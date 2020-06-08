@@ -1,6 +1,6 @@
-// Copyright 2020 New Relic Corporation. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
-package metrics_sender
+//  Copyright 2020 New Relic Corporation. All rights reserved.
+//  SPDX-License-Identifier: Apache-2.0
+package sampler
 
 import (
 	"errors"

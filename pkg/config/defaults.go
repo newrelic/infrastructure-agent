@@ -43,6 +43,7 @@ var (
 	DefaultStripCommandLine            = true
 	DefaultSmartVerboseModeEntryLimit  = 1000
 	DefaultIntegrationsDir             = "newrelic-integrations"
+	DefaultMetricsMatcherConfig        = map[string][]string{}
 
 	// private
 	defaultAppDataDir                    = ""

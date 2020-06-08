@@ -525,7 +525,7 @@ func TestEventSender_ResponseError(t *testing.T) {
 				ConnectEnabled:          true,
 				PayloadCompressionLevel: gzip.NoCompression,
 			}
-			c := NewContext(cfg, "1.2.3", testhelpers.NullHostnameResolver, IDLookup{})
+			c := NewContext(cfg, "1.2.3", testhelpers.NullHostnameResolver, IDLookup{}, nil)
 			c.agentKey = agentKey
 			c.SetAgentIdentity(agentIdn)
 

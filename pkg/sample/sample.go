@@ -16,9 +16,10 @@ type Event interface {
 	Timestamp(timestamp int64)
 }
 
+// EventBatch is a slice of Event
 type EventBatch []Event
 
-// Base type specifying properties for all sample events
+// BaseEvent type specifying properties for all sample events
 // All fields on SampleEvent must be set before it is sent.
 type BaseEvent struct {
 	EventType string `json:"eventType"`
@@ -28,14 +29,17 @@ type BaseEvent struct {
 
 var _ Event = (*BaseEvent)(nil) // BaseEvent implements sample.Event
 
+// Type sets the event type
 func (bse *BaseEvent) Type(eventType string) {
 	bse.EventType = eventType
 }
 
+// Entity sets the event entity
 func (bse *BaseEvent) Entity(key entity.Key) {
 	bse.EntityKey = string(key)
 }
 
+// Timestamp sets the event timestamp
 func (bse *BaseEvent) Timestamp(timestamp int64) {
 	bse.Timestmp = timestamp
 }
