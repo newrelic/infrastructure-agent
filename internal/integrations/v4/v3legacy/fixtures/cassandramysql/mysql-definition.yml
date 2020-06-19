@@ -1,0 +1,11 @@
+name: com.newrelic.mysql
+description: Reports status and metrics for mysql server
+protocol_version: 3
+os: linux
+
+commands:
+  status:
+    command:
+      - ./bin/nr-mysql
+    prefix: config/mysql
+    interval: 30

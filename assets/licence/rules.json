@@ -1,0 +1,22 @@
+{
+  "whitelist": [
+    "Apache-2.0",
+    "MIT",
+    "ISC",
+    "BSD-2-Clause-FreeBSD",
+    "BSD-2-Clause-NetBSD",
+    "BSD-2-Clause",
+    "BSD-3-Clause-Attribution",
+    "BSD-3-Clause-Clear",
+    "BSD-3-Clause-LBNL",
+    "BSD-3-Clause",
+    "BSD-4-Clause-UC",
+    "BSD-4-Clause",
+    "BSD-Protection",
+    "MS-PL",
+    "Ruby",
+    "ISC",
+    "CC0-1.0",
+    "Zlib"
+  ]
+}

@@ -1,0 +1,22 @@
+FROM golang:1.14 as builder
+
+ARG CGO_ENABLED=0
+WORKDIR /go/src/github.com/newrelic/infrastructure-agent
+COPY . .
+
+RUN go mod vendor
+RUN go build -o target/proxytests/agent test/proxy/minagent/main-agent/agentmain.go
+RUN go build -o target/proxytests/agentservice test/proxy/minagent/main-service/servicemain.go
+
+FROM alpine:3.9
+
+RUN mkdir /cabundle
+
+ADD test/proxy/minagent/assets /
+ADD test/proxy/fakecollector/assets/cabundle /cabundle/
+ADD test/proxy/fakecollector/assets/cabundle /fullcabundle/
+ADD test/proxy/squid-https-assets/cabundle/httpsproxy.pem /fullcabundle/httpsproxy.pem
+
+COPY --from=builder /go/src/github.com/newrelic/infrastructure-agent/target/proxytests/agent* /
+
+CMD ["/agentservice"]

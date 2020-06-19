@@ -1,0 +1,6 @@
+# configuration that provides wrong proxy information
+collector_url: https://fake-collector:4444
+license_key: abcdef012345
+proxy: http://hi-ho-ha:1234
+
+register_enabled: false

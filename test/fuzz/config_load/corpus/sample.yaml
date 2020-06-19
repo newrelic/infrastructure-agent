@@ -1,0 +1,86 @@
+license_key: your_license_key
+payload_compression_level: 6
+display_name: new_name
+passthrough_environment:
+  - HOST
+  - PORT
+custom_attributes:
+  environment: production
+  service: login service
+  team: alpha-team
+log_file: /temp/debug_log
+log_format: text
+log_to_stdout: true
+verbose: 0
+network_interface_filters:
+  prefix:
+    - dummy
+    - lo
+  index-1:
+    - tun
+disable_all_plugins: false
+cloud_security_group_refresh_sec: 60
+daemontools_interval_sec: 15
+dpkg_interval_sec: 30
+facter_interval_sec: 30
+kernel_modules_refresh_sec: 10
+network_interface_interval_sec: 60
+rpm_interval_sec: 30
+selinux_interval_sec: 30
+sshd_config_refresh_sec: 15
+supervisor_interval_sec: 15
+sysctl_interval_sec: 60
+systemd_interval_sec: 30
+sysvinit_interval_sec: 30
+upstart_interval_sec: 30
+users_refresh_sec: 15
+windows_services_refresh_sec: 30
+windows_updates_refresh_sec: 60
+metrics_network_sample_rate: 10
+metrics_process_sample_rate: 20
+metrics_storage_sample_rate: 20
+metrics_system_sample_rate: 5
+selinux_enable_semodule: true
+http_server_enabled: true
+http_server_host: localhost
+http_server_port: 8001
+ca_bundle_dir: /etc/my-certificates
+ca_bundle_file: /etc/my-certificates/secureproxy.pem
+ignore_system_proxy: false
+proxy: https://user:password@hostname:port
+proxy_validate_certificates: false
+max_procs: 1
+agent_dir:
+plugin_dir:
+entityname_integrations_v2_update: false
+pid_file:
+app_data_dir:
+cloud_max_retry_count: 10
+cloud_retry_backoff_sec: 60
+cloud_metadata_expiry_sec: 300
+disable_cloud_metadata: false
+disable_cloud_instance_id: false
+startup_connection_retries: 6
+startup_connection_retry_time: 5s
+startup_connection_timeout: 10s
+traces:
+container_cache_metadata_limit: 60
+docker_api_version: 1.24
+custom_supported_file_systems:
+file_devices_ignored:
+ignored_inventory:
+ignore_reclaimable: false
+supervisor_rpc_sock:
+proxy_config_plugin: true
+facter_home_dir:
+allowed_list_process_sample:
+strip_command_line: true
+dns_hostname_resolution: true
+override_hostname: custom.hostname.org
+override_hostname_short: custom-hostname
+remove_entities_period: 48h
+enable_win_update_plugin: false
+legacy_storage_sampler: false
+win_process_priority_class: Normal
+win_removable_drives: true
+disable_zero_mem_process_filter: false

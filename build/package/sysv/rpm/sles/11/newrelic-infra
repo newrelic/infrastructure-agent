@@ -1,0 +1,243 @@
+#!/bin/bash
+#
+# Start/stop the New Relic Infrastructure agent
+#
+### BEGIN INIT INFO
+# Provides:          newrelic-infra
+# Required-Start:    $remote_fs $syslog $time
+# Required-Stop:     $remote_fs $syslog $time
+# Should-Start:      $network $named slapd autofs ypbind nscd nslcd
+# Should-Stop:       $network $named slapd autofs ypbind nscd nslcd
+# Default-Start:     2 3 5
+# Default-Stop:
+# Short-Description: Agent for reporting data to the New Relic Infrastructure API
+# Description:       Agent for reporting data to the New Relic Infrastructure API
+### END INIT INFO
+
+NAME=newrelic-infra
+DAEMON=/usr/bin/$NAME-service
+CONFFILE=/etc/$NAME.yml
+LOGFILE=/tmp/$NAME.log
+PIDDIR=/var/run/$NAME
+PIDFILE=$PIDDIR/$NAME.pid
+USER=root
+
+log_end_msg_pre () { :; }
+log_end_msg_post () { :; }
+log_action_msg_pre () { :; }
+log_action_msg_post () { :; }
+# int log_end_message (int exitstatus)
+log_end_msg () {
+    # If no arguments were passed, return
+    if [ -z "${1:-}" ]; then
+        return 1
+    fi
+
+    local retval
+    retval=$1
+
+    log_end_msg_pre "$@"
+
+    # Only do the fancy stuff if we have an appropriate terminal
+    # and if /usr is already mounted
+    if log_use_fancy_output; then
+        RED=$( $TPUT setaf 1)
+        YELLOW=$( $TPUT setaf 3)
+        NORMAL=$( $TPUT op)
+    else
+        RED=''
+        YELLOW=''
+        NORMAL=''
+    fi
+
+    if [ $1 -eq 0 ]; then
+        echo "." || true
+    elif [ $1 -eq 255 ]; then
+        /bin/echo -e " ${YELLOW}(warning).${NORMAL}" || true
+    else
+        /bin/echo -e " ${RED}failed!${NORMAL}" || true
+    fi
+    log_end_msg_post "$@"
+    return $retval
+}
+# Source function library.
+. /lib/lsb/init-functions
+
+log_daemon_msg_post () { :; }
+
+log_use_fancy_output () {
+    TPUT=/usr/bin/tput
+    EXPR=/usr/bin/expr
+    if  [ -t 1 ] &&
+        [ "x${TERM:-}" != "x" ] &&
+        [ "x${TERM:-}" != "xdumb" ] &&
+        [ -x $TPUT ] && [ -x $EXPR ] &&
+        $TPUT hpa 60 >/dev/null 2>&1 &&
+        $TPUT setaf 1 >/dev/null 2>&1
+    then
+        [ -z $FANCYTTY ] && FANCYTTY=1 || true
+    else
+        FANCYTTY=0
+    fi
+    case "$FANCYTTY" in
+        1|Y|yes|true)   true;;
+        *)              false;;
+    esac
+}
+# Default info blocks put to the left of the screen
+log_daemon_msg_pre () {
+    if log_use_fancy_output; then
+        /bin/echo -n "[....] " || true
+    fi
+}
+log_begin_msg_pre () {
+    log_daemon_msg_pre "$@"
+}
+log_end_msg_pre () {
+    if log_use_fancy_output; then
+        RED=$( $TPUT setaf 1)
+        GREEN=$( $TPUT setaf 2)
+        YELLOW=$( $TPUT setaf 3)
+        NORMAL=$( $TPUT op)
+
+        $TPUT civis || true
+        $TPUT sc && \
+        $TPUT hpa 0 && \
+        if [ $1 -eq 0 ]; then
+            /bin/echo -ne "[${GREEN} ok ${NORMAL}" || true
+        elif [ $1 -eq 255 ]; then
+            /bin/echo -ne "[${YELLOW}warn${NORMAL}" || true
+        else
+            /bin/echo -ne "[${RED}FAIL${NORMAL}" || true
+        fi && \
+        $TPUT rc || true
+        $TPUT cnorm || true
+    fi
+}
+log_action_msg_pre () {
+    if log_use_fancy_output; then
+        CYAN=$( $TPUT setaf 6)
+        NORMAL=$( $TPUT op)
+        /bin/echo -ne "[${CYAN}info${NORMAL}] " || true
+    fi
+}
+log_action_begin_msg_pre () {
+    log_daemon_msg_pre "$@"
+}
+log_action_end_msg_pre () {
+    log_end_msg_pre "$@"
+}
+
+# Return LSB status
+status_of_proc () {
+    local pidfile daemon name status OPTIND
+
+    pidfile=
+    OPTIND=1
+    while getopts p: opt ; do
+        case "$opt" in
+            p)  pidfile="$OPTARG";;
+        esac
+    done
+    shift $(($OPTIND - 1))
+
+    if [ -n "$pidfile" ]; then
+        pidfile="-p $pidfile"
+    fi
+    daemon="$1"
+    name="$2"
+
+    status="0"
+    pidofproc $pidfile $daemon >/dev/null || status="$?"
+    if [ "$status" = 0 ]; then
+        log_success_msg "$name is running"
+        return 0
+    elif [ "$status" = 4 ]; then
+        log_failure_msg "could not access PID file for $name"
+        return $status
+    else
+        log_failure_msg "$name is not running"
+        return $status
+    fi
+}
+
+log_action_msg () {
+    log_action_msg_pre "$@"
+    echo "$@." || true
+    log_action_msg_post "$@"
+}
+
+log_daemon_msg () {
+    if [ -z "${1:-}" ]; then
+        return 1
+    fi
+    log_daemon_msg_pre "$@"
+
+    if [ -z "${2:-}" ]; then
+        /bin/echo -n "$1:" || true
+        return
+    fi
+
+    /bin/echo -n "$1: $2" || true
+    log_daemon_msg_post "$@"
+}
+
+setup_log () {
+    set -e
+    rm -f "$LOGFILE"
+    mkfifo "$LOGFILE"
+    (setsid logger -t"$NAME" <"$LOGFILE" &)
+}
+
+# Sanity check
+if [ ! -f $DAEMON ]; then
+    log_failure_msg "$DAEMON not found"
+    exit 2
+fi
+
+case "$1" in
+    start)
+        if [ $(pidofproc -p $PIDFILE $DAEMON) ];
+            then
+            log_warning_msg "New Relic Infrastructure agent already running. Exiting..."
+            exit
+        fi
+        if [ ! -f $CONFFILE ]; then
+            log_failure_msg "Can't find configuration file: $CONFFILE"
+            exit 2
+        fi
+        log_daemon_msg "Starting New Relic Infrastructure agent:" "$NAME"
+        ulimit -m 1073741824
+        setup_log
+        mkdir -p $PIDDIR
+        chown -R $USER:$USER $PIDDIR
+        startproc -u $USER $DAEMON -config $CONFFILE  >"$LOGFILE" 2>"$LOGFILE"
+        sleep 1
+        if [ $(pidofproc -p $PIDFILE $DAEMON) ];
+        then
+            log_success_msg
+            exec >"$LOGFILE" 2>"$LOGFILE"
+            rm "$LOGFILE"
+        else
+            log_failure_msg "Failed to start. Check syslog for errors"
+        fi
+    ;;
+    stop)
+        log_daemon_msg "Stopping New Relic Infrastructure agent:" "$NAME"
+        killproc -p $PIDFILE $DAEMON
+        RETVAL=$?
+        [ $RETVAL -eq 0 ] && [ -e "$PIDFILE" ] && rm -f $PIDFILE
+        log_success_msg
+    ;;
+    restart)
+        $0 stop
+        $0 start
+    ;;
+    status)
+        status_of_proc -p $PIDFILE $DAEMON $NAME && exit 0 || exit $?
+    ;;
+    *)
+        log_action_msg "Usage: \"${0} {start|stop|status|restart}\""
+        exit 2
+    ;;
+esac

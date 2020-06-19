@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+  vault:
+    image: vault:1.3.4
+    cap_add:
+      - IPC_LOCK
+    environment:
+      - VAULT_DEV_ROOT_TOKEN_ID=my_root_token
+      - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:11234
+    ports:
+      - "11234:11234"
+    expose:
+      - "11234"
+  vault-v1:
+    image: vault:1.3.4
+    cap_add:
+      - IPC_LOCK
+    environment:
+      - VAULT_DEV_ROOT_TOKEN_ID=my_root_token
+      - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:11235
+    ports:
+      - "11235:11235"
+    expose:
+      - "11235"
+    command: server -dev-kv-v1 -dev

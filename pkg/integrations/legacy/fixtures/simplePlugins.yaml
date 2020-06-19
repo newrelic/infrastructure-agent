@@ -1,0 +1,9 @@
+plugin:
+    -
+        name: ls-root
+        instance:
+            -
+                directoryToMonitor: /home
+            -
+                directoryToMonitor: /home/matt
+

@@ -1,0 +1,60 @@
+{
+	  "name": "com.newrelic.integration",
+	  "protocol_version": "3",
+	  "integration_version": "1.0.0-beta2",
+	  "data": [
+		{
+		  "entity": {
+			"name": "my_family_car",
+			"type": "car",
+			"id_attributes": [
+				{
+					"key": "env", 
+					"value": "prod"
+				},
+				{
+					"key": "srv", 
+					"value": "auth"
+				}
+    		 ]
+		  },
+		  "metrics": [
+			{
+			  "speed": 95,
+			  "fuel": 768,
+			  "passengers": 3,
+			  "displayName": "my_family_car",
+			  "entityName": "car:my_family_car",
+			  "reportingAgent": "reporting_agent_id",
+			  "reportingEntityKey": "reporting_entity_key",
+			  "event_type": "VehicleStatus"
+			}
+		  ],
+		  "inventory": {
+			"motor": {"brand": "renault", "cc": 1800}
+		  },
+		  "events": []
+		},
+		{
+		  "entity": {
+			"name": "street_hawk",
+			"type": "motorbike"
+		  },
+		  "metrics": [
+			{
+			  "speed": 180,
+			  "fuel": 128,
+			  "passengers": 1,
+			  "displayName": "street_hawk",
+			  "entityName": "motorbike:street_hawk",
+			  "reportingEndpoint": "reporting_endpoint",
+			  "event_type": "VehicleStatus"
+			}
+		  ],
+		  "inventory": {
+			"motor": {"brand": "yamaha", "cc": 500}
+		  },
+		  "events": []
+		}
+	  ]
+	}

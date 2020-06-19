@@ -1,0 +1,49 @@
+version: "2"
+networks:
+  aws_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: "169.254.170.0/24"
+          gateway: 169.254.170.1
+services:
+  # This container exposes the AWS metadata API to other containers
+  ecs-local-endpoints:
+    # The Amazon ECS Local Container Endpoints Docker Image
+    image: amazon/amazon-ecs-local-container-endpoints
+    volumes:
+      - /var/run:/var/run
+    networks:
+      aws_network:
+        ipv4_address: "169.254.170.2"
+  webserver_private:
+    image: nginx:1.17-alpine
+    networks:
+      aws_network:
+        ipv4_address: "169.254.170.3"
+    labels:
+      author: mmacias
+  webserver_public:
+    image: httpd:2.4-alpine
+    ports:
+      - "28888:80"
+      - "8443:443"
+    expose:
+      - "80"
+      - "443"
+    networks:
+      aws_network:
+        ipv4_address: "169.254.170.4"
+    labels:
+      author: superman
+  test_executor:
+    build:
+      context: ../../../
+      dockerfile: test/databind/fargate/Dockerfile_test
+    networks:
+      aws_network:
+        ipv4_address: "169.254.170.5"
+    depends_on:
+      - ecs-local-endpoints
+      - webserver_private
+      - webserver_public

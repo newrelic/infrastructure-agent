@@ -1,0 +1,29 @@
+version: '3'
+
+services:
+  webserver_private:
+    image: nginx:1.17-alpine
+    labels:
+      author: mmacias
+    networks:
+      testing_net:
+        ipv4_address: "169.254.170.2"
+  webserver_public:
+    image: httpd:2.4-alpine
+    ports:
+      - "8443:443"
+      - "18888:80"
+    expose:
+      - "443"
+      - "80"
+    networks:
+      testing_net:
+        ipv4_address: "169.254.170.4"
+    labels:
+      author: superman
+networks:
+  testing_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: "169.254.170.0/24"

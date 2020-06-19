@@ -1,0 +1,17 @@
+name: com.newrelic.cassandra
+description: Reports metrics and inventory for a Cassandra server
+protocol_version: 3
+os: linux
+
+commands:
+  metrics:
+    command:
+      - ./bin/nr-cassandra
+      - --metrics
+    interval: 30
+  inventory:
+    command:
+      - ./bin/nr-cassandra
+      - --inventory
+    interval: 60
+    prefix: config/cassandra

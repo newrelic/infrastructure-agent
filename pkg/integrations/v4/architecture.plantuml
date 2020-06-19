@@ -1,0 +1,62 @@
+@startuml
+
+
+
+' Simple, simplified architecture to facilitate getting the overall
+' picture of the plugins V4
+
+hide circle
+skinparam classAttributeIconSize 0
+
+class "runner.Group" as Group {
+   Run()
+}
+
+note left of Group
+One instance corresponds
+to one YML config file.
+It contains one "integration"
+per entry in the "integrations"
+section of the YML file.
+end note
+
+Manager --> "*" Group : loads and triggers
+
+class Definition {
+   Run()
+}
+
+interface "<<interface>>\nEmitter" as Emitter {
+    Emit()
+}
+
+runner --> Log : sends errors
+
+Executor ..> Output: sends\nstderr, stdout,\nerrors (channels)
+
+Definition <.. DefinitionsRepo : instantiates
+
+
+Group ..> runner : instantiates
+Group *--> "*" Definition
+
+Definition ..> "*" Executor : starts
+
+Output <.. runner : listens to
+
+
+runner -> Definition : runs
+
+runner ..> Emitter : sends stdout
+
+Emitter <|.. LegacyEmitter
+
+Group .> ConfigYAML : Created From
+
+note right of Definition
+Each entry in the "integrations" YML document:
+- Definition for a CLI entry or named entry
+- DefinitionCommand for legacy V3 plugins
+end note
+
+@enduml

@@ -1,0 +1,488 @@
+[
+  {
+    "variables": {
+      "annotation.kubernetes.io/config.seen": "2019-12-18T16:11:57.512021598Z",
+      "annotation.kubernetes.io/config.source": "api",
+      "clusterName": "ohai-test",
+      "id": "docker://5a4eefc5b30f6f12402665bd920ee8e889ba9e14bdcc623e2865a79d40f58412",
+      "image": "k8s.gcr.io/kube-proxy:v1.16.2",
+      "ip": "192.168.99.103",
+      "label.controller-revision-hash": "56ffd4ff47",
+      "label.k8s-app": "kube-proxy",
+      "label.pod-template-generation": "1",
+      "name": "kube-proxy",
+      "namespace": "kube-system",
+      "podName": "kube-proxy-8k87t"
+    },
+    "metricAnnotations": {
+      "clusterName": "ohai-test",
+      "image": "k8s.gcr.io/kube-proxy:v1.16.2",
+      "label.controller-revision-hash": "56ffd4ff47",
+      "label.k8s-app": "kube-proxy",
+      "label.pod-template-generation": "1",
+      "name": "kube-proxy",
+      "namespace": "kube-system",
+      "podName": "kube-proxy-8k87t"
+    },
+    "entityRewrites": [
+      {
+        "action": "replace",
+        "match": "${ip}",
+        "replaceField": "k8s:${clusterName}:${namespace}:pod:${podName}:${name}"
+      }
+    ]
+  },
+  {
+    "variables": {
+      "annotation.kubernetes.io/config.seen": "2019-12-18T16:11:57.747502238Z",
+      "annotation.kubernetes.io/config.source": "api",
+      "clusterName": "ohai-test",
+      "id": "docker://3c477ff91b2aeb9354da7a370009bdd3e9867a1c706251b9eab28ef87a59bea2",
+      "image": "k8s.gcr.io/coredns:1.6.2",
+      "ip": "172.17.0.3",
+      "label.k8s-app": "kube-dns",
+      "label.pod-template-hash": "5644d7b6d9",
+      "name": "coredns",
+      "namespace": "kube-system",
+      "podName": "coredns-5644d7b6d9-tnshz"
+    },
+    "metricAnnotations": {
+      "clusterName": "ohai-test",
+      "image": "k8s.gcr.io/coredns:1.6.2",
+      "label.k8s-app": "kube-dns",
+      "label.pod-template-hash": "5644d7b6d9",
+      "name": "coredns",
+      "namespace": "kube-system",
+      "podName": "coredns-5644d7b6d9-tnshz"
+    },
+    "entityRewrites": [
+      {
+        "action": "replace",
+        "match": "${ip}",
+        "replaceField": "k8s:${clusterName}:${namespace}:pod:${podName}:${name}"
+      }
+    ]
+  },
+  {
+    "variables": {
+      "annotation.kubernetes.io/config.seen": "2019-12-19T10:44:00.424587361Z",
+      "annotation.kubernetes.io/config.source": "api",
+      "clusterName": "ohai-test",
+      "id": "docker://b8bca2beadb125fda4587279e11345c0341442e6f80264a1c1bd4ef8492fd1b8",
+      "image": "newrelic/nginx-httpd:latest",
+      "ip": "172.17.0.6",
+      "label.app": "nginx",
+      "label.env": "k8s",
+      "label.pod-template-hash": "6d6d4d7cd9",
+      "label.role": "load_balancer",
+      "label.status_url": "nginx_status",
+      "name": "nginx",
+      "namespace": "default",
+      "podName": "nginx-deployment-6d6d4d7cd9-95w7p"
+    },
+    "metricAnnotations": {
+      "clusterName": "ohai-test",
+      "image": "newrelic/nginx-httpd:latest",
+      "label.app": "nginx",
+      "label.env": "k8s",
+      "label.pod-template-hash": "6d6d4d7cd9",
+      "label.role": "load_balancer",
+      "label.status_url": "nginx_status",
+      "name": "nginx",
+      "namespace": "default",
+      "podName": "nginx-deployment-6d6d4d7cd9-95w7p"
+    },
+    "entityRewrites": [
+      {
+        "action": "replace",
+        "match": "${ip}",
+        "replaceField": "k8s:${clusterName}:${namespace}:pod:${podName}:${name}"
+      }
+    ]
+  },
+  {
+    "variables": {
+      "annotation.kubernetes.io/config.seen": "2019-12-18T17:39:10.759269932Z",
+      "annotation.kubernetes.io/config.source": "api",
+      "clusterName": "ohai-test",
+      "id": "docker://8e57f84b673e8deb01c8a546db4e3b3156b0143bfcf78b3981931be49cc26a76",
+      "image": "quay.io/coreos/kube-state-metrics:v1.8.0",
+      "ip": "172.17.0.5",
+      "label.app.kubernetes.io/name": "kube-state-metrics",
+      "label.app.kubernetes.io/version": "v1.8.0",
+      "label.pod-template-hash": "7b48c458ff",
+      "name": "kube-state-metrics",
+      "namespace": "kube-system",
+      "podName": "kube-state-metrics-7b48c458ff-cs5x4"
+    },
+    "metricAnnotations": {
+      "clusterName": "ohai-test",
+      "image": "quay.io/coreos/kube-state-metrics:v1.8.0",
+      "label.app.kubernetes.io/name": "kube-state-metrics",
+      "label.app.kubernetes.io/version": "v1.8.0",
+      "label.pod-template-hash": "7b48c458ff",
+      "name": "kube-state-metrics",
+      "namespace": "kube-system",
+      "podName": "kube-state-metrics-7b48c458ff-cs5x4"
+    },
+    "entityRewrites": [
+      {
+        "action": "replace",
+        "match": "${ip}",
+        "replaceField": "k8s:${clusterName}:${namespace}:pod:${podName}:${name}"
+      }
+    ]
+  },
+  {
+    "variables": {
+      "annotation.kubernetes.io/config.hash": "74dea8da17aa6241e5e4f7b2ba4e1d8e",
+      "annotation.kubernetes.io/config.seen": "2019-12-18T16:11:34.39674445Z",
+      "annotation.kubernetes.io/config.source": "file",
+      "clusterName": "ohai-test",
+      "id": "docker://2ec1a0e8a10a2ea20effe77fc0c937270a596fc53d31c677472ad51c4cd5ccfa",
+      "image": "k8s.gcr.io/kube-scheduler:v1.16.2",
+      "ip": "192.168.99.103",
+      "label.component": "kube-scheduler",
+      "label.tier": "control-plane",
+      "name": "kube-scheduler",
+      "namespace": "kube-system",
+      "podName": "kube-scheduler-minikube"
+    },
+    "metricAnnotations": {
+      "clusterName": "ohai-test",
+      "image": "k8s.gcr.io/kube-scheduler:v1.16.2",
+      "label.component": "kube-scheduler",
+      "label.tier": "control-plane",
+      "name": "kube-scheduler",
+      "namespace": "kube-system",
+      "podName": "kube-scheduler-minikube"
+    },
+    "entityRewrites": [
+      {
+        "action": "replace",
+        "match": "${ip}",
+        "replaceField": "k8s:${clusterName}:${namespace}:pod:${podName}:${name}"
+      }
+    ]
+  },
+  {
+    "variables": {
+      "annotation.kubernetes.io/config.seen": "2019-12-18T16:11:57.715463709Z",
+      "annotation.kubernetes.io/config.source": "api",
+      "clusterName": "ohai-test",
+      "id": "docker://d0553a6d5eb9658a33a3b6842ef7b19c8ae4c4f8e9475414bf993dd40d657dee",
+      "image": "k8s.gcr.io/coredns:1.6.2",
+      "ip": "172.17.0.2",
+      "label.k8s-app": "kube-dns",
+      "label.pod-template-hash": "5644d7b6d9",
+      "name": "coredns",
+      "namespace": "kube-system",
+      "podName": "coredns-5644d7b6d9-2qzkn"
+    },
+    "metricAnnotations": {
+      "clusterName": "ohai-test",
+      "image": "k8s.gcr.io/coredns:1.6.2",
+      "label.k8s-app": "kube-dns",
+      "label.pod-template-hash": "5644d7b6d9",
+      "name": "coredns",
+      "namespace": "kube-system",
+      "podName": "coredns-5644d7b6d9-2qzkn"
+    },
+    "entityRewrites": [
+      {
+        "action": "replace",
+        "match": "${ip}",
+        "replaceField": "k8s:${clusterName}:${namespace}:pod:${podName}:${name}"
+      }
+    ]
+  },
+  {
+    "variables": {
+      "annotation.kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"Pod\",\"metadata\":{\"annotations\":{},\"labels\":{\"addonmanager.kubernetes.io/mode\":\"Reconcile\",\"integration-test\":\"storage-provisioner\"},\"name\":\"storage-provisioner\",\"namespace\":\"kube-system\"},\"spec\":{\"containers\":[{\"command\":[\"/storage-provisioner\"],\"image\":\"gcr.io/k8s-minikube/storage-provisioner:v1.8.1\",\"imagePullPolicy\":\"IfNotPresent\",\"name\":\"storage-provisioner\",\"volumeMounts\":[{\"mountPath\":\"/tmp\",\"name\":\"tmp\"}]}],\"hostNetwork\":true,\"serviceAccountName\":\"storage-provisioner\",\"volumes\":[{\"hostPath\":{\"path\":\"/tmp\",\"type\":\"Directory\"},\"name\":\"tmp\"}]}}\n",
+      "annotation.kubernetes.io/config.seen": "2019-12-18T16:11:59.659693163Z",
+      "annotation.kubernetes.io/config.source": "api",
+      "clusterName": "ohai-test",
+      "id": "docker://c9abcf60923a37d8737cdf162736b074856a60758caee9b52ba961296433e800",
+      "image": "gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
+      "ip": "192.168.99.103",
+      "label.addonmanager.kubernetes.io/mode": "Reconcile",
+      "label.integration-test": "storage-provisioner",
+      "name": "storage-provisioner",
+      "namespace": "kube-system",
+      "podName": "storage-provisioner"
+    },
+    "metricAnnotations": {
+      "clusterName": "ohai-test",
+      "image": "gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
+      "label.addonmanager.kubernetes.io/mode": "Reconcile",
+      "label.integration-test": "storage-provisioner",
+      "name": "storage-provisioner",
+      "namespace": "kube-system",
+      "podName": "storage-provisioner"
+    },
+    "entityRewrites": [
+      {
+        "action": "replace",
+        "match": "${ip}",
+        "replaceField": "k8s:${clusterName}:${namespace}:pod:${podName}:${name}"
+      }
+    ]
+  },
+  {
+    "variables": {
+      "annotation.kubernetes.io/config.seen": "2019-12-19T10:35:10.970606009Z",
+      "annotation.kubernetes.io/config.source": "api",
+      "clusterName": "ohai-test",
+      "id": "docker://7ff043204214ef59e49af8b1138e1bc3566c57f4a77e6f2d72be0a7e1ba81193",
+      "image": "newrelic/load-generator:latest",
+      "ip": "172.17.0.8",
+      "label.app": "load-generator",
+      "label.pod-template-hash": "5bf7c56464",
+      "name": "load-generator",
+      "namespace": "default",
+      "podName": "load-generator-deployment-5bf7c56464-85mmh"
+    },
+    "metricAnnotations": {
+      "clusterName": "ohai-test",
+      "image": "newrelic/load-generator:latest",
+      "label.app": "load-generator",
+      "label.pod-template-hash": "5bf7c56464",
+      "name": "load-generator",
+      "namespace": "default",
+      "podName": "load-generator-deployment-5bf7c56464-85mmh"
+    },
+    "entityRewrites": [
+      {
+        "action": "replace",
+        "match": "${ip}",
+        "replaceField": "k8s:${clusterName}:${namespace}:pod:${podName}:${name}"
+      }
+    ]
+  },
+  {
+    "variables": {
+      "annotation.kubernetes.io/config.hash": "76f2327775296ce38d758f0acd0eef02",
+      "annotation.kubernetes.io/config.seen": "2019-12-18T16:11:34.396181894Z",
+      "annotation.kubernetes.io/config.source": "file",
+      "clusterName": "ohai-test",
+      "id": "docker://a6f8a0597de8ecb7bdf03a0aa534e414fa4c066a99556e671703525e8d98ee07",
+      "image": "k8s.gcr.io/etcd:3.3.15-0",
+      "ip": "192.168.99.103",
+      "label.component": "etcd",
+      "label.tier": "control-plane",
+      "name": "etcd",
+      "namespace": "kube-system",
+      "podName": "etcd-minikube"
+    },
+    "metricAnnotations": {
+      "clusterName": "ohai-test",
+      "image": "k8s.gcr.io/etcd:3.3.15-0",
+      "label.component": "etcd",
+      "label.tier": "control-plane",
+      "name": "etcd",
+      "namespace": "kube-system",
+      "podName": "etcd-minikube"
+    },
+    "entityRewrites": [
+      {
+        "action": "replace",
+        "match": "${ip}",
+        "replaceField": "k8s:${clusterName}:${namespace}:pod:${podName}:${name}"
+      }
+    ]
+  },
+  {
+    "variables": {
+      "annotation.kubernetes.io/config.hash": "67888a6f41348f1a41e319a7f77279a2",
+      "annotation.kubernetes.io/config.seen": "2019-12-18T16:11:34.396187537Z",
+      "annotation.kubernetes.io/config.source": "file",
+      "clusterName": "ohai-test",
+      "id": "docker://53382c6f67483e64c5d7e475c45cdaeadd93e7c8324db86d51d7eb280368a60b",
+      "image": "k8s.gcr.io/kube-controller-manager:v1.16.2",
+      "ip": "192.168.99.103",
+      "label.component": "kube-controller-manager",
+      "label.tier": "control-plane",
+      "name": "kube-controller-manager",
+      "namespace": "kube-system",
+      "podName": "kube-controller-manager-minikube"
+    },
+    "metricAnnotations": {
+      "clusterName": "ohai-test",
+      "image": "k8s.gcr.io/kube-controller-manager:v1.16.2",
+      "label.component": "kube-controller-manager",
+      "label.tier": "control-plane",
+      "name": "kube-controller-manager",
+      "namespace": "kube-system",
+      "podName": "kube-controller-manager-minikube"
+    },
+    "entityRewrites": [
+      {
+        "action": "replace",
+        "match": "${ip}",
+        "replaceField": "k8s:${clusterName}:${namespace}:pod:${podName}:${name}"
+      }
+    ]
+  },
+  {
+    "variables": {
+      "annotation.kubernetes.io/config.seen": "2019-12-19T09:47:23.294378538Z",
+      "annotation.kubernetes.io/config.source": "api",
+      "clusterName": "ohai-test",
+      "id": "docker://67d9990a9c0dc0a156de1e5688387fe4c85eb633777559e9eb12f879029dda60",
+      "image": "newrelic/app-python:latest",
+      "ip": "172.17.0.7",
+      "label.app": "test-app",
+      "label.pod-template-hash": "695c788f64",
+      "name": "app-python",
+      "namespace": "default",
+      "podName": "app-695c788f64-xpdnc"
+    },
+    "metricAnnotations": {
+      "clusterName": "ohai-test",
+      "image": "newrelic/app-python:latest",
+      "label.app": "test-app",
+      "label.pod-template-hash": "695c788f64",
+      "name": "app-python",
+      "namespace": "default",
+      "podName": "app-695c788f64-xpdnc"
+    },
+    "entityRewrites": [
+      {
+        "action": "replace",
+        "match": "${ip}",
+        "replaceField": "k8s:${clusterName}:${namespace}:pod:${podName}:${name}"
+      }
+    ]
+  },
+  {
+    "variables": {
+      "annotation.kubernetes.io/config.seen": "2019-12-19T09:47:23.294378538Z",
+      "annotation.kubernetes.io/config.source": "api",
+      "clusterName": "ohai-test",
+      "id": "docker://487a387588dc35c601ef7dffe698992730f3df6940a21ed31f2b381a8e87a70f",
+      "image": "redis:5-alpine",
+      "ip": "172.17.0.7",
+      "label.app": "test-app",
+      "label.pod-template-hash": "695c788f64",
+      "name": "redis-master",
+      "namespace": "default",
+      "podName": "app-695c788f64-xpdnc"
+    },
+    "metricAnnotations": {
+      "clusterName": "ohai-test",
+      "image": "redis:5-alpine",
+      "label.app": "test-app",
+      "label.pod-template-hash": "695c788f64",
+      "name": "redis-master",
+      "namespace": "default",
+      "podName": "app-695c788f64-xpdnc"
+    },
+    "entityRewrites": [
+      {
+        "action": "replace",
+        "match": "${ip}",
+        "replaceField": "k8s:${clusterName}:${namespace}:pod:${podName}:${name}"
+      }
+    ]
+  },
+  {
+    "variables": {
+      "annotation.kubernetes.io/config.hash": "d6ca3c6e393b5e15ee246547bd552854",
+      "annotation.kubernetes.io/config.seen": "2019-12-18T16:11:34.396186472Z",
+      "annotation.kubernetes.io/config.source": "file",
+      "clusterName": "ohai-test",
+      "id": "docker://ae0d315894dae337e87d512bc666960764a700219a7f4b5e23723681665c3885",
+      "image": "k8s.gcr.io/kube-apiserver:v1.16.2",
+      "ip": "192.168.99.103",
+      "label.component": "kube-apiserver",
+      "label.tier": "control-plane",
+      "name": "kube-apiserver",
+      "namespace": "kube-system",
+      "podName": "kube-apiserver-minikube"
+    },
+    "metricAnnotations": {
+      "clusterName": "ohai-test",
+      "image": "k8s.gcr.io/kube-apiserver:v1.16.2",
+      "label.component": "kube-apiserver",
+      "label.tier": "control-plane",
+      "name": "kube-apiserver",
+      "namespace": "kube-system",
+      "podName": "kube-apiserver-minikube"
+    },
+    "entityRewrites": [
+      {
+        "action": "replace",
+        "match": "${ip}",
+        "replaceField": "k8s:${clusterName}:${namespace}:pod:${podName}:${name}"
+      }
+    ]
+  },
+  {
+    "variables": {
+      "annotation.kubernetes.io/config.hash": "c3e29047da86ce6690916750ab69c40b",
+      "annotation.kubernetes.io/config.seen": "2019-12-18T16:11:34.396746185Z",
+      "annotation.kubernetes.io/config.source": "file",
+      "clusterName": "ohai-test",
+      "id": "docker://e028d3e5433f5ae5c452743c5d1a8d34e1cd79b66731a7db9cef9f0e11832ee7",
+      "image": "k8s.gcr.io/kube-addon-manager:v9.0.2",
+      "ip": "192.168.99.103",
+      "label.component": "kube-addon-manager",
+      "label.kubernetes.io/minikube-addons": "addon-manager",
+      "label.version": "v9.0.2",
+      "name": "kube-addon-manager",
+      "namespace": "kube-system",
+      "podName": "kube-addon-manager-minikube"
+    },
+    "metricAnnotations": {
+      "clusterName": "ohai-test",
+      "image": "k8s.gcr.io/kube-addon-manager:v9.0.2",
+      "label.component": "kube-addon-manager",
+      "label.kubernetes.io/minikube-addons": "addon-manager",
+      "label.version": "v9.0.2",
+      "name": "kube-addon-manager",
+      "namespace": "kube-system",
+      "podName": "kube-addon-manager-minikube"
+    },
+    "entityRewrites": [
+      {
+        "action": "replace",
+        "match": "${ip}",
+        "replaceField": "k8s:${clusterName}:${namespace}:pod:${podName}:${name}"
+      }
+    ]
+  },
+  {
+    "variables": {
+      "annotation.kubernetes.io/config.seen": "2019-12-19T10:52:09.409039117Z",
+      "annotation.kubernetes.io/config.source": "api",
+      "annotation.scheduler.alpha.kubernetes.io/tolerations": "[{\"operator\": \"Exists\", \"effect\": \"NoSchedule\"},{\"operator\": \"Exists\", \"effect\": \"NoExecute\"}]\n",
+      "clusterName": "ohai-test",
+      "id": "docker://46a701ebca4d751e37fbaa3c0422e3509fc1c3529878d3bf4980e204d60bb16d",
+      "image": "newrelic/infrastructure-k8s:1.11.0-bundle",
+      "ip": "192.168.99.103",
+      "label.controller-revision-hash": "69c876dd65",
+      "label.name": "newrelic-infra",
+      "label.pod-template-generation": "1",
+      "name": "newrelic-infra",
+      "namespace": "default",
+      "podName": "newrelic-infra-mv627"
+    },
+    "metricAnnotations": {
+      "clusterName": "ohai-test",
+      "image": "newrelic/infrastructure-k8s:1.11.0-bundle",
+      "label.controller-revision-hash": "69c876dd65",
+      "label.name": "newrelic-infra",
+      "label.pod-template-generation": "1",
+      "name": "newrelic-infra",
+      "namespace": "default",
+      "podName": "newrelic-infra-mv627"
+    },
+    "entityRewrites": [
+      {
+        "action": "replace",
+        "match": "${ip}",
+        "replaceField": "k8s:${clusterName}:${namespace}:pod:${podName}:${name}"
+      }
+    ]
+  }
+]

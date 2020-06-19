@@ -1,0 +1,10 @@
+{
+	"files": [
+		{
+			"path": "/etc/nginx/ssl.conf"
+		},
+		{
+			"path": "/etc/opsmatic/yo_creds"
+		}
+	]
+}

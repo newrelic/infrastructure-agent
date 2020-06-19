@@ -1,0 +1,30 @@
+description "New Relic Infrastructure agent"
+
+start on runlevel [2345]
+stop on runlevel [!2345]
+
+respawn
+respawn limit 5 60
+
+# no limits on open descriptors
+limit nofile 65535 65535
+
+# don't let the agent use more than 1gb of resident memory (see http://man7.org/linux/man-pages/man2/getrlimit.2.html)
+limit data 1073741824 1073741824
+
+chdir /var/db/newrelic-infra/
+
+pre-start script
+    mkdir -p /var/run/newrelic-infra
+    #permissions
+end script
+
+script
+    set -e
+    rm -f "/tmp/newrelic-infra.log"
+    mkfifo "/tmp/newrelic-infra.log"
+    (setsid logger -t"newrelic-infra" <"/tmp/newrelic-infra.log" &)
+    exec >"/tmp/newrelic-infra.log" 2>"/tmp/newrelic-infra.log"
+    rm "/tmp/newrelic-infra.log"
+    exec /usr/bin/newrelic-infra-service
+end script
