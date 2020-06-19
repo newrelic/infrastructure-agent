@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProductVersion>3.10</ProductVersion>
+    <ProjectGuid>0a88050d-630f-4f58-8f30-677b2a5efd03</ProjectGuid>
+    <SchemaVersion>2.0</SchemaVersion>
+    <OutputName>newrelic-infra-amd64</OutputName>
+    <OutputType>Package</OutputType>
+    <SignToolPath>C:\Program Files (x86)\Windows Kits\10\bin\x64\</SignToolPath>
+    <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
+    <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
+    <Name>newrelic-infra-installer</Name>
+    <DefineSolutionProperties>false</DefineSolutionProperties>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
+    <DefineConstants>Debug;ExternalFilesPath=..\..\..\..\..\external_content\;BinariesPath=..\..\..\..\..\target\bin\windows_amd64\;BundledPluginsPath=..\..\..\..\..\overlay\bundled-plugins\win\</DefineConstants>
+    <SuppressAllWarnings>True</SuppressAllWarnings>
+    <Pedantic>False</Pedantic>
+    <CompilerAdditionalOptions>-arch x64</CompilerAdditionalOptions>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
+    <DefineConstants>ExternalFilesPath=..\..\..\..\..\external_content\;BinariesPath=..\..\..\..\..\target\bin\windows_amd64\;BundledPluginsPath=..\..\..\..\..\overlay\bundled-plugins\win\</DefineConstants>
+    <CompilerAdditionalOptions>-arch x64</CompilerAdditionalOptions>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Product.wxs" />
+  </ItemGroup>
+  <Import Project="$(WixTargetsPath)" />
+  <Target Name="BeforeBuild">
+    <CreateProperty Condition="$(IncludeFluentBit) != ''" Value="IncludeFluentBit=$(IncludeFluentBit);$(DefineConstants)">
+        <Output TaskParameter="Value" PropertyName="DefineConstants" />
+    </CreateProperty>
+  </Target>
+  <Target Name="SignInstaller">
+    <Exec Command="&quot;$(SignToolPath)signtool.exe&quot; sign /d &quot;New Relic Infrastructure Agent&quot; /n &quot;New Relic, Inc.&quot; &quot;$(OutputPath)$(OutputName).msi&quot;" />
+    <Copy SourceFiles="$(OutputPath)$(OutputName).msi" DestinationFiles="$(OutputPath)$(OutputName).1.0.NNN.msi" />
+    <!-- <Delete Files="$(OutputPath)$(OutputName).msi" /> -->
+  </Target>
+  <Target Name="AfterBuild" DependsOnTargets="SignInstaller" />
+  <!--
+	To modify your build process, add your task inside one of the targets below and uncomment it.
+	Other similar extension points exist, see Wix.targets.
+	<Target Name="BeforeBuild">
+	</Target>
+	<Target Name="AfterBuild">
+	</Target>
+	-->
+</Project>

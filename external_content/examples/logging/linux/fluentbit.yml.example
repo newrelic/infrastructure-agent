@@ -1,0 +1,21 @@
+###############################################################################
+# Log forwarder configuration file example                                    #
+# Source: fluentbit                                                           #
+# Available customization parameters: <none>                                  #
+###############################################################################
+logs:
+  # Use an external configuration file in the Fluentbit native format. You can
+  # also define your own 'parsers.conf' file if your native Fluentbit
+  # configuration file defines custom parsers for your log records.
+  #
+  # WARNING: do not define an output using the 'newrelic' plugin in external
+  # configuration files, as you'd potentially end up with duplicated log
+  # records in New Relic. The New Relic agent already sets an output plugin
+  # for you.
+  #
+  # NOTE: 'rfc3164', 'rfc3164-local' and 'rfc5424' are reserved parser names
+  # and must not be used in your custom parsers.conf
+  - name: external-fluentbit-config-and-parsers-file
+    fluentbit:
+      config_file: /home/user/Configs/fluent-bit.conf
+      parsers_file: /home/user/Configs/parsers.conf

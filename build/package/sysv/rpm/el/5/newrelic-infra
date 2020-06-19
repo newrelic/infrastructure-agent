@@ -1,0 +1,85 @@
+#!/bin/bash
+#
+# Start/stop the New Relic Infrastructure agent
+#
+### BEGIN INIT INFO
+# Provides:          newrelic-infra
+# Required-Start:    $remote_fs $syslog $time
+# Required-Stop:     $remote_fs $syslog $time
+# Should-Start:      $network $named slapd autofs ypbind nscd nslcd
+# Should-Stop:       $network $named slapd autofs ypbind nscd nslcd
+# Default-Start:     2 3 5
+# Default-Stop:
+# Short-Description: Agent for reporting data to the New Relic Infrastructure API
+# Description:       Agent for reporting data to the New Relic Infrastructure API
+### END INIT INFO
+
+NAME=newrelic-infra
+DAEMON=/usr/bin/$NAME-service
+CONFFILE=/etc/$NAME.yml
+LOGFILE=/tmp/$NAME.log
+PIDDIR=/var/run/$NAME
+PIDFILE=$PIDDIR/$NAME.pid
+RETVAL=0
+USER=root
+
+
+# Source function library.
+. /etc/init.d/functions
+
+
+start() {
+        echo -n $"Starting $NAME: "
+        if [ $(pidofproc -p $PIDFILE newrelic-infra) ];
+            then
+            echo -n "New Relic Infrastructure agent already running. Exiting..."
+            exit 2
+        fi
+        if [ ! -f $CONFFILE ]; then
+            echo -n "Can't find configuration file: $CONFFILE"
+            exit 2
+        fi
+        mkdir -p $PIDDIR
+        chown -R $USER:$USER $PIDDIR
+        daemon -0 --user ${USER} --pidfile=${PIDFILE} newrelic-infra -config $CONFFILE $OPTIONS >"$LOGFILE" 2>"$LOGFILE" &
+        sleep 1
+        if [ $(pidofproc -p $PIDFILE newrelic-infra) ];
+            then
+                RETVAL=0
+                echo_success
+                rm -f "${LOGFILE}"
+            else
+                echo_failure
+                RETVAL=1
+            fi
+        echo
+}
+stop() {
+	echo -n $"Stopping $NAME: "
+	killproc -p ${PIDFILE} -d 1 newrelic-infra
+	RETVAL=$?
+	echo
+	[ $RETVAL = 0 ] && rm -f ${PIDFILE}
+}
+
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    status)
+        status -p ${PIDFILE} $NAME && exit 0 || exit $?
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    *)
+        echo "Usage: /etc/init.d/newrelic-infra {start|stop|status|restart"
+        exit 1
+        ;;
+esac
+exit $?

@@ -1,0 +1,14 @@
+{
+  "ec2_metadata": {
+    "iam": {
+      "info": [
+        "{",
+        "  \"Code\" : \"Success\",",
+        "  \"LastUpdated\" : \"2015-06-29T16:14:54Z\",",
+        "  \"InstanceProfileArn\" : \"arn:aws:iam::1234567890:instance-profile/EC2_Configure\",",
+        "  \"InstanceProfileId\" : \"FOOBARBAZI\"",
+        "}"
+      ]
+    }
+  }
+}

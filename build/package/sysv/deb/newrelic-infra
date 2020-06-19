@@ -1,0 +1,82 @@
+#!/bin/bash
+# Start/stop the New Relic Infrastructure agent
+#
+### BEGIN INIT INFO
+# Provides:          newrelic-infra
+# Required-Start:    $remote_fs $syslog $time
+# Required-Stop:     $remote_fs $syslog $time
+# Should-Start:      $network $named slapd autofs ypbind nscd nslcd
+# Should-Stop:       $network $named slapd autofs ypbind nscd nslcd
+# Default-Start:     2 3 4 5
+# Default-Stop:
+# Short-Description: Agent for reporting data to the New Relic Infrastructure API
+# Description:       Agent for reporting data to the New Relic Infrastructure API
+### END INIT INFO
+
+DESC="newrelic-infra"
+NAME=newrelic-infra
+DAEMON=/usr/bin/$NAME-service
+SCRIPTNAME=/etc/init.d/$NAME
+LOGFILE=/tmp/$NAME.log
+PIDDIR=/var/run/$NAME
+export PIDFILE=$PIDDIR/$NAME.pid
+USER=root
+
+test -f $DAEMON || exit 0
+
+# Source function library.
+. /lib/lsb/init-functions
+
+setup_log ()
+{
+    set -e
+    rm -f "$LOGFILE"
+    mkfifo "$LOGFILE"
+    (setsid logger -t"$NAME" <"$LOGFILE" &)
+}
+
+case "$1" in
+    start)
+        if [ $(pidofproc -p $PIDFILE $DAEMON) ];
+          then
+          log_warning_msg "New Relic Infrastructure agent already running. Exiting..."
+          exit
+        fi
+        log_daemon_msg "Starting New Relic Infrastructure agent:" "$NAME"
+        ulimit -m 1073741824
+        setup_log
+        mkdir -p $PIDDIR
+        chown -R $USER:$USER $PIDDIR
+        /sbin/start-stop-daemon -c $USER --start --nicelevel 0 --quiet --oknodo --chdir /var/db/newrelic-infra/ --background --exec $DAEMON --oknodo --no-close --make-pidfile --pidfile $PIDFILE -- $EXTRA_OPTS >"$LOGFILE" 2>"$LOGFILE"
+        RETVAL=$?
+
+        # Also checks whether newrelic-infra started successfully
+        sleep 1s
+        if [ $RETVAL -eq 0 -a -d "/proc/$(cat $PIDFILE)" ];
+        then
+          log_success_msg "done"
+          exec >"$LOGFILE" 2>"$LOGFILE"
+          rm "$LOGFILE"
+        else
+          log_failure_msg "failed to start. Check syslog for errors"
+        fi
+    ;;
+    stop)
+        log_daemon_msg "Stopping New Relic Infrastructure agent:" "$NAME"
+        killproc -p $PIDFILE $DAEMON
+        RETVAL=$?
+        [ $RETVAL -eq 0 ] && [ -e "$PIDFILE" ] && rm -f $PIDFILE
+        log_end_msg $RETVAL
+    ;;
+    restart)
+        log_daemon_msg "Restarting New Relic Infrastructure agent:" "$NAME"
+        $0 stop
+        $0 start
+    ;;
+    status)
+        status_of_proc -p $PIDFILE $DAEMON $NAME && exit 0 || exit $?
+    ;;
+*)      log_action_msg "Usage: newrelic-infra {start|stop|status|restart}"
+        exit 2
+    ;;
+esac

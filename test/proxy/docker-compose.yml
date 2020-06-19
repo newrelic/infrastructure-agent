@@ -1,0 +1,41 @@
+version: '3.1'
+
+services:
+  minimal-agent:
+    build:
+      context: ../../
+      dockerfile: test/proxy/Dockerfile_agent
+    image: minimal-agent
+    links:
+      - fake-collector
+      - http-proxy
+    ports:
+      - "4445:4445"
+
+  fake-collector:
+    build:
+      context: ../../
+      dockerfile: test/proxy/Dockerfile_collector
+    image: fake-collector
+    ports:
+      - "4444:4444"
+
+  http-proxy:
+    build:
+      context: ../../
+      dockerfile: test/proxy/Dockerfile_proxyhttp
+    image: proxyhttp
+    links:
+      - fake-collector
+    ports:
+      - "3128:3128"
+
+  https-proxy:
+    build:
+      context: ../../
+      dockerfile: test/proxy/Dockerfile_proxyhttps
+    image: proxyhttps
+    links:
+      - fake-collector
+    ports:
+      - "3129:3129"

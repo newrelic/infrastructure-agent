@@ -1,0 +1,11 @@
+FROM golang:1.14 as builder
+ARG CGO_ENABLED=0
+WORKDIR /go/src/github.com/newrelic/infrastructure-agent
+COPY . .
+RUN go mod vendor
+RUN go build -o target/proxytests/collector test/proxy/fakecollector/main/collectormain.go
+
+FROM alpine:3.9
+ADD test/proxy/fakecollector/assets /
+COPY --from=builder /go/src/github.com/newrelic/infrastructure-agent/target/proxytests/collector /
+CMD ["/collector"]

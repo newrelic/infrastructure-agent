@@ -1,0 +1,22 @@
+###############################################################################
+# Log forwarder configuration file example                                    #
+# Source: systemd                                                             #
+# Available customization parameters: attributes, max_line_kb, pattern        #
+###############################################################################
+logs:
+  # Systemd 'cupsd' service
+  # WARNING: Infrastructure Agent must run as *root* to use this source
+  - name: systemd-cups
+    systemd: cupsd
+
+  # You can optionally include the 'attributes', 'max_line_kb' and 'pattern'
+  # parameters (refer to file.yml.example or to the official documentation for
+  # more details)
+  - name: customized-systemd-cupsd
+    systemd: cupsd
+    attributes:
+      application: tomcat
+      department: sales
+      maintainer: example@mailprovider.com
+    max_line_kb: 256
+    pattern: WARN|ERROR

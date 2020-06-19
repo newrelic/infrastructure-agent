@@ -1,0 +1,340 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <?define Version = "{AgentVersion}" ?>
+  <?define ProductId = "*" ?>
+  <?define UpgradeCode = "{6d227283-6369-4e8b-8d8e-44f9eb5fb080}" ?>
+
+	<Product Id="$(var.ProductId)"
+        Name="New Relic Infrastructure Agent (x86)"
+        Language="1033"
+        Version="$(var.Version)"
+        Manufacturer="New Relic, Inc."
+        UpgradeCode="$(var.UpgradeCode)">
+		<Package Id="*"
+          InstallerVersion="200"
+          Compressed="yes"
+          InstallScope="perMachine"
+          Platform="x86"
+          Manufacturer="New Relic, Inc."
+          Comments="(c) 2018 New Relic, Inc."
+          Keywords="infrastructure,agent,MSI,32bit"/>
+
+		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+		<MediaTemplate EmbedCab="yes" />
+
+        <Property Id="LICENSE_KEY" Secure="yes" />
+        <Property Id="DISPLAY_NAME" Secure="yes" />
+        <Property Id="PROXY"  Secure="yes" />
+        <Property Id="CUSTOM_ATTRIBUTES" Secure="yes" />
+        <Property Id="METRICS_SYSTEM_SAMPLE_RATE"  Secure="yes" />
+        <Property Id="METRICS_STORAGE_SAMPLE_RATE"  Secure="yes" />
+        <Property Id="METRICS_NETWORK_SAMPLE_RATE"  Secure="yes" />
+        <Property Id="METRICS_PROCESS_SAMPLE_RATE"  Secure="yes" />
+        <Property Id="PAYLOAD_COMPRESSION_LEVEL"  Secure="yes" />
+
+		<Feature Id="ProductFeature" Title="New Relic Infrastructure Agent" Level="1">
+            <ComponentRef Id="CMP_V1_PLUGIN_CONFIGS" />
+            <ComponentRef Id="CMP_V1_CUSTOM_PLUGINS" />
+            <ComponentRef Id="CMP_V1_NR_PLUGINS" />
+            <ComponentRef Id="CMP_LOGGING_TOOL" />
+            <ComponentRef Id="CMP_LOGGING_TOOL_CFG" />
+			<ComponentGroupRef Id="ProductComponents" />
+			<ComponentGroupRef Id="Bundled386PluginDefinitionComponents" />
+			<ComponentGroupRef Id="Bundled386PluginConfigComponents" />
+			<ComponentGroupRef Id="Bundled386PerfmonPluginComponents" />
+			<ComponentGroupRef Id="Bundled386EventLogPluginComponents" />
+			<ComponentGroupRef Id="Bundled386HttpHealthPluginComponents" />
+            <ComponentGroupRef Id="Bundled386NtpPluginComponents" />
+            <?if "$(var.IncludeFluentBit)" = "True"?>
+			  <ComponentGroupRef Id="LoggingToolComponents" />
+			  <ComponentGroupRef Id="LoggingToolCfgComponents" />
+			<?endif?>
+		</Feature>
+	</Product>
+
+	<Fragment>
+		<Directory Id="TARGETDIR" Name="SourceDir">
+			<Directory Id="ProgramFilesFolder">
+        <Directory Id="CompanyFolder" Name="New Relic">
+          <Directory Id="AgentBinaryFolder" Name="newrelic-infra">
+            <Directory Id="DataFolder" Name="data" />
+            <Directory Id="UserDataFolder" Name="user_data" />
+            <Directory Id="V1PluginConfigsFolder" Name="integrations.d" />
+            <Directory Id="LoggingToolCfg" Name="logging.d" />
+            <Directory Id="V1CustomPluginsFolder" Name="custom-integrations" >
+                <Directory Id="PerfMonFolder" Name="newrelic-infra-perfmon" />
+                <Directory Id="EventLogFolder" Name="newrelic-infra-eventlogreader" />
+                <Directory Id="HttpHealthFolder" Name="newrelic-infra-httphealth" />
+                <Directory Id="NtpFolder" Name="newrelic-infra-ntp" />
+            </Directory>
+            <Directory Id="V1NRPluginsFolder" Name="newrelic-integrations">
+              <Directory Id="LoggingTool" Name="logging" />
+            </Directory>
+          </Directory>
+        </Directory>
+			</Directory>
+		</Directory>
+	</Fragment>
+
+    <Fragment>
+      <DirectoryRef Id="V1PluginConfigsFolder">
+          <Component Id="CMP_V1_PLUGIN_CONFIGS" Guid="94DE94E9-E7A8-4886-B13F-7586DB53462D" KeyPath="yes">
+              <CreateFolder />
+          </Component>
+      </DirectoryRef>
+      <DirectoryRef Id="LoggingToolCfg">
+          <Component Id="CMP_LOGGING_TOOL_CFG" Guid="AF0591C3-572E-4CDB-88C1-928FA97D8EFF" KeyPath="yes">
+              <CreateFolder />
+          </Component>
+      </DirectoryRef>
+      <DirectoryRef Id="V1CustomPluginsFolder">
+          <Component Id="CMP_V1_CUSTOM_PLUGINS" Guid="2E6B37B0-CAF1-4E42-9D7D-0A423C7D1C0A" KeyPath="yes">
+              <CreateFolder />
+          </Component>
+      </DirectoryRef>
+      <DirectoryRef Id="LoggingTool">
+          <Component Id="CMP_LOGGING_TOOL" Guid="97CBE086-FE32-44FE-B035-9B7D66A422AD" KeyPath="yes">
+              <CreateFolder />
+          </Component>
+      </DirectoryRef>
+      <DirectoryRef Id="V1NRPluginsFolder">
+          <Component Id="CMP_V1_NR_PLUGINS" Guid="070708D0-87B5-4543-83C3-5A037A15BD5B" KeyPath="yes">
+              <CreateFolder />
+          </Component>
+      </DirectoryRef>
+    </Fragment>
+
+	<Fragment>
+		<ComponentGroup Id="ProductComponents" Directory="AgentBinaryFolder">
+            <Component Id="CMP_AGENT_SERVICE_EXE" Guid="C9D28BD5-7FD7-4E69-8D49-D07043D8AE3E" Win64="no">
+                <File Id="FILE_AgentBinaryFolder_AGENT_SERVICE_EXE"
+                      Name ="newrelic-infra-service.exe"
+                      Source="$(var.BinariesPath)newrelic-infra-service.exe"
+                      KeyPath="yes"/>
+                <ServiceInstall
+                  Id="InstallAgentService"
+                  Name="newrelic-infra"
+                  DisplayName="New Relic Infrastructure Agent (x86)"
+                  Start="auto"
+                  ErrorControl="normal"
+                  Type="ownProcess" />
+                <ServiceControl
+                  Id="sc_AgentService"
+                  Name="newrelic-infra"
+                  Stop="both"
+                  Remove="uninstall"
+                  Wait="yes" />
+            </Component>
+            <Component Id="CMP_AGENT_EXE" Guid="78C05055-B371-4B81-A818-B85FB0A8E889" Win64="no">
+                <File Id="FILE_AgentBinaryFolder_AGENT_EXE"
+                      Source="$(var.BinariesPath)newrelic-infra.exe"
+                      KeyPath="yes"/>
+            </Component>
+            <Component Id="CMP_AGENT_CONFIG_YML" Guid="62B86CB1-7C3F-44EC-ABB6-428476EA978B" Win64="no" NeverOverwrite="yes" Permanent="yes">
+                <File Id="FILE_AgentBinaryFolder_AGENT_CONFIG_YML"
+                      Name="newrelic-infra.yml"
+                      Source="$(var.ExternalFilesPath)newrelic-infra.windows.yml"
+                      KeyPath="yes" />
+            </Component>
+            <Component Id="CMP_LICENSE_TXT" Guid="488B9919-4C3D-46BB-A030-09A7F1E64780" Win64="no">
+                <File Id="FILE_AgentBinaryFolder_LICENSE_TXT"
+                      Name ="LICENSE.txt"
+                      Source="$(var.ExternalFilesPath)LICENSE.windows.txt"
+                      KeyPath="yes" />
+            </Component>
+            <Component Id="CMP_YAMLGENERATOR_EXE" Guid="BA99F9AA-967F-405C-B80B-9ACE31D98E9F" Win64="no">
+                  <File Id="FILE_AgentBinaryFolder_YAMLGENERATOR_EXE"
+                        Name ="yamlgen.exe"
+                        Source="$(var.BinariesPath)yamlgen.exe"
+                        KeyPath="yes" />
+            </Component>
+            <Component Id="CMP_AGENT_CTL_EXE" Guid="A9108F57-1785-46D5-A879-D2A55AEA62F6" Win64="no">
+                  <File Id="FILE_AgentBinaryFolder_AGENT_CTL_EXE"
+                        Name ="newrelic-infra-ctl.exe"
+                        Source="$(var.BinariesPath)newrelic-infra-ctl.exe"
+                        KeyPath="yes" />
+            </Component>
+		</ComponentGroup>
+        <CustomAction Id="yamlgen.nribase" Property="nribase" Value="-license_key  &quot;[LICENSE_KEY]&quot; -display_name &quot;[DISPLAY_NAME]&quot; -proxy &quot;[PROXY]&quot; -custom_attributes &quot;[CUSTOM_ATTRIBUTES]&quot; " />
+        <CustomAction Id="yamlgen.nriconfig0" Property="nriconfig0" Value="-metrics_system_sample_rate &quot;[METRICS_SYSTEM_SAMPLE_RATE]&quot; -metrics_storage_sample_rate &quot;[METRICS_STORAGE_SAMPLE_RATE]&quot; -metrics_network_sample_rate &quot;[METRICS_NETWORK_SAMPLE_RATE]&quot; -metrics_process_sample_rate &quot;[METRICS_PROCESS_SAMPLE_RATE]&quot;" />
+        <CustomAction Id="yamlgen.nriconfig1" Property="nriconfig1" Value="-payload_compression_level &quot;[PAYLOAD_COMPRESSION_LEVEL]&quot;" />
+
+        <CustomAction Id="RunYamlGenerator"
+                Directory="AgentBinaryFolder"
+                ExeCommand="[AgentBinaryFolder]yamlgen.exe [nribase] [nriconfig0] [nriconfig1]"
+                Execute="deferred"
+                Return="ignore"/>
+
+        <InstallExecuteSequence>
+            <Custom Action="yamlgen.nribase" Before="RunYamlGenerator" />
+            <Custom Action="yamlgen.nriconfig0" After="yamlgen.nribase" />
+            <Custom Action="yamlgen.nriconfig1" After="yamlgen.nriconfig0" />
+            <Custom Action="RunYamlGenerator" Before="InstallFinalize" >
+               <![CDATA[ GENERATE_CONFIG ]]>
+            </Custom>
+        </InstallExecuteSequence>
+	</Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="LoggingToolComponents" Directory="LoggingTool">
+        <Component Id="CMP_LOGGING_TOOL_BIN" Guid="015B10A1-7843-4961-B221-CBB449A6646C" Win64="no">
+          <File Id="FILE_LOGGING_TOOL_BIN"
+              Source="$(var.BinariesPath)logging\fluent-bit.exe"
+                KeyPath="yes" />
+        </Component>
+        <Component Id="CMP_LOGGING_TOOL_DLL" Guid="28A3B24F-A98E-4D20-BEB3-8859D29375FD" Win64="no">
+          <File Id="FILE_LOGGING_TOOL_DLL"
+              Source="$(var.BinariesPath)logging\fluent-bit.dll"
+                KeyPath="yes" />
+        </Component>
+        <Component Id="CMP_NR_LOGGING_TOOL_DLL" Guid="9B2B74F7-DA9C-4C44-9FA7-96CA3C6DBB0D" Win64="no">
+          <File Id="FILE_NR_LOGGING_TOOL_DLL"
+              Source="$(var.BinariesPath)logging\out_newrelic.dll"
+                KeyPath="yes" />
+        </Component>
+        <Component Id="CMP_NR_LOGGING_TOOL_PARSERS" Guid="34BF1E45-4AC5-45C4-AB80-D7C457A9B601" Win64="no">
+          <File Id="FILE_NR_LOGGING_TOOL_PARSERS"
+              Source="$(var.BinariesPath)logging\parsers.conf"
+                KeyPath="yes" />
+        </Component>
+    </ComponentGroup>
+  </Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="LoggingToolCfgComponents" Directory="LoggingToolCfg">
+        <Component Id="CMP_LOGGING_EXAMPLE_CFG_FILE" Guid="B347F18E-6406-412C-B676-B3328F285080" Win64="no">
+          <File Id="FILE_LOGGING_EXAMPLE_CFG_FILE"
+              Source="$(var.ExternalFilesPath)\examples\logging\windows\file.yml.example"
+              KeyPath="yes" />
+        </Component>
+        <Component Id="CMP_LOGGING_EXAMPLE_CFG_FLUENTBIT" Guid="9CD27204-08BE-4911-BC6D-BFB01DB20897" Win64="no">
+          <File Id="FILE_LOGGING_EXAMPLE_CFG_FLUENTBIT"
+              Source="$(var.ExternalFilesPath)\examples\logging\windows\fluentbit.yml.example"
+              KeyPath="yes" />
+        </Component>
+        <Component Id="CMP_LOGGING_EXAMPLE_CFG_TCP" Guid="BFCCA150-DED2-492D-9F2B-1D0F8B9A69B1" Win64="no">
+          <File Id="FILE_LOGGING_EXAMPLE_CFG_TCP"
+              Source="$(var.ExternalFilesPath)\examples\logging\windows\tcp.yml.example"
+              KeyPath="yes" />
+        </Component>
+    </ComponentGroup>
+  </Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="Bundled386NtpPluginComponents" Directory="NtpFolder">
+      <Component Id="CMP_NTP_APP" Guid="EFDD9AA7-94DD-4216-A9A4-8AE86C7CEE9D" Win64="no">
+              <File Id="FILE_NTP_APP"
+              Source="$(var.ExternalFilesPath)windows\386\ntp\nr-ntp-checker-386.exe"
+              KeyPath="yes" />
+      </Component>
+	</ComponentGroup>
+  </Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="Bundled386HttpHealthPluginComponents" Directory="HttpHealthFolder">
+      <Component Id="CMP_HTTPHEALTH_APP" Guid="F305526F-CF5A-4B82-BA06-BB883B94CD8C" Win64="no">
+              <File Id="FILE_HTTPHEALTH_APP"
+              Source="$(var.ExternalFilesPath)windows\386\health-check\nr-http-health-plugin-386.exe"
+              KeyPath="yes" />
+      </Component>
+	</ComponentGroup>
+  </Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="Bundled386EventLogPluginComponents" Directory="EventLogFolder">
+      <Component Id="CMP_EVENTLOG_APP" Guid="2C8C4715-89F0-4BE6-AA82-37183D6D0E39" Win64="no">
+              <File Id="FILE_EVENTLOG_APP"
+              Source="$(var.ExternalFilesPath)windows\386\eventlogreader\EventLogReader.exe"
+              KeyPath="yes" />
+      </Component>
+      <Component Id="CMP_EVENTLOG_CONFIG" Guid="307CC0E5-D192-498A-8629-82E9E8C7EB66" Win64="no">
+          <File Id="FILE_EVENTLOG_CONFIG"
+              Source="$(var.ExternalFilesPath)windows\386\eventlogreader\EXAMPLE_EventLogReaderParameters.txt"
+              Name="EventLogReaderParameters.txt"
+              KeyPath="yes" />
+      </Component>
+	</ComponentGroup>
+  </Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="Bundled386PluginDefinitionComponents" Directory="V1CustomPluginsFolder">
+	  <Component Id="CMP_PERFMON_PLUGIN_DEFINITION" Guid="68E7F472-664B-492E-8779-CCDE3E7B5C2D" Win64="no">
+        <File Id="FILE_PERFMON_PLUGIN_DEFINITION"
+              Source="$(var.ExternalFilesPath)windows\386\perfmon\newrelic-infra-perfmon-definition.yml"
+              KeyPath="yes" />
+      </Component>
+	  <Component Id="CMP_EVENTLOG_PLUGIN_DEFINITION" Guid="AE7B9171-048E-4C43-82E1-FEDECB97AE0D" Win64="no">
+        <File Id="FILE_EVENTLOG_PLUGIN_DEFINITION"
+            Source="$(var.ExternalFilesPath)windows\386\eventlogreader\EventLogReader-definition.yml"
+            Name="newrelic-infra-eventlog-definition.yml"
+              KeyPath="yes" />
+      </Component>
+	  <Component Id="CMP_HTTPHEALTH_PLUGIN_DEFINITION" Guid="94B109D9-C857-4833-B6DE-80474EBA875D" Win64="no">
+        <File Id="FILE_HTTPHEALTH_PLUGIN_DEFINITION"
+            Source="$(var.ExternalFilesPath)windows\386\health-check\nr-http-health-definition.yml"
+            Name="newrelic-infra-http-health-definition.yml"
+              KeyPath="yes" />
+      </Component>
+	  <Component Id="CMP_NTP_PLUGIN_DEFINITION" Guid="EDD68B9D-9491-4FFE-9EE0-4FF71D4F2C49" Win64="no">
+        <File Id="FILE_NTP_PLUGIN_DEFINITION"
+            Source="$(var.ExternalFilesPath)windows\386\ntp\NR-NTP-definition.yml"
+            Name="newrelic-infra-ntp-definition.yml"
+              KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="Bundled386PluginConfigComponents" Directory="V1PluginConfigsFolder">
+	  <Component Id="CMP_PERFMON_PLUGIN_CONFIG" Guid="5A1E93D0-7969-470F-812A-289E72BB5775" Win64="no">
+        <File Id="FILE_PERFMON_PLUGIN_CONFIG"
+              Source="$(var.ExternalFilesPath)windows\386\perfmon\newrelic-infra-perfmon-config.yml"
+              Name="newrelic-infra-perfmon-config.sample"
+              KeyPath="yes" />
+      </Component>
+	  <Component Id="CMP_EVENTLOG_PLUGIN_CONFIG" Guid="5670FC67-255A-4905-93D0-2DBCC0740339" Win64="no">
+        <File Id="FILE_EVENTLOG_PLUGIN_CONFIG"
+            Source="$(var.ExternalFilesPath)windows\386\eventlogreader\EventLogReader-config.yml"
+            Name="newrelic-infra-eventlog-config.sample"
+              KeyPath="yes" />
+      </Component>
+	  <Component Id="CMP_HTTPCHECK_PLUGIN_CONFIG" Guid="65DA36AD-EACF-45E0-B164-67683CBE1170" Win64="no">
+        <File Id="FILE_HTTPCHECK_PLUGIN_CONFIG"
+            Source="$(var.ExternalFilesPath)windows\386\health-check\nr-http-health-config.yml"
+            Name="newrelic-infra-http-health-config.sample"
+              KeyPath="yes" />
+      </Component>
+	  <Component Id="CMP_NTP_PLUGIN_CONFIG" Guid="DB235AAC-3EE2-4442-8C2E-5FEEABD323C3" Win64="no">
+        <File Id="FILE_NTP_PLUGIN_CONFIG"
+            Source="$(var.ExternalFilesPath)windows\386\ntp\NR-NTP-config.yml"
+            Name="newrelic-infra-ntp-config.sample"
+              KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="Bundled386PerfmonPluginComponents" Directory="PerfMonFolder">
+	  <Component Id="CMP_PERFMON_FLUENTDLL" Guid="86C8E15D-6006-4C7D-B36E-E94974FF495D" Win64="no">
+        <File Id="FILE_PERFMON_FLUENTDLL"
+              Source="$(var.ExternalFilesPath)windows\386\perfmon\FluentCommandLineParser.dll"
+              KeyPath="yes" />
+      </Component>
+	  <Component Id="CMP_PERFMON_NEWTONSOFTDLL" Guid="1719DBCC-1CEF-4625-BECC-BF51C83958CE" Win64="no">
+        <File Id="FILE_PERFMON_NEWTONSOFTDLL"
+              Source="$(var.ExternalFilesPath)windows\386\perfmon\Newtonsoft.Json.dll"
+              KeyPath="yes" />
+      </Component>
+	  <Component Id="CMP_PERFMON_APP" Guid="CB300DAE-EEFF-444D-BD85-38AD8E6C94C4" Win64="no">
+        <File Id="FILE_PERFMON_APP"
+              Source="$(var.ExternalFilesPath)windows\386\perfmon\newrelic-infra-perfmon-plugin.exe"
+              KeyPath="yes" />
+      </Component>
+	  <Component Id="CMP_PERFMON_CONFIG" Guid="4DEA80C1-8C22-4A95-9539-F8BE2BA8B73F" Win64="no">
+        <File Id="FILE_PERFMON_CONFIG"
+              Source="$(var.ExternalFilesPath)windows\386\perfmon\config.json"
+              KeyPath="yes" />
+      </Component>
+	</ComponentGroup>
+  </Fragment>
+</Wix>

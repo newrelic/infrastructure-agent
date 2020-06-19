@@ -1,0 +1,8 @@
+# configuration that provides proxy information
+collector_url: https://fake-collector:4444
+license_key: abcdef012345
+proxy: https://https-proxy:3129
+proxy_verify_certificates: true
+ca_bundle_dir: /fullcabundle
+
+register_enabled: false

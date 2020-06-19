@@ -1,0 +1,10 @@
+{
+	"files": [
+		{
+			"path": "/etc/nginx/ssl.conf"
+		},
+		{
+			"path": "/etc/opsmatic/square_cash_creds"
+		}
+	]
+}

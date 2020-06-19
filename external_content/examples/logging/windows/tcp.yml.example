@@ -1,0 +1,31 @@
+###############################################################################
+# Log forwarder configuration file example                                    #
+# Source: tcp                                                                 #
+# Available customization parameters: attributes, max_line_kb                 #
+###############################################################################
+logs:
+  # TCP log ingestion with no specific format. Records separated by line breaks.
+  - name: tcp-with-no-format
+    tcp:
+      uri: tcp://127.0.0.1:5170
+      format: none
+      separator: \n
+
+  # TCP log ingestion in JSON format.
+  - name: tcp-json
+    tcp:
+      uri: tcp://127.0.0.1:5171
+      format: json
+
+  # You can optionally include the 'attributes' and 'max_line_kb' parameters
+  # (refer to file.yml.example or to the official documentation for more
+  # details)
+  - name: customized-tcp-json
+    tcp:
+      uri: tcp://127.0.0.1:5172
+      format: json
+    attributes:
+      application: tomcat
+      department: sales
+      maintainer: example@mailprovider.com
+    max_line_kb: 256

@@ -1,0 +1,19 @@
+[Unit]
+Description=New Relic Infrastructure Agent
+After=dbus.service syslog.target network.target
+
+[Service]
+RuntimeDirectory=newrelic-infra
+Type=simple
+ExecStart=/usr/bin/newrelic-infra-service
+MemoryLimit=1G
+# MemoryMax is only supported in systemd > 230 and replaces MemoryLimit. Some cloud dists do not have that version
+# MemoryMax=1G
+Restart=always
+RestartSec=20
+StartLimitInterval=0
+StartLimitBurst=5
+PIDFile=/var/run/newrelic-infra/newrelic-infra.pid
+
+[Install]
+WantedBy=multi-user.target

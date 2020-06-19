@@ -1,0 +1,6 @@
+# configuration that provides proxy information
+collector_url: https://fake-collector:4444
+license_key: abcdef012345
+proxy: http://http-proxy:3128
+
+register_enabled: false

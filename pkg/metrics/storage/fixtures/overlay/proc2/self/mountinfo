@@ -1,0 +1,38 @@
+18 61 0:18 / /sys rw,nosuid,nodev,noexec,relatime shared:6 - sysfs sysfs rw
+19 61 0:3 / /proc rw,nosuid,nodev,noexec,relatime shared:5 - proc proc rw
+20 61 0:5 / /dev rw,nosuid shared:2 - devtmpfs devtmpfs rw,size=1744972k,nr_inodes=436243,mode=755
+21 18 0:17 / /sys/kernel/security rw,nosuid,nodev,noexec,relatime shared:7 - securityfs securityfs rw
+22 20 0:19 / /dev/shm rw,nosuid,nodev shared:3 - tmpfs tmpfs rw
+23 20 0:12 / /dev/pts rw,nosuid,noexec,relatime shared:4 - devpts devpts rw,gid=5,mode=620,ptmxmode=000
+24 61 0:20 / /run rw,nosuid,nodev shared:22 - tmpfs tmpfs rw,mode=755
+25 18 0:21 / /sys/fs/cgroup ro,nosuid,nodev,noexec shared:8 - tmpfs tmpfs ro,mode=755
+26 25 0:22 / /sys/fs/cgroup/systemd rw,nosuid,nodev,noexec,relatime shared:9 - cgroup cgroup rw,xattr,release_agent=/usr/lib/systemd/systemd-cgroups-agent,name=systemd
+27 18 0:23 / /sys/fs/pstore rw,nosuid,nodev,noexec,relatime shared:20 - pstore pstore rw
+28 25 0:24 / /sys/fs/cgroup/cpuset rw,nosuid,nodev,noexec,relatime shared:10 - cgroup cgroup rw,cpuset
+29 25 0:25 / /sys/fs/cgroup/net_cls,net_prio rw,nosuid,nodev,noexec,relatime shared:11 - cgroup cgroup rw,net_prio,net_cls
+30 25 0:26 / /sys/fs/cgroup/pids rw,nosuid,nodev,noexec,relatime shared:12 - cgroup cgroup rw,pids
+31 25 0:27 / /sys/fs/cgroup/hugetlb rw,nosuid,nodev,noexec,relatime shared:13 - cgroup cgroup rw,hugetlb
+32 25 0:28 / /sys/fs/cgroup/cpu,cpuacct rw,nosuid,nodev,noexec,relatime shared:14 - cgroup cgroup rw,cpuacct,cpu
+33 25 0:29 / /sys/fs/cgroup/freezer rw,nosuid,nodev,noexec,relatime shared:15 - cgroup cgroup rw,freezer
+34 25 0:30 / /sys/fs/cgroup/blkio rw,nosuid,nodev,noexec,relatime shared:16 - cgroup cgroup rw,blkio
+35 25 0:31 / /sys/fs/cgroup/devices rw,nosuid,nodev,noexec,relatime shared:17 - cgroup cgroup rw,devices
+36 25 0:32 / /sys/fs/cgroup/memory rw,nosuid,nodev,noexec,relatime shared:18 - cgroup cgroup rw,memory
+37 25 0:33 / /sys/fs/cgroup/perf_event rw,nosuid,nodev,noexec,relatime shared:19 - cgroup cgroup rw,perf_event
+59 18 0:34 / /sys/kernel/config rw,relatime shared:21 - configfs configfs rw
+61 0 8:2 / / rw,relatime shared:1 - xfs /dev/sda2 rw,attr2,inode64,noquota
+16 19 0:16 / /proc/sys/fs/binfmt_misc rw,relatime shared:23 - autofs systemd-1 rw,fd=24,pgrp=1,timeout=0,minproto=5,maxproto=5,direct,pipe_ino=13324
+38 20 0:15 / /dev/mqueue rw,relatime shared:24 - mqueue mqueue rw
+40 18 0:6 / /sys/kernel/debug rw,relatime shared:25 - debugfs debugfs rw
+39 20 0:35 / /dev/hugepages rw,relatime shared:26 - hugetlbfs hugetlbfs rw
+70 61 8:1 / /boot rw,relatime shared:27 - xfs /dev/sda1 rw,attr2,inode64,noquota
+176 61 0:37 / /TK/azurestorage/media-backup rw,relatime shared:129 - cifs //sthybrishnaprod0backup.file.core.windows.net/af-hna-prod-media-backup rw,vers=3.0,cache=strict,username=sthybrishnaprod0backup,domain=,uid=1500,forceuid,gid=1500,forcegid,addr=52.174.224.24,file_mode=0775,dir_mode=0775,soft,persistenthandles,nounix,serverino,mapposix,rsize=1048576,wsize=1048576,echo_interval=60,actimeo=1
+177 61 0:38 / /TK/azurestorage/tk-sftp rw,relatime shared:133 - cifs //sthybrishnaprod01.file.core.windows.net/af-hna-prod-tk-sftp rw,vers=3.0,cache=strict,username=sthybrishnaprod01,domain=,uid=1500,forceuid,gid=1500,forcegid,addr=52.239.142.232,file_mode=0775,dir_mode=0775,soft,persistenthandles,nounix,serverino,mapposix,rsize=1048576,wsize=1048576,echo_interval=60,actimeo=1
+186 16 0:39 / /proc/sys/fs/binfmt_misc rw,relatime shared:137 - binfmt_misc binfmt_misc rw
+191 61 8:2 /TK/docker/plugins /TK/docker/plugins rw,relatime - xfs /dev/sda2 rw,attr2,inode64,noquota
+202 61 8:2 /TK/docker/overlay2 /TK/docker/overlay2 rw,relatime - xfs /dev/sda2 rw,attr2,inode64,noquota
+207 61 8:17 / /mnt/resource rw,relatime shared:152 - ext4 /dev/sdb1 rw,data=ordered
+147 202 0:42 / /TK/docker/overlay2/8d3bd0982e855065b39adffd99ba20e2583ce96ee9bd524c38647a79f1ac4ebc/merged rw,relatime - overlay overlay rw,lowerdir=/TK/docker/overlay2/l/UVA6GVSD3VRBRGRRSWREXPFIFU:/TK/docker/overlay2/l/JBQ7UKGJD2NMQQQU624M2DN5ZM:/TK/docker/overlay2/l/XXV3ZV6OZB2XEFRCGKUBLZ2KVX:/TK/docker/overlay2/l/KPLNZZTBB6ZDK3FWQXAZWLFZOK:/TK/docker/overlay2/l/ET5HZ6AN742OFFDQTRCJKRWG22,upperdir=/TK/docker/overlay2/8d3bd0982e855065b39adffd99ba20e2583ce96ee9bd524c38647a79f1ac4ebc/diff,workdir=/TK/docker/overlay2/8d3bd0982e855065b39adffd99ba20e2583ce96ee9bd524c38647a79f1ac4ebc/work
+155 61 0:43 / /TK/docker/containers/8800973d3de46006fffcd66299ff0ff18f47c6c0560d86f430bd100fe1cc6177/shm rw,nosuid,nodev,noexec,relatime shared:103 - tmpfs shm rw,size=65536k
+252 24 0:3 / /run/docker/netns/ae51dc599825 rw,nosuid,nodev,noexec,relatime shared:5 - proc proc rw
+142 24 0:40 / /run/user/1002 rw,nosuid,nodev,relatime shared:95 - tmpfs tmpfs rw,size=351040k,mode=700,uid=1002,gid=1001
+137 24 0:36 / /run/user/1504 rw,nosuid,nodev,relatime shared:91 - tmpfs tmpfs rw,size=351040k,mode=700,uid=1504,gid=1001

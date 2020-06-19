@@ -1,0 +1,5 @@
+# default agent configuration
+collector_url: https://fake-collector:4444
+license_key: abcdef012345
+
+register_enabled: false

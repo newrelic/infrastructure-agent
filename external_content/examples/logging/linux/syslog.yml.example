@@ -1,0 +1,80 @@
+###############################################################################
+# Log forwarder configuration file example                                    #
+# Source: syslog                                                              #
+# Available customization parameters: attributes, max_line_kb                 #
+###############################################################################
+logs:
+  # Syslog RFC3164 via TCP IP socket
+  - name: syslog-tcp-rfc3164
+    syslog:
+      uri: tcp://127.0.0.1:5140
+      parser: rfc3164
+
+  # Syslog RFC5424 via TCP IP socket
+  - name: syslog-tcp-rfc5424
+    syslog:
+      uri: tcp://127.0.0.1:5141
+      parser: rfc5424
+
+  # Syslog RFC3164 via UDP IP socket
+  - name: syslog-udp-rfc3164
+    syslog:
+      uri: udp://127.0.0.1:6140
+      parser: rfc3164
+
+  # Syslog RFC5424 via UDP IP socket
+  - name: syslog-udp-rfc5424
+    syslog:
+      uri: udp://127.0.0.1:6141
+      parser: rfc5424
+
+  # General WARNINGS on Syslog via Unix (domain) sockets:
+  # - Default socket permissions are changed to 0644 by Fluentbit, so only
+  #   processes running as root (if the agent runs as root) or nri-agent (if
+  #   the agent runs as nri-agent) will be able to write to the logs. You can
+  #   use 0666 to allow processes run by other users to write into the socket,
+  #   at your own risk.
+  # - Sockets must either exist and be readable by the user executing the
+  #   Infrastructure Agent, or defined in a folder where such user can create a
+  #   new socket file.
+
+  # Syslog RFC3164 via TCP Unix (domain) socket
+  - name: syslog-unix-tcp-rfc3164
+    syslog:
+      uri: unix_tcp:///home/user/Sockets/unix-tcp-socket-rfc3164
+      parser: rfc3164
+      # unix_permissions: 0666
+
+  # Syslog RFC5424 via TCP Unix (domain) socket
+  - name: syslog-unix-tcp-rfc5424
+    syslog:
+      uri: unix_tcp:///home/user/Sockets/unix-tcp-socket-rfc5424
+      parser: rfc5424
+      # unix_permissions: 0666
+
+  # Syslog RFC3164 via UDP Unix (domain) socket
+  - name: syslog-unix-udp-rfc3164
+    syslog:
+      uri: unix_udp:///home/user/Sockets/unix-udp-socket-rfc3164
+      parser: rfc3164
+      # unix_permissions: 0666
+
+  # Syslog RFC5424 via UDP Unix (domain) socket
+  - name: syslog-unix-udp-test-rfc5424
+    syslog:
+      uri: unix_udp:///home/user/Sockets/unix-udp-socket-rfc5424
+      parser: rfc5424
+      # unix_permissions: 0666
+
+  # You can optionally include the 'attributes' and 'max_line_kb parameters'
+  # (refer to file.yml.example or to the official documentation for more
+  # details)
+  - name: customized-syslog-tcp-rfc5424
+    syslog:
+      uri: tcp://127.0.0.1:5142
+      parser: rfc5424
+    attributes:
+      application: tomcat
+      department: sales
+      maintainer: example@mailprovider.com
+    max_line_kb: 256
