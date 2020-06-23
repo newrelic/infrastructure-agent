@@ -1227,6 +1227,16 @@ func NewConfig() *Config {
 	}
 }
 
+// NewTest creates a default testing Config.
+func NewTest(dataDir string) *Config {
+	c := NewConfig()
+	c.AgentDir = dataDir
+	c.AppDataDir = dataDir
+	c.OfflineLoggingMode = true
+
+	return c
+}
+
 // GenerateInventoryURL will use the agent configuration to generate the url required for inventory endpoint.
 func (c Config) GenerateInventoryURL() string {
 	inventoryURL := fmt.Sprintf("%s/%s", c.CollectorURL,

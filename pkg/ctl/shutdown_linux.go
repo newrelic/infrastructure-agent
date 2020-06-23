@@ -6,6 +6,7 @@ import (
 	ctx "context"
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
@@ -39,6 +40,7 @@ type shutdownWatcherLinux struct {
 	connectFunc func() (conn dbusConn, err error)
 	ctx         ctx.Context
 	cancel      ctx.CancelFunc
+	l           sync.RWMutex
 }
 
 type dbusConn interface {
@@ -47,6 +49,9 @@ type dbusConn interface {
 }
 
 func (s *shutdownWatcherLinux) init() (err error) {
+	s.l.Lock()
+	defer s.l.Unlock()
+
 	nlog.Debug("Init shutdownWatcherLinux.")
 	conn, err := s.connectFunc()
 	if err != nil {
@@ -58,6 +63,9 @@ func (s *shutdownWatcherLinux) init() (err error) {
 }
 
 func (s *shutdownWatcherLinux) stop() {
+	s.l.Lock()
+	defer s.l.Unlock()
+
 	s.cancel()
 	if s.conn != nil {
 		s.conn.Close()
@@ -66,6 +74,9 @@ func (s *shutdownWatcherLinux) stop() {
 }
 
 func (s *shutdownWatcherLinux) checkShutdownStatus(shutdown chan<- shutdownCmd) {
+	s.l.RLock()
+	defer s.l.RUnlock()
+
 	// we may have failed to connect to Dbus (no systemd?), so this can be nil
 	if s.conn == nil {
 		return
