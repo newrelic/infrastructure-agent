@@ -46,8 +46,7 @@ func newTesting(cfg *config.Config) *Agent {
 	}
 
 	if cfg == nil {
-		cfg = config.NewConfig()
-		cfg.OfflineLoggingMode = true
+		cfg = config.NewTest(dataDir)
 	}
 	cloudDetector := cloud.NewDetector(true, 0, 0, 0, false)
 	lookups := NewIdLookup(hostname.CreateResolver("", "", true), cloudDetector, cfg.DisplayName)
