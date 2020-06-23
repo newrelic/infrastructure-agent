@@ -128,7 +128,7 @@ Provide full CI via GitHub Actions:
   * Fuzz testing
 - Release pipeline
 
-### Code of Conduct
+## Code of Conduct
 
 Read our [Code of Conduct](./CODE_OF_CONDUCT.md) to understand how we operate in open source and what we expect of contributors.
   
