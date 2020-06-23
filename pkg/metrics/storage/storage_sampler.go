@@ -48,6 +48,7 @@ type BaseSample struct {
 	WriteUtilizationPercent *float64 `json:"writeUtilizationPercent,omitempty"`
 	ReadBytesPerSec         *float64 `json:"readBytesPerSecond,omitempty"`
 	WriteBytesPerSec        *float64 `json:"writeBytesPerSecond,omitempty"`
+	ReadWriteBytesPerSecond *float64 `json:"readWriteBytesPerSecond,omitempty"`
 	ReadsPerSec             *float64 `json:"readIoPerSecond,omitempty"`
 	WritesPerSec            *float64 `json:"writeIoPerSecond,omitempty"`
 	IOTimeDelta             uint64   `json:"-"`
@@ -353,6 +354,7 @@ func populateSample(source, dest *Sample) {
 	dest.WritesPerSec = source.WritesPerSec
 	dest.ReadBytesPerSec = source.ReadBytesPerSec
 	dest.WriteBytesPerSec = source.WriteBytesPerSec
+	dest.ReadWriteBytesPerSecond = calculateReadWriteBytesPerSecond(source.ReadBytesPerSec, source.WriteBytesPerSec)
 	dest.IOTimeDelta = source.IOTimeDelta
 	dest.ReadTimeDelta = source.ReadTimeDelta
 	dest.WriteTimeDelta = source.WriteTimeDelta
@@ -361,6 +363,17 @@ func populateSample(source, dest *Sample) {
 
 	// Fields that are exclusive to a given Operation System
 	populateSampleOS(source, dest)
+}
+
+func calculateReadWriteBytesPerSecond(readBytesPerSec, writeBytesPerSec *float64) *float64 {
+
+	if readBytesPerSec == nil || writeBytesPerSec == nil {
+		return nil
+	}
+
+	readWriteBytesPerSecond := *readBytesPerSec + *writeBytesPerSec
+
+	return &readWriteBytesPerSecond
 }
 
 // populateUsage copies the Usage Stats inside the destination sample
