@@ -94,6 +94,7 @@ dist-for-os:
 	done
 
 .PHONY: test-centos-5
+test-centos-5: go-get
 test-centos-5: TEST_FLAGS=
 test-centos-5:
 	@printf '\n================================================================\n'
