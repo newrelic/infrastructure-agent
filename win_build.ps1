@@ -5,7 +5,10 @@
 param (
     # Target architecture: amd64 (default) or 386
     [ValidateSet("amd64", "386")]
-    [string]$arch="amd64"
+    [string]$arch="amd64",
+
+    # Skip tests
+    [switch]$skipTests=$false
 )
 
 echo "--- Checking dependencies"
