@@ -93,6 +93,14 @@ dist-for-os:
 		$(GO_BIN) build -gcflags '-N -l' -ldflags '$(LDFLAGS)' -o $(TARGET_DIR)/bin/$(GOOS)_$(GOARCH)/`basename $$main_package` $$main_package || exit 1 ;\
 	done
 
+.PHONY: dist/linux
+dist/linux: $(ARCHS)
+
+linux/%:
+	@echo "building ${@}"
+	@(arch=$$(echo ${@} | cut -d '/' -f2) ;\
+	$(MAKE) dist-for-os GOOS=linux GOARCH=$$arch)
+
 .PHONY: test-centos-5
 test-centos-5: go-get
 test-centos-5: TEST_FLAGS=
