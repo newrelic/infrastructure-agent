@@ -15,6 +15,8 @@ RUN apt-get update \
         less \
         groff \
         unzip \
+        jq \
+        tree \
     && mkdir -p /build-utils \
     && echo "lc_all=en_us.utf-8" >> /etc/environment \
     && echo "en_us.utf-8 utf-8" >> /etc/locale.gen \
@@ -32,3 +34,5 @@ RUN apt-get update \
         /var/lib/apt/lists/*
 
 WORKDIR /go/src/github.com/newrelic/infrastructure-agent
+
+ENTRYPOINT []
