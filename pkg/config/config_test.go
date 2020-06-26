@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"reflect"
 	"runtime"
 	"testing"
 	"time"
@@ -510,18 +511,18 @@ include_matching_metrics:
 	c.Assert(cfg.IncludeMetricsMatchers["process.executable"], HasLen, 1)
 }
 
-func (s *ConfigSuite) Test_ParseIncludeMatchingRule_EnvVar(c *C) {
+func Test_ParseIncludeMatchingRule_EnvVar(t *testing.T) {
 	os.Setenv("NRIA_INCLUDE_MATCHING_METRICS", "process.name:\n - regex \"kube*\" \n")
 	defer os.Unsetenv("NRIA_INCLUDE_MATCHING_METRICS")
 
 	configStr := "license_key: abc123"
 	f, err := ioutil.TempFile("", "yaml_config_test")
-	c.Assert(err, IsNil)
+	assert.NoError(t, err)
 	f.WriteString(configStr)
 	f.Close()
 
 	cfg, err := LoadConfig(f.Name())
-	c.Assert(err, IsNil)
-	c.Assert(fmt.Sprintf("%v", cfg.IncludeMetricsMatchers), Equals, "map[process.name:[regex \"kube*\"]]")
+	assert.NoError(t, err)
+	expected := IncludeMetricsMap{"process.name": []string{"regex \"kube*\""}}
+	assert.True(t, reflect.DeepEqual(cfg.IncludeMetricsMatchers, expected))
 }
-
