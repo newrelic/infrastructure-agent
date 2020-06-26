@@ -51,7 +51,3 @@ func (f FakeSample) Entity(key entity.Key) {
 func (f FakeSample) Timestamp(timestamp int64) {
 	f["timestamp"] = timestamp
 }
-
-func (f FakeSample) FieldMap() map[string]interface{} {
-	return map[string]interface{}{}
-}
