@@ -160,15 +160,18 @@ type Configuration struct {
 	Verbose int
 	// PassthroughEnvironment holds a copy of its homonym in config.Config.
 	PassthroughEnvironment []string
+	// ConfigToIntegrations holds a copy of cherry-picked configs of the agent to be passed to the integrations
+	ConfigToIntegrations map[string]interface{}
 }
 
-func NewConfig(verbose int, features map[string]bool, passthroughEnvs, configFolders, definitionFolders []string) Configuration {
+func NewConfig(verbose int, features map[string]bool, passthroughEnvs, configFolders, definitionFolders []string, configToIntegrations map[string]interface{}) Configuration {
 	return Configuration{
 		ConfigFolders:          configFolders,
 		AgentFeatures:          features,
 		DefinitionFolders:      definitionFolders,
 		Verbose:                verbose,
 		PassthroughEnvironment: append(passthroughEnvs, legacy.DefaultInheritedEnv...),
+		ConfigToIntegrations: configToIntegrations,
 	}
 }
 
@@ -229,6 +232,7 @@ func NewManager(cfg Configuration, emitter emitter.Emitter) *Manager {
 
 // Start in background the v4 integrations lifecycle management, including hot reloading, interval and timeout management
 func (mgr *Manager) Start(ctx context.Context) {
+	ctx = contextWithAgentConfig(ctx, mgr.config.ConfigToIntegrations)
 	mgr.parent = contextWithVerbose(ctx, mgr.config.Verbose)
 	for path, rc := range mgr.runners.List() {
 		illog.WithField("file", path).Debug("Starting integrations group.")
@@ -517,4 +521,14 @@ func defaultInstancesLookup(cfg Configuration) integration.InstancesLookup {
 
 func contextWithVerbose(ctx context.Context, verbose int) context.Context {
 	return context.WithValue(ctx, constants.EnableVerbose, verbose)
+}
+
+func contextWithAgentConfig(ctx context.Context, configs map[string]interface{}) context.Context {
+	if val, ok := configs[constants.AppDataDir]; ok {
+		ctx = context.WithValue(ctx, constants.AppDataDir, val)
+	}
+	if val, ok := configs[constants.AgentDir]; ok {
+		ctx = context.WithValue(ctx, constants.AgentDir, val)
+	}
+	return ctx
 }

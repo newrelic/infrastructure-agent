@@ -138,6 +138,16 @@ func (r *Executor) buildCommand(ctx context.Context) *exec.Cmd {
 		cmd.Env = append(cmd.Env, "VERBOSE=1")
 	}
 
+	agentDir, ok := ctx.Value(constants.AgentDir).(string)
+	if ok && agentDir != "" {
+		cmd.Env = append(cmd.Env, constants.AgentDir+"="+agentDir)
+	}
+
+	appDataDir, ok := ctx.Value(constants.AppDataDir).(string)
+	if ok && appDataDir != "" {
+		cmd.Env = append(cmd.Env, constants.AppDataDir+"="+appDataDir)
+	}
+
 	cmd.Dir = r.Cfg.Directory
 	return cmd
 }

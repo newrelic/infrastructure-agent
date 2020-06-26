@@ -26,6 +26,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/logs"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/constants"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/commandapi"
 	"github.com/newrelic/infrastructure-agent/pkg/fs/systemd"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
@@ -263,12 +264,16 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		return err
 	}
 
+	//configToIntegrations holds a copy of cherry-picked configs of the agent to be passed to the integrations as environmentVariables
+	configToIntegrations := configToIntegrations(c)
+
 	integrationCfg := v4.NewConfig(
 		c.Verbose,
 		c.Features,
 		c.PassthroughEnvironment,
 		c.PluginInstanceDirs,
 		pluginSourceDirs,
+		configToIntegrations,
 	)
 	integrationEmitter := emitter.NewIntegrationEmitter(agt, dmSender, ffManager)
 	integrationManager := v4.NewManager(integrationCfg, integrationEmitter)
@@ -321,6 +326,19 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	timedLog.Info("New Relic infrastructure agent is running.")
 
 	return agt.Run()
+}
+
+//config to integrations populates the config to be passed down to integrations as environment variables
+func configToIntegrations(c *config.Config) map[string]interface{} {
+	configToIntegrations := map[string]interface{}{}
+
+	if c.AgentDir != "" {
+		configToIntegrations[constants.AgentDir] = c.AgentDir
+	}
+	if c.AppDataDir != "" {
+		configToIntegrations[constants.AppDataDir] = c.AppDataDir
+	}
+	return configToIntegrations
 }
 
 // configureLogFormat checks the config and sets the log format accordingly.

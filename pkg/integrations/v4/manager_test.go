@@ -931,6 +931,34 @@ func TestManager_contextWithVerbose(t *testing.T) {
 	assert.Equal(t, actualContext.Value(constants.EnableVerbose), 1)
 }
 
+func TestManager_contextWithAgentConfig(t *testing.T) {
+
+	actualContext := contextWithAgentConfig(context.Background(),nil)
+	assert.Equal(t, actualContext.Value(constants.AppDataDir), nil)
+	assert.Equal(t, actualContext.Value(constants.AgentDir), nil)
+
+	mgr:= Manager{
+		config: NewConfig(1, nil, nil, nil, nil,
+			map[string]interface{}{
+			"feature_not_passed1": nil,
+			constants.AppDataDir: "test/appDir",
+			constants.AgentDir: "test/agentDir",
+			"feature_not_passed2": "test",
+			"feature_not_passed3": 15,
+		},
+		),
+	}
+
+	actualContext = contextWithAgentConfig(context.Background(), mgr.config.ConfigToIntegrations)
+	
+	assert.Equal(t, actualContext.Value(constants.AppDataDir), "test/appDir")
+	assert.Equal(t, actualContext.Value(constants.AgentDir), "test/agentDir")
+	assert.Equal(t, actualContext.Value("feature_not_passed1"), nil)
+	assert.Equal(t, actualContext.Value("feature_not_passed2"), nil)
+	assert.Equal(t, actualContext.Value("feature_not_passed3"), nil)
+
+}
+
 func tempFiles(pathContents map[string]string) (directory string, err error) {
 	dir, err := ioutil.TempDir("", "tempFiles")
 	if err != nil {

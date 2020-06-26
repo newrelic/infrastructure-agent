@@ -3,3 +3,5 @@
 package constants
 
 const EnableVerbose = "enable_verbose"
+const AgentDir = "AGENT_DIR"
+const AppDataDir = "APP_DATA_DIR"
