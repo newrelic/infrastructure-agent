@@ -43,7 +43,6 @@ var (
 	DefaultStripCommandLine            = true
 	DefaultSmartVerboseModeEntryLimit  = 1000
 	DefaultIntegrationsDir             = "newrelic-integrations"
-	DefaultMetricsMatcherConfig        = map[string][]string{}
 
 	// private
 	defaultAppDataDir                    = ""
@@ -91,6 +90,7 @@ var (
 	defaultProxyConfigPlugin             = true
 	defaultWinRemovableDrives            = true
 	defaultTraces                        = []trace.Feature{trace.CONN}
+	defaultMetricsMatcherConfig        	 = IncludeMetricsMap{}
 )
 
 // Default internal values

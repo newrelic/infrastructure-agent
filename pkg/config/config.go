@@ -1239,7 +1239,7 @@ func NewConfig() *Config {
 		MetricsNFSSampleRate:        DefaultMetricsNFSSampleRate,
 		SmartVerboseModeEntryLimit:  DefaultSmartVerboseModeEntryLimit,
 		DefaultIntegrationsTempDir:  defaultIntegrationsTempDir,
-		IncludeMetricsMatchers:      DefaultMetricsMatcherConfig,
+		IncludeMetricsMatchers:      defaultMetricsMatcherConfig,
 	}
 }
 
