@@ -509,3 +509,19 @@ include_matching_metrics:
 	c.Assert(cfg.IncludeMetricsMatchers["process.name"], HasLen, 2)
 	c.Assert(cfg.IncludeMetricsMatchers["process.executable"], HasLen, 1)
 }
+
+func (s *ConfigSuite) Test_ParseIncludeMatchingRule_EnvVar(c *C) {
+	os.Setenv("NRIA_INCLUDE_MATCHING_METRICS", "process.name:\n - regex \"kube*\" \n")
+	defer os.Unsetenv("NRIA_INCLUDE_MATCHING_METRICS")
+
+	configStr := "license_key: abc123"
+	f, err := ioutil.TempFile("", "yaml_config_test")
+	c.Assert(err, IsNil)
+	f.WriteString(configStr)
+	f.Close()
+
+	cfg, err := LoadConfig(f.Name())
+	c.Assert(err, IsNil)
+	c.Assert(fmt.Sprintf("%v", cfg.IncludeMetricsMatchers), Equals, "map[process.name:[regex \"kube*\"]]")
+}
+

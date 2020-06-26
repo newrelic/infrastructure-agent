@@ -1650,7 +1650,6 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 
 func (c *CustomAttributeMap) Decode(value string) error {
 	data := []byte(value)
-	fmt.Println(value)
 
 	// Clear current Custom Attribute Map
 	for k := range *c {
@@ -1659,18 +1658,17 @@ func (c *CustomAttributeMap) Decode(value string) error {
 	if err := json.Unmarshal(data, c); err != nil {
 		return err
 	}
-	fmt.Println(c)
 	return nil
 }
 
 func (i *IncludeMetricsMap) Decode(value string) error {
 	data := []byte(value)
-	fmt.Println(value)
 
 	// Clear current Map
 	for k := range *i {
 		delete(*i, k)
 	}
+
 	if err := yaml.Unmarshal(data, i); err != nil {
 		return err
 	}
