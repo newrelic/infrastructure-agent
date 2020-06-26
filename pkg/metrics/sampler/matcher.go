@@ -1,5 +1,5 @@
-//  Copyright 2020 New Relic Corporation. All rights reserved.
-//  SPDX-License-Identifier: Apache-2.0
+// Copyright 2020 New Relic Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 package sampler
 
@@ -44,8 +44,7 @@ type matcher struct {
 }
 
 func (p matcher) Evaluate(event interface{}) bool {
-	skip := skipSample(event, typesToEvaluate)
-	if skip {
+	if skipSample(event, typesToEvaluate) {
 		return true
 	}
 
@@ -178,13 +177,12 @@ func NewMatcherChain(expressions map[string][]string) MatcherChain {
 
 // Evaluate returns the result of evaluating a chain of evaluators
 func (ec MatcherChain) Evaluate(event interface{}) bool {
-	// default is to return true. what "true" means is up to the client
-	var result bool = true
+	var result = true
 	for _, es := range ec.Matchers {
 		for _, e := range es {
 			result = e.Evaluate(event)
 			if result {
-				return true
+				return result
 			}
 		}
 	}
