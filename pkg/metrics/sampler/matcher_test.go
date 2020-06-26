@@ -4,10 +4,18 @@
 package sampler_test
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/config"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/network"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
+	"github.com/newrelic/infrastructure-agent/pkg/trace"
+	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
+	"github.com/stretchr/testify/require"
+	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -102,7 +110,7 @@ func Test_EvaluatorChain_WithSingleRule(t *testing.T) {
 }
 
 // Although these test cases are checking specifically for the 2 required dimensions/attributes
-// it can be easily adapted for any other number of dimensions/attrbites
+// it can be easily adapted for any other number of dimensions/attributes
 func Test_Evaluator_WithTwoLiteralRules(t *testing.T) {
 	// ProcessDisplayName maps to "process.name" and CmdLine maps to "process.executable"
 	javaProcessSample := metrics.ProcessSample{ProcessDisplayName: "java", CmdLine: "/bin/java"}
@@ -471,4 +479,26 @@ func Test_EvaluatorChain_RulesWithQuotesAndSpaces(t *testing.T) {
 	for _, i := range inputs {
 		assert.Equal(t, true, ec.Evaluate(i))
 	}
+}
+
+func Test_EvaluatorChain_LogTraceMatcher(t *testing.T) {
+	trace.EnableOn([]string{trace.METRIC_MATCHER.String()})
+	log.SetOutput(ioutil.Discard) // discard logs so not to break race tests
+	log.SetLevel(logrus.TraceLevel)
+	defer log.SetOutput(os.Stderr) // return back to default
+	hook := new(test.Hook)
+	log.AddHook(hook)
+
+	javaProcessSample := metrics.ProcessSample{ProcessDisplayName: "java", CmdLine: "/bin/java"}
+
+	rule := config.IncludeMetricsMap{"process.name": {"java"}}
+	ec := sampler.NewMatcherChain(rule)
+
+	assert.Len(t, ec.Matchers, len(rule))
+	assert.EqualValues(t, true, ec.Evaluate(javaProcessSample))
+
+	require.NotEmpty(t, hook.Entries)
+	entry := hook.LastEntry()
+	assert.Equal(t, "[metric.match] 'java' matches expression 'ProcessDisplayName' >> 'java': true", entry.Message)
+	assert.Equal(t, logrus.TraceLevel, entry.Level)
 }

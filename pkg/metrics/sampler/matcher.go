@@ -30,11 +30,10 @@ type regexCompiledCache map[string]*regexp.Regexp
 var regexCache regexCompiledCache
 
 func init() {
-	attrCache = attributeCache{}
-	attrCache = make(map[string]string)
-	attrCache["process.name"] = "ProcessDisplayName"
-	attrCache["process.executable"] = "CmdLine"
-
+	attrCache = attributeCache{
+		"process.name":       "ProcessDisplayName",
+		"process.executable": "CmdLine",
+	}
 	regexCache = regexCompiledCache{}
 }
 
