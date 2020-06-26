@@ -5,15 +5,13 @@ package sampler
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/trace"
 	"reflect"
 	"regexp"
 	"strings"
-
-	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
 var (
-	logger          = log.WithComponent("sampler-matcher")
 	typesToEvaluate = map[string]bool{"ProcessSample": true}
 )
 
@@ -49,8 +47,6 @@ type matcher struct {
 func (p matcher) Evaluate(event interface{}) bool {
 	skip := skipSample(event, typesToEvaluate)
 	if skip {
-		// evaluation determines if the sample is "included".
-		// returning true will make sure it is
 		return true
 	}
 
@@ -59,8 +55,7 @@ func (p matcher) Evaluate(event interface{}) bool {
 		return false
 	}
 	isMatch := p.Evaluator(p.ExpectedValue, actualValue)
-	logger.Debugf("'%v' matches expression '%v >> '%v': %v",
-		actualValue, p.PropertyName, p.ExpectedValue, isMatch)
+	trace.MetricMatch("'%v' matches expression '%v' >> '%v': %v", actualValue, p.PropertyName, p.ExpectedValue, isMatch)
 	return isMatch
 }
 
@@ -75,7 +70,7 @@ func getFieldValue(object interface{}, fieldName string) interface{} {
 		return fieldValue
 	}
 
-	logger.Debugf("field '%v' does NOT exist in sample", fieldName)
+	trace.MetricMatch("field '%v' does NOT exist in sample", fieldName)
 	return nil
 }
 
