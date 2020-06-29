@@ -17,7 +17,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>Debug;ExternalFilesPath=..\..\..\..\..\external_content\;BinariesPath=..\..\..\..\..\target\bin\windows_386\</DefineConstants>
+    <DefineConstants>Debug;ExternalFilesPath=..\..\..\..\..\assets\;BinariesPath=..\..\..\..\..\target\bin\windows_386\</DefineConstants>
     <SuppressAllWarnings>True</SuppressAllWarnings>
     <Pedantic>False</Pedantic>
     <CompilerAdditionalOptions>-arch x86</CompilerAdditionalOptions>
@@ -25,7 +25,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>ExternalFilesPath=..\..\..\..\..\external_content\;BinariesPath=..\..\..\..\..\target\bin\windows_386\</DefineConstants>
+    <DefineConstants>ExternalFilesPath=..\..\..\..\..\assets\;BinariesPath=..\..\..\..\..\target\bin\windows_386\</DefineConstants>
     <CompilerAdditionalOptions>-arch x86</CompilerAdditionalOptions>
   </PropertyGroup>
   <ItemGroup>
