@@ -118,7 +118,7 @@ func ParsePayloadV4(raw []byte, ffManager feature_flags.Retriever) (dataV4 proto
 		return
 	}
 
-	if enabled, ok := ffManager.GetFeatureFlag(handler.ProtocolV4Enabled); !ok || !enabled {
+	if enabled, ok := ffManager.GetFeatureFlag(handler.FlagProtocolV4); !ok || !enabled {
 		err = ProtocolV4NotEnabledErr
 		return
 	}

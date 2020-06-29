@@ -18,10 +18,9 @@ const (
 	// FFs
 	FlagCategory     = "Infra_Agent"
 	FlagNameRegister = "register_enabled"
+	FlagProtocolV4   = "protocol_v4_enabled"
 	// Config
 	CfgYmlRegisterEnabled = "register_enabled"
-	// Protocol v4 for dimensional metrics
-	ProtocolV4Enabled = "protocol_v4_enabled"
 )
 
 var ffLogger = log.WithComponent("FeatureFlagHandler")
@@ -109,7 +108,7 @@ func (h *FFHandler) Handle(ffArgs commandapi.FFArgs, isInitialFetch bool) {
 	}
 
 	// this is where we handle normal feature flags that are not related to OHIs
-	if ffArgs.Flag == ProtocolV4Enabled {
+	if ffArgs.Flag == FlagProtocolV4 {
 		h.handleFeatureFlag(ffArgs.Flag, ffArgs.Enabled)
 		return
 	}
