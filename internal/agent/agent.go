@@ -5,6 +5,8 @@ package agent
 import (
 	context2 "context"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
+	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
 	"net"
 	"net/http"
@@ -274,7 +276,7 @@ func checkCollectorConnectivity(ctx context2.Context, cfg *config.Config, retrie
 	return
 }
 
-func getSampleMatcher(c *config.Config) func(interface{}) bool {
+func newSampleMatcher(c *config.Config, ffRetriever feature_flags.Retriever) func(interface{}) bool {
 	ec := sampler.NewMatcherChain(c.IncludeMetricsMatchers)
 	if ec.Enabled {
 		return func(sample interface{}) bool {
@@ -286,12 +288,16 @@ func getSampleMatcher(c *config.Config) func(interface{}) bool {
 
 	// default matching function. All samples/event will be included
 	return func(sample interface{}) bool {
+		if enabled, exists := ffRetriever.GetFeatureFlag(handler.FlagFullProcess); exists {
+			return enabled
+		}
+
 		return true
 	}
 }
 
 // NewAgent returns a new instance of an agent built from the config.
-func NewAgent(cfg *config.Config, buildVersion string) (a *Agent, err error) {
+func NewAgent(cfg *config.Config, buildVersion string, ffRetriever feature_flags.Retriever) (a *Agent, err error) {
 
 	hostnameResolver := hostname.CreateResolver(
 		cfg.OverrideHostname, cfg.OverrideHostnameShort, cfg.DnsHostnameResolution)
@@ -301,7 +307,7 @@ func NewAgent(cfg *config.Config, buildVersion string) (a *Agent, err error) {
 	cloudHarvester.Initialize()
 
 	idLookupTable := NewIdLookup(hostnameResolver, cloudHarvester, cfg.DisplayName)
-	sampleMatcher := getSampleMatcher(cfg)
+	sampleMatcher := newSampleMatcher(cfg, ffRetriever)
 	ctx := NewContext(cfg, buildVersion, hostnameResolver, idLookupTable, sampleMatcher)
 
 	agentKey, err := idLookupTable.getAgentKey()
