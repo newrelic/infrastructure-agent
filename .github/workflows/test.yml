@@ -37,7 +37,7 @@ jobs:
         run: go mod vendor
 
       - name: Running unit tests
-        run: .\win_build.ps1
+        run: .\build\win_build.ps1
 
   build-centos5:
     runs-on: ubuntu-latest
