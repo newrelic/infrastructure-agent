@@ -13,6 +13,7 @@ var (
 )
 
 type Setter interface {
+	// SetFeatureFlag enables or disables FF on the config if not already set.
 	SetFeatureFlag(name string, enabled bool) error
 }
 
