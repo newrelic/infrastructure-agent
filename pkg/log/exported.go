@@ -33,7 +33,7 @@ type log struct {
 
 // usual singleton access used on the codebase
 var w = wrap{
-	l:  logrus.New(),
+	l:  logrus.StandardLogger(),
 	mu: &sync.Mutex{},
 }
 

@@ -39,6 +39,8 @@ import (
 
 var NilIDLookup IDLookup
 
+var matcher = func(interface{}) bool { return true }
+
 func newTesting(cfg *config.Config) *Agent {
 	dataDir, err := ioutil.TempDir("", "prefix")
 	if err != nil {
@@ -52,7 +54,7 @@ func newTesting(cfg *config.Config) *Agent {
 	lookups := NewIdLookup(hostname.CreateResolver("", "", true), cloudDetector, cfg.DisplayName)
 
 	//ctx := newContextTesting("1.2.3", cfg)
-	ctx := NewContext(cfg, "1.2.3", testhelpers.NullHostnameResolver, lookups)
+	ctx := NewContext(cfg, "1.2.3", testhelpers.NullHostnameResolver, lookups, matcher)
 
 	st := delta.NewStore(dataDir, "default", cfg.MaxInventorySize)
 
@@ -117,7 +119,8 @@ func TestIgnoreInventory(t *testing.T) {
 }
 
 func TestServicePidMap(t *testing.T) {
-	ctx := NewContext(&config.Config{}, "", testhelpers.NullHostnameResolver, NilIDLookup)
+
+	ctx := NewContext(&config.Config{}, "", testhelpers.NullHostnameResolver, NilIDLookup, matcher)
 	svc, ok := ctx.GetServiceForPid(1)
 	assert.False(t, ok)
 	assert.Len(t, svc, 0)

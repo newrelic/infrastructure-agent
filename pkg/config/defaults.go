@@ -90,6 +90,7 @@ var (
 	defaultProxyConfigPlugin             = true
 	defaultWinRemovableDrives            = true
 	defaultTraces                        = []trace.Feature{trace.CONN}
+	defaultMetricsMatcherConfig        	 = IncludeMetricsMap{}
 )
 
 // Default internal values

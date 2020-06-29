@@ -1,11 +1,12 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-package metrics_sender
+package sampler
 
 import (
 	"sync"
 	"time"
 
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
 )
 
@@ -14,6 +15,8 @@ type SamplerRoutine struct {
 	stopChannel    chan bool
 	waitForCleanup *sync.WaitGroup
 }
+
+var mslog = log.WithField("component", "Sampler routine")
 
 func StartSamplerRoutine(sampler Sampler, sampleQueue chan sample.EventBatch) *SamplerRoutine {
 	sr := &SamplerRoutine{

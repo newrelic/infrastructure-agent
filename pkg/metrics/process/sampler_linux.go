@@ -11,8 +11,8 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
-	"github.com/newrelic/infrastructure-agent/pkg/metrics"
-	metrics_sender "github.com/newrelic/infrastructure-agent/pkg/metrics/sender"
+	metrics "github.com/newrelic/infrastructure-agent/pkg/metrics"
+	sampler "github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
 )
 
@@ -28,12 +28,12 @@ type processSampler struct {
 }
 
 var (
-	_                       metrics_sender.Sampler = (*processSampler)(nil) // static interface assertion
-	containerNotRunningErrs                        = map[string]struct{}{}
+	_                       sampler.Sampler = (*processSampler)(nil) // static interface assertion
+	containerNotRunningErrs                 = map[string]struct{}{}
 )
 
 // NewProcessSampler creates and returns a new process Sampler, given an agent context.
-func NewProcessSampler(ctx agent.AgentContext) metrics_sender.Sampler {
+func NewProcessSampler(ctx agent.AgentContext) sampler.Sampler {
 	hasConfig := ctx != nil && ctx.Config() != nil
 
 	ttlSecs := config.DefaultContainerCacheMetadataLimit

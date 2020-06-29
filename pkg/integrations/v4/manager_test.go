@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -220,7 +221,6 @@ func TestManager_SkipLoadingV3IntegrationsWithNoWarnings(t *testing.T) {
 }
 
 func TestManager_LogWarningForInvalidYaml(t *testing.T) {
-
 	hook := new(test.Hook)
 	log.AddHook(hook)
 
@@ -269,6 +269,7 @@ func TestManager_Config_EmbeddedYAML(t *testing.T) {
 }
 
 func TestManager_HotReload_Add(t *testing.T) {
+	skipIfWindows(t)
 	// GIVEN an integration
 	dir, err := tempFiles(map[string]string{
 		"integration.yaml": v4AppendableConfig,
@@ -302,6 +303,7 @@ func TestManager_HotReload_Add(t *testing.T) {
 }
 
 func TestManager_HotReload_Modify(t *testing.T) {
+	skipIfWindows(t)
 	// GIVEN an integration
 	dir, err := tempFiles(map[string]string{
 		"integration.yaml": v4AppendableConfig,
@@ -342,6 +344,7 @@ func TestManager_HotReload_Modify(t *testing.T) {
 
 // this test is used to make sure we see file changes on K8s
 func TestManager_HotReload_ModifyLinkFile(t *testing.T) {
+	skipIfWindows(t)
 	// GIVEN an integration
 	dir, err := tempFiles(map[string]string{
 		"integration.yaml": v4AppendableConfig,
@@ -395,6 +398,7 @@ func TestManager_HotReload_ModifyLinkFile(t *testing.T) {
 }
 
 func TestManager_HotReload_Delete(t *testing.T) {
+	skipIfWindows(t)
 	// GIVEN a set of integrations
 	dir, err := tempFiles(map[string]string{
 		"integration.yaml":   v4AppendableConfig,
@@ -501,6 +505,7 @@ integrations:
 }
 
 func TestManager_LegacyIntegrations(t *testing.T) {
+	skipIfWindows(t)
 	// GIVEN a v3 definitions folder with its compiled binaries
 	definitionsDir, err := tempFiles(map[string]string{
 		"longtime-definition.yml": fixtures.LongtimeDefinition,
@@ -549,6 +554,7 @@ integrations:
 }
 
 func TestManager_LegacyIntegrations_PassthroughEnv(t *testing.T) {
+	skipIfWindows(t)
 	// GIVEN a v3 definitions folder with its compiled binaries
 	definitionsDir, err := tempFiles(map[string]string{
 		"longtime-definition.yml": fixtures.LongtimeDefinition,
@@ -592,6 +598,7 @@ integrations:
 }
 
 func TestManager_NamedIntegration(t *testing.T) {
+	skipIfWindows(t)
 	// GIVEN an set of agent directories containing compiled binaries
 	niDir, err := ioutil.TempDir("", "newrelic-integrations")
 	require.NoError(t, err)
@@ -726,6 +733,7 @@ func TestManager_EnableFeatureFromAgentConfig(t *testing.T) {
 }
 
 func TestManager_CCDisablesAgentEnabledFeature(t *testing.T) {
+	skipIfWindows(t)
 	// GIVEN a configuration file with a featured OHI that reports continuously.
 	dir, err := tempFiles(map[string]string{
 		"foo.yaml": v4FileWithContinuousNriDocker,
@@ -760,6 +768,7 @@ func TestManager_CCDisablesAgentEnabledFeature(t *testing.T) {
 }
 
 func TestManager_CCDisablesPreviouslyEnabledFeature(t *testing.T) {
+	skipIfWindows(t)
 	// GIVEN a configuration file with a featured OHI that reports continuously.
 	dir, err := tempFiles(map[string]string{
 		"foo.yaml": v4FileWithContinuousNriDocker,
@@ -924,7 +933,6 @@ func getV4VerboseCheckYAML(t *testing.T) string {
 }
 
 func TestManager_contextWithVerbose(t *testing.T) {
-
 	actualContext := contextWithVerbose(context.Background(), 1)
 
 	// THEN verbose variable in context set to 1
@@ -975,4 +983,10 @@ func getEmittedData(t require.TestingT, e *testemit.Emitter, pluginName string) 
 func expectNoMetric(t require.TestingT, e *testemit.Emitter, pluginName string) {
 	_, err := e.ReceiveFrom(pluginName)
 	require.Error(t, err)
+}
+
+func skipIfWindows(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping in windows")
+	}
 }

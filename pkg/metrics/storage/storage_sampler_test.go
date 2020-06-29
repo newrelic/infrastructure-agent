@@ -16,7 +16,7 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
-	metrics_sender "github.com/newrelic/infrastructure-agent/pkg/metrics/sender"
+	metrics "github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
 )
 
 func TestNewStorageSampler(t *testing.T) {
@@ -67,7 +67,7 @@ func TestSampleWithCustomFilesystemList(t *testing.T) {
 
 	m := NewSampler(testAgentConfig)
 	testSampleQueue := make(chan sample.EventBatch, 2)
-	metrics_sender.StartSamplerRoutine(m, testSampleQueue)
+	metrics.StartSamplerRoutine(m, testSampleQueue)
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)
 	assert.Contains(t, SupportedFileSystems, fs)
