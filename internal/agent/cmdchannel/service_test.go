@@ -223,7 +223,7 @@ func TestSrv_InitialFetch_EnablesDimensionalMetrics(t *testing.T) {
 	_, err := s.InitialFetch()
 	assert.NoError(t, err)
 
-	enabled, exists := ffManager.GetFeatureFlag(handler.ProtocolV4Enabled)
+	enabled, exists := ffManager.GetFeatureFlag(handler.FlagProtocolV4)
 	assert.True(t, exists)
 	assert.True(t, enabled)
 }
@@ -309,7 +309,7 @@ func TestSrv_Run(t *testing.T) {
 	wg.Wait()
 	assert.Equal(t, 2, s.pollDelaySecs, "minimum interval is 1sec")
 
-	enabled, exists := ffManager.GetFeatureFlag(handler.ProtocolV4Enabled)
+	enabled, exists := ffManager.GetFeatureFlag(handler.FlagProtocolV4)
 	assert.True(t, enabled)
 	assert.True(t, exists)
 }
