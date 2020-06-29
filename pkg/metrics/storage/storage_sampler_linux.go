@@ -382,7 +382,6 @@ func CalculateDeviceMapping(activeDevices map[string]bool, isContainerized bool)
 				// mapped device name. ex: dm-x -> /dev/mapper/xxx
 				deviceKey := fmt.Sprintf("dm-%s", devNumbers[1])
 				devToFullDevicePath[deviceKey] = deviceName
-				break
 			}
 		} else {
 			match := deviceRegexp.FindStringSubmatch(deviceName)
