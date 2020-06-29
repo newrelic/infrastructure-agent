@@ -17,7 +17,8 @@ var (
 
 // ExpressionMatcher is an interface every evaluator must implement
 type ExpressionMatcher interface {
-	// Evaluate evaluates a property
+	// Evaluate compare property value with evaluator criteria and
+	// return if it found a match
 	Evaluate(event interface{}) bool
 }
 
@@ -175,7 +176,11 @@ func NewMatcherChain(expressions map[string][]string) MatcherChain {
 	return chain
 }
 
-// Evaluate returns the result of evaluating a chain of evaluators
+// Evaluate returns the result of compare an event with a chain of matching rules
+// return:
+//  - true, if event match with evaluator criteria chain
+//  - false, if event do not match with evaluator criteria chain
+// If there is no matchers will return true.
 func (ec MatcherChain) Evaluate(event interface{}) bool {
 	var result = true
 	for _, es := range ec.Matchers {
