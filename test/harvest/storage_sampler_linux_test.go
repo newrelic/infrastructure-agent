@@ -60,6 +60,8 @@ func TestStorageSample(t *testing.T) {
 	assert.NotZero(t, *ss.TotalBytes)
 	assert.NotNil(t, ss.UsedBytes)
 	assert.NotZero(t, *ss.UsedBytes)
+	assert.NotNil(t, ss.ReadWriteBytesPerSecond)
+	assert.NotZero(t, *ss.ReadWriteBytesPerSecond)
 
 }
 

@@ -124,3 +124,42 @@ func BenchmarkStorage(b *testing.B) {
 		m.Sample()
 	}
 }
+
+func TestCalculateReadWriteBytesPerSecond(t *testing.T) {
+
+	var f64toPointer = func(variable float64) *float64 {
+		return &variable
+	}
+
+	testCases := []struct {
+		read     *float64
+		write    *float64
+		expected *float64
+	}{
+		{
+			read:     f64toPointer(13),
+			write:    f64toPointer(29),
+			expected: f64toPointer(42),
+		},
+		{
+			read:     nil,
+			write:    f64toPointer(29),
+			expected: nil,
+		},
+		{
+			read:     f64toPointer(13),
+			write:    nil,
+			expected: nil,
+		},
+		{
+			read:     nil,
+			write:    nil,
+			expected: nil,
+		},
+	}
+
+	for _, testCase := range testCases {
+		actual := calculateReadWriteBytesPerSecond(testCase.read, testCase.write)
+		assert.Equal(t, testCase.expected, actual)
+	}
+}
