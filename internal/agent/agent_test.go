@@ -6,7 +6,6 @@ import (
 	context2 "context"
 	"encoding/json"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/pkg/ctl"
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
 	"io/ioutil"
@@ -382,15 +381,15 @@ func TestCheckConnectionRetry(t *testing.T) {
 	ts := NewTimeoutServer(2)
 	defer ts.Cancel()
 
-	// declared only to satisfy ctor
-	var ffFetcher feature_flags.Retriever
-
 	cnf := &config.Config{
 		CollectorURL:             ts.server.URL,
 		StartupConnectionRetries: 3,
 		StartupConnectionTimeout: "10ms",
 		MaxInventorySize:         maxInventoryDataSize,
 	}
+
+	// required for building the agent
+	ffFetcher := &fakeFeatureFlagRetriever{enabled: false, exists: false}
 
 	// The agent should eventually connect
 	a, err := NewAgent(cnf, "testing-timeouts", ffFetcher)
@@ -403,15 +402,15 @@ func TestCheckConnectionTimeout(t *testing.T) {
 	ts := NewTimeoutServer(3)
 	defer ts.Cancel()
 
-	// declared only to satisfy ctor
-	var ffFetcher feature_flags.Retriever
-
 	cnf := &config.Config{
 		CollectorURL:             ts.server.URL,
 		StartupConnectionRetries: 2,
 		StartupConnectionTimeout: "1ms",
 		MaxInventorySize:         maxInventoryDataSize,
 	}
+
+	// required to build the agent
+	ffFetcher := &fakeFeatureFlagRetriever{enabled: false, exists: false}
 
 	// The agent stops reconnecting after retrying as configured
 	_, err := NewAgent(cnf, "testing-timeouts", ffFetcher)
