@@ -60,9 +60,6 @@ func TestStorageSample(t *testing.T) {
 	assert.NotZero(t, *ss.TotalBytes)
 	assert.NotNil(t, ss.UsedBytes)
 	assert.NotZero(t, *ss.UsedBytes)
-	assert.NotNil(t, ss.ReadWriteBytesPerSecond)
-	assert.NotZero(t, *ss.ReadWriteBytesPerSecond)
-
 }
 
 // This test assumes that the temporary folder is mounted in the same device as the root directory
@@ -110,8 +107,8 @@ func TestStorageSampleInodes(t *testing.T) {
 // fullSample returns a sample containing usage data
 func fullSample(t *testing.T, samples sample.EventBatch) *storage.Sample {
 	t.Helper()
-	for _, sample := range samples {
-		if s, ok := sample.(*storage.Sample); ok {
+	for i := range samples {
+		if s, ok := samples[i].(*storage.Sample); ok {
 			if s.InodesTotal != nil && *s.InodesTotal != 0 {
 				return s
 			}

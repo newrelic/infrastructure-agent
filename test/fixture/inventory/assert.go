@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/backend/inventoryapi"
+	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -72,6 +73,30 @@ func assertSubTreeContained(t *testing.T, expected interface{}, actual interface
 		assert.Nil(t, actual)
 		return
 	}
+
+	if expectedField, ok := expected.(config.CustomAttributeMap); ok {
+		if actualField, ok := actual.(config.CustomAttributeMap); ok {
+			for innerFieldName, innerField := range expectedField {
+				// Expected Nil fields are not being asserted to be contained
+				if _, ok := innerField.(Nil); !ok {
+					assert.Contains(t, actualField, innerFieldName)
+				}
+				assertSubTreeContained(t, innerField, actualField[innerFieldName])
+			}
+			return
+		}
+		if actualField, ok := actual.(map[string]interface{}); ok {
+			for innerFieldName, innerField := range expectedField {
+				// Expected Nil fields are not being asserted to be contained
+				if _, ok := innerField.(Nil); !ok {
+					assert.Contains(t, actualField, innerFieldName)
+				}
+				assertSubTreeContained(t, innerField, actualField[innerFieldName])
+			}
+			return
+		}
+	}
+
 	if expectedField, ok := expected.(map[string]interface{}); ok {
 		if actualField, ok := actual.(map[string]interface{}); ok {
 			for innerFieldName, innerField := range expectedField {

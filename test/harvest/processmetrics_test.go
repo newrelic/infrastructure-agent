@@ -21,14 +21,16 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/process"
-	"github.com/newrelic/infrastructure-agent/pkg/metrics/sender"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-var tmpIOFile = "/tmp/io"
-var testFile = "nr_test_file"
+const (
+	tmpIOFile = "/tmp/io"
+	testFile  = "nr_test_file"
+)
 
 // In some machines, the updated IO metrics take many seconds to be visible by the process sampler
 // Tests would never reach this timeout, unless they really have to fail
@@ -98,7 +100,11 @@ func TestProcessSamplerDiskValues_Write(t *testing.T) {
 
 	// When the Disk writes are stressed
 	assert.NoError(t, writeDisk(tmpIOFile))
-	defer cleanup(tmpIOFile)
+	defer func() {
+		if derr := cleanup(tmpIOFile); derr != nil {
+			t.Log(derr)
+		}
+	}()
 
 	// The IO write metrics become noticeably higher than in the previous samples
 	testhelpers.Eventually(t, diskIOTimeout, func(t require.TestingT) {
