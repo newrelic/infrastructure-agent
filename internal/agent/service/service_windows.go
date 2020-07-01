@@ -54,7 +54,7 @@ func (svc *Service) Stop(s service.Service) (err error) {
 // - if we start the service and shutdown the host immediately, the agent may not stop properly
 //   and so we have to kill it forcefully
 func (svc *Service) Shutdown(s service.Service) (err error) {
-	log.Debug("Host is shutting down. notifying agent process.")
+	log.Debug("host is shutting down. notifying agent process.")
 
 	svc.daemon.Lock()
 	defer svc.daemon.Unlock()
@@ -106,12 +106,12 @@ func (d *daemon) run() {
 func runAgentCmd(cmd *exec.Cmd) error {
 	jobObject, err := NewJob()
 	if err != nil {
-		log.Warnf("Failed to create Job Object for Agent: %v", err)
+		log.Warnf("failed to create Job Object for Agent: %v", err)
 	}
 	defer func() {
 		if jobObject != nil {
 			if err := jobObject.Close(); err != nil {
-				log.Warnf("Failed to close Agent Job Object: %v", err)
+				log.Warnf("failed to close Agent Job Object: %v", err)
 			}
 		}
 	}()
@@ -122,7 +122,7 @@ func runAgentCmd(cmd *exec.Cmd) error {
 
 	if jobObject != nil {
 		if err := jobObject.AddProcess(cmd.Process); err != nil {
-			log.Warnf("Failed to add Agent process to Job Object: %v", err)
+			log.Warnf("failed to add Agent process to Job Object: %v", err)
 		}
 	}
 
