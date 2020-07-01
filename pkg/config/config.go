@@ -969,6 +969,8 @@ type Config struct {
 	// Default: none
 	// Public: Yes
 	IncludeMetricsMatchers IncludeMetricsMap `yaml:"include_matching_metrics" envconfig:"include_matching_metrics"`
+
+	EnableProcessMetrics *bool `yaml:"enable_process_metrics" envconfig:"enable_process_metrics"`
 }
 
 // Troubleshoot trobleshoot mode configuration.

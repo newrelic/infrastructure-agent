@@ -277,21 +277,49 @@ func checkCollectorConnectivity(ctx context2.Context, cfg *config.Config, retrie
 }
 
 func newSampleMatcher(c *config.Config, ffRetriever feature_flags.Retriever) func(interface{}) bool {
-	ec := sampler.NewMatcherChain(c.IncludeMetricsMatchers)
-	if ec.Enabled {
+	// configuration option always takes precedence over FF and matchers configuration
+	if c.EnableProcessMetrics != nil && *c.EnableProcessMetrics == false {
+		alog.Debug("EnableProcessMetrics is FALSE, process metrics will be DISABLED")
 		return func(sample interface{}) bool {
-			return ec.Evaluate(sample)
+			// no process samples will be sent to backend
+			return false
 		}
 	}
 
-	alog.Debug("Evaluation chain is DISABLED, using default behaviour")
-
-	// default matching function. All samples/event will be included
-	return func(sample interface{}) bool {
-		if enabled, exists := ffRetriever.GetFeatureFlag(handler.FlagFullProcess); exists {
-			return enabled
+	if c.EnableProcessMetrics != nil && *c.EnableProcessMetrics == true {
+		ec := sampler.NewMatcherChain(c.IncludeMetricsMatchers)
+		if ec.Enabled {
+			alog.Debug("EnableProcessMetrics is TRUE and rules ARE defined, process metrics will be ENABLED for matching processes")
+			return func(sample interface{}) bool {
+				return ec.Evaluate(sample)
+			}
+		} else {
+			alog.Debug("EnableProcessMetrics is TRUE and no rules defined, ALL process metrics will be ENABLED")
+			return func(sample interface{}) bool {
+				// ALL process samples will be sent to backend
+				return true
+			}
 		}
+	}
 
+	// if config option is not set, check if we have rules defined. those take precedence over the FF
+	ec := sampler.NewMatcherChain(c.IncludeMetricsMatchers)
+	if ec.Enabled {
+		alog.Debug("EnableProcessMetrics is TRUE and rules ARE defined, process metrics will be ENABLED for matching processes")
+		return func(sample interface{}) bool {
+			return ec.Evaluate(sample)
+		}
+	} else {
+		// configuration option is not defined, check feature flag
+		if enabled, exists := ffRetriever.GetFeatureFlag(handler.FlagFullProcess); exists {
+			return func(sample interface{}) bool {
+				return enabled
+			}
+		}
+	}
+
+	// if nothing is configured, use back compat behaviour and include let every process sample
+	return func(sample interface{}) bool {
 		return true
 	}
 }

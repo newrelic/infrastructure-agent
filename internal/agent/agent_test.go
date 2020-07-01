@@ -6,6 +6,8 @@ import (
 	context2 "context"
 	"encoding/json"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/ctl"
+	"github.com/newrelic/infrastructure-agent/pkg/sample"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -15,8 +17,6 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
-
-	"github.com/newrelic/infrastructure-agent/pkg/ctl"
 
 	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
 
@@ -388,8 +388,11 @@ func TestCheckConnectionRetry(t *testing.T) {
 		MaxInventorySize:         maxInventoryDataSize,
 	}
 
+	// required for building the agent
+	ffFetcher := &fakeFeatureFlagRetriever{enabled: false, exists: false}
+
 	// The agent should eventually connect
-	a, err := NewAgent(cnf, "testing-timeouts")
+	a, err := NewAgent(cnf, "testing-timeouts", ffFetcher)
 	assert.NoError(t, err)
 	assert.NotNil(t, a)
 }
@@ -406,8 +409,11 @@ func TestCheckConnectionTimeout(t *testing.T) {
 		MaxInventorySize:         maxInventoryDataSize,
 	}
 
+	// required to build the agent
+	ffFetcher := &fakeFeatureFlagRetriever{enabled: false, exists: false}
+
 	// The agent stops reconnecting after retrying as configured
-	_, err := NewAgent(cnf, "testing-timeouts")
+	_, err := NewAgent(cnf, "testing-timeouts", ffFetcher)
 	assert.Error(t, err)
 }
 
@@ -699,6 +705,127 @@ func BenchmarkStorePluginOutput(b *testing.B) {
 				_ = a.storePluginOutput(output)
 			}
 			b.StopTimer()
+		})
+	}
+}
+
+type fakeFeatureFlagRetriever struct {
+	enabled bool
+	exists  bool
+}
+
+func (ff *fakeFeatureFlagRetriever) GetFeatureFlag(name string) (enabled bool, exists bool) {
+	return ff.enabled, ff.exists
+}
+
+func Test_ProcessSampling_FeatureFlagIsEnabled(t *testing.T) {
+	cnf := &config.Config{
+		IncludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}},
+	}
+	someSample := struct {
+		evenType string
+	}{
+		evenType: "ProcessSample",
+	}
+	ffFetcher := &fakeFeatureFlagRetriever{enabled: true, exists: true}
+	a, _ := NewAgent(cnf, "test", ffFetcher)
+
+	// when
+	actual := a.Context.shouldIncludeEvent(someSample)
+
+	// then
+	assert.Equal(t, true, actual)
+}
+
+// ProcessSample is mimicking the real ProcessSample which we can't reference from here due to import cycles.
+type ProcessSample struct {
+	sample.BaseEvent
+	ProcessDisplayName string
+}
+
+func getBooleanPtr(val bool) *bool {
+	return &val
+}
+
+func Test_ProcessSampling(t *testing.T) {
+	someSample := ProcessSample{
+		ProcessDisplayName: "some-process",
+	}
+
+	type testCase struct {
+		name string
+		c    *config.Config
+		ff   *fakeFeatureFlagRetriever
+		want bool
+	}
+	testCases := []testCase{
+		{
+			// if config op
+			name: "ConfigurationOptionIsDisabled",
+			c:    &config.Config{EnableProcessMetrics: getBooleanPtr(false)},
+			want: false,
+		},
+		{
+			name: "ConfigurationOptionIsEnabled",
+			c:    &config.Config{EnableProcessMetrics: getBooleanPtr(true)},
+			want: true,
+		},
+		{
+			// if nothing is configured, the FF retriever is checked so it needs to not be nil
+			name: "ConfigurationOptionIsNotPresentAndNoMatcherPresentAndFeatureFlagIsNotConfigured",
+			c:    &config.Config{},
+			ff:   &fakeFeatureFlagRetriever{enabled: false, exists: false},
+			want: true,
+		},
+		{
+			// if the matchers are empty (corner case), the FF retriever is checked so it needs to not be nil
+			name: "ConfigurationOptionIsNotPresentAndMatchersAreEmptyAndFeatureFlagIsNotConfigured",
+			c:    &config.Config{IncludeMetricsMatchers: map[string][]string{}},
+			ff:   &fakeFeatureFlagRetriever{enabled: false, exists: false},
+			want: true,
+		},
+		{
+			name: "ConfigurationOptionIsNotPresentAndMatchersConfiguredDoNotMatch",
+			c:    &config.Config{IncludeMetricsMatchers: map[string][]string{"process.name": {"does-not-match"}}},
+			want: false,
+		},
+		{
+			name: "ConfigurationOptionIsNotPresentAndMatchersConfiguredDoMatch",
+			c:    &config.Config{IncludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}}},
+			want: true,
+		},
+		{
+			name: "ConfigurationOptionIsNotPresentAndMatchersAreNotConfiguredAndFeatureFlagIsEnabled",
+			c:    &config.Config{},
+			ff:   &fakeFeatureFlagRetriever{enabled: true, exists: true},
+			want: true,
+		},
+		{
+			name: "ConfigurationOptionIsNotPresentAndMatchersAreNotConfiguredAndFeatureFlagIsDisabled",
+			c:    &config.Config{},
+			ff:   &fakeFeatureFlagRetriever{enabled: false, exists: true},
+			want: false,
+		},
+		{
+			name: "ConfigurationOptionIsNotPresentAndMatchersAreNotConfiguredAndFeatureFlagIsNotFound",
+			c:    &config.Config{},
+			ff:   &fakeFeatureFlagRetriever{enabled: false, exists: false},
+			want: true,
+		},
+		{
+			name: "BackwardsCompatibleBehaviour",
+			c:    &config.Config{},
+			ff:   &fakeFeatureFlagRetriever{enabled: false, exists: false},
+			want: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		a, _ := NewAgent(tc.c, "test", tc.ff)
+
+		t.Run(tc.name, func(t *testing.T) {
+			actual := a.Context.shouldIncludeEvent(someSample)
+			assert.Equal(t, tc.want, actual)
 		})
 	}
 }
