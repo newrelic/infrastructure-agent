@@ -8,7 +8,6 @@ import (
 	"os/exec"
 
 	"github.com/kardianos/service"
-
 	"github.com/newrelic/infrastructure-agent/internal/os/api"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/windows"
 	"github.com/newrelic/infrastructure-agent/pkg/ipc"
@@ -27,7 +26,7 @@ func (svc *Service) Start(s service.Service) (err error) {
 // - if we start and stop the service immediately, the agent may not stop properly
 //   and so we have to kill it forcefully
 func (svc *Service) Stop(s service.Service) (err error) {
-	log.Info("service is stopping. notifying agent process...")
+	log.Info("service is stopping. notifying agent process.")
 
 	svc.daemon.Lock()
 	defer svc.daemon.Unlock()
@@ -55,7 +54,7 @@ func (svc *Service) Stop(s service.Service) (err error) {
 // - if we start the service and shutdown the host immediately, the agent may not stop properly
 //   and so we have to kill it forcefully
 func (svc *Service) Shutdown(s service.Service) (err error) {
-	log.Debug("Host is shutting down. notifying agent process.")
+	log.Debug("host is shutting down. notifying agent process.")
 
 	svc.daemon.Lock()
 	defer svc.daemon.Unlock()
@@ -80,6 +79,7 @@ func (svc *Service) Shutdown(s service.Service) (err error) {
 
 func (d *daemon) run() {
 	for {
+
 		d.Lock()
 		d.ctx, d.cancel = context.WithCancel(context.Background())
 		d.cmd = exec.CommandContext(d.ctx, GetCommandPath(d.args[0]), d.args[1:]...)
@@ -87,7 +87,7 @@ func (d *daemon) run() {
 		d.cmd.Stderr = os.Stderr
 		d.Unlock()
 
-		exitCode := api.CheckExitCode(d.cmd.Run())
+		exitCode := api.CheckExitCode(runAgentCmd(d.cmd))
 
 		switch exitCode {
 		case api.ExitCodeRestart:
@@ -99,4 +99,32 @@ func (d *daemon) run() {
 			return
 		}
 	}
+}
+
+// runAgentCmd will run the agent process and wait it to exit. The process will be added
+// to an Windows job object to handle the child processes.
+func runAgentCmd(cmd *exec.Cmd) error {
+	jobObject, err := NewJob()
+	if err != nil {
+		log.Warnf("failed to create Job Object for Agent: %v", err)
+	}
+	defer func() {
+		if jobObject != nil {
+			if err := jobObject.Close(); err != nil {
+				log.Warnf("failed to close Agent Job Object: %v", err)
+			}
+		}
+	}()
+
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+
+	if jobObject != nil {
+		if err := jobObject.AddProcess(cmd.Process); err != nil {
+			log.Warnf("failed to add Agent process to Job Object: %v", err)
+		}
+	}
+
+	return cmd.Wait()
 }
