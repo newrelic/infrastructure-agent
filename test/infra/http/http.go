@@ -12,6 +12,12 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/backend/inventoryapi"
 )
 
+const (
+	body        = "response_foo"
+	errorBody   = "response_error_foo"
+	tooManyBody = "response_too_many_foo"
+)
+
 // RequestRecorderClient is an HTTP client that records the first arriving request.
 type RequestRecorderClient struct {
 	Client    backendhttp.Client
@@ -40,7 +46,7 @@ func NewRequestRecorderClient(responses ...http.Response) *RequestRecorderClient
 
 		return &http.Response{
 			StatusCode: http.StatusAccepted,
-			Body:       ioutil.NopCloser(bytes.NewReader([]byte("foo"))),
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(body))),
 		}, nil
 	}
 
@@ -72,7 +78,7 @@ func ResetDeltasResponse(pluginId string) http.Response {
 // ErrorResponse simulates an error response.
 var ErrorResponse = http.Response{
 	StatusCode: http.StatusInternalServerError,
-	Body:       ioutil.NopCloser(bytes.NewReader([]byte(`foo`))),
+	Body:       ioutil.NopCloser(bytes.NewReader([]byte(errorBody))),
 }
 
 // RetryAfter adds the `Retry-After` header to the HTTP response.
@@ -86,7 +92,7 @@ func RetryAfter(value string) ResponseOption {
 func TooManyRequestsResponse(opts ...ResponseOption) http.Response {
 	r := http.Response{
 		StatusCode: http.StatusTooManyRequests,
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte(`foo`))),
+		Body:       ioutil.NopCloser(bytes.NewReader([]byte(tooManyBody))),
 		Header:     http.Header{},
 	}
 	for _, o := range opts {

@@ -25,7 +25,7 @@ func TestPluginCustomAttributes(t *testing.T) {
 	testClient := ihttp.NewRequestRecorderClient()
 	a := infra.NewAgent(testClient.Client, func(cfg *config.Config) {
 		cfg.CustomAttributes = map[string]interface{}{
-			"foo": "bar",
+			"custom_attribute_foo": "bar",
 		}
 	})
 	a.RegisterPlugin(plugins.NewCustomAttrsPlugin(a.Context))

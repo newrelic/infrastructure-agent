@@ -45,7 +45,7 @@ var (
 			"metadata": {}
 		  },
 		  "inventory": {
-			"foo": {
+			"inventory_foo": {
 			  "value": "bar"
 			}
 		  },
@@ -83,7 +83,7 @@ var (
 						DisplayName: "human readable name",
 						Metadata:    map[string]interface{}{}},
 					Inventory: map[string]protocol.InventoryData{
-						"foo": {"value": "bar"},
+						"inventory_foo": {"value": "bar"},
 					},
 					Events: []protocol.EventData{},
 				},

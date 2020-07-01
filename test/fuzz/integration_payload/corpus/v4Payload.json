@@ -48,7 +48,7 @@
         }
       },
       "inventory": {
-        "foo": {
+        "inventory_payload_foo": {
           "value": "bar"
         }
       },
