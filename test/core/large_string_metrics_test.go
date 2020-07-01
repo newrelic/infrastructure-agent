@@ -40,8 +40,8 @@ func TestLimitLargeString_Struct(t *testing.T) {
 
 func TestLimitLargeString_Map(t *testing.T) {
 	inputSample := minagent.FakeSample{
-		"foo": generateString(4095),
-		"bar": "hello",
+		"fake_foo": generateString(4095),
+		"fake_bar": "hello",
 	}
 
 	testClient := ihttp.NewRequestRecorderClient()
@@ -59,8 +59,8 @@ func TestLimitLargeString_Map(t *testing.T) {
 	a.Terminate()
 
 	expected := minagent.FakeSample{
-		"foo":       generateString(4095),
-		"bar":       "hello",
+		"fake_foo":  generateString(4095),
+		"fake_bar":  "hello",
 		"entityKey": "display-name",
 	}
 
