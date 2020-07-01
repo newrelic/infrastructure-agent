@@ -6,8 +6,6 @@ import (
 	context2 "context"
 	"encoding/json"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/ctl"
-	"github.com/newrelic/infrastructure-agent/pkg/sample"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -17,6 +15,11 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
+	"github.com/newrelic/infrastructure-agent/internal/feature_flags/test"
+	"github.com/newrelic/infrastructure-agent/pkg/ctl"
+	"github.com/newrelic/infrastructure-agent/pkg/sample"
 
 	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
 
@@ -389,7 +392,7 @@ func TestCheckConnectionRetry(t *testing.T) {
 	}
 
 	// required for building the agent
-	ffFetcher := &fakeFeatureFlagRetriever{enabled: false, exists: false}
+	ffFetcher := test.NewFFRetrieverReturning(false, false)
 
 	// The agent should eventually connect
 	a, err := NewAgent(cnf, "testing-timeouts", ffFetcher)
@@ -410,7 +413,7 @@ func TestCheckConnectionTimeout(t *testing.T) {
 	}
 
 	// required to build the agent
-	ffFetcher := &fakeFeatureFlagRetriever{enabled: false, exists: false}
+	ffFetcher := test.NewFFRetrieverReturning(false, false)
 
 	// The agent stops reconnecting after retrying as configured
 	_, err := NewAgent(cnf, "testing-timeouts", ffFetcher)
@@ -709,15 +712,6 @@ func BenchmarkStorePluginOutput(b *testing.B) {
 	}
 }
 
-type fakeFeatureFlagRetriever struct {
-	enabled bool
-	exists  bool
-}
-
-func (ff *fakeFeatureFlagRetriever) GetFeatureFlag(name string) (enabled bool, exists bool) {
-	return ff.enabled, ff.exists
-}
-
 func Test_ProcessSampling_FeatureFlagIsEnabled(t *testing.T) {
 	cnf := &config.Config{
 		IncludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}},
@@ -727,8 +721,7 @@ func Test_ProcessSampling_FeatureFlagIsEnabled(t *testing.T) {
 	}{
 		evenType: "ProcessSample",
 	}
-	ffFetcher := &fakeFeatureFlagRetriever{enabled: true, exists: true}
-	a, _ := NewAgent(cnf, "test", ffFetcher)
+	a, _ := NewAgent(cnf, "test", test.NewFFRetrieverReturning(true, true))
 
 	// when
 	actual := a.Context.shouldIncludeEvent(someSample)
@@ -755,7 +748,7 @@ func Test_ProcessSampling(t *testing.T) {
 	type testCase struct {
 		name string
 		c    *config.Config
-		ff   *fakeFeatureFlagRetriever
+		ff   feature_flags.Retriever
 		want bool
 	}
 	testCases := []testCase{
@@ -774,14 +767,14 @@ func Test_ProcessSampling(t *testing.T) {
 			// if nothing is configured, the FF retriever is checked so it needs to not be nil
 			name: "ConfigurationOptionIsNotPresentAndNoMatcherPresentAndFeatureFlagIsNotConfigured",
 			c:    &config.Config{},
-			ff:   &fakeFeatureFlagRetriever{enabled: false, exists: false},
+			ff:   test.NewFFRetrieverReturning(false, false),
 			want: true,
 		},
 		{
 			// if the matchers are empty (corner case), the FF retriever is checked so it needs to not be nil
 			name: "ConfigurationOptionIsNotPresentAndMatchersAreEmptyAndFeatureFlagIsNotConfigured",
 			c:    &config.Config{IncludeMetricsMatchers: map[string][]string{}},
-			ff:   &fakeFeatureFlagRetriever{enabled: false, exists: false},
+			ff:   test.NewFFRetrieverReturning(false, false),
 			want: true,
 		},
 		{
@@ -797,25 +790,25 @@ func Test_ProcessSampling(t *testing.T) {
 		{
 			name: "ConfigurationOptionIsNotPresentAndMatchersAreNotConfiguredAndFeatureFlagIsEnabled",
 			c:    &config.Config{},
-			ff:   &fakeFeatureFlagRetriever{enabled: true, exists: true},
+			ff:   test.NewFFRetrieverReturning(true, true),
 			want: true,
 		},
 		{
 			name: "ConfigurationOptionIsNotPresentAndMatchersAreNotConfiguredAndFeatureFlagIsDisabled",
 			c:    &config.Config{},
-			ff:   &fakeFeatureFlagRetriever{enabled: false, exists: true},
+			ff:   test.NewFFRetrieverReturning(false, true),
 			want: false,
 		},
 		{
 			name: "ConfigurationOptionIsNotPresentAndMatchersAreNotConfiguredAndFeatureFlagIsNotFound",
 			c:    &config.Config{},
-			ff:   &fakeFeatureFlagRetriever{enabled: false, exists: false},
+			ff:   test.NewFFRetrieverReturning(false, false),
 			want: true,
 		},
 		{
 			name: "BackwardsCompatibleBehaviour",
 			c:    &config.Config{},
-			ff:   &fakeFeatureFlagRetriever{enabled: false, exists: false},
+			ff:   test.NewFFRetrieverReturning(false, false),
 			want: true,
 		},
 	}
