@@ -311,7 +311,7 @@ func TestDeltas_HarvestAfterStoreCleanup(t *testing.T) {
 		ihttp.ResetDeltasResponse("test/dummy"))
 
 	a := infra.NewAgent(testClient.Client, func(cfg *config.Config) {
-		cfg.CustomAttributes = map[string]interface{}{
+		cfg.CustomAttributes = config.CustomAttributeMap{
 			"some":      "attr",
 			"someother": "other_attr",
 		}
