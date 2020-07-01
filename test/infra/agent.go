@@ -23,6 +23,9 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
 )
 
+// Matcher function that will allow process to be sent
+var matcher = func(interface{}) bool { return true }
+
 // Create a new agent for testing.
 func NewAgent(dataClient backendhttp.Client, configurator ...func(*config.Config)) *agent.Agent {
 	return NewAgentWithConnectClient(SuccessConnectClient, dataClient, configurator...)
@@ -56,7 +59,7 @@ func NewAgentWithConnectClientAndConfig(connectClient, dataClient backendhttp.Cl
 		c(cfg)
 	}
 
-	ctx := agent.NewContext(cfg, "1.2.3", testhelpers.NewFakeHostnameResolver("foobar", "foo", nil), nil)
+	ctx := agent.NewContext(cfg, "1.2.3", testhelpers.NewFakeHostnameResolver("foobar", "foo", nil), nil, matcher)
 
 	if cfg.AgentDir == "" {
 		var err error

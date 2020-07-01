@@ -16,7 +16,7 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
-	metrics_sender "github.com/newrelic/infrastructure-agent/pkg/metrics/sender"
+	metrics "github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
 )
 
 func TestNewStorageSampler(t *testing.T) {
@@ -67,7 +67,7 @@ func TestSampleWithCustomFilesystemList(t *testing.T) {
 
 	m := NewSampler(testAgentConfig)
 	testSampleQueue := make(chan sample.EventBatch, 2)
-	metrics_sender.StartSamplerRoutine(m, testSampleQueue)
+	metrics.StartSamplerRoutine(m, testSampleQueue)
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)
 	assert.Contains(t, SupportedFileSystems, fs)
@@ -122,5 +122,44 @@ func BenchmarkStorage(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
 		m.Sample()
+	}
+}
+
+func TestCalculateReadWriteBytesPerSecond(t *testing.T) {
+
+	var f64toPointer = func(variable float64) *float64 {
+		return &variable
+	}
+
+	testCases := []struct {
+		read     *float64
+		write    *float64
+		expected *float64
+	}{
+		{
+			read:     f64toPointer(13),
+			write:    f64toPointer(29),
+			expected: f64toPointer(42),
+		},
+		{
+			read:     nil,
+			write:    f64toPointer(29),
+			expected: nil,
+		},
+		{
+			read:     f64toPointer(13),
+			write:    nil,
+			expected: nil,
+		},
+		{
+			read:     nil,
+			write:    nil,
+			expected: nil,
+		},
+	}
+
+	for _, testCase := range testCases {
+		actual := calculateReadWriteBytesPerSecond(testCase.read, testCase.write)
+		assert.Equal(t, testCase.expected, actual)
 	}
 }

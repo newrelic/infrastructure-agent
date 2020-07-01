@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gopkg.in/yaml.v2"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -45,6 +46,9 @@ const (
 type CustomAttributeMap map[string]interface{}
 
 var clog = log.WithComponent("Configuration")
+
+// Configuration type to Map include_matching_metrics setting env var
+type IncludeMetricsMap map[string][]string
 
 //
 // IMPORTANT NOTE: If you add new config fields, consider checking the ignore list in
@@ -622,6 +626,7 @@ type Config struct {
 	// AllowedListProcessSample only collects process samples for processes we care about, this is a WINDOWS ONLY CONFIG
 	// Default: Empty
 	// Public: No
+	// Deprecated: use IncludeMatchingMetrics instead.
 	AllowedListProcessSample []string `yaml:"allowed_list_process_sample" envconfig:"allowed_list_process_sample" public:"false"`
 
 	// DisableWinSharedWMI uses shared WMI if possible, fixed leaks on Win10/Server 2016 and newer
@@ -954,6 +959,16 @@ type Config struct {
 	// this is the default "persister" folder that the SDK uses. right now we don't allow configuration but we could at some point
 	// send this to the integrations for them to use for persisting data.
 	DefaultIntegrationsTempDir string
+
+	// IncludeMetricsMatchers Configuration of the metrics matchers that determine which metric data should the agent
+	// send to the New Relic backend.
+	// If no configuration is defined, the previous behaviour is maintained, i.e., every metric data captured is sent.
+	// If a configuration is defined, then only metric data matching the configuration is sent.
+	// Note that ALL DATA NOT MATCHED WILL BE DROPPED.
+	// Also note that at present it ONLY APPLIES to metric data related to processes. All other metric data is still being sent as usual.
+	// Default: none
+	// Public: Yes
+	IncludeMetricsMatchers IncludeMetricsMap `yaml:"include_matching_metrics" envconfig:"include_matching_metrics"`
 }
 
 // Troubleshoot trobleshoot mode configuration.
@@ -1224,6 +1239,7 @@ func NewConfig() *Config {
 		MetricsNFSSampleRate:        DefaultMetricsNFSSampleRate,
 		SmartVerboseModeEntryLimit:  DefaultSmartVerboseModeEntryLimit,
 		DefaultIntegrationsTempDir:  defaultIntegrationsTempDir,
+		IncludeMetricsMatchers:      defaultMetricsMatcherConfig,
 	}
 }
 
@@ -1634,7 +1650,6 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 
 func (c *CustomAttributeMap) Decode(value string) error {
 	data := []byte(value)
-	fmt.Println(value)
 
 	// Clear current Custom Attribute Map
 	for k := range *c {
@@ -1643,6 +1658,19 @@ func (c *CustomAttributeMap) Decode(value string) error {
 	if err := json.Unmarshal(data, c); err != nil {
 		return err
 	}
-	fmt.Println(c)
+	return nil
+}
+
+func (i *IncludeMetricsMap) Decode(value string) error {
+	data := []byte(value)
+
+	// Clear current Map
+	for k := range *i {
+		delete(*i, k)
+	}
+
+	if err := yaml.Unmarshal(data, i); err != nil {
+		return err
+	}
 	return nil
 }

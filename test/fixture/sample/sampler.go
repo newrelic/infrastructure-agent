@@ -5,7 +5,7 @@ package fixture
 import (
 	"time"
 
-	metrics_sender "github.com/newrelic/infrastructure-agent/pkg/metrics/sender"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
 )
 
@@ -31,7 +31,7 @@ func (m *Sampler) Sample() (s sample.EventBatch, err error) {
 	return
 }
 
-func NewSampler(sample sample.Event) metrics_sender.Sampler {
+func NewSampler(sample sample.Event) sampler.Sampler {
 	s := Sampler{
 		sample: sample,
 		name:   "FixtureSampler",

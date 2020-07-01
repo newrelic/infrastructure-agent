@@ -5,6 +5,7 @@ package agent
 import (
 	context2 "context"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
 	"net"
 	"net/http"
 	"net/url"
@@ -137,12 +138,16 @@ type context struct {
 	version        string
 	eventSender    eventSender
 
-	servicePidLock *sync.RWMutex
-	servicePids    map[string]map[int]string // Map of plugin -> (map of pid -> service)
-	resolver       hostname.ResolverChangeNotifier
-	EntityMap      entity.KnownIDs
-	idLookup       IDLookup
+	servicePidLock     *sync.RWMutex
+	servicePids        map[string]map[int]string // Map of plugin -> (map of pid -> service)
+	resolver           hostname.ResolverChangeNotifier
+	EntityMap          entity.KnownIDs
+	idLookup           IDLookup
+	shouldIncludeEvent includeSampleMatcher
 }
+
+// func that satisfies the metrics matcher (processor.MatcherChain) interface while avoiding the import
+type includeSampleMatcher func(sample interface{}) bool
 
 // AgentID provides agent ID, blocking until it's available
 func (c *context) AgentID() entity.ID {
@@ -181,20 +186,22 @@ func (c *context) IDLookup() IDLookup {
 type IDLookup map[string]string
 
 //NewContext creates a new context.
-func NewContext(cfg *config.Config, buildVersion string, resolver hostname.ResolverChangeNotifier, lookup IDLookup) *context {
+func NewContext(cfg *config.Config, buildVersion string, resolver hostname.ResolverChangeNotifier, lookup IDLookup,
+	sampleMatcher includeSampleMatcher) *context {
 	ctx, cancel := context2.WithCancel(context2.Background())
 
 	return &context{
-		cfg:            cfg,
-		Ctx:            ctx,
-		CancelFn:       cancel,
-		id:             id.NewContext(ctx),
-		reconnecting:   new(sync.Map),
-		version:        buildVersion,
-		servicePidLock: &sync.RWMutex{},
-		servicePids:    make(map[string]map[int]string),
-		resolver:       resolver,
-		idLookup:       lookup,
+		cfg:                cfg,
+		Ctx:                ctx,
+		CancelFn:           cancel,
+		id:                 id.NewContext(ctx),
+		reconnecting:       new(sync.Map),
+		version:            buildVersion,
+		servicePidLock:     &sync.RWMutex{},
+		servicePids:        make(map[string]map[int]string),
+		resolver:           resolver,
+		idLookup:           lookup,
+		shouldIncludeEvent: sampleMatcher,
 	}
 }
 
@@ -267,6 +274,22 @@ func checkCollectorConnectivity(ctx context2.Context, cfg *config.Config, retrie
 	return
 }
 
+func getSampleMatcher(c *config.Config) func(interface{}) bool {
+	ec := sampler.NewMatcherChain(c.IncludeMetricsMatchers)
+	if ec.Enabled {
+		return func(sample interface{}) bool {
+			return ec.Evaluate(sample)
+		}
+	}
+
+	alog.Debug("Evaluation chain is DISABLED, using default behaviour")
+
+	// default matching function. All samples/event will be included
+	return func(sample interface{}) bool {
+		return true
+	}
+}
+
 // NewAgent returns a new instance of an agent built from the config.
 func NewAgent(cfg *config.Config, buildVersion string) (a *Agent, err error) {
 
@@ -278,7 +301,8 @@ func NewAgent(cfg *config.Config, buildVersion string) (a *Agent, err error) {
 	cloudHarvester.Initialize()
 
 	idLookupTable := NewIdLookup(hostnameResolver, cloudHarvester, cfg.DisplayName)
-	ctx := NewContext(cfg, buildVersion, hostnameResolver, idLookupTable)
+	sampleMatcher := getSampleMatcher(cfg)
+	ctx := NewContext(cfg, buildVersion, hostnameResolver, idLookupTable, sampleMatcher)
 
 	agentKey, err := idLookupTable.getAgentKey()
 	if err != nil {
@@ -346,24 +370,15 @@ func NewAgent(cfg *config.Config, buildVersion string) (a *Agent, err error) {
 	// notificationHandler will map ipc messages to functions
 	notificationHandler := ctl.NewNotificationHandlerWithCancellation(ctx.Ctx)
 
-	return New(cfg, ctx, userAgent, idLookupTable, s, connectSrv, provideIDs, httpClient, transport, cloudHarvester, fpHarvester, notificationHandler)
+	return New(cfg, ctx, userAgent, idLookupTable, s, connectSrv, provideIDs, httpClient, transport, cloudHarvester,
+		fpHarvester, notificationHandler)
 }
 
 // New creates a new agent using given context and services.
-func New(
-	cfg *config.Config,
-	ctx *context,
-	userAgent string,
-	idLookupTable IDLookup,
-	s *delta.Store,
-	connectSrv *identityConnectService,
-	provideIDs ProvideIDs,
-	dataClient backendhttp.Client,
-	transport *http.Transport,
-	cloudHarvester cloud.Harvester,
-	fpHarvester fingerprint.Harvester,
-	notificationHandler *ctl.NotificationHandlerWithCancellation,
-) (*Agent, error) {
+func New(cfg *config.Config, ctx *context, userAgent string, idLookupTable IDLookup, s *delta.Store,
+	connectSrv *identityConnectService, provideIDs ProvideIDs, dataClient backendhttp.Client,
+	transport *http.Transport, cloudHarvester cloud.Harvester, fpHarvester fingerprint.Harvester,
+	notificationHandler *ctl.NotificationHandlerWithCancellation) (*Agent, error) {
 	a := &Agent{
 		Context:             ctx,
 		debugProvide:        debug.ProvideFn,
@@ -984,10 +999,14 @@ func (c *context) SendEvent(event sample.Event, entityKey entity.Key) {
 		if c.cfg.TruncTextValues {
 			event = metric.TruncateLength(event, metric.NRDBLimit)
 		}
-		if err := c.eventSender.QueueEvent(event, entityKey); err != nil {
-			alog.WithField(
-				"entityKey", entityKey,
-			).WithError(err).Error("could not queue event")
+
+		includeSample := c.shouldIncludeEvent(event)
+		if includeSample {
+			if err := c.eventSender.QueueEvent(event, entityKey); err != nil {
+				alog.WithField(
+					"entityKey", entityKey,
+				).WithError(err).Error("could not queue event")
+			}
 		}
 	}
 }

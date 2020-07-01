@@ -12,10 +12,11 @@ func (f Feature) String() string {
 
 // List of available features that can be traced.
 const (
-	ATTR          Feature = "attributes"    // custom-attributes
-	CONN          Feature = "connect"       // fingerprint connect
-	HOSTNAME      Feature = "hostname"      // hostname
-	DM_SUBMISSION Feature = "dm.submission" // dimensional metrics submission
+	ATTR           Feature = "attributes"    // custom-attributes
+	CONN           Feature = "connect"       // fingerprint connect
+	HOSTNAME       Feature = "hostname"      // hostname
+	DM_SUBMISSION  Feature = "dm.submission" // dimensional metrics submission
+	METRIC_MATCHER Feature = "metric.match"  // match metric by rule
 )
 
 // Helper functions to avoid repeating:
@@ -44,4 +45,9 @@ func Hostname(format string, args ...interface{}) {
 // Telemetry traces to "audit" (log payloads) on DM telemetry.
 func Telemetry(format string, args ...interface{}) {
 	On(func() bool { return true }, DM_SUBMISSION, format, args...)
+}
+
+// MetricMatch traces to "audit" log metric match rule.
+func MetricMatch(format string, args ...interface{}) {
+	On(func() bool { return true }, METRIC_MATCHER, format, args...)
 }

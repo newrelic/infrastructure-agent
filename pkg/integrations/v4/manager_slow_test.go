@@ -24,6 +24,7 @@ import (
 // this test is used to make sure we see file changes on K8s
 // slow test
 func TestManager_HotReload_CreateAndModifyLinkFile(t *testing.T) {
+	skipIfWindows(t)
 	// GIVEN an integration
 	dir, err := tempFiles(map[string]string{
 		"integration": v4AppendableConfig,

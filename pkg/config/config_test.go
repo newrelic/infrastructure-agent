@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"reflect"
 	"runtime"
 	"testing"
 	"time"
@@ -207,6 +208,8 @@ license_key: abc123
 	defer os.Unsetenv("NRIA_IGNORE_RECLAIMABLE")
 	os.Setenv("NRIA_PROXY_VALIDATE_CERTIFICATES", "true")
 	defer os.Unsetenv("NRIA_PROXY_VALIDATE_CERTIFICATES")
+	os.Setenv("NRIA_INCLUDE_MATCHING_METRICS", "process.name:\n - regex \"kube*\" \n")
+	defer os.Unsetenv("NRIA_INCLUDE_MATCHING_METRICS")
 
 	f, err := ioutil.TempFile("", "yaml_config_test")
 	c.Assert(err, IsNil)
@@ -217,6 +220,7 @@ license_key: abc123
 	c.Assert(err, IsNil)
 	c.Assert(cfg.IgnoreReclaimable, Equals, true)
 	c.Assert(cfg.ProxyValidateCerts, Equals, true)
+	c.Assert(fmt.Sprintf("%v", cfg.IncludeMetricsMatchers), Equals, "map[process.name:[regex \"kube*\"]]")
 }
 
 func (s *ConfigSuite) TestWrongFormatDurations(c *C) {
@@ -478,4 +482,47 @@ func TestConfig_GetYamlAttribute(t *testing.T) {
 	}
 	assert.True(t, c.ConnectEnabled)
 	assert.Error(t, c.SetBoolValueByYamlAttribute("no_a_value", false))
+}
+
+func (s *ConfigSuite) Test_ParseIncludeMatchingRules(c *C) {
+	config := `
+license_key: test
+include_matching_metrics:
+  process.name:
+    - test
+    - other-test
+  process.executable:
+    - regex "^some-process" 
+`
+	f, err := ioutil.TempFile("", "include_matching_rules_config_test")
+	c.Assert(err, IsNil)
+	_, err = f.WriteString(config)
+	c.Assert(err, IsNil)
+	_ = f.Close()
+	defer func(f *os.File) {
+		err = os.Remove(f.Name())
+		c.Assert(err, IsNil)
+	}(f)
+
+	cfg, err := LoadConfig(f.Name())
+	c.Assert(err, IsNil)
+	c.Assert(cfg.IncludeMetricsMatchers, HasLen, 2)
+	c.Assert(cfg.IncludeMetricsMatchers["process.name"], HasLen, 2)
+	c.Assert(cfg.IncludeMetricsMatchers["process.executable"], HasLen, 1)
+}
+
+func Test_ParseIncludeMatchingRule_EnvVar(t *testing.T) {
+	os.Setenv("NRIA_INCLUDE_MATCHING_METRICS", "process.name:\n - regex \"kube*\" \n")
+	defer os.Unsetenv("NRIA_INCLUDE_MATCHING_METRICS")
+
+	configStr := "license_key: abc123"
+	f, err := ioutil.TempFile("", "yaml_config_test")
+	assert.NoError(t, err)
+	f.WriteString(configStr)
+	f.Close()
+
+	cfg, err := LoadConfig(f.Name())
+	assert.NoError(t, err)
+	expected := IncludeMetricsMap{"process.name": []string{"regex \"kube*\""}}
+	assert.True(t, reflect.DeepEqual(cfg.IncludeMetricsMatchers, expected))
 }

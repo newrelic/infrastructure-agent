@@ -286,7 +286,7 @@ func assertIOCounters(t assert.TestingT, sample *metrics.ProcessSample) {
 	assert.NotNil(t, sample.IOTotalWriteBytes)
 }
 
-func sampleProcess(ps metrics_sender.Sampler, pid int32) (*metrics.ProcessSample, error) {
+func sampleProcess(ps sampler.Sampler, pid int32) (*metrics.ProcessSample, error) {
 	batch, err := ps.Sample()
 	if err != nil {
 		return nil, err
