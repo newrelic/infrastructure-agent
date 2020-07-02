@@ -10,6 +10,7 @@ import (
 	"strings"
 	"syscall"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -1036,4 +1037,56 @@ func TestStore_Path_PermissionDenied(t *testing.T) {
 
 	// THEN should return that exists as a bool
 	assert.True(t, exists)
+}
+
+func TestStore_LastSuccessSubmission_Memory(t *testing.T) {
+	dataDir, err := TempDeltaStoreDir()
+	assert.NoError(t, err)
+	repoDir := filepath.Join(dataDir, "delta")
+	ds := NewStore(repoDir, "default", maxInventorySize)
+
+	now := time.Now()
+	ds.updateLastSuccessSubmission(now)
+
+	actual, err := ds.LastSuccessSubmission()
+	assert.NoError(t, err)
+
+	assert.Equal(t, now, actual)
+}
+
+func TestStore_LastSuccessSubmission_Disk(t *testing.T) {
+	dataDir, err := TempDeltaStoreDir()
+	assert.NoError(t, err)
+	repoDir := filepath.Join(dataDir, "delta")
+	ds := NewStore(repoDir, "default", maxInventorySize)
+
+	now := time.Now()
+	ds.updateLastSuccessSubmission(now)
+	err = ds.saveLastSuccessSubmission()
+	assert.NoError(t, err)
+	ds.lastSuccessSubmission = time.Time{}
+
+	actual, err := ds.LastSuccessSubmission()
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, now.Unix(), actual.Unix())
+}
+
+func TestStore_LastSuccessSubmission_MemoryFirst(t *testing.T) {
+	dataDir, err := TempDeltaStoreDir()
+	assert.NoError(t, err)
+	repoDir := filepath.Join(dataDir, "delta")
+	ds := NewStore(repoDir, "default", maxInventorySize)
+
+	aprilFirst, err := time.Parse(time.RFC3339, "2020-04-01T00:00:00+00:00")
+	mayFirst, err := time.Parse(time.RFC3339, "2020-05-01T00:00:00+00:00")
+	ds.updateLastSuccessSubmission(aprilFirst)
+	err = ds.saveLastSuccessSubmission()
+	assert.NoError(t, err)
+	ds.updateLastSuccessSubmission(mayFirst)
+
+	actual, err := ds.LastSuccessSubmission()
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, mayFirst.Unix(), actual.Unix())
 }

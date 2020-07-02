@@ -37,10 +37,12 @@ const (
 	NO_DELTA_ID               = 0
 	localEntityFolder         = "__nria_localentity"
 	DisableInventorySplit     = 0
+	lastSuccessSubmissionFile = "last_success"
 )
 
 var EMPTY_DELTA = []byte{'{', '}'}
 var NULL = []byte{'n', 'u', 'l', 'l'}
+var ErrNoPreviousSuccessSubmissionTime = fmt.Errorf("no previous success submission time")
 
 var slog = log.WithComponent("Delta Store")
 
@@ -87,6 +89,58 @@ type Store struct {
 	CacheDir string
 	// NextIDMap stores the information about the available plugins
 	NextIDMap pluginIDMap
+	// stores time of last success submission of inventory to backend
+	lastSuccessSubmission time.Time
+}
+
+func (d *Store) LastSuccessSubmission() (time.Time, error) {
+
+	if !d.lastSuccessSubmission.Equal(time.Time{}) {
+		return d.lastSuccessSubmission, nil
+	}
+
+	content, err := ioutil.ReadFile(d.generateLastSuccessSubmissionFilePath())
+
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	if err = d.lastSuccessSubmission.UnmarshalText(content); err != nil {
+		return time.Time{}, err
+	}
+
+	if !d.lastSuccessSubmission.Equal(time.Time{}) {
+		return d.lastSuccessSubmission, nil
+	}
+
+	return time.Time{}, ErrNoPreviousSuccessSubmissionTime
+}
+
+func (d *Store) UpdateAndSaveLastSuccessSubmission() error {
+	d.updateLastSuccessSubmission(time.Now())
+	return d.saveLastSuccessSubmission()
+}
+
+func (d *Store) updateLastSuccessSubmission(submissionTime time.Time) {
+	d.lastSuccessSubmission = submissionTime
+}
+
+func (d *Store) saveLastSuccessSubmission() error {
+	serialised, err := d.lastSuccessSubmission.MarshalText()
+
+	if err != nil {
+		return err
+	}
+
+	if err = ioutil.WriteFile(d.generateLastSuccessSubmissionFilePath(), serialised, DATA_DIR_MODE); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *Store) generateLastSuccessSubmissionFilePath() string{
+	return filepath.Join(d.DataDir, lastSuccessSubmissionFile)
 }
 
 // NewStore creates a new Store and returns a pointer to it. If maxInventorySize <= 0, the inventory splitting is disabled
