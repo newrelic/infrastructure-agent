@@ -474,7 +474,10 @@ func TestPatchSender_Process_Reset(t *testing.T) {
 	assert.NoError(t, err)
 
 	// few bytes remain (the almost-empty .delta_repo/delta_id_file.json file) + few directories
-	assert.True(t, storageSize < 10, "%v not smaller than 10", storageSize)
+	// add length of a last_submission file
+	expectedStorageSize := len("{}")
+	expectedStorageSize += len("2020-07-02T18:12:02.921062+02:00")
+	assert.True(t, storageSize <= uint64(expectedStorageSize), "%v not smaller or equal than %d", storageSize, expectedStorageSize)
 }
 
 var emptyIdnProvide = func() entity.Identity {

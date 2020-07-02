@@ -82,6 +82,15 @@ func newPatchSender(entityKey string, context AgentContext, store *delta.Store, 
 		resetIfOffline, _ = time.ParseDuration("24h")
 	}
 	now := timeNow()
+	lastSuccess, err := store.LastSuccessSubmission()
+
+	if err != nil {
+		lastSuccess = now
+		if err != delta.ErrNoPreviousSuccessSubmissionTime {
+			pslog.WithError(err).Warn("cannot read previous submission time")
+		}
+	}
+
 	return &patchSenderIngest{
 		entityKey:        entityKey,
 		store:            store,
@@ -91,7 +100,7 @@ func newPatchSender(entityKey string, context AgentContext, store *delta.Store, 
 		compactEnabled:   context.Config().CompactEnabled,
 		compactThreshold: context.Config().CompactThreshold,
 		cfg:              context.Config(),
-		lastConnection:   now,
+		lastConnection:   lastSuccess,
 		lastDeltaRemoval: now,
 		resetIfOffline:   resetIfOffline,
 	}, nil
@@ -207,7 +216,19 @@ func (p *patchSenderIngest) sendAllDeltas(allDeltas []inventoryapi.RawDeltaBlock
 			return err
 		}
 
-		p.lastConnection = currentTime
+		if err = p.store.UpdateAndSaveLastSuccessSubmission(); err != nil {
+			llog.WithError(err).Error("can't save submission time")
+		}
+
+		p.lastConnection, err = p.store.LastSuccessSubmission()
+
+		if err != nil {
+			p.lastConnection = currentTime
+			if err != delta.ErrNoPreviousSuccessSubmissionTime {
+				pslog.WithError(err).Warn("cannot read previous submission time")
+			}
+		}
+
 		if postDeltaResults.Reset == inventoryapi.ResetAll {
 			reset = true
 		} else {
