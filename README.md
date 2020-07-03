@@ -40,7 +40,7 @@ For more information on configuration methods, precedence, and structure, see th
 
 This repository contains a number of scripts that facilitate building `infra-agent` for environments supported by New Relic: Linux, Windows, and Docker. 
 
-To build the agent for architectures and OSes different than those supported by New Relic, set the [Go environment variables](https://golang.org/cmd/go/#hdr-Environment_variables) to target the desired OS/Architecture combination. For example:
+To build the agent for architectures and OSes different than the one where the build is running, set the [Go environment variables](https://golang.org/cmd/go/#hdr-Environment_variables) to target the desired OS/Architecture combination. For example:
 
 ```bash
 $ make dist-for-os GOOS=linux
