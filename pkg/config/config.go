@@ -1253,6 +1253,14 @@ func NewTest(dataDir string) *Config {
 	return c
 }
 
+// NewTestWithDeltas creates a default testing Config submitting deltas.
+func NewTestWithDeltas(dataDir string) *Config {
+	c := NewTest(dataDir)
+	c.OfflineLoggingMode = false
+
+	return c
+}
+
 // GenerateInventoryURL will use the agent configuration to generate the url required for inventory endpoint.
 func (c Config) GenerateInventoryURL() string {
 	inventoryURL := fmt.Sprintf("%s/%s", c.CollectorURL,
