@@ -764,18 +764,11 @@ func Test_ProcessSampling(t *testing.T) {
 			want: true,
 		},
 		{
-			// if nothing is configured, the FF retriever is checked so it needs to not be nil
-			name: "ConfigurationOptionIsNotPresentAndNoMatcherPresentAndFeatureFlagIsNotConfigured",
-			c:    &config.Config{},
-			ff:   test.NewFFRetrieverReturning(false, false),
-			want: true,
-		},
-		{
 			// if the matchers are empty (corner case), the FF retriever is checked so it needs to not be nil
 			name: "ConfigurationOptionIsNotPresentAndMatchersAreEmptyAndFeatureFlagIsNotConfigured",
 			c:    &config.Config{IncludeMetricsMatchers: map[string][]string{}},
 			ff:   test.NewFFRetrieverReturning(false, false),
-			want: true,
+			want: false,
 		},
 		{
 			name: "ConfigurationOptionIsNotPresentAndMatchersConfiguredDoNotMatch",
@@ -803,13 +796,13 @@ func Test_ProcessSampling(t *testing.T) {
 			name: "ConfigurationOptionIsNotPresentAndMatchersAreNotConfiguredAndFeatureFlagIsNotFound",
 			c:    &config.Config{},
 			ff:   test.NewFFRetrieverReturning(false, false),
-			want: true,
+			want: false,
 		},
 		{
-			name: "BackwardsCompatibleBehaviour",
+			name: "DefaultBehaviourExcludesProcessSamples",
 			c:    &config.Config{},
 			ff:   test.NewFFRetrieverReturning(false, false),
-			want: true,
+			want: false,
 		},
 	}
 
