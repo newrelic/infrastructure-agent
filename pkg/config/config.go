@@ -970,6 +970,9 @@ type Config struct {
 	// Public: Yes
 	IncludeMetricsMatchers IncludeMetricsMap `yaml:"include_matching_metrics" envconfig:"include_matching_metrics"`
 
+	// EnableProcessMetrics enables/disables process metrics, it does not enforce when not set.
+	// Default: empty
+	// Public: Yes
 	EnableProcessMetrics *bool `yaml:"enable_process_metrics" envconfig:"enable_process_metrics"`
 }
 
