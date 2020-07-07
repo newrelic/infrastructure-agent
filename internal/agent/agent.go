@@ -278,22 +278,22 @@ func checkCollectorConnectivity(ctx context2.Context, cfg *config.Config, retrie
 
 func newSampleMatcher(c *config.Config, ffRetriever feature_flags.Retriever) func(interface{}) bool {
 	// configuration option always takes precedence over FF and matchers configuration
-	if c.EnableProcessMetrics != nil && *c.EnableProcessMetrics == false {
-		alog.Debug("EnableProcessMetrics is FALSE, process metrics will be DISABLED")
-		return func(sample interface{}) bool {
-			// no process samples will be sent to backend
-			return false
-		}
-	}
-
-	if c.EnableProcessMetrics != nil && *c.EnableProcessMetrics == true {
-		ec := sampler.NewMatcherChain(c.IncludeMetricsMatchers)
-		if ec.Enabled {
-			alog.Debug("EnableProcessMetrics is TRUE and rules ARE defined, process metrics will be ENABLED for matching processes")
+	if c.EnableProcessMetrics != nil {
+		if *c.EnableProcessMetrics == false {
+			alog.Debug("EnableProcessMetrics is FALSE, process metrics will be DISABLED")
 			return func(sample interface{}) bool {
-				return ec.Evaluate(sample)
+				// no process samples will be sent to backend
+				return false
 			}
 		} else {
+			ec := sampler.NewMatcherChain(c.IncludeMetricsMatchers)
+			if ec.Enabled {
+				alog.Debug("EnableProcessMetrics is TRUE and rules ARE defined, process metrics will be ENABLED for matching processes")
+				return func(sample interface{}) bool {
+					return ec.Evaluate(sample)
+				}
+			}
+
 			alog.Debug("EnableProcessMetrics is TRUE and no rules defined, ALL process metrics will be ENABLED")
 			return func(sample interface{}) bool {
 				// ALL process samples will be sent to backend
@@ -309,12 +309,12 @@ func newSampleMatcher(c *config.Config, ffRetriever feature_flags.Retriever) fun
 		return func(sample interface{}) bool {
 			return ec.Evaluate(sample)
 		}
-	} else {
-		// configuration option is not defined, check feature flag
-		if enabled, exists := ffRetriever.GetFeatureFlag(handler.FlagFullProcess); exists {
-			return func(sample interface{}) bool {
-				return enabled
-			}
+	}
+
+	// configuration option is not defined, check feature flag
+	if enabled, exists := ffRetriever.GetFeatureFlag(handler.FlagFullProcess); exists {
+		return func(sample interface{}) bool {
+			return enabled
 		}
 	}
 
