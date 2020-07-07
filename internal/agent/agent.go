@@ -311,13 +311,13 @@ func newSampleMatcher(c *config.Config, ffRetriever feature_flags.Retriever) fun
 		}
 	}
 
-	// configuration option is not defined, check feature flag
-	// if nothing is configured, use back compat behaviour and include let every process sample
+	// configuration option is not defined and feature flag is present, FF determines, otherwise
+	// all process samples will be excluded
 	return func(sample interface{}) bool {
 		if enabled, exists := ffRetriever.GetFeatureFlag(handler.FlagFullProcess); exists {
 			return enabled
 		}
-		return true
+		return false
 	}
 }
 
