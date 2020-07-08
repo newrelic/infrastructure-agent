@@ -3,12 +3,12 @@
 package fixture
 
 import (
-	"github.com/newrelic/infrastructure-agent/pkg/metrics"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
 )
 
 var (
-	ProcessSample = metrics.ProcessSample{
+	ProcessSample = types.ProcessSample{
 		BaseEvent: sample.BaseEvent{
 			EntityKey: "my-entity-key",
 		},
