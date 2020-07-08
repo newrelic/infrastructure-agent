@@ -145,11 +145,12 @@ type context struct {
 	resolver           hostname.ResolverChangeNotifier
 	EntityMap          entity.KnownIDs
 	idLookup           IDLookup
-	shouldIncludeEvent includeSampleMatcher
+	shouldIncludeEvent includeSampleMatchFn
 }
 
-// func that satisfies the metrics matcher (processor.MatcherChain) interface while avoiding the import
-type includeSampleMatcher func(sample interface{}) bool
+// includeSampleMatchFn func that returns wether an event/sample should be included, it satisfies
+// the metrics matcher (processor.MatcherChain) interface.
+type includeSampleMatchFn func(sample interface{}) bool
 
 // AgentID provides agent ID, blocking until it's available
 func (c *context) AgentID() entity.ID {
@@ -188,8 +189,13 @@ func (c *context) IDLookup() IDLookup {
 type IDLookup map[string]string
 
 //NewContext creates a new context.
-func NewContext(cfg *config.Config, buildVersion string, resolver hostname.ResolverChangeNotifier, lookup IDLookup,
-	sampleMatcher includeSampleMatcher) *context {
+func NewContext(
+	cfg *config.Config,
+	buildVersion string,
+	resolver hostname.ResolverChangeNotifier,
+	lookup IDLookup,
+	sampleMatchFn includeSampleMatchFn,
+) *context {
 	ctx, cancel := context2.WithCancel(context2.Background())
 
 	return &context{
@@ -203,7 +209,7 @@ func NewContext(cfg *config.Config, buildVersion string, resolver hostname.Resol
 		servicePids:        make(map[string]map[int]string),
 		resolver:           resolver,
 		idLookup:           lookup,
-		shouldIncludeEvent: sampleMatcher,
+		shouldIncludeEvent: sampleMatchFn,
 	}
 }
 
@@ -276,17 +282,19 @@ func checkCollectorConnectivity(ctx context2.Context, cfg *config.Config, retrie
 	return
 }
 
-func newSampleMatcher(c *config.Config, ffRetriever feature_flags.Retriever) func(interface{}) bool {
+// newSampleMatchFn creates new includeSampleMatchFn func, enableProcessMetrics might be nil when
+// value was not set.
+func newSampleMatchFn(enableProcessMetrics *bool, includeMetricsMatchers config.IncludeMetricsMap, ffRetriever feature_flags.Retriever) includeSampleMatchFn {
 	// configuration option always takes precedence over FF and matchers configuration
-	if c.EnableProcessMetrics != nil {
-		if *c.EnableProcessMetrics == false {
+	if enableProcessMetrics != nil {
+		if *enableProcessMetrics == false {
 			alog.Debug("EnableProcessMetrics is FALSE, process metrics will be DISABLED")
 			return func(sample interface{}) bool {
 				// no process samples will be sent to backend
 				return false
 			}
 		} else {
-			ec := sampler.NewMatcherChain(c.IncludeMetricsMatchers)
+			ec := sampler.NewMatcherChain(includeMetricsMatchers)
 			if ec.Enabled {
 				alog.Debug("EnableProcessMetrics is TRUE and rules ARE defined, process metrics will be ENABLED for matching processes")
 				return func(sample interface{}) bool {
@@ -303,7 +311,7 @@ func newSampleMatcher(c *config.Config, ffRetriever feature_flags.Retriever) fun
 	}
 
 	// if config option is not set, check if we have rules defined. those take precedence over the FF
-	ec := sampler.NewMatcherChain(c.IncludeMetricsMatchers)
+	ec := sampler.NewMatcherChain(includeMetricsMatchers)
 	if ec.Enabled {
 		alog.Debug("EnableProcessMetrics is EMPTY and rules ARE defined, process metrics will be ENABLED for matching processes")
 		return func(sample interface{}) bool {
@@ -332,8 +340,8 @@ func NewAgent(cfg *config.Config, buildVersion string, ffRetriever feature_flags
 	cloudHarvester.Initialize()
 
 	idLookupTable := NewIdLookup(hostnameResolver, cloudHarvester, cfg.DisplayName)
-	sampleMatcher := newSampleMatcher(cfg, ffRetriever)
-	ctx := NewContext(cfg, buildVersion, hostnameResolver, idLookupTable, sampleMatcher)
+	sampleMatchFn := newSampleMatchFn(cfg.EnableProcessMetrics, cfg.IncludeMetricsMatchers, ffRetriever)
+	ctx := NewContext(cfg, buildVersion, hostnameResolver, idLookupTable, sampleMatchFn)
 
 	agentKey, err := idLookupTable.getAgentKey()
 	if err != nil {

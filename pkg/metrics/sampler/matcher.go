@@ -5,6 +5,7 @@ package sampler
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/trace"
 	"reflect"
 	"regexp"
@@ -151,7 +152,7 @@ type MatcherChain struct {
 // NewMatcherChain creates a new chain of matchers.
 // Each expression will generate an matcher that gets added to the chain
 // While the chain will be matched for each "sample", it terminates as soon as 1 match is matched (result = true)
-func NewMatcherChain(expressions map[string][]string) MatcherChain {
+func NewMatcherChain(expressions config.IncludeMetricsMap) MatcherChain {
 	chain := MatcherChain{Matchers: map[string][]ExpressionMatcher{}, Enabled: false}
 
 	// no matchers means the chain will be disabled
