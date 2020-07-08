@@ -570,7 +570,7 @@ func TestNewSampleMatchFn(t *testing.T) {
 			args: args{
 				enableProcessMetrics:   nil,
 				includeMetricsMatchers: emptyMatchers,
-				ffRetriever:            &disabledFFRetriever{},
+				ffRetriever:            &enabledFFRetriever{},
 				sample:                 fixture.ProcessSample,
 			},
 			include: true,

@@ -255,12 +255,11 @@ func NewSampleMatchFn(enableProcessMetrics *bool, includeMetricsMatchers config.
 	// configuration option is not defined and feature flag is present, FF determines, otherwise
 	// all process samples will be excluded
 	return func(sample interface{}) bool {
-		if enabled, exists := ffRetriever.GetFeatureFlag(handler.FlagFullProcess); exists {
-			if _, isProcessSample := sample.(types.ProcessSample); !isProcessSample {
-				return !isProcessSample || enabled
-			}
+		if _, isProcessSample := sample.(types.ProcessSample); !isProcessSample {
+			return true
 		}
 
-		return true
+		enabled, exists := ffRetriever.GetFeatureFlag(handler.FlagFullProcess)
+		return  exists && enabled
 	}
 }
