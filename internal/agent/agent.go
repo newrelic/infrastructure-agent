@@ -5,11 +5,6 @@ package agent
 import (
 	context2 "context"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
-	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
-	"github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
-	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
-
 	"net"
 	"net/http"
 	"net/url"
@@ -21,6 +16,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
 
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/metric"
 	"github.com/sirupsen/logrus"
@@ -147,12 +145,8 @@ type context struct {
 	resolver           hostname.ResolverChangeNotifier
 	EntityMap          entity.KnownIDs
 	idLookup           IDLookup
-	shouldIncludeEvent includeSampleMatchFn
+	shouldIncludeEvent sampler.IncludeSampleMatchFn
 }
-
-// includeSampleMatchFn func that returns wether an event/sample should be included, it satisfies
-// the metrics matcher (processor.MatcherChain) interface.
-type includeSampleMatchFn func(sample interface{}) bool
 
 // AgentID provides agent ID, blocking until it's available
 func (c *context) AgentID() entity.ID {
@@ -196,7 +190,7 @@ func NewContext(
 	buildVersion string,
 	resolver hostname.ResolverChangeNotifier,
 	lookup IDLookup,
-	sampleMatchFn includeSampleMatchFn,
+	sampleMatchFn sampler.IncludeSampleMatchFn,
 ) *context {
 	ctx, cancel := context2.WithCancel(context2.Background())
 
@@ -284,55 +278,6 @@ func checkCollectorConnectivity(ctx context2.Context, cfg *config.Config, retrie
 	return
 }
 
-// newSampleMatchFn creates new includeSampleMatchFn func, enableProcessMetrics might be nil when
-// value was not set.
-func newSampleMatchFn(enableProcessMetrics *bool, includeMetricsMatchers config.IncludeMetricsMap, ffRetriever feature_flags.Retriever) includeSampleMatchFn {
-	// configuration option always takes precedence over FF and matchers configuration
-	if enableProcessMetrics != nil {
-		if *enableProcessMetrics == false {
-			alog.Debug("EnableProcessMetrics is FALSE, process metrics will be DISABLED")
-			return func(sample interface{}) bool {
-				// no process samples are included
-				_, ok := sample.(types.ProcessSample)
-				return ok
-			}
-		} else {
-			ec := sampler.NewMatcherChain(includeMetricsMatchers)
-			if ec.Enabled {
-				alog.Debug("EnableProcessMetrics is TRUE and rules ARE defined, process metrics will be ENABLED for matching processes")
-				return func(sample interface{}) bool {
-					return ec.Evaluate(sample)
-				}
-			}
-
-			alog.Debug("EnableProcessMetrics is TRUE and rules are NOT defined, ALL process metrics will be ENABLED")
-			return func(sample interface{}) bool {
-				// all process samples are included
-				return true
-			}
-		}
-	}
-
-	// if config option is not set, check if we have rules defined. those take precedence over the FF
-	ec := sampler.NewMatcherChain(includeMetricsMatchers)
-	if ec.Enabled {
-		alog.Debug("EnableProcessMetrics is EMPTY and rules ARE defined, process metrics will be ENABLED for matching processes")
-		return func(sample interface{}) bool {
-			return ec.Evaluate(sample)
-		}
-	}
-
-	// configuration option is not defined and feature flag is present, FF determines, otherwise
-	// all process samples will be excluded
-	return func(sample interface{}) bool {
-		if enabled, exists := ffRetriever.GetFeatureFlag(handler.FlagFullProcess); exists {
-			return enabled
-		}
-		_, ok := sample.(types.ProcessSample)
-		return ok
-	}
-}
-
 // NewAgent returns a new instance of an agent built from the config.
 func NewAgent(cfg *config.Config, buildVersion string, ffRetriever feature_flags.Retriever) (a *Agent, err error) {
 
@@ -344,7 +289,7 @@ func NewAgent(cfg *config.Config, buildVersion string, ffRetriever feature_flags
 	cloudHarvester.Initialize()
 
 	idLookupTable := NewIdLookup(hostnameResolver, cloudHarvester, cfg.DisplayName)
-	sampleMatchFn := newSampleMatchFn(cfg.EnableProcessMetrics, cfg.IncludeMetricsMatchers, ffRetriever)
+	sampleMatchFn := sampler.NewSampleMatchFn(cfg.EnableProcessMetrics, cfg.IncludeMetricsMatchers, ffRetriever)
 	ctx := NewContext(cfg, buildVersion, hostnameResolver, idLookupTable, sampleMatchFn)
 
 	agentKey, err := idLookupTable.getAgentKey()
