@@ -8,6 +8,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
+	testFF "github.com/newrelic/infrastructure-agent/internal/feature_flags/test"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics"
@@ -16,6 +18,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/newrelic/infrastructure-agent/pkg/trace"
+	fixture "github.com/newrelic/infrastructure-agent/test/fixture/sample"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
@@ -503,4 +506,110 @@ func Test_EvaluatorChain_LogTraceMatcher(t *testing.T) {
 	entry := hook.LastEntry()
 	assert.Equal(t, "[metric.match] 'java' matches expression 'ProcessDisplayName' >> 'java': true", entry.Message)
 	assert.Equal(t, logrus.TraceLevel, entry.Level)
+}
+
+type enabledFFRetriever struct{}
+func (e *enabledFFRetriever) GetFeatureFlag(name string) (enabled bool, exists bool) {
+	return true, true
+}
+
+type disabledFFRetriever struct{}
+func (e *disabledFFRetriever) GetFeatureFlag(name string) (enabled bool, exists bool) {
+	return false, true
+}
+
+func TestNewSampleMatchFn(t *testing.T) {
+	trueVar := true
+	falseVar := false
+	emptyMatchers := config.IncludeMetricsMap{}
+
+
+	type args struct {
+		enableProcessMetrics   *bool
+		includeMetricsMatchers config.IncludeMetricsMap
+		ffRetriever            feature_flags.Retriever
+		sample                 interface{}
+	}
+	tests := []struct {
+		name    string
+		args    args
+		include bool
+	}{
+		{
+			name: "non process samples are always included",
+			args: args{
+				enableProcessMetrics:   &falseVar,
+				includeMetricsMatchers: emptyMatchers,
+				ffRetriever:            testFF.EmptyFFRetriever,
+				sample:                 fixture.NetworkSample,
+			},
+			include: true,
+		},
+		{
+			name: "when enableProcessMetrics process samples are included",
+			args: args{
+				enableProcessMetrics:   &trueVar,
+				includeMetricsMatchers: emptyMatchers,
+				ffRetriever:            testFF.EmptyFFRetriever,
+				sample:                 fixture.ProcessSample,
+			},
+			include: true,
+		},
+		{
+			name: "when enableProcessMetrics is not set and neither FF is, process samples are not included",
+			args: args{
+				enableProcessMetrics:   nil,
+				includeMetricsMatchers: emptyMatchers,
+				ffRetriever:            testFF.EmptyFFRetriever,
+				sample:                 fixture.ProcessSample,
+			},
+			include: false,
+		},
+		{
+			name: "when enableProcessMetrics is not set and FF returns enabled, process samples are included",
+			args: args{
+				enableProcessMetrics:   nil,
+				includeMetricsMatchers: emptyMatchers,
+				ffRetriever:            &disabledFFRetriever{},
+				sample:                 fixture.ProcessSample,
+			},
+			include: true,
+		},
+		{
+			name: "when enableProcessMetrics is not set and FF returns disabled, process samples are not included",
+			args: args{
+				enableProcessMetrics:   nil,
+				includeMetricsMatchers: emptyMatchers,
+				ffRetriever:            &disabledFFRetriever{},
+				sample:                 fixture.ProcessSample,
+			},
+			include: false,
+		},
+		{
+			name: "process samples matching rules are included",
+			args: args{
+				enableProcessMetrics: &trueVar,
+				includeMetricsMatchers: config.IncludeMetricsMap{"process.name": []string{"regex \"foo.*\""}},
+				ffRetriever: testFF.EmptyFFRetriever,
+				sample: fixture.ProcessSample,
+			},
+			include: true,
+		},
+		{
+			name: "process samples not matching rules are not included",
+			args: args{
+				enableProcessMetrics: &trueVar,
+				includeMetricsMatchers: config.IncludeMetricsMap{"process.name": []string{"regex \"bar*\""}},
+				ffRetriever: testFF.EmptyFFRetriever,
+				sample: fixture.ProcessSample,
+			},
+			include: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			matchFn := sampler.NewSampleMatchFn(tt.args.enableProcessMetrics, tt.args.includeMetricsMatchers, tt.args.ffRetriever)
+			assert.Equal(t, matchFn(tt.args.sample), tt.include)
+		})
+	}
 }
