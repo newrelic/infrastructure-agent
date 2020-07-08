@@ -224,7 +224,7 @@ func NewSampleMatchFn(enableProcessMetrics *bool, includeMetricsMatchers config.
 			return func(sample interface{}) bool {
 				// no process samples are included
 				_, ok := sample.(types.ProcessSample)
-				return ok
+				return !ok
 			}
 		} else {
 			ec := NewMatcherChain(includeMetricsMatchers)
@@ -259,6 +259,6 @@ func NewSampleMatchFn(enableProcessMetrics *bool, includeMetricsMatchers config.
 			return enabled
 		}
 		_, ok := sample.(types.ProcessSample)
-		return ok
+		return !ok
 	}
 }
