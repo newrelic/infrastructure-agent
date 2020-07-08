@@ -5,9 +5,8 @@ import (
 	"github.com/shirou/gopsutil/process"
 )
 
-// We use pointers to floats instead of plain floats so that if we don't set one
-// of the values, it will not be sent to Dirac. (Not using pointers would mean
-// that Go would always send a default value of 0.)
+// ProcessSample data type storing all the data harvested for a process.
+// Pointers are used as nil values represent no data.
 type ProcessSample struct {
 	sample.BaseEvent
 	ProcessDisplayName    string   `json:"processDisplayName"`
@@ -41,4 +40,3 @@ type ProcessSample struct {
 	LastIOCounters  *process.IOCountersStat `json:"-"`
 	ContainerLabels map[string]string       `json:"-"`
 }
-
