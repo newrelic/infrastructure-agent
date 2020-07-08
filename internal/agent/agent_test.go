@@ -18,10 +18,9 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags/test"
-	"github.com/newrelic/infrastructure-agent/pkg/ctl"
-	"github.com/newrelic/infrastructure-agent/pkg/sample"
-
 	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
+	"github.com/newrelic/infrastructure-agent/pkg/ctl"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
@@ -730,18 +729,12 @@ func Test_ProcessSampling_FeatureFlagIsEnabled(t *testing.T) {
 	assert.Equal(t, true, actual)
 }
 
-// ProcessSample is mimicking the real ProcessSample which we can't reference from here due to import cycles.
-type ProcessSample struct {
-	sample.BaseEvent
-	ProcessDisplayName string
-}
-
 func getBooleanPtr(val bool) *bool {
 	return &val
 }
 
 func Test_ProcessSampling(t *testing.T) {
-	someSample := ProcessSample{
+	someSample := types.ProcessSample{
 		ProcessDisplayName: "some-process",
 	}
 
