@@ -305,7 +305,7 @@ func newSampleMatcher(c *config.Config, ffRetriever feature_flags.Retriever) fun
 	// if config option is not set, check if we have rules defined. those take precedence over the FF
 	ec := sampler.NewMatcherChain(c.IncludeMetricsMatchers)
 	if ec.Enabled {
-		alog.Debug("EnableProcessMetrics is TRUE and rules ARE defined, process metrics will be ENABLED for matching processes")
+		alog.Debug("EnableProcessMetrics is EMPTY and rules ARE defined, process metrics will be ENABLED for matching processes")
 		return func(sample interface{}) bool {
 			return ec.Evaluate(sample)
 		}
