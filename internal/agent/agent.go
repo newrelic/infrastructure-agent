@@ -8,6 +8,8 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
+
 	"net"
 	"net/http"
 	"net/url"
@@ -291,8 +293,8 @@ func newSampleMatchFn(enableProcessMetrics *bool, includeMetricsMatchers config.
 			alog.Debug("EnableProcessMetrics is FALSE, process metrics will be DISABLED")
 			return func(sample interface{}) bool {
 				// no process samples are included
-				// TODO filter process
-				return false
+				_, ok := sample.(types.ProcessSample)
+				return ok
 			}
 		} else {
 			ec := sampler.NewMatcherChain(includeMetricsMatchers)
@@ -326,7 +328,8 @@ func newSampleMatchFn(enableProcessMetrics *bool, includeMetricsMatchers config.
 		if enabled, exists := ffRetriever.GetFeatureFlag(handler.FlagFullProcess); exists {
 			return enabled
 		}
-		return false
+		_, ok := sample.(types.ProcessSample)
+		return ok
 	}
 }
 
