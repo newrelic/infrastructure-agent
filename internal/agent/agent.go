@@ -290,7 +290,8 @@ func newSampleMatchFn(enableProcessMetrics *bool, includeMetricsMatchers config.
 		if *enableProcessMetrics == false {
 			alog.Debug("EnableProcessMetrics is FALSE, process metrics will be DISABLED")
 			return func(sample interface{}) bool {
-				// no process samples will be sent to backend
+				// no process samples are included
+				// TODO filter process
 				return false
 			}
 		} else {
@@ -302,9 +303,9 @@ func newSampleMatchFn(enableProcessMetrics *bool, includeMetricsMatchers config.
 				}
 			}
 
-			alog.Debug("EnableProcessMetrics is TRUE and no rules defined, ALL process metrics will be ENABLED")
+			alog.Debug("EnableProcessMetrics is TRUE and rules are NOT defined, ALL process metrics will be ENABLED")
 			return func(sample interface{}) bool {
-				// ALL process samples will be sent to backend
+				// all process samples are included
 				return true
 			}
 		}
