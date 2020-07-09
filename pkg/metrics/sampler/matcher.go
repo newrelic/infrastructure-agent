@@ -223,7 +223,7 @@ func NewSampleMatchFn(enableProcessMetrics *bool, includeMetricsMatchers config.
 			trace.MetricMatch("EnableProcessMetrics is FALSE, process metrics will be DISABLED")
 			return func(sample interface{}) bool {
 				// no process samples are included
-				_, isProcessSample := sample.(types.ProcessSample)
+				_, isProcessSample := sample.(*types.ProcessSample)
 				return !isProcessSample
 			}
 		} else {
@@ -255,7 +255,7 @@ func NewSampleMatchFn(enableProcessMetrics *bool, includeMetricsMatchers config.
 	// configuration option is not defined and feature flag is present, FF determines, otherwise
 	// all process samples will be excluded
 	return func(sample interface{}) bool {
-		if _, isProcessSample := sample.(types.ProcessSample); !isProcessSample {
+		if _, isProcessSample := sample.(*types.ProcessSample); !isProcessSample {
 			return true
 		}
 
