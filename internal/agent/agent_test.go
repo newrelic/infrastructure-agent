@@ -53,7 +53,6 @@ func newTesting(cfg *config.Config) *Agent {
 	cloudDetector := cloud.NewDetector(true, 0, 0, 0, false)
 	lookups := NewIdLookup(hostname.CreateResolver("", "", true), cloudDetector, cfg.DisplayName)
 
-	//ctx := newContextTesting("1.2.3", cfg)
 	ctx := NewContext(cfg, "1.2.3", testhelpers.NullHostnameResolver, lookups, matcher)
 
 	st := delta.NewStore(dataDir, "default", cfg.MaxInventorySize)
@@ -66,7 +65,21 @@ func newTesting(cfg *config.Config) *Agent {
 	connectSrv := NewIdentityConnectService(&MockIdentityConnectClient{}, fpHarvester)
 	provideIDs := NewProvideIDs(&EmptyRegisterClient{}, state.NewRegisterSM())
 
-	a, err := New(cfg, ctx, "user-agent", lookups, st, connectSrv, provideIDs, http2.NullHttpClient, &http.Transport{}, cloudDetector, fpHarvester, ctl.NewNotificationHandlerWithCancellation(nil))
+	a, err := New(
+		cfg,
+		ctx,
+		"user-agent",
+		lookups,
+		st,
+		delta.NewLastSubmissionInMemory(),
+		connectSrv,
+		provideIDs,
+		http2.NullHttpClient,
+		&http.Transport{},
+		cloudDetector,
+		fpHarvester,
+		ctl.NewNotificationHandlerWithCancellation(nil),
+	)
 
 	if err != nil {
 		panic(err)

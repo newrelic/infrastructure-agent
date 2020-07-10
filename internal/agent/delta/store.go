@@ -1,5 +1,6 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+
 package delta
 
 import (
@@ -91,56 +92,6 @@ type Store struct {
 	NextIDMap pluginIDMap
 	// stores time of last success submission of inventory to backend
 	lastSuccessSubmission time.Time
-}
-
-func (d *Store) LastSuccessSubmission() (time.Time, error) {
-
-	if !d.lastSuccessSubmission.Equal(time.Time{}) {
-		return d.lastSuccessSubmission, nil
-	}
-
-	content, err := ioutil.ReadFile(d.generateLastSuccessSubmissionFilePath())
-
-	if err != nil {
-		return time.Time{}, err
-	}
-
-	if err = d.lastSuccessSubmission.UnmarshalText(content); err != nil {
-		return time.Time{}, err
-	}
-
-	if !d.lastSuccessSubmission.Equal(time.Time{}) {
-		return d.lastSuccessSubmission, nil
-	}
-
-	return time.Time{}, ErrNoPreviousSuccessSubmissionTime
-}
-
-func (d *Store) UpdateAndSaveLastSuccessSubmission() error {
-	d.updateLastSuccessSubmission(time.Now())
-	return d.saveLastSuccessSubmission()
-}
-
-func (d *Store) updateLastSuccessSubmission(submissionTime time.Time) {
-	d.lastSuccessSubmission = submissionTime
-}
-
-func (d *Store) saveLastSuccessSubmission() error {
-	serialised, err := d.lastSuccessSubmission.MarshalText()
-
-	if err != nil {
-		return err
-	}
-
-	if err = ioutil.WriteFile(d.generateLastSuccessSubmissionFilePath(), serialised, DATA_DIR_MODE); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (d *Store) generateLastSuccessSubmissionFilePath() string{
-	return filepath.Join(d.DataDir, lastSuccessSubmissionFile)
 }
 
 // NewStore creates a new Store and returns a pointer to it. If maxInventorySize <= 0, the inventory splitting is disabled

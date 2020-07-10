@@ -95,7 +95,7 @@ func NewAgentWithConnectClientAndConfig(connectClient, dataClient backendhttp.Cl
 
 	provideIDs := agent.NewProvideIDs(registerC, state.NewRegisterSM())
 	transport := backendhttp.BuildTransport(cfg, backendhttp.ClientTimeout)
-	a, err := agent.New(cfg, ctx, "user-agent", lookups, st, connectSrv, provideIDs, dataClient, transport, cloudDetector, fingerprintHarvester, ctl.NewNotificationHandlerWithCancellation(nil))
+	a, err := agent.New(cfg, ctx, "user-agent", lookups, st, delta.NewLastSubmissionInMemory(), connectSrv, provideIDs, dataClient, transport, cloudDetector, fingerprintHarvester, ctl.NewNotificationHandlerWithCancellation(nil))
 	if err != nil {
 		panic(err)
 	}

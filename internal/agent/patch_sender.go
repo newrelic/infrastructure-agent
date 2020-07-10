@@ -24,13 +24,13 @@ import (
 type patchSenderIngest struct {
 	entityKey        string
 	store            *delta.Store
+	lastSubmission   delta.LastSubmissionStore
 	postDeltas       postDeltas
 	userAgent        string
 	compactEnabled   bool
 	compactThreshold uint64
 	cfg              *config.Config
 	context          AgentContext
-	lastConnection   time.Time
 	lastDeltaRemoval time.Time
 	resetIfOffline   time.Duration
 }
@@ -47,11 +47,14 @@ var pslog = log.WithComponent("PatchSender")
 // Reference to post delta function that can be stubbed for unit testing
 type postDeltas func(entityKeys []string, isAgent bool, deltas ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error)
 
-func newPatchSender(entityKey string, context AgentContext, store *delta.Store, userAgent string, agentIDProvide id.Provide, httpClient http2.Client) (patchSender, error) {
+func newPatchSender(entityKey string, context AgentContext, store *delta.Store, lastSubmission delta.LastSubmissionStore, userAgent string, agentIDProvide id.Provide, httpClient http2.Client) (patchSender, error) {
 	if store == nil {
-		pslog.WithField("entityKey", entityKey).Error("creating patch sender: delta store can't be nil")
-		panic("creating patch sender: delta store can't be nil")
+		return nil, fmt.Errorf("creating patch sender: delta store can't be nil")
 	}
+	if lastSubmission == nil {
+		return nil, fmt.Errorf("creating patch sender: last submission store can't be nil")
+	}
+
 	inventoryURL := fmt.Sprintf("%s/%s", context.Config().CollectorURL,
 		strings.TrimPrefix(context.Config().InventoryIngestEndpoint, "/"))
 	if os.Getenv("DEV_INVENTORY_INGEST_URL") != "" {
@@ -81,29 +84,21 @@ func newPatchSender(entityKey string, context AgentContext, store *delta.Store, 
 
 		resetIfOffline, _ = time.ParseDuration("24h")
 	}
-	now := timeNow()
-	lastSuccess, err := store.LastSuccessSubmission()
 
-	if err != nil {
-		lastSuccess = now
-		if err != delta.ErrNoPreviousSuccessSubmissionTime {
-			pslog.WithError(err).Warn("cannot read previous submission time")
-		}
-	}
+	err = lastSubmission.UpdateTime(time.Now())
 
 	return &patchSenderIngest{
 		entityKey:        entityKey,
 		store:            store,
+		lastSubmission:   lastSubmission,
 		postDeltas:       client.PostDeltas,
 		context:          context,
 		userAgent:        userAgent,
 		compactEnabled:   context.Config().CompactEnabled,
 		compactThreshold: context.Config().CompactThreshold,
 		cfg:              context.Config(),
-		lastConnection:   lastSuccess,
-		lastDeltaRemoval: now,
 		resetIfOffline:   resetIfOffline,
-	}, nil
+	}, err
 }
 
 func (p *patchSenderIngest) Process() (err error) {
@@ -120,21 +115,16 @@ func (p *patchSenderIngest) Process() (err error) {
 	}
 	if len(deltas) == 0 {
 		llog.Debug("Patch sender found no deltas to send.")
-		// Update the lastConnection time to stop the `agent has been offline`
-		// error from being triggered
-		p.lastConnection = now
 		return nil
 	}
 
-	llog.WithFieldsF(func() logrus.Fields {
-		return logrus.Fields{
-			"lastConnection": p.lastConnection,
-			"currentTime":    now,
-		}
-	}).Debug("Prepare to process deltas.")
-
 	// We reset the deltas if the postDeltas fails after agent has been offline for > 24h
-	longTimeDisconnected := p.lastConnection.Add(p.resetIfOffline).Before(now)
+	lastConn, err := p.lastSubmission.Time()
+	if err != nil {
+		llog.WithError(err).Warn("cannot retrieve last submission time")
+	}
+
+	longTimeDisconnected := lastConn.Add(p.resetIfOffline).Before(now)
 	if longTimeDisconnected && p.lastDeltaRemoval.Add(p.resetIfOffline).Before(now) {
 		llog.WithField("offlineTime", p.resetIfOffline).
 			Info("agent has been offline for too long. Recreating delta store")
@@ -170,7 +160,6 @@ func (p *patchSenderIngest) sendAllDeltas(allDeltas []inventoryapi.RawDeltaBlock
 	llog := pslog.WithField("entityKey", p.entityKey)
 
 	// This variable means the entity these deltas represent is an agent
-
 	var areAgentDeltas bool
 	var entityKey string
 	// Empty entity Key belong to the Agent
@@ -216,17 +205,8 @@ func (p *patchSenderIngest) sendAllDeltas(allDeltas []inventoryapi.RawDeltaBlock
 			return err
 		}
 
-		if err = p.store.UpdateAndSaveLastSuccessSubmission(); err != nil {
+		if err = p.lastSubmission.UpdateTime(timeNow()); err != nil {
 			llog.WithError(err).Error("can't save submission time")
-		}
-
-		p.lastConnection, err = p.store.LastSuccessSubmission()
-
-		if err != nil {
-			p.lastConnection = currentTime
-			if err != delta.ErrNoPreviousSuccessSubmissionTime {
-				pslog.WithError(err).Warn("cannot read previous submission time")
-			}
 		}
 
 		if postDeltaResults.Reset == inventoryapi.ResetAll {

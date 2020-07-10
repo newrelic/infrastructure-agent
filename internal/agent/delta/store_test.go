@@ -1039,16 +1039,16 @@ func TestStore_Path_PermissionDenied(t *testing.T) {
 	assert.True(t, exists)
 }
 
-func TestStore_LastSuccessSubmission_Memory(t *testing.T) {
+func TestStore_LastSuccessSubmission_KeepsTrackMemory(t *testing.T) {
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
 	repoDir := filepath.Join(dataDir, "delta")
-	ds := NewStore(repoDir, "default", maxInventorySize)
+	ds := NewLastSubmissionStore(repoDir).(*LastSubmissionFileStore)
 
 	now := time.Now()
 	ds.updateLastSuccessSubmission(now)
 
-	actual, err := ds.LastSuccessSubmission()
+	actual, err := ds.Time()
 	assert.NoError(t, err)
 
 	assert.Equal(t, now, actual)
@@ -1058,15 +1058,15 @@ func TestStore_LastSuccessSubmission_Disk(t *testing.T) {
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
 	repoDir := filepath.Join(dataDir, "delta")
-	ds := NewStore(repoDir, "default", maxInventorySize)
+	ls := NewLastSubmissionStore(repoDir).(*LastSubmissionFileStore)
 
 	now := time.Now()
-	ds.updateLastSuccessSubmission(now)
-	err = ds.saveLastSuccessSubmission()
+	ls.updateLastSuccessSubmission(now)
+	err = ls.saveLastSuccessSubmission()
 	assert.NoError(t, err)
-	ds.lastSuccessSubmission = time.Time{}
+	ls.t = time.Time{}
 
-	actual, err := ds.LastSuccessSubmission()
+	actual, err := ls.Time()
 	assert.NoError(t, err)
 
 	assert.EqualValues(t, now.Unix(), actual.Unix())
@@ -1076,7 +1076,7 @@ func TestStore_LastSuccessSubmission_MemoryFirst(t *testing.T) {
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
 	repoDir := filepath.Join(dataDir, "delta")
-	ds := NewStore(repoDir, "default", maxInventorySize)
+	ds := NewLastSubmissionStore(repoDir).(*LastSubmissionFileStore)
 
 	aprilFirst, err := time.Parse(time.RFC3339, "2020-04-01T00:00:00+00:00")
 	mayFirst, err := time.Parse(time.RFC3339, "2020-05-01T00:00:00+00:00")
@@ -1085,7 +1085,7 @@ func TestStore_LastSuccessSubmission_MemoryFirst(t *testing.T) {
 	assert.NoError(t, err)
 	ds.updateLastSuccessSubmission(mayFirst)
 
-	actual, err := ds.LastSuccessSubmission()
+	actual, err := ds.Time()
 	assert.NoError(t, err)
 
 	assert.EqualValues(t, mayFirst.Unix(), actual.Unix())
