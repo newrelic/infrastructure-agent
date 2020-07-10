@@ -114,10 +114,7 @@ func (p *patchSenderIngest) Process() (err error) {
 		return
 	}
 	if len(deltas) == 0 {
-		//llog.Debug("Patch sender found no deltas to send.")
-		// Update the lastConnection time to stop the `agent has been offline`
-		// error from being triggered
-		//p.store.UpdateAndSaveLastSuccessSubmission(timeNow())
+		llog.Debug("Patch sender found no deltas to send.")
 		return nil
 	}
 
@@ -127,7 +124,6 @@ func (p *patchSenderIngest) Process() (err error) {
 		llog.WithError(err).Warn("cannot retrieve last submission time")
 	}
 
-	//fmt.Printf("lastConn: %v p.resetIfOffline: %v, now: %v", lastConn, p.resetIfOffline, now)
 	longTimeDisconnected := lastConn.Add(p.resetIfOffline).Before(now)
 	if longTimeDisconnected && p.lastDeltaRemoval.Add(p.resetIfOffline).Before(now) {
 		llog.WithField("offlineTime", p.resetIfOffline).
@@ -164,7 +160,6 @@ func (p *patchSenderIngest) sendAllDeltas(allDeltas []inventoryapi.RawDeltaBlock
 	llog := pslog.WithField("entityKey", p.entityKey)
 
 	// This variable means the entity these deltas represent is an agent
-
 	var areAgentDeltas bool
 	var entityKey string
 	// Empty entity Key belong to the Agent
