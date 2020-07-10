@@ -4,7 +4,9 @@
 package delta
 
 import (
+	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"time"
 )
@@ -67,6 +69,13 @@ func (l *LastSubmissionFileStore) saveLastSuccessSubmission() error {
 
 	if err != nil {
 		return err
+	}
+
+	dir := filepath.Dir(l.file)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err = os.MkdirAll(dir, DATA_DIR_MODE); err != nil {
+			return fmt.Errorf("submission store directory does not exist and cannot be created: %s", dir)
+		}
 	}
 
 	if err = ioutil.WriteFile(l.file, serialised, DATA_DIR_MODE); err != nil {
