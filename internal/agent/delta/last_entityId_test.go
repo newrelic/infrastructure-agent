@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestLastEntityId_RetrieveStoredValue(t *testing.T) {
+func TestLastEntityID_RetrieveStoredValue(t *testing.T) {
 	expectedID := "entity_id"
 
 	le := &LastEntityIDFileStore{
@@ -24,7 +24,23 @@ func TestLastEntityId_RetrieveStoredValue(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestLastEntityId_ErrWhenReadFile(t *testing.T) {
+func TestLastEntityID_RetrieveInMemoryValue(t *testing.T) {
+	expectedID := "entity_id"
+
+	le := &LastEntityIDFileStore{
+		readerFile: func(path string) (string, error) {
+			return EmptyID, fmt.Errorf("should not read from file")
+		},
+		lastID: expectedID,
+	}
+
+	id, err := le.GetLastID()
+
+	assert.Equal(t, expectedID, id)
+	require.NoError(t, err)
+}
+
+func TestLastEntityID_ErrWhenReadFile(t *testing.T) {
 	expectedMessage := "failed when reading file"
 
 	le := &LastEntityIDFileStore{

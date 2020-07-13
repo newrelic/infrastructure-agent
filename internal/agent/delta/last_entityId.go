@@ -48,9 +48,7 @@ func (le *LastEntityIDFileStore) GetLastID() (string, error) {
 	}
 
 	v, err := le.readerFile(le.filePath)
-	if err != nil {
-		return EmptyID, err
-	}
+
 	return v, err
 }
 
