@@ -1,5 +1,7 @@
 package delta
 
+var EmptyId= ""
+
 type LastEntityIDFileStore struct {
 	readerFile func() (string, error)
 	path       string
@@ -17,10 +19,17 @@ func readFile() (string, error) {
 }
 
 func (le *LastEntityIDFileStore) GetLastID() (string, error) {
-	if le.lastID != "" {
+	if !le.isEmpty() {
 		return le.lastID, nil
 	}
 
-	v, _ := le.readerFile()
-	return v, nil
+	v, err := le.readerFile()
+	if err != nil {
+		return EmptyId, err
+	}
+	return v, err
+}
+
+func (le *LastEntityIDFileStore) isEmpty() bool {
+	return le.lastID == EmptyId
 }
