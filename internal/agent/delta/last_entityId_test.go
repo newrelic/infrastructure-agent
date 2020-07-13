@@ -40,7 +40,7 @@ func TestLastEntityID_RetrieveInMemoryValue(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestLastEntityID_ErrWhenReadFile(t *testing.T) {
+func TestLastEntityID_ErrWhenReadingFile(t *testing.T) {
 	expectedMessage := "failed when reading file"
 
 	le := &LastEntityIDFileStore{
@@ -64,8 +64,25 @@ func TestLastEntityID_UpdateValue(t *testing.T) {
 		},
 	}
 
-	err := le.SetLastID(expectedID)
+	err := le.UpdateLastID(expectedID)
 	require.NoError(t, err)
+	assert.Equal(t, expectedID, le.lastID)
+}
+
+func TestLastEntityID_ErrWhenWritingFile(t *testing.T) {
+	expectedErrMessage := "file could not be written"
+	expectedID := "expected_id"
+
+	le := &LastEntityIDFileStore{
+		writerFile: func(id string) error {
+			return fmt.Errorf(expectedErrMessage)
+		},
+	}
+
+	err := le.UpdateLastID(expectedID)
+
+	assert.Errorf(t, err, "Update lastID should return an error when failed writing file")
+	assert.Equal(t, expectedErrMessage, err.Error())
 	assert.Equal(t, expectedID, le.lastID)
 }
 

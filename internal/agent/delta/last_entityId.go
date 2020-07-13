@@ -53,9 +53,15 @@ func (le *LastEntityIDFileStore) GetLastID() (string, error) {
 	return v, err
 }
 
-
-func (le *LastEntityIDFileStore) SetLastID(id string) error {
+func (le *LastEntityIDFileStore) UpdateLastID(id string) error {
 	le.lastID = id
+
+	err := le.writerFile(id)
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
