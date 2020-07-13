@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 )
 
 var EmptyID = ""
 
 type LastEntityIDFileStore struct {
 	readerFile func(path string) (string, error)
-	writerFile func(id string) error
+	writerFile func(content string, path string) error
 	filePath   string
 	lastID     string
 }
@@ -43,6 +44,16 @@ func readFile(filePath string) (string, error) {
 	return string(buf), nil
 }
 
+func writeFile(content string, filePath string) error {
+	dir := filepath.Dir(filePath)
+
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		_ = os.MkdirAll(dir, DATA_DIR_MODE)
+	}
+
+	return ioutil.WriteFile(filePath, []byte(content), DATA_DIR_MODE)
+}
+
 func (le *LastEntityIDFileStore) GetLastID() (string, error) {
 	if !le.isEmpty() {
 		return le.lastID, nil
@@ -56,7 +67,7 @@ func (le *LastEntityIDFileStore) GetLastID() (string, error) {
 func (le *LastEntityIDFileStore) UpdateLastID(id string) error {
 	le.lastID = id
 
-	err := le.writerFile(id)
+	err := le.writerFile(id, le.filePath)
 
 	if err != nil {
 		return err
