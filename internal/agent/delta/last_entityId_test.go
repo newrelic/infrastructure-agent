@@ -55,6 +55,20 @@ func TestLastEntityID_ErrWhenReadFile(t *testing.T) {
 	assert.Error(t, err, expectedMessage)
 }
 
+func TestLastEntityID_UpdateValue(t *testing.T) {
+	expectedID := "new_id"
+
+	le := &LastEntityIDFileStore{
+		writerFile: func(id string) error {
+			return nil
+		},
+	}
+
+	err := le.SetLastID(expectedID)
+	require.NoError(t, err)
+	assert.Equal(t, expectedID, le.lastID)
+}
+
 // Read File IT
 func TestReadFile_ReturnContent(t *testing.T) {
 	expected := "some_content"

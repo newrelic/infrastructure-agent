@@ -10,6 +10,7 @@ var EmptyID = ""
 
 type LastEntityIDFileStore struct {
 	readerFile func(path string) (string, error)
+	writerFile func(id string) error
 	filePath   string
 	lastID     string
 }
@@ -50,6 +51,12 @@ func (le *LastEntityIDFileStore) GetLastID() (string, error) {
 	v, err := le.readerFile(le.filePath)
 
 	return v, err
+}
+
+
+func (le *LastEntityIDFileStore) SetLastID(id string) error {
+	le.lastID = id
+	return nil
 }
 
 func (le *LastEntityIDFileStore) isEmpty() bool {
