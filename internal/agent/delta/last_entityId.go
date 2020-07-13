@@ -1,10 +1,16 @@
 package delta
 
-var EmptyId= ""
+import (
+	"fmt"
+	"io/ioutil"
+	"os"
+)
+
+var EmptyID = ""
 
 type LastEntityIDFileStore struct {
-	readerFile func() (string, error)
-	path       string
+	readerFile func(path string) (string, error)
+	filePath   string
 	lastID     string
 }
 
@@ -14,8 +20,26 @@ func NewLastEntityId() *LastEntityIDFileStore {
 	}
 }
 
-func readFile() (string, error) {
-	return "", nil
+func readFile(filePath string) (string, error) {
+	_, err := os.Stat(filePath)
+
+	if err != nil {
+		return EmptyID, err
+	}
+
+	buf, err := ioutil.ReadFile(filePath)
+
+	if err != nil {
+		return EmptyID, err
+	}
+
+	s := string(buf)
+
+	if s == EmptyID {
+		return EmptyID, fmt.Errorf("file has no content")
+	}
+
+	return string(buf), nil
 }
 
 func (le *LastEntityIDFileStore) GetLastID() (string, error) {
@@ -23,13 +47,13 @@ func (le *LastEntityIDFileStore) GetLastID() (string, error) {
 		return le.lastID, nil
 	}
 
-	v, err := le.readerFile()
+	v, err := le.readerFile(le.filePath)
 	if err != nil {
-		return EmptyId, err
+		return EmptyID, err
 	}
 	return v, err
 }
 
 func (le *LastEntityIDFileStore) isEmpty() bool {
-	return le.lastID == EmptyId
+	return le.lastID == EmptyID
 }
