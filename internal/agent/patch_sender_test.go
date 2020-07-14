@@ -25,6 +25,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	entityKey = "entityKey"
+	agentKey  = "agentKey"
+)
+
 var (
 	agentIdn         = entity.Identity{ID: 13}
 	registerEntities = []identityapi.RegisterEntity{
@@ -86,7 +91,7 @@ func TestPatchSender_Process_LongTermOffline(t *testing.T) {
 	ls := delta.NewLastSubmissionInMemory()
 
 	// With some cached plugin data
-	cachePluginData(t, store, "entityKey")
+	cachePluginData(t, store, entityKey)
 
 	// And a patch sender that has been disconnected for more than 24 hours
 	ps := newTestPatchSender(t, dataDir, store, ls)
@@ -101,7 +106,7 @@ func TestPatchSender_Process_LongTermOffline(t *testing.T) {
 	assert.Error(t, err)
 
 	// And the delta cache has been cleaned up
-	_, err = os.Stat(filepath.Join(store.CacheDir, "metadata", "entityKey"))
+	_, err = os.Stat(filepath.Join(store.CacheDir, "metadata", entityKey))
 	assert.True(t, os.IsNotExist(err), "err: %+v", err)
 }
 
@@ -113,7 +118,7 @@ func TestPatchSender_Process_LongTermOffline_ReconnectPlugins(t *testing.T) {
 	ls := delta.NewLastSubmissionInMemory()
 
 	// With some cached plugin data
-	cachePluginData(t, store, "entityKey")
+	cachePluginData(t, store, entityKey)
 
 	// And a patch sender that has been disconnected for more than 24 hours, but doesn't need to reset deltas
 	ps := newTestPatchSender(t, dataDir, store, ls)
@@ -178,7 +183,7 @@ func TestPatchSender_Process_LongTermOffline_AlreadyRemoved(t *testing.T) {
 	ls := delta.NewLastSubmissionInMemory()
 
 	// With some cached plugin data
-	cachePluginData(t, store, "entityKey")
+	cachePluginData(t, store, entityKey)
 
 	// And a patch sender that has been disconnected for more than 24 hours
 	resetTime, _ := time.ParseDuration("24h")
@@ -199,7 +204,7 @@ func TestPatchSender_Process_LongTermOffline_AlreadyRemoved(t *testing.T) {
 	assert.Error(t, err)
 
 	// But the current delta cache is not cleaned up since it is less than 24 hours old
-	fileInfo, err := os.Stat(filepath.Join(store.CacheDir, "metadata", "entityKey"))
+	fileInfo, err := os.Stat(filepath.Join(store.CacheDir, "metadata", entityKey))
 	assert.NoError(t, err)
 	assert.True(t, fileInfo.IsDir())
 }
@@ -212,7 +217,7 @@ func TestPatchSender_Process_ShortTermOffline(t *testing.T) {
 	ls := delta.NewLastSubmissionInMemory()
 
 	// With some cached plugin data
-	cachePluginData(t, store, "entityKey")
+	cachePluginData(t, store, entityKey)
 
 	// And a patch sender that has been disconnected for less than 24 hours
 	resetTime, _ := time.ParseDuration("24h")
@@ -230,14 +235,12 @@ func TestPatchSender_Process_ShortTermOffline(t *testing.T) {
 	assert.Error(t, err)
 
 	// The delta cache has NOT been cleaned up
-	fileInfo, err := os.Stat(filepath.Join(store.CacheDir, "metadata", "entityKey"))
+	fileInfo, err := os.Stat(filepath.Join(store.CacheDir, "metadata", entityKey))
 	assert.NoError(t, err)
 	assert.True(t, fileInfo.IsDir())
 }
 
 func TestPatchSender_Process_DividedDeltas(t *testing.T) {
-	const entityKey = "entityKey"
-
 	// Given a patch sender
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
@@ -277,8 +280,6 @@ func TestPatchSender_Process_DividedDeltas(t *testing.T) {
 }
 
 func TestPatchSender_Process_DisabledDeltaSplit(t *testing.T) {
-	const entityKey = "entityKey"
-
 	// Given a patch sender with disabled delta split
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
@@ -308,8 +309,6 @@ func TestPatchSender_Process_DisabledDeltaSplit(t *testing.T) {
 }
 
 func TestPatchSender_Process_SingleRequestDeltas(t *testing.T) {
-	const entityKey = "entityKey"
-
 	// Given a patch sender
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
@@ -347,8 +346,6 @@ func TestPatchSender_Process_SingleRequestDeltas(t *testing.T) {
 }
 
 func TestPatchSender_Process_CompactEnabled(t *testing.T) {
-	const entityKey = "entityKey"
-
 	// Given a patch sender with compaction enabled
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
@@ -383,8 +380,6 @@ func TestPatchSender_Process_CompactEnabled(t *testing.T) {
 }
 
 func TestPatchSender_Process_Reset(t *testing.T) {
-	const entityKey = "entityKey"
-
 	// Given a patch sender
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
@@ -398,7 +393,7 @@ func TestPatchSender_Process_Reset(t *testing.T) {
 	ps.postDeltas = ResetPostDelta
 	ps.lastDeltaRemoval = lastDeltaRemoval
 	ps.resetIfOffline = resetTime
-	ps.context = &context{agentKey: "agentIdentifier", reconnecting: new(sync.Map)}
+	ps.context = &context{agentKey: agentKey, reconnecting: new(sync.Map)}
 	ps.compactEnabled = true
 
 	// And a set of stored deltas that occupy a given size in disk
@@ -426,11 +421,11 @@ func TestPatchSender_Process_Reset(t *testing.T) {
 func newTestPatchSender(t *testing.T, dataDir string, store *delta.Store, ls delta.LastSubmissionStore) *patchSenderIngest {
 	idCtx := id.NewContext(ctx.Background())
 	aCtx := &context{
-		agentKey: "agentIdentifier",
+		agentKey: agentKey,
 		cfg:      config.NewTestWithDeltas(dataDir),
 	}
 	psI, err := newPatchSender(
-		"entityKey",
+		entityKey,
 		aCtx,
 		store,
 		ls,
