@@ -85,8 +85,6 @@ func newPatchSender(entityKey string, context AgentContext, store *delta.Store, 
 		resetIfOffline, _ = time.ParseDuration("24h")
 	}
 
-	err = lastSubmission.UpdateTime(time.Now())
-
 	return &patchSenderIngest{
 		entityKey:        entityKey,
 		store:            store,
