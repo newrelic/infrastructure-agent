@@ -28,7 +28,7 @@ func TestNewFBConf(t *testing.T) {
 		Name:  "record_modifier",
 		Match: "*",
 		Records: map[string]string{
-			"entity.guid": "0",
+			"entity.guid.INFRA": "0",
 			"plugin.type": "nri-agent",
 			"hostname":    "",
 		},
@@ -230,7 +230,7 @@ func TestNewFBConf(t *testing.T) {
 				File: "/foo/file.foo",
 				Attributes: map[string]string{
 					"valid":       "value",
-					"entity.guid": "should-be-ignored",
+					"entity.guid.INFRA": "should-be-ignored",
 				},
 			},
 		}, FBCfg{
@@ -728,7 +728,7 @@ func TestFBCfgFormat(t *testing.T) {
 [FILTER]
     Name  record_modifier
     Match *
-    Record entity.guid testGUID
+    Record entity.guid.INFRA testGUID
     Record fb.source nri-agent
 
 [OUTPUT]
@@ -803,7 +803,7 @@ func TestFBCfgFormat(t *testing.T) {
 				Name:  "record_modifier",
 				Match: "*",
 				Records: map[string]string{
-					"entity.guid": "testGUID",
+					"entity.guid.INFRA": "testGUID",
 					"fb.source":   "nri-agent",
 				},
 			},
@@ -843,7 +843,7 @@ func TestFBCfgFormatWithHostname(t *testing.T) {
 [FILTER]
     Name  record_modifier
     Match *
-    Record entity.guid testGUID
+    Record entity.guid.INFRA testGUID
     Record hostname ubuntu
     Record plugin.type nri-agent
 
@@ -893,7 +893,7 @@ func TestFBCfgFormatWithHostname(t *testing.T) {
 				Name:  "record_modifier",
 				Match: "*",
 				Records: map[string]string{
-					"entity.guid": "testGUID",
+					"entity.guid.INFRA": "testGUID",
 					"plugin.type": "nri-agent",
 					"hostname":    "ubuntu",
 				},
