@@ -26,9 +26,9 @@ type LastSubmissionFileStore struct {
 }
 
 // NewLastSubmissionStore creates a new LastSubmissionStore storing data in file.
-func NewLastSubmissionStore(dataDir string) LastSubmissionStore {
+func NewLastSubmissionStore(dataDir, entityKey string) LastSubmissionStore {
 	return &LastSubmissionFileStore{
-		file: filepath.Join(dataDir, lastSuccessSubmissionFile),
+		file: filepath.Join(dataDir, lastSuccessSubmissionFolder, entityKey),
 	}
 }
 

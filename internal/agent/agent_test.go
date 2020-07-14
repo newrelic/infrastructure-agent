@@ -71,7 +71,6 @@ func newTesting(cfg *config.Config) *Agent {
 		"user-agent",
 		lookups,
 		st,
-		delta.NewLastSubmissionInMemory(),
 		connectSrv,
 		provideIDs,
 		http2.NullHttpClient,

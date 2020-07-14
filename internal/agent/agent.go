@@ -72,15 +72,11 @@ type Agent struct {
 	Context             *context              // Agent context data that is passed around the place
 	metricsSender       registerableSender
 	store               *delta.Store
-	lastSubmissionStore delta.LastSubmissionStore
 	debugProvide        debug.Provide
 	httpClient          backendhttp.Client // http client for both data submission types: events and inventory
-
-	connectSrv *identityConnectService
-
-	provideIDs ProvideIDs
-	entityMap  entity.KnownIDs
-
+	connectSrv          *identityConnectService
+	provideIDs          ProvideIDs
+	entityMap           entity.KnownIDs
 	fpHarvester         fingerprint.Harvester
 	cloudHarvester      cloud.Harvester                          // If it's the case returns information about the cloud where instance is running.
 	agentID             *entity.ID                               // pointer as it's referred from several points
@@ -325,8 +321,6 @@ func NewAgent(cfg *config.Config, buildVersion string) (a *Agent, err error) {
 
 	s := delta.NewStore(dataDir, ctx.AgentIdentifier(), maxInventorySize)
 
-	lastInventorySubmissionStore := delta.NewLastSubmissionStore(dataDir)
-
 	userAgent := GenerateUserAgent("New Relic Infrastructure Agent", buildVersion)
 
 	transport := backendhttp.BuildTransport(cfg, backendhttp.ClientTimeout)
@@ -379,7 +373,6 @@ func NewAgent(cfg *config.Config, buildVersion string) (a *Agent, err error) {
 		userAgent,
 		idLookupTable,
 		s,
-		lastInventorySubmissionStore,
 		connectSrv,
 		provideIDs,
 		httpClient,
@@ -387,7 +380,7 @@ func NewAgent(cfg *config.Config, buildVersion string) (a *Agent, err error) {
 		cloudHarvester,
 		fpHarvester,
 		notificationHandler,
-		)
+	)
 }
 
 // New creates a new agent using given context and services.
@@ -397,7 +390,6 @@ func New(
 	userAgent string,
 	idLookupTable IDLookup,
 	s *delta.Store,
-	lastInventoryStore delta.LastSubmissionStore,
 	connectSrv *identityConnectService,
 	provideIDs ProvideIDs,
 	dataClient backendhttp.Client,
@@ -411,7 +403,6 @@ func New(
 		debugProvide:        debug.ProvideFn,
 		userAgent:           userAgent,
 		store:               s,
-		lastSubmissionStore: lastInventoryStore,
 		httpClient:          dataClient,
 		fpHarvester:         fpHarvester,
 		cloudHarvester:      cloudHarvester,
@@ -551,7 +542,8 @@ func (a *Agent) registerEntityInventory(entityKey string) error {
 	if a.Context.cfg.RegisterEnabled {
 		inv.sender, err = newPatchSenderVortex(entityKey, a.Context.agentKey, a.Context, a.store, a.userAgent, a.Context.AgentIdentity, a.provideIDs, a.entityMap, a.httpClient)
 	} else {
-		inv.sender, err = newPatchSender(entityKey, a.Context, a.store, a.lastSubmissionStore, a.userAgent, a.Context.AgentIdentity, a.httpClient)
+		lastSubmission := delta.NewLastSubmissionStore(a.Context.Config().AppDataDir, entityKey)
+		inv.sender, err = newPatchSender(entityKey, a.Context, a.store, lastSubmission, a.userAgent, a.Context.AgentIdentity, a.httpClient)
 	}
 	if err != nil {
 		return err
