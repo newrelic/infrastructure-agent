@@ -2,18 +2,18 @@ package delta
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
-var EmptyID = ""
-
 type LastEntityIDFileStore struct {
-	readerFile func(path string) (string, error)
-	writerFile func(content string, path string) error
+	readerFile func(path string) (entity.ID, error)
+	writerFile func(content entity.ID, path string) error
 	filePath   string
-	lastID     string
+	lastID     entity.ID
 }
 
 func NewLastEntityId() *LastEntityIDFileStore {
@@ -22,39 +22,41 @@ func NewLastEntityId() *LastEntityIDFileStore {
 	}
 }
 
-func readFile(filePath string) (string, error) {
+func readFile(filePath string) (entity.ID, error) {
 	_, err := os.Stat(filePath)
 
-	if err != nil {
-		return EmptyID, err
+	if os.IsNotExist(err) {
+		return entity.EmptyID, err
 	}
 
 	buf, err := ioutil.ReadFile(filePath)
 
 	if err != nil {
-		return EmptyID, err
+		return entity.EmptyID, err
 	}
 
-	s := string(buf)
+	s, _ := strconv.ParseInt(string(buf), 10, 64)
 
-	if s == EmptyID {
-		return EmptyID, fmt.Errorf("file has no content")
+	e := entity.ID(s)
+
+	if e == entity.EmptyID {
+		return entity.EmptyID, fmt.Errorf("file has no content")
 	}
 
-	return string(buf), nil
+	return e, nil
 }
 
-func writeFile(content string, filePath string) error {
+func writeFile(content entity.ID, filePath string) error {
 	dir := filepath.Dir(filePath)
 
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		_ = os.MkdirAll(dir, DATA_DIR_MODE)
 	}
 
-	return ioutil.WriteFile(filePath, []byte(content), DATA_DIR_MODE)
+	return ioutil.WriteFile(filePath, []byte(content.String()), DATA_FILE_MODE)
 }
 
-func (le *LastEntityIDFileStore) GetLastID() (string, error) {
+func (le *LastEntityIDFileStore) GetLastID() (entity.ID, error) {
 	if !le.isEmpty() {
 		return le.lastID, nil
 	}
@@ -64,7 +66,7 @@ func (le *LastEntityIDFileStore) GetLastID() (string, error) {
 	return v, err
 }
 
-func (le *LastEntityIDFileStore) UpdateLastID(id string) error {
+func (le *LastEntityIDFileStore) UpdateLastID(id entity.ID) error {
 	le.lastID = id
 
 	err := le.writerFile(id, le.filePath)
@@ -77,5 +79,5 @@ func (le *LastEntityIDFileStore) UpdateLastID(id string) error {
 }
 
 func (le *LastEntityIDFileStore) isEmpty() bool {
-	return le.lastID == EmptyID
+	return le.lastID == entity.EmptyID
 }

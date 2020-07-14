@@ -2,6 +2,7 @@ package delta
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
@@ -11,10 +12,10 @@ import (
 )
 
 func TestLastEntityID_RetrieveStoredValue(t *testing.T) {
-	expectedID := "entity_id"
+	expectedID := entity.ID(10)
 
 	le := &LastEntityIDFileStore{
-		readerFile: func(path string) (string, error) {
+		readerFile: func(path string) (entity.ID, error) {
 			return expectedID, nil
 		},
 	}
@@ -26,11 +27,11 @@ func TestLastEntityID_RetrieveStoredValue(t *testing.T) {
 }
 
 func TestLastEntityID_RetrieveInMemoryValue(t *testing.T) {
-	expectedID := "entity_id"
+	expectedID := entity.ID(10)
 
 	le := &LastEntityIDFileStore{
-		readerFile: func(path string) (string, error) {
-			return EmptyID, fmt.Errorf("should not read from file")
+		readerFile: func(path string) (entity.ID, error) {
+			return entity.EmptyID, fmt.Errorf("should not read from file")
 		},
 		lastID: expectedID,
 	}
@@ -45,22 +46,22 @@ func TestLastEntityID_ErrWhenReadingFile(t *testing.T) {
 	expectedMessage := "failed when reading file"
 
 	le := &LastEntityIDFileStore{
-		readerFile: func(path string) (string, error) {
-			return EmptyID, fmt.Errorf(expectedMessage)
+		readerFile: func(path string) (entity.ID, error) {
+			return entity.EmptyID, fmt.Errorf(expectedMessage)
 		},
 	}
 
 	id, err := le.GetLastID()
 
-	assert.Equal(t, id, EmptyID)
+	assert.Equal(t, id, entity.EmptyID)
 	assert.Error(t, err, expectedMessage)
 }
 
 func TestLastEntityID_UpdateValue(t *testing.T) {
-	expectedID := "new_id"
+	expectedID := entity.ID(10)
 
 	le := &LastEntityIDFileStore{
-		writerFile: func(id string, filePath string) error {
+		writerFile: func(id entity.ID, filePath string) error {
 			return nil
 		},
 	}
@@ -72,10 +73,10 @@ func TestLastEntityID_UpdateValue(t *testing.T) {
 
 func TestLastEntityID_ErrWhenWritingFile(t *testing.T) {
 	expectedErrMessage := "file could not be written"
-	expectedID := "expected_id"
+	expectedID := entity.ID(10)
 
 	le := &LastEntityIDFileStore{
-		writerFile: func(id string, filePath string) error {
+		writerFile: func(id entity.ID, filePath string) error {
 			return fmt.Errorf(expectedErrMessage)
 		},
 	}
@@ -89,13 +90,13 @@ func TestLastEntityID_ErrWhenWritingFile(t *testing.T) {
 
 // Read File IT
 func TestReadFile_ReturnContent(t *testing.T) {
-	expected := "some_content"
+	expected := entity.ID(10)
 
 	path, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
 
 	file := filepath.Join(path, "temporary_file")
-	err = ioutil.WriteFile(file, []byte(expected), 0644)
+	err = ioutil.WriteFile(file, []byte(expected.String()), 0644)
 	assert.NoError(t, err)
 
 	content, err := readFile(file)
@@ -105,8 +106,6 @@ func TestReadFile_ReturnContent(t *testing.T) {
 }
 
 func TestReadFile_EmptyFile(t *testing.T) {
-	expectedErrorMessage := "file has no content"
-
 	path, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
 
@@ -116,29 +115,43 @@ func TestReadFile_EmptyFile(t *testing.T) {
 
 	content, err := readFile(file)
 
-	assert.Equal(t, EmptyID, content)
+	assert.Equal(t, entity.EmptyID, content)
 	require.Error(t, err, "Expected to return an Empty file error")
-	assert.Equal(t, expectedErrorMessage, err.Error())
 }
 
 func TestReadFile_FileNotFound(t *testing.T) {
-	expectedErrorMessage := "stat some_non-existing_file_path: no such file or directory"
-
 	content, err := readFile("some_non-existing_file_path")
 
-	assert.Equal(t, EmptyID, content)
+	assert.Equal(t, entity.EmptyID, content)
 	require.Error(t, err, "Expected to failed when read a non-exiting file")
-	assert.Equal(t, expectedErrorMessage, err.Error())
+}
+
+func TestReadFile_NoPermission(t *testing.T) {
+	path, err := TempDeltaStoreDir()
+	assert.NoError(t, err)
+
+	file := filepath.Join(path, "temporary_file")
+	err = ioutil.WriteFile(file, []byte(""), 0000)
+	assert.NoError(t, err)
+
+	content, err := readFile(file)
+
+	assert.Equal(t, entity.EmptyID, content)
+	require.Error(t, err, "Expected to return an permission error")
+}
+
+func TestReadFile_ErrParseContent(t *testing.T) {
+
 }
 
 // Write File IT
 func TestWriteFile_StoreValue(t *testing.T) {
-	expectedValue := "some_content"
+	expectedValue := entity.ID(10)
 
 	//GIVEN an empty file
 	temp, err := TempDeltaStoreDir()
 	filePath := filepath.Join(temp, "last_entity_ID")
-	err = ioutil.WriteFile(filePath, []byte(EmptyID), DATA_FILE_MODE)
+	err = ioutil.WriteFile(filePath, []byte(entity.EmptyID.String()), DATA_FILE_MODE)
 	require.NoError(t, err, "Should create a last entity ID file")
 
 	//WHEN write new content on it
@@ -152,7 +165,7 @@ func TestWriteFile_StoreValue(t *testing.T) {
 }
 
 func TestWriteFile_FileNotExist(t *testing.T) {
-	expectedValue := "some_content"
+	expectedValue := entity.ID(10)
 
 	//GIVEN a temporary folder
 	temp, err := TempDeltaStoreDir()
@@ -174,4 +187,6 @@ func TestWriteFile_FileNotExist(t *testing.T) {
 	require.NoError(t, err, "Should retrieve value from file")
 	assert.Equal(t, expectedValue, actualValue)
 }
+
+//TODO write/override multiple times
 
