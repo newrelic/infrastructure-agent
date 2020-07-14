@@ -58,7 +58,7 @@ type Harvester interface {
 // Detector is used to detect the cloud type on which the instance is running
 // and can be queried in order to get the information needed.
 type Detector struct {
-	sync.RWMutex
+	lock                 sync.RWMutex
 	maxRetriesNumber     int           // Specify how many times the Detector will try in case of failure.
 	retryBackOff         time.Duration // Specify how much time to wait between the retries.
 	expiryInSec          int           // The interval of time on which the metadata should be expired and re-fetched.
@@ -170,44 +170,44 @@ func (d *Detector) GetCloudSource() string {
 
 // isInitialized will check if the detector is Initialized.
 func (d *Detector) isInitialized() bool {
-	d.RLock()
-	defer d.RUnlock()
+	d.lock.RLock()
+	defer d.lock.RUnlock()
 	return d.initialized
 }
 
 // isInProgress will return true if Detector is in initialize process.
 func (d *Detector) isInProgress() bool {
-	d.RLock()
-	defer d.RUnlock()
+	d.lock.RLock()
+	defer d.lock.RUnlock()
 	return d.inProgress
 }
 
 // initializeStart is called when the detector initialization process starts.
 func (d *Detector) initializeStart() {
-	d.Lock()
-	defer d.Unlock()
+	d.lock.Lock()
+	defer d.lock.Unlock()
 	d.inProgress = true
 }
 
 // finishInit is called when the initialize process finishes.
 func (d *Detector) finishInit() {
-	d.Lock()
-	defer d.Unlock()
+	d.lock.Lock()
+	defer d.lock.Unlock()
 	d.initialized = true
 	d.inProgress = false
 }
 
 // setHarvester will cache the Harvester instance.
 func (d *Detector) setHarvester(harvester Harvester) {
-	d.Lock()
-	defer d.Unlock()
+	d.lock.Lock()
+	defer d.lock.Unlock()
 	d.cloudHarvester = harvester
 }
 
 // getHarvester returns the Harvester instance.
 func (d *Detector) getHarvester() Harvester {
-	d.RLock()
-	defer d.RUnlock()
+	d.lock.RLock()
+	defer d.lock.RUnlock()
 	return d.cloudHarvester
 }
 
