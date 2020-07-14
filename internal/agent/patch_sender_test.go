@@ -141,7 +141,7 @@ func TestPatchSender_Process_LongTermOffline_ReconnectPlugins(t *testing.T) {
 	assert.Equal(t, 1, plugin.invocations)
 }
 
-func TestPatchSender_Process_LongTermOffline_NoDeltasToPost_UpdatelastDeltaRemoval(t *testing.T) {
+func TestPatchSender_Process_LongTermOffline_NoDeltasToPost_UpdateLastDeltaRemoval(t *testing.T) {
 	// Given a delta Store
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
