@@ -11,16 +11,16 @@ import (
 	"testing"
 )
 
-func TestLastEntityID_RetrieveStoredValue(t *testing.T) {
+func TestEntityIDFilePersist_RetrieveStoredValue(t *testing.T) {
 	expectedID := entity.ID(10)
 
-	le := &LastEntityIDFileStore{
-		readerFile: func(path string) (entity.ID, error) {
+	le := &EntityIDFilePersist{
+		readFile: func(path string) (entity.ID, error) {
 			return expectedID, nil
 		},
 	}
 
-	id, err := le.GetLastID()
+	id, err := le.GetEntityID()
 
 	assert.Equal(t, expectedID, id)
 	assert.NoError(t, err)
@@ -29,14 +29,14 @@ func TestLastEntityID_RetrieveStoredValue(t *testing.T) {
 func TestLastEntityID_RetrieveInMemoryValue(t *testing.T) {
 	expectedID := entity.ID(10)
 
-	le := &LastEntityIDFileStore{
-		readerFile: func(path string) (entity.ID, error) {
+	le := &EntityIDFilePersist{
+		readFile: func(path string) (entity.ID, error) {
 			return entity.EmptyID, fmt.Errorf("should not read from file")
 		},
-		lastID: expectedID,
+		lastEntityID: expectedID,
 	}
 
-	id, err := le.GetLastID()
+	id, err := le.GetEntityID()
 
 	assert.Equal(t, expectedID, id)
 	require.NoError(t, err)
@@ -45,13 +45,13 @@ func TestLastEntityID_RetrieveInMemoryValue(t *testing.T) {
 func TestLastEntityID_ErrWhenReadingFile(t *testing.T) {
 	expectedMessage := "failed when reading file"
 
-	le := &LastEntityIDFileStore{
-		readerFile: func(path string) (entity.ID, error) {
+	le := &EntityIDFilePersist{
+		readFile: func(path string) (entity.ID, error) {
 			return entity.EmptyID, fmt.Errorf(expectedMessage)
 		},
 	}
 
-	id, err := le.GetLastID()
+	id, err := le.GetEntityID()
 
 	assert.Equal(t, id, entity.EmptyID)
 	assert.Error(t, err, expectedMessage)
@@ -60,32 +60,32 @@ func TestLastEntityID_ErrWhenReadingFile(t *testing.T) {
 func TestLastEntityID_UpdateValue(t *testing.T) {
 	expectedID := entity.ID(10)
 
-	le := &LastEntityIDFileStore{
-		writerFile: func(id entity.ID, filePath string) error {
+	le := &EntityIDFilePersist{
+		writeFile: func(id entity.ID, filePath string) error {
 			return nil
 		},
 	}
 
-	err := le.UpdateLastID(expectedID)
+	err := le.UpdateEntityID(expectedID)
 	require.NoError(t, err)
-	assert.Equal(t, expectedID, le.lastID)
+	assert.Equal(t, expectedID, le.lastEntityID)
 }
 
 func TestLastEntityID_ErrWhenWritingFile(t *testing.T) {
 	expectedErrMessage := "file could not be written"
 	expectedID := entity.ID(10)
 
-	le := &LastEntityIDFileStore{
-		writerFile: func(id entity.ID, filePath string) error {
+	le := &EntityIDFilePersist{
+		writeFile: func(id entity.ID, filePath string) error {
 			return fmt.Errorf(expectedErrMessage)
 		},
 	}
 
-	err := le.UpdateLastID(expectedID)
+	err := le.UpdateEntityID(expectedID)
 
-	assert.Errorf(t, err, "Update lastID should return an error when failed writing file")
+	assert.Errorf(t, err, "Update lastEntityID should return an error when failed writing file")
 	assert.Equal(t, expectedErrMessage, err.Error())
-	assert.Equal(t, expectedID, le.lastID)
+	assert.Equal(t, expectedID, le.lastEntityID)
 }
 
 // Read File IT
@@ -99,7 +99,7 @@ func TestReadFile_ReturnContent(t *testing.T) {
 	err = ioutil.WriteFile(file, []byte(expected.String()), 0644)
 	assert.NoError(t, err)
 
-	content, err := readFile(file)
+	content, err := readFileFn(file)
 
 	assert.Equal(t, expected, content)
 	assert.NoError(t, err)
@@ -113,17 +113,17 @@ func TestReadFile_EmptyFile(t *testing.T) {
 	err = ioutil.WriteFile(file, []byte(""), 0644)
 	assert.NoError(t, err)
 
-	content, err := readFile(file)
+	content, err := readFileFn(file)
 
 	assert.Equal(t, entity.EmptyID, content)
 	require.Error(t, err, "Expected to return an Empty file error")
 }
 
 func TestReadFile_FileNotFound(t *testing.T) {
-	content, err := readFile("some_non-existing_file_path")
+	content, err := readFileFn("some_non-existing_file_path")
 
 	assert.Equal(t, entity.EmptyID, content)
-	require.Error(t, err, "Expected to failed when read a non-exiting file")
+	require.NoError(t, err)
 }
 
 func TestReadFile_NoPermission(t *testing.T) {
@@ -134,7 +134,7 @@ func TestReadFile_NoPermission(t *testing.T) {
 	err = ioutil.WriteFile(file, []byte(""), 0000)
 	assert.NoError(t, err)
 
-	content, err := readFile(file)
+	content, err := readFileFn(file)
 
 	assert.Equal(t, entity.EmptyID, content)
 	require.Error(t, err, "Expected to return an permission error")
@@ -146,22 +146,28 @@ func TestReadFile_ErrParseContent(t *testing.T) {
 
 // Write File IT
 func TestWriteFile_StoreValue(t *testing.T) {
-	expectedValue := entity.ID(10)
 
-	//GIVEN an empty file
+	//GIVEN a file with a stored entityID
+	oldID := entity.ID(123456)
+
 	temp, err := TempDeltaStoreDir()
+
 	filePath := filepath.Join(temp, "last_entity_ID")
-	err = ioutil.WriteFile(filePath, []byte(entity.EmptyID.String()), DATA_FILE_MODE)
+	err = ioutil.WriteFile(filePath, []byte(oldID.String()), DATA_FILE_MODE)
 	require.NoError(t, err, "Should create a last entity ID file")
 
-	//WHEN write new content on it
-	err = writeFile(expectedValue, filePath)
-	require.NoError(t, err, "Should create the file if not exist")
+	newID := entity.ID(54321)
+	le := NewEntityIDFilePersist(filePath)
+
+	//WHEN UpdateEntityID
+	err = le.UpdateEntityID(newID)
+	require.NoError(t, err)
 
 	//THEN new content can be retrieved
-	actualValue, err := readFile(filePath)
-	require.NoError(t, err, "Should retrieve value from file")
-	assert.Equal(t, expectedValue, actualValue)
+	persistedID, err := ioutil.ReadFile(filePath)
+	require.NoError(t, err)
+
+	assert.Equal(t, newID.String(), string(persistedID))
 }
 
 func TestWriteFile_FileNotExist(t *testing.T) {
@@ -175,7 +181,7 @@ func TestWriteFile_FileNotExist(t *testing.T) {
 	nonExistingFilePath := filepath.Join(temp, "last_entity_ID")
 
 	//WHEN want to write content on it
-	err = writeFile(expectedValue, nonExistingFilePath)
+	err = writeFileFn(expectedValue, nonExistingFilePath)
 	require.NoError(t, err, "Should write the file")
 
 	//THEN file were created
@@ -183,10 +189,7 @@ func TestWriteFile_FileNotExist(t *testing.T) {
 	require.NoError(t, err, "Should create the file if not exist")
 
 	//AND the value can be retrieved
-	actualValue, err := readFile(nonExistingFilePath)
+	actualValue, err := readFileFn(nonExistingFilePath)
 	require.NoError(t, err, "Should retrieve value from file")
 	assert.Equal(t, expectedValue, actualValue)
 }
-
-//TODO write/override multiple times
-

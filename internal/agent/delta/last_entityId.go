@@ -9,75 +9,72 @@ import (
 	"strconv"
 )
 
-type LastEntityIDFileStore struct {
-	readerFile func(path string) (entity.ID, error)
-	writerFile func(content entity.ID, path string) error
-	filePath   string
-	lastID     entity.ID
+// EntityIDFilePersist will store on the given file the EntityID in order to persist it between agent restarts.
+type EntityIDFilePersist struct {
+	readFile     func(path string) (entity.ID, error)
+	writeFile    func(content entity.ID, path string) error
+	filePath     string
+	lastEntityID entity.ID
 }
 
-func NewLastEntityId() *LastEntityIDFileStore {
-	return &LastEntityIDFileStore{
-		readerFile: readFile,
+// NewEntityIDFilePersist create a new instance of EntityIDFilePersist.
+func NewEntityIDFilePersist(filePath string) *EntityIDFilePersist {
+	return &EntityIDFilePersist{
+		readFile:  readFileFn,
+		writeFile: writeFileFn,
+		filePath:  filePath,
 	}
 }
 
-func readFile(filePath string) (entity.ID, error) {
+// GetEntityID will return entityID from memory or disk.
+func (le *EntityIDFilePersist) GetEntityID() (entity.ID, error) {
+	if le.lastEntityID != entity.EmptyID {
+		return le.lastEntityID, nil
+	}
+
+	return le.readFile(le.filePath)
+}
+
+// UpdateEntityID will store the entityID on memory and disk.
+func (le *EntityIDFilePersist) UpdateEntityID(id entity.ID) error {
+	le.lastEntityID = id
+
+	return le.writeFile(id, le.filePath)
+}
+
+func readFileFn(filePath string) (entity.ID, error) {
 	_, err := os.Stat(filePath)
 
+	// Check if there is an already stored value on disk.
 	if os.IsNotExist(err) {
-		return entity.EmptyID, err
+		return entity.EmptyID, nil
 	}
 
 	buf, err := ioutil.ReadFile(filePath)
 
 	if err != nil {
-		return entity.EmptyID, err
+		return entity.EmptyID, fmt.Errorf("cannot read file persisted entityID, file: '%s', error: %v", filePath, err)
 	}
 
-	s, _ := strconv.ParseInt(string(buf), 10, 64)
-
-	e := entity.ID(s)
-
-	if e == entity.EmptyID {
-		return entity.EmptyID, fmt.Errorf("file has no content")
+	value, err := strconv.ParseInt(string(buf), 10, 64)
+	if err != nil {
+		return entity.EmptyID, fmt.Errorf("cannot parse entityID from file content: '%s', error: %v", buf, err)
 	}
 
-	return e, nil
+	entityID := entity.ID(value)
+
+	return entityID, nil
 }
 
-func writeFile(content entity.ID, filePath string) error {
+func writeFileFn(content entity.ID, filePath string) error {
 	dir := filepath.Dir(filePath)
 
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		_ = os.MkdirAll(dir, DATA_DIR_MODE)
+		if mkDirErr := os.MkdirAll(dir, DATA_DIR_MODE); mkDirErr != nil {
+			return fmt.Errorf("cannot persist entityID, agent data directory: '%s' does not exist and cannot be created: %v",
+				dir, mkDirErr)
+		}
 	}
 
 	return ioutil.WriteFile(filePath, []byte(content.String()), DATA_FILE_MODE)
-}
-
-func (le *LastEntityIDFileStore) GetLastID() (entity.ID, error) {
-	if !le.isEmpty() {
-		return le.lastID, nil
-	}
-
-	v, err := le.readerFile(le.filePath)
-
-	return v, err
-}
-
-func (le *LastEntityIDFileStore) UpdateLastID(id entity.ID) error {
-	le.lastID = id
-
-	err := le.writerFile(id, le.filePath)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (le *LastEntityIDFileStore) isEmpty() bool {
-	return le.lastID == entity.EmptyID
 }
