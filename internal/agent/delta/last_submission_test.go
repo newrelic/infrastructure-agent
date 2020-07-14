@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestLastSubmissionStore(t *testing.T) {
+func TestLastSubmissionStore_ReadsPreviousStoredTime(t *testing.T) {
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
 	repoDir := filepath.Join(dataDir, "delta")
@@ -25,7 +25,7 @@ func TestLastSubmissionStore(t *testing.T) {
 	assert.Equal(t, now, got)
 }
 
-func TestStore_LastSuccessSubmission_ReadsFromDiskWhenNoInMemoryData(t *testing.T) {
+func TestLastSubmissionStore_ReadsFromDiskWhenNoInMemoryData(t *testing.T) {
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
 	repoDir := filepath.Join(dataDir, "delta")
@@ -41,7 +41,7 @@ func TestStore_LastSuccessSubmission_ReadsFromDiskWhenNoInMemoryData(t *testing.
 	assert.Equal(t, now.Unix(), got.Unix())
 }
 
-func TestStore_LastSuccessSubmission_MemoryFirst(t *testing.T) {
+func TestLastSubmissionStore_MemoryFirst(t *testing.T) {
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
 	repoDir := filepath.Join(dataDir, "delta")
