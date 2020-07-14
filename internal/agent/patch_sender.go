@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/delta"
@@ -33,6 +34,8 @@ type patchSenderIngest struct {
 	context          AgentContext
 	lastDeltaRemoval time.Time
 	resetIfOffline   time.Duration
+	agentIDProvide   id.Provide
+	currentAgentID   entity.ID
 }
 
 type patchSender interface {
@@ -96,6 +99,8 @@ func newPatchSender(entityKey string, context AgentContext, store *delta.Store, 
 		compactThreshold: context.Config().CompactThreshold,
 		cfg:              context.Config(),
 		resetIfOffline:   resetIfOffline,
+		agentIDProvide:            agentIDProvide,
+		currentAgentID:   entity.EmptyID,
 	}, err
 }
 
@@ -111,19 +116,23 @@ func (p *patchSenderIngest) Process() (err error) {
 		llog.WithError(err).Error("patch sender process reading deltas")
 		return
 	}
-	if len(deltas) == 0 {
-		llog.Debug("Patch sender found no deltas to send.")
-		return nil
-	}
 
-	// We reset the deltas if the postDeltas fails after agent has been offline for > 24h
 	lastConn, err := p.lastSubmission.Time()
 	if err != nil {
 		llog.WithError(err).Warn("cannot retrieve last submission time")
 	}
 
+	// We reset the deltas if the postDeltas fails after agent has been offline for > 24h
 	longTimeDisconnected := lastConn.Add(p.resetIfOffline).Before(now)
-	if longTimeDisconnected && p.lastDeltaRemoval.Add(p.resetIfOffline).Before(now) {
+	longTimeOrReset := longTimeDisconnected && p.lastDeltaRemoval.Add(p.resetIfOffline).Before(now)
+	removalRequired := longTimeOrReset || p.isAgentEntityAndIdChanged()
+
+	if len(deltas) == 0 && !removalRequired {
+		llog.Debug("Patch sender found no deltas to send.")
+		return nil
+	}
+
+	if removalRequired {
 		llog.WithField("offlineTime", p.resetIfOffline).
 			Info("agent has been offline for too long. Recreating delta store")
 
@@ -216,4 +225,19 @@ func (p *patchSenderIngest) sendAllDeltas(allDeltas []inventoryapi.RawDeltaBlock
 	}
 
 	return nil
+}
+
+func (p *patchSenderIngest) isAgentEntityAndIdChanged() bool {
+	// agent entity?
+	if p.entityKey != p.context.AgentIdentifier() {
+		return false
+	}
+
+	// lazy initialization
+	if p.currentAgentID == entity.EmptyID {
+		p.currentAgentID = p.agentIDProvide().ID
+	}
+
+	// id changed?
+	return p.currentAgentID != p.agentIDProvide().ID
 }
