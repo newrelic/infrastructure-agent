@@ -28,17 +28,17 @@ import (
 )
 
 const (
-	DATA_DIR_MODE             = 0755 // default mode for data directories
-	DATA_FILE_MODE            = 0644 // default mode for data files
-	CACHE_DIR                 = ".delta_repo"
-	SAMPLING_REPO             = ".sampling_repo"
-	CACHE_ID_FILE             = "delta_id_cache.json"
-	UNSENT_DELTA_JOURNAL_EXT  = ".pending"
-	ARCHIVE_DELTA_JOURNAL_EXT = ".sent"
-	NO_DELTA_ID               = 0
-	localEntityFolder         = "__nria_localentity"
-	DisableInventorySplit     = 0
-	lastSuccessSubmissionFile = "last_success"
+	DATA_DIR_MODE               = 0755 // default mode for data directories
+	DATA_FILE_MODE              = 0644 // default mode for data files
+	CACHE_DIR                   = ".delta_repo"
+	SAMPLING_REPO               = ".sampling_repo"
+	CACHE_ID_FILE               = "delta_id_cache.json"
+	UNSENT_DELTA_JOURNAL_EXT    = ".pending"
+	ARCHIVE_DELTA_JOURNAL_EXT   = ".sent"
+	NO_DELTA_ID                 = 0
+	localEntityFolder           = "__nria_localentity"
+	DisableInventorySplit       = 0
+	lastSuccessSubmissionFolder = "last_success"
 )
 
 var EMPTY_DELTA = []byte{'{', '}'}

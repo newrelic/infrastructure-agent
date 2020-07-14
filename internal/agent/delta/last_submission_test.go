@@ -14,7 +14,7 @@ func TestLastSubmissionStore(t *testing.T) {
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
 	repoDir := filepath.Join(dataDir, "delta")
-	ds := NewLastSubmissionStore(repoDir)
+	ds := NewLastSubmissionStore(repoDir, "entity-key")
 
 	now := time.Now()
 	assert.NoError(t, ds.UpdateTime(now))
@@ -25,11 +25,11 @@ func TestLastSubmissionStore(t *testing.T) {
 	assert.Equal(t, now, got)
 }
 
-func TestStore_LastSuccessSubmission_ReadsFromDiskWhenNoInMemryData(t *testing.T) {
+func TestStore_LastSuccessSubmission_ReadsFromDiskWhenNoInMemoryData(t *testing.T) {
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
 	repoDir := filepath.Join(dataDir, "delta")
-	ls := NewLastSubmissionStore(repoDir).(*LastSubmissionFileStore)
+	ls := NewLastSubmissionStore(repoDir, "entity-key").(*LastSubmissionFileStore)
 
 	now := time.Now()
 	assert.NoError(t, ls.UpdateTime(now))
@@ -45,7 +45,7 @@ func TestStore_LastSuccessSubmission_MemoryFirst(t *testing.T) {
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
 	repoDir := filepath.Join(dataDir, "delta")
-	ds := NewLastSubmissionStore(repoDir).(*LastSubmissionFileStore)
+	ds := NewLastSubmissionStore(repoDir, "entity-key").(*LastSubmissionFileStore)
 
 	aprilFirst, err := time.Parse(time.RFC3339, "2020-04-01T00:00:00+00:00")
 	mayFirst, err := time.Parse(time.RFC3339, "2020-05-01T00:00:00+00:00")
