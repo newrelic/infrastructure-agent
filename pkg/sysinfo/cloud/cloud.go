@@ -58,7 +58,7 @@ type Harvester interface {
 // Detector is used to detect the cloud type on which the instance is running
 // and can be queried in order to get the information needed.
 type Detector struct {
-	sync.Mutex
+	sync.RWMutex
 	maxRetriesNumber     int           // Specify how many times the Detector will try in case of failure.
 	retryBackOff         time.Duration // Specify how much time to wait between the retries.
 	expiryInSec          int           // The interval of time on which the metadata should be expired and re-fetched.
@@ -122,76 +122,63 @@ func (d *Detector) GetHarvester() (Harvester, error) {
 
 // GetInstanceID will return the id of the cloud instance.
 func (d *Detector) GetInstanceID() (string, error) {
-	cloudHarvester := d.getHarvester()
-
-	if cloudHarvester != nil {
-		return cloudHarvester.GetInstanceID()
+	cloudHarvester, err := d.GetHarvester()
+	if err != nil {
+		return "", err
 	}
-
-	if !d.isInitialized() {
-		return "", ErrDetectorNotInitialized
-	}
-	return "", ErrCouldNotDetect
+	return cloudHarvester.GetInstanceID()
 }
 
 // GetHostType will return the cloud instance type.
 func (d *Detector) GetHostType() (string, error) {
-	cloudHarvester := d.getHarvester()
-	if cloudHarvester != nil {
-		return cloudHarvester.GetHostType()
+	cloudHarvester, err := d.GetHarvester()
+	if err != nil {
+		return "", err
 	}
-
-	if !d.isInitialized() {
-		return "", ErrDetectorNotInitialized
-	}
-	return "", ErrCouldNotDetect
+	return cloudHarvester.GetHostType()
 }
 
 // GetRegion will return the region of cloud instance.
 func (d *Detector) GetRegion() (string, error) {
-	cloudHarvester := d.getHarvester()
-	if cloudHarvester != nil {
-		return cloudHarvester.GetRegion()
+	cloudHarvester, err := d.GetHarvester()
+	if err != nil {
+		return "", err
 	}
-	if !d.isInitialized() {
-		return "", ErrDetectorNotInitialized
-	}
-	return "", ErrCouldNotDetect
+	return cloudHarvester.GetRegion()
 }
 
 // GetCloudType will return the cloud type on which the instance is running.
 func (d *Detector) GetCloudType() Type {
-	cloudHarvester := d.getHarvester()
-	if cloudHarvester != nil {
-		return cloudHarvester.GetCloudType()
+	cloudHarvester, err := d.GetHarvester()
+	if err != nil {
+		if err == ErrDetectorNotInitialized {
+			return TypeInProgress
+		}
+		return TypeNoCloud
 	}
-
-	if !d.isInitialized() {
-		return TypeInProgress
-	}
-	return TypeNoCloud
+	return cloudHarvester.GetCloudType()
 }
 
 // GetCloudSource Returns a string key which will be used as a HostSource (see host_aliases plugin).
 func (d *Detector) GetCloudSource() string {
-	cloudHarvester := d.getHarvester()
-	if cloudHarvester != nil {
-		return cloudHarvester.GetCloudSource()
+	cloudHarvester, err := d.GetHarvester()
+	if err != nil {
+		return ""
 	}
-	return ""
+	return cloudHarvester.GetCloudSource()
 }
 
 // isInitialized will check if the detector is Initialized.
 func (d *Detector) isInitialized() bool {
-	d.Lock()
-	defer d.Unlock()
+	d.RLock()
+	defer d.RUnlock()
 	return d.initialized
 }
 
 // isInProgress will return true if Detector is in initialize process.
 func (d *Detector) isInProgress() bool {
-	d.Lock()
-	defer d.Unlock()
+	d.RLock()
+	defer d.RUnlock()
 	return d.inProgress
 }
 
@@ -219,8 +206,8 @@ func (d *Detector) setHarvester(harvester Harvester) {
 
 // getHarvester returns the Harvester instance.
 func (d *Detector) getHarvester() Harvester {
-	d.Lock()
-	defer d.Unlock()
+	d.RLock()
+	defer d.RUnlock()
 	return d.cloudHarvester
 }
 
