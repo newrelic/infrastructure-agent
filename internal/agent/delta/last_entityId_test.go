@@ -141,7 +141,15 @@ func TestReadFile_NoPermission(t *testing.T) {
 }
 
 func TestReadFile_ErrParseContent(t *testing.T) {
+	temp, err := TempDeltaStoreDir()
+	require.NoError(t, err)
 
+	filePath := filepath.Join(temp, "temporary_file")
+	err = ioutil.WriteFile(filePath, []byte("wrong_entity_id"), 0644)
+
+	emptyID, err := readFileFn(filePath)
+	require.Error(t, err)
+	assert.Equal(t, entity.EmptyID, emptyID)
 }
 
 // Write File IT
