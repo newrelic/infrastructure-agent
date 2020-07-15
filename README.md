@@ -13,6 +13,7 @@ from services running in the cloud or on dedicated hosts to containers running i
 * [Run the agent](#run-the-agent)
 * [Use the agent](#use-the-agent)
 * [Testing](#testing)
+* [Documentation](#docs)
 * [Support](#support)
 * [Contributing](#contributing)
 * [To-do](#to-do)
@@ -95,6 +96,11 @@ $ go test -race -run /A=1    # For all top-level tests, run subtests matching "A
 ```
 
 For more information, see [Testing](https://golang.org/pkg/testing/) in the official Go docs.
+
+## Documentation
+
+Documentation about overall architecture, components and workflows, is located under [the docs 
+directory](docs).
 
 ## Support
 
