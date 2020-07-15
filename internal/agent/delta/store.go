@@ -78,6 +78,15 @@ func removeNils(data interface{}) {
 	}
 }
 
+type Storage interface {
+	ReadDeltas(entityKey string) ([]inventoryapi.RawDeltaBlock, error)
+	RemoveEntity(entityKey string) error
+	CompactStorage(entityKey string, threshold uint64) (err error)
+	ResetAllDeltas(entityKey string)
+	UpdateState(entityKey string, deltas []*inventoryapi.RawDelta, deltaStateResults *inventoryapi.DeltaStateMap)
+	SaveState() (err error)
+}
+
 // Store handles information about the storage of Deltas.
 type Store struct {
 	// if <= 0, the inventory splitting is disabled

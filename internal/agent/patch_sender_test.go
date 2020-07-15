@@ -418,6 +418,12 @@ func TestPatchSender_Process_Reset(t *testing.T) {
 	assert.True(t, storageSize <= uint64(expectedStorageSize), "%v not smaller or equal than %d", storageSize, expectedStorageSize)
 }
 
+func TestPathSender_Process_EntityIDChange_ResetLocalEntityDeltas(t *testing.T) {
+
+	//assert.
+}
+
+
 func newTestPatchSender(t *testing.T, dataDir string, store *delta.Store, ls delta.LastSubmissionStore) *patchSenderIngest {
 	idCtx := id.NewContext(ctx.Background())
 	aCtx := &context{
