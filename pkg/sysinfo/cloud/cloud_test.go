@@ -28,31 +28,31 @@ func (s *CloudDetectionSuite) TestParseAWSMeta(c *C) {
 	mux.Handle("/valid", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("i-db519dd1\n"))
+		_, _ = w.Write([]byte("i-db519dd1\n"))
 		return
 	}))
 	mux.Handle("/list", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("foo\nbar"))
+		_, _ = w.Write([]byte("foo\nbar"))
 		return
 	}))
 	mux.Handle("/not200", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("foo"))
+		_, _ = w.Write([]byte("foo"))
 		return
 	}))
 	mux.Handle("/notplain", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("foo"))
+		_, _ = w.Write([]byte("foo"))
 		return
 	}))
 	mux.Handle("/justgarbage", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("<html>this is some test</html>"))
+		_, _ = w.Write([]byte("<html>this is some test</html>"))
 		return
 	}))
 	server := httptest.NewServer(mux)

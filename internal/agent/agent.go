@@ -5,7 +5,6 @@ package agent
 import (
 	context2 "context"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
 	"net"
 	"net/http"
 	"net/url"
@@ -17,6 +16,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
 
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/metric"
 	"github.com/sirupsen/logrus"
@@ -143,11 +145,8 @@ type context struct {
 	resolver           hostname.ResolverChangeNotifier
 	EntityMap          entity.KnownIDs
 	idLookup           IDLookup
-	shouldIncludeEvent includeSampleMatcher
+	shouldIncludeEvent sampler.IncludeSampleMatchFn
 }
-
-// func that satisfies the metrics matcher (processor.MatcherChain) interface while avoiding the import
-type includeSampleMatcher func(sample interface{}) bool
 
 // AgentID provides agent ID, blocking until it's available
 func (c *context) AgentID() entity.ID {
@@ -186,8 +185,13 @@ func (c *context) IDLookup() IDLookup {
 type IDLookup map[string]string
 
 //NewContext creates a new context.
-func NewContext(cfg *config.Config, buildVersion string, resolver hostname.ResolverChangeNotifier, lookup IDLookup,
-	sampleMatcher includeSampleMatcher) *context {
+func NewContext(
+	cfg *config.Config,
+	buildVersion string,
+	resolver hostname.ResolverChangeNotifier,
+	lookup IDLookup,
+	sampleMatchFn sampler.IncludeSampleMatchFn,
+) *context {
 	ctx, cancel := context2.WithCancel(context2.Background())
 
 	return &context{
@@ -201,7 +205,7 @@ func NewContext(cfg *config.Config, buildVersion string, resolver hostname.Resol
 		servicePids:        make(map[string]map[int]string),
 		resolver:           resolver,
 		idLookup:           lookup,
-		shouldIncludeEvent: sampleMatcher,
+		shouldIncludeEvent: sampleMatchFn,
 	}
 }
 
@@ -274,24 +278,8 @@ func checkCollectorConnectivity(ctx context2.Context, cfg *config.Config, retrie
 	return
 }
 
-func getSampleMatcher(c *config.Config) func(interface{}) bool {
-	ec := sampler.NewMatcherChain(c.IncludeMetricsMatchers)
-	if ec.Enabled {
-		return func(sample interface{}) bool {
-			return ec.Evaluate(sample)
-		}
-	}
-
-	alog.Debug("Evaluation chain is DISABLED, using default behaviour")
-
-	// default matching function. All samples/event will be included
-	return func(sample interface{}) bool {
-		return true
-	}
-}
-
 // NewAgent returns a new instance of an agent built from the config.
-func NewAgent(cfg *config.Config, buildVersion string) (a *Agent, err error) {
+func NewAgent(cfg *config.Config, buildVersion string, ffRetriever feature_flags.Retriever) (a *Agent, err error) {
 
 	hostnameResolver := hostname.CreateResolver(
 		cfg.OverrideHostname, cfg.OverrideHostnameShort, cfg.DnsHostnameResolution)
@@ -301,8 +289,8 @@ func NewAgent(cfg *config.Config, buildVersion string) (a *Agent, err error) {
 	cloudHarvester.Initialize()
 
 	idLookupTable := NewIdLookup(hostnameResolver, cloudHarvester, cfg.DisplayName)
-	sampleMatcher := getSampleMatcher(cfg)
-	ctx := NewContext(cfg, buildVersion, hostnameResolver, idLookupTable, sampleMatcher)
+	sampleMatchFn := sampler.NewSampleMatchFn(cfg.EnableProcessMetrics, cfg.IncludeMetricsMatchers, ffRetriever)
+	ctx := NewContext(cfg, buildVersion, hostnameResolver, idLookupTable, sampleMatchFn)
 
 	agentKey, err := idLookupTable.getAgentKey()
 	if err != nil {

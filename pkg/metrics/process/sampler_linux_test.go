@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
 
 	"github.com/stretchr/testify/assert"
@@ -29,7 +30,7 @@ func TestProcessSampler_DockerDecorator(t *testing.T) {
 	ctx.On("Config").Return(&config.Config{})
 	ctx.On("GetServiceForPid", mock.Anything).Return("", false)
 	ps := NewProcessSampler(ctx).(*processSampler)
-	ps.harvest = &harvesterMock{samples: map[int32]*metrics.ProcessSample{
+	ps.harvest = &harvesterMock{samples: map[int32]*types.ProcessSample{
 		1: {
 			ProcessID:          1,
 			ProcessDisplayName: "Hello",
@@ -65,7 +66,7 @@ func TestProcessSampler_DockerDecorator(t *testing.T) {
 }
 
 type harvesterMock struct {
-	samples map[int32]*metrics.ProcessSample
+	samples map[int32]*types.ProcessSample
 }
 
 func (hm *harvesterMock) Pids() ([]int32, error) {
@@ -76,7 +77,7 @@ func (hm *harvesterMock) Pids() ([]int32, error) {
 	return keys, nil
 }
 
-func (hm *harvesterMock) Do(pid int32, elapsedSeconds float64) (*metrics.ProcessSample, error) {
+func (hm *harvesterMock) Do(pid int32, elapsedSeconds float64) (*types.ProcessSample, error) {
 	return hm.samples[pid], nil
 }
 
@@ -92,7 +93,7 @@ func (*fakeContainerSampler) NewDecorator() (metrics.ProcessDecorator, error) {
 
 type fakeDecorator struct{}
 
-func (pd *fakeDecorator) Decorate(process *metrics.ProcessSample) {
+func (pd *fakeDecorator) Decorate(process *types.ProcessSample) {
 	process.ContainerImage = "decorated"
 	process.ContainerLabels = map[string]string{
 		"label1": "value1",

@@ -23,7 +23,7 @@ TEST_FLAGS += -race
 export GO111MODULE := on
 export PATH := $(PROJECT_WORKSPACE)/bin:$(PATH)
 
-GO_TEST ?= test $(TEST_OPTIONS) $(TEST_FLAGS) $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=5m
+GO_TEST ?= test $(TEST_OPTIONS) $(TEST_FLAGS) $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=10m
 
 .PHONY: go-get-go-1_9
 go-get-go-1_9:
