@@ -33,8 +33,8 @@ var (
 		Match: "*",
 		Records: map[string]string{
 			"entity.guid.INFRA": "FOOBAR",
-			"plugin.type": logRecordModifierSource,
-			"hostname":    hostName,
+			"plugin.type":       logRecordModifierSource,
+			"hostname":          hostName,
 		}, // see idnProvide below
 	}
 	idnProvide = func() entity.Identity {

@@ -29,8 +29,8 @@ func TestNewFBConf(t *testing.T) {
 		Match: "*",
 		Records: map[string]string{
 			"entity.guid.INFRA": "0",
-			"plugin.type": "nri-agent",
-			"hostname":    "",
+			"plugin.type":       "nri-agent",
+			"hostname":          "",
 		},
 	}
 	inputRecordModifier := func(i string, m string) FBCfgParser {
@@ -229,7 +229,7 @@ func TestNewFBConf(t *testing.T) {
 				Name: "reserved-test",
 				File: "/foo/file.foo",
 				Attributes: map[string]string{
-					"valid":       "value",
+					"valid":             "value",
 					"entity.guid.INFRA": "should-be-ignored",
 				},
 			},
@@ -804,7 +804,7 @@ func TestFBCfgFormat(t *testing.T) {
 				Match: "*",
 				Records: map[string]string{
 					"entity.guid.INFRA": "testGUID",
-					"fb.source":   "nri-agent",
+					"fb.source":         "nri-agent",
 				},
 			},
 		},
@@ -894,8 +894,8 @@ func TestFBCfgFormatWithHostname(t *testing.T) {
 				Match: "*",
 				Records: map[string]string{
 					"entity.guid.INFRA": "testGUID",
-					"plugin.type": "nri-agent",
-					"hostname":    "ubuntu",
+					"plugin.type":       "nri-agent",
+					"hostname":          "ubuntu",
 				},
 			},
 		},
