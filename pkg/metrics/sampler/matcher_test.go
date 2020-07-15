@@ -541,7 +541,7 @@ func TestNewSampleMatchFn(t *testing.T) {
 				enableProcessMetrics:   &falseVar,
 				includeMetricsMatchers: emptyMatchers,
 				ffRetriever:            testFF.EmptyFFRetriever,
-				sample:                 fixture.NetworkSample,
+				sample:                 &fixture.NetworkSample,
 			},
 			include: true,
 		},
@@ -551,7 +551,7 @@ func TestNewSampleMatchFn(t *testing.T) {
 				enableProcessMetrics:   &trueVar,
 				includeMetricsMatchers: emptyMatchers,
 				ffRetriever:            testFF.EmptyFFRetriever,
-				sample:                 fixture.ProcessSample,
+				sample:                 &fixture.ProcessSample,
 			},
 			include: true,
 		},
@@ -561,7 +561,7 @@ func TestNewSampleMatchFn(t *testing.T) {
 				enableProcessMetrics:   nil,
 				includeMetricsMatchers: emptyMatchers,
 				ffRetriever:            testFF.EmptyFFRetriever,
-				sample:                 fixture.ProcessSample,
+				sample:                 &fixture.ProcessSample,
 			},
 			include: false,
 		},
@@ -571,7 +571,7 @@ func TestNewSampleMatchFn(t *testing.T) {
 				enableProcessMetrics:   nil,
 				includeMetricsMatchers: emptyMatchers,
 				ffRetriever:            &enabledFFRetriever{},
-				sample:                 fixture.ProcessSample,
+				sample:                 &fixture.ProcessSample,
 			},
 			include: true,
 		},
@@ -581,7 +581,7 @@ func TestNewSampleMatchFn(t *testing.T) {
 				enableProcessMetrics:   nil,
 				includeMetricsMatchers: emptyMatchers,
 				ffRetriever:            &disabledFFRetriever{},
-				sample:                 fixture.ProcessSample,
+				sample:                 &fixture.ProcessSample,
 			},
 			include: false,
 		},
@@ -591,7 +591,7 @@ func TestNewSampleMatchFn(t *testing.T) {
 				enableProcessMetrics: &trueVar,
 				includeMetricsMatchers: config.IncludeMetricsMap{"process.name": []string{"regex \"foo.*\""}},
 				ffRetriever: testFF.EmptyFFRetriever,
-				sample: fixture.ProcessSample,
+				sample: &fixture.ProcessSample,
 			},
 			include: true,
 		},
@@ -601,7 +601,7 @@ func TestNewSampleMatchFn(t *testing.T) {
 				enableProcessMetrics: &trueVar,
 				includeMetricsMatchers: config.IncludeMetricsMap{"process.name": []string{"regex \"bar*\""}},
 				ffRetriever: testFF.EmptyFFRetriever,
-				sample: fixture.ProcessSample,
+				sample: &fixture.ProcessSample,
 			},
 			include: false,
 		},
@@ -609,7 +609,7 @@ func TestNewSampleMatchFn(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			matchFn := sampler.NewSampleMatchFn(tt.args.enableProcessMetrics, tt.args.includeMetricsMatchers, tt.args.ffRetriever)
-			assert.Equal(t, matchFn(tt.args.sample), tt.include)
+			assert.Equal(t, tt.include, matchFn(tt.args.sample))
 		})
 	}
 }
