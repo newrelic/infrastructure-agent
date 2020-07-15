@@ -25,8 +25,9 @@ import (
 type patchSenderIngest struct {
 	entityKey        string
 	store            delta.Storage
-	lastSubmission   delta.LastSubmissionStore
 	postDeltas       postDeltas
+	lastSubmission   delta.LastSubmissionStore
+	lastEntityID     delta.EntityIDPersist
 	userAgent        string
 	compactEnabled   bool
 	compactThreshold uint64
@@ -50,7 +51,7 @@ var pslog = log.WithComponent("PatchSender")
 // Reference to post delta function that can be stubbed for unit testing
 type postDeltas func(entityKeys []string, isAgent bool, deltas ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error)
 
-func newPatchSender(entityKey string, context AgentContext, store delta.Storage, lastSubmission delta.LastSubmissionStore, userAgent string, agentIDProvide id.Provide, httpClient http2.Client) (patchSender, error) {
+func newPatchSender(entityKey string, context AgentContext, store delta.Storage, lastSubmission delta.LastSubmissionStore, lastEntityID delta.EntityIDPersist, userAgent string, agentIDProvide id.Provide, httpClient http2.Client) (patchSender, error) {
 	if store == nil {
 		return nil, fmt.Errorf("creating patch sender: delta store can't be nil")
 	}
@@ -92,6 +93,7 @@ func newPatchSender(entityKey string, context AgentContext, store delta.Storage,
 		entityKey:        entityKey,
 		store:            store,
 		lastSubmission:   lastSubmission,
+		lastEntityID: 		lastEntityID,
 		postDeltas:       client.PostDeltas,
 		context:          context,
 		userAgent:        userAgent,

@@ -9,6 +9,11 @@ import (
 	"strconv"
 )
 
+type EntityIDPersist interface {
+	GetEntityID() (entity.ID, error)
+	UpdateEntityID(id entity.ID) error
+}
+
 // EntityIDFilePersist will store on the given file the EntityID in order to persist it between agent restarts.
 type EntityIDFilePersist struct {
 	readFile     func(path string) (entity.ID, error)
