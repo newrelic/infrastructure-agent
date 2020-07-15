@@ -423,11 +423,11 @@ func TestCheckConnectionTimeout(t *testing.T) {
 func TestCheckNetworkNoTimeout(t *testing.T) {
 	retval := make(chan error, 1)
 
-	go func() {
-		// Given a server that always returns timeouts
-		ts := NewTimeoutServer(-1)
-		defer ts.Cancel()
+	// Given a server that always returns timeouts
+	ts := NewTimeoutServer(-1)
+	defer ts.Cancel()
 
+	go func() {
 		cnf := &config.Config{
 			CollectorURL:             ts.server.URL,
 			StartupConnectionRetries: -1,
@@ -748,52 +748,52 @@ func Test_ProcessSampling(t *testing.T) {
 	testCases := []testCase{
 		{
 			name: "ConfigurationOptionIsDisabled",
-			c:    &config.Config{EnableProcessMetrics: getBooleanPtr(false)},
+			c:    &config.Config{EnableProcessMetrics: getBooleanPtr(false), DisableCloudMetadata: true},
 			want: false,
 		},
 		{
 			name: "ConfigurationOptionIsEnabled",
-			c:    &config.Config{EnableProcessMetrics: getBooleanPtr(true)},
+			c:    &config.Config{EnableProcessMetrics: getBooleanPtr(true), DisableCloudMetadata: true},
 			want: true,
 		},
 		{
 			// if the matchers are empty (corner case), the FF retriever is checked so it needs to not be nil
 			name: "ConfigurationOptionIsNotPresentAndMatchersAreEmptyAndFeatureFlagIsNotConfigured",
-			c:    &config.Config{IncludeMetricsMatchers: map[string][]string{}},
+			c:    &config.Config{IncludeMetricsMatchers: map[string][]string{}, DisableCloudMetadata: true},
 			ff:   test.NewFFRetrieverReturning(false, false),
 			want: false,
 		},
 		{
 			name: "ConfigurationOptionIsNotPresentAndMatchersConfiguredDoNotMatch",
-			c:    &config.Config{IncludeMetricsMatchers: map[string][]string{"process.name": {"does-not-match"}}},
+			c:    &config.Config{IncludeMetricsMatchers: map[string][]string{"process.name": {"does-not-match"}}, DisableCloudMetadata: true},
 			want: false,
 		},
 		{
 			name: "ConfigurationOptionIsNotPresentAndMatchersConfiguredDoMatch",
-			c:    &config.Config{IncludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}}},
+			c:    &config.Config{IncludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}}, DisableCloudMetadata: true},
 			want: true,
 		},
 		{
 			name: "ConfigurationOptionIsNotPresentAndMatchersAreNotConfiguredAndFeatureFlagIsEnabled",
-			c:    &config.Config{},
+			c:    &config.Config{DisableCloudMetadata: true},
 			ff:   test.NewFFRetrieverReturning(true, true),
 			want: true,
 		},
 		{
 			name: "ConfigurationOptionIsNotPresentAndMatchersAreNotConfiguredAndFeatureFlagIsDisabled",
-			c:    &config.Config{},
+			c:    &config.Config{DisableCloudMetadata: true},
 			ff:   test.NewFFRetrieverReturning(false, true),
 			want: false,
 		},
 		{
 			name: "ConfigurationOptionIsNotPresentAndMatchersAreNotConfiguredAndFeatureFlagIsNotFound",
-			c:    &config.Config{},
+			c:    &config.Config{DisableCloudMetadata: true},
 			ff:   test.NewFFRetrieverReturning(false, false),
 			want: false,
 		},
 		{
 			name: "DefaultBehaviourExcludesProcessSamples",
-			c:    &config.Config{},
+			c:    &config.Config{DisableCloudMetadata: true},
 			ff:   test.NewFFRetrieverReturning(false, false),
 			want: false,
 		},
