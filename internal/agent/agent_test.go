@@ -735,7 +735,7 @@ func getBooleanPtr(val bool) *bool {
 }
 
 func Test_ProcessSampling(t *testing.T) {
-	someSample := types.ProcessSample{
+	someSample := &types.ProcessSample{
 		ProcessDisplayName: "some-process",
 	}
 
@@ -747,7 +747,6 @@ func Test_ProcessSampling(t *testing.T) {
 	}
 	testCases := []testCase{
 		{
-			// if config op
 			name: "ConfigurationOptionIsDisabled",
 			c:    &config.Config{EnableProcessMetrics: getBooleanPtr(false)},
 			want: false,
