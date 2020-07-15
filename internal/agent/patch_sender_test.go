@@ -420,16 +420,34 @@ func TestPatchSender_Process_Reset(t *testing.T) {
 }
 
 func TestPathSender_Process_EntityIDChange_ResetLocalEntityDeltas(t *testing.T) {
+	newIdentity := entity.Identity{
+		ID: entity.ID(23456),
+	}
+
+	// GIVEN a delta store
 	storage := &mockStorage{}
 	storage.On("ReadDeltas", mock.Anything).Return([]inventoryapi.RawDeltaBlock{})
-	//storage.On("RemoveEntity", mock.Anything).Return(nil)
+	storage.On("RemoveEntity", agentKey).Return(nil)
 
+	// AND a disk persisted entityID
 	lastEntityID := &mockEntityIDPersist{}
-	sender := newTestPatchSender(t, "", storage,  delta.NewLastSubmissionInMemory(), lastEntityID)
+	lastEntityID.On("UpdateEntityID", newIdentity.ID).Return(nil)
 
-	err := sender.Process()
-	require.NoError(t, err)
-	storage.AssertCalled(t, "RemoveEntity")
+	// AND a patchSender
+	sender := newTestPatchSender(t, "", storage, delta.NewLastSubmissionInMemory(), lastEntityID)
+	sender.entityKey = agentKey
+
+	// AND set a new identity
+	idCtx := id.NewContext(ctx.Background())
+	sender.agentIDProvide = idCtx.AgentIdentity
+	idCtx.SetAgentIdentity(newIdentity)
+
+	// WHEN process deltas
+	sender.Process()
+
+	// THEN remove deltas for the entity and update the persisted entityID
+	storage.AssertCalled(t, "RemoveEntity", agentKey)
+	lastEntityID.AssertCalled(t, "UpdateEntityID", newIdentity.ID)
 }
 
 type mockStorage struct {
@@ -438,20 +456,24 @@ type mockStorage struct {
 }
 
 func (m *mockStorage) RemoveEntity(entityKey string) error {
-	return m.Called().Get(0).(error)
+	m.Called(entityKey)
+	return nil
 }
 
 func (m *mockStorage) ReadDeltas(entityKey string) ([]inventoryapi.RawDeltaBlock, error) {
 	return m.Called().Get(0).([]inventoryapi.RawDeltaBlock), nil
 }
 
-type mockEntityIDPersist struct {}
+type mockEntityIDPersist struct {
+	mock.Mock
+}
 
-func (e *mockEntityIDPersist) GetEntityID() (entity.ID, error)  {
+func (e *mockEntityIDPersist) GetEntityID() (entity.ID, error) {
 	return entity.ID(654321), nil
 }
 
-func (e *mockEntityIDPersist) UpdateEntityID(id entity.ID) error  {
+func (e *mockEntityIDPersist) UpdateEntityID(id entity.ID) error {
+	e.Called(id)
 	return nil
 }
 
