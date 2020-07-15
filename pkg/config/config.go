@@ -960,6 +960,11 @@ type Config struct {
 	// send this to the integrations for them to use for persisting data.
 	DefaultIntegrationsTempDir string
 
+	// EnableProcessMetrics enables/disables process metrics, it does not enforce when not set.
+	// Default: empty
+	// Public: Yes
+	EnableProcessMetrics *bool `yaml:"enable_process_metrics" envconfig:"enable_process_metrics"`
+
 	// IncludeMetricsMatchers Configuration of the metrics matchers that determine which metric data should the agent
 	// send to the New Relic backend.
 	// If no configuration is defined, the previous behaviour is maintained, i.e., every metric data captured is sent.

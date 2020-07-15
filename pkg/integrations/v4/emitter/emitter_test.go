@@ -421,7 +421,7 @@ func TestLegacy_Emit(t *testing.T) {
 
 			em := &Legacy{
 				Context:       ma,
-				FFRetriever:   feature_flags.NewManager(map[string]bool{handler.ProtocolV4Enabled: true}),
+				FFRetriever:   feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true}),
 				MetricsSender: mockedMetricsSender,
 			}
 
@@ -456,7 +456,7 @@ func TestProtocolV4_Emit(t *testing.T) {
 
 	em := &Legacy{
 		Context:       ma,
-		FFRetriever:   feature_flags.NewManager(map[string]bool{handler.ProtocolV4Enabled: true}),
+		FFRetriever:   feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true}),
 		MetricsSender: mockedMetricsSender,
 	}
 
@@ -506,7 +506,7 @@ func TestProtocolV4_Emit_WithFFDisabled(t *testing.T) {
 	ma := mockAgent()
 	em := &Legacy{
 		Context:     ma,
-		FFRetriever: feature_flags.NewManager(map[string]bool{handler.ProtocolV4Enabled: false}),
+		FFRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: false}),
 	}
 
 	err := em.Emit(metadata, extraLabels, entityRewrite, integrationJSON)
@@ -514,7 +514,7 @@ func TestProtocolV4_Emit_WithFFDisabled(t *testing.T) {
 }
 
 func TestParsePayloadV4(t *testing.T) {
-	ffm := feature_flags.NewManager(map[string]bool{handler.ProtocolV4Enabled: true})
+	ffm := feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true})
 
 	d, err := ParsePayloadV4(integrationFixture.ProtocolV4.Payload, ffm)
 	assert.NoError(t, err)

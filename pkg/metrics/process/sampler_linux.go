@@ -13,6 +13,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	metrics "github.com/newrelic/infrastructure-agent/pkg/metrics"
 	sampler "github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
 )
 
@@ -107,7 +108,7 @@ func (ps *processSampler) Sample() (results sample.EventBatch, err error) {
 	}
 
 	for _, pid := range pids {
-		var sample *metrics.ProcessSample
+		var sample *types.ProcessSample
 		var err error
 
 		sample, err = ps.harvest.Do(pid, elapsedSeconds)
@@ -128,7 +129,7 @@ func (ps *processSampler) Sample() (results sample.EventBatch, err error) {
 	return results, nil
 }
 
-func (self *processSampler) normalizeSample(s *metrics.ProcessSample) sample.Event {
+func (self *processSampler) normalizeSample(s *types.ProcessSample) sample.Event {
 	if len(s.ContainerLabels) > 0 {
 		sb, err := json.Marshal(s)
 		if err == nil {

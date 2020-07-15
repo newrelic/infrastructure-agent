@@ -1,5 +1,6 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+
 package agent
 
 import (
@@ -16,9 +17,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/newrelic/infrastructure-agent/pkg/ctl"
-
+	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
+	"github.com/newrelic/infrastructure-agent/internal/feature_flags/test"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
+	"github.com/newrelic/infrastructure-agent/pkg/ctl"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
@@ -388,8 +391,11 @@ func TestCheckConnectionRetry(t *testing.T) {
 		MaxInventorySize:         maxInventoryDataSize,
 	}
 
+	// required for building the agent
+	ffFetcher := test.NewFFRetrieverReturning(false, false)
+
 	// The agent should eventually connect
-	a, err := NewAgent(cnf, "testing-timeouts")
+	a, err := NewAgent(cnf, "testing-timeouts", ffFetcher)
 	assert.NoError(t, err)
 	assert.NotNil(t, a)
 }
@@ -406,8 +412,11 @@ func TestCheckConnectionTimeout(t *testing.T) {
 		MaxInventorySize:         maxInventoryDataSize,
 	}
 
+	// required to build the agent
+	ffFetcher := test.NewFFRetrieverReturning(false, false)
+
 	// The agent stops reconnecting after retrying as configured
-	_, err := NewAgent(cnf, "testing-timeouts")
+	_, err := NewAgent(cnf, "testing-timeouts", ffFetcher)
 	assert.Error(t, err)
 }
 
@@ -699,6 +708,103 @@ func BenchmarkStorePluginOutput(b *testing.B) {
 				_ = a.storePluginOutput(output)
 			}
 			b.StopTimer()
+		})
+	}
+}
+
+func Test_ProcessSampling_FeatureFlagIsEnabled(t *testing.T) {
+	cnf := &config.Config{
+		IncludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}},
+	}
+	someSample := struct {
+		evenType string
+	}{
+		evenType: "ProcessSample",
+	}
+	a, _ := NewAgent(cnf, "test", test.NewFFRetrieverReturning(true, true))
+
+	// when
+	actual := a.Context.shouldIncludeEvent(someSample)
+
+	// then
+	assert.Equal(t, true, actual)
+}
+
+func getBooleanPtr(val bool) *bool {
+	return &val
+}
+
+func Test_ProcessSampling(t *testing.T) {
+	someSample := &types.ProcessSample{
+		ProcessDisplayName: "some-process",
+	}
+
+	type testCase struct {
+		name string
+		c    *config.Config
+		ff   feature_flags.Retriever
+		want bool
+	}
+	testCases := []testCase{
+		{
+			name: "ConfigurationOptionIsDisabled",
+			c:    &config.Config{EnableProcessMetrics: getBooleanPtr(false)},
+			want: false,
+		},
+		{
+			name: "ConfigurationOptionIsEnabled",
+			c:    &config.Config{EnableProcessMetrics: getBooleanPtr(true)},
+			want: true,
+		},
+		{
+			// if the matchers are empty (corner case), the FF retriever is checked so it needs to not be nil
+			name: "ConfigurationOptionIsNotPresentAndMatchersAreEmptyAndFeatureFlagIsNotConfigured",
+			c:    &config.Config{IncludeMetricsMatchers: map[string][]string{}},
+			ff:   test.NewFFRetrieverReturning(false, false),
+			want: false,
+		},
+		{
+			name: "ConfigurationOptionIsNotPresentAndMatchersConfiguredDoNotMatch",
+			c:    &config.Config{IncludeMetricsMatchers: map[string][]string{"process.name": {"does-not-match"}}},
+			want: false,
+		},
+		{
+			name: "ConfigurationOptionIsNotPresentAndMatchersConfiguredDoMatch",
+			c:    &config.Config{IncludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}}},
+			want: true,
+		},
+		{
+			name: "ConfigurationOptionIsNotPresentAndMatchersAreNotConfiguredAndFeatureFlagIsEnabled",
+			c:    &config.Config{},
+			ff:   test.NewFFRetrieverReturning(true, true),
+			want: true,
+		},
+		{
+			name: "ConfigurationOptionIsNotPresentAndMatchersAreNotConfiguredAndFeatureFlagIsDisabled",
+			c:    &config.Config{},
+			ff:   test.NewFFRetrieverReturning(false, true),
+			want: false,
+		},
+		{
+			name: "ConfigurationOptionIsNotPresentAndMatchersAreNotConfiguredAndFeatureFlagIsNotFound",
+			c:    &config.Config{},
+			ff:   test.NewFFRetrieverReturning(false, false),
+			want: false,
+		},
+		{
+			name: "DefaultBehaviourExcludesProcessSamples",
+			c:    &config.Config{},
+			ff:   test.NewFFRetrieverReturning(false, false),
+			want: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		a, _ := NewAgent(tc.c, "test", tc.ff)
+
+		t.Run(tc.name, func(t *testing.T) {
+			actual := a.Context.shouldIncludeEvent(someSample)
+			assert.Equal(t, tc.want, actual)
 		})
 	}
 }
