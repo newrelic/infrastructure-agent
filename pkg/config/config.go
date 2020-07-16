@@ -1648,6 +1648,10 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 
 	cfg.IsForwardOnly = cfg.IsForwardOnly || cfg.K8sIntegration
 
+	if cfg.IsForwardOnly {
+		cfg.ConnectEnabled = false
+	}
+
 	// For backwards compatibility FileDevicesBlacklist is deprecated.
 	if len(cfg.FileDevicesBlacklist) > 0 {
 		cfg.FileDevicesIgnored = append(cfg.FileDevicesIgnored, cfg.FileDevicesBlacklist...)
