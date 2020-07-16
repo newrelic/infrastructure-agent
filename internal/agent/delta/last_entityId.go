@@ -23,11 +23,11 @@ type EntityIDFilePersist struct {
 }
 
 // NewEntityIDFilePersist create a new instance of EntityIDFilePersist.
-func NewEntityIDFilePersist(filePath string) *EntityIDFilePersist {
+func NewEntityIDFilePersist(dataDir string, entityKey string) *EntityIDFilePersist {
 	return &EntityIDFilePersist{
 		readFile:  readFileFn,
 		writeFile: writeFileFn,
-		filePath:  filePath,
+		filePath:  filepath.Join(dataDir, lastEntityIDFolder, entityKey),
 	}
 }
 

@@ -159,13 +159,17 @@ func TestWriteFile_StoreValue(t *testing.T) {
 	oldID := entity.ID(123456)
 
 	temp, err := TempDeltaStoreDir()
+	require.NoError(t, err)
 
-	filePath := filepath.Join(temp, "last_entity_ID")
+	err = os.MkdirAll(filepath.Join(temp, lastEntityIDFolder), DATA_DIR_MODE)
+	require.NoError(t, err)
+
+	filePath := filepath.Join(temp, lastEntityIDFolder, "entityKey")
 	err = ioutil.WriteFile(filePath, []byte(oldID.String()), DATA_FILE_MODE)
 	require.NoError(t, err, "Should create a last entity ID file")
 
 	newID := entity.ID(54321)
-	le := NewEntityIDFilePersist(filePath)
+	le := NewEntityIDFilePersist(temp, "entityKey")
 
 	//WHEN UpdateEntityID
 	err = le.UpdateEntityID(newID)

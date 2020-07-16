@@ -543,7 +543,8 @@ func (a *Agent) registerEntityInventory(entityKey string) error {
 		inv.sender, err = newPatchSenderVortex(entityKey, a.Context.agentKey, a.Context, a.store, a.userAgent, a.Context.AgentIdentity, a.provideIDs, a.entityMap, a.httpClient)
 	} else {
 		lastSubmission := delta.NewLastSubmissionStore(a.Context.Config().AppDataDir, entityKey)
-		inv.sender, err = newPatchSender(entityKey, a.Context, a.store, lastSubmission, nil, a.userAgent, a.Context.AgentIdentity, a.httpClient)
+		lastEntityID := delta.NewEntityIDFilePersist(a.Context.Config().AppDataDir, entityKey)
+		inv.sender, err = newPatchSender(entityKey, a.Context, a.store, lastSubmission, lastEntityID, a.userAgent, a.Context.AgentIdentity, a.httpClient)
 	}
 	if err != nil {
 		return err

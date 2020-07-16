@@ -39,6 +39,7 @@ const (
 	localEntityFolder           = "__nria_localentity"
 	DisableInventorySplit       = 0
 	lastSuccessSubmissionFolder = "last_success"
+	lastEntityIDFolder          = "last_entityID"
 )
 
 var EMPTY_DELTA = []byte{'{', '}'}
