@@ -228,7 +228,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	// Basic initialization of the agent.
 	timedLog.WithField("version", buildVersion).Info("Initializing")
 
-	agt, err := agent.NewAgent(c, buildVersion)
+	agt, err := agent.NewAgent(c, buildVersion, ffManager)
 	if err != nil {
 		fatal(err, "Agent cannot initialize.")
 	}

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
+	"github.com/newrelic/infrastructure-agent/internal/feature_flags/test"
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -61,7 +62,8 @@ func TestSampleWithCustomFilesystemList(t *testing.T) {
 	}()
 	config := config.Config{CustomSupportedFileSystems: []string{fs},
 		FileDevicesIgnored: []string{"sda1"}, MetricsStorageSampleRate: config.FREQ_INTERVAL_FLOOR_STORAGE_METRICS}
-	testAgent, err := agent.NewAgent(&config, "1")
+
+	testAgent, err := agent.NewAgent(&config, "1", test.EmptyFFRetriever)
 	assert.NoError(t, err)
 	testAgentConfig := testAgent.Context
 

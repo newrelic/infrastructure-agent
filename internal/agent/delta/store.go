@@ -328,7 +328,7 @@ func (d *Store) ResetAllDeltas(entityKey string) {
 // UpdateState updates in disk the state of the deltas according to the passed PostDeltaBody, whose their ExternalKeys
 // field may be empty.
 func (d *Store) UpdateState(entityKey string, deltas []*inventoryapi.RawDelta, deltaStateResults *inventoryapi.DeltaStateMap) {
-	sentPlugins := make(map[string]bool)
+	sentPlugins := make(map[string]bool, len(deltas))
 	// record what was sent and archive
 	for _, delta := range deltas {
 		var deltaResult *inventoryapi.DeltaState
@@ -363,7 +363,7 @@ func (d *Store) updateLastDeltaSent(entityKey string, delta *inventoryapi.RawDel
 			})
 			if resultHint != nil {
 				if resultHint.Error != nil {
-					dslog.WithFields(logrus.Fields{"error": *resultHint.Error}).
+					dslog.WithField("error", *resultHint.Error).
 						Debug("Plugin delta submission returned a hint with an error.")
 				} else {
 					dslog.WithFields(logrus.Fields{

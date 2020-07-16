@@ -13,6 +13,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/acquire"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/process"
 	"github.com/sirupsen/logrus"
@@ -27,7 +28,7 @@ type Harvester interface {
 	Pids() ([]int32, error)
 	// Do performs the actual harvesting operation, returning a process sample containing all the metrics data
 	// for the last elapsedSeconds
-	Do(pid int32, elapsedSeconds float64) (*metrics.ProcessSample, error)
+	Do(pid int32, elapsedSeconds float64) (*types.ProcessSample, error)
 }
 
 func newHarvester(ctx agent.AgentContext, cache *cache) *linuxHarvester {
@@ -65,7 +66,7 @@ func (*linuxHarvester) Pids() ([]int32, error) {
 // Returns a sample of a process whose PID is passed as argument. The 'elapsedSeconds' argument represents the
 // time since this process was sampled for the last time. If the process has been sampled for the first time, this value
 // will be ignored
-func (ps *linuxHarvester) Do(pid int32, elapsedSeconds float64) (*metrics.ProcessSample, error) {
+func (ps *linuxHarvester) Do(pid int32, elapsedSeconds float64) (*types.ProcessSample, error) {
 	// Reuses process information that does not vary
 	cached, hasCachedSample := ps.cache.Get(pid)
 
@@ -116,7 +117,7 @@ func (ps *linuxHarvester) Do(pid int32, elapsedSeconds float64) (*metrics.Proces
 }
 
 // populateStaticData populates the sample with the process data won't vary during the process life cycle
-func (ps *linuxHarvester) populateStaticData(sample *metrics.ProcessSample, process Snapshot) error {
+func (ps *linuxHarvester) populateStaticData(sample *types.ProcessSample, process Snapshot) error {
 	var err error
 	sample.CmdLine, err = process.CmdLine(!ps.stripCommandLine)
 	if err != nil {
@@ -137,7 +138,7 @@ func (ps *linuxHarvester) populateStaticData(sample *metrics.ProcessSample, proc
 }
 
 // populateGauges populates the sample with gauge data that represents the process state at a given point
-func (ps *linuxHarvester) populateGauges(sample *metrics.ProcessSample, process Snapshot) error {
+func (ps *linuxHarvester) populateGauges(sample *types.ProcessSample, process Snapshot) error {
 	var err error
 
 	cpuTimes, err := process.CPUTimes()
@@ -177,7 +178,7 @@ func (ps *linuxHarvester) populateGauges(sample *metrics.ProcessSample, process 
 
 // populateIOCounters fills the sample with the IO counters data. For the "X per second" metrics, it requires the
 // last process sample for comparative purposes
-func (ps *linuxHarvester) populateIOCounters(sample, lastSample *metrics.ProcessSample, source Snapshot, elapsedSeconds float64) error {
+func (ps *linuxHarvester) populateIOCounters(sample, lastSample *types.ProcessSample, source Snapshot, elapsedSeconds float64) error {
 	ioCounters, err := source.IOCounters()
 	if err != nil {
 		return err
@@ -211,7 +212,7 @@ func (ps *linuxHarvester) populateIOCounters(sample, lastSample *metrics.Process
 
 // determineProcessDisplayName generates a human-friendly name for this process. By default, we use the command name.
 // If we know of a service for this pid, that'll be the name.
-func (ps *linuxHarvester) determineProcessDisplayName(sample *metrics.ProcessSample) string {
+func (ps *linuxHarvester) determineProcessDisplayName(sample *types.ProcessSample) string {
 	displayName := sample.CommandName
 	if serviceName, ok := ps.serviceForPid(int(sample.ProcessID)); ok && len(serviceName) > 0 {
 		mplog.WithFieldsF(func() logrus.Fields {

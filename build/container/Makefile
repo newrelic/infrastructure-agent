@@ -84,13 +84,6 @@ build/base :
 	-f ${DOCKERFILE} \
 	${INFRASTRUCTURE_WORKSPACE})
 
-# publish to container fabric
-.PHONY : publish-cf/base
-publish-cf/base : build/base
-publish-cf/base :
-	@(docker push cf-registry.nr-ops.net/infrastructure/newrelic-infrastructure:${IMAGE_VERSION})
-	@(docker push cf-registry.nr-ops.net/infrastructure/newrelic-infrastructure:latest)
-
 # publish to docker hub
 .PHONY : publish/base
 publish/base : build/base

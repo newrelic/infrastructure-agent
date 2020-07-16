@@ -18,10 +18,10 @@ const (
 	// FFs
 	FlagCategory     = "Infra_Agent"
 	FlagNameRegister = "register_enabled"
+	FlagProtocolV4   = "protocol_v4_enabled"
+	FlagFullProcess  = "full_process_sampling"
 	// Config
 	CfgYmlRegisterEnabled = "register_enabled"
-	// Protocol v4 for dimensional metrics
-	ProtocolV4Enabled = "protocol_v4_enabled"
 )
 
 var ffLogger = log.WithComponent("FeatureFlagHandler")
@@ -109,20 +109,21 @@ func (h *FFHandler) Handle(ffArgs commandapi.FFArgs, isInitialFetch bool) {
 	}
 
 	// this is where we handle normal feature flags that are not related to OHIs
-	if ffArgs.Flag == ProtocolV4Enabled {
-		h.handleFeatureFlag(ffArgs.Flag, ffArgs.Enabled)
+	if ffArgs.Flag == FlagProtocolV4 || ffArgs.Flag == FlagFullProcess {
+		h.setFFConfig(ffArgs.Flag, ffArgs.Enabled)
 		return
 	}
 
-	// OHI enabler won't be ready at initial fetch
+	// integration enabler won't be ready at initial fetch
 	if isInitialFetch {
 		return
 	}
 
+	// evaluated at the end as integration name flag is looked up dynamically
 	h.handleEnableOHI(ffArgs.Flag, ffArgs.Enabled)
 }
 
-func (h *FFHandler) handleFeatureFlag(ff string, enabled bool) {
+func (h *FFHandler) setFFConfig(ff string, enabled bool) {
 	err := h.ffSetter.SetFeatureFlag(ff, enabled)
 	if err != nil {
 		// ignore if the FF has been already set
@@ -131,7 +132,7 @@ func (h *FFHandler) handleFeatureFlag(ff string, enabled bool) {
 				WithError(err).
 				WithField("feature_flag", ff).
 				WithField("enable", enabled).
-				Debug("Error setting feature flag.")
+				Debug("Cannot set feature flag configuration.")
 		}
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/newrelic/infrastructure-agent/pkg/metrics"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/network"
@@ -46,15 +47,15 @@ func AssertRequestContainsSample(t *testing.T, req http.Request, expected sample
 			gotSample.Timestamp(0)
 			assert.Equal(t, expected, &gotSample)
 
-		case *metrics.ProcessSample:
-			var gotSample metrics.ProcessSample
+		case *types.ProcessSample:
+			var gotSample types.ProcessSample
 			assert.NoError(t, json.Unmarshal(gotEv, &gotSample))
 			assert.NotNil(t, expected)
 			assert.NotNil(t, gotSample)
 			expected.Timestamp(0)
 			gotSample.Timestamp(0)
 			assert.Equal(t, expected, &gotSample)
-			assert.EqualValues(t, expected.(*metrics.ProcessSample).EntityKey, gotSample.EntityKey)
+			assert.EqualValues(t, expected.(*types.ProcessSample).EntityKey, gotSample.EntityKey)
 
 		case *storage.Sample:
 			var gotSample storage.Sample

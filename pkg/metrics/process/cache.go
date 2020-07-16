@@ -6,7 +6,7 @@ package process
 
 import (
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/lru"
-	"github.com/newrelic/infrastructure-agent/pkg/metrics"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 )
 
 // processCache wraps the invocations to lru.Cache, enabling clearer code and type safety
@@ -16,7 +16,7 @@ type cache struct {
 
 type cacheEntry struct {
 	process    *linuxProcess
-	lastSample *metrics.ProcessSample // The last event we generated for this process, so we can re-use metadata which doesn't change
+	lastSample *types.ProcessSample // The last event we generated for this process, so we can re-use metadata which doesn't change
 }
 
 func newCache() cache {
