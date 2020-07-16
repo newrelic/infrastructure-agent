@@ -25,7 +25,7 @@ func Fuzz(data []byte) int {
 
 	// integration protocol v4
 	// otherwise parse won't happen
-	ffm := feature_flags.NewManager(map[string]bool{handler.ProtocolV4Enabled: true})
+	ffm := feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true})
 	_, err3 := emitter.ParsePayloadV4(data, ffm)
 
 	// discourage mutation when no errors at all

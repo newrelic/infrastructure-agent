@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/log"
+	metricTypes "github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 
 	"github.com/docker/docker/api/types"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
@@ -78,7 +79,7 @@ func (d *DockerSampler) NewDecorator() (ProcessDecorator, error) {
 }
 
 type ProcessDecorator interface {
-	Decorate(process *ProcessSample)
+	Decorate(process *metricTypes.ProcessSample)
 }
 
 type decoratorImpl struct {
@@ -169,7 +170,7 @@ func (d *decoratorImpl) pidsContainers() (map[int32]types.Container, error) {
 }
 
 // DecorateProcesses adds container information to all the processes that belong to a container
-func (d *decoratorImpl) Decorate(process *ProcessSample) {
+func (d *decoratorImpl) Decorate(process *metricTypes.ProcessSample) {
 	if container, ok := d.pids[process.ProcessID]; ok {
 		imageIDComponents := strings.Split(container.ImageID, ":")
 		process.ContainerImage = imageIDComponents[len(imageIDComponents)-1]

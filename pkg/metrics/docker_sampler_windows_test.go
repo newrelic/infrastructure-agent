@@ -12,6 +12,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
+	metricTypes "github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/net"
 	"github.com/shirou/gopsutil/process"
@@ -42,7 +43,7 @@ func TestDocker(t *testing.T) {
 
 	assert.Len(t, samples, 3)
 	for i, sample := range samples {
-		procSample, ok := sample.(*ProcessSample)
+		procSample, ok := sample.(*metricTypes.ProcessSample)
 		assert.True(t, ok)
 
 		switch i {
@@ -229,6 +230,6 @@ func (m *MockProcessInterrogator) NewProcess(pid int32) (ProcessWrapper, error) 
 	return &MockInternalProcess{p}, nil
 }
 
-func (m *MockProcessInterrogator) FillFromStatus(*ProcessSample) error {
+func (m *MockProcessInterrogator) FillFromStatus(*metricTypes.ProcessSample) error {
 	return nil
 }
