@@ -35,8 +35,6 @@ func RegisterPlugins(agent *agnt.Agent) error {
 	agent.DeprecatePlugin(ids.PluginID{"services", "sysv_init"})
 	agent.DeprecatePlugin(ids.PluginID{"services", "docker"})
 
-	agent.RegisterPlugin(NewCustomAttrsPlugin(agent.Context))
-
 	if config.K8sIntegration {
 		agent.RegisterPlugin(NewK8sIntegrationsPlugin(agent.Context, agent.Plugins))
 	}
@@ -46,9 +44,10 @@ func RegisterPlugins(agent *agnt.Agent) error {
 	}
 
 	if config.IsForwardOnly {
-		registerForwarderHeartbeat(agent)
 		return nil
 	}
+
+	agent.RegisterPlugin(NewCustomAttrsPlugin(agent.Context))
 
 	// Enabling the hostinfo plugin will make the host appear in the UI
 	agent.RegisterPlugin(pluginsLinux.NewHostinfoPlugin(agent.Context, agent.GetCloudHarvester()))
