@@ -5,6 +5,7 @@ package delta
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -26,9 +27,9 @@ type LastSubmissionFileStore struct {
 }
 
 // NewLastSubmissionStore creates a new LastSubmissionStore storing data in file.
-func NewLastSubmissionStore(dataDir, entityKey string) LastSubmissionStore {
+func NewLastSubmissionStore(dataDir, fileName string) LastSubmissionStore {
 	return &LastSubmissionFileStore{
-		file: filepath.Join(dataDir, lastSuccessSubmissionFolder, entityKey),
+		file: filepath.Join(dataDir, lastSuccessSubmissionFolder, helpers.SanitizeFileName(fileName)),
 	}
 }
 
@@ -78,7 +79,7 @@ func (l *LastSubmissionFileStore) saveLastSuccessSubmission() error {
 		}
 	}
 
-	if err = ioutil.WriteFile(l.file, serialised, DATA_DIR_MODE); err != nil {
+	if err = ioutil.WriteFile(l.file, serialised, DATA_FILE_MODE); err != nil {
 		return err
 	}
 

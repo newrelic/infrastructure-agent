@@ -3,6 +3,7 @@ package delta
 import (
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -23,21 +24,22 @@ type EntityIDFilePersist struct {
 }
 
 // NewEntityIDFilePersist create a new instance of EntityIDFilePersist.
-func NewEntityIDFilePersist(dataDir string, entityKey string) *EntityIDFilePersist {
+func NewEntityIDFilePersist(dataDir string, fileName string) *EntityIDFilePersist {
 	return &EntityIDFilePersist{
 		readFile:  readFileFn,
 		writeFile: writeFileFn,
-		filePath:  filepath.Join(dataDir, lastEntityIDFolder, entityKey),
+		filePath:  filepath.Join(dataDir, lastEntityIDFolder, helpers.SanitizeFileName(fileName)),
 	}
 }
 
 // GetEntityID will return entityID from memory or disk.
 func (le *EntityIDFilePersist) GetEntityID() (entity.ID, error) {
-	if le.lastEntityID != entity.EmptyID {
-		return le.lastEntityID, nil
+	var err error
+	if le.lastEntityID == entity.EmptyID {
+		le.lastEntityID, err = le.readFile(le.filePath)
 	}
 
-	return le.readFile(le.filePath)
+	return le.lastEntityID, err
 }
 
 // UpdateEntityID will store the entityID on memory and disk.

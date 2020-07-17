@@ -29,7 +29,9 @@ func TestLastSubmissionStore_ReadsFromDiskWhenNoInMemoryData(t *testing.T) {
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
 	repoDir := filepath.Join(dataDir, "delta")
-	ls := NewLastSubmissionStore(repoDir, "entity-key").(*LastSubmissionFileStore)
+	ls := NewLastSubmissionStore(repoDir, "server:entity-key01:80").(*LastSubmissionFileStore)
+
+	assert.Equal(t, filepath.Join(repoDir, "last_success", "serverentity-key0180"), ls.file)
 
 	now := time.Now()
 	assert.NoError(t, ls.UpdateTime(now))

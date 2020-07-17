@@ -164,12 +164,12 @@ func TestWriteFile_StoreValue(t *testing.T) {
 	err = os.MkdirAll(filepath.Join(temp, lastEntityIDFolder), DATA_DIR_MODE)
 	require.NoError(t, err)
 
-	filePath := filepath.Join(temp, lastEntityIDFolder, "entityKey")
+	filePath := filepath.Join(temp, lastEntityIDFolder, "serverentity_key0180")
 	err = ioutil.WriteFile(filePath, []byte(oldID.String()), DATA_FILE_MODE)
 	require.NoError(t, err, "Should create a last entity ID file")
 
 	newID := entity.ID(54321)
-	le := NewEntityIDFilePersist(temp, "entityKey")
+	le := NewEntityIDFilePersist(temp, "server:entity_key01:80")
 
 	//WHEN UpdateEntityID
 	err = le.UpdateEntityID(newID)
