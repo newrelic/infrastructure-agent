@@ -2,8 +2,6 @@
 
 There have been several changes in the way the infrastructure agent handles hostname resolution. The following explains hostname resolution behaviour from v1.0.976 onward.
 
-## Hostname resolution
-
 The agent provides two fields for hostname resolution: `hostname` and `fullHostname`.
 
 ### Short hostname (`hostname`)
