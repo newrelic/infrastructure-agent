@@ -1,54 +1,26 @@
-# NR infrastructure agent documentation
+# New Relic infrastructure agent developer documentation
 
-## User documentation
+This README provides more detailed information for contribution and issue troubleshooting.
 
-Agent installation, configuration and usage documentation is available at [New Relic 
-docs](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure).
+> Installation, configuration, and usage documentation is available at [New Relic Docs](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure).
 
-Overall New Relic infrastructure product is available at [New Relic infrastructure 
-docs](https://docs.newrelic.com/docs/infrastructure).
+## Overview
 
-Documentation at this repo aims covering more detailed information useful for contribution and issue
- troubleshooting.
+The New Relic infrastructure agent orchestrates data retrieval and data forwarding into the platform. 
 
+Data is gathered through **integrations**. On-host integrations are small binaries than retrieve data from different sources like the OS or external services (NGINX, MySQL, Redis, etc.). Integrations are executed by the **agent** at defined intervals or kept running indefinitely under the agent supervision.
 
-## Responsibilities
+Integrations write their payload into `stdout` and log into `stderr` (for more information, see [integration specs](https://docs.newrelic.com/docs/integrations/integrations-sdk/file-specifications/integration-executable-file-specifications). The agent reads the payloads, performs some processingm, and forwards them to the New Relic platform. 
 
-NR infrastructure agent responsibility is to orchestrate data retrieval and data forwarding 
-into the platform.
+Integrations can produce different [types of 
+data](https://docs.newrelic.com/docs/integrations/infrastructure-integrations/get-started/understand-use-data-infrastructure-integrations). For a list of available integrations see the [docs 
+site](https://docs.newrelic.com/docs/integrations/host-integrations/host-integrations-list).
 
-### Data retrieval
-
-NR infrastructure on-host agent gathers data from **integrations**.
-
-
-#### Integrations
-
-On-host integrations are small binaries than retrieve data from different sources like OS or 
-external services (like Nginx, Redis...).
-
-They are executed by the **agent** at defined intervals or kept running indefinitely under agent 
-supervision.
-
-Integrations write their payload into `stdout` and log into `stderr`. See [integration 
-specs](https://docs.newrelic.com/docs/integrations/integrations-sdk/file-specifications/integration-executable-file-specifications).
- Agent reads these, performs some processing and forward their payload into New Relic platform. 
-
-They produce different [types of 
-data](https://docs.newrelic.com/docs/integrations/infrastructure-integrations/get-started/understand-use-data-infrastructure-integrations).
-
-
-There a list of available integrations at the [docs 
-site](https://docs.newrelic.com/docs/integrations/host-integrations/host-integrations-list)
-
-To ease building your own integrations we provide a [Golang 
-SDK](https://github.com/newrelic/infra-integrations-sdk). 
-
+To facilitate building your own integrations we provide a [Golang SDK](https://github.com/newrelic/infra-integrations-sdk). 
 
 ## Binaries
 
-NR infrastructure agent is composed of different binaries. Besides integrations, there are 3 main 
-ones:
+The New Relic infrastructure agent is composed of different binaries. Besides integrations, there are three executables:
 
 ```
 ├── newrelic-infra
@@ -56,144 +28,115 @@ ones:
 └── newrelic-infra-service
 ```
 
-### newrelic-infra-service
+### `newrelic-infra-service`
 
-This binary is the daemon managed by the service manager (systemd, upstart, init-v).
+This binary is the daemon managed by the service manager (`systemd`, `upstart`, `init-v`).
 
-It's only purpose is to get safe runtime reload/restart. This is achieved by signaling its child
-`newrelic-infra`. 
+Its only purpose is to get safe runtime reload/restart. This is achieved by signaling its child `newrelic-infra`. 
 
-### newrelic-infra
+### `newrelic-infra`
 
-This binary owns the whole agent runtime.
+This binary owns the whole agent runtime. It can be triggered in stand-alone mode if reload/restart features are not required.  
 
-It could be triggered in stand-alone mode if reload/restart features are not required.  
-
-### newrelic-infra-ctl
+### `newrelic-infra-ctl`
 
 This is the CLI control command to communicate with the agent daemon.
 
-
 ## Runtime
 
-We could describe 3 different runtime steps:
+There's three different runtime steps:
 
-- Startup
-- Main runtime
-- Shutdown
+1. Startup
+2. Main runtime
+3. Shutdown
 
 ### Startup
 
 #### Connectivity check
 
-Agent performs an initial network connection check against NR endpoints before bootstrapping the 
-rest of the runtime.
+The agent performs an initial network connection check against New Relic endpoints before bootstrapping the rest of the runtime.
 
-> Failures will be retried with a maximum limit of attempts and time.  
+In case of failure, the agent retries connecting to New Relic till the limit of attempts and time is reached. 
 
 #### Connect
 
 This step attempts to uniquely identify the agent/box.
 
-As hostnames are prone to collision and change a *fingerprint* is used to present some host/cloud 
-information that might be valuable for identification, such as hostname, cloud instance id and so.
+As hostnames are prone to collision and change, a fingerprint is used to present some host/cloud information that might be valuable for identification, such as hostname, cloud instance id, etc.
 
-Agent retrieves this *fingerprint* data and requests a unique identifier from New Relic identity 
-endpoint.
+The agent retrieves the fingerprinting data and requests a unique identifier to the New Relic identity endpoint. Errors at this point behave as circuit breaker, blocking any data submission to the platform.
 
-Errors here behave as circuit breaker blocking any data submission to the platform.
-
-> Failures will be retried with a maximum limit of attempts and time.
->
-> This step is run concurrently so it avoids blocking the runtime. 
+In case of failure, the agent retries connecting to New Relic till the limit of attempts and time is reached. This step is run concurrently so it avoids blocking the runtime. 
 
 
 #### Main runtime
 
-Main runtime workflow addresses data processing and submission.
+The main runtime workflow addresses data processing and submission.
 
 Codebase differentiates different paths for:
 
-- metrics and events: these share the same workflow, as non dimensional metrics are represented 
-through events.
-- inventory: stateful data, might require disk persistence.
+- Metrics and events: these share the same workflow, as non dimensional metrics are represented through events.
+- Inventory: stateful data. Might require disk persistence.
 
 ##### Data sources
 
-**Host metrics** are retrieved by embeded **samplers**, ie: `ProcessSampler, StorageSampler, ...`.
+**Host metrics** are retrieved by embedded **samplers**, for example: `ProcessSampler, StorageSampler, ...`.
 
-**Host inventory** is retrieved by embeded **inventory plugins**, ie: `KernelModulesPlugin, 
-DpkgPlugin...`
+**Host inventory** is retrieved by embedded **inventory plugins**, for example: `KernelModulesPlugin, DpkgPlugin...`
 
-Each one have different workflow paths.
+Each type of source has different workflow paths.
 
-**External services data** is retrieved using integrations. Integrations are managed at the 
-`integrations` package. There are different *integration protocol* versions. Each one define a 
-[JSON API](https://docs.newrelic.com/docs/integrations/infrastructure-integrations/get-started/understand-use-data-infrastructure-integrations).
-
+**External services data** is retrieved using integrations. Integrations are managed by the `integrations` package. There are different integration protocol versions. Each defines a [JSON API](https://docs.newrelic.com/docs/integrations/infrastructure-integrations/get-started/understand-use-data-infrastructure-integrations).
 
 ##### Data processing
 
 Metrics/Events:
 
-- Event queue is shared for all the events (agent's and integrations)
-- When event-queue reaches 1K events agent discard new events. In this case it'll log this error msg `Could not queue event: Queue is full..`
-  * We already know this is not optimal and it should change once we add agent-level rate-limiting
-- Therefor agent won't ensure data is reported
-  * This will change with the feature mentioned above
-- Events from the queue are batched (default batch queue size 200)
-  * This means agent could do 200 batches, each with 1000 rows?
-    - Batching and queueing run in parallel, so it could happen that while batcher is feeding and sending batches the event-queue reaches its capacity.
-    - So you couldn't say there's a total limit of 200*1K
+- Event queue is shared for all the events (agents and integrations).
+- When event-queue reaches 1K events, the agent discard new events. In this case it logs this error message: `Could not queue event: Queue is full..`
+  > We already know this is not optimal and that it should change once we add agent-level rate-limiting.
+- Therefore, the agent won't ensure data is reported.
+  > This will change with the feature mentioned above.
+- Events from the queue are batched (default batch queue size is 200).
+  > Does this mean that the agent could do 200 batches, each with 1000 rows?
+    - Batching and queueing run in parallel, so it could happen that while the batcher is feeding and sending batches, the event-queue reaches its capacity.
+    - So you couldn't say there's a total limit of 200*1K.
 
 Integrations:
 
 - They are started concurrently at similar times.
-  * There is a random delay btw 0 and their defined interval is used in order to spread the load.
+  * There is a random delay between 0 and their defined interval, which is used in order to spread the load.
   * For subsequents runs their defined interval is used.
-- There's no mechanism for waiting on other plugins/instances completion btw runs.
+- There's no mechanism for waiting on other plugins/instances completion between runs.
 
 #### Shutdown
  
-Shutdown is handled by both `newrelic-infra-service` and `newrelic-infra`. The former is called by 
-OS service manager forwarding this request into the later. Later receives notifications about 
-shutdown via signaling on Linux and using named-pipes on Windows.
+Shutdown is handled by both `newrelic-infra-service` and `newrelic-infra`. `newrelic-infra-service` is called by the OS service manager, forwarding this request to `newrelic-infra`, which receives notifications about  shutdown via signaling on Linux and using named-pipes on Windows.
 
-Agent attempts to gracefully shutdown its children processes (integrations) and go-routines. There's
- a grace time period, once reached force stop is executed. 
+The agent attempts to gracefully shutdown its children processes (integrations) and go-routines. There's  a grace time period which, once reached, executes a force stop. 
 
-Agent differentiates between OS shutdown and agent service stop. This allows to avoid triggering 
-alerts on cloud scheduled instances decommision, for instance when downscaling.
+The agent differentiates between OS shutdown and agent service stop. This allows avoiding triggering alerts on cloud scheduled instances decommision (for example, when downscaling).
 
 
 ## Tests
 
-We differentiate `harvest` tests from the usual ones. The prior require are aimed to assert data 
-retrieval from underlying OS, whereas the laters are expected to not be coupled to the underlying 
-OS. A build-tag is used to run the `harvest` ones.
+We differentiate `harvest` tests from the usual ones. The prior assert data retrieval from the underlying OS, whereas the latter are expected to not be coupled to the OS. A build-tag is used to run the `harvest` ones.
 
-Usual package tests lie within each pacakge but behavioural ones lie at `test/` folder.
+Usual package tests lie within each pacakge, but behavioural ones lie at `test/` folder. The core logic behavior is covered at `test/core` using fixtures to replace data retrieval. 
 
-The core logic behaviour is covered at `test/core` using fixtures to replace data retrieval. 
-
-
-> At the moment not all the available test suites are run in the public CI (Github actions).
-> A private CI is still used while the CI migration into public GHA is accomplished.
+> Currently, not all the available test suites are run in the public CI (Github actions). A private CI is still used while the CI migration into public GHA is accomplished.
 
 There are also some special test suites covering:
-- performance benchmarks
-- fuzz testing
-- proxy end-to-end behaviour
+
+- Performance benchmarks
+- Fuzz testing
+- Proxy end-to-end behaviour
  
 ## Containerised agent
 
-The recommended way to run the agent as a container is to use the **[infrastructure-bundle](https://github.com/newrelic/infrastructure-bundle/)** which 
-contains not only the agent but all the official integrations up to date.
+The recommended way to run the agent as a container is to use the [infrastructure-bundle](https://github.com/newrelic/infrastructure-bundle/), which 
+contains not only the agent but also all the official, up-to-date integrations.
 
-Releases are available at [GH releases](https://github.com/newrelic/infrastructure-bundle/releases).
+Releases are accessible [here](https://github.com/newrelic/infrastructure-bundle/releases). Within the same repository you can find information to manually build the container, so you can customize it. 
 
-Within the same repository there's information to manually build the container, so you can customize
- it.
-
-Kubernetes integration is not included in the *bundle* as it's delployed via 
-[manifest](https://docs.newrelic.com/docs/integrations/kubernetes-integration/installation/kubernetes-integration-install-configure).
+> The Kubernetes integration is not included in the bundle as it's deployed via [manifest](https://docs.newrelic.com/docs/integrations/kubernetes-integration/installation/kubernetes-integration-install-configure).
