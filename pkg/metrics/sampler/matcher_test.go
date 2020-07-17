@@ -26,8 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var metricDimensionProcessName string = "process.name"
-var metricDimensionProcessExecutable string = "process.executable"
+var metricDimensionProcessName = "process.name"
+var metricDimensionProcessExecutable = "process.executable"
 
 func Test_EvaluatorChain_WithSingleRule(t *testing.T) {
 
@@ -103,6 +103,15 @@ func Test_EvaluatorChain_WithSingleRule(t *testing.T) {
 			},
 			want: false,
 		},
+		{
+			name:  "ProcessCmdLine_NotValidRegex",
+			input: &types.ProcessSample{CmdLine: "/bin/java"},
+			rules: map[string][]string{
+				metricDimensionProcessExecutable: {"regex *"},
+			},
+			// We want to match because the only filtering rule is a wrong regex.
+			want: true,
+		},
 	}
 
 	for _, tc := range cases {
@@ -163,6 +172,16 @@ func Test_Evaluator_WithTwoLiteralRules(t *testing.T) {
 				metricDimensionProcessName:       {"java-9"},
 				metricDimensionProcessExecutable: {"/bin/java"},
 			},
+			want: true,
+		},
+		{
+			name:  "ProcessNameAndExecutableAreMatchNotValidRegex",
+			input: javaProcessSample,
+			rules: map[string][]string{
+				metricDimensionProcessExecutable: {"regex *"},
+				metricDimensionProcessName:       {"java"},
+			},
+			// We want to match because the only rule is a wrong regex.
 			want: true,
 		},
 	}
@@ -453,6 +472,26 @@ func Test_EvaluatorChain_WithMultipleRuleAttribute(t *testing.T) {
 			},
 			want: []bool{true, true, false, true, true, true, false},
 		},
+		{
+			/*
+				matchers:
+				  process.executable:
+				    - regex *					# bad regex
+				    - regex .*
+			*/
+			name: "ProcessExecutable_NotValidRegex",
+			input: []interface{}{
+				types.ProcessSample{CmdLine: "/bin/java"},
+				types.ProcessSample{CmdLine: "/bin/local/java"},
+			},
+			rules: map[string][]string{
+				metricDimensionProcessExecutable: {
+					"regex *",
+					"regex .*",
+				},
+			},
+			want: []bool{true, true},
+		},
 	}
 
 	for _, tc := range cases {
@@ -509,11 +548,13 @@ func Test_EvaluatorChain_LogTraceMatcher(t *testing.T) {
 }
 
 type enabledFFRetriever struct{}
+
 func (e *enabledFFRetriever) GetFeatureFlag(name string) (enabled bool, exists bool) {
 	return true, true
 }
 
 type disabledFFRetriever struct{}
+
 func (e *disabledFFRetriever) GetFeatureFlag(name string) (enabled bool, exists bool) {
 	return false, true
 }
@@ -522,7 +563,6 @@ func TestNewSampleMatchFn(t *testing.T) {
 	trueVar := true
 	falseVar := false
 	emptyMatchers := config.IncludeMetricsMap{}
-
 
 	type args struct {
 		enableProcessMetrics   *bool
@@ -588,20 +628,20 @@ func TestNewSampleMatchFn(t *testing.T) {
 		{
 			name: "process samples matching rules are included",
 			args: args{
-				enableProcessMetrics: &trueVar,
+				enableProcessMetrics:   &trueVar,
 				includeMetricsMatchers: config.IncludeMetricsMap{"process.name": []string{"regex \"foo.*\""}},
-				ffRetriever: testFF.EmptyFFRetriever,
-				sample: &fixture.ProcessSample,
+				ffRetriever:            testFF.EmptyFFRetriever,
+				sample:                 &fixture.ProcessSample,
 			},
 			include: true,
 		},
 		{
 			name: "process samples not matching rules are not included",
 			args: args{
-				enableProcessMetrics: &trueVar,
+				enableProcessMetrics:   &trueVar,
 				includeMetricsMatchers: config.IncludeMetricsMap{"process.name": []string{"regex \"bar*\""}},
-				ffRetriever: testFF.EmptyFFRetriever,
-				sample: &fixture.ProcessSample,
+				ffRetriever:            testFF.EmptyFFRetriever,
+				sample:                 &fixture.ProcessSample,
 			},
 			include: false,
 		},

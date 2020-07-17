@@ -5,6 +5,7 @@ package sampler
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"reflect"
 	"regexp"
 	"strings"
@@ -19,6 +20,8 @@ import (
 var (
 	typesToEvaluate = map[string]bool{"ProcessSample": true}
 )
+
+var mlog = log.WithField("component", "Sampler matcher")
 
 // IncludeSampleMatchFn func that returns whether an event/sample should be included, it satisfies
 // the metrics matcher (processor.MatcherChain) interface.
@@ -104,17 +107,17 @@ func regularExpressionEvaluator(expected interface{}, actual interface{}) bool {
 }
 
 //newExpressionMatcher returns a new ExpressionMatcher
-func newExpressionMatcher(dimensionName string, expr string) ExpressionMatcher {
+func newExpressionMatcher(dimensionName string, expr string) (ExpressionMatcher, error) {
 	return build(dimensionName, expr)
 }
 
-func build(dimensionName string, expr string) ExpressionMatcher {
+func build(dimensionName string, expr string) (ExpressionMatcher, error) {
 	// if the dimension is not "registered", return a constant "false" matcher
 	// "false" will make the chain continue (until either there is a "true" result or there's no more matchers),
 	// so this matcher basically get's ignored in the current implementation
 	mappedAttributeName, found := attrCache[dimensionName]
 	if !found {
-		return constantMatcher{false}
+		return constantMatcher{value:false}, nil
 	}
 
 	eval := matcher{
@@ -123,7 +126,9 @@ func build(dimensionName string, expr string) ExpressionMatcher {
 
 	if strings.HasPrefix(expr, "regex") {
 		regex := strings.Trim(strings.TrimSpace(strings.TrimLeft(expr, "regex")), `"`)
-		cacheRegex(regex)
+		if err := cacheRegex(regex); err != nil {
+			return nil, err
+		}
 		eval.ExpectedValue = regex
 		eval.Evaluator = regularExpressionEvaluator
 	} else {
@@ -131,14 +136,19 @@ func build(dimensionName string, expr string) ExpressionMatcher {
 		eval.Evaluator = literalExpressionEvaluator
 	}
 
-	return eval
+	return eval, nil
 }
 
-func cacheRegex(regex string) {
+func cacheRegex(pattern string) error {
 	//if not cached yet, cache it
-	if _, ok := regexCache[regex]; !ok {
-		regexCache[regex] = regexp.MustCompile(regex)
+	if _, ok := regexCache[pattern]; !ok {
+		regex, err := regexp.Compile(pattern)
+		if err != nil {
+			return err
+		}
+		regexCache[pattern] = regex
 	}
+	return nil
 }
 
 // MatcherChain is a chain of evaluators
@@ -176,7 +186,11 @@ func NewMatcherChain(expressions config.IncludeMetricsMap) MatcherChain {
 
 		evs := chain.Matchers[prop]
 		for _, expr := range exprs {
-			e := newExpressionMatcher(prop, expr)
+			e, err := newExpressionMatcher(prop, expr)
+			if err != nil {
+				mlog.WithError(err).Error(fmt.Sprintf("could not intitilize expression matcher for the provided configuration: '%s'", expr))
+				continue
+			}
 			evs = append(evs, e)
 		}
 		chain.Matchers[prop] = evs
@@ -260,6 +274,6 @@ func NewSampleMatchFn(enableProcessMetrics *bool, includeMetricsMatchers config.
 		}
 
 		enabled, exists := ffRetriever.GetFeatureFlag(handler.FlagFullProcess)
-		return  exists && enabled
+		return exists && enabled
 	}
 }
