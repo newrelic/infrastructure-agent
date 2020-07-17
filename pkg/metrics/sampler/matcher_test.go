@@ -180,7 +180,6 @@ func Test_Evaluator_WithTwoLiteralRules(t *testing.T) {
 				metricDimensionProcessExecutable: {"regex *"},
 				metricDimensionProcessName:       {"java"},
 			},
-			// We want to match because the only rule is a wrong regex.
 			want: true,
 		},
 	}
