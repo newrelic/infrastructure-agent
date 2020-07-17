@@ -10,7 +10,7 @@ The New Relic infrastructure agent orchestrates data retrieval and data forwardi
 
 Data is gathered through **integrations**. On-host integrations are small binaries than retrieve data from different sources like the OS or external services (NGINX, MySQL, Redis, etc.). Integrations are executed by the **agent** at defined intervals or kept running indefinitely under the agent supervision.
 
-Integrations write their payload into `stdout` and log into `stderr` (for more information, see [integration specs](https://docs.newrelic.com/docs/integrations/integrations-sdk/file-specifications/integration-executable-file-specifications). The agent reads the payloads, performs some processingm, and forwards them to the New Relic platform. 
+Integrations write their payload into `stdout` and log into `stderr` (for more information, see [integration specs](https://docs.newrelic.com/docs/integrations/integrations-sdk/file-specifications/integration-executable-file-specifications). The agent reads the payloads, performs some processing, and forwards them to the New Relic platform. 
 
 Integrations can produce different [types of 
 data](https://docs.newrelic.com/docs/integrations/infrastructure-integrations/get-started/understand-use-data-infrastructure-integrations). For a list of available integrations see the [docs 
