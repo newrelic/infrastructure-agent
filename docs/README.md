@@ -36,13 +36,13 @@ Its only purpose is to get safe runtime reload/restart. This is achieved by sign
 
 ### `newrelic-infra`
 
-This binary owns the whole agent runtime. It can be triggered in stand-alone mode if reload/restart features are not required.  
+This binary owns the whole agent runtime. It can be triggered in stand-alone mode if reload/restart features are not required. 
 
 ### `newrelic-infra-ctl`
 
 This is the CLI control command to communicate with the agent daemon.
 
-## Runtime
+## Runtime steps
 
 There's three different runtime steps:
 
@@ -50,7 +50,7 @@ There's three different runtime steps:
 2. Main runtime
 3. Shutdown
 
-### Startup
+### 1. Startup
 
 #### Connectivity check
 
@@ -58,7 +58,7 @@ The agent performs an initial network connection check against New Relic endpoin
 
 In case of failure, the agent retries connecting to New Relic till the limit of attempts and time is reached. 
 
-#### Connect
+#### Connection
 
 This step attempts to uniquely identify the agent/box.
 
@@ -68,8 +68,7 @@ The agent retrieves the fingerprinting data and requests a unique identifier to 
 
 In case of failure, the agent retries connecting to New Relic till the limit of attempts and time is reached. This step is run concurrently so it avoids blocking the runtime. 
 
-
-#### Main runtime
+#### 2. Main runtime
 
 The main runtime workflow addresses data processing and submission.
 
@@ -109,14 +108,13 @@ Integrations:
   * For subsequents runs their defined interval is used.
 - There's no mechanism for waiting on other plugins/instances completion between runs.
 
-#### Shutdown
+#### 3. Shutdown
  
-Shutdown is handled by both `newrelic-infra-service` and `newrelic-infra`. `newrelic-infra-service` is called by the OS service manager, forwarding this request to `newrelic-infra`, which receives notifications about  shutdown via signaling on Linux and using named-pipes on Windows.
+Shutdown is handled by both `newrelic-infra-service` and `newrelic-infra`. `newrelic-infra-service` is called by the OS service manager, forwarding this request to `newrelic-infra`, which receives notifications about shutdown via signaling on Linux and using named-pipes on Windows.
 
-The agent attempts to gracefully shutdown its children processes (integrations) and go-routines. There's  a grace time period which, once reached, executes a force stop. 
+The agent attempts to gracefully shutdown its children processes (integrations) and go-routines. There's a grace time period which, once reached, executes a force stop. 
 
 The agent differentiates between OS shutdown and agent service stop. This allows avoiding triggering alerts on cloud scheduled instances decommision (for example, when downscaling).
-
 
 ## Tests
 
