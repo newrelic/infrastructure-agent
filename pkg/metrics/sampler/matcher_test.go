@@ -109,8 +109,7 @@ func Test_EvaluatorChain_WithSingleRule(t *testing.T) {
 			rules: map[string][]string{
 				metricDimensionProcessExecutable: {"regex *"},
 			},
-			// We want to match because the only filtering rule is a wrong regex.
-			want: true,
+			want: false,
 		},
 	}
 
@@ -487,7 +486,8 @@ func Test_EvaluatorChain_WithMultipleRuleAttribute(t *testing.T) {
 			rules: map[string][]string{
 				metricDimensionProcessExecutable: {
 					"regex *",
-					"regex .*",
+					"/bin/java",
+					"/bin/local/java",
 				},
 			},
 			want: []bool{true, true},

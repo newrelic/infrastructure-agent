@@ -107,17 +107,17 @@ func regularExpressionEvaluator(expected interface{}, actual interface{}) bool {
 }
 
 //newExpressionMatcher returns a new ExpressionMatcher
-func newExpressionMatcher(dimensionName string, expr string) (ExpressionMatcher, error) {
+func newExpressionMatcher(dimensionName string, expr string) ExpressionMatcher {
 	return build(dimensionName, expr)
 }
 
-func build(dimensionName string, expr string) (ExpressionMatcher, error) {
+func build(dimensionName string, expr string) ExpressionMatcher {
 	// if the dimension is not "registered", return a constant "false" matcher
 	// "false" will make the chain continue (until either there is a "true" result or there's no more matchers),
 	// so this matcher basically get's ignored in the current implementation
 	mappedAttributeName, found := attrCache[dimensionName]
 	if !found {
-		return constantMatcher{value:false}, nil
+		return constantMatcher{value: false}
 	}
 
 	eval := matcher{
@@ -127,7 +127,8 @@ func build(dimensionName string, expr string) (ExpressionMatcher, error) {
 	if strings.HasPrefix(expr, "regex") {
 		regex := strings.Trim(strings.TrimSpace(strings.TrimLeft(expr, "regex")), `"`)
 		if err := cacheRegex(regex); err != nil {
-			return nil, err
+			mlog.WithError(err).Error(fmt.Sprintf("could not intitilize expression matcher for the provided configuration: '%s'", expr))
+			return constantMatcher{value: false}
 		}
 		eval.ExpectedValue = regex
 		eval.Evaluator = regularExpressionEvaluator
@@ -136,7 +137,7 @@ func build(dimensionName string, expr string) (ExpressionMatcher, error) {
 		eval.Evaluator = literalExpressionEvaluator
 	}
 
-	return eval, nil
+	return eval
 }
 
 func cacheRegex(pattern string) error {
@@ -186,11 +187,7 @@ func NewMatcherChain(expressions config.IncludeMetricsMap) MatcherChain {
 
 		evs := chain.Matchers[prop]
 		for _, expr := range exprs {
-			e, err := newExpressionMatcher(prop, expr)
-			if err != nil {
-				mlog.WithError(err).Error(fmt.Sprintf("could not intitilize expression matcher for the provided configuration: '%s'", expr))
-				continue
-			}
+			e := newExpressionMatcher(prop, expr)
 			evs = append(evs, e)
 		}
 		chain.Matchers[prop] = evs
