@@ -21,7 +21,7 @@ var (
 	typesToEvaluate = map[string]bool{"ProcessSample": true}
 )
 
-var mlog = log.WithField("component", "SamplerMatcher")
+var mlog = log.WithComponent(SamplerMatcher")
 
 // IncludeSampleMatchFn func that returns whether an event/sample should be included, it satisfies
 // the metrics matcher (processor.MatcherChain) interface.
