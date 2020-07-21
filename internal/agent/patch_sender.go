@@ -136,7 +136,7 @@ func (p *patchSenderIngest) Process() (err error) {
 
 		if agentEntityIDChanged {
 			if err := p.lastEntityID.UpdateEntityID(p.agentIDProvide().ID); err != nil {
-				llog.WithError(err).Warn("failed to update inventory agent entityID")
+				llog.WithError(err).Warn("Failed to update inventory agent entityID")
 			}
 		}
 
