@@ -127,16 +127,16 @@ func (p *patchSenderIngest) Process() (err error) {
 	if longTimeDisconnected || agentEntityIDChanged {
 		llog.WithField("offlineTime", p.resetIfOffline).
 			WithField("agentEntityIDChanged", agentEntityIDChanged).
-			Info("removing inventory cache")
+			Info("Removing inventory cache")
 
 		// Removing the store for the entity would force the agent recreating a fresh Delta Store
 		if err := p.store.RemoveEntity(p.entityKey); err != nil {
-			llog.WithError(err).Warn("could not remove inventory cache")
+			llog.WithError(err).Warn("Could not remove inventory cache")
 		}
 
 		if agentEntityIDChanged {
 			if err := p.lastEntityID.UpdateEntityID(p.agentIDProvide().ID); err != nil {
-				llog.WithError(err).Warn("failed to update inventory agent entityID")
+				llog.WithError(err).Warn("Failed to update inventory agent entityID")
 			}
 		}
 
