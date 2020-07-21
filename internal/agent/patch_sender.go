@@ -119,20 +119,19 @@ func (p *patchSenderIngest) Process() (err error) {
 	}
 
 	// We reset the deltas if the postDeltas fails after agent has been offline for > 24h
-	longTimeDisconnected := p.isLongTimeDisconnected(now)
-	longTimeOrReset := longTimeDisconnected && p.lastDeltaRemoval.Add(p.resetIfOffline).Before(now)
+	lastSubmissionTimeExceeded := p.isLastSubmissionTimeExceeded(now)
+	longTimeDisconnected := lastSubmissionTimeExceeded && p.lastDeltaRemoval.Add(p.resetIfOffline).Before(now)
 
 	agentEntityIDChanged := p.agentEntityIDChanged()
 
-	removalRequired := longTimeOrReset || agentEntityIDChanged
-
-	if removalRequired {
+	if longTimeDisconnected || agentEntityIDChanged {
 		llog.WithField("offlineTime", p.resetIfOffline).
-			Info("agent has been offline for too long. Recreating delta store")
+			WithField("agentEntityIDChanged", agentEntityIDChanged).
+			Info("removing inventory cache")
 
 		// Removing the store for the entity would force the agent recreating a fresh Delta Store
 		if err := p.store.RemoveEntity(p.entityKey); err != nil {
-			llog.WithError(err).Warn("removing deltas")
+			llog.WithError(err).Warn("could not remove inventory cache")
 		}
 
 		if agentEntityIDChanged {
@@ -142,7 +141,7 @@ func (p *patchSenderIngest) Process() (err error) {
 		}
 
 		p.lastDeltaRemoval = now
-		return fmt.Errorf("agent has been offline for %v min. Need to reset delta store", p.resetIfOffline)
+		return fmt.Errorf("agent has to remove inventory cache")
 	}
 
 	if len(deltas) == 0 {
@@ -151,7 +150,7 @@ func (p *patchSenderIngest) Process() (err error) {
 	}
 
 	if !p.cfg.OfflineLoggingMode {
-		if err = p.sendAllDeltas(deltas); err == nil && longTimeDisconnected {
+		if err = p.sendAllDeltas(deltas); err == nil && lastSubmissionTimeExceeded {
 			// If the agent has been long time disconnected, we re-run the reconnecting plugins
 			p.context.Reconnect()
 		}
@@ -233,33 +232,32 @@ func (p *patchSenderIngest) sendAllDeltas(allDeltas []inventoryapi.RawDeltaBlock
 	return nil
 }
 
-func (p *patchSenderIngest) isLongTimeDisconnected(now time.Time) bool {
+func (p *patchSenderIngest) isLastSubmissionTimeExceeded(now time.Time) bool {
 	// Empty entity keys will be attached to agent entityKey so no need to reset.
 	if p.entityKey == "" {
 		return false
 	}
-
-	llog := pslog.WithField("entityKey", p.entityKey)
-
 	lastConn, err := p.lastSubmission.Time()
 	if err != nil {
-		llog.WithError(err).Warn("cannot retrieve last submission time")
+		pslog.WithField("entityKey", p.entityKey).
+			WithError(err).
+			Warn("could not retrieve last submission time")
 	}
 
 	return lastConn.Add(p.resetIfOffline).Before(now)
 }
 
 func (p *patchSenderIngest) agentEntityIDChanged() bool {
-	llog := pslog.WithField("entityKey", p.entityKey)
-
-	// If this is not the agent entity.
+	// Only check for entityID when is the agent sender.
 	if p.entityKey != p.context.AgentIdentifier() {
 		return false
 	}
 
 	lastEntityID, err := p.lastEntityID.GetEntityID()
 	if err != nil {
-		llog.WithError(err).Warn("cannot retrieve last submission time")
+		pslog.WithField("entityKey", p.entityKey).
+			WithError(err).
+			Warn("could not retrieve entityID")
 	}
 
 	return lastEntityID != p.agentIDProvide().ID
