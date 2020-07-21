@@ -50,10 +50,8 @@ func (e *EntityIDFilePersist) UpdateEntityID(id entity.ID) error {
 }
 
 func readFileFn(filePath string) (entity.ID, error) {
-	_, err := os.Stat(filePath)
-
 	// Check if there is an already stored value on disk.
-	if os.IsNotExist(err) {
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return entity.EmptyID, nil
 	}
 
