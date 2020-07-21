@@ -26,7 +26,7 @@ func TestEntityIDFilePersist_RetrieveStoredValue(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestLastEntityID_RetrieveInMemoryValue(t *testing.T) {
+func TestEntityIDFilePersist_RetrieveInMemoryValue(t *testing.T) {
 	expectedID := entity.ID(10)
 
 	le := &EntityIDFilePersist{
@@ -42,7 +42,7 @@ func TestLastEntityID_RetrieveInMemoryValue(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestLastEntityID_ErrWhenReadingFile(t *testing.T) {
+func TestEntityIDFilePersist_ErrWhenReadingFile(t *testing.T) {
 	expectedMessage := "failed when reading file"
 
 	le := &EntityIDFilePersist{
@@ -57,7 +57,7 @@ func TestLastEntityID_ErrWhenReadingFile(t *testing.T) {
 	assert.Error(t, err, expectedMessage)
 }
 
-func TestLastEntityID_UpdateValue(t *testing.T) {
+func TestEntityIDFilePersist_UpdateValue(t *testing.T) {
 	expectedID := entity.ID(10)
 
 	le := &EntityIDFilePersist{
@@ -71,7 +71,7 @@ func TestLastEntityID_UpdateValue(t *testing.T) {
 	assert.Equal(t, expectedID, le.lastEntityID)
 }
 
-func TestLastEntityID_ErrWhenWritingFile(t *testing.T) {
+func TestEntityIDFilePersist_ErrWhenWritingFile(t *testing.T) {
 	expectedErrMessage := "file could not be written"
 	expectedID := entity.ID(10)
 
