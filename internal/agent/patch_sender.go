@@ -131,7 +131,7 @@ func (p *patchSenderIngest) Process() (err error) {
 
 		// Removing the store for the entity would force the agent recreating a fresh Delta Store
 		if err := p.store.RemoveEntity(p.entityKey); err != nil {
-			llog.WithError(err).Warn("could not remove inventory cache")
+			llog.WithError(err).Warn("Could not remove inventory cache")
 		}
 
 		if agentEntityIDChanged {
