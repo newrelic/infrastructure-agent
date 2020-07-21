@@ -33,20 +33,20 @@ func NewEntityIDFilePersist(dataDir string, fileName string) *EntityIDFilePersis
 }
 
 // GetEntityID will return entityID from memory or disk.
-func (le *EntityIDFilePersist) GetEntityID() (entity.ID, error) {
+func (e *EntityIDFilePersist) GetEntityID() (entity.ID, error) {
 	var err error
-	if le.lastEntityID == entity.EmptyID {
-		le.lastEntityID, err = le.readFile(le.filePath)
+	if e.lastEntityID == entity.EmptyID {
+		e.lastEntityID, err = e.readFile(e.filePath)
 	}
 
-	return le.lastEntityID, err
+	return e.lastEntityID, err
 }
 
 // UpdateEntityID will store the entityID on memory and disk.
-func (le *EntityIDFilePersist) UpdateEntityID(id entity.ID) error {
-	le.lastEntityID = id
+func (e *EntityIDFilePersist) UpdateEntityID(id entity.ID) error {
+	e.lastEntityID = id
 
-	return le.writeFile(id, le.filePath)
+	return e.writeFile(id, e.filePath)
 }
 
 func readFileFn(filePath string) (entity.ID, error) {
@@ -68,9 +68,7 @@ func readFileFn(filePath string) (entity.ID, error) {
 		return entity.EmptyID, fmt.Errorf("cannot parse entityID from file content: '%s', error: %v", buf, err)
 	}
 
-	entityID := entity.ID(value)
-
-	return entityID, nil
+	return entity.ID(value), nil
 }
 
 func writeFileFn(content entity.ID, filePath string) error {
