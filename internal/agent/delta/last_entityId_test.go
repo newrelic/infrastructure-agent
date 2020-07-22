@@ -93,7 +93,8 @@ func TestReadFile_ReturnContent(t *testing.T) {
 	expected := entity.ID(10)
 
 	path, err := TempDeltaStoreDir()
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	defer cleanFolder(path)
 
 	file := filepath.Join(path, "temporary_file")
 	err = ioutil.WriteFile(file, []byte(expected.String()), 0644)
@@ -107,7 +108,8 @@ func TestReadFile_ReturnContent(t *testing.T) {
 
 func TestReadFile_EmptyFile(t *testing.T) {
 	path, err := TempDeltaStoreDir()
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	defer cleanFolder(path)
 
 	file := filepath.Join(path, "temporary_file")
 	err = ioutil.WriteFile(file, []byte(""), 0644)
@@ -128,7 +130,8 @@ func TestReadFile_FileNotFound(t *testing.T) {
 
 func TestReadFile_NoPermission(t *testing.T) {
 	path, err := TempDeltaStoreDir()
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	defer cleanFolder(path)
 
 	file := filepath.Join(path, "temporary_file")
 	err = ioutil.WriteFile(file, []byte(""), 0000)
@@ -143,6 +146,7 @@ func TestReadFile_NoPermission(t *testing.T) {
 func TestReadFile_ErrParseContent(t *testing.T) {
 	temp, err := TempDeltaStoreDir()
 	require.NoError(t, err)
+	defer cleanFolder(temp)
 
 	filePath := filepath.Join(temp, "temporary_file")
 	err = ioutil.WriteFile(filePath, []byte("wrong_entity_id"), 0644)
@@ -160,6 +164,7 @@ func TestWriteFile_StoreValue(t *testing.T) {
 
 	temp, err := TempDeltaStoreDir()
 	require.NoError(t, err)
+	defer cleanFolder(temp)
 
 	err = os.MkdirAll(filepath.Join(temp, lastEntityIDFolder), DATA_DIR_MODE)
 	require.NoError(t, err)
@@ -188,6 +193,7 @@ func TestWriteFile_FileNotExist(t *testing.T) {
 	//GIVEN a temporary folder
 	temp, err := TempDeltaStoreDir()
 	require.NoError(t, err, "Should create a temporary file")
+	defer cleanFolder(temp)
 
 	//AND a non existing file to store a value
 	nonExistingFilePath := filepath.Join(temp, "last_entity_ID")
@@ -204,4 +210,10 @@ func TestWriteFile_FileNotExist(t *testing.T) {
 	actualValue, err := readFileFn(nonExistingFilePath)
 	require.NoError(t, err, "Should retrieve value from file")
 	assert.Equal(t, expectedValue, actualValue)
+}
+
+func cleanFolder(path string) {
+	func() {
+		_ = os.RemoveAll(path)
+	}()
 }
