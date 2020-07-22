@@ -6,6 +6,7 @@
 package harvest
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"net/http"
 	"os/user"
 	"testing"
