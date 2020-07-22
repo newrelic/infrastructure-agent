@@ -18,7 +18,7 @@ func TestHeartBeatSampler(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, ok := sample1[0].(HeartbeatSample)
+	_, ok := sample1[0].(*HeartbeatSample)
 
 	assert.True(t, true, ok)
 }
