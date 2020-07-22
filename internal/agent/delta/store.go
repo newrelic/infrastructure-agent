@@ -39,6 +39,7 @@ const (
 	localEntityFolder           = "__nria_localentity"
 	DisableInventorySplit       = 0
 	lastSuccessSubmissionFolder = "last_success"
+	lastEntityIDFolder          = "last_entityID"
 )
 
 var EMPTY_DELTA = []byte{'{', '}'}
@@ -76,6 +77,15 @@ func removeNils(data interface{}) {
 	default:
 		return
 	}
+}
+
+type Storage interface {
+	ReadDeltas(entityKey string) ([]inventoryapi.RawDeltaBlock, error)
+	RemoveEntity(entityKey string) error
+	CompactStorage(entityKey string, threshold uint64) (err error)
+	ResetAllDeltas(entityKey string)
+	UpdateState(entityKey string, deltas []*inventoryapi.RawDelta, deltaStateResults *inventoryapi.DeltaStateMap)
+	SaveState() (err error)
 }
 
 // Store handles information about the storage of Deltas.

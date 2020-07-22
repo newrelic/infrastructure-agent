@@ -24,9 +24,10 @@ import (
 // patchSender collects the cached plugin deltas and submits them to the backend ingest service
 type patchSenderIngest struct {
 	entityKey        string
-	store            *delta.Store
-	lastSubmission   delta.LastSubmissionStore
+	store            delta.Storage
 	postDeltas       postDeltas
+	lastSubmission   delta.LastSubmissionStore
+	lastEntityID     delta.EntityIDPersist
 	userAgent        string
 	compactEnabled   bool
 	compactThreshold uint64
@@ -50,7 +51,7 @@ var pslog = log.WithComponent("PatchSender")
 // Reference to post delta function that can be stubbed for unit testing
 type postDeltas func(entityKeys []string, isAgent bool, deltas ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error)
 
-func newPatchSender(entityKey string, context AgentContext, store *delta.Store, lastSubmission delta.LastSubmissionStore, userAgent string, agentIDProvide id.Provide, httpClient http2.Client) (patchSender, error) {
+func newPatchSender(entityKey string, context AgentContext, store delta.Storage, lastSubmission delta.LastSubmissionStore, lastEntityID delta.EntityIDPersist, userAgent string, agentIDProvide id.Provide, httpClient http2.Client) (patchSender, error) {
 	if store == nil {
 		return nil, fmt.Errorf("creating patch sender: delta store can't be nil")
 	}
@@ -92,6 +93,7 @@ func newPatchSender(entityKey string, context AgentContext, store *delta.Store, 
 		entityKey:        entityKey,
 		store:            store,
 		lastSubmission:   lastSubmission,
+		lastEntityID:     lastEntityID,
 		postDeltas:       client.PostDeltas,
 		context:          context,
 		userAgent:        userAgent,
@@ -99,8 +101,7 @@ func newPatchSender(entityKey string, context AgentContext, store *delta.Store, 
 		compactThreshold: context.Config().CompactThreshold,
 		cfg:              context.Config(),
 		resetIfOffline:   resetIfOffline,
-		agentIDProvide:            agentIDProvide,
-		currentAgentID:   entity.EmptyID,
+		agentIDProvide:   agentIDProvide,
 	}, err
 }
 
@@ -117,35 +118,39 @@ func (p *patchSenderIngest) Process() (err error) {
 		return
 	}
 
-	lastConn, err := p.lastSubmission.Time()
-	if err != nil {
-		llog.WithError(err).Warn("cannot retrieve last submission time")
+	// We reset the deltas if the postDeltas fails after agent has been offline for > 24h
+	lastSubmissionTimeExceeded := p.isLastSubmissionTimeExceeded(now)
+	longTimeDisconnected := lastSubmissionTimeExceeded && p.lastDeltaRemoval.Add(p.resetIfOffline).Before(now)
+
+	agentEntityIDChanged := p.agentEntityIDChanged()
+
+	if longTimeDisconnected || agentEntityIDChanged {
+		llog.WithField("offlineTime", p.resetIfOffline).
+			WithField("agentEntityIDChanged", agentEntityIDChanged).
+			Info("Removing inventory cache")
+
+		// Removing the store for the entity would force the agent recreating a fresh Delta Store
+		if err := p.store.RemoveEntity(p.entityKey); err != nil {
+			llog.WithError(err).Warn("Could not remove inventory cache")
+		}
+
+		if agentEntityIDChanged {
+			if err := p.lastEntityID.UpdateEntityID(p.agentIDProvide().ID); err != nil {
+				llog.WithError(err).Warn("Failed to update inventory agent entityID")
+			}
+		}
+
+		p.lastDeltaRemoval = now
+		return fmt.Errorf("agent has to remove inventory cache")
 	}
 
-	// We reset the deltas if the postDeltas fails after agent has been offline for > 24h
-	longTimeDisconnected := lastConn.Add(p.resetIfOffline).Before(now)
-	longTimeOrReset := longTimeDisconnected && p.lastDeltaRemoval.Add(p.resetIfOffline).Before(now)
-	removalRequired := longTimeOrReset || p.isAgentEntityAndIdChanged()
-
-	if len(deltas) == 0 && !removalRequired {
+	if len(deltas) == 0 {
 		llog.Debug("Patch sender found no deltas to send.")
 		return nil
 	}
 
-	if removalRequired {
-		llog.WithField("offlineTime", p.resetIfOffline).
-			Info("agent has been offline for too long. Recreating delta store")
-
-		// Removing the store for the entity would force the agent recreating a fresh Delta Store
-		if err := p.store.RemoveEntity(p.entityKey); err != nil {
-			llog.WithError(err).Warn("removing deltas")
-		}
-		p.lastDeltaRemoval = now
-		return fmt.Errorf("agent has been offline for %v min. Need to reset delta store", p.resetIfOffline)
-	}
-
 	if !p.cfg.OfflineLoggingMode {
-		if err = p.sendAllDeltas(deltas, now); err == nil && longTimeDisconnected {
+		if err = p.sendAllDeltas(deltas); err == nil && lastSubmissionTimeExceeded {
 			// If the agent has been long time disconnected, we re-run the reconnecting plugins
 			p.context.Reconnect()
 		}
@@ -163,7 +168,7 @@ func (p *patchSenderIngest) Process() (err error) {
 	return
 }
 
-func (p *patchSenderIngest) sendAllDeltas(allDeltas []inventoryapi.RawDeltaBlock, currentTime time.Time) error {
+func (p *patchSenderIngest) sendAllDeltas(allDeltas []inventoryapi.RawDeltaBlock) error {
 	llog := pslog.WithField("entityKey", p.entityKey)
 
 	// This variable means the entity these deltas represent is an agent
@@ -227,17 +232,33 @@ func (p *patchSenderIngest) sendAllDeltas(allDeltas []inventoryapi.RawDeltaBlock
 	return nil
 }
 
-func (p *patchSenderIngest) isAgentEntityAndIdChanged() bool {
-	// agent entity?
+func (p *patchSenderIngest) isLastSubmissionTimeExceeded(now time.Time) bool {
+	// Empty entity keys will be attached to agent entityKey so no need to reset.
+	if p.entityKey == "" {
+		return false
+	}
+	lastConn, err := p.lastSubmission.Time()
+	if err != nil {
+		pslog.WithField("entityKey", p.entityKey).
+			WithError(err).
+			Warn("could not retrieve last submission time")
+	}
+
+	return lastConn.Add(p.resetIfOffline).Before(now)
+}
+
+func (p *patchSenderIngest) agentEntityIDChanged() bool {
+	// Only check for entityID when is the agent sender.
 	if p.entityKey != p.context.AgentIdentifier() {
 		return false
 	}
 
-	// lazy initialization
-	if p.currentAgentID == entity.EmptyID {
-		p.currentAgentID = p.agentIDProvide().ID
+	lastEntityID, err := p.lastEntityID.GetEntityID()
+	if err != nil {
+		pslog.WithField("entityKey", p.entityKey).
+			WithError(err).
+			Warn("could not retrieve entityID")
 	}
 
-	// id changed?
-	return p.currentAgentID != p.agentIDProvide().ID
+	return lastEntityID != p.agentIDProvide().ID
 }
