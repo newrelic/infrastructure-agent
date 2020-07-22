@@ -146,7 +146,7 @@ func TestReadFile_ErrParseContent(t *testing.T) {
 
 	filePath := filepath.Join(temp, "temporary_file")
 	err = ioutil.WriteFile(filePath, []byte("wrong_entity_id"), 0644)
-
+require.NoError(t, err)
 	emptyID, err := readFileFn(filePath)
 	require.Error(t, err)
 	assert.Equal(t, entity.EmptyID, emptyID)
