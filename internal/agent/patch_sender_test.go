@@ -419,7 +419,7 @@ func TestPatchSender_Process_Reset(t *testing.T) {
 	assert.True(t, storageSize <= uint64(expectedStorageSize), "%v not smaller or equal than %d", storageSize, expectedStorageSize)
 }
 
-func TestPathSender_Process_EntityIDChange_ResetLocalEntityDeltas(t *testing.T) {
+func TestPathSender_Process_EntityIDChanged_ResetLocalEntityDeltas(t *testing.T) {
 	newIdentity := entity.Identity{
 		ID: entity.ID(23456),
 	}
@@ -432,6 +432,7 @@ func TestPathSender_Process_EntityIDChange_ResetLocalEntityDeltas(t *testing.T) 
 	// AND a disk persisted entityID
 	lastEntityID := &mockEntityIDPersist{}
 	lastEntityID.On("UpdateEntityID", newIdentity.ID).Return(nil)
+	lastEntityID.On("GetEntityID").Return(entity.ID(654321))
 
 	// AND a patchSender
 	sender := newTestPatchSender(t, "", storage, delta.NewLastSubmissionInMemory(), lastEntityID)
@@ -450,6 +451,38 @@ func TestPathSender_Process_EntityIDChange_ResetLocalEntityDeltas(t *testing.T) 
 	lastEntityID.AssertCalled(t, "UpdateEntityID", newIdentity.ID)
 }
 
+func TestPathSender_Process_EmptyEntityID_UpdateEntityIDWithCurrentAgentID(t *testing.T) {
+	agentID := entity.Identity{
+		ID: entity.ID(23456),
+	}
+
+	// GIVEN a delta store
+	storage := &mockStorage{}
+	storage.On("ReadDeltas", mock.Anything).Return([]inventoryapi.RawDeltaBlock{})
+	storage.On("RemoveEntity", agentKey).Return(nil)
+
+	// AND no persisted entityID
+	lastEntityID := &mockEntityIDPersist{}
+	lastEntityID.On("UpdateEntityID", agentID.ID).Return(nil)
+	lastEntityID.On("GetEntityID").Return(entity.EmptyID)
+
+	// AND a patchSender
+	sender := newTestPatchSender(t, "", storage, delta.NewLastSubmissionInMemory(), lastEntityID)
+	sender.entityKey = agentKey
+
+	// AND set a new identity
+	idCtx := id.NewContext(ctx.Background())
+	sender.agentIDProvide = idCtx.AgentIdentity
+	idCtx.SetAgentIdentity(agentID)
+
+	// WHEN process deltas
+	sender.Process()
+
+	// THEN we should not remove deltas and update the persisted entityID
+	storage.AssertNotCalled(t, "RemoveEntity", agentKey)
+	lastEntityID.AssertCalled(t, "UpdateEntityID", agentID.ID)
+}
+
 type mockStorage struct {
 	mock.Mock
 	delta.Storage
@@ -461,7 +494,7 @@ func (m *mockStorage) RemoveEntity(entityKey string) error {
 }
 
 func (m *mockStorage) ReadDeltas(entityKey string) ([]inventoryapi.RawDeltaBlock, error) {
-	return m.Called().Get(0).([]inventoryapi.RawDeltaBlock), nil
+	return m.Called(entityKey).Get(0).([]inventoryapi.RawDeltaBlock), nil
 }
 
 type mockEntityIDPersist struct {
@@ -469,7 +502,7 @@ type mockEntityIDPersist struct {
 }
 
 func (e *mockEntityIDPersist) GetEntityID() (entity.ID, error) {
-	return entity.ID(654321), nil
+	return e.Called().Get(0).(entity.ID), nil
 }
 
 func (e *mockEntityIDPersist) UpdateEntityID(id entity.ID) error {

@@ -241,7 +241,7 @@ func (p *patchSenderIngest) isLastSubmissionTimeExceeded(now time.Time) bool {
 	if err != nil {
 		pslog.WithField("entityKey", p.entityKey).
 			WithError(err).
-			Warn("could not retrieve last submission time")
+			Warn("failed when retrieve last submission time")
 	}
 
 	return lastConn.Add(p.resetIfOffline).Before(now)
@@ -268,11 +268,9 @@ func (p *patchSenderIngest) agentEntityIDChanged() bool {
 			pslog.WithField("entityKey", p.entityKey).
 				WithError(err).
 				Warn("could not save entityID")
-			return false
 		}
-
 		return false
 	}
 
-	return lastEntityID != currentAgentId
+	return lastEntityID != p.agentIDProvide().ID
 }

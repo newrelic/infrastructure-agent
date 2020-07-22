@@ -3,6 +3,7 @@
 package delta
 
 import (
+	"github.com/stretchr/testify/require"
 	"path/filepath"
 	"testing"
 	"time"
@@ -60,4 +61,15 @@ func TestLastSubmissionStore_MemoryFirst(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.EqualValues(t, mayFirst.Unix(), actual.Unix())
+}
+
+func TestLastSubmissionStore_Time_UpdateWithNowIfHasNoStoredTime(t *testing.T) {
+	dataDir, err := TempDeltaStoreDir()
+	assert.NoError(t, err)
+	repoDir := filepath.Join(dataDir, "delta")
+	ls := NewLastSubmissionStore(repoDir, "entityKey").(*LastSubmissionFileStore)
+
+	n, err := ls.Time()
+	require.NoError(t, err)
+	assert.NotEqual(t, time.Time{}, n)
 }

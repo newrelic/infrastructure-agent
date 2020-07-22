@@ -43,10 +43,7 @@ func (l *LastSubmissionFileStore) Time() (time.Time, error) {
 
 	if err != nil {
 		err := l.UpdateTime(time.Now())
-		if err != nil {
-			return time.Time{}, err
-		}
-		return l.t, nil
+		return l.t, err
 	}
 
 	if err = l.t.UnmarshalText(content); err != nil {
