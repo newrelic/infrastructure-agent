@@ -5,6 +5,7 @@
 package harvest
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"net/http"
 	"testing"
 	"time"
@@ -27,10 +28,10 @@ func TestHostAliases(t *testing.T) {
 	a := infra.NewAgent(testClient.Client, func(config *config.Config) {
 		config.DisplayName = "my_display_name"
 	})
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
 	cloudDetector := cloud.NewDetector(true, 0, 0, 0, false)
 	a.RegisterPlugin(plugins.NewHostAliasesPlugin(a.Context, cloudDetector))
-
 	go a.Run()
 
 	var req http.Request
