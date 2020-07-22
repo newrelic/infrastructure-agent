@@ -7,6 +7,7 @@ package harvest
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"net/http"
 	"testing"
 	"time"
@@ -28,7 +29,7 @@ func TestSysctlPollingRootless(t *testing.T) {
 	a.Context.Config().SysctlIntervalSec = 10 // fail faster
 
 	a.RegisterPlugin(pluginsLinux.NewSysctlPollingMonitor(ids.PluginID{"kernel", "sysctl"}, a.Context))
-
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 	go a.Run()
 
 	var req http.Request
@@ -48,6 +49,7 @@ func TestSysctlSubscriberRootless(t *testing.T) {
 	testClient := ihttp.NewRequestRecorderClient()
 	a := infra.NewAgent(testClient.Client)
 	a.Context.Config().SysctlIntervalSec = 10 // fail faster
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
 	p, err := pluginsLinux.NewSysctlSubscriberMonitor(ids.PluginID{"kernel", "sysctl"}, a.Context)
 	require.NoError(t, err)
@@ -71,6 +73,7 @@ func TestSysctlSubscriberRootless(t *testing.T) {
 func BenchmarkSysctlPollingRootless(b *testing.B) {
 	testClient := ihttp.NewRequestRecorderClient()
 	a := infra.NewAgent(testClient.Client)
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
 	// avoid event submission channel being blocked by no consumers
 	go a.Run()
@@ -90,6 +93,7 @@ func BenchmarkSysctlPollingRootless(b *testing.B) {
 func BenchmarkSysctlSubscriberRootless(b *testing.B) {
 	testClient := ihttp.NewRequestRecorderClient()
 	a := infra.NewAgent(testClient.Client)
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
 	// avoid event submission channel being blocked by no consumers
 	go a.Run()

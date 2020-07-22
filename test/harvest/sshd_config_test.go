@@ -6,6 +6,7 @@
 package harvest
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -40,9 +41,9 @@ func TestSshdConfig(t *testing.T) {
 
 	testClient := ihttp.NewRequestRecorderClient()
 	a := infra.NewAgent(testClient.Client)
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
 	a.RegisterPlugin(pluginsLinux.NewSshdConfigPlugin(ids.PluginID{"config", "sshd"}, a.Context))
-
 	go a.Run()
 
 	var req http.Request

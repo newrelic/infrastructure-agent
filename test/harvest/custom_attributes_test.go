@@ -29,8 +29,8 @@ func TestPluginCustomAttributes(t *testing.T) {
 			"custom_attribute_foo": "bar",
 		}
 	})
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 	a.RegisterPlugin(plugins.NewCustomAttrsPlugin(a.Context))
-	a.Context.SetAgentIdentity(entity.Identity{10, "qweqwe"})
 	go a.Run()
 	defer a.Terminate()
 

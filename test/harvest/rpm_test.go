@@ -6,6 +6,7 @@
 package harvest
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"net/http"
 	"os"
 	"testing"
@@ -29,8 +30,8 @@ func TestRpmPlugin(t *testing.T) {
 
 	testClient := ihttp.NewRequestRecorderClient()
 	a := infra.NewAgent(testClient.Client)
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 	a.RegisterPlugin(pluginsLinux.NewRpmPlugin(a.Context))
-
 	go a.Run()
 
 	var req http.Request
