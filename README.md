@@ -99,7 +99,7 @@ For more information, see [Testing](https://golang.org/pkg/testing/) in the offi
 
 ## Documentation
 
-Documentation about overall architecture, components and workflows, is located under [the docs 
+Find more documentation about the overall architecture, components, and workflows in [the docs
 directory](docs).
 
 ## Support
