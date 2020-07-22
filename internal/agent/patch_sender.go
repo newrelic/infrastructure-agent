@@ -260,5 +260,19 @@ func (p *patchSenderIngest) agentEntityIDChanged() bool {
 			Warn("could not retrieve entityID")
 	}
 
-	return lastEntityID != p.agentIDProvide().ID
+	currentAgentId := p.agentIDProvide().ID
+
+	if lastEntityID == entity.EmptyID {
+		err = p.lastEntityID.UpdateEntityID(currentAgentId)
+		if err != nil {
+			pslog.WithField("entityKey", p.entityKey).
+				WithError(err).
+				Warn("could not save entityID")
+			return false
+		}
+
+		return false
+	}
+
+	return lastEntityID != currentAgentId
 }

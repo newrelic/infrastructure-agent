@@ -42,7 +42,11 @@ func (l *LastSubmissionFileStore) Time() (time.Time, error) {
 	content, err := ioutil.ReadFile(l.file)
 
 	if err != nil {
-		return time.Time{}, err
+		err := l.UpdateTime(time.Now())
+		if err != nil {
+			return time.Time{}, err
+		}
+		return l.t, nil
 	}
 
 	if err = l.t.UnmarshalText(content); err != nil {
