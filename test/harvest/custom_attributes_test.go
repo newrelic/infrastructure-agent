@@ -6,6 +6,7 @@
 package harvest
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"testing"
 	"time"
 
@@ -28,8 +29,8 @@ func TestPluginCustomAttributes(t *testing.T) {
 			"custom_attribute_foo": "bar",
 		}
 	})
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 	a.RegisterPlugin(plugins.NewCustomAttrsPlugin(a.Context))
-
 	go a.Run()
 	defer a.Terminate()
 

@@ -29,7 +29,6 @@ import (
 )
 
 var (
-	agentKey             = "agentKey"
 	remoteKey entity.Key = "remoteKey"
 	ev                   = mapEvent{
 		"eventType": "TestEvent",

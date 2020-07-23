@@ -4,6 +4,7 @@ package core
 
 import (
 	"bytes"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -70,6 +71,7 @@ func TestDeltas_BasicWorkflow(t *testing.T) {
 		ihttp.AcceptedResponse("test/dummy", 1),
 		ihttp.AcceptedResponse("test/dummy", 2))
 	a := infra.NewAgent(testClient.Client)
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
 	// That runs a plugin
 	plugin := newDummyPlugin("hello", a.Context)
@@ -155,6 +157,7 @@ func TestDeltas_ResendIfFailure(t *testing.T) {
 		ihttp.AcceptedResponse("test/dummy", 2))
 
 	a := infra.NewAgent(testClient.Client)
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
 	// That runs a plugin
 	plugin := newDummyPlugin("hello", a.Context)
@@ -240,7 +243,7 @@ func TestDeltas_ResendIfFailure(t *testing.T) {
 }
 
 func TestDeltas_ResendAfterReset(t *testing.T) {
-	const timeout = 5 * time.Second
+	const timeout = 10 * time.Second
 
 	agentDir, err := ioutil.TempDir("", "prefix")
 	if err != nil {
@@ -253,6 +256,7 @@ func TestDeltas_ResendAfterReset(t *testing.T) {
 		config.SendInterval = time.Hour
 		config.AgentDir = agentDir
 	})
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
 	// That runs a plugin
 	plugin1 := newDummyPlugin("hello", a.Context)
@@ -276,6 +280,7 @@ func TestDeltas_ResendAfterReset(t *testing.T) {
 	a = infra.NewAgent(testClient.Client, func(config *config.Config) {
 		config.AgentDir = agentDir
 	})
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 	a.RegisterPlugin(plugin1)
 	go a.Run()
 
@@ -283,23 +288,22 @@ func TestDeltas_ResendAfterReset(t *testing.T) {
 	var req http.Request
 	select {
 	case req = <-testClient.RequestCh:
-		a.Terminate()
-	case <-time.After(timeout):
-		a.Terminate()
-		assert.FailNow(t, "timeout while waiting for a response")
-	}
-	fixture.AssertRequestContainsInventoryDeltas(t, req, []*inventoryapi.RawDelta{
-		{
-			Source:   "test/dummy",
-			ID:       1,
-			FullDiff: true,
-			Diff: map[string]interface{}{
-				"dummy": map[string]interface{}{
-					"value": "hello",
+		fixture.AssertRequestContainsInventoryDeltas(t, req, []*inventoryapi.RawDelta{
+			{
+				Source:   "test/dummy",
+				ID:       1,
+				FullDiff: true,
+				Diff: map[string]interface{}{
+					"dummy": map[string]interface{}{
+						"value": "hello",
+					},
 				},
 			},
-		},
-	})
+		})
+	case <-time.After(timeout):
+		assert.FailNow(t, "timeout while waiting for a response")
+	}
+	a.Terminate()
 }
 
 func TestDeltas_HarvestAfterStoreCleanup(t *testing.T) {
@@ -317,6 +321,8 @@ func TestDeltas_HarvestAfterStoreCleanup(t *testing.T) {
 		}
 		cfg.Verbose = 1
 	})
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
+
 	go a.Terminate()
 
 	plugin := newDummyPlugin("hi", a.Context)

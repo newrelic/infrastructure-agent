@@ -7,22 +7,31 @@ package sender
 import (
 	"bufio"
 	"fmt"
+	"math/rand"
 	"net"
+	"testing"
 
 	"github.com/Microsoft/go-winio"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/windows"
 	"github.com/newrelic/infrastructure-agent/pkg/ipc"
 	"github.com/stretchr/testify/assert"
-
-	"testing"
 )
 
-const pipeName = windows.PipeName + "-test"
+var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func randSeq(n int) string {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
+}
 
 func TestNewClient(t *testing.T) {
 	ready := make(chan int)
 
 	// setup "server"
+	pipeName := getPipeName(t)
 	l, err := winio.ListenPipe(pipeName, nil)
 	assert.NoError(t, err)
 	defer l.Close()
@@ -47,7 +56,12 @@ func TestNewClient(t *testing.T) {
 	<-ready
 }
 
+func getPipeName(t *testing.T) string {
+	return windows.GetPipeName(t.Name() + randSeq(12))
+}
+
 func TestEnableVerboseMissingPipe(t *testing.T) {
+	pipeName := getPipeName(t)
 	c, err := NewClientWithName(0, pipeName)
 
 	err = c.Notify(nil, ipc.EnableVerboseLogging)

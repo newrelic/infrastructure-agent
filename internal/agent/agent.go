@@ -65,23 +65,20 @@ type registerableSender interface {
 }
 
 type Agent struct {
-	plugins       []Plugin              // Slice of registered plugins
-	oldPlugins    []ids.PluginID        // Deprecated plugins whose cached data must be removed, if existing
-	agentDir      string                // Base data directory for the agent
-	extDir        string                // Location of external data input
-	userAgent     string                // User-Agent making requests to warlock
-	inventories   map[string]*inventory // Inventory reaper and sender instances (key: entity ID)
-	Context       *context              // Agent context data that is passed around the place
-	metricsSender registerableSender
-	store         *delta.Store
-	debugProvide  debug.Provide
-	httpClient    backendhttp.Client // http client for both data submission types: events and inventory
-
-	connectSrv *identityConnectService
-
-	provideIDs ProvideIDs
-	entityMap  entity.KnownIDs
-
+	plugins             []Plugin              // Slice of registered plugins
+	oldPlugins          []ids.PluginID        // Deprecated plugins whose cached data must be removed, if existing
+	agentDir            string                // Base data directory for the agent
+	extDir              string                // Location of external data input
+	userAgent           string                // User-Agent making requests to warlock
+	inventories         map[string]*inventory // Inventory reaper and sender instances (key: entity ID)
+	Context             *context              // Agent context data that is passed around the place
+	metricsSender       registerableSender
+	store               *delta.Store
+	debugProvide        debug.Provide
+	httpClient          backendhttp.Client // http client for both data submission types: events and inventory
+	connectSrv          *identityConnectService
+	provideIDs          ProvideIDs
+	entityMap           entity.KnownIDs
 	fpHarvester         fingerprint.Harvester
 	cloudHarvester      cloud.Harvester                          // If it's the case returns information about the cloud where instance is running.
 	agentID             *entity.ID                               // pointer as it's referred from several points
@@ -358,15 +355,37 @@ func NewAgent(cfg *config.Config, buildVersion string, ffRetriever feature_flags
 	// notificationHandler will map ipc messages to functions
 	notificationHandler := ctl.NewNotificationHandlerWithCancellation(ctx.Ctx)
 
-	return New(cfg, ctx, userAgent, idLookupTable, s, connectSrv, provideIDs, httpClient, transport, cloudHarvester,
-		fpHarvester, notificationHandler)
+	return New(
+		cfg,
+		ctx,
+		userAgent,
+		idLookupTable,
+		s,
+		connectSrv,
+		provideIDs,
+		httpClient,
+		transport,
+		cloudHarvester,
+		fpHarvester,
+		notificationHandler,
+	)
 }
 
 // New creates a new agent using given context and services.
-func New(cfg *config.Config, ctx *context, userAgent string, idLookupTable IDLookup, s *delta.Store,
-	connectSrv *identityConnectService, provideIDs ProvideIDs, dataClient backendhttp.Client,
-	transport *http.Transport, cloudHarvester cloud.Harvester, fpHarvester fingerprint.Harvester,
-	notificationHandler *ctl.NotificationHandlerWithCancellation) (*Agent, error) {
+func New(
+	cfg *config.Config,
+	ctx *context,
+	userAgent string,
+	idLookupTable IDLookup,
+	s *delta.Store,
+	connectSrv *identityConnectService,
+	provideIDs ProvideIDs,
+	dataClient backendhttp.Client,
+	transport *http.Transport,
+	cloudHarvester cloud.Harvester,
+	fpHarvester fingerprint.Harvester,
+	notificationHandler *ctl.NotificationHandlerWithCancellation,
+) (*Agent, error) {
 	a := &Agent{
 		Context:             ctx,
 		debugProvide:        debug.ProvideFn,
@@ -511,7 +530,9 @@ func (a *Agent) registerEntityInventory(entityKey string) error {
 	if a.Context.cfg.RegisterEnabled {
 		inv.sender, err = newPatchSenderVortex(entityKey, a.Context.agentKey, a.Context, a.store, a.userAgent, a.Context.AgentIdentity, a.provideIDs, a.entityMap, a.httpClient)
 	} else {
-		inv.sender, err = newPatchSender(entityKey, a.Context, a.store, a.userAgent, a.Context.AgentIdentity, a.httpClient)
+		lastSubmission := delta.NewLastSubmissionStore(a.store.DataDir, entityKey)
+		lastEntityID := delta.NewEntityIDFilePersist(a.store.DataDir, entityKey)
+		inv.sender, err = newPatchSender(entityKey, a.Context, a.store, lastSubmission, lastEntityID, a.userAgent, a.Context.AgentIdentity, a.httpClient)
 	}
 	if err != nil {
 		return err

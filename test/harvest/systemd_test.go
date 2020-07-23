@@ -6,6 +6,7 @@
 package harvest
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"net/http"
 	"os"
 	"testing"
@@ -29,7 +30,7 @@ func TestSystemdPlugin(t *testing.T) {
 
 	testClient := ihttp.NewRequestRecorderClient()
 	a := infra.NewAgent(testClient.Client)
-
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 	a.RegisterPlugin(pluginsLinux.NewSystemdPlugin(a.Context))
 
 	go a.Run()

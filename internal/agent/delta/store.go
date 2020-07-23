@@ -1,5 +1,6 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+
 package delta
 
 import (
@@ -27,20 +28,23 @@ import (
 )
 
 const (
-	DATA_DIR_MODE             = 0755 // default mode for data directories
-	DATA_FILE_MODE            = 0644 // default mode for data files
-	CACHE_DIR                 = ".delta_repo"
-	SAMPLING_REPO             = ".sampling_repo"
-	CACHE_ID_FILE             = "delta_id_cache.json"
-	UNSENT_DELTA_JOURNAL_EXT  = ".pending"
-	ARCHIVE_DELTA_JOURNAL_EXT = ".sent"
-	NO_DELTA_ID               = 0
-	localEntityFolder         = "__nria_localentity"
-	DisableInventorySplit     = 0
+	DATA_DIR_MODE               = 0755 // default mode for data directories
+	DATA_FILE_MODE              = 0644 // default mode for data files
+	CACHE_DIR                   = ".delta_repo"
+	SAMPLING_REPO               = ".sampling_repo"
+	CACHE_ID_FILE               = "delta_id_cache.json"
+	UNSENT_DELTA_JOURNAL_EXT    = ".pending"
+	ARCHIVE_DELTA_JOURNAL_EXT   = ".sent"
+	NO_DELTA_ID                 = 0
+	localEntityFolder           = "__nria_localentity"
+	DisableInventorySplit       = 0
+	lastSuccessSubmissionFolder = "last_success"
+	lastEntityIDFolder          = "last_entityID"
 )
 
 var EMPTY_DELTA = []byte{'{', '}'}
 var NULL = []byte{'n', 'u', 'l', 'l'}
+var ErrNoPreviousSuccessSubmissionTime = fmt.Errorf("no previous success submission time")
 
 var slog = log.WithComponent("Delta Store")
 
@@ -75,6 +79,15 @@ func removeNils(data interface{}) {
 	}
 }
 
+type Storage interface {
+	ReadDeltas(entityKey string) ([]inventoryapi.RawDeltaBlock, error)
+	RemoveEntity(entityKey string) error
+	CompactStorage(entityKey string, threshold uint64) (err error)
+	ResetAllDeltas(entityKey string)
+	UpdateState(entityKey string, deltas []*inventoryapi.RawDelta, deltaStateResults *inventoryapi.DeltaStateMap)
+	SaveState() (err error)
+}
+
 // Store handles information about the storage of Deltas.
 type Store struct {
 	// if <= 0, the inventory splitting is disabled
@@ -87,6 +100,8 @@ type Store struct {
 	CacheDir string
 	// NextIDMap stores the information about the available plugins
 	NextIDMap pluginIDMap
+	// stores time of last success submission of inventory to backend
+	lastSuccessSubmission time.Time
 }
 
 // NewStore creates a new Store and returns a pointer to it. If maxInventorySize <= 0, the inventory splitting is disabled

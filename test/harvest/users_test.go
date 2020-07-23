@@ -6,6 +6,7 @@
 package harvest
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"net/http"
 	"os/user"
 	"testing"
@@ -28,6 +29,8 @@ func TestUsersPlugin(t *testing.T) {
 
 	rc := ihttp.NewRequestRecorderClient()
 	a := infra.NewAgent(rc.Client)
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
+
 	a.RegisterPlugin(pluginsLinux.NewUsersPlugin(a.Context))
 
 	go a.Run()

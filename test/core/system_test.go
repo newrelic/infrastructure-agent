@@ -3,7 +3,10 @@
 package core
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 
@@ -37,8 +40,11 @@ func TestSystemSample(t *testing.T) {
 // Metadata comes from inventory using the agent context as provider
 // then this data is processed upstream in the platform to build Insights fields like `agentVersion`.
 func TestMetadata(t *testing.T) {
+	const timeout = 5 * time.Second
+
 	testClient := ihttp.NewRequestRecorderClient()
 	a := infra.NewAgent(testClient.Client)
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
 	cloudDetector := cloud.NewDetector(true, 0, 0, 0, false)
 	a.RegisterPlugin(plugins.NewHostAliasesPlugin(a.Context, cloudDetector))
@@ -46,8 +52,11 @@ func TestMetadata(t *testing.T) {
 
 	go a.Run()
 
-	req := <-testClient.RequestCh
+	select {
+	case req := <-testClient.RequestCh:
+		fixture_inventory.AssertRequestContainsInventoryDeltas(t, req, fixture_inventory.ExpectedMetadataDelta)
+	case <-time.After(timeout):
+		assert.FailNow(t, "timeout while waiting for a response")
+	}
 	a.Terminate()
-
-	fixture_inventory.AssertRequestContainsInventoryDeltas(t, req, fixture_inventory.ExpectedMetadataDelta)
 }
