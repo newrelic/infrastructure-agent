@@ -2,15 +2,15 @@ ARG base_image=alpine:3.12
 
 FROM $base_image AS core
 
-ARG image_version
-ARG agent_version
-ARG version_file
-ARG agent_bin
+ARG image_version=0.0
+ARG agent_version=0.0
+ARG version_file=VERSION
+ARG agent_bin=newrelic-infra
 
 # Add the agent binary
 COPY $agent_bin /usr/bin/newrelic-infra
 COPY ${agent_bin}-ctl /usr/bin/newrelic-infra-ctl
-#COPY ${agent_bin}-service /usr/bin/newrelic-infra-service
+COPY ${agent_bin}-service /usr/bin/newrelic-infra-service
 
 # Add all static assets
 COPY assets /newrelic
@@ -40,7 +40,24 @@ RUN apk add --no-cache --upgrade \
 
 # Tini is now available at /sbin/tini
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["/usr/bin/newrelic-infra"]
+CMD ["/usr/bin/newrelic-infra-service"]
+
+#################################
+# Forwarder
+#################################
+FROM core AS forwarder
+RUN addgroup -g 2000 nri-agent && adduser -D -H -u 1000 -G nri-agent nri-agent
+USER nri-agent
+
+ENV NRIA_OVERRIDE_HOST_ROOT ""
+ENV NRIA_IS_SECURE_FORWARD_ONLY true
+
+#################################
+# K8s events forwarder
+#################################
+FROM forwarder AS k8s-events-forwarder
+
+ENV NRIA_HTTP_SERVER_ENABLED true
 
 #################################
 # BASE
