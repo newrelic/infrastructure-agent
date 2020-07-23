@@ -280,6 +280,7 @@ func TestDeltas_ResendAfterReset(t *testing.T) {
 	a = infra.NewAgent(testClient.Client, func(config *config.Config) {
 		config.AgentDir = agentDir
 	})
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 	a.RegisterPlugin(plugin1)
 	go a.Run()
 
@@ -287,23 +288,22 @@ func TestDeltas_ResendAfterReset(t *testing.T) {
 	var req http.Request
 	select {
 	case req = <-testClient.RequestCh:
-		a.Terminate()
-	case <-time.After(timeout):
-		a.Terminate()
-		assert.FailNow(t, "timeout while waiting for a response")
-	}
-	fixture.AssertRequestContainsInventoryDeltas(t, req, []*inventoryapi.RawDelta{
-		{
-			Source:   "test/dummy",
-			ID:       1,
-			FullDiff: true,
-			Diff: map[string]interface{}{
-				"dummy": map[string]interface{}{
-					"value": "hello",
+		fixture.AssertRequestContainsInventoryDeltas(t, req, []*inventoryapi.RawDelta{
+			{
+				Source:   "test/dummy",
+				ID:       1,
+				FullDiff: true,
+				Diff: map[string]interface{}{
+					"dummy": map[string]interface{}{
+						"value": "hello",
+					},
 				},
 			},
-		},
-	})
+		})
+	case <-time.After(timeout):
+		assert.FailNow(t, "timeout while waiting for a response")
+	}
+	a.Terminate()
 }
 
 func TestDeltas_HarvestAfterStoreCleanup(t *testing.T) {
