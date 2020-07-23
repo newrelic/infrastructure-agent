@@ -4,6 +4,7 @@ package core
 
 import (
 	"bytes"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -70,6 +71,7 @@ func TestDeltas_BasicWorkflow(t *testing.T) {
 		ihttp.AcceptedResponse("test/dummy", 1),
 		ihttp.AcceptedResponse("test/dummy", 2))
 	a := infra.NewAgent(testClient.Client)
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
 	// That runs a plugin
 	plugin := newDummyPlugin("hello", a.Context)
@@ -155,6 +157,7 @@ func TestDeltas_ResendIfFailure(t *testing.T) {
 		ihttp.AcceptedResponse("test/dummy", 2))
 
 	a := infra.NewAgent(testClient.Client)
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
 	// That runs a plugin
 	plugin := newDummyPlugin("hello", a.Context)
@@ -253,6 +256,7 @@ func TestDeltas_ResendAfterReset(t *testing.T) {
 		config.SendInterval = time.Hour
 		config.AgentDir = agentDir
 	})
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
 	// That runs a plugin
 	plugin1 := newDummyPlugin("hello", a.Context)
@@ -317,6 +321,8 @@ func TestDeltas_HarvestAfterStoreCleanup(t *testing.T) {
 		}
 		cfg.Verbose = 1
 	})
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
+
 	go a.Terminate()
 
 	plugin := newDummyPlugin("hi", a.Context)
