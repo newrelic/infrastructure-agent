@@ -28,8 +28,8 @@ type Manager interface {
 
 type FeatureFlags struct {
 	featuresFromCfg map[string]bool
-	features map[string]bool
-	lock     sync.Mutex
+	features        map[string]bool
+	lock            sync.Mutex
 }
 
 func NewManager(initialFeatureFlags map[string]bool) *FeatureFlags {

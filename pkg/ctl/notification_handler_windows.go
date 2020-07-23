@@ -20,7 +20,7 @@ func NotificationHandler(ctx context.Context, handlers map[ipc.Message]func() er
 		return errors.New("notification handlers not set")
 	}
 
-	l, err := windows.NewNotificationPipeListener(windows.PipeName)
+	l, err := windows.NewNotificationPipeListener(windows.GetPipeName("newrelic-infra"))
 	if err != nil {
 		nlog.WithError(err).Error("failed to create NamedPipe listener")
 		return err

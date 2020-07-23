@@ -13,8 +13,8 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/ipc"
 )
 
-// PipeName is the name of the NamedPipe used for notifications
-const PipeName = `\\.\pipe\newrelic-infra`
+// pipeName is the template used to generate the NamedPipe used for notifications
+const pipeName = `\\.\pipe\`
 
 // PostNotificationMessage sends the message argument to the NamedPipe
 func PostNotificationMessage(pipeName string, message ipc.Message) (err error) {
@@ -45,4 +45,9 @@ func writeMessage(message string, conn net.Conn) (err error) {
 func NewNotificationPipeListener(pipeName string) (l net.Listener, err error) {
 	l, err = winio.ListenPipe(pipeName, nil)
 	return
+}
+
+// GetPipeName generates the NamedPipe used for notifications
+func GetPipeName(serviceName string) string {
+	return pipeName + serviceName
 }
