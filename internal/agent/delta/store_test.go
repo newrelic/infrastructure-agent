@@ -1037,4 +1037,3 @@ func TestStore_Path_PermissionDenied(t *testing.T) {
 	// THEN should return that exists as a bool
 	assert.True(t, exists)
 }
-

@@ -20,7 +20,7 @@ type windowsClient struct {
 // NewClient creates an agent controller client for windows.
 // Windows doesn't require the Pid parameter
 func NewClient(pid int) (c Client, err error) {
-	return NewClientWithName(pid, windows.PipeName)
+	return NewClientWithName(pid, windows.GetPipeName("newrelic-infra"))
 }
 
 // NewClientWithName creates an agent controller client for windows with a configurable pipe name

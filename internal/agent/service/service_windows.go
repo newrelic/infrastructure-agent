@@ -38,7 +38,7 @@ func (svc *Service) Stop(s service.Service) (err error) {
 	}()
 
 	// notify the agent to gracefully stop
-	windows.PostNotificationMessage(windows.PipeName, ipc.Stop)
+	windows.PostNotificationMessage(windows.GetPipeName(svcName), ipc.Stop)
 
 	err = waitForExitOrTimeout(gracefulExit)
 	if err == GracefulExitTimeoutErr {
@@ -66,7 +66,7 @@ func (svc *Service) Shutdown(s service.Service) (err error) {
 	}()
 
 	// notify the agent to update the shutdown status and then stop gracefully
-	windows.PostNotificationMessage(windows.PipeName, ipc.Shutdown)
+	windows.PostNotificationMessage(windows.GetPipeName(svcName), ipc.Shutdown)
 
 	err = waitForExitOrTimeout(gracefulExit)
 	if err == GracefulExitTimeoutErr {
