@@ -52,7 +52,7 @@ const (
 )
 
 const (
-	rAttEntityGUID = "entity.guid"
+	rAttEntityGUID = "entity.guid.INFRA"
 	rAttFbInput    = "fb.input"
 	rAttPluginType = "plugin.type"
 	rAttHostname   = "hostname"

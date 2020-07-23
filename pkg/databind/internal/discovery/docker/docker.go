@@ -45,6 +45,7 @@ func fetch(d discovery.Container, matcher *discovery.FieldsMatcher) ([]discovery
 	if err != nil {
 		return nil, err
 	}
+	defer dc.Close()
 
 	containers, err := dc.ContainerList(context.Background(), types.ContainerListOptions{})
 	if err != nil {

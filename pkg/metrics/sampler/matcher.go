@@ -5,6 +5,7 @@ package sampler
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"reflect"
 	"regexp"
 	"strings"
@@ -19,6 +20,8 @@ import (
 var (
 	typesToEvaluate = map[string]bool{"ProcessSample": true}
 )
+
+var mlog = log.WithComponent("SamplerMatcher")
 
 // IncludeSampleMatchFn func that returns whether an event/sample should be included, it satisfies
 // the metrics matcher (processor.MatcherChain) interface.
@@ -114,7 +117,7 @@ func build(dimensionName string, expr string) ExpressionMatcher {
 	// so this matcher basically get's ignored in the current implementation
 	mappedAttributeName, found := attrCache[dimensionName]
 	if !found {
-		return constantMatcher{false}
+		return constantMatcher{value: false}
 	}
 
 	eval := matcher{
@@ -123,7 +126,10 @@ func build(dimensionName string, expr string) ExpressionMatcher {
 
 	if strings.HasPrefix(expr, "regex") {
 		regex := strings.Trim(strings.TrimSpace(strings.TrimLeft(expr, "regex")), `"`)
-		cacheRegex(regex)
+		if err := cacheRegex(regex); err != nil {
+			mlog.WithError(err).Error(fmt.Sprintf("could not intitilize expression matcher for the provided configuration: '%s'", expr))
+			return constantMatcher{value: false}
+		}
 		eval.ExpectedValue = regex
 		eval.Evaluator = regularExpressionEvaluator
 	} else {
@@ -134,11 +140,16 @@ func build(dimensionName string, expr string) ExpressionMatcher {
 	return eval
 }
 
-func cacheRegex(regex string) {
+func cacheRegex(pattern string) error {
 	//if not cached yet, cache it
-	if _, ok := regexCache[regex]; !ok {
-		regexCache[regex] = regexp.MustCompile(regex)
+	if _, ok := regexCache[pattern]; !ok {
+		regex, err := regexp.Compile(pattern)
+		if err != nil {
+			return err
+		}
+		regexCache[pattern] = regex
 	}
+	return nil
 }
 
 // MatcherChain is a chain of evaluators
@@ -260,6 +271,6 @@ func NewSampleMatchFn(enableProcessMetrics *bool, includeMetricsMatchers config.
 		}
 
 		enabled, exists := ffRetriever.GetFeatureFlag(handler.FlagFullProcess)
-		return  exists && enabled
+		return exists && enabled
 	}
 }

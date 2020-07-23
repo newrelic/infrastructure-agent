@@ -9,7 +9,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 
-	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
 )
 
@@ -31,8 +30,8 @@ func NewHeartbeatSampler(context agent.AgentContext) *HeartbeatSampler {
 func (f *HeartbeatSampler) Sample() (sample.EventBatch, error) {
 	s := HeartbeatSample{
 		HeartbeatCounter: f.count,
-		EventType:        "HeartbeatSample",
 	}
+	s.Type("HeartbeatSample")
 	f.count++
 	return sample.EventBatch{&s}, nil
 }
@@ -62,20 +61,6 @@ func (hb *HeartbeatSampler) Disabled() bool {
 }
 
 type HeartbeatSample struct {
-	HeartbeatCounter int        `json:"heartBeatCounter"`
-	EventType        string     `json:"eventType"`
-	EntityKey        entity.Key `json:"entityKey"`
-	Time             int64      `json:"timestamp"`
-}
-
-func (f HeartbeatSample) Type(eventType string) {
-	f.EventType = eventType
-}
-
-func (f HeartbeatSample) Entity(key entity.Key) {
-	f.EntityKey = key
-}
-
-func (f HeartbeatSample) Timestamp(timestamp int64) {
-	f.Time = timestamp
+	sample.BaseEvent
+	HeartbeatCounter int `json:"heartBeatCounter"`
 }

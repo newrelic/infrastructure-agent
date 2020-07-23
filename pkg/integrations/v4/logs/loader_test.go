@@ -32,9 +32,9 @@ var (
 		Name:  "record_modifier",
 		Match: "*",
 		Records: map[string]string{
-			"entity.guid": "FOOBAR",
-			"plugin.type": logRecordModifierSource,
-			"hostname":    hostName,
+			"entity.guid.INFRA": "FOOBAR",
+			"plugin.type":       logRecordModifierSource,
+			"hostname":          hostName,
 		}, // see idnProvide below
 	}
 	idnProvide = func() entity.Identity {
