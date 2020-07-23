@@ -243,7 +243,7 @@ func TestDeltas_ResendIfFailure(t *testing.T) {
 }
 
 func TestDeltas_ResendAfterReset(t *testing.T) {
-	const timeout = 5 * time.Second
+	const timeout = 10 * time.Second
 
 	agentDir, err := ioutil.TempDir("", "prefix")
 	if err != nil {
