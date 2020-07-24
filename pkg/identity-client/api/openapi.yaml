@@ -1,0 +1,961 @@
+---
+# Copyright 2020 New Relic Corporation. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+openapi: 3.0.0
+info:
+  title: Identity API specifications
+  version: 1.5.0
+servers:
+- url: '{scheme}://{host}:{port}/identity/v1'
+  variables:
+    scheme:
+      default: https
+      enum:
+      - http
+      - https
+    host:
+      default: localhost
+    port:
+      default: "443"
+paths:
+  /connect:
+    post:
+      parameters:
+      - explode: false
+        in: header
+        name: Content-Encoding
+        required: false
+        schema:
+          enum:
+          - gzip
+          type: string
+        style: simple
+      - explode: false
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: header
+        name: X-License-Key
+        required: true
+        schema:
+          pattern: ^[[:alnum:]]+$
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectResponse'
+          description: OK
+        "401":
+          description: unauthorized
+        "418":
+          description: anomaly detected
+        "500":
+          description: unhandled error
+      summary: Connect using a fingerprint
+    put:
+      parameters:
+      - explode: false
+        in: header
+        name: Content-Encoding
+        required: false
+        schema:
+          enum:
+          - gzip
+          type: string
+        style: simple
+      - explode: false
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: header
+        name: X-License-Key
+        required: true
+        schema:
+          pattern: ^[[:alnum:]]+$
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReconnectRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectResponse'
+          description: OK
+        "204":
+          description: used to exclude the retry after for bugged agent v 1.5.62
+        "400":
+          description: bad request if fingerpring and entityID are not properly passed
+        "401":
+          description: unauthorized
+        "500":
+          description: unhandled error
+      summary: Reconnect using a fingerprint and an entityID
+  /disconnect:
+    put:
+      parameters:
+      - explode: false
+        in: header
+        name: Content-Encoding
+        required: false
+        schema:
+          enum:
+          - gzip
+          type: string
+        style: simple
+      - explode: false
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: header
+        name: X-License-Key
+        required: true
+        schema:
+          pattern: ^[[:alnum:]]+$
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DisconnectRequest'
+        required: true
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: bad request if entityID and reason are not properly passed
+        "401":
+          description: unauthorized
+        "500":
+          description: unhandled error
+      summary: disconnects an entity
+  /register/batch:
+    post:
+      parameters:
+      - explode: false
+        in: header
+        name: Content-Encoding
+        required: false
+        schema:
+          enum:
+          - gzip
+          type: string
+        style: simple
+      - explode: false
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: header
+        name: X-License-Key
+        required: true
+        schema:
+          pattern: ^[[:alnum:]]+$
+          type: string
+        style: simple
+      - explode: false
+        in: header
+        name: X-NRI-Agent-Entity-Id
+        required: false
+        schema:
+          format: int64
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterBatchRequest'
+        required: true
+      responses:
+        "207":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterBatchResponse'
+          description: OK
+        "400":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: Invalid payload
+        "401":
+          description: unauthorized
+        "500":
+          description: Unhandled error
+      summary: Register integration entities in batch of a max size of 1000 and 1MB
+    put:
+      parameters:
+      - explode: false
+        in: header
+        name: Content-Encoding
+        required: false
+        schema:
+          enum:
+          - gzip
+          type: string
+        style: simple
+      - explode: false
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: header
+        name: X-License-Key
+        required: true
+        schema:
+          pattern: ^[[:alnum:]]+$
+          type: string
+        style: simple
+      - explode: false
+        in: header
+        name: X-NRI-Agent-Entity-Id
+        required: false
+        schema:
+          format: int64
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReRegisterBatchRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReRegisterBatchResponse'
+          description: OK
+        "400":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: Invalid payload
+        "401":
+          description: unauthorized
+        "500":
+          description: Unhandled error
+      summary: Re-register integration entities in batch of a max size of 1000 and
+        1MB
+  /register:
+    post:
+      parameters:
+      - explode: false
+        in: header
+        name: Content-Encoding
+        required: false
+        schema:
+          enum:
+          - gzip
+          type: string
+        style: simple
+      - explode: false
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: header
+        name: X-License-Key
+        required: true
+        schema:
+          pattern: ^[[:alnum:]]+$
+          type: string
+        style: simple
+      - explode: false
+        in: header
+        name: X-NRI-Agent-Entity-Id
+        required: false
+        schema:
+          format: int64
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+          description: OK
+        "400":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: Bad request such as invalid entity name/type
+        "401":
+          description: unauthorized
+        "500":
+          description: Unhandled error
+      summary: Register integration entity
+    put:
+      parameters:
+      - explode: false
+        in: header
+        name: Content-Encoding
+        required: false
+        schema:
+          enum:
+          - gzip
+          type: string
+        style: simple
+      - explode: false
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: header
+        name: X-License-Key
+        required: true
+        schema:
+          pattern: ^[[:alnum:]]+$
+          type: string
+        style: simple
+      - explode: false
+        in: header
+        name: X-NRI-Agent-Entity-Id
+        required: false
+        schema:
+          format: int64
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReRegisterRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReRegisterResponse'
+          description: OK
+        "400":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: Bad request such as invalid entity name/type
+        "401":
+          description: unauthorized
+        "500":
+          description: Unhandled error
+      summary: Re-register integration entity
+  /lookup:
+    post:
+      parameters:
+      - explode: false
+        in: header
+        name: Content-Encoding
+        required: false
+        schema:
+          enum:
+          - gzip
+          type: string
+        style: simple
+      - explode: false
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: header
+        name: X-License-Key
+        required: true
+        schema:
+          pattern: ^[[:alnum:]]+$
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LookupRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LookupResponse'
+          description: OK
+        "400":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: Bad request
+        "404":
+          description: not found
+        "401":
+          description: unauthorized
+        "500":
+          description: Unhandled error
+      summary: lookup for an entity, given the entityName
+  /lookup/batch:
+    post:
+      parameters:
+      - explode: false
+        in: header
+        name: Content-Encoding
+        required: false
+        schema:
+          enum:
+          - gzip
+          type: string
+        style: simple
+      - explode: false
+        in: header
+        name: User-Agent
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: header
+        name: X-License-Key
+        required: true
+        schema:
+          pattern: ^[[:alnum:]]+$
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LookupBatchRequest'
+        required: true
+      responses:
+        "207":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LookupBatchResponse'
+          description: OK
+        "400":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: Bad request
+        "401":
+          description: unauthorized
+        "500":
+          description: Unhandled error
+      summary: lookup batch for list of entities, given their entityNames
+components:
+  parameters:
+    contentEncoding:
+      explode: false
+      in: header
+      name: Content-Encoding
+      required: false
+      schema:
+        enum:
+        - gzip
+        type: string
+      style: simple
+    userAgent:
+      explode: false
+      in: header
+      name: User-Agent
+      required: true
+      schema:
+        type: string
+      style: simple
+    license:
+      explode: false
+      in: header
+      name: X-License-Key
+      required: true
+      schema:
+        pattern: ^[[:alnum:]]+$
+        type: string
+      style: simple
+    nriAgentEntityId:
+      explode: false
+      in: header
+      name: X-NRI-Agent-Entity-Id
+      required: false
+      schema:
+        format: int64
+        type: integer
+      style: simple
+  schemas:
+    Fingerprint:
+      example:
+        fullHostname: fullHostname
+        hostname: hostname
+        displayName: displayName
+        bootId: bootId
+        macAddresses:
+          key:
+          - macAddresses
+          - macAddresses
+        ipAddresses:
+          key:
+          - ipAddresses
+          - ipAddresses
+        cloudProviderId: cloudProviderId
+        type: type
+      properties:
+        fullHostname:
+          type: string
+        hostname:
+          type: string
+        cloudProviderId:
+          type: string
+        displayName:
+          maxLength: 255
+          type: string
+        bootId:
+          type: string
+        ipAddresses:
+          additionalProperties:
+            items:
+              type: string
+            type: array
+          type: object
+        macAddresses:
+          additionalProperties:
+            items:
+              type: string
+            type: array
+          type: object
+        type:
+          type: string
+      type: object
+    Identity:
+      example:
+        guid: guid
+        entityId: 0
+      properties:
+        entityId:
+          format: int64
+          type: integer
+        guid:
+          type: string
+      required:
+      - entityId
+      - guid
+      type: object
+    RegisterRequest:
+      example:
+        metadata:
+          key: metadata
+        entityName: entityName
+        displayName: displayName
+        entityType: entityType
+        source: source
+      properties:
+        entityName:
+          maxLength: 255
+          type: string
+        displayName:
+          maxLength: 255
+          type: string
+        entityType:
+          pattern: /[A-Z][A-Z0-9_]{2,11}/
+          type: string
+        metadata:
+          additionalProperties:
+            maxLength: 256
+            pattern: ^[a-zA-Z0-9à-ÿÀ-ß  _./=+,\\-]*$
+            type: string
+          maxItems: 100
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9à-ÿÀ-ß  _./=+,\\-]*$
+          type: object
+        source:
+          maxLength: 50
+          type: string
+      required:
+      - entityName
+      type: object
+    ReRegisterRequest:
+      example:
+        metadata:
+          key: metadata
+        entityName: entityName
+        displayName: displayName
+        entityType: entityType
+        entityId: 0
+        source: source
+      properties:
+        entityId:
+          format: int64
+          type: integer
+        entityName:
+          maxLength: 255
+          type: string
+        displayName:
+          maxLength: 255
+          type: string
+        entityType:
+          pattern: /[A-Z][A-Z0-9_]{2,11}/
+          type: string
+        metadata:
+          additionalProperties:
+            maxLength: 256
+            pattern: ^[a-zA-Z0-9à-ÿÀ-ß  _./=+,\\-]*$
+            type: string
+          maxItems: 100
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9à-ÿÀ-ß  _./=+,\\-]*$
+          type: object
+        source:
+          maxLength: 50
+          type: string
+      required:
+      - entityId
+      type: object
+    RegisterBatchEntityResponse:
+      example:
+        entityName: entityName
+        warnings:
+        - warnings
+        - warnings
+        guid: guid
+        entityId: 0
+        error: error
+      properties:
+        entityId:
+          format: int64
+          type: integer
+        entityName:
+          maxLength: 255
+          type: string
+        guid:
+          type: string
+        warnings:
+          items:
+            type: string
+          type: array
+        error:
+          type: string
+      required:
+      - entityName
+      type: object
+    RegisterResponse:
+      example:
+        entityName: entityName
+        warnings:
+        - warnings
+        - warnings
+        guid: guid
+        entityId: 0
+      properties:
+        entityId:
+          format: int64
+          type: integer
+        entityName:
+          type: string
+        guid:
+          type: string
+        warnings:
+          items:
+            type: string
+          type: array
+      required:
+      - entityId
+      - entityName
+      - guid
+      type: object
+    ReRegisterResponse:
+      example:
+        warnings:
+        - warnings
+        - warnings
+        guid: guid
+        entityId: 0
+      properties:
+        entityId:
+          format: int64
+          type: integer
+        guid:
+          type: string
+        warnings:
+          items:
+            type: string
+          type: array
+      required:
+      - entityId
+      - guid
+      type: object
+    ReRegisterBatchEntityResponse:
+      example:
+        entityName: entityName
+        warnings:
+        - warnings
+        - warnings
+        guid: guid
+        entityId: 0
+        error: error
+      properties:
+        entityId:
+          format: int64
+          type: integer
+        entityName:
+          maxLength: 255
+          type: string
+        guid:
+          type: string
+        warnings:
+          items:
+            type: string
+          type: array
+        error:
+          type: string
+      type: object
+    ConnectRequest:
+      example:
+        metadata:
+          key: metadata
+        fingerprint:
+          fullHostname: fullHostname
+          hostname: hostname
+          displayName: displayName
+          bootId: bootId
+          macAddresses:
+            key:
+            - macAddresses
+            - macAddresses
+          ipAddresses:
+            key:
+            - ipAddresses
+            - ipAddresses
+          cloudProviderId: cloudProviderId
+          type: type
+        source: source
+      properties:
+        fingerprint:
+          $ref: '#/components/schemas/Fingerprint'
+        metadata:
+          additionalProperties:
+            maxLength: 256
+            pattern: ^[a-zA-Z0-9à-ÿÀ-ß  _./=+,\\-]*$
+            type: string
+          maxItems: 100
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9à-ÿÀ-ß  _./=+,\\-]*$
+          type: object
+        source:
+          maxLength: 50
+          type: string
+      required:
+      - fingerprint
+      type: object
+    ReconnectRequest:
+      example:
+        metadata:
+          key: metadata
+        fingerprint:
+          fullHostname: fullHostname
+          hostname: hostname
+          displayName: displayName
+          bootId: bootId
+          macAddresses:
+            key:
+            - macAddresses
+            - macAddresses
+          ipAddresses:
+            key:
+            - ipAddresses
+            - ipAddresses
+          cloudProviderId: cloudProviderId
+          type: type
+        entityId: 0
+        source: source
+      properties:
+        entityId:
+          format: int64
+          type: integer
+        fingerprint:
+          $ref: '#/components/schemas/Fingerprint'
+        metadata:
+          additionalProperties:
+            maxLength: 256
+            pattern: ^[a-zA-Z0-9à-ÿÀ-ß  _./=+,\\-]*$
+            type: string
+          maxItems: 100
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9à-ÿÀ-ß  _./=+,\\-]*$
+          type: object
+        source:
+          maxLength: 50
+          type: string
+      required:
+      - entityId
+      - fingerprint
+      type: object
+    DisconnectRequest:
+      example:
+        reason: shutdown
+        entityId: 0
+      properties:
+        entityId:
+          format: int64
+          type: integer
+        reason:
+          enum:
+          - shutdown
+          type: string
+      required:
+      - entityId
+      - reason
+      type: object
+    LookupRequest:
+      example:
+        entityName: entityName
+      properties:
+        entityName:
+          type: string
+      required:
+      - entityName
+      type: object
+    LookupBatchRequest:
+      items:
+        $ref: '#/components/schemas/LookupRequest'
+      maxItems: 1000
+      minItems: 1
+      type: array
+    LookupResponse:
+      example:
+        entityName: entityName
+        guid: guid
+        entityId: 0
+      properties:
+        entityId:
+          format: int64
+          type: integer
+        entityName:
+          type: string
+        guid:
+          type: string
+      required:
+      - entityId
+      - entityName
+      type: object
+    LookupBatchResponse:
+      items:
+        properties:
+          entityId:
+            format: int64
+            type: integer
+          entityName:
+            type: string
+          guid:
+            type: string
+          error:
+            type: string
+          statusCode:
+            type: integer
+        required:
+        - entityName
+        - statusCode
+        type: object
+      maxItems: 1000
+      minItems: 1
+      type: array
+    RegisterBatchRequest:
+      items:
+        $ref: '#/components/schemas/RegisterRequest'
+      maxItems: 1000
+      minItems: 1
+      type: array
+    ReRegisterBatchRequest:
+      items:
+        $ref: '#/components/schemas/ReRegisterRequest'
+      maxItems: 1000
+      minItems: 1
+      type: array
+    ConnectResponse:
+      example:
+        identity:
+          guid: guid
+          entityId: 0
+        warnings:
+        - warnings
+        - warnings
+      properties:
+        identity:
+          $ref: '#/components/schemas/Identity'
+        warnings:
+          items:
+            type: string
+          type: array
+      required:
+      - identity
+      type: object
+    RegisterBatchResponse:
+      items:
+        $ref: '#/components/schemas/RegisterBatchEntityResponse'
+      type: array
+    ReRegisterBatchResponse:
+      items:
+        $ref: '#/components/schemas/ReRegisterBatchEntityResponse'
+      type: array
+    Metadata:
+      additionalProperties:
+        maxLength: 256
+        pattern: ^[a-zA-Z0-9à-ÿÀ-ß  _./=+,\\-]*$
+        type: string
+      maxItems: 100
+      maxLength: 128
+      pattern: ^[a-zA-Z0-9à-ÿÀ-ß  _./=+,\\-]*$
+      type: object
+    Source:
+      maxLength: 50
+      type: string
