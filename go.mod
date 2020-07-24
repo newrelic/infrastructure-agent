@@ -7,6 +7,7 @@ require (
 	github.com/Microsoft/go-winio v0.4.11
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
 	github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6
+	github.com/antihax/optional v1.0.0
 	github.com/aws/aws-sdk-go v1.25.14-0.20200515182354-0961961790e6
 	github.com/containerd/containerd v1.3.7 // indirect
 	github.com/coreos/go-systemd/v22 v22.1.0
@@ -39,6 +40,7 @@ require (
 	github.com/sirupsen/logrus v1.6.1-0.20200528085638-6699a89a232f
 	github.com/stretchr/testify v1.5.1
 	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b
+	golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be
 	golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1
 	golang.org/x/text v0.3.3-0.20190829152558-3d0f7978add9 // indirect
 	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c // indirect
