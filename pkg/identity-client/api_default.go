@@ -13,6 +13,7 @@ package identity
 
 import (
 	_context "context"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 	_ioutil "io/ioutil"
 	_nethttp "net/http"
 	_neturl "net/url"
@@ -810,6 +811,7 @@ func (a *DefaultApiService) RegisterPost(ctx _context.Context, userAgent string,
 
 	// create path and map variables
 	localVarPath := a.client.cfg.BasePath + "/register"
+	log.WithField("localVarPath", localVarPath).Info("Calling register")
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := _neturl.Values{}
 	localVarFormParams := _neturl.Values{}
