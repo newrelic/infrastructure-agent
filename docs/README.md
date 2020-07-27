@@ -74,8 +74,12 @@ The main runtime workflow addresses data processing and submission.
 
 Codebase differentiates different paths for:
 
-- Metrics and events: these share the same workflow, as non dimensional metrics are represented through events.
-- Inventory: stateful data. Might require disk persistence.
+- Metrics and events: these share the same workflow, as non dimensional metrics are represented 
+through events. See [docs](https://docs.newrelic.com/docs/using-new-relic/data/understand-data/new-relic-data-types)
+for further information.
+- Inventory: data which might require state to be persisted between agent/box restarts. See 
+[docs](https://docs.newrelic.com/docs/infrastructure/infrastructure-ui-pages/infra-ui-pages/infrastructure-inventory-page-search-your-entire-infrastructure)
+ for further information.
 
 ##### Data sources
 
@@ -104,7 +108,8 @@ Metrics/Events:
 Integrations:
 
 - They are started concurrently at similar times.
-  * There is a random delay between 0 and their defined interval, which is used in order to spread the load.
+  * At the first run there is a random delay between 0 and their defined interval, which is used in 
+  order to spread the load.
   * For subsequents runs their defined interval is used.
 - There's no mechanism for waiting on other plugins/instances completion between runs.
 
