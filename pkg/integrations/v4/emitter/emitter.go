@@ -3,9 +3,12 @@
 package emitter
 
 import (
+	_context "context"
 	"errors"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/identity-client"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
+	_nethttp "net/http"
 
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
@@ -33,12 +36,37 @@ type Emitter interface {
 	Emit(metadata integration.Definition, ExtraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error
 }
 
-func NewIntegrationEmitter(a *agent.Agent, dmSender dm.MetricsSender, ffRetriever feature_flags.Retriever) Emitter {
+// IdentityClient registers entities
+type IdentityClient interface {
+	RegisterPost(
+		ctx _context.Context,
+		userAgent string,
+		xLicenseKey string,
+		registerRequest identity.RegisterRequest,
+		localVarOptionals *identity.RegisterPostOpts) (identity.RegisterResponse, *_nethttp.Response, error)
+
+	ConnectPost(
+		ctx _context.Context,
+		userAgent string,
+		xLicenseKey string,
+		connectRequest identity.ConnectRequest,
+		localVarOptionals *identity.ConnectPostOpts) (identity.ConnectResponse, *_nethttp.Response, error)
+}
+
+func NewIntegrationEmitter(a *agent.Agent,
+	dmSender dm.MetricsSender,
+	identityClient IdentityClient,
+	ffRetriever feature_flags.Retriever,
+	license string,
+	userAgent string) Emitter {
 	return &Legacy{
 		Context:             a.Context,
 		MetricsSender:       dmSender,
 		ForceProtocolV2ToV3: true,
 		FFRetriever:         ffRetriever,
+		identityClient:      identityClient,
+		license:             license,
+		userAgent:           userAgent,
 	}
 }
 
@@ -49,6 +77,9 @@ type Legacy struct {
 	MetricsSender       dm.MetricsSender
 	ForceProtocolV2ToV3 bool
 	FFRetriever         feature_flags.Retriever
+	identityClient      IdentityClient
+	userAgent           string
+	license             string
 }
 
 func (e *Legacy) Emit(metadata integration.Definition, extraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error {
