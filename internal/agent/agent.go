@@ -5,7 +5,6 @@ package agent
 import (
 	context2 "context"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
 	"net"
 	"net/http"
 	"net/url"
@@ -17,6 +16,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
 
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/metric"
 	"github.com/sirupsen/logrus"
@@ -63,23 +65,20 @@ type registerableSender interface {
 }
 
 type Agent struct {
-	plugins       []Plugin              // Slice of registered plugins
-	oldPlugins    []ids.PluginID        // Deprecated plugins whose cached data must be removed, if existing
-	agentDir      string                // Base data directory for the agent
-	extDir        string                // Location of external data input
-	userAgent     string                // User-Agent making requests to warlock
-	inventories   map[string]*inventory // Inventory reaper and sender instances (key: entity ID)
-	Context       *context              // Agent context data that is passed around the place
-	metricsSender registerableSender
-	store         *delta.Store
-	debugProvide  debug.Provide
-	httpClient    backendhttp.Client // http client for both data submission types: events and inventory
-
-	connectSrv *identityConnectService
-
-	provideIDs ProvideIDs
-	entityMap  entity.KnownIDs
-
+	plugins             []Plugin              // Slice of registered plugins
+	oldPlugins          []ids.PluginID        // Deprecated plugins whose cached data must be removed, if existing
+	agentDir            string                // Base data directory for the agent
+	extDir              string                // Location of external data input
+	userAgent           string                // User-Agent making requests to warlock
+	inventories         map[string]*inventory // Inventory reaper and sender instances (key: entity ID)
+	Context             *context              // Agent context data that is passed around the place
+	metricsSender       registerableSender
+	store               *delta.Store
+	debugProvide        debug.Provide
+	httpClient          backendhttp.Client // http client for both data submission types: events and inventory
+	connectSrv          *identityConnectService
+	provideIDs          ProvideIDs
+	entityMap           entity.KnownIDs
 	fpHarvester         fingerprint.Harvester
 	cloudHarvester      cloud.Harvester                          // If it's the case returns information about the cloud where instance is running.
 	agentID             *entity.ID                               // pointer as it's referred from several points
@@ -143,11 +142,8 @@ type context struct {
 	resolver           hostname.ResolverChangeNotifier
 	EntityMap          entity.KnownIDs
 	idLookup           IDLookup
-	shouldIncludeEvent includeSampleMatcher
+	shouldIncludeEvent sampler.IncludeSampleMatchFn
 }
-
-// func that satisfies the metrics matcher (processor.MatcherChain) interface while avoiding the import
-type includeSampleMatcher func(sample interface{}) bool
 
 // AgentID provides agent ID, blocking until it's available
 func (c *context) AgentID() entity.ID {
@@ -186,8 +182,13 @@ func (c *context) IDLookup() IDLookup {
 type IDLookup map[string]string
 
 //NewContext creates a new context.
-func NewContext(cfg *config.Config, buildVersion string, resolver hostname.ResolverChangeNotifier, lookup IDLookup,
-	sampleMatcher includeSampleMatcher) *context {
+func NewContext(
+	cfg *config.Config,
+	buildVersion string,
+	resolver hostname.ResolverChangeNotifier,
+	lookup IDLookup,
+	sampleMatchFn sampler.IncludeSampleMatchFn,
+) *context {
 	ctx, cancel := context2.WithCancel(context2.Background())
 
 	return &context{
@@ -201,7 +202,7 @@ func NewContext(cfg *config.Config, buildVersion string, resolver hostname.Resol
 		servicePids:        make(map[string]map[int]string),
 		resolver:           resolver,
 		idLookup:           lookup,
-		shouldIncludeEvent: sampleMatcher,
+		shouldIncludeEvent: sampleMatchFn,
 	}
 }
 
@@ -274,24 +275,8 @@ func checkCollectorConnectivity(ctx context2.Context, cfg *config.Config, retrie
 	return
 }
 
-func getSampleMatcher(c *config.Config) func(interface{}) bool {
-	ec := sampler.NewMatcherChain(c.IncludeMetricsMatchers)
-	if ec.Enabled {
-		return func(sample interface{}) bool {
-			return ec.Evaluate(sample)
-		}
-	}
-
-	alog.Debug("Evaluation chain is DISABLED, using default behaviour")
-
-	// default matching function. All samples/event will be included
-	return func(sample interface{}) bool {
-		return true
-	}
-}
-
 // NewAgent returns a new instance of an agent built from the config.
-func NewAgent(cfg *config.Config, buildVersion string) (a *Agent, err error) {
+func NewAgent(cfg *config.Config, buildVersion string, ffRetriever feature_flags.Retriever) (a *Agent, err error) {
 
 	hostnameResolver := hostname.CreateResolver(
 		cfg.OverrideHostname, cfg.OverrideHostnameShort, cfg.DnsHostnameResolution)
@@ -301,8 +286,8 @@ func NewAgent(cfg *config.Config, buildVersion string) (a *Agent, err error) {
 	cloudHarvester.Initialize()
 
 	idLookupTable := NewIdLookup(hostnameResolver, cloudHarvester, cfg.DisplayName)
-	sampleMatcher := getSampleMatcher(cfg)
-	ctx := NewContext(cfg, buildVersion, hostnameResolver, idLookupTable, sampleMatcher)
+	sampleMatchFn := sampler.NewSampleMatchFn(cfg.EnableProcessMetrics, cfg.IncludeMetricsMatchers, ffRetriever)
+	ctx := NewContext(cfg, buildVersion, hostnameResolver, idLookupTable, sampleMatchFn)
 
 	agentKey, err := idLookupTable.getAgentKey()
 	if err != nil {
@@ -370,15 +355,37 @@ func NewAgent(cfg *config.Config, buildVersion string) (a *Agent, err error) {
 	// notificationHandler will map ipc messages to functions
 	notificationHandler := ctl.NewNotificationHandlerWithCancellation(ctx.Ctx)
 
-	return New(cfg, ctx, userAgent, idLookupTable, s, connectSrv, provideIDs, httpClient, transport, cloudHarvester,
-		fpHarvester, notificationHandler)
+	return New(
+		cfg,
+		ctx,
+		userAgent,
+		idLookupTable,
+		s,
+		connectSrv,
+		provideIDs,
+		httpClient,
+		transport,
+		cloudHarvester,
+		fpHarvester,
+		notificationHandler,
+	)
 }
 
 // New creates a new agent using given context and services.
-func New(cfg *config.Config, ctx *context, userAgent string, idLookupTable IDLookup, s *delta.Store,
-	connectSrv *identityConnectService, provideIDs ProvideIDs, dataClient backendhttp.Client,
-	transport *http.Transport, cloudHarvester cloud.Harvester, fpHarvester fingerprint.Harvester,
-	notificationHandler *ctl.NotificationHandlerWithCancellation) (*Agent, error) {
+func New(
+	cfg *config.Config,
+	ctx *context,
+	userAgent string,
+	idLookupTable IDLookup,
+	s *delta.Store,
+	connectSrv *identityConnectService,
+	provideIDs ProvideIDs,
+	dataClient backendhttp.Client,
+	transport *http.Transport,
+	cloudHarvester cloud.Harvester,
+	fpHarvester fingerprint.Harvester,
+	notificationHandler *ctl.NotificationHandlerWithCancellation,
+) (*Agent, error) {
 	a := &Agent{
 		Context:             ctx,
 		debugProvide:        debug.ProvideFn,
@@ -523,7 +530,9 @@ func (a *Agent) registerEntityInventory(entityKey string) error {
 	if a.Context.cfg.RegisterEnabled {
 		inv.sender, err = newPatchSenderVortex(entityKey, a.Context.agentKey, a.Context, a.store, a.userAgent, a.Context.AgentIdentity, a.provideIDs, a.entityMap, a.httpClient)
 	} else {
-		inv.sender, err = newPatchSender(entityKey, a.Context, a.store, a.userAgent, a.Context.AgentIdentity, a.httpClient)
+		lastSubmission := delta.NewLastSubmissionStore(a.store.DataDir, entityKey)
+		lastEntityID := delta.NewEntityIDFilePersist(a.store.DataDir, entityKey)
+		inv.sender, err = newPatchSender(entityKey, a.Context, a.store, lastSubmission, lastEntityID, a.userAgent, a.Context.AgentIdentity, a.httpClient)
 	}
 	if err != nil {
 		return err

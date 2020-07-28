@@ -19,9 +19,9 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
-	"github.com/newrelic/infrastructure-agent/pkg/metrics"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/process"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -259,7 +259,7 @@ func contextMock() *mocks.AgentContext {
 }
 
 // assertProcessSample will do the initial check for the sample.
-func assertProcessSample(t assert.TestingT, sample *metrics.ProcessSample) {
+func assertProcessSample(t assert.TestingT, sample *types.ProcessSample) {
 	assert.NotNil(t, sample.ProcessDisplayName)
 	assert.NotNil(t, sample.ProcessID)
 	assert.NotNil(t, sample.CommandName)
@@ -281,7 +281,7 @@ func assertProcessSample(t assert.TestingT, sample *metrics.ProcessSample) {
 	assert.NotNil(t, sample.FdCount)
 }
 
-func assertIOCounters(t assert.TestingT, sample *metrics.ProcessSample) {
+func assertIOCounters(t assert.TestingT, sample *types.ProcessSample) {
 	assert.NotNil(t, sample.IOReadCountPerSecond)
 	assert.NotNil(t, sample.IOWriteCountPerSecond)
 	assert.NotNil(t, sample.IOReadBytesPerSecond)
@@ -292,13 +292,13 @@ func assertIOCounters(t assert.TestingT, sample *metrics.ProcessSample) {
 	assert.NotNil(t, sample.IOTotalWriteBytes)
 }
 
-func sampleProcess(ps sampler.Sampler, pid int32) (*metrics.ProcessSample, error) {
+func sampleProcess(ps sampler.Sampler, pid int32) (*types.ProcessSample, error) {
 	batch, err := ps.Sample()
 	if err != nil {
 		return nil, err
 	}
 	for _, s := range batch {
-		sample := s.(*metrics.ProcessSample) // This will fail if you add container labels to the sample
+		sample := s.(*types.ProcessSample) // This will fail if you add container labels to the sample
 		if sample.ProcessID == pid {
 			return sample, nil
 		}

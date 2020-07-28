@@ -3,9 +3,8 @@
 package feature_flags
 
 import (
+	"errors"
 	"sync"
-
-	"github.com/pkg/errors"
 )
 
 var (
@@ -13,6 +12,7 @@ var (
 )
 
 type Setter interface {
+	// SetFeatureFlag enables or disables FF on the config if not already set.
 	SetFeatureFlag(name string, enabled bool) error
 }
 
@@ -27,22 +27,26 @@ type Manager interface {
 }
 
 type FeatureFlags struct {
-	features map[string]bool
-	lock     sync.Mutex
+	featuresFromCfg map[string]bool
+	features        map[string]bool
+	lock            sync.Mutex
 }
 
 func NewManager(initialFeatureFlags map[string]bool) *FeatureFlags {
-	ff := map[string]bool{}
+	fInitial := map[string]bool{}
+	fFromCfg := map[string]bool{}
 
 	if initialFeatureFlags != nil {
 		for key, value := range initialFeatureFlags {
-			ff[key] = value
+			fInitial[key] = value
+			fFromCfg[key] = value
 		}
 	}
 
 	return &FeatureFlags{
-		features: ff,
-		lock:     sync.Mutex{},
+		featuresFromCfg: fFromCfg,
+		features:        fInitial,
+		lock:            sync.Mutex{},
 	}
 }
 
@@ -52,9 +56,13 @@ func (f *FeatureFlags) SetFeatureFlag(name string, enabled bool) error {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
-	// if the FF exists, it means either it's in the config file or it has been set already by the CommandChannel.
-	// In either case, do not modify the previous value
-	if _, ok := f.features[name]; ok {
+	// if the FF was provided by user config, that one prevails
+	if _, ok := f.featuresFromCfg[name]; ok {
+		return ErrFeatureFlagAlreadyExists
+	}
+
+	// value from command-channel equals current state
+	if v, ok := f.features[name]; ok && v == enabled {
 		return ErrFeatureFlagAlreadyExists
 	}
 

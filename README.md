@@ -13,6 +13,7 @@ from services running in the cloud or on dedicated hosts to containers running i
 * [Run the agent](#run-the-agent)
 * [Use the agent](#use-the-agent)
 * [Testing](#testing)
+* [Documentation](#docs)
 * [Support](#support)
 * [Contributing](#contributing)
 * [To-do](#to-do)
@@ -40,7 +41,11 @@ For more information on configuration methods, precedence, and structure, see th
 
 This repository contains a number of scripts that facilitate building `infra-agent` for environments supported by New Relic: Linux, Windows, and Docker. 
 
-To build the agent for architectures and OSes different than those supported by New Relic, set the [Go environment variables](https://golang.org/cmd/go/#hdr-Environment_variables) to target the desired OS/Architecture combination.
+To build the agent for architectures and OSes different than the one where the build is running, set the [Go environment variables](https://golang.org/cmd/go/#hdr-Environment_variables) to target the desired OS/Architecture combination. For example:
+
+```bash
+$ make dist-for-os GOOS=linux
+```
 
 To compile and build the agent run these commands:
 
@@ -92,6 +97,11 @@ $ go test -race -run /A=1    # For all top-level tests, run subtests matching "A
 
 For more information, see [Testing](https://golang.org/pkg/testing/) in the official Go docs.
 
+## Documentation
+
+Find more documentation about the overall architecture, components, and workflows in [the docs
+directory](docs).
+
 ## Support
 
 New Relic provides support for its infrastructure agent when it's installed using the [official packages](https://docs.newrelic.com/docs/infrastructure/install-configure-manage-infrastructure).
@@ -108,15 +118,28 @@ You can find this project's topic/threads here:
 
 https://discuss.newrelic.com/c/support-products-agents/new-relic-infrastructure
 
+## Privacy
+
+At New Relic we take your privacy and the security of your information seriously, and are committed to protecting your information.
+We must emphasize the importance of not sharing personal data in public forums, and ask all users to scrub logs and diagnostic information for sensitive information, whether personal, proprietary, or otherwise.
+
+We define “Personal Data” as any information relating to an identified or identifiable individual, including, for example, your name, phone number, post code or zip code, Device ID, IP address, and email address.
+
+Review [New Relic’s General Data Privacy Notice](https://newrelic.com/termsandconditions/privacy) for more information.
+
 ## Contributing
 
-Contributions to improve infrastructure agent are encouraged!
+We encourage your contributions to improve the infrastructure agent!
 Keep in mind when you submit your pull request, you'll need to sign the CLA via the click-through using CLA-Assistant.
 You only have to sign the CLA one time per project.
+If you have any questions, or to execute our corporate CLA, required if your contribution is on behalf of a company, drop us an email at opensource@newrelic.com.
 
-To execute our corporate CLA, which is required if your contribution is on behalf of a company, or if you have any questions, please drop us an email at open-source@newrelic.com.
+**A note about vulnerabilities**
 
-Full details about how to contribute in our [Contribution Guide](./CONTRIBUTING.md).
+As noted in our [security policy](https://github.com/newrelic/.github/blob/master/SECURITY.md), New Relic is committed to the privacy and security of our customers and their data.
+We believe that providing coordinated disclosure by security researchers and engaging with the security community are important means to achieve our security goals.
+
+If you believe you have found a security vulnerability in this project or any of New Relic's products or websites, we welcome and greatly appreciate you reporting it to New Relic through [HackerOne](https://hackerone.com/newrelic).
 
 ## To do
 

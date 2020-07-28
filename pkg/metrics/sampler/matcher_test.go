@@ -4,25 +4,30 @@
 package sampler_test
 
 import (
+	"io/ioutil"
+	"os"
+	"testing"
+
+	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
+	testFF "github.com/newrelic/infrastructure-agent/internal/feature_flags/test"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/network"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/newrelic/infrastructure-agent/pkg/trace"
+	fixture "github.com/newrelic/infrastructure-agent/test/fixture/sample"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
-	"io/ioutil"
-	"os"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-var metricDimensionProcessName string = "process.name"
-var metricDimensionProcessExecutable string = "process.executable"
+var metricDimensionProcessName = "process.name"
+var metricDimensionProcessExecutable = "process.executable"
 
 func Test_EvaluatorChain_WithSingleRule(t *testing.T) {
 
@@ -36,7 +41,7 @@ func Test_EvaluatorChain_WithSingleRule(t *testing.T) {
 	cases := []testCase{
 		{
 			name:  "ProcessName_IsLiteralMatch",
-			input: metrics.ProcessSample{ProcessDisplayName: "java"},
+			input: types.ProcessSample{ProcessDisplayName: "java"},
 			rules: map[string][]string{
 				metricDimensionProcessName: {"java"},
 			},
@@ -44,7 +49,7 @@ func Test_EvaluatorChain_WithSingleRule(t *testing.T) {
 		},
 		{
 			name:  "ProcessName_IsLiteralNotMatch",
-			input: metrics.ProcessSample{ProcessDisplayName: "java"},
+			input: types.ProcessSample{ProcessDisplayName: "java"},
 			rules: map[string][]string{
 				metricDimensionProcessName: {"test"},
 			},
@@ -52,7 +57,7 @@ func Test_EvaluatorChain_WithSingleRule(t *testing.T) {
 		},
 		{
 			name:  "ProcessName_IsRegexMatch",
-			input: metrics.ProcessSample{ProcessDisplayName: "test.exe"},
+			input: types.ProcessSample{ProcessDisplayName: "test.exe"},
 			rules: map[string][]string{
 				metricDimensionProcessName: {"regex ^test"},
 			},
@@ -60,7 +65,7 @@ func Test_EvaluatorChain_WithSingleRule(t *testing.T) {
 		},
 		{
 			name:  "ProcessName_IsRegexNotMatch",
-			input: metrics.ProcessSample{ProcessDisplayName: "java.exe"},
+			input: types.ProcessSample{ProcessDisplayName: "java.exe"},
 			rules: map[string][]string{
 				metricDimensionProcessName: {"regex ^test"},
 			},
@@ -68,7 +73,7 @@ func Test_EvaluatorChain_WithSingleRule(t *testing.T) {
 		},
 		{
 			name:  "ProcessCmdLine_IsLiteralMatch",
-			input: &metrics.ProcessSample{CmdLine: "/bin/java"},
+			input: &types.ProcessSample{CmdLine: "/bin/java"},
 			rules: map[string][]string{
 				metricDimensionProcessExecutable: {"/bin/java"},
 			},
@@ -76,7 +81,7 @@ func Test_EvaluatorChain_WithSingleRule(t *testing.T) {
 		},
 		{
 			name:  "ProcessCmdLine_IsLiteralNotMatch",
-			input: &metrics.ProcessSample{CmdLine: "/bin/java"},
+			input: &types.ProcessSample{CmdLine: "/bin/java"},
 			rules: map[string][]string{
 				metricDimensionProcessExecutable: {"/bin/test"},
 			},
@@ -84,7 +89,7 @@ func Test_EvaluatorChain_WithSingleRule(t *testing.T) {
 		},
 		{
 			name:  "ProcessCmdLine_IsRegexMatch",
-			input: &metrics.ProcessSample{CmdLine: "/bin/java"},
+			input: &types.ProcessSample{CmdLine: "/bin/java"},
 			rules: map[string][]string{
 				metricDimensionProcessExecutable: {"regex ^/bin/java"},
 			},
@@ -92,9 +97,17 @@ func Test_EvaluatorChain_WithSingleRule(t *testing.T) {
 		},
 		{
 			name:  "ProcessCmdLine_IsRegexNotMatch",
-			input: &metrics.ProcessSample{CmdLine: "/bin/java"},
+			input: &types.ProcessSample{CmdLine: "/bin/java"},
 			rules: map[string][]string{
 				metricDimensionProcessExecutable: {"regex ^/bin/local/java"},
+			},
+			want: false,
+		},
+		{
+			name:  "ProcessCmdLine_NotValidRegex",
+			input: &types.ProcessSample{CmdLine: "/bin/java"},
+			rules: map[string][]string{
+				metricDimensionProcessExecutable: {"regex *"},
 			},
 			want: false,
 		},
@@ -113,7 +126,7 @@ func Test_EvaluatorChain_WithSingleRule(t *testing.T) {
 // it can be easily adapted for any other number of dimensions/attributes
 func Test_Evaluator_WithTwoLiteralRules(t *testing.T) {
 	// ProcessDisplayName maps to "process.name" and CmdLine maps to "process.executable"
-	javaProcessSample := metrics.ProcessSample{ProcessDisplayName: "java", CmdLine: "/bin/java"}
+	javaProcessSample := types.ProcessSample{ProcessDisplayName: "java", CmdLine: "/bin/java"}
 
 	type testCase struct {
 		name  string
@@ -160,6 +173,15 @@ func Test_Evaluator_WithTwoLiteralRules(t *testing.T) {
 			},
 			want: true,
 		},
+		{
+			name:  "ProcessNameAndExecutableAreMatchNotValidRegex",
+			input: javaProcessSample,
+			rules: map[string][]string{
+				metricDimensionProcessExecutable: {"regex *"},
+				metricDimensionProcessName:       {"java"},
+			},
+			want: true,
+		},
 	}
 
 	for _, tc := range cases {
@@ -172,7 +194,7 @@ func Test_Evaluator_WithTwoLiteralRules(t *testing.T) {
 }
 
 func Test_Evaluator_WithUnMappedFields(t *testing.T) {
-	javaProcessSample := metrics.ProcessSample{ProcessDisplayName: "java", CmdLine: "/bin/java"}
+	javaProcessSample := types.ProcessSample{ProcessDisplayName: "java", CmdLine: "/bin/java"}
 
 	type testCase struct {
 		name  string
@@ -284,8 +306,8 @@ func Test_EvaluatorChain_WithMultipleRuleAttribute(t *testing.T) {
 			*/
 			name: "ProcessName_IsLiteralMatch",
 			input: []interface{}{
-				metrics.ProcessSample{ProcessDisplayName: "java"},
-				metrics.ProcessSample{ProcessDisplayName: "test"},
+				types.ProcessSample{ProcessDisplayName: "java"},
+				types.ProcessSample{ProcessDisplayName: "test"},
 			},
 			rules: map[string][]string{
 				metricDimensionProcessName: {
@@ -303,8 +325,8 @@ func Test_EvaluatorChain_WithMultipleRuleAttribute(t *testing.T) {
 			*/
 			name: "ProcessName_IsLiteralNotMatch",
 			input: []interface{}{
-				metrics.ProcessSample{ProcessDisplayName: "java"},
-				metrics.ProcessSample{ProcessDisplayName: "test"},
+				types.ProcessSample{ProcessDisplayName: "java"},
+				types.ProcessSample{ProcessDisplayName: "test"},
 			},
 			rules: map[string][]string{
 				metricDimensionProcessName: {"newrelic"},
@@ -319,8 +341,8 @@ func Test_EvaluatorChain_WithMultipleRuleAttribute(t *testing.T) {
 			*/
 			name: "ProcessName_IsRegexMatch",
 			input: []interface{}{
-				metrics.ProcessSample{ProcessDisplayName: "java.exe"},
-				metrics.ProcessSample{ProcessDisplayName: "java-9.exe"},
+				types.ProcessSample{ProcessDisplayName: "java.exe"},
+				types.ProcessSample{ProcessDisplayName: "java-9.exe"},
 			},
 			rules: map[string][]string{
 				metricDimensionProcessName: {"regex ^java"},
@@ -335,8 +357,8 @@ func Test_EvaluatorChain_WithMultipleRuleAttribute(t *testing.T) {
 			*/
 			name: "ProcessName_IsRegexNotMatch",
 			input: []interface{}{
-				metrics.ProcessSample{ProcessDisplayName: "java.exe"},
-				metrics.ProcessSample{ProcessDisplayName: "java-9.exe"},
+				types.ProcessSample{ProcessDisplayName: "java.exe"},
+				types.ProcessSample{ProcessDisplayName: "java-9.exe"},
 			},
 			rules: map[string][]string{
 				metricDimensionProcessName: {"regex ^test"},
@@ -352,8 +374,8 @@ func Test_EvaluatorChain_WithMultipleRuleAttribute(t *testing.T) {
 			*/
 			name: "ProcessExecutable_IsLiteralMatch",
 			input: []interface{}{
-				metrics.ProcessSample{CmdLine: "/bin/java"},
-				metrics.ProcessSample{CmdLine: "/bin/local/java-9"},
+				types.ProcessSample{CmdLine: "/bin/java"},
+				types.ProcessSample{CmdLine: "/bin/local/java-9"},
 			},
 			rules: map[string][]string{
 				metricDimensionProcessExecutable: {
@@ -372,8 +394,8 @@ func Test_EvaluatorChain_WithMultipleRuleAttribute(t *testing.T) {
 			*/
 			name: "ProcessExecutalbe_IsLiteralNotMatch",
 			input: []interface{}{
-				metrics.ProcessSample{CmdLine: "/bin/java"},
-				metrics.ProcessSample{CmdLine: "/bin/local/java-9.exe"},
+				types.ProcessSample{CmdLine: "/bin/java"},
+				types.ProcessSample{CmdLine: "/bin/local/java-9.exe"},
 			},
 			rules: map[string][]string{
 				metricDimensionProcessExecutable: {
@@ -392,8 +414,8 @@ func Test_EvaluatorChain_WithMultipleRuleAttribute(t *testing.T) {
 			*/
 			name: "ProcessExecutable_IsRegexMatch",
 			input: []interface{}{
-				metrics.ProcessSample{CmdLine: "/bin/java"},
-				metrics.ProcessSample{CmdLine: "/bin/local/test"},
+				types.ProcessSample{CmdLine: "/bin/java"},
+				types.ProcessSample{CmdLine: "/bin/local/test"},
 			},
 			rules: map[string][]string{
 				metricDimensionProcessExecutable: {
@@ -412,8 +434,8 @@ func Test_EvaluatorChain_WithMultipleRuleAttribute(t *testing.T) {
 			*/
 			name: "ProcessExecutable_IsRegexNotMatch",
 			input: []interface{}{
-				metrics.ProcessSample{CmdLine: "/bin/java"},
-				metrics.ProcessSample{CmdLine: "/bin/local/test"},
+				types.ProcessSample{CmdLine: "/bin/java"},
+				types.ProcessSample{CmdLine: "/bin/local/test"},
 			},
 			rules: map[string][]string{
 				metricDimensionProcessExecutable: {
@@ -426,13 +448,13 @@ func Test_EvaluatorChain_WithMultipleRuleAttribute(t *testing.T) {
 		{
 			name: "AllTogetherNow",
 			input: []interface{}{
-				metrics.ProcessSample{ProcessDisplayName: "java", CmdLine: "/bin/java"},
-				metrics.ProcessSample{ProcessDisplayName: "test", CmdLine: "/bin/local/test"},
-				metrics.ProcessSample{ProcessDisplayName: "newrelic", CmdLine: "/bin/newrelic-infra"},
-				metrics.ProcessSample{ProcessDisplayName: "kafka", CmdLine: "/bin/java"},
-				metrics.ProcessSample{ProcessDisplayName: "important.exe", CmdLine: "c:\\program files\\my-app\\important.exe"},
-				metrics.ProcessSample{ProcessDisplayName: "dhclient", CmdLine: "/sbin/dhclient"},
-				metrics.ProcessSample{ProcessDisplayName: "dockerd", CmdLine: "/usr/bin/dockerd"},
+				types.ProcessSample{ProcessDisplayName: "java", CmdLine: "/bin/java"},
+				types.ProcessSample{ProcessDisplayName: "test", CmdLine: "/bin/local/test"},
+				types.ProcessSample{ProcessDisplayName: "newrelic", CmdLine: "/bin/newrelic-infra"},
+				types.ProcessSample{ProcessDisplayName: "kafka", CmdLine: "/bin/java"},
+				types.ProcessSample{ProcessDisplayName: "important.exe", CmdLine: "c:\\program files\\my-app\\important.exe"},
+				types.ProcessSample{ProcessDisplayName: "dhclient", CmdLine: "/sbin/dhclient"},
+				types.ProcessSample{ProcessDisplayName: "dockerd", CmdLine: "/usr/bin/dockerd"},
 			},
 			rules: map[string][]string{
 				metricDimensionProcessName: {
@@ -447,6 +469,27 @@ func Test_EvaluatorChain_WithMultipleRuleAttribute(t *testing.T) {
 				},
 			},
 			want: []bool{true, true, false, true, true, true, false},
+		},
+		{
+			/*
+				matchers:
+				  process.executable:
+				    - regex *					# bad regex
+				    - regex .*
+			*/
+			name: "ProcessExecutable_NotValidRegex",
+			input: []interface{}{
+				types.ProcessSample{CmdLine: "/bin/java"},
+				types.ProcessSample{CmdLine: "/bin/local/java"},
+			},
+			rules: map[string][]string{
+				metricDimensionProcessExecutable: {
+					"regex *",
+					"/bin/java",
+					"/bin/local/java",
+				},
+			},
+			want: []bool{true, true},
 		},
 	}
 
@@ -464,8 +507,8 @@ func Test_EvaluatorChain_WithMultipleRuleAttribute(t *testing.T) {
 
 func Test_EvaluatorChain_RulesWithQuotesAndSpaces(t *testing.T) {
 	inputs := []interface{}{
-		metrics.ProcessSample{ProcessDisplayName: "java"},
-		metrics.ProcessSample{ProcessDisplayName: "test"},
+		types.ProcessSample{ProcessDisplayName: "java"},
+		types.ProcessSample{ProcessDisplayName: "test"},
 	}
 
 	rules := map[string][]string{
@@ -489,7 +532,7 @@ func Test_EvaluatorChain_LogTraceMatcher(t *testing.T) {
 	hook := new(test.Hook)
 	log.AddHook(hook)
 
-	javaProcessSample := metrics.ProcessSample{ProcessDisplayName: "java", CmdLine: "/bin/java"}
+	javaProcessSample := types.ProcessSample{ProcessDisplayName: "java", CmdLine: "/bin/java"}
 
 	rule := config.IncludeMetricsMap{"process.name": {"java"}}
 	ec := sampler.NewMatcherChain(rule)
@@ -501,4 +544,111 @@ func Test_EvaluatorChain_LogTraceMatcher(t *testing.T) {
 	entry := hook.LastEntry()
 	assert.Equal(t, "[metric.match] 'java' matches expression 'ProcessDisplayName' >> 'java': true", entry.Message)
 	assert.Equal(t, logrus.TraceLevel, entry.Level)
+}
+
+type enabledFFRetriever struct{}
+
+func (e *enabledFFRetriever) GetFeatureFlag(name string) (enabled bool, exists bool) {
+	return true, true
+}
+
+type disabledFFRetriever struct{}
+
+func (e *disabledFFRetriever) GetFeatureFlag(name string) (enabled bool, exists bool) {
+	return false, true
+}
+
+func TestNewSampleMatchFn(t *testing.T) {
+	trueVar := true
+	falseVar := false
+	emptyMatchers := config.IncludeMetricsMap{}
+
+	type args struct {
+		enableProcessMetrics   *bool
+		includeMetricsMatchers config.IncludeMetricsMap
+		ffRetriever            feature_flags.Retriever
+		sample                 interface{}
+	}
+	tests := []struct {
+		name    string
+		args    args
+		include bool
+	}{
+		{
+			name: "non process samples are always included",
+			args: args{
+				enableProcessMetrics:   &falseVar,
+				includeMetricsMatchers: emptyMatchers,
+				ffRetriever:            testFF.EmptyFFRetriever,
+				sample:                 &fixture.NetworkSample,
+			},
+			include: true,
+		},
+		{
+			name: "when enableProcessMetrics process samples are included",
+			args: args{
+				enableProcessMetrics:   &trueVar,
+				includeMetricsMatchers: emptyMatchers,
+				ffRetriever:            testFF.EmptyFFRetriever,
+				sample:                 &fixture.ProcessSample,
+			},
+			include: true,
+		},
+		{
+			name: "when enableProcessMetrics is not set and neither FF is, process samples are not included",
+			args: args{
+				enableProcessMetrics:   nil,
+				includeMetricsMatchers: emptyMatchers,
+				ffRetriever:            testFF.EmptyFFRetriever,
+				sample:                 &fixture.ProcessSample,
+			},
+			include: false,
+		},
+		{
+			name: "when enableProcessMetrics is not set and FF returns enabled, process samples are included",
+			args: args{
+				enableProcessMetrics:   nil,
+				includeMetricsMatchers: emptyMatchers,
+				ffRetriever:            &enabledFFRetriever{},
+				sample:                 &fixture.ProcessSample,
+			},
+			include: true,
+		},
+		{
+			name: "when enableProcessMetrics is not set and FF returns disabled, process samples are not included",
+			args: args{
+				enableProcessMetrics:   nil,
+				includeMetricsMatchers: emptyMatchers,
+				ffRetriever:            &disabledFFRetriever{},
+				sample:                 &fixture.ProcessSample,
+			},
+			include: false,
+		},
+		{
+			name: "process samples matching rules are included",
+			args: args{
+				enableProcessMetrics:   &trueVar,
+				includeMetricsMatchers: config.IncludeMetricsMap{"process.name": []string{"regex \"foo.*\""}},
+				ffRetriever:            testFF.EmptyFFRetriever,
+				sample:                 &fixture.ProcessSample,
+			},
+			include: true,
+		},
+		{
+			name: "process samples not matching rules are not included",
+			args: args{
+				enableProcessMetrics:   &trueVar,
+				includeMetricsMatchers: config.IncludeMetricsMap{"process.name": []string{"regex \"bar*\""}},
+				ffRetriever:            testFF.EmptyFFRetriever,
+				sample:                 &fixture.ProcessSample,
+			},
+			include: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			matchFn := sampler.NewSampleMatchFn(tt.args.enableProcessMetrics, tt.args.includeMetricsMatchers, tt.args.ffRetriever)
+			assert.Equal(t, tt.include, matchFn(tt.args.sample))
+		})
+	}
 }

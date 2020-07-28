@@ -6,6 +6,7 @@ import (
 	"errors"
 
 	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/sirupsen/logrus"
 
 	"github.com/newrelic/infrastructure-agent/pkg/metrics"
@@ -29,7 +30,7 @@ func GetInfraAgentProcess() (int32, error) {
 
 // IsContainerized is checking if a pid is running inside a docker container.
 func IsContainerized(pid int32, dockerAPIVersion string) (isContainerized bool, containerID string, err error) {
-	p := &metrics.ProcessSample{
+	p := &types.ProcessSample{
 		ProcessID: pid,
 	}
 	d := metrics.NewDockerSampler(60, dockerAPIVersion)

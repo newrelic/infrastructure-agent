@@ -14,6 +14,7 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/process"
 	"github.com/sirupsen/logrus"
@@ -91,7 +92,7 @@ func (st *SystemTimes) Sub(other *SystemTimes) *SystemTimes {
 	return &result
 }
 
-func (ip *InternalProcessInterrogator) FillFromStatus(sample *ProcessSample) error {
+func (ip *InternalProcessInterrogator) FillFromStatus(sample *types.ProcessSample) error {
 	return nil
 }
 
@@ -568,7 +569,7 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 		for _, winProc := range processes {
 
 			var proc ProcessWrapper
-			var lastSample *ProcessSample
+			var lastSample *types.ProcessSample
 			pid := int32(winProc.ProcessID)
 			if pid == 0 {
 				continue
@@ -792,7 +793,7 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 
 	if self.Debug() {
 		for _, sample := range results {
-			helpers.LogStructureDetails(pslog, sample.(*ProcessSample), "ProcessSample", "final", nil)
+			helpers.LogStructureDetails(pslog, sample.(*types.ProcessSample), "ProcessSample", "final", nil)
 		}
 	}
 	return

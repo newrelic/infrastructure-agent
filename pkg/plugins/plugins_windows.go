@@ -17,8 +17,6 @@ import (
 func RegisterPlugins(agent *agnt.Agent) error {
 	config := agent.GetContext().Config()
 
-	agent.RegisterPlugin(NewCustomAttrsPlugin(agent.Context))
-
 	if config.IsForwardOnly {
 		return nil
 	}
@@ -30,6 +28,8 @@ func RegisterPlugins(agent *agnt.Agent) error {
 	if config.ProxyConfigPlugin {
 		agent.RegisterPlugin(proxy.ConfigPlugin(agent.Context))
 	}
+
+	agent.RegisterPlugin(NewCustomAttrsPlugin(agent.Context))
 
 	if config.IsSecureForwardOnly {
 		// We need heartbeat samples.

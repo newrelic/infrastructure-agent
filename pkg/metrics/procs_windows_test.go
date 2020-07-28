@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/StackExchange/wmi"
+	ffTest "github.com/newrelic/infrastructure-agent/internal/feature_flags/test"
 
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/sirupsen/logrus"
@@ -37,7 +38,7 @@ func TestProcessAllowedList(t *testing.T) {
 
 	// this test assumes that go is running
 	config := config.Config{AllowedListProcessSample: []string{"go.exe"}}
-	testAgent, err := agent.NewAgent(&config, "1")
+	testAgent, err := agent.NewAgent(&config, "1", ffTest.EmptyFFRetriever)
 	assert.NoError(t, err)
 	testAgentConfig := testAgent.Context
 	pm := NewProcsMonitor(testAgentConfig)

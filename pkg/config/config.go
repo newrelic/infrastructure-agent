@@ -960,6 +960,11 @@ type Config struct {
 	// send this to the integrations for them to use for persisting data.
 	DefaultIntegrationsTempDir string
 
+	// EnableProcessMetrics enables/disables process metrics, it does not enforce when not set.
+	// Default: empty
+	// Public: Yes
+	EnableProcessMetrics *bool `yaml:"enable_process_metrics" envconfig:"enable_process_metrics"`
+
 	// IncludeMetricsMatchers Configuration of the metrics matchers that determine which metric data should the agent
 	// send to the New Relic backend.
 	// If no configuration is defined, the previous behaviour is maintained, i.e., every metric data captured is sent.
@@ -1249,6 +1254,14 @@ func NewTest(dataDir string) *Config {
 	c.AgentDir = dataDir
 	c.AppDataDir = dataDir
 	c.OfflineLoggingMode = true
+
+	return c
+}
+
+// NewTestWithDeltas creates a default testing Config submitting deltas.
+func NewTestWithDeltas(dataDir string) *Config {
+	c := NewTest(dataDir)
+	c.OfflineLoggingMode = false
 
 	return c
 }
@@ -1634,6 +1647,10 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	nlog.WithField("defaultCloudMetadataExpiryInSec", defaultCloudMetadataExpiryInSec).Debug("Using default cloud metadata expiry time.")
 
 	cfg.IsForwardOnly = cfg.IsForwardOnly || cfg.K8sIntegration
+
+	if cfg.IsForwardOnly {
+		cfg.ConnectEnabled = false
+	}
 
 	// For backwards compatibility FileDevicesBlacklist is deprecated.
 	if len(cfg.FileDevicesBlacklist) > 0 {

@@ -5,6 +5,7 @@
 package harvest
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -29,7 +30,7 @@ func TestEmptyProxyConfigPlugin(t *testing.T) {
 	testClient := ihttp.NewRequestRecorderClient()
 	a := infra.NewAgent(testClient.Client)
 	a.RegisterPlugin(proxy.ConfigPlugin(a.Context))
-
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 	go a.Run()
 
 	// When the proxy plugin reports the proxy configuration
@@ -90,7 +91,7 @@ func TestEmptyConfigPlugin(t *testing.T) {
 		cfg.CABundleFile = caBundleFile.Name()
 	})
 	a.RegisterPlugin(proxy.ConfigPlugin(a.Context))
-
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 	go a.Run()
 
 	// When the proxy plugin reports the proxy configuration
@@ -163,8 +164,8 @@ func TestWrongConfigPlugin(t *testing.T) {
 	a := infra.NewAgent(testClient.Client, func(cfg *config.Config) {
 		cfg.Proxy = wrongURL
 	})
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 	a.RegisterPlugin(proxy.ConfigPlugin(a.Context))
-
 	go a.Run()
 
 	// When the proxy plugin reports the proxy configuration

@@ -6,6 +6,7 @@
 package harvest
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -30,6 +31,7 @@ func TestHeartBeatSampler(t *testing.T) {
 		config.IsSecureForwardOnly = true
 		config.HeartBeatSampleRate = 1
 	})
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
 	sender := metrics_sender.NewSender(a.Context)
 	heartBeatSampler := metrics.NewHeartbeatSampler(a.Context)

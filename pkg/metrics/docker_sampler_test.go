@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
+	metricTypes "github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
@@ -70,7 +71,7 @@ func TestProcessDecoratorDecorateProcessSampleBadProcessID(t *testing.T) {
 	decorator, err := newDecoratorImpl(mock, pidsCache)
 	assert.NoError(t, err)
 
-	process := ProcessSample{ProcessID: 666, ContainerLabels: map[string]string{}}
+	process := metricTypes.ProcessSample{ProcessID: 666, ContainerLabels: map[string]string{}}
 	decorator.Decorate(&process)
 
 	assert.Equal(t, process.ContainerImage, "")
@@ -88,7 +89,7 @@ func TestProcessDecoratorDecorateProcessSample(t *testing.T) {
 	decorator, err := newDecoratorImpl(mock, pidsCache)
 	assert.NoError(t, err)
 
-	process := ProcessSample{ProcessID: 123}
+	process := metricTypes.ProcessSample{ProcessID: 123}
 	decorator.Decorate(&process)
 
 	assert.Equal(t, process.ContainerImage, "14.04")
