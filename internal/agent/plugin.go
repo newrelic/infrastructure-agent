@@ -136,7 +136,9 @@ func (self *PluginCommon) gatherDecorations() {
 }
 
 func (self *PluginCommon) decorateEvent(eventData map[string]interface{}) {
-	eventData["timestamp"] = time.Now().Unix()
+	if eventData["timestamp"] == nil {
+		eventData["timestamp"] = time.Now().Unix()
+	}
 
 	self.gatherDecorations()
 	for k, v := range self.decorations {
