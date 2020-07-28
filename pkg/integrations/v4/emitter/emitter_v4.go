@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/newrelic/infrastructure-agent/pkg/identity-client"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 
@@ -90,8 +91,8 @@ func emitV4DataSet(idLookup agent.IDLookup, metricsSender dm.MetricsSender, idCl
 
 	request := identity.RegisterRequest{
 		EntityName:  dataSet.Entity.Name,
-		//EntityType:  dataSet.Entity.Type,
-		//DisplayName: dataSet.Entity.DisplayName,
+		EntityType:  dataSet.Entity.Type,
+		DisplayName: dataSet.Entity.DisplayName,
 	}
 
 	resp, httpResp, err := idClient.RegisterPost(context.Background(), userAgent, license, request, nil)

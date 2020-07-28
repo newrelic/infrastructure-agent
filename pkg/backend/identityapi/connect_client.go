@@ -308,7 +308,7 @@ func (ic *identityClient) marshal(b interface{}) (*bytes.Buffer, error) {
 	if ic.compressionLevel > gzip.NoCompression {
 		gzipWriter, err := gzip.NewWriterLevel(&buf, ic.compressionLevel)
 		if err != nil {
-			return nil, fmt.Errorf("Unable to create gzip writer: %v", err)
+			return nil, fmt.Errorf("unable to create gzip writer: %v", err)
 		}
 		defer func() {
 			if err := gzipWriter.Close(); err != nil {
@@ -316,7 +316,7 @@ func (ic *identityClient) marshal(b interface{}) (*bytes.Buffer, error) {
 			}
 		}()
 		if err := json.NewEncoder(gzipWriter).Encode(b); err != nil {
-			return nil, fmt.Errorf("Gzip writer was not able to write to request body: %s", err)
+			return nil, fmt.Errorf("gzip writer was not able to write to request body: %s", err)
 		}
 	} else {
 		if err := json.NewEncoder(&buf).Encode(b); err != nil {

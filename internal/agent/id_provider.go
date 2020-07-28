@@ -56,7 +56,7 @@ retry:
 	}
 
 	var retryAfter time.Duration
-	ids, retryAfter, err = p.client.Register(agentIdn.ID, entities)
+	ids, retryAfter, err = p.client.RegisterEntities(agentIdn.ID, entities)
 	if err != nil {
 		clog.WithFields(logrus.Fields{
 			"agentID":    agentIdn,

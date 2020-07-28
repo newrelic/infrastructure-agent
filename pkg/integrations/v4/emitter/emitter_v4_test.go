@@ -16,16 +16,15 @@ func TestLegacy_EmitV4(t *testing.T) {
 	icfg.Host = "staging-identity-api.newrelic.com"
 	identityClient := identity.NewAPIClient(icfg)
 
-
 	request := identity.RegisterRequest{
-		EntityName:  "entityName",
-		EntityType:  "entityType",
+		EntityName: "entityName",
+		EntityType: "entityType",
 		//DisplayName: dataSet.Entity.DisplayName,
 	}
 
 	resp, httpResp, err := identityClient.DefaultApi.RegisterPost(context.Background(), "userAgent", "<SECRET>", request, nil)
 	if err != nil {
-		bs,_:=ioutil.ReadAll(httpResp.Body)
+		bs, _ := ioutil.ReadAll(httpResp.Body)
 
 		body := string(bs)
 		logrus.WithError(err).
