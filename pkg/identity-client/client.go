@@ -18,7 +18,6 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	log2 "github.com/newrelic/infrastructure-agent/pkg/log"
 	"io"
 	"log"
 	"mime/multipart"
@@ -70,7 +69,6 @@ func NewAPIClient(cfg *Configuration) *APIClient {
 
 	// API Services
 	c.DefaultApi = (*DefaultApiService)(&c.common)
-	log2.WithField("Host", c.cfg.Host).Info("setting host")
 	return c
 }
 
@@ -283,12 +281,9 @@ func (c *APIClient) prepareRequest(
 	}
 
 	// Override request host, if applicable
-	log2.WithField("cfg.Host", c.cfg.Host).Info("About to prepare")
 	if c.cfg.Host != "" {
 		url.Host = c.cfg.Host
 	}
-	log2.WithField("url.Host", url.Host).Info("Done")
-
 
 	// Override request scheme, if applicable
 	if c.cfg.Scheme != "" {
@@ -306,7 +301,6 @@ func (c *APIClient) prepareRequest(
 	// Encode the parameters.
 	url.RawQuery = query.Encode()
 
-	log2.WithField("URL", url.String()).Info("Generate a new request")
 	// Generate a new request
 	if body != nil {
 		localVarRequest, err = http.NewRequest(method, url.String(), body)
