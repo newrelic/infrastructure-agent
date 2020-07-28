@@ -3,15 +3,12 @@
 package emitter
 
 import (
-	_context "context"
 	"errors"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/identity-client"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
-	_nethttp "net/http"
-
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
+	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
@@ -27,7 +24,6 @@ var (
 	NoContentToParseErr     = errors.New("no content to parse")
 
 	// internal
-
 	elog = log.WithComponent("integrations.emitter.Legacy")
 )
 
@@ -36,26 +32,9 @@ type Emitter interface {
 	Emit(metadata integration.Definition, ExtraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error
 }
 
-// IdentityClient registers entities
-type IdentityClient interface {
-	RegisterPost(
-		ctx _context.Context,
-		userAgent string,
-		xLicenseKey string,
-		registerRequest identity.RegisterRequest,
-		localVarOptionals *identity.RegisterPostOpts) (identity.RegisterResponse, *_nethttp.Response, error)
-
-	ConnectPost(
-		ctx _context.Context,
-		userAgent string,
-		xLicenseKey string,
-		connectRequest identity.ConnectRequest,
-		localVarOptionals *identity.ConnectPostOpts) (identity.ConnectResponse, *_nethttp.Response, error)
-}
-
 func NewIntegrationEmitter(a *agent.Agent,
 	dmSender dm.MetricsSender,
-	identityClient IdentityClient,
+	identityClient identityapi.IdentityRegisterClient,
 	ffRetriever feature_flags.Retriever,
 	license string,
 	userAgent string) Emitter {
@@ -77,7 +56,7 @@ type Legacy struct {
 	MetricsSender       dm.MetricsSender
 	ForceProtocolV2ToV3 bool
 	FFRetriever         feature_flags.Retriever
-	identityClient      IdentityClient
+	identityClient      identityapi.IdentityRegisterClient
 	userAgent           string
 	license             string
 }

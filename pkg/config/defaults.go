@@ -16,13 +16,17 @@ const (
 
 	// Non configurable stuff
 	defaultIdentityURLEu          = "https://identity-api.eu.newrelic.com"
+	defaultIdentityHostEu         = "staging-identity-api.eu.newrelic.com"
 	defaultIdentityStagingURLEu   = "https://staging-identity-api.eu.newrelic.com"
+	defaultIdentityStagingHostEu  = "staging-identity-api.eu.newrelic.com"
 	defaultCmdChannelURLEu        = "https://infrastructure-command-api.eu.newrelic.com"
 	defaultCmdChannelStagingURLEu = "https://staging-infrastructure-command-api.eu.newrelic.com"
 	defaultCmdChannelURL          = "https://infrastructure-command-api.newrelic.com"
 	defaultCmdChannelStagingURL   = "https://staging-infrastructure-command-api.newrelic.com"
 	defaultIdentityURL            = "https://identity-api.newrelic.com"
+	defaultIdentityHost           = "https://identity-api.newrelic.com"
 	defaultIdentityStagingURL     = "https://staging-identity-api.newrelic.com"
+	defaultIdentityStagingHost    = "staging-identity-api.newrelic.com"
 	defaultCollectorURL           = "https://infra-api.newrelic.com"
 	defaultCollectorStagingURL    = "https://staging-infra-api.newrelic.com"
 	defaultRegionURLFormat        = "https://infra-api.%s.nr-data.net"

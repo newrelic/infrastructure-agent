@@ -7,6 +7,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
 	"net"
 	"net/http"
 	"net/url"
@@ -18,7 +19,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/newrelic/infrastructure-agent/pkg/identity-client"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4"
 
@@ -271,10 +271,16 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		c.PluginInstanceDirs,
 		pluginSourceDirs,
 	)
-	icfg := identity.NewConfiguration()
-	icfg.Host = "staging-identity-api.newrelic.com"
-	identityClient := identity.NewAPIClient(icfg)
-	integrationEmitter := emitter.NewIntegrationEmitter(agt, dmSender, identityClient.DefaultApi, ffManager, c.License, userAgent)
+
+	registerClient, _ := identityapi.NewIdentityRegisterClient(
+		"",
+		c.IdentityHost,
+		c.License,
+		userAgent,
+		c.PayloadCompressionLevel,
+		httpClient,
+	)
+	integrationEmitter := emitter.NewIntegrationEmitter(agt, dmSender, registerClient, ffManager, c.License, userAgent)
 	integrationManager := v4.NewManager(integrationCfg, integrationEmitter)
 
 	// log-forwarder

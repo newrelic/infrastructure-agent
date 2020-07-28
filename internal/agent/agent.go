@@ -120,6 +120,9 @@ type AgentContext interface {
 	// HostnameResolver returns the host name resolver associated to the agent context
 	HostnameResolver() hostname.Resolver
 	IDLookup() IDLookup
+
+	// AgentIdentity provides agent ID & GUID, blocking until it's available
+	AgentIdentity() entity.Identity
 }
 
 // context defines a bunch of agent data structures we make
@@ -320,6 +323,7 @@ func NewAgent(cfg *config.Config, buildVersion string, ffRetriever feature_flags
 		identityURL = os.Getenv("DEV_IDENTITY_INGEST_URL")
 	}
 	identityURL = strings.TrimSuffix(identityURL, "/")
+
 	connectClient, err := identityapi.NewIdentityConnectClient(
 		identityURL,
 		cfg.License,
@@ -334,6 +338,7 @@ func NewAgent(cfg *config.Config, buildVersion string, ffRetriever feature_flags
 
 	registerClient, err := identityapi.NewIdentityRegisterClient(
 		identityURL,
+		cfg.IdentityHost,
 		cfg.License,
 		userAgent,
 		cfg.PayloadCompressionLevel,

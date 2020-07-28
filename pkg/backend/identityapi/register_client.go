@@ -57,19 +57,25 @@ func NewRegisterEntity(key entity.Key) RegisterEntity {
 }
 
 func NewIdentityRegisterClient(
-	svcUrl, licenseKey, userAgent string,
+	svcUrl, svcHost, licenseKey, userAgent string,
 	compressionLevel int,
 	httpClient backendhttp.Client,
 ) (IdentityRegisterClient, error) {
 	if compressionLevel < gzip.NoCompression || compressionLevel > gzip.BestCompression {
 		return nil, fmt.Errorf("gzip: invalid compression level: %d", compressionLevel)
 	}
+	icfg := identity.NewConfiguration()
+	icfg.Host = svcHost
+	// TODO: add the global HTTP client here
+	// icfg.HTTPClient = httpClient
+	identityClient := identity.NewAPIClient(icfg)
 	return &registerClient{
 		svcUrl:           strings.TrimSuffix(svcUrl, "/"),
 		licenseKey:       licenseKey,
 		userAgent:        userAgent,
 		httpClient:       httpClient,
 		compressionLevel: compressionLevel,
+		apiClient:        identityClient.DefaultApi,
 	}, nil
 }
 
@@ -184,9 +190,15 @@ func (rc *registerClient) RegisterEntity(agentEntityID entity.ID, ent protocol.E
 	localVarOptionals := &identity.RegisterPostOpts{
 		XNRIAgentEntityId: optional.NewInt64(int64(agentEntityID)),
 	}
-	apiReps, _, err := rc.apiClient.RegisterPost(ctx, rc.userAgent, rc.licenseKey, registerRequest, localVarOptionals)
+	apiReps, httpResp, err := rc.apiClient.RegisterPost(ctx, rc.userAgent, rc.licenseKey, registerRequest, localVarOptionals)
 
 	if err != nil {
+		bs,_ := ioutil.ReadAll(httpResp.Body)
+		rlog.
+			WithError(err).
+			WithField("status", httpResp.StatusCode).
+			WithField("body", string(bs)).
+			Error("Something went wrong")
 		return resp, err
 	}
 
