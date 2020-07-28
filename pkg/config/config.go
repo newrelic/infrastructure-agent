@@ -79,6 +79,11 @@ type Config struct {
 	// Public: No
 	IdentityURL string `yaml:"identity_url" envconfig:"identity_url" public:"false"`
 
+	// IdentityURL defines the base URL for the identity connect.
+	// Default: https://infra-api.newrelic.com
+	// Public: No
+	IdentityHost string `yaml:"identity_host" envconfig:"identity_host" public:"false"`
+
 	// CommandChannelURL defines the base URL for the command channel.
 	// Default: https://infra-api.newrelic.com
 	// Public: No
@@ -1370,6 +1375,29 @@ func calculateIdentityStagingURL(licenseKey string) string {
 	return defaultIdentityStagingURL
 }
 
+func calculateIdentityHost(licenseKey string, staging bool) string {
+	if staging {
+		return calculateIdentityStagingHost(licenseKey)
+	}
+	return calculateIdentityProductionHost(licenseKey)
+}
+
+func calculateIdentityProductionHost(licenseKey string) string {
+	// only EU supported
+	if license.IsRegionEU(licenseKey) {
+		return defaultIdentityHostEu
+	}
+	return defaultIdentityHost
+}
+
+func calculateIdentityStagingHost(licenseKey string) string {
+	// only EU supported
+	if license.IsRegionEU(licenseKey) {
+		return defaultIdentityStagingHostEu
+	}
+	return defaultIdentityStagingHost
+}
+
 func calculateCmdChannelURL(licenseKey string, staging bool) string {
 	if staging {
 		return calculateCmdChannelStagingURL(licenseKey)
@@ -1441,6 +1469,10 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 
 	if cfg.IdentityURL == "" {
 		cfg.IdentityURL = calculateIdentityURL(cfg.License, cfg.Staging)
+	}
+
+	if cfg.IdentityHost == "" {
+		cfg.IdentityHost = calculateIdentityHost(cfg.License, cfg.Staging)
 	}
 
 	if cfg.CommandChannelURL == "" {

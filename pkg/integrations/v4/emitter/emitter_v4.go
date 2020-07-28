@@ -3,11 +3,10 @@
 package emitter
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
 
-	"github.com/newrelic/infrastructure-agent/pkg/identity-client"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
@@ -36,13 +35,13 @@ func (e *Legacy) EmitV4(
 
 	var err error
 	idLookup := e.Context.IDLookup()
+	agentID := e.Context.AgentIdentity()
 	for _, dataset := range integrationData.DataSets {
 		if err = emitV4DataSet(
 			idLookup,
+			agentID.ID,
 			e.MetricsSender,
 			e.identityClient,
-			e.userAgent,
-			e.license,
 			&plugin,
 			metadata,
 			integrationData.Integration,
@@ -58,7 +57,7 @@ func (e *Legacy) EmitV4(
 	return composeEmitError(emitErrs, len(integrationData.DataSets))
 }
 
-func emitV4DataSet(idLookup agent.IDLookup, metricsSender dm.MetricsSender, idClient IdentityClient, userAgent string, license string, emitter agent.PluginEmitter, metadata integration.Definition, integrationMetadata protocol.IntegrationMetadata, dataSet protocol.Dataset, labels map[string]string, extraAnnotations map[string]string, entityRewrite []data.EntityRewrite) error {
+func emitV4DataSet(idLookup agent.IDLookup, agentID entity.ID, metricsSender dm.MetricsSender, idClient identityapi.IdentityRegisterClient, emitter agent.PluginEmitter, metadata integration.Definition, integrationMetadata protocol.IntegrationMetadata, dataSet protocol.Dataset, labels map[string]string, extraAnnotations map[string]string, entityRewrite []data.EntityRewrite) error {
 	logEntry := elog.WithField("action", "EmitV4DataSet")
 
 	err := replaceEntityName(dataSet.Entity, entityRewrite, idLookup)
@@ -89,22 +88,14 @@ func emitV4DataSet(idLookup agent.IDLookup, metricsSender dm.MetricsSender, idCl
 		IntegrationExtraAnnotations: extraAnnotations,
 	}
 
-	request := identity.RegisterRequest{
-		EntityName:  dataSet.Entity.Name,
-		EntityType:  dataSet.Entity.Type,
-		DisplayName: dataSet.Entity.DisplayName,
-	}
-
-	resp, httpResp, err := idClient.RegisterPost(context.Background(), userAgent, license, request, nil)
+	resp, err := idClient.RegisterEntity(agentID, dataSet.Entity)
 	if err != nil {
-		logEntry.WithError(err).
-			WithField("Warnings", resp.Warnings).Info("Did not register entity")
+		logEntry.WithError(err).Info("Did not register entity")
 		return err
 	}
 	logEntry.
-		WithField("httpStatusCode", httpResp.StatusCode).
-		WithField("EntityId", resp.EntityId).
-		WithField("Warnings", resp.Warnings).
+		WithField("EntityId", resp.ID).
+		WithField("EntityKey", resp.Key).
 		Info("Registered entity")
 	metricsSender.SendMetrics(dmProcessor.ProcessMetrics(dataSet.Metrics, dataSet.Common, dataSet.Entity))
 	return nil
