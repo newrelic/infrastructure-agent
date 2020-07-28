@@ -5,6 +5,7 @@ package identityapi
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -13,9 +14,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/antihax/optional"
 	backendhttp "github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/inventoryapi"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/newrelic/infrastructure-agent/pkg/identity-client"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
@@ -164,10 +167,44 @@ func (rc *registerClient) marshal(b interface{}) (*bytes.Buffer, error) {
 		if err := json.NewEncoder(&buf).Encode(b); err != nil {
 			return nil, err
 		}
+
 	}
 	return &buf, nil
 }
 
-func (rc *registerClient) RegisterEntity(agentEntityID entity.ID, entity protocol.Entity) (resp RegisterEntityResponse, err error) {
+func (rc *registerClient) RegisterEntity(agentEntityID entity.ID, ent protocol.Entity) (resp RegisterEntityResponse, err error) {
+
+	ctx := context.Background()
+	registerRequest := identity.RegisterRequest{
+		EntityType:  ent.Type,
+		EntityName:  ent.Name,
+		DisplayName: ent.DisplayName,
+		Metadata:    convertMetadataToMapStringString(ent.Metadata),
+	}
+	localVarOptionals := &identity.RegisterPostOpts{
+		XNRIAgentEntityId: optional.NewInt64(int64(agentEntityID)),
+	}
+	apiReps, _, err := rc.apiClient.RegisterPost(ctx, rc.userAgent, rc.licenseKey, registerRequest, localVarOptionals)
+
+	if err != nil {
+		return resp, err
+	}
+
+	resp = RegisterEntityResponse{
+		ID:  entity.ID(apiReps.EntityId),
+		Key: entity.Key(apiReps.EntityName),
+	}
+
+	return resp, err
+}
+
+func convertMetadataToMapStringString(from map[string]interface{}) (to map[string]string) {
+
+	to = make(map[string]string, len(from))
+
+	for key, value := range from {
+		to[key] = fmt.Sprintf("%v", value)
+	}
+
 	return
 }
