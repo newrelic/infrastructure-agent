@@ -398,7 +398,7 @@ func (d *Store) updateLastDeltaSent(entityKey string, delta *inventoryapi.RawDel
 					// problematic.
 					_ = d.clearPluginDeltaStore(plugin, entityKey)
 					d.nextIDMap[source].LastSentID = resultHint.SendNextID - 1
-					d.nextIDMap[source].MostRecentID = resultHint.LastStoredID
+					d.nextIDMap[source].setDeltaID(entityKey, resultHint.LastStoredID)
 
 				case resultHint.SendNextID == id+1:
 					// normal case
@@ -415,7 +415,7 @@ func (d *Store) updateLastDeltaSent(entityKey string, delta *inventoryapi.RawDel
 					// can fill in the gaps in the correct sequence
 					_ = d.clearPluginDeltaStore(plugin, entityKey)
 					d.nextIDMap[source].LastSentID = resultHint.SendNextID - 1
-					d.nextIDMap[source].MostRecentID = resultHint.LastStoredID
+					d.nextIDMap[source].setDeltaID(entityKey, resultHint.LastStoredID)
 
 				case resultHint.SendNextID == id:
 					// Send again? This is a no-op, set last sent id to one previous
@@ -601,9 +601,11 @@ func (d *Store) storeDelta(pluginItem *PluginInfo, entityKey string, del delta) 
 	if _, ok := d.nextIDMap[pluginItem.Source]; !ok {
 		d.nextIDMap[pluginItem.Source] = pluginItem
 	}
+	d.nextIDMap[pluginItem.Source].increaseDeltaID(entityKey)
+
 	delta := &inventoryapi.RawDelta{
 		Source:    pluginItem.Source,
-		ID:        d.nextIDMap[pluginItem.Source].nextDeltaID(),
+		ID:        d.nextIDMap[pluginItem.Source].deltaID(entityKey),
 		Timestamp: time.Now().Unix(),
 		Diff:      deltaBody,
 		FullDiff:  del.full}

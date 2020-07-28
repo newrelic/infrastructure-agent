@@ -10,31 +10,55 @@ import (
 
 // PluginInfo holds information about agent plugins
 type PluginInfo struct {
-	Source         string `json:"source"`
-	Plugin         string `json:"plugin"`
-	FileName       string `json:"filename"`
-	MostRecentID   int64  `json:"mru_id"`       // Most recent id assigned to a delta
-	LastSentID     int64  `json:"last_sent_id"` // Most recent delta id sent to server
-	FirstArchiveID int64  `json:"first_archive_id"`
+	Source         string           `json:"source"`
+	Plugin         string           `json:"plugin"`
+	FileName       string           `json:"filename"`
+	LastSentID     int64            `json:"last_sent_id"` // Most recent delta id sent to server
+	FirstArchiveID int64            `json:"first_archive_id"`
+	MostRecentIDs  map[string]int64 `json:"mru_ids"`      // Most recent ids per entity plugin delta (replaces obsolete "mru_id", as it does not support remote entities)
 }
 
 // NewPluginInfo
-func NewPluginInfo(dirName, fileName string) *PluginInfo {
+func NewPluginInfo(name, fileName string) *PluginInfo {
 	cleanFileName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
 
 	return &PluginInfo{
-		Source:         fmt.Sprintf("%s/%s", dirName, cleanFileName),
-		Plugin:         dirName,
+		Source:         fmt.Sprintf("%s/%s", name, cleanFileName),
+		Plugin:         name,
 		FileName:       fileName,
-		MostRecentID:   NO_DELTA_ID,
+		MostRecentIDs:  make(map[string]int64),
 		LastSentID:     NO_DELTA_ID,
 		FirstArchiveID: NO_DELTA_ID,
 	}
 }
 
-func (pi *PluginInfo) nextDeltaID() int64 {
-	pi.MostRecentID = pi.MostRecentID + 1
-	return pi.MostRecentID
+func (pi *PluginInfo) setDeltaID(entityKey string, value int64) {
+	pi.initialize()
+
+	pi.MostRecentIDs[entityKey] = value
+}
+
+func (pi *PluginInfo) increaseDeltaID(entityKey string) {
+	pi.initialize()
+
+	if v, ok := pi.MostRecentIDs[entityKey]; ok {
+		pi.MostRecentIDs[entityKey] = v + 1
+	} else {
+		pi.MostRecentIDs[entityKey] = 1
+	}
+}
+
+func (pi *PluginInfo) deltaID(entityKey string) int64 {
+	pi.initialize()
+
+	id, _ := pi.MostRecentIDs[entityKey]
+	return id
+}
+
+func (pi *PluginInfo) initialize() {
+	if pi.MostRecentIDs == nil {
+		pi.MostRecentIDs = make(map[string]int64)
+	}
 }
 
 // pluginSource2Info stores plugins info by source
