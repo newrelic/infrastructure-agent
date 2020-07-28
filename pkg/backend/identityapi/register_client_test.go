@@ -73,7 +73,7 @@ func TestRegisterRetryTime(t *testing.T) {
 	client, err := NewIdentityRegisterClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, mockHttp)
 	assert.NoError(t, err)
 
-	entities, retryTime, err := client.Register(testAgentEntityId, testRegisterEntity)
+	entities, retryTime, err := client.RegisterEntities(testAgentEntityId, testRegisterEntity)
 	assert.Error(t, err)
 	assert.EqualValues(t, time.Duration(10*time.Second), retryTime)
 
@@ -89,7 +89,7 @@ func TestRegisterOk(t *testing.T) {
 	client, err := NewIdentityRegisterClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, mockHttp)
 	assert.NoError(t, err)
 
-	entities, retryTime, err := client.Register(testAgentEntityId, testRegisterEntity)
+	entities, retryTime, err := client.RegisterEntities(testAgentEntityId, testRegisterEntity)
 	assert.NoError(t, err)
 	assert.EqualValues(t, EmptyRetryTime, retryTime)
 	assert.EqualValues(t, testRegisterEntityResponse, entities)
