@@ -2,6 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 package delta
 
+import (
+	"fmt"
+	"path/filepath"
+	"strings"
+)
+
 // PluginInfo holds information about agent plugins
 type PluginInfo struct {
 	Source         string `json:"source"`
@@ -11,6 +17,21 @@ type PluginInfo struct {
 	LastSentID     int64  `json:"last_sent_id"` // Most recent delta id sent to server
 	FirstArchiveID int64  `json:"first_archive_id"`
 }
+
+// NewPluginInfo
+func NewPluginInfo(dirName, fileName string) *PluginInfo {
+	cleanFileName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
+
+	return &PluginInfo{
+		Source:         fmt.Sprintf("%s/%s", dirName, cleanFileName),
+		Plugin:         dirName,
+		FileName:       fileName,
+		MostRecentID:   NO_DELTA_ID,
+		LastSentID:     NO_DELTA_ID,
+		FirstArchiveID: NO_DELTA_ID,
+	}
+}
+
 
 func (pi *PluginInfo) nextDeltaID() int64 {
 	pi.MostRecentID = pi.MostRecentID + 1

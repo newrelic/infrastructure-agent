@@ -488,32 +488,33 @@ func (d *Store) writePluginIDMap() (err error) {
 	return
 }
 
-func (d *Store) collectPluginFiles(dir string, entityKey string, fileFilterRE *regexp.Regexp) ([]*PluginInfo, error) {
-	pluginInfos, err := ioutil.ReadDir(dir)
+func (d *Store) collectPluginFiles(dir string, entityKey string, fileFilterRE *regexp.Regexp) (pluginList []*PluginInfo, err error) {
+	pluginsFileInfo, err := ioutil.ReadDir(dir)
 	if err != nil {
-		return nil, err
+		return
 	}
-	pluginList := make([]*PluginInfo, 0, len(pluginInfos))
+
+	pluginList = make([]*PluginInfo, 0, len(pluginsFileInfo))
 	entityFolder := d.entityFolder(entityKey)
-	for _, pluginInfo := range pluginInfos {
-		if pluginInfo != nil && pluginInfo.IsDir() && !nonEntityFolders[pluginInfo.Name()] {
-			entityFullPath := filepath.Join(dir, pluginInfo.Name(), entityFolder)
+
+	for _, dirInfo := range pluginsFileInfo {
+		if dirInfo != nil && dirInfo.IsDir() && !nonEntityFolders[dirInfo.Name()] {
 			// Look inside each "plugin" directory to find the plugin's data files
-			pluginFiles, err := ioutil.ReadDir(entityFullPath)
+			filesInfo, err := ioutil.ReadDir(filepath.Join(dir, dirInfo.Name(), entityFolder))
 			if err != nil {
-				continue // There is no such entity for the given plugin, so continuing
+				// There is no such entity for the given plugin, so continuing
+				continue
 			}
-			for _, fileinfo := range pluginFiles {
-				if fileinfo != nil && !fileinfo.IsDir() && (fileFilterRE == nil || fileFilterRE.MatchString(fileinfo.Name())) {
-					cleanFileName := strings.TrimSuffix(fileinfo.Name(), filepath.Ext(fileinfo.Name()))
-					// Given a folder plugin/entity/filename.json, it takes plugin/filename as plugin info
-					sourceName := fmt.Sprintf("%s/%s", pluginInfo.Name(), cleanFileName)
-					pluginList = append(pluginList, &PluginInfo{sourceName, pluginInfo.Name(), fileinfo.Name(), NO_DELTA_ID, NO_DELTA_ID, NO_DELTA_ID})
+
+			for _, fInfo := range filesInfo {
+				if fInfo != nil && !fInfo.IsDir() && (fileFilterRE == nil || fileFilterRE.MatchString(fInfo.Name())) {
+					pluginList = append(pluginList, NewPluginInfo(dirInfo.Name(), fInfo.Name()))
 				}
 			}
 		}
 	}
-	return pluginList, nil
+
+	return
 }
 
 func removeNilsFromMarshaledJSON(buf []byte) (cleanBuf []byte, err error) {
