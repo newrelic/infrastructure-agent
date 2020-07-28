@@ -99,7 +99,7 @@ type Store struct {
 	// defaultEntityKey holds the agent entity name
 	defaultEntityKey string
 	// NextIDMap stores the information about the available plugins
-	nextIDMap pluginIDMap
+	nextIDMap pluginSource2Info
 	// stores time of last success submission of inventory to backend
 	lastSuccessSubmission time.Time
 }
@@ -116,7 +116,7 @@ func NewStore(dataDir string, defaultEntityKey string, maxInventorySize int) *St
 		CacheDir:         filepath.Join(dataDir, CACHE_DIR),
 		maxInventorySize: maxInventorySize,
 		defaultEntityKey: defaultEntityKey,
-		nextIDMap:        make(pluginIDMap),
+		nextIDMap:        make(pluginSource2Info),
 	}
 
 	// Nice2Have: remove side effects from constructor
@@ -223,7 +223,6 @@ func (d *Store) compactCacheStorage(entityKey string, threshold uint64) (err err
 				delete(removedPlugins, plugin.Source)
 			}
 			for _, p := range removedPlugins {
-				// log.Debugf("Clearing removed plugin: %s", p.Source)
 				_ = d.clearPluginDeltaStore(p, entityKey)
 				delete(d.nextIDMap, p.Source)
 			}

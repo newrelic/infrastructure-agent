@@ -38,7 +38,8 @@ func (pi *PluginInfo) nextDeltaID() int64 {
 	return pi.MostRecentID
 }
 
-type pluginIDMap map[string]*PluginInfo
+// pluginSource2Info stores plugins info by source
+type pluginSource2Info map[string]*PluginInfo
 
 // ID returns plugin serialized ID.
 func (pi *PluginInfo) ID() string {
