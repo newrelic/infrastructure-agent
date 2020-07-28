@@ -16,13 +16,15 @@ import (
 	backendhttp "github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/inventoryapi"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
 var rlog = log.WithComponent("IdentityRegisterClient")
 
 type IdentityRegisterClient interface {
-	Register(agentEntityID entity.ID, entities []RegisterEntity) ([]RegisterEntityResponse, time.Duration, error)
+	RegisterEntities(agentEntityID entity.ID, entities []RegisterEntity) ([]RegisterEntityResponse, time.Duration, error)
+	RegisterEntity(agentEntityID entity.ID, entity protocol.Entity) (RegisterEntityResponse, error)
 }
 
 type registerClient struct {
@@ -31,6 +33,7 @@ type registerClient struct {
 	userAgent        string
 	httpClient       backendhttp.Client
 	compressionLevel int
+	apiClient        apiClient
 }
 
 type RegisterEntity struct {
@@ -69,7 +72,7 @@ func NewIdentityRegisterClient(
 
 // Perform the GetIDs step. For doing that, the Agent must provide for each entity an entityKey. Backend should reply
 // with a unique Entity ID across NR for each registered entity
-func (rc *registerClient) Register(agentID entity.ID, entities []RegisterEntity) (ids []RegisterEntityResponse, retryAfter time.Duration, err error) {
+func (rc *registerClient) RegisterEntities(agentID entity.ID, entities []RegisterEntity) (ids []RegisterEntityResponse, retryAfter time.Duration, err error) {
 	retryAfter = EmptyRetryTime
 
 	if agentID.IsEmpty() {
@@ -163,4 +166,8 @@ func (rc *registerClient) marshal(b interface{}) (*bytes.Buffer, error) {
 		}
 	}
 	return &buf, nil
+}
+
+func (rc *registerClient) RegisterEntity(agentEntityID entity.ID, entity protocol.Entity) (resp RegisterEntityResponse, err error) {
+	return
 }
