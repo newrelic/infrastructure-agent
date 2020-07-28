@@ -32,7 +32,6 @@ func NewPluginInfo(dirName, fileName string) *PluginInfo {
 	}
 }
 
-
 func (pi *PluginInfo) nextDeltaID() int64 {
 	pi.MostRecentID = pi.MostRecentID + 1
 	return pi.MostRecentID
