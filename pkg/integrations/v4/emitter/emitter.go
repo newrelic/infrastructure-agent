@@ -49,6 +49,7 @@ type Legacy struct {
 	MetricsSender       dm.MetricsSender
 	ForceProtocolV2ToV3 bool
 	FFRetriever         feature_flags.Retriever
+	dmEmitter           dm.Emitter
 }
 
 func (e *Legacy) Emit(metadata integration.Definition, extraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error {
@@ -64,13 +65,7 @@ func (e *Legacy) Emit(metadata integration.Definition, extraLabels data.Map, ent
 
 	// dimensional metrics
 	if protocolVersion == protocol.V4 {
-		pluginDataV4, err := ParsePayloadV4(integrationJSON, e.FFRetriever)
-		if err != nil {
-			elog.WithError(err).WithField("output", string(integrationJSON)).Warn("can't parse v4 integration output")
-			return err
-		}
-
-		return e.EmitV4(metadata, extraLabels, entityRewrite, pluginDataV4)
+		return e.dmEmitter.Send(integrationJSON)
 	}
 
 	pluginDataV3, err := protocol.ParsePayload(integrationJSON, protocolVersion)
