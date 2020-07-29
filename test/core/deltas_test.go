@@ -284,7 +284,7 @@ func TestDeltas_HarvestAfterStoreCleanup(t *testing.T) {
 
 	plugin := newDummyPlugin("hi", a.Context)
 	a.RegisterPlugin(plugin)
-	// That runs a reconnectable plugin (e.g. Custom Attributes plugin)
+	// That runs a re-connectable plugin (e.g. Custom Attributes plugin)
 	a.RegisterPlugin(plugins.NewCustomAttrsPlugin(a.Context))
 	go a.Run()
 
