@@ -18,8 +18,8 @@ type PluginInfo struct {
 	MostRecentIDs  map[string]int64 `json:"mru_ids"`      // Most recent ids per entity plugin delta (replaces obsolete "mru_id", as it does not support remote entities)
 }
 
-// NewPluginInfo creates a new PluginInfo from plugin name and file
-func NewPluginInfo(name, fileName string) *PluginInfo {
+// newPluginInfo creates a new PluginInfo from plugin name and file
+func newPluginInfo(name, fileName string) *PluginInfo {
 	cleanFileName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
 
 	return &PluginInfo{

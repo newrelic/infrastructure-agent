@@ -126,7 +126,7 @@ func (s *DeltaUtilsCoreSuite) SetUpTest(c *C) {
 	s.dataDir, err = TempDeltaStoreDir()
 	c.Check(err, IsNil)
 	s.repoDir = filepath.Join(s.dataDir, "delta")
-	s.plugin = NewPluginInfo("metadata", "plugin.json")
+	s.plugin = newPluginInfo("metadata", "plugin.json")
 	s.pluginID = ids.PluginID{
 		Category: "metadata",
 		Term:     "plugin",
@@ -692,7 +692,7 @@ func (s *DeltaUtilsCoreSuite) TestCompactStoreRemoveUnusedPlugin(c *C) {
 	const id = "entity:ID"
 
 	ds := s.SetupSavedState(c)
-	plugin2 := NewPluginInfo("fancy", "plugin.json")
+	plugin2 := newPluginInfo("fancy", "plugin.json")
 	fancyFile := ds.SourceFilePath(plugin2, id)
 	err := os.MkdirAll(filepath.Dir(fancyFile), 0755)
 	c.Check(err, IsNil)
@@ -748,7 +748,7 @@ func (s *DeltaUtilsCoreSuite) TestDeltaFileCorrupt(c *C) {
 	err = ioutil.WriteFile(corruptDeltaFile, corruptDelta, 0644)
 	c.Check(err, IsNil)
 
-	secondPlugin := NewPluginInfo("metadata", "plugin.json")
+	secondPlugin := newPluginInfo("metadata", "plugin.json")
 	// break on purpose, so read should fail
 	secondPlugin.Source =       "metadata/plugin2"
 	secondPlugin.Plugin =       "metadata2"

@@ -507,7 +507,7 @@ func (d *Store) collectPluginFiles(dir string, entityKey string, fileFilterRE *r
 
 			for _, fInfo := range filesInfo {
 				if fInfo != nil && !fInfo.IsDir() && (fileFilterRE == nil || fileFilterRE.MatchString(fInfo.Name())) {
-					pluginList = append(pluginList, NewPluginInfo(dirInfo.Name(), fInfo.Name()))
+					pluginList = append(pluginList, newPluginInfo(dirInfo.Name(), fInfo.Name()))
 				}
 			}
 		}
