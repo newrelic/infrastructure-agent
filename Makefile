@@ -12,4 +12,4 @@ GO_BIN				?= go
 GO_BIN_1_9			?= go1.9.4
 
 # Scripts for building the Agent
-include scripts/infra_build.mk
+include build/infra_build.mk
