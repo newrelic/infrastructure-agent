@@ -5,10 +5,10 @@ package emitter
 import (
 	"errors"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
-	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
-	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
+
+	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
+	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
@@ -24,6 +24,7 @@ var (
 	NoContentToParseErr     = errors.New("no content to parse")
 
 	// internal
+
 	elog = log.WithComponent("integrations.emitter.Legacy")
 )
 
@@ -32,20 +33,12 @@ type Emitter interface {
 	Emit(metadata integration.Definition, ExtraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error
 }
 
-func NewIntegrationEmitter(a *agent.Agent,
-	dmSender dm.MetricsSender,
-	identityClient identityapi.IdentityRegisterClient,
-	ffRetriever feature_flags.Retriever,
-	license string,
-	userAgent string) Emitter {
+func NewIntegrationEmitter(a *agent.Agent, dmSender dm.MetricsSender, ffRetriever feature_flags.Retriever) Emitter {
 	return &Legacy{
 		Context:             a.Context,
 		MetricsSender:       dmSender,
 		ForceProtocolV2ToV3: true,
 		FFRetriever:         ffRetriever,
-		identityClient:      identityClient,
-		license:             license,
-		userAgent:           userAgent,
 	}
 }
 
@@ -56,9 +49,6 @@ type Legacy struct {
 	MetricsSender       dm.MetricsSender
 	ForceProtocolV2ToV3 bool
 	FFRetriever         feature_flags.Retriever
-	identityClient      identityapi.IdentityRegisterClient
-	userAgent           string
-	license             string
 }
 
 func (e *Legacy) Emit(metadata integration.Definition, extraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error {
