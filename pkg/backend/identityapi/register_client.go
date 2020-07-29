@@ -66,6 +66,7 @@ func NewIdentityRegisterClient(
 	}
 	icfg := identity.NewConfiguration()
 	icfg.Host = svcHost
+	icfg.Debug = true
 	// TODO: add the global HTTP client here
 	// icfg.HTTPClient = httpClient
 	identityClient := identity.NewAPIClient(icfg)
@@ -190,14 +191,16 @@ func (rc *registerClient) RegisterEntity(agentEntityID entity.ID, ent protocol.E
 	localVarOptionals := &identity.RegisterPostOpts{
 		XNRIAgentEntityId: optional.NewInt64(int64(agentEntityID)),
 	}
-	apiReps, httpResp, err := rc.apiClient.RegisterPost(ctx, rc.userAgent, rc.licenseKey, registerRequest, localVarOptionals)
 
+	apiReps, httpResp, err := rc.apiClient.RegisterPost(ctx, rc.userAgent, rc.licenseKey, registerRequest, localVarOptionals)
 	if err != nil {
-		bs,_ := ioutil.ReadAll(httpResp.Body)
+		bs, _ := ioutil.ReadAll(httpResp.Body)
 		rlog.
 			WithError(err).
+			WithField("XNRIAgentEntityId", agentEntityID).
 			WithField("status", httpResp.StatusCode).
 			WithField("body", string(bs)).
+			WithField("RegisterRequest", registerRequest).
 			Error("Something went wrong")
 		return resp, err
 	}
@@ -211,12 +214,9 @@ func (rc *registerClient) RegisterEntity(agentEntityID entity.ID, ent protocol.E
 }
 
 func convertMetadataToMapStringString(from map[string]interface{}) (to map[string]string) {
-
 	to = make(map[string]string, len(from))
-
 	for key, value := range from {
 		to[key] = fmt.Sprintf("%v", value)
 	}
-
 	return
 }
