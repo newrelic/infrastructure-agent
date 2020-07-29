@@ -22,6 +22,7 @@ import (
 var (
 	testConnectPath   = "identity/v1/connect"
 	testUrl           = "https://staging.newrelic.com"
+	testHost          = "staging.newrelic.com"
 	testLicenseKey    = "1234567890"
 	testUserAgent     = "Agent v1.2.3"
 	testAgentEntityId = entity.ID(999666333)

@@ -32,7 +32,23 @@ type emitter struct {
 }
 
 type Emitter interface {
-	Send(integrationJSON []byte) error
+	Send(
+		metadata integration.Definition,
+		extraLabels data.Map,
+		entityRewrite []data.EntityRewrite,
+		integrationJSON []byte) error
+}
+
+func NewEmitter(
+	a *agent.Agent,
+	dmSender MetricsSender,
+	ffRetriever feature_flags.Retriever) Emitter {
+
+	return &emitter{
+		agentContext:  a.GetContext(),
+		metricsSender: dmSender,
+		ffRetriever:   ffRetriever,
+	}
 }
 
 func (e *emitter) Send(
@@ -109,8 +125,8 @@ func emitV4DataSet(
 	}
 
 	for _, event := range dataSet.Events {
-		normalizedEvent := legacy.NormalizeEvent(elog, event, labels, integrationUser, dataSet.Entity.Name)
-
+		normalizedEvent := legacy.
+			NormalizeEvent(elog, event, labels, integrationUser, dataSet.Entity.Name)
 		if normalizedEvent != nil {
 			emitter.EmitEvent(normalizedEvent, entity.Key(dataSet.Entity.Name))
 		}
@@ -121,6 +137,8 @@ func emitV4DataSet(
 		IntegrationLabels:           labels,
 		IntegrationExtraAnnotations: extraAnnotations,
 	}
+
+	// TODO: register entities
 	metricsSender.SendMetrics(dmProcessor.ProcessMetrics(dataSet.Metrics, dataSet.Common, dataSet.Entity))
 
 	return nil

@@ -3,6 +3,8 @@
 package agent
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
+	"math/rand"
 	"testing"
 	"time"
 
@@ -20,6 +22,10 @@ import (
 type EmptyRegisterClient struct{}
 
 func (icc *EmptyRegisterClient) RegisterEntities(agentEntityID entity.ID, entities []identityapi.RegisterEntity) (r []identityapi.RegisterEntityResponse, retryAfter time.Duration, err error) {
+	return
+}
+
+func (icc *EmptyRegisterClient) RegisterEntity(agentEntityID entity.ID, entity protocol.Entity) (resp identityapi.RegisterEntityResponse, err error) {
 	return
 }
 
@@ -41,7 +47,7 @@ func newRetryBackoffRegister() identityapi.IdentityRegisterClient {
 
 func (r *incrementalRegister) RegisterEntities(agentEntityID entity.ID, entities []identityapi.RegisterEntity) (responseKeys []identityapi.RegisterEntityResponse, retryAfter time.Duration, err error) {
 	if r.state == state.RegisterRetryAfter {
-		retryAfter = time.Duration(1 * time.Second)
+		retryAfter = 1 * time.Second
 		err = inventoryapi.NewIngestError("ingest service rejected the register step", http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError), "")
 		return
 	} else if r.state == state.RegisterRetryBackoff {
@@ -56,6 +62,13 @@ func (r *incrementalRegister) RegisterEntities(agentEntityID entity.ID, entities
 	}
 
 	return
+}
+
+func (r *incrementalRegister) RegisterEntity(agentEntityID entity.ID, ent protocol.Entity) (identityapi.RegisterEntityResponse, error) {
+	return identityapi.RegisterEntityResponse{
+		ID:  entity.ID(rand.Int63n(100000)),
+		Key: entity.Key(ent.Name),
+	}, nil
 }
 
 func TestNewProvideIDs(t *testing.T) {

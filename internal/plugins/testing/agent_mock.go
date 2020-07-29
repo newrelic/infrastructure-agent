@@ -18,6 +18,7 @@ import (
 )
 
 type MockAgent struct {
+	agent.AgentContext
 	ch         chan agent.PluginOutput
 	registered bool
 	cfg        *config.Config

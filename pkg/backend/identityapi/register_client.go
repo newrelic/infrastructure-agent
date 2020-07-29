@@ -194,12 +194,10 @@ func (rc *registerClient) RegisterEntity(agentEntityID entity.ID, ent protocol.E
 
 	apiReps, httpResp, err := rc.apiClient.RegisterPost(ctx, rc.userAgent, rc.licenseKey, registerRequest, localVarOptionals)
 	if err != nil {
-		bs, _ := ioutil.ReadAll(httpResp.Body)
 		rlog.
 			WithError(err).
 			WithField("XNRIAgentEntityId", agentEntityID).
 			WithField("status", httpResp.StatusCode).
-			WithField("body", string(bs)).
 			WithField("RegisterRequest", registerRequest).
 			Error("Something went wrong")
 		return resp, err

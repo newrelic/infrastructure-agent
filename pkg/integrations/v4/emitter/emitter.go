@@ -33,12 +33,17 @@ type Emitter interface {
 	Emit(metadata integration.Definition, ExtraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error
 }
 
-func NewIntegrationEmitter(a *agent.Agent, dmSender dm.MetricsSender, ffRetriever feature_flags.Retriever) Emitter {
+func NewIntegrationEmitter(
+	a *agent.Agent,
+	dmSender dm.MetricsSender,
+	dmEmitter dm.Emitter,
+	ffRetriever feature_flags.Retriever) Emitter {
 	return &Legacy{
-		Context:             a.Context,
+		Context:             a.GetContext(),
 		MetricsSender:       dmSender,
 		ForceProtocolV2ToV3: true,
 		FFRetriever:         ffRetriever,
+		dmEmitter:           dmEmitter,
 	}
 }
 
@@ -65,7 +70,7 @@ func (e *Legacy) Emit(metadata integration.Definition, extraLabels data.Map, ent
 
 	// dimensional metrics
 	if protocolVersion == protocol.V4 {
-		return e.dmEmitter.Send(integrationJSON)
+		return e.dmEmitter.Send(metadata, extraLabels, entityRewrite, integrationJSON)
 	}
 
 	pluginDataV3, err := protocol.ParsePayload(integrationJSON, protocolVersion)

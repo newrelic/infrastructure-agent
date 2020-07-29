@@ -270,7 +270,9 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		c.PluginInstanceDirs,
 		pluginSourceDirs,
 	)
-	integrationEmitter := emitter.NewIntegrationEmitter(agt, dmSender, ffManager)
+
+	dmEmitter := dm.NewEmitter(agt, dmSender, ffManager)
+	integrationEmitter := emitter.NewIntegrationEmitter(agt, dmSender, dmEmitter, ffManager)
 	integrationManager := v4.NewManager(integrationCfg, integrationEmitter)
 
 	// log-forwarder
