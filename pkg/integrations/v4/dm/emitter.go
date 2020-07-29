@@ -9,6 +9,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/http"
+	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
@@ -26,9 +27,10 @@ var (
 )
 
 type emitter struct {
-	ffRetriever   feature_flags.Retriever
-	metricsSender MetricsSender
-	agentContext  agent.AgentContext
+	ffRetriever    feature_flags.Retriever
+	metricsSender  MetricsSender
+	agentContext   agent.AgentContext
+	registerClient identityapi.RegisterClient
 }
 
 type Emitter interface {
@@ -42,12 +44,14 @@ type Emitter interface {
 func NewEmitter(
 	a *agent.Agent,
 	dmSender MetricsSender,
-	ffRetriever feature_flags.Retriever) Emitter {
+	ffRetriever feature_flags.Retriever,
+	registerClient identityapi.RegisterClient) Emitter {
 
 	return &emitter{
-		agentContext:  a.GetContext(),
-		metricsSender: dmSender,
-		ffRetriever:   ffRetriever,
+		agentContext:   a.GetContext(),
+		metricsSender:  dmSender,
+		ffRetriever:    ffRetriever,
+		registerClient: registerClient,
 	}
 }
 
@@ -79,7 +83,32 @@ func (e *emitter) process(
 	labels, extraAnnotations := metadata.LabelsAndExtraAnnotations(extraLabels)
 
 	var err error
+
+	var entities []protocol.Entity
+	// Collect All entities
+	for i := range integrationData.DataSets {
+		entities = append(entities, integrationData.DataSets[i].Entity)
+	}
+
+	// Bulk update them (after checking our datastore if they exist)
+	// add entity ID to metric annotations
+	resp, _, err := e.registerClient.RegisterProtocolEntities(e.agentContext.AgentIdentity().ID, entities)
+
+	if err != nil {
+		//TODO: handle error
+		return err
+	}
+
+	registeredEntities := make(map[string]entity.ID, len(resp))
+
+	for i := range resp {
+		registeredEntities[resp[i].Name] = resp[i].ID
+	}
+
 	for _, dataset := range integrationData.DataSets {
+		// for dataset.Entity call emitV4DataSet function with entity ID
+		dataset.Common.Attributes["nr.entity.id"] = registeredEntities[dataset.Entity.Name]
+
 		if err = emitV4DataSet(
 			e.agentContext.IDLookup(),
 			e.metricsSender,
@@ -137,8 +166,6 @@ func emitV4DataSet(
 		IntegrationLabels:           labels,
 		IntegrationExtraAnnotations: extraAnnotations,
 	}
-
-	// TODO: register entities
 	metricsSender.SendMetrics(dmProcessor.ProcessMetrics(dataSet.Metrics, dataSet.Common, dataSet.Entity))
 
 	return nil

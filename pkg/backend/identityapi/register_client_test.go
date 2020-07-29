@@ -29,7 +29,7 @@ import (
 var (
 	testRegisterRequestPath    = "identity/v1/register/batch"
 	testRegisterEntity         = []RegisterEntity{NewRegisterEntity("my-entity-1"), NewRegisterEntity("my-entity-2")}
-	testRegisterEntityResponse = []RegisterEntityResponse{{entity.ID(12345), "my-entity-1"}, {entity.ID(54321), "my-entity-2"}}
+	testRegisterEntityResponse = []RegisterEntityResponse{{ID: entity.ID(12345), Name: "my-entity-1"}, {ID: entity.ID(54321), Name: "my-entity-2"}}
 )
 
 func getRegisterRequestBody(req *http.Request) ([]RegisterEntity, error) {
@@ -82,7 +82,7 @@ func TestRegisterRetryTime(t *testing.T) {
 	client, err := NewIdentityRegisterClient(testUrl, testHost, testLicenseKey, testUserAgent, gzip.BestCompression, mockHttp)
 	assert.NoError(t, err)
 
-	entities, retryTime, err := client.RegisterEntities(testAgentEntityId, testRegisterEntity)
+	entities, retryTime, err := client.RegisterEntitiesRemoveMe(testAgentEntityId, testRegisterEntity)
 	assert.Error(t, err)
 	assert.EqualValues(t, 10*time.Second, retryTime)
 
@@ -98,7 +98,7 @@ func TestRegisterOk(t *testing.T) {
 	client, err := NewIdentityRegisterClient(testUrl, testHost, testLicenseKey, testUserAgent, gzip.BestCompression, mockHttp)
 	assert.NoError(t, err)
 
-	entities, retryTime, err := client.RegisterEntities(testAgentEntityId, testRegisterEntity)
+	entities, retryTime, err := client.RegisterEntitiesRemoveMe(testAgentEntityId, testRegisterEntity)
 	assert.NoError(t, err)
 	assert.EqualValues(t, EmptyRetryTime, retryTime)
 	assert.EqualValues(t, testRegisterEntityResponse, entities)

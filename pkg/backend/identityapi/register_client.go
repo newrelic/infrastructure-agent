@@ -23,10 +23,11 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
-var rlog = log.WithComponent("IdentityRegisterClient")
+var rlog = log.WithComponent("identityapi.RegisterClient")
 
-type IdentityRegisterClient interface {
-	RegisterEntities(agentEntityID entity.ID, entities []RegisterEntity) ([]RegisterEntityResponse, time.Duration, error)
+type RegisterClient interface {
+	RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities []RegisterEntity) ([]RegisterEntityResponse, time.Duration, error)
+	RegisterProtocolEntities(agentEntityID entity.ID, entities []protocol.Entity) (RegisterBatchEntityResponse, time.Duration, error)
 	RegisterEntity(agentEntityID entity.ID, entity protocol.Entity) (RegisterEntityResponse, error)
 }
 
@@ -48,9 +49,12 @@ type RegisterEntity struct {
 }
 
 type RegisterEntityResponse struct {
-	ID  entity.ID  `json:"entityID"`
-	Key entity.Key `json:"entityKey"`
+	ID   entity.ID  `json:"entityID"`
+	Key  entity.Key `json:"entityKey"`
+	Name string     `json:"entityName"`
 }
+
+type RegisterBatchEntityResponse []RegisterEntityResponse
 
 func NewRegisterEntity(key entity.Key) RegisterEntity {
 	return RegisterEntity{key, "", "", nil, nil}
@@ -60,7 +64,7 @@ func NewIdentityRegisterClient(
 	svcUrl, svcHost, licenseKey, userAgent string,
 	compressionLevel int,
 	httpClient backendhttp.Client,
-) (IdentityRegisterClient, error) {
+) (RegisterClient, error) {
 	if compressionLevel < gzip.NoCompression || compressionLevel > gzip.BestCompression {
 		return nil, fmt.Errorf("gzip: invalid compression level: %d", compressionLevel)
 	}
@@ -80,9 +84,13 @@ func NewIdentityRegisterClient(
 	}, nil
 }
 
+func (rc *registerClient) RegisterProtocolEntities(agentEntityID entity.ID, entities []protocol.Entity) (RegisterBatchEntityResponse, time.Duration, error) {
+	panic("not implemented yet")
+}
+
 // Perform the GetIDs step. For doing that, the Agent must provide for each entity an entityKey. Backend should reply
 // with a unique Entity ID across NR for each registered entity
-func (rc *registerClient) RegisterEntities(agentID entity.ID, entities []RegisterEntity) (ids []RegisterEntityResponse, retryAfter time.Duration, err error) {
+func (rc *registerClient) RegisterEntitiesRemoveMe(agentID entity.ID, entities []RegisterEntity) (ids []RegisterEntityResponse, retryAfter time.Duration, err error) {
 	retryAfter = EmptyRetryTime
 
 	if agentID.IsEmpty() {

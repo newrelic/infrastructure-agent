@@ -21,7 +21,11 @@ import (
 
 type EmptyRegisterClient struct{}
 
-func (icc *EmptyRegisterClient) RegisterEntities(agentEntityID entity.ID, entities []identityapi.RegisterEntity) (r []identityapi.RegisterEntityResponse, retryAfter time.Duration, err error) {
+func (icc *EmptyRegisterClient) RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities []identityapi.RegisterEntity) (r []identityapi.RegisterEntityResponse, retryAfter time.Duration, err error) {
+	return
+}
+
+func (icc *EmptyRegisterClient) RegisterProtocolEntities(agentEntityID entity.ID, entities []protocol.Entity) (r identityapi.RegisterBatchEntityResponse, retryAfter time.Duration, err error) {
 	return
 }
 
@@ -33,19 +37,23 @@ type incrementalRegister struct {
 	state state.Register
 }
 
-func newIncrementalRegister() identityapi.IdentityRegisterClient {
+func newIncrementalRegister() identityapi.RegisterClient {
 	return &incrementalRegister{state: state.RegisterHealthy}
 }
 
-func newRetryAfterRegister() identityapi.IdentityRegisterClient {
+func newRetryAfterRegister() identityapi.RegisterClient {
 	return &incrementalRegister{state: state.RegisterRetryAfter}
 }
 
-func newRetryBackoffRegister() identityapi.IdentityRegisterClient {
+func newRetryBackoffRegister() identityapi.RegisterClient {
 	return &incrementalRegister{state: state.RegisterRetryBackoff}
 }
 
-func (r *incrementalRegister) RegisterEntities(agentEntityID entity.ID, entities []identityapi.RegisterEntity) (responseKeys []identityapi.RegisterEntityResponse, retryAfter time.Duration, err error) {
+func (r *incrementalRegister) RegisterProtocolEntities(agentEntityID entity.ID, entities []protocol.Entity) (batchResponse identityapi.RegisterBatchEntityResponse, t time.Duration, err error) {
+	return
+}
+
+func (r *incrementalRegister) RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities []identityapi.RegisterEntity) (responseKeys []identityapi.RegisterEntityResponse, retryAfter time.Duration, err error) {
 	if r.state == state.RegisterRetryAfter {
 		retryAfter = 1 * time.Second
 		err = inventoryapi.NewIngestError("ingest service rejected the register step", http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError), "")

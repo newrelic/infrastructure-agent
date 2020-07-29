@@ -3,9 +3,8 @@
 package dm
 
 import (
-	"time"
-
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
+	"time"
 )
 
 const labelPrefix = "label."
