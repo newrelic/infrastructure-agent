@@ -18,6 +18,23 @@ jobs:
       - name: Running unit tests
         run: make test
 
+  build-container:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '^1.14.4'
+
+      - name: Build linux agent
+        run: make clean linux/amd64
+
+      - name: Build container agent
+        run: make -C build/container/ build/base
+
   build-windows:
     runs-on: windows-latest
 
