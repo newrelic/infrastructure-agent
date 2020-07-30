@@ -1,5 +1,5 @@
 # Standard variables defining directories and other useful stuff.
-PROJECT_WORKSPACE	:= $(CURDIR)
+PROJECT_WORKSPACE	?= $(CURDIR)
 PROJECT_NAME		:= newrelic-infra
 TARGET_DIR			= $(PROJECT_WORKSPACE)/target
 TARGET_DIR_CENTOS5	= $(TARGET_DIR)/el_5

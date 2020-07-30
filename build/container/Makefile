@@ -4,10 +4,9 @@ INFRASTRUCTURE_WORKSPACE       ?= workspace
 PROJECT_WORKSPACE              ?= $(CURDIR)/$(INFRASTRUCTURE_WORKSPACE)
 
 TARGET_DIR						= $(PROJECT_WORKSPACE)/target
-NRI_INTEGRATIONS_FILE			= ../../build/nri-integrations
+NRI_INTEGRATIONS_FILE			= $(CURDIR)/../../build/nri-integrations
 NRI_PKG_DIR						?= ${PROJECT_WORKSPACE}/${BASE_OHIS}
-AGENT_BUILD_TARGET_DIR			?= ../../target/bin/linux_amd64
-ASSETS_DIR						?= ../../
+AGENT_BUILD_TARGET_DIR			?= $(CURDIR)/../../target/bin/linux_amd64
 
 include ../../build/embed_ohis.mk
 
@@ -18,9 +17,9 @@ AGENT_VERSION                  ?= ${AGENT_BUILD_NUMBER}
 
 NS                             ?= newrelic
 REPO                           ?= infrastructure
-IMAGE_NAME                     := ${NS}/${REPO}
-CORE_IMAGE_NAME                := ${IMAGE_NAME}-core
-BASE_IMAGE_NAME                := ${IMAGE_NAME}
+IMAGE_NAME                     ?= ${NS}/${REPO}
+CORE_IMAGE_NAME                ?= ${IMAGE_NAME}-core
+BASE_IMAGE_NAME                ?= ${IMAGE_NAME}
 
 AGENT_BIN                      ?= newrelic-infra
 DOCKERFILE                     ?= $(CURDIR)/Dockerfile
@@ -30,11 +29,14 @@ BASE_OHIS                      ?= ohis
 DOCKER_VERSION                 ?= $(call get-nri-version,nri-docker)
 FLEX_VERSION                   ?= $(call get-nri-version,nri-flex)
 
-DOCKER_BUILD_BASE 				= docker build --no-cache \
+DOCKER_NO_CACHE					?= --no-cache
+DOCKER_BUILD_BASE				= docker build \
+								${DOCKER_NO_CACHE} \
+								--pull \
 								-t ${BASE_IMAGE_NAME}:${IMAGE_VERSION} \
 								-t ${BASE_IMAGE_NAME}:latest \
-								-t cf-registry.nr-ops.net/infrastructure/newrelic-infrastructure:${IMAGE_VERSION} \
-								-t cf-registry.nr-ops.net/infrastructure/newrelic-infrastructure:latest \
+								-t newrelic-infrastructure:${IMAGE_VERSION} \
+								-t newrelic-infrastructure:latest \
 								--build-arg image_version=${IMAGE_VERSION} \
 								--build-arg agent_version=${AGENT_VERSION} \
 								--build-arg version_file=VERSION \
@@ -57,7 +59,9 @@ workspace/assets : workspace
 .PHONY : build/core
 build/core : workspace/assets
 build/core :
-	@(docker build --no-cache \
+	@(docker build \
+	${DOCKER_NO_CACHE} \
+	--pull \
 	-t ${CORE_IMAGE_NAME}:${IMAGE_VERSION} \
 	--build-arg image_version=${IMAGE_VERSION} \
 	--build-arg agent_version=${AGENT_VERSION} \
@@ -69,11 +73,6 @@ build/core :
 
 ${NRI_PKG_DIR}:
 	@(mkdir -p ${NRI_PKG_DIR})
-
-## Base
-#.PHONY : base/get-integrations
-#base/get-integrations :
-#	@($(MAKE)  && NRI_PKG_DIR="${PROJECT_WORKSPACE}/${BASE_OHIS}" $(MAKE) embed-integrations)
 
 # Useful to get logged in Jenkins when things blow up
 .PHONY : debug
@@ -111,3 +110,7 @@ lint : lint/Dockerfile
 .PHONY : lint/Dockerfile
 lint/Dockerfile :
 	@(docker run --rm -i hadolint/hadolint < ${DOCKERFILE})
+
+.PHONY : clean
+clean:
+	@(rm -rf ${PROJECT_WORKSPACE})
