@@ -294,10 +294,10 @@ func (d *Store) archivePlugin(pluginItem *PluginInfo, entityKey string) (err err
 
 	keepDeltas := make([]*inventoryapi.RawDelta, 0)
 	archiveDeltas := make([]*inventoryapi.RawDelta, 0)
-	// Is this plugin already in the map?
 	_, ok := d.plugins[pluginItem.Source]
 	for _, result := range deltas {
 		if ok && result.ID <= pluginItem.LastSentID {
+			// backend already has this data
 			archiveDeltas = append(archiveDeltas, result)
 		} else {
 			keepDeltas = append(keepDeltas, result)

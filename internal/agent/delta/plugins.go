@@ -13,7 +13,7 @@ type PluginInfo struct {
 	Source         string           `json:"source"`
 	Plugin         string           `json:"plugin"`
 	FileName       string           `json:"filename"`
-	LastSentID     int64            `json:"last_sent_id"` // Most recent delta id sent to server
+	LastSentID     int64            `json:"last_sent_id"` // Latest delta available on platform
 	MostRecentIDs  map[string]int64 `json:"mru_ids"`      // Most recent ids per entity plugin delta (replaces obsolete "mru_id", as it does not support remote entities)
 }
 
@@ -30,6 +30,7 @@ func newPluginInfo(name, fileName string) *PluginInfo {
 	}
 }
 
+// setDeltaID is used as backend-client reconciliation mechanism
 func (pi *PluginInfo) setDeltaID(entityKey string, value int64) {
 	pi.initialize()
 
