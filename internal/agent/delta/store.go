@@ -355,7 +355,7 @@ func (d *Store) updateLastDeltaSent(entityKey string, delta *inventoryapi.RawDel
 
 	source := delta.Source
 	id := delta.ID
-	plugin, ok := d.plugins[source]
+	p, ok := d.plugins[source]
 	if !ok {
 		return
 	}
@@ -389,42 +389,42 @@ func (d *Store) updateLastDeltaSent(entityKey string, delta *inventoryapi.RawDel
 			// N+1 as the SendNextID, the agent
 			// could not tell if its delta was
 			// problematic.
-			d.reconciliateWithBackend(source, entityKey, plugin, resultHint)
+			d.reconciliateWithBackend(entityKey, p, resultHint)
 
 		case resultHint.SendNextID == id+1:
 			// normal case
-			d.plugins[source].LastSentID = id
+			p.LastSentID = id
 
 		case resultHint.SendNextID == 0:
 			// Send full
 			// Leave delta ID values as is
-			_ = d.clearPluginDeltaStore(plugin, entityKey)
+			_ = d.clearPluginDeltaStore(p, entityKey)
 
 		case resultHint.SendNextID != id:
 			// If not present, send current full
 			// Reset delta ids to use SendNextID for the numbering of the next delta ids so we
 			// can fill in the gaps in the correct sequence
-			d.reconciliateWithBackend(source, entityKey, plugin, resultHint)
+			d.reconciliateWithBackend(entityKey, p, resultHint)
 
 		case resultHint.SendNextID == id:
 			// Send again? This is a no-op, set last sent id to one previous
-			dslog.WithFields(logrus.Fields{"sendNextID": id, "plugin": plugin}).
+			dslog.WithFields(logrus.Fields{"sendNextID": id, "plugin": p}).
 				Debug("Requesting to update last delta sent to identical value.")
-			d.plugins[source].LastSentID = id - 1
+			p.LastSentID = id - 1
 		}
 	} else {
-		if id > d.plugins[source].LastSentID {
-			d.plugins[source].LastSentID = id
+		if id > p.LastSentID {
+			p.LastSentID = id
 		}
 	}
 
 	dslog.WithField("plugin", source).Debug("Updating deltas.")
 }
 
-func (d *Store) reconciliateWithBackend(source, entityKey string, plugin *PluginInfo, resultHint *inventoryapi.DeltaState) {
+func (d *Store) reconciliateWithBackend(entityKey string, plugin *PluginInfo, resultHint *inventoryapi.DeltaState) {
 	_ = d.clearPluginDeltaStore(plugin, entityKey)
-	d.plugins[source].LastSentID = resultHint.SendNextID - 1
-	d.plugins[source].setDeltaID(entityKey, resultHint.LastStoredID)
+	plugin.LastSentID = resultHint.SendNextID - 1
+	plugin.setDeltaID(entityKey, resultHint.LastStoredID)
 }
 
 // SaveState writes on disk the plugin ID maps
