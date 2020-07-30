@@ -18,13 +18,7 @@ import (
 )
 
 var (
-	// Errors
-
-	ProtocolV4NotEnabledErr = errors.New("integration protocol version 4 is not enabled")
-	NoContentToParseErr     = errors.New("no content to parse")
-
 	// internal
-
 	elog = log.WithComponent("integrations.emitter.Legacy")
 )
 

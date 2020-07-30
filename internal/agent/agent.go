@@ -279,7 +279,12 @@ func checkCollectorConnectivity(ctx context2.Context, cfg *config.Config, retrie
 }
 
 // NewAgent returns a new instance of an agent built from the config.
-func NewAgent(cfg *config.Config, buildVersion string, ffRetriever feature_flags.Retriever) (a *Agent, err error) {
+func NewAgent(
+	cfg *config.Config,
+	buildVersion string,
+	userAgent string,
+	registerClient identityapi.RegisterClient,
+	ffRetriever feature_flags.Retriever) (a *Agent, err error) {
 
 	hostnameResolver := hostname.CreateResolver(
 		cfg.OverrideHostname, cfg.OverrideHostnameShort, cfg.DnsHostnameResolution)
@@ -312,8 +317,6 @@ func NewAgent(cfg *config.Config, buildVersion string, ffRetriever feature_flags
 
 	s := delta.NewStore(dataDir, ctx.AgentIdentifier(), maxInventorySize)
 
-	userAgent := GenerateUserAgent("New Relic Infrastructure Agent", buildVersion)
-
 	transport := backendhttp.BuildTransport(cfg, backendhttp.ClientTimeout)
 
 	httpClient := backendhttp.GetHttpClient(backendhttp.ClientTimeout, transport).Do
@@ -330,18 +333,6 @@ func NewAgent(cfg *config.Config, buildVersion string, ffRetriever feature_flags
 		userAgent,
 		cfg.PayloadCompressionLevel,
 		cfg.IsContainerized,
-		httpClient,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	registerClient, err := identityapi.NewIdentityRegisterClient(
-		identityURL,
-		cfg.IdentityHost,
-		cfg.License,
-		userAgent,
-		cfg.PayloadCompressionLevel,
 		httpClient,
 	)
 	if err != nil {
