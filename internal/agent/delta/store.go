@@ -311,14 +311,12 @@ func (d *Store) archivePlugin(pluginItem *PluginInfo, entityKey string) (err err
 		}
 	}
 
-	deltaFilePath := d.archiveFilePath(pluginItem, entityKey)
-	err = d.rewriteDeltas(deltaFilePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, archiveDeltas)
-	if err == nil {
-		deltaFilePath = d.DeltaFilePath(pluginItem, entityKey)
-		err = d.rewriteDeltas(deltaFilePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, keepDeltas)
+	err = d.rewriteDeltas(d.archiveFilePath(pluginItem, entityKey), os.O_CREATE|os.O_APPEND|os.O_WRONLY, archiveDeltas)
+	if err != nil {
+		return
 	}
 
-	return
+	return d.rewriteDeltas(d.DeltaFilePath(pluginItem, entityKey), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, keepDeltas)
 }
 
 // ResetAllDeltas clears the plugin delta store for all the existing plugins
