@@ -516,10 +516,57 @@ func (s *DeltaUtilsCoreSuite) TestReadDeltas(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(deltas, HasLen, 1)
 	c.Assert(deltas[0], HasLen, 1)
+	c.Assert(deltas[0][0].ID, Equals, int64(1))
 	c.Assert(deltas[0][0].Source, Equals, s.plugin.Source)
 	var expectedDelta map[string]interface{}
 	c.Assert(json.Unmarshal(deltaBytes, &expectedDelta), IsNil)
 	c.Assert(deltas[0][0].Diff, DeepEquals, expectedDelta)
+}
+func (s *DeltaUtilsCoreSuite) TestReadDeltas_SamePluginWithMultipleEntitiesIncreaseIDIndependently(c *C) {
+	// Given a delta file store
+	ds := NewStore(s.repoDir, "default", maxInventorySize)
+
+	// When a delta source file is created for an entity
+	const e1 = "entity:ID1"
+	srcFile := ds.SourceFilePath(s.plugin, e1)
+	err := os.MkdirAll(filepath.Dir(srcFile), 0755)
+	c.Assert(err, IsNil)
+	deltaBytes := []byte(`{"hostname":{"alias":"foo","id":"hostname"}}`)
+	err = ioutil.WriteFile(srcFile, deltaBytes, 0644)
+	c.Assert(err, IsNil)
+
+	// And its cache is updated
+	updated, err := ds.updatePluginInventoryCache(s.plugin, e1)
+	c.Assert(updated, Equals, true)
+	c.Assert(err, IsNil)
+
+	// And read deltas for the entity 1 returns ID as 1
+	deltas, err := ds.ReadDeltas(e1)
+	c.Assert(err, IsNil)
+	c.Assert(deltas, HasLen, 1)
+	c.Assert(deltas[0], HasLen, 1)
+	c.Assert(deltas[0][0].ID, Equals, int64(1))
+
+	// When a delta source file is created for an entity
+	const e2 = "entity:ID2"
+	srcFile = ds.SourceFilePath(s.plugin, e2)
+	err = os.MkdirAll(filepath.Dir(srcFile), 0755)
+	c.Assert(err, IsNil)
+	deltaBytes = []byte(`{"hostname":{"alias":"bar","id":"hostname"}}`)
+	err = ioutil.WriteFile(srcFile, deltaBytes, 0644)
+	c.Assert(err, IsNil)
+
+	// And its cache is updated
+	updated, err = ds.updatePluginInventoryCache(s.plugin, e2)
+	c.Assert(updated, Equals, true)
+	c.Assert(err, IsNil)
+
+	// Then read deltas for the entity 2 returns ID as 1
+	deltas, err = ds.ReadDeltas(e2)
+	c.Assert(err, IsNil)
+	c.Assert(deltas, HasLen, 1)
+	c.Assert(deltas[0], HasLen, 1)
+	c.Assert(deltas[0][0].ID, Equals, int64(1))
 }
 
 func (s *DeltaUtilsCoreSuite) TestReadDeltas_Divided(c *C) {
