@@ -406,10 +406,8 @@ func (d *Store) updateLastDeltaSent(entityKey string, delta *inventoryapi.RawDel
 				Debug("Requesting to update last delta sent to identical value.")
 			p.LastSentID = id - 1
 		}
-	} else {
-		if id > p.LastSentID {
-			p.LastSentID = id
-		}
+	} else if id > p.LastSentID {
+		p.LastSentID = id
 	}
 
 	dslog.WithField("plugin", source).Debug("Updating deltas.")
