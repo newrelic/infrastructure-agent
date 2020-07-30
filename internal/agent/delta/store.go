@@ -382,32 +382,26 @@ func (d *Store) updateLastDeltaSent(entityKey string, delta *inventoryapi.RawDel
 	if resultHint != nil {
 		switch {
 		case resultHint.NeedsReset:
-			// This case was added to fix
-			// the situation where the agent sent N
-			// and the server expected N+1.  In this
-			// situation, when the server sends back
-			// N+1 as the SendNextID, the agent
-			// could not tell if its delta was
-			// problematic.
-			d.reconciliateWithBackend(entityKey, p, resultHint)
+			// Fixes the situation where agent sent N but backend expected N+1. In this situation,
+			// when backend sends back N+1 as the SendNextID, the agent could not tell if its delta
+			// was problematic.
+			d.reconciliateWithBackend(p, entityKey, resultHint)
 
 		case resultHint.SendNextID == id+1:
-			// normal case
+			// Normal case.
 			p.LastSentID = id
 
 		case resultHint.SendNextID == 0:
-			// Send full
-			// Leave delta ID values as is
+			// Send full. Leave delta ID values as is.
 			_ = d.clearPluginDeltaStore(p, entityKey)
 
 		case resultHint.SendNextID != id:
-			// If not present, send current full
-			// Reset delta ids to use SendNextID for the numbering of the next delta ids so we
-			// can fill in the gaps in the correct sequence
-			d.reconciliateWithBackend(entityKey, p, resultHint)
+			// If not present, send current full Reset delta ids to use SendNextID for the numbering
+			// of the next delta ids so we can fill in the gaps in the correct sequence.
+			d.reconciliateWithBackend(p, entityKey, resultHint)
 
 		case resultHint.SendNextID == id:
-			// Send again? This is a no-op, set last sent id to one previous
+			// Send again? This is a no-op, set last sent id to one previous.
 			dslog.WithFields(logrus.Fields{"sendNextID": id, "plugin": p}).
 				Debug("Requesting to update last delta sent to identical value.")
 			p.LastSentID = id - 1
@@ -421,7 +415,7 @@ func (d *Store) updateLastDeltaSent(entityKey string, delta *inventoryapi.RawDel
 	dslog.WithField("plugin", source).Debug("Updating deltas.")
 }
 
-func (d *Store) reconciliateWithBackend(entityKey string, plugin *PluginInfo, resultHint *inventoryapi.DeltaState) {
+func (d *Store) reconciliateWithBackend(plugin *PluginInfo, entityKey string, resultHint *inventoryapi.DeltaState) {
 	_ = d.clearPluginDeltaStore(plugin, entityKey)
 	plugin.LastSentID = resultHint.SendNextID - 1
 	plugin.setDeltaID(entityKey, resultHint.LastStoredID)
