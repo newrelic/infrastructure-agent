@@ -98,8 +98,8 @@ type Store struct {
 	maxInventorySize int
 	// defaultEntityKey holds the agent entity name
 	defaultEntityKey string
-	// NextIDMap stores the information about the available plugins
-	nextIDMap pluginSource2Info
+	// plugins stores the information about the available plugins
+	plugins pluginSource2Info
 	// stores time of last success submission of inventory to backend
 	lastSuccessSubmission time.Time
 }
@@ -116,7 +116,7 @@ func NewStore(dataDir string, defaultEntityKey string, maxInventorySize int) *St
 		CacheDir:         filepath.Join(dataDir, CACHE_DIR),
 		maxInventorySize: maxInventorySize,
 		defaultEntityKey: defaultEntityKey,
-		nextIDMap:        make(pluginSource2Info),
+		plugins:          make(pluginSource2Info),
 	}
 
 	// Nice2Have: remove side effects from constructor
@@ -223,7 +223,7 @@ func (d *Store) compactCacheStorage(entityKey string, threshold uint64) (err err
 			}
 			for _, p := range removedPlugins {
 				_ = d.clearPluginDeltaStore(p, entityKey)
-				delete(d.nextIDMap, p.Source)
+				delete(d.plugins, p.Source)
 			}
 
 			// Now for the active ones, remove their archives
@@ -295,7 +295,7 @@ func (d *Store) archivePlugin(pluginItem *PluginInfo, entityKey string) (err err
 	keepDeltas := make([]*inventoryapi.RawDelta, 0)
 	archiveDeltas := make([]*inventoryapi.RawDelta, 0)
 	// Is this plugin already in the map?
-	_, ok := d.nextIDMap[pluginItem.Source]
+	_, ok := d.plugins[pluginItem.Source]
 	for _, result := range deltas {
 		if ok && result.ID <= pluginItem.LastSentID {
 			archiveDeltas = append(archiveDeltas, result)
@@ -314,8 +314,8 @@ func (d *Store) archivePlugin(pluginItem *PluginInfo, entityKey string) (err err
 
 // ResetAllDeltas clears the plugin delta store for all the existing plugins
 func (d *Store) ResetAllDeltas(entityKey string) {
-	if d.nextIDMap != nil {
-		for _, plugin := range d.nextIDMap {
+	if d.plugins != nil {
+		for _, plugin := range d.plugins {
 			_ = d.clearPluginDeltaStore(plugin, entityKey)
 		}
 	}
@@ -336,7 +336,7 @@ func (d *Store) UpdateState(entityKey string, deltas []*inventoryapi.RawDelta, d
 	}
 	// Clean up delta files in bulk for each plugin
 	for source := range sentPlugins {
-		plugin := d.nextIDMap[source]
+		plugin := d.plugins[source]
 		if plugin != nil {
 			ierr := d.archivePlugin(plugin, entityKey)
 			if ierr != nil {
@@ -349,13 +349,13 @@ func (d *Store) UpdateState(entityKey string, deltas []*inventoryapi.RawDelta, d
 }
 
 func (d *Store) updateLastDeltaSent(entityKey string, delta *inventoryapi.RawDelta, resultHint *inventoryapi.DeltaState) {
-	if d.nextIDMap == nil {
+	if d.plugins == nil {
 		return
 	}
 
 	source := delta.Source
 	id := delta.ID
-	plugin, ok := d.nextIDMap[source]
+	plugin, ok := d.plugins[source]
 	if !ok {
 		return
 	}
@@ -390,12 +390,12 @@ func (d *Store) updateLastDeltaSent(entityKey string, delta *inventoryapi.RawDel
 			// could not tell if its delta was
 			// problematic.
 			_ = d.clearPluginDeltaStore(plugin, entityKey)
-			d.nextIDMap[source].LastSentID = resultHint.SendNextID - 1
-			d.nextIDMap[source].setDeltaID(entityKey, resultHint.LastStoredID)
+			d.plugins[source].LastSentID = resultHint.SendNextID - 1
+			d.plugins[source].setDeltaID(entityKey, resultHint.LastStoredID)
 
 		case resultHint.SendNextID == id+1:
 			// normal case
-			d.nextIDMap[source].LastSentID = id
+			d.plugins[source].LastSentID = id
 
 		case resultHint.SendNextID == 0:
 			// Send full
@@ -407,18 +407,18 @@ func (d *Store) updateLastDeltaSent(entityKey string, delta *inventoryapi.RawDel
 			// Reset delta ids to use SendNextID for the numbering of the next delta ids so we
 			// can fill in the gaps in the correct sequence
 			_ = d.clearPluginDeltaStore(plugin, entityKey)
-			d.nextIDMap[source].LastSentID = resultHint.SendNextID - 1
-			d.nextIDMap[source].setDeltaID(entityKey, resultHint.LastStoredID)
+			d.plugins[source].LastSentID = resultHint.SendNextID - 1
+			d.plugins[source].setDeltaID(entityKey, resultHint.LastStoredID)
 
 		case resultHint.SendNextID == id:
 			// Send again? This is a no-op, set last sent id to one previous
 			dslog.WithFields(logrus.Fields{"sendNextID": id, "plugin": plugin}).
 				Debug("Requesting to update last delta sent to identical value.")
-			d.nextIDMap[source].LastSentID = id - 1
+			d.plugins[source].LastSentID = id - 1
 		}
 	} else {
-		if id > d.nextIDMap[source].LastSentID {
-			d.nextIDMap[source].LastSentID = id
+		if id > d.plugins[source].LastSentID {
+			d.plugins[source].LastSentID = id
 		}
 	}
 
@@ -456,7 +456,7 @@ func exists(path string) bool {
 
 func (d *Store) loadPluginIDMap(deltaIDBytes []byte) (err error) {
 	if len(deltaIDBytes) > 0 {
-		return json.Unmarshal(deltaIDBytes, &d.nextIDMap)
+		return json.Unmarshal(deltaIDBytes, &d.plugins)
 	}
 
 	slog.Debug("Empty Plugin ID Map cache file, starting fresh.")
@@ -466,7 +466,7 @@ func (d *Store) loadPluginIDMap(deltaIDBytes []byte) (err error) {
 func (d *Store) writePluginIDMap() (err error) {
 	if _, err = os.Stat(d.CacheDir); err == nil {
 		var buf []byte
-		if buf, err = json.Marshal(d.nextIDMap); err != nil {
+		if buf, err = json.Marshal(d.plugins); err != nil {
 			slog.WithError(err).Error("can't marshal id map?")
 		} else {
 			cachedDeltaPath := filepath.Join(d.CacheDir, CACHE_ID_FILE)
@@ -589,14 +589,14 @@ func (d *Store) storeDelta(pluginItem *PluginInfo, entityKey string, del delta) 
 		return fmt.Errorf("error unmarshaling file %s: %s", deltaFilePath, err)
 	}
 
-	if _, ok := d.nextIDMap[pluginItem.Source]; !ok {
-		d.nextIDMap[pluginItem.Source] = pluginItem
+	if _, ok := d.plugins[pluginItem.Source]; !ok {
+		d.plugins[pluginItem.Source] = pluginItem
 	}
-	d.nextIDMap[pluginItem.Source].increaseDeltaID(entityKey)
+	d.plugins[pluginItem.Source].increaseDeltaID(entityKey)
 
 	delta := &inventoryapi.RawDelta{
 		Source:    pluginItem.Source,
-		ID:        d.nextIDMap[pluginItem.Source].deltaID(entityKey),
+		ID:        d.plugins[pluginItem.Source].deltaID(entityKey),
 		Timestamp: time.Now().Unix(),
 		Diff:      deltaBody,
 		FullDiff:  del.full}
