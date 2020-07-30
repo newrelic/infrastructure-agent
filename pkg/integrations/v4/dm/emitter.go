@@ -84,15 +84,12 @@ func (e *emitter) process(
 	metadata integration.Definition,
 	extraLabels data.Map,
 	entityRewrite []data.EntityRewrite,
-	integrationData protocol.DataV4) error {
+	integrationData protocol.DataV4) (err error) {
 
 	var emitErrs []error
 	pluginId := metadata.PluginID(integrationData.Integration.Name)
 	plugin := agent.NewExternalPluginCommon(pluginId, e.agentContext, metadata.Name)
-
 	labels, extraAnnotations := metadata.LabelsAndExtraAnnotations(extraLabels)
-
-	var err error
 
 	var entities []protocol.Entity
 	// Collect All entities
@@ -100,26 +97,16 @@ func (e *emitter) process(
 		entities = append(entities, integrationData.DataSets[i].Entity)
 	}
 
-	// Bulk update them (after checking our datastore if they exist)
-	// add entity ID to metric annotations
-	resp, _, err := e.registerClient.RegisterProtocolEntities(e.agentContext.AgentIdentity().ID, entities)
-
+	registeredEntities, err := e.RegisterEntities(entities)
 	if err != nil {
-		//TODO: handle error
 		return err
 	}
 
-	registeredEntities := make(map[string]entity.ID, len(resp))
-
-	for i := range resp {
-		registeredEntities[resp[i].Name] = resp[i].ID
-	}
-
 	for _, dataset := range integrationData.DataSets {
+
 		// for dataset.Entity call emitV4DataSet function with entity ID
 		dataset.Common.Attributes[nrEntityId] = registeredEntities[dataset.Entity.Name]
-
-		if err = emitV4DataSet(
+		if emitErr := emitV4DataSet(
 			e.agentContext.IDLookup(),
 			e.metricsSender,
 			&plugin,
@@ -129,12 +116,30 @@ func (e *emitter) process(
 			labels,
 			extraAnnotations,
 			entityRewrite,
-		); err != nil {
-			emitErrs = append(emitErrs, err)
+		); emitErr != nil {
+			emitErrs = append(emitErrs, emitErr)
 		}
 	}
 
 	return composeEmitError(emitErrs, len(integrationData.DataSets))
+}
+
+func (e *emitter) RegisterEntities(entities []protocol.Entity) (map[string]entity.ID, error) {
+	// Bulk update them (after checking our datastore if they exist)
+	// add entity ID to metric annotations
+	resp, _, err := e.registerClient.RegisterProtocolEntities(e.agentContext.AgentIdentity().ID, entities)
+
+	if err != nil {
+		//TODO: handle error
+		return nil, err
+	}
+
+	registeredEntities := make(map[string]entity.ID, len(resp))
+
+	for i := range resp {
+		registeredEntities[resp[i].Name] = resp[i].ID
+	}
+	return registeredEntities, nil
 }
 
 func emitV4DataSet(

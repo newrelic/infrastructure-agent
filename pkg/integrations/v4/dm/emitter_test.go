@@ -3,6 +3,7 @@
 package dm
 
 import (
+	"errors"
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
@@ -81,18 +82,60 @@ func (mk *mockedRegisterClient) RegisterProtocolEntities(agentEntityID entity.ID
 		args.Error(2)
 }
 
+func TestEmitter_Send_RegisterErr(t *testing.T) {
+	agentCtx := getAgentContext("bob")
+	dmSender := &mockedMetricsSender{}
+	ffRetriever := &enabledFFRetriever{}
+	registerClient := &mockedRegisterClient{}
+
+	expectedError := errors.New("expected error")
+	registerClient.
+		On("RegisterProtocolEntities", agentCtx.id.ID, mock.Anything).
+		Return(identityapi.RegisterBatchEntityResponse{}, time.Second, expectedError)
+
+	emitter := NewEmitter(agentCtx, dmSender, ffRetriever, registerClient)
+	metadata := integration.Definition{}
+	var extraLabels data.Map
+	var entityRewrite []data.EntityRewrite
+
+	err := emitter.Send(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4.Payload)
+
+	assert.EqualError(t, err, expectedError.Error())
+}
+
+func TestEmitter_Send_ErrorOnHostname(t *testing.T) {
+	expectedEntityId := entity.ID(123)
+	agentCtx := getAgentContext("")
+	dmSender := &mockedMetricsSender{}
+	ffRetriever := &enabledFFRetriever{}
+	registerClient := &mockedRegisterClient{}
+
+	registerBatchEntityResponse := identityapi.RegisterBatchEntityResponse{{Name: "unique name", ID: expectedEntityId}}
+
+	expectedEntities := []protocol.Entity{
+		{
+			Name:        "unique name",
+			Type:        "RedisInstance",
+			DisplayName: "human readable name",
+			Metadata:    make(map[string]interface{}),
+		}}
+	registerClient.
+		On("RegisterProtocolEntities", agentCtx.id.ID, expectedEntities).
+		Return(registerBatchEntityResponse, time.Second, nil)
+
+	emitter := NewEmitter(agentCtx, dmSender, ffRetriever, registerClient)
+
+	metadata := integration.Definition{}
+	var extraLabels data.Map
+	var entityRewrite []data.EntityRewrite
+
+	err := emitter.Send(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4.Payload)
+	assert.Error(t, err, "1 out of 1 datasets could not be emitted. Reasons: error renaming entity: no known identifier types found in ID lookup table")
+}
+
 func TestEmitter_Send(t *testing.T) {
 	expectedEntityId := entity.ID(123)
-
-	agentCtx := &agentContext{}
-	agentCtx.id = entity.Identity{
-		ID:   1,
-		GUID: "abcdef",
-	}
-
-	agentCtx.idLookup = make(agent.IDLookup)
-	agentCtx.idLookup[sysinfo.HOST_SOURCE_INSTANCE_ID] = "bob"
-
+	agentCtx := getAgentContext("bob")
 	dmSender := &mockedMetricsSender{}
 	ffRetriever := &enabledFFRetriever{}
 	registerClient := &mockedRegisterClient{}
@@ -129,6 +172,19 @@ func TestEmitter_Send(t *testing.T) {
 	dmMetricsSent := dmSender.Calls[0].Arguments[0].([]protocol.Metric)
 	assert.Len(t, dmMetricsSent, 1)
 	assert.Equal(t, expectedEntityId, dmMetricsSent[0].Attributes[nrEntityId])
+}
+
+func getAgentContext(hostname string) *agentContext {
+	agentCtx := &agentContext{}
+	agentCtx.id = entity.Identity{
+		ID:   1,
+		GUID: "abcdef",
+	}
+	agentCtx.idLookup = make(agent.IDLookup)
+	if hostname != "" {
+		agentCtx.idLookup[sysinfo.HOST_SOURCE_INSTANCE_ID] = hostname
+	}
+	return agentCtx
 }
 
 func Test_NrEntityIdConst(t *testing.T) {
