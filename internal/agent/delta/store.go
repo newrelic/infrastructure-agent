@@ -389,9 +389,7 @@ func (d *Store) updateLastDeltaSent(entityKey string, delta *inventoryapi.RawDel
 			// N+1 as the SendNextID, the agent
 			// could not tell if its delta was
 			// problematic.
-			_ = d.clearPluginDeltaStore(plugin, entityKey)
-			d.plugins[source].LastSentID = resultHint.SendNextID - 1
-			d.plugins[source].setDeltaID(entityKey, resultHint.LastStoredID)
+			d.reconciliateWithBackend(source, entityKey, plugin, resultHint)
 
 		case resultHint.SendNextID == id+1:
 			// normal case
@@ -406,9 +404,7 @@ func (d *Store) updateLastDeltaSent(entityKey string, delta *inventoryapi.RawDel
 			// If not present, send current full
 			// Reset delta ids to use SendNextID for the numbering of the next delta ids so we
 			// can fill in the gaps in the correct sequence
-			_ = d.clearPluginDeltaStore(plugin, entityKey)
-			d.plugins[source].LastSentID = resultHint.SendNextID - 1
-			d.plugins[source].setDeltaID(entityKey, resultHint.LastStoredID)
+			d.reconciliateWithBackend(source, entityKey, plugin, resultHint)
 
 		case resultHint.SendNextID == id:
 			// Send again? This is a no-op, set last sent id to one previous
@@ -423,6 +419,12 @@ func (d *Store) updateLastDeltaSent(entityKey string, delta *inventoryapi.RawDel
 	}
 
 	dslog.WithField("plugin", source).Debug("Updating deltas.")
+}
+
+func (d *Store) reconciliateWithBackend(source, entityKey string, plugin *PluginInfo, resultHint *inventoryapi.DeltaState) {
+	_ = d.clearPluginDeltaStore(plugin, entityKey)
+	d.plugins[source].LastSentID = resultHint.SendNextID - 1
+	d.plugins[source].setDeltaID(entityKey, resultHint.LastStoredID)
 }
 
 // SaveState writes on disk the plugin ID maps
