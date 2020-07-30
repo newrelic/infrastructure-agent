@@ -430,7 +430,6 @@ func TestLegacy_Emit(t *testing.T) {
 			integrationJSON := []byte(tc.integrationJsonOutput)
 
 			ma := mockAgent()
-			mockedMetricsSender := mockMetricSender()
 			mockDME := &mockDmEmitter{}
 			mockDME.On("Send",
 				tc.metadata,
@@ -440,10 +439,9 @@ func TestLegacy_Emit(t *testing.T) {
 			).Return(nil)
 
 			em := &Legacy{
-				Context:       ma,
-				FFRetriever:   feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true}),
-				MetricsSender: mockedMetricsSender,
-				dmEmitter:     mockDME,
+				Context:     ma,
+				FFRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true}),
+				dmEmitter:   mockDME,
 			}
 
 			err := em.Emit(tc.metadata, extraLabels, entityRewrite, integrationJSON)
@@ -484,10 +482,9 @@ func TestProtocolV4_Emit(t *testing.T) {
 	).Return(nil)
 
 	em := &Legacy{
-		Context:       ma,
-		FFRetriever:   feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true}),
-		MetricsSender: mockedMetricsSender,
-		dmEmitter:     mockDME,
+		Context:     ma,
+		FFRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true}),
+		dmEmitter:   mockDME,
 	}
 
 	err := em.Emit(metadata, extraLabels, entityRewrite, integrationJSON)

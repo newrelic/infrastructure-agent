@@ -29,12 +29,10 @@ type Emitter interface {
 
 func NewIntegrationEmitter(
 	a *agent.Agent,
-	dmSender dm.MetricsSender,
 	dmEmitter dm.Emitter,
 	ffRetriever feature_flags.Retriever) Emitter {
 	return &Legacy{
 		Context:             a.GetContext(),
-		MetricsSender:       dmSender,
 		ForceProtocolV2ToV3: true,
 		FFRetriever:         ffRetriever,
 		dmEmitter:           dmEmitter,
@@ -45,7 +43,6 @@ func NewIntegrationEmitter(
 // integrations package from the whole agent complexities
 type Legacy struct {
 	Context             agent.AgentContext
-	MetricsSender       dm.MetricsSender
 	ForceProtocolV2ToV3 bool
 	FFRetriever         feature_flags.Retriever
 	dmEmitter           dm.Emitter

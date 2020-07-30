@@ -28,6 +28,14 @@ var (
 	elog = log.WithComponent("DimensionalMetricsEmitter")
 )
 
+const (
+	nrEntityId = "nr.entity.id"
+)
+
+type Agent interface {
+	GetContext() agent.AgentContext
+}
+
 type emitter struct {
 	ffRetriever    feature_flags.Retriever
 	metricsSender  MetricsSender
@@ -44,13 +52,13 @@ type Emitter interface {
 }
 
 func NewEmitter(
-	a *agent.Agent,
+	agentContext agent.AgentContext,
 	dmSender MetricsSender,
 	ffRetriever feature_flags.Retriever,
 	registerClient identityapi.RegisterClient) Emitter {
 
 	return &emitter{
-		agentContext:   a.GetContext(),
+		agentContext:   agentContext,
 		metricsSender:  dmSender,
 		ffRetriever:    ffRetriever,
 		registerClient: registerClient,
@@ -77,8 +85,8 @@ func (e *emitter) process(
 	extraLabels data.Map,
 	entityRewrite []data.EntityRewrite,
 	integrationData protocol.DataV4) error {
-	var emitErrs []error
 
+	var emitErrs []error
 	pluginId := metadata.PluginID(integrationData.Integration.Name)
 	plugin := agent.NewExternalPluginCommon(pluginId, e.agentContext, metadata.Name)
 
@@ -109,7 +117,7 @@ func (e *emitter) process(
 
 	for _, dataset := range integrationData.DataSets {
 		// for dataset.Entity call emitV4DataSet function with entity ID
-		dataset.Common.Attributes["nr.entity.id"] = registeredEntities[dataset.Entity.Name]
+		dataset.Common.Attributes[nrEntityId] = registeredEntities[dataset.Entity.Name]
 
 		if err = emitV4DataSet(
 			e.agentContext.IDLookup(),
@@ -168,8 +176,8 @@ func emitV4DataSet(
 		IntegrationLabels:           labels,
 		IntegrationExtraAnnotations: extraAnnotations,
 	}
-	metricsSender.SendMetrics(dmProcessor.ProcessMetrics(dataSet.Metrics, dataSet.Common, dataSet.Entity))
 
+	metricsSender.SendMetrics(dmProcessor.ProcessMetrics(dataSet.Metrics, dataSet.Common, dataSet.Entity))
 	return nil
 }
 
