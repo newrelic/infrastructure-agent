@@ -14,7 +14,6 @@ type PluginInfo struct {
 	Plugin         string           `json:"plugin"`
 	FileName       string           `json:"filename"`
 	LastSentID     int64            `json:"last_sent_id"` // Most recent delta id sent to server
-	FirstArchiveID int64            `json:"first_archive_id"`
 	MostRecentIDs  map[string]int64 `json:"mru_ids"`      // Most recent ids per entity plugin delta (replaces obsolete "mru_id", as it does not support remote entities)
 }
 
@@ -28,7 +27,6 @@ func newPluginInfo(name, fileName string) *PluginInfo {
 		FileName:       fileName,
 		MostRecentIDs:  make(map[string]int64),
 		LastSentID:     NO_DELTA_ID,
-		FirstArchiveID: NO_DELTA_ID,
 	}
 }
 

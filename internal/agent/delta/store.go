@@ -203,7 +203,6 @@ func (d *Store) clearPluginDeltaStore(pluginItem *PluginInfo, entityKey string) 
 	_ = os.Remove(cachedFilePath)
 	_ = os.Remove(deltaFilePath)
 	_ = os.Remove(archiveFilePath)
-	pluginItem.FirstArchiveID = 0
 	return
 }
 
@@ -231,9 +230,6 @@ func (d *Store) compactCacheStorage(entityKey string, threshold uint64) (err err
 			for _, p := range activePlugins {
 				archiveFilePath := d.archiveFilePath(p, entityKey)
 				_ = os.Remove(archiveFilePath)
-				if plugin, ok := d.nextIDMap[p.Source]; ok {
-					plugin.FirstArchiveID = 0
-				}
 			}
 
 		}
@@ -302,9 +298,6 @@ func (d *Store) archivePlugin(pluginItem *PluginInfo, entityKey string) (err err
 	_, ok := d.nextIDMap[pluginItem.Source]
 	for _, result := range deltas {
 		if ok && result.ID <= pluginItem.LastSentID {
-			if pluginItem.FirstArchiveID == 0 {
-				pluginItem.FirstArchiveID = result.ID
-			}
 			archiveDeltas = append(archiveDeltas, result)
 		} else {
 			keepDeltas = append(keepDeltas, result)
