@@ -301,15 +301,11 @@ func (d *Store) archivePlugin(pluginItem *PluginInfo, entityKey string) (err err
 	// Is this plugin already in the map?
 	_, ok := d.nextIDMap[pluginItem.Source]
 	for _, result := range deltas {
-		if ok {
-			if result.ID > pluginItem.LastSentID {
-				keepDeltas = append(keepDeltas, result)
-			} else {
-				if pluginItem.FirstArchiveID == 0 {
-					pluginItem.FirstArchiveID = result.ID
-				}
-				archiveDeltas = append(archiveDeltas, result)
+		if ok && result.ID <= pluginItem.LastSentID {
+			if pluginItem.FirstArchiveID == 0 {
+				pluginItem.FirstArchiveID = result.ID
 			}
+			archiveDeltas = append(archiveDeltas, result)
 		} else {
 			keepDeltas = append(keepDeltas, result)
 		}
