@@ -102,23 +102,39 @@ func (e *emitter) process(
 		return err
 	}
 
+	agentShortName, err := e.agentContext.IDLookup().AgentShortEntityName()
+	if err != nil {
+		return wrapError(fmt.Errorf("error renaming entity: %s", err.Error()), len(integrationData.DataSets))
+	}
+
 	for _, dataset := range integrationData.DataSets {
 
 		// for dataset.Entity call emitV4DataSet function with entity ID
 		dataset.Common.Attributes[nrEntityId] = registeredEntities[dataset.Entity.Name]
-		if emitErr := emitV4DataSet(
-			e.agentContext.IDLookup(),
-			e.metricsSender,
+		replaceEntityName(dataset.Entity, entityRewrite, agentShortName)
+
+		emitInventory(
 			&plugin,
 			metadata,
 			integrationData.Integration,
 			dataset,
 			labels,
-			extraAnnotations,
-			entityRewrite,
-		); emitErr != nil {
-			emitErrs = append(emitErrs, emitErr)
+		)
+
+		emitEvent(
+			&plugin,
+			metadata,
+			dataset,
+			labels,
+		)
+
+		dmProcessor := IntegrationProcessor{
+			IntegrationInterval:         metadata.Interval,
+			IntegrationLabels:           labels,
+			IntegrationExtraAnnotations: extraAnnotations,
 		}
+
+		e.metricsSender.SendMetrics(dmProcessor.ProcessMetrics(dataset.Metrics, dataset.Common, dataset.Entity))
 	}
 
 	return composeEmitError(emitErrs, len(integrationData.DataSets))
@@ -142,22 +158,13 @@ func (e *emitter) RegisterEntities(entities []protocol.Entity) (map[string]entit
 	return registeredEntities, nil
 }
 
-func emitV4DataSet(
-	idLookup agent.IDLookup,
-	metricsSender MetricsSender,
+func emitInventory(
 	emitter agent.PluginEmitter,
 	metadata integration.Definition,
 	integrationMetadata protocol.IntegrationMetadata,
 	dataSet protocol.Dataset,
-	labels map[string]string,
-	extraAnnotations map[string]string,
-	entityRewrite []data.EntityRewrite) error {
+	labels map[string]string) {
 	logEntry := elog.WithField("action", "EmitV4DataSet")
-
-	err := replaceEntityName(dataSet.Entity, entityRewrite, idLookup)
-	if err != nil {
-		return fmt.Errorf("error renaming entity: %s", err.Error())
-	}
 
 	integrationUser := metadata.ExecutorConfig.User
 
@@ -167,7 +174,15 @@ func emitV4DataSet(
 			dataSet.Entity.Name)
 		emitter.EmitInventory(inventoryDataSet, dataSet.Entity.Name)
 	}
+}
 
+func emitEvent(
+	emitter agent.PluginEmitter,
+	metadata integration.Definition,
+	dataSet protocol.Dataset,
+	labels map[string]string) {
+
+	integrationUser := metadata.ExecutorConfig.User
 	for _, event := range dataSet.Events {
 		normalizedEvent := legacy.
 			NormalizeEvent(elog, event, labels, integrationUser, dataSet.Entity.Name)
@@ -175,30 +190,13 @@ func emitV4DataSet(
 			emitter.EmitEvent(normalizedEvent, entity.Key(dataSet.Entity.Name))
 		}
 	}
-
-	dmProcessor := IntegrationProcessor{
-		IntegrationInterval:         metadata.Interval,
-		IntegrationLabels:           labels,
-		IntegrationExtraAnnotations: extraAnnotations,
-	}
-
-	metricsSender.SendMetrics(dmProcessor.ProcessMetrics(dataSet.Metrics, dataSet.Common, dataSet.Entity))
-	return nil
 }
 
 // Replace entity name by applying entity rewrites and replacing loopback
-func replaceEntityName(entity protocol.Entity, entityRewrite []data.EntityRewrite, idLookup agent.IDLookup) error {
+func replaceEntityName(entity protocol.Entity, entityRewrite []data.EntityRewrite, agentShortName string) {
 	newName := legacy.ApplyEntityRewrite(entity.Name, entityRewrite)
-
-	agentShortName, err := idLookup.AgentShortEntityName()
 	newName = http.ReplaceLocalhost(newName, agentShortName)
-
-	if err != nil {
-		return err
-	}
-
 	entity.Name = newName
-	return nil
 }
 
 // ParsePayloadV4 parses a string containing a JSON payload with the format of our
@@ -236,4 +234,8 @@ func composeEmitError(emitErrs []error, dataSetLenght int) error {
 	}
 
 	return errors.New(composedError)
+}
+
+func wrapError(err error, datasetLen int) error {
+	return composeEmitError([]error{err}, datasetLen)
 }

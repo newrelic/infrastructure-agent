@@ -12,6 +12,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
+	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
 	integrationFixture "github.com/newrelic/infrastructure-agent/test/fixture/integration"
 	"github.com/stretchr/testify/assert"
@@ -39,6 +40,7 @@ type agentContext struct {
 	agent.AgentContext
 	id       entity.Identity
 	idLookup agent.IDLookup
+	mock.Mock
 }
 
 func (a *agentContext) AgentIdentity() entity.Identity {
@@ -49,8 +51,8 @@ func (a *agentContext) IDLookup() agent.IDLookup {
 	return a.idLookup
 }
 
-func (a *agentContext) SendData(agent.PluginOutput) {
-
+func (a *agentContext) SendData(ap agent.PluginOutput) {
+	a.Called(ap)
 }
 
 type mockedMetricsSender struct {
@@ -130,7 +132,7 @@ func TestEmitter_Send_ErrorOnHostname(t *testing.T) {
 	var entityRewrite []data.EntityRewrite
 
 	err := emitter.Send(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4.Payload)
-	assert.Error(t, err, "1 out of 1 datasets could not be emitted. Reasons: error renaming entity: no known identifier types found in ID lookup table")
+	assert.EqualError(t, err, "1 out of 1 datasets could not be emitted. Reasons: error renaming entity: no known identifier types found in ID lookup table")
 }
 
 func TestEmitter_Send(t *testing.T) {
@@ -156,6 +158,9 @@ func TestEmitter_Send(t *testing.T) {
 	dmSender.
 		On("SendMetrics", mock.AnythingOfType("[]protocol.Metric"))
 
+	agentCtx.On("SendData",
+		agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "integration name"}, EntityKey: "unique name", Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_foo", "value": "bar"}}, NotApplicable: false})
+
 	emitter := NewEmitter(agentCtx, dmSender, ffRetriever, registerClient)
 
 	metadata := integration.Definition{}
@@ -167,6 +172,7 @@ func TestEmitter_Send(t *testing.T) {
 	assert.NoError(t, err)
 	registerClient.AssertExpectations(t)
 	dmSender.AssertExpectations(t)
+	agentCtx.AssertExpectations(t)
 
 	// Should add Entity Id ('nr.entity.id') to Common attributes
 	dmMetricsSent := dmSender.Calls[0].Arguments[0].([]protocol.Metric)
