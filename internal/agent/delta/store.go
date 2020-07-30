@@ -349,76 +349,80 @@ func (d *Store) UpdateState(entityKey string, deltas []*inventoryapi.RawDelta, d
 }
 
 func (d *Store) updateLastDeltaSent(entityKey string, delta *inventoryapi.RawDelta, resultHint *inventoryapi.DeltaState) {
-	if d.nextIDMap != nil {
-		source := delta.Source
-		id := delta.ID
-		plugin, ok := d.nextIDMap[source]
-		if ok {
-			dslog := slog.WithFieldsF(func() logrus.Fields {
-				return logrus.Fields{"entityKey": entityKey, "source": source}
-			})
-			if resultHint != nil {
-				if resultHint.Error != nil {
-					dslog.WithField("error", *resultHint.Error).
-						Debug("Plugin delta submission returned a hint with an error.")
-				} else {
-					dslog.WithFields(logrus.Fields{
-						"needsReset":   resultHint.NeedsReset,
-						"lastStoredID": resultHint.LastStoredID,
-						"sendNextID":   resultHint.SendNextID,
-					}).Debug("Plugin delta submission returned a hint.")
-				}
-			} else {
-				dslog.Debug("Plugin delta submission did not return any hint.")
-			}
+	if d.nextIDMap == nil {
+		return
+	}
 
-			// If we have a result Hint, we'll use that, otherwise, use the supplied id
-			if resultHint != nil {
-				switch {
-				case resultHint.NeedsReset:
-					// This case was added to fix
-					// the situation where the agent sent N
-					// and the server expected N+1.  In this
-					// situation, when the server sends back
-					// N+1 as the SendNextID, the agent
-					// could not tell if its delta was
-					// problematic.
-					_ = d.clearPluginDeltaStore(plugin, entityKey)
-					d.nextIDMap[source].LastSentID = resultHint.SendNextID - 1
-					d.nextIDMap[source].setDeltaID(entityKey, resultHint.LastStoredID)
+	source := delta.Source
+	id := delta.ID
+	plugin, ok := d.nextIDMap[source]
+	if !ok {
+		return
+	}
 
-				case resultHint.SendNextID == id+1:
-					// normal case
-					d.nextIDMap[source].LastSentID = id
+	dslog := slog.WithFieldsF(func() logrus.Fields {
+		return logrus.Fields{"entityKey": entityKey, "source": source}
+	})
+	if resultHint != nil {
+		if resultHint.Error != nil {
+			dslog.WithField("error", *resultHint.Error).
+				Debug("Plugin delta submission returned a hint with an error.")
+		} else {
+			dslog.WithFields(logrus.Fields{
+				"needsReset":   resultHint.NeedsReset,
+				"lastStoredID": resultHint.LastStoredID,
+				"sendNextID":   resultHint.SendNextID,
+			}).Debug("Plugin delta submission returned a hint.")
+		}
+	} else {
+		dslog.Debug("Plugin delta submission did not return any hint.")
+	}
 
-				case resultHint.SendNextID == 0:
-					// Send full
-					// Leave delta ID values as is
-					_ = d.clearPluginDeltaStore(plugin, entityKey)
+	// If we have a result Hint, we'll use that, otherwise, use the supplied id
+	if resultHint != nil {
+		switch {
+		case resultHint.NeedsReset:
+			// This case was added to fix
+			// the situation where the agent sent N
+			// and the server expected N+1.  In this
+			// situation, when the server sends back
+			// N+1 as the SendNextID, the agent
+			// could not tell if its delta was
+			// problematic.
+			_ = d.clearPluginDeltaStore(plugin, entityKey)
+			d.nextIDMap[source].LastSentID = resultHint.SendNextID - 1
+			d.nextIDMap[source].setDeltaID(entityKey, resultHint.LastStoredID)
 
-				case resultHint.SendNextID != id:
-					// If not present, send current full
-					// Reset delta ids to use SendNextID for the numbering of the next delta ids so we
-					// can fill in the gaps in the correct sequence
-					_ = d.clearPluginDeltaStore(plugin, entityKey)
-					d.nextIDMap[source].LastSentID = resultHint.SendNextID - 1
-					d.nextIDMap[source].setDeltaID(entityKey, resultHint.LastStoredID)
+		case resultHint.SendNextID == id+1:
+			// normal case
+			d.nextIDMap[source].LastSentID = id
 
-				case resultHint.SendNextID == id:
-					// Send again? This is a no-op, set last sent id to one previous
-					dslog.WithFields(logrus.Fields{"sendNextID": id, "plugin": plugin}).
-						Debug("Requesting to update last delta sent to identical value.")
-					d.nextIDMap[source].LastSentID = id - 1
-				}
-			} else {
-				if id > d.nextIDMap[source].LastSentID {
-					d.nextIDMap[source].LastSentID = id
-				}
-			}
+		case resultHint.SendNextID == 0:
+			// Send full
+			// Leave delta ID values as is
+			_ = d.clearPluginDeltaStore(plugin, entityKey)
 
-			dslog.WithField("plugin", source).Debug("Updating deltas.")
+		case resultHint.SendNextID != id:
+			// If not present, send current full
+			// Reset delta ids to use SendNextID for the numbering of the next delta ids so we
+			// can fill in the gaps in the correct sequence
+			_ = d.clearPluginDeltaStore(plugin, entityKey)
+			d.nextIDMap[source].LastSentID = resultHint.SendNextID - 1
+			d.nextIDMap[source].setDeltaID(entityKey, resultHint.LastStoredID)
+
+		case resultHint.SendNextID == id:
+			// Send again? This is a no-op, set last sent id to one previous
+			dslog.WithFields(logrus.Fields{"sendNextID": id, "plugin": plugin}).
+				Debug("Requesting to update last delta sent to identical value.")
+			d.nextIDMap[source].LastSentID = id - 1
+		}
+	} else {
+		if id > d.nextIDMap[source].LastSentID {
+			d.nextIDMap[source].LastSentID = id
 		}
 	}
+
+	dslog.WithField("plugin", source).Debug("Updating deltas.")
 }
 
 // SaveState writes on disk the plugin ID maps
