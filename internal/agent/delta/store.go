@@ -864,24 +864,22 @@ func (s *Store) newPluginDelta(pluginItem *PluginInfo, entityKey string) (delta,
 //
 // Returns false when the delta is empty, meaning that the plugin state
 // didn't change; otherwise, it returns trues.
-func (s *Store) updatePluginInventoryCache(
-	pluginItem *PluginInfo, entityKey string,
-) (updated bool, err error) {
+func (s *Store) updatePluginInventoryCache(pi *PluginInfo, entityKey string) (updated bool, err error) {
 
 	updated = true
 
 	llog := slog.WithFieldsF(func() logrus.Fields {
-		return logrus.Fields{"entityKey": entityKey, "plugin": pluginItem.ID()}
+		return logrus.Fields{"entityKey": entityKey, "plugin": pi.ID()}
 	})
 
-	del, err := s.newPluginDelta(pluginItem, entityKey)
+	del, err := s.newPluginDelta(pi, entityKey)
 	if err != nil {
 		llog.WithError(err).Error("can't calculate delta from JSON files")
 		// Corrupted JSON. Removing plugin folder and deltas
-		if err := s.clearPluginDeltaStore(pluginItem, entityKey); err != nil {
+		if err := s.clearPluginDeltaStore(pi, entityKey); err != nil {
 			llog.WithError(err).Warn("can't clear plugin delta store")
 		}
-		if err := os.RemoveAll(s.SourceFilePath(pluginItem, entityKey)); err != nil {
+		if err := os.RemoveAll(s.SourceFilePath(pi, entityKey)); err != nil {
 			llog.WithError(err).Warn("can't remove source file path")
 		}
 		return
@@ -893,16 +891,16 @@ func (s *Store) updatePluginInventoryCache(
 	}
 
 	trace.AttrOn(
-		func() bool { return ids.CustomAttrsID.String() == pluginItem.ID() },
-		"reap change, item: %+v", *pluginItem,
+		func() bool { return ids.CustomAttrsID.String() == pi.ID() },
+		"reap change, item: %+v", *pi,
 	)
 
-	err = s.storeDelta(pluginItem, entityKey, del)
+	err = s.storeDelta(pi, entityKey, del)
 	if err != nil {
 		llog.WithError(err).Error("can't commit inventory")
 	}
 
-	err = s.replacePluginCacheFileWithSource(pluginItem, entityKey)
+	err = s.replacePluginCacheFileWithSource(pi, entityKey)
 	if err != nil {
 		llog.WithError(err).Error("replacing plugin cache file failed")
 	}
