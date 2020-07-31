@@ -138,20 +138,20 @@ func NewStore(dataDir string, defaultEntityKey string, maxInventorySize int) *St
 	return d
 }
 
-func (d *Store) createDataStore() (err error) {
-	if err = disk.MkdirAll(d.DataDir, DATA_DIR_MODE); err != nil {
-		return fmt.Errorf("can't create data directory: %s err: %s", d.DataDir, err)
+func (s *Store) createDataStore() (err error) {
+	if err = disk.MkdirAll(s.DataDir, DATA_DIR_MODE); err != nil {
+		return fmt.Errorf("can't create data directory: %s err: %s", s.DataDir, err)
 	}
 
-	if _, err = os.Stat(d.CacheDir); err == nil {
+	if _, err = os.Stat(s.CacheDir); err == nil {
 		return
 	}
 
-	if err = disk.MkdirAll(d.CacheDir, DATA_DIR_MODE); err != nil {
-		return fmt.Errorf("can't create cache directory: %s, err: %s", d.CacheDir, err)
+	if err = disk.MkdirAll(s.CacheDir, DATA_DIR_MODE); err != nil {
+		return fmt.Errorf("can't create cache directory: %s, err: %s", s.CacheDir, err)
 	}
 
-	samplingDir := filepath.Join(d.DataDir, SAMPLING_REPO)
+	samplingDir := filepath.Join(s.DataDir, SAMPLING_REPO)
 	if err = disk.MkdirAll(samplingDir, DATA_DIR_MODE); err != nil {
 		return fmt.Errorf("can't create data sampling directory: %s, err: %s", samplingDir, err)
 	}
@@ -159,45 +159,45 @@ func (d *Store) createDataStore() (err error) {
 	return
 }
 
-func (d *Store) archiveFilePath(pluginItem *PluginInfo, entityKey string) string {
-	file := d.cachedFilePath(pluginItem, entityKey)
+func (s *Store) archiveFilePath(pluginItem *PluginInfo, entityKey string) string {
+	file := s.cachedFilePath(pluginItem, entityKey)
 	return fmt.Sprintf("%s%s", strings.TrimSuffix(file, filepath.Ext(file)), ARCHIVE_DELTA_JOURNAL_EXT)
 }
 
-func (d *Store) DeltaFilePath(pluginItem *PluginInfo, entityKey string) string {
-	file := d.cachedFilePath(pluginItem, entityKey)
+func (s *Store) DeltaFilePath(pluginItem *PluginInfo, entityKey string) string {
+	file := s.cachedFilePath(pluginItem, entityKey)
 	return fmt.Sprintf("%s%s", strings.TrimSuffix(file, filepath.Ext(file)), UNSENT_DELTA_JOURNAL_EXT)
 }
 
-func (d *Store) cachedDirPath(pluginItem *PluginInfo, entityKey string) string {
-	return filepath.Join(d.CacheDir,
+func (s *Store) cachedDirPath(pluginItem *PluginInfo, entityKey string) string {
+	return filepath.Join(s.CacheDir,
 		pluginItem.Plugin,
-		d.entityFolder(entityKey))
+		s.entityFolder(entityKey))
 }
 
-func (d *Store) cachedFilePath(pluginItem *PluginInfo, entityKey string) string {
-	return filepath.Join(d.CacheDir,
+func (s *Store) cachedFilePath(pluginItem *PluginInfo, entityKey string) string {
+	return filepath.Join(s.CacheDir,
 		pluginItem.Plugin,
-		d.entityFolder(entityKey),
+		s.entityFolder(entityKey),
 		pluginItem.FileName)
 }
 
-func (d *Store) SourceFilePath(pluginItem *PluginInfo, entityKey string) string {
-	return filepath.Join(d.DataDir,
+func (s *Store) SourceFilePath(pluginItem *PluginInfo, entityKey string) string {
+	return filepath.Join(s.DataDir,
 		pluginItem.Plugin,
-		d.entityFolder(entityKey),
+		s.entityFolder(entityKey),
 		pluginItem.FileName)
 }
 
-func (d *Store) PluginDirPath(pluginCategory, entityKey string) string {
-	return filepath.Join(d.DataDir, pluginCategory, d.entityFolder(entityKey))
+func (s *Store) PluginDirPath(pluginCategory, entityKey string) string {
+	return filepath.Join(s.DataDir, pluginCategory, s.entityFolder(entityKey))
 }
 
-func (d *Store) clearPluginDeltaStore(pluginItem *PluginInfo, entityKey string) (err error) {
+func (s *Store) clearPluginDeltaStore(pluginItem *PluginInfo, entityKey string) (err error) {
 	// Clear the cachedFile and deltas
-	cachedFilePath := d.cachedFilePath(pluginItem, entityKey)
-	deltaFilePath := d.DeltaFilePath(pluginItem, entityKey)
-	archiveFilePath := d.archiveFilePath(pluginItem, entityKey)
+	cachedFilePath := s.cachedFilePath(pluginItem, entityKey)
+	deltaFilePath := s.DeltaFilePath(pluginItem, entityKey)
+	archiveFilePath := s.archiveFilePath(pluginItem, entityKey)
 	helpers.DebugStackf("Clearing delta store for plugin %s and entity %s: %s, %s, %s",
 		pluginItem.Source, entityKey, cachedFilePath, deltaFilePath, archiveFilePath)
 	_ = os.Remove(cachedFilePath)
@@ -206,13 +206,13 @@ func (d *Store) clearPluginDeltaStore(pluginItem *PluginInfo, entityKey string) 
 	return
 }
 
-func (d *Store) compactCacheStorage(entityKey string, threshold uint64) (err error) {
+func (s *Store) compactCacheStorage(entityKey string, threshold uint64) (err error) {
 	// Strategy:
 	// For any plugins that don't exist anymore, we can complete clean those out
 	// For plugins that do exist with N generations of data, remove all sent generations
 
-	if activePlugins, err := d.collectPluginFiles(d.DataDir, entityKey, helpers.JsonFilesRegexp); err == nil {
-		if reapedPlugins, err := d.collectPluginFiles(d.CacheDir, entityKey, helpers.JsonFilesRegexp); err == nil {
+	if activePlugins, err := s.collectPluginFiles(s.DataDir, entityKey, helpers.JsonFilesRegexp); err == nil {
+		if reapedPlugins, err := s.collectPluginFiles(s.CacheDir, entityKey, helpers.JsonFilesRegexp); err == nil {
 			// clear out unused plugins
 			removedPlugins := make(map[string]*PluginInfo)
 			for _, plugin := range reapedPlugins {
@@ -222,13 +222,13 @@ func (d *Store) compactCacheStorage(entityKey string, threshold uint64) (err err
 				delete(removedPlugins, plugin.Source)
 			}
 			for _, p := range removedPlugins {
-				_ = d.clearPluginDeltaStore(p, entityKey)
-				delete(d.plugins, p.Source)
+				_ = s.clearPluginDeltaStore(p, entityKey)
+				delete(s.plugins, p.Source)
 			}
 
 			// Now for the active ones, remove their archives
 			for _, p := range activePlugins {
-				archiveFilePath := d.archiveFilePath(p, entityKey)
+				archiveFilePath := s.archiveFilePath(p, entityKey)
 				_ = os.Remove(archiveFilePath)
 			}
 
@@ -238,19 +238,19 @@ func (d *Store) compactCacheStorage(entityKey string, threshold uint64) (err err
 }
 
 // CompactStorage reduces the size of the Delta Storage
-func (d *Store) CompactStorage(entityKey string, threshold uint64) (err error) {
+func (s *Store) CompactStorage(entityKey string, threshold uint64) (err error) {
 	var repoSize, newRepoSize uint64
-	repoSize, err = d.StorageSize(d.CacheDir)
+	repoSize, err = s.StorageSize(s.CacheDir)
 	if err == nil && repoSize > 0 && repoSize > threshold {
 		cslog := slog.WithFieldsF(func() logrus.Fields {
 			return logrus.Fields{"repoSize": repoSize, "threshold": threshold, "entityKey": entityKey}
 		})
 
 		cslog.Debug("Local repo size exceeds compaction threshold. Compacting.")
-		if err = d.compactCacheStorage(entityKey, threshold); err != nil {
+		if err = s.compactCacheStorage(entityKey, threshold); err != nil {
 			return
 		}
-		newRepoSize, err = d.StorageSize(d.CacheDir)
+		newRepoSize, err = s.StorageSize(s.CacheDir)
 		if nil != err {
 			return
 		}
@@ -260,13 +260,13 @@ func (d *Store) CompactStorage(entityKey string, threshold uint64) (err error) {
 			return logrus.Fields{"newRepoSize": newRepoSize, "savedPercentage": savedPct}
 		}).Debug("Local repo compacted.")
 
-		err = d.SaveState()
+		err = s.SaveState()
 	}
 	return
 }
 
 // StorageSize returns the size used in bytes of all the loose objects in the cache, non-inclusive of dirs
-func (d *Store) StorageSize(path string) (uint64, error) {
+func (s *Store) StorageSize(path string) (uint64, error) {
 	var size int64
 	err := filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
@@ -277,14 +277,14 @@ func (d *Store) StorageSize(path string) (uint64, error) {
 	return uint64(size), err
 }
 
-func (d *Store) archivePlugin(pluginItem *PluginInfo, entityKey string) (err error) {
+func (s *Store) archivePlugin(pluginItem *PluginInfo, entityKey string) (err error) {
 	var buf []byte
-	buf, err = d.readIndividualPluginDeltas(pluginItem, entityKey)
+	buf, err = s.readIndividualPluginDeltas(pluginItem, entityKey)
 	if err != nil {
 		return
 	}
 
-	buf = d.wrapBuffer(buf, '[', ']', ",")
+	buf = s.wrapBuffer(buf, '[', ']', ",")
 	var deltas []*inventoryapi.RawDelta
 	if err = json.Unmarshal(buf, &deltas); err != nil {
 		slog.WithFields(logrus.Fields{"plugin": pluginItem.ID(), "entityKey": entityKey}).
@@ -294,7 +294,7 @@ func (d *Store) archivePlugin(pluginItem *PluginInfo, entityKey string) (err err
 
 	keepDeltas := make([]*inventoryapi.RawDelta, 0)
 	archiveDeltas := make([]*inventoryapi.RawDelta, 0)
-	_, ok := d.plugins[pluginItem.Source]
+	_, ok := s.plugins[pluginItem.Source]
 	for _, result := range deltas {
 		if ok && result.ID <= pluginItem.LastSentID {
 			// backend already has this data
@@ -304,26 +304,26 @@ func (d *Store) archivePlugin(pluginItem *PluginInfo, entityKey string) (err err
 		}
 	}
 
-	err = d.rewriteDeltas(d.archiveFilePath(pluginItem, entityKey), os.O_CREATE|os.O_APPEND|os.O_WRONLY, archiveDeltas)
+	err = s.rewriteDeltas(s.archiveFilePath(pluginItem, entityKey), os.O_CREATE|os.O_APPEND|os.O_WRONLY, archiveDeltas)
 	if err != nil {
 		return
 	}
 
-	return d.rewriteDeltas(d.DeltaFilePath(pluginItem, entityKey), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, keepDeltas)
+	return s.rewriteDeltas(s.DeltaFilePath(pluginItem, entityKey), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, keepDeltas)
 }
 
 // ResetAllDeltas clears the plugin delta store for all the existing plugins
-func (d *Store) ResetAllDeltas(entityKey string) {
-	if d.plugins != nil {
-		for _, plugin := range d.plugins {
-			_ = d.clearPluginDeltaStore(plugin, entityKey)
+func (s *Store) ResetAllDeltas(entityKey string) {
+	if s.plugins != nil {
+		for _, plugin := range s.plugins {
+			_ = s.clearPluginDeltaStore(plugin, entityKey)
 		}
 	}
 }
 
 // UpdateState updates in disk the state of the deltas according to the passed PostDeltaBody, whose their ExternalKeys
 // field may be empty.
-func (d *Store) UpdateState(entityKey string, deltas []*inventoryapi.RawDelta, deltaStateResults *inventoryapi.DeltaStateMap) {
+func (s *Store) UpdateState(entityKey string, deltas []*inventoryapi.RawDelta, deltaStateResults *inventoryapi.DeltaStateMap) {
 	sentPlugins := make(map[string]bool, len(deltas))
 	// record what was sent and archive
 	for _, delta := range deltas {
@@ -331,14 +331,14 @@ func (d *Store) UpdateState(entityKey string, deltas []*inventoryapi.RawDelta, d
 		if deltaStateResults != nil {
 			deltaResult, _ = (*deltaStateResults)[delta.Source]
 		}
-		d.updateLastDeltaSent(entityKey, delta, deltaResult)
+		s.updateLastDeltaSent(entityKey, delta, deltaResult)
 		sentPlugins[delta.Source] = true
 	}
 	// Clean up delta files in bulk for each plugin
 	for source := range sentPlugins {
-		plugin := d.plugins[source]
+		plugin := s.plugins[source]
 		if plugin != nil {
-			ierr := d.archivePlugin(plugin, entityKey)
+			ierr := s.archivePlugin(plugin, entityKey)
 			if ierr != nil {
 				slog.WithFields(logrus.Fields{"source": source, "entity": entityKey}).
 					Debug("UpdateState: Plugin delta does not exist.")
@@ -348,14 +348,14 @@ func (d *Store) UpdateState(entityKey string, deltas []*inventoryapi.RawDelta, d
 	return
 }
 
-func (d *Store) updateLastDeltaSent(entityKey string, delta *inventoryapi.RawDelta, resultHint *inventoryapi.DeltaState) {
-	if d.plugins == nil {
+func (s *Store) updateLastDeltaSent(entityKey string, delta *inventoryapi.RawDelta, resultHint *inventoryapi.DeltaState) {
+	if s.plugins == nil {
 		return
 	}
 
 	source := delta.Source
 	id := delta.ID
-	p, ok := d.plugins[source]
+	p, ok := s.plugins[source]
 	if !ok {
 		return
 	}
@@ -385,7 +385,7 @@ func (d *Store) updateLastDeltaSent(entityKey string, delta *inventoryapi.RawDel
 			// Fixes the situation where agent sent N but backend expected N+1. In this situation,
 			// when backend sends back N+1 as the SendNextID, the agent could not tell if its delta
 			// was problematic.
-			d.reconciliateWithBackend(p, entityKey, resultHint)
+			s.reconciliateWithBackend(p, entityKey, resultHint)
 
 		case resultHint.SendNextID == id+1:
 			// Normal case.
@@ -393,12 +393,12 @@ func (d *Store) updateLastDeltaSent(entityKey string, delta *inventoryapi.RawDel
 
 		case resultHint.SendNextID == 0:
 			// Send full. Leave delta ID values as is.
-			_ = d.clearPluginDeltaStore(p, entityKey)
+			_ = s.clearPluginDeltaStore(p, entityKey)
 
 		case resultHint.SendNextID != id:
 			// If not present, send current full Reset delta ids to use SendNextID for the numbering
 			// of the next delta ids so we can fill in the gaps in the correct sequence.
-			d.reconciliateWithBackend(p, entityKey, resultHint)
+			s.reconciliateWithBackend(p, entityKey, resultHint)
 
 		case resultHint.SendNextID == id:
 			// Send again? This is a no-op, set last sent id to one previous.
@@ -413,28 +413,28 @@ func (d *Store) updateLastDeltaSent(entityKey string, delta *inventoryapi.RawDel
 	dslog.WithField("plugin", source).Debug("Updating deltas.")
 }
 
-func (d *Store) reconciliateWithBackend(plugin *PluginInfo, entityKey string, resultHint *inventoryapi.DeltaState) {
-	_ = d.clearPluginDeltaStore(plugin, entityKey)
+func (s *Store) reconciliateWithBackend(plugin *PluginInfo, entityKey string, resultHint *inventoryapi.DeltaState) {
+	_ = s.clearPluginDeltaStore(plugin, entityKey)
 	plugin.LastSentID = resultHint.SendNextID - 1
 	plugin.setDeltaID(entityKey, resultHint.LastStoredID)
 }
 
 // SaveState writes on disk the plugin ID maps
-func (d *Store) SaveState() (err error) {
-	if err = d.writePluginIDMap(); err != nil {
+func (s *Store) SaveState() (err error) {
+	if err = s.writePluginIDMap(); err != nil {
 		slog.WithError(err).Error("can't write plugin id maps")
 	}
 	return
 }
 
-func (d *Store) readPluginIDMap(cachedDeltaPath string) (err error) {
+func (s *Store) readPluginIDMap(cachedDeltaPath string) (err error) {
 	ok := exists(cachedDeltaPath)
 	if !ok {
 		return nil
 	}
 
 	if deltaIDBytes, err := ioutil.ReadFile(cachedDeltaPath); err == nil {
-		return d.loadPluginIDMap(deltaIDBytes)
+		return s.loadPluginIDMap(deltaIDBytes)
 	}
 
 	return err
@@ -448,22 +448,22 @@ func exists(path string) bool {
 	return true
 }
 
-func (d *Store) loadPluginIDMap(deltaIDBytes []byte) (err error) {
+func (s *Store) loadPluginIDMap(deltaIDBytes []byte) (err error) {
 	if len(deltaIDBytes) > 0 {
-		return json.Unmarshal(deltaIDBytes, &d.plugins)
+		return json.Unmarshal(deltaIDBytes, &s.plugins)
 	}
 
 	slog.Debug("Empty Plugin ID Map cache file, starting fresh.")
 	return nil
 }
 
-func (d *Store) writePluginIDMap() (err error) {
-	if _, err = os.Stat(d.CacheDir); err == nil {
+func (s *Store) writePluginIDMap() (err error) {
+	if _, err = os.Stat(s.CacheDir); err == nil {
 		var buf []byte
-		if buf, err = json.Marshal(d.plugins); err != nil {
+		if buf, err = json.Marshal(s.plugins); err != nil {
 			slog.WithError(err).Error("can't marshal id map?")
 		} else {
-			cachedDeltaPath := filepath.Join(d.CacheDir, CACHE_ID_FILE)
+			cachedDeltaPath := filepath.Join(s.CacheDir, CACHE_ID_FILE)
 			if err = disk.WriteFile(cachedDeltaPath, buf, DATA_FILE_MODE); err != nil {
 				slog.WithError(err).WithField("path", cachedDeltaPath).Error("unable to write delta cache")
 			}
@@ -472,14 +472,14 @@ func (d *Store) writePluginIDMap() (err error) {
 	return
 }
 
-func (d *Store) collectPluginFiles(dir string, entityKey string, fileFilterRE *regexp.Regexp) (pluginList []*PluginInfo, err error) {
+func (s *Store) collectPluginFiles(dir string, entityKey string, fileFilterRE *regexp.Regexp) (pluginList []*PluginInfo, err error) {
 	pluginsFileInfo, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return
 	}
 
 	pluginList = make([]*PluginInfo, 0, len(pluginsFileInfo))
-	entityFolder := d.entityFolder(entityKey)
+	entityFolder := s.entityFolder(entityKey)
 
 	for _, dirInfo := range pluginsFileInfo {
 		if dirInfo != nil && dirInfo.IsDir() && !nonEntityFolders[dirInfo.Name()] {
@@ -516,7 +516,7 @@ func removeNilsFromMarshaledJSON(buf []byte) (cleanBuf []byte, err error) {
 	return
 }
 
-func (d *Store) getDeltaFromJSON(previous, current []byte) (delta []byte, err error) {
+func (s *Store) getDeltaFromJSON(previous, current []byte) (delta []byte, err error) {
 
 	// A simple bytes comparison to prevent UnMarshalling
 	if bytes.Equal(previous, current) {
@@ -527,7 +527,7 @@ func (d *Store) getDeltaFromJSON(previous, current []byte) (delta []byte, err er
 	return jsonpatch.CreateMergePatch(previous, current)
 }
 
-func (d *Store) rewriteDeltas(deltaFilePath string, flag int, deltas []*inventoryapi.RawDelta) (err error) {
+func (s *Store) rewriteDeltas(deltaFilePath string, flag int, deltas []*inventoryapi.RawDelta) (err error) {
 	f, err := disk.OpenFile(deltaFilePath, flag, DATA_FILE_MODE)
 	if err != nil {
 		slog.WithField("path", deltaFilePath).WithError(err).Error("can't open delta journal file")
@@ -540,13 +540,13 @@ func (d *Store) rewriteDeltas(deltaFilePath string, flag int, deltas []*inventor
 		if deltaBuf, err = json.Marshal(deltas); err == nil {
 			// strip the square brackets, write as one blob
 			deltaBuf = bytes.Trim(deltaBuf, "[]")
-			err = d.writeDelta(f, deltaBuf)
+			err = s.writeDelta(f, deltaBuf)
 		}
 	}
 	return
 }
 
-func (d *Store) writeDelta(f *os.File, deltaBuf []byte) (err error) {
+func (s *Store) writeDelta(f *os.File, deltaBuf []byte) (err error) {
 	if _, err = f.Write(deltaBuf); err != nil {
 		slog.WithError(err).Error("can't write journal entry")
 		return
@@ -557,8 +557,8 @@ func (d *Store) writeDelta(f *os.File, deltaBuf []byte) (err error) {
 	return
 }
 
-func (d *Store) storeDelta(pluginItem *PluginInfo, entityKey string, del delta) (err error) {
-	cachePath := d.cachedDirPath(pluginItem, entityKey)
+func (s *Store) storeDelta(pluginItem *PluginInfo, entityKey string, del delta) (err error) {
+	cachePath := s.cachedDirPath(pluginItem, entityKey)
 	if err = disk.MkdirAll(cachePath, DATA_DIR_MODE); err != nil {
 		slog.WithFields(logrus.Fields{
 			"path":   cachePath,
@@ -567,7 +567,7 @@ func (d *Store) storeDelta(pluginItem *PluginInfo, entityKey string, del delta) 
 		return
 	}
 
-	deltaFilePath := d.DeltaFilePath(pluginItem, entityKey)
+	deltaFilePath := s.DeltaFilePath(pluginItem, entityKey)
 	f, err := disk.OpenFile(deltaFilePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, DATA_FILE_MODE)
 	if err != nil {
 		slog.WithFields(logrus.Fields{
@@ -583,25 +583,25 @@ func (d *Store) storeDelta(pluginItem *PluginInfo, entityKey string, del delta) 
 		return fmt.Errorf("error unmarshaling file %s: %s", deltaFilePath, err)
 	}
 
-	if _, ok := d.plugins[pluginItem.Source]; !ok {
-		d.plugins[pluginItem.Source] = pluginItem
+	if _, ok := s.plugins[pluginItem.Source]; !ok {
+		s.plugins[pluginItem.Source] = pluginItem
 	}
-	d.plugins[pluginItem.Source].increaseDeltaID(entityKey)
+	s.plugins[pluginItem.Source].increaseDeltaID(entityKey)
 
 	delta := &inventoryapi.RawDelta{
 		Source:    pluginItem.Source,
-		ID:        d.plugins[pluginItem.Source].deltaID(entityKey),
+		ID:        s.plugins[pluginItem.Source].deltaID(entityKey),
 		Timestamp: time.Now().Unix(),
 		Diff:      deltaBody,
 		FullDiff:  del.full}
 	var deltaBuf []byte
 	if deltaBuf, err = json.Marshal(delta); err == nil {
-		err = d.writeDelta(f, deltaBuf)
+		err = s.writeDelta(f, deltaBuf)
 	}
 	return
 }
 
-func (d *Store) wrapBuffer(buf []byte, openWrapChar, closeWrapChar byte, strip string) (wrapped []byte) {
+func (s *Store) wrapBuffer(buf []byte, openWrapChar, closeWrapChar byte, strip string) (wrapped []byte) {
 	if len(strip) > 0 {
 		buf = bytes.TrimRight(buf, strip)
 	}
@@ -611,8 +611,8 @@ func (d *Store) wrapBuffer(buf []byte, openWrapChar, closeWrapChar byte, strip s
 }
 
 // The deltas are a list of json hashes WITHOUT the surrounding square brackets
-func (d *Store) readIndividualPluginDeltas(plugin *PluginInfo, entityKey string) (buf []byte, err error) {
-	deltaFilePath := d.DeltaFilePath(plugin, entityKey)
+func (s *Store) readIndividualPluginDeltas(plugin *PluginInfo, entityKey string) (buf []byte, err error) {
+	deltaFilePath := s.DeltaFilePath(plugin, entityKey)
 	if _, err = os.Stat(deltaFilePath); err == nil {
 		if buf, err = ioutil.ReadFile(deltaFilePath); err != nil {
 			slog.WithField("path", deltaFilePath).WithError(err).Error("can't read delta file")
@@ -622,15 +622,15 @@ func (d *Store) readIndividualPluginDeltas(plugin *PluginInfo, entityKey string)
 }
 
 // Returns deltas grouped in buffers of size <= maxGroupSize
-func (d *Store) readAllPluginDeltas(plugins []*PluginInfo, entityKey string) ([][]byte, error) {
+func (s *Store) readAllPluginDeltas(plugins []*PluginInfo, entityKey string) ([][]byte, error) {
 	allDeltas := make([][]byte, 0)
 	buf := make([]byte, 0)
 	bufferSize := 0
 	for _, plugin := range plugins {
-		diff, err := d.readIndividualPluginDeltas(plugin, entityKey)
+		diff, err := s.readIndividualPluginDeltas(plugin, entityKey)
 		diffLen := len(diff)
 		if err == nil && diffLen > 0 {
-			if bufferSize+diffLen > d.maxInventorySize {
+			if bufferSize+diffLen > s.maxInventorySize {
 				allDeltas = append(allDeltas, buf)
 				buf = make([]byte, 0)
 				bufferSize = 0
@@ -646,10 +646,10 @@ func (d *Store) readAllPluginDeltas(plugins []*PluginInfo, entityKey string) ([]
 }
 
 // Legacy method that implemented delta reading before the splitting mechanism was added
-func (d *Store) readAllPluginDeltasWithoutSplitting(plugins []*PluginInfo, entityKey string) (buf []byte, err error) {
+func (s *Store) readAllPluginDeltasWithoutSplitting(plugins []*PluginInfo, entityKey string) (buf []byte, err error) {
 	buf = []byte{}
 	for _, plugin := range plugins {
-		diff, err := d.readIndividualPluginDeltas(plugin, entityKey)
+		diff, err := s.readIndividualPluginDeltas(plugin, entityKey)
 		if err == nil && len(diff) > 0 {
 			buf = append(buf, diff...)
 		}
@@ -657,12 +657,12 @@ func (d *Store) readAllPluginDeltasWithoutSplitting(plugins []*PluginInfo, entit
 	return buf, nil
 }
 
-func (d *Store) cleanPluginDeltas(plugins []*PluginInfo, entityKey string) (err error) {
+func (s *Store) cleanPluginDeltas(plugins []*PluginInfo, entityKey string) (err error) {
 	for _, plugin := range plugins {
 		var delta inventoryapi.RawDelta
-		if buf, err := d.readIndividualPluginDeltas(plugin, entityKey); err == nil {
+		if buf, err := s.readIndividualPluginDeltas(plugin, entityKey); err == nil {
 			if err = json.Unmarshal(buf, &delta); err != nil {
-				deltaFilePath := d.DeltaFilePath(plugin, entityKey)
+				deltaFilePath := s.DeltaFilePath(plugin, entityKey)
 				cslog := slog.WithFieldsF(func() logrus.Fields {
 					return logrus.Fields{
 						"entity": entityKey,
@@ -683,25 +683,25 @@ func (d *Store) cleanPluginDeltas(plugins []*PluginInfo, entityKey string) (err 
 }
 
 // ReadDeltas collects the plugins and read their deltas, grouped in blocks of size < maxInventorySize
-func (d *Store) ReadDeltas(entityKey string) ([]inventoryapi.RawDeltaBlock, error) {
+func (s *Store) ReadDeltas(entityKey string) ([]inventoryapi.RawDeltaBlock, error) {
 	// Walk through all active plugins and see if each has any deltas,
 	// and collect them if so
 	llog := slog.WithField("entity", entityKey)
-	reapedPlugins, err := d.collectPluginFiles(d.CacheDir, entityKey, helpers.JsonFilesRegexp)
+	reapedPlugins, err := s.collectPluginFiles(s.CacheDir, entityKey, helpers.JsonFilesRegexp)
 	if err != nil {
-		llog.WithError(err).WithField("path", d.CacheDir).Error("can't get plugins in cache directory")
+		llog.WithError(err).WithField("path", s.CacheDir).Error("can't get plugins in cache directory")
 		return nil, err
 	}
 
 	var buffers [][]byte
-	if d.maxInventorySize <= DisableInventorySplit {
-		buffer, err := d.readAllPluginDeltasWithoutSplitting(reapedPlugins, entityKey)
+	if s.maxInventorySize <= DisableInventorySplit {
+		buffer, err := s.readAllPluginDeltasWithoutSplitting(reapedPlugins, entityKey)
 		if err != nil {
 			return nil, err
 		}
 		buffers = [][]byte{buffer}
 	} else {
-		buffers, err = d.readAllPluginDeltas(reapedPlugins, entityKey)
+		buffers, err = s.readAllPluginDeltas(reapedPlugins, entityKey)
 		if err != nil {
 			return nil, err
 		}
@@ -710,10 +710,10 @@ func (d *Store) ReadDeltas(entityKey string) ([]inventoryapi.RawDeltaBlock, erro
 	deltas := make([]inventoryapi.RawDeltaBlock, 0)
 	for _, buf := range buffers {
 		deltasGroup := make([]*inventoryapi.RawDelta, 0)
-		buf = d.wrapBuffer(buf, '[', ']', ",")
+		buf = s.wrapBuffer(buf, '[', ']', ",")
 		if err = json.Unmarshal(buf, &deltasGroup); err != nil {
 			llog.WithError(err).Error("ReadDeltas can't unmarshal raw deltas, cleaning out file")
-			if err2 := d.cleanPluginDeltas(reapedPlugins, entityKey); err2 != nil {
+			if err2 := s.cleanPluginDeltas(reapedPlugins, entityKey); err2 != nil {
 				llog.WithError(err2).Error("can't clean plugin deltas")
 			}
 			return nil, err
@@ -723,35 +723,35 @@ func (d *Store) ReadDeltas(entityKey string) ([]inventoryapi.RawDeltaBlock, erro
 	return deltas, nil
 }
 
-func (d *Store) ChangeDefaultEntity(newEntityKey string) {
-	d.defaultEntityKey = newEntityKey
+func (s *Store) ChangeDefaultEntity(newEntityKey string) {
+	s.defaultEntityKey = newEntityKey
 }
 
 // entityFolder provides the folder name for a given entity ID, or for the agent default entity in case entityKey is an
 // empty string
-func (d *Store) entityFolder(entityKey string) string {
-	if entityKey == "" || entityKey == d.defaultEntityKey {
+func (s *Store) entityFolder(entityKey string) string {
+	if entityKey == "" || entityKey == s.defaultEntityKey {
 		return localEntityFolder
 	}
 	return helpers.SanitizeFileName(entityKey)
 }
 
 // RemoveEntity removes the entity cached storage.
-func (d *Store) RemoveEntity(entityKey string) error {
-	return d.RemoveEntityFolders(d.entityFolder(entityKey))
+func (s *Store) RemoveEntity(entityKey string) error {
+	return s.RemoveEntityFolders(s.entityFolder(entityKey))
 }
 
 // RemoveEntityFolders removes the entity cached storage from the entities whose folder is equal to the argument.
-func (d *Store) RemoveEntityFolders(entityFolder string) error {
-	errStrings := d.removeEntityEntries(d.DataDir, entityFolder)
-	errStrings = append(errStrings, d.removeEntityEntries(d.CacheDir, entityFolder)...)
+func (s *Store) RemoveEntityFolders(entityFolder string) error {
+	errStrings := s.removeEntityEntries(s.DataDir, entityFolder)
+	errStrings = append(errStrings, s.removeEntityEntries(s.CacheDir, entityFolder)...)
 	if len(errStrings) > 0 {
 		return fmt.Errorf("errors happened while removing entity folders: %s", strings.Join(errStrings, ", "))
 	}
 	return nil
 }
 
-func (d *Store) removeEntityEntries(dir, entityFolder string) (errStrings []string) {
+func (s *Store) removeEntityEntries(dir, entityFolder string) (errStrings []string) {
 	errStrings = make([]string, 0)
 	// For all the plugins in the given directory
 	plugins, err := ioutil.ReadDir(dir)
@@ -775,12 +775,12 @@ func (d *Store) removeEntityEntries(dir, entityFolder string) (errStrings []stri
 }
 
 // ScanEntityFolders returns a set of those entities that have been found in the different plugin folders.
-func (d *Store) ScanEntityFolders() (map[string]interface{}, error) {
-	entities, err := d.fetchEntities(d.DataDir)
+func (s *Store) ScanEntityFolders() (map[string]interface{}, error) {
+	entities, err := s.fetchEntities(s.DataDir)
 	if err != nil {
 		return nil, err
 	}
-	cacheEntities, err := d.fetchEntities(d.CacheDir)
+	cacheEntities, err := s.fetchEntities(s.CacheDir)
 	if err != nil {
 		return entities, err
 	}
@@ -790,7 +790,7 @@ func (d *Store) ScanEntityFolders() (map[string]interface{}, error) {
 	return entities, nil
 }
 
-func (d *Store) fetchEntities(dir string) (map[string]interface{}, error) {
+func (s *Store) fetchEntities(dir string) (map[string]interface{}, error) {
 	entities := make(map[string]interface{})
 
 	// For all the plugins in the given directory
@@ -819,8 +819,8 @@ func (d *Store) fetchEntities(dir string) (map[string]interface{}, error) {
 // json and the cache inventory json of the given plugin from the given
 // entity. If there is no difference, then an empty JSON object is
 // retured `{}`.
-func (d *Store) newPluginDelta(pluginItem *PluginInfo, entityKey string) (delta, error) {
-	sourceFilePath := d.SourceFilePath(pluginItem, entityKey)
+func (s *Store) newPluginDelta(pluginItem *PluginInfo, entityKey string) (delta, error) {
+	sourceFilePath := s.SourceFilePath(pluginItem, entityKey)
 	sourceB, err := ioutil.ReadFile(sourceFilePath)
 	if err != nil {
 		slog.WithFields(logrus.Fields{
@@ -830,7 +830,7 @@ func (d *Store) newPluginDelta(pluginItem *PluginInfo, entityKey string) (delta,
 		return delta{}, err
 	}
 
-	cacheFilePath := d.cachedFilePath(pluginItem, entityKey)
+	cacheFilePath := s.cachedFilePath(pluginItem, entityKey)
 	_, err = os.Stat(cacheFilePath)
 	if os.IsNotExist(err) {
 		return delta{value: sourceB, full: true}, nil
@@ -842,7 +842,7 @@ func (d *Store) newPluginDelta(pluginItem *PluginInfo, entityKey string) (delta,
 		return delta{}, err
 	}
 
-	del, err := d.getDeltaFromJSON(cacheB, sourceB)
+	del, err := s.getDeltaFromJSON(cacheB, sourceB)
 	return delta{value: del, full: false}, err
 }
 
@@ -853,7 +853,7 @@ func (d *Store) newPluginDelta(pluginItem *PluginInfo, entityKey string) (delta,
 //
 // Returns false when the delta is empty, meaning that the plugin state
 // didn't change; otherwise, it returns trues.
-func (d *Store) updatePluginInventoryCache(
+func (s *Store) updatePluginInventoryCache(
 	pluginItem *PluginInfo, entityKey string,
 ) (updated bool, err error) {
 
@@ -863,14 +863,14 @@ func (d *Store) updatePluginInventoryCache(
 		return logrus.Fields{"entityKey": entityKey, "plugin": pluginItem.ID()}
 	})
 
-	del, err := d.newPluginDelta(pluginItem, entityKey)
+	del, err := s.newPluginDelta(pluginItem, entityKey)
 	if err != nil {
 		llog.WithError(err).Error("can't calculate delta from JSON files")
 		// Corrupted JSON. Removing plugin folder and deltas
-		if err := d.clearPluginDeltaStore(pluginItem, entityKey); err != nil {
+		if err := s.clearPluginDeltaStore(pluginItem, entityKey); err != nil {
 			llog.WithError(err).Warn("can't clear plugin delta store")
 		}
-		if err := os.RemoveAll(d.SourceFilePath(pluginItem, entityKey)); err != nil {
+		if err := os.RemoveAll(s.SourceFilePath(pluginItem, entityKey)); err != nil {
 			llog.WithError(err).Warn("can't remove source file path")
 		}
 		return
@@ -886,12 +886,12 @@ func (d *Store) updatePluginInventoryCache(
 		"reap change, item: %+v", *pluginItem,
 	)
 
-	err = d.storeDelta(pluginItem, entityKey, del)
+	err = s.storeDelta(pluginItem, entityKey, del)
 	if err != nil {
 		llog.WithError(err).Error("can't commit inventory")
 	}
 
-	err = d.replacePluginCacheFileWithSource(pluginItem, entityKey)
+	err = s.replacePluginCacheFileWithSource(pluginItem, entityKey)
 	if err != nil {
 		llog.WithError(err).Error("replacing plugin cache file failed")
 	}
@@ -902,9 +902,9 @@ func (d *Store) updatePluginInventoryCache(
 // replacePluginCacheFileWithSource replaces the given entity plugin
 // inventory cache file with the source file.  It deletes the cache file
 // if it already exists.
-func (d *Store) replacePluginCacheFileWithSource(pluginItem *PluginInfo, entityKey string) error {
-	sourceFilePath := d.SourceFilePath(pluginItem, entityKey)
-	cachedFilePath := d.cachedFilePath(pluginItem, entityKey)
+func (s *Store) replacePluginCacheFileWithSource(pluginItem *PluginInfo, entityKey string) error {
+	sourceFilePath := s.SourceFilePath(pluginItem, entityKey)
+	cachedFilePath := s.cachedFilePath(pluginItem, entityKey)
 	return helpers.CopyFile(sourceFilePath, cachedFilePath)
 }
 
@@ -915,16 +915,16 @@ func (d *Store) replacePluginCacheFileWithSource(pluginItem *PluginInfo, entityK
 //
 // If the JSONs differ, creates a delta file and replaces the cache
 // with the source file. Then finally writes on disk the plugin ID maps.
-func (d *Store) UpdatePluginsInventoryCache(entityKey string) (err error) {
-	activePlugins, err := d.collectPluginFiles(
-		d.DataDir,
+func (s *Store) UpdatePluginsInventoryCache(entityKey string) (err error) {
+	activePlugins, err := s.collectPluginFiles(
+		s.DataDir,
 		entityKey,
 		helpers.JsonFilesRegexp,
 	)
 	if err != nil {
 		slog.WithFields(logrus.Fields{
 			"entityKey": entityKey,
-			"path":      d.DataDir,
+			"path":      s.DataDir,
 		}).WithError(err).Error("can't get plugins in the data directory")
 		return
 	}
@@ -933,7 +933,7 @@ func (d *Store) UpdatePluginsInventoryCache(entityKey string) (err error) {
 	var pUpdated bool
 	var pErr error
 	for _, pluginItem := range activePlugins {
-		pUpdated, pErr = d.updatePluginInventoryCache(pluginItem, entityKey)
+		pUpdated, pErr = s.updatePluginInventoryCache(pluginItem, entityKey)
 		if pErr != nil {
 			slog.WithFields(logrus.Fields{
 				"entityKey": entityKey,
@@ -947,7 +947,7 @@ func (d *Store) UpdatePluginsInventoryCache(entityKey string) (err error) {
 		return
 	}
 
-	err = d.SaveState()
+	err = s.SaveState()
 	if err != nil {
 		slog.WithField("entityKey", entityKey).WithError(err).Error("error flushing inventory to cache")
 	}
@@ -956,9 +956,9 @@ func (d *Store) UpdatePluginsInventoryCache(entityKey string) (err error) {
 
 // StorePluginOutput will take a PluginOutput blob and write it to the
 // data directory in JSON format
-func (d *Store) SavePluginSource(entityKey, category, term string, source map[string]interface{}) (err error) {
+func (s *Store) SavePluginSource(entityKey, category, term string, source map[string]interface{}) (err error) {
 	// construct the plugin data directory and ensure it exists
-	outputDir := d.PluginDirPath(category, entityKey)
+	outputDir := s.PluginDirPath(category, entityKey)
 	if err = disk.MkdirAll(outputDir, DATA_DIR_MODE); err != nil {
 		return err
 	}
@@ -978,13 +978,13 @@ func (d *Store) SavePluginSource(entityKey, category, term string, source map[st
 		}
 	}
 
-	if len(sourceB) > d.maxInventorySize {
+	if len(sourceB) > s.maxInventorySize {
 		err = fmt.Errorf(
 			"Plugin data for entity %v plugin %v/%v is larger than max size of %v",
 			entityKey,
 			category,
 			term,
-			d.maxInventorySize,
+			s.maxInventorySize,
 		)
 		return
 	}
