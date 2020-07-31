@@ -37,6 +37,7 @@ func (pi *PluginInfo) setDeltaID(entityKey string, value int64) {
 	pi.MostRecentIDs[entityKey] = value
 }
 
+// increaseDeltaID triggered on plugin reap, prior to submission
 func (pi *PluginInfo) increaseDeltaID(entityKey string) {
 	pi.initialize()
 
@@ -47,6 +48,7 @@ func (pi *PluginInfo) increaseDeltaID(entityKey string) {
 	}
 }
 
+// deltaID provides delta ID for one of this plugin's entity
 func (pi *PluginInfo) deltaID(entityKey string) int64 {
 	pi.initialize()
 
