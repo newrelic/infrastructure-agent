@@ -563,6 +563,7 @@ func (s *Store) writeDelta(f *os.File, deltaBuf []byte) (err error) {
 }
 
 func (s *Store) storeDelta(pluginItem *PluginInfo, entityKey string, d delta) (err error) {
+	// FS mgmt
 	dir := s.cachedDirPath(pluginItem, entityKey)
 	if err = disk.MkdirAll(dir, DATA_DIR_MODE); err != nil {
 		slog.WithFields(logrus.Fields{
@@ -583,21 +584,24 @@ func (s *Store) storeDelta(pluginItem *PluginInfo, entityKey string, d delta) (e
 	}
 	defer f.Close()
 
-	var dBody map[string]interface{}
-	if err = json.Unmarshal(d.value, &dBody); err != nil {
+	// format raw diff
+	var diff map[string]interface{}
+	if err = json.Unmarshal(d.value, &diff); err != nil {
 		return fmt.Errorf("error unmarshaling file %s: %s", file, err)
 	}
 
+	// increase ID
 	if _, ok := s.plugins[pluginItem.Source]; !ok {
 		s.plugins[pluginItem.Source] = pluginItem
 	}
 	s.plugins[pluginItem.Source].increaseDeltaID(entityKey)
 
+	// persist raw
 	dRaw := &inventoryapi.RawDelta{
 		Source:    pluginItem.Source,
 		ID:        s.plugins[pluginItem.Source].deltaID(entityKey),
 		Timestamp: time.Now().Unix(),
-		Diff:      dBody,
+		Diff:      diff,
 		FullDiff:  d.full,
 	}
 	var deltaBuf []byte
