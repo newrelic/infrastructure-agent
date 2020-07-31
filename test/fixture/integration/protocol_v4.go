@@ -4,7 +4,6 @@ package integration
 
 import (
 	"encoding/json"
-
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 )
 
@@ -15,6 +14,126 @@ type ProtocolParsingPair struct {
 }
 
 var (
+	ProtocolV4TwoEntities = ProtocolParsingPair{
+		Payload: []byte(`{
+  "protocol_version": "4",
+  "integration": {
+    "name": "Sample",
+    "version": "1.2.3"
+  },
+  "data": [
+    {
+      "common": {
+        "timestamp": 1586357933,
+        "interval.ms": 10000,
+        "attributes": {
+          "host.name": "host-test",
+          "host.user": "test-user"
+        }
+      },
+      "metrics": [
+        {
+          "name": "a.gauge",
+          "type": "gauge",
+          "value": 13,
+          "attributes": {
+            "key1": "val1"
+          }
+        },
+        {
+          "name": "a.summary",
+          "type": "summary",
+          "value": {
+            "count": 10,
+            "sum": 664,
+            "min": 15,
+            "max": 248
+          }
+        },
+        {
+          "name": "a.count",
+          "type": "count",
+          "value": 666
+        }
+      ],
+      "entity": {
+        "name": "a.entity.one",
+        "type": "ATYPE",
+        "displayName": "A display name one",
+        "metadata": {
+          "env": "testing"
+        }
+      },
+      "inventory": {
+        "inventory_payload_one": {
+          "value": "foo-one"
+        }
+      },
+      "events": []
+    },
+    {
+      "common": {
+        "timestamp": 1586357933,
+        "interval.ms": 10000,
+        "attributes": {
+          "host.name": "host-test",
+          "host.user": "test-user"
+        }
+      },
+      "metrics": [
+        {
+          "name": "b.gauge",
+          "type": "gauge",
+          "value": 13,
+          "attributes": {
+            "key1": "val2"
+          }
+        },
+        {
+          "name": "b.summary",
+          "type": "summary",
+          "value": {
+            "count": 10,
+            "sum": 664,
+            "min": 15,
+            "max": 248
+          }
+        },
+        {
+          "name": "b.count",
+          "type": "count",
+          "value": 666
+        }
+      ],
+      "entity": {
+        "name": "b.entity.two",
+        "type": "ATYPE",
+        "displayName": "A display name two",
+        "metadata": {
+          "env": "testing"
+        }
+      },
+      "inventory": {
+        "inventory_payload_two": {
+          "value": "bar-two"
+        }
+      },
+      "events": []
+    }
+  ]
+}`),
+		ParsedV4: protocol.DataV4{
+			PluginProtocolVersion: protocol.PluginProtocolVersion{
+				RawProtocolVersion: "4",
+			},
+			Integration: protocol.IntegrationMetadata{
+				Name:    "Sample",
+				Version: "1.2.3",
+			},
+			DataSets: []protocol.Dataset{},
+		},
+	}
+
 	ProtocolV4 = ProtocolParsingPair{
 		Payload: []byte(`
 	{
