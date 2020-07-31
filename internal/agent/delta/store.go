@@ -295,12 +295,12 @@ func (s *Store) archivePlugin(pluginItem *PluginInfo, entityKey string) (err err
 	keepDeltas := make([]*inventoryapi.RawDelta, 0)
 	archiveDeltas := make([]*inventoryapi.RawDelta, 0)
 	_, ok := s.plugins[pluginItem.Source]
-	for _, result := range deltas {
-		if ok && result.ID <= pluginItem.LastSentID {
+	for _, d := range deltas {
+		if ok && d.ID <= pluginItem.LastSentID {
 			// backend already has this data
-			archiveDeltas = append(archiveDeltas, result)
+			archiveDeltas = append(archiveDeltas, d)
 		} else {
-			keepDeltas = append(keepDeltas, result)
+			keepDeltas = append(keepDeltas, d)
 		}
 	}
 
