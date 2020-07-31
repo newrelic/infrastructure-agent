@@ -122,6 +122,7 @@ func BenchmarkProcessSampler_NoCache(b *testing.B) {
 
 // DummyAgentContext replaces mock agent context because mocks management can have impact in benchmarks
 type dummyAgentContext struct {
+	agent.AgentContext
 	cfg *config.Config
 }
 
