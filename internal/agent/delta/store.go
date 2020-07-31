@@ -325,15 +325,17 @@ func (s *Store) ResetAllDeltas(entityKey string) {
 // field may be empty.
 func (s *Store) UpdateState(entityKey string, deltas []*inventoryapi.RawDelta, deltaStateResults *inventoryapi.DeltaStateMap) {
 	sentPlugins := make(map[string]bool, len(deltas))
+
 	// record what was sent and archive
-	for _, delta := range deltas {
-		var deltaResult *inventoryapi.DeltaState
+	for _, d := range deltas {
+		var dResult *inventoryapi.DeltaState
 		if deltaStateResults != nil {
-			deltaResult, _ = (*deltaStateResults)[delta.Source]
+			dResult, _ = (*deltaStateResults)[d.Source]
 		}
-		s.updateLastDeltaSent(entityKey, delta, deltaResult)
-		sentPlugins[delta.Source] = true
+		s.updateLastDeltaSent(entityKey, d, dResult)
+		sentPlugins[d.Source] = true
 	}
+
 	// Clean up delta files in bulk for each plugin
 	for source := range sentPlugins {
 		plugin := s.plugins[source]
@@ -348,13 +350,13 @@ func (s *Store) UpdateState(entityKey string, deltas []*inventoryapi.RawDelta, d
 	return
 }
 
-func (s *Store) updateLastDeltaSent(entityKey string, delta *inventoryapi.RawDelta, resultHint *inventoryapi.DeltaState) {
+func (s *Store) updateLastDeltaSent(entityKey string, dRaw *inventoryapi.RawDelta, resultHint *inventoryapi.DeltaState) {
 	if s.plugins == nil {
 		return
 	}
 
-	source := delta.Source
-	id := delta.ID
+	source := dRaw.Source
+	id := dRaw.ID
 	p, ok := s.plugins[source]
 	if !ok {
 		return
@@ -413,10 +415,10 @@ func (s *Store) updateLastDeltaSent(entityKey string, delta *inventoryapi.RawDel
 	dslog.WithField("plugin", source).Debug("Updating deltas.")
 }
 
-func (s *Store) reconciliateWithBackend(plugin *PluginInfo, entityKey string, resultHint *inventoryapi.DeltaState) {
-	_ = s.clearPluginDeltaStore(plugin, entityKey)
-	plugin.LastSentID = resultHint.SendNextID - 1
-	plugin.setDeltaID(entityKey, resultHint.LastStoredID)
+func (s *Store) reconciliateWithBackend(pi *PluginInfo, entityKey string, resultHint *inventoryapi.DeltaState) {
+	_ = s.clearPluginDeltaStore(pi, entityKey)
+	pi.LastSentID = resultHint.SendNextID - 1
+	pi.setDeltaID(entityKey, resultHint.LastStoredID)
 }
 
 // SaveState writes on disk the plugin ID maps
@@ -458,15 +460,17 @@ func (s *Store) loadPluginIDMap(deltaIDBytes []byte) (err error) {
 }
 
 func (s *Store) writePluginIDMap() (err error) {
-	if _, err = os.Stat(s.CacheDir); err == nil {
-		var buf []byte
-		if buf, err = json.Marshal(s.plugins); err != nil {
-			slog.WithError(err).Error("can't marshal id map?")
-		} else {
-			cachedDeltaPath := filepath.Join(s.CacheDir, CACHE_ID_FILE)
-			if err = disk.WriteFile(cachedDeltaPath, buf, DATA_FILE_MODE); err != nil {
-				slog.WithError(err).WithField("path", cachedDeltaPath).Error("unable to write delta cache")
-			}
+	if _, err = os.Stat(s.CacheDir); err != nil {
+		return
+	}
+
+	var buf []byte
+	if buf, err = json.Marshal(s.plugins); err != nil {
+		slog.WithError(err).Error("can't marshal id map?")
+	} else {
+		cachedDeltaPath := filepath.Join(s.CacheDir, CACHE_ID_FILE)
+		if err = disk.WriteFile(cachedDeltaPath, buf, DATA_FILE_MODE); err != nil {
+			slog.WithError(err).WithField("path", cachedDeltaPath).Error("unable to write delta cache")
 		}
 	}
 	return
@@ -507,17 +511,18 @@ func removeNilsFromMarshaledJSON(buf []byte) (cleanBuf []byte, err error) {
 		slog.WithError(err).Error("can't unmarshal and remove nils")
 		return
 	}
+
 	removeNils(delta)
 	cleanBuf, err = json.Marshal(delta)
 	if err != nil {
 		slog.WithError(err).Error("can't marshal de-nil'd delta")
 		return
 	}
+
 	return
 }
 
 func (s *Store) getDeltaFromJSON(previous, current []byte) (delta []byte, err error) {
-
 	// A simple bytes comparison to prevent UnMarshalling
 	if bytes.Equal(previous, current) {
 		delta = EMPTY_DELTA
@@ -557,30 +562,30 @@ func (s *Store) writeDelta(f *os.File, deltaBuf []byte) (err error) {
 	return
 }
 
-func (s *Store) storeDelta(pluginItem *PluginInfo, entityKey string, del delta) (err error) {
-	cachePath := s.cachedDirPath(pluginItem, entityKey)
-	if err = disk.MkdirAll(cachePath, DATA_DIR_MODE); err != nil {
+func (s *Store) storeDelta(pluginItem *PluginInfo, entityKey string, d delta) (err error) {
+	dir := s.cachedDirPath(pluginItem, entityKey)
+	if err = disk.MkdirAll(dir, DATA_DIR_MODE); err != nil {
 		slog.WithFields(logrus.Fields{
-			"path":   cachePath,
+			"path":   dir,
 			"plugin": pluginItem.ID(),
 		}).WithError(err).Error("could not create cache directory")
 		return
 	}
 
-	deltaFilePath := s.DeltaFilePath(pluginItem, entityKey)
-	f, err := disk.OpenFile(deltaFilePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, DATA_FILE_MODE)
+	file := s.DeltaFilePath(pluginItem, entityKey)
+	f, err := disk.OpenFile(file, os.O_CREATE|os.O_APPEND|os.O_WRONLY, DATA_FILE_MODE)
 	if err != nil {
 		slog.WithFields(logrus.Fields{
-			"path":   deltaFilePath,
+			"path":   file,
 			"plugin": pluginItem.ID(),
 		}).WithError(err).Error("can't open delta journal file")
 		return
 	}
 	defer f.Close()
 
-	var deltaBody map[string]interface{}
-	if err = json.Unmarshal(del.value, &deltaBody); err != nil {
-		return fmt.Errorf("error unmarshaling file %s: %s", deltaFilePath, err)
+	var dBody map[string]interface{}
+	if err = json.Unmarshal(d.value, &dBody); err != nil {
+		return fmt.Errorf("error unmarshaling file %s: %s", file, err)
 	}
 
 	if _, ok := s.plugins[pluginItem.Source]; !ok {
@@ -588,16 +593,18 @@ func (s *Store) storeDelta(pluginItem *PluginInfo, entityKey string, del delta) 
 	}
 	s.plugins[pluginItem.Source].increaseDeltaID(entityKey)
 
-	delta := &inventoryapi.RawDelta{
+	dRaw := &inventoryapi.RawDelta{
 		Source:    pluginItem.Source,
 		ID:        s.plugins[pluginItem.Source].deltaID(entityKey),
 		Timestamp: time.Now().Unix(),
-		Diff:      deltaBody,
-		FullDiff:  del.full}
+		Diff:      dBody,
+		FullDiff:  d.full,
+	}
 	var deltaBuf []byte
-	if deltaBuf, err = json.Marshal(delta); err == nil {
+	if deltaBuf, err = json.Marshal(dRaw); err == nil {
 		err = s.writeDelta(f, deltaBuf)
 	}
+
 	return
 }
 
