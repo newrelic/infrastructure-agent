@@ -37,8 +37,13 @@ func TestProcessAllowedList(t *testing.T) {
 	t.Skip("failing for releases")
 
 	// this test assumes that go is running
-	config := config.Config{AllowedListProcessSample: []string{"go.exe"}}
-	testAgent, err := agent.NewAgent(&config, "1", ffTest.EmptyFFRetriever)
+	cfg := config.Config{AllowedListProcessSample: []string{"go.exe"}}
+	testAgent, err := agent.NewAgent(
+		&cfg,
+		"1",
+		"userAgent",
+		nil,
+		ffTest.EmptyFFRetriever)
 	assert.NoError(t, err)
 	testAgentConfig := testAgent.Context
 	pm := NewProcsMonitor(testAgentConfig)
