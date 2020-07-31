@@ -129,7 +129,62 @@ func TestEmitter_Send_ErrorOnHostname(t *testing.T) {
 	var entityRewrite []data.EntityRewrite
 
 	err := emitter.Send(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4TwoEntities.Payload)
-	assert.EqualError(t, err, "1 out of 2 datasets could not be emitted. Reasons: error renaming entity: no known identifier types found in ID lookup table")
+	assert.EqualError(t, err, "2 out of 2 datasets could not be emitted. Reasons: error renaming entity: no known identifier types found in ID lookup table")
+}
+
+func TestEmitter_SendOneEntityOutOfTwo(t *testing.T) {
+	expectedEntityId := entity.ID(123)
+	agentCtx := getAgentContext("test")
+	dmSender := &mockedMetricsSender{}
+	ffRetriever := &enabledFFRetriever{}
+	registerClient := &mockedRegisterClient{}
+
+	registerBatchEntityResponse := identityapi.RegisterBatchEntityResponse{
+		{
+			Name: "A display name one",
+			ID:   expectedEntityId,
+			Key:  "a.entity.one",
+		},
+	}
+
+	expectedEntities := []protocol.Entity{
+		{Name: "a.entity.one", Type: "ATYPE", DisplayName: "A display name one", Metadata: map[string]interface{}{"env": "testing"}},
+		{Name: "b.entity.two", Type: "ATYPE", DisplayName: "A display name two", Metadata: map[string]interface{}{"env": "testing"}},
+	}
+	registerClient.
+		On("RegisterProtocolEntities", agentCtx.id.ID, expectedEntities).
+		Return(registerBatchEntityResponse, time.Second, nil)
+
+	dmSender.
+		On("SendMetrics", mock.AnythingOfType("[]protocol.Metric"))
+
+	agentCtx.On("SendData",
+		agent.PluginOutput{
+			Id:        ids.PluginID{Category: "integration", Term: "Sample"},
+			EntityKey: "a.entity.one",
+			Data: agent.PluginInventoryDataset{
+				protocol.InventoryData{"id": "inventory_payload_one", "value": "foo-one"},
+			}, NotApplicable: false})
+
+	emitter := NewEmitter(agentCtx, dmSender, ffRetriever, registerClient)
+
+	metadata := integration.Definition{}
+	var extraLabels data.Map
+	var entityRewrite []data.EntityRewrite
+
+	err := emitter.Send(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4TwoEntities.Payload)
+	assert.EqualError(t, err, "1 out of 2 datasets could not be emitted. Reasons: entity with name 'b.entity.two' was not registered in the backend")
+
+	registerClient.AssertExpectations(t)
+	dmSender.AssertExpectations(t)
+	agentCtx.AssertExpectations(t)
+
+	// Should add Entity Id ('nr.entity.id') to Common attributes
+	dmMetricsSent := dmSender.Calls[0].Arguments[0].([]protocol.Metric)
+	assert.Len(t, dmMetricsSent, 3)
+	assert.Equal(t, expectedEntityId, dmMetricsSent[0].Attributes[nrEntityId])
+	assert.Equal(t, expectedEntityId, dmMetricsSent[1].Attributes[nrEntityId])
+	assert.Equal(t, expectedEntityId, dmMetricsSent[2].Attributes[nrEntityId])
 }
 
 func TestEmitter_Send(t *testing.T) {
@@ -139,7 +194,13 @@ func TestEmitter_Send(t *testing.T) {
 	ffRetriever := &enabledFFRetriever{}
 	registerClient := &mockedRegisterClient{}
 
-	registerBatchEntityResponse := identityapi.RegisterBatchEntityResponse{{Name: "unique name", ID: expectedEntityId}}
+	registerBatchEntityResponse := identityapi.RegisterBatchEntityResponse{
+		{
+			Name: "unique name",
+			ID:   expectedEntityId,
+			Key:  "unique name",
+		},
+	}
 
 	expectedEntities := []protocol.Entity{
 		{

@@ -86,7 +86,6 @@ func (e *emitter) process(
 	entityRewrite []data.EntityRewrite,
 	integrationData protocol.DataV4) (err error) {
 
-	var emitErrs []error
 	pluginId := metadata.PluginID(integrationData.Integration.Name)
 	plugin := agent.NewExternalPluginCommon(pluginId, e.agentContext, metadata.Name)
 	labels, extraAnnotations := metadata.LabelsAndExtraAnnotations(extraLabels)
@@ -107,10 +106,16 @@ func (e *emitter) process(
 		return wrapError(fmt.Errorf("error renaming entity: %s", err.Error()), len(integrationData.DataSets))
 	}
 
+	var emitErrs []error
 	for _, dataset := range integrationData.DataSets {
 
 		// for dataset.Entity call emitV4DataSet function with entity ID
-		dataset.Common.Attributes[nrEntityId] = registeredEntities[dataset.Entity.Name]
+		val, ok := registeredEntities[dataset.Entity.Name]
+		if !ok {
+			emitErrs = append(emitErrs, fmt.Errorf("entity with name '%s' was not registered in the backend", dataset.Entity.Name))
+			continue
+		}
+		dataset.Common.Attributes[nrEntityId] = val
 		replaceEntityName(dataset.Entity, entityRewrite, agentShortName)
 
 		emitInventory(
@@ -134,7 +139,8 @@ func (e *emitter) process(
 			IntegrationExtraAnnotations: extraAnnotations,
 		}
 
-		e.metricsSender.SendMetrics(dmProcessor.ProcessMetrics(dataset.Metrics, dataset.Common, dataset.Entity))
+		metrics := dmProcessor.ProcessMetrics(dataset.Metrics, dataset.Common, dataset.Entity)
+		e.metricsSender.SendMetrics(metrics)
 	}
 
 	return composeEmitError(emitErrs, len(integrationData.DataSets))
@@ -153,7 +159,7 @@ func (e *emitter) RegisterEntities(entities []protocol.Entity) (map[string]entit
 	registeredEntities := make(map[string]entity.ID, len(resp))
 
 	for i := range resp {
-		registeredEntities[resp[i].Name] = resp[i].ID
+		registeredEntities[string(resp[i].Key)] = resp[i].ID
 	}
 	return registeredEntities, nil
 }
@@ -229,13 +235,13 @@ func composeEmitError(emitErrs []error, dataSetLenght int) error {
 		msg := err.Error()
 		if _, ok := messages[msg]; !ok { // avoid logging repeated error messages
 			messages[msg] = struct{}{}
-			composedError += msg
+			composedError += msg + ","
 		}
 	}
-
-	return errors.New(composedError)
+	return errors.New(composedError[:len(composedError)-1])
 }
 
 func wrapError(err error, datasetLen int) error {
-	return composeEmitError([]error{err}, datasetLen)
+	composedError := fmt.Sprintf("%d out of %d datasets could not be emitted. Reasons: %v", datasetLen, datasetLen, err)
+	return errors.New(composedError)
 }
