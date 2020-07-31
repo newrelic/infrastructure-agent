@@ -278,8 +278,21 @@ func (m *mockAPIClient) RegisterPost(
 ) (identity.RegisterResponse, *http.Response, error) {
 
 	args := m.Called(ctx, userAgent, xLicenseKey, registerRequest, localVarOptionals)
-
 	return args.Get(0).(identity.RegisterResponse),
+		args.Get(1).(*http.Response),
+		args.Error(2)
+}
+
+
+
+func (m *mockAPIClient) RegisterBatchPost(
+ctx context.Context,
+userAgent string,
+xLicenseKey string,
+registerRequest []identity.RegisterRequest,
+localVarOptionals *identity.RegisterBatchPostOpts) ([]identity.RegisterBatchEntityResponse, *http.Response, error) {
+	args := m.Called(ctx, userAgent, xLicenseKey, registerRequest, localVarOptionals)
+	return args.Get(0).([]identity.RegisterBatchEntityResponse),
 		args.Get(1).(*http.Response),
 		args.Error(2)
 }

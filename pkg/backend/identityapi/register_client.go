@@ -84,8 +84,81 @@ func NewIdentityRegisterClient(
 	}, nil
 }
 
-func (rc *registerClient) RegisterProtocolEntities(agentEntityID entity.ID, entities []protocol.Entity) (RegisterBatchEntityResponse, time.Duration, error) {
-	panic("not implemented yet")
+func (rc *registerClient) RegisterProtocolEntities(agentEntityID entity.ID, entities []protocol.Entity) (resp RegisterBatchEntityResponse, duration time.Duration, err error) {
+
+	ctx := context.Background()
+
+	registerRequests := make([]identity.RegisterRequest, len(entities))
+
+	for i := range entities {
+		registerRequest := identity.RegisterRequest{
+			EntityType:  entities[i].Type,
+			EntityName:  entities[i].Name,
+			DisplayName: entities[i].DisplayName,
+			Metadata:    convertMetadataToMapStringString(entities[i].Metadata),
+		}
+		registerRequests[i] = registerRequest
+	}
+
+	localVarOptionals := &identity.RegisterBatchPostOpts{
+		XNRIAgentEntityId: optional.NewInt64(int64(agentEntityID)),
+	}
+
+	apiReps, httpResp, err := rc.apiClient.RegisterBatchPost(ctx, rc.userAgent, rc.licenseKey, registerRequests, localVarOptionals)
+	if err != nil {
+		rlog.
+			WithError(err).
+			WithField("XNRIAgentEntityId", agentEntityID).
+			WithField("status", httpResp.StatusCode).
+			WithField("RegisterRequests", registerRequests).
+			Error("Something went wrong")
+		return resp, time.Second, err // TODO add right duration
+	}
+
+	resp = make(RegisterBatchEntityResponse, len(apiReps))
+
+	for i := range apiReps {
+		resp[i] = RegisterEntityResponse{
+			ID:   entity.ID(apiReps[i].EntityId),
+			Key:  entity.Key(apiReps[i].EntityName),
+			Name: apiReps[i].EntityName,
+		}
+	}
+
+	return resp, time.Second, err
+}
+
+func (rc *registerClient) RegisterEntity(agentEntityID entity.ID, ent protocol.Entity) (resp RegisterEntityResponse, err error) {
+
+	ctx := context.Background()
+	registerRequest := identity.RegisterRequest{
+		EntityType:  ent.Type,
+		EntityName:  ent.Name,
+		DisplayName: ent.DisplayName,
+		Metadata:    convertMetadataToMapStringString(ent.Metadata),
+	}
+	localVarOptionals := &identity.RegisterPostOpts{
+		XNRIAgentEntityId: optional.NewInt64(int64(agentEntityID)),
+	}
+
+	apiReps, httpResp, err := rc.apiClient.RegisterPost(ctx, rc.userAgent, rc.licenseKey, registerRequest, localVarOptionals)
+	if err != nil {
+		rlog.
+			WithError(err).
+			WithField("XNRIAgentEntityId", agentEntityID).
+			WithField("status", httpResp.StatusCode).
+			WithField("RegisterRequest", registerRequest).
+			Error("Something went wrong")
+		return resp, err
+	}
+
+	resp = RegisterEntityResponse{
+		ID:   entity.ID(apiReps.EntityId),
+		Key:  entity.Key(apiReps.EntityName),
+		Name: apiReps.EntityName,
+	}
+
+	return resp, err
 }
 
 // Perform the GetIDs step. For doing that, the Agent must provide for each entity an entityKey. Backend should reply
@@ -185,38 +258,6 @@ func (rc *registerClient) marshal(b interface{}) (*bytes.Buffer, error) {
 
 	}
 	return &buf, nil
-}
-
-func (rc *registerClient) RegisterEntity(agentEntityID entity.ID, ent protocol.Entity) (resp RegisterEntityResponse, err error) {
-
-	ctx := context.Background()
-	registerRequest := identity.RegisterRequest{
-		EntityType:  ent.Type,
-		EntityName:  ent.Name,
-		DisplayName: ent.DisplayName,
-		Metadata:    convertMetadataToMapStringString(ent.Metadata),
-	}
-	localVarOptionals := &identity.RegisterPostOpts{
-		XNRIAgentEntityId: optional.NewInt64(int64(agentEntityID)),
-	}
-
-	apiReps, httpResp, err := rc.apiClient.RegisterPost(ctx, rc.userAgent, rc.licenseKey, registerRequest, localVarOptionals)
-	if err != nil {
-		rlog.
-			WithError(err).
-			WithField("XNRIAgentEntityId", agentEntityID).
-			WithField("status", httpResp.StatusCode).
-			WithField("RegisterRequest", registerRequest).
-			Error("Something went wrong")
-		return resp, err
-	}
-
-	resp = RegisterEntityResponse{
-		ID:  entity.ID(apiReps.EntityId),
-		Key: entity.Key(apiReps.EntityName),
-	}
-
-	return resp, err
 }
 
 func convertMetadataToMapStringString(from map[string]interface{}) (to map[string]string) {
