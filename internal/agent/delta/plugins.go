@@ -31,34 +31,34 @@ func newPluginInfo(name, fileName string) *PluginInfo {
 }
 
 // setDeltaID is used as backend-client reconciliation mechanism
-func (pi *PluginInfo) setDeltaID(entityKey string, value int64) {
-	pi.initialize()
+func (p *PluginInfo) setDeltaID(entityKey string, value int64) {
+	p.init()
 
-	pi.MostRecentIDs[entityKey] = value
+	p.MostRecentIDs[entityKey] = value
 }
 
 // increaseDeltaID triggered on plugin reap, prior to submission
-func (pi *PluginInfo) increaseDeltaID(entityKey string) {
-	pi.initialize()
+func (p *PluginInfo) increaseDeltaID(entityKey string) {
+	p.init()
 
-	if v, ok := pi.MostRecentIDs[entityKey]; ok {
-		pi.MostRecentIDs[entityKey] = v + 1
+	if v, ok := p.MostRecentIDs[entityKey]; ok {
+		p.MostRecentIDs[entityKey] = v + 1
 	} else {
-		pi.MostRecentIDs[entityKey] = 1
+		p.MostRecentIDs[entityKey] = 1
 	}
 }
 
 // deltaID provides delta ID for one of this plugin's entity
-func (pi *PluginInfo) deltaID(entityKey string) int64 {
-	pi.initialize()
+func (p *PluginInfo) deltaID(entityKey string) int64 {
+	p.init()
 
-	id, _ := pi.MostRecentIDs[entityKey]
+	id, _ := p.MostRecentIDs[entityKey]
 	return id
 }
 
-func (pi *PluginInfo) initialize() {
-	if pi.MostRecentIDs == nil {
-		pi.MostRecentIDs = make(map[string]int64)
+func (p *PluginInfo) init() {
+	if p.MostRecentIDs == nil {
+		p.MostRecentIDs = make(map[string]int64)
 	}
 }
 
@@ -66,6 +66,6 @@ func (pi *PluginInfo) initialize() {
 type pluginSource2Info map[string]*PluginInfo
 
 // ID returns plugin serialized ID.
-func (pi *PluginInfo) ID() string {
-	return pi.Source
+func (p *PluginInfo) ID() string {
+	return p.Source
 }
