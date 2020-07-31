@@ -8,13 +8,13 @@ import (
 	"strings"
 )
 
-// PluginInfo holds information about agent plugins
+// PluginInfo persisted information about plugins.
 type PluginInfo struct {
 	Source         string           `json:"source"`
 	Plugin         string           `json:"plugin"`
 	FileName       string           `json:"filename"`
-	LastSentID     int64            `json:"last_sent_id"` // Latest delta available on platform
-	MostRecentIDs  map[string]int64 `json:"mru_ids"`      // Most recent ids per entity plugin delta (replaces obsolete "mru_id", as it does not support remote entities)
+	LastSentID     int64            `json:"last_sent_id"` // latest ID from platform, to decide whether archive or keep delta
+	MostRecentIDs  map[string]int64 `json:"mru_ids"`      // latest IDs per entity plugin (replaces obsolete "mru_id", as it does not support remote entities)
 }
 
 // newPluginInfo creates a new PluginInfo from plugin name and file
