@@ -205,7 +205,7 @@ func (s *DeltaUtilsCoreSuite) TestResetAllSentDeltas(c *C) {
 	updated, err := ds.updatePluginInventoryCache(s.plugin, id)
 	c.Assert(updated, Equals, true)
 	c.Assert(err, IsNil)
-	c.Assert(ds.plugins["metadata/plugin"].LastSentID, Equals, int64(0))
+	c.Assert(ds.plugins["metadata/plugin"].lastSentID(id), Equals, int64(0))
 	c.Assert(ds.plugins["metadata/plugin"].deltaID(id), Equals, int64(1))
 	_, err = os.Stat(ds.cachedFilePath(s.plugin, id))
 	c.Assert(err, IsNil)
@@ -219,7 +219,6 @@ func (s *DeltaUtilsCoreSuite) TestResetAllSentDeltas(c *C) {
 func (s *DeltaUtilsCoreSuite) TestUpdateLastDeltaSentNoHint(c *C) {
 	ds := NewStore(s.repoDir, "default", maxInventorySize)
 	s.plugin.setDeltaID("entityKey", 1)
-	s.plugin.LastSentID = int64(0)
 	ds.plugins["metadata/plugin"] = s.plugin
 	diff := make(map[string]interface{})
 	diff["test"] = "value"
@@ -234,14 +233,13 @@ func (s *DeltaUtilsCoreSuite) TestUpdateLastDeltaSentNoHint(c *C) {
 	deltaArr := []*inventoryapi.RawDelta{delta}
 	ds.UpdateState("entityKey", deltaArr, &dsm)
 
-	c.Assert(ds.plugins["metadata/plugin"].LastSentID, Equals, int64(2))
+	c.Assert(ds.plugins["metadata/plugin"].lastSentID("entityKey"), Equals, int64(2))
 	c.Assert(ds.plugins["metadata/plugin"].deltaID("entityKey"), Equals, int64(1))
 }
 
 func (s *DeltaUtilsCoreSuite) TestUpdateLastDeltaSentNewDelta(c *C) {
 	ds := NewStore(s.repoDir, "default", maxInventorySize)
 	s.plugin.setDeltaID("entityKey", 1)
-	s.plugin.LastSentID = int64(0)
 	ds.plugins["metadata/plugin"] = s.plugin
 	diff := make(map[string]interface{})
 	diff["test"] = "value"
@@ -260,14 +258,13 @@ func (s *DeltaUtilsCoreSuite) TestUpdateLastDeltaSentNewDelta(c *C) {
 	deltaArr := []*inventoryapi.RawDelta{delta}
 	ds.UpdateState("entityKey", deltaArr, &dsm)
 
-	c.Assert(ds.plugins["metadata/plugin"].LastSentID, Equals, int64(1))
+	c.Assert(ds.plugins["metadata/plugin"].lastSentID("entityKey"), Equals, int64(1))
 	c.Assert(ds.plugins["metadata/plugin"].deltaID("entityKey"), Equals, int64(1))
 }
 
 func (s *DeltaUtilsCoreSuite) TestUpdateLastDeltaSentHintResend(c *C) {
 	ds := NewStore(s.repoDir, "default", maxInventorySize)
 	s.plugin.setDeltaID("entityKey", 1)
-	s.plugin.LastSentID = int64(0)
 	ds.plugins["metadata/plugin"] = s.plugin
 	diff := make(map[string]interface{})
 	diff["test"] = "value"
@@ -286,14 +283,13 @@ func (s *DeltaUtilsCoreSuite) TestUpdateLastDeltaSentHintResend(c *C) {
 	deltaArr := []*inventoryapi.RawDelta{delta}
 	ds.UpdateState("entityKey", deltaArr, &dsm)
 
-	c.Assert(ds.plugins["metadata/plugin"].LastSentID, Equals, int64(0))
+	c.Assert(ds.plugins["metadata/plugin"].lastSentID("entityKey"), Equals, int64(0))
 	c.Assert(ds.plugins["metadata/plugin"].deltaID("entityKey"), Equals, int64(1))
 }
 
 func (s *DeltaUtilsCoreSuite) TestUpdateLastDeltaSentHintRequestOlder(c *C) {
 	ds := NewStore(s.repoDir, "default", maxInventorySize)
 	s.plugin.setDeltaID("entityKey", 1)
-	s.plugin.LastSentID = int64(0)
 	ds.plugins["metadata/plugin"] = s.plugin
 	diff := make(map[string]interface{})
 	diff["test"] = "value"
@@ -313,14 +309,13 @@ func (s *DeltaUtilsCoreSuite) TestUpdateLastDeltaSentHintRequestOlder(c *C) {
 	deltaArr := []*inventoryapi.RawDelta{delta}
 	ds.UpdateState("entityKey", deltaArr, &dsm)
 
-	c.Assert(ds.plugins["metadata/plugin"].LastSentID, Equals, int64(2))
+	c.Assert(ds.plugins["metadata/plugin"].lastSentID("entityKey"), Equals, int64(2))
 	c.Assert(ds.plugins["metadata/plugin"].deltaID("entityKey"), Equals, int64(1))
 }
 
 func (s *DeltaUtilsCoreSuite) TestUpdateLastDeltaSentHintIsSameAsDelta(c *C) {
 	ds := NewStore(s.repoDir, "default", maxInventorySize)
 	s.plugin.setDeltaID("entityKey", 1)
-	s.plugin.LastSentID = int64(0)
 	ds.plugins["metadata/plugin"] = s.plugin
 	diff := make(map[string]interface{})
 	diff["test"] = "value"
@@ -340,7 +335,7 @@ func (s *DeltaUtilsCoreSuite) TestUpdateLastDeltaSentHintIsSameAsDelta(c *C) {
 	deltaArr := []*inventoryapi.RawDelta{delta}
 	ds.UpdateState("entityKey", deltaArr, &dsm)
 
-	c.Assert(ds.plugins["metadata/plugin"].LastSentID, Equals, int64(1))
+	c.Assert(ds.plugins["metadata/plugin"].lastSentID("entityKey"), Equals, int64(1))
 	c.Assert(ds.plugins["metadata/plugin"].deltaID("entityKey"), Equals, int64(1))
 }
 
@@ -362,7 +357,7 @@ func (s *DeltaUtilsCoreSuite) TestUpdatePluginInventoryCacheFirstRunGP(c *C) {
 	c.Assert(updated, Equals, true)
 
 	c.Assert(err, IsNil)
-	c.Assert(ds.plugins["metadata/plugin"].LastSentID, Equals, int64(0))
+	c.Assert(ds.plugins["metadata/plugin"].lastSentID(id), Equals, int64(0))
 	c.Assert(ds.plugins["metadata/plugin"].deltaID(id), Equals, int64(1))
 	_, err = os.Stat(ds.cachedFilePath(s.plugin, id))
 	c.Assert(err, IsNil)
@@ -399,7 +394,7 @@ func (s *DeltaUtilsCoreSuite) TestUpdatePluginInventoryCacheThreeChanges(c *C) {
 	c.Assert(updated, Equals, true)
 
 	c.Assert(err, IsNil)
-	c.Assert(ds.plugins["metadata/plugin"].LastSentID, Equals, int64(0))
+	c.Assert(ds.plugins["metadata/plugin"].lastSentID(id), Equals, int64(0))
 	c.Assert(ds.plugins["metadata/plugin"].deltaID(id), Equals, int64(3))
 }
 
@@ -437,14 +432,14 @@ func (s *DeltaUtilsCoreSuite) TestSaveState(c *C) {
 	err = ds.SaveState()
 
 	c.Assert(err, IsNil)
-	c.Assert(ds.plugins["metadata/plugin"].LastSentID, Equals, int64(0))
+	c.Assert(ds.plugins["metadata/plugin"].lastSentID(id), Equals, int64(0))
 	c.Assert(ds.plugins["metadata/plugin"].deltaID(id), Equals, int64(3))
 
 	// Read it back in, and the numbers should be the same!
 	cachedDeltaPath := filepath.Join(ds.CacheDir, srcFile)
 	err = ds.readPluginIDMap(cachedDeltaPath)
 	c.Assert(err, IsNil)
-	c.Assert(ds.plugins["metadata/plugin"].LastSentID, Equals, int64(0))
+	c.Assert(ds.plugins["metadata/plugin"].lastSentID(id), Equals, int64(0))
 	c.Assert(ds.plugins["metadata/plugin"].deltaID(id), Equals, int64(3))
 }
 
@@ -467,7 +462,7 @@ func (s *DeltaUtilsCoreSuite) TestReadPluginIDMapNoContent(c *C) {
 	cachedDeltaPath := filepath.Join(ds.CacheDir, srcFile)
 	err = ds.readPluginIDMap(cachedDeltaPath)
 	c.Assert(err, IsNil)
-	c.Assert(ds.plugins["metadata/plugin"].LastSentID, Equals, int64(0))
+	c.Assert(ds.plugins["metadata/plugin"].lastSentID(id), Equals, int64(0))
 	c.Assert(ds.plugins["metadata/plugin"].deltaID(id), Equals, int64(1))
 
 	// Remove cache content and try again, should not get an error
@@ -489,7 +484,7 @@ func (s *DeltaUtilsCoreSuite) TestReadPluginIDMapNoContent(c *C) {
 
 	err = ds.readPluginIDMap(cachedDeltaPath)
 	c.Assert(err, IsNil)
-	c.Assert(ds.plugins["metadata/plugin"].LastSentID, Equals, int64(0))
+	c.Assert(ds.plugins["metadata/plugin"].lastSentID(id), Equals, int64(0))
 
 }
 
@@ -707,7 +702,7 @@ func (s *DeltaUtilsCoreSuite) SetupSavedState(c *C) (ds *Store) {
 	err = ds.SaveState()
 
 	c.Assert(err, IsNil)
-	c.Assert(ds.plugins["metadata/plugin"].LastSentID, Equals, int64(0))
+	c.Assert(ds.plugins["metadata/plugin"].lastSentID(id), Equals, int64(0))
 	c.Assert(ds.plugins["metadata/plugin"].deltaID(id), Equals, int64(3))
 
 	return ds
@@ -730,7 +725,7 @@ func (s *DeltaUtilsCoreSuite) TestCompactStoreTrimSentDelta(c *C) {
 	const id = "entity:ID"
 
 	ds := s.SetupSavedState(c)
-	ds.plugins["metadata/plugin"].LastSentID = int64(2)
+	ds.plugins["metadata/plugin"].setLastSentID(id,2)
 	err := ds.archivePlugin(ds.plugins["metadata/plugin"], id)
 	c.Check(err, IsNil)
 	size, err := ds.StorageSize(ds.CacheDir)

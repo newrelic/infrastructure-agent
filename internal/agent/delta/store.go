@@ -296,7 +296,7 @@ func (s *Store) archivePlugin(pluginItem *PluginInfo, entityKey string) (err err
 	archiveDeltas := make([]*inventoryapi.RawDelta, 0)
 	_, ok := s.plugins[pluginItem.Source]
 	for _, d := range deltas {
-		if ok && d.ID <= pluginItem.LastSentID {
+		if ok && d.ID <= pluginItem.lastSentID(entityKey) {
 			// backend already has this data
 			archiveDeltas = append(archiveDeltas, d)
 		} else {
@@ -391,7 +391,7 @@ func (s *Store) updateLastDeltaSent(entityKey string, dRaw *inventoryapi.RawDelt
 
 		case resultHint.SendNextID == id+1:
 			// Normal case.
-			p.LastSentID = id
+			p.setLastSentID(entityKey, id)
 
 		case resultHint.SendNextID == 0:
 			// Send full. Leave delta ID values as is.
@@ -406,10 +406,10 @@ func (s *Store) updateLastDeltaSent(entityKey string, dRaw *inventoryapi.RawDelt
 			// Send again? This is a no-op, set last sent id to one previous.
 			dslog.WithFields(logrus.Fields{"sendNextID": id, "plugin": p}).
 				Debug("Requesting to update last delta sent to identical value.")
-			p.LastSentID = id - 1
+			p.setLastSentID(entityKey, id - 1)
 		}
-	} else if id > p.LastSentID {
-		p.LastSentID = id
+	} else if id > p.lastSentID(entityKey) {
+		p.setLastSentID(entityKey, id)
 	}
 
 	dslog.WithField("plugin", source).Debug("Updating deltas.")
@@ -417,7 +417,7 @@ func (s *Store) updateLastDeltaSent(entityKey string, dRaw *inventoryapi.RawDelt
 
 func (s *Store) reconciliateWithBackend(pi *PluginInfo, entityKey string, resultHint *inventoryapi.DeltaState) {
 	_ = s.clearPluginDeltaStore(pi, entityKey)
-	pi.LastSentID = resultHint.SendNextID - 1
+	pi.setLastSentID(entityKey, resultHint.SendNextID - 1)
 	pi.setDeltaID(entityKey, resultHint.LastStoredID)
 }
 
