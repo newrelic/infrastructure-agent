@@ -18,11 +18,11 @@ type PluginInfo struct {
 
 // PIEntity persisted info about an entity for a plugin.
 type PIEntity struct {
-	MostRecentID int64 `json:"mru_id"`       // latest ID an inventory plugin entity
+	MostRecentID int64 `json:"mru_id"`       // latest ID for an plugin entity to be used for submission
 	LastSentID   int64 `json:"last_sent_id"` // latest ID from platform, decides whether archive or keep delta
 }
 
-// newPluginInfo creates a new PluginInfo from plugin name and file
+// newPluginInfo creates a new PluginInfo from plugin name and file.
 func newPluginInfo(name, fileName string) *PluginInfo {
 	cleanFileName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
 
@@ -34,19 +34,19 @@ func newPluginInfo(name, fileName string) *PluginInfo {
 	}
 }
 
-// setLastSentID is used
+// setLastSentID is used to store latest ID from platform.
 func (p *PluginInfo) setLastSentID(entityKey string, value int64) {
 	e := p.entity(entityKey)
 	e.LastSentID = value
 	p.Entities[entityKey] = e
 }
 
-//
+// lastSentID retrieves last sent ID.
 func (p *PluginInfo) lastSentID(entityKey string) int64 {
 	return p.entity(entityKey).LastSentID
 }
 
-// setDeltaID is used as backend-client reconciliation mechanism
+// setDeltaID is used as backend-client reconciliation mechanism.
 func (p *PluginInfo) setDeltaID(entityKey string, value int64) {
 	e := p.entity(entityKey)
 	e.MostRecentID = value
@@ -60,7 +60,7 @@ func (p *PluginInfo) increaseDeltaID(entityKey string) {
 	p.Entities[entityKey] = e
 }
 
-// deltaID provides delta ID for one of this plugin's entity
+// deltaID provides delta ID for one of this plugin's entity.
 func (p *PluginInfo) deltaID(entityKey string) int64 {
 	return p.entity(entityKey).MostRecentID
 }
@@ -76,7 +76,7 @@ func (p *PluginInfo) entity(key string) PIEntity {
 	return p.Entities[key]
 }
 
-// pluginSource2Info stores plugins info by source
+// pluginSource2Info stores plugins info by source.
 type pluginSource2Info map[string]*PluginInfo
 
 // ID returns plugin serialized ID.
