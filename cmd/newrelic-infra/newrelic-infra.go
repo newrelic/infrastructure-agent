@@ -226,7 +226,6 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 
 	registerClient, err := identityapi.NewIdentityRegisterClient(
 		c.IdentityURL,
-		c.IdentityHost,
 		c.License,
 		userAgent,
 		c.PayloadCompressionLevel,

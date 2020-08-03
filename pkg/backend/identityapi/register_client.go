@@ -25,6 +25,10 @@ import (
 
 var rlog = log.WithComponent("identityapi.RegisterClient")
 
+const (
+	identityPath = "/identity/v1"
+)
+
 type RegisterClient interface {
 	RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities []RegisterEntity) ([]RegisterEntityResponse, time.Duration, error)
 	RegisterProtocolEntities(agentEntityID entity.ID, entities []protocol.Entity) (RegisterBatchEntityResponse, time.Duration, error)
@@ -61,7 +65,7 @@ func NewRegisterEntity(key entity.Key) RegisterEntity {
 }
 
 func NewIdentityRegisterClient(
-	svcUrl, svcHost, licenseKey, userAgent string,
+	svcUrl, licenseKey, userAgent string,
 	compressionLevel int,
 	httpClient backendhttp.Client,
 ) (RegisterClient, error) {
@@ -69,7 +73,7 @@ func NewIdentityRegisterClient(
 		return nil, fmt.Errorf("gzip: invalid compression level: %d", compressionLevel)
 	}
 	icfg := identity.NewConfiguration()
-	icfg.Host = svcHost
+	icfg.BasePath = svcUrl + identityPath
 	icfg.Debug = true
 	// TODO: add the global HTTP client here
 	// icfg.HTTPClient = httpClient

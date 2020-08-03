@@ -79,7 +79,7 @@ func TestRegisterRetryTime(t *testing.T) {
 		return resp, nil
 	}
 
-	client, err := NewIdentityRegisterClient(testUrl, testHost, testLicenseKey, testUserAgent, gzip.BestCompression, mockHttp)
+	client, err := NewIdentityRegisterClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, mockHttp)
 	assert.NoError(t, err)
 
 	entities, retryTime, err := client.RegisterEntitiesRemoveMe(testAgentEntityId, testRegisterEntity)
@@ -95,7 +95,7 @@ func TestRegisterOk(t *testing.T) {
 		return getRegisterResponse(testRegisterEntityResponse)
 	}
 
-	client, err := NewIdentityRegisterClient(testUrl, testHost, testLicenseKey, testUserAgent, gzip.BestCompression, mockHttp)
+	client, err := NewIdentityRegisterClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, mockHttp)
 	assert.NoError(t, err)
 
 	entities, retryTime, err := client.RegisterEntitiesRemoveMe(testAgentEntityId, testRegisterEntity)
@@ -283,14 +283,12 @@ func (m *mockAPIClient) RegisterPost(
 		args.Error(2)
 }
 
-
-
 func (m *mockAPIClient) RegisterBatchPost(
-ctx context.Context,
-userAgent string,
-xLicenseKey string,
-registerRequest []identity.RegisterRequest,
-localVarOptionals *identity.RegisterBatchPostOpts) ([]identity.RegisterBatchEntityResponse, *http.Response, error) {
+	ctx context.Context,
+	userAgent string,
+	xLicenseKey string,
+	registerRequest []identity.RegisterRequest,
+	localVarOptionals *identity.RegisterBatchPostOpts) ([]identity.RegisterBatchEntityResponse, *http.Response, error) {
 	args := m.Called(ctx, userAgent, xLicenseKey, registerRequest, localVarOptionals)
 	return args.Get(0).([]identity.RegisterBatchEntityResponse),
 		args.Get(1).(*http.Response),
