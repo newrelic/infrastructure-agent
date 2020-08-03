@@ -65,15 +65,15 @@ func (p *PluginInfo) deltaID(entityKey string) int64 {
 	return p.entity(entityKey).MostRecentID
 }
 
-func (p *PluginInfo) entity(entityKey string) PIEntity {
+func (p *PluginInfo) entity(key string) PIEntity {
 	if p.Entities == nil {
 		p.Entities = make(map[string]PIEntity)
 	}
-	if _, ok := p.Entities[entityKey]; !ok {
-		p.Entities[entityKey] = PIEntity{}
+	if _, ok := p.Entities[key]; !ok {
+		p.Entities[key] = PIEntity{}
 	}
 
-	return p.Entities[entityKey]
+	return p.Entities[key]
 }
 
 // pluginSource2Info stores plugins info by source
