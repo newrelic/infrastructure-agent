@@ -38,6 +38,15 @@ go-get:
 	$(GO_BIN) mod vendor
 	@echo '[go-get] Done.'
 
+.PHONY: test-coverage
+test-coverage: TEST_FLAGS += -covermode=atomic -coverprofile=coverage.out
+test-coverage: go-get
+	@printf '\n================================================================\n'
+	@printf 'Target: test-coverage'
+	@printf '\n================================================================\n'
+	@echo '[test] Testing packages: $(SOURCE_FILES)'
+	$(GO_BIN) $(GO_TEST)
+
 .PHONY: test
 test: go-get
 	@printf '\n================================================================\n'
