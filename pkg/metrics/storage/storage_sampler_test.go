@@ -67,7 +67,6 @@ func TestSampleWithCustomFilesystemList(t *testing.T) {
 		&cfg,
 		"1",
 		"userAgent",
-		nil,
 		test.EmptyFFRetriever)
 	assert.NoError(t, err)
 	testAgentConfig := testAgent.Context

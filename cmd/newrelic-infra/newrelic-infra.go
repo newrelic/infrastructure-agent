@@ -239,7 +239,6 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		c,
 		buildVersion,
 		userAgent,
-		registerClient,
 		ffManager)
 
 	if err != nil {

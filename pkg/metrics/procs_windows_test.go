@@ -42,7 +42,6 @@ func TestProcessAllowedList(t *testing.T) {
 		&cfg,
 		"1",
 		"userAgent",
-		nil,
 		ffTest.EmptyFFRetriever)
 	assert.NoError(t, err)
 	testAgentConfig := testAgent.Context

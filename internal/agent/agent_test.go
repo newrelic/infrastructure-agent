@@ -407,7 +407,7 @@ func TestCheckConnectionRetry(t *testing.T) {
 	ffFetcher := test.NewFFRetrieverReturning(false, false)
 
 	// The agent should eventually connect
-	a, err := NewAgent(cnf, "testing-timeouts", "userAgent", test.NewFakeRegisterClient(), ffFetcher)
+	a, err := NewAgent(cnf, "testing-timeouts", "userAgent", ffFetcher)
 	assert.NoError(t, err)
 	assert.NotNil(t, a)
 }
@@ -428,7 +428,7 @@ func TestCheckConnectionTimeout(t *testing.T) {
 	ffFetcher := test.NewFFRetrieverReturning(false, false)
 
 	// The agent stops reconnecting after retrying as configured
-	_, err := NewAgent(cnf, "testing-timeouts", "userAgent", test.NewFakeRegisterClient(), ffFetcher)
+	_, err := NewAgent(cnf, "testing-timeouts", "userAgent", ffFetcher)
 	assert.Error(t, err)
 }
 
@@ -733,7 +733,7 @@ func Test_ProcessSampling_FeatureFlagIsEnabled(t *testing.T) {
 	}{
 		evenType: "ProcessSample",
 	}
-	a, _ := NewAgent(cnf, "test", "userAgent", test.NewFakeRegisterClient(), test.NewFFRetrieverReturning(true, true))
+	a, _ := NewAgent(cnf, "test", "userAgent", test.NewFFRetrieverReturning(true, true))
 
 	// when
 	actual := a.Context.shouldIncludeEvent(someSample)
@@ -812,7 +812,7 @@ func Test_ProcessSampling(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		a, _ := NewAgent(tc.c, "test", "userAgent", test.NewFakeRegisterClient(), tc.ff)
+		a, _ := NewAgent(tc.c, "test", "userAgent", tc.ff)
 
 		t.Run(tc.name, func(t *testing.T) {
 			actual := a.Context.shouldIncludeEvent(someSample)
