@@ -36,7 +36,7 @@ func (dc *DockerClient) Initialize(apiVersion string) (err error) {
 		return ErrNoDockerd
 	}
 
-	dc.client, err = client.NewClientWithOpts(client.FromEnv, client.WithVersion(apiVersion))
+	dc.client, err = client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize docker client")
 	}

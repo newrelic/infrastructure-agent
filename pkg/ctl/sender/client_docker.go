@@ -35,7 +35,7 @@ func NewContainerisedClient(apiVersion string, containerID string) (c Client, er
 		return
 	}
 
-	cl, err := client.NewClientWithOpts(client.FromEnv)
+	cl, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		err = errors.Wrap(err, "failed to initialize docker client")
 		return

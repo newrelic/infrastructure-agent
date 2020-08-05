@@ -8,11 +8,12 @@ require (
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
 	github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6
 	github.com/aws/aws-sdk-go v1.25.14-0.20200515182354-0961961790e6
+	github.com/containerd/containerd v1.3.7 // indirect
 	github.com/coreos/go-systemd/v22 v22.1.0
-	github.com/docker/distribution v2.7.0-rc.0.0.20181024170156-93e082742a00+incompatible // indirect
-	github.com/docker/docker v17.12.0-ce-rc1.0.20181123102044-618741ba87e9+incompatible
+	github.com/docker/distribution v2.7.1+incompatible // indirect
+	github.com/docker/docker v17.12.0-ce-rc1.0.20200618181300-9dc6525e6118+incompatible
 	github.com/docker/go-connections v0.4.0 // indirect
-	github.com/docker/go-units v0.2.1-0.20151230175859-0bbddae09c5a // indirect
+	github.com/docker/go-units v0.4.0 // indirect
 	github.com/evanphx/json-patch v4.5.0+incompatible
 	github.com/fortytw2/leaktest v1.3.1-0.20190606143808-d73c753520d9
 	github.com/fsnotify/fsnotify v0.9.3
@@ -27,6 +28,7 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kolo/xmlrpc v0.0.0-20200310150728-e0350524596b
 	github.com/kr/pretty v0.2.0 // indirect
+	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/newrelic-forks/newrelic-telemetry-sdk-go v0.2.1-0.20200423081332-b6856fd89c75
 	github.com/opencontainers/go-digest v1.0.0-rc1.0.20180430190053-c9281466c8b2 // indirect
 	github.com/opencontainers/image-spec v1.0.2-0.20181029102219-09950c5fb1bb // indirect
