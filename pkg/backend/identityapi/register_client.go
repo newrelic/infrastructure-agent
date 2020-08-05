@@ -30,8 +30,13 @@ const (
 )
 
 type RegisterClient interface {
+	// Deprecated: method to be removed at the end of this completing this feature
 	RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities []RegisterEntity) ([]RegisterEntityResponse, time.Duration, error)
-	RegisterProtocolEntities(agentEntityID entity.ID, entities []protocol.Entity) (RegisterBatchEntityResponse, time.Duration, error)
+
+	// RegisterBatchEntities registers a slice of protocol.Entity. This is done as a batch process
+	RegisterBatchEntities(agentEntityID entity.ID, entities []protocol.Entity) (RegisterBatchEntityResponse, time.Duration, error)
+
+	// RegisterEntity registers a protocol.Entity
 	RegisterEntity(agentEntityID entity.ID, entity protocol.Entity) (RegisterEntityResponse, error)
 }
 
@@ -88,7 +93,7 @@ func NewIdentityRegisterClient(
 	}, nil
 }
 
-func (rc *registerClient) RegisterProtocolEntities(agentEntityID entity.ID, entities []protocol.Entity) (resp RegisterBatchEntityResponse, duration time.Duration, err error) {
+func (rc *registerClient) RegisterBatchEntities(agentEntityID entity.ID, entities []protocol.Entity) (resp RegisterBatchEntityResponse, duration time.Duration, err error) {
 
 	ctx := context.Background()
 

@@ -149,7 +149,7 @@ func (e *emitter) process(
 func (e *emitter) RegisterEntities(entities []protocol.Entity) (map[string]entity.ID, error) {
 	// Bulk update them (after checking our datastore if they exist)
 	// add entity ID to metric annotations
-	resp, _, err := e.registerClient.RegisterProtocolEntities(e.agentContext.AgentIdentity().ID, entities)
+	resp, _, err := e.registerClient.RegisterBatchEntities(e.agentContext.AgentIdentity().ID, entities)
 
 	if err != nil {
 		//TODO: handle error

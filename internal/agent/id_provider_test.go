@@ -25,7 +25,7 @@ func (icc *EmptyRegisterClient) RegisterEntitiesRemoveMe(agentEntityID entity.ID
 	return
 }
 
-func (icc *EmptyRegisterClient) RegisterProtocolEntities(agentEntityID entity.ID, entities []protocol.Entity) (r identityapi.RegisterBatchEntityResponse, retryAfter time.Duration, err error) {
+func (icc *EmptyRegisterClient) RegisterBatchEntities(agentEntityID entity.ID, entities []protocol.Entity) (r identityapi.RegisterBatchEntityResponse, retryAfter time.Duration, err error) {
 	return
 }
 
@@ -49,7 +49,7 @@ func newRetryBackoffRegister() identityapi.RegisterClient {
 	return &incrementalRegister{state: state.RegisterRetryBackoff}
 }
 
-func (r *incrementalRegister) RegisterProtocolEntities(agentEntityID entity.ID, entities []protocol.Entity) (batchResponse identityapi.RegisterBatchEntityResponse, t time.Duration, err error) {
+func (r *incrementalRegister) RegisterBatchEntities(agentEntityID entity.ID, entities []protocol.Entity) (batchResponse identityapi.RegisterBatchEntityResponse, t time.Duration, err error) {
 	return
 }
 

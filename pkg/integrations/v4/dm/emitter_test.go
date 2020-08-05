@@ -75,7 +75,7 @@ type mockedRegisterClient struct {
 	mock.Mock
 }
 
-func (mk *mockedRegisterClient) RegisterProtocolEntities(agentEntityID entity.ID, entities []protocol.Entity,
+func (mk *mockedRegisterClient) RegisterBatchEntities(agentEntityID entity.ID, entities []protocol.Entity,
 ) (identityapi.RegisterBatchEntityResponse, time.Duration, error) {
 
 	args := mk.Called(agentEntityID, entities)
@@ -92,7 +92,7 @@ func TestEmitter_Send_RegisterErr(t *testing.T) {
 
 	expectedError := errors.New("expected error")
 	registerClient.
-		On("RegisterProtocolEntities", agentCtx.id.ID, mock.Anything).
+		On("RegisterBatchEntities", agentCtx.id.ID, mock.Anything).
 		Return(identityapi.RegisterBatchEntityResponse{}, time.Second, expectedError)
 
 	emitter := NewEmitter(agentCtx, dmSender, ffRetriever, registerClient)
@@ -119,7 +119,7 @@ func TestEmitter_Send_ErrorOnHostname(t *testing.T) {
 		{Name: "b.entity.two", Type: "ATYPE", DisplayName: "A display name two", Metadata: map[string]interface{}{"env": "testing"}},
 	}
 	registerClient.
-		On("RegisterProtocolEntities", agentCtx.id.ID, expectedEntities).
+		On("RegisterBatchEntities", agentCtx.id.ID, expectedEntities).
 		Return(registerBatchEntityResponse, time.Second, nil)
 
 	emitter := NewEmitter(agentCtx, dmSender, ffRetriever, registerClient)
@@ -152,7 +152,7 @@ func TestEmitter_SendOneEntityOutOfTwo(t *testing.T) {
 		{Name: "b.entity.two", Type: "ATYPE", DisplayName: "A display name two", Metadata: map[string]interface{}{"env": "testing"}},
 	}
 	registerClient.
-		On("RegisterProtocolEntities", agentCtx.id.ID, expectedEntities).
+		On("RegisterBatchEntities", agentCtx.id.ID, expectedEntities).
 		Return(registerBatchEntityResponse, time.Second, nil)
 
 	dmSender.
@@ -210,7 +210,7 @@ func TestEmitter_Send(t *testing.T) {
 			Metadata:    make(map[string]interface{}),
 		}}
 	registerClient.
-		On("RegisterProtocolEntities", agentCtx.id.ID, expectedEntities).
+		On("RegisterBatchEntities", agentCtx.id.ID, expectedEntities).
 		Return(registerBatchEntityResponse, time.Second, nil)
 
 	dmSender.
