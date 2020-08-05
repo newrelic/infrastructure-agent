@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/pkg/errors"
@@ -109,6 +110,7 @@ func Test_shutdownWatcherLinux_checkForShutdownStatus(t *testing.T) {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
+		time.Sleep(100 * time.Millisecond)
 		s.checkShutdownStatus(shutdown)
 		// checkShutdownStatus will write to the shutdown channel
 		wg.Done()
