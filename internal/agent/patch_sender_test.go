@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -125,8 +126,11 @@ func TestPatchSender_Process_LongTermOffline_ReconnectPlugins(t *testing.T) {
 	ps := newTestPatchSender(t, dataDir, store, ls, nil)
 	ps.postDeltas = FakePostDelta
 	ps.lastDeltaRemoval = endOf18
+	var agentKey atomic.Value
+	agentKey.Store("test")
 	ps.context = &context{
 		reconnecting: new(sync.Map),
+		agentKey:     agentKey,
 	}
 
 	nowIsEndOf18()
@@ -394,7 +398,9 @@ func TestPatchSender_Process_Reset(t *testing.T) {
 	ps.postDeltas = ResetPostDelta
 	ps.lastDeltaRemoval = lastDeltaRemoval
 	ps.resetIfOffline = resetTime
-	ps.context = &context{agentKey: agentKey, reconnecting: new(sync.Map)}
+	var agentKeyVal atomic.Value
+	agentKeyVal.Store(agentKey)
+	ps.context = &context{agentKey: agentKeyVal, reconnecting: new(sync.Map)}
 	ps.compactEnabled = true
 
 	// And a set of stored deltas that occupy a given size in disk
@@ -512,8 +518,10 @@ func (e *mockEntityIDPersist) UpdateEntityID(id entity.ID) error {
 
 func newTestPatchSender(t *testing.T, dataDir string, store delta.Storage, ls delta.LastSubmissionStore, lastEntityID delta.EntityIDPersist) *patchSenderIngest {
 	idCtx := id.NewContext(ctx.Background())
+	var agentKeyVal atomic.Value
+	agentKeyVal.Store(agentKey)
 	aCtx := &context{
-		agentKey: agentKey,
+		agentKey: agentKeyVal,
 		cfg:      config.NewTestWithDeltas(dataDir),
 	}
 	psI, err := newPatchSender(
