@@ -335,7 +335,7 @@ func NewAgent(
 		return nil, err
 	}
 
-	registerClient, err := identityapi.NewIdentityRegisterClient(
+	registerClient, err := identityapi.NewRegisterClient(
 		identityURL,
 		cfg.License,
 		userAgent,

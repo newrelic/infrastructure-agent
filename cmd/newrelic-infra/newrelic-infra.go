@@ -224,7 +224,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	// Basic initialization of the agent.
 	timedLog.WithField("version", buildVersion).Info("Initializing")
 
-	registerClient, err := identityapi.NewIdentityRegisterClient(
+	registerClient, err := identityapi.NewRegisterClient(
 		c.IdentityURL,
 		c.License,
 		userAgent,
