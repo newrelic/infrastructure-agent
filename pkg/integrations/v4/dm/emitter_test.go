@@ -76,10 +76,10 @@ type mockedRegisterClient struct {
 }
 
 func (mk *mockedRegisterClient) RegisterBatchEntities(agentEntityID entity.ID, entities []protocol.Entity,
-) (identityapi.RegisterBatchEntityResponse, time.Duration, error) {
+) ([]identityapi.RegisterEntityResponse, time.Duration, error) {
 
 	args := mk.Called(agentEntityID, entities)
-	return args.Get(0).(identityapi.RegisterBatchEntityResponse),
+	return args.Get(0).([]identityapi.RegisterEntityResponse),
 		args.Get(1).(time.Duration),
 		args.Error(2)
 }
@@ -93,7 +93,7 @@ func TestEmitter_Send_RegisterErr(t *testing.T) {
 	expectedError := errors.New("expected error")
 	registerClient.
 		On("RegisterBatchEntities", agentCtx.id.ID, mock.Anything).
-		Return(identityapi.RegisterBatchEntityResponse{}, time.Second, expectedError)
+		Return([]identityapi.RegisterEntityResponse{}, time.Second, expectedError)
 
 	emitter := NewEmitter(agentCtx, dmSender, ffRetriever, registerClient)
 	metadata := integration.Definition{}
@@ -112,7 +112,7 @@ func TestEmitter_Send_ErrorOnHostname(t *testing.T) {
 	ffRetriever := &enabledFFRetriever{}
 	registerClient := &mockedRegisterClient{}
 
-	registerBatchEntityResponse := identityapi.RegisterBatchEntityResponse{{Name: "unique name", ID: expectedEntityId}}
+	registerBatchEntityResponse := []identityapi.RegisterEntityResponse{{Name: "unique name", ID: expectedEntityId}}
 
 	expectedEntities := []protocol.Entity{
 		{Name: "a.entity.one", Type: "ATYPE", DisplayName: "A display name one", Metadata: map[string]interface{}{"env": "testing"}},
@@ -139,7 +139,7 @@ func TestEmitter_SendOneEntityOutOfTwo(t *testing.T) {
 	ffRetriever := &enabledFFRetriever{}
 	registerClient := &mockedRegisterClient{}
 
-	registerBatchEntityResponse := identityapi.RegisterBatchEntityResponse{
+	registerBatchEntityResponse := []identityapi.RegisterEntityResponse{
 		{
 			Name: "A display name one",
 			ID:   expectedEntityId,
@@ -194,7 +194,7 @@ func TestEmitter_Send(t *testing.T) {
 	ffRetriever := &enabledFFRetriever{}
 	registerClient := &mockedRegisterClient{}
 
-	registerBatchEntityResponse := identityapi.RegisterBatchEntityResponse{
+	registerBatchEntityResponse := []identityapi.RegisterEntityResponse{
 		{
 			Name: "unique name",
 			ID:   expectedEntityId,
