@@ -148,12 +148,7 @@ func newRegisterRequest(entity protocol.Entity) identity.RegisterRequest {
 func (rc *registerClient) RegisterEntity(agentEntityID entity.ID, ent protocol.Entity) (resp RegisterEntityResponse, err error) {
 
 	ctx := context.Background()
-	registerRequest := identity.RegisterRequest{
-		EntityType:  ent.Type,
-		EntityName:  ent.Name,
-		DisplayName: ent.DisplayName,
-		Metadata:    convertMetadataToMapStringString(ent.Metadata),
-	}
+	registerRequest := newRegisterRequest(ent)
 	localVarOptionals := &identity.RegisterPostOpts{
 		XNRIAgentEntityId: optional.NewInt64(int64(agentEntityID)),
 	}
