@@ -3,15 +3,11 @@
 package sender
 
 import (
-	"testing"
-
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
+	"testing"
 )
 
 func TestNewContainerisedClient(t *testing.T) {
-	if !helpers.IsDockerRunning() {
-		t.Skip("docker required for this test suite")
-	}
 
 	type args struct {
 		apiVersion  string
@@ -28,6 +24,9 @@ func TestNewContainerisedClient(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if !helpers.IsDockerRunning() {
+				t.Skip("docker required for this test suite")
+			}
 			gotC, err := NewContainerisedClient(tt.args.apiVersion, tt.args.containerID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewContainerisedClient() error = %v, want %v", err, tt.wantErr)

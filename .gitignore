@@ -12,6 +12,8 @@ newrelic-infra.yml.*
 c.out
 *.syso
 coverage.xml
+coverage.out
+lcov.info
 *.heap
 /workspace
 .vscode

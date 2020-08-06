@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
@@ -133,7 +134,7 @@ type context struct {
 	CancelFn       context2.CancelFunc
 	cfg            *config.Config
 	id             *id.Context
-	agentKey       string
+	agentKey       atomic.Value
 	reconnecting   *sync.Map         // Plugins that must be re-executed after a long disconnection
 	ch             chan PluginOutput // Channel of inbound plugin data payloads
 	activeEntities chan string       // Channel will be reported about the local/remote entities that are active
@@ -194,6 +195,8 @@ func NewContext(
 ) *context {
 	ctx, cancel := context2.WithCancel(context2.Background())
 
+	var agentKey atomic.Value
+	agentKey.Store("")
 	return &context{
 		cfg:                cfg,
 		Ctx:                ctx,
@@ -206,6 +209,7 @@ func NewContext(
 		resolver:           resolver,
 		idLookup:           lookup,
 		shouldIncludeEvent: sampleMatchFn,
+		agentKey:           agentKey,
 	}
 }
 
@@ -300,7 +304,7 @@ func NewAgent(
 	if err != nil {
 		return
 	}
-	ctx.agentKey = agentKey
+	ctx.setAgentKey(agentKey)
 
 	var dataDir string
 	if cfg.AppDataDir != "" {
@@ -425,7 +429,7 @@ func New(
 	a.inventories = map[string]*inventory{}
 
 	// Make sure the network is working before continuing with identity
-	if err := checkCollectorConnectivity(ctx.Ctx, cfg, backoff.NewRetrier(), a.userAgent, a.Context.agentKey, transport); err != nil {
+	if err := checkCollectorConnectivity(ctx.Ctx, cfg, backoff.NewRetrier(), a.userAgent, a.Context.getAgentKey(), transport); err != nil {
 		alog.WithError(err).Error("network is not available")
 		return nil, err
 	}
@@ -533,7 +537,7 @@ func (a *Agent) registerEntityInventory(entityKey string) error {
 
 	var err error
 	if a.Context.cfg.RegisterEnabled {
-		inv.sender, err = newPatchSenderVortex(entityKey, a.Context.agentKey, a.Context, a.store, a.userAgent, a.Context.AgentIdentity, a.provideIDs, a.entityMap, a.httpClient)
+		inv.sender, err = newPatchSenderVortex(entityKey, a.Context.getAgentKey(), a.Context, a.store, a.userAgent, a.Context.AgentIdentity, a.provideIDs, a.entityMap, a.httpClient)
 	} else {
 		lastSubmission := delta.NewLastSubmissionStore(a.store.DataDir, entityKey)
 		lastEntityID := delta.NewEntityIDFilePersist(a.store.DataDir, entityKey)
@@ -692,9 +696,9 @@ func (a *Agent) setAgentKey(idLookupTable IDLookup) error {
 		return err
 	}
 
-	alog.WithField("old", a.Context.agentKey).WithField("new", key).Debug("Updating identity.")
+	alog.WithField("old", a.Context.getAgentKey()).WithField("new", key).Debug("Updating identity.")
 
-	a.Context.agentKey = key
+	a.Context.setAgentKey(key)
 
 	if a.store != nil {
 		a.store.ChangeDefaultEntity(key)
@@ -1034,7 +1038,7 @@ func (c *context) Config() *config.Config {
 }
 
 func (c *context) AgentIdentifier() string {
-	return c.agentKey
+	return c.getAgentKey()
 }
 
 func (c *context) Version() string {
@@ -1099,6 +1103,14 @@ func (c *context) HostnameResolver() hostname.Resolver {
 // HostnameResolver returns the host name change notifier associated to the agent context
 func (c *context) HostnameChangeNotifier() hostname.ChangeNotifier {
 	return c.resolver
+}
+
+func (c *context) setAgentKey(agentKey string) {
+	c.agentKey.Store(agentKey)
+}
+
+func (c *context) getAgentKey() (agentKey string) {
+	return c.agentKey.Load().(string)
 }
 
 func (a *Agent) connect() {
