@@ -5,6 +5,7 @@ package identityapi
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -13,16 +14,33 @@ import (
 	"strings"
 	"time"
 
+	"github.com/antihax/optional"
 	backendhttp "github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/inventoryapi"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/newrelic/infrastructure-agent/pkg/identity-client"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
-var rlog = log.WithComponent("IdentityRegisterClient")
+var rlog = log.WithComponent("identityapi.RegisterClient")
 
-type IdentityRegisterClient interface {
-	Register(agentEntityID entity.ID, entities []RegisterEntity) ([]RegisterEntityResponse, time.Duration, error)
+const (
+	identityPath = "/identity/v1"
+)
+
+// RegisterClient provides the ability to register either a single entity or a
+// "batch" of entities.
+type RegisterClient interface {
+
+	// Deprecated: method to be removed at the end of this completing this feature
+	RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities []RegisterEntity) ([]RegisterEntityResponse, time.Duration, error)
+
+	// RegisterBatchEntities registers a slice of protocol.Entity. This is done as a batch process
+	RegisterBatchEntities(agentEntityID entity.ID, entities []protocol.Entity) ([]RegisterEntityResponse, time.Duration, error)
+
+	// RegisterEntity registers a protocol.Entity
+	RegisterEntity(agentEntityID entity.ID, entity protocol.Entity) (RegisterEntityResponse, error)
 }
 
 type registerClient struct {
@@ -31,6 +49,7 @@ type registerClient struct {
 	userAgent        string
 	httpClient       backendhttp.Client
 	compressionLevel int
+	apiClient        apiClient
 }
 
 type RegisterEntity struct {
@@ -42,34 +61,113 @@ type RegisterEntity struct {
 }
 
 type RegisterEntityResponse struct {
-	ID  entity.ID  `json:"entityID"`
-	Key entity.Key `json:"entityKey"`
+	ID   entity.ID  `json:"entityID"`
+	Key  entity.Key `json:"entityKey"`
+	Name string     `json:"entityName"`
+}
+
+func NewRegisterEntityResponse(id entity.ID, key entity.Key, name string) RegisterEntityResponse {
+	return RegisterEntityResponse{
+		ID:   id,
+		Key:  key,
+		Name: name,
+	}
 }
 
 func NewRegisterEntity(key entity.Key) RegisterEntity {
 	return RegisterEntity{key, "", "", nil, nil}
 }
 
-func NewIdentityRegisterClient(
+// NewRegisterClient returns an implementation of RegisterClient
+func NewRegisterClient(
 	svcUrl, licenseKey, userAgent string,
 	compressionLevel int,
 	httpClient backendhttp.Client,
-) (IdentityRegisterClient, error) {
+) (RegisterClient, error) {
 	if compressionLevel < gzip.NoCompression || compressionLevel > gzip.BestCompression {
 		return nil, fmt.Errorf("gzip: invalid compression level: %d", compressionLevel)
 	}
+	icfg := identity.NewConfiguration()
+	icfg.BasePath = svcUrl + identityPath
+	icfg.Debug = true
+	// TODO: add the global HTTP client here
+	// icfg.HTTPClient = httpClient
+	identityClient := identity.NewAPIClient(icfg)
 	return &registerClient{
 		svcUrl:           strings.TrimSuffix(svcUrl, "/"),
 		licenseKey:       licenseKey,
 		userAgent:        userAgent,
 		httpClient:       httpClient,
 		compressionLevel: compressionLevel,
+		apiClient:        identityClient.DefaultApi,
 	}, nil
+}
+
+func (rc *registerClient) RegisterBatchEntities(agentEntityID entity.ID, entities []protocol.Entity) (resp []RegisterEntityResponse, duration time.Duration, err error) {
+
+	ctx := context.Background()
+
+	registerRequests := make([]identity.RegisterRequest, len(entities))
+
+	for i := range entities {
+		registerRequests[i] = newRegisterRequest(entities[i])
+	}
+
+	localVarOptionals := &identity.RegisterBatchPostOpts{
+		XNRIAgentEntityId: optional.NewInt64(int64(agentEntityID)),
+	}
+
+	apiReps, _, err := rc.apiClient.RegisterBatchPost(ctx, rc.userAgent, rc.licenseKey, registerRequests, localVarOptionals)
+	if err != nil {
+		return resp, time.Second, err // TODO add right duration
+	}
+
+	resp = make([]RegisterEntityResponse, len(apiReps))
+
+	for i := range apiReps {
+		resp[i] = NewRegisterEntityResponse(
+			entity.ID(apiReps[i].EntityId),
+			entity.Key(apiReps[i].EntityName),
+			apiReps[i].EntityName)
+	}
+
+	return resp, time.Second, err
+}
+
+func newRegisterRequest(entity protocol.Entity) identity.RegisterRequest {
+	registerRequest := identity.RegisterRequest{
+		EntityType:  entity.Type,
+		EntityName:  entity.Name,
+		DisplayName: entity.DisplayName,
+		Metadata:    convertMetadataToMapStringString(entity.Metadata),
+	}
+	return registerRequest
+}
+
+func (rc *registerClient) RegisterEntity(agentEntityID entity.ID, ent protocol.Entity) (resp RegisterEntityResponse, err error) {
+
+	ctx := context.Background()
+	registerRequest := newRegisterRequest(ent)
+	localVarOptionals := &identity.RegisterPostOpts{
+		XNRIAgentEntityId: optional.NewInt64(int64(agentEntityID)),
+	}
+
+	apiReps, _, err := rc.apiClient.RegisterPost(ctx, rc.userAgent, rc.licenseKey, registerRequest, localVarOptionals)
+	if err != nil {
+		return resp, err
+	}
+
+	resp = NewRegisterEntityResponse(
+		entity.ID(apiReps.EntityId),
+		entity.Key(apiReps.EntityName),
+		apiReps.EntityName)
+
+	return resp, err
 }
 
 // Perform the GetIDs step. For doing that, the Agent must provide for each entity an entityKey. Backend should reply
 // with a unique Entity ID across NR for each registered entity
-func (rc *registerClient) Register(agentID entity.ID, entities []RegisterEntity) (ids []RegisterEntityResponse, retryAfter time.Duration, err error) {
+func (rc *registerClient) RegisterEntitiesRemoveMe(agentID entity.ID, entities []RegisterEntity) (ids []RegisterEntityResponse, retryAfter time.Duration, err error) {
 	retryAfter = EmptyRetryTime
 
 	if agentID.IsEmpty() {
@@ -161,6 +259,15 @@ func (rc *registerClient) marshal(b interface{}) (*bytes.Buffer, error) {
 		if err := json.NewEncoder(&buf).Encode(b); err != nil {
 			return nil, err
 		}
+
 	}
 	return &buf, nil
+}
+
+func convertMetadataToMapStringString(from map[string]interface{}) (to map[string]string) {
+	to = make(map[string]string, len(from))
+	for key, value := range from {
+		to[key] = fmt.Sprintf("%v", value)
+	}
+	return
 }

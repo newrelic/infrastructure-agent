@@ -5,12 +5,21 @@ package identityapi
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/antihax/optional"
+	"github.com/newrelic/infrastructure-agent/pkg/identity-client"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 
 	backendhttp "github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
@@ -20,7 +29,7 @@ import (
 var (
 	testRegisterRequestPath    = "identity/v1/register/batch"
 	testRegisterEntity         = []RegisterEntity{NewRegisterEntity("my-entity-1"), NewRegisterEntity("my-entity-2")}
-	testRegisterEntityResponse = []RegisterEntityResponse{{entity.ID(12345), "my-entity-1"}, {entity.ID(54321), "my-entity-2"}}
+	testRegisterEntityResponse = []RegisterEntityResponse{{ID: entity.ID(12345), Name: "my-entity-1"}, {ID: entity.ID(54321), Name: "my-entity-2"}}
 )
 
 func getRegisterRequestBody(req *http.Request) ([]RegisterEntity, error) {
@@ -70,12 +79,12 @@ func TestRegisterRetryTime(t *testing.T) {
 		return resp, nil
 	}
 
-	client, err := NewIdentityRegisterClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, mockHttp)
+	client, err := NewRegisterClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, mockHttp)
 	assert.NoError(t, err)
 
-	entities, retryTime, err := client.Register(testAgentEntityId, testRegisterEntity)
+	entities, retryTime, err := client.RegisterEntitiesRemoveMe(testAgentEntityId, testRegisterEntity)
 	assert.Error(t, err)
-	assert.EqualValues(t, time.Duration(10*time.Second), retryTime)
+	assert.EqualValues(t, 10*time.Second, retryTime)
 
 	var expected []RegisterEntityResponse
 	assert.EqualValues(t, expected, entities)
@@ -86,10 +95,10 @@ func TestRegisterOk(t *testing.T) {
 		return getRegisterResponse(testRegisterEntityResponse)
 	}
 
-	client, err := NewIdentityRegisterClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, mockHttp)
+	client, err := NewRegisterClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, mockHttp)
 	assert.NoError(t, err)
 
-	entities, retryTime, err := client.Register(testAgentEntityId, testRegisterEntity)
+	entities, retryTime, err := client.RegisterEntitiesRemoveMe(testAgentEntityId, testRegisterEntity)
 	assert.NoError(t, err)
 	assert.EqualValues(t, EmptyRetryTime, retryTime)
 	assert.EqualValues(t, testRegisterEntityResponse, entities)
@@ -167,4 +176,121 @@ func TestRegisterMarshallCompression(t *testing.T) {
 	err = json.Unmarshal(plainBuf, &mtOutput)
 	assert.NoError(t, err)
 	assert.EqualValues(t, mtInput, mtOutput)
+}
+
+func TestRegisterClient_RegisterEntity(t *testing.T) {
+	mc := &mockAPIClient{}
+	entID := rand.Int63n(10000)
+	expectedRegisterRequest := identity.RegisterRequest{
+		EntityType:  "TEST_TYPE",
+		EntityName:  "Entity key",
+		DisplayName: "Entity Display Name",
+		Metadata: map[string]string{
+			"key_one":   "value",
+			"key_two":   "12345",
+			"key_three": "true",
+			"key_four":  "1234.56789",
+		},
+	}
+	irr := identity.RegisterResponse{
+		EntityId:   entID,
+		EntityName: expectedRegisterRequest.EntityName,
+		Guid:       "GUIIDIDID",
+	}
+
+	agentID := int64(123123123)
+
+	registerPostOpts := &identity.RegisterPostOpts{
+		XNRIAgentEntityId: optional.NewInt64(agentID),
+	}
+
+	mc.On("RegisterPost",
+		mock.AnythingOfType("*context.emptyCtx"),
+		"ExpectedUserAgent",
+		"ExpectedXLicenseKey",
+		expectedRegisterRequest,
+		registerPostOpts,
+	).Return(irr, &http.Response{}, nil)
+
+	client := &registerClient{
+		apiClient:  mc,
+		licenseKey: "ExpectedXLicenseKey",
+		userAgent:  "ExpectedUserAgent",
+	}
+
+	ent := protocol.Entity{
+		Type:        expectedRegisterRequest.EntityType,
+		Name:        expectedRegisterRequest.EntityName,
+		DisplayName: expectedRegisterRequest.DisplayName,
+		Metadata: map[string]interface{}{
+			"key_one":   "value",
+			"key_two":   12345,
+			"key_three": true,
+			"key_four":  01234.567890,
+		},
+	}
+	agentEntityID := entity.ID(agentID)
+
+	resp, err := client.RegisterEntity(agentEntityID, ent)
+	require.NoError(t, err)
+
+	expectedEntityID := entity.ID(entID)
+	assert.Equal(t, expectedEntityID, resp.ID)
+
+	expectedEntityKey := entity.Key(expectedRegisterRequest.EntityName)
+	assert.Equal(t, expectedEntityKey, resp.Key)
+
+	mc.AssertExpectations(t)
+}
+
+func TestRegisterClient_RegisterEntity_err(t *testing.T) {
+	expectedError := errors.New("some random error")
+	mc := &mockAPIClient{}
+	mc.On("RegisterPost",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything).Return(identity.RegisterResponse{}, &http.Response{}, expectedError)
+
+	client := &registerClient{
+		apiClient:  mc,
+		licenseKey: "ExpectedXLicenseKey",
+		userAgent:  "ExpectedUserAgent",
+	}
+
+	agentEntityID := entity.ID(12231)
+	resp, err := client.RegisterEntity(agentEntityID, protocol.Entity{})
+	assert.EqualError(t, err, expectedError.Error())
+	assert.Equal(t, RegisterEntityResponse{}, resp)
+}
+
+type mockAPIClient struct {
+	mock.Mock
+}
+
+func (m *mockAPIClient) RegisterPost(
+	ctx context.Context,
+	userAgent string,
+	xLicenseKey string,
+	registerRequest identity.RegisterRequest,
+	localVarOptionals *identity.RegisterPostOpts,
+) (identity.RegisterResponse, *http.Response, error) {
+
+	args := m.Called(ctx, userAgent, xLicenseKey, registerRequest, localVarOptionals)
+	return args.Get(0).(identity.RegisterResponse),
+		args.Get(1).(*http.Response),
+		args.Error(2)
+}
+
+func (m *mockAPIClient) RegisterBatchPost(
+	ctx context.Context,
+	userAgent string,
+	xLicenseKey string,
+	registerRequest []identity.RegisterRequest,
+	localVarOptionals *identity.RegisterBatchPostOpts) ([]identity.RegisterBatchEntityResponse, *http.Response, error) {
+	args := m.Called(ctx, userAgent, xLicenseKey, registerRequest, localVarOptionals)
+	return args.Get(0).([]identity.RegisterBatchEntityResponse),
+		args.Get(1).(*http.Response),
+		args.Error(2)
 }

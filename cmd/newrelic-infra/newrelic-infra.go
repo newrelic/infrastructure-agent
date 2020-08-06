@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	_ "net/http/pprof"
 	"net/url"
 	"os"
 	"os/signal"
@@ -18,34 +19,29 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4"
-
-	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
-
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/logs"
-
-	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
-	"github.com/newrelic/infrastructure-agent/pkg/backend/commandapi"
-	"github.com/newrelic/infrastructure-agent/pkg/fs/systemd"
-	"github.com/newrelic/infrastructure-agent/pkg/helpers"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
-
-	"github.com/newrelic/infrastructure-agent/pkg/helpers/recover"
-	wlog "github.com/newrelic/infrastructure-agent/pkg/log"
-	"github.com/newrelic/infrastructure-agent/pkg/trace"
 	"github.com/sirupsen/logrus"
-
-	_ "net/http/pprof"
 
 	"github.com/newrelic/infrastructure-agent/cmd/newrelic-infra/initialize"
 	"github.com/newrelic/infrastructure-agent/internal/agent"
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
+	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
+	"github.com/newrelic/infrastructure-agent/pkg/backend/commandapi"
 	backendhttp "github.com/newrelic/infrastructure-agent/pkg/backend/http"
+	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/disk"
+	"github.com/newrelic/infrastructure-agent/pkg/fs/systemd"
+	"github.com/newrelic/infrastructure-agent/pkg/helpers"
+	"github.com/newrelic/infrastructure-agent/pkg/helpers/recover"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/logs"
+	wlog "github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins"
+	"github.com/newrelic/infrastructure-agent/pkg/trace"
 )
 
 var (
@@ -228,7 +224,23 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	// Basic initialization of the agent.
 	timedLog.WithField("version", buildVersion).Info("Initializing")
 
-	agt, err := agent.NewAgent(c, buildVersion, ffManager)
+	registerClient, err := identityapi.NewRegisterClient(
+		c.IdentityURL,
+		c.License,
+		userAgent,
+		c.PayloadCompressionLevel,
+		httpClient,
+	)
+	if err != nil {
+		return err
+	}
+
+	agt, err := agent.NewAgent(
+		c,
+		buildVersion,
+		userAgent,
+		ffManager)
+
 	if err != nil {
 		fatal(err, "Agent cannot initialize.")
 	}
@@ -257,8 +269,8 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	pluginSourceDirs = helpers.RemoveEmptyAndDuplicateEntries(pluginSourceDirs)
 
 	metricsSenderConfig := dm.NewConfig(c.Staging, c.License, time.Duration(c.DMSubmissionPeriod)*time.Second)
-
 	dmSender, err := dm.NewDMSender(metricsSenderConfig, transport, agt.Context.IdContext())
+
 	if err != nil {
 		return err
 	}
@@ -270,7 +282,9 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		c.PluginInstanceDirs,
 		pluginSourceDirs,
 	)
-	integrationEmitter := emitter.NewIntegrationEmitter(agt, dmSender, ffManager)
+
+	dmEmitter := dm.NewEmitter(agt.GetContext(), dmSender, ffManager, registerClient)
+	integrationEmitter := emitter.NewIntegrationEmitter(agt, dmEmitter, ffManager)
 	integrationManager := v4.NewManager(integrationCfg, integrationEmitter)
 
 	// log-forwarder

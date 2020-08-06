@@ -60,10 +60,14 @@ func TestSampleWithCustomFilesystemList(t *testing.T) {
 	defer func() {
 		SupportedFileSystems = oldSupportedFileSystems
 	}()
-	config := config.Config{CustomSupportedFileSystems: []string{fs},
+	cfg := config.Config{CustomSupportedFileSystems: []string{fs},
 		FileDevicesIgnored: []string{"sda1"}, MetricsStorageSampleRate: config.FREQ_INTERVAL_FLOOR_STORAGE_METRICS}
 
-	testAgent, err := agent.NewAgent(&config, "1", test.EmptyFFRetriever)
+	testAgent, err := agent.NewAgent(
+		&cfg,
+		"1",
+		"userAgent",
+		test.EmptyFFRetriever)
 	assert.NoError(t, err)
 	testAgentConfig := testAgent.Context
 
@@ -123,7 +127,7 @@ func BenchmarkStorage(b *testing.B) {
 	m := NewSampler(ctx)
 
 	for n := 0; n < b.N; n++ {
-		m.Sample()
+		_, _ = m.Sample()
 	}
 }
 

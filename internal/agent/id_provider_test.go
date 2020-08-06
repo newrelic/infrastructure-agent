@@ -3,6 +3,8 @@
 package agent
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
+	"math/rand"
 	"testing"
 	"time"
 
@@ -19,7 +21,15 @@ import (
 
 type EmptyRegisterClient struct{}
 
-func (icc *EmptyRegisterClient) Register(agentEntityID entity.ID, entities []identityapi.RegisterEntity) (r []identityapi.RegisterEntityResponse, retryAfter time.Duration, err error) {
+func (icc *EmptyRegisterClient) RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities []identityapi.RegisterEntity) (r []identityapi.RegisterEntityResponse, retryAfter time.Duration, err error) {
+	return
+}
+
+func (icc *EmptyRegisterClient) RegisterBatchEntities(agentEntityID entity.ID, entities []protocol.Entity) (r []identityapi.RegisterEntityResponse, retryAfter time.Duration, err error) {
+	return
+}
+
+func (icc *EmptyRegisterClient) RegisterEntity(agentEntityID entity.ID, entity protocol.Entity) (resp identityapi.RegisterEntityResponse, err error) {
 	return
 }
 
@@ -27,21 +37,25 @@ type incrementalRegister struct {
 	state state.Register
 }
 
-func newIncrementalRegister() identityapi.IdentityRegisterClient {
+func newIncrementalRegister() identityapi.RegisterClient {
 	return &incrementalRegister{state: state.RegisterHealthy}
 }
 
-func newRetryAfterRegister() identityapi.IdentityRegisterClient {
+func newRetryAfterRegister() identityapi.RegisterClient {
 	return &incrementalRegister{state: state.RegisterRetryAfter}
 }
 
-func newRetryBackoffRegister() identityapi.IdentityRegisterClient {
+func newRetryBackoffRegister() identityapi.RegisterClient {
 	return &incrementalRegister{state: state.RegisterRetryBackoff}
 }
 
-func (r *incrementalRegister) Register(agentEntityID entity.ID, entities []identityapi.RegisterEntity) (responseKeys []identityapi.RegisterEntityResponse, retryAfter time.Duration, err error) {
+func (r *incrementalRegister) RegisterBatchEntities(agentEntityID entity.ID, entities []protocol.Entity) (batchResponse []identityapi.RegisterEntityResponse, t time.Duration, err error) {
+	return
+}
+
+func (r *incrementalRegister) RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities []identityapi.RegisterEntity) (responseKeys []identityapi.RegisterEntityResponse, retryAfter time.Duration, err error) {
 	if r.state == state.RegisterRetryAfter {
-		retryAfter = time.Duration(1 * time.Second)
+		retryAfter = 1 * time.Second
 		err = inventoryapi.NewIngestError("ingest service rejected the register step", http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError), "")
 		return
 	} else if r.state == state.RegisterRetryBackoff {
@@ -56,6 +70,13 @@ func (r *incrementalRegister) Register(agentEntityID entity.ID, entities []ident
 	}
 
 	return
+}
+
+func (r *incrementalRegister) RegisterEntity(agentEntityID entity.ID, ent protocol.Entity) (identityapi.RegisterEntityResponse, error) {
+	return identityapi.RegisterEntityResponse{
+		ID:  entity.ID(rand.Int63n(100000)),
+		Key: entity.Key(ent.Name),
+	}, nil
 }
 
 func TestNewProvideIDs(t *testing.T) {

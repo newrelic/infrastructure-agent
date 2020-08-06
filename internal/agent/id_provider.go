@@ -20,20 +20,20 @@ var clog = log.WithComponent("IDProvider")
 type ProvideIDs func(agentIdn entity.Identity, entities []identityapi.RegisterEntity) ([]identityapi.RegisterEntityResponse, error)
 
 type idProvider struct {
-	client identityapi.IdentityRegisterClient
+	client identityapi.RegisterClient
 	state  state.RegisterSM
 }
 
 // NewProvideIDs creates a new remote entity IDs provider.
 func NewProvideIDs(
-	client identityapi.IdentityRegisterClient,
+	client identityapi.RegisterClient,
 	sm state.RegisterSM,
 ) ProvideIDs {
 	p := newIDProvider(client, sm)
 	return p.provideIDs
 }
 
-func newIDProvider(client identityapi.IdentityRegisterClient, sm state.RegisterSM) *idProvider {
+func newIDProvider(client identityapi.RegisterClient, sm state.RegisterSM) *idProvider {
 	return &idProvider{
 		client: client,
 		state:  sm,
@@ -56,7 +56,7 @@ retry:
 	}
 
 	var retryAfter time.Duration
-	ids, retryAfter, err = p.client.Register(agentIdn.ID, entities)
+	ids, retryAfter, err = p.client.RegisterEntitiesRemoveMe(agentIdn.ID, entities)
 	if err != nil {
 		clog.WithFields(logrus.Fields{
 			"agentID":    agentIdn,

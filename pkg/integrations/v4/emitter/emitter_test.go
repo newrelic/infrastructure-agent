@@ -3,23 +3,22 @@
 package emitter
 
 import (
+	"errors"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"strings"
 	"testing"
 
+	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
-	integrationFixture "github.com/newrelic/infrastructure-agent/test/fixture/integration"
-
-	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
-	"github.com/newrelic/infrastructure-agent/pkg/sample"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -350,6 +349,20 @@ const integrationJsonV4Output = `
 }
 `
 
+type mockDmEmitter struct {
+	mock.Mock
+}
+
+func (m *mockDmEmitter) Send(
+	metadata integration.Definition,
+	extraLabels data.Map,
+	entityRewrite []data.EntityRewrite,
+	integrationJSON []byte) error {
+
+	args := m.Called(metadata, extraLabels, entityRewrite, integrationJSON)
+	return args.Error(0)
+}
+
 func TestLegacy_Emit(t *testing.T) {
 	type testCase struct {
 		name                  string
@@ -417,12 +430,18 @@ func TestLegacy_Emit(t *testing.T) {
 			integrationJSON := []byte(tc.integrationJsonOutput)
 
 			ma := mockAgent()
-			mockedMetricsSender := mockMetricSender()
+			mockDME := &mockDmEmitter{}
+			mockDME.On("Send",
+				tc.metadata,
+				extraLabels,
+				entityRewrite,
+				integrationJSON,
+			).Return(nil)
 
 			em := &Legacy{
-				Context:       ma,
-				FFRetriever:   feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true}),
-				MetricsSender: mockedMetricsSender,
+				Context:     ma,
+				FFRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true}),
+				dmEmitter:   mockDME,
 			}
 
 			err := em.Emit(tc.metadata, extraLabels, entityRewrite, integrationJSON)
@@ -454,10 +473,18 @@ func TestProtocolV4_Emit(t *testing.T) {
 	ma := mockAgent()
 	mockedMetricsSender := mockMetricSender()
 
+	mockDME := &mockDmEmitter{}
+	mockDME.On("Send",
+		metadata,
+		extraLabels,
+		entityRewrite,
+		integrationJSON,
+	).Return(nil)
+
 	em := &Legacy{
-		Context:       ma,
-		FFRetriever:   feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true}),
-		MetricsSender: mockedMetricsSender,
+		Context:     ma,
+		FFRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true}),
+		dmEmitter:   mockDME,
 	}
 
 	err := em.Emit(metadata, extraLabels, entityRewrite, integrationJSON)
@@ -504,31 +531,25 @@ func TestProtocolV4_Emit_WithFFDisabled(t *testing.T) {
 	integrationJSON := []byte(integrationJsonV4Output)
 
 	ma := mockAgent()
+	mockDME := &mockDmEmitter{}
+	mockDME.On("Send",
+		metadata,
+		extraLabels,
+		entityRewrite,
+		integrationJSON,
+	).Return(errors.New("something failed"))
+
 	em := &Legacy{
 		Context:     ma,
 		FFRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: false}),
+		dmEmitter:   mockDME,
 	}
 
 	err := em.Emit(metadata, extraLabels, entityRewrite, integrationJSON)
 	require.Error(t, err)
 }
 
-func TestParsePayloadV4(t *testing.T) {
-	ffm := feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true})
-
-	d, err := ParsePayloadV4(integrationFixture.ProtocolV4.Payload, ffm)
-	assert.NoError(t, err)
-	assert.EqualValues(t, integrationFixture.ProtocolV4.ParsedV4, d)
-}
-
-func TestParsePayloadV4_noFF(t *testing.T) {
-	ffm := feature_flags.NewManager(map[string]bool{})
-
-	_, err := ParsePayloadV4(integrationFixture.ProtocolV4.Payload, ffm)
-	assert.Equal(t, ProtocolV4NotEnabledErr, err)
-}
-
-func mockAgent() *mockedAgent {
+func mockAgent() *mocks.AgentContext {
 	aID := agent.IDLookup{
 		sysinfo.HOST_SOURCE_HOSTNAME:       "long",
 		sysinfo.HOST_SOURCE_HOSTNAME_SHORT: "short",
@@ -539,7 +560,7 @@ func mockAgent() *mockedAgent {
 		SupervisorRpcSocket:  "/tmp/supervisor.sock.test",
 	}
 
-	ma := &mockedAgent{}
+	ma := &mocks.AgentContext{}
 	ma.On("AgentIdentifier").Return("bob")
 	ma.On("IDLookup").Return(aID)
 	ma.On("SendData", mock.AnythingOfType("agent.PluginOutput")).Once()
@@ -555,31 +576,6 @@ func mockMetricSender() *mockedMetricsSender {
 	mockedMetricsSender.On("SendMetrics", mock.AnythingOfType("[]protocol.Metric")).Once()
 
 	return mockedMetricsSender
-}
-
-type mockedAgent struct {
-	agent.AgentContext
-	mock.Mock
-}
-
-func (m *mockedAgent) AgentIdentifier() string {
-	return m.Called().String(0)
-}
-
-func (m *mockedAgent) IDLookup() agent.IDLookup {
-	return m.Called().Get(0).(agent.IDLookup)
-}
-
-func (m *mockedAgent) SendData(po agent.PluginOutput) {
-	m.Called(po)
-}
-
-func (m *mockedAgent) Config() *config.Config {
-	return m.Called().Get(0).(*config.Config)
-}
-
-func (m *mockedAgent) SendEvent(event sample.Event, entityKey entity.Key) {
-	m.Called(event, entityKey)
 }
 
 type mockedMetricsSender struct {

@@ -111,9 +111,10 @@ func BenchmarkProcessSampler(b *testing.B) {
 
 // Tests procs monitor without the Docker container metadata cache
 func BenchmarkProcessSampler_NoCache(b *testing.B) {
-	pm := NewProcessSampler(&dummyAgentContext{&config.Config{
-		ContainerMetadataCacheLimit: -5,
-	}})
+	pm := NewProcessSampler(&dummyAgentContext{
+		cfg: &config.Config{
+			ContainerMetadataCacheLimit: -5,
+		}})
 
 	for i := 0; i < b.N; i++ {
 		_, _ = pm.Sample()
@@ -122,6 +123,7 @@ func BenchmarkProcessSampler_NoCache(b *testing.B) {
 
 // DummyAgentContext replaces mock agent context because mocks management can have impact in benchmarks
 type dummyAgentContext struct {
+	agent.AgentContext
 	cfg *config.Config
 }
 

@@ -8,12 +8,12 @@ import (
 )
 
 type identityRegisterService struct {
-	client identityapi.IdentityRegisterClient
+	client identityapi.RegisterClient
 	state  state.RegisterSM
 }
 
 func NewIdentityRegisterService(
-	client identityapi.IdentityRegisterClient,
+	client identityapi.RegisterClient,
 	sm state.RegisterSM,
 ) *identityRegisterService {
 	return &identityRegisterService{
