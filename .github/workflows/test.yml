@@ -16,7 +16,22 @@ jobs:
           go-version: '^1.14.4'
 
       - name: Running unit tests
-        run: make test
+        run: make test-coverage
+
+      - name: Install gcov2lcov
+        working-directory: /tmp
+        run: go get -u github.com/jandelgado/gcov2lcov
+
+      - name: Convert coverage.out to lcov.info
+        run: gcov2lcov -infile=coverage.out -outfile=lcov.info
+
+      - name: Coveralls Parallel
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.github_token }}
+          path-to-lcov: lcov.info
+          flag-name: run-linux
+          parallel: true
 
   build-container:
     runs-on: ubuntu-latest
@@ -75,3 +90,13 @@ jobs:
         env:
           GOPATH: "${{ github.workspace }}"
         run: make test-centos-5
+
+  finish:
+    needs: [ build ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.github_token }}
+          parallel-finished: true
