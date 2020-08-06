@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"strconv"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -35,13 +36,11 @@ type EventSenderSuite struct {
 var _ = Suite(&EventSenderSuite{})
 
 func (s *EventSenderSuite) TestMetricsEntryPointConfig(c *C) {
-	context := &context{
-		agentKey: "testAgent",
-		cfg: &config.Config{
+	context := newTestContext("testAgent",
+		&config.Config{
 			CollectorURL:          "http://test.com/",
 			MetricsIngestEndpoint: "/metrics/",
-		},
-	}
+		})
 	sender := newMetricsIngestSender(context, "license", "userAgent", http2.NullHttpClient, false)
 
 	c.Assert(sender.metricIngestURL, Equals, "http://test.com/metrics")
@@ -58,13 +57,12 @@ func (s *EventSenderSuite) TestSingleEventBatch(c *C) {
 	}))
 	defer ts.Close()
 
-	context := &context{
-		agentKey: "testAgent",
-		cfg: &config.Config{
+	context := newTestContext("testAgent",
+		&config.Config{
 			PayloadCompressionLevel: gzip.NoCompression,
 			CollectorURL:            ts.URL,
-		},
-	}
+		})
+
 	sender := newMetricsIngestSender(context, "license", "userAgent", http2.NullHttpClient, false)
 	c.Assert(sender.Start(), IsNil)
 	defer sender.Stop()
@@ -96,13 +94,11 @@ func (s *EventSenderSuite) TestSingleEventBatchCompression(c *C) {
 	}))
 	defer ts.Close()
 
-	context := &context{
-		agentKey: "testAgent",
-		cfg: &config.Config{
+	context := newTestContext("testAgent",
+		&config.Config{
 			PayloadCompressionLevel: gzip.BestCompression,
 			CollectorURL:            ts.URL,
-		},
-	}
+		})
 	sender := newMetricsIngestSender(context, "license", "userAgent", http2.NullHttpClient, false)
 	c.Assert(sender.Start(), IsNil)
 	defer sender.Stop()
@@ -131,13 +127,11 @@ func (s *EventSenderSuite) TestLargeEventBatch(c *C) {
 	}))
 	defer ts.Close()
 
-	context := &context{
-		agentKey: "testAgent",
-		cfg: &config.Config{
+	context := newTestContext("testAgent",
+		&config.Config{
 			PayloadCompressionLevel: gzip.NoCompression,
 			CollectorURL:            ts.URL,
-		},
-	}
+		})
 	sender := newMetricsIngestSender(context, "license", "userAgent", http2.NullHttpClient, false)
 	c.Assert(sender.Start(), IsNil)
 	defer sender.Stop()
@@ -185,13 +179,11 @@ func (s *EventSenderSuite) TestLargeEventBatchCompression(c *C) {
 	}))
 	defer ts.Close()
 
-	context := &context{
-		agentKey: "testAgent",
-		cfg: &config.Config{
+	context := newTestContext("testAgent",
+		&config.Config{
 			PayloadCompressionLevel: gzip.BestCompression,
 			CollectorURL:            ts.URL,
-		},
-	}
+		})
 	sender := newMetricsIngestSender(context, "license", "userAgent", http2.NullHttpClient, false)
 	c.Assert(sender.Start(), IsNil)
 	defer sender.Stop()
@@ -235,13 +227,11 @@ func (s *EventSenderSuite) TestBatchForRemoteEntity(c *C) {
 	}))
 	defer ts.Close()
 
-	context := &context{
-		agentKey: "testAgent",
-		cfg: &config.Config{
+	context := newTestContext("testAgent",
+		&config.Config{
 			PayloadCompressionLevel: gzip.NoCompression,
 			CollectorURL:            ts.URL,
-		},
-	}
+		})
 	sender := newMetricsIngestSender(context, "license", "userAgent", http2.NullHttpClient, false)
 	c.Assert(sender.Start(), IsNil)
 	defer sender.Stop()
@@ -269,13 +259,11 @@ func (s *EventSenderSuite) TestEventKeyHeaderIsSent(c *C) {
 	}))
 	defer ts.Close()
 
-	ctx := &context{
-		agentKey: agentKey,
-		cfg: &config.Config{
+	ctx := newTestContext(agentKey,
+		&config.Config{
 			PayloadCompressionLevel: gzip.NoCompression,
 			CollectorURL:            ts.URL,
-		},
-	}
+		})
 	sender := newMetricsIngestSender(ctx, "license", "userAgent", http2.NullHttpClient, false)
 
 	c.Assert(sender.Start(), IsNil)
@@ -303,13 +291,11 @@ func (s *EventSenderSuite) TestAgentIDHeaderIsSentWhenConnectEnabled(c *C) {
 	}))
 	defer ts.Close()
 
-	ctx := &context{
-		agentKey: agentKey,
-		cfg: &config.Config{
+	ctx := newTestContext(agentKey,
+		&config.Config{
 			PayloadCompressionLevel: gzip.NoCompression,
 			CollectorURL:            ts.URL,
-		},
-	}
+		})
 	ctx.SetAgentIdentity(entity.Identity{ID: entity.ID(agentID)})
 	sender := newMetricsIngestSender(ctx, "license", "userAgent", http2.NullHttpClient, true)
 
@@ -356,13 +342,11 @@ func (s *EventSenderSuite) TestValidSSLCert(c *C) {
 	_, port, _ := net.SplitHostPort(u.Host)
 	localhostURL := "https://localhost:" + port
 
-	context := &context{
-		agentKey: "testAgent",
-		cfg: &config.Config{
+	context := newTestContext("testAgent",
+		&config.Config{
 			CABundleFile: sca.Name(),
 			CollectorURL: localhostURL,
-		},
-	}
+		})
 
 	sender := newMetricsIngestSender(context, "license", "userAgent", http2.NullHttpClient, false)
 	c.Assert(sender.Start(), IsNil)
@@ -405,12 +389,10 @@ func (s *EventSenderSuite) TestMissingCACert(c *C) {
 	_, port, _ := net.SplitHostPort(u.Host)
 	localhostURL := "https://localhost:" + port
 
-	context := &context{
-		agentKey: "testAgent",
-		cfg: &config.Config{
+	context := newTestContext("testAgent",
+		&config.Config{
 			CollectorURL: localhostURL,
-		},
-	}
+		})
 
 	sender := newMetricsIngestSender(context, "license", "userAgent", http2.NullHttpClient, false)
 	c.Assert(sender.Start(), IsNil)
@@ -526,7 +508,7 @@ func TestEventSender_ResponseError(t *testing.T) {
 				PayloadCompressionLevel: gzip.NoCompression,
 			}
 			c := NewContext(cfg, "1.2.3", testhelpers.NullHostnameResolver, IDLookup{}, nil)
-			c.agentKey = agentKey
+			c.setAgentKey(agentKey)
 			c.SetAgentIdentity(agentIdn)
 
 			sender := newMetricsIngestSender(
@@ -552,5 +534,14 @@ func TestEventSender_ResponseError(t *testing.T) {
 			assert.Equal(t, test.backoffD, <-backoffCh)
 			assert.Equal(t, uint32(1), sender.sendErrorCount, "The metric sender was unable to send the event")
 		})
+	}
+}
+
+func newTestContext(agentKey string, cfg *config.Config) *context {
+	var atomicAgentKey atomic.Value
+	atomicAgentKey.Store(agentKey)
+	return &context{
+		agentKey: atomicAgentKey,
+		cfg:      cfg,
 	}
 }
