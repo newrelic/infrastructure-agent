@@ -324,7 +324,7 @@ func (s *Store) ResetAllDeltas(entityKey string) {
 // UpdateState updates in disk the state of the deltas according to the passed PostDeltaBody, whose their ExternalKeys
 // field may be empty.
 func (s *Store) UpdateState(entityKey string, deltas []*inventoryapi.RawDelta, deltaStateResults *inventoryapi.DeltaStateMap) {
-	sentPlugins := make(map[string]bool, len(deltas))
+	sentPlugins := make([]string, len(deltas))
 
 	// record what was sent and archive
 	for _, d := range deltas {
@@ -333,11 +333,11 @@ func (s *Store) UpdateState(entityKey string, deltas []*inventoryapi.RawDelta, d
 			dResult, _ = (*deltaStateResults)[d.Source]
 		}
 		s.updateLastDeltaSent(entityKey, d, dResult)
-		sentPlugins[d.Source] = true
+		sentPlugins = append(sentPlugins, d.Source)
 	}
 
 	// Clean up delta files in bulk for each plugin
-	for source := range sentPlugins {
+	for _, source := range sentPlugins {
 		plugin := s.plugins[source]
 		if plugin != nil {
 			ierr := s.archivePlugin(plugin, entityKey)
