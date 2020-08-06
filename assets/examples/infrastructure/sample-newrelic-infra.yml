@@ -1,0 +1,923 @@
+#
+# New Relic infrastructure agent configuration file
+#
+# This file overrides the agent defaults. Lines that begin with # are comments,
+# which are ignored by the infrastructure agent. Uncomment the desired options
+# to enable them. Restart the agent or the server after changing settings.
+#
+# The infrastructure agent only requires the license key to be 
+# configured; the rest of the default values represent best practices.
+#
+# If options have command line equivalents, New Relic uses the command line 
+# options to override values set in this file. 
+
+# Environment variables (documented here as "Env var") always override the
+# values set in the configuration file. We recommend setting any sensitive
+# information through environment variables.
+#
+# For more information on each setting, see https://docs.newrelic.com/docs/infrastructure/install-configure-manage-infrastructure/configuration/infrastructure-configuration-settings
+#
+
+#
+# Option : license_key
+# Value  : 40-character hexadecimal string provided by New Relic. This is the
+#          only required value in your config file.
+# Default: none
+#
+license_key: your_license_key
+
+#
+# Option   : payload_compression_level
+# Env var  : NRIA_PAYLOAD_COMPRESSION_LEVEL
+# Value    : Sets the compression level of the agent requests payload.
+# Range    : 0-9
+# Default  : 6
+#
+#payload_compression_level: 6
+#
+
+#
+# Option   : display_name
+# Env var  : NRIA_DISPLAY_NAME
+# Value    : Replaces the automatically generated hostname for
+#            reporting.
+# Default  : Automatically generated hostname
+# Risk     : Changing this value could create a different host entity, causing 
+#            some alarms to trigger, since the previous host would appear 
+#            disconnected.
+#display_name: new_name
+#
+
+#
+# Option   : passthrough_environment
+# Env var  : NRIA_PASSTHROUGH_ENVIRONMENT
+# Value    : A list of environment variables that will be passed to all 
+#            integrations. If an integration already has an existing 
+#            configuration option with the same name, the environment variable
+#            takes precedence.
+# Default  : Empty
+#
+#passthrough_environment:
+#  - HOST
+#  - PORT
+
+#
+# Option   : custom_attributes
+# Env var  : NRIA_CUSTOM_ATTRIBUTES
+# Value    : Use optional key-value pairs to build filter sets, group your 
+#            results, annotate your data, etc.
+#
+#custom_attributes:
+#  environment: production
+#  service: login service
+#  team: alpha-team
+#
+
+#
+# Option   : enable_process_metrics
+# Env var  : NRIA_ENABLE_PROCESS_METRICS
+# Value    : Enables the sending of process metrics to New Relic. If you
+#            want to send metric data about all the operating system's processes
+#            to New Relic, set enable_process_metrics to true.
+# Tip      : Sending all process data could increase the volume of data sent
+#            to New Relic. To fine-tune which processes you want to monitor,
+#            configure include_matching_metrics.
+#
+#enable_process_metrics: false
+#
+
+#
+# Option   : include_matching_metrics
+# Env var  : NRIA_INCLUDE_MATCHING_METRICS
+# Value    : Use lists of metric attributes and values to only send to New Relic
+#            the metric data of matching entities.
+# Note     : Currently limited to process metrics (process.name and .executable).
+# Tip      : You can combine different attributes.
+#
+#include_matching_metrics:
+#  metric.attribute:
+#    - regex "pattern"
+#    - "string"
+#    - "string-with-wildcard*"
+#
+
+#
+# Option   : log_file
+# Env var  : NRIA_LOG_FILE
+# Value    : Full path and file name of the log file.
+# Default  : Linux: /var/log/newrelic-infra/newrelic-infra.log
+#            Windows: C:\Program Files\New Relic\newrelic-infra\newrelic-infra.log
+# Risk     : Providing a log file path that does not yet exist causes the agent 
+#            to fail on startup.
+#log_file: /temp/debug_log
+#
+
+#
+# Option   : log_format
+# Env var  : NRIA_LOG_FORMAT
+# Value    : Defines the log output format. Available values are text (default),
+#            and json. Both formats use one line per log entry.
+# Default  : text
+# Tip      : Use json when forwarding the agent logs to New Relic logs for
+#            troubleshooting (verbose:3).
+#
+#log_format: text
+
+#
+# Option   : log_to_stdout
+# Env var  : NRIA_LOG_TO_STDOUT
+# Value    : Set to false to disable logs in the standard output. By default all
+#            logs are displayed in both standard output and a log file.
+# Default  : true
+#
+#log_to_stdout: true
+#
+
+#
+# Option   : verbose
+# Env var  : NRIA_VERBOSE
+# Value    : Enable (1) only for troubleshooting. Use (3) to forward the 
+             agent logs to New Relic Logs for troubleshooting.
+# Default  : 0
+# Risk     : Verbose logging can generate a lot of data very quickly.
+# Tip      : Run the agent in verbose mode only for troubleshooting. To disable 
+#            verbose logging, set verbose to 0 and restart the agent.
+#verbose: 0
+#
+
+#
+# Option   : network_interface_filters
+# Env var  : NRIA_NETWORK_INTERFACE_FILTERS
+# Value    : List of network interfaces to be filtered out. 
+# Default  : Network interfaces that start with dummy, lo, vmnet, sit, tun, tap,
+#            or veth, or that contain tun or tap.
+# Tip      : Use the network interface filter configuration to hide network 
+#            interfaces from the infrastructure agent. This helps reduce 
+#            resource usage and noise in your data.
+#network_interface_filters:
+#  prefix:
+#    - dummy
+#    - lo
+#  index-1:
+#    - tun
+#
+
+#
+# Option   : disable_all_plugins
+# Env var  : NRIA_DISABLE_ALL_PLUGINS
+# Value    : To disable all the inventory, set to true.
+# Default  : false
+#
+#disable_all_plugins: false
+#
+
+#
+# Option   : cloud_security_group_refresh_sec
+# Env var  : NRIA_CLOUD_SECURITY_GROUP_REFRESH_SEC
+# Value    : Sampling interval for CloudSecurityGroups plugin, in seconds. Set 
+#            to -1 to disable it. Minimum value is 30. This plugin is activated 
+#            only if the agent is running in an AWS instance.
+# Default  : 60
+# Tip      : If not explicitly set in the config file, this option can be 
+#            disabled by setting DisableAllPlugins to true.
+#cloud_security_group_refresh_sec: 60
+#
+
+#
+# Option   : daemontools_interval_sec
+# Env var  : NRIA_DAEMONTOOLS_INTERVAL_SEC
+# Value    : Sampling interval for the daemontools plugin, in seconds. Set to -1
+#            to disable it. Minimum value is 10.
+# Default  : 15
+# Tip      : If not explicitly set in the config file, this option can be 
+#            disabled by setting DisableAllPlugins to true.
+#
+#daemontools_interval_sec: 15
+#
+
+#
+# Option   : dpkg_interval_sec
+# Env var  : NRIA_DPKG_INTERVAL_SEC
+# Value    : Sampling interval for the dpkg plugin, in seconds. Set to -1 to 
+#            disable it. Minimum value is 30. Only activated on Debian based 
+#            distros in either root or privileged mode.
+# Default  : 30
+# Tip      : If not explicitly set in the config file, this option can be 
+#            disabled by setting DisableAllPlugins to true.
+#
+#dpkg_interval_sec: 30
+#
+
+#
+# Option   : facter_interval_sec
+# Env var  : NRIA_FACTER_INTERVAL_SEC
+# Value    : Sampling interval for the facter plugin, in seconds. Set to -1 
+#            to disable it. Minimum value is 30.
+# Default  : 30
+# Tip      : If not explicitly set in the config file, this option can be 
+#            disabled by setting DisableAllPlugins to true.
+#
+#facter_interval_sec: 30
+#
+
+#
+# Option   : kernel_modules_refresh_sec
+# Env var  : NRIA_KERNEL_MODULES_REFRESH_SEC
+# Value    : Sampling interval for the CloudSecurityGroups plugin, in seconds. 
+#            Set to -1 to disable it. Minimum value is 10. This plugin can be 
+#            activated only in root or privileged mode.
+# Default  : 10
+# Tip      : If not explicitly set in the config file, this option can be 
+#            disabled by setting DisableAllPlugins to true.
+#
+#kernel_modules_refresh_sec: 10
+#
+
+#
+# Option   : network_interface_interval_sec
+# Env var  : NRIA_NETWORK_INTERFACE_INTERVAL_SEC
+# Value    : Sampling interval for the NetworkInterface plugin, in seconds. Set
+#            to -1 to disable it. Minimum value is 10.
+# Default  : 60
+# Tip      : If not explicitly set in the config file, this option can be 
+#            disabled by setting DisableAllPlugins to true.
+#
+#network_interface_interval_sec: 60
+#
+
+#
+# Option   : rpm_interval_sec
+# Env var  : NRIA_RPM_INTERVAL_SEC
+# Value    : Sampling interval for the Rpm plugin, in seconds. Set to -1 
+#            to disable it. Minimum value is 30. Can be activated only for 
+#            RedHat, RedHat AWS, and SuSE in root or privileged modes.
+# Default  : 30
+# Tip      : If not explicitly set in the config file, this option can be 
+#            disabled by setting DisableAllPlugins to true.
+#
+#rpm_interval_sec: 30
+#
+
+#
+# Option   : selinux_interval_sec
+# Env var  : NRIA_SELINUX_INTERVAL_SEC
+# Value    : Sampling interval for the SELinux plugin, in seconds. Set to -1 to 
+#            disable it. Minimum value is 30. Can be activated only in root mode.
+# Default  : 30
+# Tip      : If not explicitly set in the config file, this option can be 
+#            disabled by setting DisableAllPlugins to true.
+#
+#selinux_interval_sec: 30
+#
+
+#
+# Option   : sshd_config_refresh_sec
+# Env var  : NRIA_SSHD_CONFIG_REFRESH_SEC
+# Value    : Sampling interval for the sshd plugin, in seconds. Set to -1 
+#            to disable it. Minimum value is 10.
+# Default  : 15
+# Tip      : If not explicitly set in the config file, this option can be 
+#            disabled by setting DisableAllPlugins to true.
+#
+#sshd_config_refresh_sec: 15
+#
+
+#
+# Option   : supervisor_interval_sec
+# Env var  : NRIA_SUPERVISOR_INTERVAL_SEC
+# Value    : Sampling interval for the Supervisor plugin, in seconds. Set to -1 
+#            to disable it. Minimum value is 10. 
+# Default  : 15
+# Tip      : If not explicitly set in the config file, this option can be 
+#            disabled by setting DisableAllPlugins to true.
+#
+#supervisor_interval_sec: 15
+#
+
+#
+# Option   : sysctl_interval_sec
+# Env var  : NRIA_SYSCTL_INTERVAL_SEC
+# Value    : Sampling interval for the sysctl plugin, in seconds. Set to -1 
+#            to disable it. Minimum value is 30. Can only be activated in root 
+#            or privileged modes.
+# Default  : 60
+# Tip      : If not explicitly set in the config file, this option can be 
+#            disabled by setting DisableAllPlugins to true.
+#
+#sysctl_interval_sec: 60
+#
+
+#
+# Option   : systemd_interval_sec
+# Env var  : NRIA_SYSTEMD_INTERVAL_SEC
+# Value    : Sampling interval for the systemd plugin, in seconds. Set to -1 
+#            to disable it. Minimum value is 10.
+# Default  : 30
+# Tip      : If not explicitly set in the config file, this option can be 
+#            disabled by setting DisableAllPlugins to true.
+#
+#systemd_interval_sec: 30
+#
+
+#
+# Option   : sysvinit_interval_sec
+# Env var  : NRIA_SYSVINIT_INTERVAL_SEC
+# Value    : Sampling interval for the SysV plugin, in seconds. Set to -1 
+#            to disable it. Minimum value is 10. Can only be activated in root 
+#            or privileged modes.
+# Default  : 30
+# Tip      : If not explicitly set in the config file, this option can be 
+#            disabled by setting DisableAllPlugins to true.
+#
+#sysvinit_interval_sec: 30
+#
+
+#
+# Option   : upstart_interval_sec
+# Env var  : NRIA_UPSTART_INTERVAL_SEC
+# Value    : Sampling interval for the upstart plugin, in seconds. Set to -1 
+#            to disable it. Minimum value is 10.
+# Default  : 30
+# Tip      : If not explicitly set in the config file, this option can be 
+#            disabled by setting DisableAllPlugins to true.
+#
+#upstart_interval_sec: 30
+#
+
+#
+# Option   : users_refresh_sec
+# Env var  : NRIA_USERS_REFRESH_SEC
+# Value    : Sampling interval for the Users plugin, in seconds. Set to -1 
+#            to disable it. Minimum value is 10.
+# Default  : 15
+# Tip      : If not explicitly set in the config file, this option can be 
+#            disabled by setting DisableAllPlugins to true.
+#
+#users_refresh_sec: 15
+#
+
+#
+# Option   : windows_services_refresh_sec
+# Env var  : NRIA_WINDOWS_SERVICES_REFRESH_SEC
+# Value    : Sampling interval for the Windows services plugin, in seconds. Set 
+#            to -1 to disable it. Minimum value is 10.
+# Default  : 30
+# Tip      : If not explicitly set in the config file, this option can be 
+#            disabled by setting DisableAllPlugins to true.
+#
+#windows_services_refresh_sec: 30
+#
+
+#
+# Option   : windows_updates_refresh_sec
+# Env var  : NRIA_WINDOWS_UPDATES_REFRESH_SEC
+# Value    : Sampling interval for the Windows Updates plugin, in seconds. Set 
+#            to -1 to disable it. Minimum value is 10.
+# Default  : 60
+# Tip      : If not explicitly set in the config file, this option can be 
+#            disabled by setting DisableAllPlugins to true.
+#
+#windows_updates_refresh_sec: 60
+#
+
+#
+# Option   : metrics_network_sample_rate
+# Env var  : NRIA_METRICS_NETWORK_SAMPLE_RATE
+# Value    : Sampling interval of network samples, in seconds. Set to -1 
+#            to disable it. Minimum value is 10.
+# Default  : 10
+#
+#metrics_network_sample_rate: 10
+#
+
+#
+# Option   : metrics_process_sample_rate
+# Env var  : NRIA_METRICS_PROCESS_SAMPLE_RATE
+# Value    : Sampling interval of system samples, in seconds. Set to -1 
+#            to disable it. Minimum value is 20.
+# Default  : 20
+#
+#metrics_process_sample_rate: 20
+#
+
+#
+# Option   : metrics_storage_sample_rate
+# Env var  : NRIA_METRICS_STORAGE_SAMPLE_RATE
+# Value    : Sampling interval of storage samples, in seconds. Set to -1 
+#            to disable it. Minimum value is 5.
+# Default  : 20
+#
+#metrics_storage_sample_rate: 20
+#
+
+#
+# Option   : metrics_system_sample_rate
+# Env var  : NRIA_METRICS_SYSTEM_SAMPLE_RATE
+# Value    : Sampling interval of system samples, in seconds. Set to -1 
+#            to disable it. Minimum value is 5.
+# Default  : 5
+#
+#metrics_system_sample_rate: 5
+#
+
+#
+# Option   : selinux_enable_semodule
+# Env var  : NRIA_SELINUX_ENABLE_SEMODULE
+# Value    : Enable to retrieve the versions of policy modules installed using 
+#            semodule. If disabled, the plugin only retrieves the status using 
+#            sestatus.
+# Default  : true
+#
+#selinux_enable_semodule: true
+#
+
+#
+# Option   : http_server_enabled
+# Env var  : NRIA_HTTP_SERVER_ENABLED
+# Value    : Enable to receive data from the New Relic StatsD backend 
+#            (https://github.com/newrelic/statsd-infra-backend). The agent opens
+#            an HTTP port (by default, 8001) to receive the data.
+# Default  : false
+#
+#http_server_enabled: true
+#
+
+#
+# Option   : http_server_host
+# Env var  : NRIA_HTTP_SERVER_HOST
+# Value    : The HTTP server used by the StatsD integration.
+# Default  : localhost
+#
+#http_server_host: localhost
+#
+
+#
+# Option   : http_server_port
+# Env var  : NRIA_HTTP_SERVER_PORT
+# Value    : HTTP port of http_server_host used by the StatsD integration.
+# Default  : 8001
+#
+#http_server_port: 8001
+#
+
+#
+# Option   : ca_bundle_dir
+# Env var  : NRIA_CA_BUNDLE_DIR
+# Value    : If the proxy config option references a proxy with self-signed 
+#            certificates, this option lets you specify the certificate 
+#            directory. The certificates in the directory must have the .pem 
+#            extension.
+#
+#ca_bundle_dir: /etc/my-certificates
+#
+
+#
+# Option   : ca_bundle_file
+# Env var  : NRIA_CA_BUNDLE_FILE
+# Value    : If the proxy config option references a proxy with self-signed 
+#            certificates, this option lets you specify the certificate
+#            filename.
+#
+#ca_bundle_file: /etc/my-certificates/secureproxy.pem
+#
+
+#
+# Option   : ignore_system_proxy
+# Env var  : NRIA_IGNORE_SYSTEM_PROXY
+# Value    : When ignore_system_proxy is set to true, the HTTPS_PROXY and
+#            HTTP_PROXY environment variables are ignored.
+# Default  : false
+# Tip      : Use this option when the agent connects directly to the New Relic
+#            metrics collector, bypassing the system proxy.
+#
+#ignore_system_proxy: false
+#
+
+#
+# Option   : proxy
+# Env var  : NRIA_PROXY
+# Value    : The proxy URL.
+# Default  : none
+# Tip      : Useful if your firewall rules require the agent to use a
+#            proxy (HTTP or HTTPS) to communicate with New Relic.
+#
+#proxy: https://user:password@hostname:port
+#
+
+#
+# Option   : proxy_validate_certificates
+# Env var  : NRIA_PROXY_VALIDATE_CERTIFICATES
+# Value    : Set to True to validate the proxy certificates (HTTPS connections).
+#            Certificates must have been issued by a valid Certificate Authority 
+#            or defined in the ca_bundle_file or ca_bundle_dir properties.
+# Default  : false
+#
+#proxy_validate_certificates: false
+#
+
+#
+# Option   : max_procs
+# Env var  : NRIA_MAX_PROCS
+# Value    : The number of logical processors available to the agent. Default is
+#            1. When set to -1 the agent reads the GOMAXPROCS environment 
+#            variable and defaults to the total number of available cores 
+#            available in the host if the environment variable is not set.
+# Default  : 1
+# Tip      : Increasing this value can help to distribute the load between different 
+#            cores.
+#
+#max_procs: 1
+#
+
+
+#
+# Option   : agent_dir
+# Env var  : NRIA_AGENT_DIR
+# Value    : Directory where the agent stores files such as cache, inventory, 
+#            integrations, etc.
+# Default  : Linux: /var/db/newrelic-infra
+#          : Windows: C:\\Program Files\NewRelic\newrelic-infra\
+#
+#agent_dir:
+#
+
+#
+# Option   : plugin_dir
+# Env var  : NRIA_PLUGIN_DIR
+# Value    : Directory containing integrations’ configuration files. Each 
+#            integration has its own configuration file, named 
+#            -config.yml by default, and placed in a 
+#            predefined location.
+# Default  : Linux: /etc/newrelic-infra/integrations.d/
+#          : Windows: C:\Program Files\New Relic\newrelic-infra\integrations.d
+#
+#plugin_dir:
+#
+
+#
+# Option   : entityname_integrations_v2_update
+# Env var  : NRIA_ENTITYNAME_INTEGRATIONS_V2_UPDATE
+# Value    : Set to True to enable automatic replacement of the 
+#            loopback-addresses in entity names when using v2 of the integration
+#            protocol. 
+# Default  : false
+# Risk     : Enabling this flag causes all integrations run by the agent using 
+#            the v2 protocol to have their names replaced when carrying a local 
+#            address. If this option is not set, services reporting from 
+#            different machines may collide.
+#
+#entityname_integrations_v2_update: false
+#
+
+#
+# Option   : pid_file
+# Env var  : NRIA_PID_FILE
+# Value    : Location of the pid file of the agent process on Linux. Used at 
+#            startup to ensure that no other instances of the agent are running.
+# Default  : /var/run/newrelic-infra/newrelic-infra.pid
+# Risk     : If the agent detects that the pid file already exists at startup,
+#            the following error will be raised: "Existing pid-file, can't 
+#            guarantee no other newrelic-infra agent is running".
+#
+#pid_file:
+#
+
+#
+# Option   : app_data_dir
+# Env var  : NRIA_APP_DATA_DIR
+# Value    : Path to store cache data other than the program files directory. 
+#            This setting is for Windows only.
+# Default  : Windows: %PROGRAMDATA%\New Relic\newrelic-infra
+#          : Linux: Not applicable
+#
+#app_data_dir:
+#
+
+#
+# Option   : cloud_max_retry_count
+# Env var  : NRIA_CLOUD_MAX_RETRY_COUNT
+# Value    : The number of retries if cloud detection fails. If cloud 
+#            detection fails during agent initialization, the agent retries 
+#            after waiting for a number of seconds as defined in 
+#            cloud_retry_backoff_sec.
+# Default  : 10
+# Info     : When the agent runs in a cloud instance, it tries to detect the
+#            source for fetching metadata, such as: instanceID, instanceType,
+#            cloudSource, hostType.
+#
+#cloud_max_retry_count: 10
+#
+
+#
+# Option   : cloud_retry_backoff_sec
+# Env var  : NRIA_CLOUD_RETRY_BACKOFF_SEC
+# Value    : The delay, in seconds, between cloud detection retries if
+#            cloud detection failed. If cloud detection fails during 
+#            initialization the agent retries as many times as defined in 
+#            cloud_max_retry_count.
+# Default  : 60
+#
+#cloud_retry_backoff_sec: 60
+#
+
+#
+# Option   : cloud_metadata_expiry_sec
+# Env var  : NRIA_CLOUD_METADATA_EXPIRY_SEC
+# Value    : The time interval for metadata expiration and re-fetching.
+# Default  : 300
+# Info     : When the agent runs in a cloud instance, it tries to detect the
+#            source for fetching metadata, such as: instanceID, instanceType,
+#            cloudSource, hostType.
+#
+#cloud_metadata_expiry_sec: 300
+#
+
+#
+# Option   : disable_cloud_metadata
+# Env var  : NRIA_DISABLE_CLOUD_METADATA
+# Value    : Set to True to disable cloud metadata collection.
+# Default  : false
+# Risk     : Disabling cloud metadata could cause APM linkage to break if the
+#            hosts are allocated on a cloud provider.
+# Info     : When the agent runs in a cloud instance, it tries to detect the
+#            source for fetching metadata, such as: instanceID, instanceType,
+#            cloudSource, hostType.
+#
+#disable_cloud_metadata: false
+#
+
+#
+# Option   : disable_cloud_instance_id
+# Env var  : NRIA_DISABLE_CLOUD_INSTANCE_ID
+# Value    : Set to True to disable cloud metadata collection for the hostalias 
+#            plugin.
+# Default  : false
+#
+#disable_cloud_instance_id: false
+#
+
+#
+# Option   : startup_connection_retries
+# Env var  : NRIA_STARTUP_CONNECTION_RETRIES
+# Value    : Number of times the agent retries the request for checking 
+#            New Relic’s platform availability on startup before throwing an 
+#            error. When set to a negative value, the agent keeps checking until
+#            the check succeeds.
+# Default  : 6
+#
+#startup_connection_retries: 6
+#
+
+#
+# Option   : startup_connection_retry_time
+# Env var  : NRIA_STARTUP_CONNECTION_RETRY_TIME
+# Value    : Time to wait before the agent retries the request for checking New 
+#            Relic’s platform availability at startup, in seconds.
+# Default  : 5s
+#
+#startup_connection_retry_time: 5s
+#
+
+#
+# Option   : startup_connection_timeout
+# Env var  : NRIA_STARTUP_CONNECTION_TIMEOUT
+# Value    : Time to wait, in seconds, before expiring the check for New Relic’s
+#            platform availability made at startup.
+# Default  : 10s
+#
+#startup_connection_timeout: 10s
+#
+
+#
+# Option   : trace
+# Env var  : NRIA_TRACE
+# Value    : Enables traces to be printed in the logs for the given features.
+#            Traces are additional log entries used for debugging purposes of
+#            specific features, and are only shown when verbose is set to True.
+# Default  : []
+# Info     : Currently, only three features have traces defined: hostname,
+#            connect, and attributes.
+#
+#traces:
+#  - connect
+#  - attributes
+#  - hostname
+
+#
+# Option   : container_cache_metadata_limit
+# Env var  : NRIA_CONTAINER_CACHE_METADATA_LIMIT
+# Value    : Time before cached containers metadata expires and must be fetched
+#            again, in seconds.
+# Default  : 60
+#
+#container_cache_metadata_limit: 60
+#
+
+#
+# Option   : docker_api_version
+# Env var  : NRIA_DOCKER_API_VERSION
+# Value    : The Docker API version to use for the Docker client.
+# Default  : 1.24
+#
+#docker_api_version: 1.24
+#
+
+#
+# Option   : custom_supported_file_systems
+# Env var  : NRIA_CUSTOM_SUPPORTED_FILESYSTEMS
+# Value    : List of filesystem types supported by the agent. This value should
+#            be a subset of the default list. Items not in the default list are
+#            discarded.
+# Default  : Linux: ["xfs", "btrfs", "ext", "ext2", "ext3", "ext4", "hfs",
+#            "vxfs"]
+#          : Windows: ["NTFS", "ReFS"]
+#
+#custom_supported_file_systems:
+#  - xfs
+#  - btrfs
+#
+
+#
+# Option   : file_devices_ignored
+# Env var  : NRIA_FILE_DEVICES_IGNORED
+# Value    : List of storage devices to be ignored by the agent when gathering 
+#            storage samples.
+# Default  : []
+#
+#file_devices_ignored:
+#  - sda1
+#  - sda2
+#
+
+#
+# Option   : ignored_inventory
+# Env var  : NRIA_IGNORED_INVENTORY
+# Value    : List of inventory paths to be ignored by the agent.
+# Default  : []
+#
+#ignored_inventory:
+#    - files/config/stuff.bar
+#    - files/config/stuff.foo
+#
+
+#
+# Option   : ignore_reclaimable
+# Env var  : NRIA_IGNORE_RECLAIMABLE
+# Value    : When True, the calculation of the host virtual memory considers 
+#            SReclaimable as available memory; otherwise SReclaimable is
+#            considered part of the used memory.
+# Default  : false
+#
+#ignore_reclaimable: false
+#
+
+#
+# Option   : supervisor_rpc_sock
+# Env var  : NRIA_SUPERVISOR_RPC_SOCK
+# Value    : Location of the supervisor (http://supervisord.org/) socket.
+# Default  : /var/run/supervisor.sock
+#
+#supervisor_rpc_sock:
+#
+
+#
+# Option   : proxy_config_plugin
+# Env var  : NRIA_PROXY_CONFIG_PLUGIN
+# Value    : Sends the following proxy configuration information as inventory: 
+#            HTTPS_PROXY, HTTP_PROXY, proxy, ca_bundle_dir, ca_bundle_file,
+#            ignore_system_proxy, proxy_validate_certificates.
+# Default  : true
+#
+#proxy_config_plugin: true
+#
+
+#
+# Option   : facter_home_dir
+# Env var  : NRIA_FACTER_HOME_DIR
+# Value    : Sets the HOME environment variable for Facter. If unset, it
+#            defaults to the current user's home directory.
+# Default  :
+#
+#facter_home_dir:
+#
+
+#
+# Option   : strip_command_line
+# Env var  : NRIA_STRIP_COMMAND_LINE
+# Value    : When true, the agent removes the command arguments from the
+#            commandLine attribute of ProcessSample. 
+# Default  : true
+# Risk     : Disabling this option causes all the command line arguments passed
+#            to commands to be sent to, and stored by, New Relic. This might
+#            include usernames, passwords, API keys, etc.
+# Tip       : Use this as a security measure to prevent leaking sensitive
+#             information.
+#
+#strip_command_line: true
+#
+
+#
+# Option   : dns_hostname_resolution
+# Env var  : NRIA_DNS_HOSTNAME_RESOLUTION
+# Value    : When true, the full hostname is resolved by performing a reverse
+#            lookup of the hosts address; otherwise, it’s retrieved using the
+#            hostname command on Linux, and from the TCP/IP Registry parameters
+#            on Windows.
+# Default  : true
+# Risk     : Changing this value could create a different host entity, causing
+#            some alarms to trigger, since the previous host would appear
+#            disconnected.
+#
+#dns_hostname_resolution: true
+#
+
+#
+# Option   : override_hostname
+# Env var  : NRIA_OVERRIDE_HOSTNAME
+# Value    : Value to be reported for the full hostname; otherwise, the agent
+#            performs a standard lookup.
+# Default  :
+# Risk     : Changing this value could create a different host entity, causing
+#            some alarms to trigger, since the previous host would appear 
+#            disconnected.
+#
+#override_hostname: custom.hostname.org
+#
+
+#
+# Option   : override_hostname_short
+# Env var  : NRIA_OVERRIDE_HOSTNAME_SHORT
+# Value    : Value to be reported for the hostname; otherwise, the agent 
+#            performs a standard lookup.
+# Default  :
+# Risk     : Changing this value could create a different host entity, causing
+#            some alarms to trigger, since the previous host would appear
+#            disconnected.
+#
+#override_hostname_short: custom-hostname
+#
+
+#
+# Option   : remove_entities_period
+# Env var  : NRIA_REMOVE_ENTITIES_PERIOD
+# Value    : Frequency for engaging the process of deleting entities that
+#            haven't reported information during the defined time interval. 
+#            Valid time units are: "s" (seconds), "m" (minutes), "h" (hours).
+# Default  : 48h
+#
+#remove_entities_period: 48h
+#
+
+#
+# Option   : enable_win_update_plugin
+# Env var  : NRIA_ENABLE_WIN_UPDATE_PLUGIN
+# Value    : Enables the Windows Updates plugin, which retrieves the lists of
+#            hotfixes installed on the host.
+# Default  : false
+#
+#enable_win_update_plugin: false
+#
+
+#
+# Option   : legacy_storage_sampler
+# Env var  : NRIA_LEGACY_STORAGE_SAMPLER
+# Value    : Set to True to force the agent to use windows WMI, the legacy
+#            method for collecting metrics on Windows (such as StorageSampler)
+#            instead of the PDH library.
+# Default  : Depending on the Windows version:
+#          : false for amd64
+#          : true  for 386
+#
+#legacy_storage_sampler: false
+#
+
+#
+# Option   : win_process_priority_class
+# Env var  : NRIA_WIN_PROCESS_PRIORITY_CLASS
+# Value    : Priority of the newrelic-infra.exe process. Possible values are:
+#            Normal, Idle, High, RealTime, BelowNormal, AboveNormal.
+# Default  :
+#
+#win_process_priority_class: Normal
+#
+
+#
+# Option   : win_removable_drives
+# Env var  : NRIA_WIN_REMOVABLE_DRIVES
+# Value    : Enables the agent to report drives A: and B: when mapped to 
+#            removable drives.
+# Default  : true
+#
+#win_removable_drives: true
+#
+
+#
+# Option   : disable_zero_mem_process_filter
+# Env var  : NRIA_DISABLE_ZERO_MEM_PROCESS_FILTER
+# Value    : Set to True to let the ZeroRSSFilter exclude processes that are not
+#            using memory from being sampled. If disabled, the agent includes
+#            those processes in the ProcessSample.
+# Default  : false
+#
+#disable_zero_mem_process_filter: false
+#
