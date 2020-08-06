@@ -406,7 +406,6 @@ func (rs *RunnerSuite) TestRegisterInstances(c *C) {
 // customContext implements the AgentContext interface for testing purposes
 // It only has two channels to read/write events and inventory data from plugins
 type customContext struct {
-	agent.AgentContext
 	ch  chan agent.PluginOutput
 	ev  chan sample.Event
 	cfg *config.Config
@@ -456,6 +455,10 @@ func (cc customContext) IDLookup() agent.IDLookup {
 	idLookupTable := make(agent.IDLookup)
 	idLookupTable[sysinfo.HOST_SOURCE_HOSTNAME_SHORT] = "short_hostname"
 	return idLookupTable
+}
+
+func (cc customContext) AgentIdentity() entity.Identity {
+	return entity.EmptyIdentity
 }
 
 func newContext() customContext {

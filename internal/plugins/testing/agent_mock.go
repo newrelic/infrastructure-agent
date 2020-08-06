@@ -18,7 +18,6 @@ import (
 )
 
 type MockAgent struct {
-	agent.AgentContext
 	ch         chan agent.PluginOutput
 	registered bool
 	cfg        *config.Config
@@ -28,6 +27,13 @@ type MockAgent struct {
 
 func (m *MockAgent) HostnameResolver() hostname.Resolver {
 	return m.resolver
+}
+
+func (m *MockAgent) AgentIdentity() entity.Identity {
+	return entity.Identity{
+		ID:   entity.ID(1337),
+		GUID: "VGhpcyBpcyBhIE1vY2tBZ2VudCB1c2VkIGZvciB0ZXN0aW5nIG9ubHk=",
+	}
 }
 
 func NewMockAgent() *MockAgent {

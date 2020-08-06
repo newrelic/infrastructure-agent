@@ -5,6 +5,7 @@ package emitter
 import (
 	"errors"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"strings"
 	"testing"
 
@@ -18,7 +19,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
-	"github.com/newrelic/infrastructure-agent/pkg/sample"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -549,7 +549,7 @@ func TestProtocolV4_Emit_WithFFDisabled(t *testing.T) {
 	require.Error(t, err)
 }
 
-func mockAgent() *mockedAgent {
+func mockAgent() *mocks.AgentContext {
 	aID := agent.IDLookup{
 		sysinfo.HOST_SOURCE_HOSTNAME:       "long",
 		sysinfo.HOST_SOURCE_HOSTNAME_SHORT: "short",
@@ -560,7 +560,7 @@ func mockAgent() *mockedAgent {
 		SupervisorRpcSocket:  "/tmp/supervisor.sock.test",
 	}
 
-	ma := &mockedAgent{}
+	ma := &mocks.AgentContext{}
 	ma.On("AgentIdentifier").Return("bob")
 	ma.On("IDLookup").Return(aID)
 	ma.On("SendData", mock.AnythingOfType("agent.PluginOutput")).Once()
@@ -576,31 +576,6 @@ func mockMetricSender() *mockedMetricsSender {
 	mockedMetricsSender.On("SendMetrics", mock.AnythingOfType("[]protocol.Metric")).Once()
 
 	return mockedMetricsSender
-}
-
-type mockedAgent struct {
-	agent.AgentContext
-	mock.Mock
-}
-
-func (m *mockedAgent) AgentIdentifier() string {
-	return m.Called().String(0)
-}
-
-func (m *mockedAgent) IDLookup() agent.IDLookup {
-	return m.Called().Get(0).(agent.IDLookup)
-}
-
-func (m *mockedAgent) SendData(po agent.PluginOutput) {
-	m.Called(po)
-}
-
-func (m *mockedAgent) Config() *config.Config {
-	return m.Called().Get(0).(*config.Config)
-}
-
-func (m *mockedAgent) SendEvent(event sample.Event, entityKey entity.Key) {
-	m.Called(event, entityKey)
 }
 
 type mockedMetricsSender struct {

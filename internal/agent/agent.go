@@ -120,6 +120,8 @@ type AgentContext interface {
 	// HostnameResolver returns the host name resolver associated to the agent context
 	HostnameResolver() hostname.Resolver
 	IDLookup() IDLookup
+
+	// AgentIdentity returns the entity ID of the infra agent
 	AgentIdentity() entity.Identity
 }
 
