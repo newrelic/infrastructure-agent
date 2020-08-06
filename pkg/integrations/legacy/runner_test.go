@@ -457,6 +457,10 @@ func (cc customContext) IDLookup() agent.IDLookup {
 	return idLookupTable
 }
 
+func (cc customContext) AgentIdentity() entity.Identity {
+	return entity.EmptyIdentity
+}
+
 func newContext() customContext {
 	configStr := `
 collector_url:  http://foo.bar

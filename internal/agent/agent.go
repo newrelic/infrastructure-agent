@@ -128,6 +128,9 @@ type AgentContext interface {
 	// HostnameResolver returns the host name resolver associated to the agent context
 	HostnameResolver() hostname.Resolver
 	IDLookup() IDLookup
+
+	// AgentIdentity returns the entity ID of the infra agent
+	AgentIdentity() entity.Identity
 }
 
 // context defines a bunch of agent data structures we make
@@ -287,7 +290,11 @@ func checkCollectorConnectivity(ctx context2.Context, cfg *config.Config, retrie
 }
 
 // NewAgent returns a new instance of an agent built from the config.
-func NewAgent(cfg *config.Config, buildVersion string, ffRetriever feature_flags.Retriever) (a *Agent, err error) {
+func NewAgent(
+	cfg *config.Config,
+	buildVersion string,
+	userAgent string,
+	ffRetriever feature_flags.Retriever) (a *Agent, err error) {
 
 	hostnameResolver := hostname.CreateResolver(
 		cfg.OverrideHostname, cfg.OverrideHostnameShort, cfg.DnsHostnameResolution)
@@ -320,8 +327,6 @@ func NewAgent(cfg *config.Config, buildVersion string, ffRetriever feature_flags
 
 	s := delta.NewStore(dataDir, ctx.AgentIdentifier(), maxInventorySize)
 
-	userAgent := GenerateUserAgent("New Relic Infrastructure Agent", buildVersion)
-
 	transport := backendhttp.BuildTransport(cfg, backendhttp.ClientTimeout)
 
 	httpClient := backendhttp.GetHttpClient(backendhttp.ClientTimeout, transport).Do
@@ -343,7 +348,7 @@ func NewAgent(cfg *config.Config, buildVersion string, ffRetriever feature_flags
 		return nil, err
 	}
 
-	registerClient, err := identityapi.NewIdentityRegisterClient(
+	registerClient, err := identityapi.NewRegisterClient(
 		identityURL,
 		cfg.License,
 		userAgent,

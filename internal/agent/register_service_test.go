@@ -11,6 +11,6 @@ import (
 
 type MockIdentityRegisterClient struct{}
 
-func (icc *MockIdentityRegisterClient) Register(agentEntityID entity.ID, entities []identityapi.RegisterEntity) (r []identityapi.RegisterEntityResponse, retryAfter time.Duration, err error) {
+func (icc *MockIdentityRegisterClient) RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities []identityapi.RegisterEntity) (r []identityapi.RegisterEntityResponse, retryAfter time.Duration, err error) {
 	return
 }
