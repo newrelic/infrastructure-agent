@@ -5,12 +5,16 @@
 # which are ignored by the infrastructure agent. Uncomment the desired options
 # to enable them. Restart the agent or the server after changing settings.
 #
+# To use this file, change its name to newrelic-infra.yml and move it to:
+#    - Linux: /etc/newrelic-infra.yml
+#    - Windows: C:\Program Files\New Relic\newrelic-infra\newrelic-infra.yml
+#
 # The infrastructure agent only requires the license key to be 
 # configured; the rest of the default values represent best practices.
 #
 # If options have command line equivalents, New Relic uses the command line 
 # options to override values set in this file. 
-
+#
 # Environment variables (documented here as "Env var") always override the
 # values set in the configuration file. We recommend setting any sensitive
 # information through environment variables.
