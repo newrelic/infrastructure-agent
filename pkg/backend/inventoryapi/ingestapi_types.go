@@ -66,6 +66,7 @@ func (a DeltasByID) Len() int           { return len(a) }
 func (a DeltasByID) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a DeltasByID) Less(i, j int) bool { return a[i].ID < a[j].ID }
 
+// DeltaState platform response for a given plugin submission.
 type DeltaState struct {
 	// NeedsReset was added Sept 2017 to fix the situation where the agent
 	// sent id N and the server expected N+1 resulting in the ambiguous

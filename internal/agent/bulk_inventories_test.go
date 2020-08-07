@@ -22,8 +22,6 @@ var plugin = &delta.PluginInfo{
 	Source:       "metadata/plugin",
 	Plugin:       "metadata",
 	FileName:     "plugin.json",
-	MostRecentID: int64(0),
-	LastSentID:   int64(0),
 }
 
 // createDelta creates and stores a delta JSON for a given entity, with a size approximate to the given size
