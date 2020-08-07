@@ -141,7 +141,7 @@ license_key: your_license_key
 # Option   : verbose
 # Env var  : NRIA_VERBOSE
 # Value    : Enable (1) only for troubleshooting. Use (3) to forward the 
-             agent logs to New Relic Logs for troubleshooting.
+#            agent logs to New Relic for troubleshooting.
 # Default  : 0
 # Risk     : Verbose logging can generate a lot of data very quickly.
 # Tip      : Run the agent in verbose mode only for troubleshooting. To disable 
