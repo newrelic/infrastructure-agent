@@ -111,7 +111,7 @@ func BenchmarkSysctlSubscriberRootless(b *testing.B) {
 
 	// fake some FS changes
 	for i := 0; i < b.N; i++ {
-		evCh <- &fsnotify.FileEvent{
+		evCh <- fsnotify.Event{
 			Name: fmt.Sprintf("fake/path/iteration-%d", i),
 		}
 	}
