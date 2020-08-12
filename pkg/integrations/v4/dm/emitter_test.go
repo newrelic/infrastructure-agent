@@ -60,7 +60,6 @@ func (e *enabledFFRetriever) GetFeatureFlag(name string) (enabled bool, exists b
 }
 
 type mockedRegisterClient struct {
-	identityapi.RegisterClient
 	mock.Mock
 }
 
@@ -71,6 +70,14 @@ func (mk *mockedRegisterClient) RegisterBatchEntities(agentEntityID entity.ID, e
 	return args.Get(0).([]identityapi.RegisterEntityResponse),
 		args.Get(1).(time.Duration),
 		args.Error(2)
+}
+
+func (mk *mockedRegisterClient) RegisterEntity(agentEntityID entity.ID, entity protocol.Entity) (identityapi.RegisterEntityResponse, error){
+	return identityapi.RegisterEntityResponse{}, nil
+}
+
+func (mk *mockedRegisterClient) RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities []identityapi.RegisterEntity) ([]identityapi.RegisterEntityResponse, time.Duration, error){
+	return nil, time.Second, nil
 }
 
 func TestEmitter_Send_RegisterErr(t *testing.T) {

@@ -40,7 +40,7 @@ type emitter struct {
 	ffRetriever    feature_flags.Retriever
 	metricsSender  MetricsSender
 	agentContext   agent.AgentContext
-	registerClient identityapi.RegisterClient
+	idProvider idProvider
 }
 
 type Emitter interface {
@@ -57,11 +57,13 @@ func NewEmitter(
 	ffRetriever feature_flags.Retriever,
 	registerClient identityapi.RegisterClient) Emitter {
 
+	idProvider := NewIDProvider(registerClient)
+
 	return &emitter{
 		agentContext:   agentContext,
 		metricsSender:  dmSender,
 		ffRetriever:    ffRetriever,
-		registerClient: registerClient,
+		idProvider: idProvider,
 	}
 }
 
@@ -146,21 +148,11 @@ func (e *emitter) process(
 	return composeEmitError(emitErrs, len(integrationData.DataSets))
 }
 
-func (e *emitter) RegisterEntities(entities []protocol.Entity) (map[string]entity.ID, error) {
+func (e *emitter) RegisterEntities(entities []protocol.Entity) (RegisteredEntitiesNameIDMap, error) {
 	// Bulk update them (after checking our datastore if they exist)
 	// add entity ID to metric annotations
-	resp, _, err := e.registerClient.RegisterBatchEntities(e.agentContext.AgentIdentity().ID, entities)
+	registeredEntities, _ := e.idProvider.Entities(e.agentContext.AgentIdentity(), entities)
 
-	if err != nil {
-		//TODO: handle error
-		return nil, err
-	}
-
-	registeredEntities := make(map[string]entity.ID, len(resp))
-
-	for i := range resp {
-		registeredEntities[string(resp[i].Key)] = resp[i].ID
-	}
 	return registeredEntities, nil
 }
 
