@@ -203,7 +203,7 @@ func (self *ConfigFilePlugin) parseAndAddPaths() {
 		if shouldBeIgnored(file) {
 			ignored += 1
 		} else {
-			if err := self.watcher.Watch(file); err != nil {
+			if err := self.watcher.Add(file); err != nil {
 				self.logger.WithError(err).WithField("file", file).Error("Unable to add watch to file")
 			}
 		}
@@ -234,7 +234,7 @@ func (self *ConfigFilePlugin) Run() {
 			// stop the ticker regardless, it gets recreated below if needed
 			checkTicker.Stop()
 			// if we successfully add a watch for external.d kill the ticker
-			if err := self.watcher.Watch(self.externalDDir); err == nil {
+			if err := self.watcher.Add(self.externalDDir); err == nil {
 				externalDExists = true
 				self.parseAndAddPaths()
 				// since we just updated ALL THE FILES, we probably want to flush
@@ -244,21 +244,25 @@ func (self *ConfigFilePlugin) Run() {
 				checkTicker = time.NewTicker(1 * time.Minute)
 			}
 
-		case event := <-self.watcher.Event:
+		case event := <-self.watcher.Events:
 			if filepath.Dir(event.Name) == self.externalDDir {
 				self.parseAndAddPaths()
 				flushNeeded = true
 			}
 
-			if event.IsRename() {
+			if event.Op&fsnotify.Rename == fsnotify.Rename {
 				movedFiles[event.Name] = true
 			}
 
-			if event.IsModify() {
+			if event.Op&fsnotify.Remove == fsnotify.Remove {
 				flushNeeded = true
 			}
 
-		case err := <-self.watcher.Error:
+			if event.Op&fsnotify.Write == fsnotify.Write {
+				flushNeeded = true
+			}
+
+		case err := <-self.watcher.Errors:
 			self.logger.WithError(err).Error("watcher received an error")
 
 		case <-flushTimer.C:
@@ -278,7 +282,7 @@ func (self *ConfigFilePlugin) Run() {
 
 				// re-add any files that may have been renamed in the last flush interval
 				for file := range movedFiles {
-					if err := self.watcher.Watch(file); err != nil {
+					if err := self.watcher.Add(file); err != nil {
 						self.logger.WithError(err).WithField(
 							"file", file,
 						).Error("Couldn't re-add file to watch")

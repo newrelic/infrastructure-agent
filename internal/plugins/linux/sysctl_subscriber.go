@@ -34,7 +34,7 @@ func NewSysctlSubscriberMonitor(id ids.PluginID, ctx agent.AgentContext) (*Sysct
 		return nil, errors.Wrap(err, "cannot create sys watcher")
 	}
 
-	err = watcher.WatchFlags(sysPoller.procSysDir, fsnotify.FSN_MODIFY)
+	err = watcher.Add(sysPoller.procSysDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot watch on sys filesystem")
 	}
@@ -71,19 +71,25 @@ func (p *SysctlSubscriberPlugin) Run() {
 			ticker.Stop()
 			ticker = time.NewTicker(p.frequency)
 
-		case e := <-p.watcher.Event:
-			needsFlush = true
-			output, err := ioutil.ReadFile(e.Name)
-			if err != nil {
-				sclog.WithField("file", e.Name).Debug("Cannot read sys file.")
-			} else {
-				deltas = append(deltas, p.newSysctlItem(e.Name, output))
+		case event, ok := <-p.watcher.Events:
+			if !ok {
+				continue
+			}
+
+			if event.Op&fsnotify.Write == fsnotify.Write {
+				needsFlush = true
+				output, err := ioutil.ReadFile(event.Name)
+				if err != nil {
+					sclog.WithField("file", event.Name).Debug("Cannot read sys file.")
+				} else {
+					deltas = append(deltas, p.newSysctlItem(event.Name, output))
+				}
 			}
 		}
 	}
 }
 
 // deprecated, just for testing purposes
-func (p *SysctlSubscriberPlugin) EventsCh() chan *fsnotify.FileEvent {
-	return p.watcher.Event
+func (p *SysctlSubscriberPlugin) EventsCh() chan fsnotify.Event {
+	return p.watcher.Events
 }

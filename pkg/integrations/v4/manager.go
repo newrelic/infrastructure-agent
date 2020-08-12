@@ -208,12 +208,12 @@ func NewManager(cfg Configuration, emitter emitter.Emitter) *Manager {
 
 		if watcher != nil {
 			flog.Debugf("watching %v", folder)
-			if err := watcher.Watch(folder); err != nil {
+			if err := watcher.Add(folder); err != nil {
 				flog.WithError(err).Warn("cant watch for file changes in folder")
 			}
 			for i := range configs {
 				flog.Debugf("watching :%v", i)
-				if err := watcher.Watch(i); err != nil {
+				if err := watcher.Add(i); err != nil {
 					flog.WithError(err).Warn("cant watch for file change")
 				}
 			}
@@ -309,9 +309,9 @@ func (mgr *Manager) watchForChanges() {
 	wclog.Debug("Watching for integrations file changes.")
 	for {
 		select {
-		case event := <-mgr.watcher.Event:
-			mgr.handleFileEvent(event)
-		case err := <-mgr.watcher.Error:
+		case event := <-mgr.watcher.Events:
+			mgr.handleFileEvent(&event)
+		case err := <-mgr.watcher.Errors:
 			wclog.WithError(err).Debug("Error watching file changes.")
 		case <-mgr.parent.Done():
 			wclog.Debug("Parent context has been cancelled. Stopped watching for file changes.")
@@ -320,7 +320,7 @@ func (mgr *Manager) watchForChanges() {
 	}
 }
 
-func (mgr *Manager) handleFileEvent(event *fsnotify.FileEvent) {
+func (mgr *Manager) handleFileEvent(event *fsnotify.Event) {
 	wclog := illog.WithField("function", "handleFileEvent")
 
 	if event == nil {
@@ -332,9 +332,23 @@ func (mgr *Manager) handleFileEvent(event *fsnotify.FileEvent) {
 		WithField("file_name", event.Name)
 	elog.Debug("Received File event.")
 
-	isDelete := event.IsDelete() || event.IsRename()
-	isCreate := event.IsCreate()
-	isWrite := isCreate || event.IsModify()
+	var eDelete, eCreate, eWrite, eRename bool
+	if event.Op&fsnotify.Write == fsnotify.Write {
+		eWrite = true
+	}
+	if event.Op&fsnotify.Remove == fsnotify.Remove {
+		eDelete = true
+	}
+	if event.Op&fsnotify.Create == fsnotify.Create {
+		eCreate = true
+	}
+	if event.Op&fsnotify.Rename == fsnotify.Rename {
+		eRename = true
+	}
+
+	isDelete := eDelete || eRename
+	isCreate := eCreate
+	isWrite := isCreate || eWrite
 	if !isDelete && !isWrite {
 		elog.Debug("Ignoring File event.")
 		return
@@ -359,14 +373,14 @@ func (mgr *Manager) handleFileEvent(event *fsnotify.FileEvent) {
 		}
 
 		elog.Debugf("file '%v' says deleted but still here", event.Name)
-		if err := mgr.watcher.Watch(event.Name); err != nil {
+		if err := mgr.watcher.Add(event.Name); err != nil {
 			elog.WithError(err).Warn("cant watch for file changes")
 		}
 	}
 
 	if isCreate {
 		elog.Debugf("watching file '%v' as brand new", event.Name)
-		if err := mgr.watcher.Watch(event.Name); err != nil {
+		if err := mgr.watcher.Add(event.Name); err != nil {
 			elog.WithError(err).Warn("cant watch for file changes")
 		}
 

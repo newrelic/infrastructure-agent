@@ -136,7 +136,7 @@ func (self *DpkgPlugin) Run() {
 		return
 	}
 
-	err = watcher.WatchFlags("/var/lib/dpkg/lock", FSN_CLOSE_WRITE)
+	err = watcher.Add("/var/lib/dpkg/lock")
 	if err != nil {
 		dpkglog.WithError(err).Error("can't setup trigger file watcher for dpkg")
 		self.Unregister()
@@ -147,14 +147,16 @@ func (self *DpkgPlugin) Run() {
 	ticker := time.NewTicker(1)
 	for {
 		select {
-		case _, ok := <-watcher.Event:
+		case event, ok := <-watcher.Events:
 			if ok {
-				counter = counter + 1
-				if counter > 1 {
-					dpkglog.WithFields(logrus.Fields{
-						"frequency": self.frequency,
-						"counter":   counter,
-					}).Debug("dpkg plugin oversampling.")
+				if event.Op&fsnotify.Write == fsnotify.Write {
+					counter = counter + 1
+					if counter > 1 {
+						dpkglog.WithFields(logrus.Fields{
+							"frequency": self.frequency,
+							"counter":   counter,
+						}).Debug("dpkg plugin oversampling.")
+					}
 				}
 			} else {
 				dpkglog.Debug("dpkg lock watcher closed.")

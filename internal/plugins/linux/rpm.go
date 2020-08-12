@@ -135,11 +135,11 @@ func (p *rpmPlugin) Run() {
 		return
 	}
 
-	err = watcher.WatchFlags("/var/lib/rpm/.rpm.lock", FSN_CLOSE_WRITE)
+	err = watcher.Add("/var/lib/rpm/.rpm.lock")
 	if err != nil {
 		// Some old distros, like SLES 11, do not provide .rpm.lock file, but the same
 		// effect can be achieved by listening some standard files from the RPM database
-		err = watcher.WatchFlags("/var/lib/rpm/Installtid", FSN_CLOSE_WRITE)
+		err = watcher.Add("/var/lib/rpm/Installtid")
 		if err != nil {
 			rpmlog.WithError(err).Error("can't setup trigger file watcher for rpm")
 			p.Unregister()
@@ -151,14 +151,16 @@ func (p *rpmPlugin) Run() {
 	ticker := time.NewTicker(1)
 	for {
 		select {
-		case _, ok := <-watcher.Event:
+		case event, ok := <-watcher.Events:
 			if ok {
-				counter = counter + 1
-				if counter > 1 {
-					rpmlog.WithFields(logrus.Fields{
-						"frequency": p.frequency,
-						"counter":   counter,
-					}).Debug("rpm plugin oversampling.")
+				if event.Op&fsnotify.Write == fsnotify.Write {
+					counter = counter + 1
+					if counter > 1 {
+						rpmlog.WithFields(logrus.Fields{
+							"frequency": p.frequency,
+							"counter":   counter,
+						}).Debug("rpm plugin oversampling.")
+					}
 				}
 			} else {
 				rpmlog.Debug("rpm lock watcher closed.")

@@ -97,7 +97,7 @@ func (self *UsersPlugin) Run() {
 		return
 	}
 
-	err = watcher.WatchFlags("/var/run/utmp", fsnotify.FSN_MODIFY)
+	err = watcher.Add("/var/run/utmp")
 	if err != nil {
 		usrlog.WithError(err).Error("can't setup trigger file watcher for users")
 		self.Unregister()
@@ -108,8 +108,12 @@ func (self *UsersPlugin) Run() {
 
 	for {
 		select {
-		case <-watcher.Event:
-			needsFlush = true
+		case event, ok := <-watcher.Events:
+			if ok {
+				if event.Op&fsnotify.Write == fsnotify.Write {
+					needsFlush = true
+				}
+			}
 		case <-refreshTimer.C:
 			{
 				refreshTimer.Reset(self.frequency)
