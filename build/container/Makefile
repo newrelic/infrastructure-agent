@@ -20,6 +20,9 @@ REPO                           ?= infrastructure
 IMAGE_NAME                     ?= ${NS}/${REPO}
 CORE_IMAGE_NAME                ?= ${IMAGE_NAME}-core
 BASE_IMAGE_NAME                ?= ${IMAGE_NAME}
+K8S_FWD_IMAGE_NAME			   ?= ${NS}/k8s-events-forwarder
+FWD_IMAGE_NAME			   	   ?= ${NS}/nri-forwarder
+DOCKER_IMAGE_NAME			   ?= ${BASE_IMAGE_NAME}
 
 AGENT_BIN                      ?= newrelic-infra
 DOCKERFILE                     ?= $(CURDIR)/Dockerfile
@@ -29,14 +32,13 @@ BASE_OHIS                      ?= ohis
 DOCKER_VERSION                 ?= $(call get-nri-version,nri-docker)
 FLEX_VERSION                   ?= $(call get-nri-version,nri-flex)
 
+DOCKER_TARGET					?= base
 DOCKER_NO_CACHE					?= --no-cache
-DOCKER_BUILD_BASE				= docker build \
+DOCKER_BUILD_BASE				?= docker build \
 								${DOCKER_NO_CACHE} \
 								--pull \
-								-t ${BASE_IMAGE_NAME}:${IMAGE_VERSION} \
-								-t ${BASE_IMAGE_NAME}:latest \
-								-t newrelic-infrastructure:${IMAGE_VERSION} \
-								-t newrelic-infrastructure:latest \
+								-t ${DOCKER_IMAGE_NAME}:${IMAGE_VERSION} \
+								-t ${DOCKER_IMAGE_NAME}:latest \
 								--build-arg image_version=${IMAGE_VERSION} \
 								--build-arg agent_version=${AGENT_VERSION} \
 								--build-arg version_file=VERSION \
@@ -44,7 +46,7 @@ DOCKER_BUILD_BASE				= docker build \
 								--build-arg nri_pkg_dir=${BASE_OHIS} \
 								--build-arg nri_docker_version=${DOCKER_VERSION} \
 								--build-arg nri_flex_version=${FLEX_VERSION} \
-								--target base \
+								--target ${DOCKER_TARGET} \
 								-f ${DOCKERFILE} \
 								${INFRASTRUCTURE_WORKSPACE}
 
@@ -95,6 +97,24 @@ base/get-infra-agent:
 build/base : workspace/assets
 build/base : base/get-integrations
 build/base : base/get-infra-agent
+build/base : DOCKER_TARGET=base
+build/base :
+	@(${DOCKER_BUILD_BASE})
+
+.PHONY : build/forwarder
+build/forwarder : workspace/assets
+build/forwarder : base/get-infra-agent
+build/forwarder : DOCKER_TARGET=forwarder
+build/forwarder : DOCKER_IMAGE_NAME=${FWD_IMAGE_NAME}
+build/forwarder :
+	@(${DOCKER_BUILD_BASE})
+
+.PHONY : build/k8s-events-forwarder
+build/k8s-events-forwarder : workspace/assets
+build/k8s-events-forwarder : base/get-infra-agent
+build/k8s-events-forwarder : DOCKER_TARGET=k8s-events-forwarder
+build/k8s-events-forwarder : DOCKER_IMAGE_NAME=${K8S_FWD_IMAGE_NAME}
+build/k8s-events-forwarder :
 	@(${DOCKER_BUILD_BASE})
 
 # publish to docker hub
