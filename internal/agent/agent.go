@@ -918,12 +918,11 @@ func (a *Agent) Run() (err error) {
 				for _, inventory := range a.inventories {
 					err := inventory.sender.Process()
 					if err != nil {
-						if ingestError, ok := err.(*inventoryapi.IngestError); ok {
-							if ingestError.StatusCode == http.StatusTooManyRequests {
-								alog.Warn("server is rate limiting inventory for this Infrastructure Agent")
-								backoffMax = config.RATE_LIMITED_BACKOFF
-								sendErrorCount = helpers.MaxBackoffErrorCount
-							}
+						if ingestError, ok := err.(*inventoryapi.IngestError); ok &&
+							ingestError.StatusCode == http.StatusTooManyRequests {
+							alog.Warn("server is rate limiting inventory submission")
+							backoffMax = config.RATE_LIMITED_BACKOFF
+							sendErrorCount = helpers.MaxBackoffErrorCount
 						} else {
 							sendErrorCount++
 						}
