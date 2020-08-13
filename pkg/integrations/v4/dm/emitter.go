@@ -11,7 +11,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/http"
-	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
@@ -32,6 +31,8 @@ const (
 	nrEntityId = "nr.entity.id"
 )
 
+var errSomeEntitiesNotRegistered = fmt.Errorf("some of entities were not registered")
+
 type Agent interface {
 	GetContext() agent.AgentContext
 }
@@ -40,7 +41,7 @@ type emitter struct {
 	ffRetriever    feature_flags.Retriever
 	metricsSender  MetricsSender
 	agentContext   agent.AgentContext
-	idProvider idProvider
+	idProvider idProviderInterface
 }
 
 type Emitter interface {
@@ -55,15 +56,13 @@ func NewEmitter(
 	agentContext agent.AgentContext,
 	dmSender MetricsSender,
 	ffRetriever feature_flags.Retriever,
-	registerClient identityapi.RegisterClient) Emitter {
-
-	idProvider := NewIDProvider(registerClient)
+	idProvider idProviderInterface) Emitter {
 
 	return &emitter{
-		agentContext:   agentContext,
-		metricsSender:  dmSender,
-		ffRetriever:    ffRetriever,
-		idProvider: idProvider,
+		agentContext:  agentContext,
+		metricsSender: dmSender,
+		ffRetriever:   ffRetriever,
+		idProvider:    idProvider,
 	}
 }
 
@@ -98,10 +97,8 @@ func (e *emitter) process(
 		entities = append(entities, integrationData.DataSets[i].Entity)
 	}
 
-	registeredEntities, err := e.RegisterEntities(entities)
-	if err != nil {
-		return err
-	}
+	// TODO start using unregisteredEntities
+	registeredEntities, _ := e.RegisterEntities(entities)
 
 	agentShortName, err := e.agentContext.IDLookup().AgentShortEntityName()
 	if err != nil {
@@ -148,12 +145,10 @@ func (e *emitter) process(
 	return composeEmitError(emitErrs, len(integrationData.DataSets))
 }
 
-func (e *emitter) RegisterEntities(entities []protocol.Entity) (RegisteredEntitiesNameIDMap, error) {
+func (e *emitter) RegisterEntities(entities []protocol.Entity) (RegisteredEntitiesNameIDMap, UnregisteredEntities) {
 	// Bulk update them (after checking our datastore if they exist)
 	// add entity ID to metric annotations
-	registeredEntities, _ := e.idProvider.Entities(e.agentContext.AgentIdentity(), entities)
-
-	return registeredEntities, nil
+	return e.idProvider.Entities(e.agentContext.AgentIdentity(), entities)
 }
 
 func emitInventory(

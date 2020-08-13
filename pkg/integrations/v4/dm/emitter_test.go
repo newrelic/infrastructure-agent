@@ -3,13 +3,12 @@
 package dm
 
 import (
-	"errors"
+	"fmt"
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
-	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
@@ -19,7 +18,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"testing"
-	"time"
 )
 
 var (
@@ -59,66 +57,27 @@ func (e *enabledFFRetriever) GetFeatureFlag(name string) (enabled bool, exists b
 	return true, true
 }
 
-type mockedRegisterClient struct {
+type mockedIdProvider struct {
 	mock.Mock
 }
 
-func (mk *mockedRegisterClient) RegisterBatchEntities(agentEntityID entity.ID, entities []protocol.Entity,
-) ([]identityapi.RegisterEntityResponse, time.Duration, error) {
-
-	args := mk.Called(agentEntityID, entities)
-	return args.Get(0).([]identityapi.RegisterEntityResponse),
-		args.Get(1).(time.Duration),
-		args.Error(2)
-}
-
-func (mk *mockedRegisterClient) RegisterEntity(agentEntityID entity.ID, entity protocol.Entity) (identityapi.RegisterEntityResponse, error){
-	return identityapi.RegisterEntityResponse{}, nil
-}
-
-func (mk *mockedRegisterClient) RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities []identityapi.RegisterEntity) ([]identityapi.RegisterEntityResponse, time.Duration, error){
-	return nil, time.Second, nil
-}
-
-func TestEmitter_Send_RegisterErr(t *testing.T) {
-	agentCtx := getAgentContext("bob")
-	dmSender := &mockedMetricsSender{}
-	ffRetriever := &enabledFFRetriever{}
-	registerClient := &mockedRegisterClient{}
-
-	expectedError := errors.New("expected error")
-	registerClient.
-		On("RegisterBatchEntities", testIdentity.ID, mock.Anything).
-		Return([]identityapi.RegisterEntityResponse{}, time.Second, expectedError)
-
-	emitter := NewEmitter(agentCtx, dmSender, ffRetriever, registerClient)
-	metadata := integration.Definition{}
-	var extraLabels data.Map
-	var entityRewrite []data.EntityRewrite
-
-	err := emitter.Send(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4.Payload)
-
-	assert.EqualError(t, err, expectedError.Error())
+func (mk *mockedIdProvider) Entities(agentIdn entity.Identity, entities []protocol.Entity) (registeredEntities RegisteredEntitiesNameIDMap, unregisteredEntities UnregisteredEntities){
+	args := mk.Called(agentIdn, entities)
+	return args.Get(0).(RegisteredEntitiesNameIDMap),
+		args.Get(1).(UnregisteredEntities)
 }
 
 func TestEmitter_Send_ErrorOnHostname(t *testing.T) {
-	expectedEntityId := entity.ID(123)
 	agentCtx := getAgentContext("")
 	dmSender := &mockedMetricsSender{}
 	ffRetriever := &enabledFFRetriever{}
-	registerClient := &mockedRegisterClient{}
+	idProvider := &mockedIdProvider{}
 
-	registerBatchEntityResponse := []identityapi.RegisterEntityResponse{{Name: "unique name", ID: expectedEntityId}}
+	idProvider.
+		On("Entities", testIdentity, mock.Anything).
+		Return(RegisteredEntitiesNameIDMap{}, UnregisteredEntities{})
 
-	expectedEntities := []protocol.Entity{
-		{Name: "a.entity.one", Type: "ATYPE", DisplayName: "A display name one", Metadata: map[string]interface{}{"env": "testing"}},
-		{Name: "b.entity.two", Type: "ATYPE", DisplayName: "A display name two", Metadata: map[string]interface{}{"env": "testing"}},
-	}
-	registerClient.
-		On("RegisterBatchEntities", testIdentity.ID, expectedEntities).
-		Return(registerBatchEntityResponse, time.Second, nil)
-
-	emitter := NewEmitter(agentCtx, dmSender, ffRetriever, registerClient)
+	emitter := NewEmitter(agentCtx, dmSender, ffRetriever, idProvider)
 
 	metadata := integration.Definition{}
 	var extraLabels data.Map
@@ -128,28 +87,35 @@ func TestEmitter_Send_ErrorOnHostname(t *testing.T) {
 	assert.EqualError(t, err, "2 out of 2 datasets could not be emitted. Reasons: error renaming entity: no known identifier types found in ID lookup table")
 }
 
+
 func TestEmitter_SendOneEntityOutOfTwo(t *testing.T) {
 	expectedEntityId := entity.ID(123)
 	agentCtx := getAgentContext("test")
 	dmSender := &mockedMetricsSender{}
 	ffRetriever := &enabledFFRetriever{}
-	registerClient := &mockedRegisterClient{}
-
-	registerBatchEntityResponse := []identityapi.RegisterEntityResponse{
-		{
-			Name: "A display name one",
-			ID:   expectedEntityId,
-			Key:  "a.entity.one",
-		},
-	}
+	idProvider := &mockedIdProvider{}
 
 	expectedEntities := []protocol.Entity{
 		{Name: "a.entity.one", Type: "ATYPE", DisplayName: "A display name one", Metadata: map[string]interface{}{"env": "testing"}},
 		{Name: "b.entity.two", Type: "ATYPE", DisplayName: "A display name two", Metadata: map[string]interface{}{"env": "testing"}},
 	}
-	registerClient.
-		On("RegisterBatchEntities", testIdentity.ID, expectedEntities).
-		Return(registerBatchEntityResponse, time.Second, nil)
+
+	idProvider.
+		On("Entities", testIdentity, expectedEntities).
+		Return(
+			RegisteredEntitiesNameIDMap{"a.entity.one": expectedEntityId},
+			UnregisteredEntities{
+				{
+					Reason: reasonEntityError,
+					Err:    fmt.Errorf("invalid entityName"),
+					Entity: protocol.Entity{
+						Name: "b.entity.two",
+						Type: "ATYPE",
+						DisplayName: "A display name two",
+						Metadata: map[string]interface{}{"env": "testing"},
+					},
+				},
+			})
 
 	dmSender.
 		On("SendMetrics", mock.AnythingOfType("[]protocol.Metric"))
@@ -162,7 +128,7 @@ func TestEmitter_SendOneEntityOutOfTwo(t *testing.T) {
 				protocol.InventoryData{"id": "inventory_payload_one", "value": "foo-one"},
 			}, NotApplicable: false})
 
-	emitter := NewEmitter(agentCtx, dmSender, ffRetriever, registerClient)
+	emitter := NewEmitter(agentCtx, dmSender, ffRetriever, idProvider)
 
 	metadata := integration.Definition{}
 	var extraLabels data.Map
@@ -171,7 +137,7 @@ func TestEmitter_SendOneEntityOutOfTwo(t *testing.T) {
 	err := emitter.Send(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4TwoEntities.Payload)
 	assert.EqualError(t, err, "1 out of 2 datasets could not be emitted. Reasons: entity with name 'b.entity.two' was not registered in the backend")
 
-	registerClient.AssertExpectations(t)
+	idProvider.AssertExpectations(t)
 	dmSender.AssertExpectations(t)
 	agentCtx.AssertExpectations(t)
 
@@ -188,34 +154,24 @@ func TestEmitter_Send(t *testing.T) {
 	agentCtx := getAgentContext("bob")
 	dmSender := &mockedMetricsSender{}
 	ffRetriever := &enabledFFRetriever{}
-	registerClient := &mockedRegisterClient{}
-
-	registerBatchEntityResponse := []identityapi.RegisterEntityResponse{
-		{
-			Name: "unique name",
-			ID:   expectedEntityId,
-			Key:  "unique name",
-		},
-	}
+	idProvider := &mockedIdProvider{}
 
 	expectedEntities := []protocol.Entity{
-		{
-			Name:        "unique name",
-			Type:        "RedisInstance",
-			DisplayName: "human readable name",
-			Metadata:    make(map[string]interface{}),
-		}}
-	registerClient.
-		On("RegisterBatchEntities", testIdentity.ID, expectedEntities).
-		Return(registerBatchEntityResponse, time.Second, nil)
+		{Name: "unique name", Type: "RedisInstance", DisplayName: "human readable name", Metadata: map[string]interface{}{}},
+	}
 
+	idProvider.
+		On("Entities", testIdentity, expectedEntities).
+		Return(
+			RegisteredEntitiesNameIDMap{"unique name": expectedEntityId},
+			UnregisteredEntities{})
 	dmSender.
 		On("SendMetrics", mock.AnythingOfType("[]protocol.Metric"))
 
 	agentCtx.On("SendData",
 		agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "integration name"}, EntityKey: "unique name", Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_foo", "value": "bar"}}, NotApplicable: false})
 
-	emitter := NewEmitter(agentCtx, dmSender, ffRetriever, registerClient)
+	emitter := NewEmitter(agentCtx, dmSender, ffRetriever, idProvider)
 
 	metadata := integration.Definition{}
 	var extraLabels data.Map
@@ -224,7 +180,7 @@ func TestEmitter_Send(t *testing.T) {
 	err := emitter.Send(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4.Payload)
 
 	assert.NoError(t, err)
-	registerClient.AssertExpectations(t)
+	idProvider.AssertExpectations(t)
 	dmSender.AssertExpectations(t)
 	agentCtx.AssertExpectations(t)
 
@@ -248,3 +204,4 @@ func getAgentContext(hostname string) *mocks.AgentContext {
 func Test_NrEntityIdConst(t *testing.T) {
 	assert.Equal(t, nrEntityId, "nr.entity.id")
 }
+

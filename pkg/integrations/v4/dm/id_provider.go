@@ -7,9 +7,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 )
 
-// TODO: move into entity pkg? entity.Name
-type entityName string
-
 type EntityIDClientResponse map[string]identityapi.RegisterEntityResponse
 
 type RegisteredEntitiesNameIDMap map[string]entity.ID
@@ -35,6 +32,10 @@ func newUnregisteredEntity(entity protocol.Entity, reason reason, err error) Unr
 	}
 }
 
+type idProviderInterface interface {
+	Entities(agentIdn entity.Identity, entities []protocol.Entity) (registeredEntities RegisteredEntitiesNameIDMap, unregisteredEntities UnregisteredEntities)
+}
+
 // change to interface
 type idProvider struct {
 	client identityapi.RegisterClient
@@ -42,10 +43,10 @@ type idProvider struct {
 	unregisteredEntities UnregisteredEntitiesNamed
 }
 
-func NewIDProvider(client identityapi.RegisterClient) idProvider {
+func NewIDProvider(client identityapi.RegisterClient) *idProvider {
 	cache := make(RegisteredEntitiesNameIDMap)
 	unregisteredEntities := make(UnregisteredEntitiesNamed)
-	return idProvider{
+	return &idProvider{
 		client:               client,
 		cache:                cache,
 		unregisteredEntities: unregisteredEntities,

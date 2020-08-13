@@ -11,6 +11,27 @@ import (
 	"time"
 )
 
+type mockedRegisterClient struct {
+	mock.Mock
+}
+
+func (mk *mockedRegisterClient) RegisterBatchEntities(agentEntityID entity.ID, entities []protocol.Entity,
+) ([]identityapi.RegisterEntityResponse, time.Duration, error) {
+
+	args := mk.Called(agentEntityID, entities)
+	return args.Get(0).([]identityapi.RegisterEntityResponse),
+		args.Get(1).(time.Duration),
+		args.Error(2)
+}
+
+func (mk *mockedRegisterClient) RegisterEntity(agentEntityID entity.ID, entity protocol.Entity) (identityapi.RegisterEntityResponse, error){
+	return identityapi.RegisterEntityResponse{}, nil
+}
+
+func (mk *mockedRegisterClient) RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities []identityapi.RegisterEntity) ([]identityapi.RegisterEntityResponse, time.Duration, error){
+	return nil, time.Second, nil
+}
+
 func TestIdProvider_Entities_MemoryFirst(t *testing.T) {
 
 	agentIdn := entity.Identity{ID: 13}

@@ -283,7 +283,8 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		pluginSourceDirs,
 	)
 
-	dmEmitter := dm.NewEmitter(agt.GetContext(), dmSender, ffManager, registerClient)
+	idProvider := dm.NewIDProvider(registerClient)
+	dmEmitter := dm.NewEmitter(agt.GetContext(), dmSender, ffManager, idProvider)
 	integrationEmitter := emitter.NewIntegrationEmitter(agt, dmEmitter, ffManager)
 	integrationManager := v4.NewManager(integrationCfg, integrationEmitter)
 
