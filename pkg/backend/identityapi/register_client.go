@@ -64,13 +64,15 @@ type RegisterEntityResponse struct {
 	ID   entity.ID  `json:"entityID"`
 	Key  entity.Key `json:"entityKey"`
 	Name string     `json:"entityName"`
+	Err  string     `json:"err"`
 }
 
-func NewRegisterEntityResponse(id entity.ID, key entity.Key, name string) RegisterEntityResponse {
+func NewRegisterEntityResponse(id entity.ID, key entity.Key, name string, err string) RegisterEntityResponse {
 	return RegisterEntityResponse{
 		ID:   id,
 		Key:  key,
 		Name: name,
+		Err:  err,
 	}
 }
 
@@ -128,7 +130,8 @@ func (rc *registerClient) RegisterBatchEntities(agentEntityID entity.ID, entitie
 		resp[i] = NewRegisterEntityResponse(
 			entity.ID(apiReps[i].EntityId),
 			entity.Key(apiReps[i].EntityName),
-			apiReps[i].EntityName)
+			apiReps[i].EntityName,
+			apiReps[i].Error)
 	}
 
 	return resp, time.Second, err
@@ -160,7 +163,8 @@ func (rc *registerClient) RegisterEntity(agentEntityID entity.ID, ent protocol.E
 	resp = NewRegisterEntityResponse(
 		entity.ID(apiReps.EntityId),
 		entity.Key(apiReps.EntityName),
-		apiReps.EntityName)
+		apiReps.EntityName,
+		"")
 
 	return resp, err
 }
