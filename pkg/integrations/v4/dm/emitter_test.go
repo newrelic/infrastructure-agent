@@ -61,9 +61,9 @@ type mockedIdProvider struct {
 	mock.Mock
 }
 
-func (mk *mockedIdProvider) Entities(agentIdn entity.Identity, entities []protocol.Entity) (registeredEntities RegisteredEntitiesNameIDMap, unregisteredEntities UnregisteredEntities){
+func (mk *mockedIdProvider) Entities(agentIdn entity.Identity, entities []protocol.Entity) (registeredEntities RegisteredEntitiesNameToID, unregisteredEntities UnregisteredEntities) {
 	args := mk.Called(agentIdn, entities)
-	return args.Get(0).(RegisteredEntitiesNameIDMap),
+	return args.Get(0).(RegisteredEntitiesNameToID),
 		args.Get(1).(UnregisteredEntities)
 }
 
@@ -75,7 +75,7 @@ func TestEmitter_Send_ErrorOnHostname(t *testing.T) {
 
 	idProvider.
 		On("Entities", testIdentity, mock.Anything).
-		Return(RegisteredEntitiesNameIDMap{}, UnregisteredEntities{})
+		Return(RegisteredEntitiesNameToID{}, UnregisteredEntities{})
 
 	emitter := NewEmitter(agentCtx, dmSender, ffRetriever, idProvider)
 
@@ -86,7 +86,6 @@ func TestEmitter_Send_ErrorOnHostname(t *testing.T) {
 	err := emitter.Send(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4TwoEntities.Payload)
 	assert.EqualError(t, err, "2 out of 2 datasets could not be emitted. Reasons: error renaming entity: no known identifier types found in ID lookup table")
 }
-
 
 func TestEmitter_SendOneEntityOutOfTwo(t *testing.T) {
 	expectedEntityId := entity.ID(123)
@@ -103,16 +102,16 @@ func TestEmitter_SendOneEntityOutOfTwo(t *testing.T) {
 	idProvider.
 		On("Entities", testIdentity, expectedEntities).
 		Return(
-			RegisteredEntitiesNameIDMap{"a.entity.one": expectedEntityId},
+			RegisteredEntitiesNameToID{"a.entity.one": expectedEntityId},
 			UnregisteredEntities{
 				{
 					Reason: reasonEntityError,
 					Err:    fmt.Errorf("invalid entityName"),
 					Entity: protocol.Entity{
-						Name: "b.entity.two",
-						Type: "ATYPE",
+						Name:        "b.entity.two",
+						Type:        "ATYPE",
 						DisplayName: "A display name two",
-						Metadata: map[string]interface{}{"env": "testing"},
+						Metadata:    map[string]interface{}{"env": "testing"},
 					},
 				},
 			})
@@ -157,13 +156,18 @@ func TestEmitter_Send(t *testing.T) {
 	idProvider := &mockedIdProvider{}
 
 	expectedEntities := []protocol.Entity{
-		{Name: "unique name", Type: "RedisInstance", DisplayName: "human readable name", Metadata: map[string]interface{}{}},
+		{
+			Name:        "unique name",
+			Type:        "RedisInstance",
+			DisplayName: "human readable name",
+			Metadata:    map[string]interface{}{},
+		},
 	}
 
 	idProvider.
 		On("Entities", testIdentity, expectedEntities).
 		Return(
-			RegisteredEntitiesNameIDMap{"unique name": expectedEntityId},
+			RegisteredEntitiesNameToID{"unique name": expectedEntityId},
 			UnregisteredEntities{})
 	dmSender.
 		On("SendMetrics", mock.AnythingOfType("[]protocol.Metric"))
@@ -204,4 +208,3 @@ func getAgentContext(hostname string) *mocks.AgentContext {
 func Test_NrEntityIdConst(t *testing.T) {
 	assert.Equal(t, nrEntityId, "nr.entity.id")
 }
-

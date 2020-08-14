@@ -31,17 +31,15 @@ const (
 	nrEntityId = "nr.entity.id"
 )
 
-var errSomeEntitiesNotRegistered = fmt.Errorf("some of entities were not registered")
-
 type Agent interface {
 	GetContext() agent.AgentContext
 }
 
 type emitter struct {
-	ffRetriever    feature_flags.Retriever
-	metricsSender  MetricsSender
-	agentContext   agent.AgentContext
-	idProvider idProviderInterface
+	ffRetriever   feature_flags.Retriever
+	metricsSender MetricsSender
+	agentContext  agent.AgentContext
+	idProvider    idProviderInterface
 }
 
 type Emitter interface {
@@ -97,24 +95,24 @@ func (e *emitter) process(
 		entities = append(entities, integrationData.DataSets[i].Entity)
 	}
 
-	// TODO start using unregisteredEntities
-	registeredEntities, _ := e.RegisterEntities(entities)
-
 	agentShortName, err := e.agentContext.IDLookup().AgentShortEntityName()
 	if err != nil {
 		return wrapError(fmt.Errorf("error renaming entity: %s", err.Error()), len(integrationData.DataSets))
 	}
 
+	// TODO start using unregisteredEntities
+	registeredEntities, _ := e.RegisterEntities(entities)
+
 	var emitErrs []error
 	for _, dataset := range integrationData.DataSets {
 
 		// for dataset.Entity call emitV4DataSet function with entity ID
-		val, ok := registeredEntities[dataset.Entity.Name]
+		entityID, ok := registeredEntities[dataset.Entity.Name]
 		if !ok {
 			emitErrs = append(emitErrs, fmt.Errorf("entity with name '%s' was not registered in the backend", dataset.Entity.Name))
 			continue
 		}
-		dataset.Common.Attributes[nrEntityId] = val
+		dataset.Common.Attributes[nrEntityId] = entityID
 		replaceEntityName(dataset.Entity, entityRewrite, agentShortName)
 
 		emitInventory(
@@ -145,7 +143,7 @@ func (e *emitter) process(
 	return composeEmitError(emitErrs, len(integrationData.DataSets))
 }
 
-func (e *emitter) RegisterEntities(entities []protocol.Entity) (RegisteredEntitiesNameIDMap, UnregisteredEntities) {
+func (e *emitter) RegisterEntities(entities []protocol.Entity) (RegisteredEntitiesNameToID, UnregisteredEntities) {
 	// Bulk update them (after checking our datastore if they exist)
 	// add entity ID to metric annotations
 	return e.idProvider.Entities(e.agentContext.AgentIdentity(), entities)

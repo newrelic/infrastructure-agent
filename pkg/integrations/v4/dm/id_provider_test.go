@@ -24,11 +24,11 @@ func (mk *mockedRegisterClient) RegisterBatchEntities(agentEntityID entity.ID, e
 		args.Error(2)
 }
 
-func (mk *mockedRegisterClient) RegisterEntity(agentEntityID entity.ID, entity protocol.Entity) (identityapi.RegisterEntityResponse, error){
+func (mk *mockedRegisterClient) RegisterEntity(agentEntityID entity.ID, entity protocol.Entity) (identityapi.RegisterEntityResponse, error) {
 	return identityapi.RegisterEntityResponse{}, nil
 }
 
-func (mk *mockedRegisterClient) RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities []identityapi.RegisterEntity) ([]identityapi.RegisterEntityResponse, time.Duration, error){
+func (mk *mockedRegisterClient) RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities []identityapi.RegisterEntity) ([]identityapi.RegisterEntityResponse, time.Duration, error) {
 	return nil, time.Second, nil
 }
 
@@ -41,7 +41,7 @@ func TestIdProvider_Entities_MemoryFirst(t *testing.T) {
 		On("RegisterBatchEntities", agentIdn.ID, mock.Anything).
 		Return([]identityapi.RegisterEntityResponse{}, time.Second, nil)
 
-	cache := RegisteredEntitiesNameIDMap{
+	cache := RegisteredEntitiesNameToID{
 		"remote_entity_flex":  6543,
 		"remote_entity_nginx": 1234,
 	}
@@ -82,7 +82,7 @@ func TestIdProvider_Entities_OneCachedAnotherRegistered(t *testing.T) {
 		On("RegisterBatchEntities", mock.Anything, mock.Anything).
 		Return(registerClientResponse, time.Second, nil)
 
-	cache := RegisteredEntitiesNameIDMap{
+	cache := RegisteredEntitiesNameToID{
 		"remote_entity_flex": 6543,
 	}
 
@@ -107,18 +107,18 @@ func TestIdProvider_Entities_ErrorsHandling(t *testing.T) {
 	testCases := []struct {
 		name                         string
 		agentIdn                     entity.Identity
-		cache                        RegisteredEntitiesNameIDMap
+		cache                        RegisteredEntitiesNameToID
 		entitiesForRegisterClient    []protocol.Entity
 		registerClientResponse       []identityapi.RegisterEntityResponse
 		registerClientResponseErr    error
 		entitiesToRegister           []protocol.Entity
-		registeredEntitiesExpected   RegisteredEntitiesNameIDMap
+		registeredEntitiesExpected   RegisteredEntitiesNameToID
 		unregisteredEntitiesExpected UnregisteredEntities
 	}{
 		{
 			name:     "OneCached_OneFailed_ErrClient",
 			agentIdn: entity.Identity{ID: 13},
-			cache: RegisteredEntitiesNameIDMap{
+			cache: RegisteredEntitiesNameToID{
 				"remote_entity_flex": 6543,
 			},
 			entitiesForRegisterClient: []protocol.Entity{
@@ -132,7 +132,7 @@ func TestIdProvider_Entities_ErrorsHandling(t *testing.T) {
 				{Name: "remote_entity_flex"},
 				{Name: "remote_entity_nginx"},
 			},
-			registeredEntitiesExpected: RegisteredEntitiesNameIDMap{
+			registeredEntitiesExpected: RegisteredEntitiesNameToID{
 				"remote_entity_flex": 6543,
 			},
 			unregisteredEntitiesExpected: UnregisteredEntities{
@@ -148,7 +148,7 @@ func TestIdProvider_Entities_ErrorsHandling(t *testing.T) {
 		{
 			name:     "OneCached_OneFailed_ErrEntity",
 			agentIdn: entity.Identity{ID: 13},
-			cache: RegisteredEntitiesNameIDMap{
+			cache: RegisteredEntitiesNameToID{
 				"remote_entity_flex": 6543,
 			},
 			entitiesForRegisterClient: []protocol.Entity{
@@ -167,7 +167,7 @@ func TestIdProvider_Entities_ErrorsHandling(t *testing.T) {
 				{Name: "remote_entity_flex"},
 				{Name: "remote_entity_nginx"},
 			},
-			registeredEntitiesExpected: RegisteredEntitiesNameIDMap{
+			registeredEntitiesExpected: RegisteredEntitiesNameToID{
 				"remote_entity_flex": 6543,
 			},
 			unregisteredEntitiesExpected: UnregisteredEntities{
@@ -183,7 +183,7 @@ func TestIdProvider_Entities_ErrorsHandling(t *testing.T) {
 		{
 			name:     "OneCached_OneRegistered_OneFailed_ErrEntity",
 			agentIdn: entity.Identity{ID: 13},
-			cache: RegisteredEntitiesNameIDMap{
+			cache: RegisteredEntitiesNameToID{
 				"remote_entity_flex": 6543,
 			},
 			entitiesForRegisterClient: []protocol.Entity{
@@ -211,7 +211,7 @@ func TestIdProvider_Entities_ErrorsHandling(t *testing.T) {
 				{Name: "remote_entity_nginx"},
 				{Name: "remote_entity_kafka"},
 			},
-			registeredEntitiesExpected: RegisteredEntitiesNameIDMap{
+			registeredEntitiesExpected: RegisteredEntitiesNameToID{
 				"remote_entity_flex":  6543,
 				"remote_entity_kafka": 1234,
 			},
