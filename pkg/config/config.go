@@ -592,6 +592,11 @@ type Config struct {
 	// Public: No
 	BatchQueueDepth int `yaml:"batch_queue_depth" envconfig:"batch_queue_depth" public:"false"` // See event_sender.go
 
+	// InventoryQueue sets the inventory processing queue size.
+	// Default: 10
+	// Public: Yes
+	InventoryQueueLen int
+
 	// EnableWinUpdatePlugin enables the windows updates plugin which retrieves the lists of hotfix that are installed
 	// on the host.
 	// Default: False
@@ -1245,6 +1250,7 @@ func NewConfig() *Config {
 		SmartVerboseModeEntryLimit:  DefaultSmartVerboseModeEntryLimit,
 		DefaultIntegrationsTempDir:  defaultIntegrationsTempDir,
 		IncludeMetricsMatchers:      defaultMetricsMatcherConfig,
+		InventoryQueueLen:			 DefaultInventoryQueue,
 	}
 }
 

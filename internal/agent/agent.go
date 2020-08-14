@@ -448,7 +448,7 @@ func New(
 	}
 
 	// Create input channel for plugins to feed data back to the agent
-	a.Context.ch = make(chan PluginOutput)
+	a.Context.ch = make(chan PluginOutput, a.Context.cfg.InventoryQueueLen)
 	a.Context.activeEntities = make(chan string, activeEntitiesBufferLength)
 
 	if cfg.RegisterEnabled {
