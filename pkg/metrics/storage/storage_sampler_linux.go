@@ -304,7 +304,7 @@ func pidForProcMounts(isContainerized bool) string {
 // use /etc/mtab because /proc/<pid>/mounts doesn't display properly lvm
 // devices, making it impossible to match against io counters.
 // The same logic is applied in fetchPartitions.
-func deviceMapperInfo(isContainerized bool) map[string]MountInfoStat {
+func deviceMapperInfo(isContainerized bool) (mounts []MountInfoStat) {
 	var mountsFile string
 	var mountsFilePath string
 
@@ -319,7 +319,6 @@ func deviceMapperInfo(isContainerized bool) map[string]MountInfoStat {
 		return nil
 	}
 
-	devices := make(map[string]MountInfoStat)
 	for lineno, line := range lines {
 		mountInfo, err := parseMountFile(mountsFile, line)
 		if err != nil {
@@ -343,10 +342,10 @@ func deviceMapperInfo(isContainerized bool) map[string]MountInfoStat {
 			continue
 		}
 		// nil = unsupported fs
-		devices[mountInfo.Device] = mountInfo
+		mounts = append(mounts, mountInfo)
 	}
 
-	return devices
+	return
 }
 
 // CalculateDeviceMapping maps devices found in mount information file to diskstats device name format
@@ -364,7 +363,10 @@ func CalculateDeviceMapping(activeDevices map[string]bool, isContainerized bool)
 	for deviceName := range activeDevices {
 		_, isLvm := isLvmMount(deviceName)
 		if isLvm {
-			if mi, found := allMounts[deviceName]; found {
+			for _, mi := range allMounts {
+				if mi.MountSource != deviceName {
+					continue
+				}
 				var devNumbers []string
 				// if we have MajMin, use it, otherwise try with a regex based on the name
 				if len(mi.MajMin) > 0 {
@@ -381,7 +383,10 @@ func CalculateDeviceMapping(activeDevices map[string]bool, isContainerized bool)
 
 				// mapped device name. ex: dm-x -> /dev/mapper/xxx
 				deviceKey := fmt.Sprintf("dm-%s", devNumbers[1])
+
 				devToFullDevicePath[deviceKey] = deviceName
+
+				break
 			}
 		} else {
 			match := deviceRegexp.FindStringSubmatch(deviceName)
