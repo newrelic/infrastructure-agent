@@ -66,6 +66,7 @@ type registerableSender interface {
 }
 
 type Agent struct {
+	inv                 inventoryState
 	plugins             []Plugin              // Slice of registered plugins
 	oldPlugins          []ids.PluginID        // Deprecated plugins whose cached data must be removed, if existing
 	agentDir            string                // Base data directory for the agent
@@ -85,6 +86,11 @@ type Agent struct {
 	agentID             *entity.ID                               // pointer as it's referred from several points
 	mtx                 sync.Mutex                               // Protect plugins
 	notificationHandler *ctl.NotificationHandlerWithCancellation // Handle ipc messaging.
+}
+
+type inventoryState struct {
+	readyToReap    bool
+	sendErrorCount uint32
 }
 
 // inventory holds the reaper and sender for the inventories of a given entity (local or remote), as well as their status
@@ -442,7 +448,7 @@ func New(
 	}
 
 	// Create input channel for plugins to feed data back to the agent
-	a.Context.ch = make(chan PluginOutput)
+	a.Context.ch = make(chan PluginOutput, a.Context.cfg.InventoryQueueLen)
 	a.Context.activeEntities = make(chan string, activeEntitiesBufferLength)
 
 	if cfg.RegisterEnabled {
@@ -767,10 +773,6 @@ func (a *Agent) Run() (err error) {
 		}
 	}
 
-	// State variables
-	var readyToReap bool          // Do we need to execute a reap phase?
-	var sendErrorCount uint32 = 0 // Send error counter
-
 	// Timers
 	reapTimer := time.NewTicker(cfg.FirstReapInterval)
 	sendTimer := time.NewTimer(cfg.SendInterval) // Send any deltas every X seconds
@@ -876,10 +878,10 @@ func (a *Agent) Run() (err error) {
 		case <-reapTimer.C:
 			{
 				for _, inventory := range a.inventories {
-					if !readyToReap {
+					if !a.inv.readyToReap {
 						if len(distinctPlugins) <= len(idsReporting) {
 							alog.Debug("Signalling initial reap.")
-							readyToReap = true
+							a.inv.readyToReap = true
 							inventory.needsCleanup = true
 						} else {
 							pluginIds := make([]ids.PluginID, 0)
@@ -891,7 +893,7 @@ func (a *Agent) Run() (err error) {
 							alog.WithField("pluginIds", pluginIds).Debug("Still waiting on plugins.")
 						}
 					}
-					if readyToReap && inventory.needsReaping {
+					if a.inv.readyToReap && inventory.needsReaping {
 						reapTimer.Stop()
 						reapTimer = time.NewTicker(cfg.ReapInterval)
 						inventory.reaper.Reap()
@@ -905,40 +907,15 @@ func (a *Agent) Run() (err error) {
 			}
 		case <-initialReapTimeout.C:
 			// If we've waited too long and still not received data from all plugins, we can just send what we have.
-			if !readyToReap {
+			if !a.inv.readyToReap {
 				alog.Debug("Maximum initial reap delay exceeded - marking inventory as ready to report.")
-				readyToReap = true
+				a.inv.readyToReap = true
 				for _, inventory := range a.inventories {
 					inventory.needsCleanup = true
 				}
 			}
 		case <-sendTimer.C:
-			{
-				backoffMax := config.MAX_BACKOFF
-				for _, inventory := range a.inventories {
-					err := inventory.sender.Process()
-					if err != nil {
-						if ingestError, ok := err.(*inventoryapi.IngestError); ok {
-							if ingestError.StatusCode == http.StatusTooManyRequests {
-								alog.Warn("server is rate limiting inventory for this Infrastructure Agent")
-								backoffMax = config.RATE_LIMITED_BACKOFF
-								sendErrorCount = helpers.MaxBackoffErrorCount
-							}
-						} else {
-							sendErrorCount++
-						}
-						alog.WithError(err).WithField("errorCount", sendErrorCount).
-							Debug("Inventory sender can't process after retrying.")
-						break // Assuming break will try to send later the data from the missing inventory senders
-					} else {
-						sendErrorCount = 0
-					}
-				}
-				sendTimerVal := helpers.ExpBackoff(cfg.SendInterval,
-					time.Duration(backoffMax)*time.Second,
-					sendErrorCount)
-				sendTimer.Reset(sendTimerVal)
-			}
+			a.sendInventory(sendTimer)
 		case <-debugTimer:
 			{
 				debugInfo, err := a.debugProvide()
@@ -955,6 +932,33 @@ func (a *Agent) Run() (err error) {
 			a.removeOutdatedEntities(pastPeriodReportedEntities)
 		}
 	}
+}
+
+func (a *Agent) sendInventory(sendTimer *time.Timer) {
+	backoffMax := config.MAX_BACKOFF
+	for _, i := range a.inventories {
+		err := i.sender.Process()
+		if err != nil {
+			if ingestError, ok := err.(*inventoryapi.IngestError); ok &&
+				ingestError.StatusCode == http.StatusTooManyRequests {
+				alog.Warn("server is rate limiting inventory submission")
+				backoffMax = config.RATE_LIMITED_BACKOFF
+				a.inv.sendErrorCount = helpers.MaxBackoffErrorCount
+			} else {
+				a.inv.sendErrorCount++
+			}
+			alog.WithError(err).WithField("errorCount", a.inv.sendErrorCount).
+				Debug("Inventory sender can't process after retrying.")
+			// Assuming break will try to send later the data from the missing inventory senders
+			break
+		} else {
+			a.inv.sendErrorCount = 0
+		}
+	}
+	sendTimerVal := helpers.ExpBackoff(a.Context.cfg.SendInterval,
+		time.Duration(backoffMax)*time.Second,
+		a.inv.sendErrorCount)
+	sendTimer.Reset(sendTimerVal)
 }
 
 func (a *Agent) removeOutdatedEntities(reportedEntities map[string]bool) {
