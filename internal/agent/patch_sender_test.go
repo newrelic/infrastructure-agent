@@ -19,7 +19,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/id"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/http"
-	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/inventoryapi"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
@@ -34,9 +33,6 @@ const (
 
 var (
 	agentIdn         = entity.Identity{ID: 13}
-	registerEntities = []identityapi.RegisterEntity{
-		identityapi.NewRegisterEntity("my-entity-1"),
-	}
 	endOf18 = time.Date(2018, 12, 12, 12, 12, 12, 12, &time.Location{})
 )
 
@@ -45,7 +41,7 @@ func TempDeltaStoreDir() (string, error) {
 }
 
 func FailingPostDelta(_ []string, _ bool, _ ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error) {
-	return nil, fmt.Errorf("catapun!")
+	return nil, fmt.Errorf("trigering an error for post delta API")
 }
 
 func FakePostDelta(_ []string, _ bool, _ ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error) {
@@ -64,9 +60,9 @@ func TestNewPatchSender(t *testing.T) {
 
 func cachePluginData(t *testing.T, store *delta.Store, entityKey string) {
 	plugin := &delta.PluginInfo{
-		Source:       "metadata/plugin",
-		Plugin:       "metadata",
-		FileName:     "plugin.json",
+		Source:   "metadata/plugin",
+		Plugin:   "metadata",
+		FileName: "plugin.json",
 	}
 	srcFile := store.SourceFilePath(plugin, entityKey)
 	err := os.MkdirAll(filepath.Dir(srcFile), 0755)
@@ -210,6 +206,54 @@ func TestPatchSender_Process_LongTermOffline_AlreadyRemoved(t *testing.T) {
 	fileInfo, err := os.Stat(filepath.Join(store.CacheDir, "metadata", entityKey))
 	assert.NoError(t, err)
 	assert.True(t, fileInfo.IsDir())
+}
+
+type mockLastSubmissionTime struct {
+	mock.Mock
+}
+
+func (l *mockLastSubmissionTime) Time() (time.Time, error) {
+	return l.Called().Get(0).(time.Time), l.Called().Get(1).(error)
+}
+
+func (l *mockLastSubmissionTime) UpdateTime(time time.Time) error {
+	l.Called(time)
+	return nil
+}
+
+func TestPatchSender_Process_LastSubmissionTime_IgnoreEmptyEntityKey(t *testing.T) {
+	rawDelta := []inventoryapi.RawDeltaBlock{{&inventoryapi.RawDelta{ID: 1234}}}
+
+	// GIVEN a delta store
+	storage := &mockStorage{}
+	storage.On("ReadDeltas", mock.Anything).Return(rawDelta)
+
+	// AND a submission time storage handler
+	lastSubmissionTime := &mockLastSubmissionTime{}
+	lastSubmissionTime.On("UpdateTime", mock.Anything).Return()
+
+	// AND a patchSender
+	sender := newTestPatchSender(t, "", storage, lastSubmissionTime, &mockEntityIDPersist{})
+	sender.entityKey = ""
+	sender.compactEnabled = false
+	sender.postDeltas = assertDeltaSent(t, rawDelta)
+
+	// WHEN process deltas
+	err := sender.Process()
+	require.NoError(t, err)
+
+	// THEN last submission time was not updated
+	lastSubmissionTime.AssertNotCalled(t, "UpdateTime", mock.Anything)
+}
+
+func assertDeltaSent(t *testing.T, rawDelta []inventoryapi.RawDeltaBlock) func(entityKeys []string, isAgent bool, deltas ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error) {
+	return func(entityKeys []string, isAgent bool, deltas ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error) {
+		// AND deltas are sent to the backend
+		for _, raw := range rawDelta {
+			assert.ElementsMatch(t, raw, deltas)
+		}
+		return &inventoryapi.PostDeltaResponse{Reset: "no"}, nil
+	}
 }
 
 func TestPatchSender_Process_ShortTermOffline(t *testing.T) {
@@ -499,6 +543,9 @@ func (m *mockStorage) RemoveEntity(entityKey string) error {
 
 func (m *mockStorage) ReadDeltas(entityKey string) ([]inventoryapi.RawDeltaBlock, error) {
 	return m.Called(entityKey).Get(0).([]inventoryapi.RawDeltaBlock), nil
+}
+
+func (m *mockStorage) UpdateState(entityKey string, deltas []*inventoryapi.RawDelta, deltaStateResults *inventoryapi.DeltaStateMap) {
 }
 
 type mockEntityIDPersist struct {
