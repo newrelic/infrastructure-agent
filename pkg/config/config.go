@@ -592,10 +592,10 @@ type Config struct {
 	// Public: No
 	BatchQueueDepth int `yaml:"batch_queue_depth" envconfig:"batch_queue_depth" public:"false"` // See event_sender.go
 
-	// InventoryQueue sets the inventory processing queue size.
-	// Default: 10
+	// InventoryQueueLen sets the inventory processing queue size. Zero value makes inventory processing synchronous (blocking call).
+	// Default: 0
 	// Public: Yes
-	InventoryQueueLen int
+	InventoryQueueLen int  `yaml:"inventory_queue_len" envconfig:"inventory_queue_len" public:"true"`
 
 	// EnableWinUpdatePlugin enables the windows updates plugin which retrieves the lists of hotfix that are installed
 	// on the host.
@@ -1090,6 +1090,26 @@ func (c *Config) SetBoolValueByYamlAttribute(attribute string, value bool) error
 		if ftags.Get("yaml") == attribute {
 			f := s.Field(i)
 			f.SetBool(value)
+			return nil
+		}
+	}
+
+	return fmt.Errorf("unknown field for yaml attribute '%s'", attribute)
+}
+
+func (c *Config) SetIntValueByYamlAttribute(attribute string, value int64) error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	s := reflect.ValueOf(c)
+	s = s.Elem()
+	t := s.Type()
+	for i := 0; i < s.NumField(); i++ {
+		ftype := t.Field(i)
+		ftags := ftype.Tag
+		if ftags.Get("yaml") == attribute {
+			f := s.Field(i)
+			f.SetInt(value)
 			return nil
 		}
 	}

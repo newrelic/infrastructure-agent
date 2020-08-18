@@ -50,27 +50,83 @@ func TestFFHandlerHandle_DisablesRegisterOnInitialFetch(t *testing.T) {
 	assert.False(t, c.RegisterEnabled)
 }
 
-func TestFFHandlerHandle_ExitsOnDiffValueAndNotInitialFetch(t *testing.T) {
-	if os.Getenv("SHOULD_RUN_EXIT") == "1" {
-		ffArgs := commandapi.FFArgs{
-			Category: handler.FlagCategory,
-			Flag:     handler.FlagNameRegister,
-			Enabled:  true,
-		}
-		handler.NewFFHandler(&config.Config{}, feature_flags.NewManager(nil)).Handle(ffArgs, false)
+func TestFFHandlerHandle_DisablesParallelizeInventoryConfigOnInitialFetch(t *testing.T) {
+	c := config.Config{
+		InventoryQueueLen: 123,
 	}
+	ffArgs := commandapi.FFArgs{
+		Category: handler.FlagCategory,
+		Flag:     handler.FlagParallelizeInventory,
+		Enabled:  false,
+	}
+	handler.NewFFHandler(&c, feature_flags.NewManager(nil)).Handle(ffArgs, true)
 
-	cmd := exec.Command(os.Args[0], "-test.run=TestFFHandlerHandle_ExitsOnDiffValueAndNotInitialFetch")
-	cmd.Env = append(os.Environ(), "SHOULD_RUN_EXIT=1")
-	err := cmd.Run()
-	if e, ok := err.(*exec.ExitError); ok && !e.Success() {
-		if status, ok := e.Sys().(syscall.WaitStatus); ok {
-			assert.Equal(t, api.ExitCodeRestart, status.ExitStatus())
+	assert.Equal(t, 0, c.InventoryQueueLen)
+}
+
+func TestFFHandlerHandle_EnablesParallelizeInventoryConfigWithDefaultValue(t *testing.T) {
+	c := config.Config{}
+	ffArgs := commandapi.FFArgs{
+		Category: handler.FlagCategory,
+		Flag:     handler.FlagParallelizeInventory,
+		Enabled:  true,
+	}
+	handler.NewFFHandler(&c, feature_flags.NewManager(nil)).Handle(ffArgs, true)
+
+	assert.Equal(t, handler.CfgValueParallelizeInventory, int64(c.InventoryQueueLen))
+}
+
+func TestFFHandlerHandle_EnabledFFParallelizeInventoryDoesNotModifyProvidedConfig(t *testing.T) {
+	c := config.Config{
+		InventoryQueueLen: 123,
+	}
+	ffArgs := commandapi.FFArgs{
+		Category: handler.FlagCategory,
+		Flag:     handler.FlagParallelizeInventory,
+		Enabled:  true,
+	}
+	handler.NewFFHandler(&c, feature_flags.NewManager(nil)).Handle(ffArgs, true)
+
+	assert.Equal(t, 123, c.InventoryQueueLen)
+}
+
+func TestFFHandlerHandle_ExitsOnDiffValueAndNotInitialFetch(t *testing.T) {
+	type testCase struct {
+		name string
+		ff   string
+	}
+	testCases := []testCase{
+		{
+			name: "FF: register_enabled",
+			ff:   handler.FlagNameRegister,
+		},
+		{
+			name: "FF: parallelize_inventory_enabled",
+			ff:   handler.FlagParallelizeInventory,
+		},
+	}
+	for _, tc := range testCases {
+		if os.Getenv("SHOULD_RUN_EXIT") == "1" {
+			ffArgs := commandapi.FFArgs{
+				Category: handler.FlagCategory,
+				Flag:     tc.ff,
+				Enabled:  true,
+			}
+			handler.NewFFHandler(&config.Config{}, feature_flags.NewManager(nil)).Handle(ffArgs, false)
+		}
+
+		cmd := exec.Command(os.Args[0], "-test.run=TestFFHandlerHandle_ExitsOnDiffValueAndNotInitialFetch")
+		cmd.Env = append(os.Environ(), "SHOULD_RUN_EXIT=1")
+		err := cmd.Run()
+		if e, ok := err.(*exec.ExitError); ok && !e.Success() {
+			if status, ok := e.Sys().(syscall.WaitStatus); ok {
+				assert.Equal(t, api.ExitCodeRestart, status.ExitStatus())
+				return
+			}
 			return
 		}
-		return
+		t.Fatalf("process ran with err %v, want exit status 1", err)
 	}
-	t.Fatalf("process ran with err %v, want exit status 1", err)
 }
 
 func TestSrv_InitialFetch_ReturnsBackoff(t *testing.T) {
