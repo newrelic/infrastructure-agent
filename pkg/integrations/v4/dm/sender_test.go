@@ -18,8 +18,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/newrelic-forks/newrelic-telemetry-sdk-go/telemetry"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
+	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 )
 
 func Test_sender_SendMetrics(t *testing.T) {
@@ -197,8 +197,8 @@ func Test_sender_SenderMetric_cumulative_CountCalculator(t *testing.T) {
 
 	harvester := &mockHarvester{}
 	deltaCalculator := &mockDeltaCalculator{}
-	deltaCalculator.On("GetCumulativeCount", name, attributes, val, cannedDate).Return(expectedMetrics[0], true)
-	deltaCalculator.On("GetCumulativeCount", otherMetricName, otherMetricAttributes, otherMetricValue, cannedDate).Return(expectedMetrics[1], true)
+	deltaCalculator.On("CountMetric", name, attributes, val, cannedDate).Return(expectedMetrics[0], true)
+	deltaCalculator.On("CountMetric", otherMetricName, otherMetricAttributes, otherMetricValue, cannedDate).Return(expectedMetrics[1], true)
 
 	s := &sender{
 		harvester:  harvester,
@@ -235,7 +235,7 @@ func Test_sender_SendMetric_cumulative_count_invalid_metric(t *testing.T) {
 		}}
 	harvester := &mockHarvester{}
 	deltaCalculator := &mockDeltaCalculator{}
-	deltaCalculator.On("GetCumulativeCount", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(telemetry.Count{}, false)
+	deltaCalculator.On("CountMetric", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(telemetry.Count{}, false)
 
 	s := &sender{
 		harvester:  harvester,
@@ -308,7 +308,7 @@ func Test_sender_SendMetrics_cumulative_RateCalculator(t *testing.T) {
 		metricType           protocol.MetricType
 	}{
 		{
-			name:                 "cumulativeRateMetric",
+			name:                 "CumulativeRateMetric",
 			rateCalculatorMethod: "GetCumulativeRate",
 			metricType:           protocol.MetricType("cumulative-rate"),
 		},
@@ -558,11 +558,15 @@ func (m *mockRateCalculator) GetCumulativeRate(
 	return args.Get(0).(telemetry.Gauge), args.Bool(1)
 }
 
+func (m *mockRateCalculator) Clean() {
+	m.Called()
+}
+
 type mockDeltaCalculator struct {
 	mock.Mock
 }
 
-func (m *mockDeltaCalculator) GetCumulativeCount(
+func (m *mockDeltaCalculator) CountMetric(
 	name string,
 	attributes map[string]interface{},
 	val float64,

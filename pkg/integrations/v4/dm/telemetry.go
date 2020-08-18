@@ -8,11 +8,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/newrelic-forks/newrelic-telemetry-sdk-go/telemetry"
 	"github.com/newrelic/infrastructure-agent/internal/agent/id"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/trace"
+	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 )
 
 const noCalculationMadeErrMsg = "no calculation made"
