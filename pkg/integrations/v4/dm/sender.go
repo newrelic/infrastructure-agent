@@ -4,12 +4,12 @@ package dm
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm/rate"
 	"net/http"
 	"time"
 
-	"github.com/newrelic-forks/newrelic-telemetry-sdk-go/cumulative"
-	"github.com/newrelic-forks/newrelic-telemetry-sdk-go/rate"
-	"github.com/newrelic-forks/newrelic-telemetry-sdk-go/telemetry"
+	"github.com/newrelic/newrelic-telemetry-sdk-go/cumulative"
+	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/id"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
@@ -57,7 +57,7 @@ func NewDMSender(config MetricsSenderConfig, transport http.RoundTripper, idCont
 	s = &sender{
 		harvester: harvester,
 		calculator: Calculator{
-			rate:  rate.NewRateCalculator(),
+			rate:  rate.NewCalculator(),
 			delta: cumulative.NewDeltaCalculator(),
 		},
 	}
@@ -71,36 +71,14 @@ type sender struct {
 
 type Calculator struct {
 	delta deltaCalculator
-	rate  rateCalculator
-}
-
-type rateCalculator interface {
-	//GetRate creates a Gauge metric with rate of change based on the previous timestamp.
-	//If no previous timestamp is found, returns false (as no calculation is made)
-	//If a previous timestamp is found use it to get the elapsed time (in seconds) and use that as the denominator
-	//Rate = value / (now - before)[s]
-	GetRate(
-		name string,
-		attributes map[string]interface{},
-		val float64,
-		now time.Time) (gauge telemetry.Gauge, valid bool)
-
-	//GetCumulativeRate creates a Gauge metric with rate of change based on the previous timestamp and value.
-	//If no previous timestamp is found, returns false (as no calculation is made)
-	//If a previous timestamp is found use it to get the elapsed time (in seconds) and use that as the denominator
-	//Rate = value / (now - before)[s]
-	GetCumulativeRate(
-		name string,
-		attributes map[string]interface{},
-		val float64,
-		now time.Time) (gauge telemetry.Gauge, valid bool)
+	rate  rate.Calculator
 }
 
 type deltaCalculator interface {
 	//GetCumulativeCount creates a count metric from the difference between the values and
 	//timestamps of multiple calls.  If this is the first time the name/attributes
 	//combination has been seen then the `valid` return value will be false.
-	GetCumulativeCount(
+	CountMetric(
 		name string,
 		attributes map[string]interface{},
 		val float64,
@@ -128,7 +106,7 @@ func (s *sender) SendMetrics(metrics []protocol.Metric) {
 		case "cumulative-rate":
 			c = Conversion{Gauge{calculate: &Rate{get: s.calculator.rate.GetCumulativeRate}}}
 		case "cumulative-count":
-			c = Conversion{Count{calculate: &Cumulative{get: s.calculator.delta.GetCumulativeCount}}}
+			c = Conversion{Count{calculate: &Cumulative{get: s.calculator.delta.CountMetric}}}
 		default:
 			logger.WithField("name", metric.Name).WithField("metric-type", metric.Name).Warn("received an unknown metric type")
 			continue
