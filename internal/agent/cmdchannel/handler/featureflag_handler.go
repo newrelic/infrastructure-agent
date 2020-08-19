@@ -25,7 +25,7 @@ const (
 	// Config
 	CfgYmlRegisterEnabled        = "register_enabled"
 	CfgYmlParallelizeInventory   = "inventory_queue_len"
-	CfgValueParallelizeInventory = int64(10) // default value when no config provided by user and FF enabled
+	CfgValueParallelizeInventory = int64(100) // default value when no config provided by user and FF enabled
 )
 
 var ffLogger = log.WithComponent("FeatureFlagHandler")
