@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/newrelic/infrastructure-agent/internal/os/api"
+	"github.com/newrelic/infrastructure-agent/pkg/trace"
 
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 
@@ -177,6 +178,11 @@ func (h *FFHandler) handleEnableOHI(ff string, enable bool) {
 }
 
 func handleParallelizeInventory(ffArgs commandapi.FFArgs, c *config.Config, isInitialFetch bool) {
+	trace.Inventory("parallelize FF handler initialFetch: %v, enable: %v, queue: %v",
+		isInitialFetch,
+		ffArgs.Enabled,
+		c.InventoryQueueLen,
+	)
 	// feature already in desired state
 	if (ffArgs.Enabled && c.InventoryQueueLen > 0) || (!ffArgs.Enabled && c.InventoryQueueLen == 0) {
 		return
