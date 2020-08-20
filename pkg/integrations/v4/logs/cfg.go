@@ -41,7 +41,10 @@ const (
 const (
 	fbFilterTypeGrep           = "grep"
 	fbFilterTypeRecordModifier = "record_modifier"
+	fbFilterTypeLua            = "lua"
 )
+//Lua Script calling function
+const fbLuaFnName = "eventIdFilter"
 
 // Syslog plugin valid formats
 const (
@@ -86,6 +89,7 @@ type LogCfg struct {
 	Syslog     *LogSyslogCfg     `yaml:"syslog"`
 	Tcp        *LogTcpCfg        `yaml:"tcp"`
 	Fluentbit  *LogExternalFBCfg `yaml:"fluentbit"`
+	Winlog     *LogWinlogCfg     `yaml:"winlog"`
 }
 
 // LogSyslogCfg logging integration config from customer defined YAML, specific for the Syslog input plugin
@@ -93,6 +97,12 @@ type LogSyslogCfg struct {
 	URI             string `yaml:"uri"`
 	Parser          string `yaml:"parser"`
 	UnixPermissions string `yaml:"unix_permissions"`
+}
+
+type LogWinlogCfg struct {
+	Channel         string   `yaml:"channel"`
+	CollectEventIds []string `yaml:"collect-eventids"`
+	ExcludeEventIds []string `yaml:"exclude-eventids"`
 }
 
 type LogTcpCfg struct {
@@ -180,6 +190,8 @@ type FBCfgParser struct {
 	Match   string
 	Regex   string            // plugin: grep
 	Records map[string]string // plugin: record_modifier
+	Script  string            //plugin:lua-Script
+	Call    string            //plugin:lua-Script
 }
 
 // FBCfgOutput FluentBit Output config block, supporting NR output plugin.
@@ -270,6 +282,8 @@ func parseConfigBlock(l LogCfg, logsHomeDir string) (input FBCfgInput, filters [
 		input, filters, err = parseSyslogInput(l)
 	} else if l.Tcp != nil {
 		input, filters, err = parseTcpInput(l)
+	} else if l.Winlog != nil {
+		input, filters, err = parseWinlogInput(l, dbPath)
 	}
 
 	if err != nil {
@@ -344,6 +358,22 @@ func parseTcpInput(l LogCfg) (input FBCfgInput, filters []FBCfgParser, err error
 	return input, filters, nil
 }
 
+//Winlog: "winlog" plugin
+func parseWinlogInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBCfgParser, err error) {
+	input = newWinlogInput(*l.Winlog, dbPath, l.Name)
+	filters = append(filters, newRecordModifierFilterForInput(l.Name, fbInputTypeWinlog, l.Attributes))
+	if included, excluded := l.Winlog.CollectEventIds, l.Winlog.ExcludeEventIds; len(included) > 0 || len(excluded) > 0 {
+		createScript(included, excluded)
+		eventIdLuaFilter := newLuaFilter(l.Name, "Script")
+		filters = append(filters, eventIdLuaFilter)
+	}
+	return input, filters, nil
+}
+
+func createScript(included []string, excluded []string) {
+	//TODO
+}
+
 func parsePattern(l LogCfg, fluentBitGrepField string, filters []FBCfgParser) []FBCfgParser {
 	if l.Pattern != "" {
 		return append(filters, newGrepFilter(l, fluentBitGrepField))
@@ -382,6 +412,15 @@ func newWindowsEventlogInput(eventLog string, dbPath string, tag string) FBCfgIn
 	return FBCfgInput{
 		Name:     fbInputTypeWinlog,
 		Channels: eventLog,
+		Tag:      tag,
+		DB:       dbPath,
+	}
+}
+
+func newWinlogInput(winlog LogWinlogCfg, dbPath string, tag string) FBCfgInput {
+	return FBCfgInput{
+		Name:     fbInputTypeWinlog,
+		Channels: winlog.Channel,
 		Tag:      tag,
 		DB:       dbPath,
 	}
@@ -478,6 +517,16 @@ func newGrepFilter(l LogCfg, fluentBitGrepField string) FBCfgParser {
 		Name:  fbFilterTypeGrep,
 		Regex: fmt.Sprintf("%s %s", fluentBitGrepField, l.Pattern),
 		Match: l.Name,
+	}
+}
+
+func newLuaFilter(tag string, nameOfTheScript string) FBCfgParser {
+	return FBCfgParser{
+		Name:  fbFilterTypeLua,
+		Match: tag,
+		//change
+		Script: fmt.Sprintf("%s.lua", nameOfTheScript),
+		Call:   fbLuaFnName,
 	}
 }
 

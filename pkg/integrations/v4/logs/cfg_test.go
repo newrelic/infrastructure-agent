@@ -190,6 +190,37 @@ func TestNewFBConf(t *testing.T) {
 			},
 			Output: outputBlock,
 		}},
+		{"input win-eventlog + eventId filtering", LogsCfg{
+			{
+				Name: "win-security",
+				Winlog: &LogWinlogCfg{
+					Channel:         "Security",
+					CollectEventIds: []string{"5000", "6000-6100", "7000", "7900-8100"},
+					ExcludeEventIds: []string{"6020-6060", "6070"},
+				},
+			},
+		}, FBCfg{
+			Inputs: []FBCfgInput{
+				{
+					Name:     "winlog",
+					Tag:      "win-security",
+					DB:       dbDbPath,
+					Channels: "Security",
+				},
+			},
+			Parsers: []FBCfgParser{
+				inputRecordModifier("winlog", "win-security"),
+				{
+					Name:   "lua",
+					Match:  "win-security",
+					Script: "Script.lua",
+					Call:   "eventIdFilter",
+				},
+				parserEntityBlock,
+			},
+
+			Output: outputBlock,
+		}},
 		{"single file with attributes", LogsCfg{
 			{
 				Name: "one-file",
@@ -713,6 +744,12 @@ func TestFBCfgFormat(t *testing.T) {
     Separator \n
     Buffer_Size 32
 
+[INPUT]
+    Name winlog
+    Tag  win-security
+    DB   fb.db
+    Channels Security
+
 [FILTER]
     Name  grep
     Match some-folder
@@ -730,6 +767,17 @@ func TestFBCfgFormat(t *testing.T) {
     Match *
     Record entity.guid.INFRA testGUID
     Record fb.source nri-agent
+
+[FILTER]
+    Name  record_modifier
+    Match win-security
+    Record fb.input winlog
+
+[FILTER]
+    Name  lua
+    Match win-security
+    script Script.lua
+    call eventIdFilter
 
 [OUTPUT]
     Name                newrelic
@@ -783,6 +831,12 @@ func TestFBCfgFormat(t *testing.T) {
 				TcpSeparator:  "\\n",
 				TcpBufferSize: 32,
 			},
+			{
+				Name:     "winlog",
+				Tag:      "win-security",
+				DB:       "fb.db",
+				Channels: "Security",
+			},
 		},
 		Parsers: []FBCfgParser{
 			{
@@ -806,6 +860,19 @@ func TestFBCfgFormat(t *testing.T) {
 					"entity.guid.INFRA": "testGUID",
 					"fb.source":         "nri-agent",
 				},
+			},
+			{
+				Name:  "record_modifier",
+				Match: "win-security",
+				Records: map[string]string{
+					"fb.input": "winlog",
+				},
+			},
+			{
+				Name:   "lua",
+				Match:  "win-security",
+				Script: "Script.lua",
+				Call:   "eventIdFilter",
 			},
 		},
 		Output: FBCfgOutput{
