@@ -14,7 +14,7 @@ dynamic monitoring of your entire infrastructure, from services running in the c
 * [Testing](#testing)
 * [Documentation](#docs)
 * [Support](#support)
-* [Contributing](#contributing)
+* [Contribute](#contribute)
 * [To-do](#to-do)
 * [License](#license)
 
