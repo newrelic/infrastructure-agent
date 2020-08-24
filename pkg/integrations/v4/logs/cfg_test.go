@@ -10,48 +10,51 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewFBConf(t *testing.T) {
-	logFwdCfg := &config.LogForward{
-		HomeDir:   "/var/db/newrelic-infra/newrelic-integrations/logging",
-		License:   "licenseKey",
-		IsStaging: false,
-		ProxyCfg: config.LogForwardProxy{
-			IgnoreSystemProxy: true,
-			Proxy:             "https://https-proxy:3129",
-			CABundleFile:      "/cabundles/proxycert.pem",
-			CABundleDir:       "/cabundles",
-			ValidateCerts:     true,
-		},
-	}
-
-	parserEntityBlock := FBCfgParser{
-		Name:  "record_modifier",
-		Match: "*",
-		Records: map[string]string{
-			"entity.guid.INFRA": "0",
-			"plugin.type":       "nri-agent",
-			"hostname":          "",
-		},
-	}
-	inputRecordModifier := func(i string, m string) FBCfgParser {
-		return FBCfgParser{
-			Name:  "record_modifier",
-			Match: m,
-			Records: map[string]string{
-				"fb.input": i,
-			},
-		}
-	}
-	outputBlock := FBCfgOutput{
-		Name:              "newrelic",
-		Match:             "*",
-		LicenseKey:        "licenseKey",
+var logFwdCfg = &config.LogForward{
+	HomeDir:   "/var/db/newrelic-infra/newrelic-integrations/logging",
+	License:   "licenseKey",
+	IsStaging: false,
+	ProxyCfg: config.LogForwardProxy{
 		IgnoreSystemProxy: true,
 		Proxy:             "https://https-proxy:3129",
 		CABundleFile:      "/cabundles/proxycert.pem",
 		CABundleDir:       "/cabundles",
 		ValidateCerts:     true,
+	},
+}
+
+var parserEntityBlock = FBCfgParser{
+	Name:  "record_modifier",
+	Match: "*",
+	Records: map[string]string{
+		"entity.guid.INFRA": "0",
+		"plugin.type":       "nri-agent",
+		"hostname":          "",
+	},
+}
+
+func inputRecordModifier(i string, m string) FBCfgParser {
+	return FBCfgParser{
+		Name:  "record_modifier",
+		Match: m,
+		Records: map[string]string{
+			"fb.input": i,
+		},
 	}
+}
+
+var outputBlock = FBCfgOutput{
+	Name:              "newrelic",
+	Match:             "*",
+	LicenseKey:        "licenseKey",
+	IgnoreSystemProxy: true,
+	Proxy:             "https://https-proxy:3129",
+	CABundleFile:      "/cabundles/proxycert.pem",
+	CABundleDir:       "/cabundles",
+	ValidateCerts:     true,
+}
+
+func TestNewFBConf(t *testing.T) {
 
 	tests := []struct {
 		name   string
@@ -188,37 +191,6 @@ func TestNewFBConf(t *testing.T) {
 				inputRecordModifier("winlog", "win-eventlog"),
 				parserEntityBlock,
 			},
-			Output: outputBlock,
-		}},
-		{"input win-eventlog + eventId filtering", LogsCfg{
-			{
-				Name: "win-security",
-				Winlog: &LogWinlogCfg{
-					Channel:         "Security",
-					CollectEventIds: []string{"5000", "6000-6100", "7000", "7900-8100"},
-					ExcludeEventIds: []string{"6020-6060", "6070"},
-				},
-			},
-		}, FBCfg{
-			Inputs: []FBCfgInput{
-				{
-					Name:     "winlog",
-					Tag:      "win-security",
-					DB:       dbDbPath,
-					Channels: "Security",
-				},
-			},
-			Parsers: []FBCfgParser{
-				inputRecordModifier("winlog", "win-security"),
-				{
-					Name:   "lua",
-					Match:  "win-security",
-					Script: "Script.lua",
-					Call:   "eventIdFilter",
-				},
-				parserEntityBlock,
-			},
-
 			Output: outputBlock,
 		}},
 		{"single file with attributes", LogsCfg{
@@ -701,6 +673,58 @@ func TestNewFBConf(t *testing.T) {
 	}
 }
 
+func TestFBConfigForWinlog(t *testing.T) {
+
+	nameTest := "input win-eventlog + eventId filtering"
+	input := LogsCfg{
+		{
+			Name: "win-security",
+			Winlog: &LogWinlogCfg{
+				Channel:         "Security",
+				CollectEventIds: []string{"5000", "6000-6100", "7000", "7900-8100"},
+				ExcludeEventIds: []string{"6020-6060", "6070"},
+			},
+		},
+	}
+
+	expected := FBCfg{
+		Inputs: []FBCfgInput{
+			{
+				Name:     "winlog",
+				Tag:      "win-security",
+				DB:       dbDbPath,
+				Channels: "Security",
+			},
+		},
+		Parsers: []FBCfgParser{
+			inputRecordModifier("winlog", "win-security"),
+			{
+				Name:   "lua",
+				Match:  "win-security",
+				Script: "Script.lua",
+				Call:   "eventIdFilter",
+			},
+			parserEntityBlock,
+		},
+
+		Output: outputBlock,
+	}
+
+	t.Run(nameTest, func(t *testing.T) {
+		fbConf, err := NewFBConf(input, logFwdCfg, "0", "")
+		assert.NoError(t, err)
+		assert.Equal(t, expected.Inputs, fbConf.Inputs)
+		assert.Equal(t, expected.Parsers[0], fbConf.Parsers[0])
+		assert.Equal(t, expected.Parsers[1].Name, fbConf.Parsers[1].Name)
+		assert.Equal(t, expected.Parsers[1].Match, fbConf.Parsers[1].Match)
+		assert.Equal(t, expected.Parsers[1].Call, fbConf.Parsers[1].Call)
+		assert.Contains(t, fbConf.Parsers[1].Script, "nr_fb_lua_filter")
+		assert.Equal(t, expected.Parsers[2], fbConf.Parsers[2])
+		assert.Equal(t, expected.Output, fbConf.Output)
+
+	})
+}
+
 func TestFBCfgFormat(t *testing.T) {
 	expected := `
 [INPUT]
@@ -889,6 +913,31 @@ func TestFBCfgFormat(t *testing.T) {
 	result, extCfg, err := fbCfg.Format()
 	assert.Empty(t, err)
 	assert.Equal(t, "/path/to/fb/parsers", extCfg.ParsersFilePath)
+	assert.Equal(t, expected, result)
+}
+
+func TestFBLuaFormat(t *testing.T) {
+	expected := `function winlog_test(tag, timestamp, record)
+    eventId = record["EventID"]
+    if eventId == 4616 then
+        return -1, 0, 0
+    end
+
+    if eventId >= 4608 and eventId <= 4624 then
+        return 0, 0, 0
+    end
+
+    return -1, 0, 0
+ end`
+
+	fbLuaScript := FBLuaScript{
+		FnName:           "winlog_test",
+		ExcludedEventIds: "eventId == 4616",
+		IncludedEventIds: "eventId >= 4608 and eventId <= 4624",
+	}
+
+	result, err := fbLuaScript.Format()
+	assert.Empty(t, err)
 	assert.Equal(t, expected, result)
 }
 

@@ -6,15 +6,15 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
+	"github.com/newrelic/infrastructure-agent/pkg/license"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/pkg/errors"
+	"io/ioutil"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
-
-	"github.com/newrelic/infrastructure-agent/pkg/license"
-	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
 var cfgLogger = log.WithComponent("integrations.Supervisor.Config").WithField("process", "log-forwarder")
@@ -43,8 +43,14 @@ const (
 	fbFilterTypeRecordModifier = "record_modifier"
 	fbFilterTypeLua            = "lua"
 )
+
 //Lua Script calling function
 const fbLuaFnName = "eventIdFilter"
+
+// Winlog constants
+const (
+	eventIdRangeRegex = `^(\d+-\d+)$`
+)
 
 // Syslog plugin valid formats
 const (
@@ -190,8 +196,8 @@ type FBCfgParser struct {
 	Match   string
 	Regex   string            // plugin: grep
 	Records map[string]string // plugin: record_modifier
-	Script  string            //plugin:lua-Script
-	Call    string            //plugin:lua-Script
+	Script  string            // plugin:lua-Script
+	Call    string            // plugin:lua-Script
 }
 
 // FBCfgOutput FluentBit Output config block, supporting NR output plugin.
@@ -206,6 +212,26 @@ type FBCfgOutput struct {
 	CABundleFile      string
 	CABundleDir       string
 	ValidateCerts     bool
+}
+
+type FBLuaScript struct {
+	FnName           string
+	ExcludedEventIds string
+	IncludedEventIds string
+}
+
+// Format will return the formatted lua script that fluent bit config is pointing to.
+func (script FBLuaScript) Format() (result string, err error) {
+	buf := new(bytes.Buffer)
+	tpl, err := template.New("fb lua").Parse(fbLuaScriptFormat)
+	if err != nil {
+		return "", errors.Wrap(err, "cannot parse log-forwarder template")
+	}
+	err = tpl.Execute(buf, script)
+	if err != nil {
+		return "", errors.Wrap(err, "cannot write r template")
+	}
+	return buf.String(), nil
 }
 
 // FBCfgExternal represents an existing set of native FluentBit configuration files
@@ -227,7 +253,6 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 		if err != nil {
 			return
 		}
-
 		if (input != FBCfgInput{}) {
 			fb.Inputs = append(fb.Inputs, input)
 		}
@@ -362,16 +387,80 @@ func parseTcpInput(l LogCfg) (input FBCfgInput, filters []FBCfgParser, err error
 func parseWinlogInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBCfgParser, err error) {
 	input = newWinlogInput(*l.Winlog, dbPath, l.Name)
 	filters = append(filters, newRecordModifierFilterForInput(l.Name, fbInputTypeWinlog, l.Attributes))
-	if included, excluded := l.Winlog.CollectEventIds, l.Winlog.ExcludeEventIds; len(included) > 0 || len(excluded) > 0 {
-		createScript(included, excluded)
-		eventIdLuaFilter := newLuaFilter(l.Name, "Script")
-		filters = append(filters, eventIdLuaFilter)
+	scriptContent, err := createLuaScript(*l.Winlog)
+	if err != nil {
+		return FBCfgInput{}, []FBCfgParser{}, err
 	}
+	scriptName, err := saveToTempFile([]byte(scriptContent))
+	if err != nil {
+		return FBCfgInput{}, []FBCfgParser{}, err
+	}
+	eventIdLuaFilter := newLuaFilter(l.Name, scriptName)
+	filters = append(filters, eventIdLuaFilter)
+
 	return input, filters, nil
 }
 
-func createScript(included []string, excluded []string) {
-	//TODO
+func createLuaScript(winlog LogWinlogCfg) (scriptContent string, err error) {
+	var fbLuaScript FBLuaScript
+	included, excluded := winlog.CollectEventIds, winlog.ExcludeEventIds
+	fbLuaScript.IncludedEventIds, err = createConditions(included, "true")
+	if err != nil {
+		return "", err
+	}
+	fbLuaScript.ExcludedEventIds, err = createConditions(excluded, "false")
+	if err != nil {
+		return "", err
+	}
+	scriptContent, err = fbLuaScript.Format()
+	if err != nil {
+		return "", err
+	}
+
+	return scriptContent, err
+}
+
+func createConditions(numberRanges []string, defaultIfEmpty string) (conditions string, err error) {
+	if len(numberRanges) > 0 {
+		conditions := make([]string, 0, len(numberRanges))
+		for _, numberRange := range numberRanges {
+			if match, err := regexp.MatchString(eventIdRangeRegex, numberRange); match && err == nil {
+				var splitRange = strings.Split(numberRange, "-")
+				bottomLimit, _ := strconv.Atoi(splitRange[0])
+				topLimit, _ := strconv.Atoi(splitRange[1])
+				if bottomLimit > topLimit {
+					topLimit, bottomLimit = bottomLimit, topLimit
+				}
+				conditions = append(conditions, fmt.Sprintf("EventID>=%d and EventID<=%d", bottomLimit, topLimit))
+			} else if _, err := strconv.Atoi(numberRange); err == nil {
+				conditions = append(conditions, fmt.Sprintf("EventID==%s", numberRange))
+			} else {
+
+				return "", fmt.Errorf("winlog: invalid range format or number")
+			}
+		}
+		return strings.Join(conditions, " or "), nil
+	} else {
+
+		return defaultIfEmpty, nil
+	}
+}
+
+func saveToTempFile(config []byte) (string, error) {
+	// create it
+	file, err := ioutil.TempFile("", "nr_fb_lua_filter")
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	cfgLogger.WithField("file", file.Name()).WithField("content", string(config)).
+		Debug("Creating temp lua filter for fb.")
+
+	if _, err := file.Write(config); err != nil {
+		return "", err
+	}
+	return file.Name(), nil
 }
 
 func parsePattern(l LogCfg, fluentBitGrepField string, filters []FBCfgParser) []FBCfgParser {
@@ -520,12 +609,11 @@ func newGrepFilter(l LogCfg, fluentBitGrepField string) FBCfgParser {
 	}
 }
 
-func newLuaFilter(tag string, nameOfTheScript string) FBCfgParser {
+func newLuaFilter(tag string, fileName string) FBCfgParser {
 	return FBCfgParser{
-		Name:  fbFilterTypeLua,
-		Match: tag,
-		//change
-		Script: fmt.Sprintf("%s.lua", nameOfTheScript),
+		Name:   fbFilterTypeLua,
+		Match:  tag,
+		Script: fileName,
 		Call:   fbLuaFnName,
 	}
 }

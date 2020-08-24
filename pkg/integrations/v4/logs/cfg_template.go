@@ -118,3 +118,16 @@ var fbConfigFormat = `{{- range .Inputs }}
 {{- if .ExternalCfg.CfgFilePath }}
 @INCLUDE {{ .ExternalCfg.CfgFilePath }}
 {{ end -}}`
+
+var fbLuaScriptFormat = `function {{ .FnName }}(tag, timestamp, record)
+    eventId = record["EventID"]
+    if {{ .ExcludedEventIds }} then
+        return -1, 0, 0
+    end
+
+    if {{ .IncludedEventIds }} then
+        return 0, 0, 0
+    end
+
+    return -1, 0, 0
+ end`
