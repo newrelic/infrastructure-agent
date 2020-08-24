@@ -3,7 +3,6 @@
 package agent
 
 import (
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"math/rand"
 	"testing"
 	"time"
@@ -34,7 +33,6 @@ func (icc *EmptyRegisterClient) RegisterEntity(agentEntityID entity.ID, entity i
 }
 
 type incrementalRegister struct {
-	EmptyRegisterClient
 	state state.Register
 }
 
@@ -50,7 +48,7 @@ func newRetryBackoffRegister() identityapi.RegisterClient {
 	return &incrementalRegister{state: state.RegisterRetryBackoff}
 }
 
-func (r *incrementalRegister) RegisterBatchEntities(agentEntityID entity.ID, entities []protocol.Entity) (batchResponse []identityapi.RegisterEntityResponse, t time.Duration, err error) {
+func (r *incrementalRegister) RegisterBatchEntities(agentEntityID entity.ID, entities []identityapi.RegisterEntity) (batchResponse []identityapi.RegisterEntityResponse, t time.Duration, err error) {
 	return
 }
 
@@ -73,7 +71,7 @@ func (r *incrementalRegister) RegisterEntitiesRemoveMe(agentEntityID entity.ID, 
 	return
 }
 
-func (r *incrementalRegister) RegisterEntity(agentEntityID entity.ID, ent protocol.Entity) (identityapi.RegisterEntityResponse, error) {
+func (r *incrementalRegister) RegisterEntity(agentEntityID entity.ID, ent identityapi.RegisterEntity) (identityapi.RegisterEntityResponse, error) {
 	return identityapi.RegisterEntityResponse{
 		ID:  entity.ID(rand.Int63n(100000)),
 		Key: entity.Key(ent.Name),

@@ -9,6 +9,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
+	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/register"
@@ -101,16 +102,16 @@ func TestEmitter_SendOneEntityOutOfTwo(t *testing.T) {
 	}
 
 	idProvider.
-		On("Entities", testIdentity, expectedEntities).
+		On("ResolveEntities", testIdentity, expectedEntities).
 		Return(
 			register.RegisteredEntitiesNameToID{"a.entity.one": expectedEntityId},
 			register.UnregisteredEntities{
 				{
 					Reason: register.ReasonEntityError,
 					Err:    fmt.Errorf("invalid entityName"),
-					Entity: protocol.Entity{
+					Entity: identityapi.RegisterEntity{
 						Name:        "b.entity.two",
-						Type:        "ATYPE",
+						EntityType:  "ATYPE",
 						DisplayName: "A display name two",
 						Metadata:    map[string]interface{}{"env": "testing"},
 					},
@@ -166,7 +167,7 @@ func TestEmitter_Send(t *testing.T) {
 	}
 
 	idProvider.
-		On("Entities", testIdentity, expectedEntities).
+		On("ResolveEntities", testIdentity, expectedEntities).
 		Return(
 			register.RegisteredEntitiesNameToID{"unique name": expectedEntityId},
 			register.UnregisteredEntities{})

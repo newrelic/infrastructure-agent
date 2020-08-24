@@ -60,11 +60,11 @@ type RegisterEntityRemoveMe struct {
 }
 
 type RegisterEntity struct {
-	EntityName  string            `json:"entityName"`
-	DisplayName string            `json:"displayName,omitempty"`
-	EntityType  string            `json:"entityType,omitempty"`
-	Metadata    map[string]string `json:"metadata,omitempty"`
-	Source      string            `json:"source,omitempty"`
+	Name        string                 `json:"entityName"`
+	DisplayName string                 `json:"displayName,omitempty"`
+	EntityType  string                 `json:"entityType,omitempty"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	Source      string                 `json:"source,omitempty"`
 }
 
 type RegisterEntityResponse struct {
@@ -147,9 +147,9 @@ func (rc *registerClient) RegisterBatchEntities(agentEntityID entity.ID, entitie
 func newRegisterRequest(entity RegisterEntity) identity.RegisterRequest {
 	registerRequest := identity.RegisterRequest{
 		EntityType:  entity.EntityType,
-		EntityName:  entity.EntityName,
+		EntityName:  entity.Name,
 		DisplayName: entity.DisplayName,
-		Metadata:    entity.Metadata,
+		Metadata:    convertMetadataToMapStringString(entity.Metadata),
 	}
 	return registerRequest
 }
@@ -273,4 +273,15 @@ func (rc *registerClient) marshal(b interface{}) (*bytes.Buffer, error) {
 
 	}
 	return &buf, nil
+}
+
+func convertMetadataToMapStringString(from map[string]interface{}) (to map[string]string) {
+	if from == nil {
+		return nil
+	}
+	to = make(map[string]string, len(from))
+	for key, value := range from {
+		to[key] = fmt.Sprintf("%v", value)
+	}
+	return
 }

@@ -63,7 +63,7 @@ func TestIdProvider_Entities_OneCachedAnotherRegistered(t *testing.T) {
 
 	agentIdn := entity.Identity{ID: 13}
 
-	entitiesForRegisterClient := []protocol.Entity{
+	entitiesForRegisterClient := []identityapi.RegisterEntity{
 		{
 			Name: "remote_entity_nginx",
 		},
@@ -108,7 +108,7 @@ func TestIdProvider_Entities_ErrorsHandling(t *testing.T) {
 		name                         string
 		agentIdn                     entity.Identity
 		cache                        RegisteredEntitiesNameToID
-		entitiesForRegisterClient    []protocol.Entity
+		entitiesForRegisterClient    []identityapi.RegisterEntity
 		registerClientResponse       []identityapi.RegisterEntityResponse
 		registerClientResponseErr    error
 		entitiesToRegister           []protocol.Entity
@@ -121,7 +121,7 @@ func TestIdProvider_Entities_ErrorsHandling(t *testing.T) {
 			cache: RegisteredEntitiesNameToID{
 				"remote_entity_flex": 6543,
 			},
-			entitiesForRegisterClient: []protocol.Entity{
+			entitiesForRegisterClient: []identityapi.RegisterEntity{
 				{
 					Name: "remote_entity_nginx",
 				},
@@ -139,7 +139,7 @@ func TestIdProvider_Entities_ErrorsHandling(t *testing.T) {
 				{
 					Reason: ReasonClientError,
 					Err:    fmt.Errorf("internal server error"),
-					Entity: protocol.Entity{
+					Entity: identityapi.RegisterEntity{
 						Name: "remote_entity_nginx",
 					},
 				},
@@ -151,7 +151,7 @@ func TestIdProvider_Entities_ErrorsHandling(t *testing.T) {
 			cache: RegisteredEntitiesNameToID{
 				"remote_entity_flex": 6543,
 			},
-			entitiesForRegisterClient: []protocol.Entity{
+			entitiesForRegisterClient: []identityapi.RegisterEntity{
 				{
 					Name: "remote_entity_nginx",
 				},
@@ -174,7 +174,7 @@ func TestIdProvider_Entities_ErrorsHandling(t *testing.T) {
 				{
 					Reason: ReasonEntityError,
 					Err:    fmt.Errorf("invalid entityName"),
-					Entity: protocol.Entity{
+					Entity: identityapi.RegisterEntity{
 						Name: "remote_entity_nginx",
 					},
 				},
@@ -186,7 +186,7 @@ func TestIdProvider_Entities_ErrorsHandling(t *testing.T) {
 			cache: RegisteredEntitiesNameToID{
 				"remote_entity_flex": 6543,
 			},
-			entitiesForRegisterClient: []protocol.Entity{
+			entitiesForRegisterClient: []identityapi.RegisterEntity{
 				{
 					Name: "remote_entity_nginx",
 				},
@@ -219,7 +219,7 @@ func TestIdProvider_Entities_ErrorsHandling(t *testing.T) {
 				{
 					Reason: ReasonEntityError,
 					Err:    fmt.Errorf("invalid entityName"),
-					Entity: protocol.Entity{
+					Entity: identityapi.RegisterEntity{
 						Name: "remote_entity_nginx",
 					},
 				},

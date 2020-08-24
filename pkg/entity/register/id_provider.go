@@ -14,7 +14,7 @@ type reason string
 type UnregisteredEntity struct {
 	Reason reason
 	Err    error
-	Entity protocol.Entity
+	Entity identityapi.RegisterEntity
 }
 
 type UnregisteredEntities []UnregisteredEntity
@@ -22,7 +22,7 @@ type UnregisteredEntities []UnregisteredEntity
 const ReasonClientError = "Identity client error"
 const ReasonEntityError = "Entity error"
 
-func newUnregisteredEntity(entity protocol.Entity, reason reason, err error) UnregisteredEntity {
+func newUnregisteredEntity(entity identityapi.RegisterEntity, reason reason, err error) UnregisteredEntity {
 	return UnregisteredEntity{
 		Entity: entity,
 		Reason: reason,
@@ -53,13 +53,19 @@ func NewCachedIDProvider(client identityapi.RegisterClient) *CachedIDProvider {
 func (p *CachedIDProvider) ResolveEntities(agentIdn entity.Identity, entities []protocol.Entity) (registeredEntities RegisteredEntitiesNameToID, unregisteredEntities UnregisteredEntities) {
 	unregisteredEntities = make(UnregisteredEntities, 0)
 	registeredEntities = make(RegisteredEntitiesNameToID, 0)
-	entitiesToRegister := make([]protocol.Entity, 0)
+	entitiesToRegister := make([]identityapi.RegisterEntity, 0)
 
 	for _, e := range entities {
 		if foundID, ok := p.cache[e.Name]; ok {
 			registeredEntities[e.Name] = foundID
 		} else {
-			entitiesToRegister = append(entitiesToRegister, e)
+			registerEntity := identityapi.RegisterEntity{
+				Name:        e.Name,
+				DisplayName: e.DisplayName,
+				EntityType:  e.Type,
+				Metadata:    e.Metadata,
+			}
+			entitiesToRegister = append(entitiesToRegister, registerEntity)
 		}
 	}
 
@@ -69,10 +75,9 @@ func (p *CachedIDProvider) ResolveEntities(agentIdn entity.Identity, entities []
 
 	response, _, errClient := p.client.RegisterBatchEntities(
 		agentIdn.ID,
-		[]identityapi.RegisterEntity{})
+		entitiesToRegister)
 
-	type nameToEntityType map[string]protocol.Entity
-	nameToEntity := make(nameToEntityType, len(entitiesToRegister))
+	nameToEntity := make(map[string]identityapi.RegisterEntity, len(entitiesToRegister))
 
 	for i := range entitiesToRegister {
 		nameToEntity[entitiesToRegister[i].Name] = entitiesToRegister[i]

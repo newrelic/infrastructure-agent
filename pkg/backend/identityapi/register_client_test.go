@@ -218,14 +218,14 @@ func TestRegisterClient_RegisterEntity(t *testing.T) {
 	}
 
 	registerEntity := RegisterEntity{
-		EntityType:        expectedRegisterRequest.EntityType,
-		EntityName:        expectedRegisterRequest.EntityName,
+		EntityType:  expectedRegisterRequest.EntityType,
+		Name:        expectedRegisterRequest.EntityName,
 		DisplayName: expectedRegisterRequest.DisplayName,
-		Metadata: map[string]string{
+		Metadata: map[string]interface{}{
 			"key_one":   "value",
 			"key_two":   "12345",
-			"key_three": "true",
-			"key_four":  "01234.567890",
+			"key_three": true,
+			"key_four":  1234.56789,
 		},
 	}
 	agentEntityID := entity.ID(agentID)
