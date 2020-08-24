@@ -217,7 +217,7 @@ func (p *patchSenderIngest) sendAllDeltas(allDeltas []inventoryapi.RawDeltaBlock
 			return err
 		}
 
-		if	p.entityKey != "" {
+		if p.entityKey != "" {
 			if err = p.lastSubmission.UpdateTime(timeNow()); err != nil {
 				llog.WithError(err).Error("can't save submission time")
 			}
