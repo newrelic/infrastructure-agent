@@ -17,7 +17,7 @@ var clog = log.WithComponent("IDProvider")
 
 // ProvideIDs provides remote entity IDs.
 // Waits for next retry if register endpoint status is not healthy.
-type ProvideIDs func(agentIdn entity.Identity, entities []identityapi.RegisterEntity) ([]identityapi.RegisterEntityResponse, error)
+type ProvideIDs func(agentIdn entity.Identity, entities []identityapi.RegisterEntityRemoveMe) ([]identityapi.RegisterEntityResponse, error)
 
 type idProvider struct {
 	client identityapi.RegisterClient
@@ -42,7 +42,7 @@ func newIDProvider(client identityapi.RegisterClient, sm state.RegisterSM) *idPr
 
 // provideIDs requests ID to register endpoint, waiting for retries on failures.
 // Updates the entity Map and adds the entityId if we already have them.
-func (p *idProvider) provideIDs(agentIdn entity.Identity, entities []identityapi.RegisterEntity) (ids []identityapi.RegisterEntityResponse, err error) {
+func (p *idProvider) provideIDs(agentIdn entity.Identity, entities []identityapi.RegisterEntityRemoveMe) (ids []identityapi.RegisterEntityResponse, err error) {
 retry:
 	s := p.state.State()
 	if s != state.RegisterHealthy {

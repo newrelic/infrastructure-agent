@@ -1,4 +1,4 @@
-package dm
+package register
 
 import (
 	"fmt"
@@ -19,8 +19,8 @@ type UnregisteredEntity struct {
 
 type UnregisteredEntities []UnregisteredEntity
 
-const reasonClientError = "Identity client error"
-const reasonEntityError = "Entity error"
+const ReasonClientError = "Identity client error"
+const ReasonEntityError = "Entity error"
 
 func newUnregisteredEntity(entity protocol.Entity, reason reason, err error) UnregisteredEntity {
 	return UnregisteredEntity{
@@ -30,27 +30,27 @@ func newUnregisteredEntity(entity protocol.Entity, reason reason, err error) Unr
 	}
 }
 
-type idProviderInterface interface {
-	Entities(agentIdn entity.Identity, entities []protocol.Entity) (registeredEntities RegisteredEntitiesNameToID, unregisteredEntities UnregisteredEntities)
+type IDProvider interface {
+	ResolveEntities(agentIdn entity.Identity, entities []protocol.Entity) (registeredEntities RegisteredEntitiesNameToID, unregisteredEntities UnregisteredEntities)
 }
 
-type idProvider struct {
+type CachedIDProvider struct {
 	client               identityapi.RegisterClient
 	cache                RegisteredEntitiesNameToID
 	unregisteredEntities UnregisteredEntitiesNamed
 }
 
-func NewIDProvider(client identityapi.RegisterClient) *idProvider {
+func NewCachedIDProvider(client identityapi.RegisterClient) *CachedIDProvider {
 	cache := make(RegisteredEntitiesNameToID)
 	unregisteredEntities := make(UnregisteredEntitiesNamed)
-	return &idProvider{
+	return &CachedIDProvider{
 		client:               client,
 		cache:                cache,
 		unregisteredEntities: unregisteredEntities,
 	}
 }
 
-func (p *idProvider) Entities(agentIdn entity.Identity, entities []protocol.Entity) (registeredEntities RegisteredEntitiesNameToID, unregisteredEntities UnregisteredEntities) {
+func (p *CachedIDProvider) ResolveEntities(agentIdn entity.Identity, entities []protocol.Entity) (registeredEntities RegisteredEntitiesNameToID, unregisteredEntities UnregisteredEntities) {
 	unregisteredEntities = make(UnregisteredEntities, 0)
 	registeredEntities = make(RegisteredEntitiesNameToID, 0)
 	entitiesToRegister := make([]protocol.Entity, 0)
@@ -69,7 +69,7 @@ func (p *idProvider) Entities(agentIdn entity.Identity, entities []protocol.Enti
 
 	response, _, errClient := p.client.RegisterBatchEntities(
 		agentIdn.ID,
-		entitiesToRegister)
+		[]identityapi.RegisterEntity{})
 
 	type nameToEntityType map[string]protocol.Entity
 	nameToEntity := make(nameToEntityType, len(entitiesToRegister))
@@ -80,14 +80,14 @@ func (p *idProvider) Entities(agentIdn entity.Identity, entities []protocol.Enti
 
 	if errClient != nil {
 		for i := range entitiesToRegister {
-			unregisteredEntity := newUnregisteredEntity(entitiesToRegister[i], reasonClientError, errClient)
+			unregisteredEntity := newUnregisteredEntity(entitiesToRegister[i], ReasonClientError, errClient)
 			p.unregisteredEntities[entitiesToRegister[i].Name] = unregisteredEntity
 			unregisteredEntities = append(unregisteredEntities, unregisteredEntity)
 		}
 	} else {
 		for i := range response {
 			if response[i].Err != "" {
-				unregisteredEntity := newUnregisteredEntity(nameToEntity[response[i].Name], reasonEntityError, fmt.Errorf(response[i].Err))
+				unregisteredEntity := newUnregisteredEntity(nameToEntity[response[i].Name], ReasonEntityError, fmt.Errorf(response[i].Err))
 				p.unregisteredEntities[response[i].Name] = unregisteredEntity
 				unregisteredEntities = append(unregisteredEntities, unregisteredEntity)
 				continue

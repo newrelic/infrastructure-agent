@@ -17,7 +17,6 @@ import (
 
 	"github.com/antihax/optional"
 	"github.com/newrelic/infrastructure-agent/pkg/identity-client"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
@@ -28,11 +27,11 @@ import (
 
 var (
 	testRegisterRequestPath    = "identity/v1/register/batch"
-	testRegisterEntity         = []RegisterEntity{NewRegisterEntity("my-entity-1"), NewRegisterEntity("my-entity-2")}
+	testRegisterEntity         = []RegisterEntityRemoveMe{NewRegisterEntity("my-entity-1"), NewRegisterEntity("my-entity-2")}
 	testRegisterEntityResponse = []RegisterEntityResponse{{ID: entity.ID(12345), Name: "my-entity-1"}, {ID: entity.ID(54321), Name: "my-entity-2"}}
 )
 
-func getRegisterRequestBody(req *http.Request) ([]RegisterEntity, error) {
+func getRegisterRequestBody(req *http.Request) ([]RegisterEntityRemoveMe, error) {
 	gzipReader, err := gzip.NewReader(req.Body)
 	if err != nil {
 		return nil, err
@@ -44,7 +43,7 @@ func getRegisterRequestBody(req *http.Request) ([]RegisterEntity, error) {
 		return nil, err
 	}
 
-	var body []RegisterEntity
+	var body []RegisterEntityRemoveMe
 	err = json.Unmarshal(buf, &body)
 	if err != nil {
 		return nil, err
@@ -218,20 +217,20 @@ func TestRegisterClient_RegisterEntity(t *testing.T) {
 		userAgent:  "ExpectedUserAgent",
 	}
 
-	ent := protocol.Entity{
-		Type:        expectedRegisterRequest.EntityType,
-		Name:        expectedRegisterRequest.EntityName,
+	registerEntity := RegisterEntity{
+		EntityType:        expectedRegisterRequest.EntityType,
+		EntityName:        expectedRegisterRequest.EntityName,
 		DisplayName: expectedRegisterRequest.DisplayName,
-		Metadata: map[string]interface{}{
+		Metadata: map[string]string{
 			"key_one":   "value",
-			"key_two":   12345,
-			"key_three": true,
-			"key_four":  01234.567890,
+			"key_two":   "12345",
+			"key_three": "true",
+			"key_four":  "01234.567890",
 		},
 	}
 	agentEntityID := entity.ID(agentID)
 
-	resp, err := client.RegisterEntity(agentEntityID, ent)
+	resp, err := client.RegisterEntity(agentEntityID, registerEntity)
 	require.NoError(t, err)
 
 	expectedEntityID := entity.ID(entID)
@@ -260,7 +259,7 @@ func TestRegisterClient_RegisterEntity_err(t *testing.T) {
 	}
 
 	agentEntityID := entity.ID(12231)
-	resp, err := client.RegisterEntity(agentEntityID, protocol.Entity{})
+	resp, err := client.RegisterEntity(agentEntityID, RegisterEntity{})
 	assert.EqualError(t, err, expectedError.Error())
 	assert.Equal(t, RegisterEntityResponse{}, resp)
 }

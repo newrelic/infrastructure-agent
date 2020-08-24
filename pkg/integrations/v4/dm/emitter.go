@@ -13,6 +13,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/register"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
@@ -39,7 +40,7 @@ type emitter struct {
 	ffRetriever   feature_flags.Retriever
 	metricsSender MetricsSender
 	agentContext  agent.AgentContext
-	idProvider    idProviderInterface
+	idProvider    register.IDProvider
 }
 
 type Emitter interface {
@@ -54,7 +55,7 @@ func NewEmitter(
 	agentContext agent.AgentContext,
 	dmSender MetricsSender,
 	ffRetriever feature_flags.Retriever,
-	idProvider idProviderInterface) Emitter {
+	idProvider register.IDProvider) Emitter {
 
 	return &emitter{
 		agentContext:  agentContext,
@@ -143,10 +144,10 @@ func (e *emitter) process(
 	return composeEmitError(emitErrs, len(integrationData.DataSets))
 }
 
-func (e *emitter) RegisterEntities(entities []protocol.Entity) (RegisteredEntitiesNameToID, UnregisteredEntities) {
+func (e *emitter) RegisterEntities(entities []protocol.Entity) (register.RegisteredEntitiesNameToID, register.UnregisteredEntities) {
 	// Bulk update them (after checking our datastore if they exist)
 	// add entity ID to metric annotations
-	return e.idProvider.Entities(e.agentContext.AgentIdentity(), entities)
+	return e.idProvider.ResolveEntities(e.agentContext.AgentIdentity(), entities)
 }
 
 func emitInventory(

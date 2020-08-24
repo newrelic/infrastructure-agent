@@ -272,7 +272,7 @@ func (s *vortexEventSender) entityIDResolverWorker(ctx context2.Context) {
 }
 
 func (s *vortexEventSender) flushRegister(events []eventVortexData) {
-	entities := make([]identityapi.RegisterEntity, s.registerBatchSize)
+	entities := make([]identityapi.RegisterEntityRemoveMe, s.registerBatchSize)
 	for _, ev := range events {
 		// events is a sized array of empty elements, not a slice
 		if ev.entityKey == "" {
@@ -398,7 +398,7 @@ func (s *vortexEventSender) accumulateBatches() {
 	}
 }
 
-func logRegisterErr(entities []identityapi.RegisterEntity, err error) {
+func logRegisterErr(entities []identityapi.RegisterEntityRemoveMe, err error) {
 	keys := []string{}
 	for _, e := range entities {
 		keys = append(keys, e.Key.String())
@@ -406,7 +406,7 @@ func logRegisterErr(entities []identityapi.RegisterEntity, err error) {
 	vlog.WithError(err).WithField("keys", keys).Error("problems registering entities")
 }
 
-func logEmptyRegisterErr(entities []identityapi.RegisterEntity) {
+func logEmptyRegisterErr(entities []identityapi.RegisterEntityRemoveMe) {
 	keys := []string{}
 	for _, e := range entities {
 		keys = append(keys, e.Key.String())

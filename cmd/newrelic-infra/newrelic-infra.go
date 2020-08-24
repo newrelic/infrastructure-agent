@@ -7,6 +7,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/register"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
@@ -283,7 +284,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		pluginSourceDirs,
 	)
 
-	idProvider := dm.NewIDProvider(registerClient)
+	idProvider := register.NewCachedIDProvider(registerClient)
 	dmEmitter := dm.NewEmitter(agt.GetContext(), dmSender, ffManager, idProvider)
 	integrationEmitter := emitter.NewIntegrationEmitter(agt, dmEmitter, ffManager)
 	integrationManager := v4.NewManager(integrationCfg, integrationEmitter)

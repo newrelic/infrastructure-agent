@@ -36,7 +36,7 @@ var (
 	}
 	evPost          = `[{"EntityID":13,"EntityKey":"agentKey","IsAgent":true,"Events":[{"entityKey":"agentKey","eventType":"TestEvent","value":"5"}],"ReportingAgentID":13}]`
 	evPostRemote    = `[{"EntityID":1,"EntityKey":"remoteKey","IsAgent":false,"Events":[{"entityKey":"remoteKey","eventType":"TestEvent","value":"5"}],"ReportingAgentID":13}]`
-	fixedProvideIDs = ProvideIDs(func(agentIdn entity.Identity, entities []identityapi.RegisterEntity) (ids []identityapi.RegisterEntityResponse, err error) {
+	fixedProvideIDs = ProvideIDs(func(agentIdn entity.Identity, entities []identityapi.RegisterEntityRemoveMe) (ids []identityapi.RegisterEntityResponse, err error) {
 		ids = []identityapi.RegisterEntityResponse{{ID: 1}}
 		return
 	})

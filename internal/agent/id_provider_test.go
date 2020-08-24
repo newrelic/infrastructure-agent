@@ -21,19 +21,20 @@ import (
 
 type EmptyRegisterClient struct{}
 
-func (icc *EmptyRegisterClient) RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities []identityapi.RegisterEntity) (r []identityapi.RegisterEntityResponse, retryAfter time.Duration, err error) {
+func (icc *EmptyRegisterClient) RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities []identityapi.RegisterEntityRemoveMe) (r []identityapi.RegisterEntityResponse, retryAfter time.Duration, err error) {
 	return
 }
 
-func (icc *EmptyRegisterClient) RegisterBatchEntities(agentEntityID entity.ID, entities []protocol.Entity) (r []identityapi.RegisterEntityResponse, retryAfter time.Duration, err error) {
+func (icc *EmptyRegisterClient) RegisterBatchEntities(agentEntityID entity.ID, entities []identityapi.RegisterEntity) (r []identityapi.RegisterEntityResponse, retryAfter time.Duration, err error) {
 	return
 }
 
-func (icc *EmptyRegisterClient) RegisterEntity(agentEntityID entity.ID, entity protocol.Entity) (resp identityapi.RegisterEntityResponse, err error) {
+func (icc *EmptyRegisterClient) RegisterEntity(agentEntityID entity.ID, entity identityapi.RegisterEntity) (resp identityapi.RegisterEntityResponse, err error) {
 	return
 }
 
 type incrementalRegister struct {
+	EmptyRegisterClient
 	state state.Register
 }
 
@@ -53,7 +54,7 @@ func (r *incrementalRegister) RegisterBatchEntities(agentEntityID entity.ID, ent
 	return
 }
 
-func (r *incrementalRegister) RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities []identityapi.RegisterEntity) (responseKeys []identityapi.RegisterEntityResponse, retryAfter time.Duration, err error) {
+func (r *incrementalRegister) RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities []identityapi.RegisterEntityRemoveMe) (responseKeys []identityapi.RegisterEntityResponse, retryAfter time.Duration, err error) {
 	if r.state == state.RegisterRetryAfter {
 		retryAfter = 1 * time.Second
 		err = inventoryapi.NewIngestError("ingest service rejected the register step", http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError), "")

@@ -1,4 +1,4 @@
-package dm
+package register
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ type mockedRegisterClient struct {
 	mock.Mock
 }
 
-func (mk *mockedRegisterClient) RegisterBatchEntities(agentEntityID entity.ID, entities []protocol.Entity,
+func (mk *mockedRegisterClient) RegisterBatchEntities(agentEntityID entity.ID, entities []identityapi.RegisterEntity,
 ) ([]identityapi.RegisterEntityResponse, time.Duration, error) {
 
 	args := mk.Called(agentEntityID, entities)
@@ -24,11 +24,11 @@ func (mk *mockedRegisterClient) RegisterBatchEntities(agentEntityID entity.ID, e
 		args.Error(2)
 }
 
-func (mk *mockedRegisterClient) RegisterEntity(agentEntityID entity.ID, entity protocol.Entity) (identityapi.RegisterEntityResponse, error) {
+func (mk *mockedRegisterClient) RegisterEntity(agentEntityID entity.ID, entity identityapi.RegisterEntity) (identityapi.RegisterEntityResponse, error) {
 	return identityapi.RegisterEntityResponse{}, nil
 }
 
-func (mk *mockedRegisterClient) RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities []identityapi.RegisterEntity) ([]identityapi.RegisterEntityResponse, time.Duration, error) {
+func (mk *mockedRegisterClient) RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities []identityapi.RegisterEntityRemoveMe) ([]identityapi.RegisterEntityResponse, time.Duration, error) {
 	return nil, time.Second, nil
 }
 
@@ -51,10 +51,10 @@ func TestIdProvider_Entities_MemoryFirst(t *testing.T) {
 		{Name: "remote_entity_nginx"},
 	}
 
-	idProvider := NewIDProvider(registerClient)
+	idProvider := NewCachedIDProvider(registerClient)
 
 	idProvider.cache = cache
-	idProvider.Entities(agentIdn, entities)
+	idProvider.ResolveEntities(agentIdn, entities)
 
 	registerClient.AssertNotCalled(t, "RegisterBatchEntities")
 }
@@ -91,10 +91,10 @@ func TestIdProvider_Entities_OneCachedAnotherRegistered(t *testing.T) {
 		{Name: "remote_entity_nginx"},
 	}
 
-	idProvider := NewIDProvider(registerClient)
+	idProvider := NewCachedIDProvider(registerClient)
 
 	idProvider.cache = cache
-	registeredEntities, unregisteredEntities := idProvider.Entities(agentIdn, entities)
+	registeredEntities, unregisteredEntities := idProvider.ResolveEntities(agentIdn, entities)
 
 	assert.Empty(t, unregisteredEntities)
 	assert.Len(t, registeredEntities, 2)
@@ -137,7 +137,7 @@ func TestIdProvider_Entities_ErrorsHandling(t *testing.T) {
 			},
 			unregisteredEntitiesExpected: UnregisteredEntities{
 				{
-					Reason: reasonClientError,
+					Reason: ReasonClientError,
 					Err:    fmt.Errorf("internal server error"),
 					Entity: protocol.Entity{
 						Name: "remote_entity_nginx",
@@ -172,7 +172,7 @@ func TestIdProvider_Entities_ErrorsHandling(t *testing.T) {
 			},
 			unregisteredEntitiesExpected: UnregisteredEntities{
 				{
-					Reason: reasonEntityError,
+					Reason: ReasonEntityError,
 					Err:    fmt.Errorf("invalid entityName"),
 					Entity: protocol.Entity{
 						Name: "remote_entity_nginx",
@@ -217,7 +217,7 @@ func TestIdProvider_Entities_ErrorsHandling(t *testing.T) {
 			},
 			unregisteredEntitiesExpected: UnregisteredEntities{
 				{
-					Reason: reasonEntityError,
+					Reason: ReasonEntityError,
 					Err:    fmt.Errorf("invalid entityName"),
 					Entity: protocol.Entity{
 						Name: "remote_entity_nginx",
@@ -234,10 +234,10 @@ func TestIdProvider_Entities_ErrorsHandling(t *testing.T) {
 				On("RegisterBatchEntities", mock.Anything, mock.Anything).
 				Return(testCase.registerClientResponse, time.Second, testCase.registerClientResponseErr)
 
-			idProvider := NewIDProvider(registerClient)
+			idProvider := NewCachedIDProvider(registerClient)
 
 			idProvider.cache = testCase.cache
-			registeredEntities, unregisteredEntities := idProvider.Entities(testCase.agentIdn, testCase.entitiesToRegister)
+			registeredEntities, unregisteredEntities := idProvider.ResolveEntities(testCase.agentIdn, testCase.entitiesToRegister)
 
 			assert.Equal(t, testCase.registeredEntitiesExpected, registeredEntities)
 

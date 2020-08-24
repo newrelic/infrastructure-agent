@@ -19,7 +19,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/backend/inventoryapi"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/identity-client"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
@@ -34,13 +33,13 @@ const (
 type RegisterClient interface {
 
 	// Deprecated: method to be removed at the end of this completing this feature
-	RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities []RegisterEntity) ([]RegisterEntityResponse, time.Duration, error)
+	RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities []RegisterEntityRemoveMe) ([]RegisterEntityResponse, time.Duration, error)
 
-	// RegisterBatchEntities registers a slice of protocol.Entity. This is done as a batch process
-	RegisterBatchEntities(agentEntityID entity.ID, entities []protocol.Entity) ([]RegisterEntityResponse, time.Duration, error)
+	// RegisterBatchEntities registers a slice of RegisterEntity. This is done as a batch process
+	RegisterBatchEntities(agentEntityID entity.ID, entities []RegisterEntity) ([]RegisterEntityResponse, time.Duration, error)
 
-	// RegisterEntity registers a protocol.Entity
-	RegisterEntity(agentEntityID entity.ID, entity protocol.Entity) (RegisterEntityResponse, error)
+	// RegisterEntityRemoveMe registers a RegisterEntity
+	RegisterEntity(agentEntityID entity.ID, entity RegisterEntity) (RegisterEntityResponse, error)
 }
 
 type registerClient struct {
@@ -52,12 +51,20 @@ type registerClient struct {
 	apiClient        apiClient
 }
 
-type RegisterEntity struct {
+type RegisterEntityRemoveMe struct {
 	Key        entity.Key        `json:"entityKey"`
 	Name       string            `json:"entityName,omitempty"`
 	Type       string            `json:"entityType,omitempty"`
 	Tags       map[string]string `json:"tags,omitempty"`
 	Interfaces []string          `json:"interfaces,omitempty"`
+}
+
+type RegisterEntity struct {
+	EntityName  string            `json:"entityName"`
+	DisplayName string            `json:"displayName,omitempty"`
+	EntityType  string            `json:"entityType,omitempty"`
+	Metadata    map[string]string `json:"metadata,omitempty"`
+	Source      string            `json:"source,omitempty"`
 }
 
 type RegisterEntityResponse struct {
@@ -76,8 +83,8 @@ func NewRegisterEntityResponse(id entity.ID, key entity.Key, name string, err st
 	}
 }
 
-func NewRegisterEntity(key entity.Key) RegisterEntity {
-	return RegisterEntity{key, "", "", nil, nil}
+func NewRegisterEntity(key entity.Key) RegisterEntityRemoveMe {
+	return RegisterEntityRemoveMe{key, "", "", nil, nil}
 }
 
 // NewRegisterClient returns an implementation of RegisterClient
@@ -105,7 +112,7 @@ func NewRegisterClient(
 	}, nil
 }
 
-func (rc *registerClient) RegisterBatchEntities(agentEntityID entity.ID, entities []protocol.Entity) (resp []RegisterEntityResponse, duration time.Duration, err error) {
+func (rc *registerClient) RegisterBatchEntities(agentEntityID entity.ID, entities []RegisterEntity) (resp []RegisterEntityResponse, duration time.Duration, err error) {
 
 	ctx := context.Background()
 
@@ -137,20 +144,20 @@ func (rc *registerClient) RegisterBatchEntities(agentEntityID entity.ID, entitie
 	return resp, time.Second, err
 }
 
-func newRegisterRequest(entity protocol.Entity) identity.RegisterRequest {
+func newRegisterRequest(entity RegisterEntity) identity.RegisterRequest {
 	registerRequest := identity.RegisterRequest{
-		EntityType:  entity.Type,
-		EntityName:  entity.Name,
+		EntityType:  entity.EntityType,
+		EntityName:  entity.EntityName,
 		DisplayName: entity.DisplayName,
-		Metadata:    convertMetadataToMapStringString(entity.Metadata),
+		Metadata:    entity.Metadata,
 	}
 	return registerRequest
 }
 
-func (rc *registerClient) RegisterEntity(agentEntityID entity.ID, ent protocol.Entity) (resp RegisterEntityResponse, err error) {
+func (rc *registerClient) RegisterEntity(agentEntityID entity.ID, registerEntity RegisterEntity) (resp RegisterEntityResponse, err error) {
 
 	ctx := context.Background()
-	registerRequest := newRegisterRequest(ent)
+	registerRequest := newRegisterRequest(registerEntity)
 	localVarOptionals := &identity.RegisterPostOpts{
 		XNRIAgentEntityId: optional.NewInt64(int64(agentEntityID)),
 	}
@@ -171,7 +178,7 @@ func (rc *registerClient) RegisterEntity(agentEntityID entity.ID, ent protocol.E
 
 // Perform the GetIDs step. For doing that, the Agent must provide for each entity an entityKey. Backend should reply
 // with a unique Entity ID across NR for each registered entity
-func (rc *registerClient) RegisterEntitiesRemoveMe(agentID entity.ID, entities []RegisterEntity) (ids []RegisterEntityResponse, retryAfter time.Duration, err error) {
+func (rc *registerClient) RegisterEntitiesRemoveMe(agentID entity.ID, entities []RegisterEntityRemoveMe) (ids []RegisterEntityResponse, retryAfter time.Duration, err error) {
 	retryAfter = EmptyRetryTime
 
 	if agentID.IsEmpty() {
@@ -266,12 +273,4 @@ func (rc *registerClient) marshal(b interface{}) (*bytes.Buffer, error) {
 
 	}
 	return &buf, nil
-}
-
-func convertMetadataToMapStringString(from map[string]interface{}) (to map[string]string) {
-	to = make(map[string]string, len(from))
-	for key, value := range from {
-		to[key] = fmt.Sprintf("%v", value)
-	}
-	return
 }

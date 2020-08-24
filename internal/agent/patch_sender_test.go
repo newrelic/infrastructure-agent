@@ -34,7 +34,7 @@ const (
 
 var (
 	agentIdn         = entity.Identity{ID: 13}
-	registerEntities = []identityapi.RegisterEntity{
+	registerEntities = []identityapi.RegisterEntityRemoveMe{
 		identityapi.NewRegisterEntity("my-entity-1"),
 	}
 	endOf18 = time.Date(2018, 12, 12, 12, 12, 12, 12, &time.Location{})

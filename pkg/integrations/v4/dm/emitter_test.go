@@ -11,6 +11,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/register"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
@@ -61,10 +62,10 @@ type mockedIdProvider struct {
 	mock.Mock
 }
 
-func (mk *mockedIdProvider) Entities(agentIdn entity.Identity, entities []protocol.Entity) (registeredEntities RegisteredEntitiesNameToID, unregisteredEntities UnregisteredEntities) {
+func (mk *mockedIdProvider) ResolveEntities(agentIdn entity.Identity, entities []protocol.Entity) (registeredEntities register.RegisteredEntitiesNameToID, unregisteredEntities register.UnregisteredEntities) {
 	args := mk.Called(agentIdn, entities)
-	return args.Get(0).(RegisteredEntitiesNameToID),
-		args.Get(1).(UnregisteredEntities)
+	return args.Get(0).(register.RegisteredEntitiesNameToID),
+		args.Get(1).(register.UnregisteredEntities)
 }
 
 func TestEmitter_Send_ErrorOnHostname(t *testing.T) {
@@ -75,7 +76,7 @@ func TestEmitter_Send_ErrorOnHostname(t *testing.T) {
 
 	idProvider.
 		On("Entities", testIdentity, mock.Anything).
-		Return(RegisteredEntitiesNameToID{}, UnregisteredEntities{})
+		Return(register.RegisteredEntitiesNameToID{}, register.UnregisteredEntities{})
 
 	emitter := NewEmitter(agentCtx, dmSender, ffRetriever, idProvider)
 
@@ -102,10 +103,10 @@ func TestEmitter_SendOneEntityOutOfTwo(t *testing.T) {
 	idProvider.
 		On("Entities", testIdentity, expectedEntities).
 		Return(
-			RegisteredEntitiesNameToID{"a.entity.one": expectedEntityId},
-			UnregisteredEntities{
+			register.RegisteredEntitiesNameToID{"a.entity.one": expectedEntityId},
+			register.UnregisteredEntities{
 				{
-					Reason: reasonEntityError,
+					Reason: register.ReasonEntityError,
 					Err:    fmt.Errorf("invalid entityName"),
 					Entity: protocol.Entity{
 						Name:        "b.entity.two",
@@ -167,8 +168,8 @@ func TestEmitter_Send(t *testing.T) {
 	idProvider.
 		On("Entities", testIdentity, expectedEntities).
 		Return(
-			RegisteredEntitiesNameToID{"unique name": expectedEntityId},
-			UnregisteredEntities{})
+			register.RegisteredEntitiesNameToID{"unique name": expectedEntityId},
+			register.UnregisteredEntities{})
 	dmSender.
 		On("SendMetrics", mock.AnythingOfType("[]protocol.Metric"))
 

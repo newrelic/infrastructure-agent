@@ -188,7 +188,7 @@ func (p *patchSenderVortex) sendAllDeltas(allDeltas []inventoryapi.RawDeltaBlock
 			entityID, found = p.entityMap.Get(entity.Key(p.entityKey))
 			if !found {
 				e := identityapi.NewRegisterEntity(entity.Key(p.entityKey))
-				idRes, err := p.provideIDs(p.agentID(), []identityapi.RegisterEntity{e})
+				idRes, err := p.provideIDs(p.agentID(), []identityapi.RegisterEntityRemoveMe{e})
 				// caller expect to handle connection errors, not register ones, so don't return these
 				if err != nil {
 					llog.WithError(err).Error("register error for inventory")
