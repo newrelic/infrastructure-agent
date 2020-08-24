@@ -19,6 +19,8 @@ import (
 
 type EmptyRegisterClient struct{}
 
+var registerEntities = []identityapi.RegisterEntity{identityapi.NewRegisterEntity("my-entity-1")}
+
 func (icc *EmptyRegisterClient) Register(agentEntityID entity.ID, entities []identityapi.RegisterEntity) (r []identityapi.RegisterEntityResponse, retryAfter time.Duration, err error) {
 	return
 }

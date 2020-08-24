@@ -23,7 +23,7 @@ type AgentConfigPlugin struct {
 
 type ConfigAttrs map[string]interface{}
 
-func (self ConfigAttrs) SortKey() string {
+func (ac ConfigAttrs) SortKey() string {
 	return "infrastructure"
 }
 
@@ -35,16 +35,16 @@ func NewAgentConfigPlugin(id ids.PluginID, ctx agent.AgentContext) agent.Plugin 
 }
 
 // This plugin is pretty simple - it simply returns once with the object containing the agent's config settings
-func (self *AgentConfigPlugin) Run() {
-	self.Context.AddReconnecting(self)
+func (ac *AgentConfigPlugin) Run() {
+	ac.Context.AddReconnecting(ac)
 
-	self.config.License = ""
-	if self.config.Proxy != "" {
-		self.config.Proxy = "<proxy set>"
+	ac.config.License = ""
+	if ac.config.Proxy != "" {
+		ac.config.Proxy = "<proxy set>"
 	}
 
 	flat := map[string]interface{}{}
-	value := reflect.ValueOf(self.config)
+	value := reflect.ValueOf(ac.config)
 	for i := 0; i < value.NumField(); i++ {
 		name := value.Type().Field(i).Name
 		switch name {
@@ -62,5 +62,5 @@ func (self *AgentConfigPlugin) Run() {
 
 	helpers.LogStructureDetails(aclog, flat, "config", "raw", logrus.Fields{})
 
-	self.EmitInventory(agent.PluginInventoryDataset{ConfigAttrs(flat)}, self.Context.AgentIdentifier())
+	ac.EmitInventory(agent.PluginInventoryDataset{ConfigAttrs(flat)}, ac.Context.AgentIdentifier())
 }
