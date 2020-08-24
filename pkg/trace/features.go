@@ -14,9 +14,10 @@ func (f Feature) String() string {
 const (
 	ATTR           Feature = "attributes"    // custom-attributes
 	CONN           Feature = "connect"       // fingerprint connect
-	HOSTNAME       Feature = "hostname"      // hostname
+	HOSTNAME       Feature = "hostname"
 	DM_SUBMISSION  Feature = "dm.submission" // dimensional metrics submission
 	METRIC_MATCHER Feature = "metric.match"  // match metric by rule
+	INVENTORY      Feature = "inventory"
 )
 
 // Helper functions to avoid repeating:
@@ -50,4 +51,9 @@ func Telemetry(format string, args ...interface{}) {
 // MetricMatch traces to "audit" log metric match rule.
 func MetricMatch(format string, args ...interface{}) {
 	On(func() bool { return true }, METRIC_MATCHER, format, args...)
+}
+
+// Inventory traces to "audit" inventory.
+func Inventory(format string, args ...interface{}) {
+	On(func() bool { return true }, INVENTORY, format, args...)
 }
