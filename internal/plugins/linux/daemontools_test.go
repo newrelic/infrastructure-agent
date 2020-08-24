@@ -17,7 +17,7 @@ type DaemontoolsSuite struct{}
 
 var _ = Suite(&DaemontoolsSuite{})
 
-func (self *DaemontoolsSuite) TestSvstatParse(c *C) {
+func (ds *DaemontoolsSuite) TestSvstatParse(c *C) {
 	table := []struct {
 		output string
 		up     bool
@@ -35,7 +35,7 @@ func (self *DaemontoolsSuite) TestSvstatParse(c *C) {
 	}
 }
 
-func (self *DaemontoolsSuite) TestPsLineParse(c *C) {
+func (ds *DaemontoolsSuite) TestPsLineParse(c *C) {
 	data := `
  1399 vim state_manager.go +924
  2136 sshd: vagrant [priv]
