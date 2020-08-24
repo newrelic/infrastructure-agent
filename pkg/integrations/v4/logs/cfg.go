@@ -124,7 +124,7 @@ type LogExternalFBCfg struct {
 
 // IsValid validates struct as there's no constructor to enforce it.
 func (l *LogCfg) IsValid() bool {
-	return l.Name != "" && (l.File != "" || l.Folder != "" || l.Systemd != "" || l.EventLog != "" || l.Syslog != nil || l.Tcp != nil || l.Fluentbit != nil)
+	return l.Name != "" && (l.File != "" || l.Folder != "" || l.Systemd != "" || l.EventLog != "" || l.Syslog != nil || l.Tcp != nil || l.Fluentbit != nil || l.Winlog != nil)
 }
 
 // FBCfg FluentBit automatically generated configuration.
@@ -403,6 +403,7 @@ func parseWinlogInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBCf
 
 func createLuaScript(winlog LogWinlogCfg) (scriptContent string, err error) {
 	var fbLuaScript FBLuaScript
+	fbLuaScript.FnName = fbLuaFnName
 	included, excluded := winlog.CollectEventIds, winlog.ExcludeEventIds
 	fbLuaScript.IncludedEventIds, err = createConditions(included, "true")
 	if err != nil {
@@ -431,9 +432,9 @@ func createConditions(numberRanges []string, defaultIfEmpty string) (conditions 
 				if bottomLimit > topLimit {
 					topLimit, bottomLimit = bottomLimit, topLimit
 				}
-				conditions = append(conditions, fmt.Sprintf("EventID>=%d and EventID<=%d", bottomLimit, topLimit))
+				conditions = append(conditions, fmt.Sprintf("eventId>=%d and eventId<=%d", bottomLimit, topLimit))
 			} else if _, err := strconv.Atoi(numberRange); err == nil {
-				conditions = append(conditions, fmt.Sprintf("EventID==%s", numberRange))
+				conditions = append(conditions, fmt.Sprintf("eventId==%s", numberRange))
 			} else {
 
 				return "", fmt.Errorf("winlog: invalid range format or number")
