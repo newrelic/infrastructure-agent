@@ -11,7 +11,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/http"
-	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
@@ -37,10 +36,10 @@ type Agent interface {
 }
 
 type emitter struct {
-	ffRetriever    feature_flags.Retriever
-	metricsSender  MetricsSender
-	agentContext   agent.AgentContext
-	registerClient identityapi.RegisterClient
+	ffRetriever   feature_flags.Retriever
+	metricsSender MetricsSender
+	agentContext  agent.AgentContext
+	idProvider    idProviderInterface
 }
 
 type Emitter interface {
@@ -55,13 +54,13 @@ func NewEmitter(
 	agentContext agent.AgentContext,
 	dmSender MetricsSender,
 	ffRetriever feature_flags.Retriever,
-	registerClient identityapi.RegisterClient) Emitter {
+	idProvider idProviderInterface) Emitter {
 
 	return &emitter{
-		agentContext:   agentContext,
-		metricsSender:  dmSender,
-		ffRetriever:    ffRetriever,
-		registerClient: registerClient,
+		agentContext:  agentContext,
+		metricsSender: dmSender,
+		ffRetriever:   ffRetriever,
+		idProvider:    idProvider,
 	}
 }
 
@@ -96,26 +95,24 @@ func (e *emitter) process(
 		entities = append(entities, integrationData.DataSets[i].Entity)
 	}
 
-	registeredEntities, err := e.RegisterEntities(entities)
-	if err != nil {
-		return err
-	}
-
 	agentShortName, err := e.agentContext.IDLookup().AgentShortEntityName()
 	if err != nil {
 		return wrapError(fmt.Errorf("error renaming entity: %s", err.Error()), len(integrationData.DataSets))
 	}
 
+	// TODO start using unregisteredEntities
+	registeredEntities, _ := e.RegisterEntities(entities)
+
 	var emitErrs []error
 	for _, dataset := range integrationData.DataSets {
 
 		// for dataset.Entity call emitV4DataSet function with entity ID
-		val, ok := registeredEntities[dataset.Entity.Name]
+		entityID, ok := registeredEntities[dataset.Entity.Name]
 		if !ok {
 			emitErrs = append(emitErrs, fmt.Errorf("entity with name '%s' was not registered in the backend", dataset.Entity.Name))
 			continue
 		}
-		dataset.Common.Attributes[nrEntityId] = val
+		dataset.Common.Attributes[nrEntityId] = entityID
 		replaceEntityName(dataset.Entity, entityRewrite, agentShortName)
 
 		emitInventory(
@@ -146,22 +143,10 @@ func (e *emitter) process(
 	return composeEmitError(emitErrs, len(integrationData.DataSets))
 }
 
-func (e *emitter) RegisterEntities(entities []protocol.Entity) (map[string]entity.ID, error) {
+func (e *emitter) RegisterEntities(entities []protocol.Entity) (RegisteredEntitiesNameToID, UnregisteredEntities) {
 	// Bulk update them (after checking our datastore if they exist)
 	// add entity ID to metric annotations
-	resp, _, err := e.registerClient.RegisterBatchEntities(e.agentContext.AgentIdentity().ID, entities)
-
-	if err != nil {
-		//TODO: handle error
-		return nil, err
-	}
-
-	registeredEntities := make(map[string]entity.ID, len(resp))
-
-	for i := range resp {
-		registeredEntities[string(resp[i].Key)] = resp[i].ID
-	}
-	return registeredEntities, nil
+	return e.idProvider.Entities(e.agentContext.AgentIdentity(), entities)
 }
 
 func emitInventory(
