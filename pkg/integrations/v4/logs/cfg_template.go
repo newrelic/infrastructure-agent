@@ -80,10 +80,10 @@ var fbConfigFormat = `{{- range .Inputs }}
     Record {{ $key }} {{ $value }}
         {{- end }}
     {{- end }}
-	{{- if .Script }}
+    {{- if .Script }}
     script {{ .Script }}
     {{- end }}
-	{{- if .Call }}
+    {{- if .Call }}
     call {{ .Call }}
     {{- end }}
 {{ end -}}
@@ -121,13 +121,14 @@ var fbConfigFormat = `{{- range .Inputs }}
 
 var fbLuaScriptFormat = `function {{ .FnName }}(tag, timestamp, record)
     eventId = record["EventID"]
+    -- Discard log records matching any of these conditions
     if {{ .ExcludedEventIds }} then
         return -1, 0, 0
     end
-
+    -- Include log records matching any of these conditions
     if {{ .IncludedEventIds }} then
         return 0, 0, 0
     end
-
+    -- If there any matching conditions discard everything
     return -1, 0, 0
  end`
