@@ -129,6 +129,6 @@ var fbLuaScriptFormat = `function {{ .FnName }}(tag, timestamp, record)
     if {{ .IncludedEventIds }} then
         return 0, 0, 0
     end
-    -- If there any matching conditions discard everything
+    -- If there is not any matching conditions discard everything
     return -1, 0, 0
  end`

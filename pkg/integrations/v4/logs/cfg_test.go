@@ -919,14 +919,15 @@ func TestFBCfgFormat(t *testing.T) {
 func TestFBLuaFormat(t *testing.T) {
 	expected := `function winlog_test(tag, timestamp, record)
     eventId = record["EventID"]
+    -- Discard log records matching any of these conditions
     if eventId == 4616 then
         return -1, 0, 0
     end
-
+    -- Include log records matching any of these conditions
     if eventId >= 4608 and eventId <= 4624 then
         return 0, 0, 0
     end
-
+    -- If there is not any matching conditions discard everything
     return -1, 0, 0
  end`
 
