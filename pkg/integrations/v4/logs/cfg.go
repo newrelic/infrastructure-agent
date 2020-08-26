@@ -45,7 +45,7 @@ const (
 )
 
 //Lua Script calling function
-const fbLuaFnName = "eventIdFilter"
+const fbLuaFnNameWinlogEventFilter = "eventIdFilter"
 
 // Winlog constants
 const (
@@ -214,14 +214,14 @@ type FBCfgOutput struct {
 	ValidateCerts     bool
 }
 
-type FBLuaScript struct {
+type FBWinlogLuaScript struct {
 	FnName           string
 	ExcludedEventIds string
 	IncludedEventIds string
 }
 
 // Format will return the formatted lua script that fluent bit config is pointing to.
-func (script FBLuaScript) Format() (result string, err error) {
+func (script FBWinlogLuaScript) Format() (result string, err error) {
 	buf := new(bytes.Buffer)
 	tpl, err := template.New("fb lua").Parse(fbLuaScriptFormat)
 	if err != nil {
@@ -402,8 +402,8 @@ func parseWinlogInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBCf
 }
 
 func createLuaScript(winlog LogWinlogCfg) (scriptContent string, err error) {
-	var fbLuaScript FBLuaScript
-	fbLuaScript.FnName = fbLuaFnName
+	var fbLuaScript FBWinlogLuaScript
+	fbLuaScript.FnName = fbLuaFnNameWinlogEventFilter
 	included, excluded := winlog.CollectEventIds, winlog.ExcludeEventIds
 	fbLuaScript.IncludedEventIds, err = createConditions(included, "true")
 	if err != nil {
@@ -413,12 +413,7 @@ func createLuaScript(winlog LogWinlogCfg) (scriptContent string, err error) {
 	if err != nil {
 		return "", err
 	}
-	scriptContent, err = fbLuaScript.Format()
-	if err != nil {
-		return "", err
-	}
-
-	return scriptContent, err
+	return fbLuaScript.Format()
 }
 
 func createConditions(numberRanges []string, defaultIfEmpty string) (conditions string, err error) {
@@ -426,6 +421,7 @@ func createConditions(numberRanges []string, defaultIfEmpty string) (conditions 
 		conditions := make([]string, 0, len(numberRanges))
 		for _, numberRange := range numberRanges {
 			if match, err := regexp.MatchString(eventIdRangeRegex, numberRange); match && err == nil {
+				//EventID range in the format 1234-2345
 				var splitRange = strings.Split(numberRange, "-")
 				bottomLimit, _ := strconv.Atoi(splitRange[0])
 				topLimit, _ := strconv.Atoi(splitRange[1])
@@ -434,12 +430,14 @@ func createConditions(numberRanges []string, defaultIfEmpty string) (conditions 
 				}
 				conditions = append(conditions, fmt.Sprintf("eventId>=%d and eventId<=%d", bottomLimit, topLimit))
 			} else if _, err := strconv.Atoi(numberRange); err == nil {
+				//Single EventID
 				conditions = append(conditions, fmt.Sprintf("eventId==%s", numberRange))
 			} else {
-
+				//Invalid format
 				return "", fmt.Errorf("winlog: invalid range format or number")
 			}
 		}
+
 		return strings.Join(conditions, " or "), nil
 	} else {
 
@@ -615,7 +613,7 @@ func newLuaFilter(tag string, fileName string) FBCfgParser {
 		Name:   fbFilterTypeLua,
 		Match:  tag,
 		Script: fileName,
-		Call:   fbLuaFnName,
+		Call:   fbLuaFnNameWinlogEventFilter,
 	}
 }
 
