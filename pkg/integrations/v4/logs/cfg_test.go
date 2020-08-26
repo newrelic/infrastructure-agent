@@ -1112,14 +1112,13 @@ func TestCreateConditions(t *testing.T) {
 		wantConditions string
 		wantErr        bool
 	}{
-		// TODO: Add test cases.
-		{"Empty range number", args {numberRanges: nil,defaultIfEmpty: "false"}, "false", false},
-		{"Single number", args { []string{"1234"}, "false"}, "eventId==1234", false},
-		{"Range number", args { []string{"1234-6534"}, "false"}, "eventId>=1234 and eventId<=6534", false},
-		{"Swap range number", args { []string{"6534-1234"}, "false"}, "eventId>=1234 and eventId<=6534", false},
-		{"Numbers and ranges", args { []string{"1234-6534", "2352", "4000", "4321-4567"}, "false"}, "eventId>=1234 and eventId<=6534 or eventId==2352 or eventId==4000 or eventId>=4321 and eventId<=4567", false},
-		{"Bad format single number", args { []string{"12a34"}, "false"}, "", true},
-		{"Bad format range number", args { []string{"1234-3252-7654"}, "false"}, "", true},
+		{"Empty range number", args{numberRanges: nil, defaultIfEmpty: "false"}, "false", false},
+		{"Single number", args{[]string{"1234"}, "false"}, "eventId==1234", false},
+		{"Range number", args{[]string{"1234-6534"}, "false"}, "eventId>=1234 and eventId<=6534", false},
+		{"Swap range number", args{[]string{"6534-1234"}, "false"}, "eventId>=1234 and eventId<=6534", false},
+		{"Numbers and ranges", args{[]string{"1234-6534", "2352", "4000", "4321-4567"}, "false"}, "eventId>=1234 and eventId<=6534 or eventId==2352 or eventId==4000 or eventId>=4321 and eventId<=4567", false},
+		{"Bad format single number", args{[]string{"12a34"}, "false"}, "", true},
+		{"Bad format range number", args{[]string{"1234-3252-7654"}, "false"}, "", true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
