@@ -112,7 +112,7 @@ func (e *emitter) process(
 			emitErrs = append(emitErrs, fmt.Errorf("entity with name '%s' was not registered in the backend", dataset.Entity.Name))
 			continue
 		}
-		dataset.Common.Attributes[nrEntityId] = entityID
+		dataset.Common.Attributes[nrEntityId] = entityID.String()
 		replaceEntityName(dataset.Entity, entityRewrite, agentShortName)
 
 		emitInventory(
