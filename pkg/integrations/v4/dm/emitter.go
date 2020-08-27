@@ -90,9 +90,11 @@ func (e *emitter) process(
 	labels, extraAnnotations := metadata.LabelsAndExtraAnnotations(extraLabels)
 
 	var entities []protocol.Entity
+	datasetsByEntityName := make(map[string]protocol.Dataset, len(integrationData.DataSets))
 	// Collect All entities
 	for i := range integrationData.DataSets {
 		entities = append(entities, integrationData.DataSets[i].Entity)
+		datasetsByEntityName[integrationData.DataSets[i].Entity.Name] = integrationData.DataSets[i]
 	}
 
 	agentShortName, err := e.agentContext.IDLookup().AgentShortEntityName()
@@ -100,18 +102,11 @@ func (e *emitter) process(
 		return wrapError(fmt.Errorf("error renaming entity: %s", err.Error()), len(integrationData.DataSets))
 	}
 
-	// TODO start using unregisteredEntities
-	registeredEntities, _ := e.RegisterEntities(entities)
 
 	var emitErrs []error
-	for _, dataset := range integrationData.DataSets {
-
+	processEntityDataset := func(dataset protocol.Dataset, entityID entity.ID){
 		// for dataset.Entity call emitV4DataSet function with entity ID
-		entityID, ok := registeredEntities[dataset.Entity.Name]
-		if !ok {
-			emitErrs = append(emitErrs, fmt.Errorf("entity with name '%s' was not registered in the backend", dataset.Entity.Name))
-			continue
-		}
+
 		dataset.Common.Attributes[nrEntityId] = entityID
 		replaceEntityName(dataset.Entity, entityRewrite, agentShortName)
 
@@ -141,10 +136,53 @@ func (e *emitter) process(
 		e.metricsSender.SendMetrics(metrics)
 	}
 
+	registeredEntities, unregisteredEntitiesWithWait := e.RegisterEntities(entities)
+
+	for entityName, entityID := range registeredEntities {
+		processEntityDataset(datasetsByEntityName[entityName], entityID)
+	}
+
+	if len(unregisteredEntitiesWithWait.entities) == 0{
+		return composeEmitError(emitErrs, len(integrationData.DataSets))
+	}
+
+	unregisteredEntitiesWithWait.waitGroup.Wait()
+	entitiesToReRegister := make([]protocol.Entity, 0)
+
+	for i := range unregisteredEntitiesWithWait.entities{
+		if unregisteredEntitiesWithWait.entities[i].Reason != reasonEntityError {
+			entitiesToReRegister = append(entitiesToReRegister, unregisteredEntitiesWithWait.entities[i].Entity)
+		} else{
+			emitErrs = append(emitErrs, fmt.Errorf(
+				"entity with name '%s' was not registered in the backend, err '%v'",
+				unregisteredEntitiesWithWait.entities[i].Entity.Name, unregisteredEntitiesWithWait.entities[i].Err))
+		}
+	}
+
+	if len(entitiesToReRegister) == 0{
+		return composeEmitError(emitErrs, len(integrationData.DataSets))
+	}
+
+	registeredEntities, unregisteredEntitiesWithWait = e.RegisterEntities(entitiesToReRegister)
+
+	for entityName, entityID := range registeredEntities {
+		processEntityDataset(datasetsByEntityName[entityName], entityID)
+	}
+
+	if len(unregisteredEntitiesWithWait.entities) == 0{
+		return composeEmitError(emitErrs, len(integrationData.DataSets))
+	}
+
+	for i := range unregisteredEntitiesWithWait.entities{
+		emitErrs = append(emitErrs, fmt.Errorf(
+			"entity with name '%s' was not registered in the backend, err '%v'",
+			unregisteredEntitiesWithWait.entities[i].Entity.Name, unregisteredEntitiesWithWait.entities[i].Err))
+	}
+
 	return composeEmitError(emitErrs, len(integrationData.DataSets))
 }
 
-func (e *emitter) RegisterEntities(entities []protocol.Entity) (registeredEntitiesNameToID, unregisteredEntityList) {
+func (e *emitter) RegisterEntities(entities []protocol.Entity) (registeredEntitiesNameToID, unregisteredEntityListWithWait) {
 	// Bulk update them (after checking our datastore if they exist)
 	// add entity ID to metric annotations
 	return e.idProvider.ResolveEntities(entities)

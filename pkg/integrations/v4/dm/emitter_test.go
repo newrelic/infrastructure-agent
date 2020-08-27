@@ -17,6 +17,7 @@ import (
 	integrationFixture "github.com/newrelic/infrastructure-agent/test/fixture/integration"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"sync"
 	"testing"
 )
 
@@ -61,10 +62,10 @@ type mockedIdProvider struct {
 	mock.Mock
 }
 
-func (mk *mockedIdProvider) ResolveEntities(entities []protocol.Entity) (registeredEntities registeredEntitiesNameToID, unregisteredEntities unregisteredEntityList) {
+func (mk *mockedIdProvider) ResolveEntities(entities []protocol.Entity) (registeredEntities registeredEntitiesNameToID, unregisteredEntitiesWithWait unregisteredEntityListWithWait) {
 	args := mk.Called(entities)
 	return args.Get(0).(registeredEntitiesNameToID),
-		args.Get(1).(unregisteredEntityList)
+		args.Get(1).(unregisteredEntityListWithWait)
 }
 
 func TestEmitter_Send_ErrorOnHostname(t *testing.T) {
@@ -94,26 +95,27 @@ func TestEmitter_SendOneEntityOutOfTwo(t *testing.T) {
 	ffRetriever := &enabledFFRetriever{}
 	idProvider := &mockedIdProvider{}
 
-	expectedEntities := []protocol.Entity{
+	idProvider.
+		On("ResolveEntities", []protocol.Entity{
 		{Name: "a.entity.one", Type: "ATYPE", DisplayName: "A display name one", Metadata: map[string]interface{}{"env": "testing"}},
 		{Name: "b.entity.two", Type: "ATYPE", DisplayName: "A display name two", Metadata: map[string]interface{}{"env": "testing"}},
-	}
-
-	idProvider.
-		On("ResolveEntities", expectedEntities).
+	}).
 		Return(
 			registeredEntitiesNameToID{"a.entity.one": expectedEntityId},
-			unregisteredEntityList{
-				{
-					Reason: reasonEntityError,
-					Err:    fmt.Errorf("invalid entityName"),
-					Entity: protocol.Entity{
-						Name:        "b.entity.two",
-						Type:        "ATYPE",
-						DisplayName: "A display name two",
-						Metadata:    map[string]interface{}{"env": "testing"},
+			unregisteredEntityListWithWait{
+				entities: []unregisteredEntity{
+					{
+						Reason: reasonEntityError,
+						Err:    fmt.Errorf("invalid entityName"),
+						Entity: protocol.Entity{
+							Name:        "b.entity.two",
+							Type:        "ATYPE",
+							DisplayName: "A display name two",
+							Metadata:    map[string]interface{}{"env": "testing"},
+						},
 					},
 				},
+				waitGroup: &sync.WaitGroup{},
 			})
 
 	dmSender.
@@ -125,7 +127,9 @@ func TestEmitter_SendOneEntityOutOfTwo(t *testing.T) {
 			Entity: entity.New("a.entity.one", 123),
 			Data: agent.PluginInventoryDataset{
 				protocol.InventoryData{"id": "inventory_payload_one", "value": "foo-one"},
-			}, NotApplicable: false})
+			},
+			NotApplicable: false,
+		})
 
 	emitter := NewEmitter(agentCtx, dmSender, ffRetriever, idProvider)
 
@@ -134,7 +138,7 @@ func TestEmitter_SendOneEntityOutOfTwo(t *testing.T) {
 	var entityRewrite []data.EntityRewrite
 
 	err := emitter.Send(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4TwoEntities.Payload)
-	assert.EqualError(t, err, "1 out of 2 datasets could not be emitted. Reasons: entity with name 'b.entity.two' was not registered in the backend")
+	assert.EqualError(t, err, "1 out of 2 datasets could not be emitted. Reasons: entity with name 'b.entity.two' was not registered in the backend, err 'invalid entityName'")
 
 	idProvider.AssertExpectations(t)
 	dmSender.AssertExpectations(t)
@@ -168,7 +172,7 @@ func TestEmitter_Send(t *testing.T) {
 		On("ResolveEntities", expectedEntities).
 		Return(
 			registeredEntitiesNameToID{"unique name": expectedEntityId},
-			unregisteredEntityList{})
+			unregisteredEntityListWithWait{})
 	dmSender.
 		On("SendMetrics", mock.AnythingOfType("[]protocol.Metric"))
 
