@@ -4,54 +4,58 @@ package logs
 
 import (
 	"github.com/newrelic/infrastructure-agent/pkg/config"
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewFBConf(t *testing.T) {
-	logFwdCfg := &config.LogForward{
-		HomeDir:   "/var/db/newrelic-infra/newrelic-integrations/logging",
-		License:   "licenseKey",
-		IsStaging: false,
-		ProxyCfg: config.LogForwardProxy{
-			IgnoreSystemProxy: true,
-			Proxy:             "https://https-proxy:3129",
-			CABundleFile:      "/cabundles/proxycert.pem",
-			CABundleDir:       "/cabundles",
-			ValidateCerts:     true,
-		},
-	}
-
-	parserEntityBlock := FBCfgParser{
-		Name:  "record_modifier",
-		Match: "*",
-		Records: map[string]string{
-			"entity.guid.INFRA": "0",
-			"plugin.type":       "nri-agent",
-			"hostname":          "",
-		},
-	}
-	inputRecordModifier := func(i string, m string) FBCfgParser {
-		return FBCfgParser{
-			Name:  "record_modifier",
-			Match: m,
-			Records: map[string]string{
-				"fb.input": i,
-			},
-		}
-	}
-	outputBlock := FBCfgOutput{
-		Name:              "newrelic",
-		Match:             "*",
-		LicenseKey:        "licenseKey",
+var logFwdCfg = &config.LogForward{
+	HomeDir:   "/var/db/newrelic-infra/newrelic-integrations/logging",
+	License:   "licenseKey",
+	IsStaging: false,
+	ProxyCfg: config.LogForwardProxy{
 		IgnoreSystemProxy: true,
 		Proxy:             "https://https-proxy:3129",
 		CABundleFile:      "/cabundles/proxycert.pem",
 		CABundleDir:       "/cabundles",
 		ValidateCerts:     true,
+	},
+}
+
+var parserEntityBlock = FBCfgParser{
+	Name:  "record_modifier",
+	Match: "*",
+	Records: map[string]string{
+		"entity.guid.INFRA": "0",
+		"plugin.type":       "nri-agent",
+		"hostname":          "",
+	},
+}
+
+func inputRecordModifier(i string, m string) FBCfgParser {
+	return FBCfgParser{
+		Name:  "record_modifier",
+		Match: m,
+		Records: map[string]string{
+			"fb.input": i,
+		},
 	}
+}
+
+var outputBlock = FBCfgOutput{
+	Name:              "newrelic",
+	Match:             "*",
+	LicenseKey:        "licenseKey",
+	IgnoreSystemProxy: true,
+	Proxy:             "https://https-proxy:3129",
+	CABundleFile:      "/cabundles/proxycert.pem",
+	CABundleDir:       "/cabundles",
+	ValidateCerts:     true,
+}
+
+func TestNewFBConf(t *testing.T) {
 
 	tests := []struct {
 		name   string
@@ -670,6 +674,66 @@ func TestNewFBConf(t *testing.T) {
 	}
 }
 
+func TestFBConfigForWinlog(t *testing.T) {
+
+	nameTest := "input win-eventlog + eventId filtering"
+	input := LogsCfg{
+		{
+			Name: "win-security",
+			Winlog: &LogWinlogCfg{
+				Channel:         "Security",
+				CollectEventIds: []string{"5000", "6000-6100", "7000", "7900-8100"},
+				ExcludeEventIds: []string{"6020-6060", "6070"},
+			},
+		},
+	}
+
+	expected := FBCfg{
+		Inputs: []FBCfgInput{
+			{
+				Name:     "winlog",
+				Tag:      "win-security",
+				DB:       dbDbPath,
+				Channels: "Security",
+			},
+		},
+		Parsers: []FBCfgParser{
+			inputRecordModifier("winlog", "win-security"),
+			{
+				Name:   "lua",
+				Match:  "win-security",
+				Script: "Script.lua",
+				Call:   "eventIdFilter",
+			},
+			parserEntityBlock,
+		},
+
+		Output: outputBlock,
+	}
+
+	t.Run(nameTest, func(t *testing.T) {
+		fbConf, err := NewFBConf(input, logFwdCfg, "0", "")
+		assert.NoError(t, err)
+		assert.Equal(t, expected.Inputs, fbConf.Inputs)
+		assert.Equal(t, expected.Parsers[0], fbConf.Parsers[0])
+		assert.Equal(t, expected.Parsers[1].Name, fbConf.Parsers[1].Name)
+		assert.Equal(t, expected.Parsers[1].Match, fbConf.Parsers[1].Match)
+		assert.Equal(t, expected.Parsers[1].Call, fbConf.Parsers[1].Call)
+		assert.Contains(t, fbConf.Parsers[1].Script, "nr_fb_lua_filter")
+		assert.Equal(t, expected.Parsers[2], fbConf.Parsers[2])
+		assert.Equal(t, expected.Output, fbConf.Output)
+		defer removeTempFile(t, fbConf.Parsers[1].Script)
+	})
+}
+
+func removeTempFile(t *testing.T, filePath string) {
+	func() {
+		if err := os.Remove(filePath); err != nil {
+			t.Log(err)
+		}
+	}()
+}
+
 func TestFBCfgFormat(t *testing.T) {
 	expected := `
 [INPUT]
@@ -713,6 +777,12 @@ func TestFBCfgFormat(t *testing.T) {
     Separator \n
     Buffer_Size 32
 
+[INPUT]
+    Name winlog
+    Tag  win-security
+    DB   fb.db
+    Channels Security
+
 [FILTER]
     Name  grep
     Match some-folder
@@ -730,6 +800,17 @@ func TestFBCfgFormat(t *testing.T) {
     Match *
     Record entity.guid.INFRA testGUID
     Record fb.source nri-agent
+
+[FILTER]
+    Name  record_modifier
+    Match win-security
+    Record fb.input winlog
+
+[FILTER]
+    Name  lua
+    Match win-security
+    script Script.lua
+    call eventIdFilter
 
 [OUTPUT]
     Name                newrelic
@@ -783,6 +864,12 @@ func TestFBCfgFormat(t *testing.T) {
 				TcpSeparator:  "\\n",
 				TcpBufferSize: 32,
 			},
+			{
+				Name:     "winlog",
+				Tag:      "win-security",
+				DB:       "fb.db",
+				Channels: "Security",
+			},
 		},
 		Parsers: []FBCfgParser{
 			{
@@ -807,6 +894,19 @@ func TestFBCfgFormat(t *testing.T) {
 					"fb.source":         "nri-agent",
 				},
 			},
+			{
+				Name:  "record_modifier",
+				Match: "win-security",
+				Records: map[string]string{
+					"fb.input": "winlog",
+				},
+			},
+			{
+				Name:   "lua",
+				Match:  "win-security",
+				Script: "Script.lua",
+				Call:   "eventIdFilter",
+			},
 		},
 		Output: FBCfgOutput{
 			Name:       "newrelic",
@@ -822,6 +922,32 @@ func TestFBCfgFormat(t *testing.T) {
 	result, extCfg, err := fbCfg.Format()
 	assert.Empty(t, err)
 	assert.Equal(t, "/path/to/fb/parsers", extCfg.ParsersFilePath)
+	assert.Equal(t, expected, result)
+}
+
+func TestFBLuaFormat(t *testing.T) {
+	expected := `function winlog_test(tag, timestamp, record)
+    eventId = record["EventID"]
+    -- Discard log records matching any of these conditions
+    if eventId == 4616 then
+        return -1, 0, 0
+    end
+    -- Include log records matching any of these conditions
+    if eventId >= 4608 and eventId <= 4624 then
+        return 0, 0, 0
+    end
+    -- If there is not any matching conditions discard everything
+    return -1, 0, 0
+ end`
+
+	fbLuaScript := FBWinlogLuaScript{
+		FnName:           "winlog_test",
+		ExcludedEventIds: "eventId == 4616",
+		IncludedEventIds: "eventId >= 4608 and eventId <= 4624",
+	}
+
+	result, err := fbLuaScript.Format()
+	assert.Empty(t, err)
 	assert.Equal(t, expected, result)
 }
 
@@ -979,6 +1105,39 @@ func TestSyslogCorrectFormat(t *testing.T) {
 				assert.NoError(t, err)
 			} else {
 				assert.NotEmpty(t, err)
+			}
+		})
+	}
+}
+
+func TestCreateConditions(t *testing.T) {
+	type args struct {
+		numberRanges   []string
+		defaultIfEmpty string
+	}
+	tests := []struct {
+		name           string
+		args           args
+		wantConditions string
+		wantErr        bool
+	}{
+		{"Empty range number", args{numberRanges: nil, defaultIfEmpty: "false"}, "false", false},
+		{"Single number", args{[]string{"1234"}, "false"}, "eventId==1234", false},
+		{"Range number", args{[]string{"1234-6534"}, "false"}, "eventId>=1234 and eventId<=6534", false},
+		{"Swap range number", args{[]string{"6534-1234"}, "false"}, "eventId>=1234 and eventId<=6534", false},
+		{"Numbers and ranges", args{[]string{"1234-6534", "2352", "4000", "4321-4567"}, "false"}, "eventId>=1234 and eventId<=6534 or eventId==2352 or eventId==4000 or eventId>=4321 and eventId<=4567", false},
+		{"Bad format single number", args{[]string{"12a34"}, "false"}, "", true},
+		{"Bad format range number", args{[]string{"1234-3252-7654"}, "false"}, "", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotConditions, err := createConditions(tt.args.numberRanges, tt.args.defaultIfEmpty)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("createConditions() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotConditions != tt.wantConditions {
+				t.Errorf("createConditions() gotConditions = %v, want %v", gotConditions, tt.wantConditions)
 			}
 		})
 	}
