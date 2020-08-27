@@ -61,10 +61,10 @@ type mockedIdProvider struct {
 	mock.Mock
 }
 
-func (mk *mockedIdProvider) Entities(agentIdn entity.Identity, entities []protocol.Entity) (registeredEntities RegisteredEntitiesNameToID, unregisteredEntities UnregisteredEntities) {
-	args := mk.Called(agentIdn, entities)
-	return args.Get(0).(RegisteredEntitiesNameToID),
-		args.Get(1).(UnregisteredEntities)
+func (mk *mockedIdProvider) ResolveEntities(entities []protocol.Entity) (registeredEntities registeredEntitiesNameToID, unregisteredEntities unregisteredEntityList) {
+	args := mk.Called(entities)
+	return args.Get(0).(registeredEntitiesNameToID),
+		args.Get(1).(unregisteredEntityList)
 }
 
 func TestEmitter_Send_ErrorOnHostname(t *testing.T) {
@@ -74,8 +74,8 @@ func TestEmitter_Send_ErrorOnHostname(t *testing.T) {
 	idProvider := &mockedIdProvider{}
 
 	idProvider.
-		On("Entities", testIdentity, mock.Anything).
-		Return(RegisteredEntitiesNameToID{}, UnregisteredEntities{})
+		On("ResolveEntities", testIdentity, mock.Anything).
+		Return(registeredEntitiesNameToID{}, unregisteredEntityList{})
 
 	emitter := NewEmitter(agentCtx, dmSender, ffRetriever, idProvider)
 
@@ -100,10 +100,10 @@ func TestEmitter_SendOneEntityOutOfTwo(t *testing.T) {
 	}
 
 	idProvider.
-		On("Entities", testIdentity, expectedEntities).
+		On("ResolveEntities", expectedEntities).
 		Return(
-			RegisteredEntitiesNameToID{"a.entity.one": expectedEntityId},
-			UnregisteredEntities{
+			registeredEntitiesNameToID{"a.entity.one": expectedEntityId},
+			unregisteredEntityList{
 				{
 					Reason: reasonEntityError,
 					Err:    fmt.Errorf("invalid entityName"),
@@ -143,9 +143,9 @@ func TestEmitter_SendOneEntityOutOfTwo(t *testing.T) {
 	// Should add Entity Id ('nr.entity.id') to Common attributes
 	dmMetricsSent := dmSender.Calls[0].Arguments[0].([]protocol.Metric)
 	assert.Len(t, dmMetricsSent, 3)
-	assert.Equal(t, "123", dmMetricsSent[0].Attributes[nrEntityId])
-	assert.Equal(t, "123", dmMetricsSent[1].Attributes[nrEntityId])
-	assert.Equal(t, "123", dmMetricsSent[2].Attributes[nrEntityId])
+	assert.Equal(t, expectedEntityId, dmMetricsSent[0].Attributes[nrEntityId])
+	assert.Equal(t, expectedEntityId, dmMetricsSent[1].Attributes[nrEntityId])
+	assert.Equal(t, expectedEntityId, dmMetricsSent[2].Attributes[nrEntityId])
 }
 
 func TestEmitter_Send(t *testing.T) {
@@ -165,10 +165,10 @@ func TestEmitter_Send(t *testing.T) {
 	}
 
 	idProvider.
-		On("Entities", testIdentity, expectedEntities).
+		On("ResolveEntities", expectedEntities).
 		Return(
-			RegisteredEntitiesNameToID{"unique name": expectedEntityId},
-			UnregisteredEntities{})
+			registeredEntitiesNameToID{"unique name": expectedEntityId},
+			unregisteredEntityList{})
 	dmSender.
 		On("SendMetrics", mock.AnythingOfType("[]protocol.Metric"))
 
@@ -191,12 +191,11 @@ func TestEmitter_Send(t *testing.T) {
 	// Should add Entity Id ('nr.entity.id') to Common attributes
 	dmMetricsSent := dmSender.Calls[0].Arguments[0].([]protocol.Metric)
 	assert.Len(t, dmMetricsSent, 1)
-	assert.Equal(t, "123", dmMetricsSent[0].Attributes[nrEntityId])
+	assert.Equal(t, expectedEntityId, dmMetricsSent[0].Attributes[nrEntityId])
 }
 
 func getAgentContext(hostname string) *mocks.AgentContext {
 	agentCtx := &mocks.AgentContext{}
-	agentCtx.On("AgentIdentity").Return(testIdentity)
 	idLookup := make(agent.IDLookup)
 	if hostname != "" {
 		idLookup[sysinfo.HOST_SOURCE_INSTANCE_ID] = hostname

@@ -112,7 +112,7 @@ func (e *emitter) process(
 			emitErrs = append(emitErrs, fmt.Errorf("entity with name '%s' was not registered in the backend", dataset.Entity.Name))
 			continue
 		}
-		dataset.Common.Attributes[nrEntityId] = entityID.String()
+		dataset.Common.Attributes[nrEntityId] = entityID
 		replaceEntityName(dataset.Entity, entityRewrite, agentShortName)
 
 		emitInventory(
@@ -144,10 +144,10 @@ func (e *emitter) process(
 	return composeEmitError(emitErrs, len(integrationData.DataSets))
 }
 
-func (e *emitter) RegisterEntities(entities []protocol.Entity) (RegisteredEntitiesNameToID, UnregisteredEntities) {
+func (e *emitter) RegisterEntities(entities []protocol.Entity) (registeredEntitiesNameToID, unregisteredEntityList) {
 	// Bulk update them (after checking our datastore if they exist)
 	// add entity ID to metric annotations
-	return e.idProvider.Entities(e.agentContext.AgentIdentity(), entities)
+	return e.idProvider.ResolveEntities(entities)
 }
 
 func emitInventory(
