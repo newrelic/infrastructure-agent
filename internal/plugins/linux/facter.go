@@ -39,8 +39,8 @@ type FacterItem struct {
 	Value interface{} `json:"value"`
 }
 
-func (self FacterItem) SortKey() string {
-	return self.Name
+func (fi FacterItem) SortKey() string {
+	return fi.Name
 }
 
 func NewFacterPlugin(ctx agent.AgentContext) *FacterPlugin {

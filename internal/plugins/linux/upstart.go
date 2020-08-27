@@ -36,24 +36,24 @@ type UpstartService struct {
 	Pid  string `json:"pid"`
 }
 
-func (self UpstartService) SortKey() string {
-	return self.Name
+func (us UpstartService) SortKey() string {
+	return us.Name
 }
 
-func (self UpstartPlugin) getUpstartDataset() agent.PluginInventoryDataset {
+func (up UpstartPlugin) getUpstartDataset() agent.PluginInventoryDataset {
 	var dataset agent.PluginInventoryDataset
 
-	for _, v := range self.runningServices {
+	for _, v := range up.runningServices {
 		dataset = append(dataset, v)
 	}
 
 	return dataset
 }
 
-func (self UpstartPlugin) getUpstartPidMap() map[int]string {
+func (up UpstartPlugin) getUpstartPidMap() map[int]string {
 	result := make(map[int]string)
 
-	for _, v := range self.runningServices {
+	for _, v := range up.runningServices {
 		pid, err := strconv.Atoi(v.Pid)
 		if err == nil {
 			result[pid] = v.Name
@@ -63,7 +63,7 @@ func (self UpstartPlugin) getUpstartPidMap() map[int]string {
 	return result
 }
 
-func (self *UpstartPlugin) getUpstartServiceStatus() {
+func (up *UpstartPlugin) getUpstartServiceStatus() {
 	output, err := helpers.RunCommand("/sbin/initctl", "", "list")
 	if err != nil {
 		ulog.WithError(err).Error("unable to get upstart service status")
@@ -99,9 +99,9 @@ func (self *UpstartPlugin) getUpstartServiceStatus() {
 		// based on status add or remove service from state map
 		switch status {
 		case "start":
-			self.runningServices[name] = UpstartService{name, pid}
+			up.runningServices[name] = UpstartService{name, pid}
 		case "stop":
-			delete(self.runningServices, name)
+			delete(up.runningServices, name)
 		}
 	}
 }
@@ -129,8 +129,8 @@ func NewUpstartPlugin(id ids.PluginID, ctx agent.AgentContext) agent.Plugin {
 	}
 }
 
-func (self *UpstartPlugin) Run() {
-	if self.frequency <= config.FREQ_DISABLE_SAMPLING {
+func (up *UpstartPlugin) Run() {
+	if up.frequency <= config.FREQ_DISABLE_SAMPLING {
 		ulog.Debug("Disabled.")
 		return
 	}
@@ -142,14 +142,14 @@ func (self *UpstartPlugin) Run() {
 			case <-refreshTimer.C:
 				{
 					refreshTimer.Stop()
-					refreshTimer = time.NewTicker(self.frequency)
-					self.getUpstartServiceStatus()
-					self.EmitInventory(self.getUpstartDataset(), self.Context.AgentIdentifier())
-					self.Context.CacheServicePids(sysinfo.PROCESS_NAME_SOURCE_UPSTART, self.getUpstartPidMap())
+					refreshTimer = time.NewTicker(up.frequency)
+					up.getUpstartServiceStatus()
+					up.EmitInventory(up.getUpstartDataset(), up.Context.AgentIdentifier())
+					up.Context.CacheServicePids(sysinfo.PROCESS_NAME_SOURCE_UPSTART, up.getUpstartPidMap())
 				}
 			}
 		}
 	} else {
-		self.Unregister()
+		up.Unregister()
 	}
 }

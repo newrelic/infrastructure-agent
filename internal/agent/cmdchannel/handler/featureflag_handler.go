@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/newrelic/infrastructure-agent/internal/os/api"
+	"github.com/newrelic/infrastructure-agent/pkg/trace"
 
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 
@@ -16,12 +17,15 @@ import (
 
 const (
 	// FFs
-	FlagCategory     = "Infra_Agent"
-	FlagNameRegister = "register_enabled"
-	FlagProtocolV4   = "protocol_v4_enabled"
-	FlagFullProcess  = "full_process_sampling"
+	FlagCategory             = "Infra_Agent"
+	FlagNameRegister         = "register_enabled"
+	FlagParallelizeInventory = "parallelize_inventory_enabled"
+	FlagProtocolV4           = "protocol_v4_enabled"
+	FlagFullProcess          = "full_process_sampling"
 	// Config
-	CfgYmlRegisterEnabled = "register_enabled"
+	CfgYmlRegisterEnabled        = "register_enabled"
+	CfgYmlParallelizeInventory   = "inventory_queue_len"
+	CfgValueParallelizeInventory = int64(100) // default value when no config provided by user and FF enabled
 )
 
 var ffLogger = log.WithComponent("FeatureFlagHandler")
@@ -103,6 +107,11 @@ func (h *FFHandler) Handle(ffArgs commandapi.FFArgs, isInitialFetch bool) {
 		return
 	}
 
+	if ffArgs.Flag == FlagParallelizeInventory {
+		handleParallelizeInventory(ffArgs, h.cfg, isInitialFetch)
+		return
+	}
+
 	if ffArgs.Flag == FlagNameRegister {
 		handleRegister(ffArgs, h.cfg, isInitialFetch)
 		return
@@ -165,6 +174,34 @@ func (h *FFHandler) handleEnableOHI(ff string, enable bool) {
 				WithField("enable", enable).
 				Debug("Unable to enable/disable OHI feature.")
 		}
+	}
+}
+
+func handleParallelizeInventory(ffArgs commandapi.FFArgs, c *config.Config, isInitialFetch bool) {
+	trace.Inventory("parallelize FF handler initialFetch: %v, enable: %v, queue: %v",
+		isInitialFetch,
+		ffArgs.Enabled,
+		c.InventoryQueueLen,
+	)
+	// feature already in desired state
+	if (ffArgs.Enabled && c.InventoryQueueLen > 0) || (!ffArgs.Enabled && c.InventoryQueueLen == 0) {
+		return
+	}
+
+	if !isInitialFetch {
+		os.Exit(api.ExitCodeRestart)
+	}
+
+	v := int64(0)
+	if ffArgs.Enabled {
+		v = CfgValueParallelizeInventory
+	}
+
+	if err := c.SetIntValueByYamlAttribute(CfgYmlParallelizeInventory, v); err != nil {
+		ffLogger.
+			WithError(err).
+			WithField("field", CfgYmlParallelizeInventory).
+			Warn("unable to update config value")
 	}
 }
 

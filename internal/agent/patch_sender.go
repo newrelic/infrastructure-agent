@@ -217,8 +217,10 @@ func (p *patchSenderIngest) sendAllDeltas(allDeltas []inventoryapi.RawDeltaBlock
 			return err
 		}
 
-		if err = p.lastSubmission.UpdateTime(timeNow()); err != nil {
-			llog.WithError(err).Error("can't save submission time")
+		if p.entityKey != "" {
+			if err = p.lastSubmission.UpdateTime(timeNow()); err != nil {
+				llog.WithError(err).Error("can't save submission time")
+			}
 		}
 
 		if postDeltaResults.Reset == inventoryapi.ResetAll {
