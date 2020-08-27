@@ -6,6 +6,7 @@ package linux
 
 import (
 	"bufio"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -166,7 +167,7 @@ func (self *SystemdPlugin) Run() {
 					refreshTimer.Stop()
 					refreshTimer = time.NewTicker(self.frequency)
 					self.getSystemdServiceStatus()
-					self.EmitInventory(self.getSystemdDataset(), self.Context.AgentIdentifier())
+					self.EmitInventory(self.getSystemdDataset(), entity.NewWithoutID(self.Context.AgentIdentifier()))
 					self.Context.CacheServicePids(sysinfo.PROCESS_NAME_SOURCE_SYSTEMD, self.getSystemdPidMap())
 				}
 			}

@@ -3,6 +3,7 @@
 package plugins
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/stretchr/testify/mock"
 	"strings"
 	"testing"
@@ -148,7 +149,7 @@ func TestNetworkPlugin(t *testing.T) {
 		pluginInventory = append(pluginInventory, interfaceStatAsNetworkInterfaceData(&ni))
 	}
 
-	expectedInventory := agent.NewPluginOutput(getPluginId(), agentId, pluginInventory)
+	expectedInventory := agent.NewPluginOutput(getPluginId(), entity.NewWithoutID(agentId), pluginInventory)
 	assert.NotNil(t, expectedInventory)
 
 	ctx := &mocks.AgentContext{}

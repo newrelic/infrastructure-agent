@@ -5,6 +5,7 @@ package core
 
 import (
 	"github.com/newrelic/infrastructure-agent/internal/agent"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 )
 
@@ -41,7 +42,7 @@ func (cp *dummyPlugin) Run() {
 			dataset := agent.PluginInventoryDataset{
 				&valueEntry{Id: "dummy", Value: cp.value},
 			}
-			cp.EmitInventory(dataset, cp.Context.AgentIdentifier())
+			cp.EmitInventory(dataset, entity.NewWithoutID(cp.Context.AgentIdentifier()))
 		}
 	}
 }

@@ -7,6 +7,7 @@ package linux
 import (
 	"bufio"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"os"
 	"regexp"
 	"strings"
@@ -166,7 +167,7 @@ func (self *KernelModulesPlugin) Run() {
 				kmlog.WithError(err).Error("getting kernel module status")
 			} else {
 				if self.needsFlush {
-					self.EmitInventory(self.getKernelModulesDataset(), self.Context.AgentIdentifier())
+					self.EmitInventory(self.getKernelModulesDataset(), entity.NewWithoutID(self.Context.AgentIdentifier()))
 					self.needsFlush = false
 				}
 			}

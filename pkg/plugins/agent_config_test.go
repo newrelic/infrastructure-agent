@@ -3,6 +3,7 @@
 package plugins
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/stretchr/testify/assert"
 	"testing"
 
@@ -71,7 +72,7 @@ func TestConfig(t *testing.T) {
 	expectedPluginOutput := args[0]
 
 	configInventory := getConfigAsInventoryDataset(*config.NewConfig())
-	actualPluginOutput := agent.NewPluginOutput(*pluginId, agentId, configInventory)
+	actualPluginOutput := agent.NewPluginOutput(*pluginId, entity.NewWithoutID(agentId), configInventory)
 
 	assert.Equal(t, expectedPluginOutput, actualPluginOutput)
 	ctx.AssertExpectations(t)

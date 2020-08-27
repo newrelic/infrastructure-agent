@@ -102,7 +102,7 @@ func (i *IngestClient) Do(req *http.Request) (*http.Response, error) {
 
 // PostDeltas posts deltas to inventory ingest. The deltas are assumed to all be coming from one
 // logical entity (host, container, etc) and blending deltas together will lead to confusion.
-func (ic *IngestClient) PostDeltas(entityKeys []string, isAgent bool, deltas ...*RawDelta) (*PostDeltaResponse, error) {
+func (ic *IngestClient) PostDeltas(entityKeys []string, entityID entity.ID, isAgent bool, deltas ...*RawDelta) (*PostDeltaResponse, error) {
 	deltas = filterDeltas(deltas)
 
 	postDeltaBody := PostDeltaBody{
@@ -113,6 +113,10 @@ func (ic *IngestClient) PostDeltas(entityKeys []string, isAgent bool, deltas ...
 
 	if ic.connectEnabled && isAgent {
 		postDeltaBody.EntityID = ic.agentIDProvide().ID
+	}
+
+	if !isAgent && !entityID.IsEmpty() {
+		postDeltaBody.EntityID = entityID
 	}
 
 	buf, err := ic.marshal(postDeltaBody)

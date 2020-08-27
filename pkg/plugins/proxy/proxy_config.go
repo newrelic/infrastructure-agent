@@ -3,6 +3,7 @@
 package proxy
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"net/url"
 	"os"
 
@@ -135,5 +136,5 @@ func pathEntry(path string) *fileEntry {
 func (pcp *configPlugin) Run() {
 	pcp.Context.AddReconnecting(pcp)
 
-	pcp.EmitInventory(pcp.config, pcp.Context.AgentIdentifier())
+	pcp.EmitInventory(pcp.config, entity.NewWithoutID(pcp.Context.AgentIdentifier()))
 }

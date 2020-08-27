@@ -4,6 +4,7 @@ package plugins
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
@@ -123,7 +124,7 @@ func (self *HostAliasesPlugin) Run() {
 					continue
 				}
 				self.logger.WithField("dataset", dataset).Debug("Completed harvest, emitting.")
-				self.EmitInventory(dataset, self.Context.AgentIdentifier())
+				self.EmitInventory(dataset, entity.NewWithoutID(self.Context.AgentIdentifier()))
 				self.logger.Debug("Completed emitting.")
 			}
 		}

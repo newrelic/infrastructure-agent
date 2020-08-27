@@ -7,6 +7,7 @@ package linux
 import (
 	"bufio"
 	"github.com/fsnotify/fsnotify"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"strings"
 	"time"
@@ -114,7 +115,7 @@ func (self *UsersPlugin) Run() {
 			{
 				refreshTimer.Reset(self.frequency)
 				if needsFlush {
-					self.EmitInventory(self.getUserDetails(), self.Context.AgentIdentifier())
+					self.EmitInventory(self.getUserDetails(), entity.NewWithoutID(self.Context.AgentIdentifier()))
 					needsFlush = false
 				}
 			}

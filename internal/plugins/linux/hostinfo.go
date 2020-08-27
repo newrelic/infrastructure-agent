@@ -7,6 +7,7 @@ package linux
 import (
 	"bufio"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"io/ioutil"
 	"os"
 	"regexp"
@@ -218,7 +219,7 @@ func (self *HostinfoPlugin) Data() agent.PluginInventoryDataset {
 func (self *HostinfoPlugin) Run() {
 	self.Context.AddReconnecting(self)
 	data := self.Data()
-	self.EmitInventory(data, self.Context.AgentIdentifier())
+	self.EmitInventory(data, entity.NewWithoutID(self.Context.AgentIdentifier()))
 }
 
 // getCpuNum reads the `cpu cores` entry from `cpuInfoFile`, on some

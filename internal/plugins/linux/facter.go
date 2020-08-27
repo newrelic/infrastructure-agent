@@ -7,6 +7,7 @@ package linux
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"os/exec"
 	"strings"
 	"time"
@@ -97,7 +98,7 @@ func (self *FacterPlugin) Run() {
 			time.Sleep(self.frequency)
 			continue
 		}
-		self.EmitInventory(data, self.Context.AgentIdentifier())
+		self.EmitInventory(data, entity.NewWithoutID(self.Context.AgentIdentifier()))
 		time.Sleep(self.frequency)
 	}
 }

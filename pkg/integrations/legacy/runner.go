@@ -738,7 +738,7 @@ func EmitDataSet(
 
 	if len(dataSet.Inventory) > 0 {
 		inventoryDataSet := BuildInventoryDataSet(elog, dataSet.Inventory, labels, integrationUser, pluginName, entityKey.String())
-		emitter.EmitInventory(inventoryDataSet, entityKey.String())
+		emitter.EmitInventory(inventoryDataSet, entity.Entity{Key: entityKey})
 	}
 
 	for _, metric := range dataSet.Metrics {

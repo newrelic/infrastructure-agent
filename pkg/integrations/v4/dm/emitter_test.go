@@ -121,8 +121,8 @@ func TestEmitter_SendOneEntityOutOfTwo(t *testing.T) {
 
 	agentCtx.On("SendData",
 		agent.PluginOutput{
-			Id:        ids.PluginID{Category: "integration", Term: "Sample"},
-			EntityKey: "a.entity.one",
+			Id:     ids.PluginID{Category: "integration", Term: "Sample"},
+			Entity: entity.New("a.entity.one", 123),
 			Data: agent.PluginInventoryDataset{
 				protocol.InventoryData{"id": "inventory_payload_one", "value": "foo-one"},
 			}, NotApplicable: false})
@@ -173,7 +173,7 @@ func TestEmitter_Send(t *testing.T) {
 		On("SendMetrics", mock.AnythingOfType("[]protocol.Metric"))
 
 	agentCtx.On("SendData",
-		agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "integration name"}, EntityKey: "unique name", Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_foo", "value": "bar"}}, NotApplicable: false})
+		agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "integration name"}, Entity: entity.New("unique name", 123), Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_foo", "value": "bar"}}, NotApplicable: false})
 
 	emitter := NewEmitter(agentCtx, dmSender, ffRetriever, idProvider)
 

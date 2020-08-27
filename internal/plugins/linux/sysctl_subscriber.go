@@ -5,6 +5,7 @@
 package linux
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"io/ioutil"
 	"time"
 
@@ -60,11 +61,11 @@ func (p *SysctlSubscriberPlugin) Run() {
 				if err != nil {
 					sclog.WithError(err).Error("fetching sysctl initial data")
 				} else {
-					p.EmitInventory(initialDataset, p.Context.AgentIdentifier())
+					p.EmitInventory(initialDataset, entity.NewWithoutID(p.Context.AgentIdentifier()))
 					initialSubmitOk = true
 				}
 			} else if needsFlush {
-				p.EmitInventory(deltas, p.Context.AgentIdentifier())
+				p.EmitInventory(deltas, entity.NewWithoutID(p.Context.AgentIdentifier()))
 				needsFlush = false
 				deltas = agent.PluginInventoryDataset{}
 			}

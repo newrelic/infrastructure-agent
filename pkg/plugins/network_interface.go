@@ -3,6 +3,7 @@
 package plugins
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
@@ -103,7 +104,7 @@ func (self *NetworkInterfacePlugin) Run() {
 			if err != nil {
 				slog.WithError(err).WithPlugin(self.Id().String()).Error("fetching network interface data")
 			}
-			self.EmitInventory(dataset, self.Context.AgentIdentifier())
+			self.EmitInventory(dataset, entity.NewWithoutID(self.Context.AgentIdentifier()))
 		}
 	}
 }

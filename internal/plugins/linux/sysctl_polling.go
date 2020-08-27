@@ -6,6 +6,7 @@ package linux
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -142,7 +143,7 @@ func (sp *SysctlPlugin) Run() {
 			if err != nil {
 				sclog.WithError(err).Error("fetching sysctl data")
 			} else {
-				sp.EmitInventory(dataset, sp.Context.AgentIdentifier())
+				sp.EmitInventory(dataset, entity.NewWithoutID(sp.Context.AgentIdentifier()))
 			}
 		}
 	}

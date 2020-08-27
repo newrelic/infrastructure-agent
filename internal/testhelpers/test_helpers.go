@@ -97,7 +97,7 @@ func panicIfErr(err error) {
 type PostDeltaTracer struct {
 	Sources          []map[string]interface{}
 	Errors           []error
-	PostDeltas       func(_ []string, _ bool, _ ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error)
+	PostDeltas       func(_ []string, _ entity.ID, _ bool, _ ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error)
 	PostDeltasVortex func(_ entity.ID, _ []string, _ bool, _ ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error)
 }
 
@@ -108,7 +108,7 @@ func NewPostDeltaTracer(maxDeltaSize int) *PostDeltaTracer {
 		Sources: make([]map[string]interface{}, 0),
 		Errors:  make([]error, 0),
 	}
-	tracer.PostDeltas = func(entities []string, isAgent bool, deltas ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error) {
+	tracer.PostDeltas = func(entities []string, _ entity.ID, isAgent bool, deltas ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error) {
 		// Check max delta size and simulate submission/return, or error if the payload is too big
 		pdb := inventoryapi.PostDeltaBody{ExternalKeys: entities, IsAgent: &isAgent, Deltas: deltas}
 		buf, err := json.Marshal(pdb)
