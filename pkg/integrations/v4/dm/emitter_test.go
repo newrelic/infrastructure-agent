@@ -143,9 +143,9 @@ func TestEmitter_SendOneEntityOutOfTwo(t *testing.T) {
 	// Should add Entity Id ('nr.entity.id') to Common attributes
 	dmMetricsSent := dmSender.Calls[0].Arguments[0].([]protocol.Metric)
 	assert.Len(t, dmMetricsSent, 3)
-	assert.Equal(t, expectedEntityId, dmMetricsSent[0].Attributes[nrEntityId])
-	assert.Equal(t, expectedEntityId, dmMetricsSent[1].Attributes[nrEntityId])
-	assert.Equal(t, expectedEntityId, dmMetricsSent[2].Attributes[nrEntityId])
+	assert.Equal(t, "123", dmMetricsSent[0].Attributes[nrEntityId])
+	assert.Equal(t, "123", dmMetricsSent[1].Attributes[nrEntityId])
+	assert.Equal(t, "123", dmMetricsSent[2].Attributes[nrEntityId])
 }
 
 func TestEmitter_Send(t *testing.T) {
