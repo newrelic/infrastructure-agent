@@ -4,6 +4,7 @@ package logs
 
 import (
 	"github.com/newrelic/infrastructure-agent/pkg/config"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -721,8 +722,16 @@ func TestFBConfigForWinlog(t *testing.T) {
 		assert.Contains(t, fbConf.Parsers[1].Script, "nr_fb_lua_filter")
 		assert.Equal(t, expected.Parsers[2], fbConf.Parsers[2])
 		assert.Equal(t, expected.Output, fbConf.Output)
-
+		defer removeTempFile(t, fbConf.Parsers[1].Script)
 	})
+}
+
+func removeTempFile(t *testing.T, filePath string) {
+	func() {
+		if err := os.Remove(filePath); err != nil {
+			t.Log(err)
+		}
+	}()
 }
 
 func TestFBCfgFormat(t *testing.T) {
