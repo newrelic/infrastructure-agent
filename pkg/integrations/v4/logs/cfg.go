@@ -42,6 +42,7 @@ const (
 	fbFilterTypeGrep           = "grep"
 	fbFilterTypeRecordModifier = "record_modifier"
 	fbFilterTypeLua            = "lua"
+	fbFilterTypeModify         = "modify"
 )
 
 //Lua Script calling function
@@ -192,12 +193,13 @@ type FBCfgInput struct {
 //    Match  nri-service
 //    Regex  MESSAGE info
 type FBCfgParser struct {
-	Name    string
-	Match   string
-	Regex   string            // plugin: grep
-	Records map[string]string // plugin: record_modifier
-	Script  string            // plugin:lua-Script
-	Call    string            // plugin:lua-Script
+	Name      string
+	Match     string
+	Regex     string            // plugin: grep
+	Records   map[string]string // plugin: record_modifier
+	Script    string            // plugin:lua-Script
+	Call      string            // plugin:lua-Script
+	Modifiers map[string]string //plugin: modify filter
 }
 
 // FBCfgOutput FluentBit Output config block, supporting NR output plugin.
@@ -397,7 +399,7 @@ func parseWinlogInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBCf
 	}
 	eventIdLuaFilter := newLuaFilter(l.Name, scriptName)
 	filters = append(filters, eventIdLuaFilter)
-
+	filters = append(filters, newModifyFilter(l.Name))
 	return input, filters, nil
 }
 
@@ -614,6 +616,17 @@ func newLuaFilter(tag string, fileName string) FBCfgParser {
 		Match:  tag,
 		Script: fileName,
 		Call:   fbLuaFnNameWinlogEventFilter,
+	}
+}
+
+func newModifyFilter(tag string) FBCfgParser {
+	return FBCfgParser{
+		Name:  fbFilterTypeModify,
+		Match: tag,
+		Modifiers: map[string]string{
+			"Message":  "message",
+			"EventType": "WinEventType",
+		},
 	}
 }
 
