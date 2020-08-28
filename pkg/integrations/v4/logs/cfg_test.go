@@ -705,6 +705,14 @@ func TestFBConfigForWinlog(t *testing.T) {
 				Script: "Script.lua",
 				Call:   "eventIdFilter",
 			},
+			{
+				Name:  "modify",
+				Match: "win-security",
+				Modifiers: map[string]string{
+					"Message":   "message",
+					"EventType": "WinEventType",
+				},
+			},
 			parserEntityBlock,
 		},
 
@@ -812,6 +820,12 @@ func TestFBCfgFormat(t *testing.T) {
     script Script.lua
     call eventIdFilter
 
+[FILTER]
+    Name  modify
+    Match win-security
+    Rename EventType WinEventType
+    Rename Message message
+
 [OUTPUT]
     Name                newrelic
     Match               *
@@ -906,6 +920,14 @@ func TestFBCfgFormat(t *testing.T) {
 				Match:  "win-security",
 				Script: "Script.lua",
 				Call:   "eventIdFilter",
+			},
+			{
+				Name:  "modify",
+				Match: "win-security",
+				Modifiers: map[string]string{
+					"Message":   "message",
+					"EventType": "WinEventType",
+				},
 			},
 		},
 		Output: FBCfgOutput{
