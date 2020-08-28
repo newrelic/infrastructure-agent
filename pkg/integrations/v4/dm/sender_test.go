@@ -18,8 +18,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	telemetry "github.com/newrelic/infrastructure-agent/pkg/backend/telemetryapi"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
-	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 )
 
 func Test_sender_SendMetrics(t *testing.T) {
