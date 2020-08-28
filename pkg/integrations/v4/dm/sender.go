@@ -4,10 +4,10 @@ package dm
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/id"
 	"net/http"
 	"time"
 
-	"github.com/newrelic/infrastructure-agent/internal/agent/id"
 	telemetry "github.com/newrelic/infrastructure-agent/pkg/backend/telemetryapi"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm/cumulative"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm/rate"
@@ -27,6 +27,7 @@ var logger = log.WithComponent("DimensionalMetricsSender")
 
 type MetricsSender interface {
 	SendMetrics(metrics []protocol.Metric)
+	SendMetricsWithCommonAttributes(commonAttributes protocol.Common, metrics []protocol.Metric) error
 }
 
 type MetricsSenderConfig struct {
@@ -51,8 +52,8 @@ func NewConfig(staging bool, licenseKey string, submissionPeriod time.Duration) 
 }
 
 // NewDMSender creates a Dimensional Metrics sender.
-func NewDMSender(config MetricsSenderConfig, transport http.RoundTripper, idContext *id.Context) (s MetricsSender, err error) {
-	harvester, err := newTelemetryHarverster(config, transport, idContext.AgentIdentity)
+func NewDMSender(config MetricsSenderConfig, transport http.RoundTripper, idProvide id.Provide) (s MetricsSender, err error) {
+	harvester, err := newTelemetryHarverster(config, transport, idProvide)
 	s = &sender{
 		harvester: harvester,
 		calculator: Calculator{
@@ -86,8 +87,10 @@ type deltaCalculator interface {
 
 type metricHarvester interface {
 	RecordMetric(m telemetry.Metric)
+	RecordInfraMetrics(commonAttribute telemetry.Attributes, metrics []telemetry.Metric) error
 }
 
+// Deprecated: Use SendMetricsWithCommonAttributes
 func (s *sender) SendMetrics(metrics []protocol.Metric) {
 	for _, metric := range metrics {
 
@@ -95,17 +98,17 @@ func (s *sender) SendMetrics(metrics []protocol.Metric) {
 
 		switch metric.Type {
 		case "gauge":
-			c = Conversion{Gauge{}}
+			c = Conversion{toTelemetry: Gauge{}}
 		case "count":
-			c = Conversion{Count{}}
+			c = Conversion{toTelemetry: Count{}}
 		case "summary":
-			c = Conversion{Summary{}}
+			c = Conversion{toTelemetry: Summary{}}
 		case "rate":
-			c = Conversion{Gauge{calculate: &Rate{get: s.calculator.rate.GetRate}}}
+			c = Conversion{toTelemetry: Gauge{calculate: &Rate{get: s.calculator.rate.GetRate}}}
 		case "cumulative-rate":
-			c = Conversion{Gauge{calculate: &Rate{get: s.calculator.rate.GetCumulativeRate}}}
+			c = Conversion{toTelemetry: Gauge{calculate: &Rate{get: s.calculator.rate.GetCumulativeRate}}}
 		case "cumulative-count":
-			c = Conversion{Count{calculate: &Cumulative{get: s.calculator.delta.CountMetric}}}
+			c = Conversion{toTelemetry: Count{calculate: &Cumulative{get: s.calculator.delta.CountMetric}}}
 		default:
 			logger.WithField("name", metric.Name).WithField("metric-type", metric.Name).Warn("received an unknown metric type")
 			continue
@@ -122,4 +125,46 @@ func (s *sender) SendMetrics(metrics []protocol.Metric) {
 
 		s.harvester.RecordMetric(recMetric)
 	}
+}
+
+func (s *sender) SendMetricsWithCommonAttributes(commonAttributes protocol.Common, metrics []protocol.Metric) error {
+	var dMetrics []telemetry.Metric
+	for _, metric := range metrics {
+
+		var c Conversion
+
+		switch metric.Type {
+		case "gauge":
+			c = Conversion{toTelemetry: Gauge{}}
+		case "count":
+			c = Conversion{toTelemetry: Count{}}
+		case "summary":
+			c = Conversion{toTelemetry: Summary{}}
+		case "rate":
+			c = Conversion{toTelemetry: Gauge{calculate: &Rate{get: s.calculator.rate.GetRate}}}
+		case "cumulative-rate":
+			c = Conversion{toTelemetry: Gauge{calculate: &Rate{get: s.calculator.rate.GetCumulativeRate}}}
+		case "cumulative-count":
+			c = Conversion{toTelemetry: Count{calculate: &Cumulative{get: s.calculator.delta.CountMetric}}}
+		default:
+			logger.WithField("name", metric.Name).WithField("metric-type", metric.Name).Warn("received an unknown metric type")
+			continue
+		}
+
+		recMetric, err := c.convert(metric)
+
+		if err != nil {
+			if err != errNoCalculation {
+				// TODO: Return error or not?
+				logger.WithField("name", metric.Name).WithField("metric-type", metric.Type).WithError(err).Error("received a metric with invalid value")
+			}
+			continue
+		}
+		dMetrics = append(dMetrics, recMetric)
+	}
+
+	if len(dMetrics) > 0 {
+		return s.harvester.RecordInfraMetrics(commonAttributes.Attributes, dMetrics)
+	}
+	return nil
 }

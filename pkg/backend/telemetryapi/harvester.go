@@ -27,14 +27,17 @@ type Harvester struct {
 	lock              sync.Mutex
 	lastHarvest       time.Time
 	rawMetrics        []Metric
+	rawMetricsBatch   []metricBatch
 	aggregatedMetrics map[metricIdentity]*metric
 	spans             []Span
+	commonAttributes  Attributes
 }
 
 const (
 	// NOTE:  These constant values are used in Config field doc comments.
 	defaultHarvestPeriod  = 5 * time.Second
 	defaultHarvestTimeout = 15 * time.Second
+	nrEntityID            = "nr.entity.id"
 )
 
 var (
@@ -76,6 +79,7 @@ func NewHarvester(options ...func(*Config)) (*Harvester, error) {
 			})
 		} else {
 			h.commonAttributesJSON = attributesJSON
+			h.commonAttributes = attrs
 		}
 		h.config.CommonAttributes = nil
 	}
@@ -143,6 +147,55 @@ func (h *Harvester) RecordMetric(m Metric) {
 	h.rawMetrics = append(h.rawMetrics, m)
 }
 
+func (h *Harvester) RecordInfraMetrics(commonAttributes Attributes, metrics []Metric) (err error) {
+	if nil == h {
+		return
+	}
+	for i := range metrics {
+		if fields := metrics[i].validate(); nil != fields {
+			h.config.logError(fields)
+			return errors.New("invalid error") // todo figure out which one broke
+		}
+	}
+	h.lock.Lock()
+	defer h.lock.Unlock()
+	var attributesJSON json.RawMessage
+	var identity string
+
+	if len(commonAttributes) < 1 {
+		attributesJSON = h.commonAttributesJSON
+	}
+
+	if len(commonAttributes) > 0 {
+		for k, v := range h.commonAttributes {
+			if _, ok := commonAttributes[k]; !ok {
+				commonAttributes[k] = v
+			}
+		}
+
+		attrs := vetAttributes(commonAttributes, h.config.logError)
+		var errJSON error
+		attributesJSON, errJSON = json.Marshal(attrs)
+		if errJSON != nil {
+			h.config.logError(map[string]interface{}{
+				"err":     errJSON.Error(),
+				"message": "error marshaling common attributes",
+			})
+			logger.WithError(err).Warn("Setting default common attributes")
+			attributesJSON = h.commonAttributesJSON
+		} else {
+			identity = commonAttributes[nrEntityID].(string)
+		}
+	}
+
+	h.rawMetricsBatch = append(h.rawMetricsBatch, metricBatch{
+		Identity:       identity,
+		AttributesJSON: attributesJSON,
+		Metrics:        metrics,
+	})
+	return err
+}
+
 type response struct {
 	statusCode int
 	body       []byte
@@ -154,7 +207,7 @@ var (
 	backoffSequenceSeconds = []int{0, 1, 2, 4, 8, 16}
 )
 
-func (r response) needsRetry(cfg *Config, attempts int) (bool, time.Duration) {
+func (r response) needsRetry(_ *Config, attempts int) (bool, time.Duration) {
 	if attempts >= len(backoffSequenceSeconds) {
 		attempts = len(backoffSequenceSeconds) - 1
 	}
@@ -250,6 +303,22 @@ func (h *Harvester) swapOutMetrics(now time.Time) []request {
 	return reqs
 }
 
+func (h *Harvester) swapOutBatchMetrics() (req []request) {
+	h.lock.Lock()
+	rawMetricsBatch := h.rawMetricsBatch
+	h.rawMetricsBatch = nil
+	h.lock.Unlock()
+	var err error
+	req, err = newBatchRequest(rawMetricsBatch, h.config.APIKey, h.config.metricURL(), h.config.userAgent())
+	if err != nil {
+		h.config.logError(map[string]interface{}{
+			"err":     err.Error(),
+			"message": "error creating requests for batch metric",
+		})
+	}
+	return req
+}
+
 func (h *Harvester) swapOutSpans() []request {
 	h.lock.Lock()
 	sps := h.spans
@@ -286,9 +355,10 @@ func harvestRequest(req request, cfg *Config) {
 		// copying UncompressedBody.
 		if cfg.auditLogEnabled() {
 			cfg.logAudit(map[string]interface{}{
-				"event": "uncompressed request body",
-				"url":   req.Request.URL.String(),
-				"data":  jsonString(req.UncompressedBody),
+				"event":   "uncompressed request body",
+				"url":     req.Request.URL.String(),
+				"data":    jsonString(req.UncompressedBody),
+				"headers": req.Request.Header,
 			})
 		}
 
@@ -341,6 +411,7 @@ func (h *Harvester) HarvestNow(ct context.Context) {
 	var reqs []request
 	reqs = append(reqs, h.swapOutMetrics(time.Now())...)
 	reqs = append(reqs, h.swapOutSpans()...)
+	reqs = append(reqs, h.swapOutBatchMetrics()...)
 
 	for _, req := range reqs {
 		req.Request = req.Request.WithContext(ctx)

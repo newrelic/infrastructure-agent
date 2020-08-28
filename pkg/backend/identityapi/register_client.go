@@ -15,10 +15,10 @@ import (
 	"time"
 
 	"github.com/antihax/optional"
+	"github.com/newrelic/infra-identity-client-go/identity"
 	backendhttp "github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/inventoryapi"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
-	"github.com/newrelic/infra-identity-client-go/identity"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )

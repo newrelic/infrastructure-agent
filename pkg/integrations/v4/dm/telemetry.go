@@ -43,13 +43,13 @@ func newTelemetryErrorLogger(level string) io.Writer {
 	return &telemetryErrLogger{level: level}
 }
 
-func newTelemetryHarverster(conf MetricsSenderConfig, transport http.RoundTripper, idnProvide id.Provide) (*telemetry.Harvester, error) {
+func newTelemetryHarverster(conf MetricsSenderConfig, transport http.RoundTripper, idProvide id.Provide) (*telemetry.Harvester, error) {
 	return telemetry.NewHarvester(
 		telemetry.ConfigAPIKey(conf.LicenseKey),
 		telemetry.ConfigBasicErrorLogger(newTelemetryErrorLogger("error")),
 		telemetry.ConfigBasicDebugLogger(newTelemetryErrorLogger("debug")),
 		telemetry.ConfigBasicAuditLogger(newTelemetryErrorLogger("audit")),
-		telemetryHarvesterWithTransport(transport, conf.LicenseKey, idnProvide),
+		telemetryHarvesterWithTransport(transport, conf.LicenseKey, idProvide),
 		telemetryHarvesterWithMetricApiUrl(conf.MetricApiURL),
 		telemetry.ConfigHarvestPeriod(conf.SubmissionPeriod),
 	)

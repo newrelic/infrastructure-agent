@@ -241,6 +241,8 @@ func (m Gauge) writeJSON(buf *bytes.Buffer) {
 // Attributes are any attributes that should be applied to all metrics in this
 // batch. Each metric type also accepts an Attributes field.
 type metricBatch struct {
+	// Metric batch identifier
+	Identity string
 	// Timestamp is the start time of all metrics in this metricBatch.  This value
 	// can be overridden by setting Timestamp on any particular metric.
 	// Timestamp must be set here or on all metrics.
@@ -286,12 +288,16 @@ func (c commonAttributes) WriteJSON(buf *bytes.Buffer) {
 
 func (batch *metricBatch) writeJSON(buf *bytes.Buffer) {
 	buf.WriteByte('[')
+	batch.writeSingleJSON(buf)
+	buf.WriteByte(']')
+}
+
+func (batch *metricBatch) writeSingleJSON(buf *bytes.Buffer) {
 	buf.WriteByte('{')
 	w := JSONFieldsWriter{Buf: buf}
 	w.WriterField("common", commonAttributes(*batch))
 	w.WriterField("metrics", metricsArray(batch.Metrics))
 	buf.WriteByte('}')
-	buf.WriteByte(']')
 }
 
 // split will split the metricBatch into 2 equal parts, returning a slice of metricBatches.
