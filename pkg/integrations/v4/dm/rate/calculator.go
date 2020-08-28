@@ -2,7 +2,7 @@ package rate
 
 import (
 	"encoding/json"
-	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
+	telemetry "github.com/newrelic/infrastructure-agent/pkg/backend/telemetryapi"
 	"sync"
 	"time"
 )

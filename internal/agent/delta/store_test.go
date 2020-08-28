@@ -725,7 +725,7 @@ func (s *DeltaUtilsCoreSuite) TestCompactStoreTrimSentDelta(c *C) {
 	const eKey = "entity:ID"
 
 	ds := s.SetupSavedState(c)
-	ds.plugins["metadata/plugin"].setLastSentID(eKey,2)
+	ds.plugins["metadata/plugin"].setLastSentID(eKey, 2)
 	err := ds.archivePlugin(ds.plugins["metadata/plugin"], eKey)
 	c.Check(err, IsNil)
 	size, err := ds.StorageSize(ds.CacheDir)
@@ -801,8 +801,8 @@ func (s *DeltaUtilsCoreSuite) TestDeltaFileCorrupt(c *C) {
 
 	secondPlugin := newPluginInfo("metadata", "plugin.json")
 	// break on purpose, so read should fail
-	secondPlugin.Source =       "metadata/plugin2"
-	secondPlugin.Plugin =       "metadata2"
+	secondPlugin.Source = "metadata/plugin2"
+	secondPlugin.Plugin = "metadata2"
 
 	srcFile2 := ds.SourceFilePath(secondPlugin, eKey)
 	err = os.MkdirAll(filepath.Dir(srcFile2), 0755)

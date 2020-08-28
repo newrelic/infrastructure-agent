@@ -4,14 +4,13 @@ package dm
 
 import (
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm/rate"
 	"net/http"
 	"time"
 
-	"github.com/newrelic/newrelic-telemetry-sdk-go/cumulative"
-	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
-
 	"github.com/newrelic/infrastructure-agent/internal/agent/id"
+	telemetry "github.com/newrelic/infrastructure-agent/pkg/backend/telemetryapi"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm/cumulative"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm/rate"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/license"
 	"github.com/newrelic/infrastructure-agent/pkg/log"

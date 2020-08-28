@@ -31,7 +31,6 @@ require (
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/newrelic/infra-identity-client-go v1.0.2
-	github.com/newrelic/newrelic-telemetry-sdk-go v0.2.0
 	github.com/opencontainers/go-digest v1.0.0-rc1.0.20180430190053-c9281466c8b2 // indirect
 	github.com/opencontainers/image-spec v1.0.2-0.20181029102219-09950c5fb1bb // indirect
 	github.com/pkg/errors v0.9.1
