@@ -6,6 +6,9 @@ package telemetryapi
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"testing"
 	"time"
@@ -16,37 +19,7 @@ import (
 func TestMetrics(t *testing.T) {
 	metrics := &metricBatch{}
 	start := time.Date(2014, time.November, 28, 1, 1, 0, 0, time.UTC)
-	metrics.Metrics = []Metric{
-		Summary{
-			Name: "mySummary",
-			Attributes: map[string]interface{}{
-				"attribute": "string",
-			},
-			Count:     3,
-			Sum:       15,
-			Min:       4,
-			Max:       6,
-			Timestamp: start,
-			Interval:  5 * time.Second,
-		},
-		Gauge{
-			Name: "myGauge",
-			Attributes: map[string]interface{}{
-				"attribute": true,
-			},
-			Value:     12.3,
-			Timestamp: start,
-		},
-		Count{
-			Name: "myCount",
-			Attributes: map[string]interface{}{
-				"attribute": 123,
-			},
-			Value:     100,
-			Timestamp: start,
-			Interval:  5 * time.Second,
-		},
-	}
+	metrics.Metrics = generateMetrics(start)
 	metrics.AttributesJSON = json.RawMessage(`{"zip":"zap"}`)
 
 	expect := compactJSONString(`[{
@@ -107,6 +80,158 @@ func TestMetrics(t *testing.T) {
 	if string(uncompressed) != expect {
 		t.Error("metrics JSON mismatch", string(uncompressed), expect)
 	}
+}
+
+func generateMetrics(start time.Time) []Metric {
+	return []Metric{
+		Summary{
+			Name: "mySummary",
+			Attributes: map[string]interface{}{
+				"attribute": "string",
+			},
+			Count:     3,
+			Sum:       15,
+			Min:       4,
+			Max:       6,
+			Timestamp: start,
+			Interval:  5 * time.Second,
+		},
+		Gauge{
+			Name: "myGauge",
+			Attributes: map[string]interface{}{
+				"attribute": true,
+			},
+			Value:     12.3,
+			Timestamp: start,
+		},
+		Count{
+			Name: "myCount",
+			Attributes: map[string]interface{}{
+				"attribute": 123,
+			},
+			Value:     100,
+			Timestamp: start,
+			Interval:  5 * time.Second,
+		},
+	}
+}
+
+func TestMetricBatch(t *testing.T) {
+	var metricBatches []metricBatch
+	for i := 0; i < 2; i++ {
+		metrics := metricBatch{}
+		start := time.Date(2014, time.November, 28, 1, 1, 0, 0, time.UTC)
+		metrics.Metrics = generateMetrics(start)
+		metrics.Identity = fmt.Sprintf("Identity-%v", i)
+		metrics.AttributesJSON = json.RawMessage(fmt.Sprintf(`{"zip":"zap_%v"}`, i))
+		metricBatches = append(metricBatches, metrics)
+	}
+
+	requests, err := newBatchRequest(metricBatches, "my-api-key", defaultMetricURL, "userAgent")
+	require.NoError(t, err)
+	require.Len(t, requests, 1)
+	assert.Equal(t, "Identity-0,Identity-1", requests[0].Request.Header.Get("X-NRI-Entity-Ids"))
+
+	expect := compactJSONString(`[
+  {
+    "common": {
+      "attributes": {
+        "zip": "zap_0"
+      }
+    },
+    "metrics": [
+      {
+        "name": "mySummary",
+        "type": "summary",
+        "value": {
+          "sum": 15,
+          "count": 3,
+          "min": 4,
+          "max": 6
+        },
+        "timestamp": 1417136460000,
+        "interval.ms": 5000,
+        "attributes": {
+          "attribute": "string"
+        }
+      },
+      {
+        "name": "myGauge",
+        "type": "gauge",
+        "value": 12.3,
+        "timestamp": 1417136460000,
+        "attributes": {
+          "attribute": true
+        }
+      },
+      {
+        "name": "myCount",
+        "type": "count",
+        "value": 100,
+        "timestamp": 1417136460000,
+        "interval.ms": 5000,
+        "attributes": {
+          "attribute": 123
+        }
+      }
+    ]
+  },
+  {
+    "common": {
+      "attributes": {
+        "zip": "zap_1"
+      }
+    },
+    "metrics": [
+      {
+        "name": "mySummary",
+        "type": "summary",
+        "value": {
+          "sum": 15,
+          "count": 3,
+          "min": 4,
+          "max": 6
+        },
+        "timestamp": 1417136460000,
+        "interval.ms": 5000,
+        "attributes": {
+          "attribute": "string"
+        }
+      },
+      {
+        "name": "myGauge",
+        "type": "gauge",
+        "value": 12.3,
+        "timestamp": 1417136460000,
+        "attributes": {
+          "attribute": true
+        }
+      },
+      {
+        "name": "myCount",
+        "type": "count",
+        "value": 100,
+        "timestamp": 1417136460000,
+        "interval.ms": 5000,
+        "attributes": {
+          "attribute": 123
+        }
+      }
+    ]
+  }
+]
+`)
+
+	req := requests[0]
+	data := req.UncompressedBody
+	assert.Equal(t, expect, string(data))
+
+	body, err := ioutil.ReadAll(req.Request.Body)
+	require.NoError(t, req.Request.Body.Close())
+	assert.Len(t, body, req.compressedBodyLength)
+	uncompressed, err := internal.Uncompress(body)
+	require.NoError(t, err)
+	assert.Equal(t, expect, string(uncompressed))
 }
 
 func testBatchJSON(t testing.TB, batch *metricBatch, expect string) {

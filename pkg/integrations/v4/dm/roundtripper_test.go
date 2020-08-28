@@ -4,6 +4,7 @@ package dm
 
 import (
 	"net/http"
+	"net/url"
 	"testing"
 
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
@@ -14,8 +15,8 @@ import (
 func Test_newTransport_RoundTrip(t *testing.T) {
 	licenseKey := "myLicenseKey"
 	entityID := entity.ID(13)
-
-	req := &http.Request{Header: make(http.Header)}
+	expectedURL, _ := url.Parse("test.url")
+	req := &http.Request{Header: make(http.Header), URL: expectedURL}
 	req.Header.Add("Api-Key", licenseKey)
 
 	rt := new(roundTripperSpy)
@@ -23,7 +24,7 @@ func Test_newTransport_RoundTrip(t *testing.T) {
 		req := args.Get(0).(*http.Request)
 		assert.Equal(t, licenseKey, req.Header.Get("X-License-Key"))
 		assert.Empty(t, req.Header.Get("Api-Key"), "api key header should be removed")
-		assert.Equal(t, entityID.String(), req.Header.Get("Infra-Agent-Entity-Id"))
+		assert.Equal(t, entityID.String(), req.Header.Get("X-NRI-Agent-Entity-Id"))
 	})
 
 	fakeIdProvide := func() entity.Identity {

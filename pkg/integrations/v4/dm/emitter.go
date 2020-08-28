@@ -138,7 +138,9 @@ func (e *emitter) process(
 		}
 
 		metrics := dmProcessor.ProcessMetrics(dataset.Metrics, dataset.Common, dataset.Entity)
-		e.metricsSender.SendMetrics(metrics)
+		if err := e.metricsSender.SendMetricsWithCommonAttributes(dataset.Common, metrics); err != nil {
+
+		}
 	}
 
 	return composeEmitError(emitErrs, len(integrationData.DataSets))

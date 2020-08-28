@@ -5,8 +5,11 @@ package telemetryapi
 
 import (
 	"encoding/json"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"math/rand"
 	"testing"
+	"time"
 )
 
 type testRequestBuilder struct {
@@ -102,5 +105,91 @@ func TestLargeRequestNoSplit(t *testing.T) {
 	}
 	if len(req.UncompressedBody) != maxCompressedSizeBytes/2 {
 		t.Error(len(req.UncompressedBody))
+	}
+}
+
+func Test_newBatchRequest(t *testing.T) {
+	now := time.Now()
+	type testRequest struct {
+		xNRIEntityIdsHeader string
+	}
+	type args struct {
+		metrics []metricBatch
+	}
+	tests := []struct {
+		name     string
+		args     args
+		wantReqs []testRequest
+		wantErr  bool
+	}{
+		{name: "basic", args: args{
+			metrics: []metricBatch{
+				{
+					Identity:       "my-identity",
+					Timestamp:      now,
+					Interval:       101,
+					AttributesJSON: json.RawMessage(`12345678901234567890`),
+					Metrics: []Metric{
+						Count{
+							Name:      "my_count",
+							Value:     10,
+							Timestamp: now,
+							Interval:  101,
+						},
+					},
+				},
+			},
+		}, wantReqs: []testRequest{
+			{xNRIEntityIdsHeader: "my-identity"},
+		}, wantErr: false},
+		{name: "multiple_batches", args: args{
+			metrics: []metricBatch{
+				{
+					Identity:       "my-identity-one",
+					Timestamp:      now,
+					Interval:       101,
+					AttributesJSON: json.RawMessage(`12345678901234567890`),
+					Metrics: []Metric{
+						Count{
+							Name:      "my_count",
+							Value:     10,
+							Timestamp: now,
+							Interval:  101,
+						},
+					},
+				},
+				{
+					Identity:       "my-identity-two",
+					Timestamp:      now,
+					Interval:       101,
+					AttributesJSON: json.RawMessage(`12345678901234567890`),
+					Metrics: []Metric{
+						Count{
+							Name:      "my_count",
+							Value:     10,
+							Timestamp: now,
+							Interval:  101,
+						},
+					},
+				},
+			},
+		}, wantReqs: []testRequest{
+			{xNRIEntityIdsHeader: "my-identity-one,my-identity-two"},
+		}, wantErr: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotReqs, err := newBatchRequest(tt.args.metrics, "apiKey_"+tt.name, "http://url/"+tt.name, "userAgent/"+tt.name)
+			if !tt.wantErr {
+				require.NoError(t, err)
+			}
+			assert.Len(t, gotReqs, len(tt.wantReqs))
+			for i := range tt.wantReqs {
+				assert.Equal(t, "apiKey_"+tt.name, gotReqs[i].Request.Header.Get("Api-Key"))
+				assert.Equal(t, "http://url/"+tt.name, gotReqs[i].Request.URL.String())
+				assert.Equal(t, "userAgent/"+tt.name, gotReqs[i].Request.Header.Get("User-Agent"))
+				assert.Equal(t, tt.wantReqs[i].xNRIEntityIdsHeader, gotReqs[i].Request.Header.Get("X-NRI-Entity-Ids"))
+			}
+		})
 	}
 }

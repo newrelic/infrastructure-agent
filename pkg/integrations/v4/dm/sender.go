@@ -27,6 +27,7 @@ var logger = log.WithComponent("DimensionalMetricsSender")
 
 type MetricsSender interface {
 	SendMetrics(metrics []protocol.Metric)
+	SendMetricsWithCommonAttributes(commonAttributes protocol.Common, metrics []protocol.Metric) error
 }
 
 type MetricsSenderConfig struct {
@@ -86,8 +87,10 @@ type deltaCalculator interface {
 
 type metricHarvester interface {
 	RecordMetric(m telemetry.Metric)
+	RecordMetrics(commonAttribute telemetry.Attributes, metrics []telemetry.Metric) error
 }
 
+// Deprecated: Use SendMetricsWithCommonAttributes
 func (s *sender) SendMetrics(metrics []protocol.Metric) {
 	for _, metric := range metrics {
 
@@ -122,4 +125,43 @@ func (s *sender) SendMetrics(metrics []protocol.Metric) {
 
 		s.harvester.RecordMetric(recMetric)
 	}
+}
+
+func (s *sender) SendMetricsWithCommonAttributes(commonAttributes protocol.Common, metrics []protocol.Metric) error {
+	dMetrics := make([]telemetry.Metric, len(metrics))
+	for i, metric := range metrics {
+
+		var c Conversion
+
+		switch metric.Type {
+		case "gauge":
+			c = Conversion{Gauge{}}
+		case "count":
+			c = Conversion{Count{}}
+		case "summary":
+			c = Conversion{Summary{}}
+		case "rate":
+			c = Conversion{Gauge{calculate: &Rate{get: s.calculator.rate.GetRate}}}
+		case "cumulative-rate":
+			c = Conversion{Gauge{calculate: &Rate{get: s.calculator.rate.GetCumulativeRate}}}
+		case "cumulative-count":
+			c = Conversion{Count{calculate: &Cumulative{get: s.calculator.delta.CountMetric}}}
+		default:
+			logger.WithField("name", metric.Name).WithField("metric-type", metric.Name).Warn("received an unknown metric type")
+			continue
+		}
+
+		recMetric, err := c.convert(metric)
+
+		if err != nil {
+			if err != errNoCalculation {
+				// TODO: Return error or not?
+				logger.WithField("name", metric.Name).WithField("metric-type", metric.Type).WithError(err).Error("received a metric with invalid value")
+			}
+			continue
+		}
+		dMetrics[i] = recMetric
+	}
+
+	return s.harvester.RecordMetrics(commonAttributes.Attributes, dMetrics)
 }
