@@ -149,7 +149,7 @@ func TestNetworkPlugin(t *testing.T) {
 		pluginInventory = append(pluginInventory, interfaceStatAsNetworkInterfaceData(&ni))
 	}
 
-	expectedInventory := agent.NewPluginOutput(getPluginId(), entity.NewWithoutID(agentId), pluginInventory)
+	expectedInventory := agent.NewPluginOutput(getPluginId(), entity.NewFromNameWithoutID(agentId), pluginInventory)
 	assert.NotNil(t, expectedInventory)
 
 	ctx := &mocks.AgentContext{}

@@ -72,7 +72,7 @@ func TestConfig(t *testing.T) {
 	expectedPluginOutput := args[0]
 
 	configInventory := getConfigAsInventoryDataset(*config.NewConfig())
-	actualPluginOutput := agent.NewPluginOutput(*pluginId, entity.NewWithoutID(agentId), configInventory)
+	actualPluginOutput := agent.NewPluginOutput(*pluginId, entity.NewFromNameWithoutID(agentId), configInventory)
 
 	assert.Equal(t, expectedPluginOutput, actualPluginOutput)
 	ctx.AssertExpectations(t)

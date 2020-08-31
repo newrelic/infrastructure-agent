@@ -39,5 +39,5 @@ func (self *CustomAttrsPlugin) Run() {
 
 	trace.Attr("run, entity: %s, data: %+v", entityKey, self.customAttributes)
 
-	self.EmitInventory(data, entity.NewWithoutID(entityKey))
+	self.EmitInventory(data, entity.NewFromNameWithoutID(entityKey))
 }

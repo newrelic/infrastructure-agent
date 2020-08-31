@@ -104,7 +104,7 @@ func (p *CloudSecurityGroupsPlugin) Run() {
 					csglog.WithError(err).Debug("Reading security groups.")
 					return
 				}
-				p.EmitInventory(dataset, entity.NewWithoutID(p.Context.AgentIdentifier()))
+				p.EmitInventory(dataset, entity.NewFromNameWithoutID(p.Context.AgentIdentifier()))
 			}
 		}
 	}

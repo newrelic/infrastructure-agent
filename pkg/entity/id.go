@@ -23,10 +23,18 @@ func New(entityKey Key, entityID ID) Entity {
 	}
 }
 
-// NewWithoutID will create an empty Entity object without entityID.
-func NewWithoutID(entityKey string) Entity {
+// NewWithoutID will create a new Entity object without entityID.
+func NewWithoutID(entityKey Key) Entity {
 	return Entity{
-		Key: Key(entityKey),
+		Key: entityKey,
+		ID:  EmptyID,
+	}
+}
+
+// NewFromNameWithoutID will create a new Entity object without entityID from a string entityName.
+func NewFromNameWithoutID(entityName string) Entity {
+	return Entity{
+		Key: Key(entityName),
 		ID:  EmptyID,
 	}
 }

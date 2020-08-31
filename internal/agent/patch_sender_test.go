@@ -234,7 +234,7 @@ func TestPatchSender_Process_LastSubmissionTime_IgnoreEmptyEntityKey(t *testing.
 
 	// AND a patchSender
 	sender := newTestPatchSender(t, "", storage, lastSubmissionTime, &mockEntityIDPersist{})
-	sender.entityInfo = entity.NewWithoutID("")
+	sender.entityInfo = entity.NewFromNameWithoutID("")
 	sender.compactEnabled = false
 	sender.postDeltas = assertDeltaSent(t, rawDelta)
 
@@ -484,7 +484,7 @@ func TestPathSender_Process_EntityIDChanged_ResetLocalEntityDeltas(t *testing.T)
 
 	// AND a patchSender
 	sender := newTestPatchSender(t, "", storage, delta.NewLastSubmissionInMemory(), lastEntityID)
-	sender.entityInfo = entity.NewWithoutID(agentKey)
+	sender.entityInfo = entity.NewFromNameWithoutID(agentKey)
 
 	// AND set a new identity
 	idCtx := id.NewContext(ctx.Background())
@@ -516,7 +516,7 @@ func TestPathSender_Process_EmptyEntityID_UpdateEntityIDWithCurrentAgentID(t *te
 
 	// AND a patchSender
 	sender := newTestPatchSender(t, "", storage, delta.NewLastSubmissionInMemory(), lastEntityID)
-	sender.entityInfo = entity.NewWithoutID(agentKey)
+	sender.entityInfo = entity.NewFromNameWithoutID(agentKey)
 
 	// AND set a new identity
 	idCtx := id.NewContext(ctx.Background())
@@ -570,7 +570,7 @@ func newTestPatchSender(t *testing.T, dataDir string, store delta.Storage, ls de
 		cfg:      config.NewTestWithDeltas(dataDir),
 	}
 	psI, err := newPatchSender(
-		entity.NewWithoutID(entityKey),
+		entity.NewFromNameWithoutID(entityKey),
 		aCtx,
 		store,
 		ls,

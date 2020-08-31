@@ -143,7 +143,7 @@ func (sp *SysctlPlugin) Run() {
 			if err != nil {
 				sclog.WithError(err).Error("fetching sysctl data")
 			} else {
-				sp.EmitInventory(dataset, entity.NewWithoutID(sp.Context.AgentIdentifier()))
+				sp.EmitInventory(dataset, entity.NewFromNameWithoutID(sp.Context.AgentIdentifier()))
 			}
 		}
 	}

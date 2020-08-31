@@ -91,7 +91,7 @@ func (self *SysvInitPlugin) Run() {
 			}
 		}
 
-		self.EmitInventory(dataset, entity.NewWithoutID(self.Context.AgentIdentifier()))
+		self.EmitInventory(dataset, entity.NewFromNameWithoutID(self.Context.AgentIdentifier()))
 		self.Context.CacheServicePids(sysinfo.PROCESS_NAME_SOURCE_SYSVINIT, pidMap)
 	}
 }

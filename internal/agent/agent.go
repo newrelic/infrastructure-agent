@@ -550,8 +550,9 @@ func (a *Agent) registerEntityInventory(entity entity.Entity) error {
 	if a.Context.cfg.RegisterEnabled {
 		inv.sender, err = newPatchSenderVortex(entityKey, a.Context.getAgentKey(), a.Context, a.store, a.userAgent, a.Context.AgentIdentity, a.provideIDs, a.entityMap, a.httpClient)
 	} else {
-		lastSubmission := delta.NewLastSubmissionStore(a.store.DataDir, entity.Key.String())
-		lastEntityID := delta.NewEntityIDFilePersist(a.store.DataDir, entity.Key.String())
+		fileName := entity.Key.String()
+		lastSubmission := delta.NewLastSubmissionStore(a.store.DataDir, fileName)
+		lastEntityID := delta.NewEntityIDFilePersist(a.store.DataDir, fileName)
 		inv.sender, err = newPatchSender(entity, a.Context, a.store, lastSubmission, lastEntityID, a.userAgent, a.Context.AgentIdentity, a.httpClient)
 	}
 	if err != nil {
@@ -812,7 +813,7 @@ func (a *Agent) Run() (err error) {
 	// This will make the agent submitting unsent deltas from a previous execution (e.g. if an inventory was reaped
 	// but the agent was restarted before sending it)
 	if _, ok := a.inventories[a.Context.AgentIdentifier()]; !ok {
-		_ = a.registerEntityInventory(entity.NewWithoutID(a.Context.AgentIdentifier()))
+		_ = a.registerEntityInventory(entity.NewFromNameWithoutID(a.Context.AgentIdentifier()))
 	}
 
 	exit := make(chan struct{})

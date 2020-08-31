@@ -153,7 +153,7 @@ func (self *DaemontoolsPlugin) Run() {
 			checkTimer = time.NewTicker(self.frequency)
 			services, pidMap, err := getDaemontoolsServiceStatus()
 			if err == nil {
-				self.EmitInventory(services, entity.NewWithoutID(self.Context.AgentIdentifier()))
+				self.EmitInventory(services, entity.NewFromNameWithoutID(self.Context.AgentIdentifier()))
 				self.Context.CacheServicePids(sysinfo.PROCESS_NAME_SOURCE_DAEMONTOOLS, pidMap)
 			} else {
 				dtlog.WithError(err).Error("getting daemontools status")

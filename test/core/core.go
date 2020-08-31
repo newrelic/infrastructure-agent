@@ -42,7 +42,7 @@ func (cp *dummyPlugin) Run() {
 			dataset := agent.PluginInventoryDataset{
 				&valueEntry{Id: "dummy", Value: cp.value},
 			}
-			cp.EmitInventory(dataset, entity.NewWithoutID(cp.Context.AgentIdentifier()))
+			cp.EmitInventory(dataset, entity.NewFromNameWithoutID(cp.Context.AgentIdentifier()))
 		}
 	}
 }

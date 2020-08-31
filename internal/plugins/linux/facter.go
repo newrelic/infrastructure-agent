@@ -98,7 +98,7 @@ func (self *FacterPlugin) Run() {
 			time.Sleep(self.frequency)
 			continue
 		}
-		self.EmitInventory(data, entity.NewWithoutID(self.Context.AgentIdentifier()))
+		self.EmitInventory(data, entity.NewFromNameWithoutID(self.Context.AgentIdentifier()))
 		time.Sleep(self.frequency)
 	}
 }
