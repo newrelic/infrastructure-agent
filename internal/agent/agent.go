@@ -539,17 +539,21 @@ func NewIdLookup(resolver hostname.Resolver, cloudHarvester cloud.Harvester, dis
 }
 
 // Instantiates delta.Store as well as associated reapers and senders
-func (a *Agent) registerEntityInventory(entityKey string) error {
-	alog.WithField("entityKey", entityKey).Debug("Registering inventory for entity.")
+func (a *Agent) registerEntityInventory(entity entity.Entity) error {
+	entityKey := entity.Key.String()
+
+	alog.WithField("entityKey", entityKey).
+		WithField("entityID", entity.ID).Debug("Registering inventory for entity.")
 	var inv inventory
 
 	var err error
 	if a.Context.cfg.RegisterEnabled {
 		inv.sender, err = newPatchSenderVortex(entityKey, a.Context.getAgentKey(), a.Context, a.store, a.userAgent, a.Context.AgentIdentity, a.provideIDs, a.entityMap, a.httpClient)
 	} else {
-		lastSubmission := delta.NewLastSubmissionStore(a.store.DataDir, entityKey)
-		lastEntityID := delta.NewEntityIDFilePersist(a.store.DataDir, entityKey)
-		inv.sender, err = newPatchSender(entityKey, a.Context, a.store, lastSubmission, lastEntityID, a.userAgent, a.Context.AgentIdentity, a.httpClient)
+		fileName := entity.Key.String()
+		lastSubmission := delta.NewLastSubmissionStore(a.store.DataDir, fileName)
+		lastEntityID := delta.NewEntityIDFilePersist(a.store.DataDir, fileName)
+		inv.sender, err = newPatchSender(entity, a.Context, a.store, lastSubmission, lastEntityID, a.userAgent, a.Context.AgentIdentity, a.httpClient)
 	}
 	if err != nil {
 		return err
@@ -652,7 +656,7 @@ DataLoop:
 	}
 
 	return a.store.SavePluginSource(
-		plugin.EntityKey,
+		plugin.Entity.Key.String(),
 		plugin.Id.Category,
 		plugin.Id.Term,
 		simplifiedPluginData,
@@ -809,7 +813,7 @@ func (a *Agent) Run() (err error) {
 	// This will make the agent submitting unsent deltas from a previous execution (e.g. if an inventory was reaped
 	// but the agent was restarted before sending it)
 	if _, ok := a.inventories[a.Context.AgentIdentifier()]; !ok {
-		_ = a.registerEntityInventory(a.Context.AgentIdentifier())
+		_ = a.registerEntityInventory(entity.NewFromNameWithoutID(a.Context.AgentIdentifier()))
 	}
 
 	exit := make(chan struct{})
@@ -871,15 +875,16 @@ func (a *Agent) Run() (err error) {
 					_ = a.updateIDLookupTable(data.Data)
 				}
 
-				if _, ok := a.inventories[data.EntityKey]; !ok {
-					_ = a.registerEntityInventory(data.EntityKey)
+				entityKey := data.Entity.Key.String()
+				if _, ok := a.inventories[entityKey]; !ok {
+					_ = a.registerEntityInventory(data.Entity)
 				}
 
 				if !data.NotApplicable {
 					if err := a.storePluginOutput(data); err != nil {
 						alog.WithError(err).Error("problem storing plugin output")
 					}
-					a.inventories[data.EntityKey].needsReaping = true
+					a.inventories[entityKey].needsReaping = true
 				}
 			}
 		case <-reapTimer.C:

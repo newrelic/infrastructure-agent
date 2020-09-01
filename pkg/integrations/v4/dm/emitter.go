@@ -119,6 +119,7 @@ func (e *emitter) process(
 			&plugin,
 			metadata,
 			integrationData.Integration,
+			entityID,
 			dataset,
 			labels,
 		)
@@ -153,6 +154,7 @@ func emitInventory(
 	emitter agent.PluginEmitter,
 	metadata integration.Definition,
 	integrationMetadata protocol.IntegrationMetadata,
+	entityID entity.ID,
 	dataSet protocol.Dataset,
 	labels map[string]string) {
 	logEntry := elog.WithField("action", "EmitV4DataSet")
@@ -163,7 +165,8 @@ func emitInventory(
 		inventoryDataSet := legacy.BuildInventoryDataSet(
 			logEntry, dataSet.Inventory, labels, integrationUser, integrationMetadata.Name,
 			dataSet.Entity.Name)
-		emitter.EmitInventory(inventoryDataSet, dataSet.Entity.Name)
+		entityKey := entity.Key(dataSet.Entity.Name)
+		emitter.EmitInventory(inventoryDataSet, entity.New(entityKey, entityID))
 	}
 }
 

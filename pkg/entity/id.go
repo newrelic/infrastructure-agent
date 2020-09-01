@@ -9,6 +9,36 @@ import (
 	"strings"
 )
 
+// Entity information.
+type Entity struct {
+	Key
+	ID
+}
+
+// New will create a new Entity object.
+func New(entityKey Key, entityID ID) Entity {
+	return Entity{
+		Key: entityKey,
+		ID:  entityID,
+	}
+}
+
+// NewWithoutID will create a new Entity object without entityID.
+func NewWithoutID(entityKey Key) Entity {
+	return Entity{
+		Key: entityKey,
+		ID:  EmptyID,
+	}
+}
+
+// NewFromNameWithoutID will create a new Entity object without entityID from a string entityName.
+func NewFromNameWithoutID(entityName string) Entity {
+	return Entity{
+		Key: Key(entityName),
+		ID:  EmptyID,
+	}
+}
+
 // ID entity ID
 type ID int64
 

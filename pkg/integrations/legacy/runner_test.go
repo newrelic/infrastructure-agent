@@ -1536,7 +1536,7 @@ type fakeEmitter struct {
 func (f *fakeEmitter) EmitInventoryWithPluginId(data agent.PluginInventoryDataset, entityKey string, pluginId ids.PluginID) {
 }
 
-func (f *fakeEmitter) EmitInventory(data agent.PluginInventoryDataset, entityKey string) {}
+func (f *fakeEmitter) EmitInventory(data agent.PluginInventoryDataset, entity entity.Entity) {}
 
 func (f *fakeEmitter) EmitEvent(eventData map[string]interface{}, entityKey entity.Key) {
 	f.lastEventData = eventData

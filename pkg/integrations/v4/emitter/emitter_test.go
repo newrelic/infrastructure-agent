@@ -496,7 +496,7 @@ func TestProtocolV4_Emit(t *testing.T) {
 		if called.Method == "SendData" {
 			//t.Log(called)
 			pluginOutput := called.Arguments[0].(agent.PluginOutput)
-			assert.Equal(t, "unique name", pluginOutput.EntityKey)
+			assert.Equal(t, "unique name", pluginOutput.Entity.Key)
 			assert.Equal(t, "labels/foo", pluginOutput.Data[1].(protocol.InventoryData)["id"])
 			assert.Equal(t, "bar", pluginOutput.Data[1].(protocol.InventoryData)["value"])
 		}

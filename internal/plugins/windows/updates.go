@@ -6,6 +6,7 @@ package windows
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"time"
 
 	"github.com/StackExchange/wmi"
@@ -76,7 +77,7 @@ func (self *UpdatesPlugin) Run() {
 		if err != nil {
 			ulog.WithError(err).Error("updates plugin can't get dataset")
 		}
-		self.EmitInventory(dataset, self.Context.AgentIdentifier())
+		self.EmitInventory(dataset, entity.NewFromNameWithoutID(self.Context.AgentIdentifier()))
 		<-refreshTimer.C
 	}
 }

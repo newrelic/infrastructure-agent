@@ -10,6 +10,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/fsnotify/fsnotify"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/sirupsen/logrus"
@@ -172,7 +173,7 @@ func (p *rpmPlugin) Run() {
 				if err != nil {
 					rpmlog.WithError(err).Error("fetching rpm data")
 				} else {
-					p.EmitInventory(data, p.Context.AgentIdentifier())
+					p.EmitInventory(data, entity.NewFromNameWithoutID(p.Context.AgentIdentifier()))
 				}
 				counter = 0
 			}

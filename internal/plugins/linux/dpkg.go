@@ -10,6 +10,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/fsnotify/fsnotify"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/sirupsen/logrus"
@@ -168,7 +169,7 @@ func (self *DpkgPlugin) Run() {
 				if err != nil {
 					dpkglog.WithError(err).Error("fetching dpkg data")
 				} else {
-					self.EmitInventory(data, self.Context.AgentIdentifier())
+					self.EmitInventory(data, entity.NewFromNameWithoutID(self.Context.AgentIdentifier()))
 				}
 				counter = 0
 			}

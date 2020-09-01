@@ -14,7 +14,7 @@ import (
 )
 
 func TestPluginOutput(t *testing.T) {
-	pluginOutput := NewPluginOutput(ids.PluginID{}, "", nil)
+	pluginOutput := NewPluginOutput(ids.PluginID{}, entity.NewFromNameWithoutID(""), nil)
 	assert.False(t, pluginOutput.NotApplicable)
 	assert.NotNil(t, pluginOutput)
 

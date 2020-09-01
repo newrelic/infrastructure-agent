@@ -32,23 +32,23 @@ const (
 )
 
 var (
-	agentIdn         = entity.Identity{ID: 13}
-	endOf18 = time.Date(2018, 12, 12, 12, 12, 12, 12, &time.Location{})
+	agentIdn = entity.Identity{ID: 13}
+	endOf18  = time.Date(2018, 12, 12, 12, 12, 12, 12, &time.Location{})
 )
 
 func TempDeltaStoreDir() (string, error) {
 	return ioutil.TempDir("", "deltastore")
 }
 
-func FailingPostDelta(_ []string, _ bool, _ ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error) {
+func FailingPostDelta(_ []string, _ entity.ID, _ bool, _ ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error) {
 	return nil, fmt.Errorf("trigering an error for post delta API")
 }
 
-func FakePostDelta(_ []string, _ bool, _ ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error) {
+func FakePostDelta(_ []string, _ entity.ID, _ bool, _ ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error) {
 	return &inventoryapi.PostDeltaResponse{}, nil
 }
 
-func ResetPostDelta(_ []string, _ bool, _ ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error) {
+func ResetPostDelta(_ []string, _ entity.ID, _ bool, _ ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error) {
 	return &inventoryapi.PostDeltaResponse{
 		Reset: inventoryapi.ResetAll,
 	}, nil
@@ -234,7 +234,7 @@ func TestPatchSender_Process_LastSubmissionTime_IgnoreEmptyEntityKey(t *testing.
 
 	// AND a patchSender
 	sender := newTestPatchSender(t, "", storage, lastSubmissionTime, &mockEntityIDPersist{})
-	sender.entityKey = ""
+	sender.entityInfo = entity.NewFromNameWithoutID("")
 	sender.compactEnabled = false
 	sender.postDeltas = assertDeltaSent(t, rawDelta)
 
@@ -246,8 +246,8 @@ func TestPatchSender_Process_LastSubmissionTime_IgnoreEmptyEntityKey(t *testing.
 	lastSubmissionTime.AssertNotCalled(t, "UpdateTime", mock.Anything)
 }
 
-func assertDeltaSent(t *testing.T, rawDelta []inventoryapi.RawDeltaBlock) func(entityKeys []string, isAgent bool, deltas ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error) {
-	return func(entityKeys []string, isAgent bool, deltas ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error) {
+func assertDeltaSent(t *testing.T, rawDelta []inventoryapi.RawDeltaBlock) func(entityKeys []string, entityID entity.ID, isAgent bool, deltas ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error) {
+	return func(entityKeys []string, entityID entity.ID, isAgent bool, deltas ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error) {
 		// AND deltas are sent to the backend
 		for _, raw := range rawDelta {
 			assert.ElementsMatch(t, raw, deltas)
@@ -484,7 +484,7 @@ func TestPathSender_Process_EntityIDChanged_ResetLocalEntityDeltas(t *testing.T)
 
 	// AND a patchSender
 	sender := newTestPatchSender(t, "", storage, delta.NewLastSubmissionInMemory(), lastEntityID)
-	sender.entityKey = agentKey
+	sender.entityInfo = entity.NewFromNameWithoutID(agentKey)
 
 	// AND set a new identity
 	idCtx := id.NewContext(ctx.Background())
@@ -516,7 +516,7 @@ func TestPathSender_Process_EmptyEntityID_UpdateEntityIDWithCurrentAgentID(t *te
 
 	// AND a patchSender
 	sender := newTestPatchSender(t, "", storage, delta.NewLastSubmissionInMemory(), lastEntityID)
-	sender.entityKey = agentKey
+	sender.entityInfo = entity.NewFromNameWithoutID(agentKey)
 
 	// AND set a new identity
 	idCtx := id.NewContext(ctx.Background())
@@ -570,7 +570,7 @@ func newTestPatchSender(t *testing.T, dataDir string, store delta.Storage, ls de
 		cfg:      config.NewTestWithDeltas(dataDir),
 	}
 	psI, err := newPatchSender(
-		entityKey,
+		entity.NewFromNameWithoutID(entityKey),
 		aCtx,
 		store,
 		ls,

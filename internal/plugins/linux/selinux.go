@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"regexp"
 	"strings"
 	"time"
@@ -192,10 +193,11 @@ func (self *SELinuxPlugin) Run() {
 				sllog.WithError(err).Error("selinux can't get dataset")
 			}
 
-			self.Context.SendData(agent.NewPluginOutput(self.Id(), self.Context.AgentIdentifier(), basicData))
-			self.Context.SendData(agent.NewPluginOutput(ids.PluginID{self.ID.Category, fmt.Sprintf("%s-policies", self.ID.Term)}, self.Context.AgentIdentifier(), policyData))
+			entity := entity.NewFromNameWithoutID(self.Context.AgentIdentifier())
+			self.Context.SendData(agent.NewPluginOutput(self.Id(), entity, basicData))
+			self.Context.SendData(agent.NewPluginOutput(ids.PluginID{self.ID.Category, fmt.Sprintf("%s-policies", self.ID.Term)}, entity, policyData))
 			if self.enableSemodule {
-				self.Context.SendData(agent.NewPluginOutput(ids.PluginID{self.ID.Category, fmt.Sprintf("%s-modules", self.ID.Term)}, self.Context.AgentIdentifier(), policyModules))
+				self.Context.SendData(agent.NewPluginOutput(ids.PluginID{self.ID.Category, fmt.Sprintf("%s-modules", self.ID.Term)}, entity, policyModules))
 			}
 
 			<-refreshTimer.C
