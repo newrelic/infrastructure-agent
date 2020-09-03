@@ -81,6 +81,7 @@ func TestNewFBConf(t *testing.T) {
 					Path:          "file.path",
 					BufferMaxSize: "128k",
 					SkipLongLines: "On",
+					Path_Key: "filename",
 				},
 			},
 			Parsers: []FBCfgParser{
@@ -104,6 +105,7 @@ func TestNewFBConf(t *testing.T) {
 					Path:          "file.path",
 					BufferMaxSize: "128k",
 					SkipLongLines: "On",
+					Path_Key: "filename",
 				},
 			},
 			Parsers: []FBCfgParser{
@@ -160,6 +162,7 @@ func TestNewFBConf(t *testing.T) {
 					Path:          filepath.Join("/path/to/folder", "*"),
 					BufferMaxSize: "32k",
 					SkipLongLines: "On",
+					Path_Key: "filename",
 				},
 			},
 			Parsers: []FBCfgParser{
@@ -212,6 +215,7 @@ func TestNewFBConf(t *testing.T) {
 					Path:          "/foo/file.foo",
 					BufferMaxSize: "128k",
 					SkipLongLines: "On",
+					Path_Key: "filename",
 				},
 			},
 			Parsers: []FBCfgParser{
@@ -246,6 +250,7 @@ func TestNewFBConf(t *testing.T) {
 					Path:          "/foo/file.foo",
 					BufferMaxSize: "128k",
 					SkipLongLines: "On",
+					Path_Key: "filename",
 				},
 			},
 			Parsers: []FBCfgParser{
@@ -749,6 +754,7 @@ func TestFBCfgFormat(t *testing.T) {
     Path /path/to/folder/*
     Buffer_Max_Size 32k
     Skip_Long_Lines On
+    Path_Key filename
     Tag  some-folder
     DB   fb.db
 
@@ -844,6 +850,7 @@ func TestFBCfgFormat(t *testing.T) {
 				Path:          "/path/to/folder/*",
 				BufferMaxSize: "32k",
 				SkipLongLines: "On",
+				Path_Key: "filename",
 			},
 			{
 				Name:           "systemd",
@@ -980,6 +987,7 @@ func TestFBCfgFormatWithHostname(t *testing.T) {
     Path file.foo
     Buffer_Max_Size 32k
     Skip_Long_Lines On
+    Path_Key filename
     Tag  some-file
     DB   fb.db
 
@@ -1029,6 +1037,7 @@ func TestFBCfgFormatWithHostname(t *testing.T) {
 				Path:          "file.foo",
 				BufferMaxSize: "32k",
 				SkipLongLines: "On",
+				Path_Key: "filename",
 			},
 		},
 		Parsers: []FBCfgParser{
