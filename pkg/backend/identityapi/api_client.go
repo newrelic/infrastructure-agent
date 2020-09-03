@@ -2,7 +2,7 @@ package identityapi
 
 import (
 	"context"
-	"github.com/newrelic/infrastructure-agent/pkg/identity-client"
+	"github.com/newrelic/infra-identity-client-go/identity"
 	"net/http"
 )
 

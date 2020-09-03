@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/antihax/optional"
-	"github.com/newrelic/infrastructure-agent/pkg/identity-client"
+	"github.com/newrelic/infra-identity-client-go/identity"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
