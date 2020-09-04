@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/stretchr/testify/require"
 
 	"github.com/newrelic/infrastructure-agent/pkg/backend/inventoryapi"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
@@ -139,18 +140,8 @@ func TestDeltas_RemoteEntitiesGetRegistered(t *testing.T) {
 	}
 
 	// The full delta is submitted
-	sentPayload := fixture.AssertRequestContainsInventoryDeltas(t, req, []*inventoryapi.RawDelta{
-		{
-			Source:   "test/dummy",
-			ID:       1,
-			FullDiff: true,
-			Diff: map[string]interface{}{
-				"dummy": map[string]interface{}{
-					"value": "hello",
-				},
-			},
-		},
-	})
+	sentPayload, err := fixture.UnmarshalRequest(req)
+	require.NoError(t, err)
 	assert.False(t, *sentPayload.IsAgent)
 	assert.Equal(t, []string{plugin.ExternalPluginName}, sentPayload.ExternalKeys)
 	assert.NotEmpty(t, sentPayload.EntityID, "expecting remote entity ID")
