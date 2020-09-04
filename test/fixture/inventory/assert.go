@@ -26,7 +26,9 @@ const NilValue = Nil("this-field-is-not-present")
 // AssertRequestContainsInventoryDeltas checks, for each RawDelta entry, that is is contained in the
 // request as a subset of all the entries.
 func AssertRequestContainsInventoryDeltas(t *testing.T, req http.Request, expected []*inventoryapi.RawDelta) (sentPayload inventoryapi.PostDeltaBody) {
-	sentPayload = unmarshalRequest(t, req)
+	var err error
+	sentPayload, err = UnmarshalRequest(req)
+	require.NoError(t, err)
 	sentDeltas := asMap(sentPayload)
 
 	// For each expected RawDelta entry
@@ -51,15 +53,16 @@ func AssertRequestContainsInventoryDeltas(t *testing.T, req http.Request, expect
 	return
 }
 
-func unmarshalRequest(t *testing.T, req http.Request) inventoryapi.PostDeltaBody {
+func UnmarshalRequest(req http.Request) (payload inventoryapi.PostDeltaBody, err error) {
 	reqBytes, err := ioutil.ReadAll(req.Body)
-	assert.NoError(t, err)
+	if err != nil {
+		return
+	}
 
 	//t.Logf("bytes::: %s", reqBytes)
 
-	sent := inventoryapi.PostDeltaBody{}
-	assert.NoError(t, json.Unmarshal(reqBytes, &sent))
-	return sent
+	err = json.Unmarshal(reqBytes, &payload)
+	return
 }
 
 // If expected and actual are maps: checks that all the entries in the expected are contained in the actual
