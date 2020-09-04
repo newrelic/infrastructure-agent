@@ -406,7 +406,7 @@ func (s *Store) updateLastDeltaSent(entityKey string, dRaw *inventoryapi.RawDelt
 			// Send again? This is a no-op, set last sent id to one previous.
 			dslog.WithFields(logrus.Fields{"sendNextID": id, "plugin": p}).
 				Debug("Requesting to update last delta sent to identical value.")
-			p.setLastSentID(entityKey, id - 1)
+			p.setLastSentID(entityKey, id-1)
 		}
 	} else if id > p.lastSentID(entityKey) {
 		p.setLastSentID(entityKey, id)
@@ -417,7 +417,7 @@ func (s *Store) updateLastDeltaSent(entityKey string, dRaw *inventoryapi.RawDelt
 
 func (s *Store) reconciliateWithBackend(pi *PluginInfo, entityKey string, resultHint *inventoryapi.DeltaState) {
 	_ = s.clearPluginDeltaStore(pi, entityKey)
-	pi.setLastSentID(entityKey, resultHint.SendNextID - 1)
+	pi.setLastSentID(entityKey, resultHint.SendNextID-1)
 	pi.setDeltaID(entityKey, resultHint.LastStoredID)
 }
 

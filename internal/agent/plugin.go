@@ -87,28 +87,28 @@ func NewNotApplicableOutput(id ids.PluginID) PluginOutput {
 }
 
 // Id is the accessor for the id field
-func (self *PluginCommon) Id() ids.PluginID {
-	return self.ID
+func (pc *PluginCommon) Id() ids.PluginID {
+	return pc.ID
 }
 
 // IsExternal is the accessor for the External field
-func (self *PluginCommon) IsExternal() bool {
-	return self.External
+func (pc *PluginCommon) IsExternal() bool {
+	return pc.External
 }
 
 // LogInfo retrieves logs the plugin name for internal plugins, and
 // for the external plugins it logs the data specified in the log fields.
-func (self *PluginCommon) LogInfo() {
-	if self.IsExternal() {
-		log.WithFieldsF(self.DetailedLogFields).Info("Integration info")
+func (pc *PluginCommon) LogInfo() {
+	if pc.IsExternal() {
+		log.WithFieldsF(pc.DetailedLogFields).Info("Integration info")
 	} else {
-		log.WithPlugin(self.Id().String()).Info("Agent plugin")
+		log.WithPlugin(pc.Id().String()).Info("Agent plugin")
 	}
 }
 
 // GetExternalPluginName is the accessor for the ExternalPluginName field
-func (self *PluginCommon) GetExternalPluginName() string {
-	return self.ExternalPluginName
+func (pc *PluginCommon) GetExternalPluginName() string {
+	return pc.ExternalPluginName
 }
 
 type PluginEmitter interface {
@@ -117,52 +117,52 @@ type PluginEmitter interface {
 }
 
 // EmitInventory sends data collected by the plugin to the agent
-func (self *PluginCommon) EmitInventory(data PluginInventoryDataset, entityKey string) {
-	self.Context.SendData(NewPluginOutput(self.ID, entityKey, data))
+func (pc *PluginCommon) EmitInventory(data PluginInventoryDataset, entityKey string) {
+	pc.Context.SendData(NewPluginOutput(pc.ID, entityKey, data))
 }
 
-func (self *PluginCommon) EmitEvent(eventData map[string]interface{}, entityKey entity.Key) {
-	self.decorateEvent(eventData)
-	self.Context.SendEvent(mapEvent(eventData), entityKey)
+func (pc *PluginCommon) EmitEvent(eventData map[string]interface{}, entityKey entity.Key) {
+	pc.decorateEvent(eventData)
+	pc.Context.SendEvent(mapEvent(eventData), entityKey)
 }
 
-func (self *PluginCommon) gatherDecorations() {
-	self.once.Do(func() {
-		cfg := self.Context.Config()
+func (pc *PluginCommon) gatherDecorations() {
+	pc.once.Do(func() {
+		cfg := pc.Context.Config()
 		if cfg != nil && cfg.K8sIntegration {
-			self.decorations = metadata.GatherK8sMetadata()
+			pc.decorations = metadata.GatherK8sMetadata()
 		}
 	})
 }
 
-func (self *PluginCommon) decorateEvent(eventData map[string]interface{}) {
+func (pc *PluginCommon) decorateEvent(eventData map[string]interface{}) {
 	if eventData["timestamp"] == nil {
 		eventData["timestamp"] = time.Now().Unix()
 	}
 
-	self.gatherDecorations()
-	for k, v := range self.decorations {
+	pc.gatherDecorations()
+	for k, v := range pc.decorations {
 		eventData[k] = v
 	}
 }
 
 // Unregister tells the agent that this plugin cannot run
-func (self *PluginCommon) Unregister() {
-	self.Context.Unregister(self.Id())
+func (pc *PluginCommon) Unregister() {
+	pc.Context.Unregister(pc.Id())
 }
 
-func (self *PluginCommon) ScheduleHealthCheck() {
-	if !self.IsExternal() {
+func (pc *PluginCommon) ScheduleHealthCheck() {
+	if !pc.IsExternal() {
 		return
 	}
 
 	// The health check channel has a size of 1 so if writing to it blocks
 	// it means a health check has already been scheduled.
 	select {
-	case self.HealthCheckCh <- struct{}{}:
-		log.WithFields(self.LogFields).Info("Integration health check scheduled")
+	case pc.HealthCheckCh <- struct{}{}:
+		log.WithFields(pc.LogFields).Info("Integration health check scheduled")
 	default:
-		log.WithFields(self.LogFields).Info("Integration health check already requested")
+		log.WithFields(pc.LogFields).Info("Integration health check already requested")
 	}
 }
 

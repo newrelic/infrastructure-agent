@@ -43,7 +43,7 @@ xserver_object_manager                      off
 zabbix_can_network                          off
 `
 
-func (self *SELinuxSuite) TestParseSELinuxConfig(c *C) {
+func (ss *SELinuxSuite) TestParseSELinuxConfig(c *C) {
 	plugin := SELinuxPlugin{}
 
 	result, policies, err := plugin.parseSestatusOutput(sampleOutput)
@@ -70,7 +70,7 @@ func (self *SELinuxSuite) TestParseSELinuxConfig(c *C) {
 var sampleOutputDisabled = `SELinux status:                 disabled
 `
 
-func (self *SELinuxSuite) TestSELinuxDisabledCheck(c *C) {
+func (ss *SELinuxSuite) TestSELinuxDisabledCheck(c *C) {
 	plugin := SELinuxPlugin{}
 
 	_, _, err := plugin.parseSestatusOutput(sampleOutputDisabled)
@@ -97,7 +97,7 @@ avahi	1.11.2
 awstats	1.2.0
 `
 
-func (self *SELinuxSuite) TestParseSEModules(c *C) {
+func (ss *SELinuxSuite) TestParseSEModules(c *C) {
 	plugin := SELinuxPlugin{}
 
 	result, err := plugin.parseSemoduleOutput(sampleSemoduleOutput)
