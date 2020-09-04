@@ -42,7 +42,14 @@ func (cp *dummyPlugin) Run() {
 			dataset := agent.PluginInventoryDataset{
 				&valueEntry{Id: "dummy", Value: cp.value},
 			}
-			cp.EmitInventory(dataset, entity.NewFromNameWithoutID(cp.Context.AgentIdentifier()))
+
+			var eKey string
+			if cp.IsExternal() {
+				eKey = cp.ExternalPluginName
+			} else {
+				eKey = cp.Context.AgentIdentifier()
+			}
+			cp.EmitInventory(dataset, entity.NewFromNameWithoutID(eKey))
 		}
 	}
 }

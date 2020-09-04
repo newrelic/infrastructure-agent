@@ -111,12 +111,9 @@ func (ic *IngestClient) PostDeltas(entityKeys []string, entityID entity.ID, isAg
 		Deltas:       deltas,
 	}
 
-	if ic.connectEnabled && isAgent {
+	postDeltaBody.EntityID = entityID
+	if isAgent {
 		postDeltaBody.EntityID = ic.agentIDProvide().ID
-	}
-
-	if !isAgent && !entityID.IsEmpty() {
-		postDeltaBody.EntityID = entityID
 	}
 
 	buf, err := ic.marshal(postDeltaBody)

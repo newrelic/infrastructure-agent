@@ -79,6 +79,7 @@ func newPatchSender(entityInfo entity.Entity, context AgentContext, store delta.
 	if err != nil {
 		return nil, err
 	}
+
 	resetIfOffline, err := time.ParseDuration(context.Config().OfflineTimeToReset)
 	if err != nil {
 		pslog.WithFields(logrus.Fields{
