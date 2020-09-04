@@ -48,7 +48,7 @@ func TestDeltas_BasicWorkflow(t *testing.T) {
 	}
 
 	// The full delta is submitted
-	fixture.AssertRequestContainsInventoryDeltas(t, req, []*inventoryapi.RawDelta{
+	sentPayload := fixture.AssertRequestContainsInventoryDeltas(t, req, []*inventoryapi.RawDelta{
 		{
 			Source:   "test/dummy",
 			ID:       1,
@@ -60,6 +60,7 @@ func TestDeltas_BasicWorkflow(t *testing.T) {
 			},
 		},
 	})
+	assert.Equal(t, entity.ID(10), sentPayload.EntityID, "expecting agent entity ID")
 
 	// And if the plugin harvests again the same inventory data
 	plugin.harvest()
@@ -102,6 +103,57 @@ func TestDeltas_BasicWorkflow(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestDeltas_RemoteEntitiesGetRegistered(t *testing.T) {
+	const timeout = 5 * time.Second
+
+	// Given an agent
+	testClient := ihttp.NewRequestRecorderClient(
+		ihttp.AcceptedResponse("test/dummy", 1),
+		ihttp.AcceptedResponse("test/dummy", 2))
+	a := infra.NewAgent(testClient.Client)
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
+
+	// And register feature is enabled
+	// TODO update FF mgmt
+	//a.Context.Config().RegisterEnabled = true
+
+	// That runs a plugin that generates remote entities
+	plugin := newDummyPlugin("hello", a.Context)
+	plugin.External = true
+	plugin.ExternalPluginName = "com.newrelic.test.dummy"
+	a.RegisterPlugin(plugin)
+
+	go a.Run()
+
+	// When the plugin harvests inventory data
+	plugin.harvest()
+
+	var req http.Request
+	select {
+	case req = <-testClient.RequestCh:
+	case <-time.After(timeout):
+		a.Terminate()
+		assert.FailNow(t, "timeout while waiting for a response")
+	}
+
+	// The full delta is submitted
+	sentPayload := fixture.AssertRequestContainsInventoryDeltas(t, req, []*inventoryapi.RawDelta{
+		{
+			Source:   "test/dummy",
+			ID:       1,
+			FullDiff: true,
+			Diff: map[string]interface{}{
+				"dummy": map[string]interface{}{
+					"value": "hello",
+				},
+			},
+		},
+	})
+	assert.False(t, *sentPayload.IsAgent)
+	assert.Equal(t, []string{plugin.ExternalPluginName}, sentPayload.ExternalKeys)
+	assert.NotEmpty(t, sentPayload.EntityID, "expecting remote entity ID")
 }
 
 func TestDeltas_ResendIfFailure(t *testing.T) {

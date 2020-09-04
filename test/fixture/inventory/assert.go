@@ -25,16 +25,9 @@ const NilValue = Nil("this-field-is-not-present")
 
 // AssertRequestContainsInventoryDeltas checks, for each RawDelta entry, that is is contained in the
 // request as a subset of all the entries.
-func AssertRequestContainsInventoryDeltas(t *testing.T, req http.Request, expected []*inventoryapi.RawDelta) {
-	reqBytes, err := ioutil.ReadAll(req.Body)
-	assert.NoError(t, err)
-
-	//t.Logf("bytes::: %s", reqBytes)
-
-	sent := inventoryapi.PostDeltaBody{}
-	assert.NoError(t, json.Unmarshal(reqBytes, &sent))
-
-	sentDeltas := asMap(sent)
+func AssertRequestContainsInventoryDeltas(t *testing.T, req http.Request, expected []*inventoryapi.RawDelta) (sentPayload inventoryapi.PostDeltaBody) {
+	sentPayload = unmarshalRequest(t, req)
+	sentDeltas := asMap(sentPayload)
 
 	// For each expected RawDelta entry
 	for _, expectedDelta := range expected {
@@ -54,6 +47,19 @@ func AssertRequestContainsInventoryDeltas(t *testing.T, req http.Request, expect
 		// timestamp assertion is only to check that it's greater than current time
 		assert.True(t, time.Now().After(time.Unix(sentDelta.Timestamp, 0)), "inventory ts not lower than current")
 	}
+
+	return
+}
+
+func unmarshalRequest(t *testing.T, req http.Request) inventoryapi.PostDeltaBody {
+	reqBytes, err := ioutil.ReadAll(req.Body)
+	assert.NoError(t, err)
+
+	//t.Logf("bytes::: %s", reqBytes)
+
+	sent := inventoryapi.PostDeltaBody{}
+	assert.NoError(t, json.Unmarshal(reqBytes, &sent))
+	return sent
 }
 
 // If expected and actual are maps: checks that all the entries in the expected are contained in the actual

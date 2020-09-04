@@ -863,11 +863,13 @@ func (a *Agent) Run() (err error) {
 		select {
 		case <-exit:
 			return nil
-			// agent gets notified about active entities
+
 		case ent := <-a.Context.activeEntities:
+			// agent gets notified about active entities
 			reportedEntities[ent] = true
-			// read data from plugin and write json
+
 		case data := <-a.Context.ch:
+			// read data from plugin and write json
 			{
 				idsReporting[data.Id] = true
 
@@ -887,6 +889,7 @@ func (a *Agent) Run() (err error) {
 					a.inventories[entityKey].needsReaping = true
 				}
 			}
+
 		case <-reapTimer.C:
 			{
 				for _, inventory := range a.inventories {
@@ -917,6 +920,7 @@ func (a *Agent) Run() (err error) {
 					}
 				}
 			}
+
 		case <-initialReapTimeout.C:
 			// If we've waited too long and still not received data from all plugins, we can just send what we have.
 			if !a.inv.readyToReap {
@@ -926,8 +930,10 @@ func (a *Agent) Run() (err error) {
 					inventory.needsCleanup = true
 				}
 			}
+
 		case <-sendTimer.C:
 			a.sendInventory(sendTimer)
+
 		case <-debugTimer:
 			{
 				debugInfo, err := a.debugProvide()
@@ -937,6 +943,7 @@ func (a *Agent) Run() (err error) {
 					alog.Debug(debugInfo)
 				}
 			}
+
 		case <-removeEntitiesTicker.C:
 			pastPeriodReportedEntities := reportedEntities
 			reportedEntities = map[string]bool{} // reset the set of reporting entities the next period

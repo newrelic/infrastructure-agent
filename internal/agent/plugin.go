@@ -100,7 +100,9 @@ func (pc *PluginCommon) IsExternal() bool {
 // for the external plugins it logs the data specified in the log fields.
 func (pc *PluginCommon) LogInfo() {
 	if pc.IsExternal() {
-		log.WithFieldsF(pc.DetailedLogFields).Info("Integration info")
+		if pc.DetailedLogFields != nil {
+			log.WithFieldsF(pc.DetailedLogFields).Info("Integration info")
+		}
 	} else {
 		log.WithPlugin(pc.Id().String()).Info("Agent plugin")
 	}
