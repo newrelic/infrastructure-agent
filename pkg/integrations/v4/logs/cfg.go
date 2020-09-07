@@ -482,7 +482,7 @@ func newFBExternalConfig(l LogExternalFBCfg) FBCfgExternal {
 func newFileInput(filePath string, dbPath string, tag string, bufSize int) FBCfgInput {
 	return FBCfgInput{
 		Name:          fbInputTypeTail,
-		Path_Key:      "filename",
+		Path_Key:      "filePath",
 		Path:          filePath,
 		DB:            dbPath,
 		Tag:           tag,
