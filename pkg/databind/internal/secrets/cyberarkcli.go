@@ -4,11 +4,13 @@
 package secrets
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
-	"os"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"os/exec"
+	"strings"
 )
 
 // Make mocking simpler
@@ -40,18 +42,25 @@ func CyberArkCLIGatherer(cyberArkCLI *CyberArkCLI) func() (interface{}, error) {
 }
 
 func (g *cyberArkCLIGatherer) get() (data.InterfaceMap, error) {
-	// GetPassword -p AppDescs.AppID=$APP_ID -p Query=\"Safe=$SAFE;Folder=$FOLDER;Object=$OBJECT\"; -o Password
-	r, err := cyberArkExecCommand(g.cfg.CLI, "GetPassword", "-p", "AppDescs.AppID="+g.cfg.AppID, "-p", "Query=\"Safe="+g.cfg.Safe+";Folder="+g.cfg.Folder+";Object="+g.cfg.Object+"\"; -o Password").Output()
+	cmd := cyberArkExecCommand(g.cfg.CLI, "GetPassword", "-p", "AppDescs.AppID="+g.cfg.AppID, "-p", "Query=Safe="+g.cfg.Safe+";Folder="+g.cfg.Folder+";Object="+g.cfg.Object, "-o", "Password")
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+
 	if err != nil {
-		return nil, fmt.Errorf("unable to retrieve cyberArkCLI secret from cli: %s", err)
+		return nil, fmt.Errorf("unable to retrieve cyberArkCLI secret from cli. err: %s err msg: %s", err, stderr.String())
 	}
-	password := string(r)
+	password := strings.TrimSuffix(out.String(), "\n")
+	password = strings.TrimSuffix(out.String(), "\r")
+
 	if password == "" {
 		return nil, fmt.Errorf("empty password returned from cyberArkCLI")
 	}
+	log.Tracef("get: returning password: %s", password)
 	result := data.InterfaceMap{}
 	result["password"] = password
-	fmt.Fprintf(os.Stderr, "get: returning %v\n\n", result)
 	return result, nil
 }
 

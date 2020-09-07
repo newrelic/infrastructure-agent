@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"os"
 )
 
@@ -49,6 +50,7 @@ func (g *cyberArkAPIGatherer) get() (data.InterfaceMap, error) {
 			result["password"] = p.(string)
 			result["user"] = u.(string)
 			fmt.Fprintf(os.Stderr, "get: returning %v\n\n", result)
+			log.Tracef("get: returning password: %s user: %s", p.(string), u.(string))
 			return result, nil
 		}
 	}
