@@ -10,8 +10,8 @@ import (
 
 func TestCyberArkAPI(t *testing.T) {
 
-	ts := httptest.NewServer(HandlerFunc(func(w ResponseWriter, r *Request) {
-		fmt.Fprintln(w, `{
+	ts := newHttpTestServer(
+		`{
   "Content": "CI<s0H9>k2zUPXM",
   "PolicyID": "ALL-APPX-WIN-SL-XNCVRRI-DEFAULT",
   "SequenceID": "2",
@@ -28,8 +28,7 @@ func TestCyberArkAPI(t *testing.T) {
   "LastSuccessChange": "1589288852",
   "CreationMethod": "PVWA",
   "PasswordChangeInProcess": "False"
-}`)
-	}))
+}`, 200)
 
 	defer ts.Close()
 	apiStruct := CyberArkAPI{
@@ -62,9 +61,15 @@ func TestCyberArkAPI(t *testing.T) {
 }
 
 func TestCyperArkAPIResponeCodes(t *testing.T) {
+	//Bad request 400 The request could not be understood by the server due to incorrect syntax.
+	//Unauthorized 401 The request requires user authentication.
+	//Forbidden 403 The server received and understood the request, but will not fulfill it. Authorization will not help and the request MUST NOT be repeated.
+	//Not Found 404 The server did not find anything that matches the Request-URI. No indication is given of whether the condition is temporary or permanent.
+	//Conflict 409 The request could not be completed due to a conflict with the current state of the resource.
+	//Internal Server Error 500 The server encountered an unexpected condition which prevented it from fulfilling the request.
 	codes := []int{400, 401, 403, 404, 409, 500}
 	for _, rc := range codes {
-		ts := newHttpTestServer(rc)
+		ts := newHttpTestServer("", rc)
 		defer ts.Close()
 		apiStruct := CyberArkAPI{
 			HTTP: &(http{
@@ -80,16 +85,11 @@ func TestCyperArkAPIResponeCodes(t *testing.T) {
 			t.Errorf("api call should have filed with %d Error: %v ", rc, err)
 		}
 	}
-	//Bad request 400 The request could not be understood by the server due to incorrect syntax.
-	//Unauthorized 401 The request requires user authentication.
-	//Forbidden 403 The server received and understood the request, but will not fulfill it. Authorization will not help and the request MUST NOT be repeated.
-	//Not Found 404 The server did not find anything that matches the Request-URI. No indication is given of whether the condition is temporary or permanent.
-	//Conflict 409 The request could not be completed due to a conflict with the current state of the resource.
-	//Internal Server Error 500 The server encountered an unexpected condition which prevented it from fulfilling the request.
 }
 
-func newHttpTestServer(rc int) *httptest.Server {
+func newHttpTestServer(response string, rc int) *httptest.Server {
 	return httptest.NewServer(HandlerFunc(func(w ResponseWriter, r *Request) {
 		w.WriteHeader(rc)
+		w.Write([]byte(response))
 	}))
 }

@@ -51,8 +51,9 @@ func (g *cyberArkCLIGatherer) get() (data.InterfaceMap, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve cyberArkCLI secret from cli. err: %s err msg: %s", err, stderr.String())
 	}
+	// End-of-line fixup from CLI
 	password := strings.TrimSuffix(out.String(), "\n")
-	password = strings.TrimSuffix(out.String(), "\r")
+	password = strings.TrimSuffix(password, "\r")
 
 	if password == "" {
 		return nil, fmt.Errorf("empty password returned from cyberArkCLI")
