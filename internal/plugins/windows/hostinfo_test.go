@@ -12,10 +12,10 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 
+	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/shirou/gopsutil/host"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 
 	. "gopkg.in/check.v1"
 )
