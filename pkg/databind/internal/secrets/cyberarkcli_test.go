@@ -8,20 +8,25 @@ import (
 	"testing"
 )
 
+// This wraps exec.Command in a new Go Test, this is how exec.Command itself is tested
 func fakeExecCommand(command string, args ...string) *exec.Cmd {
+	// Tell Go to run a test and which test to run
 	cs := []string{"-test.run=TestHelperProcess", "--", command}
 	cs = append(cs, args...)
 	cmd := exec.Command(os.Args[0], cs...)
+	// Flag so the spawned test knows to run
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
 	return cmd
 }
 
+// This test is not run directly but spawned by fakeExecCommand
 func TestHelperProcess(t *testing.T) {
+	// Only run if we've been spawned by fakeExecCommand
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
+		t.Skip("Skipping, this test is not called directly ")
 		return
 	}
 	fmt.Fprintf(os.Stdout, "password")
-	os.Exit(0)
 }
 
 func TestCyberArkCLI(t *testing.T) {
@@ -45,10 +50,11 @@ func TestCyberArkCLI(t *testing.T) {
 	unboxed := r.(data.InterfaceMap)
 
 	if unboxed == nil {
-		fmt.Errorf("Result is nil")
+		t.Errorf("Result is nil")
 	}
 
-	if unboxed["password"] != "password" {
+	// The passing TestHelpProcess add PASS to the output
+	if unboxed["password"] != "passwordPASS" {
 		t.Errorf("expected password, got %v", unboxed)
 	}
 }
