@@ -9,8 +9,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	test "github.com/newrelic/infrastructure-agent/test/databind"
+	"github.com/stretchr/testify/require"
 )
 
 func TestIntegrationFargate(t *testing.T) {

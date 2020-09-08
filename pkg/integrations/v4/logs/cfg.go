@@ -624,7 +624,7 @@ func newModifyFilter(tag string) FBCfgParser {
 		Name:  fbFilterTypeModify,
 		Match: tag,
 		Modifiers: map[string]string{
-			"Message":  "message",
+			"Message":   "message",
 			"EventType": "WinEventType",
 		},
 	}

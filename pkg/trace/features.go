@@ -12,8 +12,8 @@ func (f Feature) String() string {
 
 // List of available features that can be traced.
 const (
-	ATTR           Feature = "attributes"    // custom-attributes
-	CONN           Feature = "connect"       // fingerprint connect
+	ATTR           Feature = "attributes" // custom-attributes
+	CONN           Feature = "connect"    // fingerprint connect
 	HOSTNAME       Feature = "hostname"
 	DM_SUBMISSION  Feature = "dm.submission" // dimensional metrics submission
 	METRIC_MATCHER Feature = "metric.match"  // match metric by rule
