@@ -43,12 +43,15 @@ func TestParsePayloadV4_noFF(t *testing.T) {
 }
 
 type mockedMetricsSender struct {
-	MetricsSender
 	mock.Mock
 }
 
 func (m *mockedMetricsSender) SendMetrics(metrics []protocol.Metric) {
 	m.Called(metrics)
+}
+
+func (m *mockedMetricsSender) SendMetricsWithCommonAttributes(commonAttributes protocol.Common, metrics []protocol.Metric) error {
+	return m.Called(commonAttributes, metrics).Error(0)
 }
 
 type enabledFFRetriever struct{}
@@ -117,7 +120,8 @@ func TestEmitter_SendOneEntityOutOfTwo(t *testing.T) {
 			})
 
 	dmSender.
-		On("SendMetrics", mock.AnythingOfType("[]protocol.Metric"))
+		On("SendMetricsWithCommonAttributes", mock.AnythingOfType("protocol.Common"), mock.AnythingOfType("[]protocol.Metric")).
+		Return(nil)
 
 	agentCtx.On("SendData",
 		agent.PluginOutput{
@@ -141,7 +145,7 @@ func TestEmitter_SendOneEntityOutOfTwo(t *testing.T) {
 	agentCtx.AssertExpectations(t)
 
 	// Should add Entity Id ('nr.entity.id') to Common attributes
-	dmMetricsSent := dmSender.Calls[0].Arguments[0].([]protocol.Metric)
+	dmMetricsSent := dmSender.Calls[0].Arguments[1].([]protocol.Metric)
 	assert.Len(t, dmMetricsSent, 3)
 	assert.Equal(t, "123", dmMetricsSent[0].Attributes[nrEntityId])
 	assert.Equal(t, "123", dmMetricsSent[1].Attributes[nrEntityId])
@@ -170,7 +174,8 @@ func TestEmitter_Send(t *testing.T) {
 			RegisteredEntitiesNameToID{"unique name": expectedEntityId},
 			UnregisteredEntities{})
 	dmSender.
-		On("SendMetrics", mock.AnythingOfType("[]protocol.Metric"))
+		On("SendMetricsWithCommonAttributes", mock.AnythingOfType("protocol.Common"), mock.AnythingOfType("[]protocol.Metric")).
+		Return(nil)
 
 	agentCtx.On("SendData",
 		agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "integration name"}, Entity: entity.New("unique name", 123), Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_foo", "value": "bar"}}, NotApplicable: false})
@@ -189,7 +194,7 @@ func TestEmitter_Send(t *testing.T) {
 	agentCtx.AssertExpectations(t)
 
 	// Should add Entity Id ('nr.entity.id') to Common attributes
-	dmMetricsSent := dmSender.Calls[0].Arguments[0].([]protocol.Metric)
+	dmMetricsSent := dmSender.Calls[0].Arguments[1].([]protocol.Metric)
 	assert.Len(t, dmMetricsSent, 1)
 	assert.Equal(t, "123", dmMetricsSent[0].Attributes[nrEntityId])
 }

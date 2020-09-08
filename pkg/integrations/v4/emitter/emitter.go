@@ -27,8 +27,12 @@ type Emitter interface {
 	Emit(metadata integration.Definition, ExtraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error
 }
 
+type Agent interface {
+	GetContext() agent.AgentContext
+}
+
 func NewIntegrationEmitter(
-	a *agent.Agent,
+	a Agent,
 	dmEmitter dm.Emitter,
 	ffRetriever feature_flags.Retriever) Emitter {
 	return &Legacy{
