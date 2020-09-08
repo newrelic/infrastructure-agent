@@ -5,6 +5,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 )
 
@@ -47,14 +48,17 @@ func TestCyberArkCLI(t *testing.T) {
 		t.Errorf("cli call failed: %v ", err)
 	}
 
-	unboxed := r.(data.InterfaceMap)
+	unboxed, ok := r.(data.InterfaceMap)
+	if !ok {
+		t.Error("Unable to unbox result")
+	}
 
 	if unboxed == nil {
 		t.Errorf("Result is nil")
 	}
 
-	// The passing TestHelpProcess add PASS to the output
-	if unboxed["password"] != "passwordPASS" {
-		t.Errorf("expected password, got %v", unboxed)
+	// Various cruft can be appended to the result depending on the test environment, just test for a prefix match
+	if !strings.HasPrefix(fmt.Sprintf("%v", unboxed["password"]), "password") {
+		t.Errorf("expected passwordPass, got %v", unboxed)
 	}
 }
