@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
-	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"os/exec"
 	"strings"
 )
@@ -19,9 +18,9 @@ var cyberArkExecCommand = exec.Command
 type CyberArkCLI struct {
 	CLI    string `yaml:"cli"`
 	AppID  string `yaml:"app-id"`
-	Safe   string
-	Folder string
-	Object string
+	Safe   string `yaml:"safe"`
+	Folder string `yaml:"folder"`
+	Object string `yaml:"object"`
 }
 
 type cyberArkCLIGatherer struct {
@@ -58,7 +57,6 @@ func (g *cyberArkCLIGatherer) get() (data.InterfaceMap, error) {
 	if password == "" {
 		return nil, fmt.Errorf("empty password returned from cyberArkCLI")
 	}
-	log.Tracef("get: returning password: %s", password)
 	result := data.InterfaceMap{}
 	result["password"] = password
 	return result, nil

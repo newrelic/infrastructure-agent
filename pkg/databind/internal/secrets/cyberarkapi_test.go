@@ -5,7 +5,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	. "net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 )
 
@@ -46,10 +45,8 @@ func TestCyberArkAPI(t *testing.T) {
 	if err != nil {
 		t.Errorf("api call failed: %v ", err)
 	}
-	fmt.Fprintf(os.Stderr, "TestCyberArkAPI: got %v\n\n", r)
 
 	unboxed := r.(data.InterfaceMap)
-	fmt.Fprintf(os.Stderr, "TestCyberArkAPI: unboxed %v\n\n", unboxed)
 
 	if unboxed == nil {
 		fmt.Errorf("Result is nil")
@@ -81,8 +78,6 @@ func TestCyperArkAPIResponeCodes(t *testing.T) {
 		_, err := g()
 		if err == nil {
 			t.Errorf("api call should have filed with %d Error: %v ", rc, err)
-		} else {
-			fmt.Fprintf(os.Stderr, "%v\n", err)
 		}
 	}
 	//Bad request 400 The request could not be understood by the server due to incorrect syntax.
