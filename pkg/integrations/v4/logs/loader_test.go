@@ -61,7 +61,7 @@ logs:
 				BufferMaxSize: "128k",
 				DB:            dbDbPath,
 				SkipLongLines: "On",
-				Path_Key: "filePath",
+				Path_Key:      "filePath",
 			},
 		},
 		Parsers: []FBCfgParser{
@@ -177,7 +177,7 @@ func TestCfgLoader_LoadAll_TroubleshootLogFile(t *testing.T) {
 				Path:          "/agent_log_file",
 				BufferMaxSize: "128k",
 				SkipLongLines: "On",
-				Path_Key: "filePath",
+				Path_Key:      "filePath",
 				Tag:           fluentBitTagTroubleshoot,
 			},
 		},

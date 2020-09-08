@@ -170,7 +170,7 @@ type FBCfgInput struct {
 	DB                    string
 	Path                  string // plugin: tail
 	BufferMaxSize         string // plugin: tail
-	Path_Key	      string // plugin: tail
+	Path_Key              string // plugin: tail
 	SkipLongLines         string // always on
 	Systemd_Filter        string // plugin: systemd
 	Channels              string // plugin: winlog
@@ -626,7 +626,7 @@ func newModifyFilter(tag string) FBCfgParser {
 		Name:  fbFilterTypeModify,
 		Match: tag,
 		Modifiers: map[string]string{
-			"Message":  "message",
+			"Message":   "message",
 			"EventType": "WinEventType",
 		},
 	}
