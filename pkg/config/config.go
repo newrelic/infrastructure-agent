@@ -595,7 +595,7 @@ type Config struct {
 	// InventoryQueueLen sets the inventory processing queue size. Zero value makes inventory processing synchronous (blocking call).
 	// Default: 0
 	// Public: Yes
-	InventoryQueueLen int  `yaml:"inventory_queue_len" envconfig:"inventory_queue_len" public:"true"`
+	InventoryQueueLen int `yaml:"inventory_queue_len" envconfig:"inventory_queue_len" public:"true"`
 
 	// EnableWinUpdatePlugin enables the windows updates plugin which retrieves the lists of hotfix that are installed
 	// on the host.
@@ -1270,7 +1270,7 @@ func NewConfig() *Config {
 		SmartVerboseModeEntryLimit:  DefaultSmartVerboseModeEntryLimit,
 		DefaultIntegrationsTempDir:  defaultIntegrationsTempDir,
 		IncludeMetricsMatchers:      defaultMetricsMatcherConfig,
-		InventoryQueueLen:			 DefaultInventoryQueue,
+		InventoryQueueLen:           DefaultInventoryQueue,
 	}
 }
 

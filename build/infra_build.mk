@@ -1,4 +1,5 @@
 SOURCE_FILES ?=./pkg/... ./cmd/... ./internal/... ./test/...
+SOURCE_FILES_DIR ?= $(CURDIR)/pkg $(CURDIR)/cmd $(CURDIR)/internal $(CURDIR)/test
 TEST_PATTERN ?=.
 TEST_OPTIONS ?=
 ALL_PACKAGES ?= $(shell $(GO_BIN) list ./cmd/...)
@@ -24,6 +25,7 @@ export GO111MODULE := on
 export PATH := $(PROJECT_WORKSPACE)/bin:$(PATH)
 
 GO_TEST ?= test $(TEST_OPTIONS) $(TEST_FLAGS) $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=10m
+GO_FMT 	?= gofmt -s -w -l $(SOURCE_FILES_DIR)
 
 .PHONY: go-get-go-1_9
 go-get-go-1_9:
@@ -63,6 +65,22 @@ clean: go-get
 	@echo '[clean] Removing target directory and build scripts...'
 	rm -rf $(TARGET_DIR)
 	@echo '[clean] Done.'
+
+.PHONY: validate
+validate:
+	@printf '\n================================================================\n'
+	@printf 'Target: validate'
+	@printf '\n================================================================\n'
+	@echo '[test] Validating packages: $(SOURCE_FILES)'
+	@test -z "$(shell  $(GO_FMT) | tee /dev/stderr)"
+
+.PHONY: gofmt
+gofmt:
+	@printf '\n================================================================\n'
+	@printf 'Target: gofmt'
+	@printf '\n================================================================\n'
+	@echo '[gofmt] Formatting go code...'
+	$(GO_FMT)
 
 .PHONY: compile
 compile:

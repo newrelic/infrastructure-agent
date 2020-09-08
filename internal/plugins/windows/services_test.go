@@ -11,9 +11,9 @@ import (
 	"testing"
 
 	"github.com/StackExchange/wmi"
-	"github.com/stretchr/testify/assert"
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
+	"github.com/stretchr/testify/assert"
 )
 
 // See https://msdn.microsoft.com/en-us/library/aa394418(v=vs.85).aspx
