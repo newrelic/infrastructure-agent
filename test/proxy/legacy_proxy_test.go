@@ -14,12 +14,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/newrelic/infrastructure-agent/test/proxy/fakecollector"
 	"github.com/newrelic/infrastructure-agent/test/proxy/minagent"
 	"github.com/newrelic/infrastructure-agent/test/proxy/testsetup"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const timeout = 10 * time.Second
