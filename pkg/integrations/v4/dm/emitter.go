@@ -76,7 +76,105 @@ func (e *emitter) SendWithoutRegister(
 	extraLabels data.Map,
 	entityRewrite []data.EntityRewrite,
 	integrationJSON []byte) error {
-	return nil
+
+	pluginDataV4, err := ParsePayloadV4(integrationJSON, e.ffRetriever)
+	if err != nil {
+		elog.WithError(err).WithField("output", string(integrationJSON)).Warn("can't parse v4 integration output")
+		return err
+	}
+
+	return e.processWithoutRegister(metadata, extraLabels, entityRewrite, pluginDataV4)
+}
+
+func (e *emitter) processWithoutRegister(metadata integration.Definition, extraLabels data.Map, entityRewrite []data.EntityRewrite, integrationData protocol.DataV4) error {
+	var emitErrs []error
+
+	pluginId := metadata.PluginID(integrationData.Integration.Name)
+	plugin := agent.NewExternalPluginCommon(pluginId, e.agentContext, metadata.Name)
+
+	labels, extraAnnotations := metadata.LabelsAndExtraAnnotations(extraLabels)
+
+	var err error
+
+	emitV4DataSet := func(
+		idLookup agent.IDLookup,
+		metricsSender MetricsSender,
+		emitter agent.PluginEmitter,
+		metadata integration.Definition,
+		integrationMetadata protocol.IntegrationMetadata,
+		dataSet protocol.Dataset,
+		labels map[string]string,
+		extraAnnotations map[string]string,
+		entityRewrite []data.EntityRewrite) error {
+
+		logEntry := elog.WithField("action", "EmitV4DataSet")
+
+		replaceEntityNameWithoutRegister := func(entity protocol.Entity, entityRewrite []data.EntityRewrite, idLookup agent.IDLookup) error {
+			// Replace entity name by applying entity rewrites and replacing loopback
+			newName := legacy.ApplyEntityRewrite(entity.Name, entityRewrite)
+
+			agentShortName, err := idLookup.AgentShortEntityName()
+			newName = http.ReplaceLocalhost(newName, agentShortName)
+
+			if err != nil {
+				return err
+			}
+
+			entity.Name = newName
+			return nil
+		}
+
+		err := replaceEntityNameWithoutRegister(dataSet.Entity, entityRewrite, idLookup)
+		if err != nil {
+			return fmt.Errorf("error renaming entity: %s", err.Error())
+		}
+
+		integrationUser := metadata.ExecutorConfig.User
+
+		if len(dataSet.Inventory) > 0 {
+			inventoryDataSet := legacy.BuildInventoryDataSet(
+				logEntry, dataSet.Inventory, labels, integrationUser, integrationMetadata.Name,
+				dataSet.Entity.Name)
+			emitter.EmitInventory(inventoryDataSet, entity.Entity{
+				Key: entity.Key(dataSet.Entity.Name),
+			})
+		}
+
+		for _, event := range dataSet.Events {
+			normalizedEvent := legacy.NormalizeEvent(elog, event, labels, integrationUser, dataSet.Entity.Name)
+
+			if normalizedEvent != nil {
+				emitter.EmitEvent(normalizedEvent, entity.Key(dataSet.Entity.Name))
+			}
+		}
+
+		dmProcessor := IntegrationProcessor{
+			IntegrationInterval:         metadata.Interval,
+			IntegrationLabels:           labels,
+			IntegrationExtraAnnotations: extraAnnotations,
+		}
+		metricsSender.SendMetrics(dmProcessor.ProcessMetrics(dataSet.Metrics, dataSet.Common, dataSet.Entity))
+
+		return nil
+	}
+
+	for _, dataset := range integrationData.DataSets {
+		if err = emitV4DataSet(
+			e.agentContext.IDLookup(),
+			e.metricsSender,
+			&plugin,
+			metadata,
+			integrationData.Integration,
+			dataset,
+			labels,
+			extraAnnotations,
+			entityRewrite,
+		); err != nil {
+			emitErrs = append(emitErrs, err)
+		}
+	}
+
+	return composeEmitError(emitErrs, len(integrationData.DataSets))
 }
 
 func (e *emitter) Send(
