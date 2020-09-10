@@ -188,11 +188,19 @@ integrations:
 
 	// WHEN the manager loads and executes the integration
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go mgr.Start(ctx)
+
+	finish := make(chan struct{})
+
+	go func() {
+		mgr.Start(ctx)
+		close(finish)
+	}()
 
 	// THEN emitted metrics are received (gauge, count & summary)
 	_ = expectNMetrics(t, emitter, "nri-protocol-v4", 3)
+	cancel()
+
+	<-finish
 }
 
 func TestManager_SkipLoadingV3IntegrationsWithNoWarnings(t *testing.T) {

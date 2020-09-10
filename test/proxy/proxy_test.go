@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/newrelic/infrastructure-agent/test/proxy/minagent"
 	"github.com/newrelic/infrastructure-agent/test/proxy/testsetup"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNriaHttpsProxyVerifiedConnection(t *testing.T) {

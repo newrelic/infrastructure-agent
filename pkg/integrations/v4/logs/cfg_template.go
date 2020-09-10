@@ -80,6 +80,17 @@ var fbConfigFormat = `{{- range .Inputs }}
     Record {{ $key }} {{ $value }}
         {{- end }}
     {{- end }}
+    {{- if .Modifiers }}
+        {{- range $key, $value := .Modifiers }}
+    Rename {{ $key }} {{ $value }}
+        {{- end }}
+    {{- end }}
+    {{- if .Script }}
+    script {{ .Script }}
+    {{- end }}
+    {{- if .Call }}
+    call {{ .Call }}
+    {{- end }}
 {{ end -}}
 
 {{- if .Output }}
@@ -112,3 +123,17 @@ var fbConfigFormat = `{{- range .Inputs }}
 {{- if .ExternalCfg.CfgFilePath }}
 @INCLUDE {{ .ExternalCfg.CfgFilePath }}
 {{ end -}}`
+
+var fbLuaScriptFormat = `function {{ .FnName }}(tag, timestamp, record)
+    eventId = record["EventID"]
+    -- Discard log records matching any of these conditions
+    if {{ .ExcludedEventIds }} then
+        return -1, 0, 0
+    end
+    -- Include log records matching any of these conditions
+    if {{ .IncludedEventIds }} then
+        return 0, 0, 0
+    end
+    -- If there is not any matching conditions discard everything
+    return -1, 0, 0
+ end`

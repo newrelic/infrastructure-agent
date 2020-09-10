@@ -37,7 +37,7 @@ func (ccw *ConfigChangesWatcher) Watch(ctx ctx2.Context, changes chan<- struct{}
 		return
 	}
 	ccw.logger.Debugf("adding path to watching %v", ccw.path)
-	if err := ccw.watcher.Watch(ccw.path); err != nil {
+	if err := ccw.watcher.Add(ccw.path); err != nil {
 		ccw.logger.WithError(err).Warn("cant watch for file changes in folder")
 		return
 	}
@@ -55,9 +55,9 @@ func (ccw *ConfigChangesWatcher) watchForChanges(ctx ctx2.Context, changes chan<
 	ccw.logger.Debug("Watching for logging config file changes.")
 	for {
 		select {
-		case event := <-ccw.watcher.Event:
-			ccw.handleFileEvent(event, changes)
-		case err := <-ccw.watcher.Error:
+		case event := <-ccw.watcher.Events:
+			ccw.handleFileEvent(&event, changes)
+		case err := <-ccw.watcher.Errors:
 			ccw.logger.WithError(err).Debug("Error occurred while watching for logging config file changes.")
 		case <-ctx.Done():
 			ccw.logger.Debug("Stopping logging config changes watcher.")
@@ -69,7 +69,7 @@ func (ccw *ConfigChangesWatcher) watchForChanges(ctx ctx2.Context, changes chan<
 	}
 }
 
-func (ccw *ConfigChangesWatcher) handleFileEvent(event *fsnotify.FileEvent, signalReload chan<- struct{}) {
+func (ccw *ConfigChangesWatcher) handleFileEvent(event *fsnotify.Event, signalReload chan<- struct{}) {
 	helog := ccw.logger.WithField("function", "handleFileEvent")
 
 	if event == nil {
@@ -81,9 +81,23 @@ func (ccw *ConfigChangesWatcher) handleFileEvent(event *fsnotify.FileEvent, sign
 		WithField("file_name", event.Name)
 	elog.Debug("Received File event.")
 
-	isDelete := event.IsDelete() || event.IsRename()
-	isCreate := event.IsCreate()
-	isWrite := isCreate || event.IsModify()
+	var eDelete, eCreate, eWrite, eRename bool
+	if event.Op&fsnotify.Write == fsnotify.Write {
+		eWrite = true
+	}
+	if event.Op&fsnotify.Remove == fsnotify.Remove {
+		eDelete = true
+	}
+	if event.Op&fsnotify.Create == fsnotify.Create {
+		eCreate = true
+	}
+	if event.Op&fsnotify.Rename == fsnotify.Rename {
+		eRename = true
+	}
+
+	isDelete := eDelete || eRename
+	isCreate := eCreate
+	isWrite := isCreate || eWrite
 	if !isDelete && !isWrite {
 		elog.Debug("Ignoring File event.")
 		return

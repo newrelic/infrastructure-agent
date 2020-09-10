@@ -6,15 +6,15 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
+	"github.com/newrelic/infrastructure-agent/pkg/license"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/pkg/errors"
+	"io/ioutil"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
-
-	"github.com/newrelic/infrastructure-agent/pkg/license"
-	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
 var cfgLogger = log.WithComponent("integrations.Supervisor.Config").WithField("process", "log-forwarder")
@@ -41,6 +41,16 @@ const (
 const (
 	fbFilterTypeGrep           = "grep"
 	fbFilterTypeRecordModifier = "record_modifier"
+	fbFilterTypeLua            = "lua"
+	fbFilterTypeModify         = "modify"
+)
+
+//Lua Script calling function
+const fbLuaFnNameWinlogEventFilter = "eventIdFilter"
+
+// Winlog constants
+const (
+	eventIdRangeRegex = `^(\d+-\d+)$`
 )
 
 // Syslog plugin valid formats
@@ -86,6 +96,7 @@ type LogCfg struct {
 	Syslog     *LogSyslogCfg     `yaml:"syslog"`
 	Tcp        *LogTcpCfg        `yaml:"tcp"`
 	Fluentbit  *LogExternalFBCfg `yaml:"fluentbit"`
+	Winlog     *LogWinlogCfg     `yaml:"winlog"`
 }
 
 // LogSyslogCfg logging integration config from customer defined YAML, specific for the Syslog input plugin
@@ -93,6 +104,12 @@ type LogSyslogCfg struct {
 	URI             string `yaml:"uri"`
 	Parser          string `yaml:"parser"`
 	UnixPermissions string `yaml:"unix_permissions"`
+}
+
+type LogWinlogCfg struct {
+	Channel         string   `yaml:"channel"`
+	CollectEventIds []string `yaml:"collect-eventids"`
+	ExcludeEventIds []string `yaml:"exclude-eventids"`
 }
 
 type LogTcpCfg struct {
@@ -108,7 +125,7 @@ type LogExternalFBCfg struct {
 
 // IsValid validates struct as there's no constructor to enforce it.
 func (l *LogCfg) IsValid() bool {
-	return l.Name != "" && (l.File != "" || l.Folder != "" || l.Systemd != "" || l.EventLog != "" || l.Syslog != nil || l.Tcp != nil || l.Fluentbit != nil)
+	return l.Name != "" && (l.File != "" || l.Folder != "" || l.Systemd != "" || l.EventLog != "" || l.Syslog != nil || l.Tcp != nil || l.Fluentbit != nil || l.Winlog != nil)
 }
 
 // FBCfg FluentBit automatically generated configuration.
@@ -176,10 +193,13 @@ type FBCfgInput struct {
 //    Match  nri-service
 //    Regex  MESSAGE info
 type FBCfgParser struct {
-	Name    string
-	Match   string
-	Regex   string            // plugin: grep
-	Records map[string]string // plugin: record_modifier
+	Name      string
+	Match     string
+	Regex     string            // plugin: grep
+	Records   map[string]string // plugin: record_modifier
+	Script    string            // plugin:lua-Script
+	Call      string            // plugin:lua-Script
+	Modifiers map[string]string //plugin: modify filter
 }
 
 // FBCfgOutput FluentBit Output config block, supporting NR output plugin.
@@ -194,6 +214,26 @@ type FBCfgOutput struct {
 	CABundleFile      string
 	CABundleDir       string
 	ValidateCerts     bool
+}
+
+type FBWinlogLuaScript struct {
+	FnName           string
+	ExcludedEventIds string
+	IncludedEventIds string
+}
+
+// Format will return the formatted lua script that fluent bit config is pointing to.
+func (script FBWinlogLuaScript) Format() (result string, err error) {
+	buf := new(bytes.Buffer)
+	tpl, err := template.New("fb lua").Parse(fbLuaScriptFormat)
+	if err != nil {
+		return "", errors.Wrap(err, "cannot parse log-forwarder template")
+	}
+	err = tpl.Execute(buf, script)
+	if err != nil {
+		return "", errors.Wrap(err, "cannot write r template")
+	}
+	return buf.String(), nil
 }
 
 // FBCfgExternal represents an existing set of native FluentBit configuration files
@@ -215,7 +255,6 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 		if err != nil {
 			return
 		}
-
 		if (input != FBCfgInput{}) {
 			fb.Inputs = append(fb.Inputs, input)
 		}
@@ -270,6 +309,8 @@ func parseConfigBlock(l LogCfg, logsHomeDir string) (input FBCfgInput, filters [
 		input, filters, err = parseSyslogInput(l)
 	} else if l.Tcp != nil {
 		input, filters, err = parseTcpInput(l)
+	} else if l.Winlog != nil {
+		input, filters, err = parseWinlogInput(l, dbPath)
 	}
 
 	if err != nil {
@@ -344,6 +385,85 @@ func parseTcpInput(l LogCfg) (input FBCfgInput, filters []FBCfgParser, err error
 	return input, filters, nil
 }
 
+//Winlog: "winlog" plugin
+func parseWinlogInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBCfgParser, err error) {
+	input = newWinlogInput(*l.Winlog, dbPath, l.Name)
+	filters = append(filters, newRecordModifierFilterForInput(l.Name, fbInputTypeWinlog, l.Attributes))
+	scriptContent, err := createLuaScript(*l.Winlog)
+	if err != nil {
+		return FBCfgInput{}, []FBCfgParser{}, err
+	}
+	scriptName, err := saveToTempFile([]byte(scriptContent))
+	if err != nil {
+		return FBCfgInput{}, []FBCfgParser{}, err
+	}
+	eventIdLuaFilter := newLuaFilter(l.Name, scriptName)
+	filters = append(filters, eventIdLuaFilter)
+	filters = append(filters, newModifyFilter(l.Name))
+	return input, filters, nil
+}
+
+func createLuaScript(winlog LogWinlogCfg) (scriptContent string, err error) {
+	var fbLuaScript FBWinlogLuaScript
+	fbLuaScript.FnName = fbLuaFnNameWinlogEventFilter
+	included, excluded := winlog.CollectEventIds, winlog.ExcludeEventIds
+	fbLuaScript.IncludedEventIds, err = createConditions(included, "true")
+	if err != nil {
+		return "", err
+	}
+	fbLuaScript.ExcludedEventIds, err = createConditions(excluded, "false")
+	if err != nil {
+		return "", err
+	}
+	return fbLuaScript.Format()
+}
+
+func createConditions(numberRanges []string, defaultIfEmpty string) (conditions string, err error) {
+	if len(numberRanges) > 0 {
+		conditions := make([]string, 0, len(numberRanges))
+		for _, numberRange := range numberRanges {
+			if match, err := regexp.MatchString(eventIdRangeRegex, numberRange); match && err == nil {
+				//EventID range in the format 1234-2345
+				var splitRange = strings.Split(numberRange, "-")
+				bottomLimit, _ := strconv.Atoi(splitRange[0])
+				topLimit, _ := strconv.Atoi(splitRange[1])
+				if bottomLimit > topLimit {
+					topLimit, bottomLimit = bottomLimit, topLimit
+				}
+				conditions = append(conditions, fmt.Sprintf("eventId>=%d and eventId<=%d", bottomLimit, topLimit))
+			} else if _, err := strconv.Atoi(numberRange); err == nil {
+				//Single EventID
+				conditions = append(conditions, fmt.Sprintf("eventId==%s", numberRange))
+			} else {
+				//Invalid format
+				return "", fmt.Errorf("winlog: invalid range format or number")
+			}
+		}
+
+		return strings.Join(conditions, " or "), nil
+	} else {
+
+		return defaultIfEmpty, nil
+	}
+}
+
+func saveToTempFile(config []byte) (string, error) {
+	// create it
+	file, err := ioutil.TempFile("", "nr_fb_lua_filter")
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	cfgLogger.WithField("file", file.Name()).WithField("content", string(config)).
+		Debug("Creating temp lua filter for fb.")
+
+	if _, err := file.Write(config); err != nil {
+		return "", err
+	}
+	return file.Name(), nil
+}
+
 func parsePattern(l LogCfg, fluentBitGrepField string, filters []FBCfgParser) []FBCfgParser {
 	if l.Pattern != "" {
 		return append(filters, newGrepFilter(l, fluentBitGrepField))
@@ -382,6 +502,15 @@ func newWindowsEventlogInput(eventLog string, dbPath string, tag string) FBCfgIn
 	return FBCfgInput{
 		Name:     fbInputTypeWinlog,
 		Channels: eventLog,
+		Tag:      tag,
+		DB:       dbPath,
+	}
+}
+
+func newWinlogInput(winlog LogWinlogCfg, dbPath string, tag string) FBCfgInput {
+	return FBCfgInput{
+		Name:     fbInputTypeWinlog,
+		Channels: winlog.Channel,
 		Tag:      tag,
 		DB:       dbPath,
 	}
@@ -478,6 +607,26 @@ func newGrepFilter(l LogCfg, fluentBitGrepField string) FBCfgParser {
 		Name:  fbFilterTypeGrep,
 		Regex: fmt.Sprintf("%s %s", fluentBitGrepField, l.Pattern),
 		Match: l.Name,
+	}
+}
+
+func newLuaFilter(tag string, fileName string) FBCfgParser {
+	return FBCfgParser{
+		Name:   fbFilterTypeLua,
+		Match:  tag,
+		Script: fileName,
+		Call:   fbLuaFnNameWinlogEventFilter,
+	}
+}
+
+func newModifyFilter(tag string) FBCfgParser {
+	return FBCfgParser{
+		Name:  fbFilterTypeModify,
+		Match: tag,
+		Modifiers: map[string]string{
+			"Message":   "message",
+			"EventType": "WinEventType",
+		},
 	}
 }
 

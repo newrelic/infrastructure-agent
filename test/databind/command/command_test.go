@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 )
 
 type exeTemplate struct {
