@@ -438,7 +438,7 @@ func TestLegacy_Emit(t *testing.T) {
 				integrationJSON,
 			).Return(nil)
 
-			em := &Legacy{
+			em := &Emittor{
 				Context:     ma,
 				FFRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true}),
 				dmEmitter:   mockDME,
@@ -481,7 +481,7 @@ func TestProtocolV4_Emit(t *testing.T) {
 		integrationJSON,
 	).Return(nil)
 
-	em := &Legacy{
+	em := &Emittor{
 		Context:     ma,
 		FFRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true}),
 		dmEmitter:   mockDME,
@@ -539,7 +539,7 @@ func TestProtocolV4_Emit_WithFFDisabled(t *testing.T) {
 		integrationJSON,
 	).Return(errors.New("something failed"))
 
-	em := &Legacy{
+	em := &Emittor{
 		Context:     ma,
 		FFRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: false}),
 		dmEmitter:   mockDME,

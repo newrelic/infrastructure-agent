@@ -19,7 +19,7 @@ import (
 
 var (
 	// internal
-	elog = log.WithComponent("integrations.emitter.Legacy")
+	elog = log.WithComponent("integrations.emitter.Emittor")
 )
 
 // Emitter submits the metrics to the next stage of the pipeline
@@ -31,11 +31,11 @@ type Agent interface {
 	GetContext() agent.AgentContext
 }
 
-func NewIntegrationEmitter(
+func NewIntegrationEmittor(
 	a Agent,
 	dmEmitter dm.Emitter,
 	ffRetriever feature_flags.Retriever) Emitter {
-	return &Legacy{
+	return &Emittor{
 		Context:             a.GetContext(),
 		ForceProtocolV2ToV3: true,
 		FFRetriever:         ffRetriever,
@@ -43,16 +43,15 @@ func NewIntegrationEmitter(
 	}
 }
 
-// Legacy abstracts all the complexities of the current Agent emitter for a better decoupling of the
-// integrations package from the whole agent complexities
-type Legacy struct {
+// Emittor actual Emitter for all integration protocol versions.
+type Emittor struct {
 	Context             agent.AgentContext
 	ForceProtocolV2ToV3 bool
 	FFRetriever         feature_flags.Retriever
 	dmEmitter           dm.Emitter
 }
 
-func (e *Legacy) Emit(metadata integration.Definition, extraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error {
+func (e *Emittor) Emit(metadata integration.Definition, extraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error {
 	protocolVersion, err := protocol.VersionFromPayload(integrationJSON, e.ForceProtocolV2ToV3)
 	if err != nil {
 		elog.
@@ -77,7 +76,7 @@ func (e *Legacy) Emit(metadata integration.Definition, extraLabels data.Map, ent
 	return e.emitV3(metadata, extraLabels, entityRewrite, pluginDataV3, protocolVersion)
 }
 
-func (e *Legacy) emitV3(
+func (e *Emittor) emitV3(
 	metadata integration.Definition,
 	extraLabels data.Map,
 	entityRewrite []data.EntityRewrite,
