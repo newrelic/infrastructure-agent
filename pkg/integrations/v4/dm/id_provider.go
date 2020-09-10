@@ -4,29 +4,41 @@
 package dm
 
 import (
+	"context"
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
+	"sync"
 )
 
-type RegisteredEntitiesNameToID map[string]entity.ID
-type UnregisteredEntitiesNamed map[string]UnregisteredEntity
+type registeredEntitiesNameToID map[string]entity.ID
+type unregisteredEntitiesNamed map[string]unregisteredEntity
 type reason string
 
-type UnregisteredEntity struct {
+type unregisteredEntity struct {
 	Reason reason
 	Err    error
 	Entity protocol.Entity
 }
 
-type UnregisteredEntities []UnregisteredEntity
+type unregisteredEntityList []unregisteredEntity
+type unregisteredEntityListWithWait struct {
+	entities unregisteredEntityList
+	waitGroup *sync.WaitGroup
+}
+
+type entityListToRegisterWithWait struct {
+	entities []protocol.Entity
+	waitGroup *sync.WaitGroup
+}
 
 const reasonClientError = "Identity client error"
 const reasonEntityError = "Entity error"
+const reasonNotInCache = "Entity not cached yet"
 
-func newUnregisteredEntity(entity protocol.Entity, reason reason, err error) UnregisteredEntity {
-	return UnregisteredEntity{
+func newUnregisteredEntity(entity protocol.Entity, reason reason, err error) unregisteredEntity {
+	return unregisteredEntity{
 		Entity: entity,
 		Reason: reason,
 		Err:    err,
@@ -34,72 +46,109 @@ func newUnregisteredEntity(entity protocol.Entity, reason reason, err error) Unr
 }
 
 type idProviderInterface interface {
-	Entities(agentIdn entity.Identity, entities []protocol.Entity) (registeredEntities RegisteredEntitiesNameToID, unregisteredEntities UnregisteredEntities)
+	ResolveEntities(entities []protocol.Entity) (registeredEntitiesNameToID, unregisteredEntityListWithWait)
 }
 
-type idProvider struct {
+type cachedIdProvider struct {
 	client               identityapi.RegisterClient
-	cache                RegisteredEntitiesNameToID
-	unregisteredEntities UnregisteredEntitiesNamed
+	agentIdentity        func() entity.Identity
+	cache                registeredEntitiesNameToID
+	unregisteredEntities unregisteredEntitiesNamed
+	cacheMutex           *sync.Mutex
+	toRegisterQueue      chan entityListToRegisterWithWait
 }
 
-func NewIDProvider(client identityapi.RegisterClient) *idProvider {
-	cache := make(RegisteredEntitiesNameToID)
-	unregisteredEntities := make(UnregisteredEntitiesNamed)
-	return &idProvider{
+func NewCachedIDProvider(client identityapi.RegisterClient, agentIdentity func() entity.Identity, closeContext context.Context) *cachedIdProvider {
+	cache := make(registeredEntitiesNameToID)
+	unregisteredEntities := make(unregisteredEntitiesNamed)
+	cacheMutex := &sync.Mutex{}
+	provider := cachedIdProvider{
 		client:               client,
+		agentIdentity:        agentIdentity,
 		cache:                cache,
 		unregisteredEntities: unregisteredEntities,
+		cacheMutex:           cacheMutex,
+		toRegisterQueue:      make(chan entityListToRegisterWithWait, 10), // TODO adjust buffer
 	}
+
+	go provider.registerEntitiesWorker(closeContext)
+
+	return &provider
 }
 
-func (p *idProvider) Entities(agentIdn entity.Identity, entities []protocol.Entity) (registeredEntities RegisteredEntitiesNameToID, unregisteredEntities UnregisteredEntities) {
-	unregisteredEntities = make(UnregisteredEntities, 0)
-	registeredEntities = make(RegisteredEntitiesNameToID, 0)
+func (p *cachedIdProvider) ResolveEntities(entities []protocol.Entity) (registeredEntitiesNameToID, unregisteredEntityListWithWait) {
+	unregisteredEntities := make(unregisteredEntityList, 0)
+	registeredEntities := make(registeredEntitiesNameToID, 0)
+
 	entitiesToRegister := make([]protocol.Entity, 0)
 
+	// add error cache checking
+	p.cacheMutex.Lock()
 	for _, e := range entities {
 		if foundID, ok := p.cache[e.Name]; ok {
 			registeredEntities[e.Name] = foundID
+		} else if foundUnregisteredEntities, ok := p.unregisteredEntities[e.Name]; ok {
+			unregisteredEntities = append(unregisteredEntities, foundUnregisteredEntities)
 		} else {
+			unregisteredEntities = append(unregisteredEntities, newUnregisteredEntity(e, reasonNotInCache, nil))
 			entitiesToRegister = append(entitiesToRegister, e)
 		}
 	}
+	p.cacheMutex.Unlock()
 
-	if len(entitiesToRegister) == 0 {
-		return registeredEntities, unregisteredEntities
-	}
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
 
-	response, _, errClient := p.client.RegisterBatchEntities(
-		agentIdn.ID,
-		entitiesToRegister)
-
-	type nameToEntityType map[string]protocol.Entity
-	nameToEntity := make(nameToEntityType, len(entitiesToRegister))
-
-	for i := range entitiesToRegister {
-		nameToEntity[entitiesToRegister[i].Name] = entitiesToRegister[i]
-	}
-
-	if errClient != nil {
-		for i := range entitiesToRegister {
-			unregisteredEntity := newUnregisteredEntity(entitiesToRegister[i], reasonClientError, errClient)
-			p.unregisteredEntities[entitiesToRegister[i].Name] = unregisteredEntity
-			unregisteredEntities = append(unregisteredEntities, unregisteredEntity)
+	if len(entitiesToRegister) != 0 {
+		p.toRegisterQueue <- entityListToRegisterWithWait{
+			entities: entitiesToRegister,
+			waitGroup: wg,
 		}
-	} else {
-		for i := range response {
-			if response[i].Err != "" {
-				unregisteredEntity := newUnregisteredEntity(nameToEntity[response[i].Name], reasonEntityError, fmt.Errorf(response[i].Err))
-				p.unregisteredEntities[response[i].Name] = unregisteredEntity
-				unregisteredEntities = append(unregisteredEntities, unregisteredEntity)
-				continue
+	}
+
+	unregisteredEntitiesWithWait := unregisteredEntityListWithWait{
+		entities: unregisteredEntities,
+		waitGroup: wg,
+	}
+
+	return registeredEntities, unregisteredEntitiesWithWait
+}
+
+// todo add backoff strategy
+func (p *cachedIdProvider) registerEntitiesWorker(closeContext context.Context) {
+	type nameToEntityType map[string]protocol.Entity
+
+	for {
+		select {
+		case <- closeContext.Done():
+			return
+		case entitiesToRegisterWithWait := <-p.toRegisterQueue:
+			response, _, errClient := p.client.RegisterBatchEntities(
+				p.agentIdentity().ID,
+				entitiesToRegisterWithWait.entities)
+
+			nameToEntity := make(nameToEntityType, len(entitiesToRegisterWithWait.entities))
+			for i := range entitiesToRegisterWithWait.entities {
+				nameToEntity[entitiesToRegisterWithWait.entities[i].Name] = entitiesToRegisterWithWait.entities[i]
 			}
 
-			p.cache[string(response[i].Key)] = response[i].ID
-			registeredEntities[string(response[i].Key)] = response[i].ID
+			p.cacheMutex.Lock()
+			if errClient != nil {
+				for i := range entitiesToRegisterWithWait.entities {
+					p.unregisteredEntities[entitiesToRegisterWithWait.entities[i].Name] = newUnregisteredEntity(entitiesToRegisterWithWait.entities[i], reasonClientError, errClient)
+				}
+			} else {
+				for i := range response {
+					if response[i].Err != "" {
+						p.unregisteredEntities[response[i].Name] = newUnregisteredEntity(nameToEntity[response[i].Name], reasonEntityError, fmt.Errorf(response[i].Err))
+						continue
+					}
+
+					p.cache[string(response[i].Key)] = response[i].ID
+				}
+			}
+			p.cacheMutex.Unlock()
+			entitiesToRegisterWithWait.waitGroup.Done()
 		}
 	}
-
-	return registeredEntities, unregisteredEntities
 }
