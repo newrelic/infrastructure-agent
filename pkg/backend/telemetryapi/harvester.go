@@ -188,6 +188,7 @@ func (h *Harvester) RecordInfraMetrics(commonAttributes Attributes, metrics []Me
 		}
 	}
 
+	// TODO limit queue len and return error when limit is reached
 	h.rawMetricsBatch = append(h.rawMetricsBatch, metricBatch{
 		Identity:       identity,
 		AttributesJSON: attributesJSON,
