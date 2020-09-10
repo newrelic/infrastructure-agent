@@ -46,7 +46,7 @@ func benchmarkSend(b *testing.B, entityCount int) {
 		ID: entity.ID(1337),
 	}
 	// And we have already registered entities
-	registeredEntities := make(RegisteredEntitiesNameToID, entityCount)
+	registeredEntities := make(registeredEntitiesNameToID, entityCount)
 	for i := 0; i < entityCount; i++ {
 		entityID := fmt.Sprintf("entity_%v", i)
 		registeredEntities[entityID] = entity.ID(i)
@@ -155,11 +155,11 @@ func benchmarkSend(b *testing.B, entityCount int) {
 }
 
 type stubIDProviderInterface struct {
-	registeredEntities RegisteredEntitiesNameToID
+	registeredEntities registeredEntitiesNameToID
 }
 
-func (s stubIDProviderInterface) Entities(_ entity.Identity, entities []protocol.Entity) (registeredEntities RegisteredEntitiesNameToID, unregisteredEntities UnregisteredEntities) {
-	registeredEntities = make(RegisteredEntitiesNameToID, len(entities))
+func (s stubIDProviderInterface) ResolveEntities(entities []protocol.Entity) (registeredEntities registeredEntitiesNameToID, unregisteredEntities unregisteredEntityListWithWait) {
+	registeredEntities = make(registeredEntitiesNameToID, len(entities))
 	for i := range entities {
 		registeredEntities[entities[i].Name] = s.registeredEntities[entities[i].Name]
 	}

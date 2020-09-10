@@ -92,7 +92,7 @@ func TestEmitter_Send_ErrorOnHostname(t *testing.T) {
 }
 
 func TestEmitter_SendOneEntityOutOfTwo(t *testing.T) {
-	expectedEntityId := entity.ID(123)
+	expectedEntityId := "123"
 	agentCtx := getAgentContext("test")
 	dmSender := &mockedMetricsSender{}
 	ffRetriever := &enabledFFRetriever{}
@@ -104,7 +104,7 @@ func TestEmitter_SendOneEntityOutOfTwo(t *testing.T) {
 			{Name: "b.entity.two", Type: "ATYPE", DisplayName: "A display name two", Metadata: map[string]interface{}{"env": "testing"}},
 		}).
 		Return(
-			registeredEntitiesNameToID{"a.entity.one": expectedEntityId},
+			registeredEntitiesNameToID{"a.entity.one": entity.ID(123)},
 			unregisteredEntityListWithWait{
 				entities: []unregisteredEntity{
 					{
@@ -157,7 +157,7 @@ func TestEmitter_SendOneEntityOutOfTwo(t *testing.T) {
 }
 
 func TestEmitter_Send(t *testing.T) {
-	expectedEntityId := entity.ID(123)
+	expectedEntityId := "123"
 	agentCtx := getAgentContext("bob")
 	dmSender := &mockedMetricsSender{}
 	ffRetriever := &enabledFFRetriever{}
@@ -175,7 +175,7 @@ func TestEmitter_Send(t *testing.T) {
 	idProvider.
 		On("ResolveEntities", expectedEntities).
 		Return(
-			registeredEntitiesNameToID{"unique name": expectedEntityId},
+			registeredEntitiesNameToID{"unique name": entity.ID(123)},
 			unregisteredEntityListWithWait{})
 	dmSender.
 		On("SendMetricsWithCommonAttributes", mock.AnythingOfType("protocol.Common"), mock.AnythingOfType("[]protocol.Metric")).

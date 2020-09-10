@@ -106,7 +106,7 @@ func (e *emitter) process(
 	processEntityDataset := func(dataset protocol.Dataset, entityID entity.ID) {
 		// for dataset.Entity call emitV4DataSet function with entity ID
 
-		dataset.Common.Attributes[nrEntityId] = entityID
+		dataset.Common.Attributes[nrEntityId] = entityID.String()
 		replaceEntityName(dataset.Entity, entityRewrite, agentShortName)
 
 		emitInventory(
