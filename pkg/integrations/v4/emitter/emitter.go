@@ -5,8 +5,10 @@ package emitter
 import (
 	"errors"
 	"fmt"
+
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
@@ -65,7 +67,10 @@ func (e *Legacy) Emit(metadata integration.Definition, extraLabels data.Map, ent
 
 	// dimensional metrics
 	if protocolVersion == protocol.V4 {
-		return e.dmEmitter.Send(metadata, extraLabels, entityRewrite, integrationJSON)
+		if enabled, exists := e.FFRetriever.GetFeatureFlag(handler.FlagDmRegisterEnable); exists && enabled {
+			return e.dmEmitter.Send(metadata, extraLabels, entityRewrite, integrationJSON)
+		}
+		return e.dmEmitter.SendWithoutRegister(metadata, extraLabels, entityRewrite, integrationJSON)
 	}
 
 	pluginDataV3, err := protocol.ParsePayload(integrationJSON, protocolVersion)

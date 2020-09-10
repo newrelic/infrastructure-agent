@@ -19,6 +19,7 @@ const (
 	// FFs
 	FlagCategory             = "Infra_Agent"
 	FlagNameRegister         = "register_enabled"
+	FlagDmRegisterEnable     = "dm_register_enabled"
 	FlagParallelizeInventory = "parallelize_inventory_enabled"
 	FlagProtocolV4           = "protocol_v4_enabled"
 	FlagFullProcess          = "full_process_sampling"

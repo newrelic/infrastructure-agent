@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
@@ -48,6 +49,12 @@ type Emitter interface {
 		extraLabels data.Map,
 		entityRewrite []data.EntityRewrite,
 		integrationJSON []byte) error
+
+	SendWithoutRegister(
+		metadata integration.Definition,
+		extraLabels data.Map,
+		entityRewrite []data.EntityRewrite,
+		integrationJSON []byte) error
 }
 
 func NewEmitter(
@@ -62,6 +69,14 @@ func NewEmitter(
 		ffRetriever:   ffRetriever,
 		idProvider:    idProvider,
 	}
+}
+
+func (e *emitter) SendWithoutRegister(
+	metadata integration.Definition,
+	extraLabels data.Map,
+	entityRewrite []data.EntityRewrite,
+	integrationJSON []byte) error {
+	return nil
 }
 
 func (e *emitter) Send(
