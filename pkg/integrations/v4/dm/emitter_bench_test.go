@@ -70,7 +70,7 @@ func benchmarkSend(b *testing.B, entityCount int) {
 		},
 		// Setup Agent ID
 		identity: agentIdentity,
-	}, dmSender, &noopRetriever{}, &stubIDProviderInterface{
+	}, dmSender, &stubIDProviderInterface{
 		registeredEntities: registeredEntities,
 	})
 
@@ -128,9 +128,6 @@ func benchmarkSend(b *testing.B, entityCount int) {
 		}
 	}
 
-	marshal, err := json.Marshal(d)
-	require.NoError(b, err)
-
 	extraLabels := map[string]string{
 		"extra_labels": "one",
 		"some_pod":     "awesome",
@@ -145,7 +142,7 @@ func benchmarkSend(b *testing.B, entityCount int) {
 	for i := 0; i < b.N; i++ {
 		// Then the emitter should send correctly five times
 		for count := 0; count < 5; count++ {
-			if err := dmEmitter.Send(integration.Definition{}, extraLabels, []data.EntityRewrite{}, marshal); err != nil {
+			if err := dmEmitter.Send(integration.Definition{}, extraLabels, []data.EntityRewrite{}, d); err != nil {
 				b.Error(err)
 				b.FailNow()
 			}
@@ -164,20 +161,6 @@ func (s stubIDProviderInterface) ResolveEntities(entities []protocol.Entity) (re
 		registeredEntities[entities[i].Name] = s.registeredEntities[entities[i].Name]
 	}
 	return
-}
-
-type noopRetriever struct {
-}
-
-func (n noopRetriever) GetFeatureFlag(name string) (enabled, exists bool) {
-	return true, true
-}
-
-type noopAgent struct {
-}
-
-func (n noopAgent) GetContext() agent.AgentContext {
-	return &noopAgentContext{}
 }
 
 type noopAgentContext struct {

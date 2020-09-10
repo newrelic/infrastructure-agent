@@ -59,7 +59,8 @@ end box
 
         MetricsSender -> metricHarvester : RecordInfraMetrics
         note over metricHarvester: telemetry SDK
-        MetricsSender <-- metricHarvester : error
+        MetricsSender <-- metricHarvester : error: ErrFullQueue
+        note right: on validation errors it logs & discards
 
         Emitter <-- MetricsSender : error
 
@@ -68,10 +69,12 @@ end box
         deactivate Emitter
 
         "pkg/integrations/v4/emitter/Emitter" <-- Emitter : error
+        note right #green: remove?????
 
         end box
 
         "runner.handleLines" <-- "pkg/integrations/v4/emitter/Emitter" : error
+        note right #green: always nil for compatibility with v3
     end
 
 end
