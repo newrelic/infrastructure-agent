@@ -22,7 +22,7 @@ var (
 	elog = log.WithComponent("integrations.emitter.Emittor")
 )
 
-// Emitter submits the metrics to the next stage of the pipeline
+// Emitter forwards agent/integration payload to  parser & processors (entity ID decoration...)
 type Emitter interface {
 	Emit(metadata integration.Definition, ExtraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error
 }
@@ -36,23 +36,23 @@ func NewIntegrationEmittor(
 	dmEmitter dm.Emitter,
 	ffRetriever feature_flags.Retriever) Emitter {
 	return &Emittor{
-		Context:             a.GetContext(),
-		ForceProtocolV2ToV3: true,
-		FFRetriever:         ffRetriever,
+		aCtx:                a.GetContext(),
+		forceProtocolV2ToV3: true,
+		ffRetriever:         ffRetriever,
 		dmEmitter:           dmEmitter,
 	}
 }
 
 // Emittor actual Emitter for all integration protocol versions.
 type Emittor struct {
-	Context             agent.AgentContext
-	ForceProtocolV2ToV3 bool
-	FFRetriever         feature_flags.Retriever
+	aCtx                agent.AgentContext
+	forceProtocolV2ToV3 bool
+	ffRetriever         feature_flags.Retriever
 	dmEmitter           dm.Emitter
 }
 
 func (e *Emittor) Emit(metadata integration.Definition, extraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error {
-	protocolVersion, err := protocol.VersionFromPayload(integrationJSON, e.ForceProtocolV2ToV3)
+	protocolVersion, err := protocol.VersionFromPayload(integrationJSON, e.forceProtocolV2ToV3)
 	if err != nil {
 		elog.
 			WithError(err).
@@ -64,7 +64,13 @@ func (e *Emittor) Emit(metadata integration.Definition, extraLabels data.Map, en
 
 	// dimensional metrics
 	if protocolVersion == protocol.V4 {
-		return e.dmEmitter.Send(metadata, extraLabels, entityRewrite, integrationJSON)
+		pluginDataV4, err := dm.ParsePayloadV4(integrationJSON, e.ffRetriever)
+		if err != nil {
+			elog.WithError(err).WithField("output", string(integrationJSON)).Warn("can't parse v4 integration output")
+			return err
+		}
+
+		return e.dmEmitter.Send(metadata, extraLabels, entityRewrite, pluginDataV4)
 	}
 
 	pluginDataV3, err := protocol.ParsePayload(integrationJSON, protocolVersion)
@@ -85,13 +91,13 @@ func (e *Emittor) emitV3(
 	var emitErrs []error
 
 	pgId := metadata.PluginID(pluginData.Name)
-	plugin := agent.NewExternalPluginCommon(pgId, e.Context, metadata.Name)
+	plugin := agent.NewExternalPluginCommon(pgId, e.aCtx, metadata.Name)
 
 	labels, extraAnnotations := metadata.LabelsAndExtraAnnotations(extraLabels)
 
 	for _, dataset := range pluginData.DataSets {
 		err := legacy.EmitDataSet(
-			e.Context,
+			e.aCtx,
 			&plugin,
 			pluginData.Name,
 			pluginData.IntegrationVersion,

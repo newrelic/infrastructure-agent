@@ -55,12 +55,6 @@ func (m *mockedMetricsSender) SendMetricsWithCommonAttributes(commonAttributes p
 	return m.Called(commonAttributes, metrics).Error(0)
 }
 
-type enabledFFRetriever struct{}
-
-func (e *enabledFFRetriever) GetFeatureFlag(name string) (enabled bool, exists bool) {
-	return true, true
-}
-
 type mockedIdProvider struct {
 	mock.Mock
 }
@@ -74,20 +68,19 @@ func (mk *mockedIdProvider) ResolveEntities(entities []protocol.Entity) (registe
 func TestEmitter_Send_ErrorOnHostname(t *testing.T) {
 	agentCtx := getAgentContext("")
 	dmSender := &mockedMetricsSender{}
-	ffRetriever := &enabledFFRetriever{}
 	idProvider := &mockedIdProvider{}
 
 	idProvider.
 		On("ResolveEntities", testIdentity, mock.Anything).
 		Return(registeredEntitiesNameToID{}, unregisteredEntityList{})
 
-	emitter := NewEmitter(agentCtx, dmSender, ffRetriever, idProvider)
+	emitter := NewEmitter(agentCtx, dmSender, idProvider)
 
 	metadata := integration.Definition{}
 	var extraLabels data.Map
 	var entityRewrite []data.EntityRewrite
 
-	err := emitter.Send(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4TwoEntities.Payload)
+	err := emitter.Send(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4TwoEntities.ParsedV4)
 	assert.EqualError(t, err, "2 out of 2 datasets could not be emitted. Reasons: error renaming entity: no known identifier types found in ID lookup table")
 }
 
@@ -95,7 +88,6 @@ func TestEmitter_SendOneEntityOutOfTwo(t *testing.T) {
 	expectedEntityId := "123"
 	agentCtx := getAgentContext("test")
 	dmSender := &mockedMetricsSender{}
-	ffRetriever := &enabledFFRetriever{}
 	idProvider := &mockedIdProvider{}
 
 	idProvider.
@@ -135,13 +127,13 @@ func TestEmitter_SendOneEntityOutOfTwo(t *testing.T) {
 			NotApplicable: false,
 		})
 
-	emitter := NewEmitter(agentCtx, dmSender, ffRetriever, idProvider)
+	emitter := NewEmitter(agentCtx, dmSender, idProvider)
 
 	metadata := integration.Definition{}
 	var extraLabels data.Map
 	var entityRewrite []data.EntityRewrite
 
-	err := emitter.Send(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4TwoEntities.Payload)
+	err := emitter.Send(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4TwoEntities.ParsedV4)
 	assert.EqualError(t, err, "1 out of 2 datasets could not be emitted. Reasons: entity with name 'b.entity.two' was not registered in the backend, err 'invalid entityName'")
 
 	idProvider.AssertExpectations(t)
@@ -160,7 +152,6 @@ func TestEmitter_Send(t *testing.T) {
 	expectedEntityId := "123"
 	agentCtx := getAgentContext("bob")
 	dmSender := &mockedMetricsSender{}
-	ffRetriever := &enabledFFRetriever{}
 	idProvider := &mockedIdProvider{}
 
 	expectedEntities := []protocol.Entity{
@@ -184,13 +175,13 @@ func TestEmitter_Send(t *testing.T) {
 	agentCtx.On("SendData",
 		agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "integration name"}, Entity: entity.New("unique name", 123), Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_foo", "value": "bar"}}, NotApplicable: false})
 
-	emitter := NewEmitter(agentCtx, dmSender, ffRetriever, idProvider)
+	emitter := NewEmitter(agentCtx, dmSender, idProvider)
 
 	metadata := integration.Definition{}
 	var extraLabels data.Map
 	var entityRewrite []data.EntityRewrite
 
-	err := emitter.Send(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4.Payload)
+	err := emitter.Send(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4.ParsedV4)
 
 	assert.NoError(t, err)
 	idProvider.AssertExpectations(t)

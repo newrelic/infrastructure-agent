@@ -357,9 +357,9 @@ func (m *mockDmEmitter) Send(
 	metadata integration.Definition,
 	extraLabels data.Map,
 	entityRewrite []data.EntityRewrite,
-	integrationJSON []byte) error {
+	integrationData protocol.DataV4) error {
 
-	args := m.Called(metadata, extraLabels, entityRewrite, integrationJSON)
+	args := m.Called(metadata, extraLabels, entityRewrite, integrationData)
 	return args.Error(0)
 }
 
@@ -439,8 +439,8 @@ func TestLegacy_Emit(t *testing.T) {
 			).Return(nil)
 
 			em := &Emittor{
-				Context:     ma,
-				FFRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true}),
+				aCtx:        ma,
+				ffRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true}),
 				dmEmitter:   mockDME,
 			}
 
@@ -482,8 +482,8 @@ func TestProtocolV4_Emit(t *testing.T) {
 	).Return(nil)
 
 	em := &Emittor{
-		Context:     ma,
-		FFRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true}),
+		aCtx:        ma,
+		ffRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true}),
 		dmEmitter:   mockDME,
 	}
 
@@ -540,8 +540,8 @@ func TestProtocolV4_Emit_WithFFDisabled(t *testing.T) {
 	).Return(errors.New("something failed"))
 
 	em := &Emittor{
-		Context:     ma,
-		FFRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: false}),
+		aCtx:        ma,
+		ffRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: false}),
 		dmEmitter:   mockDME,
 	}
 

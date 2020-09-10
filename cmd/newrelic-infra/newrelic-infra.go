@@ -284,7 +284,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	)
 
 	idProvider := dm.NewCachedIDProvider(registerClient, agt.Context.AgentIdentity, agt.Context.Ctx)
-	dmEmitter := dm.NewEmitter(agt.GetContext(), dmSender, ffManager, idProvider)
+	dmEmitter := dm.NewEmitter(agt.GetContext(), dmSender, idProvider)
 	integrationEmitter := emitter.NewIntegrationEmittor(agt, dmEmitter, ffManager)
 	integrationManager := v4.NewManager(integrationCfg, integrationEmitter)
 

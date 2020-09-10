@@ -36,7 +36,6 @@ type Agent interface {
 }
 
 type emitter struct {
-	ffRetriever   feature_flags.Retriever
 	metricsSender MetricsSender
 	agentContext  agent.AgentContext
 	idProvider    idProviderInterface
@@ -47,19 +46,17 @@ type Emitter interface {
 		metadata integration.Definition,
 		extraLabels data.Map,
 		entityRewrite []data.EntityRewrite,
-		integrationJSON []byte) error
+		integrationData protocol.DataV4) error
 }
 
 func NewEmitter(
 	agentContext agent.AgentContext,
 	dmSender MetricsSender,
-	ffRetriever feature_flags.Retriever,
 	idProvider idProviderInterface) Emitter {
 
 	return &emitter{
 		agentContext:  agentContext,
 		metricsSender: dmSender,
-		ffRetriever:   ffRetriever,
 		idProvider:    idProvider,
 	}
 }
@@ -68,22 +65,7 @@ func (e *emitter) Send(
 	metadata integration.Definition,
 	extraLabels data.Map,
 	entityRewrite []data.EntityRewrite,
-	integrationJSON []byte) error {
-
-	pluginDataV4, err := ParsePayloadV4(integrationJSON, e.ffRetriever)
-	if err != nil {
-		elog.WithError(err).WithField("output", string(integrationJSON)).Warn("can't parse v4 integration output")
-		return err
-	}
-
-	return e.process(metadata, extraLabels, entityRewrite, pluginDataV4)
-}
-
-func (e *emitter) process(
-	metadata integration.Definition,
-	extraLabels data.Map,
-	entityRewrite []data.EntityRewrite,
-	integrationData protocol.DataV4) (err error) {
+	integrationData protocol.DataV4) error {
 
 	pluginId := metadata.PluginID(integrationData.Integration.Name)
 	plugin := agent.NewExternalPluginCommon(pluginId, e.agentContext, metadata.Name)
