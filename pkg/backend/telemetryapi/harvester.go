@@ -147,16 +147,18 @@ func (h *Harvester) RecordMetric(m Metric) {
 	h.rawMetrics = append(h.rawMetrics, m)
 }
 
-func (h *Harvester) RecordInfraMetrics(commonAttributes Attributes, metrics []Metric) (err error) {
+func (h *Harvester) RecordInfraMetrics(commonAttributes Attributes, metrics []Metric) error {
 	if nil == h {
-		return
+		return nil
 	}
+
 	for i := range metrics {
 		if fields := metrics[i].validate(); nil != fields {
 			h.config.logError(fields)
 			return errors.New("invalid error") // todo figure out which one broke
 		}
 	}
+
 	h.lock.Lock()
 	defer h.lock.Unlock()
 	var attributesJSON json.RawMessage
@@ -181,7 +183,7 @@ func (h *Harvester) RecordInfraMetrics(commonAttributes Attributes, metrics []Me
 				"err":     errJSON.Error(),
 				"message": "error marshaling common attributes",
 			})
-			logger.WithError(err).Warn("Setting default common attributes")
+			logger.WithError(errJSON).Warn("Setting default common attributes")
 			attributesJSON = h.commonAttributesJSON
 		} else {
 			identity = commonAttributes[nrEntityID].(string)
@@ -194,7 +196,8 @@ func (h *Harvester) RecordInfraMetrics(commonAttributes Attributes, metrics []Me
 		AttributesJSON: attributesJSON,
 		Metrics:        metrics,
 	})
-	return err
+
+	return nil
 }
 
 type response struct {
