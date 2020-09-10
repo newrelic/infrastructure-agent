@@ -133,7 +133,7 @@ func (e *emitter) process(
 
 		metrics := dmProcessor.ProcessMetrics(dataset.Metrics, dataset.Common, dataset.Entity)
 		if err := e.metricsSender.SendMetricsWithCommonAttributes(dataset.Common, metrics); err != nil {
-
+			// TODO error handling
 		}
 	}
 
