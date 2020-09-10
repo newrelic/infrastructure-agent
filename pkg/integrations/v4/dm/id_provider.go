@@ -24,12 +24,12 @@ type unregisteredEntity struct {
 
 type unregisteredEntityList []unregisteredEntity
 type unregisteredEntityListWithWait struct {
-	entities unregisteredEntityList
+	entities  unregisteredEntityList
 	waitGroup *sync.WaitGroup
 }
 
 type entityListToRegisterWithWait struct {
-	entities []protocol.Entity
+	entities  []protocol.Entity
 	waitGroup *sync.WaitGroup
 }
 
@@ -101,13 +101,13 @@ func (p *cachedIdProvider) ResolveEntities(entities []protocol.Entity) (register
 
 	if len(entitiesToRegister) != 0 {
 		p.toRegisterQueue <- entityListToRegisterWithWait{
-			entities: entitiesToRegister,
+			entities:  entitiesToRegister,
 			waitGroup: wg,
 		}
 	}
 
 	unregisteredEntitiesWithWait := unregisteredEntityListWithWait{
-		entities: unregisteredEntities,
+		entities:  unregisteredEntities,
 		waitGroup: wg,
 	}
 
@@ -120,7 +120,7 @@ func (p *cachedIdProvider) registerEntitiesWorker(closeContext context.Context) 
 
 	for {
 		select {
-		case <- closeContext.Done():
+		case <-closeContext.Done():
 			return
 		case entitiesToRegisterWithWait := <-p.toRegisterQueue:
 			response, _, errClient := p.client.RegisterBatchEntities(

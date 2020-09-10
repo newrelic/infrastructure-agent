@@ -100,9 +100,9 @@ func TestEmitter_SendOneEntityOutOfTwo(t *testing.T) {
 
 	idProvider.
 		On("ResolveEntities", []protocol.Entity{
-		{Name: "a.entity.one", Type: "ATYPE", DisplayName: "A display name one", Metadata: map[string]interface{}{"env": "testing"}},
-		{Name: "b.entity.two", Type: "ATYPE", DisplayName: "A display name two", Metadata: map[string]interface{}{"env": "testing"}},
-	}).
+			{Name: "a.entity.one", Type: "ATYPE", DisplayName: "A display name one", Metadata: map[string]interface{}{"env": "testing"}},
+			{Name: "b.entity.two", Type: "ATYPE", DisplayName: "A display name two", Metadata: map[string]interface{}{"env": "testing"}},
+		}).
 		Return(
 			registeredEntitiesNameToID{"a.entity.one": expectedEntityId},
 			unregisteredEntityListWithWait{

@@ -102,9 +102,8 @@ func (e *emitter) process(
 		return wrapError(fmt.Errorf("error renaming entity: %s", err.Error()), len(integrationData.DataSets))
 	}
 
-
 	var emitErrs []error
-	processEntityDataset := func(dataset protocol.Dataset, entityID entity.ID){
+	processEntityDataset := func(dataset protocol.Dataset, entityID entity.ID) {
 		// for dataset.Entity call emitV4DataSet function with entity ID
 
 		dataset.Common.Attributes[nrEntityId] = entityID
@@ -144,24 +143,24 @@ func (e *emitter) process(
 		processEntityDataset(datasetsByEntityName[entityName], entityID)
 	}
 
-	if len(unregisteredEntitiesWithWait.entities) == 0{
+	if len(unregisteredEntitiesWithWait.entities) == 0 {
 		return composeEmitError(emitErrs, len(integrationData.DataSets))
 	}
 
 	unregisteredEntitiesWithWait.waitGroup.Wait()
 	entitiesToReRegister := make([]protocol.Entity, 0)
 
-	for i := range unregisteredEntitiesWithWait.entities{
+	for i := range unregisteredEntitiesWithWait.entities {
 		if unregisteredEntitiesWithWait.entities[i].Reason != reasonEntityError {
 			entitiesToReRegister = append(entitiesToReRegister, unregisteredEntitiesWithWait.entities[i].Entity)
-		} else{
+		} else {
 			emitErrs = append(emitErrs, fmt.Errorf(
 				"entity with name '%s' was not registered in the backend, err '%v'",
 				unregisteredEntitiesWithWait.entities[i].Entity.Name, unregisteredEntitiesWithWait.entities[i].Err))
 		}
 	}
 
-	if len(entitiesToReRegister) == 0{
+	if len(entitiesToReRegister) == 0 {
 		return composeEmitError(emitErrs, len(integrationData.DataSets))
 	}
 
@@ -171,11 +170,11 @@ func (e *emitter) process(
 		processEntityDataset(datasetsByEntityName[entityName], entityID)
 	}
 
-	if len(unregisteredEntitiesWithWait.entities) == 0{
+	if len(unregisteredEntitiesWithWait.entities) == 0 {
 		return composeEmitError(emitErrs, len(integrationData.DataSets))
 	}
 
-	for i := range unregisteredEntitiesWithWait.entities{
+	for i := range unregisteredEntitiesWithWait.entities {
 		emitErrs = append(emitErrs, fmt.Errorf(
 			"entity with name '%s' was not registered in the backend, err '%v'",
 			unregisteredEntitiesWithWait.entities[i].Entity.Name, unregisteredEntitiesWithWait.entities[i].Err))

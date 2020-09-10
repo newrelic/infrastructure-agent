@@ -38,7 +38,7 @@ func (mk *mockedRegisterClient) RegisterEntitiesRemoveMe(agentEntityID entity.ID
 
 func TestIdProvider_Entities_MemoryFirst(t *testing.T) {
 
-	agentIdentity := func() entity.Identity{
+	agentIdentity := func() entity.Identity {
 		return entity.Identity{ID: 13}
 	}
 
@@ -60,7 +60,7 @@ func TestIdProvider_Entities_MemoryFirst(t *testing.T) {
 	}
 
 	registeredEntitiesExpected := registeredEntitiesNameToID{
-		"remote_entity_flex": entity.ID(6543),
+		"remote_entity_flex":  entity.ID(6543),
 		"remote_entity_nginx": entity.ID(1234),
 	}
 
@@ -76,7 +76,7 @@ func TestIdProvider_Entities_MemoryFirst(t *testing.T) {
 
 func TestIdProvider_Entities_OneCachedAnotherRegistered(t *testing.T) {
 
-	agentIdentity := func() entity.Identity{
+	agentIdentity := func() entity.Identity {
 		return entity.Identity{ID: 13}
 	}
 	ctx := context.Background()
@@ -125,7 +125,7 @@ func TestIdProvider_Entities_OneCachedAnotherRegistered(t *testing.T) {
 	unregisteredEntities.waitGroup.Wait()
 
 	registeredEntitiesExpected = registeredEntitiesNameToID{
-		"remote_entity_flex": entity.ID(6543),
+		"remote_entity_flex":  entity.ID(6543),
 		"remote_entity_nginx": entity.ID(1234),
 	}
 	registeredEntities, unregisteredEntities = idProvider.ResolveEntities(entities)
@@ -149,8 +149,8 @@ func TestIdProvider_Entities_ErrorsHandling(t *testing.T) {
 		unregisteredEntitiesExpected unregisteredEntityList
 	}{
 		{
-			name:     "OneCached_OneFailed_ErrClient",
-			agentIdn: func() entity.Identity{
+			name: "OneCached_OneFailed_ErrClient",
+			agentIdn: func() entity.Identity {
 				return entity.Identity{ID: 13}
 			},
 			cache: registeredEntitiesNameToID{
@@ -181,8 +181,8 @@ func TestIdProvider_Entities_ErrorsHandling(t *testing.T) {
 			},
 		},
 		{
-			name:     "OneCached_OneFailed_ErrEntity",
-			agentIdn: func() entity.Identity{
+			name: "OneCached_OneFailed_ErrEntity",
+			agentIdn: func() entity.Identity {
 				return entity.Identity{ID: 13}
 			},
 			cache: registeredEntitiesNameToID{
@@ -218,8 +218,8 @@ func TestIdProvider_Entities_ErrorsHandling(t *testing.T) {
 			},
 		},
 		{
-			name:     "OneCached_OneRegistered_OneFailed_ErrEntity",
-			agentIdn: func() entity.Identity{
+			name: "OneCached_OneRegistered_OneFailed_ErrEntity",
+			agentIdn: func() entity.Identity {
 				return entity.Identity{ID: 13}
 			},
 			cache: registeredEntitiesNameToID{
