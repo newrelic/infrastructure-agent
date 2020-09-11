@@ -269,6 +269,10 @@ func (s *Store) CompactStorage(entityKey string, threshold uint64) (err error) {
 func (s *Store) StorageSize(path string) (uint64, error) {
 	var size int64
 	err := filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
+		// if err is not nil, info will be nil and makes agent panic
+		if err != nil {
+			return err
+		}
 		if !info.IsDir() {
 			size += info.Size()
 		}
