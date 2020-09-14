@@ -5,9 +5,11 @@ package emitter
 import (
 	"errors"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"strings"
 	"testing"
+
+	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
+	integration2 "github.com/newrelic/infrastructure-agent/test/fixture/integration"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
@@ -427,15 +429,13 @@ func TestLegacy_Emit(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			extraLabels := data.Map{}
 			entityRewrite := []data.EntityRewrite{}
-			integrationJSON := []byte(tc.integrationJsonOutput)
-
 			ma := mockAgent()
 			mockDME := &mockDmEmitter{}
 			mockDME.On("Send",
 				tc.metadata,
 				extraLabels,
 				entityRewrite,
-				integrationJSON,
+				mock.Anything,
 			).Return(nil)
 
 			em := &Emittor{
@@ -444,7 +444,7 @@ func TestLegacy_Emit(t *testing.T) {
 				dmEmitter:   mockDME,
 			}
 
-			err := em.Emit(tc.metadata, extraLabels, entityRewrite, integrationJSON)
+			err := em.Emit(tc.metadata, extraLabels, entityRewrite, []byte(tc.integrationJsonOutput))
 			require.NoError(t, err)
 
 			for c := range ma.Calls {
@@ -478,7 +478,7 @@ func TestProtocolV4_Emit(t *testing.T) {
 		metadata,
 		extraLabels,
 		entityRewrite,
-		integrationJSON,
+		mock.Anything,
 	).Return(nil)
 
 	em := &Emittor{
@@ -528,7 +528,7 @@ func TestProtocolV4_Emit_WithFFDisabled(t *testing.T) {
 		"extraAnnotationAttribute": "annotated",
 	}
 	entityRewrite := []data.EntityRewrite{}
-	integrationJSON := []byte(integrationJsonV4Output)
+	integrationJSON := integration2.ProtocolV4.Payload
 
 	ma := mockAgent()
 	mockDME := &mockDmEmitter{}
@@ -536,7 +536,7 @@ func TestProtocolV4_Emit_WithFFDisabled(t *testing.T) {
 		metadata,
 		extraLabels,
 		entityRewrite,
-		integrationJSON,
+		integration2.ProtocolV4.ParsedV4,
 	).Return(errors.New("something failed"))
 
 	em := &Emittor{

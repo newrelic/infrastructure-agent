@@ -3,7 +3,8 @@
 package dm
 
 import (
-	"fmt"
+	"testing"
+
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
@@ -17,8 +18,6 @@ import (
 	integrationFixture "github.com/newrelic/infrastructure-agent/test/fixture/integration"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"sync"
-	"testing"
 )
 
 var (
@@ -82,70 +81,6 @@ func TestEmitter_Send_ErrorOnHostname(t *testing.T) {
 
 	err := emitter.Send(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4TwoEntities.ParsedV4)
 	assert.EqualError(t, err, "2 out of 2 datasets could not be emitted. Reasons: error renaming entity: no known identifier types found in ID lookup table")
-}
-
-func TestEmitter_SendOneEntityOutOfTwo(t *testing.T) {
-	expectedEntityId := "123"
-	agentCtx := getAgentContext("test")
-	dmSender := &mockedMetricsSender{}
-	idProvider := &mockedIdProvider{}
-
-	idProvider.
-		On("ResolveEntities", []protocol.Entity{
-			{Name: "a.entity.one", Type: "ATYPE", DisplayName: "A display name one", Metadata: map[string]interface{}{"env": "testing"}},
-			{Name: "b.entity.two", Type: "ATYPE", DisplayName: "A display name two", Metadata: map[string]interface{}{"env": "testing"}},
-		}).
-		Return(
-			registeredEntitiesNameToID{"a.entity.one": entity.ID(123)},
-			unregisteredEntityListWithWait{
-				entities: []unregisteredEntity{
-					{
-						Reason: reasonEntityError,
-						Err:    fmt.Errorf("invalid entityName"),
-						Entity: protocol.Entity{
-							Name:        "b.entity.two",
-							Type:        "ATYPE",
-							DisplayName: "A display name two",
-							Metadata:    map[string]interface{}{"env": "testing"},
-						},
-					},
-				},
-				waitGroup: &sync.WaitGroup{},
-			})
-
-	dmSender.
-		On("SendMetricsWithCommonAttributes", mock.AnythingOfType("protocol.Common"), mock.AnythingOfType("[]protocol.Metric")).
-		Return(nil)
-
-	agentCtx.On("SendData",
-		agent.PluginOutput{
-			Id:     ids.PluginID{Category: "integration", Term: "Sample"},
-			Entity: entity.New("a.entity.one", 123),
-			Data: agent.PluginInventoryDataset{
-				protocol.InventoryData{"id": "inventory_payload_one", "value": "foo-one"},
-			},
-			NotApplicable: false,
-		})
-
-	emitter := NewEmitter(agentCtx, dmSender, idProvider)
-
-	metadata := integration.Definition{}
-	var extraLabels data.Map
-	var entityRewrite []data.EntityRewrite
-
-	err := emitter.Send(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4TwoEntities.ParsedV4)
-	assert.EqualError(t, err, "1 out of 2 datasets could not be emitted. Reasons: entity with name 'b.entity.two' was not registered in the backend, err 'invalid entityName'")
-
-	idProvider.AssertExpectations(t)
-	dmSender.AssertExpectations(t)
-	agentCtx.AssertExpectations(t)
-
-	// Should add Entity Id ('nr.entity.id') to Common attributes
-	dmMetricsSent := dmSender.Calls[0].Arguments[1].([]protocol.Metric)
-	assert.Len(t, dmMetricsSent, 3)
-	assert.Equal(t, expectedEntityId, dmMetricsSent[0].Attributes[nrEntityId])
-	assert.Equal(t, expectedEntityId, dmMetricsSent[1].Attributes[nrEntityId])
-	assert.Equal(t, expectedEntityId, dmMetricsSent[2].Attributes[nrEntityId])
 }
 
 func TestEmitter_Send(t *testing.T) {
