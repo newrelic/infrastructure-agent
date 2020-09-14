@@ -130,7 +130,43 @@ var (
 				Name:    "Sample",
 				Version: "1.2.3",
 			},
-			DataSets: []protocol.Dataset{},
+			DataSets: []protocol.Dataset{
+				{
+					Metrics: []protocol.Metric{
+						{Name: "a.gauge"},
+						{Name: "a.summary"},
+						{Name: "a.count"},
+					},
+					Entity: protocol.Entity{
+						Name:        "a.entity.one",
+						Type:        "ATYPE",
+						DisplayName: "A display name one",
+						Metadata:    map[string]interface{}{"env": "testing"},
+					},
+					Common: protocol.Common{
+						Attributes: map[string]interface{}{},
+					},
+					Inventory: map[string]protocol.InventoryData{
+						"inventory_payload_one": {
+							"value": "foo-one",
+						},
+					},
+				},
+				{
+					Metrics: []protocol.Metric{
+						{Name: "b.entity.two"},
+					},
+					Entity: protocol.Entity{
+						Name:        "b.entity.two",
+						Type:        "ATYPE",
+						DisplayName: "A display name two",
+						Metadata:    map[string]interface{}{"env": "testing"},
+					},
+					Common: protocol.Common{
+						Attributes: map[string]interface{}{},
+					},
+				},
+			},
 		},
 	}
 
