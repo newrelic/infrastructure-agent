@@ -19,12 +19,13 @@ const (
 	// FFs
 	FlagCategory             = "Infra_Agent"
 	FlagNameRegister         = "register_enabled"
-	FlagDmRegisterEnable     = "dm_register_enabled"
+	FlagDMRegisterEnable     = "dm_register_enabled"
 	FlagParallelizeInventory = "parallelize_inventory_enabled"
 	FlagProtocolV4           = "protocol_v4_enabled"
 	FlagFullProcess          = "full_process_sampling"
 	// Config
 	CfgYmlRegisterEnabled        = "register_enabled"
+	CfgYmlDMRegisterEnable       = "dm_register_enabled"
 	CfgYmlParallelizeInventory   = "inventory_queue_len"
 	CfgValueParallelizeInventory = int64(100) // default value when no config provided by user and FF enabled
 )
@@ -115,6 +116,11 @@ func (h *FFHandler) Handle(ffArgs commandapi.FFArgs, isInitialFetch bool) {
 
 	if ffArgs.Flag == FlagNameRegister {
 		handleRegister(ffArgs, h.cfg, isInitialFetch)
+		return
+	}
+
+	if ffArgs.Flag == FlagDMRegisterEnable {
+		handleDMRegister(ffArgs, h.cfg, isInitialFetch)
 		return
 	}
 
@@ -219,6 +225,23 @@ func handleRegister(ffArgs commandapi.FFArgs, c *config.Config, isInitialFetch b
 		ffLogger.
 			WithError(err).
 			WithField("field", CfgYmlRegisterEnabled).
+			Warn("unable to update config value")
+	}
+}
+
+func handleDMRegister(ffArgs commandapi.FFArgs, c *config.Config, isInitialFetch bool) {
+	if ffArgs.Enabled == c.DMRegisterEnabled {
+		return
+	}
+
+	if !isInitialFetch {
+		os.Exit(api.ExitCodeRestart)
+	}
+
+	if err := c.SetBoolValueByYamlAttribute(CfgYmlDMRegisterEnable, ffArgs.Enabled); err != nil {
+		ffLogger.
+			WithError(err).
+			WithField("field", CfgYmlDMRegisterEnable).
 			Warn("unable to update config value")
 	}
 }

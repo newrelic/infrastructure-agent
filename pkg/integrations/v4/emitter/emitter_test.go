@@ -451,7 +451,7 @@ func TestLegacy_Emit(t *testing.T) {
 
 			em := &Legacy{
 				Context:     ma,
-				FFRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true, handler.FlagDmRegisterEnable: true}),
+				FFRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true, handler.FlagDMRegisterEnable: true}),
 				dmEmitter:   mockDME,
 			}
 
@@ -494,7 +494,7 @@ func TestProtocolV4_Emit(t *testing.T) {
 
 	em := &Legacy{
 		Context:     ma,
-		FFRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true, handler.FlagDmRegisterEnable: true}),
+		FFRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true, handler.FlagDMRegisterEnable: true}),
 		dmEmitter:   mockDME,
 	}
 
@@ -552,7 +552,7 @@ func TestProtocolV4_Emit_WithFFDisabled(t *testing.T) {
 
 	em := &Legacy{
 		Context:     ma,
-		FFRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: false, handler.FlagDmRegisterEnable: true}),
+		FFRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: false, handler.FlagDMRegisterEnable: true}),
 		dmEmitter:   mockDME,
 	}
 
@@ -576,7 +576,7 @@ func TestProtocolV4_Emit_WithoutRegisteringEntities(t *testing.T) {
 
 	em := &Legacy{
 		Context:     mockAgent(),
-		FFRetriever: feature_flags.NewManager(map[string]bool{handler.FlagDmRegisterEnable: false}),
+		FFRetriever: feature_flags.NewManager(map[string]bool{handler.FlagDMRegisterEnable: false}),
 		dmEmitter:   dmEmitter,
 	}
 

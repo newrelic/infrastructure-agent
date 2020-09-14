@@ -50,6 +50,42 @@ func TestFFHandlerHandle_DisablesRegisterOnInitialFetch(t *testing.T) {
 	assert.False(t, c.RegisterEnabled)
 }
 
+func TestFFHandler_DMRegisterOnInitialFetch(t *testing.T) {
+	tests := []struct {
+		name   string
+		config config.Config
+		args   commandapi.FFArgs
+		want   bool
+	}{{
+		"Disabled if command api is disabled",
+		config.Config{RegisterEnabled: true},
+		commandapi.FFArgs{
+			Category: handler.FlagCategory,
+			Flag:     handler.FlagDMRegisterEnable,
+			Enabled:  false,
+		},
+		false,
+	},
+		{
+			"Enabled if command api is Enabled",
+			config.Config{},
+			commandapi.FFArgs{
+				Category: handler.FlagCategory,
+				Flag:     handler.FlagDMRegisterEnable,
+				Enabled:  true,
+			},
+			true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			handler.NewFFHandler(&tc.config, feature_flags.NewManager(nil)).Handle(tc.args, true)
+			assert.Equal(t, tc.want, tc.config.DMRegisterEnabled)
+		})
+	}
+}
+
 func TestFFHandlerHandle_DisablesParallelizeInventoryConfigOnInitialFetch(t *testing.T) {
 	c := config.Config{
 		InventoryQueueLen: 123,
