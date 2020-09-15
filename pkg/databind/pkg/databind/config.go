@@ -40,9 +40,11 @@ func (y *YAMLConfig) Enabled() bool {
 }
 
 type varEntry struct {
-	TTL   string         `yaml:"ttl,omitempty"`
-	KMS   *secrets.KMS   `yaml:"aws-kms,omitempty"`
-	Vault *secrets.Vault `yaml:"vault,omitempty"`
+	TTL         string               `yaml:"ttl,omitempty"`
+	KMS         *secrets.KMS         `yaml:"aws-kms,omitempty"`
+	Vault       *secrets.Vault       `yaml:"vault,omitempty"`
+	CyberArkCLI *secrets.CyberArkCLI `yaml:"cyberark-cli,omitempty"`
+	CyberArkAPI *secrets.CyberArkAPI `yaml:"cyberark-api,omitempty"`
 }
 
 // LoadYaml builds a set of data binding Sources from a YAML file
@@ -138,6 +140,16 @@ func selectGatherer(ttl time.Duration, vg *varEntry) *gatherer {
 			cache: cachedEntry{ttl: ttl},
 			fetch: secrets.VaultGatherer(vg.Vault),
 		}
+	} else if vg.CyberArkCLI != nil {
+		return &gatherer{
+			cache: cachedEntry{ttl: ttl},
+			fetch: secrets.CyberArkCLIGatherer(vg.CyberArkCLI),
+		}
+	} else if vg.CyberArkAPI != nil {
+		return &gatherer{
+			cache: cachedEntry{ttl: ttl},
+			fetch: secrets.CyberArkAPIGatherer(vg.CyberArkAPI),
+		}
 	}
 	// should never reach here as long as "varEntry.validate()" does its job
 	// anyway, returning an error gatherer to avoid unexpected panics
@@ -200,8 +212,20 @@ func (ve *varEntry) validate() error {
 			return err
 		}
 	}
+	if ve.CyberArkCLI != nil {
+		sections++
+		if err := ve.CyberArkCLI.Validate(); err != nil {
+			return err
+		}
+	}
+	if ve.CyberArkAPI != nil {
+		sections++
+		if err := ve.CyberArkAPI.Validate(); err != nil {
+			return err
+		}
+	}
 	if sections == 0 {
-		return errors.New("you should specify one source to gather the variable: aws-kms or vault")
+		return errors.New("you should specify one source to gather the variable: aws-kms or vault or cyberark-cli")
 	}
 	if sections > 1 {
 		return errors.New("you can't specify more than one source into a single variable. Use another variable")
