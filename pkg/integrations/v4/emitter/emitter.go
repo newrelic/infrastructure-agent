@@ -67,7 +67,7 @@ func (e *Legacy) Emit(metadata integration.Definition, extraLabels data.Map, ent
 
 	// dimensional metrics
 	if protocolVersion == protocol.V4 {
-		if enabled, exists := e.FFRetriever.GetFeatureFlag(handler.FlagDmRegisterEnable); exists && enabled {
+		if enabled, exists := e.FFRetriever.GetFeatureFlag(handler.FlagDMRegisterEnable); exists && enabled {
 			return e.dmEmitter.Send(metadata, extraLabels, entityRewrite, integrationJSON)
 		}
 		return e.dmEmitter.SendWithoutRegister(metadata, extraLabels, entityRewrite, integrationJSON)
