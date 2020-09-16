@@ -19,11 +19,13 @@ const (
 	// FFs
 	FlagCategory             = "Infra_Agent"
 	FlagNameRegister         = "register_enabled"
+	FlagDMRegisterEnable     = "dm_register_enabled"
 	FlagParallelizeInventory = "parallelize_inventory_enabled"
 	FlagProtocolV4           = "protocol_v4_enabled"
 	FlagFullProcess          = "full_process_sampling"
 	// Config
 	CfgYmlRegisterEnabled        = "register_enabled"
+	CfgYmlDMRegisterEnable       = "dm_register_enabled"
 	CfgYmlParallelizeInventory   = "inventory_queue_len"
 	CfgValueParallelizeInventory = int64(100) // default value when no config provided by user and FF enabled
 )
@@ -118,7 +120,7 @@ func (h *FFHandler) Handle(ffArgs commandapi.FFArgs, isInitialFetch bool) {
 	}
 
 	// this is where we handle normal feature flags that are not related to OHIs
-	if ffArgs.Flag == FlagProtocolV4 || ffArgs.Flag == FlagFullProcess {
+	if ffArgs.Flag == FlagProtocolV4 || ffArgs.Flag == FlagFullProcess || ffArgs.Flag == FlagDMRegisterEnable {
 		h.setFFConfig(ffArgs.Flag, ffArgs.Enabled)
 		return
 	}
