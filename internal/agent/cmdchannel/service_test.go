@@ -52,36 +52,49 @@ func TestFFHandlerHandle_DisablesRegisterOnInitialFetch(t *testing.T) {
 
 func TestFFHandler_DMRegisterOnInitialFetch(t *testing.T) {
 	tests := []struct {
-		name   string
-		config config.Config
-		args   commandapi.FFArgs
-		want   bool
-	}{{
-		"Disabled if command api is disabled",
-		config.Config{RegisterEnabled: true},
-		commandapi.FFArgs{
-			Category: handler.FlagCategory,
-			Flag:     handler.FlagDMRegisterEnable,
-			Enabled:  false,
-		},
-		false,
-	},
+		name         string
+		feature      map[string]bool
+		commandValue bool
+		want         bool
+	}{
 		{
-			"Enabled if command api is Enabled",
-			config.Config{},
-			commandapi.FFArgs{
-				Category: handler.FlagCategory,
-				Flag:     handler.FlagDMRegisterEnable,
-				Enabled:  true,
-			},
-			true,
+			name:         "Enabled if in config is enabled",
+			feature:      map[string]bool{handler.FlagDMRegisterEnable: true},
+			commandValue: false,
+			want:         true,
+		},
+		{
+			name:         "Disabled if in config is disabled",
+			feature:      map[string]bool{handler.FlagDMRegisterEnable: false},
+			commandValue: false,
+			want:         false,
+		},
+		{
+			name:         "Disabled if is not present in config and is disabled in command api",
+			feature:      nil,
+			commandValue: false,
+			want:         false,
+		},
+		{
+			name:         "Enabled if is not present in config and is enabled in command api",
+			feature:      nil,
+			commandValue: true,
+			want:         true,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			handler.NewFFHandler(&tc.config, feature_flags.NewManager(nil)).Handle(tc.args, true)
-			assert.Equal(t, tc.want, tc.config.DMRegisterEnabled)
+			config := config.Config{Features: tc.feature}
+			commandArgs := commandapi.FFArgs{
+				Category: handler.FlagCategory,
+				Flag:     handler.FlagDMRegisterEnable,
+				Enabled:  tc.commandValue,
+			}
+			manager := feature_flags.NewManager(tc.feature)
+			handler.NewFFHandler(&config, manager).Handle(commandArgs, true)
+			enable, _ := manager.GetFeatureFlag(handler.FlagDMRegisterEnable)
+			assert.Equal(t, tc.want, enable)
 		})
 	}
 }

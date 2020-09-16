@@ -119,13 +119,8 @@ func (h *FFHandler) Handle(ffArgs commandapi.FFArgs, isInitialFetch bool) {
 		return
 	}
 
-	if ffArgs.Flag == FlagDMRegisterEnable {
-		handleDMRegister(ffArgs, h.cfg, isInitialFetch)
-		return
-	}
-
 	// this is where we handle normal feature flags that are not related to OHIs
-	if ffArgs.Flag == FlagProtocolV4 || ffArgs.Flag == FlagFullProcess {
+	if ffArgs.Flag == FlagProtocolV4 || ffArgs.Flag == FlagFullProcess || ffArgs.Flag == FlagDMRegisterEnable {
 		h.setFFConfig(ffArgs.Flag, ffArgs.Enabled)
 		return
 	}
@@ -225,23 +220,6 @@ func handleRegister(ffArgs commandapi.FFArgs, c *config.Config, isInitialFetch b
 		ffLogger.
 			WithError(err).
 			WithField("field", CfgYmlRegisterEnabled).
-			Warn("unable to update config value")
-	}
-}
-
-func handleDMRegister(ffArgs commandapi.FFArgs, c *config.Config, isInitialFetch bool) {
-	if ffArgs.Enabled == c.DMRegisterEnabled {
-		return
-	}
-
-	if !isInitialFetch {
-		os.Exit(api.ExitCodeRestart)
-	}
-
-	if err := c.SetBoolValueByYamlAttribute(CfgYmlDMRegisterEnable, ffArgs.Enabled); err != nil {
-		ffLogger.
-			WithError(err).
-			WithField("field", CfgYmlDMRegisterEnable).
 			Warn("unable to update config value")
 	}
 }
