@@ -237,6 +237,6 @@ func (n noopAgentContext) IDLookup() agent.IDLookup {
 	return n.lookUp
 }
 
-func (n noopAgentContext) AgentIdentity() entity.Identity {
+func (n noopAgentContext) Identity() entity.Identity {
 	return n.identity
 }
