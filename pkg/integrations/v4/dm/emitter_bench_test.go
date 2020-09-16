@@ -142,10 +142,8 @@ func benchmarkSend(b *testing.B, entityCount int) {
 	for i := 0; i < b.N; i++ {
 		// Then the emitter should send correctly five times
 		for count := 0; count < 5; count++ {
-			if err := dmEmitter.Send(integration.Definition{}, extraLabels, []data.EntityRewrite{}, d); err != nil {
-				b.Error(err)
-				b.FailNow()
-			}
+			dmEmitter.Send(integration.Definition{}, extraLabels, []data.EntityRewrite{}, d)
+			// todo: error handling
 			// todo: Trigger harvest
 		}
 	}

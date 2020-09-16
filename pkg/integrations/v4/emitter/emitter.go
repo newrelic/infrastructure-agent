@@ -70,7 +70,8 @@ func (e *Emittor) Emit(metadata integration.Definition, extraLabels data.Map, en
 			return err
 		}
 
-		return e.dmEmitter.Send(metadata, extraLabels, entityRewrite, pluginDataV4)
+		e.dmEmitter.Send(metadata, extraLabels, entityRewrite, pluginDataV4)
+		return nil
 	}
 
 	pluginDataV3, err := protocol.ParsePayload(integrationJSON, protocolVersion)

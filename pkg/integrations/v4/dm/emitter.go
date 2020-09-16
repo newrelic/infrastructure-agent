@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
@@ -46,7 +47,7 @@ type Emitter interface {
 		metadata integration.Definition,
 		extraLabels data.Map,
 		entityRewrite []data.EntityRewrite,
-		integrationData protocol.DataV4) error
+		integrationData protocol.DataV4)
 }
 
 func NewEmitter(
@@ -65,7 +66,16 @@ func (e *emitter) Send(
 	metadata integration.Definition,
 	extraLabels data.Map,
 	entityRewrite []data.EntityRewrite,
-	integrationData protocol.DataV4) error {
+	integrationData protocol.DataV4) {
+
+	agentShortName, err := e.agentContext.IDLookup().AgentShortEntityName()
+	if err != nil {
+		elog.
+			WithError(err).
+			WithField("integration", metadata.Name).
+			Errorf("cannot determine agent short name")
+		return
+	}
 
 	pluginId := metadata.PluginID(integrationData.Integration.Name)
 	plugin := agent.NewExternalPluginCommon(pluginId, e.agentContext, metadata.Name)
@@ -77,11 +87,6 @@ func (e *emitter) Send(
 	for i := range integrationData.DataSets {
 		entities = append(entities, integrationData.DataSets[i].Entity)
 		datasetsByEntityName[integrationData.DataSets[i].Entity.Name] = integrationData.DataSets[i]
-	}
-
-	agentShortName, err := e.agentContext.IDLookup().AgentShortEntityName()
-	if err != nil {
-		return wrapError(fmt.Errorf("error renaming entity: %s", err.Error()), len(integrationData.DataSets))
 	}
 
 	var emitErrs []error
@@ -126,7 +131,8 @@ func (e *emitter) Send(
 	}
 
 	if len(unregisteredEntitiesWithWait.entities) == 0 {
-		return composeEmitError(emitErrs, len(integrationData.DataSets))
+		// TODO error handling
+		return
 	}
 
 	unregisteredEntitiesWithWait.waitGroup.Wait()
@@ -143,7 +149,9 @@ func (e *emitter) Send(
 	}
 
 	if len(entitiesToReRegister) == 0 {
-		return composeEmitError(emitErrs, len(integrationData.DataSets))
+		// TODO error handling
+		elog.Error(composeEmitError(emitErrs, len(integrationData.DataSets)).Error())
+		return
 	}
 
 	registeredEntities, unregisteredEntitiesWithWait = e.RegisterEntities(entitiesToReRegister)
@@ -153,7 +161,9 @@ func (e *emitter) Send(
 	}
 
 	if len(unregisteredEntitiesWithWait.entities) == 0 {
-		return composeEmitError(emitErrs, len(integrationData.DataSets))
+		// TODO error handling
+		elog.Error(composeEmitError(emitErrs, len(integrationData.DataSets)).Error())
+		return
 	}
 
 	for i := range unregisteredEntitiesWithWait.entities {
@@ -162,7 +172,9 @@ func (e *emitter) Send(
 			unregisteredEntitiesWithWait.entities[i].Entity.Name, unregisteredEntitiesWithWait.entities[i].Err))
 	}
 
-	return composeEmitError(emitErrs, len(integrationData.DataSets))
+	// TODO error handling
+	elog.Error(composeEmitError(emitErrs, len(integrationData.DataSets)).Error())
+	return
 }
 
 func (e *emitter) RegisterEntities(entities []protocol.Entity) (registeredEntitiesNameToID, unregisteredEntityListWithWait) {
@@ -248,9 +260,4 @@ func composeEmitError(emitErrs []error, dataSetLenght int) error {
 		}
 	}
 	return errors.New(composedError[:len(composedError)-1])
-}
-
-func wrapError(err error, datasetLen int) error {
-	composedError := fmt.Sprintf("%d out of %d datasets could not be emitted. Reasons: %v", datasetLen, datasetLen, err)
-	return errors.New(composedError)
 }

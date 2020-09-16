@@ -359,10 +359,9 @@ func (m *mockDmEmitter) Send(
 	metadata integration.Definition,
 	extraLabels data.Map,
 	entityRewrite []data.EntityRewrite,
-	integrationData protocol.DataV4) error {
+	integrationData protocol.DataV4) {
 
-	args := m.Called(metadata, extraLabels, entityRewrite, integrationData)
-	return args.Error(0)
+	m.Called(metadata, extraLabels, entityRewrite, integrationData)
 }
 
 func TestLegacy_Emit(t *testing.T) {

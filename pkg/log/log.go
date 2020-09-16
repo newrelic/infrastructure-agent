@@ -74,6 +74,10 @@ func (e Entry) Error(msg string) {
 	}
 }
 
+func (e Entry) Errorf(format string, args ...interface{}) {
+	e.Error(fmt.Sprintf(format, args...))
+}
+
 func (e Entry) WithFields(f logrus.Fields) Entry {
 	return func() *logrus.Entry {
 		return e().WithFields(f)
