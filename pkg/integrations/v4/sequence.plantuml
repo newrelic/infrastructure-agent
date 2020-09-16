@@ -35,7 +35,7 @@ box "pkg/integrations/v4"
 
         == Payload mgmt ==
 
-        note over "emitter/Emitter" #orange : not only v4
+        note over "emitter/Emitter" #white : not only v4
 
         "runner.handleLines" -> "emitter/Emitter" : Emit (line)
         note left : from parent Group
@@ -86,9 +86,9 @@ box "pkg/integrations/v4"
         end
 
         "emitter/Emitter" <-- "dm/Emitter" : error
-        note right #green : deprecated
+        note right #red : remove
 
-        "runner.handleLines" <-- "emitter/Emitter" : error
+        "runner.handleLines" <[#red]-- "emitter/Emitter" : error
         note right #green : always nil for compatibility with v3
 
         note over "runner.handleLines" #red : heatBeat
