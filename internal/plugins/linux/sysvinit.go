@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -90,7 +91,7 @@ func (self *SysvInitPlugin) Run() {
 			}
 		}
 
-		self.EmitInventory(dataset, self.Context.AgentIdentifier())
+		self.EmitInventory(dataset, entity.NewFromNameWithoutID(self.Context.AgentIdentifier()))
 		self.Context.CacheServicePids(sysinfo.PROCESS_NAME_SOURCE_SYSVINIT, pidMap)
 	}
 }

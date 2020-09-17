@@ -43,7 +43,7 @@
         "name": "a.entity.name",
         "type": "ASample",
         "displayName": "A display name",
-        "tags": {
+        "metadata": {
           "env": "testing"
         }
       },

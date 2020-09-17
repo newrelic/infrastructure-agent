@@ -128,6 +128,9 @@ type AgentContext interface {
 	// HostnameResolver returns the host name resolver associated to the agent context
 	HostnameResolver() hostname.Resolver
 	IDLookup() IDLookup
+
+	// Identity returns the entity ID of the infra agent
+	Identity() entity.Identity
 }
 
 // context defines a bunch of agent data structures we make
@@ -159,7 +162,7 @@ func (c *context) AgentID() entity.ID {
 }
 
 // AgentIdentity provides agent ID & GUID, blocking until it's available
-func (c *context) AgentIdentity() entity.Identity {
+func (c *context) Identity() entity.Identity {
 	return c.id.AgentIdentity()
 }
 
@@ -287,7 +290,11 @@ func checkCollectorConnectivity(ctx context2.Context, cfg *config.Config, retrie
 }
 
 // NewAgent returns a new instance of an agent built from the config.
-func NewAgent(cfg *config.Config, buildVersion string, ffRetriever feature_flags.Retriever) (a *Agent, err error) {
+func NewAgent(
+	cfg *config.Config,
+	buildVersion string,
+	userAgent string,
+	ffRetriever feature_flags.Retriever) (a *Agent, err error) {
 
 	hostnameResolver := hostname.CreateResolver(
 		cfg.OverrideHostname, cfg.OverrideHostnameShort, cfg.DnsHostnameResolution)
@@ -320,8 +327,6 @@ func NewAgent(cfg *config.Config, buildVersion string, ffRetriever feature_flags
 
 	s := delta.NewStore(dataDir, ctx.AgentIdentifier(), maxInventorySize)
 
-	userAgent := GenerateUserAgent("New Relic Infrastructure Agent", buildVersion)
-
 	transport := backendhttp.BuildTransport(cfg, backendhttp.ClientTimeout)
 
 	httpClient := backendhttp.GetHttpClient(backendhttp.ClientTimeout, transport).Do
@@ -343,7 +348,7 @@ func NewAgent(cfg *config.Config, buildVersion string, ffRetriever feature_flags
 		return nil, err
 	}
 
-	registerClient, err := identityapi.NewIdentityRegisterClient(
+	registerClient, err := identityapi.NewRegisterClient(
 		identityURL,
 		cfg.License,
 		userAgent,
@@ -534,17 +539,21 @@ func NewIdLookup(resolver hostname.Resolver, cloudHarvester cloud.Harvester, dis
 }
 
 // Instantiates delta.Store as well as associated reapers and senders
-func (a *Agent) registerEntityInventory(entityKey string) error {
-	alog.WithField("entityKey", entityKey).Debug("Registering inventory for entity.")
+func (a *Agent) registerEntityInventory(entity entity.Entity) error {
+	entityKey := entity.Key.String()
+
+	alog.WithField("entityKey", entityKey).
+		WithField("entityID", entity.ID).Debug("Registering inventory for entity.")
 	var inv inventory
 
 	var err error
 	if a.Context.cfg.RegisterEnabled {
-		inv.sender, err = newPatchSenderVortex(entityKey, a.Context.getAgentKey(), a.Context, a.store, a.userAgent, a.Context.AgentIdentity, a.provideIDs, a.entityMap, a.httpClient)
+		inv.sender, err = newPatchSenderVortex(entityKey, a.Context.getAgentKey(), a.Context, a.store, a.userAgent, a.Context.Identity, a.provideIDs, a.entityMap, a.httpClient)
 	} else {
-		lastSubmission := delta.NewLastSubmissionStore(a.store.DataDir, entityKey)
-		lastEntityID := delta.NewEntityIDFilePersist(a.store.DataDir, entityKey)
-		inv.sender, err = newPatchSender(entityKey, a.Context, a.store, lastSubmission, lastEntityID, a.userAgent, a.Context.AgentIdentity, a.httpClient)
+		fileName := entity.Key.String()
+		lastSubmission := delta.NewLastSubmissionStore(a.store.DataDir, fileName)
+		lastEntityID := delta.NewEntityIDFilePersist(a.store.DataDir, fileName)
+		inv.sender, err = newPatchSender(entity, a.Context, a.store, lastSubmission, lastEntityID, a.userAgent, a.Context.Identity, a.httpClient)
 	}
 	if err != nil {
 		return err
@@ -647,7 +656,7 @@ DataLoop:
 	}
 
 	return a.store.SavePluginSource(
-		plugin.EntityKey,
+		plugin.Entity.Key.String(),
 		plugin.Id.Category,
 		plugin.Id.Term,
 		simplifiedPluginData,
@@ -804,7 +813,7 @@ func (a *Agent) Run() (err error) {
 	// This will make the agent submitting unsent deltas from a previous execution (e.g. if an inventory was reaped
 	// but the agent was restarted before sending it)
 	if _, ok := a.inventories[a.Context.AgentIdentifier()]; !ok {
-		_ = a.registerEntityInventory(a.Context.AgentIdentifier())
+		_ = a.registerEntityInventory(entity.NewFromNameWithoutID(a.Context.AgentIdentifier()))
 	}
 
 	exit := make(chan struct{})
@@ -866,15 +875,16 @@ func (a *Agent) Run() (err error) {
 					_ = a.updateIDLookupTable(data.Data)
 				}
 
-				if _, ok := a.inventories[data.EntityKey]; !ok {
-					_ = a.registerEntityInventory(data.EntityKey)
+				entityKey := data.Entity.Key.String()
+				if _, ok := a.inventories[entityKey]; !ok {
+					_ = a.registerEntityInventory(data.Entity)
 				}
 
 				if !data.NotApplicable {
 					if err := a.storePluginOutput(data); err != nil {
 						alog.WithError(err).Error("problem storing plugin output")
 					}
-					a.inventories[data.EntityKey].needsReaping = true
+					a.inventories[entityKey].needsReaping = true
 				}
 			}
 		case <-reapTimer.C:
@@ -1123,7 +1133,7 @@ func (a *Agent) connect() {
 
 	for range ticker.C {
 		alog.Debug("Performing connect update.")
-		identity, err := a.connectSrv.ConnectUpdate(a.Context.AgentIdentity())
+		identity, err := a.connectSrv.ConnectUpdate(a.Context.Identity())
 		if err != nil {
 			alog.WithError(err).Warn("error occurred while updating the system fingerprint")
 			continue

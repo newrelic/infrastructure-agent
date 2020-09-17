@@ -1,0 +1,80 @@
+@startuml
+
+actor main
+actor "pkg/integrations/v4/Manager"
+create "pkg/integrations/v4/Manager"
+main -> "pkg/integrations/v4/Manager": NewManager
+
+main ->> "pkg/integrations/v4/Manager": Start
+
+'create  "pkg/integrations/v4/emitter"
+
+box "internal/integrations/v4"
+
+loop groupContext
+
+    "pkg/integrations/v4/Manager" -> "groupContext" : start
+    note left: startRunnerGroup
+    "groupContext" -> Group : Run
+
+    loop Definition
+        Group ->> runner : Run
+
+        loop interval
+
+        note right: heartbeat stuff
+
+        create Definition
+        runner -> Definition : Run
+        runner <-- Definition : []IntegrationOutput, error
+
+        create "runner.handleLines"
+        runner ->> "runner.handleLines" : go
+
+end box
+
+        == Payload mgmt ==
+
+        "runner.handleLines" -> "pkg/integrations/v4/emitter/Emitter" : Emit (line)
+        note left: from parent Group
+
+        box "pkg/integrations/v4/dm"
+
+        "pkg/integrations/v4/emitter/Emitter" -> Emitter : if(v4) Send
+
+        activate Emitter
+
+        Emitter -> Emitter : ParsePayloadV4
+
+        actor idProviderInterface #red
+        Emitter -[#red]> idProviderInterface : RegisterEntities
+        Emitter <[#red]-- idProviderInterface : []registered, []unregistered
+
+        Emitter -> Emitter : replaceEntityName
+
+        Emitter -> "IntegrationProcessor" : ProcessMetrics
+        Emitter <-- "IntegrationProcessor" : [] v4/protocol.metric
+
+        Emitter -> MetricsSender : SendMetricsWithCommonAttributes
+
+        MetricsSender -> metricHarvester : RecordInfraMetrics
+        note over metricHarvester: telemetry SDK
+        MetricsSender <-- metricHarvester : error
+
+        Emitter <-- MetricsSender : error
+
+        Emitter -> Emitter : composeEmitError
+
+        deactivate Emitter
+
+        "pkg/integrations/v4/emitter/Emitter" <-- Emitter : error
+
+        end box
+
+        "runner.handleLines" <-- "pkg/integrations/v4/emitter/Emitter" : error
+    end
+
+end
+
+
+@enduml

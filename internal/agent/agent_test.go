@@ -7,6 +7,7 @@ import (
 	context2 "context"
 	"encoding/json"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -111,8 +112,8 @@ func TestIgnoreInventory(t *testing.T) {
 	}()
 
 	assert.NoError(t, a.storePluginOutput(PluginOutput{
-		Id:        ids.PluginID{"test", "plugin"},
-		EntityKey: "someEntity",
+		Id:     ids.PluginID{"test", "plugin"},
+		Entity: entity.NewFromNameWithoutID("someEntity"),
 		Data: PluginInventoryDataset{
 			&TestAgentData{"yum", "value1"},
 			&TestAgentData{"myService", "value2"},
@@ -315,7 +316,7 @@ func TestRemoveOutdatedEntities(t *testing.T) {
 
 	// With a set of registered entities
 	for _, id := range []string{"entity:1", "entity:2", "entity:3"} {
-		agent.registerEntityInventory(id)
+		agent.registerEntityInventory(entity.NewFromNameWithoutID(id))
 		assert.NoError(t, os.MkdirAll(filepath.Join(dataDir, aPlugin, helpers.SanitizeFileName(id)), 0755))
 		assert.NoError(t, os.MkdirAll(filepath.Join(dataDir, anotherPlugin, helpers.SanitizeFileName(id)), 0755))
 	}
@@ -407,7 +408,7 @@ func TestCheckConnectionRetry(t *testing.T) {
 	ffFetcher := test.NewFFRetrieverReturning(false, false)
 
 	// The agent should eventually connect
-	a, err := NewAgent(cnf, "testing-timeouts", ffFetcher)
+	a, err := NewAgent(cnf, "testing-timeouts", "userAgent", ffFetcher)
 	assert.NoError(t, err)
 	assert.NotNil(t, a)
 }
@@ -428,7 +429,7 @@ func TestCheckConnectionTimeout(t *testing.T) {
 	ffFetcher := test.NewFFRetrieverReturning(false, false)
 
 	// The agent stops reconnecting after retrying as configured
-	_, err := NewAgent(cnf, "testing-timeouts", ffFetcher)
+	_, err := NewAgent(cnf, "testing-timeouts", "userAgent", ffFetcher)
 	assert.Error(t, err)
 }
 
@@ -630,8 +631,8 @@ func TestStorePluginOutput(t *testing.T) {
 	bV := "bValue"
 	cV := "cValue"
 	err := a.storePluginOutput(PluginOutput{
-		Id:        ids.PluginID{"test", "plugin"},
-		EntityKey: "someEntity",
+		Id:     ids.PluginID{"test", "plugin"},
+		Entity: entity.NewFromNameWithoutID("someEntity"),
 		Data: PluginInventoryDataset{
 			&testAgentNullableData{"cMyService", &cV},
 			&testAgentNullableData{"aMyService", &aV},
@@ -710,9 +711,9 @@ func BenchmarkStorePluginOutput(b *testing.B) {
 			}
 
 			output := PluginOutput{
-				Id:        ids.PluginID{"test", "plugin"},
-				EntityKey: "someEntity",
-				Data:      dataset,
+				Id:     ids.PluginID{"test", "plugin"},
+				Entity: entity.NewFromNameWithoutID("someEntity"),
+				Data:   dataset,
 			}
 
 			b.ResetTimer()
@@ -733,7 +734,7 @@ func Test_ProcessSampling_FeatureFlagIsEnabled(t *testing.T) {
 	}{
 		evenType: "ProcessSample",
 	}
-	a, _ := NewAgent(cnf, "test", test.NewFFRetrieverReturning(true, true))
+	a, _ := NewAgent(cnf, "test", "userAgent", test.NewFFRetrieverReturning(true, true))
 
 	// when
 	actual := a.Context.shouldIncludeEvent(someSample)
@@ -812,7 +813,7 @@ func Test_ProcessSampling(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		a, _ := NewAgent(tc.c, "test", tc.ff)
+		a, _ := NewAgent(tc.c, "test", "userAgent", tc.ff)
 
 		t.Run(tc.name, func(t *testing.T) {
 			actual := a.Context.shouldIncludeEvent(someSample)

@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/newrelic-forks/newrelic-telemetry-sdk-go/telemetry"
 	"github.com/newrelic/infrastructure-agent/internal/agent/id"
+	telemetry "github.com/newrelic/infrastructure-agent/pkg/backend/telemetryapi"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/trace"
@@ -43,13 +43,13 @@ func newTelemetryErrorLogger(level string) io.Writer {
 	return &telemetryErrLogger{level: level}
 }
 
-func newTelemetryHarverster(conf MetricsSenderConfig, transport http.RoundTripper, idnProvide id.Provide) (*telemetry.Harvester, error) {
+func newTelemetryHarverster(conf MetricsSenderConfig, transport http.RoundTripper, idProvide id.Provide) (*telemetry.Harvester, error) {
 	return telemetry.NewHarvester(
 		telemetry.ConfigAPIKey(conf.LicenseKey),
 		telemetry.ConfigBasicErrorLogger(newTelemetryErrorLogger("error")),
 		telemetry.ConfigBasicDebugLogger(newTelemetryErrorLogger("debug")),
 		telemetry.ConfigBasicAuditLogger(newTelemetryErrorLogger("audit")),
-		telemetryHarvesterWithTransport(transport, conf.LicenseKey, idnProvide),
+		telemetryHarvesterWithTransport(transport, conf.LicenseKey, idProvide),
 		telemetryHarvesterWithMetricApiUrl(conf.MetricApiURL),
 		telemetry.ConfigHarvestPeriod(conf.SubmissionPeriod),
 	)

@@ -7,6 +7,7 @@ package harvest
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"os"
 	"regexp"
 	"strconv"
@@ -132,7 +133,7 @@ func TestHostInfo(t *testing.T) {
 			Category: "metadata",
 			Term:     "system",
 		},
-		EntityKey: agentIdentifier,
+		Entity: entity.NewFromNameWithoutID(agentIdentifier),
 		Data: agent.PluginInventoryDataset{
 			&pluginsLinux.HostinfoData{
 				System:          "system",

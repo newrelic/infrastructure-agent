@@ -5,8 +5,8 @@ go 1.14
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
 	github.com/Microsoft/go-winio v0.4.11
-	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
 	github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6
+	github.com/antihax/optional v1.0.0
 	github.com/aws/aws-sdk-go v1.25.14-0.20200515182354-0961961790e6
 	github.com/containerd/containerd v1.3.7 // indirect
 	github.com/coreos/go-systemd/v22 v22.1.0
@@ -17,7 +17,6 @@ require (
 	github.com/evanphx/json-patch v4.5.0+incompatible
 	github.com/fortytw2/leaktest v1.3.1-0.20190606143808-d73c753520d9
 	github.com/fsnotify/fsnotify v1.4.9
-	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-ole/go-ole v1.2.1 // indirect
 	github.com/gogo/protobuf v1.1.2-0.20181116123445-07eab6a8298c // indirect
 	github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9
@@ -29,7 +28,7 @@ require (
 	github.com/kolo/xmlrpc v0.0.0-20200310150728-e0350524596b
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
-	github.com/newrelic-forks/newrelic-telemetry-sdk-go v0.2.1-0.20200423081332-b6856fd89c75
+	github.com/newrelic/infra-identity-client-go v1.0.2
 	github.com/opencontainers/go-digest v1.0.0-rc1.0.20180430190053-c9281466c8b2 // indirect
 	github.com/opencontainers/image-spec v1.0.2-0.20181029102219-09950c5fb1bb // indirect
 	github.com/pkg/errors v0.9.1

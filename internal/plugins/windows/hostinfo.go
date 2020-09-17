@@ -7,6 +7,7 @@ package windows
 import (
 	"context"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"runtime"
 	"strconv"
 	"strings"
@@ -83,7 +84,7 @@ func (self *HostinfoPlugin) Data() agent.PluginInventoryDataset {
 func (self *HostinfoPlugin) Run() {
 	self.Context.AddReconnecting(self)
 	data := self.Data()
-	self.EmitInventory(data, self.Context.AgentIdentifier())
+	self.EmitInventory(data, entity.NewFromNameWithoutID(self.Context.AgentIdentifier()))
 }
 
 func getHostInfo() *host.InfoStat {

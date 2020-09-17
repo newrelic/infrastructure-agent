@@ -6,6 +6,7 @@ package linux
 
 import (
 	"bufio"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -144,7 +145,7 @@ func (up *UpstartPlugin) Run() {
 					refreshTimer.Stop()
 					refreshTimer = time.NewTicker(up.frequency)
 					up.getUpstartServiceStatus()
-					up.EmitInventory(up.getUpstartDataset(), up.Context.AgentIdentifier())
+					up.EmitInventory(up.getUpstartDataset(), entity.NewFromNameWithoutID(up.Context.AgentIdentifier()))
 					up.Context.CacheServicePids(sysinfo.PROCESS_NAME_SOURCE_UPSTART, up.getUpstartPidMap())
 				}
 			}

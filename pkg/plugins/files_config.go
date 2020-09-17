@@ -6,6 +6,7 @@ package plugins
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"io/ioutil"
 	"os"
 	"path"
@@ -277,7 +278,7 @@ func (self *ConfigFilePlugin) Run() {
 				if err != nil {
 					self.logger.WithError(err).Error("Fetching external data set")
 				}
-				self.EmitInventory(dataset, self.Context.AgentIdentifier())
+				self.EmitInventory(dataset, entity.NewFromNameWithoutID(self.Context.AgentIdentifier()))
 				flushNeeded = false
 
 				// re-add any files that may have been renamed in the last flush interval

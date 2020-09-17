@@ -4,6 +4,7 @@ package plugins
 
 import (
 	"github.com/newrelic/infrastructure-agent/internal/agent"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/newrelic/infrastructure-agent/pkg/trace"
 )
@@ -38,5 +39,5 @@ func (self *CustomAttrsPlugin) Run() {
 
 	trace.Attr("run, entity: %s, data: %+v", entityKey, self.customAttributes)
 
-	self.EmitInventory(data, entityKey)
+	self.EmitInventory(data, entity.NewFromNameWithoutID(entityKey))
 }

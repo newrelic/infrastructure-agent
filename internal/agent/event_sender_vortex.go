@@ -138,7 +138,7 @@ func newVortexEventSender(ctx *context, licenseKey, userAgent string, httpClient
 		sendBackoffMax:           config.MAX_BACKOFF,
 		maxMetricsBatchSizeBytes: maxMetricsBatchSizeBytes,
 		HttpClient:               httpClient,
-		agentIDProvide:           ctx.AgentIdentity,
+		agentIDProvide:           ctx.Identity,
 		provideIDs:               provideIDs,
 		localEntityMap:           localEntityMap,
 		registerWorkers:          cfg.RegisterConcurrency,

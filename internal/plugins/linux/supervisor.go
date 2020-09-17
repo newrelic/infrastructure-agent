@@ -6,6 +6,7 @@ package linux
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"net/http"
 	"strconv"
 	"strings"
@@ -141,7 +142,7 @@ func (self *SupervisorPlugin) Run() {
 			slog.WithError(err).Error("getting supervisord data")
 			continue
 		}
-		self.EmitInventory(data, self.Context.AgentIdentifier())
+		self.EmitInventory(data, entity.NewFromNameWithoutID(self.Context.AgentIdentifier()))
 		self.Context.CacheServicePids(sysinfo.PROCESS_NAME_SOURCE_SUPERVISOR, pidMap)
 	}
 }

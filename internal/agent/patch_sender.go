@@ -23,7 +23,7 @@ import (
 
 // patchSender collects the cached plugin deltas and submits them to the backend ingest service
 type patchSenderIngest struct {
-	entityKey        string
+	entityInfo       entity.Entity
 	store            delta.Storage
 	postDeltas       postDeltas
 	lastSubmission   delta.LastSubmissionStore
@@ -49,9 +49,9 @@ var timeNow = time.Now
 var pslog = log.WithComponent("PatchSender")
 
 // Reference to post delta function that can be stubbed for unit testing
-type postDeltas func(entityKeys []string, isAgent bool, deltas ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error)
+type postDeltas func(entityKeys []string, entityID entity.ID, isAgent bool, deltas ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error)
 
-func newPatchSender(entityKey string, context AgentContext, store delta.Storage, lastSubmission delta.LastSubmissionStore, lastEntityID delta.EntityIDPersist, userAgent string, agentIDProvide id.Provide, httpClient http2.Client) (patchSender, error) {
+func newPatchSender(entityInfo entity.Entity, context AgentContext, store delta.Storage, lastSubmission delta.LastSubmissionStore, lastEntityID delta.EntityIDPersist, userAgent string, agentIDProvide id.Provide, httpClient http2.Client) (patchSender, error) {
 	if store == nil {
 		return nil, fmt.Errorf("creating patch sender: delta store can't be nil")
 	}
@@ -82,7 +82,7 @@ func newPatchSender(entityKey string, context AgentContext, store delta.Storage,
 	resetIfOffline, err := time.ParseDuration(context.Config().OfflineTimeToReset)
 	if err != nil {
 		pslog.WithFields(logrus.Fields{
-			"entityKey":   entityKey,
+			"entityKey":   entityInfo.Key.String(),
 			"actualValue": context.Config().OfflineTimeToReset,
 		}).WithError(err).Warn("configuration property offline_time_to_reset has an invalid format. Setting to '24h'")
 
@@ -90,7 +90,7 @@ func newPatchSender(entityKey string, context AgentContext, store delta.Storage,
 	}
 
 	return &patchSenderIngest{
-		entityKey:        entityKey,
+		entityInfo:       entityInfo,
 		store:            store,
 		lastSubmission:   lastSubmission,
 		lastEntityID:     lastEntityID,
@@ -106,13 +106,14 @@ func newPatchSender(entityKey string, context AgentContext, store delta.Storage,
 }
 
 func (p *patchSenderIngest) Process() (err error) {
-	llog := pslog.WithField("entityKey", p.entityKey)
+	entityKey := p.entityInfo.Key.String()
+	llog := pslog.WithField("entityKey", entityKey)
 
 	now := timeNow()
 
 	// Note that caller will use a back-off on calling frequency
 	// based on receiving error codes from this function
-	deltas, err := p.store.ReadDeltas(p.entityKey)
+	deltas, err := p.store.ReadDeltas(entityKey)
 	if err != nil {
 		llog.WithError(err).Error("patch sender process reading deltas")
 		return
@@ -130,7 +131,7 @@ func (p *patchSenderIngest) Process() (err error) {
 			Info("Removing inventory cache")
 
 		// Removing the store for the entity would force the agent recreating a fresh Delta Store
-		if err := p.store.RemoveEntity(p.entityKey); err != nil {
+		if err := p.store.RemoveEntity(entityKey); err != nil {
 			llog.WithError(err).Warn("Could not remove inventory cache")
 		}
 
@@ -159,7 +160,7 @@ func (p *patchSenderIngest) Process() (err error) {
 	}
 
 	if p.compactEnabled {
-		if cerr := p.store.CompactStorage(p.entityKey, p.compactThreshold); cerr != nil {
+		if cerr := p.store.CompactStorage(entityKey, p.compactThreshold); cerr != nil {
 			llog.WithError(cerr).WithField("compactThreshold", p.compactThreshold).
 				Error("compaction error")
 		}
@@ -169,19 +170,15 @@ func (p *patchSenderIngest) Process() (err error) {
 }
 
 func (p *patchSenderIngest) sendAllDeltas(allDeltas []inventoryapi.RawDeltaBlock) error {
-	llog := pslog.WithField("entityKey", p.entityKey)
+	entityKey := p.entityInfo.Key.String()
+	llog := pslog.WithField("entityKey", entityKey)
 
-	// This variable means the entity these deltas represent is an agent
-	var areAgentDeltas bool
-	var entityKey string
 	// Empty entity Key belong to the Agent
-	if p.entityKey == "" {
-		areAgentDeltas = true
+	if entityKey == "" {
 		entityKey = p.context.AgentIdentifier()
-	} else {
-		areAgentDeltas = p.entityKey == p.context.AgentIdentifier()
-		entityKey = p.entityKey
 	}
+	// This variable means the entity these deltas represent is an agent
+	areAgentDeltas := entityKey == p.context.AgentIdentifier()
 
 	reset := false
 
@@ -209,7 +206,7 @@ func (p *patchSenderIngest) sendAllDeltas(allDeltas []inventoryapi.RawDeltaBlock
 
 		var postDeltaResults *inventoryapi.PostDeltaResponse
 		var err error
-		if postDeltaResults, err = p.postDeltas([]string{entityKey}, areAgentDeltas, deltas...); err != nil {
+		if postDeltaResults, err = p.postDeltas([]string{entityKey}, p.entityInfo.ID, areAgentDeltas, deltas...); err != nil {
 			llog.WithError(err).WithFields(logrus.Fields{
 				"areAgentDeltas":   areAgentDeltas,
 				"postDeltaResults": fmt.Sprintf("%+v", postDeltaResults),
@@ -217,7 +214,7 @@ func (p *patchSenderIngest) sendAllDeltas(allDeltas []inventoryapi.RawDeltaBlock
 			return err
 		}
 
-		if p.entityKey != "" {
+		if !p.entityInfo.Key.IsEmpty() {
 			if err = p.lastSubmission.UpdateTime(timeNow()); err != nil {
 				llog.WithError(err).Error("can't save submission time")
 			}
@@ -235,13 +232,15 @@ func (p *patchSenderIngest) sendAllDeltas(allDeltas []inventoryapi.RawDeltaBlock
 }
 
 func (p *patchSenderIngest) isLastSubmissionTimeExceeded(now time.Time) bool {
+	entityKey := p.entityInfo.Key.String()
+
 	// Empty entity keys will be attached to agent entityKey so no need to reset.
-	if p.entityKey == "" {
+	if entityKey == "" {
 		return false
 	}
 	lastConn, err := p.lastSubmission.Time()
 	if err != nil {
-		pslog.WithField("entityKey", p.entityKey).
+		pslog.WithField("entityKey", entityKey).
 			WithError(err).
 			Warn("failed when retrieve last submission time")
 	}
@@ -250,14 +249,16 @@ func (p *patchSenderIngest) isLastSubmissionTimeExceeded(now time.Time) bool {
 }
 
 func (p *patchSenderIngest) agentEntityIDChanged() bool {
+	entityKey := p.entityInfo.Key.String()
+
 	// Only check for entityID when is the agent sender.
-	if p.entityKey != p.context.AgentIdentifier() {
+	if entityKey != p.context.AgentIdentifier() {
 		return false
 	}
 
 	lastEntityID, err := p.lastEntityID.GetEntityID()
 	if err != nil {
-		pslog.WithField("entityKey", p.entityKey).
+		pslog.WithField("entityKey", entityKey).
 			WithError(err).
 			Warn("could not retrieve entityID")
 	}
@@ -267,7 +268,7 @@ func (p *patchSenderIngest) agentEntityIDChanged() bool {
 	if lastEntityID == entity.EmptyID {
 		err = p.lastEntityID.UpdateEntityID(currentAgentId)
 		if err != nil {
-			pslog.WithField("entityKey", p.entityKey).
+			pslog.WithField("entityKey", entityKey).
 				WithError(err).
 				Warn("could not save entityID")
 		}

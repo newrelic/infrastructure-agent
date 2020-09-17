@@ -5,8 +5,10 @@ package emitter
 import (
 	"errors"
 	"fmt"
+
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
@@ -18,13 +20,7 @@ import (
 )
 
 var (
-	// Errors
-
-	ProtocolV4NotEnabledErr = errors.New("integration protocol version 4 is not enabled")
-	NoContentToParseErr     = errors.New("no content to parse")
-
 	// internal
-
 	elog = log.WithComponent("integrations.emitter.Legacy")
 )
 
@@ -33,12 +29,19 @@ type Emitter interface {
 	Emit(metadata integration.Definition, ExtraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error
 }
 
-func NewIntegrationEmitter(a *agent.Agent, dmSender dm.MetricsSender, ffRetriever feature_flags.Retriever) Emitter {
+type Agent interface {
+	GetContext() agent.AgentContext
+}
+
+func NewIntegrationEmitter(
+	a Agent,
+	dmEmitter dm.Emitter,
+	ffRetriever feature_flags.Retriever) Emitter {
 	return &Legacy{
-		Context:             a.Context,
-		MetricsSender:       dmSender,
+		Context:             a.GetContext(),
 		ForceProtocolV2ToV3: true,
 		FFRetriever:         ffRetriever,
+		dmEmitter:           dmEmitter,
 	}
 }
 
@@ -46,9 +49,9 @@ func NewIntegrationEmitter(a *agent.Agent, dmSender dm.MetricsSender, ffRetrieve
 // integrations package from the whole agent complexities
 type Legacy struct {
 	Context             agent.AgentContext
-	MetricsSender       dm.MetricsSender
 	ForceProtocolV2ToV3 bool
 	FFRetriever         feature_flags.Retriever
+	dmEmitter           dm.Emitter
 }
 
 func (e *Legacy) Emit(metadata integration.Definition, extraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error {
@@ -64,13 +67,10 @@ func (e *Legacy) Emit(metadata integration.Definition, extraLabels data.Map, ent
 
 	// dimensional metrics
 	if protocolVersion == protocol.V4 {
-		pluginDataV4, err := ParsePayloadV4(integrationJSON, e.FFRetriever)
-		if err != nil {
-			elog.WithError(err).WithField("output", string(integrationJSON)).Warn("can't parse v4 integration output")
-			return err
+		if enabled, exists := e.FFRetriever.GetFeatureFlag(handler.FlagDMRegisterEnable); exists && enabled {
+			return e.dmEmitter.Send(metadata, extraLabels, entityRewrite, integrationJSON)
 		}
-
-		return e.EmitV4(metadata, extraLabels, entityRewrite, pluginDataV4)
+		return e.dmEmitter.SendWithoutRegister(metadata, extraLabels, entityRewrite, integrationJSON)
 	}
 
 	pluginDataV3, err := protocol.ParsePayload(integrationJSON, protocolVersion)

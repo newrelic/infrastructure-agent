@@ -435,7 +435,7 @@ func TestPatchSenderVortex_Process_Reset(t *testing.T) {
 }
 
 func newSender(t *testing.T, ctx *context, store *delta.Store, client http.Client) patchSender {
-	pSender, err := newPatchSenderVortex("entityKey", agentKey, ctx, store, "user-agent", ctx.AgentIdentity, NewProvideIDs(newIncrementalRegister(), state.NewRegisterSM()), entity.NewKnownIDs(), client)
+	pSender, err := newPatchSenderVortex("entityKey", agentKey, ctx, store, "user-agent", ctx.Identity, NewProvideIDs(newIncrementalRegister(), state.NewRegisterSM()), entity.NewKnownIDs(), client)
 	require.NoError(t, err)
 	return pSender
 }

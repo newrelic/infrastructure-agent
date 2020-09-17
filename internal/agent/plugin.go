@@ -73,13 +73,13 @@ func (pd PluginInventoryDataset) Less(i, j int) bool { return pd[i].SortKey() < 
 // to the delta store
 type PluginOutput struct {
 	Id            ids.PluginID
-	EntityKey     string
+	Entity        entity.Entity
 	Data          PluginInventoryDataset
 	NotApplicable bool
 }
 
-func NewPluginOutput(id ids.PluginID, entityKey string, data PluginInventoryDataset) PluginOutput {
-	return PluginOutput{Id: id, EntityKey: entityKey, Data: data}
+func NewPluginOutput(id ids.PluginID, entity entity.Entity, data PluginInventoryDataset) PluginOutput {
+	return PluginOutput{Id: id, Entity: entity, Data: data}
 }
 
 func NewNotApplicableOutput(id ids.PluginID) PluginOutput {
@@ -112,13 +112,13 @@ func (pc *PluginCommon) GetExternalPluginName() string {
 }
 
 type PluginEmitter interface {
-	EmitInventory(data PluginInventoryDataset, entityKey string)
+	EmitInventory(data PluginInventoryDataset, entity entity.Entity)
 	EmitEvent(eventData map[string]interface{}, entityKey entity.Key)
 }
 
 // EmitInventory sends data collected by the plugin to the agent
-func (pc *PluginCommon) EmitInventory(data PluginInventoryDataset, entityKey string) {
-	pc.Context.SendData(NewPluginOutput(pc.ID, entityKey, data))
+func (pc *PluginCommon) EmitInventory(data PluginInventoryDataset, entity entity.Entity) {
+	pc.Context.SendData(NewPluginOutput(pc.ID, entity, data))
 }
 
 func (pc *PluginCommon) EmitEvent(eventData map[string]interface{}, entityKey entity.Key) {

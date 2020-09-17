@@ -6,20 +6,18 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
-	"sync"
 	"testing"
 	"time"
 
-	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/stretchr/testify/assert"
-
-	"github.com/newrelic-forks/newrelic-telemetry-sdk-go/telemetry"
+	telemetry "github.com/newrelic/infrastructure-agent/pkg/backend/telemetryapi"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
 func Test_sender_SendMetrics(t *testing.T) {
@@ -58,7 +56,7 @@ func Test_sender_SendMetrics(t *testing.T) {
 			expectedMetrics: []telemetry.Metric{
 				telemetry.Gauge{
 					Name:       "GaugeMetric",
-					Value:      float64(1.45),
+					Value:      1.45,
 					Attributes: map[string]interface{}{"att_key": "att_value"},
 					Timestamp:  cannedDate,
 				},
@@ -84,7 +82,7 @@ func Test_sender_SendMetrics(t *testing.T) {
 			expectedMetrics: []telemetry.Metric{
 				telemetry.Count{
 					Name:       "CountMetric",
-					Value:      float64(1.45),
+					Value:      1.45,
 					Attributes: map[string]interface{}{"att_key": "att_value"},
 					Timestamp:  cannedDate,
 					Interval:   cannedDuration,
@@ -127,18 +125,23 @@ func Test_sender_SendMetrics(t *testing.T) {
 			s := &sender{
 				harvester: tt.fields.harvester,
 			}
-			s.SendMetrics(tt.args.metrics)
-			tt.fields.harvester.lock.RLock()
-			defer tt.fields.harvester.lock.RUnlock()
-			if len(tt.expectedMetrics) > 0 {
-				assert.NotEmpty(t, tt.fields.harvester.aggregatedMetrics)
-			} else {
-				assert.Empty(t, tt.fields.harvester.aggregatedMetrics)
+
+			expectedAttributes := telemetry.Attributes{
+				"one": 1,
+				"two": "two",
 			}
 
-			for i := range tt.expectedMetrics {
-				assert.Equal(t, tt.expectedMetrics[i], tt.fields.harvester.aggregatedMetrics[i])
-			}
+			tt.fields.harvester.On("RecordInfraMetrics", expectedAttributes, tt.expectedMetrics).Return(nil)
+			err := s.SendMetricsWithCommonAttributes(protocol.Common{
+				Timestamp: &cannedDateUnix,
+				Interval:  &cannedDurationInt,
+				Attributes: map[string]interface{}{
+					"one": 1,
+					"two": "two",
+				},
+			}, tt.args.metrics)
+			require.NoError(t, err)
+			tt.fields.harvester.AssertExpectations(t)
 		})
 	}
 }
@@ -150,11 +153,11 @@ func Test_sender_SenderMetric_cumulative_CountCalculator(t *testing.T) {
 	cannedDateUnix := cannedDate.Unix()
 
 	name := "CumulativeCountMetric"
-	val := float64(1.45)
+	val := 1.45
 	attributes := map[string]interface{}{"att_key": "att_value"}
 
 	otherMetricName := "OtherCumulativeCountMetric"
-	otherMetricValue := float64(1.22)
+	otherMetricValue := 1.22
 	otherMetricAttributes := map[string]interface{}{"other_metric_att_key": "att_value"}
 
 	metrics := []protocol.Metric{
@@ -197,19 +200,25 @@ func Test_sender_SenderMetric_cumulative_CountCalculator(t *testing.T) {
 
 	harvester := &mockHarvester{}
 	deltaCalculator := &mockDeltaCalculator{}
-	deltaCalculator.On("GetCumulativeCount", name, attributes, val, cannedDate).Return(expectedMetrics[0], true)
-	deltaCalculator.On("GetCumulativeCount", otherMetricName, otherMetricAttributes, otherMetricValue, cannedDate).Return(expectedMetrics[1], true)
+	deltaCalculator.On("CountMetric", name, attributes, val, cannedDate).Return(expectedMetrics[0], true)
+	deltaCalculator.On("CountMetric", otherMetricName, otherMetricAttributes, otherMetricValue, cannedDate).Return(expectedMetrics[1], true)
 
 	s := &sender{
 		harvester:  harvester,
 		calculator: Calculator{delta: deltaCalculator},
 	}
 
-	s.SendMetrics(metrics)
-
-	harvester.lock.RLock()
-	defer harvester.lock.RUnlock()
-	assert.ElementsMatch(t, expectedMetrics, harvester.aggregatedMetrics)
+	harvester.On("RecordInfraMetrics", mock.AnythingOfType("telemetryapi.Attributes"), expectedMetrics).Return(nil)
+	err := s.SendMetricsWithCommonAttributes(protocol.Common{
+		Timestamp: &cannedDateUnix,
+		Interval:  &cannedDurationInt,
+		Attributes: map[string]interface{}{
+			"one": 1,
+			"two": "two",
+		},
+	}, metrics)
+	require.NoError(t, err)
+	harvester.AssertExpectations(t)
 }
 
 func Test_sender_SendMetric_cumulative_count_invalid_metric(t *testing.T) {
@@ -235,18 +244,24 @@ func Test_sender_SendMetric_cumulative_count_invalid_metric(t *testing.T) {
 		}}
 	harvester := &mockHarvester{}
 	deltaCalculator := &mockDeltaCalculator{}
-	deltaCalculator.On("GetCumulativeCount", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(telemetry.Count{}, false)
+	deltaCalculator.On("CountMetric", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(telemetry.Count{}, false)
 
 	s := &sender{
 		harvester:  harvester,
 		calculator: Calculator{delta: deltaCalculator},
 	}
-	s.SendMetrics(metrics)
 
-	harvester.lock.RLock()
-	defer harvester.lock.RUnlock()
+	err := s.SendMetricsWithCommonAttributes(protocol.Common{
+		Timestamp: &cannedDateUnix,
+		Interval:  &cannedDurationInt,
+		Attributes: map[string]interface{}{
+			"one": 1,
+			"two": "two",
+		},
+	}, metrics)
+	require.NoError(t, err)
 
-	assert.Empty(t, harvester.aggregatedMetrics)
+	harvester.AssertNotCalled(t, "RecordInfraMetrics", mock.AnythingOfType("telemetryapi.Attributes"), mock.AnythingOfType("[]telemetry.Metric"))
 
 	// THEN one long entry found
 	require.NotEmpty(t, hook.Entries)
@@ -265,6 +280,8 @@ func Test_sender_SendMetric_cumulative_count_invalid_metric_value(t *testing.T) 
 
 	cannedDate := time.Date(1980, time.January, 12, 1, 2, 0, 0, time.Now().Location())
 	cannedDateUnix := cannedDate.Unix()
+	cannedDuration, _ := time.ParseDuration("1m17s")
+	cannedDurationInt := int64(cannedDuration.Seconds() * 1000)
 	harvester := &mockHarvester{}
 	deltaCalculator := &mockDeltaCalculator{}
 	s := &sender{
@@ -281,9 +298,17 @@ func Test_sender_SendMetric_cumulative_count_invalid_metric_value(t *testing.T) 
 			Value:     nil,
 		},
 	}
-	s.SendMetrics(metrics)
+	err := s.SendMetricsWithCommonAttributes(protocol.Common{
+		Timestamp: &cannedDateUnix,
+		Interval:  &cannedDurationInt,
+		Attributes: map[string]interface{}{
+			"one": 1,
+			"two": "two",
+		},
+	}, metrics)
+	require.NoError(t, err)
 
-	assert.Empty(t, harvester.aggregatedMetrics)
+	harvester.AssertNotCalled(t, "RecordInfraMetrics", mock.AnythingOfType("telemetryapi.Attributes"), mock.AnythingOfType("[]telemetry.Metric"))
 
 	// THEN one long entry found
 	require.NotEmpty(t, hook.Entries)
@@ -299,8 +324,10 @@ func Test_sender_SendMetric_cumulative_count_invalid_metric_value(t *testing.T) 
 func Test_sender_SendMetrics_cumulative_RateCalculator(t *testing.T) {
 	cannedDate := time.Date(1980, time.January, 12, 1, 2, 0, 0, time.Now().Location())
 	cannedDateUnix := cannedDate.Unix()
+	cannedDuration, _ := time.ParseDuration("1m27s")
+	cannedDurationInt := int64(cannedDuration.Seconds() * 1000)
 	attributes := map[string]interface{}{"att_key": "att_value"}
-	val := float64(2.45)
+	val := 2.45
 
 	tests := []struct {
 		name                 string
@@ -308,7 +335,7 @@ func Test_sender_SendMetrics_cumulative_RateCalculator(t *testing.T) {
 		metricType           protocol.MetricType
 	}{
 		{
-			name:                 "cumulativeRateMetric",
+			name:                 "CumulativeRateMetric",
 			rateCalculatorMethod: "GetCumulativeRate",
 			metricType:           protocol.MetricType("cumulative-rate"),
 		},
@@ -339,7 +366,7 @@ func Test_sender_SendMetrics_cumulative_RateCalculator(t *testing.T) {
 			expectedMetrics := []telemetry.Metric{
 				telemetry.Gauge{
 					Name:       tt.name,
-					Value:      float64(2.45),
+					Value:      2.45,
 					Attributes: map[string]interface{}{"att_key": "att_value"},
 					Timestamp:  cannedDate,
 				},
@@ -347,17 +374,20 @@ func Test_sender_SendMetrics_cumulative_RateCalculator(t *testing.T) {
 			// Set up mock
 			rateCalculator.On(tt.rateCalculatorMethod, tt.name, attributes, val, cannedDate).Return(expectedMetrics[0], true).Once()
 
-			s.SendMetrics(metrics)
+			harvester.On("RecordInfraMetrics", mock.AnythingOfType("telemetryapi.Attributes"), expectedMetrics).Return(nil)
 
-			harvester.lock.RLock()
-			defer harvester.lock.RUnlock()
+			err := s.SendMetricsWithCommonAttributes(protocol.Common{
+				Timestamp: &cannedDateUnix,
+				Interval:  &cannedDurationInt,
+				Attributes: map[string]interface{}{
+					"one": 1,
+					"two": "two",
+				},
+			}, metrics)
+			require.NoError(t, err)
 
 			rateCalculator.AssertExpectations(t)
-
-			require.NotEmpty(t, harvester.aggregatedMetrics)
-			for i := range expectedMetrics {
-				assert.Equal(t, expectedMetrics[i], harvester.aggregatedMetrics[i])
-			}
+			harvester.AssertExpectations(t)
 		})
 	}
 }
@@ -365,8 +395,10 @@ func Test_sender_SendMetrics_cumulative_RateCalculator(t *testing.T) {
 func Test_sender_SendMetric_rate_cumulative_invalid_metric(t *testing.T) {
 	cannedDate := time.Date(1980, time.January, 12, 1, 2, 0, 0, time.Now().Location())
 	cannedDateUnix := cannedDate.Unix()
+	cannedDuration, _ := time.ParseDuration("1m37s")
+	cannedDurationInt := int64(cannedDuration.Seconds() * 1000)
 	attributes := map[string]interface{}{"att_key": "att_value"}
-	val := float64(2.45)
+	val := 2.45
 
 	log.SetOutput(ioutil.Discard)  // discard logs so not to break race tests
 	defer log.SetOutput(os.Stderr) // return back to default
@@ -411,7 +443,7 @@ func Test_sender_SendMetric_rate_cumulative_invalid_metric(t *testing.T) {
 			expectedMetrics := []telemetry.Metric{
 				telemetry.Gauge{
 					Name:       tt.name,
-					Value:      float64(2.45),
+					Value:      2.45,
 					Attributes: map[string]interface{}{"att_key": "att_value"},
 					Timestamp:  cannedDate,
 				},
@@ -419,14 +451,18 @@ func Test_sender_SendMetric_rate_cumulative_invalid_metric(t *testing.T) {
 			// Set up mock
 			rateCalculator.On(tt.rateCalculatorMethod, tt.name, attributes, val, cannedDate).Return(expectedMetrics[0], false).Once()
 
-			s.SendMetrics(metrics)
-
-			harvester.lock.RLock()
-			defer harvester.lock.RUnlock()
+			err := s.SendMetricsWithCommonAttributes(protocol.Common{
+				Timestamp: &cannedDateUnix,
+				Interval:  &cannedDurationInt,
+				Attributes: map[string]interface{}{
+					"one": 1,
+					"two": "two",
+				},
+			}, metrics)
+			require.NoError(t, err)
 
 			rateCalculator.AssertExpectations(t)
-
-			assert.Empty(t, harvester.aggregatedMetrics)
+			harvester.AssertNotCalled(t, "RecordInfraMetrics", mock.AnythingOfType("telemetryapi.Attributes"), mock.AnythingOfType("[]telemetry.Metric"))
 
 			// THEN one long entry found
 			require.NotEmpty(t, hook.Entries)
@@ -447,6 +483,8 @@ func Test_sender_SendMetric_rate_cumulative_invalid_metric_value(t *testing.T) {
 
 	cannedDate := time.Date(1980, time.January, 12, 1, 2, 0, 0, time.Now().Location())
 	cannedDateUnix := cannedDate.Unix()
+	cannedDuration, _ := time.ParseDuration("1m47s")
+	cannedDurationInt := int64(cannedDuration.Seconds() * 1000)
 	harvester := &mockHarvester{}
 	rateCalculator := &mockRateCalculator{}
 	s := &sender{
@@ -473,14 +511,23 @@ func Test_sender_SendMetric_rate_cumulative_invalid_metric_value(t *testing.T) {
 			metrics := []protocol.Metric{
 				{
 					Name:      tt.name,
-					Type:      protocol.MetricType(tt.metricType),
+					Type:      tt.metricType,
 					Timestamp: &cannedDateUnix,
 					Value:     nil,
 				},
 			}
-			s.SendMetrics(metrics)
 
-			assert.Empty(t, harvester.aggregatedMetrics)
+			harvester.On("RecordInfraMetrics", mock.AnythingOfType("telemetryapi.Attributes"), metrics).Return(nil)
+			err := s.SendMetricsWithCommonAttributes(protocol.Common{
+				Timestamp: &cannedDateUnix,
+				Interval:  &cannedDurationInt,
+				Attributes: map[string]interface{}{
+					"one": 1,
+					"two": "two",
+				},
+			}, metrics)
+			require.NoError(t, err)
+			harvester.AssertNotCalled(t, "RecordInfraMetrics", mock.AnythingOfType("telemetryapi.Attributes"), mock.AnythingOfType("protocol.Metric"))
 
 			// THEN one long entry found
 			require.NotEmpty(t, hook.Entries)
@@ -500,6 +547,11 @@ func TestSender_SendMetrics_invalid_metric_type(t *testing.T) {
 	hook := new(test.Hook)
 	log.AddHook(hook)
 
+	cannedDate := time.Date(1980, time.January, 12, 1, 2, 0, 0, time.Now().Location())
+	cannedDateUnix := cannedDate.Unix()
+	cannedDuration, _ := time.ParseDuration("1m47s")
+	cannedDurationInt := int64(cannedDuration.Seconds() * 1000)
+
 	harvester := &mockHarvester{}
 	rateCalculator := &mockRateCalculator{}
 	s := &sender{
@@ -511,9 +563,16 @@ func TestSender_SendMetrics_invalid_metric_type(t *testing.T) {
 		Type: "invalidType",
 	}
 
-	s.SendMetrics([]protocol.Metric{invalidMetric})
-
-	assert.Empty(t, harvester.aggregatedMetrics)
+	err := s.SendMetricsWithCommonAttributes(protocol.Common{
+		Timestamp: &cannedDateUnix,
+		Interval:  &cannedDurationInt,
+		Attributes: map[string]interface{}{
+			"one": 1,
+			"two": "two",
+		},
+	}, []protocol.Metric{invalidMetric})
+	require.NoError(t, err)
+	harvester.AssertNotCalled(t, "RecordInfraMetrics", mock.AnythingOfType("telemetryapi.Attributes"), mock.AnythingOfType("[]telemetry.Metrics"))
 
 	// THEN one long entry found
 	require.NotEmpty(t, hook.Entries)
@@ -524,14 +583,16 @@ func TestSender_SendMetrics_invalid_metric_type(t *testing.T) {
 }
 
 type mockHarvester struct {
-	lock              sync.RWMutex
-	aggregatedMetrics []telemetry.Metric
+	mock.Mock
 }
 
 func (m *mockHarvester) RecordMetric(metric telemetry.Metric) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-	m.aggregatedMetrics = append(m.aggregatedMetrics, metric)
+	m.Called(metric)
+}
+
+func (m *mockHarvester) RecordInfraMetrics(commonAttributes telemetry.Attributes, metrics []telemetry.Metric) error {
+	args := m.Called(commonAttributes, metrics)
+	return args.Error(0)
 }
 
 type mockRateCalculator struct {
@@ -558,11 +619,15 @@ func (m *mockRateCalculator) GetCumulativeRate(
 	return args.Get(0).(telemetry.Gauge), args.Bool(1)
 }
 
+func (m *mockRateCalculator) Clean() {
+	m.Called()
+}
+
 type mockDeltaCalculator struct {
 	mock.Mock
 }
 
-func (m *mockDeltaCalculator) GetCumulativeCount(
+func (m *mockDeltaCalculator) CountMetric(
 	name string,
 	attributes map[string]interface{},
 	val float64,

@@ -8,6 +8,12 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/id"
 )
 
+const (
+	agentEntityHeader    = "X-NRI-Agent-Entity-Id"
+	licenseKeyHeader     = "X-License-Key"
+	apiKeyHeaderToRemove = "Api-Key"
+)
+
 type roundTripper struct {
 	rt         http.RoundTripper
 	licenseKey string
@@ -27,11 +33,10 @@ func newTransport(agentTransport http.RoundTripper, licenseKey string, idProvide
 	}
 }
 
-func (t *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+func (t roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Use license key header rather than API key
-	req.Header.Del("Api-Key")
-	req.Header.Add("X-License-Key", t.licenseKey)
-	req.Header.Add("Infra-Agent-Entity-Id", t.idProvide().ID.String())
-
+	req.Header.Del(apiKeyHeaderToRemove)
+	req.Header.Add(licenseKeyHeader, t.licenseKey)
+	req.Header.Add(agentEntityHeader, t.idProvide().ID.String())
 	return t.rt.RoundTrip(req)
 }

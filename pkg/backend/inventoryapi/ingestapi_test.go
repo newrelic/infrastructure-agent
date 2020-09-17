@@ -111,47 +111,67 @@ func (*IngestAPISuite) TestEntityKeyIsAttached(c *C) {
 func (*IngestAPISuite) TestPostDeltasGoldenPath(c *C) {
 	client := setupMockedClient(202, []byte(`{}`))
 
-	msg, err := client.PostDeltas([]string{"MyKey", "OtherKey"}, true, &RawDelta{})
+	msg, err := client.PostDeltas([]string{"MyKey", "OtherKey"}, entity.EmptyID, true, &RawDelta{})
 
 	c.Assert(err, IsNil)
 	c.Assert(msg, IsNil)
 }
 
-func (*IngestAPISuite) TestPostDeltasGoldenPathGzip(c *C) {
-	accumulatedBatches := make(map[int][]byte)
-	// set up test server
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		c.Assert(r.Header.Get("Content-Encoding"), Equals, "gzip")
+func TestPostDeltasGoldenPathGzip(t *testing.T) {
+	testCases := map[string]struct {
+		isAgent  bool
+		entityID entity.ID
+		expected string
+	}{
+		"WithoutEntityID": {
+			isAgent:  true,
+			entityID: entity.EmptyID,
+			expected: `{"entityKeys":["MyKey","OtherKey"],"isAgent":true,"deltas":[{"source":"","id":0,"timestamp":0,"diff":null,"full_diff":false}]}`,
+		},
+		"WithEntityID": {
+			isAgent:  false,
+			entityID: entity.ID(1234),
+			expected: `{"entityId":1234,"entityKeys":["MyKey","OtherKey"],"isAgent":false,"deltas":[{"source":"","id":0,"timestamp":0,"diff":null,"full_diff":false}]}`,
+		},
+	}
 
-		gz, err := gzip.NewReader(r.Body)
-		c.Assert(err, IsNil)
-		data, err := ioutil.ReadAll(gz)
-		c.Assert(err, IsNil)
+	for testName, testCase := range testCases {
+		t.Run(testName, func(t *testing.T) {
+			accumulatedBatches := make(map[int][]byte)
+			// set up test server
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Header.Get("Content-Encoding"), "gzip")
 
-		accumulatedBatches[len(accumulatedBatches)] = data
+				gz, err := gzip.NewReader(r.Body)
+				assert.NoError(t, err)
+				data, err := ioutil.ReadAll(gz)
+				assert.NoError(t, err)
 
-		// Fake a successful receipt of the deltas
-		w.WriteHeader(202)
-		w.Write([]byte("{}"))
-	}))
-	defer ts.Close()
+				accumulatedBatches[len(accumulatedBatches)] = data
 
-	httpClient := backendhttp.GetHttpClient(1*time.Second, &http.Transport{})
+				// Fake a successful receipt of the deltas
+				w.WriteHeader(202)
+				w.Write([]byte("{}"))
+			}))
+			defer ts.Close()
 
-	// create real client using test server's URL (instead of mocked client)
-	client, _ := NewIngestClient(ts.URL, "abc", "useragent", 6, "", nil, false, httpClient.Do)
+			httpClient := backendhttp.GetHttpClient(1*time.Second, &http.Transport{})
+			client, _ := NewIngestClient(ts.URL, "abc", "useragent", 6, "", nil, false, httpClient.Do)
 
-	msg, err := client.PostDeltas([]string{"MyKey", "OtherKey"}, true, &RawDelta{})
-	c.Assert(err, IsNil)
-	c.Assert(msg, IsNil)
+			// create real client using test server's URL (instead of mocked client)
+			msg, err := client.PostDeltas([]string{"MyKey", "OtherKey"}, testCase.entityID, testCase.isAgent, &RawDelta{})
+			assert.NoError(t, err)
+			assert.Nil(t, msg)
 
-	c.Assert(strings.TrimSpace(string(accumulatedBatches[0])), Equals, `{"entityKeys":["MyKey","OtherKey"],"isAgent":true,"deltas":[{"source":"","id":0,"timestamp":0,"diff":null,"full_diff":false}]}`)
+			assert.Equal(t, strings.TrimSpace(string(accumulatedBatches[0])), testCase.expected)
+		})
+	}
 }
 
 func (*IngestAPISuite) TestPostDeltasGoldenPathWithDeltaStates(c *C) {
 	client := setupMockedClient(202, []byte(`{"payload": {"version": 0, "state_map": {"plugin/test": {"last_stored_id": 4, "send_next_id": 2 }}, "reset": "all"}}`))
 
-	pdr, err := client.PostDeltas([]string{"MyKey", "OtherKey"}, true, &RawDelta{})
+	pdr, err := client.PostDeltas([]string{"MyKey", "OtherKey"}, entity.EmptyID, true, &RawDelta{})
 
 	c.Assert(err, IsNil)
 	c.Assert(pdr, NotNil)
@@ -168,7 +188,7 @@ func (*IngestAPISuite) TestPostDeltasGoldenPathWithDeltaStates(c *C) {
 func (*IngestAPISuite) TestPostDeltasNon200(c *C) {
 	client := setupMockedClient(500, []byte(`bug`))
 
-	msg, err := client.PostDeltas([]string{"MyKey", "OtherKey"}, true, &RawDelta{})
+	msg, err := client.PostDeltas([]string{"MyKey", "OtherKey"}, entity.EmptyID, true, &RawDelta{})
 
 	c.Assert(err, ErrorMatches, ".*deltas were not accepted: 500.*bug")
 	c.Assert(msg, IsNil)
@@ -177,7 +197,7 @@ func (*IngestAPISuite) TestPostDeltasNon200(c *C) {
 func (*IngestAPISuite) TestPostDeltas429(c *C) {
 	client := setupMockedClient(429, []byte(`bug`))
 
-	msg, err := client.PostDeltas([]string{"MyKey", "OtherKey"}, true, &RawDelta{})
+	msg, err := client.PostDeltas([]string{"MyKey", "OtherKey"}, entity.EmptyID, true, &RawDelta{})
 
 	c.Assert(err, ErrorMatches, ".*deltas were not accepted: 429.*bug")
 	iie, ok := err.(*IngestError)
@@ -189,7 +209,7 @@ func (*IngestAPISuite) TestPostDeltas429(c *C) {
 func (*IngestAPISuite) TestPostDeltasEmptyReturnBody(c *C) {
 	client := setupMockedClient(202, []byte(``))
 
-	client.PostDeltas([]string{"MyKey", "OtherKey"}, true, &RawDelta{})
+	client.PostDeltas([]string{"MyKey", "OtherKey"}, entity.EmptyID, true, &RawDelta{})
 
 	// c.Assert(err, ErrorMatches, ".*Unable to parse.*unexpected end of JSON.*")
 	// c.Assert(msg, IsNil)
@@ -200,7 +220,7 @@ func (*IngestAPISuite) TestPostDeltasBadJSON(c *C) {
 	diff := make(map[string]interface{})
 	diff["Test}"] = func() bool { return false }
 
-	_, err := client.PostDeltas([]string{"MyKey", "OtherKey"}, true, &RawDelta{Diff: diff})
+	_, err := client.PostDeltas([]string{"MyKey", "OtherKey"}, entity.EmptyID, true, &RawDelta{Diff: diff})
 
 	c.Assert(err, ErrorMatches, ".*unsupported type.*")
 }
@@ -217,7 +237,7 @@ func (*IngestAPISuite) TestPostDeltasDoError(c *C) {
 		CompressionLevel: 0,
 	}
 
-	_, err := client.PostDeltas([]string{"MyKey", "OtherKey"}, true, &RawDelta{})
+	_, err := client.PostDeltas([]string{"MyKey", "OtherKey"}, entity.EmptyID, true, &RawDelta{})
 
 	c.Assert(err, ErrorMatches, ".*fail do.*")
 }
@@ -244,7 +264,7 @@ func (*IngestAPISuite) TestPostDeltasBadBody(c *C) {
 		CompressionLevel: 0,
 	}
 
-	_, err := client.PostDeltas([]string{"MyKey", "OtherKey"}, true, &RawDelta{})
+	_, err := client.PostDeltas([]string{"MyKey", "OtherKey"}, entity.EmptyID, true, &RawDelta{})
 
 	c.Assert(err, ErrorMatches, ".*bad read.*")
 }
@@ -348,7 +368,7 @@ func TestPostDeltas_EntityID(t *testing.T) {
 			// create real client using test server's URL (instead of mocked client)
 			client, _ := NewIngestClient(ts.URL, "abc", "useragent", 6, "", agentIDProvide, true, httpClient.Do)
 
-			msg, err := client.PostDeltas([]string{"MyKey", "OtherKey"}, testCase.isAgent, &RawDelta{})
+			msg, err := client.PostDeltas([]string{"MyKey", "OtherKey"}, entity.EmptyID, testCase.isAgent, &RawDelta{})
 			assert.NoError(t, err)
 			assert.Nil(t, msg)
 

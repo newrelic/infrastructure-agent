@@ -33,3 +33,4 @@ cmd/newrelic-infra/versioninfo.json
 /vendor
 !/vendor/modules.txt
 .envrc
+venv

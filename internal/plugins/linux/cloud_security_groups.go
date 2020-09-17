@@ -6,6 +6,7 @@ package linux
 
 import (
 	"errors"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"strings"
 	"time"
 
@@ -103,7 +104,7 @@ func (p *CloudSecurityGroupsPlugin) Run() {
 					csglog.WithError(err).Debug("Reading security groups.")
 					return
 				}
-				p.EmitInventory(dataset, p.Context.AgentIdentifier())
+				p.EmitInventory(dataset, entity.NewFromNameWithoutID(p.Context.AgentIdentifier()))
 			}
 		}
 	}
