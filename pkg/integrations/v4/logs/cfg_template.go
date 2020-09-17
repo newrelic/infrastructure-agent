@@ -17,8 +17,8 @@ var fbConfigFormat = `{{- range .Inputs }}
     {{- if .SkipLongLines }}
     Skip_Long_Lines {{ .SkipLongLines }}
     {{- end }}
-    {{- if .Path_Key }}
-    Path_Key {{ .Path_Key }}
+    {{- if .PathKey }}
+    Path_Key {{ .PathKey }}
     {{- end }}
     {{- if .Tag }}
     Tag  {{ .Tag }}

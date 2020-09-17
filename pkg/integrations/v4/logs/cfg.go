@@ -170,7 +170,7 @@ type FBCfgInput struct {
 	DB                    string
 	Path                  string // plugin: tail
 	BufferMaxSize         string // plugin: tail
-	Path_Key              string // plugin: tail
+	PathKey               string // plugin: tail
 	SkipLongLines         string // always on
 	Systemd_Filter        string // plugin: systemd
 	Channels              string // plugin: winlog
@@ -482,7 +482,7 @@ func newFBExternalConfig(l LogExternalFBCfg) FBCfgExternal {
 func newFileInput(filePath string, dbPath string, tag string, bufSize int) FBCfgInput {
 	return FBCfgInput{
 		Name:          fbInputTypeTail,
-		Path_Key:      "filePath",
+		PathKey:       "filePath",
 		Path:          filePath,
 		DB:            dbPath,
 		Tag:           tag,
