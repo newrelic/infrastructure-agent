@@ -11,6 +11,8 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	integration2 "github.com/newrelic/infrastructure-agent/test/fixture/integration"
 
+	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
+
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
@@ -359,6 +361,16 @@ func (m *mockDmEmitter) Send(
 	metadata integration.Definition,
 	extraLabels data.Map,
 	entityRewrite []data.EntityRewrite,
+	integrationData protocol.DataV4)  {
+
+	args := m.Called(metadata, extraLabels, entityRewrite, integrationJSON)
+	return args.Error(0)
+}
+
+func (m *mockDmEmitter) SendWithoutRegister(
+	metadata integration.Definition,
+	extraLabels data.Map,
+	entityRewrite []data.EntityRewrite,
 	integrationData protocol.DataV4) {
 
 	m.Called(metadata, extraLabels, entityRewrite, integrationData)
@@ -439,7 +451,7 @@ func TestLegacy_Emit(t *testing.T) {
 
 			em := &Emittor{
 				aCtx:        ma,
-				ffRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true}),
+				ffRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true, handler.FlagDMRegisterEnable: true}),
 				dmEmitter:   mockDME,
 			}
 
@@ -482,7 +494,7 @@ func TestProtocolV4_Emit(t *testing.T) {
 
 	em := &Emittor{
 		aCtx:        ma,
-		ffRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true}),
+		ffRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true, handler.FlagDMRegisterEnable: true}),
 		dmEmitter:   mockDME,
 	}
 
@@ -540,12 +552,38 @@ func TestProtocolV4_Emit_WithFFDisabled(t *testing.T) {
 
 	em := &Emittor{
 		aCtx:        ma,
-		ffRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: false}),
+		ffRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: false, handler.FlagDMRegisterEnable: true}),
 		dmEmitter:   mockDME,
 	}
 
 	err := em.Emit(metadata, extraLabels, entityRewrite, integrationJSON)
 	require.Error(t, err)
+}
+
+func TestProtocolV4_Emit_WithoutRegisteringEntities(t *testing.T) {
+	intDefinition := integration.Definition{
+		InventorySource: *ids.NewPluginID("cat", "term"),
+	}
+	extraLabels := data.Map{
+		"label.foo":                "bar",
+		"extraAnnotationAttribute": "annotated",
+	}
+	entityRewrite := []data.EntityRewrite{}
+	integrationJSON := []byte(integrationJsonV4Output)
+
+	dmEmitter := &mockDmEmitter{}
+	dmEmitter.On("SendWithoutRegister", intDefinition, extraLabels, entityRewrite, integrationJSON).Return(nil)
+
+	em := &Legacy{
+		Context:     mockAgent(),
+		FFRetriever: feature_flags.NewManager(map[string]bool{handler.FlagDMRegisterEnable: false}),
+		dmEmitter:   dmEmitter,
+	}
+
+	err := em.Emit(intDefinition, extraLabels, entityRewrite, integrationJSON)
+	require.NoError(t, err)
+
+	dmEmitter.AssertExpectations(t)
 }
 
 func mockAgent() *mocks.AgentContext {

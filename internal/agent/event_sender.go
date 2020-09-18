@@ -116,7 +116,7 @@ func newMetricsIngestSender(ctx *context, licenseKey, userAgent string, httpClie
 		sendBackoffMax:           config.MAX_BACKOFF,
 		maxMetricsBatchSizeBytes: maxMetricsBatchSizeBytes,
 		HttpClient:               httpClient,
-		agentIDProvide:           ctx.AgentIdentity,
+		agentIDProvide:           ctx.Identity,
 		connectEnabled:           connectEnabled,
 		getBackoffTimer:          time.NewTimer,
 		postCount:                0,

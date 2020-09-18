@@ -457,7 +457,7 @@ func (cc customContext) IDLookup() agent.IDLookup {
 	return idLookupTable
 }
 
-func (cc customContext) AgentIdentity() entity.Identity {
+func (cc customContext) Identity() entity.Identity {
 	return entity.EmptyIdentity
 }
 

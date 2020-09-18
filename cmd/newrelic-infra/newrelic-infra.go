@@ -283,7 +283,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		pluginSourceDirs,
 	)
 
-	idProvider := dm.NewCachedIDProvider(registerClient, agt.Context.AgentIdentity, agt.Context.Ctx)
+	idProvider := dm.NewCachedIDProvider(registerClient, agt.Context.Identity, agt.Context.Ctx)
 	dmEmitter := dm.NewEmitter(agt.GetContext(), dmSender, idProvider)
 	integrationEmitter := emitter.NewIntegrationEmittor(agt, dmEmitter, ffManager)
 	integrationManager := v4.NewManager(integrationCfg, integrationEmitter)
@@ -295,7 +295,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		FluentBitParsersPath: c.FluentBitParsersPath,
 	}
 	if fbIntCfg.IsLogForwarderAvailable() {
-		logCfgLoader := logs.NewFolderLoader(logFwCfg, agt.Context.AgentIdentity, agt.Context.HostnameResolver())
+		logCfgLoader := logs.NewFolderLoader(logFwCfg, agt.Context.Identity, agt.Context.HostnameResolver())
 		logSupervisor := v4.NewFBSupervisor(
 			fbIntCfg,
 			logCfgLoader,

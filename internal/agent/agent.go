@@ -129,8 +129,8 @@ type AgentContext interface {
 	HostnameResolver() hostname.Resolver
 	IDLookup() IDLookup
 
-	// AgentIdentity returns the entity ID of the infra agent
-	AgentIdentity() entity.Identity
+	// Identity returns the entity ID of the infra agent
+	Identity() entity.Identity
 }
 
 // context defines a bunch of agent data structures we make
@@ -162,7 +162,7 @@ func (c *context) AgentID() entity.ID {
 }
 
 // AgentIdentity provides agent ID & GUID, blocking until it's available
-func (c *context) AgentIdentity() entity.Identity {
+func (c *context) Identity() entity.Identity {
 	return c.id.AgentIdentity()
 }
 
@@ -548,12 +548,12 @@ func (a *Agent) registerEntityInventory(entity entity.Entity) error {
 
 	var err error
 	if a.Context.cfg.RegisterEnabled {
-		inv.sender, err = newPatchSenderVortex(entityKey, a.Context.getAgentKey(), a.Context, a.store, a.userAgent, a.Context.AgentIdentity, a.provideIDs, a.entityMap, a.httpClient)
+		inv.sender, err = newPatchSenderVortex(entityKey, a.Context.getAgentKey(), a.Context, a.store, a.userAgent, a.Context.Identity, a.provideIDs, a.entityMap, a.httpClient)
 	} else {
 		fileName := entity.Key.String()
 		lastSubmission := delta.NewLastSubmissionStore(a.store.DataDir, fileName)
 		lastEntityID := delta.NewEntityIDFilePersist(a.store.DataDir, fileName)
-		inv.sender, err = newPatchSender(entity, a.Context, a.store, lastSubmission, lastEntityID, a.userAgent, a.Context.AgentIdentity, a.httpClient)
+		inv.sender, err = newPatchSender(entity, a.Context, a.store, lastSubmission, lastEntityID, a.userAgent, a.Context.Identity, a.httpClient)
 	}
 	if err != nil {
 		return err
@@ -1133,7 +1133,7 @@ func (a *Agent) connect() {
 
 	for range ticker.C {
 		alog.Debug("Performing connect update.")
-		identity, err := a.connectSrv.ConnectUpdate(a.Context.AgentIdentity())
+		identity, err := a.connectSrv.ConnectUpdate(a.Context.Identity())
 		if err != nil {
 			alog.WithError(err).Warn("error occurred while updating the system fingerprint")
 			continue

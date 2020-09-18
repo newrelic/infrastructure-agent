@@ -5,8 +5,10 @@ package emitter
 import (
 	"errors"
 	"fmt"
+
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
@@ -70,7 +72,11 @@ func (e *Emittor) Emit(metadata integration.Definition, extraLabels data.Map, en
 			return err
 		}
 
-		e.dmEmitter.Send(metadata, extraLabels, entityRewrite, pluginDataV4)
+		if enabled, exists := e.FFRetriever.GetFeatureFlag(handler.FlagDMRegisterEnable); exists && enabled {
+			e.dmEmitter.Send(metadata, extraLabels, entityRewrite, pluginDataV4)
+		} else {
+			e.dmEmitter.SendWithoutRegister(metadata, extraLabels, entityRewrite, pluginDataV4)
+		}
 		return nil
 	}
 

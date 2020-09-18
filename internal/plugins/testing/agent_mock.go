@@ -29,7 +29,7 @@ func (m *MockAgent) HostnameResolver() hostname.Resolver {
 	return m.resolver
 }
 
-func (m *MockAgent) AgentIdentity() entity.Identity {
+func (m *MockAgent) Identity() entity.Identity {
 	return entity.Identity{
 		ID:   entity.ID(1337),
 		GUID: "VGhpcyBpcyBhIE1vY2tBZ2VudCB1c2VkIGZvciB0ZXN0aW5nIG9ubHk=",

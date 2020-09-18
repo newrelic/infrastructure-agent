@@ -59,7 +59,7 @@ func (_m *AgentContext) AgentIdentifier() string {
 }
 
 // AgentIdentity provides a mock function with given fields:
-func (_m *AgentContext) AgentIdentity() entity.Identity {
+func (_m *AgentContext) Identity() entity.Identity {
 	ret := _m.Called()
 
 	var r0 entity.Identity
