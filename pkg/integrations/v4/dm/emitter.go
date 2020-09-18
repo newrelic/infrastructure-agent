@@ -32,6 +32,15 @@ const (
 	nrEntityId = "nr.entity.id"
 )
 
+// DTO stores integration protocol v4 received data and required metadata to be processed before
+// submission.
+type DTO struct {
+	Metadata        integration.Definition
+	ExtraLabels     data.Map
+	EntityRewrite   []data.EntityRewrite
+	IntegrationData protocol.DataV4
+}
+
 type Agent interface {
 	GetContext() agent.AgentContext
 }
@@ -43,17 +52,20 @@ type emitter struct {
 }
 
 type Emitter interface {
-	Send(
-		metadata integration.Definition,
-		extraLabels data.Map,
-		entityRewrite []data.EntityRewrite,
-		integrationData protocol.DataV4)
+	Send(DTO)
+	SendWithoutRegister(DTO)
+}
 
-	SendWithoutRegister(
-		metadata integration.Definition,
-		extraLabels data.Map,
-		entityRewrite []data.EntityRewrite,
-		integrationData protocol.DataV4)
+func NewDTO(metadata integration.Definition,
+	extraLabels data.Map,
+	entityRewrite []data.EntityRewrite,
+	integrationData protocol.DataV4) DTO {
+	return DTO{
+		Metadata:        metadata,
+		ExtraLabels:     extraLabels,
+		EntityRewrite:   entityRewrite,
+		IntegrationData: integrationData,
+	}
 }
 
 func NewEmitter(
@@ -68,11 +80,11 @@ func NewEmitter(
 	}
 }
 
-func (e *emitter) SendWithoutRegister(
-	metadata integration.Definition,
-	extraLabels data.Map,
-	entityRewrite []data.EntityRewrite,
-	integrationData protocol.DataV4) {
+func (e *emitter) SendWithoutRegister(dto DTO) {
+	metadata := dto.Metadata
+	extraLabels := dto.ExtraLabels
+	entityRewrite := dto.EntityRewrite
+	integrationData := dto.IntegrationData
 
 	var emitErrs []error
 
@@ -165,11 +177,11 @@ func (e *emitter) SendWithoutRegister(
 	elog.Error(composeEmitError(emitErrs, len(integrationData.DataSets)).Error())
 }
 
-func (e *emitter) Send(
-	metadata integration.Definition,
-	extraLabels data.Map,
-	entityRewrite []data.EntityRewrite,
-	integrationData protocol.DataV4) {
+func (e *emitter) Send(dto DTO) {
+	metadata := dto.Metadata
+	extraLabels := dto.ExtraLabels
+	entityRewrite := dto.EntityRewrite
+	integrationData := dto.IntegrationData
 
 	agentShortName, err := e.agentContext.IDLookup().AgentShortEntityName()
 	if err != nil {

@@ -79,7 +79,7 @@ func TestEmitter_Send_ErrorOnHostname(t *testing.T) {
 	var extraLabels data.Map
 	var entityRewrite []data.EntityRewrite
 
-	emitter.Send(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4TwoEntities.ParsedV4)
+	emitter.Send(NewDTO(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4TwoEntities.ParsedV4))
 	// TODO error handling
 }
 
@@ -116,7 +116,7 @@ func TestEmitter_Send(t *testing.T) {
 	var extraLabels data.Map
 	var entityRewrite []data.EntityRewrite
 
-	emitter.Send(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4.ParsedV4)
+	emitter.Send(NewDTO(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4.ParsedV4))
 	// TODO error handling
 	idProvider.AssertExpectations(t)
 	dmSender.AssertExpectations(t)

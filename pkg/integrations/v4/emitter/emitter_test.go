@@ -3,7 +3,6 @@
 package emitter
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -356,23 +355,12 @@ type mockDmEmitter struct {
 	mock.Mock
 }
 
-func (m *mockDmEmitter) Send(
-	metadata integration.Definition,
-	extraLabels data.Map,
-	entityRewrite []data.EntityRewrite,
-	integrationData protocol.DataV4) {
-
-	m.Called(metadata, extraLabels, entityRewrite, integrationData)
-	return
+func (m *mockDmEmitter) Send(dto dm.DTO) {
+	m.Called(dto)
 }
 
-func (m *mockDmEmitter) SendWithoutRegister(
-	metadata integration.Definition,
-	extraLabels data.Map,
-	entityRewrite []data.EntityRewrite,
-	integrationData protocol.DataV4) {
-
-	m.Called(metadata, extraLabels, entityRewrite, integrationData)
+func (m *mockDmEmitter) SendWithoutRegister(dto dm.DTO) {
+	m.Called(dto)
 }
 
 func TestLegacy_Emit(t *testing.T) {
@@ -441,12 +429,7 @@ func TestLegacy_Emit(t *testing.T) {
 			entityRewrite := []data.EntityRewrite{}
 			ma := mockAgent()
 			mockDME := &mockDmEmitter{}
-			mockDME.On("Send",
-				tc.metadata,
-				extraLabels,
-				entityRewrite,
-				mock.Anything,
-			).Return(nil)
+			mockDME.On("Send", mock.Anything)
 
 			em := &Emittor{
 				aCtx:        ma,
@@ -484,12 +467,7 @@ func TestProtocolV4_Emit(t *testing.T) {
 	mockedMetricsSender := mockMetricSender()
 
 	mockDME := &mockDmEmitter{}
-	mockDME.On("Send",
-		metadata,
-		extraLabels,
-		entityRewrite,
-		mock.Anything,
-	).Return(nil)
+	mockDME.On("Send", mock.Anything)
 
 	em := &Emittor{
 		aCtx:        ma,
@@ -542,12 +520,12 @@ func TestProtocolV4_Emit_WithFFDisabled(t *testing.T) {
 
 	ma := mockAgent()
 	mockDME := &mockDmEmitter{}
-	mockDME.On("Send",
+	mockDME.On("Send", dm.NewDTO(
 		metadata,
 		extraLabels,
 		entityRewrite,
 		integration2.ProtocolV4.ParsedV4,
-	).Return(errors.New("something failed"))
+	))
 
 	em := &Emittor{
 		aCtx:        ma,
@@ -570,7 +548,12 @@ func TestProtocolV4_Emit_WithoutRegisteringEntities(t *testing.T) {
 	entityRewrite := []data.EntityRewrite{}
 
 	dmEmitter := &mockDmEmitter{}
-	dmEmitter.On("SendWithoutRegister", intDefinition, extraLabels, entityRewrite, integration2.ProtocolV4.ParsedV4).Return(nil)
+	dmEmitter.On("SendWithoutRegister", dm.NewDTO(
+		intDefinition,
+		extraLabels,
+		entityRewrite,
+		integration2.ProtocolV4.ParsedV4,
+	))
 
 	em := &Emittor{
 		aCtx:        mockAgent(),
