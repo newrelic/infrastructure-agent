@@ -361,7 +361,7 @@ func (m *mockDmEmitter) Send(
 	metadata integration.Definition,
 	extraLabels data.Map,
 	entityRewrite []data.EntityRewrite,
-	integrationData protocol.DataV4)  {
+	integrationData protocol.DataV4) {
 
 	args := m.Called(metadata, extraLabels, entityRewrite, integrationJSON)
 	return args.Error(0)
