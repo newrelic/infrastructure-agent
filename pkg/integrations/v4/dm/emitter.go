@@ -72,18 +72,8 @@ func (e *emitter) SendWithoutRegister(
 	metadata integration.Definition,
 	extraLabels data.Map,
 	entityRewrite []data.EntityRewrite,
-	integrationJSON []byte) error {
+	integrationData protocol.DataV4) {
 
-	pluginDataV4, err := ParsePayloadV4(integrationJSON, e.ffRetriever)
-	if err != nil {
-		elog.WithError(err).WithField("output", string(integrationJSON)).Warn("can't parse v4 integration output")
-		return err
-	}
-
-	return e.processWithoutRegister(metadata, extraLabels, entityRewrite, pluginDataV4)
-}
-
-func (e *emitter) processWithoutRegister(metadata integration.Definition, extraLabels data.Map, entityRewrite []data.EntityRewrite, integrationData protocol.DataV4) error {
 	var emitErrs []error
 
 	pluginId := metadata.PluginID(integrationData.Integration.Name)
@@ -171,7 +161,8 @@ func (e *emitter) processWithoutRegister(metadata integration.Definition, extraL
 		}
 	}
 
-	return composeEmitError(emitErrs, len(integrationData.DataSets))
+	// TODO error handling
+	elog.Error(composeEmitError(emitErrs, len(integrationData.DataSets)).Error())
 }
 
 func (e *emitter) Send(
