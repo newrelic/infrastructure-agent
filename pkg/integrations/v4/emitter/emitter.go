@@ -26,7 +26,7 @@ var (
 
 // Emitter forwards agent/integration payload to  parser & processors (entity ID decoration...)
 type Emitter interface {
-	Emit(metadata integration.Definition, ExtraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error
+	Emit(definition integration.Definition, ExtraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error
 }
 
 type Agent interface {
@@ -53,7 +53,7 @@ type Emittor struct {
 	dmEmitter           dm.Emitter
 }
 
-func (e *Emittor) Emit(metadata integration.Definition, extraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error {
+func (e *Emittor) Emit(definition integration.Definition, extraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error {
 	protocolVersion, err := protocol.VersionFromPayload(integrationJSON, e.forceProtocolV2ToV3)
 	if err != nil {
 		elog.
@@ -72,7 +72,7 @@ func (e *Emittor) Emit(metadata integration.Definition, extraLabels data.Map, en
 			return err
 		}
 
-		dto := dm.NewDTO(metadata, extraLabels, entityRewrite, pluginDataV4)
+		dto := dm.NewDTO(definition, extraLabels, entityRewrite, pluginDataV4)
 		if enabled, exists := e.ffRetriever.GetFeatureFlag(handler.FlagDMRegisterEnable); exists && enabled {
 			e.dmEmitter.Send(dto)
 		} else {
@@ -89,7 +89,7 @@ func (e *Emittor) Emit(metadata integration.Definition, extraLabels data.Map, en
 
 	dto := integration.DTOV3{
 		DTOMeta: integration.DTOMeta{
-			Definition:    metadata,
+			Definition:    definition,
 			ExtraLabels:   extraLabels,
 			EntityRewrite: entityRewrite,
 		},
