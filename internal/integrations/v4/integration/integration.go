@@ -31,8 +31,8 @@ const (
 
 var ilog = log.WithComponent("integrations.Definition")
 
-type IntegrationOutput struct {
-	Output        executor.OutputReceive
+type Output struct {
+	Receive       executor.OutputReceive
 	ExtraLabels   data.Map
 	EntityRewrite []data.EntityRewrite
 }

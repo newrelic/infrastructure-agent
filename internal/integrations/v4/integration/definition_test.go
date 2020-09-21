@@ -49,9 +49,9 @@ func TestExec(t *testing.T) {
 	require.Len(t, outs, 1)
 
 	// THEN returns normally, forwarding the Standard Output&error
-	assert.NoError(t, testhelp.ChannelErrClosed(outs[0].Output.Errors))
-	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[0].Output.Stdout))
-	assert.Equal(t, "error line", testhelp.ChannelRead(outs[0].Output.Stderr))
+	assert.NoError(t, testhelp.ChannelErrClosed(outs[0].Receive.Errors))
+	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[0].Receive.Stdout))
+	assert.Equal(t, "error line", testhelp.ChannelRead(outs[0].Receive.Stderr))
 }
 
 func TestExec_NoDiscovery(t *testing.T) {
@@ -102,22 +102,22 @@ func TestExec_Discovery(t *testing.T) {
 	require.Len(t, outs, 3)
 
 	// THEN the tasks are executed with the given configuration
-	assert.NoError(t, testhelp.ChannelErrClosed(outs[0].Output.Errors))
-	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[0].Output.Stdout))
-	assert.Equal(t, "error line", testhelp.ChannelRead(outs[0].Output.Stderr))
-	assert.Equal(t, "hello-world", testhelp.ChannelRead(outs[0].Output.Stdout))
+	assert.NoError(t, testhelp.ChannelErrClosed(outs[0].Receive.Errors))
+	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[0].Receive.Stdout))
+	assert.Equal(t, "error line", testhelp.ChannelRead(outs[0].Receive.Stderr))
+	assert.Equal(t, "hello-world", testhelp.ChannelRead(outs[0].Receive.Stdout))
 	assert.Equal(t, data.Map{"label.one": "one", "special": "true"}, outs[0].ExtraLabels)
 
-	assert.NoError(t, testhelp.ChannelErrClosed(outs[1].Output.Errors))
-	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[1].Output.Stdout))
-	assert.Equal(t, "error line", testhelp.ChannelRead(outs[1].Output.Stderr))
-	assert.Equal(t, "bye-people", testhelp.ChannelRead(outs[1].Output.Stdout))
+	assert.NoError(t, testhelp.ChannelErrClosed(outs[1].Receive.Errors))
+	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[1].Receive.Stdout))
+	assert.Equal(t, "error line", testhelp.ChannelRead(outs[1].Receive.Stderr))
+	assert.Equal(t, "bye-people", testhelp.ChannelRead(outs[1].Receive.Stdout))
 	assert.Equal(t, data.Map{"label.two": "two", "special": "false"}, outs[1].ExtraLabels)
 
-	assert.NoError(t, testhelp.ChannelErrClosed(outs[2].Output.Errors))
-	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[2].Output.Stdout))
-	assert.Equal(t, "error line", testhelp.ChannelRead(outs[2].Output.Stderr))
-	assert.Equal(t, "kon-nichiwa", testhelp.ChannelRead(outs[2].Output.Stdout))
+	assert.NoError(t, testhelp.ChannelErrClosed(outs[2].Receive.Errors))
+	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[2].Receive.Stdout))
+	assert.Equal(t, "error line", testhelp.ChannelRead(outs[2].Receive.Stderr))
+	assert.Equal(t, "kon-nichiwa", testhelp.ChannelRead(outs[2].Receive.Stdout))
 	assert.Equal(t, data.Map{"label.tree": "three", "other_tag": "true"}, outs[2].ExtraLabels)
 }
 
@@ -137,10 +137,10 @@ func TestExec_CmdSlice(t *testing.T) {
 	require.Len(t, outs, 1)
 
 	// THEN the tasks are executed with the given configuration
-	assert.NoError(t, testhelp.ChannelErrClosed(outs[0].Output.Errors))
-	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[0].Output.Stdout))
-	assert.Equal(t, "error line", testhelp.ChannelRead(outs[0].Output.Stderr))
-	assert.Equal(t, "-argument", testhelp.ChannelRead(outs[0].Output.Stdout))
+	assert.NoError(t, testhelp.ChannelErrClosed(outs[0].Receive.Errors))
+	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[0].Receive.Stdout))
+	assert.Equal(t, "error line", testhelp.ChannelRead(outs[0].Receive.Stderr))
+	assert.Equal(t, "-argument", testhelp.ChannelRead(outs[0].Receive.Stdout))
 }
 
 func TestExec_CancelPropagation(t *testing.T) {
@@ -166,8 +166,8 @@ func TestExec_CancelPropagation(t *testing.T) {
 
 	// WHEN the tasks are running
 	for _, out := range outs {
-		assert.Equal(t, "starting", testhelp.ChannelRead(out.Output.Stdout))
-		assert.Error(t, testhelp.ChannelErrClosedTimeout(out.Output.Errors, 100*time.Millisecond))
+		assert.Equal(t, "starting", testhelp.ChannelRead(out.Receive.Stdout))
+		assert.Error(t, testhelp.ChannelErrClosedTimeout(out.Receive.Errors, 100*time.Millisecond))
 	}
 
 	// AND they are cancelled
@@ -176,18 +176,18 @@ func TestExec_CancelPropagation(t *testing.T) {
 	// THEN all the subtasks have reported errors
 	var openCh bool
 	for _, out := range outs {
-		err := testhelp.ChannelErrClosed(out.Output.Errors)
+		err := testhelp.ChannelErrClosed(out.Receive.Errors)
 		assert.Error(t, err)
 		assert.NotEqual(t, err, testhelp.ErrChannelTimeout)
 
 		// AND channels are closed
-		_, openCh = <-out.Output.Stdout
+		_, openCh = <-out.Receive.Stdout
 		assert.False(t, openCh)
-		_, openCh = <-out.Output.Stderr
+		_, openCh = <-out.Receive.Stderr
 		assert.False(t, openCh)
 
 		// AND ctx has been canceled
-		_, openCh = <-out.Output.Done
+		_, openCh = <-out.Receive.Done
 		assert.False(t, openCh)
 	}
 }
@@ -214,18 +214,18 @@ func TestExec_CancelPropagationWithoutReads(t *testing.T) {
 	// THEN all the subtasks have reported errors
 	var openCh bool
 	for _, out := range outs {
-		err := testhelp.ChannelErrClosed(out.Output.Errors)
+		err := testhelp.ChannelErrClosed(out.Receive.Errors)
 		assert.Error(t, err)
 		assert.NotEqual(t, err, testhelp.ErrChannelTimeout)
 
 		// AND channels are closed
-		_, openCh = <-out.Output.Stdout
+		_, openCh = <-out.Receive.Stdout
 		assert.False(t, openCh)
-		_, openCh = <-out.Output.Stderr
+		_, openCh = <-out.Receive.Stderr
 		assert.False(t, openCh)
 
 		// AND ctx has been canceled
-		_, openCh = <-out.Output.Done
+		_, openCh = <-out.Receive.Done
 		assert.False(t, openCh)
 	}
 }
@@ -251,16 +251,16 @@ func TestExec_Cancel_Partial(t *testing.T) {
 	require.Len(t, outs, 2)
 
 	// WHEN the tasks are running
-	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[0].Output.Stdout))
-	assert.Equal(t, "starting", testhelp.ChannelRead(outs[1].Output.Stdout))
-	assert.Error(t, testhelp.ChannelErrClosedTimeout(outs[1].Output.Errors, 100*time.Millisecond))
+	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[0].Receive.Stdout))
+	assert.Equal(t, "starting", testhelp.ChannelRead(outs[1].Receive.Stdout))
+	assert.Error(t, testhelp.ChannelErrClosedTimeout(outs[1].Receive.Errors, 100*time.Millisecond))
 
 	// AND they are cancelled
 	cancel()
 
 	// THEN only the non-finished tasks have been cancelled
-	assert.NoError(t, testhelp.ChannelErrClosed(outs[0].Output.Errors))
-	assert.Error(t, testhelp.ChannelErrClosedTimeout(outs[1].Output.Errors, 100*time.Millisecond))
+	assert.NoError(t, testhelp.ChannelErrClosed(outs[0].Receive.Errors))
+	assert.Error(t, testhelp.ChannelErrClosedTimeout(outs[1].Receive.Errors, 100*time.Millisecond))
 }
 
 func TestExec_Directory(t *testing.T) {
@@ -293,9 +293,9 @@ func TestExec_Directory(t *testing.T) {
 	require.Len(t, outs, 1)
 
 	// THEN returns normally, forwarding the Standard Output&error
-	assert.NoError(t, testhelp.ChannelErrClosed(outs[0].Output.Errors))
-	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[0].Output.Stdout))
-	assert.Equal(t, "error line", testhelp.ChannelRead(outs[0].Output.Stderr))
+	assert.NoError(t, testhelp.ChannelErrClosed(outs[0].Receive.Errors))
+	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[0].Receive.Stdout))
+	assert.Equal(t, "error line", testhelp.ChannelRead(outs[0].Receive.Stderr))
 }
 
 func TestExec_RemoveExternalConfig(t *testing.T) {
@@ -339,7 +339,7 @@ func TestExec_RemoveExternalConfig(t *testing.T) {
 	timeout := time.After(10 * time.Second)
 	for _, out := range outputs {
 		select {
-		case <-out.Output.Done:
+		case <-out.Receive.Done:
 		case <-timeout:
 			require.FailNow(t, "timeout waiting for the integrations to finish")
 		}
