@@ -176,27 +176,6 @@ func TestNewFBConf(t *testing.T) {
 			},
 			Output: outputBlock,
 		}},
-		{"input win-eventlog + parser", LogsCfg{
-			{
-				Name:     "win-eventlog",
-				EventLog: "Application",
-				Pattern:  "something",
-			},
-		}, FBCfg{
-			Inputs: []FBCfgInput{
-				{
-					Name:     "winlog",
-					Tag:      "win-eventlog",
-					DB:       dbDbPath,
-					Channels: "Application",
-				},
-			},
-			Parsers: []FBCfgParser{
-				inputRecordModifier("winlog", "win-eventlog"),
-				parserEntityBlock,
-			},
-			Output: outputBlock,
-		}},
 		{"single file with attributes", LogsCfg{
 			{
 				Name: "one-file",
@@ -681,7 +660,7 @@ func TestNewFBConf(t *testing.T) {
 
 func TestFBConfigForWinlog(t *testing.T) {
 
-	nameTest := "input win-eventlog + eventId filtering"
+	nameTest := "input winlog + eventId filtering"
 	input := LogsCfg{
 		{
 			Name: "win-security",
