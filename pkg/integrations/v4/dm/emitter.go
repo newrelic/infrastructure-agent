@@ -32,61 +32,60 @@ const (
 	nrEntityId = "nr.entity.id"
 )
 
+// DTO stores integration protocol v4 received data and required metadata to be processed before
+// submission.
+type DTO struct {
+	Metadata        integration.Definition
+	ExtraLabels     data.Map
+	EntityRewrite   []data.EntityRewrite
+	IntegrationData protocol.DataV4
+}
+
 type Agent interface {
 	GetContext() agent.AgentContext
 }
 
 type emitter struct {
-	ffRetriever   feature_flags.Retriever
 	metricsSender MetricsSender
 	agentContext  agent.AgentContext
 	idProvider    idProviderInterface
 }
 
 type Emitter interface {
-	Send(
-		metadata integration.Definition,
-		extraLabels data.Map,
-		entityRewrite []data.EntityRewrite,
-		integrationJSON []byte) error
+	Send(DTO)
+	SendWithoutRegister(DTO)
+}
 
-	SendWithoutRegister(
-		metadata integration.Definition,
-		extraLabels data.Map,
-		entityRewrite []data.EntityRewrite,
-		integrationJSON []byte) error
+func NewDTO(metadata integration.Definition,
+	extraLabels data.Map,
+	entityRewrite []data.EntityRewrite,
+	integrationData protocol.DataV4) DTO {
+	return DTO{
+		Metadata:        metadata,
+		ExtraLabels:     extraLabels,
+		EntityRewrite:   entityRewrite,
+		IntegrationData: integrationData,
+	}
 }
 
 func NewEmitter(
 	agentContext agent.AgentContext,
 	dmSender MetricsSender,
-	ffRetriever feature_flags.Retriever,
 	idProvider idProviderInterface) Emitter {
 
 	return &emitter{
 		agentContext:  agentContext,
 		metricsSender: dmSender,
-		ffRetriever:   ffRetriever,
 		idProvider:    idProvider,
 	}
 }
 
-func (e *emitter) SendWithoutRegister(
-	metadata integration.Definition,
-	extraLabels data.Map,
-	entityRewrite []data.EntityRewrite,
-	integrationJSON []byte) error {
+func (e *emitter) SendWithoutRegister(dto DTO) {
+	metadata := dto.Metadata
+	extraLabels := dto.ExtraLabels
+	entityRewrite := dto.EntityRewrite
+	integrationData := dto.IntegrationData
 
-	pluginDataV4, err := ParsePayloadV4(integrationJSON, e.ffRetriever)
-	if err != nil {
-		elog.WithError(err).WithField("output", string(integrationJSON)).Warn("can't parse v4 integration output")
-		return err
-	}
-
-	return e.processWithoutRegister(metadata, extraLabels, entityRewrite, pluginDataV4)
-}
-
-func (e *emitter) processWithoutRegister(metadata integration.Definition, extraLabels data.Map, entityRewrite []data.EntityRewrite, integrationData protocol.DataV4) error {
 	var emitErrs []error
 
 	pluginId := metadata.PluginID(integrationData.Integration.Name)
@@ -174,90 +173,74 @@ func (e *emitter) processWithoutRegister(metadata integration.Definition, extraL
 		}
 	}
 
-	return composeEmitError(emitErrs, len(integrationData.DataSets))
+	// TODO error handling
+	elog.Error(composeEmitError(emitErrs, len(integrationData.DataSets)).Error())
 }
 
-func (e *emitter) Send(
-	metadata integration.Definition,
-	extraLabels data.Map,
-	entityRewrite []data.EntityRewrite,
-	integrationJSON []byte) error {
-
-	pluginDataV4, err := ParsePayloadV4(integrationJSON, e.ffRetriever)
-	if err != nil {
-		elog.WithError(err).WithField("output", string(integrationJSON)).Warn("can't parse v4 integration output")
-		return err
-	}
-
-	return e.process(metadata, extraLabels, entityRewrite, pluginDataV4)
-}
-
-func (e *emitter) process(
-	metadata integration.Definition,
-	extraLabels data.Map,
-	entityRewrite []data.EntityRewrite,
-	integrationData protocol.DataV4) (err error) {
-
-	pluginId := metadata.PluginID(integrationData.Integration.Name)
-	plugin := agent.NewExternalPluginCommon(pluginId, e.agentContext, metadata.Name)
-	labels, extraAnnotations := metadata.LabelsAndExtraAnnotations(extraLabels)
-
-	var entities []protocol.Entity
-	datasetsByEntityName := make(map[string]protocol.Dataset, len(integrationData.DataSets))
-	// Collect All entities
-	for i := range integrationData.DataSets {
-		entities = append(entities, integrationData.DataSets[i].Entity)
-		datasetsByEntityName[integrationData.DataSets[i].Entity.Name] = integrationData.DataSets[i]
-	}
-
+func (e *emitter) Send(dto DTO) {
 	agentShortName, err := e.agentContext.IDLookup().AgentShortEntityName()
 	if err != nil {
-		return wrapError(fmt.Errorf("error renaming entity: %s", err.Error()), len(integrationData.DataSets))
+		elog.
+			WithError(err).
+			WithField("integration", dto.Metadata.Name).
+			Errorf("cannot determine agent short name")
+		return
+	}
+
+	pluginId := dto.Metadata.PluginID(dto.IntegrationData.Integration.Name)
+	plugin := agent.NewExternalPluginCommon(pluginId, e.agentContext, dto.Metadata.Name)
+	labels, extraAnnotations := dto.Metadata.LabelsAndExtraAnnotations(dto.ExtraLabels)
+
+	var entities []protocol.Entity
+	datasetsByEntityName := make(map[string]protocol.Dataset, len(dto.IntegrationData.DataSets))
+	// Collect All entities
+	for _, ds := range dto.IntegrationData.DataSets {
+		entities = append(entities, ds.Entity)
+		datasetsByEntityName[ds.Entity.Name] = ds
 	}
 
 	var emitErrs []error
-	processEntityDataset := func(dataset protocol.Dataset, entityID entity.ID) {
-		// for dataset.Entity call emitV4DataSet function with entity ID
-
-		dataset.Common.Attributes[nrEntityId] = entityID.String()
-		replaceEntityName(dataset.Entity, entityRewrite, agentShortName)
-
-		emitInventory(
-			&plugin,
-			metadata,
-			integrationData.Integration,
-			entityID,
-			dataset,
-			labels,
-		)
-
-		emitEvent(
-			&plugin,
-			metadata,
-			dataset,
-			labels,
-		)
-
-		dmProcessor := IntegrationProcessor{
-			IntegrationInterval:         metadata.Interval,
-			IntegrationLabels:           labels,
-			IntegrationExtraAnnotations: extraAnnotations,
-		}
-
-		metrics := dmProcessor.ProcessMetrics(dataset.Metrics, dataset.Common, dataset.Entity)
-		if err := e.metricsSender.SendMetricsWithCommonAttributes(dataset.Common, metrics); err != nil {
-
-		}
-	}
-
 	registeredEntities, unregisteredEntitiesWithWait := e.RegisterEntities(entities)
 
 	for entityName, entityID := range registeredEntities {
-		processEntityDataset(datasetsByEntityName[entityName], entityID)
+		func(dataset protocol.Dataset, entityID entity.ID) {
+			// for dataset.Entity call emitV4DataSet function with entity ID
+
+			dataset.Common.Attributes[nrEntityId] = entityID.String()
+			replaceEntityName(dataset.Entity, dto.EntityRewrite, agentShortName)
+
+			emitInventory(
+				&plugin,
+				dto.Metadata,
+				dto.IntegrationData.Integration,
+				entityID,
+				dataset,
+				labels,
+			)
+
+			emitEvent(
+				&plugin,
+				dto.Metadata,
+				dataset,
+				labels,
+			)
+
+			dmProcessor := IntegrationProcessor{
+				IntegrationInterval:         dto.Metadata.Interval,
+				IntegrationLabels:           labels,
+				IntegrationExtraAnnotations: extraAnnotations,
+			}
+
+			metrics := dmProcessor.ProcessMetrics(dataset.Metrics, dataset.Common, dataset.Entity)
+			if err := e.metricsSender.SendMetricsWithCommonAttributes(dataset.Common, metrics); err != nil {
+				// TODO error handling
+			}
+		}(datasetsByEntityName[entityName], entityID)
 	}
 
 	if len(unregisteredEntitiesWithWait.entities) == 0 {
-		return composeEmitError(emitErrs, len(integrationData.DataSets))
+		// TODO error handling
+		return
 	}
 
 	unregisteredEntitiesWithWait.waitGroup.Wait()
@@ -274,26 +257,14 @@ func (e *emitter) process(
 	}
 
 	if len(entitiesToReRegister) == 0 {
-		return composeEmitError(emitErrs, len(integrationData.DataSets))
+		// TODO error handling
+		elog.Error(composeEmitError(emitErrs, len(dto.IntegrationData.DataSets)).Error())
+		return
 	}
 
-	registeredEntities, unregisteredEntitiesWithWait = e.RegisterEntities(entitiesToReRegister)
-
-	for entityName, entityID := range registeredEntities {
-		processEntityDataset(datasetsByEntityName[entityName], entityID)
-	}
-
-	if len(unregisteredEntitiesWithWait.entities) == 0 {
-		return composeEmitError(emitErrs, len(integrationData.DataSets))
-	}
-
-	for i := range unregisteredEntitiesWithWait.entities {
-		emitErrs = append(emitErrs, fmt.Errorf(
-			"entity with name '%s' was not registered in the backend, err '%v'",
-			unregisteredEntitiesWithWait.entities[i].Entity.Name, unregisteredEntitiesWithWait.entities[i].Err))
-	}
-
-	return composeEmitError(emitErrs, len(integrationData.DataSets))
+	// TODO error handling
+	elog.Error(composeEmitError(emitErrs, len(dto.IntegrationData.DataSets)).Error())
+	return
 }
 
 func (e *emitter) RegisterEntities(entities []protocol.Entity) (registeredEntitiesNameToID, unregisteredEntityListWithWait) {
@@ -379,9 +350,4 @@ func composeEmitError(emitErrs []error, dataSetLenght int) error {
 		}
 	}
 	return errors.New(composedError[:len(composedError)-1])
-}
-
-func wrapError(err error, datasetLen int) error {
-	composedError := fmt.Sprintf("%d out of %d datasets could not be emitted. Reasons: %v", datasetLen, datasetLen, err)
-	return errors.New(composedError)
 }
