@@ -84,16 +84,18 @@ func (d *Definition) LabelsAndExtraAnnotations(extraLabels data.Map) (map[string
 
 	return labels, extraAnnotations
 }
-func (d *Definition) Run(ctx context.Context, bind *databind.Values) ([]IntegrationOutput, error) {
+
+func (d *Definition) Run(ctx context.Context, bind *databind.Values) ([]Output, error) {
 	logger := elog.WithField("integration_name", d.Name)
 	logger.Debug("Running task.")
 	// no discovery data: execute a single instance
 	if bind == nil {
 		logger.Debug("Running single instance.")
-		return []IntegrationOutput{{Output: d.runnable.Execute(ctx)}}, nil
+		return []Output{{Receive: d.runnable.Execute(ctx)}}, nil
 	}
+
 	// apply discovered data to run multiple instances
-	var tasksOutput []IntegrationOutput
+	var tasksOutput []Output
 
 	// merges both runnable configuration and config template (if any) to avoid having different
 	// discoverable
@@ -115,6 +117,7 @@ func (d *Definition) Run(ctx context.Context, bind *databind.Values) ([]Integrat
 	if err != nil {
 		return nil, err
 	}
+
 	logger.Debug("Running through all discovery matches.")
 	for _, ir := range matches {
 		dc, ok := ir.Variables.(discoveredConfig)
@@ -162,7 +165,7 @@ func (d *Definition) Run(ctx context.Context, bind *databind.Values) ([]Integrat
 		if removeFile != nil {
 			go removeFile(taskOutput.Done)
 		}
-		tasksOutput = append(tasksOutput, IntegrationOutput{Output: taskOutput, ExtraLabels: ir.MetricAnnotations, EntityRewrite: ir.EntityRewrites})
+		tasksOutput = append(tasksOutput, Output{Receive: taskOutput, ExtraLabels: ir.MetricAnnotations, EntityRewrite: ir.EntityRewrites})
 	}
 	return tasksOutput, nil
 }
