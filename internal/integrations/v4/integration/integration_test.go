@@ -81,7 +81,7 @@ func TestConfigTemplate(t *testing.T) {
 			// AND the integration has correctly accepted the file templates with the discovery matches
 			expectedIPs := map[string]struct{}{"1.2.3.4": {}, "5.6.7.8": {}}
 			for _, out := range outputs {
-				line := testhelp.ChannelRead(out.Output.Stdout)
+				line := testhelp.ChannelRead(out.Receive.Stdout)
 				assert.Containsf(t, expectedIPs, line, "unexpected value: %v", line)
 				delete(expectedIPs, line)
 				assert.Len(t, out.ExtraLabels, 2)
@@ -146,7 +146,7 @@ func TestEmbeddedConfig_String(t *testing.T) {
 			// AND the integration has correctly accepted the file templates with the discovery matches
 			expectedIPs := map[string]struct{}{"1.2.3.4": {}, "5.6.7.8": {}}
 			for _, out := range outputs {
-				line := testhelp.ChannelRead(out.Output.Stdout)
+				line := testhelp.ChannelRead(out.Receive.Stdout)
 				assert.Containsf(t, expectedIPs, line, "unexpected value: %q", line)
 				delete(expectedIPs, line)
 			}
