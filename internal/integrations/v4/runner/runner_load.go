@@ -55,7 +55,7 @@ func LoadFrom(cfg config2.YAML, agentAndCCFeatures *Features) Loader {
 				return
 			}
 			var i integration.Definition
-			i, err = integration.New(cfgEntry, dr, passthroughEnv, template)
+			i, err = integration.NewDefinition(cfgEntry, dr, passthroughEnv, template)
 			if err != nil {
 				return
 			}

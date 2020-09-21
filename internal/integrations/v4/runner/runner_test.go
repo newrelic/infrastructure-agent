@@ -185,7 +185,7 @@ discovery:
 	require.NoError(t, err)
 
 	// GIVEN a grouprunner that runs an integration with discovery configurations
-	integr, err := integration.New(config2.ConfigEntry{
+	integr, err := integration.NewDefinition(config2.ConfigEntry{
 		Name: "timestamp",
 		Exec: testhelp.Command(fixtures.IntegrationScript, "${discovery.timestamp}"),
 	}, integration.InstancesLookup{}, []string{}, nil)
