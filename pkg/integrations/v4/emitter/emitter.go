@@ -87,40 +87,40 @@ func (e *Emittor) Emit(metadata integration.Definition, extraLabels data.Map, en
 		return err
 	}
 
-	return e.emitV3(metadata, extraLabels, entityRewrite, pluginDataV3, protocolVersion)
+	dto := integration.DTOV3{
+		DTOMeta: integration.DTOMeta{
+			Definition:    metadata,
+			ExtraLabels:   extraLabels,
+			EntityRewrite: entityRewrite,
+		},
+		Data: pluginDataV3,
+	}
+	return e.emitV3(dto, protocolVersion)
 }
 
-func (e *Emittor) emitV3(
-	metadata integration.Definition,
-	extraLabels data.Map,
-	entityRewrite []data.EntityRewrite,
-	pluginData protocol.PluginDataV3,
-	protocolVersion int) error {
+func (e *Emittor) emitV3(dto integration.DTOV3, protocolVersion int) error {
+	plugin := agent.NewExternalPluginCommon(dto.Definition.PluginID(dto.Data.Name), e.aCtx, dto.Definition.Name)
+	labels, extraAnnotations := dto.LabelsAndExtraAnnotations()
+
 	var emitErrs []error
-
-	pgId := metadata.PluginID(pluginData.Name)
-	plugin := agent.NewExternalPluginCommon(pgId, e.aCtx, metadata.Name)
-
-	labels, extraAnnotations := metadata.LabelsAndExtraAnnotations(extraLabels)
-
-	for _, dataset := range pluginData.DataSets {
+	for _, dataset := range dto.Data.DataSets {
 		err := legacy.EmitDataSet(
 			e.aCtx,
 			&plugin,
-			pluginData.Name,
-			pluginData.IntegrationVersion,
-			metadata.ExecutorConfig.User,
+			dto.Definition.Name,
+			dto.Data.IntegrationVersion,
+			dto.Definition.ExecutorConfig.User,
 			dataset,
 			extraAnnotations,
 			labels,
-			entityRewrite,
+			dto.EntityRewrite,
 			protocolVersion)
 		if err != nil {
 			emitErrs = append(emitErrs, err)
 		}
 	}
 
-	return composeEmitError(emitErrs, len(pluginData.DataSets))
+	return composeEmitError(emitErrs, len(dto.Data.DataSets))
 }
 
 // Returns a composed error which describes all the errors found during the emit process of each data set

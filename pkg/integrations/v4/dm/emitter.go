@@ -36,10 +36,8 @@ const (
 // DTO stores integration protocol v4 received data and required metadata to be processed before
 // submission.
 type DTO struct {
-	Metadata        integration.Definition
-	ExtraLabels     data.Map
-	EntityRewrite   []data.EntityRewrite
-	IntegrationData protocol.DataV4
+	integration.DTOMeta
+	Data protocol.DataV4
 }
 
 type Agent interface {
@@ -57,20 +55,22 @@ type Emitter interface {
 	SendWithoutRegister(DTO)
 }
 
-func NewDTO(metadata integration.Definition,
+func NewDTO(definition integration.Definition,
 	extraLabels data.Map,
 	entityRewrite []data.EntityRewrite,
 	integrationData protocol.DataV4) DTO {
 	return DTO{
-		Metadata:        metadata,
-		ExtraLabels:     extraLabels,
-		EntityRewrite:   entityRewrite,
-		IntegrationData: integrationData,
+		DTOMeta: integration.DTOMeta{
+			Definition:    definition,
+			ExtraLabels:   extraLabels,
+			EntityRewrite: entityRewrite,
+		},
+		Data: integrationData,
 	}
 }
 
 func (d DTO) PluginID() ids.PluginID {
-	return d.Metadata.PluginID(d.IntegrationData.Integration.Name)
+	return d.Definition.PluginID(d.Data.Integration.Name)
 }
 
 func NewEmitter(
@@ -86,16 +86,14 @@ func NewEmitter(
 }
 
 func (e *emitter) SendWithoutRegister(dto DTO) {
-	metadata := dto.Metadata
-	extraLabels := dto.ExtraLabels
 	entityRewrite := dto.EntityRewrite
-	integrationData := dto.IntegrationData
+	integrationData := dto.Data
 
 	var emitErrs []error
 
-	plugin := agent.NewExternalPluginCommon(dto.PluginID(), e.agentContext, metadata.Name)
+	plugin := agent.NewExternalPluginCommon(dto.PluginID(), e.agentContext, dto.Definition.Name)
 
-	labels, extraAnnotations := metadata.LabelsAndExtraAnnotations(extraLabels)
+	labels, extraAnnotations := dto.LabelsAndExtraAnnotations()
 
 	var err error
 
@@ -166,7 +164,7 @@ func (e *emitter) SendWithoutRegister(dto DTO) {
 			e.agentContext.IDLookup(),
 			e.metricsSender,
 			&plugin,
-			metadata,
+			dto.Definition,
 			integrationData.Integration,
 			dataset,
 			labels,
@@ -186,18 +184,18 @@ func (e *emitter) Send(dto DTO) {
 	if err != nil {
 		elog.
 			WithError(err).
-			WithField("integration", dto.Metadata.Name).
+			WithField("integration", dto.Definition.Name).
 			Errorf("cannot determine agent short name")
 		return
 	}
 
-	plugin := agent.NewExternalPluginCommon(dto.PluginID(), e.agentContext, dto.Metadata.Name)
-	labels, extraAnnotations := dto.Metadata.LabelsAndExtraAnnotations(dto.ExtraLabels)
+	plugin := agent.NewExternalPluginCommon(dto.PluginID(), e.agentContext, dto.Definition.Name)
+	labels, extraAnnotations := dto.LabelsAndExtraAnnotations()
 
 	var entities []protocol.Entity
-	datasetsByEntityName := make(map[string]protocol.Dataset, len(dto.IntegrationData.DataSets))
+	datasetsByEntityName := make(map[string]protocol.Dataset, len(dto.Data.DataSets))
 	// Collect All entities
-	for _, ds := range dto.IntegrationData.DataSets {
+	for _, ds := range dto.Data.DataSets {
 		entities = append(entities, ds.Entity)
 		datasetsByEntityName[ds.Entity.Name] = ds
 	}
@@ -214,8 +212,8 @@ func (e *emitter) Send(dto DTO) {
 
 			emitInventory(
 				&plugin,
-				dto.Metadata,
-				dto.IntegrationData.Integration,
+				dto.Definition,
+				dto.Data.Integration,
 				entityID,
 				dataset,
 				labels,
@@ -223,13 +221,13 @@ func (e *emitter) Send(dto DTO) {
 
 			emitEvent(
 				&plugin,
-				dto.Metadata,
+				dto.Definition,
 				dataset,
 				labels,
 			)
 
 			dmProcessor := IntegrationProcessor{
-				IntegrationInterval:         dto.Metadata.Interval,
+				IntegrationInterval:         dto.Definition.Interval,
 				IntegrationLabels:           labels,
 				IntegrationExtraAnnotations: extraAnnotations,
 			}
@@ -261,12 +259,12 @@ func (e *emitter) Send(dto DTO) {
 
 	if len(entitiesToReRegister) == 0 {
 		// TODO error handling
-		elog.Error(composeEmitError(emitErrs, len(dto.IntegrationData.DataSets)).Error())
+		elog.Error(composeEmitError(emitErrs, len(dto.Data.DataSets)).Error())
 		return
 	}
 
 	// TODO error handling
-	elog.Error(composeEmitError(emitErrs, len(dto.IntegrationData.DataSets)).Error())
+	elog.Error(composeEmitError(emitErrs, len(dto.Data.DataSets)).Error())
 	return
 }
 

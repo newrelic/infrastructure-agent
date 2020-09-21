@@ -6,14 +6,15 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"strings"
 	"time"
-
-	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/when"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
+	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/sirupsen/logrus"
@@ -37,6 +38,19 @@ type Output struct {
 	EntityRewrite []data.EntityRewrite
 }
 
+// DTOMeta stores integration required metadata for telemetry data to be processed before submission.
+type DTOMeta struct {
+	Definition    Definition
+	ExtraLabels   data.Map
+	EntityRewrite []data.EntityRewrite
+}
+
+// DTOV3 stores integration protocol v3 received data and required metadata to be processed.
+type DTOV3 struct {
+	DTOMeta
+	Data protocol.PluginDataV3
+}
+
 // InstancesLookup helps looking for integration executables that are not explicitly
 // defined as an "exec" command
 type InstancesLookup struct {
@@ -45,6 +59,25 @@ type InstancesLookup struct {
 	Legacy func(DefinitionCommandConfig) (Definition, error)
 	// ByName looks for the path of an executable only by the name of the integration
 	ByName func(name string) (string, error)
+}
+
+func (d *DTOMeta) LabelsAndExtraAnnotations() (map[string]string, map[string]string) {
+	labels := make(map[string]string, len(d.Definition.Labels)+len(d.ExtraLabels))
+	extraAnnotations := make(map[string]string, len(d.ExtraLabels))
+
+	for k, v := range d.Definition.Labels {
+		labels[k] = v
+	}
+
+	for k, v := range d.ExtraLabels {
+		if strings.HasPrefix(k, labelPrefix) {
+			labels[k[labelPrefixTrim:]] = v
+		} else {
+			extraAnnotations[k] = v
+		}
+	}
+
+	return labels, extraAnnotations
 }
 
 // NewDefinition creates Definition from ConfigEntry, config template, executables lookup and
