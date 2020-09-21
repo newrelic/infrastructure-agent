@@ -17,6 +17,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 )
 
 var (
@@ -68,6 +69,10 @@ func NewDTO(metadata integration.Definition,
 	}
 }
 
+func (d DTO) PluginID() ids.PluginID {
+	return d.Metadata.PluginID(d.IntegrationData.Integration.Name)
+}
+
 func NewEmitter(
 	agentContext agent.AgentContext,
 	dmSender MetricsSender,
@@ -88,8 +93,7 @@ func (e *emitter) SendWithoutRegister(dto DTO) {
 
 	var emitErrs []error
 
-	pluginId := metadata.PluginID(integrationData.Integration.Name)
-	plugin := agent.NewExternalPluginCommon(pluginId, e.agentContext, metadata.Name)
+	plugin := agent.NewExternalPluginCommon(dto.PluginID(), e.agentContext, metadata.Name)
 
 	labels, extraAnnotations := metadata.LabelsAndExtraAnnotations(extraLabels)
 
@@ -187,8 +191,7 @@ func (e *emitter) Send(dto DTO) {
 		return
 	}
 
-	pluginId := dto.Metadata.PluginID(dto.IntegrationData.Integration.Name)
-	plugin := agent.NewExternalPluginCommon(pluginId, e.agentContext, dto.Metadata.Name)
+	plugin := agent.NewExternalPluginCommon(dto.PluginID(), e.agentContext, dto.Metadata.Name)
 	labels, extraAnnotations := dto.Metadata.LabelsAndExtraAnnotations(dto.ExtraLabels)
 
 	var entities []protocol.Entity
