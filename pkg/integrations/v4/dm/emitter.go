@@ -17,7 +17,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
-	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 )
 
 var (
@@ -33,13 +32,6 @@ const (
 	nrEntityId = "nr.entity.id"
 )
 
-// FwRequest stores integration telemetry data & metadata required from protocol v4 to be processed
-// before it gets forwarded to NR telemetry SDK.
-type FwRequest struct {
-	integration.FwRequestMeta
-	Data protocol.DataV4
-}
-
 type Agent interface {
 	GetContext() agent.AgentContext
 }
@@ -52,24 +44,6 @@ type emitter struct {
 
 type Emitter interface {
 	Send(FwRequest)
-}
-
-func NewFwRequest(definition integration.Definition,
-	extraLabels data.Map,
-	entityRewrite []data.EntityRewrite,
-	integrationData protocol.DataV4) FwRequest {
-	return FwRequest{
-		FwRequestMeta: integration.FwRequestMeta{
-			Definition:    definition,
-			ExtraLabels:   extraLabels,
-			EntityRewrite: entityRewrite,
-		},
-		Data: integrationData,
-	}
-}
-
-func (d FwRequest) PluginID() ids.PluginID {
-	return d.Definition.PluginID(d.Data.Integration.Name)
 }
 
 func NewEmitter(
