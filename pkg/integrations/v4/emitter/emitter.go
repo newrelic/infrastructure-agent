@@ -72,7 +72,7 @@ func (e *Emittor) Emit(definition integration.Definition, extraLabels data.Map, 
 			return err
 		}
 
-		dto := dm.NewDTO(definition, extraLabels, entityRewrite, pluginDataV4)
+		dto := dm.NewFwRequest(definition, extraLabels, entityRewrite, pluginDataV4)
 		if enabled, exists := e.ffRetriever.GetFeatureFlag(handler.FlagDMRegisterEnable); exists && enabled {
 			e.dmEmitter.Send(dto)
 		} else {

@@ -55,7 +55,7 @@ type Emitter interface {
 	SendWithoutRegister(FwRequest)
 }
 
-func NewDTO(definition integration.Definition,
+func NewFwRequest(definition integration.Definition,
 	extraLabels data.Map,
 	entityRewrite []data.EntityRewrite,
 	integrationData protocol.DataV4) FwRequest {

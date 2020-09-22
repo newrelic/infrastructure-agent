@@ -520,7 +520,7 @@ func TestProtocolV4_Emit_WithFFDisabled(t *testing.T) {
 
 	ma := mockAgent()
 	mockDME := &mockDmEmitter{}
-	mockDME.On("Send", dm.NewDTO(
+	mockDME.On("Send", dm.NewFwRequest(
 		metadata,
 		extraLabels,
 		entityRewrite,
@@ -548,7 +548,7 @@ func TestProtocolV4_Emit_WithoutRegisteringEntities(t *testing.T) {
 	entityRewrite := []data.EntityRewrite{}
 
 	dmEmitter := &mockDmEmitter{}
-	dmEmitter.On("SendWithoutRegister", dm.NewDTO(
+	dmEmitter.On("SendWithoutRegister", dm.NewFwRequest(
 		intDefinition,
 		extraLabels,
 		entityRewrite,
