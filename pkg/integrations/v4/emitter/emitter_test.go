@@ -355,11 +355,11 @@ type mockDmEmitter struct {
 	mock.Mock
 }
 
-func (m *mockDmEmitter) Send(dto dm.DTO) {
+func (m *mockDmEmitter) Send(dto dm.FwRequest) {
 	m.Called(dto)
 }
 
-func (m *mockDmEmitter) SendWithoutRegister(dto dm.DTO) {
+func (m *mockDmEmitter) SendWithoutRegister(dto dm.FwRequest) {
 	m.Called(dto)
 }
 

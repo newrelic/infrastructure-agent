@@ -33,10 +33,10 @@ const (
 	nrEntityId = "nr.entity.id"
 )
 
-// DTO stores integration protocol v4 received data and required metadata to be processed before
-// submission.
-type DTO struct {
-	integration.DTOMeta
+// FwRequest stores integration protocol v4 required metadata for telemetry data to be processed
+// before it gets forwarded to NR telemetry SDK.
+type FwRequest struct {
+	integration.FwRequestMeta
 	Data protocol.DataV4
 }
 
@@ -51,16 +51,16 @@ type emitter struct {
 }
 
 type Emitter interface {
-	Send(DTO)
-	SendWithoutRegister(DTO)
+	Send(FwRequest)
+	SendWithoutRegister(FwRequest)
 }
 
 func NewDTO(definition integration.Definition,
 	extraLabels data.Map,
 	entityRewrite []data.EntityRewrite,
-	integrationData protocol.DataV4) DTO {
-	return DTO{
-		DTOMeta: integration.DTOMeta{
+	integrationData protocol.DataV4) FwRequest {
+	return FwRequest{
+		FwRequestMeta: integration.FwRequestMeta{
 			Definition:    definition,
 			ExtraLabels:   extraLabels,
 			EntityRewrite: entityRewrite,
@@ -69,7 +69,7 @@ func NewDTO(definition integration.Definition,
 	}
 }
 
-func (d DTO) PluginID() ids.PluginID {
+func (d FwRequest) PluginID() ids.PluginID {
 	return d.Definition.PluginID(d.Data.Integration.Name)
 }
 
@@ -85,7 +85,7 @@ func NewEmitter(
 	}
 }
 
-func (e *emitter) SendWithoutRegister(dto DTO) {
+func (e *emitter) SendWithoutRegister(dto FwRequest) {
 	entityRewrite := dto.EntityRewrite
 	integrationData := dto.Data
 
@@ -179,7 +179,7 @@ func (e *emitter) SendWithoutRegister(dto DTO) {
 	elog.Error(composeEmitError(emitErrs, len(integrationData.DataSets)).Error())
 }
 
-func (e *emitter) Send(dto DTO) {
+func (e *emitter) Send(dto FwRequest) {
 	agentShortName, err := e.agentContext.IDLookup().AgentShortEntityName()
 	if err != nil {
 		elog.

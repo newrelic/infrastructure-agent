@@ -38,16 +38,18 @@ type Output struct {
 	EntityRewrite []data.EntityRewrite
 }
 
-// DTOMeta stores integration required metadata for telemetry data to be processed before submission.
-type DTOMeta struct {
+// FwRequestMeta stores integration required metadata for telemetry data to be processed before it
+// gets forwarded to NR telemetry SDK.
+type FwRequestMeta struct {
 	Definition    Definition
 	ExtraLabels   data.Map
 	EntityRewrite []data.EntityRewrite
 }
 
-// DTOV3 stores integration protocol v3 received data and required metadata to be processed.
-type DTOV3 struct {
-	DTOMeta
+// FwRequestLegacy stores integration protocol v3 required metadata for telemetry data to be
+// processed before it gets forwarded to NR telemetry SDK.
+type FwRequestLegacy struct {
+	FwRequestMeta
 	Data protocol.PluginDataV3
 }
 
@@ -61,7 +63,7 @@ type InstancesLookup struct {
 	ByName func(name string) (string, error)
 }
 
-func (d *DTOMeta) LabelsAndExtraAnnotations() (map[string]string, map[string]string) {
+func (d *FwRequestMeta) LabelsAndExtraAnnotations() (map[string]string, map[string]string) {
 	labels := make(map[string]string, len(d.Definition.Labels)+len(d.ExtraLabels))
 	extraAnnotations := make(map[string]string, len(d.ExtraLabels))
 

@@ -87,8 +87,8 @@ func (e *Emittor) Emit(definition integration.Definition, extraLabels data.Map, 
 		return err
 	}
 
-	dto := integration.DTOV3{
-		DTOMeta: integration.DTOMeta{
+	dto := integration.FwRequestLegacy{
+		FwRequestMeta: integration.FwRequestMeta{
 			Definition:    definition,
 			ExtraLabels:   extraLabels,
 			EntityRewrite: entityRewrite,
@@ -98,7 +98,7 @@ func (e *Emittor) Emit(definition integration.Definition, extraLabels data.Map, 
 	return e.emitV3(dto, protocolVersion)
 }
 
-func (e *Emittor) emitV3(dto integration.DTOV3, protocolVersion int) error {
+func (e *Emittor) emitV3(dto integration.FwRequestLegacy, protocolVersion int) error {
 	plugin := agent.NewExternalPluginCommon(dto.Definition.PluginID(dto.Data.Name), e.aCtx, dto.Definition.Name)
 	labels, extraAnnotations := dto.LabelsAndExtraAnnotations()
 
