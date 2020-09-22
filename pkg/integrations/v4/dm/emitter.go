@@ -3,6 +3,7 @@
 package dm
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,6 +18,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/tevino/abool"
 )
 
 var (
@@ -29,7 +31,8 @@ var (
 )
 
 const (
-	nrEntityId = "nr.entity.id"
+	nrEntityId              = "nr.entity.id"
+	defaultRequestsQueueLen = 1000
 )
 
 type Agent interface {
@@ -37,6 +40,8 @@ type Agent interface {
 }
 
 type emitter struct {
+	reqsQueue     chan FwRequest
+	isProcessing  abool.AtomicBool
 	metricsSender MetricsSender
 	agentContext  agent.AgentContext
 	idProvider    idProviderInterface
@@ -52,13 +57,41 @@ func NewEmitter(
 	idProvider idProviderInterface) Emitter {
 
 	return &emitter{
+		reqsQueue:     make(chan FwRequest, defaultRequestsQueueLen),
 		agentContext:  agentContext,
 		metricsSender: dmSender,
 		idProvider:    idProvider,
 	}
 }
 
-func (e *emitter) Send(dto FwRequest) {
+// Send receives data forward requests and queues them while processing them on different goroutine.
+// Processor is automatically being lazy run at first data received.
+func (e *emitter) Send(req FwRequest) {
+	e.reqsQueue <- req
+	e.lazyLoadProcessor()
+}
+
+func (e *emitter) lazyLoadProcessor() {
+	if !e.isProcessing.IsNotSet() {
+		e.isProcessing.Set()
+		go e.runProcessor(e.agentContext.Context())
+	}
+}
+
+func (e *emitter) runProcessor(ctx context.Context) {
+	for {
+		select {
+		case _ = <-ctx.Done():
+			e.isProcessing.UnSet()
+			return
+
+		case req := <-e.reqsQueue:
+			e.process(req)
+		}
+	}
+}
+
+func (e *emitter) process(dto FwRequest) {
 	agentShortName, err := e.agentContext.IDLookup().AgentShortEntityName()
 	if err != nil {
 		elog.
