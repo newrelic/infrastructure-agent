@@ -106,6 +106,7 @@ var alog = log.WithComponent("Agent")
 
 // AgentContext defines the interfaces between plugins and the agent
 type AgentContext interface {
+	Context() context2.Context
 	SendData(PluginOutput)
 	SendEvent(event sample.Event, entityKey entity.Key)
 	Unregister(ids.PluginID)
@@ -154,6 +155,10 @@ type context struct {
 	EntityMap          entity.KnownIDs
 	idLookup           IDLookup
 	shouldIncludeEvent sampler.IncludeSampleMatchFn
+}
+
+func (c *context) Context() context2.Context {
+	return c.Ctx
 }
 
 // AgentID provides agent ID, blocking until it's available

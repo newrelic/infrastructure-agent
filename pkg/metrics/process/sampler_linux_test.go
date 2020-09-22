@@ -3,6 +3,7 @@
 package process
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -125,6 +126,10 @@ func BenchmarkProcessSampler_NoCache(b *testing.B) {
 type dummyAgentContext struct {
 	agent.AgentContext
 	cfg *config.Config
+}
+
+func (*dummyAgentContext) Context() context.Context {
+	return context.TODO()
 }
 
 func (*dummyAgentContext) ActiveEntitiesChannel() chan string {

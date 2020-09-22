@@ -4,6 +4,7 @@ package legacy
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -409,6 +410,10 @@ type customContext struct {
 	ch  chan agent.PluginOutput
 	ev  chan sample.Event
 	cfg *config.Config
+}
+
+func (cc customContext) Context() context.Context {
+	return context.TODO()
 }
 
 func (cc customContext) HostnameResolver() hostname.Resolver {

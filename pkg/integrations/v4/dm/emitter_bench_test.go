@@ -1,6 +1,7 @@
 package dm
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
@@ -164,6 +165,10 @@ func (s stubIDProviderInterface) ResolveEntities(entities []protocol.Entity) (re
 type noopAgentContext struct {
 	lookUp   agent.IDLookup
 	identity entity.Identity
+}
+
+func (n noopAgentContext) Context() context.Context {
+	return context.TODO()
 }
 
 func (n noopAgentContext) SendData(output agent.PluginOutput) {

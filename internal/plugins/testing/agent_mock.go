@@ -3,6 +3,7 @@
 package testing
 
 import (
+	"context"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
 	"time"
 
@@ -47,6 +48,10 @@ func NewMockAgent() *MockAgent {
 		entities: make(chan string, 1000),
 		resolver: hostname.CreateResolver("", "", true),
 	}
+}
+
+func (m *MockAgent) Context() context.Context {
+	return context.TODO()
 }
 
 func (m *MockAgent) ActiveEntitiesChannel() chan string {
