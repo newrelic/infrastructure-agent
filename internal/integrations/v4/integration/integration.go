@@ -63,6 +63,22 @@ type InstancesLookup struct {
 	ByName func(name string) (string, error)
 }
 
+func NewFwRequestLegacy(definition Definition,
+	extraLabels data.Map,
+	entityRewrite []data.EntityRewrite,
+	integrationData protocol.PluginDataV3,
+) FwRequestLegacy {
+
+	return FwRequestLegacy{
+		FwRequestMeta: FwRequestMeta{
+			Definition:    definition,
+			ExtraLabels:   extraLabels,
+			EntityRewrite: entityRewrite,
+		},
+		Data: integrationData,
+	}
+}
+
 func (d *FwRequestMeta) LabelsAndExtraAnnotations() (map[string]string, map[string]string) {
 	labels := make(map[string]string, len(d.Definition.Labels)+len(d.ExtraLabels))
 	extraAnnotations := make(map[string]string, len(d.ExtraLabels))

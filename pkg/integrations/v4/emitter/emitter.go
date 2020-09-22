@@ -8,7 +8,6 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 
-	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
@@ -72,12 +71,7 @@ func (e *Emittor) Emit(definition integration.Definition, extraLabels data.Map, 
 			return err
 		}
 
-		dto := dm.NewFwRequest(definition, extraLabels, entityRewrite, pluginDataV4)
-		if enabled, exists := e.ffRetriever.GetFeatureFlag(handler.FlagDMRegisterEnable); exists && enabled {
-			e.dmEmitter.Send(dto)
-		} else {
-			e.dmEmitter.SendWithoutRegister(dto)
-		}
+		e.dmEmitter.Send(dm.NewFwRequest(definition, extraLabels, entityRewrite, pluginDataV4))
 		return nil
 	}
 
@@ -87,15 +81,7 @@ func (e *Emittor) Emit(definition integration.Definition, extraLabels data.Map, 
 		return err
 	}
 
-	dto := integration.FwRequestLegacy{
-		FwRequestMeta: integration.FwRequestMeta{
-			Definition:    definition,
-			ExtraLabels:   extraLabels,
-			EntityRewrite: entityRewrite,
-		},
-		Data: pluginDataV3,
-	}
-	return e.emitV3(dto, protocolVersion)
+	return e.emitV3(integration.NewFwRequestLegacy(definition, extraLabels, entityRewrite, pluginDataV3), protocolVersion)
 }
 
 func (e *Emittor) emitV3(dto integration.FwRequestLegacy, protocolVersion int) error {

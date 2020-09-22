@@ -359,10 +359,6 @@ func (m *mockDmEmitter) Send(dto dm.FwRequest) {
 	m.Called(dto)
 }
 
-func (m *mockDmEmitter) SendWithoutRegister(dto dm.FwRequest) {
-	m.Called(dto)
-}
-
 func TestLegacy_Emit(t *testing.T) {
 	type testCase struct {
 		name                  string
@@ -548,7 +544,7 @@ func TestProtocolV4_Emit_WithoutRegisteringEntities(t *testing.T) {
 	entityRewrite := []data.EntityRewrite{}
 
 	dmEmitter := &mockDmEmitter{}
-	dmEmitter.On("SendWithoutRegister", dm.NewFwRequest(
+	dmEmitter.On("Send", dm.NewFwRequest(
 		intDefinition,
 		extraLabels,
 		entityRewrite,
