@@ -124,12 +124,12 @@ func (e *Emittor) emitV3(dto integration.DTOV3, protocolVersion int) error {
 }
 
 // Returns a composed error which describes all the errors found during the emit process of each data set
-func composeEmitError(emitErrs []error, dataSetLenght int) error {
+func composeEmitError(emitErrs []error, dataSetLength int) error {
 	if len(emitErrs) == 0 {
 		return nil
 	}
 
-	composedError := fmt.Sprintf("%d out of %d datasets could not be emitted. Reasons: ", len(emitErrs), dataSetLenght)
+	composedError := fmt.Sprintf("%d out of %d datasets could not be emitted. Reasons: ", len(emitErrs), dataSetLength)
 	messages := map[string]struct{}{}
 
 	for _, err := range emitErrs {
