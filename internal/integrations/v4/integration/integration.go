@@ -46,7 +46,7 @@ type FwRequestMeta struct {
 	EntityRewrite []data.EntityRewrite
 }
 
-// FwRequestLegacy stores integration protocol v3 required metadata for telemetry data to be
+// FwRequestLegacy stores integration telemetry data & metadata required from protocol v3 to be
 // processed before it gets forwarded to NR telemetry SDK.
 type FwRequestLegacy struct {
 	FwRequestMeta

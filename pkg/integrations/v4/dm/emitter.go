@@ -33,7 +33,7 @@ const (
 	nrEntityId = "nr.entity.id"
 )
 
-// FwRequest stores integration protocol v4 required metadata for telemetry data to be processed
+// FwRequest stores integration telemetry data & metadata required from protocol v4 to be processed
 // before it gets forwarded to NR telemetry SDK.
 type FwRequest struct {
 	integration.FwRequestMeta
