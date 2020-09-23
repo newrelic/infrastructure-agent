@@ -223,8 +223,8 @@ func emitEvent(
 }
 
 // Replace entity name by applying entity rewrites and replacing loopback
-func replaceEntityName(entity protocol.Entity, entityRewrite []data.EntityRewrite, agentShortName string) {
-	newName := legacy.ApplyEntityRewrite(entity.Name, entityRewrite)
+func replaceEntityName(entity protocol.Entity, entityRewrite data.EntityRewrites, agentShortName string) {
+	newName := entityRewrite.Apply(entity.Name)
 	newName = http.ReplaceLocalhost(newName, agentShortName)
 	entity.Name = newName
 }

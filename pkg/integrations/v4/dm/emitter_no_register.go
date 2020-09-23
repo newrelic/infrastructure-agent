@@ -45,13 +45,13 @@ func (e *nonRegisterEmitter) Send(dto FwRequest) {
 		dataSet protocol.Dataset,
 		labels map[string]string,
 		extraAnnotations map[string]string,
-		entityRewrite []data.EntityRewrite) error {
+		entityRewrite data.EntityRewrites) error {
 
 		logEntry := elog.WithField("action", "EmitV4DataSet")
 
-		replaceEntityNameWithoutRegister := func(entity protocol.Entity, entityRewrite []data.EntityRewrite, idLookup agent.IDLookup) error {
+		replaceEntityNameWithoutRegister := func(entity protocol.Entity, entityRewrite data.EntityRewrites, idLookup agent.IDLookup) error {
 			// Replace entity name by applying entity rewrites and replacing loopback
-			newName := legacy.ApplyEntityRewrite(entity.Name, entityRewrite)
+			newName := entityRewrite.Apply(entity.Name)
 
 			agentShortName, err := idLookup.AgentShortEntityName()
 			newName = http.ReplaceLocalhost(newName, agentShortName)

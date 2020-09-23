@@ -30,7 +30,7 @@ type FwRequestLegacy struct {
 type FwRequestMeta struct {
 	Definition    integration.Definition
 	ExtraLabels   data.Map
-	EntityRewrite []data.EntityRewrite
+	EntityRewrite data.EntityRewrites
 }
 
 func NewFwRequest(definition integration.Definition,
