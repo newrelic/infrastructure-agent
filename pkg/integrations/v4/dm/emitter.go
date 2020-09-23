@@ -72,7 +72,7 @@ func (e *emitter) Send(req FwRequest) {
 }
 
 func (e *emitter) lazyLoadProcessor() {
-	if !e.isProcessing.IsNotSet() {
+	if e.isProcessing.IsNotSet() {
 		e.isProcessing.Set()
 		go e.runProcessor(e.agentContext.Context())
 	}
