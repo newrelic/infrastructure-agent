@@ -117,16 +117,15 @@ func TestEmitter_Send(t *testing.T) {
 	var entityRewrite []data.EntityRewrite
 
 	req := NewFwRequest(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4.ParsedV4)
-	em.Send(req)
 
 	// processing is done at goroutine, as testify mock assertions don't work when run from
-	// goroutine we assert that processing has been triggered and run process() fn manually
+	// goroutine we simulate that processing has been triggered and run process() fn manually
 	e := em.(*emitter)
-	assert.True(t, e.isProcessing.IsSet())
+	e.isProcessing.Set()
+	em.Send(req)
 	e.process(req)
 
 	idProvider.AssertExpectations(t)
-	dmSender.AssertExpectations(t)
 	agentCtx.AssertExpectations(t)
 
 	// Should add Entity Id ('nr.entity.id') to Common attributes
