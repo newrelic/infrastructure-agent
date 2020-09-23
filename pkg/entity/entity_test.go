@@ -5,8 +5,8 @@ package entity
 import (
 	"testing"
 
-	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
 	"github.com/stretchr/testify/assert"
@@ -217,8 +217,8 @@ func TestResolveEntityWithProtocolV2(t *testing.T) {
 	assert.Equal(t, Key("instance:localhost:80"), k)
 }
 
-func newFixedIDLookup() agent.IDLookup {
-	idLookupTable := make(agent.IDLookup)
+func newFixedIDLookup() host.IDLookup {
+	idLookupTable := make(host.IDLookup)
 	idLookupTable[sysinfo.HOST_SOURCE_DISPLAY_NAME] = "display_name"
 	return idLookupTable
 }

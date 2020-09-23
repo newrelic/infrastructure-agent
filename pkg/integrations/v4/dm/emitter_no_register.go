@@ -8,6 +8,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 )
@@ -37,7 +38,7 @@ func (e *nonRegisterEmitter) Send(dto FwRequest) {
 	var err error
 
 	emitV4DataSet := func(
-		idLookup agent.IDLookup,
+		idLookup host.IDLookup,
 		metricsSender MetricsSender,
 		emitter agent.PluginEmitter,
 		metadata integration.Definition,
@@ -49,7 +50,7 @@ func (e *nonRegisterEmitter) Send(dto FwRequest) {
 
 		logEntry := elog.WithField("action", "EmitV4DataSet")
 
-		replaceEntityNameWithoutRegister := func(entity protocol.Entity, entityRewrite data.EntityRewrites, idLookup agent.IDLookup) error {
+		replaceEntityNameWithoutRegister := func(entity protocol.Entity, entityRewrite data.EntityRewrites, idLookup host.IDLookup) error {
 			// Replace entity name by applying entity rewrites and replacing loopback
 			newName := entityRewrite.Apply(entity.Name)
 

@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 )
 
@@ -141,7 +141,7 @@ func (f *Fields) Key() (Key, error) {
 	return Key(fmt.Sprintf("%v:%v%s", f.Type, f.Name, strings.ToLower(attrsStr))), nil
 }
 
-func (f *Fields) ResolveUniqueEntityKey(agentID string, lookup agent.IDLookup, entityRewrite data.EntityRewrites, protocol int) (Key, error) {
+func (f *Fields) ResolveUniqueEntityKey(agentID string, lookup host.IDLookup, entityRewrite data.EntityRewrites, protocol int) (Key, error) {
 	if f.IsAgent() {
 		return Key(agentID), nil
 	}
@@ -155,7 +155,7 @@ func (f *Fields) ResolveUniqueEntityKey(agentID string, lookup agent.IDLookup, e
 	return f.Key()
 }
 
-func ReplaceLoopback(value string, lookup agent.IDLookup, protocolVersion int) (string, error) {
+func ReplaceLoopback(value string, lookup host.IDLookup, protocolVersion int) (string, error) {
 	if protocolVersion < protocol.V3 || !http.ContainsLocalhost(value) {
 		return value, nil
 	}

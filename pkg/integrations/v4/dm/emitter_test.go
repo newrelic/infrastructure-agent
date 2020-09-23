@@ -12,6 +12,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
@@ -136,7 +137,7 @@ func TestEmitter_Send(t *testing.T) {
 
 func getAgentContext(hostname string) *mocks.AgentContext {
 	agentCtx := &mocks.AgentContext{}
-	idLookup := make(agent.IDLookup)
+	idLookup := make(host.IDLookup)
 	if hostname != "" {
 		idLookup[sysinfo.HOST_SOURCE_INSTANCE_ID] = hostname
 	}

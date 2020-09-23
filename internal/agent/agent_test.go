@@ -7,7 +7,10 @@ import (
 	context2 "context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
+
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -41,7 +44,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var NilIDLookup IDLookup
+var NilIDLookup host.IDLookup
 
 var matcher = func(interface{}) bool { return true }
 
@@ -55,7 +58,7 @@ func newTesting(cfg *config.Config) *Agent {
 		cfg = config.NewTest(dataDir)
 	}
 	cloudDetector := cloud.NewDetector(true, 0, 0, 0, false)
-	lookups := NewIdLookup(hostname.CreateResolver("", "", true), cloudDetector, cfg.DisplayName)
+	lookups := host.NewIdLookup(hostname.CreateResolver("", "", true), cloudDetector, cfg.DisplayName)
 
 	ctx := NewContext(cfg, "1.2.3", testhelpers.NullHostnameResolver, lookups, matcher)
 
@@ -153,7 +156,7 @@ func TestSetAgentKeysDisplayInstance(t *testing.T) {
 	a := newTesting(nil)
 	defer os.RemoveAll(a.store.DataDir)
 
-	idMap := IDLookup{
+	idMap := host.IDLookup{
 		sysinfo.HOST_SOURCE_DISPLAY_NAME: "displayName",
 		sysinfo.HOST_SOURCE_HOSTNAME:     "hostName",
 		sysinfo.HOST_SOURCE_INSTANCE_ID:  "instanceId",
@@ -168,7 +171,7 @@ func TestSetAgentKeysInstanceEmptyString(t *testing.T) {
 	a := newTesting(nil)
 	defer os.RemoveAll(a.store.DataDir)
 
-	keys := IDLookup{
+	keys := host.IDLookup{
 		sysinfo.HOST_SOURCE_DISPLAY_NAME: "displayName",
 		sysinfo.HOST_SOURCE_HOSTNAME:     "hostName",
 		sysinfo.HOST_SOURCE_INSTANCE_ID:  "",
@@ -182,7 +185,7 @@ func TestSetAgentKeysDisplayNameMatchesHostName(t *testing.T) {
 	a := newTesting(nil)
 	defer os.RemoveAll(a.store.DataDir)
 
-	keyMap := IDLookup{
+	keyMap := host.IDLookup{
 		sysinfo.HOST_SOURCE_DISPLAY_NAME: "hostName",
 		sysinfo.HOST_SOURCE_HOSTNAME:     "hostName",
 	}
@@ -195,7 +198,7 @@ func TestSetAgentKeysNoValues(t *testing.T) {
 	a := newTesting(nil)
 	defer os.RemoveAll(a.store.DataDir)
 
-	assert.Error(t, a.setAgentKey(IDLookup{}))
+	assert.Error(t, a.setAgentKey(host.IDLookup{}))
 }
 
 func TestUpdateIDLookupTable(t *testing.T) {
@@ -221,7 +224,7 @@ func TestUpdateIDLookupTable(t *testing.T) {
 }
 
 func TestIDLookup_EntityNameCloudInstance(t *testing.T) {
-	l := IDLookup{
+	l := host.IDLookup{
 		sysinfo.HOST_SOURCE_INSTANCE_ID:    "instance-id",
 		sysinfo.HOST_SOURCE_AZURE_VM_ID:    "azure-id",
 		sysinfo.HOST_SOURCE_GCP_VM_ID:      "gcp-id",
@@ -237,7 +240,7 @@ func TestIDLookup_EntityNameCloudInstance(t *testing.T) {
 }
 
 func TestIDLookup_EntityNameAzure(t *testing.T) {
-	l := IDLookup{
+	l := host.IDLookup{
 		sysinfo.HOST_SOURCE_INSTANCE_ID:    "",
 		sysinfo.HOST_SOURCE_AZURE_VM_ID:    "azure-id",
 		sysinfo.HOST_SOURCE_GCP_VM_ID:      "gcp-id",
@@ -252,7 +255,7 @@ func TestIDLookup_EntityNameAzure(t *testing.T) {
 }
 
 func TestIDLookup_EntityNameGCP(t *testing.T) {
-	l := IDLookup{
+	l := host.IDLookup{
 		sysinfo.HOST_SOURCE_INSTANCE_ID:    "",
 		sysinfo.HOST_SOURCE_AZURE_VM_ID:    "",
 		sysinfo.HOST_SOURCE_GCP_VM_ID:      "gcp-id",
@@ -267,7 +270,7 @@ func TestIDLookup_EntityNameGCP(t *testing.T) {
 }
 
 func TestIDLookup_EntityNameAlibaba(t *testing.T) {
-	l := IDLookup{
+	l := host.IDLookup{
 		sysinfo.HOST_SOURCE_INSTANCE_ID:    "",
 		sysinfo.HOST_SOURCE_AZURE_VM_ID:    "",
 		sysinfo.HOST_SOURCE_GCP_VM_ID:      "",
@@ -282,7 +285,7 @@ func TestIDLookup_EntityNameAlibaba(t *testing.T) {
 }
 
 func TestIDLookup_EntityNameDisplayName(t *testing.T) {
-	l := IDLookup{
+	l := host.IDLookup{
 		sysinfo.HOST_SOURCE_DISPLAY_NAME:   "display-name",
 		sysinfo.HOST_SOURCE_HOSTNAME_SHORT: "short",
 	}
@@ -293,7 +296,7 @@ func TestIDLookup_EntityNameDisplayName(t *testing.T) {
 }
 
 func TestIDLookup_EntityNameShortName(t *testing.T) {
-	l := IDLookup{
+	l := host.IDLookup{
 		sysinfo.HOST_SOURCE_HOSTNAME:       "long",
 		sysinfo.HOST_SOURCE_HOSTNAME_SHORT: "short",
 	}

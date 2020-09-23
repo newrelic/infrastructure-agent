@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
 	"github.com/newrelic/infrastructure-agent/pkg/trace"
 
@@ -128,7 +129,7 @@ type AgentContext interface {
 	ActiveEntitiesChannel() chan string
 	// HostnameResolver returns the host name resolver associated to the agent context
 	HostnameResolver() hostname.Resolver
-	IDLookup() IDLookup
+	IDLookup() host.IDLookup
 
 	// Identity returns the entity ID of the infra agent
 	Identity() entity.Identity
@@ -153,7 +154,7 @@ type context struct {
 	servicePids        map[string]map[int]string // Map of plugin -> (map of pid -> service)
 	resolver           hostname.ResolverChangeNotifier
 	EntityMap          entity.KnownIDs
-	idLookup           IDLookup
+	idLookup           host.IDLookup
 	shouldIncludeEvent sampler.IncludeSampleMatchFn
 }
 
@@ -190,19 +191,16 @@ func (c *context) SetAgentIdentity(id entity.Identity) {
 }
 
 //IDLookup returns the IDLookup map.
-func (c *context) IDLookup() IDLookup {
+func (c *context) IDLookup() host.IDLookup {
 	return c.idLookup
 }
-
-// IDLookup contains the identifiers used for resolving the agent entity name and agent key.
-type IDLookup map[string]string
 
 //NewContext creates a new context.
 func NewContext(
 	cfg *config.Config,
 	buildVersion string,
 	resolver hostname.ResolverChangeNotifier,
-	lookup IDLookup,
+	lookup host.IDLookup,
 	sampleMatchFn sampler.IncludeSampleMatchFn,
 ) *context {
 	ctx, cancel := context2.WithCancel(context2.Background())
@@ -308,7 +306,7 @@ func NewAgent(
 	cloudHarvester := cloud.NewDetector(cfg.DisableCloudMetadata, cfg.CloudMaxRetryCount, cfg.CloudRetryBackOffSec, cfg.CloudMetadataExpiryInSec, cfg.CloudMetadataDisableKeepAlive)
 	cloudHarvester.Initialize()
 
-	idLookupTable := NewIdLookup(hostnameResolver, cloudHarvester, cfg.DisplayName)
+	idLookupTable := host.NewIdLookup(hostnameResolver, cloudHarvester, cfg.DisplayName)
 	sampleMatchFn := sampler.NewSampleMatchFn(cfg.EnableProcessMetrics, cfg.IncludeMetricsMatchers, ffRetriever)
 	ctx := NewContext(cfg, buildVersion, hostnameResolver, idLookupTable, sampleMatchFn)
 
@@ -397,7 +395,7 @@ func New(
 	cfg *config.Config,
 	ctx *context,
 	userAgent string,
-	idLookupTable IDLookup,
+	idLookupTable host.IDLookup,
 	s *delta.Store,
 	connectSrv *identityConnectService,
 	provideIDs ProvideIDs,
@@ -472,75 +470,6 @@ func New(
 	}
 
 	return a, nil
-}
-
-func (i IDLookup) getAgentKey() (agentKey string, err error) {
-	if len(i) == 0 {
-		err = fmt.Errorf("No identifiers given")
-		return
-	}
-
-	for _, keyType := range sysinfo.HOST_ID_TYPES {
-		// Skip blank identifiers which may have found their way into the map.
-		// (Specifically, Azure can sometimes give us a blank VMID - See MTBLS-1429)
-		if key, ok := i[keyType]; ok && key != "" {
-			return key, nil
-		}
-	}
-
-	err = ErrUndefinedLookupType
-	return
-}
-
-// AgentShortEntityName is the agent entity name, but without having long-hostname into account.
-// It is taken from the first field in the priority.
-func (i IDLookup) AgentShortEntityName() (string, error) {
-	priorities := []string{
-		sysinfo.HOST_SOURCE_INSTANCE_ID,
-		sysinfo.HOST_SOURCE_AZURE_VM_ID,
-		sysinfo.HOST_SOURCE_GCP_VM_ID,
-		sysinfo.HOST_SOURCE_ALIBABA_VM_ID,
-		sysinfo.HOST_SOURCE_DISPLAY_NAME,
-		sysinfo.HOST_SOURCE_HOSTNAME_SHORT,
-	}
-
-	for _, k := range priorities {
-		if name, ok := i[k]; ok && name != "" {
-			return name, nil
-		}
-	}
-
-	return "", ErrUndefinedLookupType
-}
-
-// NewIdLookup creates a new agent ID lookup table.
-func NewIdLookup(resolver hostname.Resolver, cloudHarvester cloud.Harvester, displayName string) IDLookup {
-	idLookupTable := make(IDLookup)
-	// Attempt to get the hostname
-	host, short, err := resolver.Query()
-	llog := alog.WithField("displayName", displayName)
-	if err == nil {
-		idLookupTable[sysinfo.HOST_SOURCE_HOSTNAME] = host
-		idLookupTable[sysinfo.HOST_SOURCE_HOSTNAME_SHORT] = short
-	} else {
-		llog.WithError(err).Warn("could not determine hostname")
-	}
-	if host == "localhost" {
-		llog.Warn("Localhost is not a good identifier")
-	}
-	// See if we have a configured alias which is not equal to the hostname, if so, use
-	// it as a unique identifier and ignore the hostname
-	if displayName != "" {
-		idLookupTable[sysinfo.HOST_SOURCE_DISPLAY_NAME] = displayName
-	}
-	cloudInstanceID, err := cloudHarvester.GetInstanceID()
-	if err != nil {
-		llog.WithField("idLookupTable", idLookupTable).WithError(err).Debug("Unable to get instance id.")
-	} else {
-		idLookupTable[sysinfo.HOST_SOURCE_INSTANCE_ID] = cloudInstanceID
-	}
-
-	return idLookupTable
 }
 
 // Instantiates delta.Store as well as associated reapers and senders
@@ -707,7 +636,7 @@ func (a *Agent) updateIDLookupTable(hostAliases PluginInventoryDataset) (err err
 // identifiers and choose the first one we can find.
 // If one is found, it will be set on the context object as well as returned.
 // Otherwise, the context is not modified.
-func (a *Agent) setAgentKey(idLookupTable IDLookup) error {
+func (a *Agent) setAgentKey(idLookupTable host.IDLookup) error {
 	key, err := idLookupTable.getAgentKey()
 	if err != nil {
 		return err

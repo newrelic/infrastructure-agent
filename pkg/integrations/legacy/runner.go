@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
@@ -677,7 +678,7 @@ func ParsePayload(raw []byte, forceV2ToV3Upgrade bool) (dataV3 protocol.PluginDa
 }
 
 // replaceLoopbackFromField will try to match and replace loopback address from a MetricData field.
-func replaceLoopbackFromField(field interface{}, lookup agent.IDLookup, protocol int) (string, error) {
+func replaceLoopbackFromField(field interface{}, lookup host.IDLookup, protocol int) (string, error) {
 	value, ok := field.(string)
 	if !ok {
 		return "", errors.New("can't replace loopback when the field is not a string")
@@ -798,7 +799,7 @@ func EmitDataSet(
 }
 
 // hostnameWithLoopbackReplacement is in this case a loopback returns the replacement hostname.
-func hostnameWithLoopbackReplacement(hostname interface{}, protocolVersion int, idLookup agent.IDLookup) (string, error) {
+func hostnameWithLoopbackReplacement(hostname interface{}, protocolVersion int, idLookup host.IDLookup) (string, error) {
 	h, ok := hostname.(string)
 	if !ok {
 		return "", errors.New("can't replace loopback hostname when it is not a string")

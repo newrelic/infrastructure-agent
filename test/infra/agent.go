@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/ctl"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 
@@ -73,7 +74,7 @@ func NewAgentWithConnectClientAndConfig(connectClient, dataClient backendhttp.Cl
 
 	cloudDetector := cloud.NewDetector(true, 0, 0, 0, false)
 
-	lookups := agent.NewIdLookup(hostname.CreateResolver(cfg.OverrideHostname, cfg.OverrideHostnameShort, cfg.DnsHostnameResolution), cloudDetector, cfg.DisplayName)
+	lookups := host.NewIdLookup(hostname.CreateResolver(cfg.OverrideHostname, cfg.OverrideHostnameShort, cfg.DnsHostnameResolution), cloudDetector, cfg.DisplayName)
 
 	fingerprintHarvester, err := fingerprint.NewHarvestor(cfg, testhelpers.NullHostnameResolver, cloudDetector)
 

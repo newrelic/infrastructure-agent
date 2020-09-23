@@ -21,6 +21,7 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/test/fixture/integration"
 	"github.com/sirupsen/logrus"
@@ -456,8 +457,8 @@ func (cc customContext) AddReconnecting(agent.Plugin) {}
 
 func (cc customContext) Reconnect() {}
 
-func (cc customContext) IDLookup() agent.IDLookup {
-	idLookupTable := make(agent.IDLookup)
+func (cc customContext) IDLookup() host.IDLookup {
+	idLookupTable := make(host.IDLookup)
 	idLookupTable[sysinfo.HOST_SOURCE_HOSTNAME_SHORT] = "short_hostname"
 	return idLookupTable
 }
@@ -2239,8 +2240,8 @@ func (r *fixedHostnameResolver) Long() string {
 	return r.long
 }
 
-func newFixedIDLookup() agent.IDLookup {
-	idLookupTable := make(agent.IDLookup)
+func newFixedIDLookup() host.IDLookup {
+	idLookupTable := make(host.IDLookup)
 	idLookupTable[sysinfo.HOST_SOURCE_DISPLAY_NAME] = "display_name"
 	return idLookupTable
 }
