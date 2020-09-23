@@ -90,7 +90,6 @@ type LogCfg struct {
 	MaxLineKb  int               `yaml:"max_line_kb"` // Setup the max value of the buffer while reading lines.
 	Folder     string            `yaml:"folder"`      // ...
 	Systemd    string            `yaml:"systemd"`     // ...
-	EventLog   string            `yaml:"eventlog"`
 	Pattern    string            `yaml:"pattern"`
 	Attributes map[string]string `yaml:"attributes"`
 	Syslog     *LogSyslogCfg     `yaml:"syslog"`
@@ -125,7 +124,7 @@ type LogExternalFBCfg struct {
 
 // IsValid validates struct as there's no constructor to enforce it.
 func (l *LogCfg) IsValid() bool {
-	return l.Name != "" && (l.File != "" || l.Folder != "" || l.Systemd != "" || l.EventLog != "" || l.Syslog != nil || l.Tcp != nil || l.Fluentbit != nil || l.Winlog != nil)
+	return l.Name != "" && (l.File != "" || l.Folder != "" || l.Systemd != "" || l.Syslog != nil || l.Tcp != nil || l.Fluentbit != nil || l.Winlog != nil)
 }
 
 // FBCfg FluentBit automatically generated configuration.
@@ -304,8 +303,6 @@ func parseConfigBlock(l LogCfg, logsHomeDir string) (input FBCfgInput, filters [
 		input, filters = parseFolderInput(l, dbPath)
 	} else if l.Systemd != "" {
 		input, filters = parseSystemdInput(l, dbPath)
-	} else if l.EventLog != "" {
-		input, filters = parseEventLogInput(l, dbPath)
 	} else if l.Syslog != nil {
 		input, filters, err = parseSyslogInput(l)
 	} else if l.Tcp != nil {
@@ -349,13 +346,6 @@ func parseSystemdInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBC
 	input = newSystemdInput(l.Systemd, dbPath, l.Name)
 	filters = append(filters, newRecordModifierFilterForInput(l.Name, fbInputTypeSystemd, l.Attributes))
 	filters = parsePattern(l, fbGrepFieldForSystemd, filters)
-	return input, filters
-}
-
-// Windows eventlog: "winlog" plugin
-func parseEventLogInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBCfgParser) {
-	input = newWindowsEventlogInput(l.EventLog, dbPath, l.Name)
-	filters = append(filters, newRecordModifierFilterForInput(l.Name, fbInputTypeWinlog, l.Attributes))
 	return input, filters
 }
 
@@ -497,15 +487,6 @@ func newSystemdInput(service string, dbPath string, tag string) FBCfgInput {
 		Systemd_Filter: fmt.Sprintf("_SYSTEMD_UNIT=%s.service", service),
 		Tag:            tag,
 		DB:             dbPath,
-	}
-}
-
-func newWindowsEventlogInput(eventLog string, dbPath string, tag string) FBCfgInput {
-	return FBCfgInput{
-		Name:     fbInputTypeWinlog,
-		Channels: eventLog,
-		Tag:      tag,
-		DB:       dbPath,
 	}
 }
 

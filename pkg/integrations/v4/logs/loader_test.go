@@ -243,21 +243,6 @@ logs:
   - name: fuuu
     wrong: field
 `)
-
-	ymlWithWinlog := []byte(`
-logs:
-  - name: win
-    eventlog: "Application"
-    pattern: "somepattern"
-`)
-	structWithWinlog := LogsCfg{
-		{
-			Name:     "win",
-			EventLog: "Application",
-			Pattern:  "somepattern",
-		},
-	}
-
 	ymlWithAttributes := []byte(`
 logs:
   - name: attributed-file
@@ -399,7 +384,6 @@ logs:
 		{"input with folder", ymlWithFolder, structWithFolder, nil},
 		{"input invalid", ymlInvalid, nil, nil},
 		{"input partially invalid", ymlPartiallyInvalid, nil, nil},
-		{"input with winlog and grep", ymlWithWinlog, structWithWinlog, nil},
 		{"file with attributes", ymlWithAttributes, structWithAttributes, nil},
 		{"syslog tcp", ymlWithTcpSyslog, structWithTcpSyslog, nil},
 		{"syslog udp", ymlWithUdpSyslog, structWithUdpSyslog, nil},
