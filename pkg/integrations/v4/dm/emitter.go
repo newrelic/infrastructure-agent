@@ -15,6 +15,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
@@ -224,7 +225,7 @@ func emitEvent(
 
 // Replace entity name by applying entity rewrites and replacing loopback
 func replaceEntityName(entity protocol.Entity, entityRewrite []data.EntityRewrite, agentShortName string) {
-	newName := legacy.ApplyEntityRewrite(entity.Name, entityRewrite)
+	newName := host.ApplyEntityRewrite(entity.Name, entityRewrite)
 	newName = http.ReplaceLocalhost(newName, agentShortName)
 	entity.Name = newName
 }

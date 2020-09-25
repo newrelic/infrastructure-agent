@@ -8,6 +8,7 @@ import (
 
 	agent "github.com/newrelic/infrastructure-agent/internal/agent"
 	config "github.com/newrelic/infrastructure-agent/pkg/config"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 
 	entity "github.com/newrelic/infrastructure-agent/pkg/entity"
 
@@ -137,15 +138,15 @@ func (_m *AgentContext) HostnameResolver() hostname.Resolver {
 }
 
 // IDLookup provides a mock function with given fields:
-func (_m *AgentContext) IDLookup() agent.IDLookup {
+func (_m *AgentContext) IDLookup() host.IDLookup {
 	ret := _m.Called()
 
-	var r0 agent.IDLookup
-	if rf, ok := ret.Get(0).(func() agent.IDLookup); ok {
+	var r0 host.IDLookup
+	if rf, ok := ret.Get(0).(func() host.IDLookup); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(agent.IDLookup)
+			r0 = ret.Get(0).(host.IDLookup)
 		}
 	}
 

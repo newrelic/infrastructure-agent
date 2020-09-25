@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
 
@@ -168,8 +169,8 @@ func (*dummyAgentContext) Version() string {
 	return ""
 }
 
-func (dummyAgentContext) IDLookup() agent.IDLookup {
-	idLookupTable := make(agent.IDLookup)
+func (dummyAgentContext) IDLookup() host.IDLookup {
+	idLookupTable := make(host.IDLookup)
 	idLookupTable[sysinfo.HOST_SOURCE_HOSTNAME_SHORT] = "short_hostname"
 	return idLookupTable
 }
