@@ -9,6 +9,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
+	"github.com/newrelic/infrastructure-agent/pkg/fwrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 )
@@ -25,7 +26,7 @@ func NewNonRegisterEmitter(agentContext agent.AgentContext, dmSender MetricsSend
 	}
 }
 
-func (e *nonRegisterEmitter) Send(dto FwRequest) {
+func (e *nonRegisterEmitter) Send(dto fwrequest.FwRequest) {
 	entityRewrite := dto.EntityRewrite
 	integrationData := dto.Data
 

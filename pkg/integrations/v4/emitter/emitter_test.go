@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
+	"github.com/newrelic/infrastructure-agent/pkg/fwrequest"
 	integration2 "github.com/newrelic/infrastructure-agent/test/fixture/integration"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
@@ -356,7 +357,7 @@ type mockDmEmitter struct {
 	mock.Mock
 }
 
-func (m *mockDmEmitter) Send(dto dm.FwRequest) {
+func (m *mockDmEmitter) Send(dto fwrequest.FwRequest) {
 	m.Called(dto)
 }
 
@@ -517,7 +518,7 @@ func TestProtocolV4_Emit_WithFFDisabled(t *testing.T) {
 
 	ma := mockAgent()
 	mockDME := &mockDmEmitter{}
-	mockDME.On("Send", dm.NewFwRequest(
+	mockDME.On("Send", fwrequest.NewFwRequest(
 		metadata,
 		extraLabels,
 		entityRewrite,
@@ -545,7 +546,7 @@ func TestProtocolV4_Emit_WithoutRegisteringEntities(t *testing.T) {
 	entityRewrite := []data.EntityRewrite{}
 
 	dmEmitter := &mockDmEmitter{}
-	dmEmitter.On("Send", dm.NewFwRequest(
+	dmEmitter.On("Send", fwrequest.NewFwRequest(
 		intDefinition,
 		extraLabels,
 		entityRewrite,

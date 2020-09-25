@@ -1,18 +1,56 @@
-// Copyright 2020 New Relic Corporation. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
-package dm
+package fwrequest
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 )
 
-// FwRequest stores integration telemetry data & metadata required from protocol v4 to be processed
-// before it gets forwarded to NR telemetry SDK.
+const (
+	EntityIdAttribute = "nr.entity.id"
+	labelPrefix       = "label."
+	labelPrefixTrim   = 6
+)
+
+// EntityFwRequest stores an integration single entity payload to be processed before it gets
+// forwarded to NR telemetry SDK.
+type EntityFwRequest struct {
+	FwRequestMeta
+	Integration protocol.IntegrationMetadata
+	Data        protocol.Dataset
+}
+
+func (r *EntityFwRequest) RegisteredWith(id entity.ID) {
+	// attributes ID decoration
+	if r.Data.Common.Attributes == nil {
+		r.Data.Common.Attributes = make(map[string]interface{})
+	}
+	r.Data.Common.Attributes[EntityIdAttribute] = id.String()
+
+}
+
+func (r *EntityFwRequest) ID() entity.ID {
+	// TODO candidate for optimization
+	if r.Data.Common.Attributes != nil {
+		if id, ok := r.Data.Common.Attributes[EntityIdAttribute]; ok {
+			if idStr, ok := id.(string); ok {
+				if idInt, err := strconv.Atoi(idStr); err == nil {
+					return entity.ID(idInt)
+				}
+			}
+		}
+	}
+
+	return entity.EmptyID
+}
+
+// FwRequest stores an integration payload with telemetry data & metadata required from protocol v4
+// to be processed before it gets forwarded to NR telemetry SDK.
 type FwRequest struct {
 	FwRequestMeta
 	Data protocol.DataV4
@@ -47,8 +85,26 @@ func NewFwRequest(definition integration.Definition,
 	}
 }
 
-func (d FwRequest) PluginID() ids.PluginID {
-	return d.Definition.PluginID(d.Data.Integration.Name)
+func (r *FwRequest) PluginID() ids.PluginID {
+	return r.Definition.PluginID(r.Data.Integration.Name)
+}
+
+func NewEntityFwRequest(
+	entityDataSet protocol.Dataset,
+	id entity.ID,
+	reqMeta FwRequestMeta,
+	intMeta protocol.IntegrationMetadata,
+) EntityFwRequest {
+	r := EntityFwRequest{
+		FwRequestMeta: reqMeta,
+		Integration:   intMeta,
+		Data:          entityDataSet,
+	}
+	if !id.IsEmpty() {
+		r.RegisteredWith(id)
+	}
+
+	return r
 }
 
 func NewFwRequestLegacy(definition integration.Definition,

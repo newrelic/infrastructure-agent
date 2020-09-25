@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/newrelic/infrastructure-agent/pkg/fwrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
@@ -71,7 +72,7 @@ func (e *Emittor) Emit(definition integration.Definition, extraLabels data.Map, 
 			return err
 		}
 
-		e.dmEmitter.Send(dm.NewFwRequest(definition, extraLabels, entityRewrite, pluginDataV4))
+		e.dmEmitter.Send(fwrequest.NewFwRequest(definition, extraLabels, entityRewrite, pluginDataV4))
 		return nil
 	}
 
@@ -81,10 +82,10 @@ func (e *Emittor) Emit(definition integration.Definition, extraLabels data.Map, 
 		return err
 	}
 
-	return e.emitV3(dm.NewFwRequestLegacy(definition, extraLabels, entityRewrite, pluginDataV3), protocolVersion)
+	return e.emitV3(fwrequest.NewFwRequestLegacy(definition, extraLabels, entityRewrite, pluginDataV3), protocolVersion)
 }
 
-func (e *Emittor) emitV3(dto dm.FwRequestLegacy, protocolVersion int) error {
+func (e *Emittor) emitV3(dto fwrequest.FwRequestLegacy, protocolVersion int) error {
 	plugin := agent.NewExternalPluginCommon(dto.Definition.PluginID(dto.Data.Name), e.aCtx, dto.Definition.Name)
 	labels, extraAnnotations := dto.LabelsAndExtraAnnotations()
 
