@@ -67,6 +67,7 @@ func TestHostInfo(t *testing.T) {
 	// Cannot assert the plugin payload here because `UpSince` is gotten from
 	// running the `uptime` command.
 	ctx.On("SendData", mock.Anything).Return(nil)
+	ctx.SendDataWg.Add(1)
 
 	// Mock the files used by the plugin to retrieve the system information
 	sysFiles := []testhelpers.MockFile{
