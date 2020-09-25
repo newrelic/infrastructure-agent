@@ -56,8 +56,9 @@ func (m *mockedMetricsSender) SendMetrics(metrics []protocol.Metric) {
 }
 
 func (m *mockedMetricsSender) SendMetricsWithCommonAttributes(commonAttributes protocol.Common, metrics []protocol.Metric) error {
+	err := m.Called(commonAttributes, metrics).Error(0)
 	m.wg.Done()
-	return m.Called(commonAttributes, metrics).Error(0)
+	return err
 }
 
 func TestEmitter_Send_usingIDCache(t *testing.T) {
