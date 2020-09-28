@@ -73,13 +73,13 @@ func TestEmitter_Send_ErrorOnHostname(t *testing.T) {
 		On("ResolveEntities", testIdentity, mock.Anything).
 		Return(registeredEntitiesNameToID{}, unregisteredEntityList{})
 
-	emitter := NewEmitter(agentCtx, dmSender, idProvider)
+	e := NewEmitter(agentCtx, dmSender, idProvider)
 
 	metadata := integration.Definition{}
 	var extraLabels data.Map
 	var entityRewrite []data.EntityRewrite
 
-	emitter.Send(NewFwRequest(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4TwoEntities.ParsedV4))
+	e.Send(NewFwRequest(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4TwoEntities.ParsedV4))
 	// TODO error handling
 }
 
@@ -110,16 +110,22 @@ func TestEmitter_Send(t *testing.T) {
 	agentCtx.On("SendData",
 		agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "integration name"}, Entity: entity.New("unique name", 123), Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_foo", "value": "bar"}}, NotApplicable: false})
 
-	emitter := NewEmitter(agentCtx, dmSender, idProvider)
+	em := NewEmitter(agentCtx, dmSender, idProvider)
 
 	metadata := integration.Definition{}
 	var extraLabels data.Map
 	var entityRewrite []data.EntityRewrite
 
-	emitter.Send(NewFwRequest(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4.ParsedV4))
-	// TODO error handling
+	req := NewFwRequest(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4.ParsedV4)
+
+	// processing is done at goroutine, as testify mock assertions don't work when run from
+	// goroutine we simulate that processing has been triggered and run process() fn manually
+	e := em.(*emitter)
+	e.isProcessing.Set()
+	em.Send(req)
+	e.process(req)
+
 	idProvider.AssertExpectations(t)
-	dmSender.AssertExpectations(t)
 	agentCtx.AssertExpectations(t)
 
 	// Should add Entity Id ('nr.entity.id') to Common attributes
