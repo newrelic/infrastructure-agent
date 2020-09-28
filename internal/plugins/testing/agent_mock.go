@@ -3,8 +3,11 @@
 package testing
 
 import (
-	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
+	"context"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
@@ -47,6 +50,10 @@ func NewMockAgent() *MockAgent {
 		entities: make(chan string, 1000),
 		resolver: hostname.CreateResolver("", "", true),
 	}
+}
+
+func (m *MockAgent) Context() context.Context {
+	return context.TODO()
 }
 
 func (m *MockAgent) ActiveEntitiesChannel() chan string {
@@ -108,8 +115,8 @@ func (m *MockAgent) AddReconnecting(agent.Plugin) {}
 
 func (m *MockAgent) Reconnect() {}
 
-func (m *MockAgent) IDLookup() agent.IDLookup {
-	idLookupTable := make(agent.IDLookup)
+func (m *MockAgent) IDLookup() host.IDLookup {
+	idLookupTable := make(host.IDLookup)
 	idLookupTable[sysinfo.HOST_SOURCE_HOSTNAME_SHORT] = "short_hostname"
 	return idLookupTable
 }

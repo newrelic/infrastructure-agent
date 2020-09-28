@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	infra "github.com/newrelic/infrastructure-agent/test/infra/http"
 	"github.com/stretchr/testify/assert"
 
@@ -507,7 +508,7 @@ func TestEventSender_ResponseError(t *testing.T) {
 				ConnectEnabled:          true,
 				PayloadCompressionLevel: gzip.NoCompression,
 			}
-			c := NewContext(cfg, "1.2.3", testhelpers.NullHostnameResolver, IDLookup{}, nil)
+			c := NewContext(cfg, "1.2.3", testhelpers.NullHostnameResolver, host.IDLookup{}, nil)
 			c.setAgentKey(agentKey)
 			c.SetAgentIdentity(agentIdn)
 

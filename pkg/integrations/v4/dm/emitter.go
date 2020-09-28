@@ -3,6 +3,7 @@
 package dm
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,10 +15,11 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
-	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
+	"github.com/tevino/abool"
 )
 
 var (
@@ -30,21 +32,17 @@ var (
 )
 
 const (
-	nrEntityId = "nr.entity.id"
+	nrEntityId              = "nr.entity.id"
+	defaultRequestsQueueLen = 1000
 )
-
-// FwRequest stores integration telemetry data & metadata required from protocol v4 to be processed
-// before it gets forwarded to NR telemetry SDK.
-type FwRequest struct {
-	integration.FwRequestMeta
-	Data protocol.DataV4
-}
 
 type Agent interface {
 	GetContext() agent.AgentContext
 }
 
 type emitter struct {
+	reqsQueue     chan FwRequest
+	isProcessing  abool.AtomicBool
 	metricsSender MetricsSender
 	agentContext  agent.AgentContext
 	idProvider    idProviderInterface
@@ -54,37 +52,47 @@ type Emitter interface {
 	Send(FwRequest)
 }
 
-func NewFwRequest(definition integration.Definition,
-	extraLabels data.Map,
-	entityRewrite []data.EntityRewrite,
-	integrationData protocol.DataV4) FwRequest {
-	return FwRequest{
-		FwRequestMeta: integration.FwRequestMeta{
-			Definition:    definition,
-			ExtraLabels:   extraLabels,
-			EntityRewrite: entityRewrite,
-		},
-		Data: integrationData,
-	}
-}
-
-func (d FwRequest) PluginID() ids.PluginID {
-	return d.Definition.PluginID(d.Data.Integration.Name)
-}
-
 func NewEmitter(
 	agentContext agent.AgentContext,
 	dmSender MetricsSender,
 	idProvider idProviderInterface) Emitter {
 
 	return &emitter{
+		reqsQueue:     make(chan FwRequest, defaultRequestsQueueLen),
 		agentContext:  agentContext,
 		metricsSender: dmSender,
 		idProvider:    idProvider,
 	}
 }
 
-func (e *emitter) Send(dto FwRequest) {
+// Send receives data forward requests and queues them while processing them on different goroutine.
+// Processor is automatically being lazy run at first data received.
+func (e *emitter) Send(req FwRequest) {
+	e.reqsQueue <- req
+	e.lazyLoadProcessor()
+}
+
+func (e *emitter) lazyLoadProcessor() {
+	if e.isProcessing.IsNotSet() {
+		e.isProcessing.Set()
+		go e.runProcessor(e.agentContext.Context())
+	}
+}
+
+func (e *emitter) runProcessor(ctx context.Context) {
+	for {
+		select {
+		case _ = <-ctx.Done():
+			e.isProcessing.UnSet()
+			return
+
+		case req := <-e.reqsQueue:
+			e.process(req)
+		}
+	}
+}
+
+func (e *emitter) process(dto FwRequest) {
 	agentShortName, err := e.agentContext.IDLookup().AgentShortEntityName()
 	if err != nil {
 		elog.
@@ -217,7 +225,7 @@ func emitEvent(
 
 // Replace entity name by applying entity rewrites and replacing loopback
 func replaceEntityName(entity protocol.Entity, entityRewrite []data.EntityRewrite, agentShortName string) {
-	newName := legacy.ApplyEntityRewrite(entity.Name, entityRewrite)
+	newName := host.ApplyEntityRewrite(entity.Name, entityRewrite)
 	newName = http.ReplaceLocalhost(newName, agentShortName)
 	entity.Name = newName
 }
