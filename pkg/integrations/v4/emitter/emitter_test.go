@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	integration2 "github.com/newrelic/infrastructure-agent/test/fixture/integration"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
@@ -564,7 +565,7 @@ func TestProtocolV4_Emit_WithoutRegisteringEntities(t *testing.T) {
 }
 
 func mockAgent() *mocks.AgentContext {
-	aID := agent.IDLookup{
+	aID := host.IDLookup{
 		sysinfo.HOST_SOURCE_HOSTNAME:       "long",
 		sysinfo.HOST_SOURCE_HOSTNAME_SHORT: "short",
 	}

@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
 	"github.com/newrelic/infrastructure-agent/pkg/trace"
 
@@ -27,8 +28,6 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/pkg/ctl"
 	"github.com/newrelic/infrastructure-agent/pkg/ipc"
-
-	"github.com/pkg/errors"
 
 	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/state"
@@ -57,9 +56,6 @@ const (
 	defaultRemoveEntitiesPeriod = 48 * time.Hour
 	activeEntitiesBufferLength  = 32
 )
-
-// ErrUndefinedLookupType error when an identifier type is not found
-var ErrUndefinedLookupType = errors.New("no known identifier types found in ID lookup table")
 
 type registerableSender interface {
 	Start() error
@@ -106,6 +102,7 @@ var alog = log.WithComponent("Agent")
 
 // AgentContext defines the interfaces between plugins and the agent
 type AgentContext interface {
+	Context() context2.Context
 	SendData(PluginOutput)
 	SendEvent(event sample.Event, entityKey entity.Key)
 	Unregister(ids.PluginID)
@@ -127,7 +124,7 @@ type AgentContext interface {
 	ActiveEntitiesChannel() chan string
 	// HostnameResolver returns the host name resolver associated to the agent context
 	HostnameResolver() hostname.Resolver
-	IDLookup() IDLookup
+	IDLookup() host.IDLookup
 
 	// Identity returns the entity ID of the infra agent
 	Identity() entity.Identity
@@ -152,8 +149,12 @@ type context struct {
 	servicePids        map[string]map[int]string // Map of plugin -> (map of pid -> service)
 	resolver           hostname.ResolverChangeNotifier
 	EntityMap          entity.KnownIDs
-	idLookup           IDLookup
+	idLookup           host.IDLookup
 	shouldIncludeEvent sampler.IncludeSampleMatchFn
+}
+
+func (c *context) Context() context2.Context {
+	return c.Ctx
 }
 
 // AgentID provides agent ID, blocking until it's available
@@ -185,19 +186,16 @@ func (c *context) SetAgentIdentity(id entity.Identity) {
 }
 
 //IDLookup returns the IDLookup map.
-func (c *context) IDLookup() IDLookup {
+func (c *context) IDLookup() host.IDLookup {
 	return c.idLookup
 }
-
-// IDLookup contains the identifiers used for resolving the agent entity name and agent key.
-type IDLookup map[string]string
 
 //NewContext creates a new context.
 func NewContext(
 	cfg *config.Config,
 	buildVersion string,
 	resolver hostname.ResolverChangeNotifier,
-	lookup IDLookup,
+	lookup host.IDLookup,
 	sampleMatchFn sampler.IncludeSampleMatchFn,
 ) *context {
 	ctx, cancel := context2.WithCancel(context2.Background())
@@ -307,7 +305,7 @@ func NewAgent(
 	sampleMatchFn := sampler.NewSampleMatchFn(cfg.EnableProcessMetrics, cfg.IncludeMetricsMatchers, ffRetriever)
 	ctx := NewContext(cfg, buildVersion, hostnameResolver, idLookupTable, sampleMatchFn)
 
-	agentKey, err := idLookupTable.getAgentKey()
+	agentKey, err := idLookupTable.AgentKey()
 	if err != nil {
 		return
 	}
@@ -392,7 +390,7 @@ func New(
 	cfg *config.Config,
 	ctx *context,
 	userAgent string,
-	idLookupTable IDLookup,
+	idLookupTable host.IDLookup,
 	s *delta.Store,
 	connectSrv *identityConnectService,
 	provideIDs ProvideIDs,
@@ -469,48 +467,9 @@ func New(
 	return a, nil
 }
 
-func (i IDLookup) getAgentKey() (agentKey string, err error) {
-	if len(i) == 0 {
-		err = fmt.Errorf("No identifiers given")
-		return
-	}
-
-	for _, keyType := range sysinfo.HOST_ID_TYPES {
-		// Skip blank identifiers which may have found their way into the map.
-		// (Specifically, Azure can sometimes give us a blank VMID - See MTBLS-1429)
-		if key, ok := i[keyType]; ok && key != "" {
-			return key, nil
-		}
-	}
-
-	err = ErrUndefinedLookupType
-	return
-}
-
-// AgentShortEntityName is the agent entity name, but without having long-hostname into account.
-// It is taken from the first field in the priority.
-func (i IDLookup) AgentShortEntityName() (string, error) {
-	priorities := []string{
-		sysinfo.HOST_SOURCE_INSTANCE_ID,
-		sysinfo.HOST_SOURCE_AZURE_VM_ID,
-		sysinfo.HOST_SOURCE_GCP_VM_ID,
-		sysinfo.HOST_SOURCE_ALIBABA_VM_ID,
-		sysinfo.HOST_SOURCE_DISPLAY_NAME,
-		sysinfo.HOST_SOURCE_HOSTNAME_SHORT,
-	}
-
-	for _, k := range priorities {
-		if name, ok := i[k]; ok && name != "" {
-			return name, nil
-		}
-	}
-
-	return "", ErrUndefinedLookupType
-}
-
 // NewIdLookup creates a new agent ID lookup table.
-func NewIdLookup(resolver hostname.Resolver, cloudHarvester cloud.Harvester, displayName string) IDLookup {
-	idLookupTable := make(IDLookup)
+func NewIdLookup(resolver hostname.Resolver, cloudHarvester cloud.Harvester, displayName string) host.IDLookup {
+	idLookupTable := make(host.IDLookup)
 	// Attempt to get the hostname
 	host, short, err := resolver.Query()
 	llog := alog.WithField("displayName", displayName)
@@ -702,8 +661,8 @@ func (a *Agent) updateIDLookupTable(hostAliases PluginInventoryDataset) (err err
 // identifiers and choose the first one we can find.
 // If one is found, it will be set on the context object as well as returned.
 // Otherwise, the context is not modified.
-func (a *Agent) setAgentKey(idLookupTable IDLookup) error {
-	key, err := idLookupTable.getAgentKey()
+func (a *Agent) setAgentKey(idLookupTable host.IDLookup) error {
+	key, err := idLookupTable.AgentKey()
 	if err != nil {
 		return err
 	}
