@@ -4,31 +4,12 @@ package legacy
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
-	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/sirupsen/logrus"
 )
-
-const (
-	entityRewriteActionReplace = "replace"
-)
-
-// Try to match and replace entityName according to EntityRewrite configuration.
-func ApplyEntityRewrite(entityName string, entityRewrite []data.EntityRewrite) string {
-	result := entityName
-
-	for _, er := range entityRewrite {
-		if er.Action == entityRewriteActionReplace {
-			result = strings.Replace(result, er.Match, er.ReplaceField, -1)
-		}
-	}
-
-	return result
-}
 
 func BuildInventoryDataSet(
 	entryLog log.Entry,

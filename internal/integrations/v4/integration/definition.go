@@ -24,10 +24,6 @@ const (
 	configPathEnv     = "CONFIG_PATH"
 	configPathVarName = "config.path"
 	configPathHolder  = "${" + configPathVarName + "}"
-
-	// These two constants can be found in old integrations as well
-	labelPrefix     = "label."
-	labelPrefixTrim = 6
 )
 
 var elog = log.WithComponent("integrations.Definition")

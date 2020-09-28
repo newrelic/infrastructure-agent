@@ -37,6 +37,7 @@ require (
 	github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4 // indirect
 	github.com/sirupsen/logrus v1.6.1-0.20200528085638-6699a89a232f
 	github.com/stretchr/testify v1.5.1
+	github.com/tevino/abool v1.2.0
 	golang.org/dl v0.0.0-20200901180525-35ca1c5c19fb // indirect
 	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b
 	golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1

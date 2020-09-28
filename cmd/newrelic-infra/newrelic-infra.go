@@ -19,6 +19,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
 	"github.com/sirupsen/logrus"
 
 	"github.com/newrelic/infrastructure-agent/cmd/newrelic-infra/initialize"
@@ -284,7 +285,12 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	)
 
 	idProvider := dm.NewCachedIDProvider(registerClient, agt.Context.Identity, agt.Context.Ctx)
-	dmEmitter := dm.NewEmitter(agt.GetContext(), dmSender, idProvider)
+	var dmEmitter dm.Emitter
+	if enabled, exists := ffManager.GetFeatureFlag(handler.FlagDMRegisterEnable); exists && enabled {
+		dmEmitter = dm.NewEmitter(agt.GetContext(), dmSender, idProvider)
+	} else {
+		dmEmitter = dm.NewNonRegisterEmitter(agt.GetContext(), dmSender)
+	}
 	integrationEmitter := emitter.NewIntegrationEmittor(agt, dmEmitter, ffManager)
 	integrationManager := v4.NewManager(integrationCfg, integrationEmitter)
 

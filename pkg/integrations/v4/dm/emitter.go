@@ -3,6 +3,7 @@
 package dm
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,10 +15,11 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
-	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
+	"github.com/tevino/abool"
 )
 
 var (
@@ -30,21 +32,17 @@ var (
 )
 
 const (
-	nrEntityId = "nr.entity.id"
+	nrEntityId              = "nr.entity.id"
+	defaultRequestsQueueLen = 1000
 )
-
-// FwRequest stores integration telemetry data & metadata required from protocol v4 to be processed
-// before it gets forwarded to NR telemetry SDK.
-type FwRequest struct {
-	integration.FwRequestMeta
-	Data protocol.DataV4
-}
 
 type Agent interface {
 	GetContext() agent.AgentContext
 }
 
 type emitter struct {
+	reqsQueue     chan FwRequest
+	isProcessing  abool.AtomicBool
 	metricsSender MetricsSender
 	agentContext  agent.AgentContext
 	idProvider    idProviderInterface
@@ -52,25 +50,6 @@ type emitter struct {
 
 type Emitter interface {
 	Send(FwRequest)
-	SendWithoutRegister(FwRequest)
-}
-
-func NewFwRequest(definition integration.Definition,
-	extraLabels data.Map,
-	entityRewrite []data.EntityRewrite,
-	integrationData protocol.DataV4) FwRequest {
-	return FwRequest{
-		FwRequestMeta: integration.FwRequestMeta{
-			Definition:    definition,
-			ExtraLabels:   extraLabels,
-			EntityRewrite: entityRewrite,
-		},
-		Data: integrationData,
-	}
-}
-
-func (d FwRequest) PluginID() ids.PluginID {
-	return d.Definition.PluginID(d.Data.Integration.Name)
 }
 
 func NewEmitter(
@@ -79,107 +58,41 @@ func NewEmitter(
 	idProvider idProviderInterface) Emitter {
 
 	return &emitter{
+		reqsQueue:     make(chan FwRequest, defaultRequestsQueueLen),
 		agentContext:  agentContext,
 		metricsSender: dmSender,
 		idProvider:    idProvider,
 	}
 }
 
-func (e *emitter) SendWithoutRegister(dto FwRequest) {
-	entityRewrite := dto.EntityRewrite
-	integrationData := dto.Data
-
-	var emitErrs []error
-
-	plugin := agent.NewExternalPluginCommon(dto.PluginID(), e.agentContext, dto.Definition.Name)
-
-	labels, extraAnnotations := dto.LabelsAndExtraAnnotations()
-
-	var err error
-
-	emitV4DataSet := func(
-		idLookup agent.IDLookup,
-		metricsSender MetricsSender,
-		emitter agent.PluginEmitter,
-		metadata integration.Definition,
-		integrationMetadata protocol.IntegrationMetadata,
-		dataSet protocol.Dataset,
-		labels map[string]string,
-		extraAnnotations map[string]string,
-		entityRewrite []data.EntityRewrite) error {
-
-		logEntry := elog.WithField("action", "EmitV4DataSet")
-
-		replaceEntityNameWithoutRegister := func(entity protocol.Entity, entityRewrite []data.EntityRewrite, idLookup agent.IDLookup) error {
-			// Replace entity name by applying entity rewrites and replacing loopback
-			newName := legacy.ApplyEntityRewrite(entity.Name, entityRewrite)
-
-			agentShortName, err := idLookup.AgentShortEntityName()
-			newName = http.ReplaceLocalhost(newName, agentShortName)
-
-			if err != nil {
-				return err
-			}
-
-			entity.Name = newName
-			return nil
-		}
-
-		err := replaceEntityNameWithoutRegister(dataSet.Entity, entityRewrite, idLookup)
-		if err != nil {
-			return fmt.Errorf("error renaming entity: %s", err.Error())
-		}
-
-		integrationUser := metadata.ExecutorConfig.User
-
-		if len(dataSet.Inventory) > 0 {
-			inventoryDataSet := legacy.BuildInventoryDataSet(
-				logEntry, dataSet.Inventory, labels, integrationUser, integrationMetadata.Name,
-				dataSet.Entity.Name)
-			emitter.EmitInventory(inventoryDataSet, entity.Entity{
-				Key: entity.Key(dataSet.Entity.Name),
-			})
-		}
-
-		for _, event := range dataSet.Events {
-			normalizedEvent := legacy.NormalizeEvent(elog, event, labels, integrationUser, dataSet.Entity.Name)
-
-			if normalizedEvent != nil {
-				emitter.EmitEvent(normalizedEvent, entity.Key(dataSet.Entity.Name))
-			}
-		}
-
-		dmProcessor := IntegrationProcessor{
-			IntegrationInterval:         metadata.Interval,
-			IntegrationLabels:           labels,
-			IntegrationExtraAnnotations: extraAnnotations,
-		}
-		metricsSender.SendMetrics(dmProcessor.ProcessMetrics(dataSet.Metrics, dataSet.Common, dataSet.Entity))
-
-		return nil
-	}
-
-	for _, dataset := range integrationData.DataSets {
-		if err = emitV4DataSet(
-			e.agentContext.IDLookup(),
-			e.metricsSender,
-			&plugin,
-			dto.Definition,
-			integrationData.Integration,
-			dataset,
-			labels,
-			extraAnnotations,
-			entityRewrite,
-		); err != nil {
-			emitErrs = append(emitErrs, err)
-		}
-	}
-
-	// TODO error handling
-	elog.Error(composeEmitError(emitErrs, len(integrationData.DataSets)).Error())
+// Send receives data forward requests and queues them while processing them on different goroutine.
+// Processor is automatically being lazy run at first data received.
+func (e *emitter) Send(req FwRequest) {
+	e.reqsQueue <- req
+	e.lazyLoadProcessor()
 }
 
-func (e *emitter) Send(dto FwRequest) {
+func (e *emitter) lazyLoadProcessor() {
+	if e.isProcessing.IsNotSet() {
+		e.isProcessing.Set()
+		go e.runProcessor(e.agentContext.Context())
+	}
+}
+
+func (e *emitter) runProcessor(ctx context.Context) {
+	for {
+		select {
+		case _ = <-ctx.Done():
+			e.isProcessing.UnSet()
+			return
+
+		case req := <-e.reqsQueue:
+			e.process(req)
+		}
+	}
+}
+
+func (e *emitter) process(dto FwRequest) {
 	agentShortName, err := e.agentContext.IDLookup().AgentShortEntityName()
 	if err != nil {
 		elog.
@@ -312,7 +225,7 @@ func emitEvent(
 
 // Replace entity name by applying entity rewrites and replacing loopback
 func replaceEntityName(entity protocol.Entity, entityRewrite []data.EntityRewrite, agentShortName string) {
-	newName := legacy.ApplyEntityRewrite(entity.Name, entityRewrite)
+	newName := host.ApplyEntityRewrite(entity.Name, entityRewrite)
 	newName = http.ReplaceLocalhost(newName, agentShortName)
 	entity.Name = newName
 }
