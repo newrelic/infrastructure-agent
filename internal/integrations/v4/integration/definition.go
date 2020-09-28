@@ -10,7 +10,6 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/when"
-	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
@@ -25,10 +24,6 @@ const (
 	configPathEnv     = "CONFIG_PATH"
 	configPathVarName = "config.path"
 	configPathHolder  = "${" + configPathVarName + "}"
-
-	// These two constants can be found in old integrations as well
-	labelPrefix     = "label."
-	labelPrefixTrim = 6
 )
 
 var elog = log.WithComponent("integrations.Definition")
@@ -64,25 +59,6 @@ func (d *Definition) PluginID(integrationName string) ids.PluginID {
 
 	// fallback to plugin name from config
 	return ids.NewDefaultInventoryPluginID(d.Name)
-}
-
-func (d *Definition) LabelsAndExtraAnnotations(extraLabels data.Map) (map[string]string, map[string]string) {
-	labels := make(map[string]string, len(d.Labels)+len(extraLabels))
-	extraAnnotations := make(map[string]string, len(extraLabels))
-
-	for k, v := range d.Labels {
-		labels[k] = v
-	}
-
-	for k, v := range extraLabels {
-		if strings.HasPrefix(k, labelPrefix) {
-			labels[k[labelPrefixTrim:]] = v
-		} else {
-			extraAnnotations[k] = v
-		}
-	}
-
-	return labels, extraAnnotations
 }
 
 func (d *Definition) Run(ctx context.Context, bind *databind.Values) ([]Output, error) {

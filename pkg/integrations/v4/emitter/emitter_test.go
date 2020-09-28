@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	integration2 "github.com/newrelic/infrastructure-agent/test/fixture/integration"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
@@ -355,11 +356,7 @@ type mockDmEmitter struct {
 	mock.Mock
 }
 
-func (m *mockDmEmitter) Send(dto dm.DTO) {
-	m.Called(dto)
-}
-
-func (m *mockDmEmitter) SendWithoutRegister(dto dm.DTO) {
+func (m *mockDmEmitter) Send(dto dm.FwRequest) {
 	m.Called(dto)
 }
 
@@ -520,7 +517,7 @@ func TestProtocolV4_Emit_WithFFDisabled(t *testing.T) {
 
 	ma := mockAgent()
 	mockDME := &mockDmEmitter{}
-	mockDME.On("Send", dm.NewDTO(
+	mockDME.On("Send", dm.NewFwRequest(
 		metadata,
 		extraLabels,
 		entityRewrite,
@@ -548,7 +545,7 @@ func TestProtocolV4_Emit_WithoutRegisteringEntities(t *testing.T) {
 	entityRewrite := []data.EntityRewrite{}
 
 	dmEmitter := &mockDmEmitter{}
-	dmEmitter.On("SendWithoutRegister", dm.NewDTO(
+	dmEmitter.On("Send", dm.NewFwRequest(
 		intDefinition,
 		extraLabels,
 		entityRewrite,
@@ -568,7 +565,7 @@ func TestProtocolV4_Emit_WithoutRegisteringEntities(t *testing.T) {
 }
 
 func mockAgent() *mocks.AgentContext {
-	aID := agent.IDLookup{
+	aID := host.IDLookup{
 		sysinfo.HOST_SOURCE_HOSTNAME:       "long",
 		sysinfo.HOST_SOURCE_HOSTNAME_SHORT: "short",
 	}

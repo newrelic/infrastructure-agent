@@ -3,6 +3,7 @@
 package dm
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,9 +15,11 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/tevino/abool"
 )
 
 var (
@@ -29,43 +32,24 @@ var (
 )
 
 const (
-	nrEntityId = "nr.entity.id"
+	nrEntityId              = "nr.entity.id"
+	defaultRequestsQueueLen = 1000
 )
-
-// DTO stores integration protocol v4 received data and required metadata to be processed before
-// submission.
-type DTO struct {
-	Metadata        integration.Definition
-	ExtraLabels     data.Map
-	EntityRewrite   []data.EntityRewrite
-	IntegrationData protocol.DataV4
-}
 
 type Agent interface {
 	GetContext() agent.AgentContext
 }
 
 type emitter struct {
+	reqsQueue     chan FwRequest
+	isProcessing  abool.AtomicBool
 	metricsSender MetricsSender
 	agentContext  agent.AgentContext
 	idProvider    idProviderInterface
 }
 
 type Emitter interface {
-	Send(DTO)
-	SendWithoutRegister(DTO)
-}
-
-func NewDTO(metadata integration.Definition,
-	extraLabels data.Map,
-	entityRewrite []data.EntityRewrite,
-	integrationData protocol.DataV4) DTO {
-	return DTO{
-		Metadata:        metadata,
-		ExtraLabels:     extraLabels,
-		EntityRewrite:   entityRewrite,
-		IntegrationData: integrationData,
-	}
+	Send(FwRequest)
 }
 
 func NewEmitter(
@@ -74,127 +58,57 @@ func NewEmitter(
 	idProvider idProviderInterface) Emitter {
 
 	return &emitter{
+		reqsQueue:     make(chan FwRequest, defaultRequestsQueueLen),
 		agentContext:  agentContext,
 		metricsSender: dmSender,
 		idProvider:    idProvider,
 	}
 }
 
-func (e *emitter) SendWithoutRegister(dto DTO) {
-	metadata := dto.Metadata
-	extraLabels := dto.ExtraLabels
-	entityRewrite := dto.EntityRewrite
-	integrationData := dto.IntegrationData
-
-	var emitErrs []error
-
-	pluginId := metadata.PluginID(integrationData.Integration.Name)
-	plugin := agent.NewExternalPluginCommon(pluginId, e.agentContext, metadata.Name)
-
-	labels, extraAnnotations := metadata.LabelsAndExtraAnnotations(extraLabels)
-
-	var err error
-
-	emitV4DataSet := func(
-		idLookup agent.IDLookup,
-		metricsSender MetricsSender,
-		emitter agent.PluginEmitter,
-		metadata integration.Definition,
-		integrationMetadata protocol.IntegrationMetadata,
-		dataSet protocol.Dataset,
-		labels map[string]string,
-		extraAnnotations map[string]string,
-		entityRewrite []data.EntityRewrite) error {
-
-		logEntry := elog.WithField("action", "EmitV4DataSet")
-
-		replaceEntityNameWithoutRegister := func(entity protocol.Entity, entityRewrite []data.EntityRewrite, idLookup agent.IDLookup) error {
-			// Replace entity name by applying entity rewrites and replacing loopback
-			newName := legacy.ApplyEntityRewrite(entity.Name, entityRewrite)
-
-			agentShortName, err := idLookup.AgentShortEntityName()
-			newName = http.ReplaceLocalhost(newName, agentShortName)
-
-			if err != nil {
-				return err
-			}
-
-			entity.Name = newName
-			return nil
-		}
-
-		err := replaceEntityNameWithoutRegister(dataSet.Entity, entityRewrite, idLookup)
-		if err != nil {
-			return fmt.Errorf("error renaming entity: %s", err.Error())
-		}
-
-		integrationUser := metadata.ExecutorConfig.User
-
-		if len(dataSet.Inventory) > 0 {
-			inventoryDataSet := legacy.BuildInventoryDataSet(
-				logEntry, dataSet.Inventory, labels, integrationUser, integrationMetadata.Name,
-				dataSet.Entity.Name)
-			emitter.EmitInventory(inventoryDataSet, entity.Entity{
-				Key: entity.Key(dataSet.Entity.Name),
-			})
-		}
-
-		for _, event := range dataSet.Events {
-			normalizedEvent := legacy.NormalizeEvent(elog, event, labels, integrationUser, dataSet.Entity.Name)
-
-			if normalizedEvent != nil {
-				emitter.EmitEvent(normalizedEvent, entity.Key(dataSet.Entity.Name))
-			}
-		}
-
-		dmProcessor := IntegrationProcessor{
-			IntegrationInterval:         metadata.Interval,
-			IntegrationLabels:           labels,
-			IntegrationExtraAnnotations: extraAnnotations,
-		}
-		metricsSender.SendMetrics(dmProcessor.ProcessMetrics(dataSet.Metrics, dataSet.Common, dataSet.Entity))
-
-		return nil
-	}
-
-	for _, dataset := range integrationData.DataSets {
-		if err = emitV4DataSet(
-			e.agentContext.IDLookup(),
-			e.metricsSender,
-			&plugin,
-			metadata,
-			integrationData.Integration,
-			dataset,
-			labels,
-			extraAnnotations,
-			entityRewrite,
-		); err != nil {
-			emitErrs = append(emitErrs, err)
-		}
-	}
-
-	// TODO error handling
-	elog.Error(composeEmitError(emitErrs, len(integrationData.DataSets)).Error())
+// Send receives data forward requests and queues them while processing them on different goroutine.
+// Processor is automatically being lazy run at first data received.
+func (e *emitter) Send(req FwRequest) {
+	e.reqsQueue <- req
+	e.lazyLoadProcessor()
 }
 
-func (e *emitter) Send(dto DTO) {
+func (e *emitter) lazyLoadProcessor() {
+	if e.isProcessing.IsNotSet() {
+		e.isProcessing.Set()
+		go e.runProcessor(e.agentContext.Context())
+	}
+}
+
+func (e *emitter) runProcessor(ctx context.Context) {
+	for {
+		select {
+		case _ = <-ctx.Done():
+			e.isProcessing.UnSet()
+			return
+
+		case req := <-e.reqsQueue:
+			e.process(req)
+		}
+	}
+}
+
+func (e *emitter) process(dto FwRequest) {
 	agentShortName, err := e.agentContext.IDLookup().AgentShortEntityName()
 	if err != nil {
 		elog.
 			WithError(err).
-			WithField("integration", dto.Metadata.Name).
+			WithField("integration", dto.Definition.Name).
 			Errorf("cannot determine agent short name")
 		return
 	}
 
-	pluginId := dto.Metadata.PluginID(dto.IntegrationData.Integration.Name)
-	plugin := agent.NewExternalPluginCommon(pluginId, e.agentContext, dto.Metadata.Name)
-	labels, extraAnnotations := dto.Metadata.LabelsAndExtraAnnotations(dto.ExtraLabels)
+	plugin := agent.NewExternalPluginCommon(dto.PluginID(), e.agentContext, dto.Definition.Name)
+	labels, extraAnnotations := dto.LabelsAndExtraAnnotations()
 
 	var entities []protocol.Entity
-	datasetsByEntityName := make(map[string]protocol.Dataset, len(dto.IntegrationData.DataSets))
+	datasetsByEntityName := make(map[string]protocol.Dataset, len(dto.Data.DataSets))
 	// Collect All entities
-	for _, ds := range dto.IntegrationData.DataSets {
+	for _, ds := range dto.Data.DataSets {
 		entities = append(entities, ds.Entity)
 		datasetsByEntityName[ds.Entity.Name] = ds
 	}
@@ -211,8 +125,8 @@ func (e *emitter) Send(dto DTO) {
 
 			emitInventory(
 				&plugin,
-				dto.Metadata,
-				dto.IntegrationData.Integration,
+				dto.Definition,
+				dto.Data.Integration,
 				entityID,
 				dataset,
 				labels,
@@ -220,13 +134,13 @@ func (e *emitter) Send(dto DTO) {
 
 			emitEvent(
 				&plugin,
-				dto.Metadata,
+				dto.Definition,
 				dataset,
 				labels,
 			)
 
 			dmProcessor := IntegrationProcessor{
-				IntegrationInterval:         dto.Metadata.Interval,
+				IntegrationInterval:         dto.Definition.Interval,
 				IntegrationLabels:           labels,
 				IntegrationExtraAnnotations: extraAnnotations,
 			}
@@ -258,12 +172,12 @@ func (e *emitter) Send(dto DTO) {
 
 	if len(entitiesToReRegister) == 0 {
 		// TODO error handling
-		elog.Error(composeEmitError(emitErrs, len(dto.IntegrationData.DataSets)).Error())
+		elog.Error(composeEmitError(emitErrs, len(dto.Data.DataSets)).Error())
 		return
 	}
 
 	// TODO error handling
-	elog.Error(composeEmitError(emitErrs, len(dto.IntegrationData.DataSets)).Error())
+	elog.Error(composeEmitError(emitErrs, len(dto.Data.DataSets)).Error())
 	return
 }
 
@@ -311,7 +225,7 @@ func emitEvent(
 
 // Replace entity name by applying entity rewrites and replacing loopback
 func replaceEntityName(entity protocol.Entity, entityRewrite []data.EntityRewrite, agentShortName string) {
-	newName := legacy.ApplyEntityRewrite(entity.Name, entityRewrite)
+	newName := host.ApplyEntityRewrite(entity.Name, entityRewrite)
 	newName = http.ReplaceLocalhost(newName, agentShortName)
 	entity.Name = newName
 }

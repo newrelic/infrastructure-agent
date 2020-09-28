@@ -8,7 +8,6 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 
-	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
@@ -26,7 +25,7 @@ var (
 
 // Emitter forwards agent/integration payload to  parser & processors (entity ID decoration...)
 type Emitter interface {
-	Emit(metadata integration.Definition, ExtraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error
+	Emit(definition integration.Definition, ExtraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error
 }
 
 type Agent interface {
@@ -53,7 +52,7 @@ type Emittor struct {
 	dmEmitter           dm.Emitter
 }
 
-func (e *Emittor) Emit(metadata integration.Definition, extraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error {
+func (e *Emittor) Emit(definition integration.Definition, extraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error {
 	protocolVersion, err := protocol.VersionFromPayload(integrationJSON, e.forceProtocolV2ToV3)
 	if err != nil {
 		elog.
@@ -72,12 +71,7 @@ func (e *Emittor) Emit(metadata integration.Definition, extraLabels data.Map, en
 			return err
 		}
 
-		dto := dm.NewDTO(metadata, extraLabels, entityRewrite, pluginDataV4)
-		if enabled, exists := e.ffRetriever.GetFeatureFlag(handler.FlagDMRegisterEnable); exists && enabled {
-			e.dmEmitter.Send(dto)
-		} else {
-			e.dmEmitter.SendWithoutRegister(dto)
-		}
+		e.dmEmitter.Send(dm.NewFwRequest(definition, extraLabels, entityRewrite, pluginDataV4))
 		return nil
 	}
 
@@ -87,49 +81,41 @@ func (e *Emittor) Emit(metadata integration.Definition, extraLabels data.Map, en
 		return err
 	}
 
-	return e.emitV3(metadata, extraLabels, entityRewrite, pluginDataV3, protocolVersion)
+	return e.emitV3(dm.NewFwRequestLegacy(definition, extraLabels, entityRewrite, pluginDataV3), protocolVersion)
 }
 
-func (e *Emittor) emitV3(
-	metadata integration.Definition,
-	extraLabels data.Map,
-	entityRewrite []data.EntityRewrite,
-	pluginData protocol.PluginDataV3,
-	protocolVersion int) error {
+func (e *Emittor) emitV3(dto dm.FwRequestLegacy, protocolVersion int) error {
+	plugin := agent.NewExternalPluginCommon(dto.Definition.PluginID(dto.Data.Name), e.aCtx, dto.Definition.Name)
+	labels, extraAnnotations := dto.LabelsAndExtraAnnotations()
+
 	var emitErrs []error
-
-	pgId := metadata.PluginID(pluginData.Name)
-	plugin := agent.NewExternalPluginCommon(pgId, e.aCtx, metadata.Name)
-
-	labels, extraAnnotations := metadata.LabelsAndExtraAnnotations(extraLabels)
-
-	for _, dataset := range pluginData.DataSets {
+	for _, dataset := range dto.Data.DataSets {
 		err := legacy.EmitDataSet(
 			e.aCtx,
 			&plugin,
-			pluginData.Name,
-			pluginData.IntegrationVersion,
-			metadata.ExecutorConfig.User,
+			dto.Definition.Name,
+			dto.Data.IntegrationVersion,
+			dto.Definition.ExecutorConfig.User,
 			dataset,
 			extraAnnotations,
 			labels,
-			entityRewrite,
+			dto.EntityRewrite,
 			protocolVersion)
 		if err != nil {
 			emitErrs = append(emitErrs, err)
 		}
 	}
 
-	return composeEmitError(emitErrs, len(pluginData.DataSets))
+	return composeEmitError(emitErrs, len(dto.Data.DataSets))
 }
 
 // Returns a composed error which describes all the errors found during the emit process of each data set
-func composeEmitError(emitErrs []error, dataSetLenght int) error {
+func composeEmitError(emitErrs []error, dataSetLength int) error {
 	if len(emitErrs) == 0 {
 		return nil
 	}
 
-	composedError := fmt.Sprintf("%d out of %d datasets could not be emitted. Reasons: ", len(emitErrs), dataSetLenght)
+	composedError := fmt.Sprintf("%d out of %d datasets could not be emitted. Reasons: ", len(emitErrs), dataSetLength)
 	messages := map[string]struct{}{}
 
 	for _, err := range emitErrs {

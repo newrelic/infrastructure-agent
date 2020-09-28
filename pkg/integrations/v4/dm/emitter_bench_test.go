@@ -1,16 +1,19 @@
 package dm
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
-	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
-	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
-	"github.com/stretchr/testify/require"
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
+	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
+	"github.com/stretchr/testify/require"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
@@ -142,7 +145,7 @@ func benchmarkSend(b *testing.B, entityCount int) {
 	for i := 0; i < b.N; i++ {
 		// Then the emitter should send correctly five times
 		for count := 0; count < 5; count++ {
-			dmEmitter.Send(NewDTO(integration.Definition{}, extraLabels, []data.EntityRewrite{}, d))
+			dmEmitter.Send(NewFwRequest(integration.Definition{}, extraLabels, []data.EntityRewrite{}, d))
 			// todo: error handling
 			// todo: Trigger harvest
 		}
@@ -162,8 +165,12 @@ func (s stubIDProviderInterface) ResolveEntities(entities []protocol.Entity) (re
 }
 
 type noopAgentContext struct {
-	lookUp   agent.IDLookup
+	lookUp   host.IDLookup
 	identity entity.Identity
+}
+
+func (n noopAgentContext) Context() context.Context {
+	return context.TODO()
 }
 
 func (n noopAgentContext) SendData(output agent.PluginOutput) {
@@ -214,7 +221,7 @@ func (n noopAgentContext) HostnameResolver() hostname.Resolver {
 	panic("implement me")
 }
 
-func (n noopAgentContext) IDLookup() agent.IDLookup {
+func (n noopAgentContext) IDLookup() host.IDLookup {
 	return n.lookUp
 }
 
