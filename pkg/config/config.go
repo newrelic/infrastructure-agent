@@ -1425,6 +1425,25 @@ func calculateCmdChannelStagingURL(licenseKey string) string {
 	return defaultCmdChannelStagingURL
 }
 
+func calculateDimensionalMetricURL(collectorURL string, licenseKey string, staging bool) string {
+	if collectorURL != "" {
+		 return collectorURL
+	}
+
+	if staging {
+		if license.IsRegionEU(licenseKey) {
+			return "https://staging-metric-api.eu.newrelic.com"
+		}
+		return "https://staging-metric-api.newrelic.com"
+	}
+
+	if license.IsRegionEU(licenseKey) {
+		return "https://metric-api.eu.newrelic.com"
+	}
+
+	return "https://metric-api.newrelic.com"
+}
+
 func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err error) {
 	nlog := clog.WithField("action", "NormalizeConfig")
 
@@ -1469,6 +1488,7 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	if cfg.CollectorURL == "" {
 		cfg.CollectorURL = calculateCollectorURL(cfg.License, cfg.Staging)
 	}
+
 	nlog.WithField("collectorURL", cfg.CollectorURL).Debug("Collector URL")
 
 	if cfg.IdentityURL == "" {
