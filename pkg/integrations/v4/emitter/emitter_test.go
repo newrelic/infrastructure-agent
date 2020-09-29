@@ -429,7 +429,7 @@ func TestLegacy_Emit(t *testing.T) {
 			mockDME := &mockDmEmitter{}
 			mockDME.On("Send", mock.Anything)
 
-			em := &Emittor{
+			em := &VersionAwareEmitter{
 				aCtx:        ma,
 				ffRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true, handler.FlagDMRegisterEnable: true}),
 				dmEmitter:   mockDME,
@@ -467,7 +467,7 @@ func TestProtocolV4_Emit(t *testing.T) {
 	mockDME := &mockDmEmitter{}
 	mockDME.On("Send", mock.Anything)
 
-	em := &Emittor{
+	em := &VersionAwareEmitter{
 		aCtx:        ma,
 		ffRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true, handler.FlagDMRegisterEnable: true}),
 		dmEmitter:   mockDME,
@@ -525,7 +525,7 @@ func TestProtocolV4_Emit_WithFFDisabled(t *testing.T) {
 		integration2.ProtocolV4.ParsedV4,
 	))
 
-	em := &Emittor{
+	em := &VersionAwareEmitter{
 		aCtx:        ma,
 		ffRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: false, handler.FlagDMRegisterEnable: true}),
 		dmEmitter:   mockDME,
@@ -553,7 +553,7 @@ func TestProtocolV4_Emit_WithoutRegisteringEntities(t *testing.T) {
 		integration2.ProtocolV4.ParsedV4,
 	))
 
-	em := &Emittor{
+	em := &VersionAwareEmitter{
 		aCtx:        mockAgent(),
 		ffRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true, handler.FlagDMRegisterEnable: false}),
 		dmEmitter:   dmEmitter,
