@@ -33,32 +33,32 @@ var noLookup = InstancesLookup{
 	},
 }
 
-func TestExec(t *testing.T) {
+func TestRun(t *testing.T) {
 	defer leaktest.Check(t)()
 
-	// GIVEN a task entry with no discovery sources
-	task, err := New(config.ConfigEntry{
+	// GIVEN a definition entry with no discovery sources
+	def, err := NewDefinition(config.ConfigEntry{
 		Name: "foo",
 		Exec: testhelp.Command(fixtures.BasicCmd),
 	}, noLookup, nil, nil)
 	require.NoError(t, err)
 
 	// WHEN it is executed
-	outs, err := task.Run(context.Background(), nil)
+	outs, err := def.Run(context.Background(), nil)
 	require.NoError(t, err)
 	require.Len(t, outs, 1)
 
 	// THEN returns normally, forwarding the Standard Output&error
-	assert.NoError(t, testhelp.ChannelErrClosed(outs[0].Output.Errors))
-	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[0].Output.Stdout))
-	assert.Equal(t, "error line", testhelp.ChannelRead(outs[0].Output.Stderr))
+	assert.NoError(t, testhelp.ChannelErrClosed(outs[0].Receive.Errors))
+	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[0].Receive.Stdout))
+	assert.Equal(t, "error line", testhelp.ChannelRead(outs[0].Receive.Stderr))
 }
 
-func TestExec_NoDiscovery(t *testing.T) {
+func TestRun_NoDiscovery(t *testing.T) {
 	defer leaktest.Check(t)()
 
-	// GIVEN a task entry with discovery sources
-	task, err := New(config.ConfigEntry{
+	// GIVEN a definition entry with discovery sources
+	def, err := NewDefinition(config.ConfigEntry{
 		Name: "foo",
 		Exec: testhelp.Command(fixtures.BasicCmd),
 		Env: map[string]string{
@@ -67,22 +67,22 @@ func TestExec_NoDiscovery(t *testing.T) {
 	}, noLookup, nil, nil)
 	require.NoError(t, err)
 
-	// WHEN the task is executed with no discovery matches
-	outs, err := task.Run(context.Background(), &databind.Values{})
+	// WHEN the def is executed with no discovery matches
+	outs, err := def.Run(context.Background(), &databind.Values{})
 	require.NoError(t, err)
 
 	// THEN no tasks are executed
 	assert.Empty(t, outs)
 }
 
-func TestExec_Discovery(t *testing.T) {
+func TestRun_Discovery(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	if runtime.GOOS == "windows" {
 		t.Skip("there is a problem when executing directly powershell with environment variables")
 	}
-	// GIVEN a task entry with discoverable configuration
-	task, err := New(config.ConfigEntry{
+	// GIVEN a definition entry with discoverable configuration
+	def, err := NewDefinition(config.ConfigEntry{
 		Name: "foo",
 		Exec: testhelp.Command(fixtures.BasicCmd, "${argument}"),
 		Env: map[string]string{
@@ -91,64 +91,64 @@ func TestExec_Discovery(t *testing.T) {
 	}, noLookup, nil, nil)
 	require.NoError(t, err)
 
-	// WHEN the task is executed with different discovery matches
+	// WHEN the def is executed with different discovery matches
 	vals := databind.NewValues(nil,
 		databind.NewDiscovery(data.Map{"prefix": "hello", "argument": "world"}, data.InterfaceMap{"special": true, "label.one": "one"}, nil),
 		databind.NewDiscovery(data.Map{"prefix": "bye", "argument": "people"}, data.InterfaceMap{"special": false, "label.two": "two"}, nil),
 		databind.NewDiscovery(data.Map{"prefix": "kon", "argument": "nichiwa"}, data.InterfaceMap{"other_tag": "true", "label.tree": "three"}, nil),
 	)
-	outs, err := task.Run(context.Background(), &vals)
+	outs, err := def.Run(context.Background(), &vals)
 	require.NoError(t, err)
 	require.Len(t, outs, 3)
 
 	// THEN the tasks are executed with the given configuration
-	assert.NoError(t, testhelp.ChannelErrClosed(outs[0].Output.Errors))
-	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[0].Output.Stdout))
-	assert.Equal(t, "error line", testhelp.ChannelRead(outs[0].Output.Stderr))
-	assert.Equal(t, "hello-world", testhelp.ChannelRead(outs[0].Output.Stdout))
+	assert.NoError(t, testhelp.ChannelErrClosed(outs[0].Receive.Errors))
+	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[0].Receive.Stdout))
+	assert.Equal(t, "error line", testhelp.ChannelRead(outs[0].Receive.Stderr))
+	assert.Equal(t, "hello-world", testhelp.ChannelRead(outs[0].Receive.Stdout))
 	assert.Equal(t, data.Map{"label.one": "one", "special": "true"}, outs[0].ExtraLabels)
 
-	assert.NoError(t, testhelp.ChannelErrClosed(outs[1].Output.Errors))
-	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[1].Output.Stdout))
-	assert.Equal(t, "error line", testhelp.ChannelRead(outs[1].Output.Stderr))
-	assert.Equal(t, "bye-people", testhelp.ChannelRead(outs[1].Output.Stdout))
+	assert.NoError(t, testhelp.ChannelErrClosed(outs[1].Receive.Errors))
+	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[1].Receive.Stdout))
+	assert.Equal(t, "error line", testhelp.ChannelRead(outs[1].Receive.Stderr))
+	assert.Equal(t, "bye-people", testhelp.ChannelRead(outs[1].Receive.Stdout))
 	assert.Equal(t, data.Map{"label.two": "two", "special": "false"}, outs[1].ExtraLabels)
 
-	assert.NoError(t, testhelp.ChannelErrClosed(outs[2].Output.Errors))
-	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[2].Output.Stdout))
-	assert.Equal(t, "error line", testhelp.ChannelRead(outs[2].Output.Stderr))
-	assert.Equal(t, "kon-nichiwa", testhelp.ChannelRead(outs[2].Output.Stdout))
+	assert.NoError(t, testhelp.ChannelErrClosed(outs[2].Receive.Errors))
+	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[2].Receive.Stdout))
+	assert.Equal(t, "error line", testhelp.ChannelRead(outs[2].Receive.Stderr))
+	assert.Equal(t, "kon-nichiwa", testhelp.ChannelRead(outs[2].Receive.Stdout))
 	assert.Equal(t, data.Map{"label.tree": "three", "other_tag": "true"}, outs[2].ExtraLabels)
 }
 
-func TestExec_CmdSlice(t *testing.T) {
+func TestRun_CmdSlice(t *testing.T) {
 	defer leaktest.Check(t)()
 
-	// GIVEN a task entry whose parameters are specified as a command array
-	task, err := New(config.ConfigEntry{
+	// GIVEN a definition entry whose parameters are specified as a command array
+	def, err := NewDefinition(config.ConfigEntry{
 		Name: "foo",
 		Exec: testhelp.CommandSlice(fixtures.BasicCmd, "argument"),
 	}, noLookup, nil, nil)
 	require.NoError(t, err)
 
-	// WHEN the task is executed
-	outs, err := task.Run(context.Background(), &databind.Values{})
+	// WHEN the def is executed
+	outs, err := def.Run(context.Background(), &databind.Values{})
 	require.NoError(t, err)
 	require.Len(t, outs, 1)
 
 	// THEN the tasks are executed with the given configuration
-	assert.NoError(t, testhelp.ChannelErrClosed(outs[0].Output.Errors))
-	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[0].Output.Stdout))
-	assert.Equal(t, "error line", testhelp.ChannelRead(outs[0].Output.Stderr))
-	assert.Equal(t, "-argument", testhelp.ChannelRead(outs[0].Output.Stdout))
+	assert.NoError(t, testhelp.ChannelErrClosed(outs[0].Receive.Errors))
+	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[0].Receive.Stdout))
+	assert.Equal(t, "error line", testhelp.ChannelRead(outs[0].Receive.Stderr))
+	assert.Equal(t, "-argument", testhelp.ChannelRead(outs[0].Receive.Stdout))
 }
 
-func TestExec_CancelPropagation(t *testing.T) {
+func TestRun_CancelPropagation(t *testing.T) {
 	defer leaktest.Check(t)()
 
-	// GIVEN a task entry with discoverable configuration
+	// GIVEN a definition entry with discoverable configuration
 	// that is executed with different discovery matches
-	task, err := New(config.ConfigEntry{
+	def, err := NewDefinition(config.ConfigEntry{
 		Name: "foo",
 		Exec: testhelp.Command(fixtures.BlockedCmd, "-f", "${argument}"),
 	}, noLookup, nil, nil)
@@ -160,14 +160,14 @@ func TestExec_CancelPropagation(t *testing.T) {
 	)
 
 	parentContext, cancel := context.WithCancel(context.Background())
-	outs, err := task.Run(parentContext, &vals)
+	outs, err := def.Run(parentContext, &vals)
 	require.NoError(t, err)
 	require.Len(t, outs, 3)
 
 	// WHEN the tasks are running
 	for _, out := range outs {
-		assert.Equal(t, "starting", testhelp.ChannelRead(out.Output.Stdout))
-		assert.Error(t, testhelp.ChannelErrClosedTimeout(out.Output.Errors, 100*time.Millisecond))
+		assert.Equal(t, "starting", testhelp.ChannelRead(out.Receive.Stdout))
+		assert.Error(t, testhelp.ChannelErrClosedTimeout(out.Receive.Errors, 100*time.Millisecond))
 	}
 
 	// AND they are cancelled
@@ -176,27 +176,27 @@ func TestExec_CancelPropagation(t *testing.T) {
 	// THEN all the subtasks have reported errors
 	var openCh bool
 	for _, out := range outs {
-		err := testhelp.ChannelErrClosed(out.Output.Errors)
+		err := testhelp.ChannelErrClosed(out.Receive.Errors)
 		assert.Error(t, err)
 		assert.NotEqual(t, err, testhelp.ErrChannelTimeout)
 
 		// AND channels are closed
-		_, openCh = <-out.Output.Stdout
+		_, openCh = <-out.Receive.Stdout
 		assert.False(t, openCh)
-		_, openCh = <-out.Output.Stderr
+		_, openCh = <-out.Receive.Stderr
 		assert.False(t, openCh)
 
 		// AND ctx has been canceled
-		_, openCh = <-out.Output.Done
+		_, openCh = <-out.Receive.Done
 		assert.False(t, openCh)
 	}
 }
 
-func TestExec_CancelPropagationWithoutReads(t *testing.T) {
+func TestRun_CancelPropagationWithoutReads(t *testing.T) {
 	defer leaktest.Check(t)()
 
-	// GIVEN a task run
-	task, err := New(config.ConfigEntry{
+	// GIVEN a definition run
+	def, err := NewDefinition(config.ConfigEntry{
 		Name: "foo",
 		Exec: testhelp.Command(fixtures.BlockedCmd),
 	}, noLookup, nil, nil)
@@ -204,7 +204,7 @@ func TestExec_CancelPropagationWithoutReads(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	outs, err := task.Run(ctx, nil)
+	outs, err := def.Run(ctx, nil)
 	require.NoError(t, err)
 	require.Len(t, outs, 1)
 
@@ -214,28 +214,28 @@ func TestExec_CancelPropagationWithoutReads(t *testing.T) {
 	// THEN all the subtasks have reported errors
 	var openCh bool
 	for _, out := range outs {
-		err := testhelp.ChannelErrClosed(out.Output.Errors)
+		err := testhelp.ChannelErrClosed(out.Receive.Errors)
 		assert.Error(t, err)
 		assert.NotEqual(t, err, testhelp.ErrChannelTimeout)
 
 		// AND channels are closed
-		_, openCh = <-out.Output.Stdout
+		_, openCh = <-out.Receive.Stdout
 		assert.False(t, openCh)
-		_, openCh = <-out.Output.Stderr
+		_, openCh = <-out.Receive.Stderr
 		assert.False(t, openCh)
 
 		// AND ctx has been canceled
-		_, openCh = <-out.Output.Done
+		_, openCh = <-out.Receive.Done
 		assert.False(t, openCh)
 	}
 }
 
-func TestExec_Cancel_Partial(t *testing.T) {
+func TestRun_Cancel_Partial(t *testing.T) {
 	defer leaktest.Check(t)()
 
-	// GIVEN a task entry with discoverable configuration
+	// GIVEN a definition entry with discoverable configuration
 	// that is executed with different discovery matches
-	task, err := New(config.ConfigEntry{
+	def, err := NewDefinition(config.ConfigEntry{
 		Name: "foo",
 		Exec: testhelp.Command("${script}"),
 	}, noLookup, nil, nil)
@@ -246,27 +246,27 @@ func TestExec_Cancel_Partial(t *testing.T) {
 	)
 
 	parentContext, cancel := context.WithCancel(context.Background())
-	outs, err := task.Run(parentContext, &vals)
+	outs, err := def.Run(parentContext, &vals)
 	require.NoError(t, err)
 	require.Len(t, outs, 2)
 
 	// WHEN the tasks are running
-	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[0].Output.Stdout))
-	assert.Equal(t, "starting", testhelp.ChannelRead(outs[1].Output.Stdout))
-	assert.Error(t, testhelp.ChannelErrClosedTimeout(outs[1].Output.Errors, 100*time.Millisecond))
+	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[0].Receive.Stdout))
+	assert.Equal(t, "starting", testhelp.ChannelRead(outs[1].Receive.Stdout))
+	assert.Error(t, testhelp.ChannelErrClosedTimeout(outs[1].Receive.Errors, 100*time.Millisecond))
 
 	// AND they are cancelled
 	cancel()
 
 	// THEN only the non-finished tasks have been cancelled
-	assert.NoError(t, testhelp.ChannelErrClosed(outs[0].Output.Errors))
-	assert.Error(t, testhelp.ChannelErrClosedTimeout(outs[1].Output.Errors, 100*time.Millisecond))
+	assert.NoError(t, testhelp.ChannelErrClosed(outs[0].Receive.Errors))
+	assert.Error(t, testhelp.ChannelErrClosedTimeout(outs[1].Receive.Errors, 100*time.Millisecond))
 }
 
-func TestExec_Directory(t *testing.T) {
+func TestRun_Directory(t *testing.T) {
 	defer leaktest.Check(t)()
 
-	// GIVEN a task that is located in a non-current directory
+	// GIVEN a definition that is located in a non-current directory
 	tmpDir, err := ioutil.TempDir("", "script")
 	require.NoError(t, err)
 	script, err := ioutil.ReadFile(string(fixtures.BasicCmd))
@@ -274,13 +274,13 @@ func TestExec_Directory(t *testing.T) {
 	scriptFile := filepath.Base(string(fixtures.BasicCmd))
 	require.NoError(t, ioutil.WriteFile(filepath.Join(tmpDir, scriptFile), script, os.ModePerm))
 
-	// GIVEN a task entry with a user-provided working directory
+	// GIVEN a definition entry with a user-provided working directory
 	// that invokes a script with a relative path
 	currentpath := "./"
 	if runtime.GOOS == "windows" {
 		currentpath = ".\\"
 	}
-	task, err := New(config.ConfigEntry{
+	def, err := NewDefinition(config.ConfigEntry{
 		Name:    "foo",
 		Exec:    testhelp.Command(testhelp.Script(currentpath + scriptFile)),
 		WorkDir: tmpDir,
@@ -288,17 +288,17 @@ func TestExec_Directory(t *testing.T) {
 	require.NoError(t, err)
 
 	// WHEN it is executed
-	outs, err := task.Run(context.Background(), nil)
+	outs, err := def.Run(context.Background(), nil)
 	require.NoError(t, err)
 	require.Len(t, outs, 1)
 
 	// THEN returns normally, forwarding the Standard Output&error
-	assert.NoError(t, testhelp.ChannelErrClosed(outs[0].Output.Errors))
-	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[0].Output.Stdout))
-	assert.Equal(t, "error line", testhelp.ChannelRead(outs[0].Output.Stderr))
+	assert.NoError(t, testhelp.ChannelErrClosed(outs[0].Receive.Errors))
+	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[0].Receive.Stdout))
+	assert.Equal(t, "error line", testhelp.ChannelRead(outs[0].Receive.Stderr))
 }
 
-func TestExec_RemoveExternalConfig(t *testing.T) {
+func TestRun_RemoveExternalConfig(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	// GIVEN an integration with an external configuration file
@@ -311,7 +311,7 @@ func TestExec_RemoveExternalConfig(t *testing.T) {
 	config, err := LoadConfigTemplate(configEntry.TemplatePath, configEntry.Config)
 	require.NoError(t, err)
 
-	task, err := New(configEntry, noLookup, nil, config)
+	def, err := NewDefinition(configEntry, noLookup, nil, config)
 	require.NoError(t, err)
 
 	// WHEN the integration has been properly executed
@@ -324,14 +324,14 @@ func TestExec_RemoveExternalConfig(t *testing.T) {
 
 	// (spy function to get which files have been created)
 	var createdConfigs []string
-	task.newTempFile = func(template []byte) (string, error) {
+	def.newTempFile = func(template []byte) (string, error) {
 		path, err := newTempFile(template)
 		if err == nil {
 			createdConfigs = append(createdConfigs, path)
 		}
 		return path, err
 	}
-	outputs, err := task.Run(ctx, &vals)
+	outputs, err := def.Run(ctx, &vals)
 	require.NoError(t, err)
 	require.Len(t, outputs, 2)
 	require.Len(t, createdConfigs, 2)
@@ -339,7 +339,7 @@ func TestExec_RemoveExternalConfig(t *testing.T) {
 	timeout := time.After(10 * time.Second)
 	for _, out := range outputs {
 		select {
-		case <-out.Output.Done:
+		case <-out.Receive.Done:
 		case <-timeout:
 			require.FailNow(t, "timeout waiting for the integrations to finish")
 		}

@@ -31,8 +31,8 @@ const (
 
 var ilog = log.WithComponent("integrations.Definition")
 
-type IntegrationOutput struct {
-	Output        executor.OutputReceive
+type Output struct {
+	Receive       executor.OutputReceive
 	ExtraLabels   data.Map
 	EntityRewrite []data.EntityRewrite
 }
@@ -47,34 +47,34 @@ type InstancesLookup struct {
 	ByName func(name string) (string, error)
 }
 
-// New interprets and validates a YAML ConfigEntry configuration and returns the proper
-// implementation.
-func New(te config2.ConfigEntry, lookup InstancesLookup, passthroughEnv []string, configTemplate []byte) (Definition, error) {
+// NewDefinition creates Definition from ConfigEntry, config template, executables lookup and
+// passed through env vars.
+func NewDefinition(ce config2.ConfigEntry, lookup InstancesLookup, passthroughEnv []string, configTemplate []byte) (Definition, error) {
 
-	if err := te.Sanitize(); err != nil {
+	if err := ce.Sanitize(); err != nil {
 		return Definition{}, err
 	}
 	d := Definition{
 		ExecutorConfig: executor.Config{
-			User:        te.User,
-			Directory:   te.WorkDir,
-			Environment: te.Env,
+			User:        ce.User,
+			Directory:   ce.WorkDir,
+			Environment: ce.Env,
 			Passthrough: passthroughEnv,
 		},
-		Labels:         te.Labels,
-		Name:           te.Name,
-		Interval:       getInterval(te.Interval),
-		WhenConditions: conditions(te.When),
+		Labels:         ce.Labels,
+		Name:           ce.Name,
+		Interval:       getInterval(ce.Interval),
+		WhenConditions: conditions(ce.When),
 		ConfigTemplate: configTemplate,
 		newTempFile:    newTempFile,
 	}
 
-	if te.InventorySource == "" {
+	if ce.InventorySource == "" {
 		// Set to empty as currently Inventory source unknown
 		d.InventorySource = ids.EmptyInventorySource
 	} else {
 		var err error
-		d.InventorySource, err = ids.FromString(te.InventorySource)
+		d.InventorySource, err = ids.FromString(ce.InventorySource)
 		if err != nil {
 			return Definition{}, errors.New("Error parsing 'inventory_source' YAML property: " + err.Error())
 		}
@@ -82,36 +82,36 @@ func New(te config2.ConfigEntry, lookup InstancesLookup, passthroughEnv []string
 
 	// Unset timeout: default
 	// Zero or negative: disabled
-	if te.Timeout == nil {
+	if ce.Timeout == nil {
 		ilog.WithField("default_timeout", defaultTimeout).Debug("Setting default timeout.")
 		d.Timeout = defaultTimeout
-	} else if *te.Timeout <= 0 {
-		ilog.WithField("timeout", *te.Timeout).Debug("Timeout disabled.")
+	} else if *ce.Timeout <= 0 {
+		ilog.WithField("timeout", *ce.Timeout).Debug("Timeout disabled.")
 		d.Timeout = 0
-	} else if *te.Timeout < minimumTimeout {
+	} else if *ce.Timeout < minimumTimeout {
 		ilog.WithFields(logrus.Fields{
-			"timeout":         te.Timeout,
+			"timeout":         ce.Timeout,
 			"minimum_timeout": minimumTimeout,
 		}).Warn("timeout is too low (did you forget to append the time unit suffix?). Using minimum allowed value")
 		d.Timeout = minimumTimeout
 	} else {
-		d.Timeout = *te.Timeout
+		d.Timeout = *ce.Timeout
 	}
 
 	// if looking for a v3 integration from the v4 engine
-	if te.IntegrationName != "" {
-		err := d.fromLegacyV3(te, lookup)
+	if ce.IntegrationName != "" {
+		err := d.fromLegacyV3(ce, lookup)
 		return d, err
 	}
-	if te.Exec != nil {
+	if ce.Exec != nil {
 		// if providing an executable path directly
-		err := d.fromExecPath(te)
+		err := d.fromExecPath(ce)
 		return d, err
 	}
 	// if not an "exec" nor legacy integration, we'll look for an
 	// executable corresponding to the "name" field in any of the integrations
 	// folders, and wrap it into an "exec"
-	err := d.fromName(te, lookup)
+	err := d.fromName(ce, lookup)
 	return d, err
 }
 
