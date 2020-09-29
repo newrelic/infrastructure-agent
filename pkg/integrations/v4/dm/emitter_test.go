@@ -78,11 +78,11 @@ func TestEmitter_Send_usingIDCache(t *testing.T) {
 
 	em := NewEmitter(aCtx, dmSender, &test.EmptyRegisterClient{})
 	e := em.(*emitter)
-	payloadEntity := integrationFixture.ProtocolV4.ParsedV4.DataSets[0]
+	data := integrationFixture.ProtocolV4.Clone().ParsedV4
 	// TODO update when key retrieval is fixed
-	e.idCache.Put(entity.Key(payloadEntity.Entity.Name), eID)
+	e.idCache.Put(entity.Key(data.DataSets[0].Entity.Name), eID)
 
-	req := fwrequest.NewFwRequest(integration.Definition{}, nil, nil, integrationFixture.ProtocolV4.ParsedV4)
+	req := fwrequest.NewFwRequest(integration.Definition{}, nil, nil, data)
 
 	em.Send(req)
 
@@ -110,30 +110,31 @@ func TestEmitter_Send(t *testing.T) {
 		},
 	)
 
-	dmSender := &mockedMetricsSender{
+	ms := &mockedMetricsSender{
 		wg: sync.WaitGroup{},
 	}
-	dmSender.
+	ms.
 		On("SendMetricsWithCommonAttributes", mock.AnythingOfType("protocol.Common"), mock.AnythingOfType("[]protocol.Metric")).
 		Return(nil)
-	dmSender.wg.Add(1)
+	ms.wg.Add(1)
 
-	em := NewEmitter(aCtx, dmSender, test.NewIncrementalRegister())
+	em := NewEmitter(aCtx, ms, test.NewIncrementalRegister())
 
 	// avoid waiting for more data to create register submission batch
 	e := em.(*emitter)
 	e.registerBatchSize = 1
 
-	em.Send(fwrequest.NewFwRequest(integration.Definition{}, nil, nil, integrationFixture.ProtocolV4.ParsedV4))
+	data := integrationFixture.ProtocolV4.Clone().ParsedV4
+	em.Send(fwrequest.NewFwRequest(integration.Definition{}, nil, nil, data))
 
-	dmSender.wg.Wait()
+	ms.wg.Wait()
 	aCtx.SendDataWg.Wait()
 	aCtx.AssertExpectations(t)
 
 	// Should add Entity Id ('nr.entity.id') to Common attributes
-	dmMetricsSent := dmSender.Calls[0].Arguments[1].([]protocol.Metric)
-	assert.Len(t, dmMetricsSent, 1)
-	assert.Equal(t, eID.String(), dmMetricsSent[0].Attributes[fwrequest.EntityIdAttribute])
+	sent := ms.Calls[0].Arguments[1].([]protocol.Metric)
+	assert.Len(t, sent, 1)
+	assert.Equal(t, eID.String(), sent[0].Attributes[fwrequest.EntityIdAttribute])
 }
 
 func getAgentContext(hostname string) *mocks.AgentContext {

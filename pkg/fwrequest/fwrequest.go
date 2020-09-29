@@ -31,7 +31,6 @@ func (r *EntityFwRequest) RegisteredWith(id entity.ID) {
 		r.Data.Common.Attributes = make(map[string]interface{})
 	}
 	r.Data.Common.Attributes[EntityIdAttribute] = id.String()
-
 }
 
 func (r *EntityFwRequest) ID() entity.ID {
