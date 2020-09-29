@@ -15,7 +15,6 @@ import (
 
 type dockerClient struct {
 	client      *client.Client
-	apiVersion  string
 	containerID string
 }
 
@@ -24,7 +23,7 @@ var RequiredContainerIDErr = errors.New("container ID of the agent is required")
 
 // NewContainerisedClient creates a containerised agent control client for Docker containers.
 // Didn't use helpers.DockerClient because it'll broad the interface breaking SRP.
-func NewContainerisedClient(apiVersion string, containerID string) (c Client, err error) {
+func NewContainerisedClient(containerID string) (c Client, err error) {
 	if containerID == "" {
 		err = RequiredContainerIDErr
 		return
@@ -43,7 +42,6 @@ func NewContainerisedClient(apiVersion string, containerID string) (c Client, er
 
 	c = &dockerClient{
 		client:      cl,
-		apiVersion:  apiVersion,
 		containerID: containerID,
 	}
 

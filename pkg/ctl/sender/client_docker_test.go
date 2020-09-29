@@ -27,7 +27,7 @@ func TestNewContainerisedClient(t *testing.T) {
 			if !helpers.IsDockerRunning() {
 				t.Skip("docker required for this test suite")
 			}
-			gotC, err := NewContainerisedClient(tt.args.apiVersion, tt.args.containerID)
+			gotC, err := NewContainerisedClient(tt.args.containerID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewContainerisedClient() error = %v, want %v", err, tt.wantErr)
 				return

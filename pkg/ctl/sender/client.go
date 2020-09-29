@@ -37,7 +37,7 @@ func NewAutoDetectedClient(dockerAPIVersion string) (Client, error) {
 	}
 
 	if inContainer {
-		return NewContainerisedClient(dockerAPIVersion, containerID)
+		return NewContainerisedClient(containerID)
 	}
 	return NewClient(int(pid))
 }

@@ -82,7 +82,7 @@ func getClient() (sender.Client, error) {
 		return sender.NewClient(agentPID)
 	}
 	if containerID != "" {
-		return sender.NewContainerisedClient(apiVersion, containerID)
+		return sender.NewContainerisedClient(containerID)
 	}
 	return sender.NewAutoDetectedClient(apiVersion)
 }
