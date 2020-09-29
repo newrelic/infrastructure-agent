@@ -31,7 +31,7 @@ import (
 var illog = log.WithComponent("integrations.Manager")
 
 const (
-	// In VersionAwareEmitter Integrations config, we use the "instances" key word
+	// Integrations V3 configs use the "instances" key word
 	// In the current Integrations config, we use "integrations"
 	// The two fields below will allows us distinguish between both, to ignore V4
 	integrationsField    = "integrations"
