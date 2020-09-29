@@ -25,7 +25,7 @@ func Test(t *testing.T) { TestingT(t) }
 
 func (s *ConfigSuite) TestParseConfig(c *C) {
 	config := `
-collector_url:  http://foo.bar
+collector_url:  http://url.test
 ignored_inventory:
    - files/config/stuff.bar
    - files/config/stuff.foo
@@ -42,7 +42,8 @@ remove_entities_period: 1h
 
 	cfg, err := LoadConfig(f.Name())
 	c.Assert(err, IsNil)
-	c.Assert(cfg.CollectorURL, Equals, "http://foo.bar")
+	c.Assert(cfg.MetricURL, Equals, "http://url.test")
+	c.Assert(cfg.CollectorURL, Equals, "http://url.test")
 	c.Assert(cfg.License, Equals, "abc123")
 	c.Assert(cfg.IgnoredInventoryPaths, HasLen, 2)
 	c.Assert(
@@ -285,6 +286,7 @@ agent_dir: /my/overriden/agent/dir
 
 	cfg, err := LoadConfig(f.Name())
 	c.Assert(cfg.PidFile, Equals, defaultPidFile)
+	c.Assert(cfg.MetricURL, Equals, "https://metric-api.newrelic.com")
 	c.Assert(cfg.CollectorURL, Equals, defaultCollectorURL)
 	c.Assert(cfg.AgentDir, Equals, "/my/overriden/agent/dir")
 	c.Assert(cfg.AppDataDir, Equals, defaultAppDataDir)
@@ -367,7 +369,7 @@ func (s *ConfigSuite) TestCalculateCollectorURL(c *C) {
 	}
 }
 
-func TestCalculateDimensionalMetricURL(t *testing.T) {
+func (s *ConfigSuite) TestCalculateDimensionalMetricURL(c *C) {
 	testCases := []struct {
 		name         string
 		license      string
@@ -414,7 +416,7 @@ func TestCalculateDimensionalMetricURL(t *testing.T) {
 
 	for _, tc := range testCases {
 		u := calculateDimensionalMetricURL(tc.collectorURL, tc.license, tc.staging)
-		assert.Equal(t, tc.want, u)
+		c.Assert(u, Equals, tc.want)
 	}
 }
 

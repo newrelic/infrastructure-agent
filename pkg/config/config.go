@@ -79,6 +79,11 @@ type Config struct {
 	// Public: No
 	IdentityURL string `yaml:"identity_url" envconfig:"identity_url" public:"false"`
 
+	// MetricURL defines the url for the dimensional metric ingest endpoint
+	// Default: https://metric-api.newrelic.com
+	// Public: No
+	MetricURL string `yaml:"metric_url" envconfig:"metric_url" public:"false"`
+
 	// CommandChannelURL defines the base URL for the command channel.
 	// Default: https://infra-api.newrelic.com
 	// Public: No
@@ -1427,21 +1432,26 @@ func calculateCmdChannelStagingURL(licenseKey string) string {
 
 func calculateDimensionalMetricURL(collectorURL string, licenseKey string, staging bool) string {
 	if collectorURL != "" {
-		 return collectorURL
+		return collectorURL
 	}
 
-	if staging {
-		if license.IsRegionEU(licenseKey) {
-			return "https://staging-metric-api.eu.newrelic.com"
-		}
-		return "https://staging-metric-api.newrelic.com"
-	}
+	return fmt.Sprintf("https://%smetric-api.%snewrelic.com", urlEnvironmentPrefix(staging), urlRegionPrefix(licenseKey))
+}
 
+func urlRegionPrefix(licenseKey string) string {
+	region := ""
 	if license.IsRegionEU(licenseKey) {
-		return "https://metric-api.eu.newrelic.com"
+		region = "eu."
 	}
+	return region
+}
 
-	return "https://metric-api.newrelic.com"
+func urlEnvironmentPrefix(staging bool) string {
+	environment := ""
+	if staging {
+		environment = "staging-"
+	}
+	return environment
 }
 
 func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err error) {
@@ -1485,6 +1495,7 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 		cfg.FeatureTraces = append(cfg.FeatureTraces, feature.String())
 	}
 
+	cfg.MetricURL = calculateDimensionalMetricURL(cfg.CollectorURL, cfg.License, cfg.Staging)
 	if cfg.CollectorURL == "" {
 		cfg.CollectorURL = calculateCollectorURL(cfg.License, cfg.Staging)
 	}
