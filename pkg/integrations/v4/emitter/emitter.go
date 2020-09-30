@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/newrelic/infrastructure-agent/pkg/fwrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
@@ -20,7 +21,7 @@ import (
 
 var (
 	// internal
-	elog = log.WithComponent("integrations.emitter.Emittor")
+	elog = log.WithComponent("integrations.emitter.Emitter")
 )
 
 // Emitter forwards agent/integration payload to  parser & processors (entity ID decoration...)
@@ -36,7 +37,7 @@ func NewIntegrationEmittor(
 	a Agent,
 	dmEmitter dm.Emitter,
 	ffRetriever feature_flags.Retriever) Emitter {
-	return &Emittor{
+	return &VersionAwareEmitter{
 		aCtx:                a.GetContext(),
 		forceProtocolV2ToV3: true,
 		ffRetriever:         ffRetriever,
@@ -44,15 +45,15 @@ func NewIntegrationEmittor(
 	}
 }
 
-// Emittor actual Emitter for all integration protocol versions.
-type Emittor struct {
+// VersionAwareEmitter actual Emitter for all integration protocol versions.
+type VersionAwareEmitter struct {
 	aCtx                agent.AgentContext
 	forceProtocolV2ToV3 bool
 	ffRetriever         feature_flags.Retriever
 	dmEmitter           dm.Emitter
 }
 
-func (e *Emittor) Emit(definition integration.Definition, extraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error {
+func (e *VersionAwareEmitter) Emit(definition integration.Definition, extraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error {
 	protocolVersion, err := protocol.VersionFromPayload(integrationJSON, e.forceProtocolV2ToV3)
 	if err != nil {
 		elog.
@@ -71,7 +72,7 @@ func (e *Emittor) Emit(definition integration.Definition, extraLabels data.Map, 
 			return err
 		}
 
-		e.dmEmitter.Send(dm.NewFwRequest(definition, extraLabels, entityRewrite, pluginDataV4))
+		e.dmEmitter.Send(fwrequest.NewFwRequest(definition, extraLabels, entityRewrite, pluginDataV4))
 		return nil
 	}
 
@@ -81,10 +82,10 @@ func (e *Emittor) Emit(definition integration.Definition, extraLabels data.Map, 
 		return err
 	}
 
-	return e.emitV3(dm.NewFwRequestLegacy(definition, extraLabels, entityRewrite, pluginDataV3), protocolVersion)
+	return e.emitV3(fwrequest.NewFwRequestLegacy(definition, extraLabels, entityRewrite, pluginDataV3), protocolVersion)
 }
 
-func (e *Emittor) emitV3(dto dm.FwRequestLegacy, protocolVersion int) error {
+func (e *VersionAwareEmitter) emitV3(dto fwrequest.FwRequestLegacy, protocolVersion int) error {
 	plugin := agent.NewExternalPluginCommon(dto.Definition.PluginID(dto.Data.Name), e.aCtx, dto.Definition.Name)
 	labels, extraAnnotations := dto.LabelsAndExtraAnnotations()
 

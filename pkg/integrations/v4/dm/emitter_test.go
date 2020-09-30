@@ -3,6 +3,7 @@
 package dm
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
@@ -10,9 +11,10 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
-	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
+	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi/test"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
+	"github.com/newrelic/infrastructure-agent/pkg/fwrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
@@ -45,106 +47,109 @@ func TestParsePayloadV4_noFF(t *testing.T) {
 
 type mockedMetricsSender struct {
 	mock.Mock
+	wg sync.WaitGroup
 }
 
 func (m *mockedMetricsSender) SendMetrics(metrics []protocol.Metric) {
 	m.Called(metrics)
+	m.wg.Done()
 }
 
 func (m *mockedMetricsSender) SendMetricsWithCommonAttributes(commonAttributes protocol.Common, metrics []protocol.Metric) error {
-	return m.Called(commonAttributes, metrics).Error(0)
+	err := m.Called(commonAttributes, metrics).Error(0)
+	m.wg.Done()
+	return err
 }
 
-type mockedIdProvider struct {
-	mock.Mock
-}
+func TestEmitter_Send_usingIDCache(t *testing.T) {
+	eID := entity.ID(1234)
+	aCtx := getAgentContext("bob")
+	aCtx.On("SendData",
+		agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "integration name"}, Entity: entity.New("unique name", eID), Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_foo", "value": "bar"}}, NotApplicable: false})
+	aCtx.SendDataWg.Add(1)
 
-func (mk *mockedIdProvider) ResolveEntities(entities []protocol.Entity) (registeredEntities registeredEntitiesNameToID, unregisteredEntitiesWithWait unregisteredEntityListWithWait) {
-	args := mk.Called(entities)
-	return args.Get(0).(registeredEntitiesNameToID),
-		args.Get(1).(unregisteredEntityListWithWait)
-}
-
-func TestEmitter_Send_ErrorOnHostname(t *testing.T) {
-	agentCtx := getAgentContext("")
-	dmSender := &mockedMetricsSender{}
-	idProvider := &mockedIdProvider{}
-
-	idProvider.
-		On("ResolveEntities", testIdentity, mock.Anything).
-		Return(registeredEntitiesNameToID{}, unregisteredEntityList{})
-
-	e := NewEmitter(agentCtx, dmSender, idProvider)
-
-	metadata := integration.Definition{}
-	var extraLabels data.Map
-	var entityRewrite []data.EntityRewrite
-
-	e.Send(NewFwRequest(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4TwoEntities.ParsedV4))
-	// TODO error handling
-}
-
-func TestEmitter_Send(t *testing.T) {
-	expectedEntityId := "123"
-	agentCtx := getAgentContext("bob")
-	dmSender := &mockedMetricsSender{}
-	idProvider := &mockedIdProvider{}
-
-	expectedEntities := []protocol.Entity{
-		{
-			Name:        "unique name",
-			Type:        "RedisInstance",
-			DisplayName: "human readable name",
-			Metadata:    map[string]interface{}{},
-		},
+	dmSender := &mockedMetricsSender{
+		wg: sync.WaitGroup{},
 	}
-
-	idProvider.
-		On("ResolveEntities", expectedEntities).
-		Return(
-			registeredEntitiesNameToID{"unique name": entity.ID(123)},
-			unregisteredEntityListWithWait{})
 	dmSender.
 		On("SendMetricsWithCommonAttributes", mock.AnythingOfType("protocol.Common"), mock.AnythingOfType("[]protocol.Metric")).
 		Return(nil)
+	dmSender.wg.Add(1)
 
-	agentCtx.On("SendData",
-		agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "integration name"}, Entity: entity.New("unique name", 123), Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_foo", "value": "bar"}}, NotApplicable: false})
-
-	em := NewEmitter(agentCtx, dmSender, idProvider)
-
-	metadata := integration.Definition{}
-	var extraLabels data.Map
-	var entityRewrite []data.EntityRewrite
-
-	req := NewFwRequest(metadata, extraLabels, entityRewrite, integrationFixture.ProtocolV4.ParsedV4)
-
-	// processing is done at goroutine, as testify mock assertions don't work when run from
-	// goroutine we simulate that processing has been triggered and run process() fn manually
+	em := NewEmitter(aCtx, dmSender, &test.EmptyRegisterClient{})
 	e := em.(*emitter)
-	e.isProcessing.Set()
-	em.Send(req)
-	e.process(req)
+	data := integrationFixture.ProtocolV4.Clone().ParsedV4
+	// TODO update when key retrieval is fixed
+	e.idCache.Put(entity.Key(data.DataSets[0].Entity.Name), eID)
 
-	idProvider.AssertExpectations(t)
-	agentCtx.AssertExpectations(t)
+	req := fwrequest.NewFwRequest(integration.Definition{}, nil, nil, data)
+
+	em.Send(req)
+
+	dmSender.wg.Wait()
+	aCtx.SendDataWg.Wait()
+
+	aCtx.AssertExpectations(t)
 
 	// Should add Entity Id ('nr.entity.id') to Common attributes
 	dmMetricsSent := dmSender.Calls[0].Arguments[1].([]protocol.Metric)
 	assert.Len(t, dmMetricsSent, 1)
-	assert.Equal(t, expectedEntityId, dmMetricsSent[0].Attributes[nrEntityId])
+	assert.Equal(t, eID.String(), dmMetricsSent[0].Attributes[fwrequest.EntityIdAttribute])
+}
+
+func TestEmitter_Send(t *testing.T) {
+	eID := entity.ID(1) // 1 as provided by test.NewIncrementalRegister
+
+	aCtx := getAgentContext("bob")
+	aCtx.On("SendData",
+		agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "integration name"}, Entity: entity.New("unique name", eID), Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_foo", "value": "bar"}}, NotApplicable: false})
+	aCtx.SendDataWg.Add(1)
+	aCtx.On("Identity").Return(
+		entity.Identity{
+			ID: entity.ID(321), // agent one
+		},
+	)
+
+	ms := &mockedMetricsSender{
+		wg: sync.WaitGroup{},
+	}
+	ms.
+		On("SendMetricsWithCommonAttributes", mock.AnythingOfType("protocol.Common"), mock.AnythingOfType("[]protocol.Metric")).
+		Return(nil)
+	ms.wg.Add(1)
+
+	em := NewEmitter(aCtx, ms, test.NewIncrementalRegister())
+
+	// avoid waiting for more data to create register submission batch
+	e := em.(*emitter)
+	e.registerBatchSize = 1
+
+	data := integrationFixture.ProtocolV4.Clone().ParsedV4
+	em.Send(fwrequest.NewFwRequest(integration.Definition{}, nil, nil, data))
+
+	ms.wg.Wait()
+	aCtx.SendDataWg.Wait()
+	aCtx.AssertExpectations(t)
+
+	// Should add Entity Id ('nr.entity.id') to Common attributes
+	sent := ms.Calls[0].Arguments[1].([]protocol.Metric)
+	assert.Len(t, sent, 1)
+	assert.Equal(t, eID.String(), sent[0].Attributes[fwrequest.EntityIdAttribute])
 }
 
 func getAgentContext(hostname string) *mocks.AgentContext {
-	agentCtx := &mocks.AgentContext{}
+	agentCtx := &mocks.AgentContext{
+		SendDataWg: sync.WaitGroup{},
+	}
 	idLookup := make(host.IDLookup)
 	if hostname != "" {
 		idLookup[sysinfo.HOST_SOURCE_INSTANCE_ID] = hostname
 	}
 	agentCtx.On("IDLookup").Return(idLookup)
+
 	return agentCtx
 }
 
 func Test_NrEntityIdConst(t *testing.T) {
-	assert.Equal(t, nrEntityId, "nr.entity.id")
+	assert.Equal(t, fwrequest.EntityIdAttribute, "nr.entity.id")
 }

@@ -13,9 +13,12 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/http"
+	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/register"
+	"github.com/newrelic/infrastructure-agent/pkg/fwrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
@@ -32,8 +35,11 @@ var (
 )
 
 const (
-	nrEntityId              = "nr.entity.id"
-	defaultRequestsQueueLen = 1000
+	defaultRegisterWorkersAmnt        = 4
+	defaultRegisterBatchSize          = 100
+	defaultRequestsQueueLen           = 1000
+	defaultRequestsToRegisterQueueLen = 1000
+	defaultRequestsRegisteredQueueLen = 1000
 )
 
 type Agent interface {
@@ -41,33 +47,43 @@ type Agent interface {
 }
 
 type emitter struct {
-	reqsQueue     chan FwRequest
-	isProcessing  abool.AtomicBool
-	metricsSender MetricsSender
-	agentContext  agent.AgentContext
-	idProvider    idProviderInterface
+	isProcessing        abool.AtomicBool
+	reqsQueue           chan fwrequest.FwRequest
+	reqsToRegisterQueue chan fwrequest.EntityFwRequest
+	reqsRegisteredQueue chan fwrequest.EntityFwRequest
+	idCache             entity.KnownIDs
+	metricsSender       MetricsSender
+	agentContext        agent.AgentContext
+	registerClient      identityapi.RegisterClient
+	registerWorkers     int
+	registerBatchSize   int
 }
 
 type Emitter interface {
-	Send(FwRequest)
+	Send(fwrequest.FwRequest)
 }
 
 func NewEmitter(
 	agentContext agent.AgentContext,
 	dmSender MetricsSender,
-	idProvider idProviderInterface) Emitter {
+	registerClient identityapi.RegisterClient) Emitter {
 
 	return &emitter{
-		reqsQueue:     make(chan FwRequest, defaultRequestsQueueLen),
-		agentContext:  agentContext,
-		metricsSender: dmSender,
-		idProvider:    idProvider,
+		reqsQueue:           make(chan fwrequest.FwRequest, defaultRequestsQueueLen),
+		reqsToRegisterQueue: make(chan fwrequest.EntityFwRequest, defaultRequestsToRegisterQueueLen),
+		reqsRegisteredQueue: make(chan fwrequest.EntityFwRequest, defaultRequestsRegisteredQueueLen),
+		registerWorkers:     defaultRegisterWorkersAmnt,
+		idCache:             entity.NewKnownIDs(),
+		agentContext:        agentContext,
+		metricsSender:       dmSender,
+		registerClient:      registerClient,
+		registerBatchSize:   defaultRegisterBatchSize,
 	}
 }
 
 // Send receives data forward requests and queues them while processing them on different goroutine.
 // Processor is automatically being lazy run at first data received.
-func (e *emitter) Send(req FwRequest) {
+func (e *emitter) Send(req fwrequest.FwRequest) {
 	e.reqsQueue <- req
 	e.lazyLoadProcessor()
 }
@@ -75,116 +91,93 @@ func (e *emitter) Send(req FwRequest) {
 func (e *emitter) lazyLoadProcessor() {
 	if e.isProcessing.IsNotSet() {
 		e.isProcessing.Set()
-		go e.runProcessor(e.agentContext.Context())
-	}
-}
+		ctx := e.agentContext.Context()
 
-func (e *emitter) runProcessor(ctx context.Context) {
-	for {
-		select {
-		case _ = <-ctx.Done():
-			e.isProcessing.UnSet()
-			return
-
-		case req := <-e.reqsQueue:
-			e.process(req)
+		go e.runFwReqConsumer(ctx)
+		go e.runReqsRegisteredConsumer(ctx)
+		for w := 0; w < e.registerWorkers; w++ {
+			go register.RunEntityIDResolverWorker(ctx, e.agentContext.Identity, e.registerClient, e.reqsToRegisterQueue, e.reqsRegisteredQueue, e.registerBatchSize)
 		}
 	}
 }
 
-func (e *emitter) process(dto FwRequest) {
+// runFwReqConsumer consumes forward reqs and dispatches them to registered or non-registered queues
+// based on local entity Key to ID cache.
+func (e *emitter) runFwReqConsumer(ctx context.Context) {
+	defer e.isProcessing.UnSet()
+
+	var eKey entity.Key
+	for {
+		select {
+		case _ = <-ctx.Done():
+			return
+
+		case req := <-e.reqsQueue:
+			for _, ds := range req.Data.DataSets {
+				// TODO use host.ResolveUniqueEntityKey instead!
+				eKey = entity.Key(ds.Entity.Name)
+				eID, found := e.idCache.Get(eKey)
+				if found {
+					select {
+					case <-ctx.Done():
+						return
+
+					case e.reqsRegisteredQueue <- fwrequest.NewEntityFwRequest(ds, eID, req.FwRequestMeta, req.Data.Integration):
+					}
+					continue
+				}
+				select {
+				case <-ctx.Done():
+					return
+
+				case e.reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(ds, entity.EmptyID, req.FwRequestMeta, req.Data.Integration):
+				}
+			}
+		}
+	}
+}
+
+func (e *emitter) runReqsRegisteredConsumer(ctx context.Context) {
+	for {
+		select {
+		case _ = <-ctx.Done():
+			return
+
+		case eReq := <-e.reqsRegisteredQueue:
+			e.processEntityFwRequest(eReq)
+		}
+	}
+}
+
+func (e *emitter) processEntityFwRequest(r fwrequest.EntityFwRequest) {
+	// rewrites processing
 	agentShortName, err := e.agentContext.IDLookup().AgentShortEntityName()
 	if err != nil {
 		elog.
 			WithError(err).
-			WithField("integration", dto.Definition.Name).
+			WithField("integration", r.Definition.Name).
 			Errorf("cannot determine agent short name")
-		return
+	}
+	replaceEntityName(r.Data.Entity, r.EntityRewrite, agentShortName)
+
+	labels, annos := r.LabelsAndExtraAnnotations()
+
+	plugin := agent.NewExternalPluginCommon(r.Definition.PluginID(r.Integration.Name), e.agentContext, r.Definition.Name)
+
+	dmProcessor := IntegrationProcessor{
+		IntegrationInterval:         r.Definition.Interval,
+		IntegrationLabels:           labels,
+		IntegrationExtraAnnotations: annos,
 	}
 
-	plugin := agent.NewExternalPluginCommon(dto.PluginID(), e.agentContext, dto.Definition.Name)
-	labels, extraAnnotations := dto.LabelsAndExtraAnnotations()
+	emitInventory(&plugin, r.Definition, r.Integration, r.ID(), r.Data, labels)
 
-	var entities []protocol.Entity
-	datasetsByEntityName := make(map[string]protocol.Dataset, len(dto.Data.DataSets))
-	// Collect All entities
-	for _, ds := range dto.Data.DataSets {
-		entities = append(entities, ds.Entity)
-		datasetsByEntityName[ds.Entity.Name] = ds
-	}
+	emitEvent(&plugin, r.Definition, r.Data, labels)
 
-	var emitErrs []error
-	registeredEntities, unregisteredEntitiesWithWait := e.RegisterEntities(entities)
-
-	for entityName, entityID := range registeredEntities {
-		func(dataset protocol.Dataset, entityID entity.ID) {
-			// for dataset.Entity call emitV4DataSet function with entity ID
-
-			dataset.Common.Attributes[nrEntityId] = entityID.String()
-			replaceEntityName(dataset.Entity, dto.EntityRewrite, agentShortName)
-
-			emitInventory(
-				&plugin,
-				dto.Definition,
-				dto.Data.Integration,
-				entityID,
-				dataset,
-				labels,
-			)
-
-			emitEvent(
-				&plugin,
-				dto.Definition,
-				dataset,
-				labels,
-			)
-
-			dmProcessor := IntegrationProcessor{
-				IntegrationInterval:         dto.Definition.Interval,
-				IntegrationLabels:           labels,
-				IntegrationExtraAnnotations: extraAnnotations,
-			}
-
-			metrics := dmProcessor.ProcessMetrics(dataset.Metrics, dataset.Common, dataset.Entity)
-			if err := e.metricsSender.SendMetricsWithCommonAttributes(dataset.Common, metrics); err != nil {
-				// TODO error handling
-			}
-		}(datasetsByEntityName[entityName], entityID)
-	}
-
-	if len(unregisteredEntitiesWithWait.entities) == 0 {
+	metrics := dmProcessor.ProcessMetrics(r.Data.Metrics, r.Data.Common, r.Data.Entity)
+	if err := e.metricsSender.SendMetricsWithCommonAttributes(r.Data.Common, metrics); err != nil {
 		// TODO error handling
-		return
 	}
-
-	unregisteredEntitiesWithWait.waitGroup.Wait()
-	entitiesToReRegister := make([]protocol.Entity, 0)
-
-	for i := range unregisteredEntitiesWithWait.entities {
-		if unregisteredEntitiesWithWait.entities[i].Reason != reasonEntityError {
-			entitiesToReRegister = append(entitiesToReRegister, unregisteredEntitiesWithWait.entities[i].Entity)
-		} else {
-			emitErrs = append(emitErrs, fmt.Errorf(
-				"entity with name '%s' was not registered in the backend, err '%v'",
-				unregisteredEntitiesWithWait.entities[i].Entity.Name, unregisteredEntitiesWithWait.entities[i].Err))
-		}
-	}
-
-	if len(entitiesToReRegister) == 0 {
-		// TODO error handling
-		elog.Error(composeEmitError(emitErrs, len(dto.Data.DataSets)).Error())
-		return
-	}
-
-	// TODO error handling
-	elog.Error(composeEmitError(emitErrs, len(dto.Data.DataSets)).Error())
-	return
-}
-
-func (e *emitter) RegisterEntities(entities []protocol.Entity) (registeredEntitiesNameToID, unregisteredEntityListWithWait) {
-	// Bulk update them (after checking our datastore if they exist)
-	// add entity ID to metric annotations
-	return e.idProvider.ResolveEntities(entities)
 }
 
 func emitInventory(

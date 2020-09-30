@@ -159,6 +159,7 @@ func TestNetworkPlugin(t *testing.T) {
 	ctx.On("SendData", mock.Anything).Run(func(args mock.Arguments) {
 		ch <- args
 	})
+	ctx.SendDataWg.Add(1)
 
 	plugin := NewNetworkInterfacePlugin(getPluginId(), ctx)
 	assert.NotNil(t, plugin)

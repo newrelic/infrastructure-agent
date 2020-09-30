@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
+	"github.com/newrelic/infrastructure-agent/pkg/fwrequest"
 	integration2 "github.com/newrelic/infrastructure-agent/test/fixture/integration"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
@@ -356,7 +357,7 @@ type mockDmEmitter struct {
 	mock.Mock
 }
 
-func (m *mockDmEmitter) Send(dto dm.FwRequest) {
+func (m *mockDmEmitter) Send(dto fwrequest.FwRequest) {
 	m.Called(dto)
 }
 
@@ -428,7 +429,7 @@ func TestLegacy_Emit(t *testing.T) {
 			mockDME := &mockDmEmitter{}
 			mockDME.On("Send", mock.Anything)
 
-			em := &Emittor{
+			em := &VersionAwareEmitter{
 				aCtx:        ma,
 				ffRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true, handler.FlagDMRegisterEnable: true}),
 				dmEmitter:   mockDME,
@@ -466,7 +467,7 @@ func TestProtocolV4_Emit(t *testing.T) {
 	mockDME := &mockDmEmitter{}
 	mockDME.On("Send", mock.Anything)
 
-	em := &Emittor{
+	em := &VersionAwareEmitter{
 		aCtx:        ma,
 		ffRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true, handler.FlagDMRegisterEnable: true}),
 		dmEmitter:   mockDME,
@@ -517,14 +518,14 @@ func TestProtocolV4_Emit_WithFFDisabled(t *testing.T) {
 
 	ma := mockAgent()
 	mockDME := &mockDmEmitter{}
-	mockDME.On("Send", dm.NewFwRequest(
+	mockDME.On("Send", fwrequest.NewFwRequest(
 		metadata,
 		extraLabels,
 		entityRewrite,
 		integration2.ProtocolV4.ParsedV4,
 	))
 
-	em := &Emittor{
+	em := &VersionAwareEmitter{
 		aCtx:        ma,
 		ffRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: false, handler.FlagDMRegisterEnable: true}),
 		dmEmitter:   mockDME,
@@ -545,14 +546,14 @@ func TestProtocolV4_Emit_WithoutRegisteringEntities(t *testing.T) {
 	entityRewrite := []data.EntityRewrite{}
 
 	dmEmitter := &mockDmEmitter{}
-	dmEmitter.On("Send", dm.NewFwRequest(
+	dmEmitter.On("Send", fwrequest.NewFwRequest(
 		intDefinition,
 		extraLabels,
 		entityRewrite,
 		integration2.ProtocolV4.ParsedV4,
 	))
 
-	em := &Emittor{
+	em := &VersionAwareEmitter{
 		aCtx:        mockAgent(),
 		ffRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true, handler.FlagDMRegisterEnable: false}),
 		dmEmitter:   dmEmitter,
@@ -579,6 +580,7 @@ func mockAgent() *mocks.AgentContext {
 	ma.On("AgentIdentifier").Return("bob")
 	ma.On("IDLookup").Return(aID)
 	ma.On("SendData", mock.AnythingOfType("agent.PluginOutput")).Once()
+	ma.SendDataWg.Add(1)
 	ma.On("SendEvent", mock.AnythingOfType("agent.mapEvent"), mock.AnythingOfType("entity.Key")).Once()
 	ma.On("Config").Return(cfg)
 	ma.On("SendEvent", mock.Anything, entity.Key("bob")).Twice()

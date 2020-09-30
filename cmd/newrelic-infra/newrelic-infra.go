@@ -284,10 +284,9 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		pluginSourceDirs,
 	)
 
-	idProvider := dm.NewCachedIDProvider(registerClient, agt.Context.Identity, agt.Context.Ctx)
 	var dmEmitter dm.Emitter
 	if enabled, exists := ffManager.GetFeatureFlag(handler.FlagDMRegisterEnable); exists && enabled {
-		dmEmitter = dm.NewEmitter(agt.GetContext(), dmSender, idProvider)
+		dmEmitter = dm.NewEmitter(agt.GetContext(), dmSender, registerClient)
 	} else {
 		dmEmitter = dm.NewNonRegisterEmitter(agt.GetContext(), dmSender)
 	}

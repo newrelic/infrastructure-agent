@@ -34,6 +34,7 @@ func TestHTTPServerPlugin(t *testing.T) {
 		po := args.Get(0).(agent.PluginOutput)
 		pOut = &po
 	})
+	ctx.SendDataWg.Add(1)
 	ch := make(chan sample.Event, 10)
 	ctx.On("SendEvent", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 		ch <- args.Get(0).(sample.Event)

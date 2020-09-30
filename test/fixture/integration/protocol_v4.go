@@ -13,6 +13,38 @@ type ProtocolParsingPair struct {
 	ParsedV4 protocol.DataV4
 }
 
+// aims to avoid data mutation when processing structs from global fixture variables
+func (p *ProtocolParsingPair) Clone() (clone ProtocolParsingPair) {
+	clone = *p
+	dss := clone.ParsedV4.DataSets
+	clone.ParsedV4.DataSets = []protocol.Dataset{}
+	for _, ds := range dss {
+
+		// Common.Attributes
+		ca := make(map[string]interface{}, len(ds.Common.Attributes))
+		for k, v := range ds.Common.Attributes {
+			ca[k] = v
+		}
+		ds.Common.Attributes = ca
+
+		// Metrics.Attributes
+		ms := make([]protocol.Metric, len(ds.Metrics))
+		for _, m := range ds.Metrics {
+			a := make(map[string]interface{}, len(m.Attributes))
+			for k, v := range m.Attributes {
+				a[k] = v
+			}
+			m.Attributes = a
+		}
+		ds.Metrics = ms
+
+		// same might be required for Events & Inventory
+
+		clone.ParsedV4.DataSets = append(clone.ParsedV4.DataSets, ds)
+	}
+	return clone
+}
+
 var (
 	ProtocolV4TwoEntities = ProtocolParsingPair{
 		Payload: []byte(`{

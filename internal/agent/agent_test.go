@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	test2 "github.com/newrelic/infrastructure-agent/pkg/backend/identityapi/test"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 
@@ -70,7 +71,7 @@ func newTesting(cfg *config.Config) *Agent {
 	}
 
 	connectSrv := NewIdentityConnectService(&MockIdentityConnectClient{}, fpHarvester)
-	provideIDs := NewProvideIDs(&EmptyRegisterClient{}, state.NewRegisterSM())
+	provideIDs := NewProvideIDs(&test2.EmptyRegisterClient{}, state.NewRegisterSM())
 
 	a, err := New(
 		cfg,

@@ -15,6 +15,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/delta"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/http"
+	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi/test"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/inventoryapi"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/state"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
@@ -435,7 +436,7 @@ func TestPatchSenderVortex_Process_Reset(t *testing.T) {
 }
 
 func newSender(t *testing.T, ctx *context, store *delta.Store, client http.Client) patchSender {
-	pSender, err := newPatchSenderVortex("entityKey", agentKey, ctx, store, "user-agent", ctx.Identity, NewProvideIDs(newIncrementalRegister(), state.NewRegisterSM()), entity.NewKnownIDs(), client)
+	pSender, err := newPatchSenderVortex("entityKey", agentKey, ctx, store, "user-agent", ctx.Identity, NewProvideIDs(test.NewIncrementalRegister(), state.NewRegisterSM()), entity.NewKnownIDs(), client)
 	require.NoError(t, err)
 	return pSender
 }
