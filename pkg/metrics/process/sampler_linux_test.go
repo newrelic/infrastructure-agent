@@ -3,10 +3,12 @@
 package process
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
 
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
 
@@ -127,6 +129,10 @@ type dummyAgentContext struct {
 	cfg *config.Config
 }
 
+func (*dummyAgentContext) Context() context.Context {
+	return context.TODO()
+}
+
 func (*dummyAgentContext) ActiveEntitiesChannel() chan string {
 	return nil
 }
@@ -163,8 +169,8 @@ func (*dummyAgentContext) Version() string {
 	return ""
 }
 
-func (dummyAgentContext) IDLookup() agent.IDLookup {
-	idLookupTable := make(agent.IDLookup)
+func (dummyAgentContext) IDLookup() host.IDLookup {
+	idLookupTable := make(host.IDLookup)
 	idLookupTable[sysinfo.HOST_SOURCE_HOSTNAME_SHORT] = "short_hostname"
 	return idLookupTable
 }

@@ -29,7 +29,7 @@ func TestRunner(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	// GIVEN a grouprunner that runs two integrations
-	te := &testemit.Emitter{}
+	te := &testemit.RecordEmitter{}
 	loader := LoadFrom(config2.YAML{
 		Integrations: []config2.ConfigEntry{
 			{Name: "sayhello", Exec: testhelp.Command(fixtures.IntegrationScript, "hello"),
@@ -68,7 +68,7 @@ func TestRunner_Inventory(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	// GIVEN a grouprunner that uses a Protocol 2 integration with inventory
-	te := &testemit.Emitter{}
+	te := &testemit.RecordEmitter{}
 	loader := LoadFrom(config2.YAML{
 		Integrations: []config2.ConfigEntry{
 			{Name: "nri-test", Exec: testhelp.GoRun(fixtures.InventoryGoFile, "key1=val1", "key2=val2"),
@@ -117,7 +117,7 @@ func TestRunner_Inventory_OverridePrefix(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	// GIVEN an integration overriding the default inventory prefix
-	te := &testemit.Emitter{}
+	te := &testemit.RecordEmitter{}
 	loader := LoadFrom(config2.YAML{
 		Integrations: []config2.ConfigEntry{
 			{Name: "nri-test", Exec: testhelp.GoRun(fixtures.InventoryGoFile, "key1=val1"),
@@ -143,7 +143,7 @@ func TestRunner_Timeout(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	// GIVEN a grouprunner that runs an integration with a timeout
-	te := &testemit.Emitter{}
+	te := &testemit.RecordEmitter{}
 	to := 200 * time.Millisecond
 	loader := LoadFrom(config2.YAML{
 		Integrations: []config2.ConfigEntry{
@@ -191,7 +191,7 @@ discovery:
 	}, integration.InstancesLookup{}, []string{}, nil)
 	require.NoError(t, err)
 
-	te := &testemit.Emitter{}
+	te := &testemit.RecordEmitter{}
 	group := Group{
 		emitter:      te,
 		discovery:    discovery,
@@ -233,7 +233,7 @@ func TestRunner_ConfigPathUpdated(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	// GIVEN a grouprunner from an integration that embeds a config file
-	te := &testemit.Emitter{}
+	te := &testemit.RecordEmitter{}
 	loader := LoadFrom(config2.YAML{
 		Integrations: []config2.ConfigEntry{{
 			Name:   "cfgpath",
@@ -312,7 +312,7 @@ func TestRunner_IntegrationScriptPrintsErrorsAndReturnCodeIsZero(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	// GIVEN a grouprunner that runs two integrations
-	te := &testemit.Emitter{}
+	te := &testemit.RecordEmitter{}
 	loader := LoadFrom(config2.YAML{
 		Integrations: []config2.ConfigEntry{
 			{Name: "log_errors", Exec: testhelp.Command(fixtures.IntegrationPrintsErr, "bye")},

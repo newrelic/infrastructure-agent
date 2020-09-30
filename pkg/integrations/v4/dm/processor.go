@@ -7,7 +7,11 @@ import (
 	"time"
 )
 
-const labelPrefix = "label."
+const (
+	// These two constants can be found in old integrations as well
+	labelPrefix     = "label."
+	labelPrefixTrim = 6
+)
 
 type IntegrationProcessor struct {
 	IntegrationInterval         time.Duration
