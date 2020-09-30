@@ -230,6 +230,11 @@
               Source="$(var.ExternalFilesPath)\examples\logging\windows\tcp.yml.example"
               KeyPath="yes" />
         </Component>
+        <Component Id="CMP_LOGGING_EXAMPLE_CFG_WINLOG" Guid="DFDACD2A-283A-4689-A2A1-A482B60250EB" Win64="yes">
+          <File Id="FILE_LOGGING_EXAMPLE_CFG_WINLOG"
+              Source="$(var.ExternalFilesPath)examples\logging\windows\winlog.yml.example"
+              KeyPath="yes" />
+        </Component>
     </ComponentGroup>
   </Fragment>
 
