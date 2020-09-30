@@ -188,11 +188,11 @@ func (r *runner) execute(ctx context.Context, matches *databind.Values) {
 	instances.Add(len(output))
 	for _, out := range output {
 		o := out
-		go r.handleLines(o.Output.Stdout, o.ExtraLabels, o.EntityRewrite)
-		go r.handleStderr(o.Output.Stderr)
+		go r.handleLines(o.Receive.Stdout, o.ExtraLabels, o.EntityRewrite)
+		go r.handleStderr(o.Receive.Stderr)
 		go func() {
 			defer instances.Done()
-			r.handleErrors(o.Output.Errors)
+			r.handleErrors(o.Receive.Errors)
 		}()
 	}
 

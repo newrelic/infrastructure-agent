@@ -1,4 +1,4 @@
-// Copyright 2020 New Relic Corporation. All rights reserved.
+// Copyright 2020 NewDefinition Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 package integration
 
@@ -61,7 +61,7 @@ func TestConfigTemplate(t *testing.T) {
 			config, err := LoadConfigTemplate(tc.config.TemplatePath, tc.config.Config)
 			require.NoError(t, err)
 
-			i, err := New(tc.config, noLookup, nil, config)
+			i, err := NewDefinition(tc.config, noLookup, nil, config)
 			require.NoError(t, err)
 
 			disc := databind.NewValues(nil,
@@ -81,7 +81,7 @@ func TestConfigTemplate(t *testing.T) {
 			// AND the integration has correctly accepted the file templates with the discovery matches
 			expectedIPs := map[string]struct{}{"1.2.3.4": {}, "5.6.7.8": {}}
 			for _, out := range outputs {
-				line := testhelp.ChannelRead(out.Output.Stdout)
+				line := testhelp.ChannelRead(out.Receive.Stdout)
 				assert.Containsf(t, expectedIPs, line, "unexpected value: %v", line)
 				delete(expectedIPs, line)
 				assert.Len(t, out.ExtraLabels, 2)
@@ -126,7 +126,7 @@ func TestEmbeddedConfig_String(t *testing.T) {
 			// That is loaded by an integration
 			config, err := LoadConfigTemplate(tc.config.TemplatePath, tc.config.Config)
 			require.NoError(t, err)
-			i, err := New(tc.config, noLookup, nil, config)
+			i, err := NewDefinition(tc.config, noLookup, nil, config)
 			require.NoError(t, err)
 
 			disc := databind.NewValues(nil,
@@ -146,7 +146,7 @@ func TestEmbeddedConfig_String(t *testing.T) {
 			// AND the integration has correctly accepted the file templates with the discovery matches
 			expectedIPs := map[string]struct{}{"1.2.3.4": {}, "5.6.7.8": {}}
 			for _, out := range outputs {
-				line := testhelp.ChannelRead(out.Output.Stdout)
+				line := testhelp.ChannelRead(out.Receive.Stdout)
 				assert.Containsf(t, expectedIPs, line, "unexpected value: %q", line)
 				delete(expectedIPs, line)
 			}
@@ -157,7 +157,7 @@ func TestEmbeddedConfig_String(t *testing.T) {
 func TestTimeout_Default(t *testing.T) {
 	// GIVEN a configuration without timeout
 	// WHEN an integration is loaded from it
-	i, err := New(config2.ConfigEntry{Name: "foo", Exec: config2.ShlexOpt{"bar"}}, noLookup, nil, nil)
+	i, err := NewDefinition(config2.ConfigEntry{Name: "foo", Exec: config2.ShlexOpt{"bar"}}, noLookup, nil, nil)
 	require.NoError(t, err)
 
 	// THEN the integration has a default timeout
@@ -174,7 +174,7 @@ timeout: 40
 `), &config))
 
 	// WHEN the integration is loaded
-	i, err := New(config, noLookup, nil, nil)
+	i, err := NewDefinition(config, noLookup, nil, nil)
 	require.NoError(t, err)
 
 	// THEN the integration has the minimum allowed timeout
@@ -191,7 +191,7 @@ timeout: 0
 `), &config))
 
 	// WHEN the integration is loaded
-	i, err := New(config, noLookup, nil, nil)
+	i, err := NewDefinition(config, noLookup, nil, nil)
 	require.NoError(t, err)
 
 	// THEN the integration has a disabled timeout
