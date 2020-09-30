@@ -297,7 +297,9 @@ var (
 					Inventory: map[string]protocol.InventoryData{
 						"inventory_foo": {"value": "bar"},
 					},
-					Events: []protocol.EventData{},
+					Events: []protocol.EventData{
+						{"summary": "foo", "timestamp":1601474525},
+					},
 				},
 			},
 		},

@@ -103,7 +103,11 @@ func TestEmitter_Send(t *testing.T) {
 	aCtx := getAgentContext("bob")
 	aCtx.On("SendData",
 		agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "integration name"}, Entity: entity.New("unique name", eID), Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_foo", "value": "bar"}}, NotApplicable: false})
+
+	aCtx.On("SendEvent", mock.Anything, entity.New("unique name", eID).Key)
+
 	aCtx.SendDataWg.Add(1)
+
 	aCtx.On("Identity").Return(
 		entity.Identity{
 			ID: entity.ID(321), // agent one
@@ -146,6 +150,7 @@ func getAgentContext(hostname string) *mocks.AgentContext {
 		idLookup[sysinfo.HOST_SOURCE_INSTANCE_ID] = hostname
 	}
 	agentCtx.On("IDLookup").Return(idLookup)
+	agentCtx.On("Config").Return(nil)
 
 	return agentCtx
 }
