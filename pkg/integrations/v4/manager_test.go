@@ -123,7 +123,7 @@ func TestManager_StartIntegrations(t *testing.T) {
 	defer removeTempFiles(t, dir)
 
 	// AND an integrations manager
-	emitter := &testemit.Emitter{}
+	emitter := &testemit.RecordEmitter{}
 	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
 
 	// WHEN the manager loads and executes the integrations in the folder
@@ -158,7 +158,7 @@ integrations:
 	defer removeTempFiles(t, dir)
 
 	// AND an integrations manager
-	emitter := &testemit.Emitter{}
+	emitter := &testemit.RecordEmitter{}
 	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
 
 	// WHEN the manager loads and executes the integration
@@ -183,7 +183,7 @@ integrations:
 	defer removeTempFiles(t, dir)
 
 	// AND an integrations manager
-	emitter := &testemit.Emitter{}
+	emitter := &testemit.RecordEmitter{}
 	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
 
 	// WHEN the manager loads and executes the integration
@@ -218,7 +218,7 @@ func TestManager_SkipLoadingV3IntegrationsWithNoWarnings(t *testing.T) {
 	defer removeTempFiles(t, dir)
 
 	// AND an integrations manager
-	emitter := &testemit.Emitter{}
+	emitter := &testemit.RecordEmitter{}
 	_ = NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
 
 	// THEN no long entries found
@@ -241,7 +241,7 @@ func TestManager_LogWarningForInvalidYaml(t *testing.T) {
 	defer removeTempFiles(t, dir)
 
 	// AND an integrations manager
-	emitter := &testemit.Emitter{}
+	emitter := &testemit.RecordEmitter{}
 	_ = NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
 
 	// THEN one long entry found
@@ -260,7 +260,7 @@ func TestManager_Config_EmbeddedYAML(t *testing.T) {
 	defer removeTempFiles(t, dir)
 
 	// AND an integrations manager
-	emitter := &testemit.Emitter{}
+	emitter := &testemit.RecordEmitter{}
 	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
 
 	// WHEN the manager loads and executes the integrations in the folder
@@ -285,7 +285,7 @@ func TestManager_HotReload_Add(t *testing.T) {
 	require.NoError(t, err)
 	defer removeTempFiles(t, dir)
 
-	emitter := &testemit.Emitter{}
+	emitter := &testemit.RecordEmitter{}
 	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -319,7 +319,7 @@ func TestManager_HotReload_Modify(t *testing.T) {
 	require.NoError(t, err)
 	defer removeTempFiles(t, dir)
 
-	emitter := &testemit.Emitter{}
+	emitter := &testemit.RecordEmitter{}
 	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -366,7 +366,7 @@ func TestManager_HotReload_ModifyLinkFile(t *testing.T) {
 	err = os.Link(filepath.Join(dir, "first_config"), filepath.Join(dir, "integration.yaml"))
 	require.NoError(t, err)
 
-	emitter := &testemit.Emitter{}
+	emitter := &testemit.RecordEmitter{}
 	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -415,7 +415,7 @@ func TestManager_HotReload_Delete(t *testing.T) {
 	require.NoError(t, err)
 	defer removeTempFiles(t, dir)
 
-	emitter := &testemit.Emitter{}
+	emitter := &testemit.RecordEmitter{}
 	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -460,7 +460,7 @@ integrations:
 	// WHEN the manager sets the PassthroughEnvironment configuration to an existing variable
 	unset := testhelpers.Setenv("VALUE", "hello-there")
 	defer unset()
-	emitter := &testemit.Emitter{}
+	emitter := &testemit.RecordEmitter{}
 	mgr := NewManager(Configuration{
 		ConfigFolders:          []string{configDir},
 		DefinitionFolders:      []string{niDir},
@@ -496,7 +496,7 @@ integrations:
 	unset := testhelpers.Setenv("VALUE", "value-from-env")
 	defer unset()
 
-	emitter := &testemit.Emitter{}
+	emitter := &testemit.RecordEmitter{}
 	mgr := NewManager(Configuration{
 		ConfigFolders:          []string{configDir},
 		DefinitionFolders:      []string{niDir},
@@ -541,7 +541,7 @@ integrations:
 	defer removeTempFiles(t, configDir)
 
 	// WHEN the v4 integrations manager loads the legacy definitions
-	emitter := &testemit.Emitter{}
+	emitter := &testemit.RecordEmitter{}
 	mgr := NewManager(Configuration{
 		ConfigFolders:     []string{configDir},
 		DefinitionFolders: []string{definitionsDir},
@@ -588,7 +588,7 @@ integrations:
 	unset := testhelpers.Setenv("VALUE", "passed-through")
 	defer unset()
 
-	emitter := &testemit.Emitter{}
+	emitter := &testemit.RecordEmitter{}
 	mgr := NewManager(Configuration{
 		ConfigFolders:          []string{configDir},
 		DefinitionFolders:      []string{definitionsDir},
@@ -630,7 +630,7 @@ integrations:
 	require.NoError(t, err)
 
 	// WHEN the v4 integrations manager recognizes the above folders
-	emitter := &testemit.Emitter{}
+	emitter := &testemit.RecordEmitter{}
 	mgr := NewManager(Configuration{
 		ConfigFolders:     []string{configDir},
 		DefinitionFolders: []string{niDir, ciDir, "unexisting-dir"},
@@ -669,7 +669,7 @@ integrations:
 	defer removeTempFiles(t, configDir)
 
 	// WHEN the v4 integrations are run
-	emitter := &testemit.Emitter{}
+	emitter := &testemit.RecordEmitter{}
 	mgr := NewManager(Configuration{
 		ConfigFolders:     []string{configDir},
 		DefinitionFolders: []string{niDir},
@@ -693,7 +693,7 @@ func TestManager_EnableFeature_WhenFeatureOnOHICfgAndAgentCfgIsDisabledAndEnable
 	defer removeTempFiles(t, dir)
 
 	// AND an integrations manager and with no feature within agent config
-	e := &testemit.Emitter{}
+	e := &testemit.RecordEmitter{}
 	mgr := NewManager(Configuration{
 		ConfigFolders: []string{dir},
 		//AgentFeatures: map[string]bool{"docker_enabled": false},
@@ -724,7 +724,7 @@ func TestManager_EnableFeatureFromAgentConfig(t *testing.T) {
 	defer removeTempFiles(t, dir)
 
 	// AND an integrations manager and with feature enabled within agent config
-	e := &testemit.Emitter{}
+	e := &testemit.RecordEmitter{}
 	mgr := NewManager(Configuration{
 		ConfigFolders: []string{dir},
 		AgentFeatures: map[string]bool{"docker_enabled": true},
@@ -750,7 +750,7 @@ func TestManager_CCDisablesAgentEnabledFeature(t *testing.T) {
 	defer removeTempFiles(t, dir)
 
 	// AND an integrations manager and OHI enabled (ie via feature agent config)
-	e := &testemit.Emitter{}
+	e := &testemit.RecordEmitter{}
 	mgr := NewManager(Configuration{
 		ConfigFolders: []string{dir},
 		AgentFeatures: map[string]bool{"docker_enabled": true},
@@ -785,7 +785,7 @@ func TestManager_CCDisablesPreviouslyEnabledFeature(t *testing.T) {
 	defer removeTempFiles(t, dir)
 
 	// AND an integrations manager and OHI enabled (ie via feature agent config)
-	e := &testemit.Emitter{}
+	e := &testemit.RecordEmitter{}
 	mgr := NewManager(Configuration{
 		ConfigFolders: []string{dir},
 	}, e)
@@ -830,7 +830,7 @@ func TestManager_WhenFileExists(t *testing.T) {
 	require.NoError(t, err)
 	defer removeTempFiles(t, dir)
 
-	emitter := &testemit.Emitter{}
+	emitter := &testemit.RecordEmitter{}
 	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
 
 	// WHEN the manager loads and executes the integrations in the folder
@@ -852,7 +852,7 @@ func TestManager_WhenFileDoesNotExist(t *testing.T) {
 	require.NoError(t, err)
 	defer removeTempFiles(t, dir)
 
-	emitter := &testemit.Emitter{}
+	emitter := &testemit.RecordEmitter{}
 	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
 
 	// WHEN the manager loads and executes the integrations in the folder
@@ -873,7 +873,7 @@ func TestManager_StartWithVerbose(t *testing.T) {
 	defer removeTempFiles(t, dir)
 
 	// AND an integrations manager and with feature enabled within agent config
-	emitter := &testemit.Emitter{}
+	emitter := &testemit.RecordEmitter{}
 	mgr := NewManager(Configuration{
 		ConfigFolders: []string{dir},
 		Verbose:       1,
@@ -904,7 +904,7 @@ func TestManager_StartWithVerboseFalse(t *testing.T) {
 	defer removeTempFiles(t, dir)
 
 	// AND an integrations manager and with feature enabled within agent config
-	emitter := &testemit.Emitter{}
+	emitter := &testemit.RecordEmitter{}
 	mgr := NewManager(Configuration{
 		ConfigFolders: []string{dir},
 		Verbose:       0,
@@ -972,23 +972,23 @@ func fileAppend(filePath, content string) error {
 
 // this receives the next sample from the plugin, expecting a payload with a single metric and returning it
 // if nothing is received or the payload has not
-func expectOneMetric(t require.TestingT, e *testemit.Emitter, pluginName string) protocol.MetricData {
+func expectOneMetric(t require.TestingT, e *testemit.RecordEmitter, pluginName string) protocol.MetricData {
 	return expectNMetrics(t, e, pluginName, 1)[0]
 }
 
-func expectNMetrics(t require.TestingT, e *testemit.Emitter, pluginName string, amount int) []protocol.MetricData {
+func expectNMetrics(t require.TestingT, e *testemit.RecordEmitter, pluginName string, amount int) []protocol.MetricData {
 	dataset := getEmittedData(t, e, pluginName)
 	require.Len(t, dataset.DataSet.Metrics, amount)
 	return dataset.DataSet.Metrics
 }
 
-func getEmittedData(t require.TestingT, e *testemit.Emitter, pluginName string) testemit.EmittedData {
+func getEmittedData(t require.TestingT, e *testemit.RecordEmitter, pluginName string) testemit.EmittedData {
 	dataset, err := e.ReceiveFrom(pluginName)
 	require.NoError(t, err)
 	return dataset
 }
 
-func expectNoMetric(t require.TestingT, e *testemit.Emitter, pluginName string) {
+func expectNoMetric(t require.TestingT, e *testemit.RecordEmitter, pluginName string) {
 	_, err := e.ReceiveFrom(pluginName)
 	require.Error(t, err)
 }

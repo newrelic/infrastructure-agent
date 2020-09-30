@@ -15,6 +15,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
@@ -33,6 +34,7 @@ func TestHTTPServerPlugin(t *testing.T) {
 		po := args.Get(0).(agent.PluginOutput)
 		pOut = &po
 	})
+	ctx.SendDataWg.Add(1)
 	ch := make(chan sample.Event, 10)
 	ctx.On("SendEvent", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 		ch <- args.Get(0).(sample.Event)
@@ -40,7 +42,7 @@ func TestHTTPServerPlugin(t *testing.T) {
 
 	ctx.On("HostnameResolver").Return(testhelpers.NewFakeHostnameResolver("something.com", "sc", nil))
 	ctx.On("AgentIdentifier").Return("test-agent")
-	ctx.On("IDLookup").Return(agent.IDLookup{"test-agent": "test-agent-id"})
+	ctx.On("IDLookup").Return(host.IDLookup{"test-agent": "test-agent-id"})
 
 	// Given an HTTP Server Plugin
 	port, err := testhelpers.GetFreePort()
@@ -106,8 +108,8 @@ func TestHTTPServerPlugin(t *testing.T) {
 	require.InDelta(t, 123, events["MyMetric"]["value"], 0.01)
 }
 
-func newFixedIDLookup() agent.IDLookup {
-	idLookupTable := make(agent.IDLookup)
+func newFixedIDLookup() host.IDLookup {
+	idLookupTable := make(host.IDLookup)
 	idLookupTable[sysinfo.HOST_SOURCE_DISPLAY_NAME] = "display_name"
 	return idLookupTable
 }

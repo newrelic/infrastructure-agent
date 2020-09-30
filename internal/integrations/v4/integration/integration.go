@@ -8,12 +8,11 @@ import (
 	"io/ioutil"
 	"time"
 
-	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
-
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/when"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
+	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/sirupsen/logrus"

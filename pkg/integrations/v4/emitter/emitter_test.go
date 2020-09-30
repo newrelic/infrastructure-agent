@@ -3,10 +3,13 @@
 package emitter
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
+	"github.com/newrelic/infrastructure-agent/pkg/fwrequest"
+	integration2 "github.com/newrelic/infrastructure-agent/test/fixture/integration"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 
@@ -354,24 +357,8 @@ type mockDmEmitter struct {
 	mock.Mock
 }
 
-func (m *mockDmEmitter) Send(
-	metadata integration.Definition,
-	extraLabels data.Map,
-	entityRewrite []data.EntityRewrite,
-	integrationJSON []byte) error {
-
-	args := m.Called(metadata, extraLabels, entityRewrite, integrationJSON)
-	return args.Error(0)
-}
-
-func (m *mockDmEmitter) SendWithoutRegister(
-	metadata integration.Definition,
-	extraLabels data.Map,
-	entityRewrite []data.EntityRewrite,
-	integrationJSON []byte) error {
-
-	args := m.Called(metadata, extraLabels, entityRewrite, integrationJSON)
-	return args.Error(0)
+func (m *mockDmEmitter) Send(dto fwrequest.FwRequest) {
+	m.Called(dto)
 }
 
 func TestLegacy_Emit(t *testing.T) {
@@ -438,24 +425,17 @@ func TestLegacy_Emit(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			extraLabels := data.Map{}
 			entityRewrite := []data.EntityRewrite{}
-			integrationJSON := []byte(tc.integrationJsonOutput)
-
 			ma := mockAgent()
 			mockDME := &mockDmEmitter{}
-			mockDME.On("Send",
-				tc.metadata,
-				extraLabels,
-				entityRewrite,
-				integrationJSON,
-			).Return(nil)
+			mockDME.On("Send", mock.Anything)
 
-			em := &Legacy{
-				Context:     ma,
-				FFRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true, handler.FlagDMRegisterEnable: true}),
+			em := &VersionAwareEmitter{
+				aCtx:        ma,
+				ffRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true, handler.FlagDMRegisterEnable: true}),
 				dmEmitter:   mockDME,
 			}
 
-			err := em.Emit(tc.metadata, extraLabels, entityRewrite, integrationJSON)
+			err := em.Emit(tc.metadata, extraLabels, entityRewrite, []byte(tc.integrationJsonOutput))
 			require.NoError(t, err)
 
 			for c := range ma.Calls {
@@ -485,16 +465,11 @@ func TestProtocolV4_Emit(t *testing.T) {
 	mockedMetricsSender := mockMetricSender()
 
 	mockDME := &mockDmEmitter{}
-	mockDME.On("Send",
-		metadata,
-		extraLabels,
-		entityRewrite,
-		integrationJSON,
-	).Return(nil)
+	mockDME.On("Send", mock.Anything)
 
-	em := &Legacy{
-		Context:     ma,
-		FFRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true, handler.FlagDMRegisterEnable: true}),
+	em := &VersionAwareEmitter{
+		aCtx:        ma,
+		ffRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true, handler.FlagDMRegisterEnable: true}),
 		dmEmitter:   mockDME,
 	}
 
@@ -539,20 +514,20 @@ func TestProtocolV4_Emit_WithFFDisabled(t *testing.T) {
 		"extraAnnotationAttribute": "annotated",
 	}
 	entityRewrite := []data.EntityRewrite{}
-	integrationJSON := []byte(integrationJsonV4Output)
+	integrationJSON := integration2.ProtocolV4.Payload
 
 	ma := mockAgent()
 	mockDME := &mockDmEmitter{}
-	mockDME.On("Send",
+	mockDME.On("Send", fwrequest.NewFwRequest(
 		metadata,
 		extraLabels,
 		entityRewrite,
-		integrationJSON,
-	).Return(errors.New("something failed"))
+		integration2.ProtocolV4.ParsedV4,
+	))
 
-	em := &Legacy{
-		Context:     ma,
-		FFRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: false, handler.FlagDMRegisterEnable: true}),
+	em := &VersionAwareEmitter{
+		aCtx:        ma,
+		ffRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: false, handler.FlagDMRegisterEnable: true}),
 		dmEmitter:   mockDME,
 	}
 
@@ -569,25 +544,29 @@ func TestProtocolV4_Emit_WithoutRegisteringEntities(t *testing.T) {
 		"extraAnnotationAttribute": "annotated",
 	}
 	entityRewrite := []data.EntityRewrite{}
-	integrationJSON := []byte(integrationJsonV4Output)
 
 	dmEmitter := &mockDmEmitter{}
-	dmEmitter.On("SendWithoutRegister", intDefinition, extraLabels, entityRewrite, integrationJSON).Return(nil)
+	dmEmitter.On("Send", fwrequest.NewFwRequest(
+		intDefinition,
+		extraLabels,
+		entityRewrite,
+		integration2.ProtocolV4.ParsedV4,
+	))
 
-	em := &Legacy{
-		Context:     mockAgent(),
-		FFRetriever: feature_flags.NewManager(map[string]bool{handler.FlagDMRegisterEnable: false}),
+	em := &VersionAwareEmitter{
+		aCtx:        mockAgent(),
+		ffRetriever: feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true, handler.FlagDMRegisterEnable: false}),
 		dmEmitter:   dmEmitter,
 	}
 
-	err := em.Emit(intDefinition, extraLabels, entityRewrite, integrationJSON)
+	err := em.Emit(intDefinition, extraLabels, entityRewrite, integration2.ProtocolV4.Payload)
 	require.NoError(t, err)
 
 	dmEmitter.AssertExpectations(t)
 }
 
 func mockAgent() *mocks.AgentContext {
-	aID := agent.IDLookup{
+	aID := host.IDLookup{
 		sysinfo.HOST_SOURCE_HOSTNAME:       "long",
 		sysinfo.HOST_SOURCE_HOSTNAME_SHORT: "short",
 	}
@@ -601,6 +580,7 @@ func mockAgent() *mocks.AgentContext {
 	ma.On("AgentIdentifier").Return("bob")
 	ma.On("IDLookup").Return(aID)
 	ma.On("SendData", mock.AnythingOfType("agent.PluginOutput")).Once()
+	ma.SendDataWg.Add(1)
 	ma.On("SendEvent", mock.AnythingOfType("agent.mapEvent"), mock.AnythingOfType("entity.Key")).Once()
 	ma.On("Config").Return(cfg)
 	ma.On("SendEvent", mock.Anything, entity.Key("bob")).Twice()

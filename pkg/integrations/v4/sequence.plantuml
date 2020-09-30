@@ -22,8 +22,6 @@ loop groupContext
 
         loop interval
 
-        note right: heartbeat stuff
-
         create Definition
         runner -> Definition : Run
         runner <-- Definition : []IntegrationOutput, error
@@ -33,48 +31,73 @@ loop groupContext
 
 end box
 
+box "pkg/integrations/v4"
+
         == Payload mgmt ==
 
-        "runner.handleLines" -> "pkg/integrations/v4/emitter/Emitter" : Emit (line)
-        note left: from parent Group
+        note over "emitter/Emitter" #white : not only v4
 
-        box "pkg/integrations/v4/dm"
+        "runner.handleLines" -> "emitter/Emitter" : Emit (line)
+        note left : from parent Group
 
-        "pkg/integrations/v4/emitter/Emitter" -> Emitter : if(v4) Send
+        "emitter/Emitter" -[#green]> "emitter/Emitter" : <font color=green>ParsePayloadV4
 
-        activate Emitter
 
-        Emitter -> Emitter : ParsePayloadV4
+        "emitter/Emitter" -[#green]> "dm/Emitter" : if(v4) Send <font color=red>(jsonLine)  <font color=green>(protocol.DataV4)
 
-        actor idProviderInterface #red
-        Emitter -[#red]> idProviderInterface : RegisterEntities
-        Emitter <[#red]-- idProviderInterface : []registered, []unregistered
+        actor "dm/Emitter.Processor" #orange
 
-        Emitter -> Emitter : replaceEntityName
+         "dm/Emitter" --[#orange]> "dm/Emitter.Processor" : Process
+        activate "dm/Emitter.Processor"
 
-        Emitter -> "IntegrationProcessor" : ProcessMetrics
-        Emitter <-- "IntegrationProcessor" : [] v4/protocol.metric
+        actor EntityRegistrator #orange
 
-        Emitter -> MetricsSender : SendMetricsWithCommonAttributes
+        "dm/Emitter.Processor" -[#orange]>> EntityRegistrator : ResolveEntities
+        EntityRegistrator -> idProviderInterface : ResolveEntities
+        EntityRegistrator <-- idProviderInterface : []registered, []unregistered
+'        "dm/Emitter.Processor" <[#orange]-- EntityRegistrator : []registered, []unregistered
+
+        loop data with IDs
+
+        "dm/Emitter.Processor" -> "dm/Emitter.Processor" : data with ID
+        "dm/Emitter.Processor" -> "dm/Emitter.Processor" : replaceEntityName
+
+        "dm/Emitter.Processor" -> "IntegrationProcessor" : ProcessMetrics
+        "dm/Emitter.Processor" <-- "IntegrationProcessor" : [] v4/protocol.metric
+
+        "dm/Emitter.Processor" -> MetricsSender : SendMetricsWithCommonAttributes(protocol.Common, []protocol.Metric)
 
         MetricsSender -> metricHarvester : RecordInfraMetrics
-        note over metricHarvester: telemetry SDK
-        MetricsSender <-- metricHarvester : error
 
-        Emitter <-- MetricsSender : error
+        note over metricHarvester : telemetry SDK
 
-        Emitter -> Emitter : composeEmitError
+        MetricsSender <-- metricHarvester : error: ErrFullQueue
+        note right : on validation errors it logs & discards
 
-        deactivate Emitter
+        "dm/Emitter.Processor" <-- MetricsSender : error
 
-        "pkg/integrations/v4/emitter/Emitter" <-- Emitter : error
+        "dm/Emitter.Processor" -[#red]> "dm/Emitter.Processor" : composeEmitError
+        note right #red : remove
+        note over "dm/Emitter.Processor" #green : heatBeat
+        note over "dm/Emitter.Processor" #green : healthCheck
 
-        end box
+        deactivate "dm/Emitter.Processor"
 
-        "runner.handleLines" <-- "pkg/integrations/v4/emitter/Emitter" : error
+        end
+
+        "emitter/Emitter" <-- "dm/Emitter" : error
+        note right #red : remove
+
+        "runner.handleLines" <[#red]-- "emitter/Emitter" : error
+        note right #green : always nil for compatibility with v3
+
+        note over "runner.handleLines" #red : heatBeat
+        note over "runner.handleLines" #red : healthCheck
+
     end
 
 end
 
+end box
 
 @enduml

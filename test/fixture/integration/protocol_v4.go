@@ -13,6 +13,38 @@ type ProtocolParsingPair struct {
 	ParsedV4 protocol.DataV4
 }
 
+// aims to avoid data mutation when processing structs from global fixture variables
+func (p *ProtocolParsingPair) Clone() (clone ProtocolParsingPair) {
+	clone = *p
+	dss := clone.ParsedV4.DataSets
+	clone.ParsedV4.DataSets = []protocol.Dataset{}
+	for _, ds := range dss {
+
+		// Common.Attributes
+		ca := make(map[string]interface{}, len(ds.Common.Attributes))
+		for k, v := range ds.Common.Attributes {
+			ca[k] = v
+		}
+		ds.Common.Attributes = ca
+
+		// Metrics.Attributes
+		ms := make([]protocol.Metric, len(ds.Metrics))
+		for _, m := range ds.Metrics {
+			a := make(map[string]interface{}, len(m.Attributes))
+			for k, v := range m.Attributes {
+				a[k] = v
+			}
+			m.Attributes = a
+		}
+		ds.Metrics = ms
+
+		// same might be required for Events & Inventory
+
+		clone.ParsedV4.DataSets = append(clone.ParsedV4.DataSets, ds)
+	}
+	return clone
+}
+
 var (
 	ProtocolV4TwoEntities = ProtocolParsingPair{
 		Payload: []byte(`{
@@ -130,7 +162,68 @@ var (
 				Name:    "Sample",
 				Version: "1.2.3",
 			},
-			DataSets: []protocol.Dataset{},
+			DataSets: []protocol.Dataset{
+				{
+					Common: protocol.Common{
+						Timestamp:  &ts,
+						Interval:   &interval,
+						Attributes: map[string]interface{}{}},
+					Metrics: []protocol.Metric{
+						{
+							Name: "b.gauge",
+							Type: "gauge",
+							//Timestamp:  (*int64)(nil),
+							//Interval:   (*int64)(nil),
+							Attributes: map[string]interface{}{
+								"key1": "val2",
+							},
+							Value: json.RawMessage("13"),
+						},
+					},
+					Entity: protocol.Entity{
+						Name:        "a.entity.one",
+						Type:        "ATYPE",
+						DisplayName: "A display name one",
+						Metadata: map[string]interface{}{
+							"env": "testing",
+						},
+					},
+					Inventory: map[string]protocol.InventoryData{
+						"inventory_payload_two": {"value": "bar-two"},
+					},
+					Events: []protocol.EventData{},
+				},
+				{
+					Common: protocol.Common{
+						Timestamp:  &ts,
+						Interval:   &interval,
+						Attributes: map[string]interface{}{}},
+					Metrics: []protocol.Metric{
+						{
+							Name: "a.gauge",
+							Type: "gauge",
+							//Timestamp:  (*int64)(nil),
+							//Interval:   (*int64)(nil),
+							Attributes: map[string]interface{}{
+								"key1": "val1",
+							},
+							Value: json.RawMessage("13"),
+						},
+					},
+					Entity: protocol.Entity{
+						Name:        "b.entity.two",
+						Type:        "ATYPE",
+						DisplayName: "A display name two",
+						Metadata: map[string]interface{}{
+							"env": "testing",
+						},
+					},
+					Inventory: map[string]protocol.InventoryData{
+						"inventory_payload_two": {"value": "bar-two"},
+					},
+					Events: []protocol.EventData{},
+				},
+			},
 		},
 	}
 
