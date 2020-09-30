@@ -39,47 +39,49 @@ func RunEntityIDResolverWorker(
 	batch := make(map[entity.Key]fwrequest.EntityFwRequest, registerBatchSize)
 	batchSize := 0
 
-	select {
-	case <-ctx.Done():
-		return
+	for {
+		select {
+		case <-ctx.Done():
+			return
 
-	case req := <-reqsToRegisterQueue:
-		batchSize++
+		case req := <-reqsToRegisterQueue:
+			batchSize++
 
-		// TODO update when entity key retrieval is fixed
-		eKey := entity.Key(req.Data.Entity.Name)
-		batch[eKey] = req
+			// TODO update when entity key retrieval is fixed
+			eKey := entity.Key(req.Data.Entity.Name)
+			batch[eKey] = req
 
-		// TODO add 1MB payload size platform limitation
-		// TODO add timer trigger
-		if batchSize == registerBatchSize {
-			var entities []protocol.Entity
-			for _, r := range batch {
-				entities = append(entities, r.Data.Entity)
-			}
-			responses, _, errClient := client.RegisterBatchEntities(agentIDProvide().ID, entities)
-			if errClient != nil {
-				// TODO error handling
-				break
-			}
-
-			for _, resp := range responses {
-				if resp.Err != "" {
+			// TODO add 1MB payload size platform limitation
+			// TODO add timer trigger
+			if batchSize == registerBatchSize {
+				var entities []protocol.Entity
+				for _, r := range batch {
+					entities = append(entities, r.Data.Entity)
+				}
+				responses, _, errClient := client.RegisterBatchEntities(agentIDProvide().ID, entities)
+				if errClient != nil {
 					// TODO error handling
-					continue
+					break
 				}
 
-				r, ok := batch[resp.Key]
-				if !ok {
-					// TODO error handling
-				} else {
-					r.RegisteredWith(resp.ID)
-					reqsRegisteredQueue <- r
+				for _, resp := range responses {
+					if resp.Err != "" {
+						// TODO error handling
+						continue
+					}
+
+					r, ok := batch[resp.Key]
+					if !ok {
+						// TODO error handling
+					} else {
+						r.RegisteredWith(resp.ID)
+						reqsRegisteredQueue <- r
+					}
 				}
+				// reset batch
+				batchSize = 0
+				batch = map[entity.Key]fwrequest.EntityFwRequest{}
 			}
-			// reset batch
-			batchSize = 0
-			batch = map[entity.Key]fwrequest.EntityFwRequest{}
 		}
 	}
 }
