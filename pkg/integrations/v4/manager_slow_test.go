@@ -30,7 +30,7 @@ func TestManager_HotReload_CreateAndModifyLinkFile(t *testing.T) {
 		"integration": v4AppendableConfig,
 	})
 
-	emitter := &testemit.Emitter{}
+	emitter := &testemit.RecordEmitter{}
 	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -100,7 +100,7 @@ integrations:
 	require.NoError(t, err)
 
 	// WHEN the v4 integrations manager runs it
-	emitter := &testemit.Emitter{}
+	emitter := &testemit.RecordEmitter{}
 	mgr := NewManager(Configuration{
 		ConfigFolders:     []string{configDir},
 		DefinitionFolders: []string{niDir},

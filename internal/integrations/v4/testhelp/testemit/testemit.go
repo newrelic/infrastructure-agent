@@ -28,13 +28,13 @@ type EmittedData struct {
 	EntityRewrite []data2.EntityRewrite
 }
 
-// Emitter implements a test emitter that stores the submitted data as Plugins structs
-type Emitter struct {
+// RecordEmitter implements a test emitter that stores the submitted data as Plugins structs
+type RecordEmitter struct {
 	received map[string]chan EmittedData
 	mutex    sync.Mutex
 }
 
-func (t *Emitter) Emit(metadata integration.Definition, extraLabels data2.Map, entityRewrite []data2.EntityRewrite, json []byte) error {
+func (t *RecordEmitter) Emit(metadata integration.Definition, extraLabels data2.Map, entityRewrite []data2.EntityRewrite, json []byte) error {
 	data, _, err := legacy.ParsePayload(json, false)
 	if err != nil {
 		return err
@@ -51,7 +51,7 @@ func (t *Emitter) Emit(metadata integration.Definition, extraLabels data2.Map, e
 	return nil
 }
 
-func (t *Emitter) ReceiveFrom(pluginName string) (EmittedData, error) {
+func (t *RecordEmitter) ReceiveFrom(pluginName string) (EmittedData, error) {
 	select {
 	case dataset := <-t.channelFor(pluginName):
 		return dataset, nil
@@ -62,7 +62,7 @@ func (t *Emitter) ReceiveFrom(pluginName string) (EmittedData, error) {
 
 // ExpectTimeout returns error if no timeout happens when listening for the plugin emissions.
 // It embeds the emitted metric information in the error, if it has received it
-func (t *Emitter) ExpectTimeout(pluginName string, timeout time.Duration) error {
+func (t *RecordEmitter) ExpectTimeout(pluginName string, timeout time.Duration) error {
 	select {
 	case dataset := <-t.channelFor(pluginName):
 		return fmt.Errorf("metrics were not expected. Received: %+v", dataset)
@@ -71,7 +71,7 @@ func (t *Emitter) ExpectTimeout(pluginName string, timeout time.Duration) error 
 	}
 }
 
-func (t *Emitter) channelFor(pluginName string) chan EmittedData {
+func (t *RecordEmitter) channelFor(pluginName string) chan EmittedData {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 

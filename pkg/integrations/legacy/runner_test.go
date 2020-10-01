@@ -4,6 +4,7 @@ package legacy
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -20,6 +21,7 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/test/fixture/integration"
 	"github.com/sirupsen/logrus"
@@ -411,6 +413,10 @@ type customContext struct {
 	cfg *config.Config
 }
 
+func (cc customContext) Context() context.Context {
+	return context.TODO()
+}
+
 func (cc customContext) HostnameResolver() hostname.Resolver {
 	return newFixedHostnameResolver("foo.bar", "short")
 }
@@ -451,8 +457,8 @@ func (cc customContext) AddReconnecting(agent.Plugin) {}
 
 func (cc customContext) Reconnect() {}
 
-func (cc customContext) IDLookup() agent.IDLookup {
-	idLookupTable := make(agent.IDLookup)
+func (cc customContext) IDLookup() host.IDLookup {
+	idLookupTable := make(host.IDLookup)
 	idLookupTable[sysinfo.HOST_SOURCE_HOSTNAME_SHORT] = "short_hostname"
 	return idLookupTable
 }
@@ -2104,7 +2110,7 @@ func TestResolveEntityKeyWithAgent(t *testing.T) {
 	ctx.On("IDLookup").Return(newFixedIDLookup())
 
 	e := entity.Fields{}
-	k, err := resolveUniqueEntityKey(e, "agent_id", ctx.IDLookup(), []data.EntityRewrite{}, protocol.V2)
+	k, err := host.ResolveUniqueEntityKey(e, "agent_id", ctx.IDLookup(), []data.EntityRewrite{}, protocol.V2)
 	assert.NoError(t, err)
 	assert.Equal(t, entity.Key("agent_id"), k)
 }
@@ -2118,7 +2124,7 @@ func TestResolveEntityWithReplacement(t *testing.T) {
 		Name: "localhost:80",
 		Type: entity.Type("instance"),
 	}
-	k, err := resolveUniqueEntityKey(e, "hostname", ctx.IDLookup(), []data.EntityRewrite{}, protocol.V3)
+	k, err := host.ResolveUniqueEntityKey(e, "hostname", ctx.IDLookup(), []data.EntityRewrite{}, protocol.V3)
 	assert.NoError(t, err)
 	assert.Equal(t, entity.Key("instance:display_name:80"), k)
 }
@@ -2132,7 +2138,7 @@ func TestResolveEntityWithProtocolV2(t *testing.T) {
 		Name: "localhost:80",
 		Type: entity.Type("instance"),
 	}
-	k, err := resolveUniqueEntityKey(e, "hostname", ctx.IDLookup(), []data.EntityRewrite{}, protocol.V2)
+	k, err := host.ResolveUniqueEntityKey(e, "hostname", ctx.IDLookup(), []data.EntityRewrite{}, protocol.V2)
 	assert.NoError(t, err)
 	assert.Equal(t, entity.Key("instance:localhost:80"), k)
 }
@@ -2273,8 +2279,8 @@ func (r *fixedHostnameResolver) Long() string {
 	return r.long
 }
 
-func newFixedIDLookup() agent.IDLookup {
-	idLookupTable := make(agent.IDLookup)
+func newFixedIDLookup() host.IDLookup {
+	idLookupTable := make(host.IDLookup)
 	idLookupTable[sysinfo.HOST_SOURCE_DISPLAY_NAME] = "display_name"
 	return idLookupTable
 }
