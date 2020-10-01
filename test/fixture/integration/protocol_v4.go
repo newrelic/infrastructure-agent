@@ -261,7 +261,12 @@ var (
 			  "value": "bar"
 			}
 		  },
-		  "events":[]
+		  "events":[
+				{ 
+				  "summary": "foo", 
+				  "timestamp":"1531414060739"
+				}
+		  ]
 		}
 	  ]
 	}`),
@@ -298,7 +303,7 @@ var (
 						"inventory_foo": {"value": "bar"},
 					},
 					Events: []protocol.EventData{
-						{"summary": "foo", "timestamp":1601474525},
+						{"summary": "foo", "timestamp":"1531414060739"},
 					},
 				},
 			},
