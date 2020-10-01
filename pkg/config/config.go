@@ -1435,23 +1435,27 @@ func calculateDimensionalMetricURL(collectorURL string, licenseKey string, stagi
 		return collectorURL
 	}
 
-	return fmt.Sprintf("https://%smetric-api.%snewrelic.com", urlEnvironmentPrefix(staging), urlRegionPrefix(licenseKey))
-}
+	r := license.GetRegion(licenseKey)
 
-func urlRegionPrefix(licenseKey string) string {
-	region := ""
-	if license.IsRegionEU(licenseKey) {
-		region = "eu."
+	if strings.Contains(r, "gov") {
+		return "https://gov-metric-api.newrelic.com"
 	}
-	return region
+
+	return fmt.Sprintf("https://%smetric-api.%snewrelic.com", urlEnvironmentPrefix(staging), urlRegionPrefix(r))
 }
 
 func urlEnvironmentPrefix(staging bool) string {
-	environment := ""
 	if staging {
-		environment = "staging-"
+		return "staging-"
 	}
-	return environment
+	return ""
+}
+
+func urlRegionPrefix(region string) string {
+	if strings.Contains(region, "eu") {
+		return "eu."
+	}
+	return ""
 }
 
 func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err error) {

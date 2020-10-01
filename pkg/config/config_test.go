@@ -406,6 +406,13 @@ func (s *ConfigSuite) TestCalculateDimensionalMetricURL(c *C) {
 			"https://staging-metric-api.eu.newrelic.com",
 		},
 		{
+			"Default URL, gov license region, no collector URL",
+			"gov01xx6789012345678901234567890123456789",
+			"",
+			true,
+			"https://gov-metric-api.newrelic.com",
+		},
+		{
 			"From Collector URL",
 			"gov01x6789012345678901234567890123456789",
 			"https://metric-api.test",
