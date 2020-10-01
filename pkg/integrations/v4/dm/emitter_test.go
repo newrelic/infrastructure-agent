@@ -122,7 +122,7 @@ func TestEmitter_Send(t *testing.T) {
 
 	// avoid waiting for more data to create register submission batch
 	e := em.(*emitter)
-	e.registerBatchSize = 1
+	e.registerMaxBatchSize = 1
 
 	data := integrationFixture.ProtocolV4.Clone().ParsedV4
 	em.Send(fwrequest.NewFwRequest(integration.Definition{}, nil, nil, data))
