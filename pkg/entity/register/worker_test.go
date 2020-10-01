@@ -83,12 +83,12 @@ func TestWorker_Run_SendsWhenMaxBatchSizeIsReached(t *testing.T) {
 
 	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{})
 
-	registeredCount := 0
-	select {
-	case result := <-reqsRegisteredQueue:
-		assert.Equal(t, ids[registeredCount], result.ID())
-		registeredCount++
-	case <-time.NewTimer(200 * time.Millisecond).C:
-		t.Error("no register response")
+	for registeredCount := 0; registeredCount < len(ids); registeredCount++ {
+		select {
+		case result := <-reqsRegisteredQueue:
+			assert.Equal(t, ids[registeredCount], result.ID())
+		case <-time.NewTimer(200 * time.Millisecond).C:
+			t.Error("no register response")
+		}
 	}
 }
