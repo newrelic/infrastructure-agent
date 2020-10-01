@@ -59,8 +59,6 @@ func (w *worker) Run(ctx context.Context) {
 
 			// TODO add 1MB payload size platform limitation
 
-			// TODO add timer trigger
-
 			if batchSize == w.maxBatchSize {
 				timer.Reset(w.maxBatchDuration)
 				w.send(batch, &batchSize)
