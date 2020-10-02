@@ -27,6 +27,7 @@ func IsRegionEU(license string) bool {
 	return false
 }
 
+// IsFederalCompliance returns true if license is from federal customer.
 func IsFederalCompliance(licenseKey string) bool {
 	r := GetRegion(licenseKey)
 
