@@ -1364,13 +1364,11 @@ func JitterFrequency(freqInSec time.Duration) time.Duration {
 }
 
 func calculateCollectorURL(licenseKey string, staging bool) string {
-	r := license.GetRegion(licenseKey)
-
-	if strings.Contains(r, "gov") {
+	if license.IsFederalCompliance(licenseKey) {
 		return defaultFedrampURL
 	}
 
-	return fmt.Sprintf(baseCollectorURL, urlEnvironmentPrefix(staging), urlRegionPrefix(r))
+	return fmt.Sprintf(baseCollectorURL, urlEnvironmentPrefix(staging), urlRegionPrefix(licenseKey))
 }
 
 func calculateIdentityURL(licenseKey string, staging bool) string {
@@ -1424,13 +1422,11 @@ func calculateDimensionalMetricURL(collectorURL string, licenseKey string, stagi
 		return collectorURL
 	}
 
-	r := license.GetRegion(licenseKey)
-
-	if strings.Contains(r, "gov") {
+	if license.IsFederalCompliance(licenseKey) {
 		return defaultFedrampURL
 	}
 
-	return fmt.Sprintf(baseDimensionalMetricURL, urlEnvironmentPrefix(staging), urlRegionPrefix(r))
+	return fmt.Sprintf(baseDimensionalMetricURL, urlEnvironmentPrefix(staging), urlRegionPrefix(licenseKey))
 }
 
 func urlEnvironmentPrefix(staging bool) string {
@@ -1440,10 +1436,11 @@ func urlEnvironmentPrefix(staging bool) string {
 	return ""
 }
 
-func urlRegionPrefix(region string) string {
-	if strings.Contains(region, "eu") {
+func urlRegionPrefix(licenseKey string) string {
+	if license.IsRegionEU(licenseKey) {
 		return "eu."
 	}
+
 	return ""
 }
 
