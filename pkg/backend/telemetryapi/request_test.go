@@ -4,6 +4,7 @@
 package telemetryapi
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -40,7 +41,7 @@ func TestNewRequestsSplitSuccess(t *testing.T) {
 			json.RawMessage(`123456789`),
 		},
 	}
-	reqs, err := newRequestsInternal(ts, "", "", "", func(r request) bool {
+	reqs, err := newRequestsInternal(context.Background(), ts, "", "", "", func(r request) bool {
 		return len(r.UncompressedBody) >= 10
 	})
 	if err != nil {
@@ -59,7 +60,7 @@ func TestNewRequestsCantSplit(t *testing.T) {
 			json.RawMessage(`12345678901`),
 		},
 	}
-	reqs, err := newRequestsInternal(ts, "", "", "", func(r request) bool {
+	reqs, err := newRequestsInternal(context.Background(), ts, "", "", "", func(r request) bool {
 		return len(r.UncompressedBody) >= 10
 	})
 	if err != errUnableToSplit {
@@ -81,7 +82,7 @@ func randomJSON(numBytes int) json.RawMessage {
 
 func TestLargeRequestNeedsSplit(t *testing.T) {
 	js := randomJSON(4 * maxCompressedSizeBytes)
-	reqs, err := newRequests(testRequestBuilder{bodies: []json.RawMessage{js}}, "apiKey", defaultMetricURL, "userAgent")
+	reqs, err := newRequests(context.Background(), testRequestBuilder{bodies: []json.RawMessage{js}}, "apiKey", defaultMetricURL, "userAgent")
 	if reqs != nil {
 		t.Error(reqs)
 	}
@@ -92,7 +93,7 @@ func TestLargeRequestNeedsSplit(t *testing.T) {
 
 func TestLargeRequestNoSplit(t *testing.T) {
 	js := randomJSON(maxCompressedSizeBytes / 2)
-	reqs, err := newRequests(testRequestBuilder{bodies: []json.RawMessage{js}}, "apiKey", defaultMetricURL, "userAgent")
+	reqs, err := newRequests(context.Background(), testRequestBuilder{bodies: []json.RawMessage{js}}, "apiKey", defaultMetricURL, "userAgent")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -192,7 +193,8 @@ func Test_newBatchRequest(t *testing.T) {
 			expectedAPIKey := "apiKey_" + tt.name
 			expectedURL := "http://url/" + tt.name
 			expectedUserAgent := "userAgent/" + tt.name
-			gotReqs, err := newBatchRequest(tt.args.metrics, expectedAPIKey, expectedURL, expectedUserAgent)
+			expectedContext := context.Background()
+			gotReqs, err := newBatchRequest(expectedContext, tt.args.metrics, expectedAPIKey, expectedURL, expectedUserAgent)
 			if !tt.wantErr {
 				require.NoError(t, err)
 			}
@@ -202,6 +204,7 @@ func Test_newBatchRequest(t *testing.T) {
 				assert.Equal(t, expectedURL, gotReqs[i].Request.URL.String())
 				assert.Equal(t, expectedUserAgent, gotReqs[i].Request.Header.Get("User-Agent"))
 				assert.Equal(t, tt.wantReqs[i].xNRIEntityIdsHeader, gotReqs[i].Request.Header.Get("X-NRI-Entity-Ids"))
+				assert.Equal(t, expectedContext, gotReqs[i].ctx)
 			}
 		})
 	}

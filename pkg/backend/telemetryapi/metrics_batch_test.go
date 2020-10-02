@@ -5,6 +5,7 @@ package telemetryapi
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/stretchr/testify/assert"
@@ -53,7 +54,8 @@ func TestMetrics(t *testing.T) {
 		]
 	}]`)
 
-	reqs, err := newRequests(metrics, "my-api-key", defaultMetricURL, "userAgent")
+	expectedContext := context.Background()
+	reqs, err := newRequests(expectedContext, metrics, "my-api-key", defaultMetricURL, "userAgent")
 	if err != nil {
 		t.Error("error creating request", err)
 	}
@@ -79,6 +81,9 @@ func TestMetrics(t *testing.T) {
 	}
 	if string(uncompressed) != expect {
 		t.Error("metrics JSON mismatch", string(uncompressed), expect)
+	}
+	if expectedContext != req.ctx {
+		t.Error("request context mismatch", expectedContext, req.ctx)
 	}
 }
 
@@ -127,7 +132,7 @@ func TestMetricBatch(t *testing.T) {
 		metricBatches = append(metricBatches, metrics)
 	}
 
-	requests, err := newBatchRequest(metricBatches, "my-api-key", defaultMetricURL, "userAgent")
+	requests, err := newBatchRequest(context.Background(), metricBatches, "my-api-key", defaultMetricURL, "userAgent")
 	require.NoError(t, err)
 	require.Len(t, requests, 1)
 	assert.Equal(t, "Identity-0,Identity-1", requests[0].Request.Header.Get("X-NRI-Entity-Ids"))
@@ -238,7 +243,7 @@ func testBatchJSON(t testing.TB, batch *metricBatch, expect string) {
 	if th, ok := t.(interface{ Helper() }); ok {
 		th.Helper()
 	}
-	reqs, err := newRequests(batch, "my-api-key", defaultMetricURL, "userAgent")
+	reqs, err := newRequests(context.Background(), batch, "my-api-key", defaultMetricURL, "userAgent")
 	if nil != err {
 		t.Fatal(err)
 	}

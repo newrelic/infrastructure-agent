@@ -4,6 +4,7 @@
 package telemetryapi
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"testing"
@@ -16,7 +17,8 @@ func testSpanBatchJSON(t testing.TB, batch *spanBatch, expect string) {
 	if th, ok := t.(interface{ Helper() }); ok {
 		th.Helper()
 	}
-	reqs, err := newRequests(batch, "apiKey", defaultSpanURL, "userAgent")
+	expectedContext := context.Background()
+	reqs, err := newRequests(expectedContext, batch, "apiKey", defaultSpanURL, "userAgent")
 	if nil != err {
 		t.Fatal(err)
 	}
@@ -31,7 +33,7 @@ func testSpanBatchJSON(t testing.TB, batch *spanBatch, expect string) {
 	}
 
 	body, err := ioutil.ReadAll(req.Request.Body)
-	req.Request.Body.Close()
+	_ = req.Request.Body.Close()
 	if err != nil {
 		t.Fatal("unable to read body", err)
 	}
@@ -45,6 +47,9 @@ func testSpanBatchJSON(t testing.TB, batch *spanBatch, expect string) {
 	}
 	if string(uncompressed) != string(req.UncompressedBody) {
 		t.Error("request JSON mismatch", string(uncompressed), string(req.UncompressedBody))
+	}
+	if expectedContext != req.ctx {
+		t.Error("request context mismatch", expectedContext, req.ctx)
 	}
 }
 

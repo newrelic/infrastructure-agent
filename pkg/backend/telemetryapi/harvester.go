@@ -32,6 +32,7 @@ type Harvester struct {
 	spans             []Span
 	commonAttributes  Attributes
 	requestsQueue     chan request
+	contextCancel     context.CancelFunc
 }
 
 const (
@@ -47,12 +48,13 @@ var (
 
 // NewHarvester creates a new harvester.
 func NewHarvester(options ...func(*Config)) (*Harvester, error) {
+	backgroundCtx, cancel := context.WithCancel(context.Background())
 	cfg := Config{
 		Client:         &http.Client{},
 		HarvestPeriod:  defaultHarvestPeriod,
 		HarvestTimeout: defaultHarvestTimeout,
 		MaxConns:       DefaultMaxConns,
-		Context:        context.Background(),
+		Context:        backgroundCtx,
 	}
 	for _, opt := range options {
 		opt(&cfg)
@@ -67,6 +69,7 @@ func NewHarvester(options ...func(*Config)) (*Harvester, error) {
 		lastHarvest:       time.Now(),
 		aggregatedMetrics: make(map[metricIdentity]*metric),
 		requestsQueue:     make(chan request, cfg.MaxConns),
+		contextCancel:     cancel,
 	}
 
 	// Marshal the common attributes to JSON here to avoid doing it on every
@@ -129,6 +132,10 @@ func (h *Harvester) RecordSpan(s Span) error {
 
 	h.spans = append(h.spans, s)
 	return nil
+}
+
+func (h *Harvester) Cancel() {
+	h.contextCancel()
 }
 
 // RecordMetric adds a fully formed metric.  This metric is not aggregated with
@@ -301,7 +308,7 @@ func (h *Harvester) swapOutMetrics(now time.Time) []request {
 		AttributesJSON: h.commonAttributesJSON,
 		Metrics:        rawMetrics,
 	}
-	reqs, err := newRequests(batch, h.config.APIKey, h.config.metricURL(), h.config.userAgent())
+	reqs, err := newRequests(nil, batch, h.config.APIKey, h.config.metricURL(), h.config.userAgent())
 	if nil != err {
 		h.config.logError(map[string]interface{}{
 			"err":     err.Error(),
@@ -318,7 +325,7 @@ func (h *Harvester) swapOutBatchMetrics() (req []request) {
 	h.rawMetricsBatch = nil
 	h.lock.Unlock()
 	var err error
-	req, err = newBatchRequest(rawMetricsBatch, h.config.APIKey, h.config.metricURL(), h.config.userAgent())
+	req, err = newBatchRequest(nil, rawMetricsBatch, h.config.APIKey, h.config.metricURL(), h.config.userAgent())
 	if err != nil {
 		h.config.logError(map[string]interface{}{
 			"err":     err.Error(),
@@ -341,7 +348,7 @@ func (h *Harvester) swapOutSpans() []request {
 		AttributesJSON: h.commonAttributesJSON,
 		Spans:          sps,
 	}
-	reqs, err := newRequests(batch, h.config.APIKey, h.config.spanURL(), h.config.userAgent())
+	reqs, err := newRequests(nil, batch, h.config.APIKey, h.config.spanURL(), h.config.userAgent())
 	if nil != err {
 		h.config.logError(map[string]interface{}{
 			"err":     err.Error(),
