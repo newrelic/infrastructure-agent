@@ -863,12 +863,6 @@ type Config struct {
 	// Public: No
 	RegisterEnabled bool `yaml:"register_enabled" envconfig:"register_enabled" public:"false"`
 
-	// DMRegisterEnabled If it's enabled entities will be registered using new register endpoint and it assigns
-	// these entities with an assigned entity ID.
-	// Default: False
-	// Public: No
-	DMRegisterEnabled bool `yaml:"dm_register_enabled" envconfig:"dm_register_enabled" public:"false"`
-
 	// FilesConfigOn enables or disables the configuration file monitoring. Disabled by default. We just keep this
 	// configuration value for backwards compatibilities, but any new agent should enable this value.
 	// Default: False
