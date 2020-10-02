@@ -3,11 +3,16 @@
 package sender
 
 import (
-	"github.com/newrelic/infrastructure-agent/pkg/helpers"
+	"runtime"
 	"testing"
+
+	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 )
 
 func TestNewContainerisedClient(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping flaky test on windows")
+	}
 
 	type args struct {
 		apiVersion  string
