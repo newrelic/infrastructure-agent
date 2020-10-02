@@ -287,7 +287,7 @@ agent_dir: /my/overriden/agent/dir
 	cfg, err := LoadConfig(f.Name())
 	c.Assert(cfg.PidFile, Equals, defaultPidFile)
 	c.Assert(cfg.MetricURL, Equals, "https://metric-api.newrelic.com")
-	c.Assert(cfg.CollectorURL, Equals, defaultCollectorURL)
+	c.Assert(cfg.CollectorURL, Equals, "https://infra-api.newrelic.com")
 	c.Assert(cfg.AgentDir, Equals, "/my/overriden/agent/dir")
 	c.Assert(cfg.AppDataDir, Equals, defaultAppDataDir)
 	c.Assert(cfg.LogToStdout, Equals, defaultLogToStdout)
@@ -350,17 +350,15 @@ func (s *ConfigSuite) TestCalculateCollectorURL(c *C) {
 		staging   bool
 	}{
 		// non-region license, staging false
-		{license: "0123456789012345678901234567890123456789", expectURL: defaultCollectorURL, staging: false},
+		{license: "0123456789012345678901234567890123456789", expectURL: "https://infra-api.newrelic.com", staging: false},
 		// non-region license, staging true
-		{license: "0123456789012345678901234567890123456789", expectURL: defaultCollectorStagingURL, staging: true},
+		{license: "0123456789012345678901234567890123456789", expectURL: "https://staging-infra-api.newrelic.com", staging: true},
 		// four letter region
-		{license: "eu01xx6789012345678901234567890123456789", expectURL: "https://infra-api.eu01.nr-data.net", staging: false},
+		{license: "eu01xx6789012345678901234567890123456789", expectURL: "https://infra-api.eu.newrelic.com", staging: false},
 		// four letter region
-		{license: "eu01xx6789012345678901234567890123456789", expectURL: "https://staging-infra-api.eu01.nr-data.net", staging: true},
-		// five letter region
-		{license: "gov01x6789012345678901234567890123456789", expectURL: "https://infra-api.gov01.nr-data.net", staging: false},
-		// five letter region
-		{license: "gov01x6789012345678901234567890123456789", expectURL: "https://staging-infra-api.gov01.nr-data.net", staging: true},
+		{license: "eu01xx6789012345678901234567890123456789", expectURL: "https://staging-infra-api.eu.newrelic.com", staging: true},
+		//// five letter region
+		{license: "gov01x6789012345678901234567890123456789", expectURL: "https://gov-infra-api.newrelic.com", staging: true},
 	}
 
 	for _, tc := range testcases {
