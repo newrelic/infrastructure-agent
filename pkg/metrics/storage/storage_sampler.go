@@ -4,9 +4,9 @@ package storage
 
 import (
 	"fmt"
-
 	"path/filepath"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -125,6 +125,17 @@ func (ss *Sampler) useCustomSupportedFileSystems() {
 	}
 }
 
+func (p *PartitionStat) IsReadOnly() bool {
+	options := strings.Split(p.Opts, ",")
+	for _, o := range options {
+		if o == "ro" {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (ss *Sampler) Interval() time.Duration {
 	return ss.sampleRate
 }
@@ -149,7 +160,7 @@ func PlatformFsByteScale(b uint64) float64 {
 }
 
 // Sample samples the storage devices
-func (ss *Sampler) Sample() (results sample.EventBatch, err error) {
+func (ss *Sampler) Sample() (samples sample.EventBatch, err error) {
 
 	defer func() {
 		if panicErr := recover(); panicErr != nil {
@@ -184,13 +195,9 @@ func (ss *Sampler) Sample() (results sample.EventBatch, err error) {
 	var activeDevices = map[string]bool{}
 
 	// key: sample deviceKey
-	samples := map[string][]*Sample{}
+	dev2Samples := map[string][]*Sample{}
 	for _, fs := range partitions {
 		helpers.LogStructureDetails(sslog, fs, "Partition", "raw", logrus.Fields{"supported": true})
-		sample := &Sample{}
-		sample.Type("StorageSample")
-		sample.ElapsedSampleDeltaMs = elapsedMs
-
 		// If there is a mountPointPrefix, this means we're most likely running inside a container.
 		// Mount points are reported from the perspective of the host. e.g. "/", "/data1"
 		//
@@ -228,22 +235,17 @@ func (ss *Sampler) Sample() (results sample.EventBatch, err error) {
 			}
 		}
 
-		sample.FileSystemType = fs.Fstype
-		sample.MountPoint = fs.Mountpoint // Ensure we use the reported mount point, not the prefixed one
-		sample.Device = fs.Device
-		sample.IsReadOnly = "false"
-		options := strings.Split(fs.Opts, ",")
-		for _, s := range options {
-			if s == "ro" {
-				sample.IsReadOnly = "true"
-				break
-			}
-		}
-
-		populateUsage(fsUsage, sample)
+		s := &Sample{}
+		s.Type("StorageSample")
+		s.ElapsedSampleDeltaMs = elapsedMs
+		s.FileSystemType = fs.Fstype
+		s.MountPoint = fs.Mountpoint // Ensure we use the reported mount point, not the prefixed one
+		s.Device = fs.Device
+		s.IsReadOnly = strconv.FormatBool(fs.IsReadOnly())
+		populateUsage(fsUsage, s)
 
 		// we can have multiple mountpoints for the same device
-		samples[fs.Device] = append(samples[fs.Device], sample)
+		dev2Samples[fs.Device] = append(dev2Samples[fs.Device], s)
 
 		activeDevices[fs.Device] = true
 	}
@@ -270,7 +272,7 @@ func (ss *Sampler) Sample() (results sample.EventBatch, err error) {
 					if lastStats, ok := ss.lastDiskStats[deviceKey]; ok {
 						// Look through all accumulated Sample objects for this device. (There could be multiple
 						// objects for the same device if it's mounted in multiple locations.)
-						if deviceSamples, ok := samples[device]; ok {
+						if deviceSamples, ok := dev2Samples[device]; ok {
 							sslog.WithFieldsF(func() logrus.Fields {
 								return logrus.Fields{
 									"device":    device,
@@ -302,17 +304,18 @@ func (ss *Sampler) Sample() (results sample.EventBatch, err error) {
 		ss.lastDiskStats = ioCounters
 	}
 
-	for _, s := range samples {
-		for _, sample := range s {
-			results = append(results, sample)
+	for _, devSamples := range dev2Samples {
+		for _, s := range devSamples {
+			samples = append(samples, s)
 		}
 	}
-	ss.lastSamples = results
+	ss.lastSamples = samples
 
-	for _, sample := range results {
-		helpers.LogStructureDetails(sslog, sample.(*Sample), "StorageSample", "final", nil)
+	for _, s := range samples {
+		helpers.LogStructureDetails(sslog, s.(*Sample), "StorageSample", "final", nil)
 	}
-	return results, nil
+
+	return samples, nil
 }
 
 // PartitionsCache avoids polling for partitions on each sample, since they do not change so frequently
