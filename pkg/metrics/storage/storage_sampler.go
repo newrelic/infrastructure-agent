@@ -161,12 +161,12 @@ func PlatformFsByteScale(b uint64) float64 {
 
 // Sample samples the storage devices
 func (ss *Sampler) Sample() (samples sample.EventBatch, err error) {
-
 	defer func() {
 		if panicErr := recover(); panicErr != nil {
 			err = fmt.Errorf("Panic in Sampler.Sample: %v\nStack: %s", panicErr, debug.Stack())
 		}
 	}()
+
 	var cfg *config.Config
 	if ss.context != nil {
 		cfg = ss.context.Config()
