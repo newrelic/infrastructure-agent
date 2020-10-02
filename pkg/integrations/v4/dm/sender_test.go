@@ -20,6 +20,20 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
+func Test_sender_Configuration_endpointURL(t *testing.T) {
+	prodUrl := "https://infra-api.newrelic.com/metric/v1/infra"
+
+	c := NewConfig("https://infra-api.newrelic.com", "licenseKey", time.Millisecond)
+
+	assert.Equal(t, prodUrl, c.MetricApiURL)
+
+	stgUrl := "https://staging-metric-api.newrelic.com/metric/v1/infra"
+
+	c = NewConfig("https://staging-metric-api.newrelic.com", "licenseKey", time.Millisecond)
+
+	assert.Equal(t, stgUrl, c.MetricApiURL)
+}
+
 func Test_sender_SendMetrics(t *testing.T) {
 	cannedDuration, _ := time.ParseDuration("1m7s")
 	cannedDurationInt := int64(cannedDuration.Seconds() * 1000)
