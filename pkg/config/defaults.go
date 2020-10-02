@@ -25,7 +25,7 @@ const (
 	defaultIdentityStagingURL     = "https://staging-identity-api.newrelic.com"
 	baseCollectorURL              = "https://%sinfra-api.%snewrelic.com"
 	baseDimensionalMetricURL      = "https://%smetric-api.%snewrelic.com"
-	defaultFedrampURL             = "https://gov-infra-api.newrelic.com"
+	defaultSecureFederalURL       = "https://gov-infra-api.newrelic.com"
 )
 
 // Default configurable values

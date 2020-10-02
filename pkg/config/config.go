@@ -1365,7 +1365,7 @@ func JitterFrequency(freqInSec time.Duration) time.Duration {
 
 func calculateCollectorURL(licenseKey string, staging bool) string {
 	if license.IsFederalCompliance(licenseKey) {
-		return defaultFedrampURL
+		return defaultSecureFederalURL
 	}
 
 	return fmt.Sprintf(baseCollectorURL, urlEnvironmentPrefix(staging), urlRegionPrefix(licenseKey))
@@ -1423,7 +1423,7 @@ func calculateDimensionalMetricURL(collectorURL string, licenseKey string, stagi
 	}
 
 	if license.IsFederalCompliance(licenseKey) {
-		return defaultFedrampURL
+		return defaultSecureFederalURL
 	}
 
 	return fmt.Sprintf(baseDimensionalMetricURL, urlEnvironmentPrefix(staging), urlRegionPrefix(licenseKey))
