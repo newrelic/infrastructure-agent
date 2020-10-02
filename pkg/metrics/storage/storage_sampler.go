@@ -196,15 +196,15 @@ func (ss *Sampler) Sample() (samples sample.EventBatch, err error) {
 
 	// key: sample deviceKey
 	dev2Samples := map[string][]*Sample{}
-	for _, fs := range partitions {
-		helpers.LogStructureDetails(sslog, fs, "Partition", "raw", logrus.Fields{"supported": true})
+	for _, p := range partitions {
+		helpers.LogStructureDetails(sslog, p, "Partition", "raw", logrus.Fields{"supported": true})
 		// If there is a mountPointPrefix, this means we're most likely running inside a container.
 		// Mount points are reported from the perspective of the host. e.g. "/", "/data1"
 		//
 		// If the host has bind mounted its root to "/host" with associated OverrideHostRoot config,
 		// to collect the disk usage we need to resolve the mount points with the host root prefix.
 		// e.g. "/" -> "/host" and "/data1" -> "/host/data1"
-		mountPoint := filepath.Join(mountPointPrefix, fs.Mountpoint)
+		mountPoint := filepath.Join(mountPointPrefix, p.Mountpoint)
 
 		var fsUsage *disk.UsageStat
 		if fsUsage, err = ss.storageUtilities.Usage(mountPoint); err != nil {
@@ -219,11 +219,11 @@ func (ss *Sampler) Sample() (samples sample.EventBatch, err error) {
 			fileDevicesIgnored := cfg.FileDevicesIgnored
 			sslog.WithField("fileDevicesIgnored", fileDevicesIgnored).Debug("Using file device ignored.")
 			for _, deviceName := range fileDevicesIgnored {
-				if strings.Contains(fs.Device, deviceName) {
+				if strings.Contains(p.Device, deviceName) {
 					sslog.WithFieldsF(func() logrus.Fields {
 						return logrus.Fields{
 							"fileDeviceIgnored": deviceName,
-							"skippedDevice":     fs.Device,
+							"skippedDevice":     p.Device,
 						}
 					}).Debug("Skipping ignored device.")
 					found = true
@@ -238,16 +238,16 @@ func (ss *Sampler) Sample() (samples sample.EventBatch, err error) {
 		s := &Sample{}
 		s.Type("StorageSample")
 		s.ElapsedSampleDeltaMs = elapsedMs
-		s.FileSystemType = fs.Fstype
-		s.MountPoint = fs.Mountpoint // Ensure we use the reported mount point, not the prefixed one
-		s.Device = fs.Device
-		s.IsReadOnly = strconv.FormatBool(fs.IsReadOnly())
+		s.FileSystemType = p.Fstype
+		s.MountPoint = p.Mountpoint // Ensure we use the reported mount point, not the prefixed one
+		s.Device = p.Device
+		s.IsReadOnly = strconv.FormatBool(p.IsReadOnly())
 		populateUsage(fsUsage, s)
 
 		// we can have multiple mountpoints for the same device
-		dev2Samples[fs.Device] = append(dev2Samples[fs.Device], s)
+		dev2Samples[p.Device] = append(dev2Samples[p.Device], s)
 
-		activeDevices[fs.Device] = true
+		activeDevices[p.Device] = true
 	}
 
 	// Gather IO stats if the OS supports it
