@@ -1438,7 +1438,7 @@ func calculateDimensionalMetricURL(collectorURL string, licenseKey string, stagi
 	r := license.GetRegion(licenseKey)
 
 	if strings.Contains(r, "gov") {
-		return "https://gov-metric-api.newrelic.com"
+		return "https://gov-infra-api.newrelic.com"
 	}
 
 	return fmt.Sprintf("https://%smetric-api.%snewrelic.com", urlEnvironmentPrefix(staging), urlRegionPrefix(r))

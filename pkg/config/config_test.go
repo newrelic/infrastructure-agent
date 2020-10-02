@@ -410,7 +410,7 @@ func (s *ConfigSuite) TestCalculateDimensionalMetricURL(c *C) {
 			"gov01xx6789012345678901234567890123456789",
 			"",
 			true,
-			"https://gov-metric-api.newrelic.com",
+			"https://gov-infra-api.newrelic.com",
 		},
 		{
 			"From Collector URL",
