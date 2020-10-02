@@ -31,6 +31,7 @@ type Harvester struct {
 	aggregatedMetrics map[metricIdentity]*metric
 	spans             []Span
 	commonAttributes  Attributes
+	requestsQueue     chan request
 }
 
 const (
@@ -50,6 +51,8 @@ func NewHarvester(options ...func(*Config)) (*Harvester, error) {
 		Client:         &http.Client{},
 		HarvestPeriod:  defaultHarvestPeriod,
 		HarvestTimeout: defaultHarvestTimeout,
+		MaxConns:       DefaultMaxConns,
+		Context:        context.Background(),
 	}
 	for _, opt := range options {
 		opt(&cfg)
@@ -63,6 +66,7 @@ func NewHarvester(options ...func(*Config)) (*Harvester, error) {
 		config:            cfg,
 		lastHarvest:       time.Now(),
 		aggregatedMetrics: make(map[metricIdentity]*metric),
+		requestsQueue:     make(chan request, cfg.MaxConns),
 	}
 
 	// Marshal the common attributes to JSON here to avoid doing it on every
@@ -257,6 +261,7 @@ func postData(req *http.Request, client *http.Client) response {
 	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusAccepted {
 		r.body, _ = ioutil.ReadAll(resp.Body)
 	} else {
+		_, _ = ioutil.ReadAll(resp.Body)
 		r.err = fmt.Errorf("unexpected post response code: %d: %s",
 			resp.StatusCode, http.StatusText(resp.StatusCode))
 	}
@@ -452,8 +457,13 @@ func harvestRoutine(h *Harvester) {
 	time.Sleep(jitter)
 
 	ticker := time.NewTicker(h.config.HarvestPeriod)
-	for range ticker.C {
-		go h.HarvestNow(context.Background())
+	for {
+		select {
+		case <-ticker.C:
+			go h.HarvestNow(h.config.Context)
+		case <-h.config.Context.Done():
+			return
+		}
 	}
 }
 

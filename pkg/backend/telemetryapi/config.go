@@ -4,12 +4,17 @@
 package telemetryapi
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"log"
 	"net/http"
 	"time"
 )
+
+// DefaultMaxConns is the default value of the Config's
+// MaxConns.
+const DefaultMaxConns = 2
 
 // Config customizes the behavior of a Harvester.
 type Config struct {
@@ -49,6 +54,11 @@ type Config struct {
 	Product string
 	// ProductVersion is added to the User-Agent header. eg. "0.1.0".
 	ProductVersion string
+	// MaxConns limits the total number of concurrent connections when submitting data
+	// If zero, DefaultMaxConns is used.
+	MaxConns int
+	// Context is the Context to use for making requests
+	Context context.Context
 }
 
 // ConfigAPIKey sets the Config's APIKey which is required and refers to your
@@ -56,6 +66,14 @@ type Config struct {
 func ConfigAPIKey(key string) func(*Config) {
 	return func(cfg *Config) {
 		cfg.APIKey = key
+	}
+}
+
+// ConfigContext add the given context.Context to the Config's
+// Context field
+func ConfigContext(ctx context.Context) func(*Config) {
+	return func(cfg *Config) {
+		cfg.Context = ctx
 	}
 }
 

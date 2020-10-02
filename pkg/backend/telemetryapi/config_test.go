@@ -5,6 +5,7 @@ package telemetryapi
 
 import (
 	"bytes"
+	"context"
 	"strings"
 	"testing"
 )
@@ -53,6 +54,17 @@ func TestConfigBasicErrorLogger(t *testing.T) {
 	h.config.logError(map[string]interface{}{"zip": func() {}})
 	if log := buf.String(); !strings.Contains(log, "json: unsupported type: func()") {
 		t.Error("message not logged correctly", log)
+	}
+}
+
+func TestConfigContext(t *testing.T) {
+	ctx := context.Background()
+	h, err := NewHarvester(ConfigAPIKey("apikey"), ConfigContext(ctx))
+	if nil == h || err != nil {
+		t.Fatal(h, err)
+	}
+	if ctx != h.config.Context {
+		t.Error("config func does not set context correctly")
 	}
 }
 
