@@ -1364,24 +1364,13 @@ func JitterFrequency(freqInSec time.Duration) time.Duration {
 }
 
 func calculateCollectorURL(licenseKey string, staging bool) string {
-	if staging {
-		return calculateCollectorStagingURL(licenseKey)
-	}
-	return calculateCollectorProductionURL(licenseKey)
-}
+	r := license.GetRegion(licenseKey)
 
-func calculateCollectorProductionURL(licenseKey string) string {
-	if r := license.GetRegion(licenseKey); r != "" {
-		return fmt.Sprintf(defaultRegionURLFormat, r)
+	if strings.Contains(r, "gov") {
+		return defaultFedrampURL
 	}
-	return defaultCollectorURL
-}
 
-func calculateCollectorStagingURL(licenseKey string) string {
-	if r := license.GetRegion(licenseKey); r != "" {
-		return fmt.Sprintf(defaultRegionStagingURLFormat, r)
-	}
-	return defaultCollectorStagingURL
+	return fmt.Sprintf(baseCollectorURL, urlEnvironmentPrefix(staging), urlRegionPrefix(r))
 }
 
 func calculateIdentityURL(licenseKey string, staging bool) string {
@@ -1438,10 +1427,10 @@ func calculateDimensionalMetricURL(collectorURL string, licenseKey string, stagi
 	r := license.GetRegion(licenseKey)
 
 	if strings.Contains(r, "gov") {
-		return "https://gov-metric-api.newrelic.com"
+		return defaultFedrampURL
 	}
 
-	return fmt.Sprintf("https://%smetric-api.%snewrelic.com", urlEnvironmentPrefix(staging), urlRegionPrefix(r))
+	return fmt.Sprintf(baseDimensionalMetricURL, urlEnvironmentPrefix(staging), urlRegionPrefix(r))
 }
 
 func urlEnvironmentPrefix(staging bool) string {
