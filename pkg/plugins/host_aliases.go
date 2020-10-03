@@ -91,7 +91,7 @@ func (self *HostAliasesPlugin) getHostAliasesDataset() (dataset agent.PluginInve
 func (self *HostAliasesPlugin) shouldCollectCloudMetadata() bool {
 	return !self.Context.Config().DisableCloudMetadata &&
 		!self.Context.Config().DisableCloudInstanceId &&
-		self.cloudHarvester.GetCloudType().ShouldCollect()
+		self.cloudHarvester.GetCloudType().IsValidCloud()
 }
 
 // Collect cloud metadata and set self.cloudAliases to include whatever we found

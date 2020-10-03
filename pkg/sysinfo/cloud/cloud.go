@@ -27,8 +27,7 @@ const (
 
 var dlog = log.WithComponent("CloudDetector")
 
-// ShouldCollect returns true if we should collect data for this cloud type.
-func (t Type) ShouldCollect() bool {
+func (t Type) IsValidCloud() bool {
 	return t != TypeNoCloud && t != TypeInProgress
 }
 
