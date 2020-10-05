@@ -70,8 +70,8 @@ type sender struct {
 }
 
 type Calculator struct {
-	delta deltaCalculator
-	rate  rate.Calculator
+	delta      deltaCalculator
+	rate       rate.Calculator
 }
 
 type deltaCalculator interface {
@@ -109,6 +109,10 @@ func (s *sender) SendMetrics(metrics []protocol.Metric) {
 			c = Conversion{toTelemetry: Gauge{calculate: &Rate{get: s.calculator.rate.GetCumulativeRate}}}
 		case "cumulative-count":
 			c = Conversion{toTelemetry: Count{calculate: &Cumulative{get: s.calculator.delta.CountMetric}}}
+		case "prometheus-summary":
+			c = Conversion{toMultipleTelemetry: PrometheusSummary{calculate: &Cumulative{get: s.calculator.delta.CountMetric}}}
+		case "prometheus-histogram":
+			c = Conversion{toMultipleTelemetry: PrometheusHistogram{calculate: &Cumulative{get: s.calculator.delta.CountMetric}}}
 		default:
 			logger.WithField("name", metric.Name).WithField("metric-type", metric.Name).Warn("received an unknown metric type")
 			continue
@@ -123,12 +127,15 @@ func (s *sender) SendMetrics(metrics []protocol.Metric) {
 			continue
 		}
 
-		s.harvester.RecordMetric(recMetric)
+		for _, m := range recMetric {
+			s.harvester.RecordMetric(m)
+		}
 	}
 }
 
 func (s *sender) SendMetricsWithCommonAttributes(commonAttributes protocol.Common, metrics []protocol.Metric) error {
 	var dMetrics []telemetry.Metric
+
 	for _, metric := range metrics {
 
 		var c Conversion
@@ -146,12 +153,16 @@ func (s *sender) SendMetricsWithCommonAttributes(commonAttributes protocol.Commo
 			c = Conversion{toTelemetry: Gauge{calculate: &Rate{get: s.calculator.rate.GetCumulativeRate}}}
 		case "cumulative-count":
 			c = Conversion{toTelemetry: Count{calculate: &Cumulative{get: s.calculator.delta.CountMetric}}}
-		default:
+		case "prometheus-summary":
+			c = Conversion{toMultipleTelemetry: PrometheusSummary{calculate: &Cumulative{get: s.calculator.delta.CountMetric}}}
+		case "prometheus-histogram":
+			c = Conversion{toMultipleTelemetry: PrometheusHistogram{calculate: &Cumulative{get: s.calculator.delta.CountMetric}}}
+			default:
 			logger.WithField("name", metric.Name).WithField("metric-type", metric.Name).Warn("received an unknown metric type")
 			continue
 		}
 
-		recMetric, err := c.convert(metric)
+		recMetrics, err := c.convert(metric)
 
 		if err != nil {
 			if err != errNoCalculation {
@@ -160,7 +171,7 @@ func (s *sender) SendMetricsWithCommonAttributes(commonAttributes protocol.Commo
 			}
 			continue
 		}
-		dMetrics = append(dMetrics, recMetric)
+		dMetrics = append(dMetrics, recMetrics...)
 	}
 
 	if len(dMetrics) > 0 {

@@ -4,7 +4,9 @@ package dm
 
 import (
 	"encoding/json"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm/cumulative"
 	"io/ioutil"
+	"math"
 	"os"
 	"testing"
 	"time"
@@ -132,6 +134,84 @@ func Test_sender_SendMetrics(t *testing.T) {
 			}
 
 			tt.fields.harvester.On("RecordInfraMetrics", expectedAttributes, tt.expectedMetrics).Return(nil)
+			err := s.SendMetricsWithCommonAttributes(protocol.Common{
+				Timestamp: &cannedDateUnix,
+				Interval:  &cannedDurationInt,
+				Attributes: map[string]interface{}{
+					"one": 1,
+					"two": "two",
+				},
+			}, tt.args.metrics)
+			require.NoError(t, err)
+			tt.fields.harvester.AssertExpectations(t)
+		})
+	}
+}
+
+func Test_sender_SendPrometheusMetrics(t *testing.T) {
+	cannedDuration, _ := time.ParseDuration("1m7s")
+	cannedDurationInt := int64(cannedDuration.Seconds() * 1000)
+	cannedDate := time.Date(1980, time.January, 12, 1, 2, 0, 0, time.Now().Location())
+	cannedDateUnix := cannedDate.Unix()
+	type fields struct {
+		harvester *mockHarvester
+	}
+
+	type args struct {
+		metrics []protocol.Metric
+	}
+	tests := []struct {
+		name            string
+		fields          fields
+		args            args
+		expectedMetrics []telemetry.Metric
+	}{
+		{
+			name: "prometheus-summary",
+			fields: fields{
+				harvester: &mockHarvester{},
+			},
+			args: args{
+				metrics: []protocol.Metric{
+					{
+						Name:       "PrometheusSummaryMetric",
+						Type:       "prometheus-summary",
+						Attributes: map[string]interface{}{"att_key": "att_value"},
+						Timestamp:  &cannedDateUnix,
+						Interval:   &cannedDurationInt,
+						Value:      json.RawMessage("{\"sample_count\":1,\"sample_sum\":2,\"quantiles\":[{\"quantile\":95,\"value\":3}]}"),
+					},
+				},
+			},
+			expectedMetrics: []telemetry.Metric{
+				telemetry.Summary{
+					Name:       "PrometheusSummaryMetric_sum",
+					Attributes: map[string]interface{}{"att_key": "att_value"},
+					Sum:        float64(2),
+					Min:        math.NaN(),
+					Max:        math.NaN(),
+					Count:      1,
+					Timestamp:  cannedDate,
+					Interval:   cannedDuration,
+				},
+				telemetry.Gauge{
+					Name:       "PrometheusSummaryMetric",
+					Attributes: map[string]interface{}{"att_key": "att_value", "quantile": "95"},
+					Value:      float64(3),
+					Timestamp:  cannedDate,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &sender{
+				harvester:  tt.fields.harvester,
+				calculator: Calculator{delta: cumulative.NewDeltaCalculator()},
+			}
+
+			tt.fields.harvester.On("RecordInfraMetrics", telemetry.Attributes{"one":1, "two":"two"}, tt.expectedMetrics).Return(nil)
 			err := s.SendMetricsWithCommonAttributes(protocol.Common{
 				Timestamp: &cannedDateUnix,
 				Interval:  &cannedDurationInt,

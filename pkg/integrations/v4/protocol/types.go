@@ -18,6 +18,9 @@ const (
 	MetricTypeSummary MetricType = "summary"
 	MetricTypeGauge   MetricType = "gauge"
 	MetricTypeRate    MetricType = "rate"
+
+	MetricTypePrometheusSummary MetricType = "prometheus-summary"
+	MetricTypePrometheusHistogram MetricType = "prometheus-histogram"
 )
 
 const millisSinceJanuaryFirst1978 = 252489600000
@@ -68,6 +71,33 @@ type SummaryValue struct {
 	Min   float64 `json:"min"`
 	Max   float64 `json:"max"`
 	Sum   float64 `json:"sum"`
+}
+
+// PrometheusHistogram represents a Prometheus histogram
+type PrometheusHistogramValue struct {
+	SampleCount *uint64  `json:"sample_count,omitempty"`
+	SampleSum   *float64 `json:"sample_sum,omitempty"`
+	// Buckets defines the buckets into which observations are counted. Each
+	// element in the slice is the upper inclusive bound of a bucket. The
+	// values must are sorted in strictly increasing order.
+	Buckets []*bucket `json:"buckets,omitempty"`
+}
+
+type bucket struct {
+	CumulativeCount *float64  `json:"cumulative_count,omitempty"`
+	UpperBound      *float64 `json:"upper_bound,omitempty"`
+}
+
+// PrometheusSummary represents a Prometheus summary
+type PrometheusSummaryValue struct {
+	SampleCount float64     `json:"sample_count,omitempty"`
+	SampleSum   float64    `json:"sample_sum,omitempty"`
+	Quantiles   []quantile `json:"quantiles,omitempty"`
+}
+
+type quantile struct {
+	Quantile float64 `json:"quantile,omitempty"`
+	Value    float64 `json:"value,omitempty"`
 }
 
 // PluginDataV1 supports a single data set for a single entity
@@ -194,4 +224,35 @@ func (m *Metric) SummaryValue() (SummaryValue, error) {
 	}
 
 	return SummaryValue{}, fmt.Errorf("metric type %v is not summary", m.Type)
+}
+
+func (m *Metric) GetPrometheusSummaryValue() (PrometheusSummaryValue, error) {
+	if m.Type == MetricTypePrometheusSummary {
+		var value PrometheusSummaryValue
+		err := json.Unmarshal(m.Value, &value)
+
+		return value, err
+	}
+
+	return PrometheusSummaryValue{}, fmt.Errorf("metric type %v is not prometheus-summary", m.Type)
+}
+
+func (m *Metric) GetPrometheusHistogramValue() (PrometheusHistogramValue, error) {
+	if m.Type == MetricTypePrometheusHistogram {
+		var value PrometheusHistogramValue
+		err := json.Unmarshal(m.Value, &value)
+
+		return value, err
+	}
+
+	return PrometheusHistogramValue{}, fmt.Errorf("metric type %v is not prometheus-histogram", m.Type)
+}
+
+// CopyAttrs returns a (shallow) copy of the passed attrs.
+func (m *Metric) CopyAttrs() map[string]interface{} {
+	duplicate := make(map[string]interface{}, len(m.Attributes))
+	for k, v := range m.Attributes {
+		duplicate[k] = v
+	}
+	return duplicate
 }
