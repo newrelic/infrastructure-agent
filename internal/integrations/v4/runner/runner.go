@@ -61,7 +61,7 @@ type runnerErrorHandler func(errs <-chan error)
 // provided context
 func (t *Group) Run(ctx context.Context) (hasStartedAnyOHI bool) {
 	for _, integr := range t.integrations {
-		r := NewRunner(t, integr)
+		r := NewRunner(integr, t.emitter, t.discovery)
 		if t.getErrorHandler != nil {
 			r.handleErrors = t.getErrorHandler()
 		}
@@ -76,7 +76,8 @@ func (t *Group) Run(ctx context.Context) (hasStartedAnyOHI bool) {
 // runner for a single integration entry
 type runner struct {
 	ctx            context.Context // to avoid logging too many errors when the integration is cancelled by the user
-	parent         *Group
+	emitter        emitter.Emitter
+	discovery      *databind.Sources
 	log            log.Entry
 	Integration    integration.Definition
 	handleErrors   func(<-chan error) // by default, runner.logErrors. Replaceable for testing purposes
@@ -87,9 +88,10 @@ type runner struct {
 	heartBeatMutex sync.RWMutex
 }
 
-func NewRunner(parentGroup *Group, intDef integration.Definition) *runner {
+func NewRunner(intDef integration.Definition, emitter emitter.Emitter, discoverySources *databind.Sources) *runner {
 	r := &runner{
-		parent:        parentGroup,
+		emitter:       emitter,
+		discovery:     discoverySources,
 		Integration:   intDef,
 		heartBeatFunc: func() {},
 		stderrParser:  parseLogrusFields,
@@ -136,11 +138,11 @@ func (r *runner) Run(ctx context.Context) {
 
 // applies discovery and returns the discovered values, if any.
 func (r *runner) applyDiscovery() (*databind.Values, error) {
-	if r.parent.discovery == nil {
+	if r.discovery == nil {
 		// nothing is discovered, but the integration can run (with the default configuration)
 		return nil, nil
 	}
-	if v, err := databind.Fetch(r.parent.discovery); err != nil {
+	if v, err := databind.Fetch(r.discovery); err != nil {
 		return nil, err
 	} else {
 		return &v, nil
@@ -263,7 +265,7 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 		}
 
 		llog.Debug("Received payload.")
-		err := r.parent.emitter.Emit(r.Integration, extraLabels, entityRewrite, line)
+		err := r.emitter.Emit(r.Integration, extraLabels, entityRewrite, line)
 		if err != nil {
 			llog.WithError(err).Warn("can't emit integration payloads")
 		} else {
