@@ -197,7 +197,7 @@ func (r *runner) handleStderr(stderr <-chan []byte) {
 		} else {
 			fields := r.stderrParser(string(line))
 			if v, ok := fields["level"]; ok && (v == "error" || v == "fatal") {
-				// If a field already exists, like the time, logrus automatically adds the prefix "fields." to the
+				// If a field already exists, like the time, logrus automatically adds the prefix "deps." to the
 				// Duplicated keys
 				r.log.WithFields(logrus.Fields(fields)).Error("received an integration log line")
 			}

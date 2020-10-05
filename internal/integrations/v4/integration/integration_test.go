@@ -61,7 +61,7 @@ func TestConfigTemplate(t *testing.T) {
 			config, err := LoadConfigTemplate(tc.config.TemplatePath, tc.config.Config)
 			require.NoError(t, err)
 
-			i, err := NewDefinition(tc.config, noLookup, nil, config)
+			i, err := NewDefinition(tc.config, ErrLookup, nil, config)
 			require.NoError(t, err)
 
 			disc := databind.NewValues(nil,
@@ -126,7 +126,7 @@ func TestEmbeddedConfig_String(t *testing.T) {
 			// That is loaded by an integration
 			config, err := LoadConfigTemplate(tc.config.TemplatePath, tc.config.Config)
 			require.NoError(t, err)
-			i, err := NewDefinition(tc.config, noLookup, nil, config)
+			i, err := NewDefinition(tc.config, ErrLookup, nil, config)
 			require.NoError(t, err)
 
 			disc := databind.NewValues(nil,
@@ -157,7 +157,7 @@ func TestEmbeddedConfig_String(t *testing.T) {
 func TestTimeout_Default(t *testing.T) {
 	// GIVEN a configuration without timeout
 	// WHEN an integration is loaded from it
-	i, err := NewDefinition(config2.ConfigEntry{Name: "foo", Exec: config2.ShlexOpt{"bar"}}, noLookup, nil, nil)
+	i, err := NewDefinition(config2.ConfigEntry{Name: "foo", Exec: config2.ShlexOpt{"bar"}}, ErrLookup, nil, nil)
 	require.NoError(t, err)
 
 	// THEN the integration has a default timeout
@@ -174,7 +174,7 @@ timeout: 40
 `), &config))
 
 	// WHEN the integration is loaded
-	i, err := NewDefinition(config, noLookup, nil, nil)
+	i, err := NewDefinition(config, ErrLookup, nil, nil)
 	require.NoError(t, err)
 
 	// THEN the integration has the minimum allowed timeout
@@ -191,7 +191,7 @@ timeout: 0
 `), &config))
 
 	// WHEN the integration is loaded
-	i, err := NewDefinition(config, noLookup, nil, nil)
+	i, err := NewDefinition(config, ErrLookup, nil, nil)
 	require.NoError(t, err)
 
 	// THEN the integration has a disabled timeout
