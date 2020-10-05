@@ -303,7 +303,7 @@ var (
 						"inventory_foo": {"value": "bar"},
 					},
 					Events: []protocol.EventData{
-						{"summary": "foo", "timestamp":"1531414060739"},
+						{"summary": "foo", "timestamp": "1531414060739"},
 					},
 				},
 			},
