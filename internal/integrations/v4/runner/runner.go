@@ -42,7 +42,7 @@ type runner struct {
 	emitter        emitter.Emitter
 	discovery      *databind.Sources
 	log            log.Entry
-	Integration    integration.Definition
+	definition     integration.Definition
 	handleErrors   func(context.Context, <-chan error) // by default, runner.logErrors. Replaceable for testing purposes
 	stderrParser   logParser
 	lastStderr     stderrQueue
@@ -60,7 +60,7 @@ func newRunner(
 	r := &runner{
 		emitter:       emitter,
 		discovery:     discoverySources,
-		Integration:   intDef,
+		definition:    intDef,
 		heartBeatFunc: func() {},
 		stderrParser:  parseLogrusFields,
 	}
@@ -74,17 +74,17 @@ func newRunner(
 }
 
 func (r *runner) Run(ctx context.Context) {
-	config := r.Integration
+	def := r.definition
 	fields := logrus.Fields{
-		"integration_name": config.Name,
+		"integration_name": def.Name,
 	}
-	for k, v := range config.Labels {
+	for k, v := range def.Labels {
 		fields[k] = v
 	}
 	r.log = illog.WithFields(fields)
 	for {
 		// we start counting the interval time on each integration execution
-		waitForNextExecution := time.After(config.Interval)
+		waitForNextExecution := time.After(def.Interval)
 
 		values, err := r.applyDiscovery()
 		if err != nil {
@@ -94,7 +94,7 @@ func (r *runner) Run(ctx context.Context) {
 				Error("can't fetch discovery items")
 		} else {
 			// the integration runs only if all the when: conditions are true, if any
-			if when.All(r.Integration.WhenConditions...) {
+			if when.All(r.definition.WhenConditions...) {
 				r.execute(ctx, values)
 			}
 		}
@@ -142,17 +142,17 @@ func (r *runner) heartBeat() {
 // For long-time running integrations, avoids starting the next
 // discover-execute cycle until all the parallel processes have ended
 func (r *runner) execute(ctx context.Context, matches *databind.Values) {
-	config := r.Integration
+	def := r.definition
 
 	// If timeout configuration is set, wraps current context in a heartbeat-enabled timeout context
-	if config.TimeoutEnabled() {
+	if def.TimeoutEnabled() {
 		var act contexts.Actuator
-		ctx, act = contexts.WithHeartBeat(ctx, config.Timeout)
+		ctx, act = contexts.WithHeartBeat(ctx, def.Timeout)
 		r.setHeartBeat(act.HeartBeat)
 	}
 
 	// Runs all the matching integration instances
-	output, err := r.Integration.Run(ctx, matches)
+	output, err := r.definition.Run(ctx, matches)
 	if err != nil {
 		r.log.WithError(err).Error("can't start integration")
 		return
@@ -237,7 +237,7 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 		}
 
 		llog.Debug("Received payload.")
-		err := r.emitter.Emit(r.Integration, extraLabels, entityRewrite, line)
+		err := r.emitter.Emit(r.definition, extraLabels, entityRewrite, line)
 		if err != nil {
 			llog.WithError(err).Warn("can't emit integration payloads")
 		} else {
