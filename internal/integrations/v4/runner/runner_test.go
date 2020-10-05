@@ -7,7 +7,6 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/fixtures"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
-	iTest "github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration/integrationtest"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/testhelp"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/testhelp/testemit"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
@@ -19,7 +18,7 @@ func Test_runner_Run(t *testing.T) {
 	def, err := integration.NewDefinition(config.ConfigEntry{
 		Name: "foo",
 		Exec: testhelp.Command(fixtures.IntegrationScript, "bar"),
-	}, iTest.ErrLookup, nil, nil)
+	}, integration.ErrLookup, nil, nil)
 	require.NoError(t, err)
 
 	e := &testemit.RecordEmitter{}
