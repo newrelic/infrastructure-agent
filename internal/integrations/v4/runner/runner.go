@@ -52,7 +52,7 @@ type Group struct {
 	definitions  *v3legacy.DefinitionsRepo
 	// for testing purposes, allows defining which action to take when an execution
 	// error is received. If unset, it will be runner.logErrors
-	getErrorHandler func() runnerErrorHandler
+	handleErrorsProvide func() runnerErrorHandler
 }
 
 type runnerErrorHandler func(errs <-chan error)
@@ -62,8 +62,8 @@ type runnerErrorHandler func(errs <-chan error)
 func (t *Group) Run(ctx context.Context) (hasStartedAnyOHI bool) {
 	for _, integr := range t.integrations {
 		r := NewRunner(integr, t.emitter, t.discovery)
-		if t.getErrorHandler != nil {
-			r.handleErrors = t.getErrorHandler()
+		if t.handleErrorsProvide != nil {
+			r.handleErrors = t.handleErrorsProvide()
 		}
 
 		go r.Run(ctx)

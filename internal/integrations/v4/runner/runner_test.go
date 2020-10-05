@@ -196,7 +196,7 @@ discovery:
 		emitter:      te,
 		discovery:    discovery,
 		integrations: []integration.Definition{integr},
-		getErrorHandler: func() runnerErrorHandler {
+		handleErrorsProvide: func() runnerErrorHandler {
 			return func(errs <-chan error) {}
 		},
 	}
@@ -276,7 +276,7 @@ func TestRunner_ConfigPathUpdated(t *testing.T) {
 
 func interceptGroupErrors(gr *Group) <-chan error {
 	handledError := make(chan error, 1)
-	gr.getErrorHandler = func() runnerErrorHandler {
+	gr.handleErrorsProvide = func() runnerErrorHandler {
 		return func(errs <-chan error) {
 			handledError <- <-errs
 		}
