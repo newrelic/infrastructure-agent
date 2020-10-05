@@ -52,29 +52,20 @@ type Group struct {
 	definitions  *v3legacy.DefinitionsRepo
 	// for testing purposes, allows defining which action to take when an execution
 	// error is received. If unset, it will be runner.logErrors
-	getErrorHandler func(r *runner) runnerErrorHandler
+	getErrorHandler func() runnerErrorHandler
 }
 
 type runnerErrorHandler func(errs <-chan error)
 
-func sendErrorsToLog(r *runner) runnerErrorHandler {
-	return r.logErrors
-}
-
 // Run launches all the integrations to run in background. They can be cancelled with the
 // provided context
 func (t *Group) Run(ctx context.Context) (hasStartedAnyOHI bool) {
-	if t.getErrorHandler == nil {
-		t.getErrorHandler = sendErrorsToLog
-	}
 	for _, integr := range t.integrations {
-		r := runner{
-			parent:        t,
-			Integration:   integr,
-			heartBeatFunc: func() {},
-			stderrParser:  parseLogrusFields,
+		r := NewRunner(t, integr)
+		if t.getErrorHandler != nil {
+			r.handleErrors = t.getErrorHandler()
 		}
-		r.handleErrors = t.getErrorHandler(&r)
+
 		go r.Run(ctx)
 		hasStartedAnyOHI = true
 	}
@@ -94,6 +85,17 @@ type runner struct {
 	healthCheck    sync.Once
 	heartBeatFunc  func()
 	heartBeatMutex sync.RWMutex
+}
+
+func NewRunner(parentGroup *Group, intDef integration.Definition) *runner {
+	r := &runner{
+		parent:        parentGroup,
+		Integration:   intDef,
+		heartBeatFunc: func() {},
+		stderrParser:  parseLogrusFields,
+	}
+	r.handleErrors = r.logErrors
+	return r
 }
 
 func (r *runner) Run(ctx context.Context) {
