@@ -284,8 +284,8 @@ func (mgr *Manager) loadEnabledRunnerGroups(cfgs map[string]config2.YAML) {
 
 func (mgr *Manager) loadRunnerGroup(path string, cfg config2.YAML, cmdFF *runner.CmdFF) (*groupContext, error) {
 	f := runner.NewFeatures(mgr.config.AgentFeatures, cmdFF)
-	from := runner.LoadFrom(cfg, f)
-	gr, fc, err := runner.NewGroup(from, mgr.lookup, mgr.config.PassthroughEnvironment, mgr.emitter, path)
+	loader := runner.NewLoader(cfg, f)
+	gr, fc, err := runner.NewGroup(loader, mgr.lookup, mgr.config.PassthroughEnvironment, mgr.emitter, path)
 	if err != nil {
 		return nil, err
 	}

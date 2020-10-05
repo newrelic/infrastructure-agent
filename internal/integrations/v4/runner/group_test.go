@@ -25,12 +25,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRunner(t *testing.T) {
+func TestGroup_Run(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	// GIVEN a grouprunner that runs two integrations
 	te := &testemit.RecordEmitter{}
-	loader := LoadFrom(config2.YAML{
+	loader := NewLoader(config2.YAML{
 		Integrations: []config2.ConfigEntry{
 			{Name: "sayhello", Exec: testhelp.Command(fixtures.IntegrationScript, "hello"),
 				Labels: map[string]string{"foo": "bar", "ou": "yea"}},
@@ -64,12 +64,12 @@ func TestRunner(t *testing.T) {
 	assert.Empty(t, dataset.Metadata.Labels)
 }
 
-func TestRunner_Inventory(t *testing.T) {
+func TestGroup_Run_Inventory(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	// GIVEN a grouprunner that uses a Protocol 2 integration with inventory
 	te := &testemit.RecordEmitter{}
-	loader := LoadFrom(config2.YAML{
+	loader := NewLoader(config2.YAML{
 		Integrations: []config2.ConfigEntry{
 			{Name: "nri-test", Exec: testhelp.GoRun(fixtures.InventoryGoFile, "key1=val1", "key2=val2"),
 				Labels: map[string]string{"foo": "bar", "ou": "yea"}},
@@ -113,12 +113,12 @@ func TestRunner_Inventory(t *testing.T) {
 	assert.Equal(t, ids.EmptyInventorySource, payload.Metadata.InventorySource)
 }
 
-func TestRunner_Inventory_OverridePrefix(t *testing.T) {
+func TestGroup_Run_Inventory_OverridePrefix(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	// GIVEN an integration overriding the default inventory prefix
 	te := &testemit.RecordEmitter{}
-	loader := LoadFrom(config2.YAML{
+	loader := NewLoader(config2.YAML{
 		Integrations: []config2.ConfigEntry{
 			{Name: "nri-test", Exec: testhelp.GoRun(fixtures.InventoryGoFile, "key1=val1"),
 				InventorySource: "custom/inventory"},
@@ -139,13 +139,13 @@ func TestRunner_Inventory_OverridePrefix(t *testing.T) {
 	assert.Equal(t, "custom/inventory", payload.Metadata.InventorySource.String())
 }
 
-func TestRunner_Timeout(t *testing.T) {
+func TestGroup_Run_Timeout(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	// GIVEN a grouprunner that runs an integration with a timeout
 	te := &testemit.RecordEmitter{}
 	to := 200 * time.Millisecond
-	loader := LoadFrom(config2.YAML{
+	loader := NewLoader(config2.YAML{
 		Integrations: []config2.ConfigEntry{
 			{Name: "Hello", Exec: testhelp.Command(fixtures.BlockedCmd), Timeout: &to},
 		},
@@ -169,7 +169,7 @@ func TestRunner_Timeout(t *testing.T) {
 	}
 }
 
-func TestRunner_DiscoveryChangesUpdated(t *testing.T) {
+func TestGroup_Run_DiscoveryChangesUpdated(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	discoveryCommand := testhelp.GoRun(fixtures.TimestampDiscovery)
@@ -196,7 +196,7 @@ discovery:
 		emitter:      te,
 		discovery:    discovery,
 		integrations: []integration.Definition{integr},
-		getErrorHandler: func(r *runner) runnerErrorHandler {
+		handleErrorsProvide: func() runnerErrorHandler {
 			return func(errs <-chan error) {}
 		},
 	}
@@ -229,12 +229,12 @@ discovery:
 	assert.NotEqual(t, firstValue, secondValue)
 }
 
-func TestRunner_ConfigPathUpdated(t *testing.T) {
+func TestGroup_Run_ConfigPathUpdated(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	// GIVEN a grouprunner from an integration that embeds a config file
 	te := &testemit.RecordEmitter{}
-	loader := LoadFrom(config2.YAML{
+	loader := NewLoader(config2.YAML{
 		Integrations: []config2.ConfigEntry{{
 			Name:   "cfgpath",
 			Exec:   testhelp.Command(fixtures.IntegrationScript, "${config.path}"),
@@ -276,7 +276,7 @@ func TestRunner_ConfigPathUpdated(t *testing.T) {
 
 func interceptGroupErrors(gr *Group) <-chan error {
 	handledError := make(chan error, 1)
-	gr.getErrorHandler = func(r *runner) runnerErrorHandler {
+	gr.handleErrorsProvide = func() runnerErrorHandler {
 		return func(errs <-chan error) {
 			handledError <- <-errs
 		}
@@ -308,12 +308,12 @@ func (h *stderrHook) Fire(entry *logrus.Entry) error {
 	return nil
 }
 
-func TestRunner_IntegrationScriptPrintsErrorsAndReturnCodeIsZero(t *testing.T) {
+func TestGroup_Run_IntegrationScriptPrintsErrorsAndReturnCodeIsZero(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	// GIVEN a grouprunner that runs two integrations
 	te := &testemit.RecordEmitter{}
-	loader := LoadFrom(config2.YAML{
+	loader := NewLoader(config2.YAML{
 		Integrations: []config2.ConfigEntry{
 			{Name: "log_errors", Exec: testhelp.Command(fixtures.IntegrationPrintsErr, "bye")},
 		},
@@ -371,7 +371,7 @@ func TestRunner_IntegrationScriptPrintsErrorsAndReturnCodeIsZero(t *testing.T) {
 	})
 }
 
-func TestRunner_ParseStdErr(t *testing.T) {
+func Test_parseLogrusFields(t *testing.T) {
 	tests := map[string]struct {
 		input string
 		want  logrus.Fields
