@@ -159,22 +159,22 @@ func (r *runner) execute(ctx context.Context, matches *databind.Values) {
 	}
 
 	// Waits for all the integrations to finish and reads the standard output and errors
-	instances := sync.WaitGroup{}
+	wg := sync.WaitGroup{}
 	waitForCurrent := make(chan struct{})
-	instances.Add(len(outputs))
+	wg.Add(len(outputs))
 	for _, out := range outputs {
 		o := out
 		go r.handleLines(o.Receive.Stdout, o.ExtraLabels, o.EntityRewrite)
 		go r.handleStderr(o.Receive.Stderr)
 		go func() {
-			defer instances.Done()
+			defer wg.Done()
 			r.handleErrors(ctx, o.Receive.Errors)
 		}()
 	}
 
 	r.log.Debug("Waiting while the integration instances run.")
 	go func() {
-		instances.Wait()
+		wg.Wait()
 		close(waitForCurrent)
 	}()
 
