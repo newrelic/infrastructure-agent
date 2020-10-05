@@ -197,7 +197,7 @@ discovery:
 		discovery:    discovery,
 		integrations: []integration.Definition{integr},
 		handleErrorsProvide: func() runnerErrorHandler {
-			return func(errs <-chan error) {}
+			return func(_ context.Context, _ <-chan error) {}
 		},
 	}
 	// shortening the interval to avoid long tests
@@ -277,7 +277,7 @@ func TestGroup_Run_ConfigPathUpdated(t *testing.T) {
 func interceptGroupErrors(gr *Group) <-chan error {
 	handledError := make(chan error, 1)
 	gr.handleErrorsProvide = func() runnerErrorHandler {
-		return func(errs <-chan error) {
+		return func(_ context.Context, errs <-chan error) {
 			handledError <- <-errs
 		}
 	}

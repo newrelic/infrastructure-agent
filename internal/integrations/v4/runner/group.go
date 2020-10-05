@@ -26,7 +26,7 @@ type Group struct {
 	handleErrorsProvide func() runnerErrorHandler
 }
 
-type runnerErrorHandler func(errs <-chan error)
+type runnerErrorHandler func(ctx context.Context, errs <-chan error)
 
 // NewGroup configures a Group instance that is provided by the passed LoadFn
 // cfgPath is used for caching to be consumed by cmd-channel FF enabler.

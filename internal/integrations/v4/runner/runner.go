@@ -39,12 +39,11 @@ type logParser func(line string) (fields logFields)
 
 // runner for a single integration entry
 type runner struct {
-	ctx            context.Context // to avoid logging too many errors when the integration is cancelled by the user
 	emitter        emitter.Emitter
 	discovery      *databind.Sources
 	log            log.Entry
 	Integration    integration.Definition
-	handleErrors   func(<-chan error) // by default, runner.logErrors. Replaceable for testing purposes
+	handleErrors   func(context.Context, <-chan error) // by default, runner.logErrors. Replaceable for testing purposes
 	stderrParser   logParser
 	lastStderr     stderrQueue
 	healthCheck    sync.Once
@@ -75,7 +74,6 @@ func newRunner(
 }
 
 func (r *runner) Run(ctx context.Context) {
-	r.ctx = ctx
 	config := r.Integration
 	fields := logrus.Fields{
 		"integration_name": config.Name,
@@ -170,7 +168,7 @@ func (r *runner) execute(ctx context.Context, matches *databind.Values) {
 		go r.handleStderr(o.Receive.Stderr)
 		go func() {
 			defer instances.Done()
-			r.handleErrors(o.Receive.Errors)
+			r.handleErrors(ctx, o.Receive.Errors)
 		}()
 	}
 
@@ -208,10 +206,10 @@ func (r *runner) handleStderr(stderr <-chan []byte) {
 }
 
 // implementation of the "handleErrors" property
-func (r *runner) logErrors(errs <-chan error) {
+func (r *runner) logErrors(ctx context.Context, errs <-chan error) {
 	for {
 		select {
-		case <-r.ctx.Done():
+		case <-ctx.Done():
 			// don't log errors if the context has been just cancelled
 			return
 		case err := <-errs:
