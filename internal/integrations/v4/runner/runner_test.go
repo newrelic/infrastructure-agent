@@ -30,7 +30,7 @@ func TestGroup_Run(t *testing.T) {
 
 	// GIVEN a grouprunner that runs two integrations
 	te := &testemit.RecordEmitter{}
-	loader := LoadFrom(config2.YAML{
+	loader := NewLoader(config2.YAML{
 		Integrations: []config2.ConfigEntry{
 			{Name: "sayhello", Exec: testhelp.Command(fixtures.IntegrationScript, "hello"),
 				Labels: map[string]string{"foo": "bar", "ou": "yea"}},
@@ -69,7 +69,7 @@ func TestGroup_Run_Inventory(t *testing.T) {
 
 	// GIVEN a grouprunner that uses a Protocol 2 integration with inventory
 	te := &testemit.RecordEmitter{}
-	loader := LoadFrom(config2.YAML{
+	loader := NewLoader(config2.YAML{
 		Integrations: []config2.ConfigEntry{
 			{Name: "nri-test", Exec: testhelp.GoRun(fixtures.InventoryGoFile, "key1=val1", "key2=val2"),
 				Labels: map[string]string{"foo": "bar", "ou": "yea"}},
@@ -118,7 +118,7 @@ func TestGroup_Run_Inventory_OverridePrefix(t *testing.T) {
 
 	// GIVEN an integration overriding the default inventory prefix
 	te := &testemit.RecordEmitter{}
-	loader := LoadFrom(config2.YAML{
+	loader := NewLoader(config2.YAML{
 		Integrations: []config2.ConfigEntry{
 			{Name: "nri-test", Exec: testhelp.GoRun(fixtures.InventoryGoFile, "key1=val1"),
 				InventorySource: "custom/inventory"},
@@ -145,7 +145,7 @@ func TestGroup_Run_Timeout(t *testing.T) {
 	// GIVEN a grouprunner that runs an integration with a timeout
 	te := &testemit.RecordEmitter{}
 	to := 200 * time.Millisecond
-	loader := LoadFrom(config2.YAML{
+	loader := NewLoader(config2.YAML{
 		Integrations: []config2.ConfigEntry{
 			{Name: "Hello", Exec: testhelp.Command(fixtures.BlockedCmd), Timeout: &to},
 		},
@@ -234,7 +234,7 @@ func TestGroup_Run_ConfigPathUpdated(t *testing.T) {
 
 	// GIVEN a grouprunner from an integration that embeds a config file
 	te := &testemit.RecordEmitter{}
-	loader := LoadFrom(config2.YAML{
+	loader := NewLoader(config2.YAML{
 		Integrations: []config2.ConfigEntry{{
 			Name:   "cfgpath",
 			Exec:   testhelp.Command(fixtures.IntegrationScript, "${config.path}"),
@@ -313,7 +313,7 @@ func TestGroup_Run_IntegrationScriptPrintsErrorsAndReturnCodeIsZero(t *testing.T
 
 	// GIVEN a grouprunner that runs two integrations
 	te := &testemit.RecordEmitter{}
-	loader := LoadFrom(config2.YAML{
+	loader := NewLoader(config2.YAML{
 		Integrations: []config2.ConfigEntry{
 			{Name: "log_errors", Exec: testhelp.Command(fixtures.IntegrationPrintsErr, "bye")},
 		},

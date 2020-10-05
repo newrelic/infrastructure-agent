@@ -13,9 +13,9 @@ import (
 // v3 legacy integrations from an external definitions' folder.
 type Loader func(dr integration.InstancesLookup, passthroughEnv []string, cfgPath string) (Group, FeaturesCache, error)
 
-// LoadFrom returns a partial Group that holds the configuration from the provided configuration.
+// NewLoader returns a partial Group that holds the configuration from the provided configuration.
 // Optionally agent and OHI "features" can be provided to be able to load disabled OHIs.
-func LoadFrom(cfg config2.YAML, agentAndCCFeatures *Features) Loader {
+func NewLoader(cfg config2.YAML, agentAndCCFeatures *Features) Loader {
 	return func(dr integration.InstancesLookup, passthroughEnv []string, cfgPath string) (g Group, c FeaturesCache, err error) {
 		discovery, err := databind.DataSources(&cfg.Databind)
 		if err != nil {
