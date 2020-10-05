@@ -22,20 +22,20 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var illog = log.WithComponent("integrations.runner.Runner")
-
-var heartBeatJSON = []byte("{}")
+var (
+	illog         = log.WithComponent("integrations.runner.Runner")
+	heartBeatJSON = []byte("{}")
+	//A Logrus line is expected to be a list of key-value pairs separated by an equal character. Keys can contain any
+	//character, whereas values can have three different formats:
+	//1- string: <quote>any character including escaped quotes \"<quote>
+	//2- map: &{any character}
+	//3- word: any character except spaces
+	logrusRegexp = regexp.MustCompile(`([^\s]*?)=(".*?[^\\]"|&{.*?}|[^\s]*)`)
+)
 
 //generic types to handle the stderr log parsing
 type logFields map[string]interface{}
 type logParser func(line string) (fields logFields)
-
-//A Logrus line is expected to be a list of key-value pairs separated by an equal character. Keys can contain any
-//character, whereas values can have three different formats:
-//1- string: <quote>any character including escaped quotes \"<quote>
-//2- map: &{any character}
-//3- word: any character except spaces
-var logrusRegexp = regexp.MustCompile(`([^\s]*?)=(".*?[^\\]"|&{.*?}|[^\s]*)`)
 
 // runner for a single integration entry
 type runner struct {
