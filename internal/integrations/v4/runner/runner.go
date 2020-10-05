@@ -57,6 +57,26 @@ type Group struct {
 
 type runnerErrorHandler func(errs <-chan error)
 
+// NewGroup configures a Group instance that is provided by the passed Loader
+// cfgPath is used for caching to be consumed by cmd-channel FF enabler.
+func NewGroup(
+	loader Loader,
+	dr integration.InstancesLookup,
+	passthroughEnv []string,
+	emitter emitter.Emitter,
+	cfgPath string,
+) (g Group, c FeaturesCache, err error) {
+
+	g, c, err = loader(dr, passthroughEnv, cfgPath)
+	if err != nil {
+		return
+	}
+
+	g.emitter = emitter
+
+	return
+}
+
 // Run launches all the integrations to run in background. They can be cancelled with the
 // provided context
 func (t *Group) Run(ctx context.Context) (hasStartedAnyOHI bool) {

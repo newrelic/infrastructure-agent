@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRunner(t *testing.T) {
+func TestGroup_Run(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	// GIVEN a grouprunner that runs two integrations
@@ -64,7 +64,7 @@ func TestRunner(t *testing.T) {
 	assert.Empty(t, dataset.Metadata.Labels)
 }
 
-func TestRunner_Inventory(t *testing.T) {
+func TestGroup_Run_Inventory(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	// GIVEN a grouprunner that uses a Protocol 2 integration with inventory
@@ -113,7 +113,7 @@ func TestRunner_Inventory(t *testing.T) {
 	assert.Equal(t, ids.EmptyInventorySource, payload.Metadata.InventorySource)
 }
 
-func TestRunner_Inventory_OverridePrefix(t *testing.T) {
+func TestGroup_Run_Inventory_OverridePrefix(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	// GIVEN an integration overriding the default inventory prefix
@@ -139,7 +139,7 @@ func TestRunner_Inventory_OverridePrefix(t *testing.T) {
 	assert.Equal(t, "custom/inventory", payload.Metadata.InventorySource.String())
 }
 
-func TestRunner_Timeout(t *testing.T) {
+func TestGroup_Run_Timeout(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	// GIVEN a grouprunner that runs an integration with a timeout
@@ -169,7 +169,7 @@ func TestRunner_Timeout(t *testing.T) {
 	}
 }
 
-func TestRunner_DiscoveryChangesUpdated(t *testing.T) {
+func TestGroup_Run_DiscoveryChangesUpdated(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	discoveryCommand := testhelp.GoRun(fixtures.TimestampDiscovery)
@@ -229,7 +229,7 @@ discovery:
 	assert.NotEqual(t, firstValue, secondValue)
 }
 
-func TestRunner_ConfigPathUpdated(t *testing.T) {
+func TestGroup_Run_ConfigPathUpdated(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	// GIVEN a grouprunner from an integration that embeds a config file
@@ -308,7 +308,7 @@ func (h *stderrHook) Fire(entry *logrus.Entry) error {
 	return nil
 }
 
-func TestRunner_IntegrationScriptPrintsErrorsAndReturnCodeIsZero(t *testing.T) {
+func TestGroup_Run_IntegrationScriptPrintsErrorsAndReturnCodeIsZero(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	// GIVEN a grouprunner that runs two integrations
@@ -371,7 +371,7 @@ func TestRunner_IntegrationScriptPrintsErrorsAndReturnCodeIsZero(t *testing.T) {
 	})
 }
 
-func TestRunner_ParseStdErr(t *testing.T) {
+func Test_parseLogrusFields(t *testing.T) {
 	tests := map[string]struct {
 		input string
 		want  logrus.Fields
