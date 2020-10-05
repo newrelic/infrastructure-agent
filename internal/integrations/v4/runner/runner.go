@@ -181,11 +181,11 @@ func (r *runner) execute(ctx context.Context, matches *databind.Values) {
 	select {
 	case <-ctx.Done():
 		r.log.Debug("Integration has been interrupted. Finishing.")
-		return
 	case <-waitForCurrent:
+		r.log.Debug("Integration instances finished their execution. Waiting until next interval.")
 	}
 
-	r.log.Debug("Integration instances finished their execution. Waiting until next interval.")
+	return
 }
 
 func (r *runner) handleStderr(stderr <-chan []byte) {
