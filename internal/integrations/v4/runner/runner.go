@@ -152,7 +152,7 @@ func (r *runner) execute(ctx context.Context, matches *databind.Values) {
 	}
 
 	// Runs all the matching integration instances
-	output, err := r.definition.Run(ctx, matches)
+	outputs, err := r.definition.Run(ctx, matches)
 	if err != nil {
 		r.log.WithError(err).Error("can't start integration")
 		return
@@ -161,8 +161,8 @@ func (r *runner) execute(ctx context.Context, matches *databind.Values) {
 	// Waits for all the integrations to finish and reads the standard output and errors
 	instances := sync.WaitGroup{}
 	waitForCurrent := make(chan struct{})
-	instances.Add(len(output))
-	for _, out := range output {
+	instances.Add(len(outputs))
+	for _, out := range outputs {
 		o := out
 		go r.handleLines(o.Receive.Stdout, o.ExtraLabels, o.EntityRewrite)
 		go r.handleStderr(o.Receive.Stderr)
