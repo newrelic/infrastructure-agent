@@ -51,6 +51,8 @@ type runner struct {
 	heartBeatMutex sync.RWMutex
 }
 
+// newRunner creates an integration runner instance.
+// args: discoverySources & handleErrorsProvide are optional, so nil values are allowed.
 func newRunner(
 	intDef integration.Definition,
 	emitter emitter.Emitter,
