@@ -129,7 +129,7 @@ func (r *runner) setHeartBeat(heartBeatFunc func()) {
 	r.heartBeatFunc = heartBeatFunc
 }
 
-// execute the heartBeatFunc
+// heartBeat triggers heartBeatFunc
 // This functions makes sure we access heartBeatFunc in a thread-safe manner
 func (r *runner) heartBeat() {
 	r.heartBeatMutex.RLock()
