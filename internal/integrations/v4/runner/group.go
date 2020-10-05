@@ -6,7 +6,6 @@ import (
 	"context"
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
-	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/v3legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 )
@@ -22,7 +21,6 @@ type Group struct {
 	discovery    *databind.Sources
 	integrations []integration.Definition
 	emitter      emitter.Emitter
-	definitions  *v3legacy.DefinitionsRepo
 	// for testing purposes, allows defining which action to take when an execution
 	// error is received. If unset, it will be runner.logErrors
 	handleErrorsProvide func() runnerErrorHandler
