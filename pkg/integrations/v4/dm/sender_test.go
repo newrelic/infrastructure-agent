@@ -153,77 +153,66 @@ func Test_sender_SendPrometheusMetrics(t *testing.T) {
 	cannedDurationInt := int64(cannedDuration.Seconds() * 1000)
 	cannedDate := time.Date(1980, time.January, 12, 1, 2, 0, 0, time.Now().Location())
 	cannedDateUnix := cannedDate.Unix()
-	type fields struct {
-		harvester *mockHarvester
-	}
 
-	type args struct {
-		metrics []protocol.Metric
-	}
-	tests := []struct {
-		name            string
-		fields          fields
-		args            args
-		expectedMetrics []telemetry.Metric
-	}{
+	protocolMetrics := []protocol.Metric{
 		{
-			name: "prometheus-summary",
-			fields: fields{
-				harvester: &mockHarvester{},
-			},
-			args: args{
-				metrics: []protocol.Metric{
-					{
-						Name:       "PrometheusSummaryMetric",
-						Type:       "prometheus-summary",
-						Attributes: map[string]interface{}{"att_key": "att_value"},
-						Timestamp:  &cannedDateUnix,
-						Interval:   &cannedDurationInt,
-						Value:      json.RawMessage("{\"sample_count\":1,\"sample_sum\":2,\"quantiles\":[{\"quantile\":95,\"value\":3}]}"),
-					},
-				},
-			},
-			expectedMetrics: []telemetry.Metric{
-				telemetry.Summary{
-					Name:       "PrometheusSummaryMetric_sum",
-					Attributes: map[string]interface{}{"att_key": "att_value"},
-					Sum:        float64(2),
-					Min:        math.NaN(),
-					Max:        math.NaN(),
-					Count:      1,
-					Timestamp:  cannedDate,
-					Interval:   cannedDuration,
-				},
-				telemetry.Gauge{
-					Name:       "PrometheusSummaryMetric",
-					Attributes: map[string]interface{}{"att_key": "att_value", "quantile": "95"},
-					Value:      float64(3),
-					Timestamp:  cannedDate,
-				},
-			},
+			Name:       "PrometheusSummaryMetric",
+			Type:       "prometheus-summary",
+			Attributes: map[string]interface{}{"att_key": "att_value"},
+			Timestamp:  &cannedDateUnix,
+			Interval:   &cannedDurationInt,
+			Value:      json.RawMessage("{\"sample_count\":1,\"sample_sum\":2,\"quantiles\":[{\"quantile\":95,\"value\":3}]}"),
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &sender{
-				harvester:  tt.fields.harvester,
-				calculator: Calculator{delta: cumulative.NewDeltaCalculator()},
-			}
-
-			tt.fields.harvester.On("RecordInfraMetrics", telemetry.Attributes{"one":1, "two":"two"}, tt.expectedMetrics).Return(nil)
-			err := s.SendMetricsWithCommonAttributes(protocol.Common{
-				Timestamp: &cannedDateUnix,
-				Interval:  &cannedDurationInt,
-				Attributes: map[string]interface{}{
-					"one": 1,
-					"two": "two",
-				},
-			}, tt.args.metrics)
-			require.NoError(t, err)
-			tt.fields.harvester.AssertExpectations(t)
-		})
+	expectedMetrics := []telemetry.Metric{
+		telemetry.Summary{
+			Name:       "PrometheusSummaryMetric_sum",
+			Attributes: map[string]interface{}{"att_key": "att_value"},
+			Sum:        float64(2),
+			Min:        math.NaN(),
+			Max:        math.NaN(),
+			Count:      1,
+			Timestamp:  cannedDate,
+			Interval:   cannedDuration,
+		},
+		telemetry.Gauge{
+			Name:       "PrometheusSummaryMetric",
+			Attributes: map[string]interface{}{"att_key": "att_value", "quantile": "95"},
+			Value:      float64(3),
+			Timestamp:  cannedDate,
+		},
 	}
+
+	s := &sender{
+		calculator: Calculator{delta: cumulative.NewDeltaCalculator()},
+	}
+
+	// Call convert twice to check deltas.
+	converted := s.convertMetrics(protocolMetrics)
+	assert.Len(t, converted, len(expectedMetrics))
+
+	actualSummaryMetric, ok := converted[0].(telemetry.Summary)
+	assert.True(t, ok)
+
+	expectedSummaryMetric, ok := expectedMetrics[0].(telemetry.Summary)
+	assert.True(t, ok)
+
+	assert.Equal(t, actualSummaryMetric.Count, expectedSummaryMetric.Count)
+	assert.Equal(t, actualSummaryMetric.Attributes, expectedSummaryMetric.Attributes)
+	assert.Equal(t, actualSummaryMetric.Sum, expectedSummaryMetric.Sum)
+	assert.True(t, math.IsNaN(actualSummaryMetric.Min))
+	assert.True(t, math.IsNaN(actualSummaryMetric.Max))
+	assert.Equal(t, actualSummaryMetric.Count, expectedSummaryMetric.Count)
+	assert.Equal(t, actualSummaryMetric.Timestamp, expectedSummaryMetric.Timestamp)
+	assert.Equal(t, actualSummaryMetric.Interval, expectedSummaryMetric.Interval)
+
+	actualGaugeMetric, ok := converted[1].(telemetry.Gauge)
+	assert.True(t, ok)
+
+	expectedGaugeMetric, ok := expectedMetrics[1].(telemetry.Gauge)
+	assert.True(t, ok)
+	assert.Equal(t, expectedGaugeMetric, actualGaugeMetric)
 }
 
 func Test_sender_SenderMetric_cumulative_CountCalculator(t *testing.T) {

@@ -70,8 +70,8 @@ type sender struct {
 }
 
 type Calculator struct {
-	delta      deltaCalculator
-	rate       rate.Calculator
+	delta deltaCalculator
+	rate  rate.Calculator
 }
 
 type deltaCalculator interface {
@@ -134,6 +134,14 @@ func (s *sender) SendMetrics(metrics []protocol.Metric) {
 }
 
 func (s *sender) SendMetricsWithCommonAttributes(commonAttributes protocol.Common, metrics []protocol.Metric) error {
+	dMetrics := s.convertMetrics(metrics)
+	if len(dMetrics) > 0 {
+		return s.harvester.RecordInfraMetrics(commonAttributes.Attributes, dMetrics)
+	}
+	return nil
+}
+
+func (s *sender) convertMetrics(metrics []protocol.Metric) []telemetry.Metric {
 	var dMetrics []telemetry.Metric
 
 	for _, metric := range metrics {
@@ -157,7 +165,7 @@ func (s *sender) SendMetricsWithCommonAttributes(commonAttributes protocol.Commo
 			c = Conversion{toMultipleTelemetry: PrometheusSummary{calculate: &Cumulative{get: s.calculator.delta.CountMetric}}}
 		case "prometheus-histogram":
 			c = Conversion{toMultipleTelemetry: PrometheusHistogram{calculate: &Cumulative{get: s.calculator.delta.CountMetric}}}
-			default:
+		default:
 			logger.WithField("name", metric.Name).WithField("metric-type", metric.Name).Warn("received an unknown metric type")
 			continue
 		}
@@ -173,9 +181,5 @@ func (s *sender) SendMetricsWithCommonAttributes(commonAttributes protocol.Commo
 		}
 		dMetrics = append(dMetrics, recMetrics...)
 	}
-
-	if len(dMetrics) > 0 {
-		return s.harvester.RecordInfraMetrics(commonAttributes.Attributes, dMetrics)
-	}
-	return nil
+	return dMetrics
 }
