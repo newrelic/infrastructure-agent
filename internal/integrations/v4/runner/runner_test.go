@@ -24,7 +24,7 @@ func Test_runner_Run(t *testing.T) {
 	e := &testemit.RecordEmitter{}
 	r := newRunner(def, e, nil, nil)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
 
 	r.Run(ctx)
