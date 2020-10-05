@@ -52,7 +52,12 @@ type runner struct {
 	heartBeatMutex sync.RWMutex
 }
 
-func NewRunner(intDef integration.Definition, emitter emitter.Emitter, discoverySources *databind.Sources) *runner {
+func newRunner(
+	intDef integration.Definition,
+	emitter emitter.Emitter,
+	discoverySources *databind.Sources,
+	handleErrorsProvide func() runnerErrorHandler,
+) *runner {
 	r := &runner{
 		emitter:       emitter,
 		discovery:     discoverySources,
@@ -60,7 +65,12 @@ func NewRunner(intDef integration.Definition, emitter emitter.Emitter, discovery
 		heartBeatFunc: func() {},
 		stderrParser:  parseLogrusFields,
 	}
-	r.handleErrors = r.logErrors
+	if handleErrorsProvide != nil {
+		r.handleErrors = handleErrorsProvide()
+	} else {
+		r.handleErrors = r.logErrors
+	}
+
 	return r
 }
 
