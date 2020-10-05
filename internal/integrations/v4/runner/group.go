@@ -30,17 +30,17 @@ type Group struct {
 
 type runnerErrorHandler func(errs <-chan error)
 
-// NewGroup configures a Group instance that is provided by the passed Loader
+// NewGroup configures a Group instance that is provided by the passed LoadFn
 // cfgPath is used for caching to be consumed by cmd-channel FF enabler.
 func NewGroup(
-	loader Loader,
+	loadFn LoadFn,
 	dr integration.InstancesLookup,
 	passthroughEnv []string,
 	emitter emitter.Emitter,
 	cfgPath string,
 ) (g Group, c FeaturesCache, err error) {
 
-	g, c, err = loader(dr, passthroughEnv, cfgPath)
+	g, c, err = loadFn(dr, passthroughEnv, cfgPath)
 	if err != nil {
 		return
 	}
