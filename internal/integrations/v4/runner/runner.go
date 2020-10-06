@@ -16,6 +16,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/contexts"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 
@@ -235,6 +236,12 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 		if isHeartBeat(line) {
 			llog.Debug("Received heartbeat.")
 			r.heartBeat()
+			continue
+		}
+
+		if ok, ver := protocol.IsCommandRequest(line); ok {
+			llog.WithField("version", ver).Debug("Received run request.")
+			// TODO handle
 			continue
 		}
 
