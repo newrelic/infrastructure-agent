@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
@@ -22,6 +21,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/sirupsen/logrus"
 	"github.com/tevino/abool"
 )
 
@@ -201,18 +201,43 @@ func emitInventory(
 }
 
 func emitEvent(emitter agent.PluginEmitter, metadata integration.Definition, dataSet protocol.Dataset, labels map[string]string, entityID entity.ID) {
+	builder := make([]func(protocol.EventData), 0)
 
-	integrationUser := metadata.ExecutorConfig.User
+	u := metadata.ExecutorConfig.User
+	if u != "" {
+		builder = append(builder, protocol.WithIntegrationUser(u))
+	}
+
+	builder = append(builder, protocol.WithLabels(labels))
+
 	for _, event := range dataSet.Events {
-		elog.WithField("event", event).Info("Demo")
+		builder = append(attributesFromEvent(event, builder),
+						protocol.WithEntity(entity.New(entity.Key(dataSet.Entity.Name), entityID)),
+						protocol.WithEvents(event))
 
-		normalizedEvent := legacy.NormalizeEvent(elog, event, labels, integrationUser, dataSet.Entity.Name)
-		normalizedEvent["entityID"] = entityID
-		if normalizedEvent != nil {
-			elog.WithField("event", normalizedEvent).Info("Demo")
-			emitter.EmitEvent(normalizedEvent, entity.Key(dataSet.Entity.Name))
+		e, err := protocol.NewEventData(builder...)
+
+		if err != nil {
+			elog.WithFields(logrus.Fields{
+				"payload": event,
+				"error":   err,
+			}).Warn("discarding event, failed building event data.")
+			continue
+		}
+
+		emitter.EmitEvent(e, entity.Key(dataSet.Entity.Name))
+	}
+}
+
+func attributesFromEvent(event protocol.EventData, builder []func(protocol.EventData)) []func(protocol.EventData) {
+	if a, ok := event["attributes"]; ok {
+		switch t := a.(type) {
+		default:
+		case map[string]interface{}:
+			builder = append(builder, protocol.WithAttributes(t))
 		}
 	}
+	return builder
 }
 
 // Replace entity name by applying entity rewrites and replacing loopback

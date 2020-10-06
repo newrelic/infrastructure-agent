@@ -264,7 +264,7 @@ var (
 		  "events":[
 				{ 
 				  "summary": "foo", 
-				  "timestamp":"1531414060739"
+				  "attributes": { "value": "bar"}
 				}
 		  ]
 		}
@@ -303,7 +303,12 @@ var (
 						"inventory_foo": {"value": "bar"},
 					},
 					Events: []protocol.EventData{
-						{"summary": "foo", "timestamp": "1531414060739"},
+						{
+							"summary":   "foo",
+							"attributes": map[string]interface {}{
+								"value":"bar",
+							},
+						},
 					},
 				},
 			},

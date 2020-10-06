@@ -142,7 +142,7 @@ func NewEventData(options ...func(EventData)) (EventData, error) {
 
 	// Validate required field
 	if _, ok := e["summary"]; !ok {
-		return nil, errors.New(fmt.Sprintf("invalid event format: missing required 'summary' field. Payload: %s", e))
+		return nil, errors.New("invalid event format: missing required 'summary' field")
 	}
 
 	// there are integrations that add the hostname
