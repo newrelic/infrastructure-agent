@@ -4,6 +4,7 @@ package protocol
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -128,6 +129,74 @@ type MetricData map[string]interface{}
 
 // EventData is the data type for single shot events
 type EventData map[string]interface{}
+
+func NewEventData(options ...func(EventData)) (EventData, error) {
+	e := EventData{
+		"eventType": "InfrastructureEvent",
+		"category":  "notifications",
+	}
+
+	for _, opt := range options {
+		opt(e)
+	}
+
+	// Validate required field
+	if _, ok := e["summary"]; !ok {
+		return nil, errors.New(fmt.Sprintf("invalid event format: missing required 'summary' field. Payload: %s", e))
+	}
+
+	// there are integrations that add the hostname
+	// and since backed has a attribute limit
+	// we remove it to avoid potential conflict when submitting events
+	delete(e, "hostname")
+
+	return e, nil
+}
+
+func WithEvents(original EventData) func(EventData) {
+	return func(copy EventData) {
+		acceptedAttribute := []string{"summary", "category", "entity_name", "format", "local_identity", "local_details"}
+		for _, key := range acceptedAttribute {
+			if val, ok := original[key]; ok {
+				copy[key] = val
+			}
+		}
+	}
+}
+
+func WithIntegrationUser(value string) func(EventData) {
+	return func(copy EventData) {
+		copy["integrationUser"] = value
+	}
+}
+
+func WithEntity(e entity.Entity) func(EventData) {
+	return func(copy EventData) {
+		copy["entityKey"] = e.Key.String()
+		copy["entityID"] = e.ID.String()
+	}
+}
+
+func WithLabels(l map[string]string) func(EventData) {
+	return func(copy EventData) {
+		for key, value := range l {
+			copy[fmt.Sprintf("label.%s", key)] = value
+		}
+	}
+}
+
+func WithAttributes(a map[string]interface{}) func(EventData) {
+	return func(copy EventData) {
+		for key, value := range a {
+			//// To avoid collisions repeated attributes are namespaced.
+			//if _, ok := copy[key]; ok {
+			//	copy[fmt.Sprintf("attr.%s", key)] = value
+			//} else {
+			copy[key] = value
+			//}
+		}
+	}
+}
 
 // Minimum information to determine plugin protocol
 type PluginProtocolVersion struct {

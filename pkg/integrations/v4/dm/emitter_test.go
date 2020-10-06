@@ -3,6 +3,7 @@
 package dm
 
 import (
+	"fmt"
 	"sync"
 	"testing"
 
@@ -66,6 +67,9 @@ func TestEmitter_Send_usingIDCache(t *testing.T) {
 	aCtx := getAgentContext("bob")
 	aCtx.On("SendData",
 		agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "integration name"}, Entity: entity.New("unique name", eID), Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_foo", "value": "bar"}}, NotApplicable: false})
+
+	aCtx.On("SendEvent", mock.AnythingOfType("agent.mapEvent"), entity.Key("unique name"))
+
 	aCtx.SendDataWg.Add(1)
 
 	dmSender := &mockedMetricsSender{
@@ -104,7 +108,7 @@ func TestEmitter_Send(t *testing.T) {
 	aCtx.On("SendData",
 		agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "integration name"}, Entity: entity.New("unique name", eID), Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_foo", "value": "bar"}}, NotApplicable: false})
 
-	aCtx.On("SendEvent", mock.Anything, entity.New("unique name", eID).Key)
+	aCtx.On("SendEvent", mock.Anything, entity.Key("unique name")).Run(assertEventData(t))
 
 	aCtx.SendDataWg.Add(1)
 
@@ -141,6 +145,25 @@ func TestEmitter_Send(t *testing.T) {
 	assert.Equal(t, eID.String(), sent[0].Attributes[fwrequest.EntityIdAttribute])
 }
 
+func Test_NrEntityIdConst(t *testing.T) {
+	assert.Equal(t, fwrequest.EntityIdAttribute, "nr.entity.id")
+}
+
+func assertEventData(t *testing.T) func(args mock.Arguments) {
+	return func(args mock.Arguments) {
+		event := args.Get(0)
+		plainEvent := fmt.Sprint(event)
+		expectedCategory := "category:notifications"
+		expectedType := "eventType:InfrastructureEvent"
+		expectedSummary := "summary:foo"
+		expectedEntityID := "entityID:1"
+		assert.Contains(t, plainEvent, expectedCategory)
+		assert.Contains(t, plainEvent, expectedType)
+		assert.Contains(t, plainEvent, expectedSummary)
+		assert.Contains(t, plainEvent, expectedEntityID)
+	}
+}
+
 func getAgentContext(hostname string) *mocks.AgentContext {
 	agentCtx := &mocks.AgentContext{
 		SendDataWg: sync.WaitGroup{},
@@ -153,8 +176,4 @@ func getAgentContext(hostname string) *mocks.AgentContext {
 	agentCtx.On("Config").Return(nil)
 
 	return agentCtx
-}
-
-func Test_NrEntityIdConst(t *testing.T) {
-	assert.Equal(t, fwrequest.EntityIdAttribute, "nr.entity.id")
 }
