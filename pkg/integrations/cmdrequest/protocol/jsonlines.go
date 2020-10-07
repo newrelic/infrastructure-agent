@@ -15,11 +15,14 @@ const (
 
 type Version int
 
-// cmdRequestDiscriminator represents the JSON shape for an integration run request
-type cmdRequestDiscriminator struct {
+// CmdRequestDiscriminator represents the JSON shape for an integration run request
+type CmdRequestDiscriminator struct {
 	CommandRequestVersion string `json:"command_request_version"`
 }
 
+// RunRequestV1 carries an integration payload requesting command/s execution.
+// This applies to a command request v1.
+// Payload comes from JSON decoding. Expected shape is:
 // {
 //   "command_request_version": "1",
 //   "commands": [
@@ -33,7 +36,16 @@ type cmdRequestDiscriminator struct {
 //     }
 //   ]
 // }
-type RunRequest struct {
+type RunRequestV1 struct {
+	CmdRequestDiscriminator
+	Commands []RunRequestV1Cmd `json:"commands"`
+}
+
+type RunRequestV1Cmd struct {
+	Name    string            `json:"name"`
+	Command string            `json:"command"`
+	Args    []string          `json:"args"`
+	Env     map[string]string `json:"env"`
 }
 
 // IsCommandRequest guesses whether a json line (coming through a previous integration response)
@@ -41,7 +53,7 @@ type RunRequest struct {
 func IsCommandRequest(line []byte) (isCmdRequest bool, cmdRequestVersion Version) {
 	cmdRequestVersion = VUnsupported
 
-	var d cmdRequestDiscriminator
+	var d CmdRequestDiscriminator
 	if err := json.Unmarshal(line, &d); err != nil {
 		return
 	}
@@ -53,5 +65,10 @@ func IsCommandRequest(line []byte) (isCmdRequest bool, cmdRequestVersion Version
 
 	cmdRequestVersion = Version(versionInt)
 	isCmdRequest = true
+	return
+}
+
+func DeserializeLine(line []byte) (r RunRequestV1, err error) {
+	err = json.Unmarshal(line, &r)
 	return
 }

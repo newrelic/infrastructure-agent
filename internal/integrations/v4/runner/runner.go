@@ -241,6 +241,13 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 
 		if ok, ver := protocol.IsCommandRequest(line); ok {
 			llog.WithField("version", ver).Debug("Received run request.")
+			_, err := protocol.DeserializeLine(line)
+			if err != nil {
+				llog.
+					WithField("line", string(line)).
+					WithError(err).
+					Warn("cannot deserialize integration run request payload")
+			}
 			// TODO handle
 			continue
 		}
@@ -248,7 +255,7 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 		llog.Debug("Received payload.")
 		err := r.emitter.Emit(r.definition, extraLabels, entityRewrite, line)
 		if err != nil {
-			llog.WithError(err).Warn("can't emit integration payloads")
+			llog.WithError(err).Warn("cannot emit integration payload")
 		} else {
 			r.heartBeat()
 		}
