@@ -192,15 +192,15 @@ func WithLabels(l map[string]string) func(EventData) {
 }
 
 // Builder for NewEventData constructor will add attributes
+// if already exist in the eventData will add it with prefix 'attr.'
 func WithAttributes(a map[string]interface{}) func(EventData) {
 	return func(copy EventData) {
 		for key, value := range a {
-			//// To avoid collisions repeated attributes are namespaced.
-			//if _, ok := copy[key]; ok {
-			//	copy[fmt.Sprintf("attr.%s", key)] = value
-			//} else {
-			copy[key] = value
-			//}
+			if _, ok := copy[key]; ok {
+				copy[fmt.Sprintf("attr.%s", key)] = value
+			} else {
+				copy[key] = value
+			}
 		}
 	}
 }

@@ -20,6 +20,7 @@ func TestEntityData_New(t *testing.T) {
 		"entityKey":            "test-entity-key",
 		"entityID":             "1234567890",
 		"label.test-label-key": "test-label-value",
+		"attr.format":          "from-attribute",
 		"foo-attribute":        "test-foo",
 		"bar-attribute":        "test-bar",
 		"lorem-attribute":      "test-lorem",
@@ -46,6 +47,7 @@ func TestEntityData_New(t *testing.T) {
 	}
 
 	a := map[string]interface{}{
+		"format":          "from-attribute",
 		"foo-attribute":   "test-foo",
 		"bar-attribute":   "test-bar",
 		"lorem-attribute": "test-lorem",
