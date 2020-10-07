@@ -217,9 +217,11 @@ func emitEvent(emitter agent.PluginEmitter, metadata integration.Definition, dat
 	builder = append(builder, protocol.WithLabels(labels))
 
 	for _, event := range dataSet.Events {
-		builder = append(attributesFromEvent(event, builder),
+		builder = append(builder,
 			protocol.WithEntity(entity.New(entity.Key(dataSet.Entity.Name), entityID)),
 			protocol.WithEvents(event))
+
+		attributesFromEvent(event, &builder)
 
 		e, err := protocol.NewEventData(builder...)
 
@@ -235,15 +237,14 @@ func emitEvent(emitter agent.PluginEmitter, metadata integration.Definition, dat
 	}
 }
 
-func attributesFromEvent(event protocol.EventData, builder []func(protocol.EventData)) []func(protocol.EventData) {
+func attributesFromEvent(event protocol.EventData, builder *[]func(protocol.EventData)) {
 	if a, ok := event["attributes"]; ok {
 		switch t := a.(type) {
 		default:
 		case map[string]interface{}:
-			builder = append(builder, protocol.WithAttributes(t))
+			*builder = append(*builder, protocol.WithAttributes(t))
 		}
 	}
-	return builder
 }
 
 // Replace entity name by applying entity rewrites and replacing loopback

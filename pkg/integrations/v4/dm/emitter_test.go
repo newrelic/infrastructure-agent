@@ -188,6 +188,9 @@ func assertEventData(t *testing.T) func(args mock.Arguments) {
 		expectedSummary := "summary:foo"
 		assert.Contains(t, plainEvent, expectedSummary)
 
+		expectedEvent := "format:event"
+		assert.Contains(t, plainEvent, expectedEvent)
+
 		expectedCategory := "category:notifications"
 		assert.Contains(t, plainEvent, expectedCategory)
 
@@ -197,7 +200,7 @@ func assertEventData(t *testing.T) func(args mock.Arguments) {
 		expectedEntityID := "entityID:1"
 		assert.Contains(t, plainEvent, expectedEntityID)
 
-		expectedAttribute := "value:bar"
+		expectedAttribute := "attr.format:attribute"
 		assert.Contains(t, plainEvent, expectedAttribute)
 
 		expectedUser := "integrationUser:root"

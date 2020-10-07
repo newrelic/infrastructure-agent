@@ -263,8 +263,9 @@ var (
 		  },
 		  "events":[
 				{ 
-				  "summary": "foo", 
-				  "attributes": { "value": "bar"}
+				  "summary": "foo",
+				  "format": "event",
+				  "attributes": { "format": "attribute"}
 				}
 		  ]
 		}
@@ -305,8 +306,9 @@ var (
 					Events: []protocol.EventData{
 						{
 							"summary": "foo",
+							"format": "event",
 							"attributes": map[string]interface{}{
-								"value": "bar",
+								"format": "attribute",
 							},
 						},
 					},
