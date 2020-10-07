@@ -68,6 +68,13 @@ func NewDefinition(ce config2.ConfigEntry, lookup InstancesLookup, passthroughEn
 		newTempFile:    newTempFile,
 	}
 
+	// Set default value to true if the config was not added
+	if ce.Integration == nil {
+		d.IsIntegration = true
+	} else {
+		d.IsIntegration = *ce.Integration
+	}
+
 	if ce.InventorySource == "" {
 		// Set to empty as currently Inventory source unknown
 		d.InventorySource = ids.EmptyInventorySource

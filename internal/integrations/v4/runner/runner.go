@@ -218,6 +218,12 @@ func (r *runner) logErrors(errs <-chan error) {
 
 func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityRewrite []data.EntityRewrite) {
 	for line := range stdout {
+		// log process stdout when debug mode is active
+		if !r.Integration.IsIntegration {
+			r.log.Debug(string(line))
+			continue
+		}
+
 		llog := r.log.WithFieldsF(func() logrus.Fields {
 			return logrus.Fields{"payload": string(line)}
 		})

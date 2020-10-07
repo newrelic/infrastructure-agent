@@ -5,8 +5,9 @@ package config
 import (
 	"errors"
 	"fmt"
-	"github.com/google/shlex"
 	"time"
+
+	"github.com/google/shlex"
 )
 
 // ConfigEntry holds an integrations YAML configuration entry. It may define multiple types of tasks
@@ -31,6 +32,9 @@ type ConfigEntry struct {
 	Config interface{} `yaml:"config"`
 	// TemplatePath specifies the path of an external configuration file. It can't coexist with Config
 	TemplatePath string `yaml:"config_template_path"`
+	// Integration if false means that the executable is not a NR integration, and stdout do not contain
+	// a valid integration payload.
+	Integration *bool `yaml:"integration"`
 }
 
 // EnableConditions condition the execution of an integration to the trueness of ALL the conditions

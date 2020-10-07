@@ -197,3 +197,13 @@ timeout: 0
 	// THEN the integration has a disabled timeout
 	assert.False(t, i.TimeoutEnabled())
 }
+
+func TestIntegration_Default(t *testing.T) {
+	// GIVEN a configuration without integration
+	// WHEN an integration is loaded from it
+	i, err := NewDefinition(config2.ConfigEntry{Name: "foo", Exec: config2.ShlexOpt{"bar"}}, noLookup, nil, nil)
+	require.NoError(t, err)
+
+	// THEN the integration has a default value for integration property
+	assert.Equal(t, true, i.IsIntegration)
+}

@@ -40,6 +40,7 @@ type Definition struct {
 	WhenConditions  []when.Condition
 	runnable        executor.Executor
 	newTempFile     func(template []byte) (string, error)
+	IsIntegration   bool
 }
 
 func (d *Definition) TimeoutEnabled() bool {
