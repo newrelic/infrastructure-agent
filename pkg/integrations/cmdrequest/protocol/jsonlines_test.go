@@ -46,7 +46,7 @@ var (
 )
 
 func inline(content string) string {
-	return strings.ReplaceAll(content, "\n", "")
+	return strings.Replace(content, "\n", "", -1)
 }
 
 func TestIsCommandRequest(t *testing.T) {
