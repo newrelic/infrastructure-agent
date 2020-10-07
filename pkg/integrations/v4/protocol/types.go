@@ -130,6 +130,7 @@ type MetricData map[string]interface{}
 // EventData is the data type for single shot events
 type EventData map[string]interface{}
 
+// NewEventData create a new event data from builder func
 func NewEventData(options ...func(EventData)) (EventData, error) {
 	e := EventData{
 		"eventType": "InfrastructureEvent",
@@ -153,6 +154,8 @@ func NewEventData(options ...func(EventData)) (EventData, error) {
 	return e, nil
 }
 
+// Builder for NewEventData constructor will copy only valid keys
+// valid keys: ["summary", "category", "entity_name", "format", "local_identity", "local_details"]
 func WithEvents(original EventData) func(EventData) {
 	return func(copy EventData) {
 		acceptedAttribute := []string{"summary", "category", "entity_name", "format", "local_identity", "local_details"}
@@ -164,12 +167,14 @@ func WithEvents(original EventData) func(EventData) {
 	}
 }
 
+// Builder for NewEventData constructor will add 'integrationUser' key
 func WithIntegrationUser(value string) func(EventData) {
 	return func(copy EventData) {
 		copy["integrationUser"] = value
 	}
 }
 
+// Builder for NewEventData constructor will add 'entityKey' and 'entityID' keys
 func WithEntity(e entity.Entity) func(EventData) {
 	return func(copy EventData) {
 		copy["entityKey"] = e.Key.String()
@@ -177,6 +182,7 @@ func WithEntity(e entity.Entity) func(EventData) {
 	}
 }
 
+// Builder for NewEventData constructor will add labels with prefix 'label.'
 func WithLabels(l map[string]string) func(EventData) {
 	return func(copy EventData) {
 		for key, value := range l {
@@ -185,6 +191,7 @@ func WithLabels(l map[string]string) func(EventData) {
 	}
 }
 
+// Builder for NewEventData constructor will add attributes
 func WithAttributes(a map[string]interface{}) func(EventData) {
 	return func(copy EventData) {
 		for key, value := range a {
