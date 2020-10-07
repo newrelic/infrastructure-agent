@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-// Run request versions
+// Command request versions:
 const (
 	VUnsupported = Version(0)
 	V1           = Version(1)
@@ -15,12 +15,12 @@ const (
 
 type Version int
 
-// CmdRequestDiscriminator represents the JSON shape for an integration run request
+// CmdRequestDiscriminator represents the JSON shape for an integration command request.
 type CmdRequestDiscriminator struct {
 	CommandRequestVersion string `json:"command_request_version"`
 }
 
-// RunRequestV1 carries an integration payload requesting command/s execution.
+// CmdRequestV1 carries an integration payload requesting command/s execution.
 // This applies to a command request v1.
 // Payload comes from JSON decoding. Expected shape is:
 // {
@@ -36,12 +36,12 @@ type CmdRequestDiscriminator struct {
 //     }
 //   ]
 // }
-type RunRequestV1 struct {
+type CmdRequestV1 struct {
 	CmdRequestDiscriminator
-	Commands []RunRequestV1Cmd `json:"commands"`
+	Commands []CmdRequestV1Cmd `json:"commands"`
 }
 
-type RunRequestV1Cmd struct {
+type CmdRequestV1Cmd struct {
 	Name    string            `json:"name"`
 	Command string            `json:"command"`
 	Args    []string          `json:"args"`
@@ -68,7 +68,7 @@ func IsCommandRequest(line []byte) (isCmdRequest bool, cmdRequestVersion Version
 	return
 }
 
-func DeserializeLine(line []byte) (r RunRequestV1, err error) {
+func DeserializeLine(line []byte) (r CmdRequestV1, err error) {
 	err = json.Unmarshal(line, &r)
 	return
 }

@@ -9,7 +9,7 @@ import (
 
 type fixture struct {
 	Payload  string
-	ParsedV1 RunRequestV1
+	ParsedV1 CmdRequestV1
 }
 
 // Test fixtures
@@ -29,9 +29,9 @@ var (
     }
   ]
 }`,
-		ParsedV1: RunRequestV1{
+		ParsedV1: CmdRequestV1{
 			CmdRequestDiscriminator{CommandRequestVersion: "1"},
-			[]RunRequestV1Cmd{
+			[]CmdRequestV1Cmd{
 				{
 					Name:    "foo",
 					Command: "/foo",
