@@ -79,6 +79,11 @@ type Config struct {
 	// Public: No
 	IdentityURL string `yaml:"identity_url" envconfig:"identity_url" public:"false"`
 
+	// MetricURL defines the url for the dimensional metric ingest endpoint
+	// Default: https://metric-api.newrelic.com
+	// Public: No
+	MetricURL string `yaml:"metric_url" envconfig:"metric_url" public:"false"`
+
 	// CommandChannelURL defines the base URL for the command channel.
 	// Default: https://infra-api.newrelic.com
 	// Public: No
@@ -858,12 +863,6 @@ type Config struct {
 	// Public: No
 	RegisterEnabled bool `yaml:"register_enabled" envconfig:"register_enabled" public:"false"`
 
-	// DMRegisterEnabled If it's enabled entities will be registered using new register endpoint and it assigns
-	// these entities with an assigned entity ID.
-	// Default: False
-	// Public: No
-	DMRegisterEnabled bool `yaml:"dm_register_enabled" envconfig:"dm_register_enabled" public:"false"`
-
 	// FilesConfigOn enables or disables the configuration file monitoring. Disabled by default. We just keep this
 	// configuration value for backwards compatibilities, but any new agent should enable this value.
 	// Default: False
@@ -1359,24 +1358,11 @@ func JitterFrequency(freqInSec time.Duration) time.Duration {
 }
 
 func calculateCollectorURL(licenseKey string, staging bool) string {
-	if staging {
-		return calculateCollectorStagingURL(licenseKey)
+	if license.IsFederalCompliance(licenseKey) {
+		return defaultSecureFederalURL
 	}
-	return calculateCollectorProductionURL(licenseKey)
-}
 
-func calculateCollectorProductionURL(licenseKey string) string {
-	if r := license.GetRegion(licenseKey); r != "" {
-		return fmt.Sprintf(defaultRegionURLFormat, r)
-	}
-	return defaultCollectorURL
-}
-
-func calculateCollectorStagingURL(licenseKey string) string {
-	if r := license.GetRegion(licenseKey); r != "" {
-		return fmt.Sprintf(defaultRegionStagingURLFormat, r)
-	}
-	return defaultCollectorStagingURL
+	return fmt.Sprintf(baseCollectorURL, urlEnvironmentPrefix(staging), urlRegionPrefix(licenseKey))
 }
 
 func calculateIdentityURL(licenseKey string, staging bool) string {
@@ -1425,6 +1411,33 @@ func calculateCmdChannelStagingURL(licenseKey string) string {
 	return defaultCmdChannelStagingURL
 }
 
+func calculateDimensionalMetricURL(collectorURL string, licenseKey string, staging bool) string {
+	if collectorURL != "" {
+		return collectorURL
+	}
+
+	if license.IsFederalCompliance(licenseKey) {
+		return defaultSecureFederalURL
+	}
+
+	return fmt.Sprintf(baseDimensionalMetricURL, urlEnvironmentPrefix(staging), urlRegionPrefix(licenseKey))
+}
+
+func urlEnvironmentPrefix(staging bool) string {
+	if staging {
+		return "staging-"
+	}
+	return ""
+}
+
+func urlRegionPrefix(licenseKey string) string {
+	if license.IsRegionEU(licenseKey) {
+		return "eu."
+	}
+
+	return ""
+}
+
 func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err error) {
 	nlog := clog.WithField("action", "NormalizeConfig")
 
@@ -1466,9 +1479,13 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 		cfg.FeatureTraces = append(cfg.FeatureTraces, feature.String())
 	}
 
+	// dm URL is calculated based on collector url, it should be set before get it default value
+	cfg.MetricURL = calculateDimensionalMetricURL(cfg.CollectorURL, cfg.License, cfg.Staging)
+
 	if cfg.CollectorURL == "" {
 		cfg.CollectorURL = calculateCollectorURL(cfg.License, cfg.Staging)
 	}
+
 	nlog.WithField("collectorURL", cfg.CollectorURL).Debug("Collector URL")
 
 	if cfg.IdentityURL == "" {

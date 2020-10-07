@@ -25,7 +25,6 @@ const (
 	FlagFullProcess          = "full_process_sampling"
 	// Config
 	CfgYmlRegisterEnabled        = "register_enabled"
-	CfgYmlDMRegisterEnable       = "dm_register_enabled"
 	CfgYmlParallelizeInventory   = "inventory_queue_len"
 	CfgValueParallelizeInventory = int64(100) // default value when no config provided by user and FF enabled
 )

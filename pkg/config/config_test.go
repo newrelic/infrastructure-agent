@@ -25,7 +25,7 @@ func Test(t *testing.T) { TestingT(t) }
 
 func (s *ConfigSuite) TestParseConfig(c *C) {
 	config := `
-collector_url:  http://foo.bar
+collector_url:  http://url.test
 ignored_inventory:
    - files/config/stuff.bar
    - files/config/stuff.foo
@@ -42,7 +42,8 @@ remove_entities_period: 1h
 
 	cfg, err := LoadConfig(f.Name())
 	c.Assert(err, IsNil)
-	c.Assert(cfg.CollectorURL, Equals, "http://foo.bar")
+	c.Assert(cfg.MetricURL, Equals, "http://url.test")
+	c.Assert(cfg.CollectorURL, Equals, "http://url.test")
 	c.Assert(cfg.License, Equals, "abc123")
 	c.Assert(cfg.IgnoredInventoryPaths, HasLen, 2)
 	c.Assert(
@@ -285,7 +286,8 @@ agent_dir: /my/overriden/agent/dir
 
 	cfg, err := LoadConfig(f.Name())
 	c.Assert(cfg.PidFile, Equals, defaultPidFile)
-	c.Assert(cfg.CollectorURL, Equals, defaultCollectorURL)
+	c.Assert(cfg.MetricURL, Equals, "https://metric-api.newrelic.com")
+	c.Assert(cfg.CollectorURL, Equals, "https://infra-api.newrelic.com")
 	c.Assert(cfg.AgentDir, Equals, "/my/overriden/agent/dir")
 	c.Assert(cfg.AppDataDir, Equals, defaultAppDataDir)
 	c.Assert(cfg.LogToStdout, Equals, defaultLogToStdout)
@@ -348,22 +350,78 @@ func (s *ConfigSuite) TestCalculateCollectorURL(c *C) {
 		staging   bool
 	}{
 		// non-region license, staging false
-		{license: "0123456789012345678901234567890123456789", expectURL: defaultCollectorURL, staging: false},
+		{license: "0123456789012345678901234567890123456789", expectURL: "https://infra-api.newrelic.com", staging: false},
 		// non-region license, staging true
-		{license: "0123456789012345678901234567890123456789", expectURL: defaultCollectorStagingURL, staging: true},
+		{license: "0123456789012345678901234567890123456789", expectURL: "https://staging-infra-api.newrelic.com", staging: true},
 		// four letter region
-		{license: "eu01xx6789012345678901234567890123456789", expectURL: "https://infra-api.eu01.nr-data.net", staging: false},
+		{license: "eu01xx6789012345678901234567890123456789", expectURL: "https://infra-api.eu.newrelic.com", staging: false},
 		// four letter region
-		{license: "eu01xx6789012345678901234567890123456789", expectURL: "https://staging-infra-api.eu01.nr-data.net", staging: true},
-		// five letter region
-		{license: "gov01x6789012345678901234567890123456789", expectURL: "https://infra-api.gov01.nr-data.net", staging: false},
-		// five letter region
-		{license: "gov01x6789012345678901234567890123456789", expectURL: "https://staging-infra-api.gov01.nr-data.net", staging: true},
+		{license: "eu01xx6789012345678901234567890123456789", expectURL: "https://staging-infra-api.eu.newrelic.com", staging: true},
+		//// five letter region
+		{license: "gov01x6789012345678901234567890123456789", expectURL: "https://gov-infra-api.newrelic.com", staging: true},
 	}
 
 	for _, tc := range testcases {
 		u := calculateCollectorURL(tc.license, tc.staging)
 		c.Assert(u, Equals, tc.expectURL)
+	}
+}
+
+func (s *ConfigSuite) TestCalculateDimensionalMetricURL(c *C) {
+	testCases := []struct {
+		name         string
+		license      string
+		collectorURL string
+		staging      bool
+		want         string
+	}{
+		{
+			"Default URL, no region license, no collector URL",
+			"0123456789012345678901234567890123456789",
+			"",
+			false,
+			"https://metric-api.newrelic.com",
+		},
+		{
+			"Staging URL, no region license, no collector URL",
+			"0123456789012345678901234567890123456789",
+			"",
+			true,
+			"https://staging-metric-api.newrelic.com",
+		},
+		{
+			"Default URL, eu license region, no collector URL",
+			"eu01xx6789012345678901234567890123456789",
+			"",
+			false,
+			"https://metric-api.eu.newrelic.com",
+		},
+		{
+			"Staging URL, eu license region, no collector URL",
+			"eu01xx6789012345678901234567890123456789",
+			"",
+			true,
+			"https://staging-metric-api.eu.newrelic.com",
+		},
+		{
+			"Default URL, gov license region, no collector URL",
+			"gov01xx6789012345678901234567890123456789",
+			"",
+			true,
+			"https://gov-infra-api.newrelic.com",
+		},
+		{
+			"From Collector URL",
+			"gov01x6789012345678901234567890123456789",
+			"https://metric-api.test",
+			true,
+			"https://metric-api.test",
+		},
+	}
+
+	for _, tc := range testCases {
+		u := calculateDimensionalMetricURL(tc.collectorURL, tc.license, tc.staging)
+		c.Assert(u, Equals, tc.want)
 	}
 }
 

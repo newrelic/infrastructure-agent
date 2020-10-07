@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
-	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/v3legacy"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/when"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
@@ -23,7 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var illog = log.WithComponent("integrations.runner.Group")
+var illog = log.WithComponent("integrations.runner.Runner")
 
 var heartBeatJSON = []byte("{}")
 
@@ -38,54 +37,11 @@ type logParser func(line string) (fields logFields)
 //3- word: any character except spaces
 var logrusRegexp = regexp.MustCompile(`([^\s]*?)=(".*?[^\\]"|&{.*?}|[^\s]*)`)
 
-// Group represents a set of runnable integrations that are located in
-// the same integration configuration file, and thus share a common
-// discovery mechanism configuration. It also does the following tasks:
-// - parses integration output and forwards it
-// - parses standard error and logs it
-// - catches errors and logs them
-// - manages the cancellation of tasks, as this should-be hot-reloaded
-type Group struct {
-	discovery    *databind.Sources
-	integrations []integration.Definition
-	emitter      emitter.Emitter
-	definitions  *v3legacy.DefinitionsRepo
-	// for testing purposes, allows defining which action to take when an execution
-	// error is received. If unset, it will be runner.logErrors
-	getErrorHandler func(r *runner) runnerErrorHandler
-}
-
-type runnerErrorHandler func(errs <-chan error)
-
-func sendErrorsToLog(r *runner) runnerErrorHandler {
-	return r.logErrors
-}
-
-// Run launches all the integrations to run in background. They can be cancelled with the
-// provided context
-func (t *Group) Run(ctx context.Context) (hasStartedAnyOHI bool) {
-	if t.getErrorHandler == nil {
-		t.getErrorHandler = sendErrorsToLog
-	}
-	for _, integr := range t.integrations {
-		r := runner{
-			parent:        t,
-			Integration:   integr,
-			heartBeatFunc: func() {},
-			stderrParser:  parseLogrusFields,
-		}
-		r.handleErrors = t.getErrorHandler(&r)
-		go r.Run(ctx)
-		hasStartedAnyOHI = true
-	}
-
-	return
-}
-
 // runner for a single integration entry
 type runner struct {
 	ctx            context.Context // to avoid logging too many errors when the integration is cancelled by the user
-	parent         *Group
+	emitter        emitter.Emitter
+	discovery      *databind.Sources
 	log            log.Entry
 	Integration    integration.Definition
 	handleErrors   func(<-chan error) // by default, runner.logErrors. Replaceable for testing purposes
@@ -94,6 +50,18 @@ type runner struct {
 	healthCheck    sync.Once
 	heartBeatFunc  func()
 	heartBeatMutex sync.RWMutex
+}
+
+func NewRunner(intDef integration.Definition, emitter emitter.Emitter, discoverySources *databind.Sources) *runner {
+	r := &runner{
+		emitter:       emitter,
+		discovery:     discoverySources,
+		Integration:   intDef,
+		heartBeatFunc: func() {},
+		stderrParser:  parseLogrusFields,
+	}
+	r.handleErrors = r.logErrors
+	return r
 }
 
 func (r *runner) Run(ctx context.Context) {
@@ -134,11 +102,11 @@ func (r *runner) Run(ctx context.Context) {
 
 // applies discovery and returns the discovered values, if any.
 func (r *runner) applyDiscovery() (*databind.Values, error) {
-	if r.parent.discovery == nil {
+	if r.discovery == nil {
 		// nothing is discovered, but the integration can run (with the default configuration)
 		return nil, nil
 	}
-	if v, err := databind.Fetch(r.parent.discovery); err != nil {
+	if v, err := databind.Fetch(r.discovery); err != nil {
 		return nil, err
 	} else {
 		return &v, nil
@@ -261,7 +229,7 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 		}
 
 		llog.Debug("Received payload.")
-		err := r.parent.emitter.Emit(r.Integration, extraLabels, entityRewrite, line)
+		err := r.emitter.Emit(r.Integration, extraLabels, entityRewrite, line)
 		if err != nil {
 			llog.WithError(err).Warn("can't emit integration payloads")
 		} else {
