@@ -6,7 +6,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 )
 
 // Loader provides a basic, incomplete Group instance to be configured by the
@@ -14,29 +13,9 @@ import (
 // v3 legacy integrations from an external definitions' folder.
 type Loader func(dr integration.InstancesLookup, passthroughEnv []string, cfgPath string) (Group, FeaturesCache, error)
 
-// NewGroup configures a Group instance that is provided by the passed Loader
-// cfgPath is used for caching to be consumed by cmd-channel FF enabler.
-func NewGroup(
-	loader Loader,
-	dr integration.InstancesLookup,
-	passthroughEnv []string,
-	emitter emitter.Emitter,
-	cfgPath string,
-) (g Group, c FeaturesCache, err error) {
-
-	g, c, err = loader(dr, passthroughEnv, cfgPath)
-	if err != nil {
-		return
-	}
-
-	g.emitter = emitter
-
-	return
-}
-
-// LoadFrom returns a partial Group that holds the configuration from the provided configuration.
+// NewLoader returns a partial Group that holds the configuration from the provided configuration.
 // Optionally agent and OHI "features" can be provided to be able to load disabled OHIs.
-func LoadFrom(cfg config2.YAML, agentAndCCFeatures *Features) Loader {
+func NewLoader(cfg config2.YAML, agentAndCCFeatures *Features) Loader {
 	return func(dr integration.InstancesLookup, passthroughEnv []string, cfgPath string) (g Group, c FeaturesCache, err error) {
 		discovery, err := databind.DataSources(&cfg.Databind)
 		if err != nil {
