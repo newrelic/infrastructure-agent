@@ -306,7 +306,7 @@ var (
 					Events: []protocol.EventData{
 						{
 							"summary": "foo",
-							"format": "event",
+							"format":  "event",
 							"attributes": map[string]interface{}{
 								"format": "attribute",
 							},
