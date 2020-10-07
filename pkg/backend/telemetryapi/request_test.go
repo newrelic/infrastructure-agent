@@ -204,7 +204,7 @@ func Test_newBatchRequest(t *testing.T) {
 				assert.Equal(t, expectedURL, gotReqs[i].Request.URL.String())
 				assert.Equal(t, expectedUserAgent, gotReqs[i].Request.Header.Get("User-Agent"))
 				assert.Equal(t, tt.wantReqs[i].xNRIEntityIdsHeader, gotReqs[i].Request.Header.Get("X-NRI-Entity-Ids"))
-				assert.Equal(t, expectedContext, gotReqs[i].ctx)
+				assert.Equal(t, expectedContext, gotReqs[i].Request.Context())
 			}
 		})
 	}

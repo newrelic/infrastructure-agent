@@ -100,11 +100,32 @@ func NewHarvester(options ...func(*Config)) (*Harvester, error) {
 		"version":                version,
 	})
 
+	defer h.Start()
+
+	return h, nil
+}
+
+func (h *Harvester) Start() {
+
 	if 0 != h.config.HarvestPeriod {
 		go harvestRoutine(h)
 	}
 
-	return h, nil
+	for i := 0; i < h.config.MaxConns; i++ {
+		go func(workerNo int) {
+			wlog := logger.WithField("WorkerNo.", workerNo)
+			wlog.Debug("Starting worker.")
+			for {
+				select {
+				case <-h.config.Context.Done():
+					wlog.Debug("Shutting down worker.")
+					return
+				case req := <-h.requestsQueue:
+					harvestRequest(req, &h.config)
+				}
+			}
+		}(i + 1)
+	}
 }
 
 var (
@@ -255,6 +276,7 @@ func (r response) needsRetry(_ *Config, attempts int) (bool, time.Duration) {
 func postData(req *http.Request, client *http.Client) response {
 	resp, err := client.Do(req)
 	if nil != err {
+		logger.WithError(err).Info("BOOM")
 		return response{err: fmt.Errorf("error posting data: %v", err)}
 	}
 	defer resp.Body.Close()
@@ -276,7 +298,7 @@ func postData(req *http.Request, client *http.Client) response {
 	return r
 }
 
-func (h *Harvester) swapOutMetrics(now time.Time) []request {
+func (h *Harvester) swapOutMetrics(ctx context.Context, now time.Time) []request {
 	h.lock.Lock()
 	lastHarvest := h.lastHarvest
 	h.lastHarvest = now
@@ -308,7 +330,7 @@ func (h *Harvester) swapOutMetrics(now time.Time) []request {
 		AttributesJSON: h.commonAttributesJSON,
 		Metrics:        rawMetrics,
 	}
-	reqs, err := newRequests(nil, batch, h.config.APIKey, h.config.metricURL(), h.config.userAgent())
+	reqs, err := newRequests(ctx, batch, h.config.APIKey, h.config.metricURL(), h.config.userAgent())
 	if nil != err {
 		h.config.logError(map[string]interface{}{
 			"err":     err.Error(),
@@ -319,13 +341,13 @@ func (h *Harvester) swapOutMetrics(now time.Time) []request {
 	return reqs
 }
 
-func (h *Harvester) swapOutBatchMetrics() (req []request) {
+func (h *Harvester) swapOutBatchMetrics(ctx context.Context) (req []request) {
 	h.lock.Lock()
 	rawMetricsBatch := h.rawMetricsBatch
 	h.rawMetricsBatch = nil
 	h.lock.Unlock()
 	var err error
-	req, err = newBatchRequest(nil, rawMetricsBatch, h.config.APIKey, h.config.metricURL(), h.config.userAgent())
+	req, err = newBatchRequest(ctx, rawMetricsBatch, h.config.APIKey, h.config.metricURL(), h.config.userAgent())
 	if err != nil {
 		h.config.logError(map[string]interface{}{
 			"err":     err.Error(),
@@ -335,7 +357,7 @@ func (h *Harvester) swapOutBatchMetrics() (req []request) {
 	return req
 }
 
-func (h *Harvester) swapOutSpans() []request {
+func (h *Harvester) swapOutSpans(ctx context.Context) []request {
 	h.lock.Lock()
 	sps := h.spans
 	h.spans = nil
@@ -348,7 +370,7 @@ func (h *Harvester) swapOutSpans() []request {
 		AttributesJSON: h.commonAttributesJSON,
 		Spans:          sps,
 	}
-	reqs, err := newRequests(nil, batch, h.config.APIKey, h.config.spanURL(), h.config.userAgent())
+	reqs, err := newRequests(ctx, batch, h.config.APIKey, h.config.spanURL(), h.config.userAgent())
 	if nil != err {
 		h.config.logError(map[string]interface{}{
 			"err":     err.Error(),
@@ -421,17 +443,15 @@ func (h *Harvester) HarvestNow(ct context.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(ct, h.config.HarvestTimeout)
-	defer cancel()
+	ctx, _ := context.WithTimeout(ct, h.config.HarvestTimeout)
 
 	var reqs []request
-	reqs = append(reqs, h.swapOutMetrics(time.Now())...)
-	reqs = append(reqs, h.swapOutSpans()...)
-	reqs = append(reqs, h.swapOutBatchMetrics()...)
+	reqs = append(reqs, h.swapOutMetrics(ctx, time.Now())...)
+	reqs = append(reqs, h.swapOutSpans(ctx)...)
+	reqs = append(reqs, h.swapOutBatchMetrics(ctx)...)
 
 	for _, req := range reqs {
-		req.Request = req.Request.WithContext(ctx)
-		harvestRequest(req, &h.config)
+		h.requestsQueue <- req
 		if err := ctx.Err(); err != nil {
 			// NOTE: It is possible that the context was
 			// cancelled/timedout right after the request

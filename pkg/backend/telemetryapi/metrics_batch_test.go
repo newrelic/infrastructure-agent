@@ -82,9 +82,6 @@ func TestMetrics(t *testing.T) {
 	if string(uncompressed) != expect {
 		t.Error("metrics JSON mismatch", string(uncompressed), expect)
 	}
-	if expectedContext != req.ctx {
-		t.Error("request context mismatch", expectedContext, req.ctx)
-	}
 }
 
 func generateMetrics(start time.Time) []Metric {

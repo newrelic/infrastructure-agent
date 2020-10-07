@@ -25,8 +25,6 @@ type request struct {
 
 	compressedBody       []byte
 	compressedBodyLength int
-
-	ctx context.Context
 }
 
 type requestsBuilder interface {
@@ -93,11 +91,10 @@ func createRequest(ctx context.Context, rawJSON json.RawMessage, apiKey string, 
 	reqHTTP.Header.Add("Content-Encoding", "gzip")
 	reqHTTP.Header.Add("User-Agent", userAgent)
 	req = request{
-		Request:              reqHTTP,
+		Request:              reqHTTP.WithContext(ctx),
 		UncompressedBody:     rawJSON,
 		compressedBody:       compressed.Bytes(),
 		compressedBodyLength: compressedLen,
-		ctx:                  ctx,
 	}
 	return req, err
 }

@@ -143,6 +143,7 @@ func ConfigSpansURLOverride(url string) func(*Config) {
 func configTesting(cfg *Config) {
 	cfg.APIKey = "api-key"
 	cfg.HarvestPeriod = 0
+	cfg.Context = context.Background()
 }
 
 func (cfg *Config) logError(fields map[string]interface{}) {

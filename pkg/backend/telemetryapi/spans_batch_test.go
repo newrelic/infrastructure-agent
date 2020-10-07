@@ -48,9 +48,6 @@ func testSpanBatchJSON(t testing.TB, batch *spanBatch, expect string) {
 	if string(uncompressed) != string(req.UncompressedBody) {
 		t.Error("request JSON mismatch", string(uncompressed), string(req.UncompressedBody))
 	}
-	if expectedContext != req.ctx {
-		t.Error("request context mismatch", expectedContext, req.ctx)
-	}
 }
 
 func TestSpansPayloadSplit(t *testing.T) {
