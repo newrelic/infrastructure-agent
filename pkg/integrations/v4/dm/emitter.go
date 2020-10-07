@@ -218,8 +218,8 @@ func emitEvent(emitter agent.PluginEmitter, metadata integration.Definition, dat
 
 	for _, event := range dataSet.Events {
 		builder = append(attributesFromEvent(event, builder),
-						protocol.WithEntity(entity.New(entity.Key(dataSet.Entity.Name), entityID)),
-						protocol.WithEvents(event))
+			protocol.WithEntity(entity.New(entity.Key(dataSet.Entity.Name), entityID)),
+			protocol.WithEvents(event))
 
 		e, err := protocol.NewEventData(builder...)
 

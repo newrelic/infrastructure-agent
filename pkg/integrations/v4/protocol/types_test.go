@@ -75,7 +75,7 @@ func TestEntityData_New_IgnoreHostnameAttribute(t *testing.T) {
 	}
 
 	a := map[string]interface{}{
-		"summary":   "test",
+		"summary":  "test",
 		"hostname": "test-hostname",
 	}
 
