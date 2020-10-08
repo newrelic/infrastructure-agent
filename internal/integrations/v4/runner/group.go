@@ -7,6 +7,7 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 )
 
@@ -32,13 +33,13 @@ type runnerErrorHandler func(ctx context.Context, errs <-chan error)
 // cfgPath is used for caching to be consumed by cmd-channel FF enabler.
 func NewGroup(
 	loadFn LoadFn,
-	dr integration.InstancesLookup,
+	il integration.InstancesLookup,
 	passthroughEnv []string,
 	emitter emitter.Emitter,
 	cfgPath string,
 ) (g Group, c FeaturesCache, err error) {
 
-	g, c, err = loadFn(dr, passthroughEnv, cfgPath)
+	g, c, err = loadFn(il, passthroughEnv, cfgPath)
 	if err != nil {
 		return
 	}
@@ -52,7 +53,7 @@ func NewGroup(
 // provided context
 func (t *Group) Run(ctx context.Context) (hasStartedAnyOHI bool) {
 	for _, integr := range t.integrations {
-		go newRunner(integr, t.emitter, t.discovery, t.handleErrorsProvide).Run(ctx)
+		go NewRunner(integr, t.emitter, t.discovery, t.handleErrorsProvide, cmdrequest.NoopHandleFn).Run(ctx)
 		hasStartedAnyOHI = true
 	}
 

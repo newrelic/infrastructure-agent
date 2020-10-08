@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"net"
@@ -200,7 +201,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 
 	// Command channel initialization.
 	ccService := cmdchannel.NewService(caClient, c, ffManager)
-	initCmdResponse, err := ccService.InitialFetch()
+	initCmdResponse, err := ccService.InitialFetch(context.Background())
 	if err != nil {
 		aslog.WithError(err).Warn("Commands initial fetch failed.")
 	}

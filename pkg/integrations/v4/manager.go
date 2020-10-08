@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/constants"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 
@@ -99,13 +100,14 @@ func (r *rgsPerPath) isGroupRunning(cfgPath string) bool {
 }
 
 type Manager struct {
-	config        Configuration
-	parent        context.Context
-	watcher       *fsnotify.Watcher
-	runners       *rgsPerPath
-	emitter       emitter.Emitter
-	lookup        integration.InstancesLookup
-	featuresCache runner.FeaturesCache
+	config          Configuration
+	watcher         *fsnotify.Watcher
+	runners         *rgsPerPath
+	emitter         emitter.Emitter
+	lookup          integration.InstancesLookup
+	featuresCache   runner.FeaturesCache
+	definitionQueue chan integration.Definition
+	handleCmdReq    cmdrequest.HandleFn
 }
 
 // groupContext pairs a runner.Group with its cancellation context
@@ -182,13 +184,16 @@ func NewManager(cfg Configuration, emitter emitter.Emitter) *Manager {
 		illog.WithError(err).Warn("can't enable hot reload")
 	}
 
+	definitionQ := make(chan integration.Definition, 100)
 	mgr := Manager{
-		config:        cfg,
-		runners:       newRunnerGroupsPerCfgPath(),
-		emitter:       emitter,
-		watcher:       watcher,
-		lookup:        defaultInstancesLookup(cfg),
-		featuresCache: make(runner.FeaturesCache),
+		config:          cfg,
+		runners:         newRunnerGroupsPerCfgPath(),
+		emitter:         emitter,
+		watcher:         watcher,
+		lookup:          newInstancesLookup(cfg),
+		featuresCache:   make(runner.FeaturesCache),
+		definitionQueue: definitionQ,
+		handleCmdReq:    cmdrequest.NewHandleFn(definitionQ, illog),
 	}
 
 	// Loads all the configuration files in the passed configFolders
@@ -229,17 +234,18 @@ func NewManager(cfg Configuration, emitter emitter.Emitter) *Manager {
 
 // Start in background the v4 integrations lifecycle management, including hot reloading, interval and timeout management
 func (mgr *Manager) Start(ctx context.Context) {
-	mgr.parent = contextWithVerbose(ctx, mgr.config.Verbose)
 	for path, rc := range mgr.runners.List() {
 		illog.WithField("file", path).Debug("Starting integrations group.")
-		mgr.startRunnerGroup(rc)
+		rc.start(contextWithVerbose(ctx, mgr.config.Verbose))
 	}
 
-	mgr.watchForChanges()
+	go mgr.handleRequestsQueue(ctx)
+
+	mgr.watchForFSChanges(ctx)
 }
 
 // EnableOHIFromFF enables an integration coming from CC request.
-func (mgr *Manager) EnableOHIFromFF(featureFlag string) error {
+func (mgr *Manager) EnableOHIFromFF(ctx context.Context, featureFlag string) error {
 	cfgPath, err := mgr.cfgPathForFF(featureFlag)
 	if err != nil {
 		return err
@@ -254,7 +260,7 @@ func (mgr *Manager) EnableOHIFromFF(featureFlag string) error {
 		Enabled: true,
 	}
 
-	mgr.runIntegration(cfgPath, false, &illog, &cmdFF)
+	mgr.runIntegrationFromPath(ctx, cfgPath, false, &illog, &cmdFF)
 
 	return nil
 }
@@ -295,32 +301,43 @@ func (mgr *Manager) loadRunnerGroup(path string, cfg config2.YAML, cmdFF *runner
 	return newGroupContext(gr), nil
 }
 
-// starts all the integrations in a runner.Group
-func (mgr *Manager) startRunnerGroup(gr *groupContext) {
-	gr.start(mgr.parent)
-}
-
-// watch for changes in the plugins directories and loads/cancels/reloads the affected integrations
-func (mgr *Manager) watchForChanges() {
-	if mgr.watcher == nil {
-		return
-	}
-	wclog := illog.WithField("function", "watchForChanges")
-	wclog.Debug("Watching for integrations file changes.")
+func (mgr *Manager) handleRequestsQueue(ctx context.Context) {
 	for {
 		select {
-		case event := <-mgr.watcher.Events:
-			mgr.handleFileEvent(&event)
-		case err := <-mgr.watcher.Errors:
-			wclog.WithError(err).Debug("Error watching file changes.")
-		case <-mgr.parent.Done():
-			wclog.Debug("Parent context has been cancelled. Stopped watching for file changes.")
+		case <-ctx.Done():
 			return
+
+		case def := <-mgr.definitionQueue:
+			r := runner.NewRunner(def, mgr.emitter, nil, nil, mgr.handleCmdReq)
+			go r.Run(ctx)
 		}
 	}
 }
 
-func (mgr *Manager) handleFileEvent(event *fsnotify.Event) {
+// watch for changes in the plugins directories and loads/cancels/reloads the affected integrations
+func (mgr *Manager) watchForFSChanges(ctx context.Context) {
+	if mgr.watcher == nil {
+		return
+	}
+
+	wclog := illog.WithField("function", "watchForChanges")
+	wclog.Debug("Watching for integrations file changes.")
+	for {
+		select {
+		case <-ctx.Done():
+			wclog.Debug("Integration manager context cancelled. Stopped watching for file changes.")
+			return
+
+		case event := <-mgr.watcher.Events:
+			mgr.handleFileEvent(ctx, &event)
+
+		case err := <-mgr.watcher.Errors:
+			wclog.WithError(err).Debug("Error watching file changes.")
+		}
+	}
+}
+
+func (mgr *Manager) handleFileEvent(ctx context.Context, event *fsnotify.Event) {
 	wclog := illog.WithField("function", "handleFileEvent")
 
 	if event == nil {
@@ -386,10 +403,10 @@ func (mgr *Manager) handleFileEvent(event *fsnotify.Event) {
 
 	}
 	// creating new configuration and starting the new runner.Group instances
-	mgr.runIntegration(event.Name, isCreate, &elog, nil)
+	mgr.runIntegrationFromPath(ctx, event.Name, isCreate, &elog, nil)
 }
 
-func (mgr *Manager) runIntegration(cfgPath string, isCreate bool, elog *log.Entry, cmdFF *runner.CmdFF) {
+func (mgr *Manager) runIntegrationFromPath(ctx context.Context, cfgPath string, isCreate bool, elog *log.Entry, cmdFF *runner.CmdFF) {
 	cfg, err := loadConfig(cfgPath)
 	if err != nil {
 		if err == legacyYAML {
@@ -411,7 +428,7 @@ func (mgr *Manager) runIntegration(cfgPath string, isCreate bool, elog *log.Entr
 	}
 
 	mgr.runners.Set(cfgPath, rc)
-	mgr.startRunnerGroup(rc)
+	rc.start(ctx)
 }
 
 func (mgr *Manager) stopRunnerGroup(fileName string) {
@@ -510,10 +527,10 @@ func foundFilesLogFields(configs map[string]config2.YAML) func() logrus.Fields {
 	}
 }
 
-// creates a instances lookup that:
+// newInstancesLookup creates an instance lookup that:
 // - looks in the v3 legacy definitions repository for defined commands
 // - looks in the definition folders (and bin/ subfolders) for executable names
-func defaultInstancesLookup(cfg Configuration) integration.InstancesLookup {
+func newInstancesLookup(cfg Configuration) integration.InstancesLookup {
 	var execFolders []string
 	for _, df := range cfg.DefinitionFolders {
 		execFolders = append(execFolders, df)

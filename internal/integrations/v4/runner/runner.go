@@ -16,6 +16,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/contexts"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
@@ -41,6 +42,7 @@ type logParser func(line string) (fields logFields)
 // runner for a single integration entry
 type runner struct {
 	emitter        emitter.Emitter
+	handleCmdReq   cmdrequest.HandleFn
 	discovery      *databind.Sources
 	log            log.Entry
 	definition     integration.Definition
@@ -52,16 +54,18 @@ type runner struct {
 	heartBeatMutex sync.RWMutex
 }
 
-// newRunner creates an integration runner instance.
-// args: discoverySources & handleErrorsProvide are optional, so nil values are allowed.
-func newRunner(
+// NewRunner creates an integration runner instance.
+// args: discoverySources, handleErrorsProvide and cmdReqHandle are optional (nils allowed).
+func NewRunner(
 	intDef integration.Definition,
 	emitter emitter.Emitter,
 	discoverySources *databind.Sources,
 	handleErrorsProvide func() runnerErrorHandler,
+	cmdReqHandle cmdrequest.HandleFn,
 ) *runner {
 	r := &runner{
 		emitter:       emitter,
+		handleCmdReq:  cmdReqHandle,
 		discovery:     discoverySources,
 		definition:    intDef,
 		heartBeatFunc: func() {},
@@ -167,7 +171,7 @@ func (r *runner) execute(ctx context.Context, matches *databind.Values) {
 	wg.Add(len(outputs))
 	for _, out := range outputs {
 		o := out
-		go r.handleLines(o.Receive.Stdout, o.ExtraLabels, o.EntityRewrite)
+		go r.handleLines(ctx, o.Receive.Stdout, o.ExtraLabels, o.EntityRewrite)
 		go r.handleStderr(o.Receive.Stderr)
 		go func() {
 			defer wg.Done()
@@ -227,7 +231,7 @@ func (r *runner) logErrors(ctx context.Context, errs <-chan error) {
 	}
 }
 
-func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityRewrite []data.EntityRewrite) {
+func (r *runner) handleLines(ctx context.Context, stdout <-chan []byte, extraLabels data.Map, entityRewrite []data.EntityRewrite) {
 	for line := range stdout {
 		llog := r.log.WithFieldsF(func() logrus.Fields {
 			return logrus.Fields{"payload": string(line)}
@@ -241,14 +245,20 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 
 		if ok, ver := protocol.IsCommandRequest(line); ok {
 			llog.WithField("version", ver).Debug("Received run request.")
-			_, err := protocol.DeserializeLine(line)
+			cr, err := protocol.DeserializeLine(line)
 			if err != nil {
 				llog.
-					WithField("line", string(line)).
 					WithError(err).
 					Warn("cannot deserialize integration run request payload")
+				continue
 			}
-			// TODO handle
+
+			if r.handleCmdReq == nil {
+				llog.Warn("received cmd request payload without a handler")
+				continue
+			}
+
+			go r.handleCmdReq(ctx, cr)
 			continue
 		}
 

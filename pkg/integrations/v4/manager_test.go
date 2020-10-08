@@ -708,7 +708,7 @@ func TestManager_EnableFeature_WhenFeatureOnOHICfgAndAgentCfgIsDisabledAndEnable
 	require.NoError(t, e.ExpectTimeout("nri-docker", 400*time.Millisecond))
 
 	// AND WHEN the OHI is enabled (originally through cmd-channel)
-	assert.NoError(t, mgr.EnableOHIFromFF("docker_enabled"))
+	assert.NoError(t, mgr.EnableOHIFromFF(context.Background(), "docker_enabled"))
 
 	// THEN the integration reports
 	metric := expectOneMetric(t, e, "nri-docker")
@@ -799,7 +799,7 @@ func TestManager_CCDisablesPreviouslyEnabledFeature(t *testing.T) {
 	require.NoError(t, e.ExpectTimeout("nri-docker", 400*time.Millisecond))
 
 	// AND WHEN the OHI is enabled (through cmd-channel)
-	assert.NoError(t, mgr.EnableOHIFromFF("docker_enabled"))
+	assert.NoError(t, mgr.EnableOHIFromFF(context.Background(), "docker_enabled"))
 
 	// THEN integration emits data
 	metric := expectOneMetric(t, e, "nri-docker")

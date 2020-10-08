@@ -16,7 +16,7 @@ type LoadFn func(dr integration.InstancesLookup, passthroughEnv []string, cfgPat
 // features cache. Optionally agent and integration "features" can be provided to be able to load
 // disabled integrations.
 func NewLoadFn(cfg config2.YAML, agentAndCCFeatures *Features) LoadFn {
-	return func(dr integration.InstancesLookup, passthroughEnv []string, cfgPath string) (g Group, c FeaturesCache, err error) {
+	return func(il integration.InstancesLookup, passthroughEnv []string, cfgPath string) (g Group, c FeaturesCache, err error) {
 		discovery, err := databind.DataSources(&cfg.Databind)
 		if err != nil {
 			return
@@ -34,7 +34,7 @@ func NewLoadFn(cfg config2.YAML, agentAndCCFeatures *Features) LoadFn {
 				return
 			}
 			var i integration.Definition
-			i, err = integration.NewDefinition(cfgEntry, dr, passthroughEnv, template)
+			i, err = integration.NewDefinition(cfgEntry, il, passthroughEnv, template)
 			if err != nil {
 				return
 			}
