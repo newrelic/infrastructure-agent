@@ -4,6 +4,9 @@ package entity
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/backend/http"
+	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"sort"
 	"strconv"
 	"strings"
@@ -134,6 +137,34 @@ func (f *Fields) Key() (Key, error) {
 	}
 
 	return Key(fmt.Sprintf("%v:%v%s", f.Type, f.Name, strings.ToLower(attrsStr))), nil
+}
+
+func (f *Fields) ResolveUniqueEntityKey(agentID string, lookup host.IDLookup, entityRewrite data.EntityRewrites, protocol int) (Key, error) {
+	if f.IsAgent() {
+		return Key(agentID), nil
+	}
+
+	result, err := ReplaceLoopback(entityRewrite.Apply(f.Name), lookup, protocol)
+	if err != nil {
+		return EmptyKey, err
+	}
+
+	f.Name = result
+	return f.Key()
+}
+
+func ReplaceLoopback(value string, lookup host.IDLookup, protocolVersion int) (string, error) {
+	const protocolV3 = 3
+	if protocolVersion < protocolV3 || !http.ContainsLocalhost(value) {
+		return value, nil
+	}
+
+	agentShortName, err := lookup.AgentShortEntityName()
+	if err != nil {
+		return "", err
+	}
+
+	return http.ReplaceLocalhost(value, agentShortName), nil
 }
 
 // Len is part of sort.Interface.

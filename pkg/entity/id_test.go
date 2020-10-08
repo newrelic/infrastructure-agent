@@ -3,6 +3,10 @@
 package entity
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -184,4 +188,37 @@ func TestKey_Empty(t *testing.T) {
 	k, err := f.Key()
 	assert.NoError(t, err)
 	assert.Equal(t, EmptyKey, k)
+}
+
+func TestResolveEntityKeyWithAgent(t *testing.T) {
+	e := Fields{}
+	k, err := e.ResolveUniqueEntityKey("agent_id", newFixedIDLookup(), []data.EntityRewrite{}, protocol.V2)
+	assert.NoError(t, err)
+	assert.Equal(t, Key("agent_id"), k)
+}
+
+func TestResolveEntityWithReplacement(t *testing.T) {
+	e := Fields{
+		Name: "localhost:80",
+		Type: Type("instance"),
+	}
+	k, err := e.ResolveUniqueEntityKey("hostname", newFixedIDLookup(), []data.EntityRewrite{}, protocol.V3)
+	assert.NoError(t, err)
+	assert.Equal(t, Key("instance:display_name:80"), k)
+}
+
+func TestResolveEntityWithProtocolV2(t *testing.T) {
+	e := Fields{
+		Name: "localhost:80",
+		Type: Type("instance"),
+	}
+	k, err := e.ResolveUniqueEntityKey("hostname", newFixedIDLookup(), []data.EntityRewrite{}, protocol.V2)
+	assert.NoError(t, err)
+	assert.Equal(t, Key("instance:localhost:80"), k)
+}
+
+func newFixedIDLookup() host.IDLookup {
+	idLookupTable := make(host.IDLookup)
+	idLookupTable[sysinfo.HOST_SOURCE_DISPLAY_NAME] = "display_name"
+	return idLookupTable
 }

@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/tevino/abool"
+
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
@@ -17,13 +19,11 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
-	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/register"
 	"github.com/newrelic/infrastructure-agent/pkg/fwrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
-	"github.com/tevino/abool"
 )
 
 var (
@@ -222,8 +222,8 @@ func emitEvent(
 }
 
 // Replace entity name by applying entity rewrites and replacing loopback
-func replaceEntityName(entity protocol.Entity, entityRewrite []data.EntityRewrite, agentShortName string) {
-	newName := host.ApplyEntityRewrite(entity.Name, entityRewrite)
+func replaceEntityName(entity protocol.Entity, entityRewrite data.EntityRewrites, agentShortName string) {
+	newName := entityRewrite.Apply(entity.Name)
 	newName = http.ReplaceLocalhost(newName, agentShortName)
 	entity.Name = newName
 }

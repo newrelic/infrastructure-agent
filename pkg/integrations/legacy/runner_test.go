@@ -2104,45 +2104,6 @@ func TestProtocolV2_LocalhostIsNotReplaced(t *testing.T) {
 	}
 }
 
-func TestResolveEntityKeyWithAgent(t *testing.T) {
-	ctx := new(mocks.AgentContext)
-	ctx.On("AgentIdentifier").Return("agent_id")
-	ctx.On("IDLookup").Return(newFixedIDLookup())
-
-	e := entity.Fields{}
-	k, err := host.ResolveUniqueEntityKey(e, "agent_id", ctx.IDLookup(), []data.EntityRewrite{}, protocol.V2)
-	assert.NoError(t, err)
-	assert.Equal(t, entity.Key("agent_id"), k)
-}
-
-func TestResolveEntityWithReplacement(t *testing.T) {
-	ctx := new(mocks.AgentContext)
-	ctx.On("AgentIdentifier").Return("agent_id")
-	ctx.On("IDLookup").Return(newFixedIDLookup())
-
-	e := entity.Fields{
-		Name: "localhost:80",
-		Type: entity.Type("instance"),
-	}
-	k, err := host.ResolveUniqueEntityKey(e, "hostname", ctx.IDLookup(), []data.EntityRewrite{}, protocol.V3)
-	assert.NoError(t, err)
-	assert.Equal(t, entity.Key("instance:display_name:80"), k)
-}
-
-func TestResolveEntityWithProtocolV2(t *testing.T) {
-	ctx := new(mocks.AgentContext)
-	ctx.On("AgentIdentifier").Return("agent_id")
-	ctx.On("IDLookup").Return(newFixedIDLookup())
-
-	e := entity.Fields{
-		Name: "localhost:80",
-		Type: entity.Type("instance"),
-	}
-	k, err := host.ResolveUniqueEntityKey(e, "hostname", ctx.IDLookup(), []data.EntityRewrite{}, protocol.V2)
-	assert.NoError(t, err)
-	assert.Equal(t, entity.Key("instance:localhost:80"), k)
-}
-
 type stubResolver struct {
 	host string
 }

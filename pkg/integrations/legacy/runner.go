@@ -683,7 +683,7 @@ func replaceLoopbackFromField(field interface{}, lookup host.IDLookup, protocol 
 	if !ok {
 		return "", errors.New("can't replace loopback when the field is not a string")
 	}
-	return host.ReplaceLoopback(value, lookup, protocol)
+	return entity.ReplaceLoopback(value, lookup, protocol)
 }
 
 func EmitDataSet(
@@ -703,7 +703,7 @@ func EmitDataSet(
 	agentIdentifier := ctx.AgentIdentifier()
 
 	idLookup := ctx.IDLookup()
-	entityKey, err := host.ResolveUniqueEntityKey(dataSet.Entity, agentIdentifier, idLookup, entityRewrite, protocolVersion)
+	entityKey, err := dataSet.Entity.ResolveUniqueEntityKey(agentIdentifier, idLookup, entityRewrite, protocolVersion)
 	if err != nil {
 		return fmt.Errorf("couldn't determine a unique entity Key: %s", err.Error())
 	}

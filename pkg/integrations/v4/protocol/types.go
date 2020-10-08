@@ -5,9 +5,8 @@ package protocol
 import (
 	"encoding/json"
 	"fmt"
-	"time"
-
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"time"
 )
 
 type MetricType string

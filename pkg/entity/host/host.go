@@ -1,12 +1,6 @@
 package host
 
 import (
-	"strings"
-
-	"github.com/newrelic/infrastructure-agent/pkg/backend/http"
-	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
-	"github.com/newrelic/infrastructure-agent/pkg/entity"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
 	"github.com/pkg/errors"
 )
@@ -57,50 +51,4 @@ func (i IDLookup) AgentShortEntityName() (string, error) {
 	}
 
 	return "", ErrUndefinedLookupType
-}
-
-func ResolveUniqueEntityKey(e entity.Fields, agentID string, lookup IDLookup, entityRewrite []data.EntityRewrite, protocol int) (entity.Key, error) {
-	if e.IsAgent() {
-		return entity.Key(agentID), nil
-	}
-
-	name := ApplyEntityRewrite(e.Name, entityRewrite)
-
-	result, err := ReplaceLoopback(name, lookup, protocol)
-	if err != nil {
-		return entity.EmptyKey, err
-	}
-
-	e.Name = result
-	return e.Key()
-}
-
-func ReplaceLoopback(value string, lookup IDLookup, protocolVersion int) (string, error) {
-	if protocolVersion < protocol.V3 || !http.ContainsLocalhost(value) {
-		return value, nil
-	}
-
-	agentShortName, err := lookup.AgentShortEntityName()
-	if err != nil {
-		return "", err
-	}
-
-	return http.ReplaceLocalhost(value, agentShortName), nil
-}
-
-const (
-	entityRewriteActionReplace = "replace"
-)
-
-// Try to match and replace entityName according to EntityRewrite configuration.
-func ApplyEntityRewrite(entityName string, entityRewrite []data.EntityRewrite) string {
-	result := entityName
-
-	for _, er := range entityRewrite {
-		if er.Action == entityRewriteActionReplace {
-			result = strings.Replace(result, er.Match, er.ReplaceField, -1)
-		}
-	}
-
-	return result
 }

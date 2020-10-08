@@ -69,11 +69,11 @@ func match(meta *TaskMetadata, matcher *discovery.FieldsMatcher) ([]discovery.Di
 		// labels to identify the container
 		labels := map[string]string{}
 		for k, v := range cont.Labels {
-			labels[naming.LabelInfix+k] = v
+			labels[data.LabelInfix+k] = v
 		}
-		labels[naming.Name] = cont.Name
-		labels[naming.Image] = cont.Image
-		labels[naming.ContainerID] = cont.DockerID
+		labels[data.Name] = cont.Name
+		labels[data.Image] = cont.Image
+		labels[data.ContainerID] = cont.DockerID
 
 		addPorts(cont, labels)
 
@@ -81,18 +81,18 @@ func match(meta *TaskMetadata, matcher *discovery.FieldsMatcher) ([]discovery.Di
 		for _, network := range cont.Networks {
 			for _, address := range network.IPv4Addresses {
 				if index == 0 {
-					labels[naming.IP] = address // at the moment, fargate ips are also private ips
-					labels[naming.PrivateIP] = address
+					labels[data.IP] = address // at the moment, fargate ips are also private ips
+					labels[data.PrivateIP] = address
 				}
 				indexStr := "." + strconv.Itoa(index)
-				labels[naming.IP+indexStr] = address // at the moment, fargate ips are also private ips
-				labels[naming.PrivateIP+indexStr] = address
+				labels[data.IP+indexStr] = address // at the moment, fargate ips are also private ips
+				labels[data.PrivateIP+indexStr] = address
 				index++
 			}
 		}
 		// only containers matching all the criteria will be added
 		if matcher.All(labels) {
-			containerLabels := discovery.LabelsToMap(naming.DiscoveryPrefix, labels)
+			containerLabels := discovery.LabelsToMap(data.DiscoveryPrefix, labels)
 
 			ma := make(data.InterfaceMap, metricAnnotationsToAdd)
 			naming.AddImage(ma, cont.Image)
@@ -106,9 +106,9 @@ func match(meta *TaskMetadata, matcher *discovery.FieldsMatcher) ([]discovery.Di
 				Variables: containerLabels,
 				EntityRewrites: []data.EntityRewrite{
 					{
-						Action:       naming.EntityRewriteActionReplace,
-						Match:        naming.ToVariable(naming.IP),
-						ReplaceField: naming.ContainerReplaceFieldPrefix + naming.ToVariable(naming.ContainerID),
+						Action:       data.EntityRewriteActionReplace,
+						Match:        naming.ToVariable(data.IP),
+						ReplaceField: data.ContainerReplaceFieldPrefix + naming.ToVariable(data.ContainerID),
 					},
 				},
 				MetricAnnotations: ma,
@@ -135,30 +135,30 @@ func addPorts(cont awsContainer, labels map[string]string) {
 		if p.HostPort != 0 {
 			portStr := strconv.Itoa(int(p.HostPort))
 			if firstPublic {
-				labels[naming.Port] = portStr // discovery.port = <...>
+				labels[data.Port] = portStr // discovery.port = <...>
 				firstPublic = false
 			}
-			labels[naming.Ports+"."+strconv.Itoa(index)] = portStr // discovery.port.0 = <...>
+			labels[data.Ports+"."+strconv.Itoa(index)] = portStr // discovery.port.0 = <...>
 
 			if p.Protocol != "" {
 				if pNum == 0 {
-					labels[naming.Ports+"."+p.Protocol] = portStr // discovery.port.tcp = <...>
+					labels[data.Ports+"."+p.Protocol] = portStr // discovery.port.tcp = <...>
 				}
-				labels[naming.Ports+"."+p.Protocol+"."+strconv.Itoa(pNum)] = portStr // discovery.port.tcp.0 = <...>
+				labels[data.Ports+"."+p.Protocol+"."+strconv.Itoa(pNum)] = portStr // discovery.port.tcp.0 = <...>
 			}
 		}
 		if p.ContainerPort != 0 {
 			portStr := strconv.Itoa(int(p.ContainerPort))
 			if firstPrivate {
-				labels[naming.PrivatePort] = portStr // discovery.private.port = <...>
+				labels[data.PrivatePort] = portStr // discovery.private.port = <...>
 				firstPrivate = false
 			}
-			labels[naming.PrivatePorts+"."+strconv.Itoa(index)] = portStr // discovery.private.port.0 = <...>
+			labels[data.PrivatePorts+"."+strconv.Itoa(index)] = portStr // discovery.private.port.0 = <...>
 			if p.Protocol != "" {
 				if pNum == 0 {
-					labels[naming.PrivatePorts+"."+p.Protocol] = portStr // discovery.private.port.tcp = <...>
+					labels[data.PrivatePorts+"."+p.Protocol] = portStr // discovery.private.port.tcp = <...>
 				}
-				labels[naming.PrivatePorts+"."+p.Protocol+"."+strconv.Itoa(pNum)] = portStr // discovery.private.port.tcp.0 = <...>
+				labels[data.PrivatePorts+"."+p.Protocol+"."+strconv.Itoa(pNum)] = portStr // discovery.private.port.tcp.0 = <...>
 			}
 		}
 	}
