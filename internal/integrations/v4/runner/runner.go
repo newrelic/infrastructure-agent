@@ -258,7 +258,7 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 				continue
 			}
 
-			go r.handleCmdReq(cr)
+			r.handleCmdReq(cr)
 			continue
 		}
 

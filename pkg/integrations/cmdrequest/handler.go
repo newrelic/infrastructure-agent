@@ -52,9 +52,9 @@ func NewHandleFn(definitionQueue chan<- integration.Definition, logger log.Entry
 // TODO this still needs to be worked on
 func NewConfigFromCmdReq(cr protocol.CmdRequestV1Cmd) config.ConfigEntry {
 	return config.ConfigEntry{
-		Name:    cr.Name,
-		Command: cr.Command,
-		//Arguments: cr.Args, // TODO fix: Arguments are converted into key-value env-vars
+		Name: cr.Name,
+		Exec: append([]string{cr.Command}, cr.Args...),
+		//Arguments: cr.Args, // CAUTION: Arguments are converted into key-value env-vars
 		Env: cr.Env,
 	}
 }

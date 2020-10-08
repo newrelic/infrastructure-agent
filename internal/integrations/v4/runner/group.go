@@ -25,6 +25,7 @@ type Group struct {
 	// for testing purposes, allows defining which action to take when an execution
 	// error is received. If unset, it will be runner.logErrors
 	handleErrorsProvide func() runnerErrorHandler
+	cmdReqHandle        cmdrequest.HandleFn
 }
 
 type runnerErrorHandler func(ctx context.Context, errs <-chan error)
@@ -36,10 +37,11 @@ func NewGroup(
 	il integration.InstancesLookup,
 	passthroughEnv []string,
 	emitter emitter.Emitter,
+	cmdReqHandle cmdrequest.HandleFn,
 	cfgPath string,
 ) (g Group, c FeaturesCache, err error) {
 
-	g, c, err = loadFn(il, passthroughEnv, cfgPath)
+	g, c, err = loadFn(il, passthroughEnv, cfgPath, cmdReqHandle)
 	if err != nil {
 		return
 	}
@@ -51,9 +53,9 @@ func NewGroup(
 
 // Run launches all the integrations to run in background. They can be cancelled with the
 // provided context
-func (t *Group) Run(ctx context.Context) (hasStartedAnyOHI bool) {
-	for _, integr := range t.integrations {
-		go NewRunner(integr, t.emitter, t.discovery, t.handleErrorsProvide, cmdrequest.NoopHandleFn).Run(ctx)
+func (g *Group) Run(ctx context.Context) (hasStartedAnyOHI bool) {
+	for _, integr := range g.integrations {
+		go NewRunner(integr, g.emitter, g.discovery, g.handleErrorsProvide, g.cmdReqHandle).Run(ctx)
 		hasStartedAnyOHI = true
 	}
 

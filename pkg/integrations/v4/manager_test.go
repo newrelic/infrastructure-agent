@@ -113,6 +113,11 @@ integrations:
       GOCACHE: %s
 `
 
+var v4CmdRequest = `---
+integrations:
+  - name: cmdreq
+    exec: ` + getExe(testhelp.GoRun(fixtures.CmdReqGoFile)) + "\n"
+
 func TestManager_StartIntegrations(t *testing.T) {
 	// GIVEN a set of configuration files
 	dir, err := tempFiles(map[string]string{
@@ -945,6 +950,32 @@ func TestManager_contextWithVerbose(t *testing.T) {
 
 	// THEN verbose variable in context set to 1
 	assert.Equal(t, actualContext.Value(constants.EnableVerbose), 1)
+}
+
+func TestManager_anIntegrationCanSpawnAnotherOne(t *testing.T) {
+	// GIVEN a set of configuration files
+	dir, err := tempFiles(map[string]string{
+		"v4-cmdreq.yaml": v4CmdRequest,
+	})
+	require.NoError(t, err)
+	defer removeTempFiles(t, dir)
+
+	// AND an integrations manager
+	emitter := &testemit.RecordEmitter{}
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
+
+	// WHEN the manager loads and executes the integrations in the folder
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go mgr.Start(ctx)
+
+	// THEN a new integration definition arrives
+	select {
+	case d := <-mgr.definitionQueue:
+		assert.NotEmpty(t, d)
+	case <-time.NewTimer(1111500 * time.Millisecond).C:
+		t.Errorf("no definition was enqueued")
+	}
 }
 
 func tempFiles(pathContents map[string]string) (directory string, err error) {
