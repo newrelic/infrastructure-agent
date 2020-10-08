@@ -1,7 +1,6 @@
 package cmdrequest
 
 import (
-	"context"
 	"errors"
 	"fmt"
 
@@ -12,7 +11,7 @@ import (
 )
 
 var (
-	NoopHandleFn    = func(context.Context, protocol.CmdRequestV1) {}
+	NoopHandleFn    = func(protocol.CmdRequestV1) {}
 	ErrNotSupported = errors.New("integration instance lookup not supported for cmd request handler")
 	noLookup        = integration.InstancesLookup{
 		Legacy: func(_ integration.DefinitionCommandConfig) (integration.Definition, error) {
@@ -24,12 +23,12 @@ var (
 	}
 )
 
-type HandleFn func(context.Context, protocol.CmdRequestV1)
+type HandleFn func(protocol.CmdRequestV1)
 
 // NewHandleFn creates a handler func that runs every command within the request batch independently.
 // Each command is run in parallel and won't depend on the results of the other ones.
 func NewHandleFn(definitionQueue chan<- integration.Definition, logger log.Entry) HandleFn {
-	return func(ctx context.Context, crBatch protocol.CmdRequestV1) {
+	return func(crBatch protocol.CmdRequestV1) {
 		for _, c := range crBatch.Commands {
 
 			def, err := integration.NewDefinition(NewConfigFromCmdReq(c), noLookup, nil, nil)

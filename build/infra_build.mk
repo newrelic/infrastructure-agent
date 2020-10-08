@@ -53,7 +53,7 @@ test-coverage: go-get
 test: go-get test-only
 
 .PHONY: test-only
--only: go-get
+test-only:
 	@printf '\n================================================================\n'
 	@printf 'Target: test'
 	@printf '\n================================================================\n'

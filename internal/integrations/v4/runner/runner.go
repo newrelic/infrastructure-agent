@@ -171,7 +171,7 @@ func (r *runner) execute(ctx context.Context, matches *databind.Values) {
 	wg.Add(len(outputs))
 	for _, out := range outputs {
 		o := out
-		go r.handleLines(ctx, o.Receive.Stdout, o.ExtraLabels, o.EntityRewrite)
+		go r.handleLines(o.Receive.Stdout, o.ExtraLabels, o.EntityRewrite)
 		go r.handleStderr(o.Receive.Stderr)
 		go func() {
 			defer wg.Done()
@@ -231,7 +231,7 @@ func (r *runner) logErrors(ctx context.Context, errs <-chan error) {
 	}
 }
 
-func (r *runner) handleLines(ctx context.Context, stdout <-chan []byte, extraLabels data.Map, entityRewrite []data.EntityRewrite) {
+func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityRewrite []data.EntityRewrite) {
 	for line := range stdout {
 		llog := r.log.WithFieldsF(func() logrus.Fields {
 			return logrus.Fields{"payload": string(line)}
@@ -258,7 +258,7 @@ func (r *runner) handleLines(ctx context.Context, stdout <-chan []byte, extraLab
 				continue
 			}
 
-			go r.handleCmdReq(ctx, cr)
+			go r.handleCmdReq(cr)
 			continue
 		}
 
