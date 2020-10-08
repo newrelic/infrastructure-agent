@@ -113,6 +113,11 @@ integrations:
       GOCACHE: %s
 `
 
+var v4CmdRequest = `---
+integrations:
+  - name: cmdreq
+    exec: ` + getExe(testhelp.GoRun(fixtures.CmdReqGoFile)) + "\n"
+
 func TestManager_StartIntegrations(t *testing.T) {
 	// GIVEN a set of configuration files
 	dir, err := tempFiles(map[string]string{
@@ -708,7 +713,7 @@ func TestManager_EnableFeature_WhenFeatureOnOHICfgAndAgentCfgIsDisabledAndEnable
 	require.NoError(t, e.ExpectTimeout("nri-docker", 400*time.Millisecond))
 
 	// AND WHEN the OHI is enabled (originally through cmd-channel)
-	assert.NoError(t, mgr.EnableOHIFromFF("docker_enabled"))
+	assert.NoError(t, mgr.EnableOHIFromFF(context.Background(), "docker_enabled"))
 
 	// THEN the integration reports
 	metric := expectOneMetric(t, e, "nri-docker")
@@ -799,7 +804,7 @@ func TestManager_CCDisablesPreviouslyEnabledFeature(t *testing.T) {
 	require.NoError(t, e.ExpectTimeout("nri-docker", 400*time.Millisecond))
 
 	// AND WHEN the OHI is enabled (through cmd-channel)
-	assert.NoError(t, mgr.EnableOHIFromFF("docker_enabled"))
+	assert.NoError(t, mgr.EnableOHIFromFF(context.Background(), "docker_enabled"))
 
 	// THEN integration emits data
 	metric := expectOneMetric(t, e, "nri-docker")
@@ -945,6 +950,28 @@ func TestManager_contextWithVerbose(t *testing.T) {
 
 	// THEN verbose variable in context set to 1
 	assert.Equal(t, actualContext.Value(constants.EnableVerbose), 1)
+}
+
+func TestManager_anIntegrationCanSpawnAnotherOne(t *testing.T) {
+	// GIVEN a configuration file for an integration that will request a cmd request
+	dir, err := tempFiles(map[string]string{
+		"v4-cmdreq.yaml": v4CmdRequest,
+	})
+	require.NoError(t, err)
+	defer removeTempFiles(t, dir)
+
+	// AND an integrations manager
+	emitter := &testemit.RecordEmitter{}
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
+
+	// WHEN the manager executes the integration
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go mgr.Start(ctx)
+
+	// THEN the integration is executed, requesting a new integration run that generates telemetry data
+	metric := expectOneMetric(t, emitter, "cmd-req-name")
+	assert.Equal(t, "ShellTestSample", metric["event_type"])
 }
 
 func tempFiles(pathContents map[string]string) (directory string, err error) {
