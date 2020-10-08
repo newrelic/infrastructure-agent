@@ -953,7 +953,7 @@ func TestManager_contextWithVerbose(t *testing.T) {
 }
 
 func TestManager_anIntegrationCanSpawnAnotherOne(t *testing.T) {
-	// GIVEN a set of configuration files
+	// GIVEN a configuration file for an integration that will request a cmd request
 	dir, err := tempFiles(map[string]string{
 		"v4-cmdreq.yaml": v4CmdRequest,
 	})
@@ -964,12 +964,12 @@ func TestManager_anIntegrationCanSpawnAnotherOne(t *testing.T) {
 	emitter := &testemit.RecordEmitter{}
 	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
 
-	// WHEN the manager loads and executes the integrations in the folder
+	// WHEN the manager executes the integration
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
 
-	// THEN the requested integration is executed and generates data
+	// THEN the integration is executed, requesting a new integration run that generates telemetry data
 	metric := expectOneMetric(t, emitter, "cmd-req-name")
 	assert.Equal(t, "ShellTestSample", metric["event_type"])
 }
