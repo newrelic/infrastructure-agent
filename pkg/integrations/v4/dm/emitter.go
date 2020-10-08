@@ -120,7 +120,7 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 		case req := <-e.reqsQueue:
 			for _, ds := range req.Data.DataSets {
 				// TODO use host.ResolveUniqueEntityKey instead!
-				eKey = entity.Key(ds.Entity.Name)
+				eKey = entity.Key(fmt.Sprintf("%s:%s", ds.Entity.Type, ds.Entity.Name))
 				eID, found := e.idCache.Get(eKey)
 				if found {
 					select {

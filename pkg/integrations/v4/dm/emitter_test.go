@@ -3,6 +3,7 @@
 package dm
 
 import (
+	"fmt"
 	"sync"
 	"testing"
 
@@ -62,11 +63,16 @@ func (m *mockedMetricsSender) SendMetricsWithCommonAttributes(commonAttributes p
 }
 
 func TestEmitter_Send_usingIDCache(t *testing.T) {
-	eID := entity.ID(1234)
+	data := integrationFixture.ProtocolV4TwoEntities.Clone().ParsedV4
+
+	firstEntity := entity.Entity{Key: entity.Key(data.DataSets[0].Entity.Name), ID: entity.ID(1)}
+	secondEntity := entity.Entity{Key: entity.Key(data.DataSets[1].Entity.Name), ID: entity.ID(2)}
+
 	aCtx := getAgentContext("bob")
-	aCtx.On("SendData",
-		agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "integration name"}, Entity: entity.New("unique name", eID), Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_foo", "value": "bar"}}, NotApplicable: false})
-	aCtx.SendDataWg.Add(1)
+	aCtx.On("SendData", agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "Sample"}, Entity: firstEntity, Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_payload_one", "value": "foo-one"}}, NotApplicable: false})
+	aCtx.On("SendData", agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "Sample"}, Entity: secondEntity, Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_payload_two", "value": "bar-two"}}, NotApplicable: false})
+
+	aCtx.SendDataWg.Add(2)
 
 	dmSender := &mockedMetricsSender{
 		wg: sync.WaitGroup{},
@@ -74,13 +80,14 @@ func TestEmitter_Send_usingIDCache(t *testing.T) {
 	dmSender.
 		On("SendMetricsWithCommonAttributes", mock.AnythingOfType("protocol.Common"), mock.AnythingOfType("[]protocol.Metric")).
 		Return(nil)
-	dmSender.wg.Add(1)
+	dmSender.wg.Add(2)
 
 	em := NewEmitter(aCtx, dmSender, &test.EmptyRegisterClient{})
 	e := em.(*emitter)
-	data := integrationFixture.ProtocolV4.Clone().ParsedV4
+
 	// TODO update when key retrieval is fixed
-	e.idCache.Put(entity.Key(data.DataSets[0].Entity.Name), eID)
+	e.idCache.Put(entity.Key(fmt.Sprintf("%s:%s", data.DataSets[0].Entity.Type, data.DataSets[0].Entity.Name)), firstEntity.ID)
+	e.idCache.Put(entity.Key(fmt.Sprintf("%s:%s", data.DataSets[1].Entity.Type, data.DataSets[1].Entity.Name)), secondEntity.ID)
 
 	req := fwrequest.NewFwRequest(integration.Definition{}, nil, nil, data)
 
@@ -92,9 +99,13 @@ func TestEmitter_Send_usingIDCache(t *testing.T) {
 	aCtx.AssertExpectations(t)
 
 	// Should add Entity Id ('nr.entity.id') to Common attributes
-	dmMetricsSent := dmSender.Calls[0].Arguments[1].([]protocol.Metric)
-	assert.Len(t, dmMetricsSent, 1)
-	assert.Equal(t, eID.String(), dmMetricsSent[0].Attributes[fwrequest.EntityIdAttribute])
+	firstDMetricsSent := dmSender.Calls[0].Arguments[1].([]protocol.Metric)
+	assert.Len(t, firstDMetricsSent, 1)
+	assert.Equal(t, firstEntity.ID.String(), firstDMetricsSent[0].Attributes[fwrequest.EntityIdAttribute])
+
+	secondDMetricsSent := dmSender.Calls[1].Arguments[1].([]protocol.Metric)
+	assert.Len(t, secondDMetricsSent, 1)
+	assert.Equal(t, secondEntity.ID.String(), secondDMetricsSent[0].Attributes[fwrequest.EntityIdAttribute])
 }
 
 func TestEmitter_Send(t *testing.T) {
