@@ -973,7 +973,7 @@ func TestManager_anIntegrationCanSpawnAnotherOne(t *testing.T) {
 	select {
 	case d := <-mgr.definitionQueue:
 		assert.NotEmpty(t, d)
-	case <-time.NewTimer(1111500 * time.Millisecond).C:
+	case <-time.NewTimer(500 * time.Millisecond).C:
 		t.Errorf("no definition was enqueued")
 	}
 }
