@@ -16,6 +16,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/contexts"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 
@@ -238,10 +239,23 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 			continue
 		}
 
+		if ok, ver := protocol.IsCommandRequest(line); ok {
+			llog.WithField("version", ver).Debug("Received run request.")
+			_, err := protocol.DeserializeLine(line)
+			if err != nil {
+				llog.
+					WithField("line", string(line)).
+					WithError(err).
+					Warn("cannot deserialize integration run request payload")
+			}
+			// TODO handle
+			continue
+		}
+
 		llog.Debug("Received payload.")
 		err := r.emitter.Emit(r.definition, extraLabels, entityRewrite, line)
 		if err != nil {
-			llog.WithError(err).Warn("can't emit integration payloads")
+			llog.WithError(err).Warn("Cannot emit integration payload")
 		} else {
 			r.heartBeat()
 		}
