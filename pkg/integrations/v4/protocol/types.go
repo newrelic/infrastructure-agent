@@ -19,7 +19,7 @@ const (
 	MetricTypeGauge   MetricType = "gauge"
 	MetricTypeRate    MetricType = "rate"
 
-	MetricTypePrometheusSummary MetricType = "prometheus-summary"
+	MetricTypePrometheusSummary   MetricType = "prometheus-summary"
 	MetricTypePrometheusHistogram MetricType = "prometheus-histogram"
 )
 
@@ -84,13 +84,13 @@ type PrometheusHistogramValue struct {
 }
 
 type bucket struct {
-	CumulativeCount *float64  `json:"cumulative_count,omitempty"`
+	CumulativeCount *float64 `json:"cumulative_count,omitempty"`
 	UpperBound      *float64 `json:"upper_bound,omitempty"`
 }
 
 // PrometheusSummary represents a Prometheus summary
 type PrometheusSummaryValue struct {
-	SampleCount float64     `json:"sample_count,omitempty"`
+	SampleCount float64    `json:"sample_count,omitempty"`
 	SampleSum   float64    `json:"sample_sum,omitempty"`
 	Quantiles   []quantile `json:"quantiles,omitempty"`
 }
