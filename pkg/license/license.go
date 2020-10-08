@@ -2,12 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 package license
 
-import "regexp"
+import (
+	"regexp"
+)
 
 var (
 	// We get our license from APM's Agent Key generator
 	licenseRegex       = regexp.MustCompile("^[[:alnum:]]+$")
-	regionLicenseRegex = regexp.MustCompile(`^([a-z]{2,3}[0-9]{2})x{1,2}`)
+	regionLicenseRegex = regexp.MustCompile(`^([a-z]{2,3})`)
 )
 
 // IsValid return true if license is in valid format.
@@ -22,6 +24,17 @@ func IsRegionEU(license string) bool {
 	if len(r) > 1 && r[:2] == "eu" {
 		return true
 	}
+	return false
+}
+
+// IsFederalCompliance returns true if license is from federal customer.
+func IsFederalCompliance(licenseKey string) bool {
+	r := GetRegion(licenseKey)
+
+	if r == "gov" {
+		return true
+	}
+
 	return false
 }
 

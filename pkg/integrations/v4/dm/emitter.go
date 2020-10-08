@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
@@ -37,6 +38,7 @@ var (
 const (
 	defaultRegisterWorkersAmnt        = 4
 	defaultRegisterBatchSize          = 100
+	defaultRegisterBatchSecs          = 1
 	defaultRequestsQueueLen           = 1000
 	defaultRequestsToRegisterQueueLen = 1000
 	defaultRequestsRegisteredQueueLen = 1000
@@ -47,16 +49,17 @@ type Agent interface {
 }
 
 type emitter struct {
-	isProcessing        abool.AtomicBool
-	reqsQueue           chan fwrequest.FwRequest
-	reqsToRegisterQueue chan fwrequest.EntityFwRequest
-	reqsRegisteredQueue chan fwrequest.EntityFwRequest
-	idCache             entity.KnownIDs
-	metricsSender       MetricsSender
-	agentContext        agent.AgentContext
-	registerClient      identityapi.RegisterClient
-	registerWorkers     int
-	registerBatchSize   int
+	isProcessing         abool.AtomicBool
+	reqsQueue            chan fwrequest.FwRequest
+	reqsToRegisterQueue  chan fwrequest.EntityFwRequest
+	reqsRegisteredQueue  chan fwrequest.EntityFwRequest
+	idCache              entity.KnownIDs
+	metricsSender        MetricsSender
+	agentContext         agent.AgentContext
+	registerClient       identityapi.RegisterClient
+	registerWorkers      int
+	registerMaxBatchSize int
+	registerMaxBatchTime time.Duration
 }
 
 type Emitter interface {
@@ -69,15 +72,16 @@ func NewEmitter(
 	registerClient identityapi.RegisterClient) Emitter {
 
 	return &emitter{
-		reqsQueue:           make(chan fwrequest.FwRequest, defaultRequestsQueueLen),
-		reqsToRegisterQueue: make(chan fwrequest.EntityFwRequest, defaultRequestsToRegisterQueueLen),
-		reqsRegisteredQueue: make(chan fwrequest.EntityFwRequest, defaultRequestsRegisteredQueueLen),
-		registerWorkers:     defaultRegisterWorkersAmnt,
-		idCache:             entity.NewKnownIDs(),
-		agentContext:        agentContext,
-		metricsSender:       dmSender,
-		registerClient:      registerClient,
-		registerBatchSize:   defaultRegisterBatchSize,
+		reqsQueue:            make(chan fwrequest.FwRequest, defaultRequestsQueueLen),
+		reqsToRegisterQueue:  make(chan fwrequest.EntityFwRequest, defaultRequestsToRegisterQueueLen),
+		reqsRegisteredQueue:  make(chan fwrequest.EntityFwRequest, defaultRequestsRegisteredQueueLen),
+		registerWorkers:      defaultRegisterWorkersAmnt,
+		idCache:              entity.NewKnownIDs(),
+		agentContext:         agentContext,
+		metricsSender:        dmSender,
+		registerClient:       registerClient,
+		registerMaxBatchSize: defaultRegisterBatchSize,
+		registerMaxBatchTime: defaultRegisterBatchSecs * time.Second,
 	}
 }
 
@@ -96,7 +100,8 @@ func (e *emitter) lazyLoadProcessor() {
 		go e.runFwReqConsumer(ctx)
 		go e.runReqsRegisteredConsumer(ctx)
 		for w := 0; w < e.registerWorkers; w++ {
-			go register.RunEntityIDResolverWorker(ctx, e.agentContext.Identity, e.registerClient, e.reqsToRegisterQueue, e.reqsRegisteredQueue, e.registerBatchSize)
+			regWorker := register.NewWorker(e.agentContext.Identity, e.registerClient, e.reqsToRegisterQueue, e.reqsRegisteredQueue, e.registerMaxBatchSize, e.registerMaxBatchTime)
+			go regWorker.Run(ctx)
 		}
 	}
 }

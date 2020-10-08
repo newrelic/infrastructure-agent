@@ -12,15 +12,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm/cumulative"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm/rate"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
-	"github.com/newrelic/infrastructure-agent/pkg/license"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
-)
-
-// endpoints
-const (
-	usDomain      = "metric-api.newrelic.com"
-	euDomain      = "metric-api.newrelic.com"
-	stagingDomain = "staging-metric-api.newrelic.com"
 )
 
 var logger = log.WithComponent("DimensionalMetricsSender")
@@ -36,17 +28,10 @@ type MetricsSenderConfig struct {
 	SubmissionPeriod time.Duration
 }
 
-func NewConfig(staging bool, licenseKey string, submissionPeriod time.Duration) MetricsSenderConfig {
-	domain := usDomain
-	if staging {
-		domain = stagingDomain
-	} else if license.IsRegionEU(licenseKey) {
-		domain = euDomain
-	}
-
+func NewConfig(baseURL string, licenseKey string, submissionPeriod time.Duration) MetricsSenderConfig {
 	return MetricsSenderConfig{
 		LicenseKey:       licenseKey,
-		MetricApiURL:     fmt.Sprintf("https://%s/metric/v1/infra", domain),
+		MetricApiURL:     fmt.Sprintf("%s/metric/v1/infra", baseURL),
 		SubmissionPeriod: submissionPeriod,
 	}
 }
