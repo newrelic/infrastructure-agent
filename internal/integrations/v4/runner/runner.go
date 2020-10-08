@@ -22,29 +22,28 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var illog = log.WithComponent("integrations.runner.Runner")
-
-var heartBeatJSON = []byte("{}")
+var (
+	illog         = log.WithComponent("integrations.runner.Runner")
+	heartBeatJSON = []byte("{}")
+	//A Logrus line is expected to be a list of key-value pairs separated by an equal character. Keys can contain any
+	//character, whereas values can have three different formats:
+	//1- string: <quote>any character including escaped quotes \"<quote>
+	//2- map: &{any character}
+	//3- word: any character except spaces
+	logrusRegexp = regexp.MustCompile(`([^\s]*?)=(".*?[^\\]"|&{.*?}|[^\s]*)`)
+)
 
 //generic types to handle the stderr log parsing
 type logFields map[string]interface{}
 type logParser func(line string) (fields logFields)
 
-//A Logrus line is expected to be a list of key-value pairs separated by an equal character. Keys can contain any
-//character, whereas values can have three different formats:
-//1- string: <quote>any character including escaped quotes \"<quote>
-//2- map: &{any character}
-//3- word: any character except spaces
-var logrusRegexp = regexp.MustCompile(`([^\s]*?)=(".*?[^\\]"|&{.*?}|[^\s]*)`)
-
 // runner for a single integration entry
 type runner struct {
-	ctx            context.Context // to avoid logging too many errors when the integration is cancelled by the user
 	emitter        emitter.Emitter
 	discovery      *databind.Sources
 	log            log.Entry
-	Integration    integration.Definition
-	handleErrors   func(<-chan error) // by default, runner.logErrors. Replaceable for testing purposes
+	definition     integration.Definition
+	handleErrors   func(context.Context, <-chan error) // by default, runner.logErrors. Replaceable for testing purposes
 	stderrParser   logParser
 	lastStderr     stderrQueue
 	healthCheck    sync.Once
@@ -52,31 +51,42 @@ type runner struct {
 	heartBeatMutex sync.RWMutex
 }
 
-func NewRunner(intDef integration.Definition, emitter emitter.Emitter, discoverySources *databind.Sources) *runner {
+// newRunner creates an integration runner instance.
+// args: discoverySources & handleErrorsProvide are optional, so nil values are allowed.
+func newRunner(
+	intDef integration.Definition,
+	emitter emitter.Emitter,
+	discoverySources *databind.Sources,
+	handleErrorsProvide func() runnerErrorHandler,
+) *runner {
 	r := &runner{
 		emitter:       emitter,
 		discovery:     discoverySources,
-		Integration:   intDef,
+		definition:    intDef,
 		heartBeatFunc: func() {},
 		stderrParser:  parseLogrusFields,
 	}
-	r.handleErrors = r.logErrors
+	if handleErrorsProvide != nil {
+		r.handleErrors = handleErrorsProvide()
+	} else {
+		r.handleErrors = r.logErrors
+	}
+
 	return r
 }
 
 func (r *runner) Run(ctx context.Context) {
-	r.ctx = ctx
-	config := r.Integration
+	def := r.definition
 	fields := logrus.Fields{
-		"integration_name": config.Name,
+		"integration_name": def.Name,
 	}
-	for k, v := range config.Labels {
+	for k, v := range def.Labels {
 		fields[k] = v
 	}
 	r.log = illog.WithFields(fields)
 	for {
 		// we start counting the interval time on each integration execution
-		waitForNextExecution := time.After(config.Interval)
+		waitForNextExecution := time.After(def.Interval)
 
 		values, err := r.applyDiscovery()
 		if err != nil {
@@ -86,7 +96,7 @@ func (r *runner) Run(ctx context.Context) {
 				Error("can't fetch discovery items")
 		} else {
 			// the integration runs only if all the when: conditions are true, if any
-			if when.All(r.Integration.WhenConditions...) {
+			if when.All(r.definition.WhenConditions...) {
 				r.execute(ctx, values)
 			}
 		}
@@ -121,7 +131,7 @@ func (r *runner) setHeartBeat(heartBeatFunc func()) {
 	r.heartBeatFunc = heartBeatFunc
 }
 
-// execute the heartBeatFunc
+// heartBeat triggers heartBeatFunc
 // This functions makes sure we access heartBeatFunc in a thread-safe manner
 func (r *runner) heartBeat() {
 	r.heartBeatMutex.RLock()
@@ -134,50 +144,50 @@ func (r *runner) heartBeat() {
 // For long-time running integrations, avoids starting the next
 // discover-execute cycle until all the parallel processes have ended
 func (r *runner) execute(ctx context.Context, matches *databind.Values) {
-	config := r.Integration
+	def := r.definition
 
 	// If timeout configuration is set, wraps current context in a heartbeat-enabled timeout context
-	if config.TimeoutEnabled() {
+	if def.TimeoutEnabled() {
 		var act contexts.Actuator
-		ctx, act = contexts.WithHeartBeat(ctx, config.Timeout)
+		ctx, act = contexts.WithHeartBeat(ctx, def.Timeout)
 		r.setHeartBeat(act.HeartBeat)
 	}
 
 	// Runs all the matching integration instances
-	output, err := r.Integration.Run(ctx, matches)
+	outputs, err := r.definition.Run(ctx, matches)
 	if err != nil {
 		r.log.WithError(err).Error("can't start integration")
 		return
 	}
 
 	// Waits for all the integrations to finish and reads the standard output and errors
-	instances := sync.WaitGroup{}
+	wg := sync.WaitGroup{}
 	waitForCurrent := make(chan struct{})
-	instances.Add(len(output))
-	for _, out := range output {
+	wg.Add(len(outputs))
+	for _, out := range outputs {
 		o := out
 		go r.handleLines(o.Receive.Stdout, o.ExtraLabels, o.EntityRewrite)
 		go r.handleStderr(o.Receive.Stderr)
 		go func() {
-			defer instances.Done()
-			r.handleErrors(o.Receive.Errors)
+			defer wg.Done()
+			r.handleErrors(ctx, o.Receive.Errors)
 		}()
 	}
 
 	r.log.Debug("Waiting while the integration instances run.")
 	go func() {
-		instances.Wait()
+		wg.Wait()
 		close(waitForCurrent)
 	}()
 
 	select {
 	case <-ctx.Done():
 		r.log.Debug("Integration has been interrupted. Finishing.")
-		return
 	case <-waitForCurrent:
+		r.log.Debug("Integration instances finished their execution. Waiting until next interval.")
 	}
 
-	r.log.Debug("Integration instances finished their execution. Waiting until next interval.")
+	return
 }
 
 func (r *runner) handleStderr(stderr <-chan []byte) {
@@ -189,7 +199,7 @@ func (r *runner) handleStderr(stderr <-chan []byte) {
 		} else {
 			fields := r.stderrParser(string(line))
 			if v, ok := fields["level"]; ok && (v == "error" || v == "fatal") {
-				// If a field already exists, like the time, logrus automatically adds the prefix "fields." to the
+				// If a field already exists, like the time, logrus automatically adds the prefix "deps." to the
 				// Duplicated keys
 				r.log.WithFields(logrus.Fields(fields)).Error("received an integration log line")
 			}
@@ -198,10 +208,10 @@ func (r *runner) handleStderr(stderr <-chan []byte) {
 }
 
 // implementation of the "handleErrors" property
-func (r *runner) logErrors(errs <-chan error) {
+func (r *runner) logErrors(ctx context.Context, errs <-chan error) {
 	for {
 		select {
-		case <-r.ctx.Done():
+		case <-ctx.Done():
 			// don't log errors if the context has been just cancelled
 			return
 		case err := <-errs:
@@ -229,7 +239,7 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 		}
 
 		llog.Debug("Received payload.")
-		err := r.emitter.Emit(r.Integration, extraLabels, entityRewrite, line)
+		err := r.emitter.Emit(r.definition, extraLabels, entityRewrite, line)
 		if err != nil {
 			llog.WithError(err).Warn("can't emit integration payloads")
 		} else {
