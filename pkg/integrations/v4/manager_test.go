@@ -969,13 +969,9 @@ func TestManager_anIntegrationCanSpawnAnotherOne(t *testing.T) {
 	defer cancel()
 	go mgr.Start(ctx)
 
-	// THEN a new integration definition arrives
-	select {
-	case d := <-mgr.definitionQueue:
-		assert.NotEmpty(t, d)
-	case <-time.NewTimer(500 * time.Millisecond).C:
-		t.Errorf("no definition was enqueued")
-	}
+	// THEN the requested integration is executed and generates data
+	metric := expectOneMetric(t, emitter, "cmd-req-name")
+	assert.Equal(t, "ShellTestSample", metric["event_type"])
 }
 
 func tempFiles(pathContents map[string]string) (directory string, err error) {

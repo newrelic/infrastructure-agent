@@ -4,19 +4,28 @@ package main
 
 import (
 	"fmt"
+	"path"
+	"path/filepath"
 	"strings"
 )
 
-// Dummy integration reporting protocol v4.
+// Dummy integration reporting a command request.
 
 func main() {
+	projectDir, err := filepath.Abs("./")
+	if err != nil {
+		panic(err)
+	}
+	// aimed to be triggered from v4 manager_test.go
+	dir := filepath.Join(projectDir, "fixtures", "cmdreq")
+
 	fmt.Println(strings.Replace(`{
   "command_request_version": "1",
   "commands": [
     {
-      "name": "foo",
-      "command": "/foo",
-      "args": ["-bar", "baz"],
+      "name": "cmd-req-name",
+      "command": "`+path.Join(dir, "v4.sh")+`",
+      "args": [],
       "env": {
         "FOO": "BAR"
       }
