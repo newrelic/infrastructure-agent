@@ -576,7 +576,7 @@ func TestFetchReplaceBytes_NoMatches_VarsPlaceholders(t *testing.T) {
 
 func TestReplace_EntityRewrite(t *testing.T) {
 	t.Parallel()
-	variables := data.Map{"discovery." + naming.IP: "1.2.3.4", "discovery." + naming.ContainerID: "1234abc", "discovery." + naming.PrivateIP: "2.3.4.5"}
+	variables := data.Map{"discovery." + data.IP: "1.2.3.4", "discovery." + data.ContainerID: "1234abc", "discovery." + data.PrivateIP: "2.3.4.5"}
 
 	tests := []struct {
 		name          string
@@ -587,9 +587,9 @@ func TestReplace_EntityRewrite(t *testing.T) {
 		{
 			name: "simple replace",
 			entityRewrite: data.EntityRewrite{
-				Action:       naming.EntityRewriteActionReplace,
-				Match:        naming.ToVariable(naming.IP),
-				ReplaceField: naming.ToVariable(naming.ContainerID),
+				Action:       data.EntityRewriteActionReplace,
+				Match:        naming.ToVariable(data.IP),
+				ReplaceField: naming.ToVariable(data.ContainerID),
 			},
 			match:        "1.2.3.4",
 			replaceField: "1234abc",
@@ -597,8 +597,8 @@ func TestReplace_EntityRewrite(t *testing.T) {
 		{
 			name: "no match",
 			entityRewrite: data.EntityRewrite{
-				Action:       naming.EntityRewriteActionReplace,
-				Match:        naming.ToVariable(naming.PrivateIP),
+				Action:       data.EntityRewriteActionReplace,
+				Match:        naming.ToVariable(data.PrivateIP),
 				ReplaceField: "uniqueId",
 			},
 			match:        "2.3.4.5",
@@ -607,9 +607,9 @@ func TestReplace_EntityRewrite(t *testing.T) {
 		{
 			name: "complex",
 			entityRewrite: data.EntityRewrite{
-				Action:       naming.EntityRewriteActionReplace,
-				Match:        naming.ToVariable(naming.IP),
-				ReplaceField: naming.ToVariable(naming.ContainerID) + ":base:" + naming.ToVariable(naming.PrivateIP),
+				Action:       data.EntityRewriteActionReplace,
+				Match:        naming.ToVariable(data.IP),
+				ReplaceField: naming.ToVariable(data.ContainerID) + ":base:" + naming.ToVariable(data.PrivateIP),
 			},
 			match:        "1.2.3.4",
 			replaceField: "1234abc:base:2.3.4.5",
@@ -651,7 +651,7 @@ func TestReplace_EntityRewrite(t *testing.T) {
 		}
 		ctx := &Values{discov: []discovery.Discovery{
 			{
-				Variables:      data.Map{"discovery." + naming.IP: "1.2.3.4", "discovery." + naming.ContainerID: "1234abc", "discovery." + naming.PrivateIP: "2.3.4.5"},
+				Variables:      data.Map{"discovery." + data.IP: "1.2.3.4", "discovery." + data.ContainerID: "1234abc", "discovery." + data.PrivateIP: "2.3.4.5"},
 				EntityRewrites: entityRewrites,
 			},
 		}}

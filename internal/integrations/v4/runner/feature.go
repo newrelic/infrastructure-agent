@@ -57,7 +57,7 @@ func NewFeatures(fromAgent map[string]bool, cmdFF *CmdFF) *Features {
 	}
 }
 
-// IsOHIExecutable determines the execution of an OHI given the features from config fields (agent & OHI)
+// IsOHIExecutable determines the execution of an OHI given the features from config deps (agent & OHI)
 // and cmd-channel. Rules:
 // a. !ohi FF                   -> executed
 // b.  ohi FF +  agent FF       -> agent determines

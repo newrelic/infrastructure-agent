@@ -24,6 +24,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -177,7 +178,7 @@ func (e *emitter) processEntityFwRequest(r fwrequest.EntityFwRequest) {
 
 	emitInventory(&plugin, r.Definition, r.Integration, r.ID(), r.Data, labels)
 
-	emitEvent(&plugin, r.Definition, r.Data, labels)
+	emitEvent(&plugin, r.Definition, r.Data, labels, r.ID())
 
 	metrics := dmProcessor.ProcessMetrics(r.Data.Metrics, r.Data.Common, r.Data.Entity)
 	if err := e.metricsSender.SendMetricsWithCommonAttributes(r.Data.Common, metrics); err != nil {
@@ -205,18 +206,43 @@ func emitInventory(
 	}
 }
 
-func emitEvent(
-	emitter agent.PluginEmitter,
-	metadata integration.Definition,
-	dataSet protocol.Dataset,
-	labels map[string]string) {
+func emitEvent(emitter agent.PluginEmitter, metadata integration.Definition, dataSet protocol.Dataset, labels map[string]string, entityID entity.ID) {
+	builder := make([]func(protocol.EventData), 0)
 
-	integrationUser := metadata.ExecutorConfig.User
+	u := metadata.ExecutorConfig.User
+	if u != "" {
+		builder = append(builder, protocol.WithIntegrationUser(u))
+	}
+
+	builder = append(builder, protocol.WithLabels(labels))
+
 	for _, event := range dataSet.Events {
-		normalizedEvent := legacy.
-			NormalizeEvent(elog, event, labels, integrationUser, dataSet.Entity.Name)
-		if normalizedEvent != nil {
-			emitter.EmitEvent(normalizedEvent, entity.Key(dataSet.Entity.Name))
+		builder = append(builder,
+			protocol.WithEntity(entity.New(entity.Key(dataSet.Entity.Name), entityID)),
+			protocol.WithEvents(event))
+
+		attributesFromEvent(event, &builder)
+
+		e, err := protocol.NewEventData(builder...)
+
+		if err != nil {
+			elog.WithFields(logrus.Fields{
+				"payload": event,
+				"error":   err,
+			}).Warn("discarding event, failed building event data.")
+			continue
+		}
+
+		emitter.EmitEvent(e, entity.Key(dataSet.Entity.Name))
+	}
+}
+
+func attributesFromEvent(event protocol.EventData, builder *[]func(protocol.EventData)) {
+	if a, ok := event["attributes"]; ok {
+		switch t := a.(type) {
+		default:
+		case map[string]interface{}:
+			*builder = append(*builder, protocol.WithAttributes(t))
 		}
 	}
 }

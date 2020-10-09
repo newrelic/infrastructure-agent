@@ -4,6 +4,13 @@ package dm
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/sirupsen/logrus"
+	logTest "github.com/sirupsen/logrus/hooks/test"
+	"github.com/stretchr/testify/require"
+	"io/ioutil"
+	"os"
 	"sync"
 	"testing"
 
@@ -68,7 +75,9 @@ func TestEmitter_Send_usingIDCache(t *testing.T) {
 	firstEntity := entity.Entity{Key: entity.Key(data.DataSets[0].Entity.Name), ID: entity.ID(1)}
 	secondEntity := entity.Entity{Key: entity.Key(data.DataSets[1].Entity.Name), ID: entity.ID(2)}
 
-	aCtx := getAgentContext("bob")
+	aCtx := getAgentContext("TestEmitter_Send_usingIDCache")
+	aCtx.On("SendEvent", mock.Anything, mock.Anything)
+
 	aCtx.On("SendData", agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "Sample"}, Entity: firstEntity, Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_payload_one", "value": "foo-one"}}, NotApplicable: false})
 	aCtx.On("SendData", agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "Sample"}, Entity: secondEntity, Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_payload_two", "value": "bar-two"}}, NotApplicable: false})
 
@@ -113,8 +122,12 @@ func TestEmitter_Send(t *testing.T) {
 
 	aCtx := getAgentContext("bob")
 	aCtx.On("SendData",
-		agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "integration name"}, Entity: entity.New("unique name", eID), Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_foo", "value": "bar"}}, NotApplicable: false})
+		agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "integration name"}, Entity: entity.New("unique name", eID), Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_foo", "value": "bar"}, protocol.InventoryData{"entityKey": "unique name", "id": "integrationUser", "value": "root"}}, NotApplicable: false})
+
+	aCtx.On("SendEvent", mock.Anything, entity.Key("unique name")).Run(assertEventData(t))
+
 	aCtx.SendDataWg.Add(1)
+
 	aCtx.On("Identity").Return(
 		entity.Identity{
 			ID: entity.ID(321), // agent one
@@ -136,7 +149,7 @@ func TestEmitter_Send(t *testing.T) {
 	e.registerMaxBatchSize = 1
 
 	data := integrationFixture.ProtocolV4.Clone().ParsedV4
-	em.Send(fwrequest.NewFwRequest(integration.Definition{}, nil, nil, data))
+	em.Send(fwrequest.NewFwRequest(integration.Definition{ExecutorConfig: executor.Config{User: "root"}}, nil, nil, data))
 
 	ms.wg.Wait()
 	aCtx.SendDataWg.Wait()
@@ -148,6 +161,62 @@ func TestEmitter_Send(t *testing.T) {
 	assert.Equal(t, eID.String(), sent[0].Attributes[fwrequest.EntityIdAttribute])
 }
 
+func Test_NrEntityIdConst(t *testing.T) {
+	assert.Equal(t, fwrequest.EntityIdAttribute, "nr.entity.id")
+}
+
+func TestEmitEvent_InvalidPayload(t *testing.T) {
+	log.SetOutput(ioutil.Discard)  // discard logs so not to break race tests
+	defer log.SetOutput(os.Stderr) // return back to default
+	hook := new(logTest.Hook)
+	log.AddHook(hook)
+	log.SetLevel(logrus.WarnLevel)
+
+	never := 0
+	aCtx := getAgentContext("bob")
+	aCtx.On("SendEvent").Times(never)
+
+	d := integration.Definition{}
+	plugin := agent.NewExternalPluginCommon(d.PluginID("integration.Name"), aCtx, "TestEmitEvent_InvalidPayload")
+
+	emitEvent(&plugin, d, protocol.Dataset{Events: []protocol.EventData{{"value": "foo"}}}, nil, entity.ID(0))
+
+	entry := hook.LastEntry()
+	require.NotEmpty(t, hook.Entries)
+	assert.Equal(t, "DimensionalMetricsEmitter", entry.Data["component"])
+	assert.Equal(t, "discarding event, failed building event data.", entry.Message)
+	assert.EqualError(t, entry.Data["error"].(error), "invalid event format: missing required 'summary' field")
+	assert.Equal(t, logrus.WarnLevel, entry.Level)
+}
+
+func assertEventData(t *testing.T) func(args mock.Arguments) {
+	return func(args mock.Arguments) {
+		event := args.Get(0)
+		plainEvent := fmt.Sprint(event)
+
+		expectedSummary := "summary:foo"
+		assert.Contains(t, plainEvent, expectedSummary)
+
+		expectedEvent := "format:event"
+		assert.Contains(t, plainEvent, expectedEvent)
+
+		expectedCategory := "category:notifications"
+		assert.Contains(t, plainEvent, expectedCategory)
+
+		expectedType := "eventType:InfrastructureEvent"
+		assert.Contains(t, plainEvent, expectedType)
+
+		expectedEntityID := "entityID:1"
+		assert.Contains(t, plainEvent, expectedEntityID)
+
+		expectedAttribute := "attr.format:attribute"
+		assert.Contains(t, plainEvent, expectedAttribute)
+
+		expectedUser := "integrationUser:root"
+		assert.Contains(t, plainEvent, expectedUser)
+	}
+}
+
 func getAgentContext(hostname string) *mocks.AgentContext {
 	agentCtx := &mocks.AgentContext{
 		SendDataWg: sync.WaitGroup{},
@@ -157,10 +226,7 @@ func getAgentContext(hostname string) *mocks.AgentContext {
 		idLookup[sysinfo.HOST_SOURCE_INSTANCE_ID] = hostname
 	}
 	agentCtx.On("IDLookup").Return(idLookup)
+	agentCtx.On("Config").Return(nil)
 
 	return agentCtx
-}
-
-func Test_NrEntityIdConst(t *testing.T) {
-	assert.Equal(t, fwrequest.EntityIdAttribute, "nr.entity.id")
 }

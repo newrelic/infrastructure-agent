@@ -141,6 +141,7 @@ func (s *EventSenderSuite) TestLargeEventBatch(c *C) {
 		sender.QueueEvent(mapEvent{
 			"eventType": "TestEvent",
 			"value":     i,
+			"entityID":  1,
 		}, "")
 	}
 
@@ -157,6 +158,7 @@ func (s *EventSenderSuite) TestLargeEventBatch(c *C) {
 	c.Assert(json.Unmarshal(accumulatedBatches[1], &postedBatches), IsNil)
 	c.Assert(postedBatches, HasLen, 1)
 	c.Assert(postedBatches[0].Events, HasLen, 10)
+	c.Assert(postedBatches[0].EntityID, Equals, 1)
 
 	c.Assert(accumulatedRequests, HasLen, 2)
 	c.Assert(accumulatedRequests[0].Header.Get(http2.LicenseHeader), Equals, "license")

@@ -150,7 +150,13 @@ var (
           "value": "bar-two"
         }
       },
-      "events": []
+      "events":[
+		{ 
+		  "summary": "foo",
+		  "format": "event",
+		  "attributes": { "format": "attribute"}
+		}
+	  ]
     }
   ]
 }`),
@@ -221,7 +227,15 @@ var (
 					Inventory: map[string]protocol.InventoryData{
 						"inventory_payload_two": {"value": "bar-two"},
 					},
-					Events: []protocol.EventData{},
+					Events: []protocol.EventData{
+						{
+							"summary": "foo",
+							"format":  "event",
+							"attributes": map[string]interface{}{
+								"format": "attribute",
+							},
+						},
+					},
 				},
 			},
 		},
@@ -261,7 +275,13 @@ var (
 			  "value": "bar"
 			}
 		  },
-		  "events":[]
+		  "events":[
+				{ 
+				  "summary": "foo",
+				  "format": "event",
+				  "attributes": { "format": "attribute"}
+				}
+		  ]
 		}
 	  ]
 	}`),
@@ -297,7 +317,15 @@ var (
 					Inventory: map[string]protocol.InventoryData{
 						"inventory_foo": {"value": "bar"},
 					},
-					Events: []protocol.EventData{},
+					Events: []protocol.EventData{
+						{
+							"summary": "foo",
+							"format":  "event",
+							"attributes": map[string]interface{}{
+								"format": "attribute",
+							},
+						},
+					},
 				},
 			},
 		},
