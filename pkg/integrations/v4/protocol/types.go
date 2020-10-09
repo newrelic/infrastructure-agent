@@ -23,6 +23,8 @@ const (
 
 const millisSinceJanuaryFirst1978 = 252489600000
 
+var acceptedAttribute = []string{"summary", "category", "entity_name", "format", "local_identity", "local_details"}
+
 type DataV4 struct {
 	PluginProtocolVersion
 	Integration IntegrationMetadata `json:"integration"`
@@ -158,7 +160,6 @@ func NewEventData(options ...func(EventData)) (EventData, error) {
 // valid keys: ["summary", "category", "entity_name", "format", "local_identity", "local_details"]
 func WithEvents(original EventData) func(EventData) {
 	return func(copy EventData) {
-		acceptedAttribute := []string{"summary", "category", "entity_name", "format", "local_identity", "local_details"}
 		for _, key := range acceptedAttribute {
 			if val, ok := original[key]; ok {
 				copy[key] = val
