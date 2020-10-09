@@ -6,7 +6,6 @@ import (
 	"context"
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
-	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/v3legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 )
@@ -22,25 +21,24 @@ type Group struct {
 	discovery    *databind.Sources
 	integrations []integration.Definition
 	emitter      emitter.Emitter
-	definitions  *v3legacy.DefinitionsRepo
 	// for testing purposes, allows defining which action to take when an execution
 	// error is received. If unset, it will be runner.logErrors
 	handleErrorsProvide func() runnerErrorHandler
 }
 
-type runnerErrorHandler func(errs <-chan error)
+type runnerErrorHandler func(ctx context.Context, errs <-chan error)
 
-// NewGroup configures a Group instance that is provided by the passed Loader
+// NewGroup configures a Group instance that is provided by the passed LoadFn
 // cfgPath is used for caching to be consumed by cmd-channel FF enabler.
 func NewGroup(
-	loader Loader,
+	loadFn LoadFn,
 	dr integration.InstancesLookup,
 	passthroughEnv []string,
 	emitter emitter.Emitter,
 	cfgPath string,
 ) (g Group, c FeaturesCache, err error) {
 
-	g, c, err = loader(dr, passthroughEnv, cfgPath)
+	g, c, err = loadFn(dr, passthroughEnv, cfgPath)
 	if err != nil {
 		return
 	}
@@ -54,12 +52,7 @@ func NewGroup(
 // provided context
 func (t *Group) Run(ctx context.Context) (hasStartedAnyOHI bool) {
 	for _, integr := range t.integrations {
-		r := NewRunner(integr, t.emitter, t.discovery)
-		if t.handleErrorsProvide != nil {
-			r.handleErrors = t.handleErrorsProvide()
-		}
-
-		go r.Run(ctx)
+		go newRunner(integr, t.emitter, t.discovery, t.handleErrorsProvide).Run(ctx)
 		hasStartedAnyOHI = true
 	}
 
