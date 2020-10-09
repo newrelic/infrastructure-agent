@@ -953,6 +953,10 @@ func TestManager_contextWithVerbose(t *testing.T) {
 }
 
 func TestManager_anIntegrationCanSpawnAnotherOne(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("no windows support on cmd request for now")
+	}
+
 	// GIVEN a configuration file for an integration that will request a cmd request
 	dir, err := tempFiles(map[string]string{
 		"v4-cmdreq.yaml": v4CmdRequest,
