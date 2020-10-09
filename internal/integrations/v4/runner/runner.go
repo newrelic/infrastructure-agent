@@ -81,26 +81,16 @@ func NewRunner(
 }
 
 func (r *runner) Run(ctx context.Context) {
-	def := r.definition
-	fields := logrus.Fields{
-		"integration_name": def.Name,
-	}
-	for k, v := range def.Labels {
-		fields[k] = v
-	}
-	r.log = illog.WithFields(fields)
+	r.log = illog.WithFields(LogFields(r.definition))
 	for {
-		// we start counting the interval time on each integration execution
-		waitForNextExecution := time.After(def.Interval)
+		waitForNextExecution := time.After(r.definition.Interval)
 
 		values, err := r.applyDiscovery()
 		if err != nil {
 			r.log.
-				WithError(
-					helpers.ObfuscateSensitiveDataFromError(err)).
+				WithError(helpers.ObfuscateSensitiveDataFromError(err)).
 				Error("can't fetch discovery items")
 		} else {
-			// the integration runs only if all the when: conditions are true, if any
 			if when.All(r.definition.WhenConditions...) {
 				r.execute(ctx, values)
 			}
@@ -113,6 +103,16 @@ func (r *runner) Run(ctx context.Context) {
 		case <-waitForNextExecution:
 		}
 	}
+}
+
+func LogFields(def integration.Definition) logrus.Fields {
+	fields := logrus.Fields{
+		"integration_name": def.Name,
+	}
+	for k, v := range def.Labels {
+		fields[k] = v
+	}
+	return fields
 }
 
 // applies discovery and returns the discovered values, if any.
