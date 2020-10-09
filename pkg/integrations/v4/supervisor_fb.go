@@ -67,6 +67,7 @@ func NewFBSupervisor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader, age
 		handleErrs:             handleErrors(sFBLogger),
 		buildExecutor:          buildFbExecutor(fbIntCfg, cfgLoader),
 		log:                    sFBLogger,
+		traceOutput:            fbIntCfg.FluentBitVerbose,
 		preRunActions:          fbPreRunActions(sendEventFn),
 		postRunActions:         fbPostRunActions(sendEventFn),
 		parseOutputFn:          logs.ParseFBOutput,

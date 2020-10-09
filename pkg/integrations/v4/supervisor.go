@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
-
 	"github.com/newrelic/infrastructure-agent/internal/agent/id"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
+	"github.com/newrelic/infrastructure-agent/pkg/trace"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 )
@@ -51,6 +51,7 @@ type Supervisor struct {
 	buildExecutor   func() (Executor, error)
 	log             log.Entry
 	parseOutputFn   ParseProcessOutput
+	traceOutput     bool
 
 	preRunActions  func(ctx ctx2.Context)
 	postRunActions func(ctx ctx2.Context, exitStatus cmdExitStatus)
@@ -176,6 +177,11 @@ func (s *Supervisor) logLine(out []byte, channel string) {
 	var lvl logrus.Level
 	// avoid feedback loops
 	if !strings.Contains(strOut, componentName) {
+		if s.traceOutput {
+			trace.LogFwdOutput(saneLine)
+			return
+		}
+
 		saneLine, lvl = s.parseOutputFn(strOut)
 		if saneLine == "" {
 			return
