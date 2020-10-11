@@ -26,13 +26,11 @@ type MockCloudHarvester struct {
 	ErrorMessage string
 }
 
+const CloudErrorMessage = "error connecting to the cloud API"
+
 func NewCloudHarvester(cloudId string, cloudType cloud.Type, error bool) *MockCloudHarvester {
 	return &MockCloudHarvester{cloudId: cloudId, cloudType: cloudType, error: error,
-		ErrorMessage: "error connecting to the cloud API"}
-}
-
-func (a *MockCloudHarvester) setError(error bool) {
-	a.error = error
+		ErrorMessage: CloudErrorMessage}
 }
 
 func (a *MockCloudHarvester) GetInstanceID() (string, error) {
@@ -62,53 +60,36 @@ func (a *MockCloudHarvester) GetHarvester() (cloud.Harvester, error) {
 	return nil, nil
 }
 
-// the fingerprint should contain the cloud id if there was no error
-func TestCloudNoError(t *testing.T) {
+func TestCloud(t *testing.T) {
 	hostnameResolver := &MockHostNameResolver{}
-	cloudHarvester := NewCloudHarvester("i-123", cloud.TypeAWS, false)
 	config := config.NewConfig()
-	fpHarvester, _ := NewHarvestor(config, hostnameResolver, cloudHarvester)
-	fp, err := fpHarvester.Harvest()
 
-	assert.NilError(t, err)
-	assert.Equal(t, fp.CloudProviderId, "i-123")
-}
+	var tests = []struct {
+		testName           string
+		cloudHarvester     cloud.Harvester
+		expectedInstanceId string
+		expectedError      error
+	}{
+		// the fingerprint should contain the cloud id if there was no error
+		{"NoError", NewCloudHarvester("i-123", cloud.TypeAWS, false), "i-123", nil},
+		// if there was an error and the cloud harvester was initialized - ie. the host was detected to run on the cloud - then
+		// harvesting the fingerprint should return an error
+		{"ErrorCloud", NewCloudHarvester("", cloud.TypeAWS, true), "", fmt.Errorf(CloudErrorMessage)},
+		// if there was an error but the host does not run on the cloud, then the fingerprint should be created without
+		// any error
+		{"ErrorNotcloud", NewCloudHarvester("", cloud.TypeNoCloud, true), "", nil},
+	}
 
-// if there was an error and the cloud harvester was initialized - ie. the host was detected to run on the cloud - then
-// harvesting the fingerprint should return an error
-func TestCloudErrorInitialized(t *testing.T) {
-	hostnameResolver := &MockHostNameResolver{}
-	cloudHarvester := NewCloudHarvester("", cloud.TypeAWS, true)
-	config := config.NewConfig()
-	fpHarvester, _ := NewHarvestor(config, hostnameResolver, cloudHarvester)
-	fp, err := fpHarvester.Harvest()
-
-	assert.Error(t, err, cloudHarvester.ErrorMessage)
-	assert.Equal(t, fp.CloudProviderId, "")
-}
-
-// if there was an error but the host does not run on the cloud, then the fingerprint should be created without
-// any error
-func TestCloudErrorNoCloud(t *testing.T) {
-	hostnameResolver := &MockHostNameResolver{}
-	cloudHarvester := NewCloudHarvester("", cloud.TypeNoCloud, true)
-	config := config.NewConfig()
-	fpHarvester, _ := NewHarvestor(config, hostnameResolver, cloudHarvester)
-	fp, err := fpHarvester.Harvest()
-
-	assert.NilError(t, err)
-	assert.Equal(t, fp.CloudProviderId, "")
-}
-
-// if there was an error but we don't know yet whether the host runs on the cloud, then the fingerprint should be
-//created without any error
-func TestCloudErrorNotInitialized(t *testing.T) {
-	hostnameResolver := &MockHostNameResolver{}
-	cloudHarvester := NewCloudHarvester("", cloud.TypeInProgress, true)
-	config := config.NewConfig()
-	fpHarvester, _ := NewHarvestor(config, hostnameResolver, cloudHarvester)
-	fp, err := fpHarvester.Harvest()
-
-	assert.NilError(t, err)
-	assert.Equal(t, fp.CloudProviderId, "")
+	for _, tt := range tests {
+		t.Run(tt.testName, func(t *testing.T) {
+			fpHarvester, _ := NewHarvestor(config, hostnameResolver, tt.cloudHarvester)
+			fp, err := fpHarvester.Harvest()
+			assert.Equal(t, fp.CloudProviderId, tt.expectedInstanceId)
+			if tt.expectedError != nil {
+				assert.Error(t, err, tt.expectedError.Error())
+			} else {
+				assert.NilError(t, err)
+			}
+		})
+	}
 }
