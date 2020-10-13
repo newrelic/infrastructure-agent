@@ -8,6 +8,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/newrelic/infrastructure-agent/pkg/trace"
 )
 
 var (
@@ -29,6 +30,7 @@ type HandleFn func(protocol.CmdRequestV1)
 // Each command is run in parallel and won't depend on the results of the other ones.
 func NewHandleFn(definitionQueue chan<- integration.Definition, logger log.Entry) HandleFn {
 	return func(crBatch protocol.CmdRequestV1) {
+		trace.CmdReq("received payload: %+v", crBatch)
 		for _, c := range crBatch.Commands {
 
 			def, err := integration.NewDefinition(NewConfigFromCmdReq(c), noLookup, nil, nil)
@@ -43,6 +45,7 @@ func NewHandleFn(definitionQueue chan<- integration.Definition, logger log.Entry
 				return
 			}
 
+			trace.CmdReq("queued definition: %+v", def)
 			definitionQueue <- def
 		}
 	}
