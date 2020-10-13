@@ -32,6 +32,10 @@ func (t Type) ShouldCollect() bool {
 	return t != TypeNoCloud && t != TypeInProgress
 }
 
+func (t Type) IsValidCloud() bool {
+	return t != TypeNoCloud && t != TypeInProgress
+}
+
 var (
 	// ErrDetectorNotInitialized is the error returned when the Detector is not initialized yet.
 	ErrDetectorNotInitialized = errors.New("cloud detector not initialized yet")

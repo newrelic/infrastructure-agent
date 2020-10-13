@@ -126,7 +126,13 @@ func (ir *harvestor) Harvest() (fp Fingerprint, err error) {
 	// Get ec2 instance id.
 	instanceID, err := ir.cloudHarvester.GetInstanceID()
 	if err != nil {
-		hlog.WithError(err).Debug("Unable to get instance id.")
+		// if we know for sure that the host runs on the cloud, do not generate a fingerprint without a cloud id
+		// because then the host could start reporting under a different entity id.
+		if ir.cloudHarvester.GetCloudType().IsValidCloud() {
+			return
+		}
+
+		hlog.WithError(err).Error("Unable to get instance id.")
 	}
 
 	return Fingerprint{
