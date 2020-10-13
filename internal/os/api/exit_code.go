@@ -3,6 +3,7 @@
 package api
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"os"
 	"os/exec"
 	"syscall"
@@ -25,6 +26,7 @@ func CheckExitCode(err error) int {
 
 	exitErr, isExitError := err.(*exec.ExitError)
 	if !isExitError {
+		log.WithError(err).Error("error occurred while running the agent process, exiting...")
 		os.Exit(ExitCodeError)
 	}
 
