@@ -117,5 +117,8 @@ func (e *nonRegisterEmitter) Send(dto fwrequest.FwRequest) {
 	}
 
 	// TODO error handling
-	elog.Error(composeEmitError(emitErrs, len(integrationData.DataSets)).Error())
+	composedError := composeEmitError(emitErrs, len(integrationData.DataSets))
+	if composedError != nil {
+		elog.Error(composedError.Error())
+	}
 }

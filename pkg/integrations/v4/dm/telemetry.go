@@ -4,7 +4,9 @@ package dm
 
 import (
 	"errors"
+	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"time"
 
@@ -68,15 +70,37 @@ func telemetryHarvesterWithMetricApiUrl(metricApiUrl string) func(*telemetry.Con
 }
 
 type Conversion struct {
-	toTelemetry Converter
+	toTelemetry         Converter
+	toMultipleTelemetry DerivingConvertor
 }
 
-func (c *Conversion) convert(metric protocol.Metric) (telemetry.Metric, error) {
-	return c.toTelemetry.from(metric)
+func (c *Conversion) convert(metric protocol.Metric) ([]telemetry.Metric, error) {
+	var result []telemetry.Metric
+	if c.toTelemetry != nil {
+		converted, err := c.toTelemetry.from(metric)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, converted)
+	}
+
+	if c.toMultipleTelemetry != nil {
+		derivedMetrics, err := c.toMultipleTelemetry.derivedFrom(metric)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, derivedMetrics...)
+	}
+	return result, nil
 }
 
 type Converter interface {
 	from(metric protocol.Metric) (telemetry.Metric, error)
+}
+
+type DerivingConvertor interface {
+	// derivedFrom is used when a metric is transformed into multiple telemetry metrics.
+	derivedFrom(metric protocol.Metric) ([]telemetry.Metric, error)
 }
 
 type Count struct {
@@ -130,7 +154,8 @@ func (g *Gauge) shouldCalculate() bool {
 	return g.calculate != nil
 }
 
-type Summary struct{}
+type Summary struct {
+}
 
 func (Summary) from(metric protocol.Metric) (telemetry.Metric, error) {
 	value, err := metric.SummaryValue()
@@ -149,6 +174,102 @@ func (Summary) from(metric protocol.Metric) (telemetry.Metric, error) {
 		Timestamp:  metric.Time(),
 		Interval:   metric.IntervalDuration(),
 	}, nil
+}
+
+type PrometheusHistogram struct {
+	calculate *Cumulative
+}
+
+func (ph PrometheusHistogram) derivedFrom(metric protocol.Metric) ([]telemetry.Metric, error) {
+	var result []telemetry.Metric
+	value, err := metric.GetPrometheusHistogramValue()
+
+	if err != nil {
+		return nil, err
+	}
+
+	if ph.calculate != nil {
+		metricName := metric.Name + "_sum"
+		sumCount, ok := ph.calculate.get(metricName, metric.Attributes, float64(*value.SampleCount), metric.Time())
+		if ok {
+			result = append(result, telemetry.Summary{
+				Name:       metricName,
+				Attributes: metric.Attributes,
+				Count:      1,
+				Sum:        sumCount.Value,
+				Min:        math.NaN(),
+				Max:        math.NaN(),
+				Timestamp:  metric.Time(),
+			})
+		} else {
+			telemetryLogger.WithField("name", metricName).WithField("metric-type", metric.Type).Debug(noCalculationMadeErrMsg)
+		}
+
+		metricName = metric.Name + "_bucket"
+		for _, b := range value.Buckets {
+			bucketAttrs := metric.CopyAttrs()
+			bucketAttrs["le"] = fmt.Sprintf("%g", *b.UpperBound)
+
+			bucketCount, ok := ph.calculate.get(
+				metricName,
+				bucketAttrs,
+				float64(*b.CumulativeCount),
+				metric.Time(),
+			)
+			if ok {
+				result = append(result, bucketCount)
+			} else {
+				telemetryLogger.WithField("name", metricName).WithField("metric-type", metric.Type).Debug(noCalculationMadeErrMsg)
+			}
+		}
+	}
+	return result, nil
+}
+
+type PrometheusSummary struct {
+	calculate *Cumulative
+}
+
+func (p PrometheusSummary) derivedFrom(metric protocol.Metric) ([]telemetry.Metric, error) {
+	var result []telemetry.Metric
+	value, err := metric.GetPrometheusSummaryValue()
+
+	if err != nil {
+		return nil, err
+	}
+
+	result = append(result, telemetry.Summary{
+		Name:       metric.Name + "_sum",
+		Attributes: metric.Attributes,
+		Count:      1,
+		Sum:        value.SampleSum,
+		Min:        math.NaN(),
+		Max:        math.NaN(),
+		Timestamp:  metric.Time(),
+		Interval:   metric.IntervalDuration(),
+	})
+
+	if p.calculate != nil {
+		metricName := metric.Name + "_count"
+		countMetric, ok := p.calculate.get(metricName, metric.Attributes, value.SampleCount, metric.Time())
+		if ok {
+			result = append(result, countMetric)
+		} else {
+			telemetryLogger.WithField("name", metricName).WithField("metric-type", metric.Type).Debug(noCalculationMadeErrMsg)
+		}
+	}
+
+	for _, q := range value.Quantiles {
+		quantileAttrs := metric.CopyAttrs()
+		quantileAttrs["quantile"] = fmt.Sprintf("%g", q.Quantile)
+		result = append(result, telemetry.Gauge{
+			Name:       metric.Name,
+			Attributes: quantileAttrs,
+			Value:      q.Value,
+			Timestamp:  metric.Time(),
+		})
+	}
+	return result, nil
 }
 
 type Rate struct {
