@@ -4,6 +4,7 @@ package integration
 
 import (
 	"encoding/json"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 )
 
@@ -186,7 +187,7 @@ var (
 							Value: json.RawMessage("13"),
 						},
 					},
-					Entity: protocol.Entity{
+					Entity: entity.Fields{
 						Name:        "entity.name",
 						Type:        "ATYPE",
 						DisplayName: "A display name one",
@@ -216,7 +217,7 @@ var (
 							Value: json.RawMessage("13"),
 						},
 					},
-					Entity: protocol.Entity{
+					Entity: entity.Fields{
 						Name:        "entity.name",
 						Type:        "BTYPE",
 						DisplayName: "A display name two",
@@ -309,7 +310,7 @@ var (
 							Value:      json.RawMessage("93"),
 						},
 					},
-					Entity: protocol.Entity{
+					Entity: entity.Fields{
 						Name:        "unique name",
 						Type:        "RedisInstance",
 						DisplayName: "human readable name",

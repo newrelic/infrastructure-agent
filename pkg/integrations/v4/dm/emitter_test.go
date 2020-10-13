@@ -120,7 +120,7 @@ func TestEmitter_Send_usingIDCache(t *testing.T) {
 func TestEmitter_Send(t *testing.T) {
 	eID := entity.ID(1) // 1 as provided by test.NewIncrementalRegister
 
-	aCtx := getAgentContext("bob")
+	aCtx := getAgentContext("TestEmitter_Send")
 	aCtx.On("SendData",
 		agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "integration name"}, Entity: entity.New("unique name", eID), Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_foo", "value": "bar"}, protocol.InventoryData{"entityKey": "unique name", "id": "integrationUser", "value": "root"}}, NotApplicable: false})
 
@@ -173,7 +173,7 @@ func TestEmitEvent_InvalidPayload(t *testing.T) {
 	log.SetLevel(logrus.WarnLevel)
 
 	never := 0
-	aCtx := getAgentContext("bob")
+	aCtx := getAgentContext("TestEmitEvent_InvalidPayload")
 	aCtx.On("SendEvent").Times(never)
 
 	d := integration.Definition{}
@@ -225,6 +225,7 @@ func getAgentContext(hostname string) *mocks.AgentContext {
 	if hostname != "" {
 		idLookup[sysinfo.HOST_SOURCE_INSTANCE_ID] = hostname
 	}
+	agentCtx.On("AgentIdentifier").Return(hostname)
 	agentCtx.On("IDLookup").Return(idLookup)
 	agentCtx.On("Config").Return(nil)
 

@@ -120,8 +120,7 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 
 		case req := <-e.reqsQueue:
 			for _, ds := range req.Data.DataSets {
-				// TODO use host.ResolveUniqueEntityKey instead!
-				eKey = entity.Key(fmt.Sprintf("%s:%s", ds.Entity.Type, ds.Entity.Name))
+				eKey, _ = ds.Entity.ResolveUniqueEntityKey(e.agentContext.AgentIdentifier(), e.agentContext.IDLookup(), req.FwRequestMeta.EntityRewrite, 4)
 				eID, found := e.idCache.Get(eKey)
 				if found {
 					select {
@@ -248,7 +247,7 @@ func attributesFromEvent(event protocol.EventData, builder *[]func(protocol.Even
 }
 
 // Replace entity name by applying entity rewrites and replacing loopback
-func replaceEntityName(entity protocol.Entity, entityRewrite data.EntityRewrites, agentShortName string) {
+func replaceEntityName(entity entity.Fields, entityRewrite data.EntityRewrites, agentShortName string) {
 	newName := entityRewrite.Apply(entity.Name)
 	newName = http.ReplaceLocalhost(newName, agentShortName)
 	entity.Name = newName

@@ -22,7 +22,7 @@ type fakeClient struct {
 	ids []entity.ID
 }
 
-func (c *fakeClient) RegisterBatchEntities(agentEntityID entity.ID, entities []protocol.Entity) (r []identityapi.RegisterEntityResponse, t time.Duration, err error) {
+func (c *fakeClient) RegisterBatchEntities(agentEntityID entity.ID, entities []entity.Fields) (r []identityapi.RegisterEntityResponse, t time.Duration, err error) {
 	r = []identityapi.RegisterEntityResponse{}
 	for _, id := range c.ids {
 		r = append(r, identityapi.RegisterEntityResponse{ID: id})
@@ -30,7 +30,7 @@ func (c *fakeClient) RegisterBatchEntities(agentEntityID entity.ID, entities []p
 	return
 }
 
-func (c *fakeClient) RegisterEntity(agentEntityID entity.ID, entity protocol.Entity) (r identityapi.RegisterEntityResponse, err error) {
+func (c *fakeClient) RegisterEntity(agentEntityID entity.ID, entity entity.Fields) (r identityapi.RegisterEntityResponse, err error) {
 	// won't be called
 	return
 }

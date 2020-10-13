@@ -9,7 +9,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/backend/inventoryapi"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/state"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 )
 
 type EmptyRegisterClient struct{}
@@ -18,11 +17,11 @@ func (icc *EmptyRegisterClient) RegisterEntitiesRemoveMe(agentEntityID entity.ID
 	return
 }
 
-func (icc *EmptyRegisterClient) RegisterBatchEntities(agentEntityID entity.ID, entities []protocol.Entity) (r []identityapi.RegisterEntityResponse, retryAfter time.Duration, err error) {
+func (icc *EmptyRegisterClient) RegisterBatchEntities(agentEntityID entity.ID, entities []entity.Fields) (r []identityapi.RegisterEntityResponse, retryAfter time.Duration, err error) {
 	return
 }
 
-func (icc *EmptyRegisterClient) RegisterEntity(agentEntityID entity.ID, entity protocol.Entity) (resp identityapi.RegisterEntityResponse, err error) {
+func (icc *EmptyRegisterClient) RegisterEntity(agentEntityID entity.ID, entity entity.Fields) (resp identityapi.RegisterEntityResponse, err error) {
 	return
 }
 
@@ -42,7 +41,7 @@ func NewRetryBackoffRegister() identityapi.RegisterClient {
 	return &IncrementalRegister{state: state.RegisterRetryBackoff}
 }
 
-func (r *IncrementalRegister) RegisterBatchEntities(agentEntityID entity.ID, entities []protocol.Entity) (batchResponse []identityapi.RegisterEntityResponse, retryAfter time.Duration, err error) {
+func (r *IncrementalRegister) RegisterBatchEntities(agentEntityID entity.ID, entities []entity.Fields) (batchResponse []identityapi.RegisterEntityResponse, retryAfter time.Duration, err error) {
 	if r.state == state.RegisterRetryAfter {
 		retryAfter = 1 * time.Second
 		err = inventoryapi.NewIngestError("ingest service rejected the register step", http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError), "")
@@ -81,7 +80,7 @@ func (r *IncrementalRegister) RegisterEntitiesRemoveMe(agentEntityID entity.ID, 
 	return
 }
 
-func (r *IncrementalRegister) RegisterEntity(agentEntityID entity.ID, ent protocol.Entity) (identityapi.RegisterEntityResponse, error) {
+func (r *IncrementalRegister) RegisterEntity(agentEntityID entity.ID, ent entity.Fields) (identityapi.RegisterEntityResponse, error) {
 	return identityapi.RegisterEntityResponse{
 		ID:  entity.ID(rand.Int63n(100000)),
 		Key: entity.Key(ent.Name),

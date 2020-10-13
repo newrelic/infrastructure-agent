@@ -51,7 +51,7 @@ func (e *nonRegisterEmitter) Send(dto fwrequest.FwRequest) {
 
 		logEntry := elog.WithField("action", "EmitV4DataSet")
 
-		replaceEntityNameWithoutRegister := func(entity protocol.Entity, entityRewrite data.EntityRewrites, idLookup host.IDLookup) error {
+		replaceEntityNameWithoutRegister := func(entity entity.Fields, entityRewrite data.EntityRewrites, idLookup host.IDLookup) error {
 
 			newName := entityRewrite.Apply(entity.Name)
 

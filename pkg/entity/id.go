@@ -109,9 +109,11 @@ type IDAttributes []IDAttribute
 
 // Fields store the identifying fields of an entity, which can be used to compose the entity Key
 type Fields struct {
-	Name         string       `json:"name"`
-	Type         Type         `json:"type"`
-	IDAttributes IDAttributes `json:"id_attributes"`
+	Name         string                 `json:"name"`
+	Type         Type                   `json:"type"`
+	IDAttributes IDAttributes           `json:"id_attributes"`
+	DisplayName  string                 `json:"displayName"`
+	Metadata     map[string]interface{} `json:"metadata"`
 }
 
 // IsAgent returns if entity is (local) agent.
