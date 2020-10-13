@@ -8,14 +8,14 @@ import (
 	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 )
 
-// Loader provides a basic, incomplete Group instance to be configured by the
-// NewGroup function. The DefinitionsRepo instance is only required to load
-// v3 legacy integrations from an external definitions' folder.
-type Loader func(dr integration.InstancesLookup, passthroughEnv []string, cfgPath string) (Group, FeaturesCache, error)
+// LoadFn provides a basic, incomplete Group instance to be configured by the NewGroup function.
+// InstancesLookup is only required to load v3 integrations from an external definitions folder.
+type LoadFn func(dr integration.InstancesLookup, passthroughEnv []string, cfgPath string) (Group, FeaturesCache, error)
 
-// NewLoader returns a partial Group that holds the configuration from the provided configuration.
-// Optionally agent and OHI "features" can be provided to be able to load disabled OHIs.
-func NewLoader(cfg config2.YAML, agentAndCCFeatures *Features) Loader {
+// NewLoadFn returns a function that provides partial Group holding provided configuration and
+// features cache. Optionally agent and integration "features" can be provided to be able to load
+// disabled integrations.
+func NewLoadFn(cfg config2.YAML, agentAndCCFeatures *Features) LoadFn {
 	return func(dr integration.InstancesLookup, passthroughEnv []string, cfgPath string) (g Group, c FeaturesCache, err error) {
 		discovery, err := databind.DataSources(&cfg.Databind)
 		if err != nil {
