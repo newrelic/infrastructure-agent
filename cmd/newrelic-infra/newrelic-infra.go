@@ -299,6 +299,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		FluentBitExePath:     c.FluentBitExePath,
 		FluentBitNRLibPath:   c.FluentBitNRLibPath,
 		FluentBitParsersPath: c.FluentBitParsersPath,
+		FluentBitVerbose:     c.Verbose != 0 && trace.IsEnabled(trace.LOG_FWD),
 	}
 	if fbIntCfg.IsLogForwarderAvailable() {
 		logCfgLoader := logs.NewFolderLoader(logFwCfg, agt.Context.Identity, agt.Context.HostnameResolver())

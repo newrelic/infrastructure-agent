@@ -28,6 +28,7 @@ type FBSupervisorConfig struct {
 	FluentBitExePath     string
 	FluentBitNRLibPath   string
 	FluentBitParsersPath string
+	FluentBitVerbose     bool
 }
 
 // IsLogForwarderAvailable checks whether all the required files for FluentBit execution are available
@@ -66,6 +67,7 @@ func NewFBSupervisor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader, age
 		handleErrs:             handleErrors(sFBLogger),
 		buildExecutor:          buildFbExecutor(fbIntCfg, cfgLoader),
 		log:                    sFBLogger,
+		traceOutput:            fbIntCfg.FluentBitVerbose,
 		preRunActions:          fbPreRunActions(sendEventFn),
 		postRunActions:         fbPostRunActions(sendEventFn),
 		parseOutputFn:          logs.ParseFBOutput,
@@ -112,6 +114,10 @@ func buildFbExecutor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 
 		if (externalCfg != logs.FBCfgExternal{} && externalCfg.ParsersFilePath != "") {
 			args = append(args, "-R", externalCfg.ParsersFilePath)
+		}
+
+		if fbIntCfg.FluentBitVerbose {
+			args = append(args, "-vv")
 		}
 
 		fbExecutor := executor.FromCmdSlice(args, &executor.Config{})
