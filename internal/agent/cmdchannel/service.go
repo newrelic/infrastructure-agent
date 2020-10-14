@@ -3,7 +3,7 @@
 package cmdchannel
 
 import (
-	context2 "context"
+	"context"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
@@ -36,14 +36,14 @@ func NewService(client commandapi.Client, config *config.Config, ffSetter featur
 }
 
 // InitialFetch initial poll to command channel
-func (s *srv) InitialFetch() (InitialCmdResponse, error) {
+func (s *srv) InitialFetch(ctx context.Context) (InitialCmdResponse, error) {
 	cmds, err := s.client.GetCommands(entity.EmptyID)
 	if err != nil {
 		return InitialCmdResponse{}, err
 	}
 
 	for _, cmd := range cmds {
-		s.handle(cmd, true)
+		s.handle(ctx, cmd, true)
 	}
 
 	return InitialCmdResponse{
@@ -53,7 +53,7 @@ func (s *srv) InitialFetch() (InitialCmdResponse, error) {
 }
 
 // Run polls command channel periodically, in case 1st poll returned a delay, it starts afterwards.
-func (s *srv) Run(ctx context2.Context, agentIDProvide id.Provide, initialRes InitialCmdResponse) {
+func (s *srv) Run(ctx context.Context, agentIDProvide id.Provide, initialRes InitialCmdResponse) {
 	d := initialRes.Delay - time.Now().Sub(initialRes.Ts)
 	if d <= 0 {
 		d = s.nextPollInterval()
@@ -70,7 +70,7 @@ func (s *srv) Run(ctx context2.Context, agentIDProvide id.Provide, initialRes In
 				ccsLogger.WithError(err).Warn("commands poll failed")
 			} else {
 				for _, cmd := range cmds {
-					s.handle(cmd, false)
+					s.handle(ctx, cmd, false)
 				}
 			}
 			t.Stop()
@@ -92,11 +92,11 @@ func (s *srv) nextPollInterval() time.Duration {
 	return time.Duration(s.pollDelaySecs) * time.Second
 }
 
-func (s *srv) handle(c commandapi.Command, initialFetch bool) {
+func (s *srv) handle(ctx context.Context, c commandapi.Command, initialFetch bool) {
 	switch c.Args.(type) {
 	case commandapi.FFArgs:
 		ffArgs := c.Args.(commandapi.FFArgs)
-		s.ffHandler.Handle(ffArgs, initialFetch)
+		s.ffHandler.Handle(ctx, ffArgs, initialFetch)
 	case commandapi.BackoffArgs:
 		boArgs := c.Args.(commandapi.BackoffArgs)
 		s.pollDelaySecs = boArgs.Delay

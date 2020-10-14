@@ -43,6 +43,30 @@ var (
 			},
 		},
 	}
+
+	fixtureWithNullValues = fixture{
+		Payload: `
+{
+  "command_request_version": "1",
+  "commands": [
+    {
+      "name": "foo",
+      "command": "/foo",
+      "args": null,
+      "env": null
+    }
+  ]
+}`,
+		ParsedV1: CmdRequestV1{
+			CmdRequestDiscriminator{CommandRequestVersion: "1"},
+			[]CmdRequestV1Cmd{
+				{
+					Name:    "foo",
+					Command: "/foo",
+				},
+			},
+		},
+	}
 )
 
 func inline(content string) string {
@@ -112,4 +136,11 @@ func TestUnmarshall(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, fixtureFoo.ParsedV1, r)
+}
+
+func TestUnmarshallWithNullValues(t *testing.T) {
+	r, err := DeserializeLine([]byte(inline(fixtureWithNullValues.Payload)))
+	assert.NoError(t, err)
+
+	assert.Equal(t, fixtureWithNullValues.ParsedV1, r)
 }

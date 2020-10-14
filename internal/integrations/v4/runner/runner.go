@@ -16,6 +16,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/contexts"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
@@ -41,6 +42,7 @@ type logParser func(line string) (fields logFields)
 // runner for a single integration entry
 type runner struct {
 	emitter        emitter.Emitter
+	handleCmdReq   cmdrequest.HandleFn
 	discovery      *databind.Sources
 	log            log.Entry
 	definition     integration.Definition
@@ -52,16 +54,18 @@ type runner struct {
 	heartBeatMutex sync.RWMutex
 }
 
-// newRunner creates an integration runner instance.
-// args: discoverySources & handleErrorsProvide are optional, so nil values are allowed.
-func newRunner(
+// NewRunner creates an integration runner instance.
+// args: discoverySources, handleErrorsProvide and cmdReqHandle are optional (nils allowed).
+func NewRunner(
 	intDef integration.Definition,
 	emitter emitter.Emitter,
 	discoverySources *databind.Sources,
 	handleErrorsProvide func() runnerErrorHandler,
+	cmdReqHandle cmdrequest.HandleFn,
 ) *runner {
 	r := &runner{
 		emitter:       emitter,
+		handleCmdReq:  cmdReqHandle,
 		discovery:     discoverySources,
 		definition:    intDef,
 		heartBeatFunc: func() {},
@@ -77,26 +81,16 @@ func newRunner(
 }
 
 func (r *runner) Run(ctx context.Context) {
-	def := r.definition
-	fields := logrus.Fields{
-		"integration_name": def.Name,
-	}
-	for k, v := range def.Labels {
-		fields[k] = v
-	}
-	r.log = illog.WithFields(fields)
+	r.log = illog.WithFields(LogFields(r.definition))
 	for {
-		// we start counting the interval time on each integration execution
-		waitForNextExecution := time.After(def.Interval)
+		waitForNextExecution := time.After(r.definition.Interval)
 
 		values, err := r.applyDiscovery()
 		if err != nil {
 			r.log.
-				WithError(
-					helpers.ObfuscateSensitiveDataFromError(err)).
+				WithError(helpers.ObfuscateSensitiveDataFromError(err)).
 				Error("can't fetch discovery items")
 		} else {
-			// the integration runs only if all the when: conditions are true, if any
 			if when.All(r.definition.WhenConditions...) {
 				r.execute(ctx, values)
 			}
@@ -109,6 +103,16 @@ func (r *runner) Run(ctx context.Context) {
 		case <-waitForNextExecution:
 		}
 	}
+}
+
+func LogFields(def integration.Definition) logrus.Fields {
+	fields := logrus.Fields{
+		"integration_name": def.Name,
+	}
+	for k, v := range def.Labels {
+		fields[k] = v
+	}
+	return fields
 }
 
 // applies discovery and returns the discovered values, if any.
@@ -241,14 +245,20 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 
 		if ok, ver := protocol.IsCommandRequest(line); ok {
 			llog.WithField("version", ver).Debug("Received run request.")
-			_, err := protocol.DeserializeLine(line)
+			cr, err := protocol.DeserializeLine(line)
 			if err != nil {
 				llog.
-					WithField("line", string(line)).
 					WithError(err).
 					Warn("cannot deserialize integration run request payload")
+				continue
 			}
-			// TODO handle
+
+			if r.handleCmdReq == nil {
+				llog.Warn("received cmd request payload without a handler")
+				continue
+			}
+
+			r.handleCmdReq(cr)
 			continue
 		}
 

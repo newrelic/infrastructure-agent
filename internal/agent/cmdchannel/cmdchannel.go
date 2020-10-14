@@ -11,7 +11,7 @@ import (
 )
 
 type Service interface {
-	InitialFetch() (InitialCmdResponse, error)
+	InitialFetch(ctx context.Context) (InitialCmdResponse, error)
 	Run(ctx context.Context, agentIDProvide id.Provide, initialRes InitialCmdResponse)
 	SetOHIHandler(enabler handler.OHIEnabler)
 }
