@@ -178,7 +178,7 @@ func (s *Supervisor) logLine(out []byte, channel string) {
 	// avoid feedback loops
 	if !strings.Contains(strOut, componentName) {
 		if s.traceOutput {
-			trace.LogFwdOutput(saneLine)
+			trace.LogFwdOutput(strOut)
 			return
 		}
 
