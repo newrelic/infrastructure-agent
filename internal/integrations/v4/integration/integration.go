@@ -218,3 +218,13 @@ func conditions(enabling config2.EnableConditions) []when.Condition {
 	}
 	return conds
 }
+
+// ErrLookup is a test helper that returns errors.
+var ErrLookup = InstancesLookup{
+	Legacy: func(_ DefinitionCommandConfig) (Definition, error) {
+		return Definition{}, errors.New("legacy integrations provider not expected to be invoked")
+	},
+	ByName: func(_ string) (string, error) {
+		return "", errors.New("lookup by name not expected to be invoked")
+	},
+}

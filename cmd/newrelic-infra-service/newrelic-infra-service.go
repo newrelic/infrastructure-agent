@@ -27,7 +27,7 @@ func main() {
 
 	if err = agentSvc.Run(); err != nil {
 		// This might not be an error: child may have already exited.
-		log.WithError(err).Debug("Service run exit.")
+		log.WithError(err).Warn("Service run exit.")
 		os.Exit(1)
 	}
 }

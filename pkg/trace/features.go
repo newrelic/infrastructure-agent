@@ -19,6 +19,7 @@ const (
 	METRIC_MATCHER Feature = "metric.match"  // match metric by rule
 	INVENTORY      Feature = "inventory"
 	LOG_FWD        Feature = "log.fw"
+	CMDREQ         Feature = "cmdreq" // command requests from integrations
 )
 
 // Helper functions to avoid repeating:
@@ -62,4 +63,9 @@ func Inventory(format string, args ...interface{}) {
 // LogFwdOutput traces to "audit" log-forwarder output.
 func LogFwdOutput(format string, args ...interface{}) {
 	On(func() bool { return true }, LOG_FWD, format, args...)
+}
+
+// CmdReq traces to "audit" command request payloads.
+func CmdReq(format string, args ...interface{}) {
+	On(func() bool { return true }, CMDREQ, format, args...)
 }

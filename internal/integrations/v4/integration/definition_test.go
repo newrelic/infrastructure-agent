@@ -4,7 +4,6 @@ package integration
 
 import (
 	"context"
-	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -24,15 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var noLookup = InstancesLookup{
-	Legacy: func(_ DefinitionCommandConfig) (Definition, error) {
-		return Definition{}, errors.New("legacy integrations provider not expected to be invoked")
-	},
-	ByName: func(_ string) (string, error) {
-		return "", errors.New("lookup by name not expected to be invoked")
-	},
-}
-
 func TestRun(t *testing.T) {
 	defer leaktest.Check(t)()
 
@@ -40,7 +30,7 @@ func TestRun(t *testing.T) {
 	def, err := NewDefinition(config.ConfigEntry{
 		Name: "foo",
 		Exec: testhelp.Command(fixtures.BasicCmd),
-	}, noLookup, nil, nil)
+	}, ErrLookup, nil, nil)
 	require.NoError(t, err)
 
 	// WHEN it is executed
@@ -64,7 +54,7 @@ func TestRun_NoDiscovery(t *testing.T) {
 		Env: map[string]string{
 			"CONFIG": "${discovery.foo}",
 		},
-	}, noLookup, nil, nil)
+	}, ErrLookup, nil, nil)
 	require.NoError(t, err)
 
 	// WHEN the def is executed with no discovery matches
@@ -88,7 +78,7 @@ func TestRun_Discovery(t *testing.T) {
 		Env: map[string]string{
 			"PREFIX": "${prefix}",
 		},
-	}, noLookup, nil, nil)
+	}, ErrLookup, nil, nil)
 	require.NoError(t, err)
 
 	// WHEN the def is executed with different discovery matches
@@ -128,7 +118,7 @@ func TestRun_CmdSlice(t *testing.T) {
 	def, err := NewDefinition(config.ConfigEntry{
 		Name: "foo",
 		Exec: testhelp.CommandSlice(fixtures.BasicCmd, "argument"),
-	}, noLookup, nil, nil)
+	}, ErrLookup, nil, nil)
 	require.NoError(t, err)
 
 	// WHEN the def is executed
@@ -151,7 +141,7 @@ func TestRun_CancelPropagation(t *testing.T) {
 	def, err := NewDefinition(config.ConfigEntry{
 		Name: "foo",
 		Exec: testhelp.Command(fixtures.BlockedCmd, "-f", "${argument}"),
-	}, noLookup, nil, nil)
+	}, ErrLookup, nil, nil)
 	require.NoError(t, err)
 	vals := databind.NewValues(nil,
 		databind.NewDiscovery(data.Map{"argument": "world"}, nil, nil),
@@ -199,7 +189,7 @@ func TestRun_CancelPropagationWithoutReads(t *testing.T) {
 	def, err := NewDefinition(config.ConfigEntry{
 		Name: "foo",
 		Exec: testhelp.Command(fixtures.BlockedCmd),
-	}, noLookup, nil, nil)
+	}, ErrLookup, nil, nil)
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -238,7 +228,7 @@ func TestRun_Cancel_Partial(t *testing.T) {
 	def, err := NewDefinition(config.ConfigEntry{
 		Name: "foo",
 		Exec: testhelp.Command("${script}"),
-	}, noLookup, nil, nil)
+	}, ErrLookup, nil, nil)
 	require.NoError(t, err)
 	vals := databind.NewValues(nil,
 		databind.NewDiscovery(data.Map{"script": string(fixtures.BasicCmd)}, nil, nil),
@@ -284,7 +274,7 @@ func TestRun_Directory(t *testing.T) {
 		Name:    "foo",
 		Exec:    testhelp.Command(testhelp.Script(currentpath + scriptFile)),
 		WorkDir: tmpDir,
-	}, noLookup, nil, nil)
+	}, ErrLookup, nil, nil)
 	require.NoError(t, err)
 
 	// WHEN it is executed
@@ -311,7 +301,7 @@ func TestRun_RemoveExternalConfig(t *testing.T) {
 	config, err := LoadConfigTemplate(configEntry.TemplatePath, configEntry.Config)
 	require.NoError(t, err)
 
-	def, err := NewDefinition(configEntry, noLookup, nil, config)
+	def, err := NewDefinition(configEntry, ErrLookup, nil, config)
 	require.NoError(t, err)
 
 	// WHEN the integration has been properly executed

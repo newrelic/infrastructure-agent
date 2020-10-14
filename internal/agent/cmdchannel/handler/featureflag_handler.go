@@ -3,6 +3,7 @@
 package handler
 
 import (
+	"context"
 	"os"
 
 	"github.com/newrelic/infrastructure-agent/internal/os/api"
@@ -41,7 +42,7 @@ type FFHandler struct {
 
 // OHIEnabler enables or disables an OHI via cmd-channel feature flag.
 type OHIEnabler interface {
-	EnableOHIFromFF(featureFlag string) error
+	EnableOHIFromFF(ctx context.Context, featureFlag string) error
 	DisableOHIFromFF(featureFlag string) error
 }
 
@@ -103,7 +104,7 @@ func (h *FFHandler) SetOHIHandler(e OHIEnabler) {
 	h.ohiEnabler = e
 }
 
-func (h *FFHandler) Handle(ffArgs commandapi.FFArgs, isInitialFetch bool) {
+func (h *FFHandler) Handle(ctx context.Context, ffArgs commandapi.FFArgs, isInitialFetch bool) {
 	if ffArgs.Category != FlagCategory {
 		return
 	}
@@ -130,7 +131,7 @@ func (h *FFHandler) Handle(ffArgs commandapi.FFArgs, isInitialFetch bool) {
 	}
 
 	// evaluated at the end as integration name flag is looked up dynamically
-	h.handleEnableOHI(ffArgs.Flag, ffArgs.Enabled)
+	h.handleEnableOHI(ctx, ffArgs.Flag, ffArgs.Enabled)
 }
 
 func (h *FFHandler) setFFConfig(ff string, enabled bool) {
@@ -147,7 +148,7 @@ func (h *FFHandler) setFFConfig(ff string, enabled bool) {
 	}
 }
 
-func (h *FFHandler) handleEnableOHI(ff string, enable bool) {
+func (h *FFHandler) handleEnableOHI(ctx context.Context, ff string, enable bool) {
 	// customer agent config takes precedence
 	if _, ok := h.cfg.Features[ff]; ok {
 		return
@@ -163,7 +164,7 @@ func (h *FFHandler) handleEnableOHI(ff string, enable bool) {
 
 	var err error
 	if enable {
-		err = h.ohiEnabler.EnableOHIFromFF(ff)
+		err = h.ohiEnabler.EnableOHIFromFF(ctx, ff)
 	} else {
 		err = h.ohiEnabler.DisableOHIFromFF(ff)
 	}

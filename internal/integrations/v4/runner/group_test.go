@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
 	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 
 	"github.com/fortytw2/leaktest"
@@ -30,14 +31,14 @@ func TestGroup_Run(t *testing.T) {
 
 	// GIVEN a grouprunner that runs two integrations
 	te := &testemit.RecordEmitter{}
-	loader := NewLoader(config2.YAML{
+	loader := NewLoadFn(config2.YAML{
 		Integrations: []config2.ConfigEntry{
 			{Name: "sayhello", Exec: testhelp.Command(fixtures.IntegrationScript, "hello"),
 				Labels: map[string]string{"foo": "bar", "ou": "yea"}},
 			{Name: "saygoodbye", Exec: testhelp.Command(fixtures.IntegrationScript, "bye")},
 		},
 	}, nil)
-	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, "")
+	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, "")
 	require.NoError(t, err)
 
 	// WHEN the Group executes all the integrations
@@ -69,13 +70,13 @@ func TestGroup_Run_Inventory(t *testing.T) {
 
 	// GIVEN a grouprunner that uses a Protocol 2 integration with inventory
 	te := &testemit.RecordEmitter{}
-	loader := NewLoader(config2.YAML{
+	loader := NewLoadFn(config2.YAML{
 		Integrations: []config2.ConfigEntry{
 			{Name: "nri-test", Exec: testhelp.GoRun(fixtures.InventoryGoFile, "key1=val1", "key2=val2"),
 				Labels: map[string]string{"foo": "bar", "ou": "yea"}},
 		},
 	}, nil)
-	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, "")
+	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, "")
 	require.NoError(t, err)
 
 	// WHEN the integration is executed
@@ -118,13 +119,13 @@ func TestGroup_Run_Inventory_OverridePrefix(t *testing.T) {
 
 	// GIVEN an integration overriding the default inventory prefix
 	te := &testemit.RecordEmitter{}
-	loader := NewLoader(config2.YAML{
+	loader := NewLoadFn(config2.YAML{
 		Integrations: []config2.ConfigEntry{
 			{Name: "nri-test", Exec: testhelp.GoRun(fixtures.InventoryGoFile, "key1=val1"),
 				InventorySource: "custom/inventory"},
 		},
 	}, nil)
-	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, "")
+	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, "")
 	require.NoError(t, err)
 
 	// WHEN the integration is executed
@@ -145,12 +146,12 @@ func TestGroup_Run_Timeout(t *testing.T) {
 	// GIVEN a grouprunner that runs an integration with a timeout
 	te := &testemit.RecordEmitter{}
 	to := 200 * time.Millisecond
-	loader := NewLoader(config2.YAML{
+	loader := NewLoadFn(config2.YAML{
 		Integrations: []config2.ConfigEntry{
 			{Name: "Hello", Exec: testhelp.Command(fixtures.BlockedCmd), Timeout: &to},
 		},
 	}, nil)
-	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, "")
+	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, "")
 	require.NoError(t, err)
 	errs := interceptGroupErrors(&gr)
 
@@ -197,7 +198,7 @@ discovery:
 		discovery:    discovery,
 		integrations: []integration.Definition{integr},
 		handleErrorsProvide: func() runnerErrorHandler {
-			return func(errs <-chan error) {}
+			return func(_ context.Context, _ <-chan error) {}
 		},
 	}
 	// shortening the interval to avoid long tests
@@ -234,14 +235,14 @@ func TestGroup_Run_ConfigPathUpdated(t *testing.T) {
 
 	// GIVEN a grouprunner from an integration that embeds a config file
 	te := &testemit.RecordEmitter{}
-	loader := NewLoader(config2.YAML{
+	loader := NewLoadFn(config2.YAML{
 		Integrations: []config2.ConfigEntry{{
 			Name:   "cfgpath",
 			Exec:   testhelp.Command(fixtures.IntegrationScript, "${config.path}"),
 			Config: "hello",
 		}},
 	}, nil)
-	group, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, "")
+	group, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, "")
 	require.NoError(t, err)
 	// shortening the interval to avoid long tests
 	group.integrations[0].Interval = 100 * time.Millisecond
@@ -277,7 +278,7 @@ func TestGroup_Run_ConfigPathUpdated(t *testing.T) {
 func interceptGroupErrors(gr *Group) <-chan error {
 	handledError := make(chan error, 1)
 	gr.handleErrorsProvide = func() runnerErrorHandler {
-		return func(errs <-chan error) {
+		return func(_ context.Context, errs <-chan error) {
 			handledError <- <-errs
 		}
 	}
@@ -313,12 +314,12 @@ func TestGroup_Run_IntegrationScriptPrintsErrorsAndReturnCodeIsZero(t *testing.T
 
 	// GIVEN a grouprunner that runs two integrations
 	te := &testemit.RecordEmitter{}
-	loader := NewLoader(config2.YAML{
+	loader := NewLoadFn(config2.YAML{
 		Integrations: []config2.ConfigEntry{
 			{Name: "log_errors", Exec: testhelp.Command(fixtures.IntegrationPrintsErr, "bye")},
 		},
 	}, nil)
-	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, "")
+	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, "")
 	require.NoError(t, err)
 
 	// WHEN we add a hook to the log to capture the "error" and "fatal" levels

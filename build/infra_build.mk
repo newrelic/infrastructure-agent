@@ -50,7 +50,10 @@ test-coverage: go-get
 	$(GO_BIN) $(GO_TEST)
 
 .PHONY: test
-test: go-get
+test: go-get test-only
+
+.PHONY: test-only
+test-only:
 	@printf '\n================================================================\n'
 	@printf 'Target: test'
 	@printf '\n================================================================\n'
