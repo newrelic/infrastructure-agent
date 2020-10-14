@@ -11,20 +11,20 @@ import (
 
 // ConfigEntry holds an integrations YAML configuration entry. It may define multiple types of tasks
 type ConfigEntry struct {
-	Name     string            `yaml:"name"`     // integration name
-	Exec     ShlexOpt          `yaml:"exec"`     // it may be a CLI string or a YAML array
-	Env      map[string]string `yaml:"env"`      // User-defined environment variables
-	Interval string            `yaml:"interval"` // User-defined interval string (duration notation)
-	Timeout  *time.Duration    `yaml:"timeout"`
-	User     string            `yaml:"integration_user"`
-	WorkDir  string            `yaml:"working_dir"`
-	Labels   map[string]string `yaml:"labels"`
-	When     EnableConditions  `yaml:"when"`
+	InstanceName string            `yaml:"name"`     // integration instance name
+	Exec         ShlexOpt          `yaml:"exec"`     // it may be a CLI string or a YAML array
+	Env          map[string]string `yaml:"env"`      // User-defined environment variables
+	Interval     string            `yaml:"interval"` // User-defined interval string (duration notation)
+	Timeout      *time.Duration    `yaml:"timeout"`
+	User         string            `yaml:"integration_user"`
+	WorkDir      string            `yaml:"working_dir"`
+	Labels       map[string]string `yaml:"labels"`
+	When         EnableConditions  `yaml:"when"`
 
 	// Legacy definition commands
 	Command         string            `yaml:"command"`
 	Arguments       map[string]string `yaml:"arguments"`
-	IntegrationName string            `yaml:"integration_name"` // refers to the definition 'name' top field
+	IntegrationName string            `yaml:"integration_name"`
 	InventorySource string            `yaml:"inventory_source"`
 
 	// Config embeds a configuration file as a string. It can't coexist with TemplatePath
@@ -89,7 +89,7 @@ func (s *ShlexOpt) Value() []string {
 
 // checks that the format is correct and fixes possible nil leaks with default values
 func (cf *ConfigEntry) Sanitize() error {
-	if cf.Name == "" {
+	if cf.InstanceName == "" {
 		return errors.New("integration entry requires a non-empty 'name' field")
 	}
 	// Checking if there is any configuration file or path to be passed externally to the integration

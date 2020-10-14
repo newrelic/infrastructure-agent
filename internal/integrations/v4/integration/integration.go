@@ -61,7 +61,7 @@ func NewDefinition(ce config2.ConfigEntry, lookup InstancesLookup, passthroughEn
 			Passthrough: passthroughEnv,
 		},
 		Labels:         ce.Labels,
-		Name:           ce.Name,
+		Name:           ce.InstanceName,
 		Interval:       getInterval(ce.Interval),
 		WhenConditions: conditions(ce.When),
 		ConfigTemplate: configTemplate,
@@ -163,18 +163,18 @@ func (d *Definition) fromExecPath(te config2.ConfigEntry) error {
 
 // loads the Definition runnable from an executable name, looking for it into a
 // set of predefined folders
-func (d *Definition) fromName(te config2.ConfigEntry, lookup InstancesLookup) error {
+func (d *Definition) fromName(cfg config2.ConfigEntry, lookup InstancesLookup) error {
 	// if not an "exec" nor legacy integration, we'll look for an
 	// executable corresponding to the "name" field in any of the integrations
 	// folders, and wrap it into an "exec"
-	path, err := lookup.ByName(te.Name)
+	path, err := lookup.ByName(cfg.InstanceName)
 	if err != nil {
 		return errors.New("can't instantiate integration: " + err.Error())
 	}
 	// we need to pass the path as part of an array, to avoid splitting the
 	// folders as different arguments
-	te.Exec = []string{path}
-	d.runnable, err = newExecutor(&d.ExecutorConfig, te.Exec)
+	cfg.Exec = []string{path}
+	d.runnable, err = newExecutor(&d.ExecutorConfig, cfg.Exec)
 	return err
 }
 

@@ -17,8 +17,8 @@ import (
 
 func Test_runner_Run(t *testing.T) {
 	def, err := integration.NewDefinition(config.ConfigEntry{
-		Name: "foo",
-		Exec: testhelp.Command(fixtures.IntegrationScript, "bar"),
+		InstanceName: "foo",
+		Exec:         testhelp.Command(fixtures.IntegrationScript, "bar"),
 	}, integration.ErrLookup, nil, nil)
 	require.NoError(t, err)
 
