@@ -45,6 +45,9 @@ func NewKnownIDs() KnownIDs {
 
 // Put registers an entity ID for a given entity Key. The entry has a default TTL of 24 hours.
 func (k *KnownIDs) Put(key Key, id ID) {
+	k.lock.Lock()
+	defer k.lock.Unlock()
+
 	k.putTTL(key, id, defaultTTL)
 }
 
