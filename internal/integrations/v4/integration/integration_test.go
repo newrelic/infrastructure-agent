@@ -197,3 +197,26 @@ timeout: 0
 	// THEN the integration has a disabled timeout
 	assert.False(t, i.TimeoutEnabled())
 }
+
+func TestDefinition_fromName(t *testing.T) {
+	cfg := config2.ConfigEntry{
+		Name:    "nri-foo",
+		CLIArgs: []string{"arg1", "arg2"},
+	}
+
+	il := InstancesLookup{
+		Legacy: func(_ DefinitionCommandConfig) (Definition, error) {
+			return Definition{}, nil
+		},
+		ByName: func(_ string) (string, error) {
+			return "/path/to/nri-foo", nil
+		},
+	}
+
+	d, err := NewDefinition(cfg, il, nil, nil)
+	require.NoError(t, err)
+
+	assert.NoError(t, d.fromName(cfg, il))
+	assert.Equal(t, "/path/to/nri-foo", d.runnable.Command)
+	assert.Equal(t, []string{"arg1", "arg2"}, d.runnable.Args)
+}
