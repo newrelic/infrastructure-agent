@@ -159,6 +159,14 @@ func TestEmitter_Send(t *testing.T) {
 	sent := ms.Calls[0].Arguments[1].([]protocol.Metric)
 	assert.Len(t, sent, 1)
 	assert.Equal(t, eID.String(), sent[0].Attributes[fwrequest.EntityIdAttribute])
+
+	for _, d := range data.DataSets {
+		entityName, err := d.Entity.Key()
+		assert.NoError(t, err)
+		actualEntityID, found := e.idCache.Get(entityName)
+		assert.True(t, found)
+		assert.Equal(t, eID, actualEntityID)
+	}
 }
 
 func Test_NrEntityIdConst(t *testing.T) {

@@ -122,6 +122,7 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 			for _, ds := range req.Data.DataSets {
 				eKey, _ = ds.Entity.ResolveUniqueEntityKey(e.agentContext.AgentIdentifier(), e.agentContext.IDLookup(), req.FwRequestMeta.EntityRewrite, 4)
 				eID, found := e.idCache.Get(eKey)
+
 				if found {
 					select {
 					case <-ctx.Done():
@@ -164,6 +165,17 @@ func (e *emitter) processEntityFwRequest(r fwrequest.EntityFwRequest) {
 			Errorf("cannot determine agent short name")
 	}
 	replaceEntityName(r.Data.Entity, r.EntityRewrite, agentShortName)
+
+	entityName, err := r.Data.Entity.Key()
+	if err != nil {
+		elog.
+			WithError(err).
+			WithField("integration", r.Definition.Name).
+			Errorf("cannot determine entity name")
+	} else {
+		e.idCache.CleanOld()
+		e.idCache.Put(entityName, r.ID())
+	}
 
 	labels, annos := r.LabelsAndExtraAnnotations()
 
