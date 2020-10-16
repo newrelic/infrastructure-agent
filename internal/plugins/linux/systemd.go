@@ -167,7 +167,7 @@ func (self *SystemdPlugin) Run() {
 					refreshTimer.Stop()
 					refreshTimer = time.NewTicker(self.frequency)
 					self.getSystemdServiceStatus()
-					self.EmitInventory(self.getSystemdDataset(), entity.NewFromNameWithoutID(self.Context.AgentIdentifier()))
+					self.EmitInventory(self.getSystemdDataset(), entity.NewFromNameWithoutID(self.Context.EntityKey()))
 					self.Context.CacheServicePids(sysinfo.PROCESS_NAME_SOURCE_SYSTEMD, self.getSystemdPidMap())
 				}
 			}

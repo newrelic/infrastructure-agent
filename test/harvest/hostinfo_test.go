@@ -63,7 +63,7 @@ func TestHostInfo(t *testing.T) {
 		RunMode:              config.ModePrivileged, // Used only to read the productUUID
 	})
 	ctx.On("Version").Return(agentVersion)
-	ctx.On("AgentIdentifier").Return(agentIdentifier)
+	ctx.On("EntityKey").Return(agentIdentifier)
 	// Cannot assert the plugin payload here because `UpSince` is gotten from
 	// running the `uptime` command.
 	ctx.On("SendData", mock.Anything).Return(nil)

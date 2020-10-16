@@ -136,5 +136,5 @@ func pathEntry(path string) *fileEntry {
 func (pcp *configPlugin) Run() {
 	pcp.Context.AddReconnecting(pcp)
 
-	pcp.EmitInventory(pcp.config, entity.NewFromNameWithoutID(pcp.Context.AgentIdentifier()))
+	pcp.EmitInventory(pcp.config, entity.NewFromNameWithoutID(pcp.Context.EntityKey()))
 }

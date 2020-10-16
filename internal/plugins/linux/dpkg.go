@@ -171,7 +171,7 @@ func (self *DpkgPlugin) Run() {
 				if err != nil {
 					dpkglog.WithError(err).Error("fetching dpkg data")
 				} else {
-					self.EmitInventory(data, entity.NewFromNameWithoutID(self.Context.AgentIdentifier()))
+					self.EmitInventory(data, entity.NewFromNameWithoutID(self.Context.EntityKey()))
 				}
 				counter = 0
 			}

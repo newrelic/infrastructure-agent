@@ -112,8 +112,8 @@ type AgentContext interface {
 	// Reconnect invokes again all the plugins that have been registered with the AddReconnecting function
 	Reconnect()
 	Config() *config.Config
-	// AgentIdentifier value may change in runtime
-	AgentIdentifier() string
+	// EntityKey stores agent entity key (name), value may change in runtime.
+	EntityKey() string
 	Version() string
 
 	// Service -> PID cache. This is used so we can translate between PIDs and service names easily.
@@ -323,7 +323,7 @@ func NewAgent(
 		maxInventorySize = delta.DisableInventorySplit
 	}
 
-	s := delta.NewStore(dataDir, ctx.AgentIdentifier(), maxInventorySize)
+	s := delta.NewStore(dataDir, ctx.EntityKey(), maxInventorySize)
 
 	transport := backendhttp.BuildTransport(cfg, backendhttp.ClientTimeout)
 
@@ -442,7 +442,7 @@ func New(
 	if err := a.setAgentKey(idLookupTable); err != nil {
 		return nil, fmt.Errorf("could not determine any suitable identification for this agent. Attempts to gather the hostname, cloud ID, or configured alias all failed")
 	}
-	llog := alog.WithField("id", a.Context.AgentIdentifier())
+	llog := alog.WithField("id", a.Context.EntityKey())
 	llog.Debug("Bootstrap Entity Key.")
 
 	// Create the external directory for user-generated json
@@ -771,8 +771,8 @@ func (a *Agent) Run() (err error) {
 	// Register local entity inventory
 	// This will make the agent submitting unsent deltas from a previous execution (e.g. if an inventory was reaped
 	// but the agent was restarted before sending it)
-	if _, ok := a.inventories[a.Context.AgentIdentifier()]; !ok {
-		_ = a.registerEntityInventory(entity.NewFromNameWithoutID(a.Context.AgentIdentifier()))
+	if _, ok := a.inventories[a.Context.EntityKey()]; !ok {
+		_ = a.registerEntityInventory(entity.NewFromNameWithoutID(a.Context.EntityKey()))
 	}
 
 	exit := make(chan struct{})
@@ -940,7 +940,7 @@ func (a *Agent) removeOutdatedEntities(reportedEntities map[string]bool) {
 	for entityKey := range a.inventories {
 		entitiesToRemove[entityKey] = true
 	}
-	delete(entitiesToRemove, a.Context.AgentIdentifier()) // never delete local entity
+	delete(entitiesToRemove, a.Context.EntityKey()) // never delete local entity
 	for entityKey := range reportedEntities {
 		delete(entitiesToRemove, entityKey)
 	}
@@ -1007,7 +1007,7 @@ func (c *context) Config() *config.Config {
 	return c.cfg
 }
 
-func (c *context) AgentIdentifier() string {
+func (c *context) EntityKey() string {
 	return c.getAgentKey()
 }
 

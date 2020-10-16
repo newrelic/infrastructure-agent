@@ -71,7 +71,7 @@ func newPatchSender(entityInfo entity.Entity, context AgentContext, store delta.
 		context.Config().License,
 		userAgent,
 		context.Config().PayloadCompressionLevel,
-		context.AgentIdentifier(),
+		context.EntityKey(),
 		agentIDProvide,
 		context.Config().ConnectEnabled,
 		httpClient,
@@ -175,10 +175,10 @@ func (p *patchSenderIngest) sendAllDeltas(allDeltas []inventoryapi.RawDeltaBlock
 
 	// Empty entity Key belong to the Agent
 	if entityKey == "" {
-		entityKey = p.context.AgentIdentifier()
+		entityKey = p.context.EntityKey()
 	}
 	// This variable means the entity these deltas represent is an agent
-	areAgentDeltas := entityKey == p.context.AgentIdentifier()
+	areAgentDeltas := entityKey == p.context.EntityKey()
 
 	reset := false
 
@@ -252,7 +252,7 @@ func (p *patchSenderIngest) agentEntityIDChanged() bool {
 	entityKey := p.entityInfo.Key.String()
 
 	// Only check for entityID when is the agent sender.
-	if entityKey != p.context.AgentIdentifier() {
+	if entityKey != p.context.EntityKey() {
 		return false
 	}
 

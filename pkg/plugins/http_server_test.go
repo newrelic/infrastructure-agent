@@ -41,7 +41,7 @@ func TestHTTPServerPlugin(t *testing.T) {
 	})
 
 	ctx.On("HostnameResolver").Return(testhelpers.NewFakeHostnameResolver("something.com", "sc", nil))
-	ctx.On("AgentIdentifier").Return("test-agent")
+	ctx.On("EntityKey").Return("test-agent")
 	ctx.On("IDLookup").Return(host.IDLookup{"test-agent": "test-agent-id"})
 
 	// Given an HTTP Server Plugin

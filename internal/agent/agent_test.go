@@ -164,7 +164,7 @@ func TestSetAgentKeysDisplayInstance(t *testing.T) {
 	}
 
 	a.setAgentKey(idMap)
-	assert.Equal(t, idMap[sysinfo.HOST_SOURCE_INSTANCE_ID], a.Context.AgentIdentifier())
+	assert.Equal(t, idMap[sysinfo.HOST_SOURCE_INSTANCE_ID], a.Context.EntityKey())
 }
 
 // Test that empty strings in the identity map are properly ignored in favor of non-empty ones
@@ -179,7 +179,7 @@ func TestSetAgentKeysInstanceEmptyString(t *testing.T) {
 	}
 
 	a.setAgentKey(keys)
-	assert.Equal(t, keys[sysinfo.HOST_SOURCE_DISPLAY_NAME], a.Context.AgentIdentifier())
+	assert.Equal(t, keys[sysinfo.HOST_SOURCE_DISPLAY_NAME], a.Context.EntityKey())
 }
 
 func TestSetAgentKeysDisplayNameMatchesHostName(t *testing.T) {
@@ -192,7 +192,7 @@ func TestSetAgentKeysDisplayNameMatchesHostName(t *testing.T) {
 	}
 
 	a.setAgentKey(keyMap)
-	assert.Equal(t, "hostName", a.Context.AgentIdentifier())
+	assert.Equal(t, "hostName", a.Context.EntityKey())
 }
 
 func TestSetAgentKeysNoValues(t *testing.T) {
@@ -221,7 +221,7 @@ func TestUpdateIDLookupTable(t *testing.T) {
 	})
 
 	assert.NoError(t, a.updateIDLookupTable(dataset))
-	assert.Equal(t, "instanceId", a.Context.AgentIdentifier())
+	assert.Equal(t, "instanceId", a.Context.EntityKey())
 }
 
 func TestIDLookup_EntityNameCloudInstance(t *testing.T) {

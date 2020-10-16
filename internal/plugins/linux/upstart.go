@@ -145,7 +145,7 @@ func (up *UpstartPlugin) Run() {
 					refreshTimer.Stop()
 					refreshTimer = time.NewTicker(up.frequency)
 					up.getUpstartServiceStatus()
-					up.EmitInventory(up.getUpstartDataset(), entity.NewFromNameWithoutID(up.Context.AgentIdentifier()))
+					up.EmitInventory(up.getUpstartDataset(), entity.NewFromNameWithoutID(up.Context.EntityKey()))
 					up.Context.CacheServicePids(sysinfo.PROCESS_NAME_SOURCE_UPSTART, up.getUpstartPidMap())
 				}
 			}

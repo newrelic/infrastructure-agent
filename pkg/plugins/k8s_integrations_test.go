@@ -47,7 +47,7 @@ func TestK8sIntegrationsPlugin(t *testing.T) {
 		K8sIntegrationSamplesIntervalSec: 1,
 	})
 
-	ctx.On("AgentIdentifier").Return("my-agent")
+	ctx.On("EntityKey").Return("my-agent")
 	ctx.On(
 		"SendEvent",
 		mock.AnythingOfType("agent.mapEvent"), entity.Key("my-agent"),

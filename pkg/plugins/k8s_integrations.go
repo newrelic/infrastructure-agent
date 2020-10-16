@@ -46,7 +46,7 @@ func NewK8sIntegrationsPlugin(ctx agent.AgentContext, pluginRetrieveFn pluginRet
 
 func (kip *K8sIntegrationsPlugin) Run() {
 	kip.Context.AddReconnecting(kip)
-	entityKey := kip.Context.AgentIdentifier()
+	entityKey := kip.Context.EntityKey()
 
 	refreshTimer := time.NewTicker(kip.frequency)
 	for range refreshTimer.C {
