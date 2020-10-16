@@ -179,7 +179,7 @@ func (self *ServicesPlugin) Run() {
 		if err != nil {
 			slog.WithError(err).Error("services plugin can't get dataset")
 		}
-		self.EmitInventory(dataset, entity.NewFromNameWithoutID(self.Context.AgentIdentifier()))
+		self.EmitInventory(dataset, entity.NewFromNameWithoutID(self.Context.EntityKey()))
 		<-refreshTimer.C
 	}
 }

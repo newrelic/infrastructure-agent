@@ -55,7 +55,7 @@ func TestConfig(t *testing.T) {
 
 	ctx := new(mocks.AgentContext)
 	ctx.On("AddReconnecting", mock.Anything).Return()
-	ctx.On("AgentIdentifier").Return(agentId)
+	ctx.On("EntityKey").Return(agentId)
 	ctx.On("Config").Return(config.NewConfig())
 	ch := make(chan mock.Arguments)
 	ctx.On("SendData", mock.Anything).Run(func(args mock.Arguments) {

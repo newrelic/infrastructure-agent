@@ -278,7 +278,7 @@ func (self *ConfigFilePlugin) Run() {
 				if err != nil {
 					self.logger.WithError(err).Error("Fetching external data set")
 				}
-				self.EmitInventory(dataset, entity.NewFromNameWithoutID(self.Context.AgentIdentifier()))
+				self.EmitInventory(dataset, entity.NewFromNameWithoutID(self.Context.EntityKey()))
 				flushNeeded = false
 
 				// re-add any files that may have been renamed in the last flush interval

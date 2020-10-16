@@ -124,7 +124,7 @@ func (self *HostAliasesPlugin) Run() {
 					continue
 				}
 				self.logger.WithField("dataset", dataset).Debug("Completed harvest, emitting.")
-				self.EmitInventory(dataset, entity.NewFromNameWithoutID(self.Context.AgentIdentifier()))
+				self.EmitInventory(dataset, entity.NewFromNameWithoutID(self.Context.EntityKey()))
 				self.logger.Debug("Completed emitting.")
 			}
 		}

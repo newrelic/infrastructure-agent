@@ -104,7 +104,7 @@ func (self *NetworkInterfacePlugin) Run() {
 			if err != nil {
 				slog.WithError(err).WithPlugin(self.Id().String()).Error("fetching network interface data")
 			}
-			self.EmitInventory(dataset, entity.NewFromNameWithoutID(self.Context.AgentIdentifier()))
+			self.EmitInventory(dataset, entity.NewFromNameWithoutID(self.Context.EntityKey()))
 		}
 	}
 }

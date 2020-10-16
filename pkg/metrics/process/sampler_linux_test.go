@@ -139,7 +139,7 @@ func (*dummyAgentContext) ActiveEntitiesChannel() chan string {
 
 func (*dummyAgentContext) AddReconnecting(agent.Plugin) {}
 
-func (*dummyAgentContext) AgentIdentifier() string {
+func (*dummyAgentContext) EntityKey() string {
 	return ""
 }
 

@@ -118,7 +118,7 @@ func (self *SshdConfigPlugin) Run() {
 		if err != nil {
 			sshdlog.WithError(err).Error("parsing sshd config file")
 		} else {
-			self.EmitInventory(convertSshValuesToPluginData(config), entity.NewFromNameWithoutID(self.Context.AgentIdentifier()))
+			self.EmitInventory(convertSshValuesToPluginData(config), entity.NewFromNameWithoutID(self.Context.EntityKey()))
 		}
 		<-refreshTimer.C
 	}
