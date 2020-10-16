@@ -14,7 +14,6 @@ box "internal/integrations/v4"
 loop groupContext
 
     "pkg/integrations/v4/Manager" -> "groupContext" : start
-    note left: startRunnerGroup
     "groupContext" -> Group : Run
 
     loop Definition

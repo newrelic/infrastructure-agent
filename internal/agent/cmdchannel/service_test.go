@@ -33,7 +33,7 @@ func TestFFHandlerHandle_EnablesRegisterOnInitialFetch(t *testing.T) {
 		Flag:     handler.FlagNameRegister,
 		Enabled:  true,
 	}
-	handler.NewFFHandler(&c, feature_flags.NewManager(nil)).Handle(ffArgs, true)
+	handler.NewFFHandler(&c, feature_flags.NewManager(nil)).Handle(context.Background(), ffArgs, true)
 
 	assert.True(t, c.RegisterEnabled)
 }
@@ -45,7 +45,7 @@ func TestFFHandlerHandle_DisablesRegisterOnInitialFetch(t *testing.T) {
 		Flag:     handler.FlagNameRegister,
 		Enabled:  false,
 	}
-	handler.NewFFHandler(&c, feature_flags.NewManager(nil)).Handle(ffArgs, true)
+	handler.NewFFHandler(&c, feature_flags.NewManager(nil)).Handle(context.Background(), ffArgs, true)
 
 	assert.False(t, c.RegisterEnabled)
 }
@@ -92,7 +92,7 @@ func TestFFHandler_DMRegisterOnInitialFetch(t *testing.T) {
 				Enabled:  tc.commandValue,
 			}
 			manager := feature_flags.NewManager(tc.feature)
-			handler.NewFFHandler(&config, manager).Handle(commandArgs, true)
+			handler.NewFFHandler(&config, manager).Handle(context.Background(), commandArgs, true)
 			enable, _ := manager.GetFeatureFlag(handler.FlagDMRegisterEnable)
 			assert.Equal(t, tc.want, enable)
 		})
@@ -108,7 +108,7 @@ func TestFFHandlerHandle_DisablesParallelizeInventoryConfigOnInitialFetch(t *tes
 		Flag:     handler.FlagParallelizeInventory,
 		Enabled:  false,
 	}
-	handler.NewFFHandler(&c, feature_flags.NewManager(nil)).Handle(ffArgs, true)
+	handler.NewFFHandler(&c, feature_flags.NewManager(nil)).Handle(context.Background(), ffArgs, true)
 
 	assert.Equal(t, 0, c.InventoryQueueLen)
 }
@@ -120,7 +120,7 @@ func TestFFHandlerHandle_EnablesParallelizeInventoryConfigWithDefaultValue(t *te
 		Flag:     handler.FlagParallelizeInventory,
 		Enabled:  true,
 	}
-	handler.NewFFHandler(&c, feature_flags.NewManager(nil)).Handle(ffArgs, true)
+	handler.NewFFHandler(&c, feature_flags.NewManager(nil)).Handle(context.Background(), ffArgs, true)
 
 	assert.Equal(t, handler.CfgValueParallelizeInventory, int64(c.InventoryQueueLen))
 }
@@ -134,7 +134,7 @@ func TestFFHandlerHandle_EnabledFFParallelizeInventoryDoesNotModifyProvidedConfi
 		Flag:     handler.FlagParallelizeInventory,
 		Enabled:  true,
 	}
-	handler.NewFFHandler(&c, feature_flags.NewManager(nil)).Handle(ffArgs, true)
+	handler.NewFFHandler(&c, feature_flags.NewManager(nil)).Handle(context.Background(), ffArgs, true)
 
 	assert.Equal(t, 123, c.InventoryQueueLen)
 }
@@ -161,7 +161,7 @@ func TestFFHandlerHandle_ExitsOnDiffValueAndNotInitialFetch(t *testing.T) {
 				Flag:     tc.ff,
 				Enabled:  true,
 			}
-			handler.NewFFHandler(&config.Config{}, feature_flags.NewManager(nil)).Handle(ffArgs, false)
+			handler.NewFFHandler(&config.Config{}, feature_flags.NewManager(nil)).Handle(context.Background(), ffArgs, false)
 		}
 
 		cmd := exec.Command(os.Args[0], "-test.run=TestFFHandlerHandle_ExitsOnDiffValueAndNotInitialFetch")
@@ -193,7 +193,7 @@ func TestSrv_InitialFetch_ReturnsBackoff(t *testing.T) {
 `
 	s := NewService(cmdChannelClient(serializedCmds), &config.Config{}, feature_flags.NewManager(nil))
 
-	initResp, err := s.InitialFetch()
+	initResp, err := s.InitialFetch(context.Background())
 	assert.NoError(t, err)
 
 	assert.Equal(t, time.Duration(3000)*time.Second, initResp.Delay)
@@ -218,7 +218,7 @@ func TestSrv_InitialFetch_EnablesRegister(t *testing.T) {
 	c := config.Config{RegisterEnabled: false}
 	s := NewService(cmdChannelClient(serializedCmds), &c, feature_flags.NewManager(nil))
 
-	_, err := s.InitialFetch()
+	_, err := s.InitialFetch(context.Background())
 	assert.NoError(t, err)
 
 	assert.True(t, c.RegisterEnabled)
@@ -243,7 +243,7 @@ func TestSrv_InitialFetch_DisablesRegister(t *testing.T) {
 	c := config.Config{RegisterEnabled: true}
 	s := NewService(cmdChannelClient(serializedCmds), &c, feature_flags.NewManager(nil))
 
-	_, err := s.InitialFetch()
+	_, err := s.InitialFetch(context.Background())
 	assert.NoError(t, err)
 
 	assert.False(t, c.RegisterEnabled)
@@ -267,7 +267,7 @@ func Test_poll_DiscardsInvalidCommands(t *testing.T) {
 `
 	s := NewService(cmdChannelClient(serializedCmds), &config.Config{}, feature_flags.NewManager(nil))
 
-	_, err := s.InitialFetch()
+	_, err := s.InitialFetch(context.Background())
 	assert.NoError(t, err)
 }
 
@@ -297,7 +297,7 @@ func TestSrv_InitialFetch_EnablesRegisterAndHandlesBackoff(t *testing.T) {
 	ss := NewService(cmdChannelClient(serializedCmds), &config.Config{RegisterEnabled: false}, feature_flags.NewManager(nil))
 	s := ss.(*srv)
 
-	initialResp, err := s.InitialFetch()
+	initialResp, err := s.InitialFetch(context.Background())
 	assert.NoError(t, err)
 
 	assert.Equal(t, 3000*time.Second, initialResp.Delay)
@@ -325,7 +325,7 @@ func TestSrv_InitialFetch_EnablesDimensionalMetrics(t *testing.T) {
 	ss := NewService(cmdChannelClient(serializedCmds), &config.Config{RegisterEnabled: false}, ffManager)
 	s := ss.(*srv)
 
-	_, err := s.InitialFetch()
+	_, err := s.InitialFetch(context.Background())
 	assert.NoError(t, err)
 
 	enabled, exists := ffManager.GetFeatureFlag(handler.FlagProtocolV4)
@@ -383,7 +383,7 @@ func TestSrv_Run(t *testing.T) {
 	var initialResp resp
 	goRes := make(chan resp)
 	go func() {
-		icr, err := s.InitialFetch()
+		icr, err := s.InitialFetch(context.Background())
 		goRes <- resp{
 			icr: icr,
 			err: err,

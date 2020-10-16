@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
 	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 
 	"github.com/fortytw2/leaktest"
@@ -37,7 +38,7 @@ func TestGroup_Run(t *testing.T) {
 			{Name: "saygoodbye", Exec: testhelp.Command(fixtures.IntegrationScript, "bye")},
 		},
 	}, nil)
-	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, "")
+	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, "")
 	require.NoError(t, err)
 
 	// WHEN the Group executes all the integrations
@@ -75,7 +76,7 @@ func TestGroup_Run_Inventory(t *testing.T) {
 				Labels: map[string]string{"foo": "bar", "ou": "yea"}},
 		},
 	}, nil)
-	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, "")
+	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, "")
 	require.NoError(t, err)
 
 	// WHEN the integration is executed
@@ -124,7 +125,7 @@ func TestGroup_Run_Inventory_OverridePrefix(t *testing.T) {
 				InventorySource: "custom/inventory"},
 		},
 	}, nil)
-	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, "")
+	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, "")
 	require.NoError(t, err)
 
 	// WHEN the integration is executed
@@ -150,7 +151,7 @@ func TestGroup_Run_Timeout(t *testing.T) {
 			{Name: "Hello", Exec: testhelp.Command(fixtures.BlockedCmd), Timeout: &to},
 		},
 	}, nil)
-	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, "")
+	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, "")
 	require.NoError(t, err)
 	errs := interceptGroupErrors(&gr)
 
@@ -241,7 +242,7 @@ func TestGroup_Run_ConfigPathUpdated(t *testing.T) {
 			Config: "hello",
 		}},
 	}, nil)
-	group, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, "")
+	group, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, "")
 	require.NoError(t, err)
 	// shortening the interval to avoid long tests
 	group.integrations[0].Interval = 100 * time.Millisecond
@@ -318,7 +319,7 @@ func TestGroup_Run_IntegrationScriptPrintsErrorsAndReturnCodeIsZero(t *testing.T
 			{Name: "log_errors", Exec: testhelp.Command(fixtures.IntegrationPrintsErr, "bye")},
 		},
 	}, nil)
-	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, "")
+	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, "")
 	require.NoError(t, err)
 
 	// WHEN we add a hook to the log to capture the "error" and "fatal" levels

@@ -18,6 +18,8 @@ const (
 	DM_SUBMISSION  Feature = "dm.submission" // dimensional metrics submission
 	METRIC_MATCHER Feature = "metric.match"  // match metric by rule
 	INVENTORY      Feature = "inventory"
+	LOG_FWD        Feature = "log.fw"
+	CMDREQ         Feature = "cmdreq" // command requests from integrations
 )
 
 // Helper functions to avoid repeating:
@@ -56,4 +58,14 @@ func MetricMatch(format string, args ...interface{}) {
 // Inventory traces to "audit" inventory.
 func Inventory(format string, args ...interface{}) {
 	On(func() bool { return true }, INVENTORY, format, args...)
+}
+
+// LogFwdOutput traces to "audit" log-forwarder output.
+func LogFwdOutput(format string, args ...interface{}) {
+	On(func() bool { return true }, LOG_FWD, format, args...)
+}
+
+// CmdReq traces to "audit" command request payloads.
+func CmdReq(format string, args ...interface{}) {
+	On(func() bool { return true }, CMDREQ, format, args...)
 }

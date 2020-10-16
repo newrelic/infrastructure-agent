@@ -46,3 +46,10 @@ func On(condition Condition, feature Feature, format string, args ...interface{}
 		global.logger.Tracef(fmt.Sprintf("[%s] %s", feature, format), args...)
 	}
 }
+
+// IsEnabled returns if feature is enabled.
+func IsEnabled(feature Feature) bool {
+	_, ok := global.enabled[feature]
+
+	return ok
+}

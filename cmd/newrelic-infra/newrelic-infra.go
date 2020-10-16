@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"net"
@@ -200,7 +201,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 
 	// Command channel initialization.
 	ccService := cmdchannel.NewService(caClient, c, ffManager)
-	initCmdResponse, err := ccService.InitialFetch()
+	initCmdResponse, err := ccService.InitialFetch(context.Background())
 	if err != nil {
 		aslog.WithError(err).Warn("Commands initial fetch failed.")
 	}
@@ -298,6 +299,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		FluentBitExePath:     c.FluentBitExePath,
 		FluentBitNRLibPath:   c.FluentBitNRLibPath,
 		FluentBitParsersPath: c.FluentBitParsersPath,
+		FluentBitVerbose:     c.Verbose != 0 && trace.IsEnabled(trace.LOG_FWD),
 	}
 	if fbIntCfg.IsLogForwarderAvailable() {
 		logCfgLoader := logs.NewFolderLoader(logFwCfg, agt.Context.Identity, agt.Context.HostnameResolver())
