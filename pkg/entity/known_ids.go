@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 package entity
 
-import "time"
+import (
+	"sync"
+	"time"
+)
 
 var now = time.Now
 
@@ -17,6 +20,7 @@ const defaultTTL = 24 * time.Hour
 //
 // This component is not thread-safe.
 type KnownIDs struct {
+	lock sync.Mutex
 	ids  map[Key]*idEntry
 	ttls map[Type]time.Duration // per-entity ttl
 }
@@ -41,6 +45,9 @@ func NewKnownIDs() KnownIDs {
 
 // Put registers an entity ID for a given entity Key. The entry has a default TTL of 24 hours.
 func (k *KnownIDs) Put(key Key, id ID) {
+	k.lock.Lock()
+	defer k.lock.Unlock()
+
 	k.putTTL(key, id, defaultTTL)
 }
 
@@ -48,6 +55,8 @@ func (k *KnownIDs) Put(key Key, id ID) {
 // type registered with the SetTTL function. If the entity type has not been registered, it assumes the default TTL of
 // 24 hours.
 func (k *KnownIDs) PutType(entityType Type, key Key, id ID) {
+	k.lock.Lock()
+	defer k.lock.Unlock()
 	if ttl, ok := k.ttls[entityType]; ok {
 		k.putTTL(key, id, ttl)
 	} else {
@@ -66,6 +75,9 @@ func (k *KnownIDs) putTTL(key Key, id ID, ttl time.Duration) {
 // Get returns the entity ID for the given entity Key, if exists. If the entry is found, its expiration time is updated
 // to the current time + TTL.
 func (k *KnownIDs) Get(key Key) (ID, bool) {
+	k.lock.Lock()
+	defer k.lock.Unlock()
+
 	entry, ok := k.ids[key]
 	if !ok {
 		return 0, false
@@ -81,14 +93,19 @@ func (k *KnownIDs) Get(key Key) (ID, bool) {
 
 // SetTTL registers a custom TTL for the given entity Type
 func (k *KnownIDs) SetTTL(entityType Type, ttl time.Duration) {
+	k.lock.Lock()
+	defer k.lock.Unlock()
+
 	k.ttls[entityType] = ttl
 }
 
 // Clean removes the expired Key <-> ID entries
-func (kn *KnownIDs) CleanOld() {
-	for k, e := range kn.ids {
+func (k *KnownIDs) CleanOld() {
+	k.lock.Lock()
+	defer k.lock.Unlock()
+	for key, e := range k.ids {
 		if e.isOutdated() {
-			delete(kn.ids, k)
+			delete(k.ids, key)
 		}
 	}
 }

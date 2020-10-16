@@ -102,7 +102,8 @@ func (w *worker) send(batch map[entity.Key]fwrequest.EntityFwRequest, batchSize 
 }
 
 func (w *worker) resetBatch(batch map[entity.Key]fwrequest.EntityFwRequest, batchSize *int) {
-	zero := 0
-	batchSize = &zero
-	batch = map[entity.Key]fwrequest.EntityFwRequest{}
+	*batchSize = 0
+	for key := range batch {
+		delete(batch, key)
+	}
 }
