@@ -34,7 +34,7 @@ func TestFacter(t *testing.T) {
 		FacterIntervalSec: 1,
 		FacterHomeDir:     usr.HomeDir,
 	})
-	ctx.On("AgentIdentifier").Return(agentIdentifier)
+	ctx.On("EntityKey").Return(agentIdentifier)
 	ch := make(chan agent.PluginOutput)
 	ctx.On("SendData", mock.Anything).Return().Run(func(args mock.Arguments) {
 		ch <- args[0].(agent.PluginOutput)

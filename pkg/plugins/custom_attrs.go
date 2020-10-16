@@ -35,7 +35,7 @@ func (self *CustomAttrsPlugin) Run() {
 	self.Context.AddReconnecting(self)
 
 	data := agent.PluginInventoryDataset{CustomAttrs(self.customAttributes)}
-	entityKey := self.Context.AgentIdentifier()
+	entityKey := self.Context.EntityKey()
 
 	trace.Attr("run, entity: %s, data: %+v", entityKey, self.customAttributes)
 

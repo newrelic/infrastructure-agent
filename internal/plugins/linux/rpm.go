@@ -175,7 +175,7 @@ func (p *rpmPlugin) Run() {
 				if err != nil {
 					rpmlog.WithError(err).Error("fetching rpm data")
 				} else {
-					p.EmitInventory(data, entity.NewFromNameWithoutID(p.Context.AgentIdentifier()))
+					p.EmitInventory(data, entity.NewFromNameWithoutID(p.Context.EntityKey()))
 				}
 				counter = 0
 			}

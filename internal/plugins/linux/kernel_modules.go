@@ -167,7 +167,7 @@ func (self *KernelModulesPlugin) Run() {
 				kmlog.WithError(err).Error("getting kernel module status")
 			} else {
 				if self.needsFlush {
-					self.EmitInventory(self.getKernelModulesDataset(), entity.NewFromNameWithoutID(self.Context.AgentIdentifier()))
+					self.EmitInventory(self.getKernelModulesDataset(), entity.NewFromNameWithoutID(self.Context.EntityKey()))
 					self.needsFlush = false
 				}
 			}

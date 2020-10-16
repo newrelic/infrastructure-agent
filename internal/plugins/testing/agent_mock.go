@@ -91,7 +91,7 @@ func (self *MockAgent) Config() *config.Config {
 	return self.cfg
 }
 
-func (self *MockAgent) AgentIdentifier() string {
+func (self *MockAgent) EntityKey() string {
 	return ""
 }
 

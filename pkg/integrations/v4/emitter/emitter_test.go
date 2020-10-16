@@ -577,7 +577,7 @@ func mockAgent() *mocks.AgentContext {
 	}
 
 	ma := &mocks.AgentContext{}
-	ma.On("AgentIdentifier").Return("bob")
+	ma.On("EntityKey").Return("bob")
 	ma.On("IDLookup").Return(aID)
 	ma.On("SendData", mock.AnythingOfType("agent.PluginOutput")).Once()
 	ma.SendDataWg.Add(1)
