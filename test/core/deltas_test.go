@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDeltas_BasicWorkflowV4(t *testing.T) {
+func TestDeltas_nestedObjectsV4(t *testing.T) {
 	const timeout = 5 * time.Second
 
 	// Given an agent
@@ -30,7 +30,7 @@ func TestDeltas_BasicWorkflowV4(t *testing.T) {
 	a := infra.NewAgent(testClient.Client)
 	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
-	// That runs a plugin
+	// That runs a v4 plugin with nested inventory
 	plugin := newDummyV4Plugin(t, `{
   "protocol_version": "4",
   "integration": {

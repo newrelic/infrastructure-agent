@@ -105,16 +105,6 @@ func NormalizeEvent(
 }
 
 func verifyInventoryData(item protocol.InventoryData) error {
-	// Ensure all inventory content consists of strings
-	for key, value := range item {
-		strValue, ok := value.(string)
-		if ok {
-			item[key] = strValue
-		} else {
-			item[key] = fmt.Sprintf("%#v", value)
-		}
-	}
-
 	if item.SortKey() == "" {
 		hash, err := getVariantHash(item)
 		if err != nil {

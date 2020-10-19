@@ -23,20 +23,20 @@ import (
 
 type dummyV4Plugin struct {
 	agent.PluginCommon
-	ticker chan interface{}
-	value  []byte
-	t      *testing.T
+	ticker  chan interface{}
+	payload []byte
+	t       *testing.T
 }
 
-func newDummyV4Plugin(t *testing.T, value string, context agent.AgentContext) *dummyV4Plugin {
+func newDummyV4Plugin(t *testing.T, payload string, context agent.AgentContext) *dummyV4Plugin {
 	return &dummyV4Plugin{
 		PluginCommon: agent.PluginCommon{
 			ID:      ids.PluginID{"test", "dummy_v4"},
 			Context: context,
 		},
-		ticker: make(chan interface{}),
-		value:  []byte(value),
-		t:      t,
+		ticker:  make(chan interface{}),
+		payload: []byte(payload),
+		t:       t,
 	}
 }
 
@@ -44,7 +44,7 @@ func (cp *dummyV4Plugin) Run() {
 	for {
 		select {
 		case <-cp.ticker:
-			dss := InventoryDatasetsForPayload(cp.t, cp.value)
+			dss := InventoryDatasetsForPayload(cp.t, cp.payload)
 			for _, ds := range dss {
 				cp.EmitInventory(ds, entity.NewFromNameWithoutID(cp.Context.EntityKey()))
 			}
@@ -71,7 +71,6 @@ func InventoryDatasetsForPayload(t *testing.T, payload []byte) (dss []agent.Plug
 	require.NoError(t, err)
 
 	r := fwrequest.NewFwRequest(def, nil, nil, dataV4)
-
 	for _, ds := range r.Data.DataSets {
 
 		legacyDS := legacy.BuildInventoryDataSet(
