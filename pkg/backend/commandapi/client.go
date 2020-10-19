@@ -17,8 +17,8 @@ import (
 
 // Available commands
 const (
-	setFFCmd   = "set_feature_flag"
-	backoffCmd = "backoff_command_channel"
+	SetFFCmd   = "set_feature_flag"
+	BackoffCmd = "backoff_command_channel"
 )
 
 var (
@@ -46,13 +46,13 @@ func (c *Command) UnmarshalJSON(b []byte) (err error) {
 	}
 
 	switch c.Name {
-	case backoffCmd:
+	case BackoffCmd:
 		var boArgs BackoffArgs
 		if err = json.Unmarshal(rawArgs, &boArgs); err != nil {
 			return
 		}
 		c.Args = boArgs
-	case setFFCmd:
+	case SetFFCmd:
 		var ffArgs FFArgs
 		if err = json.Unmarshal(rawArgs, &ffArgs); err != nil {
 			return

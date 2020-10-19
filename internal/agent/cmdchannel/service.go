@@ -16,22 +16,41 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
-var ccsLogger = log.WithComponent("CommandChannelService")
+var (
+	ccsLogger = log.WithComponent("CommandChannelService")
+)
+
+// CmdHandle command channel request handler function.
+type CmdHandle func(ctx context.Context, cmd commandapi.Command, initialFetch bool) (backoffSecs int, err error)
 
 type srv struct {
-	client        commandapi.Client
-	config        *config.Config
-	pollDelaySecs int
-	ffHandler     *handler.FFHandler
+	client            commandapi.Client
+	pollDelaySecs     int
+	handlersByCmdName map[string]CmdHandle
+	ffHandler         *handler.FFHandler // explicit to ease deps injection on runtime
 }
 
 // NewService creates a service to poll and handle command channel commands.
 func NewService(client commandapi.Client, config *config.Config, ffSetter feature_flags.Setter) Service {
+	boHandle := func(ctx context.Context, cmd commandapi.Command, initialFetch bool) (backoffSecs int, err error) {
+		boArgs, ok := cmd.Args.(commandapi.BackoffArgs)
+		if !ok {
+			err = handler.InvalidArgsErr
+			return
+		}
+		backoffSecs = boArgs.Delay
+		return
+	}
+
+	ffHandler := handler.NewFFHandler(config, ffSetter, log.WithComponent("FFHandler"))
 	return &srv{
 		client:        client,
-		config:        config,
 		pollDelaySecs: config.CommandChannelIntervalSec,
-		ffHandler:     handler.NewFFHandler(config, ffSetter),
+		ffHandler:     ffHandler,
+		handlersByCmdName: map[string]CmdHandle{
+			commandapi.BackoffCmd: boHandle,
+			commandapi.SetFFCmd:   ffHandler.Handle,
+		},
 	}
 }
 
@@ -93,12 +112,26 @@ func (s *srv) nextPollInterval() time.Duration {
 }
 
 func (s *srv) handle(ctx context.Context, c commandapi.Command, initialFetch bool) {
-	switch c.Args.(type) {
-	case commandapi.FFArgs:
-		ffArgs := c.Args.(commandapi.FFArgs)
-		s.ffHandler.Handle(ctx, ffArgs, initialFetch)
-	case commandapi.BackoffArgs:
-		boArgs := c.Args.(commandapi.BackoffArgs)
-		s.pollDelaySecs = boArgs.Delay
+	handle, ok := s.handlersByCmdName[c.Name]
+	if !ok {
+		ccsLogger.
+			WithField("cmd_id", c.ID).
+			WithField("cmd_name", c.Name).
+			Error("no handler for command-channel cmd")
+		return
+	}
+
+	backoffSecs, err := handle(ctx, c, initialFetch)
+	if err != nil {
+		ccsLogger.
+			WithField("cmd_id", c.ID).
+			WithField("cmd_name", c.Name).
+			WithField("cmd_arguments", c.Args).
+			WithError(err).
+			Error("error handling cmd-channel request")
+
+	}
+	if backoffSecs > 0 {
+		s.pollDelaySecs = backoffSecs
 	}
 }

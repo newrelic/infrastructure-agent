@@ -4,6 +4,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"os"
 
 	"github.com/newrelic/infrastructure-agent/internal/os/api"
@@ -30,7 +31,10 @@ const (
 	CfgValueParallelizeInventory = int64(100) // default value when no config provided by user and FF enabled
 )
 
-var ffLogger = log.WithComponent("FeatureFlagHandler")
+var (
+	ffLogger       = log.WithComponent("FeatureFlagHandler")
+	InvalidArgsErr = errors.New("invalid arguments type")
+)
 
 // FFHandler handles FF commands.
 type FFHandler struct {
@@ -38,6 +42,7 @@ type FFHandler struct {
 	ohiEnabler OHIEnabler
 	ffSetter   feature_flags.Setter
 	ffsState   handledStatePerFF
+	logger     log.Entry
 }
 
 // OHIEnabler enables or disables an OHI via cmd-channel feature flag.
@@ -90,11 +95,12 @@ const (
 type handledStatePerFF map[string]ffHandledState
 
 // NewFFHandler creates a new feature-flag cmd handler, FFHandler not available at this time.
-func NewFFHandler(cfg *config.Config, ffSetter feature_flags.Setter) *FFHandler {
+func NewFFHandler(cfg *config.Config, ffSetter feature_flags.Setter, logger log.Entry) *FFHandler {
 	return &FFHandler{
 		cfg:      cfg,
 		ffsState: make(handledStatePerFF),
 		ffSetter: ffSetter,
+		logger:   logger,
 	}
 }
 
@@ -104,7 +110,13 @@ func (h *FFHandler) SetOHIHandler(e OHIEnabler) {
 	h.ohiEnabler = e
 }
 
-func (h *FFHandler) Handle(ctx context.Context, ffArgs commandapi.FFArgs, isInitialFetch bool) {
+func (h *FFHandler) Handle(ctx context.Context, c commandapi.Command, isInitialFetch bool) (boSecs int, err error) {
+	ffArgs, ok := c.Args.(commandapi.FFArgs)
+	if !ok {
+		err = InvalidArgsErr
+		return
+	}
+
 	if ffArgs.Category != FlagCategory {
 		return
 	}
@@ -132,6 +144,8 @@ func (h *FFHandler) Handle(ctx context.Context, ffArgs commandapi.FFArgs, isInit
 
 	// evaluated at the end as integration name flag is looked up dynamically
 	h.handleEnableOHI(ctx, ffArgs.Flag, ffArgs.Enabled)
+
+	return
 }
 
 func (h *FFHandler) setFFConfig(ff string, enabled bool) {

@@ -6,6 +6,8 @@ import (
 	"bytes"
 	"context"
 	"github.com/newrelic/infrastructure-agent/internal/os/api"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
+
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -26,26 +28,34 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var (
+	l = log.WithComponent("test")
+)
+
 func TestFFHandlerHandle_EnablesRegisterOnInitialFetch(t *testing.T) {
 	c := config.Config{}
-	ffArgs := commandapi.FFArgs{
-		Category: handler.FlagCategory,
-		Flag:     handler.FlagNameRegister,
-		Enabled:  true,
+	cmd := commandapi.Command{
+		Args: commandapi.FFArgs{
+			Category: handler.FlagCategory,
+			Flag:     handler.FlagNameRegister,
+			Enabled:  true,
+		},
 	}
-	handler.NewFFHandler(&c, feature_flags.NewManager(nil)).Handle(context.Background(), ffArgs, true)
+	handler.NewFFHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
 
 	assert.True(t, c.RegisterEnabled)
 }
 
 func TestFFHandlerHandle_DisablesRegisterOnInitialFetch(t *testing.T) {
 	c := config.Config{RegisterEnabled: true}
-	ffArgs := commandapi.FFArgs{
-		Category: handler.FlagCategory,
-		Flag:     handler.FlagNameRegister,
-		Enabled:  false,
+	cmd := commandapi.Command{
+		Args: commandapi.FFArgs{
+			Category: handler.FlagCategory,
+			Flag:     handler.FlagNameRegister,
+			Enabled:  false,
+		},
 	}
-	handler.NewFFHandler(&c, feature_flags.NewManager(nil)).Handle(context.Background(), ffArgs, true)
+	handler.NewFFHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
 
 	assert.False(t, c.RegisterEnabled)
 }
@@ -86,13 +96,15 @@ func TestFFHandler_DMRegisterOnInitialFetch(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			config := config.Config{Features: tc.feature}
-			commandArgs := commandapi.FFArgs{
-				Category: handler.FlagCategory,
-				Flag:     handler.FlagDMRegisterEnable,
-				Enabled:  tc.commandValue,
+			cmd := commandapi.Command{
+				Args: commandapi.FFArgs{
+					Category: handler.FlagCategory,
+					Flag:     handler.FlagDMRegisterEnable,
+					Enabled:  tc.commandValue,
+				},
 			}
 			manager := feature_flags.NewManager(tc.feature)
-			handler.NewFFHandler(&config, manager).Handle(context.Background(), commandArgs, true)
+			handler.NewFFHandler(&config, manager, l).Handle(context.Background(), cmd, true)
 			enable, _ := manager.GetFeatureFlag(handler.FlagDMRegisterEnable)
 			assert.Equal(t, tc.want, enable)
 		})
@@ -103,24 +115,28 @@ func TestFFHandlerHandle_DisablesParallelizeInventoryConfigOnInitialFetch(t *tes
 	c := config.Config{
 		InventoryQueueLen: 123,
 	}
-	ffArgs := commandapi.FFArgs{
-		Category: handler.FlagCategory,
-		Flag:     handler.FlagParallelizeInventory,
-		Enabled:  false,
+	cmd := commandapi.Command{
+		Args: commandapi.FFArgs{
+			Category: handler.FlagCategory,
+			Flag:     handler.FlagParallelizeInventory,
+			Enabled:  false,
+		},
 	}
-	handler.NewFFHandler(&c, feature_flags.NewManager(nil)).Handle(context.Background(), ffArgs, true)
+	handler.NewFFHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
 
 	assert.Equal(t, 0, c.InventoryQueueLen)
 }
 
 func TestFFHandlerHandle_EnablesParallelizeInventoryConfigWithDefaultValue(t *testing.T) {
 	c := config.Config{}
-	ffArgs := commandapi.FFArgs{
-		Category: handler.FlagCategory,
-		Flag:     handler.FlagParallelizeInventory,
-		Enabled:  true,
+	cmd := commandapi.Command{
+		Args: commandapi.FFArgs{
+			Category: handler.FlagCategory,
+			Flag:     handler.FlagParallelizeInventory,
+			Enabled:  true,
+		},
 	}
-	handler.NewFFHandler(&c, feature_flags.NewManager(nil)).Handle(context.Background(), ffArgs, true)
+	handler.NewFFHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
 
 	assert.Equal(t, handler.CfgValueParallelizeInventory, int64(c.InventoryQueueLen))
 }
@@ -129,12 +145,14 @@ func TestFFHandlerHandle_EnabledFFParallelizeInventoryDoesNotModifyProvidedConfi
 	c := config.Config{
 		InventoryQueueLen: 123,
 	}
-	ffArgs := commandapi.FFArgs{
-		Category: handler.FlagCategory,
-		Flag:     handler.FlagParallelizeInventory,
-		Enabled:  true,
+	cmd := commandapi.Command{
+		Args: commandapi.FFArgs{
+			Category: handler.FlagCategory,
+			Flag:     handler.FlagParallelizeInventory,
+			Enabled:  true,
+		},
 	}
-	handler.NewFFHandler(&c, feature_flags.NewManager(nil)).Handle(context.Background(), ffArgs, true)
+	handler.NewFFHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
 
 	assert.Equal(t, 123, c.InventoryQueueLen)
 }
@@ -156,12 +174,14 @@ func TestFFHandlerHandle_ExitsOnDiffValueAndNotInitialFetch(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		if os.Getenv("SHOULD_RUN_EXIT") == "1" {
-			ffArgs := commandapi.FFArgs{
-				Category: handler.FlagCategory,
-				Flag:     tc.ff,
-				Enabled:  true,
+			cmd := commandapi.Command{
+				Args: commandapi.FFArgs{
+					Category: handler.FlagCategory,
+					Flag:     tc.ff,
+					Enabled:  true,
+				},
 			}
-			handler.NewFFHandler(&config.Config{}, feature_flags.NewManager(nil)).Handle(context.Background(), ffArgs, false)
+			handler.NewFFHandler(&config.Config{}, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, false)
 		}
 
 		cmd := exec.Command(os.Args[0], "-test.run=TestFFHandlerHandle_ExitsOnDiffValueAndNotInitialFetch")
@@ -294,7 +314,8 @@ func TestSrv_InitialFetch_EnablesRegisterAndHandlesBackoff(t *testing.T) {
 		]
 	}
 `
-	ss := NewService(cmdChannelClient(serializedCmds), &config.Config{RegisterEnabled: false}, feature_flags.NewManager(nil))
+	c := &config.Config{RegisterEnabled: false}
+	ss := NewService(cmdChannelClient(serializedCmds), c, feature_flags.NewManager(nil))
 	s := ss.(*srv)
 
 	initialResp, err := s.InitialFetch(context.Background())
@@ -302,7 +323,7 @@ func TestSrv_InitialFetch_EnablesRegisterAndHandlesBackoff(t *testing.T) {
 
 	assert.Equal(t, 3000*time.Second, initialResp.Delay)
 	assert.Equal(t, 3000, s.pollDelaySecs)
-	assert.True(t, s.config.RegisterEnabled)
+	assert.True(t, c.RegisterEnabled)
 }
 
 func TestSrv_InitialFetch_EnablesDimensionalMetrics(t *testing.T) {
