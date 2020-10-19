@@ -166,15 +166,15 @@ func (e *emitter) processEntityFwRequest(r fwrequest.EntityFwRequest) {
 	}
 	replaceEntityName(r.Data.Entity, r.EntityRewrite, agentShortName)
 
-	entityName, err := r.Data.Entity.Key()
+	key, err := r.Data.Entity.Key()
 	if err != nil {
 		elog.
 			WithError(err).
 			WithField("integration", r.Definition.Name).
-			Errorf("cannot determine entity name")
+			Errorf("cannot determine entity")
 	} else {
 		e.idCache.CleanOld()
-		e.idCache.Put(entityName, r.ID())
+		e.idCache.Put(key, r.ID())
 	}
 
 	labels, annos := r.LabelsAndExtraAnnotations()
