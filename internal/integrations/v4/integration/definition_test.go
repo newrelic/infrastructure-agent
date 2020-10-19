@@ -28,8 +28,8 @@ func TestRun(t *testing.T) {
 
 	// GIVEN a definition entry with no discovery sources
 	def, err := NewDefinition(config.ConfigEntry{
-		Name: "foo",
-		Exec: testhelp.Command(fixtures.BasicCmd),
+		InstanceName: "foo",
+		Exec:         testhelp.Command(fixtures.BasicCmd),
 	}, ErrLookup, nil, nil)
 	require.NoError(t, err)
 
@@ -49,8 +49,8 @@ func TestRun_NoDiscovery(t *testing.T) {
 
 	// GIVEN a definition entry with discovery sources
 	def, err := NewDefinition(config.ConfigEntry{
-		Name: "foo",
-		Exec: testhelp.Command(fixtures.BasicCmd),
+		InstanceName: "foo",
+		Exec:         testhelp.Command(fixtures.BasicCmd),
 		Env: map[string]string{
 			"CONFIG": "${discovery.foo}",
 		},
@@ -73,8 +73,8 @@ func TestRun_Discovery(t *testing.T) {
 	}
 	// GIVEN a definition entry with discoverable configuration
 	def, err := NewDefinition(config.ConfigEntry{
-		Name: "foo",
-		Exec: testhelp.Command(fixtures.BasicCmd, "${argument}"),
+		InstanceName: "foo",
+		Exec:         testhelp.Command(fixtures.BasicCmd, "${argument}"),
 		Env: map[string]string{
 			"PREFIX": "${prefix}",
 		},
@@ -116,8 +116,8 @@ func TestRun_CmdSlice(t *testing.T) {
 
 	// GIVEN a definition entry whose parameters are specified as a command array
 	def, err := NewDefinition(config.ConfigEntry{
-		Name: "foo",
-		Exec: testhelp.CommandSlice(fixtures.BasicCmd, "argument"),
+		InstanceName: "foo",
+		Exec:         testhelp.CommandSlice(fixtures.BasicCmd, "argument"),
 	}, ErrLookup, nil, nil)
 	require.NoError(t, err)
 
@@ -139,8 +139,8 @@ func TestRun_CancelPropagation(t *testing.T) {
 	// GIVEN a definition entry with discoverable configuration
 	// that is executed with different discovery matches
 	def, err := NewDefinition(config.ConfigEntry{
-		Name: "foo",
-		Exec: testhelp.Command(fixtures.BlockedCmd, "-f", "${argument}"),
+		InstanceName: "foo",
+		Exec:         testhelp.Command(fixtures.BlockedCmd, "-f", "${argument}"),
 	}, ErrLookup, nil, nil)
 	require.NoError(t, err)
 	vals := databind.NewValues(nil,
@@ -187,8 +187,8 @@ func TestRun_CancelPropagationWithoutReads(t *testing.T) {
 
 	// GIVEN a definition run
 	def, err := NewDefinition(config.ConfigEntry{
-		Name: "foo",
-		Exec: testhelp.Command(fixtures.BlockedCmd),
+		InstanceName: "foo",
+		Exec:         testhelp.Command(fixtures.BlockedCmd),
 	}, ErrLookup, nil, nil)
 	require.NoError(t, err)
 
@@ -226,8 +226,8 @@ func TestRun_Cancel_Partial(t *testing.T) {
 	// GIVEN a definition entry with discoverable configuration
 	// that is executed with different discovery matches
 	def, err := NewDefinition(config.ConfigEntry{
-		Name: "foo",
-		Exec: testhelp.Command("${script}"),
+		InstanceName: "foo",
+		Exec:         testhelp.Command("${script}"),
 	}, ErrLookup, nil, nil)
 	require.NoError(t, err)
 	vals := databind.NewValues(nil,
@@ -271,9 +271,9 @@ func TestRun_Directory(t *testing.T) {
 		currentpath = ".\\"
 	}
 	def, err := NewDefinition(config.ConfigEntry{
-		Name:    "foo",
-		Exec:    testhelp.Command(testhelp.Script(currentpath + scriptFile)),
-		WorkDir: tmpDir,
+		InstanceName: "foo",
+		Exec:         testhelp.Command(testhelp.Script(currentpath + scriptFile)),
+		WorkDir:      tmpDir,
 	}, ErrLookup, nil, nil)
 	require.NoError(t, err)
 
@@ -294,9 +294,9 @@ func TestRun_RemoveExternalConfig(t *testing.T) {
 	// GIVEN an integration with an external configuration file
 
 	configEntry := config.ConfigEntry{
-		Name:   "foo",
-		Exec:   testhelp.Command(fixtures.FileContentsWithArgCmd, "${config.path}"),
-		Config: "${discovery.ip}",
+		InstanceName: "foo",
+		Exec:         testhelp.Command(fixtures.FileContentsWithArgCmd, "${config.path}"),
+		Config:       "${discovery.ip}",
 	}
 	config, err := LoadConfigTemplate(configEntry.TemplatePath, configEntry.Config)
 	require.NoError(t, err)

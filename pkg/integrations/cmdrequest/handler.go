@@ -58,17 +58,17 @@ func newConfigFromCmdReq(cr protocol.CmdRequestV1Cmd) config.ConfigEntry {
 	// executable is provided
 	if cr.Command != "" {
 		return config.ConfigEntry{
-			Name: cr.Name,
-			Exec: append([]string{cr.Command}, cr.Args...),
-			Env:  cr.Env,
+			InstanceName: cr.Name,
+			Exec:         append([]string{cr.Command}, cr.Args...),
+			Env:          cr.Env,
 		}
 
 	}
 
 	// executable would be looked up by integration name
 	return config.ConfigEntry{
-		Name:    cr.Name,
-		CLIArgs: cr.Args,
-		Env:     cr.Env,
+		InstanceName: cr.Name,
+		CLIArgs:      cr.Args,
+		Env:          cr.Env,
 	}
 }
