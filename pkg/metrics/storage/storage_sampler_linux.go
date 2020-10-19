@@ -25,11 +25,20 @@ import (
 
 var (
 	mountSource          = ""
-	SupportedFileSystems = map[string]bool{"xfs": true, "btrfs": true, "ext": true, "ext2": true, "ext3": true, "ext4": true, "hfs": true, "vxfs": true}
-	deviceRegexp         = regexp.MustCompile("^/dev/([a-z0-9]+)")
-	lvmRegexp            = regexp.MustCompile("^/dev/mapper/(.*)")
-	lvmVolumeIdRegexp    = regexp.MustCompile("^/dev/mapper/VolGroup[0-9]+-LogVol([0-9]+)$")
-	invoke               acquire.Invoker
+	SupportedFileSystems = map[string]bool{
+		"xfs":   true,
+		"btrfs": true,
+		"ext":   true,
+		"ext2":  true,
+		"ext3":  true,
+		"ext4":  true,
+		"hfs":   true,
+		"vxfs":  true,
+	}
+	deviceRegexp      = regexp.MustCompile("^/dev/([a-z0-9]+)")
+	lvmRegexp         = regexp.MustCompile("^/dev/mapper/(.*)")
+	lvmVolumeIdRegexp = regexp.MustCompile("^/dev/mapper/VolGroup[0-9]+-LogVol([0-9]+)$")
+	invoke            acquire.Invoker
 )
 
 const (

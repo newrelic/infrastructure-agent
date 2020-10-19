@@ -4,9 +4,9 @@ package storage
 
 import (
 	"fmt"
-
 	"path/filepath"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -125,6 +125,17 @@ func (ss *Sampler) useCustomSupportedFileSystems() {
 	}
 }
 
+func (p *PartitionStat) IsReadOnly() bool {
+	options := strings.Split(p.Opts, ",")
+	for _, o := range options {
+		if o == "ro" {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (ss *Sampler) Interval() time.Duration {
 	return ss.sampleRate
 }
@@ -149,13 +160,13 @@ func PlatformFsByteScale(b uint64) float64 {
 }
 
 // Sample samples the storage devices
-func (ss *Sampler) Sample() (results sample.EventBatch, err error) {
-
+func (ss *Sampler) Sample() (samples sample.EventBatch, err error) {
 	defer func() {
 		if panicErr := recover(); panicErr != nil {
 			err = fmt.Errorf("Panic in Sampler.Sample: %v\nStack: %s", panicErr, debug.Stack())
 		}
 	}()
+
 	var cfg *config.Config
 	if ss.context != nil {
 		cfg = ss.context.Config()
@@ -184,20 +195,16 @@ func (ss *Sampler) Sample() (results sample.EventBatch, err error) {
 	var activeDevices = map[string]bool{}
 
 	// key: sample deviceKey
-	samples := map[string][]*Sample{}
-	for _, fs := range partitions {
-		helpers.LogStructureDetails(sslog, fs, "Partition", "raw", logrus.Fields{"supported": true})
-		sample := &Sample{}
-		sample.Type("StorageSample")
-		sample.ElapsedSampleDeltaMs = elapsedMs
-
+	dev2Samples := map[string][]*Sample{}
+	for _, p := range partitions {
+		helpers.LogStructureDetails(sslog, p, "Partition", "raw", logrus.Fields{"supported": true})
 		// If there is a mountPointPrefix, this means we're most likely running inside a container.
 		// Mount points are reported from the perspective of the host. e.g. "/", "/data1"
 		//
 		// If the host has bind mounted its root to "/host" with associated OverrideHostRoot config,
 		// to collect the disk usage we need to resolve the mount points with the host root prefix.
 		// e.g. "/" -> "/host" and "/data1" -> "/host/data1"
-		mountPoint := filepath.Join(mountPointPrefix, fs.Mountpoint)
+		mountPoint := filepath.Join(mountPointPrefix, p.Mountpoint)
 
 		var fsUsage *disk.UsageStat
 		if fsUsage, err = ss.storageUtilities.Usage(mountPoint); err != nil {
@@ -212,11 +219,11 @@ func (ss *Sampler) Sample() (results sample.EventBatch, err error) {
 			fileDevicesIgnored := cfg.FileDevicesIgnored
 			sslog.WithField("fileDevicesIgnored", fileDevicesIgnored).Debug("Using file device ignored.")
 			for _, deviceName := range fileDevicesIgnored {
-				if strings.Contains(fs.Device, deviceName) {
+				if strings.Contains(p.Device, deviceName) {
 					sslog.WithFieldsF(func() logrus.Fields {
 						return logrus.Fields{
 							"fileDeviceIgnored": deviceName,
-							"skippedDevice":     fs.Device,
+							"skippedDevice":     p.Device,
 						}
 					}).Debug("Skipping ignored device.")
 					found = true
@@ -228,24 +235,19 @@ func (ss *Sampler) Sample() (results sample.EventBatch, err error) {
 			}
 		}
 
-		sample.FileSystemType = fs.Fstype
-		sample.MountPoint = fs.Mountpoint // Ensure we use the reported mount point, not the prefixed one
-		sample.Device = fs.Device
-		sample.IsReadOnly = "false"
-		options := strings.Split(fs.Opts, ",")
-		for _, s := range options {
-			if s == "ro" {
-				sample.IsReadOnly = "true"
-				break
-			}
-		}
-
-		populateUsage(fsUsage, sample)
+		s := &Sample{}
+		s.Type("StorageSample")
+		s.ElapsedSampleDeltaMs = elapsedMs
+		s.FileSystemType = p.Fstype
+		s.MountPoint = p.Mountpoint // Ensure we use the reported mount point, not the prefixed one
+		s.Device = p.Device
+		s.IsReadOnly = strconv.FormatBool(p.IsReadOnly())
+		populateUsage(fsUsage, s)
 
 		// we can have multiple mountpoints for the same device
-		samples[fs.Device] = append(samples[fs.Device], sample)
+		dev2Samples[p.Device] = append(dev2Samples[p.Device], s)
 
-		activeDevices[fs.Device] = true
+		activeDevices[p.Device] = true
 	}
 
 	// Gather IO stats if the OS supports it
@@ -270,7 +272,7 @@ func (ss *Sampler) Sample() (results sample.EventBatch, err error) {
 					if lastStats, ok := ss.lastDiskStats[deviceKey]; ok {
 						// Look through all accumulated Sample objects for this device. (There could be multiple
 						// objects for the same device if it's mounted in multiple locations.)
-						if deviceSamples, ok := samples[device]; ok {
+						if deviceSamples, ok := dev2Samples[device]; ok {
 							sslog.WithFieldsF(func() logrus.Fields {
 								return logrus.Fields{
 									"device":    device,
@@ -302,17 +304,18 @@ func (ss *Sampler) Sample() (results sample.EventBatch, err error) {
 		ss.lastDiskStats = ioCounters
 	}
 
-	for _, s := range samples {
-		for _, sample := range s {
-			results = append(results, sample)
+	for _, devSamples := range dev2Samples {
+		for _, s := range devSamples {
+			samples = append(samples, s)
 		}
 	}
-	ss.lastSamples = results
+	ss.lastSamples = samples
 
-	for _, sample := range results {
-		helpers.LogStructureDetails(sslog, sample.(*Sample), "StorageSample", "final", nil)
+	for _, s := range samples {
+		helpers.LogStructureDetails(sslog, s.(*Sample), "StorageSample", "final", nil)
 	}
-	return results, nil
+
+	return samples, nil
 }
 
 // PartitionsCache avoids polling for partitions on each sample, since they do not change so frequently
