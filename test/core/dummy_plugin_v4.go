@@ -65,8 +65,8 @@ func InventoryDatasetsForPayload(t *testing.T, payload []byte) (dss []agent.Plug
 	require.NoError(t, err)
 
 	def, err := integration.NewDefinition(config.ConfigEntry{
-		Name: "foo",
-		Exec: testhelp.Command(fixtures.BasicCmd),
+		InstanceName: "foo",
+		Exec:         testhelp.Command(fixtures.BasicCmd),
 	}, integration.ErrLookup, nil, nil)
 	require.NoError(t, err)
 
