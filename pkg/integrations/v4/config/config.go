@@ -12,6 +12,7 @@ import (
 // ConfigEntry holds an integrations YAML configuration entry. It may define multiple types of tasks
 type ConfigEntry struct {
 	Name     string            `yaml:"name"`     // integration name
+	CLIArgs  []string          `yaml:"cli_args"` // optional when executable is deduced by "name" instead of "exec"
 	Exec     ShlexOpt          `yaml:"exec"`     // it may be a CLI string or a YAML array
 	Env      map[string]string `yaml:"env"`      // User-defined environment variables
 	Interval string            `yaml:"interval"` // User-defined interval string (duration notation)
@@ -92,10 +93,16 @@ func (cf *ConfigEntry) Sanitize() error {
 	if cf.Name == "" {
 		return errors.New("integration entry requires a non-empty 'name' field")
 	}
+
+	if len(cf.Exec) > 0 && len(cf.CLIArgs) > 0 {
+		return errors.New("use either 'exec' or 'cli_args' but not both")
+	}
+
 	// Checking if there is any configuration file or path to be passed externally to the integration
 	if cf.Config != nil && cf.TemplatePath != "" {
 		return fmt.Errorf("only 'config' or 'config_template_path' is allowed, not both at the same time")
 	}
+
 	// Avoids undefined environment configuration to leak a nil map
 	if cf.Env == nil {
 		cf.Env = map[string]string{}

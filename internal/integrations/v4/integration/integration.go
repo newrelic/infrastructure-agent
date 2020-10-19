@@ -173,7 +173,7 @@ func (d *Definition) fromName(te config2.ConfigEntry, lookup InstancesLookup) er
 	}
 	// we need to pass the path as part of an array, to avoid splitting the
 	// folders as different arguments
-	te.Exec = []string{path}
+	te.Exec = append([]string{path}, te.CLIArgs...)
 	d.runnable, err = newExecutor(&d.ExecutorConfig, te.Exec)
 	return err
 }
