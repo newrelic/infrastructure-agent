@@ -61,7 +61,7 @@ func NewDefinition(ce config2.ConfigEntry, lookup InstancesLookup, passthroughEn
 			Passthrough: passthroughEnv,
 		},
 		Labels:         ce.Labels,
-		Name:           ce.Name,
+		Name:           ce.InstanceName,
 		Interval:       getInterval(ce.Interval),
 		WhenConditions: conditions(ce.When),
 		ConfigTemplate: configTemplate,
@@ -167,7 +167,7 @@ func (d *Definition) fromName(te config2.ConfigEntry, lookup InstancesLookup) er
 	// if not an "exec" nor legacy integration, we'll look for an
 	// executable corresponding to the "name" field in any of the integrations
 	// folders, and wrap it into an "exec"
-	path, err := lookup.ByName(te.Name)
+	path, err := lookup.ByName(te.InstanceName)
 	if err != nil {
 		return errors.New("can't instantiate integration: " + err.Error())
 	}
