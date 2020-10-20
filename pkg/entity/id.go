@@ -141,6 +141,7 @@ func (f *Fields) Key() (Key, error) {
 	return Key(fmt.Sprintf("%v:%v%s", f.Type, f.Name, strings.ToLower(attrsStr))), nil
 }
 
+// ResolveUniqueEntityKey determine an unique entity key for agent and integrations to avoid collision.
 func (f *Fields) ResolveUniqueEntityKey(agentID string, lookup host.IDLookup, entityRewrite data.EntityRewrites, protocol int) (Key, error) {
 	if f.IsAgent() {
 		return Key(agentID), nil
@@ -155,6 +156,7 @@ func (f *Fields) ResolveUniqueEntityKey(agentID string, lookup host.IDLookup, en
 	return f.Key()
 }
 
+// ReplaceLoopback returns the value replacing localhost for agent hostname
 func ReplaceLoopback(value string, lookup host.IDLookup, protocolVersion int) (string, error) {
 	const protocolV3 = 3
 	if protocolVersion < protocolV3 || !http.ContainsLocalhost(value) {
