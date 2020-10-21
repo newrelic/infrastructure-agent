@@ -1,13 +1,13 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-package handler
+package ffhandler
 
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"os"
 
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
 	"github.com/newrelic/infrastructure-agent/internal/os/api"
 	"github.com/newrelic/infrastructure-agent/pkg/trace"
 	errors2 "github.com/pkg/errors"
@@ -34,8 +34,7 @@ const (
 )
 
 var (
-	ffLogger       = log.WithComponent("FeatureFlagHandler")
-	InvalidArgsErr = errors.New("invalid arguments for command")
+	ffLogger = log.WithComponent("FeatureFlagHandler")
 )
 
 // FFHandler handles FF commands.
@@ -115,7 +114,7 @@ func (h *FFHandler) SetOHIHandler(e OHIEnabler) {
 func (h *FFHandler) Handle(ctx context.Context, c commandapi.Command, isInitialFetch bool) (boSecs int, err error) {
 	var ffArgs commandapi.FFArgs
 	if err = json.Unmarshal(c.Args, &ffArgs); err != nil {
-		err = errors2.Wrap(InvalidArgsErr, err.Error())
+		err = errors2.Wrap(cmdchannel.InvalidArgsErr, err.Error())
 		return
 	}
 

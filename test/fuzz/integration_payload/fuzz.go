@@ -6,7 +6,7 @@
 package integration_payload
 
 import (
-	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/ffhandler"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm"
@@ -25,7 +25,7 @@ func Fuzz(data []byte) int {
 
 	// integration protocol v4
 	// otherwise parse won't happen
-	ffm := feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true})
+	ffm := feature_flags.NewManager(map[string]bool{ffhandler.FlagProtocolV4: true})
 	_, err3 := dm.ParsePayloadV4(data, ffm)
 
 	// discourage mutation when no errors at all
