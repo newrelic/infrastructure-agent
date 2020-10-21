@@ -131,8 +131,7 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 				var found bool
 
 				if ds.Entity.IsAgent() {
-					eID = e.agentContext.Identity().ID
-					found = true
+					eID, found = e.agentContext.Identity().ID, true
 				} else {
 					eID, found = e.idCache.Get(eKey)
 				}
@@ -298,12 +297,12 @@ func ParsePayloadV4(raw []byte, ffManager feature_flags.Retriever) (dataV4 proto
 }
 
 // Returns a composed error which describes all the errors found during the emit process of each data set
-func composeEmitError(emitErrs []error, dataSetLenght int) error {
+func composeEmitError(emitErrs []error, dataSetLength int) error {
 	if len(emitErrs) == 0 {
 		return nil
 	}
 
-	composedError := fmt.Sprintf("%d out of %d datasets could not be emitted. Reasons: ", len(emitErrs), dataSetLenght)
+	composedError := fmt.Sprintf("%d out of %d datasets could not be emitted. Reasons: ", len(emitErrs), dataSetLength)
 	messages := map[string]struct{}{}
 
 	for _, err := range emitErrs {
