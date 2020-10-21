@@ -23,6 +23,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
 	ccBackoff "github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/backoff"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/runintegration"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/service"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/files"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
@@ -229,8 +230,15 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	boHandler := ccBackoff.NewHandler()
 	ffHandle := fflag.NewHandler(c, ffManager, wlog.WithComponent("FFHandler"))
 	ffHandler := cmdchannel.NewCmdHandler("set_feature_flag", ffHandle.Handle)
+	riHandler := runintegration.NewHandler(definitionQ, il, wlog.WithComponent("runintegration.Handler"))
 	// Command channel service
-	ccService := service.NewService(caClient, c.CommandChannelIntervalSec, boHandler, ffHandler)
+	ccService := service.NewService(
+		caClient,
+		c.CommandChannelIntervalSec,
+		boHandler,
+		ffHandler,
+		riHandler,
+	)
 	initCmdResponse, err := ccService.InitialFetch(context.Background())
 	if err != nil {
 		aslog.WithError(err).Warn("Commands initial fetch failed.")

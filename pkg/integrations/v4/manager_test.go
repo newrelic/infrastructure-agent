@@ -4,6 +4,7 @@ package v4
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -17,6 +18,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/testhelp"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/testhelp/testemit"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/v3legacy"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/fixtures"
@@ -459,7 +461,8 @@ func TestManager_PassthroughEnv(t *testing.T) {
 	niDir, err := ioutil.TempDir("", "newrelic-integrations")
 	require.NoError(t, err)
 	defer removeTempFiles(t, niDir)
-	require.NoError(t, testhelp.GoBuild(fixtures.SimpleGoFile, filepath.Join(niDir, "nri-simple"+fixtures.CmdExtension)))
+	execPath := filepath.Join(niDir, "nri-simple"+fixtures.CmdExtension)
+	require.NoError(t, testhelp.GoBuild(fixtures.SimpleGoFile, execPath))
 	configDir, err := tempFiles(map[string]string{
 		"my-configs.yml": `
 integrations:
@@ -475,7 +478,7 @@ integrations:
 		ConfigFolders:          []string{configDir},
 		DefinitionFolders:      []string{niDir},
 		PassthroughEnvironment: []string{niDir},
-	}, emitter, integration.ErrLookup, definitionQ)
+	}, emitter, instancesLookupReturning(execPath), definitionQ)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -491,7 +494,8 @@ func TestManager_PassthroughEnv_Priorities(t *testing.T) {
 	require.NoError(t, err)
 	defer removeTempFiles(t, niDir)
 
-	require.NoError(t, testhelp.GoBuild(fixtures.SimpleGoFile, filepath.Join(niDir, "nri-simple"+fixtures.CmdExtension)))
+	execPath := filepath.Join(niDir, "nri-simple"+fixtures.CmdExtension)
+	require.NoError(t, testhelp.GoBuild(fixtures.SimpleGoFile, execPath))
 	configDir, err := tempFiles(map[string]string{
 		"my-configs.yml": `
 integrations:
@@ -511,7 +515,7 @@ integrations:
 		ConfigFolders:          []string{configDir},
 		DefinitionFolders:      []string{niDir},
 		PassthroughEnvironment: []string{"VALUE"},
-	}, emitter, integration.ErrLookup, definitionQ)
+	}, emitter, instancesLookupReturning(execPath), definitionQ)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -555,7 +559,7 @@ integrations:
 	mgr := NewManager(Configuration{
 		ConfigFolders:     []string{configDir},
 		DefinitionFolders: []string{definitionsDir},
-	}, emitter, integration.ErrLookup, definitionQ)
+	}, emitter, instancesLookupLegacy(definitionsDir), definitionQ)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -603,7 +607,7 @@ integrations:
 		ConfigFolders:          []string{configDir},
 		DefinitionFolders:      []string{definitionsDir},
 		PassthroughEnvironment: []string{"VALUE"},
-	}, emitter, integration.ErrLookup, definitionQ)
+	}, emitter, instancesLookupLegacy(definitionsDir), definitionQ)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -625,8 +629,10 @@ func TestManager_NamedIntegration(t *testing.T) {
 	ciDir, err := ioutil.TempDir("", "custom integrations") // using spaces to make sure they are not taken as different arguments
 	require.NoError(t, err)
 	defer removeTempFiles(t, ciDir)
-	require.NoError(t, testhelp.GoBuild(fixtures.LongTimeGoFile, filepath.Join(niDir, "nri-longtime"+fixtures.CmdExtension)))
-	require.NoError(t, testhelp.GoBuild(fixtures.SimpleGoFile, filepath.Join(ciDir, "nri-simple"+fixtures.CmdExtension)))
+	execPath1 := filepath.Join(niDir, "nri-longtime"+fixtures.CmdExtension)
+	execPath2 := filepath.Join(ciDir, "nri-simple"+fixtures.CmdExtension)
+	require.NoError(t, testhelp.GoBuild(fixtures.LongTimeGoFile, execPath1))
+	require.NoError(t, testhelp.GoBuild(fixtures.SimpleGoFile, execPath2))
 
 	// AND a v4 configuration file that references the above commands only by name
 	configDir, err := tempFiles(map[string]string{
@@ -644,7 +650,7 @@ integrations:
 	mgr := NewManager(Configuration{
 		ConfigFolders:     []string{configDir},
 		DefinitionFolders: []string{niDir, ciDir, "unexisting-dir"},
-	}, emitter, integration.ErrLookup, definitionQ)
+	}, emitter, instancesLookupReturning(execPath1, execPath2), definitionQ)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -663,7 +669,8 @@ func TestManager_NamedIntegrationWithConfig(t *testing.T) {
 	niDir, err := ioutil.TempDir("", "newrelic-integrations")
 	require.NoError(t, err)
 	defer removeTempFiles(t, niDir)
-	require.NoError(t, testhelp.GoBuild(fixtures.ValidYAMLGoFile, filepath.Join(niDir, "nri-validyaml"+fixtures.CmdExtension)))
+	execPath := filepath.Join(niDir, "nri-validyaml"+fixtures.CmdExtension)
+	require.NoError(t, testhelp.GoBuild(fixtures.ValidYAMLGoFile, execPath))
 
 	// AND a v4 named integration with an embedded config
 	configDir, err := tempFiles(map[string]string{
@@ -683,7 +690,7 @@ integrations:
 	mgr := NewManager(Configuration{
 		ConfigFolders:     []string{configDir},
 		DefinitionFolders: []string{niDir},
-	}, emitter, integration.ErrLookup, definitionQ)
+	}, emitter, instancesLookupReturning(execPath), definitionQ)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -1032,5 +1039,31 @@ func expectNoMetric(t require.TestingT, e *testemit.RecordEmitter, pluginName st
 func skipIfWindows(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping in windows")
+	}
+}
+
+func instancesLookupReturning(execPaths ...string) integration.InstancesLookup {
+	calls := 0
+	return integration.InstancesLookup{
+		Legacy: func(dcc integration.DefinitionCommandConfig) (integration.Definition, error) {
+			return integration.Definition{}, nil
+		},
+		ByName: func(_ string) (string, error) {
+			calls++
+			return execPaths[calls-1], nil
+		},
+	}
+}
+
+func instancesLookupLegacy(definitionFolders ...string) integration.InstancesLookup {
+	legacyDefinedCommands := v3legacy.NewDefinitionsRepo(v3legacy.LegacyConfig{
+		DefinitionFolders: definitionFolders,
+		Verbose:           0,
+	})
+	return integration.InstancesLookup{
+		Legacy: legacyDefinedCommands.NewDefinitionCommand,
+		ByName: func(_ string) (string, error) {
+			return "", errors.New("lookup by name not expected to be invoked")
+		},
 	}
 }
