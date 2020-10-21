@@ -111,7 +111,7 @@ func (h *Harvester) Start() {
 		go harvestRoutine(h)
 	}
 
-	for i := 0; i < h.config.MaxConns; i++ {
+	for i := 1; i <= h.config.MaxConns; i++ {
 		go func(workerNo int) {
 			wlog := logger.WithField("WorkerNo.", workerNo)
 			wlog.Debug("Starting worker.")
@@ -124,7 +124,7 @@ func (h *Harvester) Start() {
 					harvestRequest(req, &h.config)
 				}
 			}
-		}(i + 1)
+		}(i)
 	}
 }
 
@@ -276,7 +276,6 @@ func (r response) needsRetry(_ *Config, attempts int) (bool, time.Duration) {
 func postData(req *http.Request, client *http.Client) response {
 	resp, err := client.Do(req)
 	if nil != err {
-		logger.WithError(err).Info("BOOM")
 		return response{err: fmt.Errorf("error posting data: %v", err)}
 	}
 	defer resp.Body.Close()
