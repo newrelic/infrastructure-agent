@@ -20,7 +20,7 @@ const defaultTTL = 24 * time.Hour
 //
 // This component is not thread-safe.
 type KnownIDs struct {
-	lock sync.Mutex
+	lock sync.RWMutex
 	ids  map[Key]*idEntry
 	ttls map[Type]time.Duration // per-entity ttl
 }
@@ -75,8 +75,8 @@ func (k *KnownIDs) putTTL(key Key, id ID, ttl time.Duration) {
 // Get returns the entity ID for the given entity Key, if exists. If the entry is found, its expiration time is updated
 // to the current time + TTL.
 func (k *KnownIDs) Get(key Key) (ID, bool) {
-	k.lock.Lock()
-	defer k.lock.Unlock()
+	k.lock.RLock()
+	defer k.lock.RUnlock()
 
 	entry, ok := k.ids[key]
 	if !ok {
