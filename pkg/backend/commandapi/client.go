@@ -4,26 +4,13 @@ package commandapi
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
 
 	backendhttp "github.com/newrelic/infrastructure-agent/pkg/backend/http"
-	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
-)
-
-// Available commands
-const (
-	SetFFCmd   = "set_feature_flag"
-	BackoffCmd = "backoff_command_channel"
-)
-
-var (
-	// Errors
-	UnknownCmdErr = errors.New("unknown command name")
 )
 
 type Client interface {
@@ -31,39 +18,9 @@ type Client interface {
 }
 
 type Command struct {
-	ID   int         `json:"id"`
-	Name string      `json:"name"`
-	Args interface{} `json:"arguments"`
-}
-
-func (c *Command) UnmarshalJSON(b []byte) (err error) {
-	var rawArgs json.RawMessage
-	c.Args = &rawArgs
-
-	type cc Command // avoid infinite nesting
-	if err = json.Unmarshal(b, (*cc)(c)); err != nil {
-		return err
-	}
-
-	switch c.Name {
-	case BackoffCmd:
-		var boArgs BackoffArgs
-		if err = json.Unmarshal(rawArgs, &boArgs); err != nil {
-			return
-		}
-		c.Args = boArgs
-	case SetFFCmd:
-		var ffArgs FFArgs
-		if err = json.Unmarshal(rawArgs, &ffArgs); err != nil {
-			return
-		}
-		c.Args = ffArgs
-	default:
-		// returning partial cmd as it might bundle useful info
-		err = UnknownCmdErr
-	}
-
-	return
+	ID   int             `json:"id"`
+	Name string          `json:"name"`
+	Args json.RawMessage `json:"arguments"`
 }
 
 type BackoffArgs struct {
@@ -75,8 +32,6 @@ type FFArgs struct {
 	Flag     string
 	Enabled  bool
 }
-
-func (f *FFArgs) Apply(cfg *config.Config) {}
 
 type client struct {
 	svcURL     string

@@ -5,26 +5,30 @@ package cmdchannel
 import (
 	"bytes"
 	"context"
-	"github.com/newrelic/infrastructure-agent/internal/os/api"
-	"github.com/newrelic/infrastructure-agent/pkg/log"
-
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
+	"reflect"
+	"runtime"
 	"strconv"
 	"sync"
 	"syscall"
-	"testing"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/os/api"
+	http2 "github.com/newrelic/infrastructure-agent/pkg/backend/http"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
+
+	"testing"
 
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/commandapi"
-	http2 "github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
-	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,11 +39,10 @@ var (
 func TestFFHandlerHandle_EnablesRegisterOnInitialFetch(t *testing.T) {
 	c := config.Config{}
 	cmd := commandapi.Command{
-		Args: commandapi.FFArgs{
-			Category: handler.FlagCategory,
-			Flag:     handler.FlagNameRegister,
-			Enabled:  true,
-		},
+		Args: []byte(`{
+ 			"category": "Infra_Agent",
+			"flag": "register_enabled",
+			"enabled": true }`),
 	}
 	handler.NewFFHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
 
@@ -49,11 +52,10 @@ func TestFFHandlerHandle_EnablesRegisterOnInitialFetch(t *testing.T) {
 func TestFFHandlerHandle_DisablesRegisterOnInitialFetch(t *testing.T) {
 	c := config.Config{RegisterEnabled: true}
 	cmd := commandapi.Command{
-		Args: commandapi.FFArgs{
-			Category: handler.FlagCategory,
-			Flag:     handler.FlagNameRegister,
-			Enabled:  false,
-		},
+		Args: []byte(`{
+ 			"category": "Infra_Agent",
+			"flag": "register_enabled",
+			"enabled": false }`),
 	}
 	handler.NewFFHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
 
@@ -97,11 +99,10 @@ func TestFFHandler_DMRegisterOnInitialFetch(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			config := config.Config{Features: tc.feature}
 			cmd := commandapi.Command{
-				Args: commandapi.FFArgs{
-					Category: handler.FlagCategory,
-					Flag:     handler.FlagDMRegisterEnable,
-					Enabled:  tc.commandValue,
-				},
+				Args: []byte(fmt.Sprintf(`{
+ 			"category": "Infra_Agent",
+			"flag": "dm_register_enabled",
+			"enabled": %s }`, strconv.FormatBool(tc.commandValue))),
 			}
 			manager := feature_flags.NewManager(tc.feature)
 			handler.NewFFHandler(&config, manager, l).Handle(context.Background(), cmd, true)
@@ -116,11 +117,10 @@ func TestFFHandlerHandle_DisablesParallelizeInventoryConfigOnInitialFetch(t *tes
 		InventoryQueueLen: 123,
 	}
 	cmd := commandapi.Command{
-		Args: commandapi.FFArgs{
-			Category: handler.FlagCategory,
-			Flag:     handler.FlagParallelizeInventory,
-			Enabled:  false,
-		},
+		Args: []byte(`{
+ 			"category": "Infra_Agent",
+			"flag": "parallelize_inventory_enabled",
+			"enabled": false }`),
 	}
 	handler.NewFFHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
 
@@ -130,11 +130,10 @@ func TestFFHandlerHandle_DisablesParallelizeInventoryConfigOnInitialFetch(t *tes
 func TestFFHandlerHandle_EnablesParallelizeInventoryConfigWithDefaultValue(t *testing.T) {
 	c := config.Config{}
 	cmd := commandapi.Command{
-		Args: commandapi.FFArgs{
-			Category: handler.FlagCategory,
-			Flag:     handler.FlagParallelizeInventory,
-			Enabled:  true,
-		},
+		Args: []byte(`{
+ 			"category": "Infra_Agent",
+			"flag": "parallelize_inventory_enabled",
+			"enabled": true }`),
 	}
 	handler.NewFFHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
 
@@ -146,11 +145,10 @@ func TestFFHandlerHandle_EnabledFFParallelizeInventoryDoesNotModifyProvidedConfi
 		InventoryQueueLen: 123,
 	}
 	cmd := commandapi.Command{
-		Args: commandapi.FFArgs{
-			Category: handler.FlagCategory,
-			Flag:     handler.FlagParallelizeInventory,
-			Enabled:  true,
-		},
+		Args: []byte(`{
+ 			"category": "Infra_Agent",
+			"flag": "parallelize_inventory_enabled",
+			"enabled": true }`),
 	}
 	handler.NewFFHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
 
@@ -175,11 +173,10 @@ func TestFFHandlerHandle_ExitsOnDiffValueAndNotInitialFetch(t *testing.T) {
 	for _, tc := range testCases {
 		if os.Getenv("SHOULD_RUN_EXIT") == "1" {
 			cmd := commandapi.Command{
-				Args: commandapi.FFArgs{
-					Category: handler.FlagCategory,
-					Flag:     tc.ff,
-					Enabled:  true,
-				},
+				Args: []byte(fmt.Sprintf(`{
+					"category": "Infra_Agent",
+					"flag": "%s",
+					"enabled": true }`, tc.ff)),
 			}
 			handler.NewFFHandler(&config.Config{}, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, false)
 		}
@@ -470,4 +467,24 @@ func cmdChannelClientSpy(serializedCmds ...string) (commandapi.Client, chan *htt
 	}
 
 	return commandapi.NewClient("https://foo", "123", "Agent v0", httpClient), respCh, receivedAgentIDCh
+}
+
+func TestNewCmdHandler(t *testing.T) {
+	type foo struct{ bar string }
+
+	noopHandle := func(ctx context.Context, cmd commandapi.Command, initialFetch bool) (backoffSecs int, err error) {
+		return
+	}
+
+	h := NewCmdHandler("foo", foo{}, noopHandle)
+
+	assert.Equal(t, "foo", h.CmdName)
+	assert.IsType(t, foo{}, h.CmdArgumentsType)
+
+	// func comparison https://github.com/stretchr/testify/issues/182#issuecomment-495359313
+	var (
+		expectedF = runtime.FuncForPC(reflect.ValueOf(noopHandle).Pointer()).Name()
+		gotF      = runtime.FuncForPC(reflect.ValueOf(h.Handle).Pointer()).Name()
+	)
+	assert.Equal(t, expectedF, gotF)
 }

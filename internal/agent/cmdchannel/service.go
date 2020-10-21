@@ -4,9 +4,11 @@ package cmdchannel
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
+	errors2 "github.com/pkg/errors"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
 	"github.com/newrelic/infrastructure-agent/internal/agent/id"
@@ -20,22 +22,37 @@ var (
 	ccsLogger = log.WithComponent("CommandChannelService")
 )
 
-// CmdHandle command channel request handler function.
-type CmdHandle func(ctx context.Context, cmd commandapi.Command, initialFetch bool) (backoffSecs int, err error)
+// CmdHandleF command channel request handler function.
+type CmdHandleF func(ctx context.Context, cmd commandapi.Command, initialFetch bool) (backoffSecs int, err error)
+
+// CmdHandler handler for the a given command-channel command request.
+type CmdHandler struct {
+	Handle           CmdHandleF
+	CmdName          string
+	CmdArgumentsType interface{}
+}
 
 type srv struct {
 	client            commandapi.Client
 	pollDelaySecs     int
-	handlersByCmdName map[string]CmdHandle
+	handlersByCmdName map[string]*CmdHandler
 	ffHandler         *handler.FFHandler // explicit to ease deps injection on runtime
+}
+
+func NewCmdHandler(cmdName string, cmdArgumentsType interface{}, handle CmdHandleF) *CmdHandler {
+	return &CmdHandler{
+		CmdName:          cmdName,
+		CmdArgumentsType: cmdArgumentsType,
+		Handle:           handle,
+	}
 }
 
 // NewService creates a service to poll and handle command channel commands.
 func NewService(client commandapi.Client, config *config.Config, ffSetter feature_flags.Setter) Service {
 	boHandle := func(ctx context.Context, cmd commandapi.Command, initialFetch bool) (backoffSecs int, err error) {
-		boArgs, ok := cmd.Args.(commandapi.BackoffArgs)
-		if !ok {
-			err = handler.InvalidArgsErr
+		var boArgs commandapi.BackoffArgs
+		if err = json.Unmarshal(cmd.Args, &boArgs); err != nil {
+			err = errors2.Wrap(handler.InvalidArgsErr, err.Error())
 			return
 		}
 		backoffSecs = boArgs.Delay
@@ -43,14 +60,17 @@ func NewService(client commandapi.Client, config *config.Config, ffSetter featur
 	}
 
 	ffHandler := handler.NewFFHandler(config, ffSetter, log.WithComponent("FFHandler"))
+
+	handlers := map[string]*CmdHandler{
+		"backoff_command_channel": NewCmdHandler("backoff_command_channel", nil, boHandle),
+		"set_feature_flag":        NewCmdHandler("set_feature_flag", nil, ffHandler.Handle),
+	}
+
 	return &srv{
-		client:        client,
-		pollDelaySecs: config.CommandChannelIntervalSec,
-		ffHandler:     ffHandler,
-		handlersByCmdName: map[string]CmdHandle{
-			commandapi.BackoffCmd: boHandle,
-			commandapi.SetFFCmd:   ffHandler.Handle,
-		},
+		client:            client,
+		pollDelaySecs:     config.CommandChannelIntervalSec,
+		ffHandler:         ffHandler,
+		handlersByCmdName: handlers,
 	}
 }
 
@@ -112,7 +132,7 @@ func (s *srv) nextPollInterval() time.Duration {
 }
 
 func (s *srv) handle(ctx context.Context, c commandapi.Command, initialFetch bool) {
-	handle, ok := s.handlersByCmdName[c.Name]
+	h, ok := s.handlersByCmdName[c.Name]
 	if !ok {
 		ccsLogger.
 			WithField("cmd_id", c.ID).
@@ -121,7 +141,7 @@ func (s *srv) handle(ctx context.Context, c commandapi.Command, initialFetch boo
 		return
 	}
 
-	backoffSecs, err := handle(ctx, c, initialFetch)
+	backoffSecs, err := h.Handle(ctx, c, initialFetch)
 	if err != nil {
 		ccsLogger.
 			WithField("cmd_id", c.ID).
