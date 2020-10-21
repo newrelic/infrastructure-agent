@@ -23,16 +23,6 @@ type Command struct {
 	Args json.RawMessage `json:"arguments"`
 }
 
-type BackoffArgs struct {
-	Delay int // backoff delay in secs
-}
-
-type FFArgs struct {
-	Category string
-	Flag     string
-	Enabled  bool
-}
-
 type client struct {
 	svcURL     string
 	licenseKey string

@@ -1,6 +1,6 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-package ffhandler
+package fflag
 
 import (
 	"context"
@@ -52,7 +52,7 @@ func TestFFHandlerHandle_EnablesRegisterOnInitialFetch(t *testing.T) {
 			"flag": "register_enabled",
 			"enabled": true }`),
 	}
-	NewFFHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
+	NewHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
 
 	assert.True(t, c.RegisterEnabled)
 }
@@ -65,7 +65,7 @@ func TestFFHandlerHandle_DisablesRegisterOnInitialFetch(t *testing.T) {
 			"flag": "register_enabled",
 			"enabled": false }`),
 	}
-	NewFFHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
+	NewHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
 
 	assert.False(t, c.RegisterEnabled)
 }
@@ -113,7 +113,7 @@ func TestFFHandler_DMRegisterOnInitialFetch(t *testing.T) {
 			"enabled": %s }`, strconv.FormatBool(tc.commandValue))),
 			}
 			manager := feature_flags.NewManager(tc.feature)
-			NewFFHandler(&config, manager, l).Handle(context.Background(), cmd, true)
+			NewHandler(&config, manager, l).Handle(context.Background(), cmd, true)
 			enable, _ := manager.GetFeatureFlag(FlagDMRegisterEnable)
 			assert.Equal(t, tc.want, enable)
 		})
@@ -130,7 +130,7 @@ func TestFFHandlerHandle_DisablesParallelizeInventoryConfigOnInitialFetch(t *tes
 			"flag": "parallelize_inventory_enabled",
 			"enabled": false }`),
 	}
-	NewFFHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
+	NewHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
 
 	assert.Equal(t, 0, c.InventoryQueueLen)
 }
@@ -143,7 +143,7 @@ func TestFFHandlerHandle_EnablesParallelizeInventoryConfigWithDefaultValue(t *te
 			"flag": "parallelize_inventory_enabled",
 			"enabled": true }`),
 	}
-	NewFFHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
+	NewHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
 
 	assert.Equal(t, CfgValueParallelizeInventory, int64(c.InventoryQueueLen))
 }
@@ -158,7 +158,7 @@ func TestFFHandlerHandle_EnabledFFParallelizeInventoryDoesNotModifyProvidedConfi
 			"flag": "parallelize_inventory_enabled",
 			"enabled": true }`),
 	}
-	NewFFHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
+	NewHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
 
 	assert.Equal(t, 123, c.InventoryQueueLen)
 }
@@ -186,7 +186,7 @@ func TestFFHandlerHandle_ExitsOnDiffValueAndNotInitialFetch(t *testing.T) {
 					"flag": "%s",
 					"enabled": true }`, tc.ff)),
 			}
-			NewFFHandler(&config.Config{}, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, false)
+			NewHandler(&config.Config{}, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, false)
 		}
 
 		cmd := exec.Command(os.Args[0], "-test.run=TestFFHandlerHandle_ExitsOnDiffValueAndNotInitialFetch")
@@ -220,7 +220,7 @@ func TestSrv_InitialFetch_EnablesRegister(t *testing.T) {
 	}
 `
 	c := config.Config{RegisterEnabled: false}
-	h := NewFFHandler(&c, feature_flags.NewManager(nil), l)
+	h := NewHandler(&c, feature_flags.NewManager(nil), l)
 	ffHandler := cmdchannel.NewCmdHandler("set_feature_flag", h.Handle)
 	s := service.NewService(cmdchanneltest.SuccessClient(serializedCmds), 0, ffHandler)
 
@@ -247,7 +247,7 @@ func TestSrv_InitialFetch_DisablesRegister(t *testing.T) {
 	}
 `
 	c := config.Config{RegisterEnabled: true}
-	h := NewFFHandler(&c, feature_flags.NewManager(nil), l)
+	h := NewHandler(&c, feature_flags.NewManager(nil), l)
 	ffHandler := cmdchannel.NewCmdHandler("set_feature_flag", h.Handle)
 	s := service.NewService(cmdchanneltest.SuccessClient(serializedCmds), 0, ffHandler)
 
@@ -274,7 +274,7 @@ func TestSrv_InitialFetch_EnablesDimensionalMetrics(t *testing.T) {
 	}
 `
 	ffManager := feature_flags.NewManager(nil)
-	h := NewFFHandler(&config.Config{}, ffManager, l)
+	h := NewHandler(&config.Config{}, ffManager, l)
 	ffHandler := cmdchannel.NewCmdHandler("set_feature_flag", h.Handle)
 	s := service.NewService(cmdchanneltest.SuccessClient(serializedCmds), 0, ffHandler)
 

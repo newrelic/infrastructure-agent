@@ -16,7 +16,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/backoff"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/cmdchanneltest"
-	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/ffhandler"
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
 	http2 "github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
@@ -117,7 +117,7 @@ func TestSrv_InitialFetch_EnablesRegisterAndHandlesBackoff(t *testing.T) {
 	}
 `
 	c := &config.Config{RegisterEnabled: false}
-	h := ffhandler.NewFFHandler(c, feature_flags.NewManager(nil), l)
+	h := fflag.NewHandler(c, feature_flags.NewManager(nil), l)
 	ffHandler := cmdchannel.NewCmdHandler("set_feature_flag", h.Handle)
 	ss := NewService(cmdchanneltest.SuccessClient(serializedCmds), 0, backoff.NewHandler(), ffHandler)
 	s := ss.(*srv)
@@ -170,7 +170,7 @@ func TestSrv_Run(t *testing.T) {
 
 	ffManager := feature_flags.NewManager(nil)
 	c := &config.Config{RegisterEnabled: false}
-	h := ffhandler.NewFFHandler(c, ffManager, l)
+	h := fflag.NewHandler(c, ffManager, l)
 	ffHandler := cmdchannel.NewCmdHandler("set_feature_flag", h.Handle)
 
 	cmdChClient, responsesCh, headerAgentIDCh := cmdChannelClientSpy(initialCmd, firstPollCmd)
@@ -215,7 +215,7 @@ func TestSrv_Run(t *testing.T) {
 	wg.Wait()
 	assert.Equal(t, 2, s.pollDelaySecs, "minimum interval is 1sec")
 
-	enabled, exists := ffManager.GetFeatureFlag(ffhandler.FlagProtocolV4)
+	enabled, exists := ffManager.GetFeatureFlag(fflag.FlagProtocolV4)
 	assert.True(t, enabled)
 	assert.True(t, exists)
 }

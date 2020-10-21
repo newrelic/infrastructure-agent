@@ -5,7 +5,7 @@ package sampler
 
 import (
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/ffhandler"
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"reflect"
 	"regexp"
@@ -270,7 +270,7 @@ func NewSampleMatchFn(enableProcessMetrics *bool, includeMetricsMatchers config.
 			return true
 		}
 
-		enabled, exists := ffRetriever.GetFeatureFlag(ffhandler.FlagFullProcess)
+		enabled, exists := ffRetriever.GetFeatureFlag(fflag.FlagFullProcess)
 		return exists && enabled
 	}
 }

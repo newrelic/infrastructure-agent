@@ -1,6 +1,6 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-package ffhandler
+package fflag
 
 import (
 	"context"
@@ -37,8 +37,14 @@ var (
 	ffLogger = log.WithComponent("FeatureFlagHandler")
 )
 
-// FFHandler handles FF commands.
-type FFHandler struct {
+type args struct {
+	Category string
+	Flag     string
+	Enabled  bool
+}
+
+// handler handles FF commands.
+type handler struct {
 	cfg        *config.Config
 	ohiEnabler OHIEnabler
 	ffSetter   feature_flags.Setter
@@ -95,9 +101,9 @@ const (
 // indexed per FF name: a FF cmd has already been handled if there's an entry, value stores state.
 type handledStatePerFF map[string]ffHandledState
 
-// NewFFHandler creates a new feature-flag cmd handler, FFHandler not available at this time.
-func NewFFHandler(cfg *config.Config, ffSetter feature_flags.Setter, logger log.Entry) *FFHandler {
-	return &FFHandler{
+// NewHandler creates a new feature-flag cmd handler, handler not available at this time.
+func NewHandler(cfg *config.Config, ffSetter feature_flags.Setter, logger log.Entry) *handler {
+	return &handler{
 		cfg:      cfg,
 		ffsState: make(handledStatePerFF),
 		ffSetter: ffSetter,
@@ -107,12 +113,12 @@ func NewFFHandler(cfg *config.Config, ffSetter feature_flags.Setter, logger log.
 
 // SetOHIHandler injects the handler dependency. A proper refactor of agent services injection will
 // be required for this to be injected via srv constructor.
-func (h *FFHandler) SetOHIHandler(e OHIEnabler) {
+func (h *handler) SetOHIHandler(e OHIEnabler) {
 	h.ohiEnabler = e
 }
 
-func (h *FFHandler) Handle(ctx context.Context, c commandapi.Command, isInitialFetch bool) (boSecs int, err error) {
-	var ffArgs commandapi.FFArgs
+func (h *handler) Handle(ctx context.Context, c commandapi.Command, isInitialFetch bool) (boSecs int, err error) {
+	var ffArgs args
 	if err = json.Unmarshal(c.Args, &ffArgs); err != nil {
 		err = errors2.Wrap(cmdchannel.InvalidArgsErr, err.Error())
 		return
@@ -149,7 +155,7 @@ func (h *FFHandler) Handle(ctx context.Context, c commandapi.Command, isInitialF
 	return
 }
 
-func (h *FFHandler) setFFConfig(ff string, enabled bool) {
+func (h *handler) setFFConfig(ff string, enabled bool) {
 	err := h.ffSetter.SetFeatureFlag(ff, enabled)
 	if err != nil {
 		// ignore if the FF has been already set
@@ -163,7 +169,7 @@ func (h *FFHandler) setFFConfig(ff string, enabled bool) {
 	}
 }
 
-func (h *FFHandler) handleEnableOHI(ctx context.Context, ff string, enable bool) {
+func (h *handler) handleEnableOHI(ctx context.Context, ff string, enable bool) {
 	// customer agent config takes precedence
 	if _, ok := h.cfg.Features[ff]; ok {
 		return
@@ -194,7 +200,7 @@ func (h *FFHandler) handleEnableOHI(ctx context.Context, ff string, enable bool)
 	}
 }
 
-func handleParallelizeInventory(ffArgs commandapi.FFArgs, c *config.Config, isInitialFetch bool) {
+func handleParallelizeInventory(ffArgs args, c *config.Config, isInitialFetch bool) {
 	trace.Inventory("parallelize FF handler initialFetch: %v, enable: %v, queue: %v",
 		isInitialFetch,
 		ffArgs.Enabled,
@@ -222,7 +228,7 @@ func handleParallelizeInventory(ffArgs commandapi.FFArgs, c *config.Config, isIn
 	}
 }
 
-func handleRegister(ffArgs commandapi.FFArgs, c *config.Config, isInitialFetch bool) {
+func handleRegister(ffArgs args, c *config.Config, isInitialFetch bool) {
 	if ffArgs.Enabled == c.RegisterEnabled {
 		return
 	}

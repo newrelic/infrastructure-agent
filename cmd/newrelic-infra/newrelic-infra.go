@@ -22,7 +22,7 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
 	ccBackoff "github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/backoff"
-	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/ffhandler"
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/service"
 	"github.com/sirupsen/logrus"
 
@@ -203,7 +203,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 
 	// Command channel handlers
 	boHandler := ccBackoff.NewHandler()
-	ffHandle := ffhandler.NewFFHandler(c, ffManager, wlog.WithComponent("FFHandler"))
+	ffHandle := fflag.NewHandler(c, ffManager, wlog.WithComponent("FFHandler"))
 	ffHandler := cmdchannel.NewCmdHandler("set_feature_flag", ffHandle.Handle)
 	// Command channel service
 	ccService := service.NewService(caClient, c.CommandChannelIntervalSec, boHandler, ffHandler)
@@ -292,7 +292,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	)
 
 	var dmEmitter dm.Emitter
-	if enabled, exists := ffManager.GetFeatureFlag(ffhandler.FlagDMRegisterEnable); exists && enabled {
+	if enabled, exists := ffManager.GetFeatureFlag(fflag.FlagDMRegisterEnable); exists && enabled {
 		dmEmitter = dm.NewEmitter(agt.GetContext(), dmSender, registerClient)
 	} else {
 		dmEmitter = dm.NewNonRegisterEmitter(agt.GetContext(), dmSender)

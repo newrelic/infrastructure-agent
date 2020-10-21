@@ -14,7 +14,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
-	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/ffhandler"
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
@@ -431,7 +431,7 @@ func TestLegacy_Emit(t *testing.T) {
 
 			em := &VersionAwareEmitter{
 				aCtx:        ma,
-				ffRetriever: feature_flags.NewManager(map[string]bool{ffhandler.FlagProtocolV4: true, ffhandler.FlagDMRegisterEnable: true}),
+				ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true, fflag.FlagDMRegisterEnable: true}),
 				dmEmitter:   mockDME,
 			}
 
@@ -469,7 +469,7 @@ func TestProtocolV4_Emit(t *testing.T) {
 
 	em := &VersionAwareEmitter{
 		aCtx:        ma,
-		ffRetriever: feature_flags.NewManager(map[string]bool{ffhandler.FlagProtocolV4: true, ffhandler.FlagDMRegisterEnable: true}),
+		ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true, fflag.FlagDMRegisterEnable: true}),
 		dmEmitter:   mockDME,
 	}
 
@@ -527,7 +527,7 @@ func TestProtocolV4_Emit_WithFFDisabled(t *testing.T) {
 
 	em := &VersionAwareEmitter{
 		aCtx:        ma,
-		ffRetriever: feature_flags.NewManager(map[string]bool{ffhandler.FlagProtocolV4: false, ffhandler.FlagDMRegisterEnable: true}),
+		ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: false, fflag.FlagDMRegisterEnable: true}),
 		dmEmitter:   mockDME,
 	}
 
@@ -555,7 +555,7 @@ func TestProtocolV4_Emit_WithoutRegisteringEntities(t *testing.T) {
 
 	em := &VersionAwareEmitter{
 		aCtx:        mockAgent(),
-		ffRetriever: feature_flags.NewManager(map[string]bool{ffhandler.FlagProtocolV4: true, ffhandler.FlagDMRegisterEnable: false}),
+		ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true, fflag.FlagDMRegisterEnable: false}),
 		dmEmitter:   dmEmitter,
 	}
 
