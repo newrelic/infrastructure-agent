@@ -46,6 +46,58 @@ func TestParsePayloadV4(t *testing.T) {
 	assert.EqualValues(t, integrationFixture.ProtocolV4.ParsedV4, d)
 }
 
+func TestParsePayloadV4_embeddedInventoryItems(t *testing.T) {
+	ffm := feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true})
+
+	d, err := ParsePayloadV4([]byte(`{
+  "protocol_version": "4",
+  "integration": {
+    "name": "com.newrelic.foo",
+    "version": "0.1.0"
+  },
+  "data": [
+    {
+      "inventory": {
+        "foo": {
+          "bar": {
+            "baz": {
+              "k1": "v1",
+              "k2": false
+            }
+          }
+        }
+      }
+    }
+  ]
+}`), ffm)
+	require.NoError(t, err)
+	require.Len(t, d.DataSets, 1)
+
+	// id: inventory data
+	id := d.DataSets[0].Inventory
+
+	fooID, ok := id["foo"]
+	require.True(t, ok)
+
+	barVal, ok := fooID["bar"]
+	require.True(t, ok)
+	barID, ok := barVal.(map[string]interface{})
+	require.True(t, ok)
+
+	bazVal, ok := barID["baz"]
+	require.True(t, ok)
+	bazID, ok := bazVal.(map[string]interface{})
+	require.True(t, ok)
+
+	k1Val, ok := bazID["k1"]
+	require.True(t, ok)
+	assert.EqualValues(t, "v1", k1Val)
+
+	k2Val, ok := bazID["k2"]
+	require.True(t, ok)
+	assert.EqualValues(t, false, k2Val)
+}
+
 func TestParsePayloadV4_noFF(t *testing.T) {
 	ffm := feature_flags.NewManager(map[string]bool{})
 
