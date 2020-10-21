@@ -193,7 +193,7 @@ func (self *SELinuxPlugin) Run() {
 				sllog.WithError(err).Error("selinux can't get dataset")
 			}
 
-			entity := entity.NewFromNameWithoutID(self.Context.AgentIdentifier())
+			entity := entity.NewFromNameWithoutID(self.Context.EntityKey())
 			self.Context.SendData(agent.NewPluginOutput(self.Id(), entity, basicData))
 			self.Context.SendData(agent.NewPluginOutput(ids.PluginID{self.ID.Category, fmt.Sprintf("%s-policies", self.ID.Term)}, entity, policyData))
 			if self.enableSemodule {

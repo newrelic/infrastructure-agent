@@ -9,8 +9,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/tevino/abool"
-
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
@@ -25,6 +23,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/sirupsen/logrus"
+	"github.com/tevino/abool"
 )
 
 var (
@@ -119,7 +118,7 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 
 		case req := <-e.reqsQueue:
 			for _, ds := range req.Data.DataSets {
-				eKey, err := ds.Entity.ResolveUniqueEntityKey(e.agentContext.AgentIdentifier(), e.agentContext.IDLookup(), req.FwRequestMeta.EntityRewrite, 4)
+				eKey, err := ds.Entity.ResolveUniqueEntityKey(e.agentContext.EntityKey(), e.agentContext.IDLookup(), req.FwRequestMeta.EntityRewrite, 4)
 				if err != nil {
 					elog.
 						WithError(err).

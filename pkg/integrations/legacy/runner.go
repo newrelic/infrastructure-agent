@@ -700,7 +700,7 @@ func EmitDataSet(
 ) error {
 	elog := rlog.WithField("action", "EmitDataSet")
 
-	agentIdentifier := ctx.AgentIdentifier()
+	agentIdentifier := ctx.EntityKey()
 
 	idLookup := ctx.IDLookup()
 	entityKey, err := dataSet.Entity.ResolveUniqueEntityKey(agentIdentifier, idLookup, entityRewrite, protocolVersion)

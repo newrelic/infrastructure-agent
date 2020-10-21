@@ -68,7 +68,7 @@ func (c *fakeContext) ActiveEntitiesChannel() chan string {
 	return make(chan string, 100)
 }
 
-func (c *fakeContext) AgentIdentifier() string {
+func (c *fakeContext) EntityKey() string {
 	return ""
 }
 

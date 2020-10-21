@@ -64,7 +64,7 @@ func newPatchSenderVortex(entityKey, agentKey string, context AgentContext, stor
 		context.Config().License,
 		userAgent,
 		context.Config().PayloadCompressionLevel,
-		context.AgentIdentifier(),
+		context.EntityKey(),
 		agentIDProvide,
 		context.Config().ConnectEnabled,
 		httpClient,
@@ -173,9 +173,9 @@ func (p *patchSenderVortex) sendAllDeltas(allDeltas []inventoryapi.RawDeltaBlock
 	// Empty entity Key belong to the Agent
 	if p.entityKey == "" {
 		areAgentDeltas = true
-		entityKey = p.context.AgentIdentifier()
+		entityKey = p.context.EntityKey()
 	} else {
-		areAgentDeltas = p.entityKey == p.context.AgentIdentifier()
+		areAgentDeltas = p.entityKey == p.context.EntityKey()
 		entityKey = p.entityKey
 	}
 

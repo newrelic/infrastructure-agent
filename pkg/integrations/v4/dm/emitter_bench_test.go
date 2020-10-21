@@ -198,7 +198,7 @@ package dm
 //	panic("implement me")
 //}
 //
-//func (n noopAgentContext) AgentIdentifier() string {
+//func (n noopAgentContext) EntityKey() string {
 //	panic("implement me")
 //}
 //

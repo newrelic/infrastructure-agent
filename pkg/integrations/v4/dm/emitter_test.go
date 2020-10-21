@@ -94,7 +94,6 @@ func TestEmitter_Send_usingIDCache(t *testing.T) {
 	em := NewEmitter(aCtx, dmSender, &test.EmptyRegisterClient{})
 	e := em.(*emitter)
 
-	// TODO update when key retrieval is fixed
 	e.idCache.Put(entity.Key(fmt.Sprintf("%s:%s", data.DataSets[0].Entity.Type, data.DataSets[0].Entity.Name)), firstEntity.ID)
 	e.idCache.Put(entity.Key(fmt.Sprintf("%s:%s", data.DataSets[1].Entity.Type, data.DataSets[1].Entity.Name)), secondEntity.ID)
 
@@ -233,7 +232,7 @@ func getAgentContext(hostname string) *mocks.AgentContext {
 	if hostname != "" {
 		idLookup[sysinfo.HOST_SOURCE_INSTANCE_ID] = hostname
 	}
-	agentCtx.On("AgentIdentifier").Return(hostname)
+	agentCtx.On("EntityKey").Return(hostname)
 	agentCtx.On("IDLookup").Return(idLookup)
 	agentCtx.On("Config").Return(nil)
 
