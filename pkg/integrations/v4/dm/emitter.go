@@ -124,10 +124,19 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 						WithError(err).
 						WithField("integration", req.Definition.Name).
 						Errorf("couldn't determine a unique entity Key")
-					break
+					continue
 				}
 
-				eID, found := e.idCache.Get(eKey)
+				var eID entity.ID
+				var found bool
+
+				if ds.Entity.IsAgent() {
+					eID = e.agentContext.Identity().ID
+					found = true
+				} else {
+					eID, found = e.idCache.Get(eKey)
+				}
+
 				if found {
 					select {
 					case <-ctx.Done():
@@ -137,6 +146,7 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 					}
 					continue
 				}
+
 				select {
 				case <-ctx.Done():
 					return
