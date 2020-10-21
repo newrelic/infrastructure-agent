@@ -4,17 +4,22 @@ package cmdchannel
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/id"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/commandapi"
+	"github.com/pkg/errors"
 )
 
 // Errors
 var (
-	InvalidArgsErr = errors.New("invalid arguments for command")
+	InvalidArgsErrMsg = "invalid arguments for command"
 )
+
+// NewArgsErr creates an invalid arguments error wrapping the reason
+func NewArgsErr(err error) error {
+	return errors.Wrap(err, InvalidArgsErrMsg)
+}
 
 // CmdHandleF command channel request handler function.
 type CmdHandleF func(ctx context.Context, cmd commandapi.Command, initialFetch bool) (backoffSecs int, err error)

@@ -6,7 +6,6 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/commandapi"
-	errors2 "github.com/pkg/errors"
 )
 
 type args struct {
@@ -18,7 +17,7 @@ func NewHandler() *cmdchannel.CmdHandler {
 	handleF := func(ctx context.Context, cmd commandapi.Command, initialFetch bool) (backoffSecs int, err error) {
 		var boArgs args
 		if err = json.Unmarshal(cmd.Args, &boArgs); err != nil {
-			err = errors2.Wrap(cmdchannel.InvalidArgsErr, err.Error())
+			err = cmdchannel.NewArgsErr(err)
 			return
 		}
 		backoffSecs = boArgs.DelaySecs

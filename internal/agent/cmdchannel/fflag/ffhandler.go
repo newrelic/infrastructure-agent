@@ -8,11 +8,9 @@ import (
 	"os"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
+	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/internal/os/api"
 	"github.com/newrelic/infrastructure-agent/pkg/trace"
-	errors2 "github.com/pkg/errors"
-
-	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 
 	"github.com/newrelic/infrastructure-agent/pkg/backend/commandapi"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
@@ -120,7 +118,7 @@ func (h *handler) SetOHIHandler(e OHIEnabler) {
 func (h *handler) Handle(ctx context.Context, c commandapi.Command, isInitialFetch bool) (boSecs int, err error) {
 	var ffArgs args
 	if err = json.Unmarshal(c.Args, &ffArgs); err != nil {
-		err = errors2.Wrap(cmdchannel.InvalidArgsErr, err.Error())
+		err = cmdchannel.NewArgsErr(err)
 		return
 	}
 
