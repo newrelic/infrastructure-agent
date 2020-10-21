@@ -22,7 +22,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/files"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/runner"
-	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/v3legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/sirupsen/logrus"
@@ -37,7 +36,6 @@ const (
 	// The two fields below will allows us distinguish between both, to ignore V4
 	integrationsField    = "integrations"
 	LegacyInstancesField = "instances"
-	executablesSubFolder = "bin"
 )
 
 // not an actual error. Used for discarding V3 plugins
@@ -178,13 +176,12 @@ func NewConfig(verbose int, features map[string]bool, passthroughEnvs, configFol
 // not belonging to the protocol V4.
 // Usually, "configFolders" will be the value of the "pluginInstanceDir" configuration option
 // The "definitionFolders" refer to the v3 definition yaml configs, placed here for v3 integrations backwards-support
-func NewManager(cfg Configuration, emitter emitter.Emitter, definitionQ chan integration.Definition) *Manager {
+func NewManager(cfg Configuration, emitter emitter.Emitter, il integration.InstancesLookup, definitionQ chan integration.Definition) *Manager {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		illog.WithError(err).Warn("can't enable hot reload")
 	}
 
-	il := newInstancesLookup(cfg)
 	mgr := Manager{
 		config:          cfg,
 		runners:         newRunnerGroupsPerCfgPath(),
@@ -524,25 +521,6 @@ func foundFilesLogFields(configs map[string]config2.YAML) func() logrus.Fields {
 			found = strings.Join(fs, ", ")
 		}
 		return logrus.Fields{"found": found}
-	}
-}
-
-// newInstancesLookup creates an instance lookup that:
-// - looks in the v3 legacy definitions repository for defined commands
-// - looks in the definition folders (and bin/ subfolders) for executable names
-func newInstancesLookup(cfg Configuration) integration.InstancesLookup {
-	var execFolders []string
-	for _, df := range cfg.DefinitionFolders {
-		execFolders = append(execFolders, df)
-		execFolders = append(execFolders, filepath.Join(df, executablesSubFolder))
-	}
-	legacyDefinedCommands := v3legacy.NewDefinitionsRepo(v3legacy.LegacyConfig{
-		DefinitionFolders: cfg.DefinitionFolders,
-		Verbose:           cfg.Verbose,
-	})
-	return integration.InstancesLookup{
-		Legacy: legacyDefinedCommands.NewDefinitionCommand,
-		ByName: files.Executables{Folders: execFolders}.Path,
 	}
 }
 

@@ -36,7 +36,7 @@ func TestManager_HotReload_CreateAndModifyLinkFile(t *testing.T) {
 	})
 
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, definitionQ)
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -109,7 +109,7 @@ integrations:
 	mgr := NewManager(Configuration{
 		ConfigFolders:     []string{configDir},
 		DefinitionFolders: []string{niDir},
-	}, emitter, definitionQ)
+	}, emitter, integration.ErrLookup, definitionQ)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)

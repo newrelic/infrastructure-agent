@@ -24,7 +24,9 @@ import (
 	ccBackoff "github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/backoff"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/service"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/files"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/v3legacy"
 	"github.com/sirupsen/logrus"
 
 	"github.com/newrelic/infrastructure-agent/cmd/newrelic-infra/initialize"
@@ -194,6 +196,23 @@ var aslog = wlog.WithComponent("AgentService").WithFields(logrus.Fields{
 })
 
 func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
+	pluginSourceDirs := []string{
+		c.CustomPluginInstallationDir,
+		filepath.Join(c.AgentDir, "custom-integrations"),
+		filepath.Join(c.AgentDir, config.DefaultIntegrationsDir),
+		filepath.Join(c.AgentDir, "bundled-plugins"),
+		filepath.Join(c.AgentDir, "plugins"),
+	}
+	pluginSourceDirs = helpers.RemoveEmptyAndDuplicateEntries(pluginSourceDirs)
+
+	integrationCfg := v4.NewConfig(
+		c.Verbose,
+		c.Features,
+		c.PassthroughEnvironment,
+		c.PluginInstanceDirs,
+		pluginSourceDirs,
+	)
+
 	userAgent := agent.GenerateUserAgent("New Relic Infrastructure Agent", buildVersion)
 	transport := backendhttp.BuildTransport(c, backendhttp.ClientTimeout)
 	httpClient := backendhttp.GetHttpClient(backendhttp.ClientTimeout, transport).Do
@@ -201,6 +220,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	ccSvcURL := fmt.Sprintf("%s%s", cmdChannelURL, c.CommandChannelEndpoint)
 	caClient := commandapi.NewClient(ccSvcURL, c.License, userAgent, httpClient)
 	ffManager := feature_flags.NewManager(c.Features)
+	il := newInstancesLookup(integrationCfg)
 
 	// queues integration run requests
 	definitionQ := make(chan integration.Definition, 100)
@@ -269,31 +289,11 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		os.Exit(1)
 	}
 
-	// Start the external plugin system. It registers all agent plugins that
-	// are to be started later.
-	pluginSourceDirs := []string{
-		c.CustomPluginInstallationDir,
-		filepath.Join(c.AgentDir, "custom-integrations"),
-		filepath.Join(c.AgentDir, config.DefaultIntegrationsDir),
-		filepath.Join(c.AgentDir, "bundled-plugins"),
-		filepath.Join(c.AgentDir, "plugins"),
-	}
-	pluginSourceDirs = helpers.RemoveEmptyAndDuplicateEntries(pluginSourceDirs)
-
 	metricsSenderConfig := dm.NewConfig(c.MetricURL, c.License, time.Duration(c.DMSubmissionPeriod)*time.Second)
 	dmSender, err := dm.NewDMSender(metricsSenderConfig, transport, agt.Context.IdContext().AgentIdentity)
-
 	if err != nil {
 		return err
 	}
-
-	integrationCfg := v4.NewConfig(
-		c.Verbose,
-		c.Features,
-		c.PassthroughEnvironment,
-		c.PluginInstanceDirs,
-		pluginSourceDirs,
-	)
 
 	var dmEmitter dm.Emitter
 	if enabled, exists := ffManager.GetFeatureFlag(fflag.FlagDMRegisterEnable); exists && enabled {
@@ -302,7 +302,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		dmEmitter = dm.NewNonRegisterEmitter(agt.GetContext(), dmSender)
 	}
 	integrationEmitter := emitter.NewIntegrationEmittor(agt, dmEmitter, ffManager)
-	integrationManager := v4.NewManager(integrationCfg, integrationEmitter, definitionQ)
+	integrationManager := v4.NewManager(integrationCfg, integrationEmitter, il, definitionQ)
 
 	// log-forwarder
 	fbIntCfg := v4.FBSupervisorConfig{
@@ -353,6 +353,27 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	timedLog.Info("New Relic infrastructure agent is running.")
 
 	return agt.Run()
+}
+
+// newInstancesLookup creates an instance lookup that:
+// - looks in the v3 legacy definitions repository for defined commands
+// - looks in the definition folders (and bin/ subfolders) for executable names
+func newInstancesLookup(cfg v4.Configuration) integration.InstancesLookup {
+	const executablesSubFolder = "bin"
+
+	var execFolders []string
+	for _, df := range cfg.DefinitionFolders {
+		execFolders = append(execFolders, df)
+		execFolders = append(execFolders, filepath.Join(df, executablesSubFolder))
+	}
+	legacyDefinedCommands := v3legacy.NewDefinitionsRepo(v3legacy.LegacyConfig{
+		DefinitionFolders: cfg.DefinitionFolders,
+		Verbose:           cfg.Verbose,
+	})
+	return integration.InstancesLookup{
+		Legacy: legacyDefinedCommands.NewDefinitionCommand,
+		ByName: files.Executables{Folders: execFolders}.Path,
+	}
 }
 
 // configureLogFormat checks the config and sets the log format accordingly.
