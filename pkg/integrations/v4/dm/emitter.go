@@ -112,7 +112,6 @@ func (e *emitter) lazyLoadProcessor() {
 func (e *emitter) runFwReqConsumer(ctx context.Context) {
 	defer e.isProcessing.UnSet()
 
-	var eKey entity.Key
 	for {
 		select {
 		case _ = <-ctx.Done():
@@ -120,9 +119,16 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 
 		case req := <-e.reqsQueue:
 			for _, ds := range req.Data.DataSets {
-				eKey, _ = ds.Entity.ResolveUniqueEntityKey(e.agentContext.AgentIdentifier(), e.agentContext.IDLookup(), req.FwRequestMeta.EntityRewrite, 4)
-				eID, found := e.idCache.Get(eKey)
+				eKey, err := ds.Entity.ResolveUniqueEntityKey(e.agentContext.AgentIdentifier(), e.agentContext.IDLookup(), req.FwRequestMeta.EntityRewrite, 4)
+				if err != nil {
+					elog.
+						WithError(err).
+						WithField("integration", req.Definition.Name).
+						Errorf("couldn't determine a unique entity Key")
+					break
+				}
 
+				eID, found := e.idCache.Get(eKey)
 				if found {
 					select {
 					case <-ctx.Done():
