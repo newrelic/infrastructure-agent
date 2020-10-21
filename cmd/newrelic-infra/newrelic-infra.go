@@ -24,6 +24,7 @@ import (
 	ccBackoff "github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/backoff"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/service"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/sirupsen/logrus"
 
 	"github.com/newrelic/infrastructure-agent/cmd/newrelic-infra/initialize"
@@ -201,6 +202,9 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	caClient := commandapi.NewClient(ccSvcURL, c.License, userAgent, httpClient)
 	ffManager := feature_flags.NewManager(c.Features)
 
+	// queues integration run requests
+	definitionQ := make(chan integration.Definition, 100)
+
 	// Command channel handlers
 	boHandler := ccBackoff.NewHandler()
 	ffHandle := fflag.NewHandler(c, ffManager, wlog.WithComponent("FFHandler"))
@@ -298,7 +302,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		dmEmitter = dm.NewNonRegisterEmitter(agt.GetContext(), dmSender)
 	}
 	integrationEmitter := emitter.NewIntegrationEmittor(agt, dmEmitter, ffManager)
-	integrationManager := v4.NewManager(integrationCfg, integrationEmitter)
+	integrationManager := v4.NewManager(integrationCfg, integrationEmitter, definitionQ)
 
 	// log-forwarder
 	fbIntCfg := v4.FBSupervisorConfig{

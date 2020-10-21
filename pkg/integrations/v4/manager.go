@@ -106,7 +106,7 @@ type Manager struct {
 	emitter         emitter.Emitter
 	lookup          integration.InstancesLookup
 	featuresCache   runner.FeaturesCache
-	definitionQueue chan integration.Definition
+	definitionQueue <-chan integration.Definition
 	handleCmdReq    cmdrequest.HandleFn
 }
 
@@ -178,13 +178,12 @@ func NewConfig(verbose int, features map[string]bool, passthroughEnvs, configFol
 // not belonging to the protocol V4.
 // Usually, "configFolders" will be the value of the "pluginInstanceDir" configuration option
 // The "definitionFolders" refer to the v3 definition yaml configs, placed here for v3 integrations backwards-support
-func NewManager(cfg Configuration, emitter emitter.Emitter) *Manager {
+func NewManager(cfg Configuration, emitter emitter.Emitter, definitionQ chan integration.Definition) *Manager {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		illog.WithError(err).Warn("can't enable hot reload")
 	}
 
-	definitionQ := make(chan integration.Definition, 100)
 	il := newInstancesLookup(cfg)
 	mgr := Manager{
 		config:          cfg,
