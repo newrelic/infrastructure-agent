@@ -20,6 +20,73 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestDeltas_nestedObjectsV4(t *testing.T) {
+	const timeout = 5 * time.Second
+
+	// Given an agent
+	testClient := ihttp.NewRequestRecorderClient(
+		ihttp.AcceptedResponse("test/dummy", 1),
+		ihttp.AcceptedResponse("test/dummy", 2))
+	a := infra.NewAgent(testClient.Client)
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
+
+	// That runs a v4 plugin with nested inventory
+	plugin := newDummyV4Plugin(t, `{
+  "protocol_version": "4",
+  "integration": {
+    "name": "com.newrelic.foo",
+    "version": "0.1.0"
+  },
+  "data": [
+    {
+      "inventory": {
+        "foo": {
+          "bar": {
+            "baz": {
+              "k1": "v1",
+              "k2": false
+            }
+          }
+        }
+      }
+    }
+  ]
+}`, a.Context)
+	a.RegisterPlugin(plugin)
+
+	go a.Run()
+
+	// When the plugin harvests inventory data
+	plugin.harvest()
+
+	var req http.Request
+	select {
+	case req = <-testClient.RequestCh:
+	case <-time.After(timeout):
+		a.Terminate()
+		assert.FailNow(t, "timeout while waiting for a response")
+	}
+
+	// The full delta is submitted
+	fixture.AssertRequestContainsInventoryDeltas(t, req, []*inventoryapi.RawDelta{
+		{
+			Source:   "test/dummy_v4",
+			ID:       1,
+			FullDiff: true,
+			Diff: map[string]interface{}{
+				"foo": map[string]interface{}{
+					"bar": map[string]interface{}{
+						"baz": map[string]interface{}{
+							"k1": "v1",
+							"k2": false,
+						},
+					},
+				},
+			},
+		},
+	})
+}
+
 func TestDeltas_BasicWorkflow(t *testing.T) {
 	const timeout = 5 * time.Second
 
