@@ -123,8 +123,8 @@ func replaceAllSources(tmpl interface{}, src []discovery.Discovery, common data.
 func replaceEntityRewrites(values []data.Map, entityRewrite []data.EntityRewrite, rc replaceConfig) ([]data.EntityRewrite, error) {
 
 	for i := range entityRewrite {
-		entityRewrite[i].ReplaceField = naming.AddPrefixToVariable(naming.DiscoveryPrefix, entityRewrite[i].ReplaceField)
-		entityRewrite[i].Match = naming.AddPrefixToVariable(naming.DiscoveryPrefix, entityRewrite[i].Match)
+		entityRewrite[i].ReplaceField = naming.AddPrefixToVariable(data.DiscoveryPrefix, entityRewrite[i].ReplaceField)
+		entityRewrite[i].Match = naming.AddPrefixToVariable(data.DiscoveryPrefix, entityRewrite[i].Match)
 	}
 
 	entityRewriteTpl := reflect.ValueOf(entityRewrite)

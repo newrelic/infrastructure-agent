@@ -11,26 +11,6 @@ import (
 )
 
 const (
-	DiscoveryPrefix             = "discovery."
-	LabelInfix                  = "label."
-	ContainerReplaceFieldPrefix = "container:"
-
-	Port                       = "port"
-	Ports                      = "ports"
-	IP                         = "ip"
-	PrivatePort                = "private.port"
-	PrivatePorts               = "private.ports"
-	PrivateIP                  = "private.ip"
-	Name                       = "name"
-	Image                      = "image"
-	ImageID                    = "imageId"
-	ContainerID                = "containerId"
-	ContainerName              = "containerName"
-	Label                      = "label"
-	Command                    = "command"
-	DockerContainerName        = "dockerContainerName"
-	EntityRewriteActionReplace = "replace"
-
 	// placeholderRegex matches anything that is "${something}".
 	// It isn't a "greedy" regex as it will stop at the first closing brace.
 	// This means if you have a string "a string with ${one} and ${two} place holders" it will
@@ -74,35 +54,35 @@ func AddPrefixToVariable(prefix, variable string) string {
 
 // AddImage adds Image name to metricAnnotations
 func AddImage(metricAnnotations data.InterfaceMap, image string) {
-	metricAnnotations[Image] = image
+	metricAnnotations[data.Image] = image
 }
 
 // AddImageID adds Image ID to metricAnnotations
 func AddImageID(metricAnnotations data.InterfaceMap, imageID string) {
-	metricAnnotations[ImageID] = imageID
+	metricAnnotations[data.ImageID] = imageID
 }
 
 // AddContainerName adds container name to metricAnnotations
 func AddContainerName(metricAnnotations data.InterfaceMap, containerName string) {
-	metricAnnotations[ContainerName] = containerName
+	metricAnnotations[data.ContainerName] = containerName
 }
 
 // AddContainerID adds container ID to metricAnnotations
 func AddContainerID(metricAnnotations data.InterfaceMap, containerID string) {
-	metricAnnotations[ContainerID] = containerID
+	metricAnnotations[data.ContainerID] = containerID
 }
 
 // AddLabels adds Docker labels to metricAnnotations
 func AddLabels(metricAnnotations data.InterfaceMap, labels map[string]string) {
-	metricAnnotations[Label] = labels
+	metricAnnotations[data.Label] = labels
 }
 
 // AddCommand adds docker command to metricAnnotations
 func AddCommand(metricAnnotations data.InterfaceMap, command string) {
-	metricAnnotations[Command] = command
+	metricAnnotations[data.Command] = command
 }
 
 // AddDockerContainerName adds docker container name to metricAnnotations
 func AddDockerContainerName(metricAnnotations data.InterfaceMap, dockerContainerName string) {
-	metricAnnotations[DockerContainerName] = dockerContainerName
+	metricAnnotations[data.DockerContainerName] = dockerContainerName
 }
