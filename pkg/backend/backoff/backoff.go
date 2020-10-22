@@ -8,6 +8,7 @@ import (
 	backendhttp "github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"math"
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -18,6 +19,7 @@ import (
 // Backoff is not generally concurrent-safe, but the ForAttempt method can
 // be used concurrently.
 type Backoff struct {
+	lock sync.Mutex
 	//Factor is the multiplying factor for each increment step
 	attempt, Factor float64
 	//Jitter eases contention by randomizing backoff steps
@@ -46,6 +48,8 @@ func NewDefaultBackoff() *Backoff {
 
 // Duration returns the duration for the current attempt. The result will be limited to max value.
 func (b *Backoff) DurationWithMax(max time.Duration) time.Duration {
+	b.lock.Lock()
+	defer b.lock.Unlock()
 	if max <= 0 {
 		max = b.Max
 	}
@@ -54,6 +58,8 @@ func (b *Backoff) DurationWithMax(max time.Duration) time.Duration {
 
 // Duration returns the duration for the current attempt.
 func (b *Backoff) Duration() time.Duration {
+	b.lock.Lock()
+	defer b.lock.Unlock()
 	return b.duration(b.Min, b.Max)
 }
 
@@ -69,6 +75,8 @@ const maxInt64 = float64(math.MaxInt64 - 512)
 
 // ForAttempt calls forAttempt with configured max/min values.
 func (b *Backoff) ForAttempt(attempt float64) time.Duration {
+	b.lock.Lock()
+	defer b.lock.Unlock()
 	return b.forAttempt(attempt, b.Min, b.Max)
 }
 
@@ -118,16 +126,22 @@ func (b *Backoff) forAttempt(attempt float64, min, max time.Duration) time.Durat
 
 // Reset restarts the current attempt counter at zero.
 func (b *Backoff) Reset() {
+	b.lock.Lock()
+	defer b.lock.Unlock()
 	b.attempt = 0
 }
 
 // Attempt returns the current attempt counter value.
 func (b *Backoff) Attempt() float64 {
+	b.lock.Lock()
+	defer b.lock.Unlock()
 	return b.attempt
 }
 
 // Copy returns a backoff with equals constraints as the original
 func (b *Backoff) Copy() *Backoff {
+	b.lock.Lock()
+	defer b.lock.Unlock()
 	return &Backoff{
 		Factor: b.Factor,
 		Jitter: b.Jitter,

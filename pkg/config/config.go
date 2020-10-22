@@ -800,6 +800,12 @@ type Config struct {
 	// Public: Yes
 	CloudRetryBackOffSec int `yaml:"cloud_retry_backoff_sec" envconfig:"cloud_retry_backoff_sec"`
 
+	// RegisterMaxRetryBo This configuration parameter set the number of seconds delay between the
+	// retries in case that entity registration fails.
+	// Default: 60
+	// Public: Yes
+	RegisterMaxRetryBo int `yaml:"register_max_retry_backoff_sec" envconfig:"register_max_retry_backoff_sec"`
+
 	// CloudMetadataExpiryInSec If the agent is running in a cloud instance, the agent will try to detect the cloud
 	// type and it will fetch metadata like: instanceID, instanceType, cloudSource, hostType. This configuration
 	// parameter sets the interval of time on which the	metadata should be expired and re-fetched.
@@ -1248,6 +1254,7 @@ func NewConfig() *Config {
 		CloudRetryBackOffSec:          defaultCloudRetryBackOffSec,
 		CloudMaxRetryCount:            defaultCloudMaxRetryCount,
 		CloudMetadataDisableKeepAlive: defaultCloudMetadataDisableKeepAlive,
+		RegisterMaxRetryBo:            defaultRegisterMaxRetryBo,
 		IgnoreReclaimable:             defaultIgnoreReclaimable,
 		DnsHostnameResolution:         defaultDnsHostnameResolution,
 		MaxProcs:                      defaultMaxProcs,

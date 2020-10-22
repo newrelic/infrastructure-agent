@@ -231,7 +231,7 @@ func newEventData(key entity.Key, edata []byte, agentKey string) eventVortexData
 func (s *vortexEventSender) updateLocalMap(entities []identityapi.RegisterEntityResponse) {
 	s.localEntityMap.CleanOld()
 	for _, e := range entities {
-		s.localEntityMap.Put(e.Key, e.ID)
+		s.localEntityMap.Put(entity.Key(e.Name), e.ID)
 	}
 }
 
@@ -295,7 +295,7 @@ func (s *vortexEventSender) flushRegister(events []eventVortexData) {
 	for _, ev := range events {
 		found := false
 		for _, idRes := range idsRes {
-			if idRes.Key == ev.entityKey {
+			if entity.Key(idRes.Name) == ev.entityKey {
 				ev.entityID = idRes.ID
 				s.updateLocalMap(idsRes)
 				select {

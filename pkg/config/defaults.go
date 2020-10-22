@@ -91,6 +91,7 @@ var (
 	defaultWinRemovableDrives            = true
 	defaultTraces                        = []trace.Feature{trace.CONN}
 	defaultMetricsMatcherConfig          = IncludeMetricsMap{}
+	defaultRegisterMaxRetryBo            = 60
 )
 
 // Default internal values

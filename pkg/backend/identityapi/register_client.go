@@ -28,6 +28,36 @@ const (
 	identityPath = "/identity/v1"
 )
 
+const (
+	// StatusCodeLimitExceed is returned when platform limit for entity registration exeeded.
+	StatusCodeLimitExceed int = 503
+	// StatusCodeConFailure is returned when there is a connection failure.
+	StatusCodeConFailure int = 429
+)
+
+// RegisterEntityError will wrap the error from entity registration api including req status code.
+type RegisterEntityError struct {
+	Status     string
+	StatusCode int
+	Err        error
+}
+
+// NewRegisterEntityError create a new instance of RegisterEntityError.
+func NewRegisterEntityError(status string, statusCode int, err error) *RegisterEntityError {
+	return &RegisterEntityError{
+		Status:     status,
+		StatusCode: statusCode,
+		Err:        err,
+	}
+}
+
+func (e *RegisterEntityError) Error() string {
+	if e.Err == nil {
+		return ""
+	}
+	return "register error: " + e.Err.Error() + " status: " + e.Status + " status_code: " + strconv.Itoa(e.StatusCode)
+}
+
 // RegisterClient provides the ability to register either a single entity or a
 // "batch" of entities.
 type RegisterClient interface {
@@ -36,7 +66,7 @@ type RegisterClient interface {
 	RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities []RegisterEntity) ([]RegisterEntityResponse, time.Duration, error)
 
 	// RegisterBatchEntities registers a slice of protocol.Entity. This is done as a batch process
-	RegisterBatchEntities(agentEntityID entity.ID, entities []entity.Fields) ([]RegisterEntityResponse, time.Duration, error)
+	RegisterBatchEntities(agentEntityID entity.ID, entities []entity.Fields) ([]RegisterEntityResponse, error)
 
 	// RegisterEntity registers a protocol.Entity
 	RegisterEntity(agentEntityID entity.ID, entity entity.Fields) (RegisterEntityResponse, error)
@@ -60,19 +90,10 @@ type RegisterEntity struct {
 }
 
 type RegisterEntityResponse struct {
-	ID   entity.ID  `json:"entityID"`
-	Key  entity.Key `json:"entityKey"`
-	Name string     `json:"entityName"`
-	Err  string     `json:"err"`
-}
-
-func NewRegisterEntityResponse(id entity.ID, key entity.Key, name string, err string) RegisterEntityResponse {
-	return RegisterEntityResponse{
-		ID:   id,
-		Key:  key,
-		Name: name,
-		Err:  err,
-	}
+	ID       entity.ID `json:"entityID"`
+	Name     string    `json:"entityName"`
+	ErrorMsg string    `json:"error"`
+	Warnings []string  `json:"warnings"`
 }
 
 func NewRegisterEntity(key entity.Key) RegisterEntity {
@@ -104,7 +125,7 @@ func NewRegisterClient(
 	}, nil
 }
 
-func (rc *registerClient) RegisterBatchEntities(agentEntityID entity.ID, entities []entity.Fields) (resp []RegisterEntityResponse, duration time.Duration, err error) {
+func (rc *registerClient) RegisterBatchEntities(agentEntityID entity.ID, entities []entity.Fields) (resp []RegisterEntityResponse, err error) {
 
 	ctx := context.Background()
 
@@ -118,22 +139,26 @@ func (rc *registerClient) RegisterBatchEntities(agentEntityID entity.ID, entitie
 		XNRIAgentEntityId: optional.NewInt64(int64(agentEntityID)),
 	}
 
-	apiReps, _, err := rc.apiClient.RegisterBatchPost(ctx, rc.userAgent, rc.licenseKey, registerRequests, localVarOptionals)
+	apiReps, reqResp, err := rc.apiClient.RegisterBatchPost(ctx, rc.userAgent, rc.licenseKey, registerRequests, localVarOptionals)
 	if err != nil {
-		return resp, time.Second, err // TODO add right duration
+		if reqResp != nil {
+			return nil, NewRegisterEntityError(reqResp.Status, reqResp.StatusCode, err)
+		}
+		return resp, err
 	}
 
 	resp = make([]RegisterEntityResponse, len(apiReps))
 
 	for i := range apiReps {
-		resp[i] = NewRegisterEntityResponse(
-			entity.ID(apiReps[i].EntityId),
-			entity.Key(apiReps[i].EntityName),
-			apiReps[i].EntityName,
-			apiReps[i].Error)
+		resp[i] = RegisterEntityResponse{
+			ID:       entity.ID(apiReps[i].EntityId),
+			Name:     apiReps[i].EntityName,
+			ErrorMsg: apiReps[i].Error,
+			Warnings: apiReps[i].Warnings,
+		}
 	}
 
-	return resp, time.Second, err
+	return resp, err
 }
 
 func newRegisterRequest(entity entity.Fields) identity.RegisterRequest {
@@ -159,11 +184,10 @@ func (rc *registerClient) RegisterEntity(agentEntityID entity.ID, ent entity.Fie
 		return resp, err
 	}
 
-	resp = NewRegisterEntityResponse(
-		entity.ID(apiReps.EntityId),
-		entity.Key(apiReps.EntityName),
-		apiReps.EntityName,
-		"")
+	resp = RegisterEntityResponse{
+		ID:   entity.ID(apiReps.EntityId),
+		Name: apiReps.EntityName,
+	}
 
 	return resp, err
 }
