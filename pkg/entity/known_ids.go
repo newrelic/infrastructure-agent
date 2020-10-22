@@ -17,8 +17,6 @@ const defaultTTL = 24 * time.Hour
 // reading values).
 //
 // The default TTL is 24h, but it is possible to register custom TTLs per entity type.
-//
-// This component is not thread-safe.
 type KnownIDs struct {
 	lock sync.RWMutex
 	ids  map[Key]*idEntry
@@ -26,13 +24,24 @@ type KnownIDs struct {
 }
 
 type idEntry struct {
+	sync.Mutex
 	id         ID
 	lastAccess time.Time
 	ttl        time.Duration
 }
 
 func (e *idEntry) isOutdated() bool {
+	e.Lock()
+	defer e.Unlock()
+
 	return e.lastAccess.Add(e.ttl).Before(now())
+}
+
+func (e *idEntry) UpdateLastAccess() {
+	e.Lock()
+	defer e.Unlock()
+
+	e.lastAccess = now()
 }
 
 // NewKnownIDs creates and returns an empty KnownIDs map
@@ -82,12 +91,13 @@ func (k *KnownIDs) Get(key Key) (ID, bool) {
 	if !ok {
 		return 0, false
 	}
+
 	// If the TTL expired, we remove the entry and return as not found
 	if entry.isOutdated() {
-		delete(k.ids, key)
 		return 0, false
 	}
-	entry.lastAccess = now()
+
+	entry.UpdateLastAccess()
 	return entry.id, true
 }
 
