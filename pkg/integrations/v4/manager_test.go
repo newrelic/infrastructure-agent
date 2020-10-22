@@ -1046,7 +1046,7 @@ func instancesLookupReturning(execPaths ...string) integration.InstancesLookup {
 	calls := 0
 	return integration.InstancesLookup{
 		Legacy: func(dcc integration.DefinitionCommandConfig) (integration.Definition, error) {
-			return integration.Definition{}, nil
+			return integration.Definition{}, errors.New("legacy lookup not expected")
 		},
 		ByName: func(_ string) (string, error) {
 			calls++
@@ -1063,7 +1063,7 @@ func instancesLookupLegacy(definitionFolders ...string) integration.InstancesLoo
 	return integration.InstancesLookup{
 		Legacy: legacyDefinedCommands.NewDefinitionCommand,
 		ByName: func(_ string) (string, error) {
-			return "", errors.New("lookup by name not expected to be invoked")
+			return "", errors.New("lookup by name not expected")
 		},
 	}
 }
