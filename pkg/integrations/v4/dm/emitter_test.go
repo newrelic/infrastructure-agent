@@ -15,7 +15,7 @@ import (
 	"testing"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
-	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
@@ -39,7 +39,7 @@ var (
 )
 
 func TestParsePayloadV4(t *testing.T) {
-	ffm := feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true})
+	ffm := feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true})
 
 	d, err := ParsePayloadV4(integrationFixture.ProtocolV4.Payload, ffm)
 	assert.NoError(t, err)
@@ -47,7 +47,7 @@ func TestParsePayloadV4(t *testing.T) {
 }
 
 func TestParsePayloadV4_embeddedInventoryItems(t *testing.T) {
-	ffm := feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true})
+	ffm := feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true})
 
 	d, err := ParsePayloadV4([]byte(`{
   "protocol_version": "4",
