@@ -156,7 +156,7 @@ func (w *worker) registerEntitiesWithRetry(ctx context.Context, entities []entit
 			e.StatusCode == identityapi.StatusCodeLimitExceed
 
 		if shouldRetry {
-			retryBOAfter := w.retryBo.DurationWithMax(1 * time.Minute)
+			retryBOAfter := w.retryBo.DurationWithMax(w.maxBatchDuration)
 			wlog.WithField("retryBackoffAfter", retryBOAfter).Debug("register request retry backoff.")
 			w.retryBo.Backoff(ctx, retryBOAfter)
 			continue
