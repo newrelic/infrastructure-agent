@@ -5,6 +5,7 @@ package dm
 import (
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
+	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/sirupsen/logrus"
 	logTest "github.com/sirupsen/logrus/hooks/test"
@@ -235,7 +236,7 @@ func getAgentContext(hostname string) *mocks.AgentContext {
 	}
 	agentCtx.On("AgentIdentifier").Return(hostname)
 	agentCtx.On("IDLookup").Return(idLookup)
-	agentCtx.On("Config").Return(nil)
+	agentCtx.On("Config").Return(config.NewConfig())
 
 	return agentCtx
 }

@@ -113,31 +113,28 @@ func TestWorker_registerEntitiesWithRetry_OnError_RetryBackoff(t *testing.T) {
 		err: identityapi.NewRegisterEntityError("err", identityapi.StatusCodeLimitExceed, fmt.Errorf("err")),
 	}
 
-	w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), 0, reqsToRegisterQueue, reqsRegisteredQueue, 1, 50*time.Millisecond)
+	backoff := backoff.NewDefaultBackoff()
+	backoffCh := make(chan time.Duration)
+	backoff.GetBackoffTimer = func(d time.Duration) *time.Timer {
+		select {
+		case backoffCh <- d:
+		default:
+		}
+		return time.NewTimer(0)
+	}
+	w := NewWorker(agentIdentity, client, backoff, 0, reqsToRegisterQueue, reqsRegisteredQueue, 1, 50*time.Millisecond)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	done := make(chan struct{})
+	result := make(chan []identityapi.RegisterEntityResponse, 1)
 	go func() {
-		w.registerEntitiesWithRetry(ctx, []entity.Fields{{Name: "test"}})
-
-		select {
-		case done <- struct{}{}:
-			return
-		case <-ctx.Done():
-			return
-		}
+		result <- w.registerEntitiesWithRetry(ctx, []entity.Fields{{Name: "test"}})
 	}()
 
-	backoffCh := make(chan time.Duration)
-	w.getBackoffTimer = func(d time.Duration) *time.Timer {
-		backoffCh <- d
-		return time.NewTimer(0)
-	}
 	select {
 	case <-backoffCh: // Success
-	case <-done:
+	case <-result:
 		t.Error("registerEntitiesWithRetry should retry")
 	case <-time.NewTimer(200 * time.Millisecond).C:
 		t.Error("Backoff not called")
@@ -145,7 +142,9 @@ func TestWorker_registerEntitiesWithRetry_OnError_RetryBackoff(t *testing.T) {
 
 	cancel()
 	select {
-	case <-done:
+	case actual := <-result:
+		var expected []identityapi.RegisterEntityResponse = nil
+		assert.Equal(t, expected, actual)
 	case <-time.NewTimer(200 * time.Millisecond).C:
 		t.Error("registerEntitiesWithRetry should stop")
 	}
@@ -164,30 +163,28 @@ func TestWorker_registerEntitiesWithRetry_OnError_Discard(t *testing.T) {
 		err: identityapi.NewRegisterEntityError("err", 400, fmt.Errorf("err")),
 	}
 
-	w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), 0, reqsToRegisterQueue, reqsRegisteredQueue, 1, 50*time.Millisecond)
+	backoff := backoff.NewDefaultBackoff()
+	backoffCh := make(chan time.Duration)
+	backoff.GetBackoffTimer = func(d time.Duration) *time.Timer {
+		select {
+		case backoffCh <- d:
+		default:
+		}
+		return time.NewTimer(0)
+	}
+	w := NewWorker(agentIdentity, client, backoff, 0, reqsToRegisterQueue, reqsRegisteredQueue, 1, 50*time.Millisecond)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	response := make(chan []identityapi.RegisterEntityResponse)
+	response := make(chan []identityapi.RegisterEntityResponse, 1)
 	go func() {
-		select {
-		case response <- w.registerEntitiesWithRetry(ctx, []entity.Fields{{Name: "test"}}):
-			return
-		case <-ctx.Done():
-			return
-		}
+		response <- w.registerEntitiesWithRetry(ctx, []entity.Fields{{Name: "test"}})
 	}()
 
-	backoffCh := make(chan time.Duration)
-	w.getBackoffTimer = func(d time.Duration) *time.Timer {
-		backoffCh <- d
-		return time.NewTimer(0)
-	}
-
-	var expected []identityapi.RegisterEntityResponse = nil
 	select {
 	case actual := <-response:
+		var expected []identityapi.RegisterEntityResponse = nil
 		assert.Equal(t, expected, actual)
 	case <-backoffCh:
 		t.Error("backoff should not be called")
@@ -210,29 +207,28 @@ func TestWorker_registerEntitiesWithRetry_Success(t *testing.T) {
 		err: nil,
 	}
 
-	w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), 0, reqsToRegisterQueue, reqsRegisteredQueue, 1, 50*time.Millisecond)
+	backoff := backoff.NewDefaultBackoff()
+	backoffCh := make(chan time.Duration)
+	backoff.GetBackoffTimer = func(d time.Duration) *time.Timer {
+		select {
+		case backoffCh <- d:
+		default:
+		}
+		return time.NewTimer(0)
+	}
+
+	w := NewWorker(agentIdentity, client, backoff, 0, reqsToRegisterQueue, reqsRegisteredQueue, 1, 50*time.Millisecond)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	response := make(chan []identityapi.RegisterEntityResponse)
+	response := make(chan []identityapi.RegisterEntityResponse, 1)
 	go func() {
-		select {
-		case response <- w.registerEntitiesWithRetry(ctx, []entity.Fields{{Name: "test"}}):
-			return
-		case <-ctx.Done():
-			return
-		}
+		response <- w.registerEntitiesWithRetry(ctx, []entity.Fields{{Name: "test"}})
 	}()
-
-	backoffCh := make(chan time.Duration)
-	w.getBackoffTimer = func(d time.Duration) *time.Timer {
-		backoffCh <- d
-		return time.NewTimer(0)
-	}
 	select {
 	case actual := <-response:
-		assert.Equal(t, 0, len(actual))
+		assert.Equal(t, 1, len(actual))
 		assert.Equal(t, "13", actual[0].ID.String())
 	case <-backoffCh:
 		t.Error("backoff should not be called")

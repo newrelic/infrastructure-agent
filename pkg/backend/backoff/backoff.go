@@ -5,6 +5,7 @@
 package backoff
 
 import (
+	"context"
 	backendhttp "github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"math"
 	"math/rand"
@@ -26,6 +27,8 @@ type Backoff struct {
 	Jitter bool
 	//Min and Max are the minimum and maximum values of the counter
 	Min, Max time.Duration
+	// GetBackoffTimer function to handle the backoff.
+	GetBackoffTimer func(time.Duration) *time.Timer
 }
 
 // Default values
@@ -39,10 +42,11 @@ const (
 // NewDefaultBackoff default behaviour for Vortex.
 func NewDefaultBackoff() *Backoff {
 	return &Backoff{
-		Factor: DefaultFactor,
-		Jitter: DefaultJitter,
-		Min:    DefaultMin,
-		Max:    DefaultMax,
+		Factor:          DefaultFactor,
+		Jitter:          DefaultJitter,
+		Min:             DefaultMin,
+		Max:             DefaultMax,
+		GetBackoffTimer: time.NewTimer,
 	}
 }
 
@@ -147,6 +151,19 @@ func (b *Backoff) Copy() *Backoff {
 		Jitter: b.Jitter,
 		Min:    b.Min,
 		Max:    b.Max,
+	}
+}
+
+// Backoff waits for the specified duration or a signal from the ctx
+// channel, whichever happens first.
+func (b *Backoff) Backoff(ctx context.Context, d time.Duration) {
+	b.lock.Lock()
+	backoffTimer := b.GetBackoffTimer(d)
+	b.lock.Unlock()
+
+	select {
+	case <-ctx.Done():
+	case <-backoffTimer.C:
 	}
 }
 

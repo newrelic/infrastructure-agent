@@ -26,7 +26,6 @@ type worker struct {
 	reqsRegisteredQueue chan<- fwrequest.EntityFwRequest
 	maxBatchSize        int
 	maxBatchDuration    time.Duration
-	getBackoffTimer     func(time.Duration) *time.Timer
 }
 
 func NewWorker(
@@ -48,7 +47,6 @@ func NewWorker(
 		reqsRegisteredQueue: reqsRegisteredQueue,
 		maxBatchSize:        maxBatchSize,
 		maxBatchDuration:    maxBatchDuration,
-		getBackoffTimer:     time.NewTimer,
 	}
 }
 
@@ -160,22 +158,12 @@ func (w *worker) registerEntitiesWithRetry(ctx context.Context, entities []entit
 		if shouldRetry {
 			retryBOAfter := w.retryBo.DurationWithMax(1 * time.Minute)
 			wlog.WithField("retryBackoffAfter", retryBOAfter).Debug("register request retry backoff.")
-			w.backoff(ctx, retryBOAfter)
+			w.retryBo.Backoff(ctx, retryBOAfter)
 			continue
 		}
 		return responses
 	}
 	return nil
-}
-
-// backoff waits for the specified duration or a signal from the ctx
-// channel, whichever happens first.
-func (w *worker) backoff(ctx context.Context, d time.Duration) {
-	backoffTimer := w.getBackoffTimer(d)
-	select {
-	case <-ctx.Done():
-	case <-backoffTimer.C:
-	}
 }
 
 func (w *worker) resetBatch(batch map[entity.Key]fwrequest.EntityFwRequest, batchSize *int) {

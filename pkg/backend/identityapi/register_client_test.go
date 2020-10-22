@@ -236,8 +236,8 @@ func TestRegisterClient_RegisterEntity(t *testing.T) {
 	expectedEntityID := entity.ID(entID)
 	assert.Equal(t, expectedEntityID, resp.ID)
 
-	expectedEntityKey := entity.Key(expectedRegisterRequest.EntityName)
-	assert.Equal(t, expectedEntityKey, resp.Key)
+	expectedEntityName := expectedRegisterRequest.EntityName
+	assert.Equal(t, expectedEntityName, resp.Name)
 
 	mc.AssertExpectations(t)
 }
