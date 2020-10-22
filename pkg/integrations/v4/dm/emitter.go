@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
-	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/http"
@@ -267,7 +267,7 @@ func ParsePayloadV4(raw []byte, ffManager feature_flags.Retriever) (dataV4 proto
 		return
 	}
 
-	if enabled, ok := ffManager.GetFeatureFlag(handler.FlagProtocolV4); !ok || !enabled {
+	if enabled, ok := ffManager.GetFeatureFlag(fflag.FlagProtocolV4); !ok || !enabled {
 		err = ProtocolV4NotEnabledErr
 		return
 	}

@@ -1,59 +1,61 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-package cmdchannel
+package service
 
 import (
 	"context"
 	"time"
 
-	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
-
-	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
 	"github.com/newrelic/infrastructure-agent/internal/agent/id"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/commandapi"
-	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
-var ccsLogger = log.WithComponent("CommandChannelService")
+var (
+	ccsLogger = log.WithComponent("CommandChannelService")
+)
 
 type srv struct {
-	client        commandapi.Client
-	config        *config.Config
-	pollDelaySecs int
-	ffHandler     *handler.FFHandler
+	pollDelaySecs     int
+	client            commandapi.Client
+	handlersByCmdName map[string]*cmdchannel.CmdHandler
 }
 
 // NewService creates a service to poll and handle command channel commands.
-func NewService(client commandapi.Client, config *config.Config, ffSetter feature_flags.Setter) Service {
+func NewService(client commandapi.Client, pollDelaySecs int, handlers ...*cmdchannel.CmdHandler) cmdchannel.Service {
+	handlersByName := map[string]*cmdchannel.CmdHandler{}
+	for _, h := range handlers {
+		handlersByName[h.CmdName] = h
+	}
+
 	return &srv{
-		client:        client,
-		config:        config,
-		pollDelaySecs: config.CommandChannelIntervalSec,
-		ffHandler:     handler.NewFFHandler(config, ffSetter),
+		client:            client,
+		pollDelaySecs:     pollDelaySecs,
+		handlersByCmdName: handlersByName,
 	}
 }
 
 // InitialFetch initial poll to command channel
-func (s *srv) InitialFetch(ctx context.Context) (InitialCmdResponse, error) {
+func (s *srv) InitialFetch(ctx context.Context) (cmdchannel.InitialCmdResponse, error) {
 	cmds, err := s.client.GetCommands(entity.EmptyID)
 	if err != nil {
-		return InitialCmdResponse{}, err
+		return cmdchannel.InitialCmdResponse{}, err
 	}
 
 	for _, cmd := range cmds {
 		s.handle(ctx, cmd, true)
 	}
 
-	return InitialCmdResponse{
+	return cmdchannel.InitialCmdResponse{
 		Ts:    time.Now(),
 		Delay: time.Duration(s.pollDelaySecs) * time.Second,
 	}, nil
 }
 
 // Run polls command channel periodically, in case 1st poll returned a delay, it starts afterwards.
-func (s *srv) Run(ctx context.Context, agentIDProvide id.Provide, initialRes InitialCmdResponse) {
+func (s *srv) Run(ctx context.Context, agentIDProvide id.Provide, initialRes cmdchannel.InitialCmdResponse) {
 	d := initialRes.Delay - time.Now().Sub(initialRes.Ts)
 	if d <= 0 {
 		d = s.nextPollInterval()
@@ -79,12 +81,6 @@ func (s *srv) Run(ctx context.Context, agentIDProvide id.Provide, initialRes Ini
 	}
 }
 
-// SetOHIHandler injects the handler dependency. A proper refactor of agent services injection will
-// be required for this to be injected via srv constructor.
-func (s *srv) SetOHIHandler(h handler.OHIEnabler) {
-	s.ffHandler.SetOHIHandler(h)
-}
-
 func (s *srv) nextPollInterval() time.Duration {
 	if s.pollDelaySecs <= 0 {
 		s.pollDelaySecs = 1
@@ -93,12 +89,26 @@ func (s *srv) nextPollInterval() time.Duration {
 }
 
 func (s *srv) handle(ctx context.Context, c commandapi.Command, initialFetch bool) {
-	switch c.Args.(type) {
-	case commandapi.FFArgs:
-		ffArgs := c.Args.(commandapi.FFArgs)
-		s.ffHandler.Handle(ctx, ffArgs, initialFetch)
-	case commandapi.BackoffArgs:
-		boArgs := c.Args.(commandapi.BackoffArgs)
-		s.pollDelaySecs = boArgs.Delay
+	h, ok := s.handlersByCmdName[c.Name]
+	if !ok {
+		ccsLogger.
+			WithField("cmd_id", c.ID).
+			WithField("cmd_name", c.Name).
+			Error("no handler for command-channel cmd")
+		return
+	}
+
+	backoffSecs, err := h.Handle(ctx, c, initialFetch)
+	if err != nil {
+		ccsLogger.
+			WithField("cmd_id", c.ID).
+			WithField("cmd_name", c.Name).
+			WithField("cmd_arguments", c.Args).
+			WithError(err).
+			Error("error handling cmd-channel request")
+
+	}
+	if backoffSecs > 0 {
+		s.pollDelaySecs = backoffSecs
 	}
 }

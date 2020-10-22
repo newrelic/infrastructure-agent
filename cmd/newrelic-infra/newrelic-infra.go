@@ -20,12 +20,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
+	ccBackoff "github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/backoff"
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/service"
 	"github.com/sirupsen/logrus"
 
 	"github.com/newrelic/infrastructure-agent/cmd/newrelic-infra/initialize"
 	"github.com/newrelic/infrastructure-agent/internal/agent"
-	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/commandapi"
@@ -199,8 +201,12 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	caClient := commandapi.NewClient(ccSvcURL, c.License, userAgent, httpClient)
 	ffManager := feature_flags.NewManager(c.Features)
 
-	// Command channel initialization.
-	ccService := cmdchannel.NewService(caClient, c, ffManager)
+	// Command channel handlers
+	boHandler := ccBackoff.NewHandler()
+	ffHandle := fflag.NewHandler(c, ffManager, wlog.WithComponent("FFHandler"))
+	ffHandler := cmdchannel.NewCmdHandler("set_feature_flag", ffHandle.Handle)
+	// Command channel service
+	ccService := service.NewService(caClient, c.CommandChannelIntervalSec, boHandler, ffHandler)
 	initCmdResponse, err := ccService.InitialFetch(context.Background())
 	if err != nil {
 		aslog.WithError(err).Warn("Commands initial fetch failed.")
@@ -286,7 +292,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	)
 
 	var dmEmitter dm.Emitter
-	if enabled, exists := ffManager.GetFeatureFlag(handler.FlagDMRegisterEnable); exists && enabled {
+	if enabled, exists := ffManager.GetFeatureFlag(fflag.FlagDMRegisterEnable); exists && enabled {
 		dmEmitter = dm.NewEmitter(agt.GetContext(), dmSender, registerClient)
 	} else {
 		dmEmitter = dm.NewNonRegisterEmitter(agt.GetContext(), dmSender)
@@ -315,7 +321,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		aslog.Debug("Log forwarder is not available for this platform. The agent will start without log forwarding support.")
 	}
 
-	ccService.SetOHIHandler(integrationManager)
+	ffHandle.SetOHIHandler(integrationManager)
 
 	go integrationManager.Start(agt.Context.Ctx)
 
