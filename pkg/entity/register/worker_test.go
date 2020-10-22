@@ -169,12 +169,56 @@ func TestWorker_registerEntitiesWithRetry_OnError_Discard(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	done := make(chan struct{})
+	response := make(chan []identityapi.RegisterEntityResponse)
 	go func() {
-		w.registerEntitiesWithRetry(ctx, []entity.Fields{{Name: "test"}})
-
 		select {
-		case done <- struct{}{}:
+		case response <- w.registerEntitiesWithRetry(ctx, []entity.Fields{{Name: "test"}}):
+			return
+		case <-ctx.Done():
+			return
+		}
+	}()
+
+	backoffCh := make(chan time.Duration)
+	w.getBackoffTimer = func(d time.Duration) *time.Timer {
+		backoffCh <- d
+		return time.NewTimer(0)
+	}
+
+	var expected []identityapi.RegisterEntityResponse = nil
+	select {
+	case actual := <-response:
+		assert.Equal(t, expected, actual)
+	case <-backoffCh:
+		t.Error("backoff should not be called")
+	case <-time.NewTimer(200 * time.Millisecond).C:
+		t.Error("registerEntitiesWithRetry should stop")
+	}
+}
+
+func TestWorker_registerEntitiesWithRetry_Success(t *testing.T) {
+	reqsToRegisterQueue := make(chan fwrequest.EntityFwRequest, 0)
+	reqsRegisteredQueue := make(chan fwrequest.EntityFwRequest, 0)
+
+	agentIdentity := func() entity.Identity {
+		return entity.Identity{ID: 13}
+	}
+
+	client := &fakeClient{
+		ids: []entity.ID{13},
+		// no err from backend.
+		err: nil,
+	}
+
+	w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), 0, reqsToRegisterQueue, reqsRegisteredQueue, 1, 50*time.Millisecond)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	response := make(chan []identityapi.RegisterEntityResponse)
+	go func() {
+		select {
+		case response <- w.registerEntitiesWithRetry(ctx, []entity.Fields{{Name: "test"}}):
 			return
 		case <-ctx.Done():
 			return
@@ -187,7 +231,9 @@ func TestWorker_registerEntitiesWithRetry_OnError_Discard(t *testing.T) {
 		return time.NewTimer(0)
 	}
 	select {
-	case <-done: // Success
+	case actual := <-response:
+		assert.Equal(t, 0, len(actual))
+		assert.Equal(t, "13", actual[0].ID.String())
 	case <-backoffCh:
 		t.Error("backoff should not be called")
 	case <-time.NewTimer(200 * time.Millisecond).C:
