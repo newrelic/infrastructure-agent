@@ -86,7 +86,7 @@ func init() {
 		pageSize = 4096 // default value
 	}
 
-	clockTicks = int64(cpu.CPUTick)
+	clockTicks = int64(cpu.ClocksPerSec)
 	if clockTicks <= 0 {
 		clockTicks = 100 // default value
 	}
