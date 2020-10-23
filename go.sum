@@ -92,6 +92,8 @@ github.com/prometheus/procfs v0.0.5-0.20190904130734-665568fc8419 h1:yJR+Dg2A7eL
 github.com/prometheus/procfs v0.0.5-0.20190904130734-665568fc8419/go.mod h1:4A/X28fw3Fc593LaREMrKMqOKvUAntwMDaekg4FpcdQ=
 github.com/shirou/gopsutil v2.18.12-0.20181220224138-a5ace91ccec8+incompatible h1:7oID10A10X7TuswfvLpbCsRSzIow5SG5qWZMcXhwB5E=
 github.com/shirou/gopsutil v2.18.12-0.20181220224138-a5ace91ccec8+incompatible/go.mod h1:5b4v6he4MtMOwMlS0TUMTu2PcXUg8+E1lC7eC3UO/RA=
+github.com/shirou/gopsutil v2.20.9+incompatible h1:msXs2frUV+O/JLva9EDLpuJ84PrFsdCTCQex8PUdtkQ=
+github.com/shirou/gopsutil v2.20.9+incompatible/go.mod h1:5b4v6he4MtMOwMlS0TUMTu2PcXUg8+E1lC7eC3UO/RA=
 github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4 h1:udFKJ0aHUL60LboW/A+DfgoHVedieIzIXE8uylPue0U=
 github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4/go.mod h1:qsXQc7+bwAM3Q1u/4XEfrquwF8Lw7D7y5cD8CuHnfIc=
 github.com/sirupsen/logrus v1.6.1-0.20200528085638-6699a89a232f h1:qqqIhBDFUBrbMezIyJkKWIpf+E5CdObleGMjW1s19Hg=

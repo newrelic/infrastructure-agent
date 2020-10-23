@@ -33,7 +33,7 @@ require (
 	github.com/opencontainers/image-spec v1.0.2-0.20181029102219-09950c5fb1bb // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/procfs v0.0.5-0.20190904130734-665568fc8419
-	github.com/shirou/gopsutil v2.18.12-0.20181220224138-a5ace91ccec8+incompatible
+	github.com/shirou/gopsutil v2.20.9+incompatible
 	github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4 // indirect
 	github.com/sirupsen/logrus v1.6.1-0.20200528085638-6699a89a232f
 	github.com/stretchr/testify v1.5.1
