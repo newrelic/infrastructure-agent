@@ -13,12 +13,12 @@ import (
 
 // Errors
 var (
-	InvalidArgsErrMsg = "invalid arguments for command"
+	ErrMsgInvalidArgs = "invalid arguments for command"
 )
 
 // NewArgsErr creates an invalid arguments error wrapping the reason
 func NewArgsErr(err error) error {
-	return errors.Wrap(err, InvalidArgsErrMsg)
+	return errors.Wrap(err, ErrMsgInvalidArgs)
 }
 
 // CmdHandleF command channel request handler function.
@@ -26,8 +26,8 @@ type CmdHandleF func(ctx context.Context, cmd commandapi.Command, initialFetch b
 
 // CmdHandler handler for the a given command-channel command request.
 type CmdHandler struct {
-	Handle  CmdHandleF
-	CmdName string
+	CmdName string     // name of the command request that should be handled
+	Handle  CmdHandleF // handling function to be invoked
 }
 
 // Service command channel service capable of handling command api cmd requests.
