@@ -15,7 +15,7 @@ import (
 	"testing"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
-	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/handler"
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
@@ -39,11 +39,63 @@ var (
 )
 
 func TestParsePayloadV4(t *testing.T) {
-	ffm := feature_flags.NewManager(map[string]bool{handler.FlagProtocolV4: true})
+	ffm := feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true})
 
 	d, err := ParsePayloadV4(integrationFixture.ProtocolV4.Payload, ffm)
 	assert.NoError(t, err)
 	assert.EqualValues(t, integrationFixture.ProtocolV4.ParsedV4, d)
+}
+
+func TestParsePayloadV4_embeddedInventoryItems(t *testing.T) {
+	ffm := feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true})
+
+	d, err := ParsePayloadV4([]byte(`{
+  "protocol_version": "4",
+  "integration": {
+    "name": "com.newrelic.foo",
+    "version": "0.1.0"
+  },
+  "data": [
+    {
+      "inventory": {
+        "foo": {
+          "bar": {
+            "baz": {
+              "k1": "v1",
+              "k2": false
+            }
+          }
+        }
+      }
+    }
+  ]
+}`), ffm)
+	require.NoError(t, err)
+	require.Len(t, d.DataSets, 1)
+
+	// id: inventory data
+	id := d.DataSets[0].Inventory
+
+	fooID, ok := id["foo"]
+	require.True(t, ok)
+
+	barVal, ok := fooID["bar"]
+	require.True(t, ok)
+	barID, ok := barVal.(map[string]interface{})
+	require.True(t, ok)
+
+	bazVal, ok := barID["baz"]
+	require.True(t, ok)
+	bazID, ok := bazVal.(map[string]interface{})
+	require.True(t, ok)
+
+	k1Val, ok := bazID["k1"]
+	require.True(t, ok)
+	assert.EqualValues(t, "v1", k1Val)
+
+	k2Val, ok := bazID["k2"]
+	require.True(t, ok)
+	assert.EqualValues(t, false, k2Val)
 }
 
 func TestParsePayloadV4_noFF(t *testing.T) {
@@ -70,14 +122,18 @@ func (m *mockedMetricsSender) SendMetricsWithCommonAttributes(commonAttributes p
 }
 
 func TestEmitter_Send_usingIDCache(t *testing.T) {
-	eID := entity.ID(1234)
-	aCtx := getAgentContext("bob")
-	aCtx.On("SendData",
-		agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "integration name"}, Entity: entity.New("unique name", eID), Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_foo", "value": "bar"}}, NotApplicable: false})
+	data := integrationFixture.ProtocolV4TwoEntities.Clone().ParsedV4
 
-	aCtx.On("SendEvent", mock.AnythingOfType("agent.mapEvent"), entity.Key("unique name"))
+	firstEntity := entity.Entity{Key: entity.Key(data.DataSets[0].Entity.Name), ID: entity.ID(1)}
+	secondEntity := entity.Entity{Key: entity.Key(data.DataSets[1].Entity.Name), ID: entity.ID(2)}
 
-	aCtx.SendDataWg.Add(1)
+	aCtx := getAgentContext("TestEmitter_Send_usingIDCache")
+	aCtx.On("SendEvent", mock.Anything, mock.Anything)
+
+	aCtx.On("SendData", agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "Sample"}, Entity: firstEntity, Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_payload_one", "value": "foo-one"}}, NotApplicable: false})
+	aCtx.On("SendData", agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "Sample"}, Entity: secondEntity, Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_payload_two", "value": "bar-two"}}, NotApplicable: false})
+
+	aCtx.SendDataWg.Add(2)
 
 	dmSender := &mockedMetricsSender{
 		wg: sync.WaitGroup{},
@@ -85,13 +141,13 @@ func TestEmitter_Send_usingIDCache(t *testing.T) {
 	dmSender.
 		On("SendMetricsWithCommonAttributes", mock.AnythingOfType("protocol.Common"), mock.AnythingOfType("[]protocol.Metric")).
 		Return(nil)
-	dmSender.wg.Add(1)
+	dmSender.wg.Add(2)
 
 	em := NewEmitter(aCtx, dmSender, &test.EmptyRegisterClient{})
 	e := em.(*emitter)
-	data := integrationFixture.ProtocolV4.Clone().ParsedV4
-	// TODO update when key retrieval is fixed
-	e.idCache.Put(entity.Key(data.DataSets[0].Entity.Name), eID)
+
+	e.idCache.Put(entity.Key(fmt.Sprintf("%s:%s", data.DataSets[0].Entity.Type, data.DataSets[0].Entity.Name)), firstEntity.ID)
+	e.idCache.Put(entity.Key(fmt.Sprintf("%s:%s", data.DataSets[1].Entity.Type, data.DataSets[1].Entity.Name)), secondEntity.ID)
 
 	req := fwrequest.NewFwRequest(integration.Definition{}, nil, nil, data)
 
@@ -103,15 +159,19 @@ func TestEmitter_Send_usingIDCache(t *testing.T) {
 	aCtx.AssertExpectations(t)
 
 	// Should add Entity Id ('nr.entity.id') to Common attributes
-	dmMetricsSent := dmSender.Calls[0].Arguments[1].([]protocol.Metric)
-	assert.Len(t, dmMetricsSent, 1)
-	assert.Equal(t, eID.String(), dmMetricsSent[0].Attributes[fwrequest.EntityIdAttribute])
+	firstDMetricsSent := dmSender.Calls[0].Arguments[1].([]protocol.Metric)
+	assert.Len(t, firstDMetricsSent, 1)
+	assert.Equal(t, firstEntity.ID.String(), firstDMetricsSent[0].Attributes[fwrequest.EntityIdAttribute])
+
+	secondDMetricsSent := dmSender.Calls[1].Arguments[1].([]protocol.Metric)
+	assert.Len(t, secondDMetricsSent, 1)
+	assert.Equal(t, secondEntity.ID.String(), secondDMetricsSent[0].Attributes[fwrequest.EntityIdAttribute])
 }
 
 func TestEmitter_Send(t *testing.T) {
 	eID := entity.ID(1) // 1 as provided by test.NewIncrementalRegister
 
-	aCtx := getAgentContext("bob")
+	aCtx := getAgentContext("TestEmitter_Send")
 	aCtx.On("SendData",
 		agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "integration name"}, Entity: entity.New("unique name", eID), Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_foo", "value": "bar"}, protocol.InventoryData{"entityKey": "unique name", "id": "integrationUser", "value": "root"}}, NotApplicable: false})
 
@@ -150,6 +210,14 @@ func TestEmitter_Send(t *testing.T) {
 	sent := ms.Calls[0].Arguments[1].([]protocol.Metric)
 	assert.Len(t, sent, 1)
 	assert.Equal(t, eID.String(), sent[0].Attributes[fwrequest.EntityIdAttribute])
+
+	for _, d := range data.DataSets {
+		entityName, err := d.Entity.Key()
+		assert.NoError(t, err)
+		actualEntityID, found := e.idCache.Get(entityName)
+		assert.True(t, found)
+		assert.Equal(t, eID, actualEntityID)
+	}
 }
 
 func Test_NrEntityIdConst(t *testing.T) {
@@ -164,7 +232,7 @@ func TestEmitEvent_InvalidPayload(t *testing.T) {
 	log.SetLevel(logrus.WarnLevel)
 
 	never := 0
-	aCtx := getAgentContext("bob")
+	aCtx := getAgentContext("TestEmitEvent_InvalidPayload")
 	aCtx.On("SendEvent").Times(never)
 
 	d := integration.Definition{}
@@ -216,6 +284,7 @@ func getAgentContext(hostname string) *mocks.AgentContext {
 	if hostname != "" {
 		idLookup[sysinfo.HOST_SOURCE_INSTANCE_ID] = hostname
 	}
+	agentCtx.On("EntityKey").Return(hostname)
 	agentCtx.On("IDLookup").Return(idLookup)
 	agentCtx.On("Config").Return(nil)
 

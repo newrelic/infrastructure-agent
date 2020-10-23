@@ -1030,7 +1030,7 @@ func (rs *RunnerSuite) TestHandleOutputV1(c *C) {
 	// inventory order is not guaranteed
 	if firstData.SortKey() == "events/worker_connections" {
 		c.Assert(inv["id"], Equals, "events/worker_connections")
-		c.Assert(inv["value"], Equals, "1024")
+		c.Assert(inv["value"], Equals, float64(1024))
 	} else if firstData.SortKey() == "http/gzip" {
 		c.Assert(inv["id"], Equals, "http/gzip")
 		c.Assert(inv["value"], Equals, "on")
@@ -1058,7 +1058,7 @@ func (rs *RunnerSuite) TestHandleOutputV2WithLocalEntity(c *C) {
 	rd, err := readData(ctx.ch)
 	c.Assert(err, IsNil)
 	c.Assert(rd.Data[0].SortKey(), Equals, "motor")
-	c.Assert(rd.Data[0].(protocol.InventoryData)["cc"], Equals, "1800")
+	c.Assert(rd.Data[0].(protocol.InventoryData)["cc"], Equals, float64(1800))
 	c.Assert(rd.Data[0].(protocol.InventoryData)["brand"], Equals, "renault")
 
 	event, err := readMetrics(ctx.ev)
@@ -1087,7 +1087,7 @@ func (rs *RunnerSuite) TestHandleOutputV2(c *C) {
 	rd, err := readData(ctx.ch)
 	c.Assert(err, IsNil)
 	c.Assert(rd.Data[0].SortKey(), Equals, "motor")
-	c.Assert(rd.Data[0].(protocol.InventoryData)["cc"], Equals, "1800")
+	c.Assert(rd.Data[0].(protocol.InventoryData)["cc"], Equals, float64(1800))
 	c.Assert(rd.Data[0].(protocol.InventoryData)["brand"], Equals, "renault")
 
 	event, err := readMetrics(ctx.ev)
@@ -1099,7 +1099,7 @@ func (rs *RunnerSuite) TestHandleOutputV2(c *C) {
 	rd, err = readData(ctx.ch)
 	c.Assert(err, IsNil)
 	c.Assert(rd.Data[0].SortKey(), Equals, "motor")
-	c.Assert(rd.Data[0].(protocol.InventoryData)["cc"], Equals, "500")
+	c.Assert(rd.Data[0].(protocol.InventoryData)["cc"], Equals, float64(500))
 	c.Assert(rd.Data[0].(protocol.InventoryData)["brand"], Equals, "yamaha")
 
 	event, err = readMetrics(ctx.ev)
@@ -2102,45 +2102,6 @@ func TestProtocolV2_LocalhostIsNotReplaced(t *testing.T) {
 		assert.Equal(t, "instance:localhost:80", event["entityKey"])
 		assert.Nil(t, event["hostname"])
 	}
-}
-
-func TestResolveEntityKeyWithAgent(t *testing.T) {
-	ctx := new(mocks.AgentContext)
-	ctx.On("EntityKey").Return("agent_id")
-	ctx.On("IDLookup").Return(newFixedIDLookup())
-
-	e := entity.Fields{}
-	k, err := host.ResolveUniqueEntityKey(e, "agent_id", ctx.IDLookup(), []data.EntityRewrite{}, protocol.V2)
-	assert.NoError(t, err)
-	assert.Equal(t, entity.Key("agent_id"), k)
-}
-
-func TestResolveEntityWithReplacement(t *testing.T) {
-	ctx := new(mocks.AgentContext)
-	ctx.On("EntityKey").Return("agent_id")
-	ctx.On("IDLookup").Return(newFixedIDLookup())
-
-	e := entity.Fields{
-		Name: "localhost:80",
-		Type: entity.Type("instance"),
-	}
-	k, err := host.ResolveUniqueEntityKey(e, "hostname", ctx.IDLookup(), []data.EntityRewrite{}, protocol.V3)
-	assert.NoError(t, err)
-	assert.Equal(t, entity.Key("instance:display_name:80"), k)
-}
-
-func TestResolveEntityWithProtocolV2(t *testing.T) {
-	ctx := new(mocks.AgentContext)
-	ctx.On("EntityKey").Return("agent_id")
-	ctx.On("IDLookup").Return(newFixedIDLookup())
-
-	e := entity.Fields{
-		Name: "localhost:80",
-		Type: entity.Type("instance"),
-	}
-	k, err := host.ResolveUniqueEntityKey(e, "hostname", ctx.IDLookup(), []data.EntityRewrite{}, protocol.V2)
-	assert.NoError(t, err)
-	assert.Equal(t, entity.Key("instance:localhost:80"), k)
 }
 
 type stubResolver struct {

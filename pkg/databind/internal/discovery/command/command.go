@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery"
-	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery/naming"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 )
 
@@ -90,7 +89,7 @@ func (e *executable) fetch() (results []discovery.Discovery, err error) {
 		fields := data.InterfaceMapToMap(res[resI].Variables)
 		if e.m.All(fields) {
 			results = append(results, discovery.Discovery{
-				Variables:         discovery.LabelsToMap(naming.DiscoveryPrefix, fields),
+				Variables:         discovery.LabelsToMap(data.DiscoveryPrefix, fields),
 				MetricAnnotations: res[resI].Annotations,
 				EntityRewrites:    res[resI].EntityRewrites,
 			})

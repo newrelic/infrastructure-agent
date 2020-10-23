@@ -19,7 +19,6 @@ import (
 	backendhttp "github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/inventoryapi"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
@@ -37,10 +36,10 @@ type RegisterClient interface {
 	RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities []RegisterEntity) ([]RegisterEntityResponse, time.Duration, error)
 
 	// RegisterBatchEntities registers a slice of protocol.Entity. This is done as a batch process
-	RegisterBatchEntities(agentEntityID entity.ID, entities []protocol.Entity) ([]RegisterEntityResponse, time.Duration, error)
+	RegisterBatchEntities(agentEntityID entity.ID, entities []entity.Fields) ([]RegisterEntityResponse, time.Duration, error)
 
 	// RegisterEntity registers a protocol.Entity
-	RegisterEntity(agentEntityID entity.ID, entity protocol.Entity) (RegisterEntityResponse, error)
+	RegisterEntity(agentEntityID entity.ID, entity entity.Fields) (RegisterEntityResponse, error)
 }
 
 type registerClient struct {
@@ -105,7 +104,7 @@ func NewRegisterClient(
 	}, nil
 }
 
-func (rc *registerClient) RegisterBatchEntities(agentEntityID entity.ID, entities []protocol.Entity) (resp []RegisterEntityResponse, duration time.Duration, err error) {
+func (rc *registerClient) RegisterBatchEntities(agentEntityID entity.ID, entities []entity.Fields) (resp []RegisterEntityResponse, duration time.Duration, err error) {
 
 	ctx := context.Background()
 
@@ -137,9 +136,9 @@ func (rc *registerClient) RegisterBatchEntities(agentEntityID entity.ID, entitie
 	return resp, time.Second, err
 }
 
-func newRegisterRequest(entity protocol.Entity) identity.RegisterRequest {
+func newRegisterRequest(entity entity.Fields) identity.RegisterRequest {
 	registerRequest := identity.RegisterRequest{
-		EntityType:  entity.Type,
+		EntityType:  string(entity.Type),
 		EntityName:  entity.Name,
 		DisplayName: entity.DisplayName,
 		Metadata:    convertMetadataToMapStringString(entity.Metadata),
@@ -147,7 +146,7 @@ func newRegisterRequest(entity protocol.Entity) identity.RegisterRequest {
 	return registerRequest
 }
 
-func (rc *registerClient) RegisterEntity(agentEntityID entity.ID, ent protocol.Entity) (resp RegisterEntityResponse, err error) {
+func (rc *registerClient) RegisterEntity(agentEntityID entity.ID, ent entity.Fields) (resp RegisterEntityResponse, err error) {
 
 	ctx := context.Background()
 	registerRequest := newRegisterRequest(ent)

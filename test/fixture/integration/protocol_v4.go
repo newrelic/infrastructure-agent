@@ -4,6 +4,7 @@ package integration
 
 import (
 	"encoding/json"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 )
 
@@ -89,7 +90,7 @@ var (
         }
       ],
       "entity": {
-        "name": "a.entity.one",
+        "name": "entity.name",
         "type": "ATYPE",
         "displayName": "A display name one",
         "metadata": {
@@ -138,8 +139,8 @@ var (
         }
       ],
       "entity": {
-        "name": "b.entity.two",
-        "type": "ATYPE",
+        "name": "entity.name",
+        "type": "BTYPE",
         "displayName": "A display name two",
         "metadata": {
           "env": "testing"
@@ -150,7 +151,13 @@ var (
           "value": "bar-two"
         }
       },
-      "events": []
+      "events":[
+		{ 
+		  "summary": "foo",
+		  "format": "event",
+		  "attributes": { "format": "attribute"}
+		}
+	  ]
     }
   ]
 }`),
@@ -180,8 +187,8 @@ var (
 							Value: json.RawMessage("13"),
 						},
 					},
-					Entity: protocol.Entity{
-						Name:        "a.entity.one",
+					Entity: entity.Fields{
+						Name:        "entity.name",
 						Type:        "ATYPE",
 						DisplayName: "A display name one",
 						Metadata: map[string]interface{}{
@@ -189,7 +196,7 @@ var (
 						},
 					},
 					Inventory: map[string]protocol.InventoryData{
-						"inventory_payload_two": {"value": "bar-two"},
+						"inventory_payload_one": {"value": "foo-one"},
 					},
 					Events: []protocol.EventData{},
 				},
@@ -210,9 +217,9 @@ var (
 							Value: json.RawMessage("13"),
 						},
 					},
-					Entity: protocol.Entity{
-						Name:        "b.entity.two",
-						Type:        "ATYPE",
+					Entity: entity.Fields{
+						Name:        "entity.name",
+						Type:        "BTYPE",
 						DisplayName: "A display name two",
 						Metadata: map[string]interface{}{
 							"env": "testing",
@@ -221,7 +228,15 @@ var (
 					Inventory: map[string]protocol.InventoryData{
 						"inventory_payload_two": {"value": "bar-two"},
 					},
-					Events: []protocol.EventData{},
+					Events: []protocol.EventData{
+						{
+							"summary": "foo",
+							"format":  "event",
+							"attributes": map[string]interface{}{
+								"format": "attribute",
+							},
+						},
+					},
 				},
 			},
 		},
@@ -295,7 +310,7 @@ var (
 							Value:      json.RawMessage("93"),
 						},
 					},
-					Entity: protocol.Entity{
+					Entity: entity.Fields{
 						Name:        "unique name",
 						Type:        "RedisInstance",
 						DisplayName: "human readable name",
