@@ -15,6 +15,7 @@ import (
 
 type Client interface {
 	GetCommands(agentID entity.ID) ([]Command, error)
+	AckCommand(agentID entity.ID, cmdID int) error
 }
 
 type Command struct {
@@ -28,6 +29,15 @@ type client struct {
 	licenseKey string
 	userAgent  string
 	httpClient backendhttp.Client
+}
+
+func NewClient(svcURL, licenseKey, userAgent string, httpClient backendhttp.Client) Client {
+	return &client{
+		svcURL:     strings.TrimSuffix(svcURL, "/"),
+		licenseKey: licenseKey,
+		userAgent:  userAgent,
+		httpClient: httpClient,
+	}
 }
 
 func (c *client) GetCommands(agentID entity.ID) ([]Command, error) {
@@ -57,13 +67,33 @@ func (c *client) GetCommands(agentID entity.ID) ([]Command, error) {
 	return unmarshalCmdChannelPayload(body)
 }
 
-func NewClient(svcURL, licenseKey, userAgent string, httpClient backendhttp.Client) Client {
-	return &client{
-		svcURL:     strings.TrimSuffix(svcURL, "/"),
-		licenseKey: licenseKey,
-		userAgent:  userAgent,
-		httpClient: httpClient,
+func (c *client) AckCommand(agentID entity.ID, cmdID int) error {
+	payload := strings.NewReader(fmt.Sprintf(`{ "id": %d, "name": "ack" }`, cmdID))
+
+	req, err := http.NewRequest("POST", c.svcURL, payload)
+	if err != nil {
+		return fmt.Errorf("cmd channel ack request creation failed: %s", err)
 	}
+
+	resp, err := c.do(req, agentID)
+	if err != nil {
+		return fmt.Errorf("cmd channel ack request submission failed: %s", err)
+	}
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	if !backendhttp.IsResponseError(resp) {
+		return nil
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		body = []byte(fmt.Sprintf("cannot read cmd channel ack response: %s", err.Error()))
+	}
+
+	return fmt.Errorf("unsuccessful ack, status:%d [%s]", resp.StatusCode, string(body))
 }
 
 func (c *client) do(req *http.Request, agentID entity.ID) (*http.Response, error) {

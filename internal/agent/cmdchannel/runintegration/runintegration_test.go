@@ -26,7 +26,7 @@ func TestHandle_returnsErrorOnMissingIntegrationName(t *testing.T) {
 	}
 
 	_, err := h.Handle(context.Background(), cmdArgsMissingName, false)
-	assert.Equal(t, cmdchannel.NewArgsErr(NoIntNameErr).Error(), err.Error())
+	assert.Equal(t, cmdchannel.NewArgsErr(ErrNoIntName).Error(), err.Error())
 }
 
 func TestHandle_queuesIntegrationToBeRun(t *testing.T) {

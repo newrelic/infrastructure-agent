@@ -17,9 +17,12 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/backoff"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/cmdchanneltest"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/runintegration"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	http2 "github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/stretchr/testify/require"
 
 	"testing"
 
@@ -130,6 +133,36 @@ func TestSrv_InitialFetch_EnablesRegisterAndHandlesBackoff(t *testing.T) {
 	assert.True(t, c.RegisterEnabled)
 }
 
+func TestSrv_InitialFetch_HandlesRunIntegration(t *testing.T) {
+	serializedCmds := `
+	{
+		"return_value": [
+			{
+				"name": "run_integration",
+				"arguments": {
+					"integration_name": "nri-foo"
+				}
+			}
+		]
+	}
+`
+	defQueue := make(chan integration.Definition, 1)
+	il := integration.InstancesLookup{
+		ByName: func(_ string) (string, error) {
+			return "/path/to/nri-foo", nil
+		},
+	}
+	h := runintegration.NewHandler(defQueue, il, l)
+
+	s := NewService(cmdchanneltest.SuccessClient(serializedCmds), 1, h)
+
+	_, err := s.InitialFetch(context.Background())
+	require.NoError(t, err)
+
+	d := <-defQueue
+	assert.Equal(t, "nri-foo", d.Name)
+}
+
 func TestSrv_Run(t *testing.T) {
 	initialCmd := `
 	{
@@ -173,7 +206,7 @@ func TestSrv_Run(t *testing.T) {
 	h := fflag.NewHandler(c, ffManager, l)
 	ffHandler := cmdchannel.NewCmdHandler("set_feature_flag", h.Handle)
 
-	cmdChClient, responsesCh, headerAgentIDCh := cmdChannelClientSpy(initialCmd, firstPollCmd)
+	cmdChClient, responsesCh, headerAgentIDCh := cmdChannelClientIDSpy(initialCmd, firstPollCmd)
 	ss := NewService(cmdChClient, 0, backoff.NewHandler(), ffHandler)
 	s := ss.(*srv)
 
@@ -220,7 +253,7 @@ func TestSrv_Run(t *testing.T) {
 	assert.True(t, exists)
 }
 
-func cmdChannelClientSpy(serializedCmds ...string) (commandapi.Client, chan *http.Response, chan entity.ID) {
+func cmdChannelClientIDSpy(serializedCmds ...string) (commandapi.Client, chan *http.Response, chan entity.ID) {
 	requests := 0
 	respCh := make(chan *http.Response)
 	receivedAgentIDCh := make(chan entity.ID)
@@ -239,4 +272,60 @@ func cmdChannelClientSpy(serializedCmds ...string) (commandapi.Client, chan *htt
 	}
 
 	return commandapi.NewClient("https://foo", "123", "Agent v0", httpClient), respCh, receivedAgentIDCh
+}
+
+func TestSrv_Run_HandlesRunIntegrationAndACKs(t *testing.T) {
+	defQueue := make(chan integration.Definition, 1)
+	il := integration.InstancesLookup{
+		ByName: func(_ string) (string, error) {
+			return "/path/to/nri-foo", nil
+		},
+	}
+	h := runintegration.NewHandler(defQueue, il, l)
+
+	cmd := `
+	{
+		"return_value": [
+			{
+				"id":   1,
+				"name": "run_integration",
+				"arguments": {
+					"integration_name": "nri-foo"
+				}
+			}
+		]
+	}`
+	cmdChClient, requestsCh := ccClientRequestsSpyReturning(cmd)
+	s := NewService(cmdChClient, 0, h)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		agentIdnProvideFn := func() entity.Identity {
+			return entity.Identity{ID: 123}
+		}
+		s.Run(ctx, agentIdnProvideFn, cmdchannel.InitialCmdResponse{})
+	}()
+
+	req1 := <-requestsCh
+	req2 := <-requestsCh
+	cancel()
+
+	assert.Equal(t, http.MethodGet, req1.Method, "get-commands request is expected")
+	assert.Equal(t, http.MethodPost, req2.Method, "ack post submission is expected")
+
+	d := <-defQueue
+	assert.Equal(t, "nri-foo", d.Name)
+}
+
+func ccClientRequestsSpyReturning(payload string) (commandapi.Client, <-chan *http.Request) {
+	reqs := make(chan *http.Request)
+	httpClient := func(req *http.Request) (*http.Response, error) {
+		reqs <- req
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(payload))),
+		}, nil
+	}
+
+	return commandapi.NewClient("https://foo", "123", "Agent v0", httpClient), reqs
 }

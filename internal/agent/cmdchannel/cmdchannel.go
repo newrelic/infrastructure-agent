@@ -13,12 +13,12 @@ import (
 
 // Errors
 var (
-	InvalidArgsErrMsg = "invalid arguments for command"
+	ErrMsgInvalidArgs = "invalid arguments for command"
 )
 
 // NewArgsErr creates an invalid arguments error wrapping the reason
 func NewArgsErr(err error) error {
-	return errors.Wrap(err, InvalidArgsErrMsg)
+	return errors.Wrap(err, ErrMsgInvalidArgs)
 }
 
 // CmdHandleF command channel request handler function.
