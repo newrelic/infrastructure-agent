@@ -11,7 +11,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
-	data2 "github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
+	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 )
 
@@ -24,8 +24,8 @@ const (
 type EmittedData struct {
 	DataSet       protocol.PluginDataSetV3
 	Metadata      integration.Definition
-	ExtraLabels   data2.Map
-	EntityRewrite []data2.EntityRewrite
+	ExtraLabels   data.Map
+	EntityRewrite []data.EntityRewrite
 }
 
 // RecordEmitter implements a test emitter that stores the submitted data as Plugins structs
@@ -34,7 +34,7 @@ type RecordEmitter struct {
 	mutex    sync.Mutex
 }
 
-func (t *RecordEmitter) Emit(metadata integration.Definition, extraLabels data2.Map, entityRewrite []data2.EntityRewrite, json []byte) error {
+func (t *RecordEmitter) Emit(metadata integration.Definition, extraLabels data.Map, entityRewrite []data.EntityRewrite, json []byte) error {
 	data, _, err := legacy.ParsePayload(json, false)
 	if err != nil {
 		return err

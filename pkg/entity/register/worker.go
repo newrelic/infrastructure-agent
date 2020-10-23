@@ -8,7 +8,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/fwrequest"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 )
 
 type worker struct {
@@ -76,7 +75,7 @@ func (w *worker) Run(ctx context.Context) {
 func (w *worker) send(batch map[entity.Key]fwrequest.EntityFwRequest, batchSize *int) {
 	defer w.resetBatch(batch, batchSize)
 
-	var entities []protocol.Entity
+	var entities []entity.Fields
 	for _, r := range batch {
 		entities = append(entities, r.Data.Entity)
 	}
@@ -103,7 +102,8 @@ func (w *worker) send(batch map[entity.Key]fwrequest.EntityFwRequest, batchSize 
 }
 
 func (w *worker) resetBatch(batch map[entity.Key]fwrequest.EntityFwRequest, batchSize *int) {
-	zero := 0
-	batchSize = &zero
-	batch = map[entity.Key]fwrequest.EntityFwRequest{}
+	*batchSize = 0
+	for key := range batch {
+		delete(batch, key)
+	}
 }

@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery"
-	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery/naming"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -154,7 +153,7 @@ func TestFetch(t *testing.T) {
 			// Check all variables
 			for k := range expect.Variables {
 				t.Logf("Variable:%s:%v", k, expect.Variables[k])
-				assert.Equal(t, fmt.Sprintf("%v", expect.Variables[k]), results[0].Variables[naming.DiscoveryPrefix+k])
+				assert.Equal(t, fmt.Sprintf("%v", expect.Variables[k]), results[0].Variables[data.DiscoveryPrefix+k])
 			}
 
 			assert.Equal(t, expect.Annotations, results[0].MetricAnnotations)

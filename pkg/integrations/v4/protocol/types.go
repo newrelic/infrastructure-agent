@@ -6,9 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"time"
-
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"time"
 )
 
 type MetricType string
@@ -42,7 +41,7 @@ type IntegrationMetadata struct {
 type Dataset struct {
 	Common    Common                   `json:"common"`
 	Metrics   []Metric                 `json:"metrics"`
-	Entity    Entity                   `json:"entity"`
+	Entity    entity.Fields            `json:"entity"`
 	Inventory map[string]InventoryData `json:"inventory"`
 	Events    []EventData              `json:"events"`
 }
@@ -60,13 +59,6 @@ type Metric struct {
 	Interval   *int64                 `json:"interval.ms"`
 	Attributes map[string]interface{} `json:"attributes"`
 	Value      json.RawMessage        `json:"value"`
-}
-
-type Entity struct {
-	Name        string                 `json:"name"`
-	Type        string                 `json:"type"`
-	DisplayName string                 `json:"displayName"`
-	Metadata    map[string]interface{} `json:"metadata"`
 }
 
 type SummaryValue struct {

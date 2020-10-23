@@ -5,16 +5,17 @@ package docker
 
 import (
 	"context"
-	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/counter"
-	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery"
-	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery/naming"
-	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
+
+	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/counter"
+	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery"
+	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery/naming"
+	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 )
 
 const (
@@ -56,25 +57,25 @@ func fetch(d discovery.Container, matcher *discovery.FieldsMatcher) ([]discovery
 		// discovery attributes that identify the container
 		labels := map[string]string{}
 		for k, v := range cont.Labels {
-			labels[naming.LabelInfix+k] = v
+			labels[data.LabelInfix+k] = v
 		}
 		if len(cont.Names) > 0 {
 			name := cont.Names[0]
 			if name[0] == '/' {
 				name = name[1:]
 			}
-			labels[naming.Name] = name
+			labels[data.Name] = name
 		}
-		labels[naming.Image] = cont.Image
+		labels[data.Image] = cont.Image
 
-		labels[naming.ContainerID] = cont.ID
+		labels[data.ContainerID] = cont.ID
 
 		index := 0
 		for _, network := range cont.NetworkSettings.Networks {
 			if index == 0 {
-				labels[naming.PrivateIP] = network.IPAddress
+				labels[data.PrivateIP] = network.IPAddress
 			}
-			labels[naming.PrivateIP+"."+strconv.Itoa(index)] = network.IPAddress
+			labels[data.PrivateIP+"."+strconv.Itoa(index)] = network.IPAddress
 			index++
 		}
 
@@ -82,7 +83,7 @@ func fetch(d discovery.Container, matcher *discovery.FieldsMatcher) ([]discovery
 
 		// only containers matching all the criteria will be added
 		if matcher.All(labels) {
-			prefixedLabels := discovery.LabelsToMap(naming.DiscoveryPrefix, labels)
+			prefixedLabels := discovery.LabelsToMap(data.DiscoveryPrefix, labels)
 
 			ma := make(data.InterfaceMap, metricAnnotationsToAdd)
 			naming.AddImage(ma, cont.Image)
@@ -96,9 +97,9 @@ func fetch(d discovery.Container, matcher *discovery.FieldsMatcher) ([]discovery
 				Variables: prefixedLabels,
 				EntityRewrites: []data.EntityRewrite{
 					{
-						Action:       naming.EntityRewriteActionReplace,
-						Match:        naming.ToVariable(naming.IP),
-						ReplaceField: naming.ContainerReplaceFieldPrefix + naming.ToVariable(naming.ContainerID),
+						Action:       data.EntityRewriteActionReplace,
+						Match:        naming.ToVariable(data.IP),
+						ReplaceField: data.ContainerReplaceFieldPrefix + naming.ToVariable(data.ContainerID),
 					},
 				},
 				MetricAnnotations: ma,
@@ -121,31 +122,31 @@ func addPorts(cont types.Container, labels map[string]string) {
 
 	for index, port := range cont.Ports {
 		indexStr := "." + strconv.Itoa(index)
-		labels[naming.IP+indexStr] = port.IP
-		labels[naming.IP] = port.IP
+		labels[data.IP+indexStr] = port.IP
+		labels[data.IP] = port.IP
 
 		tIdx := types.Count(port.Type)
 		publicPort := strconv.Itoa(int(port.PublicPort))
 		privatePort := strconv.Itoa(int(port.PrivatePort))
 		if firstPublic {
-			labels[naming.Port] = publicPort
+			labels[data.Port] = publicPort
 			firstPublic = false
 		}
-		labels[naming.Ports+indexStr] = publicPort
+		labels[data.Ports+indexStr] = publicPort
 		if firstPrivate {
-			labels[naming.PrivatePort] = privatePort
+			labels[data.PrivatePort] = privatePort
 			firstPrivate = false
 		}
-		labels[naming.PrivatePorts+indexStr] = privatePort
+		labels[data.PrivatePorts+indexStr] = privatePort
 
 		// label ports by type (e.g. discovery.port.tcp.1)
 		if port.Type != "" {
 			if tIdx == 0 {
-				labels[naming.Ports+"."+port.Type] = publicPort
-				labels[naming.PrivatePorts+"."+port.Type] = privatePort
+				labels[data.Ports+"."+port.Type] = publicPort
+				labels[data.PrivatePorts+"."+port.Type] = privatePort
 			}
-			labels[naming.Ports+"."+port.Type+indexStr] = publicPort
-			labels[naming.PrivatePorts+"."+port.Type+indexStr] = privatePort
+			labels[data.Ports+"."+port.Type+indexStr] = publicPort
+			labels[data.PrivatePorts+"."+port.Type+indexStr] = privatePort
 		}
 	}
 }

@@ -4,6 +4,7 @@
 package telemetryapi
 
 import (
+	"context"
 	"math"
 	"os"
 	"reflect"
@@ -55,7 +56,7 @@ func TestManyAttributes(t *testing.T) {
 	}
 	h.MetricAggregator().Gauge("myGauge", attributes).valueNow(1.0, now)
 	h.MetricAggregator().Gauge("myGauge", attributes).valueNow(2.0, now)
-	if ms := h.swapOutMetrics(time.Now()); len(ms) != 1 {
+	if ms := h.swapOutMetrics(context.Background(), time.Now()); len(ms) != 1 {
 		t.Fatal(len(ms))
 	}
 }
@@ -136,7 +137,7 @@ func TestCountNegative(t *testing.T) {
 	h, _ := NewHarvester(configTesting)
 	count := h.MetricAggregator().Count("myCount", map[string]interface{}{"zip": "zap"})
 	count.Increase(-123)
-	if ms := h.swapOutMetrics(time.Now()); len(ms) != 0 {
+	if ms := h.swapOutMetrics(context.Background(), time.Now()); len(ms) != 0 {
 		t.Fatal(ms)
 	}
 }

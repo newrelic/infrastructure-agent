@@ -6,6 +6,29 @@ package data
 import (
 	"fmt"
 	"strconv"
+	"strings"
+)
+
+const (
+	DiscoveryPrefix             = "discovery."
+	LabelInfix                  = "label."
+	ContainerReplaceFieldPrefix = "container:"
+
+	Port                       = "port"
+	Ports                      = "ports"
+	IP                         = "ip"
+	PrivatePort                = "private.port"
+	PrivatePorts               = "private.ports"
+	PrivateIP                  = "private.ip"
+	Name                       = "name"
+	Image                      = "image"
+	ImageID                    = "imageId"
+	ContainerID                = "containerId"
+	ContainerName              = "containerName"
+	Label                      = "label"
+	Command                    = "command"
+	DockerContainerName        = "dockerContainerName"
+	EntityRewriteActionReplace = "replace"
 )
 
 type Map map[string]string
@@ -23,6 +46,8 @@ type EntityRewrite struct {
 	ReplaceField string `json:"replaceField"`
 }
 
+type EntityRewrites []EntityRewrite
+
 func InterfaceMapToMap(original InterfaceMap) (out Map) {
 	out = make(Map, len(original))
 	AddValues(out, "", original)
@@ -33,6 +58,19 @@ type GenericDiscovery struct {
 	Variables      InterfaceMap    `json:"variables"`
 	Annotations    InterfaceMap    `json:"metricAnnotations"`
 	EntityRewrites []EntityRewrite `json:"entityRewrites"`
+}
+
+// Apply tries to match and replace entityName according to EntityRewrite configuration.
+func (e EntityRewrites) Apply(entityName string) string {
+	result := entityName
+
+	for _, er := range e {
+		if er.Action == EntityRewriteActionReplace {
+			result = strings.Replace(result, er.Match, er.ReplaceField, -1)
+		}
+	}
+
+	return result
 }
 
 // Adds a structured value to a flat map, where each key has a

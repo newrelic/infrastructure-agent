@@ -8,15 +8,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/backend/telemetryapi/internal"
 	"io/ioutil"
 	"math"
 	"net/http"
 	"reflect"
 	"sort"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/pkg/backend/telemetryapi/internal"
 )
 
 // compactJSONString removes the whitespace from a JSON string.  This function
@@ -112,13 +115,19 @@ func TestVetCommonAttributes(t *testing.T) {
 }
 
 func TestHarvestCancelled(t *testing.T) {
-	var errs int
-	var posts int
+	errs := int32(0)
+	posts := int32(0)
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	rt := roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+		go func() {
+			time.Sleep(time.Second)
+			wg.Done()
+		}()
 		// Test that the context with the deadline is added to the
 		// harvest request.
 		<-r.Context().Done()
-		posts++
+		atomic.AddInt32(&posts, 1)
 
 		// Set a retry after so that the backoff sleep is not zero to
 		// ensure that the Context().Done() select always succeeds.
@@ -130,11 +139,12 @@ func TestHarvestCancelled(t *testing.T) {
 	})
 	h, _ := NewHarvester(func(cfg *Config) {
 		cfg.ErrorLogger = func(e map[string]interface{}) {
-			errs++
+			atomic.AddInt32(&errs, 1)
 		}
 		cfg.HarvestPeriod = 0
 		cfg.Client.Transport = rt
 		cfg.APIKey = "key"
+		cfg.Context = context.Background()
 	})
 	h.RecordSpan(Span{TraceID: "id", ID: "id"})
 
@@ -142,12 +152,15 @@ func TestHarvestCancelled(t *testing.T) {
 	cancel()
 
 	h.HarvestNow(ctx)
+	wg.Wait()
 
-	if posts != 1 {
-		t.Error("incorrect number of tries tried", posts)
+	actualPosts := atomic.LoadInt32(&posts)
+	if actualPosts != 1 {
+		t.Error("incorrect number of tries tried", actualPosts)
 	}
-	if errs != 2 {
-		t.Error("incorrect number of errors logged", errs)
+	actualErrors := atomic.LoadInt32(&errs)
+	if actualErrors != 2 {
+		t.Error("incorrect number of errors logged", actualErrors)
 	}
 }
 
@@ -160,7 +173,8 @@ func TestNewRequestHeaders(t *testing.T) {
 	h.RecordSpan(Span{TraceID: "id", ID: "id"})
 	h.RecordMetric(Gauge{})
 
-	reqs := h.swapOutSpans()
+	expectedContext := context.Background()
+	reqs := h.swapOutSpans(expectedContext)
 	if len(reqs) != 1 {
 		t.Fatal(reqs)
 	}
@@ -172,7 +186,7 @@ func TestNewRequestHeaders(t *testing.T) {
 		t.Error("User-Agent header incorrect", req.Request.Header)
 	}
 
-	reqs = h.swapOutMetrics(time.Now())
+	reqs = h.swapOutMetrics(h.config.Context, time.Now())
 	if len(reqs) != 1 {
 		t.Fatal(reqs)
 	}
@@ -188,6 +202,9 @@ func TestNewRequestHeaders(t *testing.T) {
 	}
 	if h := req.Request.Header.Get("User-Agent"); expectUserAgent != h {
 		t.Error("User-Agent header incorrect", h)
+	}
+	if req.Request.Context() != expectedContext {
+		t.Error("incorrect context being used")
 	}
 }
 
@@ -235,7 +252,7 @@ func (h sortedMetricsHelper) Swap(i, j int) {
 }
 
 func testHarvesterMetrics(t testing.TB, h *Harvester, expect string) {
-	reqs := h.swapOutMetrics(time.Now())
+	reqs := h.swapOutMetrics(context.Background(), time.Now())
 	if len(reqs) != 1 {
 		t.Fatal(reqs)
 	}
@@ -320,29 +337,56 @@ func TestReturnCodes(t *testing.T) {
 		{503, true},
 	}
 
-	var posts int
-	sp := Span{TraceID: "id", ID: "id", Name: "span1", Timestamp: time.Date(2014, time.November, 28, 1, 1, 0, 0, time.UTC)}
-
-	rtFunc := func(code int) roundTripperFunc {
-		return roundTripperFunc(func(req *http.Request) (*http.Response, error) {
-			posts++
-			if posts > 1 {
-				return emptyResponse(202), nil
+	for _, test := range testcases {
+		t.Run(fmt.Sprintf("%v_%v", test.returnCode, test.shouldRetry), func(t *testing.T) {
+			posts := 0
+			wg := &sync.WaitGroup{}
+			if test.shouldRetry {
+				wg.Add(2)
+			} else {
+				wg.Add(1)
 			}
-			return emptyResponse(code), nil
+			sp := Span{TraceID: "id", ID: "id", Name: "span1", Timestamp: time.Date(2014, time.November, 28, 1, 1, 0, 0, time.UTC)}
+
+			rtFunc := func(code int) roundTripperFunc {
+				return func(req *http.Request) (*http.Response, error) {
+					posts++
+					wg.Done()
+					if posts > 1 {
+						return emptyResponse(202), nil
+					}
+					return emptyResponse(code), nil
+				}
+			}
+			h, _ := NewHarvester(configTesting, func(cfg *Config) {
+				cfg.Client.Transport = rtFunc(test.returnCode)
+			})
+
+			h.RecordSpan(sp)
+			h.HarvestNow(context.Background())
+
+			if testTimesout(wg) {
+				t.Error("incorrect number of posts", posts)
+			}
+
+			if (test.shouldRetry && 2 != posts) || (!test.shouldRetry && 1 != posts) {
+				t.Error("incorrect number of posts", posts)
+			}
 		})
 	}
+}
 
-	for _, test := range testcases {
-		posts = 0
-		h, _ := NewHarvester(configTesting, func(cfg *Config) {
-			cfg.Client.Transport = rtFunc(test.returnCode)
-		})
-		h.RecordSpan(sp)
-		h.HarvestNow(context.Background())
-		if (test.shouldRetry && 2 != posts) || (!test.shouldRetry && 1 != posts) {
-			t.Error("incorrect number of posts", posts)
-		}
+func testTimesout(wg *sync.WaitGroup) bool {
+	c := make(chan struct{})
+	go func() {
+		defer close(c)
+		wg.Wait()
+	}()
+	select {
+	case <-c:
+		return false
+	case <-time.After(time.Second):
+		return true
 	}
 }
 
@@ -351,58 +395,55 @@ func Test429RetryAfterUsesConfig(t *testing.T) {
 	// * Retry-After header not set
 	// * Retry-After header not parsable
 	// * Retry-After header delay is less than config retry backoff
-	var posts int
-	var start time.Time
-	tm := time.Date(2014, time.November, 28, 1, 1, 0, 0, time.UTC)
-	span := Span{TraceID: "id", ID: "id", Name: "span1", Timestamp: tm}
+	testcases := []struct {
+		name        string
+		retryHeader string
+	}{
+		{name: "Retry-After header not set", retryHeader: ""},
+		{name: "Retry-After header not parsable", retryHeader: "hello world!"},
+		{name: "Retry-After header delay is less than config retry backoff", retryHeader: "0"},
+	}
 
-	roundTripper := func(retryHeader string) roundTripperFunc {
-		return roundTripperFunc(func(req *http.Request) (*http.Response, error) {
-			posts++
-			if posts > 1 {
-				if since := time.Since(start); since > time.Second {
-					t.Errorf("incorrect retry backoff used, since=%v", since)
+	for _, test := range testcases {
+		t.Run(test.name, func(t *testing.T) {
+			var posts int
+			wg := &sync.WaitGroup{}
+			wg.Add(2)
+			var start time.Time
+			tm := time.Date(2014, time.November, 28, 1, 1, 0, 0, time.UTC)
+			span := Span{TraceID: "id", ID: "id", Name: "span1", Timestamp: tm}
+
+			roundTripper := func(retryHeader string) roundTripperFunc {
+				return func(req *http.Request) (*http.Response, error) {
+					posts++
+					wg.Done()
+					if posts > 1 {
+						if since := time.Since(start); since > time.Second {
+							t.Errorf("incorrect retry backoff used, since=%v", since)
+						}
+						return emptyResponse(200), nil
+					}
+					start = time.Now()
+					resp := emptyResponse(429)
+					resp.Header = http.Header{}
+					resp.Header.Add("Retry-After", retryHeader)
+					return resp, nil
 				}
-				return emptyResponse(200), nil
 			}
-			start = time.Now()
-			resp := emptyResponse(429)
-			resp.Header = http.Header{}
-			resp.Header.Add("Retry-After", retryHeader)
-			return resp, nil
+
+			h, _ := NewHarvester(func(cfg *Config) {
+				cfg.Client.Transport = roundTripper("")
+				cfg.APIKey = "key"
+			})
+			h.RecordSpan(span)
+			h.HarvestNow(context.Background())
+			if testTimesout(wg) {
+				t.Error("incorrect number of posts", posts)
+			}
+			if posts != 2 {
+				t.Error("incorrect number of posts", posts)
+			}
 		})
-	}
-
-	h, _ := NewHarvester(func(cfg *Config) {
-		cfg.Client.Transport = roundTripper("")
-		cfg.APIKey = "key"
-	})
-	h.RecordSpan(span)
-	h.HarvestNow(context.Background())
-	if posts != 2 {
-		t.Error("incorrect number of posts", posts)
-	}
-
-	posts = 0
-	h, _ = NewHarvester(func(cfg *Config) {
-		cfg.Client.Transport = roundTripper("hello world!")
-		cfg.APIKey = "key"
-	})
-	h.RecordSpan(span)
-	h.HarvestNow(context.Background())
-	if posts != 2 {
-		t.Error("incorrect number of posts", posts)
-	}
-
-	posts = 0
-	h, _ = NewHarvester(func(cfg *Config) {
-		cfg.Client.Transport = roundTripper("0")
-		cfg.APIKey = "key"
-	})
-	h.RecordSpan(span)
-	h.HarvestNow(context.Background())
-	if posts != 2 {
-		t.Error("incorrect number of posts", posts)
 	}
 }
 
@@ -569,7 +610,10 @@ func TestRecordSpanZeroTimestamp(t *testing.T) {
 }
 
 func TestHarvestAuditLog(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	roundTripper := roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		defer wg.Done()
 		return emptyResponse(200), nil
 	})
 
@@ -585,6 +629,10 @@ func TestHarvestAuditLog(t *testing.T) {
 	})
 	h.RecordMetric(Count{})
 	h.HarvestNow(context.Background())
+
+	if testTimesout(wg) {
+		t.Error("Test timed out")
+	}
 	if u := audit["url"]; u != "https://metric-api.newrelic.com/metric/v1" {
 		t.Fatal(u)
 	}

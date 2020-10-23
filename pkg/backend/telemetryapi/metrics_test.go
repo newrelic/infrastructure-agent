@@ -4,6 +4,7 @@
 package telemetryapi
 
 import (
+	"context"
 	"math"
 	"reflect"
 	"testing"
@@ -41,7 +42,7 @@ func TestMetricPayload(t *testing.T) {
 	})
 	h.lastHarvest = now
 	end := h.lastHarvest.Add(5 * time.Second)
-	reqs := h.swapOutMetrics(end)
+	reqs := h.swapOutMetrics(context.Background(), end)
 	if len(reqs) != 1 {
 		t.Fatal(reqs)
 	}
