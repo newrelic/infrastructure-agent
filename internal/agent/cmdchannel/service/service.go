@@ -4,7 +4,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -119,7 +118,7 @@ func (s *srv) handle(ctx context.Context, c commandapi.Command, initialFetch boo
 			ccsLogger.
 				WithField("cmd_id", c.ID).
 				WithField("cmd_name", c.Name).
-				WithField("cmd_args", fmt.Sprintf("%+v", c.Args)).
+				WithField("cmd_args", string(c.Args)).
 				WithError(err).
 				Error("cannot ACK command")
 		}
@@ -155,7 +154,7 @@ func (s *srv) handleWrap(h *cmdchannel.CmdHandler, ctx context.Context, c comman
 		ccsLogger.
 			WithField("cmd_id", c.ID).
 			WithField("cmd_name", c.Name).
-			WithField("cmd_args", fmt.Sprintf("%+v", c.Args)).
+			WithField("cmd_args", string(c.Args)).
 			WithError(err).
 			Error("error handling cmd-channel request")
 

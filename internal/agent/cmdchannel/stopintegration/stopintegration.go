@@ -81,7 +81,7 @@ func logDecorated(logger log.Entry, cmd commandapi.Command, args runIntArgs, err
 	return logger.
 		WithField("cmd_id", cmd.ID).
 		WithField("cmd_name", cmd.Name).
-		WithField("cmd_args", fmt.Sprintf("%+v", cmd.Args)).
+		WithField("cmd_args", string(cmd.Args)).
 		WithField("cmd_args_pid", args.PID).
 		WithField("cmd_args_name", args.IntegrationName).
 		WithField("cmd_args_args", fmt.Sprintf("%+v", args.IntegrationArgs)).

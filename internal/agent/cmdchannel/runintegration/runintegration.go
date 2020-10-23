@@ -44,7 +44,7 @@ func NewHandler(definitionQ chan<- integration.Definition, il integration.Instan
 			logger.
 				WithField("cmd_id", cmd.ID).
 				WithField("cmd_name", cmd.Name).
-				WithField("cmd_args", fmt.Sprintf("%+v", cmd.Args)).
+				WithField("cmd_args", string(cmd.Args)).
 				WithField("cmd_args_name", args.IntegrationName).
 				WithField("cmd_args_args", fmt.Sprintf("%+v", args.IntegrationArgs)).
 				WithError(err).
