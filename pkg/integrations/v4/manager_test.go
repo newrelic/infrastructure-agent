@@ -4,6 +4,7 @@ package v4
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -14,8 +15,10 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/constants"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/testhelp"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/testhelp/testemit"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/v3legacy"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/fixtures"
@@ -118,6 +121,10 @@ integrations:
   - name: cmdreq
     exec: ` + getExe(testhelp.GoRun(fixtures.CmdReqGoFile)) + "\n"
 
+var (
+	definitionQ = make(chan integration.Definition, 1000)
+)
+
 func TestManager_StartIntegrations(t *testing.T) {
 	// GIVEN a set of configuration files
 	dir, err := tempFiles(map[string]string{
@@ -129,7 +136,7 @@ func TestManager_StartIntegrations(t *testing.T) {
 
 	// AND an integrations manager
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ)
 
 	// WHEN the manager loads and executes the integrations in the folder
 	ctx, cancel := context.WithCancel(context.Background())
@@ -164,7 +171,7 @@ integrations:
 
 	// AND an integrations manager
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ)
 
 	// WHEN the manager loads and executes the integration
 	ctx, cancel := context.WithCancel(context.Background())
@@ -189,7 +196,7 @@ integrations:
 
 	// AND an integrations manager
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ)
 
 	// WHEN the manager loads and executes the integration
 	ctx, cancel := context.WithCancel(context.Background())
@@ -224,7 +231,7 @@ func TestManager_SkipLoadingV3IntegrationsWithNoWarnings(t *testing.T) {
 
 	// AND an integrations manager
 	emitter := &testemit.RecordEmitter{}
-	_ = NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
+	_ = NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ)
 
 	// THEN no long entries found
 	for i := range hook.Entries {
@@ -247,7 +254,7 @@ func TestManager_LogWarningForInvalidYaml(t *testing.T) {
 
 	// AND an integrations manager
 	emitter := &testemit.RecordEmitter{}
-	_ = NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
+	_ = NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ)
 
 	// THEN one long entry found
 	require.NotEmpty(t, hook.Entries)
@@ -266,7 +273,7 @@ func TestManager_Config_EmbeddedYAML(t *testing.T) {
 
 	// AND an integrations manager
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ)
 
 	// WHEN the manager loads and executes the integrations in the folder
 	ctx, cancel := context.WithCancel(context.Background())
@@ -291,7 +298,7 @@ func TestManager_HotReload_Add(t *testing.T) {
 	defer removeTempFiles(t, dir)
 
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -325,7 +332,7 @@ func TestManager_HotReload_Modify(t *testing.T) {
 	defer removeTempFiles(t, dir)
 
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -372,7 +379,7 @@ func TestManager_HotReload_ModifyLinkFile(t *testing.T) {
 	require.NoError(t, err)
 
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -421,7 +428,7 @@ func TestManager_HotReload_Delete(t *testing.T) {
 	defer removeTempFiles(t, dir)
 
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -454,7 +461,8 @@ func TestManager_PassthroughEnv(t *testing.T) {
 	niDir, err := ioutil.TempDir("", "newrelic-integrations")
 	require.NoError(t, err)
 	defer removeTempFiles(t, niDir)
-	require.NoError(t, testhelp.GoBuild(fixtures.SimpleGoFile, filepath.Join(niDir, "nri-simple"+fixtures.CmdExtension)))
+	execPath := filepath.Join(niDir, "nri-simple"+fixtures.CmdExtension)
+	require.NoError(t, testhelp.GoBuild(fixtures.SimpleGoFile, execPath))
 	configDir, err := tempFiles(map[string]string{
 		"my-configs.yml": `
 integrations:
@@ -470,7 +478,7 @@ integrations:
 		ConfigFolders:          []string{configDir},
 		DefinitionFolders:      []string{niDir},
 		PassthroughEnvironment: []string{niDir},
-	}, emitter)
+	}, emitter, instancesLookupReturning(execPath), definitionQ)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -486,7 +494,8 @@ func TestManager_PassthroughEnv_Priorities(t *testing.T) {
 	require.NoError(t, err)
 	defer removeTempFiles(t, niDir)
 
-	require.NoError(t, testhelp.GoBuild(fixtures.SimpleGoFile, filepath.Join(niDir, "nri-simple"+fixtures.CmdExtension)))
+	execPath := filepath.Join(niDir, "nri-simple"+fixtures.CmdExtension)
+	require.NoError(t, testhelp.GoBuild(fixtures.SimpleGoFile, execPath))
 	configDir, err := tempFiles(map[string]string{
 		"my-configs.yml": `
 integrations:
@@ -506,7 +515,7 @@ integrations:
 		ConfigFolders:          []string{configDir},
 		DefinitionFolders:      []string{niDir},
 		PassthroughEnvironment: []string{"VALUE"},
-	}, emitter)
+	}, emitter, instancesLookupReturning(execPath), definitionQ)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -550,7 +559,7 @@ integrations:
 	mgr := NewManager(Configuration{
 		ConfigFolders:     []string{configDir},
 		DefinitionFolders: []string{definitionsDir},
-	}, emitter)
+	}, emitter, instancesLookupLegacy(definitionsDir), definitionQ)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -598,7 +607,7 @@ integrations:
 		ConfigFolders:          []string{configDir},
 		DefinitionFolders:      []string{definitionsDir},
 		PassthroughEnvironment: []string{"VALUE"},
-	}, emitter)
+	}, emitter, instancesLookupLegacy(definitionsDir), definitionQ)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -620,8 +629,10 @@ func TestManager_NamedIntegration(t *testing.T) {
 	ciDir, err := ioutil.TempDir("", "custom integrations") // using spaces to make sure they are not taken as different arguments
 	require.NoError(t, err)
 	defer removeTempFiles(t, ciDir)
-	require.NoError(t, testhelp.GoBuild(fixtures.LongTimeGoFile, filepath.Join(niDir, "nri-longtime"+fixtures.CmdExtension)))
-	require.NoError(t, testhelp.GoBuild(fixtures.SimpleGoFile, filepath.Join(ciDir, "nri-simple"+fixtures.CmdExtension)))
+	execPath1 := filepath.Join(niDir, "nri-longtime"+fixtures.CmdExtension)
+	execPath2 := filepath.Join(ciDir, "nri-simple"+fixtures.CmdExtension)
+	require.NoError(t, testhelp.GoBuild(fixtures.LongTimeGoFile, execPath1))
+	require.NoError(t, testhelp.GoBuild(fixtures.SimpleGoFile, execPath2))
 
 	// AND a v4 configuration file that references the above commands only by name
 	configDir, err := tempFiles(map[string]string{
@@ -639,7 +650,7 @@ integrations:
 	mgr := NewManager(Configuration{
 		ConfigFolders:     []string{configDir},
 		DefinitionFolders: []string{niDir, ciDir, "unexisting-dir"},
-	}, emitter)
+	}, emitter, instancesLookupReturning(execPath1, execPath2), definitionQ)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -658,7 +669,8 @@ func TestManager_NamedIntegrationWithConfig(t *testing.T) {
 	niDir, err := ioutil.TempDir("", "newrelic-integrations")
 	require.NoError(t, err)
 	defer removeTempFiles(t, niDir)
-	require.NoError(t, testhelp.GoBuild(fixtures.ValidYAMLGoFile, filepath.Join(niDir, "nri-validyaml"+fixtures.CmdExtension)))
+	execPath := filepath.Join(niDir, "nri-validyaml"+fixtures.CmdExtension)
+	require.NoError(t, testhelp.GoBuild(fixtures.ValidYAMLGoFile, execPath))
 
 	// AND a v4 named integration with an embedded config
 	configDir, err := tempFiles(map[string]string{
@@ -678,7 +690,7 @@ integrations:
 	mgr := NewManager(Configuration{
 		ConfigFolders:     []string{configDir},
 		DefinitionFolders: []string{niDir},
-	}, emitter)
+	}, emitter, instancesLookupReturning(execPath), definitionQ)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -702,7 +714,7 @@ func TestManager_EnableFeature_WhenFeatureOnOHICfgAndAgentCfgIsDisabledAndEnable
 	mgr := NewManager(Configuration{
 		ConfigFolders: []string{dir},
 		//AgentFeatures: map[string]bool{"docker_enabled": false},
-	}, e)
+	}, e, integration.ErrLookup, definitionQ)
 
 	// AND the manager loads and executes the integrations in the folder
 	ctx, cancel := context.WithCancel(context.Background())
@@ -733,7 +745,7 @@ func TestManager_EnableFeatureFromAgentConfig(t *testing.T) {
 	mgr := NewManager(Configuration{
 		ConfigFolders: []string{dir},
 		AgentFeatures: map[string]bool{"docker_enabled": true},
-	}, e)
+	}, e, integration.ErrLookup, definitionQ)
 
 	// AND the manager starts
 	ctx, cancel := context.WithCancel(context.Background())
@@ -759,7 +771,7 @@ func TestManager_CCDisablesAgentEnabledFeature(t *testing.T) {
 	mgr := NewManager(Configuration{
 		ConfigFolders: []string{dir},
 		AgentFeatures: map[string]bool{"docker_enabled": true},
-	}, e)
+	}, e, integration.ErrLookup, definitionQ)
 
 	// AND manager loads and executes the integrations in the folder
 	ctx, cancel := context.WithCancel(context.Background())
@@ -793,7 +805,7 @@ func TestManager_CCDisablesPreviouslyEnabledFeature(t *testing.T) {
 	e := &testemit.RecordEmitter{}
 	mgr := NewManager(Configuration{
 		ConfigFolders: []string{dir},
-	}, e)
+	}, e, integration.ErrLookup, definitionQ)
 
 	// AND manager loads and executes the integrations in the folder
 	ctx, cancel := context.WithCancel(context.Background())
@@ -836,7 +848,7 @@ func TestManager_WhenFileExists(t *testing.T) {
 	defer removeTempFiles(t, dir)
 
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ)
 
 	// WHEN the manager loads and executes the integrations in the folder
 	ctx, cancel := context.WithCancel(context.Background())
@@ -858,7 +870,7 @@ func TestManager_WhenFileDoesNotExist(t *testing.T) {
 	defer removeTempFiles(t, dir)
 
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ)
 
 	// WHEN the manager loads and executes the integrations in the folder
 	ctx, cancel := context.WithCancel(context.Background())
@@ -882,7 +894,7 @@ func TestManager_StartWithVerbose(t *testing.T) {
 	mgr := NewManager(Configuration{
 		ConfigFolders: []string{dir},
 		Verbose:       1,
-	}, emitter)
+	}, emitter, integration.ErrLookup, definitionQ)
 
 	// AND the manager starts
 	ctx, cancel := context.WithCancel(context.Background())
@@ -913,7 +925,7 @@ func TestManager_StartWithVerboseFalse(t *testing.T) {
 	mgr := NewManager(Configuration{
 		ConfigFolders: []string{dir},
 		Verbose:       0,
-	}, emitter)
+	}, emitter, integration.ErrLookup, definitionQ)
 
 	// AND the manager starts
 	ctx, cancel := context.WithCancel(context.Background())
@@ -966,7 +978,7 @@ func TestManager_anIntegrationCanSpawnAnotherOne(t *testing.T) {
 
 	// AND an integrations manager
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter)
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ)
 
 	// WHEN the manager executes the integration
 	ctx, cancel := context.WithCancel(context.Background())
@@ -1027,5 +1039,31 @@ func expectNoMetric(t require.TestingT, e *testemit.RecordEmitter, pluginName st
 func skipIfWindows(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping in windows")
+	}
+}
+
+func instancesLookupReturning(execPaths ...string) integration.InstancesLookup {
+	calls := 0
+	return integration.InstancesLookup{
+		Legacy: func(dcc integration.DefinitionCommandConfig) (integration.Definition, error) {
+			return integration.Definition{}, errors.New("legacy lookup not expected")
+		},
+		ByName: func(_ string) (string, error) {
+			calls++
+			return execPaths[calls-1], nil
+		},
+	}
+}
+
+func instancesLookupLegacy(definitionFolders ...string) integration.InstancesLookup {
+	legacyDefinedCommands := v3legacy.NewDefinitionsRepo(v3legacy.LegacyConfig{
+		DefinitionFolders: definitionFolders,
+		Verbose:           0,
+	})
+	return integration.InstancesLookup{
+		Legacy: legacyDefinedCommands.NewDefinitionCommand,
+		ByName: func(_ string) (string, error) {
+			return "", errors.New("lookup by name not expected")
+		},
 	}
 }
