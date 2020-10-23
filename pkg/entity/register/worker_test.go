@@ -29,7 +29,6 @@ func (c *fakeClient) RegisterBatchEntities(agentEntityID entity.ID, entities []e
 	if c.err != nil {
 		return nil, c.err
 	}
-
 	r = []identityapi.RegisterEntityResponse{}
 	for _, id := range c.ids {
 		r = append(r, identityapi.RegisterEntityResponse{ID: id})

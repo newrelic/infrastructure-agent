@@ -185,15 +185,16 @@ func NewManager(cfg Configuration, emitter emitter.Emitter) *Manager {
 	}
 
 	definitionQ := make(chan integration.Definition, 100)
+	il := newInstancesLookup(cfg)
 	mgr := Manager{
 		config:          cfg,
 		runners:         newRunnerGroupsPerCfgPath(),
 		emitter:         emitter,
 		watcher:         watcher,
-		lookup:          newInstancesLookup(cfg),
+		lookup:          il,
 		featuresCache:   make(runner.FeaturesCache),
 		definitionQueue: definitionQ,
-		handleCmdReq:    cmdrequest.NewHandleFn(definitionQ, illog),
+		handleCmdReq:    cmdrequest.NewHandleFn(definitionQ, il, illog),
 	}
 
 	// Loads all the configuration files in the passed configFolders

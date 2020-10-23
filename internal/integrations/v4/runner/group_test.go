@@ -33,9 +33,9 @@ func TestGroup_Run(t *testing.T) {
 	te := &testemit.RecordEmitter{}
 	loader := NewLoadFn(config2.YAML{
 		Integrations: []config2.ConfigEntry{
-			{Name: "sayhello", Exec: testhelp.Command(fixtures.IntegrationScript, "hello"),
+			{InstanceName: "sayhello", Exec: testhelp.Command(fixtures.IntegrationScript, "hello"),
 				Labels: map[string]string{"foo": "bar", "ou": "yea"}},
-			{Name: "saygoodbye", Exec: testhelp.Command(fixtures.IntegrationScript, "bye")},
+			{InstanceName: "saygoodbye", Exec: testhelp.Command(fixtures.IntegrationScript, "bye")},
 		},
 	}, nil)
 	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, "")
@@ -72,7 +72,7 @@ func TestGroup_Run_Inventory(t *testing.T) {
 	te := &testemit.RecordEmitter{}
 	loader := NewLoadFn(config2.YAML{
 		Integrations: []config2.ConfigEntry{
-			{Name: "nri-test", Exec: testhelp.GoRun(fixtures.InventoryGoFile, "key1=val1", "key2=val2"),
+			{InstanceName: "nri-test", Exec: testhelp.GoRun(fixtures.InventoryGoFile, "key1=val1", "key2=val2"),
 				Labels: map[string]string{"foo": "bar", "ou": "yea"}},
 		},
 	}, nil)
@@ -121,7 +121,7 @@ func TestGroup_Run_Inventory_OverridePrefix(t *testing.T) {
 	te := &testemit.RecordEmitter{}
 	loader := NewLoadFn(config2.YAML{
 		Integrations: []config2.ConfigEntry{
-			{Name: "nri-test", Exec: testhelp.GoRun(fixtures.InventoryGoFile, "key1=val1"),
+			{InstanceName: "nri-test", Exec: testhelp.GoRun(fixtures.InventoryGoFile, "key1=val1"),
 				InventorySource: "custom/inventory"},
 		},
 	}, nil)
@@ -148,7 +148,7 @@ func TestGroup_Run_Timeout(t *testing.T) {
 	to := 200 * time.Millisecond
 	loader := NewLoadFn(config2.YAML{
 		Integrations: []config2.ConfigEntry{
-			{Name: "Hello", Exec: testhelp.Command(fixtures.BlockedCmd), Timeout: &to},
+			{InstanceName: "Hello", Exec: testhelp.Command(fixtures.BlockedCmd), Timeout: &to},
 		},
 	}, nil)
 	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, "")
@@ -187,8 +187,8 @@ discovery:
 
 	// GIVEN a grouprunner that runs an integration with discovery configurations
 	integr, err := integration.NewDefinition(config2.ConfigEntry{
-		Name: "timestamp",
-		Exec: testhelp.Command(fixtures.IntegrationScript, "${discovery.timestamp}"),
+		InstanceName: "timestamp",
+		Exec:         testhelp.Command(fixtures.IntegrationScript, "${discovery.timestamp}"),
 	}, integration.InstancesLookup{}, []string{}, nil)
 	require.NoError(t, err)
 
@@ -237,9 +237,9 @@ func TestGroup_Run_ConfigPathUpdated(t *testing.T) {
 	te := &testemit.RecordEmitter{}
 	loader := NewLoadFn(config2.YAML{
 		Integrations: []config2.ConfigEntry{{
-			Name:   "cfgpath",
-			Exec:   testhelp.Command(fixtures.IntegrationScript, "${config.path}"),
-			Config: "hello",
+			InstanceName: "cfgpath",
+			Exec:         testhelp.Command(fixtures.IntegrationScript, "${config.path}"),
+			Config:       "hello",
 		}},
 	}, nil)
 	group, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, "")
@@ -316,7 +316,7 @@ func TestGroup_Run_IntegrationScriptPrintsErrorsAndReturnCodeIsZero(t *testing.T
 	te := &testemit.RecordEmitter{}
 	loader := NewLoadFn(config2.YAML{
 		Integrations: []config2.ConfigEntry{
-			{Name: "log_errors", Exec: testhelp.Command(fixtures.IntegrationPrintsErr, "bye")},
+			{InstanceName: "log_errors", Exec: testhelp.Command(fixtures.IntegrationPrintsErr, "bye")},
 		},
 	}, nil)
 	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, "")

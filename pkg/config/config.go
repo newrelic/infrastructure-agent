@@ -85,7 +85,7 @@ type Config struct {
 	MetricURL string `yaml:"metric_url" envconfig:"metric_url" public:"false"`
 
 	// CommandChannelURL defines the base URL for the command channel.
-	// Default: https://infra-api.newrelic.com
+	// Default: https://infrastructure-command-api.newrelic.com
 	// Public: No
 	CommandChannelURL string `yaml:"command_channel_url" envconfig:"command_channel_url" public:"false"`
 

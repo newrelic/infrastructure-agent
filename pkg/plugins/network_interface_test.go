@@ -154,7 +154,7 @@ func TestNetworkPlugin(t *testing.T) {
 
 	ctx := &mocks.AgentContext{}
 	ctx.On("Config").Return(&config.Config{})
-	ctx.On("AgentIdentifier").Return(agentId)
+	ctx.On("EntityKey").Return(agentId)
 	ch := make(chan mock.Arguments)
 	ctx.On("SendData", mock.Anything).Run(func(args mock.Arguments) {
 		ch <- args

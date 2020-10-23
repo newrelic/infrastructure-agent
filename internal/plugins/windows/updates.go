@@ -77,7 +77,7 @@ func (self *UpdatesPlugin) Run() {
 		if err != nil {
 			ulog.WithError(err).Error("updates plugin can't get dataset")
 		}
-		self.EmitInventory(dataset, entity.NewFromNameWithoutID(self.Context.AgentIdentifier()))
+		self.EmitInventory(dataset, entity.NewFromNameWithoutID(self.Context.EntityKey()))
 		<-refreshTimer.C
 	}
 }

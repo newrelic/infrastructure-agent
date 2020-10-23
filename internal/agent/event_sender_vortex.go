@@ -195,7 +195,7 @@ func (s *vortexEventSender) Stop() (err error) {
 
 // We can accept any kind of object to represent an event. We assume that it will marshal to a valid JSON event object.
 func (s *vortexEventSender) QueueEvent(event sample.Event, key entity.Key) (err error) {
-	agentKey := s.Context.AgentIdentifier()
+	agentKey := s.Context.EntityKey()
 	// Default to the agent's own ID if we didn't receive one
 	if key == "" {
 		key = entity.Key(agentKey)

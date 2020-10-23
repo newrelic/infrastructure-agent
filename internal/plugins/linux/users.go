@@ -119,7 +119,7 @@ func (self *UsersPlugin) Run() {
 			{
 				refreshTimer.Reset(self.frequency)
 				if needsFlush {
-					self.EmitInventory(self.getUserDetails(), entity.NewFromNameWithoutID(self.Context.AgentIdentifier()))
+					self.EmitInventory(self.getUserDetails(), entity.NewFromNameWithoutID(self.Context.EntityKey()))
 					needsFlush = false
 				}
 			}

@@ -425,7 +425,7 @@ func (cc customContext) ActiveEntitiesChannel() chan string {
 	return make(chan string, 100)
 }
 
-func (cc customContext) AgentIdentifier() string {
+func (cc customContext) EntityKey() string {
 	return ""
 }
 
@@ -943,7 +943,7 @@ func (rs *RunnerSuite) TestBadProtocolVersions(c *C) {
 		ForceProtocolV2toV3: false,
 	}
 	ctx.On("Config").Return(cfg)
-	ctx.On("AgentIdentifier").Return("my-agent-id")
+	ctx.On("EntityKey").Return("my-agent-id")
 	ctx.On("HostnameResolver").Return(newFixedHostnameResolver("foo.bar", "short"))
 	ctx.On("IDLookup").Return(newFixedIDLookup())
 
@@ -1030,7 +1030,7 @@ func (rs *RunnerSuite) TestHandleOutputV1(c *C) {
 	// inventory order is not guaranteed
 	if firstData.SortKey() == "events/worker_connections" {
 		c.Assert(inv["id"], Equals, "events/worker_connections")
-		c.Assert(inv["value"], Equals, "1024")
+		c.Assert(inv["value"], Equals, float64(1024))
 	} else if firstData.SortKey() == "http/gzip" {
 		c.Assert(inv["id"], Equals, "http/gzip")
 		c.Assert(inv["value"], Equals, "on")
@@ -1058,7 +1058,7 @@ func (rs *RunnerSuite) TestHandleOutputV2WithLocalEntity(c *C) {
 	rd, err := readData(ctx.ch)
 	c.Assert(err, IsNil)
 	c.Assert(rd.Data[0].SortKey(), Equals, "motor")
-	c.Assert(rd.Data[0].(protocol.InventoryData)["cc"], Equals, "1800")
+	c.Assert(rd.Data[0].(protocol.InventoryData)["cc"], Equals, float64(1800))
 	c.Assert(rd.Data[0].(protocol.InventoryData)["brand"], Equals, "renault")
 
 	event, err := readMetrics(ctx.ev)
@@ -1087,7 +1087,7 @@ func (rs *RunnerSuite) TestHandleOutputV2(c *C) {
 	rd, err := readData(ctx.ch)
 	c.Assert(err, IsNil)
 	c.Assert(rd.Data[0].SortKey(), Equals, "motor")
-	c.Assert(rd.Data[0].(protocol.InventoryData)["cc"], Equals, "1800")
+	c.Assert(rd.Data[0].(protocol.InventoryData)["cc"], Equals, float64(1800))
 	c.Assert(rd.Data[0].(protocol.InventoryData)["brand"], Equals, "renault")
 
 	event, err := readMetrics(ctx.ev)
@@ -1099,7 +1099,7 @@ func (rs *RunnerSuite) TestHandleOutputV2(c *C) {
 	rd, err = readData(ctx.ch)
 	c.Assert(err, IsNil)
 	c.Assert(rd.Data[0].SortKey(), Equals, "motor")
-	c.Assert(rd.Data[0].(protocol.InventoryData)["cc"], Equals, "500")
+	c.Assert(rd.Data[0].(protocol.InventoryData)["cc"], Equals, float64(500))
 	c.Assert(rd.Data[0].(protocol.InventoryData)["brand"], Equals, "yamaha")
 
 	event, err = readMetrics(ctx.ev)
@@ -1555,7 +1555,7 @@ func TestEmitPayloadV2NoDisplayNameNoEntityName(t *testing.T) {
 		ForceProtocolV2toV3: false,
 	}
 	ctx.On("Config").Return(cfg)
-	ctx.On("AgentIdentifier").Return("my-agent-id")
+	ctx.On("EntityKey").Return("my-agent-id")
 	ctx.On("HostnameResolver").Return(newFixedHostnameResolver("foo.bar", "short"))
 	ctx.On("IDLookup").Return(newFixedIDLookup())
 
@@ -1615,7 +1615,7 @@ func TestEmitDataSet_OnAddHostnameDecoratesWithHostname(t *testing.T) {
 	}
 
 	ctx := new(mocks.AgentContext)
-	ctx.On("AgentIdentifier").Return(agentIdentifier)
+	ctx.On("EntityKey").Return(agentIdentifier)
 	ctx.On("HostnameResolver").Return(newFixedHostnameResolver(hn, "short"))
 	ctx.On("IDLookup").Return(newFixedIDLookup())
 
@@ -1666,7 +1666,7 @@ func TestEmitDataSet_EntityNameLocalhostIsNotReplacedWithHostnameV2(t *testing.T
 	}
 
 	ctx := new(mocks.AgentContext)
-	ctx.On("AgentIdentifier").Return(agID)
+	ctx.On("EntityKey").Return(agID)
 	ctx.On("HostnameResolver").Return(newFixedHostnameResolver("foo.bar", "short"))
 	ctx.On("IDLookup").Return(newFixedIDLookup())
 
@@ -1713,7 +1713,7 @@ func TestEmitDataSet_EntityNameLocalhostIsReplacedWithHostnameV3(t *testing.T) {
 	}
 
 	ctx := new(mocks.AgentContext)
-	ctx.On("AgentIdentifier").Return(agID)
+	ctx.On("EntityKey").Return(agID)
 	ctx.On("HostnameResolver").Return(newFixedHostnameResolver("foo.bar", "short"))
 	ctx.On("IDLookup").Return(newFixedIDLookup())
 
@@ -1761,7 +1761,7 @@ func TestEmitDataSet_MetricHostnameIsReplacedIfLocalhostV3(t *testing.T) {
 	}
 
 	ctx := new(mocks.AgentContext)
-	ctx.On("AgentIdentifier").Return(agID)
+	ctx.On("EntityKey").Return(agID)
 	ctx.On("HostnameResolver").Return(newFixedHostnameResolver("foo.bar", "short"))
 	ctx.On("IDLookup").Return(newFixedIDLookup())
 
@@ -1810,7 +1810,7 @@ func TestEmitDataSet_ReportingFieldsAreReplacedIfLocalhostV3(t *testing.T) {
 	}
 
 	ctx := new(mocks.AgentContext)
-	ctx.On("AgentIdentifier").Return(agID)
+	ctx.On("EntityKey").Return(agID)
 	ctx.On("HostnameResolver").Return(newFixedHostnameResolver("foo.bar", "short"))
 	ctx.On("IDLookup").Return(newFixedIDLookup())
 
@@ -1858,7 +1858,7 @@ func TestEmitDataSet_LogsEntityViolationsOncePerEntity(t *testing.T) {
 	}
 
 	ctx := new(mocks.AgentContext)
-	ctx.On("AgentIdentifier").Return(agID)
+	ctx.On("EntityKey").Return(agID)
 	ctx.On("HostnameResolver").Return(newFixedHostnameResolver("foo.bar", "short"))
 	ctx.On("IDLookup").Return(newFixedIDLookup())
 
@@ -1895,7 +1895,7 @@ func TestEmitDataSet_DoNotOverrideExistingMetrics(t *testing.T) {
 	}
 
 	ctx := new(mocks.AgentContext)
-	ctx.On("AgentIdentifier").Return("agent-id")
+	ctx.On("EntityKey").Return("agent-id")
 	ctx.On("HostnameResolver").Return(newFixedHostnameResolver("long", "short"))
 	ctx.On("IDLookup").Return(newFixedIDLookup())
 	em := &fakeEmitter{}
@@ -2142,7 +2142,7 @@ func BenchmarkEmitDataSet_MetricHostnameIsReplacedIfLocalhost(b *testing.B) {
 			}
 
 			ctx := new(mocks.AgentContext)
-			ctx.On("AgentIdentifier").Return(agID)
+			ctx.On("EntityKey").Return(agID)
 			ctx.On("IDLookup").Return(newFixedIDLookup())
 			ctx.On("HostnameResolver").Return(&stubResolver{host: t})
 

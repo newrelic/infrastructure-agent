@@ -17,22 +17,31 @@ const defaultTTL = 24 * time.Hour
 // reading values).
 //
 // The default TTL is 24h, but it is possible to register custom TTLs per entity type.
-//
-// This component is not thread-safe.
 type KnownIDs struct {
-	lock sync.Mutex
+	lock sync.RWMutex
 	ids  map[Key]*idEntry
 	ttls map[Type]time.Duration // per-entity ttl
 }
 
 type idEntry struct {
+	sync.Mutex
 	id         ID
 	lastAccess time.Time
 	ttl        time.Duration
 }
 
 func (e *idEntry) isOutdated() bool {
+	e.Lock()
+	defer e.Unlock()
+
 	return e.lastAccess.Add(e.ttl).Before(now())
+}
+
+func (e *idEntry) UpdateLastAccess() {
+	e.Lock()
+	defer e.Unlock()
+
+	e.lastAccess = now()
 }
 
 // NewKnownIDs creates and returns an empty KnownIDs map
@@ -75,19 +84,20 @@ func (k *KnownIDs) putTTL(key Key, id ID, ttl time.Duration) {
 // Get returns the entity ID for the given entity Key, if exists. If the entry is found, its expiration time is updated
 // to the current time + TTL.
 func (k *KnownIDs) Get(key Key) (ID, bool) {
-	k.lock.Lock()
-	defer k.lock.Unlock()
+	k.lock.RLock()
+	defer k.lock.RUnlock()
 
 	entry, ok := k.ids[key]
 	if !ok {
 		return 0, false
 	}
+
 	// If the TTL expired, we remove the entry and return as not found
 	if entry.isOutdated() {
-		delete(k.ids, key)
 		return 0, false
 	}
-	entry.lastAccess = now()
+
+	entry.UpdateLastAccess()
 	return entry.id, true
 }
 

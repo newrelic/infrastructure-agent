@@ -31,6 +31,8 @@ DOCKERFILE                     ?= $(CURDIR)/Dockerfile
 BASE_OHIS                      ?= ohis
 DOCKER_VERSION                 ?= $(call get-nri-version,nri-docker)
 FLEX_VERSION                   ?= $(call get-nri-version,nri-flex)
+PROMETHEUS_VERSION             ?= $(call get-nri-version,nri-prometheus)
+
 
 DOCKER_TARGET					?= base
 DOCKER_NO_CACHE					?= --no-cache
@@ -46,6 +48,7 @@ DOCKER_BUILD_BASE				?= docker build \
 								--build-arg nri_pkg_dir=${BASE_OHIS} \
 								--build-arg nri_docker_version=${DOCKER_VERSION} \
 								--build-arg nri_flex_version=${FLEX_VERSION} \
+								--build-arg nri_prometheus_version=${PROMETHEUS_VERSION} \
 								--target ${DOCKER_TARGET} \
 								-f ${DOCKERFILE} \
 								${INFRASTRUCTURE_WORKSPACE}

@@ -1,5 +1,4 @@
 version: '3'
-
 services:
   webserver_private:
     image: nginx:1.17-alpine
@@ -7,7 +6,7 @@ services:
       author: mmacias
     networks:
       testing_net:
-        ipv4_address: "169.254.170.2"
+        ipv4_address: "169.254.174.2"
   webserver_public:
     image: httpd:2.4-alpine
     ports:
@@ -18,7 +17,7 @@ services:
       - "80"
     networks:
       testing_net:
-        ipv4_address: "169.254.170.4"
+        ipv4_address: "169.254.174.4"
     labels:
       author: superman
 networks:
@@ -26,4 +25,4 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: "169.254.170.0/24"
+        - subnet: "169.254.174.0/24"

@@ -63,5 +63,5 @@ func (ac *AgentConfigPlugin) Run() {
 
 	helpers.LogStructureDetails(aclog, flat, "config", "raw", logrus.Fields{})
 
-	ac.EmitInventory(agent.PluginInventoryDataset{ConfigAttrs(flat)}, entity.NewFromNameWithoutID(ac.Context.AgentIdentifier()))
+	ac.EmitInventory(agent.PluginInventoryDataset{ConfigAttrs(flat)}, entity.NewFromNameWithoutID(ac.Context.EntityKey()))
 }

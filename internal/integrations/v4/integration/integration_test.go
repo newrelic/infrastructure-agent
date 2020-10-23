@@ -33,20 +33,20 @@ func TestConfigTemplate(t *testing.T) {
 	}
 	cases := []testCase{{"Passing ${config.path} as command-line argument",
 		config2.ConfigEntry{
-			Name:         "test-integration",
+			InstanceName: "test-integration",
 			Exec:         testhelp.Command(fixtures.FileContentsWithArgCmd, "${config.path}"),
 			TemplatePath: file.Name(),
 		}}}
 	if runtime.GOOS != "windows" { // executing Powershell passing env vars has problems
 		cases = append(cases, testCase{"Using default CONFIG_PATH env var",
 			config2.ConfigEntry{
-				Name:         "test-integration",
+				InstanceName: "test-integration",
 				Exec:         testhelp.Command(fixtures.FileContentsCmd),
 				TemplatePath: file.Name(),
 			}})
 		cases = append(cases, testCase{"Passing ${config.path} as environment variable",
 			config2.ConfigEntry{
-				Name:         "test-integration",
+				InstanceName: "test-integration",
 				Exec:         testhelp.Command(fixtures.FileContentsFromEnvCmd),
 				Env:          map[string]string{"CUSTOM_CONFIG_PATH": "${config.path}"},
 				TemplatePath: file.Name(),
@@ -99,23 +99,23 @@ func TestEmbeddedConfig_String(t *testing.T) {
 	}
 	cases := []testCase{{"Passing ${config.path} as command-line argument. External file embedded in yaml",
 		config2.ConfigEntry{
-			Name:   "test-integration",
-			Exec:   testhelp.Command(fixtures.FileContentsWithArgCmd, "${config.path}"),
-			Config: "${discovery.ip}",
+			InstanceName: "test-integration",
+			Exec:         testhelp.Command(fixtures.FileContentsWithArgCmd, "${config.path}"),
+			Config:       "${discovery.ip}",
 		}}}
 	if runtime.GOOS != "windows" { // executing Powershell passing env vars has problems
 		cases = append(cases, testCase{"Using default CONFIG_PATH env var. External file embedded in yaml",
 			config2.ConfigEntry{
-				Name:   "test-integration",
-				Exec:   testhelp.Command(fixtures.FileContentsCmd),
-				Config: "${discovery.ip}",
+				InstanceName: "test-integration",
+				Exec:         testhelp.Command(fixtures.FileContentsCmd),
+				Config:       "${discovery.ip}",
 			}})
 		cases = append(cases, testCase{"Passing ${config.path} as environment variable. External file embedded in yaml",
 			config2.ConfigEntry{
-				Name:   "test-integration",
-				Exec:   testhelp.Command(fixtures.FileContentsFromEnvCmd),
-				Env:    map[string]string{"CUSTOM_CONFIG_PATH": "${config.path}"},
-				Config: "${discovery.ip}",
+				InstanceName: "test-integration",
+				Exec:         testhelp.Command(fixtures.FileContentsFromEnvCmd),
+				Env:          map[string]string{"CUSTOM_CONFIG_PATH": "${config.path}"},
+				Config:       "${discovery.ip}",
 			},
 		})
 	}
@@ -157,7 +157,7 @@ func TestEmbeddedConfig_String(t *testing.T) {
 func TestTimeout_Default(t *testing.T) {
 	// GIVEN a configuration without timeout
 	// WHEN an integration is loaded from it
-	i, err := NewDefinition(config2.ConfigEntry{Name: "foo", Exec: config2.ShlexOpt{"bar"}}, ErrLookup, nil, nil)
+	i, err := NewDefinition(config2.ConfigEntry{InstanceName: "foo", Exec: config2.ShlexOpt{"bar"}}, ErrLookup, nil, nil)
 	require.NoError(t, err)
 
 	// THEN the integration has a default timeout
@@ -196,4 +196,27 @@ timeout: 0
 
 	// THEN the integration has a disabled timeout
 	assert.False(t, i.TimeoutEnabled())
+}
+
+func TestDefinition_fromName(t *testing.T) {
+	cfg := config2.ConfigEntry{
+		InstanceName: "nri-foo",
+		CLIArgs:      []string{"arg1", "arg2"},
+	}
+
+	il := InstancesLookup{
+		Legacy: func(_ DefinitionCommandConfig) (Definition, error) {
+			return Definition{}, nil
+		},
+		ByName: func(_ string) (string, error) {
+			return "/path/to/nri-foo", nil
+		},
+	}
+
+	d, err := NewDefinition(cfg, il, nil, nil)
+	require.NoError(t, err)
+
+	assert.NoError(t, d.fromName(cfg, il))
+	assert.Equal(t, "/path/to/nri-foo", d.runnable.Command)
+	assert.Equal(t, []string{"arg1", "arg2"}, d.runnable.Args)
 }

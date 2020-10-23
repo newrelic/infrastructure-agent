@@ -53,8 +53,8 @@ func (_m *AgentContext) AddReconnecting(_a0 agent.Plugin) {
 	_m.Called(_a0)
 }
 
-// AgentIdentifier provides a mock function with given fields:
-func (_m *AgentContext) AgentIdentifier() string {
+// EntityKey provides a mock function with given fields:
+func (_m *AgentContext) EntityKey() string {
 	ret := _m.Called()
 
 	var r0 string

@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	gohttp "net/http"
 )
 
@@ -64,11 +63,12 @@ func httpRequest(config *http, method string, body io.Reader) ([]byte, error) {
 	}
 	defer func() {
 		if err := res.Body.Close(); err != nil {
-			log.Printf("Unable to close response body: %s\n", err)
+			slog.WithError(err).Warn("Unable to close response body")
 		}
 	}()
 
 	if res.StatusCode != gohttp.StatusOK {
+		_, _ = io.Copy(ioutil.Discard, res.Body)
 		return nil, fmt.Errorf("error response received from server: %s", res.Status)
 	}
 	b, err := ioutil.ReadAll(res.Body)

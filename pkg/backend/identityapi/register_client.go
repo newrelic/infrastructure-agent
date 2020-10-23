@@ -112,7 +112,6 @@ func NewRegisterClient(
 	}
 	icfg := identity.NewConfiguration()
 	icfg.BasePath = svcUrl + identityPath
-	icfg.Debug = true
 	// TODO: add the global HTTP client here
 	// icfg.HTTPClient = httpClient
 	identityClient := identity.NewAPIClient(icfg)
@@ -127,7 +126,6 @@ func NewRegisterClient(
 }
 
 func (rc *registerClient) RegisterBatchEntities(agentEntityID entity.ID, entities []entity.Fields) (resp []RegisterEntityResponse, err error) {
-
 	ctx := context.Background()
 
 	registerRequests := make([]identity.RegisterRequest, len(entities))

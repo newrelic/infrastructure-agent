@@ -8,7 +8,7 @@ import (
 // Errors
 var (
 	ErrUndefinedLookupType = errors.New("no known identifier types found in ID lookup table")
-	ErrNoAgentIdentifiers  = errors.New("no agent identifiers available")
+	ErrNoEntityKeys        = errors.New("no agent identifiers available")
 )
 
 // IDLookup contains the identifiers used for resolving the agent entity name and agent key.
@@ -16,7 +16,7 @@ type IDLookup map[string]string
 
 func (i IDLookup) AgentKey() (agentKey string, err error) {
 	if len(i) == 0 {
-		err = ErrNoAgentIdentifiers
+		err = ErrNoEntityKeys
 		return
 	}
 

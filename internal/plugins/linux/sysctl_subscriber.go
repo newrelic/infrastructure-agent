@@ -61,11 +61,11 @@ func (p *SysctlSubscriberPlugin) Run() {
 				if err != nil {
 					sclog.WithError(err).Error("fetching sysctl initial data")
 				} else {
-					p.EmitInventory(initialDataset, entity.NewFromNameWithoutID(p.Context.AgentIdentifier()))
+					p.EmitInventory(initialDataset, entity.NewFromNameWithoutID(p.Context.EntityKey()))
 					initialSubmitOk = true
 				}
 			} else if needsFlush {
-				p.EmitInventory(deltas, entity.NewFromNameWithoutID(p.Context.AgentIdentifier()))
+				p.EmitInventory(deltas, entity.NewFromNameWithoutID(p.Context.EntityKey()))
 				needsFlush = false
 				deltas = agent.PluginInventoryDataset{}
 			}

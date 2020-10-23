@@ -142,7 +142,7 @@ func (self *SupervisorPlugin) Run() {
 			slog.WithError(err).Error("getting supervisord data")
 			continue
 		}
-		self.EmitInventory(data, entity.NewFromNameWithoutID(self.Context.AgentIdentifier()))
+		self.EmitInventory(data, entity.NewFromNameWithoutID(self.Context.EntityKey()))
 		self.Context.CacheServicePids(sysinfo.PROCESS_NAME_SOURCE_SUPERVISOR, pidMap)
 	}
 }
