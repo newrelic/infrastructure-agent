@@ -285,7 +285,6 @@ func getAgentContext(hostname string) *mocks.AgentContext {
 	if hostname != "" {
 		idLookup[sysinfo.HOST_SOURCE_INSTANCE_ID] = hostname
 	}
-	agentCtx.On("AgentIdentifier").Return(hostname)
 	agentCtx.On("EntityKey").Return(hostname)
 	agentCtx.On("IDLookup").Return(idLookup)
 	agentCtx.On("Config").Return(config.NewConfig())
