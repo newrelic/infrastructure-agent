@@ -90,7 +90,6 @@ func NewRegisterClient(
 	}
 	icfg := identity.NewConfiguration()
 	icfg.BasePath = svcUrl + identityPath
-	icfg.Debug = true
 	// TODO: add the global HTTP client here
 	// icfg.HTTPClient = httpClient
 	identityClient := identity.NewAPIClient(icfg)
