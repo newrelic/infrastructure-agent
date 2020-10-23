@@ -55,7 +55,8 @@ func (e *RegisterEntityError) Error() string {
 	if e.Err == nil {
 		return ""
 	}
-	return "register error: " + e.Err.Error() + " status: " + e.Status + " status_code: " + strconv.Itoa(e.StatusCode)
+	return fmt.Sprintf("register error: %v, status: %s, status_code: %d",
+		e.Err, e.Status, e.StatusCode)
 }
 
 // RegisterClient provides the ability to register either a single entity or a
