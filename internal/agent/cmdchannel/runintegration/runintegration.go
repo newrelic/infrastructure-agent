@@ -17,7 +17,7 @@ import (
 
 // Errors
 var (
-	NoIntNameErr = errors.New("missing required \"integration_name\"")
+	ErrNoIntName = errors.New("missing required \"integration_name\"")
 )
 
 type runIntArgs struct {
@@ -35,7 +35,7 @@ func NewHandler(definitionQ chan<- integration.Definition, il integration.Instan
 		}
 
 		if args.IntegrationName == "" {
-			err = cmdchannel.NewArgsErr(NoIntNameErr)
+			err = cmdchannel.NewArgsErr(ErrNoIntName)
 			return
 		}
 
