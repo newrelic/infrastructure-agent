@@ -1,7 +1,6 @@
 package cmdrequest
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
@@ -12,17 +11,8 @@ import (
 )
 
 var (
-	// helpers for testing purposes
-	NoopHandleFn    = func(protocol.CmdRequestV1) {}
-	ErrNotSupported = errors.New("integration instance lookup not supported for cmd request handler")
-	NoLookup        = integration.InstancesLookup{
-		Legacy: func(_ integration.DefinitionCommandConfig) (integration.Definition, error) {
-			return integration.Definition{}, ErrNotSupported
-		},
-		ByName: func(_ string) (string, error) {
-			return "", ErrNotSupported
-		},
-	}
+	// helper for testing purposes
+	NoopHandleFn = func(protocol.CmdRequestV1) {}
 )
 
 type HandleFn func(protocol.CmdRequestV1)
