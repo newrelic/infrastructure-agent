@@ -5,6 +5,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
@@ -14,19 +15,29 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
+const (
+	handleBOTimeoutOnInitialFetch = 100 * time.Millisecond
+)
+
 var (
 	ccsLogger = log.WithComponent("CommandChannelService")
 )
 
 type srv struct {
 	pollDelaySecs     int
+	pollDelaySecsC    <-chan int
 	client            commandapi.Client
 	handlersByCmdName map[string]*cmdchannel.CmdHandler
 	acks              map[int]struct{} // command IDs successfully ack'd
+	acksLock          sync.RWMutex
 }
 
 // NewService creates a service to poll and handle command channel commands.
-func NewService(client commandapi.Client, pollDelaySecs int, handlers ...*cmdchannel.CmdHandler) cmdchannel.Service {
+func NewService(
+	client commandapi.Client,
+	pollDelaySecs int,
+	backoffSecsC <-chan int,
+	handlers ...*cmdchannel.CmdHandler) cmdchannel.Service {
 	handlersByName := map[string]*cmdchannel.CmdHandler{}
 	for _, h := range handlers {
 		handlersByName[h.CmdName] = h
@@ -35,8 +46,10 @@ func NewService(client commandapi.Client, pollDelaySecs int, handlers ...*cmdcha
 	return &srv{
 		client:            client,
 		pollDelaySecs:     pollDelaySecs,
+		pollDelaySecsC:    backoffSecsC,
 		handlersByCmdName: handlersByName,
 		acks:              make(map[int]struct{}),
+		acksLock:          sync.RWMutex{},
 	}
 }
 
@@ -49,6 +62,12 @@ func (s *srv) InitialFetch(ctx context.Context) (cmdchannel.InitialCmdResponse, 
 
 	for _, cmd := range cmds {
 		s.handle(ctx, cmd, true, entity.EmptyID)
+	}
+
+	select {
+	case boSec := <-s.pollDelaySecsC:
+		s.pollDelaySecs = boSec
+	case <-time.NewTimer(handleBOTimeoutOnInitialFetch).C:
 	}
 
 	return cmdchannel.InitialCmdResponse{
@@ -69,6 +88,8 @@ func (s *srv) Run(ctx context.Context, agentIDProvide id.Provide, initialRes cmd
 		select {
 		case <-ctx.Done():
 			return
+		case boSecs := <-s.pollDelaySecsC:
+			s.pollDelaySecs = boSecs
 		case <-t.C:
 			agentID := agentIDProvide().ID
 			cmds, err := s.client.GetCommands(agentID)
@@ -105,7 +126,7 @@ func (s *srv) handle(ctx context.Context, c commandapi.Command, initialFetch boo
 	}
 
 	if s.notReadyToHandle(c, agentID) {
-		// discarding commands is safe as they will be requested again
+		// discarding commands is safe, they will be requested again
 		return
 	}
 
@@ -118,7 +139,18 @@ func (s *srv) handle(ctx context.Context, c commandapi.Command, initialFetch boo
 		return
 	}
 
-	backoffSecs, err := h.Handle(ctx, c, initialFetch)
+	// TODO add concurrency support to FF handlers
+	if c.Name != "set_feature_flag" {
+		go func() {
+			s.handleWrap(h, ctx, c, initialFetch)
+		}()
+	} else {
+		s.handleWrap(h, ctx, c, initialFetch)
+	}
+}
+
+func (s *srv) handleWrap(h *cmdchannel.CmdHandler, ctx context.Context, c commandapi.Command, initialFetch bool) {
+	err := h.Handle(ctx, c, initialFetch)
 	if err != nil {
 		ccsLogger.
 			WithField("cmd_id", c.ID).
@@ -127,9 +159,6 @@ func (s *srv) handle(ctx context.Context, c commandapi.Command, initialFetch boo
 			WithError(err).
 			Error("error handling cmd-channel request")
 
-	}
-	if backoffSecs > 0 {
-		s.pollDelaySecs = backoffSecs
 	}
 }
 
@@ -142,14 +171,18 @@ func (s *srv) requiresAck(c commandapi.Command, agentID entity.ID) bool {
 		return false
 	}
 
+	s.acksLock.RLock()
 	_, ok := s.acks[c.ID]
+	s.acksLock.RUnlock()
 	return !ok
 }
 
 func (s *srv) ack(agentID entity.ID, c commandapi.Command) error {
 	err := s.client.AckCommand(agentID, c.ID)
 	if err == nil {
+		s.acksLock.Lock()
 		s.acks[c.ID] = struct{}{}
+		s.acksLock.Unlock()
 	}
 	return err
 }

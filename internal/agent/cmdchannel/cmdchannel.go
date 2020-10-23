@@ -22,7 +22,7 @@ func NewArgsErr(err error) error {
 }
 
 // CmdHandleF command channel request handler function.
-type CmdHandleF func(ctx context.Context, cmd commandapi.Command, initialFetch bool) (backoffSecs int, err error)
+type CmdHandleF func(ctx context.Context, cmd commandapi.Command, initialFetch bool) error
 
 // CmdHandler handler for the a given command-channel command request.
 type CmdHandler struct {

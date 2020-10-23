@@ -15,15 +15,14 @@ type args struct {
 }
 
 // NewHandler creates a cmd-channel handler for cmd poll backoff requests.
-func NewHandler() *cmdchannel.CmdHandler {
-	handleF := func(ctx context.Context, cmd commandapi.Command, initialFetch bool) (backoffSecs int, err error) {
+func NewHandler(backoffSecsC chan<- int) *cmdchannel.CmdHandler {
+	handleF := func(ctx context.Context, cmd commandapi.Command, initialFetch bool) error {
 		var boArgs args
-		if err = json.Unmarshal(cmd.Args, &boArgs); err != nil {
-			err = cmdchannel.NewArgsErr(err)
-			return
+		if err := json.Unmarshal(cmd.Args, &boArgs); err != nil {
+			return cmdchannel.NewArgsErr(err)
 		}
-		backoffSecs = boArgs.DelaySecs
-		return
+		backoffSecsC <- boArgs.DelaySecs
+		return nil
 	}
 
 	return cmdchannel.NewCmdHandler("backoff_command_channel", handleF)
