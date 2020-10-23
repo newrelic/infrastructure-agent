@@ -1,4 +1,4 @@
-NRI_INTEGRATIONS_FILE	?= $(CURDIR)/build/nri-integrations
+NRI_INTEGRATIONS_FILE	?= $(INCLUDE_BUILD_DIR)/nri-integrations
 get-nri-version			= $(shell awk -F, '/^$(1),/ {print $$2}' ${NRI_INTEGRATIONS_FILE})
 
 NRI_PKG_DIR				?= $(PKG_DIR)
