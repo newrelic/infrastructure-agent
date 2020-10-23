@@ -67,9 +67,11 @@ FROM core AS base
 ARG nri_pkg_dir
 ARG nri_docker_version
 ARG nri_flex_version
+ARG nri_prometheus_version
 
 LABEL com.newrelic.nri-docker.version=$nri_docker_version \
-      com.newrelic.nri-flex.version=$nri_flex_version
+      com.newrelic.nri-flex.version=$nri_flex_version \
+      com.newrelic.nri-prometheus.version=$nri_prometheus_version
 
 RUN apk add --no-cache \
         ntpsec=1.1.8-r0 \
