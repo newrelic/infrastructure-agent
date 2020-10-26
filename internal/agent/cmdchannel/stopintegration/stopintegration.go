@@ -64,8 +64,9 @@ func NewHandler(logger log.Entry) *cmdchannel.CmdHandler {
 		}
 
 		if isRunning {
-			err = p.KillWithContext(ctx)
-			logDecorated(logger, cmd, args, err).Error("cannot kill process")
+			if err = p.KillWithContext(ctx); err != nil {
+				logDecorated(logger, cmd, args, err).Error("cannot kill process")
+			}
 		}
 
 		// no further error handling required
