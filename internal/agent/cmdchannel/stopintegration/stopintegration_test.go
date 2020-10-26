@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"runtime"
 	"testing"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
@@ -32,6 +33,10 @@ func TestHandle_returnsErrorOnMissingPID(t *testing.T) {
 }
 
 func TestHandle_signalStopProcess(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("CC stop-intergation is not supported on Windows")
+	}
+
 	// Given a running process
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

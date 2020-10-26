@@ -14,6 +14,7 @@ import (
 // Errors
 var (
 	ErrMsgInvalidArgs = "invalid arguments for command"
+	ErrOSNotSupported = errors.New("OS not supported")
 )
 
 // NewArgsErr creates an invalid arguments error wrapping the reason

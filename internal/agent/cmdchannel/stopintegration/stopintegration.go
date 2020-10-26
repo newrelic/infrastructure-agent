@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"runtime"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
@@ -33,6 +34,10 @@ type runIntArgs struct {
 // NewHandler creates a cmd-channel handler for stop-integration requests.
 func NewHandler(logger log.Entry) *cmdchannel.CmdHandler {
 	handleF := func(ctx context.Context, cmd commandapi.Command, initialFetch bool) (err error) {
+		if runtime.GOOS == "windows" {
+			return cmdchannel.ErrOSNotSupported
+		}
+
 		var args runIntArgs
 		if err = json.Unmarshal(cmd.Args, &args); err != nil {
 			err = cmdchannel.NewArgsErr(err)
