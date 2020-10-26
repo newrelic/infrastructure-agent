@@ -39,6 +39,7 @@ func TestFacter(t *testing.T) {
 	ctx.On("SendData", mock.Anything).Return().Run(func(args mock.Arguments) {
 		ch <- args[0].(agent.PluginOutput)
 	})
+	ctx.SendDataWg.Add(1)
 
 	facterPlugin := pluginsLinux.NewFacterPlugin(ctx)
 	go facterPlugin.Run()
