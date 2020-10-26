@@ -14,6 +14,9 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 )
 
+// Payload size.
+const MB = 1000 * 1000
+
 func newClientReturning(ids ...entity.ID) identityapi.RegisterClient {
 	return &fakeClient{
 		ids: ids,
@@ -30,8 +33,12 @@ func (c *fakeClient) RegisterBatchEntities(agentEntityID entity.ID, entities []e
 		return nil, c.err
 	}
 	r = []identityapi.RegisterEntityResponse{}
-	for _, id := range c.ids {
-		r = append(r, identityapi.RegisterEntityResponse{ID: id})
+	for i, id := range c.ids {
+		var name string
+		if len(entities) > i {
+			name = entities[i].Name
+		}
+		r = append(r, identityapi.RegisterEntityResponse{Name: name, ID: id})
 	}
 	return
 }
@@ -54,7 +61,7 @@ func TestWorker_Run_SendsWhenMaxTimeIsReached(t *testing.T) {
 		return entity.Identity{ID: 13}
 	}
 
-	w := NewWorker(agentIdentity, newClientReturning(123), backoff.NewDefaultBackoff(), 0, reqsToRegisterQueue, reqsRegisteredQueue, 2, 50*time.Millisecond)
+	w := NewWorker(agentIdentity, newClientReturning(123), backoff.NewDefaultBackoff(), 0, reqsToRegisterQueue, reqsRegisteredQueue, 2, MB, 50*time.Millisecond)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -80,7 +87,7 @@ func TestWorker_Run_SendsWhenMaxBatchSizeIsReached(t *testing.T) {
 	}
 
 	ids := []entity.ID{123, 456}
-	w := NewWorker(agentIdentity, newClientReturning(ids...), backoff.NewDefaultBackoff(), 0, reqsToRegisterQueue, reqsRegisteredQueue, 2, 50*time.Millisecond)
+	w := NewWorker(agentIdentity, newClientReturning(ids...), backoff.NewDefaultBackoff(), 0, reqsToRegisterQueue, reqsRegisteredQueue, 2, MB, 50*time.Millisecond)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -97,6 +104,55 @@ func TestWorker_Run_SendsWhenMaxBatchSizeIsReached(t *testing.T) {
 			t.Error("no register response")
 		}
 	}
+}
+
+func TestWorker_Run_SendsWhenMaxBatchBytesSizeIsReached(t *testing.T) {
+	reqsToRegisterQueue := make(chan fwrequest.EntityFwRequest, 10)
+	reqsRegisteredQueue := make(chan fwrequest.EntityFwRequest, 10)
+
+	agentIdentity := func() entity.Identity {
+		return entity.Identity{ID: 13}
+	}
+
+	ids := []entity.ID{123, 456}
+
+	entityFields := entity.Fields{
+		Name: "test",
+	}
+	// Given a maxBatchSize(number of elements of 100), we send even 1 if the maxBytesSize is reached.
+	maxBatchSize := 100
+	maxBatchBytesSize := entityFields.JsonSize()
+
+	w := NewWorker(
+		agentIdentity,
+		newClientReturning(ids...),
+		backoff.NewDefaultBackoff(),
+		0,
+		reqsToRegisterQueue,
+		reqsRegisteredQueue,
+		maxBatchSize,
+		maxBatchBytesSize,
+		50*time.Millisecond,
+	)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go w.Run(ctx)
+
+	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{Entity: entityFields}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{})
+	// Second request will cause the batch split.
+	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{Entity: entityFields}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{})
+
+	// Expect only one registered.
+	select {
+	case result := <-reqsRegisteredQueue:
+		assert.Equal(t, ids[0], result.ID())
+	case <-time.NewTimer(200 * time.Millisecond).C:
+		t.Error("no register response")
+	}
+
+	assert.Equal(t, 0, len(reqsRegisteredQueue))
 }
 
 func TestWorker_registerEntitiesWithRetry_OnError_RetryBackoff(t *testing.T) {
@@ -121,7 +177,7 @@ func TestWorker_registerEntitiesWithRetry_OnError_RetryBackoff(t *testing.T) {
 		}
 		return time.NewTimer(0)
 	}
-	w := NewWorker(agentIdentity, client, backoff, 0, reqsToRegisterQueue, reqsRegisteredQueue, 1, 50*time.Millisecond)
+	w := NewWorker(agentIdentity, client, backoff, 0, reqsToRegisterQueue, reqsRegisteredQueue, 1, MB, 50*time.Millisecond)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -171,7 +227,7 @@ func TestWorker_registerEntitiesWithRetry_OnError_Discard(t *testing.T) {
 		}
 		return time.NewTimer(0)
 	}
-	w := NewWorker(agentIdentity, client, backoff, 0, reqsToRegisterQueue, reqsRegisteredQueue, 1, 50*time.Millisecond)
+	w := NewWorker(agentIdentity, client, backoff, 0, reqsToRegisterQueue, reqsRegisteredQueue, 1, MB, 50*time.Millisecond)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -216,7 +272,7 @@ func TestWorker_registerEntitiesWithRetry_Success(t *testing.T) {
 		return time.NewTimer(0)
 	}
 
-	w := NewWorker(agentIdentity, client, backoff, 0, reqsToRegisterQueue, reqsRegisteredQueue, 1, 50*time.Millisecond)
+	w := NewWorker(agentIdentity, client, backoff, 0, reqsToRegisterQueue, reqsRegisteredQueue, 1, MB, 50*time.Millisecond)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

@@ -40,6 +40,7 @@ var (
 const (
 	defaultRegisterWorkersAmnt        = 4
 	defaultRegisterBatchSize          = 100
+	defaultRegisterBatchBytesSize     = 1000 * 1000 // Size limit for a batch call payload (1MB)
 	defaultRegisterBatchSecs          = 1
 	defaultRequestsQueueLen           = 1000
 	defaultRequestsToRegisterQueueLen = 1000
@@ -51,19 +52,20 @@ type Agent interface {
 }
 
 type emitter struct {
-	isProcessing         abool.AtomicBool
-	reqsQueue            chan fwrequest.FwRequest
-	reqsToRegisterQueue  chan fwrequest.EntityFwRequest
-	reqsRegisteredQueue  chan fwrequest.EntityFwRequest
-	retryBo              *backoff.Backoff
-	maxRetryBo           int
-	idCache              entity.KnownIDs
-	metricsSender        MetricsSender
-	agentContext         agent.AgentContext
-	registerClient       identityapi.RegisterClient
-	registerWorkers      int
-	registerMaxBatchSize int
-	registerMaxBatchTime time.Duration
+	isProcessing              abool.AtomicBool
+	reqsQueue                 chan fwrequest.FwRequest
+	reqsToRegisterQueue       chan fwrequest.EntityFwRequest
+	reqsRegisteredQueue       chan fwrequest.EntityFwRequest
+	retryBo                   *backoff.Backoff
+	maxRetryBo                int
+	idCache                   entity.KnownIDs
+	metricsSender             MetricsSender
+	agentContext              agent.AgentContext
+	registerClient            identityapi.RegisterClient
+	registerWorkers           int
+	registerMaxBatchSize      int
+	registerMaxBatchBytesSize int
+	registerMaxBatchTime      time.Duration
 }
 
 type Emitter interface {
@@ -76,18 +78,19 @@ func NewEmitter(
 	registerClient identityapi.RegisterClient) Emitter {
 
 	return &emitter{
-		retryBo:              backoff.NewDefaultBackoff(),
-		maxRetryBo:           agentContext.Config().RegisterMaxRetryBo,
-		reqsQueue:            make(chan fwrequest.FwRequest, defaultRequestsQueueLen),
-		reqsToRegisterQueue:  make(chan fwrequest.EntityFwRequest, defaultRequestsToRegisterQueueLen),
-		reqsRegisteredQueue:  make(chan fwrequest.EntityFwRequest, defaultRequestsRegisteredQueueLen),
-		registerWorkers:      defaultRegisterWorkersAmnt,
-		idCache:              entity.NewKnownIDs(),
-		agentContext:         agentContext,
-		metricsSender:        dmSender,
-		registerClient:       registerClient,
-		registerMaxBatchSize: defaultRegisterBatchSize,
-		registerMaxBatchTime: defaultRegisterBatchSecs * time.Second,
+		retryBo:                   backoff.NewDefaultBackoff(),
+		maxRetryBo:                agentContext.Config().RegisterMaxRetryBo,
+		reqsQueue:                 make(chan fwrequest.FwRequest, defaultRequestsQueueLen),
+		reqsToRegisterQueue:       make(chan fwrequest.EntityFwRequest, defaultRequestsToRegisterQueueLen),
+		reqsRegisteredQueue:       make(chan fwrequest.EntityFwRequest, defaultRequestsRegisteredQueueLen),
+		registerWorkers:           defaultRegisterWorkersAmnt,
+		idCache:                   entity.NewKnownIDs(),
+		agentContext:              agentContext,
+		metricsSender:             dmSender,
+		registerClient:            registerClient,
+		registerMaxBatchSize:      defaultRegisterBatchSize,
+		registerMaxBatchBytesSize: defaultRegisterBatchBytesSize,
+		registerMaxBatchTime:      defaultRegisterBatchSecs * time.Second,
 	}
 }
 
@@ -114,6 +117,7 @@ func (e *emitter) lazyLoadProcessor() {
 				e.reqsToRegisterQueue,
 				e.reqsRegisteredQueue,
 				e.registerMaxBatchSize,
+				e.registerMaxBatchBytesSize,
 				e.registerMaxBatchTime)
 			go regWorker.Run(ctx)
 		}

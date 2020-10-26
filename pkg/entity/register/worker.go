@@ -25,6 +25,7 @@ type worker struct {
 	reqsToRegisterQueue <-chan fwrequest.EntityFwRequest
 	reqsRegisteredQueue chan<- fwrequest.EntityFwRequest
 	maxBatchSize        int
+	maxBatchSizeBytes   int
 	maxBatchDuration    time.Duration
 }
 
@@ -36,6 +37,7 @@ func NewWorker(
 	reqsToRegisterQueue <-chan fwrequest.EntityFwRequest,
 	reqsRegisteredQueue chan<- fwrequest.EntityFwRequest,
 	maxBatchSize int,
+	maxBatchSizeBytes int,
 	maxBatchDuration time.Duration,
 ) *worker {
 	return &worker{
@@ -46,6 +48,7 @@ func NewWorker(
 		reqsToRegisterQueue: reqsToRegisterQueue,
 		reqsRegisteredQueue: reqsRegisteredQueue,
 		maxBatchSize:        maxBatchSize,
+		maxBatchSizeBytes:   maxBatchSizeBytes,
 		maxBatchDuration:    maxBatchDuration,
 	}
 }
@@ -55,38 +58,34 @@ func (w *worker) Run(ctx context.Context) {
 
 	// data for register batch call
 	batch := make(map[entity.Key]fwrequest.EntityFwRequest, w.maxBatchSize)
-	batchSize := 0
-
+	batchSizeBytes := 0
 	for {
 		select {
 		case <-ctx.Done():
 			return
 
 		case req := <-w.reqsToRegisterQueue:
-			batchSize++
+			entitySizeBytes := req.Data.Entity.JsonSize()
 
+			if batchSizeBytes+entitySizeBytes > w.maxBatchSize || len(batch) == w.maxBatchSize {
+				timer.Reset(w.maxBatchDuration)
+				w.send(ctx, batch, &batchSizeBytes)
+			}
 			// TODO update when entity key retrieval is fixed
 			eKey := entity.Key(req.Data.Entity.Name)
 			batch[eKey] = req
-
-			// TODO add 1MB payload size platform limitation
-
-			if batchSize == w.maxBatchSize {
-				timer.Reset(w.maxBatchDuration)
-				w.send(ctx, batch, &batchSize)
-			}
-
+			batchSizeBytes += entitySizeBytes
 		case <-timer.C:
 			if len(batch) > 0 {
-				w.send(ctx, batch, &batchSize)
+				w.send(ctx, batch, &batchSizeBytes)
 			}
 			timer.Reset(w.maxBatchDuration)
 		}
 	}
 }
 
-func (w *worker) send(ctx context.Context, batch map[entity.Key]fwrequest.EntityFwRequest, batchSize *int) {
-	defer w.resetBatch(batch, batchSize)
+func (w *worker) send(ctx context.Context, batch map[entity.Key]fwrequest.EntityFwRequest, batchSizeBytes *int) {
+	defer w.resetBatch(batch, batchSizeBytes)
 
 	var entities []entity.Fields
 	for _, r := range batch {
@@ -166,8 +165,8 @@ func (w *worker) registerEntitiesWithRetry(ctx context.Context, entities []entit
 	return nil
 }
 
-func (w *worker) resetBatch(batch map[entity.Key]fwrequest.EntityFwRequest, batchSize *int) {
-	*batchSize = 0
+func (w *worker) resetBatch(batch map[entity.Key]fwrequest.EntityFwRequest, batchSizeBytes *int) {
+	*batchSizeBytes = 0
 	for key := range batch {
 		delete(batch, key)
 	}
