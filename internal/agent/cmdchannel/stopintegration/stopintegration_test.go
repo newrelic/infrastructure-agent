@@ -22,6 +22,10 @@ var (
 )
 
 func TestHandle_returnsErrorOnMissingPID(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("CC stop-intergation is not supported on Windows")
+	}
+
 	h := NewHandler(l)
 
 	cmdArgsMissingPID := commandapi.Command{
