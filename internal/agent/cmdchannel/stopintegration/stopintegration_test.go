@@ -36,7 +36,7 @@ func TestHandle_signalStopProcess(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	proc := exec.CommandContext(ctx, "sleep", "2")
+	proc := exec.CommandContext(ctx, "sleep", "5")
 	pidC := make(chan int)
 	go func() {
 		require.NoError(t, proc.Start())
@@ -53,16 +53,19 @@ func TestHandle_signalStopProcess(t *testing.T) {
 	p, err := process.NewProcess(int32(pid))
 	require.NoError(t, err)
 
-	runs, err := p.IsRunningWithContext(ctx)
+	st, err := p.StatusWithContext(ctx)
 	require.NoError(t, err)
-	require.True(t, runs)
+	if st != "S" && st != "R" {
+		t.Fatal("sleep command should be either running or sleep")
+	}
 
 	// WHEN handler receives stop PID request
 	err = h.Handle(context.Background(), cmd, false)
 	require.NoError(t, err)
 
 	// THEN process is stopped
-	runs, err = p.IsRunningWithContext(ctx)
+	st, err = p.StatusWithContext(ctx)
 	require.NoError(t, err)
-	require.False(t, runs)
+	require.NotEqual(t, "S", st)
+	require.NotEqual(t, "R", st)
 }
