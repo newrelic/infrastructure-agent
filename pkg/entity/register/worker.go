@@ -146,22 +146,20 @@ func (w *worker) registerEntitiesWithRetry(ctx context.Context, entities []entit
 		}
 
 		e, ok := err.(*identityapi.RegisterEntityError)
-		if !ok {
-			wlog.WithError(err).
-				Error("entity register request error, discarding entities.")
+		if ok {
+			shouldRetry := e.StatusCode == identityapi.StatusCodeConFailure ||
+				e.StatusCode == identityapi.StatusCodeLimitExceed
 
-			return nil
+			if shouldRetry {
+				retryBOAfter := w.retryBo.DurationWithMax(w.maxRetryBo)
+				wlog.WithField("retryBackoffAfter", retryBOAfter).Debug("register request retry backoff.")
+				w.retryBo.Backoff(ctx, retryBOAfter)
+				continue
+			}
 		}
-		shouldRetry := e.StatusCode == identityapi.StatusCodeConFailure ||
-			e.StatusCode == identityapi.StatusCodeLimitExceed
-
-		if shouldRetry {
-			retryBOAfter := w.retryBo.DurationWithMax(w.maxRetryBo)
-			wlog.WithField("retryBackoffAfter", retryBOAfter).Debug("register request retry backoff.")
-			w.retryBo.Backoff(ctx, retryBOAfter)
-			continue
-		}
-		return responses
+		wlog.WithError(err).
+			Error("entity register request error, discarding entities.")
+		break
 	}
 	return nil
 }
