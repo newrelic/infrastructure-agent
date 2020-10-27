@@ -106,6 +106,7 @@ type Manager struct {
 	featuresCache   runner.FeaturesCache
 	definitionQueue <-chan integration.Definition
 	handleCmdReq    cmdrequest.HandleFn
+	tracker         *stoppablesTracker
 }
 
 // groupContext pairs a runner.Group with its cancellation context
@@ -191,6 +192,7 @@ func NewManager(cfg Configuration, emitter emitter.Emitter, il integration.Insta
 		featuresCache:   make(runner.FeaturesCache),
 		definitionQueue: definitionQ,
 		handleCmdReq:    cmdrequest.NewHandleFn(definitionQ, il, illog),
+		tracker:         newStoppablesTracker(),
 	}
 
 	// Loads all the configuration files in the passed configFolders
@@ -306,7 +308,12 @@ func (mgr *Manager) handleRequestsQueue(ctx context.Context) {
 
 		case def := <-mgr.definitionQueue:
 			r := runner.NewRunner(def, mgr.emitter, nil, nil, mgr.handleCmdReq)
-			go r.Run(ctx)
+			// tracking so cmd requests can be stopped by hash
+			ctx = mgr.tracker.Add(ctx, def.CmdChannelHash)
+			go func(hash string) {
+				r.Run(ctx)
+				mgr.tracker.Remove(hash)
+			}(def.CmdChannelHash)
 		}
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
@@ -23,6 +24,11 @@ var (
 type runIntArgs struct {
 	IntegrationName string   `json:"integration_name"`
 	IntegrationArgs []string `json:"integration_args"`
+}
+
+// Hash hashes the run-integration request, so intergation can be required to stop using same arguments.
+func (a *runIntArgs) Hash() string {
+	return fmt.Sprintf("%s#%s", strings.TrimSpace(a.IntegrationName), strings.TrimSpace(a.IntegrationName))
 }
 
 // NewHandler creates a cmd-channel handler for run-integration requests.
@@ -51,6 +57,7 @@ func NewHandler(definitionQ chan<- integration.Definition, il integration.Instan
 				Warn("cannot create handler for cmd channel run_integration requests")
 			return
 		}
+		def.CmdChannelHash = args.Hash()
 
 		definitionQ <- def
 		return
