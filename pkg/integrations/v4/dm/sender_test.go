@@ -183,7 +183,7 @@ func Test_sender_SendPrometheusSummary(t *testing.T) {
 		telemetry.Summary{
 			Name:       "PrometheusSummaryMetric_sum",
 			Attributes: map[string]interface{}{"att_key": "att_value"},
-			Sum:        float64(2),
+			Sum:        float64(0),
 			Min:        math.NaN(),
 			Max:        math.NaN(),
 			Count:      1,
