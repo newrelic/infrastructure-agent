@@ -138,6 +138,8 @@ func (w *worker) registerEntitiesWithRetry(ctx context.Context, entities []entit
 		default:
 		}
 
+		// Backoff object it's shared between workers. If another worker is in backoff,
+		// the current will also backoff.
 		attempt := w.retryBo.Attempt()
 		if attempt > 0 {
 			retryBOAfter := w.retryBo.ForAttemptWithMax(attempt, w.maxRetryBo)
