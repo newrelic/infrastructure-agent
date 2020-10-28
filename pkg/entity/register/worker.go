@@ -138,6 +138,13 @@ func (w *worker) registerEntitiesWithRetry(ctx context.Context, entities []entit
 		default:
 		}
 
+		attempt := w.retryBo.Attempt()
+		if attempt > 0 {
+			retryBOAfter := w.retryBo.ForAttemptWithMax(attempt, w.maxRetryBo)
+			wlog.WithField("retryBackoffAfter", retryBOAfter).Debug("register request retry backoff.")
+			w.retryBo.Backoff(ctx, retryBOAfter)
+		}
+
 		var err error
 		responses, err := w.client.RegisterBatchEntities(w.agentIDProvide().ID, entities)
 		if err == nil {
@@ -148,9 +155,7 @@ func (w *worker) registerEntitiesWithRetry(ctx context.Context, entities []entit
 		e, ok := err.(*identityapi.RegisterEntityError)
 		if ok {
 			if e.ShouldRetry() {
-				retryBOAfter := w.retryBo.DurationWithMax(w.maxRetryBo)
-				wlog.WithField("retryBackoffAfter", retryBOAfter).Debug("register request retry backoff.")
-				w.retryBo.Backoff(ctx, retryBOAfter)
+				w.retryBo.IncreaseAttempt()
 				continue
 			}
 		}

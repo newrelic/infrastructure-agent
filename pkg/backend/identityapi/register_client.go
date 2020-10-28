@@ -111,21 +111,20 @@ func NewRegisterEntity(key entity.Key) RegisterEntity {
 func NewRegisterClient(
 	svcUrl, licenseKey, userAgent string,
 	compressionLevel int,
-	httpClient backendhttp.Client,
+	httpClient *http.Client,
 ) (RegisterClient, error) {
 	if compressionLevel < gzip.NoCompression || compressionLevel > gzip.BestCompression {
 		return nil, fmt.Errorf("gzip: invalid compression level: %d", compressionLevel)
 	}
 	icfg := identity.NewConfiguration()
 	icfg.BasePath = svcUrl + identityPath
-	// TODO: add the global HTTP client here
-	// icfg.HTTPClient = httpClient
+	icfg.HTTPClient = httpClient
 	identityClient := identity.NewAPIClient(icfg)
 	return &registerClient{
 		svcUrl:           strings.TrimSuffix(svcUrl, "/"),
 		licenseKey:       licenseKey,
 		userAgent:        userAgent,
-		httpClient:       httpClient,
+		httpClient:       httpClient.Do,
 		compressionLevel: compressionLevel,
 		apiClient:        identityClient.DefaultApi,
 	}, nil
