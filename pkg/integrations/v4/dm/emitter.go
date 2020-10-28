@@ -111,6 +111,7 @@ func (e *emitter) lazyLoadProcessor() {
 func (e *emitter) runFwReqConsumer(ctx context.Context) {
 	defer e.isProcessing.UnSet()
 
+	agentVersion := e.agentContext.Version()
 	for {
 		select {
 		case _ = <-ctx.Done():
@@ -141,7 +142,7 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 					case <-ctx.Done():
 						return
 
-					case e.reqsRegisteredQueue <- fwrequest.NewEntityFwRequest(ds, eID, req.FwRequestMeta, req.Data.Integration):
+					case e.reqsRegisteredQueue <- fwrequest.NewEntityFwRequest(ds, eID, req.FwRequestMeta, req.Data.Integration, agentVersion):
 					}
 					continue
 				}
@@ -150,7 +151,7 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 				case <-ctx.Done():
 					return
 
-				case e.reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(ds, entity.EmptyID, req.FwRequestMeta, req.Data.Integration):
+				case e.reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(ds, entity.EmptyID, req.FwRequestMeta, req.Data.Integration, agentVersion):
 				}
 			}
 		}

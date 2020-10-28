@@ -18,6 +18,10 @@ func newClientReturning(ids ...entity.ID) identityapi.RegisterClient {
 	}
 }
 
+const (
+	agentVersion = "testVersion"
+)
+
 type fakeClient struct {
 	ids []entity.ID
 }
@@ -55,7 +59,7 @@ func TestWorker_Run_SendsWhenMaxTimeIsReached(t *testing.T) {
 
 	go w.Run(ctx)
 
-	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{})
+	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{}, agentVersion)
 
 	select {
 	case result := <-reqsRegisteredQueue:
@@ -81,7 +85,7 @@ func TestWorker_Run_SendsWhenMaxBatchSizeIsReached(t *testing.T) {
 
 	go w.Run(ctx)
 
-	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{})
+	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{}, agentVersion)
 
 	for registeredCount := 0; registeredCount < len(ids); registeredCount++ {
 		select {
