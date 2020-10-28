@@ -7,13 +7,12 @@ import (
 	"testing"
 )
 
-
 func TestCommonAttributes(t *testing.T) {
 
-	id:=entity.ID(115)
-	agentVersion:="agentVersion"
-	intVersion:="intVersion"
-	intName:="intName"
+	id := entity.ID(115)
+	agentVersion := "agentVersion"
+	intVersion := "intVersion"
+	intName := "intName"
 	fw := NewEntityFwRequest(protocol.Dataset{}, id, FwRequestMeta{}, protocol.IntegrationMetadata{Name: intName, Version: intVersion}, agentVersion)
 
 	assert.Equal(t, agentVersion, fw.Data.Common.Attributes[CollectorVersionAttribute])

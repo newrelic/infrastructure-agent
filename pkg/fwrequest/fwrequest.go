@@ -12,16 +12,16 @@ import (
 )
 
 const (
-	EntityIdAttribute = "nr.entity.id"
-	InstrumentationVersionAttribute = "instrumentation.version"
-	InstrumentationNameAttribute = "instrumentation.name"
+	EntityIdAttribute                = "nr.entity.id"
+	InstrumentationVersionAttribute  = "instrumentation.version"
+	InstrumentationNameAttribute     = "instrumentation.name"
 	InstrumentationProviderAttribute = "instrumentation.provider"
-	CollectorNameAttribute = "collector.name"
-	CollectorVersionAttribute = "collector.version"
-	labelPrefix       = "label."
-	labelPrefixTrim   = 6
-	newRelicProvider = "newRelic"
-	agentCollector = "infrastructure-agent"
+	CollectorNameAttribute           = "collector.name"
+	CollectorVersionAttribute        = "collector.version"
+	labelPrefix                      = "label."
+	labelPrefixTrim                  = 6
+	newRelicProvider                 = "newRelic"
+	agentCollector                   = "infrastructure-agent"
 )
 
 // EntityFwRequest stores an integration single entity payload to be processed before it gets
