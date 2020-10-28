@@ -42,6 +42,12 @@ type RegisterEntityError struct {
 	Err        error
 }
 
+// ShouldRetry checks the status code of the error and returns true if the request should be submitted again.
+func (e *RegisterEntityError) ShouldRetry() bool {
+	return e.StatusCode == StatusCodeConFailure ||
+		e.StatusCode == StatusCodeLimitExceed
+}
+
 // NewRegisterEntityError create a new instance of RegisterEntityError.
 func NewRegisterEntityError(status string, statusCode int, err error) *RegisterEntityError {
 	return &RegisterEntityError{

@@ -32,7 +32,7 @@ func NewWorker(
 	agentIDProvide id.Provide,
 	client identityapi.RegisterClient,
 	retryBo *backoff.Backoff,
-	maxRetryBo int,
+	maxRetryBo time.Duration,
 	reqsToRegisterQueue <-chan fwrequest.EntityFwRequest,
 	reqsRegisteredQueue chan<- fwrequest.EntityFwRequest,
 	maxBatchSize int,
@@ -42,7 +42,7 @@ func NewWorker(
 		agentIDProvide:      agentIDProvide,
 		client:              client,
 		retryBo:             retryBo,
-		maxRetryBo:          time.Duration(maxRetryBo) * time.Second,
+		maxRetryBo:          maxRetryBo,
 		reqsToRegisterQueue: reqsToRegisterQueue,
 		reqsRegisteredQueue: reqsRegisteredQueue,
 		maxBatchSize:        maxBatchSize,
@@ -147,10 +147,7 @@ func (w *worker) registerEntitiesWithRetry(ctx context.Context, entities []entit
 
 		e, ok := err.(*identityapi.RegisterEntityError)
 		if ok {
-			shouldRetry := e.StatusCode == identityapi.StatusCodeConFailure ||
-				e.StatusCode == identityapi.StatusCodeLimitExceed
-
-			if shouldRetry {
+			if e.ShouldRetry() {
 				retryBOAfter := w.retryBo.DurationWithMax(w.maxRetryBo)
 				wlog.WithField("retryBackoffAfter", retryBOAfter).Debug("register request retry backoff.")
 				w.retryBo.Backoff(ctx, retryBOAfter)
