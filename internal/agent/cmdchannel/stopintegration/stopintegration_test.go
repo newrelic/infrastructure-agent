@@ -4,13 +4,15 @@ package stopintegration
 
 import (
 	"context"
-	"fmt"
 	"os/exec"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/runintegration"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/commandapi"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/stoppable"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/shirou/gopsutil/process"
 	"github.com/stretchr/testify/assert"
@@ -21,19 +23,19 @@ var (
 	l = log.WithComponent("test")
 )
 
-func TestHandle_returnsErrorOnMissingPID(t *testing.T) {
+func TestHandle_returnsErrorOnMissingName(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("CC stop-intergation is not supported on Windows")
 	}
 
-	h := NewHandler(l)
+	h := NewHandler(stoppable.NewTracker(), l)
 
 	cmdArgsMissingPID := commandapi.Command{
-		Args: []byte(`{ "integration_name": "foo" }`),
+		Args: []byte(`{ "integration_args": ["foo"] }`),
 	}
 
 	err := h.Handle(context.Background(), cmdArgsMissingPID, false)
-	assert.Equal(t, cmdchannel.NewArgsErr(ErrNoIntPID).Error(), err.Error())
+	assert.Equal(t, cmdchannel.NewArgsErr(runintegration.ErrNoIntName).Error(), err.Error())
 }
 
 func TestHandle_signalStopProcess(t *testing.T) {
@@ -41,40 +43,44 @@ func TestHandle_signalStopProcess(t *testing.T) {
 		t.Skip("CC stop-intergation is not supported on Windows")
 	}
 
-	// Given a running process
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	// Given a handler with an stoppables tracker
+	tracker := stoppable.NewTracker()
+	h := NewHandler(tracker, l)
+
+	// When a process context is tracked
+	ctx := context.Background()
+	ctx, pidC := tracker.Track(ctx, "foo#")
 
 	proc := exec.CommandContext(ctx, "sleep", "5")
-	pidC := make(chan int)
+
+	// And process is started and PID is sent
+	waitForProc := make(chan struct{})
 	go func() {
 		require.NoError(t, proc.Start())
+		close(waitForProc)
 		pidC <- proc.Process.Pid
 	}()
 
-	h := NewHandler(l)
-
-	pid := <-pidC
-	cmd := commandapi.Command{
-		Args: []byte(fmt.Sprintf(`{ "pid": %d }`, pid)),
-	}
-
-	p, err := process.NewProcess(int32(pid))
+	// And process status is running or stopped
+	<-waitForProc
+	p, err := process.NewProcess(int32(proc.Process.Pid))
 	require.NoError(t, err)
-
 	st, err := p.StatusWithContext(ctx)
 	require.NoError(t, err)
-	if st != "S" && st != "R" {
-		t.Fatal("sleep command should be either running or sleep")
+	if st[0:1] != "S" && st[0:1] != "R" {
+		t.Fatal("sleep command should be either running or sleep, got: ", st)
 	}
 
-	// WHEN handler receives stop PID request
+	// WHEN stop handler receives a cmd for the tracked process
+	cmd := commandapi.Command{
+		Args: []byte(`{ "integration_name": "foo" }`),
+	}
 	err = h.Handle(context.Background(), cmd, false)
 	require.NoError(t, err)
 
 	// THEN process is stopped
+	time.Sleep(100 * time.Millisecond) // let OS update proc status
 	st, err = p.StatusWithContext(ctx)
 	require.NoError(t, err)
-	require.NotEqual(t, "S", st)
 	require.NotEqual(t, "R", st)
 }

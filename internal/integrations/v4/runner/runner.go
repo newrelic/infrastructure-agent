@@ -80,7 +80,7 @@ func NewRunner(
 	return r
 }
 
-func (r *runner) Run(ctx context.Context) {
+func (r *runner) Run(ctx context.Context, pidWChan chan<- int) {
 	r.log = illog.WithFields(LogFields(r.definition))
 	for {
 		waitForNextExecution := time.After(r.definition.Interval)
@@ -92,7 +92,7 @@ func (r *runner) Run(ctx context.Context) {
 				Error("can't fetch discovery items")
 		} else {
 			if when.All(r.definition.WhenConditions...) {
-				r.execute(ctx, values)
+				r.execute(ctx, values, pidWChan)
 			}
 		}
 
@@ -148,7 +148,7 @@ func (r *runner) heartBeat() {
 // to finish
 // For long-time running integrations, avoids starting the next
 // discover-execute cycle until all the parallel processes have ended
-func (r *runner) execute(ctx context.Context, matches *databind.Values) {
+func (r *runner) execute(ctx context.Context, matches *databind.Values, pidWChan chan<- int) {
 	def := r.definition
 
 	// If timeout configuration is set, wraps current context in a heartbeat-enabled timeout context
@@ -159,7 +159,7 @@ func (r *runner) execute(ctx context.Context, matches *databind.Values) {
 	}
 
 	// Runs all the matching integration instances
-	outputs, err := r.definition.Run(ctx, matches)
+	outputs, err := r.definition.Run(ctx, matches, pidWChan)
 	if err != nil {
 		r.log.WithError(err).Error("can't start integration")
 		return

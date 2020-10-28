@@ -62,13 +62,13 @@ func (d *Definition) PluginID(integrationName string) ids.PluginID {
 	return ids.NewDefaultInventoryPluginID(d.Name)
 }
 
-func (d *Definition) Run(ctx context.Context, bind *databind.Values) ([]Output, error) {
+func (d *Definition) Run(ctx context.Context, bind *databind.Values, pidC chan<- int) ([]Output, error) {
 	logger := elog.WithField("integration_name", d.Name)
 	logger.Debug("Running task.")
 	// no discovery data: execute a single instance
 	if bind == nil {
 		logger.Debug("Running single instance.")
-		return []Output{{Receive: d.runnable.Execute(ctx)}}, nil
+		return []Output{{Receive: d.runnable.Execute(ctx, pidC)}}, nil
 	}
 
 	// apply discovered data to run multiple instances
@@ -138,7 +138,7 @@ func (d *Definition) Run(ctx context.Context, bind *databind.Values) ([]Output, 
 		}
 
 		logger.Debug("Executing task.")
-		taskOutput := dc.Executor.Execute(ctx)
+		taskOutput := dc.Executor.Execute(ctx, nil)
 		if removeFile != nil {
 			go removeFile(taskOutput.Done)
 		}

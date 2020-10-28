@@ -35,7 +35,8 @@ const (
 )
 
 type Executor interface {
-	Execute(ctx context.Context) executor.OutputReceive
+	// When writable a PID channel is provided, generated PID will be written.
+	Execute(ctx context.Context, pidChan chan<- int) executor.OutputReceive
 }
 
 type ParseProcessOutput func(line string) (sanitizedLine string, severity logrus.Level)
@@ -133,7 +134,7 @@ func (s *Supervisor) startBackgroundProcess(ctx ctx2.Context, executor Executor)
 
 func (s *Supervisor) startProcess(ctx ctx2.Context, executor Executor) cmdExitStatus {
 	s.log.Debug("Launching process.")
-	cmdOutputPipe := executor.Execute(ctx)
+	cmdOutputPipe := executor.Execute(ctx, nil)
 
 	go s.handleStdOut(cmdOutputPipe.Stdout)
 	go s.handleStdErr(cmdOutputPipe.Stderr)
