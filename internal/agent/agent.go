@@ -352,6 +352,7 @@ func NewAgent(
 		userAgent,
 		cfg.PayloadCompressionLevel,
 		httpClient,
+		httpClient.Do,
 	)
 	if err != nil {
 		return nil, err

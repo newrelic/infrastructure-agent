@@ -270,6 +270,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		userAgent,
 		c.PayloadCompressionLevel,
 		httpClient,
+		httpClient.Do,
 	)
 	if err != nil {
 		return err

@@ -112,6 +112,7 @@ func NewRegisterClient(
 	svcUrl, licenseKey, userAgent string,
 	compressionLevel int,
 	httpClient *http.Client,
+	httpClientRemoveMe backendhttp.Client,
 ) (RegisterClient, error) {
 	if compressionLevel < gzip.NoCompression || compressionLevel > gzip.BestCompression {
 		return nil, fmt.Errorf("gzip: invalid compression level: %d", compressionLevel)
@@ -124,7 +125,7 @@ func NewRegisterClient(
 		svcUrl:           strings.TrimSuffix(svcUrl, "/"),
 		licenseKey:       licenseKey,
 		userAgent:        userAgent,
-		httpClient:       httpClient.Do,
+		httpClient:       httpClientRemoveMe,
 		compressionLevel: compressionLevel,
 		apiClient:        identityClient.DefaultApi,
 	}, nil
