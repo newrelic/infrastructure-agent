@@ -200,6 +200,7 @@ func (ph PrometheusHistogram) derivedFrom(metric protocol.Metric) ([]telemetry.M
 				Min:        math.NaN(),
 				Max:        math.NaN(),
 				Timestamp:  metric.Time(),
+				Interval:   sumCount.Interval,
 			})
 		} else {
 			telemetryLogger.WithField("name", metricName).WithField("metric-type", metric.Type).Debug(noCalculationMadeErrMsg)
@@ -240,18 +241,18 @@ func (p PrometheusSummary) derivedFrom(metric protocol.Metric) ([]telemetry.Metr
 
 	if p.calculate != nil {
 		metricName := metric.Name + "_sum"
-		sumCount, ok := p.calculate.get(metricName, metric.Attributes, value.SampleSum, metric.Time())
+		sumMetric, ok := p.calculate.get(metricName, metric.Attributes, value.SampleSum, metric.Time())
 
 		if ok {
 			result = append(result, telemetry.Summary{
 				Name:       metricName,
 				Attributes: metric.Attributes,
 				Count:      1,
-				Sum:        sumCount.Value,
+				Sum:        sumMetric.Value,
 				Min:        math.NaN(),
 				Max:        math.NaN(),
 				Timestamp:  metric.Time(),
-				Interval:   metric.IntervalDuration(),
+				Interval:   sumMetric.Interval,
 			})
 		} else {
 			telemetryLogger.WithField("name", metricName).WithField("metric-type", metric.Type).Debug(noCalculationMadeErrMsg)
