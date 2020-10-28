@@ -120,9 +120,8 @@ func NewEntityFwRequest(
 	}
 	if !id.IsEmpty() {
 		r.RegisteredWith(id)
+		r.populateCommonAttributes(intMeta, agentVersion)
 	}
-
-	r.populateCommonAttributes(intMeta, agentVersion)
 
 	return r
 }
