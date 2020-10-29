@@ -170,31 +170,6 @@ func (s *srv) requiresAck(c commandapi.Command, agentID entity.ID) bool {
 		return false
 	}
 
-	s.acksLock.RLock()
-	_, ok := s.acks[c.ID]
-	s.acksLock.RUnlock()
-	return !ok
-}
-
-func (s *srv) ack(agentID entity.ID, c commandapi.Command) error {
-	err := s.client.AckCommand(agentID, c.ID)
-	if err == nil {
-		s.acksLock.Lock()
-		s.acks[c.ID] = struct{}{}
-		s.acksLock.Unlock()
-	}
-	return err
-}
-
-func (s *srv) notReadyToHandle(c commandapi.Command, agentID entity.ID) bool {
-	return c.ID != 0 && agentID.IsEmpty()
-}
-
-func (s *srv) requiresAck(c commandapi.Command, agentID entity.ID) bool {
-	if c.ID == 0 || agentID.IsEmpty() {
-		return false
-	}
-
 	_, ok := s.acks[c.ID]
 	return !ok
 }
