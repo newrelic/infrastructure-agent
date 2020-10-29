@@ -7,7 +7,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
 	"time"
+
+	"github.com/tevino/abool"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
@@ -23,7 +26,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/sirupsen/logrus"
-	"github.com/tevino/abool"
 )
 
 var (
@@ -53,6 +55,8 @@ type emitter struct {
 	reqsQueue            chan fwrequest.FwRequest
 	reqsToRegisterQueue  chan fwrequest.EntityFwRequest
 	reqsRegisteredQueue  chan fwrequest.EntityFwRequest
+	retryBo              *backoff.Backoff
+	maxRetryBo           time.Duration
 	idCache              entity.KnownIDs
 	metricsSender        MetricsSender
 	agentContext         agent.AgentContext
@@ -72,6 +76,8 @@ func NewEmitter(
 	registerClient identityapi.RegisterClient) Emitter {
 
 	return &emitter{
+		retryBo:              backoff.NewDefaultBackoff(),
+		maxRetryBo:           time.Duration(agentContext.Config().RegisterMaxRetryBoSecs) * time.Second,
 		reqsQueue:            make(chan fwrequest.FwRequest, defaultRequestsQueueLen),
 		reqsToRegisterQueue:  make(chan fwrequest.EntityFwRequest, defaultRequestsToRegisterQueueLen),
 		reqsRegisteredQueue:  make(chan fwrequest.EntityFwRequest, defaultRequestsRegisteredQueueLen),
@@ -100,7 +106,15 @@ func (e *emitter) lazyLoadProcessor() {
 		go e.runFwReqConsumer(ctx)
 		go e.runReqsRegisteredConsumer(ctx)
 		for w := 0; w < e.registerWorkers; w++ {
-			regWorker := register.NewWorker(e.agentContext.Identity, e.registerClient, e.reqsToRegisterQueue, e.reqsRegisteredQueue, e.registerMaxBatchSize, e.registerMaxBatchTime)
+			regWorker := register.NewWorker(
+				e.agentContext.Identity,
+				e.registerClient,
+				e.retryBo,
+				e.maxRetryBo,
+				e.reqsToRegisterQueue,
+				e.reqsRegisteredQueue,
+				e.registerMaxBatchSize,
+				e.registerMaxBatchTime)
 			go regWorker.Run(ctx)
 		}
 	}
@@ -118,6 +132,7 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 
 		case req := <-e.reqsQueue:
 			for _, ds := range req.Data.DataSets {
+
 				eKey, err := ds.Entity.ResolveUniqueEntityKey(e.agentContext.EntityKey(), e.agentContext.IDLookup(), req.FwRequestMeta.EntityRewrite, 4)
 				if err != nil {
 					elog.

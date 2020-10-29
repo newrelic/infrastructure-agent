@@ -23,7 +23,7 @@ func TestNewProvideIDs(t *testing.T) {
 	assert.NoError(t, err)
 
 	require.Len(t, ids, 1)
-	assert.Equal(t, registerEntities[0].Key, ids[0].Key)
+	assert.Equal(t, registerEntities[0].Key, entity.Key(ids[0].Name))
 	assert.Equal(t, entity.ID(1), ids[0].ID, "incremental register should return 1 as first id")
 }
 
