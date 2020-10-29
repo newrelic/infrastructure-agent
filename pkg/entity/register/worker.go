@@ -17,6 +17,7 @@ var (
 	wlog = log.WithComponent("RegisterWorker")
 )
 
+// WorkerConfig will provide all configuration parameters for a register worker.
 type WorkerConfig struct {
 	MaxBatchSize      int
 	MaxBatchSizeBytes int
