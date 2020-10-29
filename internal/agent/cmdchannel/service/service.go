@@ -185,3 +185,24 @@ func (s *srv) ack(agentID entity.ID, c commandapi.Command) error {
 	}
 	return err
 }
+
+func (s *srv) notReadyToHandle(c commandapi.Command, agentID entity.ID) bool {
+	return c.ID != 0 && agentID.IsEmpty()
+}
+
+func (s *srv) requiresAck(c commandapi.Command, agentID entity.ID) bool {
+	if c.ID == 0 || agentID.IsEmpty() {
+		return false
+	}
+
+	_, ok := s.acks[c.ID]
+	return !ok
+}
+
+func (s *srv) ack(agentID entity.ID, c commandapi.Command) error {
+	err := s.client.AckCommand(agentID, c.ID)
+	if err == nil {
+		s.acks[c.ID] = struct{}{}
+	}
+	return err
+}

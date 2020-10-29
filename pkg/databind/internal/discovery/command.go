@@ -6,8 +6,9 @@ package discovery
 import (
 	"errors"
 	"fmt"
-	"github.com/google/shlex"
 	"time"
+
+	"github.com/google/shlex"
 )
 
 type Command struct {

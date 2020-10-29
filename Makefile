@@ -1,5 +1,6 @@
 # Standard variables defining directories and other useful stuff.
 PROJECT_WORKSPACE	?= $(CURDIR)
+INCLUDE_BUILD_DIR	?= $(PROJECT_WORKSPACE)/build
 PROJECT_NAME		:= newrelic-infra
 TARGET_DIR			= $(PROJECT_WORKSPACE)/target
 TARGET_DIR_CENTOS5	= $(TARGET_DIR)/el_5
@@ -12,9 +13,9 @@ GO_BIN				?= go
 GO_BIN_1_9			?= go1.9.4
 
 # Scripts for building the Agent
-include $(CURDIR)/build/infra_build.mk
+include $(INCLUDE_BUILD_DIR)/infra_build.mk
 
 # Scripts for getting On Host Integrations
 # https://docs.newrelic.com/docs/integrations/host-integrations/getting-started/introduction-host-integrations
-include $(CURDIR)/build/embed_ohis.mk
+include $(INCLUDE_BUILD_DIR)/embed_ohis.mk
 

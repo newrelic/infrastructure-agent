@@ -3,6 +3,7 @@
 package entity
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -81,6 +82,28 @@ func TestKnownIDs_Get_UpdatesExpiration(t *testing.T) {
 	setNow(2, 05, 01)
 	_, ok = kn.Get("entity-1")
 	assert.False(t, ok)
+}
+
+func TestKnownIDs_Get_UpdateExpiration_concurrency(t *testing.T) {
+	// Given a Key to IDs map
+	kn := NewKnownIDs()
+
+	// And a known entity recently added
+	setNow(0, 00, 00)
+	kn.Put("entity-1", 12345)
+
+	// When it is accessed for multiple threads
+	wg := &sync.WaitGroup{}
+	wg.Add(10)
+	for i := 0; i < 10; i++ {
+		go func() {
+			id, ok := kn.Get("entity-1")
+			assert.True(t, ok)
+			assert.EqualValues(t, id, 12345)
+			wg.Done()
+		}()
+	}
+	wg.Wait()
 }
 
 func TestKnownIDs_PutType(t *testing.T) {

@@ -7,7 +7,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
 	"time"
+
+	"github.com/tevino/abool"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
@@ -17,14 +20,12 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
-	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/register"
 	"github.com/newrelic/infrastructure-agent/pkg/fwrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/sirupsen/logrus"
-	"github.com/tevino/abool"
 )
 
 var (
@@ -54,6 +55,8 @@ type emitter struct {
 	reqsQueue            chan fwrequest.FwRequest
 	reqsToRegisterQueue  chan fwrequest.EntityFwRequest
 	reqsRegisteredQueue  chan fwrequest.EntityFwRequest
+	retryBo              *backoff.Backoff
+	maxRetryBo           time.Duration
 	idCache              entity.KnownIDs
 	metricsSender        MetricsSender
 	agentContext         agent.AgentContext
@@ -73,6 +76,8 @@ func NewEmitter(
 	registerClient identityapi.RegisterClient) Emitter {
 
 	return &emitter{
+		retryBo:              backoff.NewDefaultBackoff(),
+		maxRetryBo:           time.Duration(agentContext.Config().RegisterMaxRetryBoSecs) * time.Second,
 		reqsQueue:            make(chan fwrequest.FwRequest, defaultRequestsQueueLen),
 		reqsToRegisterQueue:  make(chan fwrequest.EntityFwRequest, defaultRequestsToRegisterQueueLen),
 		reqsRegisteredQueue:  make(chan fwrequest.EntityFwRequest, defaultRequestsRegisteredQueueLen),
@@ -101,7 +106,15 @@ func (e *emitter) lazyLoadProcessor() {
 		go e.runFwReqConsumer(ctx)
 		go e.runReqsRegisteredConsumer(ctx)
 		for w := 0; w < e.registerWorkers; w++ {
-			regWorker := register.NewWorker(e.agentContext.Identity, e.registerClient, e.reqsToRegisterQueue, e.reqsRegisteredQueue, e.registerMaxBatchSize, e.registerMaxBatchTime)
+			regWorker := register.NewWorker(
+				e.agentContext.Identity,
+				e.registerClient,
+				e.retryBo,
+				e.maxRetryBo,
+				e.reqsToRegisterQueue,
+				e.reqsRegisteredQueue,
+				e.registerMaxBatchSize,
+				e.registerMaxBatchTime)
 			go regWorker.Run(ctx)
 		}
 	}
@@ -112,7 +125,6 @@ func (e *emitter) lazyLoadProcessor() {
 func (e *emitter) runFwReqConsumer(ctx context.Context) {
 	defer e.isProcessing.UnSet()
 
-	var eKey entity.Key
 	for {
 		select {
 		case _ = <-ctx.Done():
@@ -120,14 +132,25 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 
 		case req := <-e.reqsQueue:
 			for _, ds := range req.Data.DataSets {
-				// local entity
-				if ds.Entity.Name == "" {
-					ds.Entity.Name = e.agentContext.EntityKey()
+
+				eKey, err := ds.Entity.ResolveUniqueEntityKey(e.agentContext.EntityKey(), e.agentContext.IDLookup(), req.FwRequestMeta.EntityRewrite, 4)
+				if err != nil {
+					elog.
+						WithError(err).
+						WithField("integration", req.Definition.Name).
+						Errorf("couldn't determine a unique entity Key")
+					continue
 				}
 
-				// TODO use host.ResolveUniqueEntityKey instead!
-				eKey = entity.Key(ds.Entity.Name)
-				eID, found := e.idCache.Get(eKey)
+				var eID entity.ID
+				var found bool
+
+				if ds.Entity.IsAgent() {
+					eID, found = e.agentContext.Identity().ID, true
+				} else {
+					eID, found = e.idCache.Get(eKey)
+				}
+
 				if found {
 					select {
 					case <-ctx.Done():
@@ -137,6 +160,7 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 					}
 					continue
 				}
+
 				select {
 				case <-ctx.Done():
 					return
@@ -170,6 +194,17 @@ func (e *emitter) processEntityFwRequest(r fwrequest.EntityFwRequest) {
 			Errorf("cannot determine agent short name")
 	}
 	replaceEntityName(r.Data.Entity, r.EntityRewrite, agentShortName)
+
+	key, err := r.Data.Entity.Key()
+	if err != nil {
+		elog.
+			WithError(err).
+			WithField("integration", r.Definition.Name).
+			Errorf("cannot determine entity")
+	} else {
+		e.idCache.CleanOld()
+		e.idCache.Put(key, r.ID())
+	}
 
 	labels, annos := r.LabelsAndExtraAnnotations()
 
@@ -253,8 +288,8 @@ func attributesFromEvent(event protocol.EventData, builder *[]func(protocol.Even
 }
 
 // Replace entity name by applying entity rewrites and replacing loopback
-func replaceEntityName(entity protocol.Entity, entityRewrite []data.EntityRewrite, agentShortName string) {
-	newName := host.ApplyEntityRewrite(entity.Name, entityRewrite)
+func replaceEntityName(entity entity.Fields, entityRewrite data.EntityRewrites, agentShortName string) {
+	newName := entityRewrite.Apply(entity.Name)
 	newName = http.ReplaceLocalhost(newName, agentShortName)
 	entity.Name = newName
 }
@@ -277,12 +312,12 @@ func ParsePayloadV4(raw []byte, ffManager feature_flags.Retriever) (dataV4 proto
 }
 
 // Returns a composed error which describes all the errors found during the emit process of each data set
-func composeEmitError(emitErrs []error, dataSetLenght int) error {
+func composeEmitError(emitErrs []error, dataSetLength int) error {
 	if len(emitErrs) == 0 {
 		return nil
 	}
 
-	composedError := fmt.Sprintf("%d out of %d datasets could not be emitted. Reasons: ", len(emitErrs), dataSetLenght)
+	composedError := fmt.Sprintf("%d out of %d datasets could not be emitted. Reasons: ", len(emitErrs), dataSetLength)
 	messages := map[string]struct{}{}
 
 	for _, err := range emitErrs {

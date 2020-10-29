@@ -5,6 +5,7 @@ package telemetryapi
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"testing"
 	"time"
@@ -42,7 +43,7 @@ func BenchmarkSpansJSON(b *testing.B) {
 }
 
 func testHarvesterSpans(t testing.TB, h *Harvester, expect string) {
-	reqs := h.swapOutSpans()
+	reqs := h.swapOutSpans(context.Background())
 	if nil == reqs {
 		if expect != "null" {
 			t.Error("nil spans", expect)

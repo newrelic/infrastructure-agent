@@ -200,6 +200,7 @@ func (ph PrometheusHistogram) derivedFrom(metric protocol.Metric) ([]telemetry.M
 				Min:        math.NaN(),
 				Max:        math.NaN(),
 				Timestamp:  metric.Time(),
+				Interval:   sumCount.Interval,
 			})
 		} else {
 			telemetryLogger.WithField("name", metricName).WithField("metric-type", metric.Type).Debug(noCalculationMadeErrMsg)
@@ -238,36 +239,44 @@ func (p PrometheusSummary) derivedFrom(metric protocol.Metric) ([]telemetry.Metr
 		return nil, err
 	}
 
-	result = append(result, telemetry.Summary{
-		Name:       metric.Name + "_sum",
-		Attributes: metric.Attributes,
-		Count:      1,
-		Sum:        value.SampleSum,
-		Min:        math.NaN(),
-		Max:        math.NaN(),
-		Timestamp:  metric.Time(),
-		Interval:   metric.IntervalDuration(),
-	})
-
 	if p.calculate != nil {
-		metricName := metric.Name + "_count"
+		metricName := metric.Name + "_sum"
+		sumMetric, ok := p.calculate.get(metricName, metric.Attributes, value.SampleSum, metric.Time())
+
+		if ok {
+			result = append(result, telemetry.Summary{
+				Name:       metricName,
+				Attributes: metric.Attributes,
+				Count:      1,
+				Sum:        sumMetric.Value,
+				Min:        math.NaN(),
+				Max:        math.NaN(),
+				Timestamp:  metric.Time(),
+				Interval:   sumMetric.Interval,
+			})
+		} else {
+			telemetryLogger.WithField("name", metricName).WithField("metric-type", metric.Type).Debug(noCalculationMadeErrMsg)
+		}
+
+		metricName = metric.Name + "_count"
 		countMetric, ok := p.calculate.get(metricName, metric.Attributes, value.SampleCount, metric.Time())
+
 		if ok {
 			result = append(result, countMetric)
 		} else {
 			telemetryLogger.WithField("name", metricName).WithField("metric-type", metric.Type).Debug(noCalculationMadeErrMsg)
 		}
-	}
 
-	for _, q := range value.Quantiles {
-		quantileAttrs := metric.CopyAttrs()
-		quantileAttrs["quantile"] = fmt.Sprintf("%g", q.Quantile)
-		result = append(result, telemetry.Gauge{
-			Name:       metric.Name,
-			Attributes: quantileAttrs,
-			Value:      q.Value,
-			Timestamp:  metric.Time(),
-		})
+		for _, q := range value.Quantiles {
+			quantileAttrs := metric.CopyAttrs()
+			quantileAttrs["quantile"] = fmt.Sprintf("%g", q.Quantile)
+			result = append(result, telemetry.Gauge{
+				Name:       metric.Name,
+				Attributes: quantileAttrs,
+				Value:      q.Value,
+				Timestamp:  metric.Time(),
+			})
+		}
 	}
 	return result, nil
 }

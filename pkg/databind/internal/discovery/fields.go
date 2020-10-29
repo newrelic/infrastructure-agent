@@ -5,8 +5,9 @@ package discovery
 
 import (
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"regexp"
+
+	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 )
 
 type FieldsMatcher struct {

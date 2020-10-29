@@ -3,6 +3,7 @@
 package dm
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"time"
 )
@@ -23,7 +24,7 @@ type IntegrationProcessor struct {
 func (p *IntegrationProcessor) ProcessMetrics(
 	metrics []protocol.Metric,
 	common protocol.Common,
-	entity protocol.Entity) []protocol.Metric {
+	entity entity.Fields) []protocol.Metric {
 	now := time.Now().Unix()
 
 	for i := range metrics {

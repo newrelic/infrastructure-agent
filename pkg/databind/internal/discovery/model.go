@@ -3,7 +3,9 @@
 
 package discovery
 
-import "github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
+import (
+	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
+)
 
 type Discovery struct {
 	Variables         data.Map             `json:"variables"`

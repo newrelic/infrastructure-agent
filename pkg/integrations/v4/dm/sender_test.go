@@ -183,12 +183,12 @@ func Test_sender_SendPrometheusSummary(t *testing.T) {
 		telemetry.Summary{
 			Name:       "PrometheusSummaryMetric_sum",
 			Attributes: map[string]interface{}{"att_key": "att_value"},
-			Sum:        float64(2),
+			Sum:        float64(0),
 			Min:        math.NaN(),
 			Max:        math.NaN(),
 			Count:      1,
 			Timestamp:  cannedDate.Add(time.Second),
-			Interval:   cannedDuration,
+			Interval:   1 * time.Second,
 		},
 		telemetry.Count{
 			Name:           "PrometheusSummaryMetric_count",
@@ -273,6 +273,7 @@ func Test_sender_SendPrometheusHistogram(t *testing.T) {
 			Max:        math.NaN(),
 			Count:      1,
 			Timestamp:  cannedDate.Add(time.Second),
+			Interval:   1 * time.Second,
 		},
 		telemetry.Count{
 			Name:           "PrometheusHistogramMetric_bucket",

@@ -2,18 +2,26 @@ package register
 
 import (
 	"context"
+	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/id"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/fwrequest"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
+)
+
+var (
+	wlog = log.WithComponent("RegisterWorker")
 )
 
 type worker struct {
 	agentIDProvide      id.Provide
 	client              identityapi.RegisterClient
+	retryBo             *backoff.Backoff
+	maxRetryBo          time.Duration
 	reqsToRegisterQueue <-chan fwrequest.EntityFwRequest
 	reqsRegisteredQueue chan<- fwrequest.EntityFwRequest
 	maxBatchSize        int
@@ -23,6 +31,8 @@ type worker struct {
 func NewWorker(
 	agentIDProvide id.Provide,
 	client identityapi.RegisterClient,
+	retryBo *backoff.Backoff,
+	maxRetryBo time.Duration,
 	reqsToRegisterQueue <-chan fwrequest.EntityFwRequest,
 	reqsRegisteredQueue chan<- fwrequest.EntityFwRequest,
 	maxBatchSize int,
@@ -31,6 +41,8 @@ func NewWorker(
 	return &worker{
 		agentIDProvide:      agentIDProvide,
 		client:              client,
+		retryBo:             retryBo,
+		maxRetryBo:          maxRetryBo,
 		reqsToRegisterQueue: reqsToRegisterQueue,
 		reqsRegisteredQueue: reqsRegisteredQueue,
 		maxBatchSize:        maxBatchSize,
@@ -61,40 +73,53 @@ func (w *worker) Run(ctx context.Context) {
 
 			if batchSize == w.maxBatchSize {
 				timer.Reset(w.maxBatchDuration)
-				w.send(batch, &batchSize)
+				w.send(ctx, batch, &batchSize)
 			}
 
 		case <-timer.C:
 			if len(batch) > 0 {
-				w.send(batch, &batchSize)
+				w.send(ctx, batch, &batchSize)
 			}
 			timer.Reset(w.maxBatchDuration)
 		}
 	}
 }
 
-func (w *worker) send(batch map[entity.Key]fwrequest.EntityFwRequest, batchSize *int) {
+func (w *worker) send(ctx context.Context, batch map[entity.Key]fwrequest.EntityFwRequest, batchSize *int) {
 	defer w.resetBatch(batch, batchSize)
 
-	var entities []protocol.Entity
+	var entities []entity.Fields
 	for _, r := range batch {
 		entities = append(entities, r.Data.Entity)
 	}
-	responses, _, errClient := w.client.RegisterBatchEntities(w.agentIDProvide().ID, entities)
-	if errClient != nil {
-		// TODO error handling
-		return
-	}
+
+	responses := w.registerEntitiesWithRetry(ctx, entities)
 
 	for _, resp := range responses {
-		if resp.Err != "" {
-			// TODO error handling
+		if resp.ErrorMsg != "" {
+			wlog.WithError(fmt.Errorf(resp.ErrorMsg)).
+				WithField("entityName", resp.Name).
+				Errorf("failed to register entity")
 			continue
 		}
 
-		r, ok := batch[resp.Key]
+		if len(resp.Warnings) > 0 {
+			for _, warn := range resp.Warnings {
+				wlog.
+					WithField("entityName", resp.Name).
+					WithField("entityID", resp.ID).
+					Errorf("entity registered with warnings: %s", warn)
+			}
+		}
+
+		r, ok := batch[entity.Key(resp.Name)]
 		if !ok {
-			// TODO error handling
+			wlog.
+				WithField("entityName", resp.Name).
+				WithField("entityID", resp.ID).
+				WithField("entityName", resp.Name).
+				Errorf("entityName returned by register not found in the entities batch")
+			continue
 		} else {
 			r.RegisteredWith(resp.ID)
 			w.reqsRegisteredQueue <- r
@@ -102,8 +127,50 @@ func (w *worker) send(batch map[entity.Key]fwrequest.EntityFwRequest, batchSize 
 	}
 }
 
+// registerEntitiesWithRetry will submit entities to the backend for registration.
+// In case of StatusCodeConFailure or StatusCodeLimitExceed errors it will retry with backoff.
+// for other errors, data will be discarded.
+func (w *worker) registerEntitiesWithRetry(ctx context.Context, entities []entity.Fields) []identityapi.RegisterEntityResponse {
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+		}
+
+		// Backoff object it's shared between workers. If another worker is in backoff,
+		// the current will also backoff.
+		attempt := w.retryBo.Attempt()
+		if attempt > 0 {
+			retryBOAfter := w.retryBo.ForAttemptWithMax(attempt, w.maxRetryBo)
+			wlog.WithField("retryBackoffAfter", retryBOAfter).Debug("register request retry backoff.")
+			w.retryBo.Backoff(ctx, retryBOAfter)
+		}
+
+		var err error
+		responses, err := w.client.RegisterBatchEntities(w.agentIDProvide().ID, entities)
+		if err == nil {
+			w.retryBo.Reset()
+			return responses
+		}
+
+		e, ok := err.(*identityapi.RegisterEntityError)
+		if ok {
+			if e.ShouldRetry() {
+				w.retryBo.IncreaseAttempt()
+				continue
+			}
+		}
+		wlog.WithError(err).
+			Error("entity register request error, discarding entities.")
+		break
+	}
+	return nil
+}
+
 func (w *worker) resetBatch(batch map[entity.Key]fwrequest.EntityFwRequest, batchSize *int) {
-	zero := 0
-	batchSize = &zero
-	batch = map[entity.Key]fwrequest.EntityFwRequest{}
+	*batchSize = 0
+	for key := range batch {
+		delete(batch, key)
+	}
 }

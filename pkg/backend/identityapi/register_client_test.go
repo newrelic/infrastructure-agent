@@ -17,7 +17,6 @@ import (
 
 	"github.com/antihax/optional"
 	"github.com/newrelic/infra-identity-client-go/identity"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
@@ -79,7 +78,7 @@ func TestRegisterRetryTime(t *testing.T) {
 		return resp, nil
 	}
 
-	client, err := NewRegisterClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, mockHttp)
+	client, err := NewRegisterClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, nil, mockHttp)
 	assert.NoError(t, err)
 
 	entities, retryTime, err := client.RegisterEntitiesRemoveMe(testAgentEntityId, testRegisterEntity)
@@ -95,7 +94,7 @@ func TestRegisterOk(t *testing.T) {
 		return getRegisterResponse(testRegisterEntityResponse)
 	}
 
-	client, err := NewRegisterClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, mockHttp)
+	client, err := NewRegisterClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, nil, mockHttp)
 	assert.NoError(t, err)
 
 	entities, retryTime, err := client.RegisterEntitiesRemoveMe(testAgentEntityId, testRegisterEntity)
@@ -218,8 +217,8 @@ func TestRegisterClient_RegisterEntity(t *testing.T) {
 		userAgent:  "ExpectedUserAgent",
 	}
 
-	ent := protocol.Entity{
-		Type:        expectedRegisterRequest.EntityType,
+	ent := entity.Fields{
+		Type:        entity.Type(expectedRegisterRequest.EntityType),
 		Name:        expectedRegisterRequest.EntityName,
 		DisplayName: expectedRegisterRequest.DisplayName,
 		Metadata: map[string]interface{}{
@@ -237,8 +236,8 @@ func TestRegisterClient_RegisterEntity(t *testing.T) {
 	expectedEntityID := entity.ID(entID)
 	assert.Equal(t, expectedEntityID, resp.ID)
 
-	expectedEntityKey := entity.Key(expectedRegisterRequest.EntityName)
-	assert.Equal(t, expectedEntityKey, resp.Key)
+	expectedEntityName := expectedRegisterRequest.EntityName
+	assert.Equal(t, expectedEntityName, resp.Name)
 
 	mc.AssertExpectations(t)
 }
@@ -260,7 +259,7 @@ func TestRegisterClient_RegisterEntity_err(t *testing.T) {
 	}
 
 	agentEntityID := entity.ID(12231)
-	resp, err := client.RegisterEntity(agentEntityID, protocol.Entity{})
+	resp, err := client.RegisterEntity(agentEntityID, entity.Fields{})
 	assert.EqualError(t, err, expectedError.Error())
 	assert.Equal(t, RegisterEntityResponse{}, resp)
 }

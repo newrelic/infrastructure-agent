@@ -216,10 +216,10 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 
 	userAgent := agent.GenerateUserAgent("New Relic Infrastructure Agent", buildVersion)
 	transport := backendhttp.BuildTransport(c, backendhttp.ClientTimeout)
-	httpClient := backendhttp.GetHttpClient(backendhttp.ClientTimeout, transport).Do
+	httpClient := backendhttp.GetHttpClient(backendhttp.ClientTimeout, transport)
 	cmdChannelURL := strings.TrimSuffix(c.CommandChannelURL, "/")
 	ccSvcURL := fmt.Sprintf("%s%s", cmdChannelURL, c.CommandChannelEndpoint)
-	caClient := commandapi.NewClient(ccSvcURL, c.License, userAgent, httpClient)
+	caClient := commandapi.NewClient(ccSvcURL, c.License, userAgent, httpClient.Do)
 	ffManager := feature_flags.NewManager(c.Features)
 	il := newInstancesLookup(integrationCfg)
 
@@ -272,6 +272,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		userAgent,
 		c.PayloadCompressionLevel,
 		httpClient,
+		httpClient.Do,
 	)
 	if err != nil {
 		return err
