@@ -36,8 +36,9 @@ func FromCmdSlice(cmd []string, cfg *Config) Executor {
 // Execute runs the command in background, sending by a channel the standard output and error, as well as any execution
 // error may happen (task can't start, task is killed...).
 // The executed process can be cancelled via the provided Context.
+// When writable PID channel is provided, generated PID will be written, so process could be signaled by 3rd parties.
 // When the process ends, all the channels are closed.
-func (r *Executor) Execute(ctx context.Context) OutputReceive {
+func (r *Executor) Execute(ctx context.Context, pidChan chan<- int) OutputReceive {
 	out, receiver := NewOutput()
 	commandCtx, cancelCommand := context.WithCancel(ctx)
 
@@ -90,6 +91,10 @@ func (r *Executor) Execute(ctx context.Context) OutputReceive {
 
 		if err := cmd.Start(); err != nil {
 			out.Errors <- err
+		}
+
+		if pidChan != nil {
+			pidChan <- cmd.Process.Pid
 		}
 
 		// Waits for the command to finish (or be externally cancelled) and closes

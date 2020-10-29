@@ -14,6 +14,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/constants"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/stoppable"
 	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/fs"
@@ -106,6 +107,7 @@ type Manager struct {
 	featuresCache   runner.FeaturesCache
 	definitionQueue <-chan integration.Definition
 	handleCmdReq    cmdrequest.HandleFn
+	tracker         *stoppable.Tracker
 }
 
 // groupContext pairs a runner.Group with its cancellation context
@@ -191,6 +193,7 @@ func NewManager(cfg Configuration, emitter emitter.Emitter, il integration.Insta
 		featuresCache:   make(runner.FeaturesCache),
 		definitionQueue: definitionQ,
 		handleCmdReq:    cmdrequest.NewHandleFn(definitionQ, il, illog),
+		tracker:         stoppable.NewTracker(),
 	}
 
 	// Loads all the configuration files in the passed configFolders
@@ -306,7 +309,12 @@ func (mgr *Manager) handleRequestsQueue(ctx context.Context) {
 
 		case def := <-mgr.definitionQueue:
 			r := runner.NewRunner(def, mgr.emitter, nil, nil, mgr.handleCmdReq)
-			go r.Run(ctx)
+			// tracking so cmd requests can be stopped by hash
+			runCtx, pidWChan := mgr.tracker.Track(ctx, def.CmdChannelHash)
+			go func(hash string) {
+				r.Run(runCtx, pidWChan)
+				mgr.tracker.Untrack(hash)
+			}(def.CmdChannelHash)
 		}
 	}
 }

@@ -227,7 +227,8 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	definitionQ := make(chan integration.Definition, 100)
 
 	// Command channel handlers
-	boHandler := ccBackoff.NewHandler()
+	backoffSecsC := make(chan int, 1) // 1 won't block on initial cmd-channel fetch
+	boHandler := ccBackoff.NewHandler(backoffSecsC)
 	ffHandle := fflag.NewHandler(c, ffManager, wlog.WithComponent("FFHandler"))
 	ffHandler := cmdchannel.NewCmdHandler("set_feature_flag", ffHandle.Handle)
 	riHandler := runintegration.NewHandler(definitionQ, il, wlog.WithComponent("runintegration.Handler"))
@@ -235,6 +236,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	ccService := service.NewService(
 		caClient,
 		c.CommandChannelIntervalSec,
+		backoffSecsC,
 		boHandler,
 		ffHandler,
 		riHandler,

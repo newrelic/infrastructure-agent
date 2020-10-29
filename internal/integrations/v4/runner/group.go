@@ -55,7 +55,7 @@ func NewGroup(
 // provided context
 func (g *Group) Run(ctx context.Context) (hasStartedAnyOHI bool) {
 	for _, integr := range g.integrations {
-		go NewRunner(integr, g.emitter, g.discovery, g.handleErrorsProvide, g.cmdReqHandle).Run(ctx)
+		go NewRunner(integr, g.emitter, g.discovery, g.handleErrorsProvide, g.cmdReqHandle).Run(ctx, nil)
 		hasStartedAnyOHI = true
 	}
 

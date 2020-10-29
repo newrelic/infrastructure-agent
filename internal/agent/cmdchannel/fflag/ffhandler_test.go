@@ -222,7 +222,7 @@ func TestSrv_InitialFetch_EnablesRegister(t *testing.T) {
 	c := config.Config{RegisterEnabled: false}
 	h := NewHandler(&c, feature_flags.NewManager(nil), l)
 	ffHandler := cmdchannel.NewCmdHandler("set_feature_flag", h.Handle)
-	s := service.NewService(cmdchanneltest.SuccessClient(serializedCmds), 0, ffHandler)
+	s := service.NewService(cmdchanneltest.SuccessClient(serializedCmds), 0, make(chan int, 1), ffHandler)
 
 	_, err := s.InitialFetch(context.Background())
 	assert.NoError(t, err)
@@ -249,7 +249,7 @@ func TestSrv_InitialFetch_DisablesRegister(t *testing.T) {
 	c := config.Config{RegisterEnabled: true}
 	h := NewHandler(&c, feature_flags.NewManager(nil), l)
 	ffHandler := cmdchannel.NewCmdHandler("set_feature_flag", h.Handle)
-	s := service.NewService(cmdchanneltest.SuccessClient(serializedCmds), 0, ffHandler)
+	s := service.NewService(cmdchanneltest.SuccessClient(serializedCmds), 0, make(chan int, 1), ffHandler)
 
 	_, err := s.InitialFetch(context.Background())
 	assert.NoError(t, err)
@@ -276,7 +276,7 @@ func TestSrv_InitialFetch_EnablesDimensionalMetrics(t *testing.T) {
 	ffManager := feature_flags.NewManager(nil)
 	h := NewHandler(&config.Config{}, ffManager, l)
 	ffHandler := cmdchannel.NewCmdHandler("set_feature_flag", h.Handle)
-	s := service.NewService(cmdchanneltest.SuccessClient(serializedCmds), 0, ffHandler)
+	s := service.NewService(cmdchanneltest.SuccessClient(serializedCmds), 0, make(chan int, 1), ffHandler)
 
 	_, err := s.InitialFetch(context.Background())
 	assert.NoError(t, err)

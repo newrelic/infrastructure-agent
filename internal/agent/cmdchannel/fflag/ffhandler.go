@@ -115,7 +115,7 @@ func (h *handler) SetOHIHandler(e OHIEnabler) {
 	h.ohiEnabler = e
 }
 
-func (h *handler) Handle(ctx context.Context, c commandapi.Command, isInitialFetch bool) (boSecs int, err error) {
+func (h *handler) Handle(ctx context.Context, c commandapi.Command, isInitialFetch bool) (err error) {
 	var ffArgs args
 	if err = json.Unmarshal(c.Args, &ffArgs); err != nil {
 		err = cmdchannel.NewArgsErr(err)
