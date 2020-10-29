@@ -17,47 +17,45 @@ var (
 	wlog = log.WithComponent("RegisterWorker")
 )
 
+type WorkerConfig struct {
+	MaxBatchSize      int
+	MaxBatchSizeBytes int
+	MaxBatchDuration  time.Duration
+	MaxRetryBo        time.Duration
+}
+
 type worker struct {
 	agentIDProvide      id.Provide
 	client              identityapi.RegisterClient
 	retryBo             *backoff.Backoff
-	maxRetryBo          time.Duration
 	reqsToRegisterQueue <-chan fwrequest.EntityFwRequest
 	reqsRegisteredQueue chan<- fwrequest.EntityFwRequest
-	maxBatchSize        int
-	maxBatchSizeBytes   int
-	maxBatchDuration    time.Duration
+	config              WorkerConfig
 }
 
 func NewWorker(
 	agentIDProvide id.Provide,
 	client identityapi.RegisterClient,
 	retryBo *backoff.Backoff,
-	maxRetryBo time.Duration,
 	reqsToRegisterQueue <-chan fwrequest.EntityFwRequest,
 	reqsRegisteredQueue chan<- fwrequest.EntityFwRequest,
-	maxBatchSize int,
-	maxBatchSizeBytes int,
-	maxBatchDuration time.Duration,
+	config WorkerConfig,
 ) *worker {
 	return &worker{
 		agentIDProvide:      agentIDProvide,
 		client:              client,
 		retryBo:             retryBo,
-		maxRetryBo:          maxRetryBo,
 		reqsToRegisterQueue: reqsToRegisterQueue,
 		reqsRegisteredQueue: reqsRegisteredQueue,
-		maxBatchSize:        maxBatchSize,
-		maxBatchSizeBytes:   maxBatchSizeBytes,
-		maxBatchDuration:    maxBatchDuration,
+		config:              config,
 	}
 }
 
 func (w *worker) Run(ctx context.Context) {
-	timer := time.NewTimer(w.maxBatchDuration)
+	timer := time.NewTimer(w.config.MaxBatchDuration)
 
 	// data for register batch call
-	batch := make(map[entity.Key]fwrequest.EntityFwRequest, w.maxBatchSize)
+	batch := make(map[entity.Key]fwrequest.EntityFwRequest, w.config.MaxBatchSize)
 	batchSizeBytes := 0
 	for {
 		select {
@@ -67,8 +65,8 @@ func (w *worker) Run(ctx context.Context) {
 		case req := <-w.reqsToRegisterQueue:
 			entitySizeBytes := req.Data.Entity.JsonSize()
 
-			if batchSizeBytes+entitySizeBytes > w.maxBatchSize || len(batch) == w.maxBatchSize {
-				timer.Reset(w.maxBatchDuration)
+			if batchSizeBytes+entitySizeBytes > w.config.MaxBatchSize || len(batch) == w.config.MaxBatchSize {
+				timer.Reset(w.config.MaxBatchDuration)
 				w.send(ctx, batch, &batchSizeBytes)
 			}
 			// TODO update when entity key retrieval is fixed
@@ -79,7 +77,7 @@ func (w *worker) Run(ctx context.Context) {
 			if len(batch) > 0 {
 				w.send(ctx, batch, &batchSizeBytes)
 			}
-			timer.Reset(w.maxBatchDuration)
+			timer.Reset(w.config.MaxBatchDuration)
 		}
 	}
 }
@@ -141,7 +139,7 @@ func (w *worker) registerEntitiesWithRetry(ctx context.Context, entities []entit
 		// the current will also backoff.
 		attempt := w.retryBo.Attempt()
 		if attempt > 0 {
-			retryBOAfter := w.retryBo.ForAttemptWithMax(attempt, w.maxRetryBo)
+			retryBOAfter := w.retryBo.ForAttemptWithMax(attempt, w.config.MaxRetryBo)
 			wlog.WithField("retryBackoffAfter", retryBOAfter).Debug("register request retry backoff.")
 			w.retryBo.Backoff(ctx, retryBOAfter)
 		}

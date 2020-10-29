@@ -109,16 +109,19 @@ func (e *emitter) lazyLoadProcessor() {
 		go e.runFwReqConsumer(ctx)
 		go e.runReqsRegisteredConsumer(ctx)
 		for w := 0; w < e.registerWorkers; w++ {
+			config := register.WorkerConfig{
+				MaxBatchSize:      e.registerMaxBatchSize,
+				MaxBatchSizeBytes: e.registerMaxBatchBytesSize,
+				MaxBatchDuration:  e.registerMaxBatchTime,
+				MaxRetryBo:        e.maxRetryBo,
+			}
 			regWorker := register.NewWorker(
 				e.agentContext.Identity,
 				e.registerClient,
 				e.retryBo,
-				e.maxRetryBo,
 				e.reqsToRegisterQueue,
 				e.reqsRegisteredQueue,
-				e.registerMaxBatchSize,
-				e.registerMaxBatchBytesSize,
-				e.registerMaxBatchTime)
+				config)
 			go regWorker.Run(ctx)
 		}
 	}
