@@ -78,7 +78,7 @@ func TestRegisterRetryTime(t *testing.T) {
 		return resp, nil
 	}
 
-	client, err := NewRegisterClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, mockHttp)
+	client, err := NewRegisterClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, nil, mockHttp)
 	assert.NoError(t, err)
 
 	entities, retryTime, err := client.RegisterEntitiesRemoveMe(testAgentEntityId, testRegisterEntity)
@@ -94,7 +94,7 @@ func TestRegisterOk(t *testing.T) {
 		return getRegisterResponse(testRegisterEntityResponse)
 	}
 
-	client, err := NewRegisterClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, mockHttp)
+	client, err := NewRegisterClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, nil, mockHttp)
 	assert.NoError(t, err)
 
 	entities, retryTime, err := client.RegisterEntitiesRemoveMe(testAgentEntityId, testRegisterEntity)

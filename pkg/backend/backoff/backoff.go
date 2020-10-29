@@ -84,6 +84,16 @@ func (b *Backoff) ForAttempt(attempt float64) time.Duration {
 	return b.forAttempt(attempt, b.Min, b.Max)
 }
 
+// ForAttemptWithMax calls forAttempt with configured a max value limit.
+func (b *Backoff) ForAttemptWithMax(attempt float64, max time.Duration) time.Duration {
+	b.lock.Lock()
+	defer b.lock.Unlock()
+	if max <= 0 {
+		max = b.Max
+	}
+	return b.forAttempt(attempt, b.Min, max)
+}
+
 // forAttempt returns the duration for a specific attempt. This is useful if
 // you have a large number of independent Backoffs, but don't want use
 // unnecessary memory storing the Backoff parameters per Backoff. The first
@@ -140,6 +150,13 @@ func (b *Backoff) Attempt() float64 {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 	return b.attempt
+}
+
+// IncreaseAttempt increases attempt counter value.
+func (b *Backoff) IncreaseAttempt() {
+	b.lock.Lock()
+	defer b.lock.Unlock()
+	b.attempt++
 }
 
 // Copy returns a backoff with equals constraints as the original

@@ -42,6 +42,12 @@ type RegisterEntityError struct {
 	Err        error
 }
 
+// ShouldRetry checks the status code of the error and returns true if the request should be submitted again.
+func (e *RegisterEntityError) ShouldRetry() bool {
+	return e.StatusCode == StatusCodeConFailure ||
+		e.StatusCode == StatusCodeLimitExceed
+}
+
 // NewRegisterEntityError create a new instance of RegisterEntityError.
 func NewRegisterEntityError(status string, statusCode int, err error) *RegisterEntityError {
 	return &RegisterEntityError{
@@ -105,21 +111,21 @@ func NewRegisterEntity(key entity.Key) RegisterEntity {
 func NewRegisterClient(
 	svcUrl, licenseKey, userAgent string,
 	compressionLevel int,
-	httpClient backendhttp.Client,
+	httpClient *http.Client,
+	httpClientRemoveMe backendhttp.Client,
 ) (RegisterClient, error) {
 	if compressionLevel < gzip.NoCompression || compressionLevel > gzip.BestCompression {
 		return nil, fmt.Errorf("gzip: invalid compression level: %d", compressionLevel)
 	}
 	icfg := identity.NewConfiguration()
 	icfg.BasePath = svcUrl + identityPath
-	// TODO: add the global HTTP client here
-	// icfg.HTTPClient = httpClient
+	icfg.HTTPClient = httpClient
 	identityClient := identity.NewAPIClient(icfg)
 	return &registerClient{
 		svcUrl:           strings.TrimSuffix(svcUrl, "/"),
 		licenseKey:       licenseKey,
 		userAgent:        userAgent,
-		httpClient:       httpClient,
+		httpClient:       httpClientRemoveMe,
 		compressionLevel: compressionLevel,
 		apiClient:        identityClient.DefaultApi,
 	}, nil

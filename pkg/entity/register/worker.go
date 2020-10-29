@@ -33,7 +33,7 @@ func NewWorker(
 	agentIDProvide id.Provide,
 	client identityapi.RegisterClient,
 	retryBo *backoff.Backoff,
-	maxRetryBo int,
+	maxRetryBo time.Duration,
 	reqsToRegisterQueue <-chan fwrequest.EntityFwRequest,
 	reqsRegisteredQueue chan<- fwrequest.EntityFwRequest,
 	maxBatchSize int,
@@ -44,7 +44,7 @@ func NewWorker(
 		agentIDProvide:      agentIDProvide,
 		client:              client,
 		retryBo:             retryBo,
-		maxRetryBo:          time.Duration(maxRetryBo) * time.Second,
+		maxRetryBo:          maxRetryBo,
 		reqsToRegisterQueue: reqsToRegisterQueue,
 		reqsRegisteredQueue: reqsRegisteredQueue,
 		maxBatchSize:        maxBatchSize,
@@ -137,6 +137,15 @@ func (w *worker) registerEntitiesWithRetry(ctx context.Context, entities []entit
 		default:
 		}
 
+		// Backoff object it's shared between workers. If another worker is in backoff,
+		// the current will also backoff.
+		attempt := w.retryBo.Attempt()
+		if attempt > 0 {
+			retryBOAfter := w.retryBo.ForAttemptWithMax(attempt, w.maxRetryBo)
+			wlog.WithField("retryBackoffAfter", retryBOAfter).Debug("register request retry backoff.")
+			w.retryBo.Backoff(ctx, retryBOAfter)
+		}
+
 		var err error
 		responses, err := w.client.RegisterBatchEntities(w.agentIDProvide().ID, entities)
 		if err == nil {
@@ -145,22 +154,15 @@ func (w *worker) registerEntitiesWithRetry(ctx context.Context, entities []entit
 		}
 
 		e, ok := err.(*identityapi.RegisterEntityError)
-		if !ok {
-			wlog.WithError(err).
-				Error("entity register request error, discarding entities.")
-
-			return nil
+		if ok {
+			if e.ShouldRetry() {
+				w.retryBo.IncreaseAttempt()
+				continue
+			}
 		}
-		shouldRetry := e.StatusCode == identityapi.StatusCodeConFailure ||
-			e.StatusCode == identityapi.StatusCodeLimitExceed
-
-		if shouldRetry {
-			retryBOAfter := w.retryBo.DurationWithMax(w.maxRetryBo)
-			wlog.WithField("retryBackoffAfter", retryBOAfter).Debug("register request retry backoff.")
-			w.retryBo.Backoff(ctx, retryBOAfter)
-			continue
-		}
-		return responses
+		wlog.WithError(err).
+			Error("entity register request error, discarding entities.")
+		break
 	}
 	return nil
 }

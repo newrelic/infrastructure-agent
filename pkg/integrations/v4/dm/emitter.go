@@ -57,7 +57,7 @@ type emitter struct {
 	reqsToRegisterQueue       chan fwrequest.EntityFwRequest
 	reqsRegisteredQueue       chan fwrequest.EntityFwRequest
 	retryBo                   *backoff.Backoff
-	maxRetryBo                int
+	maxRetryBo                time.Duration
 	idCache                   entity.KnownIDs
 	metricsSender             MetricsSender
 	agentContext              agent.AgentContext
@@ -79,7 +79,7 @@ func NewEmitter(
 
 	return &emitter{
 		retryBo:                   backoff.NewDefaultBackoff(),
-		maxRetryBo:                agentContext.Config().RegisterMaxRetryBo,
+		maxRetryBo:                time.Duration(agentContext.Config().RegisterMaxRetryBoSecs) * time.Second,
 		reqsQueue:                 make(chan fwrequest.FwRequest, defaultRequestsQueueLen),
 		reqsToRegisterQueue:       make(chan fwrequest.EntityFwRequest, defaultRequestsToRegisterQueueLen),
 		reqsRegisteredQueue:       make(chan fwrequest.EntityFwRequest, defaultRequestsRegisteredQueueLen),
