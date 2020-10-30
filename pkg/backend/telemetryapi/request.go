@@ -33,38 +33,54 @@ type requestsBuilder interface {
 }
 
 var (
-	errUnableToSplit = fmt.Errorf("unable to split large payload further")
+	errUnableToSplit     = fmt.Errorf("unable to split large payload further")
+	maxEntitiesByRequest = 100
 )
 
 func newBatchRequest(ctx context.Context, metricsBatch []metricBatch, apiKey string, url string, userAgent string) (reqs []request, err error) {
 	// todo: split payload based on:
-	// a) number of entities being sent
 	// b) payload size
 	if len(metricsBatch) < 1 {
 		return nil, nil
 	}
 
-	var entityIds string
-	buf := &bytes.Buffer{}
-	buf.WriteByte('[')
-	for i := range metricsBatch {
-		metricsBatch[i].writeSingleJSON(buf)
-		entityIds = entityIds + metricsBatch[i].Identity
-		if i < len(metricsBatch)-1 {
-			buf.WriteByte(',')
-			entityIds = entityIds + ","
+	var batch [][]metricBatch
+	for i := 0; i < len(metricsBatch); i += maxEntitiesByRequest {
+		batch = append(batch, metricsBatch[i:min(i+maxEntitiesByRequest, len(metricsBatch))])
+	}
+
+	for b := range batch {
+		var entityIds string
+		buf := &bytes.Buffer{}
+		buf.WriteByte('[')
+
+		metrics := batch[b]
+		for i := range metrics {
+			metrics[i].writeSingleJSON(buf)
+			entityIds = entityIds + metrics[i].Identity
+			if i < len(metrics)-1 {
+				buf.WriteByte(',')
+				entityIds = entityIds + ","
+			}
 		}
+		buf.WriteByte(']')
+		req, err := createRequest(ctx, buf.Bytes(), apiKey, url, userAgent)
+		if err != nil {
+			return nil, err
+		}
+		jsonPayload := string(buf.Bytes())
+		logger.WithField("json", jsonPayload).Debug("Request created")
+		req.Request.Header.Add("X-NRI-Entity-Ids", entityIds)
+		reqs = append(reqs, req)
 	}
-	buf.WriteByte(']')
-	req, err := createRequest(ctx, buf.Bytes(), apiKey, url, userAgent)
-	if err != nil {
-		return nil, err
-	}
-	jsonPayload := string(buf.Bytes())
-	logger.WithField("json", jsonPayload).Debug("Request created")
-	req.Request.Header.Add("X-NRI-Entity-Ids", entityIds)
-	reqs = append(reqs, req)
 	return reqs, err
+}
+
+func min(a, b int) int {
+	if a <= b {
+		return a
+	}
+	return b
 }
 
 func requestNeedsSplit(r request) bool {
