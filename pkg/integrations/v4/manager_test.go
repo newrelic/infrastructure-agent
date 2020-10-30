@@ -1050,8 +1050,12 @@ func instancesLookupReturning(execPaths ...string) integration.InstancesLookup {
 			return integration.Definition{}, errors.New("legacy lookup not expected")
 		},
 		ByName: func(_ string) (string, error) {
-			calls++
-			return execPaths[calls-1], nil
+			il := execPaths[calls]
+			// use last provided path when not enough
+			if len(execPaths) >= calls+1 {
+				calls++
+			}
+			return il, nil
 		},
 	}
 }
