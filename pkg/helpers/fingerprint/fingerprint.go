@@ -132,7 +132,7 @@ func (ir *harvestor) Harvest() (fp Fingerprint, err error) {
 			return
 		}
 
-		hlog.WithError(err).Error("Unable to get instance id.")
+		hlog.WithError(err).Debug("Unable to get instance id.")
 	}
 
 	return Fingerprint{
