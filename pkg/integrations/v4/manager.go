@@ -178,7 +178,13 @@ func NewConfig(verbose int, features map[string]bool, passthroughEnvs, configFol
 // not belonging to the protocol V4.
 // Usually, "configFolders" will be the value of the "pluginInstanceDir" configuration option
 // The "definitionFolders" refer to the v3 definition yaml configs, placed here for v3 integrations backwards-support
-func NewManager(cfg Configuration, emitter emitter.Emitter, il integration.InstancesLookup, definitionQ chan integration.Definition) *Manager {
+func NewManager(
+	cfg Configuration,
+	emitter emitter.Emitter,
+	il integration.InstancesLookup,
+	definitionQ chan integration.Definition,
+	tracker *stoppable.Tracker,
+) *Manager {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		illog.WithError(err).Warn("can't enable hot reload")
@@ -193,7 +199,7 @@ func NewManager(cfg Configuration, emitter emitter.Emitter, il integration.Insta
 		featuresCache:   make(runner.FeaturesCache),
 		definitionQueue: definitionQ,
 		handleCmdReq:    cmdrequest.NewHandleFn(definitionQ, il, illog),
-		tracker:         stoppable.NewTracker(),
+		tracker:         tracker,
 	}
 
 	// Loads all the configuration files in the passed configFolders

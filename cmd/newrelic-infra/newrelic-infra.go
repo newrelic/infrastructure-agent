@@ -25,9 +25,11 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/runintegration"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/service"
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/stopintegration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/files"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/v3legacy"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/stoppable"
 	"github.com/sirupsen/logrus"
 
 	"github.com/newrelic/infrastructure-agent/cmd/newrelic-infra/initialize"
@@ -226,12 +228,15 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	// queues integration run requests
 	definitionQ := make(chan integration.Definition, 100)
 
+	tracker := stoppable.NewTracker()
+
 	// Command channel handlers
 	backoffSecsC := make(chan int, 1) // 1 won't block on initial cmd-channel fetch
 	boHandler := ccBackoff.NewHandler(backoffSecsC)
 	ffHandle := fflag.NewHandler(c, ffManager, wlog.WithComponent("FFHandler"))
 	ffHandler := cmdchannel.NewCmdHandler("set_feature_flag", ffHandle.Handle)
 	riHandler := runintegration.NewHandler(definitionQ, il, wlog.WithComponent("runintegration.Handler"))
+	siHandler := stopintegration.NewHandler(tracker, wlog.WithComponent("stopintegration.Handler"))
 	// Command channel service
 	ccService := service.NewService(
 		caClient,
@@ -240,6 +245,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		boHandler,
 		ffHandler,
 		riHandler,
+		siHandler,
 	)
 	initCmdResponse, err := ccService.InitialFetch(context.Background())
 	if err != nil {
@@ -313,7 +319,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		dmEmitter = dm.NewNonRegisterEmitter(agt.GetContext(), dmSender)
 	}
 	integrationEmitter := emitter.NewIntegrationEmittor(agt, dmEmitter, ffManager)
-	integrationManager := v4.NewManager(integrationCfg, integrationEmitter, il, definitionQ)
+	integrationManager := v4.NewManager(integrationCfg, integrationEmitter, il, definitionQ, tracker)
 
 	// log-forwarder
 	fbIntCfg := v4.FBSupervisorConfig{
