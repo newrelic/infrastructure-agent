@@ -38,7 +38,7 @@ var (
 )
 
 func TestNewCmdHandler(t *testing.T) {
-	noopHandle := func(ctx context.Context, cmd commandapi.Command, initialFetch bool) (backoffSecs int, err error) {
+	noopHandle := func(ctx context.Context, cmd commandapi.Command, initialFetch bool) (err error) {
 		return
 	}
 
@@ -69,7 +69,7 @@ func Test_poll_DiscardsInvalidCommands(t *testing.T) {
 		]
 	}
 `
-	s := NewService(cmdchanneltest.SuccessClient(serializedCmds), 0)
+	s := NewService(cmdchanneltest.SuccessClient(serializedCmds), 0, make(chan int, 1))
 
 	_, err := s.InitialFetch(context.Background())
 	assert.NoError(t, err)
@@ -88,7 +88,8 @@ func TestSrv_InitialFetch_ReturnsBackoff(t *testing.T) {
 		]
 	}
 `
-	s := NewService(cmdchanneltest.SuccessClient(serializedCmds), 1, backoff.NewHandler())
+	boC := make(chan int, 1)
+	s := NewService(cmdchanneltest.SuccessClient(serializedCmds), 1, boC, backoff.NewHandler(boC))
 
 	initResp, err := s.InitialFetch(context.Background())
 	assert.NoError(t, err)
@@ -122,7 +123,8 @@ func TestSrv_InitialFetch_EnablesRegisterAndHandlesBackoff(t *testing.T) {
 	c := &config.Config{RegisterEnabled: false}
 	h := fflag.NewHandler(c, feature_flags.NewManager(nil), l)
 	ffHandler := cmdchannel.NewCmdHandler("set_feature_flag", h.Handle)
-	ss := NewService(cmdchanneltest.SuccessClient(serializedCmds), 0, backoff.NewHandler(), ffHandler)
+	boC := make(chan int, 1)
+	ss := NewService(cmdchanneltest.SuccessClient(serializedCmds), 0, boC, backoff.NewHandler(boC), ffHandler)
 	s := ss.(*srv)
 
 	initialResp, err := s.InitialFetch(context.Background())
@@ -154,7 +156,7 @@ func TestSrv_InitialFetch_HandlesRunIntegration(t *testing.T) {
 	}
 	h := runintegration.NewHandler(defQueue, il, l)
 
-	s := NewService(cmdchanneltest.SuccessClient(serializedCmds), 1, h)
+	s := NewService(cmdchanneltest.SuccessClient(serializedCmds), 1, make(chan int, 1), h)
 
 	_, err := s.InitialFetch(context.Background())
 	require.NoError(t, err)
@@ -207,7 +209,8 @@ func TestSrv_Run(t *testing.T) {
 	ffHandler := cmdchannel.NewCmdHandler("set_feature_flag", h.Handle)
 
 	cmdChClient, responsesCh, headerAgentIDCh := cmdChannelClientIDSpy(initialCmd, firstPollCmd)
-	ss := NewService(cmdChClient, 0, backoff.NewHandler(), ffHandler)
+	boC := make(chan int, 1)
+	ss := NewService(cmdChClient, 0, boC, backoff.NewHandler(boC), ffHandler)
 	s := ss.(*srv)
 
 	type resp struct {
@@ -244,9 +247,9 @@ func TestSrv_Run(t *testing.T) {
 
 	<-responsesCh // wait for response to be served
 	assert.Equal(t, agentID, <-headerAgentIDCh)
+	assert.Equal(t, 2, <-s.pollDelaySecsC, "minimum interval is 1sec")
 	cancel()
 	wg.Wait()
-	assert.Equal(t, 2, s.pollDelaySecs, "minimum interval is 1sec")
 
 	enabled, exists := ffManager.GetFeatureFlag(fflag.FlagProtocolV4)
 	assert.True(t, enabled)
@@ -296,7 +299,7 @@ func TestSrv_Run_HandlesRunIntegrationAndACKs(t *testing.T) {
 		]
 	}`
 	cmdChClient, requestsCh := ccClientRequestsSpyReturning(cmd)
-	s := NewService(cmdChClient, 0, h)
+	s := NewService(cmdChClient, 0, make(chan int, 1), h)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {

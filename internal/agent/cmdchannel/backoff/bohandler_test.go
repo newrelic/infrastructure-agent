@@ -17,8 +17,7 @@ func TestNewHandler(t *testing.T) {
 		Args: []byte(`{ "delay": 3000 }`),
 	}
 
-	delay, err := NewHandler().Handle(context.Background(), cmd, false)
-
-	require.NoError(t, err)
-	assert.Equal(t, 3000, delay)
+	boChan := make(chan int, 1)
+	require.NoError(t, NewHandler(boChan).Handle(context.Background(), cmd, false))
+	assert.Equal(t, 3000, <-boChan)
 }

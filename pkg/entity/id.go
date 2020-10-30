@@ -3,6 +3,7 @@
 package entity
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
@@ -114,6 +115,12 @@ type Fields struct {
 	IDAttributes IDAttributes           `json:"id_attributes"`
 	DisplayName  string                 `json:"displayName"`
 	Metadata     map[string]interface{} `json:"metadata"`
+}
+
+// JsonSize will return the size of the json serialization.
+func (f *Fields) JsonSize() int {
+	b, _ := json.Marshal(f)
+	return len(b)
 }
 
 // IsAgent returns if entity is (local) agent.

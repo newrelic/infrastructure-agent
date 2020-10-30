@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
@@ -20,15 +21,20 @@ var (
 	ErrNoIntName = errors.New("missing required \"integration_name\"")
 )
 
-type runIntArgs struct {
+type RunIntArgs struct {
 	IntegrationName string   `json:"integration_name"`
 	IntegrationArgs []string `json:"integration_args"`
 }
 
-// NewHandler creates a cmd-channel handler for cmd poll backoff requests.
+// Hash hashes the run-integration request, so intergation can be required to stop using same arguments.
+func (a *RunIntArgs) Hash() string {
+	return fmt.Sprintf("%s#%s", strings.TrimSpace(a.IntegrationName), strings.TrimSpace(a.IntegrationName))
+}
+
+// NewHandler creates a cmd-channel handler for run-integration requests.
 func NewHandler(definitionQ chan<- integration.Definition, il integration.InstancesLookup, logger log.Entry) *cmdchannel.CmdHandler {
-	handleF := func(ctx context.Context, cmd commandapi.Command, initialFetch bool) (backoffSecs int, err error) {
-		var args runIntArgs
+	handleF := func(ctx context.Context, cmd commandapi.Command, initialFetch bool) (err error) {
+		var args RunIntArgs
 		if err = json.Unmarshal(cmd.Args, &args); err != nil {
 			err = cmdchannel.NewArgsErr(err)
 			return
@@ -44,13 +50,14 @@ func NewHandler(definitionQ chan<- integration.Definition, il integration.Instan
 			logger.
 				WithField("cmd_id", cmd.ID).
 				WithField("cmd_name", cmd.Name).
-				WithField("cmd_args", fmt.Sprintf("%+v", cmd.Args)).
+				WithField("cmd_args", string(cmd.Args)).
 				WithField("cmd_args_name", args.IntegrationName).
 				WithField("cmd_args_args", fmt.Sprintf("%+v", args.IntegrationArgs)).
 				WithError(err).
-				Warn("cannot create handler for cmd channel request")
+				Warn("cannot create handler for cmd channel run_integration requests")
 			return
 		}
+		def.CmdChannelHash = args.Hash()
 
 		definitionQ <- def
 		return
@@ -60,7 +67,7 @@ func NewHandler(definitionQ chan<- integration.Definition, il integration.Instan
 }
 
 // newConfigFromCmdReq creates an integration config from a command request.
-func newConfigFromCmdChannelRunInt(args runIntArgs) config.ConfigEntry {
+func newConfigFromCmdChannelRunInt(args RunIntArgs) config.ConfigEntry {
 	// executable would be looked up by integration name
 	return config.ConfigEntry{
 		InstanceName: args.IntegrationName,

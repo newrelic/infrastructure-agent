@@ -25,7 +25,7 @@ func TestHandle_returnsErrorOnMissingIntegrationName(t *testing.T) {
 		Args: []byte(`{ "integration_args": ["foo", "bar"] }`),
 	}
 
-	_, err := h.Handle(context.Background(), cmdArgsMissingName, false)
+	err := h.Handle(context.Background(), cmdArgsMissingName, false)
 	assert.Equal(t, cmdchannel.NewArgsErr(ErrNoIntName).Error(), err.Error())
 }
 
@@ -45,7 +45,7 @@ func TestHandle_queuesIntegrationToBeRun(t *testing.T) {
 		Args: []byte(`{ "integration_name": "nri-foo", "integration_args": ["bar", "baz"] }`),
 	}
 
-	_, err := h.Handle(context.Background(), cmd, false)
+	err := h.Handle(context.Background(), cmd, false)
 	require.NoError(t, err)
 
 	d := <-defQueue

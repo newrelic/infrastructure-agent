@@ -14,6 +14,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/constants"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/stoppable"
 	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/fs"
@@ -106,6 +107,7 @@ type Manager struct {
 	featuresCache   runner.FeaturesCache
 	definitionQueue <-chan integration.Definition
 	handleCmdReq    cmdrequest.HandleFn
+	tracker         *stoppable.Tracker
 }
 
 // groupContext pairs a runner.Group with its cancellation context
@@ -176,7 +178,13 @@ func NewConfig(verbose int, features map[string]bool, passthroughEnvs, configFol
 // not belonging to the protocol V4.
 // Usually, "configFolders" will be the value of the "pluginInstanceDir" configuration option
 // The "definitionFolders" refer to the v3 definition yaml configs, placed here for v3 integrations backwards-support
-func NewManager(cfg Configuration, emitter emitter.Emitter, il integration.InstancesLookup, definitionQ chan integration.Definition) *Manager {
+func NewManager(
+	cfg Configuration,
+	emitter emitter.Emitter,
+	il integration.InstancesLookup,
+	definitionQ chan integration.Definition,
+	tracker *stoppable.Tracker,
+) *Manager {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		illog.WithError(err).Warn("can't enable hot reload")
@@ -191,6 +199,7 @@ func NewManager(cfg Configuration, emitter emitter.Emitter, il integration.Insta
 		featuresCache:   make(runner.FeaturesCache),
 		definitionQueue: definitionQ,
 		handleCmdReq:    cmdrequest.NewHandleFn(definitionQ, il, illog),
+		tracker:         tracker,
 	}
 
 	// Loads all the configuration files in the passed configFolders
@@ -306,7 +315,12 @@ func (mgr *Manager) handleRequestsQueue(ctx context.Context) {
 
 		case def := <-mgr.definitionQueue:
 			r := runner.NewRunner(def, mgr.emitter, nil, nil, mgr.handleCmdReq)
-			go r.Run(ctx)
+			// tracking so cmd requests can be stopped by hash
+			runCtx, pidWChan := mgr.tracker.Track(ctx, def.CmdChannelHash)
+			go func(hash string) {
+				r.Run(runCtx, pidWChan)
+				mgr.tracker.Untrack(hash)
+			}(def.CmdChannelHash)
 		}
 	}
 }

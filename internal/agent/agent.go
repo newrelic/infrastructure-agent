@@ -327,7 +327,7 @@ func NewAgent(
 
 	transport := backendhttp.BuildTransport(cfg, backendhttp.ClientTimeout)
 
-	httpClient := backendhttp.GetHttpClient(backendhttp.ClientTimeout, transport).Do
+	httpClient := backendhttp.GetHttpClient(backendhttp.ClientTimeout, transport)
 
 	identityURL := fmt.Sprintf("%s/%s", cfg.IdentityURL, strings.TrimPrefix(cfg.IdentityIngestEndpoint, "/"))
 	if os.Getenv("DEV_IDENTITY_INGEST_URL") != "" {
@@ -340,7 +340,7 @@ func NewAgent(
 		userAgent,
 		cfg.PayloadCompressionLevel,
 		cfg.IsContainerized,
-		httpClient,
+		httpClient.Do,
 	)
 	if err != nil {
 		return nil, err
@@ -352,6 +352,7 @@ func NewAgent(
 		userAgent,
 		cfg.PayloadCompressionLevel,
 		httpClient,
+		httpClient.Do,
 	)
 	if err != nil {
 		return nil, err
@@ -377,7 +378,7 @@ func NewAgent(
 		s,
 		connectSrv,
 		provideIDs,
-		httpClient,
+		httpClient.Do,
 		transport,
 		cloudHarvester,
 		fpHarvester,

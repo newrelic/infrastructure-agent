@@ -5,10 +5,11 @@ package v4
 import (
 	ctx2 "context"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/logs"
-	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
 	"testing"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/logs"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/id"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
@@ -129,7 +130,7 @@ func NewExecutorMock() *ExecutorMock {
 	}
 }
 
-func (em *ExecutorMock) Execute(ctx ctx2.Context) executor.OutputReceive {
+func (em *ExecutorMock) Execute(ctx ctx2.Context, pidChan chan<- int) executor.OutputReceive {
 	return executor.OutputReceive{
 		Errors: em.errorCh,
 	}

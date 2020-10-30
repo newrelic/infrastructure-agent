@@ -88,7 +88,7 @@ func NewAgentWithConnectClientAndConfig(connectClient, dataClient backendhttp.Cl
 
 	connectSrv := agent.NewIdentityConnectService(connectC, fingerprintHarvester)
 
-	registerC, err := identityapi.NewRegisterClient("url", "license", "user-agent", gzip.BestCompression, connectClient)
+	registerC, err := identityapi.NewRegisterClient("url", "license", "user-agent", gzip.BestCompression, nil, connectClient)
 	if err != nil {
 		panic(err)
 	}
