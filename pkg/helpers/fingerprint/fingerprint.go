@@ -132,7 +132,13 @@ func (ir *harvestor) Harvest() (fp Fingerprint, err error) {
 			return
 		}
 
-		hlog.WithError(err).Error("Unable to get instance id.")
+		if err != cloud.ErrDetectorNotInitialized && err != cloud.ErrCouldNotDetect {
+			hlog.WithError(err).Error("Unable to get instance id.")
+		}
+
+		if err == cloud.ErrCouldNotDetect {
+			hlog.Debug("Could not detect any cloud type.")
+		}
 	}
 
 	return Fingerprint{
