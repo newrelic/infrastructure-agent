@@ -38,7 +38,6 @@ func (fp Executables) Path(name string) (string, error) {
 			if nameFor(fileName) == name {
 				return filepath.Join(folder, fileName), nil
 			}
-			fclog.WithField("file", fileName).Debug("File does not match.")
 		}
 		fclog.Debug("Integration name not found. Trying another folder, if any.")
 	}
