@@ -72,7 +72,7 @@ func (p *HTTPServerPlugin) dataHandler(w http.ResponseWriter, r *http.Request, p
 			Error: fmt.Sprintf("error decoding data payload: %v", err),
 		})
 		if jerr != nil {
-			p.logger.WithError(err).Warn("couldn't encode a failed response")
+			p.logger.WithError(jerr).Warn("couldn't encode a failed response")
 		}
 		return
 	}
