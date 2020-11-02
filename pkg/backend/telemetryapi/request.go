@@ -47,7 +47,7 @@ func newBatchRequest(ctx context.Context, metricsBatch []metricBatch, apiKey str
 		return buildRequests(ctx, metricsBatch, apiKey, url, userAgent)
 	}
 
-	metrics := metricsBatch[:min(len(metricsBatch), maxEntitiesByRequest)]
+	metrics := metricsBatch[:maxEntitiesByRequest]
 	req, err := buildRequests(ctx, metrics, apiKey, url, userAgent)
 	reqs = append(reqs, req...)
 
@@ -84,13 +84,6 @@ func buildRequests(ctx context.Context, metricsBatch []metricBatch, apiKey strin
 	logger.WithField("json", jsonPayload).Debug("Request created")
 	req.Request.Header.Add("X-NRI-Entity-Ids", entityIds)
 	return []request{req}, err
-}
-
-func min(a, b int) int {
-	if a <= b {
-		return a
-	}
-	return b
 }
 
 func requestNeedsSplit(r request) bool {
