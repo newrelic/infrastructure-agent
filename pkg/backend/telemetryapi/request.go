@@ -38,42 +38,52 @@ var (
 )
 
 func newBatchRequest(ctx context.Context, metricsBatch []metricBatch, apiKey string, url string, userAgent string) (reqs []request, err error) {
-	// todo: split payload based on:
-	// b) payload size
+	// todo: split payload based on payload size
 	if len(metricsBatch) < 1 {
 		return nil, nil
 	}
 
-	var batch [][]metricBatch
-	for i := 0; i < len(metricsBatch); i += maxEntitiesByRequest {
-		batch = append(batch, metricsBatch[i:min(i+maxEntitiesByRequest, len(metricsBatch))])
+	if len(metricsBatch) <= maxEntitiesByRequest {
+		return buildRequests(ctx, metricsBatch, apiKey, url, userAgent)
 	}
 
-	for b := range batch {
-		var entityIds string
-		buf := &bytes.Buffer{}
-		buf.WriteByte('[')
+	metrics := metricsBatch[:min(len(metricsBatch), maxEntitiesByRequest)]
+	req, err := buildRequests(ctx, metrics, apiKey, url, userAgent)
+	reqs = append(reqs, req...)
 
-		metrics := batch[b]
-		for i := range metrics {
-			metrics[i].writeSingleJSON(buf)
-			entityIds = entityIds + metrics[i].Identity
-			if i < len(metrics)-1 {
-				buf.WriteByte(',')
-				entityIds = entityIds + ","
-			}
-		}
-		buf.WriteByte(']')
-		req, err := createRequest(ctx, buf.Bytes(), apiKey, url, userAgent)
-		if err != nil {
+	if len(metricsBatch[maxEntitiesByRequest:]) > 0 {
+		req, err = newBatchRequest(ctx, metricsBatch[maxEntitiesByRequest:], apiKey, url, userAgent)
+		if nil != err {
 			return nil, err
 		}
-		jsonPayload := string(buf.Bytes())
-		logger.WithField("json", jsonPayload).Debug("Request created")
-		req.Request.Header.Add("X-NRI-Entity-Ids", entityIds)
-		reqs = append(reqs, req)
+		reqs = append(reqs, req...)
 	}
+
 	return reqs, err
+}
+
+func buildRequests(ctx context.Context, metricsBatch []metricBatch, apiKey string, url string, userAgent string) ([]request, error) {
+	var entityIds string
+	buf := &bytes.Buffer{}
+	buf.WriteByte('[')
+	for i := range metricsBatch {
+		metricsBatch[i].writeSingleJSON(buf)
+		entityIds = entityIds + metricsBatch[i].Identity
+		if i < len(metricsBatch)-1 {
+			buf.WriteByte(',')
+			entityIds = entityIds + ","
+		}
+	}
+	buf.WriteByte(']')
+	req, err := createRequest(ctx, buf.Bytes(), apiKey, url, userAgent)
+	if err != nil {
+		return nil, err
+	}
+
+	jsonPayload := string(buf.Bytes())
+	logger.WithField("json", jsonPayload).Debug("Request created")
+	req.Request.Header.Add("X-NRI-Entity-Ids", entityIds)
+	return []request{req}, err
 }
 
 func min(a, b int) int {
