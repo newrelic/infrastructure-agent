@@ -158,9 +158,9 @@ func TestWorker_Run_SendsWhenMaxBatchBytesSizeIsReached(t *testing.T) {
 
 	go w.Run(ctx)
 
-	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{Entity: entityFields}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{})
+	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{Entity: entityFields}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{}, agentVersion)
 	// Second request will cause the batch split.
-	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{Entity: entityFields}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{})
+	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{Entity: entityFields}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{}, agentVersion)
 
 	// Expect only one registered.
 	select {
