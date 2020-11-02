@@ -857,7 +857,7 @@ type Config struct {
 	MaxMetricsBatchSizeBytes int `yaml:"max_metrics_batch_size_bytes" envconfig:"max_metrics_batch_size_bytes" public:"false"`
 
 	// MaxMetricBatchEntitiesCount Defined a max amount of entities to be submitted in a single metric-ingest request. Used to avoid reach max size in req Header.
-	// Default: 800
+	// Default: 300
 	// Public: No
 	MaxMetricBatchEntitiesCount int `yaml:"max_metrics_batch_entities_count" envconfig:"max_metrics_batch_entities_count" public:"false"`
 
