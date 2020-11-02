@@ -12,9 +12,16 @@ import (
 )
 
 const (
-	EntityIdAttribute = "nr.entity.id"
-	labelPrefix       = "label."
-	labelPrefixTrim   = 6
+	EntityIdAttribute                = "nr.entity.id"
+	InstrumentationVersionAttribute  = "instrumentation.version"
+	InstrumentationNameAttribute     = "instrumentation.name"
+	InstrumentationProviderAttribute = "instrumentation.provider"
+	CollectorNameAttribute           = "collector.name"
+	CollectorVersionAttribute        = "collector.version"
+	labelPrefix                      = "label."
+	labelPrefixTrim                  = 6
+	newRelicProvider                 = "newRelic"
+	agentCollector                   = "infrastructure-agent"
 )
 
 // EntityFwRequest stores an integration single entity payload to be processed before it gets
@@ -31,6 +38,17 @@ func (r *EntityFwRequest) RegisteredWith(id entity.ID) {
 		r.Data.Common.Attributes = make(map[string]interface{})
 	}
 	r.Data.Common.Attributes[EntityIdAttribute] = id.String()
+}
+
+func (r *EntityFwRequest) populateCommonAttributes(intMeta protocol.IntegrationMetadata, agentVersion string) {
+	if r.Data.Common.Attributes == nil {
+		r.Data.Common.Attributes = make(map[string]interface{})
+	}
+	r.Data.Common.Attributes[InstrumentationVersionAttribute] = intMeta.Version
+	r.Data.Common.Attributes[InstrumentationNameAttribute] = intMeta.Name
+	r.Data.Common.Attributes[InstrumentationProviderAttribute] = newRelicProvider
+	r.Data.Common.Attributes[CollectorNameAttribute] = agentCollector
+	r.Data.Common.Attributes[CollectorVersionAttribute] = agentVersion
 }
 
 func (r *EntityFwRequest) ID() entity.ID {
@@ -93,6 +111,7 @@ func NewEntityFwRequest(
 	id entity.ID,
 	reqMeta FwRequestMeta,
 	intMeta protocol.IntegrationMetadata,
+	agentVersion string,
 ) EntityFwRequest {
 	r := EntityFwRequest{
 		FwRequestMeta: reqMeta,
@@ -101,6 +120,7 @@ func NewEntityFwRequest(
 	}
 	if !id.IsEmpty() {
 		r.RegisteredWith(id)
+		r.populateCommonAttributes(intMeta, agentVersion)
 	}
 
 	return r

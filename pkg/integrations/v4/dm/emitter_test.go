@@ -287,6 +287,7 @@ func getAgentContext(hostname string) *mocks.AgentContext {
 	}
 	agentCtx.On("EntityKey").Return(hostname)
 	agentCtx.On("IDLookup").Return(idLookup)
+	agentCtx.On("Version").Return("dev")
 	agentCtx.On("Config").Return(config.NewConfig())
 
 	return agentCtx
