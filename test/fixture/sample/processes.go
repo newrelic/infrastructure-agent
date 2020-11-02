@@ -27,4 +27,11 @@ var (
 		ContainerID:        "qux",
 		Contained:          "true",
 	}
+
+	FlatProcessSample = types.FlatProcessSample{
+		"processDisplayName": "foo",
+		"commandLine":        "/usr/bin/foo",
+		"commandName":        "bar",
+		"userName":           "baz",
+	}
 )

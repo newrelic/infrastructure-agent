@@ -5,23 +5,27 @@ package sampler
 
 import (
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
-	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"reflect"
 	"regexp"
 	"strings"
 
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/newrelic/infrastructure-agent/pkg/trace"
 )
 
 var (
-	typesToEvaluate = map[string]bool{"ProcessSample": true}
-)
+	mlog = log.WithComponent("SamplerMatcher")
 
-var mlog = log.WithComponent("SamplerMatcher")
+	// typesToEvaluate is map that contains the samples we want to filter on
+	typesToEvaluate = map[string]bool{
+		"ProcessSample":     true, // Normal process sample
+		"FlatProcessSample": true, // Process sample combined with Docker process data
+	}
+)
 
 // IncludeSampleMatchFn func that returns whether an event/sample should be included, it satisfies
 // the metrics matcher (processor.MatcherChain) interface.
@@ -34,7 +38,7 @@ type ExpressionMatcher interface {
 	Evaluate(event interface{}) bool
 }
 
-type attributeCache map[string]string
+type attributeCache map[string][]string
 
 var attrCache attributeCache
 
@@ -44,14 +48,20 @@ var regexCache regexCompiledCache
 
 func init() {
 	attrCache = attributeCache{
-		"process.name":       "ProcessDisplayName",
-		"process.executable": "CmdLine",
+		"process.name": []string{
+			"ProcessDisplayName", // Field name from ProcessSample
+			"processDisplayName", // Field name from FlatProcessSample (i.e. the map key name)
+		},
+		"process.executable": []string{
+			"CmdLine",     // Field name from ProcessSample
+			"commandLine", // Field name from FlatProcessSample (i.e. the map key name)
+		},
 	}
 	regexCache = regexCompiledCache{}
 }
 
 type matcher struct {
-	PropertyName  string
+	PropertyName  []string
 	ExpectedValue interface{}
 	Evaluator     func(expected interface{}, actual interface{}) bool
 }
@@ -66,23 +76,47 @@ func (p matcher) Evaluate(event interface{}) bool {
 		return false
 	}
 	isMatch := p.Evaluator(p.ExpectedValue, actualValue)
-	trace.MetricMatch("'%v' matches expression '%v' >> '%v': %v", actualValue, p.PropertyName, p.ExpectedValue, isMatch)
+	trace.MetricMatch("'%v' matches expression %v >> '%v': %v", actualValue, p.PropertyName, p.ExpectedValue, isMatch)
 	return isMatch
 }
 
-func getFieldValue(object interface{}, fieldName string) interface{} {
+func getMapValue(object map[string]interface{}, fieldNames []string) interface{} {
+	trace.MetricMatch("Searching map[string]interface{} for fields %v", fieldNames)
+	for i := range fieldNames {
+		obj := object[fieldNames[i]]
+		if obj != nil {
+			return obj
+		}
+	}
+	return nil
+}
+
+func getFieldValue(object interface{}, fieldNames []string) interface{} {
 	v := reflect.ValueOf(object)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
-	fv := v.FieldByName(fieldName)
-	if fv.IsValid() && fv.CanInterface() {
-		fieldValue := fv.Interface()
-		return fieldValue
+
+	// If a struct then try and get it by field
+	if v.Kind() == reflect.Struct {
+		trace.MetricMatch("Searching Struct for fields %v", fieldNames)
+		for i := range fieldNames {
+			fv := v.FieldByName(fieldNames[i])
+			if fv.IsValid() && fv.CanInterface() {
+				fieldValue := fv.Interface()
+				return fieldValue
+			}
+		}
 	}
 
-	trace.MetricMatch("field '%v' does NOT exist in sample", fieldName)
-	return nil
+	// Anything else then work out the type
+	switch v.Interface().(type) {
+	case types.FlatProcessSample: // types.FlatProcessSample is a map so check if any of the field names contains a value
+		return getMapValue(v.Interface().(types.FlatProcessSample), fieldNames)
+	default:
+		trace.MetricMatch("Fields %v does NOT exist in sample.", fieldNames)
+		return nil
+	}
 }
 
 // determine is this is a sample that should be evaluated
@@ -242,7 +276,10 @@ func NewSampleMatchFn(enableProcessMetrics *bool, includeMetricsMatchers config.
 		// configuration option is not defined and feature flag is present, FF determines, otherwise
 		// all process samples will be excluded
 		return func(sample interface{}) bool {
-			if _, isProcessSample := sample.(*types.ProcessSample); !isProcessSample {
+			_, isProcessSample := sample.(*types.ProcessSample)
+			_, isFlatProcessSample := sample.(*types.FlatProcessSample)
+
+			if !isProcessSample && !isFlatProcessSample {
 				return true
 			}
 
@@ -251,12 +288,23 @@ func NewSampleMatchFn(enableProcessMetrics *bool, includeMetricsMatchers config.
 		}
 	}
 
-	if !isEnableProcessMetrics(enableProcessMetrics) {
+	if excludeProcessMetrics(enableProcessMetrics) {
 		trace.MetricMatch("EnableProcessMetrics is FALSE, process metrics will be DISABLED")
 		return func(sample interface{}) bool {
-			// no process samples are included
-			_, isProcessSample := sample.(*types.ProcessSample)
-			return !isProcessSample
+			switch sample.(type) {
+			case *types.ProcessSample:
+				trace.MetricMatch("Got a sample of type '*types.ProcessSample' so excluding sample.")
+				// no process samples are included
+				return false
+			case *types.FlatProcessSample:
+				trace.MetricMatch("Got a sample of type '*types.FlatProcessSample' so excluding sample.")
+				// no flat process samples are included
+				return false
+			default:
+				trace.MetricMatch("Got a sample of type '%s' that should not be excluded.", reflect.TypeOf(sample).String())
+				// other samples are included
+				return true
+			}
 		}
 	}
 
@@ -275,9 +323,9 @@ func NewSampleMatchFn(enableProcessMetrics *bool, includeMetricsMatchers config.
 	}
 }
 
-func isEnableProcessMetrics(enableProcessMetrics *bool) bool {
-	if enableProcessMetrics != nil {
-		return *enableProcessMetrics
+func excludeProcessMetrics(enableProcessMetrics *bool) bool {
+	if enableProcessMetrics == nil || *enableProcessMetrics {
+		return false
 	}
-	return false
+	return true
 }

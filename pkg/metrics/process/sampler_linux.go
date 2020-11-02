@@ -90,7 +90,6 @@ func (ps *processSampler) Sample() (results sample.EventBatch, err error) {
 
 	var dockerDecorator metrics.ProcessDecorator = nil
 	if ps.containerSampler.Enabled() {
-		mplog.Info("Running Docker sampler")
 		dockerDecorator, err = ps.containerSampler.NewDecorator()
 		if err != nil {
 			if id := containerIDFromNotRunningErr(err); id != "" {
