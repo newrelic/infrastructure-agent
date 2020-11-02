@@ -229,48 +229,55 @@ func (ne constantMatcher) String() string {
 // value was not set.
 func NewSampleMatchFn(enableProcessMetrics *bool, includeMetricsMatchers config.IncludeMetricsMap, ffRetriever feature_flags.Retriever) IncludeSampleMatchFn {
 	// configuration option always takes precedence over FF and matchers configuration
-	if enableProcessMetrics != nil {
-		if *enableProcessMetrics == false {
-			trace.MetricMatch("EnableProcessMetrics is FALSE, process metrics will be DISABLED")
+	if enableProcessMetrics == nil {
+		// if config option is not set, check if we have rules defined. those take precedence over the FF
+		ec := NewMatcherChain(includeMetricsMatchers)
+		if ec.Enabled {
+			trace.MetricMatch("EnableProcessMetrics is EMPTY and rules ARE defined, process metrics will be ENABLED for matching processes")
 			return func(sample interface{}) bool {
-				// no process samples are included
-				_, isProcessSample := sample.(*types.ProcessSample)
-				return !isProcessSample
+				return ec.Evaluate(sample)
 			}
-		} else {
-			ec := NewMatcherChain(includeMetricsMatchers)
-			if ec.Enabled {
-				trace.MetricMatch("EnableProcessMetrics is TRUE and rules ARE defined, process metrics will be ENABLED for matching processes")
-				return func(sample interface{}) bool {
-					return ec.Evaluate(sample)
-				}
-			}
+		}
 
-			trace.MetricMatch("EnableProcessMetrics is TRUE and rules are NOT defined, ALL process metrics will be ENABLED")
-			return func(sample interface{}) bool {
-				// all process samples are included
+		// configuration option is not defined and feature flag is present, FF determines, otherwise
+		// all process samples will be excluded
+		return func(sample interface{}) bool {
+			if _, isProcessSample := sample.(*types.ProcessSample); !isProcessSample {
 				return true
 			}
+
+			enabled, exists := ffRetriever.GetFeatureFlag(fflag.FlagFullProcess)
+			return exists && enabled
 		}
 	}
 
-	// if config option is not set, check if we have rules defined. those take precedence over the FF
+	if !isEnableProcessMetrics(enableProcessMetrics) {
+		trace.MetricMatch("EnableProcessMetrics is FALSE, process metrics will be DISABLED")
+		return func(sample interface{}) bool {
+			// no process samples are included
+			_, isProcessSample := sample.(*types.ProcessSample)
+			return !isProcessSample
+		}
+	}
+
 	ec := NewMatcherChain(includeMetricsMatchers)
 	if ec.Enabled {
-		trace.MetricMatch("EnableProcessMetrics is EMPTY and rules ARE defined, process metrics will be ENABLED for matching processes")
+		trace.MetricMatch("EnableProcessMetrics is TRUE and rules ARE defined, process metrics will be ENABLED for matching processes")
 		return func(sample interface{}) bool {
 			return ec.Evaluate(sample)
 		}
 	}
 
-	// configuration option is not defined and feature flag is present, FF determines, otherwise
-	// all process samples will be excluded
+	trace.MetricMatch("EnableProcessMetrics is TRUE and rules are NOT defined, ALL process metrics will be ENABLED")
 	return func(sample interface{}) bool {
-		if _, isProcessSample := sample.(*types.ProcessSample); !isProcessSample {
-			return true
-		}
-
-		enabled, exists := ffRetriever.GetFeatureFlag(fflag.FlagFullProcess)
-		return exists && enabled
+		// all process samples are included
+		return true
 	}
+}
+
+func isEnableProcessMetrics(enableProcessMetrics *bool) bool {
+	if enableProcessMetrics != nil {
+		return *enableProcessMetrics
+	}
+	return false
 }
