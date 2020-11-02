@@ -8,9 +8,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
-
 	"github.com/newrelic/infrastructure-agent/pkg/backend/telemetryapi/internal"
+	"net/http"
+	"strings"
 )
 
 const (
@@ -66,14 +66,39 @@ func buildRequests(ctx context.Context, metricsBatch []metricBatch, apiKey strin
 	var entityIds string
 	buf := &bytes.Buffer{}
 	buf.WriteByte('[')
+	//for i := range metricsBatch {
+	//	metricsBatch[i].writeSingleJSON(buf)
+	//
+	//	// avoid to add multiple time same entityID
+	//	if strings.Contains(entityIds, metricsBatch[i].Identity) {
+	//		continue
+	//	}
+	//
+	//	if i > 0 {
+	//		buf.WriteByte(',')
+	//		entityIds = entityIds + ","
+	//	}
+	//
+	//	entityIds = entityIds + metricsBatch[i].Identity
+	//}
+
 	for i := range metricsBatch {
 		metricsBatch[i].writeSingleJSON(buf)
-		entityIds = entityIds + metricsBatch[i].Identity
+		// add ',' separator between metrics
 		if i < len(metricsBatch)-1 {
 			buf.WriteByte(',')
+		}
+
+		// collect unique entityID from metric
+		if strings.Contains(entityIds, metricsBatch[i].Identity) {
+			continue
+		}
+		if i > 0 {
 			entityIds = entityIds + ","
 		}
+		entityIds = entityIds + metricsBatch[i].Identity
 	}
+
 	buf.WriteByte(']')
 	req, err := createRequest(ctx, buf.Bytes(), apiKey, url, userAgent)
 	if err != nil {

@@ -286,7 +286,8 @@ func Test_newBatchRequest(t *testing.T) {
 								Timestamp: now,
 							},
 						},
-					}, {
+					},
+					{
 						Identity:       "my-identity-four",
 						Timestamp:      now,
 						Interval:       101,
@@ -327,7 +328,8 @@ func Test_newBatchRequest(t *testing.T) {
 								Timestamp: now,
 							},
 						},
-					}, {
+					},
+					{
 						Identity:       "my-identity-seven",
 						Timestamp:      now,
 						Interval:       101,
@@ -368,7 +370,8 @@ func Test_newBatchRequest(t *testing.T) {
 								Timestamp: now,
 							},
 						},
-					}, {
+					},
+					{
 						Identity:       "my-identity-ten",
 						Timestamp:      now,
 						Interval:       101,
@@ -409,7 +412,8 @@ func Test_newBatchRequest(t *testing.T) {
 								Timestamp: now,
 							},
 						},
-					}, {
+					},
+					{
 						Identity:       "my-identity-thirteen",
 						Timestamp:      now,
 						Interval:       101,
@@ -450,7 +454,8 @@ func Test_newBatchRequest(t *testing.T) {
 								Timestamp: now,
 							},
 						},
-					}, {
+					},
+					{
 						Identity:       "my-identity-sixteen",
 						Timestamp:      now,
 						Interval:       101,
@@ -504,6 +509,46 @@ func Test_newBatchRequest(t *testing.T) {
 				{xNRIEntityIdsHeader: "my-identity-thirteen,my-identity-fourteen"},
 				{xNRIEntityIdsHeader: "my-identity-fifteen,my-identity-sixteen"},
 				{xNRIEntityIdsHeader: "my-identity-seventeen,my-identity-eighteen"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "set-header-by-unique-entity-id",
+			args: args{
+				metrics: []metricBatch{
+					{
+						Identity:       "my-identity-one",
+						Timestamp:      now,
+						Interval:       101,
+						AttributesJSON: json.RawMessage(`12345678901234567890`),
+						Metrics: []Metric{
+							Count{
+								Name:      "my_count",
+								Value:     10,
+								Timestamp: now,
+								Interval:  101,
+							},
+						},
+					},
+					{
+						Identity:       "my-identity-one",
+						Timestamp:      now,
+						Interval:       101,
+						AttributesJSON: json.RawMessage(`12345678901234567890`),
+						Metrics: []Metric{
+							Summary{
+								Name:      "my_summary",
+								Count:     1,
+								Sum:       10,
+								Timestamp: now,
+								Interval:  101,
+							},
+						},
+					},
+				},
+			},
+			wantReqs: []testRequest{
+				{xNRIEntityIdsHeader: "my-identity-one"},
 			},
 			wantErr: false,
 		},
