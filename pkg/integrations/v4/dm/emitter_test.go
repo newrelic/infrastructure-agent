@@ -290,6 +290,5 @@ func getAgentContext(hostname string) *mocks.AgentContext {
 	agentCtx.On("Version").Return("dev")
 	agentCtx.On("Config").Return(config.NewConfig())
 
-
 	return agentCtx
 }
