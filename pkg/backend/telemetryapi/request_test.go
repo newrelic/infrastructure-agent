@@ -555,12 +555,17 @@ func Test_newBatchRequest(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			maxEntitiesByRequest = 2
 			expectedAPIKey := "apiKey_" + tt.name
 			expectedURL := "http://url/" + tt.name
 			expectedUserAgent := "userAgent/" + tt.name
 			expectedContext := context.Background()
-			gotReqs, err := newBatchRequest(expectedContext, tt.args.metrics, expectedAPIKey, expectedURL, expectedUserAgent)
+			gotReqs, err := newBatchRequest(expectedContext, config{
+				data:        tt.args.metrics,
+				apiKey:      expectedAPIKey,
+				url:         expectedURL,
+				userAgent:   expectedUserAgent,
+				maxEntities: 2,
+			})
 			if !tt.wantErr {
 				require.NoError(t, err)
 			}

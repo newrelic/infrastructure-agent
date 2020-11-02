@@ -12,9 +12,12 @@ import (
 	"time"
 )
 
-// DefaultMaxConns is the default value of the Config's
-// MaxConns.
-const DefaultMaxConns = 2
+const (
+	// DefaultMaxConns is the default value of the Config's
+	// MaxConns.
+	DefaultMaxConns              = 2
+	DefaultMaxEntitiesPerRequest = 100
+)
 
 // Config customizes the behavior of a Harvester.
 type Config struct {
@@ -59,6 +62,9 @@ type Config struct {
 	MaxConns int
 	// Context is the Context to use for making requests
 	Context context.Context
+	// MaxEntitiesPerBatch limits the total number of entities per request when submitting metric
+	// If zero, DefaultMaxEntitiesPerRequest is used (100 entities).
+	MaxEntitiesPerBatch int
 }
 
 // ConfigAPIKey sets the Config's APIKey which is required and refers to your
@@ -82,6 +88,14 @@ func ConfigContext(ctx context.Context) func(*Config) {
 func ConfigCommonAttributes(attributes map[string]interface{}) func(*Config) {
 	return func(cfg *Config) {
 		cfg.CommonAttributes = attributes
+	}
+}
+
+// ConfigEntitiesPerBatch sets the Config's MaxEntitiesPerBatch field which controls the
+// amount of entities that is submitted to New Relic per request.
+func ConfigEntitiesPerBatch(quantity int) func(*Config) {
+	return func(cfg *Config) {
+		cfg.MaxEntitiesPerBatch = quantity
 	}
 }
 

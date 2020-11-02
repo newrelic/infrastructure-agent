@@ -129,7 +129,13 @@ func TestMetricBatch(t *testing.T) {
 		metricBatches = append(metricBatches, metrics)
 	}
 
-	requests, err := newBatchRequest(context.Background(), metricBatches, "my-api-key", defaultMetricURL, "userAgent")
+	requests, err := newBatchRequest(context.Background(), config{
+		metricBatches,
+		"my-api-key",
+		defaultMetricURL,
+		"userAgent",
+		2,
+	})
 	require.NoError(t, err)
 	require.Len(t, requests, 1)
 	assert.Equal(t, "Identity-0,Identity-1", requests[0].Request.Header.Get("X-NRI-Entity-Ids"))

@@ -50,11 +50,12 @@ var (
 func NewHarvester(options ...func(*Config)) (*Harvester, error) {
 	backgroundCtx, cancel := context.WithCancel(context.Background())
 	cfg := Config{
-		Client:         &http.Client{},
-		HarvestPeriod:  defaultHarvestPeriod,
-		HarvestTimeout: defaultHarvestTimeout,
-		MaxConns:       DefaultMaxConns,
-		Context:        backgroundCtx,
+		Client:              &http.Client{},
+		HarvestPeriod:       defaultHarvestPeriod,
+		HarvestTimeout:      defaultHarvestTimeout,
+		MaxConns:            DefaultMaxConns,
+		MaxEntitiesPerBatch: DefaultMaxEntitiesPerRequest,
+		Context:             backgroundCtx,
 	}
 	for _, opt := range options {
 		opt(&cfg)
@@ -346,7 +347,14 @@ func (h *Harvester) swapOutBatchMetrics(ctx context.Context) (req []request) {
 	h.rawMetricsBatch = nil
 	h.lock.Unlock()
 	var err error
-	req, err = newBatchRequest(ctx, rawMetricsBatch, h.config.APIKey, h.config.metricURL(), h.config.userAgent())
+	r := config{
+		rawMetricsBatch,
+		h.config.APIKey,
+		h.config.metricURL(),
+		h.config.userAgent(),
+		h.config.MaxEntitiesPerBatch,
+	}
+	req, err = newBatchRequest(ctx, r)
 	if err != nil {
 		h.config.logError(map[string]interface{}{
 			"err":     err.Error(),

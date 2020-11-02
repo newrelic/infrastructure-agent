@@ -856,6 +856,11 @@ type Config struct {
 	// Public: No
 	MaxMetricsBatchSizeBytes int `yaml:"max_metrics_batch_size_bytes" envconfig:"max_metrics_batch_size_bytes" public:"false"`
 
+	// MaxMetricBatchEntitiesCount Defined a max amount of entities to be submitted in a single metric-ingest request. Used to avoid reach max size in req Header.
+	// Default: 800
+	// Public: No
+	MaxMetricBatchEntitiesCount int `yaml:"max_metrics_batch_entities_count" envconfig:"max_metrics_batch_entities_count" public:"false"`
+
 	// ConnectEnabled It enables or disables the connect for the agent ID resolution given the agent fingerprint.
 	// If the config option is enabled it also reconnects to update the fingerprint with the given agent ID.
 	// In case this config is enabled then it adds the resolved agent ID in the header as X-NRI-Agent-Entity-Id.
@@ -1262,6 +1267,7 @@ func NewConfig() *Config {
 		DisableInventorySplit:       defaultDisableInventorySplit,
 		MaxInventorySize:            defaultMaxInventorySize,
 		MaxMetricsBatchSizeBytes:    DefaultMaxMetricsBatchSizeBytes,
+		MaxMetricBatchEntitiesCount: DefaultMaxMetricBatchEntitiesCount,
 		StartupConnectionRetries:    defaultStartupConnectionRetries,
 		DisableZeroRSSFilter:        defaultDisableZeroRSSFilter,
 		DisableWinSharedWMI:         defaultDisableWinSharedWMI,
@@ -1646,6 +1652,10 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 
 	if cfg.MaxMetricsBatchSizeBytes > DefaultMaxMetricsBatchSizeBytes || cfg.MaxMetricsBatchSizeBytes <= 0 {
 		cfg.MaxMetricsBatchSizeBytes = DefaultMaxMetricsBatchSizeBytes
+	}
+
+	if cfg.MaxMetricBatchEntitiesCount > DefaultMaxMetricBatchEntitiesCount || cfg.MaxMetricBatchEntitiesCount <= 0 {
+		cfg.MaxMetricBatchEntitiesCount = DefaultMaxMetricBatchEntitiesCount
 	}
 
 	// Avoid clients de-facto disabling inventory splitting when we remove the disable_inventory_split function

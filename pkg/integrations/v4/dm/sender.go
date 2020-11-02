@@ -26,13 +26,15 @@ type MetricsSenderConfig struct {
 	LicenseKey       string
 	MetricApiURL     string
 	SubmissionPeriod time.Duration
+	MaxEntities      int
 }
 
-func NewConfig(baseURL string, licenseKey string, submissionPeriod time.Duration) MetricsSenderConfig {
+func NewConfig(baseURL string, licenseKey string, submissionPeriod time.Duration, maxEntities int) MetricsSenderConfig {
 	return MetricsSenderConfig{
 		LicenseKey:       licenseKey,
 		MetricApiURL:     fmt.Sprintf("%s/metric/v1/infra", baseURL),
 		SubmissionPeriod: submissionPeriod,
+		MaxEntities:      maxEntities,
 	}
 }
 

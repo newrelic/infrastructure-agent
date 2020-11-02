@@ -33,26 +33,34 @@ type requestsBuilder interface {
 }
 
 var (
-	errUnableToSplit     = fmt.Errorf("unable to split large payload further")
-	maxEntitiesByRequest = 100
+	errUnableToSplit = fmt.Errorf("unable to split large payload further")
 )
 
-func newBatchRequest(ctx context.Context, metricsBatch []metricBatch, apiKey string, url string, userAgent string) (reqs []request, err error) {
+type config struct {
+	data        []metricBatch
+	apiKey      string
+	url         string
+	userAgent   string
+	maxEntities int
+}
+
+func newBatchRequest(ctx context.Context, r config) (reqs []request, err error) {
 	// todo: split payload based on payload size
-	if len(metricsBatch) < 1 {
+	if len(r.data) < 1 {
 		return nil, nil
 	}
 
-	if len(metricsBatch) <= maxEntitiesByRequest {
-		return buildRequests(ctx, metricsBatch, apiKey, url, userAgent)
+	if len(r.data) <= r.maxEntities {
+		return buildRequests(ctx, r.data, r.apiKey, r.url, r.userAgent)
 	}
 
-	metrics := metricsBatch[:maxEntitiesByRequest]
-	req, err := buildRequests(ctx, metrics, apiKey, url, userAgent)
+	metrics := r.data[:r.maxEntities]
+	req, err := buildRequests(ctx, metrics, r.apiKey, r.url, r.userAgent)
 	reqs = append(reqs, req...)
 
-	if len(metricsBatch[maxEntitiesByRequest:]) > 0 {
-		req, err = newBatchRequest(ctx, metricsBatch[maxEntitiesByRequest:], apiKey, url, userAgent)
+	if len(r.data[r.maxEntities:]) > 0 {
+		r.data = r.data[r.maxEntities:]
+		req, err = newBatchRequest(ctx, r)
 		if nil != err {
 			return nil, err
 		}
@@ -66,21 +74,6 @@ func buildRequests(ctx context.Context, metricsBatch []metricBatch, apiKey strin
 	var entityIds string
 	buf := &bytes.Buffer{}
 	buf.WriteByte('[')
-	//for i := range metricsBatch {
-	//	metricsBatch[i].writeSingleJSON(buf)
-	//
-	//	// avoid to add multiple time same entityID
-	//	if strings.Contains(entityIds, metricsBatch[i].Identity) {
-	//		continue
-	//	}
-	//
-	//	if i > 0 {
-	//		buf.WriteByte(',')
-	//		entityIds = entityIds + ","
-	//	}
-	//
-	//	entityIds = entityIds + metricsBatch[i].Identity
-	//}
 
 	for i := range metricsBatch {
 		metricsBatch[i].writeSingleJSON(buf)
