@@ -23,6 +23,10 @@ func newClientReturning(ids ...entity.ID) identityapi.RegisterClient {
 	}
 }
 
+const (
+	agentVersion = "testVersion"
+)
+
 type fakeClient struct {
 	ids []entity.ID
 	err error
@@ -74,7 +78,7 @@ func TestWorker_Run_SendsWhenMaxTimeIsReached(t *testing.T) {
 
 	go w.Run(ctx)
 
-	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{})
+	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{}, agentVersion)
 
 	select {
 	case result := <-reqsRegisteredQueue:
@@ -107,7 +111,7 @@ func TestWorker_Run_SendsWhenMaxBatchSizeIsReached(t *testing.T) {
 
 	go w.Run(ctx)
 
-	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{})
+	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{}, agentVersion)
 
 	for registeredCount := 0; registeredCount < len(ids); registeredCount++ {
 		select {
@@ -154,9 +158,9 @@ func TestWorker_Run_SendsWhenMaxBatchBytesSizeIsReached(t *testing.T) {
 
 	go w.Run(ctx)
 
-	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{Entity: entityFields}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{})
+	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{Entity: entityFields}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{}, agentVersion)
 	// Second request will cause the batch split.
-	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{Entity: entityFields}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{})
+	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{Entity: entityFields}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{}, agentVersion)
 
 	// Expect only one registered.
 	select {

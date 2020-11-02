@@ -512,8 +512,8 @@ func checkEndpointReachable(cfg *config.Config, timeout time.Duration, transport
 		if e2, ok := err.(net.Error); ok && (e2.Timeout() || e2.Temporary()) {
 			timedout = true
 		}
-		if _, ok := err.(*url.Error); ok {
-			aslog.Debug("URL error detected. May be a configuration problem or a network connectivity issue.")
+		if errURL, ok := err.(*url.Error); ok {
+			aslog.WithError(errURL).Warn("URL error detected. May be a configuration problem or a network connectivity issue.")
 			timedout = true
 		}
 	}
