@@ -187,6 +187,371 @@ func Test_newBatchRequest(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "split-req-by-nr-of-entities",
+			args: args{
+				metrics: []metricBatch{
+					{
+						Identity:       "my-identity-one",
+						Timestamp:      now,
+						Interval:       101,
+						AttributesJSON: json.RawMessage(`12345678901234567890`),
+						Metrics: []Metric{
+							Count{
+								Name:      "my_count",
+								Value:     10,
+								Timestamp: now,
+								Interval:  101,
+							},
+						},
+					},
+					{
+						Identity:       "my-identity-two",
+						Timestamp:      now,
+						Interval:       101,
+						AttributesJSON: json.RawMessage(`12345678901234567890`),
+						Metrics: []Metric{
+							Summary{
+								Name:      "my_summary",
+								Count:     1,
+								Sum:       10,
+								Timestamp: now,
+								Interval:  101,
+							},
+						},
+					},
+					{
+						Identity:       "my-identity-three",
+						Timestamp:      now,
+						Interval:       101,
+						AttributesJSON: json.RawMessage(`12345678901234567890`),
+						Metrics: []Metric{
+							Gauge{
+								Name:      "my_gauge",
+								Value:     10,
+								Timestamp: now,
+							},
+						},
+					},
+				},
+			},
+			wantReqs: []testRequest{
+				{xNRIEntityIdsHeader: "my-identity-one,my-identity-two"},
+				{xNRIEntityIdsHeader: "my-identity-three"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "split-high-nr-of-entities",
+			args: args{
+				metrics: []metricBatch{
+					{
+						Identity:       "my-identity-one",
+						Timestamp:      now,
+						Interval:       101,
+						AttributesJSON: json.RawMessage(`12345678901234567890`),
+						Metrics: []Metric{
+							Count{
+								Name:      "my_count",
+								Value:     10,
+								Timestamp: now,
+								Interval:  101,
+							},
+						},
+					},
+					{
+						Identity:       "my-identity-two",
+						Timestamp:      now,
+						Interval:       101,
+						AttributesJSON: json.RawMessage(`12345678901234567890`),
+						Metrics: []Metric{
+							Summary{
+								Name:      "my_summary",
+								Count:     1,
+								Sum:       10,
+								Timestamp: now,
+								Interval:  101,
+							},
+						},
+					},
+					{
+						Identity:       "my-identity-three",
+						Timestamp:      now,
+						Interval:       101,
+						AttributesJSON: json.RawMessage(`12345678901234567890`),
+						Metrics: []Metric{
+							Gauge{
+								Name:      "my_gauge",
+								Value:     10,
+								Timestamp: now,
+							},
+						},
+					},
+					{
+						Identity:       "my-identity-four",
+						Timestamp:      now,
+						Interval:       101,
+						AttributesJSON: json.RawMessage(`12345678901234567890`),
+						Metrics: []Metric{
+							Count{
+								Name:      "my_count",
+								Value:     10,
+								Timestamp: now,
+								Interval:  101,
+							},
+						},
+					},
+					{
+						Identity:       "my-identity-five",
+						Timestamp:      now,
+						Interval:       101,
+						AttributesJSON: json.RawMessage(`12345678901234567890`),
+						Metrics: []Metric{
+							Summary{
+								Name:      "my_summary",
+								Count:     1,
+								Sum:       10,
+								Timestamp: now,
+								Interval:  101,
+							},
+						},
+					},
+					{
+						Identity:       "my-identity-six",
+						Timestamp:      now,
+						Interval:       101,
+						AttributesJSON: json.RawMessage(`12345678901234567890`),
+						Metrics: []Metric{
+							Gauge{
+								Name:      "my_gauge",
+								Value:     10,
+								Timestamp: now,
+							},
+						},
+					},
+					{
+						Identity:       "my-identity-seven",
+						Timestamp:      now,
+						Interval:       101,
+						AttributesJSON: json.RawMessage(`12345678901234567890`),
+						Metrics: []Metric{
+							Count{
+								Name:      "my_count",
+								Value:     10,
+								Timestamp: now,
+								Interval:  101,
+							},
+						},
+					},
+					{
+						Identity:       "my-identity-eighth",
+						Timestamp:      now,
+						Interval:       101,
+						AttributesJSON: json.RawMessage(`12345678901234567890`),
+						Metrics: []Metric{
+							Summary{
+								Name:      "my_summary",
+								Count:     1,
+								Sum:       10,
+								Timestamp: now,
+								Interval:  101,
+							},
+						},
+					},
+					{
+						Identity:       "my-identity-nine",
+						Timestamp:      now,
+						Interval:       101,
+						AttributesJSON: json.RawMessage(`12345678901234567890`),
+						Metrics: []Metric{
+							Gauge{
+								Name:      "my_gauge",
+								Value:     10,
+								Timestamp: now,
+							},
+						},
+					},
+					{
+						Identity:       "my-identity-ten",
+						Timestamp:      now,
+						Interval:       101,
+						AttributesJSON: json.RawMessage(`12345678901234567890`),
+						Metrics: []Metric{
+							Count{
+								Name:      "my_count",
+								Value:     10,
+								Timestamp: now,
+								Interval:  101,
+							},
+						},
+					},
+					{
+						Identity:       "my-identity-eleven",
+						Timestamp:      now,
+						Interval:       101,
+						AttributesJSON: json.RawMessage(`12345678901234567890`),
+						Metrics: []Metric{
+							Summary{
+								Name:      "my_summary",
+								Count:     1,
+								Sum:       10,
+								Timestamp: now,
+								Interval:  101,
+							},
+						},
+					},
+					{
+						Identity:       "my-identity-twelve",
+						Timestamp:      now,
+						Interval:       101,
+						AttributesJSON: json.RawMessage(`12345678901234567890`),
+						Metrics: []Metric{
+							Gauge{
+								Name:      "my_gauge",
+								Value:     10,
+								Timestamp: now,
+							},
+						},
+					},
+					{
+						Identity:       "my-identity-thirteen",
+						Timestamp:      now,
+						Interval:       101,
+						AttributesJSON: json.RawMessage(`12345678901234567890`),
+						Metrics: []Metric{
+							Count{
+								Name:      "my_count",
+								Value:     10,
+								Timestamp: now,
+								Interval:  101,
+							},
+						},
+					},
+					{
+						Identity:       "my-identity-fourteen",
+						Timestamp:      now,
+						Interval:       101,
+						AttributesJSON: json.RawMessage(`12345678901234567890`),
+						Metrics: []Metric{
+							Summary{
+								Name:      "my_summary",
+								Count:     1,
+								Sum:       10,
+								Timestamp: now,
+								Interval:  101,
+							},
+						},
+					},
+					{
+						Identity:       "my-identity-fifteen",
+						Timestamp:      now,
+						Interval:       101,
+						AttributesJSON: json.RawMessage(`12345678901234567890`),
+						Metrics: []Metric{
+							Gauge{
+								Name:      "my_gauge",
+								Value:     10,
+								Timestamp: now,
+							},
+						},
+					},
+					{
+						Identity:       "my-identity-sixteen",
+						Timestamp:      now,
+						Interval:       101,
+						AttributesJSON: json.RawMessage(`12345678901234567890`),
+						Metrics: []Metric{
+							Count{
+								Name:      "my_count",
+								Value:     10,
+								Timestamp: now,
+								Interval:  101,
+							},
+						},
+					},
+					{
+						Identity:       "my-identity-seventeen",
+						Timestamp:      now,
+						Interval:       101,
+						AttributesJSON: json.RawMessage(`12345678901234567890`),
+						Metrics: []Metric{
+							Summary{
+								Name:      "my_summary",
+								Count:     1,
+								Sum:       10,
+								Timestamp: now,
+								Interval:  101,
+							},
+						},
+					},
+					{
+						Identity:       "my-identity-eighteen",
+						Timestamp:      now,
+						Interval:       101,
+						AttributesJSON: json.RawMessage(`12345678901234567890`),
+						Metrics: []Metric{
+							Gauge{
+								Name:      "my_gauge",
+								Value:     10,
+								Timestamp: now,
+							},
+						},
+					},
+				},
+			},
+			wantReqs: []testRequest{
+				{xNRIEntityIdsHeader: "my-identity-one,my-identity-two"},
+				{xNRIEntityIdsHeader: "my-identity-three,my-identity-four"},
+				{xNRIEntityIdsHeader: "my-identity-five,my-identity-six"},
+				{xNRIEntityIdsHeader: "my-identity-seven,my-identity-eighth"},
+				{xNRIEntityIdsHeader: "my-identity-nine,my-identity-ten"},
+				{xNRIEntityIdsHeader: "my-identity-eleven,my-identity-twelve"},
+				{xNRIEntityIdsHeader: "my-identity-thirteen,my-identity-fourteen"},
+				{xNRIEntityIdsHeader: "my-identity-fifteen,my-identity-sixteen"},
+				{xNRIEntityIdsHeader: "my-identity-seventeen,my-identity-eighteen"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "set-header-by-unique-entity-id",
+			args: args{
+				metrics: []metricBatch{
+					{
+						Identity:       "my-identity-one",
+						Timestamp:      now,
+						Interval:       101,
+						AttributesJSON: json.RawMessage(`12345678901234567890`),
+						Metrics: []Metric{
+							Count{
+								Name:      "my_count",
+								Value:     10,
+								Timestamp: now,
+								Interval:  101,
+							},
+						},
+					},
+					{
+						Identity:       "my-identity-one",
+						Timestamp:      now,
+						Interval:       101,
+						AttributesJSON: json.RawMessage(`12345678901234567890`),
+						Metrics: []Metric{
+							Summary{
+								Name:      "my_summary",
+								Count:     1,
+								Sum:       10,
+								Timestamp: now,
+								Interval:  101,
+							},
+						},
+					},
+				},
+			},
+			wantReqs: []testRequest{
+				{xNRIEntityIdsHeader: "my-identity-one"},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -194,7 +559,13 @@ func Test_newBatchRequest(t *testing.T) {
 			expectedURL := "http://url/" + tt.name
 			expectedUserAgent := "userAgent/" + tt.name
 			expectedContext := context.Background()
-			gotReqs, err := newBatchRequest(expectedContext, tt.args.metrics, expectedAPIKey, expectedURL, expectedUserAgent)
+			gotReqs, err := newBatchRequest(expectedContext, config{
+				data:        tt.args.metrics,
+				apiKey:      expectedAPIKey,
+				url:         expectedURL,
+				userAgent:   expectedUserAgent,
+				maxEntities: 2,
+			})
 			if !tt.wantErr {
 				require.NoError(t, err)
 			}

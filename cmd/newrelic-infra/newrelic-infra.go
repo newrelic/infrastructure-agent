@@ -306,7 +306,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		os.Exit(1)
 	}
 
-	metricsSenderConfig := dm.NewConfig(c.MetricURL, c.License, time.Duration(c.DMSubmissionPeriod)*time.Second)
+	metricsSenderConfig := dm.NewConfig(c.MetricURL, c.License, time.Duration(c.DMSubmissionPeriod)*time.Second, c.MaxMetricBatchEntitiesCount)
 	dmSender, err := dm.NewDMSender(metricsSenderConfig, transport, agt.Context.IdContext().AgentIdentity)
 	if err != nil {
 		return err

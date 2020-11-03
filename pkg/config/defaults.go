@@ -36,6 +36,7 @@ var (
 	DefaultHeartBeatFrequencySecs      = 60
 	DefaultDMPeriodSecs                = 5           // default telemetry SDK value
 	DefaultMaxMetricsBatchSizeBytes    = 1000 * 1000 // Size limit from Vortex collector service (1MB)
+	DefaultMaxMetricBatchEntitiesCount = 300         // Amount limit from Vortex collector service header (8k ~ 300 entities)
 	DefaultMetricsNFSSampleRate        = 20
 	DefaultOfflineTimeToReset          = "24h"
 	DefaultStorageSamplerRateSecs      = 20

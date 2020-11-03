@@ -8,9 +8,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
-
 	"github.com/newrelic/infrastructure-agent/pkg/backend/telemetryapi/internal"
+	"net/http"
+	"strings"
 )
 
 const (
@@ -36,35 +36,72 @@ var (
 	errUnableToSplit = fmt.Errorf("unable to split large payload further")
 )
 
-func newBatchRequest(ctx context.Context, metricsBatch []metricBatch, apiKey string, url string, userAgent string) (reqs []request, err error) {
-	// todo: split payload based on:
-	// a) number of entities being sent
-	// b) payload size
-	if len(metricsBatch) < 1 {
+type config struct {
+	data        []metricBatch
+	apiKey      string
+	url         string
+	userAgent   string
+	maxEntities int
+}
+
+func newBatchRequest(ctx context.Context, r config) (reqs []request, err error) {
+	// todo: split payload based on payload size
+	if len(r.data) < 1 {
 		return nil, nil
 	}
 
+	if len(r.data) <= r.maxEntities {
+		return buildRequests(ctx, r.data, r.apiKey, r.url, r.userAgent)
+	}
+
+	metrics := r.data[:r.maxEntities]
+	req, err := buildRequests(ctx, metrics, r.apiKey, r.url, r.userAgent)
+	reqs = append(reqs, req...)
+
+	if len(r.data[r.maxEntities:]) > 0 {
+		r.data = r.data[r.maxEntities:]
+		req, err = newBatchRequest(ctx, r)
+		if nil != err {
+			return nil, err
+		}
+		reqs = append(reqs, req...)
+	}
+
+	return reqs, err
+}
+
+func buildRequests(ctx context.Context, metricsBatch []metricBatch, apiKey string, url string, userAgent string) ([]request, error) {
 	var entityIds string
 	buf := &bytes.Buffer{}
 	buf.WriteByte('[')
+
 	for i := range metricsBatch {
 		metricsBatch[i].writeSingleJSON(buf)
-		entityIds = entityIds + metricsBatch[i].Identity
+		// add ',' separator between metrics
 		if i < len(metricsBatch)-1 {
 			buf.WriteByte(',')
+		}
+
+		// collect unique entityID from metric
+		if strings.Contains(entityIds, metricsBatch[i].Identity) {
+			continue
+		}
+		if i > 0 {
 			entityIds = entityIds + ","
 		}
+		entityIds = entityIds + metricsBatch[i].Identity
 	}
+
 	buf.WriteByte(']')
 	req, err := createRequest(ctx, buf.Bytes(), apiKey, url, userAgent)
 	if err != nil {
 		return nil, err
 	}
+
 	jsonPayload := string(buf.Bytes())
 	logger.WithField("json", jsonPayload).Debug("Request created")
 	req.Request.Header.Add("X-NRI-Entity-Ids", entityIds)
-	reqs = append(reqs, req)
-	return reqs, err
+	return []request{req}, err
 }
 
 func requestNeedsSplit(r request) bool {
