@@ -56,6 +56,22 @@ func Test_EvaluatorChain_WithSingleRule(t *testing.T) {
 			want: false,
 		},
 		{
+			name:  "FlatProcessName_IsLiteralMatch",
+			input: types.FlatProcessSample{"processDisplayName": "java"},
+			rules: map[string][]string{
+				metricDimensionProcessName: {"java"},
+			},
+			want: true,
+		},
+		{
+			name:  "FlatProcessName_IsLiteralNotMatch",
+			input: types.FlatProcessSample{"processDisplayName": "java"},
+			rules: map[string][]string{
+				metricDimensionProcessName: {"test"},
+			},
+			want: false,
+		},
+		{
 			name:  "ProcessName_IsRegexMatch",
 			input: types.ProcessSample{ProcessDisplayName: "test.exe"},
 			rules: map[string][]string{
@@ -542,7 +558,7 @@ func Test_EvaluatorChain_LogTraceMatcher(t *testing.T) {
 
 	require.NotEmpty(t, hook.Entries)
 	entry := hook.LastEntry()
-	assert.Equal(t, "[metric.match] 'java' matches expression 'ProcessDisplayName' >> 'java': true", entry.Message)
+	assert.Equal(t, "[metric.match] 'java' matches expression [ProcessDisplayName processDisplayName] >> 'java': true", entry.Message)
 	assert.Equal(t, logrus.TraceLevel, entry.Level)
 }
 
@@ -585,12 +601,42 @@ func TestNewSampleMatchFn(t *testing.T) {
 			include: true,
 		},
 		{
+			name: "when enableProcessMetrics is FALSE process samples are always excluded",
+			args: args{
+				enableProcessMetrics:   &falseVar,
+				includeMetricsMatchers: emptyMatchers,
+				ffRetriever:            testFF.EmptyFFRetriever,
+				sample:                 &fixture.ProcessSample,
+			},
+			include: false,
+		},
+		{
+			name: "when enableProcessMetrics is FALSE flat process samples are always excluded",
+			args: args{
+				enableProcessMetrics:   &falseVar,
+				includeMetricsMatchers: emptyMatchers,
+				ffRetriever:            testFF.EmptyFFRetriever,
+				sample:                 &fixture.FlatProcessSample,
+			},
+			include: false,
+		},
+		{
 			name: "when enableProcessMetrics process samples are included",
 			args: args{
 				enableProcessMetrics:   &trueVar,
 				includeMetricsMatchers: emptyMatchers,
 				ffRetriever:            testFF.EmptyFFRetriever,
 				sample:                 &fixture.ProcessSample,
+			},
+			include: true,
+		},
+		{
+			name: "when enableProcessMetrics flat process samples are included",
+			args: args{
+				enableProcessMetrics:   &trueVar,
+				includeMetricsMatchers: emptyMatchers,
+				ffRetriever:            testFF.EmptyFFRetriever,
+				sample:                 &fixture.FlatProcessSample,
 			},
 			include: true,
 		},
@@ -605,12 +651,32 @@ func TestNewSampleMatchFn(t *testing.T) {
 			include: false,
 		},
 		{
+			name: "when enableProcessMetrics is not set and neither FF is, flat process samples are not included",
+			args: args{
+				enableProcessMetrics:   nil,
+				includeMetricsMatchers: emptyMatchers,
+				ffRetriever:            testFF.EmptyFFRetriever,
+				sample:                 &fixture.FlatProcessSample,
+			},
+			include: false,
+		},
+		{
 			name: "when enableProcessMetrics is not set and FF returns enabled, process samples are included",
 			args: args{
 				enableProcessMetrics:   nil,
 				includeMetricsMatchers: emptyMatchers,
 				ffRetriever:            &enabledFFRetriever{},
 				sample:                 &fixture.ProcessSample,
+			},
+			include: true,
+		},
+		{
+			name: "when enableProcessMetrics is not set and FF returns enabled, flat process samples are included",
+			args: args{
+				enableProcessMetrics:   nil,
+				includeMetricsMatchers: emptyMatchers,
+				ffRetriever:            &enabledFFRetriever{},
+				sample:                 &fixture.FlatProcessSample,
 			},
 			include: true,
 		},
@@ -625,6 +691,16 @@ func TestNewSampleMatchFn(t *testing.T) {
 			include: false,
 		},
 		{
+			name: "when enableProcessMetrics is not set and FF returns disabled, flat process samples are not included",
+			args: args{
+				enableProcessMetrics:   nil,
+				includeMetricsMatchers: emptyMatchers,
+				ffRetriever:            &disabledFFRetriever{},
+				sample:                 &fixture.FlatProcessSample,
+			},
+			include: false,
+		},
+		{
 			name: "process samples matching rules are included",
 			args: args{
 				enableProcessMetrics:   &trueVar,
@@ -635,12 +711,32 @@ func TestNewSampleMatchFn(t *testing.T) {
 			include: true,
 		},
 		{
+			name: "flat process samples matching rules are included",
+			args: args{
+				enableProcessMetrics:   &trueVar,
+				includeMetricsMatchers: config.IncludeMetricsMap{"process.name": []string{"regex \"foo.*\""}},
+				ffRetriever:            testFF.EmptyFFRetriever,
+				sample:                 &fixture.FlatProcessSample,
+			},
+			include: true,
+		},
+		{
 			name: "process samples not matching rules are not included",
 			args: args{
 				enableProcessMetrics:   &trueVar,
 				includeMetricsMatchers: config.IncludeMetricsMap{"process.name": []string{"regex \"bar*\""}},
 				ffRetriever:            testFF.EmptyFFRetriever,
 				sample:                 &fixture.ProcessSample,
+			},
+			include: false,
+		},
+		{
+			name: "flat process samples not matching rules are not included",
+			args: args{
+				enableProcessMetrics:   &trueVar,
+				includeMetricsMatchers: config.IncludeMetricsMap{"process.name": []string{"regex \"bar*\""}},
+				ffRetriever:            testFF.EmptyFFRetriever,
+				sample:                 &fixture.FlatProcessSample,
 			},
 			include: false,
 		},

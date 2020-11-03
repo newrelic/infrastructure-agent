@@ -8,10 +8,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
-	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
-	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -20,9 +16,12 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
 )
 
@@ -52,18 +51,18 @@ func TestProcessSampler_DockerDecorator(t *testing.T) {
 	require.Len(t, samples, 2)
 
 	for i := range samples {
-		sample := samples[i].(*FlatProcessSample)
-		switch int32((*sample)["processId"].(float64)) {
+		flatProcessSample := samples[i].(*types.FlatProcessSample)
+		switch int32((*flatProcessSample)["processId"].(float64)) {
 		case 1:
-			assert.Equal(t, "Hello", (*sample)["processDisplayName"])
+			assert.Equal(t, "Hello", (*flatProcessSample)["processDisplayName"])
 		case 2:
-			assert.Equal(t, "Bye", (*sample)["processDisplayName"])
+			assert.Equal(t, "Bye", (*flatProcessSample)["processDisplayName"])
 		default:
-			assert.Failf(t, fmt.Sprintf("Unknown process: %#v", *sample), "")
+			assert.Failf(t, fmt.Sprintf("Unknown process: %#v", *flatProcessSample), "")
 		}
-		assert.Equal(t, "decorated", (*sample)["containerImage"])
-		assert.Equal(t, "value1", (*sample)["containerLabel_label1"])
-		assert.Equal(t, "value2", (*sample)["containerLabel_label2"])
+		assert.Equal(t, "decorated", (*flatProcessSample)["containerImage"])
+		assert.Equal(t, "value1", (*flatProcessSample)["containerLabel_label1"])
+		assert.Equal(t, "value2", (*flatProcessSample)["containerLabel_label2"])
 	}
 }
 
@@ -79,7 +78,7 @@ func (hm *harvesterMock) Pids() ([]int32, error) {
 	return keys, nil
 }
 
-func (hm *harvesterMock) Do(pid int32, elapsedSeconds float64) (*types.ProcessSample, error) {
+func (hm *harvesterMock) Do(pid int32, _ float64) (*types.ProcessSample, error) {
 	return hm.samples[pid], nil
 }
 

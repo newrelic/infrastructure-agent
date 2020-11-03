@@ -4,8 +4,10 @@
 package types
 
 import (
-	"github.com/newrelic/infrastructure-agent/pkg/sample"
 	"github.com/shirou/gopsutil/process"
+
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/newrelic/infrastructure-agent/pkg/sample"
 )
 
 // ProcessSample data type storing all the data harvested for a process.
@@ -42,4 +44,21 @@ type ProcessSample struct {
 	// Auxiliary values, not to be reported
 	LastIOCounters  *process.IOCountersStat `json:"-"`
 	ContainerLabels map[string]string       `json:"-"`
+}
+
+// FlatProcessSample stores the process sampling information as a map
+type FlatProcessSample map[string]interface{}
+
+var _ sample.Event = &FlatProcessSample{} // FlatProcessSample implements sample.Event
+
+func (f *FlatProcessSample) Type(eventType string) {
+	(*f)["eventType"] = eventType
+}
+
+func (f *FlatProcessSample) Entity(key entity.Key) {
+	(*f)["entityKey"] = key
+}
+
+func (f *FlatProcessSample) Timestamp(timestamp int64) {
+	(*f)["timestamp"] = timestamp
 }
