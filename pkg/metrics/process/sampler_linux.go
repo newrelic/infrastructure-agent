@@ -10,9 +10,8 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
-	"github.com/newrelic/infrastructure-agent/pkg/entity"
-	metrics "github.com/newrelic/infrastructure-agent/pkg/metrics"
-	sampler "github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
 )
@@ -108,20 +107,20 @@ func (ps *processSampler) Sample() (results sample.EventBatch, err error) {
 	}
 
 	for _, pid := range pids {
-		var sample *types.ProcessSample
+		var processSample *types.ProcessSample
 		var err error
 
-		sample, err = ps.harvest.Do(pid, elapsedSeconds)
+		processSample, err = ps.harvest.Do(pid, elapsedSeconds)
 		if err != nil {
 			mplog.WithError(err).WithField("pid", pid).Debug("Skipping process.")
 			continue
 		}
 
 		if dockerDecorator != nil {
-			dockerDecorator.Decorate(sample)
+			dockerDecorator.Decorate(processSample)
 		}
 
-		results = append(results, ps.normalizeSample(sample))
+		results = append(results, ps.normalizeSample(processSample))
 	}
 
 	ps.cache.items.RemoveUntilLen(len(pids))
@@ -129,11 +128,11 @@ func (ps *processSampler) Sample() (results sample.EventBatch, err error) {
 	return results, nil
 }
 
-func (self *processSampler) normalizeSample(s *types.ProcessSample) sample.Event {
+func (ps *processSampler) normalizeSample(s *types.ProcessSample) sample.Event {
 	if len(s.ContainerLabels) > 0 {
 		sb, err := json.Marshal(s)
 		if err == nil {
-			bm := &FlatProcessSample{}
+			bm := &types.FlatProcessSample{}
 			if err = json.Unmarshal(sb, bm); err == nil {
 				for name, value := range s.ContainerLabels {
 					key := fmt.Sprintf("containerLabel_%s", name)
@@ -146,23 +145,6 @@ func (self *processSampler) normalizeSample(s *types.ProcessSample) sample.Event
 		}
 	}
 	return s
-}
-
-// FlatProcessSample stores the process sampling information as a map
-type FlatProcessSample map[string]interface{}
-
-var _ sample.Event = &FlatProcessSample{} // FlatProcessSample implements sample.Event
-
-func (f *FlatProcessSample) Type(eventType string) {
-	(*f)["eventType"] = eventType
-}
-
-func (f *FlatProcessSample) Entity(key entity.Key) {
-	(*f)["entityKey"] = key
-}
-
-func (f *FlatProcessSample) Timestamp(timestamp int64) {
-	(*f)["timestamp"] = timestamp
 }
 
 func containerIDFromNotRunningErr(err error) string {

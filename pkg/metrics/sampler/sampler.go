@@ -3,8 +3,9 @@
 package sampler
 
 import (
-	"github.com/newrelic/infrastructure-agent/pkg/sample"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/pkg/sample"
 )
 
 type Sampler interface {
