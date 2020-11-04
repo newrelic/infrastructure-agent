@@ -40,7 +40,7 @@ require (
 	github.com/tevino/abool v1.2.0
 	golang.org/dl v0.0.0-20200901180525-35ca1c5c19fb // indirect
 	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b
-	golang.org/x/sys v0.0.0-20201101102859-da207088b7d1
+	golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd
 	golang.org/x/text v0.3.3-0.20190829152558-3d0f7978add9 // indirect
 	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c // indirect
 	google.golang.org/grpc v1.29.1 // indirect
