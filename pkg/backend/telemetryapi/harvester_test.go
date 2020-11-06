@@ -689,7 +689,7 @@ func TestRequestRetryBody(t *testing.T) {
 func TestRecordInfraMetrics_MaxEntitiesPerBatchReached_returnError(t *testing.T) {
 	// GIVEN a harvester configured max event deep queue to 1
 	h, err := NewHarvester(
-		ConfigAPIKey("TestRecordInfraMetrics_MaxEventQueued_returnError"),
+		ConfigAPIKey("TestRecordInfraMetrics_MaxEntitiesPerBatchReached_returnError"),
 		ConfigMaxEntitiesPerBatch(1))
 	if err != nil {
 		t.Error("Failed to initialize harvester with error: ", err)
