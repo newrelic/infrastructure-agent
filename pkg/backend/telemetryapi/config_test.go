@@ -192,3 +192,61 @@ func TestConfigUserAgent(t *testing.T) {
 		}
 	}
 }
+
+func TestConfigMaxEntitiesPerRequest(t *testing.T) {
+	// Default
+	h, err := NewHarvester(
+		ConfigAPIKey("TestConfigMaxEntitiesPerRequest"))
+
+	if h == nil || err != nil {
+		t.Error("Failed to initialize harvester with err: ", err)
+	}
+
+	if h.config.MaxEntitiesPerRequest != DefaultMaxEntitiesPerRequest {
+		t.Error("Expected to 'MaxEntitiesPerRequest' setting be: ", DefaultMaxEntitiesPerRequest)
+	}
+
+	// With expected value
+	expectedMax := 1
+
+	h, err = NewHarvester(
+		ConfigAPIKey("TestConfigMax"),
+		ConfigMaxEntitiesPerRequest(expectedMax))
+
+	if h == nil || err != nil {
+		t.Error("Failed to initialize harvester with err: ", err)
+	}
+
+	if h.config.MaxEntitiesPerRequest != expectedMax {
+		t.Error("Expected to 'MaxEntitiesPerRequest' setting be: ", expectedMax)
+	}
+}
+
+func TestConfigMaxEntitiesPerBatch(t *testing.T) {
+	// Default
+	h, err := NewHarvester(
+		ConfigAPIKey("TestConfigMaxEntitiesPerBatch"))
+
+	if h == nil || err != nil {
+		t.Error("Failed to initialize harvester with err: ", err)
+	}
+
+	if h.config.MaxEntitiesPerBatch != DefaultMaxEntitiesPerBatch {
+		t.Error("Expected to 'MaxEntitiesPerBatch' setting be: ", DefaultMaxEntitiesPerBatch)
+	}
+
+	// With expected value
+	expectedMax := 1
+
+	h, err = NewHarvester(
+		ConfigAPIKey("TestConfigMax"),
+		ConfigMaxEntitiesPerBatch(expectedMax))
+
+	if h == nil || err != nil {
+		t.Error("Failed to initialize harvester with err: ", err)
+	}
+
+	if h.config.MaxEntitiesPerBatch != expectedMax {
+		t.Error("Expected to 'MaxEntitiesPerBatch' setting be: ", expectedMax)
+	}
+}

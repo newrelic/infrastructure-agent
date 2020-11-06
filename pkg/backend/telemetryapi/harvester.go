@@ -27,11 +27,11 @@ type Harvester struct {
 	lock              sync.Mutex
 	lastHarvest       time.Time
 	rawMetrics        []Metric
-	rawMetricsBatch   []metricBatch
 	aggregatedMetrics map[metricIdentity]*metric
 	spans             []Span
 	commonAttributes  Attributes
 	requestsQueue     chan request
+	metricBatch       metricBatchHandler
 	contextCancel     context.CancelFunc
 }
 
@@ -50,12 +50,13 @@ var (
 func NewHarvester(options ...func(*Config)) (*Harvester, error) {
 	backgroundCtx, cancel := context.WithCancel(context.Background())
 	cfg := Config{
-		Client:              &http.Client{},
-		HarvestPeriod:       defaultHarvestPeriod,
-		HarvestTimeout:      defaultHarvestTimeout,
-		MaxConns:            DefaultMaxConns,
-		MaxEntitiesPerBatch: DefaultMaxEntitiesPerRequest,
-		Context:             backgroundCtx,
+		Client:                &http.Client{},
+		HarvestPeriod:         defaultHarvestPeriod,
+		HarvestTimeout:        defaultHarvestTimeout,
+		MaxConns:              DefaultMaxConns,
+		MaxEntitiesPerRequest: DefaultMaxEntitiesPerRequest,
+		MaxEntitiesPerBatch:   DefaultMaxEntitiesPerBatch,
+		Context:               backgroundCtx,
 	}
 	for _, opt := range options {
 		opt(&cfg)
@@ -70,6 +71,7 @@ func NewHarvester(options ...func(*Config)) (*Harvester, error) {
 		lastHarvest:       time.Now(),
 		aggregatedMetrics: make(map[metricIdentity]*metric),
 		requestsQueue:     make(chan request, cfg.MaxConns),
+		metricBatch:       newMetricBatchHandler(cfg.MaxEntitiesPerBatch),
 		contextCancel:     cancel,
 	}
 
@@ -192,8 +194,6 @@ func (h *Harvester) RecordInfraMetrics(commonAttributes Attributes, metrics []Me
 		}
 	}
 
-	h.lock.Lock()
-	defer h.lock.Unlock()
 	var attributesJSON json.RawMessage
 	var identity string
 
@@ -223,14 +223,11 @@ func (h *Harvester) RecordInfraMetrics(commonAttributes Attributes, metrics []Me
 		}
 	}
 
-	// TODO limit queue len and return error when limit is reached
-	h.rawMetricsBatch = append(h.rawMetricsBatch, metricBatch{
+	return h.metricBatch.enqueue(metricBatch{
 		Identity:       identity,
 		AttributesJSON: attributesJSON,
 		Metrics:        metrics,
 	})
-
-	return nil
 }
 
 type response struct {
@@ -343,8 +340,7 @@ func (h *Harvester) swapOutMetrics(ctx context.Context, now time.Time) []request
 
 func (h *Harvester) swapOutBatchMetrics(ctx context.Context) (req []request) {
 	h.lock.Lock()
-	rawMetricsBatch := h.rawMetricsBatch
-	h.rawMetricsBatch = nil
+	rawMetricsBatch := h.metricBatch.dequeue()
 	h.lock.Unlock()
 	var err error
 	r := config{
@@ -352,7 +348,7 @@ func (h *Harvester) swapOutBatchMetrics(ctx context.Context) (req []request) {
 		h.config.APIKey,
 		h.config.metricURL(),
 		h.config.userAgent(),
-		h.config.MaxEntitiesPerBatch,
+		h.config.MaxEntitiesPerRequest,
 	}
 	req, err = newBatchRequest(ctx, r)
 	if err != nil {
@@ -580,4 +576,39 @@ func (ag *MetricAggregator) Summary(name string, attributes map[string]interface
 		return nil
 	}
 	return &AggregatedSummary{metricHandle: newMetricHandle(ag.harvester, name, attributes)}
+}
+
+type metricBatchHandler struct {
+	lock  sync.Mutex
+	index int
+	queue []metricBatch
+}
+
+func newMetricBatchHandler(maxDepth int) metricBatchHandler {
+	return metricBatchHandler{
+		index: 0,
+		queue: make([]metricBatch, maxDepth),
+	}
+}
+
+func (m *metricBatchHandler) enqueue(metric metricBatch) error {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	if m.index == cap(m.queue) {
+		return errors.New("could not queue event: queue is full")
+	}
+
+	m.queue[m.index] = metric
+	m.index++
+	return nil
+}
+
+func (m *metricBatchHandler) dequeue() []metricBatch {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	res := m.queue[:m.index]
+	m.queue = make([]metricBatch, cap(m.queue))
+	return res
 }

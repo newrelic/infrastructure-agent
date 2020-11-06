@@ -54,7 +54,8 @@ func newTelemetryHarverster(conf MetricsSenderConfig, transport http.RoundTrippe
 		telemetryHarvesterWithTransport(transport, conf.LicenseKey, idProvide),
 		telemetryHarvesterWithMetricApiUrl(conf.MetricApiURL),
 		telemetry.ConfigHarvestPeriod(conf.SubmissionPeriod),
-		telemetry.ConfigEntitiesPerBatch(conf.MaxEntities),
+		telemetry.ConfigMaxEntitiesPerRequest(conf.MaxEntitiesPerReq),
+		telemetry.ConfigMaxEntitiesPerBatch(conf.MaxEntitiesPerBatch),
 	)
 }
 

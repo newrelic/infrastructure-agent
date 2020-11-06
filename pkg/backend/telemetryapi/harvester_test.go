@@ -18,8 +18,6 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
-
-	"github.com/newrelic/infrastructure-agent/pkg/backend/telemetryapi/internal"
 )
 
 // compactJSONString removes the whitespace from a JSON string.  This function
@@ -222,20 +220,6 @@ func emptyResponse(status int) *http.Response {
 		StatusCode: status,
 		Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
 	}
-}
-
-func uncompressBody(req *http.Request) (string, error) {
-	body, err := ioutil.ReadAll(req.Body)
-	defer req.Body.Close()
-
-	if err != nil {
-		return "", fmt.Errorf("unable to read body: %v", err)
-	}
-	uncompressed, err := internal.Uncompress(body)
-	if err != nil {
-		return "", fmt.Errorf("unable to uncompress body: %v", err)
-	}
-	return string(uncompressed), nil
 }
 
 // sortedMetricsHelper is used to sort metrics for JSON comparison.
@@ -700,6 +684,29 @@ func TestRequestRetryBody(t *testing.T) {
 	})
 	h.RecordMetric(Count{})
 	h.HarvestNow(context.Background())
+}
+
+func TestRecordInfraMetrics_MaxEntitiesPerBatchReached_returnError(t *testing.T) {
+	// GIVEN a harvester configured max event deep queue to 1
+	h, err := NewHarvester(
+		ConfigAPIKey("TestRecordInfraMetrics_MaxEventQueued_returnError"),
+		ConfigMaxEntitiesPerBatch(1))
+	if err != nil {
+		t.Error("Failed to initialize harvester with error: ", err)
+	}
+
+	// AND a recorded metric
+	_ = h.RecordInfraMetrics(Attributes{}, []Metric{Count{Name: "count-metric"}})
+
+	// WHEN try to record more metrics
+	err = h.RecordInfraMetrics(Attributes{}, []Metric{
+		Summary{Name: "summary-metric"},
+	})
+
+	// THEN returns a queue busy error
+	if err == nil {
+		t.Error("Expected to failed due a max entities per batch reached")
+	}
 }
 
 // multiAttemptRoundTripper will fail the first n requests after reading
