@@ -1397,49 +1397,48 @@ func (rs *RunnerSuite) TestGenerateExecCmdEnvironmentPath(c *C) {
 }
 
 // Check that we can expand environment variables if they exist but keep the original value if not
-// SKIP: go might not be on the path"
-//func (rs *RunnerSuite) TestGenerateExecWithEnvVars(c *C) {
-//	// given
-//	_ = os.Setenv("envVar", "test")
-//	_ = os.Setenv("otherEnvVar", "bob")
-//	defer func() {
-//		_ = os.Unsetenv("envVar")
-//		_ = os.Unsetenv("otherEnvVar")
-//	}()
-//
-//	plugin := newFakePluginWithEnvVars(1)
-//	plugin.updateCmdWrappers("")
-//	cmd := plugin.getCmdWrappers()
-//	c.Assert(cmd, HasLen, 1)
-//
-//	// This will check that the system resolves the command "go" to its absolute path based on the system's $PATH
-//	goPath, err := exec.LookPath("go")
-//	c.Assert(err, IsNil)
-//	c.Assert(cmd[0].cmd.Path, Equals, goPath)
-//	c.Assert(cmd[0].cmd.Args, DeepEquals, []string{"go", "run", "test.go"}) // Go puts the command back in the args, so we expect "go" to be here
-//
-//	// Convert the env back into a map for easier checking
-//	envVarMap := make(map[string]string)
-//	for _, envVar := range cmd[0].cmd.Env {
-//		envVarParts := strings.Split(envVar, "=")
-//		envVarMap[envVarParts[0]] = envVarParts[1]
-//	}
-//	c.Assert(envVarMap["PATH"], Equals, os.Getenv("PATH"))             // The config has a PATH set as well, but the env var should take precedence
-//	c.Assert(envVarMap["VERBOSE"], Equals, "0")                        // Should be set based on config
-//	c.Assert(envVarMap["CUSTOM_ARG"], Equals, "testValue")             // Should match the config on the plugin instance
-//	c.Assert(envVarMap["PASSWORD1"], Equals, "pa$$word")               // should be kept
-//	c.Assert(envVarMap["PASSWORD2"], Equals, "pa$tor")                 // should be kept
-//	c.Assert(envVarMap["PASSWORD3"], Equals, "pa${tor}")               // should be kept
-//	c.Assert(envVarMap["PASSWORD4"], Equals, "patest")                 // should be replaced
-//	c.Assert(envVarMap["PASSWORD5"], Equals, "patestrest")             // should be replaced
-//	c.Assert(envVarMap["PASSWORD6"], Equals, "pabobsomethingtestrest") // should be replaced
-//
-//	// In config.go, these environment variables are also configured to pass through
-//	if runtime.GOOS == "windows" {
-//		c.Assert(envVarMap["ComSpec"], Equals, os.Getenv("ComSpec"))
-//		c.Assert(envVarMap["SystemRoot"], Equals, os.Getenv("SystemRoot"))
-//	}
-//}
+func (rs *RunnerSuite) TestGenerateExecWithEnvVars(c *C) {
+	// given
+	_ = os.Setenv("envVar", "test")
+	_ = os.Setenv("otherEnvVar", "bob")
+	defer func() {
+		_ = os.Unsetenv("envVar")
+		_ = os.Unsetenv("otherEnvVar")
+	}()
+
+	plugin := newFakePluginWithEnvVars(1)
+	plugin.updateCmdWrappers("")
+	cmd := plugin.getCmdWrappers()
+	c.Assert(cmd, HasLen, 1)
+
+	// This will check that the system resolves the command "go" to its absolute path based on the system's $PATH
+	goPath, err := exec.LookPath("go")
+	c.Assert(err, IsNil)
+	c.Assert(cmd[0].cmd.Path, Equals, goPath)
+	c.Assert(cmd[0].cmd.Args, DeepEquals, []string{"go", "run", "test.go"}) // Go puts the command back in the args, so we expect "go" to be here
+
+	// Convert the env back into a map for easier checking
+	envVarMap := make(map[string]string)
+	for _, envVar := range cmd[0].cmd.Env {
+		envVarParts := strings.Split(envVar, "=")
+		envVarMap[envVarParts[0]] = envVarParts[1]
+	}
+	c.Assert(envVarMap["PATH"], Equals, os.Getenv("PATH"))             // The config has a PATH set as well, but the env var should take precedence
+	c.Assert(envVarMap["VERBOSE"], Equals, "0")                        // Should be set based on config
+	c.Assert(envVarMap["CUSTOM_ARG"], Equals, "testValue")             // Should match the config on the plugin instance
+	c.Assert(envVarMap["PASSWORD1"], Equals, "pa$$word")               // should be kept
+	c.Assert(envVarMap["PASSWORD2"], Equals, "pa$tor")                 // should be kept
+	c.Assert(envVarMap["PASSWORD3"], Equals, "pa${tor}")               // should be kept
+	c.Assert(envVarMap["PASSWORD4"], Equals, "patest")                 // should be replaced
+	c.Assert(envVarMap["PASSWORD5"], Equals, "patestrest")             // should be replaced
+	c.Assert(envVarMap["PASSWORD6"], Equals, "pabobsomethingtestrest") // should be replaced
+
+	// In config.go, these environment variables are also configured to pass through
+	if runtime.GOOS == "windows" {
+		c.Assert(envVarMap["ComSpec"], Equals, os.Getenv("ComSpec"))
+		c.Assert(envVarMap["SystemRoot"], Equals, os.Getenv("SystemRoot"))
+	}
+}
 
 func (rs *RunnerSuite) TestParsePayloadV2(c *C) {
 	ctx := new(mocks.AgentContext)
