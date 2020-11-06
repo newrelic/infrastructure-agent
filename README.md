@@ -69,7 +69,7 @@ Once you've built the agent, you'll find the following binary files inside the `
 - `newrelic-infra-service`: Parent process that looks after the main process, making sure it executes and stays up.
 - `newrelic-infra-ctl`: Troubleshooting utility that enables verbose logs and executes health checks. For more information, see [Troubleshooting a running agent](https://docs.newrelic.com/docs/infrastructure/install-configure-manage-infrastructure/manage-your-agent/troubleshoot-running-agent).
 
-The agent must run in [root/administrator mode](https://docs.newrelic.com/docs/infrastructure/install-configure-infrastructure/linux-installation/linux-agent-running-modes).
+The agent could run in [root/privileged/unprivileged/administrator(win) mode](https://docs.newrelic.com/docs/infrastructure/install-configure-infrastructure/linux-installation/linux-agent-running-modes).
 
 
 ## Use the agent
