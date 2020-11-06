@@ -25,13 +25,13 @@ import (
 func Test_sender_Configuration_endpointURL(t *testing.T) {
 	prodUrl := "https://infra-api.newrelic.com/metric/v1/infra"
 
-	c := NewConfig("https://infra-api.newrelic.com", "licenseKey", time.Millisecond, 0)
+	c := NewConfig("https://infra-api.newrelic.com", "licenseKey", time.Millisecond, 0, 0)
 
 	assert.Equal(t, prodUrl, c.MetricApiURL)
 
 	stgUrl := "https://staging-metric-api.newrelic.com/metric/v1/infra"
 
-	c = NewConfig("https://staging-metric-api.newrelic.com", "licenseKey", time.Millisecond, 0)
+	c = NewConfig("https://staging-metric-api.newrelic.com", "licenseKey", time.Millisecond, 0, 0)
 
 	assert.Equal(t, stgUrl, c.MetricApiURL)
 }
