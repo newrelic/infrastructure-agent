@@ -28,7 +28,7 @@ type IngestError struct {
 }
 
 func (e *IngestError) Error() string {
-	return fmt.Sprintf("InventoryIngest: %s: %d %s %s", e.msg, e.StatusCode, e.Status, e.Body)
+	return fmt.Sprintf("IngestError: %s: %d %s %s", e.msg, e.StatusCode, e.Status, e.Body)
 }
 
 // NewIngestError returns a new IngestError.
