@@ -7,7 +7,6 @@ package linux
 import (
 	"bufio"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"io/ioutil"
 	"os"
 	"regexp"
@@ -15,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
@@ -303,14 +304,16 @@ func (self *HostinfoPlugin) setCloudRegion(data *HostinfoData) (err error) {
 }
 
 func (self *HostinfoPlugin) getHostType() string {
+	hostType := "unknown"
+
 	if self.Context.Config().DisableCloudMetadata ||
-		self.cloudHarvester.GetCloudType() == cloud.TypeNoCloud {
+		self.cloudHarvester.GetCloudType() == cloud.TypeNoCloud ||
+		self.cloudHarvester.GetCloudType() == cloud.TypeInProgress {
 		manufacturer := readFirstLine(helpers.HostSys("/devices/virtual/dmi/id/sys_vendor"))
 		name := readFirstLine(helpers.HostSys("/devices/virtual/dmi/id/product_name"))
-		return fmt.Sprintf("%s %s", manufacturer, name)
+		hostType = fmt.Sprintf("%s %s", manufacturer, name)
 	}
 
-	hostType := "unknown"
 	if response, err := self.cloudHarvester.GetHostType(); err != nil {
 		hlog.WithError(err).WithField("cloudType", self.cloudHarvester.GetCloudType()).Debug(
 			"error getting host type from cloud metadata")
