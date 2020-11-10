@@ -690,7 +690,8 @@ func TestRecordInfraMetrics_MaxEntitiesPerBatchReached_returnError(t *testing.T)
 	// GIVEN a harvester configured max event deep queue to 1
 	h, err := NewHarvester(
 		ConfigAPIKey("TestRecordInfraMetrics_MaxEntitiesPerBatchReached_returnError"),
-		ConfigMaxEntitiesPerBatch(1))
+		ConfigMaxEntitiesPerBatch(1),
+		ConfigHarvestPeriod(1*time.Millisecond))
 	if err != nil {
 		t.Error("Failed to initialize harvester with error: ", err)
 	}
@@ -706,6 +707,12 @@ func TestRecordInfraMetrics_MaxEntitiesPerBatchReached_returnError(t *testing.T)
 	// THEN returns a queue busy error
 	if err == nil {
 		t.Error("Expected to failed due a max entities per batch reached")
+	}
+
+	time.Sleep(25 * time.Millisecond)
+
+	if h.metricBatch.index != 0 {
+		t.Error("Expected to queue be consumed when harvester start to process metrics")
 	}
 }
 

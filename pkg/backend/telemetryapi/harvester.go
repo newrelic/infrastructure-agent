@@ -596,7 +596,7 @@ func (m *metricBatchHandler) enqueue(metric metricBatch) error {
 	defer m.lock.Unlock()
 
 	if m.index == cap(m.queue) {
-		return errors.New("could not queue event: queue is full")
+		return errors.New("could not queue metric: queue is full")
 	}
 
 	m.queue[m.index] = metric
@@ -610,5 +610,6 @@ func (m *metricBatchHandler) dequeue() []metricBatch {
 
 	res := m.queue[:m.index]
 	m.queue = make([]metricBatch, cap(m.queue))
+	m.index = 0
 	return res
 }
