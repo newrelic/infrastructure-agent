@@ -32,15 +32,17 @@ require (
 	github.com/opencontainers/go-digest v1.0.0-rc1.0.20180430190053-c9281466c8b2 // indirect
 	github.com/opencontainers/image-spec v1.0.2-0.20181029102219-09950c5fb1bb // indirect
 	github.com/pkg/errors v0.9.1
+	github.com/prometheus/client_golang v1.7.1
 	github.com/prometheus/procfs v0.2.0
 	github.com/shirou/gopsutil v2.18.12-0.20181220224138-a5ace91ccec8+incompatible
 	github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4 // indirect
 	github.com/sirupsen/logrus v1.6.1-0.20200528085638-6699a89a232f
-	github.com/stretchr/testify v1.5.1
+	github.com/stretchr/testify v1.6.1
 	github.com/tevino/abool v1.2.0
-	golang.org/dl v0.0.0-20200901180525-35ca1c5c19fb // indirect
+	go.opentelemetry.io/otel v0.13.0
+	go.opentelemetry.io/otel/exporters/metric/prometheus v0.13.0
 	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b
-	golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd
+	golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1
 	golang.org/x/text v0.3.3-0.20190829152558-3d0f7978add9 // indirect
 	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c // indirect
 	google.golang.org/grpc v1.29.1 // indirect
