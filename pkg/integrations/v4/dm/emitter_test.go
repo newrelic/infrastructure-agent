@@ -250,7 +250,7 @@ func TestEmitter_Send_failedToSubmitMetrics_dropAndLog(t *testing.T) {
 	ctx.SendDataWg.Wait()
 
 	entry := hook.LastEntry()
-	require.NotEmpty(t, hook.Entries)
+	require.NotEmpty(t, hook.AllEntries())
 	assert.Equal(t, "DimensionalMetricsEmitter", entry.Data["component"])
 	assert.Equal(t, "discarding metrics", entry.Message)
 	assert.Equal(t, identity.ID, entry.Data["entity"])
@@ -279,7 +279,7 @@ func TestEmitEvent_InvalidPayload(t *testing.T) {
 	emitEvent(&plugin, d, protocol.Dataset{Events: []protocol.EventData{{"value": "foo"}}}, nil, entity.ID(0))
 
 	entry := hook.LastEntry()
-	require.NotEmpty(t, hook.Entries)
+	require.NotEmpty(t, hook.AllEntries())
 	assert.Equal(t, "DimensionalMetricsEmitter", entry.Data["component"])
 	assert.Equal(t, "discarding event, failed building event data.", entry.Message)
 	assert.EqualError(t, entry.Data["error"].(error), "invalid event format: missing required 'summary' field")

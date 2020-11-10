@@ -1155,11 +1155,11 @@ func TestGenerateExecCmdWithDatabind_FetchError(t *testing.T) {
 	plugin.updateCmdWrappers("")
 	cmds := plugin.getCmdWrappers()
 	assert.Empty(t, cmds)
-	require.NotEmpty(t, hook.Entries)
+	require.NotEmpty(t, hook.AllEntries())
 	var found bool
-	for i := range hook.Entries {
-		if hook.Entries[i].Level == logrus.WarnLevel {
-			if val, ok := hook.Entries[i].Data["error"]; ok {
+	for i := range hook.AllEntries() {
+		if hook.AllEntries()[i].Level == logrus.WarnLevel {
+			if val, ok := hook.AllEntries()[i].Data["error"]; ok {
 				if val.(error).Error() == "fetch error with password=<HIDDEN>" {
 					found = true
 				}
@@ -1191,11 +1191,11 @@ func TestGenerateExecCmdWithDatabind_ReplaceError(t *testing.T) {
 	plugin.updateCmdWrappers("")
 	cmds := plugin.getCmdWrappers()
 	assert.Empty(t, cmds)
-	require.NotEmpty(t, hook.Entries)
+	require.NotEmpty(t, hook.AllEntries())
 	var found bool
-	for i := range hook.Entries {
-		if hook.Entries[i].Level == logrus.WarnLevel {
-			if val, ok := hook.Entries[i].Data["error"]; ok {
+	for i := range hook.AllEntries() {
+		if hook.AllEntries()[i].Level == logrus.WarnLevel {
+			if val, ok := hook.AllEntries()[i].Data["error"]; ok {
 				if val.(error).Error() == "replace error with password=<HIDDEN>" {
 					found = true
 				}

@@ -193,7 +193,7 @@ func TestProcess_WithoutPath(t *testing.T) {
 	}
 
 	for _, p := range processes {
-		assertLogProcessData(t, p.Name, p.ProcessID, hook.Entries)
+		assertLogProcessData(t, p.Name, p.ProcessID, hook.AllEntries())
 	}
 
 	le := hook.LastEntry()

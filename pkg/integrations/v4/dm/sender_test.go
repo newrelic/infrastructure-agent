@@ -451,7 +451,7 @@ func Test_sender_SendMetric_cumulative_count_invalid_metric(t *testing.T) {
 	harvester.AssertNotCalled(t, "RecordInfraMetrics", mock.AnythingOfType("telemetryapi.Attributes"), mock.AnythingOfType("[]telemetry.Metric"))
 
 	// THEN one long entry found
-	require.NotEmpty(t, hook.Entries)
+	require.NotEmpty(t, hook.AllEntries())
 	entry := hook.LastEntry()
 	assert.Equal(t, "CumulativeCountInvalidMetric", entry.Data["name"])
 	assert.Equal(t, noCalculationMadeErrMsg, entry.Message)
@@ -498,7 +498,7 @@ func Test_sender_SendMetric_cumulative_count_invalid_metric_value(t *testing.T) 
 	harvester.AssertNotCalled(t, "RecordInfraMetrics", mock.AnythingOfType("telemetryapi.Attributes"), mock.AnythingOfType("[]telemetry.Metric"))
 
 	// THEN one long entry found
-	require.NotEmpty(t, hook.Entries)
+	require.NotEmpty(t, hook.AllEntries())
 	entry := hook.LastEntry()
 	assert.Equal(t, name, entry.Data["name"])
 	assert.Equal(t, cumulativeType, entry.Data["metric-type"])
@@ -652,7 +652,7 @@ func Test_sender_SendMetric_rate_cumulative_invalid_metric(t *testing.T) {
 			harvester.AssertNotCalled(t, "RecordInfraMetrics", mock.AnythingOfType("telemetryapi.Attributes"), mock.AnythingOfType("[]telemetry.Metric"))
 
 			// THEN one long entry found
-			require.NotEmpty(t, hook.Entries)
+			require.NotEmpty(t, hook.AllEntries())
 			entry := hook.LastEntry()
 			assert.Equal(t, tt.name, entry.Data["name"])
 			assert.Equal(t, tt.metricType, entry.Data["metric-type"])
@@ -717,7 +717,7 @@ func Test_sender_SendMetric_rate_cumulative_invalid_metric_value(t *testing.T) {
 			harvester.AssertNotCalled(t, "RecordInfraMetrics", mock.AnythingOfType("telemetryapi.Attributes"), mock.AnythingOfType("protocol.Metric"))
 
 			// THEN one long entry found
-			require.NotEmpty(t, hook.Entries)
+			require.NotEmpty(t, hook.AllEntries())
 			entry := hook.LastEntry()
 			assert.Equal(t, tt.name, entry.Data["name"])
 			assert.Equal(t, tt.metricType, entry.Data["metric-type"])
@@ -762,7 +762,7 @@ func TestSender_SendMetrics_invalid_metric_type(t *testing.T) {
 	harvester.AssertNotCalled(t, "RecordInfraMetrics", mock.AnythingOfType("telemetryapi.Attributes"), mock.AnythingOfType("[]telemetry.Metrics"))
 
 	// THEN one long entry found
-	require.NotEmpty(t, hook.Entries)
+	require.NotEmpty(t, hook.AllEntries())
 	entry := hook.LastEntry()
 	assert.Equal(t, "received an unknown metric type", entry.Message)
 	assert.Equal(t, entry.Data["name"], "InvalidMetric")
