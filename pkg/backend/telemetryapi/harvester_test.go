@@ -686,12 +686,20 @@ func TestRequestRetryBody(t *testing.T) {
 	h.HarvestNow(context.Background())
 }
 
-func TestRecordInfraMetrics_MaxEntitiesPerBatchReached_returnError(t *testing.T) {
-	// GIVEN a harvester configured max event deep queue to 1
-	h, err := NewHarvester(
-		ConfigAPIKey("TestRecordInfraMetrics_MaxEntitiesPerBatchReached_returnError"),
-		ConfigMaxEntitiesPerBatch(1),
-		ConfigHarvestPeriod(1*time.Millisecond))
+func TestRecordInfraMetrics_MaxEntitiesPerBatchReached(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	// GIVEN a harvester configured max event deep queue to only 1 entity
+	h, err := NewHarvester(func(cfg *Config) {
+		cfg.HarvestPeriod = 0
+		cfg.APIKey = "TestRecordInfraMetrics_MaxEntitiesPerBatchReached_returnError"
+		cfg.MaxEntitiesPerBatch = 1
+		cfg.Client.Transport = roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+			defer wg.Done()
+			return emptyResponse(200), nil
+		})
+	})
 	if err != nil {
 		t.Error("Failed to initialize harvester with error: ", err)
 	}
@@ -709,10 +717,18 @@ func TestRecordInfraMetrics_MaxEntitiesPerBatchReached_returnError(t *testing.T)
 		t.Error("Expected to failed due a max entities per batch reached")
 	}
 
-	time.Sleep(25 * time.Millisecond)
+	// GIVEN a harvested metrics
+	h.HarvestNow(context.Background())
+	wg.Wait()
 
-	if h.metricBatch.index != 0 {
-		t.Error("Expected to queue be consumed when harvester start to process metrics")
+	// WHEN try to record more metrics
+	err = h.RecordInfraMetrics(Attributes{}, []Metric{
+		Summary{Name: "summary-metric"},
+	})
+
+	// THEN returns no error, since metrics queue was drained during harvesting
+	if err != nil {
+		t.Error("Expected has length in queue to add more metrics")
 	}
 }
 
