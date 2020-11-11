@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"sync"
 	"testing"
 	"time"
 
@@ -20,6 +22,7 @@ const MB = 1000 * 1000
 func newClientReturning(ids ...entity.ID) identityapi.RegisterClient {
 	return &fakeClient{
 		ids: ids,
+		wg:  &sync.WaitGroup{},
 	}
 }
 
@@ -28,11 +31,13 @@ const (
 )
 
 type fakeClient struct {
-	ids []entity.ID
-	err error
+	wg        *sync.WaitGroup
+	mutex     sync.Mutex
+	waitFor   int
+	ids       []entity.ID
+	collector [][]string
+	err       error
 }
-
-var registerCallsCount = 0
 
 func (c *fakeClient) RegisterBatchEntities(agentEntityID entity.ID, entities []entity.Fields) (r []identityapi.RegisterEntityResponse, err error) {
 	if c.err != nil {
@@ -46,7 +51,14 @@ func (c *fakeClient) RegisterBatchEntities(agentEntityID entity.ID, entities []e
 			r = append(r, identityapi.RegisterEntityResponse{Name: name, ID: id})
 		}
 	}
-	registerCallsCount++
+
+	names := make([]string, len(entities))
+	for i, e := range entities {
+		names[i] = e.Name
+	}
+	c.collector = append(c.collector, names)
+
+	c.internalWaitGroupDone()
 	return
 }
 
@@ -58,6 +70,39 @@ func (c *fakeClient) RegisterEntity(agentEntityID entity.ID, entity entity.Field
 func (c *fakeClient) RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities []identityapi.RegisterEntity) (r []identityapi.RegisterEntityResponse, t time.Duration, err error) {
 	// won't be called
 	return
+}
+
+func (c *fakeClient) assertRecordedData(t *testing.T, names [][]string) {
+	require.Equal(t, len(names), len(c.collector))
+
+	for i, n := range names {
+		assert.ElementsMatch(t, n, c.collector[i])
+	}
+}
+
+func (c *fakeClient) internalWaitGroupAdd(times int) {
+	c.waitFor = times
+	c.wg.Add(times)
+}
+
+func (c *fakeClient) internalWaitGroupDone() {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	if c.waitFor > 0 {
+		c.wg.Done()
+		c.waitFor--
+	}
+}
+
+func (c *fakeClient) internalWaitGroupRelease() {
+	for c.waitFor > 0 {
+		c.internalWaitGroupDone()
+	}
+}
+
+func (c *fakeClient) internalWaitGroupWait() {
+	c.wg.Wait()
 }
 
 func TestWorker_Run_SendsWhenMaxTimeIsReached(t *testing.T) {
@@ -92,42 +137,93 @@ func TestWorker_Run_SendsWhenMaxTimeIsReached(t *testing.T) {
 }
 
 func TestWorker_Run_SendsWhenMaxBatchSizeIsReached(t *testing.T) {
-	reqsToRegisterQueue := make(chan fwrequest.EntityFwRequest, 1)
-	reqsRegisteredQueue := make(chan fwrequest.EntityFwRequest, 1)
-
-	agentIdentity := func() entity.Identity {
-		return entity.Identity{ID: 13}
+	testCases := []struct {
+		name               string
+		batchSize          int
+		batchesCount       int
+		entitiesCount      int
+		expectedEntityName [][]string //TODO fix naming
+		batchDuration      time.Duration
+		timeout            time.Duration
+	}{
+		{
+			name:               "full batch",
+			batchSize:          1,
+			batchesCount:       1,
+			entitiesCount:      1,
+			expectedEntityName: [][]string{{"test-0"}},
+			batchDuration:      50 * time.Millisecond,
+			timeout:            100 * time.Millisecond,
+		},
+		{
+			name:               "The Hitchhiker's Guide to Galaxy - 42",
+			batchSize:          2,
+			batchesCount:       2,
+			entitiesCount:      4,
+			expectedEntityName: [][]string{{"test-0", "test-1"}, {"test-2", "test-3"}},
+			batchDuration:      50 * time.Millisecond,
+			timeout:            100 * time.Millisecond,
+		},
+		{
+			name:               "one full batch, one pending to be full",
+			batchSize:          2,
+			batchesCount:       1,
+			entitiesCount:      3,
+			expectedEntityName: [][]string{{"test-0", "test-1"}},
+			batchDuration:      200 * time.Millisecond,
+			timeout:            100 * time.Millisecond,
+		},
 	}
 
-	ids := []entity.ID{123, 456}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			reqsToRegisterQueue := make(chan fwrequest.EntityFwRequest, test.entitiesCount)
 
-	config := WorkerConfig{
-		MaxBatchSize:      2,
-		MaxBatchSizeBytes: MB,
-		MaxBatchDuration:  50 * time.Millisecond,
-		MaxRetryBo:        0,
-	}
-	w := NewWorker(agentIdentity, newClientReturning(ids...), backoff.NewDefaultBackoff(), reqsToRegisterQueue, reqsRegisteredQueue, config)
+			agentIdentity := func() entity.Identity {
+				return entity.Identity{ID: 13}
+			}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+			ids := []entity.ID{123, 456}
 
-	go w.Run(ctx)
+			config := WorkerConfig{
+				MaxBatchSize:      test.batchSize,
+				MaxBatchSizeBytes: MB,
+				MaxBatchDuration:  test.batchDuration,
+				MaxRetryBo:        0,
+			}
 
-	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{}, agentVersion)
+			client := &fakeClient{
+				ids:       ids,
+				wg:        &sync.WaitGroup{},
+				collector: make([][]string, 0),
+			}
+			client.internalWaitGroupAdd(test.batchesCount)
 
-	for registeredCount := 0; registeredCount < len(ids); registeredCount++ {
-		select {
-		case result := <-reqsRegisteredQueue:
-			assert.Equal(t, ids[registeredCount], result.ID())
-		case <-time.NewTimer(200 * time.Millisecond).C:
-			t.Error("no register response")
-		}
+			w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), reqsToRegisterQueue, make(chan fwrequest.EntityFwRequest, test.entitiesCount), config)
+
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			go w.Run(ctx)
+
+			for i := 0; i < test.entitiesCount; i++ {
+				reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{Entity: entity.Fields{
+					Name: fmt.Sprintf("test-%d", i),
+				}}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{}, agentVersion)
+			}
+
+			go func() {
+				time.Sleep(test.timeout)
+				client.internalWaitGroupRelease()
+			}()
+
+			client.internalWaitGroupWait()
+			client.assertRecordedData(t, test.expectedEntityName)
+		})
 	}
 }
 
 func TestWorker_Run_SendsWhenMaxBatchBytesSizeIsReached(t *testing.T) {
-	registerCallsCount = 0
 	reqsToRegisterQueue := make(chan fwrequest.EntityFwRequest, 10)
 	reqsRegisteredQueue := make(chan fwrequest.EntityFwRequest, 10)
 	agentIdentity := func() entity.Identity {
@@ -174,7 +270,7 @@ func TestWorker_Run_SendsWhenMaxBatchBytesSizeIsReached(t *testing.T) {
 	case <-time.After(timeout):
 		t.Error(errorMessage)
 	}
-	assert.Equal(t, 2, registerCallsCount)
+	//assert.Equal(t, 2, registerCallsCount)
 }
 
 func TestWorker_registerEntitiesWithRetry_OnError_RetryBackoff(t *testing.T) {
