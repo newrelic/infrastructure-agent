@@ -10,8 +10,8 @@ import (
 func TestEntityData_New(t *testing.T) {
 	want := EventData{
 		"eventType":            "InfrastructureEvent",
-		"category":             "notifications",
-		"summary":              "test",
+		"category":             "test-category",
+		"summary":              "test-summary",
 		"entity_name":          "test-entity_name",
 		"format":               "test-format",
 		"local_identity":       "test-local_identity",
@@ -27,7 +27,8 @@ func TestEntityData_New(t *testing.T) {
 	}
 
 	e := EventData{
-		"summary":            "test",
+		"category":           "test-category", // integrations are able to override default category
+		"summary":            "test-summary",
 		"entity_name":        "test-entity_name",
 		"format":             "test-format",
 		"local_identity":     "test-local_identity",
@@ -41,7 +42,7 @@ func TestEntityData_New(t *testing.T) {
 		"test-label-key": "test-label-value",
 	}
 
-	entity := entity.Entity{
+	en := entity.Entity{
 		Key: "test-entity-key",
 		ID:  entity.ID(1234567890),
 	}
@@ -57,7 +58,7 @@ func TestEntityData_New(t *testing.T) {
 		WithEvents(e),
 		WithIntegrationUser(u),
 		WithLabels(l),
-		WithEntity(entity),
+		WithEntity(en),
 		WithAttributes(a),
 	)
 
