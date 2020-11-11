@@ -200,7 +200,7 @@ func (r *runner) handleStderr(stderr <-chan []byte) {
 		r.lastStderr.Add(line)
 
 		if r.log.IsDebugEnabled() {
-			r.log.Debug(string(line))
+			r.log.WithField("line", string(line)).Debug("Integration stderr (not parsed).")
 		} else {
 			fields := r.stderrParser(string(line))
 			if v, ok := fields["level"]; ok && (v == "error" || v == "fatal") {
