@@ -3,6 +3,7 @@
 package dm
 
 import (
+	"errors"
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
@@ -221,6 +222,42 @@ func TestEmitter_Send(t *testing.T) {
 	}
 }
 
+func TestEmitter_Send_failedToSubmitMetrics_dropAndLog(t *testing.T) {
+	log.SetOutput(ioutil.Discard)  // discard logs so not to break race tests
+	defer log.SetOutput(os.Stderr) // return back to default
+	hook := new(logTest.Hook)
+	log.AddHook(hook)
+	log.SetLevel(logrus.WarnLevel)
+
+	identity := entity.Identity{ID: entity.ID(321)}
+	data := integrationFixture.ProtocolV4.Clone().ParsedV4
+
+	ctx := getAgentContext("TestEmitter_Send_failedToSubmitMetrics")
+	ctx.On("SendData", mock.Anything)
+	ctx.On("SendEvent", mock.Anything, mock.Anything)
+	ctx.On("Identity").Return(identity)
+	ctx.SendDataWg.Add(1)
+
+	ms := &mockedMetricsSender{wg: sync.WaitGroup{}}
+	ms.On("SendMetricsWithCommonAttributes", mock.Anything, mock.Anything).Return(errors.New("failed to submit metrics"))
+	ms.wg.Add(1)
+
+	em := NewEmitter(ctx, ms, test.NewIncrementalRegister()).(*emitter)
+	em.idCache.Put(entity.Key(fmt.Sprintf("%s:%s", data.DataSets[0].Entity.Type, data.DataSets[0].Entity.Name)), identity.ID)
+	em.Send(fwrequest.NewFwRequest(integration.Definition{ExecutorConfig: executor.Config{User: "root"}}, nil, nil, data))
+
+	ms.wg.Wait()
+	ctx.SendDataWg.Wait()
+
+	entry := hook.LastEntry()
+	require.NotEmpty(t, hook.AllEntries())
+	assert.Equal(t, "DimensionalMetricsEmitter", entry.Data["component"])
+	assert.Equal(t, "discarding metrics", entry.Message)
+	assert.Equal(t, identity.ID, entry.Data["entity"])
+	assert.EqualError(t, entry.Data["error"].(error), "failed to submit metrics")
+	assert.Equal(t, logrus.WarnLevel, entry.Level, "expected for a Warn log level")
+}
+
 func Test_NrEntityIdConst(t *testing.T) {
 	assert.Equal(t, fwrequest.EntityIdAttribute, "nr.entity.id")
 }
@@ -242,7 +279,7 @@ func TestEmitEvent_InvalidPayload(t *testing.T) {
 	emitEvent(&plugin, d, protocol.Dataset{Events: []protocol.EventData{{"value": "foo"}}}, nil, entity.ID(0))
 
 	entry := hook.LastEntry()
-	require.NotEmpty(t, hook.Entries)
+	require.NotEmpty(t, hook.AllEntries())
 	assert.Equal(t, "DimensionalMetricsEmitter", entry.Data["component"])
 	assert.Equal(t, "discarding event, failed building event data.", entry.Message)
 	assert.EqualError(t, entry.Data["error"].(error), "invalid event format: missing required 'summary' field")

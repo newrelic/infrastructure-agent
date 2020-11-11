@@ -311,6 +311,7 @@ agent_dir: /my/overriden/agent/dir
 	c.Assert(cfg.MaxProcs, Equals, defaultMaxProcs)
 	c.Assert(cfg.IgnoreSystemProxy, Equals, false)
 	c.Assert(cfg.MaxMetricBatchEntitiesCount, Equals, 300)
+	c.Assert(cfg.MaxMetricBatchEntitiesQueue, Equals, 1000)
 
 	var expectedMetricEndpoint = defaultMetricsIngestEndpoint
 	if cfg.ConnectEnabled {

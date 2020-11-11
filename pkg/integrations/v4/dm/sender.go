@@ -23,18 +23,20 @@ type MetricsSender interface {
 }
 
 type MetricsSenderConfig struct {
-	LicenseKey       string
-	MetricApiURL     string
-	SubmissionPeriod time.Duration
-	MaxEntities      int
+	LicenseKey          string
+	MetricApiURL        string
+	SubmissionPeriod    time.Duration
+	MaxEntitiesPerReq   int
+	MaxEntitiesPerBatch int
 }
 
-func NewConfig(baseURL string, licenseKey string, submissionPeriod time.Duration, maxEntities int) MetricsSenderConfig {
+func NewConfig(baseURL string, licenseKey string, submissionPeriod time.Duration, maxEntitiesPerReq int, maxEntitiesPerBatch int) MetricsSenderConfig {
 	return MetricsSenderConfig{
-		LicenseKey:       licenseKey,
-		MetricApiURL:     fmt.Sprintf("%s/metric/v1/infra", baseURL),
-		SubmissionPeriod: submissionPeriod,
-		MaxEntities:      maxEntities,
+		LicenseKey:          licenseKey,
+		MetricApiURL:        fmt.Sprintf("%s/metric/v1/infra", baseURL),
+		SubmissionPeriod:    submissionPeriod,
+		MaxEntitiesPerReq:   maxEntitiesPerReq,
+		MaxEntitiesPerBatch: maxEntitiesPerBatch,
 	}
 }
 

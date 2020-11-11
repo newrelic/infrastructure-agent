@@ -235,10 +235,10 @@ func TestManager_SkipLoadingV3IntegrationsWithNoWarnings(t *testing.T) {
 	_ = NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ, stoppable.NewTracker())
 
 	// THEN no long entries found
-	for i := range hook.Entries {
-		fmt.Println(hook.Entries[i]) // Use stdout as logger is in discard mode and we never run tests in verbose
+	for i := range hook.AllEntries() {
+		fmt.Println(hook.AllEntries()[i]) // Use stdout as logger is in discard mode and we never run tests in verbose
 	}
-	assert.Empty(t, hook.Entries)
+	assert.Empty(t, hook.AllEntries())
 }
 
 func TestManager_LogWarningForInvalidYaml(t *testing.T) {
@@ -258,7 +258,7 @@ func TestManager_LogWarningForInvalidYaml(t *testing.T) {
 	_ = NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ, stoppable.NewTracker())
 
 	// THEN one long entry found
-	require.NotEmpty(t, hook.Entries)
+	require.NotEmpty(t, hook.AllEntries())
 	entry := hook.LastEntry()
 	assert.Equal(t, "can't load integrations file", entry.Message)
 	assert.Equal(t, logrus.WarnLevel, entry.Level)

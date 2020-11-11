@@ -17,6 +17,7 @@ const (
 	// MaxConns.
 	DefaultMaxConns              = 2
 	DefaultMaxEntitiesPerRequest = 100
+	DefaultMaxEntitiesPerBatch   = 1000
 )
 
 // Config customizes the behavior of a Harvester.
@@ -48,7 +49,6 @@ type Config struct {
 	// MetricsURLOverride overrides the metrics endpoint if not not empty.
 	MetricsURLOverride string
 	// SpansURLOverride overrides the spans endpoint if not not empty.
-	//
 	// To enable Infinite Tracing on the New Relic Edge, set this field to your
 	// Trace Observer URL.  See
 	// https://docs.newrelic.com/docs/understand-dependencies/distributed-tracing/enable-configure/enable-distributed-tracing
@@ -62,8 +62,11 @@ type Config struct {
 	MaxConns int
 	// Context is the Context to use for making requests
 	Context context.Context
-	// MaxEntitiesPerBatch limits the total number of entities per request when submitting metric
+	// MaxEntitiesPerRequest limits the total number of entities per request when submitting metric
 	// If zero, DefaultMaxEntitiesPerRequest is used (100 entities).
+	MaxEntitiesPerRequest int
+	// MaxEntitiesPerBatch limits the total of metrics to queue
+	// If zero, DefaultMaxEntitiesPerBatch is used (1000 entities).
 	MaxEntitiesPerBatch int
 }
 
@@ -91,11 +94,19 @@ func ConfigCommonAttributes(attributes map[string]interface{}) func(*Config) {
 	}
 }
 
-// ConfigEntitiesPerBatch sets the Config's MaxEntitiesPerBatch field which controls the
+// ConfigMaxEntitiesPerRequest sets the Config's MaxEntitiesPerRequest field which controls the
 // amount of entities that is submitted to New Relic per request.
-func ConfigEntitiesPerBatch(quantity int) func(*Config) {
+func ConfigMaxEntitiesPerRequest(n int) func(*Config) {
 	return func(cfg *Config) {
-		cfg.MaxEntitiesPerBatch = quantity
+		cfg.MaxEntitiesPerRequest = n
+	}
+}
+
+// ConfigMaxEntitiesPerBatch sets the Config's MaxEntitiesPerBatch field which controls the
+// amount of entities that will be queued to process before submitted to New Relic.
+func ConfigMaxEntitiesPerBatch(n int) func(*Config) {
+	return func(c *Config) {
+		c.MaxEntitiesPerBatch = n
 	}
 }
 

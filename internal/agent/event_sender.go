@@ -194,7 +194,7 @@ func (sender *metricsIngestSender) QueueEvent(event sample.Event, key entity.Key
 	case sender.eventQueue <- queuedEvent:
 		return nil
 	default:
-		return fmt.Errorf("Could not queue event: Queue is full.")
+		return fmt.Errorf("could not queue event: queue is full")
 	}
 }
 
