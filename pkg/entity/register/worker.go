@@ -66,7 +66,7 @@ func (w *worker) Run(ctx context.Context) {
 		case req := <-w.reqsToRegisterQueue:
 			entitySizeBytes := req.Data.Entity.JsonSize()
 
-			if batchSizeBytes+entitySizeBytes > w.config.MaxBatchSize || len(batch) == w.config.MaxBatchSize {
+			if batchSizeBytes+entitySizeBytes > w.config.MaxBatchSizeBytes || len(batch) == w.config.MaxBatchSize {
 				timer.Reset(w.config.MaxBatchDuration)
 				w.send(ctx, batch, &batchSizeBytes)
 			}

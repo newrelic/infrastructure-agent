@@ -32,6 +32,8 @@ type fakeClient struct {
 	err error
 }
 
+var registerCallsCount = 0
+
 func (c *fakeClient) RegisterBatchEntities(agentEntityID entity.ID, entities []entity.Fields) (r []identityapi.RegisterEntityResponse, err error) {
 	if c.err != nil {
 		return nil, c.err
@@ -41,9 +43,10 @@ func (c *fakeClient) RegisterBatchEntities(agentEntityID entity.ID, entities []e
 		var name string
 		if len(entities) > i {
 			name = entities[i].Name
+			r = append(r, identityapi.RegisterEntityResponse{Name: name, ID: id})
 		}
-		r = append(r, identityapi.RegisterEntityResponse{Name: name, ID: id})
 	}
+	registerCallsCount++
 	return
 }
 
@@ -124,53 +127,54 @@ func TestWorker_Run_SendsWhenMaxBatchSizeIsReached(t *testing.T) {
 }
 
 func TestWorker_Run_SendsWhenMaxBatchBytesSizeIsReached(t *testing.T) {
+	registerCallsCount = 0
 	reqsToRegisterQueue := make(chan fwrequest.EntityFwRequest, 10)
 	reqsRegisteredQueue := make(chan fwrequest.EntityFwRequest, 10)
-
 	agentIdentity := func() entity.Identity {
 		return entity.Identity{ID: 13}
 	}
-
 	ids := []entity.ID{123, 456}
-
-	entityFields := entity.Fields{
-		Name: "test",
+	entityFields1 := entity.Fields{
+		Name: "test1",
 	}
-
+	entityFields2 := entity.Fields{
+		Name: "test2",
+	}
 	// Given a MaxBatchSize(number of elements of 100), we send even 1 if the maxBytesSize is reached.
 	config := WorkerConfig{
-		MaxBatchSize:      100,
-		MaxBatchSizeBytes: entityFields.JsonSize(),
+		MaxBatchSize:      1000,
+		MaxBatchSizeBytes: entityFields1.JsonSize(),
 		MaxBatchDuration:  50 * time.Millisecond,
 		MaxRetryBo:        0,
 	}
+	fakeRegisterClient := newClientReturning(ids...)
 	w := NewWorker(
 		agentIdentity,
-		newClientReturning(ids...),
+		fakeRegisterClient,
 		backoff.NewDefaultBackoff(),
 		reqsToRegisterQueue,
 		reqsRegisteredQueue,
 		config,
 	)
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-
 	go w.Run(ctx)
-
-	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{Entity: entityFields}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{}, agentVersion)
+	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{Entity: entityFields1}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{}, agentVersion)
 	// Second request will cause the batch split.
-	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{Entity: entityFields}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{}, agentVersion)
-
-	// Expect only one registered.
+	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{Entity: entityFields2}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{}, agentVersion)
+	timeout := 200 * time.Millisecond
+	errorMessage := "timeout reached, no messages returned"
 	select {
-	case result := <-reqsRegisteredQueue:
-		assert.Equal(t, ids[0], result.ID())
-	case <-time.NewTimer(200 * time.Millisecond).C:
-		t.Error("no register response")
+	case <-reqsRegisteredQueue:
+	case <-time.After(timeout):
+		t.Error(errorMessage)
 	}
-
-	assert.Equal(t, 0, len(reqsRegisteredQueue))
+	select {
+	case <-reqsRegisteredQueue:
+	case <-time.After(timeout):
+		t.Error(errorMessage)
+	}
+	assert.Equal(t, 2, registerCallsCount)
 }
 
 func TestWorker_registerEntitiesWithRetry_OnError_RetryBackoff(t *testing.T) {
