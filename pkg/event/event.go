@@ -3,6 +3,7 @@ package event
 // reservedFields reserved event keys.
 var reservedFields = map[string]struct{}{
 	"timestamp":    {},
+	"eventType":    {},
 	"entityID":     {},
 	"entityGuid":   {},
 	"entityKey":    {},
