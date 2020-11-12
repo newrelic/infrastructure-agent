@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/newrelic/infrastructure-agent/pkg/event"
+
 	"time"
 )
 
@@ -180,7 +182,9 @@ func NewEventData(options ...func(EventData)) (EventData, error) {
 func WithEvents(original EventData) func(EventData) {
 	return func(copy EventData) {
 		for k, v := range original {
-			copy[k] = v
+			if !event.IsReserved(k) {
+				copy[k] = v
+			}
 		}
 	}
 }
