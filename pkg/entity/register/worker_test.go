@@ -81,6 +81,9 @@ func (c *fakeClient) assertRecordedData(t *testing.T, names [][]string) {
 }
 
 func (c *fakeClient) internalWaitGroupAdd(times int) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
 	c.waitFor = times
 	c.wg.Add(times)
 }
@@ -96,6 +99,9 @@ func (c *fakeClient) internalWaitGroupDone() {
 }
 
 func (c *fakeClient) internalWaitGroupRelease() {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
 	for c.waitFor > 0 {
 		c.internalWaitGroupDone()
 	}
@@ -211,11 +217,6 @@ func TestWorker_Run_SendsWhenMaxBatchSizeIsReached(t *testing.T) {
 					Name: fmt.Sprintf("test-%d", i),
 				}}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{}, agentVersion)
 			}
-
-			go func() {
-				time.Sleep(test.timeout)
-				client.internalWaitGroupRelease()
-			}()
 
 			client.internalWaitGroupWait()
 			client.assertRecordedData(t, test.expectedEntityName)
