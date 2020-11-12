@@ -68,10 +68,8 @@ func NormalizeEvent(
 		"eventType": V1_EVENT_EVENT_TYPE,
 		"category":  V1_DEFAULT_EVENT_CATEGORY,
 	}
-	for _, key := range V1_ACCEPTED_EVENT_ATTRIBUTES {
-		if val, ok := event[key]; ok {
-			normalizedEvent[key] = val
-		}
+	for key, val := range event {
+		normalizedEvent[key] = val
 	}
 	for key, value := range labels {
 		normalizedEvent[fmt.Sprintf("label.%s", key)] = value
