@@ -219,7 +219,7 @@ func WithAttributes(a map[string]interface{}) func(EventData) {
 	return func(copy EventData) {
 		for key, value := range a {
 			if _, ok := copy[key]; ok {
-				copy[fmt.Sprintf("attr.%s", key)] = value
+				copy[fmt.Sprintf("%s%s", event.AttributesPrefix, key)] = value
 			} else {
 				copy[key] = value
 			}
