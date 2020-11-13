@@ -258,7 +258,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	}
 
 	aslog.Info("Checking network connectivity...")
-	err = waitForNetwork(c)
+	err = waitForNetwork(c.CollectorURL, c.StartupConnectionTimeout, c.StartupConnectionRetries, transport)
 	if err != nil {
 		fatal(err, "Can't reach the New Relic collector.")
 	}
@@ -459,10 +459,8 @@ func (fc *fileAndConsoleLogger) Write(b []byte) (n int, err error) {
 // If we don't wait for the network, it may happen that a cloud instance doesn't
 // properly get the cloud metadata during the initial samples, and different
 // entity IDs are seen for some minutes after the cloud instance is restarted.
-func waitForNetwork(cfg *config.Config) (err error) {
-	transport := backendhttp.BuildTransport(cfg, backendhttp.ClientTimeout)
-
-	if cfg.CollectorURL == "" {
+func waitForNetwork(collectorURL, timeout string, retries int, transport *http.Transport) (err error) {
+	if collectorURL == "" {
 		return
 	}
 
@@ -470,8 +468,7 @@ func waitForNetwork(cfg *config.Config) (err error) {
 
 	// If StartupConnectionRetries is negative, we keep checking the connection
 	// until it succeeds.
-	tries := cfg.StartupConnectionRetries
-	timeout, err := time.ParseDuration(cfg.StartupConnectionTimeout)
+	timeoutD, err := time.ParseDuration(timeout)
 	if err != nil {
 		// This should never happen, as the correct format is checked
 		// during NormalizeConfig.
@@ -480,15 +477,15 @@ func waitForNetwork(cfg *config.Config) (err error) {
 	var timedout bool
 
 	for {
-		timedout, err = checkEndpointReachable(cfg, timeout, transport)
+		timedout, err = checkEndpointReachable(collectorURL, timeoutD, transport)
 		if timedout {
-			if tries >= 0 {
-				tries -= 1
-				if tries <= 0 {
+			if retries >= 0 {
+				retries -= 1
+				if retries <= 0 {
 					break
 				}
 			}
-			aslog.WithError(err).WithField("collector_url", cfg.CollectorURL).
+			aslog.WithError(err).WithField("collector_url", collectorURL).
 				Warn("Collector endpoint not reachable, retrying...")
 			retrier.SetNextRetryWithBackoff()
 			time.Sleep(retrier.RetryAfter())
@@ -500,9 +497,9 @@ func waitForNetwork(cfg *config.Config) (err error) {
 	return
 }
 
-func checkEndpointReachable(cfg *config.Config, timeout time.Duration, transport *http.Transport) (timedout bool, err error) {
+func checkEndpointReachable(collectorURL string, timeout time.Duration, transport *http.Transport) (timedout bool, err error) {
 	var request *http.Request
-	if request, err = http.NewRequest("HEAD", cfg.CollectorURL, nil); err != nil {
+	if request, err = http.NewRequest("HEAD", collectorURL, nil); err != nil {
 		aslog.WithError(err).Debug("Unable to prepare availability request.")
 		return false, fmt.Errorf("Unable to prepare availability request: %v", request)
 	}
