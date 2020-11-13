@@ -12,10 +12,11 @@ func TestIsReserved(t *testing.T) {
 		field string
 		want  bool
 	}{
-		{"empty case", "", true},
+		{"empty", "", true},
 		{"timestamp", "timestamp", true},
 		{"hostname", "hostname", true},
 		{"non reserved", "non-reserved", false},
+		{"case independent", "entityID", true},
 		{"attribute prefix", "attr.foo", true},
 	}
 	for _, tt := range tests {

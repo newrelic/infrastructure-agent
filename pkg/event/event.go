@@ -1,5 +1,7 @@
 package event
 
+import "strings"
+
 // AttributesPrefix preffix used to prefix attributes with.
 const AttributesPrefix = "attr."
 
@@ -7,16 +9,16 @@ const AttributesPrefix = "attr."
 var reservedFields = map[string]struct{}{
 	"":             {},
 	"timestamp":    {},
-	"eventType":    {},
-	"entityID":     {},
-	"entityGuid":   {},
-	"entityKey":    {},
-	"entityName":   {},
+	"eventytype":   {},
+	"entityid":     {},
+	"entityguid":   {},
+	"entitykey":    {},
+	"entityname":   {},
 	"hostname":     {},
-	"fullHostname": {},
-	"displayName":  {},
-	"agentName":    {},
-	"coreCount":    {},
+	"fullhostname": {},
+	"displayname":  {},
+	"agentname":    {},
+	"corecount":    {},
 }
 
 // IsReserved returns true when field name is a reserved key.
@@ -26,6 +28,6 @@ func IsReserved(field string) bool {
 		return true
 	}
 
-	_, ok := reservedFields[field]
+	_, ok := reservedFields[strings.ToLower(field)]
 	return ok
 }
