@@ -5,7 +5,7 @@ import "strings"
 // AttributesPrefix preffix used to prefix attributes with.
 const AttributesPrefix = "attr."
 
-// reservedFields reserved event keys.
+// reservedFields reserved event keys, in lowercase for case insensitive comparison.
 var reservedFields = map[string]struct{}{
 	"":             {},
 	"timestamp":    {},
