@@ -7,13 +7,11 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"testing"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/backend/inventoryapi"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 type Any string
@@ -25,7 +23,7 @@ const NilValue = Nil("this-field-is-not-present")
 
 // AssertRequestContainsInventoryDeltas checks, for each RawDelta entry, that is is contained in the
 // request as a subset of all the entries.
-func AssertRequestContainsInventoryDeltas(t *testing.T, req http.Request, expected []*inventoryapi.RawDelta) {
+func AssertRequestContainsInventoryDeltas(t assert.TestingT, req http.Request, expected []*inventoryapi.RawDelta) {
 	reqBytes, err := ioutil.ReadAll(req.Body)
 	assert.NoError(t, err)
 
@@ -58,14 +56,14 @@ func AssertRequestContainsInventoryDeltas(t *testing.T, req http.Request, expect
 
 // If expected and actual are maps: checks that all the entries in the expected are contained in the actual
 // Otherwise, compare whether they are equal
-func assertSubTreeContained(t *testing.T, expected interface{}, actual interface{}) {
+func assertSubTreeContained(t assert.TestingT, expected interface{}, actual interface{}) {
 	// If an expected diff entry is nil, it just checks it exist (does not compare contents)
 	switch expected.(type) {
 	case Any:
 		return
 	case ContainsString:
 		actualStr, ok := actual.(string)
-		require.True(t, ok, "expected string value but got: %+v", actual)
+		assert.True(t, ok, "expected string value but got: %+v", actual)
 		assert.True(t, strings.Contains(actualStr, string(expected.(ContainsString))),
 			"actual string: %s, does not contain: %s", actualStr, expected)
 		return

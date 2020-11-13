@@ -408,3 +408,47 @@ func TestDeltas_HarvestAfterStoreCleanup(t *testing.T) {
 		},
 	})
 }
+
+func BenchmarkInventoryProcessingPipeline(b *testing.B) {
+	const timeout = 5 * time.Second
+
+	// Given an agent
+	testClient := ihttp.NewRequestRecorderClient(
+		ihttp.AcceptedResponse("test/dummy", 1),
+		ihttp.AcceptedResponse("test/dummy", 2))
+	a := infra.NewAgent(testClient.Client)
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
+
+	// That runs a plugin
+	plugin := newDummyPlugin("hello", a.Context)
+	a.RegisterPlugin(plugin)
+
+	go a.Run()
+
+	// When the plugin harvests inventory data
+	b.StartTimer()
+	plugin.harvest()
+
+	var req http.Request
+	select {
+	case req = <-testClient.RequestCh:
+		b.StopTimer()
+	case <-time.After(timeout):
+		a.Terminate()
+		assert.FailNow(b, "timeout while waiting for a response")
+	}
+
+	// The full delta is submitted
+	fixture.AssertRequestContainsInventoryDeltas(b, req, []*inventoryapi.RawDelta{
+		{
+			Source:   "test/dummy",
+			ID:       1,
+			FullDiff: true,
+			Diff: map[string]interface{}{
+				"dummy": map[string]interface{}{
+					"value": "hello",
+				},
+			},
+		},
+	})
+}
