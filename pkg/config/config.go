@@ -1011,6 +1011,22 @@ type Config struct {
 	// Default: none
 	// Public: Yes
 	IncludeMetricsMatchers IncludeMetricsMap `yaml:"include_matching_metrics" envconfig:"include_matching_metrics"`
+
+	// EnableMetricsEndpoint By setting true this configuration parameter the agent will
+	// open an http port (by default, 2222) for serving requests .
+	// Default: False
+	// Public: Yes
+	EnableMetricsEndpoint bool `yaml:"enable_metrics_endpoint" envconfig:"enable_metrics_endpoint"`
+
+	// MetricsEndpointHost Set the host for the HTTP server the agent will use to server OpenMetrics
+	// Default: localhost
+	// Public: Yes
+	MetricsEndpointHost string `yaml:"metrics_endpoint_host" envconfig:"metrics_endpoint_host"`
+
+	// MetricsEndpointPort Set the port for HTTP server serving OpenMetrics
+	// Default: 2222
+	// Public: Yes
+	MetricsEndpointPort int `yaml:"metrics_endpoint_port" envconfig:"metrics_endpoint_port"`
 }
 
 // Troubleshoot trobleshoot mode configuration.
@@ -1328,6 +1344,9 @@ func NewConfig() *Config {
 		DefaultIntegrationsTempDir:  defaultIntegrationsTempDir,
 		IncludeMetricsMatchers:      defaultMetricsMatcherConfig,
 		InventoryQueueLen:           DefaultInventoryQueue,
+		EnableMetricsEndpoint:       defaultEnableMetricsEndpoint,
+		MetricsEndpointHost:         defaultMetricsEndpointHost,
+		MetricsEndpointPort:         defaultMetricsEndpointPort,
 	}
 }
 

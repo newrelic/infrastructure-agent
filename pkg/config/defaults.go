@@ -95,6 +95,10 @@ var (
 	defaultTraces                        = []trace.Feature{trace.CONN}
 	defaultMetricsMatcherConfig          = IncludeMetricsMap{}
 	defaultRegisterMaxRetryBoSecs        = 60
+
+	defaultEnableMetricsEndpoint = false
+	defaultMetricsEndpointHost   = "localhost"
+	defaultMetricsEndpointPort   = 2222
 )
 
 // Default internal values

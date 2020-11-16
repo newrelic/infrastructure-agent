@@ -8,6 +8,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
@@ -206,6 +207,23 @@ var aslog = wlog.WithComponent("AgentService").WithFields(logrus.Fields{
 })
 
 func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
+	if c.EnableMetricsEndpoint {
+		server, err := instrumentation.NewOpentelemetryServer()
+		if err != nil {
+			return err
+		}
+		addr := fmt.Sprintf("%s:%v", strings.TrimSpace(c.MetricsEndpointHost), c.MetricsEndpointPort)
+		aslog.WithField("addr", addr).Info("Starting Opentelemetry server")
+		srv := &http.Server{
+			Handler:      server.GetHandler(),
+			Addr:         addr,
+			WriteTimeout: 15 * time.Second,
+			ReadTimeout:  15 * time.Second,
+		}
+		go srv.ListenAndServe()
+		defer srv.Close()
+	}
+
 	pluginSourceDirs := []string{
 		c.CustomPluginInstallationDir,
 		filepath.Join(c.AgentDir, "custom-integrations"),
