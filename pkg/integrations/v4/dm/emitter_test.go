@@ -250,7 +250,6 @@ func TestEmitter_Send_failedToSubmitMetrics_dropAndLog(t *testing.T) {
 	ctx.SendDataWg.Wait()
 
 	entry := hook.LastEntry()
-	require.NotNil(t, entry)
 	assert.Equal(t, "DimensionalMetricsEmitter", entry.Data["component"])
 	assert.Equal(t, "discarding metrics", entry.Message)
 	assert.Equal(t, identity.ID, entry.Data["entity"])
