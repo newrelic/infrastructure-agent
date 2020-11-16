@@ -333,15 +333,13 @@ func (c *PartitionsCache) Get() ([]PartitionStat, error) {
 	if c.lastStat != nil && now.Before(c.lastInvocation.Add(c.ttl)) {
 		return c.lastStat, nil
 	}
-
 	var err error
 	c.lastStat, err = c.refresh()
 	if err != nil {
 		c.lastStat = nil
 	}
 	c.lastInvocation = now
-
-	return c.lastStat, nil
+	return c.lastStat, err
 }
 
 func (c *PartitionsCache) refresh() ([]PartitionStat, error) {

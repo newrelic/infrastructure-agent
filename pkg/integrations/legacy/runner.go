@@ -29,6 +29,7 @@ import (
 
 	"github.com/golang/groupcache/lru"
 	"github.com/newrelic/infrastructure-agent/internal/agent"
+	"github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
@@ -795,6 +796,22 @@ func EmitDataSet(
 	}
 
 	return nil
+}
+
+// hostnameWithLoopbackReplacement is in this case a loopback returns the replacement hostname.
+func hostnameWithLoopbackReplacement(hostname interface{}, protocolVersion int, idLookup host.IDLookup) (string, error) {
+	h, ok := hostname.(string)
+	if !ok {
+		return "", errors.New("can't replace loopback hostname when it is not a string")
+	}
+	if protocolVersion < protocol.V3 {
+		return h, nil
+	}
+	if !http.IsLocalhost(h) {
+		return h, nil
+	}
+
+	return idLookup.AgentShortEntityName()
 }
 
 // cfgTmp is used to store a copy of the configuration to be replaced by discovery/databinding information
