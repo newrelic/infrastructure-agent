@@ -29,6 +29,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/files"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/v3legacy"
+	"github.com/newrelic/infrastructure-agent/internal/socketapi"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/stoppable"
 	"github.com/sirupsen/logrus"
 
@@ -319,6 +320,8 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	}
 	integrationEmitter := emitter.NewIntegrationEmittor(agt, dmEmitter, ffManager)
 	integrationManager := v4.NewManager(integrationCfg, integrationEmitter, il, definitionQ, tracker)
+
+	go socketapi.NewServer(integrationEmitter, il).Serve(agt.Context.Ctx)
 
 	// log-forwarder
 	fbIntCfg := v4.FBSupervisorConfig{
