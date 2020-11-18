@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
@@ -21,27 +20,23 @@ type Server struct {
 	port    int
 	logger  log.Entry
 	emitter emitter.Emitter
-	il      integration.InstancesLookup
 }
 
 type sockHandleF func() error
 
 // NewServer creates a new socket API server.
-func NewServer(emitter emitter.Emitter, il integration.InstancesLookup) *Server {
+func NewServer(emitter emitter.Emitter) *Server {
 	logger := log.WithComponent("Server")
 	return &Server{
 		port:    7070,
 		logger:  logger,
-		il:      il,
 		emitter: emitter,
 	}
 }
 
 // Serve serves socket API requests.
 func (s *Server) Serve(ctx context.Context) {
-	def, err := integration.NewDefinition(config.ConfigEntry{
-		InstanceName: IntegrationName,
-	}, s.il, nil, nil)
+	def, err := integration.NewAPIDefinition(IntegrationName)
 	if err != nil {
 		s.logger.WithError(err).Error("cannot create integration definition")
 		return
