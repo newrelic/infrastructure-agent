@@ -46,9 +46,7 @@ type InstancesLookup struct {
 	ByName func(name string) (string, error)
 }
 
-// NewDefinition creates Definition from ConfigEntry, config template, executables lookup and
-// passed through env vars.
-func NewDefinition(ce config2.ConfigEntry, lookup InstancesLookup, passthroughEnv []string, configTemplate []byte) (Definition, error) {
+func newDefinitionWithoutLookup(ce config2.ConfigEntry, passthroughEnv []string, configTemplate []byte) (Definition, error) {
 
 	if err := ce.Sanitize(); err != nil {
 		return Definition{}, err
@@ -97,21 +95,42 @@ func NewDefinition(ce config2.ConfigEntry, lookup InstancesLookup, passthroughEn
 		d.Timeout = *ce.Timeout
 	}
 
+	return d, nil
+}
+
+// NewDefinition creates Definition from ConfigEntry, config template, executables lookup and
+// passed through env vars.
+func NewDefinition(ce config2.ConfigEntry, lookup InstancesLookup, passthroughEnv []string, configTemplate []byte) (d Definition, err error) {
+	d, err = newDefinitionWithoutLookup(ce, passthroughEnv, configTemplate)
+	if err != nil {
+		return
+	}
+
 	// if looking for a v3 integration from the v4 engine
 	if ce.IntegrationName != "" {
-		err := d.fromLegacyV3(ce, lookup)
-		return d, err
+		err = d.fromLegacyV3(ce, lookup)
+		return
 	}
 	if ce.Exec != nil {
 		// if providing an executable path directly
-		err := d.fromExecPath(ce)
-		return d, err
+		err = d.fromExecPath(ce)
+		return
 	}
 	// if not an "exec" nor legacy integration, we'll look for an
 	// executable corresponding to the "name" field in any of the integrations
 	// folders, and wrap it into an "exec"
-	err := d.fromName(ce, lookup)
-	return d, err
+	err = d.fromName(ce, lookup)
+	return
+}
+
+// NewAPIDefinition creates a definition generated for payload coming from API.
+func NewAPIDefinition(integrationName string) (d Definition, err error) {
+	ce := config2.ConfigEntry{
+		InstanceName: integrationName,
+	}
+	d, err = newDefinitionWithoutLookup(ce, nil, nil)
+
+	return
 }
 
 // LoadConfigTemplate loads the contents of an external configuration file that can be passed

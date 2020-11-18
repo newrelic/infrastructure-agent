@@ -321,7 +321,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	integrationEmitter := emitter.NewIntegrationEmittor(agt, dmEmitter, ffManager)
 	integrationManager := v4.NewManager(integrationCfg, integrationEmitter, il, definitionQ, tracker)
 
-	go socketapi.NewServer(integrationEmitter, il).Serve(agt.Context.Ctx)
+	go socketapi.NewServer(integrationEmitter).Serve(agt.Context.Ctx)
 
 	// log-forwarder
 	fbIntCfg := v4.FBSupervisorConfig{
