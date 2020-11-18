@@ -8,6 +8,10 @@ import (
 	"net/http"
 )
 
+func NewNoopServer() (exporter Exporter) {
+	return &noop{}
+}
+
 type noop struct {
 }
 
@@ -21,4 +25,8 @@ func (n noop) GetHandler() http.Handler {
 		_, _ = ioutil.ReadAll(r.Body)
 		w.WriteHeader(200)
 	})
+}
+
+func (n noop) GetHttpTransport(base http.RoundTripper) http.RoundTripper {
+	return base
 }

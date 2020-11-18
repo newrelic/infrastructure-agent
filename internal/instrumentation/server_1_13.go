@@ -9,13 +9,14 @@ import (
 	"net/http"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/api/metric"
 	oprometheus "go.opentelemetry.io/otel/exporters/metric/prometheus"
 	"go.opentelemetry.io/otel/label"
 )
 
 type opentelemetry struct {
-	handler http.Handler
+	handler *oprometheus.Exporter
 	counter *metric.Int64Counter
 	meter   *metric.Meter
 }
@@ -29,6 +30,14 @@ func (o opentelemetry) IncrementSomething(val int64) {
 		context.Background(),
 		[]label.KeyValue{},
 		o.counter.Measurement(val))
+}
+
+func (o opentelemetry) GetHttpTransport(base http.RoundTripper) http.RoundTripper {
+	return otelhttp.NewTransport(base,
+		otelhttp.WithMeterProvider(o.handler.MeterProvider()),
+		otelhttp.WithMessageEvents(
+			otelhttp.ReadEvents,
+			otelhttp.WriteEvents))
 }
 
 func NewOpentelemetryServer() (exporter Exporter, err error) {

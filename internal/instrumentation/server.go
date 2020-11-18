@@ -9,4 +9,5 @@ import (
 type Exporter interface {
 	GetHandler() http.Handler
 	IncrementSomething(val int64)
+	GetHttpTransport(base http.RoundTripper) http.RoundTripper
 }

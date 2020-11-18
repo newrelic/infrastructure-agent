@@ -5,5 +5,5 @@
 package instrumentation
 
 func NewOpentelemetryServer() (exporter Exporter, err error) {
-	return &noop{}, nil
+	return NewNoopServer(), nil
 }
