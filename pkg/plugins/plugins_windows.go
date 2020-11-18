@@ -31,6 +31,10 @@ func RegisterPlugins(agent *agnt.Agent) error {
 
 	agent.RegisterPlugin(NewCustomAttrsPlugin(agent.Context))
 
+	if config.HTTPServerEnabled {
+		agent.RegisterPlugin(NewHTTPServerPlugin(agent.Context, config.HTTPServerHost, config.HTTPServerPort))
+	}
+
 	if config.IsSecureForwardOnly {
 		// We need heartbeat samples.
 		sender := metricsSender.NewSender(agent.Context)
