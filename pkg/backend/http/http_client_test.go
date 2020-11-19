@@ -4,33 +4,30 @@ package http
 
 import (
 	"io/ioutil"
+	"testing"
 
-	. "gopkg.in/check.v1"
+	"github.com/stretchr/testify/assert"
 )
 
-type HttpSuite struct{}
-
-var _ = Suite(&HttpSuite{})
-
-func (s *HttpSuite) TestCertPoolFunctionality(c *C) {
+func TestCertPoolFunctionality(t *testing.T) {
 
 	initialCerts := len(systemCertPool().Subjects())
 
 	ca1, err := ioutil.TempFile("", "ca.pem")
-	c.Assert(err, IsNil)
+	assert.NoError(t, err)
 	tempDir, err := ioutil.TempDir("", "certDir")
-	c.Assert(err, IsNil)
+	assert.NoError(t, err)
 	ca2, err := ioutil.TempFile(tempDir, "ca2.pem")
-	c.Assert(err, IsNil)
+	assert.NoError(t, err)
 	ca3, err := ioutil.TempFile(tempDir, "ca3.pem")
-	c.Assert(err, IsNil)
+	assert.NoError(t, err)
 
-	ca1.WriteString(firstCA)
-	ca2.WriteString(anotherCA)
-	ca3.WriteString(yetAnotherCA)
+	_, _ = ca1.WriteString(firstCA)
+	_, _ = ca2.WriteString(anotherCA)
+	_, _ = ca3.WriteString(yetAnotherCA)
 
 	certPool := getCertPool(ca1.Name(), tempDir)
-	c.Assert(len(certPool.Subjects()), Equals, initialCerts+3) //check to make sure cert pool contains 3 certificates
+	assert.Len(t, certPool.Subjects(), initialCerts+3) //check to make sure cert pool contains 3 certificates
 
 }
 

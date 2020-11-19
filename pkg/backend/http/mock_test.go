@@ -5,38 +5,36 @@ package http
 import (
 	"io/ioutil"
 	"net/http"
+	"testing"
 
-	. "gopkg.in/check.v1"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-type TestSuite struct{}
-
-var _ = Suite(&TestSuite{})
-
-func (s *TestSuite) TestMockTransport(c *C) {
+func TestMockTransport(t *testing.T) {
 	mock := NewMockTransport()
 	client := &http.Client{
 		Transport: mock,
 	}
 	mock.Append(200, []byte(`foo`))
-	s.Get(client, `foo`, c)
+	assertGet(t, client, `foo`)
 	// try again
-	s.Get(client, `foo`, c)
+	assertGet(t, client, `foo`)
 	// should get the empty value now
 	mock.WhenEmpty(200, []byte(`bar`))
-	s.Get(client, `bar`, c)
-	s.Get(client, `bar`, c)
+	assertGet(t, client, `bar`)
+	assertGet(t, client, `bar`)
 	// and not anymore
 	mock.Append(200, []byte(`foo`))
-	s.Get(client, `foo`, c)
+	assertGet(t, client, `foo`)
 }
 
-func (s *TestSuite) Get(client *http.Client, expected string, c *C) {
-	resp, err := client.Get("http://jsonip.com")
-	c.Assert(err, IsNil)
+func assertGet(t *testing.T, client *http.Client, expected string) {
+	resp, err := client.Get("http://unit.test")
+	assert.NoError(t, err)
 	body, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
 	defer resp.Body.Close()
-	c.Assert(err, IsNil)
-	c.Assert(body, NotNil)
-	c.Assert(string(body), Equals, expected)
+	assert.NotEmpty(t, body)
+	assert.Equal(t, expected, string(body))
 }
