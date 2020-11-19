@@ -125,7 +125,7 @@ func proxyByPriority(cfg *config.Config) proxyConfig {
 // If the configuration option ignore_system_proxy is set, it ignores the HTTPS_PROXY and HTTP_PROXY configuration
 // If the configuration option proxy_validate_certificates is set, it will force the HTTPS proxy options to verify the
 // certificates
-func BuildTransport(cfg *config.Config, timeout time.Duration) *http.Transport {
+func BuildTransport(cfg *config.Config, timeout time.Duration) http.RoundTripper {
 	proxyConfig := proxyByPriority(cfg)
 
 	if proxyConfig.isEmpty() {

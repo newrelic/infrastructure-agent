@@ -500,7 +500,7 @@ func waitForNetwork(cfg *config.Config) (err error) {
 	return
 }
 
-func checkEndpointReachable(cfg *config.Config, timeout time.Duration, transport *http.Transport) (timedout bool, err error) {
+func checkEndpointReachable(cfg *config.Config, timeout time.Duration, transport http.RoundTripper) (timedout bool, err error) {
 	var request *http.Request
 	if request, err = http.NewRequest("HEAD", cfg.CollectorURL, nil); err != nil {
 		aslog.WithError(err).Debug("Unable to prepare availability request.")

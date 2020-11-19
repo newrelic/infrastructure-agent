@@ -218,7 +218,7 @@ func NewContext(
 	}
 }
 
-func checkEndpointAvailability(ctx context2.Context, cfg *config.Config, userAgent, agentKey string, timeout time.Duration, transport *http.Transport) (timedout bool, err error) {
+func checkEndpointAvailability(ctx context2.Context, cfg *config.Config, userAgent, agentKey string, timeout time.Duration, transport http.RoundTripper) (timedOut bool, err error) {
 	var request *http.Request
 	if request, err = http.NewRequest("HEAD", cfg.CollectorURL, nil); err != nil {
 		return false, fmt.Errorf("unable to prepare availability request: %v", request)
@@ -234,7 +234,7 @@ func checkEndpointAvailability(ctx context2.Context, cfg *config.Config, userAge
 
 	if _, err = client.Do(request); err != nil {
 		if e2, ok := err.(net.Error); ok && (e2.Timeout() || e2.Temporary()) {
-			timedout = true
+			timedOut = true
 		}
 		if _, ok := err.(*url.Error); ok {
 			alog.WithError(err).WithFields(logrus.Fields{
@@ -242,14 +242,14 @@ func checkEndpointAvailability(ctx context2.Context, cfg *config.Config, userAge
 				"timeout":   timeout,
 				"url":       cfg.CollectorURL,
 			}).Debug("URL Error detected, may be configuration problem or network connectivity issue.")
-			timedout = true
+			timedOut = true
 		}
 	}
 
 	return
 }
 
-func checkCollectorConnectivity(ctx context2.Context, cfg *config.Config, retrier *backoff.RetryManager, userAgent string, agentKey string, transport *http.Transport) (err error) {
+func checkCollectorConnectivity(ctx context2.Context, cfg *config.Config, retrier *backoff.RetryManager, userAgent string, agentKey string, transport http.RoundTripper) (err error) {
 	if cfg.CollectorURL == "" {
 		return
 	}
@@ -396,7 +396,7 @@ func New(
 	connectSrv *identityConnectService,
 	provideIDs ProvideIDs,
 	dataClient backendhttp.Client,
-	transport *http.Transport,
+	transport http.RoundTripper,
 	cloudHarvester cloud.Harvester,
 	fpHarvester fingerprint.Harvester,
 	notificationHandler *ctl.NotificationHandlerWithCancellation,
