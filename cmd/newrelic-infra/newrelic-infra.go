@@ -458,7 +458,7 @@ func (fc *fileAndConsoleLogger) Write(b []byte) (n int, err error) {
 // If we don't wait for the network, it may happen that a cloud instance doesn't
 // properly get the cloud metadata during the initial samples, and different
 // entity IDs are seen for some minutes after the cloud instance is restarted.
-func waitForNetwork(collectorURL, timeout string, retries int, transport *http.Transport) (err error) {
+func waitForNetwork(collectorURL, timeout string, retries int, transport http.RoundTripper) (err error) {
 	if collectorURL == "" {
 		return
 	}
