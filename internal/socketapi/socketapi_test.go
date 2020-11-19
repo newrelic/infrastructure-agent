@@ -14,7 +14,7 @@ import (
 
 func TestPayloadFwServer_Serve(t *testing.T) {
 	e := &testemit.RecordEmitter{}
-	pf := NewServer(e, il)
+	pf := NewServer(e)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
