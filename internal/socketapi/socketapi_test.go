@@ -1,3 +1,5 @@
+// Copyright 2020 New Relic Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 package socketapi
 
 import (
@@ -5,16 +7,22 @@ import (
 	"net"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/testhelp/testemit"
+	"github.com/newrelic/infrastructure-agent/internal/os/distro"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestPayloadFwServer_Serve(t *testing.T) {
+	if distro.IsCentos5() {
+		t.Skip("centos5 CI not reliable")
+	}
+
 	e := &testemit.RecordEmitter{}
-	pf := NewServer(e)
+	pf := NewServer(e, 17171)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -22,7 +30,7 @@ func TestPayloadFwServer_Serve(t *testing.T) {
 
 	payloadWritten := make(chan struct{})
 	go func() {
-		conn, err := net.Dial("tcp", "localhost:7070")
+		conn, err := net.Dial("tcp", "localhost:17171")
 		require.NoError(t, err)
 		_, err = conn.Write([]byte(strings.Replace(`{
   "protocol_version": "4",
@@ -45,7 +53,13 @@ func TestPayloadFwServer_Serve(t *testing.T) {
 		close(payloadWritten)
 	}()
 
-	<-payloadWritten
+	select {
+	case <-time.NewTimer(500 * time.Millisecond).C:
+		t.Fail()
+		return
+	case <-payloadWritten:
+	}
+
 	d, err := e.ReceiveFrom(IntegrationName)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, d)

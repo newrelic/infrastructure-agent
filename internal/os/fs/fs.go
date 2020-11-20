@@ -20,7 +20,7 @@ func ReadFirstLine(filename string) (line string, err error) {
 	scanner := bufio.NewScanner(file)
 	scanner.Scan()
 	output := scanner.Text()
-	if err := scanner.Err(); err != nil {
+	if err = scanner.Err(); err != nil {
 		err = fmt.Errorf("cannot read file %s, err: %s", filename, err)
 		line = "unknown"
 		return

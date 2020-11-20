@@ -756,11 +756,15 @@ type Config struct {
 	// Public: Yes
 	HTTPServerHost string `yaml:"http_server_host" envconfig:"http_server_host"`
 
-	// HTTPServerPort Set the port for http server(used only by statsD integration) to receive data	from New Relic
-	// statsD backend.
+	// HTTPServerPort Set the port for http server (used by statsD integration) to receive integration payloads.
 	// Default: 8001
 	// Public: Yes
 	HTTPServerPort int `yaml:"http_server_port" envconfig:"http_server_port"`
+
+	// TCPServerPort Set the port for tcp server(used only by statsD integration) to receive integration payloads.
+	// Default: 8002
+	// Public: Yes
+	TCPServerPort int `yaml:"tcp_server_port" envconfig:"tcp_server_port"`
 
 	// AppDataDir This option is only for Windows. It defines the path to store data in a different path than the
 	// program files directory.
@@ -1251,6 +1255,7 @@ func NewConfig() *Config {
 		LogFormat:                     defaultLogFormat,
 		HTTPServerHost:                defaultHTTPServerHost,
 		HTTPServerPort:                defaultHTTPServerPort,
+		TCPServerPort:                 defaultTCPServerPort,
 		DockerApiVersion:              DefaultDockerApiVersion,
 		FingerprintUpdateFreqSec:      defaultFingerprintUpdateFreqSec,
 		CloudMetadataExpiryInSec:      defaultCloudMetadataExpiryInSec,

@@ -1,3 +1,5 @@
+// Copyright 2020 New Relic Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 package socketapi
 
 import (
@@ -25,10 +27,10 @@ type Server struct {
 type sockHandleF func() error
 
 // NewServer creates a new socket API server.
-func NewServer(emitter emitter.Emitter) *Server {
+func NewServer(emitter emitter.Emitter, port int) *Server {
 	logger := log.WithComponent("Server")
 	return &Server{
-		port:    7070,
+		port:    port,
 		logger:  logger,
 		emitter: emitter,
 	}

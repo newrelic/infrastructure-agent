@@ -315,7 +315,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	integrationEmitter := emitter.NewIntegrationEmittor(agt, dmEmitter, ffManager)
 	integrationManager := v4.NewManager(integrationCfg, integrationEmitter, il, definitionQ, tracker)
 
-	go socketapi.NewServer(integrationEmitter).Serve(agt.Context.Ctx)
+	go socketapi.NewServer(integrationEmitter, c.TCPServerPort).Serve(agt.Context.Ctx)
 
 	// Start all plugins we want the agent to run.
 	if err = plugins.RegisterPlugins(agt, integrationEmitter); err != nil {
