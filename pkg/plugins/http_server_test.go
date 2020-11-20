@@ -3,7 +3,6 @@
 package plugins
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -11,46 +10,27 @@ import (
 	"testing"
 	"time"
 
-	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/testhelp/testemit"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
-	"github.com/newrelic/infrastructure-agent/pkg/config"
-	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
-	"github.com/newrelic/infrastructure-agent/pkg/sample"
-	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
-	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestHTTPServerPlugin(t *testing.T) {
-
-	ctx := new(mocks.AgentContext)
-	ctx.On("Config").Return(&config.Config{
-		MetricsNetworkSampleRate: 1,
-	})
-	var pOut *agent.PluginOutput = nil
-	ctx.On("SendData", mock.Anything).Run(func(args mock.Arguments) {
-		po := args.Get(0).(agent.PluginOutput)
-		pOut = &po
-	})
-	ctx.SendDataWg.Add(1)
-	ch := make(chan sample.Event, 10)
-	ctx.On("SendEvent", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
-		ch <- args.Get(0).(sample.Event)
-	})
-
-	ctx.On("HostnameResolver").Return(testhelpers.NewFakeHostnameResolver("something.com", "sc", nil))
-	ctx.On("EntityKey").Return("test-agent")
-	ctx.On("IDLookup").Return(host.IDLookup{"test-agent": "test-agent-id"})
-
 	// Given an HTTP Server Plugin
 	port, err := testhelpers.GetFreePort()
 	require.NoError(t, err)
-	hsp := NewHTTPServerPlugin(ctx, "127.0.0.1", port)
+
+	e := &testemit.RecordEmitter{}
+
+	hsp, err := NewHTTPServerPlugin(new(mocks.AgentContext), "127.0.0.1", port, e)
+	require.NoError(t, err)
+
 	go hsp.Run()
 
-	// that is listening
+	// And an client connects
 	client := http.Client{}
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -68,7 +48,7 @@ func TestHTTPServerPlugin(t *testing.T) {
 
 	wg.Wait()
 
-	// When an integration sends data to the HTTP Server plugin
+	// When a payload is posted to the HTTP endpoint
 	body := strings.NewReader(`{"name":"int1","protocol_version":"1","integration_version":"1",` +
 		`"metrics":[{"event_type":"MyMetric","value":123}],` +
 		`"inventory":{"thing":{"urlEntry":"value"}},` +
@@ -77,39 +57,24 @@ func TestHTTPServerPlugin(t *testing.T) {
 	resp, err := client.Do(postReq)
 	require.NoError(t, err)
 
-	// It returns 20x status
+	// Then it returns 2XX
 	require.Equal(t, 20, resp.StatusCode/10) // 200 OK or 204 No content
 
-	events := make(map[string]map[string]interface{})
-	for {
-		se := <-ch
-		sejson, _ := json.Marshal(se)
-		var event map[string]interface{}
-		err = json.Unmarshal(sejson, &event)
-		require.NoError(t, err)
-		events[event["eventType"].(string)] = event
-		// InfrastructureEvent should be the last event sent
-		if event["eventType"] == "InfrastructureEvent" {
-			break
-		}
-	}
-	// And the plugin inventory output is correctly emitted
-	require.NotNil(t, pOut)
-	require.Equal(t, "metadata/http_server", pOut.Id.String())
-	inv := pOut.Data[0].(protocol.InventoryData)
-	require.Equal(t, "value", inv["urlEntry"])
-	require.Equal(t, "thing", inv["id"])
+	// And posted data has been emitted
+	d, err := e.ReceiveFrom(IntegrationName)
+	assert.NoError(t, err)
 
-	// As well as the metrics and events
-	require.Len(t, events, 2)
-	require.Equal(t, "bleh", events["InfrastructureEvent"]["category"])
-	require.Equal(t, "blah", events["InfrastructureEvent"]["summary"])
-	require.Equal(t, "MyMetric", events["MyMetric"]["event_type"])
-	require.InDelta(t, 123, events["MyMetric"]["value"], 0.01)
-}
+	inv := d.DataSet.PluginDataSet.Inventory
+	require.Len(t, inv, 1)
+	assert.Equal(t, protocol.InventoryData{"urlEntry": "value"}, inv["thing"])
 
-func newFixedIDLookup() host.IDLookup {
-	idLookupTable := make(host.IDLookup)
-	idLookupTable[sysinfo.HOST_SOURCE_DISPLAY_NAME] = "display_name"
-	return idLookupTable
+	metrics := d.DataSet.PluginDataSet.Metrics
+	require.Len(t, metrics, 1)
+	assert.Equal(t, "MyMetric", metrics[0]["event_type"])
+	assert.Equal(t, float64(123), metrics[0]["value"])
+
+	events := d.DataSet.PluginDataSet.Events
+	require.Len(t, events, 1)
+	assert.Equal(t, "blah", events[0]["summary"])
+	assert.Equal(t, "bleh", events[0]["category"])
 }

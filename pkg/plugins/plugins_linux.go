@@ -7,6 +7,7 @@ import (
 	pluginsLinux "github.com/newrelic/infrastructure-agent/internal/plugins/linux"
 	config2 "github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/network"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/process"
@@ -25,7 +26,7 @@ func registerForwarderHeartbeat(a *agnt.Agent) {
 	a.RegisterMetricsSender(sender)
 }
 
-func RegisterPlugins(agent *agnt.Agent) error {
+func RegisterPlugins(agent *agnt.Agent, em emitter.Emitter) error {
 	config := agent.GetContext().Config()
 	// Deprecating a pluging causes the agent to delete its inventory
 	agent.DeprecatePlugin(ids.PluginID{"metadata", "cloud_instance"})
@@ -40,7 +41,16 @@ func RegisterPlugins(agent *agnt.Agent) error {
 	}
 
 	if config.HTTPServerEnabled {
-		agent.RegisterPlugin(NewHTTPServerPlugin(agent.Context, config.HTTPServerHost, config.HTTPServerPort))
+		httpSrv, err := NewHTTPServerPlugin(agent.Context, config.HTTPServerHost, config.HTTPServerPort, em)
+		if err != nil {
+			slog.
+				WithField("port", config.HTTPServerPort).
+				WithField("host", config.HTTPServerHost).
+				WithError(err).
+				Error("cannot create HTTP server")
+		} else {
+			agent.RegisterPlugin(httpSrv)
+		}
 	}
 
 	if config.IsForwardOnly {
