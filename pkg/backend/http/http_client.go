@@ -17,7 +17,7 @@ import (
 
 func GetHttpClient(
 	httpTimeout time.Duration,
-	transport *http.Transport,
+	transport http.RoundTripper,
 ) *http.Client {
 	return &http.Client{
 		Timeout:   httpTimeout,
@@ -55,7 +55,7 @@ func getCertPool(certFile string, certDirectory string) *x509.CertPool {
 
 		for _, f := range files {
 			if strings.Contains(f.Name(), ".pem") {
-				caCertFilePath := filepath.Join(certDirectory + "/" + f.Name())
+				caCertFilePath := filepath.Join(certDirectory, f.Name())
 				caCert, err := ioutil.ReadFile(caCertFilePath)
 				if err != nil {
 					log.WithField("file", f.Name()).WithError(err).Error("can't read certificate file")
@@ -76,5 +76,7 @@ type Client func(req *http.Request) (*http.Response, error)
 
 // NullHttpClient client discarding all the requests and returning empty objects.
 var NullHttpClient = func(req *http.Request) (res *http.Response, err error) {
+	_, _ = ioutil.ReadAll(req.Body)
+	defer req.Body.Close()
 	return
 }

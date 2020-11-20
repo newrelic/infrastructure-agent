@@ -5,32 +5,34 @@ package dm
 import (
 	"errors"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
-	"github.com/newrelic/infrastructure-agent/pkg/config"
-	"github.com/newrelic/infrastructure-agent/pkg/log"
-	"github.com/sirupsen/logrus"
-	logTest "github.com/sirupsen/logrus/hooks/test"
-	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
 	"sync"
 	"testing"
+	"time"
+
+	"github.com/sirupsen/logrus"
+	logTest "github.com/sirupsen/logrus/hooks/test"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi/test"
+	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/fwrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
 	integrationFixture "github.com/newrelic/infrastructure-agent/test/fixture/integration"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 var (
@@ -249,7 +251,12 @@ func TestEmitter_Send_failedToSubmitMetrics_dropAndLog(t *testing.T) {
 	ms.wg.Wait()
 	ctx.SendDataWg.Wait()
 
-	entry := hook.LastEntry()
+	var entry *logrus.Entry
+	assert.Eventually(t, func() bool {
+		entry = hook.LastEntry()
+		return entry != nil
+	}, time.Second, 10*time.Millisecond)
+
 	require.NotNil(t, entry)
 	assert.Equal(t, "DimensionalMetricsEmitter", entry.Data["component"])
 	assert.Equal(t, "discarding metrics", entry.Message)

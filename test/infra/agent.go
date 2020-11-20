@@ -5,6 +5,7 @@ package infra
 import (
 	"compress/gzip"
 	"io/ioutil"
+	"net/http"
 	"path/filepath"
 	"time"
 
@@ -28,17 +29,17 @@ var matcher = func(interface{}) bool { return true }
 
 // Create a new agent for testing.
 func NewAgent(dataClient backendhttp.Client, configurator ...func(*config.Config)) *agent.Agent {
-	return NewAgentWithConnectClient(SuccessConnectClient, dataClient, configurator...)
+	return NewAgentWithConnectClient(NewSuccessConnectHttpClient(), dataClient, configurator...)
 }
 
 func NewAgentFromConfig(cfg *config.Config) *agent.Agent {
 	transport := backendhttp.BuildTransport(cfg, backendhttp.ClientTimeout)
 	dataClient := backendhttp.GetHttpClient(backendhttp.ClientTimeout, transport)
-	return NewAgentWithConnectClientAndConfig(SuccessConnectClient, dataClient.Do, cfg)
+	return NewAgentWithConnectClientAndConfig(NewSuccessConnectHttpClient(), dataClient.Do, cfg)
 }
 
 // NewAgentWithConnectClient create a new agent for testing with a provided connect-client.
-func NewAgentWithConnectClient(connectClient, dataClient backendhttp.Client, configurator ...func(*config.Config)) *agent.Agent {
+func NewAgentWithConnectClient(connectClient *http.Client, dataClient backendhttp.Client, configurator ...func(*config.Config)) *agent.Agent {
 	return NewAgentWithConnectClientAndConfig(connectClient, dataClient, &config.Config{
 		IgnoredInventoryPaths:    []string{"test/plugin/yum"},
 		MaxInventorySize:         config.DefaultMaxMetricsBatchSizeBytes,
@@ -53,7 +54,7 @@ func NewAgentWithConnectClient(connectClient, dataClient backendhttp.Client, con
 	}, configurator...)
 }
 
-func NewAgentWithConnectClientAndConfig(connectClient, dataClient backendhttp.Client, cfg *config.Config, configurator ...func(*config.Config)) *agent.Agent {
+func NewAgentWithConnectClientAndConfig(connectClient *http.Client, dataClient backendhttp.Client, cfg *config.Config, configurator ...func(*config.Config)) *agent.Agent {
 
 	for _, c := range configurator {
 		c(cfg)
@@ -81,14 +82,20 @@ func NewAgentWithConnectClientAndConfig(connectClient, dataClient backendhttp.Cl
 		panic(err)
 	}
 
-	connectC, err := identityapi.NewIdentityConnectClient("url", "license", "user-agent", gzip.BestCompression, true, connectClient)
+	connectC, err := identityapi.NewIdentityConnectClient("url", "license", "user-agent", gzip.BestCompression, true, connectClient.Do)
 	if err != nil {
 		panic(err)
 	}
 
 	connectSrv := agent.NewIdentityConnectService(connectC, fingerprintHarvester)
 
-	registerC, err := identityapi.NewRegisterClient("url", "license", "user-agent", gzip.BestCompression, nil, connectClient)
+	registerC, err := identityapi.NewRegisterClient(
+		"url",
+		"license", ""+
+			"user-agent",
+		gzip.BestCompression,
+		connectClient,
+	)
 	if err != nil {
 		panic(err)
 	}

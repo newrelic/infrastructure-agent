@@ -350,7 +350,6 @@ func deviceMapperInfo(isContainerized bool) (mounts []MountInfoStat) {
 			}).Debug("Unsupported file system.")
 			continue
 		}
-
 		// nil = unsupported fs
 		mounts = append(mounts, mountInfo)
 	}
@@ -436,13 +435,14 @@ func fetchPartitions(isContainerized bool) ([]PartitionStat, error) {
 	}
 
 	partitions := make([]PartitionStat, 0, len(mountedDevices))
-	for _, md := range mountedDevices {
-		partitions = append(partitions, PartitionStat{
-			Device:     md.Device,
-			Mountpoint: md.MountPoint,
-			Fstype:     md.FSType,
-			Opts:       md.Opts,
-		})
+	for _, m := range mountedDevices {
+		d := PartitionStat{
+			Device:     m.Device,
+			Mountpoint: m.MountPoint,
+			Fstype:     m.FSType,
+			Opts:       m.Opts,
+		}
+		partitions = append(partitions, d)
 	}
 
 	return partitions, nil
