@@ -3,6 +3,7 @@
 package plugins
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/network"
 	metricsSender "github.com/newrelic/infrastructure-agent/pkg/metrics/sender"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
@@ -14,7 +15,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/metrics"
 )
 
-func RegisterPlugins(agent *agnt.Agent) error {
+func RegisterPlugins(agent *agnt.Agent, em emitter.Emitter) error {
 	config := agent.GetContext().Config()
 
 	if config.IsForwardOnly {
@@ -32,7 +33,16 @@ func RegisterPlugins(agent *agnt.Agent) error {
 	agent.RegisterPlugin(NewCustomAttrsPlugin(agent.Context))
 
 	if config.HTTPServerEnabled {
-		agent.RegisterPlugin(NewHTTPServerPlugin(agent.Context, config.HTTPServerHost, config.HTTPServerPort))
+		httpSrv, err := NewHTTPServerPlugin(a.Context, config.HTTPServerHost, config.HTTPServerPort, em)
+		if err != nil {
+			slog.
+				WithField("port", config.HTTPServerPort).
+				WithField("host", config.HTTPServerHost).
+				WithError(err).
+				Error("cannot create HTTP server")
+		} else {
+			agent.RegisterPlugin(httpSrv)
+		}
 	}
 
 	if config.IsSecureForwardOnly {
