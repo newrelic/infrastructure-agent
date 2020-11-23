@@ -5,6 +5,7 @@ package socketapi
 import (
 	"context"
 	"net"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -17,8 +18,8 @@ import (
 )
 
 func TestPayloadFwServer_Serve(t *testing.T) {
-	if distro.IsCentos5() {
-		t.Skip("centos5 CI not reliable")
+	if distro.IsCentos5() || runtime.GOOS == "windows" {
+		t.Skip("centos5 & windows CI not reliable")
 	}
 
 	e := &testemit.RecordEmitter{}
