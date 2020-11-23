@@ -3,6 +3,7 @@
 package network_helpers
 
 import (
+	net2 "net"
 	"strings"
 
 	"github.com/shirou/gopsutil/net"
@@ -57,4 +58,19 @@ func IPAddressesByType(addrs []net.InterfaceAddr) (ipv4, ipv6 string) {
 		}
 	}
 	return
+}
+
+// TCPPort returns a random free TCP port.
+func TCPPort() (int, error) {
+	addr, err := net2.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return 0, err
+	}
+
+	l, err := net2.ListenTCP("tcp", addr)
+	if err != nil {
+		return 0, err
+	}
+	defer l.Close()
+	return l.Addr().(*net2.TCPAddr).Port, nil
 }

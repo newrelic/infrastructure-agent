@@ -4,26 +4,25 @@ package socketapi
 
 import (
 	"context"
+	"fmt"
 	"net"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/testhelp/testemit"
-	"github.com/newrelic/infrastructure-agent/internal/os/distro"
+	network_helpers "github.com/newrelic/infrastructure-agent/pkg/helpers/network"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestPayloadFwServer_Serve(t *testing.T) {
-	if distro.IsCentos5() || runtime.GOOS == "windows" {
-		t.Skip("centos5 & windows CI not reliable")
-	}
+	port, err := network_helpers.TCPPort()
+	require.NoError(t, err)
 
 	e := &testemit.RecordEmitter{}
-	pf := NewServer(e, 17171)
+	pf := NewServer(e, port)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -31,7 +30,7 @@ func TestPayloadFwServer_Serve(t *testing.T) {
 
 	payloadWritten := make(chan struct{})
 	go func() {
-		conn, err := net.Dial("tcp", "localhost:17171")
+		conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", port))
 		require.NoError(t, err)
 		_, err = conn.Write([]byte(strings.Replace(`{
   "protocol_version": "4",

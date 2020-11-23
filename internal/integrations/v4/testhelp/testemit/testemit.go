@@ -54,7 +54,7 @@ func (t *RecordEmitter) Emit(metadata integration.Definition, extraLabels data.M
 			ch <- EmittedData{
 				DataSet: protocol.PluginDataSetV3{PluginDataSet: protocol.PluginDataSet{
 					Entity: ds.Entity,
-					// TODO but for now enough the assertion mechanism:
+					// TODO but for now it's enough for the assertion mechanism:
 					Metrics: make([]protocol.MetricData, len(ds.Metrics)),
 				}},
 				Metadata:      metadata,
