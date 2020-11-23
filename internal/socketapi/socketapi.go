@@ -63,7 +63,6 @@ func (s *Server) Serve(ctx context.Context) {
 		if err != nil {
 			s.logger.WithField("port", s.port).WithError(err).Error("cannot accept connection")
 		}
-		s.readyCh = make(chan struct{})
 		defer func() {
 			if err = conn.Close(); err != nil {
 				s.logger.WithError(err).Error("cannot close connection")
@@ -94,8 +93,5 @@ func (s *Server) Serve(ctx context.Context) {
 
 // WaitUntilReady blocks the call until server is ready to accept connections.
 func (s *Server) WaitUntilReady() {
-	select {
-	case <-s.readyCh:
-		return
-	}
+	_, _ = <-s.readyCh
 }
