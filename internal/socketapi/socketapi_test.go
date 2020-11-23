@@ -30,6 +30,7 @@ func TestPayloadFwServer_Serve(t *testing.T) {
 
 	payloadWritten := make(chan struct{})
 	go func() {
+		pf.WaitUntilReady()
 		conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", port))
 		require.NoError(t, err)
 		_, err = conn.Write([]byte(strings.Replace(`{

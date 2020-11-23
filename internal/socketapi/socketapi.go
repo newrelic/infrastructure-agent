@@ -22,9 +22,8 @@ type Server struct {
 	port    int
 	logger  log.Entry
 	emitter emitter.Emitter
+	readyCh chan struct{}
 }
-
-type sockHandleF func() error
 
 // NewServer creates a new socket API server.
 func NewServer(emitter emitter.Emitter, port int) *Server {
@@ -33,6 +32,7 @@ func NewServer(emitter emitter.Emitter, port int) *Server {
 		port:    port,
 		logger:  logger,
 		emitter: emitter,
+		readyCh: make(chan struct{}),
 	}
 }
 
@@ -58,10 +58,12 @@ func (s *Server) Serve(ctx context.Context) {
 		}
 
 		// this is a PoC! just handling 1 connection fir this purpose is enough
+		close(s.readyCh)
 		conn, err := listener.Accept()
 		if err != nil {
 			s.logger.WithField("port", s.port).WithError(err).Error("cannot accept connection")
 		}
+		s.readyCh = make(chan struct{})
 		defer func() {
 			if err = conn.Close(); err != nil {
 				s.logger.WithError(err).Error("cannot close connection")
@@ -87,5 +89,13 @@ func (s *Server) Serve(ctx context.Context) {
 				s.logger.WithError(err).Error("cannot emit payload")
 			}
 		}
+	}
+}
+
+// WaitUntilReady blocks the call until server is ready to accept connections.
+func (s *Server) WaitUntilReady() {
+	select {
+	case <-s.readyCh:
+		return
 	}
 }
