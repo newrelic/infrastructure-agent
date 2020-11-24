@@ -126,9 +126,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	// override verbose when enabled from CLI flag
+	// override YAML with CLI flags
 	if verbose > config.NonVerboseLogging {
 		cfg.Verbose = verbose
+	}
+	if cpuprofile != "" {
+		cfg.CPUProfile = cpuprofile
+	}
+	if memprofile != "" {
+		cfg.MemProfile = memprofile
 	}
 
 	if cfg.Verbose == config.SmartVerboseLogging {
@@ -142,17 +148,11 @@ func main() {
 		})
 	}
 
-	if cpuprofile != "" {
-		cfg.CPUProfile = cpuprofile
-	}
-	if memprofile != "" {
-		cfg.MemProfile = memprofile
-	}
+	configureLogFormat(cfg.LogFormat)
 
-	// Set the log format.
-	configureLogFormat(cfg)
 	// Send logging where it's supposed to go.
 	agentLogsToFile := configureLogRedirection(cfg, memLog)
+
 	trace.EnableOn(cfg.FeatureTraces)
 
 	// Runtime config setup.
@@ -399,8 +399,8 @@ func newInstancesLookup(cfg v4.Configuration) integration.InstancesLookup {
 }
 
 // configureLogFormat checks the config and sets the log format accordingly.
-func configureLogFormat(cfg *config.Config) {
-	if cfg.LogFormat == config.LogFormatJSON {
+func configureLogFormat(logFormat string) {
+	if logFormat == config.LogFormatJSON {
 		jsonFormatter := &logrus.JSONFormatter{
 			DataKey: "context",
 
