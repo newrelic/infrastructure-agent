@@ -120,55 +120,61 @@ func main() {
 
 	timedLog.Debug("Loading configuration.")
 
-	parsedConfig, err := config.LoadConfigWithVerbose(configFile, verbose)
+	cfg, err := config.LoadConfig(configFile)
 	if err != nil {
 		alog.WithError(err).Error("can't load configuration file")
 		os.Exit(1)
 	}
-	if parsedConfig.Verbose == config.SmartVerboseLogging {
-		wlog.EnableSmartVerboseMode(parsedConfig.SmartVerboseModeEntryLimit)
+
+	// override YAML with CLI flags
+	if verbose > config.NonVerboseLogging {
+		cfg.Verbose = verbose
+	}
+	if cpuprofile != "" {
+		cfg.CPUProfile = cpuprofile
+	}
+	if memprofile != "" {
+		cfg.MemProfile = memprofile
 	}
 
-	if debug || parsedConfig.WebProfile {
+	if cfg.Verbose == config.SmartVerboseLogging {
+		wlog.EnableSmartVerboseMode(cfg.SmartVerboseModeEntryLimit)
+	}
+
+	if debug || cfg.WebProfile {
 		alog.Info("starting pprof server at http://localhost:6060")
 		go recover.FuncWithPanicHandler(recover.LogAndContinue, func() {
 			alog.WithError(http.ListenAndServe("localhost:6060", nil)).Warn("trying to open a connection in :6060")
 		})
 	}
 
-	if cpuprofile != "" {
-		parsedConfig.CPUProfile = cpuprofile
-	}
-	if memprofile != "" {
-		parsedConfig.MemProfile = memprofile
-	}
+	configureLogFormat(cfg.LogFormat)
 
-	// Set the log format.
-	configureLogFormat(parsedConfig)
 	// Send logging where it's supposed to go.
-	agentLogsToFile := configureLogRedirection(parsedConfig, memLog)
-	trace.EnableOn(parsedConfig.FeatureTraces)
+	agentLogsToFile := configureLogRedirection(cfg, memLog)
+
+	trace.EnableOn(cfg.FeatureTraces)
 
 	// Runtime config setup.
-	troubleCfg := config.NewTroubleshootCfg(parsedConfig.IsTroubleshootMode(), agentLogsToFile, parsedConfig.GetLogFile())
-	logFwCfg := config.NewLogForward(parsedConfig, troubleCfg)
+	troubleCfg := config.NewTroubleshootCfg(cfg.IsTroubleshootMode(), agentLogsToFile, cfg.GetLogFile())
+	logFwCfg := config.NewLogForward(cfg, troubleCfg)
 
 	// If parsedConfig.MaxProcs < 1, leave GOMAXPROCS to its previous value,
 	// which, if not set by the environment, is the number of processors that
 	// have been detected by the system.
 	// Note that if the `max_procs` option is unset, default value for
 	// parsedConfig.MaxProcs is 1.
-	runtime.GOMAXPROCS(parsedConfig.MaxProcs)
+	runtime.GOMAXPROCS(cfg.MaxProcs)
 
-	logConfig(parsedConfig)
+	logConfig(cfg)
 
-	err = initialize.OsProcess(parsedConfig)
+	err = initialize.OsProcess(cfg)
 	if err != nil {
 		alog.WithError(err).Error("Performing OS-specific process initialization...")
 		os.Exit(1)
 	}
 
-	err = initializeAgentAndRun(parsedConfig, logFwCfg)
+	err = initializeAgentAndRun(cfg, logFwCfg)
 	if err != nil {
 		timedLog.WithError(err).Error("Agent run returned an error.")
 		os.Exit(1)
@@ -258,7 +264,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	}
 
 	aslog.Info("Checking network connectivity...")
-	err = waitForNetwork(c)
+	err = waitForNetwork(c.CollectorURL, c.StartupConnectionTimeout, c.StartupConnectionRetries, transport)
 	if err != nil {
 		fatal(err, "Can't reach the New Relic collector.")
 	}
@@ -278,7 +284,6 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		userAgent,
 		c.PayloadCompressionLevel,
 		httpClient,
-		httpClient.Do,
 	)
 	if err != nil {
 		return err
@@ -306,7 +311,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		os.Exit(1)
 	}
 
-	metricsSenderConfig := dm.NewConfig(c.MetricURL, c.License, time.Duration(c.DMSubmissionPeriod)*time.Second, c.MaxMetricBatchEntitiesCount)
+	metricsSenderConfig := dm.NewConfig(c.MetricURL, c.License, time.Duration(c.DMSubmissionPeriod)*time.Second, c.MaxMetricBatchEntitiesCount, c.MaxMetricBatchEntitiesQueue)
 	dmSender, err := dm.NewDMSender(metricsSenderConfig, transport, agt.Context.IdContext().AgentIdentity)
 	if err != nil {
 		return err
@@ -394,8 +399,8 @@ func newInstancesLookup(cfg v4.Configuration) integration.InstancesLookup {
 }
 
 // configureLogFormat checks the config and sets the log format accordingly.
-func configureLogFormat(cfg *config.Config) {
-	if cfg.LogFormat == config.LogFormatJSON {
+func configureLogFormat(logFormat string) {
+	if logFormat == config.LogFormatJSON {
 		jsonFormatter := &logrus.JSONFormatter{
 			DataKey: "context",
 
@@ -459,10 +464,8 @@ func (fc *fileAndConsoleLogger) Write(b []byte) (n int, err error) {
 // If we don't wait for the network, it may happen that a cloud instance doesn't
 // properly get the cloud metadata during the initial samples, and different
 // entity IDs are seen for some minutes after the cloud instance is restarted.
-func waitForNetwork(cfg *config.Config) (err error) {
-	transport := backendhttp.BuildTransport(cfg, backendhttp.ClientTimeout)
-
-	if cfg.CollectorURL == "" {
+func waitForNetwork(collectorURL, timeout string, retries int, transport http.RoundTripper) (err error) {
+	if collectorURL == "" {
 		return
 	}
 
@@ -470,8 +473,7 @@ func waitForNetwork(cfg *config.Config) (err error) {
 
 	// If StartupConnectionRetries is negative, we keep checking the connection
 	// until it succeeds.
-	tries := cfg.StartupConnectionRetries
-	timeout, err := time.ParseDuration(cfg.StartupConnectionTimeout)
+	timeoutD, err := time.ParseDuration(timeout)
 	if err != nil {
 		// This should never happen, as the correct format is checked
 		// during NormalizeConfig.
@@ -480,15 +482,15 @@ func waitForNetwork(cfg *config.Config) (err error) {
 	var timedout bool
 
 	for {
-		timedout, err = checkEndpointReachable(cfg, timeout, transport)
+		timedout, err = checkEndpointReachable(collectorURL, timeoutD, transport)
 		if timedout {
-			if tries >= 0 {
-				tries -= 1
-				if tries <= 0 {
+			if retries >= 0 {
+				retries -= 1
+				if retries <= 0 {
 					break
 				}
 			}
-			aslog.WithError(err).WithField("collector_url", cfg.CollectorURL).
+			aslog.WithError(err).WithField("collector_url", collectorURL).
 				Warn("Collector endpoint not reachable, retrying...")
 			retrier.SetNextRetryWithBackoff()
 			time.Sleep(retrier.RetryAfter())
@@ -500,9 +502,12 @@ func waitForNetwork(cfg *config.Config) (err error) {
 	return
 }
 
-func checkEndpointReachable(cfg *config.Config, timeout time.Duration, transport *http.Transport) (timedout bool, err error) {
+func checkEndpointReachable(
+	collectorURL string,
+	timeout time.Duration,
+	transport http.RoundTripper) (timedOut bool, err error) {
 	var request *http.Request
-	if request, err = http.NewRequest("HEAD", cfg.CollectorURL, nil); err != nil {
+	if request, err = http.NewRequest("HEAD", collectorURL, nil); err != nil {
 		aslog.WithError(err).Debug("Unable to prepare availability request.")
 		return false, fmt.Errorf("Unable to prepare availability request: %v", request)
 	}
@@ -510,11 +515,11 @@ func checkEndpointReachable(cfg *config.Config, timeout time.Duration, transport
 	client := backendhttp.GetHttpClient(timeout, transport)
 	if _, err = client.Do(request); err != nil {
 		if e2, ok := err.(net.Error); ok && (e2.Timeout() || e2.Temporary()) {
-			timedout = true
+			timedOut = true
 		}
 		if errURL, ok := err.(*url.Error); ok {
 			aslog.WithError(errURL).Warn("URL error detected. May be a configuration problem or a network connectivity issue.")
-			timedout = true
+			timedOut = true
 		}
 	}
 

@@ -193,7 +193,7 @@ func TestProcess_WithoutPath(t *testing.T) {
 	}
 
 	for _, p := range processes {
-		assertLogProcessData(t, p.Name, p.ProcessID, hook.Entries)
+		assertLogProcessData(t, p.Name, p.ProcessID, hook.AllEntries())
 	}
 
 	le := hook.LastEntry()
@@ -204,7 +204,7 @@ func TestProcess_WithoutPath(t *testing.T) {
 	assert.Equal(t, "ProcessSampler", le.Data["sampler"])
 }
 
-func assertLogProcessData(t *testing.T, name string, id uint32, logEntries []logrus.Entry) {
+func assertLogProcessData(t *testing.T, name string, id uint32, logEntries []*logrus.Entry) {
 	const logNotFound = -1
 	i := sort.Search(len(logEntries), func(i int) bool {
 		return logEntries[i].Data["name"] == name && logEntries[i].Data["process_id"] == id

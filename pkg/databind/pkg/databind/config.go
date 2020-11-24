@@ -54,11 +54,12 @@ func LoadYAML(bytes []byte) (*Sources, error) {
 	if err := yaml.Unmarshal(bytes, &dc); err != nil {
 		return nil, err
 	}
-	return DataSources(&dc)
+
+	return dc.DataSources()
 }
 
-// DataSources builds a set of data binding sources from a YAMLConfig instance
-func DataSources(dc *YAMLConfig) (*Sources, error) {
+// DataSources builds a set of data binding sources for the YAMLConfig instance.
+func (dc *YAMLConfig) DataSources() (*Sources, error) {
 	if err := dc.validate(); err != nil {
 		return nil, fmt.Errorf("error parsing YAML configuration: %s", err)
 	}
@@ -67,18 +68,22 @@ func DataSources(dc *YAMLConfig) (*Sources, error) {
 	if err != nil {
 		return nil, err
 	}
-	cfg := Sources{clock: time.Now, variables: map[string]*gatherer{}}
-	cfg.discoverer, err = selectDiscoverer(ttl, dc)
+
+	cfg := Sources{
+		clock:     time.Now,
+		variables: map[string]*gatherer{},
+	}
+	cfg.discoverer, err = dc.selectDiscoverer(ttl)
 	if err != nil {
 		return nil, err
 	}
 
-	for name, vg := range dc.Variables {
-		ttl, err := duration(vg.TTL, defaultVariablesTTL)
+	for vName, vEntry := range dc.Variables {
+		ttl, err := duration(vEntry.TTL, defaultVariablesTTL)
 		if err != nil {
 			return nil, err
 		}
-		cfg.variables[name] = selectGatherer(ttl, &vg)
+		cfg.variables[vName] = vEntry.selectGatherer(ttl)
 	}
 
 	return &cfg, nil
@@ -87,75 +92,42 @@ func DataSources(dc *YAMLConfig) (*Sources, error) {
 // returns a duration in the formatted string. If the string is empty, returns def (default)
 // if the format is wrong, returns the default and an error
 func duration(fmt string, def time.Duration) (time.Duration, error) {
-	if fmt != "" {
-		duration, err := time.ParseDuration(fmt)
-		if err != nil {
-			return def, err
-		}
-		return duration, nil
+	if fmt == "" {
+		return def, nil
 	}
-	return def, nil
+
+	duration, err := time.ParseDuration(fmt)
+	if err != nil {
+		return def, err
+	}
+
+	return duration, nil
 }
 
-func selectDiscoverer(ttl time.Duration, dc *YAMLConfig) (*discoverer, error) {
+func (dc *YAMLConfig) selectDiscoverer(ttl time.Duration) (*discoverer, error) {
 	if dc.Discovery.Fargate != nil {
 		fetch, err := fargate.Discoverer(*dc.Discovery.Fargate)
-		if err != nil {
-			return nil, err
-		}
 		return &discoverer{
 			cache: cachedEntry{ttl: ttl},
 			fetch: fetch,
-		}, nil
+		}, err
+
 	} else if dc.Discovery.Docker != nil {
 		fetch, err := docker.Discoverer(*dc.Discovery.Docker)
-		if err != nil {
-			return nil, err
-		}
 		return &discoverer{
 			cache: cachedEntry{ttl: ttl},
 			fetch: fetch,
-		}, nil
+		}, err
+
 	} else if dc.Discovery.Command != nil {
 		fetch, err := command.Discoverer(*dc.Discovery.Command)
-		if err != nil {
-			return nil, err
-		}
 		return &discoverer{
 			cache: cachedEntry{ttl: ttl},
 			fetch: fetch,
-		}, nil
+		}, err
+
 	}
 	return nil, nil
-}
-
-func selectGatherer(ttl time.Duration, vg *varEntry) *gatherer {
-	if vg.KMS != nil {
-		return &gatherer{
-			cache: cachedEntry{ttl: ttl},
-			fetch: secrets.KMSGatherer(vg.KMS),
-		}
-	} else if vg.Vault != nil {
-		return &gatherer{
-			cache: cachedEntry{ttl: ttl},
-			fetch: secrets.VaultGatherer(vg.Vault),
-		}
-	} else if vg.CyberArkCLI != nil {
-		return &gatherer{
-			cache: cachedEntry{ttl: ttl},
-			fetch: secrets.CyberArkCLIGatherer(vg.CyberArkCLI),
-		}
-	} else if vg.CyberArkAPI != nil {
-		return &gatherer{
-			cache: cachedEntry{ttl: ttl},
-			fetch: secrets.CyberArkAPIGatherer(vg.CyberArkAPI),
-		}
-	}
-	// should never reach here as long as "varEntry.validate()" does its job
-	// anyway, returning an error gatherer to avoid unexpected panics
-	return &gatherer{fetch: func() (interface{}, error) {
-		return "", errors.New("missing variable data source")
-	}}
 }
 
 func (y *YAMLConfig) validate() error {
@@ -185,12 +157,12 @@ func (y *YAMLConfig) validate() error {
 	}
 
 	names := map[string]struct{}{}
-	for name, vg := range y.Variables {
-		if _, ok := names[name]; ok {
+	for vName, vEntry := range y.Variables {
+		if _, ok := names[vName]; ok {
 			return fmt.Errorf("duplicate variable name %q", names)
 		}
-		names[name] = struct{}{}
-		if err := vg.validate(); err != nil {
+		names[vName] = struct{}{}
+		if err := vEntry.validate(); err != nil {
 			return err
 		}
 	}
@@ -198,29 +170,29 @@ func (y *YAMLConfig) validate() error {
 	return nil
 }
 
-func (ve *varEntry) validate() error {
+func (v *varEntry) validate() error {
 	sections := 0
-	if ve.KMS != nil {
+	if v.KMS != nil {
 		sections++
-		if err := ve.KMS.Validate(); err != nil {
+		if err := v.KMS.Validate(); err != nil {
 			return err
 		}
 	}
-	if ve.Vault != nil {
+	if v.Vault != nil {
 		sections++
-		if err := ve.Vault.Validate(); err != nil {
+		if err := v.Vault.Validate(); err != nil {
 			return err
 		}
 	}
-	if ve.CyberArkCLI != nil {
+	if v.CyberArkCLI != nil {
 		sections++
-		if err := ve.CyberArkCLI.Validate(); err != nil {
+		if err := v.CyberArkCLI.Validate(); err != nil {
 			return err
 		}
 	}
-	if ve.CyberArkAPI != nil {
+	if v.CyberArkAPI != nil {
 		sections++
-		if err := ve.CyberArkAPI.Validate(); err != nil {
+		if err := v.CyberArkAPI.Validate(); err != nil {
 			return err
 		}
 	}
@@ -231,4 +203,37 @@ func (ve *varEntry) validate() error {
 		return errors.New("you can't specify more than one source into a single variable. Use another variable")
 	}
 	return nil
+}
+
+func (v *varEntry) selectGatherer(ttl time.Duration) *gatherer {
+	if v.KMS != nil {
+		return &gatherer{
+			cache: cachedEntry{ttl: ttl},
+			fetch: secrets.KMSGatherer(v.KMS),
+		}
+
+	} else if v.Vault != nil {
+		return &gatherer{
+			cache: cachedEntry{ttl: ttl},
+			fetch: secrets.VaultGatherer(v.Vault),
+		}
+
+	} else if v.CyberArkCLI != nil {
+		return &gatherer{
+			cache: cachedEntry{ttl: ttl},
+			fetch: secrets.CyberArkCLIGatherer(v.CyberArkCLI),
+		}
+
+	} else if v.CyberArkAPI != nil {
+		return &gatherer{
+			cache: cachedEntry{ttl: ttl},
+			fetch: secrets.CyberArkAPIGatherer(v.CyberArkAPI),
+		}
+	}
+
+	// should never reach here as long as "varEntry.validate()" does its job
+	// anyway, returning an error gatherer to avoid unexpected panics
+	return &gatherer{fetch: func() (interface{}, error) {
+		return "", errors.New("missing variable data source")
+	}}
 }

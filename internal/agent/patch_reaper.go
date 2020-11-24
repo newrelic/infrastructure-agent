@@ -54,6 +54,7 @@ func (p *patchReaper) CleanupOldPlugins(plugins []ids.PluginID) {
 	}
 }
 
+// Reap generates deltas from last iteration and persist.
 func (p *patchReaper) Reap() {
 	err := p.store.UpdatePluginsInventoryCache(p.entityKey)
 	if err != nil {

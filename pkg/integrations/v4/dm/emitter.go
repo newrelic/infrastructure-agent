@@ -230,7 +230,7 @@ func (e *emitter) processEntityFwRequest(r fwrequest.EntityFwRequest) {
 
 	metrics := dmProcessor.ProcessMetrics(r.Data.Metrics, r.Data.Common, r.Data.Entity)
 	if err := e.metricsSender.SendMetricsWithCommonAttributes(r.Data.Common, metrics); err != nil {
-		// TODO error handling
+		elog.WithField("entity", r.ID()).WithError(err).Warn("discarding metrics")
 	}
 }
 

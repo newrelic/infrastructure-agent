@@ -195,7 +195,7 @@ discovery:
 	te := &testemit.RecordEmitter{}
 	group := Group{
 		emitter:      te,
-		discovery:    discovery,
+		dSources:     discovery,
 		integrations: []integration.Definition{integr},
 		handleErrorsProvide: func() runnerErrorHandler {
 			return func(_ context.Context, _ <-chan error) {}
