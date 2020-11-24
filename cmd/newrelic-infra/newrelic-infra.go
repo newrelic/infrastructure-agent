@@ -120,55 +120,61 @@ func main() {
 
 	timedLog.Debug("Loading configuration.")
 
-	parsedConfig, err := config.LoadConfigWithVerbose(configFile, verbose)
+	cfg, err := config.LoadConfig(configFile)
 	if err != nil {
 		alog.WithError(err).Error("can't load configuration file")
 		os.Exit(1)
 	}
-	if parsedConfig.Verbose == config.SmartVerboseLogging {
-		wlog.EnableSmartVerboseMode(parsedConfig.SmartVerboseModeEntryLimit)
+
+	// override YAML with CLI flags
+	if verbose > config.NonVerboseLogging {
+		cfg.Verbose = verbose
+	}
+	if cpuprofile != "" {
+		cfg.CPUProfile = cpuprofile
+	}
+	if memprofile != "" {
+		cfg.MemProfile = memprofile
 	}
 
-	if debug || parsedConfig.WebProfile {
+	if cfg.Verbose == config.SmartVerboseLogging {
+		wlog.EnableSmartVerboseMode(cfg.SmartVerboseModeEntryLimit)
+	}
+
+	if debug || cfg.WebProfile {
 		alog.Info("starting pprof server at http://localhost:6060")
 		go recover.FuncWithPanicHandler(recover.LogAndContinue, func() {
 			alog.WithError(http.ListenAndServe("localhost:6060", nil)).Warn("trying to open a connection in :6060")
 		})
 	}
 
-	if cpuprofile != "" {
-		parsedConfig.CPUProfile = cpuprofile
-	}
-	if memprofile != "" {
-		parsedConfig.MemProfile = memprofile
-	}
+	configureLogFormat(cfg.LogFormat)
 
-	// Set the log format.
-	configureLogFormat(parsedConfig)
 	// Send logging where it's supposed to go.
-	agentLogsToFile := configureLogRedirection(parsedConfig, memLog)
-	trace.EnableOn(parsedConfig.FeatureTraces)
+	agentLogsToFile := configureLogRedirection(cfg, memLog)
+
+	trace.EnableOn(cfg.FeatureTraces)
 
 	// Runtime config setup.
-	troubleCfg := config.NewTroubleshootCfg(parsedConfig.IsTroubleshootMode(), agentLogsToFile, parsedConfig.GetLogFile())
-	logFwCfg := config.NewLogForward(parsedConfig, troubleCfg)
+	troubleCfg := config.NewTroubleshootCfg(cfg.IsTroubleshootMode(), agentLogsToFile, cfg.GetLogFile())
+	logFwCfg := config.NewLogForward(cfg, troubleCfg)
 
 	// If parsedConfig.MaxProcs < 1, leave GOMAXPROCS to its previous value,
 	// which, if not set by the environment, is the number of processors that
 	// have been detected by the system.
 	// Note that if the `max_procs` option is unset, default value for
 	// parsedConfig.MaxProcs is 1.
-	runtime.GOMAXPROCS(parsedConfig.MaxProcs)
+	runtime.GOMAXPROCS(cfg.MaxProcs)
 
-	logConfig(parsedConfig)
+	logConfig(cfg)
 
-	err = initialize.OsProcess(parsedConfig)
+	err = initialize.OsProcess(cfg)
 	if err != nil {
 		alog.WithError(err).Error("Performing OS-specific process initialization...")
 		os.Exit(1)
 	}
 
-	err = initializeAgentAndRun(parsedConfig, logFwCfg)
+	err = initializeAgentAndRun(cfg, logFwCfg)
 	if err != nil {
 		timedLog.WithError(err).Error("Agent run returned an error.")
 		os.Exit(1)
@@ -393,8 +399,8 @@ func newInstancesLookup(cfg v4.Configuration) integration.InstancesLookup {
 }
 
 // configureLogFormat checks the config and sets the log format accordingly.
-func configureLogFormat(cfg *config.Config) {
-	if cfg.LogFormat == config.LogFormatJSON {
+func configureLogFormat(logFormat string) {
+	if logFormat == config.LogFormatJSON {
 		jsonFormatter := &logrus.JSONFormatter{
 			DataKey: "context",
 

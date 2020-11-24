@@ -25,7 +25,7 @@ func main() {
 	configFile := flag.String("config", minagent.DefaultConfig, "configuration file")
 	flag.Parse()
 
-	cfg, err := config.LoadConfigWithVerbose(*configFile, 0)
+	cfg, err := config.LoadConfig(*configFile)
 	if err != nil {
 		malog.WithError(err).Fatal("can't load configuration file")
 	}
