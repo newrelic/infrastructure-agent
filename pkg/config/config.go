@@ -980,7 +980,7 @@ type Config struct {
 	// Internals
 
 	// concurrency support
-	lock sync.Mutex
+	lock *sync.Mutex
 
 	// this is the default "persister" folder that the SDK uses. right now we don't allow configuration but we could at some point
 	// send this to the integrations for them to use for persisting data.
@@ -1231,7 +1231,7 @@ func LoadConfigWithVerbose(configFile string, verbose int) (*Config, error) {
 // NewConfig returns the default Config.
 func NewConfig() *Config {
 	return &Config{
-		lock: sync.Mutex{},
+		lock: &sync.Mutex{},
 		// The following values are not configurable by the user
 		ConnectEnabled:                defaultConnectEnabled,
 		FirstReapInterval:             defaultFirstReapInterval,
