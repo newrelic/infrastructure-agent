@@ -73,7 +73,7 @@ func (dc *YAMLConfig) DataSources() (*Sources, error) {
 		clock:     time.Now,
 		variables: map[string]*gatherer{},
 	}
-	cfg.discoverer, err = selectDiscoverer(ttl, dc)
+	cfg.discoverer, err = dc.selectDiscoverer(ttl)
 	if err != nil {
 		return nil, err
 	}
@@ -104,34 +104,28 @@ func duration(fmt string, def time.Duration) (time.Duration, error) {
 	return duration, nil
 }
 
-func selectDiscoverer(ttl time.Duration, dc *YAMLConfig) (*discoverer, error) {
+func (dc *YAMLConfig) selectDiscoverer(ttl time.Duration) (*discoverer, error) {
 	if dc.Discovery.Fargate != nil {
 		fetch, err := fargate.Discoverer(*dc.Discovery.Fargate)
-		if err != nil {
-			return nil, err
-		}
 		return &discoverer{
 			cache: cachedEntry{ttl: ttl},
 			fetch: fetch,
-		}, nil
+		}, err
+
 	} else if dc.Discovery.Docker != nil {
 		fetch, err := docker.Discoverer(*dc.Discovery.Docker)
-		if err != nil {
-			return nil, err
-		}
 		return &discoverer{
 			cache: cachedEntry{ttl: ttl},
 			fetch: fetch,
-		}, nil
+		}, err
+
 	} else if dc.Discovery.Command != nil {
 		fetch, err := command.Discoverer(*dc.Discovery.Command)
-		if err != nil {
-			return nil, err
-		}
 		return &discoverer{
 			cache: cachedEntry{ttl: ttl},
 			fetch: fetch,
-		}, nil
+		}, err
+
 	}
 	return nil, nil
 }
