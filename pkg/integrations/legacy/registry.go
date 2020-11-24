@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/newrelic/infrastructure-agent/pkg/config/loader"
-	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/pkg/errors"
@@ -123,7 +122,7 @@ func (pr *PluginRegistry) loadPluginInstance(dir string, dirOrFile os.FileInfo) 
 	if instanceWrapper.DataBind.Enabled() {
 		pilog.Debug("Instantiating Databind sources.")
 		var err error
-		plugin.discovery, err = databind.DataSources(&instanceWrapper.DataBind)
+		plugin.discovery, err = instanceWrapper.DataBind.DataSources()
 		if err != nil {
 			pilog.WithError(err).Error("variables/discovery data binding problem. Ignoring this plugin")
 			return

@@ -55,11 +55,11 @@ func LoadYAML(bytes []byte) (*Sources, error) {
 		return nil, err
 	}
 
-	return DataSources(&dc)
+	return dc.DataSources()
 }
 
-// DataSources builds a set of data binding sources from a YAMLConfig instance
-func DataSources(dc *YAMLConfig) (*Sources, error) {
+// DataSources builds a set of data binding sources for the YAMLConfig instance.
+func (dc *YAMLConfig) DataSources() (*Sources, error) {
 	if err := dc.validate(); err != nil {
 		return nil, fmt.Errorf("error parsing YAML configuration: %s", err)
 	}
@@ -70,7 +70,7 @@ func DataSources(dc *YAMLConfig) (*Sources, error) {
 	}
 
 	cfg := Sources{
-		clock: time.Now,
+		clock:     time.Now,
 		variables: map[string]*gatherer{},
 	}
 	cfg.discoverer, err = selectDiscoverer(ttl, dc)
