@@ -83,7 +83,7 @@ func (dc *YAMLConfig) DataSources() (*Sources, error) {
 		if err != nil {
 			return nil, err
 		}
-		cfg.variables[name] = selectGatherer(ttl, &vg)
+		cfg.variables[name] = vg.selectGatherer(ttl)
 	}
 
 	return &cfg, nil
@@ -130,28 +130,32 @@ func (dc *YAMLConfig) selectDiscoverer(ttl time.Duration) (*discoverer, error) {
 	return nil, nil
 }
 
-func selectGatherer(ttl time.Duration, vg *varEntry) *gatherer {
+func (vg *varEntry) selectGatherer(ttl time.Duration) *gatherer {
 	if vg.KMS != nil {
 		return &gatherer{
 			cache: cachedEntry{ttl: ttl},
 			fetch: secrets.KMSGatherer(vg.KMS),
 		}
+
 	} else if vg.Vault != nil {
 		return &gatherer{
 			cache: cachedEntry{ttl: ttl},
 			fetch: secrets.VaultGatherer(vg.Vault),
 		}
+
 	} else if vg.CyberArkCLI != nil {
 		return &gatherer{
 			cache: cachedEntry{ttl: ttl},
 			fetch: secrets.CyberArkCLIGatherer(vg.CyberArkCLI),
 		}
+
 	} else if vg.CyberArkAPI != nil {
 		return &gatherer{
 			cache: cachedEntry{ttl: ttl},
 			fetch: secrets.CyberArkAPIGatherer(vg.CyberArkAPI),
 		}
 	}
+
 	// should never reach here as long as "varEntry.validate()" does its job
 	// anyway, returning an error gatherer to avoid unexpected panics
 	return &gatherer{fetch: func() (interface{}, error) {
