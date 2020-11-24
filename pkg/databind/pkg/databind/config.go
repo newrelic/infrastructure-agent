@@ -78,12 +78,12 @@ func (dc *YAMLConfig) DataSources() (*Sources, error) {
 		return nil, err
 	}
 
-	for name, vg := range dc.Variables {
-		ttl, err := duration(vg.TTL, defaultVariablesTTL)
+	for vName, vEntry := range dc.Variables {
+		ttl, err := duration(vEntry.TTL, defaultVariablesTTL)
 		if err != nil {
 			return nil, err
 		}
-		cfg.variables[name] = vg.selectGatherer(ttl)
+		cfg.variables[vName] = vEntry.selectGatherer(ttl)
 	}
 
 	return &cfg, nil
@@ -130,39 +130,6 @@ func (dc *YAMLConfig) selectDiscoverer(ttl time.Duration) (*discoverer, error) {
 	return nil, nil
 }
 
-func (vg *varEntry) selectGatherer(ttl time.Duration) *gatherer {
-	if vg.KMS != nil {
-		return &gatherer{
-			cache: cachedEntry{ttl: ttl},
-			fetch: secrets.KMSGatherer(vg.KMS),
-		}
-
-	} else if vg.Vault != nil {
-		return &gatherer{
-			cache: cachedEntry{ttl: ttl},
-			fetch: secrets.VaultGatherer(vg.Vault),
-		}
-
-	} else if vg.CyberArkCLI != nil {
-		return &gatherer{
-			cache: cachedEntry{ttl: ttl},
-			fetch: secrets.CyberArkCLIGatherer(vg.CyberArkCLI),
-		}
-
-	} else if vg.CyberArkAPI != nil {
-		return &gatherer{
-			cache: cachedEntry{ttl: ttl},
-			fetch: secrets.CyberArkAPIGatherer(vg.CyberArkAPI),
-		}
-	}
-
-	// should never reach here as long as "varEntry.validate()" does its job
-	// anyway, returning an error gatherer to avoid unexpected panics
-	return &gatherer{fetch: func() (interface{}, error) {
-		return "", errors.New("missing variable data source")
-	}}
-}
-
 func (y *YAMLConfig) validate() error {
 	sections := 0
 	if y.Discovery.Docker != nil {
@@ -190,12 +157,12 @@ func (y *YAMLConfig) validate() error {
 	}
 
 	names := map[string]struct{}{}
-	for name, vg := range y.Variables {
-		if _, ok := names[name]; ok {
+	for vName, vEntry := range y.Variables {
+		if _, ok := names[vName]; ok {
 			return fmt.Errorf("duplicate variable name %q", names)
 		}
-		names[name] = struct{}{}
-		if err := vg.validate(); err != nil {
+		names[vName] = struct{}{}
+		if err := vEntry.validate(); err != nil {
 			return err
 		}
 	}
@@ -203,29 +170,29 @@ func (y *YAMLConfig) validate() error {
 	return nil
 }
 
-func (ve *varEntry) validate() error {
+func (v *varEntry) validate() error {
 	sections := 0
-	if ve.KMS != nil {
+	if v.KMS != nil {
 		sections++
-		if err := ve.KMS.Validate(); err != nil {
+		if err := v.KMS.Validate(); err != nil {
 			return err
 		}
 	}
-	if ve.Vault != nil {
+	if v.Vault != nil {
 		sections++
-		if err := ve.Vault.Validate(); err != nil {
+		if err := v.Vault.Validate(); err != nil {
 			return err
 		}
 	}
-	if ve.CyberArkCLI != nil {
+	if v.CyberArkCLI != nil {
 		sections++
-		if err := ve.CyberArkCLI.Validate(); err != nil {
+		if err := v.CyberArkCLI.Validate(); err != nil {
 			return err
 		}
 	}
-	if ve.CyberArkAPI != nil {
+	if v.CyberArkAPI != nil {
 		sections++
-		if err := ve.CyberArkAPI.Validate(); err != nil {
+		if err := v.CyberArkAPI.Validate(); err != nil {
 			return err
 		}
 	}
@@ -236,4 +203,37 @@ func (ve *varEntry) validate() error {
 		return errors.New("you can't specify more than one source into a single variable. Use another variable")
 	}
 	return nil
+}
+
+func (v *varEntry) selectGatherer(ttl time.Duration) *gatherer {
+	if v.KMS != nil {
+		return &gatherer{
+			cache: cachedEntry{ttl: ttl},
+			fetch: secrets.KMSGatherer(v.KMS),
+		}
+
+	} else if v.Vault != nil {
+		return &gatherer{
+			cache: cachedEntry{ttl: ttl},
+			fetch: secrets.VaultGatherer(v.Vault),
+		}
+
+	} else if v.CyberArkCLI != nil {
+		return &gatherer{
+			cache: cachedEntry{ttl: ttl},
+			fetch: secrets.CyberArkCLIGatherer(v.CyberArkCLI),
+		}
+
+	} else if v.CyberArkAPI != nil {
+		return &gatherer{
+			cache: cachedEntry{ttl: ttl},
+			fetch: secrets.CyberArkAPIGatherer(v.CyberArkAPI),
+		}
+	}
+
+	// should never reach here as long as "varEntry.validate()" does its job
+	// anyway, returning an error gatherer to avoid unexpected panics
+	return &gatherer{fetch: func() (interface{}, error) {
+		return "", errors.New("missing variable data source")
+	}}
 }
