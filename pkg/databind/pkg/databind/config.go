@@ -54,6 +54,7 @@ func LoadYAML(bytes []byte) (*Sources, error) {
 	if err := yaml.Unmarshal(bytes, &dc); err != nil {
 		return nil, err
 	}
+
 	return DataSources(&dc)
 }
 
@@ -67,7 +68,11 @@ func DataSources(dc *YAMLConfig) (*Sources, error) {
 	if err != nil {
 		return nil, err
 	}
-	cfg := Sources{clock: time.Now, variables: map[string]*gatherer{}}
+
+	cfg := Sources{
+		clock: time.Now,
+		variables: map[string]*gatherer{},
+	}
 	cfg.discoverer, err = selectDiscoverer(ttl, dc)
 	if err != nil {
 		return nil, err
@@ -87,14 +92,16 @@ func DataSources(dc *YAMLConfig) (*Sources, error) {
 // returns a duration in the formatted string. If the string is empty, returns def (default)
 // if the format is wrong, returns the default and an error
 func duration(fmt string, def time.Duration) (time.Duration, error) {
-	if fmt != "" {
-		duration, err := time.ParseDuration(fmt)
-		if err != nil {
-			return def, err
-		}
-		return duration, nil
+	if fmt == "" {
+		return def, nil
 	}
-	return def, nil
+
+	duration, err := time.ParseDuration(fmt)
+	if err != nil {
+		return def, err
+	}
+
+	return duration, nil
 }
 
 func selectDiscoverer(ttl time.Duration, dc *YAMLConfig) (*discoverer, error) {

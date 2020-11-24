@@ -89,33 +89,30 @@ func (pr *PluginRegistry) LoadPluginInstances() (err error) {
 func (pr *PluginRegistry) loadPluginInstance(dir string, dirOrFile os.FileInfo) {
 	dirOrFileName := dirOrFile.Name()
 	dirOrFilePath := filepath.Join(dir, dirOrFileName)
+	pflog := plog.WithField("configFile", dirOrFilePath)
 
 	// Ignore non yaml files or directories
 	fileExt := filepath.Ext(dirOrFileName)
 	if fileExt != ".yaml" && fileExt != ".yml" {
-		plog.WithField("path", dirOrFilePath).
-			Debug("Ignoring directory or non yaml integration config file.")
+		pflog.Debug("Ignoring directory or non yaml integration config file.")
 		return
 	}
 
-	instanceWrapper, err := pr.loadPluginInstanceWrapper(dirOrFilePath)
+	pflog.Debug("Found integration config file.")
+	instanceWrapper, err := loadPluginInstanceWrapper(dirOrFilePath)
 	if err != nil {
-		plog.WithField("configFile", dirOrFilePath).
-			Error("Couldn't load integration config file")
+		pflog.Error("cannot load integration config file")
 		return
 	}
+
+	pilog := pflog.WithField("integration", instanceWrapper.IntegrationName)
 
 	// ignore V4 plugins
 	if instanceWrapper.IntegrationName == "" && len(instanceWrapper.Instances) == 0 {
-		plog.WithField("file", dirOrFilePath).
-			Debug("Ignoring v4 integration. To be loaded later.")
+		pilog.Debug("Ignoring v4 integration. To be loaded later.")
 		return
 	}
 
-	pilog := plog.WithFields(logrus.Fields{
-		"integration": instanceWrapper.IntegrationName,
-		"configFile":  dirOrFileName,
-	})
 	plugin, err := pr.GetPlugin(instanceWrapper.IntegrationName)
 	if err != nil {
 		pilog.WithError(err).Error("Couldn't load integration instances from config file")
@@ -144,16 +141,15 @@ func (pr *PluginRegistry) loadPluginInstance(dir string, dirOrFile os.FileInfo) 
 	}
 }
 
-func (pr *PluginRegistry) loadPluginInstanceWrapper(pluginInstanceFilePath string) (pluginInstanceWrapper *PluginInstanceWrapper, err error) {
-	plog.WithField("configFile", pluginInstanceFilePath).Debug("Found integration config file.")
+func loadPluginInstanceWrapper(pluginInstanceFilePath string) (pluginInstanceWrapper *PluginInstanceWrapper, err error) {
 	var decodedPluginInstanceWrapper PluginInstanceWrapper
 	if _, err = config_loader.LoadYamlConfig(&decodedPluginInstanceWrapper, pluginInstanceFilePath); err != nil {
 		return
 	}
-	if _, err = config_loader.LoadYamlConfig(&decodedPluginInstanceWrapper.DataBind, pluginInstanceFilePath); err != nil {
-		return
-	}
-	return &decodedPluginInstanceWrapper, nil
+
+	_, err = config_loader.LoadYamlConfig(&decodedPluginInstanceWrapper.DataBind, pluginInstanceFilePath)
+
+	return &decodedPluginInstanceWrapper, err
 }
 
 // LoadPlugins scans all plugins in the plugin storage dir and loads their

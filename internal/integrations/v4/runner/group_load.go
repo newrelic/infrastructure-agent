@@ -18,13 +18,13 @@ type LoadFn func(dr integration.InstancesLookup, passthroughEnv []string, cfgPat
 // disabled integrations.
 func NewLoadFn(cfg config2.YAML, agentAndCCFeatures *Features) LoadFn {
 	return func(il integration.InstancesLookup, passthroughEnv []string, cfgPath string, cmdReqHandle cmdrequest.HandleFn) (g Group, c FeaturesCache, err error) {
-		discovery, err := databind.DataSources(&cfg.Databind)
+		dSources, err := databind.DataSources(&cfg.Databind)
 		if err != nil {
 			return
 		}
 
 		g = Group{
-			discovery:    discovery,
+			dSources:     dSources,
 			cmdReqHandle: cmdReqHandle,
 		}
 		c = make(FeaturesCache)
