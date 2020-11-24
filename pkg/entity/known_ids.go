@@ -18,7 +18,7 @@ const defaultTTL = 24 * time.Hour
 //
 // The default TTL is 24h, but it is possible to register custom TTLs per entity type.
 type KnownIDs struct {
-	lock sync.RWMutex
+	lock *sync.RWMutex
 	ids  map[Key]*idEntry
 	ttls map[Type]time.Duration // per-entity ttl
 }
@@ -47,6 +47,7 @@ func (e *idEntry) UpdateLastAccess() {
 // NewKnownIDs creates and returns an empty KnownIDs map
 func NewKnownIDs() KnownIDs {
 	return KnownIDs{
+		lock: &sync.RWMutex{},
 		ids:  map[Key]*idEntry{},
 		ttls: map[Type]time.Duration{},
 	}
