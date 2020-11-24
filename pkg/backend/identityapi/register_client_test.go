@@ -63,22 +63,24 @@ func getRegisterResponse(entities []RegisterEntityResponse) (*http.Response, err
 }
 
 func TestRegisterRetryTime(t *testing.T) {
-	mockHttp := func(req *http.Request) (*http.Response, error) {
-		reqBody, err := getRegisterRequestBody(req)
-		assert.NoError(t, err)
-		assert.EqualValues(t, testRegisterEntity, reqBody)
+	mockHttpClient := &http.Client{
+		Transport: &mockHttpTransport{
+			roundTrip: func(req *http.Request) (*http.Response, error) {
+				reqBody, err := getRegisterRequestBody(req)
+				assert.NoError(t, err)
+				assert.EqualValues(t, testRegisterEntity, reqBody)
 
-		var entities []RegisterEntityResponse
-		resp, err := getRegisterResponse(entities)
-		assert.NoError(t, err)
-		resp.Header.Add("Retry-After", "10")
-		resp.StatusCode = 429
-		resp.Status = "429 TOO MANY REQUESTS"
+				var entities []RegisterEntityResponse
+				resp, err := getRegisterResponse(entities)
+				assert.NoError(t, err)
+				resp.Header.Add("Retry-After", "10")
+				resp.StatusCode = 429
+				resp.Status = "429 TOO MANY REQUESTS"
 
-		return resp, nil
-	}
+				return resp, nil
+			}}}
 
-	client, err := NewRegisterClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, nil, mockHttp)
+	client, err := NewRegisterClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, mockHttpClient)
 	assert.NoError(t, err)
 
 	entities, retryTime, err := client.RegisterEntitiesRemoveMe(testAgentEntityId, testRegisterEntity)
@@ -89,12 +91,24 @@ func TestRegisterRetryTime(t *testing.T) {
 	assert.EqualValues(t, expected, entities)
 }
 
+type mockHttpTransport struct {
+	roundTrip func(req *http.Request) (*http.Response, error)
+}
+
+func (m *mockHttpTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	return m.roundTrip(req)
+}
+
 func TestRegisterOk(t *testing.T) {
-	mockHttp := func(req *http.Request) (*http.Response, error) {
-		return getRegisterResponse(testRegisterEntityResponse)
+	mockHttpClient := &http.Client{
+		Transport: &mockHttpTransport{
+			roundTrip: func(req *http.Request) (*http.Response, error) {
+				return getRegisterResponse(testRegisterEntityResponse)
+			},
+		},
 	}
 
-	client, err := NewRegisterClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, nil, mockHttp)
+	client, err := NewRegisterClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, mockHttpClient)
 	assert.NoError(t, err)
 
 	entities, retryTime, err := client.RegisterEntitiesRemoveMe(testAgentEntityId, testRegisterEntity)

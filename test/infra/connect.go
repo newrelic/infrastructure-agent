@@ -38,6 +38,22 @@ func SuccessConnectClient(req *http.Request) (*http.Response, error) {
 	}, nil
 }
 
+type connectRoundTripper struct {
+	roundTrip func(req *http.Request) (*http.Response, error)
+}
+
+func (c *connectRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	return c.RoundTrip(req)
+}
+
+func NewSuccessConnectHttpClient() *http.Client {
+	return &http.Client{
+		Transport: &connectRoundTripper{
+			roundTrip: SuccessConnectClient,
+		},
+	}
+}
+
 func FailingConnectClient(req *http.Request) (*http.Response, error) {
 	return &http.Response{
 		Header:     http.Header{},
