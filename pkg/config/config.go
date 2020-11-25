@@ -1218,9 +1218,16 @@ func LoadConfig(configFile string) (cfg *Config, err error) {
 	if err != nil {
 		return
 	}
-	_, err = databind.Fetch(sources)
+	//_, err = databind.Fetch(sources)
+	vals, err := databind.Fetch(sources)
 	if err != nil {
 		return
+	}
+	if vals.VarsLen() > 0 {
+		_, err = databind.Replace(&vals, cfg)
+		if err != nil {
+			return
+		}
 	}
 
 	cfg.RunMode, cfg.AgentUser, cfg.ExecutablePath = runtimeValues()
