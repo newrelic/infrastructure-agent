@@ -122,10 +122,10 @@ func (w *worker) send(ctx context.Context, batch map[entity.Key]fwrequest.Entity
 
 		if w.config.VerboseLogLevel > 0 && len(resp.Warnings) > 0 {
 			for _, warn := range resp.Warnings {
-				wlog.
+				wlog.WithError(fmt.Errorf(warn)).
 					WithField("entityName", resp.Name).
 					WithField("entityID", resp.ID).
-					Errorf("entity registered with warnings: %s", warn)
+					Warn("entity registered with warnings")
 			}
 		}
 
