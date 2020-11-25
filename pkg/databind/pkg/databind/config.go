@@ -22,9 +22,13 @@ const (
 	defaultVariablesTTL = time.Hour
 )
 
-type YAMLConfig struct {
+type YAMLAgentConfig struct {
 	Variables map[string]varEntry `yaml:"variables,omitempty"` // key: variable name
-	Discovery struct {
+}
+
+type YAMLConfig struct {
+	YAMLAgentConfig `yaml:",inline"`
+	Discovery       struct {
 		TTL     string               `yaml:"ttl,omitempty"`
 		Docker  *discovery.Container `yaml:"docker,omitempty"`
 		Fargate *discovery.Container `yaml:"fargate,omitempty"`
@@ -69,13 +73,29 @@ func (dc *YAMLConfig) DataSources() (*Sources, error) {
 		return nil, err
 	}
 
-	cfg := Sources{
+	s := Sources{
 		clock:     time.Now,
 		variables: map[string]*gatherer{},
 	}
-	cfg.discoverer, err = dc.selectDiscoverer(ttl)
+	s.discoverer, err = dc.selectDiscoverer(ttl)
 	if err != nil {
 		return nil, err
+	}
+
+	varS, err := dc.YAMLAgentConfig.DataSources()
+	if err != nil {
+		return nil, err
+	}
+
+	s.variables = varS.variables
+
+	return &s, nil
+}
+
+func (dc *YAMLAgentConfig) DataSources() (*Sources, error) {
+	s := Sources{
+		clock:     time.Now,
+		variables: map[string]*gatherer{},
 	}
 
 	for vName, vEntry := range dc.Variables {
@@ -83,10 +103,10 @@ func (dc *YAMLConfig) DataSources() (*Sources, error) {
 		if err != nil {
 			return nil, err
 		}
-		cfg.variables[vName] = vEntry.selectGatherer(ttl)
+		s.variables[vName] = vEntry.selectGatherer(ttl)
 	}
 
-	return &cfg, nil
+	return &s, nil
 }
 
 // returns a duration in the formatted string. If the string is empty, returns def (default)
@@ -156,6 +176,10 @@ func (y *YAMLConfig) validate() error {
 		return errors.New("only one discovery source allowed")
 	}
 
+	return y.YAMLAgentConfig.validate()
+}
+
+func (y *YAMLAgentConfig) validate() error {
 	names := map[string]struct{}{}
 	for vName, vEntry := range y.Variables {
 		if _, ok := names[vName]; ok {
