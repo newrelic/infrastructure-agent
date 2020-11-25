@@ -84,6 +84,6 @@ baz: ${creds.user}
 	require.NoError(t, err)
 	assert.Equal(t, "bar", cfg.Foo)
 	assert.Equal(t, "${creds.user}", cfg.Baz)
-	require.Len(t, cfg.Databind.Variables, 1)
+	require.Contains(t, cfg.Databind.Variables, "creds")
 	assert.Equal(t, cfg.Databind.Variables["creds"].Vault.HTTP.URL, "http://my.vault.host/v1/newengine/data/secret")
 }
