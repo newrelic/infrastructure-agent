@@ -26,7 +26,7 @@ func NewValues(vars data.Map, discoveries ...discovery.Discovery) Values {
 	}
 }
 
-// NewDiscovery returns an instance of discovery.Discovery which is needed for populating Values
+// NewDiscovery returns an instance of discovery.Discovery aimed to be used for testing as prod should come from unmarshalling.
 func NewDiscovery(variables data.Map, metricAnnotations data.InterfaceMap, entityRewrites []data.EntityRewrite) discovery.Discovery {
 	return discovery.Discovery{
 		Variables:         variables,

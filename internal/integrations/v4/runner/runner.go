@@ -43,7 +43,7 @@ type logParser func(line string) (fields logFields)
 type runner struct {
 	emitter        emitter.Emitter
 	handleCmdReq   cmdrequest.HandleFn
-	discovery      *databind.Sources
+	dSources       *databind.Sources
 	log            log.Entry
 	definition     integration.Definition
 	handleErrors   func(context.Context, <-chan error) // by default, runner.logErrors. Replaceable for testing purposes
@@ -59,14 +59,14 @@ type runner struct {
 func NewRunner(
 	intDef integration.Definition,
 	emitter emitter.Emitter,
-	discoverySources *databind.Sources,
+	dSources *databind.Sources,
 	handleErrorsProvide func() runnerErrorHandler,
 	cmdReqHandle cmdrequest.HandleFn,
 ) *runner {
 	r := &runner{
 		emitter:       emitter,
 		handleCmdReq:  cmdReqHandle,
-		discovery:     discoverySources,
+		dSources:      dSources,
 		definition:    intDef,
 		heartBeatFunc: func() {},
 		stderrParser:  parseLogrusFields,
@@ -115,13 +115,13 @@ func LogFields(def integration.Definition) logrus.Fields {
 	return fields
 }
 
-// applies discovery and returns the discovered values, if any.
+// applies dSources and returns the discovered values, if any.
 func (r *runner) applyDiscovery() (*databind.Values, error) {
-	if r.discovery == nil {
+	if r.dSources == nil {
 		// nothing is discovered, but the integration can run (with the default configuration)
 		return nil, nil
 	}
-	if v, err := databind.Fetch(r.discovery); err != nil {
+	if v, err := databind.Fetch(r.dSources); err != nil {
 		return nil, err
 	} else {
 		return &v, nil
@@ -144,7 +144,7 @@ func (r *runner) heartBeat() {
 	r.heartBeatFunc()
 }
 
-// execute the integration and wait for all the possible instances (resulting of multiple discovery matches)
+// execute the integration and wait for all the possible instances (resulting of multiple dSources matches)
 // to finish
 // For long-time running integrations, avoids starting the next
 // discover-execute cycle until all the parallel processes have ended
@@ -200,7 +200,7 @@ func (r *runner) handleStderr(stderr <-chan []byte) {
 		r.lastStderr.Add(line)
 
 		if r.log.IsDebugEnabled() {
-			r.log.Debug(string(line))
+			r.log.WithField("line", string(line)).Debug("Integration stderr (not parsed).")
 		} else {
 			fields := r.stderrParser(string(line))
 			if v, ok := fields["level"]; ok && (v == "error" || v == "fatal") {

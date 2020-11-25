@@ -19,7 +19,7 @@ import (
 // - catches errors and logs them
 // - manages the cancellation of tasks, as this should-be hot-reloaded
 type Group struct {
-	discovery    *databind.Sources
+	dSources     *databind.Sources
 	integrations []integration.Definition
 	emitter      emitter.Emitter
 	// for testing purposes, allows defining which action to take when an execution
@@ -55,7 +55,7 @@ func NewGroup(
 // provided context
 func (g *Group) Run(ctx context.Context) (hasStartedAnyOHI bool) {
 	for _, integr := range g.integrations {
-		go NewRunner(integr, g.emitter, g.discovery, g.handleErrorsProvide, g.cmdReqHandle).Run(ctx, nil)
+		go NewRunner(integr, g.emitter, g.dSources, g.handleErrorsProvide, g.cmdReqHandle).Run(ctx, nil)
 		hasStartedAnyOHI = true
 	}
 
