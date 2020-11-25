@@ -1231,6 +1231,12 @@ func LoadConfig(configFile string) (cfg *Config, err error) {
 		return
 	}
 	if vals.VarsLen() > 0 {
+		_, err = databind.Replace(&vals, cfg)
+		if err != nil {
+			return
+		}
+	}
+	if vals.VarsLen() > 0 {
 		cfg.Databind = databind.YAMLAgentConfig{}
 		matches, errD := databind.Replace(&vals, cfg)
 		if errD != nil {
