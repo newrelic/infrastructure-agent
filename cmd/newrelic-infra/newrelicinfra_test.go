@@ -13,16 +13,23 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
-func TestLogRedirection(t *testing.T) {
+func Test_configureLogRedirection(t *testing.T) {
+	// Given a new MemLogger with data
+	l := log.NewMemLogger(ioutil.Discard)
+	_, err := l.Write([]byte("example logs here"))
+	require.NoError(t, err)
+
+	// And a log file
 	logFile, err := ioutil.TempFile("", "newLogs.txt")
 	require.NoError(t, err)
-	logText := "example logs here"
-	_, _ = logFile.WriteString(logText)
-	cfg := &config.Config{
+
+	// When log redirection is configured to log file
+	assert.True(t, configureLogRedirection(&config.Config{
 		LogFile: logFile.Name(),
-	}
-	assert.True(t, configureLogRedirection(cfg, &log.MemLogger{}))
+	}, l))
+
+	// Then data previously stored in MemLogger gets written into log file
 	dat, err := ioutil.ReadFile(logFile.Name())
 	require.NoError(t, err)
-	assert.Equal(t, logText, string(dat))
+	assert.Equal(t, "example logs here", string(dat))
 }
