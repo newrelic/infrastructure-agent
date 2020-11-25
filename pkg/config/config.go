@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"gopkg.in/yaml.v2"
 	"math/rand"
 	"os"
@@ -57,6 +58,9 @@ type IncludeMetricsMap map[string][]string
 // Configuration structs
 // Use the 'public' annotation to specify the visibility of the config option: false/obfuscate [default: true]
 type Config struct {
+	// Databind provides varaiable (secrets, discovery) replacement capabilities for the configuration.
+	Databind databind.YAMLAgentConfig `yaml:",inline"`
+
 	// License specifies the license key for your New Relic account. The agent uses this key to associate your server's
 	// metrics with your New Relic account. This setting is created as part of the standard installation process.
 	// Default: ""
@@ -1193,21 +1197,31 @@ func (c *Config) toLogInfo() (map[string]string, error) {
 	return result, nil
 }
 
-func LoadConfig(configFile string) (*Config, error) {
+func LoadConfig(configFile string) (cfg *Config, err error) {
 	var filesToCheck []string
 	if configFile != "" {
 		filesToCheck = append(filesToCheck, configFile)
 	}
 	filesToCheck = append(filesToCheck, defaultConfigFiles...)
 
-	cfg := NewConfig()
+	cfg = NewConfig()
 	cfgMetadata, err := config_loader.LoadYamlConfig(cfg, filesToCheck...)
 	if err != nil {
-		return cfg, fmt.Errorf("Unable to parse configuration file %s: %s", configFile, err)
+		err = fmt.Errorf("unable to parse configuration file %s: %s", configFile, err)
+		return
 	}
 
 	// After the config file has loaded,  override via any environment variables
 	configOverride(cfg)
+
+	sources, err := cfg.Databind.DataSources()
+	if err != nil {
+		return
+	}
+	_, err = databind.Fetch(sources)
+	if err != nil {
+		return
+	}
 
 	cfg.RunMode, cfg.AgentUser, cfg.ExecutablePath = runtimeValues()
 
@@ -1216,7 +1230,7 @@ func LoadConfig(configFile string) (*Config, error) {
 	// above and place each one at the bottom of this ordering
 	err = NormalizeConfig(cfg, *cfgMetadata)
 
-	return cfg, err
+	return
 }
 
 // NewConfig returns the default Config.
