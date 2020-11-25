@@ -2,6 +2,10 @@
 
 The infrastructure agent support Docker version 1.12  or higher.
 
+## Precondition
+
+Be sure you already [built the agent binaries](https://github.com/newrelic/infrastructure-agent#compile-and-build-the-agent), so these should be available at project root `target/` folder.
+
 ## Automatic build and deploy
 
 [`make build/base`](Makefile) builds the Docker image from this repo's [Dockerfile](Dockerfile).
