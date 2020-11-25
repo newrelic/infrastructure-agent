@@ -55,19 +55,19 @@ func (s *RegistrySuite) TestLoadPlugins(c *C) {
 name: foo
 description: foo plugin
 source:
-  - command:
-     - cmd
-     - -switch
-     - arg
-    prefix: my/prefix
-    interval: 42
-    type: inventory
+ - command:
+    - cmd
+    - -switch
+    - arg
+   prefix: my/prefix
+   interval: 42
+   type: inventory
 os: linux, darwin, windows
 property:
-  - name: p1
-    description: d1
-  - name: p2
-    description: d2
+ - name: p1
+   description: d1
+ - name: p2
+   description: d2
 `)
 	dir, err := MakePluginDir(0, "foo", "yaml", configData)
 	c.Assert(err, IsNil)
@@ -162,20 +162,20 @@ protocol_version: 1
 os: linux, darwin, windows
 
 commands:
-  one:
-    command: cmd
-    prefix: my/prefix
-    interval: 42
+ one:
+   command: cmd
+   prefix: my/prefix
+   interval: 42
 `)
 
 	configData := []byte(`integration_name: foo
 
 instances:
-  - name: foo
-    command: one
-    arguments:
-      key: value
-      key2: value2
+ - name: foo
+   command: one
+   arguments:
+     key: value
+     key2: value2
 `)
 	dirs, err := MakePluginV1Dirs("foo", definitionData, configData)
 	c.Assert(err, IsNil)
@@ -195,19 +195,19 @@ name: foo-name
 description: foo plugin
 protocol_version: 1
 commands:
-  one:
-    command:
-      - cmd
-    interval: 42
+ one:
+   command:
+     - cmd
+   interval: 42
 `)
 	configData := []byte(`
 integration_name: foo-name
 
 instances:
-  - name: foo
-    command: bar
-    arguments:
-      key: value
+ - name: foo
+   command: bar
+   arguments:
+     key: value
 `)
 	dirs, err := MakePluginV1Dirs("foo2", definitionData, configData)
 	c.Assert(err, IsNil)
@@ -238,26 +238,26 @@ name: foo-name
 description: foo plugin
 protocol_version: 1
 commands:
-  one:
-    command:
-      - ./cmd -switch arg
-    prefix: my/prefix
-    interval: 42
+ one:
+   command:
+     - ./cmd -switch arg
+   prefix: my/prefix
+   interval: 42
 `)
 
 	configData := []byte(`
 integration_name: foo-name
 
 instances:
-  - name: foo
-    command: bar
-    arguments:
-      key: value
+ - name: foo
+   command: bar
+   arguments:
+     key: value
 
-  - name: bar
-    command: bar
-    arguments:
-      key: value2
+ - name: bar
+   command: bar
+   arguments:
+     key: value2
 `)
 	dirs, err := MakePluginV1Dirs("foo2", definitionData, configData)
 	c.Assert(err, IsNil)
@@ -288,21 +288,21 @@ description: An example plugin which monitors the list of files in a configured 
 # A list of properties required by the plugin. If these properties are not specified
 # in newrelic-infra-plugins.yml, the plugin will not be used.
 property:
-  - name: directoryToMonitor
-    description: The full path to a directory to be monitored
+ - name: directoryToMonitor
+   description: The full path to a directory to be monitored
 
 # Data sources for the plugin. The given command and arguments will be executed
 # every [interval] seconds, producing inventory data for the [prefix] path.
 # Commands are invoked relative to the plugin directory, so relative paths can
 # be used to access files included with the plugin.
 source:
-  - command:
-     - python
-     - ls-dir.py
-     - $directoryToMonitor
-    prefix: config/ls-$directoryToMonitor
-    interval: 5
-    type: inventory
+ - command:
+    - python
+    - ls-dir.py
+    - $directoryToMonitor
+   prefix: config/ls-$directoryToMonitor
+   interval: 5
+   type: inventory
 `)
 	dir, err := MakePluginDir(0, "example-plugin", "yaml", configData)
 	c.Assert(err, IsNil)

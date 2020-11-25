@@ -4,7 +4,6 @@ package runner
 
 import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
-	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
 	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 )
@@ -18,13 +17,13 @@ type LoadFn func(dr integration.InstancesLookup, passthroughEnv []string, cfgPat
 // disabled integrations.
 func NewLoadFn(cfg config2.YAML, agentAndCCFeatures *Features) LoadFn {
 	return func(il integration.InstancesLookup, passthroughEnv []string, cfgPath string, cmdReqHandle cmdrequest.HandleFn) (g Group, c FeaturesCache, err error) {
-		discovery, err := databind.DataSources(&cfg.Databind)
+		dSources, err := cfg.Databind.DataSources()
 		if err != nil {
 			return
 		}
 
 		g = Group{
-			discovery:    discovery,
+			dSources:     dSources,
 			cmdReqHandle: cmdReqHandle,
 		}
 		c = make(FeaturesCache)
