@@ -527,12 +527,12 @@ func TestWorker_send_Logging_VerboseDisabled(t *testing.T) {
 	w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), reqsToRegisterQueue, reqsRegisteredQueue, config)
 
 	batch := map[entity.Key]fwrequest.EntityFwRequest{
-		entity.Key(13): {
+		entity.Key("error"): {
 			Data: protocol.Dataset{
 				Entity: entity.Fields{Name: "error"},
 			},
 		},
-		entity.Key(14): {
+		entity.Key("warnings"): {
 			Data: protocol.Dataset{
 				Entity: entity.Fields{Name: "warnings"},
 			},
