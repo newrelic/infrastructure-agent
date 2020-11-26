@@ -28,7 +28,7 @@ var (
 		Match:      "*",
 		LicenseKey: "license",
 	}
-	fbCfgEntityDecoration = FBCfgParser{
+	fbCfgEntityDecoration = FBCfgFilter{
 		Name:  "record_modifier",
 		Match: "*",
 		Records: map[string]string{
@@ -64,7 +64,7 @@ logs:
 				PathKey:       "filePath",
 			},
 		},
-		Parsers: []FBCfgParser{
+		Filters: []FBCfgFilter{
 			{
 				Name:  "record_modifier",
 				Match: "foo",
@@ -151,7 +151,7 @@ func TestCfgLoader_LoadAll_TroubleshootNoLogFile(t *testing.T) {
 				Systemd_Filter: "_SYSTEMD_UNIT=newrelic-infra.service",
 			},
 		},
-		Parsers: []FBCfgParser{
+		Filters: []FBCfgFilter{
 			{
 				Name:  "record_modifier",
 				Match: fluentBitTagTroubleshoot,
@@ -181,7 +181,7 @@ func TestCfgLoader_LoadAll_TroubleshootLogFile(t *testing.T) {
 				Tag:           fluentBitTagTroubleshoot,
 			},
 		},
-		Parsers: []FBCfgParser{
+		Filters: []FBCfgFilter{
 			{
 				Name:  "record_modifier",
 				Match: fluentBitTagTroubleshoot,

@@ -23,7 +23,7 @@ var logFwdCfg = &config.LogForward{
 	},
 }
 
-var parserEntityBlock = FBCfgParser{
+var filterEntityBlock = FBCfgFilter{
 	Name:  "record_modifier",
 	Match: "*",
 	Records: map[string]string{
@@ -33,8 +33,8 @@ var parserEntityBlock = FBCfgParser{
 	},
 }
 
-func inputRecordModifier(i string, m string) FBCfgParser {
-	return FBCfgParser{
+func inputRecordModifier(i string, m string) FBCfgFilter {
+	return FBCfgFilter{
 		Name:  "record_modifier",
 		Match: m,
 		Records: map[string]string{
@@ -64,7 +64,7 @@ func TestNewFBConf(t *testing.T) {
 		{"empty", LogsCfg{},
 			FBCfg{
 				Inputs:  []FBCfgInput{},
-				Parsers: []FBCfgParser{},
+				Filters: []FBCfgFilter{},
 			}},
 		{"single input", LogsCfg{
 			{
@@ -83,13 +83,13 @@ func TestNewFBConf(t *testing.T) {
 					PathKey:       "filePath",
 				},
 			},
-			Parsers: []FBCfgParser{
+			Filters: []FBCfgFilter{
 				inputRecordModifier("tail", "log-file"),
-				parserEntityBlock,
+				filterEntityBlock,
 			},
 			Output: outputBlock,
 		}},
-		{"input file + parser", LogsCfg{
+		{"input file + filter", LogsCfg{
 			{
 				Name:    "log-file",
 				File:    "file.path",
@@ -107,18 +107,18 @@ func TestNewFBConf(t *testing.T) {
 					PathKey:       "filePath",
 				},
 			},
-			Parsers: []FBCfgParser{
+			Filters: []FBCfgFilter{
 				inputRecordModifier("tail", "log-file"),
 				{
 					Name:  "grep",
 					Match: "log-file",
 					Regex: "log foo",
 				},
-				parserEntityBlock,
+				filterEntityBlock,
 			},
 			Output: outputBlock,
 		}},
-		{"input systemd + parser", LogsCfg{
+		{"input systemd + filter", LogsCfg{
 			{
 				Name:    "some_system",
 				Systemd: "service_name",
@@ -133,14 +133,14 @@ func TestNewFBConf(t *testing.T) {
 					Systemd_Filter: "_SYSTEMD_UNIT=service_name.service",
 				},
 			},
-			Parsers: []FBCfgParser{
+			Filters: []FBCfgFilter{
 				inputRecordModifier("systemd", "some_system"),
 				{
 					Name:  "grep",
 					Match: "some_system",
 					Regex: "MESSAGE foo",
 				},
-				parserEntityBlock,
+				filterEntityBlock,
 			},
 			Output: outputBlock,
 		}},
@@ -165,7 +165,7 @@ func TestNewFBConf(t *testing.T) {
 					PathKey:       "filePath",
 				},
 			},
-			Parsers: []FBCfgParser{
+			Filters: []FBCfgFilter{
 				{
 					Name:  "record_modifier",
 					Match: "one-file",
@@ -175,7 +175,7 @@ func TestNewFBConf(t *testing.T) {
 						"key2":     "value2",
 					},
 				},
-				parserEntityBlock,
+				filterEntityBlock,
 			},
 			Output: outputBlock,
 		}},
@@ -200,7 +200,7 @@ func TestNewFBConf(t *testing.T) {
 					PathKey:       "filePath",
 				},
 			},
-			Parsers: []FBCfgParser{
+			Filters: []FBCfgFilter{
 				{
 					Name:  "record_modifier",
 					Match: "reserved-test",
@@ -209,7 +209,7 @@ func TestNewFBConf(t *testing.T) {
 						"valid":    "value",
 					},
 				},
-				parserEntityBlock,
+				filterEntityBlock,
 			},
 			Output: outputBlock,
 		}},
@@ -233,9 +233,9 @@ func TestNewFBConf(t *testing.T) {
 					BufferMaxSize: "128k",
 				},
 			},
-			Parsers: []FBCfgParser{
+			Filters: []FBCfgFilter{
 				inputRecordModifier("syslog", "syslog-tcp-test"),
-				parserEntityBlock,
+				filterEntityBlock,
 			},
 			Output: outputBlock,
 		}},
@@ -259,9 +259,9 @@ func TestNewFBConf(t *testing.T) {
 					BufferMaxSize: "128k",
 				},
 			},
-			Parsers: []FBCfgParser{
+			Filters: []FBCfgFilter{
 				inputRecordModifier("syslog", "syslog-tcp-test"),
-				parserEntityBlock,
+				filterEntityBlock,
 			},
 			Output: outputBlock,
 		}},
@@ -285,9 +285,9 @@ func TestNewFBConf(t *testing.T) {
 					BufferMaxSize: "128k",
 				},
 			},
-			Parsers: []FBCfgParser{
+			Filters: []FBCfgFilter{
 				inputRecordModifier("syslog", "syslog-tcp-test"),
-				parserEntityBlock,
+				filterEntityBlock,
 			},
 			Output: outputBlock,
 		}},
@@ -311,9 +311,9 @@ func TestNewFBConf(t *testing.T) {
 					BufferChunkSize: "128k",
 				},
 			},
-			Parsers: []FBCfgParser{
+			Filters: []FBCfgFilter{
 				inputRecordModifier("syslog", "syslog-udp-test"),
-				parserEntityBlock,
+				filterEntityBlock,
 			},
 			Output: outputBlock,
 		}},
@@ -339,9 +339,9 @@ func TestNewFBConf(t *testing.T) {
 					BufferMaxSize:         "640k",
 				},
 			},
-			Parsers: []FBCfgParser{
+			Filters: []FBCfgFilter{
 				inputRecordModifier("syslog", "syslog-unix-tcp-test"),
-				parserEntityBlock,
+				filterEntityBlock,
 			},
 			Output: outputBlock,
 		}},
@@ -367,9 +367,9 @@ func TestNewFBConf(t *testing.T) {
 					BufferChunkSize:       "64k",
 				},
 			},
-			Parsers: []FBCfgParser{
+			Filters: []FBCfgFilter{
 				inputRecordModifier("syslog", "syslog-unix-udp-test"),
-				parserEntityBlock,
+				filterEntityBlock,
 			},
 			Output: outputBlock,
 		}},
@@ -395,9 +395,9 @@ func TestNewFBConf(t *testing.T) {
 					TcpBufferSize: 64,
 				},
 			},
-			Parsers: []FBCfgParser{
+			Filters: []FBCfgFilter{
 				inputRecordModifier("tcp", "tcp-test"),
-				parserEntityBlock,
+				filterEntityBlock,
 			},
 			Output: outputBlock,
 		}},
@@ -423,9 +423,9 @@ func TestNewFBConf(t *testing.T) {
 					TcpBufferSize: 64,
 				},
 			},
-			Parsers: []FBCfgParser{
+			Filters: []FBCfgFilter{
 				inputRecordModifier("tcp", "tcp-test"),
-				parserEntityBlock,
+				filterEntityBlock,
 			},
 			Output: outputBlock,
 		}},
@@ -451,9 +451,9 @@ func TestNewFBConf(t *testing.T) {
 					TcpBufferSize: 64,
 				},
 			},
-			Parsers: []FBCfgParser{
+			Filters: []FBCfgFilter{
 				inputRecordModifier("tcp", "tcp-test"),
-				parserEntityBlock,
+				filterEntityBlock,
 			},
 			Output: outputBlock,
 		}},
@@ -480,14 +480,14 @@ func TestNewFBConf(t *testing.T) {
 					Systemd_Filter: "_SYSTEMD_UNIT=service_name.service",
 				},
 			},
-			Parsers: []FBCfgParser{
+			Filters: []FBCfgFilter{
 				inputRecordModifier("systemd", "dummy_system"),
 				{
 					Name:  "grep",
 					Match: "dummy_system",
 					Regex: "MESSAGE foo",
 				},
-				parserEntityBlock,
+				filterEntityBlock,
 			},
 			Output: outputBlock,
 			ExternalCfg: FBCfgExternal{
@@ -512,8 +512,8 @@ func TestNewFBConf(t *testing.T) {
 			},
 		}, FBCfg{
 			Inputs: []FBCfgInput{},
-			Parsers: []FBCfgParser{
-				parserEntityBlock,
+			Filters: []FBCfgFilter{
+				filterEntityBlock,
 			},
 			Output: outputBlock,
 			ExternalCfg: FBCfgExternal{
@@ -542,14 +542,14 @@ func TestNewFBConf(t *testing.T) {
 					BufferMaxSize: "128k",
 				},
 			},
-			Parsers: []FBCfgParser{
+			Filters: []FBCfgFilter{
 				inputRecordModifier("syslog", "syslog-tcp-test"),
 				{
 					Name:  "grep",
 					Match: "syslog-tcp-test",
 					Regex: "message foo",
 				},
-				parserEntityBlock,
+				filterEntityBlock,
 			},
 			Output: outputBlock,
 		}},
@@ -576,14 +576,14 @@ func TestNewFBConf(t *testing.T) {
 					TcpBufferSize: 64,
 				},
 			},
-			Parsers: []FBCfgParser{
+			Filters: []FBCfgFilter{
 				inputRecordModifier("tcp", "tcp-test"),
 				{
 					Name:  "grep",
 					Match: "tcp-test",
 					Regex: "log foo",
 				},
-				parserEntityBlock,
+				filterEntityBlock,
 			},
 			Output: outputBlock,
 		}},
@@ -609,9 +609,9 @@ func TestNewFBConf(t *testing.T) {
 					TcpBufferSize: 64,
 				},
 			},
-			Parsers: []FBCfgParser{
+			Filters: []FBCfgFilter{
 				inputRecordModifier("tcp", "tcp-test"),
-				parserEntityBlock,
+				filterEntityBlock,
 			},
 			Output: outputBlock,
 		}},
@@ -649,7 +649,7 @@ func TestFBConfigForWinlog(t *testing.T) {
 				Channels: "Security",
 			},
 		},
-		Parsers: []FBCfgParser{
+		Filters: []FBCfgFilter{
 			inputRecordModifier("winlog", "win-security"),
 			{
 				Name:   "lua",
@@ -665,7 +665,7 @@ func TestFBConfigForWinlog(t *testing.T) {
 					"EventType": "WinEventType",
 				},
 			},
-			parserEntityBlock,
+			filterEntityBlock,
 		},
 
 		Output: outputBlock,
@@ -675,14 +675,14 @@ func TestFBConfigForWinlog(t *testing.T) {
 		fbConf, err := NewFBConf(input, logFwdCfg, "0", "")
 		assert.NoError(t, err)
 		assert.Equal(t, expected.Inputs, fbConf.Inputs)
-		assert.Equal(t, expected.Parsers[0], fbConf.Parsers[0])
-		assert.Equal(t, expected.Parsers[1].Name, fbConf.Parsers[1].Name)
-		assert.Equal(t, expected.Parsers[1].Match, fbConf.Parsers[1].Match)
-		assert.Equal(t, expected.Parsers[1].Call, fbConf.Parsers[1].Call)
-		assert.Contains(t, fbConf.Parsers[1].Script, "nr_fb_lua_filter")
-		assert.Equal(t, expected.Parsers[2], fbConf.Parsers[2])
+		assert.Equal(t, expected.Filters[0], fbConf.Filters[0])
+		assert.Equal(t, expected.Filters[1].Name, fbConf.Filters[1].Name)
+		assert.Equal(t, expected.Filters[1].Match, fbConf.Filters[1].Match)
+		assert.Equal(t, expected.Filters[1].Call, fbConf.Filters[1].Call)
+		assert.Contains(t, fbConf.Filters[1].Script, "nr_fb_lua_filter")
+		assert.Equal(t, expected.Filters[2], fbConf.Filters[2])
 		assert.Equal(t, expected.Output, fbConf.Output)
-		defer removeTempFile(t, fbConf.Parsers[1].Script)
+		defer removeTempFile(t, fbConf.Filters[1].Script)
 	})
 }
 
@@ -839,7 +839,7 @@ func TestFBCfgFormat(t *testing.T) {
 				Channels: "Security",
 			},
 		},
-		Parsers: []FBCfgParser{
+		Filters: []FBCfgFilter{
 			{
 				Name:  "grep",
 				Match: "some-folder",
@@ -987,7 +987,7 @@ func TestFBCfgFormatWithHostname(t *testing.T) {
 				PathKey:       "filePath",
 			},
 		},
-		Parsers: []FBCfgParser{
+		Filters: []FBCfgFilter{
 			{
 				Name:  "grep",
 				Match: "some-file",
