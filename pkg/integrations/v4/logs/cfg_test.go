@@ -5,7 +5,6 @@ package logs
 import (
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -140,37 +139,6 @@ func TestNewFBConf(t *testing.T) {
 					Name:  "grep",
 					Match: "some_system",
 					Regex: "MESSAGE foo",
-				},
-				parserEntityBlock,
-			},
-			Output: outputBlock,
-		}},
-		{"input folder with files", LogsCfg{
-			{
-				Name:      "some-folder",
-				Folder:    "/path/to/folder",
-				MaxLineKb: 32,
-				Pattern:   "foo",
-			},
-		}, FBCfg{
-			Inputs: []FBCfgInput{
-				{
-					Name: "tail",
-					Tag:  "some-folder",
-					DB:   dbDbPath,
-					// filepath.Join used here as the test outputs the result as \path\to\folder\* when executing on Windows
-					Path:          filepath.Join("/path/to/folder", "*"),
-					BufferMaxSize: "32k",
-					SkipLongLines: "On",
-					PathKey:       "filePath",
-				},
-			},
-			Parsers: []FBCfgParser{
-				inputRecordModifier("tail", "some-folder"),
-				{
-					Name:  "grep",
-					Match: "some-folder",
-					Regex: "log foo",
 				},
 				parserEntityBlock,
 			},

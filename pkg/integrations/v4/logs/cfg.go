@@ -88,7 +88,6 @@ type LogCfg struct {
 	Name       string            `yaml:"name"`
 	File       string            `yaml:"file"`        // ...
 	MaxLineKb  int               `yaml:"max_line_kb"` // Setup the max value of the buffer while reading lines.
-	Folder     string            `yaml:"folder"`      // ...
 	Systemd    string            `yaml:"systemd"`     // ...
 	Pattern    string            `yaml:"pattern"`
 	Attributes map[string]string `yaml:"attributes"`
@@ -124,7 +123,7 @@ type LogExternalFBCfg struct {
 
 // IsValid validates struct as there's no constructor to enforce it.
 func (l *LogCfg) IsValid() bool {
-	return l.Name != "" && (l.File != "" || l.Folder != "" || l.Systemd != "" || l.Syslog != nil || l.Tcp != nil || l.Fluentbit != nil || l.Winlog != nil)
+	return l.Name != "" && (l.File != "" || l.Systemd != "" || l.Syslog != nil || l.Tcp != nil || l.Fluentbit != nil || l.Winlog != nil)
 }
 
 // FBCfg FluentBit automatically generated configuration.
@@ -299,8 +298,6 @@ func parseConfigBlock(l LogCfg, logsHomeDir string) (input FBCfgInput, filters [
 
 	if l.File != "" {
 		input, filters = parseFileInput(l, dbPath)
-	} else if l.Folder != "" {
-		input, filters = parseFolderInput(l, dbPath)
 	} else if l.Systemd != "" {
 		input, filters = parseSystemdInput(l, dbPath)
 	} else if l.Syslog != nil {
@@ -326,16 +323,6 @@ func parseConfigBlock(l LogCfg, logsHomeDir string) (input FBCfgInput, filters [
 // Single file
 func parseFileInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBCfgParser) {
 	input = newFileInput(l.File, dbPath, l.Name, getBufferMaxSize(l))
-	filters = append(filters, newRecordModifierFilterForInput(l.Name, fbInputTypeTail, l.Attributes))
-	filters = parsePattern(l, fbGrepFieldForTail, filters)
-	return input, filters
-}
-
-// Multiple files: expands folder into several "tail" plugin inputs
-func parseFolderInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBCfgParser) {
-	// /path/to/folder results in /path/to/folder/*
-	folderPath := filepath.Join(l.Folder, "*")
-	input = newFileInput(folderPath, dbPath, l.Name, getBufferMaxSize(l))
 	filters = append(filters, newRecordModifierFilterForInput(l.Name, fbInputTypeTail, l.Attributes))
 	filters = parsePattern(l, fbGrepFieldForTail, filters)
 	return input, filters
