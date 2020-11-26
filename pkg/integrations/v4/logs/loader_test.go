@@ -222,18 +222,6 @@ logs:
 		},
 	}
 
-	ymlWithFolder := []byte(`
-logs:
-  - name: baz
-    folder: /folder
-`)
-	structWithFolder := LogsCfg{
-		{
-			Name:   "baz",
-			Folder: "/folder",
-		},
-	}
-
 	ymlInvalid := []byte(`
 nooo:
   - name: fuuu
@@ -381,7 +369,6 @@ logs:
 		{"empty file", []byte{}, nil, nil},
 		{"input with file", ymlWithFile, structWithFile, nil},
 		{"input with systemd and grep", ymlWithSystemd, structWithSystemd, nil},
-		{"input with folder", ymlWithFolder, structWithFolder, nil},
 		{"input invalid", ymlInvalid, nil, nil},
 		{"input partially invalid", ymlPartiallyInvalid, nil, nil},
 		{"file with attributes", ymlWithAttributes, structWithAttributes, nil},
