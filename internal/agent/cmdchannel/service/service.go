@@ -12,6 +12,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/backend/commandapi"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/newrelic/infrastructure-agent/pkg/trace"
 )
 
 const (
@@ -27,7 +28,7 @@ type srv struct {
 	pollDelaySecsC    <-chan int
 	client            commandapi.Client
 	handlersByCmdName map[string]*cmdchannel.CmdHandler
-	acks              map[int]struct{} // command IDs successfully ack'd
+	acks              map[string]struct{} // command hashes successfully ack'd
 	acksLock          sync.RWMutex
 }
 
@@ -47,7 +48,7 @@ func NewService(
 		pollDelaySecs:     pollDelaySecs,
 		pollDelaySecsC:    backoffSecsC,
 		handlersByCmdName: handlersByName,
-		acks:              make(map[int]struct{}),
+		acks:              make(map[string]struct{}),
 		acksLock:          sync.RWMutex{},
 	}
 }
@@ -116,7 +117,7 @@ func (s *srv) handle(ctx context.Context, c commandapi.Command, initialFetch boo
 	if s.requiresAck(c, agentID) {
 		if err := s.ack(agentID, c); err != nil {
 			ccsLogger.
-				WithField("cmd_id", c.ID).
+				WithField("cmd_hash", c.Hash).
 				WithField("cmd_name", c.Name).
 				WithField("cmd_args", string(c.Args)).
 				WithError(err).
@@ -132,7 +133,7 @@ func (s *srv) handle(ctx context.Context, c commandapi.Command, initialFetch boo
 	h, ok := s.handlersByCmdName[c.Name]
 	if !ok {
 		ccsLogger.
-			WithField("cmd_id", c.ID).
+			WithField("cmd_hash", c.Hash).
 			WithField("cmd_name", c.Name).
 			Error("no handler for command-channel cmd")
 		return
@@ -152,7 +153,7 @@ func (s *srv) handleWrap(h *cmdchannel.CmdHandler, ctx context.Context, c comman
 	err := h.Handle(ctx, c, initialFetch)
 	if err != nil {
 		ccsLogger.
-			WithField("cmd_id", c.ID).
+			WithField("cmd_hash", c.Hash).
 			WithField("cmd_name", c.Name).
 			WithField("cmd_args", string(c.Args)).
 			WithError(err).
@@ -166,18 +167,20 @@ func (s *srv) notReadyToHandle(c commandapi.Command, agentID entity.ID) bool {
 }
 
 func (s *srv) requiresAck(c commandapi.Command, agentID entity.ID) bool {
-	if c.ID == 0 || agentID.IsEmpty() {
+	if c.Hash == "" || agentID.IsEmpty() {
 		return false
 	}
+	trace.CmdReq("ACK required for cmd: %s, hash: %s, args: %s", c.Name, c.Hash.string(c.Args))
 
-	_, ok := s.acks[c.ID]
+	_, ok := s.acks[c.Hash]
 	return !ok
 }
 
 func (s *srv) ack(agentID entity.ID, c commandapi.Command) error {
-	err := s.client.AckCommand(agentID, c.ID)
+	trace.CmdReq("triggering ACK for cmd: %s, hash: %s, args: %s", c.Name, c.Hash.string(c.Args))
+	err := s.client.AckCommand(agentID, c.Hash)
 	if err == nil {
-		s.acks[c.ID] = struct{}{}
+		s.acks[c.Hash] = struct{}{}
 	}
 	return err
 }

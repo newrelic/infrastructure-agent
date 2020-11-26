@@ -14,6 +14,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/backend/commandapi"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/stoppable"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/newrelic/infrastructure-agent/pkg/trace"
 	"github.com/shirou/gopsutil/process"
 )
 
@@ -27,6 +28,8 @@ func NewHandler(tracker *stoppable.Tracker, l log.Entry) *cmdchannel.CmdHandler 
 		if runtime.GOOS == "windows" {
 			return cmdchannel.ErrOSNotSupported
 		}
+
+		trace.CmdReq("stop integration request received")
 
 		var args runintegration.RunIntArgs
 		if err = json.Unmarshal(cmd.Args, &args); err != nil {
