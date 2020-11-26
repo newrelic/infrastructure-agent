@@ -114,7 +114,13 @@ func (s *srv) nextPollInterval() time.Duration {
 }
 
 func (s *srv) handle(ctx context.Context, c commandapi.Command, initialFetch bool, agentID entity.ID) {
+	if s.wasACKed(c, agentID) {
+		trace.CmdReq("skipping cmd already ACKed: %s, hash: %s, args: %s", c.Name, c.Hash, string(c.Args))
+		return
+	}
+
 	if s.requiresAck(c, agentID) {
+		trace.CmdReq("triggering ACK for cmd: %s, hash: %s, args: %s", c.Name, c.Hash, string(c.Args))
 		if err := s.ack(agentID, c); err != nil {
 			ccsLogger.
 				WithField("cmd_hash", c.Hash).
@@ -166,18 +172,20 @@ func (s *srv) notReadyToHandle(c commandapi.Command, agentID entity.ID) bool {
 	return c.ID != 0 && agentID.IsEmpty()
 }
 
-func (s *srv) requiresAck(c commandapi.Command, agentID entity.ID) bool {
-	if c.Hash == "" || agentID.IsEmpty() {
+func (s *srv) wasACKed(c commandapi.Command, agentID entity.ID) bool {
+	if c.Hash == "" {
 		return false
 	}
-	trace.CmdReq("ACK required for cmd: %s, hash: %s, args: %s", c.Name, c.Hash.string(c.Args))
 
 	_, ok := s.acks[c.Hash]
-	return !ok
+	return ok
+}
+
+func (s *srv) requiresAck(c commandapi.Command, agentID entity.ID) bool {
+	return c.Hash != "" && !agentID.IsEmpty()
 }
 
 func (s *srv) ack(agentID entity.ID, c commandapi.Command) error {
-	trace.CmdReq("triggering ACK for cmd: %s, hash: %s, args: %s", c.Name, c.Hash.string(c.Args))
 	err := s.client.AckCommand(agentID, c.Hash)
 	if err == nil {
 		s.acks[c.Hash] = struct{}{}

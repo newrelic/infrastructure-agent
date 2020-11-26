@@ -15,7 +15,7 @@ const serializedCmds = `
 	{
 		"return_value": [
 			{
-				"id": 0,
+				"hash": "xyz",
 				"name": "set_feature_flag",
 				"arguments": {
 					"category": "Infra_Agent",
@@ -24,7 +24,7 @@ const serializedCmds = `
 				}
 			},
 			{
-				"id": 0,
+				"hash": "xyz",
 				"name": "backoff_command_channel",
 				"arguments": {
 					"delay": 3000
@@ -55,7 +55,7 @@ func TestClient_AckCommand(t *testing.T) {
 	type testCase struct {
 		name          string
 		agentID       entity.ID
-		cmdID         int
+		cmdHash       string
 		expectErr     bool
 		expectPayload string
 		client        *commandapitest.HttpClient
@@ -64,49 +64,49 @@ func TestClient_AckCommand(t *testing.T) {
 		{
 			"empty IDs",
 			entity.EmptyID,
-			0,
+			"0",
 			false,
-			`{"id":0,"name":"ack"}`,
+			`{"hash":"0","name":"ack"}`,
 			commandapitest.ClientReturns(200, serializedCmds, nil),
 		},
 		{
 			"empty agent ID",
 			entity.EmptyID,
-			1,
+			"1",
 			false,
-			`{"id":1,"name":"ack"}`,
+			`{"hash":"1","name":"ack"}`,
 			commandapitest.ClientReturns(200, serializedCmds, nil),
 		},
 		{
 			"empty cmd ID",
 			1,
-			0,
+			"0",
 			false,
-			`{"id":0,"name":"ack"}`,
+			`{"hash":"0","name":"ack"}`,
 			commandapitest.ClientReturns(200, serializedCmds, nil),
 		},
 		{
 			"happy path",
 			1,
-			1,
+			"1",
 			false,
-			`{"id":1,"name":"ack"}`,
+			`{"hash":"1","name":"ack"}`,
 			commandapitest.ClientReturns(200, serializedCmds, nil),
 		},
 		{
 			"http client returns 500",
 			1,
-			1,
+			"1",
 			true,
-			`{"id":1,"name":"ack"}`,
+			`{"hash":"1","name":"ack"}`,
 			commandapitest.ClientReturns(500, "", nil),
 		},
 		{
 			"http client returns error",
 			1,
-			123,
+			"123",
 			true,
-			`{"id":123,"name":"ack"}`,
+			`{"hash":"123","name":"ack"}`,
 			commandapitest.ClientReturns(200, "", errors.New("foo")),
 		},
 	}
@@ -114,7 +114,7 @@ func TestClient_AckCommand(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			client := NewClient("https://foo", "123", "Agent v0", tc.client.Do)
 
-			err := client.AckCommand(tc.agentID, tc.cmdID)
+			err := client.AckCommand(tc.agentID, tc.cmdHash)
 
 			if tc.expectErr {
 				assert.Error(t, err)
