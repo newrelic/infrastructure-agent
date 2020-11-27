@@ -21,6 +21,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	http2 "github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	dm "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm/testutils"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/stretchr/testify/require"
 
@@ -154,7 +155,7 @@ func TestSrv_InitialFetch_HandlesRunIntegration(t *testing.T) {
 			return "/path/to/nri-foo", nil
 		},
 	}
-	h := runintegration.NewHandler(defQueue, il, l)
+	h := runintegration.NewHandler(defQueue, il, dm.NewNoopEmitter(), l)
 
 	s := NewService(cmdchanneltest.SuccessClient(serializedCmds), 1, make(chan int, 1), h)
 
@@ -284,7 +285,7 @@ func TestSrv_Run_HandlesRunIntegrationAndACKs(t *testing.T) {
 			return "/path/to/nri-foo", nil
 		},
 	}
-	h := runintegration.NewHandler(defQueue, il, l)
+	h := runintegration.NewHandler(defQueue, il, dm.NewNoopEmitter(), l)
 
 	cmd := `
 	{

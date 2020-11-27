@@ -154,6 +154,30 @@ type MetricData map[string]interface{}
 // EventData is the data type for single shot events
 type EventData map[string]interface{}
 
+// NewData creates a payload from code instead of JSON.
+func NewData(name, version string, ds []Dataset) DataV4 {
+	return DataV4{
+		PluginProtocolVersion: PluginProtocolVersion{RawProtocolVersion: 4},
+		Integration: IntegrationMetadata{
+			Name:    name,
+			Version: version,
+		},
+		DataSets: ds,
+	}
+}
+
+// NewEventDataset creates a dataset with jsut a single event.
+func NewEventDataset(ts int64, event EventData) Dataset {
+	return Dataset{
+		Common: Common{
+			Timestamp: &ts,
+		},
+		Events: []EventData{
+			event,
+		},
+	}
+}
+
 // NewEventData create a new event data from builder func
 func NewEventData(options ...func(EventData)) (EventData, error) {
 	e := EventData{

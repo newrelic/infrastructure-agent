@@ -9,6 +9,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/commandapi"
+	dm "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm/testutils"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,7 +20,7 @@ var (
 )
 
 func TestHandle_returnsErrorOnMissingIntegrationName(t *testing.T) {
-	h := NewHandler(make(chan integration.Definition, 1), integration.ErrLookup, l)
+	h := NewHandler(make(chan integration.Definition, 1), integration.ErrLookup, dm.NewNoopEmitter(), l)
 
 	cmdArgsMissingName := commandapi.Command{
 		Args: []byte(`{ "integration_args": ["foo", "bar"] }`),
@@ -39,7 +40,7 @@ func TestHandle_queuesIntegrationToBeRun(t *testing.T) {
 			return "/path/to/nri-foo", nil
 		},
 	}
-	h := NewHandler(defQueue, il, l)
+	h := NewHandler(defQueue, il, dm.NewNoopEmitter(), l)
 
 	cmd := commandapi.Command{
 		Args: []byte(`{ "integration_name": "nri-foo", "integration_args": ["bar", "baz"] }`),

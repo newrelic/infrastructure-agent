@@ -218,16 +218,15 @@ func (e *emitter) processEntityFwRequest(r fwrequest.EntityFwRequest) {
 
 	plugin := agent.NewExternalPluginCommon(r.Definition.PluginID(r.Integration.Name), e.agentContext, r.Definition.Name)
 
+	emitInventory(&plugin, r.Definition, r.Integration, r.ID(), r.Data, labels)
+
+	emitEvent(&plugin, r.Definition, r.Data, labels, r.ID())
+
 	dmProcessor := IntegrationProcessor{
 		IntegrationInterval:         r.Definition.Interval,
 		IntegrationLabels:           labels,
 		IntegrationExtraAnnotations: annos,
 	}
-
-	emitInventory(&plugin, r.Definition, r.Integration, r.ID(), r.Data, labels)
-
-	emitEvent(&plugin, r.Definition, r.Data, labels, r.ID())
-
 	metrics := dmProcessor.ProcessMetrics(r.Data.Metrics, r.Data.Common, r.Data.Entity)
 	if err := e.metricsSender.SendMetricsWithCommonAttributes(r.Data.Common, metrics); err != nil {
 		elog.WithField("entity", r.ID()).WithError(err).Warn("discarding metrics")
