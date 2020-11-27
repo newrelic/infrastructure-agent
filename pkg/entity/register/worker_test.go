@@ -467,43 +467,34 @@ func TestWorker_send_Logging_VerboseEnabled(t *testing.T) {
 	batchSizeBytes := 10000
 	w.send(ctx, batch, &batchSizeBytes)
 
-	found := false
-	var actualErrors []string
-	for _, expectedError := range expectedErrs {
-		for i, entry := range hook.AllEntries() {
-			if entry.Level != log.ErrorLevel {
-				continue
-			}
-			if val, ok := hook.AllEntries()[i].Data["error"]; ok {
-				errStr := val.(error).Error()
-				if errStr == expectedError {
-					found = true
+	searchLogEntries := func(expectedMessages []string, level log.Level) (found bool) {
+		for _, expectedMsg := range expectedMessages {
+			for i, entry := range hook.AllEntries() {
+				if entry.Level != level {
+					continue
 				}
-				actualErrors = append(actualErrors, errStr)
+				if val, ok := hook.AllEntries()[i].Data["error"]; ok {
+					errStr := val.(error).Error()
+					if errStr == expectedMsg {
+						found = true
+					}
+				}
 			}
 		}
+		return
 	}
-	assert.True(t, found, "expected to find error message: %s \n actual errors: %s",
-		expectedErrs, actualErrors)
 
-	var actualWarnings []string
-	found = false
-	for _, expectedWarn := range expectedWarnings {
-		for i, entry := range hook.AllEntries() {
-			if entry.Level != log.WarnLevel {
-				continue
-			}
-			if val, ok := hook.AllEntries()[i].Data["error"]; ok {
-				warnStr := val.(error).Error()
-				if warnStr == expectedWarn {
-					found = true
-				}
-				actualWarnings = append(actualWarnings, warnStr)
-			}
-		}
-	}
-	assert.True(t, found, "expected to find warn message: %s \n actual warns: %s",
-		expectedWarnings, actualWarnings)
+	assert.Eventually(t, func() bool {
+		ok := searchLogEntries(expectedErrs, log.ErrorLevel)
+		return ok
+	}, time.Second, 10*time.Millisecond,
+		"expected to find error messages: %s", expectedErrs)
+
+	assert.Eventually(t, func() bool {
+		ok := searchLogEntries(expectedWarnings, log.WarnLevel)
+		return ok
+	}, time.Second, 10*time.Millisecond,
+		"expected to find warning messages: %s \n", expectedWarnings)
 }
 
 func TestWorker_send_Logging_VerboseDisabled(t *testing.T) {
@@ -563,5 +554,8 @@ func TestWorker_send_Logging_VerboseDisabled(t *testing.T) {
 	batchSizeBytes := 10000
 	w.send(ctx, batch, &batchSizeBytes)
 
-	assert.Empty(t, hook.Entries)
+	assert.Eventually(t, func() bool {
+		hook.LastEntry()
+		return len(hook.Entries) == 0
+	}, time.Second, 10*time.Millisecond)
 }
