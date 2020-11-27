@@ -113,10 +113,12 @@ func (w *worker) send(ctx context.Context, batch map[entity.Key]fwrequest.Entity
 	responses := w.registerEntitiesWithRetry(ctx, entities)
 
 	for _, resp := range responses {
-		if w.config.VerboseLogLevel > 0 && resp.ErrorMsg != "" {
-			wlog.WithError(fmt.Errorf(resp.ErrorMsg)).
-				WithField("entityName", resp.Name).
-				Errorf("failed to register entity")
+		if resp.ErrorMsg != "" {
+			if w.config.VerboseLogLevel > 0 {
+				wlog.WithError(fmt.Errorf(resp.ErrorMsg)).
+					WithField("entityName", resp.Name).
+					Errorf("failed to register entity")
+			}
 			continue
 		}
 
@@ -130,12 +132,14 @@ func (w *worker) send(ctx context.Context, batch map[entity.Key]fwrequest.Entity
 		}
 
 		r, ok := batch[entity.Key(resp.Name)]
-		if w.config.VerboseLogLevel > 0 && !ok {
-			wlog.
-				WithField("entityName", resp.Name).
-				WithField("entityID", resp.ID).
-				WithField("entityName", resp.Name).
-				Errorf("entityName returned by register not found in the entities batch")
+		if !ok {
+			if w.config.VerboseLogLevel > 0 {
+				wlog.
+					WithField("entityName", resp.Name).
+					WithField("entityID", resp.ID).
+					WithField("entityName", resp.Name).
+					Errorf("entityName returned by register not found in the entities batch")
+			}
 			continue
 		} else {
 			r.RegisteredWith(resp.ID)
