@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/newrelic/infrastructure-agent/pkg/event"
+
 	"time"
 )
 
@@ -24,8 +26,6 @@ const (
 )
 
 const millisSinceJanuaryFirst1978 = 252489600000
-
-var acceptedAttribute = []string{"summary", "category", "entity_name", "format", "local_identity", "local_details"}
 
 type DataV4 struct {
 	PluginProtocolVersion
@@ -178,13 +178,12 @@ func NewEventData(options ...func(EventData)) (EventData, error) {
 	return e, nil
 }
 
-// Builder for NewEventData constructor will copy only valid keys
-// valid keys: ["summary", "category", "entity_name", "format", "local_identity", "local_details"]
+// Builder for NewEventData copying all event fields.
 func WithEvents(original EventData) func(EventData) {
 	return func(copy EventData) {
-		for _, key := range acceptedAttribute {
-			if val, ok := original[key]; ok {
-				copy[key] = val
+		for k, v := range original {
+			if !event.IsReserved(k) {
+				copy[k] = v
 			}
 		}
 	}
@@ -220,7 +219,7 @@ func WithAttributes(a map[string]interface{}) func(EventData) {
 	return func(copy EventData) {
 		for key, value := range a {
 			if _, ok := copy[key]; ok {
-				copy[fmt.Sprintf("attr.%s", key)] = value
+				copy[fmt.Sprintf("%s%s", event.AttributesPrefix, key)] = value
 			} else {
 				copy[key] = value
 			}
