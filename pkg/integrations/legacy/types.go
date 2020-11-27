@@ -32,10 +32,6 @@ const (
 	V1_EVENT_EVENT_TYPE        = "InfrastructureEvent"
 )
 
-var (
-	V1_ACCEPTED_EVENT_ATTRIBUTES = []string{"summary", "category", "entity_name", "format", "local_identity", "local_details"}
-)
-
 type PluginV1Command struct {
 	Command  []string     `yaml:"command"`  // Command to execute, run from the plugin's directory.
 	Prefix   ids.PluginID `yaml:"prefix"`   // "Plugin path" for inventory data produced by the plugin. Not applicable for event sources.

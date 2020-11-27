@@ -258,24 +258,22 @@ func emitInventory(
 }
 
 func emitEvent(emitter agent.PluginEmitter, metadata integration.Definition, dataSet protocol.Dataset, labels map[string]string, entityID entity.ID) {
-	builder := make([]func(protocol.EventData), 0)
+	sharedOpts := []func(protocol.EventData){
+		protocol.WithEntity(entity.New(entity.Key(dataSet.Entity.Name), entityID)),
+		protocol.WithLabels(labels),
+	}
 
 	u := metadata.ExecutorConfig.User
 	if u != "" {
-		builder = append(builder, protocol.WithIntegrationUser(u))
+		sharedOpts = append(sharedOpts, protocol.WithIntegrationUser(u))
 	}
 
-	builder = append(builder, protocol.WithLabels(labels))
-
 	for _, event := range dataSet.Events {
-		builder = append(builder,
-			protocol.WithEntity(entity.New(entity.Key(dataSet.Entity.Name), entityID)),
-			protocol.WithEvents(event))
+		opts := append(sharedOpts, protocol.WithEvents(event))
 
-		attributesFromEvent(event, &builder)
+		attributesFromEvent(event, &opts)
 
-		e, err := protocol.NewEventData(builder...)
-
+		e, err := protocol.NewEventData(opts...)
 		if err != nil {
 			elog.WithFields(logrus.Fields{
 				"payload": event,

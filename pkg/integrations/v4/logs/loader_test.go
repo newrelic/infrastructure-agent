@@ -28,7 +28,7 @@ var (
 		Match:      "*",
 		LicenseKey: "license",
 	}
-	fbCfgEntityDecoration = FBCfgParser{
+	fbCfgEntityDecoration = FBCfgFilter{
 		Name:  "record_modifier",
 		Match: "*",
 		Records: map[string]string{
@@ -64,7 +64,7 @@ logs:
 				PathKey:       "filePath",
 			},
 		},
-		Parsers: []FBCfgParser{
+		Filters: []FBCfgFilter{
 			{
 				Name:  "record_modifier",
 				Match: "foo",
@@ -151,7 +151,7 @@ func TestCfgLoader_LoadAll_TroubleshootNoLogFile(t *testing.T) {
 				Systemd_Filter: "_SYSTEMD_UNIT=newrelic-infra.service",
 			},
 		},
-		Parsers: []FBCfgParser{
+		Filters: []FBCfgFilter{
 			{
 				Name:  "record_modifier",
 				Match: fluentBitTagTroubleshoot,
@@ -181,7 +181,7 @@ func TestCfgLoader_LoadAll_TroubleshootLogFile(t *testing.T) {
 				Tag:           fluentBitTagTroubleshoot,
 			},
 		},
-		Parsers: []FBCfgParser{
+		Filters: []FBCfgFilter{
 			{
 				Name:  "record_modifier",
 				Match: fluentBitTagTroubleshoot,
@@ -219,18 +219,6 @@ logs:
 			Name:    "bar",
 			Systemd: "bar-svc",
 			Pattern: "regex",
-		},
-	}
-
-	ymlWithFolder := []byte(`
-logs:
-  - name: baz
-    folder: /folder
-`)
-	structWithFolder := LogsCfg{
-		{
-			Name:   "baz",
-			Folder: "/folder",
 		},
 	}
 
@@ -381,7 +369,6 @@ logs:
 		{"empty file", []byte{}, nil, nil},
 		{"input with file", ymlWithFile, structWithFile, nil},
 		{"input with systemd and grep", ymlWithSystemd, structWithSystemd, nil},
-		{"input with folder", ymlWithFolder, structWithFolder, nil},
 		{"input invalid", ymlInvalid, nil, nil},
 		{"input partially invalid", ymlPartiallyInvalid, nil, nil},
 		{"file with attributes", ymlWithAttributes, structWithAttributes, nil},
