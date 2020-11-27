@@ -108,7 +108,7 @@ func notifyPlatform(dmEmitter dm.Emitter, il integration.InstancesLookup, cmd co
 	def.CmdChannelHash = args.Hash()
 	ev := cmd.Event(args.IntegrationName, args.IntegrationArgs)
 	ev["cmd_stop_hash"] = args.Hash()
-	ev["stop_mode"] = stopModeUsed
+	ev["cmd_stop_mode"] = stopModeUsed
 	runintegration.NotifyPlatform(dmEmitter, def, ev)
 
 	return nil
