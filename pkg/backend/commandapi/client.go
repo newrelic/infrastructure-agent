@@ -31,7 +31,7 @@ func (c *Command) Event(integrationName string, integrationArgs []string) protoc
 	return protocol.EventData{
 		"eventType":     "InfrastructureEvent",
 		"category":      "notifications",
-		"summary":       c.Name,
+		"summary":       fmt.Sprintf("cmdapi.%s", c.Name),
 		"cmd_id":        c.ID,
 		"cmd_hash":      c.Hash,
 		"cmd_name":      c.Name,
