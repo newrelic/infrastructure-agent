@@ -554,8 +554,5 @@ func TestWorker_send_Logging_VerboseDisabled(t *testing.T) {
 	batchSizeBytes := 10000
 	w.send(ctx, batch, &batchSizeBytes)
 
-	assert.Eventually(t, func() bool {
-		hook.LastEntry()
-		return len(hook.Entries) == 0
-	}, time.Second, 10*time.Millisecond)
+	assert.Empty(t, hook.AllEntries())
 }
