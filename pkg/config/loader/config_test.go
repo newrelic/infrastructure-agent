@@ -75,9 +75,9 @@ baz: ${creds.user}
 	defer os.Remove(tmp.Name())
 
 	var cfg struct {
-		Foo      string              `yaml:"foo"`
-		Baz      string              `yaml:"baz"`
-		Databind databind.YAMLConfig `yaml:",inline"`
+		Foo      string                   `yaml:"foo"`
+		Baz      string                   `yaml:"baz"`
+		Databind databind.YAMLAgentConfig `yaml:",inline"`
 	}
 
 	meta, err := LoadYamlConfig(&cfg, tmp.Name())
