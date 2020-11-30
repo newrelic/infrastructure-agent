@@ -67,7 +67,7 @@ var fbConfigFormat = `{{- range .Inputs }}
     {{- end }}
 {{ end -}}
 
-{{- range .Parsers }}
+{{- range .Filters }}
 [FILTER]
     {{- if .Name }}
     Name  {{ .Name }}

@@ -88,7 +88,6 @@ type LogCfg struct {
 	Name       string            `yaml:"name"`
 	File       string            `yaml:"file"`        // ...
 	MaxLineKb  int               `yaml:"max_line_kb"` // Setup the max value of the buffer while reading lines.
-	Folder     string            `yaml:"folder"`      // ...
 	Systemd    string            `yaml:"systemd"`     // ...
 	Pattern    string            `yaml:"pattern"`
 	Attributes map[string]string `yaml:"attributes"`
@@ -124,13 +123,13 @@ type LogExternalFBCfg struct {
 
 // IsValid validates struct as there's no constructor to enforce it.
 func (l *LogCfg) IsValid() bool {
-	return l.Name != "" && (l.File != "" || l.Folder != "" || l.Systemd != "" || l.Syslog != nil || l.Tcp != nil || l.Fluentbit != nil || l.Winlog != nil)
+	return l.Name != "" && (l.File != "" || l.Systemd != "" || l.Syslog != nil || l.Tcp != nil || l.Fluentbit != nil || l.Winlog != nil)
 }
 
 // FBCfg FluentBit automatically generated configuration.
 type FBCfg struct {
 	Inputs      []FBCfgInput
-	Parsers     []FBCfgParser
+	Filters     []FBCfgFilter
 	ExternalCfg FBCfgExternal
 	Output      FBCfgOutput
 }
@@ -150,7 +149,7 @@ func (c FBCfg) Format() (result string, externalCfg FBCfgExternal, err error) {
 	return buf.String(), c.ExternalCfg, nil
 }
 
-// FBCfgInput FluentBit Input config block for either "tail", "systemd", "winlog" or "syslog" plugins.
+// FBCfgInput FluentBit INPUT config block for either "tail", "systemd", "winlog" or "syslog" plugins.
 // Tail plugin expected shape:
 //  [INPUT]
 //    Name tail
@@ -187,12 +186,12 @@ type FBCfgInput struct {
 	TcpBufferSize         int    // plugin: tcp (note that the "tcp" plugin uses Buffer_Size (without "k"s!) instead of Buffer_Max_Size (with "k"s!))
 }
 
-// FBCfgParser FluentBit Parser config block, only "grep" plugin supported.
+// FBCfgFilter FluentBit FILTER config block, only "grep" plugin supported.
 //  [FILTER]
 //    Name   grep
 //    Match  nri-service
 //    Regex  MESSAGE info
-type FBCfgParser struct {
+type FBCfgFilter struct {
 	Name      string
 	Match     string
 	Regex     string            // plugin: grep
@@ -247,7 +246,7 @@ type FBCfgExternal struct {
 func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, hostname string) (fb FBCfg, e error) {
 	fb = FBCfg{
 		Inputs:  []FBCfgInput{},
-		Parsers: []FBCfgParser{},
+		Filters: []FBCfgFilter{},
 	}
 
 	for _, block := range loggingCfgs {
@@ -259,7 +258,7 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 			fb.Inputs = append(fb.Inputs, input)
 		}
 
-		fb.Parsers = append(fb.Parsers, filters...)
+		fb.Filters = append(fb.Filters, filters...)
 
 		if (external != FBCfgExternal{} && fb.ExternalCfg != FBCfgExternal{}) {
 			cfgLogger.Warn("External Fluent Bit configuration specified more than once. Only first one is considered, please remove any duplicates from the configuration.")
@@ -273,7 +272,7 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 	}
 
 	// This record_modifier FILTER adds common attributes for all the log records
-	fb.Parsers = append(fb.Parsers, FBCfgParser{
+	fb.Filters = append(fb.Filters, FBCfgFilter{
 		Name:  fbFilterTypeRecordModifier,
 		Match: "*",
 		Records: map[string]string{
@@ -289,7 +288,7 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 	return
 }
 
-func parseConfigBlock(l LogCfg, logsHomeDir string) (input FBCfgInput, filters []FBCfgParser, external FBCfgExternal, err error) {
+func parseConfigBlock(l LogCfg, logsHomeDir string) (input FBCfgInput, filters []FBCfgFilter, external FBCfgExternal, err error) {
 	if l.Fluentbit != nil {
 		external = newFBExternalConfig(*l.Fluentbit)
 		return
@@ -299,8 +298,6 @@ func parseConfigBlock(l LogCfg, logsHomeDir string) (input FBCfgInput, filters [
 
 	if l.File != "" {
 		input, filters = parseFileInput(l, dbPath)
-	} else if l.Folder != "" {
-		input, filters = parseFolderInput(l, dbPath)
 	} else if l.Systemd != "" {
 		input, filters = parseSystemdInput(l, dbPath)
 	} else if l.Syslog != nil {
@@ -324,25 +321,15 @@ func parseConfigBlock(l LogCfg, logsHomeDir string) (input FBCfgInput, filters [
 }
 
 // Single file
-func parseFileInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBCfgParser) {
+func parseFileInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBCfgFilter) {
 	input = newFileInput(l.File, dbPath, l.Name, getBufferMaxSize(l))
 	filters = append(filters, newRecordModifierFilterForInput(l.Name, fbInputTypeTail, l.Attributes))
 	filters = parsePattern(l, fbGrepFieldForTail, filters)
 	return input, filters
 }
 
-// Multiple files: expands folder into several "tail" plugin inputs
-func parseFolderInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBCfgParser) {
-	// /path/to/folder results in /path/to/folder/*
-	folderPath := filepath.Join(l.Folder, "*")
-	input = newFileInput(folderPath, dbPath, l.Name, getBufferMaxSize(l))
-	filters = append(filters, newRecordModifierFilterForInput(l.Name, fbInputTypeTail, l.Attributes))
-	filters = parsePattern(l, fbGrepFieldForTail, filters)
-	return input, filters
-}
-
 // Systemd service: "system" plugin input
-func parseSystemdInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBCfgParser) {
+func parseSystemdInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBCfgFilter) {
 	input = newSystemdInput(l.Systemd, dbPath, l.Name)
 	filters = append(filters, newRecordModifierFilterForInput(l.Name, fbInputTypeSystemd, l.Attributes))
 	filters = parsePattern(l, fbGrepFieldForSystemd, filters)
@@ -350,7 +337,7 @@ func parseSystemdInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBC
 }
 
 // Syslog: "syslog" plugin
-func parseSyslogInput(l LogCfg) (input FBCfgInput, filters []FBCfgParser, err error) {
+func parseSyslogInput(l LogCfg) (input FBCfgInput, filters []FBCfgFilter, err error) {
 	slIn, e := newSyslogInput(*l.Syslog, l.Name, getBufferMaxSize(l))
 	if e != nil {
 		return FBCfgInput{}, nil, e
@@ -362,7 +349,7 @@ func parseSyslogInput(l LogCfg) (input FBCfgInput, filters []FBCfgParser, err er
 }
 
 // Tcp: "tcp plugin
-func parseTcpInput(l LogCfg) (input FBCfgInput, filters []FBCfgParser, err error) {
+func parseTcpInput(l LogCfg) (input FBCfgInput, filters []FBCfgFilter, err error) {
 	tcpIn, e := newTcpInput(*l.Tcp, l.Name, getBufferMaxSize(l))
 	if e != nil {
 		err = e
@@ -377,16 +364,16 @@ func parseTcpInput(l LogCfg) (input FBCfgInput, filters []FBCfgParser, err error
 }
 
 //Winlog: "winlog" plugin
-func parseWinlogInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBCfgParser, err error) {
+func parseWinlogInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBCfgFilter, err error) {
 	input = newWinlogInput(*l.Winlog, dbPath, l.Name)
 	filters = append(filters, newRecordModifierFilterForInput(l.Name, fbInputTypeWinlog, l.Attributes))
 	scriptContent, err := createLuaScript(*l.Winlog)
 	if err != nil {
-		return FBCfgInput{}, []FBCfgParser{}, err
+		return FBCfgInput{}, []FBCfgFilter{}, err
 	}
 	scriptName, err := saveToTempFile([]byte(scriptContent))
 	if err != nil {
-		return FBCfgInput{}, []FBCfgParser{}, err
+		return FBCfgInput{}, []FBCfgFilter{}, err
 	}
 	eventIdLuaFilter := newLuaFilter(l.Name, scriptName)
 	filters = append(filters, eventIdLuaFilter)
@@ -455,7 +442,7 @@ func saveToTempFile(config []byte) (string, error) {
 	return file.Name(), nil
 }
 
-func parsePattern(l LogCfg, fluentBitGrepField string, filters []FBCfgParser) []FBCfgParser {
+func parsePattern(l LogCfg, fluentBitGrepField string, filters []FBCfgFilter) []FBCfgFilter {
 	if l.Pattern != "" {
 		return append(filters, newGrepFilter(l, fluentBitGrepField))
 	}
@@ -565,8 +552,8 @@ func newTcpInput(t LogTcpCfg, tag string, bufSize int) (FBCfgInput, error) {
 	return fbInput, nil
 }
 
-func newRecordModifierFilterForInput(tag string, fbFilterInputType string, userAttributes map[string]string) FBCfgParser {
-	ret := FBCfgParser{
+func newRecordModifierFilterForInput(tag string, fbFilterInputType string, userAttributes map[string]string) FBCfgFilter {
+	ret := FBCfgFilter{
 		Name:  fbFilterTypeRecordModifier,
 		Match: tag,
 		Records: map[string]string{
@@ -585,16 +572,16 @@ func newRecordModifierFilterForInput(tag string, fbFilterInputType string, userA
 	return ret
 }
 
-func newGrepFilter(l LogCfg, fluentBitGrepField string) FBCfgParser {
-	return FBCfgParser{
+func newGrepFilter(l LogCfg, fluentBitGrepField string) FBCfgFilter {
+	return FBCfgFilter{
 		Name:  fbFilterTypeGrep,
 		Regex: fmt.Sprintf("%s %s", fluentBitGrepField, l.Pattern),
 		Match: l.Name,
 	}
 }
 
-func newLuaFilter(tag string, fileName string) FBCfgParser {
-	return FBCfgParser{
+func newLuaFilter(tag string, fileName string) FBCfgFilter {
+	return FBCfgFilter{
 		Name:   fbFilterTypeLua,
 		Match:  tag,
 		Script: fileName,
@@ -602,8 +589,8 @@ func newLuaFilter(tag string, fileName string) FBCfgParser {
 	}
 }
 
-func newModifyFilter(tag string) FBCfgParser {
-	return FBCfgParser{
+func newModifyFilter(tag string) FBCfgFilter {
+	return FBCfgFilter{
 		Name:  fbFilterTypeModify,
 		Match: tag,
 		Modifiers: map[string]string{
