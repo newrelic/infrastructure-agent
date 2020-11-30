@@ -96,7 +96,7 @@ func NewHandler(tracker *stoppable.Tracker, il integration.InstancesLookup, dmEm
 		return
 	}
 
-	return cmdchannel.NewCmdHandler("run_integration", handleF)
+	return cmdchannel.NewCmdHandler("stop_integration", handleF)
 }
 
 func notifyPlatform(dmEmitter dm.Emitter, il integration.InstancesLookup, cmd commandapi.Command, args runintegration.RunIntArgs, stopModeUsed string) error {
