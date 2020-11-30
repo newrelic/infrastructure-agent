@@ -96,6 +96,12 @@ func (r *runner) Run(ctx context.Context, pidWChan chan<- int) {
 			}
 		}
 
+		// single run
+		if r.definition.Interval == 0 {
+			r.log.Debug("single run finished")
+			return
+		}
+
 		select {
 		case <-ctx.Done():
 			r.log.Debug("Integration has been interrupted. Finishing.")

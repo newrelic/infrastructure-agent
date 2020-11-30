@@ -82,6 +82,7 @@ func NewConfigFromCmdChannelRunInt(args RunIntArgs) config.ConfigEntry {
 	return config.ConfigEntry{
 		InstanceName: args.IntegrationName,
 		CLIArgs:      args.IntegrationArgs,
+		Interval:     "0",
 	}
 }
 
