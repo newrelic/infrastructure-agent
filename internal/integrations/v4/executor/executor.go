@@ -11,7 +11,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"strings"
 	"sync"
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/constants"
@@ -46,14 +45,10 @@ func (r *Executor) Execute(ctx context.Context, pidChan chan<- int) OutputReceiv
 	go func() {
 		cmd := r.buildCommand(commandCtx)
 
-		//argsS := make([]string, len(cmd.Args))
-		//copy(argsS, cmd.Args)
-		//args := helpers.ObfuscateSensitiveDataFromArray(argsS)
-
 		illog.
 			WithField("command", r.Command).
 			WithField("path", cmd.Path).
-			WithField("args", strings.Join(helpers.ObfuscateSensitiveDataFromArray(cmd.Args), ",")).
+			WithField("args", helpers.ObfuscateSensitiveDataFromArray(cmd.Args)).
 			WithField("env", helpers.ObfuscateSensitiveDataFromArray(cmd.Env)).
 			Debug("Running command.")
 
