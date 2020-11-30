@@ -80,8 +80,12 @@ baz: ${creds.user}
 		Databind databind.YAMLConfig `yaml:",inline"`
 	}
 
-	_, err = LoadYamlConfig(&cfg, tmp.Name())
+	meta, err := LoadYamlConfig(&cfg, tmp.Name())
+
 	require.NoError(t, err)
+
+	assert.Equal(t, YAMLMetadata{"variables": true, "baz": true, "foo": true}, *meta)
+
 	assert.Equal(t, "bar", cfg.Foo)
 	assert.Equal(t, "${creds.user}", cfg.Baz)
 	require.Contains(t, cfg.Databind.Variables, "creds")
