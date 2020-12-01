@@ -28,10 +28,8 @@ func TestStoppablesTracker_Add(t *testing.T) {
 
 	assert.True(t, stopped)
 
-	// once stopped context is removed from track
-
 	_, ok := s.hash2Cancel["foo"]
-	assert.False(t, ok)
+	assert.False(t, ok, "once stopped context should had been removed from track")
 }
 
 func TestStoppablesTracker_Kill_WontStopNonTrackedContext(t *testing.T) {

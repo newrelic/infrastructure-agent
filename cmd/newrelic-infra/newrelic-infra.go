@@ -231,40 +231,13 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	ffManager := feature_flags.NewManager(c.Features)
 	il := newInstancesLookup(integrationCfg)
 
-	// queues integration run requests
-	definitionQ := make(chan integration.Definition, 100)
-
-	tracker := stoppable.NewTracker()
-
-	// Command channel handlers
-	backoffSecsC := make(chan int, 1) // 1 won't block on initial cmd-channel fetch
-	boHandler := ccBackoff.NewHandler(backoffSecsC)
-	ffHandle := fflag.NewHandler(c, ffManager, wlog.WithComponent("FFHandler"))
-	ffHandler := cmdchannel.NewCmdHandler("set_feature_flag", ffHandle.Handle)
-	riHandler := runintegration.NewHandler(definitionQ, il, wlog.WithComponent("runintegration.Handler"))
-	siHandler := stopintegration.NewHandler(tracker, wlog.WithComponent("stopintegration.Handler"))
-	// Command channel service
-	ccService := service.NewService(
-		caClient,
-		c.CommandChannelIntervalSec,
-		backoffSecsC,
-		boHandler,
-		ffHandler,
-		riHandler,
-		siHandler,
-	)
-	initCmdResponse, err := ccService.InitialFetch(context.Background())
-	if err != nil {
-		aslog.WithError(err).Warn("Commands initial fetch failed.")
-	}
-
 	fatal := func(err error, message string) {
 		aslog.WithError(err).Error(message)
 		os.Exit(1)
 	}
 
 	aslog.Info("Checking network connectivity...")
-	err = waitForNetwork(c.CollectorURL, c.StartupConnectionTimeout, c.StartupConnectionRetries, transport)
+	err := waitForNetwork(c.CollectorURL, c.StartupConnectionTimeout, c.StartupConnectionRetries, transport)
 	if err != nil {
 		fatal(err, "Can't reach the New Relic collector.")
 	}
@@ -317,6 +290,12 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		return err
 	}
 
+	// queues integration run requests
+	definitionQ := make(chan integration.Definition, 100)
+
+	// track stoppable integrations
+	tracker := stoppable.NewTracker()
+
 	var dmEmitter dm.Emitter
 	if enabled, exists := ffManager.GetFeatureFlag(fflag.FlagDMRegisterEnable); exists && enabled {
 		dmEmitter = dm.NewEmitter(agt.GetContext(), dmSender, registerClient)
@@ -325,6 +304,28 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	}
 	integrationEmitter := emitter.NewIntegrationEmittor(agt, dmEmitter, ffManager)
 	integrationManager := v4.NewManager(integrationCfg, integrationEmitter, il, definitionQ, tracker)
+
+	// Command channel handlers
+	backoffSecsC := make(chan int, 1) // 1 won't block on initial cmd-channel fetch
+	boHandler := ccBackoff.NewHandler(backoffSecsC)
+	ffHandle := fflag.NewHandler(c, ffManager, wlog.WithComponent("FFHandler"))
+	ffHandler := cmdchannel.NewCmdHandler("set_feature_flag", ffHandle.Handle)
+	riHandler := runintegration.NewHandler(definitionQ, il, dmEmitter, wlog.WithComponent("runintegration.Handler"))
+	siHandler := stopintegration.NewHandler(tracker, il, dmEmitter, wlog.WithComponent("stopintegration.Handler"))
+	// Command channel service
+	ccService := service.NewService(
+		caClient,
+		c.CommandChannelIntervalSec,
+		backoffSecsC,
+		boHandler,
+		ffHandler,
+		riHandler,
+		siHandler,
+	)
+	initCmdResponse, err := ccService.InitialFetch(context.Background())
+	if err != nil {
+		aslog.WithError(err).Warn("Commands initial fetch failed.")
+	}
 
 	// log-forwarder
 	fbIntCfg := v4.FBSupervisorConfig{
