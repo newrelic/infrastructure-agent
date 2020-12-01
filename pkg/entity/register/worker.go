@@ -24,6 +24,7 @@ type WorkerConfig struct {
 	MaxBatchSizeBytes int
 	MaxBatchDuration  time.Duration
 	MaxRetryBo        time.Duration
+	VerboseLogLevel   int
 }
 
 type worker struct {
@@ -113,28 +114,32 @@ func (w *worker) send(ctx context.Context, batch map[entity.Key]fwrequest.Entity
 
 	for _, resp := range responses {
 		if resp.ErrorMsg != "" {
-			wlog.WithError(fmt.Errorf(resp.ErrorMsg)).
-				WithField("entityName", resp.Name).
-				Errorf("failed to register entity")
+			if w.config.VerboseLogLevel > 0 {
+				wlog.WithError(fmt.Errorf(resp.ErrorMsg)).
+					WithField("entityName", resp.Name).
+					Errorf("failed to register entity")
+			}
 			continue
 		}
 
-		if len(resp.Warnings) > 0 {
+		if w.config.VerboseLogLevel > 0 && len(resp.Warnings) > 0 {
 			for _, warn := range resp.Warnings {
-				wlog.
+				wlog.WithError(fmt.Errorf(warn)).
 					WithField("entityName", resp.Name).
 					WithField("entityID", resp.ID).
-					Errorf("entity registered with warnings: %s", warn)
+					Warn("entity registered with warnings")
 			}
 		}
 
 		r, ok := batch[entity.Key(resp.Name)]
 		if !ok {
-			wlog.
-				WithField("entityName", resp.Name).
-				WithField("entityID", resp.ID).
-				WithField("entityName", resp.Name).
-				Errorf("entityName returned by register not found in the entities batch")
+			if w.config.VerboseLogLevel > 0 {
+				wlog.
+					WithField("entityName", resp.Name).
+					WithField("entityID", resp.ID).
+					WithField("entityName", resp.Name).
+					Errorf("entityName returned by register not found in the entities batch")
+			}
 			continue
 		} else {
 			r.RegisteredWith(resp.ID)

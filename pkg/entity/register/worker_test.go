@@ -4,8 +4,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
+	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"io/ioutil"
 	"testing"
 	"time"
 
@@ -43,7 +46,20 @@ func (c *fakeClient) RegisterBatchEntities(agentEntityID entity.ID, entities []e
 		var name string
 		if len(entities) > i {
 			name = entities[i].Name
-			r = append(r, identityapi.RegisterEntityResponse{Name: name, ID: id})
+			// Simulate an entity that generates error
+			if name == "error" {
+				r = append(r, identityapi.RegisterEntityResponse{Name: name, ErrorMsg: "Invalid entityName"})
+			} else if name == "warnings" {
+				r = append(r, identityapi.RegisterEntityResponse{
+					Name: name,
+					Warnings: []string{
+						"Too many metadata, dropping ...",
+						"Invalid metadata: ...",
+					},
+				})
+			} else {
+				r = append(r, identityapi.RegisterEntityResponse{Name: name, ID: id})
+			}
 		}
 	}
 
@@ -384,4 +400,159 @@ func TestWorker_registerEntitiesWithRetry_Success(t *testing.T) {
 	case <-time.NewTimer(200 * time.Millisecond).C:
 		t.Error("registerEntitiesWithRetry should stop")
 	}
+}
+
+func TestWorker_send_Logging_VerboseEnabled(t *testing.T) {
+	expectedErrs := []string{
+		"Invalid entityName",
+	}
+	expectedWarnings := []string{
+		"Too many metadata, dropping ...",
+		"Invalid metadata: ...",
+	}
+
+	// When the request is successful but some entities fail, we log only when verbose is enabled.
+	reqsToRegisterQueue := make(chan fwrequest.EntityFwRequest, 0)
+	reqsRegisteredQueue := make(chan fwrequest.EntityFwRequest, 0)
+
+	agentIdentity := func() entity.Identity {
+		return entity.Identity{ID: 12}
+	}
+
+	client := &fakeClient{
+		ids: []entity.ID{13, 14},
+		// no err from backend.
+		err: nil,
+	}
+
+	config := WorkerConfig{
+		VerboseLogLevel: 1,
+	}
+	w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), reqsToRegisterQueue, reqsRegisteredQueue, config)
+
+	batch := map[entity.Key]fwrequest.EntityFwRequest{
+		entity.Key("error"): {
+			Data: protocol.Dataset{
+				Entity: entity.Fields{Name: "error"},
+			},
+		},
+		entity.Key("warnings"): {
+			Data: protocol.Dataset{
+				Entity: entity.Fields{Name: "warnings"},
+			},
+		},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-reqsRegisteredQueue:
+				// empty the registered queue to process new requests.
+			case <-time.After(5 * time.Second):
+				cancel()
+				t.Error("Timeout while executing the test")
+			}
+		}
+	}()
+
+	hook := new(test.Hook)
+	log.AddHook(hook)
+	log.SetOutput(ioutil.Discard)
+
+	batchSizeBytes := 10000
+	w.send(ctx, batch, &batchSizeBytes)
+
+	searchLogEntries := func(expectedMessages []string, level log.Level) (found bool) {
+		for _, expectedMsg := range expectedMessages {
+			for i, entry := range hook.AllEntries() {
+				if entry.Level != level {
+					continue
+				}
+				if val, ok := hook.AllEntries()[i].Data["error"]; ok {
+					errStr := val.(error).Error()
+					if errStr == expectedMsg {
+						found = true
+					}
+				}
+			}
+		}
+		return
+	}
+
+	assert.Eventually(t, func() bool {
+		ok := searchLogEntries(expectedErrs, log.ErrorLevel)
+		return ok
+	}, time.Second, 10*time.Millisecond,
+		"expected to find error messages: %s", expectedErrs)
+
+	assert.Eventually(t, func() bool {
+		ok := searchLogEntries(expectedWarnings, log.WarnLevel)
+		return ok
+	}, time.Second, 10*time.Millisecond,
+		"expected to find warning messages: %s \n", expectedWarnings)
+}
+
+func TestWorker_send_Logging_VerboseDisabled(t *testing.T) {
+	// When the request is successful but some entities fail, we log only when verbose is enabled.
+	reqsToRegisterQueue := make(chan fwrequest.EntityFwRequest, 0)
+	reqsRegisteredQueue := make(chan fwrequest.EntityFwRequest, 0)
+
+	agentIdentity := func() entity.Identity {
+		return entity.Identity{ID: 12}
+	}
+
+	client := &fakeClient{
+		ids: []entity.ID{13, 14},
+		// no err from backend.
+		err: nil,
+	}
+
+	config := WorkerConfig{
+		VerboseLogLevel: 0,
+	}
+	w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), reqsToRegisterQueue, reqsRegisteredQueue, config)
+
+	batch := map[entity.Key]fwrequest.EntityFwRequest{
+		entity.Key("error"): {
+			Data: protocol.Dataset{
+				Entity: entity.Fields{Name: "error"},
+			},
+		},
+		entity.Key("warnings"): {
+			Data: protocol.Dataset{
+				Entity: entity.Fields{Name: "warnings"},
+			},
+		},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-reqsRegisteredQueue:
+				// empty the registered queue to process new requests.
+			case <-time.After(5 * time.Second):
+				cancel()
+				t.Error("Timeout while executing the test")
+			}
+		}
+	}()
+
+	hook := new(test.Hook)
+	log.AddHook(hook)
+	log.SetOutput(ioutil.Discard)
+
+	batchSizeBytes := 10000
+	w.send(ctx, batch, &batchSizeBytes)
+
+	assert.Empty(t, hook.AllEntries())
 }
