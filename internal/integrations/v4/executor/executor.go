@@ -48,7 +48,8 @@ func (r *Executor) Execute(ctx context.Context, pidChan chan<- int) OutputReceiv
 		illog.
 			WithField("command", r.Command).
 			WithField("path", cmd.Path).
-			WithField("args", helpers.ObfuscateSensitiveDataFromArray(cmd.Args)).
+			// TODO: creates weird failure on leaktest
+			//WithField("args", helpers.ObfuscateSensitiveDataFromArray(cmd.Args)).
 			WithField("env", helpers.ObfuscateSensitiveDataFromArray(cmd.Env)).
 			Debug("Running command.")
 

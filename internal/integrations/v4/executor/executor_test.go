@@ -165,8 +165,7 @@ func TestRunnable_Execute_Blocked(t *testing.T) {
 func TestNoRaces(t *testing.T) {
 	log.SetOutput(ioutil.Discard)  // discard logs so not to break race tests
 	defer log.SetOutput(os.Stderr) // return back to default
-	// weird leaked goroutine on ObfuscateSensitiveData regex ?!
-	//defer leaktest.Check(t)()
+	defer leaktest.Check(t)()
 
 	bytes := make([]byte, 1000000)
 	for i := range bytes {
@@ -183,8 +182,7 @@ func TestNoRaces(t *testing.T) {
 }
 
 func TestRunnable_Execute_Verbose(t *testing.T) {
-	// weird leaked goroutine on ObfuscateSensitiveData regex ?!
-	// defer leaktest.Check(t)()
+	defer leaktest.Check(t)()
 
 	// GIVEN a runnable instance that points to a working executable
 	r := FromCmdSlice(testhelp.Command(fixtures.IntegrationVerboseScript), execConfig(t))
@@ -196,9 +194,7 @@ func TestRunnable_Execute_Verbose(t *testing.T) {
 	to := r.Execute(ctx, nil)
 
 	// THEN no errors are returned
-	if runtime.GOOS != "windows" { // Windows CI box times out randomly
-		assert.NoError(t, testhelp.ChannelErrClosed(to.Errors))
-	}
+	assert.NoError(t, testhelp.ChannelErrClosed(to.Errors))
 
 	// AND standard output lines are returned
 	assert.Equal(t, "stdout line", testhelp.ChannelRead(to.Stdout))
@@ -208,8 +204,7 @@ func TestRunnable_Execute_Verbose(t *testing.T) {
 }
 
 func TestRunnable_Execute_VerboseFalse(t *testing.T) {
-	// weird leaked goroutine on ObfuscateSensitiveData regex ?!
-	// defer leaktest.Check(t)()
+	defer leaktest.Check(t)()
 
 	// GIVEN a runnable instance that points to a working executable
 	r := FromCmdSlice(testhelp.Command(fixtures.IntegrationVerboseScript), execConfig(t))
@@ -240,9 +235,7 @@ func TestRunnable_Execute_NoVerboseSet(t *testing.T) {
 	to := r.Execute(context.Background(), nil)
 
 	// THEN no errors are returned
-	if runtime.GOOS != "windows" { // Windows CI box times out randomly
-		assert.NoError(t, testhelp.ChannelErrClosed(to.Errors))
-	}
+	assert.NoError(t, testhelp.ChannelErrClosed(to.Errors))
 
 	// AND standard output lines are returned
 	assert.Equal(t, "stdout line", testhelp.ChannelRead(to.Stdout))
