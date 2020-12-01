@@ -290,7 +290,8 @@ func TestSrv_Run_HandlesRunIntegrationAndACKs(t *testing.T) {
 	{
 		"return_value": [
 			{
-				"id":   1,
+				"id":   0,
+				"hash": "xyz",
 				"name": "run_integration",
 				"arguments": {
 					"integration_name": "nri-foo"
@@ -313,8 +314,8 @@ func TestSrv_Run_HandlesRunIntegrationAndACKs(t *testing.T) {
 	req2 := <-requestsCh
 	cancel()
 
-	assert.Equal(t, http.MethodGet, req1.Method, "get-commands request is expected")
-	assert.Equal(t, http.MethodPost, req2.Method, "ack post submission is expected")
+	assert.Equal(t, http.MethodGet, req1.Method, "GET commands request is expected")
+	assert.Equal(t, http.MethodPost, req2.Method, "POST ack submission is expected")
 
 	d := <-defQueue
 	assert.Equal(t, "nri-foo", d.Name)
