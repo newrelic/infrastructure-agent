@@ -38,7 +38,7 @@ func FromCmdSlice(cmd []string, cfg *Config) Executor {
 // The executed process can be cancelled via the provided Context.
 // When writable PID channel is provided, generated PID will be written, so process could be signaled by 3rd parties.
 // When the process ends, all the channels are closed.
-func (r *Executor) Execute(ctx context.Context, pidChan chan<- int) OutputReceive {
+func (r *Executor) Execute(ctx context.Context, pidChan, exitCodeCh chan<- int) OutputReceive {
 	out, receiver := NewOutput()
 	commandCtx, cancelCommand := context.WithCancel(ctx)
 
@@ -99,6 +99,11 @@ func (r *Executor) Execute(ctx context.Context, pidChan chan<- int) OutputReceiv
 		<-commandCtx.Done()
 		if err := cmd.Wait(); err != nil {
 			out.Errors <- err
+			if exitCodeCh != nil {
+				if exitError, ok := err.(*exec.ExitError); ok {
+					exitCodeCh <- exitError.ExitCode()
+				}
+			}
 		}
 		allOutputForwarded.Wait() // waiting again to avoid closing output before the data is received during cancellation
 		out.Close()

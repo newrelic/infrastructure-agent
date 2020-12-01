@@ -12,7 +12,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/runintegration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/commandapi"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/stoppable"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/trace"
@@ -24,7 +24,7 @@ const (
 )
 
 // NewHandler creates a cmd-channel handler for stop-integration requests.
-func NewHandler(tracker *stoppable.Tracker, il integration.InstancesLookup, dmEmitter dm.Emitter, l log.Entry) *cmdchannel.CmdHandler {
+func NewHandler(tracker *track.Tracker, il integration.InstancesLookup, dmEmitter dm.Emitter, l log.Entry) *cmdchannel.CmdHandler {
 	handleF := func(ctx context.Context, cmd commandapi.Command, initialFetch bool) (err error) {
 		if runtime.GOOS == "windows" {
 			return cmdchannel.ErrOSNotSupported
@@ -105,7 +105,7 @@ func notifyPlatform(dmEmitter dm.Emitter, il integration.InstancesLookup, cmd co
 		return err
 	}
 
-	def.CmdChannelHash = args.Hash()
+	def.CmdChanReq.CmdChannelCmdHash = args.Hash()
 	ev := cmd.Event(args.IntegrationName, args.IntegrationArgs)
 	ev["cmd_stop_hash"] = args.Hash()
 	ev["cmd_stop_mode"] = stopModeUsed

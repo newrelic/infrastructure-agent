@@ -37,7 +37,7 @@ func (c *Command) Event(integrationName string, integrationArgs []string) protoc
 		"cmd_name":      c.Name,
 		"cmd_args":      string(c.Args),
 		"cmd_args_name": integrationName,
-		"cmd_args_args": strings.Join(integrationArgs, " "),
+		"cmd_args_args": fmt.Sprintf("%+v", integrationArgs),
 	}
 }
 

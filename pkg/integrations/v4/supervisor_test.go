@@ -130,7 +130,7 @@ func NewExecutorMock() *ExecutorMock {
 	}
 }
 
-func (em *ExecutorMock) Execute(ctx ctx2.Context, pidChan chan<- int) executor.OutputReceive {
+func (em *ExecutorMock) Execute(ctx ctx2.Context, pidChan, exitCodeCh chan<- int) executor.OutputReceive {
 	return executor.OutputReceive{
 		Errors: em.errorCh,
 	}
