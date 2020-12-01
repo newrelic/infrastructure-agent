@@ -14,6 +14,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/backend/commandapi"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/newrelic/infrastructure-agent/pkg/trace"
 )
 
 // Errors
@@ -34,6 +35,7 @@ func (a *RunIntArgs) Hash() string {
 // NewHandler creates a cmd-channel handler for run-integration requests.
 func NewHandler(definitionQ chan<- integration.Definition, il integration.InstancesLookup, logger log.Entry) *cmdchannel.CmdHandler {
 	handleF := func(ctx context.Context, cmd commandapi.Command, initialFetch bool) (err error) {
+		trace.CmdReq("run integration request received")
 		var args RunIntArgs
 		if err = json.Unmarshal(cmd.Args, &args); err != nil {
 			err = cmdchannel.NewArgsErr(err)
