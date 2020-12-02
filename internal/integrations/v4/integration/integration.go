@@ -183,6 +183,11 @@ func (d *Definition) fromName(te config2.ConfigEntry, lookup InstancesLookup) er
 // - If a wrong string is provided, it returns the default interval and logs a warning message
 // - If the provided integration is lower than the minimum allowed, it logs a warning message and returns the minimum
 func getInterval(duration string) time.Duration {
+	// zero value disables interval
+	if duration == "0" {
+		return 0
+	}
+
 	if duration == "" {
 		return defaultIntegrationInterval
 	}

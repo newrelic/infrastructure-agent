@@ -51,6 +51,7 @@ func newConfigFromCmdReq(cr protocol.CmdRequestV1Cmd) config.ConfigEntry {
 			InstanceName: cr.Name,
 			Exec:         append([]string{cr.Command}, cr.Args...),
 			Env:          cr.Env,
+			Interval:     "0",
 		}
 
 	}
@@ -60,5 +61,6 @@ func newConfigFromCmdReq(cr protocol.CmdRequestV1Cmd) config.ConfigEntry {
 		InstanceName: cr.Name,
 		CLIArgs:      cr.Args,
 		Env:          cr.Env,
+		Interval:     "0",
 	}
 }

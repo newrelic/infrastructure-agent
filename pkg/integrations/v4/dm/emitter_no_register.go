@@ -42,7 +42,7 @@ func (e *nonRegisterEmitter) Send(dto fwrequest.FwRequest) {
 		idLookup host.IDLookup,
 		metricsSender MetricsSender,
 		emitter agent.PluginEmitter,
-		metadata integration.Definition,
+		definition integration.Definition,
 		integrationMetadata protocol.IntegrationMetadata,
 		dataSet protocol.Dataset,
 		labels map[string]string,
@@ -71,7 +71,7 @@ func (e *nonRegisterEmitter) Send(dto fwrequest.FwRequest) {
 			return fmt.Errorf("error renaming entity: %s", err.Error())
 		}
 
-		integrationUser := metadata.ExecutorConfig.User
+		integrationUser := definition.ExecutorConfig.User
 
 		if len(dataSet.Inventory) > 0 {
 			inventoryDataSet := legacy.BuildInventoryDataSet(
@@ -91,7 +91,7 @@ func (e *nonRegisterEmitter) Send(dto fwrequest.FwRequest) {
 		}
 
 		dmProcessor := IntegrationProcessor{
-			IntegrationInterval:         metadata.Interval,
+			IntegrationInterval:         definition.Interval,
 			IntegrationLabels:           labels,
 			IntegrationExtraAnnotations: extraAnnotations,
 		}
