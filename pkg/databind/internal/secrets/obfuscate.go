@@ -38,9 +38,9 @@ func ObfuscateGatherer(obfuscated *Obfuscated) func() (interface{}, error) {
 }
 
 func (g *obfuscateGatherer) get() (data.InterfaceMap, error) {
-	secret := g.cfg
+	credentials := g.cfg
 
-	decrypted, err := decryptStringWithKey(secret.Secret, secret.Key)
+	decrypted, err := decryptStringWithKey(credentials.Secret, credentials.Key)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode obfuscated secret: %v", err)
 	}
