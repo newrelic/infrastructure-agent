@@ -5,11 +5,12 @@
 package obfuscate
 
 import (
+	"os"
+	"testing"
+
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"os"
-	"testing"
 )
 
 func TestReplaceObfuscatedJSONYAMLs(t *testing.T) {
