@@ -29,15 +29,12 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
-// AgentMode agent user run modes, possible values are: root, privileged or unprivileged
-type AgentMode string
-
 const (
 	envPrefix           = "nria"
-	ModeUnknown         = AgentMode("")
-	ModeRoot            = AgentMode("root")
-	ModePrivileged      = AgentMode("privileged")
-	ModeUnprivileged    = AgentMode("unprivileged")
+	ModeUnknown         = ""
+	ModeRoot            = "root"
+	ModePrivileged      = "privileged"
+	ModeUnprivileged    = "unprivileged"
 	NonVerboseLogging   = 0
 	VerboseLogging      = 1
 	SmartVerboseLogging = 2
@@ -1243,10 +1240,7 @@ func LoadConfig(configFile string) (cfg *Config, err error) {
 		cfg = replacedCfg
 	}
 
-	// datading replacement needs to be improved for it to handle this type properly
-	var runM AgentMode
-	runM, cfg.AgentUser, cfg.ExecutablePath = runtimeValues()
-	cfg.RunMode = string(runM)
+	cfg.RunMode, cfg.AgentUser, cfg.ExecutablePath = runtimeValues()
 
 	// Move any other post processing steps that clean up or announce settings to be
 	// after both config file and env variable processing is complete. Need to review each of the items
