@@ -45,6 +45,7 @@ type varEntry struct {
 	Vault       *secrets.Vault       `yaml:"vault,omitempty"`
 	CyberArkCLI *secrets.CyberArkCLI `yaml:"cyberark-cli,omitempty"`
 	CyberArkAPI *secrets.CyberArkAPI `yaml:"cyberark-api,omitempty"`
+	Obfuscated  *secrets.Obfuscated  `yaml:"obfuscated,omitempty"`
 }
 
 // LoadYaml builds a set of data binding Sources from a YAML file
@@ -196,6 +197,12 @@ func (v *varEntry) validate() error {
 			return err
 		}
 	}
+	if v.Obfuscated != nil {
+		sections++
+		if err := v.Obfuscated.Validate(); err != nil {
+			return err
+		}
+	}
 	if sections == 0 {
 		return errors.New("you should specify one source to gather the variable: aws-kms or vault or cyberark-cli")
 	}
@@ -228,6 +235,11 @@ func (v *varEntry) selectGatherer(ttl time.Duration) *gatherer {
 		return &gatherer{
 			cache: cachedEntry{ttl: ttl},
 			fetch: secrets.CyberArkAPIGatherer(v.CyberArkAPI),
+		}
+	} else if v.Obfuscated != nil {
+		return &gatherer{
+			cache: cachedEntry{ttl: ttl},
+			fetch: secrets.ObfuscateGatherer(v.Obfuscated),
 		}
 	}
 
