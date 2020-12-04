@@ -1269,10 +1269,7 @@ func LoadConfig(configFile string) (cfg *Config, err error) {
 		cfg = replacedCfg
 	}
 
-	// datading replacement needs to be improved for it to handle this type properly
-	var runM AgentMode
-	runM, cfg.AgentUser, cfg.ExecutablePath = runtimeValues()
-	cfg.RunMode = string(runM)
+	cfg.RunMode, cfg.AgentUser, cfg.ExecutablePath = runtimeValues()
 
 	// Move any other post processing steps that clean up or announce settings to be
 	// after both config file and env variable processing is complete. Need to review each of the items
