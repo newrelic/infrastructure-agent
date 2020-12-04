@@ -84,7 +84,7 @@ variables:
 	_ = vals
 	require.NoError(t, err)
 	templ := map[string]string{
-		"url": "http://admin:${creds.password}@example.com/",
+		"url": "http://admin:${creds}@example.com/",
 	}
 	data, err := databind.Replace(&vals, templ)
 	require.NoError(t, err)
