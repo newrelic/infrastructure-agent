@@ -45,11 +45,17 @@ func (y *YAMLConfig) Enabled() bool {
 
 type varEntry struct {
 	TTL         string               `yaml:"ttl,omitempty"`
+	Test        *Test                `yaml:"test,omitempty"`
 	KMS         *secrets.KMS         `yaml:"aws-kms,omitempty"`
 	Vault       *secrets.Vault       `yaml:"vault,omitempty"`
 	CyberArkCLI *secrets.CyberArkCLI `yaml:"cyberark-cli,omitempty"`
 	CyberArkAPI *secrets.CyberArkAPI `yaml:"cyberark-api,omitempty"`
 }
+
+// Test for testing purposes until providers get decoupled.
+type Test struct{}
+
+func (t *Test) Validate() error { return nil }
 
 // LoadYaml builds a set of data binding Sources from a YAML file
 func LoadYAML(bytes []byte) (*Sources, error) {
@@ -252,6 +258,11 @@ func (v *varEntry) selectGatherer(ttl time.Duration) *gatherer {
 		return &gatherer{
 			cache: cachedEntry{ttl: ttl},
 			fetch: secrets.CyberArkAPIGatherer(v.CyberArkAPI),
+		}
+	} else if v.Test != nil {
+		return &gatherer{
+			cache: cachedEntry{ttl: ttl},
+			fetch: func() (interface{}, error) { return "test-result", nil },
 		}
 	}
 

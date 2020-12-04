@@ -13,6 +13,7 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	. "gopkg.in/check.v1"
 )
 
@@ -585,4 +586,41 @@ func Test_ParseIncludeMatchingRule_EnvVar(t *testing.T) {
 	assert.NoError(t, err)
 	expected := IncludeMetricsMap{"process.name": []string{"regex \"kube*\""}}
 	assert.True(t, reflect.DeepEqual(cfg.IncludeMetricsMatchers, expected))
+}
+
+func TestLoadYamlConfig_withDatabindVariables(t *testing.T) {
+	yamlData := []byte(`
+variables:
+  var1:
+    test:
+      unused_setup: "non_used"
+staging: true
+license_key: "xxx"
+proxy: ${var1}
+`)
+
+	tmp, err := createTestFile(yamlData)
+	require.NoError(t, err)
+	defer os.Remove(tmp.Name())
+
+	cfg, err := LoadConfig(tmp.Name())
+
+	require.NoError(t, err)
+
+	assert.True(t, cfg.Staging)
+	assert.Equal(t, "xxx", cfg.License)
+	assert.Equal(t, "test-result", cfg.Proxy)
+}
+
+func createTestFile(data []byte) (*os.File, error) {
+	tmp, err := ioutil.TempFile("", "loadconfig")
+	if err != nil {
+		return nil, err
+	}
+	_, err = tmp.Write(data)
+	if err != nil {
+		return nil, err
+	}
+	tmp.Close()
+	return tmp, nil
 }

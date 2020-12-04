@@ -926,7 +926,7 @@ type Config struct {
 	// - If the user is other than `root` but the capabilities don't match the ones in the previous rule, then the mode is `unprivileged`.
 	// Default: Runtime value
 	// Public: No
-	RunMode AgentMode
+	RunMode string
 
 	// AgentUser The name of the user that's executing the agent process. This value is taken from the runtime
 	// environment and cannot be manually set. The default Linux installation uses by default the `root` account to run
@@ -1224,13 +1224,29 @@ func LoadConfig(configFile string) (cfg *Config, err error) {
 		return
 	}
 	if vals.VarsLen() > 0 {
-		_, err = databind.Replace(&vals, cfg)
-		if err != nil {
+		cfg.Databind = databind.YAMLAgentConfig{}
+		matches, errD := databind.Replace(&vals, cfg)
+		if errD != nil {
 			return
 		}
+
+		if len(matches) != 1 {
+			err = fmt.Errorf("unexpected config file variables replacement amount")
+			return
+		}
+		transformed := matches[0]
+		replacedCfg, ok := transformed.Variables.(*Config)
+		if !ok {
+			err = fmt.Errorf("unexpected config file variables replacement type")
+			return
+		}
+		cfg = replacedCfg
 	}
 
-	cfg.RunMode, cfg.AgentUser, cfg.ExecutablePath = runtimeValues()
+	// datading replacement needs to be improved for it to handle this type properly
+	var runM AgentMode
+	runM, cfg.AgentUser, cfg.ExecutablePath = runtimeValues()
+	cfg.RunMode = string(runM)
 
 	// Move any other post processing steps that clean up or announce settings to be
 	// after both config file and env variable processing is complete. Need to review each of the items
