@@ -1231,10 +1231,23 @@ func LoadConfig(configFile string) (cfg *Config, err error) {
 		return
 	}
 	if vals.VarsLen() > 0 {
-		_, err = databind.Replace(&vals, cfg)
-		if err != nil {
+		cfg.Databind = databind.YAMLAgentConfig{}
+		matches, errD := databind.Replace(&vals, cfg)
+		if errD != nil {
 			return
 		}
+
+		if len(matches) != 1 {
+			err = fmt.Errorf("unexpected config file variables replacement amount")
+			return
+		}
+		transformed := matches[0]
+		replacedCfg, ok := transformed.Variables.(*Config)
+		if !ok {
+			err = fmt.Errorf("unexpected config file variables replacement type")
+			return
+		}
+		cfg = replacedCfg
 	}
 	if vals.VarsLen() > 0 {
 		cfg.Databind = databind.YAMLAgentConfig{}
@@ -1256,7 +1269,10 @@ func LoadConfig(configFile string) (cfg *Config, err error) {
 		cfg = replacedCfg
 	}
 
-	cfg.RunMode, cfg.AgentUser, cfg.ExecutablePath = runtimeValues()
+	// datading replacement needs to be improved for it to handle this type properly
+	var runM AgentMode
+	runM, cfg.AgentUser, cfg.ExecutablePath = runtimeValues()
+	cfg.RunMode = string(runM)
 
 	// Move any other post processing steps that clean up or announce settings to be
 	// after both config file and env variable processing is complete. Need to review each of the items
