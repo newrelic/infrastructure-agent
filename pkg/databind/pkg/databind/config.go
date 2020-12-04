@@ -6,15 +6,18 @@ package databind
 import (
 	"errors"
 	"fmt"
+	"os"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery/command"
+	yaml "gopkg.in/yaml.v2"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery/docker"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery/fargate"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/secrets"
-	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -162,6 +165,8 @@ func (y *YAMLConfig) validate() error {
 		if _, ok := names[vName]; ok {
 			return fmt.Errorf("duplicate variable name %q", names)
 		}
+		vEntry.expand()
+
 		names[vName] = struct{}{}
 		if err := vEntry.validate(); err != nil {
 			return err
@@ -169,6 +174,12 @@ func (y *YAMLConfig) validate() error {
 	}
 
 	return nil
+}
+
+func (v *varEntry) expand() {
+	if v.Obfuscated != nil {
+		expandEnvVars(v.Obfuscated)
+	}
 }
 
 func (v *varEntry) validate() error {
@@ -248,4 +259,25 @@ func (v *varEntry) selectGatherer(ttl time.Duration) *gatherer {
 	return &gatherer{fetch: func() (interface{}, error) {
 		return "", errors.New("missing variable data source")
 	}}
+}
+
+func expandEnvVars(obj interface{}) {
+	e := reflect.ValueOf(obj).Elem()
+
+	for i := 0; i < e.NumField(); i++ {
+		value := e.Field(i).Interface()
+
+		valueStr, ok := value.(string)
+		if !ok {
+			continue
+		}
+
+		if ok := strings.HasPrefix(valueStr, "$"); !ok {
+			continue
+		}
+
+		if envVar, ok := os.LookupEnv(valueStr[1:]); ok {
+			e.Field(i).SetString(envVar)
+		}
+	}
 }
