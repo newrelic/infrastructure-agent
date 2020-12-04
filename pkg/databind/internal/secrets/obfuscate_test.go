@@ -24,16 +24,12 @@ func TestDecodeString(t *testing.T) {
 		t.Errorf("obfuscate failed: %v ", err)
 	}
 
-	unboxed, ok := r.(data.InterfaceMap)
+	unboxed, ok := r.(string)
 	if !ok {
 		t.Error("Unable to unbox result")
 	}
 
-	if unboxed == nil {
-		t.Errorf("Result is nil")
-	}
-
-	assert.Equal(t, expectedDecrypted, unboxed["password"])
+	assert.Equal(t, expectedDecrypted, unboxed)
 }
 
 func TestDecodeJSON(t *testing.T) {
