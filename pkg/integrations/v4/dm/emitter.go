@@ -66,6 +66,7 @@ type emitter struct {
 	registerMaxBatchSize      int
 	registerMaxBatchBytesSize int
 	registerMaxBatchTime      time.Duration
+	verboseLogLevel           int
 }
 
 type Emitter interface {
@@ -91,6 +92,7 @@ func NewEmitter(
 		registerMaxBatchSize:      defaultRegisterBatchSize,
 		registerMaxBatchBytesSize: defaultRegisterBatchBytesSize,
 		registerMaxBatchTime:      defaultRegisterBatchSecs * time.Second,
+		verboseLogLevel:           agentContext.Config().Verbose,
 	}
 }
 
@@ -114,6 +116,7 @@ func (e *emitter) lazyLoadProcessor() {
 				MaxBatchSizeBytes: e.registerMaxBatchBytesSize,
 				MaxBatchDuration:  e.registerMaxBatchTime,
 				MaxRetryBo:        e.maxRetryBo,
+				VerboseLogLevel:   e.verboseLogLevel,
 			}
 			regWorker := register.NewWorker(
 				e.agentContext.Identity,
@@ -218,16 +221,15 @@ func (e *emitter) processEntityFwRequest(r fwrequest.EntityFwRequest) {
 
 	plugin := agent.NewExternalPluginCommon(r.Definition.PluginID(r.Integration.Name), e.agentContext, r.Definition.Name)
 
+	emitInventory(&plugin, r.Definition, r.Integration, r.ID(), r.Data, labels)
+
+	emitEvent(&plugin, r.Definition, r.Data, labels, r.ID())
+
 	dmProcessor := IntegrationProcessor{
 		IntegrationInterval:         r.Definition.Interval,
 		IntegrationLabels:           labels,
 		IntegrationExtraAnnotations: annos,
 	}
-
-	emitInventory(&plugin, r.Definition, r.Integration, r.ID(), r.Data, labels)
-
-	emitEvent(&plugin, r.Definition, r.Data, labels, r.ID())
-
 	metrics := dmProcessor.ProcessMetrics(r.Data.Metrics, r.Data.Common, r.Data.Entity)
 	if err := e.metricsSender.SendMetricsWithCommonAttributes(r.Data.Common, metrics); err != nil {
 		elog.WithField("entity", r.ID()).WithError(err).Warn("discarding metrics")
@@ -255,24 +257,22 @@ func emitInventory(
 }
 
 func emitEvent(emitter agent.PluginEmitter, metadata integration.Definition, dataSet protocol.Dataset, labels map[string]string, entityID entity.ID) {
-	builder := make([]func(protocol.EventData), 0)
+	sharedOpts := []func(protocol.EventData){
+		protocol.WithEntity(entity.New(entity.Key(dataSet.Entity.Name), entityID)),
+		protocol.WithLabels(labels),
+	}
 
 	u := metadata.ExecutorConfig.User
 	if u != "" {
-		builder = append(builder, protocol.WithIntegrationUser(u))
+		sharedOpts = append(sharedOpts, protocol.WithIntegrationUser(u))
 	}
 
-	builder = append(builder, protocol.WithLabels(labels))
-
 	for _, event := range dataSet.Events {
-		builder = append(builder,
-			protocol.WithEntity(entity.New(entity.Key(dataSet.Entity.Name), entityID)),
-			protocol.WithEvents(event))
+		opts := append(sharedOpts, protocol.WithEvents(event))
 
-		attributesFromEvent(event, &builder)
+		attributesFromEvent(event, &opts)
 
-		e, err := protocol.NewEventData(builder...)
-
+		e, err := protocol.NewEventData(opts...)
 		if err != nil {
 			elog.WithFields(logrus.Fields{
 				"payload": event,

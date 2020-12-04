@@ -11,17 +11,34 @@ import (
 
 	backendhttp "github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 )
 
 type Client interface {
 	GetCommands(agentID entity.ID) ([]Command, error)
-	AckCommand(agentID entity.ID, cmdID int) error
+	AckCommand(agentID entity.ID, cmdHash string) error
 }
 
 type Command struct {
 	ID   int             `json:"id"`
+	Hash string          `json:"hash"`
 	Name string          `json:"name"`
 	Args json.RawMessage `json:"arguments"`
+}
+
+// Event creates an event from command.
+func (c *Command) Event(integrationName string, integrationArgs []string) protocol.EventData {
+	return protocol.EventData{
+		"eventType":     "InfrastructureEvent",
+		"category":      "notifications",
+		"summary":       "cmd-api",
+		"cmd_id":        c.ID,
+		"cmd_hash":      c.Hash,
+		"cmd_name":      c.Name,
+		"cmd_args":      string(c.Args),
+		"cmd_args_name": integrationName,
+		"cmd_args_args": strings.Join(integrationArgs, " "),
+	}
 }
 
 type client struct {
@@ -67,8 +84,8 @@ func (c *client) GetCommands(agentID entity.ID) ([]Command, error) {
 	return unmarshalCmdChannelPayload(body)
 }
 
-func (c *client) AckCommand(agentID entity.ID, cmdID int) error {
-	payload := strings.NewReader(fmt.Sprintf(`{ "id": %d, "name": "ack" }`, cmdID))
+func (c *client) AckCommand(agentID entity.ID, cmdHash string) error {
+	payload := strings.NewReader(fmt.Sprintf(`{ "hash": "%s", "name": "ack" }`, cmdHash))
 
 	req, err := http.NewRequest("POST", c.svcURL, payload)
 	if err != nil {

@@ -129,7 +129,7 @@ func (d *decoratorImpl) topPids(container types.Container, pids map[int32]types.
 	}
 	cachedPids := make([]int32, 0, len(processes))
 	for _, process := range processes {
-		pid, err := strconv.Atoi(process[pidColumn])
+		pid, err := strconv.ParseInt(process[pidColumn], 10, 32)
 		if err != nil {
 			dslog.WithFieldsF(func() logrus.Fields {
 				return logrus.Fields{
@@ -140,8 +140,9 @@ func (d *decoratorImpl) topPids(container types.Container, pids map[int32]types.
 			}).Debug("Wrong PID number. Ignoring.")
 			continue
 		}
-		pids[int32(pid)] = container
-		cachedPids = append(cachedPids, int32(pid))
+		pidAsInt32 := int32(pid)
+		pids[pidAsInt32] = container
+		cachedPids = append(cachedPids, pidAsInt32)
 	}
 	// store fresh pids in the cache
 	d.cache.put(container.ID, cachedPids)
