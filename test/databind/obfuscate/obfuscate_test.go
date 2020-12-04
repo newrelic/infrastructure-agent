@@ -1,6 +1,5 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-// +build slow
 
 package obfuscate
 
@@ -55,7 +54,7 @@ variables:
 	_ = vals
 	require.NoError(t, err)
 	templ := map[string]string{
-		"url": "http://admin:${creds.password}@example.com/",
+		"url": "http://admin:${creds}@example.com/",
 	}
 	data, err := databind.Replace(&vals, templ)
 	require.NoError(t, err)
