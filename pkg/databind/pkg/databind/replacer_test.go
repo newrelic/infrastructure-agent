@@ -162,11 +162,11 @@ func TestReplace_Struct(t *testing.T) {
 	myConfig.Forget.Value = "${discovery.ip}:${discovery.port}"
 
 	// WHEN it is replaced by a set of two discovered items
-	ctx := &Values{discov: []discovery.Discovery{
+	vals := &Values{discov: []discovery.Discovery{
 		{Variables: data.Map{"discovery.ip": "1.2.3.4", "discovery.port": "8888", "hostname": "jarl"}},
 		{Variables: data.Map{"discovery.ip": "5.6.7.8", "discovery.port": "1111", "hostname": "nopuedor"}},
 	}}
-	ret, err := Replace(ctx, myConfig)
+	ret, err := Replace(vals, myConfig)
 	require.NoError(t, err)
 
 	// THEN two replaced instances are returned

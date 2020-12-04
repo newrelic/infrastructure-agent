@@ -181,6 +181,9 @@ func replaceFields(values []data.Map, val reflect.Value, rc replaceConfig, match
 		}
 		return newSlice, nil
 	case reflect.Ptr:
+		if val.IsNil() {
+			return val.Elem(), nil
+		}
 		vals, err := replaceFields(values, val.Elem(), rc, matches)
 		if err != nil {
 			return reflect.Value{}, err
@@ -227,7 +230,7 @@ func replaceFields(values []data.Map, val reflect.Value, rc replaceConfig, match
 				return reflect.Value{}, err
 			}
 			field := newStruct.Field(i)
-			if field.CanSet() {
+			if field.CanSet() && nComps.IsValid() {
 				field.Set(nComps)
 			}
 		}
