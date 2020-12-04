@@ -37,7 +37,7 @@ func ObfuscateGatherer(obfuscated *Obfuscated) func() (interface{}, error) {
 	}
 }
 
-func (g *obfuscateGatherer) get() (data.InterfaceMap, error) {
+func (g *obfuscateGatherer) get() (interface{}, error) {
 	credentials := g.cfg
 
 	decrypted, err := decryptStringWithKey(credentials.Secret, credentials.Key)
@@ -46,7 +46,7 @@ func (g *obfuscateGatherer) get() (data.InterfaceMap, error) {
 	}
 	result := data.InterfaceMap{}
 	if err := json.Unmarshal([]byte(decrypted), &result); err != nil {
-		result["password"] = decrypted
+		return decrypted, nil
 	}
 
 	return result, nil
