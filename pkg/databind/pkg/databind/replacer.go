@@ -188,7 +188,10 @@ func replaceFields(values []data.Map, val reflect.Value, rc replaceConfig, match
 		if vals.Kind() == reflect.Ptr {
 			return reflect.NewAt(val.Type(), unsafe.Pointer(vals.Pointer())), nil
 		}
-		return vals.Addr(), nil
+		if vals.CanAddr() {
+			return vals.Addr(), nil
+		}
+		return val.Elem(), nil
 	case reflect.Interface:
 		vals, err := replaceFields(values, reflect.ValueOf(val.Interface()), rc, matches)
 		if err != nil {
@@ -223,7 +226,10 @@ func replaceFields(values []data.Map, val reflect.Value, rc replaceConfig, match
 			if err != nil {
 				return reflect.Value{}, err
 			}
-			newStruct.Field(i).Set(nComps)
+			field := newStruct.Field(i)
+			if field.CanSet() {
+				field.Set(nComps)
+			}
 		}
 		return newStruct, nil
 	default:
