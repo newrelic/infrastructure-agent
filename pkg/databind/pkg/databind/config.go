@@ -58,7 +58,7 @@ type varEntry struct {
 
 // Test for testing purposes until providers get decoupled.
 type Test struct {
-	Value string `yaml:"value,omitempty"`
+	Value interface{} `yaml:"value,omitempty"`
 }
 
 func (t *Test) Validate() error { return nil }
