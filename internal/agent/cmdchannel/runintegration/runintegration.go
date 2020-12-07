@@ -59,8 +59,9 @@ func NewHandler(definitionQ chan<- integration.Definition, il integration.Instan
 			LogDecorated(logger, cmd, args).WithError(err).Warn("cannot create handler for cmd channel run_integration requests")
 			return
 		}
-		trackCtx := ctx2.NewTrackCtx(cmdName, args.Hash(), args.IntegrationName, args.IntegrationArgs)
-		def.CmdChanReq = &trackCtx
+
+		cmdChanReq := ctx2.NewCmdChannelRequest(cmdName, args.Hash(), args.IntegrationName, args.IntegrationArgs)
+		def.CmdChanReq = &cmdChanReq
 
 		definitionQ <- def
 

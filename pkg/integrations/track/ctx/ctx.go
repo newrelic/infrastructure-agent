@@ -8,8 +8,8 @@ type CmdChannelRequest struct {
 	IntegrationArgs   []string
 }
 
-// NewTrackCtx create new CmdChannelRequest.
-func NewTrackCtx(cmdChanCmdName, cmdChanCmdHash, integrationName string, integrationArgs []string) CmdChannelRequest {
+// NewCmdChannelRequest create new CmdChannelRequest.
+func NewCmdChannelRequest(cmdChanCmdName, cmdChanCmdHash, integrationName string, integrationArgs []string) CmdChannelRequest {
 	return CmdChannelRequest{
 		CmdChannelCmdName: cmdChanCmdName,
 		CmdChannelCmdHash: cmdChanCmdHash,
