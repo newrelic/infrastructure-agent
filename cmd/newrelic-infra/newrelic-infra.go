@@ -121,55 +121,61 @@ func main() {
 
 	timedLog.Debug("Loading configuration.")
 
-	parsedConfig, err := config.LoadConfigWithVerbose(configFile, verbose)
+	cfg, err := config.LoadConfig(configFile)
 	if err != nil {
 		alog.WithError(err).Error("can't load configuration file")
 		os.Exit(1)
 	}
-	if parsedConfig.Verbose == config.SmartVerboseLogging {
-		wlog.EnableSmartVerboseMode(parsedConfig.SmartVerboseModeEntryLimit)
+
+	// override YAML with CLI flags
+	if verbose > config.NonVerboseLogging {
+		cfg.Verbose = verbose
+	}
+	if cpuprofile != "" {
+		cfg.CPUProfile = cpuprofile
+	}
+	if memprofile != "" {
+		cfg.MemProfile = memprofile
 	}
 
-	if debug || parsedConfig.WebProfile {
+	if cfg.Verbose == config.SmartVerboseLogging {
+		wlog.EnableSmartVerboseMode(cfg.SmartVerboseModeEntryLimit)
+	}
+
+	if debug || cfg.WebProfile {
 		alog.Info("starting pprof server at http://localhost:6060")
 		go recover.FuncWithPanicHandler(recover.LogAndContinue, func() {
 			alog.WithError(http.ListenAndServe("localhost:6060", nil)).Warn("trying to open a connection in :6060")
 		})
 	}
 
-	if cpuprofile != "" {
-		parsedConfig.CPUProfile = cpuprofile
-	}
-	if memprofile != "" {
-		parsedConfig.MemProfile = memprofile
-	}
+	configureLogFormat(cfg.LogFormat)
 
-	// Set the log format.
-	configureLogFormat(parsedConfig)
 	// Send logging where it's supposed to go.
-	agentLogsToFile := configureLogRedirection(parsedConfig, memLog)
-	trace.EnableOn(parsedConfig.FeatureTraces)
+	agentLogsToFile := configureLogRedirection(cfg, memLog)
+
+	trace.EnableOn(cfg.FeatureTraces)
 
 	// Runtime config setup.
-	troubleCfg := config.NewTroubleshootCfg(parsedConfig.IsTroubleshootMode(), agentLogsToFile, parsedConfig.GetLogFile())
-	logFwCfg := config.NewLogForward(parsedConfig, troubleCfg)
+	troubleCfg := config.NewTroubleshootCfg(cfg.IsTroubleshootMode(), agentLogsToFile, cfg.GetLogFile())
+	logFwCfg := config.NewLogForward(cfg, troubleCfg)
 
 	// If parsedConfig.MaxProcs < 1, leave GOMAXPROCS to its previous value,
 	// which, if not set by the environment, is the number of processors that
 	// have been detected by the system.
 	// Note that if the `max_procs` option is unset, default value for
 	// parsedConfig.MaxProcs is 1.
-	runtime.GOMAXPROCS(parsedConfig.MaxProcs)
+	runtime.GOMAXPROCS(cfg.MaxProcs)
 
-	logConfig(parsedConfig)
+	logConfig(cfg)
 
-	err = initialize.OsProcess(parsedConfig)
+	err = initialize.OsProcess(cfg)
 	if err != nil {
 		alog.WithError(err).Error("Performing OS-specific process initialization...")
 		os.Exit(1)
 	}
 
-	err = initializeAgentAndRun(parsedConfig, logFwCfg)
+	err = initializeAgentAndRun(cfg, logFwCfg)
 	if err != nil {
 		timedLog.WithError(err).Error("Agent run returned an error.")
 		os.Exit(1)
@@ -226,40 +232,13 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	ffManager := feature_flags.NewManager(c.Features)
 	il := newInstancesLookup(integrationCfg)
 
-	// queues integration run requests
-	definitionQ := make(chan integration.Definition, 100)
-
-	tracker := stoppable.NewTracker()
-
-	// Command channel handlers
-	backoffSecsC := make(chan int, 1) // 1 won't block on initial cmd-channel fetch
-	boHandler := ccBackoff.NewHandler(backoffSecsC)
-	ffHandle := fflag.NewHandler(c, ffManager, wlog.WithComponent("FFHandler"))
-	ffHandler := cmdchannel.NewCmdHandler("set_feature_flag", ffHandle.Handle)
-	riHandler := runintegration.NewHandler(definitionQ, il, wlog.WithComponent("runintegration.Handler"))
-	siHandler := stopintegration.NewHandler(tracker, wlog.WithComponent("stopintegration.Handler"))
-	// Command channel service
-	ccService := service.NewService(
-		caClient,
-		c.CommandChannelIntervalSec,
-		backoffSecsC,
-		boHandler,
-		ffHandler,
-		riHandler,
-		siHandler,
-	)
-	initCmdResponse, err := ccService.InitialFetch(context.Background())
-	if err != nil {
-		aslog.WithError(err).Warn("Commands initial fetch failed.")
-	}
-
 	fatal := func(err error, message string) {
 		aslog.WithError(err).Error(message)
 		os.Exit(1)
 	}
 
 	aslog.Info("Checking network connectivity...")
-	err = waitForNetwork(c.CollectorURL, c.StartupConnectionTimeout, c.StartupConnectionRetries, transport)
+	err := waitForNetwork(c.CollectorURL, c.StartupConnectionTimeout, c.StartupConnectionRetries, transport)
 	if err != nil {
 		fatal(err, "Can't reach the New Relic collector.")
 	}
@@ -306,6 +285,12 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		return err
 	}
 
+	// queues integration run requests
+	definitionQ := make(chan integration.Definition, 100)
+
+	// track stoppable integrations
+	tracker := stoppable.NewTracker()
+
 	var dmEmitter dm.Emitter
 	if enabled, exists := ffManager.GetFeatureFlag(fflag.FlagDMRegisterEnable); exists && enabled {
 		dmEmitter = dm.NewEmitter(agt.GetContext(), dmSender, registerClient)
@@ -314,6 +299,28 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	}
 	integrationEmitter := emitter.NewIntegrationEmittor(agt, dmEmitter, ffManager)
 	integrationManager := v4.NewManager(integrationCfg, integrationEmitter, il, definitionQ, tracker)
+
+	// Command channel handlers
+	backoffSecsC := make(chan int, 1) // 1 won't block on initial cmd-channel fetch
+	boHandler := ccBackoff.NewHandler(backoffSecsC)
+	ffHandle := fflag.NewHandler(c, ffManager, wlog.WithComponent("FFHandler"))
+	ffHandler := cmdchannel.NewCmdHandler("set_feature_flag", ffHandle.Handle)
+	riHandler := runintegration.NewHandler(definitionQ, il, dmEmitter, wlog.WithComponent("runintegration.Handler"))
+	siHandler := stopintegration.NewHandler(tracker, il, dmEmitter, wlog.WithComponent("stopintegration.Handler"))
+	// Command channel service
+	ccService := service.NewService(
+		caClient,
+		c.CommandChannelIntervalSec,
+		backoffSecsC,
+		boHandler,
+		ffHandler,
+		riHandler,
+		siHandler,
+	)
+	initCmdResponse, err := ccService.InitialFetch(context.Background())
+	if err != nil {
+		aslog.WithError(err).Warn("Commands initial fetch failed.")
+	}
 
 	if c.TCPServerEnabled {
 		go socketapi.NewServer(integrationEmitter, c.TCPServerPort).Serve(agt.Context.Ctx)
@@ -398,8 +405,8 @@ func newInstancesLookup(cfg v4.Configuration) integration.InstancesLookup {
 }
 
 // configureLogFormat checks the config and sets the log format accordingly.
-func configureLogFormat(cfg *config.Config) {
-	if cfg.LogFormat == config.LogFormatJSON {
+func configureLogFormat(logFormat string) {
+	if logFormat == config.LogFormatJSON {
 		jsonFormatter := &logrus.JSONFormatter{
 			DataKey: "context",
 

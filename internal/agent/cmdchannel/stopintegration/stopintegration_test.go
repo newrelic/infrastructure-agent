@@ -11,8 +11,10 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/runintegration"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/commandapi"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/stoppable"
+	dm "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm/testutils"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/shirou/gopsutil/process"
 	"github.com/stretchr/testify/assert"
@@ -28,7 +30,7 @@ func TestHandle_returnsErrorOnMissingName(t *testing.T) {
 		t.Skip("CC stop-intergation is not supported on Windows")
 	}
 
-	h := NewHandler(stoppable.NewTracker(), l)
+	h := NewHandler(stoppable.NewTracker(), integration.ErrLookup, dm.NewNoopEmitter(), l)
 
 	cmdArgsMissingPID := commandapi.Command{
 		Args: []byte(`{ "integration_args": ["foo"] }`),
@@ -45,7 +47,7 @@ func TestHandle_signalStopProcess(t *testing.T) {
 
 	// Given a handler with an stoppables tracker
 	tracker := stoppable.NewTracker()
-	h := NewHandler(tracker, l)
+	h := NewHandler(tracker, integration.ErrLookup, dm.NewNoopEmitter(), l)
 
 	// When a process context is tracked
 	ctx := context.Background()

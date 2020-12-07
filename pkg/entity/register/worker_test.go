@@ -4,7 +4,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
+	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"io/ioutil"
 	"testing"
 	"time"
 
@@ -28,8 +32,9 @@ const (
 )
 
 type fakeClient struct {
-	ids []entity.ID
-	err error
+	ids       []entity.ID
+	collector [][]string
+	err       error
 }
 
 func (c *fakeClient) RegisterBatchEntities(agentEntityID entity.ID, entities []entity.Fields) (r []identityapi.RegisterEntityResponse, err error) {
@@ -41,9 +46,29 @@ func (c *fakeClient) RegisterBatchEntities(agentEntityID entity.ID, entities []e
 		var name string
 		if len(entities) > i {
 			name = entities[i].Name
+			// Simulate an entity that generates error
+			if name == "error" {
+				r = append(r, identityapi.RegisterEntityResponse{Name: name, ErrorMsg: "Invalid entityName"})
+			} else if name == "warnings" {
+				r = append(r, identityapi.RegisterEntityResponse{
+					Name: name,
+					Warnings: []string{
+						"Too many metadata, dropping ...",
+						"Invalid metadata: ...",
+					},
+				})
+			} else {
+				r = append(r, identityapi.RegisterEntityResponse{Name: name, ID: id})
+			}
 		}
-		r = append(r, identityapi.RegisterEntityResponse{Name: name, ID: id})
 	}
+
+	names := make([]string, len(entities))
+	for i, e := range entities {
+		names[i] = e.Name
+	}
+	c.collector = append(c.collector, names)
+
 	return
 }
 
@@ -57,120 +82,167 @@ func (c *fakeClient) RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities 
 	return
 }
 
-func TestWorker_Run_SendsWhenMaxTimeIsReached(t *testing.T) {
-	reqsToRegisterQueue := make(chan fwrequest.EntityFwRequest, 1)
-	reqsRegisteredQueue := make(chan fwrequest.EntityFwRequest, 1)
+func (c *fakeClient) assertRecordedData(t *testing.T, names [][]string) {
+	require.Equal(t, len(names), len(c.collector))
 
-	agentIdentity := func() entity.Identity {
-		return entity.Identity{ID: 13}
-	}
-
-	config := WorkerConfig{
-		MaxBatchSize:      2,
-		MaxBatchSizeBytes: MB,
-		MaxBatchDuration:  50 * time.Millisecond,
-		MaxRetryBo:        0,
-	}
-	w := NewWorker(agentIdentity, newClientReturning(123), backoff.NewDefaultBackoff(), reqsToRegisterQueue, reqsRegisteredQueue, config)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	go w.Run(ctx)
-
-	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{}, agentVersion)
-
-	select {
-	case result := <-reqsRegisteredQueue:
-		assert.Equal(t, "123", result.ID().String())
-	case <-time.NewTimer(200 * time.Millisecond).C:
-		t.Error("no register response")
+	for i, n := range names {
+		assert.ElementsMatch(t, n, c.collector[i])
 	}
 }
 
-func TestWorker_Run_SendsWhenMaxBatchSizeIsReached(t *testing.T) {
-	reqsToRegisterQueue := make(chan fwrequest.EntityFwRequest, 1)
-	reqsRegisteredQueue := make(chan fwrequest.EntityFwRequest, 1)
-
-	agentIdentity := func() entity.Identity {
-		return entity.Identity{ID: 13}
+func TestWorker_Run_SendsWhenBatchLimitIsReached(t *testing.T) {
+	testCases := []struct {
+		name                 string
+		maxBatchSize         int
+		maxBatchByteSize     int
+		expectedBatchesCount int
+		givenEntitiesCount   int
+		expectedEntityName   [][]string //TODO fix naming
+		batchDuration        time.Duration
+		timeout              time.Duration
+	}{
+		{
+			name:                 "given_a_batch_limits_of_5_entities_when_5_entities_are_submitted_then_register_is_called_in_a_single_batch",
+			maxBatchSize:         5,
+			maxBatchByteSize:     MB,
+			givenEntitiesCount:   5,
+			expectedBatchesCount: 1,
+			expectedEntityName:   [][]string{{"test-0", "test-1", "test-2", "test-3", "test-4"}},
+			batchDuration:        50 * time.Millisecond,
+			timeout:              100 * time.Millisecond,
+		},
+		{
+			name:                 "given_a_batch_limit_of_2_entities_when_4_entities_are_submitted_then_register_is_called_in_2_batches",
+			maxBatchSize:         2,
+			maxBatchByteSize:     MB,
+			givenEntitiesCount:   4,
+			expectedBatchesCount: 2,
+			expectedEntityName:   [][]string{{"test-0", "test-1"}, {"test-2", "test-3"}},
+			batchDuration:        50 * time.Millisecond,
+			timeout:              100 * time.Millisecond,
+		},
+		{
+			name:                 "given_a_batch_limit_of_2_entities_when_3_entities_are_submitted_then_register_is_called_with_1_batch_by_limit_and_other_batch_by_timer",
+			maxBatchSize:         2,
+			maxBatchByteSize:     MB,
+			givenEntitiesCount:   3,
+			expectedBatchesCount: 1,
+			expectedEntityName:   [][]string{{"test-0", "test-1"}, {"test-2"}},
+			batchDuration:        50 * time.Millisecond,
+			timeout:              100 * time.Millisecond,
+		},
+		{
+			name:                 "given_a_batch_byte_limit_of_2_entities_size_when_2_entities_are_submitted_then_register_is_called_in_a_single_batch",
+			maxBatchSize:         10,                                              // high number to prevent send by this setting
+			maxBatchByteSize:     (&entity.Fields{Name: "test-1"}).JsonSize() * 2, //calc based on number of entities per batch
+			givenEntitiesCount:   2,
+			expectedBatchesCount: 1,
+			expectedEntityName:   [][]string{{"test-0", "test-1"}},
+			batchDuration:        time.Second,
+			timeout:              100 * time.Millisecond,
+		},
+		{
+			name:                 "given_a_batch_byte_limit_of_2_entities_size_when_3_entities_are_submitted_then_register_is_called_with_1_batch_by_limit_and_other_batch_by_timer",
+			maxBatchSize:         10,                                              // high number to prevent send by this setting
+			maxBatchByteSize:     (&entity.Fields{Name: "test-1"}).JsonSize() * 2, //calc based on number of entities per batch
+			givenEntitiesCount:   3,
+			expectedBatchesCount: 1,
+			expectedEntityName:   [][]string{{"test-0", "test-1"}, {"test-2"}},
+			batchDuration:        50 * time.Millisecond,
+			timeout:              100 * time.Millisecond,
+		},
 	}
 
-	ids := []entity.ID{123, 456}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			reqsToRegisterQueue := make(chan fwrequest.EntityFwRequest, test.givenEntitiesCount)
+			registeredQueue := make(chan fwrequest.EntityFwRequest, test.givenEntitiesCount)
 
-	config := WorkerConfig{
-		MaxBatchSize:      2,
-		MaxBatchSizeBytes: MB,
-		MaxBatchDuration:  50 * time.Millisecond,
-		MaxRetryBo:        0,
-	}
-	w := NewWorker(agentIdentity, newClientReturning(ids...), backoff.NewDefaultBackoff(), reqsToRegisterQueue, reqsRegisteredQueue, config)
+			agentIdentity := func() entity.Identity {
+				return entity.Identity{ID: 13}
+			}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+			ids := make([]entity.ID, test.maxBatchSize)
+			for i := 0; i < test.maxBatchSize; i++ {
+				ids[i] = entity.ID(i)
+			}
 
-	go w.Run(ctx)
+			config := WorkerConfig{
+				MaxBatchSize:      test.maxBatchSize,
+				MaxBatchSizeBytes: test.maxBatchByteSize,
+				MaxBatchDuration:  test.batchDuration,
+				MaxRetryBo:        0,
+			}
 
-	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{}, agentVersion)
+			client := &fakeClient{
+				ids:       ids,
+				collector: make([][]string, 0),
+			}
 
-	for registeredCount := 0; registeredCount < len(ids); registeredCount++ {
-		select {
-		case result := <-reqsRegisteredQueue:
-			assert.Equal(t, ids[registeredCount], result.ID())
-		case <-time.NewTimer(200 * time.Millisecond).C:
-			t.Error("no register response")
-		}
+			w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), reqsToRegisterQueue, registeredQueue, config)
+
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			go w.Run(ctx)
+
+			for i := 0; i < test.givenEntitiesCount; i++ {
+				reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{Entity: entity.Fields{
+					Name: fmt.Sprintf("test-%d", i),
+				}}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{}, agentVersion)
+			}
+
+			// wait for the register to finish all the requests
+			for i := 0; i < test.givenEntitiesCount; i++ {
+				select {
+				case <-registeredQueue:
+				case <-time.After(test.timeout):
+					assert.Fail(t, "timeout exceeded waiting for register")
+				}
+			}
+
+			client.assertRecordedData(t, test.expectedEntityName)
+		})
 	}
 }
 
-func TestWorker_Run_SendsWhenMaxBatchBytesSizeIsReached(t *testing.T) {
-	reqsToRegisterQueue := make(chan fwrequest.EntityFwRequest, 10)
-	reqsRegisteredQueue := make(chan fwrequest.EntityFwRequest, 10)
+func TestWorker_Run_EntityGraterThanMaxByteSize(t *testing.T) {
+	reqsToRegisterQueue := make(chan fwrequest.EntityFwRequest, 0)
+	registeredQueue := make(chan fwrequest.EntityFwRequest, 1)
 
 	agentIdentity := func() entity.Identity {
 		return entity.Identity{ID: 13}
 	}
-
-	ids := []entity.ID{123, 456}
-
-	entityFields := entity.Fields{
-		Name: "test",
-	}
-
-	// Given a MaxBatchSize(number of elements of 100), we send even 1 if the maxBytesSize is reached.
 	config := WorkerConfig{
-		MaxBatchSize:      100,
-		MaxBatchSizeBytes: entityFields.JsonSize(),
+		MaxBatchSize:      2,
+		MaxBatchSizeBytes: (&entity.Fields{Name: "test-1"}).JsonSize(),
 		MaxBatchDuration:  50 * time.Millisecond,
 		MaxRetryBo:        0,
 	}
-	w := NewWorker(
-		agentIdentity,
-		newClientReturning(ids...),
-		backoff.NewDefaultBackoff(),
-		reqsToRegisterQueue,
-		reqsRegisteredQueue,
-		config,
-	)
+
+	client := &fakeClient{
+		ids: []entity.ID{1},
+	}
+
+	w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), reqsToRegisterQueue, registeredQueue, config)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	go w.Run(ctx)
 
-	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{Entity: entityFields}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{}, agentVersion)
-	// Second request will cause the batch split.
-	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{Entity: entityFields}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{}, agentVersion)
+	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{Entity: entity.Fields{
+		Name: "this-entity-should-not-pass",
+	}}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{}, agentVersion)
 
-	// Expect only one registered.
+	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{Entity: entity.Fields{
+		Name: "test-1",
+	}}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{}, agentVersion)
+
 	select {
-	case result := <-reqsRegisteredQueue:
-		assert.Equal(t, ids[0], result.ID())
-	case <-time.NewTimer(200 * time.Millisecond).C:
-		t.Error("no register response")
+	case req := <-registeredQueue:
+		assert.Equal(t, "test-1", req.Data.Entity.Name)
 	}
-
-	assert.Equal(t, 0, len(reqsRegisteredQueue))
 }
 
 func TestWorker_registerEntitiesWithRetry_OnError_RetryBackoff(t *testing.T) {
@@ -328,4 +400,159 @@ func TestWorker_registerEntitiesWithRetry_Success(t *testing.T) {
 	case <-time.NewTimer(200 * time.Millisecond).C:
 		t.Error("registerEntitiesWithRetry should stop")
 	}
+}
+
+func TestWorker_send_Logging_VerboseEnabled(t *testing.T) {
+	expectedErrs := []string{
+		"Invalid entityName",
+	}
+	expectedWarnings := []string{
+		"Too many metadata, dropping ...",
+		"Invalid metadata: ...",
+	}
+
+	// When the request is successful but some entities fail, we log only when verbose is enabled.
+	reqsToRegisterQueue := make(chan fwrequest.EntityFwRequest, 0)
+	reqsRegisteredQueue := make(chan fwrequest.EntityFwRequest, 0)
+
+	agentIdentity := func() entity.Identity {
+		return entity.Identity{ID: 12}
+	}
+
+	client := &fakeClient{
+		ids: []entity.ID{13, 14},
+		// no err from backend.
+		err: nil,
+	}
+
+	config := WorkerConfig{
+		VerboseLogLevel: 1,
+	}
+	w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), reqsToRegisterQueue, reqsRegisteredQueue, config)
+
+	batch := map[entity.Key]fwrequest.EntityFwRequest{
+		entity.Key("error"): {
+			Data: protocol.Dataset{
+				Entity: entity.Fields{Name: "error"},
+			},
+		},
+		entity.Key("warnings"): {
+			Data: protocol.Dataset{
+				Entity: entity.Fields{Name: "warnings"},
+			},
+		},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-reqsRegisteredQueue:
+				// empty the registered queue to process new requests.
+			case <-time.After(5 * time.Second):
+				cancel()
+				t.Error("Timeout while executing the test")
+			}
+		}
+	}()
+
+	hook := new(test.Hook)
+	log.AddHook(hook)
+	log.SetOutput(ioutil.Discard)
+
+	batchSizeBytes := 10000
+	w.send(ctx, batch, &batchSizeBytes)
+
+	searchLogEntries := func(expectedMessages []string, level log.Level) (found bool) {
+		for _, expectedMsg := range expectedMessages {
+			for i, entry := range hook.AllEntries() {
+				if entry.Level != level {
+					continue
+				}
+				if val, ok := hook.AllEntries()[i].Data["error"]; ok {
+					errStr := val.(error).Error()
+					if errStr == expectedMsg {
+						found = true
+					}
+				}
+			}
+		}
+		return
+	}
+
+	assert.Eventually(t, func() bool {
+		ok := searchLogEntries(expectedErrs, log.ErrorLevel)
+		return ok
+	}, time.Second, 10*time.Millisecond,
+		"expected to find error messages: %s", expectedErrs)
+
+	assert.Eventually(t, func() bool {
+		ok := searchLogEntries(expectedWarnings, log.WarnLevel)
+		return ok
+	}, time.Second, 10*time.Millisecond,
+		"expected to find warning messages: %s \n", expectedWarnings)
+}
+
+func TestWorker_send_Logging_VerboseDisabled(t *testing.T) {
+	// When the request is successful but some entities fail, we log only when verbose is enabled.
+	reqsToRegisterQueue := make(chan fwrequest.EntityFwRequest, 0)
+	reqsRegisteredQueue := make(chan fwrequest.EntityFwRequest, 0)
+
+	agentIdentity := func() entity.Identity {
+		return entity.Identity{ID: 12}
+	}
+
+	client := &fakeClient{
+		ids: []entity.ID{13, 14},
+		// no err from backend.
+		err: nil,
+	}
+
+	config := WorkerConfig{
+		VerboseLogLevel: 0,
+	}
+	w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), reqsToRegisterQueue, reqsRegisteredQueue, config)
+
+	batch := map[entity.Key]fwrequest.EntityFwRequest{
+		entity.Key("error"): {
+			Data: protocol.Dataset{
+				Entity: entity.Fields{Name: "error"},
+			},
+		},
+		entity.Key("warnings"): {
+			Data: protocol.Dataset{
+				Entity: entity.Fields{Name: "warnings"},
+			},
+		},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-reqsRegisteredQueue:
+				// empty the registered queue to process new requests.
+			case <-time.After(5 * time.Second):
+				cancel()
+				t.Error("Timeout while executing the test")
+			}
+		}
+	}()
+
+	hook := new(test.Hook)
+	log.AddHook(hook)
+	log.SetOutput(ioutil.Discard)
+
+	batchSizeBytes := 10000
+	w.send(ctx, batch, &batchSizeBytes)
+
+	assert.Empty(t, hook.AllEntries())
 }

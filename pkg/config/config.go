@@ -1204,10 +1204,6 @@ func (c *Config) toLogInfo() (map[string]string, error) {
 }
 
 func LoadConfig(configFile string) (*Config, error) {
-	return LoadConfigWithVerbose(configFile, 0)
-}
-
-func LoadConfigWithVerbose(configFile string, verbose int) (*Config, error) {
 	var filesToCheck []string
 	if configFile != "" {
 		filesToCheck = append(filesToCheck, configFile)
@@ -1224,11 +1220,6 @@ func LoadConfigWithVerbose(configFile string, verbose int) (*Config, error) {
 	configOverride(cfg)
 
 	cfg.RunMode, cfg.AgentUser, cfg.ExecutablePath = runtimeValues()
-
-	// override verbose when enabled from CLI flag
-	if verbose > NonVerboseLogging {
-		cfg.Verbose = verbose
-	}
 
 	// Move any other post processing steps that clean up or announce settings to be
 	// after both config file and env variable processing is complete. Need to review each of the items

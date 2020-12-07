@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/newrelic/infrastructure-agent/pkg/event"
+
 	"time"
 )
 
@@ -24,8 +26,6 @@ const (
 )
 
 const millisSinceJanuaryFirst1978 = 252489600000
-
-var acceptedAttribute = []string{"summary", "category", "entity_name", "format", "local_identity", "local_details"}
 
 type DataV4 struct {
 	PluginProtocolVersion
@@ -154,6 +154,30 @@ type MetricData map[string]interface{}
 // EventData is the data type for single shot events
 type EventData map[string]interface{}
 
+// NewData creates a payload from code instead of JSON.
+func NewData(name, version string, ds []Dataset) DataV4 {
+	return DataV4{
+		PluginProtocolVersion: PluginProtocolVersion{RawProtocolVersion: 4},
+		Integration: IntegrationMetadata{
+			Name:    name,
+			Version: version,
+		},
+		DataSets: ds,
+	}
+}
+
+// NewEventDataset creates a dataset with jsut a single event.
+func NewEventDataset(ts int64, event EventData) Dataset {
+	return Dataset{
+		Common: Common{
+			Timestamp: &ts,
+		},
+		Events: []EventData{
+			event,
+		},
+	}
+}
+
 // NewEventData create a new event data from builder func
 func NewEventData(options ...func(EventData)) (EventData, error) {
 	e := EventData{
@@ -178,13 +202,12 @@ func NewEventData(options ...func(EventData)) (EventData, error) {
 	return e, nil
 }
 
-// Builder for NewEventData constructor will copy only valid keys
-// valid keys: ["summary", "category", "entity_name", "format", "local_identity", "local_details"]
+// Builder for NewEventData copying all event fields.
 func WithEvents(original EventData) func(EventData) {
 	return func(copy EventData) {
-		for _, key := range acceptedAttribute {
-			if val, ok := original[key]; ok {
-				copy[key] = val
+		for k, v := range original {
+			if !event.IsReserved(k) {
+				copy[k] = v
 			}
 		}
 	}
@@ -220,7 +243,7 @@ func WithAttributes(a map[string]interface{}) func(EventData) {
 	return func(copy EventData) {
 		for key, value := range a {
 			if _, ok := copy[key]; ok {
-				copy[fmt.Sprintf("attr.%s", key)] = value
+				copy[fmt.Sprintf("%s%s", event.AttributesPrefix, key)] = value
 			} else {
 				copy[key] = value
 			}
