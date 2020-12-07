@@ -593,7 +593,7 @@ func TestLoadYamlConfig_withDatabindVariables(t *testing.T) {
 variables:
   var1:
     test:
-      unused_setup: "non_used"
+      value: "10.0.2.2:8888"
 staging: true
 license_key: "xxx"
 proxy: ${var1}
@@ -609,7 +609,7 @@ proxy: ${var1}
 
 	assert.True(t, cfg.Staging)
 	assert.Equal(t, "xxx", cfg.License)
-	assert.Equal(t, "test-result", cfg.Proxy)
+	assert.Equal(t, "10.0.2.2:8888", cfg.Proxy)
 }
 
 func createTestFile(data []byte) (*os.File, error) {

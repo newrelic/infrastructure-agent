@@ -57,7 +57,9 @@ type varEntry struct {
 }
 
 // Test for testing purposes until providers get decoupled.
-type Test struct{}
+type Test struct {
+	Value string `yaml:"value,omitempty"`
+}
 
 func (t *Test) Validate() error { return nil }
 
@@ -285,7 +287,7 @@ func (v *varEntry) selectGatherer(ttl time.Duration) *gatherer {
 	} else if v.Test != nil {
 		return &gatherer{
 			cache: cachedEntry{ttl: ttl},
-			fetch: func() (interface{}, error) { return "test-result", nil },
+			fetch: func() (interface{}, error) { return v.Test.Value, nil },
 		}
 	}
 
