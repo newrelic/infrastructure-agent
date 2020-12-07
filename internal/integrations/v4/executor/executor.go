@@ -19,6 +19,8 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
+const unknownErrExitCode = -3
+
 var illog = log.WithComponent("integrations.Executor")
 
 // Executor handles Executable commands asynchronously.
@@ -103,6 +105,8 @@ func (r *Executor) Execute(ctx context.Context, pidChan, exitCodeCh chan<- int) 
 			if exitCodeCh != nil {
 				if exitError, ok := err.(*exec.ExitError); ok {
 					exitCodeCh <- gobackfill.ExitCode(exitError)
+				} else {
+					exitCodeCh <- unknownErrExitCode
 				}
 			}
 		} else if exitCodeCh != nil {
