@@ -6,14 +6,16 @@ type CmdChannelRequest struct {
 	CmdChannelCmdHash string
 	IntegrationName   string
 	IntegrationArgs   []string
+	Metadata          map[string]interface{}
 }
 
 // NewCmdChannelRequest create new CmdChannelRequest.
-func NewCmdChannelRequest(cmdChanCmdName, cmdChanCmdHash, integrationName string, integrationArgs []string) CmdChannelRequest {
+func NewCmdChannelRequest(cmdChanCmdName, cmdChanCmdHash, integrationName string, integrationArgs []string, metadata map[string]interface{}) CmdChannelRequest {
 	return CmdChannelRequest{
 		CmdChannelCmdName: cmdChanCmdName,
 		CmdChannelCmdHash: cmdChanCmdHash,
 		IntegrationName:   integrationName,
 		IntegrationArgs:   integrationArgs,
+		Metadata:          metadata,
 	}
 }

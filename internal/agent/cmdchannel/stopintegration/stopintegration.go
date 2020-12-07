@@ -111,9 +111,9 @@ func notifyPlatform(dmEmitter dm.Emitter, il integration.InstancesLookup, cmd co
 		return err
 	}
 
-	ccReq := ctx.NewCmdChannelRequest(cmdName, cmd.Hash, args.IntegrationName, args.IntegrationArgs)
+	ccReq := ctx.NewCmdChannelRequest(cmdName, cmd.Hash, args.IntegrationName, args.IntegrationArgs, cmd.Metadata)
 	def.CmdChanReq = &ccReq
-	ev := cmd.Event(args.IntegrationName, args.IntegrationArgs)
+	ev := cmd.Event(args.IntegrationName, args.IntegrationArgs, cmd.Metadata)
 	ev["cmd_stop_hash"] = args.Hash()
 	ev["cmd_stop_mode"] = stopModeUsed
 	runintegration.NotifyPlatform(dmEmitter, def, ev)

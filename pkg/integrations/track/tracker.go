@@ -113,7 +113,7 @@ func (t *Tracker) NotifyExit(hash string, exitCode int) {
 		return
 	}
 
-	ds := protocol.NewEventDataset(ts, protocol.EventData{
+	ev := protocol.EventData{
 		"eventType":     "InfrastructureEvent",
 		"category":      "notifications",
 		"summary":       "integration-exited",
@@ -122,7 +122,11 @@ func (t *Tracker) NotifyExit(hash string, exitCode int) {
 		"cmd_args_name": iCtx.def.CmdChanReq.IntegrationName,
 		"cmd_args_args": fmt.Sprintf("%+v", iCtx.def.CmdChanReq.IntegrationArgs),
 		"cmd_exit_code": exitCode,
-	})
+	}
+	for k, v := range iCtx.def.CmdChanReq.Metadata {
+		ev["cmd_metadata."+k] = v
+	}
+	ds := protocol.NewEventDataset(ts, ev)
 	data := protocol.NewData("tracker.notifyexit", "1", []protocol.Dataset{ds})
 	t.eventEmitter.Send(fwrequest.NewFwRequest(iCtx.def, nil, nil, data))
 }

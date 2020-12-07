@@ -20,15 +20,16 @@ type Client interface {
 }
 
 type Command struct {
-	ID   int             `json:"id"`
-	Hash string          `json:"hash"`
-	Name string          `json:"name"`
-	Args json.RawMessage `json:"arguments"`
+	ID       int                    `json:"id"`
+	Hash     string                 `json:"hash"`
+	Metadata map[string]interface{} `json:"metadata"`
+	Name     string                 `json:"name"`
+	Args     json.RawMessage        `json:"arguments"`
 }
 
 // Event creates an event from command.
-func (c *Command) Event(integrationName string, integrationArgs []string) protocol.EventData {
-	return protocol.EventData{
+func (c *Command) Event(integrationName string, integrationArgs []string, metadata map[string]interface{}) protocol.EventData {
+	ev := protocol.EventData{
 		"eventType":     "InfrastructureEvent",
 		"category":      "notifications",
 		"summary":       "cmd-api",
@@ -39,6 +40,12 @@ func (c *Command) Event(integrationName string, integrationArgs []string) protoc
 		"cmd_args_name": integrationName,
 		"cmd_args_args": fmt.Sprintf("%+v", integrationArgs),
 	}
+
+	for k, v := range metadata {
+		ev["cmd_metadata."+k] = v
+	}
+
+	return ev
 }
 
 type client struct {
