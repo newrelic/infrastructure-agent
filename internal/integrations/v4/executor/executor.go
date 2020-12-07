@@ -105,7 +105,10 @@ func (r *Executor) Execute(ctx context.Context, pidChan, exitCodeCh chan<- int) 
 					exitCodeCh <- gobackfill.ExitCode(exitError)
 				}
 			}
+		} else if exitCodeCh != nil {
+			exitCodeCh <- 0
 		}
+
 		allOutputForwarded.Wait() // waiting again to avoid closing output before the data is received during cancellation
 		out.Close()
 	}()
