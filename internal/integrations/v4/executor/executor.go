@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"sync"
 
+	"github.com/newrelic/infrastructure-agent/internal/gobackfill"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/constants"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
@@ -101,7 +102,7 @@ func (r *Executor) Execute(ctx context.Context, pidChan, exitCodeCh chan<- int) 
 			out.Errors <- err
 			if exitCodeCh != nil {
 				if exitError, ok := err.(*exec.ExitError); ok {
-					exitCodeCh <- exitError.ExitCode()
+					exitCodeCh <- gobackfill.ExitCode(exitError)
 				}
 			}
 		}
