@@ -13,6 +13,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/commandapi"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/track/ctx"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/trace"
@@ -20,6 +21,7 @@ import (
 )
 
 const (
+	cmdName                = "stop_integration"
 	terminationGracePeriod = 1 * time.Minute
 )
 
@@ -58,6 +60,7 @@ func NewHandler(tracker *track.Tracker, il integration.InstancesLookup, dmEmitte
 		p, err := process.NewProcess(int32(<-pidC))
 		if err != nil {
 			runintegration.LogDecorated(l, cmd, args).WithError(err).Warn("cannot retrieve process")
+			notifyPlatformWithLog(dmEmitter, il, cmd, args, "process-not-found", l)
 			return
 		}
 
@@ -85,10 +88,7 @@ func NewHandler(tracker *track.Tracker, il integration.InstancesLookup, dmEmitte
 			stopModeUsed = "sigkill"
 		}
 
-		// notify platform
-		if err = notifyPlatform(dmEmitter, il, cmd, args, stopModeUsed); err != nil {
-			runintegration.LogDecorated(l, cmd, args).WithError(err).Warn("cannot notify platform about command")
-		}
+		notifyPlatformWithLog(dmEmitter, il, cmd, args, stopModeUsed, l)
 
 		// no further error handling required
 		err = nil
@@ -96,7 +96,13 @@ func NewHandler(tracker *track.Tracker, il integration.InstancesLookup, dmEmitte
 		return
 	}
 
-	return cmdchannel.NewCmdHandler("stop_integration", handleF)
+	return cmdchannel.NewCmdHandler(cmdName, handleF)
+}
+
+func notifyPlatformWithLog(dmEmitter dm.Emitter, il integration.InstancesLookup, cmd commandapi.Command, args runintegration.RunIntArgs, stopModeUsed string, l log.Entry) {
+	if err := notifyPlatform(dmEmitter, il, cmd, args, stopModeUsed); err != nil {
+		runintegration.LogDecorated(l, cmd, args).WithError(err).Warn("cannot notify platform about command")
+	}
 }
 
 func notifyPlatform(dmEmitter dm.Emitter, il integration.InstancesLookup, cmd commandapi.Command, args runintegration.RunIntArgs, stopModeUsed string) error {
@@ -105,7 +111,8 @@ func notifyPlatform(dmEmitter dm.Emitter, il integration.InstancesLookup, cmd co
 		return err
 	}
 
-	def.CmdChanReq.CmdChannelCmdHash = args.Hash()
+	ccReq := ctx.NewCmdChannelRequest(cmdName, cmd.Hash, args.IntegrationName, args.IntegrationArgs)
+	def.CmdChanReq = &ccReq
 	ev := cmd.Event(args.IntegrationName, args.IntegrationArgs)
 	ev["cmd_stop_hash"] = args.Hash()
 	ev["cmd_stop_mode"] = stopModeUsed
