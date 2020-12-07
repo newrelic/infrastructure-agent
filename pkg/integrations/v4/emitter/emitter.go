@@ -54,6 +54,11 @@ type VersionAwareEmitter struct {
 }
 
 func (e *VersionAwareEmitter) Emit(definition integration.Definition, extraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error {
+	elog.
+		WithField("name", definition.Name).
+		WithField("payload", string(integrationJSON)).
+		Debug("Received payload.")
+
 	protocolVersion, err := protocol.VersionFromPayload(integrationJSON, e.forceProtocolV2ToV3)
 	if err != nil {
 		elog.

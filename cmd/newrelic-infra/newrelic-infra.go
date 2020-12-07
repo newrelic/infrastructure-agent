@@ -29,7 +29,9 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/files"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/v3legacy"
+	"github.com/newrelic/infrastructure-agent/internal/socketapi"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
+	"github.com/newrelic/infrastructure-agent/pkg/plugins"
 	"github.com/sirupsen/logrus"
 
 	"github.com/newrelic/infrastructure-agent/cmd/newrelic-infra/initialize"
@@ -50,7 +52,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/logs"
 	wlog "github.com/newrelic/infrastructure-agent/pkg/log"
-	"github.com/newrelic/infrastructure-agent/pkg/plugins"
 	"github.com/newrelic/infrastructure-agent/pkg/trace"
 )
 
@@ -278,12 +279,6 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		fatal(err, "Can't complete platform specific initialization.")
 	}
 
-	// Start all plugins we want the agent to run.
-	if err = plugins.RegisterPlugins(agt); err != nil {
-		aslog.WithError(err).Error("fatal error while registering plugins")
-		os.Exit(1)
-	}
-
 	metricsSenderConfig := dm.NewConfig(c.MetricURL, c.License, time.Duration(c.DMSubmissionPeriod)*time.Second, c.MaxMetricBatchEntitiesCount, c.MaxMetricBatchEntitiesQueue)
 	dmSender, err := dm.NewDMSender(metricsSenderConfig, transport, agt.Context.IdContext().AgentIdentity)
 	if err != nil {
@@ -326,6 +321,16 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	initCmdResponse, err := ccService.InitialFetch(context.Background())
 	if err != nil {
 		aslog.WithError(err).Warn("Commands initial fetch failed.")
+	}
+
+	if c.TCPServerEnabled {
+		go socketapi.NewServer(integrationEmitter, c.TCPServerPort).Serve(agt.Context.Ctx)
+	}
+
+	// Start all plugins we want the agent to run.
+	if err = plugins.RegisterPlugins(agt, integrationEmitter); err != nil {
+		aslog.WithError(err).Error("fatal error while registering plugins")
+		os.Exit(1)
 	}
 
 	// log-forwarder
