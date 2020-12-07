@@ -47,7 +47,9 @@ func (s *Server) Serve(ctx context.Context) {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", s.port))
 	if err != nil {
 		s.logger.WithField("port", s.port).WithError(err).Error("trying to listen")
+		return
 	}
+	defer listener.Close()
 
 	for {
 		select {
