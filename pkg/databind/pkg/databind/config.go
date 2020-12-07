@@ -61,7 +61,9 @@ type Test struct {
 func (t *Test) Validate() error { return nil }
 
 // Test for testing purposes until providers get decoupled.
-type Test struct{}
+type Test struct {
+	Value string `yaml:"value,omitempty"`
+}
 
 func (t *Test) Validate() error { return nil }
 
