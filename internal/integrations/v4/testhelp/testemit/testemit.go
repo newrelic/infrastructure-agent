@@ -8,10 +8,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
-
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
+	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 )
 
@@ -35,6 +37,34 @@ type RecordEmitter struct {
 }
 
 func (t *RecordEmitter) Emit(metadata integration.Definition, extraLabels data.Map, entityRewrite []data.EntityRewrite, json []byte) error {
+	protocolVersion, err := protocol.VersionFromPayload(json, true)
+	if err != nil {
+		return err
+	}
+
+	// dimensional metrics
+	if protocolVersion == protocol.V4 {
+		ffMan := feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true})
+		data, err := dm.ParsePayloadV4(json, ffMan)
+		if err != nil {
+			return err
+		}
+		ch := t.channelFor(metadata.Name)
+		for _, ds := range data.DataSets {
+			ch <- EmittedData{
+				DataSet: protocol.PluginDataSetV3{PluginDataSet: protocol.PluginDataSet{
+					Entity: ds.Entity,
+					// TODO but for now it's enough for the assertion mechanism:
+					Metrics: make([]protocol.MetricData, len(ds.Metrics)),
+				}},
+				Metadata:      metadata,
+				ExtraLabels:   extraLabels,
+				EntityRewrite: entityRewrite,
+			}
+		}
+		return nil
+	}
+
 	data, _, err := legacy.ParsePayload(json, false)
 	if err != nil {
 		return err
@@ -48,6 +78,7 @@ func (t *RecordEmitter) Emit(metadata integration.Definition, extraLabels data.M
 			EntityRewrite: entityRewrite,
 		}
 	}
+
 	return nil
 }
 

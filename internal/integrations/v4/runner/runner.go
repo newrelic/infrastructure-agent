@@ -268,7 +268,6 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 			continue
 		}
 
-		llog.Debug("Received payload.")
 		err := r.emitter.Emit(r.definition, extraLabels, entityRewrite, line)
 		if err != nil {
 			llog.WithError(err).Warn("Cannot emit integration payload")
