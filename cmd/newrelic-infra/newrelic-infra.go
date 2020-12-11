@@ -291,7 +291,10 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	// track stoppable integrations
 	tracker := stoppable.NewTracker()
 
-	dmEmitter := dm.NewEmitterWithFF(agt.GetContext(), dmSender, registerClient, ffManager)
+	emitterWithRegister := dm.NewEmitter(agt.GetContext(), dmSender, registerClient)
+	nonRegisterEmitter := dm.NewNonRegisterEmitter(agt.GetContext(), dmSender)
+
+	dmEmitter := dm.NewEmitterWithFF(emitterWithRegister, nonRegisterEmitter, ffManager)
 
 	integrationEmitter := emitter.NewIntegrationEmittor(agt, dmEmitter, ffManager)
 	integrationManager := v4.NewManager(integrationCfg, integrationEmitter, il, definitionQ, tracker)
