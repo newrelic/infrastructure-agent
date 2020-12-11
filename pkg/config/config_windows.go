@@ -46,7 +46,7 @@ func init() {
 	defaultFluentBitNRLib = "out_newrelic.dll"
 }
 
-func runtimeValues() (userMode AgentMode, agentUser, executablePath string) {
+func runtimeValues() (userMode, agentUser, executablePath string) {
 	userMode = ModeRoot
 
 	usr, err := user.Current()

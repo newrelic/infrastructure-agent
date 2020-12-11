@@ -42,6 +42,11 @@ type Values struct {
 	discov []discovery.Discovery
 }
 
+// VarsLen amount of variables to be replaced.
+func (v *Values) VarsLen() int {
+	return len(v.vars)
+}
+
 // Fetch queries the Sources for discovery data and user-defined variables, and returns the
 // acquired Values.
 func Fetch(ctx *Sources) (Values, error) {

@@ -25,9 +25,13 @@ const (
 	defaultVariablesTTL = time.Hour
 )
 
-type YAMLConfig struct {
+type YAMLAgentConfig struct {
 	Variables map[string]varEntry `yaml:"variables,omitempty"` // key: variable name
-	Discovery struct {
+}
+
+type YAMLConfig struct {
+	YAMLAgentConfig `yaml:",inline"`
+	Discovery       struct {
 		TTL     string               `yaml:"ttl,omitempty"`
 		Docker  *discovery.Container `yaml:"docker,omitempty"`
 		Fargate *discovery.Container `yaml:"fargate,omitempty"`
@@ -44,12 +48,20 @@ func (y *YAMLConfig) Enabled() bool {
 
 type varEntry struct {
 	TTL         string               `yaml:"ttl,omitempty"`
+	Test        *Test                `yaml:"test,omitempty"`
 	KMS         *secrets.KMS         `yaml:"aws-kms,omitempty"`
 	Vault       *secrets.Vault       `yaml:"vault,omitempty"`
 	CyberArkCLI *secrets.CyberArkCLI `yaml:"cyberark-cli,omitempty"`
 	CyberArkAPI *secrets.CyberArkAPI `yaml:"cyberark-api,omitempty"`
 	Obfuscated  *secrets.Obfuscated  `yaml:"obfuscated,omitempty"`
 }
+
+// Test for testing purposes until providers get decoupled.
+type Test struct {
+	Value interface{} `yaml:"value,omitempty"`
+}
+
+func (t *Test) Validate() error { return nil }
 
 // LoadYaml builds a set of data binding Sources from a YAML file
 func LoadYAML(bytes []byte) (*Sources, error) {
@@ -73,13 +85,29 @@ func (dc *YAMLConfig) DataSources() (*Sources, error) {
 		return nil, err
 	}
 
-	cfg := Sources{
+	s := Sources{
 		clock:     time.Now,
 		variables: map[string]*gatherer{},
 	}
-	cfg.discoverer, err = dc.selectDiscoverer(ttl)
+	s.discoverer, err = dc.selectDiscoverer(ttl)
 	if err != nil {
 		return nil, err
+	}
+
+	varS, err := dc.YAMLAgentConfig.DataSources()
+	if err != nil {
+		return nil, err
+	}
+
+	s.variables = varS.variables
+
+	return &s, nil
+}
+
+func (dc *YAMLAgentConfig) DataSources() (*Sources, error) {
+	s := Sources{
+		clock:     time.Now,
+		variables: map[string]*gatherer{},
 	}
 
 	for vName, vEntry := range dc.Variables {
@@ -87,10 +115,10 @@ func (dc *YAMLConfig) DataSources() (*Sources, error) {
 		if err != nil {
 			return nil, err
 		}
-		cfg.variables[vName] = vEntry.selectGatherer(ttl)
+		s.variables[vName] = vEntry.selectGatherer(ttl)
 	}
 
-	return &cfg, nil
+	return &s, nil
 }
 
 // returns a duration in the formatted string. If the string is empty, returns def (default)
@@ -160,6 +188,10 @@ func (y *YAMLConfig) validate() error {
 		return errors.New("only one discovery source allowed")
 	}
 
+	return y.YAMLAgentConfig.validate()
+}
+
+func (y *YAMLAgentConfig) validate() error {
 	names := map[string]struct{}{}
 	for vName, vEntry := range y.Variables {
 		if _, ok := names[vName]; ok {
@@ -251,6 +283,11 @@ func (v *varEntry) selectGatherer(ttl time.Duration) *gatherer {
 		return &gatherer{
 			cache: cachedEntry{ttl: ttl},
 			fetch: secrets.ObfuscateGatherer(v.Obfuscated),
+		}
+	} else if v.Test != nil {
+		return &gatherer{
+			cache: cachedEntry{ttl: ttl},
+			fetch: func() (interface{}, error) { return v.Test.Value, nil },
 		}
 	}
 
