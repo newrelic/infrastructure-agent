@@ -85,7 +85,7 @@ func getKernelRelease() string {
 	return v
 }
 
-func getProductUuid(mode config.AgentMode) string {
+func getProductUuid(mode string) string {
 	const unknownProductUUID = "unknown"
 
 	if mode == config.ModeUnprivileged {

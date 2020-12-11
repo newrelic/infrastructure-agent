@@ -867,7 +867,7 @@ func (ep *externalPlugin) updateCmdWrappers(pluginDir string) {
 		rcfg, ok := icfg.Variables.(cfgTmp)
 		if !ok {
 			// should never ever happen. Just logging so the programmer is aware of a "bug"
-			ep.logger.WithField("config", rcfg).Warn("unexpected: the plugin configuration should be of type `config`")
+			ep.logger.WithField("config", icfg).Warn("unexpected: the plugin configuration should be of type `config`")
 			return
 		}
 		// Convenience/backwards-compatibility:

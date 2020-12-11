@@ -67,11 +67,11 @@ func (d *Definition) PluginID(integrationName string) ids.PluginID {
 	return ids.NewDefaultInventoryPluginID(d.Name)
 }
 
-func (d *Definition) Run(ctx context.Context, bind *databind.Values, pidC, exitCodeC chan<- int) ([]Output, error) {
+func (d *Definition) Run(ctx context.Context, bindVals *databind.Values, pidC, exitCodeC chan<- int) ([]Output, error) {
 	logger := elog.WithField("integration_name", d.Name)
 	logger.Debug("Running task.")
 	// no discovery data: execute a single instance
-	if bind == nil {
+	if bindVals == nil {
 		logger.Debug("Running single instance.")
 		return []Output{{Receive: d.runnable.Execute(ctx, pidC, exitCodeC)}}, nil
 	}
@@ -92,7 +92,7 @@ func (d *Definition) Run(ctx context.Context, bind *databind.Values, pidC, exitC
 	if d.ConfigTemplate != nil {
 		onDemand = ignoreConfigPathVar(&foundConfigPath)
 	}
-	matches, err := databind.Replace(bind, discoveredConfig{
+	matches, err := databind.Replace(bindVals, discoveredConfig{
 		Executor:       d.runnable.DeepClone(),
 		ConfigTemplate: d.ConfigTemplate,
 	}, databind.Provided(onDemand))
