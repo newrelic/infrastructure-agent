@@ -48,8 +48,8 @@ func TestEmitterWithFF_Send(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			emitterWithRegister := &fakeEmitter{wasCalled: false}
-			emitterWithNoRegister := &fakeEmitter{wasCalled: false}
+			emitterWithRegister := &fakeEmitter{}
+			emitterWithNoRegister := &fakeEmitter{}
 
 			f := feature_flags.NewManager(tc.initialFeatureFlags)
 			emitterWrapper := NewEmitterWithFF(emitterWithRegister, emitterWithNoRegister, f)
