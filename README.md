@@ -1,4 +1,4 @@
-[![New Relic Community Plus header](https://raw.githubusercontent.com/newrelic/open-source-office/master/examples/categories/images/Community_Plus.png)](https://opensource.newrelic.com/oss-category/#community-plus)
+[![Community Plus header](https://github.com/newrelic/opensource-website/raw/master/src/images/categories/Community_Plus.png)](https://opensource.newrelic.com/oss-category/#community-plus)
 
 # New Relic infrastructure agent
 
@@ -7,16 +7,18 @@ The infrastructure agent (infra-agent) collects inventory data and metrics of yo
 [New Relic's infrastructure monitoring](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/get-started/introduction-new-relic-infrastructure) provides flexible,
 dynamic monitoring of your entire infrastructure, from services running in the cloud or on dedicated hosts to containers running in orchestrated environments.
 
-* [Compatibility and requirements](#compatibility-and-requirements)
-* [Compile and build the agent](#compile-and-build-the-agent)
-* [Run the agent](#run-the-agent)
-* [Use the agent](#use-the-agent)
-* [Testing](#testing)
-* [Documentation](#docs)
-* [Support](#support)
-* [Contribute](#contribute)
-* [To-do](#to-do)
-* [License](#license)
+- [Compatibility and requirements](#compatibility-and-requirements)
+  - [Set up your license key](#set-up-your-license-key)
+- [Compile and build the agent](#compile-and-build-the-agent)
+- [Run the agent](#run-the-agent)
+- [Use the agent](#use-the-agent)
+- [Testing](#testing)
+- [Documentation](#documentation)
+- [To do](#to-do)
+- [Support](#support)
+- [Privacy](#privacy)
+- [Contribute](#contribute)
+- [License](#license)
 
 ## Compatibility and requirements
 
