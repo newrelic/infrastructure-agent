@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -27,10 +26,6 @@ func ExpandInContent(content []byte) ([]byte, error) {
 
 		evName := strings.TrimSpace(string(content[evStart:evEnd]))
 		if evVal, exist := os.LookupEnv(evName); exist {
-			// quote non numerics
-			if _, err := strconv.ParseFloat(evVal, 64); err != nil {
-				evVal = fmt.Sprintf(`"%s"`, evVal)
-			}
 			newContent = append(newContent, content[lastReplacement:idx[0]]...)
 			newContent = append(newContent, []byte(evVal)...)
 			lastReplacement = idx[1]
