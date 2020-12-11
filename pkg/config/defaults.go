@@ -62,6 +62,7 @@ var (
 	defaultMaxProcs                      = 1
 	defaultHTTPServerHost                = "localhost"
 	defaultHTTPServerPort                = 8001
+	defaultTCPServerPort                 = 8002
 	defaultIpData                        = true
 	defaultTruncTextValues               = true
 	defaultLogToStdout                   = true

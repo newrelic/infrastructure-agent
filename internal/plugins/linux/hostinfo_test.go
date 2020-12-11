@@ -5,12 +5,15 @@
 package linux
 
 import (
-	testing2 "github.com/newrelic/infrastructure-agent/internal/plugins/testing"
 	"io/ioutil"
 	"os"
 	"regexp"
 	"testing"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/os/distro"
+	"github.com/newrelic/infrastructure-agent/internal/os/fs"
+	testing2 "github.com/newrelic/infrastructure-agent/internal/plugins/testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -68,7 +71,7 @@ func (s *HostinfoSuite) TestRunCmd(c *C) {
 }
 
 func (s *HostinfoSuite) TestGetDistro(c *C) {
-	name := getDistro()
+	name := distro.GetDistro()
 	c.Check(name, Not(Equals), "")
 
 	cloudDetector := cloud.NewDetector(true, 0, 0, 0, false)
@@ -104,7 +107,8 @@ func (s *HostinfoSuite) TestGetCpuNumFallback(c *C) {
 func (s *HostinfoSuite) TestLsbRelease(c *C) {
 	err := ioutil.WriteFile("/tmp/lsb_release", []byte(lsbRelease), 0644)
 	c.Assert(err, IsNil)
-	release := readFile("/tmp/lsb_release", regexp.MustCompile(`DISTRIB_DESCRIPTION="(.*?)"`))
+	release, err := fs.ReadFileFieldMatching("/tmp/lsb_release", regexp.MustCompile(`DISTRIB_DESCRIPTION="(.*?)"`))
+	c.Assert(err, IsNil)
 	c.Assert(release, Equals, "Ubuntu 14.04.5 LTS")
 }
 

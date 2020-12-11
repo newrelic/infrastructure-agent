@@ -745,8 +745,8 @@ type Config struct {
 	// Public: No
 	FluentBitNRLibPath string `yaml:"fluent_bit_nr_lib_path "envconfig:"fluent_bit_nr_lib_path" public:"false"`
 
-	// HTTPServerEnabled By setting true this configuration parameter (used only by statsD integration)	the agent will
-	// open an http port (by default, 8001) for receiving data from	New Relic statsD backend.
+	// HTTPServerEnabled By setting true this configuration parameter (used by statsD integration v1) the agent will
+	//	// open HTTP port (by default, 8001) to receive integration payloads via HTTP.
 	// Default: False
 	// Public: Yes
 	HTTPServerEnabled bool `yaml:"http_server_enabled" envconfig:"http_server_enabled"`
@@ -757,11 +757,21 @@ type Config struct {
 	// Public: Yes
 	HTTPServerHost string `yaml:"http_server_host" envconfig:"http_server_host"`
 
-	// HTTPServerPort Set the port for http server(used only by statsD integration) to receive data	from New Relic
-	// statsD backend.
+	// HTTPServerPort Set the port for http server (used by statsD integration) to receive integration payloads.
 	// Default: 8001
 	// Public: Yes
 	HTTPServerPort int `yaml:"http_server_port" envconfig:"http_server_port"`
+
+	// TCPServerEnabled By setting true this configuration parameter (used by statsD integration v1) the agent will
+	// open an TCP port (by default, 8002) to receive integration payloads via TCP.
+	// Default: False
+	// Public: Yes
+	TCPServerEnabled bool `yaml:"tcp_server_enabled" envconfig:"tcp_server_enabled"`
+
+	// TCPServerPort Set the port for tcp server(used only by statsD integration) to receive integration payloads.
+	// Default: 8002
+	// Public: Yes
+	TCPServerPort int `yaml:"tcp_server_port" envconfig:"tcp_server_port"`
 
 	// AppDataDir This option is only for Windows. It defines the path to store data in a different path than the
 	// program files directory.
@@ -1273,6 +1283,7 @@ func NewConfig() *Config {
 		LogFormat:                     defaultLogFormat,
 		HTTPServerHost:                defaultHTTPServerHost,
 		HTTPServerPort:                defaultHTTPServerPort,
+		TCPServerPort:                 defaultTCPServerPort,
 		DockerApiVersion:              DefaultDockerApiVersion,
 		FingerprintUpdateFreqSec:      defaultFingerprintUpdateFreqSec,
 		CloudMetadataExpiryInSec:      defaultCloudMetadataExpiryInSec,

@@ -8,7 +8,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/newrelic/infrastructure-agent/internal/agent"
@@ -17,31 +18,47 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const IntegrationName = "http-api"
+
 type HTTPServerPlugin struct {
 	agent.PluginCommon
-	host   string
-	port   int
-	logger log.Entry
+	host       string
+	port       int
+	logger     log.Entry
+	definition integration.Definition
+	emitter    emitter.Emitter
 }
 
 type responseError struct {
 	Error string `json:"error"`
 }
 
-func NewHTTPServerPlugin(ctx agent.AgentContext, host string, port int) agent.Plugin {
+func NewHTTPServerPlugin(ctx agent.AgentContext, host string, port int, em emitter.Emitter) (p agent.Plugin, err error) {
 	id := ids.PluginID{
 		Category: "metadata",
 		Term:     "http_server",
 	}
-	return &HTTPServerPlugin{
+
+	logger := slog.WithPlugin(id.String())
+
+	d, err := integration.NewAPIDefinition(IntegrationName)
+	if err != nil {
+		err = fmt.Errorf("cannot create API definition for HTTP API server, err: %s", err)
+		return
+	}
+
+	p = &HTTPServerPlugin{
 		PluginCommon: agent.PluginCommon{
 			ID:      id,
 			Context: ctx,
 		},
-		host:   host,
-		port:   port,
-		logger: slog.WithPlugin(id.String()),
+		host:       host,
+		port:       port,
+		logger:     logger,
+		definition: d,
+		emitter:    em,
 	}
+	return
 }
 
 func (p *HTTPServerPlugin) Run() {
@@ -62,36 +79,29 @@ func (p *HTTPServerPlugin) dataHandler(w http.ResponseWriter, r *http.Request, p
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	rawBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		p.logger.WithError(err).Debug("Reading request body.")
-	}
-	payload, protocolVersion, err := legacy.ParsePayload(rawBody, p.Context.Config().ForceProtocolV2toV3)
-
-	if err != nil {
+		errMsg := "cannot read HTTP payload"
+		p.logger.WithError(err).Warn(errMsg)
 		w.WriteHeader(http.StatusBadRequest)
 		jerr := json.NewEncoder(w).Encode(responseError{
-			Error: fmt.Sprintf("error decoding data payload: %v", err),
+			Error: fmt.Sprintf("%s: %s", errMsg, err.Error()),
 		})
 		if jerr != nil {
 			p.logger.WithError(jerr).Warn("couldn't encode a failed response")
 		}
 		return
 	}
-	labels := map[string]string{}
-	for _, dataSet := range payload.DataSets {
-		err := legacy.EmitDataSet(
-			p.Context,
-			p,
-			payload.Name,
-			payload.IntegrationVersion,
-			"",
-			dataSet,
-			labels,
-			labels,
-			nil,
-			protocolVersion)
+
+	err = p.emitter.Emit(p.definition, nil, nil, rawBody)
+	if err != nil {
+		errMsg := "cannot emit HTTP payload"
+		p.logger.WithError(err).Warn(errMsg)
+		w.WriteHeader(http.StatusInternalServerError)
+		_, err = w.Write([]byte(fmt.Sprintf("%s, err: %s", errMsg, err.Error())))
 		if err != nil {
-			p.logger.WithError(err).Warn("emitting plugin dataset")
+			p.logger.WithError(err).Warn("cannot write HTTP response body")
 		}
+		return
 	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
