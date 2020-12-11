@@ -1249,6 +1249,25 @@ func LoadConfig(configFile string) (cfg *Config, err error) {
 		}
 		cfg = replacedCfg
 	}
+	if vals.VarsLen() > 0 {
+		cfg.Databind = databind.YAMLAgentConfig{}
+		matches, errD := databind.Replace(&vals, cfg)
+		if errD != nil {
+			return
+		}
+
+		if len(matches) != 1 {
+			err = fmt.Errorf("unexpected config file variables replacement amount")
+			return
+		}
+		transformed := matches[0]
+		replacedCfg, ok := transformed.Variables.(*Config)
+		if !ok {
+			err = fmt.Errorf("unexpected config file variables replacement type")
+			return
+		}
+		cfg = replacedCfg
+	}
 
 	cfg.RunMode, cfg.AgentUser, cfg.ExecutablePath = runtimeValues()
 

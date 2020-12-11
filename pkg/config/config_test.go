@@ -612,6 +612,27 @@ proxy: ${var1}
 	assert.Equal(t, "10.0.2.2:8888", cfg.Proxy)
 }
 
+func TestLoadYamlConfig_withDatabindAndEnvVars(t *testing.T) {
+	yamlData := []byte(`
+variables:
+  license:
+    test:
+      value: {{ SOME_LICENSE }}
+license_key: ${license}
+`)
+
+	tmp, err := createTestFile(yamlData)
+	require.NoError(t, err)
+	defer os.Remove(tmp.Name())
+
+	os.Setenv("SOME_LICENSE", "XXX")
+	cfg, err := LoadConfig(tmp.Name())
+	os.Unsetenv("SOME_LICENSE")
+
+	require.NoError(t, err)
+	assert.Equal(t, "XXX", cfg.License)
+}
+
 func createTestFile(data []byte) (*os.File, error) {
 	tmp, err := ioutil.TempFile("", "loadconfig")
 	if err != nil {
