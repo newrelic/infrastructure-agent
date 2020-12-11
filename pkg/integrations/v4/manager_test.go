@@ -991,6 +991,48 @@ func TestManager_anIntegrationCanSpawnAnotherOne(t *testing.T) {
 	assert.Equal(t, "ShellTestSample", metric["event_type"])
 }
 
+func TestManager_ExpandsConfigEnvVars(t *testing.T) {
+	// GIVEN an set of agent directories containing compiled binaries
+	niDir, err := ioutil.TempDir("", "newrelic-integrations")
+	require.NoError(t, err)
+	defer removeTempFiles(t, niDir)
+	execPath := filepath.Join(niDir, "nri-validyaml"+fixtures.CmdExtension)
+	require.NoError(t, testhelp.GoBuild(fixtures.ValidYAMLGoFile, execPath))
+
+	// AND a v4 named integration with an embedded config
+	configDir, err := tempFiles(map[string]string{
+		"my-configs.yml": `
+integrations:
+  - name: nri-validyaml
+    config:
+      event_type: YAMLEvent
+      map:
+        hello: {{ SOME_VAR }}  
+`})
+	require.NoError(t, err)
+	defer removeTempFiles(t, configDir)
+
+	// WHEN env-var is set up
+	assert.NoError(t, os.Setenv("SOME_VAR", "FOO"))
+
+	// AND the v4 integrations are run
+	emitter := &testemit.RecordEmitter{}
+	mgr := NewManager(Configuration{
+		ConfigFolders:     []string{configDir},
+		DefinitionFolders: []string{niDir},
+	}, emitter, instancesLookupReturning(execPath), definitionQ, stoppable.NewTracker())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go mgr.Start(ctx)
+
+	assert.NoError(t, os.Unsetenv("SOME_VAR"))
+
+	// THEN manager expanded env-var
+	metric := expectOneMetric(t, emitter, "nri-validyaml")
+	assert.Equal(t, "YAMLEvent", metric["event_type"])
+	gotest.DeepEqual(t, map[string]interface{}{"hello": "FOO"}, metric["map"])
+}
+
 func tempFiles(pathContents map[string]string) (directory string, err error) {
 	dir, err := ioutil.TempDir("", "tempFiles")
 	if err != nil {
