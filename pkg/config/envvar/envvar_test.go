@@ -23,12 +23,12 @@ func TestExpandInContent(t *testing.T) {
 	}{
 		{"empty", emptyEnv, "", "", false},
 		{"no placeholder", emptyEnv, "foo bar\nbaz", "foo bar\nbaz", false},
-		{"1 placeholder with no env-var", emptyEnv, "foo: \"{{BAR}}\"\nbaz", "", true},
-		{"1 placeholder with 1 env-var", map[string]string{"BAR": "VAL"}, "foo: {{BAR}}\nbaz", "foo: \"VAL\"\nbaz", false},
-		{"1 placeholder with 1 env-var with spaces", map[string]string{"BAR": "VAL"}, "foo: {{  BAR  }}\nbaz", "foo: \"VAL\"\nbaz", false},
-		{"3 placeholder with 1 env-var", map[string]string{"BAR": "VAL"}, "foo: {{BAR}}\nbaz: {{BAR}}-{{BAR}}", "foo: \"VAL\"\nbaz: \"VAL\"-\"VAL\"", false},
-		{"2 placeholder with 2 env-var", map[string]string{"BAR1": "VAL1", "BAR2": "VAL2"}, "foo: {{BAR1}}\nbaz: {{BAR2}}", "foo: \"VAL1\"\nbaz: \"VAL2\"", false},
-		{"1 placeholder with 1 env-var special chars", map[string]string{"BAR": "$.*^"}, "foo: {{BAR}}\nbaz", "foo: \"$.*^\"\nbaz", false},
+		{"1 placeholder with no env-var", emptyEnv, "foo: {{BAR}}\nbaz", "", true},
+		{"1 placeholder with 1 env-var", map[string]string{"BAR": "VAL"}, "foo: {{BAR}}\nbaz", "foo: VAL\nbaz", false},
+		{"1 placeholder with 1 env-var with spaces", map[string]string{"BAR": "VAL"}, "foo: {{  BAR  }}\nbaz", "foo: VAL\nbaz", false},
+		{"3 placeholder with 1 env-var", map[string]string{"BAR": "VAL"}, "foo: {{BAR}}\nbaz: {{BAR}}-{{BAR}}", "foo: VAL\nbaz: VAL-VAL", false},
+		{"2 placeholder with 2 env-var", map[string]string{"BAR1": "VAL1", "BAR2": "VAL2"}, "foo: {{BAR1}}\nbaz: {{BAR2}}", "foo: VAL1\nbaz: VAL2", false},
+		{"1 placeholder with 1 env-var special chars", map[string]string{"BAR": "$.*^"}, "foo: {{BAR}}\nbaz", "foo: $.*^\nbaz", false},
 		{"1 placeholder with 1 env-var numeric", map[string]string{"BAR": "1"}, "foo: {{BAR}}", "foo: 1", false},
 	}
 	for _, tt := range tests {
