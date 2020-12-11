@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/constants"
+	"github.com/newrelic/infrastructure-agent/pkg/config/envvar"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/stoppable"
@@ -496,6 +497,12 @@ func loadConfig(path string) (config2.YAML, error) {
 	if err != nil {
 		return cy, err
 	}
+
+	bytes, err = envvar.ExpandInContent(bytes)
+	if err != nil {
+		return cy, err
+	}
+
 	if err := yaml.Unmarshal(bytes, &cy); err != nil {
 		return cy, err
 	}
