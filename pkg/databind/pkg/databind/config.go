@@ -60,13 +60,6 @@ type Test struct {
 
 func (t *Test) Validate() error { return nil }
 
-// Test for testing purposes until providers get decoupled.
-type Test struct {
-	Value interface{} `yaml:"value,omitempty"`
-}
-
-func (t *Test) Validate() error { return nil }
-
 // LoadYaml builds a set of data binding Sources from a YAML file
 func LoadYAML(bytes []byte) (*Sources, error) {
 	// Load raw yaml
