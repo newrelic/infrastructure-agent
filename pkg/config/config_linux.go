@@ -81,7 +81,7 @@ func hostOverride(cfg *Config) {
 // - root if the running user is root
 // - privileged if the binary has capabilities: `cap_dac_read_search` and `cap_sys_ptrace`.
 // - unprivileged otherwise
-func runtimeValues() (agentMode AgentMode, agentUser, executablePath string) {
+func runtimeValues() (agentMode, agentUser, executablePath string) {
 	agentMode = ModeUnknown
 
 	usr, err := user.Current()

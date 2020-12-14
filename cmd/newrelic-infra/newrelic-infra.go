@@ -288,12 +288,10 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	// queues integration run requests
 	definitionQ := make(chan integration.Definition, 100)
 
-	var dmEmitter dm.Emitter
-	if enabled, exists := ffManager.GetFeatureFlag(fflag.FlagDMRegisterEnable); exists && enabled {
-		dmEmitter = dm.NewEmitter(agt.GetContext(), dmSender, registerClient)
-	} else {
-		dmEmitter = dm.NewNonRegisterEmitter(agt.GetContext(), dmSender)
-	}
+	emitterWithRegister := dm.NewEmitter(agt.GetContext(), dmSender, registerClient)
+	nonRegisterEmitter := dm.NewNonRegisterEmitter(agt.GetContext(), dmSender)
+
+	dmEmitter := dm.NewEmitterWithFF(emitterWithRegister, nonRegisterEmitter, ffManager)
 
 	// track stoppable integrations
 	tracker := track.NewTracker(dmEmitter)

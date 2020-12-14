@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"gopkg.in/yaml.v2"
 	"math/rand"
 	"os"
@@ -28,15 +29,12 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
-// AgentMode agent user run modes, possible values are: root, privileged or unprivileged
-type AgentMode string
-
 const (
 	envPrefix           = "nria"
-	ModeUnknown         = AgentMode("")
-	ModeRoot            = AgentMode("root")
-	ModePrivileged      = AgentMode("privileged")
-	ModeUnprivileged    = AgentMode("unprivileged")
+	ModeUnknown         = ""
+	ModeRoot            = "root"
+	ModePrivileged      = "privileged"
+	ModeUnprivileged    = "unprivileged"
 	NonVerboseLogging   = 0
 	VerboseLogging      = 1
 	SmartVerboseLogging = 2
@@ -57,6 +55,9 @@ type IncludeMetricsMap map[string][]string
 // Configuration structs
 // Use the 'public' annotation to specify the visibility of the config option: false/obfuscate [default: true]
 type Config struct {
+	// Databind provides varaiable (secrets, discovery) replacement capabilities for the configuration.
+	Databind databind.YAMLAgentConfig `yaml:",inline"`
+
 	// License specifies the license key for your New Relic account. The agent uses this key to associate your server's
 	// metrics with your New Relic account. This setting is created as part of the standard installation process.
 	// Default: ""
@@ -932,7 +933,7 @@ type Config struct {
 	// - If the user is other than `root` but the capabilities don't match the ones in the previous rule, then the mode is `unprivileged`.
 	// Default: Runtime value
 	// Public: No
-	RunMode AgentMode
+	RunMode string
 
 	// AgentUser The name of the user that's executing the agent process. This value is taken from the runtime
 	// environment and cannot be manually set. The default Linux installation uses by default the `root` account to run
@@ -1203,21 +1204,51 @@ func (c *Config) toLogInfo() (map[string]string, error) {
 	return result, nil
 }
 
-func LoadConfig(configFile string) (*Config, error) {
+func LoadConfig(configFile string) (cfg *Config, err error) {
 	var filesToCheck []string
 	if configFile != "" {
 		filesToCheck = append(filesToCheck, configFile)
 	}
 	filesToCheck = append(filesToCheck, defaultConfigFiles...)
 
-	cfg := NewConfig()
+	cfg = NewConfig()
 	cfgMetadata, err := config_loader.LoadYamlConfig(cfg, filesToCheck...)
 	if err != nil {
-		return cfg, fmt.Errorf("Unable to parse configuration file %s: %s", configFile, err)
+		err = fmt.Errorf("unable to parse configuration file %s: %s", configFile, err)
+		return
 	}
 
 	// After the config file has loaded,  override via any environment variables
 	configOverride(cfg)
+
+	sources, err := cfg.Databind.DataSources()
+	if err != nil {
+		return
+	}
+	//_, err = databind.Fetch(sources)
+	vals, err := databind.Fetch(sources)
+	if err != nil {
+		return
+	}
+	if vals.VarsLen() > 0 {
+		cfg.Databind = databind.YAMLAgentConfig{}
+		matches, errD := databind.Replace(&vals, cfg)
+		if errD != nil {
+			return
+		}
+
+		if len(matches) != 1 {
+			err = fmt.Errorf("unexpected config file variables replacement amount")
+			return
+		}
+		transformed := matches[0]
+		replacedCfg, ok := transformed.Variables.(*Config)
+		if !ok {
+			err = fmt.Errorf("unexpected config file variables replacement type")
+			return
+		}
+		cfg = replacedCfg
+	}
 
 	cfg.RunMode, cfg.AgentUser, cfg.ExecutablePath = runtimeValues()
 
@@ -1226,7 +1257,7 @@ func LoadConfig(configFile string) (*Config, error) {
 	// above and place each one at the bottom of this ordering
 	err = NormalizeConfig(cfg, *cfgMetadata)
 
-	return cfg, err
+	return
 }
 
 // NewConfig returns the default Config.

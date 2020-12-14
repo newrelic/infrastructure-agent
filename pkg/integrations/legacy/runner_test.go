@@ -801,6 +801,10 @@ func (a FakeAgent) RegisterPlugin(p agent.Plugin) {
 func (FakeAgent) GetContext() agent.AgentContext { return nil }
 
 func (rs *RunnerSuite) TestEventsPluginRunV1(c *C) {
+	if runtime.GOOS == "windows" {
+		c.Skip("timeouts on windows CI")
+	}
+
 	ctx, plugin := newFakePluginWithContext(1)
 
 	plugin.pluginCommand.Command = []string{
