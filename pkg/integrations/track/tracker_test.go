@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestStoppablesTracker_Add(t *testing.T) {
+func TestTracker_Track(t *testing.T) {
 	s := NewTracker(nil)
 	ctx, _ := s.Track(context.Background(), "foo", nil)
 
@@ -32,7 +32,7 @@ func TestStoppablesTracker_Add(t *testing.T) {
 	assert.False(t, ok, "once stopped context should had been removed from track")
 }
 
-func TestStoppablesTracker_Kill_WontStopNonTrackedContext(t *testing.T) {
+func TestTracker_Kill(t *testing.T) {
 	s := NewTracker(nil)
 	ctx, _ := s.Track(context.Background(), "foo", nil)
 
@@ -53,7 +53,7 @@ func TestStoppablesTracker_Kill_WontStopNonTrackedContext(t *testing.T) {
 	assert.False(t, stopped)
 }
 
-func TestStoppablesTracker_PID(t *testing.T) {
+func TestTracker_PIDReadChan(t *testing.T) {
 	s := NewTracker(nil)
 	_, pidC := s.Track(context.Background(), "foo", nil)
 	require.NotNil(t, pidC)
