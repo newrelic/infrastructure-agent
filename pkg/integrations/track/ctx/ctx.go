@@ -1,3 +1,6 @@
+// Copyright 2020 New Relic Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 package ctx
 
 // CmdChannelRequest DTO storing context required to handle actions on integration run exit.
