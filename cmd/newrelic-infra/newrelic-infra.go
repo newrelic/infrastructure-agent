@@ -513,8 +513,7 @@ func checkEndpointReachable(
 	transport http.RoundTripper) (timedOut bool, err error) {
 	var request *http.Request
 	if request, err = http.NewRequest("HEAD", collectorURL, nil); err != nil {
-		aslog.WithError(err).Debug("Unable to prepare availability request.")
-		return false, fmt.Errorf("Unable to prepare availability request: %v", request)
+		return false, fmt.Errorf("unable to prepare reachability request: %v, error: %s", request, err)
 	}
 
 	client := backendhttp.GetHttpClient(timeout, transport)
