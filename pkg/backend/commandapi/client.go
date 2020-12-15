@@ -11,7 +11,6 @@ import (
 
 	backendhttp "github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 )
 
 type Client interface {
@@ -25,27 +24,6 @@ type Command struct {
 	Metadata map[string]interface{} `json:"metadata"`
 	Name     string                 `json:"name"`
 	Args     json.RawMessage        `json:"arguments"`
-}
-
-// Event creates an event from command.
-func (c *Command) Event(integrationName string, integrationArgs []string, metadata map[string]interface{}) protocol.EventData {
-	ev := protocol.EventData{
-		"eventType":     "InfrastructureEvent",
-		"category":      "notifications",
-		"summary":       "cmd-api",
-		"cmd_id":        c.ID,
-		"cmd_hash":      c.Hash,
-		"cmd_name":      c.Name,
-		"cmd_args":      string(c.Args),
-		"cmd_args_name": integrationName,
-		"cmd_args_args": fmt.Sprintf("%+v", integrationArgs),
-	}
-
-	for k, v := range metadata {
-		ev["cmd_metadata."+k] = v
-	}
-
-	return ev
 }
 
 type client struct {

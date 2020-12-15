@@ -65,8 +65,8 @@ func NewHandler(definitionQ chan<- integration.Definition, il integration.Instan
 
 		definitionQ <- def
 
-		ev := cmd.Event(args.IntegrationName, args.IntegrationArgs, cmd.Metadata)
-		ev["cmd_stop_hash"] = args.Hash()
+		ev := cmdChanReq.Event("cmd-api")
+
 		NotifyPlatform(dmEmitter, def, ev)
 
 		return
