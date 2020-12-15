@@ -17,7 +17,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/testhelp"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/testhelp/testemit"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/stoppable"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/fixtures"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -37,7 +37,7 @@ func TestManager_HotReload_CreateAndModifyLinkFile(t *testing.T) {
 	})
 
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ, stoppable.NewTracker())
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ, track.NewTracker())
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -110,7 +110,7 @@ integrations:
 	mgr := NewManager(Configuration{
 		ConfigFolders:     []string{configDir},
 		DefinitionFolders: []string{niDir},
-	}, emitter, integration.ErrLookup, definitionQ, stoppable.NewTracker())
+	}, emitter, integration.ErrLookup, definitionQ, track.NewTracker())
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)

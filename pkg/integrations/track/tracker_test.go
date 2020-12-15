@@ -1,4 +1,7 @@
-package stoppable
+// Copyright 2020 New Relic Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+package track
 
 import (
 	"context"
@@ -8,9 +11,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestStoppablesTracker_Add(t *testing.T) {
-	s := NewTracker()
-	ctx, _ := s.Track(context.Background(), "foo")
+func TestTracker_Track(t *testing.T) {
+	s := NewTracker(nil)
+	ctx, _ := s.Track(context.Background(), "foo", nil)
 
 	select {
 	case <-ctx.Done():
@@ -28,13 +31,13 @@ func TestStoppablesTracker_Add(t *testing.T) {
 
 	assert.True(t, stopped)
 
-	_, ok := s.hash2Cancel["foo"]
+	_, ok := s.hash2Ctx["foo"]
 	assert.False(t, ok, "once stopped context should had been removed from track")
 }
 
-func TestStoppablesTracker_Kill_WontStopNonTrackedContext(t *testing.T) {
-	s := NewTracker()
-	ctx, _ := s.Track(context.Background(), "foo")
+func TestTracker_Kill(t *testing.T) {
+	s := NewTracker(nil)
+	ctx, _ := s.Track(context.Background(), "foo", nil)
 
 	select {
 	case <-ctx.Done():
@@ -53,9 +56,9 @@ func TestStoppablesTracker_Kill_WontStopNonTrackedContext(t *testing.T) {
 	assert.False(t, stopped)
 }
 
-func TestStoppablesTracker_PID(t *testing.T) {
-	s := NewTracker()
-	_, pidC := s.Track(context.Background(), "foo")
+func TestTracker_PIDReadChan(t *testing.T) {
+	s := NewTracker(nil)
+	_, pidC := s.Track(context.Background(), "foo", nil)
 	require.NotNil(t, pidC)
 
 	// a single PID write is expected and shouldn't block

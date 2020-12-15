@@ -14,12 +14,15 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/commandapi"
 	"github.com/newrelic/infrastructure-agent/pkg/fwrequest"
+	ctx2 "github.com/newrelic/infrastructure-agent/pkg/integrations/track/ctx"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/trace"
 )
+
+const cmdName = "run_integration"
 
 // Errors
 var (
@@ -56,7 +59,9 @@ func NewHandler(definitionQ chan<- integration.Definition, il integration.Instan
 			LogDecorated(logger, cmd, args).WithError(err).Warn("cannot create handler for cmd channel run_integration requests")
 			return
 		}
-		def.CmdChannelHash = args.Hash()
+
+		cmdChanReq := ctx2.NewCmdChannelRequest(cmdName, args.Hash(), args.IntegrationName, args.IntegrationArgs)
+		def.CmdChanReq = &cmdChanReq
 
 		definitionQ <- def
 
@@ -67,7 +72,7 @@ func NewHandler(definitionQ chan<- integration.Definition, il integration.Instan
 		return
 	}
 
-	return cmdchannel.NewCmdHandler("run_integration", handleF)
+	return cmdchannel.NewCmdHandler(cmdName, handleF)
 }
 
 func NotifyPlatform(dmEmitter dm.Emitter, def integration.Definition, ev protocol.EventData) {

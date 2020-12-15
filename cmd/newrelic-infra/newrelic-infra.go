@@ -30,7 +30,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/v3legacy"
 	"github.com/newrelic/infrastructure-agent/internal/socketapi"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/stoppable"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins"
 	"github.com/sirupsen/logrus"
 
@@ -288,13 +288,13 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	// queues integration run requests
 	definitionQ := make(chan integration.Definition, 100)
 
-	// track stoppable integrations
-	tracker := stoppable.NewTracker()
-
 	emitterWithRegister := dm.NewEmitter(agt.GetContext(), dmSender, registerClient)
 	nonRegisterEmitter := dm.NewNonRegisterEmitter(agt.GetContext(), dmSender)
 
 	dmEmitter := dm.NewEmitterWithFF(emitterWithRegister, nonRegisterEmitter, ffManager)
+
+	// track stoppable integrations
+	tracker := track.NewTracker(dmEmitter)
 
 	integrationEmitter := emitter.NewIntegrationEmittor(agt, dmEmitter, ffManager)
 	integrationManager := v4.NewManager(integrationCfg, integrationEmitter, il, definitionQ, tracker)

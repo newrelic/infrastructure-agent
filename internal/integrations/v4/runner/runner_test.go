@@ -28,7 +28,7 @@ func Test_runner_Run(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
 
-	r.Run(ctx, nil)
+	r.Run(ctx, nil, nil)
 
 	dataset, err := e.ReceiveFrom("foo")
 	require.NoError(t, err)

@@ -34,7 +34,7 @@ func TestRun(t *testing.T) {
 	require.NoError(t, err)
 
 	// WHEN it is executed
-	outs, err := def.Run(context.Background(), nil, nil)
+	outs, err := def.Run(context.Background(), nil, nil, nil)
 	require.NoError(t, err)
 	require.Len(t, outs, 1)
 
@@ -58,7 +58,7 @@ func TestRun_NoDiscovery(t *testing.T) {
 	require.NoError(t, err)
 
 	// WHEN the def is executed with no discovery matches
-	outs, err := def.Run(context.Background(), &databind.Values{}, nil)
+	outs, err := def.Run(context.Background(), &databind.Values{}, nil, nil)
 	require.NoError(t, err)
 
 	// THEN no tasks are executed
@@ -87,7 +87,7 @@ func TestRun_Discovery(t *testing.T) {
 		databind.NewDiscovery(data.Map{"prefix": "bye", "argument": "people"}, data.InterfaceMap{"special": false, "label.two": "two"}, nil),
 		databind.NewDiscovery(data.Map{"prefix": "kon", "argument": "nichiwa"}, data.InterfaceMap{"other_tag": "true", "label.tree": "three"}, nil),
 	)
-	outs, err := def.Run(context.Background(), &vals, nil)
+	outs, err := def.Run(context.Background(), &vals, nil, nil)
 	require.NoError(t, err)
 	require.Len(t, outs, 3)
 
@@ -122,7 +122,7 @@ func TestRun_CmdSlice(t *testing.T) {
 	require.NoError(t, err)
 
 	// WHEN the def is executed
-	outs, err := def.Run(context.Background(), &databind.Values{}, nil)
+	outs, err := def.Run(context.Background(), &databind.Values{}, nil, nil)
 	require.NoError(t, err)
 	require.Len(t, outs, 1)
 
@@ -150,7 +150,7 @@ func TestRun_CancelPropagation(t *testing.T) {
 	)
 
 	parentContext, cancel := context.WithCancel(context.Background())
-	outs, err := def.Run(parentContext, &vals, nil)
+	outs, err := def.Run(parentContext, &vals, nil, nil)
 	require.NoError(t, err)
 	require.Len(t, outs, 3)
 
@@ -194,7 +194,7 @@ func TestRun_CancelPropagationWithoutReads(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	outs, err := def.Run(ctx, nil, nil)
+	outs, err := def.Run(ctx, nil, nil, nil)
 	require.NoError(t, err)
 	require.Len(t, outs, 1)
 
@@ -236,7 +236,7 @@ func TestRun_Cancel_Partial(t *testing.T) {
 	)
 
 	parentContext, cancel := context.WithCancel(context.Background())
-	outs, err := def.Run(parentContext, &vals, nil)
+	outs, err := def.Run(parentContext, &vals, nil, nil)
 	require.NoError(t, err)
 	require.Len(t, outs, 2)
 
@@ -278,7 +278,7 @@ func TestRun_Directory(t *testing.T) {
 	require.NoError(t, err)
 
 	// WHEN it is executed
-	outs, err := def.Run(context.Background(), nil, nil)
+	outs, err := def.Run(context.Background(), nil, nil, nil)
 	require.NoError(t, err)
 	require.Len(t, outs, 1)
 
@@ -321,7 +321,7 @@ func TestRun_RemoveExternalConfig(t *testing.T) {
 		}
 		return path, err
 	}
-	outputs, err := def.Run(ctx, &vals, nil)
+	outputs, err := def.Run(ctx, &vals, nil, nil)
 	require.NoError(t, err)
 	require.Len(t, outputs, 2)
 	require.Len(t, createdConfigs, 2)
