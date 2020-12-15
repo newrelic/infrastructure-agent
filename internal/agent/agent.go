@@ -221,7 +221,7 @@ func NewContext(
 func checkEndpointAvailability(ctx context2.Context, cfg *config.Config, userAgent, agentKey string, timeout time.Duration, transport http.RoundTripper) (timedOut bool, err error) {
 	var request *http.Request
 	if request, err = http.NewRequest("HEAD", cfg.CollectorURL, nil); err != nil {
-		return false, fmt.Errorf("unable to prepare availability request: %v", request)
+		return false, fmt.Errorf("unable to prepare availability request: %v, error: %s", request, err)
 	}
 
 	request = request.WithContext(ctx)
