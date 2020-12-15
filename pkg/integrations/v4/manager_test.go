@@ -1020,7 +1020,7 @@ integrations:
 	mgr := NewManager(Configuration{
 		ConfigFolders:     []string{configDir},
 		DefinitionFolders: []string{niDir},
-	}, emitter, instancesLookupReturning(execPath), definitionQ, track.NewTracker())
+	}, emitter, instancesLookupReturning(execPath), definitionQ, track.NewTracker(nil))
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
