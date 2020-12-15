@@ -60,13 +60,13 @@ func NewHandler(definitionQ chan<- integration.Definition, il integration.Instan
 			return
 		}
 
-		cmdChanReq := ctx2.NewCmdChannelRequest(cmdName, args.Hash(), args.IntegrationName, args.IntegrationArgs)
+		cmdChanReq := ctx2.NewCmdChannelRequest(cmdName, args.Hash(), args.IntegrationName, args.IntegrationArgs, cmd.Metadata)
 		def.CmdChanReq = &cmdChanReq
 
 		definitionQ <- def
 
-		ev := cmd.Event(args.IntegrationName, args.IntegrationArgs)
-		ev["cmd_stop_hash"] = args.Hash()
+		ev := cmdChanReq.Event("cmd-api")
+
 		NotifyPlatform(dmEmitter, def, ev)
 
 		return

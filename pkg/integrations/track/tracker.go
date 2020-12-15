@@ -5,7 +5,6 @@ package track
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -113,16 +112,10 @@ func (t *Tracker) NotifyExit(hash string, exitCode int) {
 		return
 	}
 
-	ds := protocol.NewEventDataset(ts, protocol.EventData{
-		"eventType":     "InfrastructureEvent",
-		"category":      "notifications",
-		"summary":       "integration-exited",
-		"cmd_name":      iCtx.def.CmdChanReq.CmdChannelCmdName,
-		"cmd_hash":      iCtx.def.CmdChanReq.CmdChannelCmdHash,
-		"cmd_args_name": iCtx.def.CmdChanReq.IntegrationName,
-		"cmd_args_args": fmt.Sprintf("%+v", iCtx.def.CmdChanReq.IntegrationArgs),
-		"cmd_exit_code": exitCode,
-	})
+	ev := iCtx.def.CmdChanReq.Event("integration-exited")
+	ev["cmd_exit_code"] = exitCode
+
+	ds := protocol.NewEventDataset(ts, ev)
 	data := protocol.NewData("tracker.notifyexit", "1", []protocol.Dataset{ds})
 	t.eventEmitter.Send(fwrequest.NewFwRequest(iCtx.def, nil, nil, data))
 }
