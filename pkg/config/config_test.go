@@ -588,7 +588,7 @@ func Test_ParseIncludeMatchingRule_EnvVar(t *testing.T) {
 	assert.True(t, reflect.DeepEqual(cfg.IncludeMetricsMatchers, expected))
 }
 
-func TestLoadYamlConfig_withDatabindVariables(t *testing.T) {
+func TestLoadYamlConfig_withDatabindJSONVariables(t *testing.T) {
 	yamlData := []byte(`
 variables:
   var1:
