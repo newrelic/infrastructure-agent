@@ -34,6 +34,7 @@ func TestExpandInContent(t *testing.T) {
 		{"1 placeholder within comment lines are stripped", emptyEnv, "#foo: {{BAR}}\nbaz", "baz", false},
 		{"comment lines starting with spaces are stripped", emptyEnv, "  #foo: {{BAR}}\nbaz", "baz", false},
 		{"comment lines starting with tab are stripped", emptyEnv, "\t #foo: {{BAR}}\nbaz", "baz", false},
+		{"comment part of the line is dropped while previous content is kept", emptyEnv, "foo: bar # {{BAR}}\nbaz", "foo: bar\nbaz", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -11,7 +11,7 @@ import (
 )
 
 func ExpandInContent(content []byte) ([]byte, error) {
-	content, err := removeCommentedLines(content)
+	content, err := removeComments(content)
 	if err != nil {
 		return nil, fmt.Errorf("cannot remove configuration commented lines, error: %w", err)
 	}
@@ -49,8 +49,8 @@ func ExpandInContent(content []byte) ([]byte, error) {
 	return newContent, nil
 }
 
-func removeCommentedLines(content []byte) ([]byte, error) {
-	r := regexp.MustCompile(`^[ \t#].*\n`)
+func removeComments(content []byte) ([]byte, error) {
+	r := regexp.MustCompile(`(^[ \t#].*\n)|([ \t]*#.*)`)
 	matches := r.FindAllIndex(content, -1)
 	if len(matches) == 0 {
 		return content, nil
