@@ -11,6 +11,11 @@ import (
 )
 
 func ExpandInContent(content []byte) ([]byte, error) {
+	content, err := removeComments(content)
+	if err != nil {
+		return nil, fmt.Errorf("cannot remove configuration commented lines, error: %w", err)
+	}
+
 	r := regexp.MustCompile(`({{ *\w+.*?}})`)
 	matches := r.FindAllIndex(content, -1)
 
@@ -35,6 +40,33 @@ func ExpandInContent(content []byte) ([]byte, error) {
 		} else {
 			return nil, fmt.Errorf("cannot replace configuration environment variables, missing env-var: %s", evName)
 		}
+	}
+
+	if lastReplacement != len(content) {
+		newContent = append(newContent, content[lastReplacement:]...)
+	}
+
+	return newContent, nil
+}
+
+func removeComments(content []byte) ([]byte, error) {
+	r := regexp.MustCompile(`(^[ \t#].*\n)|([ \t]*#.*)`)
+	matches := r.FindAllIndex(content, -1)
+	if len(matches) == 0 {
+		return content, nil
+	}
+
+	var newContent []byte
+	var lastReplacement int
+	for _, idx := range matches {
+		lineStart := idx[0]
+		lineEnd := idx[1]
+		if len(content) < lineStart || len(content) < lineEnd {
+			return content, fmt.Errorf("cannot remove commented lines from config")
+		}
+		newContent = append(newContent, content[lastReplacement:lineStart]...)
+		lastReplacement = lineEnd
+
 	}
 
 	if lastReplacement != len(content) {
