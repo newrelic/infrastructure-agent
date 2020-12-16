@@ -15,7 +15,8 @@
 ### END INIT INFO
 
 NAME=newrelic-infra
-DAEMON=/usr/bin/$NAME-service
+AGENT=/usr/bin/$NAME
+DAEMON=$AGENT-service
 CONFFILE=/etc/$NAME.yml
 LOGFILE=/tmp/$NAME.log
 PIDDIR=/var/run/$NAME
@@ -197,7 +198,7 @@ fi
 
 case "$1" in
     start)
-        if [ $(pidofproc -p $PIDFILE $DAEMON) ];
+        if [ $(pidofproc -p $PIDFILE $AGENT) ];
             then
             log_warning_msg "New Relic Infrastructure agent already running. Exiting..."
             exit
@@ -213,7 +214,7 @@ case "$1" in
         chown -R $USER:$USER $PIDDIR
         startproc -u $USER $DAEMON -config $CONFFILE  >"$LOGFILE" 2>"$LOGFILE"
         sleep 1
-        if [ $(pidofproc -p $PIDFILE $DAEMON) ];
+        if [ $(pidofproc -p $PIDFILE $AGENT) ];
         then
             log_success_msg
             exec >"$LOGFILE" 2>"$LOGFILE"
@@ -224,7 +225,7 @@ case "$1" in
     ;;
     stop)
         log_daemon_msg "Stopping New Relic Infrastructure agent:" "$NAME"
-        killproc -p $PIDFILE $DAEMON
+        killproc $DAEMON && killproc $AGENT
         RETVAL=$?
         [ $RETVAL -eq 0 ] && [ -e "$PIDFILE" ] && rm -f $PIDFILE
         log_success_msg
@@ -234,7 +235,7 @@ case "$1" in
         $0 start
     ;;
     status)
-        status_of_proc -p $PIDFILE $DAEMON $NAME && exit 0 || exit $?
+        status_of_proc -p $PIDFILE $AGENT $NAME && exit 0 || exit $?
     ;;
     *)
         log_action_msg "Usage: \"${0} {start|stop|status|restart}\""
