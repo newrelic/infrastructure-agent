@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewOpentelemetryServer(t *testing.T) {
+func TestOpentelemetry_Measure(t *testing.T) {
 	exporter, err := NewOpentelemetryServer()
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
@@ -23,7 +23,10 @@ func TestNewOpentelemetryServer(t *testing.T) {
 	defer ts.Close()
 
 	for i := int64(1); i <= 100; i++ {
-		exporter.IncrementSomething(i)
+		exporter.Measure(Counter, DMRequestsForwarded, i)
+	}
+	for i := int64(1); i <= 200; i++ {
+		exporter.Measure(Counter, DMDatasetsReceived, i)
 	}
 
 	metricsUrl := ts.URL + "/metrics"
@@ -37,6 +40,7 @@ func TestNewOpentelemetryServer(t *testing.T) {
 	assert.Equal(t, 200, res.StatusCode)
 
 	assert.Contains(t, string(metrics), "go_gc_duration_seconds")
-	assert.Contains(t, string(metrics), "newrelic_infra_instrumentation_counter 5050")
-	t.Logf("%s", metrics)
+	assert.Contains(t, string(metrics), "newrelic_infra_instrumentation_dm_requests_forwarded 5050")
+	assert.Contains(t, string(metrics), "newrelic_infra_instrumentation_dm_datasets_received 20100")
+	//t.Logf("%s", metrics)
 }

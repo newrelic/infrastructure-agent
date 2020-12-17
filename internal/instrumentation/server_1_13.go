@@ -16,20 +16,20 @@ import (
 )
 
 type opentelemetry struct {
-	handler *oprometheus.Exporter
-	counter *metric.Int64Counter
-	meter   *metric.Meter
+	handler  *oprometheus.Exporter
+	meter    *metric.Meter
+	counters map[MetricName]metric.Int64Counter
 }
 
 func (o opentelemetry) GetHandler() http.Handler {
 	return o.handler
 }
 
-func (o opentelemetry) IncrementSomething(val int64) {
+func (o opentelemetry) Measure(metricType MetricType, name MetricName, val int64) {
 	o.meter.RecordBatch(
 		context.Background(),
 		[]label.KeyValue{},
-		o.counter.Measurement(val))
+		o.counters[name].Measurement(val))
 }
 
 func (o opentelemetry) GetHttpTransport(base http.RoundTripper) http.RoundTripper {
@@ -51,10 +51,16 @@ func NewOpentelemetryServer() (exporter Exporter, err error) {
 		return nil, err
 	}
 	meter := prometheusExporter.MeterProvider().Meter("newrelic.infra")
-	counter := metric.Must(meter).NewInt64Counter("newrelic.infra/instrumentation.counter")
+
+	counters := make(map[MetricName]metric.Int64Counter, 2)
+
+	for metricName, metricRegistrationName := range metricsToRegister {
+		counters[metricName] = metric.Must(meter).NewInt64Counter("newrelic.infra/instrumentation." + metricRegistrationName)
+	}
+
 	return &opentelemetry{
-		handler: prometheusExporter,
-		counter: &counter,
-		meter:   &meter,
+		handler:  prometheusExporter,
+		counters: counters,
+		meter:    &meter,
 	}, err
 }

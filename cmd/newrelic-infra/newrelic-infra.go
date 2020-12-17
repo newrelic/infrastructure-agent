@@ -206,9 +206,10 @@ var aslog = wlog.WithComponent("AgentService").WithFields(logrus.Fields{
 	"service": svcName,
 })
 
-func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
+func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) (err error) {
+	server := instrumentation.NewNoopServer()
 	if c.EnableMetricsEndpoint {
-		server, err := instrumentation.NewOpentelemetryServer()
+		server, err = instrumentation.NewOpentelemetryServer()
 		if err != nil {
 			return err
 		}
@@ -223,6 +224,8 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		go srv.ListenAndServe()
 		defer srv.Close()
 	}
+
+	wlog.Instrument(server.Measure)
 
 	pluginSourceDirs := []string{
 		c.CustomPluginInstallationDir,
@@ -256,7 +259,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	}
 
 	aslog.Info("Checking network connectivity...")
-	err := waitForNetwork(c.CollectorURL, c.StartupConnectionTimeout, c.StartupConnectionRetries, transport)
+	err = waitForNetwork(c.CollectorURL, c.StartupConnectionTimeout, c.StartupConnectionRetries, transport)
 	if err != nil {
 		fatal(err, "Can't reach the New Relic collector.")
 	}
@@ -309,7 +312,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	// track stoppable integrations
 	tracker := stoppable.NewTracker()
 
-	emitterWithRegister := dm.NewEmitter(agt.GetContext(), dmSender, registerClient)
+	emitterWithRegister := dm.NewEmitter(agt.GetContext(), dmSender, registerClient, server.Measure)
 	nonRegisterEmitter := dm.NewNonRegisterEmitter(agt.GetContext(), dmSender)
 
 	dmEmitter := dm.NewEmitterWithFF(emitterWithRegister, nonRegisterEmitter, ffManager)

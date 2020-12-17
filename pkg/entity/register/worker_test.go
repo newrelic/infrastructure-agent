@@ -3,6 +3,7 @@ package register
 import (
 	"context"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
 	log "github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
@@ -30,6 +31,8 @@ func newClientReturning(ids ...entity.ID) identityapi.RegisterClient {
 const (
 	agentVersion = "testVersion"
 )
+
+var fakeOtelServer = instrumentation.NewNoopServer()
 
 type fakeClient struct {
 	ids       []entity.ID
@@ -179,7 +182,7 @@ func TestWorker_Run_SendsWhenBatchLimitIsReached(t *testing.T) {
 				collector: make([][]string, 0),
 			}
 
-			w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), reqsToRegisterQueue, registeredQueue, config)
+			w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), reqsToRegisterQueue, registeredQueue, config, fakeOtelServer.Measure)
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -224,7 +227,7 @@ func TestWorker_Run_EntityGraterThanMaxByteSize(t *testing.T) {
 		ids: []entity.ID{1},
 	}
 
-	w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), reqsToRegisterQueue, registeredQueue, config)
+	w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), reqsToRegisterQueue, registeredQueue, config, fakeOtelServer.Measure)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -274,7 +277,7 @@ func TestWorker_registerEntitiesWithRetry_OnError_RetryBackoff(t *testing.T) {
 		MaxBatchDuration:  50 * time.Millisecond,
 		MaxRetryBo:        0,
 	}
-	w := NewWorker(agentIdentity, client, backoff, reqsToRegisterQueue, reqsRegisteredQueue, config)
+	w := NewWorker(agentIdentity, client, backoff, reqsToRegisterQueue, reqsRegisteredQueue, config, fakeOtelServer.Measure)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -331,7 +334,7 @@ func TestWorker_registerEntitiesWithRetry_OnError_Discard(t *testing.T) {
 		MaxBatchDuration:  50 * time.Millisecond,
 		MaxRetryBo:        0,
 	}
-	w := NewWorker(agentIdentity, client, backoff, reqsToRegisterQueue, reqsRegisteredQueue, config)
+	w := NewWorker(agentIdentity, client, backoff, reqsToRegisterQueue, reqsRegisteredQueue, config, fakeOtelServer.Measure)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -382,7 +385,7 @@ func TestWorker_registerEntitiesWithRetry_Success(t *testing.T) {
 		MaxBatchDuration:  50 * time.Millisecond,
 		MaxRetryBo:        0,
 	}
-	w := NewWorker(agentIdentity, client, backoff, reqsToRegisterQueue, reqsRegisteredQueue, config)
+	w := NewWorker(agentIdentity, client, backoff, reqsToRegisterQueue, reqsRegisteredQueue, config, fakeOtelServer.Measure)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -428,7 +431,7 @@ func TestWorker_send_Logging_VerboseEnabled(t *testing.T) {
 	config := WorkerConfig{
 		VerboseLogLevel: 1,
 	}
-	w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), reqsToRegisterQueue, reqsRegisteredQueue, config)
+	w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), reqsToRegisterQueue, reqsRegisteredQueue, config, fakeOtelServer.Measure)
 
 	batch := map[entity.Key]fwrequest.EntityFwRequest{
 		entity.Key("error"): {
@@ -515,7 +518,7 @@ func TestWorker_send_Logging_VerboseDisabled(t *testing.T) {
 	config := WorkerConfig{
 		VerboseLogLevel: 0,
 	}
-	w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), reqsToRegisterQueue, reqsRegisteredQueue, config)
+	w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), reqsToRegisterQueue, reqsRegisteredQueue, config, fakeOtelServer.Measure)
 
 	batch := map[entity.Key]fwrequest.EntityFwRequest{
 		entity.Key("error"): {

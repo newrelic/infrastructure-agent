@@ -10,6 +10,7 @@ package log
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
 
 	"github.com/sirupsen/logrus"
 )
@@ -72,6 +73,7 @@ func (e Entry) Error(msg string) {
 		}
 		e().Error(msg)
 	}
+	w.otelMeasure(instrumentation.Counter, instrumentation.LoggedErrors, 1)
 }
 
 func (e Entry) Errorf(format string, args ...interface{}) {
