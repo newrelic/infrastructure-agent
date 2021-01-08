@@ -18,7 +18,7 @@ jobs:
           fetch-depth: 1
           path: src/github.com/${{env.ORIGINAL_REPO_NAME}}
       - name: Proxy Test
-        run: make proxy-test
+        run: ls -laht
 
   build:
     runs-on: ubuntu-latest
