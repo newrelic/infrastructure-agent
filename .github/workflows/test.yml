@@ -18,7 +18,7 @@ jobs:
           fetch-depth: 1
           path: src/github.com/newrelic/infrastructure-agent
       - name: Proxy Test
-        run: ls -laht
+        run: make proxy-test
 
   build:
     runs-on: ubuntu-latest
