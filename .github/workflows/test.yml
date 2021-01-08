@@ -17,8 +17,8 @@ jobs:
       - name: Integration test
         env:
           GOPATH: "${{ github.workspace }}"
-        run: make harvest-test
-        
+        run: make proxy-test
+
   build:
     runs-on: ubuntu-latest
 
