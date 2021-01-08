@@ -8,15 +8,16 @@ jobs:
   proxy-tests:
     name: Proxy tests
     runs-on: ubuntu-20.04
+    defaults:
+      run:
+        working-directory: src/github.com/newrelic/infrastructure-agent
     steps:
       - name: Check out code
         uses: actions/checkout@v2
         with:
           fetch-depth: 1
           path: src/github.com/${{env.ORIGINAL_REPO_NAME}}
-      - name: Integration test
-        env:
-          GOPATH: "${{ github.workspace }}"
+      - name: Proxy Test
         run: make proxy-test
 
   build:
