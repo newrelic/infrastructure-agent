@@ -4,6 +4,21 @@ name: UnitTesting
 on: [push, pull_request]
 
 jobs:
+
+  proxy-tests:
+    name: Proxy tests
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+          path: src/github.com/${{env.ORIGINAL_REPO_NAME}}
+      - name: Integration test
+        env:
+          GOPATH: "${{ github.workspace }}"
+        run: make harvest-test
+        
   build:
     runs-on: ubuntu-latest
 
