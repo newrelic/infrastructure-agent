@@ -30,6 +30,11 @@ func TestExpandInContent(t *testing.T) {
 		{"2 placeholder with 2 env-var", map[string]string{"BAR1": "VAL1", "BAR2": "VAL2"}, "foo: {{BAR1}}\nbaz: {{BAR2}}", "foo: VAL1\nbaz: VAL2", false},
 		{"1 placeholder with 1 env-var special chars", map[string]string{"BAR": "$.*^"}, "foo: {{BAR}}\nbaz", "foo: $.*^\nbaz", false},
 		{"1 placeholder with 1 env-var numeric", map[string]string{"BAR": "1"}, "foo: {{BAR}}", "foo: 1", false},
+		// comments removal
+		{"1 placeholder within comment lines are stripped", emptyEnv, "#foo: {{BAR}}\nbaz", "baz", false},
+		{"comment lines starting with spaces are stripped", emptyEnv, "  #foo: {{BAR}}\nbaz", "baz", false},
+		{"comment lines starting with tab are stripped", emptyEnv, "\t #foo: {{BAR}}\nbaz", "baz", false},
+		{"comment part of the line is dropped while previous content is kept", emptyEnv, "foo: bar # {{BAR}}\nbaz", "foo: bar\nbaz", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
