@@ -178,6 +178,7 @@ linux/harvest-tests: go-get
 
 .PHONY: proxy-test
 proxy-test:
-	@docker-compose -f $(CURDIR)/test/proxy/docker-compose.yml up -d ;\
-	go test --tags=proxytests ./test/proxy/ ;\
-    docker-compose -f test/proxy/docker-compose.yml down ;\
+	@docker-compose -f $(CURDIR)/test/proxy/docker-compose.yml up -d ; \
+	go test --tags=proxytests ./test/proxy/; status=$$?; \
+    docker-compose -f test/proxy/docker-compose.yml down; \
+    exit $$status
