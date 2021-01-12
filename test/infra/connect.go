@@ -43,7 +43,7 @@ type connectRoundTripper struct {
 }
 
 func (c *connectRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	return c.RoundTrip(req)
+	return c.roundTrip(req)
 }
 
 func NewSuccessConnectHttpClient() *http.Client {
