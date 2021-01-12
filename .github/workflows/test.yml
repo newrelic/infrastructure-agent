@@ -11,9 +11,6 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v2
-        with:
-          fetch-depth: 1
-          path: src/github.com/newrelic/infrastructure-agent
       - name: Proxy Test
         run: ls -laht
 
@@ -29,7 +26,7 @@ jobs:
           go-version: '^1.14.4'
 
       - name: Validate code
-        run: make validate
+        run: ls -laht
 
       - name: Running unit tests
         run: make test-coverage
