@@ -5,7 +5,7 @@ env:
   DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
   TAG: "v0.0.0" # needed for goreleaser windows builds
-  
+
 on:
   push:
     branches:
@@ -59,7 +59,7 @@ jobs:
 
       - name: Setup node
         run: |
-          if [ "$RUNNER_OS" == "Linux" ]; then # if matrix.os == 'ubuntu-latest'
+          if [ "$RUNNER_OS" == "Linux" ]; then
             sudo apt install musl-dev
           fi
 
@@ -91,6 +91,12 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
 
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKER_HUB_ID }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
+
       - name: Running proxy tests
         run: make proxy-test
 
@@ -99,6 +105,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKER_HUB_ID }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
 
       - name: Install Go
         uses: actions/setup-go@v2

@@ -77,7 +77,7 @@ builds:
       - amd64
       - 386
     hooks:
-      pre: cicd/scripts/windows/set_exe_properties.sh {{ .Env.TAG }}
+      pre: build/set_exe_properties.sh {{ .Env.TAG }}
 
   - id: windows-newrelic-infra-ctl
     main: ./cmd/newrelic-infra-ctl
@@ -93,7 +93,7 @@ builds:
       - amd64
       - 386
     hooks:
-      pre: cicd/scripts/windows/set_exe_properties.sh {{ .Env.TAG }}
+      pre: build/set_exe_properties.sh {{ .Env.TAG }}
 
   - id: windows-newrelic-infra-service
     main: ./cmd/newrelic-infra-service
@@ -109,4 +109,4 @@ builds:
       - amd64
       - 386
     hooks:
-      pre: cicd/scripts/windows/set_exe_properties.sh {{ .Env.TAG }}
+      pre: build/set_exe_properties.sh {{ .Env.TAG }}

@@ -19,6 +19,7 @@ include $(INCLUDE_BUILD_DIR)/infra_build.mk
 # https://docs.newrelic.com/docs/integrations/host-integrations/getting-started/introduction-host-integrations
 include $(INCLUDE_BUILD_DIR)/embed_ohis.mk
 
-include $(PROJECT_WORKSPACE)/cicd/ci.mk
+# Scripts for CICD
+include $(INCLUDE_BUILD_DIR)/ci.mk
 
-include $(PROJECT_WORKSPACE)/cicd/release.mk
+include $(INCLUDE_BUILD_DIR)/release.mk
