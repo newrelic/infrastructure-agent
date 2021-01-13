@@ -45,10 +45,19 @@ jobs:
 
   harvest-test-linux:
     name: Linux harvest tests
-    runs-on: ubuntu-20.04
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-18.04, ubuntu-16.04 ]
     steps:
       - uses: actions/checkout@v2
 
+      - name: Setup node
+        run: |
+          if [ "$RUNNER_OS" == "Linux" ]; then # if matrix.os == 'ubuntu-latest'
+            sudo apt install musl-dev
+          fi
+          
       - name: Running Harvest tests
         run: make linux/harvest-tests
 
