@@ -10,7 +10,7 @@ on:
       - README.md
 
 env:
-  SNYK_TOKEN: ${{ secrets.COREINT_SNYK_TOKEN }}
+  SNYK_TOKEN: ${{ secrets.CAOS_SNYK_TOKEN }}
   DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
 
