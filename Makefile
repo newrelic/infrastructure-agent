@@ -21,3 +21,4 @@ include $(INCLUDE_BUILD_DIR)/embed_ohis.mk
 
 include $(PROJECT_WORKSPACE)/cicd/ci.mk
 
+include $(PROJECT_WORKSPACE)/cicd/release.mk

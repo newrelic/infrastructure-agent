@@ -21,6 +21,21 @@ ci/snyk-test:
 			-e SNYK_TOKEN \
 			snyk/snyk:golang snyk test --severity-threshold=high
 
+.PHONY : ci/build
+ci/build: ci/deps
+ifdef TAG
+	@docker run --rm -t \
+			--name "infrastructure-agent-snyk-test-build" \
+			-v $(CURDIR):/go/src/github.com/newrelic/nri-$(INTEGRATION) \
+			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
+			-w /go/src/github.com/newrelic/infrastructure-agent \
+			-e TAG \
+			$(BUILDER_IMG_TAG) make release/build
+else
+	@echo "===> $(INTEGRATION) ===  [ci/build] TAG env variable expected to be set"
+	exit 1
+endif
+
 .PHONY: ci/test-coverage
 ci/test-coverage: ci/deps
 	@docker run --rm -t \
