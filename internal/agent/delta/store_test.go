@@ -9,34 +9,23 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
+	"github.com/stretchr/testify/require"
 
 	"github.com/newrelic/infrastructure-agent/pkg/backend/inventoryapi"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
-
-	. "github.com/newrelic/infrastructure-agent/pkg/go-better-check"
-	. "gopkg.in/check.v1"
+	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 )
 
 const maxInventorySize = 3 * 1000 * 1000
-
-func Test(t *testing.T) { TestingT(t) }
 
 func TempDeltaStoreDir() (string, error) {
 	return ioutil.TempDir("", "deltastore")
 }
 
-type DeltaUtilsSuite struct {
-}
-
-var _ = Suite(&DeltaUtilsSuite{})
-
-func (s *DeltaUtilsSuite) TestRemoveNulls(c *C) {
+func TestRemoveNulls(t *testing.T) {
 	obj := map[string]interface{}{
 		"child1": map[string]interface{}{
 			"attr1": "foo",
@@ -58,59 +47,59 @@ func (s *DeltaUtilsSuite) TestRemoveNulls(c *C) {
 
 	child1 := obj["child1"].(map[string]interface{})
 	_, hasChild1Attr3 := child1["attr3"]
-	c.Assert(hasChild1Attr3, Equals, false)
+	assert.False(t, hasChild1Attr3)
 
 	child2 := obj["child2"].([]interface{})
 	child2Map := child2[2].(map[string]interface{})
 	_, hasChild2MapName := child2Map["name"]
-	c.Assert(hasChild2MapName, Equals, false)
+	assert.False(t, hasChild2MapName)
 
 	_, hasChild3 := obj["child3"]
-	c.Assert(hasChild3, Equals, false)
+	assert.False(t, hasChild3)
 }
 
-func (s *DeltaUtilsSuite) TestPluginInfoNextDelta(c *C) {
+func TestPluginInfoNextDelta(t *testing.T) {
 	pi := &PluginInfo{}
 
 	const eKey = "entity_key"
 	pi.increaseDeltaID(eKey)
-	c.Assert(pi.deltaID(eKey), Equals, int64(1))
+	assert.Equal(t, int64(1), pi.deltaID(eKey))
 	pi.increaseDeltaID(eKey)
-	c.Assert(pi.deltaID(eKey), Equals, int64(2))
+	assert.Equal(t, int64(2), pi.deltaID(eKey))
 }
 
-func (s *DeltaUtilsSuite) TestNewDeltaStoreGolden(c *C) {
+func TestNewDeltaStoreGolden(t *testing.T) {
 	dataDir, err := TempDeltaStoreDir()
-	c.Check(err, IsNil)
+	require.NoError(t, err)
+	defer os.RemoveAll(dataDir)
+
 	repoDir := filepath.Join(dataDir, "delta")
 	ds := NewStore(repoDir, "default", maxInventorySize)
-
-	c.Assert(ds, Not(IsNil))
-
-	syscall.Rmdir(dataDir)
+	assert.NotNil(t, ds)
 }
 
-func (s *DeltaUtilsSuite) TestStorageSize(c *C) {
+func TestStorageSize(t *testing.T) {
 	dataDir, err := TempDeltaStoreDir()
-	c.Check(err, IsNil)
+	require.NoError(t, err)
+	defer os.RemoveAll(dataDir)
+
 	repoDir := filepath.Join(dataDir, "delta")
 	ds := NewStore(repoDir, "default", maxInventorySize)
 
 	size, _ := ds.StorageSize(ds.CacheDir)
-	c.Assert(size, Equals, uint64(0))
+	assert.Equal(t, uint64(0), size)
 
 	deltaFilePath := filepath.Join(ds.CacheDir, "test")
 	f, err := os.OpenFile(deltaFilePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
-	c.Check(err, IsNil)
+	require.NoError(t, err)
 	defer f.Close()
+
 	buf := []byte{'1', 'A', '#'}
 	_, err = f.Write(buf)
-	c.Check(err, IsNil)
+	assert.NoError(t, err)
 
 	size, _ = ds.StorageSize(ds.CacheDir)
-	c.Assert(size, Equals, uint64(len(buf)))
-
-	syscall.Rmdir(dataDir)
+	assert.Equal(t, uint64(len(buf)), size)
 }
 
 type DeltaUtilsCoreSuite struct {
@@ -120,103 +109,148 @@ type DeltaUtilsCoreSuite struct {
 	pluginID ids.PluginID
 }
 
-var _core = Suite(&DeltaUtilsCoreSuite{})
+func (d DeltaUtilsCoreSuite) TearDownTest() {
+	_ = os.RemoveAll(d.dataDir)
+}
 
-func (s *DeltaUtilsCoreSuite) SetUpTest(c *C) {
+func SetUpTest(t *testing.T) (d DeltaUtilsCoreSuite) {
 	var err error
-	s.dataDir, err = TempDeltaStoreDir()
-	c.Check(err, IsNil)
-	s.repoDir = filepath.Join(s.dataDir, "delta")
-	s.plugin = newPluginInfo("metadata", "plugin.json")
-	s.pluginID = ids.PluginID{
+	d.dataDir, err = TempDeltaStoreDir()
+	require.NoError(t, err)
+	d.repoDir = filepath.Join(d.dataDir, "delta")
+	d.plugin = newPluginInfo("metadata", "plugin.json")
+	d.pluginID = ids.PluginID{
 		Category: "metadata",
 		Term:     "plugin",
 	}
+	return d
 }
 
-func (s *DeltaUtilsCoreSuite) TearDownTest(c *C) {
-	os.RemoveAll(s.dataDir)
+func assertSuffix(t *testing.T, expected string, actual string) bool {
+	return assert.True(t,
+		strings.HasSuffix(actual, expected),
+		fmt.Sprintf("%s should have sufix %s", actual, expected))
 }
 
-func (s *DeltaUtilsCoreSuite) TestArchiveFilePath(c *C) {
-	ds := NewStore(s.repoDir, "default", maxInventorySize)
-	c.Assert(ds.archiveFilePath(s.plugin, "entity:id"), HasSuffix, filepath.Join("delta", ".delta_repo", "metadata", "entityid", "plugin.sent"))
-}
-
-func (s *DeltaUtilsCoreSuite) TestDeltaFilePath(c *C) {
-	ds := NewStore(s.repoDir, "default", maxInventorySize)
-
-	c.Assert(ds.DeltaFilePath(s.plugin, "entity:id:2"), HasSuffix, filepath.Join("delta", ".delta_repo", "metadata", "entityid2", "plugin.pending"))
-}
-
-func (s *DeltaUtilsCoreSuite) TestCachedFilePath(c *C) {
+func TestArchiveFilePath(t *testing.T) {
+	s := SetUpTest(t)
+	defer s.TearDownTest()
 	ds := NewStore(s.repoDir, "default", maxInventorySize)
 
-	c.Assert(ds.cachedFilePath(s.plugin, "hello!!everybody"), HasSuffix, filepath.Join("delta", ".delta_repo", "metadata", "hello!!everybody", "plugin.json"))
+	actual := ds.archiveFilePath(s.plugin, "entity:id")
+	expected := filepath.Join("delta", ".delta_repo", "metadata", "entityid", "plugin.sent")
+	assertSuffix(t, expected, actual)
 }
 
-func (s *DeltaUtilsCoreSuite) TestSourceFilePath(c *C) {
+func TestDeltaFilePath(t *testing.T) {
+	s := SetUpTest(t)
+	defer s.TearDownTest()
 	ds := NewStore(s.repoDir, "default", maxInventorySize)
 
-	c.Assert(ds.SourceFilePath(s.plugin, "xxxx"), HasSuffix, filepath.Join("delta", "metadata", "xxxx", "plugin.json"))
+	actual := ds.DeltaFilePath(s.plugin, "entity:id:2")
+	expected := filepath.Join("delta", ".delta_repo", "metadata", "entityid2", "plugin.pending")
+	assertSuffix(t, expected, actual)
 }
 
-func (s *DeltaUtilsCoreSuite) TestArchiveFilePath_localEntity(c *C) {
+func TestCachedFilePath(t *testing.T) {
+	s := SetUpTest(t)
+	defer s.TearDownTest()
+	ds := NewStore(s.repoDir, "default", maxInventorySize)
+
+	actual := ds.cachedFilePath(s.plugin, "hello!!everybody")
+	expected := filepath.Join("delta", ".delta_repo", "metadata", "hello!!everybody", "plugin.json")
+	assertSuffix(t, expected, actual)
+}
+
+func TestSourceFilePath(t *testing.T) {
+	s := SetUpTest(t)
+	defer s.TearDownTest()
+	ds := NewStore(s.repoDir, "default", maxInventorySize)
+
+	actual := ds.SourceFilePath(s.plugin, "xxxx")
+	expected := filepath.Join("delta", "metadata", "xxxx", "plugin.json")
+	assertSuffix(t, expected, actual)
+}
+
+func TestArchiveFilePath_localEntity(t *testing.T) {
+	s := SetUpTest(t)
+	defer s.TearDownTest()
 	ds := NewStore(s.repoDir, "my-hostname", maxInventorySize)
-	c.Assert(ds.archiveFilePath(s.plugin, ""), HasSuffix, filepath.Join("delta", ".delta_repo", "metadata", localEntityFolder, "plugin.sent"))
+
+	actual := ds.archiveFilePath(s.plugin, "")
+	expected := filepath.Join("delta", ".delta_repo", "metadata", localEntityFolder, "plugin.sent")
+	assertSuffix(t, expected, actual)
 }
 
-func (s *DeltaUtilsCoreSuite) TestDeltaFilePath_localEntity(c *C) {
+func TestDeltaFilePath_localEntity(t *testing.T) {
+	s := SetUpTest(t)
+	defer s.TearDownTest()
 	ds := NewStore(s.repoDir, "my-hostname", maxInventorySize)
 
-	c.Assert(ds.DeltaFilePath(s.plugin, ""), HasSuffix, filepath.Join("delta", ".delta_repo", "metadata", localEntityFolder, "plugin.pending"))
+	actual := ds.DeltaFilePath(s.plugin, "")
+	expected := filepath.Join("delta", ".delta_repo", "metadata", localEntityFolder, "plugin.pending")
+	assertSuffix(t, expected, actual)
 }
 
-func (s *DeltaUtilsCoreSuite) TestCachedFilePath_localEntity(c *C) {
+func TestCachedFilePath_localEntity(t *testing.T) {
+	s := SetUpTest(t)
+	defer s.TearDownTest()
 	ds := NewStore(s.repoDir, "my-hostname", maxInventorySize)
 
-	c.Assert(ds.cachedFilePath(s.plugin, ""), HasSuffix, filepath.Join("delta", ".delta_repo", "metadata", localEntityFolder, "plugin.json"))
+	actual := ds.cachedFilePath(s.plugin, "")
+	expected := filepath.Join("delta", ".delta_repo", "metadata", localEntityFolder, "plugin.json")
+	assertSuffix(t, expected, actual)
 }
 
-func (s *DeltaUtilsCoreSuite) TestSourceFilePath_localEntity(c *C) {
+func TestSourceFilePath_localEntity(t *testing.T) {
+	s := SetUpTest(t)
+	defer s.TearDownTest()
 	ds := NewStore(s.repoDir, "my-hostname", maxInventorySize)
 
-	c.Assert(ds.SourceFilePath(s.plugin, ""), HasSuffix, filepath.Join("delta", "metadata", localEntityFolder, "plugin.json"))
+	actual := ds.SourceFilePath(s.plugin, "")
+	expected := filepath.Join("delta", "metadata", localEntityFolder, "plugin.json")
+	assertSuffix(t, expected, actual)
 }
 
-func (s *DeltaUtilsCoreSuite) TestBaseDirectories(c *C) {
+func TestBaseDirectories(t *testing.T) {
+	s := SetUpTest(t)
+	defer s.TearDownTest()
 	ds := NewStore(s.repoDir, "default", maxInventorySize)
 
-	c.Assert(ds.DataDir, Equals, s.repoDir)
-	c.Assert(ds.CacheDir, Equals, filepath.Join(s.repoDir, CACHE_DIR))
+	assert.Equal(t, s.repoDir, ds.DataDir)
+	assert.Equal(t, filepath.Join(s.repoDir, CACHE_DIR), ds.CacheDir)
 }
 
-func (s *DeltaUtilsCoreSuite) TestResetAllSentDeltas(c *C) {
+func TestResetAllSentDeltas(t *testing.T) {
+	s := SetUpTest(t)
+	defer s.TearDownTest()
 	const eKey = "entityKey"
 	ds := NewStore(s.repoDir, "default", maxInventorySize)
 	srcFile := ds.SourceFilePath(s.plugin, eKey)
 	err := os.MkdirAll(filepath.Dir(srcFile), 0755)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 	diff := []byte(`{"hostname":{"alias":"eee-opsmatic","id":"hostname"}}`)
 	err = ioutil.WriteFile(srcFile, diff, 0644)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 	_, err = os.Stat(ds.cachedFilePath(s.plugin, eKey))
-	c.Assert(err, Not(IsNil))
+	require.Error(t, err)
 	updated, err := ds.updatePluginInventoryCache(s.plugin, eKey)
-	c.Assert(updated, Equals, true)
-	c.Assert(err, IsNil)
-	c.Assert(ds.plugins["metadata/plugin"].lastSentID(eKey), Equals, int64(0))
-	c.Assert(ds.plugins["metadata/plugin"].deltaID(eKey), Equals, int64(1))
+	require.NoError(t, err)
+	assert.True(t, updated)
+	assert.Equal(t, int64(0), ds.plugins["metadata/plugin"].lastSentID(eKey))
+	assert.Equal(t, int64(1), ds.plugins["metadata/plugin"].deltaID(eKey))
 	_, err = os.Stat(ds.cachedFilePath(s.plugin, eKey))
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 
 	ds.ResetAllDeltas(eKey)
 
 	_, err = os.Stat(ds.cachedFilePath(s.plugin, eKey))
-	c.Assert(err, NotNil)
+	require.Error(t, err)
 }
 
-func (s *DeltaUtilsCoreSuite) TestUpdateLastDeltaSentNoHint(c *C) {
+func TestUpdateLastDeltaSentNoHint(t *testing.T) {
+	s := SetUpTest(t)
+	defer s.TearDownTest()
 	ds := NewStore(s.repoDir, "default", maxInventorySize)
 	s.plugin.setDeltaID("entityKey", 1)
 	ds.plugins["metadata/plugin"] = s.plugin
@@ -233,11 +267,13 @@ func (s *DeltaUtilsCoreSuite) TestUpdateLastDeltaSentNoHint(c *C) {
 	deltaArr := []*inventoryapi.RawDelta{delta}
 	ds.UpdateState("entityKey", deltaArr, &dsm)
 
-	c.Assert(ds.plugins["metadata/plugin"].lastSentID("entityKey"), Equals, int64(2))
-	c.Assert(ds.plugins["metadata/plugin"].deltaID("entityKey"), Equals, int64(1))
+	assert.Equal(t, int64(2), ds.plugins["metadata/plugin"].lastSentID("entityKey"))
+	assert.Equal(t, int64(1), ds.plugins["metadata/plugin"].deltaID("entityKey"))
 }
 
-func (s *DeltaUtilsCoreSuite) TestUpdateLastDeltaSentNewDelta(c *C) {
+func TestUpdateLastDeltaSentNewDelta(t *testing.T) {
+	s := SetUpTest(t)
+	defer s.TearDownTest()
 	ds := NewStore(s.repoDir, "default", maxInventorySize)
 	s.plugin.setDeltaID("entityKey", 1)
 	ds.plugins["metadata/plugin"] = s.plugin
@@ -258,11 +294,13 @@ func (s *DeltaUtilsCoreSuite) TestUpdateLastDeltaSentNewDelta(c *C) {
 	deltaArr := []*inventoryapi.RawDelta{delta}
 	ds.UpdateState("entityKey", deltaArr, &dsm)
 
-	c.Assert(ds.plugins["metadata/plugin"].lastSentID("entityKey"), Equals, int64(1))
-	c.Assert(ds.plugins["metadata/plugin"].deltaID("entityKey"), Equals, int64(1))
+	assert.Equal(t, int64(1), ds.plugins["metadata/plugin"].lastSentID("entityKey"))
+	assert.Equal(t, int64(1), ds.plugins["metadata/plugin"].deltaID("entityKey"))
 }
 
-func (s *DeltaUtilsCoreSuite) TestUpdateLastDeltaSentHintResend(c *C) {
+func TestUpdateLastDeltaSentHintResend(t *testing.T) {
+	s := SetUpTest(t)
+	defer s.TearDownTest()
 	ds := NewStore(s.repoDir, "default", maxInventorySize)
 	s.plugin.setDeltaID("entityKey", 1)
 	ds.plugins["metadata/plugin"] = s.plugin
@@ -283,11 +321,13 @@ func (s *DeltaUtilsCoreSuite) TestUpdateLastDeltaSentHintResend(c *C) {
 	deltaArr := []*inventoryapi.RawDelta{delta}
 	ds.UpdateState("entityKey", deltaArr, &dsm)
 
-	c.Assert(ds.plugins["metadata/plugin"].lastSentID("entityKey"), Equals, int64(0))
-	c.Assert(ds.plugins["metadata/plugin"].deltaID("entityKey"), Equals, int64(1))
+	assert.Equal(t, int64(0), ds.plugins["metadata/plugin"].lastSentID("entityKey"))
+	assert.Equal(t, int64(1), ds.plugins["metadata/plugin"].deltaID("entityKey"))
 }
 
-func (s *DeltaUtilsCoreSuite) TestUpdateLastDeltaSentHintRequestOlder(c *C) {
+func TestUpdateLastDeltaSentHintRequestOlder(t *testing.T) {
+	s := SetUpTest(t)
+	defer s.TearDownTest()
 	ds := NewStore(s.repoDir, "default", maxInventorySize)
 	s.plugin.setDeltaID("entityKey", 1)
 	ds.plugins["metadata/plugin"] = s.plugin
@@ -309,11 +349,13 @@ func (s *DeltaUtilsCoreSuite) TestUpdateLastDeltaSentHintRequestOlder(c *C) {
 	deltaArr := []*inventoryapi.RawDelta{delta}
 	ds.UpdateState("entityKey", deltaArr, &dsm)
 
-	c.Assert(ds.plugins["metadata/plugin"].lastSentID("entityKey"), Equals, int64(2))
-	c.Assert(ds.plugins["metadata/plugin"].deltaID("entityKey"), Equals, int64(1))
+	assert.Equal(t, int64(2), ds.plugins["metadata/plugin"].lastSentID("entityKey"))
+	assert.Equal(t, int64(1), ds.plugins["metadata/plugin"].deltaID("entityKey"))
 }
 
-func (s *DeltaUtilsCoreSuite) TestUpdateLastDeltaSentHintIsSameAsDelta(c *C) {
+func TestUpdateLastDeltaSentHintIsSameAsDelta(t *testing.T) {
+	s := SetUpTest(t)
+	defer s.TearDownTest()
 	ds := NewStore(s.repoDir, "default", maxInventorySize)
 	s.plugin.setDeltaID("entityKey", 1)
 	ds.plugins["metadata/plugin"] = s.plugin
@@ -335,160 +377,167 @@ func (s *DeltaUtilsCoreSuite) TestUpdateLastDeltaSentHintIsSameAsDelta(c *C) {
 	deltaArr := []*inventoryapi.RawDelta{delta}
 	ds.UpdateState("entityKey", deltaArr, &dsm)
 
-	c.Assert(ds.plugins["metadata/plugin"].lastSentID("entityKey"), Equals, int64(1))
-	c.Assert(ds.plugins["metadata/plugin"].deltaID("entityKey"), Equals, int64(1))
+	assert.Equal(t, int64(1), ds.plugins["metadata/plugin"].lastSentID("entityKey"))
+	assert.Equal(t, int64(1), ds.plugins["metadata/plugin"].deltaID("entityKey"))
 }
 
-func (s *DeltaUtilsCoreSuite) TestUpdatePluginInventoryCacheFirstRunGP(c *C) {
+func TestUpdatePluginInventoryCacheFirstRunGP(t *testing.T) {
+	s := SetUpTest(t)
+	defer s.TearDownTest()
 	const eKey = "entity:ID"
 
 	ds := NewStore(s.repoDir, "default", maxInventorySize)
 	srcFile := ds.SourceFilePath(s.plugin, eKey)
 	err := os.MkdirAll(filepath.Dir(srcFile), 0755)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 	diff := []byte(`{"hostname":{"alias":"eee-opsmatic","id":"hostname"}}`)
 	err = ioutil.WriteFile(srcFile, diff, 0644)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 
 	_, err = os.Stat(ds.cachedFilePath(s.plugin, eKey))
-	c.Assert(err, Not(IsNil))
+	assert.Error(t, err)
 
 	updated, err := ds.updatePluginInventoryCache(s.plugin, eKey)
-	c.Assert(updated, Equals, true)
+	require.NoError(t, err)
+	assert.True(t, updated)
 
-	c.Assert(err, IsNil)
-	c.Assert(ds.plugins["metadata/plugin"].lastSentID(eKey), Equals, int64(0))
-	c.Assert(ds.plugins["metadata/plugin"].deltaID(eKey), Equals, int64(1))
+	assert.Equal(t, int64(0), ds.plugins["metadata/plugin"].lastSentID(eKey))
+	assert.Equal(t, int64(1), ds.plugins["metadata/plugin"].deltaID(eKey))
 	_, err = os.Stat(ds.cachedFilePath(s.plugin, eKey))
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 }
 
-func (s *DeltaUtilsCoreSuite) TestUpdatePluginInventoryCacheThreeChanges(c *C) {
+func TestUpdatePluginInventoryCacheThreeChanges(t *testing.T) {
+	s := SetUpTest(t)
+	defer s.TearDownTest()
 	const eKey = "entity:ID"
 
 	ds := NewStore(s.repoDir, "default", maxInventorySize)
 	srcFile := ds.SourceFilePath(s.plugin, eKey)
 	err := os.MkdirAll(filepath.Dir(srcFile), 0755)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 	diff1 := []byte(`{"hostname":{"alias":"aaa-opsmatic","id":"hostname"}}`)
 	err = ioutil.WriteFile(srcFile, diff1, 0644)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 
 	updated, err := ds.updatePluginInventoryCache(s.plugin, eKey)
-	c.Assert(updated, Equals, true)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
+	assert.True(t, updated)
 
 	diff2 := []byte(`{"hostname":{"alias":"bbb-opsmatic","id":"hostname"}}`)
 	err = ioutil.WriteFile(srcFile, diff2, 0644)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 
 	updated, err = ds.updatePluginInventoryCache(s.plugin, eKey)
-	c.Assert(updated, Equals, true)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
+	assert.True(t, updated)
 
 	diff3 := []byte(`{"hostname":{"alias":"ccc-opsmatic","id":"hostname"}}`)
 	err = ioutil.WriteFile(srcFile, diff3, 0644)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 
 	updated, err = ds.updatePluginInventoryCache(s.plugin, eKey)
-	c.Assert(updated, Equals, true)
+	require.NoError(t, err)
+	assert.True(t, updated)
 
-	c.Assert(err, IsNil)
-	c.Assert(ds.plugins["metadata/plugin"].lastSentID(eKey), Equals, int64(0))
-	c.Assert(ds.plugins["metadata/plugin"].deltaID(eKey), Equals, int64(3))
+	assert.Equal(t, int64(0), ds.plugins["metadata/plugin"].lastSentID(eKey))
+	assert.Equal(t, int64(3), ds.plugins["metadata/plugin"].deltaID(eKey))
 }
 
-func (s *DeltaUtilsCoreSuite) TestSaveState(c *C) {
+func TestSaveState(t *testing.T) {
+	s := SetUpTest(t)
+	defer s.TearDownTest()
 	const eKey = "entity:ID"
 
 	ds := NewStore(s.repoDir, "default", maxInventorySize)
 	srcFile := ds.SourceFilePath(s.plugin, eKey)
 	err := os.MkdirAll(filepath.Dir(srcFile), 0755)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 	diff1 := []byte(`{"hostname":{"alias":"aaa-opsmatic","id":"hostname"}}`)
 	err = ioutil.WriteFile(srcFile, diff1, 0644)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 
 	updated, err := ds.updatePluginInventoryCache(s.plugin, eKey)
-	c.Assert(updated, Equals, true)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
+	assert.True(t, updated)
 
 	diff2 := []byte(`{"hostname":{"alias":"bbb-opsmatic","id":"hostname"}}`)
 	err = ioutil.WriteFile(srcFile, diff2, 0644)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 
 	updated, err = ds.updatePluginInventoryCache(s.plugin, eKey)
-	c.Assert(updated, Equals, true)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
+	assert.True(t, updated)
 
 	diff3 := []byte(`{"hostname":{"alias":"ccc-opsmatic","id":"hostname"}}`)
 	err = ioutil.WriteFile(srcFile, diff3, 0644)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 
 	updated, err = ds.updatePluginInventoryCache(s.plugin, eKey)
-	c.Assert(updated, Equals, true)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
+	assert.True(t, updated)
 
 	err = ds.SaveState()
+	require.NoError(t, err)
 
-	c.Assert(err, IsNil)
-	c.Assert(ds.plugins["metadata/plugin"].lastSentID(eKey), Equals, int64(0))
-	c.Assert(ds.plugins["metadata/plugin"].deltaID(eKey), Equals, int64(3))
+	assert.Equal(t, int64(0), ds.plugins["metadata/plugin"].lastSentID(eKey))
+	assert.Equal(t, int64(3), ds.plugins["metadata/plugin"].deltaID(eKey))
 
 	// Read it back in, and the numbers should be the same!
 	cachedDeltaPath := filepath.Join(ds.CacheDir, srcFile)
 	err = ds.readPluginIDMap(cachedDeltaPath)
-	c.Assert(err, IsNil)
-	c.Assert(ds.plugins["metadata/plugin"].lastSentID(eKey), Equals, int64(0))
-	c.Assert(ds.plugins["metadata/plugin"].deltaID(eKey), Equals, int64(3))
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), ds.plugins["metadata/plugin"].lastSentID(eKey))
+	assert.Equal(t, int64(3), ds.plugins["metadata/plugin"].deltaID(eKey))
 }
 
 // Regression test for empty cache id file handling
-func (s *DeltaUtilsCoreSuite) TestReadPluginIDMapNoContent(c *C) {
+func TestReadPluginIDMapNoContent(t *testing.T) {
+	s := SetUpTest(t)
+	defer s.TearDownTest()
 	const eKey = "entity:ID"
 
 	ds := NewStore(s.repoDir, "default", maxInventorySize)
 	srcFile := ds.SourceFilePath(s.plugin, eKey)
 	err := os.MkdirAll(filepath.Dir(srcFile), 0755)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 	diff1 := []byte(`{"hostname":{"alias":"aaa-opsmatic","id":"hostname"}}`)
 	err = ioutil.WriteFile(srcFile, diff1, 0644)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 	updated, err := ds.updatePluginInventoryCache(s.plugin, eKey)
-	c.Assert(updated, Equals, true)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
+	assert.True(t, updated)
 	err = ds.SaveState()
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 	cachedDeltaPath := filepath.Join(ds.CacheDir, srcFile)
 	err = ds.readPluginIDMap(cachedDeltaPath)
-	c.Assert(err, IsNil)
-	c.Assert(ds.plugins["metadata/plugin"].lastSentID(eKey), Equals, int64(0))
-	c.Assert(ds.plugins["metadata/plugin"].deltaID(eKey), Equals, int64(1))
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), ds.plugins["metadata/plugin"].lastSentID(eKey))
+	assert.Equal(t, int64(1), ds.plugins["metadata/plugin"].deltaID(eKey))
 
 	// Remove cache content and try again, should not get an error
 
 	pluginMapPath := filepath.Join(ds.CacheDir, CACHE_ID_FILE)
 	fi, err := os.Stat(pluginMapPath)
-	c.Assert(err, IsNil)
-	if fi.Size() > 0 {
-		var file *os.File
-		file, err = os.OpenFile(pluginMapPath, os.O_TRUNC|os.O_WRONLY, 0644)
-		c.Assert(err, IsNil)
-		_ = file.Close()
-		fi, err = os.Stat(pluginMapPath)
-		c.Assert(fi.Size(), Equals, int64(0))
-		c.Assert(err, IsNil)
-	} else {
-		c.Errorf("CACHE_ID_FILE not populated?")
-	}
+	require.NoError(t, err)
+	require.Greater(t, fi.Size(), int64(0), "CACHE_ID_FILE not populated?")
+	var file *os.File
+	file, err = os.OpenFile(pluginMapPath, os.O_TRUNC|os.O_WRONLY, 0644)
+	require.NoError(t, err)
+	_ = file.Close()
+	fi, err = os.Stat(pluginMapPath)
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), fi.Size())
 
 	err = ds.readPluginIDMap(cachedDeltaPath)
-	c.Assert(err, IsNil)
-	c.Assert(ds.plugins["metadata/plugin"].lastSentID(eKey), Equals, int64(0))
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), ds.plugins["metadata/plugin"].lastSentID(eKey))
 
 }
 
-func (s *DeltaUtilsCoreSuite) TestReadDeltas(c *C) {
+func TestReadDeltas(t *testing.T) {
+	s := SetUpTest(t)
+	defer s.TearDownTest()
 	// Given a delta file store
 	ds := NewStore(s.repoDir, "default", maxInventorySize)
 
@@ -496,28 +545,31 @@ func (s *DeltaUtilsCoreSuite) TestReadDeltas(c *C) {
 	const eKey = "entity:ID"
 	srcFile := ds.SourceFilePath(s.plugin, eKey)
 	err := os.MkdirAll(filepath.Dir(srcFile), 0755)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 	deltaBytes := []byte(`{"hostname":{"alias":"foo","id":"hostname"}}`)
 	err = ioutil.WriteFile(srcFile, deltaBytes, 0644)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 
 	// And its cache is updated
 	updated, err := ds.updatePluginInventoryCache(s.plugin, eKey)
-	c.Assert(updated, Equals, true)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
+	assert.True(t, updated)
 
 	// Then reading deltas for the entity returns written delta
 	deltas, err := ds.ReadDeltas(eKey)
-	c.Assert(err, IsNil)
-	c.Assert(deltas, HasLen, 1)
-	c.Assert(deltas[0], HasLen, 1)
-	c.Assert(deltas[0][0].ID, Equals, int64(1))
-	c.Assert(deltas[0][0].Source, Equals, s.plugin.Source)
+	require.NoError(t, err)
+	assert.Len(t, deltas, 1)
+	assert.Len(t, deltas[0], 1)
+	assert.Equal(t, int64(1), deltas[0][0].ID)
+	assert.Equal(t, s.plugin.Source, deltas[0][0].Source)
 	var expectedDelta map[string]interface{}
-	c.Assert(json.Unmarshal(deltaBytes, &expectedDelta), IsNil)
-	c.Assert(deltas[0][0].Diff, DeepEquals, expectedDelta)
+	require.NoError(t, json.Unmarshal(deltaBytes, &expectedDelta))
+	assert.Equal(t, expectedDelta, deltas[0][0].Diff)
 }
-func (s *DeltaUtilsCoreSuite) TestReadDeltas_SamePluginWithMultipleEntitiesIncreaseIDIndependently(c *C) {
+
+func TestReadDeltas_SamePluginWithMultipleEntitiesIncreaseIDIndependently(t *testing.T) {
+	s := SetUpTest(t)
+	defer s.TearDownTest()
 	// Given a delta file store
 	ds := NewStore(s.repoDir, "default", maxInventorySize)
 
@@ -525,46 +577,48 @@ func (s *DeltaUtilsCoreSuite) TestReadDeltas_SamePluginWithMultipleEntitiesIncre
 	const e1 = "entity:ID1"
 	srcFile := ds.SourceFilePath(s.plugin, e1)
 	err := os.MkdirAll(filepath.Dir(srcFile), 0755)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 	deltaBytes := []byte(`{"hostname":{"alias":"foo","id":"hostname"}}`)
 	err = ioutil.WriteFile(srcFile, deltaBytes, 0644)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 
 	// And its cache is updated
 	updated, err := ds.updatePluginInventoryCache(s.plugin, e1)
-	c.Assert(updated, Equals, true)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
+	assert.True(t, updated)
 
 	// And read deltas for the entity 1 returns ID as 1
 	deltas, err := ds.ReadDeltas(e1)
-	c.Assert(err, IsNil)
-	c.Assert(deltas, HasLen, 1)
-	c.Assert(deltas[0], HasLen, 1)
-	c.Assert(deltas[0][0].ID, Equals, int64(1))
+	require.NoError(t, err)
+	assert.Len(t, deltas, 1)
+	assert.Len(t, deltas[0], 1)
+	assert.Equal(t, int64(1), deltas[0][0].ID)
 
 	// When a delta source file is created for an entity
 	const e2 = "entity:ID2"
 	srcFile = ds.SourceFilePath(s.plugin, e2)
 	err = os.MkdirAll(filepath.Dir(srcFile), 0755)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 	deltaBytes = []byte(`{"hostname":{"alias":"bar","id":"hostname"}}`)
 	err = ioutil.WriteFile(srcFile, deltaBytes, 0644)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 
 	// And its cache is updated
 	updated, err = ds.updatePluginInventoryCache(s.plugin, e2)
-	c.Assert(updated, Equals, true)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
+	assert.True(t, updated)
 
 	// Then read deltas for the entity 2 returns ID as 1
 	deltas, err = ds.ReadDeltas(e2)
-	c.Assert(err, IsNil)
-	c.Assert(deltas, HasLen, 1)
-	c.Assert(deltas[0], HasLen, 1)
-	c.Assert(deltas[0][0].ID, Equals, int64(1))
+	require.NoError(t, err)
+	assert.Len(t, deltas, 1)
+	assert.Len(t, deltas[0], 1)
+	assert.Equal(t, int64(1), deltas[0][0].ID)
 }
 
-func (s *DeltaUtilsCoreSuite) TestReadDeltas_Divided(c *C) {
+func TestReadDeltas_Divided(t *testing.T) {
+	s := SetUpTest(t)
+	defer s.TearDownTest()
 	const eKey = "entity:ID"
 
 	// Given some deltas
@@ -591,32 +645,34 @@ func (s *DeltaUtilsCoreSuite) TestReadDeltas_Divided(c *C) {
 		}
 		srcFile := ds.SourceFilePath(&pi, eKey)
 		err := os.MkdirAll(filepath.Dir(srcFile), 0755)
-		c.Assert(err, IsNil)
+		require.NoError(t, err)
 
 		err = ioutil.WriteFile(srcFile, delta.diff, 0644)
-		c.Assert(err, IsNil)
+		require.NoError(t, err)
 		updated, err = ds.updatePluginInventoryCache(&pi, eKey)
-		c.Assert(updated, Equals, true)
-		c.Assert(err, IsNil)
+		require.NoError(t, err)
+		assert.True(t, updated)
 	}
 
 	// When reading the deltas
 	all, err := ds.ReadDeltas(eKey)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 
 	// They have been read in two groups
-	c.Assert(all, HasLen, 2)
-	c.Assert(all[0], HasLen, 2)
-	c.Assert(all[0][0].Source, Equals, "hostname/alias")
-	c.Assert(all[0][0].Diff["hostname"], NotNil)
-	c.Assert(all[0][1].Source, Equals, "something/else")
-	c.Assert(all[0][1].Diff["something"], NotNil)
-	c.Assert(all[1], HasLen, 1)
-	c.Assert(all[1][0].Source, Equals, "this/too")
-	c.Assert(all[1][0].Diff["this"], NotNil)
+	assert.Len(t, all, 2)
+	assert.Len(t, all[0], 2)
+	assert.Equal(t, "hostname/alias", all[0][0].Source)
+	assert.NotNil(t, all[0][0].Diff["hostname"])
+	assert.Equal(t, "something/else", all[0][1].Source)
+	assert.NotNil(t, all[0][1].Diff["something"])
+	assert.Len(t, all[1], 1)
+	assert.Equal(t, "this/too", all[1][0].Source)
+	assert.NotNil(t, all[1][0].Diff["this"])
 }
 
-func (s *DeltaUtilsCoreSuite) TestReadDeltas_Undivided(c *C) {
+func TestReadDeltas_Undivided(t *testing.T) {
+	s := SetUpTest(t)
+	defer s.TearDownTest()
 	const eKey = "entity:ID"
 
 	// Given some deltas
@@ -643,161 +699,170 @@ func (s *DeltaUtilsCoreSuite) TestReadDeltas_Undivided(c *C) {
 		}
 		srcFile := ds.SourceFilePath(&pi, eKey)
 		err := os.MkdirAll(filepath.Dir(srcFile), 0755)
-		c.Assert(err, IsNil)
+		require.NoError(t, err)
 
 		err = ioutil.WriteFile(srcFile, delta.diff, 0644)
-		c.Assert(err, IsNil)
+		require.NoError(t, err)
 		updated, err = ds.updatePluginInventoryCache(&pi, eKey)
-		c.Assert(updated, Equals, true)
-		c.Assert(err, IsNil)
+		require.NoError(t, err)
+		assert.True(t, updated)
 	}
 
 	// When reading the deltas
 	all, err := ds.ReadDeltas(eKey)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 
 	// They have been read in two groups
-	c.Assert(all, HasLen, 1)
-	c.Assert(all[0], HasLen, 3)
-	c.Assert(all[0][0].Source, Equals, "hostname/alias")
-	c.Assert(all[0][0].Diff["hostname"], NotNil)
-	c.Assert(all[0][1].Source, Equals, "something/else")
-	c.Assert(all[0][1].Diff["something"], NotNil)
-	c.Assert(all[0][2].Source, Equals, "this/too")
-	c.Assert(all[0][2].Diff["this"], NotNil)
+	// They have been read in two groups
+	assert.Len(t, all, 1)
+	assert.Len(t, all[0], 3)
+	assert.Equal(t, "hostname/alias", all[0][0].Source)
+	assert.NotNil(t, all[0][0].Diff["hostname"])
+	assert.Equal(t, "something/else", all[0][1].Source)
+	assert.NotNil(t, all[0][1].Diff["something"])
+	assert.Equal(t, "this/too", all[0][2].Source)
+	assert.NotNil(t, all[0][2].Diff["this"])
 }
 
 // COMPACTION TESTING
-func (s *DeltaUtilsCoreSuite) SetupSavedState(c *C) (ds *Store) {
+func (d *DeltaUtilsCoreSuite) SetupSavedState(t *testing.T) (ds *Store) {
 	const eKey = "entity:ID"
 
-	ds = NewStore(s.repoDir, "default", maxInventorySize)
-	srcFile := ds.SourceFilePath(s.plugin, eKey)
+	ds = NewStore(d.repoDir, "default", maxInventorySize)
+	srcFile := ds.SourceFilePath(d.plugin, eKey)
 	err := os.MkdirAll(filepath.Dir(srcFile), 0755)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 	diff1 := []byte(`{"hostname":{"alias":"aaa-opsmatic","id":"hostname"}}`)
 	err = ioutil.WriteFile(srcFile, diff1, 0644)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 
-	updated, err := ds.updatePluginInventoryCache(s.plugin, eKey)
-	c.Assert(updated, Equals, true)
-	c.Assert(err, IsNil)
+	updated, err := ds.updatePluginInventoryCache(d.plugin, eKey)
+	require.NoError(t, err)
+	assert.True(t, updated)
 
 	diff2 := []byte(`{"hostname":{"alias":"bbb-opsmatic","id":"hostname"}}`)
 	err = ioutil.WriteFile(srcFile, diff2, 0644)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 
-	updated, err = ds.updatePluginInventoryCache(s.plugin, eKey)
-	c.Assert(updated, Equals, true)
-	c.Assert(err, IsNil)
+	updated, err = ds.updatePluginInventoryCache(d.plugin, eKey)
+	require.NoError(t, err)
+	assert.True(t, updated)
 
 	diff3 := []byte(`{"hostname":{"alias":"ccc-opsmatic","id":"hostname"}}`)
 	err = ioutil.WriteFile(srcFile, diff3, 0644)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 
-	updated, err = ds.updatePluginInventoryCache(s.plugin, eKey)
-	c.Assert(updated, Equals, true)
-	c.Assert(err, IsNil)
+	updated, err = ds.updatePluginInventoryCache(d.plugin, eKey)
+	require.NoError(t, err)
+	assert.True(t, updated)
 
 	err = ds.SaveState()
 
-	c.Assert(err, IsNil)
-	c.Assert(ds.plugins["metadata/plugin"].lastSentID(eKey), Equals, int64(0))
-	c.Assert(ds.plugins["metadata/plugin"].deltaID(eKey), Equals, int64(3))
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), ds.plugins["metadata/plugin"].lastSentID(eKey))
+	assert.Equal(t, int64(3), ds.plugins["metadata/plugin"].deltaID(eKey))
 
 	return ds
 }
 
-func (s *DeltaUtilsCoreSuite) TestCompactStoreNoChange(c *C) {
-	ds := s.SetupSavedState(c)
+func TestCompactStoreNoChange(t *testing.T) {
+	s := SetUpTest(t)
+	defer s.TearDownTest()
+	ds := s.SetupSavedState(t)
 	size, err := ds.StorageSize(ds.CacheDir)
-	c.Check(err, IsNil)
+	require.NoError(t, err)
 
 	err = ds.CompactStorage("", size+1024)
 
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 	newSize, err := ds.StorageSize(ds.CacheDir)
-	c.Check(err, IsNil)
-	c.Assert(size, Equals, newSize)
+	require.NoError(t, err)
+	assert.Equal(t, size, newSize)
 }
 
-func (s *DeltaUtilsCoreSuite) TestCompactStoreTrimSentDelta(c *C) {
+func TestCompactStoreTrimSentDelta(t *testing.T) {
 	const eKey = "entity:ID"
+	s := SetUpTest(t)
+	defer s.TearDownTest()
 
-	ds := s.SetupSavedState(c)
+	ds := s.SetupSavedState(t)
 	ds.plugins["metadata/plugin"].setLastSentID(eKey, 2)
 	err := ds.archivePlugin(ds.plugins["metadata/plugin"], eKey)
-	c.Check(err, IsNil)
+	require.NoError(t, err)
 	size, err := ds.StorageSize(ds.CacheDir)
-	c.Check(err, IsNil)
+	require.NoError(t, err)
 
 	err = ds.CompactStorage(eKey, size-128)
 
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 	newSize, err := ds.StorageSize(ds.CacheDir)
-	c.Check(err, IsNil)
-	c.Assert(newSize < size, Equals, true)
+	require.NoError(t, err)
+	assert.Greater(t, size, newSize)
 }
 
-func (s *DeltaUtilsCoreSuite) TestCompactStoreRemoveUnusedPlugin(c *C) {
+func TestCompactStoreRemoveUnusedPlugin(t *testing.T) {
 	const eKey = "entity:ID"
+	s := SetUpTest(t)
+	defer s.TearDownTest()
 
-	ds := s.SetupSavedState(c)
+	ds := s.SetupSavedState(t)
 	plugin2 := newPluginInfo("fancy", "plugin.json")
 	fancyFile := ds.SourceFilePath(plugin2, eKey)
 	err := os.MkdirAll(filepath.Dir(fancyFile), 0755)
-	c.Check(err, IsNil)
+	require.NoError(t, err)
 	diffFancy := []byte(`{"fancy":{"alias":"thing1","id":"one"}}`)
 	err = ioutil.WriteFile(fancyFile, diffFancy, 0644)
-	c.Check(err, IsNil)
+	require.NoError(t, err)
 	updated, err := ds.updatePluginInventoryCache(plugin2, eKey)
-	c.Assert(updated, Equals, true)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
+	assert.True(t, updated)
 	_, err = os.Stat(ds.SourceFilePath(plugin2, eKey))
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 	_, err = os.Stat(ds.cachedFilePath(plugin2, eKey))
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 	_, err = os.Stat(ds.DeltaFilePath(plugin2, eKey))
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 	err = os.Remove(ds.SourceFilePath(plugin2, eKey))
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 	size, err := ds.StorageSize(ds.CacheDir)
-	c.Check(err, IsNil)
+	require.NoError(t, err)
 
 	err = ds.CompactStorage(eKey, size-128)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 
 	newSize, err := ds.StorageSize(ds.CacheDir)
-	c.Check(err, IsNil)
-	c.Assert(newSize < size, Equals, true)
+	require.NoError(t, err)
+	assert.Greater(t, size, newSize)
 	_, err = os.Stat(ds.SourceFilePath(plugin2, eKey))
-	c.Assert(err, NotNil)
+	assert.Error(t, err)
 	_, err = os.Stat(ds.cachedFilePath(plugin2, eKey))
-	c.Assert(err, NotNil)
+	assert.Error(t, err)
 	_, err = os.Stat(ds.DeltaFilePath(plugin2, eKey))
-	c.Assert(err, NotNil)
+	assert.Error(t, err)
 }
 
-func (s *DeltaUtilsCoreSuite) TestDeltaFileCorrupt(c *C) {
+func TestDeltaFileCorrupt(t *testing.T) {
+	s := SetUpTest(t)
+	defer s.TearDownTest()
 	const eKey = "entity:ID"
 	ds := NewStore(s.repoDir, "default", maxInventorySize)
 	srcFile := ds.SourceFilePath(s.plugin, eKey)
 	err := os.MkdirAll(filepath.Dir(srcFile), 0755)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 	diff1 := []byte(`{"hostname":{"alias":"aaa-opsmatic","id":"hostname"}}`)
 	err = ioutil.WriteFile(srcFile, diff1, 0644)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 
 	updated, err := ds.updatePluginInventoryCache(s.plugin, eKey)
-	c.Assert(err, IsNil)
-	c.Assert(updated, Equals, true)
+	require.NoError(t, err)
+	assert.True(t, updated)
 
 	corruptDeltaFile := ds.DeltaFilePath(s.plugin, eKey)
 	err = os.MkdirAll(filepath.Dir(corruptDeltaFile), 0755)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 	corruptDelta := []byte(`{"source":"test/thing","id":1,`)
 	err = ioutil.WriteFile(corruptDeltaFile, corruptDelta, 0644)
-	c.Check(err, IsNil)
+	require.NoError(t, err)
 
 	secondPlugin := newPluginInfo("metadata", "plugin.json")
 	// break on purpose, so read should fail
@@ -806,39 +871,40 @@ func (s *DeltaUtilsCoreSuite) TestDeltaFileCorrupt(c *C) {
 
 	srcFile2 := ds.SourceFilePath(secondPlugin, eKey)
 	err = os.MkdirAll(filepath.Dir(srcFile2), 0755)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 	diff2 := []byte(`{"hostname":{"alias":"bbb-opsmatic","id":"ipAddress"}}`)
 	err = ioutil.WriteFile(srcFile2, diff2, 0644)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 
 	updated, err = ds.updatePluginInventoryCache(secondPlugin, eKey)
-	c.Assert(updated, Equals, true)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
+	assert.True(t, updated)
 
 	normalDeltaFile := ds.DeltaFilePath(secondPlugin, eKey)
 	err = os.MkdirAll(filepath.Dir(normalDeltaFile), 0755)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 	normalDelta := []byte(`{"source":"test/thing2","id":1,"timestamp":1487182523,"diff":null,"full_diff":false}`)
 
 	err = ioutil.WriteFile(normalDeltaFile, normalDelta, 0644)
-	c.Check(err, IsNil)
+	require.NoError(t, err)
 
 	_, err = ds.ReadDeltas(eKey)
-	c.Assert(err, NotNil)
+	assert.Error(t, err)
 
 	_, err = ds.ReadDeltas(eKey)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 
 	data, err := ioutil.ReadFile(corruptDeltaFile)
-	c.Assert(err, IsNil)
-	c.Assert(string(data), Equals, "")
+	require.NoError(t, err)
+	assert.Empty(t, data)
 
 	data, err = ioutil.ReadFile(normalDeltaFile)
-	c.Assert(err, IsNil)
-	c.Assert(string(data), Equals, `{"source":"test/thing2","id":1,"timestamp":1487182523,"diff":null,"full_diff":false}`)
+	require.NoError(t, err)
+	actual := string(data)
+	assert.Equal(t, `{"source":"test/thing2","id":1,"timestamp":1487182523,"diff":null,"full_diff":false}`, actual)
 }
 
-func (s *DeltaUtilsCoreSuite) TestRemoveEntity(c *C) {
+func TestRemoveEntity(t *testing.T) {
 	const aPlugin = "aPlugin"
 	const anotherPlugin = "anotherPlugin"
 	const entityToKeep = "entityToKeep"
@@ -846,7 +912,8 @@ func (s *DeltaUtilsCoreSuite) TestRemoveEntity(c *C) {
 
 	// Given a Store object under a base data directory
 	baseDir, err := ioutil.TempDir("", "test-remove-entity")
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
+	defer os.RemoveAll(baseDir)
 
 	directories := []struct {
 		path            string
@@ -861,7 +928,7 @@ func (s *DeltaUtilsCoreSuite) TestRemoveEntity(c *C) {
 		{filepath.Join(baseDir, SAMPLING_REPO, "ignoreThis", "ignoreThis"), false},
 	}
 	for _, dir := range directories {
-		c.Assert(os.MkdirAll(dir.path, 0755), IsNil)
+		assert.NoError(t, os.MkdirAll(dir.path, 0755))
 	}
 	store := NewStore(baseDir, "default", maxInventorySize)
 
@@ -872,16 +939,14 @@ func (s *DeltaUtilsCoreSuite) TestRemoveEntity(c *C) {
 	for _, dir := range directories {
 		_, err := os.Stat(dir.path)
 		if dir.shouldBeRemoved {
-			c.Assert(os.IsNotExist(err), Equals, true)
+			assert.True(t, os.IsNotExist(err))
 		} else {
-			c.Assert(err, IsNil)
+			require.NoError(t, err)
 		}
 	}
-
-	_ = os.RemoveAll(baseDir)
 }
 
-func (s *DeltaUtilsCoreSuite) TestScanEntityFolders(c *C) {
+func TestScanEntityFolders(t *testing.T) {
 	const aPlugin = "aPlugin"
 	const anotherPlugin = "anotherPlugin"
 	const anEntity = "anEntity"
@@ -889,7 +954,8 @@ func (s *DeltaUtilsCoreSuite) TestScanEntityFolders(c *C) {
 
 	// Given a Store object under a base data directory
 	baseDir, err := ioutil.TempDir("", "test-scan-entity-folders")
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
+	defer os.RemoveAll(baseDir)
 
 	directories := []struct {
 		path            string
@@ -904,21 +970,19 @@ func (s *DeltaUtilsCoreSuite) TestScanEntityFolders(c *C) {
 		{filepath.Join(baseDir, SAMPLING_REPO, "ignoreThis", "ignoreThis"), false},
 	}
 	for _, dir := range directories {
-		c.Assert(os.MkdirAll(dir.path, 0755), IsNil)
+		assert.NoError(t, os.MkdirAll(dir.path, 0755))
 	}
 	store := NewStore(baseDir, "default", maxInventorySize)
 
 	// When fetching all the entities
 	entities, err := store.ScanEntityFolders()
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 
 	// Then only the entities in the system are retrieved, ignoring those from cache and sample dirs
-	c.Assert(entities, DeepEquals, map[string]interface{}{"anEntity": true, "anotherEntity": true})
-
-	_ = os.RemoveAll(baseDir)
+	assert.Equal(t, map[string]interface{}{"anEntity": true, "anotherEntity": true}, entities)
 }
 
-func (s *DeltaUtilsCoreSuite) TestCollectPluginFiles(c *C) {
+func TestCollectPluginFiles(t *testing.T) {
 	const aPlugin = "aPlugin"
 	const anotherPlugin = "anotherPlugin"
 	const anEntity = "anEntity"
@@ -926,7 +990,8 @@ func (s *DeltaUtilsCoreSuite) TestCollectPluginFiles(c *C) {
 
 	// Given a Store object under a base data directory
 	baseDir, err := ioutil.TempDir("", "test-scan-entity-folders")
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
+	defer os.RemoveAll(baseDir)
 
 	directories := []struct {
 		path            string
@@ -941,35 +1006,34 @@ func (s *DeltaUtilsCoreSuite) TestCollectPluginFiles(c *C) {
 		{filepath.Join(baseDir, SAMPLING_REPO, "ignoreThis", "ignoreThis", "ignore.json"), false},
 	}
 	for _, dir := range directories {
-		c.Assert(os.MkdirAll(filepath.Dir(dir.path), 0755), IsNil)
+		require.NoError(t, os.MkdirAll(filepath.Dir(dir.path), 0755))
 		file, err := os.Create(dir.path)
-		c.Assert(err, IsNil)
+		require.NoError(t, err)
 		file.Close()
 	}
 	store := NewStore(baseDir, "default", maxInventorySize)
 
 	// When collecting all the plugins of a given entity
 	plugins, err := store.collectPluginFiles(store.DataDir, anEntity, helpers.JsonFilesRegexp)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 	// They got the expected values
-	c.Assert(len(plugins), Equals, 2)
-	c.Assert(plugins[0].Plugin, Not(Equals), plugins[1].Plugin)
+	assert.Len(t, plugins, 2)
+	assert.NotEqual(t, plugins[0].Plugin, plugins[1].Plugin)
 	expectedPlugins := map[string]bool{"aPlugin/aFile": true, "anotherPlugin/anotherFile": true}
-	c.Assert(expectedPlugins[plugins[0].Source], Equals, true)
-	c.Assert(expectedPlugins[plugins[1].Source], Equals, true)
+	assert.True(t, expectedPlugins[plugins[0].Source])
+	assert.True(t, expectedPlugins[plugins[1].Source])
 
 	// When collecting other plugins for the given entity
 	plugins, err = store.collectPluginFiles(store.DataDir, anotherEntity, helpers.JsonFilesRegexp)
-	c.Assert(err, IsNil)
-	c.Assert(len(plugins) > 0, Equals, true)
+	require.NoError(t, err)
+	assert.NotEmpty(t, plugins)
 	// They got the correct ones
 	for _, plugin := range plugins {
-		c.Assert(plugin.Source, Equals, "aPlugin/aFile")
+		assert.Equal(t, "aPlugin/aFile", plugin.Source)
 	}
-	os.RemoveAll(baseDir)
 }
 
-func (s *DeltaUtilsCoreSuite) TestUpdatePluginInventoryCacheDeltaFileCorrupted(c *C) {
+func TestUpdatePluginInventoryCacheDeltaFileCorrupted(t *testing.T) {
 	testCases := []map[string][]byte{{
 		"source": []byte(`{"hostname":{"alias":"aaa-opsmatic","id":"hostname"`),
 		"cache":  []byte(`{"hostname":{"alias":"aaa-opsmatic","id":"hostname"}}`),
@@ -978,7 +1042,8 @@ func (s *DeltaUtilsCoreSuite) TestUpdatePluginInventoryCacheDeltaFileCorrupted(c
 		"cache":  []byte(`{"hostname":{"alias":"aaa-opsmatic","id":"hostname"`),
 	}}
 	dataDir, err := TempDeltaStoreDir()
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
+	defer os.RemoveAll(dataDir)
 
 	for _, testCase := range testCases {
 		// Given corrupted data and deltas
@@ -989,10 +1054,10 @@ func (s *DeltaUtilsCoreSuite) TestUpdatePluginInventoryCacheDeltaFileCorrupted(c
 
 		// And a delta storage
 		ds := NewStore(dataDir, "default", maxInventorySize)
-		c.Assert(os.MkdirAll(sourceDir, 0755), IsNil)
-		c.Assert(os.MkdirAll(cacheDir, 0755), IsNil)
-		c.Assert(ioutil.WriteFile(sourceJSON, testCase["source"], 0644), IsNil)
-		c.Assert(ioutil.WriteFile(cacheJSON, testCase["cache"], 0644), IsNil)
+		require.NoError(t, os.MkdirAll(sourceDir, 0755))
+		require.NoError(t, os.MkdirAll(cacheDir, 0755))
+		require.NoError(t, ioutil.WriteFile(sourceJSON, testCase["source"], 0644))
+		require.NoError(t, ioutil.WriteFile(cacheJSON, testCase["cache"], 0644))
 
 		// When the updatePluginInventoryCache method tries to deal with the corrupted JSONs
 		updated, err := ds.updatePluginInventoryCache(&PluginInfo{
@@ -1001,14 +1066,14 @@ func (s *DeltaUtilsCoreSuite) TestUpdatePluginInventoryCacheDeltaFileCorrupted(c
 			FileName: "corrupted.json",
 		}, "")
 
-		c.Assert(updated, Equals, true)
-		c.Assert(err, NotNil)
+		assert.True(t, updated)
+		assert.Error(t, err)
 
 		// The corrupted plugin is removed
 		_, err = os.Stat(cacheJSON)
-		c.Assert(os.IsNotExist(err), Equals, true)
+		assert.True(t, os.IsNotExist(err))
 		_, err = os.Stat(sourceJSON)
-		c.Assert(os.IsNotExist(err), Equals, true)
+		assert.True(t, os.IsNotExist(err))
 	}
 }
 
