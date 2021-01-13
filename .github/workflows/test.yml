@@ -49,8 +49,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Validate code
-        run: linux/harvest-tests
+      - name: Running Harvest tests
+        run: make linux/harvest-tests
 
   unit-test-windows:
     name: Windows unit tests
@@ -76,7 +76,8 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v2
-      - name: Proxy Test
+
+      - name: Running proxy tests
         run: make proxy-test
 
   build-container:
