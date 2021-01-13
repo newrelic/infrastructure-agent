@@ -8,7 +8,7 @@ param (
     [string]$arch="amd64",
 
     # Skip tests
-    [switch]$skipTests=$false
+    [switch]$skipTests=$false,
 
     # Skip build
     [switch]$skipBuild=$false
