@@ -6,8 +6,6 @@ on:
       - '**'
     tags-ignore:
       - '**'
-    paths-ignore:
-      - README.md
 
 env:
   SNYK_TOKEN: ${{ secrets.CAOS_SNYK_TOKEN }}
