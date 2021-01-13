@@ -28,11 +28,3 @@ ci/test-coverage: ci/deps
 			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
 			-w /go/src/github.com/newrelic/infrastructure-agent \
 			$(BUILDER_IMG_TAG) make test-coverage
-
-.PHONY: ci/test-centos-5
-ci/test-centos-5: ci/deps
-	@docker run --rm -t \
-			--name "infrastructure-agent-test-centos-5" \
-			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
-			-w /go/src/github.com/newrelic/infrastructure-agent \
-			$(BUILDER_IMG_TAG) make go-get-go-1_9 test-centos-5
