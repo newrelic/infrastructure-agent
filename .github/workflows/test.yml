@@ -10,8 +10,8 @@ on:
     paths-ignore:
       - README.md
 jobs:
-  test-linux:
-    name: Linux tests
+  unit-test-linux:
+    name: Linux unit tests
     runs-on: ubuntu-20.04
 
     steps:
@@ -43,7 +43,7 @@ jobs:
           flag-name: run-linux
           parallel: true
 
-  test-linux-harvest:
+  harvest-test-linux:
     name: Linux harvest tests
     runs-on: ubuntu-20.04
     steps:
@@ -52,8 +52,8 @@ jobs:
       - name: Validate code
         run: linux/harvest-tests
 
-  test-windows:
-    name: Windows tests
+  unit-test-windows:
+    name: Windows unit tests
     runs-on: windows-latest
 
     steps:
@@ -70,7 +70,7 @@ jobs:
       - name: Running unit tests
         run: .\build\win_build.ps1 -skipBuild
 
-  proxy-tests:
+  proxy-tests-linux:
     name: Proxy tests
     runs-on: ubuntu-20.04
     steps:
@@ -97,7 +97,7 @@ jobs:
         run: make -C build/container/ build/base
 
   finish:
-    needs: [ build ]
+    needs: [ unit-test-linux ]
     runs-on: ubuntu-latest
     steps:
       - name: Coveralls Finished
