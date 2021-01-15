@@ -481,21 +481,21 @@ func (s *ConfigSuite) TestCalculateCmdChannelURL(c *C) {
 func TestLogInfo_Nil(t *testing.T) {
 	var config *Config
 
-	_, err := config.toLogInfo()
+	_, err := config.PublicFields()
 	assert.Error(t, err)
 }
 
 func TestLogInfo_Empty(t *testing.T) {
 	var config Config
 
-	_, err := config.toLogInfo()
+	_, err := config.PublicFields()
 	assert.NoError(t, err)
 }
 
 func TestLogInfo_New(t *testing.T) {
 	var config = NewConfig()
 
-	_, err := config.toLogInfo()
+	_, err := config.PublicFields()
 	assert.NoError(t, err)
 }
 
@@ -503,7 +503,7 @@ func TestLogInfo_HidePrivate(t *testing.T) {
 	var config = NewConfig()
 	config.CollectorURL = "test"
 
-	actual, err := config.toLogInfo()
+	actual, err := config.PublicFields()
 	assert.NoError(t, err)
 
 	_, exists := actual["collector_url"]
@@ -514,7 +514,7 @@ func TestLogInfo_Public(t *testing.T) {
 	var config = NewConfig()
 	config.Proxy = "test"
 
-	actual, err := config.toLogInfo()
+	actual, err := config.PublicFields()
 	assert.NoError(t, err)
 
 	actualVal, exists := actual["proxy"]
@@ -526,7 +526,7 @@ func TestLogInfo_Obfuscate(t *testing.T) {
 	var config = NewConfig()
 	config.License = "testabcd"
 
-	actual, err := config.toLogInfo()
+	actual, err := config.PublicFields()
 	assert.NoError(t, err)
 
 	actualVal, exists := actual["license_key"]

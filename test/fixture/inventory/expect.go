@@ -33,10 +33,8 @@ var (
 				// Verifying some config we already set in the tests, as well as some
 				// fields we just know exist
 				"infrastructure": map[string]interface{}{
-					"DisplayName":           map[string]interface{}{"value": "display-name"},
-					"OverrideHostEtc":       map[string]interface{}{"value": ""},
-					"MaxProcs":              AnyValue,
-					"IgnoredInventoryPaths": AnyValue,
+					"display_name": map[string]interface{}{"value": "display-name"},
+					"max_procs":    AnyValue,
 				},
 			},
 		},
