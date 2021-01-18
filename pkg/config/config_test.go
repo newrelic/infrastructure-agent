@@ -351,21 +351,22 @@ func (s *ConfigSuite) TestCalculateCollectorURL(c *C) {
 		license   string
 		expectURL string
 		staging   bool
+		fedramp   bool
 	}{
 		// non-region license, staging false
-		{license: "0123456789012345678901234567890123456789", expectURL: "https://infra-api.newrelic.com", staging: false},
+		{license: "0123456789012345678901234567890123456789", expectURL: "https://infra-api.newrelic.com", staging: false, fedramp: false},
 		// non-region license, staging true
-		{license: "0123456789012345678901234567890123456789", expectURL: "https://staging-infra-api.newrelic.com", staging: true},
+		{license: "0123456789012345678901234567890123456789", expectURL: "https://staging-infra-api.newrelic.com", staging: true, fedramp: false},
 		// four letter region
-		{license: "eu01xx6789012345678901234567890123456789", expectURL: "https://infra-api.eu.newrelic.com", staging: false},
+		{license: "eu01xx6789012345678901234567890123456789", expectURL: "https://infra-api.eu.newrelic.com", staging: false, fedramp: false},
 		// four letter region
-		{license: "eu01xx6789012345678901234567890123456789", expectURL: "https://staging-infra-api.eu.newrelic.com", staging: true},
-		//// five letter region
-		{license: "gov01x6789012345678901234567890123456789", expectURL: "https://gov-infra-api.newrelic.com", staging: true},
+		{license: "eu01xx6789012345678901234567890123456789", expectURL: "https://staging-infra-api.eu.newrelic.com", staging: true, fedramp: false},
+		// non-region license, fedramp true
+		{license: "0123456789012345678901234567890123456789", expectURL: "https://gov-infra-api.newrelic.com", staging: false, fedramp: true},
 	}
 
 	for _, tc := range testcases {
-		u := calculateCollectorURL(tc.license, tc.staging)
+		u := calculateCollectorURL(tc.license, tc.staging, tc.fedramp)
 		c.Assert(u, Equals, tc.expectURL)
 	}
 }
@@ -376,12 +377,14 @@ func (s *ConfigSuite) TestCalculateDimensionalMetricURL(c *C) {
 		license      string
 		collectorURL string
 		staging      bool
+		fedramp      bool
 		want         string
 	}{
 		{
 			"Default URL, no region license, no collector URL",
 			"0123456789012345678901234567890123456789",
 			"",
+			false,
 			false,
 			"https://metric-api.newrelic.com",
 		},
@@ -390,12 +393,14 @@ func (s *ConfigSuite) TestCalculateDimensionalMetricURL(c *C) {
 			"0123456789012345678901234567890123456789",
 			"",
 			true,
+			false,
 			"https://staging-metric-api.newrelic.com",
 		},
 		{
 			"Default URL, eu license region, no collector URL",
 			"eu01xx6789012345678901234567890123456789",
 			"",
+			false,
 			false,
 			"https://metric-api.eu.newrelic.com",
 		},
@@ -404,26 +409,29 @@ func (s *ConfigSuite) TestCalculateDimensionalMetricURL(c *C) {
 			"eu01xx6789012345678901234567890123456789",
 			"",
 			true,
+			false,
 			"https://staging-metric-api.eu.newrelic.com",
 		},
 		{
-			"Default URL, gov license region, no collector URL",
-			"gov01xx6789012345678901234567890123456789",
+			"Default URL, fedramp flag, no collector URL",
+			"0123456789012345678901234567890123456789",
 			"",
+			false,
 			true,
 			"https://gov-infra-api.newrelic.com",
 		},
 		{
-			"From Collector URL",
-			"gov01x6789012345678901234567890123456789",
-			"https://metric-api.test",
+			"Staging flag prevails over fedramp one",
+			"0123456789012345678901234567890123456789",
+			"",
 			true,
-			"https://metric-api.test",
+			true,
+			"https://staging-metric-api.newrelic.com",
 		},
 	}
 
 	for _, tc := range testCases {
-		u := calculateDimensionalMetricURL(tc.collectorURL, tc.license, tc.staging)
+		u := calculateDimensionalMetricURL(tc.collectorURL, tc.license, tc.staging, tc.fedramp)
 		c.Assert(u, Equals, tc.want)
 	}
 }
