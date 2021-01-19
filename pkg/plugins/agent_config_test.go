@@ -5,9 +5,9 @@ package plugins
 import (
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/stretchr/testify/assert"
-	"testing"
+	"github.com/stretchr/testify/require"
 
-	"reflect"
+	"testing"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
@@ -15,39 +15,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/stretchr/testify/mock"
 )
-
-func configAsMap(config *config.Config) map[string]interface{} {
-	out := map[string]interface{}{}
-
-	value := reflect.ValueOf(*config)
-	for i := 0; i < value.NumField(); i++ {
-		name := value.Type().Field(i).Name
-		if value.Field(i).CanInterface() {
-			fieldValue := value.Field(i).Interface()
-			out[name] = map[string]interface{}{
-				"value": fieldValue,
-			}
-		}
-	}
-
-	return out
-}
-
-func getConfigAsInventoryDataset(config config.Config) agent.PluginInventoryDataset {
-	// These values are private
-	config.License = ""
-	if config.Proxy != "" {
-		config.Proxy = "<proxy set>"
-	}
-	configMap := configAsMap(&config)
-
-	// These config options are not sent
-	delete(configMap, "FilesConfigOn")
-	delete(configMap, "DebugLogSec")
-	delete(configMap, "OfflineLoggingMode")
-
-	return agent.PluginInventoryDataset{ConfigAttrs(configMap)}
-}
 
 func TestConfig(t *testing.T) {
 	pluginId := ids.NewPluginID("metadata", "agent_config")
@@ -70,12 +37,20 @@ func TestConfig(t *testing.T) {
 
 	_, ok := args[0].(agent.PluginOutput)
 	assert.True(t, ok)
-	expectedPluginOutput := args[0]
+	gotPluginOutput := args[0]
 
-	configInventory := getConfigAsInventoryDataset(*config.NewConfig())
-	actualPluginOutput := agent.NewPluginOutput(*pluginId, entity.NewFromNameWithoutID(agentId), configInventory)
+	expectedConf := config.NewConfig()
+	expectedConfPublic, err := expectedConf.PublicFields()
+	require.NoError(t, err)
+	expectedInvItems := map[string]interface{}{}
+	for name, value := range expectedConfPublic {
+		expectedInvItems[name] = map[string]interface{}{
+			"value": value,
+		}
+	}
+	expectedPluginOutput := agent.NewPluginOutput(*pluginId, entity.NewFromNameWithoutID(agentId), agent.PluginInventoryDataset{ConfigAttrs(expectedInvItems)})
 
-	assert.Equal(t, expectedPluginOutput, actualPluginOutput)
+	assert.Equal(t, gotPluginOutput, expectedPluginOutput)
 	ctx.AssertExpectations(t)
 
 }

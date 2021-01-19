@@ -56,7 +56,7 @@ type IncludeMetricsMap map[string][]string
 // Use the 'public' annotation to specify the visibility of the config option: false/obfuscate [default: true]
 type Config struct {
 	// Databind provides varaiable (secrets, discovery) replacement capabilities for the configuration.
-	Databind databind.YAMLAgentConfig `yaml:",inline"`
+	Databind databind.YAMLAgentConfig `yaml:",inline" public:"false"`
 
 	// License specifies the license key for your New Relic account. The agent uses this key to associate your server's
 	// metrics with your New Relic account. This setting is created as part of the standard installation process.
@@ -1094,7 +1094,7 @@ func (c *Config) GetLogFile() string {
 // LogInfo will log the configuration.
 // It obfuscates sensitive information and hide private configs.
 func (c *Config) LogInfo() {
-	configFields, err := c.toLogInfo()
+	configFields, err := c.PublicFields()
 	if err != nil {
 		clog.WithError(err).Error("failed to log config")
 		return
@@ -1149,9 +1149,8 @@ func (c *Config) SetIntValueByYamlAttribute(attribute string, value int64) error
 	return fmt.Errorf("unknown field for yaml attribute '%s'", attribute)
 }
 
-// toLogInfo prepares the configuration to be logged.
-// It obfuscates sensitive information and hide private configs.
-func (c *Config) toLogInfo() (map[string]string, error) {
+// PublicFields returns public config fields values indexed by YAML name. It obfuscates sensitive info.
+func (c *Config) PublicFields() (map[string]string, error) {
 	valueOfC := reflect.ValueOf(c)
 
 	if valueOfC.Kind() != reflect.Ptr && valueOfC.Kind() != reflect.Interface {
