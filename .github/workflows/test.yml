@@ -32,7 +32,7 @@ jobs:
         run: make ci/validate
 
       - name: Running unit tests
-        run: ci/test-coverage
+        run: make ci/test-coverage
 
       - name: Install gcov2lcov
         working-directory: /tmp
