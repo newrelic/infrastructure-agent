@@ -22,6 +22,7 @@ var cfgLogger = log.WithComponent("integrations.Supervisor.Config").WithField("p
 // FluentBit default values.
 const (
 	euEndpoint              = "https://log-api.eu.newrelic.com/log/v1"
+	fedrampEndpoint         = "https://gov-log-api.newrelic.com"
 	stagingEndpoint         = "https://staging-log-api.newrelic.com/log/v1"
 	logRecordModifierSource = "nri-agent"
 	defaultBufferMaxSize    = 128
@@ -610,6 +611,10 @@ func newNROutput(cfg *config.LogForward) FBCfgOutput {
 		CABundleFile:      cfg.ProxyCfg.CABundleFile,
 		CABundleDir:       cfg.ProxyCfg.CABundleDir,
 		ValidateCerts:     cfg.ProxyCfg.ValidateCerts,
+	}
+
+	if cfg.IsFedramp {
+		ret.Endpoint = fedrampEndpoint
 	}
 
 	if cfg.IsStaging {

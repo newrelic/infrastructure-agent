@@ -1043,6 +1043,7 @@ type LogForward struct {
 	ConfigsDir   string
 	HomeDir      string
 	License      string
+	IsFedramp    bool
 	IsStaging    bool
 	ProxyCfg     LogForwardProxy
 }
@@ -1062,6 +1063,7 @@ func NewLogForward(config *Config, troubleshoot Troubleshoot) LogForward {
 		ConfigsDir:   config.LoggingConfigsDir,
 		HomeDir:      config.LoggingBinDir,
 		License:      config.License,
+		IsFedramp:    config.Fedramp,
 		IsStaging:    config.Staging,
 		ProxyCfg: LogForwardProxy{
 			IgnoreSystemProxy: config.IgnoreSystemProxy,
