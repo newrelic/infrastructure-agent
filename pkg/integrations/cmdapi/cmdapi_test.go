@@ -14,7 +14,7 @@ func TestIsAllowedToRunStopFromCmdAPI(t *testing.T) {
 	}{
 		{"empty", "", false},
 		{"allowed", "nri-lsi-java", true},
-		{"not allowed", "", false},
+		{"not allowed", "nri-foo", false},
 		{"extra suffix", "nri-lsi-java-foo", false},
 	}
 	for _, tt := range tests {
