@@ -23,7 +23,7 @@ ifdef TAG
 			-e TAG \
 			$(BUILDER_IMG_TAG) make release/build
 else
-	@echo "===> $(INTEGRATION) ===  [ci/build] TAG env variable expected to be set"
+	@echo "===  [ci/build] TAG env variable expected to be set"
 	exit 1
 endif
 
