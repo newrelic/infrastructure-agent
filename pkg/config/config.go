@@ -64,6 +64,11 @@ type Config struct {
 	// Public: Yes
 	License string `yaml:"license_key" envconfig:"license_key" public:"obfuscate"`
 
+	// Fedramp use Fedramp endpoints. See https://docs.newrelic.com/docs/fedramp-endpoint-logs-metrics
+	// Default: true
+	// Public: No
+	Fedramp bool `yaml:"fedramp" envconfig:"fedramp" public:"true"`
+
 	// Staging is staging environment.
 	// Default: false
 	// Public: No
@@ -1038,6 +1043,7 @@ type LogForward struct {
 	ConfigsDir   string
 	HomeDir      string
 	License      string
+	IsFedramp    bool
 	IsStaging    bool
 	ProxyCfg     LogForwardProxy
 }
@@ -1057,6 +1063,7 @@ func NewLogForward(config *Config, troubleshoot Troubleshoot) LogForward {
 		ConfigsDir:   config.LoggingConfigsDir,
 		HomeDir:      config.LoggingBinDir,
 		License:      config.License,
+		IsFedramp:    config.Fedramp,
 		IsStaging:    config.Staging,
 		ProxyCfg: LogForwardProxy{
 			IgnoreSystemProxy: config.IgnoreSystemProxy,
@@ -1408,8 +1415,8 @@ func JitterFrequency(freqInSec time.Duration) time.Duration {
 	return time.Duration(randomSeconds) * time.Second
 }
 
-func calculateCollectorURL(licenseKey string, staging bool) string {
-	if license.IsFederalCompliance(licenseKey) {
+func calculateCollectorURL(licenseKey string, staging, fedramp bool) string {
+	if fedramp {
 		return defaultSecureFederalURL
 	}
 
@@ -1462,12 +1469,12 @@ func calculateCmdChannelStagingURL(licenseKey string) string {
 	return defaultCmdChannelStagingURL
 }
 
-func calculateDimensionalMetricURL(collectorURL string, licenseKey string, staging bool) string {
+func calculateDimensionalMetricURL(collectorURL string, licenseKey string, staging, fedramp bool) string {
 	if collectorURL != "" {
 		return collectorURL
 	}
 
-	if license.IsFederalCompliance(licenseKey) {
+	if fedramp && !staging {
 		return defaultSecureFederalURL
 	}
 
@@ -1531,10 +1538,10 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	}
 
 	// dm URL is calculated based on collector url, it should be set before get it default value
-	cfg.MetricURL = calculateDimensionalMetricURL(cfg.CollectorURL, cfg.License, cfg.Staging)
+	cfg.MetricURL = calculateDimensionalMetricURL(cfg.CollectorURL, cfg.License, cfg.Staging, cfg.Fedramp)
 
 	if cfg.CollectorURL == "" {
-		cfg.CollectorURL = calculateCollectorURL(cfg.License, cfg.Staging)
+		cfg.CollectorURL = calculateCollectorURL(cfg.License, cfg.Staging, cfg.Fedramp)
 	}
 
 	nlog.WithField("collectorURL", cfg.CollectorURL).Debug("Collector URL")
