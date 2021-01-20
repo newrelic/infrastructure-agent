@@ -25,13 +25,18 @@ release/deps: $(GORELEASER_BIN)
 
 .PHONY : release/build
 release/build: release/deps release/clean
-#ifeq ($(PRERELEASE), true)
-#	@echo "=== [release/build] PRE-RELEASE compiling all binaries, creating packages, archives"
-#	@$(GORELEASER_BIN) release --config $(CURDIR)/build/.goreleaser.yml --rm-dist
-#else
+ifeq ($(PRERELEASE), true)
+	@echo "=== [release/build] PRE-RELEASE compiling all binaries, creating packages, archives"
+	@$(GORELEASER_BIN) release --config $(CURDIR)/build/.goreleaser.yml --rm-dist
+else
 	@echo "=== [release/build] build compiling all binaries"
 	@$(GORELEASER_BIN) build --config $(CURDIR)/build/.goreleaser.yml --snapshot --rm-dist
-#endif
+endif
+
+.PHONY : release
+release: release/build release/deps release/clean
+	@echo "=== [release] full pre-release cycle complete for nix"
+
 
 OS := $(shell uname -s)
 ifeq ($(OS), Darwin)

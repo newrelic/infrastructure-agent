@@ -58,7 +58,6 @@ get-nri-prometheus:
 	  exit 1 ;\
 	fi
 
-
 .PHONY: embed-nri-docker
 embed-nri-docker:
 	@echo "Embed nri-docker version: $(NRI_DOCKER_VERSION)"
