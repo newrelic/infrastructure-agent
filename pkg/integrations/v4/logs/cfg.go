@@ -613,12 +613,12 @@ func newNROutput(cfg *config.LogForward) FBCfgOutput {
 		ValidateCerts:     cfg.ProxyCfg.ValidateCerts,
 	}
 
-	if cfg.IsFedramp {
-		ret.Endpoint = fedrampEndpoint
-	}
-
 	if cfg.IsStaging {
 		ret.Endpoint = stagingEndpoint
+	}
+
+	if cfg.IsFedramp {
+		ret.Endpoint = fedrampEndpoint
 	}
 
 	if license.IsRegionEU(cfg.License) {
