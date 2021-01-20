@@ -2,7 +2,8 @@ package cmdapi
 
 var (
 	integrationsAllowedToRunStopFromCmdAPI = map[string]struct{}{
-		"nri-lsi-java": {},
+		"nri-lsi-java":         {},
+		"nri-process-detector": {},
 	}
 )
 

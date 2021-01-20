@@ -28,7 +28,7 @@ const cmdName = "run_integration"
 // Errors
 var (
 	ErrNoIntName     = errors.New("missing required \"integration_name\"")
-	ErrIntNotAllowed = errors.New("integration now allowed to run/stop from command channel")
+	ErrIntNotAllowed = errors.New("integration not allowed to run/stop from command channel")
 )
 
 type RunIntArgs struct {

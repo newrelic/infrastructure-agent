@@ -13,7 +13,8 @@ func TestIsAllowedToRunStopFromCmdAPI(t *testing.T) {
 		want            bool
 	}{
 		{"empty", "", false},
-		{"allowed", "nri-lsi-java", true},
+		{"allowed 1", "nri-process-detector", true},
+		{"allowed 2", "nri-lsi-java", true},
 		{"not allowed", "nri-foo", false},
 		{"extra suffix", "nri-lsi-java-foo", false},
 	}
