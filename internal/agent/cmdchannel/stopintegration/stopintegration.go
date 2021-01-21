@@ -12,6 +12,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/runintegration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/commandapi"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdapi"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track/ctx"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm"
@@ -43,6 +44,10 @@ func NewHandler(tracker *track.Tracker, il integration.InstancesLookup, dmEmitte
 		if args.IntegrationName == "" {
 			err = cmdchannel.NewArgsErr(runintegration.ErrNoIntName)
 			return
+		}
+
+		if cmdapi.IsAllowedToRunStopFromCmdAPI(args.IntegrationName) {
+			return runintegration.ErrIntNotAllowed
 		}
 
 		pidC, tracked := tracker.PIDReadChan(args.Hash())
