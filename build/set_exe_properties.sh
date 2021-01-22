@@ -4,6 +4,9 @@
 # Create the metadata for the exe's files, called by .goreleser as a hook in the build section
 #
 #
+
+set -e
+
 TAG=$1
 
 if [ -n "$1" ]; then
