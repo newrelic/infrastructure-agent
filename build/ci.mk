@@ -16,7 +16,7 @@ ci/validate: ci/deps
 ci/build: ci/deps
 ifdef TAG
 	@docker run --rm -t \
-			--name "infrastructure-agent-snyk-test-build" \
+			--name "infrastructure-agent-test-build" \
 			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
 			-w /go/src/github.com/newrelic/infrastructure-agent \
 			-e TAG \
@@ -51,13 +51,12 @@ ifdef TAG
 			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
             -w /go/src/github.com/newrelic/infrastructure-agent \
 			-e PRERELEASE=true \
-			#-e GITHUB_TOKEN \
-			#-e REPO_FULL_NAME
+			-e GITHUB_TOKEN \
 			-e TAG \
 			-e GPG_MAIL \
 			-e GPG_PASSPHRASE \
 			-e GPG_PRIVATE_KEY_BASE64 \
-			$(BUILDER_TAG) make release
+			$(BUILDER_IMG_TAG) make release
 else
 	@echo "===> infrastructure-agent ===  [ci/prerelease] TAG env variable expected to be set"
 	exit 1
