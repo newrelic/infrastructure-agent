@@ -1,4 +1,6 @@
 /.idea
+/bin
+/dist
 /target
 /overlay/bundled-plugins/*/bin
 .DS_Store
