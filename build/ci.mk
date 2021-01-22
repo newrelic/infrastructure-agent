@@ -17,7 +17,6 @@ ci/build: ci/deps
 ifdef TAG
 	@docker run --rm -t \
 			--name "infrastructure-agent-snyk-test-build" \
-			-v $(CURDIR):/go/src/github.com/newrelic/nri-$(INTEGRATION) \
 			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
 			-w /go/src/github.com/newrelic/infrastructure-agent \
 			-e TAG \

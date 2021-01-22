@@ -14,6 +14,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/commandapi"
 	"github.com/newrelic/infrastructure-agent/pkg/fwrequest"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdapi"
 	ctx2 "github.com/newrelic/infrastructure-agent/pkg/integrations/track/ctx"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm"
@@ -26,7 +27,8 @@ const cmdName = "run_integration"
 
 // Errors
 var (
-	ErrNoIntName = errors.New("missing required \"integration_name\"")
+	ErrNoIntName     = errors.New("missing required \"integration_name\"")
+	ErrIntNotAllowed = errors.New("integration not allowed to run/stop from command channel")
 )
 
 type RunIntArgs struct {
@@ -52,6 +54,10 @@ func NewHandler(definitionQ chan<- integration.Definition, il integration.Instan
 		if args.IntegrationName == "" {
 			err = cmdchannel.NewArgsErr(ErrNoIntName)
 			return
+		}
+
+		if cmdapi.IsAllowedToRunStopFromCmdAPI(args.IntegrationName) {
+			return ErrIntNotAllowed
 		}
 
 		def, err := integration.NewDefinition(NewConfigFromCmdChannelRunInt(args), il, nil, nil)
