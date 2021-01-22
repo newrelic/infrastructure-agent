@@ -4,7 +4,7 @@ name: Testing
 env:
   DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
-  TAG: "v0.0.0" # needed for goreleaser windows builds
+  TAG: "0.0.0" # needed for goreleaser windows builds
   GO_VERSION: '1.14.4'
 
 on:
