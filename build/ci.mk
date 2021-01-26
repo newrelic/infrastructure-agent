@@ -50,7 +50,7 @@ ifdef TAG
 			--name "infrastructure-agent-prerelease" \
 			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
             -w /go/src/github.com/newrelic/infrastructure-agent \
-			-e PRERELEASE=true \
+			-e PRERELEASE=false \
 			-e GITHUB_TOKEN \
 			-e TAG \
 			-e GPG_MAIL \
