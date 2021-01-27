@@ -33,8 +33,19 @@ release/pkg: release/deps release/clean
 	@echo "=== [release/build] PRE-RELEASE compiling all binaries, creating packages, archives"
 	@$(GORELEASER_BIN) release --config $(CURDIR)/build/.goreleaser.yml --rm-dist $(PKG_FLAGS)
 
+.PHONY : release/sign/nix
+release/sign/nix:
+	@echo "===> $(INTEGRATION) === [release/sign] signing packages"
+	@bash $(CURDIR)/build/sign.sh
+
+
+.PHONY : release/publish
+release/publish:
+	@echo "===> $(INTEGRATION) === [release/publish] publishing artifacts"
+	@bash $(CURDIR)/build/upload_artifacts_gh.sh
+
 .PHONY : release
-release: release/pkg release/deps release/clean
+release: release/pkg release/sign/nix release/publish release/clean
 	@echo "=== [release] full pre-release cycle complete for nix"
 
 PRERELEASE := ${PRERELEASE}
