@@ -870,7 +870,7 @@ nfpms:
     formats:
       - rpm
     bindir: /usr/bin
-        contents:
+    contents:
       - src: 'assets/examples/logging/linux/file.yml.example'
         dst: '/etc/newrelic-infra/logging.d/file.yml.example'
       - src: 'assets/examples/logging/linux/fluentbit.yml.example'
