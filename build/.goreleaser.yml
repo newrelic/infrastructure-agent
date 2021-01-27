@@ -529,13 +529,76 @@ nfpms:
 #      summary: "New Relic Infrastructure Agent"
 #      group: default
 #
-#  - id: sle-11.4-infrastructure-agent
+  - id: sle-11.4-infrastructure-agent
+    builds:
+      - linux-newrelic-infra
+      - linux-newrelic-infra-ctl
+      - linux-newrelic-infra-service
+    package_name: newrelic-infra
+    file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.sles11.4.{{ .Arch }}"
+    vendor: 'New Relic, Inc.'
+    homepage: 'https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes/new-relic-infrastructure-agent-197'
+    maintainer: 'caos-team@newrelic.com'
+    description: 'New Relic Infrastructure provides flexible, dynamic server monitoring. With real-time data collection and a UI that scales from a handful of hosts to thousands, Infrastructure is designed for modern Operations teams with fast-changing systems.'
+    license: 'Copyright (c) 2008-2020 New Relic, Inc. All rights reserved.'
+    formats:
+      - rpm
+    bindir: /usr/bin
+    contents:
+      - src: 'target/nridocker/etc/newrelic-infra/integrations.d/docker-config.yml'
+        dst: '/etc/newrelic-infra/integrations.d/docker-config.yml'
+        type: config
+
+      - src: 'LICENSE'
+        dst: '/var/db/newrelic-infra/LICENSE.txt'
+      - src: 'target/nridocker/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
+      - src: 'target/nriflex/nri-flex'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
+      - src: 'target/nriprometheus/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
+
+      # Upstart service conf file
+      - src: 'build/package/upstart/newrelic-infra'
+        dst: '/etc/init/newrelic-infra.conf'
+        type: config
+
+      # Symlink required for upstart service.
+      - src: /lib/init/upstart-job
+        dst: /etc/init.d/newrelic-infra
+        type: "symlink"
+    empty_folders:
+      - /var/db/newrelic-infra/custom-integrations
+      - /var/db/newrelic-infra/integrations.d
+      - /var/log/newrelic-infra
+      - /var/run/newrelic-infra
+        # Scripts to execute during the installation of the package.
+    scripts:
+      preinstall: "build/package/before-install.sh"
+      postinstall: "build/package/rpm/postinst-sysv.sh"
+      preremove: "build/package/rpm/prerm-sysv.sh"
+    # Packages that conflict with your package.
+    conflicts:
+      - newrelic-infra
+    # Packages to replace according to old packaging scripts.
+    replaces:
+      - opspro-agent
+      - opspro-agent-sysv
+    epoch: 0
+    release: 1.sles11.4
+    replacements:
+      amd64: x86_64
+    rpm:
+      summary: "New Relic Infrastructure Agent"
+      group: default
+
+#  - id: sle-12.1-infrastructure-agent
 #    builds:
 #      - linux-newrelic-infra
 #      - linux-newrelic-infra-ctl
 #      - linux-newrelic-infra-service
 #    package_name: newrelic-infra
-#    file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.sles11.4.{{ .Arch }}"
+#    file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.sles12.1.{{ .Arch }}"
 #    vendor: 'New Relic, Inc.'
 #    homepage: 'https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes/new-relic-infrastructure-agent-197'
 #    maintainer: 'caos-team@newrelic.com'
@@ -545,335 +608,297 @@ nfpms:
 #      - rpm
 #    bindir: /usr/bin
 #    contents:
-#      - src: 'build/package/sysv/rpm/sles/11/newrelic-infra'
-#        dst: '/etc/init.d/newrelic-infra'
-#      - src: 'target/nridocker/etc/newrelic-infra/integrations.d/docker-config.yml'
-#        dst: '/etc/newrelic-infra/integrations.d/docker-config.yml'
+#      - src: 'assets/examples/logging/linux/file.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
+#      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
+#      - src: 'assets/examples/logging/linux/syslog.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
+#      - src: 'assets/examples/logging/linux/systemd.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
+#      - src: 'assets/examples/logging/linux/tcp.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
+#
+#      - src: 'build/package/systemd/newrelic-infra.service'
+#        dst: '/etc/systemd/system/newrelic-infra.service'
 #      - src: 'LICENSE'
 #        dst: '/var/db/newrelic-infra/LICENSE.txt'
+#      - src: 'target/nridocker/etc/newrelic-infra/integrations.d/docker-config.yml'
+#        dst: '/etc/newrelic-infra/integrations.d/docker-config.yml'
+#        type: config
+#
 #      - src: 'target/nridocker/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
 #        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
 #      - src: 'target/nriflex/nri-flex'
 #        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
 #      - src: 'target/nriprometheus/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
 #        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
+#      - src: 'target/fluent-bit/nrfb/fluent-bit'
+#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
+#      - src: 'target/fluent-bit/nrfb/out_newrelic.so'
+#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
+#      - src: 'target/fluent-bit/nrfb/parsers.conf'
+#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
 #    empty_folders:
 #      - /var/db/newrelic-infra/custom-integrations
 #      - /var/db/newrelic-infra/integrations.d
 #      - /var/log/newrelic-infra
 #      - /var/run/newrelic-infra
 #    epoch: 0
-#    release: 1.sles11.4
+#    release: 1.sles12.1
 #    replacements:
 #      amd64: x86_64
 #
-  - id: sle-12.1-infrastructure-agent
-    builds:
-      - linux-newrelic-infra
-      - linux-newrelic-infra-ctl
-      - linux-newrelic-infra-service
-    package_name: newrelic-infra
-    file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.sles12.1.{{ .Arch }}"
-    vendor: 'New Relic, Inc.'
-    homepage: 'https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes/new-relic-infrastructure-agent-197'
-    maintainer: 'caos-team@newrelic.com'
-    description: 'New Relic Infrastructure provides flexible, dynamic server monitoring. With real-time data collection and a UI that scales from a handful of hosts to thousands, Infrastructure is designed for modern Operations teams with fast-changing systems.'
-    license: 'Copyright (c) 2008-2020 New Relic, Inc. All rights reserved.'
-    formats:
-      - rpm
-    bindir: /usr/bin
-    contents:
-      - src: 'assets/examples/logging/linux/file.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
-      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
-      - src: 'assets/examples/logging/linux/syslog.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
-      - src: 'assets/examples/logging/linux/systemd.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
-      - src: 'assets/examples/logging/linux/tcp.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
-
-      - src: 'build/package/systemd/newrelic-infra.service'
-        dst: '/etc/systemd/system/newrelic-infra.service'
-      - src: 'LICENSE'
-        dst: '/var/db/newrelic-infra/LICENSE.txt'
-      - src: 'target/nridocker/etc/newrelic-infra/integrations.d/docker-config.yml'
-        dst: '/etc/newrelic-infra/integrations.d/docker-config.yml'
-        type: config
-
-      - src: 'target/nridocker/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
-      - src: 'target/nriflex/nri-flex'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
-      - src: 'target/nriprometheus/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-      - src: 'target/fluent-bit/nrfb/fluent-bit'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
-      - src: 'target/fluent-bit/nrfb/out_newrelic.so'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-      - src: 'target/fluent-bit/nrfb/parsers.conf'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
-    empty_folders:
-      - /var/db/newrelic-infra/custom-integrations
-      - /var/db/newrelic-infra/integrations.d
-      - /var/log/newrelic-infra
-      - /var/run/newrelic-infra
-    epoch: 0
-    release: 1.sles12.1
-    replacements:
-      amd64: x86_64
-
-    # Scripts to execute during the installation of the package.
-    scripts:
-      preinstall: "build/package/before-install.sh"
-      postinstall: "build/package/rpm/postinst-systemd.sh"
-      preremove: "build/package/rpm/prerm-systemd.sh"
-    # Packages that conflict with your package.
-    conflicts:
-      - newrelic-infra
-    # Packages to replace according to old packaging scripts.
-    replaces:
-      - opspro-agent
-      - opspro-agent-systemd
-    # Section.
-    section: default
-    # Priority.
-    priority: extra
-    rpm:
-      summary: "New Relic Infrastructure Agent"
-      group: default
-
-  - id: sle-12.2-infrastructure-agent
-    builds:
-      - linux-newrelic-infra
-      - linux-newrelic-infra-ctl
-      - linux-newrelic-infra-service
-    package_name: newrelic-infra
-    file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.sles12.2.{{ .Arch }}"
-    vendor: 'New Relic, Inc.'
-    homepage: 'https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes/new-relic-infrastructure-agent-197'
-    maintainer: 'caos-team@newrelic.com'
-    description: 'New Relic Infrastructure provides flexible, dynamic server monitoring. With real-time data collection and a UI that scales from a handful of hosts to thousands, Infrastructure is designed for modern Operations teams with fast-changing systems.'
-    license: 'Copyright (c) 2008-2020 New Relic, Inc. All rights reserved.'
-    formats:
-      - rpm
-    bindir: /usr/bin
-    contents:
-      - src: 'assets/examples/logging/linux/file.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
-      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
-      - src: 'assets/examples/logging/linux/syslog.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
-      - src: 'assets/examples/logging/linux/systemd.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
-      - src: 'assets/examples/logging/linux/tcp.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
-
-      - src: 'build/package/systemd/newrelic-infra.service'
-        dst: '/etc/systemd/system/newrelic-infra.service'
-      - src: 'LICENSE'
-        dst: '/var/db/newrelic-infra/LICENSE.txt'
-      - src: 'target/nridocker/etc/newrelic-infra/integrations.d/docker-config.yml'
-        dst: '/etc/newrelic-infra/integrations.d/docker-config.yml'
-        type: config
-
-      - src: 'target/nridocker/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
-      - src: 'target/nriflex/nri-flex'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
-      - src: 'target/nriprometheus/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-      - src: 'target/fluent-bit/nrfb/fluent-bit'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
-      - src: 'target/fluent-bit/nrfb/out_newrelic.so'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-      - src: 'target/fluent-bit/nrfb/parsers.conf'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
-    empty_folders:
-      - /var/db/newrelic-infra/custom-integrations
-      - /var/db/newrelic-infra/integrations.d
-      - /var/log/newrelic-infra
-      - /var/run/newrelic-infra
-    epoch: 0
-    release: 1.sles12.2
-    replacements:
-      amd64: x86_64
-
-    # Scripts to execute during the installation of the package.
-    scripts:
-      preinstall: "build/package/before-install.sh"
-      postinstall: "build/package/rpm/postinst-systemd.sh"
-      preremove: "build/package/rpm/prerm-systemd.sh"
-    # Packages that conflict with your package.
-    conflicts:
-      - newrelic-infra
-    # Packages to replace according to old packaging scripts.
-    replaces:
-      - opspro-agent
-      - opspro-agent-systemd
-    # Section.
-    section: default
-    # Priority.
-    priority: extra
-    rpm:
-      summary: "New Relic Infrastructure Agent"
-      group: default
-
-  - id: sle-12.3-infrastructure-agent
-    builds:
-      - linux-newrelic-infra
-      - linux-newrelic-infra-ctl
-      - linux-newrelic-infra-service
-    package_name: newrelic-infra
-    file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.sles12.3.{{ .Arch }}"
-    vendor: 'New Relic, Inc.'
-    homepage: 'https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes/new-relic-infrastructure-agent-197'
-    maintainer: 'caos-team@newrelic.com'
-    description: 'New Relic Infrastructure provides flexible, dynamic server monitoring. With real-time data collection and a UI that scales from a handful of hosts to thousands, Infrastructure is designed for modern Operations teams with fast-changing systems.'
-    license: 'Copyright (c) 2008-2020 New Relic, Inc. All rights reserved.'
-    formats:
-      - rpm
-    bindir: /usr/bin
-    contents:
-      - src: 'assets/examples/logging/linux/file.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
-      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
-      - src: 'assets/examples/logging/linux/syslog.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
-      - src: 'assets/examples/logging/linux/systemd.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
-      - src: 'assets/examples/logging/linux/tcp.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
-
-      - src: 'build/package/systemd/newrelic-infra.service'
-        dst: '/etc/systemd/system/newrelic-infra.service'
-      - src: 'LICENSE'
-        dst: '/var/db/newrelic-infra/LICENSE.txt'
-      - src: 'target/nridocker/etc/newrelic-infra/integrations.d/docker-config.yml'
-        dst: '/etc/newrelic-infra/integrations.d/docker-config.yml'
-        type: config
-
-      - src: 'target/nridocker/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
-      - src: 'target/nriflex/nri-flex'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
-      - src: 'target/nriprometheus/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-      - src: 'target/fluent-bit/nrfb/fluent-bit'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
-      - src: 'target/fluent-bit/nrfb/out_newrelic.so'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-      - src: 'target/fluent-bit/nrfb/parsers.conf'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
-    empty_folders:
-      - /var/db/newrelic-infra/custom-integrations
-      - /var/db/newrelic-infra/integrations.d
-      - /var/log/newrelic-infra
-      - /var/run/newrelic-infra
-    epoch: 0
-    release: 1.sles12.3
-    replacements:
-      amd64: x86_64
-
-    # Scripts to execute during the installation of the package.
-    scripts:
-      preinstall: "build/package/before-install.sh"
-      postinstall: "build/package/rpm/postinst-systemd.sh"
-      preremove: "build/package/rpm/prerm-systemd.sh"
-    # Packages that conflict with your package.
-    conflicts:
-      - newrelic-infra
-    # Packages to replace according to old packaging scripts.
-    replaces:
-      - opspro-agent
-      - opspro-agent-systemd
-    # Section.
-    section: default
-    # Priority.
-    priority: extra
-    rpm:
-      summary: "New Relic Infrastructure Agent"
-      group: default
-
-  - id: sle-12.4-infrastructure-agent
-    builds:
-      - linux-newrelic-infra
-      - linux-newrelic-infra-ctl
-      - linux-newrelic-infra-service
-    package_name: newrelic-infra
-    file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.sles12.4.{{ .Arch }}"
-    vendor: 'New Relic, Inc.'
-    homepage: 'https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes/new-relic-infrastructure-agent-197'
-    maintainer: 'caos-team@newrelic.com'
-    description: 'New Relic Infrastructure provides flexible, dynamic server monitoring. With real-time data collection and a UI that scales from a handful of hosts to thousands, Infrastructure is designed for modern Operations teams with fast-changing systems.'
-    license: 'Copyright (c) 2008-2020 New Relic, Inc. All rights reserved.'
-    formats:
-      - rpm
-    bindir: /usr/bin
-    contents:
-      - src: 'assets/examples/logging/linux/file.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
-      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
-      - src: 'assets/examples/logging/linux/syslog.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
-      - src: 'assets/examples/logging/linux/systemd.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
-      - src: 'assets/examples/logging/linux/tcp.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
-
-      - src: 'build/package/systemd/newrelic-infra.service'
-        dst: '/etc/systemd/system/newrelic-infra.service'
-      - src: 'LICENSE'
-        dst: '/var/db/newrelic-infra/LICENSE.txt'
-      - src: 'target/nridocker/etc/newrelic-infra/integrations.d/docker-config.yml'
-        dst: '/etc/newrelic-infra/integrations.d/docker-config.yml'
-        type: config
-
-      - src: 'target/nridocker/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
-      - src: 'target/nriflex/nri-flex'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
-      - src: 'target/nriprometheus/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-      - src: 'target/fluent-bit/nrfb/fluent-bit'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
-      - src: 'target/fluent-bit/nrfb/out_newrelic.so'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-      - src: 'target/fluent-bit/nrfb/parsers.conf'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
-    empty_folders:
-      - /var/db/newrelic-infra/custom-integrations
-      - /var/db/newrelic-infra/integrations.d
-      - /var/log/newrelic-infra
-      - /var/run/newrelic-infra
-    overrides:
-      rpm:
-        replacements:
-          amd64: 1.x86_64
-
-    # Scripts to execute during the installation of the package.
-    scripts:
-      preinstall: "build/package/before-install.sh"
-      postinstall: "build/package/rpm/postinst-systemd.sh"
-      preremove: "build/package/rpm/prerm-systemd.sh"
-    # Packages that conflict with your package.
-    conflicts:
-      - newrelic-infra
-    # Packages to replace according to old packaging scripts.
-    replaces:
-      - opspro-agent
-      - opspro-agent-systemd
-    # Section.
-    section: default
-    # Priority.
-    priority: extra
-    rpm:
-      summary: "New Relic Infrastructure Agent"
-      group: default
+#    # Scripts to execute during the installation of the package.
+#    scripts:
+#      preinstall: "build/package/before-install.sh"
+#      postinstall: "build/package/rpm/postinst-systemd.sh"
+#      preremove: "build/package/rpm/prerm-systemd.sh"
+#    # Packages that conflict with your package.
+#    conflicts:
+#      - newrelic-infra
+#    # Packages to replace according to old packaging scripts.
+#    replaces:
+#      - opspro-agent
+#      - opspro-agent-systemd
+#    # Section.
+#    section: default
+#    # Priority.
+#    priority: extra
+#    rpm:
+#      summary: "New Relic Infrastructure Agent"
+#      group: default
+#
+#  - id: sle-12.2-infrastructure-agent
+#    builds:
+#      - linux-newrelic-infra
+#      - linux-newrelic-infra-ctl
+#      - linux-newrelic-infra-service
+#    package_name: newrelic-infra
+#    file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.sles12.2.{{ .Arch }}"
+#    vendor: 'New Relic, Inc.'
+#    homepage: 'https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes/new-relic-infrastructure-agent-197'
+#    maintainer: 'caos-team@newrelic.com'
+#    description: 'New Relic Infrastructure provides flexible, dynamic server monitoring. With real-time data collection and a UI that scales from a handful of hosts to thousands, Infrastructure is designed for modern Operations teams with fast-changing systems.'
+#    license: 'Copyright (c) 2008-2020 New Relic, Inc. All rights reserved.'
+#    formats:
+#      - rpm
+#    bindir: /usr/bin
+#    contents:
+#      - src: 'assets/examples/logging/linux/file.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
+#      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
+#      - src: 'assets/examples/logging/linux/syslog.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
+#      - src: 'assets/examples/logging/linux/systemd.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
+#      - src: 'assets/examples/logging/linux/tcp.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
+#
+#      - src: 'build/package/systemd/newrelic-infra.service'
+#        dst: '/etc/systemd/system/newrelic-infra.service'
+#      - src: 'LICENSE'
+#        dst: '/var/db/newrelic-infra/LICENSE.txt'
+#      - src: 'target/nridocker/etc/newrelic-infra/integrations.d/docker-config.yml'
+#        dst: '/etc/newrelic-infra/integrations.d/docker-config.yml'
+#        type: config
+#
+#      - src: 'target/nridocker/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
+#        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
+#      - src: 'target/nriflex/nri-flex'
+#        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
+#      - src: 'target/nriprometheus/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
+#        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
+#      - src: 'target/fluent-bit/nrfb/fluent-bit'
+#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
+#      - src: 'target/fluent-bit/nrfb/out_newrelic.so'
+#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
+#      - src: 'target/fluent-bit/nrfb/parsers.conf'
+#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
+#    empty_folders:
+#      - /var/db/newrelic-infra/custom-integrations
+#      - /var/db/newrelic-infra/integrations.d
+#      - /var/log/newrelic-infra
+#      - /var/run/newrelic-infra
+#    epoch: 0
+#    release: 1.sles12.2
+#    replacements:
+#      amd64: x86_64
+#
+#    # Scripts to execute during the installation of the package.
+#    scripts:
+#      preinstall: "build/package/before-install.sh"
+#      postinstall: "build/package/rpm/postinst-systemd.sh"
+#      preremove: "build/package/rpm/prerm-systemd.sh"
+#    # Packages that conflict with your package.
+#    conflicts:
+#      - newrelic-infra
+#    # Packages to replace according to old packaging scripts.
+#    replaces:
+#      - opspro-agent
+#      - opspro-agent-systemd
+#    # Section.
+#    section: default
+#    # Priority.
+#    priority: extra
+#    rpm:
+#      summary: "New Relic Infrastructure Agent"
+#      group: default
+#
+#  - id: sle-12.3-infrastructure-agent
+#    builds:
+#      - linux-newrelic-infra
+#      - linux-newrelic-infra-ctl
+#      - linux-newrelic-infra-service
+#    package_name: newrelic-infra
+#    file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.sles12.3.{{ .Arch }}"
+#    vendor: 'New Relic, Inc.'
+#    homepage: 'https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes/new-relic-infrastructure-agent-197'
+#    maintainer: 'caos-team@newrelic.com'
+#    description: 'New Relic Infrastructure provides flexible, dynamic server monitoring. With real-time data collection and a UI that scales from a handful of hosts to thousands, Infrastructure is designed for modern Operations teams with fast-changing systems.'
+#    license: 'Copyright (c) 2008-2020 New Relic, Inc. All rights reserved.'
+#    formats:
+#      - rpm
+#    bindir: /usr/bin
+#    contents:
+#      - src: 'assets/examples/logging/linux/file.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
+#      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
+#      - src: 'assets/examples/logging/linux/syslog.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
+#      - src: 'assets/examples/logging/linux/systemd.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
+#      - src: 'assets/examples/logging/linux/tcp.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
+#
+#      - src: 'build/package/systemd/newrelic-infra.service'
+#        dst: '/etc/systemd/system/newrelic-infra.service'
+#      - src: 'LICENSE'
+#        dst: '/var/db/newrelic-infra/LICENSE.txt'
+#      - src: 'target/nridocker/etc/newrelic-infra/integrations.d/docker-config.yml'
+#        dst: '/etc/newrelic-infra/integrations.d/docker-config.yml'
+#        type: config
+#
+#      - src: 'target/nridocker/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
+#        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
+#      - src: 'target/nriflex/nri-flex'
+#        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
+#      - src: 'target/nriprometheus/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
+#        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
+#      - src: 'target/fluent-bit/nrfb/fluent-bit'
+#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
+#      - src: 'target/fluent-bit/nrfb/out_newrelic.so'
+#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
+#      - src: 'target/fluent-bit/nrfb/parsers.conf'
+#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
+#    empty_folders:
+#      - /var/db/newrelic-infra/custom-integrations
+#      - /var/db/newrelic-infra/integrations.d
+#      - /var/log/newrelic-infra
+#      - /var/run/newrelic-infra
+#    epoch: 0
+#    release: 1.sles12.3
+#    replacements:
+#      amd64: x86_64
+#
+#    # Scripts to execute during the installation of the package.
+#    scripts:
+#      preinstall: "build/package/before-install.sh"
+#      postinstall: "build/package/rpm/postinst-systemd.sh"
+#      preremove: "build/package/rpm/prerm-systemd.sh"
+#    # Packages that conflict with your package.
+#    conflicts:
+#      - newrelic-infra
+#    # Packages to replace according to old packaging scripts.
+#    replaces:
+#      - opspro-agent
+#      - opspro-agent-systemd
+#    # Section.
+#    section: default
+#    # Priority.
+#    priority: extra
+#    rpm:
+#      summary: "New Relic Infrastructure Agent"
+#      group: default
+#
+#  - id: sle-12.4-infrastructure-agent
+#    builds:
+#      - linux-newrelic-infra
+#      - linux-newrelic-infra-ctl
+#      - linux-newrelic-infra-service
+#    package_name: newrelic-infra
+#    file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.sles12.4.{{ .Arch }}"
+#    vendor: 'New Relic, Inc.'
+#    homepage: 'https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes/new-relic-infrastructure-agent-197'
+#    maintainer: 'caos-team@newrelic.com'
+#    description: 'New Relic Infrastructure provides flexible, dynamic server monitoring. With real-time data collection and a UI that scales from a handful of hosts to thousands, Infrastructure is designed for modern Operations teams with fast-changing systems.'
+#    license: 'Copyright (c) 2008-2020 New Relic, Inc. All rights reserved.'
+#    formats:
+#      - rpm
+#    bindir: /usr/bin
+#    contents:
+#      - src: 'assets/examples/logging/linux/file.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
+#      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
+#      - src: 'assets/examples/logging/linux/syslog.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
+#      - src: 'assets/examples/logging/linux/systemd.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
+#      - src: 'assets/examples/logging/linux/tcp.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
+#
+#      - src: 'build/package/systemd/newrelic-infra.service'
+#        dst: '/etc/systemd/system/newrelic-infra.service'
+#      - src: 'LICENSE'
+#        dst: '/var/db/newrelic-infra/LICENSE.txt'
+#      - src: 'target/nridocker/etc/newrelic-infra/integrations.d/docker-config.yml'
+#        dst: '/etc/newrelic-infra/integrations.d/docker-config.yml'
+#        type: config
+#
+#      - src: 'target/nridocker/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
+#        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
+#      - src: 'target/nriflex/nri-flex'
+#        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
+#      - src: 'target/nriprometheus/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
+#        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
+#      - src: 'target/fluent-bit/nrfb/fluent-bit'
+#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
+#      - src: 'target/fluent-bit/nrfb/out_newrelic.so'
+#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
+#      - src: 'target/fluent-bit/nrfb/parsers.conf'
+#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
+#    empty_folders:
+#      - /var/db/newrelic-infra/custom-integrations
+#      - /var/db/newrelic-infra/integrations.d
+#      - /var/log/newrelic-infra
+#      - /var/run/newrelic-infra
+#    epoch: 0
+#    release: 1.sles12.4
+#    replacements:
+#      amd64: x86_64
+#
+#    # Scripts to execute during the installation of the package.
+#    scripts:
+#      preinstall: "build/package/before-install.sh"
+#      postinstall: "build/package/rpm/postinst-systemd.sh"
+#      preremove: "build/package/rpm/prerm-systemd.sh"
+#    # Packages that conflict with your package.
+#    conflicts:
+#      - newrelic-infra
+#    # Packages to replace according to old packaging scripts.
+#    replaces:
+#      - opspro-agent
+#      - opspro-agent-systemd
+#    # Section.
+#    section: default
+#    # Priority.
+#    priority: extra
+#    rpm:
+#      summary: "New Relic Infrastructure Agent"
+#      group: default
 
 # we use custom publisher for fixing archives and signing them
 release:
@@ -881,10 +906,3 @@ release:
 
 checksum:
   disable: true
-
-#signs:
-#  - artifacts: all
-#    cmd: bash
-#    args:
-#    - '-c'
-#    - ./cicd/scripts/rpm_sign.sh "${signature}" "${artifact}"
