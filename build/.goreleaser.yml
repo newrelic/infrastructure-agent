@@ -557,16 +557,6 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-
-      # Upstart service conf file
-      - src: 'build/package/upstart/newrelic-infra'
-        dst: '/etc/init/newrelic-infra.conf'
-        type: config
-
-      # Symlink required for upstart service.
-      - src: /lib/init/upstart-job
-        dst: /etc/init.d/newrelic-infra
-        type: "symlink"
     empty_folders:
       - /var/db/newrelic-infra/custom-integrations
       - /var/db/newrelic-infra/integrations.d
@@ -577,9 +567,7 @@ nfpms:
       preinstall: "build/package/before-install.sh"
       postinstall: "build/package/rpm/postinst-sysv.sh"
       preremove: "build/package/rpm/prerm-sysv.sh"
-    # Packages that conflict with your package.
-    conflicts:
-      - newrelic-infra
+
     # Packages to replace according to old packaging scripts.
     replaces:
       - opspro-agent
