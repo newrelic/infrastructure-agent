@@ -48,5 +48,4 @@ if (-not $?)
 }
 
 Write-Output "===> Making versioned installed copy"
-Set-Location bin\Release
-Copy-Item newrelic-infra-$arch.msi newrelic-infra-${arch}.${version}.msi
+Copy-Item $WixPrjPath\bin\Release\newrelic-infra-$arch.msi $WixPrjPath\bin\Release\newrelic-infra-${arch}.${version}.msi
