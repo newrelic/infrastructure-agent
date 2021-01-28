@@ -67,9 +67,9 @@ $goMains = @(
 )
 
 Write-Output "--- Generating code..."
-$Success = Invoke-expression -Command "$scriptPath\set_exe_metadata.ps1 -version ${version}"
-if (-not $Success)
-{
+Invoke-expression -Command "$scriptPath\set_exe_metadata.ps1 -version ${version}"
+if ($lastExitCode -ne 0) {
+
     Write-Output "Failed to generate code"
     exit -1
 }
@@ -106,9 +106,8 @@ Foreach ($pkg in $goMains)
 
     go build -ldflags "-X main.buildVersion=$version" -o $exe $pkg
     if (-Not $skipSigning) {
-        $Success = Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.' $exe"
-        if (-not $Success)
-        {
+        Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.' $exe"
+        if ($lastExitCode -ne 0) {
             Write-Output "Failed to sign $exe"
             exit -1
         }
