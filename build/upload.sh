@@ -8,4 +8,4 @@ set -e
 ARCH=$1
 TAG=$2
 
-hub release edit -a "build/package/windows/newrelic-infra-${ARCH}-installer/newrelic-infra/bin/Release/newrelic-infra-${ARCH}.msi" -m ${TAG} ${TAG}
+hub release edit -a "build/package/windows/newrelic-infra-${ARCH}-installer/newrelic-infra/bin/Release/newrelic-infra-${ARCH}.${TAG}.msi" -m ${TAG} ${TAG}

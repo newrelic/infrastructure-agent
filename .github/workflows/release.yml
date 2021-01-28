@@ -13,8 +13,6 @@ env:
   GPG_MAIL: 'infrastructure-eng@newrelic.com'
   GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
   GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
-  INTEGRATION: "redis"
-  ORIGINAL_REPO_NAME: 'newrelic/nri-redis'
   PFX_CERTIFICATE_BASE64: ${{ secrets.OHAI_PFX_CERTIFICATE_BASE64 }} # base64 encoded
   PFX_CERTIFICATE_DESCRIPTION: 'New Relic'
   PFX_PASSPHRASE:  ${{ secrets.OHAI_PFX_PASSPHRASE }}
@@ -47,7 +45,7 @@ jobs:
       GOPATH: ${{ github.workspace }}
     defaults:
       run:
-        working-directory: src/github.com/${{env.ORIGINAL_REPO_NAME}}
+        working-directory: src/github.com/newrelic/infrastructure-agent
     strategy:
       matrix:
         goarch: [ amd64 ]
@@ -55,7 +53,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          path: src/github.com/${{env.ORIGINAL_REPO_NAME}}
+          path: src/github.com/newrelic/infrastructure-agent
       - name: Get PFX certificate from GH secrets
         shell: bash
         run: printf "%s" "$PFX_CERTIFICATE_BASE64" | base64 -d - > wincert.pfx
