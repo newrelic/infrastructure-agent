@@ -19,7 +19,7 @@ $buildYear = (Get-Date).Year
 
 Write-Output "===> Embeding integrations"
 
-Invoke-expression -Command "$scriptPath\embed\integrations_win.ps1 -arch $arch $(If ($skipSigning) {"-skipSigning"} Else {"false"})"
+Invoke-expression -Command "$scriptPath\embed\integrations_win.ps1 -arch $arch $(If ($skipSigning) {"-skipSigning"})"
 if ($lastExitCode -ne 0) {
     Write-Output "Failed to embed integration"
     exit -1
