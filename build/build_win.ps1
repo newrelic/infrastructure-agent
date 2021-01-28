@@ -7,6 +7,8 @@ param (
     [ValidateSet("amd64", "386")]
     [string]$arch="amd64",
 
+    [string]$version="0.0.0",
+
     # Skip tests
     [switch]$skipTests=$false,
 
@@ -14,7 +16,7 @@ param (
     [switch]$skipBuild=$false
 )
 $scriptPath = split-path -parent $MyInvocation.MyCommand.Definition
-$workspace = "$scriptPath\..\"
+$workspace = "$scriptPath\.."
 
 Write-Output "--- Checking dependencies"
 
@@ -42,6 +44,31 @@ if ($skipBuild) {
     exit 0
 }
 
+Write-Output "--- Cleaning target..."
+Remove-Item -Path "target" -Force -Recurse -ErrorAction Ignore
+
+$goMains = @(
+    "$workspace\cmd\newrelic-infra"
+    "$workspace\cmd\newrelic-infra-ctl"
+    "$workspace\cmd\newrelic-infra-service"
+    "$workspace\tools\yamlgen"
+)
+
+Write-Output "--- Generating code..."
+
+Invoke-expression -Command "$scriptPath\set_exe_metadata.ps1 -version ${version}"
+
+Foreach ($pkg in $goMains)
+{
+    Write-Output "generating $pkg"
+    go generate $pkg
+    if (-not $?)
+    {
+        Write-Output "Failed generate code $pkg"
+        exit -1
+    }
+}
+
 Write-Output "--- Running Build"
 $goFiles = go list $workspace\cmd\...
 go build -v $goFiles
@@ -50,13 +77,6 @@ if (-not $?)
     Write-Output "Failed building files"
     exit -1
 }
-
-$goMains = @(
-    "$workspace\cmd\newrelic-infra"
-    "$workspace\cmd\newrelic-infra-ctl"
-    "$workspace\cmd\newrelic-infra-service"
-    "$workspace\tools\yamlgen"
-)
 
 
 Write-Output "--- Running Full Build"

@@ -2,16 +2,16 @@
 	"FixedFileInfo":
 	{
 		"FileVersion": {
-			"Major": 1,
-			"Minor": 0,
-			"Patch": 0,
-			"Build": 0
+			"Major": {AgentMajorVersion},
+			"Minor": {AgentMinorVersion},
+			"Patch": {AgentPatchVersion},
+			"Build": {AgentBuildVersion}
 		},
 		"ProductVersion": {
-			"Major": 1,
-			"Minor": 0,
-			"Patch": 0,
-			"Build": 0
+			"Major": {AgentMajorVersion},
+			"Minor": {AgentMinorVersion},
+			"Patch": {AgentPatchVersion},
+			"Build": {AgentBuildVersion}
 		},
 		"FileFlagsMask": "3f",
 		"FileFlags ": "00",
@@ -24,14 +24,14 @@
 		"Comments": "(c) 2019 New Relic, Inc.",
 		"CompanyName": "New Relic, Inc.",
 		"FileDescription": "",
-		"FileVersion": "1.0.0.0",
+		"FileVersion": "{AgentMajorVersion}.{AgentMinorVersion}.{AgentPatchVersion}.{AgentBuildVersion}",
 		"InternalName": "newrelic-infra-ctl",
 		"LegalCopyright": "(c) 2019 New Relic, Inc.",
 		"LegalTrademarks": "",
 		"OriginalFilename": "newrelic-infra-ctl.exe",
 		"PrivateBuild": "",
 		"ProductName": "New Relic Infrastructure Agent Command Control",
-		"ProductVersion": "1.0.0.0",
+		"ProductVersion": "{AgentMajorVersion}.{AgentMinorVersion}.{AgentPatchVersion}.{AgentBuildVersion}",
 		"SpecialBuild": ""
 	},
 	"VarFileInfo":
