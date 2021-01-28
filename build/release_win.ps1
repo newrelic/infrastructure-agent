@@ -7,7 +7,10 @@ param (
     [string]$integration="none",
     [ValidateSet("amd64", "386")]
     [string]$arch="amd64",
-    [string]$version="0.0.0"
+    [string]$version="0.0.0",
+
+    # Skip signing
+    [switch]$skipSigning=$false
 )
 
 $scriptPath = split-path -parent $MyInvocation.MyCommand.Definition
@@ -15,7 +18,8 @@ $scriptPath = split-path -parent $MyInvocation.MyCommand.Definition
 $buildYear = (Get-Date).Year
 
 Write-Output "===> Embeding integrations"
-Invoke-expression -Command "$scriptPath\embed\integrations_win.ps1 -arch $arch"
+
+Invoke-expression -Command "$scriptPath\embed\integrations_win.ps1 -arch $arch $(If ($skipSigning) {"-skipSigning"} Else {"false"})"
 if ($lastExitCode -ne 0) {
     Write-Output "Failed to embed integration"
     exit -1
@@ -44,3 +48,5 @@ if (-not $?)
 
 Write-Output "===> Making versioned installed copy"
 Copy-Item $WixPrjPath\bin\Release\newrelic-infra-$arch.msi $WixPrjPath\bin\Release\newrelic-infra-${arch}.${version}.msi
+
+exit 0

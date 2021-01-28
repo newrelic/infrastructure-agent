@@ -61,7 +61,7 @@ if (-Not [string]::IsNullOrWhitespace($nriWinServicesVersion)) {
     Write-Output "--- Embedding win-services"
 
     # download
-    [string]$file="nri-winservices-${nriWinServicesVersion}-$arch.zip"
+    [string]$file="nri-winservices-${nriWinServicesVersion}-amd64.zip" # TODO change this with $arch when package is available.
     $ProgressPreference = 'SilentlyContinue'
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     Invoke-WebRequest "https://github.com/newrelic/nri-winservices/releases/download/${nriWinServicesVersion}/${file}" -OutFile "$downloadPath\nri-winservices.zip"
@@ -132,8 +132,9 @@ if (-Not [string]::IsNullOrWhitespace($nrfbArtifactVersion)) {
     }
     # Download fluent-bit artifacts.
     $ProgressPreference = 'SilentlyContinue'
+
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    Invoke-WebRequest "https://download.newrelic.com/infrastructure_agent/logging/windows/nrfb-$nrfbArtifactVersion-$fbArch.zip" -Headers @{"X-JFrog-Art-Api"="$artifactoryToken"} -OutFile nrfb.zip
+    Invoke-WebRequest "https://download.newrelic.com/infrastructure_agent/logging/windows/nrfb-$nrfbArtifactVersion-$fbArch.zip" -OutFile nrfb.zip
 
     expand-archive -path '.\nrfb.zip' -destinationpath '.\'
     Remove-Item -Force .\nrfb.zip
@@ -180,3 +181,4 @@ if (-Not $skipSigning) {
     }
 }
 
+exit 0

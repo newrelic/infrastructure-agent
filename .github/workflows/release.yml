@@ -48,7 +48,7 @@ jobs:
         working-directory: src/github.com/newrelic/infrastructure-agent
     strategy:
       matrix:
-        goarch: [ amd64 ]
+        goarch: [ amd64 386 ]
     steps:
       - name: Checkout
         uses: actions/checkout@v2

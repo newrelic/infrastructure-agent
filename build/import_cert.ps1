@@ -12,3 +12,5 @@ Import-PfxCertificate -FilePath wincert.pfx -Password (ConvertTo-SecureString -S
 
 Write-Output "===> Show certificate installed"
 Get-ChildItem -Path cert:\CurrentUser\My\
+
+exit 0

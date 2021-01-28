@@ -23,6 +23,9 @@ param (
 $scriptPath = split-path -parent $MyInvocation.MyCommand.Definition
 $workspace = "$scriptPath\.."
 
+$env:GOOS="windows"
+$env:GOARCH=$arch
+
 Write-Output "--- Checking dependencies"
 
 Write-Output "Checking Go..."
@@ -94,16 +97,14 @@ if (-not $?)
     exit -1
 }
 
-
 Write-Output "--- Running Full Build"
 
 Foreach ($pkg in $goMains)
 {
     $fileName = ([io.fileinfo]$pkg).BaseName
     Write-Output "creating $fileName"
-    $exe = "$workspace\target\bin\windows_$arch\$fileName.exe"
-    go build -o $exe $pkg
 
+    $exe = "$workspace\target\bin\windows_$arch\$fileName.exe"
     go build -ldflags "-X main.buildVersion=$version" -o $exe $pkg
     if (-Not $skipSigning) {
         Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.' $exe"
