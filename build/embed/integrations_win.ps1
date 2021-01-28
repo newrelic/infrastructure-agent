@@ -49,7 +49,7 @@ if (-Not [string]::IsNullOrWhitespace($nriFlexVersion)) {
     Remove-Item "$downloadPath\nri-flex.zip"
 
     if (-Not $skipSigning) {
-        Invoke-Expression -Command "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  $dstPath\nri-flex.exe"
+        Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  $dstPath\nri-flex.exe"
         if ($lastExitCode -ne 0) {
             Write-Output "Failed to sign flex"
             exit -1
@@ -73,7 +73,7 @@ if (-Not [string]::IsNullOrWhitespace($nriWinServicesVersion)) {
     Remove-Item "$downloadPath\nri-winservices.zip"
 
     if (-Not $skipSigning) {
-        Invoke-Expression  -Command "$signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  $windowsTargetPath\nri-winservices.exe"
+        Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  $windowsTargetPath\nri-winservices.exe"
         if ($lastExitCode -ne 0) {
             Write-Output "Failed to sign winservices"
             exit -1
