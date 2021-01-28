@@ -49,15 +49,13 @@ if (-Not [string]::IsNullOrWhitespace($nriFlexVersion)) {
     Remove-Item "$downloadPath\nri-flex.zip"
 
     if (-Not $skipSigning) {
-        $Success = Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  $dstPath\nri-flex.exe"
-        if (-not $Success)
-        {
+        Invoke-Expression -Command "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  $dstPath\nri-flex.exe"
+        if ($lastExitCode -ne 0) {
             Write-Output "Failed to sign flex"
             exit -1
         }
     }
 }
-
 # embded nri-winservices
 if (-Not [string]::IsNullOrWhitespace($nriWinServicesVersion)) {
     Write-Output "--- Embedding win-services"
@@ -75,15 +73,13 @@ if (-Not [string]::IsNullOrWhitespace($nriWinServicesVersion)) {
     Remove-Item "$downloadPath\nri-winservices.zip"
 
     if (-Not $skipSigning) {
-        $Success = Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  $windowsTargetPath\nri-winservices.exe"
-        if (-not $Success)
-        {
+        Invoke-Expression  -Command "$signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  $windowsTargetPath\nri-winservices.exe"
+        if ($lastExitCode -ne 0) {
             Write-Output "Failed to sign winservices"
             exit -1
         }
-        $Success = Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  $windowsTargetPath\windows_exporter.exe"
-        if (-not $Success)
-        {
+        Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  $windowsTargetPath\windows_exporter.exe"
+        if ($lastExitCode -ne 0) {
             Write-Output "Failed to sign win services exported"
             exit -1
         }
@@ -116,9 +112,8 @@ if (-Not [string]::IsNullOrWhitespace($nriPrometheusVersion)) {
     Copy-Item -Path "$prometheusPath\New Relic\newrelic-infra\newrelic-integrations\bin\nri-prometheus.exe" -Destination "$dstPath\nri-prometheus.exe" -Recurse -Force
 
     if (-Not $skipSigning) {
-        $Success = Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  $prometheusTargetPath\nri-prometheus.exe"
-        if (-not $Success)
-        {
+        Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  $prometheusTargetPath\nri-prometheus.exe"
+        if ($lastExitCode -ne 0) {
             Write-Output "Failed to sign prometheus"
             exit -1
         }
@@ -144,9 +139,8 @@ if (-Not [string]::IsNullOrWhitespace($nrfbArtifactVersion)) {
     Remove-Item -Force .\nrfb.zip
 
     if (-Not $skipSigning) {
-        $Success = Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  .\nrfb\fluent-bit.exe"
-        if (-not $Success)
-        {
+        Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  .\nrfb\fluent-bit.exe"
+        if ($lastExitCode -ne 0) {
             Write-Output "Failed to sign fluent-bit"
             exit -1
         }
@@ -179,9 +173,8 @@ expand-archive -path "$downloadPath\nri-winpkg.zip" -destinationpath $dstPath
 Remove-Item "$downloadPath\nri-winpkg.zip"
 
 if (-Not $skipSigning) {
-    $Success = Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  $dstPath\nr-winpkg.exe"
-    if (-not $Success)
-    {
+    Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  $dstPath\nr-winpkg.exe"
+    if ($lastExitCode -ne 0) {
         Write-Output "Failed to sign winpkg"
         exit -1
     }

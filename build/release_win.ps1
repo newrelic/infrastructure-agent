@@ -7,23 +7,19 @@ param (
     [string]$integration="none",
     [ValidateSet("amd64", "386")]
     [string]$arch="amd64",
-    [string]$version="0.0.0",
-    [string]$pfx_passphrase="none",
-    [string]$pfx_certificate_description="none"
+    [string]$version="0.0.0"
 )
 
 $scriptPath = split-path -parent $MyInvocation.MyCommand.Definition
 
 $buildYear = (Get-Date).Year
 
-Write-Output "===> Import .pfx certificate from GH Secrets"
-Import-PfxCertificate -FilePath wincert.pfx -Password (ConvertTo-SecureString -String $pfx_passphrase -AsPlainText -Force) -CertStoreLocation Cert:\CurrentUser\My
-
-Write-Output "===> Show certificate installed"
-Get-ChildItem -Path cert:\CurrentUser\My\
-
 Write-Output "===> Embeding integrations"
 Invoke-expression -Command "$scriptPath\embed\integrations_win.ps1 -arch $arch"
+if ($lastExitCode -ne 0) {
+    Write-Output "Failed to embed integration"
+    exit -1
+}
 
 Write-Output "===> Checking MSBuild.exe..."
 $msBuild = (Get-ItemProperty hklm:\software\Microsoft\MSBuild\ToolsVersions\4.0).MSBuildToolsPath

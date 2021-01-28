@@ -33,7 +33,6 @@ if (-not $?)
     exit -1
 }
 
-
 Write-Output "Downloading go modules..."
 go mod download
 
@@ -68,7 +67,12 @@ $goMains = @(
 )
 
 Write-Output "--- Generating code..."
-Invoke-expression -Command "$scriptPath\set_exe_metadata.ps1 -version ${version}"
+$Success = Invoke-expression -Command "$scriptPath\set_exe_metadata.ps1 -version ${version}"
+if (-not $Success)
+{
+    Write-Output "Failed to generate code"
+    exit -1
+}
 
 Foreach ($pkg in $goMains)
 {
