@@ -13,7 +13,12 @@ param (
     [switch]$skipTests=$false,
 
     # Skip build
-    [switch]$skipBuild=$false
+    [switch]$skipBuild=$false,
+
+    # Skip signing
+    [switch]$skipSigning=$false,
+    # Signing tool
+    [string]$signtool='"C:\Program Files (x86)\Windows Kits\10\bin\x64\signtool.exe"'
 )
 $scriptPath = split-path -parent $MyInvocation.MyCommand.Definition
 $workspace = "$scriptPath\.."
@@ -63,7 +68,6 @@ $goMains = @(
 )
 
 Write-Output "--- Generating code..."
-
 Invoke-expression -Command "$scriptPath\set_exe_metadata.ps1 -version ${version}"
 
 Foreach ($pkg in $goMains)
@@ -95,4 +99,9 @@ Foreach ($pkg in $goMains)
     Write-Output "creating $fileName"
     $exe = "$workspace\target\bin\windows_$arch\$fileName.exe"
     go build -o $exe $pkg
+
+    go build -ldflags "-X main.buildVersion=$version" -o $exe $pkg
+    if (-Not $skipSigning) {
+        Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.' $exe"
+   }
 }

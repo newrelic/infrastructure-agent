@@ -14,8 +14,13 @@ param (
     # nri-prometheus
     [string]$nriPrometheusVersion=$(Get-Content $scriptPath/integrations.version | %{if($_ -match "^nri-prometheus") { $_.Split(',')[1]; }}),
     #fluent-bit
-    [string]$nrfbArtifactVersion=$(Get-Content $scriptPath/fluent-bit.version | %{if($_ -match "^windows") { $_.Split(',')[3]; }})
-)
+    [string]$nrfbArtifactVersion=$(Get-Content $scriptPath/fluent-bit.version | %{if($_ -match "^windows") { $_.Split(',')[3]; }}),
+
+    # Skip signing
+    [switch]$skipSigning=$false,
+    # Signing tool
+    [string]$signtool='"C:\Program Files (x86)\Windows Kits\10\bin\x64\signtool.exe"'
+    )
 
 $downloadPath = "$scriptPath\..\..\target\embed"
 
@@ -42,6 +47,10 @@ if (-Not [string]::IsNullOrWhitespace($nriFlexVersion)) {
     New-Item -path $dstPath -type directory -Force
     expand-archive -path "$downloadPath\nri-flex.zip" -destinationpath $dstPath
     Remove-Item "$downloadPath\nri-flex.zip"
+
+    if (-Not $skipSigning) {
+        Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  $dstPath\nri-flex.exe"
+    }
 }
 
 # embded nri-winservices
@@ -60,10 +69,10 @@ if (-Not [string]::IsNullOrWhitespace($nriWinServicesVersion)) {
     expand-archive -path "$downloadPath\nri-winservices.zip" -destinationpath $windowsTargetPath
     Remove-Item "$downloadPath\nri-winservices.zip"
 
-    # if (-Not $skipSigning) {
-    #     iex "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  $windowsTargetPath\nri-winservices.exe"
-    #     iex "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  $windowsTargetPath\windows_exporter.exe"
-    # }
+    if (-Not $skipSigning) {
+        Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  $windowsTargetPath\nri-winservices.exe"
+        Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  $windowsTargetPath\windows_exporter.exe"
+    }
 }
 
 # embded nri-prometheus
@@ -91,9 +100,9 @@ if (-Not [string]::IsNullOrWhitespace($nriPrometheusVersion)) {
 
     Copy-Item -Path "$prometheusPath\New Relic\newrelic-infra\newrelic-integrations\bin\nri-prometheus.exe" -Destination "$dstPath\nri-prometheus.exe" -Recurse -Force
 
-    # if (-Not $skipSigning) {
-    #     Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  $prometheusTargetPath\nri-prometheus.exe"
-    # }
+    if (-Not $skipSigning) {
+        Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  $prometheusTargetPath\nri-prometheus.exe"
+    }
     Remove-Item -Path $prometheusPath -Force -Recurse
 }
 
@@ -114,9 +123,9 @@ if (-Not [string]::IsNullOrWhitespace($nrfbArtifactVersion)) {
     expand-archive -path '.\nrfb.zip' -destinationpath '.\'
     Remove-Item -Force .\nrfb.zip
 
-    # if (-Not $skipSigning) {
-    #     iex "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  .\nrfb\fluent-bit.exe"
-    # }
+    if (-Not $skipSigning) {
+        Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  .\nrfb\fluent-bit.exe"
+    }
 
     # Move the files to packaging.
     $nraPath = "$downloadPath\bin\windows_$arch\"
@@ -144,4 +153,7 @@ New-Item -path $dstPath -type directory -Force
 expand-archive -path "$downloadPath\nri-winpkg.zip" -destinationpath $dstPath
 Remove-Item "$downloadPath\nri-winpkg.zip"
 
+if (-Not $skipSigning) {
+    Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  $dstPath\nr-winpkg.exe"
+}
 
