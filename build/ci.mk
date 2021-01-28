@@ -2,7 +2,7 @@ BUILDER_IMG_TAG = infrastructure-agent-builder
 
 .PHONY: ci/deps
 ci/deps:
-	@docker build -t $(BUILDER_IMG_TAG) -f $(CURDIR)/build/Dockerfile.cicd $(CURDIR)
+	@docker build -t $(BUILDER_IMG_TAG) -f $(CURDIR)/build/Dockerfile $(CURDIR)
 
 .PHONY: ci/validate
 ci/validate: ci/deps
