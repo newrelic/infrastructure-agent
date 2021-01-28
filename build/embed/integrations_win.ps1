@@ -173,7 +173,7 @@ expand-archive -path "$downloadPath\nri-winpkg.zip" -destinationpath $dstPath
 Remove-Item "$downloadPath\nri-winpkg.zip"
 
 if (-Not $skipSigning) {
-    Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  $dstPath\nr-winpkg.exe"
+    Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  $dstPath\winpkg\nr-winpkg.exe"
     if ($lastExitCode -ne 0) {
         Write-Output "Failed to sign winpkg"
         exit -1
