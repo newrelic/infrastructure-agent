@@ -41,10 +41,8 @@
 			<ComponentGroupRef Id="ProductComponents" />
 			<ComponentGroupRef Id="BundledPluginConfigComponents" />
 			<ComponentGroupRef Id="BundledPluginComponents" />
-			<?if "$(var.IncludeFluentBit)" = "True"?>
-			  <ComponentGroupRef Id="LoggingToolComponents" />
-			  <ComponentGroupRef Id="LoggingToolCfgComponents" />
-			<?endif?>
+      <ComponentGroupRef Id="LoggingToolComponents" />
+      <ComponentGroupRef Id="LoggingToolCfgComponents" />
 		</Feature>
 	</Product>
 
@@ -126,13 +124,13 @@
             <Component Id="CMP_AGENT_CONFIG_YML" Guid="A7976B53-0B30-4E9A-AEB1-C903C28A5864" Win64="yes" NeverOverwrite="yes" Permanent="yes">
                 <File Id="FILE_AgentBinaryFolder_AGENT_CONFIG_YML"
                       Name="newrelic-infra.yml"
-                      Source="$(var.ExternalFilesPath)newrelic-infra.windows.yml"
+                      Source="$(var.ExternalFilesPath)\examples\infrastructure\newrelic-infra.windows.yml"
                       KeyPath="yes" />
             </Component>
             <Component Id="CMP_LICENSE_TXT" Guid="BA99F9AA-967F-405C-B80B-9ACE31D98E9E" Win64="yes">
                 <File Id="FILE_AgentBinaryFolder_LICENSE_TXT"
                       Name ="LICENSE.txt"
-                      Source="$(var.ExternalFilesPath)LICENSE.windows.txt"
+                      Source="$(var.ExternalFilesPath)\examples\infrastructure\LICENSE.windows.txt"
                       KeyPath="yes" />
               </Component>
             <Component Id="CMP_YAMLGENERATOR_EXE" Guid="BA69F9AA-977F-415C-B70B-9ADE31D98E9F" Win64="yes">
@@ -181,22 +179,22 @@
     <ComponentGroup Id="LoggingToolComponents" Directory="LoggingTool">
         <Component Id="CMP_LOGGING_TOOL_BIN" Guid="015B10A1-7843-4961-B221-CBB449A6646C" Win64="yes">
           <File Id="FILE_LOGGING_TOOL_BIN"
-              Source="$(var.BinariesPath)logging\fluent-bit.exe"
+              Source="$(var.EmbedBinariesPath)logging\fluent-bit.exe"
                 KeyPath="yes" />
         </Component>
         <Component Id="CMP_LOGGING_TOOL_DLL" Guid="28A3B24F-A98E-4D20-BEB3-8859D29375FD" Win64="yes">
           <File Id="FILE_LOGGING_TOOL_DLL"
-              Source="$(var.BinariesPath)logging\fluent-bit.dll"
+              Source="$(var.EmbedBinariesPath)logging\fluent-bit.dll"
                 KeyPath="yes" />
         </Component>
         <Component Id="CMP_NR_LOGGING_TOOL_DLL" Guid="9B2B74F7-DA9C-4C44-9FA7-96CA3C6DBB0D" Win64="yes">
           <File Id="FILE_NR_LOGGING_TOOL_DLL"
-              Source="$(var.BinariesPath)logging\out_newrelic.dll"
+              Source="$(var.EmbedBinariesPath)logging\out_newrelic.dll"
                 KeyPath="yes" />
         </Component>
         <Component Id="CMP_NR_LOGGING_TOOL_PARSERS" Guid="34BF1E45-4AC5-45C4-AB80-D7C457A9B601" Win64="yes">
           <File Id="FILE_NR_LOGGING_TOOL_PARSERS"
-              Source="$(var.BinariesPath)logging\parsers.conf"
+              Source="$(var.EmbedBinariesPath)logging\parsers.conf"
                 KeyPath="yes" />
         </Component>
     </ComponentGroup>

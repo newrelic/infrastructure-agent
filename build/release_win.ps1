@@ -23,7 +23,6 @@ Write-Output "===> Show certificate installed"
 Get-ChildItem -Path cert:\CurrentUser\My\
 
 Write-Output "===> Embeding integrations"
-
 Invoke-expression -Command "$scriptPath\embed\integrations_win.ps1 -arch $arch"
 
 Write-Output "===> Checking MSBuild.exe..."
@@ -39,7 +38,7 @@ Write-Output "===> Building msi Installer"
 $env:path = "$env:path;C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin"
 
 $WixPrjPath = "$scriptPath\package\windows\newrelic-infra-$arch-installer\newrelic-infra"
-. $msBuild/MSBuild.exe "$WixPrjPath\newrelic-infra-installer.wixproj" /p:AgentVersion=${version} /p:IncludeFluentBit=true
+. $msBuild/MSBuild.exe "$WixPrjPath\newrelic-infra-installer.wixproj" /p:AgentVersion=${version}
 
 if (-not $?)
 {
