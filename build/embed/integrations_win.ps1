@@ -112,7 +112,7 @@ if (-Not [string]::IsNullOrWhitespace($nriPrometheusVersion)) {
     Copy-Item -Path "$prometheusPath\New Relic\newrelic-infra\newrelic-integrations\bin\nri-prometheus.exe" -Destination "$dstPath\nri-prometheus.exe" -Recurse -Force
 
     if (-Not $skipSigning) {
-        Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.'  $prometheusTargetPath\nri-prometheus.exe"
+        Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.' $dstPath\nri-prometheus.exe"
         if ($lastExitCode -ne 0) {
             Write-Output "Failed to sign prometheus"
             exit -1
