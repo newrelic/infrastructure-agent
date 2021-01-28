@@ -28,6 +28,9 @@ if (-not $?)
     exit -1
 }
 
+Write-Output "Installing goversioninfo..."
+go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
+
 if (-Not $skipTests) {
     Write-Output "--- Running tests"
 
