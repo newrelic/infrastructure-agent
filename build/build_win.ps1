@@ -102,6 +102,11 @@ Foreach ($pkg in $goMains)
 
     go build -ldflags "-X main.buildVersion=$version" -o $exe $pkg
     if (-Not $skipSigning) {
-        Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.' $exe"
-   }
+        $Success = Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.' $exe"
+        if (-not $Success)
+        {
+            Write-Output "Failed to sign $exe"
+            exit -1
+        }
+    }
 }
