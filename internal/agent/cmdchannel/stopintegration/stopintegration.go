@@ -46,7 +46,7 @@ func NewHandler(tracker *track.Tracker, il integration.InstancesLookup, dmEmitte
 			return
 		}
 
-		if cmdapi.IsAllowedToRunStopFromCmdAPI(args.IntegrationName) {
+		if cmdapi.IsForbiddenToRunStopFromCmdAPI(args.IntegrationName) {
 			return runintegration.ErrIntNotAllowed
 		}
 
