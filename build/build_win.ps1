@@ -28,7 +28,12 @@ if (-not $?)
     exit -1
 }
 
+
+Write-Output "Downloading go modules..."
+go mod download
+
 Write-Output "Installing goversioninfo..."
+$Env:Path+= ";" + $Env:GOPATH + "\bin"
 go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
 
 if (-Not $skipTests) {

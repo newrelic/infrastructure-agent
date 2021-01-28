@@ -19,7 +19,7 @@ lcov.info
 *.heap
 /workspace
 .vscode
-cmd/newrelic-infra/versioninfo.json
+versioninfo.json
 
 # Agent data directory when AppDataDir is not specify in darwin
 /data
