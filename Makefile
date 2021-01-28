@@ -13,13 +13,13 @@ GO_BIN				?= go
 GO_BIN_1_9			?= go1.9.4
 
 # Scripts for building the Agent
-include $(INCLUDE_BUILD_DIR)/infra_build.mk
+include $(INCLUDE_BUILD_DIR)/build.mk
 
 # Scripts for getting On Host Integrations
 # https://docs.newrelic.com/docs/integrations/host-integrations/getting-started/introduction-host-integrations
-include $(INCLUDE_BUILD_DIR)/embed_ohis.mk
+include $(INCLUDE_BUILD_DIR)/embed/integrations.mk
 
-include $(INCLUDE_BUILD_DIR)/embed_fb.mk
+include $(INCLUDE_BUILD_DIR)/embed/fluent-bit.mk
 
 # Scripts for CICD
 include $(INCLUDE_BUILD_DIR)/ci.mk
