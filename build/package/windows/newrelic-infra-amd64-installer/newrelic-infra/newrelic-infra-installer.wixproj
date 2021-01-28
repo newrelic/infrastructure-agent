@@ -17,7 +17,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>Debug;ExternalFilesPath=..\..\..\..\..\assets\;BinariesPath=..\..\..\..\..\target\bin\windows_amd64\;BundledPluginsPath=..\..\..\..\..\overlay\bundled-plugins\win\</DefineConstants>
+    <DefineConstants>Debug;ExternalFilesPath=..\..\..\..\..\assets\examples\infrastructure\;BinariesPath=..\..\..\..\..\target\bin\windows_amd64\;EmbedBinariesPath=..\..\..\..\..\target\embed\bin\windows_amd64\;</DefineConstants>
     <SuppressAllWarnings>True</SuppressAllWarnings>
     <Pedantic>False</Pedantic>
     <CompilerAdditionalOptions>-arch x64</CompilerAdditionalOptions>
@@ -25,7 +25,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>ExternalFilesPath=..\..\..\..\..\assets\;BinariesPath=..\..\..\..\..\target\bin\windows_amd64\;BundledPluginsPath=..\..\..\..\..\overlay\bundled-plugins\win\</DefineConstants>
+    <DefineConstants>ExternalFilesPath=..\..\..\..\..\assets\examples\infrastructure\;BinariesPath=..\..\..\..\..\target\bin\windows_amd64\;EmbedBinariesPath=..\..\..\..\..\target\embed\bin\windows_amd64\;</DefineConstants>
     <CompilerAdditionalOptions>-arch x64</CompilerAdditionalOptions>
   </PropertyGroup>
   <ItemGroup>
@@ -34,6 +34,9 @@
   <Import Project="$(WixTargetsPath)" />
   <Target Name="BeforeBuild">
     <CreateProperty Condition="$(IncludeFluentBit) != ''" Value="IncludeFluentBit=$(IncludeFluentBit);$(DefineConstants)">
+        <Output TaskParameter="Value" PropertyName="DefineConstants" />
+    </CreateProperty>
+    <CreateProperty Condition="$(AgentVersion) != ''" Value="AgentVersion=$(AgentVersion);$(DefineConstants)">
         <Output TaskParameter="Value" PropertyName="DefineConstants" />
     </CreateProperty>
   </Target>

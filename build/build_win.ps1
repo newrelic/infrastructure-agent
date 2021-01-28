@@ -1,6 +1,6 @@
 <#
     .SYNOPSIS
-        This script tests builds the New Relic Infrastructure Agent
+        This script build the binaries and run the tests of New Relic Infrastructure Agent
 #>
 param (
     # Target architecture: amd64 (default) or 386
@@ -13,55 +13,58 @@ param (
     # Skip build
     [switch]$skipBuild=$false
 )
+$scriptPath = split-path -parent $MyInvocation.MyCommand.Definition
+$workspace = "$scriptPath\..\"
 
-echo "--- Checking dependencies"
+Write-Output "--- Checking dependencies"
 
-echo "Checking Go..."
+Write-Output "Checking Go..."
 go version
 if (-not $?)
 {
-    echo "Can't find Go"
+    Write-Output "Can't find Go"
     exit -1
 }
 
 if (-Not $skipTests) {
-    echo "--- Running tests"
+    Write-Output "--- Running tests"
 
-    go test .\pkg\... .\cmd\... .\internal\... .\test\...
+    go test $workspace\pkg\... $workspace\cmd\... $workspace\internal\... $workspace\test\...
     if (-not $?)
     {
-        echo "Failed running tests"
+        Write-Output "Failed running tests"
         exit -1
     }
 }
 
 if ($skipBuild) {
-    echo "--- Build step skipped"
+    Write-Output "--- Build step skipped"
     exit 0
 }
 
-echo "--- Running Build"
-$goFiles = go list .\cmd\...
+Write-Output "--- Running Build"
+$goFiles = go list $workspace\cmd\...
 go build -v $goFiles
 if (-not $?)
 {
-    echo "Failed building files"
+    Write-Output "Failed building files"
     exit -1
 }
 
 $goMains = @(
-    ".\cmd\newrelic-infra"
-    ".\cmd\newrelic-infra-ctl"
-    ".\cmd\newrelic-infra-service"
+    "$workspace\cmd\newrelic-infra"
+    "$workspace\cmd\newrelic-infra-ctl"
+    "$workspace\cmd\newrelic-infra-service"
+    "$workspace\tools\yamlgen"
 )
 
 
-echo "--- Running Full Build"
+Write-Output "--- Running Full Build"
 
 Foreach ($pkg in $goMains)
 {
     $fileName = ([io.fileinfo]$pkg).BaseName
-    echo "creating $fileName"
-    $exe = ".\target\bin\windows_$arch\$fileName.exe"
+    Write-Output "creating $fileName"
+    $exe = "$workspace\target\bin\windows_$arch\$fileName.exe"
     go build -o $exe $pkg
 }
