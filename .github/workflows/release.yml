@@ -69,4 +69,4 @@ jobs:
       - name: Upload MSI to GH
         shell: bash
         run: |
-          build/windows/upload_msi.sh ${{ matrix.goarch }} ${TAG}
+          build/upload.sh ${{ matrix.goarch }} ${TAG}
