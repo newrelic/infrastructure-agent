@@ -46,9 +46,6 @@ jobs:
     defaults:
       run:
         working-directory: src/github.com/newrelic/infrastructure-agent
-    strategy:
-      matrix:
-        goarch: [ amd64, 386 ]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -64,14 +61,18 @@ jobs:
       - name: Import PFX certificate
         shell: pwsh
         run: build\import_cert.ps1 -pfx_passphrase "$env:PFX_PASSPHRASE" -pfx_certificate_description "$env:PFX_CERTIFICATE_DESCRIPTION"
-      - name: Build executables
+      - name: Build executables amd64
         shell: pwsh
-        run: |
-          build\build_win.ps1 -skipTests -arch amd64 -version "$env:TAG"
-          build\build_win.ps1 -skipTests -arch 386 -version "$env:TAG"
-      - name: Create MSI
+        run: build\build_win.ps1 -skipTests -arch amd64 -version "$env:TAG"
+      - name: Create MSI amd64
         shell: pwsh
-        run: build\release_win.ps1 -arch ${{ matrix.goarch }} -version "$env:TAG"
+        run: build\release_win.ps1 -arch amd64 -version "$env:TAG"
+      - name: Build executables 386
+        shell: pwsh
+        run: build\build_win.ps1 -skipTests -arch 386 -version "$env:TAG"
+      - name: Create MSI amd64
+        shell: pwsh
+        run: build\release_win.ps1 -arch amd64 -version "$env:TAG"
       - name: Upload MSI to GH
         shell: bash
         run: |
