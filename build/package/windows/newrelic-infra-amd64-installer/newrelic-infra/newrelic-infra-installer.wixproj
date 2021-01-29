@@ -34,7 +34,10 @@
   <Import Project="$(WixTargetsPath)" />
   <Target Name="BeforeBuild">
     <CreateProperty Condition="$(AgentVersion) != ''" Value="AgentVersion=$(AgentVersion);$(DefineConstants)">
-        <Output TaskParameter="Value" PropertyName="DefineConstants" />
+      <Output TaskParameter="Value" PropertyName="DefineConstants" />
+    </CreateProperty>
+    <CreateProperty Condition="$(Year) != ''" Value="Year=$(Year);$(DefineConstants)">
+      <Output TaskParameter="Value" PropertyName="DefineConstants" />
     </CreateProperty>
   </Target>
   <Target Name="SignInstaller">

@@ -16,7 +16,7 @@
           InstallScope="perMachine"
           Platform="x86"
           Manufacturer="New Relic, Inc."
-          Comments="(c) 2018 New Relic, Inc."
+          Comments="(c) $(var.Year) New Relic, Inc."
           Keywords="infrastructure,agent,MSI,32bit"/>
 
 		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
