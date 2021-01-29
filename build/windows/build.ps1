@@ -86,7 +86,7 @@ Foreach ($pkg in $goMains)
     Write-Output "creating $fileName"
 
     $exe = "$workspace\target\bin\windows_$arch\$fileName.exe"
-    go build -ldflags "-X main.buildVersion=$version" -ldflags "-X main.commit=$commit" -o $exe $pkg
+    go build -ldflags "-X main.buildVersion=$version" -ldflags "-X main.gitCommit=$commit" -o $exe $pkg
     if (-Not $skipSigning) {
         SignExecutable -executable "$exe"
     }
