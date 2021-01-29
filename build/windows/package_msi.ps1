@@ -14,7 +14,7 @@ param (
 )
 
 $scriptPath = split-path -parent $MyInvocation.MyCommand.Definition
-$workspace = "$scriptPath\.."
+$workspace = "$scriptPath\..\.."
 
 $buildYear = (Get-Date).Year
 
