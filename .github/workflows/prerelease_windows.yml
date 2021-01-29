@@ -16,6 +16,7 @@ env:
   SNYK_TOKEN: ${{ secrets.COREINT_SNYK_TOKEN }}
   TAG: ${{ github.event.release.tag_name }}
 
+jobs:
   unit-test-windows:
     name: Windows unit tests
     runs-on: windows-latest
