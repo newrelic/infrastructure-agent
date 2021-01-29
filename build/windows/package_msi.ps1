@@ -19,8 +19,7 @@ $workspace = "$scriptPath\.."
 $buildYear = (Get-Date).Year
 
 Write-Output "===> Embeding integrations"
-
-Invoke-expression -Command "$scriptPath\embed\integrations_win.ps1 -arch $arch $(If ($skipSigning) {"-skipSigning"})"
+Invoke-expression -Command "$scriptPath\scripts\embed_ohis.ps1 -arch $arch $(If ($skipSigning) {"-skipSigning"})"
 if ($lastExitCode -ne 0) {
     Write-Output "Failed to embed integration"
     exit -1
@@ -37,9 +36,8 @@ Write-Output $msBuild
 Write-Output "===> Building msi Installer"
 
 $env:path = "$env:path;C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin"
-
-$WixPrjPath = "$scriptPath\package\windows\newrelic-infra-$arch-installer\newrelic-infra"
-. $msBuild/MSBuild.exe "$WixPrjPath\newrelic-infra-installer.wixproj" /p:AgentVersion=${version}
+$WixPrjPath = "$scriptPath\..\package\windows\newrelic-infra-$arch-installer\newrelic-infra"
+. $msBuild/MSBuild.exe "$WixPrjPath\newrelic-infra-installer.wixproj" /p:AgentVersion=${version} /p:SkipSigning=${skipSigning}
 
 if (-not $?)
 {
@@ -50,7 +48,6 @@ if (-not $?)
 Write-Output "===> Making versioned installed copy"
 
 New-Item -path "$workspace\dist" -type directory -Force
-
 Copy-Item $WixPrjPath\bin\Release\newrelic-infra-$arch.msi "$workspace\dist\newrelic-infra-${arch}.${version}.msi"
 
 exit 0

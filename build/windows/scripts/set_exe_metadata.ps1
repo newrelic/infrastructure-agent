@@ -13,7 +13,7 @@ $build = 0
 
 $scriptPath = split-path -parent $MyInvocation.MyCommand.Definition
 
-$agentPath = "$scriptPath\.."
+$agentPath = "$scriptPath\..\..\.."
 
 Function GenerateVersionInfoFile($exeName) {
   $versionInfoPath = Join-Path -Path $agentPath -ChildPath "cmd\$exeName\versioninfo.json"
@@ -33,3 +33,4 @@ Function GenerateVersionInfoFile($exeName) {
 GenerateVersionInfoFile("newrelic-infra")
 GenerateVersionInfoFile("newrelic-infra-ctl")
 GenerateVersionInfoFile("newrelic-infra-service")
+exit 0

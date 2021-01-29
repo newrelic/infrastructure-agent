@@ -196,22 +196,22 @@
     <ComponentGroup Id="LoggingToolComponents" Directory="LoggingTool">
         <Component Id="CMP_LOGGING_TOOL_BIN" Guid="015B10A1-7843-4961-B221-CBB449A6646C" Win64="no">
           <File Id="FILE_LOGGING_TOOL_BIN"
-              Source="$(var.EmbedBinariesPath)logging\fluent-bit.exe"
+              Source="$(var.EmbedBinariesPath)logging\nrfb\fluent-bit.exe"
                 KeyPath="yes" />
         </Component>
         <Component Id="CMP_LOGGING_TOOL_DLL" Guid="28A3B24F-A98E-4D20-BEB3-8859D29375FD" Win64="no">
           <File Id="FILE_LOGGING_TOOL_DLL"
-              Source="$(var.EmbedBinariesPath)logging\fluent-bit.dll"
+              Source="$(var.EmbedBinariesPath)logging\nrfb\fluent-bit.dll"
                 KeyPath="yes" />
         </Component>
         <Component Id="CMP_NR_LOGGING_TOOL_DLL" Guid="9B2B74F7-DA9C-4C44-9FA7-96CA3C6DBB0D" Win64="no">
           <File Id="FILE_NR_LOGGING_TOOL_DLL"
-              Source="$(var.EmbedBinariesPath)logging\out_newrelic.dll"
+              Source="$(var.EmbedBinariesPath)logging\nrfb\out_newrelic.dll"
                 KeyPath="yes" />
         </Component>
         <Component Id="CMP_NR_LOGGING_TOOL_PARSERS" Guid="34BF1E45-4AC5-45C4-AB80-D7C457A9B601" Win64="no">
           <File Id="FILE_NR_LOGGING_TOOL_PARSERS"
-              Source="$(var.EmbedBinariesPath)logging\parsers.conf"
+              Source="$(var.EmbedBinariesPath)logging\nrfb\parsers.conf"
                 KeyPath="yes" />
         </Component>
     </ComponentGroup>

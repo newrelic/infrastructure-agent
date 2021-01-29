@@ -80,7 +80,7 @@ jobs:
         run: go mod vendor
 
       - name: Running unit tests
-        run: build\build_win.ps1 -onlyTests
+        run: build\windows\test.ps1
 
   proxy-tests-linux:
     name: Proxy tests

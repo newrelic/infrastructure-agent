@@ -1,6 +1,6 @@
 <#
     .SYNOPSIS
-        This script build the binaries and run the tests of New Relic Infrastructure Agent
+        This script build the binaries of New Relic Infrastructure Agent
 #>
 param (
     # Target architecture: amd64 (default) or 386
@@ -8,12 +8,7 @@ param (
     [string]$arch="amd64",
 
     [string]$version="0.0.0",
-
-    # Skip tests
-    [switch]$skipTests=$false,
-
-    # Skip build
-    [switch]$onlyTests=$false,
+    [string]$commit="default",
 
     # Skip signing
     [switch]$skipSigning=$false,
@@ -21,10 +16,15 @@ param (
     [string]$signtool='"C:\Program Files (x86)\Windows Kits\10\bin\x64\signtool.exe"'
 )
 $scriptPath = split-path -parent $MyInvocation.MyCommand.Definition
-$workspace = "$scriptPath\.."
+$workspace = "$scriptPath\..\.."
+
+# Source build Functions.
+. $scriptPath/scripts/functions.ps1
+
+Write-Output "--- Cleaning target..."
+Remove-Item -Path "target" -Force -Recurse -ErrorAction Ignore
 
 Write-Output "--- Checking dependencies"
-
 Write-Output "Checking Go..."
 go version
 if (-not $?)
@@ -38,27 +38,7 @@ go mod download
 
 Write-Output "Installing goversioninfo..."
 $Env:Path+= ";" + $Env:GOPATH + "\bin"
-
 go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
-
-if (-Not $skipTests) {
-    Write-Output "--- Running tests"
-
-    go test $workspace\pkg\... $workspace\cmd\... $workspace\internal\... $workspace\test\...
-    if (-not $?)
-    {
-        Write-Output "Failed running tests"
-        exit -1
-    }
-}
-
-if ($onlyTests) {
-    Write-Output "--- Build step skipped"
-    exit 0
-}
-
-Write-Output "--- Cleaning target..."
-Remove-Item -Path "target" -Force -Recurse -ErrorAction Ignore
 
 $goMains = @(
     "$workspace\cmd\newrelic-infra"
@@ -68,7 +48,7 @@ $goMains = @(
 )
 
 Write-Output "--- Generating code..."
-Invoke-expression -Command "$scriptPath\set_exe_metadata.ps1 -version ${version}"
+Invoke-expression -Command "$scriptPath\scripts\set_exe_metadata.ps1 -version ${version}"
 if ($lastExitCode -ne 0) {
 
     Write-Output "Failed to generate code"
@@ -106,12 +86,8 @@ Foreach ($pkg in $goMains)
     Write-Output "creating $fileName"
 
     $exe = "$workspace\target\bin\windows_$arch\$fileName.exe"
-    go build -ldflags "-X main.buildVersion=$version" -o $exe $pkg
+    go build -ldflags "-X main.buildVersion=$version" -ldflags "-X main.commit=$commit" -o $exe $pkg
     if (-Not $skipSigning) {
-        Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.' $exe"
-        if ($lastExitCode -ne 0) {
-            Write-Output "Failed to sign $exe"
-            exit -1
-        }
+        SignExecutable -executable "$exe"
     }
 }
