@@ -61,3 +61,16 @@ else
 	@echo "===> infrastructure-agent ===  [ci/prerelease] TAG env variable expected to be set"
 	exit 1
 endif
+
+.PHONY : ci/tarball
+ci/tarball: ci/deps
+ifdef TAG
+	@docker run --rm -t \
+			--name "infrastructure-agent-tarball" \
+			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
+            -w /go/src/github.com/newrelic/infrastructure-agent \
+			$(BUILDER_IMG_TAG) make tarball-linux-all VERSION=$(TAG)
+else
+	@echo "===> infrastructure-agent ===  [ci/tarball] TAG env variable expected to be set"
+	exit 1
+endif

@@ -97,4 +97,18 @@ jobs:
           password: ${{ env.DOCKER_HUB_PASSWORD }}
       - name: Pre release
         run: make ci/prerelease
-  
+
+  packaging-tarball-linux:
+    name: Build tarballs and upload into GH Release assets
+    runs-on: ubuntu-20.04
+    needs: [unit-test-linux, harvest-test-linux, proxy-tests-linux]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKER_HUB_ID }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
+      - name: Pre release
+        run: make ci/tarball
