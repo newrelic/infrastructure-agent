@@ -14,6 +14,7 @@ param (
 )
 
 $scriptPath = split-path -parent $MyInvocation.MyCommand.Definition
+$workspace = "$scriptPath\.."
 
 $buildYear = (Get-Date).Year
 
@@ -47,6 +48,9 @@ if (-not $?)
 }
 
 Write-Output "===> Making versioned installed copy"
-Copy-Item $WixPrjPath\bin\Release\newrelic-infra-$arch.msi $WixPrjPath\bin\Release\newrelic-infra-${arch}.${version}.msi
+
+New-Item -path "$workspace\dist" -type directory -Force
+
+Copy-Item $WixPrjPath\bin\Release\newrelic-infra-$arch.msi "$workspace\dist\newrelic-infra-${arch}.${version}.msi"
 
 exit 0
