@@ -10,6 +10,7 @@ $major = $version.Split(".")[0]
 $minor = $version.Split(".")[1]
 $patch = $version.Split(".")[2]
 $build = 0
+$buildYear = (Get-Date).Year
 
 $scriptPath = split-path -parent $MyInvocation.MyCommand.Definition
 
@@ -27,6 +28,8 @@ Function GenerateVersionInfoFile($exeName) {
   $versionInfo = $versionInfo -replace "{AgentMinorVersion}", $minor
   $versionInfo = $versionInfo -replace "{AgentPatchVersion}", $patch
   $versionInfo = $versionInfo -replace "{AgentBuildVersion}", $build
+  $versionInfo = $versionInfo -replace "{Year}", $buildYear
+
   Set-Content -Path $versionInfoPath -Value $versionInfo
 }
 

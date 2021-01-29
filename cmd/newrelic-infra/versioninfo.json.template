@@ -21,12 +21,12 @@
 	},
 	"StringFileInfo":
 	{
-		"Comments": "(c) 2019 New Relic, Inc.",
+		"Comments": "(c) {Year} New Relic, Inc.",
 		"CompanyName": "New Relic, Inc.",
 		"FileDescription": "",
 		"FileVersion": "{AgentMajorVersion}.{AgentMinorVersion}.{AgentPatchVersion}.{AgentBuildVersion}",
 		"InternalName": "newrelic-infra",
-		"LegalCopyright": "(c) 2019 New Relic, Inc.",
+		"LegalCopyright": "(c) {Year} New Relic, Inc.",
 		"LegalTrademarks": "",
 		"OriginalFilename": "newrelic-infra.exe",
 		"PrivateBuild": "",
