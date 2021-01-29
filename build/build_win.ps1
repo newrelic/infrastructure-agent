@@ -23,9 +23,6 @@ param (
 $scriptPath = split-path -parent $MyInvocation.MyCommand.Definition
 $workspace = "$scriptPath\.."
 
-$env:GOOS="windows"
-$env:GOARCH=$arch
-
 Write-Output "--- Checking dependencies"
 
 Write-Output "Checking Go..."
@@ -43,12 +40,6 @@ Write-Output "Installing goversioninfo..."
 $Env:Path+= ";" + $Env:GOPATH + "\bin"
 
 go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
-
-echo "path $Env:Path"
-echo "gopath $Env:GOPATH"
-echo "gobin $Env:GOBIN"
-ls $Env:GOPATH\bin
-
 
 if (-Not $skipTests) {
     Write-Output "--- Running tests"
@@ -96,6 +87,9 @@ Foreach ($pkg in $goMains)
 }
 
 Write-Output "--- Running Build"
+$env:GOOS="windows"
+$env:GOARCH=$arch
+
 $goFiles = go list $workspace\cmd\...
 go build -v $goFiles
 if (-not $?)
