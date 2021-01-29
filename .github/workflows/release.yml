@@ -49,7 +49,7 @@ jobs:
 
     strategy:
       matrix:
-        goarch: [amd64, 386]
+        goarch: [386]
       max-parallel: 1
     steps:
       - name: Checkout

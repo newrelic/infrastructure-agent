@@ -43,6 +43,14 @@ Write-Output "Installing goversioninfo..."
 $Env:Path+= ";" + $Env:GOPATH + "\bin"
 go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
 
+echo $Env:Path
+echo $Env:GOPATH
+ls $Env:Path
+
+ls $Env:GOBIN
+
+
+
 if (-Not $skipTests) {
     Write-Output "--- Running tests"
 
