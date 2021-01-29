@@ -41,12 +41,13 @@ go mod download
 
 Write-Output "Installing goversioninfo..."
 $Env:Path+= ";" + $Env:GOPATH + "\bin"
+
 go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
 
 echo "path $Env:Path"
 echo "gopath $Env:GOPATH"
 echo "gobin $Env:GOBIN"
-
+ls $Env:GOPATH\bin
 
 
 if (-Not $skipTests) {
