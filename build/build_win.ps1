@@ -13,7 +13,7 @@ param (
     [switch]$skipTests=$false,
 
     # Skip build
-    [switch]$skipBuild=$false,
+    [switch]$onlyTests=$false,
 
     # Skip signing
     [switch]$skipSigning=$false,
@@ -52,7 +52,7 @@ if (-Not $skipTests) {
     }
 }
 
-if ($skipBuild) {
+if ($onlyTests) {
     Write-Output "--- Build step skipped"
     exit 0
 }

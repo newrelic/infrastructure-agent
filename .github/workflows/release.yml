@@ -117,7 +117,7 @@ jobs:
         run: go mod vendor
 
       - name: Running unit tests
-        run: build\build_win.ps1 -skipTests
+        run: build\build_win.ps1 -onlyTests
 
   packaging-windows:
     name: Create MSI & Upload into GH Release assets
