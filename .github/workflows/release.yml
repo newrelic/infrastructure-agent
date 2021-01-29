@@ -50,7 +50,7 @@ jobs:
     strategy:
       matrix:
         arch: [amd64, 386]
-        max-parallel: 1
+      max-parallel: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v2
