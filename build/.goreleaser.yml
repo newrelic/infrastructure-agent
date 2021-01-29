@@ -63,54 +63,6 @@ builds:
       #    - ppc64le
       #    - s390x
 
-  - id: windows-newrelic-infra
-    main: ./cmd/newrelic-infra
-    binary: newrelic-infra
-    env:
-      - CGO_ENABLED=0
-    goos:
-      - windows
-    ldflags:
-      - -s -w -X main.buildVersion={{ .Version }}
-      - -s -w -X main.gitCommit={{.Commit}}
-    goarch:
-      - amd64
-      - 386
-    hooks:
-      pre: build/set_exe_properties.sh {{ .Env.TAG }}
-
-  - id: windows-newrelic-infra-ctl
-    main: ./cmd/newrelic-infra-ctl
-    binary: newrelic-infra-ctl
-    env:
-      - CGO_ENABLED=0
-    goos:
-      - windows
-    ldflags:
-      - -s -w -X main.buildVersion={{ .Version }}
-      - -s -w -X main.gitCommit={{.Commit}}
-    goarch:
-      - amd64
-      - 386
-    hooks:
-      pre: build/set_exe_properties.sh {{ .Env.TAG }}
-
-  - id: windows-newrelic-infra-service
-    main: ./cmd/newrelic-infra-service
-    binary: newrelic-infra-service
-    env:
-      - CGO_ENABLED=0
-    goos:
-      - windows
-    ldflags:
-      - -s -w -X main.buildVersion={{ .Version }}
-      - -s -w -X main.gitCommit={{.Commit}}
-    goarch:
-      - amd64
-      - 386
-    hooks:
-      pre: build/set_exe_properties.sh {{ .Env.TAG }}
-
 archives:
   - id: linux-tarball-infrastructure-agent
     builds:
