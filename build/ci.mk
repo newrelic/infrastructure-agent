@@ -69,6 +69,8 @@ ifdef TAG
 			--name "infrastructure-agent-tarball" \
 			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
             -w /go/src/github.com/newrelic/infrastructure-agent \
+			-e GITHUB_TOKEN \
+			-e TAG \
 			$(BUILDER_IMG_TAG) make tarball-release VERSION=$(TAG)
 else
 	@echo "===> infrastructure-agent ===  [ci/tarball] TAG env variable expected to be set"
