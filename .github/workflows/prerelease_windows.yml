@@ -15,6 +15,7 @@ env:
   PFX_PASSPHRASE:  ${{ secrets.OHAI_PFX_PASSPHRASE }}
   SNYK_TOKEN: ${{ secrets.COREINT_SNYK_TOKEN }}
   TAG: ${{ github.event.release.tag_name }}
+  COMMIT: ${{ $GITHUB_SHA }}
 
 jobs:
   unit-test-windows:
@@ -63,7 +64,7 @@ jobs:
       
       - name: Build executables ${{ matrix.goarch }}
         shell: pwsh
-        run: build\windows\build.ps1 -arch ${{ matrix.goarch }} -version "$env:TAG" -commit "$GITHUB_SHA"
+        run: build\windows\build.ps1 -arch ${{ matrix.goarch }} -version "$env:TAG" -commit "$env:COMMIT"
       
       - name: Create MSI package ${{ matrix.goarch }}
         shell: pwsh
