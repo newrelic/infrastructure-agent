@@ -31,6 +31,14 @@
 license_key: your_license_key
 
 #
+# Option : fedramp
+# Value  : true in case you want to use Fedramp endpoints.
+# Default: false
+#
+#fedramp: false
+
+
+#
 # Option   : payload_compression_level
 # Env var  : NRIA_PAYLOAD_COMPRESSION_LEVEL
 # Value    : Sets the compression level of the agent requests payload.

@@ -2,13 +2,13 @@ package cmdapi
 
 var (
 	integrationsAllowedToRunStopFromCmdAPI = map[string]struct{}{
-		"nri-lsi-java":         {},
-		"nri-process-detector": {},
+		"nri-lsi-java":          {},
+		"nri-process-discovery": {},
 	}
 )
 
-func IsAllowedToRunStopFromCmdAPI(integrationName string) bool {
+func IsForbiddenToRunStopFromCmdAPI(integrationName string) bool {
 	_, ok := integrationsAllowedToRunStopFromCmdAPI[integrationName]
 
-	return ok
+	return !ok
 }

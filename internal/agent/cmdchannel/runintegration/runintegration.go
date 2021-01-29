@@ -56,7 +56,7 @@ func NewHandler(definitionQ chan<- integration.Definition, il integration.Instan
 			return
 		}
 
-		if cmdapi.IsAllowedToRunStopFromCmdAPI(args.IntegrationName) {
+		if cmdapi.IsForbiddenToRunStopFromCmdAPI(args.IntegrationName) {
 			return ErrIntNotAllowed
 		}
 

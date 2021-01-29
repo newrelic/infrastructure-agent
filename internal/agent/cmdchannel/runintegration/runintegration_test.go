@@ -38,20 +38,20 @@ func TestHandle_queuesIntegrationToBeRun(t *testing.T) {
 			return integration.Definition{}, nil
 		},
 		ByName: func(_ string) (string, error) {
-			return "/path/to/nri-foo", nil
+			return "/path/to/nri-process-discovery", nil
 		},
 	}
 	h := NewHandler(defQueue, il, dm.NewNoopEmitter(), l)
 
 	cmd := commandapi.Command{
-		Args: []byte(`{ "integration_name": "nri-foo", "integration_args": ["bar", "baz"] }`),
+		Args: []byte(`{ "integration_name": "nri-process-discovery", "integration_args": ["bar", "baz"] }`),
 	}
 
 	err := h.Handle(context.Background(), cmd, false)
 	require.NoError(t, err)
 
 	d := <-defQueue
-	assert.Equal(t, "nri-foo", d.Name)
+	assert.Equal(t, "nri-process-discovery", d.Name)
 	// Definition won't allow assert further
 }
 
@@ -62,14 +62,14 @@ func TestHandle_notifiesPlatform(t *testing.T) {
 			return integration.Definition{}, nil
 		},
 		ByName: func(_ string) (string, error) {
-			return "/path/to/nri-foo", nil
+			return "/path/to/nri-process-discovery", nil
 		},
 	}
 	em := dm.NewRecordEmitter()
 	h := NewHandler(defQueue, il, em, l)
 
 	cmd := commandapi.Command{
-		Args: []byte(`{ "integration_name": "nri-foo", "integration_args": ["bar", "baz"] }`),
+		Args: []byte(`{ "integration_name": "nri-process-discovery", "integration_args": ["bar", "baz"] }`),
 		Metadata: map[string]interface{}{
 			"meta key": "meta value",
 		},
@@ -88,8 +88,8 @@ func TestHandle_notifiesPlatform(t *testing.T) {
 		"category":              "notifications",
 		"summary":               "cmd-api",
 		"cmd_name":              "run_integration",
-		"cmd_hash":              "nri-foo#[bar baz]",
-		"cmd_args_name":         "nri-foo",
+		"cmd_hash":              "nri-process-discovery#[bar baz]",
+		"cmd_args_name":         "nri-process-discovery",
 		"cmd_args_args":         "[bar baz]",
 		"cmd_metadata.meta key": "meta value",
 	}
