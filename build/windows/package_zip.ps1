@@ -26,5 +26,5 @@ Copy-Item -Path "$workspace\assets\examples\infrastructure\LICENSE.windows.txt" 
 Copy-Item -Path "$workspace\build\package\binaries\windows\installer.ps1" -Destination "$scriptPath\target\newrelic-infra\Program Files\New Relic\newrelic-infra\installer.ps1"
 
 New-Item -path "$workspace\dist" -type directory -Force
-Compress-Archive -Path "$scriptPath\target\newrelic-infra\Program Files" -DestinationPath "$workspace\dist\newrelic-infra-$version.$patch.zip" -Force
+Compress-Archive -Path "$scriptPath\target\newrelic-infra\Program Files" -DestinationPath "$workspace\dist\newrelic-infra-$arch.$version.zip" -Force
 Remove-Item "$scriptPath\target" -Force -Recurse
