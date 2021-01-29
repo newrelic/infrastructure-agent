@@ -76,4 +76,5 @@ jobs:
       - name: Upload MSI to GH
         shell: bash
         run: |
-          build/upload.sh ${{ matrix.goarch }} ${TAG}
+          build/upload.sh 386 ${TAG}
+          build/upload.sh amd64 ${TAG}
