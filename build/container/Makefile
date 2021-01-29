@@ -8,7 +8,7 @@ NRI_INTEGRATIONS_FILE			= $(CURDIR)/../../build/nri-integrations
 NRI_PKG_DIR						?= ${PROJECT_WORKSPACE}/${BASE_OHIS}
 AGENT_BUILD_TARGET_DIR			?= $(CURDIR)/../../target/bin/linux_amd64
 
-include ../../build/embed_ohis.mk
+include ../embed/integrations.mk
 
 # AGENT_BUILD_NUMBER comes from the jenkins job
 AGENT_BUILD_NUMBER			   ?= 0.0
