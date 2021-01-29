@@ -11,7 +11,7 @@ import (
 )
 
 func ExpandInContent(content []byte) ([]byte, error) {
-	content, err := removeComments(content)
+	content, err := RemoveYAMLComments(content)
 	if err != nil {
 		return nil, fmt.Errorf("cannot remove configuration commented lines, error: %w", err)
 	}
@@ -49,9 +49,58 @@ func ExpandInContent(content []byte) ([]byte, error) {
 	return newContent, nil
 }
 
-func removeComments(content []byte) ([]byte, error) {
-	r := regexp.MustCompile(`(^[ \t#].*\n)|([ \t]*#.*)`)
-	matches := r.FindAllIndex(content, -1)
+// RemoveYAMLComments removes comments from YAML content
+// golang does not support negative lookaheads
+// there's an alternative library https://github.com/dlclark/regexp2 but here we stick to stdlib
+// for this reason it's required:
+// - several regexes
+// - several capture groups that will be discarded
+func RemoveYAMLComments(content []byte) ([]byte, error) {
+	rLines := regexp.MustCompile(`(?m:^[ \t]*#.*\n)`) // ?m: = multiline flag
+	matches := rLines.FindAllIndex(content, -1)
+
+	newContent, err := removeMatches(content, matches)
+	if err != nil {
+		return content, err
+	}
+
+	// lines with strings: double or single quotes appearing on pairs
+	rInlinedWithQuotes := regexp.MustCompile(`((.*".*".*)|(.*'.*'.*))(#.*)`)
+	subMatches := rInlinedWithQuotes.FindAllSubmatchIndex(newContent, -1)
+
+	// retrieve matches only for comment capture group
+	var commentMatches [][]int
+	for _, indexes := range subMatches {
+		// 0,1: 1st capt group
+		// ...
+		// 8,9: 5th capt group <comment>
+		if len(indexes) == 10 {
+			commentMatches = append(commentMatches, []int{indexes[8], indexes[9]})
+		}
+	}
+
+	newContent, err = removeMatches(newContent, commentMatches)
+	if err != nil {
+		return content, err
+	}
+
+	// inlined comments within lines without quotes
+	rInlinedWithoutQuotes := regexp.MustCompile(`(?m:^[^"'\n]+(#.*)$)`)
+	subMatches = rInlinedWithoutQuotes.FindAllSubmatchIndex(newContent, -1)
+
+	// retrieve matches only for "comment" capture group
+	commentMatches = [][]int{}
+	for _, indexes := range subMatches {
+		// 0,1: 1st capt group
+		if len(indexes) == 4 {
+			commentMatches = append(commentMatches, []int{indexes[2], indexes[3]})
+		}
+	}
+
+	return removeMatches(newContent, commentMatches)
+}
+
+func removeMatches(content []byte, matches [][]int) ([]byte, error) {
 	if len(matches) == 0 {
 		return content, nil
 	}
