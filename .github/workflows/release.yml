@@ -73,4 +73,4 @@ jobs:
         run: build\release_win.ps1 -arch ${{ matrix.goarch }} -version "$env:TAG"
       - name: Upload MSI to GH
         shell: bash
-        run: upload_artifacts_gh.sh
+        run: build/upload_artifacts_gh.sh
