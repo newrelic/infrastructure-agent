@@ -4,7 +4,7 @@ INFRASTRUCTURE_WORKSPACE       ?= workspace
 PROJECT_WORKSPACE              ?= $(CURDIR)/$(INFRASTRUCTURE_WORKSPACE)
 
 TARGET_DIR						= $(PROJECT_WORKSPACE)/target
-NRI_INTEGRATIONS_FILE			= $(CURDIR)/../../build/nri-integrations
+NRI_INTEGRATIONS_FILE			= $(CURDIR)/../embed/integrations.version
 NRI_PKG_DIR						?= ${PROJECT_WORKSPACE}/${BASE_OHIS}
 AGENT_BUILD_TARGET_DIR			?= $(CURDIR)/../../target/bin/linux_amd64
 

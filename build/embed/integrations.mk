@@ -69,3 +69,25 @@ get-nri-prometheus:
 	  echo 'nri-prometheus version $(NRI_PROMETHEUS_VERSION) URL does not exist: $(NRI_PROMETHEUS_URL)' ;\
 	  exit 1 ;\
 	fi
+	
+.PHONY: embed-nri-docker
+embed-nri-docker:
+	@echo "Embed nri-docker version: $(NRI_DOCKER_VERSION)"
+	@cp -r $(TARGET_DIR)/nridocker/* $(NRI_PKG_DIR)
+
+.PHONY: embed-nri-flex
+embed-nri-flex:
+	@echo "Embed nri-flex version: $(NRI_FLEX_VERSION)"
+	@mkdir -p $(PKG_DIR_BIN_OHIS)
+	@cp $(TARGET_DIR)/nriflex/nri-flex $(PKG_DIR_BIN_OHIS)/
+
+.PHONY: embed-nri-prometheus
+embed-nri-prometheus:
+	@echo "Embed nri-prometheus version: $(NRI_PROMETHEUS_VERSION)"
+	@mkdir -p $(PKG_DIR_BIN_OHIS)
+	@cp -r $(TARGET_DIR)/nriprometheus/var $(NRI_PKG_DIR)
+
+.PHONY: embed-integrations
+embed-integrations: embed-nri-flex
+embed-integrations: embed-nri-docker
+embed-integrations: embed-nri-prometheus
