@@ -95,7 +95,7 @@ jobs:
         with:
           username: ${{ env.DOCKER_HUB_ID }}
           password: ${{ env.DOCKER_HUB_PASSWORD }}
-      - name: Pre release
+      - name: Releasing linux packages
         run: make ci/prerelease
 
   packaging-tarball-linux:
@@ -110,5 +110,5 @@ jobs:
         with:
           username: ${{ env.DOCKER_HUB_ID }}
           password: ${{ env.DOCKER_HUB_PASSWORD }}
-      - name: Pre release
+      - name: Releasing linux tarballs
         run: make ci/tarball

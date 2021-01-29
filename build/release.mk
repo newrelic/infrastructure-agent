@@ -39,7 +39,6 @@ release/sign:
 	@echo "=== [release/sign] signing packages"
 	@bash $(CURDIR)/build/sign.sh
 
-
 .PHONY : release/publish
 release/publish:
 	@echo "=== [release/publish] publishing artifacts"
@@ -51,7 +50,7 @@ release: release/pkg release/sign release/publish release/clean
 
 FILENAME_TARBALL = $(PROJECT_NAME)_linux_$(VERSION)_$(GOARCH).tar.gz
 .PHONY: tarball-linux
-tarball-linux: release/publish
+tarball-linux:
 	@$(MAKE) dist-for-os GOOS=linux #TODO remove this when goreleaser has all archs.
 	$(eval TARBALL_BUILD_DIR := $(DIST_DIR)/newrelic-infra)
 	@rm -rf $(TARBALL_BUILD_DIR)
@@ -84,10 +83,15 @@ tarball-linux: release/publish
 	@tar -czf $(DIST_DIR)/$(FILENAME_TARBALL) -C $(DIST_DIR) $(PROJECT_NAME)
 	@rm -rf $(TARBALL_BUILD_DIR)
 
+.PHONY: tarball-linux-all
 tarball-linux-all:
 	@for arch in "amd64" "386" "arm" "arm64" "mips" "mips64" "mips64le" "mipsle" "ppc64le" "s390x"  ; do \
 		$(MAKE) tarball-linux GOARCH=$$arch || exit 1 ;\
 	done
+
+.PHONY: tarball-release
+tarball-release: tarball-linux-all release/publish
+	@echo "=== [release] releasing linux tarballs"
 
 PRERELEASE := ${PRERELEASE}
 ifneq ($(PRERELEASE), true)
