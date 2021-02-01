@@ -174,11 +174,11 @@ dist-centos-5:
 linux/harvest-tests: GOOS=linux
 linux/harvest-tests: GOARCH=amd64
 linux/harvest-tests: go-get
-	go test ./test/harvest -tags="harvest" -v -c -o ./harvest-bin && ./harvest-bin
+	go test ./test/harvest -tags="harvest" -v
 
 .PHONY: proxy-test
 proxy-test:
-	@docker-compose -f $(CURDIR)/test/proxy/docker-compose.yml up -d ; \
+	docker-compose -f $(CURDIR)/test/proxy/docker-compose.yml up -d ; \
 	go test --tags=proxytests ./test/proxy/; status=$$?; \
-    docker-compose -f test/proxy/docker-compose.yml down; \
-    exit $$status
+	docker-compose -f test/proxy/docker-compose.yml down; \
+	exit $$status
