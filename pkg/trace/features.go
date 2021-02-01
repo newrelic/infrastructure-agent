@@ -20,6 +20,7 @@ const (
 	INVENTORY      Feature = "inventory"
 	LOG_FWD        Feature = "log.fw"
 	CMDREQ         Feature = "cmdreq" // command requests from integrations
+	PROC           Feature = "proc"   // process data
 )
 
 // Helper functions to avoid repeating:
@@ -68,4 +69,9 @@ func LogFwdOutput(format string, args ...interface{}) {
 // CmdReq traces to "audit" command request payloads.
 func CmdReq(format string, args ...interface{}) {
 	On(func() bool { return true }, CMDREQ, format, args...)
+}
+
+// Proc traces to "audit" process sampling.
+func Proc(format string, args ...interface{}) {
+	On(func() bool { return true }, PROC, format, args...)
 }
