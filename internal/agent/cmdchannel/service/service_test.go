@@ -143,7 +143,7 @@ func TestSrv_InitialFetch_HandlesRunIntegrationAndMetadata(t *testing.T) {
 			{
 				"name": "run_integration",
 				"arguments": {
-					"integration_name": "nri-foo"
+					"integration_name": "nri-process-discovery"
 				},
 				"metadata": {
 					"target_pid": 123,
@@ -156,7 +156,7 @@ func TestSrv_InitialFetch_HandlesRunIntegrationAndMetadata(t *testing.T) {
 	defQueue := make(chan integration.Definition, 1)
 	il := integration.InstancesLookup{
 		ByName: func(_ string) (string, error) {
-			return "/path/to/nri-foo", nil
+			return "/path/to/nri-process-discovery", nil
 		},
 	}
 	h := runintegration.NewHandler(defQueue, il, dm.NewNoopEmitter(), l)
@@ -167,7 +167,7 @@ func TestSrv_InitialFetch_HandlesRunIntegrationAndMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	d := <-defQueue
-	assert.Equal(t, "nri-foo", d.Name)
+	assert.Equal(t, "nri-process-discovery", d.Name)
 	require.NotNil(t, d.CmdChanReq)
 	require.Contains(t, d.CmdChanReq.Metadata, "target_pid")
 	require.Contains(t, d.CmdChanReq.Metadata, "target_strategy")
@@ -291,7 +291,7 @@ func TestSrv_Run_HandlesRunIntegrationAndACKs(t *testing.T) {
 	defQueue := make(chan integration.Definition, 1)
 	il := integration.InstancesLookup{
 		ByName: func(_ string) (string, error) {
-			return "/path/to/nri-foo", nil
+			return "/path/to/nri-process-discovery", nil
 		},
 	}
 	h := runintegration.NewHandler(defQueue, il, dm.NewNoopEmitter(), l)
@@ -304,7 +304,7 @@ func TestSrv_Run_HandlesRunIntegrationAndACKs(t *testing.T) {
 				"hash": "xyz",
 				"name": "run_integration",
 				"arguments": {
-					"integration_name": "nri-foo"
+					"integration_name": "nri-process-discovery"
 				}
 			}
 		]
@@ -328,7 +328,7 @@ func TestSrv_Run_HandlesRunIntegrationAndACKs(t *testing.T) {
 	assert.Equal(t, http.MethodPost, req2.Method, "POST ack submission is expected")
 
 	d := <-defQueue
-	assert.Equal(t, "nri-foo", d.Name)
+	assert.Equal(t, "nri-process-discovery", d.Name)
 }
 
 func ccClientRequestsSpyReturning(payload string) (commandapi.Client, <-chan *http.Request) {

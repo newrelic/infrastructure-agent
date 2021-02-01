@@ -33,7 +33,7 @@ func TestHandle_returnsErrorOnMissingName(t *testing.T) {
 	h := NewHandler(track.NewTracker(nil), integration.ErrLookup, dm.NewNoopEmitter(), l)
 
 	cmdArgsMissingPID := commandapi.Command{
-		Args: []byte(`{ "integration_args": ["foo"] }`),
+		Args: []byte(`{ "integration_args": ["nri-process-discovery"] }`),
 	}
 
 	err := h.Handle(context.Background(), cmdArgsMissingPID, false)
@@ -52,7 +52,7 @@ func TestHandle_signalStopProcess(t *testing.T) {
 
 	// When a process context is tracked
 	ctx := context.Background()
-	ctx, pidC := tracker.Track(ctx, "foo#", nil)
+	ctx, pidC := tracker.Track(ctx, "nri-process-discovery#", nil)
 
 	proc := exec.CommandContext(ctx, "sleep", "5")
 
@@ -76,7 +76,7 @@ func TestHandle_signalStopProcess(t *testing.T) {
 
 	// WHEN stop handler receives a cmd for the tracked process
 	cmd := commandapi.Command{
-		Args: []byte(`{ "integration_name": "foo" }`),
+		Args: []byte(`{ "integration_name": "nri-process-discovery" }`),
 	}
 	err = h.Handle(context.Background(), cmd, false)
 	require.NoError(t, err)
