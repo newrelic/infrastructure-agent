@@ -18,8 +18,11 @@ release/clean:
 	rm -fv $(CURDIR)/cmd/newrelic-infra/versioninfo.json
 	rm -fv $(CURDIR)/cmd/newrelic-infra/resource.syso
 
+.PHONY : release/deps
+release/deps: $(GORELEASER_BIN)
+
 .PHONY : release/build
-release/build: release/clean
+release/build: release/deps release/clean
 	@echo "=== [release/build] build compiling all binaries"
 	@$(GORELEASER_BIN) build --config $(CURDIR)/build/.goreleaser.yml --snapshot --rm-dist
 
