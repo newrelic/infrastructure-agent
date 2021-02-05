@@ -100,7 +100,7 @@ func (pr *PluginRegistry) loadPluginInstance(dir string, dirOrFile os.FileInfo) 
 	pflog.Debug("Found integration config file.")
 	instanceWrapper, err := loadPluginInstanceWrapper(dirOrFilePath)
 	if err != nil {
-		pflog.Error("cannot load integration config file")
+		pflog.WithError(err).Error("cannot load integration config file")
 		return
 	}
 
