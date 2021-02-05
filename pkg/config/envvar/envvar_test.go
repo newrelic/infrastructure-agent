@@ -52,7 +52,7 @@ func TestExpandInContent(t *testing.T) {
 	}
 }
 
-func TestRemoveYAMLComments(t *testing.T) {
+func Test_removeYAMLComments(t *testing.T) {
 	noComments := `integration_name: com.newrelic.mysql
 	
 	instances:
@@ -72,7 +72,7 @@ instances:
      k5: "f#oo"# comment
      k6: "f#oo" # comment
      k7: "foo"# comment "foo"
-     k8: "87l#154NUp"
+     k8: "foo#bar"
      k9: ["foo#bar", "baz" ]  # another inline comment
      q1: 'foo' # comment
      q2: 'foo'# comment
@@ -80,7 +80,7 @@ instances:
      q4: 'f#oo'# comment
      q5: 'f#oo' # comment
      q6: 'foo'# comment "foo"
-     q7: '87l#154NUp'
+     q7: 'foo#bar'
      q8: ['foo#bar', 'baz' ]  # another inline comment
      # some comments
      # some comments
@@ -101,7 +101,7 @@ instances:
      k5: "f#oo"
      k6: "f#oo" 
      k7: "foo"
-     k8: "87l#154NUp"
+     k8: "foo#bar"
      k9: ["foo#bar", "baz" ]  
      q1: 'foo' 
      q2: 'foo'
@@ -109,7 +109,7 @@ instances:
      q4: 'f#oo'
      q5: 'f#oo' 
      q6: 'foo'
-     q7: '87l#154NUp'
+     q7: 'foo#bar'
      q8: ['foo#bar', 'baz' ]  
     labels:
       foo: bar
@@ -127,7 +127,7 @@ instances:
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := RemoveYAMLComments([]byte(tt.content))
+			got, err := removeYAMLComments([]byte(tt.content))
 			assert.Equal(t, tt.want, string(got))
 			if tt.wantErr {
 				assert.Error(t, err)

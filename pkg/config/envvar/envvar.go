@@ -11,7 +11,7 @@ import (
 )
 
 func ExpandInContent(content []byte) ([]byte, error) {
-	content, err := RemoveYAMLComments(content)
+	content, err := removeYAMLComments(content)
 	if err != nil {
 		return nil, fmt.Errorf("cannot remove configuration commented lines, error: %w", err)
 	}
@@ -49,13 +49,13 @@ func ExpandInContent(content []byte) ([]byte, error) {
 	return newContent, nil
 }
 
-// RemoveYAMLComments removes comments from YAML content
+// removeYAMLComments removes comments from YAML content
 // golang does not support negative lookaheads
 // there's an alternative library https://github.com/dlclark/regexp2 but here we stick to stdlib
 // for this reason it's required:
 // - several regexes
 // - several capture groups that will be discarded
-func RemoveYAMLComments(content []byte) ([]byte, error) {
+func removeYAMLComments(content []byte) ([]byte, error) {
 	rLines := regexp.MustCompile(`(?m:^[ \t]*#.*\n)`) // ?m: = multiline flag
 	matches := rLines.FindAllIndex(content, -1)
 
