@@ -27,7 +27,7 @@ ENV NRIA_IS_CONTAINERIZED true
 ENV NRIA_OVERRIDE_HOST_ROOT /host
 
 RUN apk add --no-cache --upgrade \
-    ca-certificates \
+    ca-certificates=20191127-r5 \
     # Embed required dlls:
     # ldd /usr/bin/newrelic-infra
     #   /lib64/ld-linux-x86-64.so.2 (0x7f2bbbd0f000)
@@ -75,6 +75,6 @@ LABEL com.newrelic.nri-docker.version=$nri_docker_version \
 
 RUN apk add --no-cache \
         ntpsec=1.2.0-r0 \
-        curl=7.75.0-r0
+        curl=7.74.0-r0
 
 COPY $nri_pkg_dir /
