@@ -27,7 +27,7 @@ ENV NRIA_IS_CONTAINERIZED true
 ENV NRIA_OVERRIDE_HOST_ROOT /host
 
 RUN apk add --no-cache --upgrade \
-    ca-certificates=20191127-r4 \
+    ca-certificates \
     # Embed required dlls:
     # ldd /usr/bin/newrelic-infra
     #   /lib64/ld-linux-x86-64.so.2 (0x7f2bbbd0f000)
