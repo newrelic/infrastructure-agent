@@ -74,7 +74,7 @@ LABEL com.newrelic.nri-docker.version=$nri_docker_version \
       com.newrelic.nri-prometheus.version=$nri_prometheus_version
 
 RUN apk add --no-cache \
-        ntpsec=1.1.8-r0 \
-        curl=7.69.1-r3
+        ntpsec=1.2.0-r0 \
+        curl=7.75.0-r0
 
 COPY $nri_pkg_dir /
