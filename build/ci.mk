@@ -43,8 +43,8 @@ ci/snyk-test:
 			-e SNYK_TOKEN \
 			snyk/snyk:golang snyk test --severity-threshold=high
 
-.PHONY : ci/prerelease
-ci/prerelease: ci/deps
+.PHONY : ci/prerelase/packages
+ci/prerelase/packages: ci/deps
 ifdef TAG
 	@docker run --rm -t \
 			--name "infrastructure-agent-prerelease" \
@@ -62,8 +62,8 @@ else
 	exit 1
 endif
 
-.PHONY : ci/tarball
-ci/tarball: ci/deps
+.PHONY : ci/prerelase/tarball
+ci/prerelase/tarball: ci/deps
 ifdef TAG
 	@docker run --rm -t \
 			--name "infrastructure-agent-tarball" \

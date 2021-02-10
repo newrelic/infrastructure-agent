@@ -61,9 +61,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Setup node
-        run: sudo apt install musl-dev
-
       - name: Running Harvest tests
         run: make linux/harvest-tests
 
@@ -96,7 +93,7 @@ jobs:
           username: ${{ env.DOCKER_HUB_ID }}
           password: ${{ env.DOCKER_HUB_PASSWORD }}
       - name: Releasing linux packages
-        run: make ci/prerelease
+        run: make ci/prerelase/packages
 
   packaging-tarball-linux:
     name: Build tarballs and upload into GH Release assets
@@ -111,4 +108,4 @@ jobs:
           username: ${{ env.DOCKER_HUB_ID }}
           password: ${{ env.DOCKER_HUB_PASSWORD }}
       - name: Releasing linux tarballs
-        run: make ci/tarball
+        run: make ci/prerelase/tarball
