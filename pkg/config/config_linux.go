@@ -33,8 +33,7 @@ func init() {
 	defaultAgentDir = filepath.Join("/var", "db", "newrelic-infra")
 	defaultLogFile = filepath.Join("/var", "db", "newrelic-infra", "newrelic-infra.log")
 	defaultNetworkInterfaceFilters = map[string][]string{
-		"prefix":  {"dummy", "lo", "vmnet", "sit", "tun", "tap", "veth"},
-		"index-1": {"tun", "tap"},
+		"prefix": {"dummy", "lo", "vmnet", "sit", "tun", "tap", "veth"},
 	}
 
 	defaultLoggingBinDir = "logging"
