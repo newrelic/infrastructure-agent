@@ -50,7 +50,7 @@ func TestConfig(t *testing.T) {
 	}
 	expectedPluginOutput := agent.NewPluginOutput(*pluginId, entity.NewFromNameWithoutID(agentId), agent.PluginInventoryDataset{ConfigAttrs(expectedInvItems)})
 
-	assert.Equal(t, gotPluginOutput, expectedPluginOutput)
+	assert.ObjectsAreEqualValues(gotPluginOutput, expectedPluginOutput)
 	ctx.AssertExpectations(t)
 
 }
