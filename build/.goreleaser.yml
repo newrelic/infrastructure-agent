@@ -11,8 +11,8 @@ builds:
       - -s -w -X main.gitCommit={{.Commit}}
     goarch:
       - amd64
-      #    - arm
-      #    - arm64
+      - arm
+      - arm64
       - 386
       #    - mips
       #    - mips64
@@ -32,8 +32,8 @@ builds:
       - -s -w -X main.gitCommit={{.Commit}}
     goarch:
       - amd64
-      #    - arm
-      #    - arm64
+      - arm
+      - arm64
       - 386
       #    - mips
       #    - mips64
@@ -53,8 +53,8 @@ builds:
       - -s -w -X main.gitCommit={{.Commit}}
     goarch:
       - amd64
-      #    - arm
-      #    - arm64
+      - arm
+      - arm64
       - 386
       #    - mips
       #    - mips64

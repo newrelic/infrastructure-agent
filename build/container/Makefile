@@ -6,7 +6,9 @@ PROJECT_WORKSPACE              ?= $(CURDIR)/$(INFRASTRUCTURE_WORKSPACE)
 TARGET_DIR						= $(PROJECT_WORKSPACE)/target
 NRI_INTEGRATIONS_FILE			= $(CURDIR)/../embed/integrations.version
 NRI_PKG_DIR						?= ${PROJECT_WORKSPACE}/${BASE_OHIS}
-AGENT_BUILD_TARGET_DIR			?= $(CURDIR)/../../target/bin/linux_amd64
+AGENT_BUILD_TARGET_DIR			?= $(CURDIR)/../../dist
+GOOS							?= linux
+GOARCH							?= amd64
 
 include ../embed/integrations.mk
 
@@ -94,7 +96,9 @@ base/get-integrations : embed-integrations
 .PHONY : base/get-infra-agent
 base/get-infra-agent : workspace
 base/get-infra-agent:
-	@(cp ${AGENT_BUILD_TARGET_DIR}/* ${PROJECT_WORKSPACE}/)
+	@(cp ${AGENT_BUILD_TARGET_DIR}/${GOOS}-newrelic-infra-ctl_${GOOS}_${GOARCH}/* ${PROJECT_WORKSPACE}/)
+	@(cp ${AGENT_BUILD_TARGET_DIR}/${GOOS}-newrelic-infra-service_${GOOS}_${GOARCH}/* ${PROJECT_WORKSPACE}/)
+	@(cp ${AGENT_BUILD_TARGET_DIR}/${GOOS}-newrelic-infra_${GOOS}_${GOARCH}/* ${PROJECT_WORKSPACE}/)
 
 .PHONY : build/base
 build/base : workspace/assets

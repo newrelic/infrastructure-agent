@@ -111,11 +111,10 @@ dist-for-os:
 	else \
 		echo '[dist] No executables to distribute - skipping dist target.' ;\
 	fi
-	@mkdir -p $(TARGET_DIR)/$(GOOS)_$(GOARCH)/bin
 	@for main_package in $(MAIN_PACKAGES);\
 	do\
 		echo "[dist] Creating executable: `basename $$main_package`";\
-		$(GO_BIN) build -gcflags '-N -l' -ldflags '$(LDFLAGS)' -o $(TARGET_DIR)/bin/$(GOOS)_$(GOARCH)/`basename $$main_package` $$main_package || exit 1 ;\
+		$(GO_BIN) build -gcflags '-N -l' -ldflags '$(LDFLAGS)' -o $(TARGET_DIR)/$(GOOS)-`basename $$main_package`_$(GOOS)_$(GOARCH)/`basename $$main_package` $$main_package || exit 1 ;\
 	done
 
 .PHONY: dist/linux
