@@ -1,4 +1,4 @@
-ARG base_image=alpine:3.12
+ARG base_image=alpine:3.13
 
 FROM $base_image AS core
 
@@ -27,7 +27,7 @@ ENV NRIA_IS_CONTAINERIZED true
 ENV NRIA_OVERRIDE_HOST_ROOT /host
 
 RUN apk add --no-cache --upgrade \
-    ca-certificates=20191127-r4 \
+    ca-certificates=20191127-r5 \
     # Embed required dlls:
     # ldd /usr/bin/newrelic-infra
     #   /lib64/ld-linux-x86-64.so.2 (0x7f2bbbd0f000)
@@ -74,7 +74,7 @@ LABEL com.newrelic.nri-docker.version=$nri_docker_version \
       com.newrelic.nri-prometheus.version=$nri_prometheus_version
 
 RUN apk add --no-cache \
-        ntpsec=1.1.8-r0 \
-        curl=7.69.1-r3
+        ntpsec=1.2.0-r0 \
+        curl=7.74.0-r0
 
 COPY $nri_pkg_dir /
