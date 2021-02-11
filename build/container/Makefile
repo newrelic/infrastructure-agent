@@ -3,12 +3,20 @@
 INFRASTRUCTURE_WORKSPACE       ?= workspace
 PROJECT_WORKSPACE              ?= $(CURDIR)/$(INFRASTRUCTURE_WORKSPACE)
 
-TARGET_DIR						= $(PROJECT_WORKSPACE)/target
+TARGET_DIR						?= $(PROJECT_WORKSPACE)/target/$(GOOS)_$(ARCH)
 NRI_INTEGRATIONS_FILE			= $(CURDIR)/../embed/integrations.version
 NRI_PKG_DIR						?= ${PROJECT_WORKSPACE}/${BASE_OHIS}
 AGENT_BUILD_TARGET_DIR			?= $(CURDIR)/../../dist
 GOOS							?= linux
 GOARCH							?= amd64
+DOCKER_BUILDX_CMD				?=
+DOCKER_BUILDX_ARGS				?= --platform $(GOOS)/$(GOARCH)
+DOCKER_BUILDX_EXTRA_ARGS		?=
+USE_BUILDX						?= false
+
+ifeq ($(USE_BUILDX), true)
+	DOCKER_BUILDX_CMD			= buildx
+endif
 
 include ../embed/integrations.mk
 
@@ -38,7 +46,11 @@ PROMETHEUS_VERSION             ?= $(call get-nri-version,nri-prometheus)
 
 DOCKER_TARGET					?= base
 DOCKER_NO_CACHE					?= --no-cache
-DOCKER_BUILD_BASE				?= docker build \
+DOCKER_BUILD_BASE				?= docker \
+								${DOCKER_BUILDX_CMD} \
+								build \
+								$(DOCKER_BUILDX_ARGS) \
+								$(DOCKER_BUILDX_EXTRA_ARGS) \
 								${DOCKER_NO_CACHE} \
 								--pull \
 								-t ${DOCKER_IMAGE_NAME}:${IMAGE_VERSION} \
