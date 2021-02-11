@@ -1,21 +1,21 @@
 .DEFAULT_GOAL := build/base
 
-INFRASTRUCTURE_WORKSPACE       ?= workspace
-PROJECT_WORKSPACE              ?= $(CURDIR)/$(INFRASTRUCTURE_WORKSPACE)
+INFRASTRUCTURE_WORKSPACE	?= workspace
+PROJECT_WORKSPACE		?= $(CURDIR)/$(INFRASTRUCTURE_WORKSPACE)
 
-TARGET_DIR						?= $(PROJECT_WORKSPACE)/target/$(GOOS)_$(ARCH)
-NRI_INTEGRATIONS_FILE			= $(CURDIR)/../embed/integrations.version
-NRI_PKG_DIR						?= ${PROJECT_WORKSPACE}/${BASE_OHIS}
-AGENT_BUILD_TARGET_DIR			?= $(CURDIR)/../../dist
-GOOS							?= linux
-GOARCH							?= amd64
-DOCKER_BUILDX_CMD				?=
-DOCKER_BUILDX_ARGS				?= --platform $(GOOS)/$(GOARCH)
-DOCKER_BUILDX_EXTRA_ARGS		?=
-USE_BUILDX						?= false
+TARGET_DIR			?= $(PROJECT_WORKSPACE)/target/$(GOOS)_$(ARCH)
+NRI_INTEGRATIONS_FILE		= $(CURDIR)/../embed/integrations.version
+NRI_PKG_DIR			?= ${PROJECT_WORKSPACE}/${BASE_OHIS}
+AGENT_BUILD_TARGET_DIR		?= $(CURDIR)/../../dist
+GOOS				?= linux
+GOARCH				?= amd64
+DOCKER_BUILDX_CMD		?=
+DOCKER_BUILDX_ARGS		?= --platform $(GOOS)/$(GOARCH)
+DOCKER_BUILDX_EXTRA_ARGS	?=
+USE_BUILDX			?= false
 
 ifeq ($(USE_BUILDX), true)
-	DOCKER_BUILDX_CMD			= buildx
+	DOCKER_BUILDX_CMD	= buildx
 endif
 
 include ../embed/integrations.mk

@@ -1,6 +1,13 @@
-BUILD_DIR    := ./bin/
-GORELEASER_VERSION := v0.155.0
-GORELEASER_BIN ?= bin/goreleaser
+BUILD_DIR			:= ./bin/
+GORELEASER_VERSION	:= v0.155.0
+GORELEASER_BIN		?= bin/goreleaser
+GORELEASER_CONFIG	?= --config $(CURDIR)/build/.goreleaser.yml
+PKG_FLAGS			?= --rm-dist
+IS_RELEASE			?= false # Default to safe mode which is pre-release
+
+ifneq ($(IS_RELEASE), "false")
+	PKG_FLAGS += --snapshot
+endif
 
 bin:
 	@mkdir -p $(BUILD_DIR)
@@ -26,13 +33,13 @@ release/deps: $(GORELEASER_BIN)
 .PHONY : release/build
 release/build: release/deps release/clean
 	@echo "=== [release/build] build compiling all binaries"
-	@$(GORELEASER_BIN) build --config $(CURDIR)/build/.goreleaser.yml --snapshot --rm-dist
+	$(GORELEASER_BIN) build $(GORELEASER_CONFIG) $(PKG_FLAGS)
 
 .PHONY : release/pkg
 release/pkg: release/deps release/clean
-	@$(MAKE) get-integrations get-fluentbit-linux
+release/pkg: get-integrations get-fluentbit-linux
 	@echo "=== [release/build] PRE-RELEASE compiling all binaries, creating packages, archives"
-	@$(GORELEASER_BIN) release --config $(CURDIR)/build/.goreleaser.yml --rm-dist $(PKG_FLAGS)
+	$(GORELEASER_BIN) release $(GORELEASER_CONFIG) $(PKG_FLAGS)
 
 .PHONY : release/sign
 release/sign:
@@ -92,11 +99,6 @@ tarball-linux-all:
 .PHONY: tarball-release
 tarball-release: tarball-linux-all release/publish
 	@echo "=== [release] releasing linux tarballs"
-
-PRERELEASE := ${PRERELEASE}
-ifneq ($(PRERELEASE), true)
-	PKG_FLAGS := "--snapshot"
-endif
 
 OS := $(shell uname -s)
 ifeq ($(OS), Darwin)
