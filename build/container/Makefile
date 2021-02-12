@@ -3,19 +3,28 @@
 INFRASTRUCTURE_WORKSPACE	?= workspace
 PROJECT_WORKSPACE		?= $(CURDIR)/$(INFRASTRUCTURE_WORKSPACE)
 
-TARGET_DIR			?= $(PROJECT_WORKSPACE)/target/$(GOOS)_$(ARCH)
+TARGET_DIR			?= $(PROJECT_WORKSPACE)/target/$(GOOS)_$(DOCKER_ARCH)
 NRI_INTEGRATIONS_FILE		= $(CURDIR)/../embed/integrations.version
 NRI_PKG_DIR			?= ${PROJECT_WORKSPACE}/${BASE_OHIS}
 AGENT_BUILD_TARGET_DIR		?= $(CURDIR)/../../dist
 GOOS				?= linux
-GOARCH				?= amd64
+DOCKER_ARCH				?= amd64
 DOCKER_BUILDX_CMD		?=
-DOCKER_BUILDX_ARGS		?= --platform $(GOOS)/$(GOARCH)
+DOCKER_BUILDX_ARGS		?= --platform $(GOOS)/$(DOCKER_ARCH)
 DOCKER_BUILDX_EXTRA_ARGS	?=
 USE_BUILDX			?= false
 
 ifeq ($(USE_BUILDX), true)
 	DOCKER_BUILDX_CMD	= buildx
+endif
+
+# TODO: Remove once nri-flex publishes with standard OHI naming scheme
+TMP_NRI_FLEX_ARCH	?= $(DOCKER_ARCH)
+ifeq ($(TMP_NRI_FLEX_ARCH), amd64)
+	TMP_NRI_FLEX_ARCH = x86_64
+endif
+ifeq ($(TMP_NRI_FLEX_ARCH), arm)
+	TMP_NRI_FLEX_ARCH = armv6
 endif
 
 include ../embed/integrations.mk
@@ -101,6 +110,9 @@ debug :
 # Base
 .PHONY : base/get-integrations
 base/get-integrations : ${NRI_PKG_DIR}
+base/get-integrations : NRI_DOCKER_ARCH=$(DOCKER_ARCH)
+base/get-integrations : NRI_PROMETHEUS_ARCH=$(DOCKER_ARCH)
+base/get-integrations : NRI_FLEX_ARCH=$(TMP_NRI_FLEX_ARCH)
 base/get-integrations : get-integrations
 base/get-integrations : embed-integrations
 
@@ -108,9 +120,9 @@ base/get-integrations : embed-integrations
 .PHONY : base/get-infra-agent
 base/get-infra-agent : workspace
 base/get-infra-agent:
-	@(cp ${AGENT_BUILD_TARGET_DIR}/${GOOS}-newrelic-infra-ctl_${GOOS}_${GOARCH}/* ${PROJECT_WORKSPACE}/)
-	@(cp ${AGENT_BUILD_TARGET_DIR}/${GOOS}-newrelic-infra-service_${GOOS}_${GOARCH}/* ${PROJECT_WORKSPACE}/)
-	@(cp ${AGENT_BUILD_TARGET_DIR}/${GOOS}-newrelic-infra_${GOOS}_${GOARCH}/* ${PROJECT_WORKSPACE}/)
+	@(cp ${AGENT_BUILD_TARGET_DIR}/${GOOS}-newrelic-infra-ctl_${GOOS}_${DOCKER_ARCH}/* ${PROJECT_WORKSPACE}/)
+	@(cp ${AGENT_BUILD_TARGET_DIR}/${GOOS}-newrelic-infra-service_${GOOS}_${DOCKER_ARCH}/* ${PROJECT_WORKSPACE}/)
+	@(cp ${AGENT_BUILD_TARGET_DIR}/${GOOS}-newrelic-infra_${GOOS}_${DOCKER_ARCH}/* ${PROJECT_WORKSPACE}/)
 
 .PHONY : build/base
 build/base : workspace/assets
