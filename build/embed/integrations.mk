@@ -30,7 +30,8 @@ get-integrations: get-nri-prometheus
 get-nri-docker:
 	@echo "NRI_DOCKER_ARCH=$(NRI_DOCKER_ARCH)"
 	@printf '\n================================================================\n'
-	@printf 'Target: download nri-docker for linux'
+	@printf 'Target: download nri-docker for linux\n'
+	@printf 'URL: $(NRI_DOCKER_URL)'
 	@printf '\n================================================================\n'
 
 	@rm -rf $(TARGET_DIR)/nridocker/
@@ -49,7 +50,8 @@ get-nri-docker:
 .PHONY: get-nri-flex
 get-nri-flex:
 	@printf '\n================================================================\n'
-	@printf 'Target: download nri-flex for linux'
+	@printf 'Target: download nri-flex for linux\n'
+	@printf 'URL: $(NRI_FLEX_URL)'
 	@printf '\n================================================================\n'
 
 	@rm -rf $(TARGET_DIR)/nriflex/
@@ -64,7 +66,8 @@ get-nri-flex:
 .PHONY: get-nri-prometheus
 get-nri-prometheus:
 	@printf '\n================================================================\n'
-	@printf 'Target: download nri-prometheus for linux'
+	@printf 'Target: download nri-prometheus for linux\n'
+	@printf 'URL: $(NRI_PROMETHEUS_URL)'
 	@printf '\n================================================================\n'
 
 	@rm -rf $(TARGET_DIR)/nriprometheus/
