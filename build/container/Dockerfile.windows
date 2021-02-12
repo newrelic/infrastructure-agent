@@ -1,0 +1,33 @@
+ARG base_image_tag=1809-amd64
+
+FROM mcr.microsoft.com/windows/servercore:$base_image_tag as servercore
+
+FROM mcr.microsoft.com/windows/nanoserver:$base_image_tag as core
+COPY --from=servercore /windows/system32/netapi32.dll /windows/system32/netapi32.dll
+
+ARG image_version=0.0.0
+ARG agent_version=0.0.0
+ARG agent_bin="./target/bin/windows_amd64/newrelic-infra.exe"
+ARG agent_ctl_bin="./target/bin/windows_amd64/newrelic-infra-ctl.exe"
+ARG agent_service_bin="./target/bin/windows_amd64/newrelic-infra-service.exe"
+
+RUN echo "Copying: $agent_bin, $agent_ctl_bin AND $agent_service_bin"
+
+WORKDIR /newrelic-infra
+
+# Add the agent binary
+COPY ["$agent_bin", "c:/Program Files/New Relic/newrelic-infra/newrelic-infra.exe"]
+COPY ["$agent_ctl_bin", "c:/Program Files/New Relic/newrelic-infra/newrelic-infra-ctl.exe"]
+COPY ["$agent_service_bin", "c:/Program Files/New Relic/newrelic-infra/newrelic-infra-service.exe"]
+
+LABEL com.newrelic.image.version=$image_version \
+      com.newrelic.infra-agent.version=$agent_version \
+      com.newrelic.maintainer="infrastructure-eng@newrelic.com" \
+      com.newrelic.description="New Relic Infrastructure agent for monitoring the underlying host."
+
+ENV NRIA_IS_CONTAINERIZED true
+
+# Currently has issues so do not use this entrypoint
+# ENTRYPOINT ["c:\\Program Files\\New Relic\\newrelic-infra\\newrelic-infra-service.exe"]
+
+ENTRYPOINT ["c:\\Program Files\\New Relic\\newrelic-infra\\newrelic-infra.exe"]

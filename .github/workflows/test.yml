@@ -4,7 +4,7 @@ name: Testing
 env:
   DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
-  TAG: "0.0.0" # needed for goreleaser windows builds
+  TAG: "0.0.0"  # needed for goreleaser windows builds
   GO_VERSION: '1.14.4'
 
 on:
@@ -15,6 +15,7 @@ on:
       - '**'
     paths-ignore:
       - README.md
+
 jobs:
   unit-test-linux:
     name: Linux unit tests
@@ -66,7 +67,7 @@ jobs:
 
   unit-test-windows:
     name: Windows unit tests
-    runs-on: windows-latest
+    runs-on: windows-2019
 
     steps:
       - uses: actions/checkout@v2
@@ -100,7 +101,7 @@ jobs:
 
   build-container:
     name: Building containerized agent
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     steps:
       - uses: actions/checkout@v2
@@ -122,10 +123,35 @@ jobs:
       - name: Build container agent
         run: make -C build/container/ build/base
 
+  build-container-windows:
+    name: Building Windows containerized agent
+    runs-on: windows-2019
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Login to DockerHub
+        run: echo ${{ env.DOCKER_HUB_PASSWORD }} | docker login -u ${{ env.DOCKER_HUB_ID }} --password-stdin
+        shell: bash
+
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{env.GO_VERSION}}
+
+      - name: Download deps
+        run: go mod vendor
+
+      - name: Build agent
+        run: .\build\win_build.ps1 -skipTests
+
+      - name: Build container
+        run: .\build\win_build_container.ps1 -baseImageTag 1809
+
   finish:
     name: Finish
     needs: [ unit-test-linux ]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: Coveralls Finished
         uses: coverallsapp/github-action@master
