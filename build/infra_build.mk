@@ -169,3 +169,16 @@ dist-centos-5:
 		echo "[dist]   Creating executable: `basename $$main_package` in $(TARGET_DIR_CENTOS5)/`basename $$main_package`";\
 		$(GO_BIN_1_9) build -ldflags '$(LDFLAGS)' -o $(TARGET_DIR_CENTOS5)/`basename $$main_package` $$main_package || exit 1 ;\
 	done
+
+.PHONY: linux/harvest-tests
+linux/harvest-tests: GOOS=linux
+linux/harvest-tests: GOARCH=amd64
+linux/harvest-tests: go-get
+	go test ./test/harvest -tags="harvest" -v
+
+.PHONY: proxy-test
+proxy-test:
+	docker-compose -f $(CURDIR)/test/proxy/docker-compose.yml up -d ; \
+	go test --tags=proxytests ./test/proxy/; status=$$?; \
+	docker-compose -f test/proxy/docker-compose.yml down; \
+	exit $$status
