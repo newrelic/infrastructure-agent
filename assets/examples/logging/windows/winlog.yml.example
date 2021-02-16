@@ -13,6 +13,27 @@ logs:
         - 4700-4800
        exclude-eventids:
         - 4735
+ 
+ # Consolidated entry for the application, system, powershell, and SCOM channels
+  - name: application-system-pshell-scom
+    winlog: 
+       channel: Application, System, Windows Powershell, Operations Manager
+ 
+ # Entry for Windows Defender Logs
+  - name: windows-defender
+    winlog:
+       channel: Microsoft-Windows-Windows Defender/Operational
+ 
+ # Entry for Windows Clustering Logs
+  - name: windows-clustering
+    winlog:
+       channel: Microsoft-Windows-FailoverClustering/Operational
+ 
+ # Entry for IIS logs with logtype attribute for automatic parsing
+  - name: iis-log
+    file: C:\inetpub\logs\LogFiles\w3svc.log
+    attributes:
+      logtype: iis_w3c
 
 # Add event IDs or ranges to collect-eventids or exclude-eventids to forward
 # or drop specific events. exclude-eventids takes precedence over collect-eventids
