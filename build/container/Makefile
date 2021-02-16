@@ -219,9 +219,9 @@ publish/multi-arch-base-manifest :
 	@printf '\n================================================================\n'
 	@(docker manifest create \
     $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
-     --amend $(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 \
-     --amend $(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm \
-     --amend $(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64)
+    	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 \
+    	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm \
+    	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64)
 	@if [ "$(DOCKER_PUBLISH)"  == "true" ]; then \
   		docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION); \
     fi
@@ -242,14 +242,15 @@ publish/multi-arch-base-rc:
 	@printf '\n================================================================\n'
 	@(docker manifest create \
          $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
-         --amend $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm64 \
-         --amend $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm \
-         --amend $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-amd64)
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm64 \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-amd64)
+	-@(docker manifest rm $(DOCKER_IMAGE_NAME):latest)
 	@(docker manifest create \
          $(DOCKER_IMAGE_NAME):latest \
-         --amend $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm64 \
-         --amend $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm \
-         --amend $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-amd64)
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm64 \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-amd64)
 	@if [ "$(DOCKER_PUBLISH)"  == "true" ]; then \
   		docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION); \
   		docker manifest push $(DOCKER_IMAGE_NAME):latest; \
