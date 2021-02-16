@@ -129,10 +129,10 @@ jobs:
         run: make -C build/container/ build/base
 
       - name: Build container agent (arm)
-        run: make -C build/container/ build/base USE_BUILDX=true GOARCH=arm
+        run: make -C build/container/ build/base-arm
 
       - name: Build container agent (arm64)
-        run: make -C build/container/ build/base USE_BUILDX=true GOARCH=arm64
+        run: make -C build/container/ build/base-arm64
 
   finish:
     name: Finish

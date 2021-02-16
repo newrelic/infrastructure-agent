@@ -11,7 +11,8 @@ GOOS				?= linux
 DOCKER_ARCH				?= amd64
 DOCKER_BUILDX_CMD		?=
 DOCKER_BUILDX_ARGS		?= --platform $(GOOS)/$(DOCKER_ARCH)
-DOCKER_BUILDX_EXTRA_ARGS	?=
+DOCKER_BUILDX_EXTRA_ARGS	?= --load
+DOCKER_TAG_LATEST	?= latest
 USE_BUILDX			?= false
 
 ifeq ($(USE_BUILDX), true)
@@ -63,7 +64,7 @@ DOCKER_BUILD_BASE				?= docker \
 								${DOCKER_NO_CACHE} \
 								--pull \
 								-t ${DOCKER_IMAGE_NAME}:${IMAGE_VERSION} \
-								-t ${DOCKER_IMAGE_NAME}:latest \
+								-t ${DOCKER_IMAGE_NAME}:$(DOCKER_TAG_LATEST) \
 								--build-arg image_version=${IMAGE_VERSION} \
 								--build-arg agent_version=${AGENT_VERSION} \
 								--build-arg version_file=VERSION \
@@ -165,3 +166,15 @@ lint/Dockerfile :
 .PHONY : clean
 clean:
 	@(rm -rf ${PROJECT_WORKSPACE})
+
+.PHONY : build/base-arm64
+build/base-arm64 : export DOCKER_ARCH=arm64
+build/base-arm64 : export USE_BUILDX=true
+build/base-arm64 :
+	@$(MAKE) build/base
+
+.PHONY : build/base-arm
+build/base-arm : export DOCKER_ARCH=arm
+build/base-arm : export USE_BUILDX=true
+build/base-arm :
+	@$(MAKE) build/base

@@ -57,3 +57,8 @@ From the root of the project:
 $ make dist-for-os GOOS=linux GOARCH=arm64
 $ make -C build/container/ clean build/base USE_BUILDX=true DOCKER_ARCH=arm64
 ```
+
+There is a shortcut make target for build ARM images:
+
+* `make build/base-arm64` will build the base image as an `arm64` image
+* `make build/base-arm` will build the base image as an `arm` image
