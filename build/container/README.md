@@ -20,7 +20,7 @@ The make target generates the Docker image in steps:
 
 > See the comments in [Makefile](Makefile) for the required env vars.
 
-## Manual build and deploy
+## Manual build
 
 ### Build `newrelic-infra` for Linux
 
@@ -62,3 +62,42 @@ There is a shortcut make target for build ARM images:
 
 * `make build/base-arm64` will build the base image as an `arm64` image
 * `make build/base-arm` will build the base image as an `arm` image
+
+## Manually publishing the image
+
+### Publishing the release candidate
+
+To publish all the supported images we can use the following make command (from the root of this project):
+
+```shell
+$ make -C build/container/ clean publish/multi-arch-base NS=test REPO=agent AGENT_VERSION=1.2.3
+```
+
+This will create all the docker images and tag them as follows, all as "release candidates":
+
+* `arm` as `test/agent:1.2.3-rc-arm
+* `arm64` as `test/agent:1.2.3-rc-arm64
+* `amd64` as `test/agent:1.2.3-rc-amd64
+
+Setting `NS` sets the Docker organisation to use (defaults to `newrelic`) and `REPO` sets the repo (defaults to `infrastructure`).
+The image version is set using `AGENT_VERSION` and should match the one for the agent being added to the image.
+
+This does not actually push the Docker images and manifest to Docker hub.
+To do this you need to pass the argument `DOCKER_PUBLISH=true`.
+
+So if you're happy publishing to the default repo then the following will do that:
+
+```shell
+$ make -C build/container/ clean publish/multi-arch-base DOCKER_PUBLISH=true AGENT_VERSION=1.2.3
+```
+
+### Promoting the release candidate
+
+Once you are happy with the release candidate you can run the following make target to promote the release candidate:
+
+```shell
+$ make -C build/container/ publish/multi-arch-base-rc DOCKER_PUBLISH=true AGENT_VERSION=1.2.3
+```
+
+Again, if `DOCKER_PUBLISH` not set to `true` then nothing will be published to Docker hub.
+Make sure the `AGENT_VERSION` matches the one you used for the release candidate.

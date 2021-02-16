@@ -5,19 +5,29 @@ PROJECT_WORKSPACE		?= $(CURDIR)/$(INFRASTRUCTURE_WORKSPACE)
 
 TARGET_DIR			?= $(PROJECT_WORKSPACE)/target/$(GOOS)_$(DOCKER_ARCH)
 NRI_INTEGRATIONS_FILE		= $(CURDIR)/../embed/integrations.version
-NRI_PKG_DIR			?= ${PROJECT_WORKSPACE}/${BASE_OHIS}
+NRI_PKG_DIR			?= $(PROJECT_WORKSPACE)/$(BASE_OHIS)
 AGENT_BUILD_TARGET_DIR		?= $(CURDIR)/../../dist
 GOOS				?= linux
 DOCKER_ARCH				?= amd64
 DOCKER_BUILDX_CMD		?=
 DOCKER_BUILDX_ARGS		?= --platform $(GOOS)/$(DOCKER_ARCH)
 DOCKER_BUILDX_EXTRA_ARGS	?= --load
+DOCKER_BUILD_TAG_PREFIX	?= build
 DOCKER_TAG_LATEST	?= latest
 USE_BUILDX			?= false
+DOCKER_PUBLISH		?= false
+
+ifeq ($(DOCKER_PUBLISH), true)
+	DOCKER_BUILDX_EXTRA_ARGS = --push
+	DOCKER_BUILDX_ARGS += $(DOCKER_BUILDX_EXTRA_ARGS)
+endif
 
 ifeq ($(USE_BUILDX), true)
 	DOCKER_BUILDX_CMD	= buildx
+else
+	DOCKER_BUILDX_ARGS =
 endif
+
 
 # TODO: Remove once nri-flex publishes with standard OHI naming scheme
 TMP_NRI_FLEX_ARCH	?= $(DOCKER_ARCH)
@@ -30,10 +40,8 @@ endif
 
 include ../embed/integrations.mk
 
-# AGENT_BUILD_NUMBER comes from the jenkins job
-AGENT_BUILD_NUMBER			   ?= 0.0
-IMAGE_VERSION                  ?= ${AGENT_BUILD_NUMBER}
-AGENT_VERSION                  ?= ${AGENT_BUILD_NUMBER}
+AGENT_VERSION                  ?= 0.0.0
+IMAGE_VERSION                  ?= $(AGENT_VERSION)
 
 NS                             ?= newrelic
 REPO                           ?= infrastructure
@@ -57,56 +65,54 @@ PROMETHEUS_VERSION             ?= $(call get-nri-version,nri-prometheus)
 DOCKER_TARGET					?= base
 DOCKER_NO_CACHE					?= --no-cache
 DOCKER_BUILD_BASE				?= docker \
-								${DOCKER_BUILDX_CMD} \
+								$(DOCKER_BUILDX_CMD) \
 								build \
 								$(DOCKER_BUILDX_ARGS) \
-								$(DOCKER_BUILDX_EXTRA_ARGS) \
-								${DOCKER_NO_CACHE} \
+								$(DOCKER_NO_CACHE) \
 								--pull \
-								-t ${DOCKER_IMAGE_NAME}:${IMAGE_VERSION} \
-								-t ${DOCKER_IMAGE_NAME}:$(DOCKER_TAG_LATEST) \
-								--build-arg image_version=${IMAGE_VERSION} \
-								--build-arg agent_version=${AGENT_VERSION} \
+								-t $(DOCKER_IMAGE_NAME):$(DOCKER_TAG_LATEST) \
+								--build-arg image_version=$(IMAGE_VERSION) \
+								--build-arg agent_version=$(AGENT_VERSION) \
 								--build-arg version_file=VERSION \
-								--build-arg agent_bin=${AGENT_BIN} \
-								--build-arg nri_pkg_dir=${BASE_OHIS} \
-								--build-arg nri_docker_version=${DOCKER_VERSION} \
-								--build-arg nri_flex_version=${FLEX_VERSION} \
-								--build-arg nri_prometheus_version=${PROMETHEUS_VERSION} \
-								--target ${DOCKER_TARGET} \
-								-f ${DOCKERFILE} \
-								${INFRASTRUCTURE_WORKSPACE}
+								--build-arg agent_bin=$(AGENT_BIN) \
+								--build-arg nri_pkg_dir=$(BASE_OHIS) \
+								--build-arg nri_docker_version=$(DOCKER_VERSION) \
+								--build-arg nri_flex_version=$(FLEX_VERSION) \
+								--build-arg nri_prometheus_version=$(PROMETHEUS_VERSION) \
+								--target $(DOCKER_TARGET) \
+								-f $(DOCKERFILE) \
+								$(INFRASTRUCTURE_WORKSPACE)
 
 workspace :
-	@(mkdir -p ${PROJECT_WORKSPACE})
+	@(mkdir -p $(PROJECT_WORKSPACE))
 
 workspace/assets : workspace
-	@(cp -r $(CURDIR)/assets ${PROJECT_WORKSPACE})
-	@(echo ${IMAGE_VERSION} > ${PROJECT_WORKSPACE}/VERSION)
+	@(cp -r $(CURDIR)/assets $(PROJECT_WORKSPACE))
+	@(echo $(IMAGE_VERSION) > $(PROJECT_WORKSPACE)/VERSION)
 
 # Core
 .PHONY : build/core
 build/core : workspace/assets
 build/core :
 	@(docker build \
-	${DOCKER_NO_CACHE} \
+	$(DOCKER_NO_CACHE) \
 	--pull \
-	-t ${CORE_IMAGE_NAME}:${IMAGE_VERSION} \
-	--build-arg image_version=${IMAGE_VERSION} \
-	--build-arg agent_version=${AGENT_VERSION} \
+	-t $(CORE_IMAGE_NAME):$(IMAGE_VERSION) \
+	--build-arg image_version=$(IMAGE_VERSION) \
+	--build-arg agent_version=$(AGENT_VERSION) \
 	--build-arg version_file=VERSION \
-	--build-arg agent_bin=${AGENT_BIN} \
+	--build-arg agent_bin=$(AGENT_BIN) \
 	--target core \
-	-f ${DOCKERFILE} \
-	${INFRASTRUCTURE_WORKSPACE})
+	-f $(DOCKERFILE) \
+	$(INFRASTRUCTURE_WORKSPACE))
 
 ${NRI_PKG_DIR}:
-	@(mkdir -p ${NRI_PKG_DIR})
+	@(mkdir -p $(NRI_PKG_DIR))
 
 # Useful to get logged in Jenkins when things blow up
 .PHONY : debug
 debug :
-	@(echo ${DOCKER_BUILD_BASE})
+	@(echo $(DOCKER_BUILD_BASE))
 
 # Base
 .PHONY : base/get-integrations
@@ -121,9 +127,9 @@ base/get-integrations : embed-integrations
 .PHONY : base/get-infra-agent
 base/get-infra-agent : workspace
 base/get-infra-agent:
-	@(cp ${AGENT_BUILD_TARGET_DIR}/${GOOS}-newrelic-infra-ctl_${GOOS}_${DOCKER_ARCH}/* ${PROJECT_WORKSPACE}/)
-	@(cp ${AGENT_BUILD_TARGET_DIR}/${GOOS}-newrelic-infra-service_${GOOS}_${DOCKER_ARCH}/* ${PROJECT_WORKSPACE}/)
-	@(cp ${AGENT_BUILD_TARGET_DIR}/${GOOS}-newrelic-infra_${GOOS}_${DOCKER_ARCH}/* ${PROJECT_WORKSPACE}/)
+	@(cp $(AGENT_BUILD_TARGET_DIR)/$(GOOS)-newrelic-infra-ctl_$(GOOS)_$(DOCKER_ARCH)/* $(PROJECT_WORKSPACE)/)
+	@(cp $(AGENT_BUILD_TARGET_DIR)/$(GOOS)-newrelic-infra-service_$(GOOS)_$(DOCKER_ARCH)/* $(PROJECT_WORKSPACE)/)
+	@(cp $(AGENT_BUILD_TARGET_DIR)/$(GOOS)-newrelic-infra_$(GOOS)_$(DOCKER_ARCH)/* $(PROJECT_WORKSPACE)/)
 
 .PHONY : build/base
 build/base : workspace/assets
@@ -131,15 +137,16 @@ build/base : base/get-integrations
 build/base : base/get-infra-agent
 build/base : DOCKER_TARGET=base
 build/base :
-	@(${DOCKER_BUILD_BASE})
+	@echo $(DOCKER_BUILD_BASE)
+	@($(DOCKER_BUILD_BASE))
 
 .PHONY : build/forwarder
 build/forwarder : workspace/assets
 build/forwarder : base/get-infra-agent
 build/forwarder : DOCKER_TARGET=forwarder
-build/forwarder : DOCKER_IMAGE_NAME=${FWD_IMAGE_NAME}
+build/forwarder : DOCKER_IMAGE_NAME=$(FWD_IMAGE_NAME)
 build/forwarder :
-	@(${DOCKER_BUILD_BASE})
+	@($(DOCKER_BUILD_BASE))
 
 .PHONY : build/k8s-events-forwarder
 build/k8s-events-forwarder : workspace/assets
@@ -147,34 +154,103 @@ build/k8s-events-forwarder : base/get-infra-agent
 build/k8s-events-forwarder : DOCKER_TARGET=k8s-events-forwarder
 build/k8s-events-forwarder : DOCKER_IMAGE_NAME=${K8S_FWD_IMAGE_NAME}
 build/k8s-events-forwarder :
-	@(${DOCKER_BUILD_BASE})
+	@($(DOCKER_BUILD_BASE))
 
 # publish to docker hub
 .PHONY : publish/base
 publish/base : build/base
 publish/base :
-	@(docker push ${BASE_IMAGE_NAME}:${IMAGE_VERSION})
-	@(docker push ${BASE_IMAGE_NAME}:latest)
+	@printf '\n================================================================\n'
+	@printf 'Target: publish/base\n'
+	@printf 'TAG: $(BASE_IMAGE_NAME):$(IMAGE_VERSION)'
+	@printf '\n================================================================\n'
+	@(docker push $(BASE_IMAGE_NAME):$(IMAGE_VERSION))
+	@(docker push $(BASE_IMAGE_NAME):latest)
 
 .PHONY : lint
 lint : lint/Dockerfile
 
 .PHONY : lint/Dockerfile
 lint/Dockerfile :
-	@(docker run --rm -i hadolint/hadolint < ${DOCKERFILE})
+	@(docker run --rm -i hadolint/hadolint < $(DOCKERFILE))
 
 .PHONY : clean
 clean:
-	@(rm -rf ${PROJECT_WORKSPACE})
+	@(rm -rf $(PROJECT_WORKSPACE))
 
 .PHONY : build/base-arm64
 build/base-arm64 : export DOCKER_ARCH=arm64
 build/base-arm64 : export USE_BUILDX=true
+build/base-arm64 : export DOCKER_TAG_LATEST=$(DOCKER_BUILD_TAG_PREFIX)-$(DOCKER_ARCH)
 build/base-arm64 :
+	@printf '\n================================================================\n'
+	@printf 'Target: build/base-arm64\n'
+	@printf 'DOCKER_TAG_LATEST: $(DOCKER_TAG_LATEST)'
+	@printf '\n================================================================\n'
+	@$(MAKE) build/base
+
+.PHONY : build/base-amd64
+build/base-amd64 : export DOCKER_ARCH=amd64
+build/base-amd64 : export USE_BUILDX=true
+build/base-amd64 : export DOCKER_TAG_LATEST=$(DOCKER_BUILD_TAG_PREFIX)-$(DOCKER_ARCH)
+build/base-amd64 :
+	@printf '\n================================================================\n'
+	@printf 'Target: build/base-amd64\n'
+	@printf 'DOCKER_TAG_LATEST: $(DOCKER_TAG_LATEST)'
+	@printf '\n================================================================\n'
 	@$(MAKE) build/base
 
 .PHONY : build/base-arm
 build/base-arm : export DOCKER_ARCH=arm
 build/base-arm : export USE_BUILDX=true
+build/base-arm : export DOCKER_TAG_LATEST=$(DOCKER_BUILD_TAG_PREFIX)-$(DOCKER_ARCH)
 build/base-arm :
+	@printf '\n================================================================\n'
+	@printf 'Target: build/base-arm\n'
+	@printf 'DOCKER_TAG_LATEST: $(DOCKER_TAG_LATEST)'
+	@printf '\n================================================================\n'
 	@$(MAKE) build/base
+
+.PHONY : publish/multi-arch-base-manifest
+publish/multi-arch-base-manifest :
+	@printf '\n================================================================\n'
+	@printf 'Target: publish/base-manifest\n'
+	@printf 'Image: $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)'
+	@printf '\n================================================================\n'
+	@(docker manifest create \
+    $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
+     --amend $(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 \
+     --amend $(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm \
+     --amend $(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64)
+	@if [ "$(DOCKER_PUBLISH)"  == "true" ]; then \
+  		docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION); \
+    fi
+
+.PHONY : publish/multi-arch-base
+publish/multi-arch-base : export IMAGE_VERSION=$(AGENT_VERSION)-rc
+publish/multi-arch-base : export DOCKER_BUILD_TAG_PREFIX=$(IMAGE_VERSION)
+publish/multi-arch-base : build/base-arm64
+publish/multi-arch-base : build/base-arm
+publish/multi-arch-base : build/base-amd64
+publish/multi-arch-base : publish/multi-arch-base-manifest
+
+.PHONY : publish/multi-arch-base-rc
+publish/multi-arch-base-rc:
+	@printf '\n================================================================\n'
+	@printf 'Target: publish/multi-arch-base-rc\n'
+	@printf 'Manifest: $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc'
+	@printf '\n================================================================\n'
+	@(docker manifest create \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
+         --amend $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm64 \
+         --amend $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm \
+         --amend $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-amd64)
+	@(docker manifest create \
+         $(DOCKER_IMAGE_NAME):latest \
+         --amend $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm64 \
+         --amend $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm \
+         --amend $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-amd64)
+	@if [ "$(DOCKER_PUBLISH)"  == "true" ]; then \
+  		docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION); \
+  		docker manifest push $(DOCKER_IMAGE_NAME):latest; \
+    fi
