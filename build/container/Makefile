@@ -178,35 +178,33 @@ lint/Dockerfile :
 clean:
 	@(rm -rf $(PROJECT_WORKSPACE))
 
-.PHONY : build/base-arm64
-build/base-arm64 : export DOCKER_ARCH=arm64
-build/base-arm64 : export USE_BUILDX=true
-build/base-arm64 : export DOCKER_TAG_LATEST=$(DOCKER_BUILD_TAG_PREFIX)-$(DOCKER_ARCH)
-build/base-arm64 :
-	@printf '\n================================================================\n'
-	@printf 'Target: build/base-arm64\n'
-	@printf 'DOCKER_TAG_LATEST: $(DOCKER_TAG_LATEST)'
-	@printf '\n================================================================\n'
-	@$(MAKE) build/base
+buildTargetArch=$(word 2,$(subst -, ,$1))
+baseBuildTargetArch=$(word 3,$(subst /, ,$1))
 
-.PHONY : build/base-amd64
-build/base-amd64 : export DOCKER_ARCH=amd64
-build/base-amd64 : export USE_BUILDX=true
-build/base-amd64 : export DOCKER_TAG_LATEST=$(DOCKER_BUILD_TAG_PREFIX)-$(DOCKER_ARCH)
-build/base-amd64 :
-	@printf '\n================================================================\n'
-	@printf 'Target: build/base-amd64\n'
-	@printf 'DOCKER_TAG_LATEST: $(DOCKER_TAG_LATEST)'
-	@printf '\n================================================================\n'
-	@$(MAKE) build/base
+.PHONY : build/base-test
+build/base-test :
+	@echo $(call buildTargetArch, $@)
+	@echo $(call targetArch, $@)
 
 .PHONY : build/base-arm
-build/base-arm : export DOCKER_ARCH=arm
-build/base-arm : export USE_BUILDX=true
-build/base-arm : export DOCKER_TAG_LATEST=$(DOCKER_BUILD_TAG_PREFIX)-$(DOCKER_ARCH)
 build/base-arm :
+	@($(MAKE) build/base/$(call buildTargetArch, $@))
+
+.PHONY : build/base-arm64
+build/base-arm64 :
+	@($(MAKE) build/base/$(call buildTargetArch, $@))
+
+.PHONY : build/base-amd64
+build/base-amd64 :
+	@($(MAKE) build/base/$(call buildTargetArch, $@))
+
+.PHONY : build/base/%
+build/base/% : export DOCKER_ARCH=$(call baseBuildTargetArch, $@)
+build/base/% : export USE_BUILDX=true
+build/base/% : export DOCKER_TAG_LATEST=$(DOCKER_BUILD_TAG_PREFIX)-$(DOCKER_ARCH)
+build/base/% :
 	@printf '\n================================================================\n'
-	@printf 'Target: build/base-arm\n'
+	@printf 'Target: build/base-$(call baseBuildTargetArch, $@)\n'
 	@printf 'DOCKER_TAG_LATEST: $(DOCKER_TAG_LATEST)'
 	@printf '\n================================================================\n'
 	@$(MAKE) build/base
