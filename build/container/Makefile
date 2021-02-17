@@ -299,3 +299,53 @@ publish/multi-arch-base-rc:
   		docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION); \
   		docker manifest push $(DOCKER_IMAGE_NAME):latest; \
     fi
+
+# Creates multi acrh manifest for k8s-events-forwarder image
+.PHONY : publish/multi-arch-k8s-events-forwarder-manifest
+publish/multi-arch-k8s-events-forwarder-manifest : export DOCKER_IMAGE_NAME=$(K8S_FWD_IMAGE_NAME)
+publish/multi-arch-k8s-events-forwarder-manifest :
+	@printf '\n================================================================\n'
+	@printf 'Target: publish/k8s-events-forwarder-manifest\n'
+	@printf 'Image: $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)'
+	@printf '\n================================================================\n'
+	@(docker manifest create \
+    $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
+    	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 \
+    	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm \
+    	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64)
+	@if [ "$(DOCKER_PUBLISH)"  == "true" ]; then \
+  		docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION); \
+    fi
+
+# Shortcut to build all supported multi arch k8s-events-forwarders
+.PHONY : publish/multi-arch-k8s-events-forwarder
+publish/multi-arch-k8s-events-forwarder : export IMAGE_VERSION=$(AGENT_VERSION)-rc
+publish/multi-arch-k8s-events-forwarder : export DOCKER_BUILD_TAG_PREFIX=$(IMAGE_VERSION)
+publish/multi-arch-k8s-events-forwarder : build/k8s-events-forwarder-arm64
+publish/multi-arch-k8s-events-forwarder : build/k8s-events-forwarder-arm
+publish/multi-arch-k8s-events-forwarder : build/k8s-events-forwarder-amd64
+publish/multi-arch-k8s-events-forwarder : publish/multi-arch-k8s-events-forwarder-manifest
+
+# Publishes k8s-events-forwarder Release Candidate (RC) image/manifest as full release
+.PHONY : publish/multi-arch-k8s-events-forwarder-rc
+publish/multi-arch-k8s-events-forwarder-rc : export DOCKER_IMAGE_NAME=$(K8S_FWD_IMAGE_NAME)
+publish/multi-arch-k8s-events-forwarder-rc:
+	@printf '\n================================================================\n'
+	@printf 'Target: publish/multi-arch-k8s-events-forwarder-rc\n'
+	@printf 'Manifest: $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc'
+	@printf '\n================================================================\n'
+	@(docker manifest create \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm64 \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-amd64)
+	-@(docker manifest rm $(DOCKER_IMAGE_NAME):latest)
+	@(docker manifest create \
+         $(DOCKER_IMAGE_NAME):latest \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm64 \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-amd64)
+	@if [ "$(DOCKER_PUBLISH)"  == "true" ]; then \
+  		docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION); \
+  		docker manifest push $(DOCKER_IMAGE_NAME):latest; \
+    fi
