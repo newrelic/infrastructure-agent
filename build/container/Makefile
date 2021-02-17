@@ -137,7 +137,6 @@ build/base : base/get-integrations
 build/base : base/get-infra-agent
 build/base : DOCKER_TARGET=base
 build/base :
-	@echo $(DOCKER_BUILD_BASE)
 	@($(DOCKER_BUILD_BASE))
 
 .PHONY : build/forwarder
@@ -178,13 +177,8 @@ lint/Dockerfile :
 clean:
 	@(rm -rf $(PROJECT_WORKSPACE))
 
-buildTargetArch=$(word 2,$(subst -, ,$1))
-baseBuildTargetArch=$(word 3,$(subst /, ,$1))
-
-.PHONY : build/base-test
-build/base-test :
-	@echo $(call buildTargetArch, $@)
-	@echo $(call targetArch, $@)
+buildTargetArch=$(lastword $(subst -, ,$1))
+baseBuildTargetArch=$(lastword $(subst /, ,$1))
 
 .PHONY : build/base-arm
 build/base-arm :
@@ -198,6 +192,7 @@ build/base-arm64 :
 build/base-amd64 :
 	@($(MAKE) build/base/$(call buildTargetArch, $@))
 
+# Helper target to build base images for each arch
 .PHONY : build/base/%
 build/base/% : export DOCKER_ARCH=$(call baseBuildTargetArch, $@)
 build/base/% : export USE_BUILDX=true
@@ -209,7 +204,56 @@ build/base/% :
 	@printf '\n================================================================\n'
 	@$(MAKE) build/base
 
-.PHONY : publish/multi-arch-base-manifest
+.PHONY : build/forwarder-arm
+build/forwarder-arm :
+	@($(MAKE) build/forwarder/$(call buildTargetArch, $@))
+
+.PHONY : build/forwarder-arm64
+build/forwarder-arm64 :
+	@($(MAKE) build/forwarder/$(call buildTargetArch, $@))
+
+.PHONY : build/forwarder-amd64
+build/forwarder-amd64 :
+	@($(MAKE) build/forwarder/$(call buildTargetArch, $@))
+
+# Helper target to build forwarder images for each arch
+.PHONY : build/forwarder/%
+build/forwarder/% : export DOCKER_ARCH=$(call baseBuildTargetArch, $@)
+build/forwarder/% : export USE_BUILDX=true
+build/forwarder/% : export DOCKER_TAG_LATEST=$(DOCKER_BUILD_TAG_PREFIX)-$(DOCKER_ARCH)
+build/forwarder/% :
+	@printf '\n================================================================\n'
+	@printf 'Target: build/forwarder-$(call baseBuildTargetArch, $@)\n'
+	@printf 'DOCKER_TAG_LATEST: $(DOCKER_TAG_LATEST)'
+	@printf '\n================================================================\n'
+	@$(MAKE) build/forwarder
+
+.PHONY : build/k8s-events-forwarder-arm
+build/k8s-events-forwarder-arm :
+	@($(MAKE) build/k8s-events-forwarder/$(call buildTargetArch, $@))
+
+.PHONY : build/k8s-events-forwarder-arm64
+build/k8s-events-forwarder-arm64 :
+	@($(MAKE) build/k8s-events-forwarder/$(call buildTargetArch, $@))
+
+.PHONY : build/k8s-events-forwarder-amd64
+build/k8s-events-forwarder-amd64 :
+	@($(MAKE) build/k8s-events-forwarder/$(call buildTargetArch, $@))
+
+# Helper target to build k8s-events-forwarder images for each arch
+.PHONY : build/k8s-events-forwarder/%
+build/k8s-events-forwarder/% : export DOCKER_ARCH=$(call baseBuildTargetArch, $@)
+build/k8s-events-forwarder/% : export USE_BUILDX=true
+build/k8s-events-forwarder/% : export DOCKER_TAG_LATEST=$(DOCKER_BUILD_TAG_PREFIX)-$(DOCKER_ARCH)
+build/k8s-events-forwarder/% :
+	@printf '\n================================================================\n'
+	@printf 'Target: build/k8s-events-forwarder-$(call baseBuildTargetArch, $@)\n'
+	@printf 'DOCKER_TAG_LATEST: $(DOCKER_TAG_LATEST)'
+	@printf '\n================================================================\n'
+	@$(MAKE) build/k8s-events-forwarder
+
+# Creates multi acrh manifest for base image
+.PHONY : publish/multi-arch-base-manifest	
 publish/multi-arch-base-manifest :
 	@printf '\n================================================================\n'
 	@printf 'Target: publish/base-manifest\n'
@@ -224,6 +268,7 @@ publish/multi-arch-base-manifest :
   		docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION); \
     fi
 
+# Shortcut to build all supported multi arch bases
 .PHONY : publish/multi-arch-base
 publish/multi-arch-base : export IMAGE_VERSION=$(AGENT_VERSION)-rc
 publish/multi-arch-base : export DOCKER_BUILD_TAG_PREFIX=$(IMAGE_VERSION)
@@ -232,6 +277,7 @@ publish/multi-arch-base : build/base-arm
 publish/multi-arch-base : build/base-amd64
 publish/multi-arch-base : publish/multi-arch-base-manifest
 
+# Publishes Release Candidate (RC) image/manifest as full release
 .PHONY : publish/multi-arch-base-rc
 publish/multi-arch-base-rc:
 	@printf '\n================================================================\n'
