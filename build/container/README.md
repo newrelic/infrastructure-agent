@@ -75,9 +75,9 @@ $ make -C build/container/ clean publish/multi-arch-base NS=test REPO=agent AGEN
 
 This will create all the docker images and tag them as follows, all as "release candidates":
 
-* `arm` as `test/agent:1.2.3-rc-arm
-* `arm64` as `test/agent:1.2.3-rc-arm64
-* `amd64` as `test/agent:1.2.3-rc-amd64
+* `arm` as `test/agent:1.2.3-rc-arm`
+* `arm64` as `test/agent:1.2.3-rc-arm64`
+* `amd64` as `test/agent:1.2.3-rc-amd64`
 
 Setting `NS` sets the Docker organisation to use (defaults to `newrelic`) and `REPO` sets the repo (defaults to `infrastructure`).
 The image version is set using `AGENT_VERSION` and should match the one for the agent being added to the image.
