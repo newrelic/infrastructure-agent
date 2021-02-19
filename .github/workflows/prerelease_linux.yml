@@ -130,7 +130,7 @@ jobs:
         with:
           tag: ${{env.TAG}}
           app_name: "newrelic-infra"
-          repo_name: ${{ env.ORIGINAL_REPO_NAME }}
+          repo_name: "newrelic/infrastructure-agent"
           env: pre-release
           # 'custom' is for custom schema file
           schema: "custom"
