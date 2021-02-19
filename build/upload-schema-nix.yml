@@ -1,5 +1,5 @@
 ---
-- src: "newrelic-infra_linux_{version}.tar.gz"
+- src: "newrelic-infra_linux_{version}_{arch}.tar.gz"
   uploads:
     - type: file
       dest: "{dest_prefix}binaries/linux/{arch}/{src}"
