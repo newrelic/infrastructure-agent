@@ -30,33 +30,38 @@ Function GetIntegrationVersion {
     return $version
 }
 
-Function GetFluentBitVersion {
-    $versionsArray = @()
+Function GetFluentBitPluginVersion {
+    $dir = "$scriptPath\..\..\embed"
 
-    $pluginVersion = $(Get-Content $dir/fluent-bit.version | %{if($_ -match "^windows") { $_.Split(',')[1]; }})
+    $pluginVersion = $(Get-Content "$dir/fluent-bit.version" | %{if($_ -match "^windows") { $_.Split(',')[1]; }})
     if ([string]::IsNullOrWhitespace($pluginVersion)) {
         throw "failed to read nr fluent-bit plugin version"
     }
-    $versionsArray += $pluginVersion
 
+    return $pluginVersion
+}
+Function GetFluentBitVersion {
     $dir = "$scriptPath\..\..\embed"
-    $fbVersion = $(Get-Content $dir/fluent-bit.version | %{if($_ -match "^windows") { $_.Split(',')[2]; }})
+    $fbVersion = $(Get-Content "$dir/fluent-bit.version" | %{if($_ -match "^windows") { $_.Split(',')[2]; }})
     if ([string]::IsNullOrWhitespace($fbVersion)) {
         throw "failed to read nr fluent-bit version"
     }
-    $versionsArray += $fbVersion
 
-    return ,$versionsArray
+    return $fbVersion
 }
 
 Function DownloadFile {
     param (
         [string]$url=$(throw "-url is required"),
-        [string]$dest=$(throw "-dest is required")
+        # $dest is that destination path where the file will be downloaded.
+        [string]$dest=".\",
+        # Pass outFile if you want to rename the outputFile. By default will use the file name from the url.
+        [string]$outFile=""
     )
 
-    # $extractDir = (Get-Item $dest).Directory.Name
-    $file = $url.Substring($url.LastIndexOf("/") + 1)
+    if ([string]::IsNullOrWhitespace($outFile)) {
+        $outFile = $url.Substring($url.LastIndexOf("/") + 1)
+    }
 
     # Download zip file.
     $ProgressPreference = 'SilentlyContinue'
@@ -65,7 +70,7 @@ Function DownloadFile {
     Write-Output "Downloading $url"
 
     New-Item -path $dest -type directory -Force
-    Invoke-WebRequest $url -OutFile "$dest\$file"
+    Invoke-WebRequest $url -OutFile "$dest\$outFile"
 }
 
 Function DownloadAndExtractZip {
@@ -75,6 +80,8 @@ Function DownloadAndExtractZip {
     )
 
     DownloadFile -dest:"$dest" -url:"$url"
+
+    $file = $url.Substring($url.LastIndexOf("/") + 1)
 
     # extract
     expand-archive -path "$dest\$file" -destinationpath $dest

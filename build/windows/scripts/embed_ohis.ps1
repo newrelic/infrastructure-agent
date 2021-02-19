@@ -74,15 +74,14 @@ Function EmbedPrometheus {
 Function EmbedFluentBit {
     Write-Output "--- Embedding fluent-bit"
 
-    $versionArray = GetFluentBitVersion
-    $pluginVersion = versionArray[0]
-    $nrfbVersion = versionArray[1]
+    $pluginVersion = GetFluentBitPluginVersion
+    $nrfbVersion = GetFluentBitVersion
 
     [string]$pluginUrl = "https://github.com/newrelic/newrelic-fluent-bit-output/releases/download/v$pluginVersion/out_newrelic-windows-$arch-$pluginVersion.dll"
-    DownloadFile -dest:"$downloadPath\logging\nrfb" -url:"$url"
+    DownloadFile -dest:"$downloadPath\logging\nrfb" -outFile:"out_newrelic.dll" -url:"$pluginUrl"
 
-    [string]$url = "https://github.com/newrelic-experimental/fluent-bit-package/releases/download/$version/fb-windows-$arch.zip"
-    DownloadAndExtractZip -dest:"$downloadPath\logging\nrfb" -url:"$url"
+    [string]$nrfbUrl = "https://github.com/newrelic-experimental/fluent-bit-package/releases/download/$nrfbVersion/fb-windows-$arch.zip"
+    DownloadAndExtractZip -dest:"$downloadPath\logging\nrfb" -url:"$nrfbUrl"
     
     if (-Not $skipSigning) {
         SignExecutable -executable "$downloadPath\logging\nrfb\fluent-bit.exe"
