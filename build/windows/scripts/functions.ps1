@@ -31,16 +31,25 @@ Function GetIntegrationVersion {
 }
 
 Function GetFluentBitVersion {
-    $dir = "$scriptPath\..\..\embed"
-    $version = $(Get-Content $dir/fluent-bit.version | %{if($_ -match "^windows") { $_.Split(',')[3]; }})
+    $versionsArray = @()
 
-    if ([string]::IsNullOrWhitespace($version)) {
+    $pluginVersion = $(Get-Content $dir/fluent-bit.version | %{if($_ -match "^windows") { $_.Split(',')[1]; }})
+    if ([string]::IsNullOrWhitespace($pluginVersion)) {
+        throw "failed to read nr fluent-bit plugin version"
+    }
+    $versionsArray += $pluginVersion
+
+    $dir = "$scriptPath\..\..\embed"
+    $fbVersion = $(Get-Content $dir/fluent-bit.version | %{if($_ -match "^windows") { $_.Split(',')[2]; }})
+    if ([string]::IsNullOrWhitespace($fbVersion)) {
         throw "failed to read nr fluent-bit version"
     }
+    $versionsArray += $fbVersion
 
-    return $version
+    return ,$versionsArray
 }
-Function DownloadAndExtractZip {
+
+Function DownloadFile {
     param (
         [string]$url=$(throw "-url is required"),
         [string]$dest=$(throw "-dest is required")
@@ -54,9 +63,18 @@ Function DownloadAndExtractZip {
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
     Write-Output "Downloading $url"
-    
+
     New-Item -path $dest -type directory -Force
     Invoke-WebRequest $url -OutFile "$dest\$file"
+}
+
+Function DownloadAndExtractZip {
+    param (
+        [string]$url=$(throw "-url is required"),
+        [string]$dest=$(throw "-dest is required")
+    )
+
+    DownloadFile -dest:"$dest" -url:"$url"
 
     # extract
     expand-archive -path "$dest\$file" -destinationpath $dest
