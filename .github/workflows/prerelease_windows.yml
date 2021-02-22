@@ -5,7 +5,7 @@ on:
     types:
       - prereleased
     tags:
-      - 'v*'
+      - '*'
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -106,7 +106,7 @@ jobs:
           env: pre-release
           # 'custom' is for custom schema file
           schema: "custom"
-          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/ci/pre-release-publish/build/upload-schema-win.yml"
+          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/ci/pre-release-publish/build/upload-schema-windows.yml"
           # careful with the access_keys used as it can inadvertently publish to where we don't want,
           # especially if the bucket name is "common" enough that it can already be used for something else
           # note: seems like using secrets here directly seems to fail for some cases

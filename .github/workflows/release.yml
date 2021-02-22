@@ -1,0 +1,86 @@
+name: Release Linux, Windows and Docker pipeline
+
+on:
+  release:
+    types:
+      - released
+    tags:
+      - '*'
+
+env:
+  GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+  GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }}
+  TAG: ${{ github.event.release.tag_name }}
+  DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
+  DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
+
+jobs:
+  publishing-to-s3-linux:
+    name: Publish linux artifacts into s3 bucket
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKER_HUB_ID }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
+      - name: Publish to S3 action
+        uses: newrelic/infrastructure-publish-action@main
+        env:
+          AWS_S3_BUCKET: newrelic-test-20200121
+          AWS_ACCESS_KEY: ${{ secrets.TEST_AWS_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.TEST_AWS_SECRET_ACCESS_KEY }}
+        with:
+          tag: ${{env.TAG}}
+          app_name: "newrelic-infra"
+          repo_name: "newrelic/infrastructure-agent"
+          env: release
+          # 'custom' is for custom schema file
+          schema: "custom"
+          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/ci/pre-release-publish/build/upload-schema-linux.yml"
+          # careful with the access_keys used as it can inadvertently publish to where we don't want,
+          # especially if the bucket name is "common" enough that it can already be used for something else
+          # note: seems like using secrets here directly seems to fail for some cases
+          aws_access_key: ${{ env.AWS_ACCESS_KEY }}
+          aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET }}
+          # used for signing package stuff
+          gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
+          gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
+
+  publishing-to-s3-windows:
+    name: Publish windows artifacts into s3 bucket
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKER_HUB_ID }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
+      - name: Publish to S3 action
+        uses: newrelic/infrastructure-publish-action@main
+        env:
+          AWS_S3_BUCKET: newrelic-test-20200121
+          AWS_ACCESS_KEY: ${{ secrets.TEST_AWS_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.TEST_AWS_SECRET_ACCESS_KEY }}
+        with:
+          tag: ${{env.TAG}}
+          app_name: "newrelic-infra"
+          repo_name: "newrelic/infrastructure-agent"
+          env: release
+          # 'custom' is for custom schema file
+          schema: "custom"
+          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/ci/pre-release-publish/build/upload-schema-windows.yml"
+          # careful with the access_keys used as it can inadvertently publish to where we don't want,
+          # especially if the bucket name is "common" enough that it can already be used for something else
+          # note: seems like using secrets here directly seems to fail for some cases
+          aws_access_key: ${{ env.AWS_ACCESS_KEY }}
+          aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET }}
+          # used for signing package stuff
+          gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
+          gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
+
+# TODO add job for docker image re-tagging
