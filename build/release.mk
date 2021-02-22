@@ -98,7 +98,7 @@ tarball-release: tarball-linux-all release/publish
 
 PRERELEASE := ${PRERELEASE}
 ifneq ($(PRERELEASE), true)
-	PKG_FLAGS += " --snapshot"
+	PKG_FLAGS += --snapshot
 endif
 
 OS := $(shell uname -s)
