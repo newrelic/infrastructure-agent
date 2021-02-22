@@ -11,8 +11,8 @@ NR_PLUGIN_VERSION_LINUX ?= $(call get-fb_version,linux,2)
 
 ARCH                    ?= amd64
 
-NRFB_URL                 = https://github.com/newrelic-experimental/fluent-bit-package/releases/download/$(NRFB_VERSION_LINUX)/fb-linux-amd64.tar.gz
-NR_PLUGIN_URL            = https://github.com/newrelic/newrelic-fluent-bit-output/releases/download/v$(NR_PLUGIN_VERSION_LINUX)/out_newrelic-linux-amd64-$(NR_PLUGIN_VERSION_LINUX).so
+NRFB_URL                 = https://github.com/newrelic-experimental/fluent-bit-package/releases/download/$(NRFB_VERSION_LINUX)/fb-linux-$(ARCH).tar.gz
+NR_PLUGIN_URL            = https://github.com/newrelic/newrelic-fluent-bit-output/releases/download/v$(NR_PLUGIN_VERSION_LINUX)/out_newrelic-linux-$(ARCH)-$(NR_PLUGIN_VERSION_LINUX).so
 
 .PHONY: get-fluentbit-linux
 get-fluentbit-linux:
