@@ -1,5 +1,8 @@
 [![New Relic Community Plus header](https://raw.githubusercontent.com/newrelic/open-source-office/master/examples/categories/images/Community_Plus.png)](https://opensource.newrelic.com/oss-category/#community-plus)
 
+![Build Status](https://github.com/newrelic/infrastructure-agent/actions/workflows/test.yml/badge.svg)
+[![Coverage Status](https://coveralls.io/repos/github/newrelic/infrastructure-agent/badge.svg?branch=master)](https://coveralls.io/github/newrelic/infrastructure-agent?branch=master)
+
 # New Relic infrastructure agent
 
 The infrastructure agent (infra-agent) collects inventory data and metrics of your hosts and sends it to the New Relic platform. 
