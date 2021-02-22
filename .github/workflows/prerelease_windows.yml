@@ -15,6 +15,8 @@ env:
   PFX_PASSPHRASE:  ${{ secrets.OHAI_PFX_PASSPHRASE }}
   SNYK_TOKEN: ${{ secrets.COREINT_SNYK_TOKEN }}
   TAG: ${{ github.event.release.tag_name }}
+  DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
+  DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
 
 jobs:
   unit-test-windows:
@@ -109,5 +111,5 @@ jobs:
           aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET }}
           # used for signing package stuff
-          gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
-          gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
+          gpg_passphrase: ""
+          gpg_private_key_base64: ""
