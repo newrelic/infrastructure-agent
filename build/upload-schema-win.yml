@@ -1,5 +1,5 @@
 ---
-- src: "newrelic-infra.{version}.msi"
+- src: "newrelic-infra-amd64.{version}.msi"
   uploads:
     - type: file
       dest: "{dest_prefix}windows/{src}"
@@ -13,12 +13,12 @@
     - type: file
       dest: "{dest_prefix}windows/386/newrelic-infra-386.msi"
 
-- src: "newrelic-infra-386.{version}.zip"
-  uploads:
-    - type: file
-      dest: "{dest_prefix}binaries/windows/386/{src}"
-
 - src: "newrelic-infra-amd64.{version}.zip"
   uploads:
     - type: file
       dest: "{dest_prefix}binaries/windows/amd64/{src}"
+
+- src: "newrelic-infra-386.{version}.zip"
+  uploads:
+    - type: file
+      dest: "{dest_prefix}binaries/windows/386/{src}"
