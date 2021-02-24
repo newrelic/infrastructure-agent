@@ -13,6 +13,9 @@ GIT_SHA    = $(shell git rev-parse --short HEAD)
 GIT_TAG    = $(shell git describe --tags --abbrev=0 --exact-match 2>/dev/null)
 GIT_DIRTY  = $(shell test -n "`git status --porcelain`" && echo "dirty" || echo "clean")
 
+GOTOOLS ?=
+GOTOOLS += github.com/jandelgado/gcov2lcov
+
 GOARCH ?= amd64
 
 LDFLAGS += -X main.buildVersion=$(VERSION)
@@ -27,25 +30,28 @@ export PATH := $(PROJECT_WORKSPACE)/bin:$(PATH)
 GO_TEST ?= test $(TEST_OPTIONS) $(TEST_FLAGS) $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=10m
 GO_FMT 	?= gofmt -s -w -l $(SOURCE_FILES_DIR)
 
-.PHONY: go-get
-go-get:
+.PHONY: deps
+deps:
 	@printf '\n================================================================\n'
 	@printf 'Target: go-get'
 	@printf '\n================================================================\n'
-	$(GO_BIN) mod vendor
+	@$(GO_BIN) get $(GOTOOLS)
+	@$(GO_BIN) mod vendor
 	@echo '[go-get] Done.'
 
 .PHONY: test-coverage
-test-coverage: TEST_FLAGS += -covermode=atomic -coverprofile=coverage.out
-test-coverage: go-get
+test-coverage: TEST_FLAGS += -covermode=atomic -coverprofile=$(COVERAGE_FILE)
+test-coverage: deps
 	@printf '\n================================================================\n'
 	@printf 'Target: test-coverage'
 	@printf '\n================================================================\n'
 	@echo '[test] Testing packages: $(SOURCE_FILES)'
 	$(GO_BIN) $(GO_TEST)
+	@echo '[test] Converting: $(COVERAGE_FILE) into lcov.info'
+	@(gcov2lcov -infile=$(COVERAGE_FILE) -outfile=lcov.info)
 
 .PHONY: test
-test: go-get test-only
+test: deps test-only
 
 .PHONY: test-only
 test-only:
@@ -56,7 +62,7 @@ test-only:
 	$(GO_BIN) $(GO_TEST)
 
 .PHONY: clean
-clean: go-get
+clean: deps
 	@printf '\n================================================================\n'
 	@printf 'Target: clean'
 	@printf '\n================================================================\n'
@@ -129,7 +135,7 @@ linux/%:
 .PHONY: linux/harvest-tests
 linux/harvest-tests: GOOS=linux
 linux/harvest-tests: GOARCH=amd64
-linux/harvest-tests: go-get
+linux/harvest-tests: deps
 	go test ./test/harvest -tags="harvest" -v -c -o ./harvest-bin && ./harvest-bin
 
 .PHONY: proxy-test

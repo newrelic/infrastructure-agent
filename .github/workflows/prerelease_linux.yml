@@ -37,13 +37,6 @@ jobs:
       - name: Running unit tests
         run: make ci/test-coverage
 
-      - name: Install gcov2lcov
-        working-directory: /tmp
-        run: go get -u github.com/jandelgado/gcov2lcov
-
-      - name: Convert coverage.out to lcov.info
-        run: gcov2lcov -infile=coverage.out -outfile=lcov.info
-
       - name: Coveralls Parallel
         uses: coverallsapp/github-action@master
         with:
