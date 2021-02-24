@@ -7,9 +7,9 @@ bin:
 
 $(GORELEASER_BIN): bin
 	@echo "=== [$(GORELEASER_BIN)] Installing goreleaser $(GORELEASER_VERSION)"
-	@(wget -qO /tmp/goreleaser.tar.gz https://github.com/goreleaser/goreleaser/releases/download/$(GORELEASER_VERSION)/goreleaser_$(OS_DOWNLOAD)_x86_64.tar.gz)
-	@(tar -xf  /tmp/goreleaser.tar.gz -C bin/)
-	@(rm -f /tmp/goreleaser.tar.gz)
+	(wget -qO /tmp/goreleaser.tar.gz https://github.com/goreleaser/goreleaser/releases/download/$(GORELEASER_VERSION)/goreleaser_$(OS_DOWNLOAD)_x86_64.tar.gz)
+	(tar -xf  /tmp/goreleaser.tar.gz -C bin/)
+	(rm -f /tmp/goreleaser.tar.gz)
 	@echo "=== [$(GORELEASER_BIN)] goreleaser downloaded"
 
 .PHONY : release/clean
@@ -20,8 +20,6 @@ release/clean:
 
 .PHONY : release/deps
 release/deps: $(GORELEASER_BIN)
-	@echo "=== [release/deps] install goversioninfo"
-	@go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
 
 .PHONY : release/build
 release/build: release/deps release/clean
