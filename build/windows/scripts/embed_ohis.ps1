@@ -25,7 +25,7 @@ Function EmbedFlex {
 
     [string]$url="https://github.com/newrelic/nri-flex/releases/download/v${version}/nri-flex_${version}_Windows_x86_64.zip"
 
-    DownloadAndExtractZip -arch:"$arch" -dest:"$downloadPath\nri-flex" -url:"$url"
+    DownloadAndExtractZip -dest:"$downloadPath\nri-flex" -url:"$url"
 
     if (-Not $skipSigning) {
         SignExecutable -executable "$downloadPath\nri-flex\nri-flex.exe"
@@ -42,7 +42,7 @@ Function EmbedWindowsServices {
 
     [string]$url="https://github.com/newrelic/nri-winservices/releases/download/${version}/${file}"
 
-    DownloadAndExtractZip -arch:"$arch" -dest:"$downloadPath\nri-winservices" -url:"$url"
+    DownloadAndExtractZip -dest:"$downloadPath\nri-winservices" -url:"$url"
 
     if (-Not $skipSigning) {
         SignExecutable -executable "$downloadPath\nri-winservices\nri-winservices.exe"
@@ -60,7 +60,7 @@ Function EmbedPrometheus {
     [string]$file="nri-prometheus-$arch.${version}.zip"
     $url="https://github.com/newrelic/nri-prometheus/releases/download/v${version}/${file}"
  
-    DownloadAndExtractZip -arch:"$arch" -dest:"$downloadPath\nri-prometheus" -url:"$url"
+    DownloadAndExtractZip -dest:"$downloadPath\nri-prometheus" -url:"$url"
 
     Copy-Item -Path "$downloadPath\nri-prometheus\New Relic\newrelic-infra\newrelic-integrations\bin\nri-prometheus.exe" -Destination "$downloadPath\nri-prometheus\nri-prometheus.exe" -Recurse -Force
     Remove-Item -Path "$downloadPath\nri-prometheus\New Relic" -Force -Recurse
@@ -74,15 +74,14 @@ Function EmbedPrometheus {
 Function EmbedFluentBit {
     Write-Output "--- Embedding fluent-bit"
 
-    $fbArch = "win64"
-    if($arch -eq "386") {
-        $fbArch = "win32"
-    }
+    $pluginVersion = GetFluentBitPluginVersion
+    $nrfbVersion = GetFluentBitVersion
 
-    $version = GetFluentBitVersion
-    [string]$url = "https://download.newrelic.com/infrastructure_agent/logging/windows/nrfb-$version-$fbArch.zip"
-    
-    DownloadAndExtractZip -arch:"$arch" -dest:"$downloadPath\logging" -url:"$url"
+    [string]$pluginUrl = "https://github.com/newrelic/newrelic-fluent-bit-output/releases/download/v$pluginVersion/out_newrelic-windows-$arch-$pluginVersion.dll"
+    DownloadFile -dest:"$downloadPath\logging\nrfb" -outFile:"out_newrelic.dll" -url:"$pluginUrl"
+
+    [string]$nrfbUrl = "https://github.com/newrelic-experimental/fluent-bit-package/releases/download/$nrfbVersion/fb-windows-$arch.zip"
+    DownloadAndExtractZip -dest:"$downloadPath\logging\nrfb" -url:"$nrfbUrl"
     
     if (-Not $skipSigning) {
         SignExecutable -executable "$downloadPath\logging\nrfb\fluent-bit.exe"
@@ -98,7 +97,7 @@ Function EmbedWinpkg {
     }
 
     [string]$url = "https://download.newrelic.com/infrastructure_agent/$UrlPath"
-    DownloadAndExtractZip -arch:"$arch" -dest:"$downloadPath" -url:"$url"
+    DownloadAndExtractZip -dest:"$downloadPath" -url:"$url"
     
     if (-Not $skipSigning) {
         SignExecutable -executable "$downloadPath\winpkg\nr-winpkg.exe"

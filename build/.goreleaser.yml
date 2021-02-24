@@ -165,11 +165,11 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-      - src: 'target/fluent-bit/nrfb/fluent-bit'
+      - src: 'target/fluent-bit/amd64/fluent-bit'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
-      - src: 'target/fluent-bit/nrfb/out_newrelic.so'
+      - src: 'target/fluent-bit-plugin/amd64/out_newrelic.so'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-      - src: 'target/fluent-bit/nrfb/parsers.conf'
+      - src: 'assets/examples/logging/parsers.conf'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
     empty_folders:
       - /var/db/newrelic-infra/custom-integrations
@@ -359,11 +359,11 @@ nfpms:
       - src: 'target/nriprometheus/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
 
-      - src: 'target/fluent-bit/nrfb/fluent-bit'
+      - src: 'target/fluent-bit/amd64/fluent-bit'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
-      - src: 'target/fluent-bit/nrfb/out_newrelic.so'
+      - src: 'target/fluent-bit-plugin/amd64/out_newrelic.so'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-      - src: 'target/fluent-bit/nrfb/parsers.conf'
+      - src: 'assets/examples/logging/parsers.conf'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
     empty_folders:
       - /var/db/newrelic-infra/custom-integrations
@@ -436,11 +436,11 @@ nfpms:
       - src: 'target/nriprometheus/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
 
-      - src: 'target/fluent-bit/nrfb/fluent-bit'
+      - src: 'target/fluent-bit/amd64/fluent-bit'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
-      - src: 'target/fluent-bit/nrfb/out_newrelic.so'
+      - src: 'target/fluent-bit-plugin/amd64/out_newrelic.so'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-      - src: 'target/fluent-bit/nrfb/parsers.conf'
+      - src: 'assets/examples/logging/parsers.conf'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
     empty_folders:
       - /var/db/newrelic-infra/custom-integrations
@@ -568,11 +568,11 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-      - src: 'target/fluent-bit/nrfb/fluent-bit'
+      - src: 'target/fluent-bit/amd64/fluent-bit'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
-      - src: 'target/fluent-bit/nrfb/out_newrelic.so'
+      - src: 'target/fluent-bit-plugin/amd64/out_newrelic.so'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-      - src: 'target/fluent-bit/nrfb/parsers.conf'
+      - src: 'assets/examples/logging/parsers.conf'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
     empty_folders:
       - /var/db/newrelic-infra/custom-integrations
@@ -645,11 +645,11 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-      - src: 'target/fluent-bit/nrfb/fluent-bit'
+      - src: 'target/fluent-bit/amd64/fluent-bit'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
-      - src: 'target/fluent-bit/nrfb/out_newrelic.so'
+      - src: 'target/fluent-bit-plugin/amd64/out_newrelic.so'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-      - src: 'target/fluent-bit/nrfb/parsers.conf'
+      - src: 'assets/examples/logging/parsers.conf'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
     empty_folders:
       - /var/db/newrelic-infra/custom-integrations
@@ -722,11 +722,11 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-      - src: 'target/fluent-bit/nrfb/fluent-bit'
+      - src: 'target/fluent-bit/amd64/fluent-bit'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
-      - src: 'target/fluent-bit/nrfb/out_newrelic.so'
+      - src: 'target/fluent-bit-plugin/amd64/out_newrelic.so'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-      - src: 'target/fluent-bit/nrfb/parsers.conf'
+      - src: 'assets/examples/logging/parsers.conf'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
     empty_folders:
       - /var/db/newrelic-infra/custom-integrations
@@ -799,11 +799,11 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-      - src: 'target/fluent-bit/nrfb/fluent-bit'
+      - src: 'target/fluent-bit/amd64/fluent-bit'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
-      - src: 'target/fluent-bit/nrfb/out_newrelic.so'
+      - src: 'target/fluent-bit-plugin/amd64/out_newrelic.so'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-      - src: 'target/fluent-bit/nrfb/parsers.conf'
+      - src: 'assets/examples/logging/parsers.conf'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
     empty_folders:
       - /var/db/newrelic-infra/custom-integrations
