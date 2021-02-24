@@ -36,6 +36,7 @@ deps:
 	@printf 'Target: go-get'
 	@printf '\n================================================================\n'
 	@$(GO_BIN) get $(GOTOOLS)
+	@$(GO_BIN) mod tidy
 	@$(GO_BIN) mod vendor
 	@echo '[go-get] Done.'
 
