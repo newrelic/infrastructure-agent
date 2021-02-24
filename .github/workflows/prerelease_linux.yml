@@ -18,7 +18,6 @@ env:
   DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
   DOCKER_PUBLISH: true
-  IS_RELEASE: true
 
 jobs:
   unit-test-linux:
