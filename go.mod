@@ -17,6 +17,7 @@ require (
 	github.com/evanphx/json-patch v4.5.0+incompatible
 	github.com/fortytw2/leaktest v1.3.1-0.20190606143808-d73c753520d9
 	github.com/fsnotify/fsnotify v1.4.9
+	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-ole/go-ole v1.2.1 // indirect
 	github.com/gogo/protobuf v1.1.2-0.20181116123445-07eab6a8298c // indirect
 	github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9
