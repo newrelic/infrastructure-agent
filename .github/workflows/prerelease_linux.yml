@@ -138,9 +138,13 @@ jobs:
           # careful with the access_keys used as it can inadvertently publish to where we don't want,
           # especially if the bucket name is "common" enough that it can already be used for something else
           # note: seems like using secrets here directly seems to fail for some cases
-          aws_access_key: ${{ env.AWS_ACCESS_KEY }}
+          aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET }}
           # used for signing package stuff
           gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
           gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
+          run_id: ${{}}
+          aws_s3_lock_bucket_name: ${{}}
+          aws_region: ${{}}
+          aws_role_arn: ${{}}

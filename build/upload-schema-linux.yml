@@ -15,3 +15,56 @@
     - ppc64le
     - s390x
 
+- src: "newrelic-infra_systemd_{version}_{arch}.deb"
+  arch:
+    - amd64
+    - 386
+  uploads:
+    - type: apt
+      src_repo: "http://newrelic-test-20200121.s3-website.eu-west-3.amazonaws.com/infrastructure_agent/test/linux/apt"
+      dest: "{dest_prefix}linux/apt/"
+      os_version:
+        - focal
+        - bionic
+        - xenial
+        - buster
+        - jessie
+        - stretch
+
+- src: "newrelic-infra_upstart_{version}_{arch}.deb"
+  arch:
+    - amd64
+    - 386
+  uploads:
+    - type: apt
+      src_repo: "http://newrelic-test-20200121.s3-website.eu-west-3.amazonaws.com/infrastructure_agent/test/linux/apt"
+      dest: "{dest_prefix}linux/apt/"
+      os_version:
+        - trusty
+        - precise
+
+- src: "newrelic-infra-{version}-1.el{os_version}.{arch}.rpm"
+  arch:
+    - x86_64
+    - 386
+  uploads:
+    - type: yum
+      dest: "{dest_prefix}linux/yum/el/{os_version}/{arch}/"
+      os_version:
+        - 6
+        - 7
+        - 8
+
+- src: "newrelic-infra-{version}-1.{os_version}.{arch}.rpm"
+  arch:
+    - x86_64
+    - 386
+  uploads:
+    - type: zypp
+      dest: "{dest_prefix}linux/zypp/sles/{os_version}/{arch}/"
+      os_version:
+        - 11.4
+        - 12.1
+        - 12.2
+        - 12.3
+        - 12.4
