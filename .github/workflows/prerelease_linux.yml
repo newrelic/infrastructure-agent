@@ -43,7 +43,7 @@ jobs:
 
       - name: Convert coverage.out to lcov.info
         run: gcov2lcov -infile=coverage.out -outfile=lcov.info
-        
+
       - name: Coveralls Parallel
         uses: coverallsapp/github-action@master
         with:
