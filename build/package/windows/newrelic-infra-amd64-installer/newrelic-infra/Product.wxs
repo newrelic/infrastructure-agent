@@ -194,7 +194,7 @@
         </Component>
         <Component Id="CMP_NR_LOGGING_TOOL_PARSERS" Guid="34BF1E45-4AC5-45C4-AB80-D7C457A9B601" Win64="yes">
           <File Id="FILE_NR_LOGGING_TOOL_PARSERS"
-              Source="$(var.EmbedBinariesPath)logging\nrfb\parsers.conf"
+              Source="$(var.ExternalFilesPath)examples\logging\parsers.conf"
                 KeyPath="yes" />
         </Component>
     </ComponentGroup>

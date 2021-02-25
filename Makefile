@@ -6,6 +6,7 @@ TARGET_DIR			?= $(PROJECT_WORKSPACE)/target
 DIST_DIR			?= $(PROJECT_WORKSPACE)/dist
 TARGET_DIR_CENTOS5	= $(TARGET_DIR)/el_5
 UNAME_S				:= $(shell uname -s)
+COVERAGE_FILE       ?= coverage.out
 
 # Default GO_BIN to Go binary in PATH
 GO_BIN				?= go

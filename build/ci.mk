@@ -43,8 +43,8 @@ ci/snyk-test:
 			-e SNYK_TOKEN \
 			snyk/snyk:golang snyk test --severity-threshold=high
 
-.PHONY : ci/prerelase/packages
-ci/prerelase/packages: ci/deps
+.PHONY : ci/prerelase
+ci/prerelase: ci/deps
 ifdef TAG
 	@docker run --rm -t \
 			--name "infrastructure-agent-prerelease" \
@@ -59,20 +59,5 @@ ifdef TAG
 			$(BUILDER_IMG_TAG) make release
 else
 	@echo "===> infrastructure-agent ===  [ci/prerelease] TAG env variable expected to be set"
-	exit 1
-endif
-
-.PHONY : ci/prerelase/tarball
-ci/prerelase/tarball: ci/deps
-ifdef TAG
-	@docker run --rm -t \
-			--name "infrastructure-agent-tarball" \
-			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
-            -w /go/src/github.com/newrelic/infrastructure-agent \
-			-e GITHUB_TOKEN \
-			-e TAG \
-			$(BUILDER_IMG_TAG) make tarball-release VERSION=$(TAG)
-else
-	@echo "===> infrastructure-agent ===  [ci/tarball] TAG env variable expected to be set"
 	exit 1
 endif

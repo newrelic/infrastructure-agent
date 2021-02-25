@@ -1,11 +1,8 @@
 ####
-#
-# fluentbit_version       - https://docs.fluentbit.io/manual/installation/linux
-#                         - https://docs.fluentbit.io/manual/installation/windows
 # newrelic_plugin_version - https://github.com/newrelic/newrelic-fluent-bit-output/releases
 #
-# nrfb_artifact_version   - https://artifacts.datanerd.us/webapp/#/artifacts/browse/tree/General/ohai-repo/logging
+# nrfb_artifact_version   - https://github.com/newrelic-experimental/fluent-bit-package/releases
 #
-# OS,fluentbit_version,newrelic_plugin_version,nrfb_artifact_version
-linux,1.6.3,1.4.3,1.4.0
-windows,1.6.3,1.4.3,1.4.0
+# OS,newrelic_plugin_version,nrfb_artifact_version
+linux,1.4.6,1.4.1
+windows,1.4.6,1.4.1
