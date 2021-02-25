@@ -22,6 +22,7 @@ env:
   AWS_S3_BUCKET_NAME: "nr-downloads-ohai-testing"
   AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-testing"
   AWS_REGION: "us-east-1"
+  DOCKER_PUBLISH: true
 
 jobs:
   unit-test-linux:
