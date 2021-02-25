@@ -33,7 +33,6 @@ jobs:
           AWS_S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET_NAME_PROD }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
-          AWS_RUN_ID: ${{ secrets.AWS_RUN_ID_PROD }}
           AWS_S3_LOCK_BUCKET_NAME: ${{ secrets.AWS_S3_LOCK_BUCKET_NAME_PROD }}
           AWS_REGION: ${{ secrets.AWS_REGION_PROD }}
           AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN_PROD }}
@@ -51,7 +50,7 @@ jobs:
           aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
-          run_id: ${{ env.AWS_RUN_ID }}
+          run_id: ${{ env.GITHUB_RUN_ID }}
           aws_s3_lock_bucket_name: ${{ env.AWS_S3_LOCK_BUCKET_NAME }}
           aws_region: ${{ env.AWS_REGION }}
           aws_role_arn: ${{ env.AWS_ROLE_ARN }}
