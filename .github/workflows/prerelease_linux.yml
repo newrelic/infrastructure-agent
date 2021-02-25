@@ -137,12 +137,8 @@ jobs:
           app_name: "newrelic-infra"
           repo_name: "newrelic/infrastructure-agent"
           env: pre-release
-          # 'custom' is for custom schema file
           schema: "custom"
           schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/$SCHEMA_BRANCH/build/upload-schema-linux.yml"
-          # careful with the access_keys used as it can inadvertently publish to where we don't want,
-          # especially if the bucket name is "common" enough that it can already be used for something else
-          # note: seems like using secrets here directly seems to fail for some cases
           aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
