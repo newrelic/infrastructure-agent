@@ -13,8 +13,8 @@ env:
   TAG: ${{ github.event.release.tag_name }}
   DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
-  #TODO change ci/pre-release to real branch name
-  SCHEMA_BRANCH: "ci/pre-release"
+  #TODO change ci/pipeline to real branch name
+  SCHEMA_BRANCH: "ci/pipeline"
   AWS_S3_BUCKET_NAME: "nr-downloads-main"
   AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock"
   AWS_REGION: "us-east-1"
