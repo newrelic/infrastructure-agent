@@ -124,7 +124,7 @@ jobs:
   publishing-to-s3:
     name: Publish linux artifacts into s3 test bucket
     runs-on: ubuntu-20.04
-    needs: [packaging-tarball-linux, packaging-linux]
+    needs: [packaging-linux]
 
     steps:
       - name: Login to DockerHub
