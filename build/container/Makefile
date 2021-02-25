@@ -28,15 +28,7 @@ else
 	DOCKER_BUILDX_ARGS =
 endif
 
-
-# TODO: Remove once nri-flex publishes with standard OHI naming scheme
-TMP_NRI_FLEX_ARCH	?= $(DOCKER_ARCH)
-ifeq ($(TMP_NRI_FLEX_ARCH), amd64)
-	TMP_NRI_FLEX_ARCH = x86_64
-endif
-ifeq ($(TMP_NRI_FLEX_ARCH), arm)
-	TMP_NRI_FLEX_ARCH = armv6
-endif
+OHI_ARCH ?= $(DOCKER_ARCH)
 
 include ../embed/integrations.mk
 
@@ -119,7 +111,7 @@ debug :
 base/get-integrations : ${NRI_PKG_DIR}
 base/get-integrations : NRI_DOCKER_ARCH=$(DOCKER_ARCH)
 base/get-integrations : NRI_PROMETHEUS_ARCH=$(DOCKER_ARCH)
-base/get-integrations : NRI_FLEX_ARCH=$(TMP_NRI_FLEX_ARCH)
+base/get-integrations : NRI_FLEX_ARCH=$(DOCKER_ARCH)
 base/get-integrations : get-integrations
 base/get-integrations : embed-integrations
 
