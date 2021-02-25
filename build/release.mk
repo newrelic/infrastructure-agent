@@ -51,7 +51,7 @@ release/publish:
 	@bash $(CURDIR)/build/upload_artifacts_gh.sh
 
 .PHONY : release
-release: release/pkg release/fix-tarballs release/sign release/publish release/clean
+release: release/pkg release/fix-tarballs release/sign release/publish
 	@echo "=== [release] full pre-release cycle complete for nix"
 
 PRERELEASE := ${PRERELEASE}
