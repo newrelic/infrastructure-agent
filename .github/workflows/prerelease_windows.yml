@@ -13,7 +13,7 @@ env:
   PFX_CERTIFICATE_BASE64: ${{ secrets.OHAI_PFX_CERTIFICATE_BASE64 }} # base64 encoded
   PFX_CERTIFICATE_DESCRIPTION: 'New Relic'
   PFX_PASSPHRASE:  ${{ secrets.OHAI_PFX_PASSPHRASE }}
-  SNYK_TOKEN: ${{ secrets.COREINT_SNYK_TOKEN }}
+  SNYK_TOKEN: ${{ secrets.CAOS_SNYK_TOKEN }}
   TAG: ${{ github.event.release.tag_name }}
   DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}

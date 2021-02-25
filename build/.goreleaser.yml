@@ -1,4 +1,42 @@
 builds:
+  - id: linux-newrelic-infra-fpm
+    main: ./cmd/newrelic-infra
+    binary: newrelic-infra
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    ldflags:
+      - -s -w -X main.buildVersion={{.Version}}
+      - -s -w -X main.gitCommit={{.Commit}}
+    goarch:
+      - amd64
+  - id: linux-newrelic-infra-ctl-fpm
+    main: ./cmd/newrelic-infra-ctl
+    binary: newrelic-infra-ctl
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    ldflags:
+      - -s -w -X main.buildVersion={{.Version}}
+      - -s -w -X main.gitCommit={{.Commit}}
+    goarch:
+      - amd64
+
+  - id: linux-newrelic-infra-service-fpm
+    main: ./cmd/newrelic-infra-service
+    binary: newrelic-infra-service
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    ldflags:
+      - -s -w -X main.buildVersion={{.Version}}
+      - -s -w -X main.gitCommit={{.Commit}}
+    goarch:
+      - amd64
+
   - id: linux-newrelic-infra
     main: ./cmd/newrelic-infra
     binary: newrelic-infra
@@ -7,19 +45,22 @@ builds:
     goos:
       - linux
     ldflags:
-      - -s -w -X main.buildVersion={{ .Version }}
+      - -s -w -X main.buildVersion={{.Version}}
       - -s -w -X main.gitCommit={{.Commit}}
     goarch:
       - amd64
-      #    - arm
-      #    - arm64
+      - arm
+      - arm64
       - 386
-      #    - mips
-      #    - mips64
-      #    - mipsle
-      #    - mips64le
-      #    - ppc64le
-      #    - s390x
+      - mips
+      - mips64
+      - mipsle
+      - mips64le
+      - ppc64le
+      - s390x
+    gomips:
+      - hardfloat
+
   - id: linux-newrelic-infra-ctl
     main: ./cmd/newrelic-infra-ctl
     binary: newrelic-infra-ctl
@@ -28,19 +69,22 @@ builds:
     goos:
       - linux
     ldflags:
-      - -s -w -X main.buildVersion={{ .Version }}
+      - -s -w -X main.buildVersion={{.Version}}
       - -s -w -X main.gitCommit={{.Commit}}
     goarch:
       - amd64
-      #    - arm
-      #    - arm64
+      - arm
+      - arm64
       - 386
-      #    - mips
-      #    - mips64
-      #    - mipsle
-      #    - mips64le
-      #    - ppc64le
-      #    - s390x
+      - mips
+      - mips64
+      - mipsle
+      - mips64le
+      - ppc64le
+      - s390x
+    gomips:
+      - hardfloat
+
   - id: linux-newrelic-infra-service
     main: ./cmd/newrelic-infra-service
     binary: newrelic-infra-service
@@ -49,19 +93,21 @@ builds:
     goos:
       - linux
     ldflags:
-      - -s -w -X main.buildVersion={{ .Version }}
+      - -s -w -X main.buildVersion={{.Version}}
       - -s -w -X main.gitCommit={{.Commit}}
     goarch:
       - amd64
-      #    - arm
-      #    - arm64
+      - arm
+      - arm64
       - 386
-      #    - mips
-      #    - mips64
-      #    - mipsle
-      #    - mips64le
-      #    - ppc64le
-      #    - s390x
+      - mips
+      - mips64
+      - mipsle
+      - mips64le
+      - ppc64le
+      - s390x
+    gomips:
+      - hardfloat
 
 archives:
   - id: linux-tarball-infrastructure-agent
@@ -69,21 +115,12 @@ archives:
       - linux-newrelic-infra
       - linux-newrelic-infra-ctl
       - linux-newrelic-infra-service
-    name_template: "newrelic-infra_binaries_{{.Os}}_{{ .Env.TAG }}_{{ .Arch }}"
+    name_template: "newrelic-infra_{{.Os}}_{{ .Env.TAG }}_{{ .Arch }}_dirty"
     wrap_in_directory: false
     format: tar.gz
     files:
       - none*
-  - id: windows-tarball-infrastructure-agent
-    builds:
-      - windows-newrelic-infra
-      - windows-newrelic-infra-ctl
-      - windows-newrelic-infra-service
-    name_template: "newrelic-infra_binaries_{{.Os}}_{{ .Env.TAG }}_{{ .Arch }}"
-    wrap_in_directory: false
-    format: zip
-    files:
-      - none*
+
 #
 #
 #  NFPMS
@@ -92,9 +129,9 @@ archives:
 nfpms:
   - id: debian-infrastructure-agent-systemd
     builds:
-      - linux-newrelic-infra
-      - linux-newrelic-infra-ctl
-      - linux-newrelic-infra-service
+      - linux-newrelic-infra-fpm
+      - linux-newrelic-infra-ctl-fpm
+      - linux-newrelic-infra-service-fpm
     package_name: newrelic-infra
     file_name_template: "newrelic-infra_systemd_{{ .Env.TAG }}_{{ .Arch }}"
     vendor: "New Relic, Inc."
@@ -128,11 +165,11 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-      - src: 'target/fluent-bit/nrfb/fluent-bit'
+      - src: 'target/fluent-bit/amd64/fluent-bit'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
-      - src: 'target/fluent-bit/nrfb/out_newrelic.so'
+      - src: 'target/fluent-bit-plugin/amd64/out_newrelic.so'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-      - src: 'target/fluent-bit/nrfb/parsers.conf'
+      - src: 'assets/examples/logging/parsers.conf'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
     empty_folders:
       - /var/db/newrelic-infra/custom-integrations
@@ -159,9 +196,9 @@ nfpms:
 
   - id: debian-infrastructure-agent-upstart
     builds:
-      - linux-newrelic-infra
-      - linux-newrelic-infra-ctl
-      - linux-newrelic-infra-service
+      - linux-newrelic-infra-fpm
+      - linux-newrelic-infra-ctl-fpm
+      - linux-newrelic-infra-service-fpm
     package_name: newrelic-infra
     file_name_template: "newrelic-infra_upstart_{{ .Env.TAG }}_{{ .Arch }}"
     vendor: "New Relic, Inc."
@@ -218,57 +255,11 @@ nfpms:
     # Priority.
     priority: extra
 
-  - id: debian-infrastructure-agent-sysv
-    builds:
-      - linux-newrelic-infra
-      - linux-newrelic-infra-ctl
-      - linux-newrelic-infra-service
-    package_name: newrelic-infra
-    file_name_template: "newrelic-infra_sysv_{{ .Env.TAG }}_{{ .Arch }}"
-    vendor: 'New Relic, Inc.'
-    homepage: 'https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes'
-    maintainer: 'caos-team@newrelic.com'
-    description: 'New Relic Infrastructure provides flexible, dynamic server monitoring. With real-time data collection and a UI that scales from a handful of hosts to thousands, Infrastructure is designed for modern Operations teams with fast-changing systems.'
-    license: 'Copyright (c) 2008-2021 New Relic, Inc. All rights reserved.'
-    formats:
-      - deb
-    bindir: /usr/bin
-    contents:
-      - src: 'build/package/sysv/deb/newrelic-infra'
-        dst: '/etc/init.d/newrelic-infra'
-      - src: 'target/nridocker/etc/newrelic-infra/integrations.d/docker-config.yml'
-        dst: '/etc/newrelic-infra/integrations.d/docker-config.yml'
-      - src: 'LICENSE'
-        dst: '/var/db/newrelic-infra/LICENSE.txt'
-      - src: 'target/nridocker/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
-      - src: 'target/nriflex/nri-flex'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
-      - src: 'target/nriprometheus/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-      - src: 'target/fluent-bit/nrfb/fluent-bit'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
-      - src: 'target/fluent-bit/nrfb/out_newrelic.so'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-      - src: 'target/fluent-bit/nrfb/parsers.conf'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
-
-    empty_folders:
-      - /var/db/newrelic-infra/custom-integrations
-      - /var/db/newrelic-infra/integrations.d
-      - /var/log/newrelic-infra
-      - /var/run/newrelic-infra
-
-    # Section.
-    section: default
-    # Priority.
-    priority: extra
-
   - id: centos-6-infrastructure-agent
     builds:
-      - linux-newrelic-infra
-      - linux-newrelic-infra-ctl
-      - linux-newrelic-infra-service
+      - linux-newrelic-infra-fpm
+      - linux-newrelic-infra-ctl-fpm
+      - linux-newrelic-infra-service-fpm
     package_name: newrelic-infra
     file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.el6.{{ .Arch }}"
     vendor: 'New Relic, Inc.'
@@ -329,9 +320,9 @@ nfpms:
 
   - id: centos-7-infrastructure-agent
     builds:
-      - linux-newrelic-infra
-      - linux-newrelic-infra-ctl
-      - linux-newrelic-infra-service
+      - linux-newrelic-infra-fpm
+      - linux-newrelic-infra-ctl-fpm
+      - linux-newrelic-infra-service-fpm
     package_name: newrelic-infra
     file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.el7.{{ .Arch }}"
     vendor: 'New Relic, Inc.'
@@ -368,11 +359,11 @@ nfpms:
       - src: 'target/nriprometheus/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
 
-      - src: 'target/fluent-bit/nrfb/fluent-bit'
+      - src: 'target/fluent-bit/amd64/fluent-bit'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
-      - src: 'target/fluent-bit/nrfb/out_newrelic.so'
+      - src: 'target/fluent-bit-plugin/amd64/out_newrelic.so'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-      - src: 'target/fluent-bit/nrfb/parsers.conf'
+      - src: 'assets/examples/logging/parsers.conf'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
     empty_folders:
       - /var/db/newrelic-infra/custom-integrations
@@ -406,9 +397,9 @@ nfpms:
 
   - id: centos-8-infrastructure-agent
     builds:
-      - linux-newrelic-infra
-      - linux-newrelic-infra-ctl
-      - linux-newrelic-infra-service
+      - linux-newrelic-infra-fpm
+      - linux-newrelic-infra-ctl-fpm
+      - linux-newrelic-infra-service-fpm
     package_name: newrelic-infra
     file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.el8.{{ .Arch }}"
     vendor: 'New Relic, Inc.'
@@ -445,11 +436,11 @@ nfpms:
       - src: 'target/nriprometheus/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
 
-      - src: 'target/fluent-bit/nrfb/fluent-bit'
+      - src: 'target/fluent-bit/amd64/fluent-bit'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
-      - src: 'target/fluent-bit/nrfb/out_newrelic.so'
+      - src: 'target/fluent-bit-plugin/amd64/out_newrelic.so'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-      - src: 'target/fluent-bit/nrfb/parsers.conf'
+      - src: 'assets/examples/logging/parsers.conf'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
     empty_folders:
       - /var/db/newrelic-infra/custom-integrations
@@ -483,9 +474,9 @@ nfpms:
 
   - id: sle-11.4-infrastructure-agent
     builds:
-      - linux-newrelic-infra
-      - linux-newrelic-infra-ctl
-      - linux-newrelic-infra-service
+      - linux-newrelic-infra-fpm
+      - linux-newrelic-infra-ctl-fpm
+      - linux-newrelic-infra-service-fpm
     package_name: newrelic-infra
     file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.sles11.4.{{ .Arch }}"
     vendor: 'New Relic, Inc.'
@@ -538,9 +529,9 @@ nfpms:
 
   - id: sle-12.1-infrastructure-agent
     builds:
-      - linux-newrelic-infra
-      - linux-newrelic-infra-ctl
-      - linux-newrelic-infra-service
+      - linux-newrelic-infra-fpm
+      - linux-newrelic-infra-ctl-fpm
+      - linux-newrelic-infra-service-fpm
     package_name: newrelic-infra
     file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.sles12.1.{{ .Arch }}"
     vendor: 'New Relic, Inc.'
@@ -577,11 +568,11 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-      - src: 'target/fluent-bit/nrfb/fluent-bit'
+      - src: 'target/fluent-bit/amd64/fluent-bit'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
-      - src: 'target/fluent-bit/nrfb/out_newrelic.so'
+      - src: 'target/fluent-bit-plugin/amd64/out_newrelic.so'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-      - src: 'target/fluent-bit/nrfb/parsers.conf'
+      - src: 'assets/examples/logging/parsers.conf'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
     empty_folders:
       - /var/db/newrelic-infra/custom-integrations
@@ -615,9 +606,9 @@ nfpms:
 
   - id: sle-12.2-infrastructure-agent
     builds:
-      - linux-newrelic-infra
-      - linux-newrelic-infra-ctl
-      - linux-newrelic-infra-service
+      - linux-newrelic-infra-fpm
+      - linux-newrelic-infra-ctl-fpm
+      - linux-newrelic-infra-service-fpm
     package_name: newrelic-infra
     file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.sles12.2.{{ .Arch }}"
     vendor: 'New Relic, Inc.'
@@ -654,11 +645,11 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-      - src: 'target/fluent-bit/nrfb/fluent-bit'
+      - src: 'target/fluent-bit/amd64/fluent-bit'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
-      - src: 'target/fluent-bit/nrfb/out_newrelic.so'
+      - src: 'target/fluent-bit-plugin/amd64/out_newrelic.so'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-      - src: 'target/fluent-bit/nrfb/parsers.conf'
+      - src: 'assets/examples/logging/parsers.conf'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
     empty_folders:
       - /var/db/newrelic-infra/custom-integrations
@@ -692,9 +683,9 @@ nfpms:
 
   - id: sle-12.3-infrastructure-agent
     builds:
-      - linux-newrelic-infra
-      - linux-newrelic-infra-ctl
-      - linux-newrelic-infra-service
+      - linux-newrelic-infra-fpm
+      - linux-newrelic-infra-ctl-fpm
+      - linux-newrelic-infra-service-fpm
     package_name: newrelic-infra
     file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.sles12.3.{{ .Arch }}"
     vendor: 'New Relic, Inc.'
@@ -731,11 +722,11 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-      - src: 'target/fluent-bit/nrfb/fluent-bit'
+      - src: 'target/fluent-bit/amd64/fluent-bit'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
-      - src: 'target/fluent-bit/nrfb/out_newrelic.so'
+      - src: 'target/fluent-bit-plugin/amd64/out_newrelic.so'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-      - src: 'target/fluent-bit/nrfb/parsers.conf'
+      - src: 'assets/examples/logging/parsers.conf'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
     empty_folders:
       - /var/db/newrelic-infra/custom-integrations
@@ -769,9 +760,9 @@ nfpms:
 
   - id: sle-12.4-infrastructure-agent
     builds:
-      - linux-newrelic-infra
-      - linux-newrelic-infra-ctl
-      - linux-newrelic-infra-service
+      - linux-newrelic-infra-fpm
+      - linux-newrelic-infra-ctl-fpm
+      - linux-newrelic-infra-service-fpm
     package_name: newrelic-infra
     file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.sles12.4.{{ .Arch }}"
     vendor: 'New Relic, Inc.'
@@ -808,11 +799,11 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-      - src: 'target/fluent-bit/nrfb/fluent-bit'
+      - src: 'target/fluent-bit/amd64/fluent-bit'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
-      - src: 'target/fluent-bit/nrfb/out_newrelic.so'
+      - src: 'target/fluent-bit-plugin/amd64/out_newrelic.so'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-      - src: 'target/fluent-bit/nrfb/parsers.conf'
+      - src: 'assets/examples/logging/parsers.conf'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
     empty_folders:
       - /var/db/newrelic-infra/custom-integrations
@@ -844,7 +835,6 @@ nfpms:
       summary: "New Relic Infrastructure Agent"
       group: default
 
-# we use custom publisher for fixing archives and signing them
 release:
   disable: true
 

@@ -4,7 +4,7 @@ name: Testing
 env:
   DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
-  TAG: "v0.0.0" # needed for goreleaser windows builds
+  TAG: "0.0.0" # needed for goreleaser test builds
   GO_VERSION: '1.14.4'
 
 on:
@@ -33,13 +33,6 @@ jobs:
 
       - name: Running unit tests
         run: make ci/test-coverage
-
-      - name: Install gcov2lcov
-        working-directory: /tmp
-        run: go get -u github.com/jandelgado/gcov2lcov
-
-      - name: Convert coverage.out to lcov.info
-        run: gcov2lcov -infile=coverage.out -outfile=lcov.info
 
       - name: Coveralls Parallel
         uses: coverallsapp/github-action@master

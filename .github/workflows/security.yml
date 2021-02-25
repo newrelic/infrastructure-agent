@@ -23,5 +23,7 @@ jobs:
         with:
           username: ${{ env.DOCKER_HUB_ID }}
           password: ${{ env.DOCKER_HUB_PASSWORD }}
+      - name: Install go deps
+        run: make ci/deps
       - name: Scan code for vulnerabilities with Snyk
         run: make ci/snyk-test
