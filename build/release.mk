@@ -28,9 +28,13 @@ release/build: release/deps release/clean
 
 .PHONY : release/pkg
 release/pkg: release/deps release/clean
+ifneq ($(PRERELEASE), true)
+	@echo "PRERELEASE must be set into true for release/pkg"
+	@exit 1
+endif
 	@$(MAKE) get-integrations get-fluentbit-linux
 	@echo "=== [release/build] PRE-RELEASE compiling all binaries, creating packages, archives"
-	@$(GORELEASER_BIN) release --config $(CURDIR)/build/.goreleaser.yml --rm-dist $(PKG_FLAGS)
+	@$(GORELEASER_BIN) release --config $(CURDIR)/build/.goreleaser.yml --rm-dist
 
 .PHONY : release/fix-tarballs
 release/fix-tarballs:
@@ -50,11 +54,6 @@ release/publish:
 .PHONY : release
 release: release/pkg release/fix-tarballs release/sign release/publish release/clean
 	@echo "=== [release] full pre-release cycle complete for nix"
-
-PRERELEASE := ${PRERELEASE}
-ifneq ($(PRERELEASE), true)
-	PKG_FLAGS := "--snapshot"
-endif
 
 OS := $(shell uname -s)
 ifeq ($(OS), Darwin)
