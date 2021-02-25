@@ -22,8 +22,7 @@ Function EmbedFlex {
     Write-Output "--- Embedding nri-flex"
 
     [string]$version = GetIntegrationVersion -name "nri-flex"
-
-    [string]$url="https://github.com/newrelic/nri-flex/releases/download/v${version}/nri-flex_${version}_Windows_x86_64.zip"
+    [string]$url="https://github.com/newrelic/nri-flex/releases/download/v${version}/nri-flex_windows_${version}_${arch}.zip"
 
     DownloadAndExtractZip -dest:"$downloadPath\nri-flex" -url:"$url"
 
