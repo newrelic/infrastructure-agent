@@ -13,11 +13,10 @@ env:
   GPG_MAIL: 'infrastructure-eng@newrelic.com'
   GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
   GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
-  SNYK_TOKEN: ${{ secrets.COREINT_SNYK_TOKEN }}
+  SNYK_TOKEN: ${{ secrets.CAOS_SNYK_TOKEN }}
   TAG: ${{ github.event.release.tag_name }}
   DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
-  DOCKER_PUBLISH: true
 
 jobs:
   unit-test-linux:
@@ -38,17 +37,10 @@ jobs:
       - name: Running unit tests
         run: make ci/test-coverage
 
-      - name: Install gcov2lcov
-        working-directory: /tmp
-        run: go get -u github.com/jandelgado/gcov2lcov
-
-      - name: Convert coverage.out to lcov.info
-        run: gcov2lcov -infile=coverage.out -outfile=lcov.info
-
       - name: Coveralls Parallel
         uses: coverallsapp/github-action@master
         with:
-          github-token: ${{ secrets.github_token }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: lcov.info
           flag-name: run-linux
           parallel: true
@@ -80,7 +72,18 @@ jobs:
 
       - name: Running proxy tests
         run: make proxy-test
-  
+
+  finish:
+    name: Finish
+    needs: [ unit-test-linux ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel-finished: true
+
   packaging-linux:
     name: Build and upload all artifacts into GH Release assets
     runs-on: ubuntu-20.04
@@ -96,7 +99,7 @@ jobs:
           password: ${{ env.DOCKER_HUB_PASSWORD }}
 
       - name: Releasing linux packages
-        run: make ci/prerelase/packages
+        run: make ci/prerelase
 
       - name: Set up QEMU # Once packages done we can build images using goreleaser artifacts
         uses: docker/setup-qemu-action@v1
@@ -112,18 +115,3 @@ jobs:
 
       - name: Build and publish Release Candidate (RC) of k8s-events-forwarders Docker image
         run: make -C build/container/ clean publish/multi-arch-k8s-events-forwarder AGENT_VERSION=${{env.TAG}}
-
-  packaging-tarball-linux:
-    name: Build tarballs and upload into GH Release assets
-    runs-on: ubuntu-20.04
-    needs: [unit-test-linux, harvest-test-linux, proxy-tests-linux]
-
-    steps:
-      - uses: actions/checkout@v2
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ env.DOCKER_HUB_ID }}
-          password: ${{ env.DOCKER_HUB_PASSWORD }}
-      - name: Releasing linux tarballs
-        run: make ci/prerelase/tarball
