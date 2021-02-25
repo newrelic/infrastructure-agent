@@ -1,0 +1,89 @@
+name: Release Linux, Windows and Docker pipeline
+
+on:
+  release:
+    types:
+      - released
+    tags:
+      - '*'
+
+env:
+  GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+  GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }}
+  TAG: ${{ github.event.release.tag_name }}
+  DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
+  DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
+  #TODO change ci/pipeline to real branch name
+  SCHEMA_BRANCH: "ci/pipeline"
+  AWS_S3_BUCKET_NAME: "nr-downloads-main"
+  AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock"
+  AWS_REGION: "us-east-1"
+
+jobs:
+  publishing-to-s3-linux:
+    name: Publish linux artifacts into s3 bucket
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKER_HUB_ID }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
+      - name: Publish to S3 action
+        uses: newrelic/infrastructure-publish-action@main
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN_PROD }}
+        with:
+          tag: ${{env.TAG}}
+          app_name: "newrelic-infra"
+          repo_name: "newrelic/infrastructure-agent"
+          env: release
+          schema: "custom"
+          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/$SCHEMA_BRANCH/build/upload-schema-linux.yml"
+          aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
+          aws_s3_lock_bucket_name: ${{ env.AWS_S3_LOCK_BUCKET_NAME }}
+          run_id: ${{ env.GITHUB_RUN_ID }}
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role_arn: ${{ env.AWS_ROLE_ARN }}
+          # used for signing package stuff
+          gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
+          gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
+
+  publishing-to-s3-windows:
+    name: Publish windows artifacts into s3 bucket
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKER_HUB_ID }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
+      - name: Publish to S3 action
+        uses: newrelic/infrastructure-publish-action@main
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN_PROD }}
+        with:
+          tag: ${{env.TAG}}
+          app_name: "newrelic-infra"
+          repo_name: "newrelic/infrastructure-agent"
+          env: release
+          schema: "custom"
+          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/$SCHEMA_BRANCH/build/upload-schema-windows.yml"
+          aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
+          aws_role_arn: ${{ env.AWS_ROLE_ARN }}
+          # used for signing package stuff - required for action, not needed for msi
+          gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
+          gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
+          disable_lock: true
+
+# TODO add job for docker image re-tagging

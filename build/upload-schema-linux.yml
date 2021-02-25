@@ -1,0 +1,70 @@
+---
+- src: "newrelic-infra_linux_{version}_{arch}.tar.gz"
+  uploads:
+    - type: file
+      dest: "{dest_prefix}binaries/linux/{arch}/{src}"
+  arch:
+    - 386
+    - amd64
+    - arm
+    - arm64
+    - mips
+    - mips64
+    - mips64le
+    - mipsle
+    - ppc64le
+    - s390x
+
+- src: "newrelic-infra_systemd_{version}_{arch}.deb"
+  arch:
+    - amd64
+    - 386
+  uploads:
+    - type: apt
+      src_repo: "http://download.newrelic.com/infrastructure_agent/test/linux/apt"
+      dest: "{dest_prefix}linux/apt/"
+      os_version:
+        - focal
+        - bionic
+        - xenial
+        - buster
+        - jessie
+        - stretch
+
+- src: "newrelic-infra_upstart_{version}_{arch}.deb"
+  arch:
+    - amd64
+    - 386
+  uploads:
+    - type: apt
+      src_repo: "http://download.newrelic.com/infrastructure_agent/test/linux/apt"
+      dest: "{dest_prefix}linux/apt/"
+      os_version:
+        - trusty
+        - precise
+
+- src: "newrelic-infra-{version}-1.el{os_version}.{arch}.rpm"
+  arch:
+    - x86_64
+    - 386
+  uploads:
+    - type: yum
+      dest: "{dest_prefix}linux/yum/el/{os_version}/{arch}/"
+      os_version:
+        - 6
+        - 7
+        - 8
+
+- src: "newrelic-infra-{version}-1.{os_version}.{arch}.rpm"
+  arch:
+    - x86_64
+    - 386
+  uploads:
+    - type: zypp
+      dest: "{dest_prefix}linux/zypp/sles/{os_version}/{arch}/"
+      os_version:
+        - 11.4
+        - 12.1
+        - 12.2
+        - 12.3
+        - 12.4

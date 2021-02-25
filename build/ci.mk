@@ -2,15 +2,7 @@ BUILDER_IMG_TAG = infrastructure-agent-builder
 
 .PHONY: ci/deps
 ci/deps:
-	@docker build -t $(BUILDER_IMG_TAG) -f $(CURDIR)/build/Dockerfile.cicd $(CURDIR)
-
-.PHONY: ci/go-get
-ci/go-get: ci/deps
-	@docker run --rm -t \
-			--name "infrastructure-agent-go-get" \
-			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
-			-w /go/src/github.com/newrelic/infrastructure-agent \
-			$(BUILDER_IMG_TAG) make go-get
+	@docker build -t $(BUILDER_IMG_TAG) -f $(CURDIR)/build/Dockerfile $(CURDIR)
 
 .PHONY: ci/validate
 ci/validate: ci/deps
@@ -24,7 +16,7 @@ ci/validate: ci/deps
 ci/build: ci/deps
 ifdef TAG
 	@docker run --rm -t \
-			--name "infrastructure-agent-snyk-test-build" \
+			--name "infrastructure-agent-test-build" \
 			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
 			-w /go/src/github.com/newrelic/infrastructure-agent \
 			-e TAG \
@@ -50,3 +42,22 @@ ci/snyk-test:
 			-w /go/src/github.com/newrelic/infrastructure-agent \
 			-e SNYK_TOKEN \
 			snyk/snyk:golang snyk test --severity-threshold=high
+
+.PHONY : ci/prerelase
+ci/prerelase: ci/deps
+ifdef TAG
+	@docker run --rm -t \
+			--name "infrastructure-agent-prerelease" \
+			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
+            -w /go/src/github.com/newrelic/infrastructure-agent \
+			-e PRERELEASE=true \
+			-e GITHUB_TOKEN \
+			-e TAG \
+			-e GPG_MAIL \
+			-e GPG_PASSPHRASE \
+			-e GPG_PRIVATE_KEY_BASE64 \
+			$(BUILDER_IMG_TAG) make release
+else
+	@echo "===> infrastructure-agent ===  [ci/prerelease] TAG env variable expected to be set"
+	exit 1
+endif

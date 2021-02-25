@@ -1,19 +1,39 @@
 .DEFAULT_GOAL := build/base
 
-INFRASTRUCTURE_WORKSPACE       ?= workspace
-PROJECT_WORKSPACE              ?= $(CURDIR)/$(INFRASTRUCTURE_WORKSPACE)
+INFRASTRUCTURE_WORKSPACE	?= workspace
+PROJECT_WORKSPACE		?= $(CURDIR)/$(INFRASTRUCTURE_WORKSPACE)
 
-TARGET_DIR						= $(PROJECT_WORKSPACE)/target
-NRI_INTEGRATIONS_FILE			= $(CURDIR)/../../build/nri-integrations
-NRI_PKG_DIR						?= ${PROJECT_WORKSPACE}/${BASE_OHIS}
-AGENT_BUILD_TARGET_DIR			?= $(CURDIR)/../../target/bin/linux_amd64
+TARGET_DIR			?= $(PROJECT_WORKSPACE)/target/$(GOOS)_$(DOCKER_ARCH)
+NRI_INTEGRATIONS_FILE		= $(CURDIR)/../embed/integrations.version
+NRI_PKG_DIR			?= $(PROJECT_WORKSPACE)/$(BASE_OHIS)
+AGENT_BUILD_TARGET_DIR		?= $(CURDIR)/../../dist
+GOOS				?= linux
+DOCKER_ARCH				?= amd64
+DOCKER_BUILDX_CMD		?=
+DOCKER_BUILDX_ARGS		?= --platform $(GOOS)/$(DOCKER_ARCH)
+DOCKER_BUILDX_EXTRA_ARGS	?= --load
+DOCKER_BUILD_TAG_PREFIX	?= build
+DOCKER_TAG_LATEST	?= latest
+USE_BUILDX			?= false
+DOCKER_PUBLISH		?= false
 
-include ../../build/embed_ohis.mk
+ifeq ($(DOCKER_PUBLISH), true)
+	DOCKER_BUILDX_EXTRA_ARGS = --push
+	DOCKER_BUILDX_ARGS += $(DOCKER_BUILDX_EXTRA_ARGS)
+endif
 
-# AGENT_BUILD_NUMBER comes from the jenkins job
-AGENT_BUILD_NUMBER			   ?= 0.0
-IMAGE_VERSION                  ?= ${AGENT_BUILD_NUMBER}
-AGENT_VERSION                  ?= ${AGENT_BUILD_NUMBER}
+ifeq ($(USE_BUILDX), true)
+	DOCKER_BUILDX_CMD	= buildx
+else
+	DOCKER_BUILDX_ARGS =
+endif
+
+OHI_ARCH ?= $(DOCKER_ARCH)
+
+include ../embed/integrations.mk
+
+AGENT_VERSION                  ?= 0.0.0
+IMAGE_VERSION                  ?= $(AGENT_VERSION)
 
 NS                             ?= newrelic
 REPO                           ?= infrastructure
@@ -36,57 +56,62 @@ PROMETHEUS_VERSION             ?= $(call get-nri-version,nri-prometheus)
 
 DOCKER_TARGET					?= base
 DOCKER_NO_CACHE					?= --no-cache
-DOCKER_BUILD_BASE				?= docker build \
-								${DOCKER_NO_CACHE} \
+DOCKER_BUILD_BASE				?= docker \
+								$(DOCKER_BUILDX_CMD) \
+								build \
+								$(DOCKER_BUILDX_ARGS) \
+								$(DOCKER_NO_CACHE) \
 								--pull \
-								-t ${DOCKER_IMAGE_NAME}:${IMAGE_VERSION} \
-								-t ${DOCKER_IMAGE_NAME}:latest \
-								--build-arg image_version=${IMAGE_VERSION} \
-								--build-arg agent_version=${AGENT_VERSION} \
+								-t $(DOCKER_IMAGE_NAME):$(DOCKER_TAG_LATEST) \
+								--build-arg image_version=$(IMAGE_VERSION) \
+								--build-arg agent_version=$(AGENT_VERSION) \
 								--build-arg version_file=VERSION \
-								--build-arg agent_bin=${AGENT_BIN} \
-								--build-arg nri_pkg_dir=${BASE_OHIS} \
-								--build-arg nri_docker_version=${DOCKER_VERSION} \
-								--build-arg nri_flex_version=${FLEX_VERSION} \
-								--build-arg nri_prometheus_version=${PROMETHEUS_VERSION} \
-								--target ${DOCKER_TARGET} \
-								-f ${DOCKERFILE} \
-								${INFRASTRUCTURE_WORKSPACE}
+								--build-arg agent_bin=$(AGENT_BIN) \
+								--build-arg nri_pkg_dir=$(BASE_OHIS) \
+								--build-arg nri_docker_version=$(DOCKER_VERSION) \
+								--build-arg nri_flex_version=$(FLEX_VERSION) \
+								--build-arg nri_prometheus_version=$(PROMETHEUS_VERSION) \
+								--target $(DOCKER_TARGET) \
+								-f $(DOCKERFILE) \
+								$(INFRASTRUCTURE_WORKSPACE)
 
 workspace :
-	@(mkdir -p ${PROJECT_WORKSPACE})
+	@(mkdir -p $(PROJECT_WORKSPACE))
 
 workspace/assets : workspace
-	@(cp -r $(CURDIR)/assets ${PROJECT_WORKSPACE})
-	@(echo ${IMAGE_VERSION} > ${PROJECT_WORKSPACE}/VERSION)
+	@(cp -r $(CURDIR)/assets $(PROJECT_WORKSPACE))
+	@(echo $(IMAGE_VERSION) > $(PROJECT_WORKSPACE)/VERSION)
 
 # Core
 .PHONY : build/core
 build/core : workspace/assets
 build/core :
 	@(docker build \
-	${DOCKER_NO_CACHE} \
+	$(DOCKER_NO_CACHE) \
 	--pull \
-	-t ${CORE_IMAGE_NAME}:${IMAGE_VERSION} \
-	--build-arg image_version=${IMAGE_VERSION} \
-	--build-arg agent_version=${AGENT_VERSION} \
+	-t $(CORE_IMAGE_NAME):$(IMAGE_VERSION) \
+	--build-arg image_version=$(IMAGE_VERSION) \
+	--build-arg agent_version=$(AGENT_VERSION) \
 	--build-arg version_file=VERSION \
-	--build-arg agent_bin=${AGENT_BIN} \
+	--build-arg agent_bin=$(AGENT_BIN) \
 	--target core \
-	-f ${DOCKERFILE} \
-	${INFRASTRUCTURE_WORKSPACE})
+	-f $(DOCKERFILE) \
+	$(INFRASTRUCTURE_WORKSPACE))
 
 ${NRI_PKG_DIR}:
-	@(mkdir -p ${NRI_PKG_DIR})
+	@(mkdir -p $(NRI_PKG_DIR))
 
 # Useful to get logged in Jenkins when things blow up
 .PHONY : debug
 debug :
-	@(echo ${DOCKER_BUILD_BASE})
+	@(echo $(DOCKER_BUILD_BASE))
 
 # Base
 .PHONY : base/get-integrations
 base/get-integrations : ${NRI_PKG_DIR}
+base/get-integrations : NRI_DOCKER_ARCH=$(DOCKER_ARCH)
+base/get-integrations : NRI_PROMETHEUS_ARCH=$(DOCKER_ARCH)
+base/get-integrations : NRI_FLEX_ARCH=$(DOCKER_ARCH)
 base/get-integrations : get-integrations
 base/get-integrations : embed-integrations
 
@@ -94,7 +119,9 @@ base/get-integrations : embed-integrations
 .PHONY : base/get-infra-agent
 base/get-infra-agent : workspace
 base/get-infra-agent:
-	@(cp ${AGENT_BUILD_TARGET_DIR}/* ${PROJECT_WORKSPACE}/)
+	@(cp $(AGENT_BUILD_TARGET_DIR)/$(GOOS)-newrelic-infra-ctl_$(GOOS)_$(DOCKER_ARCH)/* $(PROJECT_WORKSPACE)/)
+	@(cp $(AGENT_BUILD_TARGET_DIR)/$(GOOS)-newrelic-infra-service_$(GOOS)_$(DOCKER_ARCH)/* $(PROJECT_WORKSPACE)/)
+	@(cp $(AGENT_BUILD_TARGET_DIR)/$(GOOS)-newrelic-infra_$(GOOS)_$(DOCKER_ARCH)/* $(PROJECT_WORKSPACE)/)
 
 .PHONY : build/base
 build/base : workspace/assets
@@ -102,15 +129,15 @@ build/base : base/get-integrations
 build/base : base/get-infra-agent
 build/base : DOCKER_TARGET=base
 build/base :
-	@(${DOCKER_BUILD_BASE})
+	@($(DOCKER_BUILD_BASE))
 
 .PHONY : build/forwarder
 build/forwarder : workspace/assets
 build/forwarder : base/get-infra-agent
 build/forwarder : DOCKER_TARGET=forwarder
-build/forwarder : DOCKER_IMAGE_NAME=${FWD_IMAGE_NAME}
+build/forwarder : DOCKER_IMAGE_NAME=$(FWD_IMAGE_NAME)
 build/forwarder :
-	@(${DOCKER_BUILD_BASE})
+	@($(DOCKER_BUILD_BASE))
 
 .PHONY : build/k8s-events-forwarder
 build/k8s-events-forwarder : workspace/assets
@@ -118,22 +145,249 @@ build/k8s-events-forwarder : base/get-infra-agent
 build/k8s-events-forwarder : DOCKER_TARGET=k8s-events-forwarder
 build/k8s-events-forwarder : DOCKER_IMAGE_NAME=${K8S_FWD_IMAGE_NAME}
 build/k8s-events-forwarder :
-	@(${DOCKER_BUILD_BASE})
+	@($(DOCKER_BUILD_BASE))
 
 # publish to docker hub
 .PHONY : publish/base
 publish/base : build/base
 publish/base :
-	@(docker push ${BASE_IMAGE_NAME}:${IMAGE_VERSION})
-	@(docker push ${BASE_IMAGE_NAME}:latest)
+	@printf '\n================================================================\n'
+	@printf 'Target: publish/base\n'
+	@printf 'TAG: $(BASE_IMAGE_NAME):$(IMAGE_VERSION)'
+	@printf '\n================================================================\n'
+	@(docker push $(BASE_IMAGE_NAME):$(IMAGE_VERSION))
+	@(docker push $(BASE_IMAGE_NAME):latest)
 
 .PHONY : lint
 lint : lint/Dockerfile
 
 .PHONY : lint/Dockerfile
 lint/Dockerfile :
-	@(docker run --rm -i hadolint/hadolint < ${DOCKERFILE})
+	@(docker run --rm -i hadolint/hadolint < $(DOCKERFILE))
 
 .PHONY : clean
 clean:
-	@(rm -rf ${PROJECT_WORKSPACE})
+	@(rm -rf $(PROJECT_WORKSPACE))
+
+buildTargetArch=$(lastword $(subst -, ,$1))
+baseBuildTargetArch=$(lastword $(subst /, ,$1))
+
+.PHONY : build/base-arm
+build/base-arm :
+	@($(MAKE) build/base/$(call buildTargetArch, $@))
+
+.PHONY : build/base-arm64
+build/base-arm64 :
+	@($(MAKE) build/base/$(call buildTargetArch, $@))
+
+.PHONY : build/base-amd64
+build/base-amd64 :
+	@($(MAKE) build/base/$(call buildTargetArch, $@))
+
+# Helper target to build base images for each arch
+.PHONY : build/base/%
+build/base/% : export DOCKER_ARCH=$(call baseBuildTargetArch, $@)
+build/base/% : export USE_BUILDX=true
+build/base/% : export DOCKER_TAG_LATEST=$(DOCKER_BUILD_TAG_PREFIX)-$(DOCKER_ARCH)
+build/base/% :
+	@printf '\n================================================================\n'
+	@printf 'Target: build/base-$(call baseBuildTargetArch, $@)\n'
+	@printf 'DOCKER_TAG_LATEST: $(DOCKER_TAG_LATEST)'
+	@printf '\n================================================================\n'
+	@$(MAKE) build/base
+
+.PHONY : build/forwarder-arm
+build/forwarder-arm :
+	@($(MAKE) build/forwarder/$(call buildTargetArch, $@))
+
+.PHONY : build/forwarder-arm64
+build/forwarder-arm64 :
+	@($(MAKE) build/forwarder/$(call buildTargetArch, $@))
+
+.PHONY : build/forwarder-amd64
+build/forwarder-amd64 :
+	@($(MAKE) build/forwarder/$(call buildTargetArch, $@))
+
+# Helper target to build forwarder images for each arch
+.PHONY : build/forwarder/%
+build/forwarder/% : export DOCKER_ARCH=$(call baseBuildTargetArch, $@)
+build/forwarder/% : export USE_BUILDX=true
+build/forwarder/% : export DOCKER_TAG_LATEST=$(DOCKER_BUILD_TAG_PREFIX)-$(DOCKER_ARCH)
+build/forwarder/% :
+	@printf '\n================================================================\n'
+	@printf 'Target: build/forwarder-$(call baseBuildTargetArch, $@)\n'
+	@printf 'DOCKER_TAG_LATEST: $(DOCKER_TAG_LATEST)'
+	@printf '\n================================================================\n'
+	@$(MAKE) build/forwarder
+
+.PHONY : build/k8s-events-forwarder-arm
+build/k8s-events-forwarder-arm :
+	@($(MAKE) build/k8s-events-forwarder/$(call buildTargetArch, $@))
+
+.PHONY : build/k8s-events-forwarder-arm64
+build/k8s-events-forwarder-arm64 :
+	@($(MAKE) build/k8s-events-forwarder/$(call buildTargetArch, $@))
+
+.PHONY : build/k8s-events-forwarder-amd64
+build/k8s-events-forwarder-amd64 :
+	@($(MAKE) build/k8s-events-forwarder/$(call buildTargetArch, $@))
+
+# Helper target to build k8s-events-forwarder images for each arch
+.PHONY : build/k8s-events-forwarder/%
+build/k8s-events-forwarder/% : export DOCKER_ARCH=$(call baseBuildTargetArch, $@)
+build/k8s-events-forwarder/% : export USE_BUILDX=true
+build/k8s-events-forwarder/% : export DOCKER_TAG_LATEST=$(DOCKER_BUILD_TAG_PREFIX)-$(DOCKER_ARCH)
+build/k8s-events-forwarder/% :
+	@printf '\n================================================================\n'
+	@printf 'Target: build/k8s-events-forwarder-$(call baseBuildTargetArch, $@)\n'
+	@printf 'DOCKER_TAG_LATEST: $(DOCKER_TAG_LATEST)'
+	@printf '\n================================================================\n'
+	@$(MAKE) build/k8s-events-forwarder
+
+# Creates multi acrh manifest for base image
+.PHONY : publish/multi-arch-base-manifest	
+publish/multi-arch-base-manifest :
+	@printf '\n================================================================\n'
+	@printf 'Target: publish/base-manifest\n'
+	@printf 'Image: $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)'
+	@printf '\n================================================================\n'
+	@(docker manifest create \
+    $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
+    	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 \
+    	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm \
+    	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64)
+	@if [ "$(DOCKER_PUBLISH)"  == "true" ]; then \
+  		docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION); \
+    fi
+
+# Shortcut to build all supported multi arch bases
+.PHONY : publish/multi-arch-base
+publish/multi-arch-base : export IMAGE_VERSION=$(AGENT_VERSION)-rc
+publish/multi-arch-base : export DOCKER_BUILD_TAG_PREFIX=$(IMAGE_VERSION)
+publish/multi-arch-base : build/base-arm64
+publish/multi-arch-base : build/base-arm
+publish/multi-arch-base : build/base-amd64
+publish/multi-arch-base : publish/multi-arch-base-manifest
+
+# Publishes Release Candidate (RC) image/manifest as full release
+.PHONY : publish/multi-arch-base-rc
+publish/multi-arch-base-rc:
+	@printf '\n================================================================\n'
+	@printf 'Target: publish/multi-arch-base-rc\n'
+	@printf 'Manifest: $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc'
+	@printf '\n================================================================\n'
+	@(docker manifest create \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm64 \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-amd64)
+	-@(docker manifest rm $(DOCKER_IMAGE_NAME):latest)
+	@(docker manifest create \
+         $(DOCKER_IMAGE_NAME):latest \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm64 \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-amd64)
+	@if [ "$(DOCKER_PUBLISH)"  == "true" ]; then \
+  		docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION); \
+  		docker manifest push $(DOCKER_IMAGE_NAME):latest; \
+    fi
+
+# Creates multi acrh manifest for k8s-events-forwarder image
+.PHONY : publish/multi-arch-k8s-events-forwarder-manifest
+publish/multi-arch-k8s-events-forwarder-manifest : export DOCKER_IMAGE_NAME=$(K8S_FWD_IMAGE_NAME)
+publish/multi-arch-k8s-events-forwarder-manifest :
+	@printf '\n================================================================\n'
+	@printf 'Target: publish/k8s-events-forwarder-manifest\n'
+	@printf 'Image: $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)'
+	@printf '\n================================================================\n'
+	@(docker manifest create \
+    $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
+    	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 \
+    	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm \
+    	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64)
+	@if [ "$(DOCKER_PUBLISH)"  == "true" ]; then \
+  		docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION); \
+    fi
+
+# Shortcut to build all supported multi arch k8s-events-forwarders
+.PHONY : publish/multi-arch-k8s-events-forwarder
+publish/multi-arch-k8s-events-forwarder : export IMAGE_VERSION=$(AGENT_VERSION)-rc
+publish/multi-arch-k8s-events-forwarder : export DOCKER_BUILD_TAG_PREFIX=$(IMAGE_VERSION)
+publish/multi-arch-k8s-events-forwarder : build/k8s-events-forwarder-arm64
+publish/multi-arch-k8s-events-forwarder : build/k8s-events-forwarder-arm
+publish/multi-arch-k8s-events-forwarder : build/k8s-events-forwarder-amd64
+publish/multi-arch-k8s-events-forwarder : publish/multi-arch-k8s-events-forwarder-manifest
+
+# Publishes k8s-events-forwarder Release Candidate (RC) image/manifest as full release
+.PHONY : publish/multi-arch-k8s-events-forwarder-rc
+publish/multi-arch-k8s-events-forwarder-rc : export DOCKER_IMAGE_NAME=$(K8S_FWD_IMAGE_NAME)
+publish/multi-arch-k8s-events-forwarder-rc:
+	@printf '\n================================================================\n'
+	@printf 'Target: publish/multi-arch-k8s-events-forwarder-rc\n'
+	@printf 'Manifest: $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc'
+	@printf '\n================================================================\n'
+	@(docker manifest create \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm64 \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-amd64)
+	-@(docker manifest rm $(DOCKER_IMAGE_NAME):latest)
+	@(docker manifest create \
+         $(DOCKER_IMAGE_NAME):latest \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm64 \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-amd64)
+	@if [ "$(DOCKER_PUBLISH)"  == "true" ]; then \
+  		docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION); \
+  		docker manifest push $(DOCKER_IMAGE_NAME):latest; \
+    fi
+
+# Creates multi acrh manifest for forwarder image
+.PHONY : publish/multi-arch-forwarder-manifest
+publish/multi-arch-forwarder-manifest : export DOCKER_IMAGE_NAME=$(FWD_IMAGE_NAME)
+publish/multi-arch-forwarder-manifest :
+	@printf '\n================================================================\n'
+	@printf 'Target: publish/forwarder-manifest\n'
+	@printf 'Image: $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)'
+	@printf '\n================================================================\n'
+	@(docker manifest create \
+    $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
+    	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 \
+    	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm \
+    	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64)
+	@if [ "$(DOCKER_PUBLISH)"  == "true" ]; then \
+  		docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION); \
+    fi
+
+# Shortcut to build all supported multi arch forwarders
+.PHONY : publish/multi-arch-forwarder
+publish/multi-arch-forwarder : export IMAGE_VERSION=$(AGENT_VERSION)-rc
+publish/multi-arch-forwarder : export DOCKER_BUILD_TAG_PREFIX=$(IMAGE_VERSION)
+publish/multi-arch-forwarder : build/forwarder-arm64
+publish/multi-arch-forwarder : build/forwarder-arm
+publish/multi-arch-forwarder : build/forwarder-amd64
+publish/multi-arch-forwarder : publish/multi-arch-forwarder-manifest
+
+# Publishes forwarder Release Candidate (RC) image/manifest as full release
+.PHONY : publish/multi-arch-forwarder-rc
+publish/multi-arch-forwarder-rc : export DOCKER_IMAGE_NAME=$(FWD_IMAGE_NAME)
+publish/multi-arch-forwarder-rc:
+	@printf '\n================================================================\n'
+	@printf 'Target: publish/multi-arch-forwarder-rc\n'
+	@printf 'Manifest: $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc'
+	@printf '\n================================================================\n'
+	@(docker manifest create \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm64 \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-amd64)
+	-@(docker manifest rm $(DOCKER_IMAGE_NAME):latest)
+	@(docker manifest create \
+         $(DOCKER_IMAGE_NAME):latest \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm64 \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm \
+         $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-amd64)
+	@if [ "$(DOCKER_PUBLISH)"  == "true" ]; then \
+  		docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION); \
+  		docker manifest push $(DOCKER_IMAGE_NAME):latest; \
+    fi

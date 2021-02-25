@@ -13,6 +13,9 @@ GIT_SHA    = $(shell git rev-parse --short HEAD)
 GIT_TAG    = $(shell git describe --tags --abbrev=0 --exact-match 2>/dev/null)
 GIT_DIRTY  = $(shell test -n "`git status --porcelain`" && echo "dirty" || echo "clean")
 
+GOTOOLS ?=
+GOTOOLS += github.com/jandelgado/gcov2lcov
+
 GOARCH ?= amd64
 
 LDFLAGS += -X main.buildVersion=$(VERSION)
@@ -27,30 +30,29 @@ export PATH := $(PROJECT_WORKSPACE)/bin:$(PATH)
 GO_TEST ?= test $(TEST_OPTIONS) $(TEST_FLAGS) $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=10m
 GO_FMT 	?= gofmt -s -w -l $(SOURCE_FILES_DIR)
 
-.PHONY: go-get-go-1_9
-go-get-go-1_9:
-	$(GO_BIN) get golang.org/dl/go1.9.4
-	$(GO_BIN_1_9) download
-
-.PHONY: go-get
-go-get:
+.PHONY: deps
+deps:
 	@printf '\n================================================================\n'
 	@printf 'Target: go-get'
 	@printf '\n================================================================\n'
-	$(GO_BIN) mod vendor
+	@$(GO_BIN) get $(GOTOOLS)
+	@$(GO_BIN) mod tidy
+	@$(GO_BIN) mod vendor
 	@echo '[go-get] Done.'
 
 .PHONY: test-coverage
-test-coverage: TEST_FLAGS += -covermode=atomic -coverprofile=coverage.out
-test-coverage: go-get
+test-coverage: TEST_FLAGS += -covermode=atomic -coverprofile=$(COVERAGE_FILE)
+test-coverage: deps
 	@printf '\n================================================================\n'
 	@printf 'Target: test-coverage'
 	@printf '\n================================================================\n'
 	@echo '[test] Testing packages: $(SOURCE_FILES)'
 	$(GO_BIN) $(GO_TEST)
+	@echo '[test] Converting: $(COVERAGE_FILE) into lcov.info'
+	@(gcov2lcov -infile=$(COVERAGE_FILE) -outfile=lcov.info)
 
 .PHONY: test
-test: go-get test-only
+test: deps test-only
 
 .PHONY: test-only
 test-only:
@@ -61,12 +63,13 @@ test-only:
 	$(GO_BIN) $(GO_TEST)
 
 .PHONY: clean
-clean: go-get
+clean: deps
 	@printf '\n================================================================\n'
 	@printf 'Target: clean'
 	@printf '\n================================================================\n'
 	@echo '[clean] Removing target directory and build scripts...'
 	rm -rf $(TARGET_DIR)
+	rm -rf $(DIST_DIR)
 	@echo '[clean] Done.'
 
 .PHONY: validate
@@ -116,11 +119,10 @@ dist-for-os:
 	else \
 		echo '[dist] No executables to distribute - skipping dist target.' ;\
 	fi
-	@mkdir -p $(TARGET_DIR)/$(GOOS)_$(GOARCH)/bin
 	@for main_package in $(MAIN_PACKAGES);\
 	do\
 		echo "[dist] Creating executable: `basename $$main_package`";\
-		$(GO_BIN) build -gcflags '-N -l' -ldflags '$(LDFLAGS)' -o $(TARGET_DIR)/bin/$(GOOS)_$(GOARCH)/`basename $$main_package` $$main_package || exit 1 ;\
+		$(GO_BIN) build -gcflags '-N -l' -ldflags '$(LDFLAGS)' -o $(DIST_DIR)/$(GOOS)-`basename $$main_package`_$(GOOS)_$(GOARCH)/`basename $$main_package` $$main_package || exit 1 ;\
 	done
 
 .PHONY: dist/linux
@@ -131,54 +133,15 @@ linux/%:
 	@(arch=$$(echo ${@} | cut -d '/' -f2) ;\
 	$(MAKE) dist-for-os GOOS=linux GOARCH=$$arch)
 
-.PHONY: test-centos-5
-test-centos-5: go-get
-test-centos-5: TEST_FLAGS=
-test-centos-5:
-	@printf '\n================================================================\n'
-	@printf 'Target: test-centos-5'
-	@printf '\n================================================================\n'
-	@echo '[test] Testing packages: $(SOURCE_FILES)'
-	$(GO_BIN_1_9) $(GO_TEST)
-
-.PHONY: compile-centos-5
-compile-centos-5: go-get
-	@printf '\n================================================================\n'
-	@printf 'Target: compile-centos-5'
-	@printf '\n================================================================\n'
-	@echo '[compile] Building packages: $(ALL_PACKAGES)'
-	$(GO_BIN_1_9) build -v $(ALL_PACKAGES)
-	@echo '[compile] Done.'
-
-.PHONY: dist-centos-5
-dist-centos-5: GOOS=linux
-dist-centos-5: GOARCH=amd64
-dist-centos-5:
-	@printf '\n================================================================\n'
-	@printf '\nBONUS TARGET FOR CENTOS 5\n'
-	@printf "[dist] Building for target GOOS=$(GOOS) GOARCH=$(GOARCH)"
-	@printf '\n================================================================\n'
-	@if [ -n "$(MAIN_PACKAGES)" ]; then \
-		echo '[dist] Creating executables for main packages: $(MAIN_PACKAGES)' ;\
-	else \
-		echo '[dist] No executables to distribute - skipping dist target.' ;\
-	fi
-	@mkdir -p $(TARGET_DIR_CENTOS5)/bin
-	@for main_package in $(MAIN_PACKAGES);\
-	do\
-		echo "[dist]   Creating executable: `basename $$main_package` in $(TARGET_DIR_CENTOS5)/`basename $$main_package`";\
-		$(GO_BIN_1_9) build -ldflags '$(LDFLAGS)' -o $(TARGET_DIR_CENTOS5)/`basename $$main_package` $$main_package || exit 1 ;\
-	done
-
 .PHONY: linux/harvest-tests
 linux/harvest-tests: GOOS=linux
 linux/harvest-tests: GOARCH=amd64
-linux/harvest-tests: go-get
+linux/harvest-tests: deps
 	go test ./test/harvest -tags="harvest" -v
 
 .PHONY: proxy-test
 proxy-test:
-	docker-compose -f $(CURDIR)/test/proxy/docker-compose.yml up -d ; \
+	@docker-compose -f $(CURDIR)/test/proxy/docker-compose.yml up -d ; \
 	go test --tags=proxytests ./test/proxy/; status=$$?; \
-	docker-compose -f test/proxy/docker-compose.yml down; \
-	exit $$status
+    docker-compose -f test/proxy/docker-compose.yml down; \
+    exit $$status
