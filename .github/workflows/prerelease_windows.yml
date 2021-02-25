@@ -20,6 +20,8 @@ env:
   # required for GHA publish action, should be moved into optional
   GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
   GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+  #TODO change ci/pre-release to real branch name
+  SCHEMA_BRANCH: "ci/pre-release"
 
 jobs:
   unit-test-windows:
@@ -96,10 +98,10 @@ jobs:
       - name: Publish to S3 action
         uses: newrelic/infrastructure-publish-action@main
         env:
-          AWS_S3_BUCKET_NAME: ${{ secrets.TEST_AWS_S3_BUCKET_NAME }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.TEST_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.TEST_AWS_SECRET_ACCESS_KEY }}
-          AWS_ROLE_ARN: ${{ secrets.TEST_AWS_ROLE_ARN }}
+          AWS_S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET_NAME_STAGING }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_STAGING }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_STAGING }}
+          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN_STAGING }}
         with:
           tag: ${{env.TAG}}
           app_name: "newrelic-infra"
@@ -107,7 +109,7 @@ jobs:
           env: pre-release
           # 'custom' is for custom schema file
           schema: "custom"
-          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/ci/pre-release-publish/build/upload-schema-windows.yml"
+          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/$SCHEMA_BRANCH/build/upload-schema-windows.yml"
           # careful with the access_keys used as it can inadvertently publish to where we don't want,
           # especially if the bucket name is "common" enough that it can already be used for something else
           # note: seems like using secrets here directly seems to fail for some cases

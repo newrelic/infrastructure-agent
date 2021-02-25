@@ -13,6 +13,8 @@ env:
   TAG: ${{ github.event.release.tag_name }}
   DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
+  #TODO change ci/pre-release to real branch name
+  SCHEMA_BRANCH: "ci/pre-release"
 
 jobs:
   publishing-to-s3-linux:
@@ -28,9 +30,13 @@ jobs:
       - name: Publish to S3 action
         uses: newrelic/infrastructure-publish-action@main
         env:
-          AWS_S3_BUCKET: newrelic-test-20200121
-          AWS_ACCESS_KEY: ${{ secrets.TEST_AWS_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.TEST_AWS_SECRET_ACCESS_KEY }}
+          AWS_S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET_NAME_PROD }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          AWS_RUN_ID: ${{ secrets.AWS_RUN_ID_PROD }}
+          AWS_S3_LOCK_BUCKET_NAME: ${{ secrets.AWS_S3_LOCK_BUCKET_NAME_PROD }}
+          AWS_REGION: ${{ secrets.AWS_REGION_PROD }}
+          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN_PROD }}
         with:
           tag: ${{env.TAG}}
           app_name: "newrelic-infra"
@@ -38,13 +44,17 @@ jobs:
           env: release
           # 'custom' is for custom schema file
           schema: "custom"
-          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/ci/pre-release-publish/build/upload-schema-linux.yml"
+          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/$SCHEMA_BRANCH/build/upload-schema-linux.yml"
           # careful with the access_keys used as it can inadvertently publish to where we don't want,
           # especially if the bucket name is "common" enough that it can already be used for something else
           # note: seems like using secrets here directly seems to fail for some cases
-          aws_access_key: ${{ env.AWS_ACCESS_KEY }}
+          aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
-          aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET }}
+          aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
+          run_id: ${{ env.AWS_RUN_ID }}
+          aws_s3_lock_bucket_name: ${{ env.AWS_S3_LOCK_BUCKET_NAME }}
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role_arn: ${{ env.AWS_ROLE_ARN }}
           # used for signing package stuff
           gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
           gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
@@ -62,9 +72,10 @@ jobs:
       - name: Publish to S3 action
         uses: newrelic/infrastructure-publish-action@main
         env:
-          AWS_S3_BUCKET: newrelic-test-20200121
-          AWS_ACCESS_KEY: ${{ secrets.TEST_AWS_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.TEST_AWS_SECRET_ACCESS_KEY }}
+          AWS_S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET_NAME_PROD }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN_PROD }}
         with:
           tag: ${{env.TAG}}
           app_name: "newrelic-infra"
@@ -72,15 +83,17 @@ jobs:
           env: release
           # 'custom' is for custom schema file
           schema: "custom"
-          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/ci/pre-release-publish/build/upload-schema-windows.yml"
+          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/$SCHEMA_BRANCH/build/upload-schema-windows.yml"
           # careful with the access_keys used as it can inadvertently publish to where we don't want,
           # especially if the bucket name is "common" enough that it can already be used for something else
           # note: seems like using secrets here directly seems to fail for some cases
-          aws_access_key: ${{ env.AWS_ACCESS_KEY }}
+          aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
-          aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET }}
-          # used for signing package stuff
+          aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
+          aws_role_arn: ${{ env.AWS_ROLE_ARN }}
+          # used for signing package stuff - required for action, not needed for msi
           gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
           gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
+          disable_lock: true
 
 # TODO add job for docker image re-tagging
