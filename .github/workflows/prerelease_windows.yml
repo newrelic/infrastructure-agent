@@ -22,6 +22,7 @@ env:
   GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
   #TODO change ci/pre-release to real branch name
   SCHEMA_BRANCH: "ci/pre-release"
+  AWS_S3_BUCKET_NAME: "nr-downloads-ohai-testing"
 
 jobs:
   unit-test-windows:
@@ -98,15 +99,14 @@ jobs:
       - name: Publish to S3 action
         uses: newrelic/infrastructure-publish-action@main
         env:
-          AWS_S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET_NAME_STAGING }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_STAGING }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_STAGING }}
-          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN_STAGING }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN_PROD }}
         with:
           tag: ${{env.TAG}}
           app_name: "newrelic-infra"
           repo_name: "newrelic/infrastructure-agent"
-          env: pre-release
+          env: release
           # 'custom' is for custom schema file
           schema: "custom"
           schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/$SCHEMA_BRANCH/build/upload-schema-windows.yml"
