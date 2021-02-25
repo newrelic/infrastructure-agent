@@ -77,7 +77,18 @@ jobs:
 
       - name: Running proxy tests
         run: make proxy-test
-  
+
+  finish:
+    name: Finish
+    needs: [ unit-test-linux ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel-finished: true
+
   packaging-linux:
     name: Build and upload all artifacts into GH Release assets
     runs-on: ubuntu-20.04
@@ -85,28 +96,30 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+
       - name: Login to DockerHub
         uses: docker/login-action@v1
         with:
           username: ${{ env.DOCKER_HUB_ID }}
           password: ${{ env.DOCKER_HUB_PASSWORD }}
+
       - name: Releasing linux packages
         run: make ci/prerelase
 
-  packaging-tarball-linux:
-    name: Build tarballs and upload into GH Release assets
-    runs-on: ubuntu-20.04
-    needs: [unit-test-linux, harvest-test-linux, proxy-tests-linux]
+      - name: Set up QEMU # Once packages done we can build images using goreleaser artifacts
+        uses: docker/setup-qemu-action@v1
 
-    steps:
-      - uses: actions/checkout@v2
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ env.DOCKER_HUB_ID }}
-          password: ${{ env.DOCKER_HUB_PASSWORD }}
-      - name: Releasing linux tarballs
-        run: make ci/prerelase/tarball
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build and publish Release Candidate (RC) of base Docker image
+        run: make -C build/container/ clean publish/multi-arch-base AGENT_VERSION=${{env.TAG}}
+
+      - name: Build and publish Release Candidate (RC) of forwarder Docker image
+        run: make -C build/container/ clean publish/multi-arch-forwarder AGENT_VERSION=${{env.TAG}}
+
+      - name: Build and publish Release Candidate (RC) of k8s-events-forwarders Docker image
+        run: make -C build/container/ clean publish/multi-arch-k8s-events-forwarder AGENT_VERSION=${{env.TAG}}
 
   publishing-to-s3:
     name: Publish linux artifacts into s3 test bucket

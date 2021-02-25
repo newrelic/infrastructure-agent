@@ -12,7 +12,8 @@ NRI_DOCKER_URL     ?= https://download.newrelic.com/infrastructure_agent/binarie
 # flex
 NRI_FLEX_VERSION   ?= $(call get-nri-version,nri-flex)
 NRI_FLEX_OS        ?= Linux
-NRI_FLEX_URL       ?= https://github.com/newrelic/nri-flex/releases/download/v$(NRI_FLEX_VERSION)/nri-flex_$(NRI_FLEX_VERSION)_$(NRI_FLEX_OS)_x86_64.tar.gz
+NRI_FLEX_ARCH	   ?= x86_64
+NRI_FLEX_URL       ?= https://github.com/newrelic/nri-flex/releases/download/v$(NRI_FLEX_VERSION)/nri-flex_$(NRI_FLEX_VERSION)_$(NRI_FLEX_OS)_$(NRI_FLEX_ARCH).tar.gz
 
 # prometheus
 NRI_PROMETHEUS_VERSION   ?= $(call get-nri-version,nri-prometheus)
@@ -27,13 +28,19 @@ get-integrations: get-nri-prometheus
 
 .PHONY: get-nri-docker
 get-nri-docker:
+	@echo "NRI_DOCKER_ARCH=$(NRI_DOCKER_ARCH)"
 	@printf '\n================================================================\n'
-	@printf 'Target: download nri-docker for linux'
+	@printf 'Target: download nri-docker for linux\n'
+	@printf 'URL: $(NRI_DOCKER_URL)'
 	@printf '\n================================================================\n'
 
 	@rm -rf $(TARGET_DIR)/nridocker/
 	@mkdir -p $(TARGET_DIR)/nridocker/
-	@if curl --output /dev/null --silent --head --fail '$(NRI_DOCKER_URL)'; then \
+	# TODO: remove check once nri-docker deploys all native packages
+	@if [ "$(NRI_DOCKER_ARCH)"  != "amd64" ]; then \
+  		echo 'Skipping downloading nri-docker'; \
+  		touch $(TARGET_DIR)/nridocker/nridocker-not-available ; \
+	elif curl --output /dev/null --silent --head --fail '$(NRI_DOCKER_URL)'; then \
 		curl -L --silent '$(NRI_DOCKER_URL)' | tar xvz --no-same-owner -C $(TARGET_DIR)/nridocker/ ;\
 	else \
 	  echo 'nri-docker version $(NRI_DOCKER_VERSION) URL does not exist: $(NRI_DOCKER_URL)' ;\
@@ -43,7 +50,8 @@ get-nri-docker:
 .PHONY: get-nri-flex
 get-nri-flex:
 	@printf '\n================================================================\n'
-	@printf 'Target: download nri-flex for linux'
+	@printf 'Target: download nri-flex for linux\n'
+	@printf 'URL: $(NRI_FLEX_URL)'
 	@printf '\n================================================================\n'
 
 	@rm -rf $(TARGET_DIR)/nriflex/
@@ -58,7 +66,8 @@ get-nri-flex:
 .PHONY: get-nri-prometheus
 get-nri-prometheus:
 	@printf '\n================================================================\n'
-	@printf 'Target: download nri-prometheus for linux'
+	@printf 'Target: download nri-prometheus for linux\n'
+	@printf 'URL: $(NRI_PROMETHEUS_URL)'
 	@printf '\n================================================================\n'
 
 	@rm -rf $(TARGET_DIR)/nriprometheus/

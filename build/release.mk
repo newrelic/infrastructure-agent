@@ -1,6 +1,9 @@
-BUILD_DIR    := ./bin/
-GORELEASER_VERSION := v0.155.0
-GORELEASER_BIN ?= bin/goreleaser
+BUILD_DIR			   := $(CURDIR)/bin
+GORELEASER_VERSION	   := v0.155.0
+GORELEASER_BIN		   ?= bin/goreleaser
+GORELEASER_CONFIG_file ?= $(CURDIR)/build/.goreleaser.yml
+GORELEASER_CONFIG	   ?= --config $(GORELEASER_CONFIG_file)
+PKG_FLAGS              ?= --rm-dist
 
 bin:
 	@mkdir -p $(BUILD_DIR)
@@ -24,13 +27,13 @@ release/deps: $(GORELEASER_BIN)
 .PHONY : release/build
 release/build: release/deps release/clean
 	@echo "=== [release/build] build compiling all binaries"
-	@$(GORELEASER_BIN) build --config $(CURDIR)/build/.goreleaser.yml --snapshot --rm-dist
+	$(GORELEASER_BIN) build $(GORELEASER_CONFIG) $(PKG_FLAGS) --snapshot
 
 .PHONY : release/pkg
 release/pkg: release/deps release/clean
-	@$(MAKE) get-integrations get-fluentbit-linux
+release/pkg: get-integrations get-fluentbit-linux
 	@echo "=== [release/build] PRE-RELEASE compiling all binaries, creating packages, archives"
-	@$(GORELEASER_BIN) release --config $(CURDIR)/build/.goreleaser.yml --rm-dist $(PKG_FLAGS)
+	$(GORELEASER_BIN) release $(GORELEASER_CONFIG) $(PKG_FLAGS)
 
 .PHONY : release/fix-tarballs
 release/fix-tarballs:
@@ -53,7 +56,7 @@ release: release/pkg release/fix-tarballs release/sign release/publish release/c
 
 PRERELEASE := ${PRERELEASE}
 ifneq ($(PRERELEASE), true)
-	PKG_FLAGS := "--snapshot"
+	PKG_FLAGS += --snapshot
 endif
 
 OS := $(shell uname -s)
