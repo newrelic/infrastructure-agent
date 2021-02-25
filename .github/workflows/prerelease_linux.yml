@@ -124,9 +124,13 @@ jobs:
       - name: Publish to S3 action
         uses: newrelic/infrastructure-publish-action@main
         env:
-          AWS_S3_BUCKET: newrelic-test-20200121
-          AWS_ACCESS_KEY: ${{ secrets.TEST_AWS_ACCESS_KEY }}
+          AWS_S3_BUCKET_NAME: ${{ secrets.TEST_AWS_S3_BUCKET_NAME }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.TEST_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.TEST_AWS_SECRET_ACCESS_KEY }}
+          AWS_RUN_ID: ${{ secrets.TEST_AWS_RUN_ID }}
+          AWS_S3_LOCK_BUCKET_NAME: ${{ secrets.TEST_AWS_S3_LOCK_BUCKET_NAME }}
+          AWS_REGION: ${{ secrets.TEST_AWS_REGION }}
+          AWS_ROLE_ARN: ${{ secrets.TEST_AWS_ROLE_ARN }}
         with:
           tag: ${{env.TAG}}
           app_name: "newrelic-infra"
@@ -140,11 +144,12 @@ jobs:
           # note: seems like using secrets here directly seems to fail for some cases
           aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
-          aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET }}
+          aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
+          run_id: ${{ env.AWS_RUN_ID }}
+          aws_s3_lock_bucket_name: ${{ env.AWS_S3_LOCK_BUCKET_NAME }}
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role_arn: ${{ env.AWS_ROLE_ARN }}
           # used for signing package stuff
           gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
           gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
-          run_id: ${{}}
-          aws_s3_lock_bucket_name: ${{}}
-          aws_region: ${{}}
-          aws_role_arn: ${{}}
+
