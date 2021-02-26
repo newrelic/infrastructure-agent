@@ -4,6 +4,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest/protocol"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/track/ctx"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
@@ -25,8 +26,12 @@ func NewHandleFn(configProtocolQueue chan<- Entry, il integration.InstancesLooku
 	return func(cp protocol.ConfigProtocolV1) {
 		//TODO trace logging
 		// trace.CmdReq("received payload: %+v", crBatch)
+
+		cr := &ctx.ConfigRequest{ConfigName: cp.ConfigName, ConfigHash: cp.Hash()}
+
 		for _, ce := range cp.Config.Integrations {
 			def, err := integration.NewDefinition(ce, il, nil, nil)
+			def.ConfigRequest = cr
 			if err != nil {
 				logger.
 					WithField("config_protocol_version", cp.ConfigProtocolVersion).
