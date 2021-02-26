@@ -23,6 +23,7 @@ env:
   #TODO change ci/pipeline to real branch name
   SCHEMA_BRANCH: "ci/pipeline"
   AWS_S3_BUCKET_NAME: "nr-downloads-ohai-testing"
+  AWS_REGION: "us-east-1"
 
 jobs:
 #  unit-test-windows:
@@ -119,3 +120,4 @@ jobs:
           gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
           gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
           disable_lock: true
+          aws_region: ${{ env.AWS_REGION }}
