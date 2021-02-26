@@ -31,7 +31,6 @@ func NewHandleFn(configProtocolQueue chan<- Entry, il integration.InstancesLooku
 
 		for _, ce := range cp.Config.Integrations {
 			def, err := integration.NewDefinition(ce, il, nil, nil)
-			def.ConfigRequest = cr
 			if err != nil {
 				logger.
 					WithField("config_protocol_version", cp.ConfigProtocolVersion).
@@ -40,6 +39,7 @@ func NewHandleFn(configProtocolQueue chan<- Entry, il integration.InstancesLooku
 					Warn("cannot create handler for config protocol")
 				return
 			}
+			def.ConfigRequest = cr
 			//trace.CmdReq("queued definition: %+v", def)
 			configProtocolQueue <- Entry{def, databind.YAMLConfig{YAMLAgentConfig: cp.Config.Databind}}
 		}

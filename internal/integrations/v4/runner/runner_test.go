@@ -10,6 +10,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/testhelp"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/testhelp/testemit"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,7 +24,7 @@ func Test_runner_Run(t *testing.T) {
 	require.NoError(t, err)
 
 	e := &testemit.RecordEmitter{}
-	r := NewRunner(def, e, nil, nil, cmdrequest.NoopHandleFn)
+	r := NewRunner(def, e, nil, nil, cmdrequest.NoopHandleFn, configrequest.NoopHandleFn)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()

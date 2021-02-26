@@ -40,6 +40,7 @@ type Definition struct {
 	InventorySource ids.PluginID
 	WhenConditions  []when.Condition
 	CmdChanReq      *ctx.CmdChannelRequest // not empty: command-channel run/stop integration requests
+	ConfigRequest   *ctx.ConfigRequest
 	runnable        executor.Executor
 	newTempFile     func(template []byte) (string, error)
 }
