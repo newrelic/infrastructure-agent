@@ -88,7 +88,7 @@ jobs:
   publishing-to-s3:
     name: Publish windows artifacts into s3 test bucket
     runs-on: ubuntu-20.04
-    needs: [packaging-windows]
+#    needs: [packaging-windows]
 
     steps:
       - name: Login to DockerHub
