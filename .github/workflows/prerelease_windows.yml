@@ -102,6 +102,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_STAGING }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_STAGING }}
           AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN_STAGING }}
+          AWS_ROLE_SESSION_NAME: ${{ secrets.AWS_ROLE_SESSION_NAME_STAGING }}
         with:
           tag: ${{env.TAG}}
           app_name: "newrelic-infra"
@@ -112,6 +113,7 @@ jobs:
           aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
+          aws_role_session_name: ${{ env.AWS_ROLE_SESSION_NAME }}
           aws_role_arn: ${{ env.AWS_ROLE_ARN }}
           # used for signing package stuff - required for action, not needed for msi
           gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
