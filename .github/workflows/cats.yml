@@ -1,13 +1,11 @@
 name: Cats 😺
 
 on:
-  pull_request_target:
-    types:
-      - opened
-      - reopened
+  pull_request:
+    types: [opened, reopened]
 
 jobs:
-  aCatForCreatingThePullRequest:
+  thank-you:
     name: A cat for your effort!
     runs-on: ubuntu-latest
     steps:
