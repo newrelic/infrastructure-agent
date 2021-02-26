@@ -14,6 +14,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/constants"
 	"github.com/newrelic/infrastructure-agent/pkg/config/envvar"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
@@ -100,15 +101,17 @@ func (r *rgsPerPath) isGroupRunning(cfgPath string) bool {
 }
 
 type Manager struct {
-	config          Configuration
-	watcher         *fsnotify.Watcher
-	runners         *rgsPerPath
-	emitter         emitter.Emitter
-	lookup          integration.InstancesLookup
-	featuresCache   runner.FeaturesCache
-	definitionQueue <-chan integration.Definition
-	handleCmdReq    cmdrequest.HandleFn
-	tracker         *track.Tracker
+	config           Configuration
+	watcher          *fsnotify.Watcher
+	runners          *rgsPerPath
+	emitter          emitter.Emitter
+	lookup           integration.InstancesLookup
+	featuresCache    runner.FeaturesCache
+	definitionQueue  <-chan integration.Definition
+	configEntryQueue <-chan configrequest.Entry
+	handleCmdReq     cmdrequest.HandleFn
+	handleConfig     configrequest.HandleFn
+	tracker          *track.Tracker
 }
 
 // groupContext pairs a runner.Group with its cancellation context
@@ -184,6 +187,7 @@ func NewManager(
 	emitter emitter.Emitter,
 	il integration.InstancesLookup,
 	definitionQ chan integration.Definition,
+	configEntryQ chan configrequest.Entry,
 	tracker *track.Tracker,
 ) *Manager {
 	watcher, err := fsnotify.NewWatcher()
@@ -192,15 +196,17 @@ func NewManager(
 	}
 
 	mgr := Manager{
-		config:          cfg,
-		runners:         newRunnerGroupsPerCfgPath(),
-		emitter:         emitter,
-		watcher:         watcher,
-		lookup:          il,
-		featuresCache:   make(runner.FeaturesCache),
-		definitionQueue: definitionQ,
-		handleCmdReq:    cmdrequest.NewHandleFn(definitionQ, il, illog),
-		tracker:         tracker,
+		config:           cfg,
+		runners:          newRunnerGroupsPerCfgPath(),
+		emitter:          emitter,
+		watcher:          watcher,
+		lookup:           il,
+		featuresCache:    make(runner.FeaturesCache),
+		definitionQueue:  definitionQ,
+		configEntryQueue: configEntryQ,
+		handleCmdReq:     cmdrequest.NewHandleFn(definitionQ, il, illog),
+		handleConfig:     configrequest.NewHandleFn(configEntryQ, il, illog),
+		tracker:          tracker,
 	}
 
 	// Loads all the configuration files in the passed configFolders
@@ -298,7 +304,7 @@ func (mgr *Manager) loadEnabledRunnerGroups(cfgs map[string]config2.YAML) {
 func (mgr *Manager) loadRunnerGroup(path string, cfg config2.YAML, cmdFF *runner.CmdFF) (*groupContext, error) {
 	f := runner.NewFeatures(mgr.config.AgentFeatures, cmdFF)
 	loader := runner.NewLoadFn(cfg, f)
-	gr, fc, err := runner.NewGroup(loader, mgr.lookup, mgr.config.PassthroughEnvironment, mgr.emitter, mgr.handleCmdReq, path)
+	gr, fc, err := runner.NewGroup(loader, mgr.lookup, mgr.config.PassthroughEnvironment, mgr.emitter, mgr.handleCmdReq, mgr.handleConfig, path)
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +321,7 @@ func (mgr *Manager) handleRequestsQueue(ctx context.Context) {
 			return
 
 		case def := <-mgr.definitionQueue:
-			r := runner.NewRunner(def, mgr.emitter, nil, nil, mgr.handleCmdReq)
+			r := runner.NewRunner(def, mgr.emitter, nil, nil, mgr.handleCmdReq, nil)
 			if def.CmdChanReq != nil {
 				// tracking so cmd requests can be stopped by hash
 				runCtx, pidWCh := mgr.tracker.Track(ctx, def.CmdChanReq.CmdChannelCmdHash, &def)
@@ -328,6 +334,10 @@ func (mgr *Manager) handleRequestsQueue(ctx context.Context) {
 			} else {
 				go r.Run(ctx, nil, nil)
 			}
+		case entry := <-mgr.configEntryQueue:
+			ds, _ := entry.YAMLConfig.DataSources()
+			r := runner.NewRunner(entry.Definition, mgr.emitter, ds, nil, nil, nil)
+			go r.Run(ctx, nil, nil)
 		}
 	}
 }

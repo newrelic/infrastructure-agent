@@ -18,6 +18,8 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/contexts"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest/protocol"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
+	cfgprotocol "github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 
@@ -43,6 +45,7 @@ type logParser func(line string) (fields logFields)
 type runner struct {
 	emitter        emitter.Emitter
 	handleCmdReq   cmdrequest.HandleFn
+	handleConfig   configrequest.HandleFn
 	dSources       *databind.Sources
 	log            log.Entry
 	definition     integration.Definition
@@ -62,10 +65,12 @@ func NewRunner(
 	dSources *databind.Sources,
 	handleErrorsProvide func() runnerErrorHandler,
 	cmdReqHandle cmdrequest.HandleFn,
+	configHandle configrequest.HandleFn,
 ) *runner {
 	r := &runner{
 		emitter:       emitter,
 		handleCmdReq:  cmdReqHandle,
+		handleConfig:  configHandle,
 		dSources:      dSources,
 		definition:    intDef,
 		heartBeatFunc: func() {},
@@ -270,6 +275,26 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 			}
 
 			r.handleCmdReq(cr)
+			continue
+		}
+
+		if ok, ver := cfgprotocol.IsConfigProtocol(line); ok {
+			llog.WithField("version", ver).Info("Received config protocol request.")
+			// llog.WithField("version", ver).Debug("Received config protocol request.")
+			cp, err := cfgprotocol.DeserializeLine(line)
+			if err != nil {
+				llog.
+					WithError(err).
+					Warn("cannot deserialize config protocol")
+				continue
+			}
+
+			if r.handleConfig == nil {
+				llog.Warn("received config protocol request payload without a handler")
+				continue
+			}
+
+			r.handleConfig(cp)
 			continue
 		}
 

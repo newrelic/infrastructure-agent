@@ -8,6 +8,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 )
 
@@ -26,6 +27,7 @@ type Group struct {
 	// error is received. If unset, it will be runner.logErrors
 	handleErrorsProvide func() runnerErrorHandler
 	cmdReqHandle        cmdrequest.HandleFn
+	configHandle        configrequest.HandleFn
 }
 
 type runnerErrorHandler func(ctx context.Context, errs <-chan error)
@@ -38,10 +40,11 @@ func NewGroup(
 	passthroughEnv []string,
 	emitter emitter.Emitter,
 	cmdReqHandle cmdrequest.HandleFn,
+	configHandle configrequest.HandleFn,
 	cfgPath string,
 ) (g Group, c FeaturesCache, err error) {
 
-	g, c, err = loadFn(il, passthroughEnv, cfgPath, cmdReqHandle)
+	g, c, err = loadFn(il, passthroughEnv, cfgPath, cmdReqHandle, configHandle)
 	if err != nil {
 		return
 	}
@@ -55,7 +58,7 @@ func NewGroup(
 // provided context
 func (g *Group) Run(ctx context.Context) (hasStartedAnyOHI bool) {
 	for _, integr := range g.integrations {
-		go NewRunner(integr, g.emitter, g.dSources, g.handleErrorsProvide, g.cmdReqHandle).Run(ctx, nil, nil)
+		go NewRunner(integr, g.emitter, g.dSources, g.handleErrorsProvide, g.cmdReqHandle, g.configHandle).Run(ctx, nil, nil)
 		hasStartedAnyOHI = true
 	}
 
