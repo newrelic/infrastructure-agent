@@ -4,6 +4,7 @@ package protocol
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
@@ -96,4 +97,9 @@ func IsConfigProtocol(line []byte) (isConfigProtocol bool, ConfigProtocolVersion
 func DeserializeLine(line []byte) (r ConfigProtocolV1, err error) {
 	err = json.Unmarshal(line, &r)
 	return
+}
+
+func (cp *ConfigProtocolV1) Hash() string {
+	//TODO hash the string.
+	return fmt.Sprintf("%v%v", cp.Config.Databind, cp.Config.Integrations)
 }

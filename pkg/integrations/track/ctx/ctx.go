@@ -44,3 +44,9 @@ func (r *CmdChannelRequest) Event(summary string) protocol.EventData {
 	}
 	return ev
 }
+
+// ConfigRequest DTO storing context required to handle actions on integration run exit.
+type ConfigRequest struct {
+	ConfigName string
+	ConfigHash string
+}
