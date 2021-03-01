@@ -18,7 +18,6 @@
 - src: "newrelic-infra_systemd_{version}_{arch}.deb"
   arch:
     - amd64
-    - 386
   uploads:
     - type: apt
       src_repo: "http://download.newrelic.com/infrastructure_agent/test/linux/apt"
@@ -34,7 +33,6 @@
 - src: "newrelic-infra_upstart_{version}_{arch}.deb"
   arch:
     - amd64
-    - 386
   uploads:
     - type: apt
       src_repo: "http://download.newrelic.com/infrastructure_agent/test/linux/apt"
@@ -46,7 +44,6 @@
 - src: "newrelic-infra-{version}-1.el{os_version}.{arch}.rpm"
   arch:
     - x86_64
-    - 386
   uploads:
     - type: yum
       dest: "{dest_prefix}linux/yum/el/{os_version}/{arch}/"
@@ -58,7 +55,6 @@
 - src: "newrelic-infra-{version}-1.{os_version}.{arch}.rpm"
   arch:
     - x86_64
-    - 386
   uploads:
     - type: zypp
       dest: "{dest_prefix}linux/zypp/sles/{os_version}/{arch}/"
