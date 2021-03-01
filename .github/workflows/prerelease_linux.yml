@@ -135,14 +135,14 @@ jobs:
       - name: Build linux agent
         run: make clean linux/amd64 linux/arm linux/arm64
 
-      - name: Build container agent (amd64)
-        run: make -C build/container/ build/base-amd64
+      - name: Build and publish Release Candidate (RC) of base Docker image
+        run: make -C build/container/ clean publish/multi-arch-base AGENT_VERSION=${{env.TAG}}
 
-      - name: Build container agent (arm)
-        run: make -C build/container/ build/base-arm
+      - name: Build and publish Release Candidate (RC) of forwarder Docker image
+        run: make -C build/container/ clean publish/multi-arch-forwarder AGENT_VERSION=${{env.TAG}}
 
-      - name: Build container agent (arm64)
-        run: make -C build/container/ build/base-arm64
+      - name: Build and publish Release Candidate (RC) of k8s-events-forwarders Docker image
+        run: make -C build/container/ clean publish/multi-arch-k8s-events-forwarder AGENT_VERSION=${{env.TAG}}
 
   publishing-to-s3:
     name: Publish linux artifacts into s3 test bucket
