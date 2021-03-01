@@ -47,7 +47,7 @@ jobs:
           aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
           aws_s3_lock_bucket_name: ${{ env.AWS_S3_LOCK_BUCKET_NAME }}
-          run_id: ${{ env.GITHUB_RUN_ID }}
+          run_id: ${ GITHUB_RUN_ID }
           aws_region: ${{ env.AWS_REGION }}
           aws_role_arn: ${{ env.AWS_ROLE_ARN }}
           # used for signing package stuff
