@@ -258,7 +258,7 @@ publish/multi-arch-base-manifest :
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64)
-	@if [ "$(DOCKER_PUBLISH)"  == "true" ]; then \
+	@if [ "$(DOCKER_PUBLISH)" = "true" ]; then \
   		docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION); \
     fi
 
@@ -289,7 +289,7 @@ publish/multi-arch-base-rc:
          $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm64 \
          $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm \
          $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-amd64)
-	@if [ "$(DOCKER_PUBLISH)"  == "true" ]; then \
+	@if [ "$(DOCKER_PUBLISH)"  = "true" ]; then \
   		docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION); \
   		docker manifest push $(DOCKER_IMAGE_NAME):latest; \
     fi
@@ -339,7 +339,7 @@ publish/multi-arch-k8s-events-forwarder-rc:
          $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm64 \
          $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm \
          $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-amd64)
-	@if [ "$(DOCKER_PUBLISH)"  == "true" ]; then \
+	@if [ "$(DOCKER_PUBLISH)"  = "true" ]; then \
   		docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION); \
   		docker manifest push $(DOCKER_IMAGE_NAME):latest; \
     fi
@@ -357,7 +357,7 @@ publish/multi-arch-forwarder-manifest :
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64)
-	@if [ "$(DOCKER_PUBLISH)"  == "true" ]; then \
+	@if [ "$(DOCKER_PUBLISH)"  = "true" ]; then \
   		docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION); \
     fi
 
@@ -389,7 +389,7 @@ publish/multi-arch-forwarder-rc:
          $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm64 \
          $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-arm \
          $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)-rc-amd64)
-	@if [ "$(DOCKER_PUBLISH)"  == "true" ]; then \
+	@if [ "$(DOCKER_PUBLISH)"  = "true" ]; then \
   		docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION); \
   		docker manifest push $(DOCKER_IMAGE_NAME):latest; \
     fi
