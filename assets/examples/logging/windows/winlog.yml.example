@@ -14,11 +14,20 @@ logs:
        exclude-eventids:
         - 4735
  
- # Consolidated entry for the application, system, powershell, and SCOM channels
-  - name: application-system-pshell-scom
+ # entries for the application, system, powershell, and SCOM channels
+  - name: windows-application
     winlog: 
-       channel: Application, System, Windows Powershell, Operations Manager
- 
+       channel: Application
+  - name: windows-system
+    winlog: 
+       channel: System
+  - name: windows-pshell
+    winlog: 
+       channel: Windows Powershell
+  - name: scom
+    winlog: 
+       channel: Operations Manager
+
  # Entry for Windows Defender Logs
   - name: windows-defender
     winlog:
