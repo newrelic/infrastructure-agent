@@ -4,6 +4,14 @@ BUILDER_IMG_TAG = infrastructure-agent-builder
 ci/deps:
 	@docker build -t $(BUILDER_IMG_TAG) -f $(CURDIR)/build/Dockerfile.cicd $(CURDIR)
 
+.PHONY: ci/go-get
+ci/go-get: ci/deps
+	@docker run --rm -t \
+			--name "infrastructure-agent-go-get" \
+			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
+			-w /go/src/github.com/newrelic/infrastructure-agent \
+			$(BUILDER_IMG_TAG) make go-get
+
 .PHONY: ci/validate
 ci/validate: ci/deps
 	@docker run --rm -t \
