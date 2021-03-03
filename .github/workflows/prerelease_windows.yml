@@ -98,7 +98,7 @@ jobs:
           username: ${{ env.DOCKER_HUB_ID }}
           password: ${{ env.DOCKER_HUB_PASSWORD }}
       - name: Publish to S3 action
-        uses: newrelic/infrastructure-publish-action@main
+        uses: newrelic/infrastructure-publish-action@ci/debug-s3fuse
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_STAGING }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_STAGING }}
