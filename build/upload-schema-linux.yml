@@ -52,7 +52,7 @@
         - 7
         - 8
 
-- src: "newrelic-infra-{version}-1.{os_version}.{arch}.rpm"
+- src: "newrelic-infra-{version}-1.sles{os_version}.{arch}.rpm"
   arch:
     - x86_64
   uploads:
