@@ -147,3 +147,5 @@ jobs:
           password: ${{ env.DOCKER_HUB_PASSWORD }}
       - name: Build all platforms:arch
         run: make ci/build
+        env:
+          SNAPSHOT: true
