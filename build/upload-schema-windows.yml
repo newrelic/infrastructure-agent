@@ -2,7 +2,7 @@
 - src: "newrelic-infra-amd64.{version}.msi"
   uploads:
     - type: file
-      dest: "{dest_prefix}windows/{src}"
+      dest: "{dest_prefix}windows/newrelic-infra.{version}.msi"
     - type: file
       dest: "{dest_prefix}windows/newrelic-infra.msi"
 
