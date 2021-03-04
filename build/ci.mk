@@ -20,6 +20,7 @@ ifdef TAG
 			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
 			-w /go/src/github.com/newrelic/infrastructure-agent \
 			-e TAG \
+			-e SNAPSHOT \
 			$(BUILDER_IMG_TAG) make release/build
 else
 	@echo "===  [ci/build] TAG env variable expected to be set"
