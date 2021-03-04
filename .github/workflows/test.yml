@@ -112,8 +112,6 @@ jobs:
 
       - name: Build agent binaries
         run: make ci/build
-        env:
-          SNAPSHOT: true
 
       - name: Build container agent (amd64)
         run: make -C build/container/ build/base-amd64
@@ -147,5 +145,3 @@ jobs:
           password: ${{ env.DOCKER_HUB_PASSWORD }}
       - name: Build all platforms:arch
         run: make ci/build
-        env:
-          SNAPSHOT: true

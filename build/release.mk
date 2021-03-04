@@ -54,6 +54,10 @@ release/publish:
 release: release/pkg release/fix-tarballs release/sign release/publish
 	@echo "=== [release] full pre-release cycle complete for nix"
 
+ifndef SNAPSHOT
+	$(error SNAPSHOT is undefined)
+endif
+
 # snapshot replaces version tag for local builds
 SNAPSHOT := ${SNAPSHOT}
 ifeq ($(SNAPSHOT), true)
