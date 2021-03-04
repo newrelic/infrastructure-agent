@@ -72,15 +72,15 @@ jobs:
 
       - name: Build executables ${{ matrix.goarch }}
         shell: pwsh
-        run: build\windows\build.ps1 -arch ${{ matrix.goarch }} -version "$env:TAG" -commit "$env:GITHUB_SHA"
+        run: build\windows\build.ps1 -arch ${{ matrix.goarch }} -version ${{env.TAG}} -commit "$env:GITHUB_SHA"
 
       - name: Create MSI package ${{ matrix.goarch }}
         shell: pwsh
-        run: build\windows\package_msi.ps1 -arch ${{ matrix.goarch }} -version "$env:TAG"
+        run: build\windows\package_msi.ps1 -arch ${{ matrix.goarch }} -version ${{env.TAG}}
 
       - name: Create zip package ${{ matrix.goarch }}
         shell: pwsh
-        run: build\windows\package_zip.ps1 -arch ${{ matrix.goarch }} -version "$env:TAG"
+        run: build\windows\package_zip.ps1 -arch ${{ matrix.goarch }} -version ${{env.TAG}}
 
       - name: Upload MSI to GH
         shell: bash
