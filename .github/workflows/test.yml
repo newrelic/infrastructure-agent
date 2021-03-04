@@ -112,6 +112,8 @@ jobs:
 
       - name: Build agent binaries
         run: make ci/build
+        env:
+          SNAPSHOT: true
 
       - name: Build container agent (amd64)
         run: make -C build/container/ build/base-amd64
