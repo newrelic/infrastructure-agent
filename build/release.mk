@@ -27,7 +27,7 @@ release/deps: $(GORELEASER_BIN)
 .PHONY : release/build
 release/build: release/deps release/clean
 	@echo "=== [release/build] build compiling all binaries"
-	$(GORELEASER_BIN) build $(GORELEASER_CONFIG) $(PKG_FLAGS)
+	$(GORELEASER_BIN) build $(GORELEASER_CONFIG) $(PKG_FLAGS) --skip-validate
 
 .PHONY : release/pkg
 release/pkg: release/deps release/clean
