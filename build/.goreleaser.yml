@@ -1,3 +1,6 @@
+snapshot:
+  name_template: 0.0.0
+
 builds:
   - id: linux-newrelic-infra-fpm
     main: ./cmd/newrelic-infra

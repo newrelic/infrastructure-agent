@@ -27,7 +27,7 @@ release/deps: $(GORELEASER_BIN)
 .PHONY : release/build
 release/build: release/deps release/clean
 	@echo "=== [release/build] build compiling all binaries"
-	$(GORELEASER_BIN) build $(GORELEASER_CONFIG) $(PKG_FLAGS) --snapshot
+	$(GORELEASER_BIN) build $(GORELEASER_CONFIG) $(PKG_FLAGS)
 
 .PHONY : release/pkg
 release/pkg: release/deps release/clean
@@ -54,8 +54,13 @@ release/publish:
 release: release/pkg release/fix-tarballs release/sign release/publish
 	@echo "=== [release] full pre-release cycle complete for nix"
 
-PRERELEASE := ${PRERELEASE}
-ifneq ($(PRERELEASE), true)
+ifndef SNAPSHOT
+	$(error SNAPSHOT is undefined)
+endif
+
+# snapshot replaces version tag for local builds
+SNAPSHOT := ${SNAPSHOT}
+ifeq ($(SNAPSHOT), true)
 	PKG_FLAGS += --snapshot
 endif
 

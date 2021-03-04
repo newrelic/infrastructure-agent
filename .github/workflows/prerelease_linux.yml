@@ -107,33 +107,11 @@ jobs:
       - name: Releasing linux packages
         run: make ci/prerelase
 
-  build-container:
-    name: Building containerized agent
-    runs-on: ubuntu-20.04
-    needs: [unit-test-linux, harvest-test-linux, proxy-tests-linux]
-
-    steps:
-      - uses: actions/checkout@v2
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ env.DOCKER_HUB_ID }}
-          password: ${{ env.DOCKER_HUB_PASSWORD }}
-
-      - name: Install Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{env.GO_VERSION}}
-
-      - name: Build linux agent
-        run: make clean linux/amd64 linux/arm linux/arm64
 
       - name: Build and publish Release Candidate (RC) of base Docker image
         run: make -C build/container/ clean publish/multi-arch-base AGENT_VERSION=${{env.TAG}}

@@ -20,6 +20,7 @@ ifdef TAG
 			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
 			-w /go/src/github.com/newrelic/infrastructure-agent \
 			-e TAG \
+			-e SNAPSHOT=true \
 			$(BUILDER_IMG_TAG) make release/build
 else
 	@echo "===  [ci/build] TAG env variable expected to be set"
@@ -56,6 +57,7 @@ ifdef TAG
 			-e GPG_MAIL \
 			-e GPG_PASSPHRASE \
 			-e GPG_PRIVATE_KEY_BASE64 \
+			-e SNAPSHOT=false \
 			$(BUILDER_IMG_TAG) make release
 else
 	@echo "===> infrastructure-agent ===  [ci/prerelease] TAG env variable expected to be set"
