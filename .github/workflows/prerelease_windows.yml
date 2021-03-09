@@ -108,7 +108,6 @@ jobs:
           tag: ${{env.TAG}}
           app_name: "newrelic-infra"
           repo_name: "newrelic/infrastructure-agent"
-          env: pre-release
           schema: "custom"
           schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.SCHEMA_BRANCH }}/build/upload-schema-windows.yml"
           aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
