@@ -15,7 +15,7 @@
     - ppc64le
     - s390x
 
-- src: "newrelic-infra_systemd_{version}_systemd_{arch}.deb"
+- src: "newrelic-infra_systemd_{version}_{arch}.deb"
   arch:
     - amd64
   uploads:
@@ -30,7 +30,7 @@
         - jessie
         - stretch
 
-- src: "newrelic-infra_upstart_{version}_upstart_{arch}.deb"
+- src: "newrelic-infra_upstart_{version}_{arch}.deb"
   arch:
     - amd64
   uploads:
