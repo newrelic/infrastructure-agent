@@ -22,7 +22,7 @@ env:
   GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
   #TODO change ci/pipeline to real branch name
   SCHEMA_BRANCH: "ci/pipeline"
-  AWS_S3_BUCKET_NAME: "nr-downloads-ohai-testing"
+  AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
   AWS_REGION: "us-east-1"
 
 jobs:

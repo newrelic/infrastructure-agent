@@ -19,8 +19,8 @@ env:
   DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
   #TODO change ci/pipeline to real branch name
   SCHEMA_BRANCH: "ci/pipeline"
-  AWS_S3_BUCKET_NAME: "nr-downloads-ohai-testing"
-  AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-testing"
+  AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
+  AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
   AWS_REGION: "us-east-1"
   DOCKER_PUBLISH: true
 
