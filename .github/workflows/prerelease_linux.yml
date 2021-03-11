@@ -136,10 +136,10 @@ jobs:
       - name: Publish to S3 action
         uses: newrelic/infrastructure-publish-action@main
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_STAGING }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_STAGING }}
-          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN_STAGING }}
-          AWS_ROLE_SESSION_NAME: ${{ secrets.AWS_ROLE_SESSION_NAME_STAGING }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
+          AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
+          AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
         with:
           tag: ${{env.TAG}}
           app_name: "newrelic-infra"
