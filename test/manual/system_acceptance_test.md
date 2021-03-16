@@ -45,7 +45,7 @@ Then all host data is sent to NR.
 - ***Scenario 9. Package uninstall*** \
 Given the latest newrelic-infra agent version installed as unprivileged mode, \
 When I uninstall the newrelic-infra agent package, \
-???
+Then no agent is present.
 
 - ***Scenario 10. Package upgrade*** \
 Given an old newrelic-infra agent version installed, \
@@ -54,13 +54,15 @@ Then all host data is sent to NR.
  
 - ***Scenario 11. Built in Flex integration is working*** \
 Given the latest newrelic-infra agent version installed, \
-???
+When agent run nri-flex integration \
+Then I flexSample is sent to NR.
 
 - ***Scenario 11. Built in Log-forwarded integration is working*** \
 Given the latest newrelic-infra agent version installed, \
-???
+When I enable the log-forwarder mode, \
+Then my configured logs are sent to NR.
 
 - ***Scenario 11. Built in Prometheus integration is working*** \
 Given the latest newrelic-infra agent version installed, \
-???
- 
+When I run nri-prometheus integration binary, \
+Then the integration returns a message.
