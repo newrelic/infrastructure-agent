@@ -1,5 +1,17 @@
-### Test cases:
-As moving forward to support many OS distribution and version we want to unsure agent main functionalities covered and working in each new release.  
+### Why:
+As moving forward to support many OS distribution and version we want to unsure agent main functionalities covered and working in each new release.
+
+### How:
+Under script folder You will find all commands and assert criteria to run locally this suit case separated by each OS dist package manager.
+
+### Setup:
+In order to pass this manual test some requirements are needed:
+- Install [newrelic-cli](https://github.com/newrelic/newrelic-cli) with your license key and api key (can be obtained though NR user information)
+This tools will allow You to get data from your agent host on NR and validate some use cases.
+- Add env var:
+    ```
+    export NR_LICENSE_KEY=*** NR_API_KEY=*** NR_ACCOUNT_ID=*** DISPLAY_NAME=*** NR_REGION=***
+    ```
 
 ### Acceptance and Criteria:
 - ***Scenario 1. Package naming follow dist convention*** \
@@ -62,7 +74,7 @@ Given the latest newrelic-infra agent version installed, \
 When I enable the log-forwarder mode, \
 Then my configured logs are sent to NR.
 
-- ***Scenario 11. Built in Prometheus integration is working*** \
+- ***Scenario 12. Built in Prometheus integration is working*** \
 Given the latest newrelic-infra agent version installed, \
 When I run nri-prometheus integration binary, \
 Then the integration returns a message.
