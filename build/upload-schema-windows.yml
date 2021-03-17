@@ -4,6 +4,7 @@
     - type: file
       dest: "{dest_prefix}windows/newrelic-infra.{version}.msi"
     - type: file
+      override: true
       dest: "{dest_prefix}windows/newrelic-infra.msi"
 
 - src: "newrelic-infra-386.{version}.msi"
@@ -11,6 +12,7 @@
     - type: file
       dest: "{dest_prefix}windows/386/{src}"
     - type: file
+      override: true
       dest: "{dest_prefix}windows/386/newrelic-infra-386.msi"
 
 - src: "newrelic-infra-amd64.{version}.zip"
