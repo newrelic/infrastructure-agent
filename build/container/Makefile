@@ -41,7 +41,7 @@ include ../embed/integrations.mk
 AGENT_VERSION                  ?= 0.0.0
 IMAGE_VERSION                  ?= $(AGENT_VERSION)
 
-NS                             ?= brushknight
+NS                             ?= newrelic
 REPO                           ?= infrastructure
 IMAGE_NAME                     ?= ${NS}/${REPO}
 CORE_IMAGE_NAME                ?= ${IMAGE_NAME}-core
