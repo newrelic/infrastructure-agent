@@ -99,11 +99,20 @@ jobs:
           username: ${{ env.DOCKER_HUB_ID }}
           password: ${{ env.DOCKER_HUB_PASSWORD }}
 
-      - name: Publish Release of base Docker image
-        run: make -C build/container/ clean publish/multi-arch-base AGENT_VERSION=${{env.TAG}}
+      - name: Publish release of base Docker image
+        run: make -C build/container/ clean publish/multi-arch-base-tag AGENT_VERSION=${{env.TAG}}
 
-      - name: Publish Release of forwarder Docker image
-        run: make -C build/container/ clean publish/multi-arch-forwarder AGENT_VERSION=${{env.TAG}}
+      - name: Publish release of base Docker image
+        run: make -C build/container/ clean publish/multi-arch-base-latest AGENT_VERSION=${{env.TAG}}
 
-      - name: Publish Release of k8s-events-forwarders Docker image
-        run: make -C build/container/ clean publish/multi-arch-k8s-events-forwarder AGENT_VERSION=${{env.TAG}}
+      - name: Publish release of forwarder Docker image
+        run: make -C build/container/ clean publish/multi-arch-forwarder-tag AGENT_VERSION=${{env.TAG}}
+
+      - name: Publish release of forwarder Docker image
+        run: make -C build/container/ clean publish/multi-arch-forwarder-latest AGENT_VERSION=${{env.TAG}}
+
+      - name: Publish release of k8s-events-forwarders Docker image
+        run: make -C build/container/ clean publish/multi-arch-k8s-events-forwarder-tag AGENT_VERSION=${{env.TAG}}
+
+      - name: Publish release of k8s-events-forwarders Docker image
+        run: make -C build/container/ clean publish/multi-arch-k8s-events-forwarder-latest AGENT_VERSION=${{env.TAG}}
