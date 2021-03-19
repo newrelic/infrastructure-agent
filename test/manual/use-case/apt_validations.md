@@ -7,19 +7,19 @@ It covers support for use case of:
 ### Setup
 - For [Ubuntu 20.04](https://app.vagrantup.com/generic/boxes/ubuntu2004) (focal):
     ```
-    $ printf "deb [arch=amd64] http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent/test/linux/apt focal main" | sudo tee -a /etc/apt/sources.list.d/newrelic-infra.list
+    $ printf "deb [arch=amd64] http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent/linux/apt focal main" | sudo tee -a /etc/apt/sources.list.d/newrelic-infra.list
     ```
 - For [Ubuntu 18.04](https://app.vagrantup.com/generic/boxes/ubuntu1804) (bionic):
     ```
-    $ printf "deb [arch=amd64] http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent/test/linux/apt bionic main" | sudo tee -a /etc/apt/sources.list.d/newrelic-infra.list
+    $ printf "deb [arch=amd64] http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent/linux/apt bionic main" | sudo tee -a /etc/apt/sources.list.d/newrelic-infra.list
     ```
 - For Ubuntu [16.04](https://app.vagrantup.com/generic/boxes/ubuntu1604) (xenial):
     ```
-    $ printf "deb [arch=amd64] http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent/test/linux/apt xenial main" | sudo tee -a /etc/apt/sources.list.d/newrelic-infra.list   
+    $ printf "deb [arch=amd64] http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent/linux/apt xenial main" | sudo tee -a /etc/apt/sources.list.d/newrelic-infra.list
     ```   
 - For Ubuntu [14.04](https://app.vagrantup.com/ubuntu/boxes/trusty64) (trusty):
     ```
-    $ printf "deb [arch=amd64] http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent/test/linux/apt trusty main" | sudo tee -a /etc/apt/sources.list.d/newrelic-infra.list
+    $ printf "deb [arch=amd64] http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent/linux/apt trusty main" | sudo tee -a /etc/apt/sources.list.d/newrelic-infra.list
     ```  
 - For [Debian 10](https://app.vagrantup.com/generic/boxes/debian10) (buster):
     ```
@@ -89,7 +89,7 @@ $ sudo systemctl show newrelic-infra --no-page|grep SubState=running
 ```
 expected output: 
 ```
-
+SubState=running
 ```
 
 Platform validation:
