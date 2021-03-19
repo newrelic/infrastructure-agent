@@ -15,8 +15,8 @@ env:
   PFX_PASSPHRASE:  ${{ secrets.OHAI_PFX_PASSPHRASE }}
   SNYK_TOKEN: ${{ secrets.CAOS_SNYK_TOKEN }}
   TAG: ${{ github.event.release.tag_name }}
-  DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
-  DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
+  DOCKER_HUB_ID: ${{ secrets.GRIGORII_DOCKER_HUB_ID }}
+  DOCKER_HUB_PASSWORD: ${{ secrets.GRIGORII_DOCKER_HUB_PASSWORD }}
   # required for GHA publish action, should be moved into optional
   GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
   GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
