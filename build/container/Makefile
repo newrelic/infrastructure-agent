@@ -276,12 +276,16 @@ publish/multi-arch-base-rc : build/base-amd64
 publish/multi-arch-base-rc : publish/multi-arch-base-manifest
 
 # Shortcut to build all supported multi arch bases
-.PHONY : publish/multi-arch-base
-publish/multi-arch-base : export IMAGE_VERSION=$(AGENT_VERSION)
-publish/multi-arch-base : export DOCKER_BUILD_TAG_PREFIX=$(IMAGE_VERSION)-rc
-publish/multi-arch-base : publish/multi-arch-base-manifest
-publish/multi-arch-base : export IMAGE_VERSION=latest
-publish/multi-arch-base : publish/multi-arch-base-manifest
+.PHONY : publish/multi-arch-base-tag
+publish/multi-arch-base-tag : export IMAGE_VERSION=$(AGENT_VERSION)
+publish/multi-arch-base-tag : export DOCKER_BUILD_TAG_PREFIX=$(AGENT_VERSION)-rc
+publish/multi-arch-base-tag : publish/multi-arch-base-manifest
+
+# Shortcut to build all supported multi arch bases
+.PHONY : publish/multi-arch-base-latest
+publish/multi-arch-base-latest : export IMAGE_VERSION=latest
+publish/multi-arch-base-latest : export DOCKER_BUILD_TAG_PREFIX=$(AGENT_VERSION)-rc
+publish/multi-arch-base-latest : publish/multi-arch-base-manifest
 
 # Creates multi acrh manifest for k8s-events-forwarder image
 .PHONY : publish/multi-arch-k8s-events-forwarder-manifest
@@ -310,12 +314,16 @@ publish/multi-arch-k8s-events-forwarder-rc : build/k8s-events-forwarder-amd64
 publish/multi-arch-k8s-events-forwarder-rc : publish/multi-arch-k8s-events-forwarder-manifest
 
 # Shortcut to build all supported multi arch k8s-events-forwarders
-.PHONY : publish/multi-arch-k8s-events-forwarder
-publish/multi-arch-k8s-events-forwarder : export IMAGE_VERSION=$(AGENT_VERSION)
-publish/multi-arch-k8s-events-forwarder : export DOCKER_BUILD_TAG_PREFIX=$(IMAGE_VERSION)-rc
-publish/multi-arch-k8s-events-forwarder : publish/multi-arch-k8s-events-forwarder-manifest
-publish/multi-arch-k8s-events-forwarder : export IMAGE_VERSION=latest
-publish/multi-arch-k8s-events-forwarder : publish/multi-arch-k8s-events-forwarder-manifest
+.PHONY : publish/multi-arch-k8s-events-forwarder-tag
+publish/multi-arch-k8s-events-forwarder-tag : export IMAGE_VERSION=$(AGENT_VERSION)
+publish/multi-arch-k8s-events-forwarder-tag : export DOCKER_BUILD_TAG_PREFIX=$(AGENT_VERSION)-rc
+publish/multi-arch-k8s-events-forwarder-tag : publish/multi-arch-k8s-events-forwarder-manifest
+
+# Shortcut to build all supported multi arch k8s-events-forwarders
+.PHONY : publish/multi-arch-k8s-events-forwarder-latest
+publish/multi-arch-k8s-events-forwarder-latest : export IMAGE_VERSION=latest
+publish/multi-arch-k8s-events-forwarder-latest : export DOCKER_BUILD_TAG_PREFIX=$(AGENT_VERSION)-rc
+publish/multi-arch-k8s-events-forwarder-latest : publish/multi-arch-k8s-events-forwarder-manifest
 
 # Creates multi acrh manifest for forwarder image
 .PHONY : publish/multi-arch-forwarder-manifest
@@ -344,9 +352,13 @@ publish/multi-arch-forwarder-rc : build/forwarder-amd64
 publish/multi-arch-forwarder-rc : publish/multi-arch-forwarder-manifest
 
 # Shortcut to build all supported multi arch forwarders
-.PHONY : publish/multi-arch-forwarder
-publish/multi-arch-forwarder : export IMAGE_VERSION=$(AGENT_VERSION)
-publish/multi-arch-forwarder : export DOCKER_BUILD_TAG_PREFIX=$(IMAGE_VERSION)-rc
-publish/multi-arch-forwarder : publish/multi-arch-forwarder-manifest
-publish/multi-arch-forwarder : export IMAGE_VERSION=latest
-publish/multi-arch-forwarder : publish/multi-arch-forwarder-manifest
+.PHONY : publish/multi-arch-forwarder-tag
+publish/multi-arch-forwarder-tag : export IMAGE_VERSION=$(AGENT_VERSION)
+publish/multi-arch-forwarder-tag : export DOCKER_BUILD_TAG_PREFIX=$(AGENT_VERSION)-rc
+publish/multi-arch-forwarder-tag : publish/multi-arch-forwarder-manifest
+
+# Shortcut to build all supported multi arch forwarders
+.PHONY : publish/multi-arch-forwarder-latest
+publish/multi-arch-forwarder-latest : export IMAGE_VERSION=latest
+publish/multi-arch-forwarder-latest : export DOCKER_BUILD_TAG_PREFIX=$(AGENT_VERSION)-rc
+publish/multi-arch-forwarder-latest : publish/multi-arch-forwarder-manifest
