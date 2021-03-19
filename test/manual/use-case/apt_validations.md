@@ -6,23 +6,23 @@ It covers support for use case of:
 
 ### Setup
 - For [Ubuntu 20.04](https://app.vagrantup.com/generic/boxes/ubuntu2004) (focal):
-    ```
+    ```shell script
     $ printf "deb [arch=amd64] http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent/linux/apt focal main" | sudo tee -a /etc/apt/sources.list.d/newrelic-infra.list
     ```
 - For [Ubuntu 18.04](https://app.vagrantup.com/generic/boxes/ubuntu1804) (bionic):
-    ```
+    ```shell script
     $ printf "deb [arch=amd64] http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent/linux/apt bionic main" | sudo tee -a /etc/apt/sources.list.d/newrelic-infra.list
     ```
 - For Ubuntu [16.04](https://app.vagrantup.com/generic/boxes/ubuntu1604) (xenial):
-    ```
+    ```shell script
     $ printf "deb [arch=amd64] http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent/linux/apt xenial main" | sudo tee -a /etc/apt/sources.list.d/newrelic-infra.list
     ```   
 - For Ubuntu [14.04](https://app.vagrantup.com/ubuntu/boxes/trusty64) (trusty):
-    ```
+    ```shell script
     $ printf "deb [arch=amd64] http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent/linux/apt trusty main" | sudo tee -a /etc/apt/sources.list.d/newrelic-infra.list
     ```  
 - For [Debian 10](https://app.vagrantup.com/generic/boxes/debian10) (buster):
-    ```
+    ```shell script
     $ printf "deb [arch=amd64] http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent/linux/apt buster main" | sudo tee -a /etc/apt/sources.list.d/newrelic-infra.list
     ```  
 
@@ -37,7 +37,7 @@ previous package version: 1.16.0, name: newrelic-infra_systemd_1.16.0_amd64.deb
 
 #### Scenario 2. Package contains all required files
 Review file managed by package and compare with previous package version.
-```
+```shell script
 $ sudo dpkg -L newrelic-infra
 ```
 e.g: Debian 10 output:
@@ -74,7 +74,7 @@ e.g: Debian 10 output:
 
 #### Scenario 3. Check agent version
 Check if version number is well inform.
-```
+```shell script
 $ newrelic-infra -version
 ```
 expected output:
@@ -84,7 +84,7 @@ expected output:
 
 #### Scenario 4. Service is working
 Check if agent is running and sending metrics to NR.
-```
+```shell script
 $ sudo systemctl show newrelic-infra --no-page|grep SubState=running
 ```
 expected output: 
@@ -93,7 +93,7 @@ SubState=running
 ```
 
 Platform validation:
-```
+```shell script
 $ newrelic nrql query -a ${NR_ACCOUNT_ID} -q "SELECT count(*) from SystemSample where displayName = '${DISPLAY_NAME}'"
 ```
 e.g. expected output: 
@@ -114,7 +114,7 @@ e.g. expected output:
 
 #### Scenario 5. Package metadata is valid
 Review if basic metadata is in place.
-```
+```shell script
 $ apt show newrelic-infra
 ```
 e.g: expected output:
@@ -138,7 +138,7 @@ Description: New Relic Infrastructure provides flexible, dynamic server monitori
 
 #### Scenario 6. Package signature is valid
 Review if pub GPG key is same as PROD.
-```
+```shell script
 $ apt-key list | grep newrelic -n2
 ```
 e.g.: expected output:
@@ -150,7 +150,7 @@ uid           [ unknown] infrastructure-eng <infrastructure-eng@newrelic.com>
 
 #### Scenario 7. Agent privileged mode is working
 For this use case You should install the agent with privileged mode.
-```
+```shell script
 $ sudo NRIA_MODE=PRIVILEGED apt install newrelic-infra -y
 ```
 Platform validation:
@@ -160,7 +160,7 @@ $ newrelic nrql query -a ${NR_ACCOUNT_ID} -q "SELECT * from SystemSample where d
 
 #### Scenario 8. Agent unprivileged mode is working
 Similar to previous scenario You should install the agent with unprivileged mode.
-```
+```shell script
 $ sudo NRIA_MODE=UNPRIVILEGED apt install newrelic-infra -y
 ```
 Platform validation:
@@ -169,7 +169,7 @@ $ newrelic nrql query -a ${NR_ACCOUNT_ID} -q "SELECT * from SystemSample where d
 ```
 
 #### Scenario 9. Package uninstall
-```
+```shell script
 $ sudo apt remove newrelic-infra -y 
 ```
 Platform Validation:
@@ -180,7 +180,7 @@ no data should be returned.
 
 #### Scenario 10. Package upgrade
 With an old agent version install, install the latest.
-```
+```shell script
 $ sudo apt install newrelic-infra=1.15.1 -y --allow-downgrades
 $ newrelic-infra -version
 $ sudo apt install newrelic-infra -y
@@ -189,13 +189,13 @@ $ newrelic-infra -version
 
 #### Scenario 11. Built in Flex integration is working
 Add Flex example yml file and review data in NR.
-```
+```shell script
 $ sudo curl -o /etc/newrelic-infra/integrations.d/flex-dig.yml https://raw.githubusercontent.com/newrelic/nri-flex/master/examples/linux/dig-example.yml
 
 $ sudo service newrelic-infra restart
 ```
 Platform verification:
-```
+```shell script
 $ newrelic nrql query -a ${NR_ACCOUNT_ID} -q "SELECT uniques(integrationVersion) from flexStatusSample where displayName = '${DISPLAY_NAME}'"
 ```
 e.g: expected output:
@@ -211,12 +211,12 @@ e.g: expected output:
 
 #### Scenario 11. Built in Log-forwarded integration is working
 Enable verbose mode in agent configuration file and review data in NR.
-```
+```shell script
 $ sudo sed -i 's#verbose:.*#verbose: 3#g' /etc/newrelic-infra.yml
 $ sudo systemctl restart newrelic-infra
 ```
 Platform verification:
-```
+```shell script
 $ newrelic nrql query -a ${NR_ACCOUNT_ID} -q "SELECT count(*) from Log where displayName = '${DISPLAY_NAME}'"
 ```
 e.g: expected output:
@@ -230,7 +230,7 @@ e.g: expected output:
 
 #### Scenario 12. Built in Prometheus integration is working
 Check if binary works.
-```
+```shell script
 $ /var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus --help
 ```
 expected value:

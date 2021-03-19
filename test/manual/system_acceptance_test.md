@@ -9,7 +9,7 @@ In order to pass this manual test some requirements are needed:
 - Install [newrelic-cli](https://github.com/newrelic/newrelic-cli) with your license key and api key (can be obtained though NR user information)
 This tools will allow You to get data from your agent host on NR and validate some use cases.
 - Add env var:
-    ```
+    ```shell script
     export NR_LICENSE_KEY=*** NR_API_KEY=*** NR_ACCOUNT_ID=*** DISPLAY_NAME=*** NR_REGION=***
     ```
 
