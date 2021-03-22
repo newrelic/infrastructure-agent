@@ -213,7 +213,7 @@ nfpms:
       - deb
     bindir: /usr/bin
     contents:
-      - src: 'target/nridocker/etc/newrelic-infra/integrations.d/docker-config.yml'
+      - src: 'target/nridocker/etc/newrelic-infra/integrations.d/docker-config.yml.sample'
         dst: '/etc/newrelic-infra/integrations.d/docker-config.yml'
         type: config
 
