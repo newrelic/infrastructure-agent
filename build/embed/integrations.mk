@@ -41,11 +41,7 @@ get-nri-docker:
 
 	@rm -rf $(TARGET_DIR)/nridocker/
 	@mkdir -p $(TARGET_DIR)/nridocker/
-	# TODO: remove check once nri-docker deploys all native packages
-	@if [ "$(NRI_DOCKER_ARCH)"  != "amd64" ]; then \
-  		echo 'Skipping downloading nri-docker'; \
-  		touch $(TARGET_DIR)/nridocker/nridocker-not-available ; \
-	elif curl --output /dev/null --silent --head --fail '$(NRI_DOCKER_URL)'; then \
+	@if curl --output /dev/null --silent --head --fail '$(NRI_DOCKER_URL)'; then \
 		curl -L --silent '$(NRI_DOCKER_URL)' | tar xvz --no-same-owner -C $(TARGET_DIR)/nridocker/ ;\
 	else \
 	  echo 'nri-docker version $(NRI_DOCKER_VERSION) URL does not exist: $(NRI_DOCKER_URL)' ;\
