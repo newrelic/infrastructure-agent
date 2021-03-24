@@ -75,6 +75,6 @@ LABEL com.newrelic.nri-docker.version=$nri_docker_version \
 
 RUN apk add --no-cache \
         ntpsec=1.2.0-r1 \
-        curl=7.74.0-r1
+        curl=7.74.0-r0
 
 COPY $nri_pkg_dir /
