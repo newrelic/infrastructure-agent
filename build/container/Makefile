@@ -262,7 +262,7 @@ publish/multi-arch-base-manifest :
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64)
-	@docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION);
+	@docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)
 
 # [RC] Shortcut to build all supported multi arch bases and publish as RC
 .PHONY : publish/multi-arch-base-rc
@@ -298,7 +298,7 @@ publish/multi-arch-k8s-events-forwarder-manifest :
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64)
-	@docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION);
+	@docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)
 
 # [RC] Shortcut to build all supported multi arch k8s-events-forwarders and publish as RC
 .PHONY : publish/multi-arch-k8s-events-forwarder-rc
@@ -334,7 +334,7 @@ publish/multi-arch-forwarder-manifest :
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64)
-	@docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION);
+	@docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)
 
 
 # [RC] Shortcut to build all supported multi arch forwarders and publish as RC
