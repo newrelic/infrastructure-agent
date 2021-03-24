@@ -64,8 +64,6 @@ func TestStorageSample(t *testing.T) {
 
 // This test assumes that the temporary folder is mounted in the same device as the root directory
 func TestStorageSampleInodes(t *testing.T) {
-	t.Skip("Flaky test")
-
 	du, err := disk.Usage("/")
 	if err != nil {
 		t.Skipf("this linux distro can't get the usage statistics: %v", err.Error())
