@@ -158,9 +158,9 @@ $ newrelic-infra -version
 $ sudo yum install newrelic-infra -y
 $ newrelic-infra -version
 ```
-Platform verification:
+Platform Validation:
 ```shell script
-$ newrelic nrql query -a ${NR_ACCOUNT_ID} -q "SELECT uniques(integrationVersion) from flexStatusSample where displayName = '${DISPLAY_NAME}'"
+$ newrelic nrql query -a ${NR_ACCOUNT_ID} -q "SELECT * from SystemSample where displayName = '${DISPLAY_NAME}' limit 1"
 ```
 
 #### Scenario 11. Built in Flex integration is working
