@@ -8,7 +8,7 @@ It covers support for use case of:
   - For [arm64](https://aws.amazon.com/ec2/graviton/)
 
 Steps to install containerize agent [here](https://hub.docker.com/r/newrelic/infrastructure/) or using docker-compose:
-```
+```shell script
 version: '3'
 services:
   agent-rc:
@@ -29,7 +29,7 @@ services:
     restart: unless-stopped
 ```
 Then up the container:
-```
+```shell script
 $ sudo -E docker-compose up
 ```
 
@@ -38,21 +38,21 @@ $ sudo -E docker-compose up
 Lookup at docker hub and compare tag under test with the previous tag name. \
 e.g.: [Docker hub](https://hub.docker.com/r/newrelic/infrastructure/tags?page=1&ordering=last_updated) \
 Check arch:
-```
+```shell script
 $ uname -a
 ```
 expected output:
-```
+```shell script
 > Linux ip-172-31-19-77.eu-central-1.compute.internal 4.14.219-161.340.amzn2.aarch64 #1 SMP Thu Feb 4 05:54:27 UTC 2021 aarch64 aarch64 aarch64 GNU/Linux
 ```
 
 #### Scenario 2. Package contains all required files
 Review file managed by package and compare with previous package version.
-```
+```shell script
 $ du -a /var/db/newrelic-infra/
 ```
 e.g: arm64 output:
-```
+```shell script
 20160	/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex
 24832	/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus
 44992	/var/db/newrelic-infra/newrelic-integrations/bin
@@ -61,32 +61,28 @@ e.g: arm64 output:
 
 #### Scenario 3. Check agent version
 Check if version number is well inform.
-```
+```shell script
 $ sudo docker exec -it <<CONTAINER_ID>> /bin/bash -c 'newrelic-infra -version'
 ```
 expected output:
-```
+```shell script
 > New Relic Infrastructure Agent version: 1.16.1, GoVersion: go1.14.4, GitCommit: ...
 ```
 
 #### Scenario 4. Service is working
 Check if agent is sending metrics to NR.
 Platform validation:
-```
+```shell script
 $ newrelic nrql query -a ${NR_ACCOUNT_ID} -q "SELECT count(*) from SystemSample where displayName = '${DISPLAY_NAME}'"
 ```
 e.g. expected output: 
-```
+```json
 [
   {
-    ...
     "agentName": "Infrastructure",
     "agentVersion": "1.16.0",
-    ...
     "displayName": "docker-test",
-    ...
-    "linuxDistribution": "Ubuntu Core 18",
-    ...
+    "linuxDistribution": "Ubuntu Core 18"
   }
 ]
 ```
@@ -99,13 +95,11 @@ NA
 
 #### Scenario 7. Agent privileged mode is working
 For this use case You should enable in docker-compose file the privileged mode.
-```
-...
+```yaml
     privileged: true
-...
 ```
 Platform validation:
-```
+```shell script
 $ newrelic nrql query -a ${NR_ACCOUNT_ID} -q "SELECT * from SystemSample where displayName = '${DISPLAY_NAME}' limit 1"
 ```
 
@@ -113,11 +107,11 @@ $ newrelic nrql query -a ${NR_ACCOUNT_ID} -q "SELECT * from SystemSample where d
 NA
 
 #### Scenario 9. Package uninstall
-```
+```shell script
 $ sudo docker-compose down
 ```
 Platform Validation:
-```
+```shell script
 $ newrelic nrql query -a ${NR_ACCOUNT_ID} -q "SELECT * from SystemSample where displayName = '${DISPLAY_NAME}' limit 1"
 ```
 no data should be returned.
@@ -128,7 +122,7 @@ NA
 #### Scenario 11. Built in Flex integration is working
 Add Flex example yml file and review data in NR.
 e.g.: Dockerfile:
-```
+```Dockerfile
 FROM newrelic/infrastructure:1.16.1-rc-arm64
 ADD newrelic-infra.yml /etc/newrelic-infra.yml
 RUN mkdir /etc/newrelic-infra
