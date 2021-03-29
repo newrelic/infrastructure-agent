@@ -1,25 +1,25 @@
 name: Release Linux, Windows and Docker pipeline
 
 on:
-  release:
-    types:
-      - released
-    tags:
-      - '*'
+#  release:
+#    types:
+#      - released
+#    tags:
+#      - '*'
   workflow_dispatch:
     inputs:
       tag:
         description: 'Tag to release'
         required: true
       assetsType:
-        description: 'Assets type to release: docker, targz, zip, msi, deb, rpm'
-        required: false
-        default: '' # if empty - release all artifacts
+        description: 'Assets type to release: all, docker, targz, zip, msi, deb, rpm'
+        required: true
+        default: 'all'
 
 env:
   GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
   GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }}
-  TAG: ${{ github.event.inputs.tag || github.event.release.tag_name }}
+  TAG: ${{ github.event.inputs.tag }} # set to github.event.release.tag_name for automatic releases
   DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
   #TODO change ci/pipeline to real branch name
@@ -30,7 +30,7 @@ env:
 
 jobs:
   publishing-to-s3-linux:
-    if: ${{ github.event.inputs.assetsType == '' || github.event.inputs.artifactType == martix.assetsType }}
+    if: ${{ github.event.inputs.assetsType == 'all' || github.event.inputs.artifactType == martix.assetsType }}
     name: Publish linux artifacts into s3 prod bucket
     runs-on: ubuntu-20.04
 
@@ -73,7 +73,7 @@ jobs:
           gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
 
   publishing-to-s3-windows:
-    if: ${{ github.event.inputs.assetsType == '' || github.event.inputs.artifactType == martix.assetsType }}
+    if: ${{ github.event.inputs.assetsType == 'all' || github.event.inputs.artifactType == martix.assetsType }}
     name: Publish windows artifacts into s3 prod bucket
     runs-on: ubuntu-20.04
 
@@ -114,7 +114,7 @@ jobs:
           aws_region: ${{ env.AWS_REGION }}
 
   publish-docker-images:
-    if: ${{ github.event.inputs.assetsType == '' || github.event.inputs.assetsType == 'docker' }}
+    if: ${{ github.event.inputs.assetsType == 'all' || github.event.inputs.assetsType == 'docker' }}
     name: Create versioned and latest images from RC
     runs-on: ubuntu-20.04
 
