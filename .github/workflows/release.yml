@@ -6,11 +6,20 @@ on:
       - released
     tags:
       - '*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release'
+        required: true
+      assetsType:
+        description: 'Assets type to release: docker, targz, zip, msi, deb, rpm'
+        required: false
+        default: '' # if empty - release all artifacts
 
 env:
   GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
   GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }}
-  TAG: ${{ github.event.release.tag_name }}
+  TAG: ${{ github.event.inputs.tag || github.event.release.tag_name }}
   DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
   #TODO change ci/pipeline to real branch name
@@ -21,8 +30,16 @@ env:
 
 jobs:
   publishing-to-s3-linux:
+    if: ${{ github.event.inputs.assetsType == '' || github.event.inputs.artifactType == martix.assetsType }}
     name: Publish linux artifacts into s3 prod bucket
     runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        assetsType:
+          - "targz"
+          - "deb"
+          - "rpm"
 
     steps:
       - name: Login to DockerHub
@@ -30,7 +47,7 @@ jobs:
         with:
           username: ${{ env.DOCKER_HUB_ID }}
           password: ${{ env.DOCKER_HUB_PASSWORD }}
-      - name: Publish to S3 action
+      - name: Publish ${{ matrix.assetsType }} to S3 action
         uses: newrelic/infrastructure-publish-action@v1
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION }}
@@ -42,7 +59,7 @@ jobs:
           app_name: "newrelic-infra"
           repo_name: "newrelic/infrastructure-agent"
           schema: "custom"
-          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.SCHEMA_BRANCH }}/build/upload-schema-linux.yml"
+          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.SCHEMA_BRANCH }}/build/upload-schema-linux-${{ matrix.assetsType }}.yml"
           aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
@@ -56,8 +73,15 @@ jobs:
           gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
 
   publishing-to-s3-windows:
+    if: ${{ github.event.inputs.assetsType == '' || github.event.inputs.artifactType == martix.assetsType }}
     name: Publish windows artifacts into s3 prod bucket
     runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        assetsType:
+          - "msi"
+          - "zip"
 
     steps:
       - name: Login to DockerHub
@@ -65,7 +89,7 @@ jobs:
         with:
           username: ${{ env.DOCKER_HUB_ID }}
           password: ${{ env.DOCKER_HUB_PASSWORD }}
-      - name: Publish to S3 action
+      - name: Publish ${{ matrix.assetsType }} to S3 action
         uses: newrelic/infrastructure-publish-action@v1
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION }}
@@ -77,7 +101,7 @@ jobs:
           app_name: "newrelic-infra"
           repo_name: "newrelic/infrastructure-agent"
           schema: "custom"
-          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.SCHEMA_BRANCH }}/build/upload-schema-windows.yml"
+          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.SCHEMA_BRANCH }}/build/upload-schema-windows-${{ matrix.assetsType }}.yml"
           aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
@@ -90,6 +114,7 @@ jobs:
           aws_region: ${{ env.AWS_REGION }}
 
   publish-docker-images:
+    if: ${{ github.event.inputs.assetsType == '' || github.event.inputs.assetsType == 'docker' }}
     name: Create versioned and latest images from RC
     runs-on: ubuntu-20.04
 
