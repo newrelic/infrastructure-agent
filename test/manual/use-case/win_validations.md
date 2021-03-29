@@ -23,11 +23,11 @@ previous package version: 1.16.0, name: newrelic-infra-amd64.1.16.0.zip
 
 #### Scenario 2. Package contains all required files
 Review file managed by package and compare with previous package version.
-```
+```shell script
 $ dir -r  | % { if ($_.PsIsContainer) { $_.FullName + "\" } else { $_.FullName } }
 ```
 e.g: Win zip installation output:
-```
+```shell script
 C:\Program Files\New Relic\newrelic-infra\custom-integrations\
 C:\Program Files\New Relic\newrelic-infra\integrations.d\
 C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\
@@ -73,21 +73,21 @@ C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\logging\parsers.
 
 #### Scenario 3. Check agent version
 Check if version number is well inform.
-```
+```shell script
 $ [System.Diagnostics.FileVersionInfo]::GetVersionInfo("C:\Program Files\New Relic\newrelic-infra\newrelic-infra.exe").FileVersion
 ```
 expected output:
-```
+```shell script
 > 1.16.1
 ```
 
 #### Scenario 4. Service is working
 Check if agent is running and sending metrics to NR.
-```
+```shell script
 $ Get-Service newrelic-infra | Where-Object {$_.Status -EQ "Running"}
 ```
 expected output: 
-```
+```shell script
 Status   Name               DisplayName
 ------   ----               -----------
 Running  newrelic-infra     New Relic Infrastructure Agent (x86)
@@ -116,13 +116,13 @@ Review if basic metadata is in place. These steps are completely manual or throu
 
 #### Scenario 6. Package signature is valid
 Review if PDX key is same as PROD and valid.
-```
+```shell script
 $ Get-AuthenticodeSignature -FilePath "C:\Program Files\New Relic\newrelic-infra\newrelic-infra.exe"
 
 $ (Get-AuthenticodeSignature "newrelic-infra.exe").Status -eq 'Valid'
 ```
 e.g.: expected output:
-```
+```shell script
 Directory: C:\Program Files\New Relic\newrelic-infra
 SignerCertificate                         Status                                 Path
 -----------------                         ------                                 ----
@@ -136,35 +136,39 @@ Not supported
 Not supported
 
 #### Scenario 9. Package uninstall
-```
+```shell script
 $ root > sc delete newrelic-infra
 ```
 Platform Validation:
-```
+```shell script
 $ newrelic nrql query -a ${NR_ACCOUNT_ID} -q "SELECT * from SystemSample where displayName = '${DISPLAY_NAME}' limit 1"
 ```
 no data should be returned.
 
 #### Scenario 10. Package upgrade
 With an old agent version install, install the latest.
-```
+```shell script
 $ msiexec.exe /qn /i PATH\TO\newrelic-infra.msi
 
 $ net start newrelic-infra
 ```
+Platform verification:
+```
+$ newrelic nrql query -a ${NR_ACCOUNT_ID} -q "SELECT * from SystemSample where displayName = '${DISPLAY_NAME}' limit 1"
+```
 
 #### Scenario 11. Built in Flex integration is working
 Add Flex example yml file and review data in NR.
-```
+```shell script
 $ (New-Object   System.Net.WebClient).DownloadFile("https://raw.githubusercontent.com/newrelic/nri-flex/master/examples/windows/windows-uptime.yml", "C:\Program Files\New Relic\newrelic-infra\integrations.d\flex-uptime.yml");
 ```
 
 Platform verification:
-```
+```shell script
 $ newrelic nrql query -a ${NR_ACCOUNT_ID} -q "SELECT uniques(integrationVersion) from flexStatusSample where displayName = '${DISPLAY_NAME}'"
 ```
 e.g: expected output:
-```
+```json
 [
   {
     "uniques.integrationVersion": [
@@ -177,15 +181,15 @@ e.g: expected output:
 
 #### Scenario 11. Built in Log-forwarded integration is working
 Enable verbose mode in agent configuration file and review data in NR.
-```
+```shell script
 $ Rename-Item -Path " C:\Program Files\New Relic\newrelic-infra\logging.d\winlog.yml.example" -NewName "C:\Program Files\New Relic\newrelic-infra\logging.d\winlog.yml"
 ```
 Platform verification:
-```
+```shell script
 $ newrelic nrql query -a ${NR_ACCOUNT_ID} -q "SELECT count(*) from Log where displayName = '${DISPLAY_NAME}'"
 ```
 e.g: expected output:
-```
+```json
 [
     {
       "count": 31
