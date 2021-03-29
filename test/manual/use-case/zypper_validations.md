@@ -5,6 +5,9 @@ It covers support for use case of:
 
 ### Setup
 - For [SLES 12.04](https://app.vagrantup.com/wandisco/boxes/sles-12.4-64)
+    ```shell script
+    $ sudo curl -o /etc/zypp/repos.d/newrelic-infra.repo http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent/linux/zypp/sles/12.4/x86_64/newrelic-infra.repo
+    ```
 
 ### Test suit
 #### Scenario 1. Package naming follow dist convention
