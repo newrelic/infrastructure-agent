@@ -41,7 +41,7 @@ Review file managed by package and compare with previous package version.
 $ sudo dpkg -L newrelic-infra
 ```
 e.g: Debian 10 output:
-```
+```shell script
 /var/db/newrelic-infra
 /var/db/newrelic-infra/custom-integrations
 /var/db/newrelic-infra/integrations.d
@@ -78,7 +78,7 @@ Check if version number is well inform.
 $ newrelic-infra -version
 ```
 expected output:
-```
+```shell script
 > New Relic Infrastructure Agent version: 1.16.1, GoVersion: go1.14.4, GitCommit: ...
 ```
 
@@ -88,7 +88,7 @@ Check if agent is running and sending metrics to NR.
 $ sudo systemctl show newrelic-infra --no-page|grep SubState=running
 ```
 expected output: 
-```
+```shell script
 SubState=running
 ```
 
@@ -97,17 +97,13 @@ Platform validation:
 $ newrelic nrql query -a ${NR_ACCOUNT_ID} -q "SELECT count(*) from SystemSample where displayName = '${DISPLAY_NAME}'"
 ```
 e.g. expected output: 
-```
+```json
 [
   {
-    ...
     "agentName": "Infrastructure",
     "agentVersion": "1.16.0",
-    ...
     "displayName": "deb10-test",
-    ...
-    "linuxDistribution": "Debian GNU/Linux 10 (buster)",
-    ...
+    "linuxDistribution": "Debian GNU/Linux 10 (buster)"
   }
 ]
 ```
@@ -118,7 +114,7 @@ Review if basic metadata is in place.
 $ apt show newrelic-infra
 ```
 e.g: expected output:
-```
+```shell script
 Package: newrelic-infra
 Version: 1.16.1
 Priority: extra
@@ -142,7 +138,7 @@ Review if pub GPG key is same as PROD.
 $ apt-key list | grep newrelic -n2
 ```
 e.g.: expected output:
-```
+```shell script
 pub   rsa4096 2016-10-26 [SCEA] <<GUID_GPG_KEY>>
 uid           [ unknown] infrastructure-eng <infrastructure-eng@newrelic.com>
 /etc/apt/trusted.gpg.d/ubuntu-keyring-2012-archive.gpg
@@ -154,7 +150,7 @@ For this use case You should install the agent with privileged mode.
 $ sudo NRIA_MODE=PRIVILEGED apt install newrelic-infra -y
 ```
 Platform validation:
-```
+```shell script
 $ newrelic nrql query -a ${NR_ACCOUNT_ID} -q "SELECT * from SystemSample where displayName = '${DISPLAY_NAME}' limit 1"
 ```
 
@@ -164,7 +160,7 @@ Similar to previous scenario You should install the agent with unprivileged mode
 $ sudo NRIA_MODE=UNPRIVILEGED apt install newrelic-infra -y
 ```
 Platform validation:
-```
+```shell script
 $ newrelic nrql query -a ${NR_ACCOUNT_ID} -q "SELECT * from SystemSample where displayName = '${DISPLAY_NAME}' limit 1"
 ```
 
@@ -173,7 +169,7 @@ $ newrelic nrql query -a ${NR_ACCOUNT_ID} -q "SELECT * from SystemSample where d
 $ sudo apt remove newrelic-infra -y 
 ```
 Platform Validation:
-```
+```shell script
 $ newrelic nrql query -a ${NR_ACCOUNT_ID} -q "SELECT * from SystemSample where displayName = '${DISPLAY_NAME}' limit 1"
 ```
 no data should be returned.
@@ -185,6 +181,10 @@ $ sudo apt install newrelic-infra=1.15.1 -y --allow-downgrades
 $ newrelic-infra -version
 $ sudo apt install newrelic-infra -y
 $ newrelic-infra -version
+```
+Platform Validation:
+```shell script
+$ newrelic nrql query -a ${NR_ACCOUNT_ID} -q "SELECT * from SystemSample where displayName = '${DISPLAY_NAME}' limit 1"
 ```
 
 #### Scenario 11. Built in Flex integration is working
@@ -199,7 +199,7 @@ Platform verification:
 $ newrelic nrql query -a ${NR_ACCOUNT_ID} -q "SELECT uniques(integrationVersion) from flexStatusSample where displayName = '${DISPLAY_NAME}'"
 ```
 e.g: expected output:
-```
+```json
 [
   {
     "uniques.integrationVersion": [
@@ -220,7 +220,7 @@ Platform verification:
 $ newrelic nrql query -a ${NR_ACCOUNT_ID} -q "SELECT count(*) from Log where displayName = '${DISPLAY_NAME}'"
 ```
 e.g: expected output:
-```
+```json
 [
     {
       "count": 31
@@ -234,7 +234,7 @@ Check if binary works.
 $ /var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus --help
 ```
 expected value:
-```
+```shell script
 Usage of /var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus:
   -config_path string
     	Path to the config file
