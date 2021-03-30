@@ -15,85 +15,85 @@ env:
   GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
   SNYK_TOKEN: ${{ secrets.CAOS_SNYK_TOKEN }}
   TAG:  ${{ github.event.release.tag_name }}
-  DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
-  DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
+  DOCKER_HUB_ID: ${{ secrets.GRIGORII_DOCKER_HUB_ID }}
+  DOCKER_HUB_PASSWORD: ${{ secrets.GRIGORII_DOCKER_HUB_PASSWORD }}
   #TODO change ci/staged-release to real branch name
   SCHEMA_BRANCH: "ci/staged-release"
-  AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
-  AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
+  AWS_S3_BUCKET_NAME: "nr-downloads-ohai-testing"
+  AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-testing"
   AWS_REGION: "us-east-1"
   DOCKER_PUBLISH: true
 
 jobs:
-  unit-test-linux:
-    name: Linux unit tests
-    runs-on: ubuntu-20.04
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Install Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{env.GO_VERSION}}
-
-      - name: Validate code
-        run: make ci/validate
-
-      - name: Running unit tests
-        run: make ci/test-coverage
-
-      - name: Coveralls Parallel
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: lcov.info
-          flag-name: run-linux
-          parallel: true
-
-  harvest-test-linux:
-    name: Linux harvest tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ ubuntu-18.04, ubuntu-16.04 ]
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Running Harvest tests
-        run: make linux/harvest-tests
-
-  proxy-tests-linux:
-    name: Proxy tests
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v2
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ env.DOCKER_HUB_ID }}
-          password: ${{ env.DOCKER_HUB_PASSWORD }}
-
-      - name: Running proxy tests
-        run: make proxy-test
-
-  finish:
-    name: Finish
-    needs: [ unit-test-linux ]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Coveralls Finished
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          parallel-finished: true
+#  unit-test-linux:
+#    name: Linux unit tests
+#    runs-on: ubuntu-20.04
+#
+#    steps:
+#      - uses: actions/checkout@v2
+#
+#      - name: Install Go
+#        uses: actions/setup-go@v2
+#        with:
+#          go-version: ${{env.GO_VERSION}}
+#
+#      - name: Validate code
+#        run: make ci/validate
+#
+#      - name: Running unit tests
+#        run: make ci/test-coverage
+#
+#      - name: Coveralls Parallel
+#        uses: coverallsapp/github-action@master
+#        with:
+#          github-token: ${{ secrets.GITHUB_TOKEN }}
+#          path-to-lcov: lcov.info
+#          flag-name: run-linux
+#          parallel: true
+#
+#  harvest-test-linux:
+#    name: Linux harvest tests
+#    runs-on: ${{ matrix.os }}
+#    strategy:
+#      matrix:
+#        os: [ ubuntu-18.04, ubuntu-16.04 ]
+#    steps:
+#      - uses: actions/checkout@v2
+#
+#      - name: Running Harvest tests
+#        run: make linux/harvest-tests
+#
+#  proxy-tests-linux:
+#    name: Proxy tests
+#    runs-on: ubuntu-20.04
+#    steps:
+#      - name: Check out code
+#        uses: actions/checkout@v2
+#
+#      - name: Login to DockerHub
+#        uses: docker/login-action@v1
+#        with:
+#          username: ${{ env.DOCKER_HUB_ID }}
+#          password: ${{ env.DOCKER_HUB_PASSWORD }}
+#
+#      - name: Running proxy tests
+#        run: make proxy-test
+#
+#  finish:
+#    name: Finish
+#    needs: [ unit-test-linux ]
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Coveralls Finished
+#        uses: coverallsapp/github-action@master
+#        with:
+#          github-token: ${{ secrets.GITHUB_TOKEN }}
+#          parallel-finished: true
 
   packaging-linux:
     name: Build and upload all artifacts into GH Release assets
     runs-on: ubuntu-20.04
-    needs: [unit-test-linux, harvest-test-linux, proxy-tests-linux]
+#    needs: [unit-test-linux, harvest-test-linux, proxy-tests-linux]
 
     steps:
       - uses: actions/checkout@v2
@@ -143,10 +143,10 @@ jobs:
       - name: Publish ${{ matrix.assetsType }} to S3 action
         uses: newrelic/infrastructure-publish-action@v1
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
-          AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
-          AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_TESTING }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_TESTING }}
+          AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_TESTING }}
+          AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_TESTING }}
         with:
           tag: ${{env.TAG}}
           app_name: "newrelic-infra"
