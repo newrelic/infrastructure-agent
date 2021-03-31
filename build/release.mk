@@ -10,9 +10,11 @@ bin:
 
 $(GORELEASER_BIN): bin
 	@echo "=== [$(GORELEASER_BIN)] Installing goreleaser $(GORELEASER_VERSION)"
-	(wget -qO /tmp/goreleaser.tar.gz https://github.com/goreleaser/goreleaser/releases/download/$(GORELEASER_VERSION)/goreleaser_$(OS_DOWNLOAD)_x86_64.tar.gz)
-	(tar -xf  /tmp/goreleaser.tar.gz -C bin/)
-	(rm -f /tmp/goreleaser.tar.gz)
+#TODO: Temporary goreleaser build for rpm trans scripts
+	(wget -qO bin/goreleaser https://download.newrelic.com/infrastructure_agent/tools/goreleaser/0.0.1/goreleaser && chmod u+x bin/goreleaser)
+#	(wget -qO /tmp/goreleaser.tar.gz https://github.com/goreleaser/goreleaser/releases/download/$(GORELEASER_VERSION)/goreleaser_$(OS_DOWNLOAD)_x86_64.tar.gz)
+#	(tar -xf  /tmp/goreleaser.tar.gz -C bin/)
+#	(rm -f /tmp/goreleaser.tar.gz)
 	@echo "=== [$(GORELEASER_BIN)] goreleaser downloaded"
 
 .PHONY : release/clean
