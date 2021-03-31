@@ -29,7 +29,7 @@ env:
 
 jobs:
   publishing-to-s3-linux:
-    if: ${{ github.event.inputs.assetsType == 'all' || github.event.inputs.artifactType == martix.assetsType }}
+    if: ${{ github.event.inputs.assetsType == 'all' || github.event.inputs.artifactType == matrix.assetsType }}
     name: Publish linux artifacts into s3 prod bucket
     runs-on: ubuntu-20.04
 
@@ -72,7 +72,7 @@ jobs:
           gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
 
   publishing-to-s3-windows:
-    if: ${{ github.event.inputs.assetsType == 'all' || github.event.inputs.artifactType == martix.assetsType }}
+    if: ${{ github.event.inputs.assetsType == 'all' || github.event.inputs.artifactType == matrix.assetsType }}
     name: Publish windows artifacts into s3 prod bucket
     runs-on: ubuntu-20.04
 
