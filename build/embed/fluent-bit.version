@@ -4,5 +4,5 @@
 # nrfb_artifact_version   - https://github.com/newrelic-experimental/fluent-bit-package/releases
 #
 # OS,newrelic_plugin_version,nrfb_artifact_version
-linux,1.4.6,1.4.4
-windows,1.4.6,1.4.4
+linux,1.4.6,1.4.1
+windows,1.4.6,1.4.1
