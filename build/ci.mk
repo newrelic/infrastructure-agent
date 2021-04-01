@@ -81,3 +81,30 @@ dev/release/pkg: ci/deps
 			-e TAG=0.0.0 \
 			-e SNAPSHOT=true \
 			$(BUILDER_IMG_TAG) make release/pkg
+
+.PHONY : ci/sync-s3/staging
+ifndef AWS_PROFILE
+	@echo "AWS_PROFILE variable must be provided"
+	exit 1
+endif
+ifndef AWS_REGION
+	@echo "AWS_REGION variable must be provided"
+	exit 1
+endif
+ci/sync-s3/staging:
+	@aws s3 rm --recursive s3://nr-downloads-ohai-staging/infrastructure_agent
+	@aws s3 cp --recursive --exclude '*/infrastructure_agent/beta/*' --exclude '*/infrastructure_agent/test/*' --exclude '*/newrelic-infra.repo' s3://nr-downloads-main/infrastructure_agent/ s3://nr-downloads-ohai-staging/infrastructure_agent/
+
+.PHONY : ci/sync-s3/testing
+ci/sync-s3/testing:
+ifndef AWS_PROFILE
+	@echo "AWS_PROFILE variable must be provided"
+	exit 1
+endif
+ifndef AWS_REGION
+	@echo "AWS_REGION variable must be provided"
+	exit 1
+endif
+	@aws s3 rm --recursive s3://nr-downloads-ohai-testing/infrastructure_agent
+	@aws s3 cp --recursive --exclude '*/infrastructure_agent/beta/*' --exclude '*/infrastructure_agent/test/*' --exclude '*/newrelic-infra.repo' s3://nr-downloads-main/infrastructure_agent/ s3://nr-downloads-ohai-testing/infrastructure_agent/
+
