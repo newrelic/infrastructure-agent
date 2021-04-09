@@ -104,7 +104,7 @@ jobs:
           username: ${{ env.DOCKER_HUB_ID }}
           password: ${{ env.DOCKER_HUB_PASSWORD }}
       - name: Publish to S3 action
-        uses: newrelic/infrastructure-publish-action@v1
+        uses: newrelic/infrastructure-publish-action@v1.0.4
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
