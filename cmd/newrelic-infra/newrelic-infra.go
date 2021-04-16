@@ -207,16 +207,16 @@ var aslog = wlog.WithComponent("AgentService").WithFields(logrus.Fields{
 })
 
 func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) (err error) {
-	server := instrumentation.NewNoopServer()
+	otelServer := instrumentation.NewNoopServer()
 	if c.EnableMetricsEndpoint {
-		server, err = instrumentation.NewOpentelemetryServer()
+		otelServer, err = instrumentation.NewOpentelemetryServer()
 		if err != nil {
 			return err
 		}
 		addr := fmt.Sprintf("%s:%v", strings.TrimSpace(c.MetricsEndpointHost), c.MetricsEndpointPort)
 		aslog.WithField("addr", addr).Info("Starting Opentelemetry server")
 		srv := &http.Server{
-			Handler:      server.GetHandler(),
+			Handler:      otelServer.GetHandler(),
 			Addr:         addr,
 			WriteTimeout: 15 * time.Second,
 			ReadTimeout:  15 * time.Second,
@@ -225,7 +225,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) (err er
 		defer srv.Close()
 	}
 
-	wlog.Instrument(server.Measure)
+	wlog.Instrument(otelServer.Measure)
 
 	pluginSourceDirs := []string{
 		c.CustomPluginInstallationDir,
@@ -309,7 +309,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) (err er
 	// queues integration run requests
 	definitionQ := make(chan integration.Definition, 100)
 
-	emitterWithRegister := dm.NewEmitter(agt.GetContext(), dmSender, registerClient)
+	emitterWithRegister := dm.NewEmitter(agt.GetContext(), dmSender, registerClient, otelServer.Measure)
 	nonRegisterEmitter := dm.NewNonRegisterEmitter(agt.GetContext(), dmSender)
 
 	dmEmitter := dm.NewEmitterWithFF(emitterWithRegister, nonRegisterEmitter, ffManager)
