@@ -3,9 +3,10 @@
 package logs
 
 import (
-	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"os"
 	"testing"
+
+	"github.com/newrelic/infrastructure-agent/pkg/config"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -14,6 +15,7 @@ var logFwdCfg = &config.LogForward{
 	HomeDir:   "/var/db/newrelic-infra/newrelic-integrations/logging",
 	License:   "licenseKey",
 	IsStaging: false,
+	IsFedramp: false,
 	ProxyCfg: config.LogForwardProxy{
 		IgnoreSystemProxy: true,
 		Proxy:             "https://https-proxy:3129",
@@ -56,16 +58,20 @@ var outputBlock = FBCfgOutput{
 
 func TestNewFBConf(t *testing.T) {
 
+	outputBlockFedramp := outputBlock
+	outputBlockFedramp.Endpoint = fedrampEndpoint
+
 	tests := []struct {
-		name   string
-		ohiCfg LogsCfg
-		want   FBCfg
+		name    string
+		ohiCfg  LogsCfg
+		want    FBCfg
+		fedramp bool
 	}{
 		{"empty", LogsCfg{},
 			FBCfg{
 				Inputs:  []FBCfgInput{},
 				Filters: []FBCfgFilter{},
-			}},
+			}, false},
 		{"single input", LogsCfg{
 			{
 				Name: "log-file",
@@ -88,7 +94,30 @@ func TestNewFBConf(t *testing.T) {
 				filterEntityBlock,
 			},
 			Output: outputBlock,
-		}},
+		}, false},
+		{"single input fedramp", LogsCfg{
+			{
+				Name: "log-file",
+				File: "file.path",
+			},
+		}, FBCfg{
+			Inputs: []FBCfgInput{
+				{
+					Name:          "tail",
+					Tag:           "log-file",
+					DB:            dbDbPath,
+					Path:          "file.path",
+					BufferMaxSize: "128k",
+					SkipLongLines: "On",
+					PathKey:       "filePath",
+				},
+			},
+			Filters: []FBCfgFilter{
+				inputRecordModifier("tail", "log-file"),
+				filterEntityBlock,
+			},
+			Output: outputBlockFedramp,
+		}, true},
 		{"input file + filter", LogsCfg{
 			{
 				Name:    "log-file",
@@ -117,7 +146,7 @@ func TestNewFBConf(t *testing.T) {
 				filterEntityBlock,
 			},
 			Output: outputBlock,
-		}},
+		}, false},
 		{"input systemd + filter", LogsCfg{
 			{
 				Name:    "some_system",
@@ -143,7 +172,7 @@ func TestNewFBConf(t *testing.T) {
 				filterEntityBlock,
 			},
 			Output: outputBlock,
-		}},
+		}, false},
 		{"single file with attributes", LogsCfg{
 			{
 				Name: "one-file",
@@ -178,7 +207,7 @@ func TestNewFBConf(t *testing.T) {
 				filterEntityBlock,
 			},
 			Output: outputBlock,
-		}},
+		}, false},
 		{"file with reserved attribute names", LogsCfg{
 			{
 				Name: "reserved-test",
@@ -212,7 +241,7 @@ func TestNewFBConf(t *testing.T) {
 				filterEntityBlock,
 			},
 			Output: outputBlock,
-		}},
+		}, false},
 		{"input syslog tcp any interface", LogsCfg{
 			{
 				Name: "syslog-tcp-test",
@@ -238,7 +267,7 @@ func TestNewFBConf(t *testing.T) {
 				filterEntityBlock,
 			},
 			Output: outputBlock,
-		}},
+		}, false},
 		{"input syslog tcp localhost", LogsCfg{
 			{
 				Name: "syslog-tcp-test",
@@ -264,7 +293,7 @@ func TestNewFBConf(t *testing.T) {
 				filterEntityBlock,
 			},
 			Output: outputBlock,
-		}},
+		}, false},
 		{"input syslog tcp specific interface", LogsCfg{
 			{
 				Name: "syslog-tcp-test",
@@ -290,7 +319,7 @@ func TestNewFBConf(t *testing.T) {
 				filterEntityBlock,
 			},
 			Output: outputBlock,
-		}},
+		}, false},
 		{"input syslog udp", LogsCfg{
 			{
 				Name: "syslog-udp-test",
@@ -316,7 +345,7 @@ func TestNewFBConf(t *testing.T) {
 				filterEntityBlock,
 			},
 			Output: outputBlock,
-		}},
+		}, false},
 		{"input syslog tcp_unix", LogsCfg{
 			{
 				Name: "syslog-unix-tcp-test",
@@ -344,7 +373,7 @@ func TestNewFBConf(t *testing.T) {
 				filterEntityBlock,
 			},
 			Output: outputBlock,
-		}},
+		}, false},
 		{"input syslog udp_unix", LogsCfg{
 			{
 				Name: "syslog-unix-udp-test",
@@ -372,7 +401,7 @@ func TestNewFBConf(t *testing.T) {
 				filterEntityBlock,
 			},
 			Output: outputBlock,
-		}},
+		}, false},
 		{"input tcp any interface", LogsCfg{
 			{
 				Name: "tcp-test",
@@ -400,7 +429,7 @@ func TestNewFBConf(t *testing.T) {
 				filterEntityBlock,
 			},
 			Output: outputBlock,
-		}},
+		}, false},
 		{"input tcp localhost", LogsCfg{
 			{
 				Name: "tcp-test",
@@ -428,7 +457,7 @@ func TestNewFBConf(t *testing.T) {
 				filterEntityBlock,
 			},
 			Output: outputBlock,
-		}},
+		}, false},
 		{"input tcp specific interface", LogsCfg{
 			{
 				Name: "tcp-test",
@@ -456,7 +485,7 @@ func TestNewFBConf(t *testing.T) {
 				filterEntityBlock,
 			},
 			Output: outputBlock,
-		}},
+		}, false},
 		{"existing Fluent Bit configuration", LogsCfg{
 			{
 				Name: "fb-test",
@@ -494,7 +523,7 @@ func TestNewFBConf(t *testing.T) {
 				CfgFilePath:     "/path/to/config/file",
 				ParsersFilePath: "/path/to/parsers/file",
 			},
-		}},
+		}, false},
 		{"existing Fluent Bit configuration, duplicated", LogsCfg{
 			{
 				Name: "fb-test",
@@ -520,7 +549,7 @@ func TestNewFBConf(t *testing.T) {
 				CfgFilePath:     "/path/to/config/file",
 				ParsersFilePath: "/path/to/parsers/file",
 			},
-		}},
+		}, false},
 		{"input syslog tcp any interface with Pattern", LogsCfg{
 			{
 				Name: "syslog-tcp-test",
@@ -552,7 +581,7 @@ func TestNewFBConf(t *testing.T) {
 				filterEntityBlock,
 			},
 			Output: outputBlock,
-		}},
+		}, false},
 		{"input tcp any interface with Pattern", LogsCfg{
 			{
 				Name: "tcp-test",
@@ -586,7 +615,7 @@ func TestNewFBConf(t *testing.T) {
 				filterEntityBlock,
 			},
 			Output: outputBlock,
-		}},
+		}, false},
 		{"input tcp any interface with Pattern in json format", LogsCfg{
 			{
 				Name: "tcp-test",
@@ -614,11 +643,12 @@ func TestNewFBConf(t *testing.T) {
 				filterEntityBlock,
 			},
 			Output: outputBlock,
-		}},
+		}, false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			logFwdCfg.IsFedramp = tt.fedramp
 			fbConf, err := NewFBConf(tt.ohiCfg, logFwdCfg, "0", "")
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, fbConf)

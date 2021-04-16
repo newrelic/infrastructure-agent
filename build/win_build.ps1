@@ -8,7 +8,10 @@ param (
     [string]$arch="amd64",
 
     # Skip tests
-    [switch]$skipTests=$false
+    [switch]$skipTests=$false,
+
+    # Skip build
+    [switch]$skipBuild=$false
 )
 
 echo "--- Checking dependencies"
@@ -30,6 +33,11 @@ if (-Not $skipTests) {
         echo "Failed running tests"
         exit -1
     }
+}
+
+if ($skipBuild) {
+    echo "--- Build step skipped"
+    exit 0
 }
 
 echo "--- Running Build"

@@ -22,6 +22,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/gorilla/mux v1.7.4 // indirect
+	github.com/josephspurrier/goversioninfo v1.2.0 // indirect
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/kardianos/service v1.1.0
 	github.com/kelseyhightower/envconfig v1.4.0

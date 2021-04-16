@@ -13,7 +13,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/runintegration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/commandapi"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/stoppable"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	dm "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm/testutils"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/shirou/gopsutil/process"
@@ -30,13 +30,14 @@ func TestHandle_returnsErrorOnMissingName(t *testing.T) {
 		t.Skip("CC stop-intergation is not supported on Windows")
 	}
 
-	h := NewHandler(stoppable.NewTracker(), integration.ErrLookup, dm.NewNoopEmitter(), l)
+	h := NewHandler(track.NewTracker(nil), integration.ErrLookup, dm.NewNoopEmitter(), l)
 
 	cmdArgsMissingPID := commandapi.Command{
-		Args: []byte(`{ "integration_args": ["foo"] }`),
+		Args: []byte(`{ "integration_args": ["nri-process-discovery"] }`),
 	}
 
 	err := h.Handle(context.Background(), cmdArgsMissingPID, false)
+	require.Error(t, err)
 	assert.Equal(t, cmdchannel.NewArgsErr(runintegration.ErrNoIntName).Error(), err.Error())
 }
 
@@ -46,12 +47,12 @@ func TestHandle_signalStopProcess(t *testing.T) {
 	}
 
 	// Given a handler with an stoppables tracker
-	tracker := stoppable.NewTracker()
+	tracker := track.NewTracker(nil)
 	h := NewHandler(tracker, integration.ErrLookup, dm.NewNoopEmitter(), l)
 
 	// When a process context is tracked
 	ctx := context.Background()
-	ctx, pidC := tracker.Track(ctx, "foo#")
+	ctx, pidC := tracker.Track(ctx, "nri-process-discovery#", nil)
 
 	proc := exec.CommandContext(ctx, "sleep", "5")
 
@@ -75,7 +76,7 @@ func TestHandle_signalStopProcess(t *testing.T) {
 
 	// WHEN stop handler receives a cmd for the tracked process
 	cmd := commandapi.Command{
-		Args: []byte(`{ "integration_name": "foo" }`),
+		Args: []byte(`{ "integration_name": "nri-process-discovery" }`),
 	}
 	err = h.Handle(context.Background(), cmd, false)
 	require.NoError(t, err)

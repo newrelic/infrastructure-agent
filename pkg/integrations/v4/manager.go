@@ -15,7 +15,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/config/envvar"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/stoppable"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/fs"
@@ -108,7 +108,7 @@ type Manager struct {
 	featuresCache   runner.FeaturesCache
 	definitionQueue <-chan integration.Definition
 	handleCmdReq    cmdrequest.HandleFn
-	tracker         *stoppable.Tracker
+	tracker         *track.Tracker
 }
 
 // groupContext pairs a runner.Group with its cancellation context
@@ -184,7 +184,7 @@ func NewManager(
 	emitter emitter.Emitter,
 	il integration.InstancesLookup,
 	definitionQ chan integration.Definition,
-	tracker *stoppable.Tracker,
+	tracker *track.Tracker,
 ) *Manager {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -316,12 +316,18 @@ func (mgr *Manager) handleRequestsQueue(ctx context.Context) {
 
 		case def := <-mgr.definitionQueue:
 			r := runner.NewRunner(def, mgr.emitter, nil, nil, mgr.handleCmdReq)
-			// tracking so cmd requests can be stopped by hash
-			runCtx, pidWChan := mgr.tracker.Track(ctx, def.CmdChannelHash)
-			go func(hash string) {
-				r.Run(runCtx, pidWChan)
-				mgr.tracker.Untrack(hash)
-			}(def.CmdChannelHash)
+			if def.CmdChanReq != nil {
+				// tracking so cmd requests can be stopped by hash
+				runCtx, pidWCh := mgr.tracker.Track(ctx, def.CmdChanReq.CmdChannelCmdHash, &def)
+				go func(hash string) {
+					exitCodeCh := make(chan int, 1)
+					r.Run(runCtx, pidWCh, exitCodeCh)
+					mgr.tracker.NotifyExit(hash, <-exitCodeCh)
+					mgr.tracker.Untrack(hash)
+				}(def.CmdChanReq.CmdChannelCmdHash)
+			} else {
+				go r.Run(ctx, nil, nil)
+			}
 		}
 	}
 }

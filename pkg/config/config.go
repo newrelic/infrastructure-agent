@@ -56,13 +56,18 @@ type IncludeMetricsMap map[string][]string
 // Use the 'public' annotation to specify the visibility of the config option: false/obfuscate [default: true]
 type Config struct {
 	// Databind provides varaiable (secrets, discovery) replacement capabilities for the configuration.
-	Databind databind.YAMLAgentConfig `yaml:",inline"`
+	Databind databind.YAMLAgentConfig `yaml:",inline" public:"false"`
 
 	// License specifies the license key for your New Relic account. The agent uses this key to associate your server's
 	// metrics with your New Relic account. This setting is created as part of the standard installation process.
 	// Default: ""
 	// Public: Yes
 	License string `yaml:"license_key" envconfig:"license_key" public:"obfuscate"`
+
+	// Fedramp use Fedramp endpoints. See https://docs.newrelic.com/docs/fedramp-endpoint-logs-metrics
+	// Default: true
+	// Public: No
+	Fedramp bool `yaml:"fedramp" envconfig:"fedramp" public:"true"`
 
 	// Staging is staging environment.
 	// Default: false
@@ -1054,6 +1059,7 @@ type LogForward struct {
 	ConfigsDir   string
 	HomeDir      string
 	License      string
+	IsFedramp    bool
 	IsStaging    bool
 	ProxyCfg     LogForwardProxy
 }
@@ -1073,6 +1079,7 @@ func NewLogForward(config *Config, troubleshoot Troubleshoot) LogForward {
 		ConfigsDir:   config.LoggingConfigsDir,
 		HomeDir:      config.LoggingBinDir,
 		License:      config.License,
+		IsFedramp:    config.Fedramp,
 		IsStaging:    config.Staging,
 		ProxyCfg: LogForwardProxy{
 			IgnoreSystemProxy: config.IgnoreSystemProxy,
@@ -1110,7 +1117,7 @@ func (c *Config) GetLogFile() string {
 // LogInfo will log the configuration.
 // It obfuscates sensitive information and hide private configs.
 func (c *Config) LogInfo() {
-	configFields, err := c.toLogInfo()
+	configFields, err := c.PublicFields()
 	if err != nil {
 		clog.WithError(err).Error("failed to log config")
 		return
@@ -1165,9 +1172,8 @@ func (c *Config) SetIntValueByYamlAttribute(attribute string, value int64) error
 	return fmt.Errorf("unknown field for yaml attribute '%s'", attribute)
 }
 
-// toLogInfo prepares the configuration to be logged.
-// It obfuscates sensitive information and hide private configs.
-func (c *Config) toLogInfo() (map[string]string, error) {
+// PublicFields returns public config fields values indexed by YAML name. It obfuscates sensitive info.
+func (c *Config) PublicFields() (map[string]string, error) {
 	valueOfC := reflect.ValueOf(c)
 
 	if valueOfC.Kind() != reflect.Ptr && valueOfC.Kind() != reflect.Interface {
@@ -1428,8 +1434,8 @@ func JitterFrequency(freqInSec time.Duration) time.Duration {
 	return time.Duration(randomSeconds) * time.Second
 }
 
-func calculateCollectorURL(licenseKey string, staging bool) string {
-	if license.IsFederalCompliance(licenseKey) {
+func calculateCollectorURL(licenseKey string, staging, fedramp bool) string {
+	if fedramp {
 		return defaultSecureFederalURL
 	}
 
@@ -1482,12 +1488,12 @@ func calculateCmdChannelStagingURL(licenseKey string) string {
 	return defaultCmdChannelStagingURL
 }
 
-func calculateDimensionalMetricURL(collectorURL string, licenseKey string, staging bool) string {
+func calculateDimensionalMetricURL(collectorURL string, licenseKey string, staging, fedramp bool) string {
 	if collectorURL != "" {
 		return collectorURL
 	}
 
-	if license.IsFederalCompliance(licenseKey) {
+	if fedramp && !staging {
 		return defaultSecureFederalURL
 	}
 
@@ -1551,10 +1557,10 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	}
 
 	// dm URL is calculated based on collector url, it should be set before get it default value
-	cfg.MetricURL = calculateDimensionalMetricURL(cfg.CollectorURL, cfg.License, cfg.Staging)
+	cfg.MetricURL = calculateDimensionalMetricURL(cfg.CollectorURL, cfg.License, cfg.Staging, cfg.Fedramp)
 
 	if cfg.CollectorURL == "" {
-		cfg.CollectorURL = calculateCollectorURL(cfg.License, cfg.Staging)
+		cfg.CollectorURL = calculateCollectorURL(cfg.License, cfg.Staging, cfg.Fedramp)
 	}
 
 	nlog.WithField("collectorURL", cfg.CollectorURL).Debug("Collector URL")

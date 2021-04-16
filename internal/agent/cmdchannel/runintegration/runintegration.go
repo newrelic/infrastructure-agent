@@ -14,6 +14,8 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/commandapi"
 	"github.com/newrelic/infrastructure-agent/pkg/fwrequest"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdapi"
+	ctx2 "github.com/newrelic/infrastructure-agent/pkg/integrations/track/ctx"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
@@ -21,9 +23,12 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/trace"
 )
 
+const cmdName = "run_integration"
+
 // Errors
 var (
-	ErrNoIntName = errors.New("missing required \"integration_name\"")
+	ErrNoIntName     = errors.New("missing required \"integration_name\"")
+	ErrIntNotAllowed = errors.New("integration not allowed to run/stop from command channel")
 )
 
 type RunIntArgs struct {
@@ -51,23 +56,29 @@ func NewHandler(definitionQ chan<- integration.Definition, il integration.Instan
 			return
 		}
 
+		if cmdapi.IsForbiddenToRunStopFromCmdAPI(args.IntegrationName) {
+			return ErrIntNotAllowed
+		}
+
 		def, err := integration.NewDefinition(NewConfigFromCmdChannelRunInt(args), il, nil, nil)
 		if err != nil {
 			LogDecorated(logger, cmd, args).WithError(err).Warn("cannot create handler for cmd channel run_integration requests")
 			return
 		}
-		def.CmdChannelHash = args.Hash()
+
+		cmdChanReq := ctx2.NewCmdChannelRequest(cmdName, args.Hash(), args.IntegrationName, args.IntegrationArgs, cmd.Metadata)
+		def.CmdChanReq = &cmdChanReq
 
 		definitionQ <- def
 
-		ev := cmd.Event(args.IntegrationName, args.IntegrationArgs)
-		ev["cmd_stop_hash"] = args.Hash()
+		ev := cmdChanReq.Event("cmd-api")
+
 		NotifyPlatform(dmEmitter, def, ev)
 
 		return
 	}
 
-	return cmdchannel.NewCmdHandler("run_integration", handleF)
+	return cmdchannel.NewCmdHandler(cmdName, handleF)
 }
 
 func NotifyPlatform(dmEmitter dm.Emitter, def integration.Definition, ev protocol.EventData) {
