@@ -1,4 +1,6 @@
 /.idea
+/bin
+/dist
 /target
 /overlay/bundled-plugins/*/bin
 .DS_Store
@@ -17,8 +19,7 @@ lcov.info
 *.heap
 /workspace
 .vscode
-cmd/newrelic-infra/versioninfo.json
-**/Product.wxs
+versioninfo.json
 
 # Agent data directory when AppDataDir is not specify in darwin
 /data

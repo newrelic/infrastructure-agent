@@ -22,7 +22,7 @@ jobs:
           go-version: '^1.14.4'
 
       - name: Validate code
-        run: make go-get
+        run: make deps
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v1
