@@ -9,10 +9,10 @@ get-fb_version          = $(shell awk -v col=$(2) -F, '/^$(1),/ {print $$col}' $
 NRFB_VERSION_LINUX      ?= $(call get-fb_version,linux,3)
 NR_PLUGIN_VERSION_LINUX ?= $(call get-fb_version,linux,2)
 
-ARCH                    ?= amd64
+FB_ARCH                 ?= amd64
 
-NRFB_URL                 = https://github.com/newrelic-experimental/fluent-bit-package/releases/download/$(NRFB_VERSION_LINUX)/fb-linux-$(ARCH).tar.gz
-NR_PLUGIN_URL            = https://github.com/newrelic/newrelic-fluent-bit-output/releases/download/v$(NR_PLUGIN_VERSION_LINUX)/out_newrelic-linux-$(ARCH)-$(NR_PLUGIN_VERSION_LINUX).so
+NRFB_URL                 = https://github.com/newrelic-experimental/fluent-bit-package/releases/download/$(NRFB_VERSION_LINUX)/fb-linux-$(FB_ARCH).tar.gz
+NR_PLUGIN_URL            = https://github.com/newrelic/newrelic-fluent-bit-output/releases/download/v$(NR_PLUGIN_VERSION_LINUX)/out_newrelic-linux-$(FB_ARCH)-$(NR_PLUGIN_VERSION_LINUX).so
 
 .PHONY: get-fluentbit-linux
 get-fluentbit-linux:
@@ -21,20 +21,20 @@ get-fluentbit-linux:
 	@printf '\n================================================================\n'
 
 	@printf '\ndownload fluent-bit\n'
-	@rm -rf $(TARGET_DIR)/fluent-bit/$(ARCH)/
-	@mkdir -p $(TARGET_DIR)/fluent-bit/$(ARCH)/
+	@rm -rf $(TARGET_DIR)/fluent-bit/$(FB_ARCH)/
+	@mkdir -p $(TARGET_DIR)/fluent-bit/$(FB_ARCH)/
 	@if curl --output /dev/null --silent --head --fail '$(NRFB_URL)'; then \
-		curl -L --silent '$(NRFB_URL)' | tar xvz --no-same-owner -C $(TARGET_DIR)/fluent-bit/$(ARCH) ;\
+		curl -L --silent '$(NRFB_URL)' | tar xvz --no-same-owner -C $(TARGET_DIR)/fluent-bit/$(FB_ARCH) ;\
 	else \
 	  echo 'nrfb version $(NRFB_VERSION_LINUX) URL does not exist: $(NRFB_URL)' ;\
 	  exit 1 ;\
 	fi
 
 	@printf '\ndownload fluent-bit nr plugin\n'
-	@rm -rf $(TARGET_DIR)/fluent-bit-plugin/$(ARCH)/
-	@mkdir -p $(TARGET_DIR)/fluent-bit-plugin/$(ARCH)/
+	@rm -rf $(TARGET_DIR)/fluent-bit-plugin/$(FB_ARCH)/
+	@mkdir -p $(TARGET_DIR)/fluent-bit-plugin/$(FB_ARCH)/
 	@if curl --output /dev/null --silent --head --fail '$(NR_PLUGIN_URL)'; then \
-		curl -L --silent '$(NR_PLUGIN_URL)' --output $(TARGET_DIR)/fluent-bit-plugin/$(ARCH)/out_newrelic.so ;\
+		curl -L --silent '$(NR_PLUGIN_URL)' --output $(TARGET_DIR)/fluent-bit-plugin/$(FB_ARCH)/out_newrelic.so ;\
 	else \
 	  echo 'nr plugin version $(NR_PLUGIN_VERSION_LINUX) URL does not exist: $(NR_PLUGIN_URL)' ;\
 	  exit 1 ;\

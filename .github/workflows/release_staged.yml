@@ -65,6 +65,7 @@ jobs:
           aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
           aws_s3_lock_bucket_name: ${{ env.AWS_S3_LOCK_BUCKET_NAME }}
+          access_point_host: "https://download.newrelic.com"
           run_id: ${{ github.run_id }}
           aws_region: ${{ env.AWS_REGION }}
           aws_role_session_name: ${{ env.AWS_ROLE_SESSION_NAME }}
