@@ -989,9 +989,6 @@ nfpms:
       postinstall: "build/package/rpm/postinst-systemd.sh"
       preremove: "build/package/rpm/prerm-systemd.sh"
       postremove: "build/package/after-remove.sh"
-    # Packages that conflict with your package.
-    conflicts:
-      - newrelic-infra
     # Packages to replace according to old packaging scripts.
     replaces:
       - opspro-agent
@@ -1067,9 +1064,6 @@ nfpms:
       preinstall: "build/package/before-install.sh"
       preremove: "build/package/rpm/prerm-systemd.sh"
 
-    # Packages that conflict with your package.
-    conflicts:
-      - newrelic-infra
     # Packages to replace according to old packaging scripts.
     replaces:
       - opspro-agent
@@ -1143,9 +1137,6 @@ nfpms:
     scripts:
       preinstall: "build/package/before-install.sh"
       preremove: "build/package/rpm/prerm-systemd.sh"
-    # Packages that conflict with your package.
-    conflicts:
-      - newrelic-infra
     # Packages to replace according to old packaging scripts.
     replaces:
       - opspro-agent
@@ -1226,9 +1217,6 @@ nfpms:
     scripts:
       preinstall: "build/package/before-install.sh"
       preremove: "build/package/rpm/prerm-systemd.sh"
-    # Packages that conflict with your package.
-    conflicts:
-      - newrelic-infra
     # Packages to replace according to old packaging scripts.
     replaces:
       - opspro-agent
@@ -1302,9 +1290,6 @@ nfpms:
     scripts:
       preinstall: "build/package/before-install.sh"
       preremove: "build/package/rpm/prerm-systemd.sh"
-    # Packages that conflict with your package.
-    conflicts:
-      - newrelic-infra
     # Packages to replace according to old packaging scripts.
     replaces:
       - opspro-agent
@@ -1378,9 +1363,6 @@ nfpms:
     scripts:
       preinstall: "build/package/before-install.sh"
       preremove: "build/package/rpm/prerm-systemd.sh"
-    # Packages that conflict with your package.
-    conflicts:
-      - newrelic-infra
     # Packages to replace according to old packaging scripts.
     replaces:
       - opspro-agent
@@ -1456,9 +1438,6 @@ nfpms:
       postinstall: "build/package/rpm/postinst-systemd.sh"
       preremove: "build/package/rpm/prerm-systemd.sh"
       postremove: "build/package/after-remove.sh"
-    # Packages that conflict with your package.
-    conflicts:
-      - newrelic-infra
     # Packages to replace according to old packaging scripts.
     replaces:
       - opspro-agent
@@ -1534,9 +1513,6 @@ nfpms:
       preinstall: "build/package/before-install.sh"
       preremove: "build/package/rpm/prerm-systemd.sh"
 
-    # Packages that conflict with your package.
-    conflicts:
-      - newrelic-infra
     # Packages to replace according to old packaging scripts.
     replaces:
       - opspro-agent
@@ -1610,9 +1586,6 @@ nfpms:
     scripts:
       preinstall: "build/package/before-install.sh"
       preremove: "build/package/rpm/prerm-systemd.sh"
-    # Packages that conflict with your package.
-    conflicts:
-      - newrelic-infra
     # Packages to replace according to old packaging scripts.
     replaces:
       - opspro-agent
@@ -1693,9 +1666,6 @@ nfpms:
     scripts:
       preinstall: "build/package/before-install.sh"
       preremove: "build/package/rpm/prerm-systemd.sh"
-    # Packages that conflict with your package.
-    conflicts:
-      - newrelic-infra
     # Packages to replace according to old packaging scripts.
     replaces:
       - opspro-agent
@@ -1769,9 +1739,6 @@ nfpms:
     scripts:
       preinstall: "build/package/before-install.sh"
       preremove: "build/package/rpm/prerm-systemd.sh"
-    # Packages that conflict with your package.
-    conflicts:
-      - newrelic-infra
     # Packages to replace according to old packaging scripts.
     replaces:
       - opspro-agent
@@ -1845,9 +1812,6 @@ nfpms:
     scripts:
       preinstall: "build/package/before-install.sh"
       preremove: "build/package/rpm/prerm-systemd.sh"
-    # Packages that conflict with your package.
-    conflicts:
-      - newrelic-infra
     # Packages to replace according to old packaging scripts.
     replaces:
       - opspro-agent
