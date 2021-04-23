@@ -19,8 +19,8 @@ env:
   DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
   #TODO change ci/pipeline-arm-from-master to real branch name
   SCHEMA_BRANCH: "ci/pipeline-arm-from-master"
-  AWS_S3_BUCKET_NAME: "nr-downloads-ohai-testing"
-  AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-testing"
+  AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
+  AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
   AWS_REGION: "us-east-1"
   DOCKER_PUBLISH: true
 
@@ -142,12 +142,12 @@ jobs:
           username: ${{ env.DOCKER_HUB_ID }}
           password: ${{ env.DOCKER_HUB_PASSWORD }}
       - name: Publish ${{ matrix.assetsType }} to S3 action
-        uses: newrelic/infrastructure-publish-action@fix/create-new-repo
+        uses: newrelic/infrastructure-publish-action@v1.0.6
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_TESTING }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_TESTING }}
-          AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_TESTING }}
-          AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_TESTING }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
+          AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
+          AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
         with:
           tag: ${{env.TAG}}
           app_name: "newrelic-infra"
@@ -158,7 +158,7 @@ jobs:
           aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
           aws_s3_lock_bucket_name: ${{ env.AWS_S3_LOCK_BUCKET_NAME }}
-          access_point_host: "https://nr-downloads-ohai-testing.s3.amazonaws.com"
+          access_point_host: "https://nr-downloads-ohai-staging.s3.amazonaws.com"
           run_id: ${{ github.run_id }}
           aws_region: ${{ env.AWS_REGION }}
           aws_role_session_name: ${{ env.AWS_ROLE_SESSION_NAME }}

@@ -22,7 +22,7 @@ env:
   GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
   #TODO change ci/pipeline-arm-from-master to real branch name
   SCHEMA_BRANCH: "ci/pipeline-arm-from-master"
-  AWS_S3_BUCKET_NAME: "nr-downloads-ohai-testing"
+  AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
   AWS_REGION: "us-east-1"
 
 jobs:
@@ -104,12 +104,12 @@ jobs:
           username: ${{ env.DOCKER_HUB_ID }}
           password: ${{ env.DOCKER_HUB_PASSWORD }}
       - name: Publish to S3 action
-        uses: newrelic/infrastructure-publish-action@v1
+        uses: newrelic/infrastructure-publish-action@v1.0.6
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_TESTING }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_TESTING }}
-          AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_TESTING }}
-          AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_TESTING }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
+          AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
+          AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
         with:
           tag: ${{env.TAG}}
           app_name: "newrelic-infra"
