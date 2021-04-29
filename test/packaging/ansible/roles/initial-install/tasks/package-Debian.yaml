@@ -1,0 +1,10 @@
+---
+
+- name: apt install infra-agent
+  apt:
+    name: "newrelic-infra={{ lookup('env', 'INITIAL_AGENT_VERSION') }}"
+    update_cache: yes
+  retries: 5
+  delay: 60
+    
+...

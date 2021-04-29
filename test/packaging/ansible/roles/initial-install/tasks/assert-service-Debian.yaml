@@ -1,0 +1,9 @@
+---
+
+- name: ensure infra-agent service is up and running
+  service:
+    name: newrelic-infra
+    state: started
+    enabled: yes
+
+...

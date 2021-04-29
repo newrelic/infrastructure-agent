@@ -1,0 +1,19 @@
+---
+
+repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
+
+# agent config:
+nr_license_key: "{{ lookup ('env', 'NR_LICENSE_KEY') }}"
+
+display_name: "{{ ansible_hostname }}"
+verbose: '0'
+staging: 'true'
+
+# custom attributes:
+nr_environment: 'development'
+department: 'product'
+product: 'integrations'
+owning_team: 'caos'
+project: 'infrastructure-agent'
+
+...
