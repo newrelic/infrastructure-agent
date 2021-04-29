@@ -60,7 +60,6 @@ ENV NRIA_IS_SECURE_FORWARD_ONLY true
 FROM forwarder AS k8s-events-forwarder
 
 ENV NRIA_HTTP_SERVER_ENABLED true
-ENV NRIA_CONNECT_ENABLED false
 
 #################################
 # BASE
