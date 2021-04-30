@@ -11,10 +11,30 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
 
-      - name: Run Trivy vulnerability scanner
+      - name: newrelic/infrastructure
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'docker.io/newrelic/infrastructure:latest'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: newrelic/k8s-events-forwarder
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'docker.io/newrelic/k8s-events-forwarder:latest'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: newrelic/nri-forwarder
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'docker.io/newrelic/nri-forwarder:latest'
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
