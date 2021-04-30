@@ -6,7 +6,7 @@
 
 - name: install infra-agent APT repository
   apt_repository:
-    repo: "deb [arch=amd64] {{ repo_endpoint }}/linux/apt {{ ansible_distribution_release }} main"
+    repo: "deb {{ repo_endpoint }}/linux/apt {{ ansible_distribution_release }} main"
     filename: newrelic-infra
 
 ...
