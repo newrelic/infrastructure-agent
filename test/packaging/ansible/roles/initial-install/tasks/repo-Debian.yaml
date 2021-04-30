@@ -1,10 +1,5 @@
 ---
 
-- name: delete internal Artifactory apt repository
-  file:
-    path: /etc/apt/sources.list.d/newrelic_infra-integrations.list 
-    state: absent
-
 - name: install infra-agent APT key
   apt_key:
     url: https://download.newrelic.com/infrastructure_agent/gpg/newrelic-infra.gpg
