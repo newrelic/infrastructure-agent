@@ -18,7 +18,6 @@
   register: output2
   ignore_errors: true
   changed_when: false
-  delay: 5
 
 - name: Test Fluent-Bit has the same PID (process didn't died)
   fail:
@@ -32,7 +31,6 @@
   command: "/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit -V"
   register: version
   ignore_errors: true
-  changed_when: false
 
 - name: Test Fluent-Bit has the correct version
   fail:
@@ -44,7 +42,6 @@
   command: "file /var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit"
   register: arch
   ignore_errors: true
-  changed_when: false
 
 - name: Test Fluent-Bit has the correct arch
   fail:
