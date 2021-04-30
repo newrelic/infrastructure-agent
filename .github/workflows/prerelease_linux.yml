@@ -107,20 +107,20 @@ jobs:
       - name: Releasing linux packages
         run: make ci/prerelease
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-
-      - name: Build and publish Release Candidate (RC) of base Docker image
-        run: make -C build/container/ clean publish/multi-arch-base-rc AGENT_VERSION=${{env.TAG}}
-
-      - name: Build and publish Release Candidate (RC) of forwarder Docker image
-        run: make -C build/container/ clean publish/multi-arch-forwarder-rc AGENT_VERSION=${{env.TAG}}
-
-      - name: Build and publish Release Candidate (RC) of k8s-events-forwarders Docker image
-        run: make -C build/container/ clean publish/multi-arch-k8s-events-forwarder-rc AGENT_VERSION=${{env.TAG}}
+#      - name: Set up QEMU
+#        uses: docker/setup-qemu-action@v1
+#
+#      - name: Set up Docker Buildx
+#        uses: docker/setup-buildx-action@v1
+#
+#      - name: Build and publish Release Candidate (RC) of base Docker image
+#        run: make -C build/container/ clean publish/multi-arch-base-rc AGENT_VERSION=${{env.TAG}}
+#
+#      - name: Build and publish Release Candidate (RC) of forwarder Docker image
+#        run: make -C build/container/ clean publish/multi-arch-forwarder-rc AGENT_VERSION=${{env.TAG}}
+#
+#      - name: Build and publish Release Candidate (RC) of k8s-events-forwarders Docker image
+#        run: make -C build/container/ clean publish/multi-arch-k8s-events-forwarder-rc AGENT_VERSION=${{env.TAG}}
 
   publishing-to-s3:
     name: Publish linux artifacts into s3 test bucket
