@@ -10,7 +10,6 @@
 *.swp
 opsmatic-agent.conf
 newrelic-infra.yml
-newrelic-infra.yml.*
 c.out
 *.syso
 coverage.xml
