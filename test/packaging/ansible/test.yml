@@ -19,7 +19,7 @@
 
       - name: Initial install
         include_role:
-          name: initial-install
+          name: privileged-install
 
       - name: Installed package files verification
         include_role:
