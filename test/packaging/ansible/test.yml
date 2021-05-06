@@ -17,6 +17,10 @@
         include_role:
           name: initial-install
 
+      - name: Installed package files verification
+        include_role:
+          name: package-files-verification
+
       always:
         - name: Final cleanup # Only required for shared infra.
           include_role:
