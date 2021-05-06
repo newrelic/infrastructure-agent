@@ -1,6 +1,6 @@
 ---
 
-initial_agent_version: "1.18.0" # 1.18.0 is the minimum version for ARM.
+initial_agent_version: "1.18.3" # minimum version supporting ARM.
 repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
 
 # agent config:

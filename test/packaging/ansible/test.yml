@@ -4,6 +4,7 @@
   become: true
   gather_facts: yes
   roles:
+    - cleanup
     - initial-install
 
 ...
