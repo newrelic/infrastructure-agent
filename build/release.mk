@@ -64,8 +64,8 @@ release/get-fluentbit-linux-arm64:
 .PHONY : release/pkg
 release/pkg: release/deps release/clean
 release/pkg: release/get-integrations-amd64
-#release/pkg: release/get-integrations-arm64
-#release/pkg: release/get-integrations-arm
+release/pkg: release/get-integrations-arm64
+release/pkg: release/get-integrations-arm
 release/pkg: release/get-fluentbit-linux-amd64
 #release/pkg: release/get-fluentbit-linux-arm
 #release/pkg: release/get-fluentbit-linux-arm64
