@@ -10,4 +10,4 @@ ansible rhel_8,centos_8 --become -m raw -a "yum install -y python3"
 
 
 printf "\nAccepting boxes SSH keys...\n"
-ansible-playbook -i "$ANSIBLE_INVENTORY" test/packaging/ansible/initial_setup.yml
+ansible-playbook -i "$ANSIBLE_INVENTORY" ansible/initial_setup.yml
