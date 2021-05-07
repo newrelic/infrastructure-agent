@@ -1,8 +1,0 @@
----
-
-- include: "config-{{ ansible_system }}.yaml"
-- include: "package-{{ ansible_os_family }}.yaml"
-- include: "assert-version-{{ ansible_system }}.yaml"
-- include: "check-{{ ansible_system }}.yaml"
-
-...
