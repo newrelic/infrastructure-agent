@@ -21,9 +21,9 @@
         include_role:
           name: privileged-install
 
-      - name: Installed package files verification
+      - name: Assert service
         include_role:
-          name: package-files-verification
+          name: assert-service
 
       always:
         - name: Final cleanup # Only required for shared infra.
