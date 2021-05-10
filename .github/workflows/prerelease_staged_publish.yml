@@ -1,13 +1,13 @@
-name: Staged release for Linux, Windows and Docker
+name: Staged pre-release for Linux, Windows
 
 on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to release'
+        description: 'Tag to pre-release'
         required: true
       assetsType:
-        description: 'Assets type to release: all, docker, targz, zip, msi, deb, rpm'
+        description: 'Assets type to pre-release: all, targz, zip, msi, deb, rpm'
         required: true
         default: 'all'
 
@@ -18,17 +18,17 @@ env:
   DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
   SCHEMA_BRANCH: "master"
-  AWS_S3_BUCKET_NAME: "nr-downloads-main"
-  AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock"
+  AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
+  AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
   AWS_REGION: "us-east-1"
-  AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION }}
-  AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_PRODUCTION }}
-  AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
+  AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
+  AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
 
 jobs:
   publishing-to-s3-linux:
-    name: Publish linux artifacts into s3 prod bucket
+    name: Publish linux artifacts into s3 staging bucket
     runs-on: ubuntu-20.04
 
     strategy:
@@ -48,7 +48,7 @@ jobs:
           password: ${{ env.DOCKER_HUB_PASSWORD }}
       - name: Publish ${{ matrix.assetsType }} to S3 action
         if: ${{ github.event.inputs.assetsType == 'all' || github.event.inputs.assetsType == matrix.assetsType }}
-        uses: newrelic/infrastructure-publish-action@v1
+        uses: newrelic/infrastructure-publish-action@v1.0.4
         env:
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
@@ -73,7 +73,7 @@ jobs:
           gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
 
   publishing-to-s3-windows:
-    name: Publish windows artifacts into s3 prod bucket
+    name: Publish windows artifacts into s3 staging bucket
     runs-on: ubuntu-20.04
 
     strategy:
@@ -91,7 +91,7 @@ jobs:
           password: ${{ env.DOCKER_HUB_PASSWORD }}
       - name: Publish ${{ matrix.assetsType }} to S3 action
         if: ${{ github.event.inputs.assetsType == 'all' || github.event.inputs.assetsType == matrix.assetsType }}
-        uses: newrelic/infrastructure-publish-action@v1
+        uses: newrelic/infrastructure-publish-action@v1.0.4
         env:
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
@@ -113,35 +113,3 @@ jobs:
           gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
           disable_lock: true
           aws_region: ${{ env.AWS_REGION }}
-
-  publish-docker-images:
-    if: ${{ github.event.inputs.assetsType == 'all' || github.event.inputs.assetsType == 'docker' }}
-    name: Create versioned and latest images from RC
-    runs-on: ubuntu-20.04
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ env.DOCKER_HUB_ID }}
-          password: ${{ env.DOCKER_HUB_PASSWORD }}
-
-      - name: Publish tag of base Docker image
-        run: make -C build/container/ clean publish/multi-arch-base-tag AGENT_VERSION=${{env.TAG}}
-
-      - name: Publish latest of base Docker image
-        run: make -C build/container/ clean publish/multi-arch-base-latest AGENT_VERSION=${{env.TAG}}
-
-      - name: Publish tag of forwarder Docker image
-        run: make -C build/container/ clean publish/multi-arch-forwarder-tag AGENT_VERSION=${{env.TAG}}
-
-      - name: Publish latest of forwarder Docker image
-        run: make -C build/container/ clean publish/multi-arch-forwarder-latest AGENT_VERSION=${{env.TAG}}
-
-      - name: Publish tag of k8s-events-forwarders Docker image
-        run: make -C build/container/ clean publish/multi-arch-k8s-events-forwarder-tag AGENT_VERSION=${{env.TAG}}
-
-      - name: Publish latest of k8s-events-forwarders Docker image
-        run: make -C build/container/ clean publish/multi-arch-k8s-events-forwarder-latest AGENT_VERSION=${{env.TAG}}
