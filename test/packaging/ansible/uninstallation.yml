@@ -10,24 +10,18 @@
         name: cleanup
 
   tasks:
-    - name: Installation tests suite
+    - name: Uninstallation tests suite
       vars:
         env_vars:
-          NRIA_MODE: PRIVILEGED
       block:
 
       - name: install agent
         include_role:
           name: agent-install
 
-      - name: Assert privileged capabilities
+      - name: Uninstall
         include_role:
-          name: assert-privileged-caps
-
-      - name: Assert rootless
-        include_role:
-          name: assert-rootless
-
+          name: package-uninstall
 
       always:
         - name: Final cleanup # Only required for shared infra.
