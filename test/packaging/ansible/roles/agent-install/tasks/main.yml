@@ -1,0 +1,19 @@
+- name: Setup repo
+  include_role:
+    name: repo-setup
+
+- name: Setup config
+  include_role:
+    name: setup-config
+
+- name: Package install
+  include_role:
+    name: package-install
+
+- name: Assert version
+  include_role:
+    name: assert-version
+
+- name: Assert service
+  include_role:
+    name: assert-service
