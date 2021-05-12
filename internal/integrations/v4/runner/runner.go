@@ -279,8 +279,8 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 		}
 
 		if ok, ver := cfgprotocol.IsConfigProtocol(line); ok {
-			llog.WithField("version", ver).Info("Received config protocol request.")
-			// llog.WithField("version", ver).Debug("Received config protocol request.")
+			llog.WithField("version", ver).Debug("Received config protocol request.")
+
 			cp, err := cfgprotocol.DeserializeLine(line)
 			if err != nil {
 				llog.
