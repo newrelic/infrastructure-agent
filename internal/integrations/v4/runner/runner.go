@@ -260,6 +260,10 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 		}
 
 		if ok, ver := protocol.IsCommandRequest(line); ok {
+			if r.handleCmdReq == nil {
+				llog.Warn("received cmd request payload without a handler")
+				continue
+			}
 			llog.WithField("version", ver).Debug("Received run request.")
 			cr, err := protocol.DeserializeLine(line)
 			if err != nil {
@@ -268,20 +272,17 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 					Warn("cannot deserialize integration run request payload")
 				continue
 			}
-
-			if r.handleCmdReq == nil {
-				llog.Warn("received cmd request payload without a handler")
-				continue
-			}
-
 			r.handleCmdReq(cr)
 			continue
 		}
 
-		if ok, ver := cfgprotocol.IsConfigProtocol(line); ok {
-			llog.WithField("version", ver).Debug("Received config protocol request.")
-
-			cp, err := cfgprotocol.DeserializeLine(line)
+		if cfgProtocolBuilder := cfgprotocol.GetConfigProtocolBuilder(line); cfgProtocolBuilder != nil {
+			if r.handleConfig == nil {
+				llog.Warn("received config protocol request payload without a handler")
+				continue
+			}
+			cfgProtocol, err := cfgProtocolBuilder.Build(line)
+			llog.WithField("version", cfgProtocol.Version()).Info("Received config protocol request.")
 			if err != nil {
 				llog.
 					WithError(err).
@@ -289,12 +290,7 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 				continue
 			}
 
-			if r.handleConfig == nil {
-				llog.Warn("received config protocol request payload without a handler")
-				continue
-			}
-
-			r.handleConfig(cp)
+			r.handleConfig(cfgProtocol)
 			continue
 		}
 
