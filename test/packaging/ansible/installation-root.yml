@@ -13,7 +13,7 @@
     - name: Installation tests suite
       vars:
         env_vars:
-#          NRIA_MODE: PRIVILEGED
+
       block:
 
         - name: install agent
