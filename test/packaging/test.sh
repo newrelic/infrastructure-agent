@@ -11,4 +11,4 @@ if [ "$NR_LICENSE_KEY" = "" ]; then
 fi
 
 printf "\nTesting initial install...\n"
-NR_LICENSE_KEY="$NR_LICENSE_KEY" ansible-playbook -i "$ANSIBLE_INVENTORY" -v ansible/installation-unprivileged.yml
+NR_LICENSE_KEY="$NR_LICENSE_KEY" ansible-playbook -i "$ANSIBLE_INVENTORY" -v test/packaging/ansible/installation-unprivileged.yml
