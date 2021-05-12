@@ -4,7 +4,7 @@
   yum_repository:
     name: newrelic-infra
     description: New Relic Infrastructure Agent
-    baseurl: {{ repo_endpoint }}/linux/yum/el/$releasever/$basearch
+    baseurl: "{{ repo_endpoint }}/linux/yum/el/$releasever/$basearch"
     gpgkey: http://download.newrelic.com/infrastructure_agent/gpg/newrelic-infra.gpg
     gpgcheck: no
     repo_gpgcheck: no

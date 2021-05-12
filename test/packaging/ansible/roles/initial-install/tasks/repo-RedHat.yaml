@@ -4,7 +4,8 @@
   yum_repository:
     name: newrelic-infra
     description: New Relic Infrastructure Agent
-    baseurl: "{{ repo_endpoint }}/linux/yum/el/$releasever/$basearch"
+    # $releasever var cannot be used as RHEL7 will replace it with 7Server instead of 7.
+    baseurl: "{{ repo_endpoint }}/linux/yum/el/{{ ansible_distribution_major_version }}/$basearch"
     gpgkey: http://download.newrelic.com/infrastructure_agent/gpg/newrelic-infra.gpg
     gpgcheck: no
     repo_gpgcheck: no
