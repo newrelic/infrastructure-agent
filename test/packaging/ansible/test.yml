@@ -1,0 +1,21 @@
+---
+
+- name: setup the environment
+  import_playbook: initial_setup.yml
+
+- name: pinned version agent installation
+  import_playbook: installation-pinned.yml
+
+- name: agent installation as root
+  import_playbook: installation-root.yml
+
+- name: privileged mode agent installation
+  import_playbook: installation-privileged.yml
+
+- name: unprivileged mode agent installation
+  import_playbook: installation-unprivileged.yml
+
+- name: agent uninstallation
+  import_playbook: uninstallation.yml
+
+...
