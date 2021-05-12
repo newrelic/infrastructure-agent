@@ -128,6 +128,11 @@ integrations:
   - name: cfgreq
     exec: ` + getExe(testhelp.GoRun(fixtures.CfgReqGoFile)) + "\n"
 
+var v4CfgReqRecursive = `---
+integrations:
+  - name: cfgreq-recursive
+    exec: ` + getExe(testhelp.GoRun(fixtures.CfgReqRecursiveGoFile)) + "\n"
+
 var (
 	definitionQ  = make(chan integration.Definition, 1000)
 	configEntryQ = make(chan configrequest.Entry, 1000)
@@ -997,12 +1002,8 @@ func TestManager_anIntegrationCanSpawnAnotherOne(t *testing.T) {
 	metric := expectOneMetric(t, emitter, "cmd-req-name")
 	assert.Equal(t, "ShellTestSample", metric["event_type"])
 }
-func TestManager_configProtocol(t *testing.T) {
-	// if runtime.GOOS == "windows" {
-	// 	t.Skip("no windows support on cmd request for now")
-	// }
-
-	// GIVEN a configuration file for an integration that will request a cmd request
+func TestManager_cfgProtocolSpawnIntegration(t *testing.T) {
+	// GIVEN a configuration file for an integration that will send a cfg protocol payload
 	dir, err := tempFiles(map[string]string{
 		"v4-cfgreq.yaml": v4CfgReq,
 	})
@@ -1021,6 +1022,37 @@ func TestManager_configProtocol(t *testing.T) {
 	// THEN the integration is executed, requesting a new integration run that generates telemetry data
 	metric := expectOneMetric(t, emitter, "nri-test")
 	assert.Equal(t, "ShellTestSample", metric["event_type"])
+}
+func TestManager_cfgProtocolSpawnedIntegrationCannotSpawnIntegration(t *testing.T) {
+	hook := new(test.Hook)
+	log.AddHook(hook)
+
+	// GIVEN a configuration file for an integration that will send a cfg protocol payload
+	dir, err := tempFiles(map[string]string{
+		"v4-cfgreq-recursive.yaml": v4CfgReqRecursive,
+	})
+	require.NoError(t, err)
+	defer removeTempFiles(t, dir)
+
+	// AND an integrations manager
+	emitter := &testemit.RecordEmitter{}
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ, configEntryQ, track.NewTracker(nil))
+
+	// WHEN the manager executes the integration
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go mgr.Start(ctx)
+
+	// THEN log entry found
+	testhelpers.Eventually(t, 5*time.Second, func(t require.TestingT) {
+		entry := hook.LastEntry()
+		if entry == nil {
+			require.NotNil(t, entry)
+			return
+		}
+		assert.Equal(t, "received config protocol request payload without a handler", entry.Message)
+		assert.Equal(t, logrus.WarnLevel, entry.Level)
+	})
 }
 
 func TestManager_ExpandsConfigEnvVars(t *testing.T) {
