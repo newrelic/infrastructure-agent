@@ -4,20 +4,60 @@ package protocol
 
 import (
 	"encoding/json"
-	"fmt"
-	"strconv"
-
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/track/ctx"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
+	"regexp"
 )
 
-// Config protocol versions:
-const (
-	VUnsupported = Version(0)
-	V1           = Version(1)
-)
 
-type Version int
+
+var reConfigProtocol = regexp.MustCompile(`(.*)\"config_protocol_version\"[\s]*\:[\s]*\"(\d)\"(.*)`)
+
+type Builder interface {
+	Build() (ConfigProtocol, error)
+}
+
+type builder struct {
+	content []byte
+	fn      func() ConfigProtocol
+}
+
+func (builder *builder) Build() (ConfigProtocol, error) {
+	var cfgProtocol = builder.fn()
+	err := json.Unmarshal(builder.content, cfgProtocol)
+	return cfgProtocol, err
+}
+
+var defaultBuilderFn = func() ConfigProtocol {
+	return &v1{}
+}
+
+var cfgProtocolVersions = map[string]func() ConfigProtocol{
+	"1": func() ConfigProtocol { return &v1{} },
+}
+
+type ConfigProtocol interface {
+	Version() int
+	BuildConfigRequest() *ctx.ConfigRequest
+	Integrations() []config.ConfigEntry
+	GetConfig() databind.YAMLConfig
+}
+
+func GetConfigProtocolBuilder(content []byte) Builder {
+	matches := reConfigProtocol.FindStringSubmatch(string(content))
+	if len(matches) != 4 {
+		return nil
+	}
+	builderFn := cfgProtocolVersions[matches[2]]
+	if builderFn == nil {
+		builderFn = defaultBuilderFn
+	}
+	return &builder{
+		content: content,
+		fn:      builderFn,
+	}
+}
 
 // The protocol is used to register integrations without the need to use config yaml files.
 // It wraps the objects used in the configuration files to define variables and integrations.
@@ -57,49 +97,3 @@ type Version int
 // 	  ]
 // 	}
 // }
-
-type ConfigProtocolV1 struct {
-	ConfigProtocolDiscriminator
-	Action     string                 `json:"action"`
-	ConfigName string                 `json:"config_name"`
-	Config     ConfigProtocolV1Config `json:"config"`
-}
-
-type ConfigProtocolDiscriminator struct {
-	ConfigProtocolVersion string `json:"config_protocol_version"`
-}
-
-type ConfigProtocolV1Config struct {
-	Databind     databind.YAMLAgentConfig `json:",inline"`
-	Integrations []config.ConfigEntry     `json:"integrations"`
-}
-
-// IsConfigProtocol guesses whether a json line (coming through a previous integration response)
-// belongs to config protocol payload, providing which version it belongs to in case it succeed.
-func IsConfigProtocol(line []byte) (isConfigProtocol bool, ConfigProtocolVersion Version) {
-	ConfigProtocolVersion = VUnsupported
-
-	var d ConfigProtocolDiscriminator
-	if err := json.Unmarshal(line, &d); err != nil {
-		return
-	}
-
-	versionInt, err := strconv.Atoi(d.ConfigProtocolVersion)
-	if err != nil {
-		return
-	}
-
-	ConfigProtocolVersion = Version(versionInt)
-	isConfigProtocol = true
-	return
-}
-
-func DeserializeLine(line []byte) (r ConfigProtocolV1, err error) {
-	err = json.Unmarshal(line, &r)
-	return
-}
-
-func (cp *ConfigProtocolV1) Hash() string {
-	//TODO hash the string.
-	return fmt.Sprintf("%v%v", cp.Config.Databind, cp.Config.Integrations)
-}
