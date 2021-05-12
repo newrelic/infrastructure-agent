@@ -281,7 +281,7 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 				llog.Warn("received config protocol request payload without a handler")
 				continue
 			}
-			cfgProtocol, err := cfgProtocolBuilder.Build(line)
+			cfgProtocol, err := cfgProtocolBuilder.Build()
 			llog.WithField("version", cfgProtocol.Version()).Info("Received config protocol request.")
 			if err != nil {
 				llog.
