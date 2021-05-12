@@ -42,12 +42,6 @@ var (
 //generic types to handle the stderr log parsing
 type logFields map[string]interface{}
 type logParser func(line string) (fields logFields)
-type Runner interface {
-	Run(ctx context.Context, pidWCh, exitCodeCh chan<- int)
-	Cache() cache.Cache
-	KillChildren()
-	WithTracker(tracker *track.Tracker) Runner
-}
 
 // runner for a single integration entry
 type runner struct {
@@ -63,7 +57,6 @@ type runner struct {
 	healthCheck    sync.Once
 	heartBeatFunc  func()
 	heartBeatMutex sync.RWMutex
-	tracker        *track.Tracker
 	cache          cache.Cache
 }
 
@@ -287,6 +280,10 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 		}
 
 		if ok, ver := protocol.IsCommandRequest(line); ok {
+			if r.handleCmdReq == nil {
+				llog.Warn("received cmd request payload without a handler")
+				continue
+			}
 			llog.WithField("version", ver).Debug("Received run request.")
 			cr, err := protocol.DeserializeLine(line)
 			if err != nil {
@@ -295,12 +292,6 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 					Warn("cannot deserialize integration run request payload")
 				continue
 			}
-
-			if r.handleCmdReq == nil {
-				llog.Warn("received cmd request payload without a handler")
-				continue
-			}
-
 			r.handleCmdReq(cr)
 			continue
 		}

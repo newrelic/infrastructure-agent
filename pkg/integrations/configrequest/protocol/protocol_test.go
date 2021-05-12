@@ -13,12 +13,7 @@ import (
 
 type fixture struct {
 	Payload  []byte
-	ParsedV1 *v1
-}
-
-var cfgProtocolV1Example = &v1{
-	Action:     "register_config",
-	ConfigName: "myconfig",
+	ParsedV1 ConfigProtocolV1
 }
 
 var fixtureFoo = fixture{
