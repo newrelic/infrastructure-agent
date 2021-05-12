@@ -16,10 +16,17 @@
       - name: Initial install
         include_role:
           name: initial-install
+        vars:
+          verbose: 3 # enable log forwarder
 
       - name: Installed package files verification
         include_role:
           name: package-files-verification
+
+      # Not available for ARM yet
+      #- name: Log forwarder
+      #  include_role:
+      #    name: logging
 
       always:
         - name: Final cleanup # Only required for shared infra.
