@@ -7,12 +7,11 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track/ctx"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
-	"regexp"
 )
 
-
-
-var reConfigProtocol = regexp.MustCompile(`(.*)\"config_protocol_version\"[\s]*\:[\s]*\"(\d)\"(.*)`)
+type discriminator struct {
+	Version string `json:"config_protocol_version"`
+}
 
 type Builder interface {
 	Build() (ConfigProtocol, error)
@@ -45,11 +44,11 @@ type ConfigProtocol interface {
 }
 
 func GetConfigProtocolBuilder(content []byte) Builder {
-	matches := reConfigProtocol.FindStringSubmatch(string(content))
-	if len(matches) != 4 {
+	val := &discriminator{}
+	if err := json.Unmarshal(content, val); err != nil || val.Version == "" {
 		return nil
 	}
-	builderFn := cfgProtocolVersions[matches[2]]
+	builderFn := cfgProtocolVersions[val.Version]
 	if builderFn == nil {
 		builderFn = defaultBuilderFn
 	}
