@@ -1,0 +1,8 @@
+---
+
+- name: restart infra-agent Linux
+  service:
+    name: newrelic-infra
+    state: restarted
+
+...
