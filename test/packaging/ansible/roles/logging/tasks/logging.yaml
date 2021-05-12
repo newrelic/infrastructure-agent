@@ -3,7 +3,6 @@
 - name: Test with retry if Fluent-Bit process started
   command: pgrep -f newrelic.*fluent-bit
   register: output1
-  ignore_errors: true
   changed_when: false
   until: output1.rc == 0
   retries: 3
@@ -13,10 +12,9 @@
   pause:
     seconds: 5
 
-- name: Get Fluent-Bit PID
+- name: Test Fluent-Bit still running
   command: pgrep -f newrelic.*fluent-bit
   register: output2
-  ignore_errors: true
   changed_when: false
 
 - name: Test Fluent-Bit has the same PID (process didn't died)
