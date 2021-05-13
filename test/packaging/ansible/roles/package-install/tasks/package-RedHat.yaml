@@ -3,7 +3,7 @@
 - name: yum install infra-agent
   environment: "{{ env_vars }}"
   yum:
-    name: "newrelic-infra-{{ initial_agent_version }}"
+    name: "newrelic-infra-{{ agent_pkg_version }}"
     update_cache: yes
   retries: 5
   delay: 60
