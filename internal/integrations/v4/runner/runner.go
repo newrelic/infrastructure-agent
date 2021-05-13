@@ -5,6 +5,8 @@ package runner
 import (
 	"bytes"
 	"context"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/runner/cache"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	"regexp"
 	"strings"
 	"sync"
@@ -42,7 +44,11 @@ type logFields map[string]interface{}
 type logParser func(line string) (fields logFields)
 type Runner interface {
 	Run(ctx context.Context, pidWCh, exitCodeCh chan<- int)
+	Cache() cache.Cache
+	KillChildren()
+	WithTracker(tracker *track.Tracker) Runner
 }
+
 // runner for a single integration entry
 type runner struct {
 	emitter        emitter.Emitter
@@ -57,6 +63,8 @@ type runner struct {
 	healthCheck    sync.Once
 	heartBeatFunc  func()
 	heartBeatMutex sync.RWMutex
+	tracker        *track.Tracker
+	cache          cache.Cache
 }
 
 // NewRunner creates an integration runner instance.
@@ -77,6 +85,7 @@ func NewRunner(
 		definition:    intDef,
 		heartBeatFunc: func() {},
 		stderrParser:  parseLogrusFields,
+		cache:         cache.New(),
 	}
 	if handleErrorsProvide != nil {
 		r.handleErrors = handleErrorsProvide()
@@ -87,8 +96,13 @@ func NewRunner(
 	return r
 }
 
+func (r *runner) Cache() cache.Cache {
+	return r.cache
+}
+
 func (r *runner) Run(ctx context.Context, pidWCh, exitCodeCh chan<- int) {
 	r.log = illog.WithFields(LogFields(r.definition))
+	defer r.KillChildren()
 	for {
 		waitForNextExecution := time.After(r.definition.Interval)
 
@@ -121,6 +135,22 @@ func (r *runner) Run(ctx context.Context, pidWCh, exitCodeCh chan<- int) {
 		case <-waitForNextExecution:
 		}
 	}
+}
+
+func (r *runner) KillChildren() {
+	if c := r.Cache(); c != nil {
+		cfgNames := c.ListConfigNames()
+		for _, cfgName := range cfgNames {
+			for hash := range r.Cache().GetHashes(cfgName) {
+				r.tracker.Kill(hash)
+			}
+		}
+	}
+}
+
+func (r *runner) WithTracker(tracker *track.Tracker) Runner {
+	r.tracker = tracker
+	return r
 }
 
 func LogFields(def integration.Definition) logrus.Fields {
@@ -168,6 +198,15 @@ func (r *runner) heartBeat() {
 // discover-execute cycle until all the parallel processes have ended
 func (r *runner) execute(ctx context.Context, matches *databind.Values, pidWCh, exitCodeCh chan<- int) {
 	def := r.definition
+
+	/**
+	c:=cache.New()
+			if added:=c.AddDefinition(entry.Definition, entry.Definition);added{
+				logger.
+					WithField("config_name",cp.ConfigName).
+					Debug("new definition added to the cache for the config name")
+			}
+	*/
 
 	// If timeout configuration is set, wraps current context in a heartbeat-enabled timeout context
 	if def.TimeoutEnabled() {
@@ -296,7 +335,7 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 				continue
 			}
 
-			r.handleConfig(cp)
+			r.handleConfig(cp, r.cache)
 			continue
 		}
 

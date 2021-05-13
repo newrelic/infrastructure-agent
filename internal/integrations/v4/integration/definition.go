@@ -45,6 +45,11 @@ type Definition struct {
 	newTempFile     func(template []byte) (string, error)
 }
 
+//TODO
+func (d *Definition) Hash() string {
+	return ""
+}
+
 func (d *Definition) TimeoutEnabled() bool {
 	return d.Timeout > 0
 }
