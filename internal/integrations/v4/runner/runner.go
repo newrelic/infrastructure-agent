@@ -40,7 +40,9 @@ var (
 //generic types to handle the stderr log parsing
 type logFields map[string]interface{}
 type logParser func(line string) (fields logFields)
-
+type Runner interface {
+	Run(ctx context.Context, pidWCh, exitCodeCh chan<- int)
+}
 // runner for a single integration entry
 type runner struct {
 	emitter        emitter.Emitter
@@ -288,7 +290,7 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 					Warn("cannot deserialize config protocol")
 				continue
 			}
-
+			cp.Hash()
 			if r.handleConfig == nil {
 				llog.Warn("received config protocol request payload without a handler")
 				continue

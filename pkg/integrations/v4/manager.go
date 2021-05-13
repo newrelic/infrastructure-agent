@@ -5,6 +5,7 @@ package v4
 import (
 	"context"
 	"errors"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/track/ctx"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -319,27 +320,31 @@ func (mgr *Manager) handleRequestsQueue(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-
 		case def := <-mgr.definitionQueue:
 			r := runner.NewRunner(def, mgr.emitter, nil, nil, mgr.handleCmdReq, nil)
-			if def.CmdChanReq != nil {
-				// tracking so cmd requests can be stopped by hash
-				runCtx, pidWCh := mgr.tracker.Track(ctx, def.CmdChanReq.CmdChannelCmdHash, &def)
-				go func(hash string) {
-					exitCodeCh := make(chan int, 1)
-					r.Run(runCtx, pidWCh, exitCodeCh)
-					mgr.tracker.NotifyExit(hash, <-exitCodeCh)
-					mgr.tracker.Untrack(hash)
-				}(def.CmdChanReq.CmdChannelCmdHash)
-			} else {
-				go r.Run(ctx, nil, nil)
-			}
+			mgr.run(ctx, r, nil, def)
 		case entry := <-mgr.configEntryQueue:
 			ds, _ := entry.YAMLConfig.DataSources()
 			r := runner.NewRunner(entry.Definition, mgr.emitter, ds, nil, nil, nil)
-			go r.Run(ctx, nil, nil)
+			mgr.run(ctx, r, entry.Definition.ConfigRequest, entry.Definition)
 		}
 	}
+}
+
+func (mgr *Manager) run(ctx context.Context, r runner.Runner, req ctx.Request, def integration.Definition) {
+
+	if req != nil {
+		// tracking so cmd requests can be stopped by hash
+		runCtx, pidWCh := mgr.tracker.Track(ctx, req.Hash(), &def)
+		go func(hash string) {
+			exitCodeCh := make(chan int, 1)
+			r.Run(runCtx, pidWCh, exitCodeCh)
+			mgr.tracker.NotifyExit(hash, <-exitCodeCh)
+			mgr.tracker.Untrack(hash)
+		}(req.Hash())
+		return
+	}
+	go r.Run(ctx, nil, nil)
 }
 
 // watch for changes in the plugins directories and loads/cancels/reloads the affected integrations
