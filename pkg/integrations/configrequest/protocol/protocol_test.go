@@ -3,6 +3,7 @@
 package protocol
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"testing"
 
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
@@ -11,7 +12,12 @@ import (
 
 type fixture struct {
 	Payload  []byte
-	ParsedV1 ConfigProtocolV1
+	ParsedV1 *v1
+}
+
+var cfgProtocolV1Example = &v1{
+	Action:     "register_config",
+	ConfigName: "myconfig",
 }
 
 var fixtureFoo = fixture{
@@ -31,25 +37,17 @@ var fixtureFoo = fixture{
 	}
 }
 `),
-	ParsedV1: ConfigProtocolV1{
-		ConfigProtocolDiscriminator: ConfigProtocolDiscriminator{ConfigProtocolVersion: "1"},
-		Action:                      "register_config",
-		ConfigName:                  "myconfig",
-		Config: ConfigProtocolV1Config{
-			Integrations: []config.ConfigEntry{
-				{
-					InstanceName: "nri-mysql",
-					Interval:     "15s",
-				},
-			},
+	ParsedV1: cfgProtocolV1Example.withConfig(databind.YAMLAgentConfig{}, []config.ConfigEntry{
+		{
+			InstanceName: "nri-mysql",
+			Interval:     "15s",
 		},
-	},
+	}),
 }
 
 func TestUnmarshall(t *testing.T) {
-	r, err := DeserializeLine(fixtureFoo.Payload)
+	r, err := GetConfigProtocolBuilder(fixtureFoo.Payload).Build()
 	assert.NoError(t, err)
-
 	assert.Equal(t, fixtureFoo.ParsedV1, r)
 }
 
@@ -61,7 +59,7 @@ func TestIsConfigProtocol(t *testing.T) {
 		name                      string
 		args                      args
 		wantIsConfigProtocol      bool
-		wantConfigProtocolVersion Version
+		wantConfigProtocolVersion int
 	}{
 		{
 			name: "valid",
@@ -69,7 +67,7 @@ func TestIsConfigProtocol(t *testing.T) {
 				line: []byte(`{"config_protocol_version": "1"}`),
 			},
 			wantIsConfigProtocol:      true,
-			wantConfigProtocolVersion: V1,
+			wantConfigProtocolVersion: 1,
 		},
 		{
 			name: "different protocol",
@@ -77,18 +75,22 @@ func TestIsConfigProtocol(t *testing.T) {
 				line: []byte(`{"command_request_version": "1"}`),
 			},
 			wantIsConfigProtocol:      false,
-			wantConfigProtocolVersion: VUnsupported,
+			wantConfigProtocolVersion: 0,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotIsConfigProtocol, gotConfigProtocolVersion := IsConfigProtocol(tt.args.line)
-			if gotIsConfigProtocol != tt.wantIsConfigProtocol {
-				t.Errorf("IsConfigProtocol() gotIsConfigProtocol = %v, want %v", gotIsConfigProtocol, tt.wantIsConfigProtocol)
+			cfgProtocolBuilder := GetConfigProtocolBuilder(tt.args.line)
+			if tt.wantIsConfigProtocol {
+				assert.NotNil(t, cfgProtocolBuilder)
+				cfgProtocol, err := cfgProtocolBuilder.Build()
+				assert.Nil(t, err)
+				assert.NotNil(t, t, cfgProtocol)
+				assert.Equal(t, tt.wantConfigProtocolVersion, cfgProtocol.Version())
+			} else {
+				assert.Nil(t, cfgProtocolBuilder)
 			}
-			if gotConfigProtocolVersion != tt.wantConfigProtocolVersion {
-				t.Errorf("IsConfigProtocol() gotConfigProtocolVersion = %v, want %v", gotConfigProtocolVersion, tt.wantConfigProtocolVersion)
-			}
+
 		})
 	}
 }
