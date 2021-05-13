@@ -199,15 +199,6 @@ func (r *runner) heartBeat() {
 func (r *runner) execute(ctx context.Context, matches *databind.Values, pidWCh, exitCodeCh chan<- int) {
 	def := r.definition
 
-	/**
-	c:=cache.New()
-			if added:=c.AddDefinition(entry.Definition, entry.Definition);added{
-				logger.
-					WithField("config_name",cp.ConfigName).
-					Debug("new definition added to the cache for the config name")
-			}
-	*/
-
 	// If timeout configuration is set, wraps current context in a heartbeat-enabled timeout context
 	if def.TimeoutEnabled() {
 		var act contexts.Actuator
