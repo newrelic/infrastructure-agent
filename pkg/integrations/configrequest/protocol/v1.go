@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"fmt"
+
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track/ctx"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
@@ -42,5 +43,5 @@ func (cfgProtocol *v1) GetConfig() databind.YAMLConfig {
 }
 
 func (cfgProtocol *v1) Integrations() []config.ConfigEntry {
-	return cfgProtocol.Integrations()
+	return cfgProtocol.Config.Integrations
 }
