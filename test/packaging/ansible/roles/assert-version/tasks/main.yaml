@@ -1,0 +1,5 @@
+---
+
+- include: "assert-version-{{ ansible_system }}.yaml"
+
+...

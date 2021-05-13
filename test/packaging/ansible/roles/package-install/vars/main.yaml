@@ -1,0 +1,5 @@
+---
+
+initial_agent_version: "1.18.12" # minimum version supporting ARM properly.
+
+...

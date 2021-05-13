@@ -34,3 +34,5 @@ versioninfo.json
 !/vendor/modules.txt
 .envrc
 venv
+
+test/packaging/ansible/inventory.ini

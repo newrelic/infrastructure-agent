@@ -1,0 +1,16 @@
+---
+
+#TODO add check for user caps - eval "$getCap $infra" | grep -e "cap_dac_read_search" | grep -e "cap_sys_ptrace"
+- name: check agent binary caps
+  shell: getcap /usr/bin/newrelic-infra | grep -e "cap_dac_read_search" | grep -e "cap_sys_ptrace"
+  register: getcap
+
+- name: Print getcap result for CI
+  debug:
+    msg: "{{ getcap.stdout }}"
+
+- name: assert caps are the same as expected
+  assert:
+    that: "'{{ getcap.stdout }}' == '/usr/bin/newrelic-infra = cap_dac_read_search,cap_sys_ptrace+ep'"
+
+...
