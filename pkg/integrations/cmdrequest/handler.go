@@ -2,7 +2,6 @@ package cmdrequest
 
 import (
 	"fmt"
-
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
@@ -25,6 +24,11 @@ func NewHandleFn(definitionQueue chan<- integration.Definition, il integration.I
 		for _, c := range crBatch.Commands {
 
 			def, err := integration.NewDefinition(newConfigFromCmdReq(c), il, nil, nil)
+
+
+
+
+
 			if err != nil {
 				logger.
 					WithField("cmd_req_version", crBatch.CommandRequestVersion).

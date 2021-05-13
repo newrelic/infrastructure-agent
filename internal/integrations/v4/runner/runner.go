@@ -5,6 +5,8 @@ package runner
 import (
 	"bytes"
 	"context"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/runner/cache"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	"regexp"
 	"strings"
 	"sync"
@@ -40,6 +42,12 @@ var (
 //generic types to handle the stderr log parsing
 type logFields map[string]interface{}
 type logParser func(line string) (fields logFields)
+type Runner interface {
+	Run(ctx context.Context, pidWCh, exitCodeCh chan<- int)
+	Cache() cache.Cache
+	KillChildren()
+	WithTracker(tracker *track.Tracker) Runner
+}
 
 // runner for a single integration entry
 type runner struct {
@@ -55,6 +63,8 @@ type runner struct {
 	healthCheck    sync.Once
 	heartBeatFunc  func()
 	heartBeatMutex sync.RWMutex
+	tracker        *track.Tracker
+	cache          cache.Cache
 }
 
 // NewRunner creates an integration runner instance.
@@ -75,6 +85,7 @@ func NewRunner(
 		definition:    intDef,
 		heartBeatFunc: func() {},
 		stderrParser:  parseLogrusFields,
+		cache:         cache.New(),
 	}
 	if handleErrorsProvide != nil {
 		r.handleErrors = handleErrorsProvide()
@@ -85,8 +96,13 @@ func NewRunner(
 	return r
 }
 
+func (r *runner) Cache() cache.Cache {
+	return r.cache
+}
+
 func (r *runner) Run(ctx context.Context, pidWCh, exitCodeCh chan<- int) {
 	r.log = illog.WithFields(LogFields(r.definition))
+	defer r.KillChildren()
 	for {
 		waitForNextExecution := time.After(r.definition.Interval)
 
@@ -117,6 +133,17 @@ func (r *runner) Run(ctx context.Context, pidWCh, exitCodeCh chan<- int) {
 			r.log.Debug("Integration has been interrupted")
 			return
 		case <-waitForNextExecution:
+		}
+	}
+}
+
+func (r *runner) KillChildren() {
+	if c := r.Cache(); c != nil {
+		cfgNames := c.ListConfigNames()
+		for _, cfgName := range cfgNames {
+			for hash := range r.Cache().GetHashes(cfgName) {
+				r.tracker.Kill(hash)
+			}
 		}
 	}
 }
@@ -260,10 +287,6 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 		}
 
 		if ok, ver := protocol.IsCommandRequest(line); ok {
-			if r.handleCmdReq == nil {
-				llog.Warn("received cmd request payload without a handler")
-				continue
-			}
 			llog.WithField("version", ver).Debug("Received run request.")
 			cr, err := protocol.DeserializeLine(line)
 			if err != nil {
@@ -296,7 +319,7 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 				continue
 			}
 
-			r.handleConfig(cfgProtocol)
+			r.handleConfig(cfgProtocol, r.cache)
 			continue
 		}
 

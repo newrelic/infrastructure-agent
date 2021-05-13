@@ -325,7 +325,8 @@ func (mgr *Manager) handleRequestsQueue(ctx context.Context) {
 			mgr.run(ctx, r, nil, def)
 		case entry := <-mgr.configEntryQueue:
 			ds, _ := entry.YAMLConfig.DataSources()
-			r := runner.NewRunner(entry.Definition, mgr.emitter, ds, nil, nil, nil)
+			r := runner.NewRunner(entry.Definition, mgr.emitter, ds, nil, nil, mgr.handleConfig)
+			r.WithTracker(mgr.tracker)
 			mgr.run(ctx, r, entry.Definition.ConfigRequest, entry.Definition)
 		}
 	}
@@ -341,6 +342,7 @@ func (mgr *Manager) run(ctx context.Context, r runner.Runner, req ctx.Request, d
 			r.Run(runCtx, pidWCh, exitCodeCh)
 			mgr.tracker.NotifyExit(hash, <-exitCodeCh)
 			mgr.tracker.Untrack(hash)
+
 		}(req.Hash())
 		return
 	}

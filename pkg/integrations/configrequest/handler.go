@@ -4,6 +4,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest/protocol"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/track/ctx"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
@@ -34,7 +35,14 @@ func NewHandleFn(configProtocolQueue chan<- Entry, il integration.InstancesLooku
 					Warn("cannot create handler for config protocol")
 				return
 			}
-			configProtocolQueue <- Entry{def.WithConfigRequest(cfgRequest), cfgProtocol.GetConfig()}
+			if added := c.AddDefinition(cp.ConfigName, def); added {
+				logger.
+					WithField("config_name", cp.ConfigName).
+					Debug("new definition added to the cache for the config name")
+				def.ConfigRequest = cr
+				//trace.CmdReq("queued definition: %+v", def)
+				configProtocolQueue <- Entry{def.WithConfigRequest(cfgRequest), cfgProtocol.GetConfig()}
+			}
 		}
 	}
 }
