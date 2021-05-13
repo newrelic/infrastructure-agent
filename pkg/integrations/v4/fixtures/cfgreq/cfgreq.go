@@ -4,14 +4,19 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
 )
 
-// Dummy integration reporting a command request.
+// Dummy integration reporting a config request.
 
 func main() {
+	stdoutType := "v4"
+	if val, ok := os.LookupEnv("STDOUT_TYPE"); ok {
+		stdoutType = val
+	}
 	projectDir, err := filepath.Abs("./")
 	if err != nil {
 		panic(err)
@@ -27,8 +32,11 @@ func main() {
 		"variables": {},
 		"integrations": [
 			{
-				"name": "nri-test",
-				"exec": ["`+path.Join(dir, "v4.sh")+`"]
+				"name": "spawned_integration",
+				"exec": ["`+path.Join(dir, "spawned_integration.sh")+`"],
+				"env": {
+					"STDOUT_TYPE": "`+stdoutType+`"
+				} 
 			}
 		]
 	}

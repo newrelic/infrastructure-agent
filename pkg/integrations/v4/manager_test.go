@@ -123,15 +123,26 @@ integrations:
   - name: cmdreq
     exec: ` + getExe(testhelp.GoRun(fixtures.CmdReqGoFile)) + "\n"
 
-var v4CfgReq = `---
+var v4CfgReqV3Payload = `---
 integrations:
   - name: cfgreq
+    env:
+      STDOUT_TYPE: v3
+    exec: ` + getExe(testhelp.GoRun(fixtures.CfgReqGoFile)) + "\n"
+
+var v4CfgReqV4Payload = `---
+integrations:
+  - name: cfgreq
+    env:
+      STDOUT_TYPE: v4
     exec: ` + getExe(testhelp.GoRun(fixtures.CfgReqGoFile)) + "\n"
 
 var v4CfgReqRecursive = `---
 integrations:
   - name: cfgreq-recursive
-    exec: ` + getExe(testhelp.GoRun(fixtures.CfgReqRecursiveGoFile)) + "\n"
+    env:
+      STDOUT_TYPE: cfgreq
+    exec: ` + getExe(testhelp.GoRun(fixtures.CfgReqGoFile)) + "\n"
 
 var (
 	definitionQ  = make(chan integration.Definition, 1000)
@@ -1002,10 +1013,10 @@ func TestManager_anIntegrationCanSpawnAnotherOne(t *testing.T) {
 	metric := expectOneMetric(t, emitter, "cmd-req-name")
 	assert.Equal(t, "ShellTestSample", metric["event_type"])
 }
-func TestManager_cfgProtocolSpawnIntegration(t *testing.T) {
+func TestManager_cfgProtocolSpawnIntegrationV3Payload(t *testing.T) {
 	// GIVEN a configuration file for an integration that will send a cfg protocol payload
 	dir, err := tempFiles(map[string]string{
-		"v4-cfgreq.yaml": v4CfgReq,
+		"v4-cfgreq-v3payload.yaml": v4CfgReqV3Payload,
 	})
 	require.NoError(t, err)
 	defer removeTempFiles(t, dir)
@@ -1019,11 +1030,33 @@ func TestManager_cfgProtocolSpawnIntegration(t *testing.T) {
 	defer cancel()
 	go mgr.Start(ctx)
 
-	// THEN the integration is executed, requesting a new integration run that generates telemetry data
-	metric := expectOneMetric(t, emitter, "nri-test")
+	// THEN the integration is executed, requesting a new integration run that generates telemetry data of v3 protocol
+	metric := expectOneMetric(t, emitter, "spawned_integration")
 	assert.Equal(t, "ShellTestSample", metric["event_type"])
 }
+func TestManager_cfgProtocolSpawnIntegrationV4Payload(t *testing.T) {
+	// GIVEN a configuration file for an integration that will send a cfg protocol payload
+	dir, err := tempFiles(map[string]string{
+		"v4-cfgreq-v4payload.yaml": v4CfgReqV4Payload,
+	})
+	require.NoError(t, err)
+	defer removeTempFiles(t, dir)
+
+	// AND an integrations manager
+	emitter := &testemit.RecordEmitter{}
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ, configEntryQ, track.NewTracker(nil))
+
+	// WHEN the manager executes the integration
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go mgr.Start(ctx)
+
+	// THEN the integration is executed, requesting a new integration run that generates telemetry data of v4 protocol
+	assert.Len(t, expectNMetrics(t, emitter, "spawned_integration", 1), 1)
+}
 func TestManager_cfgProtocolSpawnedIntegrationCannotSpawnIntegration(t *testing.T) {
+	log.SetOutput(ioutil.Discard)  // discard logs so not to break race tests
+	defer log.SetOutput(os.Stderr) // return back to default
 	hook := new(test.Hook)
 	log.AddHook(hook)
 
@@ -1044,15 +1077,15 @@ func TestManager_cfgProtocolSpawnedIntegrationCannotSpawnIntegration(t *testing.
 	go mgr.Start(ctx)
 
 	// THEN log entry found
-	testhelpers.Eventually(t, 5*time.Second, func(t require.TestingT) {
-		entry := hook.LastEntry()
-		if entry == nil {
-			require.NotNil(t, entry)
-			return
+	assert.Eventually(t, func() bool {
+		entries := hook.AllEntries()
+		for _, e := range entries {
+			if e.Message == "received config protocol request payload without a handler" {
+				return true
+			}
 		}
-		assert.Equal(t, "received config protocol request payload without a handler", entry.Message)
-		assert.Equal(t, logrus.WarnLevel, entry.Level)
-	})
+		return false
+	}, time.Second, 10*time.Millisecond)
 }
 
 func TestManager_ExpandsConfigEnvVars(t *testing.T) {
