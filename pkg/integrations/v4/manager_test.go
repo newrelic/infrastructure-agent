@@ -1014,6 +1014,7 @@ func TestManager_anIntegrationCanSpawnAnotherOne(t *testing.T) {
 	assert.Equal(t, "ShellTestSample", metric["event_type"])
 }
 func TestManager_cfgProtocolSpawnIntegrationV3Payload(t *testing.T) {
+	skipIfWindows(t)
 	// GIVEN a configuration file for an integration that will send a cfg protocol payload
 	dir, err := tempFiles(map[string]string{
 		"v4-cfgreq-v3payload.yaml": v4CfgReqV3Payload,
@@ -1035,6 +1036,7 @@ func TestManager_cfgProtocolSpawnIntegrationV3Payload(t *testing.T) {
 	assert.Equal(t, "ShellTestSample", metric["event_type"])
 }
 func TestManager_cfgProtocolSpawnIntegrationV4Payload(t *testing.T) {
+	skipIfWindows(t)
 	// GIVEN a configuration file for an integration that will send a cfg protocol payload
 	dir, err := tempFiles(map[string]string{
 		"v4-cfgreq-v4payload.yaml": v4CfgReqV4Payload,
@@ -1055,6 +1057,7 @@ func TestManager_cfgProtocolSpawnIntegrationV4Payload(t *testing.T) {
 	assert.Len(t, expectNMetrics(t, emitter, "spawned_integration", 1), 1)
 }
 func TestManager_cfgProtocolSpawnedIntegrationCannotSpawnIntegration(t *testing.T) {
+	skipIfWindows(t)
 	log.SetOutput(ioutil.Discard)  // discard logs so not to break race tests
 	defer log.SetOutput(os.Stderr) // return back to default
 	hook := new(test.Hook)
