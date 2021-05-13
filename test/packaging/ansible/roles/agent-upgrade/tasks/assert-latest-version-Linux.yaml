@@ -1,0 +1,11 @@
+---
+
+- name: register installed version
+  shell: "newrelic-infra --version | egrep -o 'New Relic Infrastructure Agent version: [0-9\\.]+' | egrep -o '[0-9\\.]+'"
+  register: installed_version
+
+- name: assert installed version is bogger than initial version
+  assert:
+    that: "{{ installed_version.stdout is version(initial_agent_version, '>') }}"
+
+...

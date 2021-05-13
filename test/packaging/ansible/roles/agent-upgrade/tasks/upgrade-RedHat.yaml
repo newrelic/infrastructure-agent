@@ -1,0 +1,12 @@
+---
+
+- name: yum install infra-agent
+  environment: "{{ env_vars }}"
+  yum:
+    name: "newrelic-infra"
+    update_cache: yes
+    state: latest
+  retries: 5
+  delay: 60
+
+...
