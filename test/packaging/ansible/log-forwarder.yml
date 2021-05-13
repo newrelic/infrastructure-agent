@@ -1,0 +1,34 @@
+---
+
+- hosts: all
+  become: true
+  gather_facts: yes
+
+  pre_tasks:
+    - name: Initial cleanup # Only required for shared infra.
+      include_role:
+        name: cleanup
+
+  tasks:
+    - name: Log forwarder tests suite
+      vars:
+        env_vars:
+
+      block:
+
+        - name: install agent
+          include_role:
+            name: agent-install
+
+        # Not available for ARM yet
+        - name: Log forwarder
+          include_role:
+            name: logging
+
+      always:
+        - name: Final cleanup # Only required for shared infra.
+          include_role:
+            name: cleanup
+
+
+...

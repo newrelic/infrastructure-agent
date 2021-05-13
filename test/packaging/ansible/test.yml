@@ -15,6 +15,10 @@
 - name: unprivileged mode agent installation
   import_playbook: installation-unprivileged.yml
 
+# Not available for ARM yet
+#- name: log forwarder
+#  import_playbook: log-forwarder.yml
+
 - name: agent uninstallation
   import_playbook: uninstallation.yml
 
