@@ -1,8 +1,5 @@
 ---
 
-- name: setup the environment
-  import_playbook: initial_setup.yml
-
 - name: pinned version agent installation
   import_playbook: installation-pinned.yml
 
@@ -18,6 +15,9 @@
 # Not available for ARM yet
 #- name: log forwarder
 #  import_playbook: log-forwarder.yml
+
+- name: agent upgrade
+  import_playbook: agent-upgrade.yml
 
 - name: agent uninstallation
   import_playbook: uninstallation.yml
