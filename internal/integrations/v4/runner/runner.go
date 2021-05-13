@@ -272,6 +272,12 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 					Warn("cannot deserialize integration run request payload")
 				continue
 			}
+
+			if r.handleCmdReq == nil {
+				llog.Warn("received cmd request payload without a handler")
+				continue
+			}
+
 			r.handleCmdReq(cr)
 			continue
 		}
