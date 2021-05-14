@@ -12,7 +12,7 @@
   tasks:
     - name: Installation tests suite
       vars:
-        initial_agent_version: "1.18.5" # TODO : Change it to specific version before merging to master
+        agent_pkg_version: "1.18.5" # TODO : Change it to specific version before merging to master
         env_vars:
 
       block:

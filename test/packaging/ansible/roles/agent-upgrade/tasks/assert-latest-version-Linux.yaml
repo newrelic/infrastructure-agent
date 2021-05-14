@@ -6,6 +6,6 @@
 
 - name: assert installed version is bogger than initial version
   assert:
-    that: "{{ installed_version.stdout is version(initial_agent_version, '>') }}"
+    that: "{{ installed_version.stdout is version(agent_pkg_version, '>') }}"
 
 ...
