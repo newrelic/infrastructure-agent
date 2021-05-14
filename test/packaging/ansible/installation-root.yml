@@ -12,6 +12,7 @@
   tasks:
     - name: Installation tests suite
       vars:
+        agent_user: root
         env_vars:
 
       block:
@@ -23,6 +24,10 @@
         - name: install agent
           include_role:
             name: agent-install
+
+        - name: Assert root
+          include_role:
+            name: assert-agent-user
 
       always:
         - name: Final cleanup # Only required for shared infra.
