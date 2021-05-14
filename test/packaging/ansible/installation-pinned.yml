@@ -12,14 +12,14 @@
   tasks:
     - name: Installation tests suite
       vars:
-        agent_pkg_version: "1.18.12" # minimum version supporting ARM.
         env_vars:
+        agent_pkg_version: "1.18.12" # minimum version supporting ARM.
 
       block:
 
         - name: install agent
           include_role:
-            name: agent-install-pinned
+            name: package-install-pinned
 
         - name: Assert version
           include_role:
@@ -29,6 +29,5 @@
         - name: Final cleanup # Only required for shared infra.
           include_role:
             name: cleanup
-
 
 ...

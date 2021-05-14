@@ -25,5 +25,4 @@
           include_role:
             name: cleanup
 
-
 ...

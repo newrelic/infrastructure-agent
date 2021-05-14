@@ -18,7 +18,7 @@
 
         - name: install initial version
           include_role:
-            name: agent-install-pinned
+            name: package-install-pinned
           vars:
             agent_pkg_version: "1.18.12"
 
@@ -46,6 +46,5 @@
         - name: Final cleanup # Only required for shared infra.
           include_role:
             name: cleanup
-
 
 ...
