@@ -1,7 +1,3 @@
-- name: Setup repo
-  include_role:
-    name: repo-setup
-
 - name: Setup config
   include_role:
     name: setup-config

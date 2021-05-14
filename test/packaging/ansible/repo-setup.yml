@@ -1,0 +1,17 @@
+---
+
+- hosts: all
+  become: true
+  gather_facts: yes
+
+  tasks:
+
+    - name: clean yum cache
+      command: yum clean all
+      when: ansible_facts['os_family'] == 'RedHat'
+
+    - name: Setup repo
+      include_role:
+        name: repo-setup
+
+...
