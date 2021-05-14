@@ -4,6 +4,7 @@ package integration
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"time"
@@ -43,6 +44,13 @@ type Definition struct {
 	cfgRequest      *ctx.ConfigRequest
 	runnable        executor.Executor
 	newTempFile     func(template []byte) (string, error)
+}
+
+//TODO
+func (d *Definition) Hash() string {
+	h := sha256.New()
+	h.Write([]byte(fmt.Sprintf("%v", d)))
+	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
 func (d *Definition) WithConfigRequest(cfgRequest *ctx.ConfigRequest) Definition {
