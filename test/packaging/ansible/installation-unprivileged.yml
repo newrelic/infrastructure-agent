@@ -20,10 +20,13 @@
         include_role:
           name: agent-install
 
+      - name: wait for agent to spin up
+        pause:
+          seconds: 3
+
       - name: Assert rootless
         include_role:
           name: assert-rootless
-
 
       always:
         - name: Final cleanup # Only required for shared infra.

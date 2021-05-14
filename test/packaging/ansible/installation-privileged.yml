@@ -16,6 +16,10 @@
           NRIA_MODE: PRIVILEGED
       block:
 
+      - name: repo setup
+        include_role:
+          name: repo-setup
+
       - name: install agent
         include_role:
           name: agent-install
@@ -23,6 +27,10 @@
       - name: Assert privileged capabilities
         include_role:
           name: assert-privileged-caps
+
+      - name: wait for agent to spin up
+        pause:
+          seconds: 3
 
       - name: Assert rootless
         include_role:
