@@ -22,20 +22,26 @@
           vars:
             agent_pkg_version: "1.18.12"
 
-        - name: get current agent PID
-          command: pgrep -x newrelic-infra
+        - name: assert service is running
+          include_role:
+            name: assert-service
+
+        - name: get initial agent PID
+          command: pgrep -f newrelic-infra-service
           register: agent_pid
 
         - name: upgrade agent
           include_role:
             name: agent-upgrade
+          vars:
+            agent_pkg_version: "1.18.12"
 
         - name: assert service countinues running after upgrade
           include_role:
             name: assert-service
 
-        - name: get current agent PID
-          command: pgrep -x newrelic-infra
+        - name: get agent PID after upgrade
+          command: pgrep -f newrelic-infra-service
           register: updated_agent_pid
 
         - name: assert agent has been reloaded
