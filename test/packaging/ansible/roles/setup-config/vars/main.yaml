@@ -1,7 +1,5 @@
 ---
 
-repo_endpoint: "http://nr-downloads-ohai-testing.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
-
 # agent config:
 nr_license_key: "{{ lookup ('env', 'NR_LICENSE_KEY') }}"
 display_name: "{{ ansible_hostname }}"
