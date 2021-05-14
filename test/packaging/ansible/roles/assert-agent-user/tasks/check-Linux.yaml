@@ -50,13 +50,15 @@
   assert:
     that: st.stat.pw_name == '{{ agent_user }}'
 
-- name: fetch agent process pid
-  command: cat {{ pidfile }}
+- name: fetch agent service pid
+  command: pgrep -f newrelic-infra-service
   register: pid
+  changed_when: false
 
 - name: fetch agent process owner
   command: ps -o user= -p {{ pid.stdout }}
   register: owner
+  changed_when: false
 
 - name: assert service is being run by the agent user
   assert:
