@@ -1,25 +1,14 @@
 package cache
 
 import (
-	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
-	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func createIntegrationDefinition(name string) integration.Definition {
 	return integration.Definition{
-		Name:            name,
-		Labels:          nil,
-		ExecutorConfig:  executor.Config{},
-		Interval:        0,
-		Timeout:         0,
-		ConfigTemplate:  nil,
-		InventorySource: ids.PluginID{},
-		WhenConditions:  nil,
-		CmdChanReq:      nil,
-		ConfigRequest:   nil,
+		Name: name,
 	}
 }
 
