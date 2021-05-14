@@ -11,5 +11,7 @@
 
 - name: clean yum cache
   command: yum clean all
+  warn: false
+  # https://github.com/ansible/ansible/pull/31450#issuecomment-352889579
 
 ...
