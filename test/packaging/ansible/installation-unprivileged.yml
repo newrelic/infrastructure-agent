@@ -18,6 +18,10 @@
 
       block:
 
+      - name: repo setup
+        include_role:
+          name: repo-setup
+
       - name: install agent
         include_role:
           name: agent-install
