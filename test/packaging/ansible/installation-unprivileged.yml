@@ -15,15 +15,12 @@
         agent_user: "nri-agent"
         env_vars:
           NRIA_MODE: UNPRIVILEGED
+
       block:
 
       - name: install agent
         include_role:
           name: agent-install
-
-      - name: wait for agent to spin up
-        pause:
-          seconds: 3
 
       - name: Assert rootless
         include_role:
