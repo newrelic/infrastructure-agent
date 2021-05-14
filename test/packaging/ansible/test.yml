@@ -1,7 +1,7 @@
 ---
 
-- name: clear package manager cache
-  import_playbook: clear-package-manager-cache.yml
+- name: repo setup
+  import_playbook: repo-setup.yml
 
 - name: pinned version agent installation
   import_playbook: installation-pinned.yml
