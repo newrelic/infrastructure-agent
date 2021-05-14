@@ -11,9 +11,7 @@ import (
 
 var (
 	// helper for testing purposes
-	NoopHandleFn = func(protocol.ConfigProtocolV1) {
-
-	}
+	NoopHandleFn = func(protocol.ConfigProtocolV1, cache.Cache) {}
 )
 
 type Entry struct {
@@ -26,8 +24,6 @@ type HandleFn func(protocol.ConfigProtocolV1, cache.Cache)
 // NewHandleFn creates a handler func that runs every command within the request batch independently.
 // Each command is run in parallel and won't depend on the results of the other ones.
 func NewHandleFn(configProtocolQueue chan<- Entry, il integration.InstancesLookup, logger log.Entry) HandleFn {
-	//TODO c := cache.New()
-
 	return func(cp protocol.ConfigProtocolV1, c cache.Cache) {
 		//TODO trace logging
 		// trace.CmdReq("received payload: %+v", crBatch)
