@@ -12,14 +12,15 @@
   tasks:
     - name: agent upgrade tests suite
       vars:
-        agent_pkg_version: "1.18.2" # TODO : Change it to specific version before merging to master
         env_vars:
 
       block:
 
         - name: install initial version
           include_role:
-            name: agent-install
+            name: package-install-pinned
+          vars:
+            agent_pkg_version: "1.18.12"
 
         - name: get current agent PID
           command: pgrep -x newrelic-infra
@@ -45,6 +46,5 @@
         - name: Final cleanup # Only required for shared infra.
           include_role:
             name: cleanup
-
 
 ...
