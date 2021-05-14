@@ -12,14 +12,18 @@
   tasks:
     - name: Installation tests suite
       vars:
-        agent_pkg_version: "1.18.5" # TODO : Change it to specific version before merging to master
+        agent_pkg_version: "1.18.12" # minimum version supporting ARM.
         env_vars:
 
       block:
 
         - name: install agent
           include_role:
-            name: agent-install
+            name: agent-install-pinned
+
+        - name: Assert version
+          include_role:
+            name: assert-version
 
       always:
         - name: Final cleanup # Only required for shared infra.
