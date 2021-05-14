@@ -10,4 +10,7 @@
     gpgcheck: no
     repo_gpgcheck: no
 
+- name: clean yum cache
+  command: yum clean all
+
 ...
