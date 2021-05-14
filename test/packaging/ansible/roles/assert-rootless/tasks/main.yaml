@@ -1,5 +1,0 @@
----
-
-- include: "check-{{ ansible_system }}.yaml"
-
-...

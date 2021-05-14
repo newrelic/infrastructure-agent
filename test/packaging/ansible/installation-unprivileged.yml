@@ -12,6 +12,7 @@
   tasks:
     - name: Installation tests suite
       vars:
+        agent_user: "nri-agent"
         env_vars:
           NRIA_MODE: UNPRIVILEGED
       block:
@@ -26,7 +27,7 @@
 
       - name: Assert rootless
         include_role:
-          name: assert-rootless
+          name: assert-agent-user
 
       always:
         - name: Final cleanup # Only required for shared infra.
