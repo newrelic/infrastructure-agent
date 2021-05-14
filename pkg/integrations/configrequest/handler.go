@@ -1,8 +1,8 @@
 package configrequest
 
 import (
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/cache"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
-	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/runner/cache"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track/ctx"

@@ -4,6 +4,7 @@ package integration
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"time"
@@ -47,7 +48,9 @@ type Definition struct {
 
 //TODO
 func (d *Definition) Hash() string {
-	return ""
+	h := sha256.New()
+	h.Write([]byte(fmt.Sprintf("%v", d)))
+	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
 func (d *Definition) TimeoutEnabled() bool {

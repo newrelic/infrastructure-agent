@@ -5,7 +5,7 @@ package runner
 import (
 	"bytes"
 	"context"
-	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/runner/cache"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/cache"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	"regexp"
 	"strings"
@@ -85,7 +85,7 @@ func NewRunner(
 		definition:    intDef,
 		heartBeatFunc: func() {},
 		stderrParser:  parseLogrusFields,
-		cache:         cache.New(),
+		cache:         cache.CreateCache(),
 	}
 	if handleErrorsProvide != nil {
 		r.handleErrors = handleErrorsProvide()

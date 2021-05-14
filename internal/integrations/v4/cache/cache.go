@@ -16,7 +16,7 @@ type cache struct {
 	definitions map[string]integration.Definition
 }
 
-func New() Cache {
+func CreateCache() Cache {
 	return &cache{
 		hashes:      make(map[string]map[string]struct{}),
 		definitions: make(map[string]integration.Definition),
@@ -27,6 +27,9 @@ func (c *cache) AddDefinition(cfgName string, definition integration.Definition)
 	hash := definition.Hash()
 	if _, ok := c.hashes[cfgName][hash]; ok {
 		return false
+	}
+	if _,ok:=c.hashes[cfgName];!ok{
+		c.hashes[cfgName]=make(map[string]struct{})
 	}
 	c.hashes[cfgName][hash] = struct{}{}
 	c.definitions[hash] = definition
