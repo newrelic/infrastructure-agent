@@ -325,8 +325,7 @@ func (mgr *Manager) handleRequestsQueue(ctx context.Context) {
 			mgr.run(ctx, r, nil, def)
 		case entry := <-mgr.configEntryQueue:
 			ds, _ := entry.YAMLConfig.DataSources()
-			r := runner.NewRunner(entry.Definition, mgr.emitter, ds, nil, nil, mgr.handleConfig)
-			r.WithTracker(mgr.tracker)
+			r := runner.NewRunner(entry.Definition, mgr.emitter, ds, nil, nil, nil)
 			mgr.run(ctx, r, entry.Definition.ConfigRequest, entry.Definition)
 		}
 	}
@@ -337,6 +336,7 @@ func (mgr *Manager) run(ctx context.Context, r runner.Runner, req ctx.Request, d
 	if req != nil {
 		// tracking so cmd requests can be stopped by hash
 		runCtx, pidWCh := mgr.tracker.Track(ctx, req.Hash(), &def)
+		r.WithTracker(mgr.tracker)
 		go func(hash string) {
 			exitCodeCh := make(chan int, 1)
 			r.Run(runCtx, pidWCh, exitCodeCh)

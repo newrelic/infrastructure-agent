@@ -28,7 +28,10 @@ const (
 	configPathHolder  = "${" + configPathVarName + "}"
 )
 
-var elog = log.WithComponent("integrations.Definition")
+var (
+	elog = log.WithComponent("integrations.Definition")
+
+)
 
 // Definition is a n `-exec` yaml entry. It will execute the provided command line or array of commands
 type Definition struct {
@@ -46,8 +49,8 @@ type Definition struct {
 	newTempFile     func(template []byte) (string, error)
 }
 
+var h = sha256.New()
 func (d *Definition) Hash() string {
-	h := sha256.New()
 	h.Write([]byte(fmt.Sprintf("%v", d)))
 	return fmt.Sprintf("%x", h.Sum(nil))
 }

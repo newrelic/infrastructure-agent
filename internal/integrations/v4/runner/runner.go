@@ -100,6 +100,11 @@ func (r *runner) Cache() cache.Cache {
 	return r.cache
 }
 
+func (r *runner) WithTracker(tracker *track.Tracker) Runner {
+	r.tracker = tracker
+	return r
+}
+
 func (r *runner) Run(ctx context.Context, pidWCh, exitCodeCh chan<- int) {
 	r.log = illog.WithFields(LogFields(r.definition))
 	defer r.KillChildren()
@@ -138,6 +143,7 @@ func (r *runner) Run(ctx context.Context, pidWCh, exitCodeCh chan<- int) {
 }
 
 func (r *runner) KillChildren() {
+
 	if c := r.Cache(); c != nil {
 		cfgNames := c.ListConfigNames()
 		for _, cfgName := range cfgNames {
@@ -146,11 +152,6 @@ func (r *runner) KillChildren() {
 			}
 		}
 	}
-}
-
-func (r *runner) WithTracker(tracker *track.Tracker) Runner {
-	r.tracker = tracker
-	return r
 }
 
 func LogFields(def integration.Definition) logrus.Fields {
@@ -320,7 +321,7 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 					Warn("cannot deserialize config protocol")
 				continue
 			}
-			cp.Hash()
+
 			if r.handleConfig == nil {
 				llog.Warn("received config protocol request payload without a handler")
 				continue
