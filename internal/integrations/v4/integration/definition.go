@@ -46,7 +46,6 @@ type Definition struct {
 	newTempFile     func(template []byte) (string, error)
 }
 
-//TODO
 func (d *Definition) Hash() string {
 	h := sha256.New()
 	h.Write([]byte(fmt.Sprintf("%v", d)))
