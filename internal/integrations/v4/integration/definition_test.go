@@ -343,3 +343,24 @@ func TestRun_RemoveExternalConfig(t *testing.T) {
 		}
 	})
 }
+
+
+func TestDefinition_Hash(t *testing.T) {
+	def := Definition{
+		Name:            "def",
+		ConfigTemplate:  []byte("a"),
+	}
+	assert.NotNil(t, def)
+	def2:= Definition{
+		Name:            "def",
+		ConfigTemplate:  []byte("b"),
+	}
+	assert.NotNil(t, def2)
+	assert.NotEqual(t, def.Hash(), def2.Hash())
+	def3:= Definition{
+		Name:            "def",
+		ConfigTemplate:  []byte("b"),
+	}
+	assert.NotNil(t, def3)
+	assert.Equal(t, def3.Hash(), def2.Hash())
+}
