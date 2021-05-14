@@ -11,6 +11,9 @@
     repo_gpgcheck: no
 
 - name: clean yum cache
-  command: yum clean all
+  # https://github.com/ansible/ansible/pull/31450#issuecomment-352889579
+  command:
+    cmd: yum clean all
+    warn: no
 
 ...
