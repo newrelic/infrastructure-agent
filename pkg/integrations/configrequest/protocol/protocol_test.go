@@ -3,11 +3,12 @@
 package protocol
 
 import (
-	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"testing"
 
+	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type fixture struct {
@@ -51,7 +52,7 @@ func TestUnmarshall(t *testing.T) {
 	assert.Equal(t, fixtureFoo.ParsedV1, r)
 }
 
-func TestIsConfigProtocol(t *testing.T) {
+func TestGetConfigProtocolBuilder(t *testing.T) {
 	type args struct {
 		line []byte
 	}
@@ -59,36 +60,56 @@ func TestIsConfigProtocol(t *testing.T) {
 		name                      string
 		args                      args
 		wantIsConfigProtocol      bool
+		wantIsValid               bool
 		wantConfigProtocolVersion int
 	}{
 		{
-			name: "valid",
+			name: "valid config request",
 			args: args{
-				line: []byte(`{"config_protocol_version": "1"}`),
+				line: []byte(`{
+				"config_protocol_version": "1",
+				"config_name": "config-name",
+				"action": "action-name",
+				"config": { "integrations": [ { "name": "nri-test"} ] } 
+				}`),
 			},
 			wantIsConfigProtocol:      true,
+			wantIsValid:               true,
 			wantConfigProtocolVersion: 1,
+		},
+		{
+			name: "invalid config request: missing required attributes",
+			args: args{
+				line: []byte(`{
+					"config_protocol_version": "1"
+					}`),
+			},
+			wantIsConfigProtocol: true,
+			wantIsValid:          false,
 		},
 		{
 			name: "different protocol",
 			args: args{
 				line: []byte(`{"command_request_version": "1"}`),
 			},
-			wantIsConfigProtocol:      false,
-			wantConfigProtocolVersion: 0,
+			wantIsConfigProtocol: false,
+			wantIsValid:          false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfgProtocolBuilder := GetConfigProtocolBuilder(tt.args.line)
 			if tt.wantIsConfigProtocol {
-				assert.NotNil(t, cfgProtocolBuilder)
+				require.NotNil(t, cfgProtocolBuilder)
+			} else {
+				assert.Nil(t, cfgProtocolBuilder)
+			}
+			if tt.wantIsValid {
+				require.NotNil(t, cfgProtocolBuilder)
 				cfgProtocol, err := cfgProtocolBuilder.Build()
 				assert.Nil(t, err)
 				assert.NotNil(t, t, cfgProtocol)
 				assert.Equal(t, tt.wantConfigProtocolVersion, cfgProtocol.Version())
-			} else {
-				assert.Nil(t, cfgProtocolBuilder)
 			}
 
 		})
