@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"context"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/cache"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	"regexp"
 	"strings"
 	"sync"
@@ -58,6 +57,7 @@ type runner struct {
 	heartBeatFunc  func()
 	heartBeatMutex sync.RWMutex
 	cache          cache.Cache
+	terminateQueue chan<- integration.Definition
 }
 
 // NewRunner creates an integration runner instance.
@@ -69,16 +69,18 @@ func NewRunner(
 	handleErrorsProvide func() runnerErrorHandler,
 	cmdReqHandle cmdrequest.HandleFn,
 	configHandle configrequest.HandleFn,
+	terminateQ chan<- integration.Definition,
 ) *runner {
 	r := &runner{
-		emitter:       emitter,
-		handleCmdReq:  cmdReqHandle,
-		handleConfig:  configHandle,
-		dSources:      dSources,
-		definition:    intDef,
-		heartBeatFunc: func() {},
-		stderrParser:  parseLogrusFields,
-		cache:         cache.CreateCache(),
+		emitter:        emitter,
+		handleCmdReq:   cmdReqHandle,
+		handleConfig:   configHandle,
+		dSources:       dSources,
+		definition:     intDef,
+		heartBeatFunc:  func() {},
+		stderrParser:   parseLogrusFields,
+		terminateQueue: terminateQ,
+		cache:          cache.CreateCache(),
 	}
 	if handleErrorsProvide != nil {
 		r.handleErrors = handleErrorsProvide()
@@ -89,13 +91,9 @@ func NewRunner(
 	return r
 }
 
-func (r *runner) Cache() cache.Cache {
-	return r.cache
-}
-
 func (r *runner) Run(ctx context.Context, pidWCh, exitCodeCh chan<- int) {
 	r.log = illog.WithFields(LogFields(r.definition))
-	defer r.KillChildren()
+	defer r.killChildren()
 	for {
 		waitForNextExecution := time.After(r.definition.Interval)
 
@@ -130,12 +128,13 @@ func (r *runner) Run(ctx context.Context, pidWCh, exitCodeCh chan<- int) {
 	}
 }
 
-func (r *runner) KillChildren() {
-	if c := r.Cache(); c != nil {
+func (r *runner) killChildren() {
+	if c := r.cache; c != nil {
 		cfgNames := c.ListConfigNames()
 		for _, cfgName := range cfgNames {
-			for hash := range r.Cache().GetHashes(cfgName) {
-				r.tracker.Kill(hash)
+			definitions := r.cache.GetDefinitions(cfgName)
+			for _, definition := range definitions {
+				r.terminateQueue <- definition
 			}
 		}
 	}

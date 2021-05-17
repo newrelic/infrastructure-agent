@@ -46,8 +46,8 @@ type Definition struct {
 	newTempFile     func(template []byte) (string, error)
 }
 
-var h = sha256.New()
 func (d *Definition) Hash() string {
+	h := sha256.New()
 	h.Write([]byte(fmt.Sprintf("%v", d)))
 	return fmt.Sprintf("%x", h.Sum(nil))
 }

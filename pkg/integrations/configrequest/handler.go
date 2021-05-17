@@ -10,7 +10,7 @@ import (
 
 var (
 	// helper for testing purposes
-	NoopHandleFn = func(configProtocol protocol.ConfigProtocol) {}
+	NoopHandleFn = func(configProtocol protocol.ConfigProtocol, c cache.Cache) {}
 )
 
 type Entry struct {
@@ -18,12 +18,12 @@ type Entry struct {
 	YAMLConfig databind.YAMLConfig
 }
 
-type HandleFn func(cfgProtocol protocol.ConfigProtocol)
+type HandleFn func(cfgProtocol protocol.ConfigProtocol, c cache.Cache)
 
 // NewHandleFn creates a handler func that runs every command within the request batch independently.
 // Each command is run in parallel and won't depend on the results of the other ones.
 func NewHandleFn(configProtocolQueue chan<- Entry, il integration.InstancesLookup, logger log.Entry) HandleFn {
-	return func(cfgProtocol protocol.ConfigProtocol) {
+	return func(cfgProtocol protocol.ConfigProtocol, c cache.Cache) {
 		cfgRequest := cfgProtocol.BuildConfigRequest()
 		for _, ce := range cfgProtocol.Integrations() {
 			def, err := integration.NewDefinition(ce, il, nil, nil)
@@ -35,12 +35,10 @@ func NewHandleFn(configProtocolQueue chan<- Entry, il integration.InstancesLooku
 					Warn("cannot create handler for config protocol")
 				return
 			}
-			if added := c.AddDefinition(cp.ConfigName, def); added {
+			if added := c.AddDefinition(cfgRequest.Name(), def); added {
 				logger.
-					WithField("config_name", cp.ConfigName).
+					WithField("config_name", cfgRequest.Name()).
 					Debug("new definition added to the cache for the config name")
-				def.ConfigRequest = cr
-				//trace.CmdReq("queued definition: %+v", def)
 				configProtocolQueue <- Entry{def.WithConfigRequest(cfgRequest), cfgProtocol.GetConfig()}
 			}
 		}

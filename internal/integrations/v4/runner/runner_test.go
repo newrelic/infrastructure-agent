@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/cache"
 	"io/ioutil"
 	"os"
 	"sync/atomic"
@@ -48,7 +49,7 @@ func Test_runner_Run(t *testing.T) {
 	require.NoError(t, err)
 
 	e := &testemit.RecordEmitter{}
-	r := NewRunner(def, e, nil, nil, cmdrequest.NoopHandleFn, configrequest.NoopHandleFn)
+	r := NewRunner(def, e, nil, nil, cmdrequest.NoopHandleFn, configrequest.NoopHandleFn, nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
@@ -79,7 +80,7 @@ func Test_runner_Run_noHandleForCfgProtocol(t *testing.T) {
 	require.NoError(t, err)
 
 	e := &testemit.RecordEmitter{}
-	r := NewRunner(def, e, nil, nil, cmdrequest.NoopHandleFn, nil)
+	r := NewRunner(def, e, nil, nil, cmdrequest.NoopHandleFn, nil, nil)
 
 	// WHEN the runner executes the binary and handle the payload.
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
@@ -119,7 +120,7 @@ func Test_runner_Run_failToUnMarshallCfgProtocol(t *testing.T) {
 	require.NoError(t, err)
 
 	e := &testemit.RecordEmitter{}
-	r := NewRunner(def, e, nil, nil, cmdrequest.NoopHandleFn, configrequest.NoopHandleFn)
+	r := NewRunner(def, e, nil, nil, cmdrequest.NoopHandleFn, configrequest.NoopHandleFn, nil)
 
 	// WHEN the runner executes the binary and handle the payload.
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
@@ -151,11 +152,11 @@ func Test_runner_Run_handlesCfgProtocol(t *testing.T) {
 	require.NoError(t, err)
 
 	var called uint32
-	mockHandleFn := func(configProtocol protocol.ConfigProtocol) {
+	mockHandleFn := func(configProtocol protocol.ConfigProtocol, c cache.Cache) {
 		atomic.AddUint32(&called, 1)
 	}
 	e := &testemit.RecordEmitter{}
-	r := NewRunner(def, e, nil, nil, cmdrequest.NoopHandleFn, mockHandleFn)
+	r := NewRunner(def, e, nil, nil, cmdrequest.NoopHandleFn, mockHandleFn, nil)
 
 	// WHEN the runner executes the binary and handle the payload.
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
