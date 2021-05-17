@@ -44,15 +44,20 @@ type Definition struct {
 	InventorySource ids.PluginID
 	WhenConditions  []when.Condition
 	CmdChanReq      *ctx.CmdChannelRequest // not empty: command-channel run/stop integration requests
-	ConfigRequest   *ctx.ConfigRequest
+	cfgRequest      *ctx.ConfigRequest
 	runnable        executor.Executor
 	newTempFile     func(template []byte) (string, error)
 }
 
-var h = sha256.New()
 func (d *Definition) Hash() string {
+	h := sha256.New()
 	h.Write([]byte(fmt.Sprintf("%v", d)))
 	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func (d *Definition) WithConfigRequest(cfgRequest *ctx.ConfigRequest) Definition {
+	d.cfgRequest = cfgRequest
+	return *d
 }
 
 func (d *Definition) TimeoutEnabled() bool {

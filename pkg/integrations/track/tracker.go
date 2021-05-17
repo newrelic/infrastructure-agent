@@ -5,6 +5,7 @@ package track
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -68,6 +69,10 @@ func (t *Tracker) Untrack(hash string) {
 	}
 
 	t.lock.Lock()
+	for k,v:=range t.hash2Ctx{
+		fmt.Println(k)
+		fmt.Println(v)
+	}
 	delete(t.hash2Ctx, hash)
 	t.lock.Unlock()
 }

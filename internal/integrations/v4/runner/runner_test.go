@@ -24,7 +24,7 @@ func Test_runner_Run(t *testing.T) {
 	require.NoError(t, err)
 
 	e := &testemit.RecordEmitter{}
-	r := NewRunner(def, e, nil, nil, cmdrequest.NoopHandleFn, configrequest.NoopHandleFn)
+	r := NewRunner(def, e, nil, nil, cmdrequest.NoopHandleFn, configrequest.NoopHandleFn, nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
@@ -39,3 +39,4 @@ func Test_runner_Run(t *testing.T) {
 	assert.Equal(t, "bar", metrics[0]["value"])
 	assert.Empty(t, dataset.Metadata.Labels)
 }
+ 	

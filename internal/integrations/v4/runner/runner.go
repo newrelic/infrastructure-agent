@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"context"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/cache"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	"regexp"
 	"strings"
 	"sync"
@@ -42,12 +41,6 @@ var (
 //generic types to handle the stderr log parsing
 type logFields map[string]interface{}
 type logParser func(line string) (fields logFields)
-type Runner interface {
-	Run(ctx context.Context, pidWCh, exitCodeCh chan<- int)
-	Cache() cache.Cache
-	KillChildren()
-	WithTracker(tracker *track.Tracker) Runner
-}
 
 // runner for a single integration entry
 type runner struct {
@@ -63,8 +56,8 @@ type runner struct {
 	healthCheck    sync.Once
 	heartBeatFunc  func()
 	heartBeatMutex sync.RWMutex
-	tracker        *track.Tracker
 	cache          cache.Cache
+	terminateQueue chan<- integration.Definition
 }
 
 // NewRunner creates an integration runner instance.
@@ -76,16 +69,18 @@ func NewRunner(
 	handleErrorsProvide func() runnerErrorHandler,
 	cmdReqHandle cmdrequest.HandleFn,
 	configHandle configrequest.HandleFn,
+	terminateQ chan<- integration.Definition,
 ) *runner {
 	r := &runner{
-		emitter:       emitter,
-		handleCmdReq:  cmdReqHandle,
-		handleConfig:  configHandle,
-		dSources:      dSources,
-		definition:    intDef,
-		heartBeatFunc: func() {},
-		stderrParser:  parseLogrusFields,
-		cache:         cache.CreateCache(),
+		emitter:        emitter,
+		handleCmdReq:   cmdReqHandle,
+		handleConfig:   configHandle,
+		dSources:       dSources,
+		definition:     intDef,
+		heartBeatFunc:  func() {},
+		stderrParser:   parseLogrusFields,
+		terminateQueue: terminateQ,
+		cache:          cache.CreateCache(),
 	}
 	if handleErrorsProvide != nil {
 		r.handleErrors = handleErrorsProvide()
@@ -93,15 +88,6 @@ func NewRunner(
 		r.handleErrors = r.logErrors
 	}
 
-	return r
-}
-
-func (r *runner) Cache() cache.Cache {
-	return r.cache
-}
-
-func (r *runner) WithTracker(tracker *track.Tracker) Runner {
-	r.tracker = tracker
 	return r
 }
 
@@ -143,12 +129,12 @@ func (r *runner) Run(ctx context.Context, pidWCh, exitCodeCh chan<- int) {
 }
 
 func (r *runner) KillChildren() {
-
-	if c := r.Cache(); c != nil {
+	if c := r.cache; c != nil {
 		cfgNames := c.ListConfigNames()
 		for _, cfgName := range cfgNames {
-			for hash := range r.Cache().GetHashes(cfgName) {
-				r.tracker.Kill(hash)
+			definitions := r.cache.GetDefinitions(cfgName)
+			for _, definition := range definitions {
+				r.terminateQueue <- definition
 			}
 		}
 	}
@@ -293,6 +279,10 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 		}
 
 		if ok, ver := protocol.IsCommandRequest(line); ok {
+			if r.handleCmdReq == nil {
+				llog.Warn("received cmd request payload without a handler")
+				continue
+			}
 			llog.WithField("version", ver).Debug("Received run request.")
 			cr, err := protocol.DeserializeLine(line)
 			if err != nil {
@@ -301,20 +291,17 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 					Warn("cannot deserialize integration run request payload")
 				continue
 			}
-
-			if r.handleCmdReq == nil {
-				llog.Warn("received cmd request payload without a handler")
-				continue
-			}
-
 			r.handleCmdReq(cr)
 			continue
 		}
 
-		if ok, ver := cfgprotocol.IsConfigProtocol(line); ok {
-			llog.WithField("version", ver).Debug("Received config protocol request.")
-
-			cp, err := cfgprotocol.DeserializeLine(line)
+		if cfgProtocolBuilder := cfgprotocol.GetConfigProtocolBuilder(line); cfgProtocolBuilder != nil {
+			if r.handleConfig == nil {
+				llog.Warn("received config protocol request payload without a handler")
+				continue
+			}
+			cfgProtocol, err := cfgProtocolBuilder.Build()
+			llog.WithField("version", cfgProtocol.Version()).Info("Received config protocol request.")
 			if err != nil {
 				llog.
 					WithError(err).
@@ -322,12 +309,7 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 				continue
 			}
 
-			if r.handleConfig == nil {
-				llog.Warn("received config protocol request payload without a handler")
-				continue
-			}
-
-			r.handleConfig(cp, r.cache)
+			r.handleConfig(cfgProtocol, r.cache)
 			continue
 		}
 
