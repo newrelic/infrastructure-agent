@@ -5,6 +5,7 @@ package runner
 import (
 	"bytes"
 	"context"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/cache"
 	"regexp"
 	"strings"
 	"sync"
@@ -55,6 +56,8 @@ type runner struct {
 	healthCheck    sync.Once
 	heartBeatFunc  func()
 	heartBeatMutex sync.RWMutex
+	cache          cache.Cache
+	terminateQueue chan<- integration.Definition
 }
 
 // NewRunner creates an integration runner instance.
@@ -66,15 +69,18 @@ func NewRunner(
 	handleErrorsProvide func() runnerErrorHandler,
 	cmdReqHandle cmdrequest.HandleFn,
 	configHandle configrequest.HandleFn,
+	terminateQ chan<- integration.Definition,
 ) *runner {
 	r := &runner{
-		emitter:       emitter,
-		handleCmdReq:  cmdReqHandle,
-		handleConfig:  configHandle,
-		dSources:      dSources,
-		definition:    intDef,
-		heartBeatFunc: func() {},
-		stderrParser:  parseLogrusFields,
+		emitter:        emitter,
+		handleCmdReq:   cmdReqHandle,
+		handleConfig:   configHandle,
+		dSources:       dSources,
+		definition:     intDef,
+		heartBeatFunc:  func() {},
+		stderrParser:   parseLogrusFields,
+		terminateQueue: terminateQ,
+		cache:          cache.CreateCache(),
 	}
 	if handleErrorsProvide != nil {
 		r.handleErrors = handleErrorsProvide()
@@ -87,6 +93,7 @@ func NewRunner(
 
 func (r *runner) Run(ctx context.Context, pidWCh, exitCodeCh chan<- int) {
 	r.log = illog.WithFields(LogFields(r.definition))
+	defer r.killChildren()
 	for {
 		waitForNextExecution := time.After(r.definition.Interval)
 
@@ -117,6 +124,18 @@ func (r *runner) Run(ctx context.Context, pidWCh, exitCodeCh chan<- int) {
 			r.log.Debug("Integration has been interrupted")
 			return
 		case <-waitForNextExecution:
+		}
+	}
+}
+
+func (r *runner) killChildren() {
+	if c := r.cache; c != nil {
+		cfgNames := c.ListConfigNames()
+		for _, cfgName := range cfgNames {
+			definitions := r.cache.GetDefinitions(cfgName)
+			for _, definition := range definitions {
+				r.terminateQueue <- definition
+			}
 		}
 	}
 }
@@ -290,7 +309,7 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 				continue
 			}
 
-			r.handleConfig(cfgProtocol)
+			r.handleConfig(cfgProtocol, r.cache)
 			continue
 		}
 

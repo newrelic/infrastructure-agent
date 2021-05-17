@@ -11,22 +11,23 @@ import (
 
 // LoadFn provides a basic, incomplete Group instance to be configured by the NewGroup function.
 // InstancesLookup is only required to load v3 integrations from an external definitions folder.
-type LoadFn func(dr integration.InstancesLookup, passthroughEnv []string, cfgPath string, cmdReqHandle cmdrequest.HandleFn, configHandle configrequest.HandleFn) (Group, FeaturesCache, error)
+type LoadFn func(dr integration.InstancesLookup, passthroughEnv []string, cfgPath string, cmdReqHandle cmdrequest.HandleFn, configHandle configrequest.HandleFn, terminateDefinitionQ chan integration.Definition) (Group, FeaturesCache, error)
 
 // NewLoadFn returns a function that provides partial Group holding provided configuration and
 // features cache. Optionally agent and integration "features" can be provided to be able to load
 // disabled integrations.
 func NewLoadFn(cfg config2.YAML, agentAndCCFeatures *Features) LoadFn {
-	return func(il integration.InstancesLookup, passthroughEnv []string, cfgPath string, cmdReqHandle cmdrequest.HandleFn, configHandle configrequest.HandleFn) (g Group, c FeaturesCache, err error) {
+	return func(il integration.InstancesLookup, passthroughEnv []string, cfgPath string, cmdReqHandle cmdrequest.HandleFn, configHandle configrequest.HandleFn, terminateDefinitionQ chan integration.Definition) (g Group, c FeaturesCache, err error) {
 		dSources, err := cfg.Databind.DataSources()
 		if err != nil {
 			return
 		}
 
 		g = Group{
-			dSources:     dSources,
-			cmdReqHandle: cmdReqHandle,
-			configHandle: configHandle,
+			dSources:             dSources,
+			cmdReqHandle:         cmdReqHandle,
+			configHandle:         configHandle,
+			terminateDefinitionQ: terminateDefinitionQ,
 		}
 		c = make(FeaturesCache)
 

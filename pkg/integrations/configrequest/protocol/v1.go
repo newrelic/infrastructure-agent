@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/track/ctx"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 )
 
@@ -67,15 +66,12 @@ func (cfgProtocol *v1) Version() int {
 	return 1
 }
 
-func (cfgProtocol *v1) hash() string {
-	return fmt.Sprintf("%v%v", cfgProtocol.Config.Databind, cfgProtocol.Config.Integrations)
+func (cfgProtocol *v1) Name() string {
+	return cfgProtocol.ConfigName
 }
 
-func (cfgProtocol *v1) BuildConfigRequest() *ctx.ConfigRequest {
-	return &ctx.ConfigRequest{
-		ConfigName: cfgProtocol.ConfigName,
-		ConfigHash: cfgProtocol.hash(),
-	}
+func (cfgProtocol *v1) hash() string {
+	return fmt.Sprintf("%v%v", cfgProtocol.Config.Databind, cfgProtocol.Config.Integrations)
 }
 
 func (cfgProtocol *v1) GetConfig() databind.YAMLConfig {

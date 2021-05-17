@@ -4,6 +4,7 @@ package integration
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"time"
@@ -40,14 +41,14 @@ type Definition struct {
 	InventorySource ids.PluginID
 	WhenConditions  []when.Condition
 	CmdChanReq      *ctx.CmdChannelRequest // not empty: command-channel run/stop integration requests
-	cfgRequest      *ctx.ConfigRequest
 	runnable        executor.Executor
 	newTempFile     func(template []byte) (string, error)
 }
 
-func (d *Definition) WithConfigRequest(cfgRequest *ctx.ConfigRequest) Definition {
-	d.cfgRequest = cfgRequest
-	return *d
+func (d *Definition) Hash() string {
+	h := sha256.New()
+	h.Write([]byte(fmt.Sprintf("%v", d)))
+	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
 func (d *Definition) TimeoutEnabled() bool {

@@ -18,6 +18,14 @@ type CmdChannelRequest struct {
 	Metadata          map[string]interface{}
 }
 
+func (r *CmdChannelRequest) Name() string {
+	return r.CmdChannelCmdName
+}
+
+func (r *CmdChannelRequest) Hash() string {
+	return r.CmdChannelCmdHash
+}
+
 // NewCmdChannelRequest create new CmdChannelRequest.
 func NewCmdChannelRequest(cmdChanCmdName, cmdChanCmdHash, integrationName string, integrationArgs []string, metadata map[string]interface{}) CmdChannelRequest {
 	return CmdChannelRequest{
@@ -45,8 +53,7 @@ func (r *CmdChannelRequest) Event(summary string) protocol.EventData {
 	return ev
 }
 
-// ConfigRequest DTO storing context required to handle actions on integration run exit.
-type ConfigRequest struct {
-	ConfigName string
-	ConfigHash string
+type Request interface {
+	Name() string
+	Hash() string
 }
