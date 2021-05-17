@@ -39,4 +39,3 @@ func Test_runner_Run(t *testing.T) {
 	assert.Equal(t, "bar", metrics[0]["value"])
 	assert.Empty(t, dataset.Metadata.Labels)
 }
- 	
