@@ -45,3 +45,16 @@ func (cfgProtocol *v1) GetConfig() databind.YAMLConfig {
 func (cfgProtocol *v1) Integrations() []config.ConfigEntry {
 	return cfgProtocol.Config.Integrations
 }
+
+func (cfgProtocol *v1) validate() error {
+	if cfgProtocol.ConfigName == "" {
+		return fmt.Errorf("config_name cannot be empty")
+	}
+	if cfgProtocol.Action == "" {
+		return fmt.Errorf("action cannot be empty")
+	}
+	if len(cfgProtocol.Config.Integrations) == 0 {
+		return fmt.Errorf("configs entries definitions cannot be empty")
+	}
+	return nil
+}

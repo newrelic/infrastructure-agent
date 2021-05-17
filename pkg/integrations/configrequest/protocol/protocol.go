@@ -4,6 +4,7 @@ package protocol
 
 import (
 	"encoding/json"
+
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track/ctx"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
@@ -24,8 +25,14 @@ type builder struct {
 
 func (builder *builder) Build() (ConfigProtocol, error) {
 	var cfgProtocol = builder.fn()
-	err := json.Unmarshal(builder.content, cfgProtocol)
-	return cfgProtocol, err
+	var err error
+	if err = json.Unmarshal(builder.content, cfgProtocol); err != nil {
+		return cfgProtocol, err
+	}
+	if err = cfgProtocol.validate(); err != nil {
+		return cfgProtocol, err
+	}
+	return cfgProtocol, nil
 }
 
 var defaultBuilderFn = func() ConfigProtocol {
@@ -41,6 +48,7 @@ type ConfigProtocol interface {
 	BuildConfigRequest() *ctx.ConfigRequest
 	Integrations() []config.ConfigEntry
 	GetConfig() databind.YAMLConfig
+	validate() error
 }
 
 func GetConfigProtocolBuilder(content []byte) Builder {
