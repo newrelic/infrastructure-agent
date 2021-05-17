@@ -1,9 +1,10 @@
 package cache
 
 import (
+	"testing"
+
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func createIntegrationDefinition(name string) integration.Definition {
@@ -50,4 +51,31 @@ func Test_createCache(t *testing.T) {
 	hashes = c.GetHashes("cfg2")
 	assert.Contains(t, hashes, def.Hash())
 	assert.Contains(t, hashes, def2.Hash())
+}
+
+func Test_definitionsChange(t *testing.T) {
+
+	c := CreateCache()
+	def := createIntegrationDefinition("def1")
+	def2 := createIntegrationDefinition("def2")
+	def3 := createIntegrationDefinition("def3")
+	def4 := createIntegrationDefinition("def4")
+	assert.True(t, c.AddDefinition("cfg1", def))
+	assert.True(t, c.AddDefinition("cfg1", def2))
+	assert.True(t, c.AddDefinition("cfg1", def3))
+	definitionsList := c.GetDefinitions("cfg1")
+	for _,def := range c.GetDefinitions("cfg1"){
+		assert.Contains(t, []string{"def1","def2","def3"},def.Name)
+	}
+	assert.Len(t, definitionsList, 3)
+	cfgDefinition := c.Take("cfg1").
+		Add(def).
+		Add(def2).
+		Add(def4)
+	c.Apply(cfgDefinition)
+	definitionsList = c.GetDefinitions("cfg1")
+	assert.Len(t, definitionsList, 3)
+	for _,def := range c.GetDefinitions("cfg1"){
+		assert.Contains(t, []string{"def1","def2","def4"},def.Name)
+	}
 }

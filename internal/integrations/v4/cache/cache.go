@@ -9,7 +9,22 @@ type Cache interface {
 	AddDefinition(key string, definition integration.Definition) bool
 	GetDefinitions(cfgName string) []integration.Definition
 	ListConfigNames() []string
+	Apply(cfgDefinitions *ConfigDefinitions)
+	Take(cfgName string) *ConfigDefinitions
 }
+
+type ConfigDefinitions struct {
+	cfgName string
+	added   map[string]integration.Definition
+	current map[string]struct{}
+}
+
+func (cfgDefinition *ConfigDefinitions) Add(def integration.Definition) *ConfigDefinitions{
+	cfgDefinition.added[def.Hash()] = def
+	return cfgDefinition
+}
+
+
 
 type cache struct {
 	hashes      map[string]map[string]struct{}
@@ -59,4 +74,26 @@ func (c *cache) GetDefinitions(cfgName string) []integration.Definition {
 		i++
 	}
 	return output
+}
+
+func (c *cache) Apply(cfgDefinitions *ConfigDefinitions) {
+	for hash, definition := range cfgDefinitions.added {
+		if _, ok := c.hashes[cfgDefinitions.cfgName][hash]; !ok {
+			c.AddDefinition(cfgDefinitions.cfgName, definition)
+		}
+	}
+	for hash := range cfgDefinitions.current {
+		if _, ok := cfgDefinitions.added[hash]; !ok {
+			delete(c.definitions, hash)
+			delete(c.hashes[cfgDefinitions.cfgName], hash)
+		}
+	}
+}
+
+func (c *cache) Take(cfgName string) *ConfigDefinitions{
+	return &ConfigDefinitions{
+		cfgName: cfgName,
+		added:   make(map[string]integration.Definition),
+		current: c.GetHashes(cfgName),
+	}
 }
