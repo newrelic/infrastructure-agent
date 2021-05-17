@@ -1,0 +1,12 @@
+---
+
+- name: apt upgrade infra-agent
+  environment: "{{ env_vars }}"
+  apt:
+    name: "newrelic-infra"
+    update_cache: yes
+    state: latest
+  retries: 5
+  delay: 60
+    
+...

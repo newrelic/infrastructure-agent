@@ -1,9 +1,0 @@
----
-
-- include: "repo-{{ ansible_distribution }}.yaml"
-- include: "config-{{ ansible_system }}.yaml"
-- include: "package-{{ ansible_os_family }}.yaml"
-- include: "assert-service-{{ ansible_os_family }}.yaml"
-- include: "assert-version-{{ ansible_system }}.yaml"
-
-...

@@ -1,0 +1,11 @@
+---
+
+  # If binaries execute w/o errors means that are built properly
+- name: ensure embeeded integrations are packaged in right architecture
+  command: "{{ item }}"
+  with_items:
+    - "/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex --help"
+    - "/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker -show_version"
+    - "/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus --help"
+
+...
