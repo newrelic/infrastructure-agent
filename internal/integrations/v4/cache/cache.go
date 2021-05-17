@@ -9,7 +9,7 @@ type Cache interface {
 	AddDefinition(key string, definition integration.Definition) bool
 	GetDefinitions(cfgName string) []integration.Definition
 	ListConfigNames() []string
-	Apply(cfgDefinitions *ConfigDefinitions)
+	Apply(cfgDefinitions *ConfigDefinitions) []string
 	Take(cfgName string) *ConfigDefinitions
 }
 
@@ -76,7 +76,8 @@ func (c *cache) GetDefinitions(cfgName string) []integration.Definition {
 	return output
 }
 
-func (c *cache) Apply(cfgDefinitions *ConfigDefinitions) {
+func (c *cache) Apply(cfgDefinitions *ConfigDefinitions) []string {
+	toBeDeleted:=make([]string,0)
 	for hash, definition := range cfgDefinitions.added {
 		if _, ok := c.hashes[cfgDefinitions.cfgName][hash]; !ok {
 			c.AddDefinition(cfgDefinitions.cfgName, definition)
@@ -86,8 +87,10 @@ func (c *cache) Apply(cfgDefinitions *ConfigDefinitions) {
 		if _, ok := cfgDefinitions.added[hash]; !ok {
 			delete(c.definitions, hash)
 			delete(c.hashes[cfgDefinitions.cfgName], hash)
+			toBeDeleted=append(toBeDeleted,hash)
 		}
 	}
+	return toBeDeleted
 }
 
 func (c *cache) Take(cfgName string) *ConfigDefinitions{

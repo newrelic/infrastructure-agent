@@ -72,10 +72,11 @@ func Test_definitionsChange(t *testing.T) {
 		Add(def).
 		Add(def2).
 		Add(def4)
-	c.Apply(cfgDefinition)
+	toBeDeleted := c.Apply(cfgDefinition)
 	definitionsList = c.GetDefinitions("cfg1")
 	assert.Len(t, definitionsList, 3)
 	for _,def := range c.GetDefinitions("cfg1"){
 		assert.Contains(t, []string{"def1","def2","def4"},def.Name)
 	}
+	assert.Equal(t, []string{def3.Hash()},toBeDeleted)
 }
