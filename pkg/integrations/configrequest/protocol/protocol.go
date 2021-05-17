@@ -4,7 +4,6 @@ package protocol
 
 import (
 	"encoding/json"
-
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track/ctx"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
@@ -44,6 +43,7 @@ var cfgProtocolVersions = map[string]func() ConfigProtocol{
 }
 
 type ConfigProtocol interface {
+	Name() string
 	Version() int
 	BuildConfigRequest() *ctx.ConfigRequest
 	Integrations() []config.ConfigEntry

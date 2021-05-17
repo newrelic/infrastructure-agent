@@ -67,6 +67,10 @@ func (cfgProtocol *v1) Version() int {
 	return 1
 }
 
+func (cfgProtocol *v1) Name() string {
+	return cfgProtocol.ConfigName
+}
+
 func (cfgProtocol *v1) hash() string {
 	return fmt.Sprintf("%v%v", cfgProtocol.Config.Databind, cfgProtocol.Config.Integrations)
 }

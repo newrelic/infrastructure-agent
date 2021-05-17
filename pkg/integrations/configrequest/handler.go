@@ -35,9 +35,9 @@ func NewHandleFn(configProtocolQueue chan<- Entry, il integration.InstancesLooku
 					Warn("cannot create handler for config protocol")
 				return
 			}
-			if added := c.AddDefinition(cfgRequest.Name(), def); added {
+			if added := c.AddDefinition(cfgProtocol.Name(), def); added {
 				logger.
-					WithField("config_name", cfgRequest.Name()).
+					WithField("config_name", cfgProtocol.Name()).
 					Debug("new definition added to the cache for the config name")
 				configProtocolQueue <- Entry{def.WithConfigRequest(cfgRequest), cfgProtocol.GetConfig()}
 			}
