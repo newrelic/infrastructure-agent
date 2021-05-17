@@ -286,7 +286,7 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 			if err != nil {
 				llog.
 					WithError(err).
-					Warn("cannot deserialize config protocol")
+					Warn("cannot build config protocol")
 				continue
 			}
 
