@@ -18,4 +18,5 @@ var (
 	FileContentsCmd          = testhelp.Script("../fixtures/filecontents.sh")
 	FileContentsWithArgCmd   = testhelp.Script("../fixtures/filecontents_witharg.sh")
 	FileContentsFromEnvCmd   = testhelp.Script("../fixtures/filecontents_fromenv.sh")
+	EchoFromEnv              = testhelp.Script("../fixtures/echo_from_env.sh")
 )
