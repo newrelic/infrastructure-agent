@@ -56,27 +56,31 @@ func Test_createCache(t *testing.T) {
 func Test_definitionsChange(t *testing.T) {
 
 	c := CreateCache()
-	def := createIntegrationDefinition("def1")
+	def := createIntegrationDefinition("def")
 	def2 := createIntegrationDefinition("def2")
 	def3 := createIntegrationDefinition("def3")
 	def4 := createIntegrationDefinition("def4")
+
 	assert.True(t, c.AddDefinition("cfg1", def))
 	assert.True(t, c.AddDefinition("cfg1", def2))
 	assert.True(t, c.AddDefinition("cfg1", def3))
+
 	definitionsList := c.GetDefinitions("cfg1")
-	for _,def := range c.GetDefinitions("cfg1"){
-		assert.Contains(t, []string{"def1","def2","def3"},def.Name)
+	for _, def := range c.GetDefinitions("cfg1") {
+		assert.Contains(t, []string{"def", "def2", "def3"}, def.Name)
 	}
 	assert.Len(t, definitionsList, 3)
-	cfgDefinition := c.Take("cfg1").
-		Add(def).
-		Add(def2).
-		Add(def4)
-	toBeDeleted := c.Apply(cfgDefinition)
+
+	cfgDefinitions := c.Take("cfg1")
+	assert.False(t, cfgDefinitions.Add(def))
+	assert.False(t, cfgDefinitions.Add(def2))
+	assert.True(t, cfgDefinitions.Add(def4))
+
+	toBeDeleted := c.Apply(cfgDefinitions)
 	definitionsList = c.GetDefinitions("cfg1")
 	assert.Len(t, definitionsList, 3)
-	for _,def := range c.GetDefinitions("cfg1"){
-		assert.Contains(t, []string{"def1","def2","def4"},def.Name)
+	for _, def := range c.GetDefinitions("cfg1") {
+		assert.Contains(t, []string{"def", "def2", "def4"}, def.Name)
 	}
-	assert.Equal(t, []string{def3.Hash()},toBeDeleted)
+	assert.Equal(t, []string{def3.Hash()}, toBeDeleted)
 }

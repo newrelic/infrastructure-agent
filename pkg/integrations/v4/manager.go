@@ -109,7 +109,7 @@ type Manager struct {
 	featuresCache            runner.FeaturesCache
 	definitionQueue          <-chan integration.Definition
 	configEntryQueue         <-chan configrequest.Entry
-	terminateDefinitionQueue chan integration.Definition
+	terminateDefinitionQueue chan string
 	handleCmdReq             cmdrequest.HandleFn
 	handleConfig             configrequest.HandleFn
 	tracker                  *track.Tracker
@@ -188,7 +188,7 @@ func NewManager(
 	emitter emitter.Emitter,
 	il integration.InstancesLookup,
 	definitionQ chan integration.Definition,
-	terminateDefinitionQ chan integration.Definition,
+	terminateDefinitionQ chan string,
 	configEntryQ chan configrequest.Entry,
 	tracker *track.Tracker,
 ) *Manager {
@@ -208,7 +208,7 @@ func NewManager(
 		configEntryQueue:         configEntryQ,
 		terminateDefinitionQueue: terminateDefinitionQ,
 		handleCmdReq:             cmdrequest.NewHandleFn(definitionQ, il, illog),
-		handleConfig:             configrequest.NewHandleFn(configEntryQ, il, illog),
+		handleConfig:             configrequest.NewHandleFn(configEntryQ, terminateDefinitionQ, il, illog),
 		tracker:                  tracker,
 	}
 
@@ -344,7 +344,7 @@ func (mgr *Manager) handleRequestsQueue(ctx context.Context) {
 			go r.Run(runCtx, pidWCh, nil)
 
 		case entry := <-mgr.terminateDefinitionQueue:
-			mgr.tracker.Kill(entry.Hash())
+			mgr.tracker.Kill(entry)
 		}
 	}
 }

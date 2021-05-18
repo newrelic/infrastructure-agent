@@ -291,7 +291,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	// queues config entries requests
 	configEntryQ := make(chan configrequest.Entry, 100)
 	// queues integration terminated definitions
-	terminateDefinitionQ := make(chan integration.Definition, 100)
+	terminateDefinitionQ := make(chan string, 100)
 
 	emitterWithRegister := dm.NewEmitter(agt.GetContext(), dmSender, registerClient)
 	nonRegisterEmitter := dm.NewNonRegisterEmitter(agt.GetContext(), dmSender)

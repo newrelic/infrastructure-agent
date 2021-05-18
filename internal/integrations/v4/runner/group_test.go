@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var terminatedQueue = make(chan integration.Definition)
+var terminatedQueue = make(chan string)
 
 func TestGroup_Run(t *testing.T) {
 	defer leaktest.Check(t)()

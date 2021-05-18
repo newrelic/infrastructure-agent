@@ -5,11 +5,12 @@ package runner
 import (
 	"bytes"
 	"context"
-	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/cache"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/cache"
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/when"
@@ -57,7 +58,7 @@ type runner struct {
 	heartBeatFunc  func()
 	heartBeatMutex sync.RWMutex
 	cache          cache.Cache
-	terminateQueue chan<- integration.Definition
+	terminateQueue chan<- string
 }
 
 // NewRunner creates an integration runner instance.
@@ -69,7 +70,7 @@ func NewRunner(
 	handleErrorsProvide func() runnerErrorHandler,
 	cmdReqHandle cmdrequest.HandleFn,
 	configHandle configrequest.HandleFn,
-	terminateQ chan<- integration.Definition,
+	terminateQ chan<- string,
 ) *runner {
 	r := &runner{
 		emitter:        emitter,
@@ -134,7 +135,7 @@ func (r *runner) killChildren() {
 		for _, cfgName := range cfgNames {
 			definitions := r.cache.GetDefinitions(cfgName)
 			for _, definition := range definitions {
-				r.terminateQueue <- definition
+				r.terminateQueue <- definition.Hash()
 			}
 		}
 	}

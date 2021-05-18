@@ -4,6 +4,7 @@ package runner
 
 import (
 	"context"
+
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
@@ -27,7 +28,7 @@ type Group struct {
 	handleErrorsProvide  func() runnerErrorHandler
 	cmdReqHandle         cmdrequest.HandleFn
 	configHandle         configrequest.HandleFn
-	terminateDefinitionQ chan integration.Definition
+	terminateDefinitionQ chan string
 }
 
 type runnerErrorHandler func(ctx context.Context, errs <-chan error)
@@ -42,7 +43,7 @@ func NewGroup(
 	cmdReqHandle cmdrequest.HandleFn,
 	configHandle configrequest.HandleFn,
 	cfgPath string,
-	terminateDefinitionQ chan integration.Definition,
+	terminateDefinitionQ chan string,
 ) (g Group, c FeaturesCache, err error) {
 
 	g, c, err = loadFn(il, passthroughEnv, cfgPath, cmdReqHandle, configHandle, terminateDefinitionQ)

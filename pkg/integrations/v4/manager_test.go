@@ -147,7 +147,7 @@ integrations:
 var (
 	definitionQ          = make(chan integration.Definition, 1000)
 	configEntryQ         = make(chan configrequest.Entry, 1000)
-	terminateDefinitionQ = make(chan integration.Definition, 1000)
+	terminateDefinitionQ = make(chan string, 1000)
 )
 
 func TestManager_StartIntegrations(t *testing.T) {
