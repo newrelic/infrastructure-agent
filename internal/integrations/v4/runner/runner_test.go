@@ -2,13 +2,13 @@ package runner
 
 import (
 	"context"
-	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/cache"
 	"io/ioutil"
 	"os"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/cache"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/fixtures"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/testhelp"
