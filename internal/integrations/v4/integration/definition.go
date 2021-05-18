@@ -47,7 +47,20 @@ type Definition struct {
 
 func (d *Definition) Hash() string {
 	h := sha256.New()
-	h.Write([]byte(fmt.Sprintf("%v", d)))
+	identifier := fmt.Sprintf("%v%v%v%v%v%v%v%v%v%v%v",
+		d.Name,
+		d.Labels,
+		d.ExecutorConfig,
+		d.Interval,
+		d.Timeout,
+		d.ConfigTemplate,
+		d.InventorySource,
+		d.WhenConditions,
+		d.runnable.Args,
+		d.runnable.Cfg,
+		d.runnable.Command,
+	)
+	h.Write([]byte(identifier))
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
