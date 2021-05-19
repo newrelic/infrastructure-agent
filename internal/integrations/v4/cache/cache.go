@@ -1,6 +1,8 @@
 package cache
 
 import (
+	"sync"
+
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 )
 
@@ -29,6 +31,7 @@ func (cfgDefinition *ConfigDefinitions) Add(def integration.Definition) bool {
 }
 
 type cache struct {
+	lock        sync.RWMutex
 	hashes      map[string]map[string]struct{}
 	definitions map[string]integration.Definition
 }
@@ -41,6 +44,8 @@ func CreateCache() Cache {
 }
 
 func (c *cache) AddDefinition(cfgName string, definition integration.Definition) bool {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	hash := definition.Hash()
 	if _, ok := c.hashes[cfgName][hash]; ok {
 		return false
@@ -54,6 +59,8 @@ func (c *cache) AddDefinition(cfgName string, definition integration.Definition)
 }
 
 func (c *cache) ListConfigNames() []string {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
 	output := make([]string, len(c.hashes))
 	i := 0
 	for cfgName := range c.hashes {
@@ -64,10 +71,14 @@ func (c *cache) ListConfigNames() []string {
 }
 
 func (c *cache) GetHashes(cfgName string) map[string]struct{} {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
 	return c.hashes[cfgName]
 }
 
 func (c *cache) GetDefinitions(cfgName string) []integration.Definition {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
 	cfg := c.hashes[cfgName]
 	output := make([]integration.Definition, len(cfg))
 	i := 0
@@ -79,6 +90,8 @@ func (c *cache) GetDefinitions(cfgName string) []integration.Definition {
 }
 
 func (c *cache) Apply(cfgDefinitions *ConfigDefinitions) []string {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	toBeDeleted := make([]string, 0)
 	for hash, definition := range cfgDefinitions.added {
 		if _, ok := c.hashes[cfgDefinitions.cfgName][hash]; !ok {
