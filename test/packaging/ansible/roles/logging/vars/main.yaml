@@ -1,0 +1,6 @@
+---
+
+expected_fb_version: "{{ lookup('env', 'FLUENT_BIT_VERSION') }}"
+expected_fb_arch: "{{ lookup('env', 'FLUENT_BIT_ARCH') }}"
+
+...

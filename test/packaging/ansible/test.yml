@@ -1,29 +1,25 @@
 ---
 
-- hosts: all
-  become: true
-  gather_facts: yes
+- name: pinned version agent installation
+  import_playbook: installation-pinned.yml
 
-  pre_tasks:
-    - name: Initial cleanup # Only required for shared infra.
-      include_role:
-        name: cleanup
+- name: agent installation as root
+  import_playbook: installation-root.yml
 
-  tasks:
-    - name: Installation tests suite
-      block:
+- name: privileged mode agent installation
+  import_playbook: installation-privileged.yml
 
-      - name: Initial install
-        include_role:
-          name: initial-install
+- name: unprivileged mode agent installation
+  import_playbook: installation-unprivileged.yml
 
-      - name: Installed package files verification
-        include_role:
-          name: package-files-verification
+# Not available for ARM yet
+#- name: log forwarder
+#  import_playbook: log-forwarder.yml
 
-      always:
-        - name: Final cleanup # Only required for shared infra.
-          include_role:
-            name: cleanup
+- name: agent upgrade
+  import_playbook: agent-upgrade.yml
+
+- name: agent uninstallation
+  import_playbook: uninstallation.yml
 
 ...

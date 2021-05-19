@@ -4,7 +4,5 @@
   service:
     name: newrelic-infra
     state: stopped
-  ignore_errors: true
-  failed_when: false
 
 ...
