@@ -1,3 +1,5 @@
+// Copyright 2020 New Relic Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 package cache
 
 import (
@@ -6,6 +8,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 )
 
+// Cache stores integrations definitions grouped by a Config Name.
 type Cache interface {
 	GetDefinitions(cfgName string) []integration.Definition
 	ListConfigNames() []string
@@ -26,12 +29,14 @@ func (cfgDefinition *ConfigDefinitions) Add(def integration.Definition) bool {
 	return !ok
 }
 
+// cache implements Cache to store integrations definitions by config protocols request names
 type cache struct {
 	lock        sync.RWMutex
 	hashes      map[string]map[string]struct{}
 	definitions map[string]integration.Definition
 }
 
+// CreateCache initialize and return an empty cache
 func CreateCache() Cache {
 	return &cache{
 		hashes:      make(map[string]map[string]struct{}),
@@ -39,6 +44,7 @@ func CreateCache() Cache {
 	}
 }
 
+// addDefinition adds a integration definition to a cfg name group, returns false if already exists.
 func (c *cache) addDefinition(cfgName string, definition integration.Definition) bool {
 	hash := definition.Hash()
 	if _, ok := c.hashes[cfgName][hash]; ok {
@@ -52,6 +58,7 @@ func (c *cache) addDefinition(cfgName string, definition integration.Definition)
 	return true
 }
 
+// ListConfigNames returns a list of config names
 func (c *cache) ListConfigNames() []string {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
@@ -68,6 +75,7 @@ func (c *cache) getHashes(cfgName string) map[string]struct{} {
 	return c.hashes[cfgName]
 }
 
+// GetDefinitions returns a list of integration definitions for a particular config name.
 func (c *cache) GetDefinitions(cfgName string) []integration.Definition {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
@@ -81,6 +89,8 @@ func (c *cache) GetDefinitions(cfgName string) []integration.Definition {
 	return output
 }
 
+// ApplyConfig sync the integrations definitions for a particular config name with the added definitions in cfgDefinitions.
+// returns a list of removed definitions for the config name.
 func (c *cache) ApplyConfig(cfgDefinitions *ConfigDefinitions) []string {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -100,6 +110,7 @@ func (c *cache) ApplyConfig(cfgDefinitions *ConfigDefinitions) []string {
 	return toBeDeleted
 }
 
+// TakeConfig returns a ConfigDefinitions initialized for a particular config name
 func (c *cache) TakeConfig(cfgName string) *ConfigDefinitions {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
