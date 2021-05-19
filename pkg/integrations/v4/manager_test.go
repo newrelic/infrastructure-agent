@@ -1081,15 +1081,17 @@ func TestManager_cfgProtocolSpawnedIntegrationCannotSpawnIntegration(t *testing.
 	go mgr.Start(ctx)
 
 	// THEN log entry found
-	assert.Eventually(t, func() bool {
+	testhelpers.Eventually(t, time.Second, func(t require.TestingT) {
 		entries := hook.AllEntries()
+		require.NotEmpty(t, entries)
+		ok := false
 		for _, e := range entries {
 			if e.Message == "received config protocol request payload without a handler" {
-				return true
+				ok = true
 			}
 		}
-		return false
-	}, time.Second, 10*time.Millisecond)
+		assert.True(t, ok, "expected log not received")
+	})
 }
 
 func TestManager_ExpandsConfigEnvVars(t *testing.T) {
