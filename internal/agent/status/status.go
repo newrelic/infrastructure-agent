@@ -13,16 +13,21 @@ import (
 const (
 	endpointTimeoutMsg = "endpoint check timeout exceeded"
 )
+
+// Report agent status report. It contains:
+// - backend endpoints availability statuses
 type Report struct {
 	Endpoints []Endpoint `json:"endpoints"`
 }
 
+// Endpoint represents a single backend endpoint availability status.
 type Endpoint struct {
 	URL       string `json:"url"`
 	Reachable bool   `json:"reachable"`
 	Error     string `json:"error,omitempty"`
 }
 
+// Reporter reports agent status.
 type Reporter interface {
 	Report() (Report, error)
 }
@@ -38,6 +43,7 @@ type nrReporter struct {
 	transport http.RoundTripper
 }
 
+// Report reports agent status.
 func (r *nrReporter) Report() (report Report, err error) {
 	for _, endpoint := range r.endpoints {
 		timedout, err := backendhttp.CheckEndpointAvailability(r.ctx, r.log, endpoint, r.license, r.userAgent, r.agentKey, r.timeout, r.transport)
@@ -60,6 +66,7 @@ func (r *nrReporter) Report() (report Report, err error) {
 	return
 }
 
+// NewReporter creates a new status reporter.
 func NewReporter(
 	ctx context.Context,
 	l log.Entry,
