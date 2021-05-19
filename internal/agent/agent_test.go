@@ -449,7 +449,6 @@ func TestCheckNetworkNoTimeout(t *testing.T) {
 			CollectorURL:             ts.server.URL,
 			StartupConnectionRetries: -1,
 			StartupConnectionTimeout: "1ms",
-			MaxInventorySize:         maxInventoryDataSize,
 		}
 
 		backOff := &backoff.Backoff{Min: 1 * time.Millisecond}
@@ -459,11 +458,11 @@ func TestCheckNetworkNoTimeout(t *testing.T) {
 
 	select {
 	case err := <-retval:
-		// this should never be triggered
 		assert.Error(t, err)
-		break
+		// this should never be triggered
+		t.Fail()
 	case <-time.After(100 * time.Millisecond):
-		break
+		// retries keep going on as expected
 	}
 }
 
