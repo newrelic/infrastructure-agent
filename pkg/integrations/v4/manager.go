@@ -338,7 +338,7 @@ func (mgr *Manager) handleRequestsQueue(ctx context.Context) {
 				go r.Run(ctx, nil, nil)
 			}
 		case entry := <-mgr.configEntryQueue:
-			ds, _ := entry.YAMLConfig.DataSources()
+			ds, _ := entry.Databind.DataSources()
 			r := runner.NewRunner(entry.Definition, mgr.emitter, ds, nil, nil, nil, mgr.terminateDefinitionQueue)
 			runCtx, pidWCh := mgr.tracker.Track(ctx, entry.Definition.Hash(), &entry.Definition)
 			go r.Run(runCtx, pidWCh, nil)

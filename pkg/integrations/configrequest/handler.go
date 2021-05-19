@@ -15,7 +15,7 @@ var (
 
 type Entry struct {
 	Definition integration.Definition
-	YAMLConfig databind.YAMLConfig
+	Databind   databind.YAMLConfig
 }
 
 type HandleFn func(cfgProtocol protocol.ConfigProtocol, c cache.Cache)
