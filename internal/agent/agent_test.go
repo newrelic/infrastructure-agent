@@ -437,7 +437,7 @@ func TestCheckConnectionTimeout(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestCheckNetworkNoTimeout(t *testing.T) {
+func Test_checkCollectorConnectivity_NoTimeoutOnInfiniteRetries(t *testing.T) {
 	// Given a server that always returns timeouts
 	ts := NewTimeoutServer(-1)
 	defer ts.Cancel()
