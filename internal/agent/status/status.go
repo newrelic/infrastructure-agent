@@ -15,12 +15,12 @@ const (
 )
 
 // Report agent status report. It contains:
-// - backend endpoints availability statuses
+// - backend endpoints reachability statuses
 type Report struct {
 	Endpoints []Endpoint `json:"endpoints"`
 }
 
-// Endpoint represents a single backend endpoint availability status.
+// Endpoint represents a single backend endpoint reachability status.
 type Endpoint struct {
 	URL       string `json:"url"`
 	Reachable bool   `json:"reachable"`
@@ -46,7 +46,7 @@ type nrReporter struct {
 // Report reports agent status.
 func (r *nrReporter) Report() (report Report, err error) {
 	for _, endpoint := range r.endpoints {
-		timedout, err := backendhttp.CheckEndpointAvailability(r.ctx, r.log, endpoint, r.license, r.userAgent, r.agentKey, r.timeout, r.transport)
+		timedout, err := backendhttp.CheckEndpointReachability(r.ctx, r.log, endpoint, r.license, r.userAgent, r.agentKey, r.timeout, r.transport)
 		e := Endpoint{
 			URL:       endpoint,
 			Reachable: true,
@@ -54,7 +54,7 @@ func (r *nrReporter) Report() (report Report, err error) {
 		if timedout || err != nil {
 			e.Reachable = false
 			if timedout {
-				e.Error = fmt.Sprintf("%s, %s", endpointTimeoutMsg ,err)
+				e.Error = fmt.Sprintf("%s, %s", endpointTimeoutMsg, err)
 			} else {
 				e.Error = err.Error()
 			}

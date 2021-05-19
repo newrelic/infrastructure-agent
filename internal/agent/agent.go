@@ -231,7 +231,7 @@ func checkCollectorConnectivity(ctx context2.Context, cfg *config.Config, retrie
 	var timedout bool
 
 	for {
-		timedout, err = backendhttp.CheckEndpointAvailability(ctx, alog, cfg.CollectorURL, cfg.License, userAgent, agentKey, timeout, transport)
+		timedout, err = backendhttp.CheckEndpointReachability(ctx, alog, cfg.CollectorURL, cfg.License, userAgent, agentKey, timeout, transport)
 		if timedout {
 			if tries >= 0 {
 				tries -= 1
