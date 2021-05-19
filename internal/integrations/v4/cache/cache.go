@@ -7,12 +7,10 @@ import (
 )
 
 type Cache interface {
-	GetHashes(cfgName string) map[string]struct{}
-	AddDefinition(key string, definition integration.Definition) bool
 	GetDefinitions(cfgName string) []integration.Definition
 	ListConfigNames() []string
-	Apply(cfgDefinitions *ConfigDefinitions) []string
-	Take(cfgName string) *ConfigDefinitions
+	ApplyConfig(cfgDefinitions *ConfigDefinitions) []string
+	TakeConfig(cfgName string) *ConfigDefinitions
 }
 
 type ConfigDefinitions struct {
@@ -24,10 +22,8 @@ type ConfigDefinitions struct {
 func (cfgDefinition *ConfigDefinitions) Add(def integration.Definition) bool {
 	dh := def.Hash()
 	cfgDefinition.added[dh] = def
-	if _, ok := cfgDefinition.current[dh]; ok {
-		return false
-	}
-	return true
+	_, ok := cfgDefinition.current[dh]
+	return !ok
 }
 
 type cache struct {
@@ -43,9 +39,7 @@ func CreateCache() Cache {
 	}
 }
 
-func (c *cache) AddDefinition(cfgName string, definition integration.Definition) bool {
-	c.lock.Lock()
-	defer c.lock.Unlock()
+func (c *cache) addDefinition(cfgName string, definition integration.Definition) bool {
 	hash := definition.Hash()
 	if _, ok := c.hashes[cfgName][hash]; ok {
 		return false
@@ -70,9 +64,7 @@ func (c *cache) ListConfigNames() []string {
 	return output
 }
 
-func (c *cache) GetHashes(cfgName string) map[string]struct{} {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
+func (c *cache) getHashes(cfgName string) map[string]struct{} {
 	return c.hashes[cfgName]
 }
 
@@ -89,13 +81,13 @@ func (c *cache) GetDefinitions(cfgName string) []integration.Definition {
 	return output
 }
 
-func (c *cache) Apply(cfgDefinitions *ConfigDefinitions) []string {
+func (c *cache) ApplyConfig(cfgDefinitions *ConfigDefinitions) []string {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	toBeDeleted := make([]string, 0)
 	for hash, definition := range cfgDefinitions.added {
 		if _, ok := c.hashes[cfgDefinitions.cfgName][hash]; !ok {
-			c.AddDefinition(cfgDefinitions.cfgName, definition)
+			c.addDefinition(cfgDefinitions.cfgName, definition)
 		}
 	}
 	for hash := range cfgDefinitions.current {
@@ -108,10 +100,12 @@ func (c *cache) Apply(cfgDefinitions *ConfigDefinitions) []string {
 	return toBeDeleted
 }
 
-func (c *cache) Take(cfgName string) *ConfigDefinitions {
+func (c *cache) TakeConfig(cfgName string) *ConfigDefinitions {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
 	return &ConfigDefinitions{
 		cfgName: cfgName,
 		added:   make(map[string]integration.Definition),
-		current: c.GetHashes(cfgName),
+		current: c.getHashes(cfgName),
 	}
 }

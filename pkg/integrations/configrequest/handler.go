@@ -24,7 +24,7 @@ type HandleFn func(cfgProtocol protocol.ConfigProtocol, c cache.Cache)
 // Each command is run in parallel and won't depend on the results of the other ones.
 func NewHandleFn(configProtocolQueue chan<- Entry, terminateDefinitionQueue chan<- string, il integration.InstancesLookup, logger log.Entry) HandleFn {
 	return func(cfgProtocol protocol.ConfigProtocol, c cache.Cache) {
-		cfgDefinitions := c.Take(cfgProtocol.Name())
+		cfgDefinitions := c.TakeConfig(cfgProtocol.Name())
 		for _, ce := range cfgProtocol.Integrations() {
 			def, err := integration.NewDefinition(ce, il, nil, nil)
 			if err != nil {
@@ -42,7 +42,7 @@ func NewHandleFn(configProtocolQueue chan<- Entry, terminateDefinitionQueue chan
 				configProtocolQueue <- Entry{def, cfgProtocol.GetConfig()}
 			}
 		}
-		removedDefinitions := c.Apply(cfgDefinitions)
+		removedDefinitions := c.ApplyConfig(cfgDefinitions)
 		for _, hash := range removedDefinitions {
 			terminateDefinitionQueue <- hash
 		}
