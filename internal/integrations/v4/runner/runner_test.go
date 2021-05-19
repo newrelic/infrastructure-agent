@@ -4,6 +4,7 @@ import (
 	"context"
 	"io/ioutil"
 	"os"
+	"runtime"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -66,6 +67,9 @@ func Test_runner_Run(t *testing.T) {
 }
 
 func Test_runner_Run_noHandleForCfgProtocol(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip()
+	}
 	log.SetOutput(ioutil.Discard)  // discard logs so not to break race tests
 	defer log.SetOutput(os.Stderr) // return back to default
 	hook := new(test.Hook)
@@ -103,6 +107,9 @@ func Test_runner_Run_noHandleForCfgProtocol(t *testing.T) {
 
 }
 func Test_runner_Run_failToUnMarshallCfgProtocol(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip()
+	}
 	log.SetOutput(ioutil.Discard)  // discard logs so not to break race tests
 	defer log.SetOutput(os.Stderr) // return back to default
 	hook := new(test.Hook)
@@ -143,6 +150,9 @@ func Test_runner_Run_failToUnMarshallCfgProtocol(t *testing.T) {
 
 }
 func Test_runner_Run_handlesCfgProtocol(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip()
+	}
 	// GIVEN a runner that receives a cfg request.
 	def, err := integration.NewDefinition(config.ConfigEntry{
 		InstanceName: "Parent",
