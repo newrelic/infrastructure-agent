@@ -316,7 +316,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		riHandler,
 		siHandler,
 	)
-	initCmdResponse, err := ccService.InitialFetch(context.Background())
+	initCmdResponse, err := ccService.InitialFetch(agt.Context.Ctx)
 	if err != nil {
 		aslog.WithError(err).Warn("Commands initial fetch failed.")
 	}
