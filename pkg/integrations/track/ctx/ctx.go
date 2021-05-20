@@ -18,6 +18,14 @@ type CmdChannelRequest struct {
 	Metadata          map[string]interface{}
 }
 
+func (r *CmdChannelRequest) Name() string {
+	return r.CmdChannelCmdName
+}
+
+func (r *CmdChannelRequest) Hash() string {
+	return r.CmdChannelCmdHash
+}
+
 // NewCmdChannelRequest create new CmdChannelRequest.
 func NewCmdChannelRequest(cmdChanCmdName, cmdChanCmdHash, integrationName string, integrationArgs []string, metadata map[string]interface{}) CmdChannelRequest {
 	return CmdChannelRequest{
@@ -43,4 +51,9 @@ func (r *CmdChannelRequest) Event(summary string) protocol.EventData {
 		ev["cmd_metadata."+k] = v
 	}
 	return ev
+}
+
+type Request interface {
+	Name() string
+	Hash() string
 }
