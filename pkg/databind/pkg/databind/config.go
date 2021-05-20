@@ -23,7 +23,7 @@ const (
 )
 
 type YAMLAgentConfig struct {
-	Variables map[string]varEntry `yaml:"variables,omitempty"` // key: variable name
+	Variables map[string]varEntry `yaml:"variables,omitempty" json:"variables,omitempty"` // key: variable name
 }
 
 type YAMLConfig struct {
@@ -44,18 +44,18 @@ func (y *YAMLConfig) Enabled() bool {
 }
 
 type varEntry struct {
-	TTL         string               `yaml:"ttl,omitempty"`
-	Test        *Test                `yaml:"test,omitempty"`
-	KMS         *secrets.KMS         `yaml:"aws-kms,omitempty"`
-	Vault       *secrets.Vault       `yaml:"vault,omitempty"`
-	CyberArkCLI *secrets.CyberArkCLI `yaml:"cyberark-cli,omitempty"`
-	CyberArkAPI *secrets.CyberArkAPI `yaml:"cyberark-api,omitempty"`
-	Obfuscated  *secrets.Obfuscated  `yaml:"obfuscated,omitempty"`
+	TTL         string               `yaml:"ttl,omitempty" json:"ttl,omitempty"`
+	Test        *Test                `yaml:"test,omitempty" json:"test,omitempty"`
+	KMS         *secrets.KMS         `yaml:"aws-kms,omitempty" json:"aws-kms,omitempty"`
+	Vault       *secrets.Vault       `yaml:"vault,omitempty" json:"vault,omitempty"`
+	CyberArkCLI *secrets.CyberArkCLI `yaml:"cyberark-cli,omitempty" json:"cyberark-cli,omitempty"`
+	CyberArkAPI *secrets.CyberArkAPI `yaml:"cyberark-api,omitempty" json:"cyberark-api,omitempty"`
+	Obfuscated  *secrets.Obfuscated  `yaml:"obfuscated,omitempty" json:"obfuscated,omitempty"`
 }
 
 // Test for testing purposes until providers get decoupled.
 type Test struct {
-	Value interface{} `yaml:"value,omitempty"`
+	Value interface{} `yaml:"value,omitempty" json:"value,omitempty"`
 }
 
 func (t *Test) Validate() error { return nil }
