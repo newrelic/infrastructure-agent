@@ -20,7 +20,7 @@ env:
   # required for GHA publish action, should be moved into optional
   GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
   GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
-  SCHEMA_BRANCH: "master"
+  SCHEMA_BRANCH: ${{ github.event.release.tag_name }}
   AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
   AWS_REGION: "us-east-1"
 
