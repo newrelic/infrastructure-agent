@@ -1,3 +1,5 @@
+// Copyright 2021 New Relic Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 package status
 
 import (
@@ -6,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/newrelic/infrastructure-agent/internal/agent/id"
 	backendhttp "github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
@@ -38,15 +41,25 @@ type nrReporter struct {
 	endpoints []string // NR backend URLs
 	license   string
 	userAgent string
-	agentKey  string
+	idProvide id.Provide
 	timeout   time.Duration
 	transport http.RoundTripper
 }
 
 // Report reports agent status.
 func (r *nrReporter) Report() (report Report, err error) {
+	agentID := r.idProvide().ID.String()
 	for _, endpoint := range r.endpoints {
-		timedout, err := backendhttp.CheckEndpointReachability(r.ctx, r.log, endpoint, r.license, r.userAgent, r.agentKey, r.timeout, r.transport)
+		timedout, err := backendhttp.CheckEndpointReachability(
+			r.ctx,
+			r.log,
+			endpoint,
+			r.license,
+			r.userAgent,
+			agentID,
+			r.timeout,
+			r.transport,
+		)
 		e := Endpoint{
 			URL:       endpoint,
 			Reachable: true,
@@ -73,9 +86,9 @@ func NewReporter(
 	backendEndpoints []string,
 	timeout time.Duration,
 	transport http.RoundTripper,
+	agentIDProvide id.Provide,
 	license,
-	userAgent,
-	agentKey string,
+	userAgent string,
 ) Reporter {
 
 	return &nrReporter{
@@ -84,7 +97,7 @@ func NewReporter(
 		endpoints: backendEndpoints,
 		license:   license,
 		userAgent: userAgent,
-		agentKey:  agentKey,
+		idProvide: agentIDProvide,
 		timeout:   timeout,
 		transport: transport,
 	}

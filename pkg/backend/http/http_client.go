@@ -85,7 +85,7 @@ var NullHttpClient = func(req *http.Request) (res *http.Response, err error) {
 	return
 }
 
-func CheckEndpointReachability(ctx context.Context, l log.Entry, endpointURL, license, userAgent, agentKey string, timeout time.Duration, transport http.RoundTripper) (timedOut bool, err error) {
+func CheckEndpointReachability(ctx context.Context, l log.Entry, endpointURL, license, userAgent, agentID string, timeout time.Duration, transport http.RoundTripper) (timedOut bool, err error) {
 	var request *http.Request
 	if request, err = http.NewRequest("HEAD", endpointURL, nil); err != nil {
 		return false, fmt.Errorf("unable to prepare availability request: %v, error: %s", request, err)
@@ -95,7 +95,7 @@ func CheckEndpointReachability(ctx context.Context, l log.Entry, endpointURL, li
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("User-Agent", userAgent)
 	request.Header.Set(LicenseHeader, license)
-	request.Header.Set(EntityKeyHeader, agentKey)
+	request.Header.Set(EntityKeyHeader, agentID)
 
 	client := GetHttpClient(timeout, transport)
 

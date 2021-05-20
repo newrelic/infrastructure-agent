@@ -9,8 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
-	"gopkg.in/yaml.v2"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -19,6 +17,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
+	"gopkg.in/yaml.v2"
 
 	"github.com/newrelic/infrastructure-agent/pkg/license"
 	"github.com/sirupsen/logrus"
@@ -555,7 +556,7 @@ type Config struct {
 	PartitionsTTL string `yaml:"partitions_ttl" envconfig:"partitions_ttl" public:"false"`
 
 	// StartupConnectionTimeout Time duration to wait before timing-out the request the agents makes at startup to
-	// check the NewRelic platform availability.
+	// check the NewRelic platform availability. Used by defining reachability status of backend endpoints.
 	// Default: 10s
 	// Public: Yes
 	StartupConnectionTimeout string `yaml:"startup_connection_timeout" envconfig:"startup_connection_timeout"`
@@ -773,10 +774,20 @@ type Config struct {
 	// Public: Yes
 	TCPServerEnabled bool `yaml:"tcp_server_enabled" envconfig:"tcp_server_enabled"`
 
-	// TCPServerPort Set the port for tcp server(used only by statsD integration) to receive integration payloads.
+	// TCPServerPort Set the port for tcp server to receive integration payloads.
 	// Default: 8002
 	// Public: Yes
 	TCPServerPort int `yaml:"tcp_server_port" envconfig:"tcp_server_port"`
+
+	// StatusServerEnabled will listen into TCP port (status_server_port) to serve status requests.
+	// Default: False
+	// Public: Yes
+	StatusServerEnabled bool `yaml:"status_server_enabled" envconfig:"status_server_enabled"`
+
+	// StatusServerPort Set the port for status server.
+	// Default: 8003
+	// Public: Yes
+	StatusServerPort int `yaml:"status_server_port" envconfig:"status_server_port"`
 
 	// AppDataDir This option is only for Windows. It defines the path to store data in a different path than the
 	// program files directory.

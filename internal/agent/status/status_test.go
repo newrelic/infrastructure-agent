@@ -1,3 +1,5 @@
+// Copyright 2021 New Relic Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 package status
 
 import (
@@ -7,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/stretchr/testify/assert"
 )
@@ -46,6 +49,12 @@ func TestReporterI_Report(t *testing.T) {
 		},
 	}}
 
+	timeout := 10 * time.Millisecond
+	transport := &http.Transport{}
+	emptyIDProvide := func() entity.Identity {
+		return entity.EmptyIdentity
+	}
+
 	tests := []struct {
 		name      string
 		endpoints []string
@@ -58,11 +67,8 @@ func TestReporterI_Report(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			l := log.WithComponent(tt.name)
-			timeout := 10 * time.Millisecond
-			transport := &http.Transport{}
-			r := NewReporter(context.Background(), l, tt.endpoints, timeout, transport, "license", "user-agent", "agent-key")
+			r := NewReporter(context.Background(), l, tt.endpoints, timeout, transport, emptyIDProvide, "user-agent", "agent-key")
 
 			got, err := r.Report()
 
