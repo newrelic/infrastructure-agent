@@ -1301,6 +1301,7 @@ func NewConfig() *Config {
 		HTTPServerHost:                defaultHTTPServerHost,
 		HTTPServerPort:                defaultHTTPServerPort,
 		TCPServerPort:                 defaultTCPServerPort,
+		StatusServerPort:              defaultStatusServerPort,
 		DockerApiVersion:              DefaultDockerApiVersion,
 		FingerprintUpdateFreqSec:      defaultFingerprintUpdateFreqSec,
 		CloudMetadataExpiryInSec:      defaultCloudMetadataExpiryInSec,

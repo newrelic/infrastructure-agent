@@ -63,6 +63,7 @@ var (
 	defaultHTTPServerHost                = "localhost"
 	defaultHTTPServerPort                = 8001
 	defaultTCPServerPort                 = 8002
+	defaultStatusServerPort              = 8003
 	defaultIpData                        = true
 	defaultTruncTextValues               = true
 	defaultLogToStdout                   = true
