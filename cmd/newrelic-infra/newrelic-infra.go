@@ -31,6 +31,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/v3legacy"
 	"github.com/newrelic/infrastructure-agent/internal/socketapi"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins"
 	"github.com/sirupsen/logrus"
@@ -48,7 +49,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/recover"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4"
+	v4 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/logs"
@@ -308,6 +309,10 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) (err er
 
 	// queues integration run requests
 	definitionQ := make(chan integration.Definition, 100)
+	// queues config entries requests
+	configEntryQ := make(chan configrequest.Entry, 100)
+	// queues integration terminated definitions
+	terminateDefinitionQ := make(chan string, 100)
 
 	emitterWithRegister := dm.NewEmitter(agt.GetContext(), dmSender, registerClient, otelServer.Measure)
 	nonRegisterEmitter := dm.NewNonRegisterEmitter(agt.GetContext(), dmSender)
@@ -318,7 +323,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) (err er
 	tracker := track.NewTracker(dmEmitter)
 
 	integrationEmitter := emitter.NewIntegrationEmittor(agt, dmEmitter, ffManager)
-	integrationManager := v4.NewManager(integrationCfg, integrationEmitter, il, definitionQ, tracker)
+	integrationManager := v4.NewManager(integrationCfg, integrationEmitter, il, definitionQ, terminateDefinitionQ, configEntryQ, tracker)
 
 	// Command channel handlers
 	backoffSecsC := make(chan int, 1) // 1 won't block on initial cmd-channel fetch

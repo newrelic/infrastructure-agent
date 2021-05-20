@@ -1,0 +1,25 @@
+---
+
+- name: pinned version agent installation
+  import_playbook: installation-pinned.yml
+
+- name: agent installation as root
+  import_playbook: installation-root.yml
+
+- name: privileged mode agent installation
+  import_playbook: installation-privileged.yml
+
+- name: unprivileged mode agent installation
+  import_playbook: installation-unprivileged.yml
+
+# Not available for ARM yet
+#- name: log forwarder
+#  import_playbook: log-forwarder.yml
+
+- name: agent upgrade
+  import_playbook: agent-upgrade.yml
+
+- name: agent uninstallation
+  import_playbook: uninstallation.yml
+
+...

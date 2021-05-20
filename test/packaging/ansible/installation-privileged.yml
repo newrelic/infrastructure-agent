@@ -1,0 +1,42 @@
+---
+
+- hosts: all
+  become: true
+  gather_facts: yes
+
+  pre_tasks:
+    - name: Initial cleanup # Only required for shared infra.
+      include_role:
+        name: cleanup
+
+  tasks:
+    - name: Installation tests suite
+      vars:
+        agent_user: "nri-agent"
+        env_vars:
+          NRIA_MODE: PRIVILEGED
+
+      block:
+
+      - name: repo setup
+        include_role:
+          name: repo-setup
+
+      - name: install agent
+        include_role:
+          name: agent-install
+
+      - name: Assert privileged capabilities
+        include_role:
+          name: assert-privileged-caps
+
+      - name: Assert rootless
+        include_role:
+          name: assert-agent-user
+
+      always:
+        - name: Final cleanup # Only required for shared infra.
+          include_role:
+            name: cleanup
+
+...

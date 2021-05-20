@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
 	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 
 	"github.com/fortytw2/leaktest"
@@ -26,6 +27,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var terminatedQueue = make(chan string)
+
 func TestGroup_Run(t *testing.T) {
 	defer leaktest.Check(t)()
 
@@ -38,7 +41,7 @@ func TestGroup_Run(t *testing.T) {
 			{InstanceName: "saygoodbye", Exec: testhelp.Command(fixtures.IntegrationScript, "bye")},
 		},
 	}, nil)
-	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, "")
+	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, configrequest.NoopHandleFn, "", terminatedQueue)
 	require.NoError(t, err)
 
 	// WHEN the Group executes all the integrations
@@ -76,7 +79,7 @@ func TestGroup_Run_Inventory(t *testing.T) {
 				Labels: map[string]string{"foo": "bar", "ou": "yea"}},
 		},
 	}, nil)
-	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, "")
+	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, configrequest.NoopHandleFn, "", terminatedQueue)
 	require.NoError(t, err)
 
 	// WHEN the integration is executed
@@ -125,7 +128,7 @@ func TestGroup_Run_Inventory_OverridePrefix(t *testing.T) {
 				InventorySource: "custom/inventory"},
 		},
 	}, nil)
-	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, "")
+	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, configrequest.NoopHandleFn, "", terminatedQueue)
 	require.NoError(t, err)
 
 	// WHEN the integration is executed
@@ -151,7 +154,7 @@ func TestGroup_Run_Timeout(t *testing.T) {
 			{InstanceName: "Hello", Exec: testhelp.Command(fixtures.BlockedCmd), Timeout: &to},
 		},
 	}, nil)
-	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, "")
+	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, configrequest.NoopHandleFn, "", terminatedQueue)
 	require.NoError(t, err)
 	errs := interceptGroupErrors(&gr)
 
@@ -242,7 +245,7 @@ func TestGroup_Run_ConfigPathUpdated(t *testing.T) {
 			Config:       "hello",
 		}},
 	}, nil)
-	group, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, "")
+	group, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, configrequest.NoopHandleFn, "", terminatedQueue)
 	require.NoError(t, err)
 	// shortening the interval to avoid long tests
 	group.integrations[0].Interval = 100 * time.Millisecond
@@ -319,7 +322,7 @@ func TestGroup_Run_IntegrationScriptPrintsErrorsAndReturnCodeIsZero(t *testing.T
 			{InstanceName: "log_errors", Exec: testhelp.Command(fixtures.IntegrationPrintsErr, "bye")},
 		},
 	}, nil)
-	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, "")
+	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, configrequest.NoopHandleFn, "", terminatedQueue)
 	require.NoError(t, err)
 
 	// WHEN we add a hook to the log to capture the "error" and "fatal" levels

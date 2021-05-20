@@ -1,0 +1,11 @@
+---
+
+- name: fail if agent_user is not defined
+  fail:
+    msg: agent_user variable must de specified
+  when: (agent_user is not defined) or (agent_user | length == 0)
+
+
+- include: "check-{{ ansible_system }}.yaml"
+
+...
