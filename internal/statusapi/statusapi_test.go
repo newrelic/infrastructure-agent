@@ -21,6 +21,7 @@ import (
 )
 
 func TestServer_Serve(t *testing.T) {
+	// Given a running HTTP endpoint
 	port, err := network_helpers.TCPPort()
 	require.NoError(t, err)
 
@@ -29,6 +30,7 @@ func TestServer_Serve(t *testing.T) {
 	}))
 	defer serverOk.Close()
 
+	// And a status reporter monitoring it
 	endpoints := []string{serverOk.URL}
 	l := log.WithComponent(t.Name())
 	timeout := 10 * time.Millisecond
@@ -40,6 +42,7 @@ func TestServer_Serve(t *testing.T) {
 	defer cancel()
 	r := status.NewReporter(ctx, l, endpoints, timeout, transport, emptyIDProvide, "user-agent", "agent-key")
 
+	// When agent status API server is ready
 	s := NewServer(port, r)
 	defer cancel()
 
@@ -48,6 +51,7 @@ func TestServer_Serve(t *testing.T) {
 	s.WaitUntilReady()
 	time.Sleep(10 * time.Millisecond)
 
+	// And a request to the status API is sent
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d%s", port, statusAPIPath), bytes.NewReader([]byte{}))
 	require.NoError(t, err)
 	client := http.Client{}
@@ -55,6 +59,8 @@ func TestServer_Serve(t *testing.T) {
 	res, err := client.Do(req)
 	require.NoError(t, err)
 	defer res.Body.Close()
+
+	// Then response contains a report for the monitored endpoint
 	require.Equal(t, http.StatusOK, res.StatusCode)
 
 	var gotReport status.Report
