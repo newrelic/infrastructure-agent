@@ -4,6 +4,7 @@ package integration
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"time"
@@ -42,6 +43,25 @@ type Definition struct {
 	CmdChanReq      *ctx.CmdChannelRequest // not empty: command-channel run/stop integration requests
 	runnable        executor.Executor
 	newTempFile     func(template []byte) (string, error)
+}
+
+func (d *Definition) Hash() string {
+	h := sha256.New()
+	identifier := fmt.Sprintf("%v%v%v%v%v%v%v%v%v%v%v",
+		d.Name,
+		d.Labels,
+		d.ExecutorConfig,
+		d.Interval,
+		d.Timeout,
+		d.ConfigTemplate,
+		d.InventorySource,
+		d.WhenConditions,
+		d.runnable.Args,
+		d.runnable.Cfg,
+		d.runnable.Command,
+	)
+	h.Write([]byte(identifier))
+	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
 func (d *Definition) TimeoutEnabled() bool {

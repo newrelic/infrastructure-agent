@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/cache"
+
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/when"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
@@ -18,6 +20,8 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/contexts"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest/protocol"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
+	cfgprotocol "github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 
@@ -43,6 +47,7 @@ type logParser func(line string) (fields logFields)
 type runner struct {
 	emitter        emitter.Emitter
 	handleCmdReq   cmdrequest.HandleFn
+	handleConfig   configrequest.HandleFn
 	dSources       *databind.Sources
 	log            log.Entry
 	definition     integration.Definition
@@ -52,6 +57,8 @@ type runner struct {
 	healthCheck    sync.Once
 	heartBeatFunc  func()
 	heartBeatMutex sync.RWMutex
+	cache          cache.Cache
+	terminateQueue chan<- string
 }
 
 // NewRunner creates an integration runner instance.
@@ -62,14 +69,19 @@ func NewRunner(
 	dSources *databind.Sources,
 	handleErrorsProvide func() runnerErrorHandler,
 	cmdReqHandle cmdrequest.HandleFn,
+	configHandle configrequest.HandleFn,
+	terminateQ chan<- string,
 ) *runner {
 	r := &runner{
-		emitter:       emitter,
-		handleCmdReq:  cmdReqHandle,
-		dSources:      dSources,
-		definition:    intDef,
-		heartBeatFunc: func() {},
-		stderrParser:  parseLogrusFields,
+		emitter:        emitter,
+		handleCmdReq:   cmdReqHandle,
+		handleConfig:   configHandle,
+		dSources:       dSources,
+		definition:     intDef,
+		heartBeatFunc:  func() {},
+		stderrParser:   parseLogrusFields,
+		terminateQueue: terminateQ,
+		cache:          cache.CreateCache(),
 	}
 	if handleErrorsProvide != nil {
 		r.handleErrors = handleErrorsProvide()
@@ -82,6 +94,7 @@ func NewRunner(
 
 func (r *runner) Run(ctx context.Context, pidWCh, exitCodeCh chan<- int) {
 	r.log = illog.WithFields(LogFields(r.definition))
+	defer r.killChildren()
 	for {
 		waitForNextExecution := time.After(r.definition.Interval)
 
@@ -112,6 +125,18 @@ func (r *runner) Run(ctx context.Context, pidWCh, exitCodeCh chan<- int) {
 			r.log.Debug("Integration has been interrupted")
 			return
 		case <-waitForNextExecution:
+		}
+	}
+}
+
+func (r *runner) killChildren() {
+	if c := r.cache; c != nil {
+		cfgNames := c.ListConfigNames()
+		for _, cfgName := range cfgNames {
+			definitions := r.cache.GetDefinitions(cfgName)
+			for _, definition := range definitions {
+				r.terminateQueue <- definition.Hash()
+			}
 		}
 	}
 }
@@ -255,6 +280,10 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 		}
 
 		if ok, ver := protocol.IsCommandRequest(line); ok {
+			if r.handleCmdReq == nil {
+				llog.Warn("received cmd request payload without a handler")
+				continue
+			}
 			llog.WithField("version", ver).Debug("Received run request.")
 			cr, err := protocol.DeserializeLine(line)
 			if err != nil {
@@ -263,13 +292,25 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 					Warn("cannot deserialize integration run request payload")
 				continue
 			}
+			r.handleCmdReq(cr)
+			continue
+		}
 
-			if r.handleCmdReq == nil {
-				llog.Warn("received cmd request payload without a handler")
+		if cfgProtocolBuilder := cfgprotocol.GetConfigProtocolBuilder(line); cfgProtocolBuilder != nil {
+			if r.handleConfig == nil {
+				llog.Warn("received config protocol request payload without a handler")
+				continue
+			}
+			cfgProtocol, err := cfgProtocolBuilder.Build()
+			llog.WithField("version", cfgProtocol.Version()).Info("Received config protocol request.")
+			if err != nil {
+				llog.
+					WithError(err).
+					Warn("cannot build config protocol")
 				continue
 			}
 
-			r.handleCmdReq(cr)
+			r.handleConfig(cfgProtocol, r.cache)
 			continue
 		}
 
