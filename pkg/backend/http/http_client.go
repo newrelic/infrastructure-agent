@@ -99,6 +99,7 @@ func CheckEndpointReachability(ctx context.Context, l log.Entry, endpointURL, li
 
 	client := GetHttpClient(timeout, transport)
 
+	// all status codes are acceptable as request has been replied by the endpoint
 	if _, err = client.Do(request); err != nil {
 		if e2, ok := err.(net.Error); ok && (e2.Timeout() || e2.Temporary()) {
 			timedOut = true
