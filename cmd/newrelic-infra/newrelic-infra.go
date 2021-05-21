@@ -207,8 +207,7 @@ var aslog = wlog.WithComponent("AgentService").WithFields(logrus.Fields{
 	"service": svcName,
 })
 
-func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) (err error) {
-
+func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	pluginSourceDirs := []string{
 		c.CustomPluginInstallationDir,
 		filepath.Join(c.AgentDir, "custom-integrations"),
@@ -241,7 +240,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) (err er
 	}
 
 	aslog.Info("Checking network connectivity...")
-	err = waitForNetwork(c.CollectorURL, c.StartupConnectionTimeout, c.StartupConnectionRetries, transport)
+	err := waitForNetwork(c.CollectorURL, c.StartupConnectionTimeout, c.StartupConnectionRetries, transport)
 	if err != nil {
 		fatal(err, "Can't reach the New Relic collector.")
 	}
@@ -395,11 +394,11 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) (err er
 	return agt.Run()
 }
 
-// initOtelServer will spawn a server and expose agent metrics through prometheus exporter
-// by default is disabled and only will be enabled if host:port are provided.
+// initOtelServer will spawn a server and expose agent metrics through prometheus exporter.
+// By default is disabled and it only will be enabled if host:port are provided.
 // Using instrumentation.SetupPrometheusIntegrationConfig it will create prometheus
-// integration configuration (and delete it on agent shutdown process)
-func initOtelServer(ctx context.Context, c *config.Config) ( instrumentation.Exporter,  error) {
+// integration configuration (and delete it on agent shutdown process).
+func initOtelServer(ctx context.Context, c *config.Config) (instrumentation.Exporter, error) {
 	if c.AgentMetricsEndpoint == "" {
 		return instrumentation.NewNoopServer(), nil
 	}

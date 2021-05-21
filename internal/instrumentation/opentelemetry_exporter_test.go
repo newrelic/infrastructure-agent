@@ -1,6 +1,5 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-// +build go1.13
 
 package instrumentation
 
@@ -42,5 +41,4 @@ func TestOpentelemetry_Measure(t *testing.T) {
 	assert.Contains(t, string(metrics), "go_gc_duration_seconds")
 	assert.Contains(t, string(metrics), "newrelic_infra_instrumentation_dm_requests_forwarded 5050")
 	assert.Contains(t, string(metrics), "newrelic_infra_instrumentation_dm_datasets_received 20100")
-	//t.Logf("%s", metrics)
 }

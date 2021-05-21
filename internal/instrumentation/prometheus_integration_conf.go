@@ -1,3 +1,6 @@
+// Copyright 2020 New Relic Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 package instrumentation
 
 import (
@@ -42,7 +45,7 @@ func SetupPrometheusIntegrationConfig(ctx context.Context, agentMetricsEndpoint 
 		return err
 	}
 
-	go func(){
+	go func() {
 		<-ctx.Done()
 		cleanConfigFile()
 	}()
