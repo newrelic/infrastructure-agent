@@ -40,7 +40,7 @@ func (o opentelemetry) GetHttpTransport(base http.RoundTripper) http.RoundTrippe
 			otelhttp.WriteEvents))
 }
 
-func NewOpentelemetryServer() (exporter Exporter, err error) {
+func NewOpentelemetryExporter() (exporter Exporter, err error) {
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}))
 	registry.MustRegister(prometheus.NewGoCollector())

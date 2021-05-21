@@ -15,7 +15,7 @@ import (
 )
 
 func TestOpentelemetry_Measure(t *testing.T) {
-	exporter, err := NewOpentelemetryServer()
+	exporter, err := NewOpentelemetryExporter()
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
 

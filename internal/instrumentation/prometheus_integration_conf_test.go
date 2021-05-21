@@ -60,7 +60,6 @@ func TestSetupPrometheusIntegrationConfig_OverrideExistingFile(t *testing.T) {
 
 	endpoint := "some-endpoint:2222"
 	promIntConfPath = os.TempDir() + "/TestSetupPrometheusIntegrationConfig.yml"
-	assert.NoFileExists(t, promIntConfPath)
 
 	err = SetupPrometheusIntegrationConfig(ctx, endpoint)
 	assert.Nil(t, err)
@@ -79,6 +78,7 @@ func TestSetupPrometheusIntegrationConfig_DeleteConfFileOnFinish(t *testing.T) {
 	assert.Nil(t, err)
 
 	cancelFn()
+	//TODO find a better way of testing cancelFn w/o sleep as it makes it flacky and slow
 	time.Sleep(time.Millisecond * 50)
 	assert.NoFileExists(t, promIntConfPath)
 }

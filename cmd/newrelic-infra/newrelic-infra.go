@@ -395,19 +395,23 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) (err er
 	return agt.Run()
 }
 
+// initOtelServer will spawn a server and expose agent metrics through prometheus exporter
+// by default is disabled and only will be enabled if host:port are provided.
+// Using instrumentation.SetupPrometheusIntegrationConfig it will create prometheus
+// integration configuration (and delete it on agent shutdown process)
 func initOtelServer(ctx context.Context, c *config.Config) ( instrumentation.Exporter,  error) {
 	if c.AgentMetricsEndpoint == "" {
 		return instrumentation.NewNoopServer(), nil
 	}
 
-	otelServer, err := instrumentation.NewOpentelemetryServer()
+	exporter, err := instrumentation.NewOpentelemetryExporter()
 	if err != nil {
 		return nil, err
 	}
 
 	aslog.WithField("addr", c.AgentMetricsEndpoint).Info("Starting Opentelemetry server")
 	srv := &http.Server{
-		Handler:      otelServer.GetHandler(),
+		Handler:      exporter.GetHandler(),
 		Addr:         c.AgentMetricsEndpoint,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
@@ -426,7 +430,7 @@ func initOtelServer(ctx context.Context, c *config.Config) ( instrumentation.Exp
 		return nil, err
 	}
 
-	return otelServer, nil
+	return exporter, nil
 }
 
 // newInstancesLookup creates an instance lookup that:
