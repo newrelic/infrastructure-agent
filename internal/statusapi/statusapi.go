@@ -47,8 +47,8 @@ func (s *Server) Serve(ctx context.Context) {
 	router := httprouter.New()
 	router.GET(statusAPIPath, s.handle) // read only API
 
-	s.logger.Debug("Status server started.")
 	close(s.readyCh)
+	s.logger.Info("Status server started.")
 
 	err := http.ListenAndServe(fmt.Sprintf("%s:%d", s.host, s.port), router)
 	if err != nil {
