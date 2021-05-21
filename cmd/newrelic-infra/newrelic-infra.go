@@ -208,25 +208,6 @@ var aslog = wlog.WithComponent("AgentService").WithFields(logrus.Fields{
 })
 
 func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) (err error) {
-	otelServer := instrumentation.NewNoopServer()
-	if c.EnableMetricsEndpoint {
-		otelServer, err = instrumentation.NewOpentelemetryServer()
-		if err != nil {
-			return err
-		}
-		addr := fmt.Sprintf("%s:%v", strings.TrimSpace(c.MetricsEndpointHost), c.MetricsEndpointPort)
-		aslog.WithField("addr", addr).Info("Starting Opentelemetry server")
-		srv := &http.Server{
-			Handler:      otelServer.GetHandler(),
-			Addr:         addr,
-			WriteTimeout: 15 * time.Second,
-			ReadTimeout:  15 * time.Second,
-		}
-		go srv.ListenAndServe()
-		defer srv.Close()
-	}
-
-	wlog.Instrument(otelServer.Measure)
 
 	pluginSourceDirs := []string{
 		c.CustomPluginInstallationDir,
@@ -300,6 +281,12 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) (err er
 	if err := initialize.AgentService(c); err != nil {
 		fatal(err, "Can't complete platform specific initialization.")
 	}
+
+	otelServer, err := initOtelServer(agt.GetContext().Context(), c)
+	if err != nil {
+		return err
+	}
+	wlog.Instrument(otelServer.Measure)
 
 	metricsSenderConfig := dm.NewConfig(c.MetricURL, c.License, time.Duration(c.DMSubmissionPeriod)*time.Second, c.MaxMetricBatchEntitiesCount, c.MaxMetricBatchEntitiesQueue)
 	dmSender, err := dm.NewDMSender(metricsSenderConfig, transport, agt.Context.IdContext().AgentIdentity)
@@ -406,6 +393,40 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) (err er
 	timedLog.Info("New Relic infrastructure agent is running.")
 
 	return agt.Run()
+}
+
+func initOtelServer(ctx context.Context, c *config.Config) ( instrumentation.Exporter,  error) {
+	if c.AgentMetricsEndpoint == "" {
+		return instrumentation.NewNoopServer(), nil
+	}
+
+	otelServer, err := instrumentation.NewOpentelemetryServer()
+	if err != nil {
+		return nil, err
+	}
+
+	aslog.WithField("addr", c.AgentMetricsEndpoint).Info("Starting Opentelemetry server")
+	srv := &http.Server{
+		Handler:      otelServer.GetHandler(),
+		Addr:         c.AgentMetricsEndpoint,
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+	}
+
+	go srv.ListenAndServe()
+	go func() {
+		<-ctx.Done()
+		aslog.Debug("Stopping Opentelemetry server")
+		srv.Close()
+	}()
+
+	//Setup prometheus integration
+	err = instrumentation.SetupPrometheusIntegrationConfig(ctx, c.AgentMetricsEndpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	return otelServer, nil
 }
 
 // newInstancesLookup creates an instance lookup that:
