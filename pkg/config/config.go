@@ -91,6 +91,11 @@ type Config struct {
 	// Public: No
 	MetricURL string `yaml:"metric_url" envconfig:"metric_url" public:"false"`
 
+	// DMIngestEndpoint defines the API path for the infrastructure dimensional metric ingest endpoint
+	// Default: /metric/v1/infra
+	// Public: No
+	DMIngestEndpoint string `yaml:"dm_endpoint" envconfig:"dm_endpoint" public:"false"`
+
 	// CommandChannelURL defines the base URL for the command channel.
 	// Default: https://infrastructure-command-api.newrelic.com
 	// Public: No
@@ -789,6 +794,11 @@ type Config struct {
 	// Public: Yes
 	StatusServerPort int `yaml:"status_server_port" envconfig:"status_server_port"`
 
+	// StatusServerPort Set the port for status server.
+	// Default: IdentityURL, CommandChannelURL, MetricsIngestURL, InventoryIngestURL
+	// Public: Yes
+	StatusEndpoints []string `yaml:"status_endpoints" envconfig:"status_endpoints"`
+
 	// AppDataDir This option is only for Windows. It defines the path to store data in a different path than the
 	// program files directory.
 	// - %AppDir%/data: used for storing the delta data.
@@ -861,7 +871,7 @@ type Config struct {
 
 	// MetricsIngestEndpoint is the path for metrics ingest endpoint. The base URL is defined in the config option
 	// collector URL.
-	// Default: /metrics
+	// Default: /infra/v2/metrics
 	// Public: No
 	MetricsIngestEndpoint string `yaml:"metrics_ingest_endpoint" envconfig:"metrics_ingest_endpoint" public:"false"`
 
@@ -1279,7 +1289,7 @@ func LoadConfig(configFile string) (cfg *Config, err error) {
 
 // NewConfig returns the default Config.
 func NewConfig() *Config {
-	return &Config{
+	c := &Config{
 		lock: sync.Mutex{},
 		// The following values are not configurable by the user
 		ConnectEnabled:                defaultConnectEnabled,
@@ -1289,6 +1299,7 @@ func NewConfig() *Config {
 		PidFile:                       defaultPidFile,
 		InventoryIngestEndpoint:       defaultInventoryIngestEndpoint,
 		MetricsIngestEndpoint:         defaultMetricsIngestEndpoint,
+		DMIngestEndpoint:              defaultDMIngestEndpoint,
 		IdentityIngestEndpoint:        defaultIdentityIngestEndpoint,
 		CommandChannelEndpoint:        defaultCmdChannelEndpoint,
 		CommandChannelIntervalSec:     defaultCmdChannelIntervalSec,
@@ -1347,6 +1358,8 @@ func NewConfig() *Config {
 		IncludeMetricsMatchers:      defaultMetricsMatcherConfig,
 		InventoryQueueLen:           DefaultInventoryQueue,
 	}
+
+	return c
 }
 
 // NewTest creates a default testing Config.
@@ -1375,6 +1388,10 @@ func (c Config) GenerateInventoryURL() string {
 		inventoryURL = os.Getenv("DEV_INVENTORY_INGEST_URL")
 	}
 	return strings.TrimSuffix(inventoryURL, "/")
+}
+
+func (c *Config) DMIngestURL() string {
+	return fmt.Sprintf("%s%s", c.MetricURL, c.DMIngestEndpoint)
 }
 
 func isConfigDefined(key string, cfgMetadata config_loader.YAMLMetadata) bool {
@@ -1572,6 +1589,17 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 
 	if cfg.ConnectEnabled {
 		cfg.MetricsIngestEndpoint = defaultMetricsIngestV2Endpoint
+	}
+
+	if len(cfg.StatusEndpoints) == 0 {
+		cfg.StatusEndpoints = []string{
+			cfg.IdentityURL + cfg.IdentityIngestEndpoint,
+			cfg.CommandChannelURL + cfg.CommandChannelEndpoint,
+			cfg.CollectorURL + cfg.MetricsIngestEndpoint,
+			cfg.CollectorURL + cfg.InventoryIngestEndpoint,
+			cfg.DMIngestURL(), // dimensional metrics without shimming might be not available for everyone
+			// no endpoint value to checking log ingest reachability
+		}
 	}
 
 	//MetricsIngestEndpoint default value defined in NewConfig

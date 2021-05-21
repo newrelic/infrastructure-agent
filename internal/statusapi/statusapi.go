@@ -84,6 +84,4 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	w.WriteHeader(http.StatusOK)
 }

@@ -78,6 +78,7 @@ var (
 	defaultStartupConnectionRetries      = 6     // -1 will try forever with an exponential backoff algorithm
 	defaultSupervisorRpcSock             = "/var/run/supervisor.sock"
 	defaultWinUpdatePlugin               = false
+	defaultDMIngestEndpoint              = "/metric/v1/infra"
 	defaultMetricsIngestEndpoint         = "/metrics"          // default: V1 endpoint root (/events/bulk), combine this with defaultCollectorURL
 	defaultInventoryIngestEndpoint       = "/inventory"        // default: V1 endpoint root (/deltas, /deltas/bulk)
 	defaultIdentityIngestEndpoint        = "/identity/v1"      // default: V1 endpoint root (/connect, /register/batch)

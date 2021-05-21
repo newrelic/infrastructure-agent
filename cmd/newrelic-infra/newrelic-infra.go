@@ -281,7 +281,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		fatal(err, "Can't complete platform specific initialization.")
 	}
 
-	metricsSenderConfig := dm.NewConfig(c.MetricURL, c.License, time.Duration(c.DMSubmissionPeriod)*time.Second, c.MaxMetricBatchEntitiesCount, c.MaxMetricBatchEntitiesQueue)
+	metricsSenderConfig := dm.NewConfig(c.DMIngestURL(), c.License, time.Duration(c.DMSubmissionPeriod)*time.Second, c.MaxMetricBatchEntitiesCount, c.MaxMetricBatchEntitiesQueue)
 	dmSender, err := dm.NewDMSender(metricsSenderConfig, transport, agt.Context.IdContext().AgentIdentity)
 	if err != nil {
 		return err
@@ -330,19 +330,13 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	// nice2have: revamp all API servers, potentially into a unique one serving different
 	// serializations & transports
 	if c.StatusServerEnabled {
-		endpoints := []string{
-			c.CollectorURL,
-			c.IdentityURL,
-			c.CommandChannelURL,
-			c.MetricURL,
-		}
 		rlog := wlog.WithComponent("status.Reporter")
 		timeoutD, err := time.ParseDuration(c.StartupConnectionTimeout)
 		if err != nil {
 			// This should never happen, as the correct format is checked during NormalizeConfig.
 			aslog.WithError(err).Error("invalid startup_connection_timeout value, cannot run status server")
 		} else {
-			rep := status.NewReporter(agt.Context.Ctx, rlog, endpoints, timeoutD, transport, agt.Context.AgentIdnOrEmpty, c.License, userAgent)
+			rep := status.NewReporter(agt.Context.Ctx, rlog, c.StatusEndpoints, timeoutD, transport, agt.Context.AgentIdnOrEmpty, c.License, userAgent)
 			go statusapi.NewServer(c.StatusServerPort, rep).Serve(agt.Context.Ctx)
 		}
 	}
