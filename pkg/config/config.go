@@ -1592,6 +1592,7 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	}
 
 	if len(cfg.StatusEndpoints) == 0 {
+		// https://docs.newrelic.com/docs/using-new-relic/cross-product-functions/install-configure/networks/#infrastructure
 		cfg.StatusEndpoints = []string{
 			cfg.IdentityURL + cfg.IdentityIngestEndpoint,
 			cfg.CommandChannelURL + cfg.CommandChannelEndpoint,
