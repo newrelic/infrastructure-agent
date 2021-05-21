@@ -78,6 +78,7 @@ func TestReporterI_Report(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
+			assert.Equal(t, timeout.String(), got.Config.ReachabilityTimeout)
 			for i, expectedEndpoint := range tt.want.Endpoints {
 				gotEndpoint := got.Endpoints[i]
 				assert.Equal(t, expectedEndpoint.URL, gotEndpoint.URL)

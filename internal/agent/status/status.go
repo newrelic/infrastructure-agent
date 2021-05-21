@@ -20,7 +20,13 @@ const (
 // Report agent status report. It contains:
 // - backend endpoints reachability statuses
 type Report struct {
-	Endpoints []Endpoint `json:"endpoints"`
+	Endpoints []Endpoint   `json:"endpoints"`
+	Config    ConfigReport `json:"config"`
+}
+
+// ConfigReport configuration used for status report.
+type ConfigReport struct {
+	ReachabilityTimeout string `json:"reachability_timeout"`
 }
 
 // Endpoint represents a single backend endpoint reachability status.
@@ -48,6 +54,10 @@ type nrReporter struct {
 
 // Report reports agent status.
 func (r *nrReporter) Report() (report Report, err error) {
+	report.Config = ConfigReport{
+		ReachabilityTimeout: r.timeout.String(),
+	}
+
 	agentID := r.idProvide().ID.String()
 	for _, endpoint := range r.endpoints {
 		timedout, err := backendhttp.CheckEndpointReachability(
