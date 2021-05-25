@@ -7,12 +7,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/status"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/testhelp/testemit"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	network_helpers "github.com/newrelic/infrastructure-agent/pkg/helpers/network"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
@@ -20,7 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestServer_Serve(t *testing.T) {
+func TestServer_Serve_Status(t *testing.T) {
 	// Given a running HTTP endpoint
 	port, err := network_helpers.TCPPort()
 	require.NoError(t, err)
@@ -43,7 +47,9 @@ func TestServer_Serve(t *testing.T) {
 	r := status.NewReporter(ctx, l, endpoints, timeout, transport, emptyIDProvide, "user-agent", "agent-key")
 
 	// When agent status API server is ready
-	s := NewServer(port, r)
+	em := &testemit.RecordEmitter{}
+	s, err := NewServer(port, r, em)
+	require.NoError(t, err)
 	defer cancel()
 
 	go s.Serve(ctx)
@@ -70,4 +76,72 @@ func TestServer_Serve(t *testing.T) {
 	assert.Empty(t, e.Error)
 	assert.True(t, e.Reachable)
 	assert.Equal(t, serverOk.URL, e.URL)
+}
+
+func TestServer_Serve_IngestData(t *testing.T) {
+	port, err := network_helpers.TCPPort()
+	require.NoError(t, err)
+
+	em := &testemit.RecordEmitter{}
+	s, err := NewServer(port, &noopReporter{}, em)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go s.Serve(ctx)
+
+	payloadWritten := make(chan struct{})
+	go func() {
+		s.WaitUntilReady()
+		time.Sleep(10 * time.Millisecond)
+		conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", port))
+		require.NoError(t, err)
+		_, err = conn.Write([]byte(strings.Replace(`{
+  "protocol_version": "4",
+  "integration": {
+    "name": "com.newrelic.foo",
+    "version": "0.1.0"
+  },
+  "data": [
+    {
+      "inventory": {
+        "foo": {
+          "k1": "v1",
+          "k2": false
+        }
+      }
+    }
+  ]
+}`, "\n", "", -1) + "\n"))
+		assert.NoError(t, err)
+		close(payloadWritten)
+	}()
+
+	select {
+	case <-time.NewTimer(500 * time.Millisecond).C:
+		t.Fail()
+		return
+	case <-payloadWritten:
+	}
+
+	t.Log("receiving...\n")
+	d, err := em.ReceiveFrom(IntegrationName)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, d)
+}
+
+var il = integration.InstancesLookup{
+	Legacy: func(_ integration.DefinitionCommandConfig) (integration.Definition, error) {
+		return integration.Definition{Name: "bar"}, nil
+	},
+	ByName: func(_ string) (string, error) {
+		return "foo", nil
+	},
+}
+
+type noopReporter struct{}
+
+func (r *noopReporter) Report() (status.Report, error) {
+	return status.Report{}, nil
 }

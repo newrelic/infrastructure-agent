@@ -327,9 +327,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		aslog.WithError(err).Warn("Commands initial fetch failed.")
 	}
 
-	// nice2have: revamp all API servers, potentially into a unique one serving different
-	// serializations & transports
-	if c.StatusServerEnabled {
+	if c.StatusServerEnabled || c.HTTPServerEnabled {
 		rlog := wlog.WithComponent("status.Reporter")
 		timeoutD, err := time.ParseDuration(c.StartupConnectionTimeout)
 		if err != nil {
@@ -337,7 +335,12 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 			aslog.WithError(err).Error("invalid startup_connection_timeout value, cannot run status server")
 		} else {
 			rep := status.NewReporter(agt.Context.Ctx, rlog, c.StatusEndpoints, timeoutD, transport, agt.Context.AgentIdnOrEmpty, c.License, userAgent)
-			go statusapi.NewServer(c.StatusServerPort, rep).Serve(agt.Context.Ctx)
+			apiSrv, err := statusapi.NewServer(c.StatusServerPort, rep)
+			if err != nil {
+				aslog.WithError(err).Error("cannot run api server")
+			} else {
+				go apiSrv.Serve(agt.Context.Ctx)
+			}
 		}
 	}
 
