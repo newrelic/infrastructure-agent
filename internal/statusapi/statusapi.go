@@ -69,8 +69,6 @@ func (s *Server) WaitUntilReady() {
 // handle returns a HTTP handler function for full status report or just errors status report.
 func (s *Server) handle(onlyErrors bool) func(http.ResponseWriter, *http.Request, httprouter.Params) {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-
 		var rep status.Report
 		var err error
 		if onlyErrors {
@@ -79,21 +77,32 @@ func (s *Server) handle(onlyErrors bool) func(http.ResponseWriter, *http.Request
 			rep, err = s.reporter.Report()
 		}
 		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
 			jerr := json.NewEncoder(w).Encode(responseError{
 				Error: fmt.Sprintf("fetching status report: %s", err),
 			})
 			if jerr != nil {
 				s.logger.WithError(jerr).Warn("couldn't encode a failed response")
 			}
-			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		jerr := json.NewEncoder(w).Encode(rep)
+		b, jerr := json.Marshal(rep)
 		if jerr != nil {
-			s.logger.WithError(jerr).Warn("couldn't encode status report")
 			w.WriteHeader(http.StatusInternalServerError)
+			s.logger.WithError(jerr).Warn("couldn't encode status report")
 			return
+		}
+
+		if rep.Checks == nil {
+			s.logger.Info("no content!!!")
+			w.WriteHeader(http.StatusNoContent) // 204
+		}
+
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		_, err = w.Write(b)
+		if err != nil {
+			s.logger.Warn("cannot write status response, error: " + err.Error())
 		}
 	}
 }
