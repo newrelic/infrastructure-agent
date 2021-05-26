@@ -1596,7 +1596,7 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 			cfg.CommandChannelURL + cfg.CommandChannelEndpoint,
 			cfg.CollectorURL + cfg.MetricsIngestEndpoint,
 			cfg.CollectorURL + cfg.InventoryIngestEndpoint,
-			cfg.DMIngestURL(), // dimensional metrics without shimming might be not available for everyone
+			//cfg.DMIngestURL(), // dimensional metrics without shimming not available yet
 			// no endpoint value to checking log ingest reachability
 		}
 	}

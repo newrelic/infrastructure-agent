@@ -29,16 +29,16 @@ func TestNewReporter_Report(t *testing.T) {
 	endpointsTimeout := []string{serverTimeout.URL}
 	endpointsMixed := []string{serverOk.URL, serverTimeout.URL}
 
-	expectReportOk := Report{Checks: Checks{Endpoints: []Endpoint{{
+	expectReportOk := Report{Checks: &ChecksReport{Endpoints: []EndpointReport{{
 		URL:       serverOk.URL,
 		Reachable: true,
 	}}}}
-	expectReportTimeout := Report{Checks: Checks{Endpoints: []Endpoint{{
+	expectReportTimeout := Report{Checks: &ChecksReport{Endpoints: []EndpointReport{{
 		URL:       serverTimeout.URL,
 		Reachable: false,
 		Error:     endpointTimeoutMsg, // substring is enough, it'll assert via "string contains"
 	}}}}
-	expectReportMixed := Report{Checks: Checks{Endpoints: []Endpoint{
+	expectReportMixed := Report{Checks: &ChecksReport{Endpoints: []EndpointReport{
 		{
 			URL:       serverOk.URL,
 			Reachable: true,
@@ -105,12 +105,12 @@ func TestNewReporter_ReportErrors(t *testing.T) {
 	endpointsMixed := []string{serverOk.URL, serverTimeout.URL}
 
 	expectReportOk := Report{}
-	expectReportTimeout := Report{Checks: Checks{Endpoints: []Endpoint{{
+	expectReportTimeout := Report{Checks: &ChecksReport{Endpoints: []EndpointReport{{
 		URL:       serverTimeout.URL,
 		Reachable: false,
 		Error:     endpointTimeoutMsg, // substring is enough, it'll assert via "string contains"
 	}}}}
-	expectReportMixed := Report{Checks: Checks{Endpoints: []Endpoint{
+	expectReportMixed := Report{Checks: &ChecksReport{Endpoints: []EndpointReport{
 		{
 			URL:       serverTimeout.URL,
 			Reachable: false,
@@ -147,12 +147,11 @@ func TestNewReporter_ReportErrors(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			expectedErrorsAmount := len(tt.want.Checks.Endpoints)
-			if expectedErrorsAmount == 0 {
+			if tt.want.Checks == nil {
 				assert.Empty(t, got)
 			} else {
 				assert.Equal(t, timeout.String(), got.Config.ReachabilityTimeout)
-				require.Len(t, got.Checks.Endpoints, expectedErrorsAmount)
+				require.Len(t, got.Checks.Endpoints, len(tt.want.Checks.Endpoints))
 				for i, expectedEndpoint := range tt.want.Checks.Endpoints {
 					gotEndpoint := got.Checks.Endpoints[i]
 					assert.Equal(t, expectedEndpoint.URL, gotEndpoint.URL)

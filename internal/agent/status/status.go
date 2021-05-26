@@ -23,21 +23,21 @@ const (
 // - configuration
 // fields will be empty when ReportErrors() report no errors.
 type Report struct {
-	Checks Checks       `json:"checks,omitempty"`
-	Config ConfigReport `json:"config,omitempty"`
+	Checks *ChecksReport `json:"checks,omitempty"`
+	Config *ConfigReport `json:"config,omitempty"`
 }
 
-type Checks struct {
-	Endpoints []Endpoint `json:"endpoints"`
+type ChecksReport struct {
+	Endpoints []EndpointReport `json:"endpoints,omitempty"`
 }
 
 // ConfigReport configuration used for status report.
 type ConfigReport struct {
-	ReachabilityTimeout string `json:"reachability_timeout"`
+	ReachabilityTimeout string `json:"reachability_timeout,omitempty"`
 }
 
-// Endpoint represents a single backend endpoint reachability status.
-type Endpoint struct {
+// EndpointReport represents a single backend endpoint reachability status.
+type EndpointReport struct {
 	URL       string `json:"url"`
 	Reachable bool   `json:"reachable"`
 	Error     string `json:"error,omitempty"`
@@ -85,7 +85,7 @@ func (r *nrReporter) report(onlyErrors bool) (report Report, err error) {
 			r.timeout,
 			r.transport,
 		)
-		e := Endpoint{
+		e := EndpointReport{
 			URL:       endpoint,
 			Reachable: true,
 		}
@@ -100,8 +100,11 @@ func (r *nrReporter) report(onlyErrors bool) (report Report, err error) {
 		}
 
 		if !onlyErrors || errored {
+			if report.Checks == nil {
+				report.Checks = &ChecksReport{}
+			}
 			report.Checks.Endpoints = append(report.Checks.Endpoints, e)
-			report.Config = ConfigReport{
+			report.Config = &ConfigReport{
 				ReachabilityTimeout: r.timeout.String(),
 			}
 
