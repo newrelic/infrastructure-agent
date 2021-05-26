@@ -95,7 +95,7 @@ func (s *Server) handle(onlyErrors bool) func(http.ResponseWriter, *http.Request
 		}
 
 		if rep.Checks == nil {
-			w.WriteHeader(http.StatusNoContent) // 204
+			w.WriteHeader(http.StatusCreated) // 201
 		}
 
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
