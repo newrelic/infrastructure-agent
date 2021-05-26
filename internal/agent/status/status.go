@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/id"
@@ -74,41 +75,63 @@ func (r *nrReporter) ReportErrors() (report Report, err error) {
 
 func (r *nrReporter) report(onlyErrors bool) (report Report, err error) {
 	agentID := r.idProvide().ID.String()
-	for _, endpoint := range r.endpoints {
-		timedout, err := backendhttp.CheckEndpointReachability(
-			r.ctx,
-			r.log,
-			endpoint,
-			r.license,
-			r.userAgent,
-			agentID,
-			r.timeout,
-			r.transport,
-		)
-		e := EndpointReport{
-			URL:       endpoint,
-			Reachable: true,
-		}
-		errored := timedout || err != nil
-		if errored {
-			e.Reachable = false
-			if timedout {
-				e.Error = fmt.Sprintf("%s, %s", endpointTimeoutMsg, err)
-			} else {
-				e.Error = err.Error()
+
+	wg := sync.WaitGroup{}
+	wg.Add(len(r.endpoints))
+	eReportsC := make(chan EndpointReport, len(r.endpoints))
+
+	for _, ep := range r.endpoints {
+		go func(endpoint string) {
+			timedout, err := backendhttp.CheckEndpointReachability(
+				r.ctx,
+				r.log,
+				endpoint,
+				r.license,
+				r.userAgent,
+				agentID,
+				r.timeout,
+				r.transport,
+			)
+			e := EndpointReport{
+				URL:       endpoint,
+				Reachable: true,
 			}
+			if timedout || err != nil {
+				e.Reachable = false
+				if timedout {
+					e.Error = fmt.Sprintf("%s, %s", endpointTimeoutMsg, err)
+				} else {
+					e.Error = err.Error()
+				}
+			}
+			eReportsC <- e
+			wg.Done()
+		}(ep)
+	}
+
+	wg.Wait()
+	close(eReportsC)
+
+	var errored bool
+	var eReports []EndpointReport
+	for e := range eReportsC {
+		if !onlyErrors || !e.Reachable {
+			eReports = append(eReports, e)
+		}
+		if !e.Reachable {
+			errored = true
+		}
+	}
+
+	if !onlyErrors || errored {
+		if report.Checks == nil {
+			report.Checks = &ChecksReport{}
+		}
+		report.Checks.Endpoints = eReports
+		report.Config = &ConfigReport{
+			ReachabilityTimeout: r.timeout.String(),
 		}
 
-		if !onlyErrors || errored {
-			if report.Checks == nil {
-				report.Checks = &ChecksReport{}
-			}
-			report.Checks.Endpoints = append(report.Checks.Endpoints, e)
-			report.Config = &ConfigReport{
-				ReachabilityTimeout: r.timeout.String(),
-			}
-
-		}
 	}
 
 	return

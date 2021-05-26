@@ -80,8 +80,16 @@ func TestNewReporter_Report(t *testing.T) {
 			}
 
 			assert.Equal(t, timeout.String(), got.Config.ReachabilityTimeout)
-			for i, expectedEndpoint := range tt.want.Checks.Endpoints {
-				gotEndpoint := got.Checks.Endpoints[i]
+			for _, expectedEndpoint := range tt.want.Checks.Endpoints {
+				found := -1
+				for idx, gotEndpoint := range got.Checks.Endpoints {
+					if gotEndpoint.URL == expectedEndpoint.URL {
+						found = idx
+						break
+					}
+				}
+				require.NotEqualf(t, -1, found, "endpoint not found in response: %s", expectedEndpoint.URL)
+				gotEndpoint := got.Checks.Endpoints[found]
 				assert.Equal(t, expectedEndpoint.URL, gotEndpoint.URL)
 				assert.Equal(t, expectedEndpoint.Reachable, gotEndpoint.Reachable)
 				assert.Contains(t, gotEndpoint.Error, expectedEndpoint.Error)
@@ -152,8 +160,16 @@ func TestNewReporter_ReportErrors(t *testing.T) {
 			} else {
 				assert.Equal(t, timeout.String(), got.Config.ReachabilityTimeout)
 				require.Len(t, got.Checks.Endpoints, len(tt.want.Checks.Endpoints))
-				for i, expectedEndpoint := range tt.want.Checks.Endpoints {
-					gotEndpoint := got.Checks.Endpoints[i]
+				for _, expectedEndpoint := range tt.want.Checks.Endpoints {
+					found := -1
+					for idx, gotEndpoint := range got.Checks.Endpoints {
+						if gotEndpoint.URL == expectedEndpoint.URL {
+							found = idx
+							break
+						}
+					}
+					require.NotEqualf(t, -1, found, "endpoint not found in response: %s", expectedEndpoint.URL)
+					gotEndpoint := got.Checks.Endpoints[found]
 					assert.Equal(t, expectedEndpoint.URL, gotEndpoint.URL)
 					assert.Equal(t, expectedEndpoint.Reachable, gotEndpoint.Reachable)
 					assert.Contains(t, gotEndpoint.Error, expectedEndpoint.Error)
