@@ -12,9 +12,10 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestReporterI_Report(t *testing.T) {
+func TestNewReporter_Report(t *testing.T) {
 	serverOk := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 	}))
@@ -28,16 +29,16 @@ func TestReporterI_Report(t *testing.T) {
 	endpointsTimeout := []string{serverTimeout.URL}
 	endpointsMixed := []string{serverOk.URL, serverTimeout.URL}
 
-	expectReportOk := Report{Endpoints: []Endpoint{{
+	expectReportOk := Report{Data: Data{Endpoints: []Endpoint{{
 		URL:       serverOk.URL,
 		Reachable: true,
-	}}}
-	expectReportTimeout := Report{Endpoints: []Endpoint{{
+	}}}}
+	expectReportTimeout := Report{Data: Data{Endpoints: []Endpoint{{
 		URL:       serverTimeout.URL,
 		Reachable: false,
 		Error:     endpointTimeoutMsg, // substring is enough, it'll assert via "string contains"
-	}}}
-	expectReportMixed := Report{Endpoints: []Endpoint{
+	}}}}
+	expectReportMixed := Report{Data: Data{Endpoints: []Endpoint{
 		{
 			URL:       serverOk.URL,
 			Reachable: true,
@@ -47,7 +48,7 @@ func TestReporterI_Report(t *testing.T) {
 			Reachable: false,
 			Error:     endpointTimeoutMsg,
 		},
-	}}
+	}}}
 
 	timeout := 10 * time.Millisecond
 	transport := &http.Transport{}
@@ -79,11 +80,85 @@ func TestReporterI_Report(t *testing.T) {
 			}
 
 			assert.Equal(t, timeout.String(), got.Config.ReachabilityTimeout)
-			for i, expectedEndpoint := range tt.want.Endpoints {
-				gotEndpoint := got.Endpoints[i]
+			for i, expectedEndpoint := range tt.want.Data.Endpoints {
+				gotEndpoint := got.Data.Endpoints[i]
 				assert.Equal(t, expectedEndpoint.URL, gotEndpoint.URL)
 				assert.Equal(t, expectedEndpoint.Reachable, gotEndpoint.Reachable)
 				assert.Contains(t, gotEndpoint.Error, expectedEndpoint.Error)
+			}
+		})
+	}
+}
+
+func TestNewReporter_ReportErrors(t *testing.T) {
+	serverOk := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+	}))
+	defer serverOk.Close()
+	serverTimeout := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(10 * time.Second)
+	}))
+	defer serverTimeout.Close()
+
+	endpointsOk := []string{serverOk.URL}
+	endpointsTimeout := []string{serverTimeout.URL}
+	endpointsMixed := []string{serverOk.URL, serverTimeout.URL}
+
+	expectReportOk := Report{}
+	expectReportTimeout := Report{Data: Data{Endpoints: []Endpoint{{
+		URL:       serverTimeout.URL,
+		Reachable: false,
+		Error:     endpointTimeoutMsg, // substring is enough, it'll assert via "string contains"
+	}}}}
+	expectReportMixed := Report{Data: Data{Endpoints: []Endpoint{
+		{
+			URL:       serverTimeout.URL,
+			Reachable: false,
+			Error:     endpointTimeoutMsg,
+		},
+	}}}
+
+	timeout := 10 * time.Millisecond
+	transport := &http.Transport{}
+	emptyIDProvide := func() entity.Identity {
+		return entity.EmptyIdentity
+	}
+
+	tests := []struct {
+		name      string
+		endpoints []string
+		want      Report
+		wantErr   bool
+	}{
+		{"connectivity ok", endpointsOk, expectReportOk, false},
+		{"connectivity timedout", endpointsTimeout, expectReportTimeout, false},
+		{"connectivities ok and timeout", endpointsMixed, expectReportMixed, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := log.WithComponent(tt.name)
+			r := NewReporter(context.Background(), l, tt.endpoints, timeout, transport, emptyIDProvide, "user-agent", "agent-key")
+
+			got, err := r.ReportErrors()
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			expectedErrorsAmount := len(tt.want.Data.Endpoints)
+			if expectedErrorsAmount == 0 {
+				assert.Empty(t, got)
+			} else {
+				assert.Equal(t, timeout.String(), got.Config.ReachabilityTimeout)
+				require.Len(t, got.Data.Endpoints, expectedErrorsAmount)
+				for i, expectedEndpoint := range tt.want.Data.Endpoints {
+					gotEndpoint := got.Data.Endpoints[i]
+					assert.Equal(t, expectedEndpoint.URL, gotEndpoint.URL)
+					assert.Equal(t, expectedEndpoint.Reachable, gotEndpoint.Reachable)
+					assert.Contains(t, gotEndpoint.Error, expectedEndpoint.Error)
+				}
 			}
 		})
 	}

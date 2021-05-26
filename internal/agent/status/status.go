@@ -18,10 +18,17 @@ const (
 )
 
 // Report agent status report. It contains:
-// - backend endpoints reachability statuses
+// - checks:
+//   * backend endpoints reachability statuses
+// - configuration
+// fields will be empty when ReportErrors() report no errors.
 type Report struct {
-	Endpoints []Endpoint   `json:"endpoints"`
-	Config    ConfigReport `json:"config"`
+	Data   Data         `json:"data,omitempty"`
+	Config ConfigReport `json:"config,omitempty"`
+}
+
+type Data struct {
+	Endpoints []Endpoint `json:"endpoints"`
 }
 
 // ConfigReport configuration used for status report.
@@ -38,7 +45,10 @@ type Endpoint struct {
 
 // Reporter reports agent status.
 type Reporter interface {
+	// Report full status report.
 	Report() (Report, error)
+	// ReportErrors only reports errors found.
+	ReportErrors() (Report, error)
 }
 
 type nrReporter struct {
@@ -54,10 +64,15 @@ type nrReporter struct {
 
 // Report reports agent status.
 func (r *nrReporter) Report() (report Report, err error) {
-	report.Config = ConfigReport{
-		ReachabilityTimeout: r.timeout.String(),
-	}
+	return r.report(false)
+}
 
+// ReportErrors only reports agent errored state, Report.Data should be empty when no errors.
+func (r *nrReporter) ReportErrors() (report Report, err error) {
+	return r.report(true)
+}
+
+func (r *nrReporter) report(onlyErrors bool) (report Report, err error) {
 	agentID := r.idProvide().ID.String()
 	for _, endpoint := range r.endpoints {
 		timedout, err := backendhttp.CheckEndpointReachability(
@@ -74,7 +89,8 @@ func (r *nrReporter) Report() (report Report, err error) {
 			URL:       endpoint,
 			Reachable: true,
 		}
-		if timedout || err != nil {
+		errored := timedout || err != nil
+		if errored {
 			e.Reachable = false
 			if timedout {
 				e.Error = fmt.Sprintf("%s, %s", endpointTimeoutMsg, err)
@@ -83,7 +99,13 @@ func (r *nrReporter) Report() (report Report, err error) {
 			}
 		}
 
-		report.Endpoints = append(report.Endpoints, e)
+		if !onlyErrors || errored {
+			report.Data.Endpoints = append(report.Data.Endpoints, e)
+			report.Config = ConfigReport{
+				ReachabilityTimeout: r.timeout.String(),
+			}
+
+		}
 	}
 
 	return

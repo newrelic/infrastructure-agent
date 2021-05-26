@@ -14,8 +14,9 @@ import (
 )
 
 const (
-	IntegrationName = "status-api"
-	statusAPIPath   = "/v1/status"
+	IntegrationName         = "status-api"
+	statusAPIPath           = "/v1/status"
+	statusOnlyErrorsAPIPath = "/v1/status/errors"
 )
 
 type responseError struct {
@@ -45,7 +46,9 @@ func NewServer(port int, r status.Reporter) *Server {
 // Serve serves status API requests.
 func (s *Server) Serve(ctx context.Context) {
 	router := httprouter.New()
-	router.GET(statusAPIPath, s.handle) // read only API
+	// read only API
+	router.GET(statusAPIPath, s.handle(false))
+	router.GET(statusOnlyErrorsAPIPath, s.handle(true))
 
 	close(s.readyCh)
 	s.logger.Info("Status server started.")
@@ -63,25 +66,34 @@ func (s *Server) WaitUntilReady() {
 	_, _ = <-s.readyCh
 }
 
-func (s *Server) handle(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+// handle returns a HTTP handler function for full status report or just errors status report.
+func (s *Server) handle(onlyErrors bool) func(http.ResponseWriter, *http.Request, httprouter.Params) {
+	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
-	rep, err := s.reporter.Report()
-	if err != nil {
-		jerr := json.NewEncoder(w).Encode(responseError{
-			Error: fmt.Sprintf("fetching status report: %s", err),
-		})
-		if jerr != nil {
-			s.logger.WithError(jerr).Warn("couldn't encode a failed response")
+		var rep status.Report
+		var err error
+		if onlyErrors {
+			rep, err = s.reporter.ReportErrors()
+		} else {
+			rep, err = s.reporter.Report()
 		}
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+		if err != nil {
+			jerr := json.NewEncoder(w).Encode(responseError{
+				Error: fmt.Sprintf("fetching status report: %s", err),
+			})
+			if jerr != nil {
+				s.logger.WithError(jerr).Warn("couldn't encode a failed response")
+			}
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 
-	jerr := json.NewEncoder(w).Encode(rep)
-	if jerr != nil {
-		s.logger.WithError(jerr).Warn("couldn't encode status report")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		jerr := json.NewEncoder(w).Encode(rep)
+		if jerr != nil {
+			s.logger.WithError(jerr).Warn("couldn't encode status report")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	}
 }
