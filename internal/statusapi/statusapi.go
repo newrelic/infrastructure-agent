@@ -95,7 +95,6 @@ func (s *Server) handle(onlyErrors bool) func(http.ResponseWriter, *http.Request
 		}
 
 		if rep.Checks == nil {
-			s.logger.Info("no content!!!")
 			w.WriteHeader(http.StatusNoContent) // 204
 		}
 
