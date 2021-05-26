@@ -29,16 +29,16 @@ func TestNewReporter_Report(t *testing.T) {
 	endpointsTimeout := []string{serverTimeout.URL}
 	endpointsMixed := []string{serverOk.URL, serverTimeout.URL}
 
-	expectReportOk := Report{Data: Data{Endpoints: []Endpoint{{
+	expectReportOk := Report{Checks: Checks{Endpoints: []Endpoint{{
 		URL:       serverOk.URL,
 		Reachable: true,
 	}}}}
-	expectReportTimeout := Report{Data: Data{Endpoints: []Endpoint{{
+	expectReportTimeout := Report{Checks: Checks{Endpoints: []Endpoint{{
 		URL:       serverTimeout.URL,
 		Reachable: false,
 		Error:     endpointTimeoutMsg, // substring is enough, it'll assert via "string contains"
 	}}}}
-	expectReportMixed := Report{Data: Data{Endpoints: []Endpoint{
+	expectReportMixed := Report{Checks: Checks{Endpoints: []Endpoint{
 		{
 			URL:       serverOk.URL,
 			Reachable: true,
@@ -80,8 +80,8 @@ func TestNewReporter_Report(t *testing.T) {
 			}
 
 			assert.Equal(t, timeout.String(), got.Config.ReachabilityTimeout)
-			for i, expectedEndpoint := range tt.want.Data.Endpoints {
-				gotEndpoint := got.Data.Endpoints[i]
+			for i, expectedEndpoint := range tt.want.Checks.Endpoints {
+				gotEndpoint := got.Checks.Endpoints[i]
 				assert.Equal(t, expectedEndpoint.URL, gotEndpoint.URL)
 				assert.Equal(t, expectedEndpoint.Reachable, gotEndpoint.Reachable)
 				assert.Contains(t, gotEndpoint.Error, expectedEndpoint.Error)
@@ -105,12 +105,12 @@ func TestNewReporter_ReportErrors(t *testing.T) {
 	endpointsMixed := []string{serverOk.URL, serverTimeout.URL}
 
 	expectReportOk := Report{}
-	expectReportTimeout := Report{Data: Data{Endpoints: []Endpoint{{
+	expectReportTimeout := Report{Checks: Checks{Endpoints: []Endpoint{{
 		URL:       serverTimeout.URL,
 		Reachable: false,
 		Error:     endpointTimeoutMsg, // substring is enough, it'll assert via "string contains"
 	}}}}
-	expectReportMixed := Report{Data: Data{Endpoints: []Endpoint{
+	expectReportMixed := Report{Checks: Checks{Endpoints: []Endpoint{
 		{
 			URL:       serverTimeout.URL,
 			Reachable: false,
@@ -147,14 +147,14 @@ func TestNewReporter_ReportErrors(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			expectedErrorsAmount := len(tt.want.Data.Endpoints)
+			expectedErrorsAmount := len(tt.want.Checks.Endpoints)
 			if expectedErrorsAmount == 0 {
 				assert.Empty(t, got)
 			} else {
 				assert.Equal(t, timeout.String(), got.Config.ReachabilityTimeout)
-				require.Len(t, got.Data.Endpoints, expectedErrorsAmount)
-				for i, expectedEndpoint := range tt.want.Data.Endpoints {
-					gotEndpoint := got.Data.Endpoints[i]
+				require.Len(t, got.Checks.Endpoints, expectedErrorsAmount)
+				for i, expectedEndpoint := range tt.want.Checks.Endpoints {
+					gotEndpoint := got.Checks.Endpoints[i]
 					assert.Equal(t, expectedEndpoint.URL, gotEndpoint.URL)
 					assert.Equal(t, expectedEndpoint.Reachable, gotEndpoint.Reachable)
 					assert.Contains(t, gotEndpoint.Error, expectedEndpoint.Error)

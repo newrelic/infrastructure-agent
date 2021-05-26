@@ -65,8 +65,8 @@ func TestServer_Serve(t *testing.T) {
 
 	var gotReport status.Report
 	json.NewDecoder(res.Body).Decode(&gotReport)
-	require.Len(t, gotReport.Data.Endpoints, 1)
-	e := gotReport.Data.Endpoints[0]
+	require.Len(t, gotReport.Checks.Endpoints, 1)
+	e := gotReport.Checks.Endpoints[0]
 	assert.Empty(t, e.Error)
 	assert.True(t, e.Reachable)
 	assert.Equal(t, serverOk.URL, e.URL)
@@ -121,8 +121,8 @@ func TestServer_Serve_OnlyErrors(t *testing.T) {
 
 	var gotReport status.Report
 	json.NewDecoder(res.Body).Decode(&gotReport)
-	require.Len(t, gotReport.Data.Endpoints, 1, "only errored endpoint should be reported")
-	e := gotReport.Data.Endpoints[0]
+	require.Len(t, gotReport.Checks.Endpoints, 1, "only errored endpoint should be reported")
+	e := gotReport.Checks.Endpoints[0]
 	assert.NotEmpty(t, e.Error)
 	assert.False(t, e.Reachable)
 	assert.Equal(t, serverTimeout.URL, e.URL)

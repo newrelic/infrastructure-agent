@@ -23,11 +23,11 @@ const (
 // - configuration
 // fields will be empty when ReportErrors() report no errors.
 type Report struct {
-	Data   Data         `json:"data,omitempty"`
+	Checks Checks       `json:"checks,omitempty"`
 	Config ConfigReport `json:"config,omitempty"`
 }
 
-type Data struct {
+type Checks struct {
 	Endpoints []Endpoint `json:"endpoints"`
 }
 
@@ -67,7 +67,7 @@ func (r *nrReporter) Report() (report Report, err error) {
 	return r.report(false)
 }
 
-// ReportErrors only reports agent errored state, Report.Data should be empty when no errors.
+// ReportErrors only reports agent errored state, Report.Checks should be empty when no errors.
 func (r *nrReporter) ReportErrors() (report Report, err error) {
 	return r.report(true)
 }
@@ -100,7 +100,7 @@ func (r *nrReporter) report(onlyErrors bool) (report Report, err error) {
 		}
 
 		if !onlyErrors || errored {
-			report.Data.Endpoints = append(report.Data.Endpoints, e)
+			report.Checks.Endpoints = append(report.Checks.Endpoints, e)
 			report.Config = ConfigReport{
 				ReachabilityTimeout: r.timeout.String(),
 			}
