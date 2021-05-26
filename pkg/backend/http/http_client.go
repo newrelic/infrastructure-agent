@@ -105,7 +105,6 @@ func CheckEndpointReachability(ctx context.Context, l log.Entry, endpointURL, li
 			timedOut = true
 		}
 		if _, ok := err.(*url.Error); ok {
-			// not returning error as this might be a temporal connectivity issue
 			l.WithError(err).
 				WithField("userAgent", userAgent).
 				WithField("timeout", timeout).
