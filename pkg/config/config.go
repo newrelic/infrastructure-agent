@@ -1289,7 +1289,7 @@ func LoadConfig(configFile string) (cfg *Config, err error) {
 
 // NewConfig returns the default Config.
 func NewConfig() *Config {
-	c := &Config{
+	return &Config{
 		lock: sync.Mutex{},
 		// The following values are not configurable by the user
 		ConnectEnabled:                defaultConnectEnabled,
@@ -1358,8 +1358,6 @@ func NewConfig() *Config {
 		IncludeMetricsMatchers:      defaultMetricsMatcherConfig,
 		InventoryQueueLen:           DefaultInventoryQueue,
 	}
-
-	return c
 }
 
 // NewTest creates a default testing Config.
