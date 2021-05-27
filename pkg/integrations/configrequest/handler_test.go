@@ -38,7 +38,7 @@ func Test_addAndRemoveDefinitions(t *testing.T) {
 	assert.NoError(t, err)
 
 	// When is processed by the handle function
-	handleFunction(cp1, c)
+	handleFunction(cp1, c, integration.Definition{})
 
 	// Then the two integrations are sent to the queue for being executed and no runner is terminated
 	assert.Len(t, configProtocolQueue, 2)
@@ -54,7 +54,7 @@ func Test_addAndRemoveDefinitions(t *testing.T) {
 	cp2, err := cfgprotocol.GetConfigProtocolBuilder(secondPayload).Build()
 	assert.NoError(t, err)
 	// When the handle function is executed again
-	handleFunction(cp2, c)
+	handleFunction(cp2, c, integration.Definition{})
 
 	// then just 1 is executed and 1 removed
 	assert.Len(t, configProtocolQueue, 1)

@@ -310,7 +310,7 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 				continue
 			}
 
-			r.handleConfig(cfgProtocol, r.cache)
+			r.handleConfig(cfgProtocol, r.cache, r.definition)
 			continue
 		}
 

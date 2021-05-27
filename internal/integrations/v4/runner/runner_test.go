@@ -162,7 +162,7 @@ func Test_runner_Run_handlesCfgProtocol(t *testing.T) {
 	require.NoError(t, err)
 
 	var called uint32
-	mockHandleFn := func(configProtocol protocol.ConfigProtocol, c cache.Cache) {
+	mockHandleFn := func(cfgProtocol protocol.ConfigProtocol, c cache.Cache, parentDefinition integration.Definition) {
 		atomic.AddUint32(&called, 1)
 	}
 	e := &testemit.RecordEmitter{}

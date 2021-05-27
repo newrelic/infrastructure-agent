@@ -12,6 +12,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/when"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
+	cfgreq "github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track/ctx"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
@@ -41,13 +42,14 @@ type Definition struct {
 	InventorySource ids.PluginID
 	WhenConditions  []when.Condition
 	CmdChanReq      *ctx.CmdChannelRequest // not empty: command-channel run/stop integration requests
+	CfgProtocol     cfgreq.Context
 	runnable        executor.Executor
 	newTempFile     func(template []byte) (string, error)
 }
 
 func (d *Definition) Hash() string {
 	h := sha256.New()
-	identifier := fmt.Sprintf("%v%v%v%v%v%v%v%v%v%v%v",
+	identifier := fmt.Sprintf("%v%v%v%v%v%v%v%v%v%v%v%v",
 		d.Name,
 		d.Labels,
 		d.ExecutorConfig,
@@ -59,6 +61,7 @@ func (d *Definition) Hash() string {
 		d.runnable.Args,
 		d.runnable.Cfg,
 		d.runnable.Command,
+		d.CfgProtocol,
 	)
 	h.Write([]byte(identifier))
 	return fmt.Sprintf("%x", h.Sum(nil))
