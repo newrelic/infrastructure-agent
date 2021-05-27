@@ -1,0 +1,3 @@
+{ "config_protocol_version": "1", "action": "register_config", "config_name": "myconfig1", "config": { "integrations": [ { "name": "spawner", "cli_args": [ "-nri-process-name", "nri-out-long-4", "-path", "testdata/scenarios/shared/nri-out.json", "-mode", "long" ] } ] } }
+{}
+{ "config_protocol_version": "1", "action": "register_config", "config_name": "myconfig2", "config": { "integrations": [ { "name": "spawner", "cli_args": [ "-nri-process-name", "nri-out-long-4", "-path", "testdata/scenarios/shared/nri-out.json", "-mode", "long" ] } ] } }
