@@ -3,7 +3,7 @@ on:
   schedule:
     # Scheduled to run hourly
     # min, hour, day of the month, month (1 - 12 or JAN-DEC), day of the week (0 - 6 or SUN-SAT)
-    - cron:  '0 * * * *'
+    - cron:  '0 8 * * *'
   workflow_dispatch:
 jobs:
   trivy_scanner:
