@@ -24,7 +24,7 @@ NRI_FLEX_URL       ?= https://github.com/newrelic/nri-flex/releases/download/v$(
 NRI_PROMETHEUS_VERSION   ?= $(call get-nri-version,nri-prometheus)
 NRI_PROMETHEUS_ARCH      ?= $(OHI_ARCH)
 NRI_PROMETHEUS_OS        ?= $(OHI_OS)
-NRI_PROMETHEUS_URL       ?= https://github.com/newrelic/nri-prometheus/releases/download/v$(NRI_PROMETHEUS_VERSION)/nri-prometheus_$(NRI_PROMETHEUS_OS)_$(NRI_PROMETHEUS_ARCH)_$(NRI_PROMETHEUS_VERSION).tar.gz
+NRI_PROMETHEUS_URL       ?= https://github.com/newrelic/nri-prometheus/releases/download/v$(NRI_PROMETHEUS_VERSION)/nri-prometheus_$(NRI_PROMETHEUS_OS)_$(NRI_PROMETHEUS_VERSION)_$(NRI_PROMETHEUS_ARCH).tar.gz
 
 .PHONY: get-integrations
 get-integrations: get-nri-docker
