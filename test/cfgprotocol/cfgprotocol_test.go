@@ -123,6 +123,7 @@ func Test_IntegrationIsRelaunchedIfTerminated(t *testing.T) {
 		assert.Len(rt, p, 1)
 	})
 	// if the integration exits with error code
+	require.NotNil(t, p[0])
 	oldPid := p[0].Pid
 	assert.NoError(t, p[0].Kill())
 	// is eventually spawned again by the runner
@@ -168,6 +169,7 @@ func Test_IntegrationIsRelaunchedIfIntegrationDetailsAreChanged(t *testing.T) {
 		assert.Len(rt, p, 1)
 	})
 	// if the integration exits with error code
+	require.NotNil(t, p[0])
 	oldPid := p[0].Pid
 	assert.Nil(t, createFile(nriCfgTemplatePath, nriCfgPath, map[string]interface{}{
 		"timestamp":   time.Now(),
@@ -210,7 +212,7 @@ func Test_IntegrationConfigContainsTwoIntegrationsAndOneIsRemoved(t *testing.T) 
 		assert.NoError(rt, err)
 		assert.Len(rt, p2, 1)
 	})
-
+	require.NotNil(t, p1[0])
 	p1OldPid := p1[0].Pid
 
 	nriCfgTemplatePath = templatePath("nri-config.json")
