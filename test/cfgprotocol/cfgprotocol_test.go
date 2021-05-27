@@ -220,12 +220,12 @@ func Test_IntegrationConfigContainsTwoIntegrationsAndOneIsRemoved(t *testing.T) 
 		"processName": "nri-out-long-1",
 	}))
 
-	testhelpers.Eventually(t, timeout, func(rt require.TestingT) {
+	testhelpers.Eventually(t, 40*time.Second, func(rt require.TestingT) {
 		p1, err := findChildrenProcessByCmdName(processName1Re)
 		assert.NoError(rt, err)
-		assert.Len(rt, p1, 1)
-		assert.Equal(rt, p1[0].Pid, p1OldPid)
-
+		if assert.Len(rt, p1, 1) {
+			assert.Equal(rt, p1[0].Pid, p1OldPid)
+		}
 		p2, err := findChildrenProcessByCmdName(processName2Re)
 		assert.NoError(rt, err)
 		assert.Len(rt, p2, 0)
