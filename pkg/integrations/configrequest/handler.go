@@ -6,6 +6,13 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/sirupsen/logrus"
+)
+
+const (
+	logFailedDefinition  = "Cannot create integration definition for config protocol"
+	logAddedDefinition   = "New definition added to the cache"
+	logRemovedDefinition = "Removed definition from cache"
 )
 
 var (
@@ -25,27 +32,27 @@ type HandleFn func(cfgProtocol protocol.ConfigProtocol, c cache.Cache, parentDef
 func NewHandleFn(configProtocolQueue chan<- Entry, terminateDefinitionQueue chan<- string, il integration.InstancesLookup, logger log.Entry) HandleFn {
 	return func(cfgProtocol protocol.ConfigProtocol, c cache.Cache, parentDefinition integration.Definition) {
 		cfgDefinitions := c.TakeConfig(cfgProtocol.Name())
+		logCtx := logrus.Fields{
+			"cfg_protocol_version":    cfgProtocol.Version(),
+			"cfg_name":                cfgProtocol.Name(),
+			"parent_integration_name": parentDefinition.Name,
+		}
 		for _, ce := range cfgProtocol.Integrations() {
 			def, err := integration.NewDefinition(ce, il, nil, nil)
 			if err != nil {
-				logger.
-					WithField("config_protocol_version", cfgProtocol.Version()).
-					WithField("name", cfgProtocol.Name()).
-					WithError(err).
-					Warn("cannot create handler for config protocol")
+				logger.WithError(err).WithFields(logCtx).Warn(logFailedDefinition)
 				return
 			}
-			def.CfgProtocol = protocol.Context{ParentName: parentDefinition.Name, ConfigName: cfgProtocol.Name()}
+			def.CfgProtocol = &protocol.Context{ParentName: parentDefinition.Name, ConfigName: cfgProtocol.Name()}
 			if cfgDefinitions.Add(def) {
-				logger.
-					WithField("config_name", cfgProtocol.Name()).
-					Debug("new definition added to the cache for the config name")
+				logger.WithFields(logCtx).WithField("definition_name", def.Name).Debug(logAddedDefinition)
 				configProtocolQueue <- Entry{def, cfgProtocol.GetConfig()}
 			}
 		}
 		removedDefinitions := c.ApplyConfig(cfgDefinitions)
-		for _, hash := range removedDefinitions {
-			terminateDefinitionQueue <- hash
+		for _, rd := range removedDefinitions {
+			logger.WithFields(logCtx).WithField("definition_name", rd.Name).Debug(logRemovedDefinition)
+			terminateDefinitionQueue <- rd.Hash()
 		}
 	}
 }

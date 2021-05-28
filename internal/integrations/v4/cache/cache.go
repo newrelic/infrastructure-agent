@@ -12,7 +12,7 @@ import (
 type Cache interface {
 	GetDefinitions(cfgName string) []integration.Definition
 	ListConfigNames() []string
-	ApplyConfig(cfgDefinitions *ConfigDefinitions) []string
+	ApplyConfig(cfgDefinitions *ConfigDefinitions) []integration.Definition
 	TakeConfig(cfgName string) *ConfigDefinitions
 }
 
@@ -91,10 +91,10 @@ func (c *cache) GetDefinitions(cfgName string) []integration.Definition {
 
 // ApplyConfig sync the integrations definitions for a particular config name with the added definitions in cfgDefinitions.
 // returns a list of removed definitions for the config name.
-func (c *cache) ApplyConfig(cfgDefinitions *ConfigDefinitions) []string {
+func (c *cache) ApplyConfig(cfgDefinitions *ConfigDefinitions) []integration.Definition {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	toBeDeleted := make([]string, 0)
+	toBeDeleted := make([]integration.Definition, 0)
 	for hash, definition := range cfgDefinitions.added {
 		if _, ok := c.hashes[cfgDefinitions.cfgName][hash]; !ok {
 			c.addDefinition(cfgDefinitions.cfgName, definition)
@@ -102,9 +102,9 @@ func (c *cache) ApplyConfig(cfgDefinitions *ConfigDefinitions) []string {
 	}
 	for hash := range cfgDefinitions.current {
 		if _, ok := cfgDefinitions.added[hash]; !ok {
+			toBeDeleted = append(toBeDeleted, c.definitions[hash])
 			delete(c.definitions, hash)
 			delete(c.hashes[cfgDefinitions.cfgName], hash)
-			toBeDeleted = append(toBeDeleted, hash)
 		}
 	}
 	return toBeDeleted

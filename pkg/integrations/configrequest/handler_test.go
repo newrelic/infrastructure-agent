@@ -2,14 +2,27 @@ package configrequest
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/cache"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
+	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 
 	cfgprotocol "github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
+)
+
+const (
+	commonConfig = `{
+		"config_protocol_version": "1",
+		"config_name": "config-name",
+		"action": "action-name",
+		"config": { "integrations": [ %s ] } 
+		}`
 )
 
 func Test_addAndRemoveDefinitions(t *testing.T) {
@@ -24,14 +37,6 @@ func Test_addAndRemoveDefinitions(t *testing.T) {
 	var logger log.Entry
 	handleFunction := NewHandleFn(configProtocolQueue, terminateDefinitionQueue, il, logger)
 	c := cache.CreateCache()
-
-	commonConfig := `{
-		"config_protocol_version": "1",
-		"config_name": "config-name",
-		"action": "action-name",
-		"config": { "integrations": [ %s ] } 
-		}`
-
 	// And a config protocol request with two integrations
 	firstPayload := []byte(fmt.Sprintf(commonConfig, `{ "name": "nri-1"}, { "name": "nri-2"} `))
 	cp1, err := cfgprotocol.GetConfigProtocolBuilder(firstPayload).Build()
@@ -59,5 +64,35 @@ func Test_addAndRemoveDefinitions(t *testing.T) {
 	// then just 1 is executed and 1 removed
 	assert.Len(t, configProtocolQueue, 1)
 	assert.Len(t, terminateDefinitionQueue, 1)
+
+}
+func Test_failedToAddDefinition(t *testing.T) {
+	// Given a Clean cache and queues for the handle function
+	logger := log.WithComponent("LogTester")
+	log.SetOutput(ioutil.Discard)  // discard logs so not to break race tests
+	defer log.SetOutput(os.Stderr) // return back to default
+	hook := new(test.Hook)
+	log.AddHook(hook)
+	configProtocolQueue := make(chan Entry, 10)
+	terminateDefinitionQueue := make(chan string, 10)
+	il := integration.InstancesLookup{
+		ByName: func(_ string) (string, error) {
+			return "", fmt.Errorf("fail")
+		},
+	}
+	handleFunction := NewHandleFn(configProtocolQueue, terminateDefinitionQueue, il, logger)
+	c := cache.CreateCache()
+
+	// And a config protocol request
+	payload := []byte(fmt.Sprintf(commonConfig, `{ "name": "nri-1"}`))
+	cp1, err := cfgprotocol.GetConfigProtocolBuilder(payload).Build()
+	assert.NoError(t, err)
+
+	// When is processed by the handle function
+	handleFunction(cp1, c, integration.Definition{})
+
+	// Then handleFunction fails to process the defintion
+	assert.Equal(t, logrus.WarnLevel, hook.LastEntry().Level)
+	assert.Equal(t, logFailedDefinition, hook.LastEntry().Message)
 
 }
