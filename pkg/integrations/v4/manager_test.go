@@ -1061,8 +1061,7 @@ func TestManager_cfgProtocolSpawnedIntegrationCannotSpawnIntegration(t *testing.
 	skipIfWindows(t)
 	log.SetOutput(ioutil.Discard)  // discard logs so not to break race tests
 	defer log.SetOutput(os.Stderr) // return back to default
-	hook := new(test.Hook)
-	log.AddHook(hook)
+	hook := test.NewGlobal()
 
 	// GIVEN a configuration file for an integration that will send a cfg protocol payload
 	dir, err := tempFiles(map[string]string{
