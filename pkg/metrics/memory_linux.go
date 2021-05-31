@@ -35,6 +35,10 @@ func reclaimableAsFree() (*mem.VirtualMemoryStat, error) {
 	filename := helpers.HostProc("meminfo")
 	lines, _ := acquire.ReadLines(filename)
 
+	return reclaimableAsFreeParseMemInfo(lines)
+}
+
+func reclaimableAsFreeParseMemInfo(lines []string) (*mem.VirtualMemoryStat, error) {
 	ret := &mem.VirtualMemoryStat{}
 	readFields := 0
 	for _, line := range lines {
@@ -63,16 +67,23 @@ func reclaimableAsFree() (*mem.VirtualMemoryStat, error) {
 		case "Cached":
 			ret.Cached = t * 1024
 			readFields++
+		case "Shmem":
+			ret.Shared = t * 1024
+			readFields++
+		case "Slab":
+			ret.Slab = t * 1024
+			readFields++
 		case "SReclaimable":
 			ret.SReclaimable = t * 1024
 			readFields++
 		}
-		if readFields >= 5 { // stop reading the file when we have read all the fields we require
+		if readFields >= 7 { // stop reading the file when we have read all the fields we require
 			break
 		}
 	}
 
-	ret.Available = ret.Free + ret.Buffers + ret.Cached + ret.SReclaimable
+	ret.Cached += ret.SReclaimable
+	ret.Available = ret.Free + ret.Buffers + ret.Cached
 	ret.Used = ret.Total - ret.Available
 
 	return ret, nil
@@ -86,12 +97,14 @@ func reclaimableAsFree() (*mem.VirtualMemoryStat, error) {
 func reclaimableAsUsed() (*mem.VirtualMemoryStat, error) {
 	filename := helpers.HostProc("meminfo")
 	lines, _ := acquire.ReadLines(filename)
+	return reclaimableAsUsedParseMemInfo(lines)
+}
 
+func reclaimableAsUsedParseMemInfo(lines []string) (*mem.VirtualMemoryStat, error) {
 	memAvailable := false
-	memTotal := false
 
 	ret := &mem.VirtualMemoryStat{}
-parse:
+	readFields := 0
 	for _, line := range lines {
 		fields := strings.Split(line, ":")
 		if len(fields) != 2 {
@@ -109,23 +122,30 @@ parse:
 		case "MemAvailable":
 			ret.Available = t * 1024
 			memAvailable = true
-			if memTotal {
-				break parse // stop parsing if we have enough fields
-			}
 		case "MemTotal":
 			ret.Total = t * 1024
-			memTotal = true
-			if memAvailable {
-				break parse // stop parsing if we have enough fields
-			}
+			readFields++
 		case "MemFree":
 			ret.Free = t * 1024
+			readFields++
 		case "Buffers":
 			ret.Buffers = t * 1024
+			readFields++
 		case "Cached":
 			ret.Cached = t * 1024
+			readFields++
+		case "Shmem":
+			ret.Shared = t * 1024
+			readFields++
+		case "Slab":
+			ret.Slab = t * 1024
+			readFields++
 		case "SReclaimable":
 			ret.SReclaimable = t * 1024
+			readFields++
+		}
+		if readFields >= 7 && memAvailable { // stop reading the file when we have read all the fields we require
+			break
 		}
 	}
 	if !memAvailable {
