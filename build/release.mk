@@ -1,8 +1,8 @@
 BUILD_DIR			   := $(CURDIR)/bin
 GORELEASER_VERSION	   := v0.155.0
 GORELEASER_BIN		   ?= bin/goreleaser
-GORELEASER_CONFIG_file ?= $(CURDIR)/build/.goreleaser.yml
-GORELEASER_CONFIG	   ?= --config $(GORELEASER_CONFIG_file)
+GORELEASER_CONFIG_FILE ?= $(CURDIR)/build/.goreleaser.yml
+GORELEASER_CONFIG	   ?= --config $(GORELEASER_CONFIG_FILE)
 PKG_FLAGS              ?= --rm-dist
 
 bin:
@@ -31,9 +31,44 @@ release/build: release/deps release/clean
 	@echo "=== [release/build] build compiling all binaries"
 	$(GORELEASER_BIN) build $(GORELEASER_CONFIG) $(PKG_FLAGS)
 
+.PHONY : release/get-integrations-amd64
+release/get-integrations-amd64:
+# trick to push makefile to execute same target twice with different params
+	@OHI_ARCH=amd64 make get-integrations
+
+.PHONY : release/get-integrations-arm64
+release/get-integrations-arm64:
+# trick to push makefile to execute same target twice with different params
+	@OHI_ARCH=arm64 make get-integrations
+
+.PHONY : release/get-integrations-arm
+release/get-integrations-arm:
+# trick to push makefile to execute same target twice with different params
+	@OHI_ARCH=arm make get-integrations
+
+.PHONY : release/get-fluentbit-linux-amd64
+release/get-fluentbit-linux-amd64:
+# trick to push makefile to execute same target twice with different params
+	@FB_ARCH=amd64 make get-fluentbit-linux
+
+.PHONY : release/get-fluentbit-linux-arm
+release/get-fluentbit-linux-arm:
+# trick to push makefile to execute same target twice with different params
+	@FB_ARCH=arm make get-fluentbit-linux
+
+.PHONY : release/get-fluentbit-linux-arm64
+release/get-fluentbit-linux-arm64:
+# trick to push makefile to execute same target twice with different params
+	@FB_ARCH=arm64 make get-fluentbit-linux
+
 .PHONY : release/pkg
 release/pkg: release/deps release/clean
-release/pkg: get-integrations get-fluentbit-linux
+release/pkg: release/get-integrations-amd64
+release/pkg: release/get-integrations-arm64
+release/pkg: release/get-integrations-arm
+release/pkg: release/get-fluentbit-linux-amd64
+#release/pkg: release/get-fluentbit-linux-arm
+#release/pkg: release/get-fluentbit-linux-arm64
 	@echo "=== [release/build] PRE-RELEASE compiling all binaries, creating packages, archives"
 	$(GORELEASER_BIN) release $(GORELEASER_CONFIG) $(PKG_FLAGS)
 
@@ -60,10 +95,10 @@ ifndef SNAPSHOT
 	$(error SNAPSHOT is undefined)
 endif
 
-# snapshot replaces version tag for local builds
+# snapshot replaces version tag for local builds, also --skip-validate to avoid git errors
 SNAPSHOT := ${SNAPSHOT}
 ifeq ($(SNAPSHOT), true)
-	PKG_FLAGS += --snapshot
+	PKG_FLAGS += --snapshot --skip-validate
 endif
 
 OS := $(shell uname -s)
