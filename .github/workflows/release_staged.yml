@@ -17,7 +17,7 @@ env:
   TAG: ${{ github.event.inputs.tag }}
   DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
-  SCHEMA_BRANCH: ${{ github.event.release.tag_name }}
+  SCHEMA_BRANCH: ${{ github.event.inputs.tag }}
   AWS_S3_BUCKET_NAME: "nr-downloads-main"
   AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock"
   AWS_REGION: "us-east-1"
@@ -48,7 +48,7 @@ jobs:
           password: ${{ env.DOCKER_HUB_PASSWORD }}
       - name: Publish ${{ matrix.assetsType }} to S3 action
         if: ${{ github.event.inputs.assetsType == 'all' || github.event.inputs.assetsType == matrix.assetsType }}
-        uses: newrelic/infrastructure-publish-action@v1.0.9
+        uses: newrelic/infrastructure-publish-action@v1.0.10
         env:
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
@@ -92,7 +92,7 @@ jobs:
           password: ${{ env.DOCKER_HUB_PASSWORD }}
       - name: Publish ${{ matrix.assetsType }} to S3 action
         if: ${{ github.event.inputs.assetsType == 'all' || github.event.inputs.assetsType == matrix.assetsType }}
-        uses: newrelic/infrastructure-publish-action@v1.0.9
+        uses: newrelic/infrastructure-publish-action@v1.0.10
         env:
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
@@ -109,6 +109,7 @@ jobs:
           aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
           aws_role_session_name: ${{ env.AWS_ROLE_SESSION_NAME }}
           aws_role_arn: ${{ env.AWS_ROLE_ARN }}
+          access_point_host: "production"
           # used for signing package stuff - required for action, not needed for msi
           gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
           gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
