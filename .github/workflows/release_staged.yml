@@ -109,6 +109,7 @@ jobs:
           aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
           aws_role_session_name: ${{ env.AWS_ROLE_SESSION_NAME }}
           aws_role_arn: ${{ env.AWS_ROLE_ARN }}
+          access_point_host: "https://nr-downloads-main.s3.amazonaws.com"
           # used for signing package stuff - required for action, not needed for msi
           gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
           gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
