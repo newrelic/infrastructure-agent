@@ -1,0 +1,6 @@
+# map ansible detected architectures with GOARCH values
+architecture_map:
+  x86_64: "amd64"
+  aarch64: "arm64"
+
+os_arch_binary_name_tpl: "harvest_%GOOS%_%GOARCH%.test"

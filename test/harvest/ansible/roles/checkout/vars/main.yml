@@ -1,0 +1,7 @@
+---
+
+agent_repo_url: "https://github.com/newrelic/infrastructure-agent"
+repo_working_copy: "/tmp/harvest_test/infrastructure-agent"
+agent_version: "master"
+
+...

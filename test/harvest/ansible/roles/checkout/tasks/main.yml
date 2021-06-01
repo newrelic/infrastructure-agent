@@ -1,0 +1,14 @@
+---
+
+- name: Ensure local working copy does not exist
+  ansible.builtin.file:
+    path: "{{ repo_working_copy }}"
+    state: "absent"
+
+- name: Checkout code
+  ansible.builtin.git:
+    repo: "{{ agent_repo_url }}"
+    dest: "{{ repo_working_copy }}"
+    version: "{{ agent_version }}"
+
+...

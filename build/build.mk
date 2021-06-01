@@ -139,6 +139,10 @@ linux/harvest-tests: GOARCH=amd64
 linux/harvest-tests: deps
 	go test ./test/harvest -tags="harvest" -v
 
+.PHONY: build-harvest-tests
+build-harvest-tests: deps
+	go test -c ./test/harvest -tags="harvest" -v
+
 .PHONY: proxy-test
 proxy-test:
 	@docker-compose -f $(CURDIR)/test/proxy/docker-compose.yml up -d ; \
