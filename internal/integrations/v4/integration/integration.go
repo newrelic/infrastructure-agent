@@ -21,12 +21,22 @@ import (
 )
 
 const (
-	minimumIntegrationInterval = config.FREQ_MINIMUM_EXTERNAL_PLUGIN_INTERVAL * time.Second
 	defaultIntegrationInterval = config.FREQ_PLUGIN_EXTERNAL_PLUGINS * time.Second
-
-	defaultTimeout = 120 * time.Second
-	minimumTimeout = 100 * time.Millisecond
+	defaultTimeout             = 120 * time.Second
+	minimumTimeout             = 100 * time.Millisecond
 )
+
+var minimumIntegrationIntervalOverride = ""
+
+var minimumIntegrationInterval = func() time.Duration {
+	if minimumIntegrationIntervalOverride != "" {
+		v, err := time.ParseDuration(minimumIntegrationIntervalOverride)
+		if err == nil {
+			return v
+		}
+	}
+	return config.FREQ_MINIMUM_EXTERNAL_PLUGIN_INTERVAL * time.Second
+}()
 
 var ilog = log.WithComponent("integrations.Definition")
 
