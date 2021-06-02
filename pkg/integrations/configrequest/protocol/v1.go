@@ -70,10 +70,6 @@ func (cfgProtocol *v1) Name() string {
 	return cfgProtocol.ConfigName
 }
 
-func (cfgProtocol *v1) hash() string {
-	return fmt.Sprintf("%v%v", cfgProtocol.Config.Databind, cfgProtocol.Config.Integrations)
-}
-
 func (cfgProtocol *v1) GetConfig() databind.YAMLConfig {
 	return databind.YAMLConfig{YAMLAgentConfig: cfgProtocol.Config.Databind}
 }
