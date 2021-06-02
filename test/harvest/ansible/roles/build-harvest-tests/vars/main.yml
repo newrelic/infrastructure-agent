@@ -1,6 +1,6 @@
 ---
 
-repo_working_copy: "/tmp/harvest_test/infrastructure-agent"
+agent_root_dir: ""
 default_binary_name: "harvest.test"
 os_arch_binary_name_tpl: "harvest_%GOOS%_%GOARCH%.test"
 goos:

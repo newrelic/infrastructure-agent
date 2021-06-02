@@ -6,7 +6,7 @@
 
 - name: copy binary
   ansible.builtin.copy:
-    src: "{{ repo_working_copy }}/{{ os_arch_binary_name }}"
+    src: "{{ agent_root_dir }}/{{ os_arch_binary_name }}"
     dest: "{{ ansible_user_dir }}/{{ os_arch_binary_name }}"
     mode: '0755'
 

@@ -5,13 +5,10 @@ if [ "$ANSIBLE_INVENTORY" = "" ]; then
   exit 1
 fi
 
-if [ "$AGENT_VERSION" = "" ]; then
-  printf "Error: missing required env-var: %s\n" "AGENT_VERSION"
-  exit 1
-fi
+AGENT_ROOT_DIR=$( pwd )
 
 printf "\nTesting initial install...\n"
-if ! ansible-playbook -i "$ANSIBLE_INVENTORY" -e agent_version="$AGENT_VERSION" test/harvest/ansible/test.yml; then
+if ! ansible-playbook -i "$ANSIBLE_INVENTORY" -e agent_root_dir="$AGENT_ROOT_DIR" test/harvest/ansible/test.yml; then
   printf "\nRunning the harvest suite failed"
   exit 1
 fi

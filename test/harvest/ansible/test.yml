@@ -1,8 +1,8 @@
 ---
 
 # This tests runs harvest tests on multiple os/architectures.
-# It will clone locally the specified `agent_version` of the agent locally, build the harvest tests binaries
-# for specified architectures/os combinations and copy and run them in the testing_hosts hosts
+# It will build the harvest tests binaries for specified architectures/os combinations
+# and copy and run them in the testing_hosts hosts
 
 - hosts: test_runner
   become: false
@@ -10,15 +10,9 @@
   connection: local
 
   tasks:
-    - name: Checkout agent and build harvest tests for all os/arch combinations
-      block:
-        - name: checkout agent
-          include_role:
-            name: checkout
-
-        - name: build harvest tests
-          include_role:
-            name: build-harvest-tests
+    - name: build harvest tests
+      include_role:
+        name: build-harvest-tests
 
 
 - hosts: testing_hosts
@@ -26,10 +20,6 @@
   gather_facts: yes
 
   tasks:
-    - name: Print all available facts
-      ansible.builtin.debug:
-        var: ansible_facts
-
     - name: copy and run harvest tests
       include_role:
         name: run-harvest-tests
