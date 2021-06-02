@@ -36,3 +36,6 @@ versioninfo.json
 venv
 
 test/packaging/ansible/inventory.ini
+
+#harvest test build
+harvest*.test
