@@ -1,0 +1,20 @@
+{
+  "config_protocol_version": "1",
+  "action": "register_config",
+  "config_name": "myconfig",
+  "config": {
+    "integrations": [
+      {
+        "name": "spawner",
+        "cli_args":[
+          "-path",
+          "testdata/scenarios/shared/nri-out.v4.json"
+        ],
+        "interval": "15s",
+        "env": {
+          "PORT": "3306"
+        }
+      }
+    ]
+  }
+}

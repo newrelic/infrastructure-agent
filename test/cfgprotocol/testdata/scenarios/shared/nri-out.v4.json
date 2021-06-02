@@ -1,0 +1,40 @@
+{
+  "protocol_version": "4",
+  "integration": {
+    "name": "integration name",
+    "version": "integration version"
+  },
+  "data": [
+    {
+      "common": {
+        "timestamp": 1531414060739,
+        "interval.ms": 10000,
+        "attributes": {}
+      },
+      "metrics": [
+        {
+          "name": "redis.metric1",
+          "type": "count",
+          "value": 93,
+          "attributes": {}
+        }
+      ],
+      "entity": {
+        "name": "uniqueName",
+        "type": "ENTITY_TYPE",
+        "displayName": "human readable name",
+        "metadata": {}
+      },
+      "inventory": { },
+      "events": [
+        {
+          "summary": "foo",
+          "format": "event",
+          "attributes": {
+            "format": "attribute"
+          }
+        }
+      ]
+    }
+  ]
+}
