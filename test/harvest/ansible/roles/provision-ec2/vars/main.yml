@@ -1,0 +1,30 @@
+---
+
+launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
+subnet: "subnet-05e71d641651d7ccb"
+
+#Ubuntu AMI: https://cloud-images.ubuntu.com/locator/ec2/
+
+instances:
+#ubuntu amd64
+  - ami: "ami-03b6c8bd55e00d5ed"
+    type: "t3a.small"
+    name: "amd64:ubuntu20.04"
+  - ami: "ami-0600b1bef20a0c212"
+    type: "t3a.small"
+    name: "amd64:ubuntu18.04"
+  - ami: "ami-0d563aeddd4be7fff"
+    type: "t3a.small"
+    name: "amd64:ubuntu16.04"
+#ubuntu arm64
+  - ami: "ami-0b0c8ae527978b689"
+    type: "t4g.small"
+    name: "arm64:ubuntu20.04"
+  - ami: "ami-09ee3570b9d8bc8cc"
+    type: "t4g.small"
+    name: "arm64:ubuntu18.04"
+  - ami: "ami-0bff25b43a4479334"
+    type: "t4g.small"
+    name: "arm64:ubuntu16.04"
+
+...

@@ -1,0 +1,8 @@
+---
+
+
+- name: "provision instance"
+  shell: "aws ec2 run-instances --launch-template {{ launch_template }} --image-id {{ item.ami }} --instance-type {{ item.type }}  --subnet-id {{ subnet }} --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=harvest:{{ item.name }}}]'"
+  loop: "{{ instances }}"
+
+...
