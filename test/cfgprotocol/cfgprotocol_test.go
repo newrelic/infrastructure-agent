@@ -13,7 +13,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
 	"github.com/newrelic/infrastructure-agent/test/cfgprotocol/agent"
 	"github.com/shirou/gopsutil/process"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -52,7 +51,6 @@ func createAgentAndStart(t *testing.T, scenario string) *agent.Emulator {
 }
 
 func Test_OneIntegrationIsExecutedV4(t *testing.T) {
-	logrus.SetLevel(logrus.DebugLevel)
 	a := createAgentAndStart(t, "v4_payload")
 	defer a.Terminate()
 
@@ -233,8 +231,10 @@ func Test_IntegrationConfigContainsTwoIntegrationsAndOneIsRemoved(t *testing.T) 
 }
 
 /**
-
- */
+Given a config protocol integration that generates 2 differnet configs with the same integrations
+When the configuration file of the spawner is removed
+Then all running integrations are terminated
+*/
 func Test_IntegrationConfigNewRelicInfraConfigurationIsRemoved(t *testing.T) {
 	nriCfgTemplatePath := templatePath("settings.yml")
 	nriCfgPath := filepath.Join("testdata", "scenarios", "scenario4", "settings.yml")
@@ -257,4 +257,24 @@ func Test_IntegrationConfigNewRelicInfraConfigurationIsRemoved(t *testing.T) {
 		assert.NoError(rt, err)
 		assert.Len(rt, p, 0)
 	})
+}
+
+/**
+Given a config protocol integration that spawns an integration that contains a config entry
+When the integration is spawned
+Then receives the temporary generated config file path is passed to the integration
+*/
+func Test_IntegrationConfigContainsConfigTemplate(t *testing.T) {
+	a := createAgentAndStart(t, "scenario5")
+	defer a.Terminate()
+
+	// the agent sends samples from the integration
+	select {
+	case req := <-a.ChannelHTTPRequests():
+		bodyBuffer, _ := ioutil.ReadAll(req.Body)
+		assertMetrics(t, metricNRIOutV3, string(bodyBuffer), []string{"timestamp"})
+	case <-time.After(timeout):
+		assert.FailNow(t, "timeout while waiting for a response")
+		return
+	}
 }
