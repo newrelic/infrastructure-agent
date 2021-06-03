@@ -197,11 +197,11 @@ func TestHostSlabMemory(t *testing.T) {
 	sampleB, _ := systemSampler.Sample()
 	beforeSample := sampleB[0].(*metrics.SystemSample)
 
-	for i := 0; i < 100; i++ {
-		cmd := exec.Command("echo", "x")
+	for i := 0; i < 1000; i++ {
+		cmd := exec.Command("sleep", "1")
 		//	s = append(s, cmd)
 		err := cmd.Start()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		defer func() {
 			if cmd.Process != nil {
 				cmd.Process.Kill()
@@ -213,7 +213,7 @@ func TestHostSlabMemory(t *testing.T) {
 		sampleB, _ = systemSampler.Sample()
 		afterSample := sampleB[0].(*metrics.SystemSample)
 
-		expectedIncreaseBytes := 100000.0
+		expectedIncreaseBytes := 500000.0
 		assert.True(t, beforeSample.MemorySlabBytes+expectedIncreaseBytes <= afterSample.MemorySlabBytes, "Slab memory used did not increase enough, expected %f increase, SlabMemoryBefore: %f SlabMemoryAfter %f ", expectedIncreaseBytes, beforeSample.MemorySlabBytes, afterSample.MemorySlabBytes)
 
 		t.Logf("Slab Memory: %f, %f", beforeSample.MemorySlabBytes, afterSample.MemorySlabBytes)
