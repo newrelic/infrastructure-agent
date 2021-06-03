@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"math/rand"
+	"os/exec"
 	"os"
 	"runtime"
 	"testing"
@@ -184,37 +185,37 @@ func TestHostSharedMemory(t *testing.T) {
 	assert.NotNil(t, sample.MemorySharedBytes, "MemorySharedBytes is null")
 }
 
-//func TestHostSlabMemory(t *testing.T) {
-//	ctx := new(mocks.AgentContext)
-//	ctx.On("Config").Return(&config.Config{
-//		MetricsNetworkSampleRate: 1,
-//	})
-//	storageSampler := storage.NewSampler(ctx)
-//
-//	systemSampler := metrics.NewSystemSampler(ctx, storageSampler)
-//
-//	sampleB, _ := systemSampler.Sample()
-//	beforeSample := sampleB[0].(*metrics.SystemSample)
-//
-//	for i := 0; i < 1000; i++ {
-//		cmd := exec.Command("echo", "x")
-//		//	s = append(s, cmd)
-//		cmd.Start()
-//		defer func() {
-//			cmd.Process.Kill()
-//		}()
-//	}
-//
-//	testhelpers.Eventually(t, timeout, func(st require.TestingT) {
-//		sampleB, _ = systemSampler.Sample()
-//		afterSample := sampleB[0].(*metrics.SystemSample)
-//
-//		expectedIncreaseBytes := 5000000.0
-//		assert.True(t, beforeSample.MemorySlabBytes+expectedIncreaseBytes <= afterSample.MemorySlabBytes, "Slab memory used did not increase enough, expected %f increase, SlabMemoryBefore: %f SlabMemoryAfter %f ", expectedIncreaseBytes, beforeSample.MemorySlabBytes, afterSample.MemorySlabBytes)
-//
-//		t.Logf("Slab Memory: %f, %f", beforeSample.MemorySlabBytes, afterSample.MemorySlabBytes)
-//	})
-//}
+func TestHostSlabMemory(t *testing.T) {
+	ctx := new(mocks.AgentContext)
+	ctx.On("Config").Return(&config.Config{
+		MetricsNetworkSampleRate: 1,
+	})
+	storageSampler := storage.NewSampler(ctx)
+
+	systemSampler := metrics.NewSystemSampler(ctx, storageSampler)
+
+	sampleB, _ := systemSampler.Sample()
+	beforeSample := sampleB[0].(*metrics.SystemSample)
+
+	for i := 0; i < 100; i++ {
+		cmd := exec.Command("echo", "x")
+		//	s = append(s, cmd)
+		cmd.Start()
+		defer func() {
+			cmd.Process.Kill()
+		}()
+	}
+
+	testhelpers.Eventually(t, timeout, func(st require.TestingT) {
+		sampleB, _ = systemSampler.Sample()
+		afterSample := sampleB[0].(*metrics.SystemSample)
+
+		expectedIncreaseBytes := 100000.0
+		assert.True(t, beforeSample.MemorySlabBytes+expectedIncreaseBytes <= afterSample.MemorySlabBytes, "Slab memory used did not increase enough, expected %f increase, SlabMemoryBefore: %f SlabMemoryAfter %f ", expectedIncreaseBytes, beforeSample.MemorySlabBytes, afterSample.MemorySlabBytes)
+
+		t.Logf("Slab Memory: %f, %f", beforeSample.MemorySlabBytes, afterSample.MemorySlabBytes)
+	})
+}
 
 func TestHostSwap(t *testing.T) {
 	if runtime.GOOS != "linux" {
