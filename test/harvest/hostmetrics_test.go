@@ -16,8 +16,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"math/rand"
-	"os/exec"
 	"os"
+	"os/exec"
 	"runtime"
 	"testing"
 	"time"
@@ -200,9 +200,12 @@ func TestHostSlabMemory(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		cmd := exec.Command("echo", "x")
 		//	s = append(s, cmd)
-		cmd.Start()
+		err := cmd.Start()
+		assert.NoError(t, err)
 		defer func() {
-			cmd.Process.Kill()
+			if cmd.Process != nil {
+				cmd.Process.Kill()
+			}
 		}()
 	}
 
