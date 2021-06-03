@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
-	"math/rand"
 	"os"
 	"os/exec"
 	"runtime"
@@ -100,10 +99,6 @@ func TestHostSharedMemory(t *testing.T) {
 }
 
 func TestHostCachedMemory(t *testing.T) {
-	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1)
-	_ = r1
-
 	ctx := new(mocks.AgentContext)
 	ctx.On("Config").Return(&config.Config{
 		MetricsNetworkSampleRate: 1,
@@ -121,20 +116,22 @@ func TestHostCachedMemory(t *testing.T) {
 
 	// Force memory spike
 	for i := 0; i < 1e6; i++ {
-		f.Write([]byte(fmt.Sprintf("%d", r1.Intn(9))))
+		f.Write([]byte("0"))
 	}
 
 	f.Sync()
 	f.Close()
 
 	_, err = ioutil.ReadFile(f.Name())
+
 	assert.NoError(t, err)
 
-	testhelpers.Eventually(t, 1*time.Second, func(st require.TestingT) {
+	testhelpers.Eventually(t, timeout, func(st require.TestingT) {
 		sampleB, _ = systemSampler.Sample()
 		afterSample := sampleB[0].(*metrics.SystemSample)
 
-		assert.True(st, beforeSample.MemoryCachedBytes+1e6 <= afterSample.MemoryCachedBytes, "Memory used did not increase enough, MemoryBefore: %f MemoryAfter %f ", beforeSample.MemoryCachedBytes, afterSample.MemoryCachedBytes)
+		expectedIncreaseBytes := 500000.0
+		assert.True(st, beforeSample.MemoryCachedBytes+expectedIncreaseBytes <= afterSample.MemoryCachedBytes, "CachedMemory used did not increase enough, expected an increase by %f CachedMemoryBefore: %f CachedMemoryAfter %f ", expectedIncreaseBytes, beforeSample.MemoryCachedBytes, afterSample.MemoryCachedBytes)
 	})
 }
 
