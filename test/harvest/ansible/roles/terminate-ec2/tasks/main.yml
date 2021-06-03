@@ -1,0 +1,19 @@
+---
+
+- name: "ensure instance_name_prefix is set not to terminate all instances"
+  fail:
+    msg: "instance_name_tag_prefix cannot be empty"
+  when: "{{ instance_name_tag_prefix }} is not defined or {{ instance_name_tag_prefix | length }} == 0"
+
+- name: "retrieve instances information"
+  shell: "aws ec2 describe-instances --filters 'Name=tag:Name,Values={{ instance_name_tag_prefix }}*'"
+  register: instances_information
+
+- name: "register instance_ids variable"
+  set_fact:
+    instance_ids: "{{ (instances_information.stdout | from_json) | community.general.json_query('Reservations[*].Instances[*].InstanceId') | list | flatten }}"
+
+- name: "retrieve instances information"
+  shell: "aws ec2 terminate-instances --instance-ids {{ instance_ids | join(' ') }}"
+
+...

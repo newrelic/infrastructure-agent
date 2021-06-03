@@ -4,6 +4,9 @@
 #CentOS AMI: https://www.centos.org/download/aws-images/
 #SLES:
 
+# TODO : Define a good prefix
+instance_name_tag_prefix: "harvest"
+
 instances:
   #ubuntu amd64
   - ami: "ami-03b6c8bd55e00d5ed"
