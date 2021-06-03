@@ -198,7 +198,7 @@ func TestHostSlabMemory(t *testing.T) {
 	beforeSample := sampleB[0].(*metrics.SystemSample)
 
 	for i := 0; i < 1000; i++ {
-		cmd := exec.Command("sleep", "1")
+		cmd := exec.Command("/bin/bash", "-c", "echo x")
 		//	s = append(s, cmd)
 		err := cmd.Start()
 		require.NoError(t, err)
