@@ -4,10 +4,9 @@
 # It will build the harvest tests binaries for specified architectures/os combinations
 # and copy and run them in the testing_hosts hosts
 
-- hosts: test_runner
+- hosts: localhost
   become: false
-  gather_facts: yes
-  connection: local
+  gather_facts: no
 
   tasks:
     - name: build harvest tests

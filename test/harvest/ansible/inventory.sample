@@ -1,5 +1,5 @@
-[test_runner]
-localhost ansible_host=127.0.0.1
+[localhost]
+localhost ansible_host=127.0.0.1 ansible_connection=local
 
 [testing_hosts]
 some_host ansible_host=192.168.1.12 ansible_user=username ansible_python_interpreter=/usr/bin/python
