@@ -437,33 +437,33 @@ func TestCheckConnectionTimeout(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestCheckNetworkNoTimeout(t *testing.T) {
-	retval := make(chan error, 1)
-
+func Test_checkCollectorConnectivity_NoTimeoutOnInfiniteRetries(t *testing.T) {
 	// Given a server that always returns timeouts
 	ts := NewTimeoutServer(-1)
 	defer ts.Cancel()
 
+	// When a connectivity is checked with retries
+	connErr := make(chan error, 1)
 	go func() {
 		cnf := &config.Config{
 			CollectorURL:             ts.server.URL,
 			StartupConnectionRetries: -1,
 			StartupConnectionTimeout: "1ms",
-			MaxInventorySize:         maxInventoryDataSize,
 		}
 
 		backOff := &backoff.Backoff{Min: 1 * time.Millisecond}
 		retrier := backoff.NewRetrierWithBackoff(backOff)
-		retval <- checkCollectorConnectivity(context2.Background(), cnf, retrier, "testing-interruption", "agent-key", &http.Transport{})
+		connErr <- checkCollectorConnectivity(context2.Background(), cnf, retrier, "testing-interruption", "agent-key", &http.Transport{})
 	}()
 
+	// Then no timeout error is returned
 	select {
-	case err := <-retval:
-		// this should never be triggered
+	case err := <-connErr:
 		assert.Error(t, err)
-		break
+		// this should never be triggered
+		t.Fail()
 	case <-time.After(100 * time.Millisecond):
-		break
+		// retries keep going on as expected
 	}
 }
 

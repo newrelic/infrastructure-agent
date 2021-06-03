@@ -3,10 +3,10 @@
 package dm
 
 import (
-	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/agent/id"
 	"net/http"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/agent/id"
 
 	telemetry "github.com/newrelic/infrastructure-agent/pkg/backend/telemetryapi"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm/cumulative"
@@ -30,10 +30,10 @@ type MetricsSenderConfig struct {
 	MaxEntitiesPerBatch int
 }
 
-func NewConfig(baseURL string, licenseKey string, submissionPeriod time.Duration, maxEntitiesPerReq int, maxEntitiesPerBatch int) MetricsSenderConfig {
+func NewConfig(url string, licenseKey string, submissionPeriod time.Duration, maxEntitiesPerReq int, maxEntitiesPerBatch int) MetricsSenderConfig {
 	return MetricsSenderConfig{
 		LicenseKey:          licenseKey,
-		MetricApiURL:        fmt.Sprintf("%s/metric/v1/infra", baseURL),
+		MetricApiURL:        url,
 		SubmissionPeriod:    submissionPeriod,
 		MaxEntitiesPerReq:   maxEntitiesPerReq,
 		MaxEntitiesPerBatch: maxEntitiesPerBatch,
