@@ -1,0 +1,48 @@
+---
+
+#Ubuntu AMI: https://cloud-images.ubuntu.com/locator/ec2/
+#CentOS AMI: https://www.centos.org/download/aws-images/
+#SLES:
+
+instances:
+  #ubuntu amd64
+  - ami: "ami-03b6c8bd55e00d5ed"
+    type: "t3a.small"
+    name: "amd64:ubuntu20.04"
+#  - ami: "ami-0600b1bef20a0c212"
+#    type: "t3a.small"
+#    name: "amd64:ubuntu18.04"
+#  - ami: "ami-0d563aeddd4be7fff"
+#    type: "t3a.small"
+#    name: "amd64:ubuntu16.04"
+  #ubuntu arm64
+#  - ami: "ami-0b0c8ae527978b689"
+#    type: "t4g.small"
+#    name: "arm64:ubuntu20.04"
+#  - ami: "ami-09ee3570b9d8bc8cc"
+#    type: "t4g.small"
+#    name: "arm64:ubuntu18.04"
+#  - ami: "ami-0bff25b43a4479334"
+#    type: "t4g.small"
+#    name: "arm64:ubuntu16.04"
+  #centos amd64
+#  - ami: "ami-00f8e2c955f7ffa9b"
+#    type: "t4g.small"
+#    name: "amd64:centos7"
+#  - ami: "ami-0ac6967966621d983"
+#    type: "t4g.small"
+#    name: "amd64:centos8"
+  #  - ami: "ami-0d97ef13c06b05a19"
+  #    type: "t4g.small"
+  #    name: "amd64:centos-stream"
+  #centos amd64
+#  - ami: "ami-07f692d95b2b9c8c5"
+#    type: "t4g.small"
+#    name: "arm64:centos7"
+#  - ami: "ami-035734c938e7da7af"
+#    type: "t4g.small"
+#    name: "arm64:centos8"
+#  - ami: "ami-0deb895048c4f105b"
+#    type: "t4g.small"
+#    name: "arm64:centos-stream"
+...
