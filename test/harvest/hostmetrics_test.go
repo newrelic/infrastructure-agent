@@ -7,7 +7,6 @@ package harvest
 
 import (
 	"fmt"
-	"github.com/ghetzel/shmtool/shm"
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
@@ -15,11 +14,9 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"io"
 	"io/ioutil"
 	"math/rand"
 	"os"
-	"os/exec"
 	"runtime"
 	"testing"
 	"time"
@@ -172,77 +169,77 @@ func TestHostMemory(t *testing.T) {
 	})
 }
 
-func TestHostSharedMemory(t *testing.T) {
-	ctx := new(mocks.AgentContext)
-	ctx.On("Config").Return(&config.Config{
-		MetricsNetworkSampleRate: 1,
-	})
-	storageSampler := storage.NewSampler(ctx)
+//func TestHostSharedMemory(t *testing.T) {
+//	ctx := new(mocks.AgentContext)
+//	ctx.On("Config").Return(&config.Config{
+//		MetricsNetworkSampleRate: 1,
+//	})
+//	storageSampler := storage.NewSampler(ctx)
+//
+//	systemSampler := metrics.NewSystemSampler(ctx, storageSampler)
+//
+//	sampleB, _ := systemSampler.Sample()
+//	beforeSample := sampleB[0].(*metrics.SystemSample)
+//
+//	segment, err := shm.Create(1024 * 1024 * 28)
+//	assert.NoError(t, err)
+//
+//	defer segment.Destroy()
+//
+//	segmentAddress, err := segment.Attach()
+//	assert.NoError(t, err)
+//	defer segment.Detach(segmentAddress)
+//
+//	// Write the contents of standard input to the shared memory area.
+//	_, err = io.Copy(segment, os.Stdin)
+//	assert.NoError(t, err)
+//
+//	// Read the contents of the shared memory area, which may (or may not) have been modified by
+//	// another program.
+//	_, err = io.Copy(os.Stdout, segment)
+//	assert.NoError(t, err)
+//
+//	testhelpers.Eventually(t, timeout, func(st require.TestingT) {
+//		sampleB, _ = systemSampler.Sample()
+//		afterSample := sampleB[0].(*metrics.SystemSample)
+//
+//		assert.True(st, beforeSample.MemorySharedBytes+(1024*1024*28) == afterSample.MemorySharedBytes, "Shared Memory used did not increase enough, SharedMemoryBefore: %f SharedMemoryAfter %f ", beforeSample.MemorySharedBytes, afterSample.MemorySharedBytes)
+//
+//		t.Logf("Shared Memory: %f, %f", beforeSample.MemorySharedBytes, afterSample.MemorySharedBytes)
+//	})
+//}
 
-	systemSampler := metrics.NewSystemSampler(ctx, storageSampler)
-
-	sampleB, _ := systemSampler.Sample()
-	beforeSample := sampleB[0].(*metrics.SystemSample)
-
-	segment, err := shm.Create(1024 * 1024 * 28)
-	assert.NoError(t, err)
-
-	defer segment.Destroy()
-
-	segmentAddress, err := segment.Attach()
-	assert.NoError(t, err)
-	defer segment.Detach(segmentAddress)
-
-	// Write the contents of standard input to the shared memory area.
-	_, err = io.Copy(segment, os.Stdin)
-	assert.NoError(t, err)
-
-	// Read the contents of the shared memory area, which may (or may not) have been modified by
-	// another program.
-	_, err = io.Copy(os.Stdout, segment)
-	assert.NoError(t, err)
-
-	testhelpers.Eventually(t, timeout, func(st require.TestingT) {
-		sampleB, _ = systemSampler.Sample()
-		afterSample := sampleB[0].(*metrics.SystemSample)
-
-		assert.True(st, beforeSample.MemorySharedBytes+(1024*1024*28) == afterSample.MemorySharedBytes, "Shared Memory used did not increase enough, SharedMemoryBefore: %f SharedMemoryAfter %f ", beforeSample.MemorySharedBytes, afterSample.MemorySharedBytes)
-
-		t.Logf("Shared Memory: %f, %f", beforeSample.MemorySharedBytes, afterSample.MemorySharedBytes)
-	})
-}
-
-func TestHostSlabMemory(t *testing.T) {
-	ctx := new(mocks.AgentContext)
-	ctx.On("Config").Return(&config.Config{
-		MetricsNetworkSampleRate: 1,
-	})
-	storageSampler := storage.NewSampler(ctx)
-
-	systemSampler := metrics.NewSystemSampler(ctx, storageSampler)
-
-	sampleB, _ := systemSampler.Sample()
-	beforeSample := sampleB[0].(*metrics.SystemSample)
-
-	for i := 0; i < 1000; i++ {
-		cmd := exec.Command("echo", "x")
-		//	s = append(s, cmd)
-		cmd.Start()
-		defer func() {
-			cmd.Process.Kill()
-		}()
-	}
-
-	testhelpers.Eventually(t, timeout, func(st require.TestingT) {
-		sampleB, _ = systemSampler.Sample()
-		afterSample := sampleB[0].(*metrics.SystemSample)
-
-		expectedIncreaseBytes := 5000000.0
-		assert.True(t, beforeSample.MemorySlabBytes+expectedIncreaseBytes <= afterSample.MemorySlabBytes, "Slab memory used did not increase enough, expected %f increase, SlabMemoryBefore: %f SlabMemoryAfter %f ", expectedIncreaseBytes, beforeSample.MemorySlabBytes, afterSample.MemorySlabBytes)
-
-		t.Logf("Slab Memory: %f, %f", beforeSample.MemorySlabBytes, afterSample.MemorySlabBytes)
-	})
-}
+//func TestHostSlabMemory(t *testing.T) {
+//	ctx := new(mocks.AgentContext)
+//	ctx.On("Config").Return(&config.Config{
+//		MetricsNetworkSampleRate: 1,
+//	})
+//	storageSampler := storage.NewSampler(ctx)
+//
+//	systemSampler := metrics.NewSystemSampler(ctx, storageSampler)
+//
+//	sampleB, _ := systemSampler.Sample()
+//	beforeSample := sampleB[0].(*metrics.SystemSample)
+//
+//	for i := 0; i < 1000; i++ {
+//		cmd := exec.Command("echo", "x")
+//		//	s = append(s, cmd)
+//		cmd.Start()
+//		defer func() {
+//			cmd.Process.Kill()
+//		}()
+//	}
+//
+//	testhelpers.Eventually(t, timeout, func(st require.TestingT) {
+//		sampleB, _ = systemSampler.Sample()
+//		afterSample := sampleB[0].(*metrics.SystemSample)
+//
+//		expectedIncreaseBytes := 5000000.0
+//		assert.True(t, beforeSample.MemorySlabBytes+expectedIncreaseBytes <= afterSample.MemorySlabBytes, "Slab memory used did not increase enough, expected %f increase, SlabMemoryBefore: %f SlabMemoryAfter %f ", expectedIncreaseBytes, beforeSample.MemorySlabBytes, afterSample.MemorySlabBytes)
+//
+//		t.Logf("Slab Memory: %f, %f", beforeSample.MemorySlabBytes, afterSample.MemorySlabBytes)
+//	})
+//}
 
 func TestHostSwap(t *testing.T) {
 	if runtime.GOOS != "linux" {
