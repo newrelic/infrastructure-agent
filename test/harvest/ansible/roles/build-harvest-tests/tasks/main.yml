@@ -1,0 +1,9 @@
+---
+
+- name: build harvest tests for every os/arch combination
+  ansible.builtin.shell: "GOOS={{item.0}} GOARCH={{item.1}} make build-harvest-tests && mv {{ default_binary_name }} {{ os_arch_binary_name_tpl | replace('%GOOS%', item.0) | replace('%GOARCH%', item.1) }}"
+  args:
+    chdir: "{{ agent_root_dir }}"
+  loop: "{{ goos|product(goarch)|list }}"
+
+...
