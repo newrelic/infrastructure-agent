@@ -8,7 +8,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
@@ -27,10 +26,13 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/runintegration"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/service"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/stopintegration"
+	"github.com/newrelic/infrastructure-agent/internal/agent/status"
+	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/files"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/v3legacy"
 	"github.com/newrelic/infrastructure-agent/internal/socketapi"
+	"github.com/newrelic/infrastructure-agent/internal/statusapi"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins"
@@ -287,7 +289,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	}
 	wlog.Instrument(otelServer.Measure)
 
-	metricsSenderConfig := dm.NewConfig(c.MetricURL, c.License, time.Duration(c.DMSubmissionPeriod)*time.Second, c.MaxMetricBatchEntitiesCount, c.MaxMetricBatchEntitiesQueue)
+	metricsSenderConfig := dm.NewConfig(c.DMIngestURL(), c.License, time.Duration(c.DMSubmissionPeriod)*time.Second, c.MaxMetricBatchEntitiesCount, c.MaxMetricBatchEntitiesQueue)
 	dmSender, err := dm.NewDMSender(metricsSenderConfig, transport, agt.Context.IdContext().AgentIdentity)
 	if err != nil {
 		return err
@@ -328,9 +330,23 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		riHandler,
 		siHandler,
 	)
-	initCmdResponse, err := ccService.InitialFetch(context.Background())
+	initCmdResponse, err := ccService.InitialFetch(agt.Context.Ctx)
 	if err != nil {
 		aslog.WithError(err).Warn("Commands initial fetch failed.")
+	}
+
+	// nice2have: revamp all API servers, potentially into a unique one serving different
+	// serializations & transports
+	if c.StatusServerEnabled {
+		rlog := wlog.WithComponent("status.Reporter")
+		timeoutD, err := time.ParseDuration(c.StartupConnectionTimeout)
+		if err != nil {
+			// This should never happen, as the correct format is checked during NormalizeConfig.
+			aslog.WithError(err).Error("invalid startup_connection_timeout value, cannot run status server")
+		} else {
+			rep := status.NewReporter(agt.Context.Ctx, rlog, c.StatusEndpoints, timeoutD, transport, agt.Context.AgentIdnOrEmpty, c.License, userAgent)
+			go statusapi.NewServer(c.StatusServerPort, rep).Serve(agt.Context.Ctx)
+		}
 	}
 
 	if c.TCPServerEnabled {
