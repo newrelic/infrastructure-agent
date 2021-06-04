@@ -287,7 +287,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 
 	otelServer, err := initOtelServer(agt.GetContext().Context(), c.AgentMetricsEndpoint)
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot initialize prometheus exporter: %v", err)
 	}
 	wlog.Instrument(otelServer.Measure)
 
