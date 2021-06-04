@@ -10,7 +10,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func NewNoopInstrumentation() (exporter Instrumentation) {
+// NoopMeasure no-op Measure function type.
+var NoopMeasure = func(_ MetricType, _ MetricName, _ int64) {}
+
+// NewNoop creates a new no-op Instrumenter.
+func NewNoop() (exporter Instrumenter) {
 	return &noop{}
 }
 

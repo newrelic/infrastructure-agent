@@ -285,7 +285,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		fatal(err, "Can't complete platform specific initialization.")
 	}
 
-	otelServer, err := initPrometheusInstrumentation(agt.GetContext().Context(), c.AgentMetricsEndpoint)
+	otelServer, err := initInstrumentation(agt.GetContext().Context(), c.AgentMetricsEndpoint)
 	if err != nil {
 		return fmt.Errorf("cannot initialize prometheus exporter: %v", err)
 	}
@@ -412,16 +412,16 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	return agt.Run()
 }
 
-// initPrometheusInstrumentation will spawn a server and expose agent metrics through prometheus exporter.
+// initInstrumentation will spawn a server and expose agent metrics through prometheus exporter.
 // By default is disabled and it only will be enabled if host:port are provided.
 // Using instrumentation.SetupPrometheusIntegrationConfig it will create prometheus
 // integration configuration (and delete it on agent shutdown process).
-func initPrometheusInstrumentation(ctx context.Context, agentMetricsEndpoint string) (instrumentation.Instrumentation, error) {
+func initInstrumentation(ctx context.Context, agentMetricsEndpoint string) (instrumentation.Instrumenter, error) {
 	if agentMetricsEndpoint == "" {
-		return instrumentation.NewNoopInstrumentation(), nil
+		return instrumentation.NewNoop(), nil
 	}
 
-	exporter, err := instrumentation.NewOpentelemetryExporter()
+	exporter, err := instrumentation.New()
 	if err != nil {
 		return nil, err
 	}

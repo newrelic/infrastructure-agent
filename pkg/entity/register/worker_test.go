@@ -32,7 +32,7 @@ const (
 	agentVersion = "testVersion"
 )
 
-var fakeOtelServer = instrumentation.NewNoopInstrumentation()
+var fakeOtelServer = instrumentation.NewNoop()
 
 type fakeClient struct {
 	ids       []entity.ID

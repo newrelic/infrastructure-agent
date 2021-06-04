@@ -43,7 +43,7 @@ var (
 	}
 )
 
-var fakeOtelServer = instrumentation.NewNoopInstrumentation()
+var fakeOtelServer = instrumentation.NewNoop()
 
 func TestParsePayloadV4(t *testing.T) {
 	ffm := feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true})

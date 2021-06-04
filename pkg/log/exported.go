@@ -26,7 +26,7 @@ type wrap struct {
 	cachedEntryLimit   int
 	mu                 *sync.Mutex
 
-	// Instrumentation
+	// Instrumenter
 	otelMeasure instrumentation.Measure
 }
 

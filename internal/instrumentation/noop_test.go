@@ -14,12 +14,12 @@ import (
 )
 
 func TestNewNoopServer(t *testing.T) {
-	server := NewNoopInstrumentation()
+	server := NewNoop()
 	require.NotNil(t, server)
 }
 
 func TestNoop_GetHandler(t *testing.T) {
-	ts := httptest.NewServer(NewNoopInstrumentation().GetHandler())
+	ts := httptest.NewServer(NewNoop().GetHandler())
 	defer ts.Close()
 	res, err := http.Get(ts.URL)
 	require.NoError(t, err)
@@ -32,6 +32,6 @@ func TestNoop_GetHandler(t *testing.T) {
 
 func TestNoop_GetHttpTransport(t *testing.T) {
 	transport := &http.Transport{MaxIdleConnsPerHost: 1}
-	actualTransport := NewNoopInstrumentation().GetHttpTransport(transport)
+	actualTransport := NewNoop().GetHttpTransport(transport)
 	assert.Equal(t, transport, actualTransport)
 }
