@@ -14,32 +14,32 @@ import (
 	"go.opentelemetry.io/otel/label"
 )
 
-type opentelemetry struct {
+type instrumentation struct {
 	handler  *oprometheus.Exporter
 	meter    *metric.Meter
 	counters map[MetricName]metric.Int64Counter
 }
 
-func (o opentelemetry) GetHandler() http.Handler {
-	return o.handler
+func (i instrumentation) GetHandler() http.Handler {
+	return i.handler
 }
 
-func (o opentelemetry) Measure(metricType MetricType, name MetricName, val int64) {
-	o.meter.RecordBatch(
+func (i instrumentation) Measure(metricType MetricType, name MetricName, val int64) {
+	i.meter.RecordBatch(
 		context.Background(),
 		[]label.KeyValue{},
-		o.counters[name].Measurement(val))
+		i.counters[name].Measurement(val))
 }
 
-func (o opentelemetry) GetHttpTransport(base http.RoundTripper) http.RoundTripper {
+func (i instrumentation) GetHttpTransport(base http.RoundTripper) http.RoundTripper {
 	return otelhttp.NewTransport(base,
-		otelhttp.WithMeterProvider(o.handler.MeterProvider()),
+		otelhttp.WithMeterProvider(i.handler.MeterProvider()),
 		otelhttp.WithMessageEvents(
 			otelhttp.ReadEvents,
 			otelhttp.WriteEvents))
 }
 
-func NewOpentelemetryExporter() (exporter Exporter, err error) {
+func NewOpentelemetryExporter() (exporter Instrumentation, err error) {
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}))
 	registry.MustRegister(prometheus.NewGoCollector())
@@ -57,7 +57,7 @@ func NewOpentelemetryExporter() (exporter Exporter, err error) {
 		counters[metricName] = metric.Must(meter).NewInt64Counter("newrelic.infra/instrumentation." + metricRegistrationName)
 	}
 
-	return &opentelemetry{
+	return &instrumentation{
 		handler:  prometheusExporter,
 		counters: counters,
 		meter:    &meter,

@@ -416,9 +416,9 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 // By default is disabled and it only will be enabled if host:port are provided.
 // Using instrumentation.SetupPrometheusIntegrationConfig it will create prometheus
 // integration configuration (and delete it on agent shutdown process).
-func initPrometheusInstrumentation(ctx context.Context, agentMetricsEndpoint string) (instrumentation.Exporter, error) {
+func initPrometheusInstrumentation(ctx context.Context, agentMetricsEndpoint string) (instrumentation.Instrumentation, error) {
 	if agentMetricsEndpoint == "" {
-		return instrumentation.NewNoopServer(), nil
+		return instrumentation.NewNoopInstrumentation(), nil
 	}
 
 	exporter, err := instrumentation.NewOpentelemetryExporter()

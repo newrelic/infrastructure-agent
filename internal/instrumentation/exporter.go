@@ -39,7 +39,7 @@ var (
 
 type Measure func(metricType MetricType, name MetricName, val int64)
 
-type Exporter interface {
+type Instrumentation interface {
 	GetHandler() http.Handler
 	Measure(metricType MetricType, name MetricName, val int64)
 	GetHttpTransport(base http.RoundTripper) http.RoundTripper

@@ -4,12 +4,13 @@
 package instrumentation
 
 import (
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/sirupsen/logrus"
 )
 
-func NewNoopServer() (exporter Exporter) {
+func NewNoopInstrumentation() (exporter Instrumentation) {
 	return &noop{}
 }
 
