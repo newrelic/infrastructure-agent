@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestOpentelemetry_Measure(t *testing.T) {
+func TestNew_Measure(t *testing.T) {
 	exporter, err := New()
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
