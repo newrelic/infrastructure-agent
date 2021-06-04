@@ -105,10 +105,15 @@ func createFile(from, dest string, vars map[string]interface{}) error {
 	}
 	t, err := template.ParseFiles(from)
 	if err != nil {
+		outputFile.Close()
 		return err
 
 	}
-	return t.Execute(outputFile, vars)
+	if err = t.Execute(outputFile, vars); err != nil {
+		outputFile.Close()
+		return err
+	}
+	return outputFile.Close()
 }
 
 func templatePath(filename string) string {
