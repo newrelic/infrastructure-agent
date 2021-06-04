@@ -52,12 +52,7 @@ func New(configsDir, tempBinDir string) *Emulator {
 		config.LogFormat = "text"
 		config.LogToStdout = true
 		config.Debug = true
-		config.MetricsSystemSampleRate = 2
-		config.MetricsProcessSampleRate = 2
-		config.MetricsNetworkSampleRate = 2
-		config.HeartBeatSampleRate = 2
-		config.MetricsNFSSampleRate = 2
-		config.MetricsStorageSampleRate = 2
+		config.IsForwardOnly = true
 		config.Features = map[string]bool{
 			fflag.FlagProtocolV4: true,
 		}
