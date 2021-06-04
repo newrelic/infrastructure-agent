@@ -8,9 +8,10 @@
 package log
 
 import (
-	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
 	"io"
 	"sync"
+
+	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
 
 	"github.com/sirupsen/logrus"
 )
@@ -27,7 +28,7 @@ type wrap struct {
 	mu                 *sync.Mutex
 
 	// Instrumentation
-	otelMeasure instrumentation.Measure
+	measure instrumentation.Measure
 }
 
 type log struct {
@@ -37,9 +38,9 @@ type log struct {
 
 // usual singleton access used on the codebase
 var w = wrap{
-	l:           logrus.StandardLogger(),
-	mu:          &sync.Mutex{},
-	otelMeasure: func(instrumentation.MetricType, instrumentation.MetricName, int64) {},
+	l:       logrus.StandardLogger(),
+	mu:      &sync.Mutex{},
+	measure: func(instrumentation.MetricType, instrumentation.MetricName, int64) {},
 }
 
 func (w *wrap) smartVerboseEnabled() bool {
@@ -82,11 +83,11 @@ func EnableSmartVerboseMode(cachedEntryLimit int) {
 	SetLevel(logrus.DebugLevel)
 }
 
-func Instrument(otelMeasure instrumentation.Measure) {
+func Instrument(m instrumentation.Measure) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	w.otelMeasure = otelMeasure
+	w.measure = m
 }
 
 // SetOutput sets the standard logger output.
@@ -177,7 +178,7 @@ func Warning(args ...interface{}) {
 // Error logs a message at level Error on the standard logger.
 func Error(args ...interface{}) {
 	w.l.Error(args...)
-	w.otelMeasure(instrumentation.Counter, instrumentation.LoggedErrors, 1)
+	w.measure(instrumentation.Counter, instrumentation.LoggedErrors, 1)
 }
 
 // Tracef logs a message at level Trace on the standard logger.

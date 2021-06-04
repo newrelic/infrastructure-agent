@@ -5,12 +5,13 @@ package dm
 import (
 	"errors"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
 	"io/ioutil"
 	"os"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
 
 	"github.com/sirupsen/logrus"
 	logTest "github.com/sirupsen/logrus/hooks/test"
@@ -42,8 +43,6 @@ var (
 		GUID: "abcdef",
 	}
 )
-
-var fakeOtelServer = instrumentation.NewNoopServer()
 
 func TestParsePayloadV4(t *testing.T) {
 	ffm := feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true})
@@ -150,7 +149,7 @@ func TestEmitter_Send_usingIDCache(t *testing.T) {
 		Return(nil)
 	dmSender.wg.Add(2)
 
-	em := NewEmitter(aCtx, dmSender, &test.EmptyRegisterClient{}, fakeOtelServer.Measure)
+	em := NewEmitter(aCtx, dmSender, &test.EmptyRegisterClient{}, instrumentation.NoopMeasure)
 	e := em.(*emitter)
 
 	e.idCache.Put(entity.Key(fmt.Sprintf("%s:%s", data.DataSets[0].Entity.Type, data.DataSets[0].Entity.Name)), firstEntity.ID)
@@ -200,7 +199,7 @@ func TestEmitter_Send(t *testing.T) {
 		Return(nil)
 	ms.wg.Add(1)
 
-	em := NewEmitter(aCtx, ms, test.NewIncrementalRegister(), fakeOtelServer.Measure)
+	em := NewEmitter(aCtx, ms, test.NewIncrementalRegister(), instrumentation.NoopMeasure)
 
 	// avoid waiting for more data to create register submission batch
 	e := em.(*emitter)
@@ -247,7 +246,7 @@ func TestEmitter_Send_failedToSubmitMetrics_dropAndLog(t *testing.T) {
 	ms.On("SendMetricsWithCommonAttributes", mock.Anything, mock.Anything).Return(errors.New("failed to submit metrics"))
 	ms.wg.Add(1)
 
-	em := NewEmitter(ctx, ms, test.NewIncrementalRegister(), fakeOtelServer.Measure).(*emitter)
+	em := NewEmitter(ctx, ms, test.NewIncrementalRegister(), instrumentation.NoopMeasure).(*emitter)
 	em.idCache.Put(entity.Key(fmt.Sprintf("%s:%s", data.DataSets[0].Entity.Type, data.DataSets[0].Entity.Name)), identity.ID)
 	em.Send(fwrequest.NewFwRequest(integration.Definition{ExecutorConfig: executor.Config{User: "root"}}, nil, nil, data))
 

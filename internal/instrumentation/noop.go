@@ -4,12 +4,17 @@
 package instrumentation
 
 import (
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/sirupsen/logrus"
 )
 
-func NewNoopServer() (exporter Exporter) {
+// NoopMeasure no-op Measure function type.
+var NoopMeasure = func(_ MetricType, _ MetricName, _ int64) {}
+
+// NewNoop creates a new no-op Instrumenter.
+func NewNoop() (exporter Instrumenter) {
 	return &noop{}
 }
 
