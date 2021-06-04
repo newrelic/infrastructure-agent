@@ -3,11 +3,12 @@ package register
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/sirupsen/logrus"
-	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/id"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
@@ -35,7 +36,7 @@ type worker struct {
 	reqsToRegisterQueue <-chan fwrequest.EntityFwRequest
 	reqsRegisteredQueue chan<- fwrequest.EntityFwRequest
 	config              WorkerConfig
-	otelMeasure         instrumentation.Measure
+	measure             instrumentation.Measure
 }
 
 func NewWorker(
@@ -45,7 +46,7 @@ func NewWorker(
 	reqsToRegisterQueue <-chan fwrequest.EntityFwRequest,
 	reqsRegisteredQueue chan<- fwrequest.EntityFwRequest,
 	config WorkerConfig,
-	otelMeasure instrumentation.Measure,
+	measureFn instrumentation.Measure,
 ) *worker {
 	return &worker{
 		agentIDProvide:      agentIDProvide,
@@ -54,7 +55,7 @@ func NewWorker(
 		reqsToRegisterQueue: reqsToRegisterQueue,
 		reqsRegisteredQueue: reqsRegisteredQueue,
 		config:              config,
-		otelMeasure:         otelMeasure,
+		measure:             measureFn,
 	}
 }
 
@@ -123,7 +124,7 @@ func (w *worker) send(ctx context.Context, batch map[entity.Key]fwrequest.Entity
 					WithField("entityName", resp.Name).
 					Errorf("failed to register entity")
 			}
-			w.otelMeasure(instrumentation.Counter, instrumentation.EntityRegisterEntitiesRegistrationFailed, 1)
+			w.measure(instrumentation.Counter, instrumentation.EntityRegisterEntitiesRegistrationFailed, 1)
 
 			continue
 		}
@@ -135,7 +136,7 @@ func (w *worker) send(ctx context.Context, batch map[entity.Key]fwrequest.Entity
 					WithField("entityID", resp.ID).
 					Warn("entity registered with warnings")
 			}
-			w.otelMeasure(instrumentation.Counter, instrumentation.EntityRegisterEntitiesRegisteredWithWarning, 1)
+			w.measure(instrumentation.Counter, instrumentation.EntityRegisterEntitiesRegisteredWithWarning, 1)
 		}
 
 		r, ok := batch[entity.Key(resp.Name)]
@@ -151,7 +152,7 @@ func (w *worker) send(ctx context.Context, batch map[entity.Key]fwrequest.Entity
 		} else {
 			r.RegisteredWith(resp.ID)
 			w.reqsRegisteredQueue <- r
-			w.otelMeasure(instrumentation.Counter, instrumentation.EntityRegisterEntitiesRegistered, 1)
+			w.measure(instrumentation.Counter, instrumentation.EntityRegisterEntitiesRegistered, 1)
 		}
 	}
 }

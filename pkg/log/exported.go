@@ -83,11 +83,11 @@ func EnableSmartVerboseMode(cachedEntryLimit int) {
 	SetLevel(logrus.DebugLevel)
 }
 
-func Instrument(otelMeasure instrumentation.Measure) {
+func Instrument(m instrumentation.Measure) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	w.measure = otelMeasure
+	w.measure = m
 }
 
 // SetOutput sets the standard logger output.
