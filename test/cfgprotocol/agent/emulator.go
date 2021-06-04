@@ -110,7 +110,7 @@ func (ae *Emulator) RunAgent() error {
 	// queues integration terminated definitions
 	terminateDefinitionQ := make(chan string, 100)
 
-	emitterWithRegister := dm.NewEmitter(ae.agent.GetContext(), dmSender, nil, instrumentation.NewNoopServer().Measure)
+	emitterWithRegister := dm.NewEmitter(ae.agent.GetContext(), dmSender, nil, instrumentation.NoopMeasure)
 	nonRegisterEmitter := dm.NewNonRegisterEmitter(ae.agent.GetContext(), dmSender)
 
 	dmEmitter := dm.NewEmitterWithFF(emitterWithRegister, nonRegisterEmitter, ffManager)

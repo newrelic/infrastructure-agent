@@ -21,18 +21,21 @@ const (
 	EntityRegisterEntitiesRegistered
 	EntityRegisterEntitiesRegisteredWithWarning
 	EntityRegisterEntitiesRegistrationFailed
-
 	LoggedErrors
 )
 
-var metricsToRegister = map[MetricName]string{
-	DMRequestsForwarded:                         "dm.requests_forwarded",
-	DMDatasetsReceived:                          "dm.datasets_received",
-	EntityRegisterEntitiesRegistered:            "entity_register.entities_registered",
-	EntityRegisterEntitiesRegisteredWithWarning: "entity_register.entities_registered_with_warning",
-	EntityRegisterEntitiesRegistrationFailed:    "entity_register.entities_registration_failed",
-	LoggedErrors:                                "logged.errors",
-}
+var (
+	// NoopMeasure no-op Measure function type.
+	NoopMeasure       = func(_ MetricType, _ MetricName, _ int64) {}
+	metricsToRegister = map[MetricName]string{
+		DMRequestsForwarded:                         "dm.requests_forwarded",
+		DMDatasetsReceived:                          "dm.datasets_received",
+		EntityRegisterEntitiesRegistered:            "entity_register.entities_registered",
+		EntityRegisterEntitiesRegisteredWithWarning: "entity_register.entities_registered_with_warning",
+		EntityRegisterEntitiesRegistrationFailed:    "entity_register.entities_registration_failed",
+		LoggedErrors:                                "logged.errors",
+	}
+)
 
 type Measure func(metricType MetricType, name MetricName, val int64)
 
