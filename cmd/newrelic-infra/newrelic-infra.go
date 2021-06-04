@@ -285,7 +285,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		fatal(err, "Can't complete platform specific initialization.")
 	}
 
-	otelServer, err := initOtelServer(agt.GetContext().Context(), c)
+	otelServer, err := initOtelServer(agt.GetContext().Context(), c.AgentMetricsEndpoint)
 	if err != nil {
 		return err
 	}
@@ -416,8 +416,8 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 // By default is disabled and it only will be enabled if host:port are provided.
 // Using instrumentation.SetupPrometheusIntegrationConfig it will create prometheus
 // integration configuration (and delete it on agent shutdown process).
-func initOtelServer(ctx context.Context, c *config.Config) (instrumentation.Exporter, error) {
-	if c.AgentMetricsEndpoint == "" {
+func initOtelServer(ctx context.Context, agentMetricsEndpoint string) (instrumentation.Exporter, error) {
+	if agentMetricsEndpoint == "" {
 		return instrumentation.NewNoopServer(), nil
 	}
 
@@ -426,10 +426,10 @@ func initOtelServer(ctx context.Context, c *config.Config) (instrumentation.Expo
 		return nil, err
 	}
 
-	aslog.WithField("addr", c.AgentMetricsEndpoint).Info("Starting Opentelemetry server")
+	aslog.WithField("addr", agentMetricsEndpoint).Info("Starting Opentelemetry server")
 	srv := &http.Server{
 		Handler:      exporter.GetHandler(),
-		Addr:         c.AgentMetricsEndpoint,
+		Addr:         agentMetricsEndpoint,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
@@ -442,7 +442,7 @@ func initOtelServer(ctx context.Context, c *config.Config) (instrumentation.Expo
 	}()
 
 	//Setup prometheus integration
-	err = instrumentation.SetupPrometheusIntegrationConfig(ctx, c.AgentMetricsEndpoint)
+	err = instrumentation.SetupPrometheusIntegrationConfig(ctx, agentMetricsEndpoint)
 	if err != nil {
 		return nil, err
 	}
