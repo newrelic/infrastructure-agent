@@ -20,6 +20,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
+
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
 	ccBackoff "github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/backoff"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
