@@ -10,9 +10,10 @@ import (
 )
 
 const (
-	logFailedDefinition  = "Cannot create integration definition for config protocol"
-	logAddedDefinition   = "New definition added to the cache"
-	logRemovedDefinition = "Removed definition from cache"
+	logFailedDefinition     = "Cannot create integration definition for config protocol"
+	logFailedConfigTemplate = "Cannot create config for the integration definition"
+	logAddedDefinition      = "New definition added to the cache"
+	logRemovedDefinition    = "Removed definition from cache"
 )
 
 var (
@@ -38,7 +39,12 @@ func NewHandleFn(configProtocolQueue chan<- Entry, terminateDefinitionQueue chan
 			"parent_integration_name": parentDefinition.Name,
 		}
 		for _, ce := range cfgProtocol.Integrations() {
-			def, err := integration.NewDefinition(ce, il, nil, nil)
+			template, err := integration.LoadConfigTemplate(ce.TemplatePath, ce.Config)
+			if err != nil {
+				logger.WithError(err).WithFields(logCtx).Warn(logFailedConfigTemplate)
+				return
+			}
+			def, err := integration.NewDefinition(ce, il, parentDefinition.ExecutorConfig.Passthrough, template)
 			if err != nil {
 				logger.WithError(err).WithFields(logCtx).Warn(logFailedDefinition)
 				return
