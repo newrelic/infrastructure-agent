@@ -13,19 +13,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestOpentelemetry_Measure(t *testing.T) {
-	exporter, err := NewOpentelemetryExporter()
+func TestNew_Measure(t *testing.T) {
+	instruments, err := New()
 	require.NoError(t, err)
-	require.NotNil(t, exporter)
+	require.NotNil(t, instruments)
 
-	ts := httptest.NewServer(exporter.GetHandler())
+	ts := httptest.NewServer(instruments.GetHandler())
 	defer ts.Close()
 
 	for i := int64(1); i <= 100; i++ {
-		exporter.Measure(Counter, DMRequestsForwarded, i)
+		instruments.Measure(Counter, DMRequestsForwarded, i)
 	}
 	for i := int64(1); i <= 200; i++ {
-		exporter.Measure(Counter, DMDatasetsReceived, i)
+		instruments.Measure(Counter, DMDatasetsReceived, i)
 	}
 
 	metricsUrl := ts.URL + "/metrics"

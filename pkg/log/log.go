@@ -73,7 +73,7 @@ func (e Entry) Error(msg string) {
 		}
 		e().Error(msg)
 	}
-	w.otelMeasure(instrumentation.Counter, instrumentation.LoggedErrors, 1)
+	w.measure(instrumentation.Counter, instrumentation.LoggedErrors, 1)
 }
 
 func (e Entry) Errorf(format string, args ...interface{}) {

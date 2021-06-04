@@ -282,11 +282,11 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		fatal(err, "Can't complete platform specific initialization.")
 	}
 
-	otelServer, err := initOtelServer(agt.GetContext().Context(), c)
+	instruments, err := initInstrumentation(agt.GetContext().Context(), c.AgentMetricsEndpoint)
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot initialize prometheus exporter: %v", err)
 	}
-	wlog.Instrument(otelServer.Measure)
+	wlog.Instrument(instruments.Measure)
 
 	metricsSenderConfig := dm.NewConfig(c.DMIngestURL(), c.License, time.Duration(c.DMSubmissionPeriod)*time.Second, c.MaxMetricBatchEntitiesCount, c.MaxMetricBatchEntitiesQueue)
 	dmSender, err := dm.NewDMSender(metricsSenderConfig, transport, agt.Context.IdContext().AgentIdentity)
@@ -301,7 +301,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	// queues integration terminated definitions
 	terminateDefinitionQ := make(chan string, 100)
 
-	emitterWithRegister := dm.NewEmitter(agt.GetContext(), dmSender, registerClient, otelServer.Measure)
+	emitterWithRegister := dm.NewEmitter(agt.GetContext(), dmSender, registerClient, instruments.Measure)
 	nonRegisterEmitter := dm.NewNonRegisterEmitter(agt.GetContext(), dmSender)
 
 	dmEmitter := dm.NewEmitterWithFF(emitterWithRegister, nonRegisterEmitter, ffManager)
@@ -409,24 +409,24 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	return agt.Run()
 }
 
-// initOtelServer will spawn a server and expose agent metrics through prometheus exporter.
+// initInstrumentation will spawn a server and expose agent metrics through prometheus exporter.
 // By default is disabled and it only will be enabled if host:port are provided.
 // Using instrumentation.SetupPrometheusIntegrationConfig it will create prometheus
 // integration configuration (and delete it on agent shutdown process).
-func initOtelServer(ctx context.Context, c *config.Config) (instrumentation.Exporter, error) {
-	if c.AgentMetricsEndpoint == "" {
-		return instrumentation.NewNoopServer(), nil
+func initInstrumentation(ctx context.Context, agentMetricsEndpoint string) (instrumentation.Instrumenter, error) {
+	if agentMetricsEndpoint == "" {
+		return instrumentation.NewNoop(), nil
 	}
 
-	exporter, err := instrumentation.NewOpentelemetryExporter()
+	instruments, err := instrumentation.New()
 	if err != nil {
 		return nil, err
 	}
 
-	aslog.WithField("addr", c.AgentMetricsEndpoint).Info("Starting Opentelemetry server")
+	aslog.WithField("addr", agentMetricsEndpoint).Info("Starting Opentelemetry server")
 	srv := &http.Server{
-		Handler:      exporter.GetHandler(),
-		Addr:         c.AgentMetricsEndpoint,
+		Handler:      instruments.GetHandler(),
+		Addr:         agentMetricsEndpoint,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
@@ -439,12 +439,12 @@ func initOtelServer(ctx context.Context, c *config.Config) (instrumentation.Expo
 	}()
 
 	//Setup prometheus integration
-	err = instrumentation.SetupPrometheusIntegrationConfig(ctx, c.AgentMetricsEndpoint)
+	err = instrumentation.SetupPrometheusIntegrationConfig(ctx, agentMetricsEndpoint)
 	if err != nil {
 		return nil, err
 	}
 
-	return exporter, nil
+	return instruments, nil
 }
 
 // newInstancesLookup creates an instance lookup that:
