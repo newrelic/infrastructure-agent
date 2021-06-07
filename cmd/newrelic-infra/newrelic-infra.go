@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
