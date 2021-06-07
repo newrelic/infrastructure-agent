@@ -2,6 +2,5 @@
 
 launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
 subnet: "subnet-05e71d641651d7ccb"
-instance_name_tag_prefix: ""
 
 ...
