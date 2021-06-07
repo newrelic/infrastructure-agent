@@ -1037,6 +1037,12 @@ type Config struct {
 	// Default: none
 	// Public: Yes
 	IncludeMetricsMatchers IncludeMetricsMap `yaml:"include_matching_metrics" envconfig:"include_matching_metrics"`
+
+	// AgentMetricsEndpoint Set the endpoint (host:port) for the HTTP server the agent will use to server OpenMetrics
+	// if empty the server will be not spawned
+	// Default: empty
+	// Public: Yes
+	AgentMetricsEndpoint string `yaml:"agent_metrics_endpoint" envconfig:"agent_metrics_endpoint"`
 }
 
 // Troubleshoot trobleshoot mode configuration.

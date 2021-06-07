@@ -14,6 +14,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
+	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/files"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/v3legacy"
@@ -109,7 +110,7 @@ func (ae *Emulator) RunAgent() error {
 	// queues integration terminated definitions
 	terminateDefinitionQ := make(chan string, 100)
 
-	emitterWithRegister := dm.NewEmitter(ae.agent.GetContext(), dmSender, nil)
+	emitterWithRegister := dm.NewEmitter(ae.agent.GetContext(), dmSender, nil, instrumentation.NoopMeasure)
 	nonRegisterEmitter := dm.NewNonRegisterEmitter(ae.agent.GetContext(), dmSender)
 
 	dmEmitter := dm.NewEmitterWithFF(emitterWithRegister, nonRegisterEmitter, ffManager)
