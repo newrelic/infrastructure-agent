@@ -9,8 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
-	"gopkg.in/yaml.v2"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -19,6 +17,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
+	"gopkg.in/yaml.v2"
 
 	"github.com/newrelic/infrastructure-agent/pkg/license"
 	"github.com/sirupsen/logrus"
@@ -89,6 +90,11 @@ type Config struct {
 	// Default: https://metric-api.newrelic.com
 	// Public: No
 	MetricURL string `yaml:"metric_url" envconfig:"metric_url" public:"false"`
+
+	// DMIngestEndpoint defines the API path for the infrastructure dimensional metric ingest endpoint
+	// Default: /metric/v1/infra
+	// Public: No
+	DMIngestEndpoint string `yaml:"dm_endpoint" envconfig:"dm_endpoint" public:"false"`
 
 	// CommandChannelURL defines the base URL for the command channel.
 	// Default: https://infrastructure-command-api.newrelic.com
@@ -555,7 +561,7 @@ type Config struct {
 	PartitionsTTL string `yaml:"partitions_ttl" envconfig:"partitions_ttl" public:"false"`
 
 	// StartupConnectionTimeout Time duration to wait before timing-out the request the agents makes at startup to
-	// check the NewRelic platform availability.
+	// check the NewRelic platform availability. Used by defining reachability status of backend endpoints.
 	// Default: 10s
 	// Public: Yes
 	StartupConnectionTimeout string `yaml:"startup_connection_timeout" envconfig:"startup_connection_timeout"`
@@ -773,10 +779,25 @@ type Config struct {
 	// Public: Yes
 	TCPServerEnabled bool `yaml:"tcp_server_enabled" envconfig:"tcp_server_enabled"`
 
-	// TCPServerPort Set the port for tcp server(used only by statsD integration) to receive integration payloads.
+	// TCPServerPort Set the port for tcp server to receive integration payloads.
 	// Default: 8002
 	// Public: Yes
 	TCPServerPort int `yaml:"tcp_server_port" envconfig:"tcp_server_port"`
+
+	// StatusServerEnabled will listen into TCP port (status_server_port) to serve status requests.
+	// Default: False
+	// Public: Yes
+	StatusServerEnabled bool `yaml:"status_server_enabled" envconfig:"status_server_enabled"`
+
+	// StatusServerPort Set the port for status server.
+	// Default: 8003
+	// Public: Yes
+	StatusServerPort int `yaml:"status_server_port" envconfig:"status_server_port"`
+
+	// StatusServerPort Set the port for status server.
+	// Default: IdentityURL, CommandChannelURL, MetricsIngestURL, InventoryIngestURL
+	// Public: Yes
+	StatusEndpoints []string `yaml:"status_endpoints" envconfig:"status_endpoints"`
 
 	// AppDataDir This option is only for Windows. It defines the path to store data in a different path than the
 	// program files directory.
@@ -850,7 +871,7 @@ type Config struct {
 
 	// MetricsIngestEndpoint is the path for metrics ingest endpoint. The base URL is defined in the config option
 	// collector URL.
-	// Default: /metrics
+	// Default: /infra/v2/metrics
 	// Public: No
 	MetricsIngestEndpoint string `yaml:"metrics_ingest_endpoint" envconfig:"metrics_ingest_endpoint" public:"false"`
 
@@ -1284,6 +1305,7 @@ func NewConfig() *Config {
 		PidFile:                       defaultPidFile,
 		InventoryIngestEndpoint:       defaultInventoryIngestEndpoint,
 		MetricsIngestEndpoint:         defaultMetricsIngestEndpoint,
+		DMIngestEndpoint:              defaultDMIngestEndpoint,
 		IdentityIngestEndpoint:        defaultIdentityIngestEndpoint,
 		CommandChannelEndpoint:        defaultCmdChannelEndpoint,
 		CommandChannelIntervalSec:     defaultCmdChannelIntervalSec,
@@ -1296,6 +1318,7 @@ func NewConfig() *Config {
 		HTTPServerHost:                defaultHTTPServerHost,
 		HTTPServerPort:                defaultHTTPServerPort,
 		TCPServerPort:                 defaultTCPServerPort,
+		StatusServerPort:              defaultStatusServerPort,
 		DockerApiVersion:              DefaultDockerApiVersion,
 		FingerprintUpdateFreqSec:      defaultFingerprintUpdateFreqSec,
 		CloudMetadataExpiryInSec:      defaultCloudMetadataExpiryInSec,
@@ -1369,6 +1392,10 @@ func (c Config) GenerateInventoryURL() string {
 		inventoryURL = os.Getenv("DEV_INVENTORY_INGEST_URL")
 	}
 	return strings.TrimSuffix(inventoryURL, "/")
+}
+
+func (c *Config) DMIngestURL() string {
+	return fmt.Sprintf("%s%s", c.MetricURL, c.DMIngestEndpoint)
 }
 
 func isConfigDefined(key string, cfgMetadata config_loader.YAMLMetadata) bool {
@@ -1566,6 +1593,18 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 
 	if cfg.ConnectEnabled {
 		cfg.MetricsIngestEndpoint = defaultMetricsIngestV2Endpoint
+	}
+
+	if len(cfg.StatusEndpoints) == 0 {
+		// https://docs.newrelic.com/docs/using-new-relic/cross-product-functions/install-configure/networks/#infrastructure
+		cfg.StatusEndpoints = []string{
+			cfg.IdentityURL + cfg.IdentityIngestEndpoint,
+			cfg.CommandChannelURL + cfg.CommandChannelEndpoint,
+			cfg.CollectorURL + cfg.MetricsIngestEndpoint,
+			cfg.CollectorURL + cfg.InventoryIngestEndpoint,
+			//cfg.DMIngestURL(), // dimensional metrics without shimming not available yet
+			// no endpoint value to checking log ingest reachability
+		}
 	}
 
 	//MetricsIngestEndpoint default value defined in NewConfig

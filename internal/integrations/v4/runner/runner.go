@@ -134,8 +134,17 @@ func (r *runner) killChildren() {
 		cfgNames := c.ListConfigNames()
 		for _, cfgName := range cfgNames {
 			definitions := r.cache.GetDefinitions(cfgName)
-			for _, definition := range definitions {
-				r.terminateQueue <- definition.Hash()
+			for _, d := range definitions {
+				r.terminateQueue <- d.Hash()
+
+				var cfgName string
+				if d.CfgProtocol != nil {
+					cfgName = d.CfgProtocol.ConfigName
+				}
+				r.log.
+					WithField("child_name", d.Name).
+					WithField("cfg_protocol_name", cfgName).
+					Debug("Stopping child integration")
 			}
 		}
 	}
@@ -147,6 +156,10 @@ func LogFields(def integration.Definition) logrus.Fields {
 	}
 	for k, v := range def.Labels {
 		fields[k] = v
+	}
+	if def.CfgProtocol != nil {
+		fields["cfg_protocol_name"] = def.CfgProtocol.ConfigName
+		fields["parent_integration_name"] = def.CfgProtocol.ParentName
 	}
 	return fields
 }
@@ -302,7 +315,7 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 				continue
 			}
 			cfgProtocol, err := cfgProtocolBuilder.Build()
-			llog.WithField("version", cfgProtocol.Version()).Info("Received config protocol request.")
+			llog.WithField("version", cfgProtocol.Version()).Debug("Received config protocol request.")
 			if err != nil {
 				llog.
 					WithError(err).
@@ -310,7 +323,7 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 				continue
 			}
 
-			r.handleConfig(cfgProtocol, r.cache)
+			r.handleConfig(cfgProtocol, r.cache, r.definition)
 			continue
 		}
 
