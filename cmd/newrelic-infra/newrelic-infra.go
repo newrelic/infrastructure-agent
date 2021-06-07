@@ -283,11 +283,11 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		fatal(err, "Can't complete platform specific initialization.")
 	}
 
-	otelServer, err := initInstrumentation(agt.GetContext().Context(), c.AgentMetricsEndpoint)
+	instruments, err := initInstrumentation(agt.GetContext().Context(), c.AgentMetricsEndpoint)
 	if err != nil {
 		return fmt.Errorf("cannot initialize prometheus exporter: %v", err)
 	}
-	wlog.Instrument(otelServer.Measure)
+	wlog.Instrument(instruments.Measure)
 
 	metricsSenderConfig := dm.NewConfig(c.DMIngestURL(), c.License, time.Duration(c.DMSubmissionPeriod)*time.Second, c.MaxMetricBatchEntitiesCount, c.MaxMetricBatchEntitiesQueue)
 	dmSender, err := dm.NewDMSender(metricsSenderConfig, transport, agt.Context.IdContext().AgentIdentity)
@@ -302,7 +302,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	// queues integration terminated definitions
 	terminateDefinitionQ := make(chan string, 100)
 
-	emitterWithRegister := dm.NewEmitter(agt.GetContext(), dmSender, registerClient, otelServer.Measure)
+	emitterWithRegister := dm.NewEmitter(agt.GetContext(), dmSender, registerClient, instruments.Measure)
 	nonRegisterEmitter := dm.NewNonRegisterEmitter(agt.GetContext(), dmSender)
 
 	dmEmitter := dm.NewEmitterWithFF(emitterWithRegister, nonRegisterEmitter, ffManager)
@@ -419,14 +419,14 @@ func initInstrumentation(ctx context.Context, agentMetricsEndpoint string) (inst
 		return instrumentation.NewNoop(), nil
 	}
 
-	exporter, err := instrumentation.New()
+	instruments, err := instrumentation.New()
 	if err != nil {
 		return nil, err
 	}
 
 	aslog.WithField("addr", agentMetricsEndpoint).Info("Starting Opentelemetry server")
 	srv := &http.Server{
-		Handler:      exporter.GetHandler(),
+		Handler:      instruments.GetHandler(),
 		Addr:         agentMetricsEndpoint,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
@@ -445,7 +445,7 @@ func initInstrumentation(ctx context.Context, agentMetricsEndpoint string) (inst
 		return nil, err
 	}
 
-	return exporter, nil
+	return instruments, nil
 }
 
 // newInstancesLookup creates an instance lookup that:
