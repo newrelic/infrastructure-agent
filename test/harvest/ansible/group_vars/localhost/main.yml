@@ -72,13 +72,13 @@ instances:
     type: "t3a.small"
     name: "amd64:centos8"
     username: "centos"
-    python_interpreter: "/usr/bin/python"
+    python_interpreter: "/usr/bin/python3"
     launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
   - ami: "ami-0d97ef13c06b05a19"
     type: "t3a.small"
     name: "amd64:centos-stream"
     username: "centos"
-    python_interpreter: "/usr/bin/python"
+    python_interpreter: "/usr/bin/python3"
     launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
   ############################
   # centos arm64
@@ -93,13 +93,13 @@ instances:
     type: "t4g.small"
     name: "arm64:centos8"
     username: "centos"
-    python_interpreter: "/usr/bin/python"
+    python_interpreter: "/usr/bin/python3"
     launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
   - ami: "ami-0deb895048c4f105b"
     type: "t4g.small"
     name: "arm64:centos-stream"
     username: "centos"
-    python_interpreter: "/usr/bin/python"
+    python_interpreter: "/usr/bin/python3"
     launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
   ############################
   # sles amd64
