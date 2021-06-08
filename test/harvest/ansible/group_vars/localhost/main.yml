@@ -17,7 +17,9 @@ instance_name_tag_prefix: "ruben-harvest"
 #  For an Ubuntu AMI, the user name is ubuntu.
 
 instances:
-  #ubuntu amd64
+  ############################
+  # ubuntu amd64
+  ############################
   - ami: "ami-03b6c8bd55e00d5ed"
     type: "t3a.small"
     name: "amd64:ubuntu20.04"
@@ -28,38 +30,157 @@ instances:
     name: "amd64:ubuntu18.04"
     username: "ubuntu"
     python_interpreter: "/usr/bin/python3"
+  - ami: "ami-0d563aeddd4be7fff"
+    type: "t3a.small"
+    name: "amd64:ubuntu16.04"
+    username: "ubuntu"
+    python_interpreter: "/usr/bin/python3"
+  ############################
+  # ubuntu arm64
+  ############################
+  - ami: "ami-0b0c8ae527978b689"
+    type: "t4g.small"
+    name: "arm64:ubuntu20.04"
+    username: "ubuntu"
+    python_interpreter: "/usr/bin/python3"
+  - ami: "ami-09ee3570b9d8bc8cc"
+    type: "t4g.small"
+    name: "arm64:ubuntu18.04"
+    username: "ubuntu"
+    python_interpreter: "/usr/bin/python3"
+  - ami: "ami-0bff25b43a4479334"
+    type: "t4g.small"
+    name: "arm64:ubuntu16.04"
+    username: "ubuntu"
+    python_interpreter: "/usr/bin/python3"
+  ############################
+  # centos amd64
+  ############################
+  - ami: "ami-00f8e2c955f7ffa9b"
+    type: "t3a.small"
+    name: "amd64:centos7"
+    username: "centos"
+    python_interpreter: "/usr/bin/python"
+  - ami: "ami-0ac6967966621d983"
+    type: "t3a.small"
+    name: "amd64:centos8"
+    username: "centos"
+    python_interpreter: "/usr/bin/python"
+  - ami: "ami-0d97ef13c06b05a19"
+    type: "t3a.small"
+    name: "amd64:centos-stream"
+    username: "centos"
+    python_interpreter: "/usr/bin/python"
+  ############################
+  # centos arm64
+  ############################
+  - ami: "ami-07f692d95b2b9c8c5"
+    type: "t4g.small"
+    name: "arm64:centos7"
+    username: "centos"
+    python_interpreter: "/usr/bin/python"
+  - ami: "ami-035734c938e7da7af"
+    type: "t4g.small"
+    name: "arm64:centos8"
+    username: "centos"
+    python_interpreter: "/usr/bin/python"
+  - ami: "ami-0deb895048c4f105b"
+    type: "t4g.small"
+    name: "arm64:centos-stream"
+    username: "centos"
+    python_interpreter: "/usr/bin/python"
+  ############################
+  # sles amd64
+  ############################
+  - ami: "ami-0b39df28334229e26"
+    type: "t3a.small"
+    name: "amd64:sles-12.2"
+    username: "ec2-user"
+    python_interpreter: "/usr/bin/python"
+  - ami: "ami-0479b39f2d07530fb"
+    type: "t3a.small"
+    name: "amd64:sles-12.3"
+    username: "ec2-user"
+    python_interpreter: "/usr/bin/python"
+  - ami: "ami-00c2a324f2cf48f09"
+    type: "t3a.small"
+    name: "amd64:sles-12.4"
+    username: "ec2-user"
+    python_interpreter: "/usr/bin/python"
+  - ami: "ami-0f84a134e8f9d527b"
+    type: "t3a.small"
+    name: "amd64:sles-12.5"
+    username: "ec2-user"
+    python_interpreter: "/usr/bin/python"
+  ############################
+  # redhat amd64
+  ############################
+  - ami: "ami-0680f7cf1ea8cb793"
+    type: "t3a.small"
+    name: "amd64:redhat-7.9"
+    username: "ec2-user"
+    python_interpreter: "/usr/bin/python"
+  - ami: "ami-0ba62214afa52bec7"
+    type: "t3a.small"
+    name: "amd64:redhat-8.4"
+    username: "ec2-user"
+    python_interpreter: "/usr/bin/python3"
+  ############################
+  # redhat arm64
+  ############################
+  - ami: "ami-0302c1ecc74930ba5"
+    type: "t4g.small"
+    name: "arm64:redhat-7.6"
+    username: "ec2-user"
+    python_interpreter: "/usr/bin/python"
+  ############################
+  # debian amd64
+  ############################
+  - ami: "ami-b2795cd7"
+    type: "t3a.small"
+    name: "amd64:debian-jessie"
+    username: "admin"
+    python_interpreter: "/usr/bin/python"
+  - ami: "ami-0d6d3e4f081c69f42"
+    type: "t3a.small"
+    name: "amd64:debian-stretch"
+    username: "admin"
+    python_interpreter: "/usr/bin/python3"
+    launch_template: "LaunchTemplateId=lt-01b2c565029b5bf2a,Version=1"
+  - ami: "ami-0f42acddbf04bd1b6"
+    type: "t3a.small"
+    name: "amd64:debian-buster"
+    username: "admin"
+    python_interpreter: "/usr/bin/python3"
+  ############################
+  # debian arm64
+  ############################
+  - ami: "ami-0cc41fb90199e2764"
+    type: "m6g.medium"
+    name: "arm64:debian-stretch"
+    username: "admin"
+    python_interpreter: "/usr/bin/python3"
+    launch_template: "LaunchTemplateId=lt-01b2c565029b5bf2a,Version=1"
+  - ami: "ami-07d2054a4befc97f7"
+    type: "t4g.small"
+    name: "arm64:debian-buster"
+    username: "admin"
+    python_interpreter: "/usr/bin/python3"
+  ############################
+  # amazon linux 2 amd64
+  ############################
+  - ami: "ami-077e31c4939f6a2f3"
+    type: "t3a.small"
+    name: "amd64:al-2"
+    username: "ec2-user"
+    python_interpreter: "/usr/bin/python3"
+  ############################
+  # amazon linux 2 arm64
+  ############################
+  - ami: "ami-07a3e3eda401f8caa"
+    type: "t4g.small"
+    name: "arm64:al-2"
+    username: "ec2-user"
+    python_interpreter: "/usr/bin/python3"
 
-#  - ami: "ami-0d563aeddd4be7fff"
-#    type: "t3a.small"
-#    name: "amd64:ubuntu16.04"
-  #ubuntu arm64
-#  - ami: "ami-0b0c8ae527978b689"
-#    type: "t4g.small"
-#    name: "arm64:ubuntu20.04"
-#  - ami: "ami-09ee3570b9d8bc8cc"
-#    type: "t4g.small"
-#    name: "arm64:ubuntu18.04"
-#  - ami: "ami-0bff25b43a4479334"
-#    type: "t4g.small"
-#    name: "arm64:ubuntu16.04"
-  #centos amd64
-#  - ami: "ami-00f8e2c955f7ffa9b"
-#    type: "t3a.small"
-#    name: "amd64:centos7"
-#  - ami: "ami-0ac6967966621d983"
-#    type: "t3a.small"
-#    name: "amd64:centos8"
-  #  - ami: "ami-0d97ef13c06b05a19"
-  #    type: "t3a.small"
-  #    name: "amd64:centos-stream"
-  #centos amd64
-#  - ami: "ami-07f692d95b2b9c8c5"
-#    type: "t4g.small"
-#    name: "arm64:centos7"
-#  - ami: "ami-035734c938e7da7af"
-#    type: "t4g.small"
-#    name: "arm64:centos8"
-#  - ami: "ami-0deb895048c4f105b"
-#    type: "t4g.small"
-#    name: "arm64:centos-stream"
 ...

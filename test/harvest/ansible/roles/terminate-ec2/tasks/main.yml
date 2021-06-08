@@ -15,5 +15,6 @@
 
 - name: "retrieve instances information"
   shell: "aws ec2 terminate-instances --instance-ids {{ instance_ids | join(' ') }}"
+  when: instance_ids | length > 0
 
 ...
