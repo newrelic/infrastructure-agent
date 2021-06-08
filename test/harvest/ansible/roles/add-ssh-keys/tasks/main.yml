@@ -9,7 +9,4 @@
   register: known_hosts_script
   changed_when: "'found' not in known_hosts_script.stdout"
 
-- name: Gathering Facts
-  setup:
-
 ...

@@ -5,7 +5,7 @@
 #SLES:
 
 # TODO : Define a good prefix
-instance_name_tag_prefix: "ruben-harvest"
+instance_name_tag_prefix: "caos-harvest"
 
 #https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/connection-prereqs.html
 #  For Amazon Linux 2 or the Amazon Linux AMI, the user name is ec2-user.

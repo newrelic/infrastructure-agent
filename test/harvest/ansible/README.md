@@ -2,6 +2,8 @@
 
 The goal of this ansible project is to provision several ec2 instances, run harvest tests in these instances and terminate them. 
 With this approach we can automatise these tests and ensure that tests are run in all supported architectures/distributions.
+All the ec2 instances created will have `instance_name_tag_prefix` as prefix in the instance name, so they can be located
+for termination.
 
 ## Playbooks
 
@@ -59,8 +61,9 @@ Ensure `AWS_PROFILE` and `AWS_REGION` env variables are exported before running 
 make run-automated-harvest-tests
 ```
 
-`PROVISION` environment variable can be used to run tests withoout provisioning/terminating instances.
+`PROVISION` and `TERMINATE`environment variable can be used to run tests without provisioning/terminating instances.
 ```bash 
 # from the agent root folder
-PROVISION=0 make run-automated-harvest-tests
+TERMINATE=0 make run-automated-harvest-tests
+TERMINATE=0 PROVISION=0 make run-automated-harvest-tests
 ```
