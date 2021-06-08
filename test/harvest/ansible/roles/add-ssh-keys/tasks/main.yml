@@ -8,5 +8,8 @@
     ssh-keygen -F {{ ansible_host }} || ssh-keyscan -H {{ ansible_host }} >> ~/.ssh/known_hosts
   register: known_hosts_script
   changed_when: "'found' not in known_hosts_script.stdout"
+  until: known_hosts_script.rc == 0
+  retries: 3
+  delay: 5
 
 ...

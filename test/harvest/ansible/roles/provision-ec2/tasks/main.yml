@@ -21,7 +21,7 @@
     created_instances_ids: "{{ created_instances_ids_results.results | map(attribute='ansible_facts') | map(attribute='created_instances_ids') | flatten }}"
 
 - name: "wait until instances are running"
-  shell: "aws ec2 wait instance-running --instance-ids {{ created_instances_ids | join(' ') }}"
+  shell: "aws ec2 wait instance-status-ok --instance-ids {{ created_instances_ids | join(' ') }}"
 
 - name: "retrieve instances information"
   shell: "aws ec2 describe-instances --filters 'Name=tag:Name,Values={{ instance_name_tag_prefix }}:*' 'Name=instance-state-name,Values=running'"
@@ -41,7 +41,7 @@
       name: "{{ item.1.name }}"
       python_interpreter: "{{ item.1.python_interpreter }}"
   loop: "{{ registered_instances | product(instances) | list }}"
-  when: "{{ item.0.ImageId == item.1.ami }}"
+  when: item.0.ImageId == item.1.ami
   register: instances_data
 
 - name: register instances information for harvest test inventory
