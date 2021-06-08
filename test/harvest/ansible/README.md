@@ -35,6 +35,9 @@ The test is divided in 3 playbooks:
   All spun instances will be named with the specified `name` variable in `instances` prefixed by the prefix `instance_name_tag_prefix`
   defined in [group_vars/localhost/main.yml](group_vars/localhost/main.yml). This prefix will be used to terminate the 
   spun instances.
+  
+  Once all instances are running, `inventory.ec2` file will be created to be used as inventory when running the harvest tests.
+  To be able to connect to the spun instances, `ec2_private_key_file` will be used 
 
 
 * [test.yml](test.yml): Build harvest test for provided architectures/os combinations, copy binaries to

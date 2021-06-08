@@ -3,7 +3,7 @@
 
 - name: 'install python'
   raw: 'sudo dnf -y install python36'
-  when: "{{ inventory_hostname_short is match('centos8') or inventory_hostname_short is match('centos-stream') }}"
+  when: inventory_hostname_short is match('centos8') or inventory_hostname_short is match('centos-stream')
 
 
 ...

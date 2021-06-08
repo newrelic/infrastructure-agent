@@ -6,7 +6,7 @@
   when: instance_name_tag_prefix is not defined or (instance_name_tag_prefix | length) == 0
 
 - name: "provision instance"
-  shell: "aws ec2 run-instances --launch-template {{ item.launch_template | default(launch_template) }} --image-id {{ item.ami }} --instance-type {{ item.type }}  --subnet-id {{ subnet }} --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value={{ instance_name_tag_prefix }}:{{ item.name }}}]'"
+  shell: "aws ec2 run-instances --launch-template {{ item.launch_template }} --image-id {{ item.ami }} --instance-type {{ item.type }}  --subnet-id {{ subnet }} --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value={{ instance_name_tag_prefix }}:{{ item.name }}}]'"
   loop: "{{ instances }}"
   register: run_instances
 
