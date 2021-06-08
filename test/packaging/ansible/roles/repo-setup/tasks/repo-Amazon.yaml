@@ -1,5 +1,10 @@
 ---
 
+- name: remove infra-agent YUM repository (from previous runs)
+  yum_repository:
+    name: newrelic-infra
+    state: absent
+
 - name: install infra-agent YUM repository
   yum_repository:
     name: newrelic-infra

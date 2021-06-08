@@ -1,5 +1,10 @@
 ---
 
+- name: remove infra-agent Zypper repository (from previous runs)
+  zypper_repository:
+    name: newrelic-infra
+    state: absent
+
 - name: install infra-agent Zypper repository
   zypper_repository:
     name: newrelic-infra
