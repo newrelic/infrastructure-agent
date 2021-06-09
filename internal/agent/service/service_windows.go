@@ -16,7 +16,7 @@ import (
 
 // Start starts the service
 func (svc *Service) Start(s service.Service) (err error) {
-	svc.daemon.exitCodeC = make(chan int)
+	svc.daemon.exitCodeC = make(chan int, 1)
 	go svc.daemon.run()
 	return
 }

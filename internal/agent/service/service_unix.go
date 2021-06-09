@@ -19,7 +19,7 @@ import (
 // Start is called when the service manager tells us to start
 func (svc *Service) Start(_ service.Service) (err error) {
 	go svc.daemon.run()
-	svc.daemon.exitCodeC = make(chan int)
+	svc.daemon.exitCodeC = make(chan int, 1)
 
 	return
 }
