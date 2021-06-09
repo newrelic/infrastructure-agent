@@ -16,7 +16,7 @@ import (
 
 // Start starts the service
 func (svc *Service) Start(s service.Service) (err error) {
-	svc.daemon.wg.Add(1)
+	svc.daemon.exitCodeC = make(chan int)
 	go svc.daemon.run()
 	return
 }
@@ -31,22 +31,10 @@ func (svc *Service) Stop(s service.Service) (err error) {
 	svc.daemon.Lock()
 	defer svc.daemon.Unlock()
 
-	gracefulExit := make(chan struct{})
-	go func() {
-		svc.daemon.wg.Wait()
-		close(gracefulExit)
-	}()
-
 	// notify the agent to gracefully stop
 	windows.PostNotificationMessage(windows.GetPipeName(svcName), ipc.Stop)
 
-	err = waitForExitOrTimeout(gracefulExit)
-	if err == GracefulExitTimeoutErr {
-		// the agent process did not exit in the allocated time.
-		// make sure it doesn't stay around..
-		svc.daemon.cmd.Process.Kill()
-	}
-	return err
+	return svc.terminate(err)
 }
 
 // Shutdown stops the service whenever the machine is restarting or shutting down
@@ -59,22 +47,10 @@ func (svc *Service) Shutdown(s service.Service) (err error) {
 	svc.daemon.Lock()
 	defer svc.daemon.Unlock()
 
-	gracefulExit := make(chan struct{})
-	go func() {
-		svc.daemon.wg.Wait()
-		close(gracefulExit)
-	}()
-
 	// notify the agent to update the shutdown status and then stop gracefully
 	windows.PostNotificationMessage(windows.GetPipeName(svcName), ipc.Shutdown)
 
-	err = waitForExitOrTimeout(gracefulExit)
-	if err == GracefulExitTimeoutErr {
-		// the agent process did not exit in the allocated time.
-		// make sure it doesn't stay around..
-		svc.daemon.cmd.Process.Kill()
-	}
-	return
+	return svc.terminate(err)
 }
 
 func (d *daemon) run() {
@@ -93,9 +69,13 @@ func (d *daemon) run() {
 		case api.ExitCodeRestart:
 			log.Info("agent process exited with restart exit code. restarting agent process...")
 			continue
-		default:
+		case 0:
 			log.Info("agent process exited normally. stopping service...")
-			d.wg.Done()
+			d.exitCodeC <- exitCode
+			return
+		default:
+			log.Info("agent process exited with errors. stopping service...")
+			d.exitCodeC <- exitCode
 			return
 		}
 	}

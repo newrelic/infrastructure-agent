@@ -19,7 +19,7 @@ import (
 // Start is called when the service manager tells us to start
 func (svc *Service) Start(_ service.Service) (err error) {
 	go svc.daemon.run()
-	svc.daemon.wg.Add(1)
+	svc.daemon.exitCodeC = make(chan int)
 
 	return
 }
@@ -30,24 +30,12 @@ func (svc *Service) Start(_ service.Service) (err error) {
 func (svc *Service) Stop(_ service.Service) (err error) {
 	log.Info("service is stopping. waiting for agent process to terminate...")
 
-	gracefulExit := make(chan struct{})
-	go func() {
-		svc.daemon.wg.Wait()
-		close(gracefulExit)
-	}()
-
 	err = svc.daemon.cmd.Process.Signal(signals.GracefulStop)
 	if err != nil {
 		log.WithError(err).Debug("Failed to send graceful stop signal to process.")
 	}
 
-	err = waitForExitOrTimeout(gracefulExit)
-	if err == GracefulExitTimeoutErr {
-		// the agent process did not exit in the allocated time.
-		// make sure it doesn't stay around..
-		svc.daemon.cmd.Process.Kill()
-	}
-	return
+	return svc.terminate(err)
 }
 
 // Shutdown is called in Windows only, when the machine is shutting down
@@ -76,7 +64,7 @@ func (d *daemon) run() {
 				log.WithField("exit_code", exitCode).
 					Info("agent process exited, stopping agent service daemon...")
 				d.cancel()
-				d.wg.Done()
+				d.exitCodeC <- exitCode
 			}
 		}()
 
