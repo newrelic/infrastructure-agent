@@ -4,6 +4,7 @@ package integration
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"runtime"
 	"testing"
@@ -162,6 +163,33 @@ func TestTimeout_Default(t *testing.T) {
 
 	// THEN the integration has a default timeout
 	assert.Equal(t, defaultTimeout, i.Timeout)
+}
+func TestInterval_EnvironmentVariableCustom(t *testing.T) {
+	// GIVEN a configuration with custom interval
+	// WHEN an integration is loaded from it
+	i, err := NewDefinition(config2.ConfigEntry{InstanceName: "foo", Interval: "55s", Exec: config2.ShlexOpt{"bar"}}, ErrLookup, nil, nil)
+	require.NoError(t, err)
+
+	// THEN the integration has an environment variable with the interval value
+	assert.Equal(t, "55s", i.ExecutorConfig.Environment[intervalEnvVarName])
+}
+func TestInterval_EnvironmentVariableCero(t *testing.T) {
+	// GIVEN a configuration with custom interval
+	// WHEN an integration is loaded from it
+	i, err := NewDefinition(config2.ConfigEntry{InstanceName: "foo", Interval: "0", Exec: config2.ShlexOpt{"bar"}}, ErrLookup, nil, nil)
+	require.NoError(t, err)
+
+	// THEN the integration has an environment variable with the interval value
+	assert.Equal(t, "0s", i.ExecutorConfig.Environment[intervalEnvVarName])
+}
+func TestInterval_EnvironmentVariableDefault(t *testing.T) {
+	// GIVEN a configuration with custom interval
+	// WHEN an integration is loaded from it
+	i, err := NewDefinition(config2.ConfigEntry{InstanceName: "foo", Exec: config2.ShlexOpt{"bar"}}, ErrLookup, nil, nil)
+	require.NoError(t, err)
+
+	// THEN the integration has an environment variable with the interval value
+	assert.Equal(t, fmt.Sprintf("%v", defaultIntegrationInterval), i.ExecutorConfig.Environment[intervalEnvVarName])
 }
 
 func TestTimeout_TooLow(t *testing.T) {

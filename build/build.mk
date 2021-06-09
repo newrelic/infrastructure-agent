@@ -23,6 +23,7 @@ LDFLAGS += -X main.gitCommit=${GIT_COMMIT}
 
 TEST_FLAGS += -failfast
 TEST_FLAGS += -race
+TEST_FLAGS += -ldflags '-X github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration.minimumIntegrationIntervalOverride=2s'
 
 export GO111MODULE := on
 export PATH := $(PROJECT_WORKSPACE)/bin:$(PATH)
@@ -138,6 +139,10 @@ linux/harvest-tests: GOOS=linux
 linux/harvest-tests: GOARCH=amd64
 linux/harvest-tests: deps
 	go test ./test/harvest -tags="harvest" -v
+
+.PHONY: build-harvest-tests
+build-harvest-tests: deps
+	go test -c ./test/harvest -tags="harvest" -v
 
 .PHONY: proxy-test
 proxy-test:

@@ -1,0 +1,26 @@
+---
+
+# This tests runs harvest tests on multiple os/architectures.
+# It will build the harvest tests binaries for specified architectures/os combinations
+# and copy and run them in the testing_hosts hosts
+
+- hosts: localhost
+  become: false
+  gather_facts: no
+
+  tasks:
+    - name: build harvest tests
+      include_role:
+        name: build-harvest-tests
+
+
+- hosts: testing_hosts
+  become: false
+  gather_facts: yes
+
+  tasks:
+    - name: copy and run harvest tests
+      include_role:
+        name: run-harvest-tests
+
+...

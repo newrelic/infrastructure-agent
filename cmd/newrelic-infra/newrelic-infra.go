@@ -8,6 +8,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
@@ -26,10 +27,12 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/runintegration"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/service"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/stopintegration"
+	"github.com/newrelic/infrastructure-agent/internal/agent/status"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/files"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/v3legacy"
 	"github.com/newrelic/infrastructure-agent/internal/socketapi"
+	"github.com/newrelic/infrastructure-agent/internal/statusapi"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins"
@@ -280,7 +283,13 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		fatal(err, "Can't complete platform specific initialization.")
 	}
 
-	metricsSenderConfig := dm.NewConfig(c.MetricURL, c.License, time.Duration(c.DMSubmissionPeriod)*time.Second, c.MaxMetricBatchEntitiesCount, c.MaxMetricBatchEntitiesQueue)
+	instruments, err := initInstrumentation(agt.GetContext().Context(), c.AgentMetricsEndpoint)
+	if err != nil {
+		return fmt.Errorf("cannot initialize prometheus exporter: %v", err)
+	}
+	wlog.Instrument(instruments.Measure)
+
+	metricsSenderConfig := dm.NewConfig(c.DMIngestURL(), c.License, time.Duration(c.DMSubmissionPeriod)*time.Second, c.MaxMetricBatchEntitiesCount, c.MaxMetricBatchEntitiesQueue)
 	dmSender, err := dm.NewDMSender(metricsSenderConfig, transport, agt.Context.IdContext().AgentIdentity)
 	if err != nil {
 		return err
@@ -293,7 +302,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	// queues integration terminated definitions
 	terminateDefinitionQ := make(chan string, 100)
 
-	emitterWithRegister := dm.NewEmitter(agt.GetContext(), dmSender, registerClient)
+	emitterWithRegister := dm.NewEmitter(agt.GetContext(), dmSender, registerClient, instruments.Measure)
 	nonRegisterEmitter := dm.NewNonRegisterEmitter(agt.GetContext(), dmSender)
 
 	dmEmitter := dm.NewEmitterWithFF(emitterWithRegister, nonRegisterEmitter, ffManager)
@@ -321,9 +330,23 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		riHandler,
 		siHandler,
 	)
-	initCmdResponse, err := ccService.InitialFetch(context.Background())
+	initCmdResponse, err := ccService.InitialFetch(agt.Context.Ctx)
 	if err != nil {
 		aslog.WithError(err).Warn("Commands initial fetch failed.")
+	}
+
+	// nice2have: revamp all API servers, potentially into a unique one serving different
+	// serializations & transports
+	if c.StatusServerEnabled {
+		rlog := wlog.WithComponent("status.Reporter")
+		timeoutD, err := time.ParseDuration(c.StartupConnectionTimeout)
+		if err != nil {
+			// This should never happen, as the correct format is checked during NormalizeConfig.
+			aslog.WithError(err).Error("invalid startup_connection_timeout value, cannot run status server")
+		} else {
+			rep := status.NewReporter(agt.Context.Ctx, rlog, c.StatusEndpoints, timeoutD, transport, agt.Context.AgentIdnOrEmpty, c.License, userAgent)
+			go statusapi.NewServer(c.StatusServerPort, rep).Serve(agt.Context.Ctx)
+		}
 	}
 
 	if c.TCPServerEnabled {
@@ -385,6 +408,44 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	timedLog.Info("New Relic infrastructure agent is running.")
 
 	return agt.Run()
+}
+
+// initInstrumentation will spawn a server and expose agent metrics through prometheus exporter.
+// By default is disabled and it only will be enabled if host:port are provided.
+// Using instrumentation.SetupPrometheusIntegrationConfig it will create prometheus
+// integration configuration (and delete it on agent shutdown process).
+func initInstrumentation(ctx context.Context, agentMetricsEndpoint string) (instrumentation.Instrumenter, error) {
+	if agentMetricsEndpoint == "" {
+		return instrumentation.NewNoop(), nil
+	}
+
+	instruments, err := instrumentation.New()
+	if err != nil {
+		return nil, err
+	}
+
+	aslog.WithField("addr", agentMetricsEndpoint).Info("Starting Opentelemetry server")
+	srv := &http.Server{
+		Handler:      instruments.GetHandler(),
+		Addr:         agentMetricsEndpoint,
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+	}
+
+	go srv.ListenAndServe()
+	go func() {
+		<-ctx.Done()
+		aslog.Debug("Stopping Opentelemetry server")
+		srv.Close()
+	}()
+
+	//Setup prometheus integration
+	err = instrumentation.SetupPrometheusIntegrationConfig(ctx, agentMetricsEndpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	return instruments, nil
 }
 
 // newInstancesLookup creates an instance lookup that:

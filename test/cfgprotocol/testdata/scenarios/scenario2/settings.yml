@@ -1,0 +1,8 @@
+integrations:
+  - name: spawner
+    cli_args:
+      - "-path"
+      - "testdata/scenarios/scenario2/nri-config.json"
+      - "-nri-process-name"
+      - "nri-config"
+    interval: "2s"
