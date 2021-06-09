@@ -66,12 +66,9 @@ func (d *daemon) run() {
 		case api.ExitCodeRestart:
 			log.Info("agent process exited with restart exit code. restarting agent process...")
 			continue
-		case 0:
-			log.Info("agent process exited normally. stopping service...")
-			d.exitCodeC <- exitCode
-			return
 		default:
-			log.Info("agent process exited with errors. stopping service...")
+			log.WithField("exit_code", exitCode).
+				Info("agent process exited, stopping agent service daemon...")
 			d.exitCodeC <- exitCode
 			return
 		}

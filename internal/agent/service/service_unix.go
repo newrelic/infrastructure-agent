@@ -17,8 +17,6 @@ import (
 
 // Start is called when the service manager tells us to start
 func (svc *Service) Start(_ service.Service) (err error) {
-	// TODO useless???
-	svc.daemon.exitCodeC = make(chan int, 1)
 	go svc.daemon.run()
 
 	return
@@ -58,9 +56,9 @@ func (d *daemon) run() {
 			continue
 		default:
 			log.WithField("exit_code", exitCode).
-				Info("agent process exited, stopping agent service daemon...")
-			// service interface doesn't provide a "run" process to handle this properly
-			os.Exit(exitCode)
+				Info("agent process exited")
+			d.exitCodeC <- exitCode
+			return
 		}
 	}
 }

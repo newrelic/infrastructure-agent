@@ -4,8 +4,6 @@ package service
 
 import (
 	"errors"
-	"fmt"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -13,6 +11,8 @@ import (
 	"time"
 
 	"github.com/kardianos/service"
+	"github.com/newrelic/infrastructure-agent/internal/os/api"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
 const (
@@ -30,10 +30,11 @@ type Service struct {
 	daemon       daemon
 }
 
-func New(arg ...string) (service.Service, error) {
+func New(exitCodeC chan int, arg ...string) (service.Service, error) {
 	svc := &Service{
 		daemon: daemon{
-			args: arg,
+			args:      arg,
+			exitCodeC: exitCodeC,
 		},
 	}
 
@@ -48,7 +49,7 @@ type daemon struct {
 	sync.Mutex // daemon can be accessed from different routines.
 	args       []string
 	cmd        *exec.Cmd
-	exitCodeC  chan int // wait for the goroutine to exit when stopping the agent on windows.
+	exitCodeC  chan int // exit status handed off to the service for its own exit
 }
 
 // GetCommandPath returns the absolute path of the agent binary that should be run.
@@ -61,33 +62,29 @@ func GetCommandPath(svcCmd string) string {
 }
 
 func (svc *Service) terminate(err error) error {
-	err = waitForExitOrTimeout(svc.daemon.exitCodeC)
-	if err != nil {
-		// the agent process did not exit in the allocated time.
-		// make sure it doesn't stay around..
-		if err == GracefulExitTimeoutErr {
-			svc.daemon.cmd.Process.Kill()
-		}
-		if errCode, ok := err.(*exitCodeErr); ok {
-			os.Exit(errCode.ExitCode())
-		}
+	err = WaitForExitOrTimeout(svc.daemon.exitCodeC)
+	// the agent process did not exit in the allocated time.
+	// make sure it doesn't stay around..
+	if err == GracefulExitTimeoutErr {
+		svc.daemon.cmd.Process.Kill()
 	}
+
 	return err
 }
 
-func waitForExitOrTimeout(exitCode <-chan int) error {
-	// wait for run() to finish its execution or timeout
-	fmt.Println("waitForExitOrTimeout")
+// TODO remove traces
+func WaitForExitOrTimeout(exitCode <-chan int) error {
+	log.Infof("waitForExitOrTimeout")
 	select {
 	case <-time.After(GracefulExitTimeout):
-		fmt.Println("waitForExitOrTimeout graceful")
+		log.Infof("waitForExitOrTimeout graceful")
 		return GracefulExitTimeoutErr
 	case c := <-exitCode:
 		if c == 0 {
-			fmt.Println("waitForExitOrTimeout 0")
+			log.Infof("waitForExitOrTimeout 0")
 			return nil
 		}
-		fmt.Println("waitForExitOrTimeout exit code err: %v", c)
-		return newExitCodeErr(c)
+		log.Infof("waitForExitOrTimeout exit code err: %v", c)
+		return api.NewExitCodeErr(c)
 	}
 }
