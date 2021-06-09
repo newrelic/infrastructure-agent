@@ -1,0 +1,5 @@
+integrations:
+  - name: spawner
+    cli_args:
+      - "-path"
+      - "testdata/scenarios/v4_payload/nri-config.json"

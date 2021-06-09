@@ -5,6 +5,7 @@ package runintegration
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
@@ -52,6 +53,7 @@ func TestHandle_queuesIntegrationToBeRun(t *testing.T) {
 
 	d := <-defQueue
 	assert.Equal(t, "nri-process-discovery", d.Name)
+	assert.Equal(t, time.Duration(0), d.Interval)
 	// Definition won't allow assert further
 }
 
