@@ -2,6 +2,6 @@
 
 - name: 'install python'
   raw: 'sudo dnf -y install python36'
-  when: inventory_hostname_short is search('centos8') or inventory_hostname_short is search('centos-stream')
+  when: "inventory_hostname in instances_without_python"
 
 ...

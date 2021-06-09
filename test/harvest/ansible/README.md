@@ -19,12 +19,13 @@ The test is divided in 3 playbooks:
     name: "amd64:ubuntu20.04"
     username: "ubuntu"
     python_interpreter: "/usr/bin/python3"
+    launch_template: "LaunchTemplateId=lt-01b2c565029b5bf2a,Version=1"
   - ami: "ami-0600b1bef20a0c212"
     type: "t3a.small"
     name: "amd64:ubuntu18.04"
     username: "ubuntu"
     python_interpreter: "/usr/bin/python3"
-  # Instance with custom launch_template
+    launch_template: "LaunchTemplateId=lt-01b2c565029b5bf2a,Version=1"
   - ami: "ami-0d6d3e4f081c69f42"
     type: "t3a.small"
     name: "amd64:debian-stretch"
@@ -64,9 +65,23 @@ Ensure `AWS_PROFILE` and `AWS_REGION` env variables are exported before running 
 make run-automated-harvest-tests
 ```
 
-`PROVISION` and `TERMINATE`environment variable can be used to run tests without provisioning/terminating instances.
+###Options allowed to be passed as environment variables:
+
+`PROVISION` enable/disable provisioning instances 
+
+`TERMINATE` enable/disable terminating instances 
+
+`TESTS_TO_RUN_REGEXP` run subset of tests based on provided regular expression
+
+Examples:
+
 ```bash 
-# from the agent root folder
+# run tests but do not terminate instances
 TERMINATE=0 make run-automated-harvest-tests
+
+# run tests over existing instances, not provision nor terminating them
 TERMINATE=0 PROVISION=0 make run-automated-harvest-tests
+
+# run tests that match regex ^TestHeartBeatSampler$
+TESTS_TO_RUN_REGEXP="^TestHeartBeatSampler$" make run-automated-harvest-tests
 ```
