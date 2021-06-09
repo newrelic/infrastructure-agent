@@ -93,8 +93,6 @@ func TestHostSharedMemory(t *testing.T) {
 		afterSample := sampleB[0].(*metrics.SystemSample)
 
 		assert.True(st, beforeSample.MemorySharedBytes+(1024*1024) == afterSample.MemorySharedBytes, "Shared Memory used did not increase enough, SharedMemoryBefore: %f SharedMemoryAfter %f ", beforeSample.MemorySharedBytes, afterSample.MemorySharedBytes)
-
-		t.Logf("Shared Memory: %f, %f", beforeSample.MemorySharedBytes, afterSample.MemorySharedBytes)
 	})
 }
 
@@ -115,7 +113,7 @@ func TestHostCachedMemory(t *testing.T) {
 	defer os.Remove(f.Name())
 
 	// Force memory spike
-	for i := 0; i < 1e6; i++ {
+	for i := 0; i < 1e7; i++ {
 		f.Write([]byte("0"))
 	}
 
@@ -209,8 +207,6 @@ func TestHostSlabMemory(t *testing.T) {
 
 		expectedIncreaseBytes := 500000.0
 		assert.True(t, beforeSample.MemorySlabBytes+expectedIncreaseBytes <= afterSample.MemorySlabBytes, "Slab memory used did not increase enough, expected %f increase, SlabMemoryBefore: %f SlabMemoryAfter %f ", expectedIncreaseBytes, beforeSample.MemorySlabBytes, afterSample.MemorySlabBytes)
-
-		t.Logf("Slab Memory: %f, %f", beforeSample.MemorySlabBytes, afterSample.MemorySlabBytes)
 	})
 }
 
