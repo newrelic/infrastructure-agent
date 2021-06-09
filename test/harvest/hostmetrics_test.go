@@ -113,8 +113,8 @@ func TestHostCachedMemory(t *testing.T) {
 	defer os.Remove(f.Name())
 
 	// Force memory spike
-	for i := 0; i < 1e7; i++ {
-		f.Write([]byte("0"))
+	for i := 0; i < 1e6; i++ {
+		f.Write([]byte("0000000000"))
 	}
 
 	f.Sync()
