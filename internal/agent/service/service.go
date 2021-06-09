@@ -3,7 +3,6 @@
 package service
 
 import (
-	"context"
 	"errors"
 	"os"
 	"os/exec"
@@ -13,6 +12,7 @@ import (
 	"time"
 
 	"github.com/kardianos/service"
+	"github.com/newrelic/infrastructure-agent/internal/os/api"
 )
 
 const (
@@ -48,8 +48,6 @@ type daemon struct {
 	sync.Mutex // daemon can be accessed from different routines.
 	args       []string
 	cmd        *exec.Cmd
-	ctx        context.Context
-	cancel     context.CancelFunc
 	exitCodeC  chan int // wait for the goroutine to exit when stopping the agent on windows.
 }
 
@@ -70,7 +68,8 @@ func (svc *Service) terminate(err error) error {
 		if err == GracefulExitTimeoutErr {
 			svc.daemon.cmd.Process.Kill()
 		}
-		if errCode, ok := err.(*exitCodeErr); ok {
+		if errCode, ok := err.(*api.ExitCodeErr); ok {
+			// discouraged https://github.com/kardianos/service/blob/v1.2.0/service.go#L327
 			os.Exit(errCode.ExitCode())
 		}
 	}
@@ -78,7 +77,6 @@ func (svc *Service) terminate(err error) error {
 }
 
 func waitForExitOrTimeout(exitCode <-chan int) error {
-	// wait for run() to finish its execution or timeout
 	select {
 	case <-time.After(GracefulExitTimeout):
 		return GracefulExitTimeoutErr
@@ -86,6 +84,6 @@ func waitForExitOrTimeout(exitCode <-chan int) error {
 		if c == 0 {
 			return nil
 		}
-		return newExitCodeErr(c)
+		return api.NewExitCodeErr(c)
 	}
 }

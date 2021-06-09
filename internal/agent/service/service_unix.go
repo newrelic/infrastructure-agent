@@ -5,7 +5,6 @@
 package service
 
 import (
-	"context"
 	"os"
 	"os/exec"
 
@@ -18,8 +17,9 @@ import (
 
 // Start is called when the service manager tells us to start
 func (svc *Service) Start(_ service.Service) (err error) {
-	go svc.daemon.run()
+	// TODO useless???
 	svc.daemon.exitCodeC = make(chan int, 1)
+	go svc.daemon.run()
 
 	return
 }
@@ -46,33 +46,21 @@ func (svc *Service) Shutdown(_ service.Service) (err error) {
 
 func (d *daemon) run() {
 	for {
-		restart := make(chan struct{})
-		d.ctx, d.cancel = context.WithCancel(context.Background())
+		d.cmd = exec.Command(GetCommandPath(d.args[0]), d.args[1:]...)
+		d.cmd.Stdout = os.Stdout
+		d.cmd.Stderr = os.Stderr
 
-		go func() {
-			d.cmd = exec.CommandContext(d.ctx, GetCommandPath(d.args[0]), d.args[1:]...)
-			d.cmd.Stdout = os.Stdout
-			d.cmd.Stderr = os.Stderr
+		exitCode := api.CheckExitCode(d.cmd.Run())
 
-			exitCode := api.CheckExitCode(d.cmd.Run())
-
-			switch exitCode {
-			case api.ExitCodeRestart:
-				log.Info("agent process requested restart")
-				close(restart)
-			default:
-				log.WithField("exit_code", exitCode).
-					Info("agent process exited, stopping agent service daemon...")
-				d.cancel()
-				d.exitCodeC <- exitCode
-			}
-		}()
-
-		select {
-		case <-d.ctx.Done():
-			return
-		case <-restart:
+		switch exitCode {
+		case api.ExitCodeRestart:
+			log.Info("agent process requested restart")
 			continue
+		default:
+			log.WithField("exit_code", exitCode).
+				Info("agent process exited, stopping agent service daemon...")
+			// service interface doesn't provide a "run" process to handle this properly
+			os.Exit(exitCode)
 		}
 	}
 }
