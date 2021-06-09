@@ -3,7 +3,6 @@
 package service
 
 import (
-	"context"
 	"os"
 	"os/exec"
 
@@ -16,7 +15,6 @@ import (
 
 // Start starts the service
 func (svc *Service) Start(s service.Service) (err error) {
-	svc.daemon.exitCodeC = make(chan int, 1)
 	go svc.daemon.run()
 	return
 }
@@ -57,8 +55,7 @@ func (d *daemon) run() {
 	for {
 
 		d.Lock()
-		d.ctx, d.cancel = context.WithCancel(context.Background())
-		d.cmd = exec.CommandContext(d.ctx, GetCommandPath(d.args[0]), d.args[1:]...)
+		d.cmd = exec.Command(GetCommandPath(d.args[0]), d.args[1:]...)
 		d.cmd.Stdout = os.Stdout
 		d.cmd.Stderr = os.Stderr
 		d.Unlock()

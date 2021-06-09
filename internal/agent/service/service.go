@@ -3,8 +3,8 @@
 package service
 
 import (
-	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -48,8 +48,6 @@ type daemon struct {
 	sync.Mutex // daemon can be accessed from different routines.
 	args       []string
 	cmd        *exec.Cmd
-	ctx        context.Context
-	cancel     context.CancelFunc
 	exitCodeC  chan int // wait for the goroutine to exit when stopping the agent on windows.
 }
 
@@ -79,13 +77,17 @@ func (svc *Service) terminate(err error) error {
 
 func waitForExitOrTimeout(exitCode <-chan int) error {
 	// wait for run() to finish its execution or timeout
+	fmt.Println("waitForExitOrTimeout")
 	select {
 	case <-time.After(GracefulExitTimeout):
+		fmt.Println("waitForExitOrTimeout graceful")
 		return GracefulExitTimeoutErr
 	case c := <-exitCode:
 		if c == 0 {
+			fmt.Println("waitForExitOrTimeout 0")
 			return nil
 		}
+		fmt.Println("waitForExitOrTimeout exit code err: %v", c)
 		return newExitCodeErr(c)
 	}
 }
