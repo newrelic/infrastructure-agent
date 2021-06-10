@@ -15,7 +15,7 @@ import (
 
 // Start starts the service
 func (svc *Service) Start(s service.Service) (err error) {
-	go svc.daemon.run()
+	go svc.daemon.run(s)
 	return
 }
 
@@ -51,7 +51,7 @@ func (svc *Service) Shutdown(s service.Service) (err error) {
 	return svc.terminate(err)
 }
 
-func (d *daemon) run() {
+func (d *daemon) run(s service.Service) {
 	for {
 
 		d.Lock()
@@ -64,15 +64,15 @@ func (d *daemon) run() {
 
 		switch exitCode {
 		case api.ExitCodeRestart:
-			log.Info("agent process exited with restart exit code. restarting agent process...")
+			log.Info("child process requested restart")
 			continue
-		case 0:
-			log.Info("agent process exited normally. stopping service...")
-			d.exitCodeC <- exitCode
-			return
 		default:
-			log.Info("agent process exited with errors. stopping service...")
+			log.WithField("exit_code", exitCode).
+				Info("child process exited")
+			d.exited.Set(true)
 			d.exitCodeC <- exitCode
+			log.Debug("signaling service stop...")
+			s.Stop()
 			return
 		}
 	}

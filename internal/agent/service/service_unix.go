@@ -16,10 +16,8 @@ import (
 )
 
 // Start is called when the service manager tells us to start
-func (svc *Service) Start(_ service.Service) (err error) {
-	// TODO useless???
-	svc.daemon.exitCodeC = make(chan int, 1)
-	go svc.daemon.run()
+func (svc *Service) Start(s service.Service) (err error) {
+	go svc.daemon.run(s)
 
 	return
 }
@@ -28,7 +26,11 @@ func (svc *Service) Start(_ service.Service) (err error) {
 // By default systemD sends the SIGTERM signal to all the subprocesses, so the agent (child) process
 // will have to handle it in order to property stop (otherwise it just gets killed 'immediately')
 func (svc *Service) Stop(_ service.Service) (err error) {
-	log.Info("service is stopping. waiting for agent process to terminate...")
+	if svc.daemon.exited.Get() {
+		return nil
+	}
+
+	log.Info("Service is stopping. waiting for agent process to terminate...")
 
 	err = svc.daemon.cmd.Process.Signal(signals.GracefulStop)
 	if err != nil {
@@ -44,7 +46,7 @@ func (svc *Service) Shutdown(_ service.Service) (err error) {
 	return nil
 }
 
-func (d *daemon) run() {
+func (d *daemon) run(s service.Service) {
 	for {
 		d.cmd = exec.Command(GetCommandPath(d.args[0]), d.args[1:]...)
 		d.cmd.Stdout = os.Stdout
@@ -54,13 +56,16 @@ func (d *daemon) run() {
 
 		switch exitCode {
 		case api.ExitCodeRestart:
-			log.Info("agent process requested restart")
+			log.Info("child process requested restart")
 			continue
 		default:
 			log.WithField("exit_code", exitCode).
-				Info("agent process exited, stopping agent service daemon...")
-			// service interface doesn't provide a "run" process to handle this properly
-			os.Exit(exitCode)
+				Info("child process exited")
+			d.exited.Set(true)
+			d.exitCodeC <- exitCode
+			log.Debug("signaling service stop...")
+			s.Stop()
+			return
 		}
 	}
 }
