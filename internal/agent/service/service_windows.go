@@ -15,7 +15,7 @@ import (
 
 // Start starts the service
 func (svc *Service) Start(s service.Service) (err error) {
-	go svc.daemon.run()
+	go svc.daemon.run(s)
 	return
 }
 
@@ -51,7 +51,7 @@ func (svc *Service) Shutdown(s service.Service) (err error) {
 	return svc.terminate(err)
 }
 
-func (d *daemon) run() {
+func (d *daemon) run(s service.Service) {
 	for {
 
 		d.Lock()
@@ -68,9 +68,13 @@ func (d *daemon) run() {
 			continue
 		default:
 			log.WithField("exit_code", exitCode).
-				Info("agent process exited, stopping agent service daemon...")
+				Info("agent process exited")
+			d.exited.Set(true)
 			d.exitCodeC <- exitCode
-			return
+			log.Debug("agent process exited, signaling service stop...")
+			s.Stop()
+			// this won't make service to stop with provided exit code either:
+			// os.Exit(exitCode)
 		}
 	}
 }

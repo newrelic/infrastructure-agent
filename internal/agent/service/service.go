@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/kardianos/service"
@@ -35,6 +36,7 @@ func New(exitCodeC chan int, arg ...string) (service.Service, error) {
 		daemon: daemon{
 			args:      arg,
 			exitCodeC: exitCodeC,
+			exited:    new(atomBool),
 		},
 	}
 
@@ -50,6 +52,26 @@ type daemon struct {
 	args       []string
 	cmd        *exec.Cmd
 	exitCodeC  chan int // exit status handed off to the service for its own exit
+	exited     *atomBool
+}
+
+type atomBool struct {
+	flag int32
+}
+
+func (b *atomBool) Set(value bool) {
+	var i int32 = 0
+	if value {
+		i = 1
+	}
+	atomic.StoreInt32(&(b.flag), i)
+}
+
+func (b *atomBool) Get() bool {
+	if atomic.LoadInt32(&(b.flag)) != 0 {
+		return true
+	}
+	return false
 }
 
 // GetCommandPath returns the absolute path of the agent binary that should be run.
