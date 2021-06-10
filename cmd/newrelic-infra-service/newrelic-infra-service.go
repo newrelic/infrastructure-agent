@@ -35,6 +35,7 @@ func main() {
 
 	err = service.WaitForExitOrTimeout(exitCodeC)
 	if err == nil {
+		log.Info("Service exited.")
 		return
 	}
 
@@ -42,10 +43,8 @@ func main() {
 	if errCode, ok := err.(*api.ExitCodeErr); ok {
 		log.WithError(err).Warn("Service exiting with child process status code.")
 		os.Exit(errCode.ExitCode())
-	} else {
-		log.WithError(err).Warn("Service exiting with child process .")
-		os.Exit(1)
 	}
 
-	log.Info("Service exited.")
+	log.WithError(err).Warn("Service exiting with child process .")
+	os.Exit(1)
 }
