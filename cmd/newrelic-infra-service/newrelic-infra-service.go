@@ -14,10 +14,6 @@ import (
 
 func main() {
 	log.SetOutput(os.Stdout)
-	log.Infof("Starting agent process: %s", service.GetCommandPath(os.Args[0]))
-
-	// Anything logged before this point won't necessarily make it into the log
-	// file that is configured on the preceding line.
 	log.Info("Creating service...")
 
 	// Create a native service wrapper for the agent and start it up.
@@ -45,6 +41,6 @@ func main() {
 		os.Exit(errCode.ExitCode())
 	}
 
-	log.WithError(err).Warn("Service exiting with child process .")
+	log.WithError(err).Warn("Service exiting with child process error message.")
 	os.Exit(1)
 }

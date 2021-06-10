@@ -13,7 +13,6 @@ import (
 
 	"github.com/kardianos/service"
 	"github.com/newrelic/infrastructure-agent/internal/os/api"
-	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
 const (
@@ -94,19 +93,14 @@ func (svc *Service) terminate(err error) error {
 	return err
 }
 
-// TODO remove traces
 func WaitForExitOrTimeout(exitCode <-chan int) error {
-	log.Infof("waitForExitOrTimeout")
 	select {
 	case <-time.After(GracefulExitTimeout):
-		log.Infof("waitForExitOrTimeout graceful")
 		return GracefulExitTimeoutErr
 	case c := <-exitCode:
 		if c == 0 {
-			log.Infof("waitForExitOrTimeout 0")
 			return nil
 		}
-		log.Infof("waitForExitOrTimeout exit code err: %v", c)
 		return api.NewExitCodeErr(c)
 	}
 }
