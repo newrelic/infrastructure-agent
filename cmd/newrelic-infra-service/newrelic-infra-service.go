@@ -21,7 +21,7 @@ func main() {
 	log.Info("Creating service...")
 
 	// Create a native service wrapper for the agent and start it up.
-	exitCodeC := make(chan int, 10)
+	exitCodeC := make(chan int, 1)
 	agentSvc, err := service.New(exitCodeC, os.Args...)
 
 	if err != nil {
@@ -30,18 +30,22 @@ func main() {
 	}
 
 	if err = agentSvc.Run(); err != nil {
-		// This might not be an error: child may have already exited.
-		log.WithError(err).Info("Service run exit.")
-		err = service.WaitForExitOrTimeout(exitCodeC)
-		if err == nil {
-			log.WithError(err).Warn("Non clean agent process exit without error code.")
-			os.Exit(1)
-		}
-		if errCode, ok := err.(*api.ExitCodeErr); ok {
-			log.WithError(err).Warn("Non clean agent process exit with error code.")
-			os.Exit(errCode.ExitCode())
-		}
-		log.WithError(err).Warn("Service run exit, reading exit status.")
+		log.WithError(err).Warn("Service exiting abnormally.")
 	}
+
+	err = service.WaitForExitOrTimeout(exitCodeC)
+	if err == nil {
+		return
+	}
+
+	// This might not be an error: child may have already exited.
+	if errCode, ok := err.(*api.ExitCodeErr); ok {
+		log.WithError(err).Warn("Service exiting with child process status code.")
+		os.Exit(errCode.ExitCode())
+	} else {
+		log.WithError(err).Warn("Service exiting with child process .")
+		os.Exit(1)
+	}
+
 	log.Info("Service exited.")
 }

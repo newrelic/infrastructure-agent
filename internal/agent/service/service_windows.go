@@ -64,17 +64,16 @@ func (d *daemon) run(s service.Service) {
 
 		switch exitCode {
 		case api.ExitCodeRestart:
-			log.Info("agent process exited with restart exit code. restarting agent process...")
+			log.Info("child process requested restart")
 			continue
 		default:
 			log.WithField("exit_code", exitCode).
-				Info("agent process exited")
+				Info("child process exited")
 			d.exited.Set(true)
 			d.exitCodeC <- exitCode
-			log.Debug("agent process exited, signaling service stop...")
+			log.Debug("signaling service stop...")
 			s.Stop()
-			// this won't make service to stop with provided exit code either:
-			// os.Exit(exitCode)
+			return
 		}
 	}
 }
