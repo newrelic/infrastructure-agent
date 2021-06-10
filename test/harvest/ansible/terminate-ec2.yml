@@ -1,0 +1,13 @@
+---
+
+# This terminates ec2 boxes for harvest tests
+- hosts: localhost
+  become: false
+  gather_facts: no
+
+  tasks:
+    - name: terminate ec2 instances
+      include_role:
+        name: terminate-ec2
+
+...

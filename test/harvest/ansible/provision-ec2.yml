@@ -1,0 +1,14 @@
+---
+
+# This provision ec2 boxes for harvest tests
+
+- hosts: localhost
+  become: false
+  gather_facts: no
+
+  tasks:
+    - name: provision ec2 instances
+      include_role:
+        name: provision-ec2
+
+...

@@ -42,3 +42,4 @@ test/cfgprotocol/testdata/scenarios/scenario4/settings.yml
 
 #harvest test build
 harvest*.test
+test/harvest/ansible/inventory.ec2
