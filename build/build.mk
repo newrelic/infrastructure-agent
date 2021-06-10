@@ -144,6 +144,10 @@ linux/harvest-tests: deps
 build-harvest-tests: deps
 	go test -c ./test/harvest -tags="harvest" -v
 
+.PHONY: run-automated-harvest-tests
+run-automated-harvest-tests: deps
+	./test/harvest/ansible/automated-test.sh
+
 .PHONY: proxy-test
 proxy-test:
 	@docker-compose -f $(CURDIR)/test/proxy/docker-compose.yml up -d ; \

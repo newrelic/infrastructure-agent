@@ -11,6 +11,6 @@
     mode: '0755'
 
 - name: execute tests
-  shell: "{{ ansible_user_dir }}/{{ os_arch_binary_name }}"
+  shell: "{{ ansible_user_dir }}/{{ os_arch_binary_name }} -test.run=\"{{ tests_to_run_regex }}\" -test.v"
 
 ...
