@@ -7,6 +7,8 @@ ARG agent_version=0.0
 ARG version_file=VERSION
 ARG agent_bin=newrelic-infra
 
+ARG curl_version=7.77.0-r0
+
 # Add the agent binary
 COPY $agent_bin /usr/bin/newrelic-infra
 COPY ${agent_bin}-ctl /usr/bin/newrelic-infra-ctl
@@ -59,6 +61,9 @@ ENV NRIA_IS_SECURE_FORWARD_ONLY true
 #################################
 FROM forwarder AS k8s-events-forwarder
 
+RUN apk add --no-cache \
+        curl=$curl_version
+
 ENV NRIA_HTTP_SERVER_ENABLED true
 
 #################################
@@ -77,6 +82,6 @@ LABEL com.newrelic.nri-docker.version=$nri_docker_version \
 
 RUN apk add --no-cache \
         ntpsec=1.2.0-r1 \
-        curl=7.77.0-r1
+        curl=$curl_version
 
 COPY $nri_pkg_dir /
