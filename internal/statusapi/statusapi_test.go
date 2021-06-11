@@ -105,7 +105,7 @@ func TestServer_Serve_OnlyErrors(t *testing.T) {
 	go s.Serve(ctx)
 
 	s.WaitUntilReady()
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 
 	// And a request to the status API is sent
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d%s", port, statusOnlyErrorsAPIPath), bytes.NewReader([]byte{}))
