@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gopkg.in/yaml.v2"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -19,8 +20,6 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
-	"gopkg.in/yaml.v2"
-
 	"github.com/newrelic/infrastructure-agent/pkg/license"
 	"github.com/sirupsen/logrus"
 
@@ -740,8 +739,15 @@ type Config struct {
 	// Public: No
 	LoggingBinDir string `yaml:"logging_bin_dir "envconfig:"logging_bin_dir" public:"false"`
 
+	// LoggingHomeDir folder containing plugins and other required files for the log forwarder.
+	// Default (Linux): /var/db/newrelic-infra/newrelic-integrations/logging/
+	// Default (Windows): C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\logging\
+	// Public: No
+	LoggingHomeDir string `yaml:"logging_home_dir "envconfig:"logging_home_dir" public:"false"`
+
 	// FluentBitExePath is the location from where the agent can execute fluent-bit.
-	// Default: /var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit
+	// Default (Linux): /opt/td-agent-bit/bin/td-agent-bit
+	// Default (Windows): C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\logging\fluent-bit
 	// Public: No
 	FluentBitExePath string `yaml:"fluent_bit_exe_path "envconfig:"fluent_bit_exe_path" public:"false"`
 
@@ -1088,7 +1094,7 @@ func NewLogForward(config *Config, troubleshoot Troubleshoot) LogForward {
 	return LogForward{
 		Troubleshoot: troubleshoot,
 		ConfigsDir:   config.LoggingConfigsDir,
-		HomeDir:      config.LoggingBinDir,
+		HomeDir:      config.LoggingHomeDir,
 		License:      config.License,
 		IsFedramp:    config.Fedramp,
 		IsStaging:    config.Staging,
@@ -1644,19 +1650,27 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	}
 
 	if cfg.LoggingBinDir == "" {
-		cfg.LoggingBinDir = filepath.Join(cfg.AgentDir, DefaultIntegrationsDir, defaultLoggingBinDir)
+		if runtime.GOOS == "linux" {
+			cfg.LoggingBinDir = defaultLoggingBinDir
+		} else {
+			cfg.LoggingBinDir = filepath.Join(cfg.AgentDir, DefaultIntegrationsDir, defaultLoggingBinDir)
+		}
 	}
 
 	if cfg.FluentBitExePath == "" {
 		cfg.FluentBitExePath = filepath.Join(cfg.LoggingBinDir, defaultFluentBitExe)
 	}
 
+	if cfg.LoggingHomeDir == "" {
+		cfg.LoggingHomeDir = filepath.Join(cfg.AgentDir, DefaultIntegrationsDir, defaultLoggingHomeDir)
+	}
+
 	if cfg.FluentBitParsersPath == "" {
-		cfg.FluentBitParsersPath = filepath.Join(cfg.LoggingBinDir, defaultFluentBitParsers)
+		cfg.FluentBitParsersPath = filepath.Join(cfg.LoggingHomeDir, defaultFluentBitParsers)
 	}
 
 	if cfg.FluentBitNRLibPath == "" {
-		cfg.FluentBitNRLibPath = filepath.Join(cfg.LoggingBinDir, defaultFluentBitNRLib)
+		cfg.FluentBitNRLibPath = filepath.Join(cfg.LoggingHomeDir, defaultFluentBitNRLib)
 	}
 
 	cfg.PluginInstanceDirs = helpers.RemoveEmptyAndDuplicateEntries(
