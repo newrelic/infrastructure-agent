@@ -391,7 +391,7 @@ logs:
 
 func newTestConf(folder string, troubleCfg config.Troubleshoot) config.LogForward {
 	cfg := &config.Config{
-		LoggingBinDir:     "/var/db/newrelic-infra/newrelic-integrations/logging",
+		LoggingHomeDir:    "/var/db/newrelic-infra/newrelic-integrations/logging",
 		LoggingConfigsDir: folder,
 		License:           "license",
 	}

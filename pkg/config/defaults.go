@@ -113,6 +113,7 @@ var (
 	defaultConfigDir               string
 	defaultLoggingConfigsDir       string
 	defaultLoggingBinDir           string
+	defaultLoggingHomeDir          string
 	defaultFluentBitExe            string
 	defaultFluentBitParsers        string
 	defaultFluentBitNRLib          string
