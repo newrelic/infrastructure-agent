@@ -59,13 +59,7 @@ func (d *daemon) run(s service.Service) {
 			log.Info("child process requested restart")
 			continue
 		default:
-			log.WithField("exit_code", exitCode).
-				Info("child process exited")
-			d.exited.Set(true)
-			d.exitCodeC <- exitCode
-			log.Debug("signaling service stop...")
-			s.Stop()
-			return
+			d.exitWithChildStatus(s, exitCode)
 		}
 	}
 }

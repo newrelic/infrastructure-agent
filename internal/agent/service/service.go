@@ -4,6 +4,7 @@ package service
 
 import (
 	"errors"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/kardianos/service"
 	"github.com/newrelic/infrastructure-agent/internal/os/api"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
 const (
@@ -103,4 +105,24 @@ func WaitForExitOrTimeout(exitCode <-chan int) error {
 		}
 		return api.NewExitCodeErr(c)
 	}
+}
+
+func (d *daemon) exitWithChildStatus(s service.Service, exitCode int) {
+	log.WithField("exit_code", exitCode).
+		Info("child process exited")
+	var err error
+	var st service.Status
+	if st, err = s.Status(); err == nil && st == service.StatusRunning {
+		d.exited.Set(true)
+		d.exitCodeC <- exitCode
+		log.Debug("signaling service stop...")
+		s.Stop()
+	}
+	if st != service.StatusUnknown {
+		log.WithError(err).Debug("retrieving service status")
+	}
+	// interface.Stop cannot be called as service is not running
+	// and there's no other way to make interface.Run to stop.
+	// Case for foreground execution, AKA interactive mode.
+	os.Exit(exitCode)
 }
