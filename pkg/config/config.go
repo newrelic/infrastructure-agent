@@ -1456,9 +1456,12 @@ func calculateCollectorURL(licenseKey string, staging, fedramp bool) string {
 	return fmt.Sprintf(baseCollectorURL, urlEnvironmentPrefix(staging), urlRegionPrefix(licenseKey))
 }
 
-func calculateIdentityURL(licenseKey string, staging bool) string {
+func calculateIdentityURL(licenseKey string, staging, fedramp bool) string {
 	if staging {
 		return calculateIdentityStagingURL(licenseKey)
+	}
+	if fedramp {
+		return defaultSecureFedralIdentityURL
 	}
 	return calculateIdentityProductionURL(licenseKey)
 }
@@ -1479,9 +1482,12 @@ func calculateIdentityStagingURL(licenseKey string) string {
 	return defaultIdentityStagingURL
 }
 
-func calculateCmdChannelURL(licenseKey string, staging bool) string {
+func calculateCmdChannelURL(licenseKey string, staging, fedramp bool) string {
 	if staging {
 		return calculateCmdChannelStagingURL(licenseKey)
+	}
+	if fedramp {
+		return defaultSecureFedralCmdChannelURL
 	}
 	return calculateCmdChannelProductionURL(licenseKey)
 }
@@ -1580,11 +1586,11 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	nlog.WithField("collectorURL", cfg.CollectorURL).Debug("Collector URL")
 
 	if cfg.IdentityURL == "" {
-		cfg.IdentityURL = calculateIdentityURL(cfg.License, cfg.Staging)
+		cfg.IdentityURL = calculateIdentityURL(cfg.License, cfg.Staging, cfg.Fedramp)
 	}
 
 	if cfg.CommandChannelURL == "" {
-		cfg.CommandChannelURL = calculateCmdChannelURL(cfg.License, cfg.Staging)
+		cfg.CommandChannelURL = calculateCmdChannelURL(cfg.License, cfg.Staging, cfg.Fedramp)
 	}
 
 	//InventoryIngestEndpoint default value defined in NewConfig
