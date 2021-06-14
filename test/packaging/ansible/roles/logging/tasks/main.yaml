@@ -1,7 +1,7 @@
 ---
 
 - name: Test with retry if Fluent-Bit process started
-  command: pgrep -f newrelic.*fluent-bit
+  command: pgrep -f td-agent-bit.*newrelic
   register: output1
   changed_when: false
   until: output1.rc == 0
@@ -13,7 +13,7 @@
     seconds: 5
 
 - name: Test Fluent-Bit still running
-  command: pgrep -f newrelic.*fluent-bit
+  command: pgrep -f td-agent-bit.*newrelic
   register: output2
   changed_when: false
 
@@ -26,7 +26,7 @@
   when: output1.stdout != output2.stdout
 
 - name: Get Fluent-Bit version
-  command: "/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit -V"
+  command: "/opt/td-agent-bit/bin/td-agent-bit -V"
   register: version
   ignore_errors: true
 
@@ -37,7 +37,7 @@
   when: 'expected_fb_version not in version.stdout'
 
 - name: Get Fluent-Bit build arch
-  command: "file /var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit"
+  command: "file /opt/td-agent-bit/bin/td-agent-bit"
   register: arch
   ignore_errors: true
 
