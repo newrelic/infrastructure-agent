@@ -1658,7 +1658,7 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	if cfg.LoggingBinDir == "" {
 		if runtime.GOOS == "linux" {
 			cfg.LoggingBinDir = defaultLoggingBinDir
-		} else {
+		} else if runtime.GOOS == "windows" {
 			cfg.LoggingBinDir = filepath.Join(cfg.AgentDir, DefaultIntegrationsDir, defaultLoggingBinDir)
 		}
 	}
