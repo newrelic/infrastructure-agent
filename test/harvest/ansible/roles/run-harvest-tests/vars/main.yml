@@ -4,3 +4,4 @@ architecture_map:
   aarch64: "arm64"
 
 os_arch_binary_name_tpl: "harvest_%GOOS%_%GOARCH%.test"
+tests_to_run_regex: ".*"

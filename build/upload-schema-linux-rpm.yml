@@ -45,3 +45,14 @@
         - 12.2
         - 12.3
         - 12.4
+
+- src: "newrelic-infra-{version}-1.amazonlinux-{os_version}.{arch}.rpm"
+  arch:
+    - x86_64
+    - arm
+    - arm64
+  uploads:
+    - type: yum
+      dest: "{dest_prefix}linux/yum/amazonlinux/{os_version}/{arch}/"
+      os_version:
+        - 2
