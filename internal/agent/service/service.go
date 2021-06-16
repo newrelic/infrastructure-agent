@@ -116,7 +116,9 @@ func (d *daemon) exitWithChildStatus(s service.Service, exitCode int) {
 		d.exited.Set(true)
 		d.exitCodeC <- exitCode
 		log.Debug("signaling service stop...")
-		s.Stop()
+		// TODO: investigate this, seems that stopping the service will affect
+		// the service recovery policy on both Windows / Linux
+		//s.Stop()
 	}
 	if st != service.StatusUnknown {
 		log.WithError(err).Debug("retrieving service status")
