@@ -3,9 +3,13 @@
 package http
 
 import (
+	"context"
 	"crypto/x509"
+	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -78,5 +82,37 @@ type Client func(req *http.Request) (*http.Response, error)
 var NullHttpClient = func(req *http.Request) (res *http.Response, err error) {
 	_, _ = ioutil.ReadAll(req.Body)
 	defer req.Body.Close()
+	return
+}
+
+func CheckEndpointReachability(ctx context.Context, l log.Entry, endpointURL, license, userAgent, agentID string, timeout time.Duration, transport http.RoundTripper) (timedOut bool, err error) {
+	var request *http.Request
+	if request, err = http.NewRequest("HEAD", endpointURL, nil); err != nil {
+		return false, fmt.Errorf("unable to prepare availability request: %v, error: %s", request, err)
+	}
+
+	request = request.WithContext(ctx)
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("User-Agent", userAgent)
+	request.Header.Set(LicenseHeader, license)
+	request.Header.Set(EntityKeyHeader, agentID)
+
+	client := GetHttpClient(timeout, transport)
+
+	// all status codes are acceptable as request has been replied by the endpoint
+	if _, err = client.Do(request); err != nil {
+		if e2, ok := err.(net.Error); ok && (e2.Timeout() || e2.Temporary()) {
+			timedOut = true
+		}
+		if _, ok := err.(*url.Error); ok {
+			l.WithError(err).
+				WithField("userAgent", userAgent).
+				WithField("timeout", timeout).
+				WithField("url", endpointURL).
+				Debug("URL Error detected, may be configuration problem or network connectivity issue.")
+			timedOut = true
+		}
+	}
+
 	return
 }

@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -18,6 +17,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
+	"gopkg.in/yaml.v2"
 
 	"github.com/newrelic/infrastructure-agent/pkg/license"
 	"github.com/sirupsen/logrus"
@@ -28,15 +30,12 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
-// AgentMode agent user run modes, possible values are: root, privileged or unprivileged
-type AgentMode string
-
 const (
 	envPrefix           = "nria"
-	ModeUnknown         = AgentMode("")
-	ModeRoot            = AgentMode("root")
-	ModePrivileged      = AgentMode("privileged")
-	ModeUnprivileged    = AgentMode("unprivileged")
+	ModeUnknown         = ""
+	ModeRoot            = "root"
+	ModePrivileged      = "privileged"
+	ModeUnprivileged    = "unprivileged"
 	NonVerboseLogging   = 0
 	VerboseLogging      = 1
 	SmartVerboseLogging = 2
@@ -57,11 +56,19 @@ type IncludeMetricsMap map[string][]string
 // Configuration structs
 // Use the 'public' annotation to specify the visibility of the config option: false/obfuscate [default: true]
 type Config struct {
+	// Databind provides varaiable (secrets, discovery) replacement capabilities for the configuration.
+	Databind databind.YAMLAgentConfig `yaml:",inline" public:"false"`
+
 	// License specifies the license key for your New Relic account. The agent uses this key to associate your server's
 	// metrics with your New Relic account. This setting is created as part of the standard installation process.
 	// Default: ""
 	// Public: Yes
 	License string `yaml:"license_key" envconfig:"license_key" public:"obfuscate"`
+
+	// Fedramp use Fedramp endpoints. See https://docs.newrelic.com/docs/fedramp-endpoint-logs-metrics
+	// Default: true
+	// Public: No
+	Fedramp bool `yaml:"fedramp" envconfig:"fedramp" public:"true"`
 
 	// Staging is staging environment.
 	// Default: false
@@ -83,6 +90,11 @@ type Config struct {
 	// Default: https://metric-api.newrelic.com
 	// Public: No
 	MetricURL string `yaml:"metric_url" envconfig:"metric_url" public:"false"`
+
+	// DMIngestEndpoint defines the API path for the infrastructure dimensional metric ingest endpoint
+	// Default: /metric/v1/infra
+	// Public: No
+	DMIngestEndpoint string `yaml:"dm_endpoint" envconfig:"dm_endpoint" public:"false"`
 
 	// CommandChannelURL defines the base URL for the command channel.
 	// Default: https://infrastructure-command-api.newrelic.com
@@ -549,7 +561,7 @@ type Config struct {
 	PartitionsTTL string `yaml:"partitions_ttl" envconfig:"partitions_ttl" public:"false"`
 
 	// StartupConnectionTimeout Time duration to wait before timing-out the request the agents makes at startup to
-	// check the NewRelic platform availability.
+	// check the NewRelic platform availability. Used by defining reachability status of backend endpoints.
 	// Default: 10s
 	// Public: Yes
 	StartupConnectionTimeout string `yaml:"startup_connection_timeout" envconfig:"startup_connection_timeout"`
@@ -744,8 +756,8 @@ type Config struct {
 	// Public: No
 	FluentBitNRLibPath string `yaml:"fluent_bit_nr_lib_path "envconfig:"fluent_bit_nr_lib_path" public:"false"`
 
-	// HTTPServerEnabled By setting true this configuration parameter (used only by statsD integration)	the agent will
-	// open an http port (by default, 8001) for receiving data from	New Relic statsD backend.
+	// HTTPServerEnabled By setting true this configuration parameter (used by statsD integration v1) the agent will
+	//	// open HTTP port (by default, 8001) to receive integration payloads via HTTP.
 	// Default: False
 	// Public: Yes
 	HTTPServerEnabled bool `yaml:"http_server_enabled" envconfig:"http_server_enabled"`
@@ -756,11 +768,36 @@ type Config struct {
 	// Public: Yes
 	HTTPServerHost string `yaml:"http_server_host" envconfig:"http_server_host"`
 
-	// HTTPServerPort Set the port for http server(used only by statsD integration) to receive data	from New Relic
-	// statsD backend.
+	// HTTPServerPort Set the port for http server (used by statsD integration) to receive integration payloads.
 	// Default: 8001
 	// Public: Yes
 	HTTPServerPort int `yaml:"http_server_port" envconfig:"http_server_port"`
+
+	// TCPServerEnabled By setting true this configuration parameter (used by statsD integration v1) the agent will
+	// open an TCP port (by default, 8002) to receive integration payloads via TCP.
+	// Default: False
+	// Public: Yes
+	TCPServerEnabled bool `yaml:"tcp_server_enabled" envconfig:"tcp_server_enabled"`
+
+	// TCPServerPort Set the port for tcp server to receive integration payloads.
+	// Default: 8002
+	// Public: Yes
+	TCPServerPort int `yaml:"tcp_server_port" envconfig:"tcp_server_port"`
+
+	// StatusServerEnabled will listen into TCP port (status_server_port) to serve status requests.
+	// Default: False
+	// Public: Yes
+	StatusServerEnabled bool `yaml:"status_server_enabled" envconfig:"status_server_enabled"`
+
+	// StatusServerPort Set the port for status server.
+	// Default: 8003
+	// Public: Yes
+	StatusServerPort int `yaml:"status_server_port" envconfig:"status_server_port"`
+
+	// StatusServerPort Set the port for status server.
+	// Default: IdentityURL, CommandChannelURL, MetricsIngestURL, InventoryIngestURL
+	// Public: Yes
+	StatusEndpoints []string `yaml:"status_endpoints" envconfig:"status_endpoints"`
 
 	// AppDataDir This option is only for Windows. It defines the path to store data in a different path than the
 	// program files directory.
@@ -834,7 +871,7 @@ type Config struct {
 
 	// MetricsIngestEndpoint is the path for metrics ingest endpoint. The base URL is defined in the config option
 	// collector URL.
-	// Default: /metrics
+	// Default: /infra/v2/metrics
 	// Public: No
 	MetricsIngestEndpoint string `yaml:"metrics_ingest_endpoint" envconfig:"metrics_ingest_endpoint" public:"false"`
 
@@ -922,7 +959,7 @@ type Config struct {
 	// - If the user is other than `root` but the capabilities don't match the ones in the previous rule, then the mode is `unprivileged`.
 	// Default: Runtime value
 	// Public: No
-	RunMode AgentMode
+	RunMode string
 
 	// AgentUser The name of the user that's executing the agent process. This value is taken from the runtime
 	// environment and cannot be manually set. The default Linux installation uses by default the `root` account to run
@@ -1000,6 +1037,12 @@ type Config struct {
 	// Default: none
 	// Public: Yes
 	IncludeMetricsMatchers IncludeMetricsMap `yaml:"include_matching_metrics" envconfig:"include_matching_metrics"`
+
+	// AgentMetricsEndpoint Set the endpoint (host:port) for the HTTP server the agent will use to server OpenMetrics
+	// if empty the server will be not spawned
+	// Default: empty
+	// Public: Yes
+	AgentMetricsEndpoint string `yaml:"agent_metrics_endpoint" envconfig:"agent_metrics_endpoint"`
 }
 
 // Troubleshoot trobleshoot mode configuration.
@@ -1027,6 +1070,7 @@ type LogForward struct {
 	ConfigsDir   string
 	HomeDir      string
 	License      string
+	IsFedramp    bool
 	IsStaging    bool
 	ProxyCfg     LogForwardProxy
 }
@@ -1046,6 +1090,7 @@ func NewLogForward(config *Config, troubleshoot Troubleshoot) LogForward {
 		ConfigsDir:   config.LoggingConfigsDir,
 		HomeDir:      config.LoggingBinDir,
 		License:      config.License,
+		IsFedramp:    config.Fedramp,
 		IsStaging:    config.Staging,
 		ProxyCfg: LogForwardProxy{
 			IgnoreSystemProxy: config.IgnoreSystemProxy,
@@ -1083,7 +1128,7 @@ func (c *Config) GetLogFile() string {
 // LogInfo will log the configuration.
 // It obfuscates sensitive information and hide private configs.
 func (c *Config) LogInfo() {
-	configFields, err := c.toLogInfo()
+	configFields, err := c.PublicFields()
 	if err != nil {
 		clog.WithError(err).Error("failed to log config")
 		return
@@ -1138,9 +1183,8 @@ func (c *Config) SetIntValueByYamlAttribute(attribute string, value int64) error
 	return fmt.Errorf("unknown field for yaml attribute '%s'", attribute)
 }
 
-// toLogInfo prepares the configuration to be logged.
-// It obfuscates sensitive information and hide private configs.
-func (c *Config) toLogInfo() (map[string]string, error) {
+// PublicFields returns public config fields values indexed by YAML name. It obfuscates sensitive info.
+func (c *Config) PublicFields() (map[string]string, error) {
 	valueOfC := reflect.ValueOf(c)
 
 	if valueOfC.Kind() != reflect.Ptr && valueOfC.Kind() != reflect.Interface {
@@ -1193,21 +1237,51 @@ func (c *Config) toLogInfo() (map[string]string, error) {
 	return result, nil
 }
 
-func LoadConfig(configFile string) (*Config, error) {
+func LoadConfig(configFile string) (cfg *Config, err error) {
 	var filesToCheck []string
 	if configFile != "" {
 		filesToCheck = append(filesToCheck, configFile)
 	}
 	filesToCheck = append(filesToCheck, defaultConfigFiles...)
 
-	cfg := NewConfig()
+	cfg = NewConfig()
 	cfgMetadata, err := config_loader.LoadYamlConfig(cfg, filesToCheck...)
 	if err != nil {
-		return cfg, fmt.Errorf("Unable to parse configuration file %s: %s", configFile, err)
+		err = fmt.Errorf("unable to parse configuration file %s: %s", configFile, err)
+		return
 	}
 
 	// After the config file has loaded,  override via any environment variables
 	configOverride(cfg)
+
+	sources, err := cfg.Databind.DataSources()
+	if err != nil {
+		return
+	}
+	//_, err = databind.Fetch(sources)
+	vals, err := databind.Fetch(sources)
+	if err != nil {
+		return
+	}
+	if vals.VarsLen() > 0 {
+		cfg.Databind = databind.YAMLAgentConfig{}
+		matches, errD := databind.Replace(&vals, cfg)
+		if errD != nil {
+			return
+		}
+
+		if len(matches) != 1 {
+			err = fmt.Errorf("unexpected config file variables replacement amount")
+			return
+		}
+		transformed := matches[0]
+		replacedCfg, ok := transformed.Variables.(*Config)
+		if !ok {
+			err = fmt.Errorf("unexpected config file variables replacement type")
+			return
+		}
+		cfg = replacedCfg
+	}
 
 	cfg.RunMode, cfg.AgentUser, cfg.ExecutablePath = runtimeValues()
 
@@ -1216,7 +1290,7 @@ func LoadConfig(configFile string) (*Config, error) {
 	// above and place each one at the bottom of this ordering
 	err = NormalizeConfig(cfg, *cfgMetadata)
 
-	return cfg, err
+	return
 }
 
 // NewConfig returns the default Config.
@@ -1231,6 +1305,7 @@ func NewConfig() *Config {
 		PidFile:                       defaultPidFile,
 		InventoryIngestEndpoint:       defaultInventoryIngestEndpoint,
 		MetricsIngestEndpoint:         defaultMetricsIngestEndpoint,
+		DMIngestEndpoint:              defaultDMIngestEndpoint,
 		IdentityIngestEndpoint:        defaultIdentityIngestEndpoint,
 		CommandChannelEndpoint:        defaultCmdChannelEndpoint,
 		CommandChannelIntervalSec:     defaultCmdChannelIntervalSec,
@@ -1242,6 +1317,8 @@ func NewConfig() *Config {
 		LogFormat:                     defaultLogFormat,
 		HTTPServerHost:                defaultHTTPServerHost,
 		HTTPServerPort:                defaultHTTPServerPort,
+		TCPServerPort:                 defaultTCPServerPort,
+		StatusServerPort:              defaultStatusServerPort,
 		DockerApiVersion:              DefaultDockerApiVersion,
 		FingerprintUpdateFreqSec:      defaultFingerprintUpdateFreqSec,
 		CloudMetadataExpiryInSec:      defaultCloudMetadataExpiryInSec,
@@ -1317,6 +1394,10 @@ func (c Config) GenerateInventoryURL() string {
 	return strings.TrimSuffix(inventoryURL, "/")
 }
 
+func (c *Config) DMIngestURL() string {
+	return fmt.Sprintf("%s%s", c.MetricURL, c.DMIngestEndpoint)
+}
+
 func isConfigDefined(key string, cfgMetadata config_loader.YAMLMetadata) bool {
 	prefixedKey := strings.ToUpper(fmt.Sprint(envPrefix, "_", key))
 	if os.Getenv(prefixedKey) != "" {
@@ -1367,17 +1448,20 @@ func JitterFrequency(freqInSec time.Duration) time.Duration {
 	return time.Duration(randomSeconds) * time.Second
 }
 
-func calculateCollectorURL(licenseKey string, staging bool) string {
-	if license.IsFederalCompliance(licenseKey) {
+func calculateCollectorURL(licenseKey string, staging, fedramp bool) string {
+	if fedramp {
 		return defaultSecureFederalURL
 	}
 
 	return fmt.Sprintf(baseCollectorURL, urlEnvironmentPrefix(staging), urlRegionPrefix(licenseKey))
 }
 
-func calculateIdentityURL(licenseKey string, staging bool) string {
+func calculateIdentityURL(licenseKey string, staging, fedramp bool) string {
 	if staging {
 		return calculateIdentityStagingURL(licenseKey)
+	}
+	if fedramp {
+		return defaultSecureFedralIdentityURL
 	}
 	return calculateIdentityProductionURL(licenseKey)
 }
@@ -1398,9 +1482,12 @@ func calculateIdentityStagingURL(licenseKey string) string {
 	return defaultIdentityStagingURL
 }
 
-func calculateCmdChannelURL(licenseKey string, staging bool) string {
+func calculateCmdChannelURL(licenseKey string, staging, fedramp bool) string {
 	if staging {
 		return calculateCmdChannelStagingURL(licenseKey)
+	}
+	if fedramp {
+		return defaultSecureFedralCmdChannelURL
 	}
 	return calculateCmdChannelProductionURL(licenseKey)
 }
@@ -1421,12 +1508,12 @@ func calculateCmdChannelStagingURL(licenseKey string) string {
 	return defaultCmdChannelStagingURL
 }
 
-func calculateDimensionalMetricURL(collectorURL string, licenseKey string, staging bool) string {
+func calculateDimensionalMetricURL(collectorURL string, licenseKey string, staging, fedramp bool) string {
 	if collectorURL != "" {
 		return collectorURL
 	}
 
-	if license.IsFederalCompliance(licenseKey) {
+	if fedramp && !staging {
 		return defaultSecureFederalURL
 	}
 
@@ -1490,20 +1577,20 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	}
 
 	// dm URL is calculated based on collector url, it should be set before get it default value
-	cfg.MetricURL = calculateDimensionalMetricURL(cfg.CollectorURL, cfg.License, cfg.Staging)
+	cfg.MetricURL = calculateDimensionalMetricURL(cfg.CollectorURL, cfg.License, cfg.Staging, cfg.Fedramp)
 
 	if cfg.CollectorURL == "" {
-		cfg.CollectorURL = calculateCollectorURL(cfg.License, cfg.Staging)
+		cfg.CollectorURL = calculateCollectorURL(cfg.License, cfg.Staging, cfg.Fedramp)
 	}
 
 	nlog.WithField("collectorURL", cfg.CollectorURL).Debug("Collector URL")
 
 	if cfg.IdentityURL == "" {
-		cfg.IdentityURL = calculateIdentityURL(cfg.License, cfg.Staging)
+		cfg.IdentityURL = calculateIdentityURL(cfg.License, cfg.Staging, cfg.Fedramp)
 	}
 
 	if cfg.CommandChannelURL == "" {
-		cfg.CommandChannelURL = calculateCmdChannelURL(cfg.License, cfg.Staging)
+		cfg.CommandChannelURL = calculateCmdChannelURL(cfg.License, cfg.Staging, cfg.Fedramp)
 	}
 
 	//InventoryIngestEndpoint default value defined in NewConfig
@@ -1512,6 +1599,18 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 
 	if cfg.ConnectEnabled {
 		cfg.MetricsIngestEndpoint = defaultMetricsIngestV2Endpoint
+	}
+
+	if len(cfg.StatusEndpoints) == 0 {
+		// https://docs.newrelic.com/docs/using-new-relic/cross-product-functions/install-configure/networks/#infrastructure
+		cfg.StatusEndpoints = []string{
+			cfg.IdentityURL + cfg.IdentityIngestEndpoint,
+			cfg.CommandChannelURL + cfg.CommandChannelEndpoint,
+			cfg.CollectorURL + cfg.MetricsIngestEndpoint,
+			cfg.CollectorURL + cfg.InventoryIngestEndpoint,
+			//cfg.DMIngestURL(), // dimensional metrics without shimming not available yet
+			// no endpoint value to checking log ingest reachability
+		}
 	}
 
 	//MetricsIngestEndpoint default value defined in NewConfig

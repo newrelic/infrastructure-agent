@@ -1,0 +1,14 @@
+---
+
+- name: Populate service facts
+  ansible.builtin.service_facts:
+
+- name: ensure infra-agent service is up and running
+  assert:
+    that: ansible_facts.services['newrelic-infra.service'].state == 'running'
+
+- name: ensure infra-agent service is enabled
+  assert:
+    that: ansible_facts.services['newrelic-infra.service'].status == 'enabled'
+
+...

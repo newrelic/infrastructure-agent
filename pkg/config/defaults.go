@@ -15,17 +15,19 @@ const (
 	LogFormatJSON = "json"
 
 	// Non configurable stuff
-	defaultIdentityURLEu          = "https://identity-api.eu.newrelic.com"
-	defaultIdentityStagingURLEu   = "https://staging-identity-api.eu.newrelic.com"
-	defaultCmdChannelURLEu        = "https://infrastructure-command-api.eu.newrelic.com"
-	defaultCmdChannelStagingURLEu = "https://staging-infrastructure-command-api.eu.newrelic.com"
-	defaultCmdChannelURL          = "https://infrastructure-command-api.newrelic.com"
-	defaultCmdChannelStagingURL   = "https://staging-infrastructure-command-api.newrelic.com"
-	defaultIdentityURL            = "https://identity-api.newrelic.com"
-	defaultIdentityStagingURL     = "https://staging-identity-api.newrelic.com"
-	baseCollectorURL              = "https://%sinfra-api.%snewrelic.com"
-	baseDimensionalMetricURL      = "https://%smetric-api.%snewrelic.com"
-	defaultSecureFederalURL       = "https://gov-infra-api.newrelic.com"
+	defaultIdentityURLEu             = "https://identity-api.eu.newrelic.com"
+	defaultIdentityStagingURLEu      = "https://staging-identity-api.eu.newrelic.com"
+	defaultCmdChannelURLEu           = "https://infrastructure-command-api.eu.newrelic.com"
+	defaultCmdChannelStagingURLEu    = "https://staging-infrastructure-command-api.eu.newrelic.com"
+	defaultCmdChannelURL             = "https://infrastructure-command-api.newrelic.com"
+	defaultCmdChannelStagingURL      = "https://staging-infrastructure-command-api.newrelic.com"
+	defaultIdentityURL               = "https://identity-api.newrelic.com"
+	defaultIdentityStagingURL        = "https://staging-identity-api.newrelic.com"
+	baseCollectorURL                 = "https://%sinfra-api.%snewrelic.com"
+	baseDimensionalMetricURL         = "https://%smetric-api.%snewrelic.com"
+	defaultSecureFederalURL          = "https://gov-infra-api.newrelic.com"
+	defaultSecureFedralIdentityURL   = "https://gov-identity-api.newrelic.com"
+	defaultSecureFedralCmdChannelURL = "https://gov-infrastructure-command-api.newrelic.com"
 )
 
 // Default configurable values
@@ -62,6 +64,8 @@ var (
 	defaultMaxProcs                      = 1
 	defaultHTTPServerHost                = "localhost"
 	defaultHTTPServerPort                = 8001
+	defaultTCPServerPort                 = 8002
+	defaultStatusServerPort              = 8003
 	defaultIpData                        = true
 	defaultTruncTextValues               = true
 	defaultLogToStdout                   = true
@@ -76,6 +80,7 @@ var (
 	defaultStartupConnectionRetries      = 6     // -1 will try forever with an exponential backoff algorithm
 	defaultSupervisorRpcSock             = "/var/run/supervisor.sock"
 	defaultWinUpdatePlugin               = false
+	defaultDMIngestEndpoint              = "/metric/v1/infra"
 	defaultMetricsIngestEndpoint         = "/metrics"          // default: V1 endpoint root (/events/bulk), combine this with defaultCollectorURL
 	defaultInventoryIngestEndpoint       = "/inventory"        // default: V1 endpoint root (/deltas, /deltas/bulk)
 	defaultIdentityIngestEndpoint        = "/identity/v1"      // default: V1 endpoint root (/connect, /register/batch)

@@ -21,12 +21,23 @@ import (
 )
 
 const (
-	minimumIntegrationInterval = config.FREQ_MINIMUM_EXTERNAL_PLUGIN_INTERVAL * time.Second
 	defaultIntegrationInterval = config.FREQ_PLUGIN_EXTERNAL_PLUGINS * time.Second
-
-	defaultTimeout = 120 * time.Second
-	minimumTimeout = 100 * time.Millisecond
+	defaultTimeout             = 120 * time.Second
+	minimumTimeout             = 100 * time.Millisecond
+	intervalEnvVarName         = "NRI_CONFIG_INTERVAL"
 )
+
+var minimumIntegrationIntervalOverride = ""
+
+var minimumIntegrationInterval = func() time.Duration {
+	if minimumIntegrationIntervalOverride != "" {
+		v, err := time.ParseDuration(minimumIntegrationIntervalOverride)
+		if err == nil {
+			return v
+		}
+	}
+	return config.FREQ_MINIMUM_EXTERNAL_PLUGIN_INTERVAL * time.Second
+}()
 
 var ilog = log.WithComponent("integrations.Definition")
 
@@ -46,13 +57,16 @@ type InstancesLookup struct {
 	ByName func(name string) (string, error)
 }
 
-// NewDefinition creates Definition from ConfigEntry, config template, executables lookup and
-// passed through env vars.
-func NewDefinition(ce config2.ConfigEntry, lookup InstancesLookup, passthroughEnv []string, configTemplate []byte) (Definition, error) {
+func newDefinitionWithoutLookup(ce config2.ConfigEntry, passthroughEnv []string, configTemplate []byte) (Definition, error) {
 
 	if err := ce.Sanitize(); err != nil {
 		return Definition{}, err
 	}
+
+	interval := getInterval(ce.Interval)
+	// Reading this env the integration can know configured interval.
+	ce.Env[intervalEnvVarName] = fmt.Sprintf("%v", interval)
+
 	d := Definition{
 		ExecutorConfig: executor.Config{
 			User:        ce.User,
@@ -62,7 +76,7 @@ func NewDefinition(ce config2.ConfigEntry, lookup InstancesLookup, passthroughEn
 		},
 		Labels:         ce.Labels,
 		Name:           ce.InstanceName,
-		Interval:       getInterval(ce.Interval),
+		Interval:       interval,
 		WhenConditions: conditions(ce.When),
 		ConfigTemplate: configTemplate,
 		newTempFile:    newTempFile,
@@ -97,21 +111,42 @@ func NewDefinition(ce config2.ConfigEntry, lookup InstancesLookup, passthroughEn
 		d.Timeout = *ce.Timeout
 	}
 
+	return d, nil
+}
+
+// NewDefinition creates Definition from ConfigEntry, config template, executables lookup and
+// passed through env vars.
+func NewDefinition(ce config2.ConfigEntry, lookup InstancesLookup, passthroughEnv []string, configTemplate []byte) (d Definition, err error) {
+	d, err = newDefinitionWithoutLookup(ce, passthroughEnv, configTemplate)
+	if err != nil {
+		return
+	}
+
 	// if looking for a v3 integration from the v4 engine
 	if ce.IntegrationName != "" {
-		err := d.fromLegacyV3(ce, lookup)
-		return d, err
+		err = d.fromLegacyV3(ce, lookup)
+		return
 	}
 	if ce.Exec != nil {
 		// if providing an executable path directly
-		err := d.fromExecPath(ce)
-		return d, err
+		err = d.fromExecPath(ce)
+		return
 	}
 	// if not an "exec" nor legacy integration, we'll look for an
 	// executable corresponding to the "name" field in any of the integrations
 	// folders, and wrap it into an "exec"
-	err := d.fromName(ce, lookup)
-	return d, err
+	err = d.fromName(ce, lookup)
+	return
+}
+
+// NewAPIDefinition creates a definition generated for payload coming from API.
+func NewAPIDefinition(integrationName string) (d Definition, err error) {
+	ce := config2.ConfigEntry{
+		InstanceName: integrationName,
+	}
+	d, err = newDefinitionWithoutLookup(ce, nil, nil)
+
+	return
 }
 
 // LoadConfigTemplate loads the contents of an external configuration file that can be passed
@@ -183,6 +218,11 @@ func (d *Definition) fromName(te config2.ConfigEntry, lookup InstancesLookup) er
 // - If a wrong string is provided, it returns the default interval and logs a warning message
 // - If the provided integration is lower than the minimum allowed, it logs a warning message and returns the minimum
 func getInterval(duration string) time.Duration {
+	// zero value disables interval
+	if duration == "0" {
+		return 0
+	}
+
 	if duration == "" {
 		return defaultIntegrationInterval
 	}

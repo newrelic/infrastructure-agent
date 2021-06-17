@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/newrelic/infrastructure-agent/pkg/config/envvar"
 	"gopkg.in/yaml.v2"
 )
 
@@ -34,6 +35,11 @@ func LoadYamlConfig(configObject interface{}, configFilePaths ...string) (*YAMLM
 			defer fd.Close()
 
 			rawConfig, err := ioutil.ReadAll(fd)
+			if err != nil {
+				return nil, err
+			}
+
+			rawConfig, err = envvar.ExpandInContent(rawConfig)
 			if err != nil {
 				return nil, err
 			}

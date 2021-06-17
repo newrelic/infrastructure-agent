@@ -1,0 +1,5 @@
+---
+
+- include: "repo-{{ ansible_distribution }}.yaml"
+
+...

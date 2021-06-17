@@ -8,6 +8,7 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/pkg/fwrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
+	"github.com/sirupsen/logrus"
 
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
@@ -54,13 +55,20 @@ type VersionAwareEmitter struct {
 }
 
 func (e *VersionAwareEmitter) Emit(definition integration.Definition, extraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error {
+	fields := logrus.Fields{
+		"integration_name": definition.Name,
+		"payload":          string(integrationJSON),
+	}
+	if definition.CfgProtocol != nil {
+		fields["cfg_protocol_name"] = definition.CfgProtocol.ConfigName
+		fields["parent_integration_name"] = definition.CfgProtocol.ParentName
+	}
+
+	elog.WithFields(fields).Debug("Received payload.")
+
 	protocolVersion, err := protocol.VersionFromPayload(integrationJSON, e.forceProtocolV2ToV3)
 	if err != nil {
-		elog.
-			WithError(err).
-			WithField("protocol", protocolVersion).
-			WithField("output", string(integrationJSON)).
-			Warn("error retrieving integration protocol version")
+		elog.WithError(err).WithFields(fields).Warn("error retrieving integration protocol version")
 		return err
 	}
 
@@ -68,7 +76,7 @@ func (e *VersionAwareEmitter) Emit(definition integration.Definition, extraLabel
 	if protocolVersion == protocol.V4 {
 		pluginDataV4, err := dm.ParsePayloadV4(integrationJSON, e.ffRetriever)
 		if err != nil {
-			elog.WithError(err).WithField("output", string(integrationJSON)).Warn("can't parse v4 integration output")
+			elog.WithError(err).WithFields(fields).Warn("can't parse v4 integration output")
 			return err
 		}
 
@@ -78,7 +86,7 @@ func (e *VersionAwareEmitter) Emit(definition integration.Definition, extraLabel
 
 	pluginDataV3, err := protocol.ParsePayload(integrationJSON, protocolVersion)
 	if err != nil {
-		elog.WithError(err).WithField("output", string(integrationJSON)).Warn("can't parse integration output")
+		elog.WithError(err).WithFields(fields).Warn("can't parse integration output")
 		return err
 	}
 

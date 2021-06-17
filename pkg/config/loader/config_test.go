@@ -5,15 +5,14 @@ package config_loader
 import (
 	"io/ioutil"
 	"os"
+	"testing"
 
-	. "gopkg.in/check.v1"
+	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-type ConfigSuite struct{}
-
-var _ = Suite(&ConfigSuite{})
-
-func CreateTestFile(data []byte) (*os.File, error) {
+func createTestFile(data []byte) (*os.File, error) {
 	tmp, err := ioutil.TempFile("", "loadconfig")
 	if err != nil {
 		return nil, err
@@ -26,35 +25,69 @@ func CreateTestFile(data []byte) (*os.File, error) {
 	return tmp, nil
 }
 
-func (self *ConfigSuite) TestLoadYamlConfig(c *C) {
+func TestLoadYamlConfig(t *testing.T) {
 	yamlData := []byte(`param: hello`)
 
-	tmp, err := CreateTestFile(yamlData)
-	c.Assert(err, IsNil)
+	tmp, err := createTestFile(yamlData)
+	require.NoError(t, err)
 	defer os.Remove(tmp.Name())
 
-	var config struct {
+	var cfg struct {
 		Param string `yaml:"param"`
 	}
 
-	meta, err := LoadYamlConfig(&config, tmp.Name())
-	c.Assert(err, IsNil)
-	c.Assert(config.Param, Equals, "hello")
-	c.Assert(meta, NotNil)
-	c.Assert(meta.Contains("param"), Equals, true)
-	c.Assert(meta.Contains("otherParam"), Equals, false)
+	meta, err := LoadYamlConfig(&cfg, tmp.Name())
+	require.NoError(t, err)
+	assert.Equal(t, "hello", cfg.Param)
+	require.NotNil(t, meta)
+	assert.True(t, meta.Contains("param"))
+	assert.False(t, meta.Contains("otherParam"))
 }
 
-func (self *ConfigSuite) TestMissingLoadYamlConfig(c *C) {
-
-	config := &struct {
+func TestMissingLoadYamlConfig(t *testing.T) {
+	cfg := &struct {
 		Param string `yaml:"param"`
 	}{}
 
-	meta, err := LoadYamlConfig(&config, "something.yml")
-	c.Assert(err, IsNil)
-	c.Assert(config.Param, Equals, "")
-	c.Assert(meta, NotNil)
-	c.Assert(meta.Contains("param"), Equals, false)
-	c.Assert(meta.Contains("otherParam"), Equals, false)
+	meta, err := LoadYamlConfig(&cfg, "idontexist.yml")
+	require.NoError(t, err)
+	assert.Equal(t, "", cfg.Param)
+	require.NotNil(t, meta)
+	assert.False(t, meta.Contains("param"))
+	assert.False(t, meta.Contains("otherParam"))
+}
+
+func TestLoadYamlConfig_withDatabindVariables(t *testing.T) {
+	yamlData := []byte(`
+variables:
+  creds:
+    vault:
+      http:
+        url: http://my.vault.host/v1/newengine/data/secret
+        headers:
+          X-Vault-Token: my-vault-token
+foo: bar
+baz: ${creds.user}
+`)
+
+	tmp, err := createTestFile(yamlData)
+	require.NoError(t, err)
+	defer os.Remove(tmp.Name())
+
+	var cfg struct {
+		Foo      string                   `yaml:"foo"`
+		Baz      string                   `yaml:"baz"`
+		Databind databind.YAMLAgentConfig `yaml:",inline"`
+	}
+
+	meta, err := LoadYamlConfig(&cfg, tmp.Name())
+
+	require.NoError(t, err)
+
+	assert.Equal(t, YAMLMetadata{"variables": true, "baz": true, "foo": true}, *meta)
+
+	assert.Equal(t, "bar", cfg.Foo)
+	assert.Equal(t, "${creds.user}", cfg.Baz)
+	require.Contains(t, cfg.Databind.Variables, "creds")
+	assert.Equal(t, cfg.Databind.Variables["creds"].Vault.HTTP.URL, "http://my.vault.host/v1/newengine/data/secret")
 }

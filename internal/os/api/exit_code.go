@@ -3,10 +3,12 @@
 package api
 
 import (
-	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"fmt"
 	"os"
 	"os/exec"
 	"syscall"
+
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
 const (
@@ -35,4 +37,23 @@ func CheckExitCode(err error) int {
 	}
 
 	return ExitCodeError
+}
+
+// ExitCodeErr error representing a CLI exit status code.
+type ExitCodeErr struct {
+	exitCode int
+}
+
+func (e *ExitCodeErr) Error() string {
+	return fmt.Sprintf("returned non zero exit: %d", e.exitCode)
+}
+
+func (e *ExitCodeErr) ExitCode() int {
+	return e.exitCode
+}
+
+func NewExitCodeErr(exitCode int) *ExitCodeErr {
+	return &ExitCodeErr{
+		exitCode: exitCode,
+	}
 }

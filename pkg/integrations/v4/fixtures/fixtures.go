@@ -15,4 +15,5 @@ var (
 	LongRunningHBGoFile = testhelp.WrapScriptPath("fixtures", "longrunning_hb", "longrunning_hb.go")
 	HugeGoFile          = testhelp.WrapScriptPath("fixtures", "huge", "huge.go")
 	CmdReqGoFile        = testhelp.WrapScriptPath("fixtures", "cmdreq", "cmdreq.go")
+	CfgReqGoFile        = testhelp.WrapScriptPath("fixtures", "cfgreq", "cfgreq.go")
 )

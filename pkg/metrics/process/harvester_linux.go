@@ -14,6 +14,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/metrics"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/acquire"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
+	"github.com/newrelic/infrastructure-agent/pkg/trace"
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/process"
 	"github.com/sirupsen/logrus"
@@ -188,6 +189,7 @@ func (ps *linuxHarvester) populateIOCounters(sample, lastSample *types.ProcessSa
 		if lastSample != nil && lastSample.LastIOCounters != nil {
 			lastCounters := lastSample.LastIOCounters
 
+			trace.Proc("ReadCount: %d, WriteCount: %d, ReadBytes: %d, WriteBytes: %d", ioCounters.ReadCount, ioCounters.WriteCount, ioCounters.ReadBytes, ioCounters.WriteBytes)
 			ioReadCountPerSecond := acquire.CalculateSafeDelta(ioCounters.ReadCount, lastCounters.ReadCount, elapsedSeconds)
 			ioWriteCountPerSecond := acquire.CalculateSafeDelta(ioCounters.WriteCount, lastCounters.WriteCount, elapsedSeconds)
 			ioReadBytesPerSecond := acquire.CalculateSafeDelta(ioCounters.ReadBytes, lastCounters.ReadBytes, elapsedSeconds)

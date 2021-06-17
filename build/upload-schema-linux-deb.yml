@@ -1,0 +1,28 @@
+---
+- src: "newrelic-infra_systemd_{version}_{arch}.deb"
+  arch:
+    - amd64
+    - arm64
+    - arm
+  uploads:
+    - type: apt
+      src_repo: "{access_point_host}/infrastructure_agent/linux/apt"
+      dest: "{dest_prefix}linux/apt/"
+      os_version:
+        - focal
+        - bionic
+        - xenial
+        - buster
+        - jessie
+        - stretch
+
+- src: "newrelic-infra_upstart_{version}_{arch}.deb"
+  arch:
+    - amd64
+  uploads:
+    - type: apt
+      src_repo: "{access_point_host}/infrastructure_agent/linux/apt"
+      dest: "{dest_prefix}linux/apt/"
+      os_version:
+        - trusty
+        - precise

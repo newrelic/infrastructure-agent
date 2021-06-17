@@ -11,6 +11,8 @@ import (
 	"io"
 	"sync"
 
+	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -24,6 +26,9 @@ type wrap struct {
 	cachedEntryCounter int
 	cachedEntryLimit   int
 	mu                 *sync.Mutex
+
+	// Instrumentation
+	measure instrumentation.Measure
 }
 
 type log struct {
@@ -33,8 +38,9 @@ type log struct {
 
 // usual singleton access used on the codebase
 var w = wrap{
-	l:  logrus.StandardLogger(),
-	mu: &sync.Mutex{},
+	l:       logrus.StandardLogger(),
+	mu:      &sync.Mutex{},
+	measure: func(instrumentation.MetricType, instrumentation.MetricName, int64) {},
 }
 
 func (w *wrap) smartVerboseEnabled() bool {
@@ -75,6 +81,13 @@ func EnableSmartVerboseMode(cachedEntryLimit int) {
 	w.smartVerboseMode = true
 	w.setLogCache(cachedEntryLimit)
 	SetLevel(logrus.DebugLevel)
+}
+
+func Instrument(m instrumentation.Measure) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	w.measure = m
 }
 
 // SetOutput sets the standard logger output.
@@ -165,6 +178,7 @@ func Warning(args ...interface{}) {
 // Error logs a message at level Error on the standard logger.
 func Error(args ...interface{}) {
 	w.l.Error(args...)
+	w.measure(instrumentation.Counter, instrumentation.LoggedErrors, 1)
 }
 
 // Tracef logs a message at level Trace on the standard logger.

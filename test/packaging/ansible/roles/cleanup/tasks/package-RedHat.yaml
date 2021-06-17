@@ -1,0 +1,9 @@
+---
+
+- name: yum remove newrelic-infra package
+  yum:
+    name: newrelic-infra
+    state: absent
+  ignore_errors: true
+
+...

@@ -1,11 +1,24 @@
 ---
-name: UnitTesting
+name: Testing
 
-on: [push, pull_request]
+env:
+  DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
+  DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
+  TAG: "0.0.0" # needed for goreleaser test builds
+  GO_VERSION: '1.14.4'
 
+on:
+  push:
+    branches:
+      - '**'
+    tags-ignore:
+      - '**'
+    paths-ignore:
+      - README.md
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  unit-test-linux:
+    name: Linux unit tests
+    runs-on: ubuntu-20.04
 
     steps:
       - uses: actions/checkout@v2
@@ -13,47 +26,39 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v2
         with:
-          go-version: '^1.14.4'
+          go-version: ${{env.GO_VERSION}}
 
       - name: Validate code
-        run: make validate
+        run: make ci/validate
 
       - name: Running unit tests
-        run: make test-coverage
-
-      - name: Install gcov2lcov
-        working-directory: /tmp
-        run: go get -u github.com/jandelgado/gcov2lcov
-
-      - name: Convert coverage.out to lcov.info
-        run: gcov2lcov -infile=coverage.out -outfile=lcov.info
+        run: make ci/test-coverage
 
       - name: Coveralls Parallel
         uses: coverallsapp/github-action@master
         with:
-          github-token: ${{ secrets.github_token }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: lcov.info
           flag-name: run-linux
           parallel: true
 
-  build-container:
-    runs-on: ubuntu-latest
-
+  harvest-test-linux:
+    name: Linux harvest tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-18.04, ubuntu-16.04 ]
     steps:
       - uses: actions/checkout@v2
 
-      - name: Install Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: '^1.14.4'
+      - name: Setup node
+        run: sudo apt install musl-dev
 
-      - name: Build linux agent
-        run: make clean linux/amd64
+      - name: Running Harvest tests
+        run: make linux/harvest-tests
 
-      - name: Build container agent
-        run: make -C build/container/ build/base
-
-  build-windows:
+  unit-test-windows:
+    name: Windows unit tests
     runs-on: windows-latest
 
     steps:
@@ -62,44 +67,81 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v2
         with:
-          go-version: '^1.14.4'
+          go-version: ${{env.GO_VERSION}}
 
       - name: Download deps
         run: go mod vendor
 
       - name: Running unit tests
-        run: .\build\win_build.ps1
+        run: build\windows\test.ps1
 
-  build-centos5:
+  proxy-tests-linux:
+    name: Proxy tests
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKER_HUB_ID }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
+
+      - name: Running proxy tests
+        run: make proxy-test
+
+  build-container:
+    name: Building containerized agent
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: src/github.com/newrelic/infrastructure-agent
 
     steps:
       - uses: actions/checkout@v2
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
         with:
-          path: src/github.com/newrelic/infrastructure-agent
+          username: ${{ env.DOCKER_HUB_ID }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
 
-      - name: Install Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: '^1.14.4'
+      - name: Build agent binaries
+        run: make ci/build
 
-      - name: Setup CentOS 5
-        run: make go-get-go-1_9
+      - name: Build container agent (amd64)
+        run: make -C build/container/ build/base-amd64
 
-      - name: Running unit tests
-        env:
-          GOPATH: "${{ github.workspace }}"
-        run: make test-centos-5
+      - name: Build container agent (arm)
+        run: make -C build/container/ build/base-arm
+
+      - name: Build container agent (arm64)
+        run: make -C build/container/ build/base-arm64
 
   finish:
-    needs: [ build ]
+    name: Finish
+    needs: [ unit-test-linux ]
     runs-on: ubuntu-latest
     steps:
       - name: Coveralls Finished
         uses: coverallsapp/github-action@master
         with:
-          github-token: ${{ secrets.github_token }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel-finished: true
+
+  test-build:
+    name: Test binary compilation for all platforms:arch
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKER_HUB_ID }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
+      - name: Build all platforms:arch
+        run: make ci/build

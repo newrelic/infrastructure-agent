@@ -1,0 +1,20 @@
+{
+  "config_protocol_version": "1",
+  "action": "register_config",
+  "config_name": "myconfig",
+  "config": {
+    "integrations": [
+      {
+        "name": "spawner",
+        "config": {
+          "path": "testdata/scenarios/shared/nri-out.json"
+        },
+        "cli_args": [
+          "-nri-process-name",
+          "nri-config-template"
+        ],
+        "interval": "2s"
+      }
+    ]
+  }
+}

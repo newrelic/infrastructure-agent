@@ -17,4 +17,5 @@ var (
 	// at the moment, unsupported, as they use env vars with Powershell. Left here to avoid compile errors
 	FileContentsCmd        = testhelp.Script("unsupported-test-case")
 	FileContentsFromEnvCmd = testhelp.Script("unsupported-test-case")
+	EchoFromEnv            = testhelp.Script("unsupported-test-case")
 )

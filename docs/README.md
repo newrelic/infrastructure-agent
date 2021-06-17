@@ -93,7 +93,7 @@ Each type of source has different workflow paths.
 
 ##### Data processing
 
-Metrics/Events:
+###### Metrics/Events:
 
 - Event queue is shared for all the events (agents and integrations).
 - When event-queue reaches 1K events, the agent discard new events. In this case it logs this error message: `Could not queue event: Queue is full..`
@@ -105,7 +105,10 @@ Metrics/Events:
     - Batching and queueing run in parallel, so it could happen that while the batcher is feeding and sending batches, the event-queue reaches its capacity.
     - So you couldn't say there's a total limit of 200*1K.
 
-Integrations:
+A solution to these limit issues is to increase the values for `event_queue_depth` (default 1k) and `batch_queue_depth` (default 200).
+There's no upper limit for those, but this will increase memory consumption.
+
+###### Integrations:
 
 - They are started concurrently at similar times.
   * At the first run there is a random delay between 0 and their defined interval, which is used in 

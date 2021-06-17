@@ -13,10 +13,13 @@ import (
 	"os/exec"
 	"sync"
 
+	"github.com/newrelic/infrastructure-agent/internal/gobackfill"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/constants"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
+
+const unknownErrExitCode = -3
 
 var illog = log.WithComponent("integrations.Executor")
 
@@ -38,21 +41,18 @@ func FromCmdSlice(cmd []string, cfg *Config) Executor {
 // The executed process can be cancelled via the provided Context.
 // When writable PID channel is provided, generated PID will be written, so process could be signaled by 3rd parties.
 // When the process ends, all the channels are closed.
-func (r *Executor) Execute(ctx context.Context, pidChan chan<- int) OutputReceive {
+func (r *Executor) Execute(ctx context.Context, pidChan, exitCodeCh chan<- int) OutputReceive {
 	out, receiver := NewOutput()
 	commandCtx, cancelCommand := context.WithCancel(ctx)
 
 	go func() {
 		cmd := r.buildCommand(commandCtx)
 
-		//argsS := make([]string, len(cmd.Args))
-		//copy(argsS, cmd.Args)
-		//args := helpers.ObfuscateSensitiveDataFromArray(argsS)
-
 		illog.
 			WithField("command", r.Command).
 			WithField("path", cmd.Path).
-			//WithField("args", args).
+			// TODO: creates weird failure on leaktest
+			//WithField("args", helpers.ObfuscateSensitiveDataFromArray(cmd.Args)).
 			WithField("env", helpers.ObfuscateSensitiveDataFromArray(cmd.Env)).
 			Debug("Running command.")
 
@@ -102,7 +102,17 @@ func (r *Executor) Execute(ctx context.Context, pidChan chan<- int) OutputReceiv
 		<-commandCtx.Done()
 		if err := cmd.Wait(); err != nil {
 			out.Errors <- err
+			if exitCodeCh != nil {
+				if exitError, ok := err.(*exec.ExitError); ok {
+					exitCodeCh <- gobackfill.ExitCode(exitError)
+				} else {
+					exitCodeCh <- unknownErrExitCode
+				}
+			}
+		} else if exitCodeCh != nil {
+			exitCodeCh <- 0
 		}
+
 		allOutputForwarded.Wait() // waiting again to avoid closing output before the data is received during cancellation
 		out.Close()
 	}()

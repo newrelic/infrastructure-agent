@@ -12,9 +12,10 @@ import (
 	"regexp"
 	"runtime"
 	"strconv"
-	"strings"
 	"time"
 
+	"github.com/newrelic/infrastructure-agent/internal/os/distro"
+	"github.com/newrelic/infrastructure-agent/internal/os/fs"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
@@ -76,43 +77,25 @@ func getTotalCpu(cpuInfoFile string) string {
 	return strconv.Itoa(len(totalCpuNum))
 }
 
-func getDistro() string {
-	if info, err := helpers.GetLinuxOSInfo(); err == nil {
-		if name, ok := info["PRETTY_NAME"]; ok {
-			return strings.TrimSpace(name)
-		}
-		if name, ok := info["NAME"]; ok {
-			return strings.TrimSpace(fmt.Sprintf("%s %s", name, info["VERSION"]))
-		}
-	}
-
-	platform := helpers.GetLinuxDistro()
-	switch {
-	case platform == helpers.LINUX_DEBIAN:
-		distro_re := regexp.MustCompile(`DISTRIB_DESCRIPTION="(.*?)"`)
-		description := readFile(helpers.HostEtc("/lsb_release"), distro_re)
-		if len(description) > 0 {
-			return strings.TrimSpace(description)
-		}
-		return "Debian (lsb_release not available)"
-	case platform == helpers.LINUX_REDHAT:
-		return readFirstLine(helpers.HostEtc("/redhat-release"))
-	}
-	return "unknown"
-}
-
 func getKernelRelease() string {
-	return readFirstLine(helpers.HostProc("/sys/kernel/osrelease"))
+	v, err := fs.ReadFirstLine(helpers.HostProc("/sys/kernel/osrelease"))
+	if err != nil {
+		hlog.WithError(err).Error("error reading kernel release")
+	}
+	return v
 }
 
-func getProductUuid(mode config.AgentMode) string {
+func getProductUuid(mode string) string {
 	const unknownProductUUID = "unknown"
 
 	if mode == config.ModeUnprivileged {
 		return unknownProductUUID
 	}
 
-	uuid := readFirstLine(helpers.HostSys("/class/dmi/id/product_uuid"))
+	uuid, err := fs.ReadFirstLine(helpers.HostSys("/class/dmi/id/product_uuid"))
+	if err != nil {
+		hlog.WithError(err).Error("error reading uuid")
+	}
 	matched, err := regexp.MatchString("^[0-9A-F]{8}(-[0-9A-F]{4}){3}-[0-9A-F]{12}$", uuid)
 	if err != nil {
 		hlog.WithError(err).Error("error in checking regular expression")
@@ -155,42 +138,6 @@ func getUpSince() string {
 		return ""
 	}
 	return time.Now().Add(time.Second * -time.Duration(info.Uptime)).Format("2006-01-02 15:04:05")
-}
-
-func readFile(filename string, re *regexp.Regexp) string {
-	file, err := os.Open(filename)
-	if err != nil {
-		hlog.WithError(err).WithField("filename", filename).Error("opening proc file")
-		return "unknown"
-	}
-	defer file.Close()
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		if line := re.FindStringSubmatch(scanner.Text()); len(line) > 1 {
-			return line[1]
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		hlog.WithError(err).WithField("filename", filename).Error("reading proc file")
-	}
-	return "unknown"
-}
-
-func readFirstLine(filename string) string {
-	file, err := os.Open(filename)
-	if err != nil {
-		hlog.WithError(err).WithField("filename", filename).Error("opening file")
-		return "unknown"
-	}
-	defer file.Close()
-	scanner := bufio.NewScanner(file)
-	scanner.Scan()
-	output := scanner.Text()
-	if err := scanner.Err(); err != nil {
-		hlog.WithError(err).WithField("filename", filename).Error("reading file")
-		return "unknown"
-	}
-	return strings.TrimSpace(output)
 }
 
 func runCmd(command string, args ...string) string {
@@ -238,12 +185,9 @@ func getCpuNum(cpuInfoFile string, fallback string) string {
 func (self *HostinfoPlugin) gatherHostinfo(context agent.AgentContext) *HostinfoData {
 	infoFile := helpers.HostProc("/cpuinfo")
 	totalCpu := getTotalCpu(infoFile)
-	r := regexp.MustCompile(`^(Red Hat|CentOS).* release 5\..*$`)
-	distro := getDistro()
-	isCentos5 := r.MatchString(distro)
 	var productUuid string
 	var hostType string
-	if isCentos5 {
+	if distro.IsCentos5() {
 		productUuid = "unknown"
 		hostType = "unknown unknown"
 	} else {
@@ -253,7 +197,7 @@ func (self *HostinfoPlugin) gatherHostinfo(context agent.AgentContext) *Hostinfo
 
 	data := &HostinfoData{
 		System:          "system",
-		Distro:          distro,
+		Distro:          distro.GetDistro(),
 		KernelVersion:   getKernelRelease(),
 		HostType:        hostType,
 		CpuName:         readProcFile(helpers.HostProc("/cpuinfo"), regexp.MustCompile(`model\sname\s*:\s`)),
@@ -309,8 +253,17 @@ func (self *HostinfoPlugin) getHostType() string {
 	if self.Context.Config().DisableCloudMetadata ||
 		self.cloudHarvester.GetCloudType() == cloud.TypeNoCloud ||
 		self.cloudHarvester.GetCloudType() == cloud.TypeInProgress {
-		manufacturer := readFirstLine(helpers.HostSys("/devices/virtual/dmi/id/sys_vendor"))
-		name := readFirstLine(helpers.HostSys("/devices/virtual/dmi/id/product_name"))
+
+		manufacturer, err := fs.ReadFirstLine(helpers.HostSys("/devices/virtual/dmi/id/sys_vendor"))
+		if err != nil {
+			hlog.WithError(err).Error("cannot read dmi sys vendor")
+		}
+
+		name, err := fs.ReadFirstLine(helpers.HostSys("/devices/virtual/dmi/id/product_name"))
+		if err != nil {
+			hlog.WithError(err).Error("cannot read dmi product name")
+		}
+
 		hostType = fmt.Sprintf("%s %s", manufacturer, name)
 	}
 

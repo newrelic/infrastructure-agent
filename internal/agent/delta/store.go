@@ -206,7 +206,7 @@ func (s *Store) clearPluginDeltaStore(pluginItem *PluginInfo, entityKey string) 
 	return
 }
 
-func (s *Store) compactCacheStorage(entityKey string, threshold uint64) (err error) {
+func (s *Store) compactCacheStorage(entityKey string, _ uint64) (err error) {
 	// Strategy:
 	// For any plugins that don't exist anymore, we can complete clean those out
 	// For plugins that do exist with N generations of data, remove all sent generations
@@ -492,16 +492,15 @@ func (s *Store) collectPluginFiles(dir string, entityKey string, fileFilterRE *r
 	for _, dirInfo := range pluginsFileInfo {
 		if dirInfo != nil && dirInfo.IsDir() && !nonEntityFolders[dirInfo.Name()] {
 			// Look inside each "plugin" directory to find the plugin's data files
-			filesInfo, err := ioutil.ReadDir(filepath.Join(dir, dirInfo.Name(), entityFolder))
+			join := filepath.Join(dir, dirInfo.Name(), entityFolder, "*.json")
+			filesInfo, err := filepath.Glob(join)
 			if err != nil {
 				// There is no such entity for the given plugin, so continuing
 				continue
 			}
 
 			for _, fInfo := range filesInfo {
-				if fInfo != nil && !fInfo.IsDir() && (fileFilterRE == nil || fileFilterRE.MatchString(fInfo.Name())) {
-					pluginList = append(pluginList, newPluginInfo(dirInfo.Name(), fInfo.Name()))
-				}
+				pluginList = append(pluginList, newPluginInfo(dirInfo.Name(), filepath.Base(fInfo)))
 			}
 		}
 	}
@@ -724,7 +723,7 @@ func (s *Store) ReadDeltas(entityKey string) ([]inventoryapi.RawDeltaBlock, erro
 
 	deltas := make([]inventoryapi.RawDeltaBlock, 0)
 	for _, buf := range buffers {
-		deltasGroup := make([]*inventoryapi.RawDelta, 0)
+		deltasGroup := make(inventoryapi.RawDeltaBlock, 0)
 		buf = s.wrapBuffer(buf, '[', ']', ",")
 		if err = json.Unmarshal(buf, &deltasGroup); err != nil {
 			llog.WithError(err).Error("ReadDeltas can't unmarshal raw deltas, cleaning out file")

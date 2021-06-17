@@ -3,9 +3,12 @@ package register
 import (
 	"context"
 	"fmt"
+	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
-	"time"
+	"github.com/sirupsen/logrus"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/id"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
@@ -23,6 +26,7 @@ type WorkerConfig struct {
 	MaxBatchSizeBytes int
 	MaxBatchDuration  time.Duration
 	MaxRetryBo        time.Duration
+	VerboseLogLevel   int
 }
 
 type worker struct {
@@ -32,6 +36,7 @@ type worker struct {
 	reqsToRegisterQueue <-chan fwrequest.EntityFwRequest
 	reqsRegisteredQueue chan<- fwrequest.EntityFwRequest
 	config              WorkerConfig
+	measure             instrumentation.Measure
 }
 
 func NewWorker(
@@ -41,6 +46,7 @@ func NewWorker(
 	reqsToRegisterQueue <-chan fwrequest.EntityFwRequest,
 	reqsRegisteredQueue chan<- fwrequest.EntityFwRequest,
 	config WorkerConfig,
+	measureFn instrumentation.Measure,
 ) *worker {
 	return &worker{
 		agentIDProvide:      agentIDProvide,
@@ -49,6 +55,7 @@ func NewWorker(
 		reqsToRegisterQueue: reqsToRegisterQueue,
 		reqsRegisteredQueue: reqsRegisteredQueue,
 		config:              config,
+		measure:             measureFn,
 	}
 }
 
@@ -66,7 +73,18 @@ func (w *worker) Run(ctx context.Context) {
 		case req := <-w.reqsToRegisterQueue:
 			entitySizeBytes := req.Data.Entity.JsonSize()
 
-			if batchSizeBytes+entitySizeBytes > w.config.MaxBatchSize || len(batch) == w.config.MaxBatchSize {
+			// Drop entities that exceed the size limit
+			if entitySizeBytes > w.config.MaxBatchSizeBytes {
+				wlog.WithFields(logrus.Fields{
+					"entity-size":       entitySizeBytes,
+					"entity-name":       req.Data.Entity.Name,
+					"maxBatchSizeBytes": w.config.MaxBatchSizeBytes,
+				}).Errorf("cannot process entity because size exceeded")
+				continue
+			}
+
+			// Check if requested entity will overpass the max bytes limits
+			if batchSizeBytes+entitySizeBytes > w.config.MaxBatchSizeBytes {
 				timer.Reset(w.config.MaxBatchDuration)
 				w.send(ctx, batch, &batchSizeBytes)
 			}
@@ -74,6 +92,12 @@ func (w *worker) Run(ctx context.Context) {
 			eKey := entity.Key(req.Data.Entity.Name)
 			batch[eKey] = req
 			batchSizeBytes += entitySizeBytes
+
+			// Send if batch is full
+			if batchSizeBytes == w.config.MaxBatchSizeBytes || len(batch) == w.config.MaxBatchSize {
+				timer.Reset(w.config.MaxBatchDuration)
+				w.send(ctx, batch, &batchSizeBytes)
+			}
 		case <-timer.C:
 			if len(batch) > 0 {
 				w.send(ctx, batch, &batchSizeBytes)
@@ -95,32 +119,40 @@ func (w *worker) send(ctx context.Context, batch map[entity.Key]fwrequest.Entity
 
 	for _, resp := range responses {
 		if resp.ErrorMsg != "" {
-			wlog.WithError(fmt.Errorf(resp.ErrorMsg)).
-				WithField("entityName", resp.Name).
-				Errorf("failed to register entity")
+			if w.config.VerboseLogLevel > 0 {
+				wlog.WithError(fmt.Errorf(resp.ErrorMsg)).
+					WithField("entityName", resp.Name).
+					Errorf("failed to register entity")
+			}
+			w.measure(instrumentation.Counter, instrumentation.EntityRegisterEntitiesRegistrationFailed, 1)
+
 			continue
 		}
 
-		if len(resp.Warnings) > 0 {
+		if w.config.VerboseLogLevel > 0 && len(resp.Warnings) > 0 {
 			for _, warn := range resp.Warnings {
-				wlog.
+				wlog.WithError(fmt.Errorf(warn)).
 					WithField("entityName", resp.Name).
 					WithField("entityID", resp.ID).
-					Errorf("entity registered with warnings: %s", warn)
+					Warn("entity registered with warnings")
 			}
+			w.measure(instrumentation.Counter, instrumentation.EntityRegisterEntitiesRegisteredWithWarning, 1)
 		}
 
 		r, ok := batch[entity.Key(resp.Name)]
 		if !ok {
-			wlog.
-				WithField("entityName", resp.Name).
-				WithField("entityID", resp.ID).
-				WithField("entityName", resp.Name).
-				Errorf("entityName returned by register not found in the entities batch")
+			if w.config.VerboseLogLevel > 0 {
+				wlog.
+					WithField("entityName", resp.Name).
+					WithField("entityID", resp.ID).
+					WithField("entityName", resp.Name).
+					Errorf("entityName returned by register not found in the entities batch")
+			}
 			continue
 		} else {
 			r.RegisteredWith(resp.ID)
 			w.reqsRegisteredQueue <- r
+			w.measure(instrumentation.Counter, instrumentation.EntityRegisterEntitiesRegistered, 1)
 		}
 	}
 }

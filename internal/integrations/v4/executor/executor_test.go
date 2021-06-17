@@ -31,7 +31,7 @@ func TestRunnable_CLI_Execute(t *testing.T) {
 		r := FromCmdSlice(testhelp.Command(fixtures.BasicCmd), execConfig(t))
 
 		// WHEN it is executed
-		to := r.Execute(context.Background(), nil)
+		to := r.Execute(context.Background(), nil, nil)
 
 		// THEN no errors are returned
 		assert.NoError(t, testhelp.ChannelErrClosed(to.Errors))
@@ -51,7 +51,7 @@ func TestRunnable_CLI_Execute_with_spaces(t *testing.T) {
 	r := FromCmdSlice(testhelp.Command(fixtures.BasicCmdWithSpace), execConfig(t))
 
 	// WHEN it is executed
-	to := r.Execute(context.Background(), nil)
+	to := r.Execute(context.Background(), nil, nil)
 
 	// THEN no errors are returned
 	assert.NoError(t, testhelp.ChannelErrClosed(to.Errors))
@@ -76,7 +76,7 @@ func TestRunnable_Execute_WithUser(t *testing.T) {
 	r := FromCmdSlice(testhelp.Command(fixtures.BasicCmd), cfg)
 
 	// WHEN it is executed
-	to := r.Execute(context.Background(), nil)
+	to := r.Execute(context.Background(), nil, nil)
 
 	// THEN no errors are returned
 	assert.NoError(t, testhelp.ChannelErrClosed(to.Errors))
@@ -95,7 +95,7 @@ func TestRunnable_Execute_WithArgs(t *testing.T) {
 	cfg := execConfig(t)
 	r := FromCmdSlice(testhelp.Command(fixtures.BasicCmd, "world"), cfg)
 
-	to := r.Execute(context.Background(), nil)
+	to := r.Execute(context.Background(), nil, nil)
 	assert.NoError(t, testhelp.ChannelErrClosed(to.Errors))
 	assert.Equal(t, "stdout line", testhelp.ChannelRead(to.Stdout))
 	assert.Equal(t, "-world", testhelp.ChannelRead(to.Stdout))
@@ -113,7 +113,7 @@ func TestRunnable_Execute_WithArgs_WithEnv(t *testing.T) {
 	cfg.Environment = map[string]string{"PREFIX": "hello"}
 	r := FromCmdSlice(testhelp.Command(fixtures.BasicCmd, "world"), cfg)
 
-	to := r.Execute(context.Background(), nil)
+	to := r.Execute(context.Background(), nil, nil)
 	assert.NoError(t, testhelp.ChannelErrClosed(to.Errors))
 	assert.Equal(t, "stdout line", testhelp.ChannelRead(to.Stdout))
 	assert.Equal(t, "hello-world", testhelp.ChannelRead(to.Stdout))
@@ -127,7 +127,7 @@ func TestRunnable_Execute_Error(t *testing.T) {
 	r := FromCmdSlice(testhelp.Command(fixtures.ErrorCmd), execConfig(t))
 
 	// WHEN it is executed
-	to := r.Execute(context.Background(), nil)
+	to := r.Execute(context.Background(), nil, nil)
 
 	// THEN an error is returned
 	assert.Error(t, testhelp.ChannelErrClosed(to.Errors))
@@ -149,7 +149,7 @@ func TestRunnable_Execute_Blocked(t *testing.T) {
 	r := FromCmdSlice(testhelp.Command(fixtures.BlockedCmd), cfg)
 
 	// THAT is normally working
-	to := r.Execute(ctx, nil)
+	to := r.Execute(ctx, nil, nil)
 	assert.Equal(t, "starting", testhelp.ChannelRead(to.Stdout))
 	assert.Error(t, testhelp.ChannelErrClosedTimeout(to.Errors, 100*time.Millisecond))
 
@@ -176,7 +176,7 @@ func TestNoRaces(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		ctx, cancel := context.WithCancel(context.Background())
 		cmd := FromCmdSlice([]string{"echo", hugeLine}, &Config{})
-		go cmd.Execute(ctx, nil)
+		go cmd.Execute(ctx, nil, nil)
 		cancel()
 	}
 }
@@ -191,7 +191,7 @@ func TestRunnable_Execute_Verbose(t *testing.T) {
 	ctx := context.WithValue(context.Background(), constants.EnableVerbose, 1)
 
 	// WHEN it is executed
-	to := r.Execute(ctx, nil)
+	to := r.Execute(ctx, nil, nil)
 
 	// THEN no errors are returned
 	assert.NoError(t, testhelp.ChannelErrClosed(to.Errors))
@@ -213,7 +213,7 @@ func TestRunnable_Execute_VerboseFalse(t *testing.T) {
 	ctx := context.WithValue(context.Background(), constants.EnableVerbose, 0)
 
 	// WHEN it is executed
-	to := r.Execute(ctx, nil)
+	to := r.Execute(ctx, nil, nil)
 
 	// THEN no errors are returned
 	assert.NoError(t, testhelp.ChannelErrClosed(to.Errors))
@@ -232,7 +232,7 @@ func TestRunnable_Execute_NoVerboseSet(t *testing.T) {
 	r := FromCmdSlice(testhelp.Command(fixtures.IntegrationVerboseScript), execConfig(t))
 
 	// WHEN it is executed
-	to := r.Execute(context.Background(), nil)
+	to := r.Execute(context.Background(), nil, nil)
 
 	// THEN no errors are returned
 	assert.NoError(t, testhelp.ChannelErrClosed(to.Errors))

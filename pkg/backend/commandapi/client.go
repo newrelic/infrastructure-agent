@@ -15,13 +15,15 @@ import (
 
 type Client interface {
 	GetCommands(agentID entity.ID) ([]Command, error)
-	AckCommand(agentID entity.ID, cmdID int) error
+	AckCommand(agentID entity.ID, cmdHash string) error
 }
 
 type Command struct {
-	ID   int             `json:"id"`
-	Name string          `json:"name"`
-	Args json.RawMessage `json:"arguments"`
+	ID       int                    `json:"id"`
+	Hash     string                 `json:"hash"`
+	Metadata map[string]interface{} `json:"metadata"`
+	Name     string                 `json:"name"`
+	Args     json.RawMessage        `json:"arguments"`
 }
 
 type client struct {
@@ -67,8 +69,8 @@ func (c *client) GetCommands(agentID entity.ID) ([]Command, error) {
 	return unmarshalCmdChannelPayload(body)
 }
 
-func (c *client) AckCommand(agentID entity.ID, cmdID int) error {
-	payload := strings.NewReader(fmt.Sprintf(`{ "id": %d, "name": "ack" }`, cmdID))
+func (c *client) AckCommand(agentID entity.ID, cmdHash string) error {
+	payload := strings.NewReader(fmt.Sprintf(`{ "hash": "%s", "name": "ack" }`, cmdHash))
 
 	req, err := http.NewRequest("POST", c.svcURL, payload)
 	if err != nil {

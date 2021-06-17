@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
+	event2 "github.com/newrelic/infrastructure-agent/pkg/event"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/sirupsen/logrus"
@@ -68,8 +69,8 @@ func NormalizeEvent(
 		"eventType": V1_EVENT_EVENT_TYPE,
 		"category":  V1_DEFAULT_EVENT_CATEGORY,
 	}
-	for _, key := range V1_ACCEPTED_EVENT_ATTRIBUTES {
-		if val, ok := event[key]; ok {
+	for key, val := range event {
+		if !event2.IsReserved(key) {
 			normalizedEvent[key] = val
 		}
 	}

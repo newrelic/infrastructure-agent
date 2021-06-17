@@ -697,7 +697,7 @@ func (rs *RunnerSuite) TestPluginHandleOutputEventsV1(c *C) {
 	ctx, plugin := newFakePluginWithContext(1)
 
 	var outputJSON = `{"name": "test", "protocol_version" : "1", "integration_version": "1.0.0", ` +
-		`"events": [{"summary": "hello world", "entity_name": "server", "format": "twisted", "hack": "nothing", "attributes": {"attrKey": "attrValue", "category": "attrCategory", "summary": "attrSummary"}}]}`
+		`"events": [{"summary": "hello world", "entity_name": "server", "format": "twisted", "custom_field": "custom_value", "attributes": {"attrKey": "attrValue", "category": "attrCategory", "summary": "attrSummary"}}]}`
 
 	extraLabels := data.Map{
 		"label.expected":     "extra label",
@@ -718,7 +718,7 @@ func (rs *RunnerSuite) TestPluginHandleOutputEventsV1(c *C) {
 	c.Assert(event["category"], Equals, V1_DEFAULT_EVENT_CATEGORY)
 	c.Assert(event["format"], Equals, "twisted")
 	c.Assert(event["entity_name"], Equals, "server")
-	c.Assert(event["hack"], IsNil)
+	c.Assert(event["custom_field"], Equals, "custom_value")
 
 	// labels from pluginInstance
 	c.Assert(event["label.environment"], Equals, "development")
@@ -801,6 +801,10 @@ func (a FakeAgent) RegisterPlugin(p agent.Plugin) {
 func (FakeAgent) GetContext() agent.AgentContext { return nil }
 
 func (rs *RunnerSuite) TestEventsPluginRunV1(c *C) {
+	if runtime.GOOS == "windows" {
+		c.Skip("timeouts on windows CI")
+	}
+
 	ctx, plugin := newFakePluginWithContext(1)
 
 	plugin.pluginCommand.Command = []string{

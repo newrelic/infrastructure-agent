@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/cache"
+
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/when"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
@@ -18,6 +20,8 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/contexts"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest/protocol"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
+	cfgprotocol "github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 
@@ -43,6 +47,7 @@ type logParser func(line string) (fields logFields)
 type runner struct {
 	emitter        emitter.Emitter
 	handleCmdReq   cmdrequest.HandleFn
+	handleConfig   configrequest.HandleFn
 	dSources       *databind.Sources
 	log            log.Entry
 	definition     integration.Definition
@@ -52,6 +57,8 @@ type runner struct {
 	healthCheck    sync.Once
 	heartBeatFunc  func()
 	heartBeatMutex sync.RWMutex
+	cache          cache.Cache
+	terminateQueue chan<- string
 }
 
 // NewRunner creates an integration runner instance.
@@ -62,14 +69,19 @@ func NewRunner(
 	dSources *databind.Sources,
 	handleErrorsProvide func() runnerErrorHandler,
 	cmdReqHandle cmdrequest.HandleFn,
+	configHandle configrequest.HandleFn,
+	terminateQ chan<- string,
 ) *runner {
 	r := &runner{
-		emitter:       emitter,
-		handleCmdReq:  cmdReqHandle,
-		dSources:      dSources,
-		definition:    intDef,
-		heartBeatFunc: func() {},
-		stderrParser:  parseLogrusFields,
+		emitter:        emitter,
+		handleCmdReq:   cmdReqHandle,
+		handleConfig:   configHandle,
+		dSources:       dSources,
+		definition:     intDef,
+		heartBeatFunc:  func() {},
+		stderrParser:   parseLogrusFields,
+		terminateQueue: terminateQ,
+		cache:          cache.CreateCache(),
 	}
 	if handleErrorsProvide != nil {
 		r.handleErrors = handleErrorsProvide()
@@ -80,10 +92,17 @@ func NewRunner(
 	return r
 }
 
-func (r *runner) Run(ctx context.Context, pidWChan chan<- int) {
+func (r *runner) Run(ctx context.Context, pidWCh, exitCodeCh chan<- int) {
 	r.log = illog.WithFields(LogFields(r.definition))
+	defer r.killChildren()
 	for {
 		waitForNextExecution := time.After(r.definition.Interval)
+
+		// only cmd-channel run-requests require exit-code, and they only trigger a single instance
+		//var exitCodeCh chan int
+		//if r.definition.RequiresEvent() {
+		//	exitCodeCh = make(chan int, 1)
+		//}
 
 		values, err := r.applyDiscovery()
 		if err != nil {
@@ -92,15 +111,41 @@ func (r *runner) Run(ctx context.Context, pidWChan chan<- int) {
 				Error("can't fetch discovery items")
 		} else {
 			if when.All(r.definition.WhenConditions...) {
-				r.execute(ctx, values, pidWChan)
+				r.execute(ctx, values, pidWCh, exitCodeCh)
 			}
+		}
+
+		if r.definition.SingleRun() {
+			r.log.Debug("Integration single run finished")
+			return
 		}
 
 		select {
 		case <-ctx.Done():
-			r.log.Debug("Integration has been interrupted. Finishing.")
+			r.log.Debug("Integration has been interrupted")
 			return
 		case <-waitForNextExecution:
+		}
+	}
+}
+
+func (r *runner) killChildren() {
+	if c := r.cache; c != nil {
+		cfgNames := c.ListConfigNames()
+		for _, cfgName := range cfgNames {
+			definitions := r.cache.GetDefinitions(cfgName)
+			for _, d := range definitions {
+				r.terminateQueue <- d.Hash()
+
+				var cfgName string
+				if d.CfgProtocol != nil {
+					cfgName = d.CfgProtocol.ConfigName
+				}
+				r.log.
+					WithField("child_name", d.Name).
+					WithField("cfg_protocol_name", cfgName).
+					Debug("Stopping child integration")
+			}
 		}
 	}
 }
@@ -111,6 +156,10 @@ func LogFields(def integration.Definition) logrus.Fields {
 	}
 	for k, v := range def.Labels {
 		fields[k] = v
+	}
+	if def.CfgProtocol != nil {
+		fields["cfg_protocol_name"] = def.CfgProtocol.ConfigName
+		fields["parent_integration_name"] = def.CfgProtocol.ParentName
 	}
 	return fields
 }
@@ -148,7 +197,7 @@ func (r *runner) heartBeat() {
 // to finish
 // For long-time running integrations, avoids starting the next
 // discover-execute cycle until all the parallel processes have ended
-func (r *runner) execute(ctx context.Context, matches *databind.Values, pidWChan chan<- int) {
+func (r *runner) execute(ctx context.Context, matches *databind.Values, pidWCh, exitCodeCh chan<- int) {
 	def := r.definition
 
 	// If timeout configuration is set, wraps current context in a heartbeat-enabled timeout context
@@ -159,7 +208,7 @@ func (r *runner) execute(ctx context.Context, matches *databind.Values, pidWChan
 	}
 
 	// Runs all the matching integration instances
-	outputs, err := r.definition.Run(ctx, matches, pidWChan)
+	outputs, err := r.definition.Run(ctx, matches, pidWCh, exitCodeCh)
 	if err != nil {
 		r.log.WithError(err).Error("can't start integration")
 		return
@@ -244,6 +293,10 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 		}
 
 		if ok, ver := protocol.IsCommandRequest(line); ok {
+			if r.handleCmdReq == nil {
+				llog.Warn("received cmd request payload without a handler")
+				continue
+			}
 			llog.WithField("version", ver).Debug("Received run request.")
 			cr, err := protocol.DeserializeLine(line)
 			if err != nil {
@@ -252,17 +305,28 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 					Warn("cannot deserialize integration run request payload")
 				continue
 			}
-
-			if r.handleCmdReq == nil {
-				llog.Warn("received cmd request payload without a handler")
-				continue
-			}
-
 			r.handleCmdReq(cr)
 			continue
 		}
 
-		llog.Debug("Received payload.")
+		if cfgProtocolBuilder := cfgprotocol.GetConfigProtocolBuilder(line); cfgProtocolBuilder != nil {
+			if r.handleConfig == nil {
+				llog.Warn("received config protocol request payload without a handler")
+				continue
+			}
+			cfgProtocol, err := cfgProtocolBuilder.Build()
+			llog.WithField("version", cfgProtocol.Version()).Debug("Received config protocol request.")
+			if err != nil {
+				llog.
+					WithError(err).
+					Warn("cannot build config protocol")
+				continue
+			}
+
+			r.handleConfig(cfgProtocol, r.cache, r.definition)
+			continue
+		}
+
 		err := r.emitter.Emit(r.definition, extraLabels, entityRewrite, line)
 		if err != nil {
 			llog.WithError(err).Warn("Cannot emit integration payload")

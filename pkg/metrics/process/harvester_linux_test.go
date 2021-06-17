@@ -21,7 +21,7 @@ import (
 
 func TestLinuxHarvester_IsPrivileged(t *testing.T) {
 	cases := []struct {
-		mode       config.AgentMode
+		mode       string
 		privileged bool
 	}{
 		{mode: config.ModeRoot, privileged: true},

@@ -13,6 +13,7 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	. "gopkg.in/check.v1"
 )
 
@@ -350,21 +351,22 @@ func (s *ConfigSuite) TestCalculateCollectorURL(c *C) {
 		license   string
 		expectURL string
 		staging   bool
+		fedramp   bool
 	}{
 		// non-region license, staging false
-		{license: "0123456789012345678901234567890123456789", expectURL: "https://infra-api.newrelic.com", staging: false},
+		{license: "0123456789012345678901234567890123456789", expectURL: "https://infra-api.newrelic.com", staging: false, fedramp: false},
 		// non-region license, staging true
-		{license: "0123456789012345678901234567890123456789", expectURL: "https://staging-infra-api.newrelic.com", staging: true},
+		{license: "0123456789012345678901234567890123456789", expectURL: "https://staging-infra-api.newrelic.com", staging: true, fedramp: false},
 		// four letter region
-		{license: "eu01xx6789012345678901234567890123456789", expectURL: "https://infra-api.eu.newrelic.com", staging: false},
+		{license: "eu01xx6789012345678901234567890123456789", expectURL: "https://infra-api.eu.newrelic.com", staging: false, fedramp: false},
 		// four letter region
-		{license: "eu01xx6789012345678901234567890123456789", expectURL: "https://staging-infra-api.eu.newrelic.com", staging: true},
-		//// five letter region
-		{license: "gov01x6789012345678901234567890123456789", expectURL: "https://gov-infra-api.newrelic.com", staging: true},
+		{license: "eu01xx6789012345678901234567890123456789", expectURL: "https://staging-infra-api.eu.newrelic.com", staging: true, fedramp: false},
+		// non-region license, fedramp true
+		{license: "0123456789012345678901234567890123456789", expectURL: "https://gov-infra-api.newrelic.com", staging: false, fedramp: true},
 	}
 
 	for _, tc := range testcases {
-		u := calculateCollectorURL(tc.license, tc.staging)
+		u := calculateCollectorURL(tc.license, tc.staging, tc.fedramp)
 		c.Assert(u, Equals, tc.expectURL)
 	}
 }
@@ -375,12 +377,14 @@ func (s *ConfigSuite) TestCalculateDimensionalMetricURL(c *C) {
 		license      string
 		collectorURL string
 		staging      bool
+		fedramp      bool
 		want         string
 	}{
 		{
 			"Default URL, no region license, no collector URL",
 			"0123456789012345678901234567890123456789",
 			"",
+			false,
 			false,
 			"https://metric-api.newrelic.com",
 		},
@@ -389,12 +393,14 @@ func (s *ConfigSuite) TestCalculateDimensionalMetricURL(c *C) {
 			"0123456789012345678901234567890123456789",
 			"",
 			true,
+			false,
 			"https://staging-metric-api.newrelic.com",
 		},
 		{
 			"Default URL, eu license region, no collector URL",
 			"eu01xx6789012345678901234567890123456789",
 			"",
+			false,
 			false,
 			"https://metric-api.eu.newrelic.com",
 		},
@@ -403,26 +409,29 @@ func (s *ConfigSuite) TestCalculateDimensionalMetricURL(c *C) {
 			"eu01xx6789012345678901234567890123456789",
 			"",
 			true,
+			false,
 			"https://staging-metric-api.eu.newrelic.com",
 		},
 		{
-			"Default URL, gov license region, no collector URL",
-			"gov01xx6789012345678901234567890123456789",
+			"Default URL, fedramp flag, no collector URL",
+			"0123456789012345678901234567890123456789",
 			"",
+			false,
 			true,
 			"https://gov-infra-api.newrelic.com",
 		},
 		{
-			"From Collector URL",
-			"gov01x6789012345678901234567890123456789",
-			"https://metric-api.test",
+			"Staging flag prevails over fedramp one",
+			"0123456789012345678901234567890123456789",
+			"",
 			true,
-			"https://metric-api.test",
+			true,
+			"https://staging-metric-api.newrelic.com",
 		},
 	}
 
 	for _, tc := range testCases {
-		u := calculateDimensionalMetricURL(tc.collectorURL, tc.license, tc.staging)
+		u := calculateDimensionalMetricURL(tc.collectorURL, tc.license, tc.staging, tc.fedramp)
 		c.Assert(u, Equals, tc.want)
 	}
 }
@@ -432,6 +441,7 @@ func (s *ConfigSuite) TestCalculateIdentityURL(c *C) {
 		license   string
 		expectURL string
 		staging   bool
+		fedramp   bool
 	}{
 		// non-region license
 		{license: "0123456789012345678901234567890123456789", expectURL: defaultIdentityURL, staging: false},
@@ -445,10 +455,12 @@ func (s *ConfigSuite) TestCalculateIdentityURL(c *C) {
 		{license: "gov01x6789012345678901234567890123456789", expectURL: defaultIdentityURL, staging: false},
 		// five letter region
 		{license: "gov01x6789012345678901234567890123456789", expectURL: defaultIdentityStagingURL, staging: true},
+		// non-region license, fedramp true
+		{license: "0123456789012345678901234567890123456789", expectURL: defaultSecureFedralIdentityURL, staging: false, fedramp: true},
 	}
 
 	for _, tc := range testcases {
-		c.Assert(calculateIdentityURL(tc.license, tc.staging), Equals, tc.expectURL)
+		c.Assert(calculateIdentityURL(tc.license, tc.staging, tc.fedramp), Equals, tc.expectURL)
 	}
 }
 
@@ -457,6 +469,7 @@ func (s *ConfigSuite) TestCalculateCmdChannelURL(c *C) {
 		license   string
 		expectURL string
 		staging   bool
+		fedramp   bool
 	}{
 		// non-region license
 		{license: "0123456789012345678901234567890123456789", expectURL: defaultCmdChannelURL, staging: false},
@@ -470,31 +483,33 @@ func (s *ConfigSuite) TestCalculateCmdChannelURL(c *C) {
 		{license: "gov01x6789012345678901234567890123456789", expectURL: defaultCmdChannelURL, staging: false},
 		// five letter region
 		{license: "gov01x6789012345678901234567890123456789", expectURL: defaultCmdChannelStagingURL, staging: true},
+		// non-region license, fedramp true
+		{license: "0123456789012345678901234567890123456789", expectURL: defaultSecureFedralCmdChannelURL, staging: false, fedramp: true},
 	}
 
 	for _, tc := range testcases {
-		c.Assert(calculateCmdChannelURL(tc.license, tc.staging), Equals, tc.expectURL)
+		c.Assert(calculateCmdChannelURL(tc.license, tc.staging, tc.fedramp), Equals, tc.expectURL)
 	}
 }
 
 func TestLogInfo_Nil(t *testing.T) {
 	var config *Config
 
-	_, err := config.toLogInfo()
+	_, err := config.PublicFields()
 	assert.Error(t, err)
 }
 
 func TestLogInfo_Empty(t *testing.T) {
 	var config Config
 
-	_, err := config.toLogInfo()
+	_, err := config.PublicFields()
 	assert.NoError(t, err)
 }
 
 func TestLogInfo_New(t *testing.T) {
 	var config = NewConfig()
 
-	_, err := config.toLogInfo()
+	_, err := config.PublicFields()
 	assert.NoError(t, err)
 }
 
@@ -502,7 +517,7 @@ func TestLogInfo_HidePrivate(t *testing.T) {
 	var config = NewConfig()
 	config.CollectorURL = "test"
 
-	actual, err := config.toLogInfo()
+	actual, err := config.PublicFields()
 	assert.NoError(t, err)
 
 	_, exists := actual["collector_url"]
@@ -513,7 +528,7 @@ func TestLogInfo_Public(t *testing.T) {
 	var config = NewConfig()
 	config.Proxy = "test"
 
-	actual, err := config.toLogInfo()
+	actual, err := config.PublicFields()
 	assert.NoError(t, err)
 
 	actualVal, exists := actual["proxy"]
@@ -525,7 +540,7 @@ func TestLogInfo_Obfuscate(t *testing.T) {
 	var config = NewConfig()
 	config.License = "testabcd"
 
-	actual, err := config.toLogInfo()
+	actual, err := config.PublicFields()
 	assert.NoError(t, err)
 
 	actualVal, exists := actual["license_key"]
@@ -585,4 +600,62 @@ func Test_ParseIncludeMatchingRule_EnvVar(t *testing.T) {
 	assert.NoError(t, err)
 	expected := IncludeMetricsMap{"process.name": []string{"regex \"kube*\""}}
 	assert.True(t, reflect.DeepEqual(cfg.IncludeMetricsMatchers, expected))
+}
+
+func TestLoadYamlConfig_withDatabindJSONVariables(t *testing.T) {
+	yamlData := []byte(`
+variables:
+  var1:
+    test:
+      value: "10.0.2.2:8888"
+staging: true
+license_key: "xxx"
+proxy: ${var1}
+`)
+
+	tmp, err := createTestFile(yamlData)
+	require.NoError(t, err)
+	defer os.Remove(tmp.Name())
+
+	cfg, err := LoadConfig(tmp.Name())
+
+	require.NoError(t, err)
+
+	assert.True(t, cfg.Staging)
+	assert.Equal(t, "xxx", cfg.License)
+	assert.Equal(t, "10.0.2.2:8888", cfg.Proxy)
+}
+
+func TestLoadYamlConfig_withDatabindAndEnvVars(t *testing.T) {
+	yamlData := []byte(`
+variables:
+  license:
+    test:
+      value: {{ SOME_LICENSE }}
+license_key: ${license}
+`)
+
+	tmp, err := createTestFile(yamlData)
+	require.NoError(t, err)
+	defer os.Remove(tmp.Name())
+
+	os.Setenv("SOME_LICENSE", "XXX")
+	cfg, err := LoadConfig(tmp.Name())
+	os.Unsetenv("SOME_LICENSE")
+
+	require.NoError(t, err)
+	assert.Equal(t, "XXX", cfg.License)
+}
+
+func createTestFile(data []byte) (*os.File, error) {
+	tmp, err := ioutil.TempFile("", "loadconfig")
+	if err != nil {
+		return nil, err
+	}
+	_, err = tmp.Write(data)
+	if err != nil {
+		return nil, err
+	}
+	tmp.Close()
+	return tmp, nil
 }

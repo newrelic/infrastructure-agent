@@ -1,0 +1,8 @@
+---
+
+- name: stop newrelic-infra service
+  service:
+    name: newrelic-infra
+    state: stopped
+
+...

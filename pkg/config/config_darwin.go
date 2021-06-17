@@ -10,7 +10,7 @@ const (
 	defaultConnectEnabled = true
 )
 
-func runtimeValues() (userMode AgentMode, agentUser, executablePath string) {
+func runtimeValues() (userMode, agentUser, executablePath string) {
 	return ModeRoot, "", ""
 }
 

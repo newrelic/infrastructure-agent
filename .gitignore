@@ -1,4 +1,6 @@
 /.idea
+/bin
+/dist
 /target
 /overlay/bundled-plugins/*/bin
 .DS_Store
@@ -8,7 +10,6 @@
 *.swp
 opsmatic-agent.conf
 newrelic-infra.yml
-newrelic-infra.yml.*
 c.out
 *.syso
 coverage.xml
@@ -17,8 +18,7 @@ lcov.info
 *.heap
 /workspace
 .vscode
-cmd/newrelic-infra/versioninfo.json
-**/Product.wxs
+versioninfo.json
 
 # Agent data directory when AppDataDir is not specify in darwin
 /data
@@ -34,3 +34,12 @@ cmd/newrelic-infra/versioninfo.json
 !/vendor/modules.txt
 .envrc
 venv
+
+test/packaging/ansible/inventory.ini
+test/cfgprotocol/testdata/scenarios/scenario2/nri-config.json
+test/cfgprotocol/testdata/scenarios/scenario3/nri-config.json
+test/cfgprotocol/testdata/scenarios/scenario4/settings.yml
+
+#harvest test build
+harvest*.test
+test/harvest/ansible/inventory.ec2

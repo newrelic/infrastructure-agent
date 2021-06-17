@@ -9,12 +9,12 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery/command"
+	yaml "gopkg.in/yaml.v2"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery/docker"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery/fargate"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/secrets"
-	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -22,9 +22,13 @@ const (
 	defaultVariablesTTL = time.Hour
 )
 
+type YAMLAgentConfig struct {
+	Variables map[string]varEntry `yaml:"variables,omitempty" json:"variables,omitempty"` // key: variable name
+}
+
 type YAMLConfig struct {
-	Variables map[string]varEntry `yaml:"variables,omitempty"` // key: variable name
-	Discovery struct {
+	YAMLAgentConfig `yaml:",inline"`
+	Discovery       struct {
 		TTL     string               `yaml:"ttl,omitempty"`
 		Docker  *discovery.Container `yaml:"docker,omitempty"`
 		Fargate *discovery.Container `yaml:"fargate,omitempty"`
@@ -40,12 +44,21 @@ func (y *YAMLConfig) Enabled() bool {
 }
 
 type varEntry struct {
-	TTL         string               `yaml:"ttl,omitempty"`
-	KMS         *secrets.KMS         `yaml:"aws-kms,omitempty"`
-	Vault       *secrets.Vault       `yaml:"vault,omitempty"`
-	CyberArkCLI *secrets.CyberArkCLI `yaml:"cyberark-cli,omitempty"`
-	CyberArkAPI *secrets.CyberArkAPI `yaml:"cyberark-api,omitempty"`
+	TTL         string               `yaml:"ttl,omitempty" json:"ttl,omitempty"`
+	Test        *Test                `yaml:"test,omitempty" json:"test,omitempty"`
+	KMS         *secrets.KMS         `yaml:"aws-kms,omitempty" json:"aws-kms,omitempty"`
+	Vault       *secrets.Vault       `yaml:"vault,omitempty" json:"vault,omitempty"`
+	CyberArkCLI *secrets.CyberArkCLI `yaml:"cyberark-cli,omitempty" json:"cyberark-cli,omitempty"`
+	CyberArkAPI *secrets.CyberArkAPI `yaml:"cyberark-api,omitempty" json:"cyberark-api,omitempty"`
+	Obfuscated  *secrets.Obfuscated  `yaml:"obfuscated,omitempty" json:"obfuscated,omitempty"`
 }
+
+// Test for testing purposes until providers get decoupled.
+type Test struct {
+	Value interface{} `yaml:"value,omitempty" json:"value,omitempty"`
+}
+
+func (t *Test) Validate() error { return nil }
 
 // LoadYaml builds a set of data binding Sources from a YAML file
 func LoadYAML(bytes []byte) (*Sources, error) {
@@ -69,13 +82,29 @@ func (dc *YAMLConfig) DataSources() (*Sources, error) {
 		return nil, err
 	}
 
-	cfg := Sources{
+	s := Sources{
 		clock:     time.Now,
 		variables: map[string]*gatherer{},
 	}
-	cfg.discoverer, err = dc.selectDiscoverer(ttl)
+	s.discoverer, err = dc.selectDiscoverer(ttl)
 	if err != nil {
 		return nil, err
+	}
+
+	varS, err := dc.YAMLAgentConfig.DataSources()
+	if err != nil {
+		return nil, err
+	}
+
+	s.variables = varS.variables
+
+	return &s, nil
+}
+
+func (dc *YAMLAgentConfig) DataSources() (*Sources, error) {
+	s := Sources{
+		clock:     time.Now,
+		variables: map[string]*gatherer{},
 	}
 
 	for vName, vEntry := range dc.Variables {
@@ -83,10 +112,10 @@ func (dc *YAMLConfig) DataSources() (*Sources, error) {
 		if err != nil {
 			return nil, err
 		}
-		cfg.variables[vName] = vEntry.selectGatherer(ttl)
+		s.variables[vName] = vEntry.selectGatherer(ttl)
 	}
 
-	return &cfg, nil
+	return &s, nil
 }
 
 // returns a duration in the formatted string. If the string is empty, returns def (default)
@@ -156,11 +185,16 @@ func (y *YAMLConfig) validate() error {
 		return errors.New("only one discovery source allowed")
 	}
 
+	return y.YAMLAgentConfig.validate()
+}
+
+func (y *YAMLAgentConfig) validate() error {
 	names := map[string]struct{}{}
 	for vName, vEntry := range y.Variables {
 		if _, ok := names[vName]; ok {
 			return fmt.Errorf("duplicate variable name %q", names)
 		}
+
 		names[vName] = struct{}{}
 		if err := vEntry.validate(); err != nil {
 			return err
@@ -196,6 +230,12 @@ func (v *varEntry) validate() error {
 			return err
 		}
 	}
+	if v.Obfuscated != nil {
+		sections++
+		if err := v.Obfuscated.Validate(); err != nil {
+			return err
+		}
+	}
 	if sections == 0 {
 		return errors.New("you should specify one source to gather the variable: aws-kms or vault or cyberark-cli")
 	}
@@ -228,6 +268,16 @@ func (v *varEntry) selectGatherer(ttl time.Duration) *gatherer {
 		return &gatherer{
 			cache: cachedEntry{ttl: ttl},
 			fetch: secrets.CyberArkAPIGatherer(v.CyberArkAPI),
+		}
+	} else if v.Obfuscated != nil {
+		return &gatherer{
+			cache: cachedEntry{ttl: ttl},
+			fetch: secrets.ObfuscateGatherer(v.Obfuscated),
+		}
+	} else if v.Test != nil {
+		return &gatherer{
+			cache: cachedEntry{ttl: ttl},
+			fetch: func() (interface{}, error) { return v.Test.Value, nil },
 		}
 	}
 
