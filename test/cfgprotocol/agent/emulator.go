@@ -97,7 +97,7 @@ func (ae *Emulator) RunAgent() error {
 	if err := initialize.AgentService(cfg); err != nil {
 		fatal(err, "Can't complete platform specific initialization.")
 	}
-	metricsSenderConfig := dm.NewConfig(cfg.MetricURL, cfg.License, time.Duration(cfg.DMSubmissionPeriod)*time.Second, cfg.MaxMetricBatchEntitiesCount, cfg.MaxMetricBatchEntitiesQueue)
+	metricsSenderConfig := dm.NewConfig(cfg.MetricURL, false, cfg.License, time.Duration(cfg.DMSubmissionPeriod)*time.Second, cfg.MaxMetricBatchEntitiesCount, cfg.MaxMetricBatchEntitiesQueue)
 	dmSender, err := dm.NewDMSender(metricsSenderConfig, http.DefaultTransport, ae.agent.Context.IdContext().AgentIdentity)
 	if err != nil {
 		return err
