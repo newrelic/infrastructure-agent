@@ -120,6 +120,7 @@ func TestConfigMetricURL(t *testing.T) {
 	if u := h.config.metricURL(); u != defaultMetricURL {
 		t.Fatal(u)
 	}
+
 	h, err = NewHarvester(configTesting, func(cfg *Config) {
 		cfg.MetricsURLOverride = "metric-url-override"
 	})
@@ -127,6 +128,14 @@ func TestConfigMetricURL(t *testing.T) {
 		t.Fatal(h, err)
 	}
 	if u := h.config.metricURL(); u != "metric-url-override" {
+		t.Fatal(u)
+	}
+
+	h, err = NewHarvester(func(cfg *Config) {
+		cfg.APIKey = "api-key"
+		cfg.Fedramp = true
+	})
+	if u := h.config.metricURL(); u != defaultMetricURLGov {
 		t.Fatal(u)
 	}
 }

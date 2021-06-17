@@ -199,9 +199,10 @@ func (cfg *Config) logAudit(fields map[string]interface{}) {
 }
 
 const (
-	defaultSpanURL    = "https://trace-api.newrelic.com/trace/v1"
-	defaultSpanURLGov = "https://gov-trace-api.newrelic.com/trace/v1"
-	defaultMetricURL  = "https://metric-api.newrelic.com/metric/v1"
+	defaultSpanURL      = "https://trace-api.newrelic.com/trace/v1"
+	defaultSpanURLGov   = "https://gov-trace-api.newrelic.com/trace/v1"
+	defaultMetricURL    = "https://metric-api.newrelic.com/metric/v1"
+	defaultMetricURLGov = "https://gov-metric-api.newrelic.com/metric/v1"
 )
 
 func (cfg *Config) spanURL() string {
@@ -220,6 +221,11 @@ func (cfg *Config) metricURL() string {
 	if cfg.MetricsURLOverride != "" {
 		return cfg.MetricsURLOverride
 	}
+
+	if cfg.Fedramp {
+		return defaultMetricURLGov
+	}
+
 	return defaultMetricURL
 }
 
