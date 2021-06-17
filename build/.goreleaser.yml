@@ -47,7 +47,7 @@ builds:
 ###
 ###  darwin build
 ###
-  - id: linux-newrelic-infra-darwin
+  - id: darwin-newrelic-infra
     main: ./cmd/newrelic-infra
     binary: newrelic-infra
     env:
@@ -58,7 +58,7 @@ builds:
       - -s -w -X main.buildVersion={{.Version}}
       - -s -w -X main.gitCommit={{.Commit}}
 
-  - id: linux-newrelic-infra-ctl-darwin
+  - id: darwin-newrelic-infra-ctl
     main: ./cmd/newrelic-infra-ctl
     binary: newrelic-infra-ctl
     env:
@@ -69,7 +69,7 @@ builds:
       - -s -w -X main.buildVersion={{.Version}}
       - -s -w -X main.gitCommit={{.Commit}}
 
-  - id: linux-newrelic-infra-service-darwin
+  - id: darwin-newrelic-infra-service
     main: ./cmd/newrelic-infra-service
     binary: newrelic-infra-service
     env:
