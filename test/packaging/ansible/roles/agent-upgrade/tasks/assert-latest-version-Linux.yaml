@@ -7,6 +7,6 @@
   # using >= not to fail with 1st arm version
 - name: assert installed version is bigger than initial version
   assert:
-    that: "{{ installed_version.stdout is version(agent_pkg_version, '>=') }}"
+    that: "{{ installed_version.stdout is version(target_agent_version, '>=') }}"
 
 ...

@@ -5,7 +5,7 @@
   yum:
     name: "newrelic-infra"
     update_cache: yes
-    state: latest
+    state: "latest"
   retries: 5
   delay: 60
 

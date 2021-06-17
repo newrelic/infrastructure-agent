@@ -13,7 +13,7 @@
     - name: Installation tests suite
       vars:
         env_vars:
-        agent_pkg_version: "1.18.0" # minimum version supporting ARM.
+        target_agent_version: "1.18.0" # minimum version supporting ARM.
 
       block:
 

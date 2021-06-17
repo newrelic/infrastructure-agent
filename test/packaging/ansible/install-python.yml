@@ -1,0 +1,10 @@
+---
+
+- hosts: all
+  become: false
+  gather_facts: no #gather facts after adding SSH known hosts
+
+  tasks:
+    - name: install python in boxes that doesn't have it by default
+      include_role:
+        name: install-python
