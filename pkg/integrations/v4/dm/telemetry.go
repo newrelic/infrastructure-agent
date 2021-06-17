@@ -53,6 +53,7 @@ func newTelemetryHarverster(conf MetricsSenderConfig, transport http.RoundTrippe
 		telemetry.ConfigBasicAuditLogger(newTelemetryErrorLogger("audit")),
 		telemetryHarvesterWithTransport(transport, conf.LicenseKey, idProvide),
 		telemetryHarvesterWithMetricApiUrl(conf.MetricApiURL),
+		telemetryHarvesterWithFedramp(conf.Fedramp),
 		telemetry.ConfigHarvestPeriod(conf.SubmissionPeriod),
 		telemetry.ConfigMaxEntitiesPerRequest(conf.MaxEntitiesPerReq),
 		telemetry.ConfigMaxEntitiesPerBatch(conf.MaxEntitiesPerBatch),
@@ -68,6 +69,12 @@ func telemetryHarvesterWithTransport(transport http.RoundTripper, licenseKey str
 func telemetryHarvesterWithMetricApiUrl(metricApiUrl string) func(*telemetry.Config) {
 	return func(config *telemetry.Config) {
 		config.MetricsURLOverride = metricApiUrl
+	}
+}
+
+func telemetryHarvesterWithFedramp(fedramp bool) func(*telemetry.Config) {
+	return func(config *telemetry.Config) {
+		config.Fedramp = fedramp
 	}
 }
 

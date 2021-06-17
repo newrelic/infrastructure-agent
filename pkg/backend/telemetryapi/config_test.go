@@ -139,6 +139,7 @@ func TestConfigSpanURL(t *testing.T) {
 	if u := h.config.spanURL(); u != defaultSpanURL {
 		t.Fatal(u)
 	}
+
 	h, err = NewHarvester(configTesting, func(cfg *Config) {
 		cfg.SpansURLOverride = "span-url-override"
 	})
@@ -146,6 +147,17 @@ func TestConfigSpanURL(t *testing.T) {
 		t.Fatal(h, err)
 	}
 	if u := h.config.spanURL(); u != "span-url-override" {
+		t.Fatal(u)
+	}
+
+	h, err = NewHarvester(func(cfg *Config) {
+		cfg.APIKey = "api-key"
+		cfg.Fedramp = true
+	})
+	if nil == h || err != nil {
+		t.Fatal(h, err)
+	}
+	if u := h.config.spanURL(); u != defaultSpanURLGov {
 		t.Fatal(u)
 	}
 }

@@ -53,6 +53,8 @@ type Config struct {
 	// Trace Observer URL.  See
 	// https://docs.newrelic.com/docs/understand-dependencies/distributed-tracing/enable-configure/enable-distributed-tracing
 	SpansURLOverride string
+	// Fedramp use government compliant endpoints
+	Fedramp bool
 	// Product is added to the User-Agent header. eg. "NewRelic-Go-OpenCensus"
 	Product string
 	// ProductVersion is added to the User-Agent header. eg. "0.1.0".
@@ -197,14 +199,20 @@ func (cfg *Config) logAudit(fields map[string]interface{}) {
 }
 
 const (
-	defaultSpanURL   = "https://trace-api.newrelic.com/trace/v1"
-	defaultMetricURL = "https://metric-api.newrelic.com/metric/v1"
+	defaultSpanURL    = "https://trace-api.newrelic.com/trace/v1"
+	defaultSpanURLGov = "https://gov-trace-api.newrelic.com/trace/v1"
+	defaultMetricURL  = "https://metric-api.newrelic.com/metric/v1"
 )
 
 func (cfg *Config) spanURL() string {
 	if cfg.SpansURLOverride != "" {
 		return cfg.SpansURLOverride
 	}
+
+	if cfg.Fedramp {
+		return defaultSpanURLGov
+	}
+
 	return defaultSpanURL
 }
 
