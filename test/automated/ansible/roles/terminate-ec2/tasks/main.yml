@@ -1,0 +1,10 @@
+---
+
+# https://stackoverflow.com/questions/32297456/
+- name: Accept SSH host keys
+  connection: local
+  become: false
+  shell: |
+    aws ec2 terminate-instances --instance-ids {{ iid }}
+
+...

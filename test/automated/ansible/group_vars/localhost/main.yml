@@ -4,9 +4,6 @@
 #CentOS AMI: https://www.centos.org/download/aws-images/
 #SLES:
 
-# TODO : Define a good prefix
-instance_name_tag_prefix: "caos-harvest"
-
 #https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/connection-prereqs.html
 #  For Amazon Linux 2 or the Amazon Linux AMI, the user name is ec2-user.
 #  For a CentOS AMI, the user name is centos.

@@ -1,6 +1,0 @@
----
-
-subnet: "subnet-05e71d641651d7ccb"
-ec2_private_key_file: "~/.ssh/caos-dev-arm.cer"
-
-...
