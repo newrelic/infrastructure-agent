@@ -77,8 +77,6 @@ func TestServe_Status(t *testing.T) {
 }
 
 func TestServe_OnlyErrors(t *testing.T) {
-	t.Skipf("because time race, as WaitUntilReady is not right")
-
 	// Given a running HTTP endpoint and an errored one (which times out)
 	port, err := network_helpers.TCPPort()
 	require.NoError(t, err)
@@ -136,8 +134,6 @@ func TestServe_OnlyErrors(t *testing.T) {
 }
 
 func TestServe_IngestData(t *testing.T) {
-	t.Skipf("because time race, as WaitUntilReady is not right")
-
 	port, err := network_helpers.TCPPort()
 	require.NoError(t, err)
 
@@ -153,8 +149,6 @@ func TestServe_IngestData(t *testing.T) {
 	payloadWritten := make(chan struct{})
 	go func() {
 		s.WaitUntilReady()
-		time.Sleep(100 * time.Millisecond)
-
 		client := http.Client{}
 		postReq, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%d%s", port, ingestAPIPath), bytes.NewReader(fixtures.FooBytes))
 		resp, err := client.Do(postReq)

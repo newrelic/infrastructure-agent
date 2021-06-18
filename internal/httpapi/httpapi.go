@@ -3,11 +3,13 @@
 package httpapi
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/newrelic/infrastructure-agent/internal/agent/status"
@@ -22,7 +24,9 @@ const (
 	componentName           = IntegrationName
 	statusAPIPath           = "/v1/status"
 	statusOnlyErrorsAPIPath = "/v1/status/errors"
+	statusAPIPathReady      = "/v1/status/ready"
 	ingestAPIPath           = "/v1/data"
+	ingestAPIPathReady      = "/v1/data/ready"
 )
 
 type responseError struct {
@@ -93,6 +97,7 @@ func (s *Server) Serve(ctx context.Context) {
 
 			router := httprouter.New()
 			// read only API
+			router.GET(statusAPIPathReady, s.handleReady)
 			router.GET(statusAPIPath, s.handle(false))
 			router.GET(statusOnlyErrorsAPIPath, s.handle(true))
 			// local only API
@@ -113,6 +118,7 @@ func (s *Server) Serve(ctx context.Context) {
 			}).Debug("Ingest API starting listening.")
 
 			router := httprouter.New()
+			router.GET(ingestAPIPathReady, s.handleReady)
 			router.POST(ingestAPIPath, s.handleIngest)
 			err := http.ListenAndServe(fmt.Sprintf("%s:%d", s.cfg.HostIngest, s.cfg.PortIngest), router)
 			if err != nil {
@@ -123,7 +129,43 @@ func (s *Server) Serve(ctx context.Context) {
 		}()
 	}
 
+	c := http.Client{}
+	var ingestReady, statusReady bool
+	for {
+		if s.cfg.EnableIngest {
+			postReq, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d%s", s.cfg.PortIngest, ingestAPIPathReady), bytes.NewReader([]byte{}))
+			if err != nil {
+				s.logger.Warnf("cannot create request to verify status API readiness, err: %s", err)
+			} else {
+				resp, err := c.Do(postReq)
+				if err == nil && resp.StatusCode == http.StatusOK {
+					ingestReady = true
+				}
+				time.Sleep(10 * time.Millisecond)
+			}
+		} else {
+			ingestReady = true
+		}
+		if s.cfg.EnableStatus {
+			postReq, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d%s", s.cfg.PortStatus, statusAPIPathReady), bytes.NewReader([]byte{}))
+			if err != nil {
+				s.logger.Warnf("cannot create request to verify ingest API readiness, err: %s", err)
+			} else {
+				resp, err := c.Do(postReq)
+				if err == nil && resp.StatusCode == http.StatusOK {
+					statusReady = true
+				}
+				time.Sleep(10 * time.Millisecond)
+			}
+		} else {
+			statusReady = true
+		}
+		if ingestReady && statusReady {
+			break
+		}
+	}
 	close(s.readyCh)
+
 	<-ctx.Done()
 }
 
@@ -170,6 +212,10 @@ func (s *Server) handle(onlyErrors bool) func(http.ResponseWriter, *http.Request
 			s.logger.Warn("cannot write status response, error: " + err.Error())
 		}
 	}
+}
+
+func (s *Server) handleReady(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *Server) handleIngest(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
