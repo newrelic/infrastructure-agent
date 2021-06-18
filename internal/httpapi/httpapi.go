@@ -14,6 +14,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -30,8 +31,7 @@ type responseError struct {
 
 // Server runtime for status API server.
 type Server struct {
-	host       string
-	port       int
+	cfg        Config
 	reporter   status.Reporter
 	logger     log.Entry
 	definition integration.Definition
@@ -39,19 +39,43 @@ type Server struct {
 	readyCh    chan struct{}
 }
 
+// Config HTTP API configuration.
+type Config struct {
+	EnableIngest bool
+	EnableStatus bool
+	PortIngest   int
+	HostIngest   string
+	PortStatus   int
+}
+
+// NewConfig creates a new API config.
+func NewConfig(enableIngest bool, hostIngest string, portIngest int, enableStatus bool, portStatus int) Config {
+	return Config{
+		EnableIngest: enableIngest,
+		EnableStatus: enableStatus,
+		PortIngest:   portIngest,
+		PortStatus:   portStatus,
+		HostIngest:   hostIngest,
+	}
+}
+
 // NewServer creates a new API server.
 // Nice2Have: decouple services into path handlers.
-func NewServer(port int, r status.Reporter, em emitter.Emitter) (*Server, error) {
+// Separate HTTP API configs should be deprecated if we want to unify under a single server & port.
+func NewServer(c Config, r status.Reporter, em emitter.Emitter) (*Server, error) {
 	d, err := integration.NewAPIDefinition(IntegrationName)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create API definition for HTTP API server, err: %s", err)
 	}
 
+	l := log.WithComponent(componentName).
+		WithField("status_enabled", c.EnableStatus).
+		WithField("status_enabled", c.EnableIngest)
+
 	return &Server{
-		host:       "localhost", // local only API
-		port:       port,
+		cfg:        c,
 		reporter:   r,
-		logger:     log.WithComponent(componentName).WithField("port", port),
+		logger:     l,
 		definition: d,
 		emitter:    em,
 		readyCh:    make(chan struct{}),
@@ -59,22 +83,48 @@ func NewServer(port int, r status.Reporter, em emitter.Emitter) (*Server, error)
 }
 
 // Serve serves status API requests.
+// Nice2Have: context cancellation.
 func (s *Server) Serve(ctx context.Context) {
-	router := httprouter.New()
-	// read only API
-	router.GET(statusAPIPath, s.handle(false))
-	router.GET(statusOnlyErrorsAPIPath, s.handle(true))
-	router.POST(ingestAPIPath, s.handleIngest)
+	if s.cfg.EnableStatus {
+		go func() {
+			s.logger.WithFields(logrus.Fields{
+				"port": s.cfg.PortStatus,
+			}).Debug("Status API starting listening.")
+
+			router := httprouter.New()
+			// read only API
+			router.GET(statusAPIPath, s.handle(false))
+			router.GET(statusOnlyErrorsAPIPath, s.handle(true))
+			// local only API
+			err := http.ListenAndServe(fmt.Sprintf("%s:%d", "localhost", s.cfg.PortStatus), router)
+			if err != nil {
+				s.logger.WithError(err).Error("unable to start Status-API")
+				return
+			}
+			s.logger.Debug("Status API stopped.")
+		}()
+	}
+
+	if s.cfg.EnableIngest {
+		go func() {
+			s.logger.WithFields(logrus.Fields{
+				"port": s.cfg.PortIngest,
+				"host": s.cfg.HostIngest,
+			}).Debug("Ingest API starting listening.")
+
+			router := httprouter.New()
+			router.POST(ingestAPIPath, s.handleIngest)
+			err := http.ListenAndServe(fmt.Sprintf("%s:%d", s.cfg.HostIngest, s.cfg.PortIngest), router)
+			if err != nil {
+				s.logger.WithError(err).Error("unable to start Ingest-API")
+				return
+			}
+			s.logger.Debug("Ingest API stopped.")
+		}()
+	}
 
 	close(s.readyCh)
-	s.logger.Info("Status server started.")
-
-	err := http.ListenAndServe(fmt.Sprintf("%s:%d", s.host, s.port), router)
-	if err != nil {
-		s.logger.WithError(err).Error("trying to listen and serve status")
-		return
-	}
-	s.logger.Debug("Status server stopped.")
+	<-ctx.Done()
 }
 
 // WaitUntilReady blocks the call until server is ready to accept connections.

@@ -46,7 +46,7 @@ func TestServe_Status(t *testing.T) {
 
 	// When agent status API server is ready
 	em := &testemit.RecordEmitter{}
-	s, err := NewServer(port, r, em)
+	s, err := NewServer(NewConfig(false, "", 0, true, port), r, em)
 	require.NoError(t, err)
 	defer cancel()
 
@@ -106,7 +106,7 @@ func TestServe_OnlyErrors(t *testing.T) {
 
 	// When agent status API server is ready
 	em := &testemit.RecordEmitter{}
-	s, err := NewServer(port, r, em)
+	s, err := NewServer(NewConfig(false, "", 0, true, port), r, em)
 	defer cancel()
 
 	go s.Serve(ctx)
@@ -142,7 +142,7 @@ func TestServe_IngestData(t *testing.T) {
 	require.NoError(t, err)
 
 	em := &testemit.RecordEmitter{}
-	s, err := NewServer(port, &noopReporter{}, em)
+	s, err := NewServer(NewConfig(true, "localhost", port, false, 0), &noopReporter{}, em)
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -164,7 +164,7 @@ func TestServe_IngestData(t *testing.T) {
 	}()
 
 	select {
-	case <-time.NewTimer(100 * time.Millisecond).C:
+	case <-time.NewTimer(500 * time.Millisecond).C:
 		t.Error("timeout waiting for HTTP request to be submitted")
 	case <-payloadWritten:
 	}
