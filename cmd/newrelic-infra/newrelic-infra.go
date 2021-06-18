@@ -5,6 +5,7 @@
 package main
 
 import (
+	context2 "context"
 	"flag"
 	"fmt"
 	"net"
@@ -343,7 +344,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 			aslog.WithError(err).Error("invalid startup_connection_timeout value, cannot run status server")
 		} else {
 			rep := status.NewReporter(agt.Context.Ctx, rlog, c.StatusEndpoints, timeoutD, transport, agt.Context.AgentIdnOrEmpty, c.License, userAgent)
-			apiSrv, err := statusapi.NewServer(c.StatusServerPort, rep)
+			apiSrv, err := statusapi.NewServer(c.StatusServerPort, rep, integrationEmitter)
 			if err != nil {
 				aslog.WithError(err).Error("cannot run api server")
 			} else {
@@ -417,7 +418,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 // By default is disabled and it only will be enabled if host:port are provided.
 // Using instrumentation.SetupPrometheusIntegrationConfig it will create prometheus
 // integration configuration (and delete it on agent shutdown process).
-func initInstrumentation(ctx context.Context, agentMetricsEndpoint string) (instrumentation.Instrumenter, error) {
+func initInstrumentation(ctx context2.Context, agentMetricsEndpoint string) (instrumentation.Instrumenter, error) {
 	if agentMetricsEndpoint == "" {
 		return instrumentation.NewNoop(), nil
 	}

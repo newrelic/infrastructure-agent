@@ -71,8 +71,8 @@ func TestServer_Serve_Status(t *testing.T) {
 
 	var gotReport status.Report
 	json.NewDecoder(res.Body).Decode(&gotReport)
-	require.Len(t, gotReport.Endpoints, 1)
-	e := gotReport.Endpoints[0]
+	require.Len(t, gotReport.Checks.Endpoints, 1)
+	e := gotReport.Checks.Endpoints[0]
 	assert.Empty(t, e.Error)
 	assert.True(t, e.Reachable)
 	assert.Equal(t, serverOk.URL, e.URL)
@@ -146,6 +146,10 @@ func (r *noopReporter) Report() (status.Report, error) {
 	return status.Report{}, nil
 }
 
+func (r *noopReporter) ReportErrors() (status.Report, error) {
+	return status.Report{}, nil
+}
+
 func TestServer_Serve_OnlyErrors(t *testing.T) {
 	t.Skipf("because time race, as WaitUntilReady is not right")
 
@@ -175,7 +179,8 @@ func TestServer_Serve_OnlyErrors(t *testing.T) {
 	r := status.NewReporter(ctx, l, endpoints, timeout, transport, emptyIDProvide, "user-agent", "agent-key")
 
 	// When agent status API server is ready
-	s := NewServer(port, r)
+	em := &testemit.RecordEmitter{}
+	s, err := NewServer(port, r, em)
 	defer cancel()
 
 	go s.Serve(ctx)

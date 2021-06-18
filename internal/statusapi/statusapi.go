@@ -120,6 +120,7 @@ func (s *Server) handle(onlyErrors bool) func(http.ResponseWriter, *http.Request
 			s.logger.Warn("cannot write status response, error: " + err.Error())
 		}
 	}
+}
 
 func (s *Server) handleIngest(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
