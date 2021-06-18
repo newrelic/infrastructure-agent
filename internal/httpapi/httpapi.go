@@ -1,6 +1,6 @@
 // Copyright 2021 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-package statusapi
+package httpapi
 
 import (
 	"context"
@@ -39,7 +39,7 @@ type Server struct {
 	readyCh    chan struct{}
 }
 
-// NewServer creates a new status local-only, read-only, API server.
+// NewServer creates a new API server.
 // Nice2Have: decouple services into path handlers.
 func NewServer(port int, r status.Reporter, em emitter.Emitter) (*Server, error) {
 	d, err := integration.NewAPIDefinition(IntegrationName)

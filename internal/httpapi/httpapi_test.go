@@ -1,6 +1,6 @@
-// Copyright 2021 New Relic Corporation. All rights reserved.
+// Copyright 2021 NewServer Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-package statusapi
+package httpapi
 
 import (
 	"bytes"
@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestServer_Serve_Status(t *testing.T) {
+func TestServe_Status(t *testing.T) {
 	// Given a running HTTP endpoint
 	port, err := network_helpers.TCPPort()
 	require.NoError(t, err)
@@ -76,7 +76,7 @@ func TestServer_Serve_Status(t *testing.T) {
 	assert.Equal(t, serverOk.URL, e.URL)
 }
 
-func TestServer_Serve_OnlyErrors(t *testing.T) {
+func TestServe_OnlyErrors(t *testing.T) {
 	t.Skipf("because time race, as WaitUntilReady is not right")
 
 	// Given a running HTTP endpoint and an errored one (which times out)
@@ -135,7 +135,7 @@ func TestServer_Serve_OnlyErrors(t *testing.T) {
 	assert.Equal(t, serverTimeout.URL, e.URL)
 }
 
-func TestServer_Serve_IngestData(t *testing.T) {
+func TestServe_IngestData(t *testing.T) {
 	t.Skipf("because time race, as WaitUntilReady is not right")
 
 	port, err := network_helpers.TCPPort()
@@ -153,7 +153,7 @@ func TestServer_Serve_IngestData(t *testing.T) {
 	payloadWritten := make(chan struct{})
 	go func() {
 		s.WaitUntilReady()
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 
 		client := http.Client{}
 		postReq, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%d%s", port, ingestAPIPath), bytes.NewReader(fixtures.FooBytes))

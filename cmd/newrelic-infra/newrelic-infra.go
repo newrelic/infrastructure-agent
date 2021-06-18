@@ -20,6 +20,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/newrelic/infrastructure-agent/internal/httpapi"
 	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
@@ -33,7 +34,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/v3legacy"
 	"github.com/newrelic/infrastructure-agent/internal/socketapi"
-	"github.com/newrelic/infrastructure-agent/internal/statusapi"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins"
@@ -344,7 +344,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 			aslog.WithError(err).Error("invalid startup_connection_timeout value, cannot run status server")
 		} else {
 			rep := status.NewReporter(agt.Context.Ctx, rlog, c.StatusEndpoints, timeoutD, transport, agt.Context.AgentIdnOrEmpty, c.License, userAgent)
-			apiSrv, err := statusapi.NewServer(c.StatusServerPort, rep, integrationEmitter)
+			apiSrv, err := httpapi.NewServer(c.StatusServerPort, rep, integrationEmitter)
 			if err != nil {
 				aslog.WithError(err).Error("cannot run api server")
 			} else {
