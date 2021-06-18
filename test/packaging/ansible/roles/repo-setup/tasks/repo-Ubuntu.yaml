@@ -4,6 +4,13 @@
   apt_key:
     url: https://download.newrelic.com/infrastructure_agent/gpg/newrelic-infra.gpg
 
+- name: remove infra-agent APT repository (from previous runs)
+  apt_repository:
+    filename: newrelic-infra
+    repo: "deb {{ item }}/linux/apt {{ ansible_distribution_release }} main"
+    state: absent
+  loop: "{{ repos_to_clean }}"
+
 - name: install infra-agent APT repository
   apt_repository:
     repo: "deb {{ repo_endpoint }}/linux/apt {{ ansible_distribution_release }} main"

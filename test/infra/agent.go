@@ -60,8 +60,6 @@ func NewAgentWithConnectClientAndConfig(connectClient *http.Client, dataClient b
 		c(cfg)
 	}
 
-	ctx := agent.NewContext(cfg, "1.2.3", testhelpers.NewFakeHostnameResolver("foobar", "foo", nil), nil, matcher)
-
 	if cfg.AgentDir == "" {
 		var err error
 		cfg.AgentDir, err = ioutil.TempDir("", "prefix")
@@ -75,6 +73,8 @@ func NewAgentWithConnectClientAndConfig(connectClient *http.Client, dataClient b
 	cloudDetector := cloud.NewDetector(true, 0, 0, 0, false)
 
 	lookups := agent.NewIdLookup(hostname.CreateResolver(cfg.OverrideHostname, cfg.OverrideHostnameShort, cfg.DnsHostnameResolution), cloudDetector, cfg.DisplayName)
+
+	ctx := agent.NewContext(cfg, "1.2.3", testhelpers.NewFakeHostnameResolver("foobar", "foo", nil), lookups, matcher)
 
 	fingerprintHarvester, err := fingerprint.NewHarvestor(cfg, testhelpers.NullHostnameResolver, cloudDetector)
 

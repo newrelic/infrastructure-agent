@@ -22,7 +22,7 @@ var cfgLogger = log.WithComponent("integrations.Supervisor.Config").WithField("p
 // FluentBit default values.
 const (
 	euEndpoint              = "https://log-api.eu.newrelic.com/log/v1"
-	fedrampEndpoint         = "https://gov-log-api.newrelic.com"
+	fedrampEndpoint         = "https://gov-log-api.newrelic.com/log/v1"
 	stagingEndpoint         = "https://staging-log-api.newrelic.com/log/v1"
 	logRecordModifierSource = "nri-agent"
 	defaultBufferMaxSize    = 128

@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/id"
@@ -18,19 +19,26 @@ const (
 )
 
 // Report agent status report. It contains:
-// - backend endpoints reachability statuses
+// - checks:
+//   * backend endpoints reachability statuses
+// - configuration
+// fields will be empty when ReportErrors() report no errors.
 type Report struct {
-	Endpoints []Endpoint   `json:"endpoints"`
-	Config    ConfigReport `json:"config"`
+	Checks *ChecksReport `json:"checks,omitempty"`
+	Config *ConfigReport `json:"config,omitempty"`
+}
+
+type ChecksReport struct {
+	Endpoints []EndpointReport `json:"endpoints,omitempty"`
 }
 
 // ConfigReport configuration used for status report.
 type ConfigReport struct {
-	ReachabilityTimeout string `json:"reachability_timeout"`
+	ReachabilityTimeout string `json:"reachability_timeout,omitempty"`
 }
 
-// Endpoint represents a single backend endpoint reachability status.
-type Endpoint struct {
+// EndpointReport represents a single backend endpoint reachability status.
+type EndpointReport struct {
 	URL       string `json:"url"`
 	Reachable bool   `json:"reachable"`
 	Error     string `json:"error,omitempty"`
@@ -38,7 +46,10 @@ type Endpoint struct {
 
 // Reporter reports agent status.
 type Reporter interface {
+	// Report full status report.
 	Report() (Report, error)
+	// ReportErrors only reports errors found.
+	ReportErrors() (Report, error)
 }
 
 type nrReporter struct {
@@ -54,36 +65,73 @@ type nrReporter struct {
 
 // Report reports agent status.
 func (r *nrReporter) Report() (report Report, err error) {
-	report.Config = ConfigReport{
-		ReachabilityTimeout: r.timeout.String(),
+	return r.report(false)
+}
+
+// ReportErrors only reports agent errored state, Report.Checks should be empty when no errors.
+func (r *nrReporter) ReportErrors() (report Report, err error) {
+	return r.report(true)
+}
+
+func (r *nrReporter) report(onlyErrors bool) (report Report, err error) {
+	agentID := r.idProvide().ID.String()
+
+	wg := sync.WaitGroup{}
+	wg.Add(len(r.endpoints))
+	eReportsC := make(chan EndpointReport, len(r.endpoints))
+
+	for _, ep := range r.endpoints {
+		go func(endpoint string) {
+			timedout, err := backendhttp.CheckEndpointReachability(
+				r.ctx,
+				r.log,
+				endpoint,
+				r.license,
+				r.userAgent,
+				agentID,
+				r.timeout,
+				r.transport,
+			)
+			e := EndpointReport{
+				URL:       endpoint,
+				Reachable: true,
+			}
+			if timedout || err != nil {
+				e.Reachable = false
+				if timedout {
+					e.Error = fmt.Sprintf("%s, %s", endpointTimeoutMsg, err)
+				} else {
+					e.Error = err.Error()
+				}
+			}
+			eReportsC <- e
+			wg.Done()
+		}(ep)
 	}
 
-	agentID := r.idProvide().ID.String()
-	for _, endpoint := range r.endpoints {
-		timedout, err := backendhttp.CheckEndpointReachability(
-			r.ctx,
-			r.log,
-			endpoint,
-			r.license,
-			r.userAgent,
-			agentID,
-			r.timeout,
-			r.transport,
-		)
-		e := Endpoint{
-			URL:       endpoint,
-			Reachable: true,
+	wg.Wait()
+	close(eReportsC)
+
+	var errored bool
+	var eReports []EndpointReport
+	for e := range eReportsC {
+		if !onlyErrors || !e.Reachable {
+			eReports = append(eReports, e)
 		}
-		if timedout || err != nil {
-			e.Reachable = false
-			if timedout {
-				e.Error = fmt.Sprintf("%s, %s", endpointTimeoutMsg, err)
-			} else {
-				e.Error = err.Error()
-			}
+		if !e.Reachable {
+			errored = true
+		}
+	}
+
+	if !onlyErrors || errored {
+		if report.Checks == nil {
+			report.Checks = &ChecksReport{}
+		}
+		report.Checks.Endpoints = eReports
+		report.Config = &ConfigReport{
+			ReachabilityTimeout: r.timeout.String(),
 		}
 
-		report.Endpoints = append(report.Endpoints, e)
 	}
 
 	return

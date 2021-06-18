@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
   <?define Version = "$(var.AgentVersion)" ?>
   <?define ProductId = "*" ?>
   <?define UpgradeCode = "{6d227283-6369-4e8b-8d8e-44f9eb5fb080}" ?>
@@ -107,7 +107,15 @@
                   DisplayName="New Relic Infrastructure Agent (x86)"
                   Start="auto"
                   ErrorControl="normal"
-                  Type="ownProcess" />
+                  Type="ownProcess"
+                >
+                  <util:ServiceConfig
+                    FirstFailureActionType='restart'
+                    SecondFailureActionType='restart'
+                    ThirdFailureActionType='restart'
+                    RestartServiceDelayInSeconds='30'
+                    ResetPeriodInDays='1'/>
+                </ServiceInstall>
                 <ServiceControl
                   Id="sc_AgentService"
                   Name="newrelic-infra"

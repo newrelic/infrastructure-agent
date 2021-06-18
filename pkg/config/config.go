@@ -1037,6 +1037,12 @@ type Config struct {
 	// Default: none
 	// Public: Yes
 	IncludeMetricsMatchers IncludeMetricsMap `yaml:"include_matching_metrics" envconfig:"include_matching_metrics"`
+
+	// AgentMetricsEndpoint Set the endpoint (host:port) for the HTTP server the agent will use to server OpenMetrics
+	// if empty the server will be not spawned
+	// Default: empty
+	// Public: Yes
+	AgentMetricsEndpoint string `yaml:"agent_metrics_endpoint" envconfig:"agent_metrics_endpoint"`
 }
 
 // Troubleshoot trobleshoot mode configuration.
@@ -1452,9 +1458,12 @@ func calculateCollectorURL(licenseKey string, staging, fedramp bool) string {
 	return fmt.Sprintf(baseCollectorURL, urlEnvironmentPrefix(staging), urlRegionPrefix(licenseKey))
 }
 
-func calculateIdentityURL(licenseKey string, staging bool) string {
+func calculateIdentityURL(licenseKey string, staging, fedramp bool) string {
 	if staging {
 		return calculateIdentityStagingURL(licenseKey)
+	}
+	if fedramp {
+		return defaultSecureFedralIdentityURL
 	}
 	return calculateIdentityProductionURL(licenseKey)
 }
@@ -1475,9 +1484,12 @@ func calculateIdentityStagingURL(licenseKey string) string {
 	return defaultIdentityStagingURL
 }
 
-func calculateCmdChannelURL(licenseKey string, staging bool) string {
+func calculateCmdChannelURL(licenseKey string, staging, fedramp bool) string {
 	if staging {
 		return calculateCmdChannelStagingURL(licenseKey)
+	}
+	if fedramp {
+		return defaultSecureFedralCmdChannelURL
 	}
 	return calculateCmdChannelProductionURL(licenseKey)
 }
@@ -1504,7 +1516,7 @@ func calculateDimensionalMetricURL(collectorURL string, licenseKey string, stagi
 	}
 
 	if fedramp && !staging {
-		return defaultSecureFederalURL
+		return defaultSecureFederalMetricURL
 	}
 
 	return fmt.Sprintf(baseDimensionalMetricURL, urlEnvironmentPrefix(staging), urlRegionPrefix(licenseKey))
@@ -1576,11 +1588,11 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	nlog.WithField("collectorURL", cfg.CollectorURL).Debug("Collector URL")
 
 	if cfg.IdentityURL == "" {
-		cfg.IdentityURL = calculateIdentityURL(cfg.License, cfg.Staging)
+		cfg.IdentityURL = calculateIdentityURL(cfg.License, cfg.Staging, cfg.Fedramp)
 	}
 
 	if cfg.CommandChannelURL == "" {
-		cfg.CommandChannelURL = calculateCmdChannelURL(cfg.License, cfg.Staging)
+		cfg.CommandChannelURL = calculateCmdChannelURL(cfg.License, cfg.Staging, cfg.Fedramp)
 	}
 
 	//InventoryIngestEndpoint default value defined in NewConfig
@@ -1598,7 +1610,7 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 			cfg.CommandChannelURL + cfg.CommandChannelEndpoint,
 			cfg.CollectorURL + cfg.MetricsIngestEndpoint,
 			cfg.CollectorURL + cfg.InventoryIngestEndpoint,
-			cfg.DMIngestURL(), // dimensional metrics without shimming might be not available for everyone
+			//cfg.DMIngestURL(), // dimensional metrics without shimming not available yet
 			// no endpoint value to checking log ingest reachability
 		}
 	}

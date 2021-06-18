@@ -418,7 +418,7 @@ func (s *ConfigSuite) TestCalculateDimensionalMetricURL(c *C) {
 			"",
 			false,
 			true,
-			"https://gov-infra-api.newrelic.com",
+			"https://gov-metric-api.newrelic.com",
 		},
 		{
 			"Staging flag prevails over fedramp one",
@@ -441,6 +441,7 @@ func (s *ConfigSuite) TestCalculateIdentityURL(c *C) {
 		license   string
 		expectURL string
 		staging   bool
+		fedramp   bool
 	}{
 		// non-region license
 		{license: "0123456789012345678901234567890123456789", expectURL: defaultIdentityURL, staging: false},
@@ -454,10 +455,12 @@ func (s *ConfigSuite) TestCalculateIdentityURL(c *C) {
 		{license: "gov01x6789012345678901234567890123456789", expectURL: defaultIdentityURL, staging: false},
 		// five letter region
 		{license: "gov01x6789012345678901234567890123456789", expectURL: defaultIdentityStagingURL, staging: true},
+		// non-region license, fedramp true
+		{license: "0123456789012345678901234567890123456789", expectURL: defaultSecureFedralIdentityURL, staging: false, fedramp: true},
 	}
 
 	for _, tc := range testcases {
-		c.Assert(calculateIdentityURL(tc.license, tc.staging), Equals, tc.expectURL)
+		c.Assert(calculateIdentityURL(tc.license, tc.staging, tc.fedramp), Equals, tc.expectURL)
 	}
 }
 
@@ -466,6 +469,7 @@ func (s *ConfigSuite) TestCalculateCmdChannelURL(c *C) {
 		license   string
 		expectURL string
 		staging   bool
+		fedramp   bool
 	}{
 		// non-region license
 		{license: "0123456789012345678901234567890123456789", expectURL: defaultCmdChannelURL, staging: false},
@@ -479,10 +483,12 @@ func (s *ConfigSuite) TestCalculateCmdChannelURL(c *C) {
 		{license: "gov01x6789012345678901234567890123456789", expectURL: defaultCmdChannelURL, staging: false},
 		// five letter region
 		{license: "gov01x6789012345678901234567890123456789", expectURL: defaultCmdChannelStagingURL, staging: true},
+		// non-region license, fedramp true
+		{license: "0123456789012345678901234567890123456789", expectURL: defaultSecureFedralCmdChannelURL, staging: false, fedramp: true},
 	}
 
 	for _, tc := range testcases {
-		c.Assert(calculateCmdChannelURL(tc.license, tc.staging), Equals, tc.expectURL)
+		c.Assert(calculateCmdChannelURL(tc.license, tc.staging, tc.fedramp), Equals, tc.expectURL)
 	}
 }
 

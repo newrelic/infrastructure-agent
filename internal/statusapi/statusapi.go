@@ -20,6 +20,7 @@ const (
 	IntegrationName = "api"
 	componentName   = IntegrationName
 	statusAPIPath   = "/v1/status"
+	statusOnlyErrorsAPIPath = "/v1/status/errors"
 	ingestAPIPath   = "/v1/data"
 )
 
@@ -60,7 +61,9 @@ func NewServer(port int, r status.Reporter, em emitter.Emitter) (*Server, error)
 // Serve serves status API requests.
 func (s *Server) Serve(ctx context.Context) {
 	router := httprouter.New()
-	router.GET(statusAPIPath, s.handleStatus) // read only API
+	// read only API
+	router.GET(statusAPIPath, s.handle(false))
+	router.GET(statusOnlyErrorsAPIPath, s.handle(true))
 	router.POST(ingestAPIPath, s.handleIngest)
 
 	close(s.readyCh)
@@ -79,28 +82,44 @@ func (s *Server) WaitUntilReady() {
 	_, _ = <-s.readyCh
 }
 
-func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-
-	rep, err := s.reporter.Report()
-	if err != nil {
-		jerr := json.NewEncoder(w).Encode(responseError{
-			Error: fmt.Sprintf("fetching status report: %s", err),
-		})
-		if jerr != nil {
-			s.logger.WithError(jerr).Warn("couldn't encode a failed response")
+// handle returns a HTTP handler function for full status report or just errors status report.
+func (s *Server) handle(onlyErrors bool) func(http.ResponseWriter, *http.Request, httprouter.Params) {
+	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		var rep status.Report
+		var err error
+		if onlyErrors {
+			rep, err = s.reporter.ReportErrors()
+		} else {
+			rep, err = s.reporter.Report()
 		}
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			jerr := json.NewEncoder(w).Encode(responseError{
+				Error: fmt.Sprintf("fetching status report: %s", err),
+			})
+			if jerr != nil {
+				s.logger.WithError(jerr).Warn("couldn't encode a failed response")
+			}
+			return
+		}
 
-	jerr := json.NewEncoder(w).Encode(rep)
-	if jerr != nil {
-		s.logger.WithError(jerr).Warn("couldn't encode status report")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		b, jerr := json.Marshal(rep)
+		if jerr != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			s.logger.WithError(jerr).Warn("couldn't encode status report")
+			return
+		}
+
+		if rep.Checks == nil {
+			w.WriteHeader(http.StatusCreated) // 201
+		}
+
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		_, err = w.Write(b)
+		if err != nil {
+			s.logger.Warn("cannot write status response, error: " + err.Error())
+		}
 	}
-}
 
 func (s *Server) handleIngest(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")

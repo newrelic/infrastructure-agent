@@ -7,8 +7,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
+	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
 
 	"github.com/tevino/abool"
 
@@ -67,6 +69,7 @@ type emitter struct {
 	registerMaxBatchBytesSize int
 	registerMaxBatchTime      time.Duration
 	verboseLogLevel           int
+	measure                   instrumentation.Measure
 }
 
 type Emitter interface {
@@ -76,7 +79,8 @@ type Emitter interface {
 func NewEmitter(
 	agentContext agent.AgentContext,
 	dmSender MetricsSender,
-	registerClient identityapi.RegisterClient) Emitter {
+	registerClient identityapi.RegisterClient,
+	measure instrumentation.Measure) Emitter {
 
 	return &emitter{
 		retryBo:                   backoff.NewDefaultBackoff(),
@@ -93,12 +97,14 @@ func NewEmitter(
 		registerMaxBatchBytesSize: defaultRegisterBatchBytesSize,
 		registerMaxBatchTime:      defaultRegisterBatchSecs * time.Second,
 		verboseLogLevel:           agentContext.Config().Verbose,
+		measure:                   measure,
 	}
 }
 
 // Send receives data forward requests and queues them while processing them on different goroutine.
 // Processor is automatically being lazy run at first data received.
 func (e *emitter) Send(req fwrequest.FwRequest) {
+	e.measure(instrumentation.Counter, instrumentation.DMRequestsForwarded, 1)
 	e.reqsQueue <- req
 	e.lazyLoadProcessor()
 }
@@ -124,7 +130,8 @@ func (e *emitter) lazyLoadProcessor() {
 				e.retryBo,
 				e.reqsToRegisterQueue,
 				e.reqsRegisteredQueue,
-				config)
+				config,
+				e.measure)
 			go regWorker.Run(ctx)
 		}
 	}
@@ -142,6 +149,7 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 			return
 
 		case req := <-e.reqsQueue:
+			e.measure(instrumentation.Counter, instrumentation.DMDatasetsReceived, int64(len(req.Data.DataSets)))
 			for _, ds := range req.Data.DataSets {
 
 				eKey, err := ds.Entity.ResolveUniqueEntityKey(e.agentContext.EntityKey(), e.agentContext.IDLookup(), req.FwRequestMeta.EntityRewrite, 4)

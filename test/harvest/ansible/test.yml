@@ -1,0 +1,37 @@
+---
+
+# This tests runs harvest tests on multiple os/architectures.
+# It will build the harvest tests binaries for specified architectures/os combinations
+# and copy and run them in the testing_hosts hosts
+
+- hosts: localhost
+  become: false
+  gather_facts: no
+
+  tasks:
+    - name: build harvest tests
+      include_role:
+        name: build-harvest-tests
+
+
+- hosts: testing_hosts
+  become: false
+  gather_facts: no #gather facts after adding SSH known hosts
+
+  tasks:
+    - name: add inventory hosts to SSH known hosts
+      include_role:
+        name: add-ssh-keys
+
+    - name: install python in boxes that doesn't have it by default
+      include_role:
+        name: install-python
+
+    - name: Gathering Facts
+      setup:
+
+    - name: copy and run harvest tests
+      include_role:
+        name: run-harvest-tests
+
+...

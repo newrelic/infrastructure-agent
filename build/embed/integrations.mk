@@ -24,7 +24,7 @@ NRI_FLEX_URL       ?= https://github.com/newrelic/nri-flex/releases/download/v$(
 NRI_PROMETHEUS_VERSION   ?= $(call get-nri-version,nri-prometheus)
 NRI_PROMETHEUS_ARCH      ?= $(OHI_ARCH)
 NRI_PROMETHEUS_OS        ?= $(OHI_OS)
-NRI_PROMETHEUS_URL       ?= https://github.com/newrelic/nri-prometheus/releases/download/v$(NRI_PROMETHEUS_VERSION)/nri-prometheus_$(NRI_PROMETHEUS_OS)_$(NRI_PROMETHEUS_ARCH)_$(NRI_PROMETHEUS_VERSION).tar.gz
+NRI_PROMETHEUS_URL       ?= https://github.com/newrelic/nri-prometheus/releases/download/v$(NRI_PROMETHEUS_VERSION)/nri-prometheus_$(NRI_PROMETHEUS_OS)_$(NRI_PROMETHEUS_VERSION)_$(NRI_PROMETHEUS_ARCH).tar.gz
 
 .PHONY: get-integrations
 get-integrations: get-nri-docker
@@ -39,10 +39,10 @@ get-nri-docker:
 	@printf 'URL: $(NRI_DOCKER_URL)'
 	@printf '\n================================================================\n'
 
-	@rm -rf $(TARGET_DIR)/nridocker/
-	@mkdir -p $(TARGET_DIR)/nridocker/
+	@rm -rf $(TARGET_DIR)/nridocker/$(NRI_DOCKER_ARCH)/
+	@mkdir -p $(TARGET_DIR)/nridocker/$(NRI_DOCKER_ARCH)/
 	@if curl --output /dev/null --silent --head --fail '$(NRI_DOCKER_URL)'; then \
-		curl -L --silent '$(NRI_DOCKER_URL)' | tar xvz --no-same-owner -C $(TARGET_DIR)/nridocker/ ;\
+		curl -L --silent '$(NRI_DOCKER_URL)' | tar xvz --no-same-owner -C $(TARGET_DIR)/nridocker/$(NRI_DOCKER_ARCH)/ ;\
 	else \
 	  echo 'nri-docker version $(NRI_DOCKER_VERSION) URL does not exist: $(NRI_DOCKER_URL)' ;\
 	  exit 1 ;\
@@ -55,10 +55,10 @@ get-nri-flex:
 	@printf 'URL: $(NRI_FLEX_URL)'
 	@printf '\n================================================================\n'
 
-	@rm -rf $(TARGET_DIR)/nriflex/
-	@mkdir -p $(TARGET_DIR)/nriflex/
+	@rm -rf $(TARGET_DIR)/nriflex/$(NRI_FLEX_ARCH)/
+	@mkdir -p $(TARGET_DIR)/nriflex/$(NRI_FLEX_ARCH)/
 	@if curl --output /dev/null --silent --head --fail '$(NRI_FLEX_URL)'; then \
-		curl -L --silent '$(NRI_FLEX_URL)' | tar xvz --no-same-owner -C $(TARGET_DIR)/nriflex/ ;\
+		curl -L --silent '$(NRI_FLEX_URL)' | tar xvz --no-same-owner -C $(TARGET_DIR)/nriflex/$(NRI_FLEX_ARCH)/ ;\
 	else \
 	  echo 'nri-flex version $(NRI_FLEX_VERSION) URL does not exist: $(NRI_FLEX_URL)' ;\
 	  exit 1 ;\
@@ -71,10 +71,10 @@ get-nri-prometheus:
 	@printf 'URL: $(NRI_PROMETHEUS_URL)'
 	@printf '\n================================================================\n'
 
-	@rm -rf $(TARGET_DIR)/nriprometheus/
-	@mkdir -p $(TARGET_DIR)/nriprometheus/
+	@rm -rf $(TARGET_DIR)/nriprometheus/$(NRI_PROMETHEUS_ARCH)/
+	@mkdir -p $(TARGET_DIR)/nriprometheus/$(NRI_PROMETHEUS_ARCH)/
 	@if curl --output /dev/null --silent --head --fail '$(NRI_PROMETHEUS_URL)'; then \
-		curl -L --silent '$(NRI_PROMETHEUS_URL)' | tar xvz --no-same-owner -C $(TARGET_DIR)/nriprometheus/ ;\
+		curl -L --silent '$(NRI_PROMETHEUS_URL)' | tar xvz --no-same-owner -C $(TARGET_DIR)/nriprometheus/$(NRI_PROMETHEUS_ARCH)/ ;\
 	else \
 	  echo 'nri-prometheus version $(NRI_PROMETHEUS_VERSION) URL does not exist: $(NRI_PROMETHEUS_URL)' ;\
 	  exit 1 ;\
@@ -83,19 +83,19 @@ get-nri-prometheus:
 .PHONY: embed-nri-docker
 embed-nri-docker:
 	@echo "Embed nri-docker version: $(NRI_DOCKER_VERSION)"
-	@cp -r $(TARGET_DIR)/nridocker/* $(NRI_PKG_DIR)
+	@cp -r $(TARGET_DIR)/nridocker/$(NRI_DOCKER_ARCH)/* $(NRI_PKG_DIR)
 
 .PHONY: embed-nri-flex
 embed-nri-flex:
 	@echo "Embed nri-flex version: $(NRI_FLEX_VERSION)"
 	@mkdir -p $(PKG_DIR_BIN_OHIS)
-	@cp $(TARGET_DIR)/nriflex/nri-flex $(PKG_DIR_BIN_OHIS)/
+	@cp $(TARGET_DIR)/nriflex/$(NRI_FLEX_ARCH)/nri-flex $(PKG_DIR_BIN_OHIS)/
 
 .PHONY: embed-nri-prometheus
 embed-nri-prometheus:
 	@echo "Embed nri-prometheus version: $(NRI_PROMETHEUS_VERSION)"
 	@mkdir -p $(PKG_DIR_BIN_OHIS)
-	@cp -r $(TARGET_DIR)/nriprometheus/var $(NRI_PKG_DIR)
+	@cp -r $(TARGET_DIR)/nriprometheus/$(NRI_PROMETHEUS_ARCH)/var $(NRI_PKG_DIR)
 
 .PHONY: embed-integrations
 embed-integrations: embed-nri-flex
