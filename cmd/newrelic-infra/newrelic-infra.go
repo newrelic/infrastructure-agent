@@ -359,7 +359,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	}
 
 	// Start all plugins we want the agent to run.
-	if err = plugins.RegisterPlugins(agt, integrationEmitter); err != nil {
+	if err = plugins.RegisterPlugins(agt); err != nil {
 		aslog.WithError(err).Error("fatal error while registering plugins")
 		os.Exit(1)
 	}

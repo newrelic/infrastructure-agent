@@ -3,7 +3,6 @@
 package plugins
 
 import (
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/network"
 	metricsSender "github.com/newrelic/infrastructure-agent/pkg/metrics/sender"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
@@ -15,7 +14,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/metrics"
 )
 
-func RegisterPlugins(a *agent.Agent, em emitter.Emitter) error {
+func RegisterPlugins(a *agent.Agent) error {
 	config := a.GetContext().Config()
 
 	if config.IsForwardOnly {
@@ -31,19 +30,6 @@ func RegisterPlugins(a *agent.Agent, em emitter.Emitter) error {
 	}
 
 	a.RegisterPlugin(NewCustomAttrsPlugin(a.Context))
-
-	if config.HTTPServerEnabled {
-		httpSrv, err := NewHTTPServerPlugin(a.Context, config.HTTPServerHost, config.HTTPServerPort, em)
-		if err != nil {
-			slog.
-				WithField("port", config.HTTPServerPort).
-				WithField("host", config.HTTPServerHost).
-				WithError(err).
-				Error("cannot create HTTP server")
-		} else {
-			a.RegisterPlugin(httpSrv)
-		}
-	}
 
 	if config.IsSecureForwardOnly {
 		// We need heartbeat samples.
