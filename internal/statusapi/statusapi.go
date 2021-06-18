@@ -17,11 +17,11 @@ import (
 )
 
 const (
-	IntegrationName = "api"
-	componentName   = IntegrationName
-	statusAPIPath   = "/v1/status"
+	IntegrationName         = "api"
+	componentName           = IntegrationName
+	statusAPIPath           = "/v1/status"
 	statusOnlyErrorsAPIPath = "/v1/status/errors"
-	ingestAPIPath   = "/v1/data"
+	ingestAPIPath           = "/v1/data"
 )
 
 type responseError struct {

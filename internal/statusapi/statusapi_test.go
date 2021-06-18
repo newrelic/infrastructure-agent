@@ -7,18 +7,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/status"
-	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/testhelp/testemit"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	network_helpers "github.com/newrelic/infrastructure-agent/pkg/helpers/network"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/fixtures"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -78,78 +76,6 @@ func TestServer_Serve_Status(t *testing.T) {
 	assert.Equal(t, serverOk.URL, e.URL)
 }
 
-func TestServer_Serve_IngestData(t *testing.T) {
-	port, err := network_helpers.TCPPort()
-	require.NoError(t, err)
-
-	em := &testemit.RecordEmitter{}
-	s, err := NewServer(port, &noopReporter{}, em)
-	require.NoError(t, err)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	go s.Serve(ctx)
-
-	payloadWritten := make(chan struct{})
-	go func() {
-		s.WaitUntilReady()
-		time.Sleep(10 * time.Millisecond)
-		conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", port))
-		require.NoError(t, err)
-		_, err = conn.Write([]byte(strings.Replace(`{
-  "protocol_version": "4",
-  "integration": {
-    "name": "com.newrelic.foo",
-    "version": "0.1.0"
-  },
-  "data": [
-    {
-      "inventory": {
-        "foo": {
-          "k1": "v1",
-          "k2": false
-        }
-      }
-    }
-  ]
-}`, "\n", "", -1) + "\n"))
-		assert.NoError(t, err)
-		close(payloadWritten)
-	}()
-
-	select {
-	case <-time.NewTimer(500 * time.Millisecond).C:
-		t.Fail()
-		return
-	case <-payloadWritten:
-	}
-
-	t.Log("receiving...\n")
-	d, err := em.ReceiveFrom(IntegrationName)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, d)
-}
-
-var il = integration.InstancesLookup{
-	Legacy: func(_ integration.DefinitionCommandConfig) (integration.Definition, error) {
-		return integration.Definition{Name: "bar"}, nil
-	},
-	ByName: func(_ string) (string, error) {
-		return "foo", nil
-	},
-}
-
-type noopReporter struct{}
-
-func (r *noopReporter) Report() (status.Report, error) {
-	return status.Report{}, nil
-}
-
-func (r *noopReporter) ReportErrors() (status.Report, error) {
-	return status.Report{}, nil
-}
-
 func TestServer_Serve_OnlyErrors(t *testing.T) {
 	t.Skipf("because time race, as WaitUntilReady is not right")
 
@@ -207,4 +133,54 @@ func TestServer_Serve_OnlyErrors(t *testing.T) {
 	assert.NotEmpty(t, e.Error)
 	assert.False(t, e.Reachable)
 	assert.Equal(t, serverTimeout.URL, e.URL)
+}
+
+func TestServer_Serve_IngestData(t *testing.T) {
+	t.Skipf("because time race, as WaitUntilReady is not right")
+
+	port, err := network_helpers.TCPPort()
+	require.NoError(t, err)
+
+	em := &testemit.RecordEmitter{}
+	s, err := NewServer(port, &noopReporter{}, em)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go s.Serve(ctx)
+
+	payloadWritten := make(chan struct{})
+	go func() {
+		s.WaitUntilReady()
+		time.Sleep(10 * time.Millisecond)
+
+		client := http.Client{}
+		postReq, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%d%s", port, ingestAPIPath), bytes.NewReader(fixtures.FooBytes))
+		resp, err := client.Do(postReq)
+		require.NoError(t, err)
+		require.Equal(t, 20, resp.StatusCode/10, "status code: %v", resp.StatusCode)
+		close(payloadWritten)
+	}()
+
+	select {
+	case <-time.NewTimer(100 * time.Millisecond).C:
+		t.Error("timeout waiting for HTTP request to be submitted")
+	case <-payloadWritten:
+	}
+
+	t.Log("receiving from integration...\n")
+	d, err := em.ReceiveFrom(IntegrationName)
+	require.NoError(t, err)
+	assert.Equal(t, "unique foo", d.DataSet.PluginDataSet.Entity.Name)
+}
+
+type noopReporter struct{}
+
+func (r *noopReporter) Report() (status.Report, error) {
+	return status.Report{}, nil
+}
+
+func (r *noopReporter) ReportErrors() (status.Report, error) {
+	return status.Report{}, nil
 }
