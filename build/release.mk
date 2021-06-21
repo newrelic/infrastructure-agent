@@ -75,6 +75,7 @@ release/pkg: release/get-fluentbit-linux-amd64
 release/fix-tarballs:
 	@echo "=== [release/fix-tarballs] fixing tar.gz archives internal structure"
 	@bash $(CURDIR)/build/fix_tarballs.sh
+	@bash $(CURDIR)/build/fix_darwin_tarballs.sh
 
 .PHONY : release/sign
 release/sign:
