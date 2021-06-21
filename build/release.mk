@@ -1,5 +1,5 @@
 BUILD_DIR			   := $(CURDIR)/bin
-GORELEASER_VERSION	   := v0.155.0
+GORELEASER_VERSION	   := v0.169.0
 GORELEASER_BIN		   ?= bin/goreleaser
 GORELEASER_CONFIG_FILE ?= $(CURDIR)/build/.goreleaser.yml
 GORELEASER_CONFIG	   ?= --config $(GORELEASER_CONFIG_FILE)
@@ -11,10 +11,9 @@ bin:
 $(GORELEASER_BIN): bin
 	@echo "=== [$(GORELEASER_BIN)] Installing goreleaser $(GORELEASER_VERSION)"
 #TODO: Temporary goreleaser build for rpm trans scripts
-	(wget -qO bin/goreleaser https://download.newrelic.com/infrastructure_agent/tools/goreleaser/0.0.1/goreleaser && chmod u+x bin/goreleaser)
-#	(wget -qO /tmp/goreleaser.tar.gz https://github.com/goreleaser/goreleaser/releases/download/$(GORELEASER_VERSION)/goreleaser_$(OS_DOWNLOAD)_x86_64.tar.gz)
-#	(tar -xf  /tmp/goreleaser.tar.gz -C bin/)
-#	(rm -f /tmp/goreleaser.tar.gz)
+	(wget -qO /tmp/goreleaser.tar.gz https://github.com/goreleaser/goreleaser/releases/download/$(GORELEASER_VERSION)/goreleaser_$(OS_DOWNLOAD)_x86_64.tar.gz)
+	(tar -xf  /tmp/goreleaser.tar.gz -C bin/)
+	(rm -f /tmp/goreleaser.tar.gz)
 	@echo "=== [$(GORELEASER_BIN)] goreleaser downloaded"
 
 .PHONY : release/clean
