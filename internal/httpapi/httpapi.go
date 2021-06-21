@@ -20,13 +20,14 @@ import (
 )
 
 const (
-	IntegrationName         = "api"
-	componentName           = IntegrationName
-	statusAPIPath           = "/v1/status"
-	statusOnlyErrorsAPIPath = "/v1/status/errors"
-	statusAPIPathReady      = "/v1/status/ready"
-	ingestAPIPath           = "/v1/data"
-	ingestAPIPathReady      = "/v1/data/ready"
+	IntegrationName            = "api"
+	componentName              = IntegrationName
+	statusAPIPath              = "/v1/status"
+	statusOnlyErrorsAPIPath    = "/v1/status/errors"
+	statusAPIPathReady         = "/v1/status/ready"
+	ingestAPIPath              = "/v1/data"
+	ingestAPIPathReady         = "/v1/data/ready"
+	readinessProbeRetryBackoff = 10 * time.Millisecond
 )
 
 type responseError struct {
@@ -130,43 +131,47 @@ func (s *Server) Serve(ctx context.Context) {
 	}
 
 	c := http.Client{}
-	var ingestReady, statusReady bool
+	var ingestReadyOrDisabled, statusReadyOrDisabled bool
 	for {
-		if s.cfg.EnableIngest {
-			postReq, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d%s", s.cfg.PortIngest, ingestAPIPathReady), bytes.NewReader([]byte{}))
-			if err != nil {
-				s.logger.Warnf("cannot create request to verify status API readiness, err: %s", err)
-			} else {
-				resp, err := c.Do(postReq)
-				if err == nil && resp.StatusCode == http.StatusOK {
-					ingestReady = true
-				}
-				time.Sleep(10 * time.Millisecond)
-			}
-		} else {
-			ingestReady = true
+		if !ingestReadyOrDisabled && s.cfg.EnableIngest {
+			ingestReadyOrDisabled = s.isGetSuccessful(c, fmt.Sprintf("http://%s:%d%s", s.cfg.HostIngest, s.cfg.PortIngest, ingestAPIPathReady))
 		}
-		if s.cfg.EnableStatus {
-			postReq, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d%s", s.cfg.PortStatus, statusAPIPathReady), bytes.NewReader([]byte{}))
-			if err != nil {
-				s.logger.Warnf("cannot create request to verify ingest API readiness, err: %s", err)
-			} else {
-				resp, err := c.Do(postReq)
-				if err == nil && resp.StatusCode == http.StatusOK {
-					statusReady = true
-				}
-				time.Sleep(10 * time.Millisecond)
-			}
-		} else {
-			statusReady = true
+		if !statusReadyOrDisabled && s.cfg.EnableStatus {
+			statusReadyOrDisabled = s.isGetSuccessful(c, fmt.Sprintf("http://localhost:%d%s", s.cfg.PortStatus, statusAPIPathReady))
 		}
-		if ingestReady && statusReady {
+
+		if s.allReadyOrDisabled(ingestReadyOrDisabled, statusReadyOrDisabled) {
 			break
 		}
+		time.Sleep(readinessProbeRetryBackoff)
 	}
 	close(s.readyCh)
 
 	<-ctx.Done()
+}
+
+func (s *Server) allReadyOrDisabled(ingestReadyOrDisabled, statusReadyOrDisabled bool) bool {
+	if !s.cfg.EnableIngest && !s.cfg.EnableStatus {
+		return true
+	}
+	if s.cfg.EnableIngest && !ingestReadyOrDisabled {
+		return false
+	}
+	if s.cfg.EnableStatus && !statusReadyOrDisabled {
+		return false
+	}
+	return true
+}
+
+func (s *Server) isGetSuccessful(c http.Client, URL string) bool {
+	postReq, err := http.NewRequest(http.MethodGet, URL, bytes.NewReader([]byte{}))
+	if err != nil {
+		s.logger.Warnf("cannot create request for %s, error: %s", URL, err)
+	} else if resp, err := c.Do(postReq); err == nil && resp.StatusCode == http.StatusOK {
+		return true
+	}
+
+	return false
 }
 
 // WaitUntilReady blocks the call until server is ready to accept connections.
