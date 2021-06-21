@@ -1,6 +1,6 @@
 ---
 
-- hosts: all
+- hosts: testing_hosts
   become: true
   gather_facts: yes
 
@@ -13,13 +13,17 @@
     - name: Installation tests suite
       vars:
         env_vars:
-        agent_pkg_version: "1.18.0" # minimum version supporting ARM.
+        target_agent_version: "1.18.0" # minimum version supporting ARM.
 
       block:
 
         - name: repo setup
           include_role:
             name: repo-setup
+
+        - name: Setup config
+          include_role:
+            name: setup-config
 
         - name: install agent
           include_role:

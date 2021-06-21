@@ -1,0 +1,27 @@
+---
+
+subnet: "subnet-05e71d641651d7ccb"
+ec2_private_key_file: "~/.ssh/caos-dev-arm.cer"
+provision_host_prefix: "caos-harvest"
+output_inventory: "inventory.ec2"
+
+#https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/connection-prereqs.html
+#  For Amazon Linux 2 or the Amazon Linux AMI, the user name is ec2-user.
+#  For a CentOS AMI, the user name is centos.
+#  For a Debian AMI, the user name is admin.
+#  For a Fedora AMI, the user name is ec2-user or fedora.
+#  For a RHEL AMI, the user name is ec2-user or root.
+#  For a SUSE AMI, the user name is ec2-user or root.
+#  For an Ubuntu AMI, the user name is ubuntu.
+instances:
+#  ############################
+#  # ubuntu amd64 example
+#  ############################
+#  - ami: "ami-03b6c8bd55e00d5ed"               # AWS ImageId
+#    type: "t3a.small"                          # AWS instance type
+#    name: "amd64:ubuntu20.04"                  # name for the instance
+#    username: "ubuntu"
+#    python_interpreter: "/usr/bin/python3"
+#    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
+
+...

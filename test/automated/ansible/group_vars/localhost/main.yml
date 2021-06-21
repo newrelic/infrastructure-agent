@@ -4,9 +4,6 @@
 #CentOS AMI: https://www.centos.org/download/aws-images/
 #SLES:
 
-# TODO : Define a good prefix
-instance_name_tag_prefix: "caos-harvest"
-
 #https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/connection-prereqs.html
 #  For Amazon Linux 2 or the Amazon Linux AMI, the user name is ec2-user.
 #  For a CentOS AMI, the user name is centos.
@@ -122,12 +119,6 @@ instances:
     username: "ec2-user"
     python_interpreter: "/usr/bin/python"
     launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
-  - ami: "ami-0f84a134e8f9d527b"
-    type: "t3a.small"
-    name: "amd64:sles-12.5"
-    username: "ec2-user"
-    python_interpreter: "/usr/bin/python"
-    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
   ############################
   # redhat amd64
   ############################
@@ -195,7 +186,7 @@ instances:
     type: "t3a.small"
     name: "amd64:al-2"
     username: "ec2-user"
-    python_interpreter: "/usr/bin/python3"
+    python_interpreter: "/usr/bin/python"
     launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
   ############################
   # amazon linux 2 arm64
@@ -204,7 +195,7 @@ instances:
     type: "t4g.small"
     name: "arm64:al-2"
     username: "ec2-user"
-    python_interpreter: "/usr/bin/python3"
+    python_interpreter: "/usr/bin/python"
     launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
 
 ...
