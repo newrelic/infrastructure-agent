@@ -1,7 +1,6 @@
 ---
 
-# https://stackoverflow.com/questions/32297456/
-- name: Accept SSH host keys
+- name: Terminate ec2 instances
   connection: local
   become: false
   shell: |

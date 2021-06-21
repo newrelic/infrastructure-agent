@@ -38,8 +38,12 @@ endif
 
 .PHONY: validate-aws-credentials
 validate-aws-credentials:
-ifneq ($(and $(AWS_PROFILE),$(AWS_REGION)),)
-	@echo "AWS_PROFILE and AWS_REGION env variables must be set"
+ifndef AWS_PROFILE
+	@echo "AWS_PROFILE variable must be provided"
+	exit 1
+endif
+ifndef AWS_REGION
+	@echo "AWS_REGION variable must be provided"
 	exit 1
 endif
 
