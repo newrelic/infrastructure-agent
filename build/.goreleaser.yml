@@ -43,6 +43,43 @@ builds:
       - -s -w -X main.gitCommit={{.Commit}}
     goarch:
       - amd64
+
+###
+###  darwin build
+###
+  - id: darwin-newrelic-infra
+    main: ./cmd/newrelic-infra
+    binary: newrelic-infra
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+    ldflags:
+      - -s -w -X main.buildVersion={{.Version}}
+      - -s -w -X main.gitCommit={{.Commit}}
+
+  - id: darwin-newrelic-infra-ctl
+    main: ./cmd/newrelic-infra-ctl
+    binary: newrelic-infra-ctl
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+    ldflags:
+      - -s -w -X main.buildVersion={{.Version}}
+      - -s -w -X main.gitCommit={{.Commit}}
+
+  - id: darwin-newrelic-infra-service
+    main: ./cmd/newrelic-infra-service
+    binary: newrelic-infra-service
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+    ldflags:
+      - -s -w -X main.buildVersion={{.Version}}
+      - -s -w -X main.gitCommit={{.Commit}}
+
 ###
 ###  arm for fpm
 ###
