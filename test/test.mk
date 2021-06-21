@@ -2,8 +2,8 @@ PROVISION_HOST_PREFIX := $(shell whoami)-$(shell hostname)
 
 .PHONY: test/automated/provision
 test/automated/provision:validate-aws-credentials
-	ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.ec2 $(CURDIR)/test/automated/ansible/install-python.yml
 	ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.local -e provision_host_prefix=$(PROVISION_HOST_PREFIX) $(CURDIR)/test/automated/ansible/provision.yml
+	ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.ec2 $(CURDIR)/test/automated/ansible/install-python.yml
 
 .PHONY: test/automated/termination
 test/automated/termination:validate-aws-credentials
