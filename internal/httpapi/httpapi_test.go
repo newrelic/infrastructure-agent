@@ -23,6 +23,8 @@ import (
 )
 
 func TestServe_Status(t *testing.T) {
+	t.Parallel()
+
 	// Given a running HTTP endpoint
 	port, err := network_helpers.TCPPort()
 	require.NoError(t, err)
@@ -77,6 +79,8 @@ func TestServe_Status(t *testing.T) {
 }
 
 func TestServe_OnlyErrors(t *testing.T) {
+	t.Parallel()
+
 	// Given a running HTTP endpoint and an errored one (which times out)
 	port, err := network_helpers.TCPPort()
 	require.NoError(t, err)
@@ -134,6 +138,8 @@ func TestServe_OnlyErrors(t *testing.T) {
 }
 
 func TestServe_IngestData(t *testing.T) {
+	t.Parallel()
+
 	port, err := network_helpers.TCPPort()
 	require.NoError(t, err)
 
