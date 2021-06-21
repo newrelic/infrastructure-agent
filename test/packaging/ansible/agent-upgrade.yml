@@ -1,6 +1,6 @@
 ---
 
-- hosts: amd64
+- hosts: testing_hosts
   become: true
   gather_facts: yes
 
@@ -20,11 +20,25 @@
           include_role:
             name: repo-setup
 
+        - name: setup config
+          include_role:
+            name: setup-config
+
+        - name: pick right agent version for amd64
+          set_fact:
+            target_agent_version_1: "1.15.2"
+          when: inventory_hostname is search("amd64")
+
+        - name: pick right agent version for arm64
+          set_fact:
+            target_agent_version_1: "1.18.0"
+          when: inventory_hostname is search("arm64")
+
         - name: install initial version
           include_role:
             name: package-install-pinned
           vars:
-            target_agent_version: "1.15.2"
+            target_agent_version: "{{ target_agent_version_1 }}"
 
         - name: assert service is running
           include_role:

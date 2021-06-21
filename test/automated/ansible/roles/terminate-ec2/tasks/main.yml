@@ -1,0 +1,9 @@
+---
+
+- name: Terminate ec2 instances
+  connection: local
+  become: false
+  shell: |
+    aws ec2 terminate-instances --instance-ids {{ iid }}
+
+...

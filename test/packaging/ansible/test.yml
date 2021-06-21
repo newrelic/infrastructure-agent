@@ -1,8 +1,5 @@
 ---
 
-- name: install pythong if missed
-  import_playbook: install-python.yml
-
 - name: pinned version agent installation
   import_playbook: installation-pinned.yml
 
@@ -20,11 +17,8 @@
 #- name: log forwarder
 #  import_playbook: log-forwarder.yml
 
-- name: agent upgrade arm64
-  import_playbook: agent-upgrade-arm64.yml
-
-- name: agent upgrade amd64
-  import_playbook: agent-upgrade-amd64.yml
+- name: agent upgrade
+  import_playbook: agent-upgrade.yml
 
 - name: agent uninstallation
   import_playbook: uninstallation.yml
