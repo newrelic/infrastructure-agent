@@ -50,6 +50,10 @@ CMD ["/usr/bin/newrelic-infra-service"]
 # Forwarder
 #################################
 FROM core AS forwarder
+
+RUN apk add --no-cache \
+        curl=$curl_version
+
 RUN addgroup -g 2000 nri-agent && adduser -D -H -u 1000 -G nri-agent nri-agent
 USER nri-agent
 
@@ -60,9 +64,6 @@ ENV NRIA_IS_SECURE_FORWARD_ONLY true
 # K8s events forwarder
 #################################
 FROM forwarder AS k8s-events-forwarder
-
-RUN apk add --no-cache \
-        curl=$curl_version
 
 ENV NRIA_HTTP_SERVER_ENABLED true
 
