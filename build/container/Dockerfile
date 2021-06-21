@@ -7,7 +7,7 @@ ARG agent_version=0.0
 ARG version_file=VERSION
 ARG agent_bin=newrelic-infra
 
-ARG curl_version=7.77.0-r0
+ARG curl_version=7.77.0-r1
 
 # Add the agent binary
 COPY $agent_bin /usr/bin/newrelic-infra
