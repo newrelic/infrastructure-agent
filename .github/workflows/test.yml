@@ -122,6 +122,24 @@ jobs:
       - name: Build container agent (arm64)
         run: make -C build/container/ build/base-arm64
 
+      - name: Build container forwarder (amd64)
+        run: make -C build/container/ build/forwarder-amd64
+
+      - name: Build container forwarder (arm)
+        run: make -C build/container/ build/forwarder-arm
+
+      - name: Build container forwarder (arm64)
+        run: make -C build/container/ build/forwarder-arm64
+
+      - name: Build container k8s-events-forwarder (amd64)
+        run: make -C build/container/ build/k8s-events-forwarder-amd64
+
+      - name: Build container k8s-events-forwarder (arm)
+        run: make -C build/container/ build/k8s-events-forwarder-arm
+
+      - name: Build container k8s-events-forwarder (arm64)
+        run: make -C build/container/ build/k8s-events-forwarder-arm64
+
   finish:
     name: Finish
     needs: [ unit-test-linux ]
