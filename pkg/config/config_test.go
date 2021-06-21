@@ -418,7 +418,7 @@ func (s *ConfigSuite) TestCalculateDimensionalMetricURL(c *C) {
 			"",
 			false,
 			true,
-			"https://gov-infra-api.newrelic.com",
+			"https://gov-metric-api.newrelic.com",
 		},
 		{
 			"Staging flag prevails over fedramp one",

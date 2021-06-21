@@ -23,6 +23,7 @@ type MetricsSender interface {
 }
 
 type MetricsSenderConfig struct {
+	Fedramp             bool
 	LicenseKey          string
 	MetricApiURL        string
 	SubmissionPeriod    time.Duration
@@ -30,8 +31,9 @@ type MetricsSenderConfig struct {
 	MaxEntitiesPerBatch int
 }
 
-func NewConfig(url string, licenseKey string, submissionPeriod time.Duration, maxEntitiesPerReq int, maxEntitiesPerBatch int) MetricsSenderConfig {
+func NewConfig(url string, fedramp bool, licenseKey string, submissionPeriod time.Duration, maxEntitiesPerReq int, maxEntitiesPerBatch int) MetricsSenderConfig {
 	return MetricsSenderConfig{
+		Fedramp:             fedramp,
 		LicenseKey:          licenseKey,
 		MetricApiURL:        url,
 		SubmissionPeriod:    submissionPeriod,
