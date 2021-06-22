@@ -6,7 +6,7 @@ set -e
 #
 #
 
-for tarball_dirty in $(find dist -regex ".*_dirty\.\(tar.gz\)");do
+for tarball_dirty in $(find dist -regex ".*linux.*_dirty\.\(tar.gz\)");do
   tarball=${tarball_dirty:5:${#tarball_dirty}-(5+13)} # Strips begining and end chars
   tarball="${tarball}.tar.gz"
   tarballTmpPath="dist/tarball_temp"

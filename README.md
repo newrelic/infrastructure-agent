@@ -101,6 +101,43 @@ $ go test -race -run /A=1    # For all top-level tests, run subtests matching "A
 
 For more information, see [Testing](https://golang.org/pkg/testing/) in the official Go docs.
 
+## Automated tests
+
+Packaging and harvest tests can be run in an automated way using ansible. 
+
+[Packaging tests](test/packaging/ansible/README.md)
+
+[Harvest tests](test/harvest/ansible/README.md)
+
+In order to spin ec2 instances and run these tests automated tests ansible project can be used.
+
+[Automated tests](test/automated/ansible/README.md)
+
+You can use make targets to run spin instances, run tests and terminate instances.
+
+```bash
+# spin instances, run tests and terminate instances
+make test/automated
+```
+
+Individual targets:
+```bash
+# provision ec2 instances (test/automated/ansible/inventory.ec2 will be created)
+make test/automated/provision
+
+# run harvest tests using test/automated/ansible/inventory.ec2 inventory
+make test/automated/harvest
+
+# run packaging tests using test/automated/ansible/inventory.ec2 inventory
+make test/automated/packaging
+
+# run packaging docker tests using test/automated/ansible/inventory.ec2 inventory
+make test/automated/packaging-docker
+
+# terminate instances in test/automated/ansible/inventory.ec2
+make test/automated/termination
+```
+
 ## Documentation
 
 Find more documentation about the overall architecture, components, and workflows in [the docs

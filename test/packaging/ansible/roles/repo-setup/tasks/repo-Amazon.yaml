@@ -1,10 +1,15 @@
 ---
 
+- name: remove infra-agent YUM repository (from previous runs)
+  yum_repository:
+    name: newrelic-infra
+    state: absent
+
 - name: install infra-agent YUM repository
   yum_repository:
     name: newrelic-infra
     description: New Relic Infrastructure Agent
-    baseurl: "{{ repo_endpoint }}/linux/yum/el/7/$basearch"
+    baseurl: "{{ repo_endpoint }}/linux/yum/amazonlinux/2/$basearch"
     gpgkey: http://download.newrelic.com/infrastructure_agent/gpg/newrelic-infra.gpg
     gpgcheck: no
     repo_gpgcheck: no

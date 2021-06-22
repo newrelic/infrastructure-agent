@@ -8,7 +8,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
@@ -20,6 +19,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
 	ccBackoff "github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/backoff"
@@ -289,7 +290,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	}
 	wlog.Instrument(instruments.Measure)
 
-	metricsSenderConfig := dm.NewConfig(c.DMIngestURL(), c.License, time.Duration(c.DMSubmissionPeriod)*time.Second, c.MaxMetricBatchEntitiesCount, c.MaxMetricBatchEntitiesQueue)
+	metricsSenderConfig := dm.NewConfig(c.DMIngestURL(), c.Fedramp, c.License, time.Duration(c.DMSubmissionPeriod)*time.Second, c.MaxMetricBatchEntitiesCount, c.MaxMetricBatchEntitiesQueue)
 	dmSender, err := dm.NewDMSender(metricsSenderConfig, transport, agt.Context.IdContext().AgentIdentity)
 	if err != nil {
 		return err

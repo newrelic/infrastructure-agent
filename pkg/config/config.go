@@ -1520,7 +1520,7 @@ func calculateDimensionalMetricURL(collectorURL string, licenseKey string, stagi
 	}
 
 	if fedramp && !staging {
-		return defaultSecureFederalURL
+		return defaultSecureFederalMetricURL
 	}
 
 	return fmt.Sprintf(baseDimensionalMetricURL, urlEnvironmentPrefix(staging), urlRegionPrefix(licenseKey))

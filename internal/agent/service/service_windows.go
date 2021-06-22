@@ -3,7 +3,6 @@
 package service
 
 import (
-	"context"
 	"os"
 	"os/exec"
 
@@ -16,8 +15,7 @@ import (
 
 // Start starts the service
 func (svc *Service) Start(s service.Service) (err error) {
-	svc.daemon.wg.Add(1)
-	go svc.daemon.run()
+	go svc.daemon.run(s)
 	return
 }
 
@@ -31,22 +29,10 @@ func (svc *Service) Stop(s service.Service) (err error) {
 	svc.daemon.Lock()
 	defer svc.daemon.Unlock()
 
-	gracefulExit := make(chan struct{})
-	go func() {
-		svc.daemon.wg.Wait()
-		close(gracefulExit)
-	}()
-
 	// notify the agent to gracefully stop
 	windows.PostNotificationMessage(windows.GetPipeName(svcName), ipc.Stop)
 
-	err = waitForExitOrTimeout(gracefulExit)
-	if err == GracefulExitTimeoutErr {
-		// the agent process did not exit in the allocated time.
-		// make sure it doesn't stay around..
-		svc.daemon.cmd.Process.Kill()
-	}
-	return err
+	return svc.terminate(err)
 }
 
 // Shutdown stops the service whenever the machine is restarting or shutting down
@@ -59,30 +45,17 @@ func (svc *Service) Shutdown(s service.Service) (err error) {
 	svc.daemon.Lock()
 	defer svc.daemon.Unlock()
 
-	gracefulExit := make(chan struct{})
-	go func() {
-		svc.daemon.wg.Wait()
-		close(gracefulExit)
-	}()
-
 	// notify the agent to update the shutdown status and then stop gracefully
 	windows.PostNotificationMessage(windows.GetPipeName(svcName), ipc.Shutdown)
 
-	err = waitForExitOrTimeout(gracefulExit)
-	if err == GracefulExitTimeoutErr {
-		// the agent process did not exit in the allocated time.
-		// make sure it doesn't stay around..
-		svc.daemon.cmd.Process.Kill()
-	}
-	return
+	return svc.terminate(err)
 }
 
-func (d *daemon) run() {
+func (d *daemon) run(s service.Service) {
 	for {
 
 		d.Lock()
-		d.ctx, d.cancel = context.WithCancel(context.Background())
-		d.cmd = exec.CommandContext(d.ctx, GetCommandPath(d.args[0]), d.args[1:]...)
+		d.cmd = exec.Command(GetCommandPath(d.args[0]), d.args[1:]...)
 		d.cmd.Stdout = os.Stdout
 		d.cmd.Stderr = os.Stderr
 		d.Unlock()
@@ -91,12 +64,10 @@ func (d *daemon) run() {
 
 		switch exitCode {
 		case api.ExitCodeRestart:
-			log.Info("agent process exited with restart exit code. restarting agent process...")
+			log.Info("child process requested restart")
 			continue
 		default:
-			log.Info("agent process exited normally. stopping service...")
-			d.wg.Done()
-			return
+			d.exitWithChildStatus(s, exitCode)
 		}
 	}
 }

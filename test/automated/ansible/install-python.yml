@@ -1,0 +1,10 @@
+---
+
+- hosts: testing_hosts
+  become: false
+  gather_facts: no
+
+  tasks:
+    - name: install python
+      include_role:
+        name: install-python

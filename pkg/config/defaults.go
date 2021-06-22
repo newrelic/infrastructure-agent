@@ -26,6 +26,7 @@ const (
 	baseCollectorURL                 = "https://%sinfra-api.%snewrelic.com"
 	baseDimensionalMetricURL         = "https://%smetric-api.%snewrelic.com"
 	defaultSecureFederalURL          = "https://gov-infra-api.newrelic.com"
+	defaultSecureFederalMetricURL    = "https://gov-metric-api.newrelic.com"
 	defaultSecureFedralIdentityURL   = "https://gov-identity-api.newrelic.com"
 	defaultSecureFedralCmdChannelURL = "https://gov-infrastructure-command-api.newrelic.com"
 )

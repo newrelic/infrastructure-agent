@@ -16,20 +16,9 @@
 
 - hosts: testing_hosts
   become: false
-  gather_facts: no #gather facts after adding SSH known hosts
+  gather_facts: yes
 
   tasks:
-    - name: add inventory hosts to SSH known hosts
-      include_role:
-        name: add-ssh-keys
-
-    - name: install python in boxes that doesn't have it by default
-      include_role:
-        name: install-python
-
-    - name: Gathering Facts
-      setup:
-
     - name: copy and run harvest tests
       include_role:
         name: run-harvest-tests

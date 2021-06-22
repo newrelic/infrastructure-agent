@@ -1,8 +1,7 @@
 ---
 
 # agent config:
-nr_license_key: "{{ lookup ('env', 'NR_LICENSE_KEY') }}"
-display_name: "{{ ansible_hostname }}"
+display_name: "{{ inventory_hostname }}"
 verbose: '0'
 staging: 'true'
 # custom attributes:

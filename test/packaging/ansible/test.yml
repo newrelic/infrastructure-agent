@@ -12,7 +12,8 @@
 - name: unprivileged mode agent installation
   import_playbook: installation-unprivileged.yml
 
-# Not available for ARM yet
+# only amd64
+# fails on suse, al2, debian
 #- name: log forwarder
 #  import_playbook: log-forwarder.yml
 

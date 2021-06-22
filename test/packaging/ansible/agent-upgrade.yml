@@ -1,6 +1,6 @@
 ---
 
-- hosts: all
+- hosts: testing_hosts
   become: true
   gather_facts: yes
 
@@ -16,11 +16,29 @@
 
       block:
 
+        - name: repo setup
+          include_role:
+            name: repo-setup
+
+        - name: setup config
+          include_role:
+            name: setup-config
+
+        - name: pick right agent version for amd64
+          set_fact:
+            target_agent_version_1: "1.15.2"
+          when: inventory_hostname is search("amd64")
+
+        - name: pick right agent version for arm64
+          set_fact:
+            target_agent_version_1: "1.18.0"
+          when: inventory_hostname is search("arm64")
+
         - name: install initial version
           include_role:
             name: package-install-pinned
           vars:
-            agent_pkg_version: "1.18.0"
+            target_agent_version: "{{ target_agent_version_1 }}"
 
         - name: assert service is running
           include_role:
@@ -30,11 +48,19 @@
           command: pgrep -f newrelic-infra-service
           register: agent_pid
 
+# this is for target upgrade from version to version
+#        - name: install initial version
+#          include_role:
+#            name: package-install-pinned
+#          vars:
+#            target_agent_version: "1.19.1"
+
         - name: upgrade agent
           include_role:
             name: agent-upgrade
           vars:
-            agent_pkg_version: "1.18.0"
+            # this used only for check that latest is grater than given
+            target_agent_version: "1.18.0"
 
         - name: assert service countinues running after upgrade
           include_role:
