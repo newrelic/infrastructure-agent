@@ -24,7 +24,8 @@ ifndef NR_LICENSE_KEY
 	@echo "NR_LICENSE_KEY variable must be provided for test/automated/packaging"
 	exit 1
 else
-	ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.ec2 -e nr_license_key=$(NR_LICENSE_KEY) $(CURDIR)/test/packaging/ansible/test.yml
+	# do not print secrets
+	@ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.ec2 -e nr_license_key=$(NR_LICENSE_KEY) $(CURDIR)/test/packaging/ansible/test.yml
 endif
 
 .PHONY: test/automated/packaging-docker
