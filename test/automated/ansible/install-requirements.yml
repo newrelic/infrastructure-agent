@@ -8,3 +8,6 @@
     - name: install python
       include_role:
         name: install-python
+    - name: install gpg
+      include_role:
+        name: install-gpg
