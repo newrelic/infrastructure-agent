@@ -2,7 +2,7 @@
 
 - name: 'install gpg'
   ansible.builtin.package:
-    name: gpg
+    name: gnupg2
     state: present
   when: "inventory_hostname in instances_without_gpg"
 

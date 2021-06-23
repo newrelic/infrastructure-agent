@@ -1,16 +1,22 @@
 ---
 
 - hosts: testing_hosts
-  become: false
+  become: true
   gather_facts: no
 
   tasks:
+    - name: Remove EOL repository sources
+      include_role:
+        name: remove-eol-sources
+
     - name: install python
       include_role:
         name: install-python
-    - name: install libcap
+
+    - name: Install Libcap
       include_role:
         name: install-libcap
-    - name: install gpg
+
+    - name: Install GPG
       include_role:
         name: install-gpg
