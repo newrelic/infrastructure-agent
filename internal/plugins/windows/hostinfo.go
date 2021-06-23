@@ -7,12 +7,13 @@ package windows
 import (
 	"context"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 
 	"golang.org/x/sys/windows/registry"
 
@@ -190,7 +191,8 @@ func (self *HostinfoPlugin) getHostType() string {
 	hostType := "unknown"
 
 	if self.Context.Config().DisableCloudMetadata ||
-		self.cloudHarvester.GetCloudType() == cloud.TypeNoCloud {
+		self.cloudHarvester.GetCloudType() == cloud.TypeNoCloud ||
+		self.cloudHarvester.GetCloudType() == cloud.TypeInProgress {
 
 		if regKey, err := registry.OpenKey(registry.LOCAL_MACHINE, `SYSTEM\CurrentControlSet\Control\SystemInformation\`, registry.QUERY_VALUE); err == nil {
 			Manufacturer, _, _ := regKey.GetStringValue("SystemManufacturer")
@@ -202,13 +204,13 @@ func (self *HostinfoPlugin) getHostType() string {
 		} else {
 			log.WithError(err).Debug("Error getting host type from Windows Registry.")
 		}
+	}
+
+	if response, err := self.cloudHarvester.GetHostType(); err != nil {
+		hlog.WithError(err).WithField("cloudType", self.cloudHarvester.GetCloudType()).Debug(
+			"Error getting host type from cloud metadata")
 	} else {
-		if response, err := self.cloudHarvester.GetHostType(); err != nil {
-			hlog.WithError(err).WithField("cloudType", self.cloudHarvester.GetCloudType()).Debug(
-				"Error getting host type from cloud metadata")
-		} else {
-			hostType = response
-		}
+		hostType = response
 	}
 
 	return hostType

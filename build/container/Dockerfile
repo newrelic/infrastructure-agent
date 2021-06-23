@@ -7,6 +7,8 @@ ARG agent_version=0.0
 ARG version_file=VERSION
 ARG agent_bin=newrelic-infra
 
+ARG curl_version=7.77.0-r1
+
 # Add the agent binary
 COPY $agent_bin /usr/bin/newrelic-infra
 COPY ${agent_bin}-ctl /usr/bin/newrelic-infra-ctl
@@ -48,6 +50,10 @@ CMD ["/usr/bin/newrelic-infra-service"]
 # Forwarder
 #################################
 FROM core AS forwarder
+
+RUN apk add --no-cache \
+        curl=$curl_version
+
 RUN addgroup -g 2000 nri-agent && adduser -D -H -u 1000 -G nri-agent nri-agent
 USER nri-agent
 
@@ -77,6 +83,6 @@ LABEL com.newrelic.nri-docker.version=$nri_docker_version \
 
 RUN apk add --no-cache \
         ntpsec=1.2.0-r1 \
-        curl=7.77.0-r1
+        curl=$curl_version
 
 COPY $nri_pkg_dir /

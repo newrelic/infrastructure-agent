@@ -1,6 +1,7 @@
 # Standard variables defining directories and other useful stuff.
 PROJECT_WORKSPACE	?= $(CURDIR)
 INCLUDE_BUILD_DIR	?= $(PROJECT_WORKSPACE)/build
+INCLUDE_TEST_DIR	?= $(PROJECT_WORKSPACE)/test
 PROJECT_NAME		:= newrelic-infra
 TARGET_DIR			?= $(PROJECT_WORKSPACE)/target
 DIST_DIR			?= $(PROJECT_WORKSPACE)/dist
@@ -27,3 +28,6 @@ include $(INCLUDE_BUILD_DIR)/embed/fluent-bit.mk
 include $(INCLUDE_BUILD_DIR)/ci.mk
 
 include $(INCLUDE_BUILD_DIR)/release.mk
+
+# test
+include $(INCLUDE_TEST_DIR)/test.mk
