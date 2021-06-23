@@ -13,7 +13,7 @@ test/automated/termination:validate-aws-credentials
 TESTS_TO_RUN_REGEXP ?= ".*"
 .PHONY: test/automated/harvest
 test/automated/harvest:
-	ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.ec2 \
+	ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.ec2 \
 					-e agent_root_dir=$(CURDIR) \
 					-e tests_to_run_regex=$(TESTS_TO_RUN_REGEXP) \
 					$(CURDIR)/test/harvest/ansible/test.yml
