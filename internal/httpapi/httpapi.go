@@ -131,16 +131,16 @@ func (s *Server) Serve(ctx context.Context) {
 	}
 
 	c := http.Client{}
-	var ingestReadyOrDisabled, statusReadyOrDisabled bool
+	var ingestReady, statusReady bool
 	for {
-		if !ingestReadyOrDisabled && s.cfg.EnableIngest {
-			ingestReadyOrDisabled = s.isGetSuccessful(c, fmt.Sprintf("http://%s:%d%s", s.cfg.HostIngest, s.cfg.PortIngest, ingestAPIPathReady))
+		if !ingestReady && s.cfg.EnableIngest {
+			ingestReady = s.isGetSuccessful(c, fmt.Sprintf("http://%s:%d%s", s.cfg.HostIngest, s.cfg.PortIngest, ingestAPIPathReady))
 		}
-		if !statusReadyOrDisabled && s.cfg.EnableStatus {
-			statusReadyOrDisabled = s.isGetSuccessful(c, fmt.Sprintf("http://localhost:%d%s", s.cfg.PortStatus, statusAPIPathReady))
+		if !statusReady && s.cfg.EnableStatus {
+			statusReady = s.isGetSuccessful(c, fmt.Sprintf("http://localhost:%d%s", s.cfg.PortStatus, statusAPIPathReady))
 		}
 
-		if s.allReadyOrDisabled(ingestReadyOrDisabled, statusReadyOrDisabled) {
+		if s.allReadyOrDisabled(ingestReady, statusReady) {
 			break
 		}
 		time.Sleep(readinessProbeRetryBackoff)
