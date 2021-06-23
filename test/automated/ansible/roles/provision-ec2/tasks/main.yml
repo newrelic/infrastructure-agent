@@ -1,0 +1,85 @@
+---
+
+- name: "ensure instance_name_prefix is set"
+  fail:
+    msg: "provision_host_prefix cannot be empty"
+  when: provision_host_prefix is not defined or (provision_host_prefix | length) == 0
+
+- name: "provision instance"
+  shell: "aws ec2 run-instances --launch-template {{ item.launch_template }} --image-id {{ item.ami }} --instance-type {{ item.type }}  --subnet-id {{ subnet }} --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value={{ provision_host_prefix }}:{{ item.name }}}]'"
+  loop: "{{ instances }}"
+  register: run_instances
+
+- name: "iterate run-instances results to gather all outputs in a single structure"
+  set_fact:
+    created_instances_ids: "{{ item.stdout | from_json | community.general.json_query('Instances[*].InstanceId') | flatten }}"
+  loop: "{{ run_instances.results | list }}"
+  register: created_instances_ids_results
+
+- name: "register instances_ids"
+  set_fact:
+    created_instances_ids: "{{ created_instances_ids_results.results | map(attribute='ansible_facts') | map(attribute='created_instances_ids') | flatten }}"
+
+- name: "wait until instances are running"
+  shell: "aws ec2 wait instance-status-ok --instance-ids {{ created_instances_ids | join(' ') }}"
+
+- name: "retrieve instances information"
+  shell: "aws ec2 describe-instances --instance-ids {{ created_instances_ids | join(' ') }}"
+  register: instances_information
+
+- name: "register instances attributes"
+  set_fact:
+    registered_instances: "{{ (instances_information.stdout  | from_json) | community.general.json_query('Reservations[*].Instances[*].{InstanceId: InstanceId, ImageId: ImageId, PublicIpAddress: PublicIpAddress, Architecture: Architecture}') | list | flatten }}"
+  register: all_registered_instances
+
+- name: add ip address for amd64
+  ansible.builtin.set_fact:
+    instance_data:
+      iid: "{{ item.0.InstanceId }}"
+      ami: "{{ item.1.ami }}"
+      ip: "{{ item.0.PublicIpAddress }}"
+      username: "{{ item.1.username }}"
+      name: "{{ item.1.name }}"
+      python_interpreter: "{{ item.1.python_interpreter }}"
+  loop: "{{ registered_instances | product(instances) | list }}"
+  when: item.0.ImageId == item.1.ami and item.1.name is search("amd64")
+  register: instances_data_amd64
+
+- debug:
+    var: instances_data_amd64
+
+- name: add ip address for arm64
+  ansible.builtin.set_fact:
+    instance_data:
+      iid: "{{ item.0.InstanceId }}"
+      ami: "{{ item.1.ami }}"
+      ip: "{{ item.0.PublicIpAddress }}"
+      username: "{{ item.1.username }}"
+      name: "{{ item.1.name }}"
+      python_interpreter: "{{ item.1.python_interpreter }}"
+  loop: "{{ registered_instances | product(instances) | list }}"
+  when: item.0.ImageId == item.1.ami and item.1.name is search("arm64")
+  register: instances_data_arm64
+
+- debug:
+    var: instances_data_arm64
+
+- name: register instances information for harvest test inventory
+  set_fact:
+    instances_for_inventory_amd64: "{{ instances_data_amd64.results | selectattr('ansible_facts', 'defined') | map(attribute='ansible_facts') | map(attribute='instance_data') | list }}"
+
+- name: register instances information for harvest test inventory
+  set_fact:
+    instances_for_inventory_arm64: "{{ instances_data_arm64.results | selectattr('ansible_facts', 'defined') | map(attribute='ansible_facts') | map(attribute='instance_data') | list }}"
+
+- debug:
+    var: instances_for_inventory_amd64
+
+- debug:
+    var: instances_for_inventory_arm64
+
+- name: create inventory
+  template:
+    src: inventory.ec2.j2
+    dest: "{{ output_inventory }}"
+...

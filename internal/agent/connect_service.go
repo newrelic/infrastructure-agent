@@ -138,5 +138,6 @@ func (ic *identityConnectService) Disconnect(agentID entity.ID, state identityap
 		return err
 	}
 
+	logger.WithField("state", state).Info("disconnect call finished")
 	return nil
 }

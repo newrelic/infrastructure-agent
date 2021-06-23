@@ -4,9 +4,6 @@
 #CentOS AMI: https://www.centos.org/download/aws-images/
 #SLES:
 
-# TODO : Define a good prefix
-instance_name_tag_prefix: "caos-harvest"
-
 #https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/connection-prereqs.html
 #  For Amazon Linux 2 or the Amazon Linux AMI, the user name is ec2-user.
 #  For a CentOS AMI, the user name is centos.
@@ -104,27 +101,22 @@ instances:
   ############################
   # sles amd64
   ############################
-  - ami: "ami-0b39df28334229e26"
-    type: "t3a.small"
-    name: "amd64:sles-12.2"
-    username: "ec2-user"
-    python_interpreter: "/usr/bin/python"
-    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
-  - ami: "ami-0479b39f2d07530fb"
-    type: "t3a.small"
-    name: "amd64:sles-12.3"
-    username: "ec2-user"
-    python_interpreter: "/usr/bin/python"
-    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
+# Disabled until EOLed repo sources are fixed
+#  - ami: "ami-0b39df28334229e26"
+#    type: "t3a.small"
+#    name: "amd64:sles-12.2"
+#    username: "ec2-user"
+#    python_interpreter: "/usr/bin/python"
+#    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
+#  - ami: "ami-0479b39f2d07530fb"
+#    type: "t3a.small"
+#    name: "amd64:sles-12.3"
+#    username: "ec2-user"
+#    python_interpreter: "/usr/bin/python"
+#    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
   - ami: "ami-00c2a324f2cf48f09"
     type: "t3a.small"
     name: "amd64:sles-12.4"
-    username: "ec2-user"
-    python_interpreter: "/usr/bin/python"
-    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
-  - ami: "ami-0f84a134e8f9d527b"
-    type: "t3a.small"
-    name: "amd64:sles-12.5"
     username: "ec2-user"
     python_interpreter: "/usr/bin/python"
     launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
@@ -188,23 +180,24 @@ instances:
     username: "admin"
     python_interpreter: "/usr/bin/python3"
     launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
-  ############################
-  # amazon linux 2 amd64
-  ############################
-  - ami: "ami-077e31c4939f6a2f3"
-    type: "t3a.small"
-    name: "amd64:al-2"
-    username: "ec2-user"
-    python_interpreter: "/usr/bin/python3"
-    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
-  ############################
-  # amazon linux 2 arm64
-  ############################
-  - ami: "ami-07a3e3eda401f8caa"
-    type: "t4g.small"
-    name: "arm64:al-2"
-    username: "ec2-user"
-    python_interpreter: "/usr/bin/python3"
-    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
+# Disabled until repo baseurl is available
+#  ############################
+#  # amazon linux 2 amd64
+#  ############################
+#  - ami: "ami-077e31c4939f6a2f3"
+#    type: "t3a.small"
+#    name: "amd64:al-2"
+#    username: "ec2-user"
+#    python_interpreter: "/usr/bin/python"
+#    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
+#  ############################
+#  # amazon linux 2 arm64
+#  ############################
+#  - ami: "ami-07a3e3eda401f8caa"
+#    type: "t4g.small"
+#    name: "arm64:al-2"
+#    username: "ec2-user"
+#    python_interpreter: "/usr/bin/python"
+#    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
 
 ...

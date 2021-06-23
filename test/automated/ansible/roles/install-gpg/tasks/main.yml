@@ -1,0 +1,9 @@
+---
+
+- name: 'install gpg'
+  ansible.builtin.package:
+    name: gpg
+    state: present
+  when: "inventory_hostname in instances_without_gpg"
+
+...

@@ -248,8 +248,11 @@ func (self *HostinfoPlugin) setCloudRegion(data *HostinfoData) (err error) {
 }
 
 func (self *HostinfoPlugin) getHostType() string {
+	hostType := "unknown"
+
 	if self.Context.Config().DisableCloudMetadata ||
-		self.cloudHarvester.GetCloudType() == cloud.TypeNoCloud {
+		self.cloudHarvester.GetCloudType() == cloud.TypeNoCloud ||
+		self.cloudHarvester.GetCloudType() == cloud.TypeInProgress {
 
 		manufacturer, err := fs.ReadFirstLine(helpers.HostSys("/devices/virtual/dmi/id/sys_vendor"))
 		if err != nil {
@@ -261,10 +264,9 @@ func (self *HostinfoPlugin) getHostType() string {
 			hlog.WithError(err).Error("cannot read dmi product name")
 		}
 
-		return fmt.Sprintf("%s %s", manufacturer, name)
+		hostType = fmt.Sprintf("%s %s", manufacturer, name)
 	}
 
-	hostType := "unknown"
 	if response, err := self.cloudHarvester.GetHostType(); err != nil {
 		hlog.WithError(err).WithField("cloudType", self.cloudHarvester.GetCloudType()).Debug(
 			"error getting host type from cloud metadata")
