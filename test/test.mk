@@ -3,7 +3,7 @@ PROVISION_HOST_PREFIX := $(shell whoami)-$(shell hostname)
 .PHONY: test/automated/provision
 test/automated/provision:validate-aws-credentials
 	ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.local -e provision_host_prefix=$(PROVISION_HOST_PREFIX) $(CURDIR)/test/automated/ansible/provision.yml
-	ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.ec2 $(CURDIR)/test/automated/ansible/install-python.yml
+	ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.ec2 $(CURDIR)/test/automated/ansible/install-requirements.yml
 
 .PHONY: test/automated/termination
 test/automated/termination:validate-aws-credentials
@@ -13,7 +13,7 @@ test/automated/termination:validate-aws-credentials
 TESTS_TO_RUN_REGEXP ?= ".*"
 .PHONY: test/automated/harvest
 test/automated/harvest:
-	ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.ec2 \
+	ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.ec2 \
 					-e agent_root_dir=$(CURDIR) \
 					-e tests_to_run_regex=$(TESTS_TO_RUN_REGEXP) \
 					$(CURDIR)/test/harvest/ansible/test.yml
@@ -24,7 +24,8 @@ ifndef NR_LICENSE_KEY
 	@echo "NR_LICENSE_KEY variable must be provided for test/automated/packaging"
 	exit 1
 else
-	ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.ec2 -e nr_license_key=$(NR_LICENSE_KEY) $(CURDIR)/test/packaging/ansible/test.yml
+	# do not print secrets
+	@ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO ANSIBLE_DISPLAY_OK_HOSTS=NO ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.ec2 -e nr_license_key=$(NR_LICENSE_KEY) $(CURDIR)/test/packaging/ansible/test.yml
 endif
 
 .PHONY: test/automated/packaging-docker

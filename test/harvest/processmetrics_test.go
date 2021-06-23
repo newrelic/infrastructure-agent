@@ -38,6 +38,8 @@ const diskIOTimeout = 1 * time.Minute
 
 // TestProcessSamplerCPUValues will assert that CPU metrics provided by the ProcessSampler are correct.
 func TestProcessSamplerCPUValues(t *testing.T) {
+	t.Skipf("flaky test")
+
 	procs := runtime.GOMAXPROCS(1) // To limit the percentage to 100
 	defer runtime.GOMAXPROCS(procs)
 
