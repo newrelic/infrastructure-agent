@@ -1,0 +1,5 @@
+instances_requiring_libcap:
+  - "amd64:sles-12.4"
+instances_requiring_libcap2:
+  - "amd64:debian-stretch"
+  - "arm64:debian-stretch"
