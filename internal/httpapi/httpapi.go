@@ -70,7 +70,7 @@ func NewServer(c Config, r status.Reporter, em emitter.Emitter) (*Server, error)
 
 	l := log.WithComponent(componentName).
 		WithField("status_enabled", c.EnableStatus).
-		WithField("status_enabled", c.EnableIngest)
+		WithField("ingest_enabled", c.EnableIngest)
 
 	return &Server{
 		cfg:        c,
