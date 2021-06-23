@@ -25,7 +25,7 @@ ifndef NR_LICENSE_KEY
 	exit 1
 else
 	# do not print secrets
-	@ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.ec2 -e nr_license_key=$(NR_LICENSE_KEY) $(CURDIR)/test/packaging/ansible/test.yml
+	@ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO ANSIBLE_DISPLAY_OK_HOSTS=NO ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.ec2 -e nr_license_key=$(NR_LICENSE_KEY) $(CURDIR)/test/packaging/ansible/test.yml
 endif
 
 .PHONY: test/automated/packaging-docker
