@@ -707,13 +707,18 @@ license_key: your_license_key
 #            Traces are additional log entries used for debugging purposes of
 #            specific features, and are only shown when verbose is set to True.
 # Default  : []
-# Info     : Currently, only three features have traces defined: hostname,
-#            connect, and attributes.
 #
 #traces:
-#  - connect
+#  - connect (enabled by default)
 #  - attributes
 #  - hostname
+#  - dm.submission
+#  - v3.submission
+#  - metric.match
+#  - inventory
+#  - log.fw
+#  - cmdreq
+#  - proc
 
 #
 # Option   : container_cache_metadata_limit
