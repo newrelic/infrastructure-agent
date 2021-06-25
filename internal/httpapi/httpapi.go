@@ -151,9 +151,6 @@ func (s *Server) Serve(ctx context.Context) {
 }
 
 func (s *Server) allReadyOrDisabled(ingestReady, statusReady bool) bool {
-	if !s.cfg.EnableIngest && !s.cfg.EnableStatus {
-		return true
-	}
 	if s.cfg.EnableIngest && !ingestReady {
 		return false
 	}
