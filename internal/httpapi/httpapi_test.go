@@ -55,7 +55,6 @@ func TestServe_Status(t *testing.T) {
 	go s.Serve(ctx)
 
 	s.WaitUntilReady()
-	time.Sleep(100 * time.Millisecond)
 
 	// And a request to the status API is sent
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d%s", port, statusAPIPath), bytes.NewReader([]byte{}))
@@ -114,7 +113,6 @@ func TestServe_OnlyErrors(t *testing.T) {
 	go s.Serve(ctx)
 
 	s.WaitUntilReady()
-	time.Sleep(100 * time.Millisecond)
 
 	// And a request to the status API is sent
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d%s", port, statusOnlyErrorsAPIPath), bytes.NewReader([]byte{}))
@@ -164,7 +162,7 @@ func TestServe_IngestData(t *testing.T) {
 	}()
 
 	select {
-	case <-time.NewTimer(500 * time.Millisecond).C:
+	case <-time.NewTimer(1000 * time.Millisecond).C:
 		t.Error("timeout waiting for HTTP request to be submitted")
 	case <-payloadWritten:
 	}
