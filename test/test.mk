@@ -1,12 +1,12 @@
 PROVISION_HOST_PREFIX := $(shell whoami)-$(shell hostname)
 
 .PHONY: test/automated/provision
-test/automated/provision:validate-aws-credentials
+test/automated/provision: validate-aws-credentials
 	ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.local -e provision_host_prefix=$(PROVISION_HOST_PREFIX) $(CURDIR)/test/automated/ansible/provision.yml
 	ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.ec2 $(CURDIR)/test/automated/ansible/install-requirements.yml
 
 .PHONY: test/automated/termination
-test/automated/termination:validate-aws-credentials
+test/automated/termination: validate-aws-credentials
 	ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.ec2 $(CURDIR)/test/automated/ansible/termination.yml
 
 # Allow running specific harvest tests based on regex (default to .*)
@@ -24,7 +24,6 @@ ifndef NR_LICENSE_KEY
 	@echo "NR_LICENSE_KEY variable must be provided for test/automated/packaging"
 	exit 1
 else
-	# do not print secrets
 	@ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO ANSIBLE_DISPLAY_OK_HOSTS=NO ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.ec2 -e nr_license_key=$(NR_LICENSE_KEY) $(CURDIR)/test/packaging/ansible/test.yml
 endif
 
@@ -50,6 +49,22 @@ endif
 
 .PHONY: test/automated
 test/automated:
+	$(MAKE) test/automated-run || $(MAKE) test/automated/nuke
+
+.PHONY: test/automated/nuke
+test/automated/nuke: validate-aws-credentials
+ifeq ($(PROVISION_HOST_PREFIX),)
+	@echo "PROVISION_HOST_PREFIX is empty"
+	exit 1
+endif
+	IIDS="$(shell AWS_PAGER="" aws ec2 describe-instances --output text --region us-east-2 \
+		--filters 'Name=tag:Name,Values="$(PROVISION_HOST_PREFIX):*"' 'Name=instance-state-name,Values=running' \
+		--query 'Reservations[*].Instances[*].[InstanceId]' )"; \
+	@echo "Terminating instances: $$IIDS ..."; \
+	AWS_PAGER="" aws ec2 terminate-instances --instance-ids $$IIDS;
+
+.PHONY: test/automated-run
+test/automated-run:
 	make test/automated/provision
 	make test/automated/harvest
 	make test/automated/packaging
