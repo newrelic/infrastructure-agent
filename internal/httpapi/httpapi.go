@@ -150,14 +150,14 @@ func (s *Server) Serve(ctx context.Context) {
 	<-ctx.Done()
 }
 
-func (s *Server) allReadyOrDisabled(ingestReadyOrDisabled, statusReadyOrDisabled bool) bool {
+func (s *Server) allReadyOrDisabled(ingestReady, statusReady bool) bool {
 	if !s.cfg.EnableIngest && !s.cfg.EnableStatus {
 		return true
 	}
-	if s.cfg.EnableIngest && !ingestReadyOrDisabled {
+	if s.cfg.EnableIngest && !ingestReady {
 		return false
 	}
-	if s.cfg.EnableStatus && !statusReadyOrDisabled {
+	if s.cfg.EnableStatus && !statusReady {
 		return false
 	}
 	return true
