@@ -3,11 +3,13 @@
 package httpapi
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/newrelic/infrastructure-agent/internal/agent/status"
@@ -18,11 +20,14 @@ import (
 )
 
 const (
-	IntegrationName         = "api"
-	componentName           = IntegrationName
-	statusAPIPath           = "/v1/status"
-	statusOnlyErrorsAPIPath = "/v1/status/errors"
-	ingestAPIPath           = "/v1/data"
+	IntegrationName            = "api"
+	componentName              = IntegrationName
+	statusAPIPath              = "/v1/status"
+	statusOnlyErrorsAPIPath    = "/v1/status/errors"
+	statusAPIPathReady         = "/v1/status/ready"
+	ingestAPIPath              = "/v1/data"
+	ingestAPIPathReady         = "/v1/data/ready"
+	readinessProbeRetryBackoff = 10 * time.Millisecond
 )
 
 type responseError struct {
@@ -93,6 +98,7 @@ func (s *Server) Serve(ctx context.Context) {
 
 			router := httprouter.New()
 			// read only API
+			router.GET(statusAPIPathReady, s.handleReady)
 			router.GET(statusAPIPath, s.handle(false))
 			router.GET(statusOnlyErrorsAPIPath, s.handle(true))
 			// local only API
@@ -113,6 +119,7 @@ func (s *Server) Serve(ctx context.Context) {
 			}).Debug("Ingest API starting listening.")
 
 			router := httprouter.New()
+			router.GET(ingestAPIPathReady, s.handleReady)
 			router.POST(ingestAPIPath, s.handleIngest)
 			err := http.ListenAndServe(fmt.Sprintf("%s:%d", s.cfg.HostIngest, s.cfg.PortIngest), router)
 			if err != nil {
@@ -123,8 +130,45 @@ func (s *Server) Serve(ctx context.Context) {
 		}()
 	}
 
+	c := http.Client{}
+	var ingestReady, statusReady bool
+	for {
+		if !ingestReady && s.cfg.EnableIngest {
+			ingestReady = s.isGetSuccessful(c, fmt.Sprintf("http://%s:%d%s", s.cfg.HostIngest, s.cfg.PortIngest, ingestAPIPathReady))
+		}
+		if !statusReady && s.cfg.EnableStatus {
+			statusReady = s.isGetSuccessful(c, fmt.Sprintf("http://localhost:%d%s", s.cfg.PortStatus, statusAPIPathReady))
+		}
+
+		if s.allReadyOrDisabled(ingestReady, statusReady) {
+			break
+		}
+		time.Sleep(readinessProbeRetryBackoff)
+	}
 	close(s.readyCh)
+
 	<-ctx.Done()
+}
+
+func (s *Server) allReadyOrDisabled(ingestReady, statusReady bool) bool {
+	if s.cfg.EnableIngest && !ingestReady {
+		return false
+	}
+	if s.cfg.EnableStatus && !statusReady {
+		return false
+	}
+	return true
+}
+
+func (s *Server) isGetSuccessful(c http.Client, URL string) bool {
+	postReq, err := http.NewRequest(http.MethodGet, URL, bytes.NewReader([]byte{}))
+	if err != nil {
+		s.logger.Warnf("cannot create request for %s, error: %s", URL, err)
+	} else if resp, err := c.Do(postReq); err == nil && resp.StatusCode == http.StatusOK {
+		return true
+	}
+
+	return false
 }
 
 // WaitUntilReady blocks the call until server is ready to accept connections.
@@ -170,6 +214,10 @@ func (s *Server) handle(onlyErrors bool) func(http.ResponseWriter, *http.Request
 			s.logger.Warn("cannot write status response, error: " + err.Error())
 		}
 	}
+}
+
+func (s *Server) handleReady(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *Server) handleIngest(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
