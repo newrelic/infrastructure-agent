@@ -4,6 +4,9 @@ package plugins
 
 import (
 	"github.com/newrelic/infrastructure-agent/internal/agent"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics"
+	metricsSender "github.com/newrelic/infrastructure-agent/pkg/metrics/sender"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/proxy"
 )
@@ -21,6 +24,22 @@ func RegisterPlugins(a *agent.Agent) error {
 	if config.FilesConfigOn {
 		a.RegisterPlugin(NewConfigFilePlugin(*ids.NewPluginID("files", "config"), a.Context))
 	}
+
+	sender := metricsSender.NewSender(a.Context)
+	storageSampler := storage.NewSampler(a.Context)
+	systemSampler := metrics.NewSystemSampler(a.Context, storageSampler)
+
+	// Prime Storage Sampler, ignoring results
+	if !storageSampler.Disabled() {
+		slog.Debug("Prewarming Sampler Cache.")
+		if _, err := storageSampler.Sample(); err != nil {
+			slog.WithError(err).Debug("Warming up Storage Sampler Cache.")
+		}
+	}
+
+	sender.RegisterSampler(systemSampler)
+	sender.RegisterSampler(storageSampler)
+	a.RegisterMetricsSender(sender)
 
 	return nil
 }
