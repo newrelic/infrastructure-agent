@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/newrelic/infrastructure-agent/pkg/trace"
 	"github.com/sirupsen/logrus"
 
 	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
@@ -457,6 +458,8 @@ func (sender *metricsIngestSender) doPost(post []*MetricPost, agentKey string) e
 		}
 		req.Header.Set(backendhttp.AgentEntityIdHeader, agentID.String())
 	}
+
+	trace.NonDMSubmission(postBytes)
 
 	resp, err := sender.HttpClient(req)
 	if err != nil {
