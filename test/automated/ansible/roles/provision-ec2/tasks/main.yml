@@ -76,7 +76,7 @@
     var: instances_for_inventory_amd64
 
 - debug:
-    var: instances_for_inventory_amd64
+    var: instances_for_inventory_arm64
 
 - name: create inventory
   template:

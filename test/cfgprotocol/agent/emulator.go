@@ -122,7 +122,7 @@ func (ae *Emulator) RunAgent() error {
 	integrationManager := v4.NewManager(ae.integrationCfg, integrationEmitter, il, definitionQ, terminateDefinitionQ, configEntryQ, tracker)
 
 	// Start all plugins we want the agent to run.
-	if err = plugins.RegisterPlugins(ae.agent, integrationEmitter); err != nil {
+	if err = plugins.RegisterPlugins(ae.agent); err != nil {
 		malog.WithError(err).Error("fatal error while registering plugins")
 		os.Exit(1)
 	}

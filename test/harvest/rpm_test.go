@@ -6,11 +6,12 @@
 package harvest
 
 import (
-	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"net/http"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 
 	pluginsLinux "github.com/newrelic/infrastructure-agent/internal/plugins/linux"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
@@ -52,7 +53,7 @@ func TestRpmPlugin(t *testing.T) {
 			Diff: map[string]interface{}{
 				// Common value for a default installation
 				"rpm": map[string]interface{}{
-					"architecture":    "x86_64",
+					"architecture":    fixture.AnyValue,
 					"id":              "rpm",
 					"installed_epoch": fixture.AnyValue,
 					"release":         fixture.AnyValue,
@@ -61,5 +62,4 @@ func TestRpmPlugin(t *testing.T) {
 			},
 		},
 	})
-
 }

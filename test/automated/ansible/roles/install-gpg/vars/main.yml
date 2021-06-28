@@ -1,0 +1,3 @@
+instances_without_gpg:
+  - "amd64:debian-buster"
+  - "arm64:debian-buster"

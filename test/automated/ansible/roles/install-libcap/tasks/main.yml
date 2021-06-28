@@ -1,0 +1,15 @@
+---
+
+- name: 'install libcap2'
+  ansible.builtin.package:
+    name: libcap
+    state: present
+  when: "inventory_hostname in instances_requiring_libcap"
+
+- name: 'install libcap-progs'
+  ansible.builtin.package:
+    name: libcap2
+    state: present
+  when: "inventory_hostname in instances_requiring_libcap2"
+
+...
