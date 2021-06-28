@@ -80,6 +80,12 @@ Status checks couldn't be reported.
 
 Empty response body.
 
+### Readiness
+
+*Endpoint:* `/v1/status/ready`
+
+It returns `200` when status API is ready to handle requests.
+
 
 ## Usage
 

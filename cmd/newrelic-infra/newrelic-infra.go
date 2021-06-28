@@ -5,7 +5,7 @@
 package main
 
 import (
-	"context"
+	context2 "context"
 	"flag"
 	"fmt"
 	"net"
@@ -20,6 +20,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/newrelic/infrastructure-agent/internal/httpapi"
 	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
@@ -33,7 +34,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/v3legacy"
 	"github.com/newrelic/infrastructure-agent/internal/socketapi"
-	"github.com/newrelic/infrastructure-agent/internal/statusapi"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins"
@@ -336,9 +336,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		aslog.WithError(err).Warn("Commands initial fetch failed.")
 	}
 
-	// nice2have: revamp all API servers, potentially into a unique one serving different
-	// serializations & transports
-	if c.StatusServerEnabled {
+	if c.StatusServerEnabled || c.HTTPServerEnabled {
 		rlog := wlog.WithComponent("status.Reporter")
 		timeoutD, err := time.ParseDuration(c.StartupConnectionTimeout)
 		if err != nil {
@@ -346,7 +344,13 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 			aslog.WithError(err).Error("invalid startup_connection_timeout value, cannot run status server")
 		} else {
 			rep := status.NewReporter(agt.Context.Ctx, rlog, c.StatusEndpoints, timeoutD, transport, agt.Context.AgentIdnOrEmpty, c.License, userAgent)
-			go statusapi.NewServer(c.StatusServerPort, rep).Serve(agt.Context.Ctx)
+			apiCfg := httpapi.NewConfig(c.StatusServerEnabled, c.HTTPServerHost, c.HTTPServerPort, c.HTTPServerEnabled, c.StatusServerPort)
+			apiSrv, err := httpapi.NewServer(apiCfg, rep, integrationEmitter)
+			if err != nil {
+				aslog.WithError(err).Error("cannot run api server")
+			} else {
+				go apiSrv.Serve(agt.Context.Ctx)
+			}
 		}
 	}
 
@@ -355,7 +359,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	}
 
 	// Start all plugins we want the agent to run.
-	if err = plugins.RegisterPlugins(agt, integrationEmitter); err != nil {
+	if err = plugins.RegisterPlugins(agt); err != nil {
 		aslog.WithError(err).Error("fatal error while registering plugins")
 		os.Exit(1)
 	}
@@ -415,7 +419,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 // By default is disabled and it only will be enabled if host:port are provided.
 // Using instrumentation.SetupPrometheusIntegrationConfig it will create prometheus
 // integration configuration (and delete it on agent shutdown process).
-func initInstrumentation(ctx context.Context, agentMetricsEndpoint string) (instrumentation.Instrumenter, error) {
+func initInstrumentation(ctx context2.Context, agentMetricsEndpoint string) (instrumentation.Instrumenter, error) {
 	if agentMetricsEndpoint == "" {
 		return instrumentation.NewNoop(), nil
 	}

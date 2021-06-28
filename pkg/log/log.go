@@ -10,6 +10,7 @@ package log
 
 import (
 	"fmt"
+
 	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
 
 	"github.com/sirupsen/logrus"
@@ -61,6 +62,12 @@ func (e Entry) IsWarnEnabled() bool {
 func (e Entry) Warn(msg string) {
 	if w.l.IsLevelEnabled(logrus.WarnLevel) {
 		e().Warn(msg)
+	}
+}
+
+func (e Entry) Warnf(format string, args ...interface{}) {
+	if w.l.IsLevelEnabled(logrus.WarnLevel) {
+		e().Warnf(format, args...)
 	}
 }
 
