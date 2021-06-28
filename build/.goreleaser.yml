@@ -304,8 +304,6 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/amd64/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-      - src: 'target/fluent-bit/amd64/fluent-bit'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
       - src: 'target/fluent-bit-plugin/amd64/out_newrelic.so'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
       - src: 'assets/examples/logging/parsers.conf'
@@ -329,6 +327,9 @@ nfpms:
     section: default
     # Priority.
     priority: extra
+    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
+    recommends:
+      - td-agent-bit
 
   - id: debian-infrastructure-agent-upstart
     builds:
@@ -387,6 +388,9 @@ nfpms:
     section: default
     # Priority.
     priority: extra
+    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
+    recommends:
+      - td-agent-bit
 
 ###############################################################################
 ###############################################################################
@@ -454,6 +458,10 @@ nfpms:
         posttrans: "build/package/rpm/postinst-upstart.sh"
       summary: "New Relic Infrastructure Agent"
       group: default
+    # Required packages. rpm version 4.11.3 does not support weak dependencies.
+    # disabled as right now fb pkg is not built for centos-6
+#    dependencies:
+#      - td-agent-bit
 
   - id: centos-7-infrastructure-agent
     builds:
@@ -495,9 +503,6 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/amd64/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-
-      - src: 'target/fluent-bit/amd64/fluent-bit'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
       - src: 'target/fluent-bit-plugin/amd64/out_newrelic.so'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
       - src: 'assets/examples/logging/parsers.conf'
@@ -530,6 +535,9 @@ nfpms:
         posttrans: "build/package/rpm/postinst-systemd.sh"
       summary: "New Relic Infrastructure Agent"
       group: default
+    # Required packages. rpm version 4.11.3 does not support weak dependencies
+    dependencies:
+      - td-agent-bit
 
   - id: centos-8-infrastructure-agent
     builds:
@@ -571,9 +579,6 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/amd64/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-
-      - src: 'target/fluent-bit/amd64/fluent-bit'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
       - src: 'target/fluent-bit-plugin/amd64/out_newrelic.so'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
       - src: 'assets/examples/logging/parsers.conf'
@@ -607,6 +612,9 @@ nfpms:
 
       summary: "New Relic Infrastructure Agent"
       group: default
+    # Required packages. rpm version 4.11.3 does not support weak dependencies
+    dependencies:
+      - td-agent-bit
 
 ###############################################################################
 ###############################################################################
@@ -669,6 +677,9 @@ nfpms:
         posttrans: "build/package/rpm/postinst-sysv.sh"
       summary: "New Relic Infrastructure Agent"
       group: default
+    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
+    recommends:
+      - td-agent-bit
 
   - id: sle-12.1-infrastructure-agent
     builds:
@@ -711,8 +722,6 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/amd64/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-      - src: 'target/fluent-bit/amd64/fluent-bit'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
       - src: 'target/fluent-bit-plugin/amd64/out_newrelic.so'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
       - src: 'assets/examples/logging/parsers.conf'
@@ -745,6 +754,9 @@ nfpms:
         posttrans: "build/package/rpm/postinst-systemd.sh"
       summary: "New Relic Infrastructure Agent"
       group: default
+    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
+    recommends:
+      - td-agent-bit
 
   - id: sle-12.2-infrastructure-agent
     builds:
@@ -787,8 +799,6 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/amd64/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-      - src: 'target/fluent-bit/amd64/fluent-bit'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
       - src: 'target/fluent-bit-plugin/amd64/out_newrelic.so'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
       - src: 'assets/examples/logging/parsers.conf'
@@ -821,6 +831,9 @@ nfpms:
         posttrans: "build/package/rpm/postinst-systemd.sh"
       summary: "New Relic Infrastructure Agent"
       group: default
+    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
+    recommends:
+      - td-agent-bit
 
   - id: sle-12.3-infrastructure-agent
     builds:
@@ -863,8 +876,6 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/amd64/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-      - src: 'target/fluent-bit/amd64/fluent-bit'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
       - src: 'target/fluent-bit-plugin/amd64/out_newrelic.so'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
       - src: 'assets/examples/logging/parsers.conf'
@@ -897,6 +908,9 @@ nfpms:
         posttrans: "build/package/rpm/postinst-systemd.sh"
       summary: "New Relic Infrastructure Agent"
       group: default
+    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
+    recommends:
+      - td-agent-bit
 
   - id: sle-12.4-infrastructure-agent
     builds:
@@ -939,8 +953,6 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/amd64/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-      - src: 'target/fluent-bit/amd64/fluent-bit'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
       - src: 'target/fluent-bit-plugin/amd64/out_newrelic.so'
         dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
       - src: 'assets/examples/logging/parsers.conf'
@@ -973,7 +985,92 @@ nfpms:
         posttrans: "build/package/rpm/postinst-systemd.sh"
       summary: "New Relic Infrastructure Agent"
       group: default
+    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
+    recommends:
+      - td-agent-bit
 
+###############################################################################
+###############################################################################
+###                              AMD64/AMAZON LINUX 2                       ###
+###############################################################################
+###############################################################################
+
+  - id: amazonlinux-2-infrastructure-agent
+    builds:
+      - linux-newrelic-infra-fpm
+      - linux-newrelic-infra-ctl-fpm
+      - linux-newrelic-infra-service-fpm
+    package_name: newrelic-infra
+    file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.amazonlinux-2.{{ .Arch }}"
+    vendor: 'New Relic, Inc.'
+    homepage: 'https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes'
+    maintainer: 'caos-team@newrelic.com'
+    description: 'New Relic Infrastructure provides flexible, dynamic server monitoring. With real-time data collection and a UI that scales from a handful of hosts to thousands, Infrastructure is designed for modern Operations teams with fast-changing systems.'
+    license: 'Copyright (c) 2008-2021 New Relic, Inc. All rights reserved.'
+    formats:
+      - rpm
+    bindir: /usr/bin
+    contents:
+      - src: 'assets/examples/logging/linux/file.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
+      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
+      - src: 'assets/examples/logging/linux/syslog.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
+      - src: 'assets/examples/logging/linux/systemd.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
+      - src: 'assets/examples/logging/linux/tcp.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
+
+      - src: 'build/package/systemd/newrelic-infra.service'
+        dst: '/etc/systemd/system/newrelic-infra.service'
+      - src: 'LICENSE'
+        dst: '/var/db/newrelic-infra/LICENSE.txt'
+      - src: 'target/nridocker/amd64/etc/newrelic-infra/integrations.d/docker-config.yml'
+        dst: '/etc/newrelic-infra/integrations.d/docker-config.yml'
+        type: config
+      - src: 'target/nridocker/amd64/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
+      - src: 'target/nriflex/amd64/nri-flex'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
+      - src: 'target/nriprometheus/amd64/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
+      - src: 'target/fluent-bit-plugin/amd64/out_newrelic.so'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
+      - src: 'assets/examples/logging/parsers.conf'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
+    empty_folders:
+      - /var/db/newrelic-infra/custom-integrations
+      - /var/db/newrelic-infra/integrations.d
+      - /var/log/newrelic-infra
+      - /var/run/newrelic-infra
+    epoch: 0
+    release: 1.amazonlinux-2
+    replacements:
+      amd64: x86_64
+
+    # Scripts to execute during the installation of the package.
+    scripts:
+      preinstall: "build/package/before-install.sh"
+      preremove: "build/package/rpm/prerm-systemd.sh"
+
+    # Packages to replace according to old packaging scripts.
+    replaces:
+      - opspro-agent
+      - opspro-agent-systemd
+    # Section.
+    section: default
+    # Priority.
+    priority: extra
+    rpm:
+      scripts:
+        posttrans: "build/package/rpm/postinst-systemd.sh"
+
+      summary: "New Relic Infrastructure Agent"
+      group: default
+    # Required packages. rpm version 4.11.3 does not support weak dependencies
+    dependencies:
+      - td-agent-bit
 
 ###############################################################################
 ###############################################################################
@@ -1019,8 +1116,6 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/arm/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-#      - src: 'target/fluent-bit/arm/fluent-bit'
-#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
 #      - src: 'target/fluent-bit-plugin/arm/out_newrelic.so'
 #        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
 #      - src: 'assets/examples/logging/parsers.conf'
@@ -1044,6 +1139,9 @@ nfpms:
     section: default
     # Priority.
     priority: extra
+    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
+    recommends:
+      - td-agent-bit
 
 ###############################################################################
 ###############################################################################
@@ -1091,9 +1189,6 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/arm/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-
-#      - src: 'target/fluent-bit/arm/fluent-bit'
-#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
 #      - src: 'target/fluent-bit-plugin/arm/out_newrelic.so'
 #        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
 #      - src: 'assets/examples/logging/parsers.conf'
@@ -1124,6 +1219,10 @@ nfpms:
         posttrans: "build/package/rpm/postinst-systemd.sh"
       summary: "New Relic Infrastructure Agent"
       group: default
+    # Required packages. rpm version 4.11.3 does not support weak dependencies
+    # disabled until logging packaging is properly handled for arm
+#    dependencies:
+#      - td-agent-bit
 
   - id: centos-8-infrastructure-agent-arm
     builds:
@@ -1165,9 +1264,6 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/arm/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-
-#      - src: 'target/fluent-bit/arm/fluent-bit'
-#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
 #      - src: 'target/fluent-bit-plugin/arm/out_newrelic.so'
 #        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
 #      - src: 'assets/examples/logging/parsers.conf'
@@ -1198,6 +1294,9 @@ nfpms:
 
       summary: "New Relic Infrastructure Agent"
       group: default
+    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
+    recommends:
+      - td-agent-bit
 
 ###############################################################################
 ###############################################################################
@@ -1246,8 +1345,6 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/arm/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-#      - src: 'target/fluent-bit/arm/fluent-bit'
-#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
 #      - src: 'target/fluent-bit-plugin/arm/out_newrelic.so'
 #        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
 #      - src: 'assets/examples/logging/parsers.conf'
@@ -1277,6 +1374,9 @@ nfpms:
         posttrans: "build/package/rpm/postinst-systemd.sh"
       summary: "New Relic Infrastructure Agent"
       group: default
+    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
+    recommends:
+      - td-agent-bit
 
   - id: sle-12.3-infrastructure-agent-arm
     builds:
@@ -1319,8 +1419,6 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/arm/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-#      - src: 'target/fluent-bit/arm/fluent-bit'
-#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
 #      - src: 'target/fluent-bit-plugin/arm/out_newrelic.so'
 #        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
 #      - src: 'assets/examples/logging/parsers.conf'
@@ -1350,6 +1448,9 @@ nfpms:
         posttrans: "build/package/rpm/postinst-systemd.sh"
       summary: "New Relic Infrastructure Agent"
       group: default
+    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
+    recommends:
+      - td-agent-bit
 
   - id: sle-12.4-infrastructure-agent-arm
     builds:
@@ -1392,8 +1493,6 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/arm/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-#      - src: 'target/fluent-bit/arm/fluent-bit'
-#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
 #      - src: 'target/fluent-bit-plugin/arm/out_newrelic.so'
 #        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
 #      - src: 'assets/examples/logging/parsers.conf'
@@ -1423,6 +1522,89 @@ nfpms:
         posttrans: "build/package/rpm/postinst-systemd.sh"
       summary: "New Relic Infrastructure Agent"
       group: default
+    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
+    recommends:
+      - td-agent-bit
+
+###############################################################################
+###############################################################################
+###                              ARM/AMAZON LINUX 2                         ###
+###############################################################################
+###############################################################################
+  - id: amazonlinux-2-infrastructure-agent-arm
+    builds:
+      - linux-newrelic-infra-fpm-arm
+      - linux-newrelic-infra-ctl-fpm-arm
+      - linux-newrelic-infra-service-fpm-arm
+    package_name: newrelic-infra
+    file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.amazonlinux-2.{{ .Arch }}"
+    vendor: 'New Relic, Inc.'
+    homepage: 'https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes'
+    maintainer: 'caos-team@newrelic.com'
+    description: 'New Relic Infrastructure provides flexible, dynamic server monitoring. With real-time data collection and a UI that scales from a handful of hosts to thousands, Infrastructure is designed for modern Operations teams with fast-changing systems.'
+    license: 'Copyright (c) 2008-2021 New Relic, Inc. All rights reserved.'
+    formats:
+      - rpm
+    bindir: /usr/bin
+    contents:
+#      - src: 'assets/examples/logging/linux/file.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
+#      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
+#      - src: 'assets/examples/logging/linux/syslog.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
+#      - src: 'assets/examples/logging/linux/systemd.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
+#      - src: 'assets/examples/logging/linux/tcp.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
+
+      - src: 'build/package/systemd/newrelic-infra.service'
+        dst: '/etc/systemd/system/newrelic-infra.service'
+      - src: 'LICENSE'
+        dst: '/var/db/newrelic-infra/LICENSE.txt'
+      - src: 'target/nridocker/arm/etc/newrelic-infra/integrations.d/docker-config.yml'
+        dst: '/etc/newrelic-infra/integrations.d/docker-config.yml'
+        type: config
+
+      - src: 'target/nridocker/arm/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
+      - src: 'target/nriflex/arm/nri-flex'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
+      - src: 'target/nriprometheus/arm/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
+#      - src: 'target/fluent-bit-plugin/arm/out_newrelic.so'
+#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
+#      - src: 'assets/examples/logging/parsers.conf'
+#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
+    empty_folders:
+      - /var/db/newrelic-infra/custom-integrations
+      - /var/db/newrelic-infra/integrations.d
+      - /var/log/newrelic-infra
+      - /var/run/newrelic-infra
+    epoch: 0
+    release: 1.amazonlinux-2
+
+    # Scripts to execute during the installation of the package.
+    scripts:
+      preinstall: "build/package/before-install.sh"
+      preremove: "build/package/rpm/prerm-systemd.sh"
+    # Packages to replace according to old packaging scripts.
+    replaces:
+      - opspro-agent
+      - opspro-agent-systemd
+    # Section.
+    section: default
+    # Priority.
+    priority: extra
+    rpm:
+      scripts:
+        posttrans: "build/package/rpm/postinst-systemd.sh"
+
+      summary: "New Relic Infrastructure Agent"
+      group: default
+    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
+    recommends:
+      - td-agent-bit
 
 ###############################################################################
 ###############################################################################
@@ -1468,8 +1650,6 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/arm64/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-#      - src: 'target/fluent-bit/arm64/fluent-bit'
-#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
 #      - src: 'target/fluent-bit-plugin/arm64/out_newrelic.so'
 #        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
 #      - src: 'assets/examples/logging/parsers.conf'
@@ -1493,6 +1673,9 @@ nfpms:
     section: default
     # Priority.
     priority: extra
+    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
+    recommends:
+      - td-agent-bit
 
 ###############################################################################
 ###############################################################################
@@ -1540,9 +1723,6 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/arm64/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-
-#      - src: 'target/fluent-bit/arm64/fluent-bit'
-#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
 #      - src: 'target/fluent-bit-plugin/arm64/out_newrelic.so'
 #        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
 #      - src: 'assets/examples/logging/parsers.conf'
@@ -1573,6 +1753,10 @@ nfpms:
         posttrans: "build/package/rpm/postinst-systemd.sh"
       summary: "New Relic Infrastructure Agent"
       group: default
+    # Required packages. rpm version 4.11.3 does not support weak dependencies
+    # disabled until logging packaging is properly handled for arm
+#    dependencies:
+#      - td-agent-bit
 
   - id: centos-8-infrastructure-agent-arm64
     builds:
@@ -1614,9 +1798,6 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/arm64/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-
-#      - src: 'target/fluent-bit/arm64/fluent-bit'
-#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
 #      - src: 'target/fluent-bit-plugin/arm64/out_newrelic.so'
 #        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
 #      - src: 'assets/examples/logging/parsers.conf'
@@ -1647,6 +1828,9 @@ nfpms:
 
       summary: "New Relic Infrastructure Agent"
       group: default
+    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
+    recommends:
+      - td-agent-bit
 
 ###############################################################################
 ###############################################################################
@@ -1695,8 +1879,6 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/arm64/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-#      - src: 'target/fluent-bit/arm64/fluent-bit'
-#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
 #      - src: 'target/fluent-bit-plugin/arm64/out_newrelic.so'
 #        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
 #      - src: 'assets/examples/logging/parsers.conf'
@@ -1726,6 +1908,9 @@ nfpms:
         posttrans: "build/package/rpm/postinst-systemd.sh"
       summary: "New Relic Infrastructure Agent"
       group: default
+    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
+    recommends:
+      - td-agent-bit
 
   - id: sle-12.3-infrastructure-agent-arm64
     builds:
@@ -1768,8 +1953,6 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/arm64/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-#      - src: 'target/fluent-bit/arm64/fluent-bit'
-#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
 #      - src: 'target/fluent-bit-plugin/arm64/out_newrelic.so'
 #        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
 #      - src: 'assets/examples/logging/parsers.conf'
@@ -1799,6 +1982,9 @@ nfpms:
         posttrans: "build/package/rpm/postinst-systemd.sh"
       summary: "New Relic Infrastructure Agent"
       group: default
+    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
+    recommends:
+      - td-agent-bit
 
   - id: sle-12.4-infrastructure-agent-arm64
     builds:
@@ -1841,8 +2027,6 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/arm64/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-#      - src: 'target/fluent-bit/arm64/fluent-bit'
-#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit'
 #      - src: 'target/fluent-bit-plugin/arm64/out_newrelic.so'
 #        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
 #      - src: 'assets/examples/logging/parsers.conf'
@@ -1872,6 +2056,88 @@ nfpms:
         posttrans: "build/package/rpm/postinst-systemd.sh"
       summary: "New Relic Infrastructure Agent"
       group: default
+    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
+    recommends:
+      - td-agent-bit
+
+###############################################################################
+###############################################################################
+###                              ARM64/AMAZONLINUX                          ###
+###############################################################################
+###############################################################################
+  - id: amazonlinux-2-infrastructure-agent-arm64
+    builds:
+      - linux-newrelic-infra-fpm-arm64
+      - linux-newrelic-infra-ctl-fpm-arm64
+      - linux-newrelic-infra-service-fpm-arm64
+    package_name: newrelic-infra
+    file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.amazonlinux-2.{{ .Arch }}"
+    vendor: 'New Relic, Inc.'
+    homepage: 'https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes'
+    maintainer: 'caos-team@newrelic.com'
+    description: 'New Relic Infrastructure provides flexible, dynamic server monitoring. With real-time data collection and a UI that scales from a handful of hosts to thousands, Infrastructure is designed for modern Operations teams with fast-changing systems.'
+    license: 'Copyright (c) 2008-2021 New Relic, Inc. All rights reserved.'
+    formats:
+      - rpm
+    bindir: /usr/bin
+    contents:
+#      - src: 'assets/examples/logging/linux/file.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
+#      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
+#      - src: 'assets/examples/logging/linux/syslog.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
+#      - src: 'assets/examples/logging/linux/systemd.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
+#      - src: 'assets/examples/logging/linux/tcp.yml.example'
+#        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
+
+      - src: 'build/package/systemd/newrelic-infra.service'
+        dst: '/etc/systemd/system/newrelic-infra.service'
+      - src: 'LICENSE'
+        dst: '/var/db/newrelic-infra/LICENSE.txt'
+      - src: 'target/nridocker/arm64/etc/newrelic-infra/integrations.d/docker-config.yml'
+        dst: '/etc/newrelic-infra/integrations.d/docker-config.yml'
+        type: config
+      - src: 'target/nridocker/arm64/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
+      - src: 'target/nriflex/arm64/nri-flex'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
+      - src: 'target/nriprometheus/arm64/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
+#      - src: 'target/fluent-bit-plugin/arm64/out_newrelic.so'
+#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
+#      - src: 'assets/examples/logging/parsers.conf'
+#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
+    empty_folders:
+      - /var/db/newrelic-infra/custom-integrations
+      - /var/db/newrelic-infra/integrations.d
+      - /var/log/newrelic-infra
+      - /var/run/newrelic-infra
+    epoch: 0
+    release: 1.amazonlinux-2
+
+    # Scripts to execute during the installation of the package.
+    scripts:
+      preinstall: "build/package/before-install.sh"
+      preremove: "build/package/rpm/prerm-systemd.sh"
+    # Packages to replace according to old packaging scripts.
+    replaces:
+      - opspro-agent
+      - opspro-agent-systemd
+    # Section.
+    section: default
+    # Priority.
+    priority: extra
+    rpm:
+      scripts:
+        posttrans: "build/package/rpm/postinst-systemd.sh"
+
+      summary: "New Relic Infrastructure Agent"
+      group: default
+    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
+    recommends:
+      - td-agent-bit
 
 release:
   disable: true

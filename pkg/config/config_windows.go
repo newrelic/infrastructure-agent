@@ -39,6 +39,7 @@ func init() {
 	defaultPluginConfigFiles = []string{filepath.Join(defaultAgentDir, "newrelic-infra-plugins.yml")}
 
 	defaultLoggingBinDir = "logging"
+	defaultLoggingHomeDir = "logging"
 	defaultLoggingConfigsDir = "logging.d"
 
 	defaultFluentBitExe = "fluent-bit.exe"
