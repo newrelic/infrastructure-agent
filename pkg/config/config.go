@@ -679,7 +679,7 @@ type Config struct {
 
 	// FeatureTraces enables traces (verbose logs) for a given set of features, aimed to troubleshoot issues, available
 	// features at trace/features.go
-	// Default: "connect"
+	// Default: ["connect"]
 	// Public: No
 	FeatureTraces []string `yaml:"trace" envconfig:"trace" public:"false"`
 
