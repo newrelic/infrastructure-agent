@@ -36,6 +36,11 @@ jobs:
         with:
           go-version: ${{env.GO_VERSION}}
 
+      - name: Install Docker
+        run: |
+          brew install --cask docker
+          sudo docker version
+
       - name: Validate code
         run: make ci/validate
 
