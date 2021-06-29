@@ -3,8 +3,6 @@
 package trace
 
 import (
-	"fmt"
-
 	"github.com/sirupsen/logrus"
 )
 
@@ -43,7 +41,7 @@ func On(condition Condition, feature Feature, format string, args ...interface{}
 	}
 
 	if _, ok := global.enabled[feature]; ok && condition() {
-		global.logger.Tracef(fmt.Sprintf("[%s] %s", feature, format), args...)
+		global.logger.WithField("feature", feature).Tracef(format, args...)
 	}
 }
 

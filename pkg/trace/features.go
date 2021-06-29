@@ -16,6 +16,7 @@ const (
 	CONN           Feature = "connect"    // fingerprint connect
 	HOSTNAME       Feature = "hostname"
 	DM_SUBMISSION  Feature = "dm.submission" // dimensional metrics submission
+	V3_SUBMISSION  Feature = "v3.submission" // non dimensional metrics (integration protocol v3) submission
 	METRIC_MATCHER Feature = "metric.match"  // match metric by rule
 	INVENTORY      Feature = "inventory"
 	LOG_FWD        Feature = "log.fw"
@@ -44,6 +45,11 @@ func Connect(format string, args ...interface{}) {
 // Hostname always traces hostname feature.
 func Hostname(format string, args ...interface{}) {
 	On(func() bool { return true }, HOSTNAME, format, args...)
+}
+
+// NonDMSubmission traces NR platform non-dimensional metrics submission payloads.
+func NonDMSubmission(payload []byte) {
+	On(func() bool { return true }, V3_SUBMISSION, string(payload))
 }
 
 // Telemetry traces to "audit" (log payloads) on DM telemetry.
