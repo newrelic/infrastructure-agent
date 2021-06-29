@@ -1,8 +1,8 @@
 BUILD_DIR			   := $(CURDIR)/bin
 GORELEASER_VERSION	   := v0.169.0
 GORELEASER_BIN		   ?= bin/goreleaser
-GORELEASER_CONFIG_FILE ?= $(CURDIR)/build/.goreleaser.yml
-GORELEASER_CONFIG	   ?= --config $(GORELEASER_CONFIG_FILE)
+GORELEASER_CONFIG_LINUX ?= $(CURDIR)/build/.goreleaser_linux.yml
+GORELEASER_CONFIG_MACOS ?= $(CURDIR)/build/.goreleaser_macos.yml
 PKG_FLAGS              ?= --rm-dist
 
 bin:
@@ -28,54 +28,66 @@ release/deps: $(GORELEASER_BIN)
 .PHONY : release/build
 release/build: release/deps release/clean
 	@echo "=== [release/build] build compiling all binaries"
-	$(GORELEASER_BIN) build $(GORELEASER_CONFIG) $(PKG_FLAGS)
+	$(GORELEASER_BIN) build --config $(GORELEASER_CONFIG_LINUX) $(PKG_FLAGS)
 
 .PHONY : release/get-integrations-amd64
 release/get-integrations-amd64:
-# trick to push makefile to execute same target twice with different params
 	@OHI_ARCH=amd64 make get-integrations
+
+.PHONY : release/get-integrations-amd64-macos
+release/get-integrations-amd64-macos:
+	@OHI_ARCH=amd64 OHI_OS=darwin make get-integrations
 
 .PHONY : release/get-integrations-arm64
 release/get-integrations-arm64:
-# trick to push makefile to execute same target twice with different params
 	@OHI_ARCH=arm64 make get-integrations
 
 .PHONY : release/get-integrations-arm
 release/get-integrations-arm:
-# trick to push makefile to execute same target twice with different params
 	@OHI_ARCH=arm make get-integrations
 
 .PHONY : release/get-fluentbit-linux-amd64
 release/get-fluentbit-linux-amd64:
-# trick to push makefile to execute same target twice with different params
 	@FB_ARCH=amd64 make get-fluentbit-linux
 
 .PHONY : release/get-fluentbit-linux-arm
 release/get-fluentbit-linux-arm:
-# trick to push makefile to execute same target twice with different params
 	@FB_ARCH=arm make get-fluentbit-linux
 
 .PHONY : release/get-fluentbit-linux-arm64
 release/get-fluentbit-linux-arm64:
-# trick to push makefile to execute same target twice with different params
 	@FB_ARCH=arm64 make get-fluentbit-linux
 
-.PHONY : release/pkg
-release/pkg: release/deps release/clean
-release/pkg: release/get-integrations-amd64
-release/pkg: release/get-integrations-arm64
-release/pkg: release/get-integrations-arm
-release/pkg: release/get-fluentbit-linux-amd64
-#release/pkg: release/get-fluentbit-linux-arm
-#release/pkg: release/get-fluentbit-linux-arm64
-	@echo "=== [release/build] PRE-RELEASE compiling all binaries, creating packages, archives"
-	$(GORELEASER_BIN) release $(GORELEASER_CONFIG) $(PKG_FLAGS)
+.PHONY : release/pkg-linux
+release/pkg-linux: release/deps release/clean
+release/pkg-linux: release/get-integrations-amd64
+release/pkg-linux: release/get-integrations-arm64
+release/pkg-linux: release/get-integrations-arm
+release/pkg-linux: release/get-fluentbit-linux-amd64
+#release/pkg-linux: release/get-fluentbit-linux-arm
+#release/pkg-linux: release/get-fluentbit-linux-arm64
+	@echo "=== [release/pkg-linux] PRE-RELEASE compiling all binaries, creating packages, archives"
+	$(GORELEASER_BIN) release --config $(GORELEASER_CONFIG_LINUX) $(PKG_FLAGS)
 
-.PHONY : release/fix-tarballs
-release/fix-tarballs:
-	@echo "=== [release/fix-tarballs] fixing tar.gz archives internal structure"
-	@bash $(CURDIR)/build/fix_tarballs.sh
-	@bash $(CURDIR)/build/fix_darwin_tarballs.sh
+.PHONY : release/pkg-macos
+release/pkg-macos: release/deps release/clean
+release/pkg-macos: release/get-integrations-amd64-macos
+#release/pkg-macos: release/get-integrations-arm64
+#release/pkg-macos: release/get-integrations-arm
+#release/pkg-macos: release/get-fluentbit-macos-amd64
+#release/pkg-macos: release/get-fluentbit-macos-arm
+#release/pkg-macos: release/get-fluentbit-macos-arm64
+	@echo "=== [release/pkg-linux] PRE-RELEASE compiling all binaries, creating packages, archives"
+	$(GORELEASER_BIN) release --config $(GORELEASER_CONFIG_MACOS) $(PKG_FLAGS)
+
+.PHONY : release/fix-tarballs-linux
+release/fix-tarballs-linux:
+	@echo "=== [release/fix-tarballs-linux] fixing tar.gz archives internal structure"
+	@bash $(CURDIR)/build/fix_tarballs_linux.sh
+
+.PHONY : release/fix-tarballs-macos
+release/fix-tarballs-macos:
+	@bash $(CURDIR)/build/fix_tarballs_macos.sh
 
 .PHONY : release/sign
 release/sign:
@@ -87,9 +99,13 @@ release/publish:
 	@echo "=== [release/publish] publishing artifacts"
 	@bash $(CURDIR)/build/upload_artifacts_gh.sh
 
-.PHONY : release
-release: release/pkg release/fix-tarballs release/sign release/publish
-	@echo "=== [release] full pre-release cycle complete for nix"
+.PHONY : release-linux
+release-linux: release/pkg-linux release/fix-tarballs-linux release/sign release/publish
+	@echo "=== [release-linux] full pre-release cycle complete for nix"
+
+.PHONY : release-macos
+release-macos: release/pkg-macos release/fix-tarballs-macos release/sign release/publish
+	@echo "=== [release-macos] full pre-release cycle complete for macOS"
 
 ifndef SNAPSHOT
 	$(error SNAPSHOT is undefined)

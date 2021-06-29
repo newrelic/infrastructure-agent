@@ -1,4 +1,4 @@
-name: Prerelease Linux pipeline
+name: Prerelease macOS pipeline
 
 on:
   release:
@@ -24,9 +24,9 @@ env:
   DOCKER_PUBLISH: true
 
 jobs:
-  unit-test-linux:
-    name: Linux unit tests
-    runs-on: ubuntu-20.04
+  unit-test-macos:
+    name: macOS unit tests
+    runs-on: macos-11
 
     steps:
       - uses: actions/checkout@v2
@@ -50,21 +50,21 @@ jobs:
           flag-name: run-linux
           parallel: true
 
-  harvest-test-linux:
-    name: Linux harvest tests
+  harvest-test-macos:
+    name: macOS harvest tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-18.04, ubuntu-16.04 ]
+        os: [ macos-11, macos-10.15 ]
     steps:
       - uses: actions/checkout@v2
 
       - name: Running Harvest tests
-        run: make linux/harvest-tests
+        run: make macos/harvest-tests
 
-  proxy-tests-linux:
+  proxy-tests-macos:
     name: Proxy tests
-    runs-on: ubuntu-20.04
+    runs-on: macos-11
     steps:
       - name: Check out code
         uses: actions/checkout@v2
@@ -80,7 +80,7 @@ jobs:
 
   finish:
     name: Finish
-    needs: [ unit-test-linux ]
+    needs: [ unit-test-macos ]
     runs-on: ubuntu-latest
     steps:
       - name: Coveralls Finished
@@ -89,10 +89,10 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel-finished: true
 
-  packaging-linux:
+  packaging-macos:
     name: Build and upload all artifacts into GH Release assets
-    runs-on: ubuntu-20.04
-    needs: [unit-test-linux, harvest-test-linux, proxy-tests-linux]
+    runs-on: macos-11
+    needs: [unit-test-macos, harvest-test-macos, proxy-tests-macos]
 
     steps:
       - uses: actions/checkout@v2
@@ -103,36 +103,19 @@ jobs:
           username: ${{ env.DOCKER_HUB_ID }}
           password: ${{ env.DOCKER_HUB_PASSWORD }}
 
-      - name: Releasing linux packages
-        run: make ci/prerelease/linux
+      - name: Releasing macos packages
+        run: make ci/prerelease/macos
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-
-      - name: Build and publish Release Candidate (RC) of base Docker image
-        run: make -C build/container/ clean publish/multi-arch-base-rc AGENT_VERSION=${{env.TAG}}
-
-      - name: Build and publish Release Candidate (RC) of forwarder Docker image
-        run: make -C build/container/ clean publish/multi-arch-forwarder-rc AGENT_VERSION=${{env.TAG}}
-
-      - name: Build and publish Release Candidate (RC) of k8s-events-forwarders Docker image
-        run: make -C build/container/ clean publish/multi-arch-k8s-events-forwarder-rc AGENT_VERSION=${{env.TAG}}
-
-  publishing-to-s3:
-    name: Publish linux artifacts into s3 staging bucket
+  publishing-to-s3-macos:
+    name: Publish macos artifacts into s3 staging bucket
     runs-on: ubuntu-20.04
-    needs: [packaging-linux]
+    needs: [packaging-macos]
 
     strategy:
       max-parallel: 1
       matrix:
         assetsType:
           - "targz"
-          - "deb"
-          - "rpm"
 
     steps:
       - name: Login to DockerHub
