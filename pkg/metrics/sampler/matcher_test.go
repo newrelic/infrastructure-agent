@@ -558,7 +558,7 @@ func Test_EvaluatorChain_LogTraceMatcher(t *testing.T) {
 
 	require.NotEmpty(t, hook.AllEntries())
 	entry := hook.LastEntry()
-	assert.Equal(t, "[metric.match] 'java' matches expression [ProcessDisplayName processDisplayName] >> 'java': true", entry.Message)
+	assert.Equal(t, "'java' matches expression [ProcessDisplayName processDisplayName] >> 'java': true", entry.Message)
 	assert.Equal(t, logrus.TraceLevel, entry.Level)
 }
 
