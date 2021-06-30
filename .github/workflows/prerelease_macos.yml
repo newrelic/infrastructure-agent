@@ -61,7 +61,7 @@ jobs:
   packaging-macos:
     name: Build and upload all artifacts into GH Release assets
     runs-on: ubuntu-20.04
-    needs: [unit-test-macos, harvest-test-macos, proxy-tests-macos]
+    needs: [unit-test-macos]
 
     steps:
       - uses: actions/checkout@v2
