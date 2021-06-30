@@ -71,7 +71,7 @@ release/pkg-linux: release/get-fluentbit-linux-amd64
 
 .PHONY : release/pkg-macos
 release/pkg-macos: release/deps release/clean
-release/pkg-macos: release/get-integrations-amd64-macos
+#release/pkg-macos: release/get-integrations-amd64-macos NO ASSETS AVAILABLE FOR NOW
 #release/pkg-macos: release/get-integrations-arm64
 #release/pkg-macos: release/get-integrations-arm
 #release/pkg-macos: release/get-fluentbit-macos-amd64
