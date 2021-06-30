@@ -1,4 +1,5 @@
 PROVISION_HOST_PREFIX := $(shell whoami)-$(shell hostname)
+AWS_ACCOUNT_ID = "018789649883"# CAOS
 
 .PHONY: test/automated/provision
 test/automated/provision: validate-aws-credentials
@@ -46,6 +47,11 @@ ifndef AWS_REGION
 	@echo "AWS_REGION variable must be provided"
 	exit 1
 endif
+	@ACC_ID="$$(aws sts get-caller-identity --output text|awk '{print $$1}')"; \
+	if [ "$${ACC_ID}" != "$(AWS_ACCOUNT_ID)" ]; then \
+		echo "Invalid AWS account ID. Expected: $(AWS_ACCOUNT_ID), got: $${ACC_ID}."; \
+		exit 1; \
+	fi
 
 .PHONY: test/automated
 test/automated:
