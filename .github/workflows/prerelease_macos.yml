@@ -36,52 +36,16 @@ jobs:
         with:
           go-version: ${{env.GO_VERSION}}
 
-      - name: Install Docker
-        run: |
-          brew install --cask docker
-          sudo docker version
-
-      - name: Validate code
-        run: make ci/validate
-
       - name: Running unit tests
-        run: make ci/test-coverage
+        run: make test-coverage
 
       - name: Coveralls Parallel
         uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: lcov.info
-          flag-name: run-linux
+          flag-name: run-macos
           parallel: true
-
-  harvest-test-macos:
-    name: macOS harvest tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ macos-11, macos-10.15 ]
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Running Harvest tests
-        run: make macos/harvest-tests
-
-  proxy-tests-macos:
-    name: Proxy tests
-    runs-on: macos-11
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v2
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ env.DOCKER_HUB_ID }}
-          password: ${{ env.DOCKER_HUB_PASSWORD }}
-
-      - name: Running proxy tests
-        run: make proxy-test
 
   finish:
     name: Finish
@@ -96,7 +60,7 @@ jobs:
 
   packaging-macos:
     name: Build and upload all artifacts into GH Release assets
-    runs-on: macos-11
+    runs-on: ubuntu-20.04
     needs: [unit-test-macos, harvest-test-macos, proxy-tests-macos]
 
     steps:
