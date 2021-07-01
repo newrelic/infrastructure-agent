@@ -77,7 +77,7 @@ release/pkg-macos: release/deps release/clean
 #release/pkg-macos: release/get-fluentbit-macos-amd64
 #release/pkg-macos: release/get-fluentbit-macos-arm
 #release/pkg-macos: release/get-fluentbit-macos-arm64
-	@echo "=== [release/pkg-linux] PRE-RELEASE compiling all binaries, creating packages, archives"
+	@echo "=== [release/pkg-macos] PRE-RELEASE compiling all binaries, creating packages, archives"
 	$(GORELEASER_BIN) release --config $(GORELEASER_CONFIG_MACOS) $(PKG_FLAGS)
 
 .PHONY : release/fix-tarballs-linux
@@ -87,6 +87,7 @@ release/fix-tarballs-linux:
 
 .PHONY : release/fix-tarballs-macos
 release/fix-tarballs-macos:
+	@echo "=== [release/fix-tarballs-macos] fixing tar.gz archives internal structure"
 	@bash $(CURDIR)/build/fix_tarballs_macos.sh
 
 .PHONY : release/sign
