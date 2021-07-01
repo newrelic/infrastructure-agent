@@ -5,6 +5,7 @@
     name: gnupg2
     state: present
     update_cache: yes
-  when: "inventory_hostname in instances_without_gpg"
+  when: inventory_hostname in instances_without_gpg and
+        (ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu')
 
 ...
