@@ -37,7 +37,7 @@ func TestServe_Status(t *testing.T) {
 	// And a status reporter monitoring it
 	endpoints := []string{serverOk.URL}
 	l := log.WithComponent(t.Name())
-	timeout := 10 * time.Millisecond
+	timeout := 100 * time.Millisecond
 	transport := &http.Transport{}
 	emptyIDProvide := func() entity.Identity {
 		return entity.EmptyIdentity
@@ -96,7 +96,7 @@ func TestServe_OnlyErrors(t *testing.T) {
 	// And a status reporter monitoring these endpoints
 	endpoints := []string{serverOk.URL, serverTimeout.URL}
 	l := log.WithComponent(t.Name())
-	timeout := 10 * time.Millisecond
+	timeout := 100 * time.Millisecond
 	transport := &http.Transport{}
 	emptyIDProvide := func() entity.Identity {
 		return entity.EmptyIdentity
