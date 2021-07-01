@@ -66,6 +66,7 @@ jobs:
           # used for signing package stuff
           gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
           gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
+          disable_lock: true
 
   publishing-to-s3-macos:
     name: Publish macOS artifacts into s3 prod bucket
