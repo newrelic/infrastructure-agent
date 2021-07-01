@@ -1,9 +1,10 @@
 ---
 
 - name: 'install gpg'
-  ansible.builtin.package:
-    name: gpgv
+  apt:
+    name: gnupg2
     state: present
+    update_cache: yes
   when: "inventory_hostname in instances_without_gpg"
 
 ...
