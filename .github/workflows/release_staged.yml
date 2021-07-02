@@ -167,7 +167,7 @@ jobs:
           aws_region: ${{ env.AWS_REGION }}
 
   publish-docker-images:
-    if: ${{ github.event.inputs.assetsType == 'all' || github.event.inputs.assetsType == 'docker' }}
+    if: ${{ (github.event.inputs.assetsType == 'all' || github.event.inputs.assetsType == 'docker') && (github.event.inputs.targzOS == 'all' || github.event.inputs.targzOS == matrix.targzOS) }}
     name: Create versioned and latest images from RC
     runs-on: ubuntu-20.04
 

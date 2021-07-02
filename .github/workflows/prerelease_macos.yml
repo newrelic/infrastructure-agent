@@ -47,6 +47,23 @@ jobs:
           flag-name: run-macos
           parallel: true
 
+  harvest-test-macos:
+    name: MacOS harvest tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ macos-11, macos-10.15 ]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{env.GO_VERSION}}
+
+      - name: Running Harvest tests
+        run: make linux/harvest-tests
+
   finish:
     name: Finish
     needs: [ unit-test-macos ]
