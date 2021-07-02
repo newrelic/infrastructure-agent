@@ -82,8 +82,6 @@ jobs:
       matrix:
         assetsType:
           - "targz"
-          - "deb"
-          - "rpm"
 
     steps:
       - name: Login to DockerHub
