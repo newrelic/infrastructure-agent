@@ -127,7 +127,7 @@ jobs:
   publishing-to-s3-windows:
     name: Publish windows artifacts into s3 prod bucket
     runs-on: ubuntu-20.04
-    if: ${{ (github.event.inputs.assetsType == 'all' || github.event.inputs.assetsType == matrix.assetsType) && (github.event.inputs.targzOS == 'all' || github.event.inputs.targzOS == matrix.targzOS) }}
+    if: ${{ github.event.inputs.assetsType == 'all' || github.event.inputs.assetsType == matrix.assetsType }}
 
     strategy:
       matrix:
