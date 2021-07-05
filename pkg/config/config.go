@@ -30,15 +30,16 @@ import (
 )
 
 const (
-	envPrefix           = "nria"
-	ModeUnknown         = ""
-	ModeRoot            = "root"
-	ModePrivileged      = "privileged"
-	ModeUnprivileged    = "unprivileged"
-	NonVerboseLogging   = 0
-	VerboseLogging      = 1
-	SmartVerboseLogging = 2
-	TroubleshootLogging = 3
+	envPrefix                 = "nria"
+	ModeUnknown               = ""
+	ModeRoot                  = "root"
+	ModePrivileged            = "privileged"
+	ModeUnprivileged          = "unprivileged"
+	NonVerboseLogging         = 0
+	VerboseLogging            = 1
+	SmartVerboseLogging       = 2
+	TroubleshootLogging       = 3
+	defaultMemProfileInterval = 60 * 5
 )
 
 type CustomAttributeMap map[string]interface{}
@@ -206,6 +207,11 @@ type Config struct {
 	// Default: ""
 	// Public: No
 	MemProfile string `yaml:"mem_profile" envconfig:"mem_profile" public:"false"`
+
+	// Interval in seconds to create memory profile snapshots, default 300 seconds (5min)
+	// Default: 300
+	// Public: No
+	MemProfileInterval int `yaml:"mem_profile_interval" envconfig:"mem_profile_interval" public:"false"`
 
 	// WebProfile enables pprof profiler serving data via HTTP API
 	// Default: false
@@ -1840,6 +1846,10 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	// For backwards compatibility WhitelistProcessSample is deprecated.
 	if len(cfg.WhitelistProcessSample) > 0 {
 		cfg.AllowedListProcessSample = append(cfg.AllowedListProcessSample, cfg.WhitelistProcessSample...)
+	}
+
+	if cfg.MemProfile != "" && cfg.MemProfileInterval == 0 {
+		cfg.MemProfileInterval = defaultMemProfileInterval
 	}
 
 	return
