@@ -4,11 +4,19 @@ package plugins
 
 import (
 	"github.com/newrelic/infrastructure-agent/internal/agent"
+	pluginsDarwin "github.com/newrelic/infrastructure-agent/internal/plugins/darwin"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/network"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/process"
+	metricsSender "github.com/newrelic/infrastructure-agent/pkg/metrics/sender"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/proxy"
 )
 
 func RegisterPlugins(a *agent.Agent) error {
+	// Enabling the hostinfo plugin will make the host appear in the UI
+	a.RegisterPlugin(pluginsDarwin.NewHostInfoPlugin(a.Context, a.GetCloudHarvester()))
 	a.RegisterPlugin(NewHostAliasesPlugin(a.Context, a.GetCloudHarvester()))
 	config := a.Context.Config()
 
@@ -21,6 +29,21 @@ func RegisterPlugins(a *agent.Agent) error {
 	if config.FilesConfigOn {
 		a.RegisterPlugin(NewConfigFilePlugin(*ids.NewPluginID("files", "config"), a.Context))
 	}
+
+	sender := metricsSender.NewSender(a.Context)
+	procSampler := process.NewProcessSampler(a.Context)
+	storageSampler := storage.NewSampler(a.Context)
+	//nfsSampler := nfs.NewSampler(a.Context)
+	networkSampler := network.NewNetworkSampler(a.Context)
+	systemSampler := metrics.NewSystemSampler(a.Context, storageSampler)
+
+	sender.RegisterSampler(systemSampler)
+	sender.RegisterSampler(storageSampler)
+	//sender.RegisterSampler(nfsSampler)
+	sender.RegisterSampler(networkSampler)
+	sender.RegisterSampler(procSampler)
+
+	a.RegisterMetricsSender(sender)
 
 	return nil
 }
