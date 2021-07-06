@@ -5,6 +5,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -28,47 +29,51 @@ import (
 const (
 	defaultBucket = "nr-downloads-ohai-staging"
 	defaultRegion = "us-east-1"
+	// more keys could be added if issues arise
+	defaultKeys = "/infrastructure_agent/linux/apt/dists/focal/main/binary-amd64/Packages.bz2,"
 )
 
-var bucket, region string
+var bucket, region, keysStr string
 var timeout time.Duration
 var attempts int
 var verbose bool
-
-// TODO
-// aws s3api head-object --bucket nr-downloads-ohai-staging --key "infrastructure_agent/linux/apt/dists/focal/main/binary-amd64/Packages.bz2
-// /infrastructure_agent/linux/apt/dists/focal/main/binary-amd64/Packages.bz2
-// Sources:
-// - https://github.com/newrelic/infrastructure-agent/runs/2709820364?check_suite_focus=true
-//   key = "/infrastructure_agent/linux/yum/el/7/x86_64/repodata/primary.sqlite.bz2"
-var key = "/infrastructure_agent/linux/apt/dists/focal/main/binary-amd64/Packages.bz2"
 
 func init() {
 	flag.BoolVar(&verbose, "v", false, "Verbose output.")
 	flag.StringVar(&bucket, "b", defaultBucket, "Bucket name.")
 	flag.StringVar(&region, "r", defaultRegion, "Region name.")
-	flag.IntVar(&attempts, "a", 5, "Retry attempts.")
+	flag.StringVar(&keysStr, "k", defaultKeys, "Keys separated by comma.")
+	flag.IntVar(&attempts, "a", 5, "Retry attempts per key.")
 	flag.DurationVar(&timeout, "d", 10*time.Second, "Timeout.")
 }
 
 func main() {
 	flag.Parse()
+	ctx := context.Background()
 
 	sess := session.Must(session.NewSession())
 	cl := s3.New(sess, aws.NewConfig().WithRegion(region))
 
+	keys := strings.Split(keysStr, ",")
+	for _, key := range keys {
+		if key != "" {
+			checkKey(ctx, key, cl, attempts)
+		}
+	}
+}
+
+func checkKey(ctx context.Context, key string, cl *s3.S3, triesLeft int) {
 	inputGetObj := s3.GetObjectInput{
 		Bucket: &bucket,
 		Key:    &key,
 	}
 
-	ctx := context.Background()
 	replicated := false
 	for {
-		if replicated || attempts <= 0 {
+		if replicated || triesLeft <= 0 {
 			break
 		}
-		attempts--
+		triesLeft--
 
 		var ctxT = ctx
 		var cancelFn func()
@@ -96,13 +101,15 @@ func main() {
 		case o := <-oC:
 			logDebug("object: %+v, key: %s", o, key)
 			// https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication-status.html
+			// ReplicationStatus via aws cli:
+			// aws s3api head-object --bucket foo --key "bar/..."
 			if o.ReplicationStatus == nil || *o.ReplicationStatus == s3.ReplicationStatusComplete {
 				replicated = true
 			}
 		}
 	}
 
-	if attempts <= 0 {
+	if triesLeft <= 0 {
 		logDebug("maximum attempts for key: %v", key)
 	}
 }
