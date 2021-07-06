@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -25,6 +26,11 @@ import (
 //		/usr/bin/curl -i -X POST -H \"Fastly-Key:\${FASTLY_KEY}\" https://api.fastly.com/service/2RMeBJ1ZTGnNJYvrWMgQhk/purge_all;
 //	fi;
 // done
+
+type result struct {
+	output s3.GetObjectOutput
+	err    error
+}
 
 const (
 	defaultBucket = "nr-downloads-ohai-staging"
@@ -57,12 +63,18 @@ func main() {
 	keys := strings.Split(keysStr, ",")
 	for _, key := range keys {
 		if key != "" {
-			checkKey(ctx, key, cl, attempts)
+			if err := waitForKeyReplication(ctx, key, cl, attempts); err != nil {
+				logInfo("unsucessful replication, error: %v", err)
+				os.Exit(1)
+			}
 		}
 	}
+
+	// TODO purgeCDN()
 }
 
-func checkKey(ctx context.Context, key string, cl *s3.S3, triesLeft int) {
+// waitForKeyReplication returns nil if key was successfully replicated or is not set for replication
+func waitForKeyReplication(ctx context.Context, key string, cl *s3.S3, triesLeft int) error {
 	inputGetObj := s3.GetObjectInput{
 		Bucket: &bucket,
 		Key:    &key,
@@ -84,34 +96,38 @@ func checkKey(ctx context.Context, key string, cl *s3.S3, triesLeft int) {
 			defer cancelFn()
 		}
 
-		oC := make(chan s3.GetObjectOutput)
+		resC := make(chan result)
 		go func(*s3.S3) {
 			o, err := cl.GetObjectWithContext(ctxT, &inputGetObj)
 			if err != nil {
-				logInfo("cannot get s3 object, key: %s, error: ", key, err)
-				os.Exit(1)
+				resC <- result{err: err}
 			}
-			oC <- *o
-
+			resC <- result{output: *o}
 		}(cl)
 
 		select {
 		case <-ctx.Done():
-			logInfo("execution terminated, msg: %v", ctx.Err())
-		case o := <-oC:
-			logDebug("object: %+v, key: %s", o, key)
+			return fmt.Errorf("execution terminated, msg: %v", ctx.Err())
+
+		case res := <-resC:
+			if res.err != nil {
+				return fmt.Errorf("cannot get s3 object, key: %s, error: %v", key, res.err)
+			}
+
+			logDebug("key: %s, attempt: %d, object: %+v", key, attempts-triesLeft, res.output)
 			// https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication-status.html
-			// ReplicationStatus via aws cli:
-			// aws s3api head-object --bucket foo --key "bar/..."
-			if o.ReplicationStatus == nil || *o.ReplicationStatus == s3.ReplicationStatusComplete {
+			// aws s3api head-object --bucket foo --key "bar/..." |grep ReplicationStatus
+			if res.output.ReplicationStatus == nil || *res.output.ReplicationStatus == s3.ReplicationStatusComplete {
 				replicated = true
 			}
 		}
 	}
 
 	if triesLeft <= 0 {
-		logDebug("maximum attempts for key: %v", key)
+		return fmt.Errorf("maximum attempts for key: %v", key)
 	}
+
+	return nil
 }
 
 func logInfo(format string, v ...interface{}) {
