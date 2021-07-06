@@ -44,6 +44,14 @@ ci/snyk-test:
 			-e SNYK_TOKEN \
 			snyk/snyk:golang snyk test --severity-threshold=high
 
+.PHONY : ci/prerelease/linux
+ci/prerelease/linux:
+	TARGET_OS=linux $(MAKE) ci/prerelease
+
+.PHONY : ci/prerelease/macos
+ci/prerelease/macos:
+	TARGET_OS=macos $(MAKE) ci/prerelease
+
 .PHONY : ci/prerelease
 ci/prerelease: ci/deps
 ifdef TAG
@@ -58,9 +66,9 @@ ifdef TAG
 			-e GPG_PASSPHRASE \
 			-e GPG_PRIVATE_KEY_BASE64 \
 			-e SNAPSHOT=false \
-			$(BUILDER_IMG_TAG) make release
+			$(BUILDER_IMG_TAG) make release-${TARGET_OS}
 else
-	@echo "===> infrastructure-agent ===  [ci/prerelease] TAG env variable expected to be set"
+	@echo "===> infrastructure-agent ===  [ci/prerelease/linux] TAG env variable expected to be set"
 	exit 1
 endif
 
