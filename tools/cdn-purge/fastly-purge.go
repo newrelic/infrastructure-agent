@@ -151,7 +151,7 @@ func purgeCDN(ctx context.Context) error {
 	var ctxT = ctx
 	var cancelFn func()
 	if timeoutCDN > 0 {
-		ctxT, cancelFn = context.WithTimeout(ctx, timeoutS3)
+		ctxT, cancelFn = context.WithTimeout(ctx, timeoutCDN)
 	}
 	if cancelFn != nil {
 		defer cancelFn()
