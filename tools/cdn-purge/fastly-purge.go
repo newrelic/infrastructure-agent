@@ -150,7 +150,7 @@ func waitForKeyReplication(ctx context.Context, key string, cl *s3.S3, triesLeft
 func purgeCDN(ctx context.Context) error {
 	var ctxT = ctx
 	var cancelFn func()
-	if timeoutS3 > 0 {
+	if timeoutCDN > 0 {
 		ctxT, cancelFn = context.WithTimeout(ctx, timeoutS3)
 	}
 	if cancelFn != nil {
