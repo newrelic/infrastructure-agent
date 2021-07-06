@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -14,6 +15,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
+// Usage:
+// go run fastly-purge.go -v
+//
+// Similar shell counterpart:
 // for i in {1..5}; do
 //	echo \$i;
 //	aws s3api head-object --bucket nr-downloads-main --key infrastructure_agent/linux/yum/el/7/x86_64/repodata/primary.sqlite.bz2
@@ -36,11 +41,12 @@ const (
 	defaultBucket = "nr-downloads-ohai-staging"
 	defaultRegion = "us-east-1"
 	// more keys could be added if issues arise
-	defaultKeys = "/infrastructure_agent/linux/apt/dists/focal/main/binary-amd64/Packages.bz2,"
+	defaultKeys    = "/infrastructure_agent/linux/apt/dists/focal/main/binary-amd64/Packages.bz2,"
+	fastlyPurgeURL = "https://api.fastly.com/service/2RMeBJ1ZTGnNJYvrWMgQhk/purge_all"
 )
 
-var bucket, region, keysStr string
-var timeout time.Duration
+var bucket, region, keysStr, fastlyKey string
+var timeoutS3, timeoutCDN time.Duration
 var attempts int
 var verbose bool
 
@@ -50,11 +56,20 @@ func init() {
 	flag.StringVar(&region, "r", defaultRegion, "Region name.")
 	flag.StringVar(&keysStr, "k", defaultKeys, "Keys separated by comma.")
 	flag.IntVar(&attempts, "a", 5, "Retry attempts per key.")
-	flag.DurationVar(&timeout, "d", 10*time.Second, "Timeout.")
+	flag.DurationVar(&timeoutS3, "t", 10*time.Second, "Timeout to fetch an S3 object.")
+	flag.DurationVar(&timeoutCDN, "c", 30*time.Second, "Timeout to request CDN purge.")
 }
 
 func main() {
 	flag.Parse()
+
+	var ok bool
+	fastlyKey, ok = os.LookupEnv("FASTLY_KEY")
+	if !ok {
+		logInfo("missing required env-var FASTLY_KEY")
+		os.Exit(1)
+	}
+
 	ctx := context.Background()
 
 	sess := session.Must(session.NewSession())
@@ -70,7 +85,9 @@ func main() {
 		}
 	}
 
-	// TODO purgeCDN()
+	if err := purgeCDN(ctx); err != nil {
+		logInfo("cannot purge CDN, error: %v", err)
+	}
 }
 
 // waitForKeyReplication returns nil if key was successfully replicated or is not set for replication
@@ -89,8 +106,8 @@ func waitForKeyReplication(ctx context.Context, key string, cl *s3.S3, triesLeft
 
 		var ctxT = ctx
 		var cancelFn func()
-		if timeout > 0 {
-			ctxT, cancelFn = context.WithTimeout(ctx, timeout)
+		if timeoutS3 > 0 {
+			ctxT, cancelFn = context.WithTimeout(ctx, timeoutS3)
 		}
 		if cancelFn != nil {
 			defer cancelFn()
@@ -125,6 +142,34 @@ func waitForKeyReplication(ctx context.Context, key string, cl *s3.S3, triesLeft
 
 	if triesLeft <= 0 {
 		return fmt.Errorf("maximum attempts for key: %v", key)
+	}
+
+	return nil
+}
+
+func purgeCDN(ctx context.Context) error {
+	var ctxT = ctx
+	var cancelFn func()
+	if timeoutS3 > 0 {
+		ctxT, cancelFn = context.WithTimeout(ctx, timeoutS3)
+	}
+	if cancelFn != nil {
+		defer cancelFn()
+	}
+
+	req, err := http.NewRequestWithContext(ctxT, http.MethodPost, fastlyPurgeURL, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Fastly-Key", fastlyKey)
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode < 200 || res.StatusCode >= 400 {
+		return fmt.Errorf("unexpected Fastly status: %s", res.Status)
 	}
 
 	return nil
