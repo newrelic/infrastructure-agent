@@ -1,4 +1,4 @@
-name: Prerelease Linux pipeline
+name: Prerelease macOS pipeline
 
 on:
   release:
@@ -10,9 +10,6 @@ on:
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   GO_VERSION: '1.14.4'
-  GPG_MAIL: 'infrastructure-eng@newrelic.com'
-  GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
-  GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
   SNYK_TOKEN: ${{ secrets.CAOS_SNYK_TOKEN }}
   TAG:  ${{ github.event.release.tag_name }}
   DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
@@ -21,12 +18,11 @@ env:
   AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
   AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
   AWS_REGION: "us-east-1"
-  DOCKER_PUBLISH: true
 
 jobs:
-  unit-test-linux:
-    name: Linux unit tests
-    runs-on: ubuntu-20.04
+  unit-test-macos:
+    name: macOS unit tests
+    runs-on: macos-11
 
     steps:
       - uses: actions/checkout@v2
@@ -36,51 +32,37 @@ jobs:
         with:
           go-version: ${{env.GO_VERSION}}
 
-      - name: Validate code
-        run: make ci/validate
-
       - name: Running unit tests
-        run: make ci/test-coverage
+        run: make test-coverage
 
       - name: Coveralls Parallel
         uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: lcov.info
-          flag-name: run-linux
+          flag-name: run-macos
           parallel: true
 
-  harvest-test-linux:
-    name: Linux harvest tests
+  harvest-test-macos:
+    name: MacOS harvest tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-18.04, ubuntu-16.04 ]
+        os: [ macos-11, macos-10.15 ]
     steps:
       - uses: actions/checkout@v2
 
-      - name: Running Harvest tests
-        run: make linux/harvest-tests
-
-  proxy-tests-linux:
-    name: Proxy tests
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v2
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
+      - name: Install Go
+        uses: actions/setup-go@v2
         with:
-          username: ${{ env.DOCKER_HUB_ID }}
-          password: ${{ env.DOCKER_HUB_PASSWORD }}
+          go-version: ${{env.GO_VERSION}}
 
-      - name: Running proxy tests
-        run: make proxy-test
+      - name: Running Harvest tests
+        run: make macos/harvest-tests
 
   finish:
     name: Finish
-    needs: [ unit-test-linux ]
+    needs: [ unit-test-macos ]
     runs-on: ubuntu-latest
     steps:
       - name: Coveralls Finished
@@ -89,10 +71,10 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel-finished: true
 
-  packaging-linux:
+  packaging-macos:
     name: Build and upload all artifacts into GH Release assets
     runs-on: ubuntu-20.04
-    needs: [unit-test-linux, harvest-test-linux, proxy-tests-linux]
+    needs: [unit-test-macos]
 
     steps:
       - uses: actions/checkout@v2
@@ -103,36 +85,19 @@ jobs:
           username: ${{ env.DOCKER_HUB_ID }}
           password: ${{ env.DOCKER_HUB_PASSWORD }}
 
-      - name: Releasing linux packages
-        run: make ci/prerelease/linux
+      - name: Releasing macos packages
+        run: make ci/prerelease/macos
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-
-      - name: Build and publish Release Candidate (RC) of base Docker image
-        run: make -C build/container/ clean publish/multi-arch-base-rc AGENT_VERSION=${{env.TAG}}
-
-      - name: Build and publish Release Candidate (RC) of forwarder Docker image
-        run: make -C build/container/ clean publish/multi-arch-forwarder-rc AGENT_VERSION=${{env.TAG}}
-
-      - name: Build and publish Release Candidate (RC) of k8s-events-forwarders Docker image
-        run: make -C build/container/ clean publish/multi-arch-k8s-events-forwarder-rc AGENT_VERSION=${{env.TAG}}
-
-  publishing-to-s3:
-    name: Publish linux artifacts into s3 staging bucket
+  publishing-to-s3-macos:
+    name: Publish macos artifacts into s3 staging bucket
     runs-on: ubuntu-20.04
-    needs: [packaging-linux]
+    needs: [packaging-macos]
 
     strategy:
       max-parallel: 1
       matrix:
         assetsType:
           - "targz"
-          - "deb"
-          - "rpm"
 
     steps:
       - name: Login to DockerHub
@@ -152,7 +117,7 @@ jobs:
           app_name: "newrelic-infra"
           repo_name: "newrelic/infrastructure-agent"
           schema: "custom"
-          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.SCHEMA_BRANCH }}/build/upload-schema-linux-${{ matrix.assetsType }}.yml"
+          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.SCHEMA_BRANCH }}/build/upload-schema-macos-${{ matrix.assetsType }}.yml"
           aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
@@ -163,5 +128,4 @@ jobs:
           aws_role_session_name: ${{ env.AWS_ROLE_SESSION_NAME }}
           aws_role_arn: ${{ env.AWS_ROLE_ARN }}
           # used for signing package stuff
-          gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
-          gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
+          disable_lock: true

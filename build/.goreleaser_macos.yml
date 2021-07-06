@@ -1,0 +1,54 @@
+snapshot:
+  name_template: 0.0.0
+
+builds:
+  - id: darwin-newrelic-infra
+    main: ./cmd/newrelic-infra
+    binary: newrelic-infra
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+    ldflags:
+      - -s -w -X main.buildVersion={{.Version}}
+      - -s -w -X main.gitCommit={{.Commit}}
+
+  - id: darwin-newrelic-infra-ctl
+    main: ./cmd/newrelic-infra-ctl
+    binary: newrelic-infra-ctl
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+    ldflags:
+      - -s -w -X main.buildVersion={{.Version}}
+      - -s -w -X main.gitCommit={{.Commit}}
+
+  - id: darwin-newrelic-infra-service
+    main: ./cmd/newrelic-infra-service
+    binary: newrelic-infra-service
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+    ldflags:
+      - -s -w -X main.buildVersion={{.Version}}
+      - -s -w -X main.gitCommit={{.Commit}}
+
+archives:
+  - id: darwin-tarball-infrastructure-agent
+    builds:
+      - darwin-newrelic-infra
+      - darwin-newrelic-infra-ctl
+      - darwin-newrelic-infra-service
+    name_template: "newrelic-infra_{{.Os}}_{{ .Env.TAG }}_{{ .Arch }}_dirty"
+    wrap_in_directory: false
+    format: tar.gz
+    files:
+      - none*
+
+release:
+  disable: true
+
+checksum:
+  disable: true
