@@ -147,11 +147,13 @@ jobs:
           aws_region: ${{ env.AWS_REGION }}
 
   purge-cdn:
-    - name: Purge CDN
-      needs: [ publishing-to-s3-windows, publishing-to-s3-linux, publishing-to-s3-macos ]
-      env:
-        FASTLY_KEY: ${{secrets.FASTLY_KEY }}
-      run: tools/cdn-purge/fastly-purge.sh
+    name: Purge CDN
+    needs: [ publishing-to-s3-windows, publishing-to-s3-linux, publishing-to-s3-macos ]
+    steps:
+      - name: Fasty purge
+        env:
+          FASTLY_KEY: ${{secrets.FASTLY_KEY }}
+        run: tools/cdn-purge/fastly-purge.sh
 
   publish-docker-images:
     name: Create versioned and latest images from RC
