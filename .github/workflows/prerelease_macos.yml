@@ -15,8 +15,10 @@ env:
   DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
   SCHEMA_BRANCH: ${{ github.event.release.tag_name }}
+  # required for GHA publish action, should be moved into optional
+  GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+  GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
   AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
-  AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
   AWS_REGION: "us-east-1"
 
 jobs:
@@ -121,7 +123,6 @@ jobs:
           aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
-          aws_s3_lock_bucket_name: ${{ env.AWS_S3_LOCK_BUCKET_NAME }}
           access_point_host: "staging"
           run_id: ${{ github.run_id }}
           aws_region: ${{ env.AWS_REGION }}
