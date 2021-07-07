@@ -1,0 +1,29 @@
+---
+
+- hosts: testing_hosts
+  become: true
+  gather_facts: yes
+
+  pre_tasks:
+    - name: Initial cleanup # Only required for shared infra.
+      include_role:
+        name: cleanup
+
+  tasks:
+    - name: Installation tests suite
+      block:
+
+        - name: install agent via newrelic-cli
+          include_role:
+            name: agent-install-newrelic-cli
+
+        - name: Assert service
+          include_role:
+            name: assert-service
+
+      always:
+        - name: Final cleanup # Only required for shared infra.
+          include_role:
+            name: cleanup
+
+...

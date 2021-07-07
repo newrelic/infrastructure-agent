@@ -12,6 +12,9 @@
 - name: unprivileged mode agent installation
   import_playbook: installation-unprivileged.yml
 
+- name: agent installation via newrelic-cli
+  import_playbook: installation-newrelic-cli.yml
+
 # only amd64
 # fails on suse, al2, debian
 #- name: log forwarder
