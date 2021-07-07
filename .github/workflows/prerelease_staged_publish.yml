@@ -10,6 +10,10 @@ on:
         description: 'Assets type to pre-release: all, targz, zip, msi, deb, rpm'
         required: true
         default: 'all'
+      targzOS:
+        description: 'OS for which tarballs will be released: all, linux, macos'
+        required: true
+        default: 'all'
 
 env:
   GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
