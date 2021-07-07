@@ -105,7 +105,7 @@ release-linux: release/pkg-linux release/fix-tarballs-linux release/sign release
 	@echo "=== [release-linux] full pre-release cycle complete for nix"
 
 .PHONY : release-macos
-release-macos: release/pkg-macos release/fix-tarballs-macos release/sign release/publish
+release-macos: release/pkg-macos release/fix-tarballs-macos release/publish
 	@echo "=== [release-macos] full pre-release cycle complete for macOS"
 
 ifndef SNAPSHOT
