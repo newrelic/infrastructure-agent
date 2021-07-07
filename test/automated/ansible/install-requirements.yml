@@ -2,6 +2,7 @@
 
 - hosts: testing_hosts
   become: true
+  gather_facts: no
 
   tasks:
     - name: Remove EOL repository sources
