@@ -34,7 +34,6 @@ jobs:
   publishing-to-s3-linux:
     name: Publish linux artifacts into s3 prod bucket
     runs-on: ubuntu-20.04
-    if: ${{ (github.event.inputs.assetsType == 'all' || github.event.inputs.assetsType == matrix.assetsType) && (github.event.inputs.targzOS == 'all' || github.event.inputs.targzOS == matrix.targzOS) }}
 
     strategy:
       max-parallel: 1
@@ -48,11 +47,13 @@ jobs:
 
     steps:
       - name: Login to DockerHub
+        if: ${{ (github.event.inputs.assetsType == 'all' || github.event.inputs.assetsType == matrix.assetsType) && (github.event.inputs.targzOS == 'all' || github.event.inputs.targzOS == matrix.targzOS) }}
         uses: docker/login-action@v1
         with:
           username: ${{ env.DOCKER_HUB_ID }}
           password: ${{ env.DOCKER_HUB_PASSWORD }}
       - name: Publish ${{ matrix.assetsType }} to S3 action
+        if: ${{ (github.event.inputs.assetsType == 'all' || github.event.inputs.assetsType == matrix.assetsType) && (github.event.inputs.targzOS == 'all' || github.event.inputs.targzOS == matrix.targzOS) }}
         uses: newrelic/infrastructure-publish-action@v1.0.14
         env:
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
@@ -81,7 +82,6 @@ jobs:
   publishing-to-s3-macos:
     name: Publish macos artifacts into s3 prod bucket
     runs-on: ubuntu-20.04
-    if: ${{ (github.event.inputs.assetsType == 'all' || github.event.inputs.assetsType == matrix.assetsType) && (github.event.inputs.targzOS == 'all' || github.event.inputs.targzOS == matrix.targzOS) }}
 
     strategy:
       max-parallel: 1
@@ -93,11 +93,13 @@ jobs:
 
     steps:
       - name: Login to DockerHub
+        if: ${{ (github.event.inputs.assetsType == 'all' || github.event.inputs.assetsType == matrix.assetsType) && (github.event.inputs.targzOS == 'all' || github.event.inputs.targzOS == matrix.targzOS) }}
         uses: docker/login-action@v1
         with:
           username: ${{ env.DOCKER_HUB_ID }}
           password: ${{ env.DOCKER_HUB_PASSWORD }}
       - name: Publish ${{ matrix.assetsType }} to S3 action
+        if: ${{ (github.event.inputs.assetsType == 'all' || github.event.inputs.assetsType == matrix.assetsType) && (github.event.inputs.targzOS == 'all' || github.event.inputs.targzOS == matrix.targzOS) }}
         uses: newrelic/infrastructure-publish-action@v1.0.14
         env:
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
@@ -127,7 +129,6 @@ jobs:
   publishing-to-s3-windows:
     name: Publish windows artifacts into s3 prod bucket
     runs-on: ubuntu-20.04
-    if: ${{ github.event.inputs.assetsType == 'all' || github.event.inputs.assetsType == matrix.assetsType }}
 
     strategy:
       matrix:
@@ -137,11 +138,13 @@ jobs:
 
     steps:
       - name: Login to DockerHub
+        if: ${{ github.event.inputs.assetsType == 'all' || github.event.inputs.assetsType == matrix.assetsType }}
         uses: docker/login-action@v1
         with:
           username: ${{ env.DOCKER_HUB_ID }}
           password: ${{ env.DOCKER_HUB_PASSWORD }}
       - name: Publish ${{ matrix.assetsType }} to S3 action
+        if: ${{ github.event.inputs.assetsType == 'all' || github.event.inputs.assetsType == matrix.assetsType }}
         uses: newrelic/infrastructure-publish-action@v1.0.14
         env:
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
@@ -169,6 +172,7 @@ jobs:
   purge-cdn:
     name: Purge CDN
     needs: [ publishing-to-s3-windows, publishing-to-s3-linux, publishing-to-s3-macos ]
+    runs-on: ubuntu-20.04
     steps:
       - name: Fasty purge
         env:
