@@ -6,6 +6,7 @@
 package harvest
 
 import (
+	"github.com/newrelic/infrastructure-agent/internal/plugins/darwin"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"net/http"
 	"testing"
@@ -13,7 +14,6 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 
-	pluginsLinux "github.com/newrelic/infrastructure-agent/internal/plugins/linux"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/inventoryapi"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	fixture "github.com/newrelic/infrastructure-agent/test/fixture/inventory"
@@ -32,7 +32,7 @@ func TestHostinfoData(t *testing.T) {
 	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
 	cloudDetector := cloud.NewDetector(true, 0, 0, 0, false)
-	a.RegisterPlugin(pluginsLinux.NewHostinfoPlugin(a.Context, cloudDetector))
+	a.RegisterPlugin(darwin.NewHostinfoPlugin(a.Context, cloudDetector))
 	go a.Run()
 
 	var req http.Request
@@ -50,7 +50,6 @@ func TestHostinfoData(t *testing.T) {
 			Source:   "metadata/system",
 			ID:       1,
 			FullDiff: true,
-			// Checking some common /proc/sys entries that should exist in any linux host
 			Diff: map[string]interface{}{
 				"system": map[string]interface{}{
 					"id":               "system",
