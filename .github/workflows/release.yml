@@ -149,7 +149,9 @@ jobs:
   purge-cdn:
     name: Purge CDN
     needs: [ publishing-to-s3-windows, publishing-to-s3-linux, publishing-to-s3-macos ]
+    runs-on: ubuntu-20.04
     steps:
+      - uses: actions/checkout@v2
       - name: Fasty purge
         env:
           FASTLY_KEY: ${{secrets.FASTLY_KEY }}
