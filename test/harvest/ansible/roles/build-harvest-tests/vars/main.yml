@@ -5,6 +5,7 @@ default_binary_name: "harvest.test"
 os_arch_binary_name_tpl: "harvest_%GOOS%_%GOARCH%.test"
 goos:
   - "linux"
+  - "darwin"
 goarch:
   - "amd64"
   - "arm"

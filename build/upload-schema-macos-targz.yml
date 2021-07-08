@@ -1,0 +1,8 @@
+---
+- src: "newrelic-infra_darwin_{version}_{arch}.tar.gz"
+  uploads:
+    - type: file
+      dest: "{dest_prefix}binaries/macos/{arch}/{src}"
+  arch:
+    - amd64
+#    - arm64
