@@ -4,11 +4,13 @@ package plugins
 
 import (
 	"github.com/newrelic/infrastructure-agent/internal/agent"
+	"github.com/newrelic/infrastructure-agent/internal/plugins/darwin"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/proxy"
 )
 
 func RegisterPlugins(a *agent.Agent) error {
+	a.RegisterPlugin(darwin.NewHostinfoPlugin(a.Context, a.GetCloudHarvester()))
 	a.RegisterPlugin(NewHostAliasesPlugin(a.Context, a.GetCloudHarvester()))
 	config := a.Context.Config()
 
