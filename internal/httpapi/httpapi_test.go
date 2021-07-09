@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/newrelic/infrastructure-agent/internal/agent/id"
 	"github.com/newrelic/infrastructure-agent/internal/agent/status"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/testhelp/testemit"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
@@ -135,6 +136,71 @@ func TestServe_OnlyErrors(t *testing.T) {
 	assert.Equal(t, serverTimeout.URL, e.URL)
 }
 
+func TestServe_Entity(t *testing.T) {
+	t.Parallel()
+
+	l := log.WithComponent(t.Name())
+	timeout := 100 * time.Millisecond
+	transport := &http.Transport{}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	emptyIDProvide := func() entity.Identity {
+		return entity.Identity{}
+	}
+	fooIDProvide := func() entity.Identity {
+		return entity.Identity{
+			GUID: "foo",
+		}
+	}
+
+	tests := []struct {
+		name         string
+		idProvide    id.Provide
+		expectedCode int
+	}{
+		{"empty id", emptyIDProvide, http.StatusNoContent},
+		{"pinned id", fooIDProvide, http.StatusOK},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Given a running HTTP endpoint and an errored one (which times out)
+			port, err := network_helpers.TCPPort()
+			require.NoError(t, err)
+
+			r := status.NewReporter(ctx, l, []string{}, timeout, transport, tt.idProvide, "user-agent", "agent-key")
+			// When agent status API server is ready
+			em := &testemit.RecordEmitter{}
+			s, err := NewServer(NewConfig(false, "", 0, true, port), r, em)
+			require.NoError(t, err)
+			defer cancel()
+
+			go s.Serve(ctx)
+
+			s.WaitUntilReady()
+
+			// And a request to the status API is sent
+			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d%s", port, statusEntityAPIPath), bytes.NewReader([]byte{}))
+			require.NoError(t, err)
+			client := http.Client{}
+
+			res, err := client.Do(req)
+			require.NoError(t, err)
+			defer res.Body.Close()
+
+			// Then response contains an entity report
+			require.Equal(t, tt.expectedCode, res.StatusCode)
+
+			if tt.expectedCode != http.StatusNoContent {
+				var gotReport status.ReportEntity
+				json.NewDecoder(res.Body).Decode(&gotReport)
+				assert.Equal(t, tt.idProvide().GUID.String(), gotReport.GUID)
+			}
+		})
+	}
+}
+
 func TestServe_IngestData(t *testing.T) {
 	t.Parallel()
 
@@ -181,4 +247,8 @@ func (r *noopReporter) Report() (status.Report, error) {
 
 func (r *noopReporter) ReportErrors() (status.Report, error) {
 	return status.Report{}, nil
+}
+
+func (r *noopReporter) ReportEntity() (re status.ReportEntity, err error) {
+	return status.ReportEntity{}, nil
 }

@@ -44,12 +44,19 @@ type EndpointReport struct {
 	Error     string `json:"error,omitempty"`
 }
 
+// ReportEntity agent entity report.
+type ReportEntity struct {
+	GUID string `json:"guid"`
+}
+
 // Reporter reports agent status.
 type Reporter interface {
 	// Report full status report.
 	Report() (Report, error)
 	// ReportErrors only reports errors found.
 	ReportErrors() (Report, error)
+	// ReportEntity agent entity report.
+	ReportEntity() (ReportEntity, error)
 }
 
 type nrReporter struct {
@@ -135,6 +142,12 @@ func (r *nrReporter) report(onlyErrors bool) (report Report, err error) {
 	}
 
 	return
+}
+
+func (r *nrReporter) ReportEntity() (re ReportEntity, err error) {
+	return ReportEntity{
+		GUID: r.idProvide().GUID.String(),
+	}, nil
 }
 
 // NewReporter creates a new status reporter.

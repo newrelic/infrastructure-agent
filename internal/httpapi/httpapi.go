@@ -24,6 +24,7 @@ const (
 	componentName              = IntegrationName
 	statusAPIPath              = "/v1/status"
 	statusOnlyErrorsAPIPath    = "/v1/status/errors"
+	statusEntityAPIPath        = "/v1/status/entity"
 	statusAPIPathReady         = "/v1/status/ready"
 	ingestAPIPath              = "/v1/data"
 	ingestAPIPathReady         = "/v1/data/ready"
@@ -99,6 +100,7 @@ func (s *Server) Serve(ctx context.Context) {
 			router := httprouter.New()
 			// read only API
 			router.GET(statusAPIPathReady, s.handleReady)
+			router.GET(statusEntityAPIPath, s.handleEntity)
 			router.GET(statusAPIPath, s.handle(false))
 			router.GET(statusOnlyErrorsAPIPath, s.handle(true))
 			// local only API
@@ -217,6 +219,35 @@ func (s *Server) handle(onlyErrors bool) func(http.ResponseWriter, *http.Request
 }
 
 func (s *Server) handleReady(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) handleEntity(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	re, err := s.reporter.ReportEntity()
+	if err != nil {
+		s.logger.WithError(err).Error("cannot report entity status")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if re.GUID == "" {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	b, jerr := json.Marshal(re)
+	if jerr != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		s.logger.WithError(jerr).Warn("couldn't encode entity report")
+		return
+	}
+
+	_, err = w.Write(b)
+	if err != nil {
+		s.logger.Warn("cannot write entity response, error: " + err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 }
 
