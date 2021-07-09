@@ -29,6 +29,47 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// payload from actual nri-ecs output
+const integrationJsonOutputV2 = `{
+  "name": "com.newrelic.ecs",
+  "protocol_version": "2",
+  "integration_version": "1.2.0",
+  "data": [
+    {
+      "entity": {
+        "name": "cluster/clusterFoo",
+        "type": "arn:aws:ecs:us-east-2:018789649883"
+      },
+      "metrics": [
+        {
+          "arn": "arn:aws:ecs:us-east-2:018789649883:cluster/clusterFoo",
+          "clusterName": "clusterFoo",
+          "event_type": "EcsClusterSample"
+        }
+      ],
+      "inventory": {
+        "cluster": {
+          "arn": "arn:aws:ecs:us-east-2:018789649883:cluster/clusterFoo",
+          "name": "clusterFoo"
+        }
+      },
+      "events": []
+    },
+    {
+      "metrics": [],
+      "inventory": {
+        "host": {
+          "awsRegion": "us-east-2",
+          "ecsClusterArn": "arn:aws:ecs:us-east-2:018789649883:cluster/clusterFoo",
+          "ecsClusterName": "clusterFoo",
+          "ecsLaunchType": "fargate"
+        }
+      },
+      "events": []
+    }
+  ]
+}`
+
 const integrationJsonOutput = `{
   "name": "%s",
   "protocol_version": "3",
@@ -367,9 +408,18 @@ func TestLegacy_Emit(t *testing.T) {
 		metadata              integration.Definition
 		integrationJsonOutput string
 		expectedId            ids.PluginID
+		ma                    *mocks.AgentContext
 	}
-
 	cases := []testCase{
+		{
+			name: "integration protocol v2",
+			metadata: integration.Definition{
+				InventorySource: ids.EmptyInventorySource,
+			},
+			integrationJsonOutput: integrationJsonOutputV2,
+			expectedId:            ids.NewDefaultInventoryPluginID("com.newrelic.ecs"),
+			ma:                    mockAgent2Payloads(),
+		},
 		{
 			name: "Inventory source set",
 			metadata: integration.Definition{
@@ -377,6 +427,7 @@ func TestLegacy_Emit(t *testing.T) {
 			},
 			integrationJsonOutput: integrationJsonOutput,
 			expectedId:            *ids.NewPluginID("cat", "term"),
+			ma:                    mockAgent(),
 		},
 		{
 			name: "Inventory source set - protocol V4",
@@ -385,6 +436,7 @@ func TestLegacy_Emit(t *testing.T) {
 			},
 			integrationJsonOutput: integrationJsonV4Output,
 			expectedId:            *ids.NewPluginID("cat", "term"),
+			ma:                    mockAgent(),
 		},
 		{
 			name: "Plugin data name",
@@ -393,6 +445,7 @@ func TestLegacy_Emit(t *testing.T) {
 			},
 			integrationJsonOutput: fmt.Sprintf(integrationJsonOutput, "com.newrelic.something"),
 			expectedId:            ids.NewDefaultInventoryPluginID("com.newrelic.something"),
+			ma:                    mockAgent(),
 		},
 		{
 			name: "Plugin data name - protocol V4",
@@ -401,6 +454,7 @@ func TestLegacy_Emit(t *testing.T) {
 			},
 			integrationJsonOutput: integrationJsonV4Output,
 			expectedId:            ids.NewDefaultInventoryPluginID("my.integration.name"),
+			ma:                    mockAgent(),
 		},
 		{
 			name: "Metadata data name",
@@ -410,6 +464,7 @@ func TestLegacy_Emit(t *testing.T) {
 			},
 			integrationJsonOutput: fmt.Sprintf(integrationJsonOutput, ""),
 			expectedId:            ids.NewDefaultInventoryPluginID("awesome-plugin"),
+			ma:                    mockAgent(),
 		},
 		{
 			name: "Metadata data name - protocol v4",
@@ -419,18 +474,18 @@ func TestLegacy_Emit(t *testing.T) {
 			},
 			integrationJsonOutput: strings.Replace(integrationJsonV4Output, "\"name\": \"my.integration.name\",", "", 1),
 			expectedId:            ids.NewDefaultInventoryPluginID("awesome-plugin"),
+			ma:                    mockAgent(),
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			extraLabels := data.Map{}
 			entityRewrite := []data.EntityRewrite{}
-			ma := mockAgent()
 			mockDME := &mockDmEmitter{}
 			mockDME.On("Send", mock.Anything)
 
 			em := &VersionAwareEmitter{
-				aCtx:        ma,
+				aCtx:        tc.ma,
 				ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true, fflag.FlagDMRegisterEnable: true}),
 				dmEmitter:   mockDME,
 			}
@@ -438,8 +493,8 @@ func TestLegacy_Emit(t *testing.T) {
 			err := em.Emit(tc.metadata, extraLabels, entityRewrite, []byte(tc.integrationJsonOutput))
 			require.NoError(t, err)
 
-			for c := range ma.Calls {
-				called := ma.Calls[c]
+			for c := range tc.ma.Calls {
+				called := tc.ma.Calls[c]
 				if called.Method == "SendData" {
 					//t.Log(called)
 					po := called.Arguments[0].(agent.PluginOutput)
@@ -584,6 +639,14 @@ func mockAgent() *mocks.AgentContext {
 	ma.On("SendEvent", mock.AnythingOfType("agent.mapEvent"), mock.AnythingOfType("entity.Key")).Once()
 	ma.On("Config").Return(cfg)
 	ma.On("SendEvent", mock.Anything, entity.Key("bob")).Twice()
+
+	return ma
+}
+
+func mockAgent2Payloads() *mocks.AgentContext {
+	ma := mockAgent()
+	ma.On("SendData", mock.AnythingOfType("agent.PluginOutput")).Twice()
+	ma.SendDataWg.Add(1)
 
 	return ma
 }
