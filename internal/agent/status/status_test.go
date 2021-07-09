@@ -178,3 +178,39 @@ func TestNewReporter_ReportErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestNewReporter_ReportEntity(t *testing.T) {
+	timeout := 10 * time.Millisecond
+	transport := &http.Transport{}
+
+	tests := []struct {
+		name    string
+		guid    string
+		want    ReportEntity
+		wantErr bool
+	}{
+		{"no guid", "", ReportEntity{}, false},
+		{"foo guid", "foo", ReportEntity{GUID: "foo"}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			idProvide := func() entity.Identity {
+				return entity.Identity{
+					GUID: entity.GUID(tt.guid),
+				}
+			}
+			l := log.WithComponent(tt.name)
+			r := NewReporter(context.Background(), l, []string{}, timeout, transport, idProvide, "user-agent", "agent-key")
+
+			got, err := r.ReportEntity()
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			assert.Equal(t, tt.guid, got.GUID)
+		})
+	}
+}

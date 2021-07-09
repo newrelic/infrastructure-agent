@@ -11,6 +11,7 @@ It requires to be enabled via `status_server_enabled: true` also port is configu
 When enabled by default these *endpoints* will be available locally:
 - `http://localhost:8003/v1/status`
 - `http://localhost:8003/v1/status/errors`
+- `http://localhost:8003/v1/status/entity`
 
 ## JSON response shape
 
@@ -27,7 +28,7 @@ When enabled by default these *endpoints* will be available locally:
         "reachable": false,
         "error": "<optional error  msg>"
       }
-    ],
+    ]
   },
   "config": {
     "reachability_timeout": "<duration>"
@@ -35,7 +36,7 @@ When enabled by default these *endpoints* will be available locally:
 }
 ```
 
-### ReportErrors
+### Report Errors
 
 *Endpoint:* `/v1/status/errors`
 
@@ -43,7 +44,7 @@ Same as above, but:
 - *filters out non errored data*
 - no errors at all will return an empty object to ease error handling
 
-### Response with status ok:
+#### Response with status ok:
 
 ```json
 {}
@@ -51,7 +52,7 @@ Same as above, but:
 
 *Status code:* 201  (created)
 
-### Response with errored status:
+#### Response with errored status:
 
 ```json
 {
@@ -72,7 +73,7 @@ Same as above, but:
 
 *Status code:* 200
 
-### Errored response:
+#### Errored response:
 
 Status checks couldn't be reported.
 
@@ -86,8 +87,35 @@ Empty response body.
 
 It returns `200` when status API is ready to handle requests.
 
+### Report Entity
 
-## Usage
+*Endpoint:* `/v1/status/entity`
+
+Returns information about the agent/host entity.
+
+#### Response
+
+##### 204
+
+A response status code *204* ("No Content") will be returned when the agent still has no information
+about the agent/host entity.
+
+Therefore, it may take several requests to until the agent provides entity data. 
+
+> According to [RFC-2616](https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html) a 204 response
+> won't provide any body contents.
+
+##### 200
+
+Entity data gets successfully reported. Body JSON shape:
+
+```json
+{
+    "guid": "ENTITY_GUID"
+}
+```
+
+##, Usage
 
 ### Setup
 
@@ -95,7 +123,7 @@ Enable status API:
 - via config file `status_server_enabled: true`
 - or environment variable: `NRIA_STATUS_SERVER_ENABLED=true`.
 
-### Run report
+### Request status report
 
 Once agent starts, wait for status API to be ready.  An INFO entry `Status server started.` will show up in the output/log, which could take ~10s.
 
@@ -134,3 +162,6 @@ Results:
 }
 ```
 
+### Request entity status report
+
+Query agent/host entity status: `curl http://localhost:8003/v1/entity`
