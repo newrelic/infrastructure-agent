@@ -135,6 +135,51 @@ func TestServe_OnlyErrors(t *testing.T) {
 	assert.Equal(t, serverTimeout.URL, e.URL)
 }
 
+func TestServe_Entity(t *testing.T) {
+	t.Parallel()
+
+	// Given a running HTTP endpoint and an errored one (which times out)
+	port, err := network_helpers.TCPPort()
+	require.NoError(t, err)
+
+	l := log.WithComponent(t.Name())
+	timeout := 100 * time.Millisecond
+	transport := &http.Transport{}
+	fooIDProvide := func() entity.Identity {
+		return entity.Identity{
+			GUID: "foo",
+		}
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	r := status.NewReporter(ctx, l, []string{}, timeout, transport, fooIDProvide, "user-agent", "agent-key")
+
+	// When agent status API server is ready
+	em := &testemit.RecordEmitter{}
+	s, err := NewServer(NewConfig(false, "", 0, true, port), r, em)
+	defer cancel()
+
+	go s.Serve(ctx)
+
+	s.WaitUntilReady()
+
+	// And a request to the status API is sent
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d%s", port, statusEntityAPIPath), bytes.NewReader([]byte{}))
+	require.NoError(t, err)
+	client := http.Client{}
+
+	res, err := client.Do(req)
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	// Then response contains a report for the monitored endpoint
+	require.Equal(t, http.StatusOK, res.StatusCode)
+
+	var gotReport status.ReportEntity
+	json.NewDecoder(res.Body).Decode(&gotReport)
+	assert.Equal(t, "foo", gotReport.GUID)
+}
+
 func TestServe_IngestData(t *testing.T) {
 	t.Parallel()
 
@@ -181,4 +226,8 @@ func (r *noopReporter) Report() (status.Report, error) {
 
 func (r *noopReporter) ReportErrors() (status.Report, error) {
 	return status.Report{}, nil
+}
+
+func (r *noopReporter) ReportEntity() (re status.ReportEntity, err error) {
+	return status.ReportEntity{}, nil
 }
