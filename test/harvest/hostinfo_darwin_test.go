@@ -64,7 +64,6 @@ func TestHostinfoData(t *testing.T) {
 					"agent_name":       "Infrastructure",
 					"operating_system": "darwin",
 					"product_uuid":     fixture.AnyValue,
-					"boot_id":          fixture.AnyValue,
 					"agent_mode":       "unprivileged",
 				},
 			},
