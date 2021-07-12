@@ -10,7 +10,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/os/distro"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
-	"github.com/newrelic/infrastructure-agent/pkg/helpers/fingerprint"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
@@ -56,14 +55,13 @@ type HostInfoData struct {
 	AgentMode       string `json:"agent_mode"`
 	OperatingSystem string `json:"operating_system"`
 	ProductUuid     string `json:"product_uuid"`
-	BootId          string `json:"boot_id"`
 	RegionAWS       string `json:"aws_region,omitempty"`
 	RegionAzure     string `json:"region_name,omitempty"`
 	RegionGCP       string `json:"zone,omitempty"`
 	RegionAlibaba   string `json:"region_id,omitempty"`
 }
 
-func (hip HostInfoData) SortKey() string {
+func (hip *HostInfoData) SortKey() string {
 	return hip.System
 }
 
@@ -118,7 +116,6 @@ func (hip *HostinfoPlugin) gatherHostinfo(context agent.AgentContext) *HostInfoD
 		AgentMode:       context.Config().RunMode,
 		OperatingSystem: runtime.GOOS,
 		ProductUuid:     ho.HardwareUUID,
-		BootId:          fingerprint.GetBootId(),
 	}
 
 	err = hip.setCloudRegion(data)

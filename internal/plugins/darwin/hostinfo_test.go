@@ -173,7 +173,6 @@ func TestData(t *testing.T) {
 		AgentMode:       "root",
 		OperatingSystem: "darwin",
 		ProductUuid:     "C3805006-DFCF-11EB-BA80-0242AC130004",
-		BootId:          "",
 	}
 
 	assert.Equal(t, expected, hip.Data()[0])
