@@ -66,7 +66,7 @@ type cpuInfo struct {
 	totalCpu string
 }
 
-func (self HostinfoData) SortKey() string {
+func (self *HostinfoData) SortKey() string {
 	return self.System
 }
 
