@@ -6,6 +6,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/plugins/darwin"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/network"
 	metricsSender "github.com/newrelic/infrastructure-agent/pkg/metrics/sender"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
@@ -31,13 +32,13 @@ func RegisterPlugins(a *agent.Agent) error {
 	//procSampler := process.NewProcessSampler(a.Context)
 	storageSampler := storage.NewSampler(a.Context)
 	//nfsSampler := nfs.NewSampler(a.Context)
-	//networkSampler := network.NewNetworkSampler(a.Context)
+	networkSampler := network.NewNetworkSampler(a.Context)
 	systemSampler := metrics.NewSystemSampler(a.Context, storageSampler)
 
 	sender.RegisterSampler(systemSampler)
 	//sender.RegisterSampler(storageSampler)
 	//sender.RegisterSampler(nfsSampler)
-	//sender.RegisterSampler(networkSampler)
+	sender.RegisterSampler(networkSampler)
 	//sender.RegisterSampler(procSampler)
 
 	a.RegisterMetricsSender(sender)
