@@ -1,6 +1,5 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-// +build linux windows
 
 package storage
 
@@ -39,7 +38,7 @@ func TestStorageSample(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	if runtime.GOOS == "linux" {
+	if runtime.GOOS != "windows" {
 		if len(result) > 0 {
 			// succeed
 		} else {
@@ -51,16 +50,17 @@ func TestStorageSample(t *testing.T) {
 }
 
 func TestSampleWithCustomFilesystemList(t *testing.T) {
-	fs := "xfs"
-	if runtime.GOOS == "windows" {
-		fs = "NTFS"
+	fs := map[string]string{
+		"linux":   "xfs",
+		"windows": "NTFS",
+		"darwin":  "apfs",
 	}
 
 	oldSupportedFileSystems := SupportedFileSystems
 	defer func() {
 		SupportedFileSystems = oldSupportedFileSystems
 	}()
-	cfg := config.Config{CustomSupportedFileSystems: []string{fs},
+	cfg := config.Config{CustomSupportedFileSystems: []string{fs[runtime.GOOS]},
 		FileDevicesIgnored: []string{"sda1"}, MetricsStorageSampleRate: config.FREQ_INTERVAL_FLOOR_STORAGE_METRICS}
 
 	testAgent, err := agent.NewAgent(
@@ -76,7 +76,8 @@ func TestSampleWithCustomFilesystemList(t *testing.T) {
 	metrics.StartSamplerRoutine(m, testSampleQueue)
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)
-	assert.Contains(t, SupportedFileSystems, fs)
+	assert.Len(t, SupportedFileSystems, 1)
+	assert.Contains(t, SupportedFileSystems, fs[runtime.GOOS])
 }
 
 func TestPartitionsCache(t *testing.T) {
