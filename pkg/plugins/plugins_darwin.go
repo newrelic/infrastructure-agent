@@ -36,7 +36,7 @@ func RegisterPlugins(a *agent.Agent) error {
 	systemSampler := metrics.NewSystemSampler(a.Context, storageSampler)
 
 	sender.RegisterSampler(systemSampler)
-	//sender.RegisterSampler(storageSampler)
+	sender.RegisterSampler(storageSampler)
 	//sender.RegisterSampler(nfsSampler)
 	sender.RegisterSampler(networkSampler)
 	//sender.RegisterSampler(procSampler)

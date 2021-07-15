@@ -9,19 +9,19 @@ import (
 	"runtime/debug"
 )
 
-func (self *DiskMonitor) Sample() (result *DiskSample, err error) {
+func (m *DiskMonitor) Sample() (result *DiskSample, err error) {
 	defer func() {
 		if panicErr := recover(); panicErr != nil {
 			err = fmt.Errorf("Panic in DiskMonitor.Sample: %v\nStack: %s", panicErr, debug.Stack())
 		}
 	}()
 
-	if self.storageSampler == nil {
+	if m.storageSampler == nil {
 		return nil, fmt.Errorf("DiskMonitor is not properly configured with a storage sampler")
 	}
 
 	// make sure we don't count the sample device more than once
-	samples := FilterStorageSamples(self.storageSampler.Samples())
+	samples := FilterStorageSamples(m.storageSampler.Samples())
 
 	var totalUsedBytes float64
 	var totalFreeBytes float64

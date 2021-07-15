@@ -561,7 +561,7 @@ type Config struct {
 	PayloadCompressionLevel int `yaml:"payload_compression_level" envconfig:"payload_compression_level"`
 
 	// PartitionsTTL Time duration to expire the cached list of storage partitions.
-	// Default: 60
+	// Default: 60s
 	// Public: No
 	PartitionsTTL string `yaml:"partitions_ttl" envconfig:"partitions_ttl" public:"false"`
 
