@@ -150,6 +150,14 @@ func (ss *Sampler) Disabled() bool {
 	return ss.Interval() <= config.FREQ_DISABLE_SAMPLING
 }
 
+func (ss *Sampler) LastDiskStats() map[string]IOCountersStat {
+	return ss.lastDiskStats
+}
+
+func (ss *Sampler) SampleWrapper() SampleWrapper {
+	return ss.storageUtilities
+}
+
 func (ss *Sampler) Samples() sample.EventBatch {
 	return ss.lastSamples
 }
