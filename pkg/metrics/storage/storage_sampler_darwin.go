@@ -5,36 +5,122 @@ package storage
 import (
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/shirou/gopsutil/disk"
+	"regexp"
+	"sync"
+	"time"
+)
+
+var (
+	SupportedFileSystems  = map[string]bool{}
+	supportedDeviceRegexp = regexp.MustCompile("^/dev/disk[0-9]+s[0-9]+(s[0-9]+)?$")
 )
 
 type Sample struct {
 	BaseSample
 }
 
-type NullStorageSampleWrapper struct{}
+type DarwinStorageSampleWrapper struct {
+	partitionsCache PartitionsCache
+	//concurrent access to disk using disk.IOCounters() with GCO enabled is no thread safe
+	ioCountersLock sync.Mutex
+}
+
+type DarwinIoCountersStat struct {
+	disk.IOCountersStat
+}
+
+func (d DarwinIoCountersStat) Source() string {
+	return "gopsutil"
+}
 
 func NewStorageSampleWrapper(cfg *config.Config) SampleWrapper {
-	return &NullStorageSampleWrapper{}
+	ttl, err := time.ParseDuration(cfg.PartitionsTTL)
+	if err != nil {
+		ttl = time.Minute // for tests with an unset ttl
+	}
+	ssw := DarwinStorageSampleWrapper{
+		partitionsCache: PartitionsCache{
+			ttl:             ttl,
+			isContainerized: cfg != nil && cfg.IsContainerized,
+			partitionsFunc:  fetchPartitions,
+		},
+	}
+	return &ssw
 }
 
-func (ssw *NullStorageSampleWrapper) Partitions() (s []PartitionStat, e error) {
-	return
+func (ssw *DarwinStorageSampleWrapper) Partitions() (partitions []PartitionStat, e error) {
+	return ssw.partitionsCache.Get()
 }
 
-func (ssw *NullStorageSampleWrapper) Usage(path string) (d *disk.UsageStat, e error) {
+// fetchPartitions gets partitions information from gopsutil library
+func fetchPartitions(_ bool) (partitions []PartitionStat, e error) {
+	partitionsInfo, err := disk.Partitions(true)
+	if err != nil {
+		return partitions, err
+	}
+
+	return partitionsFromGopsutilPartitions(partitionsInfo), nil
+}
+
+func partitionsFromGopsutilPartitions(partitionsInfo []disk.PartitionStat) (partitions []PartitionStat) {
+	for _, p := range partitionsInfo {
+		if !isSupportedDevice(p.Device) {
+			continue
+		}
+		partitions = append(partitions, PartitionStat{
+			Device:     p.Device,
+			Mountpoint: p.Mountpoint,
+			Fstype:     p.Fstype,
+			Opts:       p.Opts,
+		})
+	}
+
+	return partitions
+}
+
+// isSupportedDevice validates device is a "physical partition" ~= "^/dev/disk..."
+func isSupportedDevice(device string) bool {
+	return supportedDeviceRegexp.Match([]byte(device))
+}
+
+func (ssw *DarwinStorageSampleWrapper) Usage(path string) (d *disk.UsageStat, e error) {
 	return disk.Usage(path)
 }
 
-func (ssw *NullStorageSampleWrapper) IOCounters() (s map[string]IOCountersStat, e error) {
-	return
+func (ssw *DarwinStorageSampleWrapper) IOCounters() (ioCounters map[string]IOCountersStat, e error) {
+	ssw.ioCountersLock.Lock()
+	defer ssw.ioCountersLock.Unlock()
+
+	ioCountersStat, err := disk.IOCounters()
+
+	if err != nil {
+		return ioCounters, err
+	}
+
+	ioCounters = make(map[string]IOCountersStat)
+	for _, p := range ioCountersStat {
+		ioCounters[p.Name] = DarwinIoCountersStat{p}
+	}
+
+	return ioCounters, nil
 }
 
-func (ssw *NullStorageSampleWrapper) CalculateSampleValues(counter, lastStats IOCountersStat, elapsedMs int64) (s *Sample) {
-	return
+func (ssw *DarwinStorageSampleWrapper) CalculateSampleValues(_, _ IOCountersStat, _ int64) (s *Sample) {
+	//IO per partition not supported yet in darwin
+	return nil
 }
 
-func populateSampleOS(source, dest *Sample) {
+// populateSampleOS complements the populateSample function by copying into the destinations the fields from the source
+// that are exclusive of Darwin Storage Samples
+func populateSampleOS(_, _ *Sample) {
+	//intentionally left empty, no OS specific values
 }
 
 func populateUsageOS(_ *disk.UsageStat, _ *Sample) {
+	//intentionally left empty, no OS specific usage values
+}
+
+func CalculateDeviceMapping(_ map[string]bool, _ bool) (deviceMap map[string]string) {
+	//intentionally left empty, IO per partition not supported yet in darwin
+	return
 }
