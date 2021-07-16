@@ -44,9 +44,8 @@ func NewConfig(url string, fedramp bool, licenseKey string, submissionPeriod tim
 
 // NewDMSender creates a Dimensional Metrics sender.
 func NewDMSender(config MetricsSenderConfig, transport http.RoundTripper, idProvide id.Provide) (s MetricsSender, err error) {
-	harvester, err := newTelemetryHarverster(config, transport, idProvide)
 	s = &sender{
-		harvester: harvester,
+		harvester: NewLazyLoadedHarvester(config, transport, idProvide),
 		calculator: Calculator{
 			rate:  rate.NewCalculator(),
 			delta: cumulative.NewDeltaCalculator(),
