@@ -3,6 +3,8 @@
 package config
 
 import (
+	"path/filepath"
+
 	"github.com/kelseyhightower/envconfig"
 )
 
@@ -10,6 +12,13 @@ const (
 	defaultConnectEnabled = true
 )
 
+func init() {
+	defaultConfigFiles = []string{
+		"newrelic-infra.yml",
+		filepath.Join("/etc", "newrelic-infra.yml"),
+		filepath.Join("/etc", "newrelic-infra", "newrelic-infra.yml"),
+	}
+}
 func runtimeValues() (userMode, agentUser, executablePath string) {
 	return ModeRoot, "", ""
 }
