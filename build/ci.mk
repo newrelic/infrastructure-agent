@@ -50,7 +50,14 @@ ci/prerelease/linux:
 
 .PHONY : ci/prerelease/macos
 ci/prerelease/macos:
-	TARGET_OS=macos $(MAKE) ci/prerelease
+ifdef TAG
+	PRERELEASE=true \
+	SNAPSHOT=false \
+		$(MAKE) release-macos
+else
+	@echo "===> infrastructure-agent ===  [ci/prerelease/macos] TAG env variable expected to be set"
+	exit 1
+endif
 
 .PHONY : ci/prerelease
 ci/prerelease: ci/deps
