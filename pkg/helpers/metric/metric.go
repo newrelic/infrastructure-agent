@@ -12,12 +12,12 @@ const NRDBLimit = 4095
 
 // TruncateLength returns a copy of the "metric" object, whatever its type is,
 // with all the strings larger than maxLength cutted down to maxLength
-func TruncateLength(event sample.Event, maxLength int) sample.Event {
+func TruncateLength(event sample.Event, maxLength int) (sample.Event, bool) {
 	if event == nil {
-		return nil
+		return nil, false
 	}
-	limited, _ := truncRecursive(reflect.ValueOf(event), maxLength)
-	return limited.Interface().(sample.Event)
+	limited, changed := truncRecursive(reflect.ValueOf(event), maxLength)
+	return limited.Interface().(sample.Event), changed
 }
 
 // uses reflection to get the type of data that is being passed as metric

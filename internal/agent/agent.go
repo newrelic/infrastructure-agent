@@ -1014,13 +1014,14 @@ func (c *context) SendEvent(event sample.Event, entityKey entity.Key) {
 
 	// truncates string fields larger than 4095 chars
 	if c.cfg.TruncTextValues {
-		orig := event
-		event = metric.TruncateLength(event, metric.NRDBLimit)
-		if orig != event {
+		var truncated bool
+		origValue := fmt.Sprintf("+%v", event)
+		event, truncated = metric.TruncateLength(event, metric.NRDBLimit)
+		if truncated {
 			aclog.
 				WithField("entity_key", entityKey.String()).
 				WithField("length", metric.NRDBLimit).
-				WithField("original", fmt.Sprintf("+%v", orig)).
+				WithField("original", origValue).
 				WithField("truncated", fmt.Sprintf("+%v", event)).
 				Warn("event truncated to NRDB limit")
 		}

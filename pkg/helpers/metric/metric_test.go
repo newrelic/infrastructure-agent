@@ -3,6 +3,7 @@
 package metric
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
@@ -16,33 +17,47 @@ type TestCase struct {
 	Description string
 	Input       sample.Event
 	Expected    sample.Event
+	Truncated   bool
 }
 
 func TestTruncates(t *testing.T) {
 	testCases := []TestCase{
 		{Description: "Do not Truncate struct",
-			Input:    Test{A: "foo", B: 123, C: "bar"},
-			Expected: Test{A: "foo", B: 123, C: "bar"}},
+			Input:     Test{A: "foo", B: 123, C: "bar"},
+			Expected:  Test{A: "foo", B: 123, C: "bar"},
+			Truncated: false,
+		},
 		{Description: "Truncate struct",
-			Input:    Test{A: "modified field", B: 123, C: "not modify"},
-			Expected: Test{A: "modified f", B: 123, C: "not modify"}},
+			Input:     Test{A: "modified field", B: 123, C: "not modify"},
+			Expected:  Test{A: "modified f", B: 123, C: "not modify"},
+			Truncated: true,
+		},
 		{Description: "Truncate struct2",
-			Input:    Test{A: "not modify", B: 123, C: "modified field"},
-			Expected: Test{A: "not modify", B: 123, C: "modified f"}},
+			Input:     Test{A: "not modify", B: 123, C: "modified field"},
+			Expected:  Test{A: "not modify", B: 123, C: "modified f"},
+			Truncated: true,
+		},
 		{Description: "Truncate nested structs",
-			Input:    Nested{Test: Test{A: "hello", C: "bar"}, C: "modified field", D: "do not"},
-			Expected: Nested{Test: Test{A: "hello", C: "bar"}, C: "modified f", D: "do not"}},
+			Input:     Nested{Test: Test{A: "hello", C: "bar"}, C: "modified field", D: "do not"},
+			Expected:  Nested{Test: Test{A: "hello", C: "bar"}, C: "modified f", D: "do not"},
+			Truncated: true,
+		},
 		{Description: "Truncate interface map",
-			Input:    InterfaceMap{"A": "modified field", "B": 123, "C": "not modify"},
-			Expected: InterfaceMap{"A": "modified f", "B": 123, "C": "not modify"}},
+			Input:     InterfaceMap{"A": "modified field", "B": 123, "C": "not modify"},
+			Expected:  InterfaceMap{"A": "modified f", "B": 123, "C": "not modify"},
+			Truncated: true,
+		},
 		{Description: "Do not limit interface map",
-			Input:    InterfaceMap{"A": "foo", "B": 123, "C": "bar"},
-			Expected: InterfaceMap{"A": "foo", "B": 123, "C": "bar"}},
+			Input:     InterfaceMap{"A": "foo", "B": 123, "C": "bar"},
+			Expected:  InterfaceMap{"A": "foo", "B": 123, "C": "bar"},
+			Truncated: false,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.Description, func(t *testing.T) {
-			limited := TruncateLength(tc.Input, TruncLen)
+			limited, truncated := TruncateLength(tc.Input, TruncLen)
 			require.Equal(t, tc.Expected, limited)
+			require.Equal(t, tc.Truncated, truncated)
 		})
 	}
 }
@@ -60,28 +75,41 @@ func TestTruncates_PassedAsPointers(t *testing.T) {
 		{Description: "null input and output",
 			Input: nil, Expected: nil},
 		{Description: "Do not Truncate struct",
-			Input:    &PTest{A: "foo", B: 123, C: "bar"},
-			Expected: &PTest{A: "foo", B: 123, C: "bar"}},
+			Input:     &PTest{A: "foo", B: 123, C: "bar"},
+			Expected:  &PTest{A: "foo", B: 123, C: "bar"},
+			Truncated: false,
+		},
 		{Description: "Truncate struct",
-			Input:    &PTest{A: "modified field", B: 123, C: "not modify"},
-			Expected: &PTest{A: "modified f", B: 123, C: "not modify"}},
+			Input:     &PTest{A: "modified field", B: 123, C: "not modify"},
+			Expected:  &PTest{A: "modified f", B: 123, C: "not modify"},
+			Truncated: true,
+		},
 		{Description: "Truncate interface map",
-			Input:    &InterfaceMap{"A": "modified field", "B": 123, "C": "not modify"},
-			Expected: &InterfaceMap{"A": "modified f", "B": 123, "C": "not modify"}},
+			Input:     &InterfaceMap{"A": "modified field", "B": 123, "C": "not modify"},
+			Expected:  &InterfaceMap{"A": "modified f", "B": 123, "C": "not modify"},
+			Truncated: true,
+		},
 		{Description: "Do not limit interface map",
-			Input:    &InterfaceMap{"A": "foo", "B": 123, "C": "bar"},
-			Expected: &InterfaceMap{"A": "foo", "B": 123, "C": "bar"}},
+			Input:     &InterfaceMap{"A": "foo", "B": 123, "C": "bar"},
+			Expected:  &InterfaceMap{"A": "foo", "B": 123, "C": "bar"},
+			Truncated: false,
+		},
 		{Description: "Truncate string map",
-			Input:    &StringMap{"A": "modified field", "C": "not modify"},
-			Expected: &StringMap{"A": "modified f", "C": "not modify"}},
+			Input:     &StringMap{"A": "modified field", "C": "not modify"},
+			Expected:  &StringMap{"A": "modified f", "C": "not modify"},
+			Truncated: true,
+		},
 		{Description: "Do not limit string map",
-			Input:    &StringMap{"A": "foo", "C": "bar"},
-			Expected: &StringMap{"A": "foo", "C": "bar"}},
+			Input:     &StringMap{"A": "foo", "C": "bar"},
+			Expected:  &StringMap{"A": "foo", "C": "bar"},
+			Truncated: false,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.Description, func(t *testing.T) {
-			limited := TruncateLength(tc.Input, TruncLen)
+			limited, truncated := TruncateLength(tc.Input, TruncLen)
 			require.Equal(t, tc.Expected, limited)
+			require.Equal(t, tc.Truncated, truncated)
 		})
 	}
 }
@@ -98,28 +126,41 @@ func TestTruncates_Containing_Pointers(t *testing.T) {
 
 	testCases := []TestCase{
 		{Description: "Do not Truncate struct",
-			Input:    TestP{A: &shortString, B: &anyInt, C: &shortString},
-			Expected: TestP{A: &shortString, B: &anyInt, C: &shortString}},
+			Input:     TestP{A: &shortString, B: &anyInt, C: &shortString},
+			Expected:  TestP{A: &shortString, B: &anyInt, C: &shortString},
+			Truncated: false,
+		},
 		{Description: "Truncate struct",
-			Input:    TestP{A: &longString, B: &anyInt, C: &shortString},
-			Expected: TestP{A: &cutLongString, B: &anyInt, C: &shortString}},
+			Input:     TestP{A: &longString, B: &anyInt, C: &shortString},
+			Expected:  TestP{A: &cutLongString, B: &anyInt, C: &shortString},
+			Truncated: true,
+		},
 		{Description: "Truncate interface map",
-			Input:    InterfaceMap{"A": &longString, "B": &anyInt, "C": &shortString, "D": nil},
-			Expected: InterfaceMap{"A": &cutLongString, "B": &anyInt, "C": &shortString, "D": nil}},
+			Input:     InterfaceMap{"A": &longString, "B": &anyInt, "C": &shortString, "D": nil},
+			Expected:  InterfaceMap{"A": &cutLongString, "B": &anyInt, "C": &shortString, "D": nil},
+			Truncated: true,
+		},
 		{Description: "Do not limit interface map",
-			Input:    InterfaceMap{"A": &shortString, "B": &anyInt, "C": &shortString, "D": nil},
-			Expected: InterfaceMap{"A": &shortString, "B": &anyInt, "C": &shortString, "D": nil}},
+			Input:     InterfaceMap{"A": &shortString, "B": &anyInt, "C": &shortString, "D": nil},
+			Expected:  InterfaceMap{"A": &shortString, "B": &anyInt, "C": &shortString, "D": nil},
+			Truncated: false,
+		},
 		{Description: "Do not limit interface pointer map",
-			Input:    InterfacePointerMap{"A": &pShortString, "B": &pAnyInt, "C": &pShortString, "D": nil},
-			Expected: InterfacePointerMap{"A": &pShortString, "B": &pAnyInt, "C": &pShortString, "D": nil}},
+			Input:     InterfacePointerMap{"A": &pShortString, "B": &pAnyInt, "C": &pShortString, "D": nil},
+			Expected:  InterfacePointerMap{"A": &pShortString, "B": &pAnyInt, "C": &pShortString, "D": nil},
+			Truncated: false,
+		},
 		{Description: "Do not limit string pointer map",
-			Input:    StringPointerMap{"A": &shortString, "C": &shortString, "D": nil},
-			Expected: StringPointerMap{"A": &shortString, "C": &shortString, "D": nil}},
+			Input:     StringPointerMap{"A": &shortString, "C": &shortString, "D": nil},
+			Expected:  StringPointerMap{"A": &shortString, "C": &shortString, "D": nil},
+			Truncated: false,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.Description, func(t *testing.T) {
-			limited := TruncateLength(tc.Input, TruncLen)
+			limited, truncated := TruncateLength(tc.Input, TruncLen)
 			require.Equal(t, tc.Expected, limited)
+			require.Equal(t, tc.Truncated, truncated)
 		})
 	}
 
@@ -138,16 +179,21 @@ func TestTruncates_Containing_Pointers_Map_Modify(t *testing.T) {
 	var pCutLongString interface{} = &cutLongString
 	testCases := []TestCase{
 		{Description: "Truncate interface pointer map",
-			Input:    InterfacePointerMap{"A": &pLongString, "B": &pAnyInt, "C": &pShortString, "D": nil},
-			Expected: InterfacePointerMap{"A": &pCutLongString, "B": &pAnyInt, "C": &pShortString, "D": nil}},
+			Input:     InterfacePointerMap{"A": &pLongString, "B": &pAnyInt, "C": &pShortString, "D": nil},
+			Expected:  InterfacePointerMap{"A": &pCutLongString, "B": &pAnyInt, "C": &pShortString, "D": nil},
+			Truncated: true,
+		},
 		{Description: "Truncate string pointer map",
-			Input:    StringPointerMap{"A": &longString, "C": &shortString, "D": nil},
-			Expected: StringPointerMap{"A": &cutLongString, "C": &shortString, "D": nil}},
+			Input:     StringPointerMap{"A": &longString, "C": &shortString, "D": nil},
+			Expected:  StringPointerMap{"A": &cutLongString, "C": &shortString, "D": nil},
+			Truncated: true,
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.Description, func(t *testing.T) {
-			limited := TruncateLength(tc.Input, TruncLen)
+			limited, truncated := TruncateLength(tc.Input, TruncLen)
+			assert.Equal(t, tc.Truncated, truncated)
 			switch l := limited.(type) {
 			case InterfacePointerMap:
 				ex := tc.Expected.(InterfacePointerMap)
