@@ -4,19 +4,22 @@
 package agent
 
 import (
+	"bytes"
 	context2 "context"
 	"encoding/json"
 	"fmt"
-
 	test2 "github.com/newrelic/infrastructure-agent/pkg/backend/identityapi/test"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
-
+	"github.com/newrelic/infrastructure-agent/pkg/helpers/metric"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/newrelic/infrastructure-agent/pkg/sample"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -824,4 +827,45 @@ func Test_ProcessSampling(t *testing.T) {
 			assert.Equal(t, tc.want, actual)
 		})
 	}
+}
+
+type fakeEventSender struct {
+}
+
+func (f fakeEventSender) QueueEvent(_ sample.Event, _ entity.Key) error {
+	return nil
+}
+
+func (f fakeEventSender) Start() error {
+	panic("implement me")
+}
+
+func (f fakeEventSender) Stop() error {
+	panic("implement me")
+}
+
+func TestContext_SendEvent_LogTruncatedEvent(t *testing.T) {
+	//Capture the logs
+	var output bytes.Buffer
+	log.SetOutput(&output)
+	log.EnableSmartVerboseMode(1000)
+
+	cfg := config.Config{TruncTextValues: true}
+	c := NewContext(
+		&cfg,
+		"0.0.0",
+		testhelpers.NewFakeHostnameResolver("foobar", "foo", nil),
+		NilIDLookup,
+		func(sample interface{}) bool { return true },
+	)
+	c.eventSender = fakeEventSender{}
+
+	original := strings.Repeat("a", metric.NRDBLimit*2)
+	truncated := original[:metric.NRDBLimit]
+	ed := map[string]interface{}{"key": original}
+	c.SendEvent(mapEvent(ed), "some key")
+
+	written := output.String()
+	assert.Contains(t, written, fmt.Sprintf("original=\"+map[key:%s]", original))
+	assert.Contains(t, written, fmt.Sprintf("truncated=\"+map[key:%s]", truncated))
 }
