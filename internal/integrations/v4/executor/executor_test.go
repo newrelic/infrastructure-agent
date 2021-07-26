@@ -6,6 +6,7 @@ import (
 	"context"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"os/user"
 	"runtime"
 	"testing"
@@ -137,6 +138,34 @@ func TestRunnable_Execute_Error(t *testing.T) {
 
 	// AND error lines are anyway returned
 	assert.Equal(t, "very bad error", testhelp.ChannelRead(to.Stderr))
+}
+
+func TestRunnable_Execute_FDsNotLeakedWhenFileDoesNotExist(t *testing.T) {
+	defer leaktest.Check(t)()
+
+	// GIVEN a runnable instance does not exist
+	r := FromCmdSlice(testhelp.Command("../fixtures/i_do_not_exist.sh"), execConfig(t))
+
+	// WHEN it is executed
+	to := r.Execute(context.Background(), nil, nil)
+
+	// AND it finished
+	<-to.Done
+
+	// THEN an error should be provided to be handled later on
+	// (handlers might be: runner.handleErrors or Supervisor.handleErrs)
+	err := testhelp.ChannelErrClosed(to.Errors)
+	_, ok := err.(*exec.ExitError)
+	require.True(t, ok)
+	// AND stdout channel should be closed
+	if runtime.GOOS != "windows" {
+		// Win returns garbage messages through stdout when no file is found
+		testhelp.AssertChanIsClosed(t, to.Stdout)
+	}
+	// AND stderr channel needs to be drained
+	// (handlers might be: runner.handleStderr or Supervisor.handleStdErr)
+	assert.NotEmpty(t, string(<-to.Stderr))
+	testhelp.AssertChanIsClosed(t, to.Stderr)
 }
 
 func TestRunnable_Execute_Blocked(t *testing.T) {

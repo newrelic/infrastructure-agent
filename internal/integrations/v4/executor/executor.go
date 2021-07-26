@@ -46,6 +46,7 @@ func (r *Executor) Execute(ctx context.Context, pidChan, exitCodeCh chan<- int) 
 	commandCtx, cancelCommand := context.WithCancel(ctx)
 
 	go func() {
+		defer out.Close()
 		cmd := r.buildCommand(commandCtx)
 
 		illog.
@@ -114,7 +115,6 @@ func (r *Executor) Execute(ctx context.Context, pidChan, exitCodeCh chan<- int) 
 		}
 
 		allOutputForwarded.Wait() // waiting again to avoid closing output before the data is received during cancellation
-		out.Close()
 	}()
 	return receiver
 }
