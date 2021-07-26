@@ -4,6 +4,7 @@ package testhelp
 
 import (
 	"errors"
+	"testing"
 	"time"
 )
 
@@ -20,6 +21,19 @@ func ChannelRead(ch <-chan []byte) string {
 }
 
 var ErrChannelTimeout = errors.New("channel not closed after timeout")
+
+func AssertChanIsClosed(t *testing.T, ch <-chan []byte) {
+	select {
+	case content, more := <-ch:
+		if more {
+			t.Errorf("channel has content: %s", string(content))
+		}
+		return
+
+	case <-time.After(channelTimeout):
+		t.Error(ErrChannelTimeout.Error())
+	}
+}
 
 // if the channel has been closed without an error, it returns nil. An error otherwise
 func ChannelErrClosed(ch <-chan error) error {
