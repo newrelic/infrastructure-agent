@@ -689,9 +689,16 @@ func (a *Agent) Run() (err error) {
 	}
 
 	// Timers
-	reapTimer := time.NewTicker(cfg.FirstReapInterval)
-	sendTimer := time.NewTimer(cfg.SendInterval) // Send any deltas every X seconds
+	reapInventoryTimer := time.NewTicker(cfg.FirstReapInterval)
+	sendInventoryTimer := time.NewTimer(cfg.SendInterval) // Send any deltas every X seconds
 	debugTimer := time.Tick(time.Duration(a.Context.Config().DebugLogSec) * time.Second)
+
+	//Remove send timer
+	if !a.shouldSendInventory() {
+		sendInventoryTimer.Stop()
+		reapInventoryTimer.Stop()
+		alog.Info("inventory submission disabled")
+	}
 
 	// Timer to engage the process of deleting entities that haven't been reported information during this time
 	removeEntitiesPeriod, err := time.ParseDuration(a.Context.Config().RemoveEntitiesPeriod)
@@ -725,7 +732,7 @@ func (a *Agent) Run() (err error) {
 	go func() {
 		<-a.Context.Ctx.Done()
 
-		a.exitGracefully(sendTimer, reapTimer, removeEntitiesTicker)
+		a.exitGracefully(sendInventoryTimer, reapInventoryTimer, removeEntitiesTicker)
 
 		close(exit)
 
@@ -768,7 +775,7 @@ func (a *Agent) Run() (err error) {
 					a.inventories[entityKey].needsReaping = true
 				}
 			}
-		case <-reapTimer.C:
+		case <-reapInventoryTimer.C:
 			{
 				for _, inventory := range a.inventories {
 					if !a.inv.readyToReap {
@@ -787,8 +794,8 @@ func (a *Agent) Run() (err error) {
 						}
 					}
 					if a.inv.readyToReap && inventory.needsReaping {
-						reapTimer.Stop()
-						reapTimer = time.NewTicker(cfg.ReapInterval)
+						reapInventoryTimer.Stop()
+						reapInventoryTimer = time.NewTicker(cfg.ReapInterval)
 						inventory.reaper.Reap()
 						if inventory.needsCleanup {
 							inventory.reaper.CleanupOldPlugins(a.oldPlugins)
@@ -807,8 +814,8 @@ func (a *Agent) Run() (err error) {
 					inventory.needsCleanup = true
 				}
 			}
-		case <-sendTimer.C:
-			a.sendInventory(sendTimer)
+		case <-sendInventoryTimer.C:
+			a.sendInventory(sendInventoryTimer)
 		case <-debugTimer:
 			{
 				debugInfo, err := a.debugProvide()
@@ -1172,4 +1179,8 @@ func (a *Agent) gracefulShutdown() error {
 	defer a.Context.CancelFn()
 
 	return a.connectSrv.Disconnect(a.Context.AgentID(), identityapi.ReasonHostShutdown)
+}
+
+func (a *Agent) shouldSendInventory() bool {
+	return !a.GetContext().Config().IsForwardOnly && !a.GetContext().Config().IsSecureForwardOnly
 }

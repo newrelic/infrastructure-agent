@@ -7,7 +7,8 @@ ARG agent_version=0.0
 ARG version_file=VERSION
 ARG agent_bin=newrelic-infra
 
-ARG curl_version=7.77.0-r1
+#https://pkgs.alpinelinux.org/package/v3.13/main/x86/curl
+ARG curl_version=7.78.0-r0
 
 # Add the agent binary
 COPY $agent_bin /usr/bin/newrelic-infra

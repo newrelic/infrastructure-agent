@@ -520,6 +520,75 @@ func TestStopByCancelFn_UsedBySignalHandler(t *testing.T) {
 	wg.Wait()
 }
 
+//patchSenderCallRecorder patchSender implementation for tests. It will record the calls made to Process()
+type patchSenderCallRecorder struct {
+	sync.Mutex
+	calls int
+}
+
+func (p *patchSenderCallRecorder) Process() error {
+	p.Lock()
+	defer p.Unlock()
+	p.calls++
+	return nil
+}
+
+func (p *patchSenderCallRecorder) getCalls() int {
+	p.Lock()
+	p.Unlock()
+	return p.calls
+}
+
+func TestAgent_Run_DontSendInventoryIfFwdOnly(t *testing.T) {
+	tests := []struct {
+		name       string
+		fwdOnly    bool
+		assertFunc func(t assert.TestingT, e1 interface{}, e2 interface{}, msgAndArgs ...interface{}) bool
+		expected   int
+	}{
+		{
+			name:       "forward only enabled should not send inventory",
+			fwdOnly:    true,
+			assertFunc: assert.Equal,
+			expected:   0,
+		},
+		{
+			name:       "forward only disabled should send inventory at least once",
+			fwdOnly:    false,
+			assertFunc: assert.GreaterOrEqual,
+			expected:   1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			wg := sync.WaitGroup{}
+			wg.Add(1)
+			cfg := &config.Config{
+				IsForwardOnly:     tt.fwdOnly,
+				FirstReapInterval: time.Second,
+				SendInterval:      time.Microsecond * 5,
+			}
+			a := newTesting(cfg)
+			//Give time to at least send one request
+			ctxTimeout, _ := context2.WithTimeout(a.Context.Ctx, time.Millisecond*10)
+			a.Context.Ctx = ctxTimeout
+
+			//Inventory recording calls
+			snd := &patchSenderCallRecorder{}
+			a.inventories = map[string]*inventory{"test": {sender: snd}}
+
+			go func() {
+				assert.NoError(t, a.Run())
+				wg.Done()
+			}()
+			wg.Wait()
+
+			tt.assertFunc(t, snd.getCalls(), tt.expected)
+		})
+	}
+}
+
 func wait(timeout time.Duration, wg *sync.WaitGroup) error {
 	done := make(chan bool, 0)
 	go func() {
