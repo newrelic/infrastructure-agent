@@ -151,7 +151,6 @@ Provide full CI via GitHub Actions:
   * Window tests & builds
   * Installation tests
   * Fuzz testing
-- Release pipeline
 
 ## Support
 
