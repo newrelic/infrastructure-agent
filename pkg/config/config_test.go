@@ -492,28 +492,28 @@ func (s *ConfigSuite) TestCalculateCmdChannelURL(c *C) {
 	}
 }
 
-func TestLogInfo_Nil(t *testing.T) {
+func TestPublicFields_ReturnsErrorOnNilConfig(t *testing.T) {
 	var config *Config
 
 	_, err := config.PublicFields()
 	assert.Error(t, err)
 }
 
-func TestLogInfo_Empty(t *testing.T) {
+func TestPublicFields_Empty(t *testing.T) {
 	var config Config
 
 	_, err := config.PublicFields()
 	assert.NoError(t, err)
 }
 
-func TestLogInfo_New(t *testing.T) {
+func TestPublicFields_New(t *testing.T) {
 	var config = NewConfig()
 
 	_, err := config.PublicFields()
 	assert.NoError(t, err)
 }
 
-func TestLogInfo_HidePrivate(t *testing.T) {
+func TestPublicFields_HidePrivate(t *testing.T) {
 	var config = NewConfig()
 	config.CollectorURL = "test"
 
@@ -524,7 +524,7 @@ func TestLogInfo_HidePrivate(t *testing.T) {
 	assert.False(t, exists)
 }
 
-func TestLogInfo_Public(t *testing.T) {
+func TestPublicFields_Public(t *testing.T) {
 	var config = NewConfig()
 	config.Proxy = "test"
 
@@ -536,7 +536,20 @@ func TestLogInfo_Public(t *testing.T) {
 	assert.Equal(t, "test", actualVal)
 }
 
-func TestLogInfo_Obfuscate(t *testing.T) {
+func TestPublicFields_DereferencePointers(t *testing.T) {
+	var config = NewConfig()
+	b := true
+	config.EnableProcessMetrics = &b
+
+	actual, err := config.PublicFields()
+	assert.NoError(t, err)
+
+	actualVal, exists := actual["enable_process_metrics"]
+	assert.True(t, exists)
+	assert.Equal(t, "true", actualVal)
+}
+
+func TestPublicFields_Obfuscate(t *testing.T) {
 	var config = NewConfig()
 	config.License = "testabcd"
 
@@ -548,7 +561,7 @@ func TestLogInfo_Obfuscate(t *testing.T) {
 	assert.Equal(t, "<HIDDEN>", actualVal)
 }
 
-func TestConfig_GetYamlAttribute(t *testing.T) {
+func TestConfig_SetBoolValueByYamlAttribute(t *testing.T) {
 	c := &Config{
 		ConnectEnabled: false,
 	}
