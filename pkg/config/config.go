@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -18,6 +17,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"gopkg.in/yaml.v2"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/newrelic/infrastructure-agent/pkg/license"
@@ -1242,6 +1243,10 @@ func (c *Config) PublicFields() (map[string]string, error) {
 		value := fmt.Sprintf("%v", fieldValue.Interface())
 		if public == "obfuscate" {
 			value = helpers.HiddenField
+		}
+
+		if fieldValue.Kind() == reflect.Ptr {
+			value = fmt.Sprintf("%v", fieldValue.Elem())
 		}
 
 		result[configOption] = value
