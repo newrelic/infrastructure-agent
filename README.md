@@ -188,7 +188,7 @@ As noted in our [security policy](../../security/policy), New Relic is committed
 
 If you believe you have found a security vulnerability in this project or any of New Relic's products or websites, we welcome and greatly appreciate you reporting it to New Relic through [HackerOne](https://hackerone.com/newrelic).
 
-If you would like to contribute to this project, review [these guidelines](./CONTRIBUTING.md).
+If you would like to contribute to this project, review [these guidelines](./CONTRIBUTING.md)
 
 To all contributors, we thank you!  Without your contribution, this project would not be what it is today.
 
