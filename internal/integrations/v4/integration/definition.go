@@ -34,6 +34,7 @@ var elog = log.WithComponent("integrations.Definition")
 // Definition is a n `-exec` yaml entry. It will execute the provided command line or array of commands
 type Definition struct {
 	Name            string
+	Source          string // Where the integration comes from, for traceability and logging purposes
 	Labels          map[string]string
 	ExecutorConfig  executor.Config
 	Interval        time.Duration

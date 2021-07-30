@@ -3,6 +3,8 @@
 package runner
 
 import (
+	"fmt"
+
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
@@ -31,7 +33,7 @@ func NewLoadFn(cfg config2.YAML, agentAndCCFeatures *Features) LoadFn {
 		}
 		c = make(FeaturesCache)
 
-		for _, cfgEntry := range cfg.Integrations {
+		for ni, cfgEntry := range cfg.Integrations {
 			var template []byte
 			template, err = integration.LoadConfigTemplate(cfgEntry.TemplatePath, cfgEntry.Config)
 			if err != nil {
@@ -42,6 +44,8 @@ func NewLoadFn(cfg config2.YAML, agentAndCCFeatures *Features) LoadFn {
 			if err != nil {
 				return
 			}
+
+			i.Source = fmt.Sprintf("%s:%d", cfgPath, ni)
 
 			if agentAndCCFeatures == nil {
 				if cfgEntry.When.Feature == "" {
