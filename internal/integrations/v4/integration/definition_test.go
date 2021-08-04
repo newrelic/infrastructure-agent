@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -362,4 +363,28 @@ func TestDefinition_Hash(t *testing.T) {
 	}
 	assert.NotNil(t, def3)
 	assert.Equal(t, def3.Hash(), def2.Hash())
+}
+
+func TestNewDefinition_LowerCasedEnvGetsUppercased(t *testing.T) {
+	const (
+		envA = "an_env_var"
+		envB = "other_env_var"
+		envC = "ANOTHER_ENV_VAR"
+	)
+
+	def, err := NewDefinition(config.ConfigEntry{
+		InstanceName: "foo",
+		Exec:         testhelp.Command(fixtures.BasicCmd),
+		Env: map[string]string{
+			envA: "random-val",
+			envB: "random-val",
+			envC: "random-val",
+		},
+	}, ErrLookup, nil, nil)
+	require.NoError(t, err)
+
+	for _, v := range []string{strings.ToUpper(envA), strings.ToUpper(envB), strings.ToUpper(envC)} {
+		require.Equal(t, "random-val", def.ExecutorConfig.Environment[v])
+	}
+
 }
