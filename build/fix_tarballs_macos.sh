@@ -10,26 +10,31 @@ for tarball_dirty in $(find dist -regex ".*darwin.*_dirty\.\(tar.gz\)");do
   tarball=${tarball_dirty:5:${#tarball_dirty}-(5+13)} # Strips begining and end chars
   tarball="${tarball}.tar.gz"
   tarballTmpPath="dist/tarball_temp"
-  tarballContentPath="${tarballTmpPath}/newrelic-infra"
+  tarballContentPath="${tarballTmpPath}"
+  tarballContentPathBin="${tarballTmpPath}/usr/local/bin/newrelic-infra"
+  tarballContentPathVarDb="${tarballTmpPath}/usr/local/var/db/newrelic-infra"
+  tarballContentPathEtc="${tarballTmpPath}/usr/local/etc/newrelic-infra"
 
-  mkdir -p ${tarballContentPath}/etc/newrelic-infra/integrations.d
-  mkdir -p ${tarballContentPath}/usr/local/bin
-  mkdir -p ${tarballContentPath}/var/{db/newrelic-infra,log/newrelic-infra,run/newrelic-infra}
-  mkdir -p ${tarballContentPath}/var/db/newrelic-infra/{custom-integrations,integrations.d,newrelic-integrations}
+  echo "===> Create ${tarballContentPathBin}/ for binaries & licence"
+  mkdir -p ${tarballContentPath}/newrelic-infra/
+  echo "===> Create ${tarballContentPathEtc}/ for config"
+  mkdir -p ${tarballContentPathEtc}/
+  echo "===> Create ${tarballContentPathVarDb}/ for data & license"
+  mkdir -p ${tarballContentPathVarDb}/
 
   echo "===> Decompress ${tarball} in ${tarballContentPath}"
   tar -xvf ${tarball_dirty} -C ${tarballContentPath}
 
-  echo "===> Move files inside ${tarball}"
-  mv ${tarballContentPath}/newrelic-infra "${tarballContentPath}/usr/local/bin/"
-  mv ${tarballContentPath}/newrelic-infra-service "${tarballContentPath}/usr/local/bin/"
-  mv ${tarballContentPath}/newrelic-infra-ctl "${tarballContentPath}/usr/local/bin/"
+  echo "===> Move executable files inside ${tarball}"
+  mv ${tarballContentPath}/newrelic-infra "${tarballContentPathBin}/"
+  mv ${tarballContentPath}/newrelic-infra-service "${tarballContentPathBin}/"
+  mv ${tarballContentPath}/newrelic-infra-ctl "${tarballContentPathBin}/"
 
-  cp build/package/binaries/linux/config_defaults.sh "${tarballContentPath}/"
-  cp assets/examples/infrastructure/LICENSE.linux.txt "${tarballContentPath}/var/db/newrelic-infra/LICENSE.txt"
+  echo "===> Copy licence ${tarballContentPathVarDb}/LICENSE.macos.txt"
+  cp assets/licence/LICENSE.macos.txt "${tarballContentPathVarDb}/LICENSE.macos.txt"
 
   echo "===> Creating tarball ${TARBALL_CLEAN}"
-  tar -czf dist/${tarball} -C "${tarballContentPath}/../" .
+  tar -czf dist/${tarball} -C "${tarballContentPath}/" .
 
   echo "===> Cleaning dirty tarball ${tarball_dirty}"
   rm ${tarball_dirty}

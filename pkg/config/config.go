@@ -290,6 +290,7 @@ type Config struct {
 
 	// AgentDir is the directory where the agent stores files like cache, inventory, integrations, etc.
 	// Default (Linux): /var/db/newrelic-infra
+	// Default (MacOS): /usr/local/var/db/newrelic-infra/
 	// Default (Windows): C:\Program Files\NewRelic\newrelic-infra
 	// Public: Yes
 	AgentDir string `yaml:"agent_dir" envconfig:"agent_dir"`

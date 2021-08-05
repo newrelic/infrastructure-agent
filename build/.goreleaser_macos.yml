@@ -9,6 +9,8 @@ builds:
       - CGO_ENABLED=1
     goos:
       - darwin
+    goarch:
+      - amd64
     ldflags:
       - -s -w -X main.buildVersion={{.Version}}
       - -s -w -X main.gitCommit={{.Commit}}
@@ -20,6 +22,8 @@ builds:
       - CGO_ENABLED=1
     goos:
       - darwin
+    goarch:
+      - amd64
     ldflags:
       - -s -w -X main.buildVersion={{.Version}}
       - -s -w -X main.gitCommit={{.Commit}}
@@ -31,6 +35,8 @@ builds:
       - CGO_ENABLED=1
     goos:
       - darwin
+    goarch:
+      - amd64
     ldflags:
       - -s -w -X main.buildVersion={{.Version}}
       - -s -w -X main.gitCommit={{.Commit}}
