@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/newrelic/infrastructure-agent/pkg/helpers"
+
 	"github.com/newrelic/infrastructure-agent/pkg/fwrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	"github.com/sirupsen/logrus"
@@ -64,7 +66,8 @@ func (e *VersionAwareEmitter) Emit(definition integration.Definition, extraLabel
 		fields["parent_integration_name"] = definition.CfgProtocol.ParentName
 	}
 
-	elog.WithFields(fields).Debug("Received payload.")
+	envVarsForLogEntry := helpers.ObfuscateSensitiveDataFromMap(definition.ExecutorConfig.Environment)
+	elog.WithField("env", envVarsForLogEntry).WithFields(fields).Debug("Received payload.")
 
 	protocolVersion, err := protocol.VersionFromPayload(integrationJSON, e.forceProtocolV2ToV3)
 	if err != nil {

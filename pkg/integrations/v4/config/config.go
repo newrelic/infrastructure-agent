@@ -5,6 +5,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/shlex"
@@ -109,4 +110,18 @@ func (cf *ConfigEntry) Sanitize() error {
 		cf.Env = map[string]string{}
 	}
 	return nil
+}
+
+// UppercaseEnvVars transforms all lowercase env vars defined in the config to uppercase
+func (cf *ConfigEntry) UppercaseEnvVars() {
+	if cf.Env == nil {
+		return
+	}
+	for k, e := range cf.Env {
+		upperCasedKey := strings.ToUpper(k)
+		if k != upperCasedKey {
+			delete(cf.Env, k)
+		}
+		cf.Env[upperCasedKey] = e
+	}
 }

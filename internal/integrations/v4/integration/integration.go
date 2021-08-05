@@ -63,6 +63,8 @@ func newDefinitionWithoutLookup(ce config2.ConfigEntry, passthroughEnv []string,
 		return Definition{}, err
 	}
 
+	ce.UppercaseEnvVars()
+
 	interval := getInterval(ce.Interval)
 	// Reading this env the integration can know configured interval.
 	ce.Env[intervalEnvVarName] = fmt.Sprintf("%v", interval)
