@@ -29,7 +29,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var hlog = log.WithComponent("HostInfoPlugin")
+var (
+	hlog = log.WithComponent("HostInfoPlugin")
+)
 
 type HostinfoPlugin struct {
 	agent.PluginCommon

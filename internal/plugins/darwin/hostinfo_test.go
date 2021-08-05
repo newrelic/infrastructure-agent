@@ -171,7 +171,7 @@ func TestData(t *testing.T) {
 		AgentVersion:    "mock",
 		AgentName:       "Infrastructure",
 		AgentMode:       "root",
-		OperatingSystem: "darwin",
+		OperatingSystem: "macOS",
 		ProductUuid:     "C3805006-DFCF-11EB-BA80-0242AC130004",
 	}
 

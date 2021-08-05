@@ -16,7 +16,6 @@ import (
 	"github.com/shirou/gopsutil/host"
 	"github.com/sirupsen/logrus"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -114,7 +113,7 @@ func (hip *HostinfoPlugin) gatherHostinfo(context agent.AgentContext) *HostInfoD
 		AgentVersion:    context.Version(),
 		AgentName:       "Infrastructure",
 		AgentMode:       context.Config().RunMode,
-		OperatingSystem: runtime.GOOS,
+		OperatingSystem: "macOS",
 		ProductUuid:     ho.HardwareUUID,
 	}
 

@@ -15,9 +15,9 @@ const (
 func init() {
 	defaultConfigFiles = []string{
 		"newrelic-infra.yml",
-		filepath.Join("/etc", "newrelic-infra.yml"),
-		filepath.Join("/etc", "newrelic-infra", "newrelic-infra.yml"),
+		filepath.Join("/usr", "local", "etc", "newrelic-infra", "newrelic-infra.yml"),
 	}
+	defaultAgentDir = filepath.Join("/usr", "local", "var", "db", "newrelic-infra")
 }
 func runtimeValues() (userMode, agentUser, executablePath string) {
 	return ModeRoot, "", ""
