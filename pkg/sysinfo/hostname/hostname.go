@@ -5,9 +5,7 @@ package hostname
 import (
 	"errors"
 	"fmt"
-	"net"
 	"os"
-	"strings"
 	"sync"
 
 	"github.com/newrelic/infrastructure-agent/pkg/log"
@@ -105,24 +103,6 @@ func newInternalResolver(overrideFull string) *fallbackResolver {
 		full:          fullResolver,
 		overridenFull: overrideFull,
 	}
-}
-
-// Looks up for the Fully Qualified Domain Name
-func getFqdnHostname(osHost string) (string, error) {
-	ips, err := net.LookupIP(osHost)
-	if err != nil {
-		return "", err
-	}
-
-	for _, ip := range ips {
-		hosts, err := net.LookupAddr(ip.String())
-		if err != nil || len(hosts) == 0 {
-			return "", err
-		}
-		trace.Hostname("found FQDN hosts: %s", strings.Join(hosts, ", "))
-		return strings.TrimSuffix(hosts[0], "."), nil
-	}
-	return "", errors.New("can't lookup FQDN")
 }
 
 // Implementation of the HostnameResolver interface that provides fallback capabilities
