@@ -1149,8 +1149,8 @@ nfpms:
     # Priority.
     priority: extra
     # Recommended packages. If they fail to install installation of the agent will not be interrupted.
-    recommends:
-      - td-agent-bit
+#    recommends:
+#      - td-agent-bit
 
 ###############################################################################
 ###############################################################################
@@ -1304,8 +1304,8 @@ nfpms:
       summary: "New Relic Infrastructure Agent"
       group: default
     # Recommended packages. If they fail to install installation of the agent will not be interrupted.
-    recommends:
-      - td-agent-bit
+#    recommends:
+#      - td-agent-bit
 
 ###############################################################################
 ###############################################################################
@@ -1384,8 +1384,8 @@ nfpms:
       summary: "New Relic Infrastructure Agent"
       group: default
     # Recommended packages. If they fail to install installation of the agent will not be interrupted.
-    recommends:
-      - td-agent-bit
+#    recommends:
+#      - td-agent-bit
 
   - id: sle-12.3-infrastructure-agent-arm
     builds:
@@ -1458,8 +1458,8 @@ nfpms:
       summary: "New Relic Infrastructure Agent"
       group: default
     # Recommended packages. If they fail to install installation of the agent will not be interrupted.
-    recommends:
-      - td-agent-bit
+#    recommends:
+#      - td-agent-bit
 
   - id: sle-12.4-infrastructure-agent-arm
     builds:
@@ -1532,8 +1532,8 @@ nfpms:
       summary: "New Relic Infrastructure Agent"
       group: default
     # Recommended packages. If they fail to install installation of the agent will not be interrupted.
-    recommends:
-      - td-agent-bit
+#    recommends:
+#      - td-agent-bit
 
 ###############################################################################
 ###############################################################################
@@ -1612,8 +1612,8 @@ nfpms:
       summary: "New Relic Infrastructure Agent"
       group: default
     # Recommended packages. If they fail to install installation of the agent will not be interrupted.
-    recommends:
-      - td-agent-bit
+#    recommends:
+#      - td-agent-bit
 
 ###############################################################################
 ###############################################################################
@@ -1637,16 +1637,16 @@ nfpms:
       - deb
     bindir: /usr/bin
     contents:
-#      - src: 'assets/examples/logging/linux/file.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
-#      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
-#      - src: 'assets/examples/logging/linux/syslog.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
-#      - src: 'assets/examples/logging/linux/systemd.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
-#      - src: 'assets/examples/logging/linux/tcp.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
+      - src: 'assets/examples/logging/linux/file.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
+      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
+      - src: 'assets/examples/logging/linux/syslog.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
+      - src: 'assets/examples/logging/linux/systemd.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
+      - src: 'assets/examples/logging/linux/tcp.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
       - src: 'build/package/systemd/newrelic-infra.service'
         dst: '/etc/systemd/system/newrelic-infra.service'
       - src: 'LICENSE'
@@ -1659,10 +1659,10 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/arm64/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-#      - src: 'target/fluent-bit-plugin/arm64/out_newrelic.so'
-#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-#      - src: 'assets/examples/logging/parsers.conf'
-#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
+      - src: 'target/fluent-bit-plugin/arm64/out_newrelic.so'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
+      - src: 'assets/examples/logging/parsers.conf'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
     empty_folders:
       - /var/db/newrelic-infra/custom-integrations
       - /var/db/newrelic-infra/integrations.d
@@ -1708,16 +1708,16 @@ nfpms:
       - rpm
     bindir: /usr/bin
     contents:
-#      - src: 'assets/examples/logging/linux/file.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
-#      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
-#      - src: 'assets/examples/logging/linux/syslog.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
-#      - src: 'assets/examples/logging/linux/systemd.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
-#      - src: 'assets/examples/logging/linux/tcp.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
+      - src: 'assets/examples/logging/linux/file.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
+      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
+      - src: 'assets/examples/logging/linux/syslog.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
+      - src: 'assets/examples/logging/linux/systemd.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
+      - src: 'assets/examples/logging/linux/tcp.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
       - src: 'build/package/systemd/newrelic-infra.service'
         dst: '/etc/systemd/system/newrelic-infra.service'
       - src: 'LICENSE'
@@ -1732,10 +1732,10 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/arm64/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-#      - src: 'target/fluent-bit-plugin/arm64/out_newrelic.so'
-#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-#      - src: 'assets/examples/logging/parsers.conf'
-#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
+      - src: 'target/fluent-bit-plugin/arm64/out_newrelic.so'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
+      - src: 'assets/examples/logging/parsers.conf'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
     empty_folders:
       - /var/db/newrelic-infra/custom-integrations
       - /var/db/newrelic-infra/integrations.d
@@ -1764,8 +1764,8 @@ nfpms:
       group: default
     # Required packages. rpm version 4.11.3 does not support weak dependencies
     # disabled until logging packaging is properly handled for arm
-#    dependencies:
-#      - td-agent-bit
+    dependencies:
+      - td-agent-bit
 
   - id: centos-8-infrastructure-agent-arm64
     builds:
@@ -1783,16 +1783,16 @@ nfpms:
       - rpm
     bindir: /usr/bin
     contents:
-#      - src: 'assets/examples/logging/linux/file.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
-#      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
-#      - src: 'assets/examples/logging/linux/syslog.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
-#      - src: 'assets/examples/logging/linux/systemd.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
-#      - src: 'assets/examples/logging/linux/tcp.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
+      - src: 'assets/examples/logging/linux/file.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
+      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
+      - src: 'assets/examples/logging/linux/syslog.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
+      - src: 'assets/examples/logging/linux/systemd.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
+      - src: 'assets/examples/logging/linux/tcp.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
 
       - src: 'build/package/systemd/newrelic-infra.service'
         dst: '/etc/systemd/system/newrelic-infra.service'
@@ -1807,10 +1807,10 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/arm64/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-#      - src: 'target/fluent-bit-plugin/arm64/out_newrelic.so'
-#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-#      - src: 'assets/examples/logging/parsers.conf'
-#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
+      - src: 'target/fluent-bit-plugin/arm64/out_newrelic.so'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
+      - src: 'assets/examples/logging/parsers.conf'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
     empty_folders:
       - /var/db/newrelic-infra/custom-integrations
       - /var/db/newrelic-infra/integrations.d
@@ -2011,16 +2011,16 @@ nfpms:
       - rpm
     bindir: /usr/bin
     contents:
-#      - src: 'assets/examples/logging/linux/file.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
-#      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
-#      - src: 'assets/examples/logging/linux/syslog.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
-#      - src: 'assets/examples/logging/linux/systemd.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
-#      - src: 'assets/examples/logging/linux/tcp.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
+      - src: 'assets/examples/logging/linux/file.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
+      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
+      - src: 'assets/examples/logging/linux/syslog.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
+      - src: 'assets/examples/logging/linux/systemd.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
+      - src: 'assets/examples/logging/linux/tcp.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
 
       - src: 'build/package/systemd/newrelic-infra.service'
         dst: '/etc/systemd/system/newrelic-infra.service'
@@ -2036,10 +2036,10 @@ nfpms:
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/arm64/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-#      - src: 'target/fluent-bit-plugin/arm64/out_newrelic.so'
-#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-#      - src: 'assets/examples/logging/parsers.conf'
-#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
+      - src: 'target/fluent-bit-plugin/arm64/out_newrelic.so'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
+      - src: 'assets/examples/logging/parsers.conf'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
     empty_folders:
       - /var/db/newrelic-infra/custom-integrations
       - /var/db/newrelic-infra/integrations.d
