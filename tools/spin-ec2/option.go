@@ -78,6 +78,6 @@ func printVmInfo(chosenOption option, provisionHostPrefix string, provisionWith 
 	fmt.Printf("Os: %s%s%s\n", colorPurple, chosenOption.os, colorReset)
 	fmt.Printf("Arch: %s%s%s\n", chosenOption.arch.color(), chosenOption.arch, colorReset)
 	fmt.Printf("Prefix: %s%s%s\n", colorCyan, provisionHostPrefix, colorReset)
-	fmt.Printf("Provision with: %s\n", colorizeYellow(provisionWith.toString()))
-	fmt.Printf("\n")
+	fmt.Printf("Provision with: \n - %s", colorizeYellow(provisionWith.toString()))
+	fmt.Printf("\n\n")
 }

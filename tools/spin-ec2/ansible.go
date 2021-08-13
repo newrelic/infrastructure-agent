@@ -5,12 +5,8 @@ import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
-	"os"
-	"os/exec"
-	"path"
 	"sort"
 	"strings"
-	"sync"
 )
 
 type AnsibleGroupVars struct {
@@ -59,56 +55,26 @@ func prepareAnsibleConfig(chosenOptions options, provisionHostPrefix string) {
 	}
 }
 
-func executeAnsible() {
-	fmt.Printf("Executing Ansible\n")
-
-	curPath, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-
-	cmd := exec.Command(
-		"ansible-playbook",
-		"-i", path.Join(curPath, "test/automated/ansible/inventory.local"),
-		"--extra-vars", "@"+path.Join(curPath, inventory),
-		path.Join(curPath, "test/automated/ansible/provision.yml"),
-	)
-
-	fmt.Println("Executing command: " + cmd.String())
-
-	stdoutIn, _ := cmd.StdoutPipe()
-	stderrIn, _ := cmd.StderrPipe()
-
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		copyAndCapture(os.Stdout, stdoutIn)
-
-		wg.Done()
-	}()
-	go func() {
-		copyAndCapture(os.Stderr, stderrIn)
-
-		wg.Done()
-	}()
-
-	err = cmd.Run()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	wg.Wait()
-}
-
 type provisionOption struct {
 	id       int
 	name     string
 	playbook string
+	args     map[string]string
 }
 
 func (o provisionOption) Option() string {
 	optionFormat := "[%d] %s"
 	return fmt.Sprintf(optionFormat, o.id, o.name)
+}
+
+func (o provisionOption) renderArgs() string {
+	var result string
+
+	for key, val := range o.args {
+		result += " -e " + key + "=" + val
+	}
+
+	return strings.TrimSpace(result)
 }
 
 type provisionOptions map[int]provisionOption
@@ -131,7 +97,7 @@ func (o provisionOptions) toString() string {
 	for _, id := range ordered {
 		s = append(s, o[id].name)
 	}
-	return strings.Join(s, ",")
+	return strings.Join(s, "\n - ")
 }
 
 func (o provisionOptions) filter(optionsIds []int) (provisionOptions, error) {
@@ -157,31 +123,37 @@ func newProvisionOptions() provisionOptions {
 	opts[1] = provisionOption{
 		id:       1,
 		name:     "install latest version of agent from PROD",
-		playbook: "",
+		playbook: "test/packaging/ansible/installation-agent-no-clean.yml",
+		args: map[string]string{
+			"repo_endpoint": "https://downloads.newrelic.com/infrastructure_agent",
+		},
 	}
 
 	opts[2] = provisionOption{
 		id:       2,
 		name:     "install latest version of agent from STG",
-		playbook: "",
+		playbook: "test/packaging/ansible/installation-agent-no-clean.yml",
 	}
 
 	opts[3] = provisionOption{
 		id:       3,
 		name:     "package tests from PROD",
-		playbook: "",
+		playbook: "test/packaging/ansible/test.yml",
+		args: map[string]string{
+			"repo_endpoint": "https://downloads.newrelic.com/infrastructure_agent",
+		},
 	}
 
 	opts[4] = provisionOption{
 		id:       4,
 		name:     "package tests from STG",
-		playbook: "",
+		playbook: "test/packaging/ansible/test.yml",
 	}
 
 	opts[5] = provisionOption{
 		id:       5,
 		name:     "harvest tests",
-		playbook: "",
+		playbook: "test/harvest/ansible/test.yml",
 	}
 
 	return opts

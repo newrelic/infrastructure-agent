@@ -4,10 +4,13 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"math/rand"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 func askUser(message string) string {
@@ -85,4 +88,33 @@ func stringToNumbers(input string) ([]int, error) {
 		opts = append(opts, opt)
 	}
 	return opts, nil
+}
+
+func execNameArgs(name string, cmdArgs ...string) {
+	cmd := exec.Command(name, cmdArgs...)
+
+	fmt.Println("Executing command: " + cmd.String())
+
+	stdoutIn, _ := cmd.StdoutPipe()
+	stderrIn, _ := cmd.StderrPipe()
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		copyAndCapture(os.Stdout, stdoutIn)
+
+		wg.Done()
+	}()
+	go func() {
+		copyAndCapture(os.Stderr, stderrIn)
+
+		wg.Done()
+	}()
+
+	err := cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	wg.Wait()
 }

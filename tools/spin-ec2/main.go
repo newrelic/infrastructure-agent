@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"os"
 	"os/user"
+	"path"
 	"time"
 )
 
@@ -76,7 +78,7 @@ func main() {
 
 		chosenProvisionInput := askUser(fmt.Sprintf("Choose an option : [%s] ", colorizeYellow("0")))
 
-		if chosenProvisionInput == ""{
+		if chosenProvisionInput == "" {
 			chosenProvisionInput = "0"
 		}
 
@@ -101,8 +103,7 @@ func main() {
 	}
 	provisionHostPrefix = fmt.Sprintf("%s-%s", u.Username, provisionHostPrefix)
 
-	// confirm
-	fmt.Printf("Chosen AMIs\n")
+	fmt.Printf("Chosen AMIs\n\n")
 	for _, chosenOption := range chosenOptions {
 		printVmInfo(chosenOption, provisionHostPrefix, chosenProvisionOptions)
 	}
@@ -114,6 +115,35 @@ func main() {
 
 	prepareAnsibleConfig(chosenOptions, provisionHostPrefix)
 
-	executeAnsible()
-}
+	curPath, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
 
+	execNameArgs("ansible-playbook",
+		"-i", path.Join(curPath, "test/automated/ansible/inventory.local"),
+		"--extra-vars", "@"+path.Join(curPath, inventory),
+		path.Join(curPath, "test/automated/ansible/provision.yml"))
+
+	if len(chosenProvisionOptions) > 0 {
+
+		for _, chosenOpt := range chosenProvisionOptions {
+
+			if chosenOpt.playbook == "" {
+				continue
+			}
+
+			var arguments []string
+
+			arguments = append(arguments, "-i", path.Join(curPath, "test/automated/ansible/inventory.ec2"))
+
+			if chosenOpt.renderArgs() != "" {
+				arguments = append(arguments, chosenOpt.renderArgs())
+			}
+
+			arguments = append(arguments, path.Join(curPath, chosenOpt.playbook))
+
+			execNameArgs("ansible-playbook", arguments...)
+		}
+	}
+}

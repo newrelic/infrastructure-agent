@@ -28,7 +28,7 @@ func TestProvisionOptionsToString(t *testing.T) {
 		{
 			name:        "multiple options",
 			filter:      []int{0, 3},
-			expected:    "nothing,package tests from PROD",
+			expected:    "nothing\n - package tests from PROD",
 			expectedErr: nil,
 		},
 	}
