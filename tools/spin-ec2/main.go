@@ -5,8 +5,6 @@ import (
 	"log"
 	"math/rand"
 	"os/user"
-	"strconv"
-	"strings"
 	"time"
 )
 
@@ -47,7 +45,7 @@ func main() {
 	var chosenAmiNumbers []int
 	var chosenOptions options
 	for {
-		chosenAmiNumbers, err = getAmiNumbers(askUser(fmt.Sprintf("Enter ',' separated instances numbers (or %s to quit): ", colorizeRed("q"))))
+		chosenAmiNumbers, err = stringToNumbers(askUser(fmt.Sprintf("Enter ',' separated instances numbers (or %s to quit): ", colorizeRed("q"))))
 		if err != nil {
 			fmt.Printf(colorizeRed(err.Error() + ". Please enter valid input\n"))
 			continue
@@ -68,6 +66,35 @@ func main() {
 		provisionHostPrefix = userProvisionHostPrefix
 	}
 
+	fmt.Printf("\nPossible provision options\n")
+
+	provisionOpts := newProvisionOptions()
+	provisionOpts.print()
+
+	var chosenProvisionOptions provisionOptions
+	for {
+
+		chosenProvisionInput := askUser(fmt.Sprintf("Choose an option : [%s] ", colorizeYellow("0")))
+
+		if chosenProvisionInput == ""{
+			chosenProvisionInput = "0"
+		}
+
+		chosenProvisionNumbers, err := stringToNumbers(chosenProvisionInput)
+		if err != nil {
+			fmt.Printf(colorizeRed(err.Error() + ". Please enter valid input\n"))
+			continue
+		}
+
+		chosenProvisionOptions, err = provisionOpts.filter(chosenProvisionNumbers)
+		if err != nil {
+			fmt.Printf(colorizeRed(err.Error() + ". Please enter valid input\n"))
+			continue
+		}
+
+		break
+	}
+
 	u, err := user.Current()
 	if err != nil {
 		log.Fatalf(err.Error())
@@ -77,7 +104,7 @@ func main() {
 	// confirm
 	fmt.Printf("Chosen AMIs\n")
 	for _, chosenOption := range chosenOptions {
-		printVmInfo(chosenOption, provisionHostPrefix)
+		printVmInfo(chosenOption, provisionHostPrefix, chosenProvisionOptions)
 	}
 	confirm := askUser(fmt.Sprintf("Is this right [(%s)es / (%s)o / (%s)uit]: ", colorizeGreen("y"), colorizeYellow("n"), colorizeRed("q")))
 
@@ -90,15 +117,3 @@ func main() {
 	executeAnsible()
 }
 
-func getAmiNumbers(input string) ([]int, error) {
-	var opts []int
-	strOpts := strings.Split(input, ",")
-	for _, strOpt := range strOpts {
-		opt, err := strconv.Atoi(strings.TrimSpace(strOpt))
-		if err != nil {
-			return nil, err
-		}
-		opts = append(opts, opt)
-	}
-	return opts, nil
-}

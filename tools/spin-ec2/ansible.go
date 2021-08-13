@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 	"sync"
 )
 
@@ -98,4 +99,88 @@ func executeAnsible() {
 	}
 
 	wg.Wait()
+}
+
+type provisionOption struct {
+	id int
+	name string
+	playbook string
+}
+
+func (o provisionOption) Option() string {
+	optionFormat := "[%d] %s"
+	return fmt.Sprintf(optionFormat, o.id, o.name)
+}
+
+type provisionOptions map[int]provisionOption
+
+func (o provisionOptions) print(){
+	for i := 0; i < len(o); i++ {
+		fmt.Println(o[i].Option())
+	}
+}
+
+func (o provisionOptions) toString() string{
+
+	var s []string
+
+	for i := 0; i < len(o); i++ {
+		s = append(s, o[i].name)
+	}
+
+	return strings.Join(s, ",")
+
+}
+
+func (o provisionOptions) filter(optionsIds []int) (provisionOptions, error) {
+	filtered := make(provisionOptions)
+	for _, optId := range optionsIds {
+		if opt, ok := o[optId]; ok {
+			filtered[optId] = opt
+		} else {
+			return nil, fmt.Errorf("%v is not a valid option", optId)
+		}
+	}
+	return filtered, nil
+}
+
+func newProvisionOptions() provisionOptions{
+	opts := make(provisionOptions)
+
+	opts[0] = provisionOption{
+		id:       0,
+		name:     "nothing",
+	}
+
+	opts[1] = provisionOption{
+		id:       1,
+		name:     "install latest version of agent from PROD",
+		playbook: "",
+	}
+
+	opts[2] = provisionOption{
+		id:       2,
+		name:     "install latest version of agent from STG",
+		playbook: "",
+	}
+
+	opts[3] = provisionOption{
+		id:       3,
+		name:     "package tests from PROD",
+		playbook: "",
+	}
+
+	opts[4] = provisionOption{
+		id:       4,
+		name:     "package tests from STG",
+		playbook: "",
+	}
+
+	opts[5] = provisionOption{
+		id:       5,
+		name:     "harvest tests",
+		playbook: "",
+	}
+
+	return opts
 }

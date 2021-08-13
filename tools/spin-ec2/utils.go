@@ -6,6 +6,8 @@ import (
 	"io"
 	"math/rand"
 	"os"
+	"strconv"
+	"strings"
 )
 
 func askUser(message string) string {
@@ -70,4 +72,17 @@ func copyAndCapture(w io.Writer, r io.Reader) error {
 			return err
 		}
 	}
+}
+
+func stringToNumbers(input string) ([]int, error) {
+	var opts []int
+	strOpts := strings.Split(input, ",")
+	for _, strOpt := range strOpts {
+		opt, err := strconv.Atoi(strings.TrimSpace(strOpt))
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, opt)
+	}
+	return opts, nil
 }
