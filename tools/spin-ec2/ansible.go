@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"sort"
 	"strings"
 	"sync"
 )
@@ -75,20 +76,18 @@ func executeAnsible() {
 
 	fmt.Println("Executing command: " + cmd.String())
 
-	var errStdout, errStderr error
-
 	stdoutIn, _ := cmd.StdoutPipe()
 	stderrIn, _ := cmd.StderrPipe()
 
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
-		errStdout = copyAndCapture(os.Stdout, stdoutIn)
+		copyAndCapture(os.Stdout, stdoutIn)
 
 		wg.Done()
 	}()
 	go func() {
-		errStderr = copyAndCapture(os.Stderr, stderrIn)
+		copyAndCapture(os.Stderr, stderrIn)
 
 		wg.Done()
 	}()
@@ -102,8 +101,8 @@ func executeAnsible() {
 }
 
 type provisionOption struct {
-	id int
-	name string
+	id       int
+	name     string
 	playbook string
 }
 
@@ -114,22 +113,25 @@ func (o provisionOption) Option() string {
 
 type provisionOptions map[int]provisionOption
 
-func (o provisionOptions) print(){
+func (o provisionOptions) print() {
 	for i := 0; i < len(o); i++ {
 		fmt.Println(o[i].Option())
 	}
 }
 
-func (o provisionOptions) toString() string{
+func (o provisionOptions) toString() string {
+
+	ordered := make([]int, 0)
+	for id := range o {
+		ordered = append(ordered, id)
+	}
+	sort.Ints(ordered)
 
 	var s []string
-
-	for i := 0; i < len(o); i++ {
-		s = append(s, o[i].name)
+	for _, id := range ordered {
+		s = append(s, o[id].name)
 	}
-
 	return strings.Join(s, ",")
-
 }
 
 func (o provisionOptions) filter(optionsIds []int) (provisionOptions, error) {
@@ -144,12 +146,12 @@ func (o provisionOptions) filter(optionsIds []int) (provisionOptions, error) {
 	return filtered, nil
 }
 
-func newProvisionOptions() provisionOptions{
+func newProvisionOptions() provisionOptions {
 	opts := make(provisionOptions)
 
 	opts[0] = provisionOption{
-		id:       0,
-		name:     "nothing",
+		id:   0,
+		name: "nothing",
 	}
 
 	opts[1] = provisionOption{
