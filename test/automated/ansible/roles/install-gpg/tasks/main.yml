@@ -6,6 +6,6 @@
     state: present
     update_cache: yes
   when: inventory_hostname in instances_without_gpg and
-        (ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu')
+    (inventory_hostname is search("debian") or inventory_hostname is search("ubuntu"))
 
 ...
