@@ -100,13 +100,27 @@ func (hip *HostinfoPlugin) gatherHostinfo(context agent.AgentContext) *HostInfoD
 		hlog.WithError(err).Error("error reading kernel release")
 	}
 
+	numberOfProcessors, err := strconv.Atoi(ho.NumberOfProcessors)
+	if err != nil {
+		hlog.WithError(err).Error("error converting number of processors to int")
+	}
+	totalNumberOfCores, err := strconv.Atoi(ho.TotalNumberOfCores)
+	if err != nil {
+		hlog.WithError(err).Error("error converting total number of cores to int")
+	}
+
+	cpuNum := 0
+	if numberOfProcessors > 0 {
+		cpuNum = totalNumberOfCores / numberOfProcessors
+	}
+
 	data := &HostInfoData{
 		System:          "system",
 		Distro:          distro.GetDistro(),
 		KernelVersion:   kernelVersion,
 		HostType:        hip.getHostType(ho),
 		CpuName:         fmt.Sprintf("%s @ %s", ho.ProcessorName, ho.ProcessorSpeed),
-		CpuNum:          ho.NumberOfProcessors,
+		CpuNum:          fmt.Sprintf("%d", cpuNum),
 		TotalCpu:        ho.TotalNumberOfCores,
 		Ram:             ho.Memory,
 		UpSince:         getUpSince(),
