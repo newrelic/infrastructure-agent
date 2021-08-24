@@ -18,9 +18,16 @@ USE_BUILDX			?= false
 DOCKER_PUBLISH		?= false
 
 AGENT_ARCH ?= $(DOCKER_ARCH)
+CGO_ENABLED := "-no-cgo"
+
+ifeq ($(AGENT_ARCH), amd64)
+	CGO_ENABLED := ""
+
+endif
 
 ifeq ($(AGENT_ARCH), arm)
 	AGENT_ARCH := $(AGENT_ARCH)_6
+
 endif
 
 ifeq ($(DOCKER_PUBLISH), true)
@@ -125,9 +132,9 @@ base/get-integrations : embed-integrations
 .PHONY : base/get-infra-agent
 base/get-infra-agent : workspace
 base/get-infra-agent:
-	@(cp $(AGENT_BUILD_TARGET_DIR)/$(GOOS)-newrelic-infra-ctl_$(GOOS)_$(AGENT_ARCH)/* $(PROJECT_WORKSPACE)/)
-	@(cp $(AGENT_BUILD_TARGET_DIR)/$(GOOS)-newrelic-infra-service_$(GOOS)_$(AGENT_ARCH)/* $(PROJECT_WORKSPACE)/)
-	@(cp $(AGENT_BUILD_TARGET_DIR)/$(GOOS)-newrelic-infra_$(GOOS)_$(AGENT_ARCH)/* $(PROJECT_WORKSPACE)/)
+	@(cp $(AGENT_BUILD_TARGET_DIR)/$(GOOS)-newrelic-infra-ctl$(CGO_ENABLED)_$(GOOS)_$(AGENT_ARCH)/* $(PROJECT_WORKSPACE)/)
+	@(cp $(AGENT_BUILD_TARGET_DIR)/$(GOOS)-newrelic-infra-service$(CGO_ENABLED)_$(GOOS)_$(AGENT_ARCH)/* $(PROJECT_WORKSPACE)/)
+	@(cp $(AGENT_BUILD_TARGET_DIR)/$(GOOS)-newrelic-infra$(CGO_ENABLED)_$(GOOS)_$(AGENT_ARCH)/* $(PROJECT_WORKSPACE)/)
 
 .PHONY : build/base
 build/base : workspace/assets
