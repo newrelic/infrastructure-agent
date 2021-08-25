@@ -18,16 +18,20 @@
 
       block:
 
-        - name: repo setup
+        - name: Repo Setup
           include_role:
             name: repo-setup
 
-        - name: install agent
+        - name: Setup config
           include_role:
-            name: agent-install-pinned
+            name: setup-config
 
-        - name: Assert root
+        - name: Package install
           include_role:
-            name: assert-agent-user
+            name: package-install-pinned
+
+        - name: Assert service
+          include_role:
+            name: assert-service
 
 ...
