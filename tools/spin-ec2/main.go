@@ -36,7 +36,7 @@ var (
 )
 
 func main() {
-	interactive := len(os.Args) == 0
+	interactive := len(os.Args) == 1
 
 	if interactive {
 		interactiveMode()
