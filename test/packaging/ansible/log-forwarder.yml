@@ -1,6 +1,6 @@
 ---
 
-- hosts: amd64
+- hosts: testing_hosts
   become: true
   gather_facts: yes
 
@@ -16,14 +16,36 @@
 
       block:
 
+        - name: repo setup
+          include_role:
+            name: repo-setup
+          when: inventory_hostname is search("ubuntu") or
+                inventory_hostname is search("centos") or
+                inventory_hostname is search("redhat")
+
+        - name: setup config
+          include_role:
+            name: setup-config
+          vars:
+            verbose_level: '3'
+          when: inventory_hostname is search("ubuntu") or
+            inventory_hostname is search("centos") or
+            inventory_hostname is search("redhat")
+
         - name: install agent
           include_role:
             name: agent-install
+          when: inventory_hostname is search("ubuntu") or
+            inventory_hostname is search("centos") or
+            inventory_hostname is search("redhat")
 
         # Not available for ARM yet
         - name: Log forwarder
           include_role:
             name: logging
+          when: inventory_hostname is search("ubuntu") or
+            inventory_hostname is search("centos") or
+            inventory_hostname is search("redhat")
 
       always:
         - name: Final cleanup # Only required for shared infra.
