@@ -32,12 +32,13 @@ type Service struct {
 	daemon       daemon
 }
 
-func New(exitCodeC chan int, arg ...string) (service.Service, error) {
+func New(arg ...string) (service.Service, error) {
 	svc := &Service{
 		daemon: daemon{
-			args:      arg,
-			exitCodeC: exitCodeC,
-			exited:    new(atomBool),
+			args:          arg,
+			exitCodeC:     make(chan int, 1),
+			exited:        new(atomBool),
+			stopRequested: new(atomBool),
 		},
 	}
 
@@ -49,11 +50,12 @@ func New(exitCodeC chan int, arg ...string) (service.Service, error) {
 }
 
 type daemon struct {
-	sync.Mutex // daemon can be accessed from different routines.
-	args       []string
-	cmd        *exec.Cmd
-	exitCodeC  chan int // exit status handed off to the service for its own exit
-	exited     *atomBool
+	sync.Mutex    // daemon can be accessed from different routines.
+	args          []string
+	cmd           *exec.Cmd
+	exitCodeC     chan int // exit status handed off to the service for its own exit
+	exited        *atomBool
+	stopRequested *atomBool
 }
 
 type atomBool struct {
@@ -69,10 +71,7 @@ func (b *atomBool) Set(value bool) {
 }
 
 func (b *atomBool) Get() bool {
-	if atomic.LoadInt32(&(b.flag)) != 0 {
-		return true
-	}
-	return false
+	return atomic.LoadInt32(&(b.flag)) != 0
 }
 
 // GetCommandPath returns the absolute path of the agent binary that should be run.
@@ -107,24 +106,28 @@ func WaitForExitOrTimeout(exitCode <-chan int) error {
 	}
 }
 
+// There are 2 scenarios in how the child process can exit:
+// 1. OS requested service stop
+// 2. child process decided to exit on it's own.
+// In the second scenario, there's no other way to make interface.Run to stop
+// we have to call os.Exit.
 func (d *daemon) exitWithChildStatus(s service.Service, exitCode int) {
 	log.WithField("exit_code", exitCode).
 		Info("child process exited")
-	var err error
-	var st service.Status
-	if st, err = s.Status(); err == nil && st == service.StatusRunning {
-		d.exited.Set(true)
+
+	d.exited.Set(true)
+
+	// OS requested service stop.
+	if d.stopRequested.Get() {
 		d.exitCodeC <- exitCode
-		log.Debug("signaling service stop...")
-		// TODO: investigate this, seems that stopping the service will affect
-		// the service recovery policy on both Windows / Linux
-		//s.Stop()
+	} else { // child process decided to exit on it's own.
+
+		// If newrelic-infra-service was not started manually from cmd line (interactive mode).
+		if !service.Interactive() && exitCode == 0 {
+			s.Stop()
+			return
+		}
+		// In case of error we have to call os.Exit and rely on os service recovery policy.
+		os.Exit(exitCode)
 	}
-	if st != service.StatusUnknown {
-		log.WithError(err).Debug("retrieving service status")
-	}
-	// interface.Stop cannot be called as service is not running
-	// and there's no other way to make interface.Run to stop.
-	// Case for foreground execution, AKA interactive mode.
-	os.Exit(exitCode)
 }

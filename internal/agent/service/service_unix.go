@@ -32,6 +32,11 @@ func (svc *Service) Stop(_ service.Service) (err error) {
 
 	log.Info("Service is stopping. waiting for agent process to terminate...")
 
+	svc.daemon.Lock()
+	defer svc.daemon.Unlock()
+
+	svc.daemon.stopRequested.Set(true)
+
 	err = svc.daemon.cmd.Process.Signal(signals.GracefulStop)
 	if err != nil {
 		log.WithError(err).Debug("Failed to send graceful stop signal to process.")
@@ -48,9 +53,11 @@ func (svc *Service) Shutdown(_ service.Service) (err error) {
 
 func (d *daemon) run(s service.Service) {
 	for {
+		d.Lock()
 		d.cmd = exec.Command(GetCommandPath(d.args[0]), d.args[1:]...)
 		d.cmd.Stdout = os.Stdout
 		d.cmd.Stderr = os.Stderr
+		d.Unlock()
 
 		exitCode := api.CheckExitCode(d.cmd.Run())
 
@@ -60,6 +67,7 @@ func (d *daemon) run(s service.Service) {
 			continue
 		default:
 			d.exitWithChildStatus(s, exitCode)
+			return
 		}
 	}
 }
