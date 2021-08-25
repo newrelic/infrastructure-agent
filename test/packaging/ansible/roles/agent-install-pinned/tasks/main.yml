@@ -1,0 +1,15 @@
+- name: Setup config
+  include_role:
+    name: setup-config
+
+- name: Package install
+  include_role:
+    name: package-install-pinned
+
+- name: Assert service
+  include_role:
+    name: assert-service
+
+- name: assert embedded integrations architecture
+  include_role:
+    name: embedded-integrations-architecture
