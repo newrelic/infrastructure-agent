@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -37,10 +36,9 @@ var (
 )
 
 func main() {
-	interactive := flag.Bool("i", true, "run the CLI in interactive mode")
-	flag.Parse()
+	interactive := len(os.Args) == 0
 
-	if *interactive {
+	if interactive {
 		interactiveMode()
 		return
 	}
