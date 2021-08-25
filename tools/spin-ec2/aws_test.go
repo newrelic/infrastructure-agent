@@ -16,15 +16,15 @@ func TestDetectVersions_Valid(t *testing.T) {
 	}
 
 	expected := []string{
+		"v1.2.3",
 		"v0.1.3",
 		"v1.1.3",
-		"v1.2.3",
 	}
 
 	actual, err := detectVersions(instances)
 	assert.NoError(t, err)
 
-	assert.Equal(t, expected, actual)
+	assert.ElementsMatch(t, expected, actual)
 }
 
 func TestDetectVersions_Invalid(t *testing.T) {
@@ -42,9 +42,9 @@ func TestDetectVersions_Invalid(t *testing.T) {
 
 func TestGetVersionsToRemove(t *testing.T) {
 	actual := getVersionsToRemove([]string{
-		"v1.1.1",
-		"v2.2.2",
 		"v3.3.3",
+		"v2.2.2",
+		"v1.1.1",
 	})
 
 	expected := []string{

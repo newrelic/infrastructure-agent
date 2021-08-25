@@ -116,6 +116,8 @@ func getInstancesToPrune(instances map[string]string) ([]string, error) {
 
 // getVersionsToRemove keeps the latest 2 version of infra agent.
 func getVersionsToRemove(versions []string) []string {
+	semver.Sort(versions)
+
 	if len(versions) > 2 {
 		return versions[:len(versions)-2]
 	}
@@ -141,7 +143,6 @@ func detectVersions(instances map[string]string) ([]string, error) {
 			versions = append(versions, version)
 		}
 	}
-	semver.Sort(versions)
 
 	return versions, nil
 }
