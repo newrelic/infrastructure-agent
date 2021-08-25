@@ -35,7 +35,7 @@ func TestContexHolder_Timeout(t *testing.T) {
 }
 
 func TestContextHolder_Heartbeat(t *testing.T) {
-	const lifeTime = 50 * time.Millisecond
+	const lifeTime = 100 * time.Millisecond
 	const extendUntil = 200 * time.Millisecond
 	start := time.Now()
 

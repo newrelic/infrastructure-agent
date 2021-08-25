@@ -24,10 +24,15 @@ func (svc *Service) Start(s service.Service) (err error) {
 // - if we start and stop the service immediately, the agent may not stop properly
 //   and so we have to kill it forcefully
 func (svc *Service) Stop(s service.Service) (err error) {
+	if svc.daemon.exited.Get() {
+		return nil
+	}
 	log.Info("service is stopping. notifying agent process.")
 
 	svc.daemon.Lock()
 	defer svc.daemon.Unlock()
+
+	svc.daemon.stopRequested.Set(true)
 
 	// notify the agent to gracefully stop
 	windows.PostNotificationMessage(windows.GetPipeName(svcName), ipc.Stop)
@@ -40,10 +45,15 @@ func (svc *Service) Stop(s service.Service) (err error) {
 // - if we start the service and shutdown the host immediately, the agent may not stop properly
 //   and so we have to kill it forcefully
 func (svc *Service) Shutdown(s service.Service) (err error) {
+	if svc.daemon.exited.Get() {
+		return nil
+	}
 	log.Debug("host is shutting down. notifying agent process.")
 
 	svc.daemon.Lock()
 	defer svc.daemon.Unlock()
+
+	svc.daemon.stopRequested.Set(true)
 
 	// notify the agent to update the shutdown status and then stop gracefully
 	windows.PostNotificationMessage(windows.GetPipeName(svcName), ipc.Shutdown)
@@ -68,6 +78,7 @@ func (d *daemon) run(s service.Service) {
 			continue
 		default:
 			d.exitWithChildStatus(s, exitCode)
+			return
 		}
 	}
 }
