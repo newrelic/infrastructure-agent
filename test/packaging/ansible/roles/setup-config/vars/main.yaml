@@ -2,7 +2,7 @@
 
 # agent config:
 display_name: "{{ inventory_hostname }}"
-verbose: '0'
+verbose: '{{ verbose_level }}'
 staging: 'true'
 # custom attributes:
 nr_environment: 'development'

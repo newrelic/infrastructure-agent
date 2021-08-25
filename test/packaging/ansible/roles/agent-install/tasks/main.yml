@@ -1,7 +1,3 @@
-- name: Setup config
-  include_role:
-    name: setup-config
-
 - name: Package install
   include_role:
     name: package-install

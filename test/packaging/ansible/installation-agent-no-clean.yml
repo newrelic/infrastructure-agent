@@ -1,4 +1,5 @@
 ---
+# this is not a test, should be moved away from this folder later
 
 - hosts: testing_hosts
   become: true
@@ -12,8 +13,8 @@
   tasks:
     - name: Installation tests suite
       vars:
+        agent_user: root
         env_vars:
-        target_agent_version: "1.18.0" # minimum version supporting ARM.
 
       block:
 
@@ -21,7 +22,7 @@
           include_role:
             name: repo-setup
 
-        - name: Setup config
+        - name: setup config
           include_role:
             name: setup-config
           vars:
@@ -29,15 +30,10 @@
 
         - name: install agent
           include_role:
-            name: package-install-pinned
+            name: agent-install
 
-        - name: Assert version
+        - name: Assert root
           include_role:
-            name: assert-version
-
-      always:
-        - name: Final cleanup # Only required for shared infra.
-          include_role:
-            name: cleanup
+            name: assert-agent-user
 
 ...
