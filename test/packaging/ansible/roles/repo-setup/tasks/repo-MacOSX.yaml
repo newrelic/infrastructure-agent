@@ -1,0 +1,11 @@
+---
+
+- name: Copy latest brew formula
+  template:
+    src: ../files/newrelic-infra-agent.rb
+    dest: /Users/ec2-user/newrelic-infra-agent.rb
+    owner: ec2-user
+    group: wheel
+    mode: 0644
+
+...

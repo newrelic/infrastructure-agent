@@ -49,17 +49,18 @@ func prepareAnsibleConfig(chosenOptions options, provisionHostPrefix string) {
 	if err != nil {
 		panic(err)
 	}
-	err = ioutil.WriteFile(inventory, newConfigByte, 0644)
+	err = ioutil.WriteFile(inventoryForCreation, newConfigByte, 0644)
 	if err != nil {
 		panic(err)
 	}
 }
 
 type provisionOption struct {
-	id       int
-	name     string
-	playbook string
-	args     map[string]string
+	id                 int
+	name               string
+	playbook           string
+	args               map[string]string
+	licenseKeyRequired bool
 }
 
 func (o provisionOption) Option() string {
@@ -137,12 +138,14 @@ func newProvisionOptions() provisionOptions {
 		args: map[string]string{
 			"repo_endpoint": "https://downloads.newrelic.com/infrastructure_agent",
 		},
+		licenseKeyRequired: true,
 	}
 
 	opts[OptionInstallLatestStaging] = provisionOption{
-		id:       2,
-		name:     "install latest version of agent from STG",
-		playbook: "test/packaging/ansible/installation-agent-no-clean.yml",
+		id:                 2,
+		name:               "install latest version of agent from STG",
+		playbook:           "test/packaging/ansible/installation-agent-no-clean.yml",
+		licenseKeyRequired: true,
 	}
 
 	opts[OptionTestsProd] = provisionOption{
@@ -152,12 +155,14 @@ func newProvisionOptions() provisionOptions {
 		args: map[string]string{
 			"repo_endpoint": "https://downloads.newrelic.com/infrastructure_agent",
 		},
+		licenseKeyRequired: true,
 	}
 
 	opts[OptionTestsStaging] = provisionOption{
-		id:       4,
-		name:     "package tests from STG",
-		playbook: "test/packaging/ansible/test.yml",
+		id:                 4,
+		name:               "package tests from STG",
+		playbook:           "test/packaging/ansible/test.yml",
+		licenseKeyRequired: true,
 	}
 
 	opts[OptionHarvestTests] = provisionOption{
@@ -167,9 +172,10 @@ func newProvisionOptions() provisionOptions {
 	}
 
 	opts[OptionInstallVersionStaging] = provisionOption{
-		id:       6,
-		name:     "install given version of agent from STG",
-		playbook: "test/packaging/ansible/installation-agent-pinned-no-clean.yml",
+		id:                 6,
+		name:               "install given version of agent from STG",
+		playbook:           "test/packaging/ansible/installation-agent-pinned-no-clean.yml",
+		licenseKeyRequired: true,
 	}
 
 	return opts

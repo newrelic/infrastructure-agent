@@ -22,6 +22,12 @@
           include_role:
             name: repo-setup
 
+        - name: setup config
+          include_role:
+            name: setup-config
+          vars:
+            verbose_level: '0'
+
         - name: install agent
           include_role:
             name: agent-install
@@ -29,5 +35,6 @@
         - name: Assert root
           include_role:
             name: assert-agent-user
+          when: ansible_system != "Darwin"
 
 ...

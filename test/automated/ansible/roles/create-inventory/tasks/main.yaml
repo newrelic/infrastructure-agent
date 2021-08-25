@@ -1,0 +1,15 @@
+---
+
+
+- debug:
+    var: instances_current.results
+
+- debug:
+    var: instances_previous.results
+
+- name: create inventory
+  template:
+    src: "{{ output_inventory }}.j2"
+    dest: "{{ output_inventory }}"
+
+...
