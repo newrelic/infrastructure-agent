@@ -52,7 +52,7 @@ func Test_runner_Run(t *testing.T) {
 	e := &testemit.RecordEmitter{}
 	r := NewRunner(def, e, nil, nil, cmdrequest.NoopHandleFn, configrequest.NoopHandleFn, nil)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 
 	r.Run(ctx, nil, nil)

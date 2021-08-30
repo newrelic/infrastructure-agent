@@ -112,15 +112,25 @@ func (o provisionOptions) filter(optionsIds []int) (provisionOptions, error) {
 	return filtered, nil
 }
 
+const (
+	OptionNothing = iota
+	OptionInstallLatestProd
+	OptionInstallLatestStaging
+	OptionTestsProd
+	OptionTestsStaging
+	OptionHarvestTests
+	OptionInstallVersionStaging
+)
+
 func newProvisionOptions() provisionOptions {
 	opts := make(provisionOptions)
 
-	opts[0] = provisionOption{
+	opts[OptionNothing] = provisionOption{
 		id:   0,
 		name: "nothing",
 	}
 
-	opts[1] = provisionOption{
+	opts[OptionInstallLatestProd] = provisionOption{
 		id:       1,
 		name:     "install latest version of agent from PROD",
 		playbook: "test/packaging/ansible/installation-agent-no-clean.yml",
@@ -129,13 +139,13 @@ func newProvisionOptions() provisionOptions {
 		},
 	}
 
-	opts[2] = provisionOption{
+	opts[OptionInstallLatestStaging] = provisionOption{
 		id:       2,
 		name:     "install latest version of agent from STG",
 		playbook: "test/packaging/ansible/installation-agent-no-clean.yml",
 	}
 
-	opts[3] = provisionOption{
+	opts[OptionTestsProd] = provisionOption{
 		id:       3,
 		name:     "package tests from PROD",
 		playbook: "test/packaging/ansible/test.yml",
@@ -144,16 +154,22 @@ func newProvisionOptions() provisionOptions {
 		},
 	}
 
-	opts[4] = provisionOption{
+	opts[OptionTestsStaging] = provisionOption{
 		id:       4,
 		name:     "package tests from STG",
 		playbook: "test/packaging/ansible/test.yml",
 	}
 
-	opts[5] = provisionOption{
+	opts[OptionHarvestTests] = provisionOption{
 		id:       5,
 		name:     "harvest tests",
 		playbook: "test/harvest/ansible/test.yml",
+	}
+
+	opts[OptionInstallVersionStaging] = provisionOption{
+		id:       6,
+		name:     "install given version of agent from STG",
+		playbook: "test/packaging/ansible/installation-agent-pinned-no-clean.yml",
 	}
 
 	return opts

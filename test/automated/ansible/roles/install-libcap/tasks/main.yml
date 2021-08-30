@@ -1,15 +1,21 @@
 ---
 
-- name: 'install libcap2'
-  ansible.builtin.package:
-    name: libcap
-    state: present
-  when: "inventory_hostname in instances_requiring_libcap"
-
 - name: 'install libcap-progs'
-  ansible.builtin.package:
-    name: libcap2
+  community.general.zypper:
+    name: libcap-progs
     state: present
-  when: "inventory_hostname in instances_requiring_libcap2"
+    update_cache: yes
+  when: inventory_hostname in instances_requiring_libcap_progs and
+    (inventory_hostname is search("sles"))
+
+- name: 'install libcap2'
+  apt:
+    name:
+      - libcap2
+      - libcap2-bin
+    state: present
+    update_cache: yes
+  when: inventory_hostname in instances_requiring_libcap2 and
+    (inventory_hostname is match("debian-stretch"))
 
 ...

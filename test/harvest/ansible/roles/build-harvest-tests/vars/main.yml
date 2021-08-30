@@ -3,12 +3,12 @@
 agent_root_dir: ""
 default_binary_name: "harvest.test"
 os_arch_binary_name_tpl: "harvest_%GOOS%_%GOARCH%.test"
-goos:
-  - "linux"
-  - "darwin"
-goarch:
-  - "amd64"
-  - "arm"
-  - "arm64"
+goos_arch:
+  linux:
+    - "amd64"
+    - "arm"
+    - "arm64"
+  darwin:
+    - "amd64"
 
 ...

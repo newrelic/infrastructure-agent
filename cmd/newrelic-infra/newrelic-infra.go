@@ -62,6 +62,7 @@ import (
 
 var (
 	configFile   string
+	validate     bool
 	showVersion  bool
 	debug        bool
 	cpuprofile   string
@@ -79,6 +80,7 @@ func elapsedTime() time.Duration {
 
 func init() {
 	flag.StringVar(&configFile, "config", "", "Overrides default configuration file")
+	flag.BoolVar(&validate, "validate", false, "Validate agent config and exit")
 	flag.BoolVar(&showVersion, "version", false, "Shows version details")
 	flag.BoolVar(&debug, "debug", false, "Enables agent debugging functionality")
 	flag.StringVar(&cpuprofile, "cpuprofile", "", "Writes cpu profile to `file`")
@@ -127,6 +129,16 @@ func main() {
 	timedLog.Debug("Loading configuration.")
 
 	cfg, err := config.LoadConfig(configFile)
+
+	if validate {
+		if err != nil {
+			alog.Info(fmt.Sprintf("config validation failed with error: %s", err.Error()))
+			os.Exit(0)
+		}
+		alog.Info("config validation finished without errors")
+		os.Exit(0)
+	}
+
 	if err != nil {
 		alog.WithError(err).Error("can't load configuration file")
 		os.Exit(1)
