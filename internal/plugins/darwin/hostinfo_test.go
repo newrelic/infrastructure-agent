@@ -164,7 +164,7 @@ func TestData(t *testing.T) {
 		KernelVersion:   "20.3.0",
 		HostType:        "MacBook Pro MacBookPro15,1",
 		CpuName:         "6-Core Intel Core i7 @ 2.6 GHz",
-		CpuNum:          "1",
+		CpuNum:          "6",
 		TotalCpu:        "6",
 		Ram:             "16777216 kB",
 		UpSince:         "2021-07-01 09:59:30",

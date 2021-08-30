@@ -5,6 +5,8 @@ package contexts
 
 import (
 	"context"
+	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"sync"
 	"time"
 )
@@ -32,7 +34,10 @@ func WithHeartBeat(parent context.Context, lifeTime time.Duration) (context.Cont
 	ctx := heartBeatCtx{lifeTime: lifeTime}
 	actuator := Actuator{HeartBeat: ctx.heartBeat}
 	ctx.Context, actuator.Cancel = context.WithCancel(parent)
-	ctx.timer = time.AfterFunc(lifeTime, actuator.Cancel)
+	ctx.timer = time.AfterFunc(lifeTime, func() {
+		log.Debug(fmt.Sprintf("HeartBeat timeout exceeded after %d", lifeTime))
+		actuator.Cancel()
+	})
 	return &ctx, actuator
 }
 

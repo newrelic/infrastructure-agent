@@ -9,7 +9,7 @@ builds:
     main: ./cmd/newrelic-infra
     binary: newrelic-infra
     env:
-      - CGO_ENABLED=0
+      - CGO_ENABLED=1
     goos:
       - linux
     ldflags:
@@ -22,7 +22,7 @@ builds:
     main: ./cmd/newrelic-infra-ctl
     binary: newrelic-infra-ctl
     env:
-      - CGO_ENABLED=0
+      - CGO_ENABLED=1
     goos:
       - linux
     ldflags:
@@ -35,7 +35,7 @@ builds:
     main: ./cmd/newrelic-infra-service
     binary: newrelic-infra-service
     env:
-      - CGO_ENABLED=0
+      - CGO_ENABLED=1
     goos:
       - linux
     ldflags:
@@ -133,7 +133,7 @@ builds:
     main: ./cmd/newrelic-infra
     binary: newrelic-infra
     env:
-      - CGO_ENABLED=0
+      - CGO_ENABLED=1
     goos:
       - linux
     ldflags:
@@ -141,9 +141,56 @@ builds:
       - -s -w -X main.gitCommit={{.Commit}}
     goarch:
       - amd64
+    gomips:
+      - hardfloat
+
+  - id: linux-newrelic-infra-ctl
+    main: ./cmd/newrelic-infra-ctl
+    binary: newrelic-infra-ctl
+    env:
+      - CGO_ENABLED=1
+    goos:
+      - linux
+    ldflags:
+      - -s -w -X main.buildVersion={{.Version}}
+      - -s -w -X main.gitCommit={{.Commit}}
+    goarch:
+      - amd64
+    gomips:
+      - hardfloat
+
+  - id: linux-newrelic-infra-service
+    main: ./cmd/newrelic-infra-service
+    binary: newrelic-infra-service
+    env:
+      - CGO_ENABLED=1
+    goos:
+      - linux
+    ldflags:
+      - -s -w -X main.buildVersion={{.Version}}
+      - -s -w -X main.gitCommit={{.Commit}}
+    goarch:
+      - amd64
+    gomips:
+      - hardfloat
+
+  ###
+  ###  architectures where CGO is not supported
+  ###
+  - id: linux-newrelic-infra-no-cgo
+    main: ./cmd/newrelic-infra
+    binary: newrelic-infra
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    ldflags:
+      - -s -w -X main.buildVersion={{.Version}}
+      - -s -w -X main.gitCommit={{.Commit}}
+    goarch:
+      - 386
       - arm
       - arm64
-      - 386
       - mips
       - mips64
       - mipsle
@@ -153,7 +200,7 @@ builds:
     gomips:
       - hardfloat
 
-  - id: linux-newrelic-infra-ctl
+  - id: linux-newrelic-infra-ctl-no-cgo
     main: ./cmd/newrelic-infra-ctl
     binary: newrelic-infra-ctl
     env:
@@ -164,10 +211,9 @@ builds:
       - -s -w -X main.buildVersion={{.Version}}
       - -s -w -X main.gitCommit={{.Commit}}
     goarch:
-      - amd64
+      - 386
       - arm
       - arm64
-      - 386
       - mips
       - mips64
       - mipsle
@@ -177,7 +223,7 @@ builds:
     gomips:
       - hardfloat
 
-  - id: linux-newrelic-infra-service
+  - id: linux-newrelic-infra-service-no-cgo
     main: ./cmd/newrelic-infra-service
     binary: newrelic-infra-service
     env:
@@ -188,10 +234,9 @@ builds:
       - -s -w -X main.buildVersion={{.Version}}
       - -s -w -X main.gitCommit={{.Commit}}
     goarch:
-      - amd64
+      - 386
       - arm
       - arm64
-      - 386
       - mips
       - mips64
       - mipsle
@@ -207,6 +252,16 @@ archives:
       - linux-newrelic-infra
       - linux-newrelic-infra-ctl
       - linux-newrelic-infra-service
+    name_template: "newrelic-infra_{{.Os}}_{{ .Env.TAG }}_{{ .Arch }}_dirty"
+    wrap_in_directory: false
+    format: tar.gz
+    files:
+      - none*
+  - id: linux-tarball-infrastructure-agent-no-cgo
+    builds:
+      - linux-newrelic-infra-no-cgo
+      - linux-newrelic-infra-ctl-no-cgo
+      - linux-newrelic-infra-service-no-cgo
     name_template: "newrelic-infra_{{.Os}}_{{ .Env.TAG }}_{{ .Arch }}_dirty"
     wrap_in_directory: false
     format: tar.gz
