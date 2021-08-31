@@ -1,0 +1,29 @@
+- name: Brew update
+  become: false
+  command: /usr/local/bin/brew update
+
+- name: Stop launchctl service
+  command: /usr/local/bin/brew services stop newrelic-infra-agent
+
+- name: Agent uninstall
+  become: false
+  command: /usr/local/bin/brew uninstall --force newrelic-infra-agent
+  ignore_errors: yes
+
+- name: cleanup | Remove files
+  command: rm -rf /usr/local/Cellar/newrelic-infra-agent
+
+- name: cleanup | Install agent to fix permissions
+  become: false
+  command: /usr/local/bin/brew reinstall newrelic-infra-agent
+
+- name: cleanup | Uninstall agent
+  become: false
+  command: /usr/local/bin/brew uninstall newrelic-infra-agent
+
+- name: Install agent
+  become: false
+  command: /usr/local/bin/brew reinstall --formula --build-from-source newrelic-infra-agent
+
+- name: Start launchctl service
+  command: /usr/local/bin/brew services start newrelic-infra-agent

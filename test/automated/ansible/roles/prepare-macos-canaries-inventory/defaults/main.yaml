@@ -1,0 +1,6 @@
+---
+
+username: ec2-user
+python_interpreter: /usr/local/bin/python3
+
+...

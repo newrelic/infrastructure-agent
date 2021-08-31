@@ -1,0 +1,5 @@
+---
+
+- include: "agent-restart-{{ ansible_system }}.yaml"
+
+...
