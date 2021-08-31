@@ -8,3 +8,9 @@
     - name: provision ec2 instances
       include_role:
         name: provision-ec2
+
+    - name: create inventory
+      include_role:
+        vars:
+          output_inventory: "inventory.ec2"
+        name: create-inventory

@@ -77,9 +77,4 @@
 
 - debug:
     var: instances_for_inventory_arm64
-
-- name: create inventory
-  template:
-    src: inventory.ec2.j2
-    dest: "{{ output_inventory }}"
 ...
