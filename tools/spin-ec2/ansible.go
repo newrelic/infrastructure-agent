@@ -49,7 +49,7 @@ func prepareAnsibleConfig(chosenOptions options, provisionHostPrefix string) {
 	if err != nil {
 		panic(err)
 	}
-	err = ioutil.WriteFile(inventory, newConfigByte, 0644)
+	err = ioutil.WriteFile(inventoryForCreation, newConfigByte, 0644)
 	if err != nil {
 		panic(err)
 	}

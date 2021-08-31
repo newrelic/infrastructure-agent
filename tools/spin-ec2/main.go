@@ -15,11 +15,14 @@ import (
 )
 
 const (
-	instancesFile = "test/automated/ansible/group_vars/localhost/main.yml"
-	inventory     = "test/automated/ansible/custom-instances.yml"
-	colorArm64    = "\033[32m"
-	colorAmd64    = "\033[34m"
-	colorReset    = "\033[0m"
+	instancesFile        = "test/automated/ansible/group_vars/localhost/main.yml"
+	inventoryForCreation = "test/automated/ansible/custom-instances.yml"
+	inventoryLocal       = "test/automated/ansible/inventory.local"
+	inventoryLinux       = "test/automated/ansible/inventory.ec2"
+	inventoryMacos       = "test/automated/ansible/inventory.macos.ec2"
+	colorArm64           = "\033[32m"
+	colorAmd64           = "\033[34m"
+	colorReset           = "\033[0m"
 
 	colorRed    = "\033[31m"
 	colorGreen  = "\033[32m"
@@ -139,8 +142,8 @@ func interactiveMode() {
 	}
 
 	execNameArgs("ansible-playbook",
-		"-i", path.Join(curPath, "test/automated/ansible/inventory.local"),
-		"--extra-vars", "@"+path.Join(curPath, inventory),
+		"-i", path.Join(curPath, inventoryLocal),
+		"--extra-vars", "@"+path.Join(curPath, inventoryForCreation),
 		path.Join(curPath, "test/automated/ansible/provision.yml"))
 
 	if len(chosenProvisionOptions) > 0 {
@@ -153,7 +156,7 @@ func interactiveMode() {
 
 			var arguments []string
 
-			arguments = append(arguments, "-i", path.Join(curPath, "test/automated/ansible/inventory.ec2"))
+			arguments = append(arguments, "-i", path.Join(curPath, inventoryLinux))
 
 			if chosenOpt.renderArgs() != "" {
 				arguments = append(arguments, chosenOpt.renderArgs())
@@ -237,24 +240,40 @@ func provisionCanaries(cmd *cobra.Command, args []string) error {
 	}
 
 	execNameArgs("ansible-playbook",
-		"-i", path.Join(curPath, "test/automated/ansible/inventory.local"),
-		"--extra-vars", "@"+path.Join(curPath, inventory),
+		"-i", path.Join(curPath, inventoryLocal),
+		"--extra-vars", "@"+path.Join(curPath, inventoryForCreation),
 		path.Join(curPath, "test/automated/ansible/provision.yml"))
 
 	provisionOpts := newProvisionOptions()[OptionInstallVersionStaging]
-	var arguments = []string{
+	var argumentsLinux = []string{
 		"-e", "nr_license_key=" + license,
 		"-e", "target_agent_version=" + agentVersion[1:],
-		"-i", path.Join(curPath, "test/automated/ansible/inventory.ec2"),
+		"-i", path.Join(curPath, inventoryLinux),
 	}
 
 	if provisionOpts.renderArgs() != "" {
-		arguments = append(arguments, provisionOpts.renderArgs())
+		argumentsLinux = append(argumentsLinux, provisionOpts.renderArgs())
 	}
 
-	arguments = append(arguments, path.Join(curPath, provisionOpts.playbook))
+	argumentsLinux = append(argumentsLinux, path.Join(curPath, provisionOpts.playbook))
 
-	execNameArgs("ansible-playbook", arguments...)
+	execNameArgs("ansible-playbook", argumentsLinux...)
+
+	// todo: provision macos canaries here
+
+	execNameArgs("ansible-playbook",
+		"-i", path.Join(curPath, inventoryLocal),
+		path.Join(curPath, "test/automated/ansible/macos-canaries.yml"))
+
+	var argumentsMacos = []string{
+		"-e", "nr_license_key=" + license,
+		"-i", path.Join(curPath, inventoryMacos),
+	}
+
+	argumentsMacos = append(argumentsMacos, path.Join(curPath, "test/packaging/ansible/macos-canary.yml"))
+
+	execNameArgs("ansible-playbook", argumentsMacos...)
+
 	return nil
 }
 
