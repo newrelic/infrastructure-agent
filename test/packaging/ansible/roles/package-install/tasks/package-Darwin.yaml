@@ -1,3 +1,7 @@
+- name: Brew update
+  become: false
+  command: /usr/local/bin/brew update
+
 - name: Stop launchctl service
   command: /usr/local/bin/brew services stop newrelic-infra-agent
 

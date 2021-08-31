@@ -33,5 +33,8 @@ include $(INCLUDE_BUILD_DIR)/release.mk
 # test
 include $(INCLUDE_TEST_DIR)/test.mk
 
+# canary
+include $(INCLUDE_TEST_DIR)/canary.mk
+
 # tools
 include $(INCLUDE_TOOLS_DIR)/tools.mk
