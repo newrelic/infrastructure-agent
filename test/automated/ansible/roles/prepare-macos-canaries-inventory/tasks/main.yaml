@@ -1,20 +1,18 @@
 ---
 
 - debug:
-    var: registered_instances
-
-
+    var: registered_instances_macos
 
 - name: register current instances
   ansible.builtin.set_fact:
     instance_data:
-      iid: "{{ item.0.InstanceId }}"
-      ip: "{{ item.0.PublicIpAddress }}"
+      iid: "{{ item.InstanceId }}"
+      ip: "{{ item.PublicIpAddress }}"
       username: "{{ username }}"
-      name: "{{ item.0.Name }}"
+      name: "{{ item.Name }}"
       python_interpreter: "{{ python_interpreter }}"
-  loop: "{{ registered_instances | list }}"
-  when:  item.0.Name is search("current")
+  loop: "{{ registered_instances_macos }}"
+  when:  item.Name is search("current")
   register: instances_current
 
 - debug:
@@ -23,13 +21,13 @@
 - name: register previous instances
   ansible.builtin.set_fact:
     instance_data:
-      iid: "{{ item.0.InstanceId }}"
-      ip: "{{ item.0.PublicIpAddress }}"
+      iid: "{{ item.InstanceId }}"
+      ip: "{{ item.PublicIpAddress }}"
       username: "{{ username }}"
-      name: "{{ item.0.Name }}"
+      name: "{{ item.Name }}"
       python_interpreter: "{{ python_interpreter }}"
-  loop: "{{ registered_instances | list }}"
-  when:  item.0.Name is search("previous")
+  loop: "{{ registered_instances_macos }}"
+  when:  item.Name is search("previous")
   register: instances_previous
 
 - debug:

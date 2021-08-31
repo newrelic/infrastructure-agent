@@ -1,6 +1,6 @@
 ---
 
 tag_name: "Name"
-tag_value: "canary:current:*"
+tag_value: "canary:*:macos*"
 
 ...
