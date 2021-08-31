@@ -1,25 +1,7 @@
-- name: Stop launchctl service
-  command: /usr/local/bin/brew services stop newrelic-infra-agent
+- name: Package install
+  include_role:
+    name: package-install
 
-- name: Agent uninstall
-  become: false
-  command: /usr/local/bin/brew uninstall --force newrelic-infra-agent
-  ignore_errors: yes
-
-- name: cleanup | Remove files
-  command: rm -rf /usr/local/Cellar/newrelic-infra-agent/1.20.0
-
-- name: cleanup | Install agent to fix permissions
-  become: false
-  command: /usr/local/bin/brew reinstall newrelic-infra-agent
-
-- name: cleanup | Uninstall agent
-  become: false
-  command: /usr/local/bin/brew uninstall newrelic-infra-agent
-
-- name: Install agentn
-  become: false
-  command: /usr/local/bin/brew install newrelic-infra-agent
-
-- name: Start launchctl service
-  command: /usr/local/bin/brew services start newrelic-infra-agent
+- name: Assert service
+  include_role:
+    name: assert-service

@@ -1,0 +1,14 @@
+---
+
+- hosts: localhost
+  become: false
+  gather_facts: yes
+
+  tasks:
+    - name: fetch macos canaries instances
+      include_role:
+        name: fetch-macos-canary
+
+    - name: create macos canaries inventory
+      include_role:
+        name: create-macos-canaries-inventory

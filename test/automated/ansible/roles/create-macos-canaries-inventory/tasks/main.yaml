@@ -1,0 +1,55 @@
+---
+
+- debug:
+    var: registered_instances
+
+
+
+- name: register current instances
+  ansible.builtin.set_fact:
+    instance_data:
+      iid: "{{ item.0.InstanceId }}"
+      ip: "{{ item.0.PublicIpAddress }}"
+      username: "{{ username }}"
+      name: "{{ item.0.Name }}"
+      python_interpreter: "{{ python_interpreter }}"
+  loop: "{{ registered_instances | list }}"
+  when:  item.0.Name is search("current")
+  register: instances_current
+
+- debug:
+    var: instances_current
+
+- name: register previous instances
+  ansible.builtin.set_fact:
+    instance_data:
+      iid: "{{ item.0.InstanceId }}"
+      ip: "{{ item.0.PublicIpAddress }}"
+      username: "{{ username }}"
+      name: "{{ item.0.Name }}"
+      python_interpreter: "{{ python_interpreter }}"
+  loop: "{{ registered_instances | list }}"
+  when:  item.0.Name is search("previous")
+  register: instances_previous
+
+- debug:
+    var: instances_previous
+
+- name: register instances information for harvest test inventory
+  set_fact:
+    instances_info_current: "{{ instances_current.results | selectattr('ansible_facts', 'defined') | map(attribute='ansible_facts') | map(attribute='instance_data') | list }}"
+
+- name: register instances information for harvest test inventory
+  set_fact:
+    instances_info_previous: "{{ instances_previous.results | selectattr('ansible_facts', 'defined') | map(attribute='ansible_facts') | map(attribute='instance_data') | list }}"
+
+- debug:
+    var: instances_info_current
+
+- debug:
+    var: instances_info_previous
+
+
+
+
+...

@@ -4,10 +4,10 @@
   become: true
   gather_facts: yes
 
-  pre_tasks:
-    - name: Initial cleanup # Only required for shared infra.
-      include_role:
-        name: cleanup
+#  pre_tasks:
+#    - name: Initial cleanup # Only required for shared infra.
+#      include_role:
+#        name: cleanup
 
   tasks:
     - name: Installation tests suite
@@ -35,10 +35,12 @@
         - name: Assert root
           include_role:
             name: assert-agent-user
+          when: ansible_system != "Darwin"
 
-      always:
-        - name: Final cleanup # Only required for shared infra.
-          include_role:
-            name: cleanup
+#
+#      always:
+#        - name: Final cleanup # Only required for shared infra.
+#          include_role:
+#            name: cleanup
 
 ...

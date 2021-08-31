@@ -4,8 +4,13 @@ localhost ansible_connection=local
 [testing_hosts:children]
 macos
 
-[macos]
-{% for ins in instances_for_inventory_amd64 %}
+[macos_previous]
+{% for ins in instances_previous %}
+{{ ins.name }} ansible_host={{ ins.ip }} ansible_user={{ ins.username }} ansible_python_interpreter={{ ins.python_interpreter }} iid={{ ins.iid }}
+{% endfor %}
+
+[macos_current]
+{% for ins in instances_current %}
 {{ ins.name }} ansible_host={{ ins.ip }} ansible_user={{ ins.username }} ansible_python_interpreter={{ ins.python_interpreter }} iid={{ ins.iid }}
 {% endfor %}
 
