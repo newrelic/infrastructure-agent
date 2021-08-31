@@ -1,0 +1,11 @@
+---
+
+- name: install infra-agent configuration file
+  template:
+    src: ../files/etc/newrelic-infra.yml.j2
+    dest: /usr/local/etc/newrelic-infra/newrelic-infra.yml
+    owner: ec2-user
+    group: wheel
+    mode: 0644
+
+...

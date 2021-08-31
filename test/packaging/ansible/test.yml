@@ -1,29 +1,29 @@
 ---
 
-#- name: pinned version agent installation
-#  import_playbook: installation-pinned.yml
-#
-#- name: agent installation as root
-#  import_playbook: installation-root.yml
-#
-#- name: privileged mode agent installation
-#  import_playbook: installation-privileged.yml
-#
-#- name: unprivileged mode agent installation
-#  import_playbook: installation-unprivileged.yml
-#
-#- name: agent installation via newrelic-cli
-#  import_playbook: installation-newrelic-cli.yml
+- name: pinned version agent installation
+  import_playbook: installation-pinned.yml
+
+- name: agent installation as root
+  import_playbook: installation-root.yml
+
+- name: privileged mode agent installation
+  import_playbook: installation-privileged.yml
+
+- name: unprivileged mode agent installation
+  import_playbook: installation-unprivileged.yml
+
+- name: agent installation via newrelic-cli
+  import_playbook: installation-newrelic-cli.yml
 
 # only amd64
 # fails on suse, al2, debian
-- name: log forwarder
-  import_playbook: log-forwarder.yml
+#- name: log forwarder
+#  import_playbook: log-forwarder.yml
 
-#- name: agent upgrade
-#  import_playbook: agent-upgrade.yml
-#
-#- name: agent uninstallation
-#  import_playbook: uninstallation.yml
+- name: agent upgrade
+  import_playbook: agent-upgrade.yml
+
+- name: agent uninstallation
+  import_playbook: uninstallation.yml
 
 ...

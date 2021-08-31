@@ -20,6 +20,7 @@
         - name: repo setup
           include_role:
             name: repo-setup
+          when: ansible_system != "Darwin"
 
         - name: setup config
           include_role:
