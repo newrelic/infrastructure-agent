@@ -10,7 +10,7 @@
         name: provision-ec2
 
     - name: create inventory
+      vars:
+        output_inventory: "inventory.ec2"
       include_role:
-        vars:
-          output_inventory: "inventory.ec2"
         name: create-inventory

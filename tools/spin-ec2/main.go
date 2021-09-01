@@ -146,6 +146,10 @@ func interactiveMode() {
 		"--extra-vars", "@"+path.Join(curPath, inventoryForCreation),
 		path.Join(curPath, "test/automated/ansible/provision.yml"))
 
+	execNameArgs("ansible-playbook",
+		"-i", path.Join(curPath, inventoryLinux),
+		path.Join(curPath, "/test/automated/ansible/install-requirements.yml"))
+
 	if len(chosenProvisionOptions) > 0 {
 
 		for _, chosenOpt := range chosenProvisionOptions {
@@ -233,7 +237,7 @@ func provisionCanaries(cmd *cobra.Command, args []string) error {
 	}
 
 	prepareAnsibleConfig(opts, fmt.Sprintf("%s:%s", hostPrefix, agentVersion))
-
+	//
 	curPath, err := os.Getwd()
 	if err != nil {
 		return err
@@ -243,6 +247,10 @@ func provisionCanaries(cmd *cobra.Command, args []string) error {
 		"-i", path.Join(curPath, inventoryLocal),
 		"--extra-vars", "@"+path.Join(curPath, inventoryForCreation),
 		path.Join(curPath, "test/automated/ansible/provision.yml"))
+
+	execNameArgs("ansible-playbook",
+		"-i", path.Join(curPath, inventoryLinux),
+		path.Join(curPath, "/test/automated/ansible/install-requirements.yml"))
 
 	provisionOpts := newProvisionOptions()[OptionInstallVersionStaging]
 	var argumentsLinux = []string{
@@ -258,8 +266,6 @@ func provisionCanaries(cmd *cobra.Command, args []string) error {
 	argumentsLinux = append(argumentsLinux, path.Join(curPath, provisionOpts.playbook))
 
 	execNameArgs("ansible-playbook", argumentsLinux...)
-
-	// todo: provision macos canaries here
 
 	execNameArgs("ansible-playbook",
 		"-i", path.Join(curPath, inventoryLocal),
