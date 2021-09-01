@@ -421,6 +421,9 @@ func getProcessCommandLineWMI(processId uint32) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if len(dst) == 0 {
+		return "", fmt.Errorf("cannot get process command line wmi for process %v", processId)
+	}
 
 	return dst[0].CommandLine, nil
 }
