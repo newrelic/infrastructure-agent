@@ -15,7 +15,8 @@
         - buster
         - jessie
         - stretch
-
+        - groovy
+        - hirsute
 - src: "newrelic-infra_upstart_{version}_{arch}.deb"
   arch:
     - amd64
