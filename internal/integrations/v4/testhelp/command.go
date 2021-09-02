@@ -23,10 +23,6 @@ func GoCommand() string {
 	if err != nil {
 		return "cant-find-go:" + err.Error()
 	}
-
-	if runtime.GOOS == "windows" {
-		gocmd = strings.Replace(gocmd, `\`, `\\`, -1)
-	}
 	return gocmd
 }
 
