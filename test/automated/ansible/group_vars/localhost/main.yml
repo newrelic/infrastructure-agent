@@ -120,6 +120,27 @@ instances:
     username: "ec2-user"
     python_interpreter: "/usr/bin/python"
     launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
+  - ami: "ami-04aa88aebb9fefd83"
+    type: "t3a.small"
+    name: "amd64:sles-12.5"
+    username: "ec2-user"
+    python_interpreter: "/usr/bin/python"
+    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
+  - ami: "ami-0f052119b3c7e61d1"
+    type: "t3a.small"
+    name: "amd64:sles-15.2"
+    username: "ec2-user"
+    python_interpreter: "/usr/bin/python3"
+    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
+  ############################
+  # sles arm64
+  ############################
+  - ami: "ami-0b99ca359a84941ee"
+    type: "t4g.small"
+    name: "arm64:sles-15.2"
+    username: "ec2-user"
+    python_interpreter: "/usr/bin/python3"
+    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
   ############################
   # redhat amd64
   ############################
