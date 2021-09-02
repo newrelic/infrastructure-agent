@@ -35,6 +35,7 @@ versioninfo.json
 .envrc
 venv
 
+test/automated/ansible/custom-instances.yml
 test/packaging/ansible/inventory.ini
 test/cfgprotocol/testdata/scenarios/scenario2/nri-config.json
 test/cfgprotocol/testdata/scenarios/scenario3/nri-config.json
@@ -43,3 +44,4 @@ test/cfgprotocol/testdata/scenarios/scenario4/settings.yml
 #harvest test build
 harvest*.test
 inventory.ec2
+tools/spin-ec2/bin

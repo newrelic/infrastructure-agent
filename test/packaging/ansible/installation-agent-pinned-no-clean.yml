@@ -1,0 +1,37 @@
+---
+# this is not a test, should be moved away from this folder later
+
+- hosts: testing_hosts
+  become: true
+  gather_facts: yes
+
+  pre_tasks:
+    - name: Initial cleanup # Only required for shared infra.
+      include_role:
+        name: cleanup
+
+  tasks:
+    - name: Installation tests suite
+      vars:
+        agent_user: root
+        env_vars:
+
+      block:
+
+        - name: Repo Setup
+          include_role:
+            name: repo-setup
+
+        - name: Setup config
+          include_role:
+            name: setup-config
+
+        - name: Package install
+          include_role:
+            name: package-install-pinned
+
+        - name: Assert service
+          include_role:
+            name: assert-service
+
+...
