@@ -44,7 +44,7 @@ require (
 	go.opentelemetry.io/otel v0.13.0
 	go.opentelemetry.io/otel/exporters/metric/prometheus v0.13.0
 	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b
-	golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1
+	golang.org/x/sys v0.0.0-20210902050250-f475640dd07b
 	golang.org/x/text v0.3.6 // indirect
 	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c // indirect
 	google.golang.org/grpc v1.29.1 // indirect
