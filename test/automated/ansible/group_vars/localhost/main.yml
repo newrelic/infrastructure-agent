@@ -210,6 +210,12 @@ instances:
     username: "admin"
     python_interpreter: "/usr/bin/python3"
     launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
+  - ami: "ami-08a0dab67e025361b"
+    type: "t3a.small"
+    name: "amd64:debian-bullseye"
+    username: "admin"
+    python_interpreter: "/usr/bin/python3"
+    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
   ############################
   # debian arm64
   ############################
@@ -222,6 +228,12 @@ instances:
   - ami: "ami-07d2054a4befc97f7"
     type: "t4g.small"
     name: "arm64:debian-buster"
+    username: "admin"
+    python_interpreter: "/usr/bin/python3"
+    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
+  - ami: "ami-03cabbbc935f5826f"
+    type: "t4g.small"
+    name: "arm64:debian-bullseye"
     username: "admin"
     python_interpreter: "/usr/bin/python3"
     launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=1"
