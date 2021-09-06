@@ -36,6 +36,7 @@
         - 12.5
         - 15.1
         - 15.2
+        - 15.3
 
 - src: "newrelic-infra-{version}-1.sles{os_version}.{arch}.rpm"
   arch:
@@ -51,6 +52,7 @@
         - 12.5
         - 15.1
         - 15.2
+        - 15.3
 
 - src: "newrelic-infra-{version}-1.amazonlinux-{os_version}.{arch}.rpm"
   arch:

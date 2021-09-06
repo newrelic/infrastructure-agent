@@ -1014,17 +1014,6 @@ nfpms:
       - rpm
     bindir: /usr/bin
     contents:
-      - src: 'assets/examples/logging/linux/file.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
-      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
-      - src: 'assets/examples/logging/linux/syslog.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
-      - src: 'assets/examples/logging/linux/systemd.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
-      - src: 'assets/examples/logging/linux/tcp.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
-
       - src: 'build/package/systemd/newrelic-infra.service'
         dst: '/etc/systemd/system/newrelic-infra.service'
       - src: 'LICENSE'
@@ -1071,9 +1060,6 @@ nfpms:
         posttrans: "build/package/rpm/postinst-systemd.sh"
       summary: "New Relic Infrastructure Agent"
       group: default
-    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
-    recommends:
-      - td-agent-bit
 
   - id: sle-15.1-infrastructure-agent
     builds:
@@ -1091,17 +1077,6 @@ nfpms:
       - rpm
     bindir: /usr/bin
     contents:
-      - src: 'assets/examples/logging/linux/file.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
-      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
-      - src: 'assets/examples/logging/linux/syslog.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
-      - src: 'assets/examples/logging/linux/systemd.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
-      - src: 'assets/examples/logging/linux/tcp.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
-
       - src: 'build/package/systemd/newrelic-infra.service'
         dst: '/etc/systemd/system/newrelic-infra.service'
       - src: 'LICENSE'
@@ -1148,9 +1123,6 @@ nfpms:
         posttrans: "build/package/rpm/postinst-systemd.sh"
       summary: "New Relic Infrastructure Agent"
       group: default
-    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
-    recommends:
-      - td-agent-bit
 
   - id: sle-15.2-infrastructure-agent
     builds:
@@ -1168,17 +1140,6 @@ nfpms:
       - rpm
     bindir: /usr/bin
     contents:
-      - src: 'assets/examples/logging/linux/file.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
-      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
-      - src: 'assets/examples/logging/linux/syslog.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
-      - src: 'assets/examples/logging/linux/systemd.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
-      - src: 'assets/examples/logging/linux/tcp.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
-
       - src: 'build/package/systemd/newrelic-infra.service'
         dst: '/etc/systemd/system/newrelic-infra.service'
       - src: 'LICENSE'
@@ -1225,9 +1186,6 @@ nfpms:
         posttrans: "build/package/rpm/postinst-systemd.sh"
       summary: "New Relic Infrastructure Agent"
       group: default
-    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
-    recommends:
-      - td-agent-bit
 
   - id: sle-15.3-infrastructure-agent
     builds:
@@ -1245,17 +1203,6 @@ nfpms:
       - rpm
     bindir: /usr/bin
     contents:
-      - src: 'assets/examples/logging/linux/file.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
-      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
-      - src: 'assets/examples/logging/linux/syslog.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
-      - src: 'assets/examples/logging/linux/systemd.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
-      - src: 'assets/examples/logging/linux/tcp.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
-
       - src: 'build/package/systemd/newrelic-infra.service'
         dst: '/etc/systemd/system/newrelic-infra.service'
       - src: 'LICENSE'
@@ -1302,9 +1249,6 @@ nfpms:
         posttrans: "build/package/rpm/postinst-systemd.sh"
       summary: "New Relic Infrastructure Agent"
       group: default
-    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
-    recommends:
-      - td-agent-bit
 
 ###############################################################################
 ###############################################################################
@@ -1859,17 +1803,6 @@ nfpms:
       - rpm
     bindir: /usr/bin
     contents:
-      - src: 'assets/examples/logging/linux/file.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
-      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
-      - src: 'assets/examples/logging/linux/syslog.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
-      - src: 'assets/examples/logging/linux/systemd.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
-      - src: 'assets/examples/logging/linux/tcp.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
-
       - src: 'build/package/systemd/newrelic-infra.service'
         dst: '/etc/systemd/system/newrelic-infra.service'
       - src: 'LICENSE'
@@ -1914,9 +1847,6 @@ nfpms:
         posttrans: "build/package/rpm/postinst-systemd.sh"
       summary: "New Relic Infrastructure Agent"
       group: default
-    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
-    recommends:
-      - td-agent-bit
 
   - id: sle-15.1-infrastructure-agent-arm
     builds:
@@ -1934,17 +1864,6 @@ nfpms:
       - rpm
     bindir: /usr/bin
     contents:
-      - src: 'assets/examples/logging/linux/file.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
-      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
-      - src: 'assets/examples/logging/linux/syslog.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
-      - src: 'assets/examples/logging/linux/systemd.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
-      - src: 'assets/examples/logging/linux/tcp.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
-
       - src: 'build/package/systemd/newrelic-infra.service'
         dst: '/etc/systemd/system/newrelic-infra.service'
       - src: 'LICENSE'
@@ -1989,9 +1908,6 @@ nfpms:
         posttrans: "build/package/rpm/postinst-systemd.sh"
       summary: "New Relic Infrastructure Agent"
       group: default
-    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
-    recommends:
-      - td-agent-bit
 
   - id: sle-15.2-infrastructure-agent-arm
     builds:
@@ -2009,16 +1925,6 @@ nfpms:
       - rpm
     bindir: /usr/bin
     contents:
-      - src: 'assets/examples/logging/linux/file.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
-      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
-      - src: 'assets/examples/logging/linux/syslog.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
-      - src: 'assets/examples/logging/linux/systemd.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
-      - src: 'assets/examples/logging/linux/tcp.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
 
       - src: 'build/package/systemd/newrelic-infra.service'
         dst: '/etc/systemd/system/newrelic-infra.service'
@@ -2064,9 +1970,6 @@ nfpms:
         posttrans: "build/package/rpm/postinst-systemd.sh"
       summary: "New Relic Infrastructure Agent"
       group: default
-    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
-    recommends:
-      - td-agent-bit
 
   - id: sle-15.3-infrastructure-agent-arm
     builds:
@@ -2084,17 +1987,6 @@ nfpms:
       - rpm
     bindir: /usr/bin
     contents:
-      - src: 'assets/examples/logging/linux/file.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
-      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
-      - src: 'assets/examples/logging/linux/syslog.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
-      - src: 'assets/examples/logging/linux/systemd.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
-      - src: 'assets/examples/logging/linux/tcp.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
-
       - src: 'build/package/systemd/newrelic-infra.service'
         dst: '/etc/systemd/system/newrelic-infra.service'
       - src: 'LICENSE'
@@ -2139,9 +2031,7 @@ nfpms:
         posttrans: "build/package/rpm/postinst-systemd.sh"
       summary: "New Relic Infrastructure Agent"
       group: default
-    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
-    recommends:
-      - td-agent-bit
+
 ###############################################################################
 ###############################################################################
 ###                              ARM/AMAZON LINUX 2                         ###
