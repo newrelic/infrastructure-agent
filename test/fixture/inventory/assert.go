@@ -18,8 +18,11 @@ type Any string
 type ContainsString string
 type Nil string
 
-const AnyValue = Any("any-value-is-ok")
-const NilValue = Nil("this-field-is-not-present")
+const (
+	AnyValue = Any("any-value-is-ok")
+	NilValue = Nil("this-field-is-not-present")
+	OrKey    = "||"
+)
 
 // AssertRequestContainsInventoryDeltas checks, for each RawDelta entry, that is is contained in the
 // request as a subset of all the entries.
@@ -98,6 +101,13 @@ func assertSubTreeContained(t assert.TestingT, expected interface{}, actual inte
 	if expectedField, ok := expected.(map[string]interface{}); ok {
 		if actualField, ok := actual.(map[string]interface{}); ok {
 			for innerFieldName, innerField := range expectedField {
+				if strings.Contains(innerFieldName, OrKey) {
+					for _, opt := range strings.Split(innerFieldName, OrKey) {
+						if _, found := actualField[opt]; found {
+							innerFieldName = opt
+						}
+					}
+				}
 				// Expected Nil fields are not being asserted to be contained
 				if _, ok := innerField.(Nil); !ok {
 					assert.Contains(t, actualField, innerFieldName)

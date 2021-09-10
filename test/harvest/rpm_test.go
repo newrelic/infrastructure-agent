@@ -52,9 +52,9 @@ func TestRpmPlugin(t *testing.T) {
 			FullDiff: true,
 			Diff: map[string]interface{}{
 				// Common value for a default installation
-				"rpm": map[string]interface{}{
+				"rpm" + fixture.OrKey + "SUSEConnect": map[string]interface{}{
 					"architecture":    fixture.AnyValue,
-					"id":              "rpm",
+					"id":              fixture.AnyValue,
 					"installed_epoch": fixture.AnyValue,
 					"release":         fixture.AnyValue,
 					"version":         fixture.AnyValue,
