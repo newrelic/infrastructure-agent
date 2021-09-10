@@ -15,11 +15,14 @@ import (
 )
 
 const (
-	instancesFile = "test/automated/ansible/group_vars/localhost/main.yml"
-	inventory     = "test/automated/ansible/custom-instances.yml"
-	colorArm64    = "\033[32m"
-	colorAmd64    = "\033[34m"
-	colorReset    = "\033[0m"
+	instancesFile        = "test/automated/ansible/group_vars/localhost/main.yml"
+	inventoryForCreation = "test/automated/ansible/custom-instances.yml"
+	inventoryLocal       = "test/automated/ansible/inventory.local"
+	inventoryLinux       = "test/automated/ansible/inventory.ec2"
+	inventoryMacos       = "test/automated/ansible/inventory.macos.ec2"
+	colorArm64           = "\033[32m"
+	colorAmd64           = "\033[34m"
+	colorReset           = "\033[0m"
 
 	colorRed    = "\033[31m"
 	colorGreen  = "\033[32m"
@@ -33,6 +36,8 @@ const (
 var (
 	letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
 	hostPrefix  = "canary"
+	isLicenseRequired = false
+	skipVMCreation = false
 )
 
 func main() {
@@ -47,6 +52,102 @@ func main() {
 }
 
 func interactiveMode() {
+
+	skipVMCreationString := askUser(fmt.Sprintf("Do you want to skip VM provision  [(%s)es / (%s)o / (%s)uit]: [no] ", colorizeGreen("y"), colorizeYellow("n"), colorizeRed("q")))
+
+	if skipVMCreationString == "yes" || skipVMCreationString == "y" {
+		skipVMCreation = true
+	}
+
+	if !skipVMCreation{
+		createVMs()
+	}
+
+	fmt.Printf("\nPossible provision options\n")
+
+	provisionOpts := newProvisionOptions()
+	provisionOpts.print()
+
+	var chosenProvisionOptions provisionOptions
+	for {
+
+		chosenProvisionInput := askUser(fmt.Sprintf("Choose an option : [%s] ", colorizeYellow("0")))
+
+		if chosenProvisionInput == "" {
+			chosenProvisionInput = "0"
+		}
+
+		chosenProvisionNumbers, err := stringToNumbers(chosenProvisionInput)
+		if err != nil {
+			fmt.Printf(colorizeRed(err.Error() + ". Please enter valid input\n"))
+			continue
+		}
+
+		chosenProvisionOptions, err = provisionOpts.filter(chosenProvisionNumbers)
+		if err != nil {
+			fmt.Printf(colorizeRed(err.Error() + ". Please enter valid input\n"))
+			continue
+		}
+
+		for _, cOpt := range chosenProvisionOptions{
+			if cOpt.licenseKeyRequired {
+				isLicenseRequired = true
+			}
+		}
+
+		break
+	}
+
+	license := ""
+
+	if isLicenseRequired {
+		license = askUser("NR license key required for chosen provision option(s): ")
+	}
+
+	curPath, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
+	if !skipVMCreation{
+		execNameArgs("ansible-playbook",
+			"-i", path.Join(curPath, inventoryLocal),
+			"--extra-vars", "@"+path.Join(curPath, inventoryForCreation),
+			path.Join(curPath, "test/automated/ansible/provision.yml"))
+
+		execNameArgs("ansible-playbook",
+			"-i", path.Join(curPath, inventoryLinux),
+			path.Join(curPath, "test/automated/ansible/install-requirements.yml"))
+	}
+
+
+
+	if len(chosenProvisionOptions) > 0 {
+
+		for _, chosenOpt := range chosenProvisionOptions {
+
+			if chosenOpt.playbook == "" {
+				continue
+			}
+
+			var arguments []string
+
+			arguments = append(arguments, "-i", path.Join(curPath, inventoryLinux))
+
+			if chosenOpt.renderArgs() != "" {
+				arguments = append(arguments, chosenOpt.renderArgs())
+			}
+
+			arguments = append(arguments, "-e", "nr_license_key=" + license)
+
+			arguments = append(arguments, path.Join(curPath, chosenOpt.playbook))
+
+			execNameArgs("ansible-playbook", arguments...)
+		}
+	}
+}
+
+func createVMs(){
 	rand.Seed(time.Now().UnixNano())
 	var err error
 
@@ -86,34 +187,6 @@ func interactiveMode() {
 		provisionHostPrefix = userProvisionHostPrefix
 	}
 
-	fmt.Printf("\nPossible provision options\n")
-
-	provisionOpts := newProvisionOptions()
-	provisionOpts.print()
-
-	var chosenProvisionOptions provisionOptions
-	for {
-
-		chosenProvisionInput := askUser(fmt.Sprintf("Choose an option : [%s] ", colorizeYellow("0")))
-
-		if chosenProvisionInput == "" {
-			chosenProvisionInput = "0"
-		}
-
-		chosenProvisionNumbers, err := stringToNumbers(chosenProvisionInput)
-		if err != nil {
-			fmt.Printf(colorizeRed(err.Error() + ". Please enter valid input\n"))
-			continue
-		}
-
-		chosenProvisionOptions, err = provisionOpts.filter(chosenProvisionNumbers)
-		if err != nil {
-			fmt.Printf(colorizeRed(err.Error() + ". Please enter valid input\n"))
-			continue
-		}
-
-		break
-	}
 
 	u, err := user.Current()
 	if err != nil {
@@ -123,7 +196,7 @@ func interactiveMode() {
 
 	fmt.Printf("Chosen AMIs\n\n")
 	for _, chosenOption := range chosenOptions {
-		printVmInfo(chosenOption, provisionHostPrefix, chosenProvisionOptions)
+		printVmInfo(chosenOption, provisionHostPrefix)
 	}
 	confirm := askUser(fmt.Sprintf("Is this right [(%s)es / (%s)o / (%s)uit]: ", colorizeGreen("y"), colorizeYellow("n"), colorizeRed("q")))
 
@@ -132,38 +205,6 @@ func interactiveMode() {
 	}
 
 	prepareAnsibleConfig(chosenOptions, provisionHostPrefix)
-
-	curPath, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-
-	execNameArgs("ansible-playbook",
-		"-i", path.Join(curPath, "test/automated/ansible/inventory.local"),
-		"--extra-vars", "@"+path.Join(curPath, inventory),
-		path.Join(curPath, "test/automated/ansible/provision.yml"))
-
-	if len(chosenProvisionOptions) > 0 {
-
-		for _, chosenOpt := range chosenProvisionOptions {
-
-			if chosenOpt.playbook == "" {
-				continue
-			}
-
-			var arguments []string
-
-			arguments = append(arguments, "-i", path.Join(curPath, "test/automated/ansible/inventory.ec2"))
-
-			if chosenOpt.renderArgs() != "" {
-				arguments = append(arguments, chosenOpt.renderArgs())
-			}
-
-			arguments = append(arguments, path.Join(curPath, chosenOpt.playbook))
-
-			execNameArgs("ansible-playbook", arguments...)
-		}
-	}
 }
 
 func cliMode() {
@@ -219,6 +260,39 @@ func provisionCanaries(cmd *cobra.Command, args []string) error {
 			agentVersion)
 	}
 
+	err := provisionLinuxCanaries(license, agentVersion)
+
+	if err != nil{
+		return err
+	}
+
+	return provisionMacosCanaries(license)
+}
+
+func provisionMacosCanaries(license string) error{
+
+	curPath, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	execNameArgs("ansible-playbook",
+		"-i", path.Join(curPath, inventoryLocal),
+		path.Join(curPath, "test/automated/ansible/macos-canaries.yml"))
+
+	var argumentsMacos = []string{
+		"-e", "nr_license_key=" + license,
+		"-i", path.Join(curPath, inventoryMacos),
+	}
+
+	argumentsMacos = append(argumentsMacos, path.Join(curPath, "test/packaging/ansible/macos-canary.yml"))
+
+	execNameArgs("ansible-playbook", argumentsMacos...)
+
+	return nil
+}
+
+func provisionLinuxCanaries(license, agentVersion string) error{
 	ansibleGroupVars, err := readAnsibleGroupVars()
 	if err != nil {
 		return err
@@ -237,24 +311,29 @@ func provisionCanaries(cmd *cobra.Command, args []string) error {
 	}
 
 	execNameArgs("ansible-playbook",
-		"-i", path.Join(curPath, "test/automated/ansible/inventory.local"),
-		"--extra-vars", "@"+path.Join(curPath, inventory),
+		"-i", path.Join(curPath, inventoryLocal),
+		"--extra-vars", "@"+path.Join(curPath, inventoryForCreation),
 		path.Join(curPath, "test/automated/ansible/provision.yml"))
 
+	execNameArgs("ansible-playbook",
+		"-i", path.Join(curPath, inventoryLinux),
+		path.Join(curPath, "/test/automated/ansible/install-requirements.yml"))
+
 	provisionOpts := newProvisionOptions()[OptionInstallVersionStaging]
-	var arguments = []string{
+	var argumentsLinux = []string{
 		"-e", "nr_license_key=" + license,
 		"-e", "target_agent_version=" + agentVersion[1:],
-		"-i", path.Join(curPath, "test/automated/ansible/inventory.ec2"),
+		"-i", path.Join(curPath, inventoryLinux),
 	}
 
 	if provisionOpts.renderArgs() != "" {
-		arguments = append(arguments, provisionOpts.renderArgs())
+		argumentsLinux = append(argumentsLinux, provisionOpts.renderArgs())
 	}
 
-	arguments = append(arguments, path.Join(curPath, provisionOpts.playbook))
+	argumentsLinux = append(argumentsLinux, path.Join(curPath, provisionOpts.playbook))
 
-	execNameArgs("ansible-playbook", arguments...)
+	execNameArgs("ansible-playbook", argumentsLinux...)
+
 	return nil
 }
 

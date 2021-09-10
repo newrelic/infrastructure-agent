@@ -1,0 +1,20 @@
+---
+
+- hosts: localhost
+  become: false
+  gather_facts: yes
+
+  tasks:
+    - name: fetch macos canaries instances
+      include_role:
+        name: fetch-macos-canary
+
+    - name: prepare macos canaries inventory data
+      include_role:
+        name: prepare-macos-canaries-inventory
+
+    - name: create macos canaries inventory
+      vars:
+        output_inventory: "inventory.macos.ec2"
+      include_role:
+        name: create-inventory
