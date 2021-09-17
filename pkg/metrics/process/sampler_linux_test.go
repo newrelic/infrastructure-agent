@@ -17,7 +17,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
-	"github.com/newrelic/infrastructure-agent/pkg/metrics"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
@@ -80,26 +79,6 @@ func (hm *harvesterMock) Pids() ([]int32, error) {
 
 func (hm *harvesterMock) Do(pid int32, _ float64) (*types.ProcessSample, error) {
 	return hm.samples[pid], nil
-}
-
-type fakeContainerSampler struct{}
-
-func (cs *fakeContainerSampler) Enabled() bool {
-	return true
-}
-
-func (*fakeContainerSampler) NewDecorator() (metrics.ProcessDecorator, error) {
-	return &fakeDecorator{}, nil
-}
-
-type fakeDecorator struct{}
-
-func (pd *fakeDecorator) Decorate(process *types.ProcessSample) {
-	process.ContainerImage = "decorated"
-	process.ContainerLabels = map[string]string{
-		"label1": "value1",
-		"label2": "value2",
-	}
 }
 
 func BenchmarkProcessSampler(b *testing.B) {
