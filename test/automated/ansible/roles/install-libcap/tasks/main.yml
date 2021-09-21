@@ -16,6 +16,6 @@
     state: present
     update_cache: yes
   when: inventory_hostname in instances_requiring_libcap2 and
-    (inventory_hostname is match("debian-stretch"))
+    (inventory_hostname is search("debian-stretch"))
 
 ...

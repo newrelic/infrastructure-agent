@@ -1,5 +1,5 @@
 ---
 
-target_agent_version: "1.18.0" # minimum version supporting ARM.
+target_agent_version: "1.20.3" # minimum version for sles 12.5,15.*,debian 11 and ubuntu 20.10,21.04
 
 ...

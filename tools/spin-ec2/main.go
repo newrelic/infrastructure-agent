@@ -322,6 +322,8 @@ func provisionLinuxCanaries(license, agentVersion string) error{
 	provisionOpts := newProvisionOptions()[OptionInstallVersionStaging]
 	var argumentsLinux = []string{
 		"-e", "nr_license_key=" + license,
+		"-e", "enable_process_metrics=true",
+		"-e", "verbose=3",
 		"-e", "target_agent_version=" + agentVersion[1:],
 		"-i", path.Join(curPath, inventoryLinux),
 	}
