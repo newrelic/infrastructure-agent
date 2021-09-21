@@ -1,6 +1,7 @@
 ---
 
-- hosts: testing_hosts
+- name: installation-root
+  hosts: testing_hosts
   become: true
   gather_facts: yes
 
@@ -37,6 +38,10 @@
             name: assert-agent-user
           when: ansible_system != "Darwin"
 
+        - name: test nri-docker integration
+          include_role:
+            name: nri-docker
+          when: ansible_system != "Darwin"
 
       always:
         - name: Final cleanup # Only required for shared infra.

@@ -1,0 +1,5 @@
+[centos-extras]
+name=Centos extras - $basearch
+baseurl=https://mirrors.up.pt/pub/centos-altarch/7.9.2009/extras/aarch64/
+enabled=1
+gpgcheck=0

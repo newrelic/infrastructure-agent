@@ -1,7 +1,8 @@
 ---
 # this is not a test, should be moved away from this folder later
 
-- hosts: testing_hosts
+- name: installation-agent-pinned-no-clean
+  hosts: testing_hosts
   become: true
   gather_facts: yes
 
