@@ -26,6 +26,10 @@ func TestRpmPlugin(t *testing.T) {
 	if _, err := os.Stat(pluginsLinux.RpmPath); os.IsNotExist(err) {
 		t.Skip("This test must be executed in RPM-based distributions")
 	}
+	//Some ubuntu distros have rpm installed
+	if _, err := os.Stat("/etc/debian_version"); err == nil {
+		t.Skip("This test must be executed in RPM-based distributions")
+	}
 
 	testhelpers.SetupLog()
 

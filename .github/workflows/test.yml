@@ -36,6 +36,7 @@ jobs:
 
       - name: Coveralls Parallel
         uses: coverallsapp/github-action@master
+        continue-on-error: true
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: lcov.info
@@ -47,7 +48,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-18.04, ubuntu-16.04 ]
+        os: [ ubuntu-18.04 ]
     steps:
       - uses: actions/checkout@v2
 
@@ -183,6 +184,7 @@ jobs:
     steps:
       - name: Coveralls Finished
         uses: coverallsapp/github-action@master
+        continue-on-error: true
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel-finished: true
