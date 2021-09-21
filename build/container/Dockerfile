@@ -1,4 +1,4 @@
-ARG base_image=alpine:3.13
+ARG base_image=alpine:3.14
 
 FROM $base_image AS core
 
@@ -6,9 +6,6 @@ ARG image_version=0.0
 ARG agent_version=0.0
 ARG version_file=VERSION
 ARG agent_bin=newrelic-infra
-
-#https://pkgs.alpinelinux.org/package/v3.13/main/x86/curl
-ARG curl_version=7.79.0-r0
 
 # Add the agent binary
 COPY $agent_bin /usr/bin/newrelic-infra
@@ -53,7 +50,7 @@ CMD ["/usr/bin/newrelic-infra-service"]
 FROM core AS forwarder
 
 RUN apk add --no-cache \
-        curl=$curl_version
+        curl
 
 RUN addgroup -g 2000 nri-agent && adduser -D -H -u 1000 -G nri-agent nri-agent
 USER nri-agent
@@ -83,7 +80,7 @@ LABEL com.newrelic.nri-docker.version=$nri_docker_version \
       com.newrelic.nri-prometheus.version=$nri_prometheus_version
 
 RUN apk add --no-cache \
-        ntpsec=1.2.0-r1 \
-        curl=$curl_version
+        ntpsec \
+        curl
 
 COPY $nri_pkg_dir /
