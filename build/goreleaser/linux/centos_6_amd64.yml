@@ -1,0 +1,68 @@
+  # CentOS 6 amd64
+  
+  - id: centos-6-infrastructure-agent
+    builds:
+      - linux-agent-amd64
+      - linux-ctl-amd64
+      - linux-service-amd64
+    package_name: newrelic-infra
+    file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.el6.{{ .Arch }}"
+    vendor: 'New Relic, Inc.'
+    homepage: 'https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes'
+    maintainer: 'caos-team@newrelic.com'
+    description: 'New Relic Infrastructure provides flexible, dynamic server monitoring. With real-time data collection and a UI that scales from a handful of hosts to thousands, Infrastructure is designed for modern Operations teams with fast-changing systems.'
+    license: 'Copyright (c) 2008-2021 New Relic, Inc. All rights reserved.'
+    formats:
+      - rpm
+    bindir: /usr/bin
+    contents:
+      - src: 'LICENSE'
+        dst: '/var/db/newrelic-infra/LICENSE.txt'
+      - src: 'target/nridocker/amd64/etc/newrelic-infra/integrations.d/docker-config.yml'
+        dst: '/etc/newrelic-infra/integrations.d/docker-config.yml'
+        type: config
+  
+      - src: 'target/nridocker/amd64/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
+      - src: 'target/nriflex/amd64/nri-flex'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
+      - src: 'target/nriprometheus/amd64/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
+  
+      # Upstart service conf file
+      - src: 'build/package/upstart/newrelic-infra'
+        dst: '/etc/init/newrelic-infra.conf'
+        type: config
+  
+      # Symlink required for upstart service.
+      - src: /lib/init/upstart-job
+        dst: /etc/init.d/newrelic-infra
+        type: "symlink"
+    empty_folders:
+      - /var/db/newrelic-infra/custom-integrations
+      - /var/db/newrelic-infra/integrations.d
+      - /var/log/newrelic-infra
+      - /var/run/newrelic-infra
+    # Scripts to execute during the installation of the package.
+    scripts:
+      preinstall: "build/package/before-install.sh"
+      preremove: "build/package/rpm/prerm-upstart.sh"
+    # Packages to replace according to old packaging scripts.
+    replaces:
+      - opspro-agent
+      - opspro-agent-sysv
+    epoch: 0
+    release: 1.el6
+    replacements:
+      amd64: x86_64
+    rpm:
+      scripts:
+        posttrans: "build/package/rpm/postinst-upstart.sh"
+      summary: "New Relic Infrastructure Agent"
+      group: default
+    # Required packages. rpm version 4.11.3 does not support weak dependencies.
+    # disabled as right now fb pkg is not built for centos-6
+  #    dependencies:
+  #      - td-agent-bit
+  
+  # end CentOS 6 amd64

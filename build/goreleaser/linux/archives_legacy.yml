@@ -1,0 +1,13 @@
+  # archived legacy
+  
+  - id: tarball-legacy
+    builds:
+      - linux-agent-legacy
+      - linux-ctl-legacy
+      - linux-service-legacy
+    name_template: "newrelic-infra_{{.Os}}_{{ .Env.TAG }}_{{ .Arch }}_dirty"
+    wrap_in_directory: false
+    format: tar.gz
+    files:
+      - none*
+  # end archived legacy

@@ -1,0 +1,12 @@
+  # archived arm
+  - id: tarball-arm
+    builds:
+      - linux-agent-arm
+      - linux-ctl-arm
+      - linux-service-arm
+    name_template: "newrelic-infra_{{.Os}}_{{ .Env.TAG }}_{{ .Arch }}_dirty"
+    wrap_in_directory: false
+    format: tar.gz
+    files:
+      - none*
+  # end archived arm

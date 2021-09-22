@@ -18,8 +18,8 @@ env:
   DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
   SCHEMA_BRANCH: ${{ github.event.release.tag_name }}
-  AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
-  AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
+  AWS_S3_BUCKET_NAME: "nr-downloads-ohai-testing"
+  AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-testing"
   AWS_REGION: "us-east-1"
   DOCKER_PUBLISH: true
 
@@ -91,9 +91,8 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel-finished: true
 
-  packaging-linux:
-    name: Build and upload all artifacts into GH Release assets
-
+  packaging-linux-amd64:
+    name: Build and upload amd64 artifacts into GH Release assets
     runs-on: ubuntu-20.04
     needs: [unit-test-linux, harvest-test-linux, proxy-tests-linux]
 
@@ -107,7 +106,75 @@ jobs:
           password: ${{ env.DOCKER_HUB_PASSWORD }}
 
       - name: Releasing linux packages
-        run: make ci/prerelease/linux
+        run: make ci/prerelease/linux-amd64
+
+  packaging-linux-arm:
+    name: Build and upload arm artifacts into GH Release assets
+    runs-on: ubuntu-20.04
+    needs: [unit-test-linux, harvest-test-linux, proxy-tests-linux]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKER_HUB_ID }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
+
+      - name: Releasing linux packages
+        run: make ci/prerelease/linux-arm
+
+  packaging-linux-arm64:
+    name: Build and upload arm64 artifacts into GH Release assets
+    runs-on: ubuntu-20.04
+    needs: [unit-test-linux, harvest-test-linux, proxy-tests-linux]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKER_HUB_ID }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
+
+      - name: Releasing linux packages
+        run: make ci/prerelease/linux-arm64
+
+  packaging-linux-legacy:
+    name: Build and upload legacy architectures artifacts into GH Release assets
+    runs-on: ubuntu-20.04
+    needs: [unit-test-linux, harvest-test-linux, proxy-tests-linux]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKER_HUB_ID }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
+
+      - name: Releasing linux packages
+        run: make ci/prerelease/linux-legacy
+
+  packaging-docker:
+    name: Build and upload docker images as RC
+    runs-on: ubuntu-20.04
+    needs: [unit-test-linux, harvest-test-linux, proxy-tests-linux]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKER_HUB_ID }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
+
+      - name: Compiling binaries for linux amd64, arm, arm64
+        run: make ci/prerelease/linux-for-docker
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -116,18 +183,18 @@ jobs:
         uses: docker/setup-buildx-action@v1
 
       - name: Build and publish Release Candidate (RC) of base Docker image
-        run: make -C build/container/ clean publish/multi-arch-base-rc AGENT_VERSION=${{env.TAG}}
+        run: AGENT_VERSION=${{env.TAG}} make -C build/container/ clean publish/multi-arch-base-rc
 
       - name: Build and publish Release Candidate (RC) of forwarder Docker image
-        run: make -C build/container/ clean publish/multi-arch-forwarder-rc AGENT_VERSION=${{env.TAG}}
+        run: AGENT_VERSION=${{env.TAG}} make -C build/container/ clean publish/multi-arch-forwarder-rc
 
       - name: Build and publish Release Candidate (RC) of k8s-events-forwarders Docker image
-        run: make -C build/container/ clean publish/multi-arch-k8s-events-forwarder-rc AGENT_VERSION=${{env.TAG}}
+        run: AGENT_VERSION=${{env.TAG}} make -C build/container/ clean publish/multi-arch-k8s-events-forwarder-rc
 
   publishing-to-s3:
     name: Publish linux artifacts into s3 staging bucket
     runs-on: ubuntu-20.04
-    needs: [packaging-linux]
+    needs: [packaging-linux-amd64, packaging-linux-arm, packaging-linux-arm64]
 
     strategy:
       max-parallel: 1
@@ -146,10 +213,10 @@ jobs:
       - name: Publish ${{ matrix.assetsType }} to S3 action
         uses: newrelic/infrastructure-publish-action@v1.0.21
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
-          AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
-          AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_TESTING }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_TESTING }}
+          AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_TESTING }}
+          AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_TESTING }}
         with:
           tag: ${{env.TAG}}
           app_name: "newrelic-infra"
