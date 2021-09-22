@@ -1,0 +1,40 @@
+  # build amd64
+  - id: linux-agent-amd64
+    main: ./cmd/newrelic-infra
+    binary: newrelic-infra
+    env:
+      - CGO_ENABLED=1
+    goos:
+      - linux
+    ldflags:
+      - -s -w -X main.buildVersion={{.Version}}
+      - -s -w -X main.gitCommit={{.Commit}}
+    goarch:
+      - amd64
+  
+  - id: linux-ctl-amd64
+    main: ./cmd/newrelic-infra-ctl
+    binary: newrelic-infra-ctl
+    env:
+      - CGO_ENABLED=1
+    goos:
+      - linux
+    ldflags:
+      - -s -w -X main.buildVersion={{.Version}}
+      - -s -w -X main.gitCommit={{.Commit}}
+    goarch:
+      - amd64
+  
+  - id: linux-service-amd64
+    main: ./cmd/newrelic-infra-service
+    binary: newrelic-infra-service
+    env:
+      - CGO_ENABLED=1
+    goos:
+      - linux
+    ldflags:
+      - -s -w -X main.buildVersion={{.Version}}
+      - -s -w -X main.gitCommit={{.Commit}}
+    goarch:
+      - amd64
+  # end build amd64
