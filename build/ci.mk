@@ -48,6 +48,27 @@ ci/snyk-test:
 ci/prerelease/linux:
 	TARGET_OS=linux $(MAKE) ci/prerelease
 
+.PHONY : ci/prerelease/linux-amd64
+ci/prerelease/linux-amd64:
+	TARGET_OS=linux-amd64 $(MAKE) ci/prerelease
+
+.PHONY : ci/prerelease/linux-arm
+ci/prerelease/linux-arm:
+	TARGET_OS=linux-arm $(MAKE) ci/prerelease
+
+.PHONY : ci/prerelease/linux-arm64
+ci/prerelease/linux-arm64:
+	TARGET_OS=linux-arm64 $(MAKE) ci/prerelease
+
+.PHONY : ci/prerelease/linux-legacy
+ci/prerelease/linux-legacy:
+	TARGET_OS=linux-legacy $(MAKE) ci/prerelease
+
+.PHONY : ci/prerelease/linux-for-docker
+ci/prerelease/linux-for-docker:
+	TARGET_OS=linux-for-docker $(MAKE) ci/prerelease
+
+
 .PHONY : ci/prerelease/macos
 ci/prerelease/macos:
 ifdef TAG
@@ -87,7 +108,7 @@ dev/release/pkg: ci/deps
             -w /go/src/github.com/newrelic/infrastructure-agent \
 			-e TAG=0.0.0 \
 			-e SNAPSHOT=true \
-			$(BUILDER_IMG_TAG) make release/pkg
+			$(BUILDER_IMG_TAG) make release/pkg-linux
 
 .PHONY : ci/validate-aws-credentials
 ci/validate-aws-credentials:

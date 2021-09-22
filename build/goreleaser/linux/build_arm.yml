@@ -1,0 +1,40 @@
+# build arm
+- id: linux-agent-arm
+  main: ./cmd/newrelic-infra
+  binary: newrelic-infra
+  env:
+    - CGO_ENABLED=0
+  goos:
+    - linux
+  ldflags:
+    - -s -w -X main.buildVersion={{.Version}}
+    - -s -w -X main.gitCommit={{.Commit}}
+  goarch:
+    - arm
+
+- id: linux-ctl-arm
+  main: ./cmd/newrelic-infra-ctl
+  binary: newrelic-infra-ctl
+  env:
+    - CGO_ENABLED=0
+  goos:
+    - linux
+  ldflags:
+    - -s -w -X main.buildVersion={{.Version}}
+    - -s -w -X main.gitCommit={{.Commit}}
+  goarch:
+    - arm
+
+- id: linux-service-arm
+  main: ./cmd/newrelic-infra-service
+  binary: newrelic-infra-service
+  env:
+    - CGO_ENABLED=0
+  goos:
+    - linux
+  ldflags:
+    - -s -w -X main.buildVersion={{.Version}}
+    - -s -w -X main.gitCommit={{.Commit}}
+  goarch:
+    - arm
+# end build arm
