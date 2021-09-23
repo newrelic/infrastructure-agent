@@ -135,7 +135,8 @@ func collectProcStats(p Process) (procStats, error) {
 		return s, err
 	}
 
-	rss := int64(memInfo.RSS) //TODO review this uint64 to int64 "conversion"
+	// unit64 to int64 conversion so there are options to lose data if rss > 9,223 PetaBytes
+	rss := int64(memInfo.RSS)
 	if rss > 0 {
 		s.vmRSS = rss
 	}

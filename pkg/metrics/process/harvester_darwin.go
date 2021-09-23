@@ -1,7 +1,7 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-// Package process Package process provides all the tools and functionality for sampling processes. It is divided in three main
+// Package process provides all the tools and functionality for sampling processes. It is divided in three main
 // components:
 // - Snapshot: provides OS-level information of a process at a given spot
 // - Harvester: manages process Snapshots to create actual Process Samples with the actual metrics.
