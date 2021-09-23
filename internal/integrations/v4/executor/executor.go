@@ -8,9 +8,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"sync"
 
@@ -143,18 +141,6 @@ func forwardCmdOutput(buffer io.Reader, fwd chan<- []byte, errors chan<- error) 
 
 func (r *Executor) buildCommand(ctx context.Context) *exec.Cmd {
 	cmd := r.userAwareCmd(ctx)
-
-	fmt.Println("PATH:")
-	fmt.Println(os.Getenv("PATH"))
-	fmt.Println("GOPATH:")
-	fmt.Println(os.Getenv("GOPATH"))
-	fmt.Println("GOCACHE:")
-	fmt.Println(os.Getenv("GOCACHE"))
-	cmd.Env = os.Environ()
-	fmt.Println(os.Getenv("PATH"))
-	fmt.Println(os.Getenv("GOPATH"))
-	fmt.Println(os.Getenv("GOCACHE"))
-
 	for key, val := range r.Cfg.BuildEnv() {
 		cmd.Env = append(cmd.Env, key+"="+val)
 	}
