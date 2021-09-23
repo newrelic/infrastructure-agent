@@ -79,7 +79,7 @@ func TestGroup_Run_Inventory(t *testing.T) {
 				Labels: map[string]string{"foo": "bar", "ou": "yea"}},
 		},
 	}, nil)
-	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, configrequest.NoopHandleFn, "", terminatedQueue)
+	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, []string{"GOCACHE", "GOPATH", "HOME", "PATH", "CGO_ENABLED"}, te, cmdrequest.NoopHandleFn, configrequest.NoopHandleFn, "", terminatedQueue)
 	require.NoError(t, err)
 
 	// WHEN the integration is executed
@@ -128,7 +128,7 @@ func TestGroup_Run_Inventory_OverridePrefix(t *testing.T) {
 				InventorySource: "custom/inventory"},
 		},
 	}, nil)
-	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, nil, te, cmdrequest.NoopHandleFn, configrequest.NoopHandleFn, "", terminatedQueue)
+	gr, _, err := NewGroup(loader, integration.InstancesLookup{}, []string{"GOCACHE", "GOPATH", "HOME", "PATH"}, te, cmdrequest.NoopHandleFn, configrequest.NoopHandleFn, "", terminatedQueue)
 	require.NoError(t, err)
 
 	// WHEN the integration is executed
