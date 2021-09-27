@@ -29,7 +29,7 @@ import (
 
 var terminatedQueue = make(chan string)
 
-var passthroughEnv = []string{"GOCACHE", "GOPATH", "HOME", "PATH", "CGO_ENABLED", "LOCALAPPDATA", "GOROOT"}
+var passthroughEnv = []string{"GOCACHE", "GOPATH", "HOME", "PATH"}
 
 func TestGroup_Run(t *testing.T) {
 	defer leaktest.Check(t)()
