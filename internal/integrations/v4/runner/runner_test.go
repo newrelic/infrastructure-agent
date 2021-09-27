@@ -52,7 +52,7 @@ func Test_runner_Run(t *testing.T) {
 	e := &testemit.RecordEmitter{}
 	r := NewRunner(def, e, nil, nil, cmdrequest.NoopHandleFn, configrequest.NoopHandleFn, nil)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
 
 	r.Run(ctx, nil, nil)
@@ -169,7 +169,7 @@ func Test_runner_Run_handlesCfgProtocol(t *testing.T) {
 	r := NewRunner(def, e, nil, nil, cmdrequest.NoopHandleFn, mockHandleFn, nil)
 
 	// WHEN the runner executes the binary and handle the payload.
-	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 1500*time.Millisecond)
 	defer cancel()
 	r.Run(ctx, nil, nil)
 
