@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"os"
 	"os/exec"
 	"sync"
 
@@ -141,6 +142,7 @@ func forwardCmdOutput(buffer io.Reader, fwd chan<- []byte, errors chan<- error) 
 
 func (r *Executor) buildCommand(ctx context.Context) *exec.Cmd {
 	cmd := r.userAwareCmd(ctx)
+	cmd.Env = os.Environ()
 	for key, val := range r.Cfg.BuildEnv() {
 		cmd.Env = append(cmd.Env, key+"="+val)
 	}
