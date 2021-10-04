@@ -136,7 +136,7 @@ func newProvisionOptions() provisionOptions {
 		name:     "install latest version of agent from PROD",
 		playbook: "test/packaging/ansible/installation-agent-no-clean.yml",
 		args: map[string]string{
-			"repo_endpoint": "https://downloads.newrelic.com/infrastructure_agent",
+			"repo_endpoint": "https://download.newrelic.com/infrastructure_agent",
 		},
 		licenseKeyRequired: true,
 	}
@@ -153,7 +153,7 @@ func newProvisionOptions() provisionOptions {
 		name:     "package tests from PROD",
 		playbook: "test/packaging/ansible/test.yml",
 		args: map[string]string{
-			"repo_endpoint": "https://downloads.newrelic.com/infrastructure_agent",
+			"repo_endpoint": "https://download.newrelic.com/infrastructure_agent",
 		},
 		licenseKeyRequired: true,
 	}

@@ -7,6 +7,7 @@
   with_items:
     - /etc/newrelic-infra
     - /etc/newrelic-infra.yml
+    - /etc/apt/sources.list.d/newrelic-infra.list
     - /etc/systemd/system/newrelic-infra.service
     - /var/db/newrelic-infra
     - /usr/local/bin/newrelic-infra
