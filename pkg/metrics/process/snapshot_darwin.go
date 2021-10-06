@@ -211,8 +211,8 @@ func (pw *darwinProcess) Command() string {
 	return pw.stats.command
 }
 
-// CmdLine Data to be derived from /proc/<pid>/cmdline in linux systems
-// not supported in darwin for now
+// CmdLine is taken from ps. As commands can have spaces, it's difficult parse parameters
+// so no params for now
 func (pw *darwinProcess) CmdLine(withArgs bool) (string, error) {
-	return "", nil
+	return pw.cmdLine, nil
 }
