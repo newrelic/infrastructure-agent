@@ -34,10 +34,10 @@ const (
 )
 
 var (
-	letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
-	hostPrefix  = "canary"
+	letterRunes       = []rune("abcdefghijklmnopqrstuvwxyz")
+	hostPrefix        = "canary"
 	isLicenseRequired = false
-	skipVMCreation = false
+	skipVMCreation    = false
 )
 
 func main() {
@@ -59,7 +59,7 @@ func interactiveMode() {
 		skipVMCreation = true
 	}
 
-	if !skipVMCreation{
+	if !skipVMCreation {
 		createVMs()
 	}
 
@@ -89,7 +89,7 @@ func interactiveMode() {
 			continue
 		}
 
-		for _, cOpt := range chosenProvisionOptions{
+		for _, cOpt := range chosenProvisionOptions {
 			if cOpt.licenseKeyRequired {
 				isLicenseRequired = true
 			}
@@ -109,7 +109,7 @@ func interactiveMode() {
 		panic(err)
 	}
 
-	if !skipVMCreation{
+	if !skipVMCreation {
 		execNameArgs("ansible-playbook",
 			"-i", path.Join(curPath, inventoryLocal),
 			"--extra-vars", "@"+path.Join(curPath, inventoryForCreation),
@@ -119,8 +119,6 @@ func interactiveMode() {
 			"-i", path.Join(curPath, inventoryLinux),
 			path.Join(curPath, "test/automated/ansible/install-requirements.yml"))
 	}
-
-
 
 	if len(chosenProvisionOptions) > 0 {
 
@@ -138,7 +136,7 @@ func interactiveMode() {
 				arguments = append(arguments, chosenOpt.renderArgs())
 			}
 
-			arguments = append(arguments, "-e", "nr_license_key=" + license)
+			arguments = append(arguments, "-e", "nr_license_key="+license)
 
 			arguments = append(arguments, path.Join(curPath, chosenOpt.playbook))
 
@@ -147,7 +145,7 @@ func interactiveMode() {
 	}
 }
 
-func createVMs(){
+func createVMs() {
 	rand.Seed(time.Now().UnixNano())
 	var err error
 
@@ -186,7 +184,6 @@ func createVMs(){
 	if userProvisionHostPrefix != "" {
 		provisionHostPrefix = userProvisionHostPrefix
 	}
-
 
 	u, err := user.Current()
 	if err != nil {
@@ -262,14 +259,14 @@ func provisionCanaries(cmd *cobra.Command, args []string) error {
 
 	err := provisionLinuxCanaries(license, agentVersion)
 
-	if err != nil{
+	if err != nil {
 		return err
 	}
 
-	return provisionMacosCanaries(license)
+	return provisionMacosCanaries(license, agentVersion)
 }
 
-func provisionMacosCanaries(license string) error{
+func provisionMacosCanaries(license string, agentVersion string) error {
 
 	curPath, err := os.Getwd()
 	if err != nil {
@@ -282,6 +279,7 @@ func provisionMacosCanaries(license string) error{
 
 	var argumentsMacos = []string{
 		"-e", "nr_license_key=" + license,
+		"-e", "target_agent_version=" + agentVersion[1:],
 		"-i", path.Join(curPath, inventoryMacos),
 	}
 
@@ -292,7 +290,7 @@ func provisionMacosCanaries(license string) error{
 	return nil
 }
 
-func provisionLinuxCanaries(license, agentVersion string) error{
+func provisionLinuxCanaries(license, agentVersion string) error {
 	ansibleGroupVars, err := readAnsibleGroupVars()
 	if err != nil {
 		return err
