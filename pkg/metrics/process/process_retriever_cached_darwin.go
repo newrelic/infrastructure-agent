@@ -137,6 +137,8 @@ func (s *ProcessRetrieverCached) retrieveProcesses(psBin string) (map[int32]psIt
 				command:  command,
 			}
 			items[int32(pid)] = item
+		} else {
+			mplog.WithField("ps_output", out).Error("ps output is expected to have >10 columns")
 		}
 	}
 	return items, nil

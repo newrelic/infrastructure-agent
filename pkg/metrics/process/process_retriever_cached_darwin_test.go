@@ -85,20 +85,36 @@ func (c *commandRunnerMock) ShouldRunCommandMultipleTimes(command string, stdin 
 func Test_ProcessRetrieverCached_InvalidPsOutputShouldNotBreakTheInternet(t *testing.T) {
 
 	tests := []struct {
-		name        string
-		wrongOutput string
+		name         string
+		psOut        string
+		psThreadsOut string
+		psCmdOut     string
 	}{
 		{
-			name:        "empty content",
-			wrongOutput: "",
+			name:         "empty content in ps",
+			psOut:        "",
+			psThreadsOut: psThreadsOut[0],
+			psCmdOut:     psCmdOut[0],
 		},
 		{
-			name:        "some invalid data",
-			wrongOutput: "some invalid data\nin\nmultiple lines",
+			name:         "empty content in ps threads",
+			psOut:        psOut[0],
+			psThreadsOut: "",
+			psCmdOut:     psCmdOut[0],
+		},
+		{
+			name:         "empty content in ps cmd",
+			psOut:        psOut[0],
+			psThreadsOut: psThreadsOut[0],
+			psCmdOut:     "",
+		},
+		{
+			name:  "some invalid data",
+			psOut: "some invalid data\nin\nmultiple lines",
 		},
 		{
 			name: "some missing columns",
-			wrongOutput: `PID  PPID USER      STAT       RSS      VSZ PAGEIN COMMAND
+			psOut: `PID  PPID USER      STAT       RSS      VSZ PAGEIN COMMAND
     1     0 root             Ss       12000  4481064      0 /sbin/launchd
    68     1 joe              S          920  4471000      0 /usr/sbin/syslogd
    73     1 root             Ss        3108  4477816      0 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/FSEvents.framework/Versions/A/Support/fseventsd
@@ -112,11 +128,11 @@ func Test_ProcessRetrieverCached_InvalidPsOutputShouldNotBreakTheInternet(t *tes
 		t.Run(tt.name, func(t *testing.T) {
 			cmdRunMock := &commandRunnerMock{}
 			commandRunner = cmdRunMock.run
-			cmdRunMock.ShouldRunCommand("/bin/ps", "", []string{"ax", "-M", "-c"}, psThreadsOut[0], nil)
-			cmdRunMock.ShouldRunCommand("/bin/ps", "", []string{"ax", "-o", "pid,command"}, psCmdOut[0], nil)
-			cmdRunMock.ShouldRunCommand("/bin/ps", "", []string{"ax", "-c", "-o", "pid,ppid,user,state,utime,stime,etime,rss,vsize,pagein,command"}, tt.wrongOutput, nil)
-			_, err := ret.ProcessById(68)
-			assert.EqualError(t, err, "cannot find process with pid 68")
+			cmdRunMock.ShouldRunCommand("/bin/ps", "", []string{"ax", "-M", "-c"}, tt.psThreadsOut, nil)
+			cmdRunMock.ShouldRunCommand("/bin/ps", "", []string{"ax", "-o", "pid,command"}, tt.psCmdOut, nil)
+			cmdRunMock.ShouldRunCommand("/bin/ps", "", []string{"ax", "-c", "-o", "pid,ppid,user,state,utime,stime,etime,rss,vsize,pagein,command"}, tt.psOut, nil)
+			_, err := ret.ProcessById(999)
+			assert.EqualError(t, err, "cannot find process with pid 999")
 			//mocked objects assertions
 			mock.AssertExpectationsForObjects(t, cmdRunMock)
 		})
