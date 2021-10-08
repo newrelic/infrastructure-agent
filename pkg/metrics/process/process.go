@@ -9,6 +9,7 @@ import (
 type Process interface {
 	Username() (string, error)
 	Name() (string, error)
+	Cmdline() (string, error)
 	ProcessId() int32
 	Parent() (Process, error)
 	NumThreads() (int32, error)
