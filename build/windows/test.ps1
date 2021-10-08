@@ -14,6 +14,9 @@ if (-not $?)
     exit -1
 }
 
+Write-Output "--- Setting gopath"
+$env:GOPATH = go env GOPATH
+
 Write-Output "--- Running tests"
 
 go test -ldflags '-X github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration.minimumIntegrationIntervalOverride=2s' $workspace\pkg\... $workspace\cmd\... $workspace\internal\... $workspace\test\...

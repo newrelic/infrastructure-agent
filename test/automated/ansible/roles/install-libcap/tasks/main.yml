@@ -5,8 +5,7 @@
     name: libcap-progs
     state: present
     update_cache: yes
-  when: inventory_hostname in instances_requiring_libcap_progs and
-    (inventory_hostname is search("sles"))
+  when: inventory_hostname in instances_requiring_libcap_progs
 
 - name: 'install libcap2'
   apt:
@@ -15,7 +14,6 @@
       - libcap2-bin
     state: present
     update_cache: yes
-  when: inventory_hostname in instances_requiring_libcap2 and
-    (inventory_hostname is match("debian-stretch"))
+  when: inventory_hostname in instances_requiring_libcap2
 
 ...

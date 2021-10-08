@@ -21,9 +21,15 @@
   become: false
   command: /usr/local/bin/brew uninstall newrelic-infra-agent
 
+  # Avoid errors with commit hash on tag recreation
+- name: delete brew cache (avoid tag recreation commit error)
+  file:
+    path: /Users/ec2-user/Library/Caches/Homebrew
+    state: absent
+
 - name: Install agent
   become: false
-  command: /usr/local/bin/brew reinstall --formula --build-from-source newrelic-infra-agent
+  command: /usr/local/bin/brew reinstall --formula --build-from-source /Users/ec2-user/newrelic-infra-agent.rb
 
 - name: Start launchctl service
   command: /usr/local/bin/brew services start newrelic-infra-agent

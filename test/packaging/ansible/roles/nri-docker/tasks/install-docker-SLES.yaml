@@ -1,9 +1,8 @@
 ---
 
-- name: zypper install infra-agent
-  environment: "{{ env_vars }}"
+- name: zypper install docker
   zypper:
-    name: "newrelic-infra"
+    name: "docker"
     state: present
     oldpackage: yes
     update_cache: yes

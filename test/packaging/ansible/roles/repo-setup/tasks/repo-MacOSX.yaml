@@ -1,8 +1,32 @@
 ---
 
+- name: ensure agent_version is provided
+  fail:
+    msg: "target_agent_version cannot be empty"
+  when: target_agent_version is not defined or (target_agent_version | length) == 0
+
+- name: get tag commit hash
+  uri:
+    url: "https://api.github.com/repos/newrelic/infrastructure-agent/git/ref/tags/{{ target_agent_version }}"
+    method: GET
+    return_content: yes
+    status_code: 200
+    body_format: json
+    validate_certs: false
+  register: http_result
+
+- name: fail if tag commit cannot be retrieved
+  fail:
+    msg: "Cannot retrieve tag {{ target_agent_version }} commit"
+  when: http_result.json.object.sha is not defined
+
+- name: set agent_version for template
+  set_fact:
+    target_agent_revision: "{{ http_result.json.object.sha }}"
+
 - name: Copy latest brew formula
   template:
-    src: ../files/newrelic-infra-agent.rb
+    src: newrelic-infra-agent.rb.j2
     dest: /Users/ec2-user/newrelic-infra-agent.rb
     owner: ec2-user
     group: wheel

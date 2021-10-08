@@ -273,6 +273,69 @@ func TestRunnable_Execute_NoVerboseSet(t *testing.T) {
 	assert.Equal(t, "VERBOSE=", testhelp.ChannelRead(to.Stderr))
 }
 
+func TestRunnable_BuildCommandWithNriaPassthroughEnvironment(t *testing.T) {
+	defer leaktest.Check(t)()
+
+	tests := []struct {
+		name           string
+		cfgEnv         map[string]string
+		osEnv          map[string]string
+		passthrough    []string
+		expectedCmdEnv []string
+	}{
+		{
+			name:           "no passthrough variables",
+			cfgEnv:         map[string]string{"PREFIX": "hello"},
+			osEnv:          map[string]string{"SOME_VAR": "some value", "ANOTHER_VAR": "another value"},
+			passthrough:    nil,
+			expectedCmdEnv: []string{"PREFIX=hello"},
+		},
+		{
+			name:           "one passthrough variable",
+			cfgEnv:         map[string]string{"PREFIX": "hello"},
+			osEnv:          map[string]string{"SOME_VAR": "some value", "ANOTHER_VAR": "another value"},
+			passthrough:    []string{"ANOTHER_VAR"},
+			expectedCmdEnv: []string{"PREFIX=hello", "ANOTHER_VAR=another value"},
+		},
+		{
+			name:           "multiple passthrough variable",
+			cfgEnv:         map[string]string{"PREFIX": "hello"},
+			osEnv:          map[string]string{"SOME_VAR": "some value", "ANOTHER_VAR": "another value"},
+			passthrough:    []string{"SOME_VAR", "ANOTHER_VAR"},
+			expectedCmdEnv: []string{"PREFIX=hello", "SOME_VAR=some value", "ANOTHER_VAR=another value"},
+		},
+		{
+			name:           "passthrough variable has precedence over integration one",
+			cfgEnv:         map[string]string{"PREFIX": "hello", "SOME_VAR": "integration value"},
+			osEnv:          map[string]string{"SOME_VAR": "some value", "ANOTHER_VAR": "another value"},
+			passthrough:    []string{"SOME_VAR", "ANOTHER_VAR"},
+			expectedCmdEnv: []string{"PREFIX=hello", "SOME_VAR=some value", "ANOTHER_VAR=another value"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// GIVEN a working runnable that is configured with CLI arguments and env vars AND passthrough env variables
+			cfg := execConfig(t)
+			cfg.Environment = tt.cfgEnv
+			cfg.Passthrough = tt.passthrough
+			r := FromCmdSlice(testhelp.Command(fixtures.BasicCmd, "world"), cfg)
+
+			// AND os ENV variables are set
+			for k, v := range tt.osEnv {
+				err := os.Setenv(k, v)
+				assert.Nil(t, err)
+			}
+			// WHEN building the command
+			cmd := r.buildCommand(context.Background())
+
+			// THEN only os env variables present in passthrough should be passed to command
+			// and have precedence over the integration ones
+			assert.ElementsMatch(t, tt.expectedCmdEnv, cmd.Env)
+		})
+	}
+}
+
 func execConfig(t require.TestingT) *Config {
 	d, err := os.Getwd()
 	require.NoError(t, err)

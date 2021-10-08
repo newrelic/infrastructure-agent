@@ -1,6 +1,7 @@
 ---
 
-- hosts: testing_hosts
+- name: uninstallation
+  hosts: testing_hosts
   become: true
   gather_facts: yes
 
@@ -14,6 +15,16 @@
       vars:
         env_vars:
       block:
+
+      - name: repo setup
+        include_role:
+          name: repo-setup
+
+      - name: setup config
+        include_role:
+          name: setup-config
+        vars:
+          verbose_level: '0'
 
       - name: install agent
         include_role:

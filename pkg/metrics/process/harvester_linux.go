@@ -10,7 +10,6 @@ package process
 import (
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
-	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/acquire"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
@@ -19,18 +18,6 @@ import (
 	"github.com/shirou/gopsutil/process"
 	"github.com/sirupsen/logrus"
 )
-
-var mplog = log.WithField("component", "Metrics Process")
-
-// Harvester manages sampling for individual processes. It is used by the Process Sampler to get information about the
-// existing processes.
-type Harvester interface {
-	// Pids return the IDs of all the processes that are currently running
-	Pids() ([]int32, error)
-	// Do performs the actual harvesting operation, returning a process sample containing all the metrics data
-	// for the last elapsedSeconds
-	Do(pid int32, elapsedSeconds float64) (*types.ProcessSample, error)
-}
 
 func newHarvester(ctx agent.AgentContext, cache *cache) *linuxHarvester {
 	cfg := ctx.Config()

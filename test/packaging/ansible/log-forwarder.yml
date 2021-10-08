@@ -1,6 +1,7 @@
 ---
 
-- hosts: amd64
+- name: log-forwarder
+  hosts: amd64
   become: true
   gather_facts: yes
 
@@ -16,36 +17,43 @@
 
       block:
 
+        - name: Define variable with supported versions
+          set_fact:
+            log_forwader_supported: true
+          when: (
+                inventory_hostname is search("ubuntu16.04") or
+                inventory_hostname is search("ubuntu18.04") or
+                inventory_hostname is search("ubuntu20.04") or
+                inventory_hostname is search("debian-stretch") or
+                inventory_hostname is search("debian-jessie") or
+                inventory_hostname is search("debian-buster") or
+                inventory_hostname is search("centos") or
+                inventory_hostname is search("redhat") or
+                inventory_hostname is search("sles-12.5")
+                )
+
         - name: repo setup
           include_role:
             name: repo-setup
-          when: inventory_hostname is search("ubuntu") or
-                inventory_hostname is search("centos") or
-                inventory_hostname is search("redhat")
+          when: log_forwader_supported is defined
 
         - name: setup config
           include_role:
             name: setup-config
           vars:
             verbose_level: '3'
-          when: inventory_hostname is search("ubuntu") or
-            inventory_hostname is search("centos") or
-            inventory_hostname is search("redhat")
+          when: log_forwader_supported is defined
 
         - name: install agent
           include_role:
             name: agent-install
-          when: inventory_hostname is search("ubuntu") or
-            inventory_hostname is search("centos") or
-            inventory_hostname is search("redhat")
+          when: log_forwader_supported is defined
 
         # Not available for ARM yet
         - name: Log forwarder
           include_role:
             name: logging
-          when: inventory_hostname is search("ubuntu") or
-            inventory_hostname is search("centos") or
-            inventory_hostname is search("redhat")
+          when: log_forwader_supported is defined
 
       always:
         - name: Final cleanup # Only required for shared infra.

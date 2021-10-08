@@ -1,6 +1,7 @@
 ---
 
-- hosts: testing_hosts
+- name: installation-newrelic-cli
+  hosts: testing_hosts
   become: true
   gather_facts: yes
 
