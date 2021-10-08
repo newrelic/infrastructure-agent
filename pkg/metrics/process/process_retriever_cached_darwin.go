@@ -78,6 +78,7 @@ func (s *ProcessRetrieverCached) processesFromCache() (map[int32]psItem, error) 
 }
 
 func addThreadsAndCmdToPsItems(items map[int32]psItem, processesThreads map[int32]int32, processesCmd map[int32]string) map[int32]psItem {
+	itemsWithAllInfo := make(map[int32]psItem)
 	for pid, item := range items {
 		if numThreads, ok := processesThreads[pid]; ok {
 			item.numThreads = numThreads
@@ -85,9 +86,9 @@ func addThreadsAndCmdToPsItems(items map[int32]psItem, processesThreads map[int3
 		if cmd, ok := processesCmd[pid]; ok {
 			item.cmdLine = cmd
 		}
-		items[pid] = item
+		itemsWithAllInfo[pid] = item
 	}
-	return items
+	return itemsWithAllInfo
 }
 
 func (s *ProcessRetrieverCached) retrieveProcesses(psBin string) (map[int32]psItem, error) {

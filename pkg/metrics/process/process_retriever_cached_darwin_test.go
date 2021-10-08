@@ -243,6 +243,67 @@ func Test_ProcessRetrieverCached_processesFromCache_cleanCacheIfTtlExpired(t *te
 	mock.AssertExpectationsForObjects(t, cmdRunMock)
 }
 
+func Test_addThreadsAndCmdToPsItems(t *testing.T) {
+
+	tests := []struct {
+		name             string
+		items            map[int32]psItem
+		processesThreads map[int32]int32
+		processesCmd     map[int32]string
+		expectedItems    map[int32]psItem
+	}{
+		{
+			name:             "empty items",
+			items:            map[int32]psItem{},
+			processesThreads: map[int32]int32{},
+			processesCmd:     map[int32]string{},
+			expectedItems:    map[int32]psItem{},
+		},
+		{
+			name:             "empty items but info in threads and cmd",
+			items:            map[int32]psItem{},
+			processesThreads: map[int32]int32{1: 12, 343: 23},
+			processesCmd:     map[int32]string{1: "/some/command"},
+			expectedItems:    map[int32]psItem{},
+		},
+		{
+			name:             "non items should not change original",
+			items:            map[int32]psItem{1: {pid: 1, command: "some_command"}, 2: {pid: 2, command: "another_command"}},
+			processesThreads: map[int32]int32{1: 12, 2: 4, 5: 343},
+			processesCmd:     map[int32]string{1: "/bin/some_command", 5: "already_dead_command", 2: "/bin/another_command"},
+			expectedItems: map[int32]psItem{
+				1: {
+					pid:        1,
+					command:    "some_command",
+					numThreads: 12,
+					cmdLine:    "/bin/some_command",
+				}, 2: {
+					pid:        2,
+					command:    "another_command",
+					numThreads: 4,
+					cmdLine:    "/bin/another_command",
+				}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			origItems := copyItems(tt.items)
+			fullInfoItems := addThreadsAndCmdToPsItems(tt.items, tt.processesThreads, tt.processesCmd)
+			assert.Equal(t, tt.expectedItems, fullInfoItems)
+			assert.Equal(t, tt.items, origItems)
+		})
+	}
+}
+
+func copyItems(origItems map[int32]psItem) map[int32]psItem {
+	dest := make(map[int32]psItem)
+	for pid, item := range origItems {
+		dest[pid] = item
+	}
+	return dest
+}
+
 func Test_ProcessRetrieverCached_retrieveProcesses(t *testing.T) {
 	expected := map[int32]psItem{
 
