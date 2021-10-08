@@ -16,6 +16,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/process"
 	"github.com/sirupsen/logrus"
+	"time"
 )
 
 func newHarvester(ctx agent.AgentContext) *darwinHarvester {
@@ -25,13 +26,8 @@ func newHarvester(ctx agent.AgentContext) *darwinHarvester {
 	disableZeroRSSFilter := cfg != nil && cfg.DisableZeroRSSFilter
 	stripCommandLine := (cfg != nil && cfg.StripCommandLine) || (cfg == nil && config.DefaultStripCommandLine)
 	//decouple the process from the harvester
-	processRetriever := func(pid int32) (Process, error) {
-		proc, err := process.NewProcess(pid)
-		if err != nil {
-			return &ProcessWrapper{}, err
-		}
-		return &ProcessWrapper{proc}, nil
-	}
+	s := NewProcessRetrieverCached(time.Second * 10)
+	processRetriever := s.ProcessById
 
 	return &darwinHarvester{
 		privileged:           privileged,
@@ -42,13 +38,15 @@ func newHarvester(ctx agent.AgentContext) *darwinHarvester {
 	}
 }
 
+type ProcessRetriever func(int32) (Process, error)
+
 // darwinHarvester is a Harvester implementation that uses various darwin sources and manages process caches
 type darwinHarvester struct {
 	privileged           bool
 	disableZeroRSSFilter bool
 	stripCommandLine     bool
 	serviceForPid        func(int) (string, bool)
-	processRetriever     func(int32) (Process, error)
+	processRetriever     ProcessRetriever
 }
 
 var _ Harvester = (*darwinHarvester)(nil) // static interface assertion

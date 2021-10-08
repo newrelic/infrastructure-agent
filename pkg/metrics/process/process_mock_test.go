@@ -36,6 +36,19 @@ func (s *ProcessMock) ShouldReturnName(name string, err error) {
 		Return(name, err)
 }
 
+func (s *ProcessMock) Cmdline() (string, error) {
+	args := s.Called()
+
+	return args.String(0), args.Error(1)
+}
+
+func (s *ProcessMock) ShouldReturnCmdLine(cmdLine string, err error) {
+	s.
+		On("Cmdline").
+		Once().
+		Return(cmdLine, err)
+}
+
 func (s *ProcessMock) ProcessId() int32 {
 	args := s.Called()
 
