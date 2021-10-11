@@ -1,6 +1,6 @@
 FROM golang:1.14.4-buster
 
-ARG GH_VERSION='1.1.0'
+ARG GH_VERSION='2.0.0'
 
 RUN apt-get update \
     && apt-get -y install \
