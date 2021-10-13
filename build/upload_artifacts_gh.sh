@@ -14,7 +14,7 @@ delete_asset_by_name() {
     exit 1
   fi
 
-  assets=$(gh api "${assets_url}" --jq '.[] | [.url,.name] | @tsv' | tee)
+  assets=$(gh api "${assets_url}?per_page=100" --jq '.[] | [.url,.name] | @tsv' | tee)
   if [ "${?}" -ne 0 ]; then
     exit 2
   fi
@@ -49,7 +49,7 @@ for filename in $(find . -name "*.msi" -o -name "*.rpm" -o -name "*.deb" -o -nam
     set -e
       delete_asset_by_name $(basename "${filename}")
     set +e
-    sleep 10s
+    sleep 3s
     (( ATTEMPTS-- ))
   done
   if [ $ATTEMPTS -eq 0 ];then
