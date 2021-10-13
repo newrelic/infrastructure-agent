@@ -246,27 +246,27 @@ builds:
     gomips:
       - hardfloat
 
-archives:
-  - id: linux-tarball-infrastructure-agent
-    builds:
-      - linux-newrelic-infra
-      - linux-newrelic-infra-ctl
-      - linux-newrelic-infra-service
-    name_template: "newrelic-infra_{{.Os}}_{{ .Env.TAG }}_{{ .Arch }}_dirty"
-    wrap_in_directory: false
-    format: tar.gz
-    files:
-      - none*
-  - id: linux-tarball-infrastructure-agent-no-cgo
-    builds:
-      - linux-newrelic-infra-no-cgo
-      - linux-newrelic-infra-ctl-no-cgo
-      - linux-newrelic-infra-service-no-cgo
-    name_template: "newrelic-infra_{{.Os}}_{{ .Env.TAG }}_{{ .Arch }}_dirty"
-    wrap_in_directory: false
-    format: tar.gz
-    files:
-      - none*
+#archives:
+#  - id: linux-tarball-infrastructure-agent
+#    builds:
+#      - linux-newrelic-infra
+#      - linux-newrelic-infra-ctl
+#      - linux-newrelic-infra-service
+#    name_template: "newrelic-infra_{{.Os}}_{{ .Env.TAG }}_{{ .Arch }}_dirty"
+#    wrap_in_directory: false
+#    format: tar.gz
+#    files:
+#      - none*
+#  - id: linux-tarball-infrastructure-agent-no-cgo
+#    builds:
+#      - linux-newrelic-infra-no-cgo
+#      - linux-newrelic-infra-ctl-no-cgo
+#      - linux-newrelic-infra-service-no-cgo
+#    name_template: "newrelic-infra_{{.Os}}_{{ .Env.TAG }}_{{ .Arch }}_dirty"
+#    wrap_in_directory: false
+#    format: tar.gz
+#    files:
+#      - none*
 
 nfpms:
 ###############################################################################
