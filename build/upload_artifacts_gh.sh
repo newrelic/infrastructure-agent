@@ -33,7 +33,6 @@ delete_asset_by_name() {
   done < <(echo "$assets")
 
   echo "no assets found to delete with the name: ${artifact}"
-  exit 4
 }
 
 MAX_ATTEMPTS=20
