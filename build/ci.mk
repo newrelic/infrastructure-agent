@@ -73,6 +73,11 @@ ifdef TAG
 			-e GPG_PASSPHRASE \
 			-e GPG_PRIVATE_KEY_BASE64 \
 			-e SNAPSHOT=false \
+			-e AWS_REGION \
+			-e AWS_ACCESS_KEY_ID \
+			-e AWS_SECRET_ACCESS_KEY \
+			-e AWS_ROLE_SESSION_NAME \
+			-e AWS_ROLE_ARN \
 			$(BUILDER_IMG_TAG) make release-${TARGET_OS}
 else
 	@echo "===> infrastructure-agent ===  [ci/prerelease/linux] TAG env variable expected to be set"
