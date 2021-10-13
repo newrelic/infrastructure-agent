@@ -27,6 +27,7 @@ delete_asset_by_name() {
       if [ "${?}" -ne 0 ]; then
         exit 3
       fi
+      echo "deleted ${artifact}, retry..."
       return
     fi
   done < <(echo "$assets")
