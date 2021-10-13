@@ -47,7 +47,7 @@ for filename in $(find . -name "*.msi" -o -name "*.rpm" -o -name "*.deb" -o -nam
       break
     fi
     set -e
-      delete_asset_by_name "${filename}"
+      delete_asset_by_name $(basename "${filename}")
     set +e
     (( ATTEMPTS-- ))
   done
