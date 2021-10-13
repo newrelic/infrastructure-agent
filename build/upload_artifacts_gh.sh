@@ -36,7 +36,7 @@ delete_asset_by_name() {
   exit 4
 }
 
-MAX_ATTEMPTS=5
+MAX_ATTEMPTS=20
 ATTEMPTS=$MAX_ATTEMPTS
 cd dist
 for filename in $(find . -name "*.msi" -o -name "*.rpm" -o -name "*.deb" -o -name "*.zip" -o -name "*.tar.gz");do
@@ -50,6 +50,7 @@ for filename in $(find . -name "*.msi" -o -name "*.rpm" -o -name "*.deb" -o -nam
     set -e
       delete_asset_by_name $(basename "${filename}")
     set +e
+    sleep 10s
     (( ATTEMPTS-- ))
   done
   if [ $ATTEMPTS -eq 0 ];then
