@@ -14,24 +14,33 @@ delete_asset_by_name() {
     exit 1
   fi
 
-  assets=$(gh api "${assets_url}?per_page=100" --jq '.[] | [.url,.name] | @tsv' | tee)
-  if [ "${?}" -ne 0 ]; then
-    exit 2
-  fi
-
-  while IFS= read -r asset;
+  page=1
+  while :
   do
-    assetArray=($asset)
-    if [ "${assetArray[1]}" = "${artifact}"  ]; then
-      gh api -X DELETE "${assetArray[0]}"
-      if [ "${?}" -ne 0 ]; then
-        exit 3
-      fi
-      echo "deleted ${artifact}, retry..."
-      return
+    echo "fetching assets page: ${page}..."
+    assets=$(gh api "${assets_url}?page=${page}" --jq '.[] | [.url,.name] | @tsv' | tee)
+    if [ "${?}" -ne 0 ]; then
+      exit 2
     fi
-  done < <(echo "$assets")
 
+    if [ "${assets}" = "" ]; then
+      break
+    fi
+
+    while IFS= read -r asset;
+    do
+      assetArray=($asset)
+      if [ "${assetArray[1]}" = "${artifact}"  ]; then
+        gh api -X DELETE "${assetArray[0]}"
+        if [ "${?}" -ne 0 ]; then
+          exit 3
+        fi
+        echo "deleted ${artifact}, retry..."
+        return
+      fi
+    done < <(echo "$assets")
+  ((page++))
+  done
   echo "no assets found to delete with the name: ${artifact}"
 }
 
