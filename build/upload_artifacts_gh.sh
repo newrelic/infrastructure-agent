@@ -5,6 +5,7 @@
 #
 #
 
+# delete_asset_by_name is used when we want to re-upload an asset that failed or was partially published.
 delete_asset_by_name() {
   artifact="${1}"
   repo="newrelic/infrastructure-agent"
@@ -15,8 +16,7 @@ delete_asset_by_name() {
   fi
 
   page=1
-  while :
-  do
+  while [ "${page}" -lt 20 ]; do
     echo "fetching assets page: ${page}..."
     assets=$(gh api "${assets_url}?page=${page}" --jq '.[] | [.url,.name] | @tsv' | tee)
     if [ "${?}" -ne 0 ]; then
@@ -49,9 +49,9 @@ ATTEMPTS=$MAX_ATTEMPTS
 cd dist
 for filename in $(find . -name "*.msi" -o -name "*.rpm" -o -name "*.deb" -o -name "*.zip" -o -name "*.tar.gz");do
   echo "===> Uploading to GH $TAG: ${filename}"
-  while [ $ATTEMPTS -gt 0 ];do
-    gh release upload $TAG $filename --clobber
-    if [[ $? -eq 0 ]];then
+  while [ "${ATTEMPTS}" -gt 0 ];do
+    gh release upload "${TAG}" "${filename}" --clobber
+    if [[ "${?}" -eq 0 ]];then
       echo "===> uploaded  ${filename}"
       break
     fi
@@ -61,9 +61,9 @@ for filename in $(find . -name "*.msi" -o -name "*.rpm" -o -name "*.deb" -o -nam
     sleep 3s
     (( ATTEMPTS-- ))
   done
-  if [ $ATTEMPTS -eq 0 ];then
-    echo "too many attempts to upload $filename"
+  if [ "${ATTEMPTS}" -eq 0 ];then
+    echo "too many attempts to upload ${filename}"
     exit 1
   fi
-  ATTEMPTS=$MAX_ATTEMPTS
+  ATTEMPTS="${MAX_ATTEMPTS}"
 done
