@@ -23,3 +23,7 @@ func (r *Executor) userAwareCmd(ctx context.Context) *exec.Cmd {
 	)
 	return exec.CommandContext(ctx, "/usr/bin/sudo", sudoArgs...)
 }
+
+func startProcess(cmd *exec.Cmd) error {
+	return cmd.Start()
+}
