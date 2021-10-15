@@ -1,12 +1,12 @@
-# archived amd64
-- id: tarball-amd64
-  builds:
-    - linux-agent-amd64
-    - linux-ctl-amd64
-    - linux-service-amd64
-  name_template: "newrelic-infra_{{.Os}}_{{ .Env.TAG }}_{{ .Arch }}_dirty"
-  wrap_in_directory: false
-  format: tar.gz
-  files:
-    - none*
-# end archived amd64
+  # archived amd64
+  - id: tarball-amd64
+    builds:
+      - linux-agent-amd64
+      - linux-ctl-amd64
+      - linux-service-amd64
+    name_template: "newrelic-infra_{{.Os}}_{{ .Env.TAG }}_{{ .Arch }}_dirty"
+    wrap_in_directory: false
+    format: tar.gz
+    files:
+      - none*
+  # end archived amd64

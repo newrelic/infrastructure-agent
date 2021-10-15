@@ -1,64 +1,64 @@
-# Debian upstart amd64
-
-- id: debian-infrastructure-agent-upstart
-  builds:
-    - linux-agent-amd64
-    - linux-ctl-amd64
-    - linux-service-amd64
-  package_name: newrelic-infra
-  file_name_template: "newrelic-infra_upstart_{{ .Env.TAG }}_{{ .Arch }}"
-  vendor: "New Relic, Inc."
-  homepage: "https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes"
-  maintainer: "caos-team@newrelic.com"
-  description: "New Relic Infrastructure provides flexible, dynamic server monitoring. With real-time data collection and a UI that scales from a handful of hosts to thousands, Infrastructure is designed for modern Operations teams with fast-changing systems."
-  license: "Copyright (c) 2008-2021 New Relic, Inc. All rights reserved."
-  formats:
-    - deb
-  bindir: /usr/bin
-  contents:
-    - src: 'target/nridocker/{{ .Arch }}/etc/newrelic-infra/integrations.d/docker-config.yml'
-      dst: '/etc/newrelic-infra/integrations.d/docker-config.yml'
-      type: config
-
-    - src: 'LICENSE'
-      dst: '/var/db/newrelic-infra/LICENSE.txt'
-    - src: 'target/nridocker/{{ .Arch }}/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
-      dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
-    - src: 'target/nriflex/{{ .Arch }}/nri-flex'
-      dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
-    - src: 'target/nriprometheus/{{ .Arch }}/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-      dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-
-    # Upstart service conf file
-    - src: 'build/package/upstart/newrelic-infra'
-      dst: '/etc/init/newrelic-infra.conf'
-      type: config
-
-    # Symlink required for upstart service.
-    - src: /lib/init/upstart-job
-      dst: /etc/init.d/newrelic-infra
-      type: "symlink"
-  empty_folders:
-    - /var/db/newrelic-infra/custom-integrations
-    - /var/db/newrelic-infra/integrations.d
-    - /var/log/newrelic-infra
-    - /var/run/newrelic-infra
-  # Scripts to execute during the installation of the package.
-  scripts:
-    preinstall: "build/package/before-install.sh"
-    postinstall: "build/package/deb/postinst-upstart.sh"
-    preremove: "build/package/deb/prerm.sh"
-    postremove: "build/package/after-remove.sh"
-  # Packages to replace according to old packaging scripts.
-  replaces:
-    - opspro-agent
-    - opspro-agent-sysv
-  # Section.
-  section: default
-  # Priority.
-  priority: extra
-  # Recommended packages. If they fail to install installation of the agent will not be interrupted.
-  recommends:
-    - td-agent-bit
-
-# end Debian upstart amd64
+  # Debian upstart amd64
+  
+  - id: debian-infrastructure-agent-upstart
+    builds:
+      - linux-agent-amd64
+      - linux-ctl-amd64
+      - linux-service-amd64
+    package_name: newrelic-infra
+    file_name_template: "newrelic-infra_upstart_{{ .Env.TAG }}_{{ .Arch }}"
+    vendor: "New Relic, Inc."
+    homepage: "https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes"
+    maintainer: "caos-team@newrelic.com"
+    description: "New Relic Infrastructure provides flexible, dynamic server monitoring. With real-time data collection and a UI that scales from a handful of hosts to thousands, Infrastructure is designed for modern Operations teams with fast-changing systems."
+    license: "Copyright (c) 2008-2021 New Relic, Inc. All rights reserved."
+    formats:
+      - deb
+    bindir: /usr/bin
+    contents:
+      - src: 'target/nridocker/{{ .Arch }}/etc/newrelic-infra/integrations.d/docker-config.yml'
+        dst: '/etc/newrelic-infra/integrations.d/docker-config.yml'
+        type: config
+  
+      - src: 'LICENSE'
+        dst: '/var/db/newrelic-infra/LICENSE.txt'
+      - src: 'target/nridocker/{{ .Arch }}/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
+      - src: 'target/nriflex/{{ .Arch }}/nri-flex'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
+      - src: 'target/nriprometheus/{{ .Arch }}/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
+  
+      # Upstart service conf file
+      - src: 'build/package/upstart/newrelic-infra'
+        dst: '/etc/init/newrelic-infra.conf'
+        type: config
+  
+      # Symlink required for upstart service.
+      - src: /lib/init/upstart-job
+        dst: /etc/init.d/newrelic-infra
+        type: "symlink"
+    empty_folders:
+      - /var/db/newrelic-infra/custom-integrations
+      - /var/db/newrelic-infra/integrations.d
+      - /var/log/newrelic-infra
+      - /var/run/newrelic-infra
+    # Scripts to execute during the installation of the package.
+    scripts:
+      preinstall: "build/package/before-install.sh"
+      postinstall: "build/package/deb/postinst-upstart.sh"
+      preremove: "build/package/deb/prerm.sh"
+      postremove: "build/package/after-remove.sh"
+    # Packages to replace according to old packaging scripts.
+    replaces:
+      - opspro-agent
+      - opspro-agent-sysv
+    # Section.
+    section: default
+    # Priority.
+    priority: extra
+    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
+    recommends:
+      - td-agent-bit
+  
+  # end Debian upstart amd64
