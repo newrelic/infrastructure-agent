@@ -323,6 +323,7 @@ func provisionLinuxCanaries(license, agentVersion string) error {
 		"-e", "enable_process_metrics=true",
 		"-e", "verbose=3",
 		"-e", "target_agent_version=" + agentVersion[1:],
+		"-e", "instance_prefix=" + "canary:" + agentVersion + ":",
 		"-i", path.Join(curPath, inventoryLinux),
 	}
 
