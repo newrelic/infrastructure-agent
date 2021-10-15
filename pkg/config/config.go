@@ -1741,7 +1741,7 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	if cfg.MetricsProcessSampleRate < FREQ_INTERVAL_FLOOR_PROCESS_METRICS && cfg.MetricsProcessSampleRate > FREQ_DISABLE_SAMPLING {
 		cfg.MetricsProcessSampleRate = FREQ_INTERVAL_FLOOR_PROCESS_METRICS
 	}
-	nlog.WithField("MetricsNetworkSampleRate", cfg.MetricsProcessSampleRate).Debug("Metrics Process Sample Rate.")
+	nlog.WithField("MetricsProcessSampleRate", cfg.MetricsProcessSampleRate).Debug("Metrics Process Sample Rate.")
 
 	nlog.WithField("FilesConfigOn", cfg.FilesConfigOn).Debug("Configuration file monitoring.")
 
