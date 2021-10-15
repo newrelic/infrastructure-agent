@@ -149,7 +149,7 @@ release-linux-arm64: release/pkg-linux-arm64 release/fix-tarballs-linux release/
 	@echo "=== [release-linux-arm64] full pre-release cycle complete for nix"
 
 .PHONY : release-linux-legacy
-release-linux-arm64: release/pkg-linux-legacy release/fix-tarballs-linux release/sign release/publish
+ release-linux-legacy: release/pkg-linux-legacy release/fix-tarballs-linux release/sign release/publish
 	@echo "=== [release-linux-legacy] full pre-release cycle complete for nix"
 
 .PHONY : release-linux-for-docker
