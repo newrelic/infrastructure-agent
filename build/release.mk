@@ -65,7 +65,7 @@ release/pkg-linux: release/get-integrations-arm64
 release/pkg-linux: release/get-integrations-arm
 release/pkg-linux: release/get-fluentbit-linux-amd64
 #release/pkg-linux: release/get-fluentbit-linux-arm
-#release/pkg-linux: release/get-fluentbit-linux-arm64
+release/pkg-linux: release/get-fluentbit-linux-arm64
 	@echo "=== [release/pkg-linux] PRE-RELEASE compiling all binaries, creating packages, archives"
 	$(GORELEASER_BIN) release --config $(GORELEASER_CONFIG_LINUX) $(PKG_FLAGS)
 
@@ -80,7 +80,7 @@ release/pkg-linux-amd64: release/get-fluentbit-linux-amd64
 .PHONY : release/pkg-linux-arm
 release/pkg-linux-arm: release/deps release/clean generate-goreleaser-arm
 release/pkg-linux-arm: release/get-integrations-arm
-release/pkg-linux-arm: release/get-fluentbit-linux-arm
+#release/pkg-linux-arm: release/get-fluentbit-linux-arm
 	@echo "=== [release/pkg-linux-arm] PRE-RELEASE compiling all binaries, creating packages, archives"
 	$(GORELEASER_BIN) release --config $(GORELEASER_CONFIG_LINUX) $(PKG_FLAGS)
 
