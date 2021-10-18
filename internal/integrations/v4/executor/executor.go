@@ -89,7 +89,7 @@ func (r *Executor) Execute(ctx context.Context, pidChan, exitCodeCh chan<- int) 
 			cancelCommand()
 		}()
 
-		if err := cmd.Start(); err != nil {
+		if err = startProcess(cmd); err != nil {
 			out.Errors <- err
 		}
 

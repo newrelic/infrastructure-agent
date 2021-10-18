@@ -7,12 +7,12 @@ arm64
 
 [amd64]
 {% for ins in instances_for_inventory_amd64 %}
-{{ ins.name }} ansible_host={{ ins.ip }} ansible_user={{ ins.username }} ansible_python_interpreter={{ ins.python_interpreter }} iid={{ ins.iid }}
+{{ instance_prefix }}{{ ins.name }} ansible_host={{ ins.ip }} ansible_user={{ ins.username }} ansible_python_interpreter={{ ins.python_interpreter }} iid={{ ins.iid }}
 {% endfor %}
 
 [arm64]
 {% for ins in instances_for_inventory_arm64 %}
-{{ ins.name }} ansible_host={{ ins.ip }} ansible_user={{ ins.username }} ansible_python_interpreter={{ ins.python_interpreter }} iid={{ ins.iid }}
+{{ instance_prefix }}{{ ins.name }} ansible_host={{ ins.ip }} ansible_user={{ ins.username }} ansible_python_interpreter={{ ins.python_interpreter }} iid={{ ins.iid }}
 {% endfor %}
 
 [amd64:vars]

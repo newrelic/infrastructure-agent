@@ -12,3 +12,7 @@ import (
 func (r *Executor) userAwareCmd(ctx context.Context) *exec.Cmd {
 	return exec.CommandContext(ctx, r.Command, r.Args...)
 }
+
+func startProcess(cmd *exec.Cmd) error {
+	return cmd.Start()
+}
