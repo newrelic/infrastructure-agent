@@ -93,7 +93,8 @@ jobs:
 
   packaging-linux:
     name: Build and upload all artifacts into GH Release assets
-    runs-on: ubuntu-18.04
+
+    runs-on: ubuntu-20.04
     needs: [unit-test-linux, harvest-test-linux, proxy-tests-linux]
 
     steps:
@@ -143,7 +144,7 @@ jobs:
           username: ${{ env.DOCKER_HUB_ID }}
           password: ${{ env.DOCKER_HUB_PASSWORD }}
       - name: Publish ${{ matrix.assetsType }} to S3 action
-        uses: newrelic/infrastructure-publish-action@v1.0.19
+        uses: newrelic/infrastructure-publish-action@v1.0.21
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
