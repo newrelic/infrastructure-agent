@@ -8,7 +8,7 @@ on:
 jobs:
   trivy_scanner:
     name: Trivy scanner for docker
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
 
       - name: newrelic/infrastructure
