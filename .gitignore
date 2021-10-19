@@ -45,3 +45,4 @@ test/cfgprotocol/testdata/scenarios/scenario4/settings.yml
 harvest*.test
 *.ec2
 tools/spin-ec2/bin
+build/.goreleaser_linux.yml
