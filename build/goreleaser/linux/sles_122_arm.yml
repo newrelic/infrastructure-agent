@@ -71,7 +71,7 @@
       summary: "New Relic Infrastructure Agent"
       group: default
     # Recommended packages. If they fail to install installation of the agent will not be interrupted.
-    recommends:
-      - td-agent-bit
+#    recommends:
+#      - td-agent-bit
   
   # end SLES 12.2 arm
