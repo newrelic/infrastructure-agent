@@ -11,9 +11,9 @@
 
 - name: unprivileged mode agent installation
   import_playbook: installation-unprivileged.yml
-
-- name: agent installation via newrelic-cli
-  import_playbook: installation-newrelic-cli.yml
+#
+#- name: agent installation via newrelic-cli
+#  import_playbook: installation-newrelic-cli.yml
 
 - name: log forwarder
   import_playbook: log-forwarder.yml
