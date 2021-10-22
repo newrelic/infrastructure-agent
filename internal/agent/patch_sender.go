@@ -28,6 +28,7 @@ type patchSenderIngest struct {
 	postDeltas       postDeltas
 	lastSubmission   delta.LastSubmissionStore
 	lastEntityID     delta.EntityIDPersist
+	lastLicense      delta.LastSubmissionLicense
 	userAgent        string
 	compactEnabled   bool
 	compactThreshold uint64
@@ -51,7 +52,7 @@ var pslog = log.WithComponent("PatchSender")
 // Reference to post delta function that can be stubbed for unit testing
 type postDeltas func(entityKeys []string, entityID entity.ID, isAgent bool, deltas ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error)
 
-func newPatchSender(entityInfo entity.Entity, context AgentContext, store delta.Storage, lastSubmission delta.LastSubmissionStore, lastEntityID delta.EntityIDPersist, userAgent string, agentIDProvide id.Provide, httpClient http2.Client) (patchSender, error) {
+func newPatchSender(entityInfo entity.Entity, context AgentContext, store delta.Storage, lastSubmission delta.LastSubmissionStore, lastEntityID delta.EntityIDPersist, lastLicense delta.LastSubmissionLicense, userAgent string, agentIDProvide id.Provide, httpClient http2.Client) (patchSender, error) {
 	if store == nil {
 		return nil, fmt.Errorf("creating patch sender: delta store can't be nil")
 	}
@@ -94,6 +95,7 @@ func newPatchSender(entityInfo entity.Entity, context AgentContext, store delta.
 		store:            store,
 		lastSubmission:   lastSubmission,
 		lastEntityID:     lastEntityID,
+		lastLicense:      lastLicense,
 		postDeltas:       client.PostDeltas,
 		context:          context,
 		userAgent:        userAgent,
@@ -124,10 +126,12 @@ func (p *patchSenderIngest) Process() (err error) {
 	longTimeDisconnected := lastSubmissionTimeExceeded && p.lastDeltaRemoval.Add(p.resetIfOffline).Before(now)
 
 	agentEntityIDChanged := p.agentEntityIDChanged()
+	licenseHashChanged := p.hasLicenseHashChanged()
 
-	if longTimeDisconnected || agentEntityIDChanged {
+	if longTimeDisconnected || agentEntityIDChanged || licenseHashChanged {
 		llog.WithField("offlineTime", p.resetIfOffline).
 			WithField("agentEntityIDChanged", agentEntityIDChanged).
+			WithField("licenseHashChanged", licenseHashChanged).
 			Info("Removing inventory cache")
 
 		// Removing the store for the entity would force the agent recreating a fresh Delta Store
@@ -138,6 +142,12 @@ func (p *patchSenderIngest) Process() (err error) {
 		if agentEntityIDChanged {
 			if err := p.lastEntityID.UpdateEntityID(p.agentIDProvide().ID); err != nil {
 				llog.WithError(err).Warn("Failed to update inventory agent entityID")
+			}
+		}
+
+		if licenseHashChanged {
+			if err := p.lastLicense.Update(p.cfg.License); err != nil {
+				llog.WithError(err).Warn("Failed to update inventory agent license hash")
 			}
 		}
 
@@ -255,7 +265,7 @@ func (p *patchSenderIngest) agentEntityIDChanged() bool {
 	if entityKey != p.context.EntityKey() {
 		return false
 	}
-
+	
 	lastEntityID, err := p.lastEntityID.GetEntityID()
 	if err != nil {
 		pslog.WithField("entityKey", entityKey).
@@ -276,4 +286,14 @@ func (p *patchSenderIngest) agentEntityIDChanged() bool {
 	}
 
 	return lastEntityID != p.agentIDProvide().ID
+}
+
+func (p *patchSenderIngest) hasLicenseHashChanged() bool {
+	hasChanged, err := p.lastLicense.HasChanged(p.cfg.License)
+	if err != nil {
+		pslog.
+			WithError(err).
+			Warn("could not retrieve license hash")
+	}
+	return hasChanged
 }

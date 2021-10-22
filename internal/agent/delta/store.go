@@ -40,6 +40,7 @@ const (
 	DisableInventorySplit       = 0
 	lastSuccessSubmissionFolder = "last_success"
 	lastEntityIDFolder          = "last_entityID"
+	lastLicenseHashFolder       = "last_license_md5"
 )
 
 var EMPTY_DELTA = []byte{'{', '}'}

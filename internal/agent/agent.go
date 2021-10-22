@@ -482,7 +482,8 @@ func (a *Agent) registerEntityInventory(entity entity.Entity) error {
 		fileName := entity.Key.String()
 		lastSubmission := delta.NewLastSubmissionStore(a.store.DataDir, fileName)
 		lastEntityID := delta.NewEntityIDFilePersist(a.store.DataDir, fileName)
-		inv.sender, err = newPatchSender(entity, a.Context, a.store, lastSubmission, lastEntityID, a.userAgent, a.Context.Identity, a.httpClient)
+		lastLicense := delta.NewLastSubmissionLicenseFileStore(a.store.DataDir, fileName)
+		inv.sender, err = newPatchSender(entity, a.Context, a.store, lastSubmission, lastEntityID, lastLicense, a.userAgent, a.Context.Identity, a.httpClient)
 	}
 	if err != nil {
 		return err
@@ -763,12 +764,12 @@ func (a *Agent) Run() (err error) {
 					_ = a.updateIDLookupTable(data.Data)
 				}
 
-				entityKey := data.Entity.Key.String()
-				if _, ok := a.inventories[entityKey]; !ok {
-					_ = a.registerEntityInventory(data.Entity)
-				}
-
 				if !data.NotApplicable {
+					entityKey := data.Entity.Key.String()
+
+					if _, ok := a.inventories[entityKey]; !ok {
+						_ = a.registerEntityInventory(data.Entity)
+					}
 					if err := a.storePluginOutput(data); err != nil {
 						alog.WithError(err).Error("problem storing plugin output")
 					}
