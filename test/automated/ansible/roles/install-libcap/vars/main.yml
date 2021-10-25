@@ -4,6 +4,7 @@ instances_requiring_libcap_progs:
   - "amd64:sles-15.1"
   - "amd64:sles-15.2"
   - "amd64:sles-15.3"
+  - "arm64:sles-15.2"
 instances_requiring_libcap2:
   - "amd64:debian-stretch"
   - "arm64:debian-stretch"
