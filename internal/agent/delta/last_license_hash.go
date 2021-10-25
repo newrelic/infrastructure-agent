@@ -40,6 +40,18 @@ func NewLastSubmissionLicenseFileStore(dataDir, fileName string) LastSubmissionL
 	}
 }
 
+// NewLastSubmissionLicenseInMemory will store the license hash only in memory.
+func NewLastSubmissionLicenseInMemory() LastSubmissionLicense {
+	return &LastSubmissionLicenseFileStore{
+		readFile: func(path string) (string, error) {
+			return "", nil
+		},
+		writeFile: func(content string, path string) error {
+			return nil
+		},
+	}
+}
+
 // load will get the license hash from the disk.
 func (l *LastSubmissionLicenseFileStore) load() error {
 	var err error

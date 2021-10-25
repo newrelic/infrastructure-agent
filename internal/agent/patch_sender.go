@@ -265,7 +265,7 @@ func (p *patchSenderIngest) agentEntityIDChanged() bool {
 	if entityKey != p.context.EntityKey() {
 		return false
 	}
-	
+
 	lastEntityID, err := p.lastEntityID.GetEntityID()
 	if err != nil {
 		pslog.WithField("entityKey", entityKey).

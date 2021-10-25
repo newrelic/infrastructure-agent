@@ -55,7 +55,7 @@ func ResetPostDelta(_ []string, _ entity.ID, _ bool, _ ...*inventoryapi.RawDelta
 }
 
 func TestNewPatchSender(t *testing.T) {
-	assert.Implements(t, (*patchSender)(nil), newTestPatchSender(t, "", &delta.Store{}, delta.NewLastSubmissionInMemory(), nil))
+	assert.Implements(t, (*patchSender)(nil), newTestPatchSender(t, "", &delta.Store{}, delta.NewLastSubmissionInMemory(), nil, nil))
 }
 
 func cachePluginData(t *testing.T, store *delta.Store, entityKey string) {
@@ -90,7 +90,7 @@ func TestPatchSender_Process_LongTermOffline(t *testing.T) {
 	cachePluginData(t, store, entityKey)
 
 	// And a patch sender that has been disconnected for more than 24 hours
-	ps := newTestPatchSender(t, dataDir, store, ls, nil)
+	ps := newTestPatchSender(t, dataDir, store, ls, nil, delta.NewLastSubmissionLicenseInMemory())
 	nowIsEndOf18()
 	duration25h, _ := time.ParseDuration("25h")
 	assert.NoError(t, ls.UpdateTime(timeNow().Add(-duration25h)))
@@ -115,9 +115,11 @@ func TestPatchSender_Process_LongTermOffline_ReconnectPlugins(t *testing.T) {
 
 	// With some cached plugin data
 	cachePluginData(t, store, entityKey)
+	lastSubmissionTime := &mockLastSubmissionTime{}
+	lastSubmissionTime.On("UpdateTime", mock.Anything).Return()
 
 	// And a patch sender that has been disconnected for more than 24 hours, but doesn't need to reset deltas
-	ps := newTestPatchSender(t, dataDir, store, ls, nil)
+	ps := newTestPatchSender(t, dataDir, store, ls, nil, delta.NewLastSubmissionLicenseInMemory())
 	ps.postDeltas = FakePostDelta
 	ps.lastDeltaRemoval = endOf18
 	var agentKey atomic.Value
@@ -154,7 +156,7 @@ func TestPatchSender_Process_LongTermOffline_NoDeltasToPost_UpdateLastDeltaRemov
 	// When it has successfully submitted some deltas
 	require.NoError(t, ls.UpdateTime(time.Now()))
 
-	ps := newTestPatchSender(t, dataDir, store, ls, nil)
+	ps := newTestPatchSender(t, dataDir, store, ls, nil, delta.NewLastSubmissionLicenseInMemory())
 	ps.postDeltas = FailingPostDelta
 	ps.lastDeltaRemoval = time.Date(2018, 12, 12, 0, 12, 12, 12, &time.Location{})
 	// And a patch sender that has been disconnected for less than 24 hours
@@ -188,7 +190,7 @@ func TestPatchSender_Process_LongTermOffline_AlreadyRemoved(t *testing.T) {
 	resetTime, _ := time.ParseDuration("24h")
 	// But the deltas were already cleaned up less than 24 hours ago
 	lastRemoval := time.Date(2018, 12, 12, 10, 12, 12, 12, &time.Location{})
-	ps := newTestPatchSender(t, dataDir, store, ls, nil)
+	ps := newTestPatchSender(t, dataDir, store, ls, nil, delta.NewLastSubmissionLicenseInMemory())
 	ps.postDeltas = FailingPostDelta
 	ps.lastDeltaRemoval = lastRemoval
 	ps.resetIfOffline = resetTime
@@ -233,7 +235,7 @@ func TestPatchSender_Process_LastSubmissionTime_IgnoreEmptyEntityKey(t *testing.
 	lastSubmissionTime.On("UpdateTime", mock.Anything).Return()
 
 	// AND a patchSender
-	sender := newTestPatchSender(t, "", storage, lastSubmissionTime, &mockEntityIDPersist{})
+	sender := newTestPatchSender(t, "", storage, lastSubmissionTime, &mockEntityIDPersist{}, delta.NewLastSubmissionLicenseInMemory())
 	sender.entityInfo = entity.NewFromNameWithoutID("")
 	sender.compactEnabled = false
 	sender.postDeltas = assertDeltaSent(t, rawDelta)
@@ -269,7 +271,7 @@ func TestPatchSender_Process_ShortTermOffline(t *testing.T) {
 	// And a patch sender that has been disconnected for less than 24 hours
 	resetTime, _ := time.ParseDuration("24h")
 	lastDeltaRemoval := time.Date(2018, 12, 12, 0, 12, 12, 12, &time.Location{})
-	ps := newTestPatchSender(t, dataDir, store, ls, nil)
+	ps := newTestPatchSender(t, dataDir, store, ls, nil, delta.NewLastSubmissionLicenseInMemory())
 	ps.postDeltas = FailingPostDelta
 	ps.lastDeltaRemoval = lastDeltaRemoval
 	ps.resetIfOffline = resetTime
@@ -297,7 +299,7 @@ func TestPatchSender_Process_DividedDeltas(t *testing.T) {
 	store := delta.NewStore(dataDir, "localhost", maxInventoryDataSize)
 	ls := delta.NewLastSubmissionInMemory()
 	require.NoError(t, ls.UpdateTime(timeNow()))
-	ps := newTestPatchSender(t, dataDir, store, ls, nil)
+	ps := newTestPatchSender(t, dataDir, store, ls, nil, delta.NewLastSubmissionLicenseInMemory())
 	pdt := testhelpers.NewPostDeltaTracer(maxInventoryDataSize)
 	ps.postDeltas = pdt.PostDeltas
 	ps.lastDeltaRemoval = time.Date(2018, 12, 12, 0, 12, 12, 12, &time.Location{})
@@ -331,7 +333,7 @@ func TestPatchSender_Process_DisabledDeltaSplit(t *testing.T) {
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
 	store := delta.NewStore(dataDir, "localhost", delta.DisableInventorySplit)
-	ps := newTestPatchSender(t, dataDir, store, delta.NewLastSubmissionInMemory(), nil)
+	ps := newTestPatchSender(t, dataDir, store, delta.NewLastSubmissionInMemory(), nil, delta.NewLastSubmissionLicenseInMemory())
 	pdt := testhelpers.NewPostDeltaTracer(math.MaxInt32)
 	ps.postDeltas = pdt.PostDeltas
 
@@ -365,7 +367,7 @@ func TestPatchSender_Process_SingleRequestDeltas(t *testing.T) {
 	pdt := testhelpers.NewPostDeltaTracer(maxInventoryDataSize)
 	resetTime, _ := time.ParseDuration("24h")
 	lastDeltaRemoval := time.Date(2018, 12, 12, 0, 12, 12, 12, &time.Location{})
-	ps := newTestPatchSender(t, dataDir, store, ls, nil)
+	ps := newTestPatchSender(t, dataDir, store, ls, nil, delta.NewLastSubmissionLicenseInMemory())
 	ps.postDeltas = pdt.PostDeltas
 	ps.lastDeltaRemoval = lastDeltaRemoval
 	ps.resetIfOffline = resetTime
@@ -401,7 +403,7 @@ func TestPatchSender_Process_CompactEnabled(t *testing.T) {
 
 	resetTime, _ := time.ParseDuration("24h")
 	lastDeltaRemoval := time.Date(2018, 12, 12, 0, 12, 12, 12, &time.Location{})
-	ps := newTestPatchSender(t, dataDir, store, ls, nil)
+	ps := newTestPatchSender(t, dataDir, store, ls, nil, delta.NewLastSubmissionLicenseInMemory())
 	ps.postDeltas = FakePostDelta
 	ps.lastDeltaRemoval = lastDeltaRemoval
 	ps.resetIfOffline = resetTime
@@ -435,7 +437,7 @@ func TestPatchSender_Process_Reset(t *testing.T) {
 
 	resetTime, _ := time.ParseDuration("24h")
 	lastDeltaRemoval := time.Date(2018, 12, 12, 0, 12, 12, 12, &time.Location{})
-	ps := newTestPatchSender(t, dataDir, store, ls, nil)
+	ps := newTestPatchSender(t, dataDir, store, ls, nil, delta.NewLastSubmissionLicenseInMemory())
 	// And a backend service that returns ResetAll after being invoked
 	ps.postDeltas = ResetPostDelta
 	ps.lastDeltaRemoval = lastDeltaRemoval
@@ -483,7 +485,7 @@ func TestPathSender_Process_EntityIDChanged_ResetLocalEntityDeltas(t *testing.T)
 	lastEntityID.On("GetEntityID").Return(entity.ID(654321))
 
 	// AND a patchSender
-	sender := newTestPatchSender(t, "", storage, delta.NewLastSubmissionInMemory(), lastEntityID)
+	sender := newTestPatchSender(t, "", storage, delta.NewLastSubmissionInMemory(), lastEntityID, delta.NewLastSubmissionLicenseInMemory())
 	sender.entityInfo = entity.NewFromNameWithoutID(agentKey)
 
 	// AND set a new identity
@@ -515,7 +517,7 @@ func TestPathSender_Process_EmptyEntityID_UpdateEntityIDWithCurrentAgentID(t *te
 	lastEntityID.On("GetEntityID").Return(entity.EmptyID)
 
 	// AND a patchSender
-	sender := newTestPatchSender(t, "", storage, delta.NewLastSubmissionInMemory(), lastEntityID)
+	sender := newTestPatchSender(t, "", storage, delta.NewLastSubmissionInMemory(), lastEntityID, delta.NewLastSubmissionLicenseInMemory())
 	sender.entityInfo = entity.NewFromNameWithoutID(agentKey)
 
 	// AND set a new identity
@@ -529,6 +531,61 @@ func TestPathSender_Process_EmptyEntityID_UpdateEntityIDWithCurrentAgentID(t *te
 	// THEN we should not remove deltas and update the persisted entityID
 	storage.AssertNotCalled(t, "RemoveEntity", agentKey)
 	lastEntityID.AssertCalled(t, "UpdateEntityID", agentID.ID)
+}
+
+func TestPathSender_Process_LicenseChanged_ResetLocalEntityDeltas(t *testing.T) {
+	newLicenseHash := "abcd"
+	entityKey := "test_entity"
+
+	// GIVEN a delta store
+	storage := &mockStorage{}
+	storage.On("ReadDeltas", mock.Anything).Return([]inventoryapi.RawDeltaBlock{})
+	storage.On("RemoveEntity", mock.Anything).Return(nil)
+
+	// AND a disk persisted license hash
+	lastSubmissionLicense := &mockLastSubmissionLicense{}
+	lastSubmissionLicense.On("HasChanged", newLicenseHash).Return(true)
+	lastSubmissionLicense.On("Update", newLicenseHash).Return(nil)
+
+	// AND a patchSender
+	sender := newTestPatchSender(t, "", storage, delta.NewLastSubmissionInMemory(), nil, lastSubmissionLicense)
+	sender.cfg.License = newLicenseHash
+	sender.entityInfo = entity.NewFromNameWithoutID(entityKey)
+
+	// WHEN process deltas
+	sender.Process()
+
+	// THEN remove deltas for the entity and update the persisted entityID
+	storage.AssertCalled(t, "RemoveEntity", entityKey)
+	lastSubmissionLicense.AssertCalled(t, "Update", newLicenseHash)
+}
+
+func TestPathSender_Process_LicenseNotChanged(t *testing.T) {
+	newLicenseHash := "abcd"
+	entityKey := "test_entity"
+
+	// GIVEN a delta store
+	storage := &mockStorage{}
+	storage.On("ReadDeltas", mock.Anything).Return([]inventoryapi.RawDeltaBlock{})
+	storage.On("RemoveEntity", mock.Anything).Return(nil)
+
+	// AND a disk persisted license hash
+	lastSubmissionLicense := &mockLastSubmissionLicense{}
+	lastSubmissionLicense.On("HasChanged", mock.Anything).Return(false)
+	lastSubmissionLicense.On("Update", mock.Anything).Return(nil)
+
+	// AND a patchSender
+	sender := newTestPatchSender(t, "", storage, delta.NewLastSubmissionInMemory(), nil, lastSubmissionLicense)
+	sender.cfg.License = newLicenseHash
+	sender.entityInfo = entity.NewFromNameWithoutID(entityKey)
+
+	// WHEN process deltas
+	sender.Process()
+
+	// THEN remove deltas for the entity and update the persisted entityID
+	storage.AssertNotCalled(t, "RemoveEntity", mock.Anything)
+	lastSubmissionLicense.AssertNotCalled(t, "Update", mock.Anything)
+	lastSubmissionLicense.AssertCalled(t, "HasChanged", newLicenseHash)
 }
 
 type mockStorage struct {
@@ -561,7 +618,20 @@ func (e *mockEntityIDPersist) UpdateEntityID(id entity.ID) error {
 	return nil
 }
 
-func newTestPatchSender(t *testing.T, dataDir string, store delta.Storage, ls delta.LastSubmissionStore, lastEntityID delta.EntityIDPersist) *patchSenderIngest {
+type mockLastSubmissionLicense struct {
+	mock.Mock
+}
+
+func (m *mockLastSubmissionLicense) HasChanged(license string) (bool, error) {
+	return m.Called(license).Get(0).(bool), nil
+}
+
+func (m *mockLastSubmissionLicense) Update(license string) error {
+	m.Called(license)
+	return nil
+}
+
+func newTestPatchSender(t *testing.T, dataDir string, store delta.Storage, ls delta.LastSubmissionStore, lastEntityID delta.EntityIDPersist, lastLicense delta.LastSubmissionLicense) *patchSenderIngest {
 	idCtx := id.NewContext(ctx.Background())
 	var agentKeyVal atomic.Value
 	agentKeyVal.Store(agentKey)
@@ -575,6 +645,7 @@ func newTestPatchSender(t *testing.T, dataDir string, store delta.Storage, ls de
 		store,
 		ls,
 		lastEntityID,
+		lastLicense,
 		"user agent",
 		idCtx.AgentIdnOrEmpty,
 		http.NullHttpClient,
