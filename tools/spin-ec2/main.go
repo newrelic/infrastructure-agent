@@ -277,6 +277,10 @@ func provisionMacosCanaries(license string, agentVersion string) error {
 		"-i", path.Join(curPath, inventoryLocal),
 		path.Join(curPath, "test/automated/ansible/macos-canaries.yml"))
 
+	//rename the ansible hostname to include agent version. This is temporary until we provision macos on demand
+	execNameArgs("sed", "-i.bak", fmt.Sprintf("s/canary:current/canary:%s/g", agentVersion), path.Join(curPath, inventoryMacos))
+	execNameArgs("rm", fmt.Sprintf("%s.bak", path.Join(curPath, inventoryMacos)))
+
 	var argumentsMacos = []string{
 		"-e", "nr_license_key=" + license,
 		"-e", "target_agent_version=" + agentVersion[1:],
