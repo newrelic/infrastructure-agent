@@ -2,6 +2,7 @@
 
 - name: 'install python'
   raw: 'sudo dnf -y install python36'
-  when: "inventory_hostname in instances_without_python"
+  when: inventory_hostname is search(item)
+  loop: "{{ instances_without_python }}"
 
 ...

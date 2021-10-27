@@ -4,6 +4,7 @@
   ansible.builtin.file:
     name: /etc/apt/sources.list.d/backports.list
     state: absent
-  when: "inventory_hostname in instances_with_eol_repos"
+  when: inventory_hostname is search(item)
+  loop: "{{ instances_with_eol_repos }}"
 
 ...
