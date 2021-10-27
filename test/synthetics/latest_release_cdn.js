@@ -13,12 +13,14 @@
 var assert = require('assert');
 var downloadServerBaseURI = `https://download.newrelic.com/infrastructure_agent`;
 var githubOrg = `https://api.github.com/repos/newrelic`;
-var allRepos = ['infrastructure-agent',
-'nrjmx', 'nri-snmp', 'nri-mysql', 'nri-apache', 'nri-cassandra', 
-'nri-consul', 'nri-couchbase', 'nri-elasticsearch', 'nri-f5', 'nri-haproxy', 
-'nri-jmx', 'nri-kafka', 'nri-memcached', 'nri-mongodb', 'nri-mssql', 
-'nri-mysql', 'nri-nagios', 'nri-nginx', 'nri-oracledb', 'nri-postgresql', 
-'nri-rabbitmq', 'nri-redis'];
+var allRepos = ['infrastructure-agent','nri-jmx', 'nrjmx', 'nri-snmp'];
+/* 
+ * Other OHIs: to consider in a separate synthetic check and alert
+'nri-mysql', 'nri-apache', 'nri-cassandra', 'nri-consul', 'nri-couchbase', 
+'nri-elasticsearch', 'nri-f5', 'nri-haproxy', 'nri-kafka', 'nri-memcached', 
+'nri-mongodb', 'nri-mssql', 'nri-mysql', 'nri-nagios', 'nri-nginx', 'nri-oracledb', 
+'nri-postgresql', 'nri-rabbitmq', 'nri-redis'];
+*/
 var arm64Unsupported = ['nri-oracledb'];
 var windowsUnsupported = ['nri-oracledb'];
 
