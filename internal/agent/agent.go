@@ -1182,5 +1182,5 @@ func (a *Agent) gracefulShutdown() error {
 }
 
 func (a *Agent) shouldSendInventory() bool {
-	return !a.GetContext().Config().IsForwardOnly && !a.GetContext().Config().IsSecureForwardOnly
+	return !a.GetContext().Config().IsForwardOnly
 }
