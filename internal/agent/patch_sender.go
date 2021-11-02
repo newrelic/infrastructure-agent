@@ -156,7 +156,6 @@ func (p *patchSenderIngest) Process() (err error) {
 	}
 
 	if !p.cfg.OfflineLoggingMode {
-		b, _ := json.Marshal(deltas)
 		err = p.sendAllDeltas(deltas)
 	} else {
 		llog.WithField("numberOfDeltas", len(deltas)).Info("suppressed PostDeltas")
