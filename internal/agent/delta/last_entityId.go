@@ -6,6 +6,7 @@ package delta
 import (
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -30,7 +31,7 @@ func NewEntityIDFilePersist(dataDir string, fileName string) *EntityIDFilePersis
 	return &EntityIDFilePersist{
 		readFile:  readFileFn,
 		writeFile: writeFileFn,
-		filePath:  filepath.Join(dataDir, lastEntityIDFolder, fileName),
+		filePath:  filepath.Join(dataDir, lastEntityIDFolder, helpers.SanitizeFileName(fileName)),
 	}
 }
 
