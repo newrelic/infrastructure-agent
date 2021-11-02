@@ -5,7 +5,6 @@ package delta
 
 import (
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -29,7 +28,7 @@ type LastSubmissionFileStore struct {
 // NewLastSubmissionStore creates a new LastSubmissionStore storing data in file.
 func NewLastSubmissionStore(dataDir, fileName string) LastSubmissionStore {
 	return &LastSubmissionFileStore{
-		file: filepath.Join(dataDir, lastSuccessSubmissionFolder, helpers.SanitizeFileName(fileName)),
+		file: filepath.Join(dataDir, lastSuccessSubmissionFolder, fileName),
 	}
 }
 

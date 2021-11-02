@@ -128,12 +128,16 @@ func (p *patchSenderIngest) Process() (err error) {
 	if longTimeDisconnected || agentEntityIDChanged {
 		llog.WithField("offlineTime", p.resetIfOffline).
 			WithField("agentEntityIDChanged", agentEntityIDChanged).
+			WithField("entityKey", entityKey).
 			Info("Removing inventory cache")
 
 		// Removing the store for the entity would force the agent recreating a fresh Delta Store
 		if err := p.store.RemoveEntity(entityKey); err != nil {
 			llog.WithError(err).Warn("Could not remove inventory cache")
 		}
+		// Relaunching one-time harvesters to avoid losing the inventories after reset
+		p.context.Reconnect()
+		p.lastDeltaRemoval = now
 
 		if agentEntityIDChanged {
 			if err := p.lastEntityID.UpdateEntityID(p.agentIDProvide().ID); err != nil {
@@ -141,20 +145,19 @@ func (p *patchSenderIngest) Process() (err error) {
 			}
 		}
 
-		p.lastDeltaRemoval = now
 		return fmt.Errorf("agent has to remove inventory cache")
 	}
 
 	if len(deltas) == 0 {
-		llog.Debug("Patch sender found no deltas to send.")
+		llog.WithField("entityid", p.entityInfo.ID.String()).
+			WithField("entityKey", entityKey).
+			Debug("Patch sender found no deltas to send.")
 		return nil
 	}
 
 	if !p.cfg.OfflineLoggingMode {
-		if err = p.sendAllDeltas(deltas); err == nil && lastSubmissionTimeExceeded {
-			// If the agent has been long time disconnected, we re-run the reconnecting plugins
-			p.context.Reconnect()
-		}
+		b, _ := json.Marshal(deltas)
+		err = p.sendAllDeltas(deltas)
 	} else {
 		llog.WithField("numberOfDeltas", len(deltas)).Info("suppressed PostDeltas")
 	}
@@ -250,11 +253,6 @@ func (p *patchSenderIngest) isLastSubmissionTimeExceeded(now time.Time) bool {
 
 func (p *patchSenderIngest) agentEntityIDChanged() bool {
 	entityKey := p.entityInfo.Key.String()
-
-	// Only check for entityID when is the agent sender.
-	if entityKey != p.context.EntityKey() {
-		return false
-	}
 
 	lastEntityID, err := p.lastEntityID.GetEntityID()
 	if err != nil {
