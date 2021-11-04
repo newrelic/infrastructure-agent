@@ -706,10 +706,10 @@ license_key: your_license_key
 # Value    : Enables traces to be printed in the logs for the given features.
 #            Traces are additional log entries used for debugging purposes of
 #            specific features, and are only shown when verbose is set to True.
-# Default  : []
+# Default  : ["connect"]
 #
-#traces:
-#  - connect (enabled by default)
+#trace:
+#  - connect # (enabled by default)
 #  - attributes
 #  - hostname
 #  - dm.submission
