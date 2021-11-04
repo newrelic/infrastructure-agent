@@ -9,26 +9,29 @@
  *   2. Select Scripted API check.
  *   3. Define appropiate settings and copy/paste this script as last step.
  *   4. Optionally, create an Alert Condition to get notifications.
+ *  
+ * List of OHIs to consider in a separate synthetic check and alert
+ * 'nri-mysql', 'nri-apache', 'nri-cassandra', 'nri-consul', 'nri-couchbase', 
+ * 'nri-elasticsearch', 'nri-f5', 'nri-haproxy', 'nri-kafka', 'nri-memcached', 
+ * 'nri-mongodb', 'nri-mssql', 'nri-mysql', 'nri-nagios', 'nri-nginx', 'nri-oracledb', 
+ * 'nri-postgresql', 'nri-rabbitmq', 'nri-redis'];
  */
 var assert = require('assert');
 var downloadServerBaseURI = `https://download.newrelic.com/infrastructure_agent`;
 var githubOrg = `https://api.github.com/repos/newrelic`;
 var allRepos = ['infrastructure-agent','nri-jmx', 'nrjmx', 'nri-snmp'];
-/* 
- * Other OHIs: to consider in a separate synthetic check and alert
-'nri-mysql', 'nri-apache', 'nri-cassandra', 'nri-consul', 'nri-couchbase', 
-'nri-elasticsearch', 'nri-f5', 'nri-haproxy', 'nri-kafka', 'nri-memcached', 
-'nri-mongodb', 'nri-mssql', 'nri-mysql', 'nri-nagios', 'nri-nginx', 'nri-oracledb', 
-'nri-postgresql', 'nri-rabbitmq', 'nri-redis'];
-*/
+
 var arm64Unsupported = ['nri-oracledb'];
 var windowsUnsupported = ['nri-oracledb'];
+// windows packages can be .msi or .exe
+var windowsExes = ['nri-oracledb', 'nri-kafka', 'nri-jmx', 'nri-cassandra'];
 
 function checkLatestReleases(repos){
   repos.forEach(repo => {
-      console.log(`Getting ${githubOrg}/${repo}/releases/latest`);
+      var repoURL = `${githubOrg}/${repo}/releases/latest`; 
+      console.log(`Getting ${repoURL}`);
       $http.get({
-        'uri': `${githubOrg}/${repo}/releases/latest`,
+        'uri': repoURL,
         'headers': {'User-Agent': 'newrelic-ohai'}
       },
         function (err, response, body) {
@@ -51,15 +54,14 @@ function checkPackagesInCDN(repo, latestRelease){
     }];
     if (arm64Unsupported.indexOf(repo) < 0){
       archs.push({ 
-        archInUrl: 'x86_64', 
-        archInPackage: repo === 'nrjmx' ? 'noarch' : 'x86_64'
+        archInUrl: 'aarch64', 
+        archInPackage: repo === 'nrjmx' ? 'noarch' : 'arm64'
       });
     } 
 
     // except from infra-agent, all OHIs have consistent repos and package names.
     var packagePrefix = repo === 'infrastructure-agent' ? 'newrelic-infra' : repo;
 
-    // TODO: add checks for all OS versions (blocked until all OHIs are released) 
     // TODO: add DockerHub images checks
     checkSLES(packagePrefix, latestRelease, archs);
     checkAL2(packagePrefix, latestRelease, archs);
@@ -123,7 +125,7 @@ function checkWindows(packagePrefix, latestRelease){
   var downloadServerURI;
   if (packagePrefix === 'newrelic-infra'){
     downloadServerURI = `${downloadServerBaseURI}/windows/${packagePrefix}.${latestRelease}.msi`;
-  } else if (['nri-oracledb', 'nri-kafka', 'nri-jmx', 'nri-cassandra'].indexOf(packagePrefix) >= 0) {
+  } else if (windowsExes.indexOf(packagePrefix) >= 0) {
     downloadServerURI = `${downloadServerBaseURI}/windows/integrations/${packagePrefix}/${packagePrefix}-amd64-installer.${latestRelease}.exe`;
   } else {
     downloadServerURI = `${downloadServerBaseURI}/windows/integrations/${packagePrefix}/${packagePrefix}-amd64.${latestRelease}.msi`;
