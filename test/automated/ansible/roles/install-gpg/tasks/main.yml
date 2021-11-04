@@ -5,7 +5,7 @@
     name: gnupg2
     state: present
     update_cache: yes
-  when: inventory_hostname in instances_without_gpg and
-    (inventory_hostname is search("debian") or inventory_hostname is search("ubuntu"))
+  when: inventory_hostname is search(item)
+  loop: "{{ instances_without_gpg }}"
 
 ...

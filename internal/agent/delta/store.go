@@ -50,8 +50,10 @@ var slog = log.WithComponent("Delta Store")
 
 // Folders that do not belong to entities nor plugins, so they have to be ignored
 var nonEntityFolders = map[string]bool{
-	CACHE_DIR:     true,
-	SAMPLING_REPO: true,
+	CACHE_DIR:                   true,
+	SAMPLING_REPO:               true,
+	lastSuccessSubmissionFolder: true,
+	lastEntityIDFolder:          true,
 }
 
 type delta struct {
@@ -172,25 +174,25 @@ func (s *Store) DeltaFilePath(pluginItem *PluginInfo, entityKey string) string {
 func (s *Store) cachedDirPath(pluginItem *PluginInfo, entityKey string) string {
 	return filepath.Join(s.CacheDir,
 		pluginItem.Plugin,
-		s.entityFolder(entityKey))
+		s.EntityFolder(entityKey))
 }
 
 func (s *Store) cachedFilePath(pluginItem *PluginInfo, entityKey string) string {
 	return filepath.Join(s.CacheDir,
 		pluginItem.Plugin,
-		s.entityFolder(entityKey),
+		s.EntityFolder(entityKey),
 		pluginItem.FileName)
 }
 
 func (s *Store) SourceFilePath(pluginItem *PluginInfo, entityKey string) string {
 	return filepath.Join(s.DataDir,
 		pluginItem.Plugin,
-		s.entityFolder(entityKey),
+		s.EntityFolder(entityKey),
 		pluginItem.FileName)
 }
 
 func (s *Store) PluginDirPath(pluginCategory, entityKey string) string {
-	return filepath.Join(s.DataDir, pluginCategory, s.entityFolder(entityKey))
+	return filepath.Join(s.DataDir, pluginCategory, s.EntityFolder(entityKey))
 }
 
 func (s *Store) clearPluginDeltaStore(pluginItem *PluginInfo, entityKey string) (err error) {
@@ -487,7 +489,7 @@ func (s *Store) collectPluginFiles(dir string, entityKey string, fileFilterRE *r
 	}
 
 	pluginList = make([]*PluginInfo, 0, len(pluginsFileInfo))
-	entityFolder := s.entityFolder(entityKey)
+	entityFolder := s.EntityFolder(entityKey)
 
 	for _, dirInfo := range pluginsFileInfo {
 		if dirInfo != nil && dirInfo.IsDir() && !nonEntityFolders[dirInfo.Name()] {
@@ -741,9 +743,9 @@ func (s *Store) ChangeDefaultEntity(newEntityKey string) {
 	s.defaultEntityKey = newEntityKey
 }
 
-// entityFolder provides the folder name for a given entity ID, or for the agent default entity in case entityKey is an
+// EntityFolder provides the folder name for a given entity ID, or for the agent default entity in case entityKey is an
 // empty string
-func (s *Store) entityFolder(entityKey string) string {
+func (s *Store) EntityFolder(entityKey string) string {
 	if entityKey == "" || entityKey == s.defaultEntityKey {
 		return localEntityFolder
 	}
@@ -752,7 +754,7 @@ func (s *Store) entityFolder(entityKey string) string {
 
 // RemoveEntity removes the entity cached storage.
 func (s *Store) RemoveEntity(entityKey string) error {
-	return s.RemoveEntityFolders(s.entityFolder(entityKey))
+	return s.RemoveEntityFolders(s.EntityFolder(entityKey))
 }
 
 // RemoveEntityFolders removes the entity cached storage from the entities whose folder is equal to the argument.

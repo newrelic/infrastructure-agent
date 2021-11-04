@@ -5,7 +5,8 @@
     name: libcap-progs
     state: present
     update_cache: yes
-  when: inventory_hostname in instances_requiring_libcap_progs
+  when: inventory_hostname is search(item)
+  loop: "{{ instances_requiring_libcap_progs }}"
 
 - name: 'install libcap2'
   apt:
@@ -14,6 +15,7 @@
       - libcap2-bin
     state: present
     update_cache: yes
-  when: inventory_hostname in instances_requiring_libcap2
+  when: inventory_hostname is search(item)
+  loop: "{{ instances_requiring_libcap2 }}"
 
 ...
