@@ -18,7 +18,7 @@ const (
 	instancesFile        = "test/automated/ansible/group_vars/localhost/main.yml"
 	inventoryForCreation = "test/automated/ansible/custom-instances.yml"
 	inventoryLocal       = "test/automated/ansible/inventory.local"
-	inventoryLinux       = "test/automated/ansible/inventory.ec2"
+	inventoryProvisioned = "test/automated/ansible/inventory.ec2"
 	inventoryMacos       = "test/automated/ansible/inventory.macos.ec2"
 	colorArm64           = "\033[32m"
 	colorAmd64           = "\033[34m"
@@ -59,8 +59,9 @@ func interactiveMode() {
 		skipVMCreation = true
 	}
 
+	var provisionHostPrefix string
 	if !skipVMCreation {
-		createVMs()
+		provisionHostPrefix = createVMs()
 	}
 
 	fmt.Printf("\nPossible provision options\n")
@@ -104,6 +105,10 @@ func interactiveMode() {
 		license = askUser("NR license key required for chosen provision option(s): ")
 	}
 
+	// ask for ansible_password  (just necessary for windows)
+	// if it's empty it will not be used
+	ansiblePassword := askUser("Insert ansible_password if needed to provision Windows hosts:")
+
 	curPath, err := os.Getwd()
 	if err != nil {
 		panic(err)
@@ -113,10 +118,11 @@ func interactiveMode() {
 		execNameArgs("ansible-playbook",
 			"-i", path.Join(curPath, inventoryLocal),
 			"--extra-vars", "@"+path.Join(curPath, inventoryForCreation),
+			"-e", "instance_prefix="+provisionHostPrefix+":",
 			path.Join(curPath, "test/automated/ansible/provision.yml"))
 
 		execNameArgs("ansible-playbook",
-			"-i", path.Join(curPath, inventoryLinux),
+			"-i", path.Join(curPath, inventoryProvisioned),
 			path.Join(curPath, "test/automated/ansible/install-requirements.yml"))
 	}
 
@@ -130,13 +136,16 @@ func interactiveMode() {
 
 			var arguments []string
 
-			arguments = append(arguments, "-i", path.Join(curPath, inventoryLinux))
+			arguments = append(arguments, "-i", path.Join(curPath, inventoryProvisioned))
 
 			if chosenOpt.renderArgs() != "" {
 				arguments = append(arguments, chosenOpt.renderArgs())
 			}
 
 			arguments = append(arguments, "-e", "nr_license_key="+license)
+			if ansiblePassword != "" {
+				arguments = append(arguments, "-e", "ansible_password="+ansiblePassword)
+			}
 
 			arguments = append(arguments, path.Join(curPath, chosenOpt.playbook))
 
@@ -145,7 +154,7 @@ func interactiveMode() {
 	}
 }
 
-func createVMs() {
+func createVMs() string {
 	rand.Seed(time.Now().UnixNano())
 	var err error
 
@@ -154,12 +163,13 @@ func createVMs() {
 		log.Fatal(err.Error())
 	}
 
-	opts, err := generateOptions(*ansibleGroupVars)
+	opts, err := generateOptions(ansibleGroupVars.Instances)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
 	opts.print()
+	fmt.Printf("\n\n")
 
 	var chosenAmiNumbers []int
 	var chosenOptions options
@@ -202,6 +212,8 @@ func createVMs() {
 	}
 
 	prepareAnsibleConfig(chosenOptions, provisionHostPrefix)
+
+	return provisionHostPrefix
 }
 
 func cliMode() {
@@ -231,6 +243,14 @@ func cliMode() {
 	viper.BindPFlag("license", cmdProvision.PersistentFlags().Lookup("license"))
 	cmdProvision.MarkPersistentFlagRequired("license")
 
+	// Platform
+	cmdProvision.PersistentFlags().StringP("platform", "p", "all", "optional platform to deploy: linux,macos,windows")
+	viper.BindPFlag("platform", cmdProvision.PersistentFlags().Lookup("platform"))
+
+	// Ansible password
+	cmdProvision.PersistentFlags().StringP("ansible_password", "x", "all", "ansible password")
+	viper.BindPFlag("ansible_password", cmdProvision.PersistentFlags().Lookup("ansible_password"))
+
 	var cmdPrune = &cobra.Command{
 		Use:   "prune",
 		Short: "Prune canary machines",
@@ -247,26 +267,58 @@ func cliMode() {
 	cmdRoot.Execute()
 }
 
-// provisionCanaries will provision aws machines with the infra-agent installed.
-func provisionCanaries(cmd *cobra.Command, args []string) error {
+func canaryConfFromArgs() (canaryConf, error) {
 	agentVersion := viper.GetString("agent_version")
 	license := viper.GetString("license")
+	platform := viper.GetString("platform")
+	ansiblePassword := viper.GetString("ansible_password")
 
 	if !semver.IsValid(agentVersion) {
-		return fmt.Errorf("agent version '%s' doesn't match the pattern 'vmajor.minor.patch' format",
+		return canaryConf{}, fmt.Errorf("agent version '%s' doesn't match the pattern 'vmajor.minor.patch' format",
 			agentVersion)
 	}
 
-	err := provisionLinuxCanaries(license, agentVersion)
+	return canaryConf{
+		license:         license,
+		agentVersion:    agentVersion,
+		platform:        platform,
+		ansiblePassword: ansiblePassword,
+	}, nil
+}
 
+// provisionCanaries will provision aws machines with the infra-agent installed.
+func provisionCanaries(cmd *cobra.Command, args []string) error {
+
+	cnf, err := canaryConfFromArgs()
 	if err != nil {
 		return err
 	}
 
-	return provisionMacosCanaries(license, agentVersion)
+	if cnf.shouldProvisionLinux() {
+		err := provisionLinuxCanaries(cnf)
+		if err != nil {
+			return err
+		}
+	}
+
+	if cnf.shouldProvisionMacos() {
+		err := provisionMacosCanaries(cnf)
+		if err != nil {
+			return err
+		}
+	}
+
+	if cnf.shouldProvisionWindows() {
+		err := provisionWindowsCanaries(cnf)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func provisionMacosCanaries(license string, agentVersion string) error {
+func provisionMacosCanaries(cnf canaryConf) error {
 
 	curPath, err := os.Getwd()
 	if err != nil {
@@ -278,12 +330,12 @@ func provisionMacosCanaries(license string, agentVersion string) error {
 		path.Join(curPath, "test/automated/ansible/macos-canaries.yml"))
 
 	//rename the ansible hostname to include agent version. This is temporary until we provision macos on demand
-	execNameArgs("sed", "-i.bak", fmt.Sprintf("s/canary:current/canary:%s/g", agentVersion), path.Join(curPath, inventoryMacos))
+	execNameArgs("sed", "-i.bak", fmt.Sprintf("s/canary:current/canary:%s/g", cnf.agentVersion), path.Join(curPath, inventoryMacos))
 	execNameArgs("rm", fmt.Sprintf("%s.bak", path.Join(curPath, inventoryMacos)))
 
 	var argumentsMacos = []string{
-		"-e", "nr_license_key=" + license,
-		"-e", "target_agent_version=" + agentVersion[1:],
+		"-e", "nr_license_key=" + cnf.license,
+		"-e", "target_agent_version=" + cnf.agentVersion[1:],
 		"-i", path.Join(curPath, inventoryMacos),
 	}
 
@@ -294,19 +346,42 @@ func provisionMacosCanaries(license string, agentVersion string) error {
 	return nil
 }
 
-func provisionLinuxCanaries(license, agentVersion string) error {
+func provisionWindowsCanaries(cnf canaryConf) error {
+
 	ansibleGroupVars, err := readAnsibleGroupVars()
 	if err != nil {
 		return err
 	}
 
-	opts, err := generateOptions(*ansibleGroupVars)
+	opts, err := generateOptions(ansibleGroupVars.InstancesWindows())
 	if err != nil {
 		return err
 	}
 
-	prepareAnsibleConfig(opts, fmt.Sprintf("%s:%s", hostPrefix, agentVersion))
+	prepareAnsibleConfig(opts, fmt.Sprintf("%s:%s", hostPrefix, cnf.agentVersion))
 
+	return provisionEphimeralCanaries(cnf)
+}
+
+func provisionLinuxCanaries(cnf canaryConf) error {
+	ansibleGroupVars, err := readAnsibleGroupVars()
+	if err != nil {
+		return err
+	}
+
+	opts, err := generateOptions(ansibleGroupVars.InstancesLinux())
+	if err != nil {
+		return err
+	}
+
+	prepareAnsibleConfig(opts, fmt.Sprintf("%s:%s", hostPrefix, cnf.agentVersion))
+	//ansible password is not needed for linux
+	cnf.ansiblePassword = ""
+
+	return provisionEphimeralCanaries(cnf)
+}
+
+func provisionEphimeralCanaries(cnf canaryConf) error {
 	curPath, err := os.Getwd()
 	if err != nil {
 		return err
@@ -315,29 +390,32 @@ func provisionLinuxCanaries(license, agentVersion string) error {
 	execNameArgs("ansible-playbook",
 		"-i", path.Join(curPath, inventoryLocal),
 		"--extra-vars", "@"+path.Join(curPath, inventoryForCreation),
-		"-e", "instance_prefix="+"canary:"+agentVersion+":",
+		"-e", "instance_prefix="+"canary:"+cnf.agentVersion+":",
 		path.Join(curPath, "test/automated/ansible/provision.yml"))
 
 	execNameArgs("ansible-playbook",
-		"-i", path.Join(curPath, inventoryLinux),
+		"-i", path.Join(curPath, inventoryProvisioned),
 		path.Join(curPath, "/test/automated/ansible/install-requirements.yml"))
 
 	provisionOpts := newProvisionOptions()[OptionInstallVersionStaging]
-	var argumentsLinux = []string{
-		"-e", "nr_license_key=" + license,
+	var playbookArguments = []string{
+		"-e", "nr_license_key=" + cnf.license,
 		"-e", "enable_process_metrics=true",
 		"-e", "verbose=3",
-		"-e", "target_agent_version=" + agentVersion[1:],
-		"-i", path.Join(curPath, inventoryLinux),
+		"-e", "target_agent_version=" + cnf.agentVersion[1:],
+		"-i", path.Join(curPath, inventoryProvisioned),
+	}
+	if cnf.ansiblePassword != "" {
+		playbookArguments = append(playbookArguments, "-e", "ansible_password="+cnf.ansiblePassword)
 	}
 
 	if provisionOpts.renderArgs() != "" {
-		argumentsLinux = append(argumentsLinux, provisionOpts.renderArgs())
+		playbookArguments = append(playbookArguments, provisionOpts.renderArgs())
 	}
 
-	argumentsLinux = append(argumentsLinux, path.Join(curPath, provisionOpts.playbook))
+	playbookArguments = append(playbookArguments, path.Join(curPath, provisionOpts.playbook))
 
-	execNameArgs("ansible-playbook", argumentsLinux...)
+	execNameArgs("ansible-playbook", playbookArguments...)
 
 	return nil
 }

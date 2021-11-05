@@ -29,7 +29,6 @@ func askUser(message string) string {
 	return userInput
 }
 
-
 func randStringRunes(n int) string {
 	b := make([]rune, n)
 	for i := range b {
@@ -90,8 +89,9 @@ func stringToNumbers(input string) ([]int, error) {
 	return opts, nil
 }
 
-func execNameArgs(name string, cmdArgs ...string) {
+func execNameArgsWithEnv(name string, env []string, cmdArgs ...string) {
 	cmd := exec.Command(name, cmdArgs...)
+	cmd.Env = append(os.Environ(), env...)
 
 	fmt.Println("Executing command: " + cmd.String())
 
@@ -117,4 +117,13 @@ func execNameArgs(name string, cmdArgs ...string) {
 	}
 
 	wg.Wait()
+}
+
+func execNameArgs(name string, cmdArgs ...string) {
+	// Running from macos causes some errors
+	// objc[89016]: +[__NSCFConstantString initialize] may have been in progress in another thread when fork() was called.
+	// objc[89016]: +[__NSCFConstantString initialize] may have been in progress in another thread when fork() was called. We cannot safely call it or ignore it in the fork() child process. Crashing instead. Set a breakpoint on objc_initializeAfterForkError to debug.
+	// ERROR! A worker was found in a dead state
+	// adding OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES makes it work
+	execNameArgsWithEnv(name, []string{"OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES"}, cmdArgs...)
 }
