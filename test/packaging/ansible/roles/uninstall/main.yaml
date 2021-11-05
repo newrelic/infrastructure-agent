@@ -1,6 +1,6 @@
 ---
 
-- hosts: testing_hosts
+- hosts: testing_hosts_linux
   become: true
   gather_facts: yes
   ignore_errors: true

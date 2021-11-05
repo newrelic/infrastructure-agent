@@ -2,23 +2,45 @@
 localhost ansible_connection=local
 
 [testing_hosts:children]
-amd64
-arm64
+linux_amd64
+linux_arm64
+windows_amd64
 
-[amd64]
-{% for ins in instances_for_inventory_amd64 %}
+[testing_hosts_linux:children]
+linux_amd64
+linux_arm64
+
+[testing_hosts_windows:children]
+windows_amd64
+
+[linux_amd64]
+{% for ins in instances_for_inventory_linux_amd64 %}
 {{ instance_prefix }}{{ ins.name }} ansible_host={{ ins.ip }} ansible_user={{ ins.username }} ansible_python_interpreter={{ ins.python_interpreter }} iid={{ ins.iid }}
 {% endfor %}
 
-[arm64]
-{% for ins in instances_for_inventory_arm64 %}
+[linux_arm64]
+{% for ins in instances_for_inventory_linux_arm64 %}
 {{ instance_prefix }}{{ ins.name }} ansible_host={{ ins.ip }} ansible_user={{ ins.username }} ansible_python_interpreter={{ ins.python_interpreter }} iid={{ ins.iid }}
 {% endfor %}
 
-[amd64:vars]
+[windows_amd64]
+{% for ins in instances_for_inventory_windows_amd64 %}
+{{ instance_prefix }}{{ ins.name }} ansible_host={{ ins.ip }} iid={{ ins.iid }}
+{% endfor %}
+
+[linux_amd64:vars]
 ansible_ssh_private_key_file={{ ec2_private_key_file }}
 ansible_ssh_common_args='-o StrictHostKeyChecking=no'
 
-[arm64:vars]
+[linux_arm64:vars]
 ansible_ssh_private_key_file={{ ec2_private_key_file }}
 ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+
+[windows_amd64:vars]
+ansible_winrm_transport=basic
+ansible_user=ansible
+ansible_password=TO_BE_PASSED_AS_ENV_VAR
+ansible_connection=winrm
+ansible_winrm_server_cert_validation=ignore
+ansible_winrm_scheme=https
+ansible_port=5986
