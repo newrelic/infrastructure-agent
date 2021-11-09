@@ -8,13 +8,13 @@ type canaryConf struct {
 }
 
 func (c canaryConf) shouldProvisionLinux() bool {
-	return c.platform == linux || c.platform == "all"
+	return c.platform == linux || c.platform == all
 }
 
 func (c canaryConf) shouldProvisionWindows() bool {
-	return c.platform == windows || c.platform == "all"
+	return c.platform == windows || c.platform == all
 }
 
 func (c canaryConf) shouldProvisionMacos() bool {
-	return c.platform == windows || c.platform == "all"
+	return c.platform == macos || c.platform == all
 }

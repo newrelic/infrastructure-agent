@@ -13,6 +13,7 @@ const (
 	linux   = "linux"
 	windows = "windows"
 	macos   = "macos"
+	all     = "all"
 )
 
 type AnsibleGroupVars struct {
