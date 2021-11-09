@@ -9,8 +9,5 @@
   template:
     src: ../files/etc/newrelic-infra.yml.j2
     dest: C:\Program Files\New Relic\newrelic-infra\newrelic-infra.yml
-    owner: root
-    group: root
-    mode: 0644
 
 ...

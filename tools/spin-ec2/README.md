@@ -21,6 +21,8 @@ The following example shows how to deploy infrastructure agent canaries:
     ./spin-ec2 canaries provision -v v<agent_version> -l <license_key> -p windows -x ansible_password 
     # linux canaries
     ./spin-ec2 canaries provision -v v<agent_version> -l <license_key> -p linux
+    # macos canaries
+    ./spin-ec2 canaries provision -v v<agent_version> -l <license_key> -p macos
 
     # Cleanup old machines. This command will terminate all the instances except the ones
     # that have the latest 2 versions of infra-agent installed.
