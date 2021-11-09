@@ -54,11 +54,11 @@ func (o options) filter(optionsIds []int) (options, error) {
 	return filtered, nil
 }
 
-func generateOptions(groupVars AnsibleGroupVars) (options, error) {
+func generateOptions(instances []instanceDef) (options, error) {
 
 	opts := options{}
 
-	for i, instance := range groupVars.Instances {
+	for i, instance := range instances {
 
 		arch := instance.Name[:strings.Index(instance.Name, ":")]
 		opSystem := instance.Name[strings.Index(instance.Name, ":")+1:]

@@ -2,7 +2,7 @@
 # this is not a test, should be moved away from this folder later
 
 - name: installation-agent-pinned-no-clean
-  hosts: testing_hosts
+  hosts: testing_hosts_linux
   become: true
   gather_facts: yes
 
@@ -36,5 +36,30 @@
         - name: Assert service
           include_role:
             name: assert-service
+
+# Windows
+- name: installation-agent-pinned-no-clean
+  hosts: testing_hosts_windows
+  gather_facts: yes
+
+  tasks:
+    - name: Installation tests suite
+
+      block:
+
+        - name: setup config
+          include_role:
+            name: setup-config
+          vars:
+            verbose_level: '0'
+
+        - name: Package install
+          include_role:
+            name: package-install-pinned
+
+        - name: Assert service
+          include_role:
+            name: assert-service
+...
 
 ...

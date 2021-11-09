@@ -9,9 +9,37 @@ import (
 	"strings"
 )
 
+const (
+	linux   = "linux"
+	windows = "windows"
+	macos   = "macos"
+)
+
 type AnsibleGroupVars struct {
 	ProvisionHostPrefix string        `yaml:"provision_host_prefix"`
 	Instances           []instanceDef `yaml:"instances"`
+}
+
+func (a AnsibleGroupVars) instancesByPlatform(platform string) []instanceDef {
+	var instancesByPlatform []instanceDef
+	for _, ins := range a.Instances {
+		if ins.Platform == platform {
+			instancesByPlatform = append(instancesByPlatform, ins)
+		}
+	}
+	return instancesByPlatform
+}
+
+func (a AnsibleGroupVars) InstancesWindows() []instanceDef {
+	return a.instancesByPlatform(windows)
+}
+
+func (a AnsibleGroupVars) InstancesLinux() []instanceDef {
+	return a.instancesByPlatform(linux)
+}
+
+func (a AnsibleGroupVars) InstancesMacos() []instanceDef {
+	return a.instancesByPlatform(macos)
 }
 
 type instanceDef struct {
@@ -21,6 +49,7 @@ type instanceDef struct {
 	Username          string `yaml:"username"`
 	PythonInterpreter string `yaml:"python_interpreter"`
 	LaunchTemplate    string `yaml:"launch_template"`
+	Platform          string `yaml:"platform"`
 }
 
 func readAnsibleGroupVars() (*AnsibleGroupVars, error) {

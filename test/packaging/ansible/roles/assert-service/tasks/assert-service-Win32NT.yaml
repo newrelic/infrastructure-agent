@@ -1,0 +1,18 @@
+---
+
+- name: get info for a single service
+  ansible.windows.win_service_info:
+    name: newrelic-infra
+  register: service_info
+
+- name: debug service
+  debug:
+    var: service_info
+
+- name: ensure infra-agent service is up and running
+  assert:
+    that:
+      - service_info.exists
+      - service_info.services[0].state == "started"
+
+...
