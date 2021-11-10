@@ -32,6 +32,11 @@ jobs:
       - name: Validate code
         run: make ci/validate
 
+      - name: Lint code
+        run: make ci/lint
+        # allow errors for now, remove once we agree to use this tool
+        continue-on-error: true
+
       - name: Running unit tests
         run: make ci/test-coverage
 
