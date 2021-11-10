@@ -29,52 +29,74 @@
 
 - name: "register instances attributes"
   set_fact:
-    registered_instances: "{{ (instances_information.stdout  | from_json) | community.general.json_query('Reservations[*].Instances[*].{InstanceId: InstanceId, ImageId: ImageId, PublicIpAddress: PublicIpAddress, Architecture: Architecture}') | list | flatten }}"
+    registered_instances: "{{ (instances_information.stdout  | from_json) | community.general.json_query('Reservations[*].Instances[*].{InstanceId: InstanceId, ImageId: ImageId, PublicIpAddress: PublicIpAddress, PrivateIpAddress: PrivateIpAddress, Architecture: Architecture}') | list | flatten }}"
   register: all_registered_instances
 
-- name: add ip address for amd64
+- name: add ip address for linux/amd64
   ansible.builtin.set_fact:
     instance_data:
       iid: "{{ item.0.InstanceId }}"
       ami: "{{ item.1.ami }}"
-      ip: "{{ item.0.PublicIpAddress }}"
+      ip: "{{ (item.0.PublicIpAddress == None) | ternary(item.0.PrivateIpAddress, item.0.PublicIpAddress) }}"
       username: "{{ item.1.username }}"
       name: "{{ item.1.name }}"
       python_interpreter: "{{ item.1.python_interpreter }}"
   loop: "{{ registered_instances | product(instances) | list }}"
-  when: item.0.ImageId == item.1.ami and item.1.name is search("amd64")
-  register: instances_data_amd64
+  when:
+    - item.0.ImageId == item.1.ami
+    - item.1.name is search("amd64")
+    - item.1.platform == "linux"
+  register: instances_data_linux_amd64
 
-- debug:
-    var: instances_data_amd64
-
-- name: add ip address for arm64
+- name: add ip address for linux/arm64
   ansible.builtin.set_fact:
     instance_data:
       iid: "{{ item.0.InstanceId }}"
       ami: "{{ item.1.ami }}"
-      ip: "{{ item.0.PublicIpAddress }}"
+      ip: "{{ (item.0.PublicIpAddress == None) | ternary(item.0.PrivateIpAddress, item.0.PublicIpAddress) }}"
       username: "{{ item.1.username }}"
       name: "{{ item.1.name }}"
       python_interpreter: "{{ item.1.python_interpreter }}"
   loop: "{{ registered_instances | product(instances) | list }}"
-  when: item.0.ImageId == item.1.ami and item.1.name is search("arm64")
-  register: instances_data_arm64
+  when:
+    - item.0.ImageId == item.1.ami
+    - item.1.name is search("arm64")
+    - item.1.platform == "linux"
+  register: instances_data_linux_arm64
+
+- name: add ip address for windows/amd64
+  ansible.builtin.set_fact:
+    instance_data:
+      iid: "{{ item.0.InstanceId }}"
+      ami: "{{ item.1.ami }}"
+      ip: "{{ (item.0.PublicIpAddress == None) | ternary(item.0.PrivateIpAddress, item.0.PublicIpAddress) }}"
+      username: "{{ item.1.username }}"
+      name: "{{ item.1.name }}"
+  loop: "{{ registered_instances | product(instances) | list }}"
+  when:
+    - item.0.ImageId == item.1.ami
+    - item.1.name is search("amd64")
+    - item.1.platform == "windows"
+  register: instances_data_windows_amd64
 
 - debug:
-    var: instances_data_arm64
+    var: "{{ item }}"
+  loop:
+    - instances_data_linux_arm64
+    - instances_data_linux_amd64
+    - instances_data_windows_amd64
 
-- name: register instances information for harvest test inventory
+- name: register instances information to harvest test inventory
   set_fact:
-    instances_for_inventory_amd64: "{{ instances_data_amd64.results | selectattr('ansible_facts', 'defined') | map(attribute='ansible_facts') | map(attribute='instance_data') | list }}"
-
-- name: register instances information for harvest test inventory
-  set_fact:
-    instances_for_inventory_arm64: "{{ instances_data_arm64.results | selectattr('ansible_facts', 'defined') | map(attribute='ansible_facts') | map(attribute='instance_data') | list }}"
+    instances_for_inventory_linux_amd64: "{{ instances_data_linux_amd64.results | selectattr('ansible_facts', 'defined') | map(attribute='ansible_facts') | map(attribute='instance_data') | list }}"
+    instances_for_inventory_linux_arm64: "{{ instances_data_linux_arm64.results | selectattr('ansible_facts', 'defined') | map(attribute='ansible_facts') | map(attribute='instance_data') | list }}"
+    instances_for_inventory_windows_amd64: "{{ instances_data_windows_amd64.results | selectattr('ansible_facts', 'defined') | map(attribute='ansible_facts') | map(attribute='instance_data') | list }}"
 
 - debug:
-    var: instances_for_inventory_amd64
+    var: "{{ item }}"
+  loop:
+    - instances_for_inventory_linux_amd64
+    - instances_for_inventory_linux_arm64
+    - instances_for_inventory_windows_amd64
 
-- debug:
-    var: instances_for_inventory_arm64
 ...

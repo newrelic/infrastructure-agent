@@ -479,7 +479,7 @@ func (a *Agent) registerEntityInventory(entity entity.Entity) error {
 	if a.Context.cfg.RegisterEnabled {
 		inv.sender, err = newPatchSenderVortex(entityKey, a.Context.getAgentKey(), a.Context, a.store, a.userAgent, a.Context.Identity, a.provideIDs, a.entityMap, a.httpClient)
 	} else {
-		fileName := entity.Key.String()
+		fileName := a.store.EntityFolder(entity.Key.String())
 		lastSubmission := delta.NewLastSubmissionStore(a.store.DataDir, fileName)
 		lastEntityID := delta.NewEntityIDFilePersist(a.store.DataDir, fileName)
 		inv.sender, err = newPatchSender(entity, a.Context, a.store, lastSubmission, lastEntityID, a.userAgent, a.Context.Identity, a.httpClient)
@@ -763,12 +763,12 @@ func (a *Agent) Run() (err error) {
 					_ = a.updateIDLookupTable(data.Data)
 				}
 
-				entityKey := data.Entity.Key.String()
-				if _, ok := a.inventories[entityKey]; !ok {
-					_ = a.registerEntityInventory(data.Entity)
-				}
-
 				if !data.NotApplicable {
+					entityKey := data.Entity.Key.String()
+					if _, ok := a.inventories[entityKey]; !ok {
+						_ = a.registerEntityInventory(data.Entity)
+					}
+
 					if err := a.storePluginOutput(data); err != nil {
 						alog.WithError(err).Error("problem storing plugin output")
 					}
@@ -1182,5 +1182,5 @@ func (a *Agent) gracefulShutdown() error {
 }
 
 func (a *Agent) shouldSendInventory() bool {
-	return !a.GetContext().Config().IsForwardOnly && !a.GetContext().Config().IsSecureForwardOnly
+	return !a.GetContext().Config().IsForwardOnly
 }

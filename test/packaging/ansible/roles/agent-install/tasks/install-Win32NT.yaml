@@ -1,0 +1,11 @@
+---
+
+- name: package install
+  include_role:
+    name: package-install
+
+- name: assert service
+  include_role:
+    name: assert-service
+
+...

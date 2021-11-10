@@ -1,6 +1,6 @@
 ---
 
-- name: log-forwarder
+- name: log-forwarder-amd64
   hosts: amd64
   become: true
   gather_facts: yes
@@ -54,6 +54,63 @@
           include_role:
             name: logging
           when: log_forwader_supported is defined
+
+      always:
+        - name: Final cleanup # Only required for shared infra.
+          include_role:
+            name: cleanup
+
+- name: log-forwarder-arm64
+  hosts: arm64
+  become: true
+  gather_facts: yes
+
+  pre_tasks:
+    - name: Initial cleanup # Only required for shared infra.
+      include_role:
+        name: cleanup
+
+  tasks:
+    - name: Log forwarder tests suite
+      vars:
+        env_vars:
+
+      block:
+
+        - name: Define variable with supported versions
+          set_fact:
+            log_forwader_supported_arm64: true
+          when: (
+                inventory_hostname is search("ubuntu18.04") or
+                inventory_hostname is search("ubuntu20.04") or
+                inventory_hostname is search("debian-stretch") or
+                inventory_hostname is search("debian-jessie") or
+                inventory_hostname is search("debian-buster") or
+                inventory_hostname is search("centos7")
+            )
+
+        - name: repo setup
+          include_role:
+            name: repo-setup
+          when: log_forwader_supported_arm64 is defined
+
+        - name: setup config
+          include_role:
+            name: setup-config
+          vars:
+            verbose_level: '3'
+          when: log_forwader_supported_arm64 is defined
+
+        - name: install agent
+          include_role:
+            name: agent-install
+          when: log_forwader_supported_arm64 is defined
+
+        # Not available for ARM yet
+        - name: Log forwarder
+          include_role:
+            name: logging
+          when: log_forwader_supported_arm64 is defined
 
       always:
         - name: Final cleanup # Only required for shared infra.

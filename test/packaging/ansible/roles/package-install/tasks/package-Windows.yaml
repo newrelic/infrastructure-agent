@@ -1,0 +1,20 @@
+---
+
+- name: download msi package
+  win_get_url:
+    url: "{{ repo_endpoint }}/windows/newrelic-infra.msi"
+    dest: 'C:\newrelic-infra.msi'
+    force: yes
+
+- name: install newrelic-infra package
+  win_package:
+    path: 'C:\newrelic-infra.msi'
+    state: present
+
+- name: set service startup mode to auto and ensure it is started
+  win_service:
+    name: newrelic-infra
+    start_mode: auto
+    state: started
+
+...

@@ -1,0 +1,21 @@
+---
+
+- hosts: testing_hosts_windows
+  gather_facts: yes
+
+  tasks:
+    - name: Installation tests suite
+
+      block:
+
+        - name: setup config
+          include_role:
+            name: setup-config
+          vars:
+            verbose_level: '0'
+
+        - name: install agent
+          include_role:
+            name: agent-install
+
+...
