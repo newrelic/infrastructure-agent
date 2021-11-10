@@ -244,11 +244,11 @@ func cliMode() {
 	cmdProvision.MarkPersistentFlagRequired("license")
 
 	// Platform
-	cmdProvision.PersistentFlags().StringP("platform", "p", "all", "optional platform to deploy: linux,macos,windows")
+	cmdProvision.PersistentFlags().StringP("platform", "p", all, "optional platform to deploy: linux,macos,windows")
 	viper.BindPFlag("platform", cmdProvision.PersistentFlags().Lookup("platform"))
 
 	// Ansible password
-	cmdProvision.PersistentFlags().StringP("ansible_password", "x", "all", "ansible password")
+	cmdProvision.PersistentFlags().StringP("ansible_password", "x", "", "ansible password")
 	viper.BindPFlag("ansible_password", cmdProvision.PersistentFlags().Lookup("ansible_password"))
 
 	var cmdPrune = &cobra.Command{
