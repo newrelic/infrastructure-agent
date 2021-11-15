@@ -105,7 +105,7 @@ func (e *VersionAwareEmitter) emitV3(dto fwrequest.FwRequestLegacy, protocolVers
 		err := legacy.EmitDataSet(
 			e.aCtx,
 			&plugin,
-			dto.Definition.Name,
+			dto.Data.Name,
 			dto.Data.IntegrationVersion,
 			dto.Definition.ExecutorConfig.User,
 			dataset,
