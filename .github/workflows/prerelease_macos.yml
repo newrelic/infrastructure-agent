@@ -9,7 +9,7 @@ on:
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  GO_VERSION: '1.14.4'
+  GO_VERSION: '1.16.9'
   SNYK_TOKEN: ${{ secrets.CAOS_SNYK_TOKEN }}
   TAG:  ${{ github.event.release.tag_name }}
   DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
