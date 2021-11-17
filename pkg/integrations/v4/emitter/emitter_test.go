@@ -3,6 +3,7 @@
 package emitter
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -618,6 +619,69 @@ func TestProtocolV4_Emit_WithoutRegisteringEntities(t *testing.T) {
 	require.NoError(t, err)
 
 	dmEmitter.AssertExpectations(t)
+}
+
+func Test_EmitV3_IntegrationNameVersion(t *testing.T) {
+
+	definition := integration.Definition{Name: "some integration"}
+	extraLabels := data.Map{}
+	integrationVersion := "1.2.3"
+	rawProtocolVersion := "3"
+	protocolVersion := 3
+	integrationName := "some.integration.name"
+	entityName := "myEntityName"
+	entityType := entity.Type("myEntityType")
+	entityKey := fmt.Sprintf("%s:%s", entityType, entityName)
+	eventType := "myEventType"
+
+	entityRewrite := []data.EntityRewrite{}
+	pluginDataV3 := protocol.PluginDataV3{
+		PluginOutputIdentifier: protocol.PluginOutputIdentifier{
+			Name:               integrationName,
+			RawProtocolVersion: rawProtocolVersion,
+			IntegrationVersion: integrationVersion,
+		},
+		DataSets: []protocol.PluginDataSetV3{
+			{
+				PluginDataSet: protocol.PluginDataSet{
+					Entity: entity.Fields{
+						Name: entityName,
+						Type: entityType,
+					},
+					Inventory: map[string]protocol.InventoryData{},
+					Metrics: []protocol.MetricData{
+						{
+							"event_type": eventType,
+						},
+					},
+					Events: []protocol.EventData{},
+				},
+			},
+		},
+	}
+
+	agentContext := new(mocks.AgentContext)
+	agentContext.On("EntityKey").Once().Return("agent key")
+	agentContext.On("IDLookup").Once().Return(host.IDLookup{})
+	cfg := &config.Config{
+		ForceProtocolV2toV3: false,
+	}
+	agentContext.On("Config").Return(cfg)
+	agentContext.On("SendEvent", mock.Anything, entity.Key(entityKey)).Once().Run(
+		func(args mock.Arguments) {
+			eventMarshalled, _ := json.Marshal(args.Get(0))
+			var eRaw map[string]interface{}
+			err := json.Unmarshal(eventMarshalled, &eRaw)
+			assert.NoError(t, err)
+			assert.Equal(t, integrationName, eRaw["integrationName"])
+			assert.Equal(t, integrationVersion, eRaw["integrationVersion"])
+		})
+
+	em := &VersionAwareEmitter{}
+	em.aCtx = agentContext
+
+	err := em.emitV3(fwrequest.NewFwRequestLegacy(definition, extraLabels, entityRewrite, pluginDataV3), protocolVersion)
+	assert.NoError(t, err)
 }
 
 func mockAgent() *mocks.AgentContext {
