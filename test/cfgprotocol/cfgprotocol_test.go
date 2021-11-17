@@ -27,7 +27,7 @@ const (
 			"Events":[
 				{
 					"displayName":"shell-test:some-entity","entityKey":"shell-test:some-entity","entityName":"shell-test:some-entity",
-					"eventType":"ShellTestSample","event_type":"ShellTestSample","integrationName":"spawner","integrationVersion":"0.0.0",
+					"eventType":"ShellTestSample","event_type":"ShellTestSample","integrationName":"com.newrelic.shelltest","integrationVersion":"0.0.0",
 					"reportingAgent":"my_display_name","some-metric":1
 				}
 			]
