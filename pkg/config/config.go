@@ -25,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	config_loader "github.com/newrelic/infrastructure-agent/pkg/config/loader"
+	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/disk"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
@@ -1872,6 +1873,16 @@ func (c *CustomAttributeMap) Decode(value string) error {
 		return err
 	}
 	return nil
+}
+
+func (c *CustomAttributeMap) ToDataMap() (d data.Map) {
+	d = data.Map{}
+
+	for k, v := range *c {
+		d[k] = v.(string)
+	}
+
+	return
 }
 
 func (i *IncludeMetricsMap) Decode(value string) error {
