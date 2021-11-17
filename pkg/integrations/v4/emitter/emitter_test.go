@@ -807,7 +807,7 @@ func mockAgent(secureForward bool, customAttributes config.CustomAttributeMap) *
 	cfg := &config.Config{
 		SupervisorRefreshSec: 1,
 		SupervisorRpcSocket:  "/tmp/supervisor.sock.test",
-		IsSecureForwardOnly: secureForward,
+		IsSecureForwardOnly:  secureForward,
 	}
 
 	if customAttributes != nil {
