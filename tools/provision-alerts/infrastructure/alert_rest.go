@@ -23,6 +23,15 @@ type PolicyResponse struct {
 	Policy PolicyDetailsResponse `json:"policy"`
 }
 
+type PoliciesDetailsResponse []PolicyDetailsResponse
+type PoliciesResponse struct {
+	Policies PoliciesDetailsResponse `json:"policies"`
+}
+
+func (p *PoliciesResponse) IsEmpty() bool {
+	return len(p.Policies) == 0
+}
+
 func FromPolicyConfig(pc config.PolicyConfig) PolicyPayload {
 	return PolicyPayload{
 		PolicyDetailsPayload{
@@ -81,7 +90,7 @@ func FromConditionConfig(condition config.ConditionConfig) NRQLConditionPayload 
 	nrqlConditionPayload.NrqlCondition.ViolationTimeLimitSeconds = 259200
 	nrqlConditionPayload.NrqlCondition.Terms = []NRQLTerm{{
 		Duration:     fmt.Sprintf("%v", condition.Duration),
-		Operator:     "above",
+		Operator:     condition.Operator,
 		Threshold:    fmt.Sprintf("%.1f", condition.Threshold),
 		TimeFunction: "all",
 		Priority:     "critical",

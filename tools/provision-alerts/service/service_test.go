@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -41,6 +42,28 @@ func TestPolicyApiService_Create(t *testing.T) {
 	actualPolicy, err := s.Create(pc)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedPolicy, actualPolicy)
+
+	//mocked objects assertions
+	mock.AssertExpectationsForObjects(t, client)
+}
+
+func TestPolicyApiService_PostErrorsOnCreate(t *testing.T) {
+
+	client := &AlertClientMock{}
+	s := NewPolicyApiService(client)
+	pc := config.PolicyConfig{
+		Name:               "testing",
+		IncidentPreference: "whatever",
+	}
+
+	post := []byte(`{"policy":{"name":"testing","incident_preference":"whatever"}}`)
+
+	expectedErr := errors.New("error occurred in the api client, resp code 503, url: https://host.com/some/url, body: , err: response body")
+	client.ShouldPost("/v2/alerts_policies.json", post, []byte{}, expectedErr)
+
+	actualPolicy, actualErr := s.Create(pc)
+	assert.Equal(t, Policy{}, actualPolicy)
+	assert.Equal(t, expectedErr, actualErr)
 
 	//mocked objects assertions
 	mock.AssertExpectationsForObjects(t, client)
@@ -185,6 +208,57 @@ func TestPolicyApiService_Delete(t *testing.T) {
 	client.ShouldDel(fmt.Sprintf("/v2/alerts_policies/%d.json", id), nil, response, nil)
 
 	err := s.Delete(id)
+
+	assert.NoError(t, err)
+
+	//mocked objects assertions
+	mock.AssertExpectationsForObjects(t, client)
+}
+
+func TestPolicyApiService_DeleteAll(t *testing.T) {
+
+	client := &AlertClientMock{}
+	alertService := NewPolicyApiService(client)
+
+	responses := []string{
+		`{
+			"policies":[
+				{"id":1,"incident_preference":"PER_POLICY","name":"test1","created_at":1637075117137,"updated_at":1637075117137},
+				{"id":5,"incident_preference":"PER_POLICY","name":"test2","created_at":1637075139610,"updated_at":1637075139610},
+				{"id":3,"incident_preference":"PER_POLICY","name":"test3","created_at":1637075140559,"updated_at":1637075140559},
+				{"id":10,"incident_preference":"PER_POLICY","name":"test4","created_at":1637075141975,"updated_at":1637075141975}
+			]
+		}`,
+		`{
+			"policies":[
+				{"id":2,"incident_preference":"PER_POLICY","name":"test5","created_at":1637075117137,"updated_at":1637075117137},
+				{"id":6,"incident_preference":"PER_POLICY","name":"test6","created_at":1637075139610,"updated_at":1637075139610},
+				{"id":7,"incident_preference":"PER_POLICY","name":"test7","created_at":1637075140559,"updated_at":1637075140559},
+				{"id":8,"incident_preference":"PER_POLICY","name":"test8","created_at":1637075141975,"updated_at":1637075141975}
+			]
+		}`,
+		`{
+			"policies":[
+				{"id":9,"incident_preference":"PER_POLICY","name":"test9","created_at":1637075117137,"updated_at":1637075117137},
+				{"id":4,"incident_preference":"PER_POLICY","name":"test10","created_at":1637075139610,"updated_at":1637075139610},
+				{"id":11,"incident_preference":"PER_POLICY","name":"test11","created_at":1637075140559,"updated_at":1637075140559}
+			]
+		}`,
+		`{
+			"policies":[]
+		}`,
+	}
+
+	for idx,response := range responses{
+		page := idx+1
+		client.ShouldGet(fmt.Sprintf("/v2/alerts_policies.json?page=%d",page), nil, []byte(response), nil)
+	}
+
+	for i:=1;i<12;i++{
+		client.ShouldDel(fmt.Sprintf("/v2/alerts_policies/%d.json", i), nil, nil, nil)
+	}
+
+	err := alertService.DeleteAll()
 
 	assert.NoError(t, err)
 

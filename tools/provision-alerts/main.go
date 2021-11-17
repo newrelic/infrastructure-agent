@@ -26,13 +26,16 @@ func main() {
 		log.Fatal(err)
 	}
 
-	cfg, err = config.FulfillConfig(cfg,displayNameCurrent, displayNamePrevious)
+	cfg, err = config.FulfillConfig(cfg, displayNameCurrent, displayNamePrevious)
 
-	client := infrastructure.NewAlertClientHttp("https://staging-api.newrelic.com", "", http.Client{})
+	client := infrastructure.NewAlertClientHttp("https://staging-api.newrelic.com", "", &http.Client{})
 
 	policyService := service.NewPolicyApiService(client)
 
-	// TODO delete all old policies, conver old ones first
+	err = policyService.DeleteAll()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	for _, policyConfig := range cfg.Policies {
 		policy, err := policyService.Create(policyConfig)

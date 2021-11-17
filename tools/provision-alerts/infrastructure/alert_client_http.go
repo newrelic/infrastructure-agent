@@ -7,13 +7,17 @@ import (
 	"strings"
 )
 
+type HttpClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
 type AlertClientHttp struct {
 	host   string
 	apiKey string
-	client http.Client
+	client HttpClient
 }
 
-func NewAlertClientHttp(host string, apiKey string, client http.Client) *AlertClientHttp {
+func NewAlertClientHttp(host string, apiKey string, client HttpClient) *AlertClientHttp {
 	return &AlertClientHttp{host: host, apiKey: apiKey, client: client}
 }
 
@@ -27,6 +31,10 @@ func (a AlertClientHttp) Put(uri string, body []byte) ([]byte, error) {
 
 func (a AlertClientHttp) Del(uri string, body []byte) ([]byte, error) {
 	return a.request("DELETE", uri, body)
+}
+
+func (a AlertClientHttp) Get(uri string, body []byte) ([]byte, error) {
+	return a.request("GET", uri, body)
 }
 
 func (a AlertClientHttp) request(method, uri string, body []byte) ([]byte, error) {
@@ -53,7 +61,7 @@ func (a AlertClientHttp) request(method, uri string, body []byte) ([]byte, error
 	}
 
 	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("error occured in the api client, resp code %d, url: %s, body: %s, err: %s", resp.StatusCode, url, body, bodyBytes)
+		return nil, fmt.Errorf("error occurred in the api client, resp code %d, url: %s, body: %s, err: %s", resp.StatusCode, url, body, bodyBytes)
 	}
 
 	return bodyBytes, nil

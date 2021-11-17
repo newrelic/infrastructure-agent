@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -210,4 +211,68 @@ func Test_FulfillConfig(t *testing.T) {
 	actualConfig, err := FulfillConfig(config, displayNameCurrent, displayNamePrevious)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedConfig, actualConfig)
+}
+
+func Test_FulfillConfig_ReturnErrorOnTemplateNotFound(t *testing.T) {
+
+	config := Config{
+		Policies: PolicyConfigs{
+			{
+				Name:               "policy name",
+				IncidentPreference: "something",
+				Channels:           []int{3423432},
+				NrqlTemplates: NrqlTemplates{
+					{
+						Name: "Generic metric comparator",
+					},
+				},
+				Conditions: ConditionConfigs{
+					{
+						TemplateName: "Generic metric comparator",
+					},
+					{
+						TemplateName: "non existing template",
+					},
+				},
+			},
+		},
+	}
+
+	displayNameCurrent := "some display name current"
+	displayNamePrevious := "some display name previous"
+
+	actualConfig, err := FulfillConfig(config, displayNameCurrent, displayNamePrevious)
+	assert.Equal(t, Config{}, actualConfig)
+	assert.Error(t, err, "cannot find non existing template template")
+}
+
+func Test_FulfillConfig_ReturnErrorOnInvalidTemplate(t *testing.T) {
+
+	config := Config{
+		Policies: PolicyConfigs{
+			{
+				Name:               "policy name",
+				IncidentPreference: "something",
+				Channels:           []int{3423432},
+				NrqlTemplates: NrqlTemplates{
+					{
+						Name: "Generic metric comparator",
+						NRQL: "{{ .Metric ",
+					},
+				},
+				Conditions: ConditionConfigs{
+					{
+						TemplateName: "Generic metric comparator",
+					},
+				},
+			},
+		},
+	}
+
+	displayNameCurrent := "some display name current"
+	displayNamePrevious := "some display name previous"
+
+	actualConfig, err := FulfillConfig(config, displayNameCurrent, displayNamePrevious)
+	assert.Equal(t, Config{}, actualConfig)
+	assert.Equal(t, errors.New("template: nrql:1: unclosed action"), err)
 }

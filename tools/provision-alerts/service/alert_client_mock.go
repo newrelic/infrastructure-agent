@@ -44,3 +44,16 @@ func (a *AlertClientMock) ShouldDel(path string, body []byte, response []byte, e
 		Once().
 		Return(response, err)
 }
+
+func (a *AlertClientMock) Get(path string, body []byte) ([]byte, error) {
+	args := a.Called(path, body)
+
+	return args.Get(0).([]byte), args.Error(1)
+}
+
+func (a *AlertClientMock) ShouldGet(path string, body []byte, response []byte, err error) {
+	a.
+		On("Get", path, body).
+		Once().
+		Return(response, err)
+}

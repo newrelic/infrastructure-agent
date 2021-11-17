@@ -9,10 +9,12 @@ import (
 )
 
 const postPolicyPath = "/v2/alerts_policies.json"
+const getPolicyPath = "/v2/alerts_policies.json"
 const delPolicyPath = "/v2/alerts_policies/%d.json"
 const postConditionPath = "/v2/alerts_nrql_conditions/policies/%d.json" // %s = policyId
 const putChannelPath = "/v2/alerts_policy_channels.json"
 
+type Policies []Policy
 type Policy struct {
 	Id                 int    `json:"id"`
 	Name               string `json:"name"`
@@ -76,12 +78,7 @@ func (pas *PolicyApiService) Create(policyConfig config.PolicyConfig) (Policy, e
 		return Policy{}, err
 	}
 
-	return Policy{
-		Id:                 policyResponse.Policy.Id,
-		Name:               policyResponse.Policy.Name,
-		IncidentPreference: policyResponse.Policy.IncidentPreference,
-	}, nil
-
+	return policyFromPolicyDetailsResponse(policyResponse.Policy), nil
 }
 
 func (pas *PolicyApiService) AddCondition(policy Policy, condition config.ConditionConfig) (Policy, error) {
@@ -139,5 +136,53 @@ func (pas *PolicyApiService) Delete(policyId int) error {
 }
 
 func (pas *PolicyApiService) DeleteAll() error {
-	panic("implement me")
+	policies, err := pas.getAll()
+	if err != nil {
+		return err
+	}
+	for _, policy := range policies {
+		err = pas.Delete(policy.Id)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (pas *PolicyApiService) getAll() (Policies, error) {
+	page := 1
+	var policies Policies
+	for {
+		policiesRawResponse, err := pas.client.Get(fmt.Sprintf("%s?page=%d", getPolicyPath, page), nil)
+		if err != nil {
+			return nil, err
+		}
+		policiesResponse := infrastructure.PoliciesResponse{}
+		err = json.Unmarshal(policiesRawResponse, &policiesResponse)
+		if err != nil {
+			return nil, err
+		}
+		if policiesResponse.IsEmpty() {
+			break
+		}
+		policies = append(policies, policiesFromPoliciesDetailsResponse(policiesResponse.Policies)...)
+		page++
+	}
+	return policies, nil
+}
+
+func policiesFromPoliciesDetailsResponse(prs infrastructure.PoliciesDetailsResponse) Policies {
+	var policies Policies
+	for _, pr := range prs {
+		policies = append(policies, policyFromPolicyDetailsResponse(pr))
+	}
+	return policies
+}
+
+func policyFromPolicyDetailsResponse(pr infrastructure.PolicyDetailsResponse) Policy {
+	return Policy{
+		Id:                 pr.Id,
+		Name:               pr.Name,
+		IncidentPreference: pr.IncidentPreference,
+	}
 }
