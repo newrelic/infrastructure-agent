@@ -684,6 +684,112 @@ func Test_EmitV3_IntegrationNameVersion(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestEmit_SendCustomAttributes_NotCASentByDefault(t *testing.T) {
+	intDefinition := integration.Definition{
+		InventorySource: *ids.NewPluginID("cat", "term"),
+	}
+	extraLabels := data.Map{
+		"label.foo":                "bar",
+		"extraAnnotationAttribute": "annotated",
+	}
+	customAttributes := config.CustomAttributeMap{
+		"customattributes.label.foo":               "bar",
+		"customAttributesExtraAnnotationAttribute": "annotated",
+	}
+	entityRewrite := []data.EntityRewrite{}
+
+	dmEmitter := &mockDmEmitter{}
+	dmEmitter.On("Send", fwrequest.NewFwRequest(
+		intDefinition,
+		extraLabels,
+		entityRewrite,
+		integration2.ProtocolV4.ParsedV4,
+	))
+
+	em := &VersionAwareEmitter{
+		aCtx:        mockSecureForwardAgent(false, customAttributes),
+		ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true, fflag.FlagDMRegisterEnable: false}),
+		dmEmitter:   dmEmitter,
+	}
+
+	err := em.Emit(intDefinition, extraLabels, entityRewrite, integration2.ProtocolV4.Payload)
+	require.NoError(t, err)
+
+	dmEmitter.AssertExpectations(t)
+}
+
+func TestEmit_SendCustomAttributes_nilCustomAttributes(t *testing.T) {
+	intDefinition := integration.Definition{
+		InventorySource: *ids.NewPluginID("cat", "term"),
+	}
+	extraLabels := data.Map{
+		"label.foo":                "bar",
+		"extraAnnotationAttribute": "annotated",
+	}
+	entityRewrite := []data.EntityRewrite{}
+
+	dmEmitter := &mockDmEmitter{}
+	dmEmitter.On("Send", fwrequest.NewFwRequest(
+		intDefinition,
+		extraLabels,
+		entityRewrite,
+		integration2.ProtocolV4.ParsedV4,
+	))
+
+	em := &VersionAwareEmitter{
+		aCtx:        mockSecureForwardAgent(true, nil),
+		ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true, fflag.FlagDMRegisterEnable: false}),
+		dmEmitter:   dmEmitter,
+	}
+
+	err := em.Emit(intDefinition, extraLabels, entityRewrite, integration2.ProtocolV4.Payload)
+	require.NoError(t, err)
+
+	dmEmitter.AssertExpectations(t)
+}
+
+func TestEmit_SendCustomAttributes_SendCAInSecureForwardMode(t *testing.T) {
+	intDefinition := integration.Definition{
+		InventorySource: *ids.NewPluginID("cat", "term"),
+	}
+	extraLabels := data.Map{
+		"label.foo":                "bar",
+		"extraAnnotationAttribute": "annotated",
+	}
+	customAttributes := config.CustomAttributeMap{
+		"customattributes.label.foo":               "bar",
+		"customAttributesExtraAnnotationAttribute": "annotated",
+	}
+	entityRewrite := []data.EntityRewrite{}
+
+	expectedLabels := make(data.Map)
+	for k, v := range extraLabels {
+		expectedLabels[k] = v
+	}
+	for k, v := range customAttributes {
+		expectedLabels[k] = v.(string)
+	}
+
+	dmEmitter := &mockDmEmitter{}
+	dmEmitter.On("Send", fwrequest.NewFwRequest(
+		intDefinition,
+		expectedLabels,
+		entityRewrite,
+		integration2.ProtocolV4.ParsedV4,
+	))
+
+	em := &VersionAwareEmitter{
+		aCtx:        mockSecureForwardAgent(true, customAttributes),
+		ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true, fflag.FlagDMRegisterEnable: false}),
+		dmEmitter:   dmEmitter,
+	}
+
+	err := em.Emit(intDefinition, extraLabels, entityRewrite, integration2.ProtocolV4.Payload)
+	require.NoError(t, err)
+
+	dmEmitter.AssertExpectations(t)
+}
+
 func mockAgent() *mocks.AgentContext {
 	aID := host.IDLookup{
 		sysinfo.HOST_SOURCE_HOSTNAME:       "long",
@@ -693,6 +799,10 @@ func mockAgent() *mocks.AgentContext {
 	cfg := &config.Config{
 		SupervisorRefreshSec: 1,
 		SupervisorRpcSocket:  "/tmp/supervisor.sock.test",
+		CustomAttributes: map[string]interface{}{
+			"customattributes.label.foo":               "bar",
+			"customAttributesExtraAnnotationAttribute": "annotated",
+		},
 	}
 
 	ma := &mocks.AgentContext{}
@@ -711,6 +821,31 @@ func mockAgent2Payloads() *mocks.AgentContext {
 	ma := mockAgent()
 	ma.On("SendData", mock.AnythingOfType("agent.PluginOutput")).Twice()
 	ma.SendDataWg.Add(1)
+
+	return ma
+}
+
+func mockSecureForwardAgent(secureForward bool, ca config.CustomAttributeMap) *mocks.AgentContext {
+	aID := host.IDLookup{
+		sysinfo.HOST_SOURCE_HOSTNAME:       "long",
+		sysinfo.HOST_SOURCE_HOSTNAME_SHORT: "short",
+	}
+
+	cfg := &config.Config{
+		SupervisorRefreshSec: 1,
+		SupervisorRpcSocket:  "/tmp/supervisor.sock.test",
+		IsSecureForwardOnly: secureForward,
+		CustomAttributes: ca,
+	}
+
+	ma := &mocks.AgentContext{}
+	ma.On("EntityKey").Return("bob")
+	ma.On("IDLookup").Return(aID)
+	ma.On("SendData", mock.AnythingOfType("agent.PluginOutput")).Once()
+	ma.SendDataWg.Add(1)
+	ma.On("SendEvent", mock.AnythingOfType("agent.mapEvent"), mock.AnythingOfType("entity.Key")).Once()
+	ma.On("Config").Return(cfg)
+	ma.On("SendEvent", mock.Anything, entity.Key("bob")).Twice()
 
 	return ma
 }

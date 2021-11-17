@@ -79,11 +79,17 @@ func (e *VersionAwareEmitter) Emit(definition integration.Definition, extraLabel
 	// But the backend is not decorating the metrics as the Host entity does is not being created in this mode.
 	// Here then we add CustomAttributes to extraLabels in case we are in these modes.
 	if e.aCtx.Config().IsSecureForwardOnly || e.aCtx.Config().IsForwardOnly {
+		extraLabelsCopy := make(map[string]string)
 		customAttributes := e.aCtx.Config().CustomAttributes.ToDataMap()
 
-		for k, v := range customAttributes {
-			extraLabels[k] = v
+		for k, v := range extraLabels {
+			extraLabelsCopy[k] = v
 		}
+		for k, v := range customAttributes {
+			extraLabelsCopy[k] = v
+		}
+
+		extraLabels = extraLabelsCopy
 	}
 
 	// dimensional metrics
