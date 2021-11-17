@@ -798,7 +798,7 @@ func mockAgent2Payloads() *mocks.AgentContext {
 	return ma
 }
 
-func mockAgent(secureForward bool, customAttributes config.CustomAttributeMap) *mocks.AgentContext {
+func mockAgent(isForwardOnly bool, customAttributes config.CustomAttributeMap) *mocks.AgentContext {
 	aID := host.IDLookup{
 		sysinfo.HOST_SOURCE_HOSTNAME:       "long",
 		sysinfo.HOST_SOURCE_HOSTNAME_SHORT: "short",
@@ -807,7 +807,7 @@ func mockAgent(secureForward bool, customAttributes config.CustomAttributeMap) *
 	cfg := &config.Config{
 		SupervisorRefreshSec: 1,
 		SupervisorRpcSocket:  "/tmp/supervisor.sock.test",
-		IsSecureForwardOnly:  secureForward,
+		IsForwardOnly:        isForwardOnly,
 	}
 
 	if customAttributes != nil {

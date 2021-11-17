@@ -75,10 +75,10 @@ func (e *VersionAwareEmitter) Emit(definition integration.Definition, extraLabel
 		return err
 	}
 
-	// Agent is decorating correctly the Entity in forward only/secure forward with Custom Attributes: pkg/plugins/plugins_linux.go:46
-	// But the backend is not decorating the metrics as the Host entity does is not being created in this mode.
-	// Here then we add CustomAttributes to extraLabels in case we are in these modes.
-	if e.aCtx.Config().IsSecureForwardOnly || e.aCtx.Config().IsForwardOnly {
+	// Agent creating the Host entity (and decorating it correctly in the backend) in secure forward with Custom Attributes: pkg/plugins/plugins_linux.go:46
+	// But in forward only there is no host entity and custom attributes are not being decorated.
+	// Here then we add CustomAttributes to extraLabels in case we are in that mode.
+	if e.aCtx.Config().IsForwardOnly {
 		extraLabelsCopy := make(map[string]string)
 		customAttributes := e.aCtx.Config().CustomAttributes.ToDataMap()
 
