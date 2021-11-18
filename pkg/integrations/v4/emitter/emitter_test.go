@@ -428,7 +428,7 @@ func TestLegacy_Emit(t *testing.T) {
 			},
 			integrationJsonOutput: integrationJsonOutput,
 			expectedId:            *ids.NewPluginID("cat", "term"),
-			ma:                    mockAgent(false, nil),
+			ma:                    mockAgent(),
 		},
 		{
 			name: "Inventory source set - protocol V4",
@@ -437,7 +437,7 @@ func TestLegacy_Emit(t *testing.T) {
 			},
 			integrationJsonOutput: integrationJsonV4Output,
 			expectedId:            *ids.NewPluginID("cat", "term"),
-			ma:                    mockAgent(false, nil),
+			ma:                    mockAgent(),
 		},
 		{
 			name: "Plugin data name",
@@ -446,7 +446,7 @@ func TestLegacy_Emit(t *testing.T) {
 			},
 			integrationJsonOutput: fmt.Sprintf(integrationJsonOutput, "com.newrelic.something"),
 			expectedId:            ids.NewDefaultInventoryPluginID("com.newrelic.something"),
-			ma:                    mockAgent(false, nil),
+			ma:                    mockAgent(),
 		},
 		{
 			name: "Plugin data name - protocol V4",
@@ -455,7 +455,7 @@ func TestLegacy_Emit(t *testing.T) {
 			},
 			integrationJsonOutput: integrationJsonV4Output,
 			expectedId:            ids.NewDefaultInventoryPluginID("my.integration.name"),
-			ma:                    mockAgent(false, nil),
+			ma:                    mockAgent(),
 		},
 		{
 			name: "Metadata data name",
@@ -465,7 +465,7 @@ func TestLegacy_Emit(t *testing.T) {
 			},
 			integrationJsonOutput: fmt.Sprintf(integrationJsonOutput, ""),
 			expectedId:            ids.NewDefaultInventoryPluginID("awesome-plugin"),
-			ma:                    mockAgent(false, nil),
+			ma:                    mockAgent(),
 		},
 		{
 			name: "Metadata data name - protocol v4",
@@ -475,7 +475,7 @@ func TestLegacy_Emit(t *testing.T) {
 			},
 			integrationJsonOutput: strings.Replace(integrationJsonV4Output, "\"name\": \"my.integration.name\",", "", 1),
 			expectedId:            ids.NewDefaultInventoryPluginID("awesome-plugin"),
-			ma:                    mockAgent(false, nil),
+			ma:                    mockAgent(),
 		},
 	}
 	for _, tc := range cases {
@@ -517,7 +517,7 @@ func TestProtocolV4_Emit(t *testing.T) {
 	entityRewrite := []data.EntityRewrite{}
 	integrationJSON := []byte(integrationJsonV4Output)
 
-	ma := mockAgent(false, nil)
+	ma := mockAgent()
 	mockedMetricsSender := mockMetricSender()
 
 	mockDME := &mockDmEmitter{}
@@ -572,7 +572,7 @@ func TestProtocolV4_Emit_WithFFDisabled(t *testing.T) {
 	entityRewrite := []data.EntityRewrite{}
 	integrationJSON := integration2.ProtocolV4.Payload
 
-	ma := mockAgent(false, nil)
+	ma := mockAgent()
 	mockDME := &mockDmEmitter{}
 	mockDME.On("Send", fwrequest.NewFwRequest(
 		metadata,
@@ -610,7 +610,7 @@ func TestProtocolV4_Emit_WithoutRegisteringEntities(t *testing.T) {
 	))
 
 	em := &VersionAwareEmitter{
-		aCtx:        mockAgent(false, nil),
+		aCtx:        mockAgent(),
 		ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true, fflag.FlagDMRegisterEnable: false}),
 		dmEmitter:   dmEmitter,
 	}
@@ -707,7 +707,7 @@ func TestEmit_SendCustomAttributes_NotCASentByDefault(t *testing.T) {
 	))
 
 	em := &VersionAwareEmitter{
-		aCtx:        mockAgent(false, customAttributes),
+		aCtx:        mockForwardAgent(false, customAttributes),
 		ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true, fflag.FlagDMRegisterEnable: false}),
 		dmEmitter:   dmEmitter,
 	}
@@ -737,7 +737,7 @@ func TestEmit_SendCustomAttributes_nilCustomAttributes(t *testing.T) {
 	))
 
 	em := &VersionAwareEmitter{
-		aCtx:        mockAgent(true, nil),
+		aCtx:        mockForwardAgent(true, nil),
 		ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true, fflag.FlagDMRegisterEnable: false}),
 		dmEmitter:   dmEmitter,
 	}
@@ -766,8 +766,8 @@ func TestEmit_SendCustomAttributes_SendCAInSecureForwardMode(t *testing.T) {
 	for k, v := range extraLabels {
 		expectedLabels[k] = v
 	}
-	for k, v := range customAttributes {
-		expectedLabels[k] = v.(string)
+	for k, v := range customAttributes.DataMap() {
+		expectedLabels[k] = v
 	}
 
 	dmEmitter := &mockDmEmitter{}
@@ -779,7 +779,7 @@ func TestEmit_SendCustomAttributes_SendCAInSecureForwardMode(t *testing.T) {
 	))
 
 	em := &VersionAwareEmitter{
-		aCtx:        mockAgent(true, customAttributes),
+		aCtx:        mockForwardAgent(true, customAttributes),
 		ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true, fflag.FlagDMRegisterEnable: false}),
 		dmEmitter:   dmEmitter,
 	}
@@ -791,14 +791,37 @@ func TestEmit_SendCustomAttributes_SendCAInSecureForwardMode(t *testing.T) {
 }
 
 func mockAgent2Payloads() *mocks.AgentContext {
-	ma := mockAgent(false, nil)
+	ma := mockAgent()
 	ma.On("SendData", mock.AnythingOfType("agent.PluginOutput")).Twice()
 	ma.SendDataWg.Add(1)
 
 	return ma
 }
 
-func mockAgent(isForwardOnly bool, customAttributes config.CustomAttributeMap) *mocks.AgentContext {
+func mockAgent() *mocks.AgentContext {
+	aID := host.IDLookup{
+		sysinfo.HOST_SOURCE_HOSTNAME:       "long",
+		sysinfo.HOST_SOURCE_HOSTNAME_SHORT: "short",
+	}
+
+	cfg := &config.Config{
+		SupervisorRefreshSec: 1,
+		SupervisorRpcSocket:  "/tmp/supervisor.sock.test",
+	}
+
+	ma := &mocks.AgentContext{}
+	ma.On("EntityKey").Return("bob")
+	ma.On("IDLookup").Return(aID)
+	ma.On("SendData", mock.AnythingOfType("agent.PluginOutput")).Once()
+	ma.SendDataWg.Add(1)
+	ma.On("SendEvent", mock.AnythingOfType("agent.mapEvent"), mock.AnythingOfType("entity.Key")).Once()
+	ma.On("Config").Return(cfg)
+	ma.On("SendEvent", mock.Anything, entity.Key("bob")).Twice()
+
+	return ma
+}
+
+func mockForwardAgent(isForwardOnly bool, customAttributes config.CustomAttributeMap) *mocks.AgentContext {
 	aID := host.IDLookup{
 		sysinfo.HOST_SOURCE_HOSTNAME:       "long",
 		sysinfo.HOST_SOURCE_HOSTNAME_SHORT: "short",
@@ -808,10 +831,7 @@ func mockAgent(isForwardOnly bool, customAttributes config.CustomAttributeMap) *
 		SupervisorRefreshSec: 1,
 		SupervisorRpcSocket:  "/tmp/supervisor.sock.test",
 		IsForwardOnly:        isForwardOnly,
-	}
-
-	if customAttributes != nil {
-		cfg.CustomAttributes = customAttributes
+		CustomAttributes:     customAttributes,
 	}
 
 	ma := &mocks.AgentContext{}

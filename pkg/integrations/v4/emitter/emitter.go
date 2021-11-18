@@ -80,7 +80,7 @@ func (e *VersionAwareEmitter) Emit(definition integration.Definition, extraLabel
 	// Here then we add CustomAttributes to extraLabels in case we are in that mode.
 	if e.aCtx.Config().IsForwardOnly {
 		extraLabelsCopy := make(map[string]string)
-		customAttributes := e.aCtx.Config().CustomAttributes.ToDataMap()
+		customAttributes := e.aCtx.Config().CustomAttributes.DataMap()
 
 		for k, v := range extraLabels {
 			extraLabelsCopy[k] = v

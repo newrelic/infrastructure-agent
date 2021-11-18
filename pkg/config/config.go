@@ -1875,11 +1875,14 @@ func (c *CustomAttributeMap) Decode(value string) error {
 	return nil
 }
 
-func (c *CustomAttributeMap) ToDataMap() (d data.Map) {
+// DataMap returns the CustomAttributeMap as a data.Map
+func (c *CustomAttributeMap) DataMap() (d data.Map) {
 	d = data.Map{}
 
 	for k, v := range *c {
-		d[k] = v.(string)
+		if str, isString := v.(string); isString {
+			d[k] = str
+		}
 	}
 
 	return
