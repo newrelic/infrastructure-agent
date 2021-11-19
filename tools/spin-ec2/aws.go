@@ -17,7 +17,7 @@ func getAWSInstances(hostPrefix string) (map[string]string, error) {
 		"ec2",
 		"describe-instances",
 		"--output", "text",
-		"--filters", `Name=tag:Name,Values="` + hostPrefix + `:*"`, `Name=instance-state-name,Values=running`,
+		"--filters", `Name=tag:Name,Values="` + hostPrefix + `*"`, `Name=instance-state-name,Values=running`,
 		"--query", "Reservations[*].Instances[*].[Tags[?Key==`Name`], InstanceId]",
 	}...)
 

@@ -425,7 +425,7 @@ func provisionEphimeralCanaries(cnf canaryConf) error {
 func pruneCanaries(cmd *cobra.Command, args []string) error {
 	dryRun := viper.GetBool("dry_run")
 
-	instances, err := getAWSInstances(hostPrefix)
+	instances, err := getAWSInstances(hostPrefix + ":v")
 	if err != nil {
 		return err
 	}
