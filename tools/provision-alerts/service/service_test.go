@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"net/url"
 	"provision-alerts/config"
 	"testing"
 )
@@ -285,7 +286,7 @@ func TestPolicyApiService_DeleteExistingPolicyByName(t *testing.T) {
 	body, err := json.Marshal(policy)
 	assert.NoError(t, err)
 
-	client.ShouldGet(fmt.Sprintf("/v2/alerts_policies.json?name=%s", policy.Name), nil, []byte(response), nil)
+	client.ShouldGet(fmt.Sprintf("/v2/alerts_policies.json?%s", url.QueryEscape("filter[name]="+policy.Name)), nil, []byte(response), nil)
 	client.ShouldDel(fmt.Sprintf("/v2/alerts_policies/%d.json", policy.Id), nil, body, nil)
 
 	err = alertService.DeleteByName("some name")
@@ -306,7 +307,7 @@ func TestPolicyApiService_FailOnDeleteExistingPolicyByNameIfMultiplePolicies(t *
 			]
 		}`
 
-	client.ShouldGet(fmt.Sprintf("/v2/alerts_policies.json?name=%s", "[auto] some name"), nil, []byte(response), nil)
+	client.ShouldGet(fmt.Sprintf("/v2/alerts_policies.json?%s", url.QueryEscape("filter[name]=[auto] some name")), nil, []byte(response), nil)
 
 	err := alertService.DeleteByName("some name")
 	assert.Equal(t, PolicyNameNotUnique, err)
@@ -324,7 +325,7 @@ func TestPolicyApiService_DeleteNonExistentPolicyByNameShouldNotFail(t *testing.
 			]
 		}`
 
-	client.ShouldGet(fmt.Sprintf("/v2/alerts_policies.json?name=%s", "[auto] some name"), nil, []byte(response), nil)
+	client.ShouldGet(fmt.Sprintf("/v2/alerts_policies.json?%s", url.QueryEscape("filter[name]=[auto] some name")), nil, []byte(response), nil)
 
 	err := alertService.DeleteByName("some name")
 	assert.NoError(t, err)
