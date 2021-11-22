@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/stretchr/testify/assert"
@@ -21,17 +22,17 @@ func TestPolicyApiService_Create(t *testing.T) {
 	}
 	expectedPolicy := Policy{
 		Id:                 454545,
-		Name:               "testing",
+		Name:               "[auto] testing",
 		IncidentPreference: "whatever",
 	}
 
-	post := []byte(`{"policy":{"name":"testing","incident_preference":"whatever"}}`)
+	post := []byte(`{"policy":{"name":"[auto] testing","incident_preference":"whatever"}}`)
 
 	response := []byte(`{
  "policy": {
    "id": 454545,
    "incident_preference": "whatever",
-   "name": "testing",
+   "name": "[auto] testing",
    "created_at": 1634302571179,
    "updated_at": 1634302571179
  }
@@ -56,7 +57,7 @@ func TestPolicyApiService_PostErrorsOnCreate(t *testing.T) {
 		IncidentPreference: "whatever",
 	}
 
-	post := []byte(`{"policy":{"name":"testing","incident_preference":"whatever"}}`)
+	post := []byte(`{"policy":{"name":"[auto] testing","incident_preference":"whatever"}}`)
 
 	expectedErr := errors.New("error occurred in the api client, resp code 503, url: https://host.com/some/url, body: , err: response body")
 	client.ShouldPost("/v2/alerts_policies.json", post, []byte{}, expectedErr)
@@ -249,17 +250,83 @@ func TestPolicyApiService_DeleteAll(t *testing.T) {
 		}`,
 	}
 
-	for idx,response := range responses{
-		page := idx+1
-		client.ShouldGet(fmt.Sprintf("/v2/alerts_policies.json?page=%d",page), nil, []byte(response), nil)
+	for idx, response := range responses {
+		page := idx + 1
+		client.ShouldGet(fmt.Sprintf("/v2/alerts_policies.json?page=%d", page), nil, []byte(response), nil)
 	}
 
-	for i:=1;i<12;i++{
+	for i := 1; i < 12; i++ {
 		client.ShouldDel(fmt.Sprintf("/v2/alerts_policies/%d.json", i), nil, nil, nil)
 	}
 
 	err := alertService.DeleteAll()
 
+	assert.NoError(t, err)
+
+	//mocked objects assertions
+	mock.AssertExpectationsForObjects(t, client)
+}
+
+func TestPolicyApiService_DeleteExistingPolicyByName(t *testing.T) {
+	client := &AlertClientMock{}
+	alertService := NewPolicyApiService(client)
+	policy := Policy{
+		Id:                 454545,
+		Name:               "[auto] some name",
+		IncidentPreference: "whatever",
+	}
+
+	response := `{
+			"policies":[
+				{"id":454545,"incident_preference":"whatever","name":"[auto] some name","created_at":1637075117137,"updated_at":1637075117137}
+			]
+		}`
+
+	body, err := json.Marshal(policy)
+	assert.NoError(t, err)
+
+	client.ShouldGet(fmt.Sprintf("/v2/alerts_policies.json?name=%s", policy.Name), nil, []byte(response), nil)
+	client.ShouldDel(fmt.Sprintf("/v2/alerts_policies/%d.json", policy.Id), nil, body, nil)
+
+	err = alertService.DeleteByName("some name")
+	assert.NoError(t, err)
+
+	//mocked objects assertions
+	mock.AssertExpectationsForObjects(t, client)
+}
+
+func TestPolicyApiService_FailOnDeleteExistingPolicyByNameIfMultiplePolicies(t *testing.T) {
+	client := &AlertClientMock{}
+	alertService := NewPolicyApiService(client)
+
+	response := `{
+			"policies":[
+				{"id":454545,"incident_preference":"whatever","name":"[auto] some name","created_at":1637075117137,"updated_at":1637075117137},
+				{"id":454546,"incident_preference":"whatever","name":"[auto] some name","created_at":1637075117137,"updated_at":1637075117137}
+			]
+		}`
+
+	client.ShouldGet(fmt.Sprintf("/v2/alerts_policies.json?name=%s", "[auto] some name"), nil, []byte(response), nil)
+
+	err := alertService.DeleteByName("some name")
+	assert.Equal(t, PolicyNameNotUnique, err)
+
+	//mocked objects assertions
+	mock.AssertExpectationsForObjects(t, client)
+}
+
+func TestPolicyApiService_DeleteNonExistentPolicyByNameShouldNotFail(t *testing.T) {
+	client := &AlertClientMock{}
+	alertService := NewPolicyApiService(client)
+
+	response := `{
+			"policies":[
+			]
+		}`
+
+	client.ShouldGet(fmt.Sprintf("/v2/alerts_policies.json?name=%s", "[auto] some name"), nil, []byte(response), nil)
+
+	err := alertService.DeleteByName("some name")
 	assert.NoError(t, err)
 
 	//mocked objects assertions

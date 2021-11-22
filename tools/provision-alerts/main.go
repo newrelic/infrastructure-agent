@@ -31,10 +31,11 @@ func main() {
 	}
 
 	cfg, err := configFromTemplate()
-	if err != nil {
-		log.Fatal(err)
-	}
+	logFatalIfErr(err)
+
 	cfg, err = config.FulfillConfig(cfg, displayNameCurrent, displayNamePrevious)
+	logFatalIfErr(err)
+
 	client := infrastructure.NewAlertClientHttp(hostName, apiKey, &http.Client{})
 	policyService := service.NewPolicyApiService(client)
 
@@ -47,42 +48,34 @@ func validArgs() bool {
 
 func configFromTemplate() (config.Config, error) {
 	rawYAML, err := ioutil.ReadFile("template/template.yml")
-
-	if err != nil {
-		log.Fatal(err)
-	}
+	logFatalIfErr(err)
 
 	return config.ParseConfig(rawYAML)
 }
 
 func recreateAlerts(cfg config.Config, policyService service.PolicyService) {
-
-	err := policyService.DeleteAll()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	for _, policyConfig := range cfg.Policies {
-		policy, err := policyService.Create(policyConfig)
+		err := policyService.DeleteByName(policyConfig.Name)
+		logFatalIfErr(err)
 
-		if err != nil {
-			log.Fatal(err)
-		}
+		policy, err := policyService.Create(policyConfig)
+		logFatalIfErr(err)
 
 		for _, conditionConfig := range policyConfig.Conditions {
 			policy, err = policyService.AddCondition(policy, conditionConfig)
-
-			if err != nil {
-				log.Fatal(err)
-			}
+			logFatalIfErr(err)
 		}
 
 		for _, channelId := range policyConfig.Channels {
 
 			policy, err = policyService.AddChannel(policy, channelId)
-			if err != nil {
-				log.Fatal(err)
-			}
+			logFatalIfErr(err)
 		}
+	}
+}
+
+func logFatalIfErr(err error) {
+	if err != nil {
+		log.Fatal(err)
 	}
 }

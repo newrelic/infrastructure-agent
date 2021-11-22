@@ -24,7 +24,7 @@ func Test_recreateAlerts(t *testing.T) {
 	channel1 := 1111
 	channel2 := 2222
 	channel3 := 3333
-	
+
 	policy1WithConditionAndChannel1 := service.Policy{Name: "policy1", Conditions: service.Conditions{condition11, condition12}, Channels: []int{channel1}}
 	policy2WithConditionAndChannel1 := service.Policy{Name: "policy2", Conditions: service.Conditions{condition11, condition12}, Channels: []int{channel1}}
 	policy2WithConditionAndChannel2 := service.Policy{Name: "policy2", Conditions: service.Conditions{condition11, condition12}, Channels: []int{channel1, channel2}}
@@ -47,7 +47,8 @@ func Test_recreateAlerts(t *testing.T) {
 
 	policyService := service.PolicyServiceMock{}
 
-	policyService.ShouldDeleteAll(nil)
+	policyService.ShouldDeleteByName(policy1.Name, nil)
+	policyService.ShouldDeleteByName(policy2.Name, nil)
 
 	policyService.ShouldCreate(cfg.Policies[0], policy1, nil)
 	policyService.ShouldCreate(cfg.Policies[1], policy2, nil)

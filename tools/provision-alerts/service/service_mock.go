@@ -9,6 +9,19 @@ type PolicyServiceMock struct {
 	mock.Mock
 }
 
+func (p *PolicyServiceMock) DeleteByName(policyName string) error {
+	args := p.Called(policyName)
+
+	return args.Error(0)
+}
+
+func (p *PolicyServiceMock) ShouldDeleteByName(policyName string, err error) {
+	p.
+		On("DeleteByName", policyName).
+		Once().
+		Return(err)
+}
+
 func (p *PolicyServiceMock) Create(policyConfig config.PolicyConfig) (Policy, error) {
 	args := p.Called(policyConfig)
 
