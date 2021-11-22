@@ -44,6 +44,14 @@ ci/snyk-test:
 			-e SNYK_TOKEN \
 			snyk/snyk:golang snyk test --severity-threshold=high
 
+.PHONY: ci/tools-test
+ci/tools-test: ci/deps
+	@docker run --rm -t \
+			--name "infrastructure-agent-test-coverage" \
+			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
+			-w /go/src/github.com/newrelic/infrastructure-agent \
+			$(BUILDER_IMG_TAG) make tools-test
+
 .PHONY : ci/prerelease/linux
 ci/prerelease/linux:
 	TARGET_OS=linux $(MAKE) ci/prerelease

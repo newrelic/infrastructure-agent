@@ -16,6 +16,7 @@ var (
 	displayNamePrevious string
 	apiKey              string
 	hostName            string
+	template            string
 )
 
 func main() {
@@ -24,6 +25,8 @@ func main() {
 	flag.StringVar(&displayNamePrevious, "display_name_previous", "", "display name of previous version")
 	flag.StringVar(&apiKey, "api_key", "", "NR api key")
 	flag.StringVar(&hostName, "host_name", "https://staging-api.newrelic.com", "NR api host (default staging)")
+	flag.StringVar(&template, "template", "", "template path")
+
 	flag.Parse()
 	if !validArgs() {
 		flag.Usage()
@@ -43,11 +46,11 @@ func main() {
 }
 
 func validArgs() bool {
-	return displayNameCurrent != "" && displayNamePrevious != "" && apiKey != ""
+	return displayNameCurrent != "" && displayNamePrevious != "" && apiKey != "" && template != ""
 }
 
 func configFromTemplate() (config.Config, error) {
-	rawYAML, err := ioutil.ReadFile("template/template.yml")
+	rawYAML, err := ioutil.ReadFile(template)
 	logFatalIfErr(err)
 
 	return config.ParseConfig(rawYAML)
