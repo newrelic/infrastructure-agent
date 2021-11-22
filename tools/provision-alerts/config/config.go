@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"gopkg.in/yaml.v3"
+	"strings"
 	"text/template"
 )
 
@@ -64,6 +65,10 @@ func FulfillConfig(config Config, displayNameCurrent, displayNamePrevious string
 			}
 			config.Policies[policyIdx].Conditions[conditionIdx] = fulfilledCc
 		}
+		// Policies have a max of 700 conditions. To create one policy per OS/distro
+		// we rename policy to include it from displayName.
+		displayNameParts := strings.Split(displayNameCurrent, ":")
+		config.Policies[policyIdx].Name += " / " + displayNameParts[len(displayNameParts)-1]
 	}
 
 	return config, nil
