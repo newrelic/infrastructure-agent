@@ -2,7 +2,9 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/url"
 	"provision-alerts/config"
 	"provision-alerts/infrastructure"
 	"strconv"
@@ -14,6 +16,10 @@ const delPolicyPath = "/v2/alerts_policies/%d.json"
 const postConditionPath = "/v2/alerts_nrql_conditions/policies/%d.json" // %s = policyId
 const putChannelPath = "/v2/alerts_policy_channels.json"
 
+// policyPrefix is used to prefix the automatic created and deleted policy so it does not match
+// with manually created ones. we don't expose this prefixed name out of the service
+const policyPrefix = "[auto]"
+
 type Policies []Policy
 type Policy struct {
 	Id                 int    `json:"id"`
@@ -24,6 +30,7 @@ type Policy struct {
 	Channels   []int
 }
 
+type Conditions []Condition
 type Condition struct {
 	Name      string
 	Duration  int
@@ -32,23 +39,14 @@ type Condition struct {
 	NRQL      string
 }
 
-type Conditions []Condition
-
-// interfaces
-
-type ConditionProvider interface {
-	Provides() Conditions
-}
-
 type PolicyService interface {
 	Create(policy config.PolicyConfig) (Policy, error)
+	DeleteByName(policyName string) error
 	AddCondition(policy Policy, condition config.ConditionConfig) (Policy, error)
 	AddChannel(policy Policy, channelId int) (Policy, error)
 	Delete(id int) error
 	DeleteAll() error
 }
-
-// services
 
 func NewPolicyApiService(client AlertClient) PolicyService {
 	return &PolicyApiService{
@@ -60,8 +58,46 @@ type PolicyApiService struct {
 	client AlertClient
 }
 
+func (pas *PolicyApiService) DeleteByName(policyName string) error {
+	policy, err := pas.getByName(prefixedName(policyName))
+	switch {
+	case err == PolicyNotFound:
+		return nil
+	case err != nil:
+		return err
+	}
+
+	return pas.Delete(policy.Id)
+}
+
+var PolicyNotFound = errors.New("policy not found")
+var PolicyNameNotUnique = errors.New("policy name is not unique")
+
+func (pas *PolicyApiService) getByName(policyName string) (Policy, error) {
+	policiesRawResponse, err := pas.client.Get(fmt.Sprintf("%s?%s", getPolicyPath, url.QueryEscape("filter[name]="+policyName)), nil)
+	if err != nil {
+		return Policy{}, err
+	}
+
+	policiesResponse := infrastructure.PoliciesResponse{}
+	err = json.Unmarshal(policiesRawResponse, &policiesResponse)
+	if err != nil {
+		return Policy{}, err
+	}
+
+	if policiesResponse.IsEmpty() {
+		return Policy{}, PolicyNotFound
+	}
+	if len(policiesResponse.Policies) > 1 {
+		return Policy{}, PolicyNameNotUnique
+	}
+
+	return policyFromPolicyDetailsResponse(policiesResponse.Policies[0]), nil
+}
+
 func (pas *PolicyApiService) Create(policyConfig config.PolicyConfig) (Policy, error) {
 
+	policyConfig.Name = prefixedName(policyConfig.Name)
 	jsonPayload, err := json.Marshal(infrastructure.FromPolicyConfig(policyConfig))
 	if err != nil {
 		return Policy{}, err
@@ -185,4 +221,8 @@ func policyFromPolicyDetailsResponse(pr infrastructure.PolicyDetailsResponse) Po
 		Name:               pr.Name,
 		IncidentPreference: pr.IncidentPreference,
 	}
+}
+
+func prefixedName(name string) string {
+	return fmt.Sprintf("%s %s", policyPrefix, name)
 }
