@@ -270,4 +270,84 @@ policies:
         operator: "above"
         template_name: "Generic metric comparator"
 
+      - name: Storage / Disk Free Bytes
+        metric: diskFreeBytes
+        sample: StorageSample
+        threshold: 100000000 # TODO review : max 100Mb avg in last week. Need to review log rotate
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: Storage / Disk Free Percent
+        metric: diskFreePercent
+        sample: StorageSample
+        threshold: 2 # TODO review : max 100Mb avg in last week. Need to review log rotate
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: Storage / Disk Total Bytes
+        metric: diskTotalBytes
+        sample: StorageSample
+        threshold: 0
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: Storage / Disk Used Bytes
+        metric: diskUsedBytes
+        sample: StorageSample
+        threshold: 100000000 # TODO review : max 100Mb avg in last week. Need to review log rotate
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: Storage / Disk Used Percent
+        metric: diskUsedPercent
+        sample: StorageSample
+        threshold: 2 # TODO review : max 100Mb avg in last week. Need to review log rotate
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: Storage / Inodes Free
+        metric: inodesFree
+        sample: StorageSample
+        threshold: 50
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: Storage / Inodes Total
+        metric: inodesTotal
+        sample: StorageSample
+        threshold: 0
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: Storage / Inodes Used
+        metric: inodesUsed
+        sample: StorageSample
+        threshold: 50
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: Storage / Inodes Used Percent
+        metric: inodesUsedPercent
+        sample: StorageSample
+        threshold: 0.1
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: Storage / System Memory Bytes
+        metric: systemMemoryBytes
+        sample: StorageSample
+        threshold: 0
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
 
