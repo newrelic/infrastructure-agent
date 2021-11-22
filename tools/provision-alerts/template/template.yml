@@ -1,34 +1,273 @@
 policies:
-  - name: "gmerkushev test 1"
+  - name: "Canaries metric comparator"
     incident_preference: "PER_POLICY"
-    channels: [56611]
+    channels: [1736205]
     nrql_templates:
       - name: Generic metric comparator
         nrql:
           SELECT abs(
-            filter(average({{ .Metric }}),WHERE displayName like '{{ .DisplayNameCurrent }}')
+            filter(average(numeric({{ .Metric }})),WHERE displayName like '{{ .DisplayNameCurrent }}')
             -
-            filter(average({{ .Metric }}),WHERE displayName like '{{ .DisplayNamePrevious }}')
+            filter(average(numeric({{ .Metric }})),WHERE displayName like '{{ .DisplayNamePrevious }}')
             )
           FROM {{ .Sample }}
           WHERE displayName IN ('{{ .DisplayNameCurrent }}','{{ .DisplayNamePrevious }}')
 
-      - name: Static example template
-        nrql: "SELECT COUNT(*) FROM Log WHERE message LIKE '%error%'"
     conditions:
-      - name: System / Cpu Percent
-        metric: cpuPercent
+      - name: System / Core Count
+        metric: coreCount
         sample: SystemSample
-        threshold: 3
+        threshold: 0
         duration: 10
         operator: "above"
         template_name: "Generic metric comparator"
 
-      - name: Errors count
-        metric: cpuPercent
+      - name: System / Cpu IOWait Percent
+        metric: cpuIOWaitPercent
         sample: SystemSample
-        threshold: 3
+        threshold: 0.2 # max 0.112 in last week
         duration: 10
         operator: "above"
-        template_name: "Static example template"
+        template_name: "Generic metric comparator"
+
+      - name: System / Cpu Idle Percent
+        metric: cpuIdlePercent
+        sample: SystemSample
+        threshold: 0.2 # max 0.1 in last week
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Cpu Percent
+        metric: cpuPercent
+        sample: SystemSample
+        threshold: 0.2 # max 0.1 in last week
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Cpu Steal Percent
+        metric: cpuStealPercent
+        sample: SystemSample
+        threshold: 0.5 # max 0 in last week
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Cpu System Percent
+        metric: cpuSystemPercent
+        sample: SystemSample
+        threshold: 0.5 # max 0.02 in last week
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Cpu User Percent
+        metric: cpuUserPercent
+        sample: SystemSample
+        threshold: 0.5 # max 0.1 in last week
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Disk Free Bytes
+        metric: diskFreeBytes
+        sample: SystemSample
+        threshold: 300000000 # ~300MB (TODO review as we have been manually deleting logs)
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Disk Free Percent
+        metric: diskFreePercent
+        sample: SystemSample
+        threshold: 3 # (TODO review as we have been manually deleting logs)
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Disk Read Utilization Percent
+        metric: diskReadUtilizationPercent
+        sample: SystemSample
+        threshold: 0.1 # max 0.009 in last week
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Disk Reads Per Second
+        metric: diskReadsPerSecond
+        sample: SystemSample
+        threshold: 5 # max 2 in last week
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Disk Total bytes
+        metric: diskTotalBytes
+        sample: SystemSample
+        threshold: 0
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Disk Used bytes
+        metric: diskUsedBytes
+        sample: SystemSample
+        threshold: 300000000 # (TODO review as we have been manually deleting logs)
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Disk Used Percent
+        metric: diskUsedPercent
+        sample: SystemSample
+        threshold: 3 # (TODO review as we have been manually deleting logs)
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Disk Utilization Percent
+        metric: diskUtilizationPercent
+        sample: SystemSample
+        threshold: 0.2 # max 0.01 in last week
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Disk Write Utilization Percent
+        metric: diskWriteUtilizationPercent
+        sample: SystemSample
+        threshold: 0.1 # max 0.002 in last week
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Disk Writes Per Second
+        metric: diskWritesPerSecond
+        sample: SystemSample
+        threshold: 1 # max 0.5 in last week
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Load Average Fifteen Minute
+        metric: loadAverageFifteenMinute
+        sample: SystemSample
+        threshold: 0.1 # max 0.04 in last day
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Load Average Five Minute
+        metric: loadAverageFiveMinute
+        sample: SystemSample
+        threshold: 0.1 # max 0.05 in last day
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Load Average One Minute
+        metric: loadAverageOneMinute
+        sample: SystemSample
+        threshold: 0.2 # max 0.06 in last week
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Memory Cached Bytes
+        metric: memoryCachedBytes
+        sample: SystemSample
+        threshold: 30000000 # TODO review : max 24M in last day
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Memory Free Bytes
+        metric: memoryFreeBytes
+        sample: SystemSample
+        threshold: 60000000 # TODO review : max 60M in last day
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Memory Free Percent
+        metric: memoryFreePercent
+        sample: SystemSample
+        threshold: 5 # TODO review : max 4 in last week
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Memory Shared Bytes
+        metric: memorySharedBytes
+        sample: SystemSample
+        threshold: 200000 # TODO review : max 900000 durint 1h in a week
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Memory Slab Bytes
+        metric: memorySlabBytes
+        sample: SystemSample
+        threshold: 50000000 # TODO review : max 5M in last week
+        duration: 30
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Memory Total Bytes
+        metric: memoryTotalBytes
+        sample: SystemSample
+        threshold: 0
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Memory Used Bytes
+        metric: memoryUsedBytes
+        sample: SystemSample
+        threshold: 100000000 # TODO review : max 50M avg in last week
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Memory Used Percent
+        metric: memoryUsedPercent
+        sample: SystemSample
+        threshold: 5 # max 4 in last week
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Swap Free Bytes
+        metric: swapFreeBytes
+        sample: SystemSample
+        threshold: 0
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Swap Total Bytes
+        metric: swapTotalBytes
+        sample: SystemSample
+        threshold: 0
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Swap Used Bytes
+        metric: swapUsedBytes
+        sample: SystemSample
+        threshold: 0
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / System Memory Bytes
+        metric: systemMemoryBytes
+        sample: SystemSample
+        threshold: 0
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
 
