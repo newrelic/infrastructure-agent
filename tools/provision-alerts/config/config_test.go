@@ -171,7 +171,7 @@ func Test_FulfillConfig(t *testing.T) {
 	expectedConfig := Config{
 		Policies: PolicyConfigs{
 			{
-				Name:               "policy name",
+				Name:               "policy name / some display name current",
 				IncidentPreference: "something",
 				Channels:           []int{3423432},
 				NrqlTemplates: NrqlTemplates{

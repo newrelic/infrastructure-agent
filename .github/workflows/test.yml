@@ -129,6 +129,22 @@ jobs:
       - name: Running proxy tests
         run: make proxy-test
 
+  tools-tests-linux:
+    name: Tools tests
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKER_HUB_ID }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
+
+      - name: Running tools tests
+        run: make ci/tools-test
+
   build-container:
     name: Building containerized agent
     runs-on: ubuntu-latest
