@@ -1,0 +1,34 @@
+policies:
+  - name: "gmerkushev test 1"
+    incident_preference: "PER_POLICY"
+    channels: [56611]
+    nrql_templates:
+      - name: Generic metric comparator
+        nrql:
+          SELECT abs(
+            filter(average({{ .Metric }}),WHERE displayName like '{{ .DisplayNameCurrent }}')
+            -
+            filter(average({{ .Metric }}),WHERE displayName like '{{ .DisplayNamePrevious }}')
+            )
+          FROM {{ .Sample }}
+          WHERE displayName IN ('{{ .DisplayNameCurrent }}','{{ .DisplayNamePrevious }}')
+
+      - name: Static example template
+        nrql: "SELECT COUNT(*) FROM Log WHERE message LIKE '%error%'"
+    conditions:
+      - name: System / Cpu Percent
+        metric: cpuPercent
+        sample: SystemSample
+        threshold: 3
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: Errors count
+        metric: cpuPercent
+        sample: SystemSample
+        threshold: 3
+        duration: 10
+        operator: "above"
+        template_name: "Static example template"
+
