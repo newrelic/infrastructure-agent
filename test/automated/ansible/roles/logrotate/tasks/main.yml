@@ -1,0 +1,6 @@
+---
+
+- include: "logrotate-{{ ansible_distribution }}.yaml"
+  when: ansible_distribution != "SLES"
+
+...
