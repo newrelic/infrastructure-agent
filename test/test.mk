@@ -84,3 +84,33 @@ test/automated-run:
 	make test/automated/packaging
 	make test/automated/packaging-docker
 	make test/automated/termination
+
+.PHONY: test/runner/provision
+test/runner/provision:
+	@ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO ANSIBLE_DISPLAY_OK_HOSTS=NO ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.runner.ec2  $(CURDIR)/test/automated/ansible/provision-runner.yml
+
+.PHONY: test/runner/packaging
+test/runner/packaging:
+ifndef NR_LICENSE_KEY
+	@echo "NR_LICENSE_KEY variable must be provided for test/automated/packaging"
+	exit 1
+endif
+ifndef NEW_RELIC_API_KEY
+	@echo "NEW_RELIC_API_KEY variable must be provided for test/automated/packaging"
+	exit 1
+endif
+ifndef NEW_RELIC_ACCOUNT_ID
+	@echo "NEW_RELIC_ACCOUNT_ID variable must be provided for test/automated/packaging"
+	exit 1
+endif
+ifndef RUNNER_IP
+	@echo "RUNNER_IP variable must be provided for test/runner/packaging"
+	exit 1
+endif
+ifndef SSH_KEY
+	@echo "SSH_KEY variable must be provided for test/runner/packaging"
+	exit 1
+endif
+	make test/automated/provision
+	make test/runner/provision
+	ssh -i $(SSH_KEY) ubuntu@$(RUNNER_IP) "cd /home/ubuntu/dev/newrelic/infrastructure-agent; echo > /var/log/runner/$(shell date '+%Y%m%d_%H%M').log; date >> /var/log/runner/$(shell date '+%Y%m%d_%H%M').log; NR_LICENSE_KEY=$(NR_LICENSE_KEY) NEW_RELIC_API_KEY=$(NEW_RELIC_API_KEY) NEW_RELIC_ACCOUNT_ID=$(NEW_RELIC_ACCOUNT_ID) nohup make test/automated/packaging 2>&1 >> /var/log/runner/$(shell date '+%Y%m%d_%H%M').log; echo >> /var/log/runner/$(shell date '+%Y%m%d_%H%M').log; date >> /var/log/runner/$(shell date '+%Y%m%d_%H%M').log;"

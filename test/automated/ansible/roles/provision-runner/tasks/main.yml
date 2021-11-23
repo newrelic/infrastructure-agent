@@ -1,0 +1,64 @@
+---
+
+- name: Install git
+  become: true
+  apt:
+    name: git
+    state: present
+    update_cache: yes
+
+- name: Ensure dirmngr is installed (gnupg dependency).
+  become: true
+  apt:
+    name: dirmngr
+    state: present
+
+- name: Add ansible repository
+  become: true
+  apt_repository:
+    repo: 'ppa:ansible/ansible'
+    update_cache: true
+
+- name: Install Ansible
+  become: true
+  apt:
+    name: ansible
+    state: present
+
+- name: Remove old newrelic/infrastructure-agent repo
+  file:
+    path: /home/ubuntu/dev/newrelic/infrastructure-agent
+    state: absent
+
+- name: Clone fresh newrelic/infrastructure-agent repo
+  git:
+    repo: 'https://github.com/newrelic/infrastructure-agent.git'
+    dest: /home/ubuntu/dev/newrelic/infrastructure-agent
+
+- name: Copy ssh key for local infra
+  copy:
+    src: ~/.ssh/caos-dev-arm.cer
+    dest: /home/ubuntu/.ssh/caos-dev-arm.cer
+    mode: '0600'
+
+- name: Copy inventory for local infra
+  copy:
+    src: inventory.ec2
+    dest: /home/ubuntu/dev/newrelic/infrastructure-agent/test/automated/ansible/inventory.ec2
+    mode: '0600'
+
+- name: Copy inventory for local infra macos
+  copy:
+    src: inventory.macos.ec2
+    dest: /home/ubuntu/dev/newrelic/infrastructure-agent/test/automated/ansible/inventory.macos.ec2
+    mode: '0600'
+
+- name: Create folder for logs
+  become: true
+  file:
+    path: /var/log/runner/
+    state: directory
+    owner: ubuntu
+    group: ubuntu
+
+...
