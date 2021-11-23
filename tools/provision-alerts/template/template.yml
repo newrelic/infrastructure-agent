@@ -41,6 +41,7 @@ policies:
             AND displayName IN ('{{ .DisplayNameCurrent }}','{{ .DisplayNamePrevious }}')
 
     conditions:
+# system
       - name: System / Core Count
         metric: coreCount
         sample: SystemSample
@@ -297,6 +298,7 @@ policies:
         operator: "above"
         template_name: "Generic metric comparator"
 
+# storage
       - name: Storage / Disk Free Bytes
         metric: diskFreeBytes
         sample: StorageSample
@@ -377,6 +379,72 @@ policies:
         operator: "above"
         template_name: "Generic metric comparator"
 
+# network
+      - name: Network / Receive Bytes Per Second
+        metric: receiveBytesPerSecond
+        sample: NetworkSample
+        threshold: 100
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: Network / Receive Dropped Per Second
+        metric: receiveDroppedPerSecond
+        sample: NetworkSample
+        threshold: 2
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: Network / Receive Errors Per Second
+        metric: receiveErrorsPerSecond
+        sample: NetworkSample
+        threshold: 2
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: Network / Receive Packets Per Second
+        metric: receivePacketsPerSecond
+        sample: NetworkSample
+        threshold: 1
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: Network / Transmit Bytes Per Second
+        metric: transmitBytesPerSecond
+        sample: NetworkSample
+        threshold: 100
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: Network / Transmit Dropped Per Second
+        metric: transmitDroppedPerSecond
+        sample: NetworkSample
+        threshold: 2
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: Network / Transmit Errors Per Second
+        metric: transmitErrorsPerSecond
+        sample: NetworkSample
+        threshold: 2
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: Network / Transmit Packets Per Second
+        metric: transmitPacketsPerSecond
+        sample: NetworkSample
+        threshold: 1
+        duration: 10
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+# process
       - name: Process / Process count
         threshold: 0
         duration: 10
