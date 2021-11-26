@@ -30,7 +30,7 @@ ifndef ANSIBLE_PASSWORD
 	exit 1
 endif
 	@read -p "Verify that you are in the VPN if needed and press any key to continue"
-	tools/spin-ec2/bin/spin-ec2 canaries provision -v 'v$(VERSION)' -l '$(NR_LICENSE_KEY)' -x '$(ANSIBLE_PASSWORD)' -p windows
+	tools/spin-ec2/bin/spin-ec2 canaries provision -v 'v$(VERSION)' -l '$(NR_LICENSE_KEY)' -x '$(ANSIBLE_PASSWORD)'
 
 .PHONY: canaries-prune-dry
 canaries-prune-dry: validate-aws-credentials install-deps ec2-build
