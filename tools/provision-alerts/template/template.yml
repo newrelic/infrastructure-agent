@@ -13,6 +13,33 @@ policies:
           FROM {{ .Sample }}
           WHERE displayName IN ('{{ .DisplayNameCurrent }}','{{ .DisplayNamePrevious }}')
 
+      - name: Process count comparator
+        nrql:
+          SELECT abs(
+            filter(uniqueCount(commandLine),WHERE displayName like '{{ .DisplayNameCurrent }}')
+            -
+            filter(uniqueCount(commandLine),WHERE displayName like '{{ .DisplayNamePrevious }}')
+            )
+          FROM ProcessSample WHERE displayName IN ('{{ .DisplayNameCurrent }}','{{ .DisplayNamePrevious }}')
+          SINCE 30 minutes ago
+
+      - name: Process username empty
+        nrql:
+          SELECT count(*) FROM ProcessSample
+           WHERE displayName IN ('{{ .DisplayNameCurrent }}')
+           AND (userName is null OR username = '')
+
+      - name: Agent process metrics
+        nrql:
+          SELECT abs(
+            filter(average(numeric({{ .Metric }})),WHERE displayName like '{{ .DisplayNameCurrent }}')
+            -
+            filter(average(numeric({{ .Metric }})),WHERE displayName like '{{ .DisplayNamePrevious }}')
+            )
+            FROM ProcessSample
+            WHERE commandLine = '/usr/bin/newrelic-infra'
+            AND displayName IN ('{{ .DisplayNameCurrent }}','{{ .DisplayNamePrevious }}')
+
     conditions:
       - name: System / Core Count
         metric: coreCount
@@ -349,5 +376,60 @@ policies:
         duration: 10
         operator: "above"
         template_name: "Generic metric comparator"
+
+      - name: Process / Process count
+        threshold: 0
+        duration: 10
+        operator: "above"
+        template_name: "Process count comparator"
+
+      - name: Process / Username empty
+        threshold: 0
+        duration: 5
+        operator: "above"
+        template_name: "Process username empty"
+
+      - name: Agent process / Cpu Percent
+        metric: cpuPercent
+        threshold: 0.1 # max 0.05 in last week
+        duration: 10
+        operator: "above"
+        template_name: "Agent process metrics"
+
+      - name: Agent process / Cpu System Percent
+        metric: cpuSystemPercent
+        threshold: 0.05 # max 0.02 in last week
+        duration: 10
+        operator: "above"
+        template_name: "Agent process metrics"
+
+      - name: Agent process / Cpu User Percent
+        metric: cpuUserPercent
+        threshold: 0.06 # max 0.02 in last week
+        duration: 10
+        operator: "above"
+        template_name: "Agent process metrics"
+
+      - name: Agent process / IO Read Bytes Per Second
+        metric: ioReadBytesPerSecond
+        threshold: 100
+        duration: 30
+        operator: "above"
+        template_name: "Agent process metrics"
+
+      - name: Agent process / IO Write Bytes Per Second
+        metric: ioWriteBytesPerSecond
+        threshold: 100
+        duration: 30
+        operator: "above"
+        template_name: "Agent process metrics"
+
+      - name: Agent process / Memory Resident Size Bytes
+        metric: memoryResidentSizeBytes
+        threshold: 5
+        duration: 10
+        operator: "above"
+        template_name: "Agent process metrics"
+
 
 
