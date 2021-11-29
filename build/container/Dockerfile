@@ -1,4 +1,4 @@
-ARG base_image=alpine:3.14
+ARG base_image=alpine:3.15
 
 FROM $base_image AS core
 
@@ -29,7 +29,7 @@ ENV NRIA_OVERRIDE_HOST_ROOT /host
 RUN apk --no-cache upgrade
 
 RUN apk add --no-cache --upgrade \
-    ca-certificates=20191127-r5 \
+    ca-certificates=20191127-r7 \
     # Embed required dlls:
     # ldd /usr/bin/newrelic-infra
     #   /lib64/ld-linux-x86-64.so.2 (0x7f2bbbd0f000)
