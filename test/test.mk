@@ -5,6 +5,7 @@ AWS_ACCOUNT_ID = "018789649883"# CAOS
 test/automated/provision: validate-aws-credentials
 	ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.local -e provision_host_prefix=$(PROVISION_HOST_PREFIX) $(CURDIR)/test/automated/ansible/provision.yml
 	ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.ec2 $(CURDIR)/test/automated/ansible/install-requirements.yml
+	ansible-playbook $(CURDIR)/test/automated/ansible/macos-canaries.yml
 
 .PHONY: test/automated/termination
 test/automated/termination: validate-aws-credentials
@@ -90,7 +91,7 @@ test/runner/provision:
 	@ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO ANSIBLE_DISPLAY_OK_HOSTS=NO ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.runner.ec2  $(CURDIR)/test/automated/ansible/provision-runner.yml
 
 .PHONY: test/runner/packaging
-test/runner/packaging:
+test/runner/packaging: validate-aws-credentials
 ifndef NR_LICENSE_KEY
 	@echo "NR_LICENSE_KEY variable must be provided for test/automated/packaging"
 	exit 1
@@ -111,6 +112,19 @@ ifndef SSH_KEY
 	@echo "SSH_KEY variable must be provided for test/runner/packaging"
 	exit 1
 endif
+
+	@echo '#!/usr/bin/env bash' > '/tmp/runner_scr.sh'
+	@echo 'LOG_FILE="/var/log/runner/$$(date '+%Y%m%d_%H%M').log"' >> /tmp/runner_scr.sh
+	@echo 'cd /home/ubuntu/dev/newrelic/infrastructure-agent' >> /tmp/runner_scr.sh
+	@echo 'date > $$LOG_FILE' >> /tmp/runner_scr.sh
+	@echo 'make test/automated/packaging 2>&1 >> $$LOG_FILE' >> /tmp/runner_scr.sh
+	@echo 'echo "" >> $$LOG_FILE' >> /tmp/runner_scr.sh
+	@echo 'date >> $$LOG_FILE' >> /tmp/runner_scr.sh
+	@echo 'mail -s "[RUNNER] Packaging tests results" caos-dev@newrelic.com -A $$LOG_FILE < $$LOG_FILE' >> /tmp/runner_scr.sh
+	@chmod +x /tmp/runner_scr.sh
+
 	make test/automated/provision
 	make test/runner/provision
-	ssh -i $(SSH_KEY) ubuntu@$(RUNNER_IP) "cd /home/ubuntu/dev/newrelic/infrastructure-agent; echo > /var/log/runner/$(shell date '+%Y%m%d_%H%M').log; date >> /var/log/runner/$(shell date '+%Y%m%d_%H%M').log; NR_LICENSE_KEY=$(NR_LICENSE_KEY) NEW_RELIC_API_KEY=$(NEW_RELIC_API_KEY) NEW_RELIC_ACCOUNT_ID=$(NEW_RELIC_ACCOUNT_ID) nohup make test/automated/packaging 2>&1 >> /var/log/runner/$(shell date '+%Y%m%d_%H%M').log; echo >> /var/log/runner/$(shell date '+%Y%m%d_%H%M').log; date >> /var/log/runner/$(shell date '+%Y%m%d_%H%M').log;"
+
+	scp -i $(SSH_KEY) /tmp/runner_scr.sh ubuntu@$(RUNNER_IP):/home/ubuntu/runner_scr.sh
+	ssh -i $(SSH_KEY) -f ubuntu@$(RUNNER_IP) "NR_LICENSE_KEY=$(NR_LICENSE_KEY) NEW_RELIC_API_KEY=$(NEW_RELIC_API_KEY) NEW_RELIC_ACCOUNT_ID=$(NEW_RELIC_ACCOUNT_ID) nohup /home/ubuntu/runner_scr.sh > /dev/null 2>&1 &"
