@@ -126,6 +126,22 @@ dist-for-os:
 		$(GO_BIN) build -gcflags '-N -l' -ldflags '$(LDFLAGS)' -o $(DIST_DIR)/$(GOOS)-`basename $$main_package`_$(GOOS)_$(GOARCH)/`basename $$main_package` $$main_package || exit 1 ;\
 	done
 
+.PHONY: debug-for-os
+debug-for-os:
+	@printf '\n================================================================\n'
+	@printf "[dist-for-os] Building for target for debugging GOOS=$(GOOS) GOARCH=$(GOARCH)"
+	@printf '\n================================================================\n'
+	@if [ -n "$(MAIN_PACKAGES)" ]; then \
+		echo '[dist] Creating executables for main packages: $(MAIN_PACKAGES)' ;\
+	else \
+		echo '[dist] No executables to distribute - skipping dist target.' ;\
+	fi
+	@for main_package in $(MAIN_PACKAGES);\
+	do\
+		echo "[dist] Creating executable: `basename $$main_package`";\
+		$(GO_BIN) build -gcflags "all=-N -l" -ldflags '$(LDFLAGS)' -o $(DIST_DIR)/$(GOOS)-`basename $$main_package`_$(GOOS)_$(GOARCH)/`basename $$main_package` $$main_package || exit 1 ;\
+	done
+
 .PHONY: dist/linux
 dist/linux: $(ARCHS)
 
