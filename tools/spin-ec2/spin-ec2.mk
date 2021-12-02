@@ -1,17 +1,19 @@
 .PHONY: ec2-install-deps
 ec2-install-deps:
-	cd $(CURDIR)/tools/spin-ec2
-	go mod download
+	@echo "installing dependencies..."
+	@cd $(CURDIR)/tools/spin-ec2
+	@go mod download
 
 .PHONY: ec2-build
 ec2-build:
-	cd $(CURDIR)/tools/spin-ec2 \
+	@echo "building tool..."
+	@cd $(CURDIR)/tools/spin-ec2 \
 	 && mkdir -p bin \
 	 && go build -o bin/spin-ec2 *.go
 
 .PHONY: ec2
 ec2: ec2-install-deps ec2-build
-	tools/spin-ec2/bin/spin-ec2
+	@tools/spin-ec2/bin/spin-ec2
 
 .PHONY: canaries
 canaries: validate-aws-credentials ec2-install-deps ec2-build
@@ -23,4 +25,19 @@ ifndef VERSION
 	@echo "VERSION variable must be provided for \"make canaries\""
 	exit 1
 endif
-	tools/spin-ec2/bin/spin-ec2 canaries provision -v v$(VERSION) -l $(NR_LICENSE_KEY)
+ifndef ANSIBLE_PASSWORD
+	@echo "ANSIBLE_PASSWORD variable must be provided for \"make canaries\""
+	exit 1
+endif
+	@read -p "Verify that you are in the VPN if needed and press any key to continue"
+	tools/spin-ec2/bin/spin-ec2 canaries provision -v 'v$(VERSION)' -l '$(NR_LICENSE_KEY)' -x '$(ANSIBLE_PASSWORD)'
+
+.PHONY: canaries-prune-dry
+canaries-prune-dry: validate-aws-credentials install-deps ec2-build
+	@read -p "DRY run for canaries prune, press enter to continue"
+	tools/spin-ec2/bin/spin-ec2 canaries prune --dry_run
+
+.PHONY: canaries-prune
+canaries-prune: validate-aws-credentials install-deps ec2-build
+	@read -p "REAL run for canaries prune, press enter to continue"
+	tools/spin-ec2/bin/spin-ec2 canaries prune
