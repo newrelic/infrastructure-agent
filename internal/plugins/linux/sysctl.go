@@ -26,6 +26,7 @@ var (
 		`net/core/((bpf_jit_harden)|(bpf_jit_kallsyms))`,
 		`net/ipv4/(tcp_fastopen_key)`,
 		`net/ipv6/conf/(.+)/(stable_secret)`,
+		`net/ipv6/neigh/default/retrans_time$`,
 		`vm/((mmap_rnd_bits)|(mmap_rnd_compat_bits)|(stat_refresh))`,
 	}
 )
