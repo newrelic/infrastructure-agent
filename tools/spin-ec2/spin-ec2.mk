@@ -29,8 +29,9 @@ ifndef ANSIBLE_PASSWORD
 	@echo "ANSIBLE_PASSWORD variable must be provided for \"make canaries\""
 	exit 1
 endif
+	PREFIX ?= canary
 	@read -p "Verify that you are in the VPN if needed and press any key to continue"
-	tools/spin-ec2/bin/spin-ec2 canaries provision -v 'v$(VERSION)' -l '$(NR_LICENSE_KEY)' -x '$(ANSIBLE_PASSWORD)'
+	tools/spin-ec2/bin/spin-ec2 canaries provision -v 'v$(VERSION)' -l '$(NR_LICENSE_KEY)' -x '$(ANSIBLE_PASSWORD)' -f '$(PREFIX)'
 
 .PHONY: canaries-prune-dry
 canaries-prune-dry: validate-aws-credentials install-deps ec2-build

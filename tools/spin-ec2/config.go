@@ -5,6 +5,7 @@ type canaryConf struct {
 	agentVersion    string
 	platform        string
 	ansiblePassword string
+	prefix          string
 }
 
 func (c canaryConf) shouldProvisionLinux() bool {

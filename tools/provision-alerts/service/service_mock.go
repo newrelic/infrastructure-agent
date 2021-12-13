@@ -9,6 +9,19 @@ type PolicyServiceMock struct {
 	mock.Mock
 }
 
+func (p *PolicyServiceMock) FindByName(name string) (Policies, error) {
+	args := p.Called(name)
+
+	return args.Get(0).(Policies), args.Error(1)
+}
+
+func (p *PolicyServiceMock) ShouldFindByName(policyName string, policies Policies, err error) {
+	p.
+		On("FindByName", policyName).
+		Once().
+		Return(policies, err)
+}
+
 func (p *PolicyServiceMock) DeleteByName(policyName string) error {
 	args := p.Called(policyName)
 
