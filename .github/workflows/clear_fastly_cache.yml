@@ -1,0 +1,15 @@
+name: Clear Fastly cache
+
+on:
+  workflow_dispatch:
+
+jobs:
+  purge-cdn:
+    name: Purge CDN
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Fasty purge
+        env:
+          FASTLY_KEY: ${{secrets.FASTLY_KEY }}
+        run: tools/cdn-purge/fastly-purge.sh
