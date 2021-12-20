@@ -16,10 +16,6 @@ const delPolicyPath = "/v2/alerts_policies/%d.json"
 const postConditionPath = "/v2/alerts_nrql_conditions/policies/%d.json" // %s = policyId
 const putChannelPath = "/v2/alerts_policy_channels.json"
 
-// policyPrefix is used to prefix the automatic created and deleted policy so it does not match
-// with manually created ones. we don't expose this prefixed name out of the service
-const policyPrefix = "[auto]"
-
 type Policies []Policy
 type Policy struct {
 	Id                 int    `json:"id"`
@@ -46,20 +42,25 @@ type PolicyService interface {
 	AddChannel(policy Policy, channelId int) (Policy, error)
 	Delete(id int) error
 	DeleteAll() error
+	FindByName(name string) (Policies, error)
 }
 
-func NewPolicyApiService(client AlertClient) PolicyService {
+func NewPolicyApiService(client AlertClient, policyPrefix string) PolicyService {
 	return &PolicyApiService{
-		client: client,
+		client:       client,
+		policyPrefix: policyPrefix,
 	}
 }
 
 type PolicyApiService struct {
 	client AlertClient
+	// policyPrefix is used to prefix the automatic created and deleted policy so it does not match
+	// with manually created ones. we don't expose this prefixed name out of the service
+	policyPrefix string
 }
 
 func (pas *PolicyApiService) DeleteByName(policyName string) error {
-	policy, err := pas.getByName(prefixedName(policyName))
+	policy, err := pas.getByName(pas.prefixedName(policyName))
 	switch {
 	case err == PolicyNotFound:
 		return nil
@@ -74,30 +75,23 @@ var PolicyNotFound = errors.New("policy not found")
 var PolicyNameNotUnique = errors.New("policy name is not unique")
 
 func (pas *PolicyApiService) getByName(policyName string) (Policy, error) {
-	policiesRawResponse, err := pas.client.Get(fmt.Sprintf("%s?%s", getPolicyPath, url.QueryEscape("filter[name]="+policyName)), nil)
+	policies, err := pas.FindByName(policyName)
 	if err != nil {
 		return Policy{}, err
 	}
-
-	policiesResponse := infrastructure.PoliciesResponse{}
-	err = json.Unmarshal(policiesRawResponse, &policiesResponse)
-	if err != nil {
-		return Policy{}, err
-	}
-
-	if policiesResponse.IsEmpty() {
-		return Policy{}, PolicyNotFound
-	}
-	if len(policiesResponse.Policies) > 1 {
+	if len(policies) > 1 {
 		return Policy{}, PolicyNameNotUnique
 	}
+	if len(policies) == 0 {
+		return Policy{}, PolicyNotFound
+	}
 
-	return policyFromPolicyDetailsResponse(policiesResponse.Policies[0]), nil
+	return policies[0], nil
 }
 
 func (pas *PolicyApiService) Create(policyConfig config.PolicyConfig) (Policy, error) {
 
-	policyConfig.Name = prefixedName(policyConfig.Name)
+	policyConfig.Name = pas.prefixedName(policyConfig.Name)
 	jsonPayload, err := json.Marshal(infrastructure.FromPolicyConfig(policyConfig))
 	if err != nil {
 		return Policy{}, err
@@ -172,7 +166,7 @@ func (pas *PolicyApiService) Delete(policyId int) error {
 }
 
 func (pas *PolicyApiService) DeleteAll() error {
-	policies, err := pas.getAll()
+	policies, err := pas.FindByName("")
 	if err != nil {
 		return err
 	}
@@ -185,11 +179,17 @@ func (pas *PolicyApiService) DeleteAll() error {
 	return nil
 }
 
-func (pas *PolicyApiService) getAll() (Policies, error) {
+// FindByName returns Policies matching name. If name is empty it will return
+// all policies
+func (pas *PolicyApiService) FindByName(name string) (Policies, error) {
 	page := 1
 	var policies Policies
 	for {
-		policiesRawResponse, err := pas.client.Get(fmt.Sprintf("%s?page=%d", getPolicyPath, page), nil)
+		path := fmt.Sprintf("%s?page=%d", getPolicyPath, page)
+		if name != "" {
+			path += "&" + url.QueryEscape("filter[name]="+name)
+		}
+		policiesRawResponse, err := pas.client.Get(path, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -207,6 +207,10 @@ func (pas *PolicyApiService) getAll() (Policies, error) {
 	return policies, nil
 }
 
+func (pas *PolicyApiService) prefixedName(name string) string {
+	return fmt.Sprintf("%s %s", pas.policyPrefix, name)
+}
+
 func policiesFromPoliciesDetailsResponse(prs infrastructure.PoliciesDetailsResponse) Policies {
 	var policies Policies
 	for _, pr := range prs {
@@ -221,8 +225,4 @@ func policyFromPolicyDetailsResponse(pr infrastructure.PolicyDetailsResponse) Po
 		Name:               pr.Name,
 		IncidentPreference: pr.IncidentPreference,
 	}
-}
-
-func prefixedName(name string) string {
-	return fmt.Sprintf("%s %s", policyPrefix, name)
 }
