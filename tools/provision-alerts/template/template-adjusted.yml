@@ -125,18 +125,18 @@ policies:
       - name: System / Disk Free Bytes
         metric: diskFreeBytes
         sample: SystemSample
-        threshold: 1000000000 # ~1GB
-        duration: 10
-        operator: "below"
-        template_name: "Single metric comparator"
+        threshold: 1000000000
+        duration: 120
+        operator: "above"
+        template_name: "Generic metric comparator"
 
       - name: System / Disk Free Percent
         metric: diskFreePercent
         sample: SystemSample
-        threshold: 10
-        duration: 10
-        operator: "below"
-        template_name: "Single metric comparator"
+        threshold: 3
+        duration: 120
+        operator: "above"
+        template_name: "Generic metric comparator"
 
       - name: System / Disk Read Utilization Percent
         metric: diskReadUtilizationPercent
@@ -166,23 +166,23 @@ policies:
         metric: diskUsedBytes
         sample: SystemSample
         threshold: 1000000000
-        duration: 10
-        operator: "below"
-        template_name: "Single metric comparator"
+        duration: 120
+        operator: "above"
+        template_name: "Generic metric comparator"
 
       - name: System / Disk Used Percent
         metric: diskUsedPercent
         sample: SystemSample
         threshold: 3
-        duration: 10
-        operator: "below"
-        template_name: "Single metric comparator"
+        duration: 120
+        operator: "above"
+        template_name: "Generic metric comparator"
 
       - name: System / Disk Utilization Percent
         metric: diskUtilizationPercent
         sample: SystemSample
-        threshold: 0.7
-        duration: 30
+        threshold: 0.8 # max 0.01 in last week
+        duration: 60
         operator: "above"
         template_name: "Generic metric comparator"
 
@@ -197,7 +197,7 @@ policies:
       - name: System / Disk Writes Per Second
         metric: diskWritesPerSecond
         sample: SystemSample
-        threshold: 10
+        threshold: 10 # max 0.5 in last week
         duration: 30
         operator: "above"
         template_name: "Generic metric comparator"
@@ -206,7 +206,7 @@ policies:
         metric: loadAverageFifteenMinute
         sample: SystemSample
         threshold: 0.5
-        duration: 30
+        duration: 10
         operator: "above"
         template_name: "Generic metric comparator"
 
@@ -214,7 +214,7 @@ policies:
         metric: loadAverageFiveMinute
         sample: SystemSample
         threshold: 0.5
-        duration: 20
+        duration: 10
         operator: "above"
         template_name: "Generic metric comparator"
 
@@ -229,8 +229,8 @@ policies:
       - name: System / Memory Cached Bytes
         metric: memoryCachedBytes
         sample: SystemSample
-        threshold: 300000000
-        duration: 30
+        threshold: 150000000 #
+        duration: 60
         operator: "above"
         template_name: "Generic metric comparator"
 
@@ -238,7 +238,7 @@ policies:
         metric: memoryFreeBytes
         sample: SystemSample
         threshold: 100000000
-        duration: 30
+        duration: 60
         operator: "above"
         template_name: "Generic metric comparator"
 
@@ -326,18 +326,18 @@ policies:
       - name: Storage / Disk Free Bytes
         metric: diskFreeBytes
         sample: StorageSample
-        threshold: 500000000
-        duration: 10
-        operator: "below"
-        template_name: "Single metric comparator"
+        threshold: 1000000000
+        duration: 120
+        operator: "above"
+        template_name: "Generic metric comparator"
 
       - name: Storage / Disk Free Percent
         metric: diskFreePercent
         sample: StorageSample
-        threshold: 5
-        duration: 10
-        operator: "below"
-        template_name: "Single metric comparator"
+        threshold: 3
+        duration: 120
+        operator: "above"
+        template_name: "Generic metric comparator"
 
       - name: Storage / Disk Total Bytes
         metric: diskTotalBytes
@@ -350,50 +350,50 @@ policies:
       - name: Storage / Disk Used Bytes
         metric: diskUsedBytes
         sample: StorageSample
-        threshold: 1000000000
-        duration: 10
-        operator: "below"
-        template_name: "Single metric comparator"
+        threshold: 1000000000 #
+        duration: 120
+        operator: "above"
+        template_name: "Generic metric comparator"
 
       - name: Storage / Disk Used Percent
         metric: diskUsedPercent
         sample: StorageSample
-        threshold: 0.5
-        duration: 10
-        operator: "below"
-        template_name: "Single metric comparator"
+        threshold: 3
+        duration: 120
+        operator: "above"
+        template_name: "Generic metric comparator"
 
       - name: Storage / Inodes Free
         metric: inodesFree
         sample: StorageSample
-        threshold: 50000
+        threshold: 50
         duration: 10
-        operator: "below"
-        template_name: "Single metric comparator"
+        operator: "above"
+        template_name: "Generic metric comparator"
 
       - name: Storage / Inodes Total
         metric: inodesTotal
         sample: StorageSample
-        threshold: 1
+        threshold: 0
         duration: 10
-        operator: "below"
-        template_name: "Single metric comparator"
+        operator: "above"
+        template_name: "Generic metric comparator"
 
       - name: Storage / Inodes Used
         metric: inodesUsed
         sample: StorageSample
-        threshold: 5000
+        threshold: 50
         duration: 10
-        operator: "below"
-        template_name: "Single metric comparator"
+        operator: "above"
+        template_name: "Generic metric comparator"
 
       - name: Storage / Inodes Used Percent
         metric: inodesUsedPercent
         sample: StorageSample
         threshold: 0.1
         duration: 10
-        operator: "below"
-        template_name: "Single metric comparator"
+        operator: "above"
+        template_name: "Generic metric comparator"
 
       - name: Storage / System Memory Bytes
         metric: systemMemoryBytes
@@ -439,8 +439,8 @@ policies:
       - name: Network / Transmit Bytes Per Second
         metric: transmitBytesPerSecond
         sample: NetworkSample
-        threshold: 300
-        duration: 10
+        threshold: 100
+        duration: 120
         operator: "above"
         template_name: "Generic metric comparator"
 
@@ -448,7 +448,7 @@ policies:
         metric: transmitDroppedPerSecond
         sample: NetworkSample
         threshold: 2
-        duration: 30
+        duration: 120
         operator: "above"
         template_name: "Generic metric comparator"
 
@@ -470,8 +470,8 @@ policies:
 
 # process
       - name: Process / Process count
-        threshold: 7
-        duration: 10
+        threshold: 10
+        duration: 60
         operator: "above"
         template_name: "Process count comparator"
 
@@ -483,43 +483,43 @@ policies:
 
       - name: Agent process / Cpu Percent
         metric: cpuPercent
-        threshold: 0.3
-        duration: 10
+        threshold: 0.5 # max 0.05 in last week
+        duration: 30
         operator: "above"
         template_name: "Agent process metrics"
 
       - name: Agent process / Cpu System Percent
         metric: cpuSystemPercent
-        threshold: 0.05 # max 0.02 in last week
-        duration: 10
+        threshold: 0.2
+        duration: 30
         operator: "above"
         template_name: "Agent process metrics"
 
       - name: Agent process / Cpu User Percent
         metric: cpuUserPercent
-        threshold: 0.06 # max 0.02 in last week
-        duration: 10
+        threshold: 0.5
+        duration: 30
         operator: "above"
         template_name: "Agent process metrics"
 
       - name: Agent process / IO Read Bytes Per Second
         metric: ioReadBytesPerSecond
-        threshold: 100
-        duration: 30
+        threshold: 60000
+        duration: 60
         operator: "above"
         template_name: "Agent process metrics"
 
       - name: Agent process / IO Write Bytes Per Second
         metric: ioWriteBytesPerSecond
-        threshold: 100
-        duration: 30
+        threshold: 3000
+        duration: 60
         operator: "above"
         template_name: "Agent process metrics"
 
       - name: Agent process / Memory Resident Size Bytes
         metric: memoryResidentSizeBytes
-        threshold: 5000000
-        duration: 10
+        threshold: 10000000
+        duration: 60
         operator: "above"
         template_name: "Agent process metrics"
 
