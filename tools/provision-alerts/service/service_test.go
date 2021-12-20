@@ -14,8 +14,9 @@ import (
 func TestPolicyApiService_Create(t *testing.T) {
 
 	client := &AlertClientMock{}
+	prefix := "[prefix]"
 
-	s := NewPolicyApiService(client)
+	s := NewPolicyApiService(client, prefix)
 
 	pc := config.PolicyConfig{
 		Name:               "testing",
@@ -23,17 +24,17 @@ func TestPolicyApiService_Create(t *testing.T) {
 	}
 	expectedPolicy := Policy{
 		Id:                 454545,
-		Name:               "[auto] testing",
+		Name:               "[prefix] testing",
 		IncidentPreference: "whatever",
 	}
 
-	post := []byte(`{"policy":{"name":"[auto] testing","incident_preference":"whatever"}}`)
+	post := []byte(`{"policy":{"name":"[prefix] testing","incident_preference":"whatever"}}`)
 
 	response := []byte(`{
  "policy": {
    "id": 454545,
    "incident_preference": "whatever",
-   "name": "[auto] testing",
+   "name": "[prefix] testing",
    "created_at": 1634302571179,
    "updated_at": 1634302571179
  }
@@ -52,13 +53,14 @@ func TestPolicyApiService_Create(t *testing.T) {
 func TestPolicyApiService_PostErrorsOnCreate(t *testing.T) {
 
 	client := &AlertClientMock{}
-	s := NewPolicyApiService(client)
+	prefix := "[prefix]"
+	s := NewPolicyApiService(client, prefix)
 	pc := config.PolicyConfig{
 		Name:               "testing",
 		IncidentPreference: "whatever",
 	}
 
-	post := []byte(`{"policy":{"name":"[auto] testing","incident_preference":"whatever"}}`)
+	post := []byte(`{"policy":{"name":"[prefix] testing","incident_preference":"whatever"}}`)
 
 	expectedErr := errors.New("error occurred in the api client, resp code 503, url: https://host.com/some/url, body: , err: response body")
 	client.ShouldPost("/v2/alerts_policies.json", post, []byte{}, expectedErr)
@@ -74,8 +76,8 @@ func TestPolicyApiService_PostErrorsOnCreate(t *testing.T) {
 func TestPolicyApiService_AddCondition(t *testing.T) {
 
 	client := &AlertClientMock{}
-
-	s := NewPolicyApiService(client)
+	prefix := "[prefix]"
+	s := NewPolicyApiService(client, prefix)
 
 	policy := Policy{
 		Id:                 454545,
@@ -152,8 +154,8 @@ func TestPolicyApiService_AddCondition(t *testing.T) {
 func TestPolicyApiService_AddChannel(t *testing.T) {
 
 	client := &AlertClientMock{}
-
-	s := NewPolicyApiService(client)
+	prefix := "[prefix]"
+	s := NewPolicyApiService(client, prefix)
 
 	policy := Policy{
 		Id:                 454545,
@@ -189,8 +191,8 @@ func TestPolicyApiService_AddChannel(t *testing.T) {
 func TestPolicyApiService_Delete(t *testing.T) {
 
 	client := &AlertClientMock{}
-
-	s := NewPolicyApiService(client)
+	prefix := "[prefix]"
+	s := NewPolicyApiService(client, prefix)
 
 	policy := Policy{
 		Id:                 454545,
@@ -220,7 +222,8 @@ func TestPolicyApiService_Delete(t *testing.T) {
 func TestPolicyApiService_DeleteAll(t *testing.T) {
 
 	client := &AlertClientMock{}
-	alertService := NewPolicyApiService(client)
+	prefix := "[prefix]"
+	alertService := NewPolicyApiService(client, prefix)
 
 	responses := []string{
 		`{
@@ -270,23 +273,26 @@ func TestPolicyApiService_DeleteAll(t *testing.T) {
 
 func TestPolicyApiService_DeleteExistingPolicyByName(t *testing.T) {
 	client := &AlertClientMock{}
-	alertService := NewPolicyApiService(client)
+	prefix := "[prefix]"
+	alertService := NewPolicyApiService(client, prefix)
 	policy := Policy{
 		Id:                 454545,
-		Name:               "[auto] some name",
+		Name:               "[prefix] some name",
 		IncidentPreference: "whatever",
 	}
 
 	response := `{
 			"policies":[
-				{"id":454545,"incident_preference":"whatever","name":"[auto] some name","created_at":1637075117137,"updated_at":1637075117137}
+				{"id":454545,"incident_preference":"whatever","name":"[prefix] some name","created_at":1637075117137,"updated_at":1637075117137}
 			]
 		}`
+	emptyResponse := `{"policies":[]}`
 
 	body, err := json.Marshal(policy)
 	assert.NoError(t, err)
 
-	client.ShouldGet(fmt.Sprintf("/v2/alerts_policies.json?%s", url.QueryEscape("filter[name]="+policy.Name)), nil, []byte(response), nil)
+	client.ShouldGet(fmt.Sprintf("/v2/alerts_policies.json?%s&%s", "page=1", url.QueryEscape("filter[name]="+policy.Name)), nil, []byte(response), nil)
+	client.ShouldGet(fmt.Sprintf("/v2/alerts_policies.json?%s&%s", "page=2", url.QueryEscape("filter[name]="+policy.Name)), nil, []byte(emptyResponse), nil)
 	client.ShouldDel(fmt.Sprintf("/v2/alerts_policies/%d.json", policy.Id), nil, body, nil)
 
 	err = alertService.DeleteByName("some name")
@@ -298,16 +304,19 @@ func TestPolicyApiService_DeleteExistingPolicyByName(t *testing.T) {
 
 func TestPolicyApiService_FailOnDeleteExistingPolicyByNameIfMultiplePolicies(t *testing.T) {
 	client := &AlertClientMock{}
-	alertService := NewPolicyApiService(client)
+	prefix := "[prefix]"
+	alertService := NewPolicyApiService(client, prefix)
 
 	response := `{
 			"policies":[
-				{"id":454545,"incident_preference":"whatever","name":"[auto] some name","created_at":1637075117137,"updated_at":1637075117137},
-				{"id":454546,"incident_preference":"whatever","name":"[auto] some name","created_at":1637075117137,"updated_at":1637075117137}
+				{"id":454545,"incident_preference":"whatever","name":"[prefix] some name","created_at":1637075117137,"updated_at":1637075117137},
+				{"id":454546,"incident_preference":"whatever","name":"[prefix] some name","created_at":1637075117137,"updated_at":1637075117137}
 			]
 		}`
 
-	client.ShouldGet(fmt.Sprintf("/v2/alerts_policies.json?%s", url.QueryEscape("filter[name]=[auto] some name")), nil, []byte(response), nil)
+	emptyResponse := `{"policies":[]}`
+	client.ShouldGet(fmt.Sprintf("/v2/alerts_policies.json?%s&%s", "page=1", url.QueryEscape("filter[name]=[prefix] some name")), nil, []byte(response), nil)
+	client.ShouldGet(fmt.Sprintf("/v2/alerts_policies.json?%s&%s", "page=2", url.QueryEscape("filter[name]=[prefix] some name")), nil, []byte(emptyResponse), nil)
 
 	err := alertService.DeleteByName("some name")
 	assert.Equal(t, PolicyNameNotUnique, err)
@@ -318,14 +327,12 @@ func TestPolicyApiService_FailOnDeleteExistingPolicyByNameIfMultiplePolicies(t *
 
 func TestPolicyApiService_DeleteNonExistentPolicyByNameShouldNotFail(t *testing.T) {
 	client := &AlertClientMock{}
-	alertService := NewPolicyApiService(client)
+	prefix := "[prefix]"
+	alertService := NewPolicyApiService(client, prefix)
 
-	response := `{
-			"policies":[
-			]
-		}`
+	response := `{"policies":[]}`
 
-	client.ShouldGet(fmt.Sprintf("/v2/alerts_policies.json?%s", url.QueryEscape("filter[name]=[auto] some name")), nil, []byte(response), nil)
+	client.ShouldGet(fmt.Sprintf("/v2/alerts_policies.json?%s&%s", "page=1", url.QueryEscape("filter[name]=[prefix] some name")), nil, []byte(response), nil)
 
 	err := alertService.DeleteByName("some name")
 	assert.NoError(t, err)

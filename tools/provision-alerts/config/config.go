@@ -65,10 +65,16 @@ func FulfillConfig(config Config, displayNameCurrent, displayNamePrevious string
 			}
 			config.Policies[policyIdx].Conditions[conditionIdx] = fulfilledCc
 		}
-		// Policies have a max of 700 conditions. To create one policy per OS/distro
+		// Policies have a max of 700 conditions. To create one policy per OS/ARCH
 		// we rename policy to include it from displayName.
 		displayNameParts := strings.Split(displayNameCurrent, ":")
-		config.Policies[policyIdx].Name += " / " + displayNameParts[len(displayNameParts)-1]
+		if len(displayNameParts) > 2 {
+			os := displayNameParts[len(displayNameParts)-1]
+			arch := displayNameParts[len(displayNameParts)-2]
+			config.Policies[policyIdx].Name += " / " + os + " / " + arch
+		} else {
+			config.Policies[policyIdx].Name += " / " + displayNameCurrent
+		}
 	}
 
 	return config, nil

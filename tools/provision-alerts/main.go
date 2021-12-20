@@ -17,6 +17,8 @@ var (
 	apiKey              string
 	hostName            string
 	template            string
+	policyPrefix        string
+	del                 bool
 )
 
 func main() {
@@ -25,12 +27,22 @@ func main() {
 	flag.StringVar(&displayNamePrevious, "display_name_previous", "", "display name of previous version")
 	flag.StringVar(&apiKey, "api_key", "", "NR api key")
 	flag.StringVar(&hostName, "host_name", "https://staging-api.newrelic.com", "NR api host (default staging)")
-	flag.StringVar(&template, "template", "", "template path")
+	flag.StringVar(&template, "template", "tools/provision-alerts/template/template.yml", "template path")
+	flag.StringVar(&policyPrefix, "prefix", "[auto]", "policy name prefix")
+	flag.BoolVar(&del, "delete", false, "delete policies matching prefix")
 
 	flag.Parse()
 	if !validArgs() {
 		flag.Usage()
 		os.Exit(1)
+	}
+
+	client := infrastructure.NewAlertClientHttp(hostName, apiKey, &http.Client{})
+	policyService := service.NewPolicyApiService(client, policyPrefix)
+
+	if del {
+		deleteAlerts(policyPrefix, policyService)
+		return
 	}
 
 	cfg, err := configFromTemplate()
@@ -39,14 +51,18 @@ func main() {
 	cfg, err = config.FulfillConfig(cfg, displayNameCurrent, displayNamePrevious)
 	logFatalIfErr(err)
 
-	client := infrastructure.NewAlertClientHttp(hostName, apiKey, &http.Client{})
-	policyService := service.NewPolicyApiService(client)
-
 	recreateAlerts(cfg, policyService)
 }
 
 func validArgs() bool {
-	return displayNameCurrent != "" && displayNamePrevious != "" && apiKey != "" && template != ""
+	if del {
+		if policyPrefix == "" && apiKey == "" {
+			return false
+		}
+		return true
+	}
+
+	return displayNameCurrent != "" && displayNamePrevious != "" && apiKey != "" && template != "" && policyPrefix != ""
 }
 
 func configFromTemplate() (config.Config, error) {
@@ -73,6 +89,17 @@ func recreateAlerts(cfg config.Config, policyService service.PolicyService) {
 
 			policy, err = policyService.AddChannel(policy, channelId)
 			logFatalIfErr(err)
+		}
+	}
+}
+
+func deleteAlerts(prefix string, policyService service.PolicyService) {
+	policies, err := policyService.FindByName(prefix)
+	logFatalIfErr(err)
+	for _, pol := range policies {
+		err = policyService.Delete(pol.Id)
+		if err != nil {
+			log.Fatal(err)
 		}
 	}
 }
