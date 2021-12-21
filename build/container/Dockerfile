@@ -29,7 +29,7 @@ ENV NRIA_OVERRIDE_HOST_ROOT /host
 RUN apk --no-cache upgrade
 
 RUN apk add --no-cache --upgrade \
-    ca-certificates=20191127-r7 \
+    ca-certificates \
     # Embed required dlls:
     # ldd /usr/bin/newrelic-infra
     #   /lib64/ld-linux-x86-64.so.2 (0x7f2bbbd0f000)
@@ -38,7 +38,7 @@ RUN apk add --no-cache --upgrade \
     # As musl and glibc are compatible, this symlink fixes the missing dependency
     && mkdir /lib64 \
     && ln -s /lib/libc.musl-x86_64.so.1 /lib64/ld-linux-x86-64.so.2 \
-    && apk add --no-cache tini=0.19.0-r0
+    && apk add --no-cache tini
 
 # Tini is now available at /sbin/tini
 ENTRYPOINT ["/sbin/tini", "--"]
