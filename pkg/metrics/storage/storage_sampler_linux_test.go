@@ -6,6 +6,9 @@ package storage
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
@@ -250,6 +253,79 @@ func TestParseMountinfo(t *testing.T) {
 	for i, line := range lines {
 		mi, _ := parseMountInfo(line)
 		assert.Equal(t, expectedMountInfoStats[i], mi)
+	}
+}
+
+func TestIsRootFs(t *testing.T) {
+	var rootFSTest = []struct {
+		name string
+		in   string
+		out  bool
+	}{
+		{"Default rootfs name", "/dev/root", true},
+		{"sda partition", "/dev/sda1", false},
+		{"ssd partition", "/dev/nvme0n1p1", false},
+	}
+	for _, tt := range rootFSTest {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.out, isRootFS(tt.in))
+		})
+	}
+}
+
+func TestPartitionsInfo(t *testing.T) {
+	tmpDir, err := ioutil.TempDir("", "tmpproc")
+	assert.NoError(t, err)
+	defer os.RemoveAll(tmpDir)
+	err = ioutil.WriteFile(filepath.Join(tmpDir, partitions), []byte("major minor  #blocks  name\n\n   7        7      44308 loop7\n 259        0    8388608 nvme0n1\n 259        1    8387567 nvme0n1p1\n 259        2    8388608 nvme1n1"), 0666)
+	assert.NoError(t, err)
+	var expectedDevices = []BlockDevice{
+		{
+			Major:  "7",
+			Minor:  "7",
+			blocks: 44308,
+			Name:   "loop7",
+		},
+		{
+			Major:  "259",
+			Minor:  "0",
+			blocks: 8388608,
+			Name:   "nvme0n1",
+		},
+		{
+			Major:  "259",
+			Minor:  "1",
+			blocks: 8387567,
+			Name:   "nvme0n1p1",
+		},
+		{
+			Major:  "259",
+			Minor:  "2",
+			blocks: 8388608,
+			Name:   "nvme1n1",
+		},
+	}
+	os.Setenv("HOST_PROC", tmpDir)
+	devices := partitionsInfo()
+	os.Unsetenv("HOST_PROC")
+	assert.Equal(t, expectedDevices, devices)
+}
+
+func TestParsePartition(t *testing.T) {
+	var partitionsFileTest = []struct {
+		name string
+		in   string
+		out  BlockDevice
+	}{
+		{"Normal entry for nvme0n1p1 partition", "259        1    8387567 nvme0n1p1", BlockDevice{"259", "1", 8387567, "nvme0n1p1"}},
+		{"Normal entry for loop device", "7        8      33076 loop8", BlockDevice{"7", "8", 33076, "loop8"}},
+	}
+	for _, tt := range partitionsFileTest {
+		t.Run(tt.name, func(t *testing.T) {
+			b, err := parsePartitions(tt.in)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.out, b)
+		})
 	}
 }
 
