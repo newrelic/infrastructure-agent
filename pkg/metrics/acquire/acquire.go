@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -99,6 +100,10 @@ func ReadLinesOffsetN(filename string, offset uint, n int) (ret []string, err er
 		// on EOF we also break, but we should have results
 		// on other errors, we should not have any result which we check on the "client"
 		if err != nil {
+			// read last line if last character is not a new line
+			if err == io.EOF && len(line) > 0 && i >= int(offset) {
+				ret = append(ret, line)
+			}
 			break
 		}
 		if i < int(offset) {

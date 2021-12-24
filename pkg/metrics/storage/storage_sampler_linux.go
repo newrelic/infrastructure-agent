@@ -46,6 +46,7 @@ const (
 	mountInfo  = "mountinfo"
 	mounts     = "mounts"
 	mtab       = "mtab"
+	partitions = "partitions"
 )
 
 type Sample struct {
@@ -119,6 +120,14 @@ type MountInfoStat struct {
 	FSType      string
 	MountSource string
 	Opts        string
+}
+
+//BlockDevice represents a linux fixed-sized blocks device
+type BlockDevice struct {
+	Major  string
+	Minor  string
+	blocks int
+	Name   string
 }
 
 func NewStorageSampleWrapper(cfg *config.Config) SampleWrapper {
@@ -281,6 +290,25 @@ func parseMounts(line string) (mi MountInfoStat, err error) {
 	return
 }
 
+func parsePartitions(line string) (b BlockDevice, err error) {
+	fields := strings.Fields(line)
+	if len(fields) < 4 {
+		return b, fmt.Errorf("unexpected number of fields, expected 4, got %d", len(fields))
+	}
+
+	blocks, err := strconv.Atoi(fields[2])
+	if err != nil {
+		return b, fmt.Errorf("unexpected number of blocks: %w", err)
+	}
+	b = BlockDevice{
+		Major:  fields[0],
+		Minor:  fields[1],
+		blocks: blocks,
+		Name:   fields[3],
+	}
+	return
+}
+
 func isSupportedFs(fsType string) bool {
 	_, supported := SupportedFileSystems[fsType]
 	return supported
@@ -296,6 +324,11 @@ func isLvmMount(name string) ([]string, bool) {
 	return nil, false
 }
 
+// check whether device is a rootfs: /dev/root
+func isRootFS(name string) bool {
+	return strings.Contains(name, "root")
+}
+
 // pidForProcMounts returns the pid for querying mount files in /proc/
 // When we're running inside a container we need to resolve the mounts file from the
 // overridden root specifically at PID 1 from the host, because "self" is a symlink
@@ -306,6 +339,39 @@ func pidForProcMounts(isContainerized bool) string {
 	}
 
 	return "self"
+}
+
+// the file /proc/partitions file contains a table with major and minor number of devices, their number
+// of blocks and the device name in /dev
+func partitionsInfo() (devices []BlockDevice) {
+	partitionsFilePath := helpers.HostProc(partitions)
+	lines, err := acquire.ReadLines(partitionsFilePath)
+	// EOF means we read the whole file and we should have "lines".
+	if err != nil && err != io.EOF {
+		sslog.WithError(err).WithField("partitionsFilePath", partitionsFilePath).Error("can't map partitions file")
+		return nil
+	}
+
+	for lineno, line := range lines {
+		// partitions file contains two initial lines used to define the format of the file and
+		// separator with the data
+		if lineno < 2 {
+			continue
+		}
+		//fmt.Println(line)
+		blockInfo, err := parsePartitions(line)
+		if err != nil {
+			sslog.WithError(err).WithFieldsF(func() log.Fields {
+				return log.Fields{
+					"lineno": lineno,
+					"line":   line,
+				}
+			}).Error("can't parse block device info line")
+			continue
+		}
+		devices = append(devices, blockInfo)
+	}
+	return
 }
 
 // deviceMapperInfo returns the mounted devices information. Usually from /proc/pid/mountinfo.
@@ -362,6 +428,7 @@ func deviceMapperInfo(isContainerized bool) (mounts []MountInfoStat) {
 // LVM devices will are mapped from /dev/mapper/xxx to dm-z where z comes either from
 //  - Min in MajMin if we have /proc/self[1]/mountInfo
 //  - LogVol[z] if the device is named with VolGroup[x]-LogVol[z]
+// Mounts in /dev/root are mapped to the actual device name using /proc/partitions
 // This mapping will fail if we do not have mountInfo (for example older systems with just /proc/mounts) and the device is not named
 // with the above pattern of VolGroup-LogVol. If we find ourselves in this situation we have to refactor this a lot more and use
 // other tools to make this mapping instead of relying in the simple mount files
@@ -396,6 +463,25 @@ func CalculateDeviceMapping(activeDevices map[string]bool, isContainerized bool)
 				devToFullDevicePath[deviceKey] = deviceName
 
 				break
+			}
+		} else if isRootFS(deviceName) {
+			// disk partitions with major and minor
+			devices := partitionsInfo()
+		Mounts:
+			for _, mi := range allMounts {
+				if mi.MountSource != deviceName {
+					continue
+				}
+				devNumbers := strings.Split(mi.MajMin, ":")
+				if len(devNumbers) != 2 {
+					continue
+				}
+				for _, d := range devices {
+					if d.Major == devNumbers[0] && d.Minor == devNumbers[1] {
+						devToFullDevicePath[d.Name] = deviceName
+						break Mounts
+					}
+				}
 			}
 		} else {
 			match := deviceRegexp.FindStringSubmatch(deviceName)

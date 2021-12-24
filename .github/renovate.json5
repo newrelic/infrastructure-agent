@@ -1,0 +1,21 @@
+{
+  "extends": [
+    "config:base"
+  ],
+  "enabledManagers": [
+    // Enable only the regex manager (for Dockerfile base image bumping).
+    "regex"
+  ],
+  "regexManagers": [
+    {
+      // Parse bundle image version from `base_image` ARG in Dockerfile.
+      "fileMatch": [
+        "build/container/Dockerfile$"
+      ],
+      "datasourceTemplate": "docker",
+      "matchStrings": [
+        "base_image=(?<depName>.+):(?<currentValue>.+)"
+      ]
+    }
+  ]
+}
