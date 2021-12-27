@@ -33,6 +33,9 @@ amd64:centos7 ansible_host=192.168.1.13 ansible_user=centos ansible_python_inter
 * [log-forwarder.yml](log-forwarder.yml): Test log forwarder is running as expected.
 
 
+* [shutdown.yml](shutdown.yml): Test infra agent graceful shutdown and HNR alert.
+
+
 * [test.yml](test.yml): Run all playbooks.
 
 

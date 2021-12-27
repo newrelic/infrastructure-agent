@@ -1,0 +1,24 @@
+---
+
+- name: list violations
+  delegate_to: 127.0.0.1
+  uri:
+    url: "{{ alerts_host }}/v2/alerts_violations.json?only_open=true"
+    method: GET
+    status_code: 200
+    headers:
+      Api-Key: "{{ nr_api_key }}"
+  register: existing_violations
+
+- name: assert violation exists
+  assert:
+    that: "'{{policy_name}}' in {{ existing_violations.json.violations | map(attribute='policy_name') | flatten  }}"
+  when: violation_open
+
+- name: assert violation does not exists
+  assert:
+    that: "'{{policy_name}}' not in {{ existing_violations.json.violations | map(attribute='policy_name') | flatten  }}"
+  when: not violation_open
+
+...
+
