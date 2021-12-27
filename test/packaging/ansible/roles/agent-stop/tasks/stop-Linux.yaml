@@ -1,10 +1,9 @@
 ---
 
-- name: restart the agent
+- name: stop the agent
   become: true
   service:
     name: newrelic-infra
-    state: restarted
-
+    state: stopped
 
 ...
