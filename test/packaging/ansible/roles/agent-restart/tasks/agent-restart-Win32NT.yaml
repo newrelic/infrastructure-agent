@@ -1,10 +1,7 @@
 ---
 
 - name: restart the agent
-  become: true
-  service:
+  ansible.windows.win_service:
     name: newrelic-infra
     state: restarted
-
-
 ...
