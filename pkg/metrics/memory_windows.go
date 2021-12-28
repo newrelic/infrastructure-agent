@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package metrics
 
-import "github.com/shirou/gopsutil/mem"
+import "github.com/shirou/gopsutil/v3/mem"
 
 // NewMemoryMonitor returns a reference to a memory monitor that reads the memory metrics as reported by the system
 func NewMemoryMonitor(_ bool) *MemoryMonitor {

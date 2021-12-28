@@ -13,7 +13,7 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/acquire"
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
-	"github.com/shirou/gopsutil/net"
+	"github.com/shirou/gopsutil/v3/net"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/pkg/config"

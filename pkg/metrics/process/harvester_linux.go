@@ -15,7 +15,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/newrelic/infrastructure-agent/pkg/trace"
 	"github.com/pkg/errors"
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/process"
 	"github.com/sirupsen/logrus"
 )
 

@@ -20,7 +20,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/acquire"
-	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/v3/disk"
 	log "github.com/sirupsen/logrus"
 )
 

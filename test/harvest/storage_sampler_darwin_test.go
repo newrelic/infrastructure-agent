@@ -13,7 +13,7 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
-	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

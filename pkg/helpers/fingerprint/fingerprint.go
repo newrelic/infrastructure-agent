@@ -11,7 +11,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/network"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
-	gopsutilnet "github.com/shirou/gopsutil/net"
+	gopsutilnet "github.com/shirou/gopsutil/v3/net"
 )
 
 // Harvester harvest agent's fingerprint.

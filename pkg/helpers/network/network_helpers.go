@@ -6,7 +6,7 @@ import (
 	net2 "net"
 	"strings"
 
-	"github.com/shirou/gopsutil/net"
+	"github.com/shirou/gopsutil/v3/net"
 )
 
 const (

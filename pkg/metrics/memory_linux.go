@@ -8,7 +8,7 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/acquire"
-	"github.com/shirou/gopsutil/mem"
+	"github.com/shirou/gopsutil/v3/mem"
 )
 
 // NewMemoryMonitor returns a memory monitor.

@@ -3,7 +3,7 @@
 package process
 
 import (
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/process"
 )
 
 // CPUInfo represents CPU usage statistics at a given point

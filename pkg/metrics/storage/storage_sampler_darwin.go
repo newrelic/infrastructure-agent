@@ -4,7 +4,7 @@ package storage
 
 import (
 	"github.com/newrelic/infrastructure-agent/pkg/config"
-	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/v3/disk"
 	"sync"
 	"time"
 )

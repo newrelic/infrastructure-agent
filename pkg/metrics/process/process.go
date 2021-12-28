@@ -1,8 +1,8 @@
 package process
 
 import (
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/process"
 )
 
 // Process it's an interface to abstract gopsutil process so we can mock it and test not coupling to infra

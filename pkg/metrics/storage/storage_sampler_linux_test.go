@@ -14,7 +14,7 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
-	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/v3/disk"
 
 	"github.com/stretchr/testify/assert"
 )

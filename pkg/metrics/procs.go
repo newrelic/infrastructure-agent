@@ -5,8 +5,8 @@ package metrics
 import (
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/process"
 	"github.com/sirupsen/logrus"
 )
 

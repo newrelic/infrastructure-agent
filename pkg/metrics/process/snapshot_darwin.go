@@ -3,7 +3,7 @@
 package process
 
 import (
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/process"
 	"os"
 	"runtime"
 	"time"

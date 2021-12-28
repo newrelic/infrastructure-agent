@@ -18,7 +18,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/trace"
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/process"
 )
 
 const (

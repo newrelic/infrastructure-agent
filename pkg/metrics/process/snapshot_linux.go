@@ -13,8 +13,8 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/pkg/errors"
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/process"
 )
 
 // linuxProcess is an implementation of the process.Snapshot interface for linux hosts. It is designed to be highly

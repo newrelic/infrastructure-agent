@@ -3,7 +3,7 @@
 package network_helpers
 
 import (
-	"github.com/shirou/gopsutil/net"
+	"github.com/shirou/gopsutil/v3/net"
 
 	. "gopkg.in/check.v1"
 )

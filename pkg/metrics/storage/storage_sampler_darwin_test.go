@@ -6,7 +6,7 @@
 package storage
 
 import (
-	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/v3/disk"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

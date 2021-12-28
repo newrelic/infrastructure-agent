@@ -16,7 +16,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	dm "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm/testutils"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/process"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
