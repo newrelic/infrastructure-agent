@@ -82,9 +82,9 @@ endif
 test/automated-run:
 	make test/automated/provision
 	make test/automated/harvest
-	make test/automated/packaging
 	make test/automated/packaging-docker
-	make test/automated/termination
+	#packaging tests will terminate provisioned instances to test HNR alerts so should be the last one
+	make test/automated/packaging
 
 .PHONY: test/runner/provision
 test/runner/provision:

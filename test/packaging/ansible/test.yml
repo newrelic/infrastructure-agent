@@ -24,7 +24,7 @@
 - name: agent uninstallation
   import_playbook: uninstallation.yml
 
-- name: shutdown and HNR
-  import_playbook: shutdown.yml
+- name: shutdown , terminate and HNR alerts
+  import_playbook: shutdown-and-terminate.yml
 
 ...
