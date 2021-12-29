@@ -1,4 +1,4 @@
-FROM golang:1.16.9-buster
+FROM golang:1.16.12-buster
 
 ARG GH_VERSION='2.0.0'
 
