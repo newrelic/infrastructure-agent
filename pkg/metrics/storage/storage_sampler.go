@@ -4,6 +4,7 @@ package storage
 
 import (
 	"fmt"
+	"math"
 	"path/filepath"
 	"runtime/debug"
 	"strconv"
@@ -358,14 +359,14 @@ func (c *PartitionsCache) refresh() ([]PartitionStat, error) {
 // populateSample copies the calculated data from the source sample into the destination sample.
 // It must not populate disk.UsageStat data, as it comes from different sources
 func populateSample(source, dest *Sample) {
-	dest.TotalUtilizationPercent = source.TotalUtilizationPercent
-	dest.ReadUtilizationPercent = source.ReadUtilizationPercent
-	dest.WriteUtilizationPercent = source.WriteUtilizationPercent
-	dest.ReadsPerSec = source.ReadsPerSec
-	dest.WritesPerSec = source.WritesPerSec
-	dest.ReadBytesPerSec = source.ReadBytesPerSec
-	dest.WriteBytesPerSec = source.WriteBytesPerSec
-	dest.ReadWriteBytesPerSecond = calculateReadWriteBytesPerSecond(source.ReadBytesPerSec, source.WriteBytesPerSec)
+	dest.TotalUtilizationPercent = asValidFloatPtr(source.TotalUtilizationPercent)
+	dest.ReadUtilizationPercent = asValidFloatPtr(source.ReadUtilizationPercent)
+	dest.WriteUtilizationPercent = asValidFloatPtr(source.WriteUtilizationPercent)
+	dest.ReadsPerSec = asValidFloatPtr(source.ReadsPerSec)
+	dest.WritesPerSec = asValidFloatPtr(source.WritesPerSec)
+	dest.ReadBytesPerSec = asValidFloatPtr(source.ReadBytesPerSec)
+	dest.WriteBytesPerSec = asValidFloatPtr(source.WriteBytesPerSec)
+	dest.ReadWriteBytesPerSecond = asValidFloatPtr(calculateReadWriteBytesPerSecond(source.ReadBytesPerSec, source.WriteBytesPerSec))
 	dest.IOTimeDelta = source.IOTimeDelta
 	dest.ReadTimeDelta = source.ReadTimeDelta
 	dest.WriteTimeDelta = source.WriteTimeDelta
@@ -393,16 +394,23 @@ func populateUsage(fsUsage *disk.UsageStat, dest *Sample) {
 	totalBytes := PlatformFsByteScale(fsUsage.Total)
 	freeBytes := PlatformFsByteScale(fsUsage.Free)
 
-	dest.UsedBytes = &usedBytes
-	dest.TotalBytes = &totalBytes
-	dest.FreeBytes = &freeBytes
+	dest.UsedBytes = asValidFloatPtr(&usedBytes)
+	dest.TotalBytes = asValidFloatPtr(&totalBytes)
+	dest.FreeBytes = asValidFloatPtr(&freeBytes)
 
 	// used percent calculations use total of usedBytes + freeBytes since totalBytes
 	// on linux includes space reserved for the operating system
 	usedPercent := usedBytes / (usedBytes + freeBytes) * 100
 	freePercent := 100 - usedPercent
-	dest.UsedPercent = &usedPercent
-	dest.FreePercent = &freePercent
+	dest.UsedPercent = asValidFloatPtr(&usedPercent)
+	dest.FreePercent = asValidFloatPtr(&freePercent)
 
 	populateUsageOS(fsUsage, dest)
+}
+
+func asValidFloatPtr(value *float64) *float64 {
+	if value == nil || math.IsNaN(*value) || math.IsInf(*value, 0) {
+		return nil
+	}
+	return value
 }
