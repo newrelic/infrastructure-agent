@@ -127,7 +127,7 @@ func (s *ProcessRetrieverCached) retrieveProcesses(psBin string) (map[int32]psIt
 				pid:      int32(pid),
 				ppid:     int32(ppid),
 				username: user,
-				state:    state,
+				state:    []string{state},
 				utime:    utime,
 				stime:    stime,
 				etime:    etime,
@@ -295,7 +295,7 @@ type psItem struct {
 	ppid       int32
 	numThreads int32
 	username   string
-	state      string
+	state      []string
 	command    string
 	cmdLine    string
 	utime      string
@@ -330,7 +330,7 @@ func (p *psItem) NumThreads() (int32, error) {
 	return p.numThreads, nil
 }
 
-func (p *psItem) Status() (string, error) {
+func (p *psItem) Status() ([]string, error) {
 	return p.state, nil
 }
 

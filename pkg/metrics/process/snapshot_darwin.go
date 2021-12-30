@@ -148,7 +148,9 @@ func collectProcStats(p Process) (procStats, error) {
 	s.command = name
 	s.ppid = ppid
 	s.numThreads = numThreads
-	s.state = status
+	if len(status) > 0 {
+		s.state = status[0]
+	}
 	s.cpu = CPUInfo{
 		Percent: cpuPercent,
 		User:    times.User,

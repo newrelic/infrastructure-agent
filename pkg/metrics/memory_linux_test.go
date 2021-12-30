@@ -110,7 +110,7 @@ func TestMemoryMonitor_reclaimableAsUsedParseMemInfo(t *testing.T) {
 		Cached:       292896 * 1024,
 		Shared:       1044 * 1024,
 		Slab:         79668 * 1024,
-		SReclaimable: 42636 * 1024,
+		Sreclaimable: 42636 * 1024,
 		Used:         (2040788 - 1595120) * 1024, // Total - Available
 	}
 	assert.Equal(t, expected.String(), actual.String())
@@ -133,7 +133,7 @@ func TestMemoryMonitor_reclaimableAsUsedParseMemInfoWithoutMemAvailable(t *testi
 		Cached:       292896 * 1024,
 		Shared:       1044 * 1024,
 		Slab:         79668 * 1024,
-		SReclaimable: 42636 * 1024,
+		Sreclaimable: 42636 * 1024,
 		Used:         (2040788 - memAvailable) * 1024, // Total - Available
 	}
 	assert.Equal(t, expected.String(), actual.String())
@@ -152,7 +152,7 @@ func TestMemoryMonitor_reclaimableAsFreeParseMemInfo(t *testing.T) {
 		Cached:       (292896 + 42636) * 1024, // Cached + SReclaimable
 		Shared:       1044 * 1024,
 		Slab:         79668 * 1024,
-		SReclaimable: 42636 * 1024,
+		Sreclaimable: 42636 * 1024,
 		Used:         (2040788 - memAvailable) * 1024, // Total - Available
 	}
 	assert.Equal(t, expected.String(), actual.String())

@@ -70,7 +70,7 @@ func TestHandle_signalStopProcess(t *testing.T) {
 	require.NoError(t, err)
 	st, err := p.StatusWithContext(ctx)
 	require.NoError(t, err)
-	if st[0:1] != "S" && st[0:1] != "R" {
+	if st[0] != process.Sleep && st[0] != process.Running {
 		t.Fatal("sleep command should be either running or sleep, got: ", st)
 	}
 

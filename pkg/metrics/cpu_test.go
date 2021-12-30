@@ -27,11 +27,11 @@ func TestCPUSample(t *testing.T) {
 
 func TestCpuMarshallableSample_NormalOperation(t *testing.T) {
 	cpuTimes := func(_ bool) ([]cpu.TimesStat, error) {
-		return []cpu.TimesStat{{"1", 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}}, nil
+		return []cpu.TimesStat{{"1", 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}}, nil
 	}
 	cpuMon := CPUMonitor{
 		cpuTimes: cpuTimes,
-		last:     []cpu.TimesStat{{"1", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0}},
+		last:     []cpu.TimesStat{{"1", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}},
 	}
 	sample, err := cpuMon.Sample()
 	assert.NoError(t, err)
@@ -41,11 +41,11 @@ func TestCpuMarshallableSample_NormalOperation(t *testing.T) {
 
 func TestCpuMarshallableSample_ZeroDeltas(t *testing.T) {
 	cpuTimes := func(_ bool) ([]cpu.TimesStat, error) {
-		return []cpu.TimesStat{{"1", 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}}, nil
+		return []cpu.TimesStat{{"1", 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}}, nil
 	}
 	cpuMon := CPUMonitor{
 		cpuTimes: cpuTimes,
-		last:     []cpu.TimesStat{{"1", 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}},
+		last:     []cpu.TimesStat{{"1", 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}},
 	}
 	sample, err := cpuMon.Sample()
 	assert.NoError(t, err)

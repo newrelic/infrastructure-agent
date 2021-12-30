@@ -371,7 +371,7 @@ func TestDarwinHarvester_Do_DontReportIfMemoryZero(t *testing.T) {
 	proc.ShouldReturnName("some name", nil)
 	proc.ShouldReturnProcessIdMultipleTimes(processId, 2)
 	proc.ShouldReturnNumThreads(3, nil)
-	proc.ShouldReturnStatus("some status", nil)
+	proc.ShouldReturnStatus([]string{"some status"}, nil)
 	proc.ShouldReturnMemoryInfo(
 		&process.MemoryInfoStat{
 			RSS: 0,
@@ -411,7 +411,7 @@ func TestDarwinHarvester_Do_NoError(t *testing.T) {
 	proc.ShouldReturnName("some name", nil)
 	proc.ShouldReturnProcessIdMultipleTimes(processId, 2)
 	proc.ShouldReturnNumThreads(3, nil)
-	proc.ShouldReturnStatus("some status", nil)
+	proc.ShouldReturnStatus([]string{"some status"}, nil)
 	proc.ShouldReturnMemoryInfo(
 		&process.MemoryInfoStat{
 			RSS: 45,

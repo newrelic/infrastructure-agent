@@ -74,7 +74,7 @@ func reclaimableAsFreeParseMemInfo(lines []string) (*mem.VirtualMemoryStat, erro
 			ret.Slab = t * 1024
 			readFields++
 		case "SReclaimable":
-			ret.SReclaimable = t * 1024
+			ret.Sreclaimable = t * 1024
 			readFields++
 		}
 		if readFields >= 7 { // stop reading the file when we have read all the fields we require
@@ -82,7 +82,7 @@ func reclaimableAsFreeParseMemInfo(lines []string) (*mem.VirtualMemoryStat, erro
 		}
 	}
 
-	ret.Cached += ret.SReclaimable
+	ret.Cached += ret.Sreclaimable
 	ret.Available = ret.Free + ret.Buffers + ret.Cached
 	ret.Used = ret.Total - ret.Available
 
@@ -141,7 +141,7 @@ func reclaimableAsUsedParseMemInfo(lines []string) (*mem.VirtualMemoryStat, erro
 			ret.Slab = t * 1024
 			readFields++
 		case "SReclaimable":
-			ret.SReclaimable = t * 1024
+			ret.Sreclaimable = t * 1024
 			readFields++
 		}
 		if readFields >= 7 && memAvailable { // stop reading the file when we have read all the fields we require
