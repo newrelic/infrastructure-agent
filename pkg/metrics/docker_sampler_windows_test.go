@@ -77,8 +77,8 @@ func TestDocker(t *testing.T) {
 
 // Function mocks
 
-func mockGetAllWin32Procs() ([]process.Win32_Process, error) {
-	processes := []process.Win32_Process{
+func mockGetAllWin32Procs() ([]win32_Process, error) {
+	processes := []win32_Process{
 		{
 			Name:      "Notepad.exe",
 			ProcessID: 1024,

@@ -56,6 +56,46 @@ const (
 	PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 )
 
+//From gopsutil v2
+type win32_Process struct {
+	Name                  string
+	ExecutablePath        *string
+	CommandLine           *string
+	Priority              uint32
+	CreationDate          *time.Time
+	ProcessID             uint32
+	ThreadCount           uint32
+	Status                *string
+	ReadOperationCount    uint64
+	ReadTransferCount     uint64
+	WriteOperationCount   uint64
+	WriteTransferCount    uint64
+	CSCreationClassName   string
+	CSName                string
+	Caption               *string
+	CreationClassName     string
+	Description           *string
+	ExecutionState        *uint16
+	HandleCount           uint32
+	KernelModeTime        uint64
+	MaximumWorkingSetSize *uint32
+	MinimumWorkingSetSize *uint32
+	OSCreationClassName   string
+	OSName                string
+	OtherOperationCount   uint64
+	OtherTransferCount    uint64
+	PageFaults            uint32
+	PageFileUsage         uint32
+	ParentProcessID       uint32
+	PeakPageFileUsage     uint32
+	PeakVirtualSize       uint64
+	PeakWorkingSetSize    uint32
+	PrivatePageCount      uint64
+	TerminationDate       *time.Time
+	UserModeTime          uint64
+	WorkingSetSize        uint64
+}
+
 type SystemTimes struct {
 	IdleTime   int64
 	KernelTime int64
@@ -293,7 +333,7 @@ type ProcsMonitor struct {
 	previousProcessTimes map[string]*SystemTimes
 	stopChannel          chan bool
 	waitForCleanup       *sync.WaitGroup
-	getAllProcs          func() ([]process.Win32_Process, error)
+	getAllProcs          func() ([]win32_Process, error)
 	getMemoryInfo        func(int32) (*MemoryInfoStat, error)
 	getStatus            func(int32) (string, error)
 	getUsername          func(int32) (string, error)
@@ -429,7 +469,7 @@ func getProcessCommandLineWMI(processId uint32) (string, error) {
 	return dst[0].CommandLine, nil
 }
 
-func getWin32Proc(process *process.Win32_Process, path processPathProvider) error {
+func getWin32Proc(process *win32_Process, path processPathProvider) error {
 
 	// https://docs.microsoft.com/en-us/windows/desktop/api/processthreadsapi/nf-processthreadsapi-openprocess
 	proc, err := syscall.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, process.ProcessID)
@@ -468,9 +508,9 @@ func getWin32Proc(process *process.Win32_Process, path processPathProvider) erro
 }
 
 // We return a func for testing purpose so we can easily mock the path provider
-func getAllWin32Procs(path processPathProvider) func() ([]process.Win32_Process, error) {
-	return func() ([]process.Win32_Process, error) {
-		var result []process.Win32_Process
+func getAllWin32Procs(path processPathProvider) func() ([]win32_Process, error) {
+	return func() ([]win32_Process, error) {
+		var result []win32_Process
 
 		// https://docs.microsoft.com/en-us/windows/desktop/api/tlhelp32/nf-tlhelp32-createtoolhelp32snapshot
 		snapshot, err := syscall.CreateToolhelp32Snapshot(syscall.TH32CS_SNAPPROCESS, 0)
@@ -490,7 +530,7 @@ func getAllWin32Procs(path processPathProvider) func() ([]process.Win32_Process,
 		for {
 			// Idle process isn't actually a process, so we can't get information from it
 			if entry.ProcessID != 0 {
-				proc := process.Win32_Process{
+				proc := win32_Process{
 					Name:        syscall.UTF16ToString(entry.ExeFile[:]),
 					ProcessID:   entry.ProcessID,
 					ThreadCount: entry.Threads,
@@ -521,7 +561,7 @@ func getAllWin32Procs(path processPathProvider) func() ([]process.Win32_Process,
 	}
 }
 
-func logSampleError(pid int32, winProc process.Win32_Process, err error, message string) {
+func logSampleError(pid int32, winProc win32_Process, err error, message string) {
 	pslog.WithError(err).WithFieldsF(func() logrus.Fields {
 		return logrus.Fields{
 			"pid":     pid,

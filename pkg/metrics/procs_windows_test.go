@@ -29,7 +29,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 
 	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/process"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 )
@@ -52,15 +51,15 @@ func TestProcessAllowedList(t *testing.T) {
 	assert.Len(t, results, 1)
 }
 
-func getAllWin32ProcsWMI() ([]process.Win32_Process, error) {
-	var dst []process.Win32_Process
+func getAllWin32ProcsWMI() ([]win32_Process, error) {
+	var dst []win32_Process
 	q := wmi.CreateQuery(&dst, "") + " WHERE ProcessID != 0 AND ExecutablePath IS NOT NULL"
 	err := wmi.QueryNamespace(q, &dst, config.DefaultWMINamespace)
 	if err != nil {
-		return []process.Win32_Process{}, fmt.Errorf("could not get win32Procs: %s", err)
+		return []win32_Process{}, fmt.Errorf("could not get win32Procs: %s", err)
 	}
 	if len(dst) < 1 {
-		return []process.Win32_Process{}, fmt.Errorf("could not get win32Proc: empty")
+		return []win32_Process{}, fmt.Errorf("could not get win32Proc: empty")
 	}
 	return dst, nil
 }
