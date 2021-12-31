@@ -204,7 +204,7 @@ func Test_ProcessRetrieverCached_ProcessById_ExistingProcess(t *testing.T) {
 		noError(process.Cmdline()))
 	assert.Equal(t, "joe", noError(process.Username()))
 	assert.Equal(t, int32(1), noError(process.Parent()).(Process).ProcessId())
-	assert.Equal(t, "S", noError(process.Status()))
+	assert.Equal(t, []string{process2.Sleep}, noError(process.Status()))
 	assert.Equal(t, &cpu.TimesStat{CPU: "cpu", User: 20.99, System: 38.18}, noError(process.Times()))
 	assert.Equal(t, &process2.MemoryInfoStat{RSS: uint64(920) * 1024, VMS: uint64(4471000) * 1024, Swap: uint64(0)}, noError(process.MemoryInfo()))
 	assert.Equal(t, int32(2), noError(process.NumThreads()))
