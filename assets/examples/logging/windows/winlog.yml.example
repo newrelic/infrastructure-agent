@@ -1,6 +1,6 @@
 ###############################################################################
 # Log forwarder configuration winlog example                                  #
-# Source: windows event log                                                   #
+# Source: Windows event log                                                   #
 ###############################################################################
 logs:
   # Winlog log ingestion with eventId filters.
