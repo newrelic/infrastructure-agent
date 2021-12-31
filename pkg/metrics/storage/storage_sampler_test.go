@@ -4,6 +4,7 @@
 package storage
 
 import (
+	"math"
 	"runtime"
 	"testing"
 	"time"
@@ -168,5 +169,28 @@ func TestCalculateReadWriteBytesPerSecond(t *testing.T) {
 	for _, testCase := range testCases {
 		actual := calculateReadWriteBytesPerSecond(testCase.read, testCase.write)
 		assert.Equal(t, testCase.expected, actual)
+	}
+}
+
+func TestAsValidFloatPtr(t *testing.T) {
+	toPtr := func(f float64) *float64 {
+		return &f
+	}
+	var floatPtrTest = []struct {
+		name     string
+		in       *float64
+		outIsNil bool
+	}{
+		{"Positive float value", toPtr(3.0), false},
+		{"Negative float value", toPtr(-3.0), false},
+		{"NaN float", toPtr(math.NaN()), true},
+		{"Infinite float", toPtr(math.Inf(0)), true},
+		{"Nil pointer", nil, true},
+	}
+
+	for _, tt := range floatPtrTest {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.outIsNil, asValidFloatPtr(tt.in) == nil)
+		})
 	}
 }
