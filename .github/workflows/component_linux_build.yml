@@ -1,0 +1,30 @@
+name: Compile linux binaries
+
+on:
+  workflow_call:
+    secrets:
+      DOCKER_HUB_ID:
+        required: true
+      DOCKER_HUB_PASSWORD:
+        required: true
+    inputs:
+      TAG:
+        required: true
+        type: string
+
+env:
+  TAG: ${{ inputs.TAG }}
+
+jobs:
+  test-build:
+    name: Test binary compilation for all (linux) platforms:arch
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_HUB_ID }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+      - name: Build all platforms:arch
+        run: make ci/build

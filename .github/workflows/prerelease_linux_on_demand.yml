@@ -1,0 +1,39 @@
+name: Prerelease Linux On Demand
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to build from'
+        required: true
+      dest_prefix:
+        description: 'Repo prefix'
+        required: true
+  push:
+    branches:
+      - 'prerelease-on-demand_*'
+jobs:
+  packaging:
+    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_packaging_on_demand.yml@id_repo-on-demand_rebase
+    secrets:
+      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+      GPG_MAIL: 'infrastructure-eng@newrelic.com'
+      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_TESTING }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_TESTING }}
+      AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_TESTING }}
+      AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_TESTING }}
+    with:
+      TAG: "0.0.0"
+#      BRANCH: ${{ inputs.branch }}
+      BRANCH: "id_repo-on-demand_rebase"
+      ACCESS_POINT_HOST: "testing"
+      RUN_ID: ${{ github.run_id }}
+      AWS_S3_BUCKET_NAME: "nr-downloads-ohai-testing"
+      AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-testing"
+#      DEST_PREFIX: ${{ inputs.dest_prefix }}
+      DEST_PREFIX: "test_20220208_2_infra_agent/"
+

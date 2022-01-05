@@ -1,4 +1,4 @@
-name: Staged pre-release for Linux, MacOS, Windows
+name: Staged pre-release for Linux, Windows
 
 on:
   workflow_dispatch:
@@ -8,10 +8,6 @@ on:
         required: true
       assetsType:
         description: 'Assets type to pre-release: all, targz, zip, msi, deb, rpm'
-        required: true
-        default: 'all'
-      targzOS:
-        description: 'OS for which tarballs will be released: all, linux, macos'
         required: true
         default: 'all'
 
@@ -31,51 +27,27 @@ env:
   AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
 
 jobs:
-  publishing-to-s3-linux:
-    name: Publish linux artifacts into s3 staging bucket
-    runs-on: ubuntu-20.04
 
-    strategy:
-      max-parallel: 1
-      matrix:
-        assetsType:
-          - "targz"
-          - "deb"
-          - "rpm"
-
-    steps:
-      - name: Login to DockerHub
-        if: ${{ (github.event.inputs.assetsType == 'all' || github.event.inputs.assetsType == matrix.assetsType) && (github.event.inputs.targzOS == 'all' || github.event.inputs.targzOS == matrix.targzOS) }}
-        uses: docker/login-action@v1
-        with:
-          username: ${{ env.DOCKER_HUB_ID }}
-          password: ${{ env.DOCKER_HUB_PASSWORD }}
-      - name: Publish ${{ matrix.assetsType }} to S3 action
-        if: ${{ (github.event.inputs.assetsType == 'all' || github.event.inputs.assetsType == matrix.assetsType) && (github.event.inputs.targzOS == 'all' || github.event.inputs.targzOS == matrix.targzOS) }}
-        uses: newrelic/infrastructure-publish-action@v1.2.1
-        env:
-          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
-          AWS_ROLE_ARN: ${{ env.AWS_ROLE_ARN }}
-          AWS_ROLE_SESSION_NAME: ${{ env.AWS_ROLE_SESSION_NAME }}
-        with:
-          tag: ${{env.TAG}}
-          app_name: "newrelic-infra"
-          repo_name: "newrelic/infrastructure-agent"
-          schema: "custom"
-          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.SCHEMA_BRANCH }}/build/upload-schema-linux-${{ matrix.assetsType }}.yml"
-          aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
-          aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
-          aws_s3_lock_bucket_name: ${{ env.AWS_S3_LOCK_BUCKET_NAME }}
-          access_point_host: "staging"
-          run_id: ${{ github.run_id }}
-          aws_region: ${{ env.AWS_REGION }}
-          aws_role_session_name: ${{ env.AWS_ROLE_SESSION_NAME }}
-          aws_role_arn: ${{ env.AWS_ROLE_ARN }}
-          # used for signing package stuff
-          gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
-          gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
+  publishing-to-s3:
+    # point to staging after tests
+    name: Publish linux artifacts into s3 testing bucket
+    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_publish.yml@master
+    secrets:
+      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_TESTING }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_TESTING }}
+      AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_TESTING }}
+      AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_TESTING }}
+    with:
+      ACCESS_POINT_HOST: "testing"
+      RUN_ID: ${{ github.run_id }}
+      TAG: ${{ github.event.release.tag_name }}
+      AWS_S3_BUCKET_NAME: "nr-downloads-ohai-testing"
+      AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-testing"
+      ASSETS_TYPE: ${{ github.event.inputs.assetsType }}
 
 #  publishing-to-s3-macos:
 #    name: Publish macos artifacts into s3 staging bucket
@@ -96,7 +68,7 @@ jobs:
 #          password: ${{ env.DOCKER_HUB_PASSWORD }}
 #      - name: Publish ${{ matrix.assetsType }} to S3 action
 #        if: ${{ (github.event.inputs.assetsType == 'all' || github.event.inputs.assetsType == matrix.assetsType) && (github.event.inputs.targzOS == 'all' || github.event.inputs.targzOS == matrix.targzOS) }}
-#        uses: newrelic/infrastructure-publish-action@v1.2.1
+#        uses: newrelic/infrastructure-publish-action@v1.1.0
 #        env:
 #          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
 #          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
@@ -122,43 +94,23 @@ jobs:
 #          gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
 
   publishing-to-s3-windows:
-    name: Publish windows artifacts into s3 staging bucket
-    runs-on: ubuntu-20.04
-
-    strategy:
-      matrix:
-        assetsType:
-          - "msi"
-          - "zip"
-
-    steps:
-      - name: Login to DockerHub
-        if: ${{ github.event.inputs.assetsType == 'all' || github.event.inputs.assetsType == matrix.assetsType }}
-        uses: docker/login-action@v1
-        with:
-          username: ${{ env.DOCKER_HUB_ID }}
-          password: ${{ env.DOCKER_HUB_PASSWORD }}
-      - name: Publish ${{ matrix.assetsType }} to S3 action
-        if: ${{ github.event.inputs.assetsType == 'all' || github.event.inputs.assetsType == matrix.assetsType }}
-        uses: newrelic/infrastructure-publish-action@v1.2.1
-        env:
-          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
-          AWS_ROLE_ARN: ${{ env.AWS_ROLE_ARN }}
-          AWS_ROLE_SESSION_NAME: ${{ env.AWS_ROLE_SESSION_NAME }}
-        with:
-          tag: ${{env.TAG}}
-          app_name: "newrelic-infra"
-          repo_name: "newrelic/infrastructure-agent"
-          schema: "custom"
-          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.SCHEMA_BRANCH }}/build/upload-schema-windows-${{ matrix.assetsType }}.yml"
-          aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
-          aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
-          aws_role_session_name: ${{ env.AWS_ROLE_SESSION_NAME }}
-          aws_role_arn: ${{ env.AWS_ROLE_ARN }}
-          # used for signing package stuff - required for action, not needed for msi
-          gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
-          gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
-          disable_lock: true
-          aws_region: ${{ env.AWS_REGION }}
+    # point to staging after tests
+    name: Publish linux artifacts into s3 testing bucket
+    uses: newrelic/infrastructure-agent/.github/workflows/component_windows_publish.yml@master
+    secrets:
+      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_TESTING }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_TESTING }}
+      AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_TESTING }}
+      AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_TESTING }}
+    with:
+      ACCESS_POINT_HOST: "testing"
+      RUN_ID: ${{ github.run_id }}
+      TAG: ${{ github.event.release.tag_name }}
+      AWS_S3_BUCKET_NAME: "nr-downloads-ohai-testing"
+      AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-testing"
+      ASSETS_TYPE: "all"
+      DISABLE_LOCK: true

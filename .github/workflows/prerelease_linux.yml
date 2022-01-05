@@ -1,4 +1,4 @@
-name: Prerelease Linux pipeline
+name: Prerelease Linux
 
 on:
   release:
@@ -7,241 +7,108 @@ on:
     tags:
       - '*'
 
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  GO_VERSION: '1.16.12'
-  GPG_MAIL: 'infrastructure-eng@newrelic.com'
-  GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
-  GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
-  SNYK_TOKEN: ${{ secrets.CAOS_SNYK_TOKEN }}
-  TAG:  ${{ github.event.release.tag_name }}
-  DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
-  DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
-  SCHEMA_BRANCH: ${{ github.event.release.tag_name }}
-  AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
-  AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
-  AWS_REGION: "us-east-1"
-  DOCKER_PUBLISH: true
-
 jobs:
-  unit-test-linux:
-    name: Linux unit tests
-    runs-on: ubuntu-20.04
+  unit-test:
+    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_unit_test.yml@master
+    secrets:
+      gh_token: ${{secrets.GITHUB_TOKEN}}
 
-    steps:
-      - uses: actions/checkout@v2
+  harvest-test:
+    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_harvest_test.yml@master
 
-      - name: Install Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{env.GO_VERSION}}
+  proxy-tests:
+    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_proxy_test.yml@master
+    secrets:
+      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
 
-      - name: Validate code
-        run: make ci/validate
+  packaging-amd64:
+    needs: [unit-test, harvest-test, proxy-tests]
+    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_packaging.yml@master
+    secrets:
+      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+      GPG_MAIL: 'infrastructure-eng@newrelic.com'
+      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    with:
+      TAG:  ${{ github.event.release.tag_name }}
+      ARCH: 'amd64'
 
-      - name: Running unit tests
-        run: make ci/test-coverage
+  packaging-arm:
+    needs: [unit-test, harvest-test, proxy-tests]
+    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_packaging.yml@master
+    secrets:
+      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+      GPG_MAIL: 'infrastructure-eng@newrelic.com'
+      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    with:
+      TAG:  ${{ github.event.release.tag_name }}
+      ARCH: 'arm'
 
-      - name: Coveralls Parallel
-        uses: coverallsapp/github-action@master
-        continue-on-error: true
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: lcov.info
-          flag-name: run-linux
-          parallel: true
+  packaging-arm64:
+    needs: [unit-test, harvest-test, proxy-tests]
+    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_packaging.yml@master
+    secrets:
+      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+      GPG_MAIL: 'infrastructure-eng@newrelic.com'
+      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    with:
+      TAG:  ${{ github.event.release.tag_name }}
+      ARCH: 'arm64'
 
-  harvest-test-linux:
-    name: Linux harvest tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ ubuntu-18.04 ]
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Install Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{env.GO_VERSION}}
-
-      - name: Running Harvest tests
-        run: make linux/harvest-tests
-
-  proxy-tests-linux:
-    name: Proxy tests
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v2
-
-      - name: Install Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{env.GO_VERSION}}
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ env.DOCKER_HUB_ID }}
-          password: ${{ env.DOCKER_HUB_PASSWORD }}
-
-      - name: Running proxy tests
-        run: make proxy-test
-
-  finish:
-    name: Finish
-    needs: [ unit-test-linux ]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Coveralls Finished
-        uses: coverallsapp/github-action@master
-        continue-on-error: true
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          parallel-finished: true
-
-  packaging-linux-amd64:
-    name: Build and upload amd64 artifacts into GH Release assets
-    runs-on: ubuntu-20.04
-    needs: [unit-test-linux, harvest-test-linux, proxy-tests-linux]
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ env.DOCKER_HUB_ID }}
-          password: ${{ env.DOCKER_HUB_PASSWORD }}
-
-      - name: Releasing linux packages
-        run: make ci/prerelease/linux-amd64
-
-  packaging-linux-arm:
-    name: Build and upload arm artifacts into GH Release assets
-    runs-on: ubuntu-20.04
-    needs: [unit-test-linux, harvest-test-linux, proxy-tests-linux]
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ env.DOCKER_HUB_ID }}
-          password: ${{ env.DOCKER_HUB_PASSWORD }}
-
-      - name: Releasing linux packages
-        run: make ci/prerelease/linux-arm
-
-  packaging-linux-arm64:
-    name: Build and upload arm64 artifacts into GH Release assets
-    runs-on: ubuntu-20.04
-    needs: [unit-test-linux, harvest-test-linux, proxy-tests-linux]
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ env.DOCKER_HUB_ID }}
-          password: ${{ env.DOCKER_HUB_PASSWORD }}
-
-      - name: Releasing linux packages
-        run: make ci/prerelease/linux-arm64
-
-  packaging-linux-legacy:
-    name: Build and upload legacy architectures artifacts into GH Release assets
-    runs-on: ubuntu-20.04
-    needs: [unit-test-linux, harvest-test-linux, proxy-tests-linux]
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ env.DOCKER_HUB_ID }}
-          password: ${{ env.DOCKER_HUB_PASSWORD }}
-
-      - name: Releasing linux packages
-        run: make ci/prerelease/linux-legacy
+  packaging-legacy:
+    needs: [unit-test, harvest-test, proxy-tests]
+    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_packaging.yml@master
+    secrets:
+      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+      GPG_MAIL: 'infrastructure-eng@newrelic.com'
+      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    with:
+      TAG:  ${{ github.event.release.tag_name }}
+      ARCH: 'legacy'
 
   packaging-docker:
-    name: Build and upload docker images as RC
-    runs-on: ubuntu-20.04
-    needs: [unit-test-linux, harvest-test-linux, proxy-tests-linux]
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ env.DOCKER_HUB_ID }}
-          password: ${{ env.DOCKER_HUB_PASSWORD }}
-
-      - name: Compiling binaries for linux amd64, arm, arm64
-        run: make ci/prerelease/linux-for-docker
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-
-      - name: Build and publish Release Candidate (RC) of base Docker image
-        run: AGENT_VERSION=${{env.TAG}} make -C build/container/ clean publish/multi-arch-base-rc
-
-      - name: Build and publish Release Candidate (RC) of forwarder Docker image
-        run: AGENT_VERSION=${{env.TAG}} make -C build/container/ clean publish/multi-arch-forwarder-rc
-
-      - name: Build and publish Release Candidate (RC) of k8s-events-forwarders Docker image
-        run: AGENT_VERSION=${{env.TAG}} make -C build/container/ clean publish/multi-arch-k8s-events-forwarder-rc
+    needs: [unit-test, harvest-test, proxy-tests]
+    uses: newrelic/infrastructure-agent/.github/workflows/component_docker_packaging.yml@master
+    secrets:
+      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+      GPG_MAIL: 'infrastructure-eng@newrelic.com'
+      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    with:
+      TAG:  ${{ github.event.release.tag_name }}
 
   publishing-to-s3:
-    name: Publish linux artifacts into s3 staging bucket
-    runs-on: ubuntu-20.04
-    needs: [packaging-linux-amd64, packaging-linux-arm, packaging-linux-arm64]
-
-    strategy:
-      max-parallel: 1
-      matrix:
-        assetsType:
-          - "targz"
-          - "deb"
-          - "rpm"
-
-    steps:
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ env.DOCKER_HUB_ID }}
-          password: ${{ env.DOCKER_HUB_PASSWORD }}
-      - name: Publish ${{ matrix.assetsType }} to S3 action
-        uses: newrelic/infrastructure-publish-action@v1.2.1
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
-          AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
-          AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
-        with:
-          tag: ${{env.TAG}}
-          app_name: "newrelic-infra"
-          repo_name: "newrelic/infrastructure-agent"
-          schema: "custom"
-          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.SCHEMA_BRANCH }}/build/upload-schema-linux-${{ matrix.assetsType }}.yml"
-          aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
-          aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
-          aws_s3_lock_bucket_name: ${{ env.AWS_S3_LOCK_BUCKET_NAME }}
-          access_point_host: "staging"
-          run_id: ${{ github.run_id }}
-          aws_region: ${{ env.AWS_REGION }}
-          aws_role_session_name: ${{ env.AWS_ROLE_SESSION_NAME }}
-          aws_role_arn: ${{ env.AWS_ROLE_ARN }}
-          # used for signing package stuff
-          gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
-          gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
+    # point to staging after tests
+    name: Publish linux artifacts into s3 testing bucket
+    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_publish.yml@master
+    needs: [packaging-amd64, packaging-arm, packaging-arm64, packaging-legacy]
+    secrets:
+      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_TESTING }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_TESTING }}
+      AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_TESTING }}
+      AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_TESTING }}
+    with:
+      ACCESS_POINT_HOST: "testing"
+      RUN_ID: ${{ github.run_id }}
+      TAG: ${{ github.event.release.tag_name }}
+      AWS_S3_BUCKET_NAME: "nr-downloads-ohai-testing"
+      AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-testing"
+      ASSETS_TYPE: "all"

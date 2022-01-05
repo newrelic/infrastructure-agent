@@ -1,0 +1,54 @@
+name: Publish docker image
+
+on:
+  workflow_call:
+    secrets:
+      DOCKER_HUB_ID:
+        required: true
+      DOCKER_HUB_PASSWORD:
+        required: true
+    inputs:
+      TAG:
+        required: true
+        type: string
+      ASSETS_TYPE:
+        required: true
+        type: string
+
+env:
+  TAG: ${{ inputs.TAG }}
+  DOCKER_PUBLISH: true
+  ASSETS_TYPE: ${{ inputs.ASSETS_TYPE }}
+
+jobs:
+  publish-docker-images:
+    if: ${{ inputs.ASSETS_TYPE == 'all' || inputs.ASSETS_TYPE == 'docker' }}
+    name: Create versioned and latest images from RC
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKER_HUB_ID }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
+
+      - name: Publish tag of base Docker image
+        run: make -C build/container/ clean publish/multi-arch-base-tag AGENT_VERSION=${{env.TAG}}
+
+      - name: Publish latest of base Docker image
+        run: make -C build/container/ clean publish/multi-arch-base-latest AGENT_VERSION=${{env.TAG}}
+
+      - name: Publish tag of forwarder Docker image
+        run: make -C build/container/ clean publish/multi-arch-forwarder-tag AGENT_VERSION=${{env.TAG}}
+
+      - name: Publish latest of forwarder Docker image
+        run: make -C build/container/ clean publish/multi-arch-forwarder-latest AGENT_VERSION=${{env.TAG}}
+
+      - name: Publish tag of k8s-events-forwarders Docker image
+        run: make -C build/container/ clean publish/multi-arch-k8s-events-forwarder-tag AGENT_VERSION=${{env.TAG}}
+
+      - name: Publish latest of k8s-events-forwarders Docker image
+        run: make -C build/container/ clean publish/multi-arch-k8s-events-forwarder-latest AGENT_VERSION=${{env.TAG}}
