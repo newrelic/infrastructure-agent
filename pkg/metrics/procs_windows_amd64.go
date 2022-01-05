@@ -1,7 +1,7 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-// +build windows
-// +build amd64
+//go:build windows && amd64
+// +build windows,amd64
 
 package metrics
 

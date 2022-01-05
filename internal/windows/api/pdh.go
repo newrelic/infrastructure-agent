@@ -4,6 +4,7 @@
 
 // Original source: github.com/lxn/win
 
+//go:build windows
 // +build windows
 
 package winapi

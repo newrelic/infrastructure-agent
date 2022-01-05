@@ -3,6 +3,7 @@
 //
 // Golang code for Go versions lower than 1.12.
 //
+//go:build !go1.12
 // +build !go1.12
 
 package gobackfill
