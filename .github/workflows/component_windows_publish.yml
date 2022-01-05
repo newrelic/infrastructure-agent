@@ -1,0 +1,107 @@
+name: Publish to S3
+
+on:
+  workflow_call:
+    secrets:
+      DOCKER_HUB_ID:
+        required: true
+      DOCKER_HUB_PASSWORD:
+        required: true
+      GPG_PASSPHRASE:
+        required: true
+      GPG_PRIVATE_KEY_BASE64:
+        required: true
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      AWS_ROLE_ARN:
+        required: true
+      AWS_ROLE_SESSION_NAME:
+        required: true
+
+    inputs:
+      TAG:
+        required: true
+        type: string
+      AWS_S3_BUCKET_NAME:
+        required: true
+        type: string
+      AWS_S3_LOCK_BUCKET_NAME:
+        required: true
+        type: string
+      ACCESS_POINT_HOST:
+        required: true
+        type: string
+      RUN_ID:
+        required: true
+        type: string
+      ASSETS_TYPE:
+        required: true
+        type: string
+      DISABLE_LOCK:
+        required: false
+        type: boolean
+
+env:
+  GPG_MAIL: 'infrastructure-eng@newrelic.com'
+  GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+  GPG_PRIVATE_KEY_BASE64: ${{ secrets.GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+  TAG:  ${{ inputs.TAG }}
+  DOCKER_HUB_ID: ${{ secrets.DOCKER_HUB_ID }}
+  DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+  SCHEMA_BRANCH: "master"
+  AWS_S3_BUCKET_NAME: ${{ inputs.AWS_S3_BUCKET_NAME }}
+  AWS_S3_LOCK_BUCKET_NAME: ${{ inputs.AWS_S3_LOCK_BUCKET_NAME }}
+  RUN_ID: ${{ inputs.RUN_ID }}
+  ASSETS_TYPE: ${{ inputs.ASSETS_TYPE }}
+  DISABLE_LOCK: ${{ inputs.DISABLE_LOCK == true }}
+  AWS_REGION: "us-east-1"
+  ACCESS_POINT_HOST: ${{ inputs.ACCESS_POINT_HOST }}
+
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+  AWS_ROLE_SESSION_NAME: ${{ secrets.AWS_ROLE_SESSION_NAME }}
+
+jobs:
+  publish:
+    name: Publish linux artifacts into s3 staging bucket
+    runs-on: ubuntu-20.04
+
+    strategy:
+      max-parallel: 1
+      matrix:
+        assetsType:
+          - "msi"
+          - "zip"
+
+    steps:
+      - name: Login to DockerHub
+        if: ${{ (env.ASSETS_TYPE == 'all' || env.ASSETS_TYPE == matrix.assetsType) }}
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKER_HUB_ID }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
+      - name: Publish ${{ matrix.assetsType }} to S3 action
+        if: ${{ (env.ASSETS_TYPE == 'all' || env.ASSETS_TYPE == matrix.assetsType) }}
+        uses: newrelic/infrastructure-publish-action@v1.2.1
+        with:
+          tag: ${{env.TAG}}
+          app_name: "newrelic-infra"
+          repo_name: "newrelic/infrastructure-agent"
+          schema: "custom"
+          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.SCHEMA_BRANCH }}/build/upload-schema-linux-${{ matrix.assetsType }}.yml"
+          aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
+          aws_s3_lock_bucket_name: ${{ env.AWS_S3_LOCK_BUCKET_NAME }}
+          access_point_host: ${{ env.ACCESS_POINT_HOST }}
+          run_id: ${{ env.RUN_ID }}
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role_session_name: ${{ env.AWS_ROLE_SESSION_NAME }}
+          aws_role_arn: ${{ env.AWS_ROLE_ARN }}
+          # used for signing package stuff
+          gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
+          gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
+          disable_lock: ${{ env.DISABLE_LOCK }}
