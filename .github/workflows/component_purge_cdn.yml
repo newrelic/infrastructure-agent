@@ -1,0 +1,35 @@
+name: Purge CDN
+
+on:
+  workflow_call:
+    secrets:
+      FASTLY_KEY:
+        required: true
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      AWS_ROLE_ARN:
+        required: true
+      AWS_ROLE_SESSION_NAME:
+        required: true
+
+env:
+  FASTLY_KEY: ${{ secrets.FASTLY_KEY }}
+  AWS_S3_BUCKET_NAME: "nr-downloads-main"
+  AWS_REGION: "us-east-1"
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+  AWS_ROLE_SESSION_NAME: ${{ secrets.AWS_ROLE_SESSION_NAME }}
+
+jobs:
+  purge-cdn:
+    name: Purge CDN
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Fasty purge
+        env:
+          FASTLY_KEY: ${{env.FASTLY_KEY }}
+        run: tools/cdn-purge/fastly-purge.sh
