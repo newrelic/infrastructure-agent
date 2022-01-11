@@ -60,8 +60,16 @@ func IsDockerRunning() bool {
 	if runtime.GOOS == "windows" {
 		_, err := os.Stat(windowsDockerSocket)
 		return err == nil
-	} else {
-		_, err := os.Stat(linuxDockerSocket)
-		return err == nil
 	}
+
+	dockerSock, err := os.Stat(linuxDockerSocket)
+	if err != nil {
+		return false
+	}
+
+	if dockerSock.Mode()&os.ModeSocket == 0 {
+		return false
+	}
+
+	return true
 }

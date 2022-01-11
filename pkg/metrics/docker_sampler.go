@@ -13,9 +13,10 @@ import (
 	metricTypes "github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 
 	"github.com/docker/docker/api/types"
+	"github.com/sirupsen/logrus"
+
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/lru"
-	"github.com/sirupsen/logrus"
 )
 
 var dslog = log.WithComponent("DockerSampler")
