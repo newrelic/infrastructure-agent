@@ -140,9 +140,13 @@ func (p *rpmPlugin) Run() {
 	// Listening writes to a RPM database file used on packages modifications
 	err = watcher.Add("/var/lib/rpm/Installtid")
 	if err != nil {
-		rpmlog.WithError(err).Error("can't setup trigger file watcher for rpm")
-		p.Unregister()
-		return
+		// New versions of rpm (> 4.16) do not contain Installtid database file
+		err = watcher.Add("/var/lib/rpm/rpmdb.sqlite")
+		if err != nil {
+			rpmlog.WithError(err).Error("can't setup trigger file watcher for rpm")
+			p.Unregister()
+			return
+		}
 	}
 
 	counter := 1
