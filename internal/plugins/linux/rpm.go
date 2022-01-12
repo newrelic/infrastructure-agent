@@ -136,16 +136,12 @@ func (p *rpmPlugin) Run() {
 		return
 	}
 
-	err = watcher.Add("/var/lib/rpm/.rpm.lock")
+	// Listening writes to a RPM database file used on packages modifications
+	err = watcher.Add("/var/lib/rpm/Installtid")
 	if err != nil {
-		// Some old distros, like SLES 11, do not provide .rpm.lock file, but the same
-		// effect can be achieved by listening some standard files from the RPM database
-		err = watcher.Add("/var/lib/rpm/Installtid")
-		if err != nil {
-			rpmlog.WithError(err).Error("can't setup trigger file watcher for rpm")
-			p.Unregister()
-			return
-		}
+		rpmlog.WithError(err).Error("can't setup trigger file watcher for rpm")
+		p.Unregister()
+		return
 	}
 
 	counter := 1

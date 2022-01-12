@@ -1,0 +1,10 @@
+---
+
+- hosts: runner
+  become: false
+  gather_facts: yes
+
+  tasks:
+    - name: provision tests runner
+      include_role:
+        name: provision-runner

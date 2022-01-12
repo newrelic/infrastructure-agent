@@ -79,7 +79,7 @@ $ newrelic-infra -version
 ```
 expected output:
 ```shell script
-> New Relic Infrastructure Agent version: 1.16.1, GoVersion: go1.14.4, GitCommit: ...
+> New Relic Infrastructure Agent version: 1.16.1, GoVersion: go1.16.12, GitCommit: ...
 ```
 
 #### Scenario 4. Service is working

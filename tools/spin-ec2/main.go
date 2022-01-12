@@ -251,6 +251,10 @@ func cliMode() {
 	cmdProvision.PersistentFlags().StringP("ansible_password", "x", "", "ansible password")
 	viper.BindPFlag("ansible_password", cmdProvision.PersistentFlags().Lookup("ansible_password"))
 
+	// Instance prefix
+	cmdProvision.PersistentFlags().StringP("prefix", "f", hostPrefix, "canary instances prefix")
+	viper.BindPFlag("prefix", cmdProvision.PersistentFlags().Lookup("prefix"))
+
 	var cmdPrune = &cobra.Command{
 		Use:   "prune",
 		Short: "Prune canary machines",
@@ -272,6 +276,7 @@ func canaryConfFromArgs() (canaryConf, error) {
 	license := viper.GetString("license")
 	platform := viper.GetString("platform")
 	ansiblePassword := viper.GetString("ansible_password")
+	prefix := viper.GetString("prefix")
 
 	if !semver.IsValid(agentVersion) {
 		return canaryConf{}, fmt.Errorf("agent version '%s' doesn't match the pattern 'vmajor.minor.patch' format",
@@ -283,6 +288,7 @@ func canaryConfFromArgs() (canaryConf, error) {
 		agentVersion:    agentVersion,
 		platform:        platform,
 		ansiblePassword: ansiblePassword,
+		prefix:          prefix,
 	}, nil
 }
 
@@ -330,7 +336,7 @@ func provisionMacosCanaries(cnf canaryConf) error {
 		path.Join(curPath, "test/automated/ansible/macos-canaries.yml"))
 
 	//rename the ansible hostname to include agent version. This is temporary until we provision macos on demand
-	execNameArgs("sed", "-i.bak", fmt.Sprintf("s/canary:current/canary:%s/g", cnf.agentVersion), path.Join(curPath, inventoryMacos))
+	execNameArgs("sed", "-i.bak", fmt.Sprintf("s/canary:current/%s:%s/g", cnf.prefix, cnf.agentVersion), path.Join(curPath, inventoryMacos))
 	execNameArgs("rm", fmt.Sprintf("%s.bak", path.Join(curPath, inventoryMacos)))
 
 	var argumentsMacos = []string{
@@ -374,7 +380,7 @@ func provisionLinuxCanaries(cnf canaryConf) error {
 		return err
 	}
 
-	prepareAnsibleConfig(opts, fmt.Sprintf("%s:%s", hostPrefix, cnf.agentVersion))
+	prepareAnsibleConfig(opts, fmt.Sprintf("%s:%s", cnf.prefix, cnf.agentVersion))
 	//ansible password is not needed for linux
 	cnf.ansiblePassword = ""
 
@@ -390,7 +396,7 @@ func provisionEphimeralCanaries(cnf canaryConf) error {
 	execNameArgs("ansible-playbook",
 		"-i", path.Join(curPath, inventoryLocal),
 		"--extra-vars", "@"+path.Join(curPath, inventoryForCreation),
-		"-e", "instance_prefix="+"canary:"+cnf.agentVersion+":",
+		"-e", fmt.Sprintf("instance_prefix=%s:%s:", cnf.prefix, cnf.agentVersion),
 		path.Join(curPath, "test/automated/ansible/provision.yml"))
 
 	execNameArgs("ansible-playbook",
@@ -425,7 +431,7 @@ func provisionEphimeralCanaries(cnf canaryConf) error {
 func pruneCanaries(cmd *cobra.Command, args []string) error {
 	dryRun := viper.GetBool("dry_run")
 
-	instances, err := getAWSInstances(hostPrefix)
+	instances, err := getAWSInstances(hostPrefix + ":v")
 	if err != nil {
 		return err
 	}

@@ -60,6 +60,14 @@ func TestStorageSample(t *testing.T) {
 	assert.NotZero(t, *ss.TotalBytes)
 	assert.NotNil(t, ss.UsedBytes)
 	assert.NotZero(t, *ss.UsedBytes)
+
+	assert.NotNil(t, ss.TotalUtilizationPercent)
+	assert.NotNil(t, ss.ReadBytesPerSec)
+	assert.NotNil(t, ss.WriteBytesPerSec)
+	assert.NotNil(t, ss.ReadWriteBytesPerSecond)
+	assert.NotNil(t, ss.ReadsPerSec)
+	assert.NotNil(t, ss.WritesPerSec)
+	assert.NotNil(t, ss.ReadWriteBytesPerSecond)
 }
 
 // This test assumes that the temporary folder is mounted in the same device as the root directory

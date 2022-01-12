@@ -41,8 +41,9 @@ const (
 	defaultBucket = "nr-downloads-ohai-staging"
 	defaultRegion = "us-east-1"
 	// more keys could be added if issues arise
-	defaultKeys    = "/infrastructure_agent/linux/apt/dists/focal/main/binary-amd64/Packages.bz2,"
-	fastlyPurgeURL = "https://api.fastly.com/service/2RMeBJ1ZTGnNJYvrWMgQhk/purge_all"
+	defaultKeys                = "/infrastructure_agent/linux/apt/dists/focal/main/binary-amd64/Packages.bz2,"
+	fastlyPurgeURL             = "https://api.fastly.com/service/2RMeBJ1ZTGnNJYvrWMgQhk/purge_all"
+	replicationStatusCompleted = "COMPLETED" // in s3.ReplicationStatusComplete is set to COMPLETE, which is wrong
 )
 
 var bucket, region, keysStr, fastlyKey string
@@ -134,7 +135,7 @@ func waitForKeyReplication(ctx context.Context, key string, cl *s3.S3, triesLeft
 			logDebug("key: %s, attempt: %d, object: %+v", key, attempts-triesLeft, res.output)
 			// https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication-status.html
 			// aws s3api head-object --bucket foo --key "bar/..." |grep ReplicationStatus
-			if res.output.ReplicationStatus == nil || *res.output.ReplicationStatus == s3.ReplicationStatusComplete {
+			if res.output.ReplicationStatus == nil || *res.output.ReplicationStatus == replicationStatusCompleted {
 				replicated = true
 			}
 		}
