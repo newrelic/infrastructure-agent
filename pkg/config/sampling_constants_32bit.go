@@ -1,5 +1,6 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+//go:build (linux || windows) && (386 || arm || mips || mipsle)
 // +build linux windows
 // +build 386 arm mips mipsle
 

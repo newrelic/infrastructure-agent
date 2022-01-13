@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Package executor implements the executor module which is able to execute an individual command and
 // forward the standard input, standard error, and go errors by a set of channels
+//go:build windows
 // +build windows
 
 package executor

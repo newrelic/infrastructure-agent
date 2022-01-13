@@ -1,7 +1,7 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-// +build windows
-// +build harvest
+//go:build windows && harvest
+// +build windows,harvest
 
 package harvest
 
