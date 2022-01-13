@@ -15,6 +15,7 @@ GIT_DIRTY  = $(shell test -n "`git status --porcelain`" && echo "dirty" || echo 
 
 GOTOOLS ?=
 GOTOOLS += github.com/jandelgado/gcov2lcov
+GOTOOLS += github.com/golangci/golangci-lint/cmd/golangci-lint@v1.43.0
 
 GOARCH ?= amd64
 
@@ -80,6 +81,14 @@ validate:
 	@printf '\n================================================================\n'
 	@echo '[test] Validating packages: $(SOURCE_FILES)'
 	@test -z "$(shell  $(GO_FMT) | tee /dev/stderr)"
+
+.PHONY: lint
+lint:
+	@printf '\n================================================================\n'
+	@printf 'Target: lint'
+	@printf '\n================================================================\n'
+	@echo '[lint] Lint packages: $(SOURCE_FILES)'
+	@golangci-lint run --new-from-rev e628b2d894399ba25651d50979e67d71f8a30de6
 
 .PHONY: gofmt
 gofmt:
