@@ -1,5 +1,6 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+//go:build linux || darwin
 // +build linux darwin
 
 // Package process provides all the tools and functionality for sampling processes. It is divided in three main

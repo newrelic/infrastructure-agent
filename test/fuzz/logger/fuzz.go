@@ -1,6 +1,8 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+//go:build gofuzz
 // +build gofuzz
+
 // Fuzz testing via https://github.com/dvyukov/go-fuzz
 
 package logger

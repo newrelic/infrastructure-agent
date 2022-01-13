@@ -1,7 +1,7 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-// +build linux
-// +build !386
+//go:build linux && !386
+// +build linux,!386
 
 package helpers
 

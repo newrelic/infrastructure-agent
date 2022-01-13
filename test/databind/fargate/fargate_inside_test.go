@@ -1,5 +1,6 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+//go:build fargate_inside
 // +build fargate_inside
 
 package fargate_test

@@ -1,5 +1,6 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+//go:build (linux || darwin) && amd64
 // +build linux darwin
 // +build amd64
 

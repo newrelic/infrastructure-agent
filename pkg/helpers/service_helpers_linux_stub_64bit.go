@@ -1,5 +1,6 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+//go:build linux && (amd64 || arm64 || mips64 || mips64le || ppc64 || ppc64le || s390x)
 // +build linux
 // +build amd64 arm64 mips64 mips64le ppc64 ppc64le s390x
 
