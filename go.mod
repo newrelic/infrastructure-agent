@@ -54,6 +54,15 @@ require (
 )
 
 replace (
+	// fixing CVEs
+	github.com/containerd/containerd v1.2.10 => github.com/containerd/containerd v1.4.8
+	github.com/containerd/containerd v1.3.0 => github.com/containerd/containerd v1.4.8
+	github.com/containerd/containerd v1.3.0-beta.2.0.20190828155532-0293cbd26c69 => github.com/containerd/containerd v1.4.8
+	github.com/containerd/containerd v1.3.1-0.20191213020239-082f7e3aed57 => github.com/containerd/containerd v1.4.8
+	github.com/containerd/containerd v1.3.2 => github.com/containerd/containerd v1.4.8
+	github.com/containerd/containerd v1.4.0-beta.2.0.20200729163537-40b22ef07410 => github.com/containerd/containerd v1.4.8
+	github.com/containerd/containerd v1.4.1 => github.com/containerd/containerd v1.4.8
+	github.com/containerd/containerd v1.4.3 => github.com/containerd/containerd v1.4.8
 	github.com/coreos/go-systemd/v22 v22.1.0 => github.com/newrelic-forks/go-systemd/v22 v22.1.1
 	github.com/kardianos/service v1.1.0 => github.com/newrelic-forks/service v1.1.2
 )
