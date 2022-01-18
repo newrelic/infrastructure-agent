@@ -167,6 +167,7 @@ generate-goreleaser-amd64:
 		$(CURDIR)/build/goreleaser/linux/archives_header.yml\
 		$(CURDIR)/build/goreleaser/linux/archives_amd64.yml\
 		$(CURDIR)/build/goreleaser/linux/nfpms_header.yml\
+		$(CURDIR)/build/goreleaser/linux/al2022_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/al2_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/centos_6_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/centos_7_amd64.yml\
@@ -191,7 +192,8 @@ generate-goreleaser-amd64:
 		$(CURDIR)/build/goreleaser/linux/archives_header.yml\
 		$(CURDIR)/build/goreleaser/linux/archives_arm.yml\
 		$(CURDIR)/build/goreleaser/linux/nfpms_header.yml\
-  		$(CURDIR)/build/goreleaser/linux/al2_arm.yml\
+		$(CURDIR)/build/goreleaser/linux/al2_arm.yml\
+		$(CURDIR)/build/goreleaser/linux/al2022_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/centos_7_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/centos_8_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/debian_systemd_arm.yml\
@@ -211,6 +213,7 @@ generate-goreleaser-arm64:
 		$(CURDIR)/build/goreleaser/linux/archives_header.yml\
 		$(CURDIR)/build/goreleaser/linux/archives_arm64.yml\
 		$(CURDIR)/build/goreleaser/linux/nfpms_header.yml\
+		$(CURDIR)/build/goreleaser/linux/al2022_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/al2_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/centos_7_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/centos_8_arm64.yml\
@@ -245,6 +248,9 @@ generate-goreleaser-multiarch:
 		$(CURDIR)/build/goreleaser/linux/archives_arm64.yml\
 		$(CURDIR)/build/goreleaser/linux/archives_legacy.yml\
 		$(CURDIR)/build/goreleaser/linux/nfpms_header.yml\
+		$(CURDIR)/build/goreleaser/linux/al2022_amd64.yml\
+		$(CURDIR)/build/goreleaser/linux/al2022_arm.yml\
+		$(CURDIR)/build/goreleaser/linux/al2022_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/al2_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/al2_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/al2_arm64.yml\

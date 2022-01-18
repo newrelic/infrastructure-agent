@@ -64,3 +64,4 @@
       dest: "{dest_prefix}linux/yum/amazonlinux/{os_version}/{arch}/"
       os_version:
         - 2
+        - 2022
