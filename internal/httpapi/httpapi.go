@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"time"
 
@@ -47,22 +48,30 @@ type Server struct {
 
 // Config HTTP API configuration.
 type Config struct {
-	EnableIngest bool
-	EnableStatus bool
-	PortIngest   int
-	HostIngest   string
-	PortStatus   int
+	Ingest struct {
+		Enabled bool
+		Address string
+		TLS     struct {
+			Enabled  bool
+			CertPath string
+			KeyPath  string
+			CAPath   string
+		}
+	}
+	Status struct {
+		Enabled bool
+		Address string
+	}
 }
 
 // NewConfig creates a new API config.
 func NewConfig(enableIngest bool, hostIngest string, portIngest int, enableStatus bool, portStatus int) Config {
-	return Config{
-		EnableIngest: enableIngest,
-		EnableStatus: enableStatus,
-		PortIngest:   portIngest,
-		PortStatus:   portStatus,
-		HostIngest:   hostIngest,
-	}
+	c := Config{}
+	c.Ingest.Enabled = enableIngest
+	c.Ingest.Address = net.JoinHostPort(hostIngest, fmt.Sprint(portIngest))
+	c.Status.Enabled = enableStatus
+	c.Status.Address = net.JoinHostPort("localhost", fmt.Sprint(portIngest))
+	return c
 }
 
 // NewServer creates a new API server.
@@ -75,8 +84,8 @@ func NewServer(c Config, r status.Reporter, em emitter.Emitter) (*Server, error)
 	}
 
 	l := log.WithComponent(componentName).
-		WithField("status_enabled", c.EnableStatus).
-		WithField("ingest_enabled", c.EnableIngest)
+		WithField("status_enabled", c.Status.Enabled).
+		WithField("ingest_enabled", c.Ingest.Enabled)
 
 	return &Server{
 		cfg:        c,
@@ -91,10 +100,10 @@ func NewServer(c Config, r status.Reporter, em emitter.Emitter) (*Server, error)
 // Serve serves status API requests.
 // Nice2Have: context cancellation.
 func (s *Server) Serve(ctx context.Context) {
-	if s.cfg.EnableStatus {
+	if s.cfg.Status.Enabled {
 		go func() {
 			s.logger.WithFields(logrus.Fields{
-				"port": s.cfg.PortStatus,
+				"address": s.cfg.Status.Address,
 			}).Debug("Status API starting listening.")
 
 			router := httprouter.New()
@@ -104,7 +113,7 @@ func (s *Server) Serve(ctx context.Context) {
 			router.GET(statusAPIPath, s.handle(false))
 			router.GET(statusOnlyErrorsAPIPath, s.handle(true))
 			// local only API
-			err := http.ListenAndServe(fmt.Sprintf("%s:%d", "localhost", s.cfg.PortStatus), router)
+			err := http.ListenAndServe(s.cfg.Status.Address, router)
 			if err != nil {
 				s.logger.WithError(err).Error("unable to start Status-API")
 				return
@@ -113,17 +122,16 @@ func (s *Server) Serve(ctx context.Context) {
 		}()
 	}
 
-	if s.cfg.EnableIngest {
+	if s.cfg.Ingest.Enabled {
 		go func() {
 			s.logger.WithFields(logrus.Fields{
-				"port": s.cfg.PortIngest,
-				"host": s.cfg.HostIngest,
+				"address": s.cfg.Ingest.Address,
 			}).Debug("Ingest API starting listening.")
 
 			router := httprouter.New()
 			router.GET(ingestAPIPathReady, s.handleReady)
 			router.POST(ingestAPIPath, s.handleIngest)
-			err := http.ListenAndServe(fmt.Sprintf("%s:%d", s.cfg.HostIngest, s.cfg.PortIngest), router)
+			err := http.ListenAndServe(s.cfg.Ingest.Address, router)
 			if err != nil {
 				s.logger.WithError(err).Error("unable to start Ingest-API")
 				return
@@ -135,11 +143,11 @@ func (s *Server) Serve(ctx context.Context) {
 	c := http.Client{}
 	var ingestReady, statusReady bool
 	for {
-		if !ingestReady && s.cfg.EnableIngest {
-			ingestReady = s.isGetSuccessful(c, fmt.Sprintf("http://%s:%d%s", s.cfg.HostIngest, s.cfg.PortIngest, ingestAPIPathReady))
+		if !ingestReady && s.cfg.Ingest.Enabled {
+			ingestReady = s.isGetSuccessful(c, s.cfg.Ingest.Address+ingestAPIPathReady)
 		}
-		if !statusReady && s.cfg.EnableStatus {
-			statusReady = s.isGetSuccessful(c, fmt.Sprintf("http://localhost:%d%s", s.cfg.PortStatus, statusAPIPathReady))
+		if !statusReady && s.cfg.Status.Enabled {
+			statusReady = s.isGetSuccessful(c, s.cfg.Status.Address+statusAPIPathReady)
 		}
 
 		if s.allReadyOrDisabled(ingestReady, statusReady) {
@@ -153,10 +161,10 @@ func (s *Server) Serve(ctx context.Context) {
 }
 
 func (s *Server) allReadyOrDisabled(ingestReady, statusReady bool) bool {
-	if s.cfg.EnableIngest && !ingestReady {
+	if s.cfg.Ingest.Enabled && !ingestReady {
 		return false
 	}
-	if s.cfg.EnableStatus && !statusReady {
+	if s.cfg.Status.Enabled && !statusReady {
 		return false
 	}
 	return true
