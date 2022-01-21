@@ -226,7 +226,7 @@ func (s *Server) isGetSuccessful(c http.Client, URL string) bool {
 	}
 	resp, err := c.Do(postReq)
 	if err != nil {
-		return false
+		s.logger.WithError(err).Warnf("httpapi readiness probe failed")
 	}
 
 	// Hack: If URL is HTTPs, readiness probe should succeed even if mTLS verification fails
