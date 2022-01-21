@@ -133,16 +133,16 @@ func (s *Server) Serve(ctx context.Context) {
 			router.POST(ingestAPIPath, s.handleIngest)
 
 			if s.cfg.Ingest.TLS.Enabled {
-				s.logger.Debug("starting TLS server")
-				err := http.ListenAndServeTLS(
-					s.cfg.Ingest.Address,
-					s.cfg.Ingest.TLS.CertPath,
-					s.cfg.Ingest.TLS.KeyPath,
-					router,
-				)
-
+				server, err := tlsServer(s.cfg.Ingest.Address, s.cfg.Ingest.TLS.CAPath, router)
 				if err != nil {
-					s.logger.WithError(err).Error("unable to start Ingest-API")
+					s.logger.WithError(err).Error("cannot create https server")
+					return
+				}
+
+				s.logger.Debug("starting TLS server")
+				err = server.ListenAndServeTLS(s.cfg.Ingest.TLS.CertPath, s.cfg.Ingest.TLS.KeyPath)
+				if err != nil {
+					s.logger.WithError(err).Error("cannot start https server")
 					return
 				}
 
