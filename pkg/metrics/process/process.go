@@ -1,8 +1,8 @@
 package process
 
 import (
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/process"
 )
 
 // Process it's an interface to abstract gopsutil process so we can mock it and test not coupling to infra
@@ -13,7 +13,7 @@ type Process interface {
 	ProcessId() int32
 	Parent() (Process, error)
 	NumThreads() (int32, error)
-	Status() (string, error)
+	Status() ([]string, error)
 	MemoryInfo() (*process.MemoryInfoStat, error)
 	CPUPercent() (float64, error)
 	Times() (*cpu.TimesStat, error)

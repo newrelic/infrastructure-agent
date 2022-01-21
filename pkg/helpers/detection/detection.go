@@ -10,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/newrelic/infrastructure-agent/pkg/metrics"
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/process"
 )
 
 const InfraAgentProcessName = "newrelic-infra"

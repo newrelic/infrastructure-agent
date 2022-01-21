@@ -3,7 +3,7 @@
 package metrics
 
 import (
-	"github.com/shirou/gopsutil/mem"
+	"github.com/shirou/gopsutil/v3/mem"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

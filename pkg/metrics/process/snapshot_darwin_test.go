@@ -4,8 +4,8 @@ package process
 
 import (
 	"errors"
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/process"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"testing"
@@ -48,7 +48,7 @@ func Test_collectProcStats_StatusError(t *testing.T) {
 	proc.ShouldReturnName("some name", nil)
 	proc.ShouldReturnProcessId(1)
 	proc.ShouldReturnNumThreads(4, nil)
-	proc.ShouldReturnStatus("", expectedError)
+	proc.ShouldReturnStatus([]string{}, expectedError)
 
 	stats, err := collectProcStats(proc)
 
@@ -65,7 +65,7 @@ func Test_collectProcStats_MemoryInfoError(t *testing.T) {
 	proc.ShouldReturnName("some name", nil)
 	proc.ShouldReturnProcessId(1)
 	proc.ShouldReturnNumThreads(4, nil)
-	proc.ShouldReturnStatus("some status", nil)
+	proc.ShouldReturnStatus([]string{"some status"}, nil)
 	proc.ShouldReturnMemoryInfo(&process.MemoryInfoStat{}, expectedError)
 
 	stats, err := collectProcStats(proc)
@@ -83,7 +83,7 @@ func Test_collectProcStats_CpuPercentError(t *testing.T) {
 	proc.ShouldReturnName("some name", nil)
 	proc.ShouldReturnProcessId(1)
 	proc.ShouldReturnNumThreads(4, nil)
-	proc.ShouldReturnStatus("some status", nil)
+	proc.ShouldReturnStatus([]string{"some status"}, nil)
 	proc.ShouldReturnMemoryInfo(&process.MemoryInfoStat{}, nil)
 	proc.ShouldReturnCPUPercent(0, expectedError)
 
@@ -102,7 +102,7 @@ func Test_collectProcStats_CpuTimesError(t *testing.T) {
 	proc.ShouldReturnName("some name", nil)
 	proc.ShouldReturnProcessId(1)
 	proc.ShouldReturnNumThreads(4, nil)
-	proc.ShouldReturnStatus("some status", nil)
+	proc.ShouldReturnStatus([]string{"some status"}, nil)
 	proc.ShouldReturnMemoryInfo(&process.MemoryInfoStat{}, nil)
 	proc.ShouldReturnCPUPercent(0, nil)
 	proc.ShouldReturnTimes(&cpu.TimesStat{}, expectedError)
@@ -213,7 +213,7 @@ func Test_collectProcStats_NoErrorsInitProcess(t *testing.T) {
 			proc.ShouldReturnName(tt.command, nil)
 			proc.ShouldReturnProcessId(tt.processId)
 			proc.ShouldReturnNumThreads(tt.numThreads, nil)
-			proc.ShouldReturnStatus(tt.status, nil)
+			proc.ShouldReturnStatus([]string{tt.status}, nil)
 			proc.ShouldReturnMemoryInfo(tt.memStat, nil)
 			proc.ShouldReturnCPUPercent(tt.cpuPercent, nil)
 			proc.ShouldReturnTimes(tt.timesStat, nil)
@@ -312,7 +312,7 @@ func Test_collectProcStats_NoErrorsProcessWithParent(t *testing.T) {
 			}
 			proc.ShouldReturnProcessId(tt.processId)
 			proc.ShouldReturnNumThreads(tt.numThreads, nil)
-			proc.ShouldReturnStatus(tt.status, nil)
+			proc.ShouldReturnStatus([]string{tt.status}, nil)
 			proc.ShouldReturnMemoryInfo(tt.memStat, nil)
 			proc.ShouldReturnCPUPercent(tt.cpuPercent, nil)
 			proc.ShouldReturnTimes(tt.timesStat, nil)

@@ -1,8 +1,8 @@
 package process
 
 import (
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/process"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -92,12 +92,12 @@ func (s *ProcessMock) ShouldReturnNumThreads(num int32, err error) {
 		Return(num, err)
 }
 
-func (s *ProcessMock) Status() (string, error) {
+func (s *ProcessMock) Status() ([]string, error) {
 	args := s.Called()
 
-	return args.String(0), args.Error(1)
+	return args.Get(0).([]string), args.Error(1)
 }
-func (s *ProcessMock) ShouldReturnStatus(status string, err error) {
+func (s *ProcessMock) ShouldReturnStatus(status []string, err error) {
 	s.
 		On("Status").
 		Once().

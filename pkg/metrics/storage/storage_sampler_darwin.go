@@ -4,7 +4,8 @@ package storage
 
 import (
 	"github.com/newrelic/infrastructure-agent/pkg/config"
-	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/v3/disk"
+	"strings"
 	"sync"
 	"time"
 )
@@ -73,7 +74,7 @@ func partitionsFromGopsutilPartitions(partitionsInfo []disk.PartitionStat) (part
 			Device:     p.Device,
 			Mountpoint: p.Mountpoint,
 			Fstype:     p.Fstype,
-			Opts:       p.Opts,
+			Opts:       strings.Join(p.Opts, ","),
 		})
 	}
 

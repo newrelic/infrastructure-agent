@@ -8,7 +8,7 @@ package metrics
 import (
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
-	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

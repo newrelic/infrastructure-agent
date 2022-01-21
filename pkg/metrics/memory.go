@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"runtime/debug"
 
-	"github.com/shirou/gopsutil/mem"
+	"github.com/shirou/gopsutil/v3/mem"
 )
 
 type MemorySample struct {

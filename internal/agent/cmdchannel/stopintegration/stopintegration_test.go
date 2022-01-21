@@ -16,7 +16,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	dm "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm/testutils"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/process"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -70,7 +70,7 @@ func TestHandle_signalStopProcess(t *testing.T) {
 	require.NoError(t, err)
 	st, err := p.StatusWithContext(ctx)
 	require.NoError(t, err)
-	if st[0:1] != "S" && st[0:1] != "R" {
+	if st[0] != process.Sleep && st[0] != process.Running {
 		t.Fatal("sleep command should be either running or sleep, got: ", st)
 	}
 

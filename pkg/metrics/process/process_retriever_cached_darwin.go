@@ -3,8 +3,8 @@ package process
 import (
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/process"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -127,7 +127,7 @@ func (s *ProcessRetrieverCached) retrieveProcesses(psBin string) (map[int32]psIt
 				pid:      int32(pid),
 				ppid:     int32(ppid),
 				username: user,
-				state:    state,
+				state:    []string{convertStateToGopsutilState(state[0:1])},
 				utime:    utime,
 				stime:    stime,
 				etime:    etime,
@@ -142,6 +142,46 @@ func (s *ProcessRetrieverCached) retrieveProcesses(psBin string) (map[int32]psIt
 		}
 	}
 	return items, nil
+}
+
+// convertStateToGopsutilState converts ps state to gopsutil v3 state
+// C&P from https://github.com/shirou/gopsutil/blob/v3.21.11/v3/process/process.go#L575
+func convertStateToGopsutilState(letter string) string {
+	// Sources
+	// Darwin: http://www.mywebuniversity.com/Man_Pages/Darwin/man_ps.html
+	// FreeBSD: https://www.freebsd.org/cgi/man.cgi?ps
+	// Linux https://man7.org/linux/man-pages/man1/ps.1.html
+	// OpenBSD: https://man.openbsd.org/ps.1#state
+	// Solaris: https://github.com/collectd/collectd/blob/1da3305c10c8ff9a63081284cf3d4bb0f6daffd8/src/processes.c#L2115
+	switch letter {
+	case "A":
+		return process.Daemon
+	case "D", "U":
+		return process.Blocked
+	case "E":
+		return process.Detached
+	case "I":
+		return process.Idle
+	case "L":
+		return process.Lock
+	case "O":
+		return process.Orphan
+	case "R":
+		return process.Running
+	case "S":
+		return process.Sleep
+	case "T", "t":
+		// "t" is used by Linux to signal stopped by the debugger during tracing
+		return process.Stop
+	case "W":
+		return process.Wait
+	case "Y":
+		return process.System
+	case "Z":
+		return process.Zombie
+	default:
+		return process.UnknownState
+	}
 }
 
 func (s *ProcessRetrieverCached) getProcessThreads(psBin string) (map[int32]int32, error) {
@@ -295,7 +335,7 @@ type psItem struct {
 	ppid       int32
 	numThreads int32
 	username   string
-	state      string
+	state      []string
 	command    string
 	cmdLine    string
 	utime      string
@@ -330,7 +370,7 @@ func (p *psItem) NumThreads() (int32, error) {
 	return p.numThreads, nil
 }
 
-func (p *psItem) Status() (string, error) {
+func (p *psItem) Status() ([]string, error) {
 	return p.state, nil
 }
 

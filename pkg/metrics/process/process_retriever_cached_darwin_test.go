@@ -2,8 +2,8 @@ package process
 
 import (
 	"errors"
-	"github.com/shirou/gopsutil/cpu"
-	process2 "github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/cpu"
+	process2 "github.com/shirou/gopsutil/v3/process"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"math"
@@ -204,7 +204,7 @@ func Test_ProcessRetrieverCached_ProcessById_ExistingProcess(t *testing.T) {
 		noError(process.Cmdline()))
 	assert.Equal(t, "joe", noError(process.Username()))
 	assert.Equal(t, int32(1), noError(process.Parent()).(Process).ProcessId())
-	assert.Equal(t, "S", noError(process.Status()))
+	assert.Equal(t, []string{process2.Sleep}, noError(process.Status()))
 	assert.Equal(t, &cpu.TimesStat{CPU: "cpu", User: 20.99, System: 38.18}, noError(process.Times()))
 	assert.Equal(t, &process2.MemoryInfoStat{RSS: uint64(920) * 1024, VMS: uint64(4471000) * 1024, Swap: uint64(0)}, noError(process.MemoryInfo()))
 	assert.Equal(t, int32(2), noError(process.NumThreads()))
@@ -327,7 +327,7 @@ func Test_ProcessRetrieverCached_retrieveProcesses(t *testing.T) {
 			pid:        1,
 			ppid:       0,
 			username:   "root",
-			state:      "Ss",
+			state:      []string{process2.Sleep},
 			utime:      "3:56.38",
 			stime:      "18:41.21",
 			etime:      "07-21:03:49",
@@ -342,7 +342,7 @@ func Test_ProcessRetrieverCached_retrieveProcesses(t *testing.T) {
 			pid:        68,
 			ppid:       1,
 			username:   "joe",
-			state:      "S",
+			state:      []string{process2.Sleep},
 			utime:      "0:20.99",
 			stime:      "0:38.18",
 			etime:      "07-21:03:41",
@@ -357,7 +357,7 @@ func Test_ProcessRetrieverCached_retrieveProcesses(t *testing.T) {
 			pid:        73,
 			ppid:       1,
 			username:   "root",
-			state:      "Ss",
+			state:      []string{process2.Sleep},
 			utime:      "2:06.17",
 			stime:      "4:13.62",
 			etime:      "07-21:03:41",
@@ -372,7 +372,7 @@ func Test_ProcessRetrieverCached_retrieveProcesses(t *testing.T) {
 			pid:        74,
 			ppid:       48,
 			username:   "pam",
-			state:      "Ss",
+			state:      []string{process2.Sleep},
 			utime:      "0:00.02",
 			stime:      "0:00.09",
 			etime:      "07-21:03:41",

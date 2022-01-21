@@ -10,8 +10,8 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/pkg/errors"
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/process"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -371,7 +371,7 @@ func TestDarwinHarvester_Do_DontReportIfMemoryZero(t *testing.T) {
 	proc.ShouldReturnName("some name", nil)
 	proc.ShouldReturnProcessIdMultipleTimes(processId, 2)
 	proc.ShouldReturnNumThreads(3, nil)
-	proc.ShouldReturnStatus("some status", nil)
+	proc.ShouldReturnStatus([]string{"some status"}, nil)
 	proc.ShouldReturnMemoryInfo(
 		&process.MemoryInfoStat{
 			RSS: 0,
@@ -411,7 +411,7 @@ func TestDarwinHarvester_Do_NoError(t *testing.T) {
 	proc.ShouldReturnName("some name", nil)
 	proc.ShouldReturnProcessIdMultipleTimes(processId, 2)
 	proc.ShouldReturnNumThreads(3, nil)
-	proc.ShouldReturnStatus("some status", nil)
+	proc.ShouldReturnStatus([]string{"some status"}, nil)
 	proc.ShouldReturnMemoryInfo(
 		&process.MemoryInfoStat{
 			RSS: 45,

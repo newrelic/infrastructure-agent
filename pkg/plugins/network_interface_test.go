@@ -14,7 +14,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/network"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
-	"github.com/shirou/gopsutil/net"
+	"github.com/shirou/gopsutil/v3/net"
 	"github.com/stretchr/testify/assert"
 )
 

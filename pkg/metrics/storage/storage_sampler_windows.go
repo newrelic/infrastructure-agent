@@ -13,7 +13,7 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/pkg/errors"
-	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/v3/disk"
 )
 
 var (

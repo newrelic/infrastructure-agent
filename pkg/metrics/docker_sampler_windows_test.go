@@ -14,9 +14,9 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	metricTypes "github.com/newrelic/infrastructure-agent/pkg/metrics/types"
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/net"
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/net"
+	"github.com/shirou/gopsutil/v3/process"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -77,8 +77,8 @@ func TestDocker(t *testing.T) {
 
 // Function mocks
 
-func mockGetAllWin32Procs() ([]process.Win32_Process, error) {
-	processes := []process.Win32_Process{
+func mockGetAllWin32Procs() ([]win32_Process, error) {
+	processes := []win32_Process{
 		{
 			Name:      "Notepad.exe",
 			ProcessID: 1024,
