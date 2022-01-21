@@ -148,10 +148,19 @@ func (s *Server) Serve(ctx context.Context) {
 	var ingestReady, statusReady bool
 	for {
 		if !ingestReady && s.cfg.Ingest.enabled {
-			ingestReady = s.isGetSuccessful(c, s.cfg.Ingest.address+ingestAPIPathReady)
+			scheme := "http://"
+			if s.cfg.Ingest.tls.enabled {
+				scheme = "https://"
+			}
+			ingestReady = s.isGetSuccessful(c, scheme+s.cfg.Ingest.address+ingestAPIPathReady)
 		}
 		if !statusReady && s.cfg.Status.enabled {
-			statusReady = s.isGetSuccessful(c, s.cfg.Status.address+statusAPIPathReady)
+			scheme := "http://"
+			if s.cfg.Ingest.tls.enabled {
+				scheme = "https://"
+			}
+
+			statusReady = s.isGetSuccessful(c, scheme+s.cfg.Status.address+statusAPIPathReady)
 		}
 
 		if s.allReadyOrDisabled(ingestReady, statusReady) {
