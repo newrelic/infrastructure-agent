@@ -39,7 +39,7 @@ type responseError struct {
 
 // Server runtime for status API server.
 type Server struct {
-	cfg        Config
+	cfg        *Config
 	reporter   status.Reporter
 	logger     log.Entry
 	definition integration.Definition
@@ -49,45 +49,56 @@ type Server struct {
 
 // Config HTTP API configuration.
 type Config struct {
-	Ingest struct {
-		Enabled bool
-		Address string
-		TLS     struct {
-			Enabled        bool
-			ValidateClient bool
-			CertPath       string
-			KeyPath        string
-			CAPath         string
-		}
-	}
-	Status struct {
-		Enabled bool
-		Address string
-	}
+	Ingest ServerConfig
+	Status ServerConfig
 }
 
-// NewConfig creates a new API config.
-func NewConfig(enableIngest bool, hostIngest string, portIngest int, enableStatus bool, portStatus int) Config {
-	c := Config{}
-	c.Ingest.Enabled = enableIngest
-	c.Ingest.Address = net.JoinHostPort(hostIngest, fmt.Sprint(portIngest))
-	c.Status.Enabled = enableStatus
-	c.Status.Address = net.JoinHostPort("localhost", fmt.Sprint(portIngest))
-	return c
+type ServerConfig struct {
+	enabled bool
+	address string
+	tls     tlsConfig
+}
+
+type tlsConfig struct {
+	enabled        bool
+	validateClient bool
+	certPath       string
+	keyPath        string
+	caPath         string
+}
+
+func NewConfig() *Config {
+	return &Config{}
+}
+
+func (sc *ServerConfig) Enable(host string, port int) {
+	sc.enabled = true
+	sc.address = net.JoinHostPort(host, fmt.Sprint(port))
+}
+
+func (sc *ServerConfig) TLS(certPath, keyPath string) {
+	sc.tls.enabled = true
+	sc.tls.certPath = certPath
+	sc.tls.keyPath = keyPath
+}
+
+func (sc *ServerConfig) VerifyTLSClient(caCertPath string) {
+	sc.tls.validateClient = true
+	sc.tls.caPath = caCertPath
 }
 
 // NewServer creates a new API server.
 // Nice2Have: decouple services into path handlers.
 // Separate HTTP API configs should be deprecated if we want to unify under a single server & port.
-func NewServer(c Config, r status.Reporter, em emitter.Emitter) (*Server, error) {
+func NewServer(c *Config, r status.Reporter, em emitter.Emitter) (*Server, error) {
 	d, err := integration.NewAPIDefinition(IntegrationName)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create API definition for HTTP API server, err: %s", err)
 	}
 
 	l := log.WithComponent(componentName).
-		WithField("status_enabled", c.Status.Enabled).
-		WithField("ingest_enabled", c.Ingest.Enabled)
+		WithField("status_enabled", c.Status.enabled).
+		WithField("ingest_enabled", c.Ingest.enabled)
 
 	return &Server{
 		cfg:        c,
@@ -102,10 +113,10 @@ func NewServer(c Config, r status.Reporter, em emitter.Emitter) (*Server, error)
 // Serve serves status API requests.
 // Nice2Have: context cancellation.
 func (s *Server) Serve(ctx context.Context) {
-	if s.cfg.Status.Enabled {
+	if s.cfg.Status.enabled {
 		go func() {
 			s.logger.WithFields(logrus.Fields{
-				"address": s.cfg.Status.Address,
+				"address": s.cfg.Status.address,
 			}).Debug("Status API starting listening.")
 
 			router := httprouter.New()
@@ -115,7 +126,7 @@ func (s *Server) Serve(ctx context.Context) {
 			router.GET(statusAPIPath, s.handle(false))
 			router.GET(statusOnlyErrorsAPIPath, s.handle(true))
 			// local only API
-			err := http.ListenAndServe(s.cfg.Status.Address, router)
+			err := http.ListenAndServe(s.cfg.Status.address, router)
 			if err != nil {
 				s.logger.WithError(err).Error("unable to start Status-API")
 				return
@@ -124,7 +135,7 @@ func (s *Server) Serve(ctx context.Context) {
 		}()
 	}
 
-	if s.cfg.Ingest.Enabled {
+	if s.cfg.Ingest.enabled {
 		go func() {
 			err := s.serveIngest()
 			if err != nil {
@@ -136,11 +147,11 @@ func (s *Server) Serve(ctx context.Context) {
 	c := http.Client{}
 	var ingestReady, statusReady bool
 	for {
-		if !ingestReady && s.cfg.Ingest.Enabled {
-			ingestReady = s.isGetSuccessful(c, s.cfg.Ingest.Address+ingestAPIPathReady)
+		if !ingestReady && s.cfg.Ingest.enabled {
+			ingestReady = s.isGetSuccessful(c, s.cfg.Ingest.address+ingestAPIPathReady)
 		}
-		if !statusReady && s.cfg.Status.Enabled {
-			statusReady = s.isGetSuccessful(c, s.cfg.Status.Address+statusAPIPathReady)
+		if !statusReady && s.cfg.Status.enabled {
+			statusReady = s.isGetSuccessful(c, s.cfg.Status.address+statusAPIPathReady)
 		}
 
 		if s.allReadyOrDisabled(ingestReady, statusReady) {
@@ -156,7 +167,7 @@ func (s *Server) Serve(ctx context.Context) {
 // serveIngest creates and starts an HTTP server handling ingestAPIPathReady and ingestAPIPath using Config.Ingest
 func (s *Server) serveIngest() error {
 	s.logger.WithFields(logrus.Fields{
-		"address": s.cfg.Ingest.Address,
+		"address": s.cfg.Ingest.address,
 	}).Debug("Ingest API starting listening.")
 
 	router := httprouter.New()
@@ -165,37 +176,37 @@ func (s *Server) serveIngest() error {
 
 	server := &http.Server{
 		Handler: router,
-		Addr:    s.cfg.Ingest.Address,
+		Addr:    s.cfg.Ingest.address,
 	}
 
-	if s.cfg.Ingest.TLS.Enabled {
-		if s.cfg.Ingest.TLS.ValidateClient {
-			err := addMTLS(server, s.cfg.Ingest.TLS.CAPath)
+	if s.cfg.Ingest.tls.enabled {
+		if s.cfg.Ingest.tls.validateClient {
+			err := addMTLS(server, s.cfg.Ingest.tls.caPath)
 			if err != nil {
 				return fmt.Errorf("creating mTLS server: %w", err)
 			}
 		}
 
-		s.logger.Debug("starting TLS server")
-		err := server.ListenAndServeTLS(s.cfg.Ingest.TLS.CertPath, s.cfg.Ingest.TLS.KeyPath)
+		s.logger.Debug("starting tls server")
+		err := server.ListenAndServeTLS(s.cfg.Ingest.tls.certPath, s.cfg.Ingest.tls.keyPath)
 		if err != nil {
-			return fmt.Errorf("starting TLS server: %w", err)
+			return fmt.Errorf("starting tls server: %w", err)
 		}
 	}
 
 	err := server.ListenAndServe()
 	if err != nil {
-		return fmt.Errorf("starting ingest server: %w", err)
+		return fmt.Errorf("starting Ingest server: %w", err)
 	}
 
-	return errors.New("ingest server stopped")
+	return errors.New("Ingest server stopped")
 }
 
 func (s *Server) allReadyOrDisabled(ingestReady, statusReady bool) bool {
-	if s.cfg.Ingest.Enabled && !ingestReady {
+	if s.cfg.Ingest.enabled && !ingestReady {
 		return false
 	}
-	if s.cfg.Status.Enabled && !statusReady {
+	if s.cfg.Status.enabled && !statusReady {
 		return false
 	}
 	return true
@@ -217,7 +228,7 @@ func (s *Server) WaitUntilReady() {
 	_, _ = <-s.readyCh
 }
 
-// handle returns a HTTP handler function for full status report or just errors status report.
+// handle returns a HTTP handler function for full Status report or just errors Status report.
 func (s *Server) handle(onlyErrors bool) func(http.ResponseWriter, *http.Request, httprouter.Params) {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		var rep status.Report
@@ -230,7 +241,7 @@ func (s *Server) handle(onlyErrors bool) func(http.ResponseWriter, *http.Request
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			jerr := json.NewEncoder(w).Encode(responseError{
-				Error: fmt.Sprintf("fetching status report: %s", err),
+				Error: fmt.Sprintf("fetching Status report: %s", err),
 			})
 			if jerr != nil {
 				s.logger.WithError(jerr).Warn("couldn't encode a failed response")
@@ -241,7 +252,7 @@ func (s *Server) handle(onlyErrors bool) func(http.ResponseWriter, *http.Request
 		b, jerr := json.Marshal(rep)
 		if jerr != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			s.logger.WithError(jerr).Warn("couldn't encode status report")
+			s.logger.WithError(jerr).Warn("couldn't encode Status report")
 			return
 		}
 
@@ -252,7 +263,7 @@ func (s *Server) handle(onlyErrors bool) func(http.ResponseWriter, *http.Request
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		_, err = w.Write(b)
 		if err != nil {
-			s.logger.Warn("cannot write status response, error: " + err.Error())
+			s.logger.Warn("cannot write Status response, error: " + err.Error())
 		}
 	}
 }
@@ -264,7 +275,7 @@ func (s *Server) handleReady(w http.ResponseWriter, r *http.Request, ps httprout
 func (s *Server) handleEntity(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	re, err := s.reporter.ReportEntity()
 	if err != nil {
-		s.logger.WithError(err).Error("cannot report entity status")
+		s.logger.WithError(err).Error("cannot report entity Status")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
