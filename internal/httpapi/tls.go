@@ -8,25 +8,21 @@ import (
 	"net/http"
 )
 
-func tlsServer(addr string, CAPath string, handler http.Handler) (*http.Server, error) {
+func addMTLS(server *http.Server, CAPath string) error {
 	caCertFile, err := ioutil.ReadFile(CAPath)
 	if err != nil {
-		return nil, fmt.Errorf("loading CA from %q: %w", CAPath, err)
+		return fmt.Errorf("loading CA from %q: %w", CAPath, err)
 	}
 
 	certPool := x509.NewCertPool()
 	certPool.AppendCertsFromPEM(caCertFile)
 
 	// serve on port 9090 of local host
-	server := &http.Server{
-		Addr:    addr,
-		Handler: handler,
-		TLSConfig: &tls.Config{
-			ClientAuth: tls.RequireAndVerifyClientCert,
-			ClientCAs:  certPool,
-			MinVersion: tls.VersionTLS12,
-		},
+	server.TLSConfig = &tls.Config{
+		ClientAuth: tls.RequireAndVerifyClientCert,
+		ClientCAs:  certPool,
+		MinVersion: tls.VersionTLS12,
 	}
 
-	return server, nil
+	return nil
 }

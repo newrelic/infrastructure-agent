@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -52,10 +53,11 @@ type Config struct {
 		Enabled bool
 		Address string
 		TLS     struct {
-			Enabled  bool
-			CertPath string
-			KeyPath  string
-			CAPath   string
+			Enabled        bool
+			ValidateClient bool
+			CertPath       string
+			KeyPath        string
+			CAPath         string
 		}
 	}
 	Status struct {
@@ -124,37 +126,10 @@ func (s *Server) Serve(ctx context.Context) {
 
 	if s.cfg.Ingest.Enabled {
 		go func() {
-			s.logger.WithFields(logrus.Fields{
-				"address": s.cfg.Ingest.Address,
-			}).Debug("Ingest API starting listening.")
-
-			router := httprouter.New()
-			router.GET(ingestAPIPathReady, s.handleReady)
-			router.POST(ingestAPIPath, s.handleIngest)
-
-			if s.cfg.Ingest.TLS.Enabled {
-				server, err := tlsServer(s.cfg.Ingest.Address, s.cfg.Ingest.TLS.CAPath, router)
-				if err != nil {
-					s.logger.WithError(err).Error("cannot create https server")
-					return
-				}
-
-				s.logger.Debug("starting TLS server")
-				err = server.ListenAndServeTLS(s.cfg.Ingest.TLS.CertPath, s.cfg.Ingest.TLS.KeyPath)
-				if err != nil {
-					s.logger.WithError(err).Error("cannot start https server")
-					return
-				}
-
-				return
-			}
-
-			err := http.ListenAndServe(s.cfg.Ingest.Address, router)
+			err := s.serveIngest()
 			if err != nil {
-				s.logger.WithError(err).Error("unable to start Ingest-API")
-				return
+				log.WithError(err).Error("Ingest server error")
 			}
-			s.logger.Debug("Ingest API stopped.")
 		}()
 	}
 
@@ -176,6 +151,44 @@ func (s *Server) Serve(ctx context.Context) {
 	close(s.readyCh)
 
 	<-ctx.Done()
+}
+
+// serveIngest creates and starts an HTTP server handling ingestAPIPathReady and ingestAPIPath using Config.Ingest
+func (s *Server) serveIngest() error {
+	s.logger.WithFields(logrus.Fields{
+		"address": s.cfg.Ingest.Address,
+	}).Debug("Ingest API starting listening.")
+
+	router := httprouter.New()
+	router.GET(ingestAPIPathReady, s.handleReady)
+	router.POST(ingestAPIPath, s.handleIngest)
+
+	server := &http.Server{
+		Handler: router,
+		Addr:    s.cfg.Ingest.Address,
+	}
+
+	if s.cfg.Ingest.TLS.Enabled {
+		if s.cfg.Ingest.TLS.ValidateClient {
+			err := addMTLS(server, s.cfg.Ingest.TLS.CAPath)
+			if err != nil {
+				return fmt.Errorf("creating mTLS server: %w", err)
+			}
+		}
+
+		s.logger.Debug("starting TLS server")
+		err := server.ListenAndServeTLS(s.cfg.Ingest.TLS.CertPath, s.cfg.Ingest.TLS.KeyPath)
+		if err != nil {
+			return fmt.Errorf("starting TLS server: %w", err)
+		}
+	}
+
+	err := server.ListenAndServe()
+	if err != nil {
+		return fmt.Errorf("starting ingest server: %w", err)
+	}
+
+	return errors.New("ingest server stopped")
 }
 
 func (s *Server) allReadyOrDisabled(ingestReady, statusReady bool) bool {
