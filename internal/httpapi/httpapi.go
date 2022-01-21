@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
@@ -225,11 +226,19 @@ func (s *Server) isGetSuccessful(c http.Client, URL string) bool {
 	postReq, err := http.NewRequest(http.MethodGet, URL, bytes.NewReader([]byte{}))
 	if err != nil {
 		s.logger.Warnf("cannot create request for %s, error: %s", URL, err)
-	} else if resp, err := c.Do(postReq); err == nil && resp.StatusCode == http.StatusOK {
+		return false
+	}
+	resp, err := c.Do(postReq)
+	if err != nil {
+		return false
+	}
+
+	// Hack: If URL is HTTPs, readiness probe should succeed even if mTLS verification fails
+	if strings.HasPrefix(URL, "https") {
 		return true
 	}
 
-	return false
+	return resp.StatusCode == http.StatusOK
 }
 
 // WaitUntilReady blocks the call until server is ready to accept connections.
