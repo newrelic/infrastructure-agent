@@ -31,7 +31,7 @@ const (
 	statusAPIPathReady         = "/v1/status/ready"
 	ingestAPIPath              = "/v1/data"
 	ingestAPIPathReady         = "/v1/data/ready"
-	readinessProbeRetryBackoff = 10 * time.Millisecond
+	readinessProbeRetryBackoff = 100 * time.Millisecond
 )
 
 type responseError struct {
@@ -148,7 +148,7 @@ func (s *Server) Serve(ctx context.Context) {
 	c := http.Client{}
 	var ingestReady, statusReady bool
 	for {
-		if !ingestReady && s.cfg.Ingest.enabled {
+		if !ingestReady && s.cfg.Ingest.enabled && !s.cfg.Ingest.tls.validateClient {
 			scheme := "http://"
 			if s.cfg.Ingest.tls.enabled {
 				scheme = "https://"
@@ -157,10 +157,6 @@ func (s *Server) Serve(ctx context.Context) {
 		}
 		if !statusReady && s.cfg.Status.enabled {
 			scheme := "http://"
-			if s.cfg.Ingest.tls.enabled {
-				scheme = "https://"
-			}
-
 			statusReady = s.isGetSuccessful(c, scheme+s.cfg.Status.address+statusAPIPathReady)
 		}
 
