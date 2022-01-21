@@ -401,6 +401,14 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 				apiCfg.Ingest.Enable(c.HTTPServerHost, c.HTTPServerPort)
 			}
 
+			if c.HTTPServerCert != "" && c.HTTPServerKey != "" {
+				apiCfg.Ingest.TLS(c.HTTPServerCert, c.HTTPServerKey)
+			}
+
+			if c.HTTPServerCA != "" {
+				apiCfg.Ingest.VerifyTLSClient(c.HTTPServerCA)
+			}
+
 			if c.StatusServerEnabled {
 				apiCfg.Status.Enable("localhost", c.StatusServerPort)
 			}
