@@ -541,22 +541,36 @@ func (p *patchSenderCallRecorder) getCalls() int {
 
 func TestAgent_Run_DontSendInventoryIfFwdOnly(t *testing.T) {
 	tests := []struct {
-		name       string
-		fwdOnly    bool
-		assertFunc func(t assert.TestingT, e1 interface{}, e2 interface{}, msgAndArgs ...interface{}) bool
-		expected   int
+		name              string
+		fwdOnly           bool
+		assertFunc        func(t assert.TestingT, e1 interface{}, e2 interface{}, msgAndArgs ...interface{}) bool
+		expected          int
+		firstReapInterval time.Duration
+		sendInterval      time.Duration
 	}{
 		{
-			name:       "forward only enabled should not send inventory",
-			fwdOnly:    true,
-			assertFunc: assert.Equal,
-			expected:   0,
+			name:              "forward only enabled should not send inventory",
+			fwdOnly:           true,
+			assertFunc:        assert.Equal,
+			expected:          0,
+			firstReapInterval: time.Second,
+			sendInterval:      time.Microsecond * 5,
 		},
 		{
-			name:       "forward only disabled should send inventory at least once",
-			fwdOnly:    false,
-			assertFunc: assert.GreaterOrEqual,
-			expected:   1,
+			name:              "forward only enabled should not send inventory low values timers",
+			fwdOnly:           true,
+			assertFunc:        assert.Equal,
+			expected:          0,
+			firstReapInterval: time.Nanosecond,
+			sendInterval:      time.Nanosecond,
+		},
+		{
+			name:              "forward only disabled should send inventory at least once",
+			fwdOnly:           false,
+			assertFunc:        assert.GreaterOrEqual,
+			expected:          1,
+			firstReapInterval: time.Second,
+			sendInterval:      time.Microsecond * 5,
 		},
 	}
 
@@ -566,8 +580,8 @@ func TestAgent_Run_DontSendInventoryIfFwdOnly(t *testing.T) {
 			wg.Add(1)
 			cfg := &config.Config{
 				IsForwardOnly:     tt.fwdOnly,
-				FirstReapInterval: time.Second,
-				SendInterval:      time.Microsecond * 5,
+				FirstReapInterval: tt.firstReapInterval,
+				SendInterval:      tt.sendInterval,
 			}
 			a := newTesting(cfg)
 			//Give time to at least send one request
