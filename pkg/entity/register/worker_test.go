@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"sync"
 	"testing"
 	"time"
 
@@ -34,9 +35,10 @@ const (
 )
 
 type fakeClient struct {
-	ids       []entity.ID
+	ids []entity.ID
+	err error
+	sync.RWMutex
 	collector [][]string
-	err       error
 }
 
 func (c *fakeClient) RegisterBatchEntities(agentEntityID entity.ID, entities []entity.Fields) (r []identityapi.RegisterEntityResponse, err error) {
@@ -69,8 +71,9 @@ func (c *fakeClient) RegisterBatchEntities(agentEntityID entity.ID, entities []e
 	for i, e := range entities {
 		names[i] = e.Name
 	}
+	c.Lock()
 	c.collector = append(c.collector, names)
-
+	c.Unlock()
 	return
 }
 
@@ -85,6 +88,9 @@ func (c *fakeClient) RegisterEntitiesRemoveMe(agentEntityID entity.ID, entities 
 }
 
 func (c *fakeClient) assertRecordedData(t *testing.T, names [][]string) {
+	c.RLock()
+	defer c.RUnlock()
+
 	require.Equal(t, len(names), len(c.collector))
 
 	for i, n := range names {
@@ -131,7 +137,7 @@ func TestWorker_Run_SendsWhenBatchLimitIsReached(t *testing.T) {
 			expectedBatchesCount: 1,
 			expectedEntityName:   [][]string{{"test-0", "test-1"}, {"test-2"}},
 			batchDuration:        50 * time.Millisecond,
-			timeout:              100 * time.Millisecond,
+			timeout:              200 * time.Millisecond,
 		},
 		{
 			name:                 "given_a_batch_byte_limit_of_2_entities_size_when_2_entities_are_submitted_then_register_is_called_in_a_single_batch",
