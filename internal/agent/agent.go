@@ -695,7 +695,10 @@ func (a *Agent) Run() (err error) {
 
 	//Remove send timer
 	if !a.shouldSendInventory() {
-		sendInventoryTimer.Stop()
+		//If Stop returns false means that the timer has been already triggered
+		if !sendInventoryTimer.Stop() {
+			<-sendInventoryTimer.C
+		}
 		reapInventoryTimer.Stop()
 		alog.Info("inventory submission disabled")
 	}
