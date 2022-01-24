@@ -31,39 +31,39 @@ type V3toV4Result struct {
 	V3toV4Result string `json:"migrateV3toV4Result"`
 }
 
-func V3toV4(pathConfiguration string, pathDefinition string, pathOutput string, overwrite bool) string {
+func V3toV4(pathConfiguration string, pathDefinition string, pathOutput string, overwrite bool) error {
 
 	if _, err := os.Stat(pathOutput); err == nil && !overwrite {
-		log.Fatal(fmt.Errorf("file '%s' already exist and overwrite option is set to false", pathOutput))
+		return fmt.Errorf("file '%s' already exist and overwrite option is set to false", pathOutput)
 	}
 
 	// Reading old Definition file
 	v3Definition := legacy.Plugin{}
 	err := readAndUnmarshallConfig(pathDefinition, &v3Definition)
 	if err != nil {
-		log.Fatal(fmt.Errorf("error reading old config definition: %w", err))
+		return fmt.Errorf("error reading old config definition: %w", err)
 	}
 
 	// Reading old Configuration file
 	v3Configuration := legacy.PluginInstanceWrapper{}
 	err = readAndUnmarshallConfig(pathConfiguration, &v3Configuration)
 	if err != nil {
-		log.Fatal(fmt.Errorf("error reading old config configuration: %w", err))
+		return fmt.Errorf("error reading old config configuration: %w", err)
 	}
 
 	// Populating new config
 	v4config, err := populateV4Config(v3Definition, v3Configuration)
 	if err != nil {
-		log.Fatal(fmt.Errorf("error populating new config: %w", err))
+		return fmt.Errorf("error populating new config: %w", err)
 	}
 
 	// Writing output
 	err = writeOutput(v4config, pathDefinition, pathConfiguration, pathOutput)
 	if err != nil {
-		log.Fatal(fmt.Errorf("error writing output: %w", err))
+		return fmt.Errorf("error writing output: %w", err)
 	}
 
-	return fmt.Sprintf("The config has been migrated and placed in: %s", pathOutput)
+	return nil
 }
 
 func readAndUnmarshallConfig(path string, out interface{}) error {

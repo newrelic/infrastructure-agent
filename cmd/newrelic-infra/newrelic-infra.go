@@ -115,15 +115,20 @@ func main() {
 
 		if len(v3tov4Args) != 4 {
 			fmt.Printf("v3tov4 argument should contain 4 parts")
-			os.Exit(0)
+			os.Exit(1)
 		}
 
-		result := migrate.V3toV4(v3tov4Args[0], v3tov4Args[1], v3tov4Args[2], v3tov4Args[3] == "true")
+		err := migrate.V3toV4(v3tov4Args[0], v3tov4Args[1], v3tov4Args[2], v3tov4Args[3] == "true")
 
-		fmt.Println(result)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		fmt.Printf("The config has been migrated and placed in: %s", v3tov4Args[2])
 
 		// rename old files to .bk
-		err := os.Rename(v3tov4Args[0], v3tov4Args[0]+".bk")
+		err = os.Rename(v3tov4Args[0], v3tov4Args[0]+".bk")
 
 		if err != nil {
 			fmt.Println(err)
