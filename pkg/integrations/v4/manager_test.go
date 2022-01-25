@@ -1088,7 +1088,7 @@ func TestManager_cfgProtocolSpawnedIntegrationCannotSpawnIntegration(t *testing.
 	go mgr.Start(ctx)
 
 	// THEN log entry found
-	testhelpers.Eventually(t, time.Second, func(t require.TestingT) {
+	testhelpers.Eventually(t, time.Second*3, func(t require.TestingT) {
 		entries := hook.AllEntries()
 		require.NotEmpty(t, entries)
 		ok := false
