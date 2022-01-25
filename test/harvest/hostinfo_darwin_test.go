@@ -8,6 +8,8 @@ package harvest
 import (
 	"github.com/newrelic/infrastructure-agent/internal/plugins/darwin"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"testing"
 	"time"
@@ -29,6 +31,7 @@ func TestHostinfoData(t *testing.T) {
 	a := infra.NewAgent(testClient.Client, func(cfg *config.Config) {
 		cfg.RunMode = config.ModeUnprivileged
 	})
+	log.SetLevel(logrus.DebugLevel)
 	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
 	cloudDetector := cloud.NewDetector(true, 0, 0, 0, false)
