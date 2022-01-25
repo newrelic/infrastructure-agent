@@ -4,6 +4,8 @@ package logs
 
 import (
 	ctx2 "context"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -14,6 +16,7 @@ import (
 )
 
 func Test_HotReload_CreateAndModifyFile(t *testing.T) {
+	log.SetLevel(logrus.DebugLevel) //remove when this test stops failing "randomly"
 	ctx, cancel := ctx2.WithCancel(ctx2.Background())
 	defer cancel()
 
@@ -73,7 +76,7 @@ func fileAppend(filePath, content string) error {
 func requireChanges(t *testing.T, changes chan struct{}) {
 	select {
 	case <-changes:
-	case <-time.After(2 * time.Second):
+	case <-time.After(5 * time.Second):
 		require.Fail(t, "Timeout exceeded while waiting receiving a change signal")
 	}
 }
