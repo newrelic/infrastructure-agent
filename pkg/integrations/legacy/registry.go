@@ -3,6 +3,7 @@
 package legacy
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -116,6 +117,18 @@ func (pr *PluginRegistry) loadPluginInstance(dir string, dirOrFile os.FileInfo) 
 	if err != nil {
 		pilog.WithError(err).Error("Couldn't load integration instances from config file")
 		return
+	}
+
+	finfo, err := os.Stat(dirOrFilePath)
+
+	// generate migration command only for files
+	if err == nil && !finfo.IsDir() {
+		pathToDefinition := plugin.SourceFilePath
+		pathToConfigV3 := dirOrFilePath
+		defaultPluginInstanceDir := filepath.Join("/etc", "newrelic-infra", "integrations.d")
+		pathToConfigV4 := filepath.Join(defaultPluginInstanceDir, plugin.Name+"-v4.yml")
+		migrationCommand := generateMigrationCommand(pathToConfigV3, pathToDefinition, pathToConfigV4, false)
+		pilog.Warn(fmt.Sprintf("Integration v3 config detected. Recommended to migrate this config to v4 format. Command to migrate '%s'", migrationCommand))
 	}
 
 	// If data binding is enabled, builds the data sources to apply them later
@@ -246,6 +259,7 @@ func (pr *PluginRegistry) loadPlugin(pluginPath string) (plugin *Plugin, err err
 	if _, err = config_loader.LoadYamlConfig(&decodedPlugin, pluginPath); err != nil {
 		return
 	}
+	decodedPlugin.SourceFilePath = pluginPath
 	plugin = &decodedPlugin
 
 	// Prefix is an optional field an a default is provided
@@ -274,4 +288,8 @@ func (pr *PluginRegistry) loadPlugin(pluginPath string) (plugin *Plugin, err err
 	}
 
 	return
+}
+
+func generateMigrationCommand(pathToConfigV3, pathToDefinition, pathToConfigV4 string, overwrite bool) string {
+	return fmt.Sprintf("newrelic-infra -v3tov4=%s:%s:%s:%t", pathToConfigV3, pathToDefinition, pathToConfigV4, overwrite)
 }

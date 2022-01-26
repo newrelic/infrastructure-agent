@@ -23,6 +23,7 @@ type Plugin struct {
 	ProtocolVersion int                         `yaml:"protocol_version"` // Protocol version (0 == original version)
 	workingDir      string
 	discovery       *databind.Sources
+	SourceFilePath  string
 }
 
 const (
