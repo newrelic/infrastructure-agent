@@ -54,6 +54,7 @@ func NormalizeEvent(
 	entryLog log.Entry,
 	event protocol.EventData,
 	labels map[string]string,
+	extraAnnotations map[string]string,
 	integrationUser string,
 	entityKey string) protocol.EventData {
 	_, ok := event[V1_REQUIRED_EVENT_FIELD]
@@ -76,6 +77,12 @@ func NormalizeEvent(
 	}
 	for key, value := range labels {
 		normalizedEvent[fmt.Sprintf("label.%s", key)] = value
+	}
+	for key, value := range extraAnnotations {
+		// Extra annotations can't override current events
+		if _, ok = event[key]; !ok {
+			normalizedEvent[key] = value
+		}
 	}
 	if integrationUser != "" {
 		normalizedEvent["integrationUser"] = integrationUser

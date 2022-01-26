@@ -83,7 +83,7 @@ func (e *nonRegisterEmitter) Send(dto fwrequest.FwRequest) {
 		}
 
 		for _, event := range dataSet.Events {
-			normalizedEvent := legacy.NormalizeEvent(elog, event, labels, integrationUser, dataSet.Entity.Name)
+			normalizedEvent := legacy.NormalizeEvent(elog, event, labels, extraAnnotations, integrationUser, dataSet.Entity.Name)
 
 			if normalizedEvent != nil {
 				emitter.EmitEvent(normalizedEvent, entity.Key(dataSet.Entity.Name))

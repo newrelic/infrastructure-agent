@@ -728,7 +728,7 @@ func (rs *RunnerSuite) TestPluginHandleOutputEventsV1(c *C) {
 	c.Assert(event["label.expected"], Equals, "extra label")
 	c.Assert(event["label.important"], Equals, "true")
 
-	c.Assert(event["special.annotation"], Equals, nil)
+	c.Assert(event["special.annotation"], Equals, "not a label but a fact")
 
 	c.Assert(event["attrKey"], Equals, "attrValue")
 	// To avoid collisions repeated attributes are namespaced

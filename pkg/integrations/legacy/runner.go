@@ -788,7 +788,7 @@ func EmitDataSet(
 	}
 
 	for _, event := range dataSet.Events {
-		normalizedEvent := NormalizeEvent(elog, event, labels, integrationUser, entityKey.String())
+		normalizedEvent := NormalizeEvent(elog, event, labels, extraAnnotations, integrationUser, entityKey.String())
 
 		if normalizedEvent != nil {
 			emitter.EmitEvent(normalizedEvent, entityKey)
