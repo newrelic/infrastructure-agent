@@ -4,7 +4,7 @@
   environment: "{{ env_vars }}"
   apt:
     name: "newrelic-infra"
-    update_cache: yes
+    update_cache: no #ubuntu 20.10 image has broken repos. Cache will only be updated after NR repo is added
   retries: 5
   delay: 60
     

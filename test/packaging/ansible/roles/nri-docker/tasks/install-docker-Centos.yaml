@@ -32,14 +32,14 @@
 
 - name: add centos extras repo (arm64)
   copy:
-    src: centos-extras-amd64.repo
+    src: centos-extras-arm64.repo
     dest: /etc/yum.repos.d/centos-extras.repo
   when: ansible_architecture == "aarch64"
 
 - name: add docker repo
   shell: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
 
-- name: install yum-utils
+- name: install docker
   yum:
     name:
       - docker-ce
