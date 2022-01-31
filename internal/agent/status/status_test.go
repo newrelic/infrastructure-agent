@@ -25,6 +25,13 @@ func TestNewReporter_Report(t *testing.T) {
 	}))
 	defer serverTimeout.Close()
 
+	assert.Eventually(t,
+		func() bool {
+			res, err := serverOk.Client().Get(serverOk.URL)
+			return err == nil && res.StatusCode == 200
+		},
+		time.Second, 10*time.Millisecond)
+
 	endpointsOk := []string{serverOk.URL}
 	endpointsTimeout := []string{serverTimeout.URL}
 	endpointsMixed := []string{serverOk.URL, serverTimeout.URL}
