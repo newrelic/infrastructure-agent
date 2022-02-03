@@ -21,7 +21,7 @@ provision-alerts-build:
 
 .PHONY: provision-alerts
 provision-alerts: PREFIX ?= "[auto]"
-provision-alerts: validate-aws-credentials provision-alerts-install-deps provision-alerts-build
+provision-alerts: provision-alerts-install-deps provision-alerts-build
 ifndef NR_API_KEY
 	@echo "NR_API_KEY variable must be provided for \"make provision-alerts\""
 	exit 1
@@ -48,7 +48,7 @@ endif
 
 
 .PHONY: provision-alerts-delete
-provision-alerts-delete: validate-aws-credentials provision-alerts-install-deps provision-alerts-build
+provision-alerts-delete: provision-alerts-install-deps provision-alerts-build
 ifndef NR_API_KEY
 	@echo "NR_API_KEY variable must be provided for \"make provision-alerts\""
 	exit 1
