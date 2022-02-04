@@ -6,6 +6,7 @@
     name: "newrelic-infra"
     update_cache: yes
     state: "latest"
+    update_only: yes #for some reason w/o this package is not being updated in al2
   retries: 5
   delay: 60
   when: not "python3" in ansible_python_interpreter
@@ -15,6 +16,7 @@
   dnf:
     name: "newrelic-infra"
     update_cache: yes
+    update_only: yes #for some reason w/o this package is not being updated in al2
     state: "latest"
   retries: 5
   delay: 60
