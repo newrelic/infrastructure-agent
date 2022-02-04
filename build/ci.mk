@@ -91,6 +91,12 @@ endif
 .PHONY : ci/prerelease
 ci/prerelease: ci/deps
 ifdef TAG
+
+	# avoid container network errors in GHA runners
+	@echo "Creating iptables rule to drop invalid packages"
+	@sudo iptables -D INPUT -i eth0 -m state --state INVALID -j DROP 2>/dev/null
+	@sudo iptables -A INPUT -i eth0 -m state --state INVALID -j DROP
+
 	@docker run --rm -t \
 			--name "infrastructure-agent-prerelease" \
 			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \

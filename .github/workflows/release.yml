@@ -42,7 +42,7 @@ jobs:
           username: ${{ env.DOCKER_HUB_ID }}
           password: ${{ env.DOCKER_HUB_PASSWORD }}
       - name: Publish ${{ matrix.assetsType }} to S3 action
-        uses: newrelic/infrastructure-publish-action@v1.2.0
+        uses: newrelic/infrastructure-publish-action@v1.2.1
         env:
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
@@ -80,7 +80,7 @@ jobs:
 #
 #    steps:
 #      - name: Publish ${{ matrix.assetsType }} to S3 action
-#        uses: newrelic/infrastructure-publish-action@v1.2.0
+#        uses: newrelic/infrastructure-publish-action@v1.2.1
 #        env:
 #          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
 #          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
@@ -123,7 +123,7 @@ jobs:
           username: ${{ env.DOCKER_HUB_ID }}
           password: ${{ env.DOCKER_HUB_PASSWORD }}
       - name: Publish ${{ matrix.assetsType }} to S3 action
-        uses: newrelic/infrastructure-publish-action@v1.2.0
+        uses: newrelic/infrastructure-publish-action@v1.2.1
         env:
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
