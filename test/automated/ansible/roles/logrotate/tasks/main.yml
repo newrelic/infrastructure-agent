@@ -19,6 +19,6 @@
     - "/etc/logrotate.d/rsyslog"
   when: ansible_distribution != "SLES"
   register: ret
-  failed_when: ret.stderr != ''
+  failed_when: ret.stderr != '' and "already exists" not in ret.stderr
 
 ...

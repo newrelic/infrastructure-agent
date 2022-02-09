@@ -20,3 +20,13 @@
     - name: Install GPG
       include_role:
         name: install-gpg
+
+
+- hosts: testing_hosts
+  become: true
+  gather_facts: yes
+
+  tasks:
+    - name: Configure logrotate
+      include_role:
+        name: logrotate
