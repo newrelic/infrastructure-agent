@@ -1,15 +1,17 @@
 ---
 
+- name: Create rsyslog script directory
+  file: path=/usr/lib/rsyslog state=directory mode=0755
+
+- name: Copy rsyslog-rotate script
+  template:
+    src: rsyslog-rotate
+    dest: "/usr/lib/rsyslog/rsyslog-rotate"
+  when: ansible_distribution_major_version == "9" or ansible_distribution_major_version == "8"
+
 - name: Configure logrotate for syslog
   template:
     src: rsyslog.j2
     dest: "/etc/logrotate.d/rsyslog"
-  when: ansible_distribution_major_version != 9
-
-- name: Configure logrotate for syslog
-  template:
-    src: rsyslog-debian-9.j2
-    dest: "/etc/logrotate.d/rsyslog"
-  when: ansible_distribution_major_version == 9
 
 ...
