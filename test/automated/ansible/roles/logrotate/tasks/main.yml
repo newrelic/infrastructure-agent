@@ -9,7 +9,7 @@
   set_fact:
     var_log_group_name: "{{ var_log_st.stat.gr_name }}"
 
-- include: "logrotate-{{ ansible_distribution }}.yaml"
+- include_tasks: "logrotate-{{ ansible_distribution }}.yaml"
   when: ansible_distribution != "SLES"
 
 - name: force logrotate
