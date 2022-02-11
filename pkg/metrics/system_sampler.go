@@ -3,7 +3,9 @@
 package metrics
 
 import (
+	context2 "context"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
 
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
@@ -84,34 +86,47 @@ func (s *SystemSampler) Sample() (results sample.EventBatch, err error) {
 			err = fmt.Errorf("Panic in SystemSampler.Sample: %v\nStack: %s", panicErr, debug.Stack())
 		}
 	}()
+	ctx := context2.Background()
+	//Example of detailed sampler. Having the context as param to Sample(ctx context.Context) would allow
+	//us check for existing transaction and reuse it instead of creating new one.
+	ctx, trx := instrumentation.SelfInstrumentation.StartTransaction(ctx, "system-sampler-detailed")
+	defer trx.End()
 
 	sample := &SystemSample{}
 	sample.Type("SystemSample")
 
 	// Collect CPU
+	ctx, seg := trx.StartSegment(ctx, "cpu sample")
 	if cpuSample, err := s.CpuMonitor.Sample(); err != nil {
 		return nil, err
 	} else {
 		sample.CPUSample = cpuSample
 	}
+	seg.End()
 
+	ctx, seg = trx.StartSegment(ctx, "disk sample")
 	if diskSample, err := s.DiskMonitor.Sample(); err != nil {
 		return nil, err
 	} else {
 		sample.DiskSample = diskSample
 	}
+	seg.End()
 
+	ctx, seg = trx.StartSegment(ctx, "load sample")
 	if loadSample, err := s.LoadMonitor.Sample(); err != nil {
 		return nil, err
 	} else {
 		sample.LoadSample = loadSample
 	}
+	seg.End()
 
+	ctx, seg = trx.StartSegment(ctx, "memory sample")
 	if memorySample, err := s.MemoryMonitor.Sample(); err != nil {
 		return nil, err
 	} else {
 		sample.MemorySample = memorySample
 	}
+	seg.End()
 
 	if s.Debug() {
 		helpers.LogStructureDetails(syslog, sample, "SystemSample", "final", nil)

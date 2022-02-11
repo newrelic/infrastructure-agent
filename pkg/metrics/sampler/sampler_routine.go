@@ -3,6 +3,9 @@
 package sampler
 
 import (
+	"context"
+	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
 	"sync"
 	"time"
 
@@ -39,7 +42,13 @@ func StartSamplerRoutine(sampler Sampler, sampleQueue chan sample.EventBatch) *S
 		for {
 			select {
 			case <-ticker.C:
-				samples, err := sampler.Sample()
+
+				samples, err := func(s Sampler) (sample.EventBatch, error) {
+					_, trx := instrumentation.SelfInstrumentation.StartTransaction(context.Background(), fmt.Sprintf("sampler.%s", s.Name()))
+					defer trx.End()
+					return s.Sample()
+				}(sampler)
+
 				if err != nil {
 					mslog.WithError(err).WithField("samplerName", sr.name).Error("can't get sample from sampler")
 					continue

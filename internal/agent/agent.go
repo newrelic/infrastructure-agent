@@ -5,6 +5,7 @@ package agent
 import (
 	context2 "context"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -598,8 +599,10 @@ func (a *Agent) startPlugins() {
 	// iterate over and start each plugin
 	for _, plugin := range a.plugins {
 		plugin.LogInfo()
-		func(p Plugin) {
-			go p.Run()
+		go func(p Plugin) {
+			_, trx := instrumentation.SelfInstrumentation.StartTransaction(context2.Background(), fmt.Sprintf("plugin. %s ", p.Id().String()))
+			defer trx.End()
+			p.Run()
 		}(plugin)
 	}
 }
