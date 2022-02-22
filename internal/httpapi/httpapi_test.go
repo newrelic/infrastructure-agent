@@ -328,13 +328,17 @@ func TestServe_IngestData_mTLS(t *testing.T) {
 
 				postReq, err := http.NewRequest("POST", fmt.Sprintf("https://localhost:%d%s", port, ingestAPIPath), bytes.NewReader(fixtures.FooBytes))
 				resp, err := client.Do(postReq)
+				if testCase.shouldFail {
+					// If we are expecting this request to fail, we won't check for errors.
+					return
+				}
 				require.NoError(t, err)
 				require.Equal(t, 20, resp.StatusCode/10, "status code: %v", resp.StatusCode)
 				close(payloadWritten)
 			}()
 
 			select {
-			case <-time.NewTimer(2000 * time.Millisecond).C:
+			case <-time.NewTimer(1000 * time.Millisecond).C:
 				if testCase.shouldFail {
 					// Payload not received and test should fail, return.
 					return
