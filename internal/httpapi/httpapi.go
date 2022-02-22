@@ -242,7 +242,7 @@ func (s *Server) WaitUntilReady() {
 	_, _ = <-s.readyCh
 }
 
-// handle returns a HTTP handler function for full Status report or just errors Status report.
+// handle returns a HTTP handler function for full status report or just errors status report.
 func (s *Server) handle(onlyErrors bool) func(http.ResponseWriter, *http.Request, httprouter.Params) {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		var rep status.Report
