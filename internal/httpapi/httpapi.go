@@ -5,13 +5,13 @@ package httpapi
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
@@ -33,6 +33,8 @@ const (
 	ingestAPIPathReady         = "/v1/data/ready"
 	readinessProbeRetryBackoff = 100 * time.Millisecond
 )
+
+var ErrServerStopped = errors.New("server stopped")
 
 type responseError struct {
 	Error string `json:"error"`
@@ -139,12 +141,24 @@ func (s *Server) Serve(ctx context.Context) {
 	c := http.Client{}
 	var ingestReady, statusReady bool
 	for {
-		if !ingestReady && s.Ingest.enabled && !s.Ingest.tls.validateClient {
+		if !ingestReady && s.Ingest.enabled {
 			scheme := "http://"
 			if s.Ingest.tls.enabled {
 				scheme = "https://"
+				c.Transport = &http.Transport{
+					TLSClientConfig: &tls.Config{
+						InsecureSkipVerify: true,
+					},
+				}
 			}
-			ingestReady = s.isGetSuccessful(c, scheme+s.Ingest.address+ingestAPIPathReady)
+
+			if s.Ingest.tls.validateClient {
+				// If client validation is enabled, we cannot probe the /ready path wihtout a valid certificate, which
+				// might not be available to us. For this reason we must lie and tell it is ready without probing.
+				ingestReady = true
+			} else {
+				ingestReady = s.isGetSuccessful(c, scheme+s.Ingest.address+ingestAPIPathReady)
+			}
 		}
 		if !statusReady && s.Status.enabled {
 			scheme := "http://"
@@ -196,7 +210,7 @@ func (s *Server) serveIngest() error {
 		return fmt.Errorf("starting Ingest server: %w", err)
 	}
 
-	return errors.New("Ingest server stopped")
+	return ErrServerStopped
 }
 
 func (s *Server) allReadyOrDisabled(ingestReady, statusReady bool) bool {
@@ -218,11 +232,7 @@ func (s *Server) isGetSuccessful(c http.Client, URL string) bool {
 	resp, err := c.Do(postReq)
 	if err != nil {
 		s.logger.WithError(err).Warnf("httpapi readiness probe failed")
-	}
-
-	// Hack: If URL is HTTPs, readiness probe should succeed even if mTLS verification fails
-	if strings.HasPrefix(URL, "https") {
-		return true
+		return false
 	}
 
 	return resp.StatusCode == http.StatusOK
