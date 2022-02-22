@@ -8,7 +8,6 @@ import (
 	context2 "context"
 	"flag"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/config/migrate"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
@@ -20,6 +19,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/pkg/config/migrate"
 
 	"github.com/newrelic/infrastructure-agent/internal/httpapi"
 	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
@@ -396,24 +397,23 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		} else {
 			rep := status.NewReporter(agt.Context.Ctx, rlog, c.StatusEndpoints, timeoutD, transport, agt.Context.AgentIdnOrEmpty, c.License, userAgent)
 
-			apiCfg := httpapi.NewConfig()
+			apiSrv, err := httpapi.NewServer(rep, integrationEmitter)
 			if c.HTTPServerEnabled {
-				apiCfg.Ingest.Enable(c.HTTPServerHost, c.HTTPServerPort)
+				apiSrv.Ingest.Enable(c.HTTPServerHost, c.HTTPServerPort)
 			}
 
 			if c.HTTPServerCert != "" && c.HTTPServerKey != "" {
-				apiCfg.Ingest.TLS(c.HTTPServerCert, c.HTTPServerKey)
+				apiSrv.Ingest.TLS(c.HTTPServerCert, c.HTTPServerKey)
 			}
 
 			if c.HTTPServerCA != "" {
-				apiCfg.Ingest.VerifyTLSClient(c.HTTPServerCA)
+				apiSrv.Ingest.VerifyTLSClient(c.HTTPServerCA)
 			}
 
 			if c.StatusServerEnabled {
-				apiCfg.Status.Enable("localhost", c.StatusServerPort)
+				apiSrv.Status.Enable("localhost", c.StatusServerPort)
 			}
 
-			apiSrv, err := httpapi.NewServer(apiCfg, rep, integrationEmitter)
 			if err != nil {
 				aslog.WithError(err).Error("cannot run api server")
 			} else {

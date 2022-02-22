@@ -49,10 +49,9 @@ func TestServe_Status(t *testing.T) {
 
 	// When agent status API server is ready
 	em := &testemit.RecordEmitter{}
-	config := &Config{}
-	config.Status.Enable("localhost", port)
-	s, err := NewServer(config, r, em)
+	s, err := NewServer(r, em)
 	require.NoError(t, err)
+	s.Status.Enable("localhost", port)
 	defer cancel()
 
 	go s.Serve(ctx)
@@ -110,10 +109,10 @@ func TestServe_OnlyErrors(t *testing.T) {
 
 	// When agent status API server is ready
 	em := &testemit.RecordEmitter{}
-	config := &Config{}
-	config.Status.Enable("localhost", port)
 
-	s, err := NewServer(config, r, em)
+	s, err := NewServer(r, em)
+	require.NoError(t, err)
+	s.Status.Enable("localhost", port)
 	defer cancel()
 
 	go s.Serve(ctx)
@@ -177,10 +176,9 @@ func TestServe_Entity(t *testing.T) {
 			r := status.NewReporter(ctx, l, []string{}, timeout, transport, tt.idProvide, "user-agent", "agent-key")
 			// When agent status API server is ready
 			em := &testemit.RecordEmitter{}
-			config := &Config{}
-			config.Status.Enable("localhost", port)
-			s, err := NewServer(config, r, em)
+			s, err := NewServer(r, em)
 			require.NoError(t, err)
+			s.Status.Enable("localhost", port)
 			defer cancel()
 
 			go s.Serve(ctx)
@@ -215,10 +213,9 @@ func TestServe_IngestData(t *testing.T) {
 	require.NoError(t, err)
 
 	em := &testemit.RecordEmitter{}
-	config := &Config{}
-	config.Ingest.Enable("localhost", port)
-	s, err := NewServer(config, &noopReporter{}, em)
+	s, err := NewServer(&noopReporter{}, em)
 	require.NoError(t, err)
+	s.Ingest.Enable("localhost", port)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

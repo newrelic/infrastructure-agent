@@ -40,7 +40,8 @@ type responseError struct {
 
 // Server runtime for status API server.
 type Server struct {
-	cfg        *Config
+	Ingest     ComponentConfig
+	Status     ComponentConfig
 	reporter   status.Reporter
 	logger     log.Entry
 	definition integration.Definition
@@ -48,18 +49,14 @@ type Server struct {
 	readyCh    chan struct{}
 }
 
-// Config HTTP API configuration.
-type Config struct {
-	Ingest ServerConfig
-	Status ServerConfig
-}
-
-type ServerConfig struct {
+// ComponentConfig stores configuration for a server component.
+type ComponentConfig struct {
 	enabled bool
 	address string
 	tls     tlsConfig
 }
 
+// tlsConfig stores tls-related configuration.
 type tlsConfig struct {
 	enabled        bool
 	validateClient bool
@@ -68,22 +65,21 @@ type tlsConfig struct {
 	caPath         string
 }
 
-func NewConfig() *Config {
-	return &Config{}
-}
-
-func (sc *ServerConfig) Enable(host string, port int) {
+// Enable configures and enables a server component.
+func (sc *ComponentConfig) Enable(host string, port int) {
 	sc.enabled = true
 	sc.address = net.JoinHostPort(host, fmt.Sprint(port))
 }
 
-func (sc *ServerConfig) TLS(certPath, keyPath string) {
+// TLS configures and enables TLS for a server component.
+func (sc *ComponentConfig) TLS(certPath, keyPath string) {
 	sc.tls.enabled = true
 	sc.tls.certPath = certPath
 	sc.tls.keyPath = keyPath
 }
 
-func (sc *ServerConfig) VerifyTLSClient(caCertPath string) {
+// VerifyTLSClient configures and enables TLS client certificate validation for a server component.
+func (sc *ComponentConfig) VerifyTLSClient(caCertPath string) {
 	sc.tls.validateClient = true
 	sc.tls.caPath = caCertPath
 }
@@ -91,20 +87,15 @@ func (sc *ServerConfig) VerifyTLSClient(caCertPath string) {
 // NewServer creates a new API server.
 // Nice2Have: decouple services into path handlers.
 // Separate HTTP API configs should be deprecated if we want to unify under a single server & port.
-func NewServer(c *Config, r status.Reporter, em emitter.Emitter) (*Server, error) {
+func NewServer(r status.Reporter, em emitter.Emitter) (*Server, error) {
 	d, err := integration.NewAPIDefinition(IntegrationName)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create API definition for HTTP API server, err: %s", err)
 	}
 
-	l := log.WithComponent(componentName).
-		WithField("status_enabled", c.Status.enabled).
-		WithField("ingest_enabled", c.Ingest.enabled)
-
 	return &Server{
-		cfg:        c,
+		logger:     log.WithComponent(componentName),
 		reporter:   r,
-		logger:     l,
 		definition: d,
 		emitter:    em,
 		readyCh:    make(chan struct{}),
@@ -114,10 +105,10 @@ func NewServer(c *Config, r status.Reporter, em emitter.Emitter) (*Server, error
 // Serve serves status API requests.
 // Nice2Have: context cancellation.
 func (s *Server) Serve(ctx context.Context) {
-	if s.cfg.Status.enabled {
+	if s.Status.enabled {
 		go func() {
 			s.logger.WithFields(logrus.Fields{
-				"address": s.cfg.Status.address,
+				"address": s.Status.address,
 			}).Debug("Status API starting listening.")
 
 			router := httprouter.New()
@@ -127,7 +118,7 @@ func (s *Server) Serve(ctx context.Context) {
 			router.GET(statusAPIPath, s.handle(false))
 			router.GET(statusOnlyErrorsAPIPath, s.handle(true))
 			// local only API
-			err := http.ListenAndServe(s.cfg.Status.address, router)
+			err := http.ListenAndServe(s.Status.address, router)
 			if err != nil {
 				s.logger.WithError(err).Error("unable to start Status-API")
 				return
@@ -136,7 +127,7 @@ func (s *Server) Serve(ctx context.Context) {
 		}()
 	}
 
-	if s.cfg.Ingest.enabled {
+	if s.Ingest.enabled {
 		go func() {
 			err := s.serveIngest()
 			if err != nil {
@@ -148,16 +139,16 @@ func (s *Server) Serve(ctx context.Context) {
 	c := http.Client{}
 	var ingestReady, statusReady bool
 	for {
-		if !ingestReady && s.cfg.Ingest.enabled && !s.cfg.Ingest.tls.validateClient {
+		if !ingestReady && s.Ingest.enabled && !s.Ingest.tls.validateClient {
 			scheme := "http://"
-			if s.cfg.Ingest.tls.enabled {
+			if s.Ingest.tls.enabled {
 				scheme = "https://"
 			}
-			ingestReady = s.isGetSuccessful(c, scheme+s.cfg.Ingest.address+ingestAPIPathReady)
+			ingestReady = s.isGetSuccessful(c, scheme+s.Ingest.address+ingestAPIPathReady)
 		}
-		if !statusReady && s.cfg.Status.enabled {
+		if !statusReady && s.Status.enabled {
 			scheme := "http://"
-			statusReady = s.isGetSuccessful(c, scheme+s.cfg.Status.address+statusAPIPathReady)
+			statusReady = s.isGetSuccessful(c, scheme+s.Status.address+statusAPIPathReady)
 		}
 
 		if s.allReadyOrDisabled(ingestReady, statusReady) {
@@ -173,7 +164,7 @@ func (s *Server) Serve(ctx context.Context) {
 // serveIngest creates and starts an HTTP server handling ingestAPIPathReady and ingestAPIPath using Config.Ingest
 func (s *Server) serveIngest() error {
 	s.logger.WithFields(logrus.Fields{
-		"address": s.cfg.Ingest.address,
+		"address": s.Ingest.address,
 	}).Debug("Ingest API starting listening.")
 
 	router := httprouter.New()
@@ -182,19 +173,19 @@ func (s *Server) serveIngest() error {
 
 	server := &http.Server{
 		Handler: router,
-		Addr:    s.cfg.Ingest.address,
+		Addr:    s.Ingest.address,
 	}
 
-	if s.cfg.Ingest.tls.enabled {
-		if s.cfg.Ingest.tls.validateClient {
-			err := addMTLS(server, s.cfg.Ingest.tls.caPath)
+	if s.Ingest.tls.enabled {
+		if s.Ingest.tls.validateClient {
+			err := addMTLS(server, s.Ingest.tls.caPath)
 			if err != nil {
 				return fmt.Errorf("creating mTLS server: %w", err)
 			}
 		}
 
 		s.logger.Debug("starting tls server")
-		err := server.ListenAndServeTLS(s.cfg.Ingest.tls.certPath, s.cfg.Ingest.tls.keyPath)
+		err := server.ListenAndServeTLS(s.Ingest.tls.certPath, s.Ingest.tls.keyPath)
 		if err != nil {
 			return fmt.Errorf("starting tls server: %w", err)
 		}
@@ -209,10 +200,10 @@ func (s *Server) serveIngest() error {
 }
 
 func (s *Server) allReadyOrDisabled(ingestReady, statusReady bool) bool {
-	if s.cfg.Ingest.enabled && !ingestReady {
+	if s.Ingest.enabled && !ingestReady {
 		return false
 	}
-	if s.cfg.Status.enabled && !statusReady {
+	if s.Status.enabled && !statusReady {
 		return false
 	}
 	return true
