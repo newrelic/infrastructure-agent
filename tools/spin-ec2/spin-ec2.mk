@@ -34,11 +34,11 @@ endif
 	tools/spin-ec2/bin/spin-ec2 canaries provision -v 'v$(VERSION)' -l '$(NR_LICENSE_KEY)' -x '$(ANSIBLE_PASSWORD)' -f '$(PREFIX)'
 
 .PHONY: canaries-prune-dry
-canaries-prune-dry: validate-aws-credentials install-deps ec2-build
+canaries-prune-dry: validate-aws-credentials ec2-install-deps ec2-build
 	@read -p "DRY run for canaries prune, press enter to continue"
 	tools/spin-ec2/bin/spin-ec2 canaries prune --dry_run
 
 .PHONY: canaries-prune
-canaries-prune: validate-aws-credentials install-deps ec2-build
+canaries-prune: validate-aws-credentials ec2-install-deps ec2-build
 	@read -p "REAL run for canaries prune, press enter to continue"
 	tools/spin-ec2/bin/spin-ec2 canaries prune
