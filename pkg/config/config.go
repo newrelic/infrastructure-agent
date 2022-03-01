@@ -349,7 +349,7 @@ type Config struct {
 
 	// MetricsStorageSampleRate Sample rate of Storage Samples in seconds. Minimum value is 5. If value is -1 then
 	// the sampler is disabled.
-	// Default: 5
+	// Default: 20
 	// Public: Yes
 	MetricsStorageSampleRate int `yaml:"metrics_storage_sample_rate" envconfig:"metrics_storage_sample_rate"`
 
