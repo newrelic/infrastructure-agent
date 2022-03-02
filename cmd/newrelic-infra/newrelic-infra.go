@@ -8,6 +8,7 @@ import (
 	context2 "context"
 	"flag"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/runner"
 	"github.com/newrelic/infrastructure-agent/pkg/config/migrate"
 	"net"
 	"net/http"
@@ -59,6 +60,8 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/logs"
 	wlog "github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/trace"
+
+	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 )
 
 var (
@@ -69,6 +72,7 @@ var (
 	cpuprofile   string
 	memprofile   string
 	v3tov4       string
+	dryRunV4      string
 	verbose      int
 	startTime    time.Time
 	buildVersion = "development"
@@ -88,6 +92,7 @@ func init() {
 	flag.StringVar(&cpuprofile, "cpuprofile", "", "Writes cpu profile to `file`")
 	flag.StringVar(&memprofile, "memprofile", "", "Writes memory profile to `file`")
 	flag.StringVar(&v3tov4, "v3tov4", "", "Converts v3 config into v4. v3tov4=/path/to/config:/path/to/definition:/path/to/output:overwrite")
+	flag.StringVar(&dryRunV4, "dry-run-v4", "", "Dry run any OHIs")
 
 	flag.IntVar(&verbose, "verbose", 0, "Higher numbers increase levels of logging. When enabled overrides provided config.")
 }
@@ -143,6 +148,54 @@ func main() {
 		}
 
 		os.Exit(0)
+	}
+
+	if dryRunV4 != ""{
+
+		// config loader + env vars + databind
+
+		cmd := append(append(config2.ShlexOpt{"/bin/sh"}, string("internal/integrations/v4/fixtures/basic_cmd.sh")))
+
+		conf := config2.ConfigEntry{
+			Interval: "0",
+			InstanceName: "foo",
+			Exec: cmd,
+		}
+
+		il := newInstancesLookup(v4.NewConfig(
+			0,
+			nil,
+			nil,
+			nil,
+			nil,
+		))
+
+		// new integration definition
+
+		def, err := integration.NewDefinition(conf, il, nil ,nil)
+
+		if err != nil{
+			fmt.Println(err)
+			return
+		}
+
+		// new emitter
+		em := emitter.NewStdoutEmitter()
+
+		q :=  make(chan<- string)
+
+
+		// create integration runner
+
+		r := runner.NewRunner(def, em, nil, nil, nil, nil, q)
+
+		ctx := context2.Background()
+
+		// execute
+
+		r.Run(ctx, nil, nil)
+
+		return
 	}
 
 	timedLog := alog.WithFieldsF(func() logrus.Fields {
