@@ -201,6 +201,44 @@ jobs:
       - name: Build and publish Release Candidate (RC) of k8s-events-forwarders Docker image
         run: AGENT_VERSION=${{env.TAG}} make -C build/container/ clean publish/multi-arch-k8s-events-forwarder-rc
 
+  trivy-scanner:
+    name: Trivy scanner for docker
+    runs-on: ubuntu-20.04
+    needs: [packaging-docker]
+    steps:
+      - name: newrelic/infrastructure
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "docker.io/newrelic/infrastructure:${{ github.event.release.tag_name }}-rc"
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+        continue-on-error: true
+
+      - name: newrelic/k8s-events-forwarder
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "docker.io/newrelic/k8s-events-forwarder:${{ github.event.release.tag_name }}-rc"
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+        continue-on-error: true
+
+      - name: newrelic/nri-forwarder
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "docker.io/newrelic/nri-forwarder:${{ github.event.release.tag_name }}-rc"
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+        continue-on-error: true
+
   publishing-to-s3:
     name: Publish linux artifacts into s3 staging bucket
     runs-on: ubuntu-20.04
