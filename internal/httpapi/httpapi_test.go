@@ -305,6 +305,12 @@ func TestServe_IngestData_mTLS(t *testing.T) {
 			payloadWritten := make(chan struct{})
 			go func() {
 				s.WaitUntilReady()
+				if testCase.sendCert {
+					// WaitUntilReady() is a no-op when mTLS is enabled, which causes the test to race sometimes.
+					// Sleeping one second is a dirty workaround to wait for the server to be ready.
+					time.Sleep(1 * time.Second)
+				}
+
 				client := http.Client{}
 				transport := &http.Transport{
 					TLSClientConfig: &tls.Config{
@@ -338,7 +344,7 @@ func TestServe_IngestData_mTLS(t *testing.T) {
 			}()
 
 			select {
-			case <-time.NewTimer(1000 * time.Millisecond).C:
+			case <-time.NewTimer(2 * time.Second).C:
 				if testCase.shouldFail {
 					// Payload not received and test should fail, return.
 					return
