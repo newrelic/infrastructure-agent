@@ -62,7 +62,7 @@ func TestServe_Status(t *testing.T) {
 	s.WaitUntilReady()
 
 	// And a request to the status API is sent
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d%s", port, statusAPIPath), bytes.NewReader([]byte{}))
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d%s", port, statusAPIPath), nil)
 	require.NoError(t, err)
 	client := http.Client{}
 
@@ -123,7 +123,7 @@ func TestServe_OnlyErrors(t *testing.T) {
 	s.WaitUntilReady()
 
 	// And a request to the status API is sent
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d%s", port, statusOnlyErrorsAPIPath), bytes.NewReader([]byte{}))
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d%s", port, statusOnlyErrorsAPIPath), nil)
 	require.NoError(t, err)
 	client := http.Client{}
 
@@ -189,7 +189,7 @@ func TestServe_Entity(t *testing.T) {
 			s.WaitUntilReady()
 
 			// And a request to the status API is sent
-			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d%s", port, statusEntityAPIPath), bytes.NewReader([]byte{}))
+			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d%s", port, statusEntityAPIPath), nil)
 			require.NoError(t, err)
 			client := http.Client{}
 
@@ -344,7 +344,7 @@ func TestServe_IngestData_mTLS(t *testing.T) {
 					return
 				}
 
-				t.Error("timeout waiting for HTTP request to be submitted")
+				t.Fatal("timeout waiting for HTTP request to be submitted")
 			case <-payloadWritten:
 			}
 
