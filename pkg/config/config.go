@@ -788,6 +788,15 @@ type Config struct {
 	// Public: Yes
 	HTTPServerPort int `yaml:"http_server_port" envconfig:"http_server_port"`
 
+	// HTTPServerCert Path to a PEM-encoded certificate to listen for integration payloads over HTTPs.
+	HTTPServerCert string `yaml:"http_server_cert" envconfig:"http_server_cert"`
+
+	// HTTPServerCert Path to a PEM-encoded key to listen for integration payloads over HTTPs.
+	HTTPServerKey string `yaml:"http_server_key" envconfig:"http_server_key"`
+
+	// HTTPServerCert Path to a PEM-encoded CA certificate to enforce client certificate validation for HTTPs requests.
+	HTTPServerCA string `yaml:"http_server_ca" envconfig:"http_server_ca"`
+
 	// TCPServerEnabled By setting true this configuration parameter (used by statsD integration v1) the agent will
 	// open an TCP port (by default, 8002) to receive integration payloads via TCP.
 	// Default: False

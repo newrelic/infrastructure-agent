@@ -5,9 +5,12 @@ package httpapi
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"time"
 
@@ -28,8 +31,10 @@ const (
 	statusAPIPathReady         = "/v1/status/ready"
 	ingestAPIPath              = "/v1/data"
 	ingestAPIPathReady         = "/v1/data/ready"
-	readinessProbeRetryBackoff = 10 * time.Millisecond
+	readinessProbeRetryBackoff = 100 * time.Millisecond
 )
+
+var ErrServerStopped = errors.New("server stopped")
 
 type responseError struct {
 	Error string `json:"error"`
@@ -37,7 +42,8 @@ type responseError struct {
 
 // Server runtime for status API server.
 type Server struct {
-	cfg        Config
+	Ingest     ComponentConfig
+	Status     ComponentConfig
 	reporter   status.Reporter
 	logger     log.Entry
 	definition integration.Definition
@@ -45,43 +51,53 @@ type Server struct {
 	readyCh    chan struct{}
 }
 
-// Config HTTP API configuration.
-type Config struct {
-	EnableIngest bool
-	EnableStatus bool
-	PortIngest   int
-	HostIngest   string
-	PortStatus   int
+// ComponentConfig stores configuration for a server component.
+type ComponentConfig struct {
+	enabled bool
+	address string
+	tls     tlsConfig
 }
 
-// NewConfig creates a new API config.
-func NewConfig(enableIngest bool, hostIngest string, portIngest int, enableStatus bool, portStatus int) Config {
-	return Config{
-		EnableIngest: enableIngest,
-		EnableStatus: enableStatus,
-		PortIngest:   portIngest,
-		PortStatus:   portStatus,
-		HostIngest:   hostIngest,
-	}
+// tlsConfig stores tls-related configuration.
+type tlsConfig struct {
+	enabled        bool
+	validateClient bool
+	certPath       string
+	keyPath        string
+	caPath         string
+}
+
+// Enable configures and enables a server component.
+func (sc *ComponentConfig) Enable(host string, port int) {
+	sc.enabled = true
+	sc.address = net.JoinHostPort(host, fmt.Sprint(port))
+}
+
+// TLS configures and enables TLS for a server component.
+func (sc *ComponentConfig) TLS(certPath, keyPath string) {
+	sc.tls.enabled = true
+	sc.tls.certPath = certPath
+	sc.tls.keyPath = keyPath
+}
+
+// VerifyTLSClient configures and enables TLS client certificate validation for a server component.
+func (sc *ComponentConfig) VerifyTLSClient(caCertPath string) {
+	sc.tls.validateClient = true
+	sc.tls.caPath = caCertPath
 }
 
 // NewServer creates a new API server.
 // Nice2Have: decouple services into path handlers.
 // Separate HTTP API configs should be deprecated if we want to unify under a single server & port.
-func NewServer(c Config, r status.Reporter, em emitter.Emitter) (*Server, error) {
+func NewServer(r status.Reporter, em emitter.Emitter) (*Server, error) {
 	d, err := integration.NewAPIDefinition(IntegrationName)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create API definition for HTTP API server, err: %s", err)
 	}
 
-	l := log.WithComponent(componentName).
-		WithField("status_enabled", c.EnableStatus).
-		WithField("ingest_enabled", c.EnableIngest)
-
 	return &Server{
-		cfg:        c,
+		logger:     log.WithComponent(componentName),
 		reporter:   r,
-		logger:     l,
 		definition: d,
 		emitter:    em,
 		readyCh:    make(chan struct{}),
@@ -91,10 +107,10 @@ func NewServer(c Config, r status.Reporter, em emitter.Emitter) (*Server, error)
 // Serve serves status API requests.
 // Nice2Have: context cancellation.
 func (s *Server) Serve(ctx context.Context) {
-	if s.cfg.EnableStatus {
+	if s.Status.enabled {
 		go func() {
 			s.logger.WithFields(logrus.Fields{
-				"port": s.cfg.PortStatus,
+				"address": s.Status.address,
 			}).Debug("Status API starting listening.")
 
 			router := httprouter.New()
@@ -104,7 +120,7 @@ func (s *Server) Serve(ctx context.Context) {
 			router.GET(statusAPIPath, s.handle(false))
 			router.GET(statusOnlyErrorsAPIPath, s.handle(true))
 			// local only API
-			err := http.ListenAndServe(fmt.Sprintf("%s:%d", "localhost", s.cfg.PortStatus), router)
+			err := http.ListenAndServe(s.Status.address, router)
 			if err != nil {
 				s.logger.WithError(err).Error("unable to start Status-API")
 				return
@@ -113,33 +129,40 @@ func (s *Server) Serve(ctx context.Context) {
 		}()
 	}
 
-	if s.cfg.EnableIngest {
+	if s.Ingest.enabled {
 		go func() {
-			s.logger.WithFields(logrus.Fields{
-				"port": s.cfg.PortIngest,
-				"host": s.cfg.HostIngest,
-			}).Debug("Ingest API starting listening.")
-
-			router := httprouter.New()
-			router.GET(ingestAPIPathReady, s.handleReady)
-			router.POST(ingestAPIPath, s.handleIngest)
-			err := http.ListenAndServe(fmt.Sprintf("%s:%d", s.cfg.HostIngest, s.cfg.PortIngest), router)
+			err := s.serveIngest()
 			if err != nil {
-				s.logger.WithError(err).Error("unable to start Ingest-API")
-				return
+				log.WithError(err).Error("Ingest server error")
 			}
-			s.logger.Debug("Ingest API stopped.")
 		}()
 	}
 
 	c := http.Client{}
 	var ingestReady, statusReady bool
 	for {
-		if !ingestReady && s.cfg.EnableIngest {
-			ingestReady = s.isGetSuccessful(c, fmt.Sprintf("http://%s:%d%s", s.cfg.HostIngest, s.cfg.PortIngest, ingestAPIPathReady))
+		if !ingestReady && s.Ingest.enabled {
+			scheme := "http://"
+			if s.Ingest.tls.enabled {
+				scheme = "https://"
+				c.Transport = &http.Transport{
+					TLSClientConfig: &tls.Config{
+						InsecureSkipVerify: true,
+					},
+				}
+			}
+
+			if s.Ingest.tls.validateClient {
+				// If client validation is enabled, we cannot probe the /ready path wihtout a valid certificate, which
+				// might not be available to us. For this reason we must lie and tell it is ready without probing.
+				ingestReady = true
+			} else {
+				ingestReady = s.isGetSuccessful(c, scheme+s.Ingest.address+ingestAPIPathReady)
+			}
 		}
-		if !statusReady && s.cfg.EnableStatus {
-			statusReady = s.isGetSuccessful(c, fmt.Sprintf("http://localhost:%d%s", s.cfg.PortStatus, statusAPIPathReady))
+		if !statusReady && s.Status.enabled {
+			scheme := "http://"
+			statusReady = s.isGetSuccessful(c, scheme+s.Status.address+statusAPIPathReady)
 		}
 
 		if s.allReadyOrDisabled(ingestReady, statusReady) {
@@ -152,11 +175,49 @@ func (s *Server) Serve(ctx context.Context) {
 	<-ctx.Done()
 }
 
+// serveIngest creates and starts an HTTP server handling ingestAPIPathReady and ingestAPIPath using Config.Ingest
+func (s *Server) serveIngest() error {
+	s.logger.WithFields(logrus.Fields{
+		"address": s.Ingest.address,
+	}).Debug("Ingest API starting listening.")
+
+	router := httprouter.New()
+	router.GET(ingestAPIPathReady, s.handleReady)
+	router.POST(ingestAPIPath, s.handleIngest)
+
+	server := &http.Server{
+		Handler: router,
+		Addr:    s.Ingest.address,
+	}
+
+	if s.Ingest.tls.enabled {
+		if s.Ingest.tls.validateClient {
+			err := addMTLS(server, s.Ingest.tls.caPath)
+			if err != nil {
+				return fmt.Errorf("creating mTLS server: %w", err)
+			}
+		}
+
+		s.logger.Debug("starting tls server")
+		err := server.ListenAndServeTLS(s.Ingest.tls.certPath, s.Ingest.tls.keyPath)
+		if err != nil {
+			return fmt.Errorf("starting tls server: %w", err)
+		}
+	}
+
+	err := server.ListenAndServe()
+	if err != nil {
+		return fmt.Errorf("starting Ingest server: %w", err)
+	}
+
+	return ErrServerStopped
+}
+
 func (s *Server) allReadyOrDisabled(ingestReady, statusReady bool) bool {
-	if s.cfg.EnableIngest && !ingestReady {
+	if s.Ingest.enabled && !ingestReady {
 		return false
 	}
-	if s.cfg.EnableStatus && !statusReady {
+	if s.Status.enabled && !statusReady {
 		return false
 	}
 	return true
@@ -166,11 +227,15 @@ func (s *Server) isGetSuccessful(c http.Client, URL string) bool {
 	postReq, err := http.NewRequest(http.MethodGet, URL, bytes.NewReader([]byte{}))
 	if err != nil {
 		s.logger.Warnf("cannot create request for %s, error: %s", URL, err)
-	} else if resp, err := c.Do(postReq); err == nil && resp.StatusCode == http.StatusOK {
-		return true
+		return false
+	}
+	resp, err := c.Do(postReq)
+	if err != nil {
+		s.logger.WithError(err).Warnf("httpapi readiness probe failed")
+		return false
 	}
 
-	return false
+	return resp.StatusCode == http.StatusOK
 }
 
 // WaitUntilReady blocks the call until server is ready to accept connections.
@@ -191,7 +256,7 @@ func (s *Server) handle(onlyErrors bool) func(http.ResponseWriter, *http.Request
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			jerr := json.NewEncoder(w).Encode(responseError{
-				Error: fmt.Sprintf("fetching status report: %s", err),
+				Error: fmt.Sprintf("fetching Status report: %s", err),
 			})
 			if jerr != nil {
 				s.logger.WithError(jerr).Warn("couldn't encode a failed response")
@@ -202,7 +267,7 @@ func (s *Server) handle(onlyErrors bool) func(http.ResponseWriter, *http.Request
 		b, jerr := json.Marshal(rep)
 		if jerr != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			s.logger.WithError(jerr).Warn("couldn't encode status report")
+			s.logger.WithError(jerr).Warn("couldn't encode Status report")
 			return
 		}
 
@@ -213,7 +278,7 @@ func (s *Server) handle(onlyErrors bool) func(http.ResponseWriter, *http.Request
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		_, err = w.Write(b)
 		if err != nil {
-			s.logger.Warn("cannot write status response, error: " + err.Error())
+			s.logger.Warn("cannot write Status response, error: " + err.Error())
 		}
 	}
 }
@@ -225,7 +290,7 @@ func (s *Server) handleReady(w http.ResponseWriter, r *http.Request, ps httprout
 func (s *Server) handleEntity(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	re, err := s.reporter.ReportEntity()
 	if err != nil {
-		s.logger.WithError(err).Error("cannot report entity status")
+		s.logger.WithError(err).Error("cannot report entity Status")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
