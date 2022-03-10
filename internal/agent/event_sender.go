@@ -140,7 +140,12 @@ func (sender *metricsIngestSender) Start() (err error) {
 	sender.stopChannel = make(chan bool)
 
 	// Wait for accumulateBatches and sendBatches to complete
-	sender.internalRoutineWaits.Add(2)
+	sender.internalRoutineWaits.Add(3)
+
+	go func() {
+		defer sender.internalRoutineWaits.Done()
+		reportEventQueueMetrics(sender.eventQueue, sender.stopChannel)
+	}()
 
 	go func() {
 		defer sender.internalRoutineWaits.Done()
@@ -195,19 +200,28 @@ func (sender *metricsIngestSender) QueueEvent(event sample.Event, key entity.Key
 
 	select {
 	case sender.eventQueue <- queuedEvent:
-		reportEventQueueMetrics(sender.eventQueue)
 		return nil
 	default:
-		reportEventQueueMetrics(sender.eventQueue)
 		return fmt.Errorf("could not queue event: queue is full")
 	}
 }
 
-func reportEventQueueMetrics(queue chan eventData) {
-	metric := instrumentation.NewGauge("agent.eventQueueSize", float64(len(queue)))
-	instrumentation.SelfInstrumentation.RecordMetric(goContext.Background(), metric)
-	metric = instrumentation.NewGauge("agent.eventQueueCapacity", float64(cap(queue)))
-	instrumentation.SelfInstrumentation.RecordMetric(goContext.Background(), metric)
+func reportEventQueueMetrics(queue chan eventData, stopChannel chan bool) {
+	sendTimer := time.NewTicker(time.Millisecond * 500)
+	for {
+		select {
+		case <-sendTimer.C:
+			metric := instrumentation.NewGauge("agent.eventQueueSize", float64(len(queue)))
+			instrumentation.SelfInstrumentation.RecordMetric(goContext.Background(), metric)
+			metric = instrumentation.NewGauge("agent.eventQueueCapacity", float64(cap(queue)))
+			instrumentation.SelfInstrumentation.RecordMetric(goContext.Background(), metric)
+			metric = instrumentation.NewGauge("agent.eventQueueUtilization", float64((len(queue)*100)/cap(queue)))
+			instrumentation.SelfInstrumentation.RecordMetric(goContext.Background(), metric)
+		case <-stopChannel:
+			sendTimer.Stop()
+			return
+		}
+	}
 }
 
 // Collect events from the queue and accumulate them into batches which can be sent up to metrics ingest.

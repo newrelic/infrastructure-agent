@@ -1018,6 +1018,9 @@ func (c *context) ActiveEntitiesChannel() chan string {
 }
 
 func (c *context) SendEvent(event sample.Event, entityKey entity.Key) {
+	_, txn := instrumentation.SelfInstrumentation.StartTransaction(context2.Background(), "agent.queue_event")
+	defer txn.End()
+
 	if c.eventSender == nil {
 		aclog.
 			WithField("entity_key", entityKey.String()).
@@ -1050,6 +1053,7 @@ func (c *context) SendEvent(event sample.Event, entityKey entity.Key) {
 	}
 
 	if err := c.eventSender.QueueEvent(event, entityKey); err != nil {
+		txn.NoticeError(err)
 		alog.WithField(
 			"entityKey", entityKey,
 		).WithError(err).Error("could not queue event")
