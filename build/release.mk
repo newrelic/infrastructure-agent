@@ -177,6 +177,8 @@ generate-goreleaser-amd64:
   		$(CURDIR)/build/goreleaser/linux/centos_6_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/centos_7_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/centos_8_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/debian_systemd_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/debian_upstart_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_114_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_121_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_122_amd64.yml\
@@ -187,9 +189,6 @@ generate-goreleaser-amd64:
   		$(CURDIR)/build/goreleaser/linux/sles_152_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_153_amd64.yml\
   		 > $(GORELEASER_CONFIG_LINUX)
-
-#  		$(CURDIR)/build/goreleaser/linux/debian_systemd_amd64.yml\
-#  		$(CURDIR)/build/goreleaser/linux/debian_upstart_amd64.yml\
 
 .PHONY : generate-goreleaser-arm
  generate-goreleaser-arm:
