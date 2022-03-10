@@ -100,6 +100,7 @@ func (e *VersionAwareEmitter) Emit(definition integration.Definition, extraLabel
 			return err
 		}
 
+		elog.WithField("payload", pluginDataV4).Warn("Sending v4 metrics.")
 		e.dmEmitter.Send(fwrequest.NewFwRequest(definition, extraLabels, entityRewrite, pluginDataV4))
 		return nil
 	}
