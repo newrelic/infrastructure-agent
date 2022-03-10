@@ -487,7 +487,7 @@ func TestLegacy_Emit(t *testing.T) {
 
 			em := &VersionAwareEmitter{
 				aCtx:        tc.ma,
-				ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true, fflag.FlagDMRegisterEnable: true}),
+				ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true}),
 				dmEmitter:   mockDME,
 			}
 
@@ -525,7 +525,7 @@ func TestProtocolV4_Emit(t *testing.T) {
 
 	em := &VersionAwareEmitter{
 		aCtx:        ma,
-		ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true, fflag.FlagDMRegisterEnable: true}),
+		ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true}),
 		dmEmitter:   mockDME,
 	}
 
@@ -583,7 +583,7 @@ func TestProtocolV4_Emit_WithFFDisabled(t *testing.T) {
 
 	em := &VersionAwareEmitter{
 		aCtx:        ma,
-		ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: false, fflag.FlagDMRegisterEnable: true}),
+		ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: false}),
 		dmEmitter:   mockDME,
 	}
 
@@ -611,7 +611,7 @@ func TestProtocolV4_Emit_WithoutRegisteringEntities(t *testing.T) {
 
 	em := &VersionAwareEmitter{
 		aCtx:        mockAgent(),
-		ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true, fflag.FlagDMRegisterEnable: false}),
+		ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true}),
 		dmEmitter:   dmEmitter,
 	}
 
@@ -708,7 +708,7 @@ func TestEmit_SendCustomAttributes_NotCASentByDefault(t *testing.T) {
 
 	em := &VersionAwareEmitter{
 		aCtx:        mockForwardAgent(false, customAttributes),
-		ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true, fflag.FlagDMRegisterEnable: false}),
+		ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true}),
 		dmEmitter:   dmEmitter,
 	}
 
@@ -738,7 +738,7 @@ func TestEmit_SendCustomAttributes_nilCustomAttributes(t *testing.T) {
 
 	em := &VersionAwareEmitter{
 		aCtx:        mockForwardAgent(true, nil),
-		ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true, fflag.FlagDMRegisterEnable: false}),
+		ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true}),
 		dmEmitter:   dmEmitter,
 	}
 
@@ -780,7 +780,7 @@ func TestEmit_SendCustomAttributes_SendCAInSecureForwardMode(t *testing.T) {
 
 	em := &VersionAwareEmitter{
 		aCtx:        mockForwardAgent(true, customAttributes),
-		ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true, fflag.FlagDMRegisterEnable: false}),
+		ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true}),
 		dmEmitter:   dmEmitter,
 	}
 
