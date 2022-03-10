@@ -39,11 +39,12 @@ type IntegrationMetadata struct {
 }
 
 type Dataset struct {
-	Common    Common                   `json:"common"`
-	Metrics   []Metric                 `json:"metrics"`
-	Entity    entity.Fields            `json:"entity"`
-	Inventory map[string]InventoryData `json:"inventory"`
-	Events    []EventData              `json:"events"`
+	Common       Common                   `json:"common"`
+	Metrics      []Metric                 `json:"metrics"`
+	Entity       entity.Fields            `json:"entity"`
+	Inventory    map[string]InventoryData `json:"inventory"`
+	Events       []EventData              `json:"events"`
+	IgnoreEntity bool                     `json:"ignore_entity"`
 }
 
 type Common struct {
