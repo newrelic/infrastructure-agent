@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strconv"
 	"syscall"
 	"testing"
 
@@ -68,56 +67,6 @@ func TestFFHandlerHandle_DisablesRegisterOnInitialFetch(t *testing.T) {
 	NewHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
 
 	assert.False(t, c.RegisterEnabled)
-}
-
-func TestFFHandler_DMRegisterOnInitialFetch(t *testing.T) {
-	tests := []struct {
-		name         string
-		feature      map[string]bool
-		commandValue bool
-		want         bool
-	}{
-		{
-			name:         "Enabled if in config is enabled",
-			feature:      map[string]bool{FlagDMRegisterEnable: true},
-			commandValue: false,
-			want:         true,
-		},
-		{
-			name:         "Disabled if in config is disabled",
-			feature:      map[string]bool{FlagDMRegisterEnable: false},
-			commandValue: false,
-			want:         false,
-		},
-		{
-			name:         "Disabled if is not present in config and is disabled in command api",
-			feature:      nil,
-			commandValue: false,
-			want:         false,
-		},
-		{
-			name:         "Enabled if is not present in config and is enabled in command api",
-			feature:      nil,
-			commandValue: true,
-			want:         true,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			config := config.Config{Features: tc.feature}
-			cmd := commandapi.Command{
-				Args: []byte(fmt.Sprintf(`{
- 			"category": "Infra_Agent",
-			"flag": "dm_register_enabled",
-			"enabled": %s }`, strconv.FormatBool(tc.commandValue))),
-			}
-			manager := feature_flags.NewManager(tc.feature)
-			NewHandler(&config, manager, l).Handle(context.Background(), cmd, true)
-			enable, _ := manager.GetFeatureFlag(FlagDMRegisterEnable)
-			assert.Equal(t, tc.want, enable)
-		})
-	}
 }
 
 func TestFFHandlerHandle_DisablesParallelizeInventoryConfigOnInitialFetch(t *testing.T) {

@@ -355,10 +355,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	// queues integration terminated definitions
 	terminateDefinitionQ := make(chan string, 100)
 
-	emitterWithRegister := dm.NewEmitter(agt.GetContext(), dmSender, registerClient, instruments.Measure)
-	nonRegisterEmitter := dm.NewNonRegisterEmitter(agt.GetContext(), dmSender)
-
-	dmEmitter := dm.NewEmitterWithFF(emitterWithRegister, nonRegisterEmitter, ffManager)
+	dmEmitter := dm.NewEmitter(agt.GetContext(), dmSender, registerClient, instruments.Measure)
 
 	// track stoppable integrations
 	tracker := track.NewTracker(dmEmitter)
