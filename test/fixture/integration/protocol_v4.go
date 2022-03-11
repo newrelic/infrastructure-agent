@@ -252,6 +252,7 @@ var (
 	  },
 	  "data": [
 		{
+		  "ignore_entity": false,
 		  "common": {
 			"timestamp": 1531414060739,
 			"interval.ms": 10000,
@@ -296,6 +297,7 @@ var (
 			},
 			DataSets: []protocol.Dataset{
 				{
+					IgnoreEntity: false,
 					Common: protocol.Common{
 						Timestamp:  &ts,
 						Interval:   &interval,
