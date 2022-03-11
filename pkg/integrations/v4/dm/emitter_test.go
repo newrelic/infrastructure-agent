@@ -248,7 +248,7 @@ func TestEmitter_Send_failedToSubmitMetrics_dropAndLog(t *testing.T) {
 
 	em := NewEmitter(ctx, ms, test.NewIncrementalRegister(), instrumentation.NoopMeasure).(*emitter)
 	em.idCache.Put(entity.Key(fmt.Sprintf("%s:%s", data.DataSets[0].Entity.Type, data.DataSets[0].Entity.Name)), identity.ID)
-	em.Send(fwrequest.NewFwRequest(integration.Definition{ExecutorConfig: executor.Config{User: "root"}}, nil, nil, data))
+	em.Send(fwrequest.NewFwRequest(integration.Definition{Name: "nri-test", ExecutorConfig: executor.Config{User: "root"}}, nil, nil, data))
 
 	ms.wg.Wait()
 	ctx.SendDataWg.Wait()
@@ -261,8 +261,8 @@ func TestEmitter_Send_failedToSubmitMetrics_dropAndLog(t *testing.T) {
 
 	require.NotNil(t, entry)
 	assert.Equal(t, "DimensionalMetricsEmitter", entry.Data["component"])
-	assert.Equal(t, "discarding metrics", entry.Message)
-	assert.Equal(t, identity.ID, entry.Data["entity"])
+	assert.Equal(t, "could not send metrics", entry.Message)
+	assert.Equal(t, "nri-test", entry.Data["integration_name"])
 	assert.EqualError(t, entry.Data["error"].(error), "failed to submit metrics")
 	assert.Equal(t, logrus.WarnLevel, entry.Level, "expected for a Warn log level")
 }

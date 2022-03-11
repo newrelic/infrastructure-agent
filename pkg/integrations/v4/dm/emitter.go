@@ -213,8 +213,11 @@ func emitInventory(
 
 func emitEvent(emitter agent.PluginEmitter, metadata integration.Definition, dataSet protocol.Dataset, labels map[string]string, entityID entity.ID) {
 	sharedOpts := []func(protocol.EventData){
-		protocol.WithEntity(entity.New(entity.Key(dataSet.Entity.Name), entityID)),
 		protocol.WithLabels(labels),
+	}
+
+	if !entityID.IsEmpty() {
+		sharedOpts = append(sharedOpts, protocol.WithEntity(entity.New(entity.Key(dataSet.Entity.Name), entityID)))
 	}
 
 	u := metadata.ExecutorConfig.User
