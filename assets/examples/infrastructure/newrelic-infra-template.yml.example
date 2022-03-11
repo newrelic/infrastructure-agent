@@ -938,3 +938,36 @@ license_key: your_license_key
 #
 #disable_zero_mem_process_filter: false
 #
+
+#
+# Option   : is_forward_only
+# Env var  : NRIA_IS_FORWARD_ONLY
+# Value    : Set to True to avoid any host plugin or sampler to be enabled. 
+             Host metrics won't be pushed. Integration payloads will be processed.
+             Inventory data won't be pushed. No Host nor integration entities in NR1. 
+# Default  : false
+#
+#is_forward_only: false
+#
+
+#
+# Option   : is_secure_forward_only
+# Env var  : NRIA_IS_SECURE_FORWARD_ONLY
+# Value    : Set to True to avoid any host plugin or sampler to enabled. 
+             Host metrics won't be pushed. Integration payloads will be processed.
+             Inventory data will be pushed. Host and integration entities visible in NR1. 
+# Default  : false
+#
+#is_forward_only: false
+#
+
+#
+# Option   : heart_beat_sample_rate
+# Env var  : NRIA_HEART_BEAT_SAMPLE_RATE
+# Value    : HeartbeatSample event is pushed when is_secure_forward_only is enabled.
+             Default interval is 60 seconds, can be modified to reduce data transferred.
+# Default  : false
+#
+#is_forward_only: false
+#
+heart_beat_sample_rate: 60
