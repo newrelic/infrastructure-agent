@@ -276,12 +276,12 @@ type Config struct {
 	// samplers, and just forwards data from the integrations.
 	// Default: False
 	// Public: Yes
-	IsForwardOnly bool `yaml:"is_forward_only" envconfig:"is_forward_only" public:"false"`
+	IsForwardOnly bool `yaml:"is_forward_only" envconfig:"is_forward_only" public:"true"`
 
 	// IsSecureForwardOnly has the same behaviour as `IsForwardOnly` but with some inventory data and a heartbeat
 	// Default: False
 	// Public: Yes
-	IsSecureForwardOnly bool `yaml:"is_secure_forward_only" envconfig:"is_secure_forward_only" public:"false"`
+	IsSecureForwardOnly bool `yaml:"is_secure_forward_only" envconfig:"is_secure_forward_only" public:"true"`
 
 	// K8sIntegration enables the K8sIntegrationSample, this sample returns the names of the integrations that
 	// the agent has configured.
@@ -368,7 +368,7 @@ type Config struct {
 	// HeartBeatSampleRate Interval in seconds for sending the HeartBeatSample.
 	// Default: False
 	// Public: Yes
-	HeartBeatSampleRate int `yaml:"heart_beat_sample_rate" envconfig:"heart_beat_sample_rate" public:"false"`
+	HeartBeatSampleRate int `yaml:"heart_beat_sample_rate" envconfig:"heart_beat_sample_rate" public:"true"`
 
 	// DMSubmissionPeriod interval in seconds for triggering dimensional metrics submissions.
 	// Default: False

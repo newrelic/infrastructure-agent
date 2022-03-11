@@ -958,7 +958,7 @@ license_key: your_license_key
              Inventory data will be pushed. Host and integration entities visible in NR1. 
 # Default  : false
 #
-#is_forward_only: false
+#is_secure_forward_only: false
 #
 
 #
@@ -966,8 +966,8 @@ license_key: your_license_key
 # Env var  : NRIA_HEART_BEAT_SAMPLE_RATE
 # Value    : HeartbeatSample event is pushed when is_secure_forward_only is enabled.
              Default interval is 60 seconds, can be modified to reduce data transferred.
-# Default  : false
+             Required to keep host entity visible in NR1. 
+# Default  : 60
 #
-#is_forward_only: false
+#heart_beat_sample_rate: 60
 #
-heart_beat_sample_rate: 60
