@@ -174,7 +174,37 @@ func TestEmitter_Send_usingIDCache(t *testing.T) {
 	assert.Equal(t, secondEntity.ID.String(), secondDMetricsSent[0].Attributes[fwrequest.EntityIdAttribute])
 }
 
+func TestEmitter_Send_ignoreEntity(t *testing.T) {
+	data := integrationFixture.ProtocolV4IgnoreEntity.Clone().ParsedV4
+
+	aCtx := getAgentContext("TestEmitter_Send_ignoreEntity")
+
+	dmSender := &mockedMetricsSender{
+		wg: sync.WaitGroup{},
+	}
+	dmSender.
+		On("SendMetricsWithCommonAttributes", mock.AnythingOfType("protocol.Common"), mock.AnythingOfType("[]protocol.Metric")).
+		Return(nil)
+
+	em := NewEmitter(aCtx, dmSender, &test.EmptyRegisterClient{}, instrumentation.NoopMeasure)
+
+	dmSender.wg.Add(getMetricsSend(data))
+
+	req := fwrequest.NewFwRequest(integration.Definition{}, nil, nil, data)
+
+	em.Send(req)
+
+	dmSender.wg.Wait()
+	aCtx.SendDataWg.Wait()
+
+	// Should not add Entity Id ('nr.entity.id') to Common attributes
+	fmt.Println(dmSender.Calls[0].Arguments)
+	firstDMetricsSent := dmSender.Calls[0].Arguments[1].([]protocol.Metric)
+	assert.NotContains(t, firstDMetricsSent[0].Attributes, fwrequest.EntityIdAttribute)
+}
+
 func TestEmitter_Send(t *testing.T) {
+	// configure mocks for emitter
 	eID := entity.ID(1) // 1 as provided by test.NewIncrementalRegister
 
 	aCtx := getAgentContext("TestEmitter_Send")
@@ -182,8 +212,6 @@ func TestEmitter_Send(t *testing.T) {
 		agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "integration name"}, Entity: entity.New("unique name", eID), Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_foo", "value": "bar"}, protocol.InventoryData{"entityKey": "unique name", "id": "integrationUser", "value": "root"}}, NotApplicable: false})
 
 	aCtx.On("SendEvent", mock.Anything, entity.Key("unique name")).Run(assertEventData(t))
-
-	aCtx.SendDataWg.Add(1)
 
 	aCtx.On("Identity").Return(
 		entity.Identity{
@@ -197,7 +225,6 @@ func TestEmitter_Send(t *testing.T) {
 	ms.
 		On("SendMetricsWithCommonAttributes", mock.AnythingOfType("protocol.Common"), mock.AnythingOfType("[]protocol.Metric")).
 		Return(nil)
-	ms.wg.Add(1)
 
 	em := NewEmitter(aCtx, ms, test.NewIncrementalRegister(), instrumentation.NoopMeasure)
 
@@ -205,24 +232,39 @@ func TestEmitter_Send(t *testing.T) {
 	e := em.(*emitter)
 	e.registerMaxBatchSize = 1
 
-	data := integrationFixture.ProtocolV4.Clone().ParsedV4
-	em.Send(fwrequest.NewFwRequest(integration.Definition{ExecutorConfig: executor.Config{User: "root"}}, nil, nil, data))
+	// set tests cases
+	var fwRequestTest = []struct {
+		name               string
+		integrationPayload protocol.DataV4
+	}{
+		{"Use host entity", integrationFixture.ProtocolV4.Clone().ParsedV4},
+		{"Ignore entity", integrationFixture.ProtocolV4IgnoreEntity.Clone().ParsedV4},
+	}
 
-	ms.wg.Wait()
-	aCtx.SendDataWg.Wait()
-	aCtx.AssertExpectations(t)
+	for _, tt := range fwRequestTest {
+		ms.wg.Add(getMetricsSend(tt.integrationPayload))
+		aCtx.SendDataWg.Add(getInventoryToSend(tt.integrationPayload))
+		em.Send(fwrequest.NewFwRequest(integration.Definition{ExecutorConfig: executor.Config{User: "root"}}, nil, nil, tt.integrationPayload))
+		ms.wg.Wait()
+		aCtx.SendDataWg.Wait()
+		aCtx.AssertExpectations(t)
 
-	// Should add Entity Id ('nr.entity.id') to Common attributes
-	sent := ms.Calls[0].Arguments[1].([]protocol.Metric)
-	assert.Len(t, sent, 1)
-	assert.Equal(t, eID.String(), sent[0].Attributes[fwrequest.EntityIdAttribute])
+		for _, d := range tt.integrationPayload.DataSets {
+			if !d.IgnoreEntity {
+				entityName, err := d.Entity.Key()
+				assert.NoError(t, err)
+				actualEntityID, found := e.idCache.Get(entityName)
+				assert.True(t, found)
+				assert.Equal(t, eID, actualEntityID)
+				assert.Equal(t, actualEntityID.String(), d.Common.Attributes[fwrequest.EntityIdAttribute])
+			} else {
+				entityName, err := d.Entity.Key()
+				assert.NoError(t, err)
+				assert.Equal(t, entity.EmptyKey, entityName)
+				assert.NotContains(t, d.Common.Attributes, fwrequest.EntityIdAttribute)
+			}
 
-	for _, d := range data.DataSets {
-		entityName, err := d.Entity.Key()
-		assert.NoError(t, err)
-		actualEntityID, found := e.idCache.Get(entityName)
-		assert.True(t, found)
-		assert.Equal(t, eID, actualEntityID)
+		}
 	}
 }
 
@@ -337,4 +379,24 @@ func getAgentContext(hostname string) *mocks.AgentContext {
 	agentCtx.On("Config").Return(config.NewConfig())
 
 	return agentCtx
+}
+
+// return the number of inventory data that will be sent by the agent
+func getInventoryToSend(data protocol.DataV4) (toSend int) {
+	for _, dataset := range data.DataSets {
+		if len(dataset.Inventory) > 0 {
+			toSend += 1
+		}
+	}
+	return
+}
+
+// return the number of metrics that will be sent by the metrics sender
+func getMetricsSend(data protocol.DataV4) (toSend int) {
+	for _, dataset := range data.DataSets {
+		if len(dataset.Metrics) > 0 {
+			toSend += 1
+		}
+	}
+	return
 }
