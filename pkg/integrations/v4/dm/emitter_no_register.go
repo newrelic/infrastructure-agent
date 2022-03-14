@@ -52,7 +52,7 @@ func (e *nonRegisterEmitter) Send(dto fwrequest.FwRequest) {
 
 		emitInventory(emitter, definition, integrationMetadata, entity.EmptyID, dataSet, labels)
 
-		emitEvent(emitter, definition, dataSet, labels, entity.EmptyID)
+		emitEvent(emitter, definition, dataSet, labels, extraAnnotations, entity.EmptyID)
 
 		emitMetrics(e.metricsSender, definition, dataSet, extraAnnotations, labels)
 
