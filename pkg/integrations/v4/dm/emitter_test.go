@@ -327,7 +327,7 @@ func TestEmitEvent_InvalidPayload(t *testing.T) {
 	d := integration.Definition{}
 	plugin := agent.NewExternalPluginCommon(d.PluginID("integration.Name"), aCtx, "TestEmitEvent_InvalidPayload")
 
-	emitEvent(&plugin, d, protocol.Dataset{Events: []protocol.EventData{{"value": "foo"}}}, nil, entity.ID(0))
+	emitEvent(&plugin, d, protocol.Dataset{Events: []protocol.EventData{{"value": "foo"}}}, nil, nil, entity.ID(0))
 
 	entry := hook.LastEntry()
 	require.NotEmpty(t, hook.AllEntries())

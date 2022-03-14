@@ -252,6 +252,18 @@ func WithAttributes(a map[string]interface{}) func(EventData) {
 	}
 }
 
+// Builder for NewEventData constructor will add annotations
+func WithAnnotations(a map[string]string) func(EventData) {
+	return func(copy EventData) {
+		for key, value := range a {
+			// Extra annotations can't override current events
+			if _, ok := copy[key]; !ok {
+				copy[key] = value
+			}
+		}
+	}
+}
+
 // Minimum information to determine plugin protocol
 type PluginProtocolVersion struct {
 	RawProtocolVersion interface{} `json:"protocol_version"` // Left open-ended for validation purposes
