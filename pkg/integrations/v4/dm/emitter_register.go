@@ -14,12 +14,12 @@ func (e *emitter) runReqsRegisteredConsumer(ctx context.Context) {
 			return
 
 		case eReq := <-e.reqsRegisteredQueue:
-			e.processEntityFwRequest(eReq)
+			e.processDatasetFwRequest(eReq)
 		}
 	}
 }
 
-func (e *emitter) processEntityFwRequest(r fwrequest.EntityFwRequest) {
+func (e *emitter) processDatasetFwRequest(r fwrequest.DatasetFwRequest) {
 	// rewrites processing
 	agentShortName, err := e.agentContext.IDLookup().AgentShortEntityName()
 	if err != nil {
@@ -69,7 +69,7 @@ func (e *emitter) processDatasetRegister(ctx context.Context, intMetadata protoc
 		case <-ctx.Done():
 			return
 
-		case e.reqsRegisteredQueue <- fwrequest.NewEntityFwRequest(dataSet, eID, reqMetadata, intMetadata, agentVersion):
+		case e.reqsRegisteredQueue <- fwrequest.NewDatasetFwRequest(dataSet, eID, reqMetadata, intMetadata, agentVersion):
 		}
 		return
 	}
@@ -78,6 +78,6 @@ func (e *emitter) processDatasetRegister(ctx context.Context, intMetadata protoc
 	case <-ctx.Done():
 		return
 
-	case e.reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(dataSet, entity.EmptyID, reqMetadata, intMetadata, agentVersion):
+	case e.reqsToRegisterQueue <- fwrequest.NewDatasetFwRequest(dataSet, entity.EmptyID, reqMetadata, intMetadata, agentVersion):
 	}
 }

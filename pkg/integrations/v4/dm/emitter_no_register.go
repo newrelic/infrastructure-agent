@@ -8,5 +8,5 @@ import (
 
 func (e *emitter) processDatasetNoRegister(intMetadata protocol.IntegrationMetadata, reqMetadata fwrequest.FwRequestMeta, dataSet protocol.Dataset) {
 	agentVersion := e.agentContext.Version()
-	e.emitDataset(fwrequest.NewEntityFwRequest(dataSet, entity.EmptyID, reqMetadata, intMetadata, agentVersion))
+	e.emitDataset(fwrequest.NewDatasetFwRequest(dataSet, entity.EmptyID, reqMetadata, intMetadata, agentVersion))
 }

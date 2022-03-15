@@ -24,15 +24,15 @@ const (
 	agentCollector                   = "infrastructure-agent"
 )
 
-// EntityFwRequest stores an integration single entity payload to be processed before it gets
+// DatasetFwRequest stores an integration single entity payload to be processed before it gets
 // forwarded to NR telemetry SDK.
-type EntityFwRequest struct {
+type DatasetFwRequest struct {
 	FwRequestMeta
 	Integration protocol.IntegrationMetadata
 	Data        protocol.Dataset
 }
 
-func (r *EntityFwRequest) RegisteredWith(id entity.ID) {
+func (r *DatasetFwRequest) RegisteredWith(id entity.ID) {
 	// attributes ID decoration
 	if r.Data.Common.Attributes == nil {
 		r.Data.Common.Attributes = make(map[string]interface{})
@@ -40,7 +40,7 @@ func (r *EntityFwRequest) RegisteredWith(id entity.ID) {
 	r.Data.Common.Attributes[EntityIdAttribute] = id.String()
 }
 
-func (r *EntityFwRequest) populateCommonAttributes(intMeta protocol.IntegrationMetadata, agentVersion string) {
+func (r *DatasetFwRequest) populateCommonAttributes(intMeta protocol.IntegrationMetadata, agentVersion string) {
 	if r.Data.Common.Attributes == nil {
 		r.Data.Common.Attributes = make(map[string]interface{})
 	}
@@ -51,7 +51,7 @@ func (r *EntityFwRequest) populateCommonAttributes(intMeta protocol.IntegrationM
 	r.Data.Common.Attributes[CollectorVersionAttribute] = agentVersion
 }
 
-func (r *EntityFwRequest) ID() entity.ID {
+func (r *DatasetFwRequest) ID() entity.ID {
 	// TODO candidate for optimization
 	if r.Data.Common.Attributes != nil {
 		if id, ok := r.Data.Common.Attributes[EntityIdAttribute]; ok {
@@ -106,14 +106,14 @@ func (r *FwRequest) PluginID() ids.PluginID {
 	return r.Definition.PluginID(r.Data.Integration.Name)
 }
 
-func NewEntityFwRequest(
+func NewDatasetFwRequest(
 	entityDataSet protocol.Dataset,
 	id entity.ID,
 	reqMeta FwRequestMeta,
 	intMeta protocol.IntegrationMetadata,
 	agentVersion string,
-) EntityFwRequest {
-	r := EntityFwRequest{
+) DatasetFwRequest {
+	r := DatasetFwRequest{
 		FwRequestMeta: reqMeta,
 		Integration:   intMeta,
 		Data:          entityDataSet,

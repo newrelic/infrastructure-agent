@@ -33,8 +33,8 @@ type worker struct {
 	agentIDProvide      id.Provide
 	client              identityapi.RegisterClient
 	retryBo             *backoff.Backoff
-	reqsToRegisterQueue <-chan fwrequest.EntityFwRequest
-	reqsRegisteredQueue chan<- fwrequest.EntityFwRequest
+	reqsToRegisterQueue <-chan fwrequest.DatasetFwRequest
+	reqsRegisteredQueue chan<- fwrequest.DatasetFwRequest
 	config              WorkerConfig
 	measure             instrumentation.Measure
 }
@@ -43,8 +43,8 @@ func NewWorker(
 	agentIDProvide id.Provide,
 	client identityapi.RegisterClient,
 	retryBo *backoff.Backoff,
-	reqsToRegisterQueue <-chan fwrequest.EntityFwRequest,
-	reqsRegisteredQueue chan<- fwrequest.EntityFwRequest,
+	reqsToRegisterQueue <-chan fwrequest.DatasetFwRequest,
+	reqsRegisteredQueue chan<- fwrequest.DatasetFwRequest,
 	config WorkerConfig,
 	measureFn instrumentation.Measure,
 ) *worker {
@@ -63,7 +63,7 @@ func (w *worker) Run(ctx context.Context) {
 	timer := time.NewTimer(w.config.MaxBatchDuration)
 
 	// data for register batch call
-	batch := make(map[entity.Key]fwrequest.EntityFwRequest, w.config.MaxBatchSize)
+	batch := make(map[entity.Key]fwrequest.DatasetFwRequest, w.config.MaxBatchSize)
 	batchSizeBytes := 0
 	for {
 		select {
@@ -107,7 +107,7 @@ func (w *worker) Run(ctx context.Context) {
 	}
 }
 
-func (w *worker) send(ctx context.Context, batch map[entity.Key]fwrequest.EntityFwRequest, batchSizeBytes *int) {
+func (w *worker) send(ctx context.Context, batch map[entity.Key]fwrequest.DatasetFwRequest, batchSizeBytes *int) {
 	defer w.resetBatch(batch, batchSizeBytes)
 
 	var entities []entity.Fields
@@ -198,7 +198,7 @@ func (w *worker) registerEntitiesWithRetry(ctx context.Context, entities []entit
 	return nil
 }
 
-func (w *worker) resetBatch(batch map[entity.Key]fwrequest.EntityFwRequest, batchSizeBytes *int) {
+func (w *worker) resetBatch(batch map[entity.Key]fwrequest.DatasetFwRequest, batchSizeBytes *int) {
 	*batchSizeBytes = 0
 	for key := range batch {
 		delete(batch, key)

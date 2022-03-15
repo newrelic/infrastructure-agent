@@ -163,8 +163,8 @@ func TestWorker_Run_SendsWhenBatchLimitIsReached(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			reqsToRegisterQueue := make(chan fwrequest.EntityFwRequest, test.givenEntitiesCount)
-			registeredQueue := make(chan fwrequest.EntityFwRequest, test.givenEntitiesCount)
+			reqsToRegisterQueue := make(chan fwrequest.DatasetFwRequest, test.givenEntitiesCount)
+			registeredQueue := make(chan fwrequest.DatasetFwRequest, test.givenEntitiesCount)
 
 			agentIdentity := func() entity.Identity {
 				return entity.Identity{ID: 13}
@@ -195,7 +195,7 @@ func TestWorker_Run_SendsWhenBatchLimitIsReached(t *testing.T) {
 			go w.Run(ctx)
 
 			for i := 0; i < test.givenEntitiesCount; i++ {
-				reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{Entity: entity.Fields{
+				reqsToRegisterQueue <- fwrequest.NewDatasetFwRequest(protocol.Dataset{Entity: entity.Fields{
 					Name: fmt.Sprintf("test-%d", i),
 				}}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{}, agentVersion)
 			}
@@ -215,8 +215,8 @@ func TestWorker_Run_SendsWhenBatchLimitIsReached(t *testing.T) {
 }
 
 func TestWorker_Run_EntityGraterThanMaxByteSize(t *testing.T) {
-	reqsToRegisterQueue := make(chan fwrequest.EntityFwRequest, 0)
-	registeredQueue := make(chan fwrequest.EntityFwRequest, 1)
+	reqsToRegisterQueue := make(chan fwrequest.DatasetFwRequest, 0)
+	registeredQueue := make(chan fwrequest.DatasetFwRequest, 1)
 
 	agentIdentity := func() entity.Identity {
 		return entity.Identity{ID: 13}
@@ -239,11 +239,11 @@ func TestWorker_Run_EntityGraterThanMaxByteSize(t *testing.T) {
 
 	go w.Run(ctx)
 
-	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{Entity: entity.Fields{
+	reqsToRegisterQueue <- fwrequest.NewDatasetFwRequest(protocol.Dataset{Entity: entity.Fields{
 		Name: "this-entity-should-not-pass",
 	}}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{}, agentVersion)
 
-	reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(protocol.Dataset{Entity: entity.Fields{
+	reqsToRegisterQueue <- fwrequest.NewDatasetFwRequest(protocol.Dataset{Entity: entity.Fields{
 		Name: "test-1",
 	}}, entity.EmptyID, fwrequest.FwRequestMeta{}, protocol.IntegrationMetadata{}, agentVersion)
 
@@ -254,8 +254,8 @@ func TestWorker_Run_EntityGraterThanMaxByteSize(t *testing.T) {
 }
 
 func TestWorker_registerEntitiesWithRetry_OnError_RetryBackoff(t *testing.T) {
-	reqsToRegisterQueue := make(chan fwrequest.EntityFwRequest, 0)
-	reqsRegisteredQueue := make(chan fwrequest.EntityFwRequest, 0)
+	reqsToRegisterQueue := make(chan fwrequest.DatasetFwRequest, 0)
+	reqsRegisteredQueue := make(chan fwrequest.DatasetFwRequest, 0)
 
 	agentIdentity := func() entity.Identity {
 		return entity.Identity{ID: 13}
@@ -311,8 +311,8 @@ func TestWorker_registerEntitiesWithRetry_OnError_RetryBackoff(t *testing.T) {
 }
 
 func TestWorker_registerEntitiesWithRetry_OnError_Discard(t *testing.T) {
-	reqsToRegisterQueue := make(chan fwrequest.EntityFwRequest, 0)
-	reqsRegisteredQueue := make(chan fwrequest.EntityFwRequest, 0)
+	reqsToRegisterQueue := make(chan fwrequest.DatasetFwRequest, 0)
+	reqsRegisteredQueue := make(chan fwrequest.DatasetFwRequest, 0)
 
 	agentIdentity := func() entity.Identity {
 		return entity.Identity{ID: 13}
@@ -361,8 +361,8 @@ func TestWorker_registerEntitiesWithRetry_OnError_Discard(t *testing.T) {
 }
 
 func TestWorker_registerEntitiesWithRetry_Success(t *testing.T) {
-	reqsToRegisterQueue := make(chan fwrequest.EntityFwRequest, 0)
-	reqsRegisteredQueue := make(chan fwrequest.EntityFwRequest, 0)
+	reqsToRegisterQueue := make(chan fwrequest.DatasetFwRequest, 0)
+	reqsRegisteredQueue := make(chan fwrequest.DatasetFwRequest, 0)
 
 	agentIdentity := func() entity.Identity {
 		return entity.Identity{ID: 13}
@@ -420,8 +420,8 @@ func TestWorker_send_Logging_VerboseEnabled(t *testing.T) {
 	}
 
 	// When the request is successful but some entities fail, we log only when verbose is enabled.
-	reqsToRegisterQueue := make(chan fwrequest.EntityFwRequest, 0)
-	reqsRegisteredQueue := make(chan fwrequest.EntityFwRequest, 0)
+	reqsToRegisterQueue := make(chan fwrequest.DatasetFwRequest, 0)
+	reqsRegisteredQueue := make(chan fwrequest.DatasetFwRequest, 0)
 
 	agentIdentity := func() entity.Identity {
 		return entity.Identity{ID: 12}
@@ -438,7 +438,7 @@ func TestWorker_send_Logging_VerboseEnabled(t *testing.T) {
 	}
 	w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), reqsToRegisterQueue, reqsRegisteredQueue, config, instrumentation.NoopMeasure)
 
-	batch := map[entity.Key]fwrequest.EntityFwRequest{
+	batch := map[entity.Key]fwrequest.DatasetFwRequest{
 		entity.Key("error"): {
 			Data: protocol.Dataset{
 				Entity: entity.Fields{Name: "error"},
@@ -507,8 +507,8 @@ func TestWorker_send_Logging_VerboseEnabled(t *testing.T) {
 
 func TestWorker_send_Logging_VerboseDisabled(t *testing.T) {
 	// When the request is successful but some entities fail, we log only when verbose is enabled.
-	reqsToRegisterQueue := make(chan fwrequest.EntityFwRequest, 0)
-	reqsRegisteredQueue := make(chan fwrequest.EntityFwRequest, 0)
+	reqsToRegisterQueue := make(chan fwrequest.DatasetFwRequest, 0)
+	reqsRegisteredQueue := make(chan fwrequest.DatasetFwRequest, 0)
 
 	agentIdentity := func() entity.Identity {
 		return entity.Identity{ID: 12}
@@ -525,7 +525,7 @@ func TestWorker_send_Logging_VerboseDisabled(t *testing.T) {
 	}
 	w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), reqsToRegisterQueue, reqsRegisteredQueue, config, instrumentation.NoopMeasure)
 
-	batch := map[entity.Key]fwrequest.EntityFwRequest{
+	batch := map[entity.Key]fwrequest.DatasetFwRequest{
 		entity.Key("error"): {
 			Data: protocol.Dataset{
 				Entity: entity.Fields{Name: "error"},

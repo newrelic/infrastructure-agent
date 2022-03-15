@@ -56,8 +56,8 @@ type Agent interface {
 type emitter struct {
 	isProcessing              abool.AtomicBool
 	reqsQueue                 chan fwrequest.FwRequest
-	reqsToRegisterQueue       chan fwrequest.EntityFwRequest
-	reqsRegisteredQueue       chan fwrequest.EntityFwRequest
+	reqsToRegisterQueue       chan fwrequest.DatasetFwRequest
+	reqsRegisteredQueue       chan fwrequest.DatasetFwRequest
 	retryBo                   *backoff.Backoff
 	maxRetryBo                time.Duration
 	idCache                   entity.KnownIDs
@@ -86,8 +86,8 @@ func NewEmitter(
 		retryBo:                   backoff.NewDefaultBackoff(),
 		maxRetryBo:                time.Duration(agentContext.Config().RegisterMaxRetryBoSecs) * time.Second,
 		reqsQueue:                 make(chan fwrequest.FwRequest, defaultRequestsQueueLen),
-		reqsToRegisterQueue:       make(chan fwrequest.EntityFwRequest, defaultRequestsToRegisterQueueLen),
-		reqsRegisteredQueue:       make(chan fwrequest.EntityFwRequest, defaultRequestsRegisteredQueueLen),
+		reqsToRegisterQueue:       make(chan fwrequest.DatasetFwRequest, defaultRequestsToRegisterQueueLen),
+		reqsRegisteredQueue:       make(chan fwrequest.DatasetFwRequest, defaultRequestsRegisteredQueueLen),
 		registerWorkers:           defaultRegisterWorkersAmnt,
 		idCache:                   entity.NewKnownIDs(),
 		agentContext:              agentContext,
@@ -161,7 +161,7 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 	}
 }
 
-func (e *emitter) emitDataset(r fwrequest.EntityFwRequest) {
+func (e *emitter) emitDataset(r fwrequest.DatasetFwRequest) {
 
 	labels, annos := r.LabelsAndExtraAnnotations()
 

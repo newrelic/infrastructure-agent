@@ -13,7 +13,7 @@ func TestCommonAttributes(t *testing.T) {
 	agentVersion := "agentVersion"
 	intVersion := "intVersion"
 	intName := "intName"
-	fw := NewEntityFwRequest(protocol.Dataset{}, id, FwRequestMeta{}, protocol.IntegrationMetadata{Name: intName, Version: intVersion}, agentVersion)
+	fw := NewDatasetFwRequest(protocol.Dataset{}, id, FwRequestMeta{}, protocol.IntegrationMetadata{Name: intName, Version: intVersion}, agentVersion)
 
 	assert.Equal(t, agentVersion, fw.Data.Common.Attributes[CollectorVersionAttribute])
 	assert.Equal(t, agentCollector, fw.Data.Common.Attributes[CollectorNameAttribute])
@@ -29,7 +29,7 @@ func TestCommonAttributesEmptyEntity(t *testing.T) {
 	agentVersion := "agentVersion"
 	intVersion := "intVersion"
 	intName := "intName"
-	fw := NewEntityFwRequest(protocol.Dataset{}, entity.EmptyID, FwRequestMeta{}, protocol.IntegrationMetadata{Name: intName, Version: intVersion}, agentVersion)
+	fw := NewDatasetFwRequest(protocol.Dataset{}, entity.EmptyID, FwRequestMeta{}, protocol.IntegrationMetadata{Name: intName, Version: intVersion}, agentVersion)
 	// No Panic expected
 
 	assert.Equal(t, agentVersion, fw.Data.Common.Attributes[CollectorVersionAttribute])
