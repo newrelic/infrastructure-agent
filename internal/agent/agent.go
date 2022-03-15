@@ -5,6 +5,7 @@ package agent
 import (
 	context2 "context"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -598,8 +599,10 @@ func (a *Agent) startPlugins() {
 	// iterate over and start each plugin
 	for _, plugin := range a.plugins {
 		plugin.LogInfo()
-		func(p Plugin) {
-			go p.Run()
+		go func(p Plugin) {
+			_, trx := instrumentation.SelfInstrumentation.StartTransaction(context2.Background(), fmt.Sprintf("plugin. %s ", p.Id().String()))
+			defer trx.End()
+			p.Run()
 		}(plugin)
 	}
 }
@@ -1015,6 +1018,9 @@ func (c *context) ActiveEntitiesChannel() chan string {
 }
 
 func (c *context) SendEvent(event sample.Event, entityKey entity.Key) {
+	_, txn := instrumentation.SelfInstrumentation.StartTransaction(context2.Background(), "agent.queue_event")
+	defer txn.End()
+
 	if c.eventSender == nil {
 		aclog.
 			WithField("entity_key", entityKey.String()).
@@ -1047,6 +1053,7 @@ func (c *context) SendEvent(event sample.Event, entityKey entity.Key) {
 	}
 
 	if err := c.eventSender.QueueEvent(event, entityKey); err != nil {
+		txn.NoticeError(err)
 		alog.WithField(
 			"entityKey", entityKey,
 		).WithError(err).Error("could not queue event")

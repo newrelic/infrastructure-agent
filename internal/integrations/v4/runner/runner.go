@@ -5,6 +5,7 @@ package runner
 import (
 	"bytes"
 	"context"
+	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
 	"regexp"
 	"strings"
 	"sync"
@@ -198,6 +199,8 @@ func (r *runner) heartBeat() {
 // For long-time running integrations, avoids starting the next
 // discover-execute cycle until all the parallel processes have ended
 func (r *runner) execute(ctx context.Context, matches *databind.Values, pidWCh, exitCodeCh chan<- int) {
+	ctx, txn := instrumentation.SelfInstrumentation.StartTransaction(ctx, "integration.v4."+r.definition.Name)
+	defer txn.End()
 	def := r.definition
 
 	// If timeout configuration is set, wraps current context in a heartbeat-enabled timeout context
@@ -210,6 +213,7 @@ func (r *runner) execute(ctx context.Context, matches *databind.Values, pidWCh, 
 	// Runs all the matching integration instances
 	outputs, err := r.definition.Run(ctx, matches, pidWCh, exitCodeCh)
 	if err != nil {
+		txn.NoticeError(err)
 		r.log.WithError(err).Error("can't start integration")
 		return
 	}
@@ -220,12 +224,26 @@ func (r *runner) execute(ctx context.Context, matches *databind.Values, pidWCh, 
 	wg.Add(len(outputs))
 	for _, out := range outputs {
 		o := out
-		go r.handleLines(o.Receive.Stdout, o.ExtraLabels, o.EntityRewrite)
-		go r.handleStderr(o.Receive.Stderr)
-		go func() {
+		go func(txn instrumentation.Transaction) {
+			_, seg := txn.StartSegment(ctx, "handleLines")
+			defer seg.End()
+			r.handleLines(o.Receive.Stdout, o.ExtraLabels, o.EntityRewrite)
+		}(txn)
+
+		go func(txn instrumentation.Transaction) {
+			_, seg := txn.StartSegment(ctx, "handleStderr")
+			defer seg.End()
+			r.handleStderr(o.Receive.Stderr)
+		}(txn)
+
+		go func(txn instrumentation.Transaction) {
+			ctx, seg := txn.StartSegment(ctx, "handleErrors")
+			defer seg.End()
+
 			defer wg.Done()
 			r.handleErrors(ctx, o.Receive.Errors)
-		}()
+
+		}(txn)
 	}
 
 	r.log.Debug("Waiting while the integration instances run.")

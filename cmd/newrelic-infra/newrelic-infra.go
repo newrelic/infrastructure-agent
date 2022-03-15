@@ -20,6 +20,7 @@ import (
 	"syscall"
 	"time"
 
+	selfInstrumentation "github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
 	"github.com/newrelic/infrastructure-agent/pkg/config/migrate"
 
 	"github.com/newrelic/infrastructure-agent/internal/httpapi"
@@ -329,6 +330,8 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	if err != nil {
 		fatal(err, "Agent cannot initialize.")
 	}
+
+	selfInstrumentation.InitSelfInstrumentation(c, agt.Context.HostnameResolver())
 
 	defer agt.Terminate()
 

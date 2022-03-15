@@ -5,8 +5,10 @@ package agent
 import (
 	"bytes"
 	"compress/gzip"
+	goContext "context"
 	"encoding/json"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -138,7 +140,12 @@ func (sender *metricsIngestSender) Start() (err error) {
 	sender.stopChannel = make(chan bool)
 
 	// Wait for accumulateBatches and sendBatches to complete
-	sender.internalRoutineWaits.Add(2)
+	sender.internalRoutineWaits.Add(3)
+
+	go func() {
+		defer sender.internalRoutineWaits.Done()
+		reportEventQueueMetrics(sender.eventQueue, sender.stopChannel)
+	}()
 
 	go func() {
 		defer sender.internalRoutineWaits.Done()
@@ -196,6 +203,24 @@ func (sender *metricsIngestSender) QueueEvent(event sample.Event, key entity.Key
 		return nil
 	default:
 		return fmt.Errorf("could not queue event: queue is full")
+	}
+}
+
+func reportEventQueueMetrics(queue chan eventData, stopChannel chan bool) {
+	sendTimer := time.NewTicker(time.Millisecond * 500)
+	for {
+		select {
+		case <-sendTimer.C:
+			metric := instrumentation.NewGauge("agent.eventQueueSize", float64(len(queue)))
+			instrumentation.SelfInstrumentation.RecordMetric(goContext.Background(), metric)
+			metric = instrumentation.NewGauge("agent.eventQueueCapacity", float64(cap(queue)))
+			instrumentation.SelfInstrumentation.RecordMetric(goContext.Background(), metric)
+			metric = instrumentation.NewGauge("agent.eventQueueUtilization", float64((len(queue)*100)/cap(queue)))
+			instrumentation.SelfInstrumentation.RecordMetric(goContext.Background(), metric)
+		case <-stopChannel:
+			sendTimer.Stop()
+			return
+		}
 	}
 }
 
@@ -320,14 +345,20 @@ func (sender *metricsIngestSender) sendBatches() {
 		select {
 
 		case batch := <-sender.batchQueue:
+			ctx := goContext.Background()
+			ctx, txn := instrumentation.SelfInstrumentation.StartTransaction(ctx, "sender.sendBatches")
+
 			pclog := ilog.WithField("postCount", sender.postCount)
 			sender.postCount++
 
 			agentKey := ""
 			dataByEntity := make(map[entity.Key]*MetricPost)
 
+			ctx, seg := txn.StartSegment(ctx, "getAgentId")
 			agentID := sender.agentID()
+			seg.End()
 
+			ctx, seg = txn.StartSegment(ctx, "rebuildEvents")
 			// We need to rebuild the array of events as a []json.RawMessage, or else JSON marshalling won't handle them correctly.
 			for _, event := range batch {
 				entityData := dataByEntity[event.entityKey]
@@ -340,25 +371,29 @@ func (sender *metricsIngestSender) sendBatches() {
 					agentKey = event.agentKey
 				}
 			}
+			seg.End()
 
+			ctx, seg = txn.StartSegment(ctx, "prepareBulkPost")
 			var bulkPost MetricPostBatch
 			for _, entityData := range dataByEntity {
-
+				metric := instrumentation.NewGauge("agent.postEventsNum", float64(len(entityData.Events)))
+				instrumentation.SelfInstrumentation.RecordMetric(ctx, metric)
 				pclog.WithFieldsF(entityData.getLoggingField).
 					WithFieldsF(entityData.getTimestampLoggingFields).
 					WithField("numEvents", len(entityData.Events)).
 					Debug("Sending events to metrics-ingest.")
 				bulkPost = append(bulkPost, entityData)
 			}
-
 			pclog.Debug("Preparing metrics post.")
+			seg.End()
 
-			err := sender.doPost(bulkPost, agentKey)
+			err := sender.doPost(ctx, bulkPost, agentKey)
 
 			if err == nil {
 				pclog.Debug("Metrics post succeeded.")
 				sender.sendErrorCount = 0
 				retryBO.Reset()
+				txn.End()
 				continue
 			}
 
@@ -367,6 +402,8 @@ func (sender *metricsIngestSender) sendBatches() {
 
 			e, ok := err.(*errRetry)
 			if !ok {
+				txn.NoticeError(err)
+				txn.End()
 				continue
 			}
 
@@ -374,11 +411,17 @@ func (sender *metricsIngestSender) sendBatches() {
 				pclog.WithField("retryAfter", e.retryPolicy.After).Debug("Metric sender retry requested.")
 				retryBO.Reset()
 				sender.backoff(e.retryPolicy.After)
+				txn.NoticeError(e)
+				txn.AddAttribute("retryAfter", e.retryPolicy.After)
+				txn.End()
 				continue
 			}
 			retryBOAfter := retryBO.DurationWithMax(e.retryPolicy.MaxBackOff)
 			pclog.WithField("retryBackoffAfter", retryBOAfter).Debug("Metric sender backoff and retry requested.")
 			sender.backoff(retryBOAfter)
+			txn.AddAttribute("retryBackoffAfter", retryBOAfter)
+			txn.NoticeError(e)
+			txn.End()
 		case <-sender.stopChannel:
 			// Stop channel has been closed - exit.
 			// There might still be some batches in the queue, but they'll still be there in case we start the sender back up.
@@ -408,12 +451,16 @@ func (s *metricsIngestSender) backoff(d time.Duration) {
 }
 
 // Make one HTTP call to push a load of events up to the server
-func (sender *metricsIngestSender) doPost(post []*MetricPost, agentKey string) error {
+func (sender *metricsIngestSender) doPost(ctx goContext.Context, post []*MetricPost, agentKey string) error {
 	if agentKey == "" {
 		ilog.Warn("no available agent-id on metrics sender")
 	}
 
+	txn := instrumentation.TransactionFromContext(ctx)
+	txnCtx, segment := txn.StartSegment(ctx, "doPost.marshall")
 	postBytes, err := json.Marshal(post)
+	segment.End()
+
 	if err != nil {
 		return fmt.Errorf("Could not marshal events object [%v]: %v", post, err)
 	}
@@ -422,18 +469,23 @@ func (sender *metricsIngestSender) doPost(post []*MetricPost, agentKey string) e
 	var reqBuf *bytes.Buffer
 	if sender.Context.Config().PayloadCompressionLevel > gzip.NoCompression {
 		// GZIP
+		txnCtx, segment = txn.StartSegment(txnCtx, "doPost.gzip")
 		reqBuf = &bytes.Buffer{}
 		compressionLevel := sender.Context.Config().PayloadCompressionLevel
 		gzipWriter, err := gzip.NewWriterLevel(reqBuf, compressionLevel)
 		if err != nil {
+			segment.End()
 			return fmt.Errorf("Unable to create gzip writer: %v", err)
 		}
 		if _, err := gzipWriter.Write(postBytes); err != nil {
+			segment.End()
 			return fmt.Errorf("Gzip writer was not able to write to request body: %s", err)
 		}
 		if err := gzipWriter.Close(); err != nil {
+			segment.End()
 			return fmt.Errorf("Gzip writer did not close: %s", err)
 		}
+		segment.End()
 	} else {
 		reqBuf = bytes.NewBuffer(postBytes)
 	}
@@ -461,7 +513,11 @@ func (sender *metricsIngestSender) doPost(post []*MetricPost, agentKey string) e
 
 	trace.NonDMSubmission(postBytes)
 
+	ctx, extSeg := txn.StartExternalSegment(ctx, "event_sender", req)
+	extSeg.AddAttribute("postSize", len(postBytes))
 	resp, err := sender.HttpClient(req)
+	extSeg.End()
+
 	if err != nil {
 		return fmt.Errorf("error sending events: %v", err)
 	}

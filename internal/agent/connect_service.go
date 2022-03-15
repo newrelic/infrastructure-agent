@@ -3,15 +3,16 @@
 package agent
 
 import (
+	goContext "context"
 	"errors"
 	"time"
 
-	"github.com/newrelic/infrastructure-agent/pkg/log"
-
+	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/fingerprint"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/trace"
 )
 
@@ -35,6 +36,9 @@ func NewIdentityConnectService(client identityapi.IdentityConnectClient, fingerp
 
 func (ic *identityConnectService) Connect() entity.Identity {
 	var retryBO *backoff.Backoff
+
+	_, txn := instrumentation.SelfInstrumentation.StartTransaction(goContext.Background(), "agent.connect")
+	defer txn.End()
 
 	for {
 		f, err := ic.fingerprintHarvest.Harvest()
@@ -81,6 +85,9 @@ func (ic *identityConnectService) Connect() entity.Identity {
 // ConnectUpdate will check for system fingerprint changes and will update it if it's the case.
 // It returns the same ID provided as argument if there is an error
 func (ic *identityConnectService) ConnectUpdate(agentIdn entity.Identity) (entityIdn entity.Identity, err error) {
+	_, txn := instrumentation.SelfInstrumentation.StartTransaction(goContext.Background(), "agent.connect_update")
+	defer txn.End()
+
 	if agentIdn.ID.IsEmpty() {
 		logger.Warn(ErrEmptyEntityID.Error())
 	}
@@ -127,6 +134,9 @@ func (ic *identityConnectService) ConnectUpdate(agentIdn entity.Identity) (entit
 
 // Disconnect is used to signal the backend that the agent will stop.
 func (ic *identityConnectService) Disconnect(agentID entity.ID, state identityapi.DisconnectReason) error {
+	_, txn := instrumentation.SelfInstrumentation.StartTransaction(goContext.Background(), "agent.disconnect")
+	defer txn.End()
+
 	logger.WithField("state", state).Info("calling disconnect")
 
 	if agentID.IsEmpty() {

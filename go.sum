@@ -483,8 +483,12 @@ github.com/ncw/swift v1.0.47/go.mod h1:23YIA4yWVnGwv2dQlN4bB7egfYX6YLn0Yo/S6zZO/
 github.com/newrelic-forks/go-systemd/v22 v22.1.1/go.mod h1:p4NfqokFlluq2+M0PT0C79+OFaaeBPRsuii4AN/fr38=
 github.com/newrelic-forks/service v1.1.2 h1:8kDY8NtqYGVk0anleTD8FAWJzmJCTUjMTwdWuYJHI0w=
 github.com/newrelic-forks/service v1.1.2/go.mod h1:RrJI2xn5vve/r32U5suTbeaSGoMU6GbNPoj36CVYcHc=
+github.com/newrelic/go-agent/v3 v3.15.2 h1:NEpksu2AhuZncbwkDqUg2IvUJst3JQ/TemYfK4WdS/Y=
+github.com/newrelic/go-agent/v3 v3.15.2/go.mod h1:1A1dssWBwzB7UemzRU6ZVaGDsI+cEn5/bNxI0wiYlIc=
 github.com/newrelic/infra-identity-client-go v1.0.2 h1:RxkHAFOqeiBkW/fXvzkp3uORPl6crFt4I/zf4dCUFKM=
 github.com/newrelic/infra-identity-client-go v1.0.2/go.mod h1:lrG2ompP2Mr6D8WW615/h2AYNs9B9pw2zLuc38LNb4E=
+github.com/newrelic/newrelic-telemetry-sdk-go v0.8.1 h1:6OX5VXMuj2salqNBc41eXKz6K+nV6OB/hhlGnAKCbwU=
+github.com/newrelic/newrelic-telemetry-sdk-go v0.8.1/go.mod h1:2kY6OeOxrJ+RIQlVjWDc/pZlT3MIf30prs6drzMfJ6E=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e h1:fD57ERR4JtEqsWbfPhv4DMiApHyliiK5xCTNVSPiaAs=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
