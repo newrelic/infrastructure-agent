@@ -174,7 +174,6 @@ func (e *emitter) emitDataset(r fwrequest.EntityFwRequest) {
 	emitMetrics(e.metricsSender, r.Definition, r.Data, annos, labels)
 }
 
-// TODO: decorate metrics with integrationMetadata protocol.IntegrationMetadata
 func emitMetrics(metricSender MetricsSender,
 	metadata integration.Definition,
 	dataset protocol.Dataset,
