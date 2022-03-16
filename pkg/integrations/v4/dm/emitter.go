@@ -150,11 +150,16 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 		case req := <-e.reqsQueue:
 			e.measure(instrumentation.Counter, instrumentation.DMDatasetsReceived, int64(len(req.Data.DataSets)))
 			for _, ds := range req.Data.DataSets {
-				if ds.IgnoreEntity {
-					// Should not contain entity attributes
-					e.processDatasetNoRegister(req.Data.Integration, req.FwRequestMeta, ds)
-				} else {
-					e.processDatasetRegister(ctx, req.Data.Integration, req.FwRequestMeta, ds)
+				select {
+				case _ = <-ctx.Done():
+					return
+				default:
+					if ds.IgnoreEntity {
+						// Should not contain entity attributes
+						e.processDatasetNoRegister(req.Data.Integration, req.FwRequestMeta, ds)
+					} else {
+						e.processDatasetRegister(ctx, req.Data.Integration, req.FwRequestMeta, ds)
+					}
 				}
 			}
 		}
