@@ -15,7 +15,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 )
 
-var mplog = log.WithField("component", "Metrics Process")
+var mplog = log.WithComponent("ProcessSampler")
 
 // Harvester manages sampling for individual processes. It is used by the Process Sampler to get information about the
 // existing processes.
