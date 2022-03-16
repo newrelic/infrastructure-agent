@@ -17,6 +17,7 @@ ec2: ec2-install-deps ec2-build
 
 .PHONY: canaries
 canaries: PREFIX ?= canary
+canaries: REPO ?= ""
 canaries: validate-aws-credentials ec2-install-deps ec2-build
 ifndef NR_LICENSE_KEY
 	@echo "NR_LICENSE_KEY variable must be provided for \"make canaries\""
@@ -31,7 +32,7 @@ ifndef ANSIBLE_PASSWORD
 	exit 1
 endif
 	@read -p "Verify that you are in the VPN if needed and press any key to continue"
-	tools/spin-ec2/bin/spin-ec2 canaries provision -v 'v$(VERSION)' -l '$(NR_LICENSE_KEY)' -x '$(ANSIBLE_PASSWORD)' -f '$(PREFIX)'
+	tools/spin-ec2/bin/spin-ec2 canaries provision -v 'v$(VERSION)' -l '$(NR_LICENSE_KEY)' -x '$(ANSIBLE_PASSWORD)' -f '$(PREFIX)' -r '$(REPO)'
 
 .PHONY: canaries-prune-dry
 canaries-prune-dry: validate-aws-credentials ec2-install-deps ec2-build

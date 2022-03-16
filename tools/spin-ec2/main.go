@@ -255,6 +255,10 @@ func cliMode() {
 	cmdProvision.PersistentFlags().StringP("prefix", "f", hostPrefix, "canary instances prefix")
 	viper.BindPFlag("prefix", cmdProvision.PersistentFlags().Lookup("prefix"))
 
+	// Repository endpoint
+	cmdProvision.PersistentFlags().StringP("repo", "r", "", "package repository url ")
+	viper.BindPFlag("repo", cmdProvision.PersistentFlags().Lookup("repo"))
+
 	var cmdPrune = &cobra.Command{
 		Use:   "prune",
 		Short: "Prune canary machines",
@@ -277,6 +281,7 @@ func canaryConfFromArgs() (canaryConf, error) {
 	platform := viper.GetString("platform")
 	ansiblePassword := viper.GetString("ansible_password")
 	prefix := viper.GetString("prefix")
+	repo := viper.GetString("repo")
 
 	if !semver.IsValid(agentVersion) {
 		return canaryConf{}, fmt.Errorf("agent version '%s' doesn't match the pattern 'vmajor.minor.patch' format",
@@ -289,6 +294,7 @@ func canaryConfFromArgs() (canaryConf, error) {
 		platform:        platform,
 		ansiblePassword: ansiblePassword,
 		prefix:          prefix,
+		repo:            repo,
 	}, nil
 }
 
@@ -410,6 +416,9 @@ func provisionEphimeralCanaries(cnf canaryConf) error {
 		"-e", "verbose=3",
 		"-e", "target_agent_version=" + cnf.agentVersion[1:],
 		"-i", path.Join(curPath, inventoryProvisioned),
+	}
+	if cnf.repo != "" {
+		playbookArguments = append(playbookArguments, "-e", "repo_endpoint="+cnf.repo)
 	}
 	if cnf.ansiblePassword != "" {
 		playbookArguments = append(playbookArguments, "-e", "ansible_password="+cnf.ansiblePassword)
