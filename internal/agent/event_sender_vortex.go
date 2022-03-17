@@ -149,10 +149,6 @@ func newVortexEventSender(ctx *context, licenseKey, userAgent string, httpClient
 	}
 }
 
-func (s *vortexEventSender) Debug() bool {
-	return s.Context.Config().Debug
-}
-
 // Start a couple of background routines to handle incoming data and post it to the server periodically.
 func (s *vortexEventSender) Start() (err error) {
 	if s.stopChannel != nil {

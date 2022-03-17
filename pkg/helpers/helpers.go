@@ -165,15 +165,18 @@ func GetEnv(key string, dfault string, combineWith ...string) string {
 }
 
 func LogStructureDetails(logEntry log.Entry, sample interface{}, name, phase string, optionalFields logrus.Fields) {
-	buffer, dErr := json.Marshal(sample)
-	logger := logEntry.WithFields(optionalFields).WithFields(logrus.Fields{
-		"structure": name,
-		"location":  phase,
-	})
-	if dErr != nil {
-		logger.WithError(dErr).Debug("Can't marshal sample.")
-	} else {
-		logger.WithFields(optionalFields).Debug(string(buffer))
+	// prevent json marshall if debug is not enabled
+	if logEntry.IsDebugEnabled() {
+		buffer, dErr := json.Marshal(sample)
+		logger := logEntry.WithFields(optionalFields).WithFields(logrus.Fields{
+			"structure": name,
+			"location":  phase,
+		})
+		if dErr != nil {
+			logger.WithError(dErr).Debug("Can't marshal sample.")
+		} else {
+			logger.WithFields(optionalFields).Debug(string(buffer))
+		}
 	}
 }
 

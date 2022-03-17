@@ -126,10 +126,6 @@ func newMetricsIngestSender(ctx *context, licenseKey, userAgent string, httpClie
 	}
 }
 
-func (sender *metricsIngestSender) Debug() bool {
-	return sender.Context.Config().Debug
-}
-
 // Start a couple of background routines to handle incoming data and post it to the server periodically.
 func (sender *metricsIngestSender) Start() (err error) {
 	if sender.stopChannel != nil {
