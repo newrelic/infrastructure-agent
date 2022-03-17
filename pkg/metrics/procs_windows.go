@@ -650,9 +650,7 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 			}
 
 			if proc != nil {
-				if self.Debug() {
-					helpers.LogStructureDetails(pslog, winProc, "ProcWinProc", "raw", logrus.Fields{"pid": pid, "pidAndCreationDate": pidAndCreationDate})
-				}
+				helpers.LogStructureDetails(pslog, winProc, "ProcWinProc", "raw", logrus.Fields{"pid": pid, "pidAndCreationDate": pidAndCreationDate})
 				// We saw process, so remember that for later clean up of cache
 				currentPids[pidAndCreationDate] = true
 
@@ -662,9 +660,7 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 					continue
 				}
 
-				if self.Debug() {
-					helpers.LogStructureDetails(pslog, memInfo, "ProcMemoryInfo", "raw", logrus.Fields{"pid": pid})
-				}
+				helpers.LogStructureDetails(pslog, memInfo, "ProcMemoryInfo", "raw", logrus.Fields{"pid": pid})
 
 				sample.MemoryRSSBytes = int64(memInfo.RSS)
 				sample.MemoryVMSBytes = int64(memInfo.VMS)
@@ -739,9 +735,7 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 				if err != nil {
 					logSampleError(pid, winProc, err, "can't get process times")
 				} else {
-					if self.Debug() {
-						helpers.LogStructureDetails(pslog, currentProcessTime, "ProcGetProcessTimes", "raw", logrus.Fields{"pid": pid})
-					}
+					helpers.LogStructureDetails(pslog, currentProcessTime, "ProcGetProcessTimes", "raw", logrus.Fields{"pid": pid})
 					sample.CPUPercent, err = self.calcCPUPercent(pidAndCreationDate, currentProcessTime)
 					if err != nil {
 						logSampleError(pid, winProc, err, "can't get CPUPercent")
@@ -835,19 +829,11 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 	self.hasAlreadyRun = true
 	self.previousSystemTime = self.currentSystemTime
 
-	if self.Debug() {
-		for _, sample := range results {
-			helpers.LogStructureDetails(pslog, sample.(*types.ProcessSample), "ProcessSample", "final", nil)
-		}
+	for _, sample := range results {
+		helpers.LogStructureDetails(pslog, sample.(*types.ProcessSample), "ProcessSample", "final", nil)
 	}
-	return
-}
 
-func (self *ProcsMonitor) Debug() bool {
-	if self.context == nil {
-		return false
-	}
-	return self.context.Config().Debug
+	return
 }
 
 func (self *ProcsMonitor) DisableZeroRSSFilter() bool {

@@ -881,12 +881,6 @@ type Config struct {
 	// Public: Yes
 	CloudMetadataDisableKeepAlive bool `yaml:"cloud_metadata_disable_keep_alive" envconfig:"cloud_metadata_disable_keep_alive"`
 
-	// Debug This config option used to be used as the current Verbose config option. Since version 1.0.261 this
-	// option config is deprecated and enabling it has no effect in the logging output
-	// Default: False
-	// Public: No
-	Debug bool `yaml:"debug" envconfig:"debug" public:"false"`
-
 	// RemoveEntitiesPeriod Defines the frequency to engage the process of deleting entities that haven't been reported
 	// information during the frequency interval. Valid time units are: "s" (seconds), "m" (minutes), "h" (hour).
 	// Default: 48h
@@ -1626,12 +1620,8 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	// today. Debug should change to just mean "debug mode" per the command
 	// line switch meaning.
 	if cfg.Verbose > 0 {
-		cfg.Debug = true
 		log.SetLevel(logrus.TraceLevel)
 		logrus.SetLevel(logrus.TraceLevel)
-		if cfg.Verbose == TroubleshootLogging {
-			cfg.Debug = true
-		}
 	}
 
 	for _, feature := range defaultTraces {

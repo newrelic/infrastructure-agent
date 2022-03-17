@@ -54,13 +54,6 @@ func NewSystemSampler(context agent.AgentContext, storageSampler *storage.Sample
 	}
 }
 
-func (s *SystemSampler) Debug() bool {
-	if s.context == nil {
-		return false
-	}
-	return s.context.Config().Debug
-}
-
 func (s *SystemSampler) sampleInterval() int {
 	if s.context != nil {
 		return s.context.Config().MetricsSystemSampleRate
@@ -128,9 +121,8 @@ func (s *SystemSampler) Sample() (results sample.EventBatch, err error) {
 	}
 	seg.End()
 
-	if s.Debug() {
-		helpers.LogStructureDetails(syslog, sample, "SystemSample", "final", nil)
-	}
+	helpers.LogStructureDetails(syslog, sample, "SystemSample", "final", nil)
 	results = append(results, sample)
+
 	return
 }

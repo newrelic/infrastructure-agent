@@ -22,7 +22,6 @@ func contextMock() *mocks.AgentContext {
 	ctx := new(mocks.AgentContext)
 	ctx.On("Config").Return(&config.Config{
 		RunMode: config.ModeRoot,
-		Debug:   true,
 		Verbose: 1,
 	})
 	ctx.On("GetServiceForPid", mock.Anything).Return("service-name", true)
