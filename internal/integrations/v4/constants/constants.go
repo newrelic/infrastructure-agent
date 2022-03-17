@@ -3,3 +3,4 @@
 package constants
 
 const EnableVerbose = "enable_verbose"
+const HostID = "host_id"

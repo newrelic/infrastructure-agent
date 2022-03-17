@@ -6,6 +6,8 @@ import (
 	"bytes"
 	"context"
 	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/constants"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"regexp"
 	"strings"
 	"sync"
@@ -60,6 +62,7 @@ type runner struct {
 	heartBeatMutex sync.RWMutex
 	cache          cache.Cache
 	terminateQueue chan<- string
+	idLookup       host.IDLookup
 }
 
 // NewRunner creates an integration runner instance.
@@ -72,6 +75,7 @@ func NewRunner(
 	cmdReqHandle cmdrequest.HandleFn,
 	configHandle configrequest.HandleFn,
 	terminateQ chan<- string,
+	idLookup host.IDLookup,
 ) *runner {
 	r := &runner{
 		emitter:        emitter,
@@ -83,6 +87,7 @@ func NewRunner(
 		stderrParser:   parseLogrusFields,
 		terminateQueue: terminateQ,
 		cache:          cache.CreateCache(),
+		idLookup:       idLookup,
 	}
 	if handleErrorsProvide != nil {
 		r.handleErrors = handleErrorsProvide()
@@ -208,6 +213,16 @@ func (r *runner) execute(ctx context.Context, matches *databind.Values, pidWCh, 
 		var act contexts.Actuator
 		ctx, act = contexts.WithHeartBeat(ctx, def.Timeout)
 		r.setHeartBeat(act.HeartBeat)
+	}
+
+	// add hostID in the context to fetch and set in executor
+	hostID, err := r.idLookup.AgentShortEntityName()
+
+	if err == nil {
+		ctx = contextWithHostID(ctx, hostID)
+	} else {
+		txn.NoticeError(err)
+		r.log.WithError(err).Error("can't fetch host ID")
 	}
 
 	// Runs all the matching integration instances
@@ -360,6 +375,10 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 			}
 		})
 	}
+}
+
+func contextWithHostID(ctx context.Context, hostID string) context.Context {
+	return context.WithValue(ctx, constants.HostID, hostID)
 }
 
 func isHeartBeat(line []byte) bool {

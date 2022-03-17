@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -163,7 +164,7 @@ func TestManager_StartIntegrations(t *testing.T) {
 
 	// AND an integrations manager
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: passthroughEnv}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: passthroughEnv}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 
 	// WHEN the manager loads and executes the integrations in the folder
 	ctx, cancel := context.WithCancel(context.Background())
@@ -198,7 +199,7 @@ integrations:
 
 	// AND an integrations manager
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: passthroughEnv}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: passthroughEnv}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 
 	// WHEN the manager loads and executes the integration
 	ctx, cancel := context.WithCancel(context.Background())
@@ -223,7 +224,7 @@ integrations:
 
 	// AND an integrations manager
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: passthroughEnv}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: passthroughEnv}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 
 	// WHEN the manager loads and executes the integration
 	ctx, cancel := context.WithCancel(context.Background())
@@ -258,7 +259,7 @@ func TestManager_SkipLoadingV3IntegrationsWithNoWarnings(t *testing.T) {
 
 	// AND an integrations manager
 	emitter := &testemit.RecordEmitter{}
-	_ = NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	_ = NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 
 	// THEN no long entries found
 	for i := range hook.AllEntries() {
@@ -281,7 +282,7 @@ func TestManager_LogWarningForInvalidYaml(t *testing.T) {
 
 	// AND an integrations manager
 	emitter := &testemit.RecordEmitter{}
-	_ = NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	_ = NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 
 	// THEN one long entry found
 	require.NotEmpty(t, hook.AllEntries())
@@ -300,7 +301,7 @@ func TestManager_Config_EmbeddedYAML(t *testing.T) {
 
 	// AND an integrations manager
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: passthroughEnv}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: passthroughEnv}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 
 	// WHEN the manager loads and executes the integrations in the folder
 	ctx, cancel := context.WithCancel(context.Background())
@@ -325,7 +326,7 @@ func TestManager_HotReload_Add(t *testing.T) {
 	defer removeTempFiles(t, dir)
 
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: passthroughEnv}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: passthroughEnv}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -359,7 +360,7 @@ func TestManager_HotReload_Modify(t *testing.T) {
 	defer removeTempFiles(t, dir)
 
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: passthroughEnv}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: passthroughEnv}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -406,7 +407,7 @@ func TestManager_HotReload_ModifyLinkFile(t *testing.T) {
 	require.NoError(t, err)
 
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: passthroughEnv}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: passthroughEnv}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -455,7 +456,7 @@ func TestManager_HotReload_Delete(t *testing.T) {
 	defer removeTempFiles(t, dir)
 
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: passthroughEnv}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: passthroughEnv}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -505,7 +506,7 @@ integrations:
 		ConfigFolders:          []string{configDir},
 		DefinitionFolders:      []string{niDir},
 		PassthroughEnvironment: []string{"VALUE"},
-	}, emitter, instancesLookupReturning(execPath), definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	}, emitter, instancesLookupReturning(execPath), definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -542,7 +543,7 @@ integrations:
 		ConfigFolders:          []string{configDir},
 		DefinitionFolders:      []string{niDir},
 		PassthroughEnvironment: []string{"VALUE"},
-	}, emitter, instancesLookupReturning(execPath), definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	}, emitter, instancesLookupReturning(execPath), definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -586,7 +587,7 @@ integrations:
 	mgr := NewManager(Configuration{
 		ConfigFolders:     []string{configDir},
 		DefinitionFolders: []string{definitionsDir},
-	}, emitter, instancesLookupLegacy(definitionsDir), definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	}, emitter, instancesLookupLegacy(definitionsDir), definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -634,7 +635,7 @@ integrations:
 		ConfigFolders:          []string{configDir},
 		DefinitionFolders:      []string{definitionsDir},
 		PassthroughEnvironment: []string{"VALUE"},
-	}, emitter, instancesLookupLegacy(definitionsDir), definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	}, emitter, instancesLookupLegacy(definitionsDir), definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -677,7 +678,7 @@ integrations:
 	mgr := NewManager(Configuration{
 		ConfigFolders:     []string{configDir},
 		DefinitionFolders: []string{niDir, ciDir, "unexisting-dir"},
-	}, emitter, instancesLookupReturning(execPath1, execPath2), definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	}, emitter, instancesLookupReturning(execPath1, execPath2), definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -717,7 +718,7 @@ integrations:
 	mgr := NewManager(Configuration{
 		ConfigFolders:     []string{configDir},
 		DefinitionFolders: []string{niDir},
-	}, emitter, instancesLookupReturning(execPath), definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	}, emitter, instancesLookupReturning(execPath), definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -742,7 +743,7 @@ func TestManager_EnableFeature_WhenFeatureOnOHICfgAndAgentCfgIsDisabledAndEnable
 		ConfigFolders:          []string{dir},
 		PassthroughEnvironment: passthroughEnv,
 		//AgentFeatures: map[string]bool{"docker_enabled": false},
-	}, e, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	}, e, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 
 	// AND the manager loads and executes the integrations in the folder
 	ctx, cancel := context.WithCancel(context.Background())
@@ -774,7 +775,7 @@ func TestManager_EnableFeatureFromAgentConfig(t *testing.T) {
 		ConfigFolders:          []string{dir},
 		AgentFeatures:          map[string]bool{"docker_enabled": true},
 		PassthroughEnvironment: passthroughEnv,
-	}, e, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	}, e, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 
 	// AND the manager starts
 	ctx, cancel := context.WithCancel(context.Background())
@@ -801,7 +802,7 @@ func TestManager_CCDisablesAgentEnabledFeature(t *testing.T) {
 		ConfigFolders:          []string{dir},
 		AgentFeatures:          map[string]bool{"docker_enabled": true},
 		PassthroughEnvironment: passthroughEnv,
-	}, e, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	}, e, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 
 	// AND manager loads and executes the integrations in the folder
 	ctx, cancel := context.WithCancel(context.Background())
@@ -836,7 +837,7 @@ func TestManager_CCDisablesPreviouslyEnabledFeature(t *testing.T) {
 	mgr := NewManager(Configuration{
 		ConfigFolders:          []string{dir},
 		PassthroughEnvironment: passthroughEnv,
-	}, e, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	}, e, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 
 	// AND manager loads and executes the integrations in the folder
 	ctx, cancel := context.WithCancel(context.Background())
@@ -879,7 +880,7 @@ func TestManager_WhenFileExists(t *testing.T) {
 	defer removeTempFiles(t, dir)
 
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: passthroughEnv}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: passthroughEnv}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 
 	// WHEN the manager loads and executes the integrations in the folder
 	ctx, cancel := context.WithCancel(context.Background())
@@ -901,7 +902,7 @@ func TestManager_WhenFileDoesNotExist(t *testing.T) {
 	defer removeTempFiles(t, dir)
 
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 
 	// WHEN the manager loads and executes the integrations in the folder
 	ctx, cancel := context.WithCancel(context.Background())
@@ -926,7 +927,7 @@ func TestManager_StartWithVerbose(t *testing.T) {
 		ConfigFolders:          []string{dir},
 		PassthroughEnvironment: passthroughEnv,
 		Verbose:                1,
-	}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 
 	// AND the manager starts
 	ctx, cancel := context.WithCancel(context.Background())
@@ -958,7 +959,7 @@ func TestManager_StartWithVerboseFalse(t *testing.T) {
 		ConfigFolders:          []string{dir},
 		PassthroughEnvironment: passthroughEnv,
 		Verbose:                0,
-	}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 
 	// AND the manager starts
 	ctx, cancel := context.WithCancel(context.Background())
@@ -1011,7 +1012,7 @@ func TestManager_anIntegrationCanSpawnAnotherOne(t *testing.T) {
 
 	// AND an integrations manager
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: passthroughEnv}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: passthroughEnv}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 
 	// WHEN the manager executes the integration
 	ctx, cancel := context.WithCancel(context.Background())
@@ -1033,7 +1034,7 @@ func TestManager_cfgProtocolSpawnIntegrationV3Payload(t *testing.T) {
 
 	// AND an integrations manager
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: passthroughEnv}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: passthroughEnv}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 
 	// WHEN the manager executes the integration
 	ctx, cancel := context.WithCancel(context.Background())
@@ -1055,7 +1056,7 @@ func TestManager_cfgProtocolSpawnIntegrationV4Payload(t *testing.T) {
 
 	// AND an integrations manager
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: passthroughEnv}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: passthroughEnv}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 
 	// WHEN the manager executes the integration
 	ctx, cancel := context.WithCancel(context.Background())
@@ -1080,7 +1081,7 @@ func TestManager_cfgProtocolSpawnedIntegrationCannotSpawnIntegration(t *testing.
 
 	// AND an integrations manager
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: passthroughEnv}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: passthroughEnv}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 
 	// WHEN the manager executes the integration
 	ctx, cancel := context.WithCancel(context.Background())
@@ -1130,7 +1131,7 @@ integrations:
 	mgr := NewManager(Configuration{
 		ConfigFolders:     []string{configDir},
 		DefinitionFolders: []string{niDir},
-	}, emitter, instancesLookupReturning(execPath), definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil))
+	}, emitter, instancesLookupReturning(execPath), definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
