@@ -39,11 +39,12 @@ type IntegrationMetadata struct {
 }
 
 type Dataset struct {
-	Common    Common                   `json:"common"`
-	Metrics   []Metric                 `json:"metrics"`
-	Entity    entity.Fields            `json:"entity"`
-	Inventory map[string]InventoryData `json:"inventory"`
-	Events    []EventData              `json:"events"`
+	Common       Common                   `json:"common"`
+	Metrics      []Metric                 `json:"metrics"`
+	Entity       entity.Fields            `json:"entity"`
+	Inventory    map[string]InventoryData `json:"inventory"`
+	Events       []EventData              `json:"events"`
+	IgnoreEntity bool                     `json:"ignore_entity"`
 }
 
 type Common struct {
@@ -245,6 +246,18 @@ func WithAttributes(a map[string]interface{}) func(EventData) {
 			if _, ok := copy[key]; ok {
 				copy[fmt.Sprintf("%s%s", event.AttributesPrefix, key)] = value
 			} else {
+				copy[key] = value
+			}
+		}
+	}
+}
+
+// Builder for NewEventData constructor will add annotations
+func WithAnnotations(a map[string]string) func(EventData) {
+	return func(copy EventData) {
+		for key, value := range a {
+			// Extra annotations can't override current events
+			if _, ok := copy[key]; !ok {
 				copy[key] = value
 			}
 		}

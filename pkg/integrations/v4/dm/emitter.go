@@ -142,7 +142,6 @@ func (e *emitter) lazyLoadProcessor() {
 func (e *emitter) runFwReqConsumer(ctx context.Context) {
 	defer e.isProcessing.UnSet()
 
-	agentVersion := e.agentContext.Version()
 	for {
 		select {
 		case _ = <-ctx.Done():
@@ -151,79 +150,23 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 		case req := <-e.reqsQueue:
 			e.measure(instrumentation.Counter, instrumentation.DMDatasetsReceived, int64(len(req.Data.DataSets)))
 			for _, ds := range req.Data.DataSets {
-
-				eKey, err := ds.Entity.ResolveUniqueEntityKey(e.agentContext.EntityKey(), e.agentContext.IDLookup(), req.FwRequestMeta.EntityRewrite, 4)
-				if err != nil {
-					elog.
-						WithError(err).
-						WithField("integration", req.Definition.Name).
-						Errorf("couldn't determine a unique entity Key")
-					continue
-				}
-
-				var eID entity.ID
-				var found bool
-
-				if ds.Entity.IsAgent() {
-					eID, found = e.agentContext.Identity().ID, true
-				} else {
-					eID, found = e.idCache.Get(eKey)
-				}
-
-				if found {
-					select {
-					case <-ctx.Done():
-						return
-
-					case e.reqsRegisteredQueue <- fwrequest.NewEntityFwRequest(ds, eID, req.FwRequestMeta, req.Data.Integration, agentVersion):
-					}
-					continue
-				}
-
 				select {
-				case <-ctx.Done():
+				case _ = <-ctx.Done():
 					return
-
-				case e.reqsToRegisterQueue <- fwrequest.NewEntityFwRequest(ds, entity.EmptyID, req.FwRequestMeta, req.Data.Integration, agentVersion):
+				default:
+					if ds.IgnoreEntity {
+						// Should not contain entity attributes
+						e.processDatasetNoRegister(req.Data.Integration, req.FwRequestMeta, ds)
+					} else {
+						e.processDatasetRegister(ctx, req.Data.Integration, req.FwRequestMeta, ds)
+					}
 				}
 			}
 		}
 	}
 }
 
-func (e *emitter) runReqsRegisteredConsumer(ctx context.Context) {
-	for {
-		select {
-		case _ = <-ctx.Done():
-			return
-
-		case eReq := <-e.reqsRegisteredQueue:
-			e.processEntityFwRequest(eReq)
-		}
-	}
-}
-
-func (e *emitter) processEntityFwRequest(r fwrequest.EntityFwRequest) {
-	// rewrites processing
-	agentShortName, err := e.agentContext.IDLookup().AgentShortEntityName()
-	if err != nil {
-		elog.
-			WithError(err).
-			WithField("integration", r.Definition.Name).
-			Errorf("cannot determine agent short name")
-	}
-	replaceEntityName(r.Data.Entity, r.EntityRewrite, agentShortName)
-
-	key, err := r.Data.Entity.Key()
-	if err != nil {
-		elog.
-			WithError(err).
-			WithField("integration", r.Definition.Name).
-			Errorf("cannot determine entity")
-	} else {
-		e.idCache.CleanOld()
-		e.idCache.Put(key, r.ID())
-	}
+func (e *emitter) emitDataset(r fwrequest.EntityFwRequest) {
 
 	labels, annos := r.LabelsAndExtraAnnotations()
 
@@ -231,16 +174,24 @@ func (e *emitter) processEntityFwRequest(r fwrequest.EntityFwRequest) {
 
 	emitInventory(&plugin, r.Definition, r.Integration, r.ID(), r.Data, labels)
 
-	emitEvent(&plugin, r.Definition, r.Data, labels, r.ID())
+	emitEvent(&plugin, r.Definition, r.Data, labels, annos, r.ID())
 
+	emitMetrics(e.metricsSender, r.Definition, r.Data, annos, labels)
+}
+
+func emitMetrics(metricSender MetricsSender,
+	metadata integration.Definition,
+	dataset protocol.Dataset,
+	annotations map[string]string,
+	labels map[string]string) {
 	dmProcessor := IntegrationProcessor{
-		IntegrationInterval:         r.Definition.Interval,
+		IntegrationInterval:         metadata.Interval,
 		IntegrationLabels:           labels,
-		IntegrationExtraAnnotations: annos,
+		IntegrationExtraAnnotations: annotations,
 	}
-	metrics := dmProcessor.ProcessMetrics(r.Data.Metrics, r.Data.Common, r.Data.Entity)
-	if err := e.metricsSender.SendMetricsWithCommonAttributes(r.Data.Common, metrics); err != nil {
-		elog.WithField("entity", r.ID()).WithError(err).Warn("discarding metrics")
+	metrics := dmProcessor.ProcessMetrics(dataset.Metrics, dataset.Common, dataset.Entity)
+	if err := metricSender.SendMetricsWithCommonAttributes(dataset.Common, metrics); err != nil {
+		elog.WithField("integration_name", metadata.Name).WithError(err).Warn("could not send metrics")
 	}
 }
 
@@ -264,10 +215,15 @@ func emitInventory(
 	}
 }
 
-func emitEvent(emitter agent.PluginEmitter, metadata integration.Definition, dataSet protocol.Dataset, labels map[string]string, entityID entity.ID) {
+func emitEvent(emitter agent.PluginEmitter, metadata integration.Definition, dataSet protocol.Dataset, labels map[string]string, annotations map[string]string, entityID entity.ID) {
 	sharedOpts := []func(protocol.EventData){
-		protocol.WithEntity(entity.New(entity.Key(dataSet.Entity.Name), entityID)),
 		protocol.WithLabels(labels),
+		// add extra annotations
+		protocol.WithAnnotations(annotations),
+	}
+
+	if !entityID.IsEmpty() {
+		sharedOpts = append(sharedOpts, protocol.WithEntity(entity.New(entity.Key(dataSet.Entity.Name), entityID)))
 	}
 
 	u := metadata.ExecutorConfig.User

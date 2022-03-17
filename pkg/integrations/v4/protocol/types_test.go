@@ -24,6 +24,7 @@ func TestEntityData_New(t *testing.T) {
 		"foo-attribute":        "test-foo",
 		"bar-attribute":        "test-bar",
 		"lorem-attribute":      "test-lorem",
+		"region":               "eu-west",
 	}
 
 	e := EventData{
@@ -54,12 +55,19 @@ func TestEntityData_New(t *testing.T) {
 		"lorem-attribute": "test-lorem",
 	}
 
+	annotations := map[string]string{
+		"region": "eu-west",
+		// repeated: should not be added
+		"category": "test-category",
+	}
+
 	n, err := NewEventData(
 		WithEvents(e),
 		WithIntegrationUser(u),
 		WithLabels(l),
 		WithEntity(en),
 		WithAttributes(a),
+		WithAnnotations(annotations),
 	)
 
 	assert.NoError(t, err)

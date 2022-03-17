@@ -21,7 +21,6 @@ const (
 	// FFs
 	FlagCategory             = "Infra_Agent"
 	FlagNameRegister         = "register_enabled"
-	FlagDMRegisterEnable     = "dm_register_enabled"
 	FlagParallelizeInventory = "parallelize_inventory_enabled"
 	FlagProtocolV4           = "protocol_v4_enabled"
 	FlagFullProcess          = "full_process_sampling"
@@ -137,7 +136,7 @@ func (h *handler) Handle(ctx context.Context, c commandapi.Command, isInitialFet
 	}
 
 	// this is where we handle normal feature flags that are not related to OHIs
-	if ffArgs.Flag == FlagProtocolV4 || ffArgs.Flag == FlagFullProcess || ffArgs.Flag == FlagDMRegisterEnable {
+	if ffArgs.Flag == FlagProtocolV4 || ffArgs.Flag == FlagFullProcess {
 		h.setFFConfig(ffArgs.Flag, ffArgs.Enabled)
 		return
 	}

@@ -219,7 +219,7 @@ func (h *Harvester) RecordInfraMetrics(commonAttributes Attributes, metrics []Me
 			logger.WithError(errJSON).Warn("Setting default common attributes")
 			attributesJSON = h.commonAttributesJSON
 		} else {
-			identity = commonAttributes[nrEntityID].(string)
+			identity, _ = commonAttributes[nrEntityID].(string)
 		}
 	}
 
