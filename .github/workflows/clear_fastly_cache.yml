@@ -3,21 +3,13 @@ name: Clear Fastly cache
 on:
   workflow_dispatch:
 
-env:
-  AWS_S3_BUCKET_NAME: "nr-downloads-main"
-  AWS_REGION: "us-east-1"
-  AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION }}
-  AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_PRODUCTION }}
-  AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION }}
-
 jobs:
   purge-cdn:
     name: Purge CDN
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-      - name: Fasty purge
-        env:
-          FASTLY_KEY: ${{secrets.FASTLY_KEY }}
-        run: tools/cdn-purge/fastly-purge.sh
+    uses: newrelic/infrastructure-agent/.github/workflows/component_purge_cdn.yml@master
+    secrets:
+      FASTLY_KEY: ${{secrets.FASTLY_KEY }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION }}
+      AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_PRODUCTION }}
+      AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION }}

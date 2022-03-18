@@ -1,0 +1,80 @@
+#TBD
+name: Produce packages for windows
+
+on:
+  workflow_call:
+    secrets:
+      PFX_CERTIFICATE_BASE64:
+        required: true
+      PFX_PASSPHRASE:
+        required: true
+    inputs:
+      PFX_CERTIFICATE_DESCRIPTION:
+        required: true
+        type: string
+      TAG:
+        required: true
+        type: string
+      GOPATH:
+        required: true
+        type: string
+      GITHUB_SHA:
+        required: true
+        type: string
+
+env:
+  PFX_CERTIFICATE_BASE64: ${{ secrets.PFX_CERTIFICATE_BASE64 }}
+  PFX_PASSPHRASE: ${{ secrets.PFX_PASSPHRASE }}
+  PFX_CERTIFICATE_DESCRIPTION: ${{ inputs.PFX_CERTIFICATE_DESCRIPTION }}
+  TAG: ${{ inputs.TAG }}
+  GOPATH: ${{ inputs.GOPATH }}
+  GITHUB_SHA: ${{ inputs.GITHUB_SHA }}
+  GO_VERSION: '1.16.12'
+
+jobs:
+  packaging:
+    name: Create MSI & Upload into GH Release assets
+    runs-on: windows-2019
+    env:
+      GOPATH: ${{ env.GOPATH }}
+    defaults:
+      run:
+        working-directory: src/github.com/newrelic/infrastructure-agent
+
+    strategy:
+      matrix:
+        goarch: [ amd64, 386 ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          path: src/github.com/newrelic/infrastructure-agent
+
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{env.GO_VERSION}}
+
+      - name: Get PFX certificate from GH secrets
+        shell: bash
+        run: printf "%s" "$PFX_CERTIFICATE_BASE64" | base64 -d - > wincert.pfx
+
+      - name: Import PFX certificate
+        shell: pwsh
+        run: build\windows\scripts\import_certificates.ps1 -pfx_passphrase "$env:PFX_PASSPHRASE" -pfx_certificate_description "$env:PFX_CERTIFICATE_DESCRIPTION"
+
+      - name: Build executables ${{ matrix.goarch }}
+        shell: pwsh
+        run: build\windows\build.ps1 -arch ${{ matrix.goarch }} -version ${{env.TAG}} -commit "$env:GITHUB_SHA"
+
+      - name: Create MSI package ${{ matrix.goarch }}
+        shell: pwsh
+        run: build\windows\package_msi.ps1 -arch ${{ matrix.goarch }} -version ${{env.TAG}}
+
+      - name: Create zip package ${{ matrix.goarch }}
+        shell: pwsh
+        run: build\windows\package_zip.ps1 -arch ${{ matrix.goarch }} -version ${{env.TAG}}
+
+      - name: Upload MSI to GH
+        shell: bash
+        run: build/upload_artifacts_gh.sh
