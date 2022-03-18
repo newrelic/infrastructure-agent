@@ -4,6 +4,7 @@ package runner
 
 import (
 	"context"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
@@ -29,6 +30,7 @@ type Group struct {
 	cmdReqHandle         cmdrequest.HandleFn
 	configHandle         configrequest.HandleFn
 	terminateDefinitionQ chan string
+	idLookup             host.IDLookup
 }
 
 type runnerErrorHandler func(ctx context.Context, errs <-chan error)
@@ -44,6 +46,7 @@ func NewGroup(
 	configHandle configrequest.HandleFn,
 	cfgPath string,
 	terminateDefinitionQ chan string,
+	idLookup host.IDLookup,
 ) (g Group, c FeaturesCache, err error) {
 
 	g, c, err = loadFn(il, passthroughEnv, cfgPath, cmdReqHandle, configHandle, terminateDefinitionQ)
@@ -52,6 +55,7 @@ func NewGroup(
 	}
 
 	g.emitter = emitter
+	g.idLookup = idLookup
 
 	return
 }
@@ -60,7 +64,7 @@ func NewGroup(
 // provided context
 func (g *Group) Run(ctx context.Context) (hasStartedAnyOHI bool) {
 	for _, integr := range g.integrations {
-		go NewRunner(integr, g.emitter, g.dSources, g.handleErrorsProvide, g.cmdReqHandle, g.configHandle, g.terminateDefinitionQ).Run(ctx, nil, nil)
+		go NewRunner(integr, g.emitter, g.dSources, g.handleErrorsProvide, g.cmdReqHandle, g.configHandle, g.terminateDefinitionQ, g.idLookup).Run(ctx, nil, nil)
 		hasStartedAnyOHI = true
 	}
 

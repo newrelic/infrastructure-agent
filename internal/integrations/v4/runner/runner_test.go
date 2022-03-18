@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"io/ioutil"
 	"os"
 	"runtime"
@@ -50,7 +51,7 @@ func Test_runner_Run(t *testing.T) {
 	require.NoError(t, err)
 
 	e := &testemit.RecordEmitter{}
-	r := NewRunner(def, e, nil, nil, cmdrequest.NoopHandleFn, configrequest.NoopHandleFn, nil)
+	r := NewRunner(def, e, nil, nil, cmdrequest.NoopHandleFn, configrequest.NoopHandleFn, nil, host.IDLookup{})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
@@ -84,7 +85,7 @@ func Test_runner_Run_noHandleForCfgProtocol(t *testing.T) {
 	require.NoError(t, err)
 
 	e := &testemit.RecordEmitter{}
-	r := NewRunner(def, e, nil, nil, cmdrequest.NoopHandleFn, nil, nil)
+	r := NewRunner(def, e, nil, nil, cmdrequest.NoopHandleFn, nil, nil, host.IDLookup{})
 
 	// WHEN the runner executes the binary and handle the payload.
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
@@ -127,7 +128,7 @@ func Test_runner_Run_failToUnMarshallCfgProtocol(t *testing.T) {
 	require.NoError(t, err)
 
 	e := &testemit.RecordEmitter{}
-	r := NewRunner(def, e, nil, nil, cmdrequest.NoopHandleFn, configrequest.NoopHandleFn, nil)
+	r := NewRunner(def, e, nil, nil, cmdrequest.NoopHandleFn, configrequest.NoopHandleFn, nil, host.IDLookup{})
 
 	// WHEN the runner executes the binary and handle the payload.
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
@@ -166,7 +167,7 @@ func Test_runner_Run_handlesCfgProtocol(t *testing.T) {
 		atomic.AddUint32(&called, 1)
 	}
 	e := &testemit.RecordEmitter{}
-	r := NewRunner(def, e, nil, nil, cmdrequest.NoopHandleFn, mockHandleFn, nil)
+	r := NewRunner(def, e, nil, nil, cmdrequest.NoopHandleFn, mockHandleFn, nil, host.IDLookup{})
 
 	// WHEN the runner executes the binary and handle the payload.
 	ctx, cancel := context.WithTimeout(context.Background(), 1500*time.Millisecond)

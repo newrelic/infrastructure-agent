@@ -151,6 +151,12 @@ func (r *Executor) buildCommand(ctx context.Context) *exec.Cmd {
 		cmd.Env = append(cmd.Env, "VERBOSE=1")
 	}
 
+	hostID, ok := ctx.Value(constants.HostID).(string)
+
+	if ok && hostID != "" {
+		cmd.Env = append(cmd.Env, "NRI_HOST_ID="+hostID)
+	}
+
 	cmd.Dir = r.Cfg.Directory
 	return cmd
 }
