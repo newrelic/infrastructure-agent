@@ -29,7 +29,6 @@ env:
 jobs:
 
   publishing-to-s3:
-    # point to staging after tests
     name: Publish linux artifacts into s3 staging bucket
     uses: newrelic/infrastructure-agent/.github/workflows/component_linux_publish.yml@master
     secrets:
@@ -44,15 +43,14 @@ jobs:
     with:
       ACCESS_POINT_HOST: "staging"
       RUN_ID: ${{ github.run_id }}
-      TAG: ${{ github.event.release.tag_name }}
+      TAG: ${{ github.event.inputs.tag }}
       AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
       AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
       ASSETS_TYPE: ${{ github.event.inputs.assetsType }}
 
 
   publishing-to-s3-windows:
-    # point to staging after tests
-    name: Publish linux artifacts into s3 staging bucket
+    name: Publish windows artifacts into s3 staging bucket
     uses: newrelic/infrastructure-agent/.github/workflows/component_windows_publish.yml@master
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
@@ -66,8 +64,8 @@ jobs:
     with:
       ACCESS_POINT_HOST: "staging"
       RUN_ID: ${{ github.run_id }}
-      TAG: ${{ github.event.release.tag_name }}
+      TAG: ${{ github.event.inputs.tag }}
       AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
       AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
-      ASSETS_TYPE: "all"
+      ASSETS_TYPE: ${{ github.event.inputs.assetsType }}
       DISABLE_LOCK: true
