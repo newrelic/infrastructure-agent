@@ -56,7 +56,7 @@ jobs:
         run: make ci/prerelease/linux
 
       - name: Publish deb to S3 action
-        uses: newrelic/infrastructure-publish-action@v1.2.2
+        uses: newrelic/infrastructure-publish-action@v1.2.3
         with:
           tag: ${{env.TAG}}
           app_name: "newrelic-infra"
@@ -81,7 +81,7 @@ jobs:
           apt_skip_mirror:  true
 
       - name: Publish rpm to S3 action
-        uses: newrelic/infrastructure-publish-action@v1.2.2
+        uses: newrelic/infrastructure-publish-action@v1.2.3
         with:
           tag: ${{env.TAG}}
           app_name: "newrelic-infra"
@@ -105,7 +105,7 @@ jobs:
           local_packages_path:  "/srv/dist/"
 
       - name: Publish targz to S3 action
-        uses: newrelic/infrastructure-publish-action@v1.2.2
+        uses: newrelic/infrastructure-publish-action@v1.2.3
         with:
           tag: ${{env.TAG}}
           app_name: "newrelic-infra"
