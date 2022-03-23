@@ -46,7 +46,7 @@ jobs:
     with:
       ACCESS_POINT_HOST: "production"
       RUN_ID: ${{ github.run_id }}
-      TAG: ${{ github.event.release.tag_name }}
+      TAG: ${{env.TAG}}
       AWS_S3_BUCKET_NAME: "nr-downloads-main"
       AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock"
       ASSETS_TYPE: ${{ github.event.inputs.assetsType }}
@@ -66,7 +66,7 @@ jobs:
     with:
       ACCESS_POINT_HOST: "production"
       RUN_ID: ${{ github.run_id }}
-      TAG: ${{ github.event.release.tag_name }}
+      TAG: ${{env.TAG}}
       AWS_S3_BUCKET_NAME: "nr-downloads-main"
       AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock"
       ASSETS_TYPE: ${{ github.event.inputs.assetsType }}
@@ -89,5 +89,5 @@ jobs:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
     with:
-      TAG: ${{ github.event.release.tag_name }}
+      TAG: ${{env.TAG}}
       ASSETS_TYPE: ${{ github.event.inputs.assetsType }}
