@@ -88,10 +88,6 @@ jobs:
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
-      GPG_MAIL: 'infrastructure-eng@newrelic.com'
-      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
-      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     with:
       TAG: ${{ github.event.release.tag_name }}
       ASSETS_TYPE: ${{ github.event.inputs.assetsType }}
