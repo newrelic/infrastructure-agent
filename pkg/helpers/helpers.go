@@ -297,6 +297,18 @@ func ObfuscateSensitiveDataFromError(originalError error) (obfuscateError error)
 	return originalError
 }
 
+func ObfuscateSensitiveDataFromString(originalString string) (obfuscateString string) {
+	if originalString == "" {
+		return originalString
+	}
+
+	matched, _, result := ObfuscateSensitiveData(originalString)
+	if matched {
+		return result
+	}
+	return originalString
+}
+
 // ObfuscateSensitiveDataFromMap will is used to detect sensitive data like tokens/passwords etc and
 // replace them by *. If a key is matched is considered a field(matched but no tokens/passwords founded)
 // the value will be obfuscated.
