@@ -5,6 +5,7 @@ package v4
 import (
 	"context"
 	"errors"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -113,6 +114,7 @@ type Manager struct {
 	handleCmdReq             cmdrequest.HandleFn
 	handleConfig             configrequest.HandleFn
 	tracker                  *track.Tracker
+	idLookup                 host.IDLookup
 }
 
 // groupContext pairs a runner.Group with its cancellation context
@@ -191,6 +193,7 @@ func NewManager(
 	terminateDefinitionQ chan string,
 	configEntryQ chan configrequest.Entry,
 	tracker *track.Tracker,
+	idLookup host.IDLookup,
 ) *Manager {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -210,6 +213,7 @@ func NewManager(
 		handleCmdReq:             cmdrequest.NewHandleFn(definitionQ, il, illog),
 		handleConfig:             configrequest.NewHandleFn(configEntryQ, terminateDefinitionQ, il, illog),
 		tracker:                  tracker,
+		idLookup:                 idLookup,
 	}
 
 	// Loads all the configuration files in the passed configFolders
@@ -307,7 +311,7 @@ func (mgr *Manager) loadEnabledRunnerGroups(cfgs map[string]config2.YAML) {
 func (mgr *Manager) loadRunnerGroup(path string, cfg config2.YAML, cmdFF *runner.CmdFF) (*groupContext, error) {
 	f := runner.NewFeatures(mgr.config.AgentFeatures, cmdFF)
 	loader := runner.NewLoadFn(cfg, f)
-	gr, fc, err := runner.NewGroup(loader, mgr.lookup, mgr.config.PassthroughEnvironment, mgr.emitter, mgr.handleCmdReq, mgr.handleConfig, path, mgr.terminateDefinitionQueue)
+	gr, fc, err := runner.NewGroup(loader, mgr.lookup, mgr.config.PassthroughEnvironment, mgr.emitter, mgr.handleCmdReq, mgr.handleConfig, path, mgr.terminateDefinitionQueue, mgr.idLookup)
 	if err != nil {
 		return nil, err
 	}
@@ -324,7 +328,7 @@ func (mgr *Manager) handleRequestsQueue(ctx context.Context) {
 			return
 
 		case def := <-mgr.definitionQueue:
-			r := runner.NewRunner(def, mgr.emitter, nil, nil, mgr.handleCmdReq, nil, mgr.terminateDefinitionQueue)
+			r := runner.NewRunner(def, mgr.emitter, nil, nil, mgr.handleCmdReq, nil, mgr.terminateDefinitionQueue, mgr.idLookup)
 			if def.CmdChanReq != nil {
 				// tracking so cmd requests can be stopped by hash
 				runCtx, pidWCh := mgr.tracker.Track(ctx, def.CmdChanReq.CmdChannelCmdHash, &def)
@@ -339,7 +343,7 @@ func (mgr *Manager) handleRequestsQueue(ctx context.Context) {
 			}
 		case entry := <-mgr.configEntryQueue:
 			ds, _ := entry.Databind.DataSources()
-			r := runner.NewRunner(entry.Definition, mgr.emitter, ds, nil, nil, nil, mgr.terminateDefinitionQueue)
+			r := runner.NewRunner(entry.Definition, mgr.emitter, ds, nil, nil, nil, mgr.terminateDefinitionQueue, mgr.idLookup)
 			runCtx, pidWCh := mgr.tracker.Track(ctx, entry.Definition.Hash(), &entry.Definition)
 			go r.Run(runCtx, pidWCh, nil)
 

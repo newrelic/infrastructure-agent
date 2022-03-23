@@ -1,0 +1,64 @@
+name: Run validate and unit tests with coverage
+
+on:
+  workflow_call:
+    secrets:
+      gh_token:
+        required: true
+
+env:
+  GO_VERSION: '1.16.12'
+
+
+jobs:
+  validate:
+    name: Validate code
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{env.GO_VERSION}}
+
+      - name: Validate code
+        run: make ci/validate
+
+  test:
+    name: Unit tests with coverage
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{env.GO_VERSION}}
+
+      - name: Validate code
+        run: make ci/validate
+
+      - name: Running unit tests
+        run: make ci/test-coverage
+
+      - name: Coveralls Parallel
+        uses: coverallsapp/github-action@master
+        continue-on-error: true
+        with:
+          github-token: ${{ secrets.gh_token }}
+          path-to-lcov: lcov.info
+          flag-name: run-linux
+          parallel: true
+
+  test-finish:
+    name: Coveralls finish
+    needs: [ test ]
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@master
+        continue-on-error: true
+        with:
+          github-token: ${{ secrets.gh_token }}
+          parallel-finished: true

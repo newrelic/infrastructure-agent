@@ -252,6 +252,7 @@ var (
 	  },
 	  "data": [
 		{
+		  "ignore_entity": false,
 		  "common": {
 			"timestamp": 1531414060739,
 			"interval.ms": 10000,
@@ -296,6 +297,7 @@ var (
 			},
 			DataSets: []protocol.Dataset{
 				{
+					IgnoreEntity: false,
 					Common: protocol.Common{
 						Timestamp:  &ts,
 						Interval:   &interval,
@@ -325,6 +327,83 @@ var (
 							"attributes": map[string]interface{}{
 								"format": "attribute",
 							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ProtocolV4IgnoreEntity = ProtocolParsingPair{
+		Payload: []byte(`
+	{
+	  "protocol_version": "4",
+	  "integration": {
+		"name": "integration name",
+		"version": "integration version"
+	  },
+	  "data": [
+		{
+		  "ignore_entity": false,
+		  "common": {
+			"timestamp": 1531414060739,
+			"interval.ms": 10000,
+			"attributes": {
+			  "targetName": "localhost:9178",
+			  "scrapeUrl": "http://localhost:9178",
+			}
+		  },
+		  "metrics":[
+			{
+			  "name": "redis.metric1",
+			  "type": "count",
+			  "value": 93,
+			  "attributes": {}
+			},
+			{
+			  "name": "redis.metric2",
+			  "type": "count",
+			  "value": 94,
+			  "attributes": {}
+			}
+		  ],
+		}
+	  ]
+	}`),
+		ParsedV4: protocol.DataV4{
+			PluginProtocolVersion: protocol.PluginProtocolVersion{
+				RawProtocolVersion: "4",
+			},
+			Integration: protocol.IntegrationMetadata{
+				Name:    "integration name",
+				Version: "integration version",
+			},
+			DataSets: []protocol.Dataset{
+				{
+					IgnoreEntity: true,
+					Common: protocol.Common{
+						Timestamp: &ts,
+						Interval:  &interval,
+						Attributes: map[string]interface{}{
+							"targetName": "localhost:9178",
+							"scrapeUrl":  "http://localhost:9178",
+						}},
+					Metrics: []protocol.Metric{
+						{
+							Name: "redis.metric1",
+							Type: "count",
+							//Timestamp:  (*int64)(nil),
+							//Interval:   (*int64)(nil),
+							Attributes: map[string]interface{}{},
+							Value:      json.RawMessage("93"),
+						},
+						{
+							Name: "redis.metric2",
+							Type: "count",
+							//Timestamp:  (*int64)(nil),
+							//Interval:   (*int64)(nil),
+							Attributes: map[string]interface{}{},
+							Value:      json.RawMessage("94"),
 						},
 					},
 				},

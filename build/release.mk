@@ -129,8 +129,13 @@ release/sign:
 
 .PHONY : release/publish
 release/publish:
+ifeq ($(DISABLE_PUBLISH), true)
+	@echo "=== [release/publish] DISABLED"
+else
 	@echo "=== [release/publish] publishing artifacts"
 	@bash $(CURDIR)/build/upload_artifacts_gh.sh
+endif
+
 
 .PHONY : release-linux
 release-linux: release/pkg-linux release/fix-tarballs-linux release/sign release/publish

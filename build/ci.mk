@@ -103,6 +103,7 @@ ifdef TAG
             -w /go/src/github.com/newrelic/infrastructure-agent \
 			-e PRERELEASE=true \
 			-e GITHUB_TOKEN \
+			-e DISABLE_PUBLISH \
 			-e TAG \
 			-e GPG_MAIL \
 			-e GPG_PASSPHRASE \
