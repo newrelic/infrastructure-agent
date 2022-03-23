@@ -895,7 +895,7 @@ func (s *Store) updatePluginInventoryCache(pi *PluginInfo, entityKey string) (up
 		return
 	}
 
-	trace.AttrOn(
+	trace.AttrOn(llog.Fields(),
 		func() bool { return ids.CustomAttrsID.String() == pi.ID() },
 		"reap change, item: %+v", *pi,
 	)

@@ -76,12 +76,12 @@ func (p matcher) Evaluate(event interface{}) bool {
 		return false
 	}
 	isMatch := p.Evaluator(p.ExpectedValue, actualValue)
-	trace.MetricMatch("'%v' matches expression %v >> '%v': %v", actualValue, p.PropertyName, p.ExpectedValue, isMatch)
+	trace.MetricMatch(mlog.Fields(), "'%v' matches expression %v >> '%v': %v", actualValue, p.PropertyName, p.ExpectedValue, isMatch)
 	return isMatch
 }
 
 func getMapValue(object map[string]interface{}, fieldNames []string) interface{} {
-	trace.MetricMatch("Searching map[string]interface{} for fields %v", fieldNames)
+	trace.MetricMatch(mlog.Fields(), "Searching map[string]interface{} for fields %v", fieldNames)
 	for i := range fieldNames {
 		obj := object[fieldNames[i]]
 		if obj != nil {
@@ -99,7 +99,7 @@ func getFieldValue(object interface{}, fieldNames []string) interface{} {
 
 	// If a struct then try and get it by field
 	if v.Kind() == reflect.Struct {
-		trace.MetricMatch("Searching Struct for fields %v", fieldNames)
+		trace.MetricMatch(mlog.Fields(), "Searching Struct for fields %v", fieldNames)
 		for i := range fieldNames {
 			fv := v.FieldByName(fieldNames[i])
 			if fv.IsValid() && fv.CanInterface() {
@@ -114,7 +114,7 @@ func getFieldValue(object interface{}, fieldNames []string) interface{} {
 	case types.FlatProcessSample: // types.FlatProcessSample is a map so check if any of the field names contains a value
 		return getMapValue(v.Interface().(types.FlatProcessSample), fieldNames)
 	default:
-		trace.MetricMatch("Fields %v does NOT exist in sample.", fieldNames)
+		trace.MetricMatch(mlog.Fields(), "Fields %v does NOT exist in sample.", fieldNames)
 		return nil
 	}
 }
@@ -267,7 +267,7 @@ func NewSampleMatchFn(enableProcessMetrics *bool, includeMetricsMatchers config.
 		// if config option is not set, check if we have rules defined. those take precedence over the FF
 		ec := NewMatcherChain(includeMetricsMatchers)
 		if ec.Enabled {
-			trace.MetricMatch("EnableProcessMetrics is EMPTY and rules ARE defined, process metrics will be ENABLED for matching processes")
+			trace.MetricMatch(mlog.Fields(), "EnableProcessMetrics is EMPTY and rules ARE defined, process metrics will be ENABLED for matching processes")
 			return func(sample interface{}) bool {
 				return ec.Evaluate(sample)
 			}
@@ -289,19 +289,19 @@ func NewSampleMatchFn(enableProcessMetrics *bool, includeMetricsMatchers config.
 	}
 
 	if excludeProcessMetrics(enableProcessMetrics) {
-		trace.MetricMatch("EnableProcessMetrics is FALSE, process metrics will be DISABLED")
+		trace.MetricMatch(mlog.Fields(), "EnableProcessMetrics is FALSE, process metrics will be DISABLED")
 		return func(sample interface{}) bool {
 			switch sample.(type) {
 			case *types.ProcessSample:
-				trace.MetricMatch("Got a sample of type '*types.ProcessSample' so excluding sample.")
+				trace.MetricMatch(mlog.Fields(), "Got a sample of type '*types.ProcessSample' so excluding sample.")
 				// no process samples are included
 				return false
 			case *types.FlatProcessSample:
-				trace.MetricMatch("Got a sample of type '*types.FlatProcessSample' so excluding sample.")
+				trace.MetricMatch(mlog.Fields(), "Got a sample of type '*types.FlatProcessSample' so excluding sample.")
 				// no flat process samples are included
 				return false
 			default:
-				trace.MetricMatch("Got a sample of type '%s' that should not be excluded.", reflect.TypeOf(sample).String())
+				trace.MetricMatch(mlog.Fields(), "Got a sample of type '%s' that should not be excluded.", reflect.TypeOf(sample).String())
 				// other samples are included
 				return true
 			}
@@ -310,13 +310,13 @@ func NewSampleMatchFn(enableProcessMetrics *bool, includeMetricsMatchers config.
 
 	ec := NewMatcherChain(includeMetricsMatchers)
 	if ec.Enabled {
-		trace.MetricMatch("EnableProcessMetrics is TRUE and rules ARE defined, process metrics will be ENABLED for matching processes")
+		trace.MetricMatch(mlog.Fields(), "EnableProcessMetrics is TRUE and rules ARE defined, process metrics will be ENABLED for matching processes")
 		return func(sample interface{}) bool {
 			return ec.Evaluate(sample)
 		}
 	}
 
-	trace.MetricMatch("EnableProcessMetrics is TRUE and rules are NOT defined, ALL process metrics will be ENABLED")
+	trace.MetricMatch(mlog.Fields(), "EnableProcessMetrics is TRUE and rules are NOT defined, ALL process metrics will be ENABLED")
 	return func(sample interface{}) bool {
 		// all process samples are included
 		return true

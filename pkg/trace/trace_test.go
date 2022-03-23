@@ -24,8 +24,8 @@ func TestConditionIsEvaluatedOnlyWhenFeatureIsEnabled(t *testing.T) {
 		return true
 	}
 
-	On(conditionA, Feature("feature666"), "")
-	On(conditionB, Feature("feature1"), "")
+	On(conditionA, Feature("feature666"), nil, "")
+	On(conditionB, Feature("feature1"), nil, "")
 
 	assert.False(t, conditionACalled)
 	assert.True(t, conditionBCalled)

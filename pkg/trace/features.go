@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 package trace
 
+import "github.com/sirupsen/logrus"
+
 // Feature feature to be traced.
 type Feature string
 
@@ -28,56 +30,56 @@ const (
 // trace.On(trace.FEATURE, ...)
 
 // Attr always traces custom-attributes feature.
-func Attr(format string, args ...interface{}) {
-	On(func() bool { return true }, ATTR, format, args...)
+func Attr(fields logrus.Fields, format string, args ...interface{}) {
+	On(func() bool { return true }, ATTR, fields, format, args...)
 }
 
 // AttrOn trace custom-attributes feature on given condition.
-func AttrOn(cond Condition, format string, args ...interface{}) {
-	On(cond, ATTR, format, args...)
+func AttrOn(fields logrus.Fields, cond Condition, format string, args ...interface{}) {
+	On(cond, ATTR, fields, format, args...)
 }
 
 // Connect always traces connect feature.
-func Connect(format string, args ...interface{}) {
-	On(func() bool { return true }, CONN, format, args...)
+func Connect(fields logrus.Fields, format string, args ...interface{}) {
+	On(func() bool { return true }, CONN, fields, format, args...)
 }
 
 // Hostname always traces hostname feature.
-func Hostname(format string, args ...interface{}) {
-	On(func() bool { return true }, HOSTNAME, format, args...)
+func Hostname(fields logrus.Fields, format string, args ...interface{}) {
+	On(func() bool { return true }, HOSTNAME, fields, format, args...)
 }
 
 // NonDMSubmission traces NR platform non-dimensional metrics submission payloads.
 func NonDMSubmission(payload []byte) {
-	On(func() bool { return true }, V3_SUBMISSION, string(payload))
+	On(func() bool { return true }, V3_SUBMISSION, nil, string(payload))
 }
 
 // Telemetry traces to "audit" (log payloads) on DM telemetry.
-func Telemetry(format string, args ...interface{}) {
-	On(func() bool { return true }, DM_SUBMISSION, format, args...)
+func Telemetry(fields logrus.Fields, format string, args ...interface{}) {
+	On(func() bool { return true }, DM_SUBMISSION, fields, format, args...)
 }
 
 // MetricMatch traces to "audit" log metric match rule.
-func MetricMatch(format string, args ...interface{}) {
-	On(func() bool { return true }, METRIC_MATCHER, format, args...)
+func MetricMatch(fields logrus.Fields, format string, args ...interface{}) {
+	On(func() bool { return true }, METRIC_MATCHER, fields, format, args...)
 }
 
 // Inventory traces to "audit" inventory.
-func Inventory(format string, args ...interface{}) {
-	On(func() bool { return true }, INVENTORY, format, args...)
+func Inventory(fields logrus.Fields, format string, args ...interface{}) {
+	On(func() bool { return true }, INVENTORY, fields, format, args...)
 }
 
 // LogFwdOutput traces to "audit" log-forwarder output.
-func LogFwdOutput(format string, args ...interface{}) {
-	On(func() bool { return true }, LOG_FWD, format, args...)
+func LogFwdOutput(fields logrus.Fields, format string, args ...interface{}) {
+	On(func() bool { return true }, LOG_FWD, fields, format, args...)
 }
 
 // CmdReq traces to "audit" command request payloads.
-func CmdReq(format string, args ...interface{}) {
-	On(func() bool { return true }, CMDREQ, format, args...)
+func CmdReq(fields logrus.Fields, format string, args ...interface{}) {
+	On(func() bool { return true }, CMDREQ, fields, format, args...)
 }
 
 // Proc traces to "audit" process sampling.
-func Proc(format string, args ...interface{}) {
-	On(func() bool { return true }, PROC, format, args...)
+func Proc(fields logrus.Fields, format string, args ...interface{}) {
+	On(func() bool { return true }, PROC, fields, format, args...)
 }

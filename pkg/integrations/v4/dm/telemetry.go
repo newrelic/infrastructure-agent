@@ -35,7 +35,7 @@ func (l *telemetryErrLogger) Write(p []byte) (n int, err error) {
 		telemetryLogger.Debug(string(p))
 	case "audit":
 		// payload should be logged only when customer enabled dm.submission feature traces.
-		trace.Telemetry(string(p))
+		trace.Telemetry(telemetryLogger.Fields(), string(p))
 	}
 
 	return len(p), nil
