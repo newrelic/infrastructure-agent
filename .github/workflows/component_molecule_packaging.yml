@@ -2,6 +2,11 @@ name: Test latest package installation
 
 on:
   workflow_call:
+    secrets:
+      DOCKER_HUB_ID:
+        required: true
+      DOCKER_HUB_PASSWORD:
+        required: true
     inputs:
       TAG:
         required: true
@@ -9,15 +14,22 @@ on:
 
 env:
   TAG: ${{ inputs.TAG }}
+  DOCKER_HUB_ID: ${{ secrets.DOCKER_HUB_ID }}
+  DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
 jobs:
   molecule-test-packages:
     name: Test package installation from prod S3
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Setup node
         run: |
           sudo pip3 install molecule[docker]==3.6.0
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKER_HUB_ID }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
       - name: Run molecule
         run: TARGET_VERSION=${{env.TAG}} cd test/packaging/ansible && molecule converge
