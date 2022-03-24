@@ -3,7 +3,7 @@
 //go:build linux
 // +build linux
 
-package legacy
+package config_v3
 
 import (
 	"fmt"

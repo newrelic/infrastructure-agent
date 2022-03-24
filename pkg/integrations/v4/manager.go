@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/config/migrate"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/config_v3"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -18,7 +19,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/config/envvar"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 
@@ -117,7 +117,7 @@ type Manager struct {
 	handleConfig             configrequest.HandleFn
 	tracker                  *track.Tracker
 	idLookup                 host.IDLookup
-	pluginRegistry           *legacy.PluginRegistry
+	pluginRegistry           *config_v3.PluginRegistry
 }
 
 // groupContext pairs a runner.Group with its cancellation context
@@ -180,7 +180,7 @@ func NewConfig(verbose int, features map[string]bool, passthroughEnvs, configFol
 		AgentFeatures:          features,
 		DefinitionFolders:      definitionFolders,
 		Verbose:                verbose,
-		PassthroughEnvironment: append(passthroughEnvs, legacy.DefaultInheritedEnv...),
+		PassthroughEnvironment: append(passthroughEnvs, config_v3.DefaultInheritedEnv...),
 	}
 }
 
@@ -197,7 +197,7 @@ func NewManager(
 	configEntryQ chan configrequest.Entry,
 	tracker *track.Tracker,
 	idLookup host.IDLookup,
-	pluginRegistry *legacy.PluginRegistry,
+	pluginRegistry *config_v3.PluginRegistry,
 ) *Manager {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -531,7 +531,7 @@ func (mgr *Manager) loadConfigIntoBytes(path string) ([]byte, error) {
 
 	err = explainEmptyIntegrations(bytes)
 	if err == legacyYAML {
-		v3Configuration := legacy.PluginInstanceWrapper{}
+		v3Configuration := config_v3.PluginInstanceWrapper{}
 		err = migrate.ReadAndUnmarshallConfig(path, &v3Configuration)
 		if err != nil {
 			return nil, fmt.Errorf("error reading old config configuration: %w", err)

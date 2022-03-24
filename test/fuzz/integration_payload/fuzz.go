@@ -22,8 +22,8 @@ import (
 // Fuzz tests integration payload handling.
 func Fuzz(data []byte) int {
 	// integration protocol <= v4
-	_, _, err1 := legacy.ParsePayload(data, true)
-	_, _, err2 := legacy.ParsePayload(data, false)
+	_, _, err1 := config_v3.ParsePayload(data, true)
+	_, _, err2 := config_v3.ParsePayload(data, false)
 
 	// integration protocol v4
 	// otherwise parse won't happen
