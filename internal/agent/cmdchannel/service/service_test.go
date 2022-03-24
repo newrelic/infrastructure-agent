@@ -5,6 +5,7 @@ package service
 import (
 	"bytes"
 	"context"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/dm/testutils"
 	"io/ioutil"
 	"net/http"
 	"reflect"
@@ -18,10 +19,9 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/cmdchanneltest"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/runintegration"
-	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	http2 "github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
-	dm "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm/testutils"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/stretchr/testify/require"
 

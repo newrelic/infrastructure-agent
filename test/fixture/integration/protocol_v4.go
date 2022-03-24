@@ -5,7 +5,7 @@ package integration
 import (
 	"encoding/json"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/protocol"
 )
 
 // ProtocolParsingPair payload and corresponding integration protocol parsed struct output.

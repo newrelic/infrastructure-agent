@@ -10,8 +10,7 @@ package integration_payload
 import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/dm"
 )
 
 // Several funcs could be used but they should be passed to the go-fuzz cmd
