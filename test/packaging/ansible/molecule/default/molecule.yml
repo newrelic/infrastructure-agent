@@ -26,5 +26,7 @@ provisioner:
     host_vars:
       centos-8:
         ansible_python_interpreter: python3
+  env:
+    ANSIBLE_ROLES_PATH: "../../roles"
 verifier:
   name: ansible
