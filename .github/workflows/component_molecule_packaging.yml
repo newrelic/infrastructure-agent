@@ -1,0 +1,23 @@
+name: Test latest package installation
+
+on:
+  workflow_call:
+    inputs:
+      TAG:
+        required: true
+        type: string
+
+env:
+  TAG: ${{ inputs.TAG }}
+
+jobs:
+  molecule-test-packages:
+    name: Test package installation from prod S3
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup node
+        run: |
+          sudo pip3 install molecule[docker]==3.6.0
+      - name: Run molecule
+        run: TARGET_VERSION=${{env.TAG}} cd test/packaging/ansible && molecule converge

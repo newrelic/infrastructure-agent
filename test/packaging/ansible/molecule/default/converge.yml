@@ -1,0 +1,8 @@
+---
+- name: Converge
+  hosts: all
+
+- import_playbook: ../../installation-pinned.yml
+  vars:
+    target_agent_version: "{{ lookup('env', 'TARGET_VERSION') }}"
+    nr_license_key: yyy
