@@ -14,26 +14,26 @@ import (
 // ConfigEntry holds an integrations YAML configuration entry. It may define multiple types of tasks
 type ConfigEntry struct {
 	InstanceName string            `yaml:"name" json:"name"`         // integration instance name
-	CLIArgs      []string          `yaml:"cli_args" json:"cli_args"` // optional when executable is deduced by "name" instead of "exec"
-	Exec         ShlexOpt          `yaml:"exec" json:"exec"`         // it may be a CLI string or a YAML array
-	Env          map[string]string `yaml:"env" json:"env"`           // User-defined environment variables
-	Interval     string            `yaml:"interval" json:"interval"` // User-defined interval string (duration notation)
-	Timeout      *time.Duration    `yaml:"timeout" json:"timeout"`
-	User         string            `yaml:"integration_user" json:"integration_user"`
-	WorkDir      string            `yaml:"working_dir" json:"working_dir"`
-	Labels       map[string]string `yaml:"labels" json:"labels"`
-	When         EnableConditions  `yaml:"when" json:"when"`
+	CLIArgs      []string          `yaml:"cli_args,omitempty" json:"cli_args"` // optional when executable is deduced by "name" instead of "exec"
+	Exec         ShlexOpt          `yaml:"exec,omitempty" json:"exec"`         // it may be a CLI string or a YAML array
+	Env          map[string]string `yaml:"env,omitempty" json:"env"`           // User-defined environment variables
+	Interval     string            `yaml:"interval,omitempty" json:"interval"` // User-defined interval string (duration notation)
+	Timeout      *time.Duration    `yaml:"timeout,omitempty" json:"timeout"`
+	User         string            `yaml:"integration_user,omitempty" json:"integration_user"`
+	WorkDir      string            `yaml:"working_dir,omitempty" json:"working_dir"`
+	Labels       map[string]string `yaml:"labels,omitempty" json:"labels"`
+	When         EnableConditions  `yaml:"when,omitempty" json:"when"`
 
 	// Legacy definition commands
-	Command         string            `yaml:"command" json:"command"`
-	Arguments       map[string]string `yaml:"arguments" json:"arguments"`
-	IntegrationName string            `yaml:"integration_name" json:"integration_name"`
-	InventorySource string            `yaml:"inventory_source" json:"inventory_source"`
+	Command         string            `yaml:"command,omitempty" json:"command"`
+	Arguments       map[string]string `yaml:"arguments,omitempty" json:"arguments"`
+	IntegrationName string            `yaml:"integration_name,omitempty" json:"integration_name"`
+	InventorySource string            `yaml:"inventory_source,omitempty" json:"inventory_source"`
 
 	// Config embeds a configuration file as a string. It can't coexist with TemplatePath
-	Config interface{} `yaml:"config" json:"config"`
+	Config interface{} `yaml:"config,omitempty" json:"config"`
 	// TemplatePath specifies the path of an external configuration file. It can't coexist with Config
-	TemplatePath string `yaml:"config_template_path" json:"config_template_path"`
+	TemplatePath string `yaml:"config_template_path,omitempty" json:"config_template_path"`
 }
 
 // EnableConditions condition the execution of an integration to the trueness of ALL the conditions
