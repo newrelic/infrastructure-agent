@@ -273,6 +273,8 @@ func (ss *Sampler) Sample() (samples sample.EventBatch, err error) {
 
 			helpers.LogStructureDetails(sslog, deviceToLogical, "CalculateDeviceMappings", "raw", nil)
 
+			noDeviceMappedList := []logrus.Fields{}
+
 			for deviceKey, counter := range ioCounters {
 				// Check to see whether we have a mapping from device key to device
 				if device, ok := deviceToLogical[deviceKey]; ok {
@@ -301,13 +303,15 @@ func (ss *Sampler) Sample() (samples sample.EventBatch, err error) {
 						}
 					}
 				} else {
-					sslog.WithFieldsF(func() logrus.Fields {
-						return logrus.Fields{
-							"device":    device,
-							"devicekey": deviceKey,
-						}
-					}).Debug("No device mapping.")
+					noDeviceMappedList = append(noDeviceMappedList, logrus.Fields{
+						"device":    device,
+						"devicekey": deviceKey,
+					})
 				}
+			}
+
+			if len(noDeviceMappedList) > 0 {
+				sslog.WithField("devices", noDeviceMappedList).Debug("No device mapping.")
 			}
 		}
 		ss.lastDiskStats = ioCounters
