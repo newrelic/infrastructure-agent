@@ -39,20 +39,20 @@ func V3toV4(pathConfiguration string, pathDefinition string, pathOutput string, 
 
 	// Reading old Definition file
 	v3Definition := legacy.Plugin{}
-	err := readAndUnmarshallConfig(pathDefinition, &v3Definition)
+	err := ReadAndUnmarshallConfig(pathDefinition, &v3Definition)
 	if err != nil {
 		return fmt.Errorf("error reading old config definition: %w", err)
 	}
 
 	// Reading old Configuration file
 	v3Configuration := legacy.PluginInstanceWrapper{}
-	err = readAndUnmarshallConfig(pathConfiguration, &v3Configuration)
+	err = ReadAndUnmarshallConfig(pathConfiguration, &v3Configuration)
 	if err != nil {
 		return fmt.Errorf("error reading old config configuration: %w", err)
 	}
 
 	// Populating new config
-	v4config, err := populateV4Config(v3Definition, v3Configuration)
+	v4config, err := PopulateV4Config(v3Definition, v3Configuration)
 	if err != nil {
 		return fmt.Errorf("error populating new config: %w", err)
 	}
@@ -66,7 +66,7 @@ func V3toV4(pathConfiguration string, pathDefinition string, pathOutput string, 
 	return nil
 }
 
-func readAndUnmarshallConfig(path string, out interface{}) error {
+func ReadAndUnmarshallConfig(path string, out interface{}) error {
 	file, err := os.Open(path)
 	if err != nil {
 		return fmt.Errorf("opening %s, %w", path, err)
@@ -81,7 +81,7 @@ func readAndUnmarshallConfig(path string, out interface{}) error {
 	return nil
 }
 
-func populateV4Config(v3Definition legacy.Plugin, v3Configuration legacy.PluginInstanceWrapper) (*config.YAML, error) {
+func PopulateV4Config(v3Definition legacy.Plugin, v3Configuration legacy.PluginInstanceWrapper) (*config.YAML, error) {
 	if v3Configuration.IntegrationName != v3Definition.Name {
 		return nil, fmt.Errorf("IntegrationName != Name: %s!=%s", v3Configuration.IntegrationName, v3Definition.Name)
 	}

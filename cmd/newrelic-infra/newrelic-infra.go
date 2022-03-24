@@ -363,8 +363,23 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	// track stoppable integrations
 	tracker := track.NewTracker(dmEmitter)
 
+	pluginRegistry := legacy.NewPluginRegistry(pluginSourceDirs, c.PluginInstanceDirs)
+	if err := pluginRegistry.LoadPlugins(); err != nil {
+		fatal(err, "Can't load plugins.")
+	}
+
 	integrationEmitter := emitter.NewIntegrationEmittor(agt, dmEmitter, ffManager)
-	integrationManager := v4.NewManager(integrationCfg, integrationEmitter, il, definitionQ, terminateDefinitionQ, configEntryQ, tracker, agt.Context.IDLookup())
+	integrationManager := v4.NewManager(
+		integrationCfg,
+		integrationEmitter,
+		il,
+		definitionQ,
+		terminateDefinitionQ,
+		configEntryQ,
+		tracker,
+		agt.Context.IDLookup(),
+		pluginRegistry,
+	)
 
 	// Command channel handlers
 	backoffSecsC := make(chan int, 1) // 1 won't block on initial cmd-channel fetch
@@ -459,24 +474,20 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 
 	go ccService.Run(agt.Context.Ctx, agt.Context.AgentIdnOrEmpty, initCmdResponse)
 
-	pluginRegistry := legacy.NewPluginRegistry(pluginSourceDirs, c.PluginInstanceDirs)
-	if err := pluginRegistry.LoadPlugins(); err != nil {
-		fatal(err, "Can't load plugins.")
-	}
-	pluginConfig, err := legacy.LoadPluginConfig(pluginRegistry, c.PluginConfigFiles)
-	if err != nil {
-		fatal(err, "Can't load plugin configuration.")
-	}
-	runner := legacy.NewPluginRunner(pluginRegistry, agt)
-	for _, pluginConf := range pluginConfig.PluginConfigs {
-		if err := runner.ConfigurePlugin(pluginConf, agt.Context.ActiveEntitiesChannel()); err != nil {
-			fatal(err, fmt.Sprint("Can't configure plugin.", pluginConf))
-		}
-	}
-
-	if err := runner.ConfigureV1Plugins(agt.Context); err != nil {
-		aslog.WithError(err).Debug("Can't configure integrations.")
-	}
+	//pluginConfig, err := legacy.LoadPluginConfig(pluginRegistry, c.PluginConfigFiles)
+	//if err != nil {
+	//	fatal(err, "Can't load plugin configuration.")
+	//}
+	//runner := legacy.NewPluginRunner(pluginRegistry, agt)
+	//for _, pluginConf := range pluginConfig.PluginConfigs {
+	//	if err := runner.ConfigurePlugin(pluginConf, agt.Context.ActiveEntitiesChannel()); err != nil {
+	//		fatal(err, fmt.Sprint("Can't configure plugin.", pluginConf))
+	//	}
+	//}
+	//
+	//if err := runner.ConfigureV1Plugins(agt.Context); err != nil {
+	//	aslog.WithError(err).Debug("Can't configure integrations.")
+	//}
 
 	timedLog.Info("New Relic infrastructure agent is running.")
 
