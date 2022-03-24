@@ -8,6 +8,7 @@ import (
 	context2 "context"
 	"flag"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/config_v3"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
@@ -54,7 +55,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/fs/systemd"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/recover"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	v4 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
@@ -363,7 +363,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	// track stoppable integrations
 	tracker := track.NewTracker(dmEmitter)
 
-	pluginRegistry := legacy.NewPluginRegistry(pluginSourceDirs, c.PluginInstanceDirs)
+	pluginRegistry := config_v3.NewPluginRegistry(pluginSourceDirs, c.PluginInstanceDirs)
 	if err := pluginRegistry.LoadPlugins(); err != nil {
 		fatal(err, "Can't load plugins.")
 	}

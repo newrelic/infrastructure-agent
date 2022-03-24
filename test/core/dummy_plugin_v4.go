@@ -73,7 +73,7 @@ func InventoryDatasetsForPayload(t *testing.T, payload []byte) (dss []agent.Plug
 	r := fwrequest.NewFwRequest(def, nil, nil, dataV4)
 	for _, ds := range r.Data.DataSets {
 
-		legacyDS := legacy.BuildInventoryDataSet(
+		legacyDS := config_v3.BuildInventoryDataSet(
 			log.WithComponent("test"),
 			ds.Inventory,
 			nil,
