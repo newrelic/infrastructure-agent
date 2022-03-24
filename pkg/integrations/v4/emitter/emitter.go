@@ -5,11 +5,11 @@ package emitter
 import (
 	"errors"
 	"fmt"
+	v3 "github.com/newrelic/infrastructure-agent/pkg/integrations/sdk/v3"
 
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 
 	"github.com/newrelic/infrastructure-agent/pkg/fwrequest"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	"github.com/sirupsen/logrus"
 
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
@@ -119,7 +119,7 @@ func (e *VersionAwareEmitter) emitV3(dto fwrequest.FwRequestLegacy, protocolVers
 
 	var emitErrs []error
 	for _, dataset := range dto.Data.DataSets {
-		err := legacy.EmitDataSet(
+		err := v3.EmitDataSet(
 			e.aCtx,
 			&plugin,
 			dto.Data.Name,

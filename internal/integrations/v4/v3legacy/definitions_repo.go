@@ -4,12 +4,11 @@ package v3legacy
 
 import (
 	"errors"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/config_v3"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
-
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 
 	"gopkg.in/yaml.v2"
 
@@ -125,7 +124,7 @@ func (dcb *DefinitionsRepo) NewDefinitionCommand(dcc integration.DefinitionComma
 	// Legacy integrations don't allow setting the environment, as it will be used
 	// for passing the "arguments" entry.
 	dcc.Common.ExecutorConfig.Environment =
-		legacy.ArgumentsToEnvVars(dcb.Config.Verbose, dcc.Arguments)
+		config_v3.ArgumentsToEnvVars(dcb.Config.Verbose, dcc.Arguments)
 
 	// We need to set the Working Directory to the folder where the definition file is placed
 	dcc.Common.ExecutorConfig.Directory = definition.Dir

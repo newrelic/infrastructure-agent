@@ -6,7 +6,7 @@ package migrate
 
 import (
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/config_v3"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
@@ -38,14 +38,14 @@ func V3toV4(pathConfiguration string, pathDefinition string, pathOutput string, 
 	}
 
 	// Reading old Definition file
-	v3Definition := legacy.Plugin{}
+	v3Definition := config_v3.Plugin{}
 	err := ReadAndUnmarshallConfig(pathDefinition, &v3Definition)
 	if err != nil {
 		return fmt.Errorf("error reading old config definition: %w", err)
 	}
 
 	// Reading old Configuration file
-	v3Configuration := legacy.PluginInstanceWrapper{}
+	v3Configuration := config_v3.PluginInstanceWrapper{}
 	err = ReadAndUnmarshallConfig(pathConfiguration, &v3Configuration)
 	if err != nil {
 		return fmt.Errorf("error reading old config configuration: %w", err)
@@ -81,7 +81,7 @@ func ReadAndUnmarshallConfig(path string, out interface{}) error {
 	return nil
 }
 
-func PopulateV4Config(v3Definition legacy.Plugin, v3Configuration legacy.PluginInstanceWrapper) (*config.YAML, error) {
+func PopulateV4Config(v3Definition config_v3.Plugin, v3Configuration config_v3.PluginInstanceWrapper) (*config.YAML, error) {
 	if v3Configuration.IntegrationName != v3Definition.Name {
 		return nil, fmt.Errorf("IntegrationName != Name: %s!=%s", v3Configuration.IntegrationName, v3Definition.Name)
 	}
@@ -104,7 +104,7 @@ func PopulateV4Config(v3Definition legacy.Plugin, v3Configuration legacy.PluginI
 	return v4Config, nil
 }
 
-func populateConfigEntry(pluginV1Instance *legacy.PluginV1Instance, pluginV1Command *legacy.PluginV1Command) config.ConfigEntry {
+func populateConfigEntry(pluginV1Instance *config_v3.PluginV1Instance, pluginV1Command *config_v3.PluginV1Command) config.ConfigEntry {
 	configEntry := config.ConfigEntry{}
 	if len(pluginV1Command.Command) == 0 {
 		return configEntry
@@ -132,7 +132,7 @@ func populateConfigEntry(pluginV1Instance *legacy.PluginV1Instance, pluginV1Comm
 	return configEntry
 }
 
-func buildCLIArgs(pluginV1Command *legacy.PluginV1Command, configEntry *config.ConfigEntry) {
+func buildCLIArgs(pluginV1Command *config_v3.PluginV1Command, configEntry *config.ConfigEntry) {
 	for index, arg := range pluginV1Command.Command {
 		if index == 0 {
 			// the first arg in command is the binary name
