@@ -11,6 +11,10 @@ on:
       - README.md
 
 jobs:
+  molecule-packaing-tests:
+    uses: newrelic/infrastructure-agent/.github/workflows/component_molecule_packaging.yml@molecule_packaging
+    with:
+      TAG: "1.23.0"
   unit-test-linux:
       uses: newrelic/infrastructure-agent/.github/workflows/component_linux_unit_test.yml@master
       secrets:
