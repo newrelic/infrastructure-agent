@@ -3,6 +3,7 @@ package register
 import (
 	"context"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/protocol"
 	"io/ioutil"
 	"sync"
 	"testing"
@@ -18,7 +19,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/fwrequest"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 )
 
 // Payload size.

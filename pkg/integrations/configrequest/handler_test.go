@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/cache"
-	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/cache"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/integration"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"

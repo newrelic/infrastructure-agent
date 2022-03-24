@@ -4,6 +4,8 @@ package agent
 
 import (
 	"compress/gzip"
+	dm2 "github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/dm"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/emitter"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -15,15 +17,12 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
-	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/files"
-	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
-	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/v3legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
+	v4 "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/files"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
-	v4 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins"
 	"github.com/newrelic/infrastructure-agent/test/infra"
 	ihttp "github.com/newrelic/infrastructure-agent/test/infra/http"
@@ -97,8 +96,8 @@ func (ae *Emulator) RunAgent() error {
 	if err := initialize.AgentService(cfg); err != nil {
 		fatal(err, "Can't complete platform specific initialization.")
 	}
-	metricsSenderConfig := dm.NewConfig(cfg.MetricURL, false, cfg.License, time.Duration(cfg.DMSubmissionPeriod)*time.Second, cfg.MaxMetricBatchEntitiesCount, cfg.MaxMetricBatchEntitiesQueue)
-	dmSender, err := dm.NewDMSender(metricsSenderConfig, http.DefaultTransport, ae.agent.Context.IdContext().AgentIdentity)
+	metricsSenderConfig := dm2.NewConfig(cfg.MetricURL, false, cfg.License, time.Duration(cfg.DMSubmissionPeriod)*time.Second, cfg.MaxMetricBatchEntitiesCount, cfg.MaxMetricBatchEntitiesQueue)
+	dmSender, err := dm2.NewDMSender(metricsSenderConfig, http.DefaultTransport, ae.agent.Context.IdContext().AgentIdentity)
 	if err != nil {
 		return err
 	}
@@ -110,7 +109,7 @@ func (ae *Emulator) RunAgent() error {
 	// queues integration terminated definitions
 	terminateDefinitionQ := make(chan string, 100)
 
-	dmEmitter := dm.NewEmitter(ae.agent.GetContext(), dmSender, nil, instrumentation.NoopMeasure)
+	dmEmitter := dm2.NewEmitter(ae.agent.GetContext(), dmSender, nil, instrumentation.NoopMeasure)
 
 	// track stoppable integrations
 	tracker := track.NewTracker(dmEmitter)
@@ -141,7 +140,7 @@ func newInstancesLookup(cfg v4.Configuration) integration.InstancesLookup {
 		execFolders = append(execFolders, df)
 		execFolders = append(execFolders, filepath.Join(df, executablesSubFolder))
 	}
-	legacyDefinedCommands := v3legacy.NewDefinitionsRepo(v3legacy.LegacyConfig{
+	legacyDefinedCommands := v3.NewDefinitionsRepo(v3.LegacyConfig{
 		DefinitionFolders: cfg.DefinitionFolders,
 		Verbose:           cfg.Verbose,
 	})

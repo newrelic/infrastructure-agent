@@ -3,10 +3,10 @@
 package protocol
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/config"
 	"testing"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

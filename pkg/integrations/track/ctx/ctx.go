@@ -5,8 +5,7 @@ package ctx
 
 import (
 	"fmt"
-
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/protocol"
 )
 
 // CmdChannelRequest DTO storing context required to handle actions on integration run exit.
