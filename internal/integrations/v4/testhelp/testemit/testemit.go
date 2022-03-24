@@ -65,7 +65,7 @@ func (t *RecordEmitter) Emit(metadata integration.Definition, extraLabels data.M
 		return nil
 	}
 
-	data, _, err := legacy.ParsePayload(json, false)
+	data, _, err := config_v3.ParsePayload(json, false)
 	if err != nil {
 		return err
 	}

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	v3 "github.com/newrelic/infrastructure-agent/pkg/integrations/sdk/v3"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
@@ -24,7 +25,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/register"
 	"github.com/newrelic/infrastructure-agent/pkg/fwrequest"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/sirupsen/logrus"
@@ -207,7 +207,7 @@ func emitInventory(
 	integrationUser := metadata.ExecutorConfig.User
 
 	if len(dataSet.Inventory) > 0 {
-		inventoryDataSet := legacy.BuildInventoryDataSet(
+		inventoryDataSet := v3.BuildInventoryDataSet(
 			logEntry, dataSet.Inventory, labels, integrationUser, integrationMetadata.Name,
 			dataSet.Entity.Name)
 		entityKey := entity.Key(dataSet.Entity.Name)
