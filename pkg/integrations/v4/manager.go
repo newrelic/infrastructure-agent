@@ -5,6 +5,8 @@ package v4
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/config/migrate"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"io/ioutil"
 	"os"
@@ -115,6 +117,7 @@ type Manager struct {
 	handleConfig             configrequest.HandleFn
 	tracker                  *track.Tracker
 	idLookup                 host.IDLookup
+	pluginRegistry           *legacy.PluginRegistry
 }
 
 // groupContext pairs a runner.Group with its cancellation context
@@ -194,6 +197,7 @@ func NewManager(
 	configEntryQ chan configrequest.Entry,
 	tracker *track.Tracker,
 	idLookup host.IDLookup,
+	pluginRegistry *legacy.PluginRegistry,
 ) *Manager {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -214,13 +218,14 @@ func NewManager(
 		handleConfig:             configrequest.NewHandleFn(configEntryQ, terminateDefinitionQ, il, illog),
 		tracker:                  tracker,
 		idLookup:                 idLookup,
+		pluginRegistry:           pluginRegistry,
 	}
 
 	// Loads all the configuration files in the passed configFolders
 	for _, folder := range cfg.ConfigFolders {
 		flog := illog.WithField("folder", folder)
 
-		configs, err := configFilesIn(folder)
+		configs, err := mgr.configFilesIn(folder)
 		if err != nil {
 			elog := flog.WithError(err)
 			if os.IsNotExist(err) {
@@ -446,7 +451,7 @@ func (mgr *Manager) handleFileEvent(ctx context.Context, event *fsnotify.Event) 
 }
 
 func (mgr *Manager) runIntegrationFromPath(ctx context.Context, cfgPath string, isCreate bool, elog *log.Entry, cmdFF *runner.CmdFF) {
-	cfg, err := loadConfig(cfgPath)
+	cfg, err := mgr.loadConfig(cfgPath)
 	if err != nil {
 		if err == legacyYAML {
 			elog.Debug("Skipping v3 integration.")
@@ -491,7 +496,7 @@ func (mgr *Manager) cfgPathForFF(featureName string) (cfgPath string, err error)
 }
 
 // reads the configuration files in a given folder, and discards those not belonging to the V4 format
-func configFilesIn(folder string) (map[string]config2.YAML, error) {
+func (mgr *Manager) configFilesIn(folder string) (map[string]config2.YAML, error) {
 	cflog := illog.WithField("folder", folder)
 
 	yamlFiles, err := files.AllYAMLs(folder)
@@ -504,7 +509,7 @@ func configFilesIn(folder string) (map[string]config2.YAML, error) {
 		flog := cflog.WithField("file", file.Name())
 		absolutePath := filepath.Join(folder, file.Name())
 		flog.Debug("Loading config.")
-		cfg, err := loadConfig(absolutePath)
+		cfg, err := mgr.loadConfig(absolutePath)
 		if err != nil {
 			if err == legacyYAML {
 				flog.Debug("Skipping v3 integration. To be loaded in another moment.")
@@ -518,12 +523,41 @@ func configFilesIn(folder string) (map[string]config2.YAML, error) {
 	return configs, nil
 }
 
-func loadConfig(path string) (config2.YAML, error) {
-	cy := config2.YAML{}
+func (mgr *Manager) loadConfigIntoBytes(path string) ([]byte, error) {
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
-		return cy, err
+		return bytes, nil
 	}
+
+	err = explainEmptyIntegrations(bytes)
+	if err == legacyYAML {
+		v3Configuration := legacy.PluginInstanceWrapper{}
+		err = migrate.ReadAndUnmarshallConfig(path, &v3Configuration)
+		if err != nil {
+			return nil, fmt.Errorf("error reading old config configuration: %w", err)
+		}
+
+		// Reading old Definition file
+		v3Definition, err := mgr.pluginRegistry.GetPlugin(v3Configuration.IntegrationName)
+		if err != nil {
+			return nil, fmt.Errorf("error reading old config configuration: %w", err)
+		}
+		v4Conf, err := migrate.PopulateV4Config(*v3Definition, v3Configuration)
+		if err != nil {
+			return nil, fmt.Errorf("error reading old config configuration: %w", err)
+		}
+		bytes, err = yaml.Marshal(v4Conf)
+		if err != nil {
+			return nil, fmt.Errorf("error reading old config configuration: %w", err)
+		}
+	}
+
+	return bytes, nil
+}
+
+func (mgr *Manager) loadConfig(path string) (config2.YAML, error) {
+	bytes, err := mgr.loadConfigIntoBytes(path)
+	cy := config2.YAML{}
 
 	bytes, err = envvar.ExpandInContent(bytes)
 	if err != nil {
