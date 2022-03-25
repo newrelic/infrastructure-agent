@@ -3,14 +3,30 @@
 package trace
 
 import (
+	"bytes"
+	"github.com/sirupsen/logrus"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestConditionIsEvaluatedOnlyWhenFeatureIsEnabled(t *testing.T) {
+var buffer bytes.Buffer
+
+func TestMain(m *testing.M) {
+	// features to enable for tests
 	EnableOn([]string{"feature1", "feature2"})
 
+	// mocked logger to get the actual output
+	mockedLogger := logrus.New()
+	mockedLogger.Out = &buffer
+	mockedLogger.SetLevel(logrus.TraceLevel)
+	global.logger = mockedLogger
+
+	os.Exit(m.Run())
+}
+
+func TestConditionIsEvaluatedOnlyWhenFeatureIsEnabled(t *testing.T) {
 	conditionACalled := false
 	conditionBCalled := false
 
@@ -29,4 +45,16 @@ func TestConditionIsEvaluatedOnlyWhenFeatureIsEnabled(t *testing.T) {
 
 	assert.False(t, conditionACalled)
 	assert.True(t, conditionBCalled)
+}
+
+func TestLogrusFields(t *testing.T) {
+	expectedFields := map[string]interface{}{
+		"component": "agentTests",
+		"name":      "SystemSampler",
+	}
+
+	On(func() bool { return true }, Feature("feature1"), expectedFields, "")
+
+	assert.Contains(t, buffer.String(), "component=agentTests")
+	assert.Contains(t, buffer.String(), "name=SystemSampler")
 }

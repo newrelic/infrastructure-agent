@@ -35,7 +35,7 @@ func EnableOn(features []string) {
 }
 
 // On logs data to be shown if trace for a given feature is enabled and condition is met.
-func On(condition Condition, feature Feature, fields logrus.Fields, format string, args ...interface{}) {
+func On(condition Condition, feature Feature, fields map[string]interface{}, format string, args ...interface{}) {
 	if global.logger == nil {
 		return
 	}

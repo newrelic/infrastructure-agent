@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 package trace
 
-import "github.com/sirupsen/logrus"
-
 // Feature feature to be traced.
 type Feature string
 
@@ -30,22 +28,22 @@ const (
 // trace.On(trace.FEATURE, ...)
 
 // Attr always traces custom-attributes feature.
-func Attr(fields logrus.Fields, format string, args ...interface{}) {
+func Attr(fields map[string]interface{}, format string, args ...interface{}) {
 	On(func() bool { return true }, ATTR, fields, format, args...)
 }
 
 // AttrOn trace custom-attributes feature on given condition.
-func AttrOn(fields logrus.Fields, cond Condition, format string, args ...interface{}) {
+func AttrOn(fields map[string]interface{}, cond Condition, format string, args ...interface{}) {
 	On(cond, ATTR, fields, format, args...)
 }
 
 // Connect always traces connect feature.
-func Connect(fields logrus.Fields, format string, args ...interface{}) {
+func Connect(fields map[string]interface{}, format string, args ...interface{}) {
 	On(func() bool { return true }, CONN, fields, format, args...)
 }
 
 // Hostname always traces hostname feature.
-func Hostname(fields logrus.Fields, format string, args ...interface{}) {
+func Hostname(fields map[string]interface{}, format string, args ...interface{}) {
 	On(func() bool { return true }, HOSTNAME, fields, format, args...)
 }
 
@@ -55,31 +53,31 @@ func NonDMSubmission(payload []byte) {
 }
 
 // Telemetry traces to "audit" (log payloads) on DM telemetry.
-func Telemetry(fields logrus.Fields, format string, args ...interface{}) {
+func Telemetry(fields map[string]interface{}, format string, args ...interface{}) {
 	On(func() bool { return true }, DM_SUBMISSION, fields, format, args...)
 }
 
 // MetricMatch traces to "audit" log metric match rule.
-func MetricMatch(fields logrus.Fields, format string, args ...interface{}) {
+func MetricMatch(fields map[string]interface{}, format string, args ...interface{}) {
 	On(func() bool { return true }, METRIC_MATCHER, fields, format, args...)
 }
 
 // Inventory traces to "audit" inventory.
-func Inventory(fields logrus.Fields, format string, args ...interface{}) {
+func Inventory(fields map[string]interface{}, format string, args ...interface{}) {
 	On(func() bool { return true }, INVENTORY, fields, format, args...)
 }
 
 // LogFwdOutput traces to "audit" log-forwarder output.
-func LogFwdOutput(fields logrus.Fields, format string, args ...interface{}) {
+func LogFwdOutput(fields map[string]interface{}, format string, args ...interface{}) {
 	On(func() bool { return true }, LOG_FWD, fields, format, args...)
 }
 
 // CmdReq traces to "audit" command request payloads.
-func CmdReq(fields logrus.Fields, format string, args ...interface{}) {
+func CmdReq(fields map[string]interface{}, format string, args ...interface{}) {
 	On(func() bool { return true }, CMDREQ, fields, format, args...)
 }
 
 // Proc traces to "audit" process sampling.
-func Proc(fields logrus.Fields, format string, args ...interface{}) {
+func Proc(fields map[string]interface{}, format string, args ...interface{}) {
 	On(func() bool { return true }, PROC, fields, format, args...)
 }
