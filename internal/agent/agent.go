@@ -423,7 +423,7 @@ func New(
 	}
 
 	// Create input channel for plugins to feed data back to the agent
-	trace.Inventory("parallelize queue: %v", a.Context.cfg.InventoryQueueLen)
+	trace.Inventory(llog.Fields(), "parallelize queue: %v", a.Context.cfg.InventoryQueueLen)
 	a.Context.ch = make(chan PluginOutput, a.Context.cfg.InventoryQueueLen)
 	a.Context.activeEntities = make(chan string, activeEntitiesBufferLength)
 

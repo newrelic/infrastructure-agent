@@ -134,3 +134,7 @@ func WithError(err error) Entry {
 		return w.l.WithError(err)
 	}
 }
+
+func (e Entry) Fields() logrus.Fields {
+	return e().Data
+}

@@ -58,6 +58,7 @@ func (m *DiskMonitor) Sample() (result *DiskSample, err error) {
 		// samples, so just take the last one
 		elapsedMs = ss.ElapsedSampleDeltaMs
 	}
+
 	syslog.WithFieldsF(func() logrus.Fields {
 		return logrus.Fields{
 			"elapsedMs":      elapsedMs,

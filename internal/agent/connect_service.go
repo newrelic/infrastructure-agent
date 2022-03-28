@@ -48,7 +48,7 @@ func (ic *identityConnectService) Connect() entity.Identity {
 			continue
 		}
 
-		trace.Connect("connect request with fingerprint: %+v", f)
+		trace.Connect(logger.Fields(), "connect request with fingerprint: %+v", f)
 
 		ids, retry, err := ic.client.Connect(f)
 
@@ -108,7 +108,7 @@ func (ic *identityConnectService) ConnectUpdate(agentIdn entity.Identity) (entit
 
 	var retryBO *backoff.Backoff
 	for {
-		trace.Connect("connect update request with fingerprint: %+v", f)
+		trace.Connect(logger.Fields(), "connect update request with fingerprint: %+v", f)
 		retry, entityIdn, err := ic.client.ConnectUpdate(agentIdn, f)
 		if retry.After > 0 {
 			logger.WithField("retryAfter", retry.After).Debug("Connect update retry requested.")
