@@ -179,7 +179,7 @@ func (s *Sampler) Sample() (eventBatch sample.EventBatch, err error) {
 	}()
 	samples, err := populateNFS(s.lastSamples, s.detailed)
 	if err != nil {
-		sslog.WithError(err).Debug("Unable to retrieve NFS stats.")
+		sslog.WithError(err).Warn("Unable to retrieve NFS stats.")
 		return nil, nil
 	}
 	for _, ss := range samples {
