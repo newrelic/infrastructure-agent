@@ -172,6 +172,10 @@ func (d *Definition) Run(ctx context.Context, bindVals *databind.Values, pidC, e
 		}
 		tasksOutput = append(tasksOutput, Output{Receive: taskOutput, ExtraLabels: ir.MetricAnnotations, EntityRewrite: ir.EntityRewrites})
 	}
+
+	if len(matches) == 0 {
+		logger.Debug("No discovery matches were found.")
+	}
 	return tasksOutput, nil
 }
 
