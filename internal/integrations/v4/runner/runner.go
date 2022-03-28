@@ -281,10 +281,13 @@ func (r *runner) handleStderr(stderr <-chan []byte) {
 	for line := range stderr {
 		r.lastStderr.Add(line)
 
+		// obfuscated stderr
+		obfuscatedLine := helpers.ObfuscateSensitiveDataFromString(string(line))
+
 		if r.log.IsDebugEnabled() {
-			r.log.WithField("line", string(line)).Debug("Integration stderr (not parsed).")
+			r.log.WithField("line", obfuscatedLine).Debug("Integration stderr (not parsed).")
 		} else {
-			fields := r.stderrParser(string(line))
+			fields := r.stderrParser(obfuscatedLine)
 			if v, ok := fields["level"]; ok && (v == "error" || v == "fatal") {
 				// If a field already exists, like the time, logrus automatically adds the prefix "deps." to the
 				// Duplicated keys
@@ -307,7 +310,8 @@ func (r *runner) logErrors(ctx context.Context, errs <-chan error) {
 				return
 			}
 			flush := r.lastStderr.Flush()
-			r.log.WithError(err).WithField("stderr", flush).
+			// err contains the exit code number
+			r.log.WithError(err).WithField("stderr", helpers.ObfuscateSensitiveDataFromString(flush)).
 				Warn("integration exited with error state")
 		}
 	}
