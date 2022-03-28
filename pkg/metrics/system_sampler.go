@@ -121,7 +121,7 @@ func (s *SystemSampler) Sample() (results sample.EventBatch, err error) {
 	}
 	seg.End()
 
-	helpers.LogStructureDetails(syslog, sample, "SystemSample", "final", nil)
+	helpers.TraceSamplerStructureDetails(syslog, sample, "SystemSample", "final", nil)
 	results = append(results, sample)
 
 	return
