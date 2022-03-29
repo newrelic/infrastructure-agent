@@ -32,6 +32,7 @@ func (c *cachedEntry) set(value interface{}, now time.Time) {
 
 // discoverer is any source discovering multiple matches from a source (e.g. containers)
 type discoverer struct {
+	info  discovererInfo
 	cache cachedEntry
 	// any discovery source must provide a function of this signature
 	fetch func() ([]discovery.Discovery, error)
@@ -47,6 +48,21 @@ func (d *discoverer) do(now time.Time) ([]discovery.Discovery, error) {
 	}
 	d.cache.set(vals, now)
 	return vals, nil
+}
+
+type discovererType string
+
+const (
+	typeDocker  discovererType = "docker"
+	typeFargate discovererType = "fargate"
+	typeCmd     discovererType = "command"
+)
+
+// discovererInfo keeps util info about the discoverer.
+type discovererInfo struct {
+	Type     discovererType
+	Name     string
+	Matchers map[string]string
 }
 
 // gatherer is any source fetching a single match from a variables source (e.g. a vault key)

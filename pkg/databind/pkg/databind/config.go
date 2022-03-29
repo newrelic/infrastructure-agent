@@ -159,6 +159,28 @@ func (dc *YAMLConfig) selectDiscoverer(ttl time.Duration) (*discoverer, error) {
 	return nil, nil
 }
 
+func (y *YAMLConfig) GetDiscoveryInfo() discovererInfo {
+	var res discovererInfo
+	if y.Discovery.Docker != nil {
+		res = discovererInfo{
+			Type:     typeDocker,
+			Matchers: y.Discovery.Docker.Match,
+		}
+	} else if y.Discovery.Fargate != nil {
+		res = discovererInfo{
+			Type:     typeFargate,
+			Matchers: y.Discovery.Fargate.Match,
+		}
+	} else if y.Discovery.Command != nil {
+		res = discovererInfo{
+			Type:     typeCmd,
+			Name:     fmt.Sprintf("%v", y.Discovery.Command.Exec),
+			Matchers: y.Discovery.Command.Matcher,
+		}
+	}
+	return res
+}
+
 func (y *YAMLConfig) validate() error {
 	sections := 0
 	if y.Discovery.Docker != nil {
