@@ -15,6 +15,7 @@ import (
 type Sources struct {
 	clock      func() time.Time
 	discoverer *discoverer
+	Info       DiscovererInfo
 	variables  map[string]*gatherer // key: variable name
 }
 

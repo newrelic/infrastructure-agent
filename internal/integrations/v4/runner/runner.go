@@ -110,14 +110,14 @@ func (r *runner) Run(ctx context.Context, pidWCh, exitCodeCh chan<- int) {
 		//	exitCodeCh = make(chan int, 1)
 		//}
 
-		values, err := r.applyDiscovery()
+		discovery, info, err := r.applyDiscovery()
 		if err != nil {
 			r.log.
 				WithError(helpers.ObfuscateSensitiveDataFromError(err)).
 				Error("can't fetch discovery items")
 		} else {
 			if when.All(r.definition.WhenConditions...) {
-				r.execute(ctx, values, pidWCh, exitCodeCh)
+				r.execute(ctx, discovery, info, pidWCh, exitCodeCh)
 			}
 		}
 
@@ -171,15 +171,15 @@ func LogFields(def integration.Definition) logrus.Fields {
 }
 
 // applies dSources and returns the discovered values, if any.
-func (r *runner) applyDiscovery() (*databind.Values, error) {
+func (r *runner) applyDiscovery() (*databind.Values, databind.DiscovererInfo, error) {
 	if r.dSources == nil {
 		// nothing is discovered, but the integration can run (with the default configuration)
-		return nil, nil
+		return nil, databind.DiscovererInfo{}, nil
 	}
 	if v, err := databind.Fetch(r.dSources); err != nil {
-		return nil, err
+		return nil, r.dSources.Info, err
 	} else {
-		return &v, nil
+		return &v, r.dSources.Info, nil
 	}
 }
 
@@ -203,7 +203,7 @@ func (r *runner) heartBeat() {
 // to finish
 // For long-time running integrations, avoids starting the next
 // discover-execute cycle until all the parallel processes have ended
-func (r *runner) execute(ctx context.Context, matches *databind.Values, pidWCh, exitCodeCh chan<- int) {
+func (r *runner) execute(ctx context.Context, matches *databind.Values, discoveryInfo databind.DiscovererInfo, pidWCh, exitCodeCh chan<- int) {
 	ctx, txn := instrumentation.SelfInstrumentation.StartTransaction(ctx, "integration.v4."+r.definition.Name)
 	defer txn.End()
 	def := r.definition
@@ -226,7 +226,7 @@ func (r *runner) execute(ctx context.Context, matches *databind.Values, pidWCh, 
 	}
 
 	// Runs all the matching integration instances
-	outputs, err := r.definition.Run(ctx, matches, pidWCh, exitCodeCh)
+	outputs, err := r.definition.Run(ctx, matches, discoveryInfo, pidWCh, exitCodeCh)
 	if err != nil {
 		txn.NoticeError(err)
 		r.log.WithError(err).Error("can't start integration")
