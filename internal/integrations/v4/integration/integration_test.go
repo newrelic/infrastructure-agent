@@ -73,7 +73,7 @@ func TestConfigTemplate(t *testing.T) {
 			// WHEN the integration is run
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
-			outputs, err := i.Run(ctx, &disc, nil, nil)
+			outputs, err := i.Run(ctx, &disc, databind.DiscovererInfo{}, nil, nil)
 			require.NoError(t, err)
 
 			// THEN the number of matches coincide with the discovered sources
@@ -138,7 +138,7 @@ func TestEmbeddedConfig_String(t *testing.T) {
 			// WHEN the integration is run
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
-			outputs, err := i.Run(ctx, &disc, nil, nil)
+			outputs, err := i.Run(ctx, &disc, databind.DiscovererInfo{}, nil, nil)
 			require.NoError(t, err)
 
 			// THEN the number of matches coincide with the discovered sources
