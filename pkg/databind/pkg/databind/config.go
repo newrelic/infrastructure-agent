@@ -90,6 +90,7 @@ func (dc *YAMLConfig) DataSources() (*Sources, error) {
 	if err != nil {
 		return nil, err
 	}
+	s.Info = dc.addDiscoveryInfo()
 
 	varS, err := dc.YAMLAgentConfig.DataSources()
 	if err != nil {
@@ -159,20 +160,20 @@ func (dc *YAMLConfig) selectDiscoverer(ttl time.Duration) (*discoverer, error) {
 	return nil, nil
 }
 
-func (y *YAMLConfig) GetDiscoveryInfo() discovererInfo {
-	var res discovererInfo
+func (y *YAMLConfig) addDiscoveryInfo() DiscovererInfo {
+	var res DiscovererInfo
 	if y.Discovery.Docker != nil {
-		res = discovererInfo{
+		res = DiscovererInfo{
 			Type:     typeDocker,
 			Matchers: y.Discovery.Docker.Match,
 		}
 	} else if y.Discovery.Fargate != nil {
-		res = discovererInfo{
+		res = DiscovererInfo{
 			Type:     typeFargate,
 			Matchers: y.Discovery.Fargate.Match,
 		}
 	} else if y.Discovery.Command != nil {
-		res = discovererInfo{
+		res = DiscovererInfo{
 			Type:     typeCmd,
 			Name:     fmt.Sprintf("%v", y.Discovery.Command.Exec),
 			Matchers: y.Discovery.Command.Matcher,

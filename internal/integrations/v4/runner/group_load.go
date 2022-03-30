@@ -31,13 +31,6 @@ func NewLoadFn(cfg config2.YAML, agentAndCCFeatures *Features) LoadFn {
 		}
 		c = make(FeaturesCache)
 
-		discoveryInfo := cfg.Databind.GetDiscoveryInfo()
-		illog.
-			WithField("matchers", discoveryInfo.Matchers).
-			WithField("type", discoveryInfo.Type).
-			WithField("name", discoveryInfo.Name).
-			Debug("Integrations group discoverer information.")
-
 		for _, cfgEntry := range cfg.Integrations {
 			var template []byte
 			template, err = integration.LoadConfigTemplate(cfgEntry.TemplatePath, cfgEntry.Config)
