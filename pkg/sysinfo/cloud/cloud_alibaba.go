@@ -42,6 +42,9 @@ type AlibabaHarvester struct {
 	instanceID       string // Cache the Alibaba instance ID.
 	hostType         string // Cache the Alibaba instance Type.
 	region           string
+	zone             string // Cache the Alibaba instance Zone.
+	instanceImageID  string // Cache the Alibaba instance Image ID.
+	account          string // Cache the Alibaba account ID.
 }
 
 // AlibabaHarvester returns a new instance of AlibabaHarvester.
@@ -106,11 +109,53 @@ func (a *AlibabaHarvester) GetRegion() (string, error) {
 	return a.region, nil
 }
 
+// GetAccount will return the cloud account.
+func (a *AlibabaHarvester) GetAccountID() (string, error) {
+	if a.region == "" || a.timeout.HasExpired() {
+		AlibabaMetadata, err := GetAlibabaMetadata(a.disableKeepAlive)
+		if err != nil {
+			return "", err
+		}
+		a.account = AlibabaMetadata.AccountID
+	}
+
+	return a.account, nil
+}
+
+// GetAvailability will return the cloud availability zone.
+func (a *AlibabaHarvester) GetZone() (string, error) {
+	if a.region == "" || a.timeout.HasExpired() {
+		AlibabaMetadata, err := GetAlibabaMetadata(a.disableKeepAlive)
+		if err != nil {
+			return "", err
+		}
+		a.zone = AlibabaMetadata.Zone
+	}
+
+	return a.zone, nil
+}
+
+// GetImageID will return the cloud image ID.
+func (a *AlibabaHarvester) GetInstanceImageID() (string, error) {
+	if a.region == "" || a.timeout.HasExpired() {
+		AlibabaMetadata, err := GetAlibabaMetadata(a.disableKeepAlive)
+		if err != nil {
+			return "", err
+		}
+		a.instanceImageID = AlibabaMetadata.InstanceImageID
+	}
+
+	return a.instanceImageID, nil
+}
+
 // Captures the fields we care about from the Alibaba metadata API
 type AlibabaMetadata struct {
-	RegionID     string `json:"region-id"`
-	InstanceID   string `json:"instance-id"`
-	InstanceType string `json:"instance-type"`
+	RegionID        string `json:"region-id"`
+	InstanceID      string `json:"instance-id"`
+	InstanceType    string `json:"instance-type"`
+	InstanceImageID string `json:"image-id"`
+	AccountID       string `json:"owner-account-id"`
+	Zone            string `json:"zone-id"`
 }
 
 // GetAlibabaMetadata is used to request metadata from Alibaba API.

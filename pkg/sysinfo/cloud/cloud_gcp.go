@@ -64,6 +64,21 @@ func (gcp *GCPHarvester) GetHostType() (string, error) {
 	return gcp.hostType, nil
 }
 
+// GetAccountID returns the cloud account
+func (gcp *GCPHarvester) GetAccountID() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
+// GetZone returns the cloud instance zone
+func (gcp *GCPHarvester) GetZone() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
+// GetInstanceImageID returns the cloud instance image ID
+func (gcp *GCPHarvester) GetInstanceImageID() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
 // GetCloudType returns the type of the cloud.
 func (gcp *GCPHarvester) GetCloudType() Type {
 	return TypeGCP

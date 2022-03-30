@@ -86,6 +86,21 @@ func (a *AzureHarvester) GetRegion() (string, error) {
 	return a.region, nil
 }
 
+// GetAccountID returns the cloud account
+func (a *AzureHarvester) GetAccountID() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
+// GetZone returns the cloud instance zone
+func (a *AzureHarvester) GetZone() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
+// GetInstanceImageID returns the cloud instance image ID
+func (a *AzureHarvester) GetInstanceImageID() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
 // Captures the fields we care about from the Azure metadata API
 type azureMetadata struct {
 	Compute struct {

@@ -41,6 +41,8 @@ var (
 	ErrDetectorNotInitialized = errors.New("cloud detector not initialized yet")
 	// ErrCouldNotDetect is the error returned when the Detector could not be initialized.
 	ErrCouldNotDetect = errors.New("detector is unable to detect the cloud type")
+	// ErrMethodNotImplemented is the error returned when a method is still not implemented by an implementation.
+	ErrMethodNotImplemented = errors.New("cloud harvester does not implement the method")
 )
 
 // Harvester is the interfaces that should be implemented by any cloud harvester.
@@ -55,6 +57,12 @@ type Harvester interface {
 	GetCloudSource() string
 	// GetRegion returns the cloud region
 	GetRegion() (string, error)
+	// GetAccountID returns the cloud account
+	GetAccountID() (string, error)
+	// GetZone returns the cloud instance zone
+	GetZone() (string, error)
+	// GetInstanceImageID returns the cloud instance image ID
+	GetInstanceImageID() (string, error)
 	// GetHarvester returns instance of the Harvester detected (or instance of themselves)
 	GetHarvester() (Harvester, error)
 }
@@ -161,6 +169,33 @@ func (d *Detector) GetCloudType() Type {
 		return TypeNoCloud
 	}
 	return cloudHarvester.GetCloudType()
+}
+
+// GetHostType will return the cloud instance type.
+func (d *Detector) GetAccountID() (string, error) {
+	cloudHarvester, err := d.GetHarvester()
+	if err != nil {
+		return "", err
+	}
+	return cloudHarvester.GetAccountID()
+}
+
+// GetRegion will return the region of cloud instance.
+func (d *Detector) GetInstanceImageID() (string, error) {
+	cloudHarvester, err := d.GetHarvester()
+	if err != nil {
+		return "", err
+	}
+	return cloudHarvester.GetInstanceImageID()
+}
+
+// GetCloudType will return the cloud type on which the instance is running.
+func (d *Detector) GetZone() (string, error) {
+	cloudHarvester, err := d.GetHarvester()
+	if err != nil {
+		return "", err
+	}
+	return cloudHarvester.GetZone()
 }
 
 // GetCloudSource Returns a string key which will be used as a HostSource (see host_aliases plugin).
