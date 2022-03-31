@@ -721,8 +721,9 @@ type Config struct {
 	// Public: Yes
 	PluginDir string `yaml:"plugin_dir" envconfig:"plugin_dir"`
 
-	// PassthroughEnvironment A list of environment variables that will be passed to all integrations. If an
-	// integration already has an existing configuration option with the same name, then the environment variable
+	// PassthroughEnvironment A list of environment variables that will be passed to all integrations. Regular
+	// expressions can also be provided to match one or multiple environment variables. If an integration already has
+	// an existing configuration option with the same name, then the environment variable
 	// takes precedence.
 	// Default: Empty
 	// Public: Yes
