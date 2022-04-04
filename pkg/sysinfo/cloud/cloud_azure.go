@@ -11,6 +11,8 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
 )
 
+// Metadata sample: https://docs.microsoft.com/en-us/azure/virtual-machines/linux/instance-metadata-service?tabs=linux
+
 const (
 	// azureEndpoint is the URL used for requesting Azure metadata.
 	azureEndpoint = "http://169.254.169.254/metadata/instance?api-version=2017-04-02"
@@ -23,6 +25,9 @@ type AzureHarvester struct {
 	instanceID       string // Cache the azure instance ID.
 	hostType         string // Cache the azure instance Type.
 	region           string
+	zone             string
+	subscriptionID   string
+	imageID          string
 }
 
 // AzureHarvester returns a new instance of AzureHarvester.
@@ -88,25 +93,56 @@ func (a *AzureHarvester) GetRegion() (string, error) {
 
 // GetAccountID returns the cloud account
 func (a *AzureHarvester) GetAccountID() (string, error) {
-	return "", ErrMethodNotImplemented
+	if a.subscriptionID == "" || a.timeout.HasExpired() {
+		azureMetadata, err := GetAzureMetadata(a.disableKeepAlive)
+		if err != nil {
+			return "", err
+		}
+		a.subscriptionID = azureMetadata.Compute.SubscriptionID
+	}
+
+	return a.subscriptionID, nil
 }
 
 // GetZone returns the cloud instance zone
 func (a *AzureHarvester) GetZone() (string, error) {
-	return "", ErrMethodNotImplemented
+	if a.zone == "" || a.timeout.HasExpired() {
+		azureMetadata, err := GetAzureMetadata(a.disableKeepAlive)
+		if err != nil {
+			return "", err
+		}
+		a.zone = azureMetadata.Compute.Zone
+	}
+
+	return a.zone, nil
 }
 
 // GetInstanceImageID returns the cloud instance image ID
 func (a *AzureHarvester) GetInstanceImageID() (string, error) {
-	return "", ErrMethodNotImplemented
+	if a.imageID == "" || a.timeout.HasExpired() {
+		azureMetadata, err := GetAzureMetadata(a.disableKeepAlive)
+		if err != nil {
+			return "", err
+		}
+		a.imageID = azureMetadata.Compute.StorageProfile.ImageReference.ID
+	}
+
+	return a.imageID, nil
 }
 
 // Captures the fields we care about from the Azure metadata API
 type azureMetadata struct {
 	Compute struct {
-		Location string `json:"location"`
-		VmId     string `json:"vmId"`
-		VmSize   string `json:"vmSize"`
+		Location       string `json:"location"`
+		VmId           string `json:"vmId"`
+		VmSize         string `json:"vmSize"`
+		SubscriptionID string `json:"subscriptionId"`
+		Zone           string `json:"zone"`
+		StorageProfile struct {
+			ImageReference struct {
+				ID string `json:"id"`
+			} `json:"imageReference"`
+		} `json:"storageProfile"`
 	} `json:"compute"`
 }
 
