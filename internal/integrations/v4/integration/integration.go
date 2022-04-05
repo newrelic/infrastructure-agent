@@ -71,10 +71,11 @@ func newDefinitionWithoutLookup(ce config2.ConfigEntry, passthroughEnv []string,
 
 	d := Definition{
 		ExecutorConfig: executor.Config{
-			User:        ce.User,
-			Directory:   ce.WorkDir,
-			Environment: ce.Env,
-			Passthrough: passthroughEnv,
+			User:         ce.User,
+			Directory:    ce.WorkDir,
+			InstanceName: ce.InstanceName,
+			Environment:  ce.Env,
+			Passthrough:  passthroughEnv,
 		},
 		Labels:         ce.Labels,
 		Name:           ce.InstanceName,

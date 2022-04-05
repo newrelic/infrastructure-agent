@@ -24,7 +24,7 @@ type Executables struct {
 // Path to an executable in the Folders set, given the executable name. The executable name
 // is usually the file base name for the executable. In windows, is the file name without the ".exe" extension
 func (fp Executables) Path(name string) (string, error) {
-	cclog := clog.WithField("forName", name)
+	cclog := clog.WithField("integration_name", name)
 	for _, folder := range fp.Folders {
 		fclog := cclog.WithField("folder", folder)
 		fileInfos, err := ioutil.ReadDir(folder)
