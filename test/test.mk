@@ -112,11 +112,18 @@ ifndef SSH_KEY
 	@echo "SSH_KEY variable must be provided for test/runner/packaging"
 	exit 1
 endif
+ifndef AGENT_VERSION
+	@echo "AGENT_VERSION variable must be provided for test/runner/packaging"
+	exit 1
+endif
 
+# add sleep if unreachable occured
 	@echo '#!/usr/bin/env bash' > '/tmp/runner_scr.sh'
 	@echo 'LOG_FILE="/var/log/runner/$$(date '+%Y%m%d_%H%M').log"' >> /tmp/runner_scr.sh
 	@echo 'cd /home/ubuntu/dev/newrelic/infrastructure-agent' >> /tmp/runner_scr.sh
 	@echo 'date > $$LOG_FILE' >> /tmp/runner_scr.sh
+	@echo 'make test/automated/harvest 2>&1 >> $$LOG_FILE' >> /tmp/runner_scr.sh
+	@echo 'make test/automated/packaging-docker 2>&1 >> $$LOG_FILE' >> /tmp/runner_scr.sh
 	@echo 'make test/automated/packaging 2>&1 >> $$LOG_FILE' >> /tmp/runner_scr.sh
 	@echo 'echo "" >> $$LOG_FILE' >> /tmp/runner_scr.sh
 	@echo 'date >> $$LOG_FILE' >> /tmp/runner_scr.sh
@@ -127,4 +134,4 @@ endif
 	make test/runner/provision
 
 	scp -i $(SSH_KEY) /tmp/runner_scr.sh ubuntu@$(RUNNER_IP):/home/ubuntu/runner_scr.sh
-	ssh -i $(SSH_KEY) -f ubuntu@$(RUNNER_IP) "NR_LICENSE_KEY=$(NR_LICENSE_KEY) NEW_RELIC_API_KEY=$(NEW_RELIC_API_KEY) NEW_RELIC_ACCOUNT_ID=$(NEW_RELIC_ACCOUNT_ID) nohup /home/ubuntu/runner_scr.sh > /dev/null 2>&1 &"
+	ssh -i $(SSH_KEY) -f ubuntu@$(RUNNER_IP) "AGENT_VERSION=$(AGENT_VERSION) NR_LICENSE_KEY=$(NR_LICENSE_KEY) NEW_RELIC_API_KEY=$(NEW_RELIC_API_KEY) NEW_RELIC_ACCOUNT_ID=$(NEW_RELIC_ACCOUNT_ID) nohup /home/ubuntu/runner_scr.sh > /var/log/runner/$$(date '+%Y%m%d_%H%M')_exec.log 2>&1 &"
