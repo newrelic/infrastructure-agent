@@ -2,4 +2,4 @@
 nri-docker,1.6.0
 nri-flex,1.4.4
 nri-winservices,v0.5.0-beta
-nri-prometheus,2.8.0
+nri-prometheus,2.14.0
