@@ -37,7 +37,7 @@ func (self *CustomAttrsPlugin) Run() {
 	data := agent.PluginInventoryDataset{CustomAttrs(self.customAttributes)}
 	entityKey := self.Context.EntityKey()
 
-	trace.Attr(aclog.Fields(), "run, entity: %s, data: %+v", entityKey, self.customAttributes)
+	trace.Attr(aclog, "run, entity: %s, data: %+v", entityKey, self.customAttributes)
 
 	self.EmitInventory(data, entity.NewFromNameWithoutID(entityKey))
 }

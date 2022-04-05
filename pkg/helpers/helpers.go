@@ -194,7 +194,7 @@ func TraceSamplerStructureDetails(logEntry log.Entry, sample interface{}, name, 
 		if dErr != nil {
 			logEntry.WithFields(optionalFields).WithError(dErr).Debug("Can't marshal sample.")
 		} else {
-			trace.Sampler(logEntry.WithFields(optionalFields).Fields(), string(buffer))
+			trace.Sampler(logEntry.WithFields(optionalFields), string(buffer))
 		}
 	}
 }

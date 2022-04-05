@@ -115,12 +115,12 @@ func (s *srv) nextPollInterval() time.Duration {
 
 func (s *srv) handle(ctx context.Context, c commandapi.Command, initialFetch bool, agentID entity.ID) {
 	if s.wasACKed(c, agentID) {
-		trace.CmdReq(ccsLogger.Fields(), "skipping cmd already ACKed: %s, hash: %s, args: %s", c.Name, c.Hash, string(c.Args))
+		trace.CmdReq(ccsLogger, "skipping cmd already ACKed: %s, hash: %s, args: %s", c.Name, c.Hash, string(c.Args))
 		return
 	}
 
 	if s.requiresAck(c, agentID) {
-		trace.CmdReq(ccsLogger.Fields(), "triggering ACK for cmd: %s, hash: %s, args: %s", c.Name, c.Hash, string(c.Args))
+		trace.CmdReq(ccsLogger, "triggering ACK for cmd: %s, hash: %s, args: %s", c.Name, c.Hash, string(c.Args))
 		if err := s.ack(agentID, c); err != nil {
 			ccsLogger.
 				WithField("cmd_hash", c.Hash).

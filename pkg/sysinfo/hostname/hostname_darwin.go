@@ -53,7 +53,7 @@ func getFqdnHostname(osHost string) (string, error) {
 		if hosts[0] == "localhost" {
 			continue
 		}
-		trace.Hostname(logger.Fields(), "found FQDN hosts: %s", strings.Join(hosts, ", "))
+		trace.Hostname(logger, "found FQDN hosts: %s", strings.Join(hosts, ", "))
 		return strings.TrimSuffix(hosts[0], "."), nil
 	}
 	return "", errors.New("can't lookup FQDN")

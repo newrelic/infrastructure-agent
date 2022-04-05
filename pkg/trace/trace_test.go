@@ -53,8 +53,16 @@ func TestLogrusFields(t *testing.T) {
 		"name":      "SystemSampler",
 	}
 
-	On(func() bool { return true }, Feature("feature1"), expectedFields, "")
+	On(func() bool { return true }, Feature("feature1"), func() *logrus.Entry { return &logrus.Entry{Data: expectedFields} }, "")
 
 	assert.Contains(t, buffer.String(), "component=agentTests")
 	assert.Contains(t, buffer.String(), "name=SystemSampler")
+}
+
+func TestLogrusFieldsDisabled(t *testing.T) {
+	On(func() bool { return true }, Feature("DisabledFeature"), func() *logrus.Entry {
+		t.Log("this expensive operation should not be executed")
+		t.Fail()
+		return &logrus.Entry{}
+	}, "")
 }

@@ -198,7 +198,7 @@ func (h *handler) handleEnableOHI(ctx context.Context, ff string, enable bool) {
 }
 
 func handleParallelizeInventory(ffArgs args, c *config.Config, isInitialFetch bool) {
-	trace.Inventory(ffLogger.Fields(), "parallelize FF handler initialFetch: %v, enable: %v, queue: %v",
+	trace.Inventory(ffLogger, "parallelize FF handler initialFetch: %v, enable: %v, queue: %v",
 		isInitialFetch,
 		ffArgs.Enabled,
 		c.InventoryQueueLen,

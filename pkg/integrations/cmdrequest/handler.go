@@ -21,7 +21,7 @@ type HandleFn func(protocol.CmdRequestV1)
 // Each command is run in parallel and won't depend on the results of the other ones.
 func NewHandleFn(definitionQueue chan<- integration.Definition, il integration.InstancesLookup, logger log.Entry) HandleFn {
 	return func(crBatch protocol.CmdRequestV1) {
-		trace.CmdReq(logger.Fields(), "received payload: %+v", crBatch)
+		trace.CmdReq(logger, "received payload: %+v", crBatch)
 		for _, c := range crBatch.Commands {
 
 			def, err := integration.NewDefinition(newConfigFromCmdReq(c), il, nil, nil)
@@ -37,7 +37,7 @@ func NewHandleFn(definitionQueue chan<- integration.Definition, il integration.I
 				return
 			}
 
-			trace.CmdReq(logger.Fields(), "queued definition: %+v", def)
+			trace.CmdReq(logger, "queued definition: %+v", def)
 			definitionQueue <- def
 		}
 	}

@@ -75,7 +75,7 @@ func CreateResolver(overrideFull, overrideShort string, dnsResolution bool) Reso
 
 	if overrideShort != "" {
 		resolver.short = func() (string, error) {
-			trace.Hostname(logger.Fields(), "using override_hostname_short property '%s'", overrideShort)
+			trace.Hostname(logger, "using override_hostname_short property '%s'", overrideShort)
 			return overrideShort, nil
 		}
 	}
@@ -131,11 +131,11 @@ func (r *fallbackResolver) Query() (string, string, error) {
 	short, err := r.short()
 	var full string
 	if r.overridenFull != "" {
-		trace.Hostname(logger.Fields(), "using override_hostname property '%s'", r.overridenFull)
+		trace.Hostname(logger, "using override_hostname property '%s'", r.overridenFull)
 		full = r.overridenFull
 	} else {
 		if err != nil {
-			trace.Hostname(logger.Fields(), "failed to resolve short hostname: %s", err)
+			trace.Hostname(logger, "failed to resolve short hostname: %s", err)
 		} else {
 			full, err = r.full(short)
 		}
@@ -143,10 +143,10 @@ func (r *fallbackResolver) Query() (string, string, error) {
 		// and just return the full hostname as queried by the kernel (the old behaviour of the agent)
 		if r.lastFull == "" && (full == "" || full == "localhost") {
 			// In this edge case, the hostname could flip under some network name instability circumstances
-			trace.Hostname(logger.Fields(), "using internal hostname")
+			trace.Hostname(logger, "using internal hostname")
 			full, err = r.internal()
 			if err != nil {
-				trace.Hostname(logger.Fields(), "internal hostname resolution failed")
+				trace.Hostname(logger, "internal hostname resolution failed")
 			}
 			if full == "localhost" {
 				full = ""
