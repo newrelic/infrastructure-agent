@@ -111,7 +111,7 @@ func (a *AlibabaHarvester) GetRegion() (string, error) {
 
 // GetAccount will return the cloud account.
 func (a *AlibabaHarvester) GetAccountID() (string, error) {
-	if a.region == "" || a.timeout.HasExpired() {
+	if a.account == "" || a.timeout.HasExpired() {
 		AlibabaMetadata, err := GetAlibabaMetadata(a.disableKeepAlive)
 		if err != nil {
 			return "", err
@@ -124,7 +124,7 @@ func (a *AlibabaHarvester) GetAccountID() (string, error) {
 
 // GetAvailability will return the cloud availability zone.
 func (a *AlibabaHarvester) GetZone() (string, error) {
-	if a.region == "" || a.timeout.HasExpired() {
+	if a.zone == "" || a.timeout.HasExpired() {
 		AlibabaMetadata, err := GetAlibabaMetadata(a.disableKeepAlive)
 		if err != nil {
 			return "", err
@@ -137,7 +137,7 @@ func (a *AlibabaHarvester) GetZone() (string, error) {
 
 // GetImageID will return the cloud image ID.
 func (a *AlibabaHarvester) GetInstanceImageID() (string, error) {
-	if a.region == "" || a.timeout.HasExpired() {
+	if a.instanceImageID == "" || a.timeout.HasExpired() {
 		AlibabaMetadata, err := GetAlibabaMetadata(a.disableKeepAlive)
 		if err != nil {
 			return "", err

@@ -56,6 +56,18 @@ func (a *MockCloudHarvester) GetRegion() (string, error) {
 	return "", nil
 }
 
+func (a *MockCloudHarvester) GetAccountID() (string, error) {
+	return "", nil
+}
+
+func (a *MockCloudHarvester) GetInstanceImageID() (string, error) {
+	return "", nil
+}
+
+func (a *MockCloudHarvester) GetZone() (string, error) {
+	return "", nil
+}
+
 func (a *MockCloudHarvester) GetHarvester() (cloud.Harvester, error) {
 	return nil, nil
 }

@@ -282,6 +282,21 @@ func (m *MockHarvester) GetRegion() (string, error) {
 	return "myRegion", nil
 }
 
+// GetAccountID returns the cloud account where the instance is running.
+func (a *MockHarvester) GetAccountID() (string, error) {
+	return "", nil
+}
+
+// GetInstanceImageID returns the instance image ID.
+func (a *MockHarvester) GetInstanceImageID() (string, error) {
+	return "", nil
+}
+
+// GetZone returns the instance cloud zone.
+func (a *MockHarvester) GetZone() (string, error) {
+	return "", nil
+}
+
 // GetHarvester returns the MockHarvester
 func (m *MockHarvester) GetHarvester() (Harvester, error) {
 	return m, nil

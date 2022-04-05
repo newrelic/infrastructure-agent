@@ -63,9 +63,9 @@ type HostinfoData struct {
 	RegionAzure         string `json:"region_name,omitempty"`
 	RegionGCP           string `json:"zone,omitempty"`
 	RegionAlibaba       string `json:"region_id,omitempty"`
-	AWSAccountID        string `json:"awsAccountId,omitempty"`
-	AWSAvailabilityZone string `json:"awsAvailabilityZone,omitempty"`
-	AWSImageID          string `json:"awsImageID,omitempty"`
+	AWSAccountID        string `json:"aws_account_id,omitempty"`
+	AWSAvailabilityZone string `json:"aws_availability_zone,omitempty"`
+	AWSImageID          string `json:"aws_image_id,omitempty"`
 }
 
 func (self HostinfoData) SortKey() string {
@@ -275,12 +275,12 @@ func (self *HostinfoPlugin) setCloudMetadata(data *HostinfoData) (err error) {
 		data.AWSImageID = imageID
 		awsAccountID, err := self.cloudHarvester.GetAccountID()
 		if err != nil {
-			return fmt.Errorf("couldn't retrieve cloud region: %v", err)
+			return fmt.Errorf("couldn't retrieve cloud account ID: %v", err)
 		}
 		data.AWSAccountID = awsAccountID
 		availabilityZone, err := self.cloudHarvester.GetZone()
 		if err != nil {
-			return fmt.Errorf("couldn't retrieve cloud region: %v", err)
+			return fmt.Errorf("couldn't retrieve cloud availability zone: %v", err)
 		}
 		data.AWSAvailabilityZone = availabilityZone
 	}
