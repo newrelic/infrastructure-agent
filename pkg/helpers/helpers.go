@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/trace"
 	"io"
 	"os"
 	"path/filepath"
@@ -176,6 +177,24 @@ func LogStructureDetails(logEntry log.Entry, sample interface{}, name, phase str
 			logger.WithError(dErr).Debug("Can't marshal sample.")
 		} else {
 			logger.WithFields(optionalFields).Debug(string(buffer))
+		}
+	}
+}
+
+// TraceSamplerStructureDetails transforms a Go structure into json and traces it if sampler feature trace is enabled
+func TraceSamplerStructureDetails(logEntry log.Entry, sample interface{}, name, phase string, optionalFields logrus.Fields) {
+	if trace.IsEnabled(trace.SAMPLER) {
+		if name != "" {
+			logEntry = logEntry.WithField("structure", name)
+		}
+		if phase != "" {
+			logEntry = logEntry.WithField("location", phase)
+		}
+		buffer, dErr := json.Marshal(sample)
+		if dErr != nil {
+			logEntry.WithFields(optionalFields).WithError(dErr).Debug("Can't marshal sample.")
+		} else {
+			trace.Sampler(logEntry.WithFields(optionalFields).Fields(), string(buffer))
 		}
 	}
 }

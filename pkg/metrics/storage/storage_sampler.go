@@ -206,7 +206,7 @@ func (ss *Sampler) Sample() (samples sample.EventBatch, err error) {
 	// key: sample deviceKey
 	dev2Samples := map[string][]*Sample{}
 	for _, p := range partitions {
-		helpers.LogStructureDetails(sslog, p, "Partition", "raw", logrus.Fields{"supported": true})
+		helpers.TraceSamplerStructureDetails(sslog, p, "Partition", "raw", logrus.Fields{"supported": true})
 		// If there is a mountPointPrefix, this means we're most likely running inside a container.
 		// Mount points are reported from the perspective of the host. e.g. "/", "/data1"
 		//
@@ -221,7 +221,7 @@ func (ss *Sampler) Sample() (samples sample.EventBatch, err error) {
 			continue
 		}
 
-		helpers.LogStructureDetails(sslog, fsUsage, "PartitionUsage", "raw", nil)
+		helpers.TraceSamplerStructureDetails(sslog, fsUsage, "PartitionUsage", "raw", nil)
 
 		if cfg != nil && len(cfg.FileDevicesIgnored) > 0 {
 			found := false
@@ -265,13 +265,13 @@ func (ss *Sampler) Sample() (samples sample.EventBatch, err error) {
 		sslog.WithError(err).Warn("can't get IOCounters")
 		err = nil
 	} else {
-		helpers.LogStructureDetails(sslog, ioCounters, "DiskIOCounters", "raw", nil)
+		helpers.TraceSamplerStructureDetails(sslog, ioCounters, "DiskIOCounters", "raw", nil)
 
 		if ss.lastDiskStats != nil {
 			// This can start using a cache at some point
 			deviceToLogical := CalculateDeviceMapping(activeDevices, cfg != nil && cfg.IsContainerized)
 
-			helpers.LogStructureDetails(sslog, deviceToLogical, "CalculateDeviceMappings", "raw", nil)
+			helpers.TraceSamplerStructureDetails(sslog, deviceToLogical, "CalculateDeviceMappings", "raw", nil)
 
 			noDeviceMappedList := []logrus.Fields{}
 
@@ -325,7 +325,7 @@ func (ss *Sampler) Sample() (samples sample.EventBatch, err error) {
 	ss.lastSamples = samples
 
 	for _, s := range samples {
-		helpers.LogStructureDetails(sslog, s.(*Sample), "StorageSample", "final", nil)
+		helpers.TraceSamplerStructureDetails(sslog, s.(*Sample), "StorageSample", "final", nil)
 	}
 
 	return samples, nil

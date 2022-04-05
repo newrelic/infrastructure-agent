@@ -20,8 +20,9 @@ const (
 	METRIC_MATCHER Feature = "metric.match"  // match metric by rule
 	INVENTORY      Feature = "inventory"
 	LOG_FWD        Feature = "log.fw"
-	CMDREQ         Feature = "cmdreq" // command requests from integrations
-	PROC           Feature = "proc"   // process data
+	CMDREQ         Feature = "cmdreq"  // command requests from integrations
+	PROC           Feature = "proc"    // process data
+	SAMPLER        Feature = "sampler" // sampler metrics
 )
 
 // Helper functions to avoid repeating:
@@ -80,4 +81,9 @@ func CmdReq(fields map[string]interface{}, format string, args ...interface{}) {
 // Proc traces to "audit" process sampling.
 func Proc(fields map[string]interface{}, format string, args ...interface{}) {
 	On(func() bool { return true }, PROC, fields, format, args...)
+}
+
+// Sampler traces to "audit" system samplers (cpu, disk, network, etc) stats.
+func Sampler(fields map[string]interface{}, format string, args ...interface{}) {
+	On(func() bool { return true }, SAMPLER, fields, format, args...)
 }

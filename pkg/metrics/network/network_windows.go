@@ -64,7 +64,7 @@ func (ss *NetworkSampler) Sample() (results sample.EventBatch, err error) {
 		return nil, err
 	}
 
-	helpers.LogStructureDetails(nslog, niList, "NetInterfaces", "raw", nil)
+	helpers.TraceSamplerStructureDetails(nslog, niList, "NetInterfaces", "raw", nil)
 
 	var networkInterfaceFilters map[string][]string
 	if cfg != nil {
@@ -105,7 +105,7 @@ func (ss *NetworkSampler) Sample() (results sample.EventBatch, err error) {
 		return nil, err
 	}
 
-	helpers.LogStructureDetails(nslog, ioCounters, "IOCounters", "raw", nil)
+	helpers.TraceSamplerStructureDetails(nslog, ioCounters, "IOCounters", "raw", nil)
 
 	nextNetStats := make(map[uint32]IOCountersWithIndexStat)
 	for _, counter := range ioCounters {
@@ -144,7 +144,7 @@ func (ss *NetworkSampler) Sample() (results sample.EventBatch, err error) {
 	ss.lastNetStats = nextNetStats
 
 	for _, sample := range results {
-		helpers.LogStructureDetails(nslog, sample.(*NetworkSample), "NetworkSample", "final", nil)
+		helpers.TraceSamplerStructureDetails(nslog, sample.(*NetworkSample), "NetworkSample", "final", nil)
 	}
 
 	return results, nil
