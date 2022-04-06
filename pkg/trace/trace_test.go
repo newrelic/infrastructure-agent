@@ -59,6 +59,18 @@ func TestLogrusFields(t *testing.T) {
 	assert.Contains(t, buffer.String(), "name=SystemSampler")
 }
 
+func TestLogrusWithoutFields(t *testing.T) {
+	On(func() bool { return true }, Feature("feature1"), func() *logrus.Entry { return &logrus.Entry{} }, "")
+
+	assert.Contains(t, buffer.String(), "feature=feature1")
+}
+
+func TestLogrusWithoutEntry(t *testing.T) {
+	On(func() bool { return true }, Feature("feature1"), nil, "")
+
+	assert.Contains(t, buffer.String(), "feature=feature1")
+}
+
 func TestLogrusFieldsDisabled(t *testing.T) {
 	On(func() bool { return true }, Feature("DisabledFeature"), func() *logrus.Entry {
 		t.Log("this expensive operation should not be executed")

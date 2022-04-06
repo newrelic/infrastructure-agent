@@ -42,9 +42,12 @@ func On(condition Condition, feature Feature, entry log.Entry, format string, ar
 	}
 
 	if _, ok := global.enabled[feature]; ok && condition() {
-		fields := make(map[string]interface{})
+		var fields logrus.Fields
 		if entry != nil {
 			fields = entry.Fields()
+		}
+		if fields == nil {
+			fields = make(logrus.Fields)
 		}
 		fields["feature"] = feature
 		global.logger.WithFields(fields).Tracef(format, args...)
