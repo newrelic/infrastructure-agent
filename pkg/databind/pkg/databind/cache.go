@@ -49,6 +49,21 @@ func (d *discoverer) do(now time.Time) ([]discovery.Discovery, error) {
 	return vals, nil
 }
 
+type DiscovererType string
+
+const (
+	typeDocker  DiscovererType = "docker"
+	typeFargate DiscovererType = "fargate"
+	typeCmd     DiscovererType = "command"
+)
+
+// DiscovererInfo keeps util info about the discoverer.
+type DiscovererInfo struct {
+	Type     DiscovererType
+	Name     string
+	Matchers map[string]string
+}
+
 // gatherer is any source fetching a single match from a variables source (e.g. a vault key)
 type gatherer struct {
 	cache cachedEntry

@@ -90,7 +90,7 @@ func (d *Definition) PluginID(integrationName string) ids.PluginID {
 	return ids.NewDefaultInventoryPluginID(d.Name)
 }
 
-func (d *Definition) Run(ctx context.Context, bindVals *databind.Values, pidC, exitCodeC chan<- int) ([]Output, error) {
+func (d *Definition) Run(ctx context.Context, bindVals *databind.Values, discoveryInfo databind.DiscovererInfo, pidC, exitCodeC chan<- int) ([]Output, error) {
 	logger := elog.WithField("integration_name", d.Name)
 	logger.Debug("Running task.")
 	// no discovery data: execute a single instance
@@ -123,7 +123,11 @@ func (d *Definition) Run(ctx context.Context, bindVals *databind.Values, pidC, e
 		return nil, err
 	}
 
-	logger.Debug("Running through all discovery matches.")
+	logger.WithField("discovery_type", discoveryInfo.Type).
+		WithField("discovery_name", discoveryInfo.Name).
+		WithField("discovery_matchers", discoveryInfo.Matchers).
+		Debug("Running through all discovery matches.")
+
 	for _, ir := range matches {
 		dc, ok := ir.Variables.(discoveredConfig)
 		if !ok { // should never happen, but left here for type safety
