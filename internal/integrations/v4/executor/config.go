@@ -10,9 +10,9 @@ import (
 
 // Config describes the context to execute a command: user, directory and environment variables.
 type Config struct {
-	User         string
-	Directory    string
-	InstanceName string
+	User            string
+	Directory       string
+	IntegrationName string
 	// Manually specified variables
 	Environment map[string]string
 	// Global variables that need to be retrieved before the integration runs
@@ -84,10 +84,10 @@ func (c *Config) deepClone() *Config {
 		copy(passthroughCopy, c.Passthrough)
 	}
 	return &Config{
-		User:         c.User,
-		Directory:    c.Directory,
-		InstanceName: c.InstanceName,
-		Environment:  envCopy,
-		Passthrough:  passthroughCopy,
+		User:            c.User,
+		Directory:       c.Directory,
+		IntegrationName: c.IntegrationName,
+		Environment:     envCopy,
+		Passthrough:     passthroughCopy,
 	}
 }

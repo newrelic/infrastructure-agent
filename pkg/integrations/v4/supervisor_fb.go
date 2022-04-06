@@ -121,7 +121,7 @@ func buildFbExecutor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 		}
 
 		fbExecutor := executor.FromCmdSlice(args, &executor.Config{
-			InstanceName: "fluent-bit",
+			IntegrationName: "fluent-bit",
 		})
 		return &fbExecutor, nil
 	}

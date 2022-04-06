@@ -44,7 +44,7 @@ func (r *Executor) Execute(ctx context.Context, pidChan, exitCodeCh chan<- int) 
 	out, receiver := NewOutput()
 	commandCtx, cancelCommand := context.WithCancel(ctx)
 
-	logger := illog.WithField("integration_name", r.Cfg.InstanceName)
+	logger := illog.WithField("integration_name", r.Cfg.IntegrationName)
 
 	go func() {
 		defer out.Close()
