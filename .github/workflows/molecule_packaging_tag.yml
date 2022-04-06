@@ -1,0 +1,12 @@
+name: Test specific version installation
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version of the agent to test installation'
+        required: true
+jobs:
+  molecule-packaing-tests:
+    uses: newrelic/infrastructure-agent/.github/workflows/component_molecule_packaging.yml@molecule_packaging
+    with:
+      TAG: ${{ github.event.inputs.tag }}
