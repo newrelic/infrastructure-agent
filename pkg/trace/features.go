@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 package trace
 
+import "github.com/newrelic/infrastructure-agent/pkg/log"
+
 // Feature feature to be traced.
 type Feature string
 
@@ -29,23 +31,23 @@ const (
 // trace.On(trace.FEATURE, ...)
 
 // Attr always traces custom-attributes feature.
-func Attr(fields map[string]interface{}, format string, args ...interface{}) {
-	On(func() bool { return true }, ATTR, fields, format, args...)
+func Attr(entry log.Entry, format string, args ...interface{}) {
+	On(func() bool { return true }, ATTR, entry, format, args...)
 }
 
 // AttrOn trace custom-attributes feature on given condition.
-func AttrOn(fields map[string]interface{}, cond Condition, format string, args ...interface{}) {
-	On(cond, ATTR, fields, format, args...)
+func AttrOn(entry log.Entry, cond Condition, format string, args ...interface{}) {
+	On(cond, ATTR, entry, format, args...)
 }
 
 // Connect always traces connect feature.
-func Connect(fields map[string]interface{}, format string, args ...interface{}) {
-	On(func() bool { return true }, CONN, fields, format, args...)
+func Connect(entry log.Entry, format string, args ...interface{}) {
+	On(func() bool { return true }, CONN, entry, format, args...)
 }
 
 // Hostname always traces hostname feature.
-func Hostname(fields map[string]interface{}, format string, args ...interface{}) {
-	On(func() bool { return true }, HOSTNAME, fields, format, args...)
+func Hostname(entry log.Entry, format string, args ...interface{}) {
+	On(func() bool { return true }, HOSTNAME, entry, format, args...)
 }
 
 // NonDMSubmission traces NR platform non-dimensional metrics submission payloads.
@@ -54,36 +56,36 @@ func NonDMSubmission(payload []byte) {
 }
 
 // Telemetry traces to "audit" (log payloads) on DM telemetry.
-func Telemetry(fields map[string]interface{}, format string, args ...interface{}) {
-	On(func() bool { return true }, DM_SUBMISSION, fields, format, args...)
+func Telemetry(entry log.Entry, format string, args ...interface{}) {
+	On(func() bool { return true }, DM_SUBMISSION, entry, format, args...)
 }
 
 // MetricMatch traces to "audit" log metric match rule.
-func MetricMatch(fields map[string]interface{}, format string, args ...interface{}) {
-	On(func() bool { return true }, METRIC_MATCHER, fields, format, args...)
+func MetricMatch(entry log.Entry, format string, args ...interface{}) {
+	On(func() bool { return true }, METRIC_MATCHER, entry, format, args...)
 }
 
 // Inventory traces to "audit" inventory.
-func Inventory(fields map[string]interface{}, format string, args ...interface{}) {
-	On(func() bool { return true }, INVENTORY, fields, format, args...)
+func Inventory(entry log.Entry, format string, args ...interface{}) {
+	On(func() bool { return true }, INVENTORY, entry, format, args...)
 }
 
 // LogFwdOutput traces to "audit" log-forwarder output.
-func LogFwdOutput(fields map[string]interface{}, format string, args ...interface{}) {
-	On(func() bool { return true }, LOG_FWD, fields, format, args...)
+func LogFwdOutput(entry log.Entry, format string, args ...interface{}) {
+	On(func() bool { return true }, LOG_FWD, entry, format, args...)
 }
 
 // CmdReq traces to "audit" command request payloads.
-func CmdReq(fields map[string]interface{}, format string, args ...interface{}) {
-	On(func() bool { return true }, CMDREQ, fields, format, args...)
+func CmdReq(entry log.Entry, format string, args ...interface{}) {
+	On(func() bool { return true }, CMDREQ, entry, format, args...)
 }
 
 // Proc traces to "audit" process sampling.
-func Proc(fields map[string]interface{}, format string, args ...interface{}) {
-	On(func() bool { return true }, PROC, fields, format, args...)
+func Proc(entry log.Entry, format string, args ...interface{}) {
+	On(func() bool { return true }, PROC, entry, format, args...)
 }
 
 // Sampler traces to "audit" system samplers (cpu, disk, network, etc) stats.
-func Sampler(fields map[string]interface{}, format string, args ...interface{}) {
-	On(func() bool { return true }, SAMPLER, fields, format, args...)
+func Sampler(entry log.Entry, format string, args ...interface{}) {
+	On(func() bool { return true }, SAMPLER, entry, format, args...)
 }

@@ -33,7 +33,7 @@ func NewHandler(tracker *track.Tracker, il integration.InstancesLookup, dmEmitte
 			return cmdchannel.ErrOSNotSupported
 		}
 
-		trace.CmdReq(l.Fields(), "stop integration request received")
+		trace.CmdReq(l, "stop integration request received")
 
 		var args runintegration.RunIntArgs
 		if err = json.Unmarshal(cmd.Args, &args); err != nil {

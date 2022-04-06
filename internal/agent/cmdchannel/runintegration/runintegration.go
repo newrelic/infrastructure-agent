@@ -44,7 +44,7 @@ func (a *RunIntArgs) Hash() string {
 // NewHandler creates a cmd-channel handler for run-integration requests.
 func NewHandler(definitionQ chan<- integration.Definition, il integration.InstancesLookup, dmEmitter dm.Emitter, logger log.Entry) *cmdchannel.CmdHandler {
 	handleF := func(ctx context.Context, cmd commandapi.Command, initialFetch bool) (err error) {
-		trace.CmdReq(logger.Fields(), "run integration request received")
+		trace.CmdReq(logger, "run integration request received")
 		var args RunIntArgs
 		if err = json.Unmarshal(cmd.Args, &args); err != nil {
 			err = cmdchannel.NewArgsErr(err)

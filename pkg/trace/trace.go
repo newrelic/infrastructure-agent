@@ -3,6 +3,7 @@
 package trace
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/sirupsen/logrus"
 )
 
@@ -35,14 +36,18 @@ func EnableOn(features []string) {
 }
 
 // On logs data to be shown if trace for a given feature is enabled and condition is met.
-func On(condition Condition, feature Feature, fields map[string]interface{}, format string, args ...interface{}) {
+func On(condition Condition, feature Feature, entry log.Entry, format string, args ...interface{}) {
 	if global.logger == nil {
 		return
 	}
 
 	if _, ok := global.enabled[feature]; ok && condition() {
+		var fields logrus.Fields
+		if entry != nil {
+			fields = entry.Fields()
+		}
 		if fields == nil {
-			fields = make(map[string]interface{})
+			fields = make(logrus.Fields)
 		}
 		fields["feature"] = feature
 		global.logger.WithFields(fields).Tracef(format, args...)
