@@ -17,7 +17,7 @@ ec2: ec2-install-deps ec2-build
 
 .PHONY: canaries
 canaries: PREFIX ?= canary
-canaries: REPO ?= ""
+canaries: REPO ?= "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
 canaries: validate-aws-credentials ec2-install-deps ec2-build
 ifndef NR_LICENSE_KEY
 	@echo "NR_LICENSE_KEY variable must be provided for \"make canaries\""

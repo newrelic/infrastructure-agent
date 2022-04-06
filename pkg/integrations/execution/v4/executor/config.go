@@ -2,7 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 package executor
 
-import "os"
+import (
+	"os"
+	"regexp"
+	"strings"
+)
 
 // Config describes the context to execute a command: user, directory and environment variables.
 type Config struct {
@@ -13,6 +17,12 @@ type Config struct {
 	// Global variables that need to be retrieved before the integration runs
 	Passthrough []string
 }
+
+// for testing purposes
+var (
+	environ   = os.Environ
+	lookupEnv = os.LookupEnv
+)
 
 // BuildEnv returns the environment configuration of an executable, merging the
 // user-defined environment variables from the configuration files with the
@@ -28,10 +38,27 @@ func (c *Config) BuildEnv() map[string]string {
 	for k, v := range c.Environment {
 		env[k] = v
 	}
+	allEnvVars := environ()
 	// override with passthrough, if defined
 	for _, k := range c.Passthrough {
-		if v, ok := os.LookupEnv(k); ok {
-			env[k] = v
+		r, err := regexp.Compile(k)
+		if err != nil {
+			if v, ok := lookupEnv(k); ok {
+				env[k] = v
+			}
+		} else {
+			for _, envVar := range allEnvVars {
+				pair := strings.SplitN(envVar, "=", 2)
+				if len(pair) != 2 {
+					continue
+				}
+				envVar = pair[0]
+				if r.MatchString(envVar) {
+					if v, ok := lookupEnv(envVar); ok {
+						env[envVar] = v
+					}
+				}
+			}
 		}
 	}
 	return env
