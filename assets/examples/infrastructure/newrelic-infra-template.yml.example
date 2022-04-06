@@ -827,8 +827,8 @@ license_key: your_license_key
 # Risk     : Disabling this option causes all the command line arguments passed
 #            to commands to be sent to, and stored by, New Relic. This might
 #            include usernames, passwords, API keys, etc.
-# Tip       : Use this as a security measure to prevent leaking sensitive
-#             information.
+# Tip      : Use this as a security measure to prevent leaking sensitive
+#            information.
 #
 #strip_command_line: true
 #
