@@ -7,6 +7,6 @@ on:
         required: true
 jobs:
   molecule-packaing-tests:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_molecule_packaging.yml@molecule_packaging
+    uses: newrelic/infrastructure-agent/.github/workflows/component_molecule_packaging.yml@master
     with:
       TAG: ${{ github.event.inputs.tag }}
