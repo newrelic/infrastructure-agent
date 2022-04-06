@@ -120,7 +120,9 @@ func buildFbExecutor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 			args = append(args, "-vv")
 		}
 
-		fbExecutor := executor.FromCmdSlice(args, &executor.Config{})
+		fbExecutor := executor.FromCmdSlice(args, &executor.Config{
+			IntegrationName: "fluent-bit",
+		})
 		return &fbExecutor, nil
 	}
 }

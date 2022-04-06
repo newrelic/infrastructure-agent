@@ -44,11 +44,13 @@ func (r *Executor) Execute(ctx context.Context, pidChan, exitCodeCh chan<- int) 
 	out, receiver := NewOutput()
 	commandCtx, cancelCommand := context.WithCancel(ctx)
 
+	logger := illog.WithField("integration_name", r.Cfg.IntegrationName)
+
 	go func() {
 		defer out.Close()
 		cmd := r.buildCommand(commandCtx)
 
-		illog.
+		logger.
 			WithField("command", r.Command).
 			WithField("path", cmd.Path).
 			// TODO: creates weird failure on leaktest
