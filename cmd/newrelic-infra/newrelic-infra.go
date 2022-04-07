@@ -56,6 +56,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/recover"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	v4 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4"
+	integrationsConfig "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/logs"
@@ -273,7 +274,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	}
 	pluginSourceDirs = helpers.RemoveEmptyAndDuplicateEntries(pluginSourceDirs)
 
-	integrationCfg := v4.NewConfig(
+	intManagerCfg := v4.NewConfig(
 		c.Verbose,
 		c.Features,
 		c.PassthroughEnvironment,
@@ -288,7 +289,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	ccSvcURL := fmt.Sprintf("%s%s", cmdChannelURL, c.CommandChannelEndpoint)
 	caClient := commandapi.NewClient(ccSvcURL, c.License, userAgent, httpClient.Do)
 	ffManager := feature_flags.NewManager(c.Features)
-	il := newInstancesLookup(integrationCfg)
+	il := newInstancesLookup(intManagerCfg)
 
 	fatal := func(err error, message string) {
 		aslog.WithError(err).Error(message)
@@ -364,7 +365,8 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	tracker := track.NewTracker(dmEmitter)
 
 	integrationEmitter := emitter.NewIntegrationEmittor(agt, dmEmitter, ffManager)
-	integrationManager := v4.NewManager(integrationCfg, integrationEmitter, il, definitionQ, terminateDefinitionQ, configEntryQ, tracker, agt.Context.IDLookup())
+	cfgLoader := integrationsConfig.NewPathLoader()
+	integrationManager := v4.NewManager(intManagerCfg, cfgLoader, integrationEmitter, il, definitionQ, terminateDefinitionQ, configEntryQ, tracker, agt.Context.IDLookup())
 
 	// Command channel handlers
 	backoffSecsC := make(chan int, 1) // 1 won't block on initial cmd-channel fetch
@@ -524,7 +526,7 @@ func initInstrumentation(ctx context2.Context, agentMetricsEndpoint string) (ins
 // newInstancesLookup creates an instance lookup that:
 // - looks in the v3 legacy definitions repository for defined commands
 // - looks in the definition folders (and bin/ subfolders) for executable names
-func newInstancesLookup(cfg v4.Configuration) integration.InstancesLookup {
+func newInstancesLookup(cfg v4.ManagerConfig) integration.InstancesLookup {
 	const executablesSubFolder = "bin"
 
 	var execFolders []string
