@@ -6,6 +6,8 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 )
 
+type YAMLMap map[string]YAML
+
 // YAML stores the information from a single V4 integrations file
 type YAML struct {
 	Databind     databind.YAMLConfig `yaml:",inline"`
