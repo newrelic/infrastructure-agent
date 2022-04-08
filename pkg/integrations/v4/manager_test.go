@@ -287,7 +287,7 @@ func TestManager_LogWarningForInvalidYaml(t *testing.T) {
 	// THEN one long entry found
 	require.NotEmpty(t, hook.AllEntries())
 	entry := hook.LastEntry()
-	assert.Equal(t, "can't load integrations file", entry.Message)
+	assert.Equal(t, "can't load integrations file. This may happen if you are editing a file and saving intermediate changes", entry.Message)
 	assert.Equal(t, logrus.WarnLevel, entry.Level)
 }
 
