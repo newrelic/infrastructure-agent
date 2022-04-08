@@ -436,8 +436,13 @@ func (mgr *Manager) handleFileEvent(ctx context.Context, event *fsnotify.Event) 
 }
 
 func (mgr *Manager) runIntegrationFromPath(ctx context.Context, cfgPath string, isCreate bool, elog *log.Entry, cmdFF *runner.CmdFF) {
-	ok, cfg := mgr.configLoader.LoadFile(cfgPath)
-	if !ok {
+	cfg, err := mgr.configLoader.LoadFile(cfgPath)
+	if err != nil {
+		if err == config2.LegacyYAML {
+			elog.Debug("Skipping v3 integration.")
+		} else {
+			elog.WithError(err).Warn("can't load integrations file. This may happen if you are editing a file and saving intermediate changes")
+		}
 		return
 	}
 

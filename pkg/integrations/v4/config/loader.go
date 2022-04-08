@@ -2,7 +2,6 @@ package config
 
 import (
 	"errors"
-	"fmt"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/files"
 	"github.com/newrelic/infrastructure-agent/pkg/config/envvar"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
@@ -31,8 +30,8 @@ type Loader interface {
 	// will try to read it as a single configuration file.
 	Load(path string) (YAMLMap, error)
 
-	// LoadFile reads the configuration file and discards it if it's not belonging to the V4 format
-	LoadFile(file string) (ok bool, cfg YAML)
+	// LoadFile reads the configuration file.
+	LoadFile(file string) (YAML, error)
 }
 
 type pathLoader struct {
@@ -57,29 +56,14 @@ func (pl *pathLoader) Load(path string) (YAMLMap, error) {
 		return pl.loadDirectory(path)
 	}
 
-	ok, cfg := pl.LoadFile(path)
-	if !ok {
-		return nil, fmt.Errorf("no configuration found in path %s", path)
+	cfg, err := pl.LoadFile(path)
+	if err != nil {
+		return nil, err
 	}
 
 	return YAMLMap{
 		path: cfg,
 	}, nil
-}
-
-// LoadFile reads the configuration file and discards it if it's not belonging to the V4 format
-func (pl *pathLoader) LoadFile(file string) (bool, YAML) {
-	fLog := clLog.WithField("file", file)
-
-	cfg, err := loadFile(file)
-	if err != nil {
-		if err == LegacyYAML {
-			fLog.Debug("Skipping v3 integration.")
-		} else {
-			fLog.WithError(err).Warn("can't load integrations file. This may happen if you are editing a file and saving intermediate changes")
-		}
-	}
-	return err == nil, cfg
 }
 
 // loadDirectory reads the configuration files in a given directory, and discards those not belonging to the V4 format
@@ -97,15 +81,22 @@ func (pl *pathLoader) loadDirectory(dir string) (YAMLMap, error) {
 		absolutePath := filepath.Join(dir, file.Name())
 
 		fLog.Debug("Loading config.")
-		if ok, cfg := pl.LoadFile(absolutePath); ok {
-			configs[absolutePath] = cfg
+		cfg, err := pl.LoadFile(absolutePath)
+		if err != nil {
+			if err == LegacyYAML {
+				fLog.Debug("Skipping v3 integration.")
+			} else {
+				fLog.WithError(err).Warn("can't load integrations file. This may happen if you are editing a file and saving intermediate changes")
+			}
+			continue
 		}
+		configs[absolutePath] = cfg
 	}
 	return configs, nil
 }
 
-// loadFile will read the file located in path and will try to parse it as yaml.
-func loadFile(path string) (YAML, error) {
+// LoadFile will read the file located in path and will try to parse it as yaml.
+func (pl *pathLoader) LoadFile(path string) (YAML, error) {
 	cy := YAML{}
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
