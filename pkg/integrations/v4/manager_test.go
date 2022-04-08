@@ -58,9 +58,9 @@ integrations:
 
 var v4FileWithConfigYAML = `---
 integrations:
-  - name: managerConfig-test
-    exec: ` + getExe(testhelp.GoRun(fixtures.ValidYAMLGoFile, "${managerConfig.path}")) + `
-    managerConfig:
+  - name: config-test
+    exec: ` + getExe(testhelp.GoRun(fixtures.ValidYAMLGoFile, "${config.path}")) + `
+    config:
       event_type: YAMLEvent
       map:
         key: value
@@ -157,7 +157,7 @@ func TestManager_StartIntegrations(t *testing.T) {
 	// GIVEN a set of configuration files
 	dir, err := tempFiles(map[string]string{
 		"v4-integrations.yaml":  v4File,
-		"v3-managerConfig.yaml": v3File, // it will be ignored
+		"v3-config.yaml": v3File, // it will be ignored
 	})
 	require.NoError(t, err)
 	defer removeTempFiles(t, dir)
@@ -252,7 +252,7 @@ func TestManager_SkipLoadingV3IntegrationsWithNoWarnings(t *testing.T) {
 	// GIVEN a set of configuration files
 	dir, err := tempFiles(map[string]string{
 		"v4-integrations.yaml":  v4File,
-		"v3-managerConfig.yaml": v3File, // it will be ignored
+		"v3-config.yaml": v3File, // it will be ignored
 	})
 	require.NoError(t, err)
 	defer removeTempFiles(t, dir)
@@ -275,7 +275,7 @@ func TestManager_LogWarningForInvalidYaml(t *testing.T) {
 	// GIVEN a set of configuration files
 	dir, err := tempFiles(map[string]string{
 		"v4-integrations.yaml":  invalidFile,
-		"v3-managerConfig.yaml": v3File, // it will be ignored
+		"v3-config.yaml": v3File, // it will be ignored
 	})
 	require.NoError(t, err)
 	defer removeTempFiles(t, dir)
@@ -292,7 +292,7 @@ func TestManager_LogWarningForInvalidYaml(t *testing.T) {
 }
 
 func TestManager_Config_EmbeddedYAML(t *testing.T) {
-	// GIVEN an integration configuration that embeds the external managerConfig file as a YAML managerConfig field
+	// GIVEN an integration configuration that embeds the external config file as a YAML config field
 	dir, err := tempFiles(map[string]string{
 		"v4-integration.yaml": v4FileWithConfigYAML,
 	})
@@ -310,7 +310,7 @@ func TestManager_Config_EmbeddedYAML(t *testing.T) {
 
 	// THEN the integration has correctly received the embedded yaml as a simple YAML
 	// (and we know it because it emits the YAML as a JSON integration)
-	metric := expectOneMetric(t, emitter, "managerConfig-test")
+	metric := expectOneMetric(t, emitter, "config-test")
 	assert.Equal(t, "YAMLEvent", metric["event_type"])
 	gotest.DeepEqual(t, map[string]interface{}{"key": "value"}, metric["map"])
 	gotest.DeepEqual(t, []interface{}{"item1", "item2"}, metric["array"])
@@ -529,7 +529,7 @@ func TestManager_PassthroughEnv_Priorities(t *testing.T) {
 integrations:
   - name: nri-simple
     env:
-      VALUE: value-from-managerConfig
+      VALUE: value-from-config
 `})
 	require.NoError(t, err)
 
@@ -700,12 +700,12 @@ func TestManager_NamedIntegrationWithConfig(t *testing.T) {
 	execPath := filepath.Join(niDir, "nri-validyaml"+fixtures.CmdExtension)
 	require.NoError(t, testhelp.GoBuild(fixtures.ValidYAMLGoFile, execPath))
 
-	// AND a v4 named integration with an embedded managerConfig
+	// AND a v4 named integration with an embedded config
 	configDir, err := tempFiles(map[string]string{
 		"my-configs.yml": `
 integrations:
   - name: nri-validyaml
-    managerConfig:
+    config:
       event_type: YAMLEvent
       map:
         hello: foo
@@ -737,7 +737,7 @@ func TestManager_EnableFeature_WhenFeatureOnOHICfgAndAgentCfgIsDisabledAndEnable
 	require.NoError(t, err)
 	defer removeTempFiles(t, dir)
 
-	// AND an integrations manager and with no feature within agent managerConfig
+	// AND an integrations manager and with no feature within agent config
 	e := &testemit.RecordEmitter{}
 	mgr := NewManager(ManagerConfig{
 		ConfigPaths:            []string{dir},
@@ -769,7 +769,7 @@ func TestManager_EnableFeatureFromAgentConfig(t *testing.T) {
 	require.NoError(t, err)
 	defer removeTempFiles(t, dir)
 
-	// AND an integrations manager and with feature enabled within agent managerConfig
+	// AND an integrations manager and with feature enabled within agent config
 	e := &testemit.RecordEmitter{}
 	mgr := NewManager(ManagerConfig{
 		ConfigPaths:            []string{dir},
@@ -796,7 +796,7 @@ func TestManager_CCDisablesAgentEnabledFeature(t *testing.T) {
 	require.NoError(t, err)
 	defer removeTempFiles(t, dir)
 
-	// AND an integrations manager and OHI enabled (ie via feature agent managerConfig)
+	// AND an integrations manager and OHI enabled (ie via feature agent config)
 	e := &testemit.RecordEmitter{}
 	mgr := NewManager(ManagerConfig{
 		ConfigPaths:            []string{dir},
@@ -832,7 +832,7 @@ func TestManager_CCDisablesPreviouslyEnabledFeature(t *testing.T) {
 	require.NoError(t, err)
 	defer removeTempFiles(t, dir)
 
-	// AND an integrations manager and OHI enabled (ie via feature agent managerConfig)
+	// AND an integrations manager and OHI enabled (ie via feature agent config)
 	e := &testemit.RecordEmitter{}
 	mgr := NewManager(ManagerConfig{
 		ConfigPaths:            []string{dir},
@@ -921,7 +921,7 @@ func TestManager_StartWithVerbose(t *testing.T) {
 	require.NoError(t, err)
 	defer removeTempFiles(t, dir)
 
-	// AND an integrations manager and with feature enabled within agent managerConfig
+	// AND an integrations manager and with feature enabled within agent config
 	emitter := &testemit.RecordEmitter{}
 	mgr := NewManager(ManagerConfig{
 		ConfigPaths:            []string{dir},
@@ -953,7 +953,7 @@ func TestManager_StartWithVerboseFalse(t *testing.T) {
 	require.NoError(t, err)
 	defer removeTempFiles(t, dir)
 
-	// AND an integrations manager and with feature enabled within agent managerConfig
+	// AND an integrations manager and with feature enabled within agent config
 	emitter := &testemit.RecordEmitter{}
 	mgr := NewManager(ManagerConfig{
 		ConfigPaths:            []string{dir},
@@ -1094,7 +1094,7 @@ func TestManager_cfgProtocolSpawnedIntegrationCannotSpawnIntegration(t *testing.
 		require.NotEmpty(t, entries)
 		ok := false
 		for _, e := range entries {
-			if e.Message == "received managerConfig protocol request payload without a handler" {
+			if e.Message == "received config protocol request payload without a handler" {
 				ok = true
 			}
 		}
@@ -1110,12 +1110,12 @@ func TestManager_ExpandsConfigEnvVars(t *testing.T) {
 	execPath := filepath.Join(niDir, "nri-validyaml"+fixtures.CmdExtension)
 	require.NoError(t, testhelp.GoBuild(fixtures.ValidYAMLGoFile, execPath))
 
-	// AND a v4 named integration with an embedded managerConfig
+	// AND a v4 named integration with an embedded config
 	configDir, err := tempFiles(map[string]string{
 		"my-configs.yml": `
 integrations:
   - name: nri-validyaml
-    managerConfig:
+    config:
       event_type: YAMLEvent
       map:
         hello: {{ SOME_VAR }}  

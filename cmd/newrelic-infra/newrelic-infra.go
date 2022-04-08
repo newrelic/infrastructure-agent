@@ -274,7 +274,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	}
 	pluginSourceDirs = helpers.RemoveEmptyAndDuplicateEntries(pluginSourceDirs)
 
-	intManagerCfg := v4.NewConfig(
+	v4ManagerConfig := v4.NewConfig(
 		c.Verbose,
 		c.Features,
 		c.PassthroughEnvironment,
@@ -289,7 +289,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	ccSvcURL := fmt.Sprintf("%s%s", cmdChannelURL, c.CommandChannelEndpoint)
 	caClient := commandapi.NewClient(ccSvcURL, c.License, userAgent, httpClient.Do)
 	ffManager := feature_flags.NewManager(c.Features)
-	il := newInstancesLookup(intManagerCfg)
+	il := newInstancesLookup(v4ManagerConfig)
 
 	fatal := func(err error, message string) {
 		aslog.WithError(err).Error(message)
@@ -366,7 +366,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 
 	integrationEmitter := emitter.NewIntegrationEmittor(agt, dmEmitter, ffManager)
 	cfgLoader := integrationsConfig.NewPathLoader()
-	integrationManager := v4.NewManager(intManagerCfg, cfgLoader, integrationEmitter, il, definitionQ, terminateDefinitionQ, configEntryQ, tracker, agt.Context.IDLookup())
+	integrationManager := v4.NewManager(v4ManagerConfig, cfgLoader, integrationEmitter, il, definitionQ, terminateDefinitionQ, configEntryQ, tracker, agt.Context.IDLookup())
 
 	// Command channel handlers
 	backoffSecsC := make(chan int, 1) // 1 won't block on initial cmd-channel fetch
