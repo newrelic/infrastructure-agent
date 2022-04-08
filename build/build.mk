@@ -15,7 +15,7 @@ GIT_DIRTY  = $(shell test -n "`git status --porcelain`" && echo "dirty" || echo 
 
 GOTOOLS ?=
 GOTOOLS += github.com/jandelgado/gcov2lcov
-GOTOOLS += github.com/golangci/golangci-lint/cmd/golangci-lint@v1.43.0
+GOTOOLS += github.com/golangci/golangci-lint/cmd/golangci-lint@v1.45.2
 
 GOARCH ?= amd64
 
