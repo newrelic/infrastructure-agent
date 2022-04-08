@@ -29,7 +29,7 @@ import (
 
 var illog = log.WithComponent("integrations.Manager")
 
-// runner-groups contexts indexed per managerConfig path, bundling lock to support concurrent access.
+// runner-groups contexts indexed per config path, bundling lock to support concurrent access.
 type rgsPerPath struct {
 	l sync.RWMutex
 	m map[string]*groupContext
@@ -144,15 +144,15 @@ func (g *groupContext) isRunning() bool {
 
 type ManagerConfig struct {
 	// ConfigPaths store the YAML integrations configurations.
-	// They may also contain -managerConfig.yml files from v3 integrations
+	// They may also contain -config.yml files from v3 integrations
 	ConfigPaths   []string
-	AgentFeatures map[string]bool // features from agent managerConfig file
+	AgentFeatures map[string]bool // features from agent config file
 	// DefinitionFolders store the v3 -definition.yml plugins (legacy support)
 	// and the executables where the agent will look for if only the 'name' property is specified for an integration
 	DefinitionFolders []string
 	// Defines verbosity level in v3 legacy integrations
 	Verbose int
-	// PassthroughEnvironment holds a copy of its homonym in managerConfig.Config.
+	// PassthroughEnvironment holds a copy of its homonym in config.Config.
 	PassthroughEnvironment []string
 }
 
@@ -276,7 +276,7 @@ func (mgr *Manager) EnableOHIFromFF(ctx context.Context, featureFlag string) err
 }
 
 // DisableOHIFromFF disables an integration coming from CC request.
-// Formats btw CC FF and managerConfig files: see EnableOHIFromCmd
+// Formats btw CC FF and config files: see EnableOHIFromCmd
 func (mgr *Manager) DisableOHIFromFF(featureFlag string) error {
 	cfgPath, err := mgr.cfgPathForFF(featureFlag)
 	if err != nil {
@@ -464,7 +464,7 @@ func (mgr *Manager) stopRunnerGroup(fileName string) {
 	}
 }
 
-// featureName is the OHI managerConfig "feature" value. ie: feature: docker
+// featureName is the OHI config "feature" value. ie: feature: docker
 func (mgr *Manager) cfgPathForFF(featureName string) (cfgPath string, err error) {
 	cfgPath, ok := mgr.featuresCache[featureName]
 	if !ok {

@@ -99,7 +99,7 @@ func buildFbExecutor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 
 		cfgTmpPath, err := saveToTempFile([]byte(cfgContent))
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to create temporary fb sFBLogger managerConfig file")
+			return nil, errors.Wrap(err, "failed to create temporary fb sFBLogger config file")
 		}
 
 		args := []string{
@@ -135,7 +135,7 @@ func saveToTempFile(config []byte) (string, error) {
 	defer file.Close()
 
 	sFBLogger.WithField("file", file.Name()).WithField("content", string(config)).
-		Debug("Creating temp managerConfig file for fb sFBLogger.")
+		Debug("Creating temp config file for fb sFBLogger.")
 
 	if _, err := file.Write(config); err != nil {
 		return "", err
