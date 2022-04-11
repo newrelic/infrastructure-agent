@@ -47,18 +47,21 @@ type HostInfoData struct {
 	CpuNum string `json:"cpu_num"`
 	// Total number of cores in all the CPUs
 	// It is shown as 'processorCount' in New Relic UI
-	TotalCpu        string `json:"total_cpu"`
-	Ram             string `json:"ram"`
-	UpSince         string `json:"boot_timestamp"`
-	AgentVersion    string `json:"agent_version"`
-	AgentName       string `json:"agent_name"`
-	AgentMode       string `json:"agent_mode"`
-	OperatingSystem string `json:"operating_system"`
-	ProductUuid     string `json:"product_uuid"`
-	RegionAWS       string `json:"aws_region,omitempty"`
-	RegionAzure     string `json:"region_name,omitempty"`
-	RegionGCP       string `json:"zone,omitempty"`
-	RegionAlibaba   string `json:"region_id,omitempty"`
+	TotalCpu            string `json:"total_cpu"`
+	Ram                 string `json:"ram"`
+	UpSince             string `json:"boot_timestamp"`
+	AgentVersion        string `json:"agent_version"`
+	AgentName           string `json:"agent_name"`
+	AgentMode           string `json:"agent_mode"`
+	OperatingSystem     string `json:"operating_system"`
+	ProductUuid         string `json:"product_uuid"`
+	RegionAWS           string `json:"aws_region,omitempty"`
+	RegionAzure         string `json:"region_name,omitempty"`
+	RegionGCP           string `json:"zone,omitempty"`
+	RegionAlibaba       string `json:"region_id,omitempty"`
+	AWSAccountID        string `json:"aws_account_id,omitempty"`
+	AWSAvailabilityZone string `json:"aws_availability_zone,omitempty"`
+	AWSImageID          string `json:"aws_image_id,omitempty"`
 }
 
 func (hip *HostInfoData) SortKey() string {
@@ -137,6 +140,13 @@ func (hip *HostinfoPlugin) gatherHostinfo(context agent.AgentContext) *HostInfoD
 		hlog.WithError(err).WithField("cloudType", hip.cloudHarvester.GetCloudType()).Debug(
 			"cloud region couldn't be set")
 	}
+
+	err = hip.setCloudMetadata(data)
+	if err != nil {
+		hlog.WithError(err).WithField("cloudType", hip.cloudHarvester.GetCloudType()).Debug(
+			"cloud metadata couldn't be set")
+	}
+
 	helpers.LogStructureDetails(hlog, data, "HostInfoData", "raw", nil)
 
 	return data
@@ -204,6 +214,33 @@ func (hip *HostinfoPlugin) setCloudRegion(data *HostInfoData) (err error) {
 	case cloud.TypeAlibaba:
 		data.RegionAlibaba = region
 	default:
+	}
+	return
+}
+
+// Only for AWS cloud instances
+func (self *HostinfoPlugin) setCloudMetadata(data *HostInfoData) (err error) {
+	if self.Context.Config().DisableCloudMetadata ||
+		self.cloudHarvester.GetCloudType() == cloud.TypeNoCloud {
+		return
+	}
+
+	if self.cloudHarvester.GetCloudType() == cloud.TypeAWS {
+		imageID, err := self.cloudHarvester.GetInstanceImageID()
+		if err != nil {
+			return fmt.Errorf("couldn't retrieve cloud image ID: %v", err)
+		}
+		data.AWSImageID = imageID
+		awsAccountID, err := self.cloudHarvester.GetAccountID()
+		if err != nil {
+			return fmt.Errorf("couldn't retrieve cloud account ID: %v", err)
+		}
+		data.AWSAccountID = awsAccountID
+		availabilityZone, err := self.cloudHarvester.GetZone()
+		if err != nil {
+			return fmt.Errorf("couldn't retrieve cloud availability zone: %v", err)
+		}
+		data.AWSAvailabilityZone = availabilityZone
 	}
 	return
 }

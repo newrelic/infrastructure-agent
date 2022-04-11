@@ -12,6 +12,8 @@
     update_cache: no #ubuntu 20.10 image has broken repos. Cache will only be updated after NR repo is added
   loop: "{{ repos_to_clean }}"
 
+- debug: var=repo_endpoint
+
 - name: install infra-agent APT repository
   apt_repository:
     repo: "deb {{ repo_endpoint }}/linux/apt {{ ansible_distribution_release }} main"

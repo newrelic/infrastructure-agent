@@ -69,3 +69,11 @@ jobs:
     with:
       TAG:  ${{ github.event.release.tag_name }}
       ASSETS_TYPE: "all"
+
+  molecule-packaing-tests:
+    uses: newrelic/infrastructure-agent/.github/workflows/component_molecule_packaging.yml@master
+    secrets:
+      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+    with:
+      TAG: ${{ github.event.release.tag_name }}
