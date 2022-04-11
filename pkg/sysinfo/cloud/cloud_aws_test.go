@@ -98,6 +98,45 @@ func TestAWSHarvester_GetInstanceID(t *testing.T) {
 	assert.Equal(t, "i-1234567890abcdef0", instanceID)
 }
 
+func TestAWSHarvester_GetAccountID(t *testing.T) {
+	t.Parallel()
+	ts := setupDefaultTestServer(t)
+	defer ts.Close()
+
+	h := NewAWSHarvester(true)
+	h.awsEC2MetadataHostname = ts.URL
+
+	instanceID, err := h.GetAccountID()
+	assert.NoError(t, err)
+	assert.Equal(t, "123456789012", instanceID)
+}
+
+func TestAWSHarvester_GetZone(t *testing.T) {
+	t.Parallel()
+	ts := setupDefaultTestServer(t)
+	defer ts.Close()
+
+	h := NewAWSHarvester(true)
+	h.awsEC2MetadataHostname = ts.URL
+
+	instanceID, err := h.GetZone()
+	assert.NoError(t, err)
+	assert.Equal(t, "us-west-2b", instanceID)
+}
+
+func TestAWSHarvester_GetInstanceImageID(t *testing.T) {
+	t.Parallel()
+	ts := setupDefaultTestServer(t)
+	defer ts.Close()
+
+	h := NewAWSHarvester(true)
+	h.awsEC2MetadataHostname = ts.URL
+
+	instanceID, err := h.GetInstanceImageID()
+	assert.NoError(t, err)
+	assert.Equal(t, "ami-5fb8c835", instanceID)
+}
+
 func TestAWSHarvester_cache(t *testing.T) {
 	t.Parallel()
 	var tokenCounter int32

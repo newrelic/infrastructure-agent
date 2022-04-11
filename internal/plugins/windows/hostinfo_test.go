@@ -112,6 +112,24 @@ func (f *fakeHarvester) GetHarvester() (cloud.Harvester, error) {
 	return f, nil
 }
 
+// GetZone returns the cloud zone (availability zone)
+func (f *fakeHarvester) GetZone() (string, error) {
+	args := f.Called()
+	return args.String(0), args.Error(1)
+}
+
+// GetAccount returns the cloud account ID
+func (f *fakeHarvester) GetAccountID() (string, error) {
+	args := f.Called()
+	return args.String(0), args.Error(1)
+}
+
+// GetImageID returns the cloud instance ID
+func (f *fakeHarvester) GetInstanceImageID() (string, error) {
+	args := f.Called()
+	return args.String(0), args.Error(1)
+}
+
 func TestHostinfoPluginSetCloudRegion(t *testing.T) {
 	testCases := []struct {
 		name       string
@@ -134,6 +152,9 @@ func TestHostinfoPluginSetCloudRegion(t *testing.T) {
 			name: "cloud aws",
 			assertions: func(d *HostinfoData) {
 				assert.Equal(t, "us-east-1", d.RegionAWS)
+				assert.Equal(t, "us-east-1a", d.AWSAvailabilityZone)
+				assert.Equal(t, "ami-12345", d.AWSImageID)
+				assert.Equal(t, "x123", d.AWSAccountID)
 				assert.Equal(t, "", d.RegionAzure)
 				assert.Equal(t, "", d.RegionGCP)
 				assert.Equal(t, "", d.RegionAlibaba)
@@ -141,6 +162,9 @@ func TestHostinfoPluginSetCloudRegion(t *testing.T) {
 			setMock: func(h *fakeHarvester) {
 				h.On("GetCloudType").Return(cloud.TypeAWS)
 				h.On("GetRegion").Return("us-east-1", nil)
+				h.On("GetZone").Return("us-east-1a", nil)
+				h.On("GetInstanceImageID").Return("ami-12345", nil)
+				h.On("GetAccountID").Return("x123", nil)
 			},
 		},
 		{
@@ -196,6 +220,7 @@ func TestHostinfoPluginSetCloudRegion(t *testing.T) {
 				cloudHarvester: h,
 			}
 			p.setCloudRegion(data)
+			p.setCloudMetadata(data)
 			testCase.assertions(data)
 			h.AssertExpectations(t)
 		})
