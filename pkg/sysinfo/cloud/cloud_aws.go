@@ -50,9 +50,12 @@ type AWSHarvester struct {
 }
 
 type instanceIdentity struct {
-	Region       string `json:"region"`
-	InstanceType string `json:"instanceType"`
-	InstanceID   string `json:"instanceId"`
+	AccountID        string `json:"accountId"`
+	AvailabilityZone string `json:"availabilityZone"`
+	ImageID          string `json:"imageID"`
+	Region           string `json:"region"`
+	InstanceType     string `json:"instanceType"`
+	InstanceID       string `json:"instanceId"`
 }
 
 // NewAWSHarvester returns a new instance of AWSHarvester.
@@ -108,6 +111,33 @@ func (a *AWSHarvester) GetRegion() (string, error) {
 		return "", err
 	}
 	return icc.Region, nil
+}
+
+// GetAccount will return the cloud account.
+func (a *AWSHarvester) GetAccountID() (string, error) {
+	icc, err := a.loadInstanceData()
+	if err != nil {
+		return "", err
+	}
+	return icc.AccountID, nil
+}
+
+// GetAvailability will return the cloud availability zone.
+func (a *AWSHarvester) GetZone() (string, error) {
+	icc, err := a.loadInstanceData()
+	if err != nil {
+		return "", err
+	}
+	return icc.AvailabilityZone, nil
+}
+
+// GetImageID will return the cloud image ID.
+func (a *AWSHarvester) GetInstanceImageID() (string, error) {
+	icc, err := a.loadInstanceData()
+	if err != nil {
+		return "", err
+	}
+	return icc.ImageID, nil
 }
 
 // GetCloudType returns the type of the cloud.

@@ -1,0 +1,16 @@
+
+FROM centos:8
+
+# Updating the default repo to vault.centos.org
+# Context: https://forketyfork.medium.com/centos-8-no-urls-in-mirrorlist-error-3f87c3466faa
+RUN sed -i -e "s|mirrorlist=|#mirrorlist=|g" /etc/yum.repos.d/CentOS-* \
+    && sed -i -e "s|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g" /etc/yum.repos.d/CentOS-*
+
+# Run a system update so the system doesn't overwrite the fake systemctl later
+RUN yum -y update
+
+RUN yum -y install python3 sudo
+
+# Adding fake systemctl
+RUN curl https://raw.githubusercontent.com/gdraheim/docker-systemctl-replacement/master/files/docker/systemctl.py -o /usr/local/bin/systemctl
+

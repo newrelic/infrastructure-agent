@@ -205,6 +205,13 @@ func (r *runner) heartBeat() {
 // discover-execute cycle until all the parallel processes have ended
 func (r *runner) execute(ctx context.Context, matches *databind.Values, pidWCh, exitCodeCh chan<- int) {
 	ctx, txn := instrumentation.SelfInstrumentation.StartTransaction(ctx, "integration.v4."+r.definition.Name)
+	if hostname, ok := r.definition.ExecutorConfig.Environment["HOSTNAME"]; ok {
+		txn.AddAttribute("integration_hostname", hostname)
+	}
+	if port, ok := r.definition.ExecutorConfig.Environment["PORT"]; ok {
+		txn.AddAttribute("integration_port", port)
+	}
+
 	defer txn.End()
 	def := r.definition
 
@@ -236,26 +243,33 @@ func (r *runner) execute(ctx context.Context, matches *databind.Values, pidWCh, 
 	// Waits for all the integrations to finish and reads the standard output and errors
 	wg := sync.WaitGroup{}
 	waitForCurrent := make(chan struct{})
-	wg.Add(len(outputs))
+	wg.Add(len(outputs) * 3)
 	for _, out := range outputs {
 		o := out
 		go func(txn instrumentation.Transaction) {
+			defer wg.Done()
+
 			_, seg := txn.StartSegment(ctx, "handleLines")
 			defer seg.End()
-			r.handleLines(o.Receive.Stdout, o.ExtraLabels, o.EntityRewrite)
+
+			r.handleLines(ctx, o.Receive.Stdout, o.ExtraLabels, o.EntityRewrite)
 		}(txn)
 
 		go func(txn instrumentation.Transaction) {
+			defer wg.Done()
+
 			_, seg := txn.StartSegment(ctx, "handleStderr")
 			defer seg.End()
+
 			r.handleStderr(o.Receive.Stderr)
 		}(txn)
 
 		go func(txn instrumentation.Transaction) {
-			ctx, seg := txn.StartSegment(ctx, "handleErrors")
+			defer wg.Done()
+
+			ctx, seg := txn.StartSegment(ctx, "handleExitCode")
 			defer seg.End()
 
-			defer wg.Done()
 			r.handleErrors(ctx, o.Receive.Errors)
 
 		}(txn)
@@ -282,13 +296,13 @@ func (r *runner) handleStderr(stderr <-chan []byte) {
 		r.lastStderr.Add(line)
 
 		if r.log.IsDebugEnabled() {
-			r.log.WithField("line", string(line)).Debug("Integration stderr (not parsed).")
+			r.log.WithField("line", string(line)).Info("Integration stderr (not parsed).")
 		} else {
 			fields := r.stderrParser(string(line))
 			if v, ok := fields["level"]; ok && (v == "error" || v == "fatal") {
 				// If a field already exists, like the time, logrus automatically adds the prefix "deps." to the
 				// Duplicated keys
-				r.log.WithFields(logrus.Fields(fields)).Error("received an integration log line")
+				r.log.WithFields(logrus.Fields(fields)).Info("received an integration log line")
 			}
 		}
 	}
@@ -313,7 +327,9 @@ func (r *runner) logErrors(ctx context.Context, errs <-chan error) {
 	}
 }
 
-func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityRewrite []data.EntityRewrite) {
+func (r *runner) handleLines(ctx context.Context, stdout <-chan []byte, extraLabels data.Map, entityRewrite []data.EntityRewrite) {
+	txn := instrumentation.TransactionFromContext(ctx)
+	payloadSize := 0
 	for line := range stdout {
 		llog := r.log.WithFieldsF(func() logrus.Fields {
 			return logrus.Fields{"payload": string(line)}
@@ -360,6 +376,7 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 			continue
 		}
 
+		payloadSize += len(line)
 		err := r.emitter.Emit(r.definition, extraLabels, entityRewrite, line)
 		if err != nil {
 			llog.WithError(err).Warn("Cannot emit integration payload")
@@ -375,6 +392,8 @@ func (r *runner) handleLines(stdout <-chan []byte, extraLabels data.Map, entityR
 			}
 		})
 	}
+
+	txn.AddAttribute("payload_size", payloadSize)
 }
 
 func contextWithHostID(ctx context.Context, hostID string) context.Context {

@@ -1,0 +1,44 @@
+name: Test agent package installation
+
+on:
+  workflow_call:
+    secrets:
+      DOCKER_HUB_ID:
+        required: true
+      DOCKER_HUB_PASSWORD:
+        required: true
+    inputs:
+      TAG:
+        required: true
+        type: string
+      REPO_ENDPOINT:
+        required: false
+        type: string
+        description: 'Repository endpoint to fetch packages from'
+        default: "https://download.newrelic.com/infrastructure_agent"
+
+env:
+  TAG: ${{ inputs.TAG }}
+  REPO_ENDPOINT: ${{ inputs.REPO_ENDPOINT }}
+  DOCKER_HUB_ID: ${{ secrets.DOCKER_HUB_ID }}
+  DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+jobs:
+  molecule-test-packages:
+    name: Test package installation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Configure Molecule and Ansible
+        run: |
+          sudo pipx uninstall ansible-core
+          sudo pip3 install molecule[docker]==3.6.0
+          sudo pip3 install 'rich>=10.0.0,<11.0.0'
+          sudo pip3 install ansible-lint[community]==5.3.2
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKER_HUB_ID }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
+      - name: Run molecule
+        run: cd test/packaging/ansible && molecule converge
