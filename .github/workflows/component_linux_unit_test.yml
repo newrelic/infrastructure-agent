@@ -36,18 +36,21 @@ jobs:
         with:
           go-version: ${{env.GO_VERSION}}
 
-      - name: Validate code
-        run: make ci/validate
-
       - name: Running unit tests
         run: make ci/test-coverage
+
+      - name: Convert coverage to lcov
+        uses: jandelgado/gcov2lcov-action@v1.0.5
+        with:
+          infile: coverage.out
+          outfile: coverage.lcov
 
       - name: Coveralls Parallel
         uses: coverallsapp/github-action@master
         continue-on-error: true
         with:
           github-token: ${{ secrets.gh_token }}
-          path-to-lcov: lcov.info
+          path-to-lcov: coverage.lcov
           flag-name: run-linux
           parallel: true
 
