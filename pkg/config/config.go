@@ -41,6 +41,8 @@ const (
 	VerboseLogging            = 1
 	SmartVerboseLogging       = 2
 	TroubleshootLogging       = 3
+	TraceLogging              = 4
+	TraceTroubleshootLogging  = 5
 	defaultMemProfileInterval = 60 * 5
 )
 
@@ -187,7 +189,8 @@ type Config struct {
 	CustomAttributes CustomAttributeMap `yaml:"custom_attributes" envconfig:"custom_attributes"`
 
 	// Verbose When verbose is set to 0, verbose logging is off, but the agent still creates logs. Set this to 1 to
-	// create verbose logs to use in troubleshooting the agent. You can set this to 2 to use Smart Verbose Logs
+	// create verbose logs to use in troubleshooting the agent. You can set this to 2 to use Smart Verbose Logs. Set to
+	// 3 to forward debug logs to FluentBit. To enable log traces set this to 4, and to 5 to forward traces to FluentBit.
 	// Default: 0
 	// Public: Yes
 	Verbose int `yaml:"verbose" envconfig:"verbose"`
@@ -1140,7 +1143,7 @@ func NewLogForward(config *Config, troubleshoot Troubleshoot) LogForward {
 // IsTroubleshootMode triggers FluentBit log forwarder to submit agent log. If agent is not running
 // under systemd service this mode enables agent logging to a log file (if not present already).
 func (c *Config) IsTroubleshootMode() bool {
-	return c.Verbose == TroubleshootLogging
+	return c.Verbose == TroubleshootLogging || c.Verbose == TraceTroubleshootLogging
 }
 
 // GetDefaultLogFile sets log file to defined app data dir or default.
@@ -1616,11 +1619,13 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 		return
 	}
 
-	// For now, make any level of verbosity == printing out debugging info
-	// until we refactor and use the Verbose attribute where Debug is used
-	// today. Debug should change to just mean "debug mode" per the command
-	// line switch meaning.
-	if cfg.Verbose > 0 {
+	// For now, make any level of verbosity between [1,3] printing out debugging info
+	// until we refactor and use the corresponding level for each value
+	switch cfg.Verbose {
+	case VerboseLogging, TroubleshootLogging, SmartVerboseLogging:
+		log.SetLevel(logrus.DebugLevel)
+		logrus.SetLevel(logrus.DebugLevel)
+	case TraceLogging, TraceTroubleshootLogging:
 		log.SetLevel(logrus.TraceLevel)
 		logrus.SetLevel(logrus.TraceLevel)
 	}
