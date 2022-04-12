@@ -1,4 +1,4 @@
-name: Produce packages for linux
+name: ~ Linux | Produce packages
 
 on:
   workflow_call:
