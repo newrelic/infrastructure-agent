@@ -105,6 +105,34 @@ func (e Entry) WithField(key string, value interface{}) Entry {
 	}
 }
 
+// Fields will be only added if TraceLevel is enabled
+func (e Entry) WithTraceFields(f logrus.Fields) Entry {
+	if w.l.IsLevelEnabled(logrus.TraceLevel) {
+		return func() *logrus.Entry {
+			return e().WithFields(f)
+		}
+	}
+	return e
+}
+
+func (e Entry) WithTraceFieldsF(lff func() logrus.Fields) Entry {
+	if w.l.IsLevelEnabled(logrus.TraceLevel) {
+		return func() *logrus.Entry {
+			return e().WithFields(lff())
+		}
+	}
+	return e
+}
+
+func (e Entry) WithTraceField(key string, value interface{}) Entry {
+	if w.l.IsLevelEnabled(logrus.TraceLevel) {
+		return func() *logrus.Entry {
+			return e().WithField(key, value)
+		}
+	}
+	return e
+}
+
 func (e Entry) WithError(err error) Entry {
 	return func() *logrus.Entry {
 		return e().WithError(err)
@@ -126,6 +154,32 @@ func WithFields(f logrus.Fields) Entry {
 func WithFieldsF(lff func() logrus.Fields) Entry {
 	return func() *logrus.Entry {
 		return w.l.WithFields(lff())
+	}
+}
+
+func WithTraceField(key string, value interface{}) Entry {
+	return WithTraceFields(logrus.Fields{key: value})
+}
+
+func WithTraceFieldsF(lff func() logrus.Fields) Entry {
+	if w.l.IsLevelEnabled(logrus.TraceLevel) {
+		return func() *logrus.Entry {
+			return w.l.WithFields(lff())
+		}
+	}
+	return func() *logrus.Entry {
+		return logrus.NewEntry(w.l)
+	}
+}
+
+func WithTraceFields(f logrus.Fields) Entry {
+	if w.l.IsLevelEnabled(logrus.TraceLevel) {
+		return func() *logrus.Entry {
+			return w.l.WithFields(f)
+		}
+	}
+	return func() *logrus.Entry {
+		return logrus.NewEntry(w.l)
 	}
 }
 

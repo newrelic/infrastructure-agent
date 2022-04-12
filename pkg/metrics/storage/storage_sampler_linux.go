@@ -422,7 +422,7 @@ func deviceMapperInfo(isContainerized bool) (mounts []MountInfoStat) {
 	}
 
 	if len(unsupportedMountPoints) > 0 {
-		sslog.WithField("mountPoints", unsupportedMountPoints).Debug("Unsupported file systems.")
+		sslog.WithTraceField("mountPoints", unsupportedMountPoints).Debug("Unsupported file systems.")
 	}
 
 	return

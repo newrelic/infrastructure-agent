@@ -99,7 +99,7 @@ func buildRequests(ctx context.Context, metricsBatch []metricBatch, apiKey strin
 	}
 
 	jsonPayload := string(buf.Bytes())
-	logger.WithField("json", jsonPayload).Debug("Request created")
+	logger.WithTraceField("json", jsonPayload).Debug("Request created")
 	req.Request.Header.Add("X-NRI-Entity-Ids", entityIds)
 	return []request{req}, err
 }

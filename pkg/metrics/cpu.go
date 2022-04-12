@@ -44,7 +44,7 @@ func (self *CPUMonitor) Sample() (sample *CPUSample, err error) {
 	}
 
 	currentTimes, err := self.cpuTimes(false)
-	helpers.TraceSamplerStructureDetails(syslog, currentTimes, "CpuTimes", "raw", nil)
+	helpers.LogStructureDetails(syslog, currentTimes, "CpuTimes", "raw", nil)
 
 	// in container envs we might get an empty array and the code panics after this
 	if len(currentTimes) <= 0 {

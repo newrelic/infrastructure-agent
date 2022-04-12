@@ -78,6 +78,29 @@ func TestWithFields(t *testing.T) {
 	assert.Contains(t, written, "hijklm")
 }
 
+func TestWithTraceFields(t *testing.T) {
+	var output bytes.Buffer
+	SetOutput(&output)
+	log := WithTraceFields(logrus.Fields{"abcdefg": "hijklm"})
+	log.Warn("hello you")
+
+	written := output.String()
+	assert.Contains(t, written, "hello you")
+	assert.NotContains(t, written, "abcdefg")
+	assert.NotContains(t, written, "hijklm")
+
+	initLevel := GetLevel()
+	SetLevel(logrus.TraceLevel)
+	traceLog := WithTraceFields(logrus.Fields{"abcdefg": "hijklm"})
+	traceLog.Warn("hello you")
+
+	written = output.String()
+	assert.Contains(t, written, "hello you")
+	assert.Contains(t, written, "abcdefg")
+	assert.Contains(t, written, "hijklm")
+	SetLevel(initLevel)
+}
+
 func TestWithFieldsChaining(t *testing.T) {
 	var output bytes.Buffer
 	SetOutput(&output)
