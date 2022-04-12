@@ -59,7 +59,6 @@ type VersionAwareEmitter struct {
 func (e *VersionAwareEmitter) Emit(definition integration.Definition, extraLabels data.Map, entityRewrite []data.EntityRewrite, integrationJSON []byte) error {
 	fields := logrus.Fields{
 		"integration_name": definition.Name,
-		"payload":          string(integrationJSON),
 	}
 	if definition.CfgProtocol != nil {
 		fields["cfg_protocol_name"] = definition.CfgProtocol.ConfigName
@@ -67,7 +66,7 @@ func (e *VersionAwareEmitter) Emit(definition integration.Definition, extraLabel
 	}
 
 	envVarsForLogEntry := helpers.ObfuscateSensitiveDataFromMap(definition.ExecutorConfig.Environment)
-	elog.WithField("env", envVarsForLogEntry).WithFields(fields).Debug("Received payload.")
+	elog.WithTraceField("payload", string(integrationJSON)).WithField("env", envVarsForLogEntry).WithFields(fields).Debug("Received payload.")
 
 	protocolVersion, err := protocol.VersionFromPayload(integrationJSON, e.forceProtocolV2ToV3)
 	if err != nil {

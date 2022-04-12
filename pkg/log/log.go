@@ -158,14 +158,11 @@ func WithFieldsF(lff func() logrus.Fields) Entry {
 }
 
 func WithTraceField(key string, value interface{}) Entry {
-	if w.l.IsLevelEnabled(logrus.TraceLevel) {
-		return WithTraceFieldsF(func() logrus.Fields {
-			return logrus.Fields{key: value}
-		})
-	}
-	return WithTraceFieldsF(func() logrus.Fields {
-		return logrus.Fields{}
-	})
+	return WithTraceFields(logrus.Fields{key: value})
+}
+
+func WithTraceFieldsF(lff func() logrus.Fields) Entry {
+	return WithTraceFields(lff())
 }
 
 func WithTraceFields(f logrus.Fields) Entry {
@@ -174,14 +171,8 @@ func WithTraceFields(f logrus.Fields) Entry {
 			return w.l.WithFields(f)
 		}
 	}
-	return WithTraceFieldsF(func() logrus.Fields {
-		return logrus.Fields{}
-	})
-}
-
-func WithTraceFieldsF(lff func() logrus.Fields) Entry {
 	return func() *logrus.Entry {
-		return w.l.WithFields(lff())
+		return logrus.NewEntry(w.l)
 	}
 }
 

@@ -168,20 +168,22 @@ func GetEnv(key string, dfault string, combineWith ...string) string {
 func LogStructureDetails(logEntry log.Entry, sample interface{}, name, phase string, optionalFields logrus.Fields) {
 	// prevent json marshall if debug is not enabled
 	if logEntry.IsDebugEnabled() {
+		if name != "" {
+			logEntry = logEntry.WithField("structure", name)
+		}
+		if phase != "" {
+			logEntry = logEntry.WithField("location", phase)
+		}
 		buffer, dErr := json.Marshal(sample)
-		logger := logEntry.WithFields(optionalFields).WithFields(logrus.Fields{
-			"structure": name,
-			"location":  phase,
-		})
 		if dErr != nil {
-			logger.WithError(dErr).Debug("Can't marshal sample.")
+			logEntry.WithError(dErr).Debug("Can't marshal sample.")
 		} else {
-			logger.WithFields(optionalFields).Debug(string(buffer))
+			logEntry.WithTraceField("payload", string(buffer)).WithFields(optionalFields).Debug("Received sampler payload")
 		}
 	}
 }
 
-// TraceSamplerStructureDetails transforms a Go structure into json and traces it if sampler feature trace is enabled
+// LogStructureDetails transforms a Go structure into json and traces it if sampler feature trace is enabled
 func TraceSamplerStructureDetails(logEntry log.Entry, sample interface{}, name, phase string, optionalFields logrus.Fields) {
 	if trace.IsEnabled(trace.SAMPLER) {
 		if name != "" {

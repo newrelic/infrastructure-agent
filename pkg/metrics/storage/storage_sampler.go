@@ -206,7 +206,7 @@ func (ss *Sampler) Sample() (samples sample.EventBatch, err error) {
 	// key: sample deviceKey
 	dev2Samples := map[string][]*Sample{}
 	for _, p := range partitions {
-		helpers.TraceSamplerStructureDetails(sslog, p, "Partition", "raw", logrus.Fields{"supported": true})
+		helpers.LogStructureDetails(sslog, p, "Partition", "raw", logrus.Fields{"supported": true})
 		// If there is a mountPointPrefix, this means we're most likely running inside a container.
 		// Mount points are reported from the perspective of the host. e.g. "/", "/data1"
 		//
@@ -221,7 +221,7 @@ func (ss *Sampler) Sample() (samples sample.EventBatch, err error) {
 			continue
 		}
 
-		helpers.TraceSamplerStructureDetails(sslog, fsUsage, "PartitionUsage", "raw", nil)
+		helpers.LogStructureDetails(sslog, fsUsage, "PartitionUsage", "raw", nil)
 
 		if cfg != nil && len(cfg.FileDevicesIgnored) > 0 {
 			found := false
@@ -265,13 +265,13 @@ func (ss *Sampler) Sample() (samples sample.EventBatch, err error) {
 		sslog.WithError(err).Warn("can't get IOCounters")
 		err = nil
 	} else {
-		helpers.TraceSamplerStructureDetails(sslog, ioCounters, "DiskIOCounters", "raw", nil)
+		helpers.LogStructureDetails(sslog, ioCounters, "DiskIOCounters", "raw", nil)
 
 		if ss.lastDiskStats != nil {
 			// This can start using a cache at some point
 			deviceToLogical := CalculateDeviceMapping(activeDevices, cfg != nil && cfg.IsContainerized)
 
-			helpers.TraceSamplerStructureDetails(sslog, deviceToLogical, "CalculateDeviceMappings", "raw", nil)
+			helpers.LogStructureDetails(sslog, deviceToLogical, "CalculateDeviceMappings", "raw", nil)
 
 			noDeviceMappedList := []logrus.Fields{}
 
@@ -284,7 +284,7 @@ func (ss *Sampler) Sample() (samples sample.EventBatch, err error) {
 						// Look through all accumulated Sample objects for this device. (There could be multiple
 						// objects for the same device if it's mounted in multiple locations.)
 						if deviceSamples, ok := dev2Samples[device]; ok {
-							sslog.WithFieldsF(func() logrus.Fields {
+							sslog.WithTraceFieldsF(func() logrus.Fields {
 								return logrus.Fields{
 									"device":    device,
 									"deviceKey": fmt.Sprintf("%+v", deviceKey),
@@ -325,7 +325,7 @@ func (ss *Sampler) Sample() (samples sample.EventBatch, err error) {
 	ss.lastSamples = samples
 
 	for _, s := range samples {
-		helpers.TraceSamplerStructureDetails(sslog, s.(*Sample), "StorageSample", "final", nil)
+		helpers.LogStructureDetails(sslog, s.(*Sample), "StorageSample", "final", nil)
 	}
 
 	return samples, nil

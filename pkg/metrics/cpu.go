@@ -4,7 +4,6 @@ package metrics
 
 import (
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"runtime/debug"
 
 	"github.com/shirou/gopsutil/v3/cpu"
@@ -33,7 +32,6 @@ func NewCPUMonitor(context agent.AgentContext) *CPUMonitor {
 }
 
 func (self *CPUMonitor) Sample() (sample *CPUSample, err error) {
-	log.Trace("monkey this is a test")
 	defer func() {
 		if panicErr := recover(); panicErr != nil {
 			err = fmt.Errorf("Panic in CPUMonitor.Sample: %v\nStack: %s", panicErr, debug.Stack())
@@ -46,7 +44,7 @@ func (self *CPUMonitor) Sample() (sample *CPUSample, err error) {
 	}
 
 	currentTimes, err := self.cpuTimes(false)
-	helpers.TraceSamplerStructureDetails(syslog, currentTimes, "CpuTimes", "raw", nil)
+	helpers.LogStructureDetails(syslog, currentTimes, "CpuTimes", "raw", nil)
 
 	// in container envs we might get an empty array and the code panics after this
 	if len(currentTimes) <= 0 {
