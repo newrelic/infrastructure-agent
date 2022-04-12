@@ -9,9 +9,6 @@ on:
       dest_prefix:
         description: 'Repo prefix'
         required: true
-  push:
-    branches:
-      - 'prerelease-on-demand_*'
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -21,8 +18,8 @@ env:
   # required for GHA publish action, should be moved into optional
   GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
   GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
-  BRANCH: ${{ inputs.branch }}
-  DEST_PREFIX: ${{ inputs.dest_prefix }}
+  BRANCH: ${{ github.event.inputs.branch }}
+  DEST_PREFIX: ${{ github.event.inputs.dest_prefix }}
   AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
   AWS_REGION: "us-east-1"
   AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
