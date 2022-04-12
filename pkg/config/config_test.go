@@ -179,6 +179,7 @@ proxy_validate_certificates: true
 win_removable_drives: false
 proxy_config_plugin: false
 trunc_text_values: false
+verbose: 4
 `
 	f, err := ioutil.TempFile("", "yaml_config_test")
 	c.Assert(err, IsNil)
@@ -200,6 +201,7 @@ trunc_text_values: false
 	c.Assert(cfg.WinRemovableDrives, Equals, false)
 	c.Assert(cfg.ProxyConfigPlugin, Equals, false)
 	c.Assert(cfg.TruncTextValues, Equals, false)
+	c.Assert(cfg.Verbose, Equals, 4)
 }
 
 func (s *ConfigSuite) TestEnv(c *C) {
