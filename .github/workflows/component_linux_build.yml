@@ -1,4 +1,4 @@
-name: Compile linux binaries
+name: ~ Linux | Compile binaries
 
 on:
   workflow_call:

@@ -1,4 +1,4 @@
-name: Run linux proxy tests
+name: ~ Linux |Run proxy tests
 
 on:
   workflow_call:
