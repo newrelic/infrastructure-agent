@@ -1,0 +1,6 @@
+---
+- name: 'install python on systems managed by brew'
+  raw: '/usr/local/bin/brew install python'
+  when: inventory_hostname is search(item)
+  loop: "{{ instances_without_python_brew }}"
+...

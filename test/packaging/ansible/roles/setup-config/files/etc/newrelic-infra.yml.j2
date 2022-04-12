@@ -32,3 +32,6 @@ display_name: {{ display_name }}
 verbose: {{ verbose }}
 staging: {{ staging }}
 enable_process_metrics: {{ enable_process_metrics }}
+{% if self_instrumentation %}
+self_instrumentation: "newrelic"
+{% endif %}

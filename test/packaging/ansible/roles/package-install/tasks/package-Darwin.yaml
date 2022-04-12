@@ -1,7 +1,3 @@
-- name: Brew update
-  become: false
-  command: /usr/local/bin/brew update
-
 - name: Stop launchctl service
   command: /usr/local/bin/brew services stop newrelic-infra-agent
 
@@ -13,23 +9,15 @@
 - name: cleanup | Remove files
   command: rm -rf /usr/local/Cellar/newrelic-infra-agent
 
-- name: cleanup | Install agent to fix permissions
-  become: false
-  command: /usr/local/bin/brew reinstall newrelic-infra-agent
-
-- name: cleanup | Uninstall agent
-  become: false
-  command: /usr/local/bin/brew uninstall newrelic-infra-agent
-
   # Avoid errors with commit hash on tag recreation
 - name: delete brew cache (avoid tag recreation commit error)
   file:
-    path: /Users/ec2-user/Library/Caches/Homebrew
+    path: "/Users/{{ ansible_user }}/Library/Caches/Homebrew"
     state: absent
 
 - name: Install agent
   become: false
-  command: /usr/local/bin/brew reinstall --formula --build-from-source /Users/ec2-user/newrelic-infra-agent.rb
+  command: "/usr/local/bin/brew reinstall --formula --build-from-source /Users/{{ ansible_user }}/newrelic-infra-agent.rb"
 
 - name: Start launchctl service
   command: /usr/local/bin/brew services start newrelic-infra-agent

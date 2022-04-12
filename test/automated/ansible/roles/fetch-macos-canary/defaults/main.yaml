@@ -1,5 +1,11 @@
 ---
 
+provider: "macstadium"
+#macstadium account api credentials
+macstadium_user: ""
+macstadium_pass: ""
+
+#aws ec2 hosts
 tag_name: "Name"
 tag_value: "canary:*:macos*"
 

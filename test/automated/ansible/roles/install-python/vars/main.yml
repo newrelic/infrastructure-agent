@@ -1,6 +1,0 @@
-instances_without_python:
-  - "amd64:centos8"
-  - "arm64:centos8"
-  - "amd64:centos-stream"
-  - "arm64:centos-stream"
-  - "amd64:redhat-8.4"

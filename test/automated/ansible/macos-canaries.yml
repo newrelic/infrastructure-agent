@@ -2,7 +2,7 @@
 
 - hosts: localhost
   become: false
-  gather_facts: yes
+  gather_facts: no
 
   tasks:
     - name: fetch macos canaries instances
@@ -10,6 +10,8 @@
         name: fetch-macos-canary
 
     - name: prepare macos canaries inventory data
+      vars:
+        username: administrator
       include_role:
         name: prepare-macos-canaries-inventory
 
