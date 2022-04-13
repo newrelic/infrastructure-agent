@@ -688,12 +688,6 @@ type Config struct {
 	// Public: No
 	Features map[string]bool `yaml:"features" envconfig:"features" public:"false"`
 
-	// FeatureTraces enables traces (verbose logs) for a given set of features, aimed to troubleshoot issues, available
-	// features at trace/features.go
-	// Default: ["connect"]
-	// Public: No
-	FeatureTraces []string `yaml:"trace" envconfig:"trace" public:"false"`
-
 	// RegisterConcurrency Amount of workers sending parallel requests for entity registration
 	// Default: 4
 	// Public: No
