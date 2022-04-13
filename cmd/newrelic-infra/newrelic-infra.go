@@ -60,7 +60,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/logs"
 	wlog "github.com/newrelic/infrastructure-agent/pkg/log"
-	"github.com/newrelic/infrastructure-agent/pkg/trace"
 )
 
 var (
@@ -211,8 +210,6 @@ func main() {
 
 	// Send logging where it's supposed to go.
 	agentLogsToFile := configureLogRedirection(cfg, memLog)
-
-	trace.EnableOn(cfg.FeatureTraces)
 
 	// Runtime config setup.
 	troubleCfg := config.NewTroubleshootCfg(cfg.IsTroubleshootMode(), agentLogsToFile, cfg.GetLogFile())
@@ -437,7 +434,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		FluentBitExePath:     c.FluentBitExePath,
 		FluentBitNRLibPath:   c.FluentBitNRLibPath,
 		FluentBitParsersPath: c.FluentBitParsersPath,
-		FluentBitVerbose:     c.Verbose != 0 && trace.IsEnabled(trace.LOG_FWD),
+		FluentBitVerbose:     c.Verbose != 0,
 	}
 	if fbIntCfg.IsLogForwarderAvailable() {
 		logCfgLoader := logs.NewFolderLoader(logFwCfg, agt.Context.Identity, agt.Context.HostnameResolver())

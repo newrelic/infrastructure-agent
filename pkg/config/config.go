@@ -1630,10 +1630,6 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 		logrus.SetLevel(logrus.TraceLevel)
 	}
 
-	for _, feature := range defaultTraces {
-		cfg.FeatureTraces = append(cfg.FeatureTraces, feature.String())
-	}
-
 	// dm URL is calculated based on collector url, it should be set before get it default value
 	cfg.MetricURL = calculateDimensionalMetricURL(cfg.CollectorURL, cfg.License, cfg.Staging, cfg.Fedramp)
 
