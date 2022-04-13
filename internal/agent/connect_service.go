@@ -13,7 +13,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/fingerprint"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
-	"github.com/newrelic/infrastructure-agent/pkg/trace"
 )
 
 type identityConnectService struct {
@@ -48,7 +47,7 @@ func (ic *identityConnectService) Connect() entity.Identity {
 			continue
 		}
 
-		trace.Connect(logger, "connect request with fingerprint: %+v", f)
+		logger.Tracef("connect request with fingerprint: %+v", f)
 
 		ids, retry, err := ic.client.Connect(f)
 
@@ -108,7 +107,7 @@ func (ic *identityConnectService) ConnectUpdate(agentIdn entity.Identity) (entit
 
 	var retryBO *backoff.Backoff
 	for {
-		trace.Connect(logger, "connect update request with fingerprint: %+v", f)
+		logger.Tracef("connect update request with fingerprint: %+v", f)
 		retry, entityIdn, err := ic.client.ConnectUpdate(agentIdn, f)
 		if retry.After > 0 {
 			logger.WithField("retryAfter", retry.After).Debug("Connect update retry requested.")

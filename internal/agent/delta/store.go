@@ -18,12 +18,9 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 
-	"github.com/newrelic/infrastructure-agent/pkg/disk"
-	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
-	"github.com/newrelic/infrastructure-agent/pkg/trace"
-
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/inventoryapi"
+	"github.com/newrelic/infrastructure-agent/pkg/disk"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 )
 
@@ -894,11 +891,6 @@ func (s *Store) updatePluginInventoryCache(pi *PluginInfo, entityKey string) (up
 		updated = false
 		return
 	}
-
-	trace.AttrOn(llog,
-		func() bool { return ids.CustomAttrsID.String() == pi.ID() },
-		"reap change, item: %+v", *pi,
-	)
 
 	err = s.storeDelta(pi, entityKey, del)
 	if err != nil {

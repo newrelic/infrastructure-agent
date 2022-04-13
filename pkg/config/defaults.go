@@ -101,7 +101,7 @@ var (
 	defaultProxyValidateCerts            = false
 	defaultProxyConfigPlugin             = true
 	defaultWinRemovableDrives            = true
-	defaultTraces                        = []trace.Feature{trace.CONN}
+	defaultTraces                        = []trace.Feature{}
 	defaultMetricsMatcherConfig          = IncludeMetricsMap{}
 	defaultRegisterMaxRetryBoSecs        = 60
 )
