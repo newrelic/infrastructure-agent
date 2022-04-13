@@ -72,6 +72,7 @@ jobs:
 
   molecule-packaing-tests:
     uses: newrelic/infrastructure-agent/.github/workflows/component_molecule_packaging.yml@master
+    needs: [publishing-to-s3-linux]
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
