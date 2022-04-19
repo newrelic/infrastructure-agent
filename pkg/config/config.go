@@ -1069,7 +1069,7 @@ type Config struct {
 	// Public: Yes
 	AgentMetricsEndpoint string `yaml:"agent_metrics_endpoint" envconfig:"agent_metrics_endpoint"`
 
-	// SelfInstrumentation Set the agent self instrumentation to be used (apm | otel)
+	// SelfInstrumentation Set the agent self instrumentation to be used. Valid values: newrelic
 	// if empty the agent will not be self instrumented
 	// Default: empty
 	// Public: No

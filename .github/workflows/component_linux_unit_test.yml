@@ -1,4 +1,4 @@
-name: Run validate and unit tests with coverage
+name: ~ Linux | Run validate and unit tests with coverage
 
 on:
   workflow_call:

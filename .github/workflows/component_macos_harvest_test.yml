@@ -1,4 +1,4 @@
-name: Run macOS harvest tests
+name: ~ macOS | Run harvest tests
 
 on:
   workflow_call:
