@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
+	network_helpers "github.com/newrelic/infrastructure-agent/pkg/helpers/network"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/testhelp/testemit"
-	network_helpers "github.com/newrelic/infrastructure-agent/pkg/helpers/network"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

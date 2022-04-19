@@ -13,8 +13,8 @@ import (
 	"sync"
 
 	"github.com/newrelic/infrastructure-agent/internal/gobackfill"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/constants"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/constants"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
