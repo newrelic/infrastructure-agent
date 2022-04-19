@@ -207,15 +207,17 @@ func main() {
 		})
 	}
 
-	configureLogFormat(cfg.LogFormat)
+	logCfg := config.NewLogConfig(cfg)
+
+	configureLogFormat(logCfg.LogFormat)
 
 	// Send logging where it's supposed to go.
-	agentLogsToFile := configureLogRedirection(cfg, memLog)
+	agentLogsToFile := configureLogRedirection(logCfg, memLog)
 
 	trace.EnableOn(cfg.FeatureTraces)
 
 	// Runtime config setup.
-	troubleCfg := config.NewTroubleshootCfg(cfg.IsTroubleshootMode(), agentLogsToFile, cfg.GetLogFile())
+	troubleCfg := config.NewTroubleshootCfg(logCfg.IsTroubleshootMode(), agentLogsToFile, logCfg.GetLogFile())
 	logFwCfg := config.NewLogForward(cfg, troubleCfg)
 
 	// If parsedConfig.MaxProcs < 1, leave GOMAXPROCS to its previous value,
@@ -559,7 +561,7 @@ func configureLogFormat(logFormat string) {
 // Either route standard logging to stdout (for Linux, so it gets copied to syslog as appropriate)
 // or copy it to stdout and a log file for Mac/Windows so we don't lose the logging when running
 // as a service.
-func configureLogRedirection(config *config.Config, memLog *wlog.MemLogger) (onFile bool) {
+func configureLogRedirection(config *config.LogConfig, memLog *wlog.MemLogger) (onFile bool) {
 	if config.LogFile == "" && !(config.IsTroubleshootMode() && systemd.IsAgentRunningOnSystemD()) {
 		wlog.SetOutput(os.Stdout)
 	} else {

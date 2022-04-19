@@ -1102,6 +1102,29 @@ func NewTroubleshootCfg(isTroubleshootMode, agentLogsToFile bool, agentLogFile s
 	return t
 }
 
+// LogConfig map all logging configuration options
+type LogConfig struct {
+	LogFile     string
+	LogLevel    logrus.Level
+	LogToStdout bool
+	LogFormat   string
+	Forward     bool
+}
+
+func NewLogConfig(config *Config) *LogConfig {
+	l := LogConfig{
+		LogFile:     config.LogFile,
+		LogLevel:    log.GetLevel(),
+		LogToStdout: config.LogToStdout,
+		LogFormat:   config.LogFormat,
+		Forward:     config.Verbose == TroubleshootLogging || config.Verbose == TraceTroubleshootLogging,
+	}
+	if config.LogFile == "" || config.LogFile == "true" {
+		l.LogFile = config.GetDefaultLogFile()
+	}
+	return &l
+}
+
 // LogForward log forwarder config values.
 type LogForward struct {
 	Troubleshoot Troubleshoot
@@ -1142,8 +1165,13 @@ func NewLogForward(config *Config, troubleshoot Troubleshoot) LogForward {
 
 // IsTroubleshootMode triggers FluentBit log forwarder to submit agent log. If agent is not running
 // under systemd service this mode enables agent logging to a log file (if not present already).
-func (c *Config) IsTroubleshootMode() bool {
-	return c.Verbose == TroubleshootLogging || c.Verbose == TraceTroubleshootLogging
+func (l *LogConfig) IsTroubleshootMode() bool {
+	return l.Forward
+}
+
+// GetLogFile provides configured log file.
+func (l *LogConfig) GetLogFile() string {
+	return l.LogFile
 }
 
 // GetDefaultLogFile sets log file to defined app data dir or default.
@@ -1152,15 +1180,6 @@ func (c *Config) GetDefaultLogFile() string {
 		return defaultLogFile
 	}
 	return filepath.Join(c.AppDataDir, "newrelic-infra.log")
-}
-
-// GetLogFile provides configured log file.
-func (c *Config) GetLogFile() string {
-	if c.LogFile == "" || c.LogFile == "true" {
-		return c.GetDefaultLogFile()
-	}
-
-	return c.LogFile
 }
 
 // LogInfo will log the configuration.

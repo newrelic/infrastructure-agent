@@ -24,7 +24,7 @@ func Test_configureLogRedirection(t *testing.T) {
 	require.NoError(t, err)
 
 	// When log redirection is configured to log file
-	assert.True(t, configureLogRedirection(&config.Config{
+	assert.True(t, configureLogRedirection(&config.LogConfig{
 		LogFile: logFile.Name(),
 	}, l))
 
