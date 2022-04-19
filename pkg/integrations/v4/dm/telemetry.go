@@ -14,7 +14,6 @@ import (
 	telemetry "github.com/newrelic/infrastructure-agent/pkg/backend/telemetryapi"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
-	"github.com/newrelic/infrastructure-agent/pkg/trace"
 )
 
 const noCalculationMadeErrMsg = "no calculation made"
@@ -35,7 +34,7 @@ func (l *telemetryErrLogger) Write(p []byte) (n int, err error) {
 		telemetryLogger.Debug(string(p))
 	case "audit":
 		// payload should be logged only when customer enabled dm.submission feature traces.
-		trace.Telemetry(telemetryLogger, string(p))
+		telemetryLogger.Trace(string(p))
 	}
 
 	return len(p), nil

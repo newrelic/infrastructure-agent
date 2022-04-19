@@ -12,7 +12,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
-	"github.com/newrelic/infrastructure-agent/pkg/trace"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 )
@@ -179,7 +178,7 @@ func (s *Supervisor) logLine(out []byte, channel string) {
 	// avoid feedback loops
 	if !strings.Contains(strOut, componentName) {
 		if s.traceOutput {
-			trace.LogFwdOutput(s.log, strOut)
+			s.log.Trace(strOut)
 			return
 		}
 

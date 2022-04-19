@@ -688,12 +688,6 @@ type Config struct {
 	// Public: No
 	Features map[string]bool `yaml:"features" envconfig:"features" public:"false"`
 
-	// FeatureTraces enables traces (verbose logs) for a given set of features, aimed to troubleshoot issues, available
-	// features at trace/features.go
-	// Default: ["connect"]
-	// Public: No
-	FeatureTraces []string `yaml:"trace" envconfig:"trace" public:"false"`
-
 	// RegisterConcurrency Amount of workers sending parallel requests for entity registration
 	// Default: 4
 	// Public: No
@@ -1628,10 +1622,6 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	case TraceLogging, TraceTroubleshootLogging:
 		log.SetLevel(logrus.TraceLevel)
 		logrus.SetLevel(logrus.TraceLevel)
-	}
-
-	for _, feature := range defaultTraces {
-		cfg.FeatureTraces = append(cfg.FeatureTraces, feature.String())
 	}
 
 	// dm URL is calculated based on collector url, it should be set before get it default value

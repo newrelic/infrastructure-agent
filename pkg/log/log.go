@@ -71,6 +71,18 @@ func (e Entry) Warnf(format string, args ...interface{}) {
 	}
 }
 
+func (e Entry) Trace(msg string) {
+	if w.l.IsLevelEnabled(logrus.TraceLevel) {
+		e().Trace(msg)
+	}
+}
+
+func (e Entry) Tracef(format string, args ...interface{}) {
+	if w.l.IsLevelEnabled(logrus.TraceLevel) {
+		e().Tracef(format, args...)
+	}
+}
+
 func (e Entry) Error(msg string) {
 	if w.l.IsLevelEnabled(logrus.ErrorLevel) {
 		if w.smartVerboseEnabled() {

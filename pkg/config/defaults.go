@@ -4,8 +4,6 @@ package config
 
 import (
 	"os/user"
-
-	"github.com/newrelic/infrastructure-agent/pkg/trace"
 )
 
 const (
@@ -101,7 +99,6 @@ var (
 	defaultProxyValidateCerts            = false
 	defaultProxyConfigPlugin             = true
 	defaultWinRemovableDrives            = true
-	defaultTraces                        = []trace.Feature{trace.CONN}
 	defaultMetricsMatcherConfig          = IncludeMetricsMap{}
 	defaultRegisterMaxRetryBoSecs        = 60
 )

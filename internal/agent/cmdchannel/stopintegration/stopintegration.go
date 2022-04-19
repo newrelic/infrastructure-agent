@@ -17,7 +17,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track/ctx"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
-	"github.com/newrelic/infrastructure-agent/pkg/trace"
 	"github.com/shirou/gopsutil/v3/process"
 )
 
@@ -33,7 +32,7 @@ func NewHandler(tracker *track.Tracker, il integration.InstancesLookup, dmEmitte
 			return cmdchannel.ErrOSNotSupported
 		}
 
-		trace.CmdReq(l, "stop integration request received")
+		l.Trace("stop integration request received")
 
 		var args runintegration.RunIntArgs
 		if err = json.Unmarshal(cmd.Args, &args); err != nil {
