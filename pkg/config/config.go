@@ -323,6 +323,18 @@ type Config struct {
 	// Public: Yes
 	LogFile string `yaml:"log_file" envconfig:"log_file"`
 
+	// Log is a map of custom logging configurations. Separate keys and values with colons :, as in KEY: VALUE, and
+	// separate each key-value pair with a line break. Key-value can be any of the following:
+	// "file: path/to/file.log" defines the log file path
+	// "format: json" logging format (json, text)
+	// "level: debug" logrus log level (error, warning, info, smart, debug, trace)
+	// "forward: true" boolean to sent logs to New Relic platform
+	// "stdout: true" boolean to print logs to stdout
+	//valid YAML except slashes /. Values can be any YAML string, including spaces.
+	// Default: none
+	// Public: Yes
+	Log LogConfig `yaml:"log" envconfig:"log"`
+
 	// PidFile contains the location on Linux where the pid file of the agent process is created. It is used at startup
 	// to ensure that no other instances of the agent are running.
 	// Default: /var/run/newrelic-infra/newrelic-infra.pid
@@ -1096,6 +1108,61 @@ func NewTroubleshootCfg(isTroubleshootMode, agentLogsToFile bool, agentLogFile s
 	return t
 }
 
+// LogConfig map all logging configuration options
+type LogConfig struct {
+	File     string `yaml:"file"`
+	Level    string `yaml:"level"`
+	Format   string `yaml:"format"`
+	Forward  *bool  `yaml:"forward,omitempty"`
+	ToStdout *bool  `yaml:"stdout,omitempty"`
+	smart    bool
+	logLevel logrus.Level
+}
+
+func coalesce(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func coalesceBool(values ...*bool) bool {
+	for _, value := range values {
+		if value != nil {
+			return *value
+		}
+	}
+	return false
+}
+
+func (config *Config) LoadLogConfig() error {
+	// backwards compatability with verbose configuration option
+	config.LogFile = coalesce(config.Log.File, config.LogFile)
+	config.LogFormat = coalesce(config.Log.Format, config.LogFormat)
+	config.LogToStdout = coalesceBool(config.Log.ToStdout, &config.LogToStdout)
+	switch config.Log.Level {
+	case "smart":
+		config.Verbose = SmartVerboseLogging
+	case "warn", "info", "error":
+		config.Verbose = 0
+	case "debug":
+		config.Verbose = VerboseLogging
+	case "trace":
+		config.Verbose = TraceLogging
+	}
+	if config.Log.Forward != nil && *config.Log.Forward {
+		switch config.Log.Level {
+		case "debug":
+			config.Verbose = TroubleshootLogging
+		case "trace":
+			config.Verbose = TraceTroubleshootLogging
+		}
+	}
+	return nil
+}
+
 // LogForward log forwarder config values.
 type LogForward struct {
 	Troubleshoot Troubleshoot
@@ -1610,6 +1677,13 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	cfg.License = strings.TrimSpace(cfg.License)
 	if !license.IsValid(cfg.License) {
 		err = fmt.Errorf("invalid license: %s, check agent's config file or NRIA_LICENSE_KEY environment variable", cfg.License)
+		return
+	}
+
+	// Map new Log configuration to old Verbose level
+	err = cfg.LoadLogConfig()
+	if err != nil {
+		err = fmt.Errorf("invalid log configuration: %w", err)
 		return
 	}
 

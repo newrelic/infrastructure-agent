@@ -35,6 +35,10 @@ custom_attributes:
    my_group:  test group
    agent_role:  test role
 remove_entities_period: 1h
+log:
+   file: agent.log
+   forward: true
+   level: debug
 `
 	f, err := ioutil.TempFile("", "opsmatic_config_test")
 	c.Assert(err, IsNil)
@@ -59,6 +63,9 @@ remove_entities_period: 1h
 	c.Assert(cfg.CustomAttributes["my_group"], Equals, "test group")
 	c.Assert(cfg.CustomAttributes["agent_role"], Equals, "test role")
 	c.Assert(cfg.RemoveEntitiesPeriod, Equals, "1h")
+	c.Assert(cfg.Log.Level, Equals, "debug")
+	c.Assert(*cfg.Log.Forward, Equals, true)
+	c.Assert(cfg.Log.File, Equals, "agent.log")
 }
 
 func (s *ConfigSuite) TestParseConfigBadLicense(c *C) {
@@ -214,6 +221,10 @@ license_key: abc123
 	defer os.Unsetenv("NRIA_PROXY_VALIDATE_CERTIFICATES")
 	os.Setenv("NRIA_INCLUDE_MATCHING_METRICS", "process.name:\n - regex \"kube*\" \n")
 	defer os.Unsetenv("NRIA_INCLUDE_MATCHING_METRICS")
+	os.Setenv("NRIA_LOG_FILE", "agent.log")
+	defer os.Unsetenv("NRIA_LOG_FILE")
+	os.Setenv("NRIA_LOG_LEVEL", "debug")
+	defer os.Unsetenv("NRIA_LOG_LEVEL")
 
 	f, err := ioutil.TempFile("", "yaml_config_test")
 	c.Assert(err, IsNil)
@@ -225,6 +236,9 @@ license_key: abc123
 	c.Assert(cfg.IgnoreReclaimable, Equals, true)
 	c.Assert(cfg.ProxyValidateCerts, Equals, true)
 	c.Assert(fmt.Sprintf("%v", cfg.IncludeMetricsMatchers), Equals, "map[process.name:[regex \"kube*\"]]")
+	fmt.Printf("%#v\n", cfg.Log)
+	c.Assert(cfg.Log.Level, Equals, "debug")
+	c.Assert(cfg.Log.File, Equals, "agent.log")
 }
 
 func (s *ConfigSuite) TestWrongFormatDurations(c *C) {
@@ -639,6 +653,58 @@ proxy: ${var1}
 	assert.True(t, cfg.Staging)
 	assert.Equal(t, "xxx", cfg.License)
 	assert.Equal(t, "10.0.2.2:8888", cfg.Proxy)
+}
+
+func TestLoadYamlConfig_withLogVariables(t *testing.T) {
+	yamlData := []byte(`
+log:
+  file: agent.log
+  format: json
+  level: trace
+  forward: true
+  stdout: true
+license_key: "xxx"
+`)
+
+	tmp, err := createTestFile(yamlData)
+	require.NoError(t, err)
+	defer os.Remove(tmp.Name())
+
+	cfg, err := LoadConfig(tmp.Name())
+
+	require.NoError(t, err)
+
+	assert.Equal(t, "xxx", cfg.License)
+	assert.Equal(t, "agent.log", cfg.LogFile)
+	assert.Equal(t, "json", cfg.LogFormat)
+	assert.Equal(t, true, cfg.LogToStdout)
+	assert.Equal(t, TraceTroubleshootLogging, cfg.Verbose)
+}
+
+func TestLoadLogConfig(t *testing.T) {
+	toPtr := func(a bool) *bool {
+		return &a
+	}
+	var logConfigs = []struct {
+		name    string
+		c       Config
+		verbose int
+	}{
+		{"Empty configuration", Config{Log: LogConfig{}}, NonVerboseLogging},
+		{"Debug and forward disabled", Config{Log: LogConfig{Level: "debug", Forward: toPtr(false)}}, VerboseLogging},
+		{"Debug and forward enabled", Config{Log: LogConfig{Level: "debug", Forward: toPtr(true)}}, TroubleshootLogging},
+		{"Trace and forward disabled", Config{Log: LogConfig{Level: "trace", Forward: toPtr(false)}}, TraceLogging},
+		{"Trace and forward enabled", Config{Log: LogConfig{Level: "trace", Forward: toPtr(true)}}, TraceTroubleshootLogging},
+	}
+
+	for _, tt := range logConfigs {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, NonVerboseLogging, tt.c.Verbose)
+			err := tt.c.LoadLogConfig()
+			assert.Nil(t, err)
+			assert.Equal(t, tt.verbose, tt.c.Verbose)
+		})
+	}
 }
 
 func TestLoadYamlConfig_withDatabindAndEnvVars(t *testing.T) {
