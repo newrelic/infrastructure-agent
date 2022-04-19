@@ -1,4 +1,4 @@
-name: Purge CDN
+name: ~ Purge CDN
 
 on:
   workflow_call:

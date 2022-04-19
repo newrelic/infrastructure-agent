@@ -1,4 +1,4 @@
-name: Publish to S3
+name: ~ Windows | Publish to S3
 
 on:
   workflow_call:

@@ -81,7 +81,10 @@ Function EmbedFluentBit {
 
     [string]$nrfbUrl = "https://github.com/newrelic-experimental/fluent-bit-package/releases/download/$nrfbVersion/fb-windows-$arch.zip"
     DownloadAndExtractZip -dest:"$downloadPath\logging\nrfb" -url:"$nrfbUrl"
-    
+
+    # rename fluent-bit binary name to old name
+    Rename-Item -Path "$downloadPath\logging\nrfb\td-agent-bit.exe" -NewName "fluent-bit.exe"
+
     if (-Not $skipSigning) {
         SignExecutable -executable "$downloadPath\logging\nrfb\fluent-bit.exe"
     }

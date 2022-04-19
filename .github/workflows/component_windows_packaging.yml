@@ -1,5 +1,5 @@
-#TBD
-name: Produce packages for windows
+#TBD - some arguments were not possible to pass
+name: ~ Windows | Produce packages
 
 on:
   workflow_call:
