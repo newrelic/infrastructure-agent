@@ -1798,7 +1798,7 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	cfg.PluginInstanceDirs = helpers.RemoveEmptyAndDuplicateEntries(
 		[]string{cfg.PluginDir, defaultPluginInstanceDir, filepath.Join(cfg.AgentDir, defaultPluginActiveConfigsDir)})
 
-	if !isConfigDefined("log_file", cfgMetadata) && runtime.GOOS == "windows" {
+	if cfg.LogFile == "" && runtime.GOOS == "windows" {
 		cfg.LogFile = "true"
 	}
 
