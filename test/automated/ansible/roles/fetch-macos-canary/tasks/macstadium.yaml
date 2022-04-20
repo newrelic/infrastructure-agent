@@ -1,0 +1,10 @@
+---
+  # using curl as ansible.builtin.uri has some trouble with auth
+- name: "retrieve instances information"
+  shell: "curl -H 'Accept: application/json' -H 'Content-Type: application/json' -X GET -u '{{ macstadium_user }}:{{ macstadium_pass }}' https://api.macstadium.com/core/api/servers"
+  register: curl_result
+
+- name: "register instances attributes"
+  set_fact:
+    registered_instances_macos: "{{ (curl_result.stdout  | from_json) | community.general.json_query('[*].{InstanceId: id, PublicIpAddress: ip, Name: name}') }}"
+...

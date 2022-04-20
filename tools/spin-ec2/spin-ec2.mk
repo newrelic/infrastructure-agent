@@ -17,7 +17,8 @@ ec2: ec2-install-deps ec2-build
 
 .PHONY: canaries
 canaries: PREFIX ?= canary
-canaries: REPO ?= "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
+canaries: REPO ?= http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent
+canaries: PLATFORM ?= "all"
 canaries: validate-aws-credentials ec2-install-deps ec2-build
 ifndef NR_LICENSE_KEY
 	@echo "NR_LICENSE_KEY variable must be provided for \"make canaries\""
@@ -31,8 +32,24 @@ ifndef ANSIBLE_PASSWORD
 	@echo "ANSIBLE_PASSWORD variable must be provided for \"make canaries\""
 	exit 1
 endif
-	@read -p "Verify that you are in the VPN if needed and press any key to continue"
-	tools/spin-ec2/bin/spin-ec2 canaries provision -v 'v$(VERSION)' -l '$(NR_LICENSE_KEY)' -x '$(ANSIBLE_PASSWORD)' -f '$(PREFIX)' -r '$(REPO)'
+ifndef MACSTADIUM_USER
+	@echo "MACSTADIUM_USER (MacStadium account username for API) variable must be provided for \"make canaries\""
+	exit 1
+endif
+ifndef MACSTADIUM_PASS
+	@echo "MACSTADIUM_PASS (MacStadium account passowrd for API) variable must be provided for \"make canaries\""
+	exit 1
+endif
+	@read -p "Verify that you are in the correct VPN if needed and press any key to continue"
+	tools/spin-ec2/bin/spin-ec2 canaries provision \
+									-v 'v$(VERSION)' \
+									-l '$(NR_LICENSE_KEY)' \
+									-x '$(ANSIBLE_PASSWORD)' \
+									-f '$(PREFIX)' \
+									-r '$(REPO)' \
+									-p '$(PLATFORM)' \
+									-u '$(MACSTADIUM_USER)' \
+									-z '$(MACSTADIUM_PASS)'
 
 .PHONY: canaries-prune-dry
 canaries-prune-dry: validate-aws-credentials ec2-install-deps ec2-build
