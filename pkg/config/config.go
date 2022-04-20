@@ -330,7 +330,6 @@ type Config struct {
 	// "level: debug" logrus log level (error, warning, info, smart, debug, trace)
 	// "forward: true" boolean to sent logs to New Relic platform
 	// "stdout: true" boolean to print logs to stdout
-	//valid YAML except slashes /. Values can be any YAML string, including spaces.
 	// Default: none
 	// Public: Yes
 	Log LogConfig `yaml:"log" envconfig:"log"`
