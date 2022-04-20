@@ -330,6 +330,7 @@ type Config struct {
 	// "level: debug" logrus log level (error, warning, info, smart, debug, trace)
 	// "forward: true" boolean to sent logs to New Relic platform
 	// "stdout: true" boolean to print logs to stdout
+	// "smart_level_entry_limit: 50" number of entries that will be cached before being flushed (default: 1000)
 	// Default: none
 	// Public: Yes
 	Log LogConfig `yaml:"log" envconfig:"log"`
@@ -1109,13 +1110,12 @@ func NewTroubleshootCfg(isTroubleshootMode, agentLogsToFile bool, agentLogFile s
 
 // LogConfig map all logging configuration options
 type LogConfig struct {
-	File     string `yaml:"file"`
-	Level    string `yaml:"level"`
-	Format   string `yaml:"format"`
-	Forward  *bool  `yaml:"forward,omitempty"`
-	ToStdout *bool  `yaml:"stdout,omitempty"`
-	smart    bool
-	logLevel logrus.Level
+	File                 string `yaml:"file" envconfig:"file"`
+	Level                string `yaml:"level" envconfig:"level"`
+	Format               string `yaml:"format" envconfig:"format"`
+	Forward              *bool  `yaml:"forward,omitempty" envconfig:"forward"`
+	ToStdout             *bool  `yaml:"stdout,omitempty" envconfig:"stdout"`
+	SmartLevelEntryLimit *int   `yaml:"smart_level_entry_limit,omitempty" envconfig:"smart_level_entry_limit"`
 }
 
 func coalesce(values ...string) string {
@@ -1141,6 +1141,9 @@ func (config *Config) LoadLogConfig() error {
 	config.LogFile = coalesce(config.Log.File, config.LogFile)
 	config.LogFormat = coalesce(config.Log.Format, config.LogFormat)
 	config.LogToStdout = coalesceBool(config.Log.ToStdout, &config.LogToStdout)
+	if config.Log.SmartLevelEntryLimit != nil {
+		config.SmartVerboseModeEntryLimit = *config.Log.SmartLevelEntryLimit
+	}
 	switch config.Log.Level {
 	case "smart":
 		config.Verbose = SmartVerboseLogging

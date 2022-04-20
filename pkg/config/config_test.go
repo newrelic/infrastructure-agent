@@ -236,7 +236,6 @@ license_key: abc123
 	c.Assert(cfg.IgnoreReclaimable, Equals, true)
 	c.Assert(cfg.ProxyValidateCerts, Equals, true)
 	c.Assert(fmt.Sprintf("%v", cfg.IncludeMetricsMatchers), Equals, "map[process.name:[regex \"kube*\"]]")
-	fmt.Printf("%#v\n", cfg.Log)
 	c.Assert(cfg.Log.Level, Equals, "debug")
 	c.Assert(cfg.Log.File, Equals, "agent.log")
 }
@@ -631,6 +630,32 @@ func Test_ParseIncludeMatchingRule_EnvVar(t *testing.T) {
 	assert.True(t, reflect.DeepEqual(cfg.IncludeMetricsMatchers, expected))
 }
 
+func Test_ParseLogConfigRule_EnvVar(t *testing.T) {
+	os.Setenv("NRIA_LOG_FILE", "agent.log")
+	defer os.Unsetenv("NRIA_LOG_FILE")
+	os.Setenv("NRIA_LOG_LEVEL", "smart")
+	defer os.Unsetenv("NRIA_LOG_LEVEL")
+	os.Setenv("NRIA_LOG_FORMAT", "json")
+	defer os.Unsetenv("NRIA_LOG_FORMAT")
+	os.Setenv("NRIA_LOG_STDOUT", "false")
+	defer os.Unsetenv("NRIA_LOG_STDOUT")
+	os.Setenv("NRIA_LOG_SMART_LEVEL_ENTRY_LIMIT", "50")
+	defer os.Unsetenv("NRIA_LOG_SMART_LEVEL_ENTRY_LIMIT")
+
+	configStr := "license_key: abc123"
+	f, err := ioutil.TempFile("", "yaml_config_test")
+	assert.NoError(t, err)
+	f.WriteString(configStr)
+	f.Close()
+
+	cfg, err := LoadConfig(f.Name())
+	assert.NoError(t, err)
+	expectedStdout := false
+	expectedSmartLevelEntryLimit := 50
+	expected := LogConfig{File: "agent.log", Level: "smart", Format: "json", ToStdout: &expectedStdout, Forward: nil, SmartLevelEntryLimit: &expectedSmartLevelEntryLimit}
+	assert.True(t, reflect.DeepEqual(cfg.Log, expected))
+}
+
 func TestLoadYamlConfig_withDatabindJSONVariables(t *testing.T) {
 	yamlData := []byte(`
 variables:
@@ -660,9 +685,9 @@ func TestLoadYamlConfig_withLogVariables(t *testing.T) {
 log:
   file: agent.log
   format: json
-  level: trace
-  forward: true
+  level: smart
   stdout: true
+  smart_level_entry_limit: 5
 license_key: "xxx"
 `)
 
@@ -678,7 +703,8 @@ license_key: "xxx"
 	assert.Equal(t, "agent.log", cfg.LogFile)
 	assert.Equal(t, "json", cfg.LogFormat)
 	assert.Equal(t, true, cfg.LogToStdout)
-	assert.Equal(t, TraceTroubleshootLogging, cfg.Verbose)
+	assert.Equal(t, 5, cfg.SmartVerboseModeEntryLimit)
+	assert.Equal(t, SmartVerboseLogging, cfg.Verbose)
 }
 
 func TestLoadLogConfig(t *testing.T) {
