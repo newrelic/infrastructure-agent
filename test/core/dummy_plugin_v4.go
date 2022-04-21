@@ -5,6 +5,7 @@ package core
 
 import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/config"
+	v3 "github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v3"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/dm"
 	"testing"
 
@@ -72,7 +73,7 @@ func InventoryDatasetsForPayload(t *testing.T, payload []byte) (dss []agent.Plug
 	r := fwrequest.NewFwRequest(def, nil, nil, dataV4)
 	for _, ds := range r.Data.DataSets {
 
-		legacyDS := config_v3.BuildInventoryDataSet(
+		legacyDS := v3.BuildInventoryDataSet(
 			log.WithComponent("test"),
 			ds.Inventory,
 			nil,

@@ -4,6 +4,8 @@ package agent
 
 import (
 	"compress/gzip"
+	v3 "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v3"
+	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v3/config"
 	dm2 "github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/dm"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/emitter"
 	"net/http"
@@ -115,7 +117,8 @@ func (ae *Emulator) RunAgent() error {
 	tracker := track.NewTracker(dmEmitter)
 	il := newInstancesLookup(ae.integrationCfg)
 	integrationEmitter := emitter.NewIntegrationEmittor(ae.agent, dmEmitter, ffManager)
-	integrationManager := v4.NewManager(ae.integrationCfg, integrationEmitter, il, definitionQ, terminateDefinitionQ, configEntryQ, tracker, ae.agent.Context.IDLookup())
+	pluginRegistry := &config2.PluginRegistry{}
+	integrationManager := v4.NewManager(ae.integrationCfg, integrationEmitter, il, definitionQ, terminateDefinitionQ, configEntryQ, tracker, ae.agent.Context.IDLookup(), pluginRegistry)
 
 	// Start all plugins we want the agent to run.
 	if err = plugins.RegisterPlugins(ae.agent); err != nil {

@@ -5,6 +5,7 @@ package testemit
 import (
 	"errors"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v3/config"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/dm"
 	protocol2 "github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/protocol"
 	"sync"
@@ -64,7 +65,7 @@ func (t *RecordEmitter) Emit(metadata integration.Definition, extraLabels data.M
 		return nil
 	}
 
-	data, _, err := config_v3.ParsePayload(json, false)
+	data, _, err := config.ParsePayload(json, false)
 	if err != nil {
 		return err
 	}
