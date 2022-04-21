@@ -20,16 +20,21 @@
     msg: "Cannot retrieve tag {{ target_agent_version }} commit"
   when: http_result.json.object.sha is not defined
 
-- name: set agent_version for template
-  set_fact:
-    target_agent_revision: "{{ http_result.json.object.sha }}"
+- name: download brew formula
+  ansible.builtin.get_url:
+    url: "https://raw.githubusercontent.com/Homebrew/homebrew-core/master/Formula/newrelic-infra-agent.rb"
+    dest: "/Users/{{ ansible_user }}/newrelic-infra-agent.rb"
 
-- name: Copy latest brew formula
-  template:
-    src: newrelic-infra-agent.rb.j2
-    dest: /Users/ec2-user/newrelic-infra-agent.rb
-    owner: ec2-user
-    group: wheel
-    mode: 0644
+- name: replace tag
+  ansible.builtin.replace:
+    path: "/Users/{{ ansible_user }}/newrelic-infra-agent.rb"
+    regexp: 'tag:(\s+)"[0-9\.]+",$'
+    replace: 'tag:\1"{{ target_agent_version }}",'
+
+- name: replace revision
+  ansible.builtin.replace:
+    path: "/Users/{{ ansible_user }}/newrelic-infra-agent.rb"
+    regexp: 'revision:(\s+)"[a-f0-9]+"$'
+    replace: 'revision:\1"{{ http_result.json.object.sha }}"'
 
 ...

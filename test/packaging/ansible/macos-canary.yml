@@ -1,6 +1,6 @@
 ---
 
-- hosts: macos_previous
+- hosts: testing_hosts_macos
   become: true
   gather_facts: yes
 
@@ -11,28 +11,6 @@
           env_vars:
 
         block:
-          - name: setup config
-            include_role:
-              name: setup-config
-            vars:
-              verbose_level: '0'
-
-          - name: restart agent
-            include_role:
-              name: agent-restart
-
-- hosts: macos_current
-  become: true
-  gather_facts: yes
-
-  tasks:
-      - name: Installation tests suite
-        vars:
-          agent_user: root
-          env_vars:
-
-        block:
-
           - name: repo setup
             include_role:
               name: repo-setup
@@ -42,6 +20,7 @@
               name: setup-config
             vars:
               verbose_level: '0'
+              self_instrumentation: true
 
           - name: install agent
             include_role:

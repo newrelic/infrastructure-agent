@@ -1,6 +1,6 @@
 ---
 
-- hosts: testing_hosts
+- hosts: testing_hosts_linux
   become: true
   gather_facts: no
 
@@ -30,3 +30,18 @@
     - name: Configure logrotate
       include_role:
         name: logrotate
+
+- hosts: testing_hosts_macos
+  become: false
+  gather_facts: no
+  vars:
+    ansible_python_interpreter: /usr/bin/python
+  tasks:
+    - name: install brew
+      include_role:
+        name: install-brew
+    - name: install python
+      include_role:
+        name: install-python
+
+

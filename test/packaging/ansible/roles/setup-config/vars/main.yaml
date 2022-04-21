@@ -11,5 +11,6 @@ product: 'integrations'
 owning_team: 'caos'
 project: 'infrastructure-agent'
 enable_process_metrics: 'true'
+self_instrumentation: false
 
 ...

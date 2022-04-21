@@ -7,6 +7,8 @@ type canaryConf struct {
 	ansiblePassword string
 	prefix          string
 	repo            string
+	macstadiumUser  string
+	macstadiumPass  string
 }
 
 func (c canaryConf) shouldProvisionLinux() bool {
