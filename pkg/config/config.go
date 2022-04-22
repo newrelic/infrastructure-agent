@@ -328,7 +328,7 @@ type Config struct {
 	// "file: path/to/file.log" defines the log file path
 	// "format: json" logging format (json, text)
 	// "level: debug" logrus log level (error, warning, info, smart, debug, trace)
-	// "forward: true" boolean to sent logs to New Relic platform
+	// "forward: true" boolean to send logs to New Relic platform
 	// "stdout: true" boolean to print logs to stdout
 	// "smart_level_entry_limit: 50" number of entries that will be cached before being flushed (default: 1000)
 	// Default: none
@@ -1136,8 +1136,8 @@ func coalesceBool(values ...*bool) bool {
 	return false
 }
 
-func (config *Config) LoadLogConfig() error {
-	// backwards compatability with verbose configuration option
+func (config *Config) loadLogConfig() error {
+	// backwards compatability with non struct log configuration options
 	config.LogFile = coalesce(config.Log.File, config.LogFile)
 	config.LogFormat = coalesce(config.Log.Format, config.LogFormat)
 	config.LogToStdout = coalesceBool(config.Log.ToStdout, &config.LogToStdout)
@@ -1683,7 +1683,7 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	}
 
 	// Map new Log configuration to old Verbose level
-	err = cfg.LoadLogConfig()
+	err = cfg.loadLogConfig()
 	if err != nil {
 		err = fmt.Errorf("invalid log configuration: %w", err)
 		return

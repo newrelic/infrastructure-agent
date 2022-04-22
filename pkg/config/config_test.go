@@ -726,7 +726,7 @@ func TestLoadLogConfig(t *testing.T) {
 	for _, tt := range logConfigs {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, NonVerboseLogging, tt.c.Verbose)
-			err := tt.c.LoadLogConfig()
+			err := tt.c.loadLogConfig()
 			assert.Nil(t, err)
 			assert.Equal(t, tt.verbose, tt.c.Verbose)
 		})
