@@ -9,7 +9,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/fixtures"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/fixtures"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"

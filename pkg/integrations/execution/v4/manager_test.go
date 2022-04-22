@@ -10,7 +10,7 @@ import (
 	v3 "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v3"
 	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v3/config"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/config"
-	fixtures2 "github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/fixtures"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/fixtures"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/protocol"
 	"io/ioutil"
 	"os"
@@ -53,14 +53,14 @@ func getExe(exec config.ShlexOpt) string {
 var v4File = `---
 integrations:
   - name: hello-test
-    exec: ` + getExe(testhelp.GoRun(fixtures2.SimpleGoFile, "hello")) + `
+    exec: ` + getExe(testhelp.GoRun(fixtures.SimpleGoFile, "hello")) + `
   - name: goodbye-test
-    exec: ` + getExe(testhelp.GoRun(fixtures2.SimpleGoFile, "goodbye")) + "\n"
+    exec: ` + getExe(testhelp.GoRun(fixtures.SimpleGoFile, "goodbye")) + "\n"
 
 var v4FileWithConfigYAML = `---
 integrations:
   - name: config-test
-    exec: ` + getExe(testhelp.GoRun(fixtures2.ValidYAMLGoFile, "${config.path}")) + `
+    exec: ` + getExe(testhelp.GoRun(fixtures.ValidYAMLGoFile, "${config.path}")) + `
     config:
       event_type: YAMLEvent
       map:
@@ -73,7 +73,7 @@ integrations:
 var v4LongTimeConfig = `---
 integrations:
   - name: longtime
-    exec: ` + getExe(testhelp.GoRun(fixtures2.LongTimeGoFile, "longtime")) + "\n"
+    exec: ` + getExe(testhelp.GoRun(fixtures.LongTimeGoFile, "longtime")) + "\n"
 
 // for Hot reload test, you only have to append a line with an extra argument
 // to change the integration configuration
@@ -83,14 +83,14 @@ integrations:
     exec:
       - ` + testhelp.GoCommand() + `
       - run
-      - ` + string(fixtures2.LongTimeGoFile) + "\n"
+      - ` + string(fixtures.LongTimeGoFile) + "\n"
 
 var v4FileWithNriDockerNameAndDockerFF = `---
 integrations:
   - name: nri-docker
     when:
       feature: docker_enabled
-    exec: ` + getExe(testhelp.GoRun(fixtures2.SimpleGoFile, "hello"))
+    exec: ` + getExe(testhelp.GoRun(fixtures.SimpleGoFile, "hello"))
 
 var v4FileWithContinuousNriDocker = `---
 integrations:
@@ -100,12 +100,12 @@ integrations:
     exec:
       - ` + testhelp.GoCommand() + `
       - run
-      - ` + string(fixtures2.LongTimeGoFile) + "\n"
+      - ` + string(fixtures.LongTimeGoFile) + "\n"
 
 var v4FileWithWhen = `---
 integrations:
   - name: hello-test
-    exec: ` + getExe(testhelp.GoRun(fixtures2.SimpleGoFile, "hello")) + `
+    exec: ` + getExe(testhelp.GoRun(fixtures.SimpleGoFile, "hello")) + `
     when:
       file_exists: %s
 `
@@ -113,7 +113,7 @@ integrations:
 var v4VerboseCheck = `---
 integrations:
   - name: verbose-check
-    exec: ` + getExe(testhelp.GoRun(fixtures2.EnvironmentGoFile)) + `
+    exec: ` + getExe(testhelp.GoRun(fixtures.EnvironmentGoFile)) + `
     env:
       THIS_IS_A_TEST: true
       GOTMPDIR: %s
@@ -123,28 +123,28 @@ integrations:
 var v4CmdRequest = `---
 integrations:
   - name: cmdreq
-    exec: ` + getExe(testhelp.GoRun(fixtures2.CmdReqGoFile)) + "\n"
+    exec: ` + getExe(testhelp.GoRun(fixtures.CmdReqGoFile)) + "\n"
 
 var v4CfgReqV3Payload = `---
 integrations:
   - name: cfgreq
     env:
       STDOUT_TYPE: v3
-    exec: ` + getExe(testhelp.GoRun(fixtures2.CfgReqGoFile)) + "\n"
+    exec: ` + getExe(testhelp.GoRun(fixtures.CfgReqGoFile)) + "\n"
 
 var v4CfgReqV4Payload = `---
 integrations:
   - name: cfgreq
     env:
       STDOUT_TYPE: v4
-    exec: ` + getExe(testhelp.GoRun(fixtures2.CfgReqGoFile)) + "\n"
+    exec: ` + getExe(testhelp.GoRun(fixtures.CfgReqGoFile)) + "\n"
 
 var v4CfgReqRecursive = `---
 integrations:
   - name: cfgreq-recursive
     env:
       STDOUT_TYPE: cfgreq
-    exec: ` + getExe(testhelp.GoRun(fixtures2.CfgReqGoFile)) + "\n"
+    exec: ` + getExe(testhelp.GoRun(fixtures.CfgReqGoFile)) + "\n"
 
 var passthroughEnv = []string{"GOCACHE", "GOPATH", "HOME", "PATH", "LOCALAPPDATA"}
 
@@ -158,7 +158,6 @@ func TestManager_StartIntegrations(t *testing.T) {
 	// GIVEN a set of configuration files
 	dir, err := tempFiles(map[string]string{
 		"v4-integrations.yaml": v4File,
-		"v3-config.yaml":       v3File, // it will be ignored
 	})
 	require.NoError(t, err)
 	defer removeTempFiles(t, dir)
@@ -194,7 +193,7 @@ func TestManager_IntegrationProtocolV4(t *testing.T) {
 		"kubernetes-like.yml": `
 integrations:
   - name: nri-kubernetes
-    exec: ` + getExe(testhelp.GoRun(fixtures2.HugeGoFile)),
+    exec: ` + getExe(testhelp.GoRun(fixtures.HugeGoFile)),
 	})
 	require.NoError(t, err)
 	defer removeTempFiles(t, dir)
@@ -220,7 +219,7 @@ func TestManager_ProtocolV4(t *testing.T) {
 		"protocol_v4.yml": `
 integrations:
   - name: nri-protocol-v4
-    exec: ` + getExe(testhelp.GoRun(fixtures2.ProtocolV4GoFile)),
+    exec: ` + getExe(testhelp.GoRun(fixtures.ProtocolV4GoFile)),
 	})
 	require.NoError(t, err)
 	defer removeTempFiles(t, dir)
@@ -247,7 +246,7 @@ integrations:
 	<-finish
 }
 
-func TestManager_SkipLoadingV3IntegrationsWithNoWarnings(t *testing.T) {
+func TestManager_ErrorLoadingV3IntegrationsIfNoDefinition(t *testing.T) {
 	log.SetOutput(ioutil.Discard)  // discard logs so not to break race tests
 	defer log.SetOutput(os.Stderr) // return back to default
 	hook := new(test.Hook)
@@ -256,7 +255,7 @@ func TestManager_SkipLoadingV3IntegrationsWithNoWarnings(t *testing.T) {
 	// GIVEN a set of configuration files
 	dir, err := tempFiles(map[string]string{
 		"v4-integrations.yaml": v4File,
-		"v3-config.yaml":       v3File, // it will be ignored
+		"v3-config.yaml":       v3File, // will fail due to definition missing
 	})
 	require.NoError(t, err)
 	defer removeTempFiles(t, dir)
@@ -266,11 +265,14 @@ func TestManager_SkipLoadingV3IntegrationsWithNoWarnings(t *testing.T) {
 	pluginRegistry := &config2.PluginRegistry{}
 	_ = NewManager(Configuration{ConfigFolders: []string{dir}}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{}, pluginRegistry)
 
-	// THEN no long entries found
+	// THEN no log entries found
 	for i := range hook.AllEntries() {
 		fmt.Println(hook.AllEntries()[i]) // Use stdout as logger is in discard mode and we never run tests in verbose
 	}
-	assert.Empty(t, hook.AllEntries())
+	assert.Equal(t, "can't load integrations file", hook.AllEntries()[0].Message)
+	assert.Equal(t, "v3-config.yaml", hook.AllEntries()[0].Data["file"])
+
+	assert.Len(t, hook.AllEntries(), 1)
 }
 
 func TestManager_LogWarningForInvalidYaml(t *testing.T) {
@@ -280,7 +282,6 @@ func TestManager_LogWarningForInvalidYaml(t *testing.T) {
 	// GIVEN a set of configuration files
 	dir, err := tempFiles(map[string]string{
 		"v4-integrations.yaml": invalidFile,
-		"v3-config.yaml":       v3File, // it will be ignored
 	})
 	require.NoError(t, err)
 	defer removeTempFiles(t, dir)
@@ -500,8 +501,8 @@ func TestManager_PassthroughEnv(t *testing.T) {
 	niDir, err := ioutil.TempDir("", "newrelic-integrations")
 	require.NoError(t, err)
 	defer removeTempFiles(t, niDir)
-	execPath := filepath.Join(niDir, "nri-simple"+fixtures2.CmdExtension)
-	require.NoError(t, testhelp.GoBuild(fixtures2.SimpleGoFile, execPath))
+	execPath := filepath.Join(niDir, "nri-simple"+fixtures.CmdExtension)
+	require.NoError(t, testhelp.GoBuild(fixtures.SimpleGoFile, execPath))
 	configDir, err := tempFiles(map[string]string{
 		"my-configs.yml": `
 integrations:
@@ -534,8 +535,8 @@ func TestManager_PassthroughEnv_Priorities(t *testing.T) {
 	require.NoError(t, err)
 	defer removeTempFiles(t, niDir)
 
-	execPath := filepath.Join(niDir, "nri-simple"+fixtures2.CmdExtension)
-	require.NoError(t, testhelp.GoBuild(fixtures2.SimpleGoFile, execPath))
+	execPath := filepath.Join(niDir, "nri-simple"+fixtures.CmdExtension)
+	require.NoError(t, testhelp.GoBuild(fixtures.SimpleGoFile, execPath))
 	configDir, err := tempFiles(map[string]string{
 		"my-configs.yml": `
 integrations:
@@ -571,13 +572,13 @@ func TestManager_LegacyIntegrations(t *testing.T) {
 	skipIfWindows(t)
 	// GIVEN a v3 definitions folder with its compiled binaries
 	definitionsDir, err := tempFiles(map[string]string{
-		"longtime-definition.yml": fixtures2.LongtimeDefinition,
+		"longtime-definition.yml": fixtures.LongtimeDefinition,
 	})
 	require.NoError(t, err)
 	defer removeTempFiles(t, definitionsDir)
 	binDir := filepath.Join(definitionsDir, "bin")
 	require.NoError(t, os.Mkdir(binDir, 0777))
-	require.NoError(t, testhelp.GoBuild(fixtures2.LongTimeGoFile, filepath.Join(binDir, "longtime"+fixtures2.CmdExtension)))
+	require.NoError(t, testhelp.GoBuild(fixtures.LongTimeGoFile, filepath.Join(binDir, "longtime"+fixtures.CmdExtension)))
 
 	// AND a v4 configuration folder that references commands from the above definitions
 	configDir, err := tempFiles(map[string]string{
@@ -621,13 +622,13 @@ func TestManager_LegacyIntegrations_PassthroughEnv(t *testing.T) {
 	skipIfWindows(t)
 	// GIVEN a v3 definitions folder with its compiled binaries
 	definitionsDir, err := tempFiles(map[string]string{
-		"longtime-definition.yml": fixtures2.LongtimeDefinition,
+		"longtime-definition.yml": fixtures.LongtimeDefinition,
 	})
 	require.NoError(t, err)
 	defer removeTempFiles(t, definitionsDir)
 	binDir := filepath.Join(definitionsDir, "bin")
 	require.NoError(t, os.Mkdir(binDir, 0777))
-	require.NoError(t, testhelp.GoBuild(fixtures2.LongTimeGoFile, filepath.Join(binDir, "longtime"+fixtures2.CmdExtension)))
+	require.NoError(t, testhelp.GoBuild(fixtures.LongTimeGoFile, filepath.Join(binDir, "longtime"+fixtures.CmdExtension)))
 
 	// AND a v4 configuration folder that references a command from the above definitions
 	configDir, err := tempFiles(map[string]string{
@@ -672,10 +673,10 @@ func TestManager_NamedIntegration(t *testing.T) {
 	ciDir, err := ioutil.TempDir("", "custom integrations") // using spaces to make sure they are not taken as different arguments
 	require.NoError(t, err)
 	defer removeTempFiles(t, ciDir)
-	execPath1 := filepath.Join(niDir, "nri-longtime"+fixtures2.CmdExtension)
-	execPath2 := filepath.Join(ciDir, "nri-simple"+fixtures2.CmdExtension)
-	require.NoError(t, testhelp.GoBuild(fixtures2.LongTimeGoFile, execPath1))
-	require.NoError(t, testhelp.GoBuild(fixtures2.SimpleGoFile, execPath2))
+	execPath1 := filepath.Join(niDir, "nri-longtime"+fixtures.CmdExtension)
+	execPath2 := filepath.Join(ciDir, "nri-simple"+fixtures.CmdExtension)
+	require.NoError(t, testhelp.GoBuild(fixtures.LongTimeGoFile, execPath1))
+	require.NoError(t, testhelp.GoBuild(fixtures.SimpleGoFile, execPath2))
 
 	// AND a v4 configuration file that references the above commands only by name
 	configDir, err := tempFiles(map[string]string{
@@ -713,8 +714,8 @@ func TestManager_NamedIntegrationWithConfig(t *testing.T) {
 	niDir, err := ioutil.TempDir("", "newrelic-integrations")
 	require.NoError(t, err)
 	defer removeTempFiles(t, niDir)
-	execPath := filepath.Join(niDir, "nri-validyaml"+fixtures2.CmdExtension)
-	require.NoError(t, testhelp.GoBuild(fixtures2.ValidYAMLGoFile, execPath))
+	execPath := filepath.Join(niDir, "nri-validyaml"+fixtures.CmdExtension)
+	require.NoError(t, testhelp.GoBuild(fixtures.ValidYAMLGoFile, execPath))
 
 	// AND a v4 named integration with an embedded config
 	configDir, err := tempFiles(map[string]string{
@@ -1136,8 +1137,8 @@ func TestManager_ExpandsConfigEnvVars(t *testing.T) {
 	niDir, err := ioutil.TempDir("", "newrelic-integrations")
 	require.NoError(t, err)
 	defer removeTempFiles(t, niDir)
-	execPath := filepath.Join(niDir, "nri-validyaml"+fixtures2.CmdExtension)
-	require.NoError(t, testhelp.GoBuild(fixtures2.ValidYAMLGoFile, execPath))
+	execPath := filepath.Join(niDir, "nri-validyaml"+fixtures.CmdExtension)
+	require.NoError(t, testhelp.GoBuild(fixtures.ValidYAMLGoFile, execPath))
 
 	// AND a v4 named integration with an embedded config
 	configDir, err := tempFiles(map[string]string{

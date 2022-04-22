@@ -7,7 +7,7 @@ package v4
 
 import (
 	"context"
-	fixtures2 "github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/fixtures"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/fixtures"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -94,7 +94,7 @@ func TestLongRunning_HeartBeat(t *testing.T) {
 	// GIVEN a long running integration sending a heartbeat
 	niDir, err := ioutil.TempDir("", "newrelic-integrations")
 	require.NoError(t, err)
-	require.NoError(t, testhelp.GoBuild(fixtures2.LongRunningHBGoFile, filepath.Join(niDir, "heartbeating"+fixtures2.CmdExtension)))
+	require.NoError(t, testhelp.GoBuild(fixtures.LongRunningHBGoFile, filepath.Join(niDir, "heartbeating"+fixtures.CmdExtension)))
 
 	// AND a v4 configuration file specifying a timeout larger than this heartbeat
 	// but lower than the metrics submission rate

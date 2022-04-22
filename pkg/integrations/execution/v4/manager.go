@@ -556,6 +556,9 @@ func (mgr *Manager) loadConfigIntoBytes(path string) ([]byte, error) {
 func (mgr *Manager) loadConfig(path string) (config2.YAML, error) {
 	bytes, err := mgr.loadConfigIntoBytes(path)
 	cy := config2.YAML{}
+	if err != nil {
+		return cy, err
+	}
 
 	bytes, err = envvar.ExpandInContent(bytes)
 	if err != nil {

@@ -20,3 +20,23 @@ var (
 	FileContentsFromEnvCmd = testhelp.Script("unsupported-test-case")
 	EchoFromEnv            = testhelp.Script("unsupported-test-case")
 )
+
+const CmdExtension = ".exe"
+
+const LongtimeDefinition = `
+name: com.newrelic.longtime
+description: Testing fixture for backwards v3 plugin compatibility
+protocol_version: I don't really care. Plugins v4 ignores this
+os: I don't really care
+
+commands:
+  hello:
+    command:
+      - .\bin\longtime.exe
+      - hello
+    interval: 15
+  use_env:
+    command:
+      - .\bin\longtime.exe
+    interval: 15
+`
