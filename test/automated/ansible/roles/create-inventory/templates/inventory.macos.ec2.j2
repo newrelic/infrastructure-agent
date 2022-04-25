@@ -5,6 +5,10 @@ localhost ansible_connection=local
 macos_current
 macos_previous
 
+[testing_hosts_macos:children]
+macos_current
+macos_previous
+
 [macos_previous]
 {% for ins in instances_info_previous %}
 {{ ins.name }} ansible_host={{ ins.ip }} ansible_user={{ ins.username }} ansible_python_interpreter={{ ins.python_interpreter }} iid={{ ins.iid }}

@@ -1,0 +1,11 @@
+instances_without_python_dnf:
+  - "amd64:centos8"
+  - "arm64:centos8"
+  - "amd64:centos-stream"
+  - "arm64:centos-stream"
+  - "amd64:redhat-8.4"
+
+instances_without_python_brew:
+  - "amd64:macos10"
+  - "amd64:macos11"
+  - "amd64:macos12"

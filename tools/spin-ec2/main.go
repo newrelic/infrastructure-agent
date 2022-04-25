@@ -1,10 +1,13 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/mod/semver"
+	"net/http"
 
 	"log"
 	"math/rand"
@@ -256,8 +259,16 @@ func cliMode() {
 	viper.BindPFlag("prefix", cmdProvision.PersistentFlags().Lookup("prefix"))
 
 	// Repository endpoint
-	cmdProvision.PersistentFlags().StringP("repo", "r", "", "package repository url ")
+	cmdProvision.PersistentFlags().StringP("repo", "r", "", "package repository url")
 	viper.BindPFlag("repo", cmdProvision.PersistentFlags().Lookup("repo"))
+
+	// Macstadium api user
+	cmdProvision.PersistentFlags().StringP("macstadium_user", "u", "", "MacStadium api user")
+	viper.BindPFlag("macstadium_user", cmdProvision.PersistentFlags().Lookup("macstadium_user"))
+
+	// Macstadium api pass
+	cmdProvision.PersistentFlags().StringP("macstadium_pass", "z", "", "MacStadium api pass")
+	viper.BindPFlag("macstadium_pass", cmdProvision.PersistentFlags().Lookup("macstadium_pass"))
 
 	var cmdPrune = &cobra.Command{
 		Use:   "prune",
@@ -282,6 +293,8 @@ func canaryConfFromArgs() (canaryConf, error) {
 	ansiblePassword := viper.GetString("ansible_password")
 	prefix := viper.GetString("prefix")
 	repo := viper.GetString("repo")
+	macstadiumUser := viper.GetString("macstadium_user")
+	macstadiumPass := viper.GetString("macstadium_pass")
 
 	if !semver.IsValid(agentVersion) {
 		return canaryConf{}, fmt.Errorf("agent version '%s' doesn't match the pattern 'vmajor.minor.patch' format",
@@ -295,6 +308,8 @@ func canaryConfFromArgs() (canaryConf, error) {
 		ansiblePassword: ansiblePassword,
 		prefix:          prefix,
 		repo:            repo,
+		macstadiumUser:  macstadiumUser,
+		macstadiumPass:  macstadiumPass,
 	}, nil
 }
 
@@ -332,28 +347,52 @@ func provisionCanaries(cmd *cobra.Command, args []string) error {
 
 func provisionMacosCanaries(cnf canaryConf) error {
 
+	// Get the latest release to be installed as previous (pre-release will be current)
+	previousVersion, err := latestRelease()
+	if err != nil {
+		return err
+	}
+	currentVersion := cnf.agentVersion[1:]
+	if previousVersion == currentVersion {
+		return errors.New("current and previous version should not be the same")
+	}
+
 	curPath, err := os.Getwd()
 	if err != nil {
 		return err
 	}
 
 	execNameArgs("ansible-playbook",
+		"-e", "macstadium_user="+cnf.macstadiumUser,
+		"-e", "macstadium_pass="+cnf.macstadiumPass,
 		"-i", path.Join(curPath, inventoryLocal),
 		path.Join(curPath, "test/automated/ansible/macos-canaries.yml"))
 
-	//rename the ansible hostname to include agent version. This is temporary until we provision macos on demand
-	execNameArgs("sed", "-i.bak", fmt.Sprintf("s/canary:current/%s:%s/g", cnf.prefix, cnf.agentVersion), path.Join(curPath, inventoryMacos))
+	// Rename the ansible hostname to include agent version. This is temporary until we provision macos on demand
+	// pre-release		--> current
+	// latest release	--> previous
+	execNameArgs("sed", "-i.bak", fmt.Sprintf("s/canary:current/%s:%s/g", cnf.prefix, currentVersion), path.Join(curPath, inventoryMacos))
+	execNameArgs("sed", "-i.bak", fmt.Sprintf("s/canary:previous/%s:%s/g", cnf.prefix, previousVersion), path.Join(curPath, inventoryMacos))
 	execNameArgs("rm", fmt.Sprintf("%s.bak", path.Join(curPath, inventoryMacos)))
 
-	var argumentsMacos = []string{
+	var argumentsMacosCurrent = []string{
+		"--limit", "macos_current",
 		"-e", "nr_license_key=" + cnf.license,
-		"-e", "target_agent_version=" + cnf.agentVersion[1:],
+		"-e", "target_agent_version=" + currentVersion,
 		"-i", path.Join(curPath, inventoryMacos),
+		path.Join(curPath, "test/packaging/ansible/macos-canary.yml"),
 	}
 
-	argumentsMacos = append(argumentsMacos, path.Join(curPath, "test/packaging/ansible/macos-canary.yml"))
+	var argumentsMacosPrevious = []string{
+		"--limit", "macos_previous",
+		"-e", "nr_license_key=" + cnf.license,
+		"-e", "target_agent_version=" + previousVersion,
+		"-i", path.Join(curPath, inventoryMacos),
+		path.Join(curPath, "test/packaging/ansible/macos-canary.yml"),
+	}
 
-	execNameArgs("ansible-playbook", argumentsMacos...)
+	execNameArgs("ansible-playbook", argumentsMacosCurrent...)
+	execNameArgs("ansible-playbook", argumentsMacosPrevious...)
 
 	return nil
 }
@@ -423,6 +462,12 @@ func provisionEphimeralCanaries(cnf canaryConf) error {
 	if cnf.ansiblePassword != "" {
 		playbookArguments = append(playbookArguments, "-e", "ansible_password="+cnf.ansiblePassword)
 	}
+	if cnf.macstadiumUser != "" {
+		playbookArguments = append(playbookArguments, "-e", "macstadium_user="+cnf.macstadiumUser)
+	}
+	if cnf.macstadiumPass != "" {
+		playbookArguments = append(playbookArguments, "-e", "macstadium_pass="+cnf.macstadiumPass)
+	}
 
 	if provisionOpts.renderArgs() != "" {
 		playbookArguments = append(playbookArguments, provisionOpts.renderArgs())
@@ -451,4 +496,29 @@ func pruneCanaries(cmd *cobra.Command, args []string) error {
 	}
 
 	return terminateInstances(idsToTerminate, instances, dryRun)
+}
+
+// latestRelease returns tha latest release (pre-released not taken into account)
+func latestRelease() (string, error) {
+	req, err := http.NewRequest("GET", "https://api.github.com/repos/newrelic/infrastructure-agent/releases/latest", nil)
+	req.Header.Add("Accept", "application/vnd.github.v3+json")
+	if err != nil {
+		return "", err
+	}
+
+	cl := http.Client{}
+	response, err := cl.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer response.Body.Close()
+
+	var release struct {
+		TagName string `json:"tag_name"`
+	}
+	err = json.NewDecoder(response.Body).Decode(&release)
+	if err != nil {
+		return "", err
+	}
+	return release.TagName, nil
 }

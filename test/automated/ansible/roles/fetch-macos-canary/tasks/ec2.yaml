@@ -1,0 +1,11 @@
+---
+
+- name: "retrieve instances information"
+  shell: "aws ec2 describe-instances --filters Name=tag:{{ tag_name }},Values={{ tag_value }}"
+  register: instances_information_macos
+
+- name: "register instances attributes"
+  set_fact:
+    registered_instances_macos: "{{ (instances_information_macos.stdout  | from_json) | community.general.json_query('Reservations[*].Instances[*].{InstanceId: InstanceId, ImageId: ImageId, PublicIpAddress: PublicIpAddress, Architecture: Architecture, Name:Tags[?Key==`Name`]|[0].Value}') | list | flatten }}"
+
+...
