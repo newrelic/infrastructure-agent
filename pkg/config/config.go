@@ -323,6 +323,18 @@ type Config struct {
 	// Public: Yes
 	LogFile string `yaml:"log_file" envconfig:"log_file"`
 
+	// Log is a map of custom logging configurations. Separate keys and values with colons :, as in KEY: VALUE, and
+	// separate each key-value pair with a line break. Key-value can be any of the following:
+	// "file: path/to/file.log" defines the log file path
+	// "format: json" logging format (json, text)
+	// "level: debug" logrus log level (error, warning, info, smart, debug, trace)
+	// "forward: true" boolean to send logs to New Relic platform
+	// "stdout: true" boolean to print logs to stdout
+	// "smart_level_entry_limit: 50" number of entries that will be cached before being flushed (default: 1000)
+	// Default: none
+	// Public: Yes
+	Log LogConfig `yaml:"log" envconfig:"log"`
+
 	// PidFile contains the location on Linux where the pid file of the agent process is created. It is used at startup
 	// to ensure that no other instances of the agent are running.
 	// Default: /var/run/newrelic-infra/newrelic-infra.pid
@@ -1096,6 +1108,63 @@ func NewTroubleshootCfg(isTroubleshootMode, agentLogsToFile bool, agentLogFile s
 	return t
 }
 
+// LogConfig map all logging configuration options
+type LogConfig struct {
+	File                 string `yaml:"file" envconfig:"file"`
+	Level                string `yaml:"level" envconfig:"level"`
+	Format               string `yaml:"format" envconfig:"format"`
+	Forward              *bool  `yaml:"forward,omitempty" envconfig:"forward"`
+	ToStdout             *bool  `yaml:"stdout,omitempty" envconfig:"stdout"`
+	SmartLevelEntryLimit *int   `yaml:"smart_level_entry_limit,omitempty" envconfig:"smart_level_entry_limit"`
+}
+
+func coalesce(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func coalesceBool(values ...*bool) bool {
+	for _, value := range values {
+		if value != nil {
+			return *value
+		}
+	}
+	return false
+}
+
+func (config *Config) loadLogConfig() error {
+	// backwards compatability with non struct log configuration options
+	config.LogFile = coalesce(config.Log.File, config.LogFile)
+	config.LogFormat = coalesce(config.Log.Format, config.LogFormat)
+	config.LogToStdout = coalesceBool(config.Log.ToStdout, &config.LogToStdout)
+	if config.Log.SmartLevelEntryLimit != nil {
+		config.SmartVerboseModeEntryLimit = *config.Log.SmartLevelEntryLimit
+	}
+	switch config.Log.Level {
+	case "smart":
+		config.Verbose = SmartVerboseLogging
+	case "warn", "info", "error":
+		config.Verbose = 0
+	case "debug":
+		config.Verbose = VerboseLogging
+	case "trace":
+		config.Verbose = TraceLogging
+	}
+	if config.Log.Forward != nil && *config.Log.Forward {
+		switch config.Log.Level {
+		case "debug":
+			config.Verbose = TroubleshootLogging
+		case "trace":
+			config.Verbose = TraceTroubleshootLogging
+		}
+	}
+	return nil
+}
+
 // LogForward log forwarder config values.
 type LogForward struct {
 	Troubleshoot Troubleshoot
@@ -1613,6 +1682,13 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 		return
 	}
 
+	// Map new Log configuration to old Verbose level
+	err = cfg.loadLogConfig()
+	if err != nil {
+		err = fmt.Errorf("invalid log configuration: %w", err)
+		return
+	}
+
 	// For now, make any level of verbosity between [1,3] printing out debugging info
 	// until we refactor and use the corresponding level for each value
 	switch cfg.Verbose {
@@ -1724,7 +1800,7 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	cfg.PluginInstanceDirs = helpers.RemoveEmptyAndDuplicateEntries(
 		[]string{cfg.PluginDir, defaultPluginInstanceDir, filepath.Join(cfg.AgentDir, defaultPluginActiveConfigsDir)})
 
-	if !isConfigDefined("log_file", cfgMetadata) && runtime.GOOS == "windows" {
+	if cfg.LogFile == "" && runtime.GOOS == "windows" {
 		cfg.LogFile = "true"
 	}
 
