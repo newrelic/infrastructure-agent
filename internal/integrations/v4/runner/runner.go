@@ -168,6 +168,9 @@ func LogFields(def integration.Definition) logrus.Fields {
 		fields["cfg_protocol_name"] = def.CfgProtocol.ConfigName
 		fields["parent_integration_name"] = def.CfgProtocol.ParentName
 	}
+
+	fields["runner_uid"] = def.Hash()[:10]
+
 	return fields
 }
 
