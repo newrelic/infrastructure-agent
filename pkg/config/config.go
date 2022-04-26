@@ -53,6 +53,9 @@ var clog = log.WithComponent("Configuration")
 // Configuration type to Map include_matching_metrics setting env var
 type IncludeMetricsMap map[string][]string
 
+// Logging filters
+type LogFilters map[string][]interface{}
+
 //
 // IMPORTANT NOTE: If you add new config fields, consider checking the ignore list in
 // the plugins/agent_config.go plugin to not send undesired fields as inventory
@@ -1110,12 +1113,13 @@ func NewTroubleshootCfg(isTroubleshootMode, agentLogsToFile bool, agentLogFile s
 
 // LogConfig map all logging configuration options
 type LogConfig struct {
-	File                 string `yaml:"file" envconfig:"file"`
-	Level                string `yaml:"level" envconfig:"level"`
-	Format               string `yaml:"format" envconfig:"format"`
-	Forward              *bool  `yaml:"forward,omitempty" envconfig:"forward"`
-	ToStdout             *bool  `yaml:"stdout,omitempty" envconfig:"stdout"`
-	SmartLevelEntryLimit *int   `yaml:"smart_level_entry_limit,omitempty" envconfig:"smart_level_entry_limit"`
+	File                 string     `yaml:"file" envconfig:"file"`
+	Level                string     `yaml:"level" envconfig:"level"`
+	Format               string     `yaml:"format" envconfig:"format"`
+	Forward              *bool      `yaml:"forward,omitempty" envconfig:"forward"`
+	ToStdout             *bool      `yaml:"stdout,omitempty" envconfig:"stdout"`
+	SmartLevelEntryLimit *int       `yaml:"smart_level_entry_limit,omitempty" envconfig:"smart_level_entry_limit"`
+	Filters              LogFilters `yaml:"filters,omitempty" envconfig:"filters"`
 }
 
 func coalesce(values ...string) string {
@@ -1998,6 +2002,19 @@ func (c *CustomAttributeMap) DataMap() (d data.Map) {
 }
 
 func (i *IncludeMetricsMap) Decode(value string) error {
+	data := []byte(value)
+
+	// Clear current Map
+	for k := range *i {
+		delete(*i, k)
+	}
+
+	if err := yaml.Unmarshal(data, i); err != nil {
+		return err
+	}
+	return nil
+}
+func (i *LogFilters) Decode(value string) error {
 	data := []byte(value)
 
 	// Clear current Map
