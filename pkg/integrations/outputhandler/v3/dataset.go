@@ -21,8 +21,7 @@ const (
 	entityMetricsLengthWarnMgs = "metric attributes exceeds 240 limit, some might be lost"
 
 	// These two constants can be found in V4 integrations as well
-	labelPrefix     = "label."
-	labelPrefixTrim = 6
+	labelPrefix = "label."
 )
 
 const (
