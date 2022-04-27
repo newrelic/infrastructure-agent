@@ -207,7 +207,7 @@ func main() {
 		})
 	}
 
-	configureLogFormat(cfg)
+	configureLogFormat(cfg.Log)
 
 	// Send logging where it's supposed to go.
 	agentLogsToFile := configureLogRedirection(cfg, memLog)
@@ -541,10 +541,10 @@ func newInstancesLookup(cfg v4.Configuration) integration.InstancesLookup {
 }
 
 // configureLogFormat checks the config and sets the log format accordingly.
-func configureLogFormat(cfg *config.Config) {
+func configureLogFormat(cfg config.LogConfig) {
 	// get default logrus formatter
 	var formatter logrus.Formatter = wlog.GetFormatter()
-	if cfg.LogFormat == config.LogFormatJSON {
+	if cfg.Format == config.LogFormatJSON {
 		jsonFormatter := &logrus.JSONFormatter{
 			DataKey: "context",
 
@@ -555,8 +555,8 @@ func configureLogFormat(cfg *config.Config) {
 		formatter = jsonFormatter
 	}
 	// filters are only available in the log configuration object
-	if len(cfg.Log.Filters) > 0 {
-		formatter = format.NewFieldFormatter(cfg.Log.Filters, formatter)
+	if len(cfg.Filters) > 0 {
+		formatter = format.NewFieldFormatter(cfg.Filters, formatter)
 	}
 	wlog.SetFormatter(formatter)
 }
