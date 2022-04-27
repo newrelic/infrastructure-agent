@@ -1,13 +1,13 @@
 package fwrequest
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/protocol"
 	"strconv"
 	"strings"
 
-	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 )
 

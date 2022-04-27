@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/testhelp"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/testhelp"
 	"github.com/newrelic/infrastructure-agent/test/cfgprotocol/agent"
 	"github.com/shirou/gopsutil/v3/process"
 	"github.com/stretchr/testify/assert"
