@@ -14,7 +14,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/sirupsen/logrus"
-	"regexp"
 )
 
 const (
@@ -34,11 +33,8 @@ const (
 )
 
 var (
-	DefaultInheritedEnv = []string{"PATH"}
-	// finds matches of either ${blahblah} or $blahblha (and groups them)
-	regex, _ = regexp.Compile(`\$\{(.+?)[}]|\$(.+)`)
-	rlog     = log.WithComponent("PluginRunner")
-	logLRU   = lru.New(1000) // avoid flooding the log with violations for the same entity
+	rlog   = log.WithComponent("PluginRunner")
+	logLRU = lru.New(1000) // avoid flooding the log with violations for the same entity
 )
 
 func EmitDataSet(
