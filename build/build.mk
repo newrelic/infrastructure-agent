@@ -1,5 +1,6 @@
 SOURCE_FILES ?=./pkg/... ./cmd/... ./internal/... ./test/...
 SOURCE_FILES_DIR ?= $(CURDIR)/pkg $(CURDIR)/cmd $(CURDIR)/internal $(CURDIR)/test
+TESTS_DATABIND = ./test/databind/...
 TEST_PATTERN ?=.
 TEST_OPTIONS ?=
 ALL_PACKAGES ?= $(shell $(GO_BIN) list ./cmd/...)
@@ -28,7 +29,8 @@ TEST_FLAGS += -ldflags '-X github.com/newrelic/infrastructure-agent/internal/int
 export GO111MODULE := on
 export PATH := $(PROJECT_WORKSPACE)/bin:$(PATH)
 
-GO_TEST ?= test $(TEST_OPTIONS) $(TEST_FLAGS) $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=10m
+GO_TEST ?= test $(TEST_OPTIONS) --tags=slow $(TEST_FLAGS) $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=30m
+GO_TEST_DATABIND ?= test $(TEST_OPTIONS) --tags=databind $(TEST_FLAGS) $(TESTS_DATABIND) -run $(TEST_PATTERN) -timeout=30m
 GO_FMT 	?= gofmt -s -w -l $(SOURCE_FILES_DIR)
 
 .PHONY: deps
@@ -41,14 +43,32 @@ deps:
 	@$(GO_BIN) mod vendor
 	@echo '[go-get] Done.'
 
-.PHONY: test-coverage
-test-coverage: TEST_FLAGS += -covermode=atomic -coverprofile=$(COVERAGE_FILE)
-test-coverage: deps
+.PHONY: unit-test-with-coverage
+unit-test-with-coverage: TEST_FLAGS += -covermode=atomic -coverprofile=$(COVERAGE_FILE)
+unit-test-with-coverage: deps
 	@printf '\n================================================================\n'
 	@printf 'Target: test-coverage'
 	@printf '\n================================================================\n'
 	@echo '[test] Testing packages: $(SOURCE_FILES)'
 	$(GO_BIN) $(GO_TEST)
+
+#.PHONY: slow-unit-tests
+#test-coverage-with-slow: deps
+#	@printf '\n================================================================\n'
+#	@printf 'Target: test-slow'
+#	@printf '\n================================================================\n'
+#	@echo '[test] Testing packages: $(SOURCE_FILES)'
+#	$(GO_BIN) $(GO_TEST_WITH_SLOW)
+#	@echo '[test] Converting: $(COVERAGE_FILE) into lcov.info'
+#	@(gcov2lcov -infile=$(COVERAGE_FILE) -outfile=lcov.info)
+
+.PHONY: databind-test
+databind-test: deps
+	@printf '\n================================================================\n'
+	@printf 'Target: test-slow'
+	@printf '\n================================================================\n'
+	@echo '[test] Testing packages: $(TESTS_DATABIND)'
+	$(GO_BIN) $(GO_TEST_DATABIND)
 
 .PHONY: test
 test: deps test-only
