@@ -1,12 +1,15 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 //go:build slow
-// +build slow
+//+build slow
 
 package v4
 
 import (
 	"context"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
+	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v3/config"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/config"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/fixtures"
 	"io/ioutil"
 	"os"
@@ -106,12 +109,25 @@ integrations:
 `})
 	require.NoError(t, err)
 
+	pluginRegistry := &config2.PluginRegistry{}
+
 	// WHEN the v4 integrations manager runs it
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{
-		ConfigFolders:     []string{configDir},
-		DefinitionFolders: []string{niDir},
-	}, emitter, integration.ErrLookup, definitionQ, track.NewTracker())
+	mgr := NewManager(
+		ManagerConfig{
+			ConfigPaths:       []string{configDir},
+			DefinitionFolders: []string{niDir},
+		},
+		config.NewPathLoader(pluginRegistry),
+		emitter,
+		integration.ErrLookup,
+		definitionQ,
+		terminateDefinitionQ,
+		configEntryQ,
+		track.NewTracker(nil),
+		host.IDLookup{},
+		pluginRegistry,
+	)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)

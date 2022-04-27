@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	v3 "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v3"
 	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v3/config"
+	config3 "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/config"
 	dm2 "github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/dm"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/emitter"
 	"net/http"
@@ -34,7 +35,7 @@ import (
 type Emulator struct {
 	chRequests     chan http.Request
 	agent          *agent.Agent
-	integrationCfg v4.Configuration
+	integrationCfg v4.ManagerConfig
 	tempDir        string
 }
 
@@ -118,7 +119,18 @@ func (ae *Emulator) RunAgent() error {
 	il := newInstancesLookup(ae.integrationCfg)
 	integrationEmitter := emitter.NewIntegrationEmittor(ae.agent, dmEmitter, ffManager)
 	pluginRegistry := &config2.PluginRegistry{}
-	integrationManager := v4.NewManager(ae.integrationCfg, integrationEmitter, il, definitionQ, terminateDefinitionQ, configEntryQ, tracker, ae.agent.Context.IDLookup(), pluginRegistry)
+	integrationManager := v4.NewManager(
+		ae.integrationCfg,
+		config3.NewPathLoader(pluginRegistry),
+		integrationEmitter,
+		il,
+		definitionQ,
+		terminateDefinitionQ,
+		configEntryQ,
+		tracker,
+		ae.agent.Context.IDLookup(),
+		pluginRegistry,
+	)
 
 	// Start all plugins we want the agent to run.
 	if err = plugins.RegisterPlugins(ae.agent); err != nil {
@@ -135,7 +147,7 @@ func (ae *Emulator) RunAgent() error {
 	return nil
 }
 
-func newInstancesLookup(cfg v4.Configuration) integration.InstancesLookup {
+func newInstancesLookup(cfg v4.ManagerConfig) integration.InstancesLookup {
 	const executablesSubFolder = "bin"
 
 	var execFolders []string

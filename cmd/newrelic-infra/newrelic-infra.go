@@ -10,6 +10,7 @@ import (
 	"fmt"
 	v3 "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v3"
 	v3config "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v3/config"
+	integrationsConfig "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/config"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/logs"
 	dm2 "github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/dm"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/emitter"
@@ -273,7 +274,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	}
 	pluginSourceDirs = helpers.RemoveEmptyAndDuplicateEntries(pluginSourceDirs)
 
-	integrationCfg := v4.NewConfig(
+	v4ManagerConfig := v4.NewConfig(
 		c.Verbose,
 		c.Features,
 		c.PassthroughEnvironment,
@@ -288,7 +289,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	ccSvcURL := fmt.Sprintf("%s%s", cmdChannelURL, c.CommandChannelEndpoint)
 	caClient := commandapi.NewClient(ccSvcURL, c.License, userAgent, httpClient.Do)
 	ffManager := feature_flags.NewManager(c.Features)
-	il := newInstancesLookup(integrationCfg)
+	il := newInstancesLookup(v4ManagerConfig)
 
 	fatal := func(err error, message string) {
 		aslog.WithError(err).Error(message)
@@ -369,8 +370,11 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	}
 
 	integrationEmitter := emitter.NewIntegrationEmittor(agt, dmEmitter, ffManager)
+
+	cfgLoader := integrationsConfig.NewPathLoader()
 	integrationManager := v4.NewManager(
-		integrationCfg,
+		v4ManagerConfig,
+		cfgLoader,
 		integrationEmitter,
 		il,
 		definitionQ,
@@ -535,7 +539,7 @@ func initInstrumentation(ctx context2.Context, agentMetricsEndpoint string) (ins
 // newInstancesLookup creates an instance lookup that:
 // - looks in the v3 legacy definitions repository for defined commands
 // - looks in the definition folders (and bin/ subfolders) for executable names
-func newInstancesLookup(cfg v4.Configuration) integration.InstancesLookup {
+func newInstancesLookup(cfg v4.ManagerConfig) integration.InstancesLookup {
 	const executablesSubFolder = "bin"
 
 	var execFolders []string
