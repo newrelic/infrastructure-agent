@@ -1140,7 +1140,12 @@ func coalesceBool(values ...*bool) bool {
 	return false
 }
 
-func (config *Config) loadLogConfig() error {
+func (config *Config) loadLogConfig() {
+	// populate LogConfig object from old configuration options
+	if reflect.DeepEqual(config.Log, LogConfig{}) {
+		config.populateLogConfig()
+		return
+	}
 	// backwards compatability with non struct log configuration options
 	config.LogFile = coalesce(config.Log.File, config.LogFile)
 	config.LogFormat = coalesce(config.Log.Format, config.LogFormat)
@@ -1166,7 +1171,32 @@ func (config *Config) loadLogConfig() error {
 			config.Verbose = TraceTroubleshootLogging
 		}
 	}
-	return nil
+}
+
+func (config *Config) populateLogConfig() {
+	boolPtr := func(a bool) *bool {
+		return &a
+	}
+	config.Log = LogConfig{
+		File:                 config.LogFile,
+		Format:               config.LogFormat,
+		ToStdout:             &config.LogToStdout,
+		Forward:              boolPtr(false),
+		SmartLevelEntryLimit: &config.SmartVerboseModeEntryLimit,
+	}
+	switch config.Verbose {
+	case SmartVerboseLogging:
+		config.Log.Level = "smart"
+	case NonVerboseLogging:
+		config.Log.Level = "info"
+	case VerboseLogging, TroubleshootLogging:
+		config.Log.Level = "debug"
+	case TraceLogging, TraceTroubleshootLogging:
+		config.Log.Level = "trace"
+	}
+	if config.Verbose == TroubleshootLogging || config.Verbose == TraceTroubleshootLogging {
+		config.Log.Forward = boolPtr(true)
+	}
 }
 
 // LogForward log forwarder config values.
@@ -1686,12 +1716,8 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 		return
 	}
 
-	// Map new Log configuration to old Verbose level
-	err = cfg.loadLogConfig()
-	if err != nil {
-		err = fmt.Errorf("invalid log configuration: %w", err)
-		return
-	}
+	//  Map new Log configuration
+	cfg.loadLogConfig()
 
 	// For now, make any level of verbosity between [1,3] printing out debugging info
 	// until we refactor and use the corresponding level for each value

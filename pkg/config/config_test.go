@@ -717,7 +717,7 @@ license_key: "xxx"
 	assert.Equal(t, SmartVerboseLogging, cfg.Verbose)
 }
 
-func TestLoadLogConfig(t *testing.T) {
+func TestLoadLogConfig_BackwardsCompatability(t *testing.T) {
 	toPtr := func(a bool) *bool {
 		return &a
 	}
@@ -736,9 +736,35 @@ func TestLoadLogConfig(t *testing.T) {
 	for _, tt := range logConfigs {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, NonVerboseLogging, tt.c.Verbose)
-			err := tt.c.loadLogConfig()
-			assert.Nil(t, err)
+			tt.c.loadLogConfig()
 			assert.Equal(t, tt.verbose, tt.c.Verbose)
+		})
+	}
+}
+
+func TestLoadLogConfig_Populate(t *testing.T) {
+	//TODO: migrate to generic function with go1.18
+	boolPtr := func(a bool) *bool {
+		return &a
+	}
+	intPtr := func(a int) *int {
+		return &a
+	}
+	var configs = []struct {
+		name              string
+		c                 Config
+		expectedLogConfig LogConfig
+	}{
+		{"Verbose disabled (info level) and custom log file", Config{Verbose: 0, LogFile: "agent.log"}, LogConfig{Level: "info", File: "agent.log", ToStdout: boolPtr(false), Forward: boolPtr(false), SmartLevelEntryLimit: intPtr(0)}},
+		{"Smart Verbose enabled with defined limit", Config{Verbose: 2, SmartVerboseModeEntryLimit: 200}, LogConfig{Level: "smart", File: "", ToStdout: boolPtr(false), Forward: boolPtr(false), SmartLevelEntryLimit: intPtr(200)}},
+		{"Forward Verbose enabled and stdout", Config{Verbose: 3, LogToStdout: true}, LogConfig{Level: "debug", File: "", ToStdout: boolPtr(true), Forward: boolPtr(true), SmartLevelEntryLimit: intPtr(0)}},
+		{"Trace Verbose enabled and file", Config{Verbose: 4, LogFile: "agent.log"}, LogConfig{Level: "trace", File: "agent.log", ToStdout: boolPtr(false), Forward: boolPtr(false), SmartLevelEntryLimit: intPtr(0)}},
+	}
+
+	for _, tt := range configs {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.c.loadLogConfig()
+			assert.True(t, reflect.DeepEqual(tt.expectedLogConfig, tt.c.Log))
 		})
 	}
 }
