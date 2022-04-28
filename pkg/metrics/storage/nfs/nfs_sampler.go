@@ -7,7 +7,6 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
@@ -17,7 +16,6 @@ import (
 var sslog = log.WithComponent("NFSSampler")
 
 type Sampler struct {
-	context     agent.AgentContext
 	lastRun     time.Time
 	lastSamples map[string]statsCache
 	sampleRate  time.Duration
@@ -189,16 +187,11 @@ func (s *Sampler) Sample() (eventBatch sample.EventBatch, err error) {
 	return eventBatch, err
 }
 
-func NewSampler(context agent.AgentContext) *Sampler {
-	sampleRateSec := config.DefaultMetricsNFSSampleRate
-	detailed := false
-	if context != nil {
-		sampleRateSec = context.Config().MetricsNFSSampleRate
-		detailed = context.Config().DetailedNFS
-	}
+func NewSampler(metricsNFSSampleRate int, detailedNFS bool) *Sampler {
+	sampleRateSec := metricsNFSSampleRate
+	detailed := detailedNFS
 
 	return &Sampler{
-		context:     context,
 		lastSamples: map[string]statsCache{},
 		sampleRate:  time.Second * time.Duration(sampleRateSec),
 		detailed:    detailed,

@@ -38,7 +38,7 @@ func RegisterPlugins(a *agent.Agent) error {
 		config.WinRemovableDrives,
 		config.CustomSupportedFileSystems,
 		config.OverrideHostRoot,
-	)	//nfsSampler := nfs.NewSampler(a.Context)
+	)
 	networkSampler := network.NewNetworkSampler(a.Context)
 	systemSampler := metrics.NewSystemSampler(
 		storageSampler,
@@ -48,7 +48,6 @@ func RegisterPlugins(a *agent.Agent) error {
 	)
 	sender.RegisterSampler(systemSampler)
 	sender.RegisterSampler(storageSampler)
-	//sender.RegisterSampler(nfsSampler)
 	sender.RegisterSampler(networkSampler)
 	sender.RegisterSampler(procSampler)
 

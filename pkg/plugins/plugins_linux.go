@@ -119,7 +119,7 @@ func RegisterPlugins(agent *agnt.Agent) error {
 		config.CustomSupportedFileSystems,
 		config.OverrideHostRoot,
 		)
-	nfsSampler := nfs.NewSampler(agent.Context)
+	nfsSampler := nfs.NewSampler(config.MetricsNFSSampleRate, config.DetailedNFS)
 	networkSampler := network.NewNetworkSampler(agent.Context)
 	systemSampler := metrics.NewSystemSampler(
 		storageSampler,

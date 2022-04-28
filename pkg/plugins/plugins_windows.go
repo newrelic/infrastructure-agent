@@ -3,7 +3,6 @@
 package plugins
 
 import (
-	"github.com/newrelic/infrastructure-agent/pkg/metrics/network"
 	metricsSender "github.com/newrelic/infrastructure-agent/pkg/metrics/sender"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
@@ -65,7 +64,6 @@ func RegisterPlugins(a *agent.Agent) error {
 		slog.WithError(err).Debug("Warming up Storage Sampler Cache.")
 	}
 
-	networkSampler := network.NewNetworkSampler(a.Context)
 	// Prime Network Sampler, ignoring results
 	slog.Debug("Prewarming NetworkSampler Cache.")
 	if _, err := networkSampler.Sample(); err != nil {
