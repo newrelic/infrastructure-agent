@@ -5,28 +5,37 @@ package metrics
 import (
 	"testing"
 
-	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewSystemSampler(t *testing.T) {
-	ctx := new(mocks.AgentContext)
-	ctx.On("Config").Return(&config.Config{})
+	cfg := config.Config{}
+	cfg.MetricsSystemSampleRate = config.FREQ_INTERVAL_FLOOR_SYSTEM_METRICS
+	cfg.IgnoreReclaimable = false
+	cfg.Debug = false
 
-	m := NewSystemSampler(ctx, nil)
+	m := NewSystemSampler(nil, cfg.MetricsSystemSampleRate, cfg.IgnoreReclaimable, cfg.Debug)
 
 	assert.NotNil(t, m)
 }
 
 func TestSystemSample(t *testing.T) {
-	ctx := new(mocks.AgentContext)
-	ctx.On("Config").Return(&config.Config{})
+	cfg := config.Config{}
+	cfg.MetricsSystemSampleRate = config.FREQ_INTERVAL_FLOOR_SYSTEM_METRICS
+	cfg.IgnoreReclaimable = false
+	cfg.Debug = false
 
-	storage := storage.NewSampler(ctx)
-	m := NewSystemSampler(ctx, storage)
-
+	s := storage.NewSampler(
+		cfg.MetricsStorageSampleRate,
+		cfg.PartitionsTTL,
+		cfg.IsContainerized,
+		cfg.WinRemovableDrives,
+		cfg.CustomSupportedFileSystems,
+		cfg.OverrideHostRoot,
+	)
+	m := NewSystemSampler(s, cfg.MetricsSystemSampleRate, cfg.IgnoreReclaimable, cfg.Debug)
 	result, err := m.Sample()
 
 	assert.NoError(t, err)
@@ -34,11 +43,20 @@ func TestSystemSample(t *testing.T) {
 }
 
 func BenchmarkSystem(b *testing.B) {
-	ctx := new(mocks.AgentContext)
-	ctx.On("Config").Return(&config.Config{})
+	cfg := config.Config{}
+	cfg.MetricsSystemSampleRate = config.FREQ_INTERVAL_FLOOR_SYSTEM_METRICS
+	cfg.IgnoreReclaimable = false
+	cfg.Debug = false
 
-	storage := storage.NewSampler(ctx)
-	m := NewSystemSampler(ctx, storage)
+	s := storage.NewSampler(
+		cfg.MetricsStorageSampleRate,
+		cfg.PartitionsTTL,
+		cfg.IsContainerized,
+		cfg.WinRemovableDrives,
+		cfg.CustomSupportedFileSystems,
+		cfg.OverrideHostRoot,
+	)
+	m := NewSystemSampler(s, cfg.MetricsSystemSampleRate, cfg.IgnoreReclaimable, cfg.Debug)
 	for n := 0; n < b.N; n++ {
 		m.Sample()
 	}

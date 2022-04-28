@@ -12,7 +12,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
 
-	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/stretchr/testify/assert"
 )
@@ -24,11 +23,17 @@ func TestNewDiskMonitor(t *testing.T) {
 }
 
 func TestDiskSample(t *testing.T) {
-	ctx := new(mocks.AgentContext)
-	ctx.On("Config").Return(&config.Config{})
+	cfg := config.Config{}
 
-	storage := storage.NewSampler(ctx)
-	m := NewDiskMonitor(storage)
+	s := storage.NewSampler(
+		cfg.MetricsStorageSampleRate,
+		cfg.PartitionsTTL,
+		cfg.IsContainerized,
+		cfg.WinRemovableDrives,
+		cfg.CustomSupportedFileSystems,
+		cfg.OverrideHostRoot,
+	)
+	m := NewDiskMonitor(s)
 
 	result, err := m.Sample()
 

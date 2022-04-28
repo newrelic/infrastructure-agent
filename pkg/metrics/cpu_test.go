@@ -4,6 +4,7 @@ package metrics
 
 import (
 	"encoding/json"
+	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"testing"
 
 	"github.com/shirou/gopsutil/v3/cpu"
@@ -11,13 +12,19 @@ import (
 )
 
 func TestNewCPUMonitor(t *testing.T) {
-	m := NewCPUMonitor(nil)
+	cfg := config.Config{}
+	cfg.Debug = false
+
+	m := NewCPUMonitor(cfg.Debug)
 
 	assert.NotNil(t, m)
 }
 
 func TestCPUSample(t *testing.T) {
-	m := NewCPUMonitor(nil)
+	cfg := config.Config{}
+	cfg.Debug = false
+
+	m := NewCPUMonitor(cfg.Debug)
 
 	result, err := m.Sample()
 

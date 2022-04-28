@@ -33,43 +33,27 @@ type SystemSample struct {
 }
 
 type SystemSampler struct {
-	CpuMonitor     *CPUMonitor
-	DiskMonitor    *DiskMonitor
-	LoadMonitor    *LoadMonitor
-	MemoryMonitor  *MemoryMonitor
-	context        agent.AgentContext
-	stopChannel    chan bool
-	waitForCleanup *sync.WaitGroup
+	CpuMonitor      *CPUMonitor
+	DiskMonitor     *DiskMonitor
+	LoadMonitor     *LoadMonitor
+	MemoryMonitor   *MemoryMonitor
+	context         agent.AgentContext
+	stopChannel     chan bool
+	waitForCleanup  *sync.WaitGroup
+	debug           bool //TODO remove this
+	sampleIntertval time.Duration
 }
 
-func NewSystemSampler(context agent.AgentContext, storageSampler *storage.Sampler) *SystemSampler {
-	cfg := context.Config()
+func NewSystemSampler(storageSampler *storage.Sampler, metricsSystemSampleRate int, ignoreReclaimable bool, debug bool) *SystemSampler {
+
 	return &SystemSampler{
-		CpuMonitor:     NewCPUMonitor(context),
-		DiskMonitor:    NewDiskMonitor(storageSampler),
-		LoadMonitor:    NewLoadMonitor(),
-		MemoryMonitor:  NewMemoryMonitor(cfg.IgnoreReclaimable),
-		context:        context,
-		waitForCleanup: &sync.WaitGroup{},
+		CpuMonitor:      NewCPUMonitor(debug),
+		DiskMonitor:     NewDiskMonitor(storageSampler),
+		LoadMonitor:     NewLoadMonitor(),
+		MemoryMonitor:   NewMemoryMonitor(ignoreReclaimable),
+		waitForCleanup:  &sync.WaitGroup{},
+		sampleIntertval: time.Second * time.Duration(metricsSystemSampleRate),
 	}
-}
-
-func (s *SystemSampler) Debug() bool {
-	if s.context == nil {
-		return false
-	}
-	return s.context.Config().Debug
-}
-
-func (s *SystemSampler) sampleInterval() int {
-	if s.context != nil {
-		return s.context.Config().MetricsSystemSampleRate
-	}
-	return config.FREQ_INTERVAL_FLOOR_SYSTEM_METRICS
-}
-
-func (s *SystemSampler) Interval() time.Duration {
-	return time.Second * time.Duration(s.sampleInterval())
 }
 
 func (s *SystemSampler) Name() string { return "SystemSampler" }
@@ -77,7 +61,7 @@ func (s *SystemSampler) Name() string { return "SystemSampler" }
 func (s *SystemSampler) OnStartup() {}
 
 func (s *SystemSampler) Disabled() bool {
-	return s.Interval() <= config.FREQ_DISABLE_SAMPLING
+	return s.sampleIntertval <= config.FREQ_DISABLE_SAMPLING
 }
 
 func (s *SystemSampler) Sample() (results sample.EventBatch, err error) {
@@ -128,7 +112,7 @@ func (s *SystemSampler) Sample() (results sample.EventBatch, err error) {
 	}
 	seg.End()
 
-	if s.Debug() {
+	if s.debug {
 		helpers.LogStructureDetails(syslog, sample, "SystemSample", "final", nil)
 	}
 	results = append(results, sample)

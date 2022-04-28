@@ -8,7 +8,6 @@ import (
 
 	"github.com/shirou/gopsutil/v3/cpu"
 
-	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 )
 
@@ -22,20 +21,13 @@ type CPUSample struct {
 }
 
 type CPUMonitor struct {
-	context  agent.AgentContext
 	last     []cpu.TimesStat
 	cpuTimes func(bool) ([]cpu.TimesStat, error)
+	debug    bool
 }
 
-func NewCPUMonitor(context agent.AgentContext) *CPUMonitor {
-	return &CPUMonitor{context: context, cpuTimes: cpu.Times}
-}
-
-func (self *CPUMonitor) Debug() bool {
-	if self.context == nil {
-		return false
-	}
-	return self.context.Config().Debug
+func NewCPUMonitor(debug bool) *CPUMonitor {
+	return &CPUMonitor{cpuTimes: cpu.Times, debug: debug}
 }
 
 func (self *CPUMonitor) Sample() (sample *CPUSample, err error) {
@@ -51,7 +43,7 @@ func (self *CPUMonitor) Sample() (sample *CPUSample, err error) {
 	}
 
 	currentTimes, err := self.cpuTimes(false)
-	if self.Debug() {
+	if self.debug {
 		helpers.LogStructureDetails(syslog, currentTimes, "CpuTimes", "raw", nil)
 	}
 	// in container envs we might get an empty array and the code panics after this
