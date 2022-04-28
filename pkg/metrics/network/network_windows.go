@@ -35,6 +35,8 @@ type NetworkSampler struct {
 	stopChannel     chan bool
 	waitForCleanup  *sync.WaitGroup
 	sampleInterval  time.Duration
+	networkInterfaceFilters map[string][]string
+	debug bool
 }
 
 func (ss *NetworkSampler) Sample() (results sample.EventBatch, err error) {
@@ -107,7 +109,7 @@ func (ss *NetworkSampler) Sample() (results sample.EventBatch, err error) {
 		return nil, err
 	}
 
-	if ss.Debug() {
+	if ss.debug {
 		helpers.LogStructureDetails(nslog, ioCounters, "IOCounters", "raw", nil)
 	}
 
@@ -147,7 +149,7 @@ func (ss *NetworkSampler) Sample() (results sample.EventBatch, err error) {
 	}
 	ss.lastNetStats = nextNetStats
 
-	if ss.Debug() {
+	if ss.debug {
 		for _, sample := range results {
 			helpers.LogStructureDetails(nslog, sample.(*NetworkSample), "NetworkSample", "final", nil)
 		}

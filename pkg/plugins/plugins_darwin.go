@@ -39,7 +39,11 @@ func RegisterPlugins(a *agent.Agent) error {
 		config.CustomSupportedFileSystems,
 		config.OverrideHostRoot,
 	)
-	networkSampler := network.NewNetworkSampler(a.Context)
+	networkSampler := network.NewNetworkSampler(
+		config.MetricsNetworkSampleRate,
+		config.NetworkInterfaceFilters,
+		config.Debug,
+	)
 	systemSampler := metrics.NewSystemSampler(
 		storageSampler,
 		config.MetricsSystemSampleRate,

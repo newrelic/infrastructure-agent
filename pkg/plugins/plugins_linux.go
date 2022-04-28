@@ -118,15 +118,19 @@ func RegisterPlugins(agent *agnt.Agent) error {
 		config.WinRemovableDrives,
 		config.CustomSupportedFileSystems,
 		config.OverrideHostRoot,
-		)
+	)
 	nfsSampler := nfs.NewSampler(config.MetricsNFSSampleRate, config.DetailedNFS)
-	networkSampler := network.NewNetworkSampler(agent.Context)
+	networkSampler := network.NewNetworkSampler(
+		config.MetricsNetworkSampleRate,
+		config.NetworkInterfaceFilters,
+		config.Debug,
+		)
 	systemSampler := metrics.NewSystemSampler(
 		storageSampler,
 		config.MetricsSystemSampleRate,
 		config.IgnoreReclaimable,
 		config.Debug,
-		)
+	)
 
 	// Prime Storage Sampler, ignoring results
 	if !storageSampler.Disabled() {

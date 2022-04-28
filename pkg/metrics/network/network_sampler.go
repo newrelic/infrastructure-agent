@@ -9,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 )
 
@@ -44,27 +43,18 @@ type NetworkSample struct {
 	TransmitDroppedPerSec *float64 `json:"transmitDroppedPerSecond,omitempty"`
 }
 
-func NewNetworkSampler(context agent.AgentContext) *NetworkSampler {
-	samplerIntervalSec := config.FREQ_INTERVAL_FLOOR_NETWORK_METRICS
-	if context != nil {
-		samplerIntervalSec = context.Config().MetricsNetworkSampleRate
-	}
-
+func NewNetworkSampler(metricsNetworkSampleRate int, networkInterfaceFilters map[string][]string, debug bool) *NetworkSampler {
 	return &NetworkSampler{
-		context:        context,
-		waitForCleanup: &sync.WaitGroup{},
-		sampleInterval: time.Second * time.Duration(samplerIntervalSec),
+		waitForCleanup:          &sync.WaitGroup{},
+		sampleInterval:          time.Second * time.Duration(metricsNetworkSampleRate),
+		networkInterfaceFilters: networkInterfaceFilters,
+		debug:                   debug,
 	}
 }
 
-func (ns *NetworkSampler) Debug() bool {
-	if ns.context == nil {
-		return false
-	}
-	return ns.context.Config().Debug
+func (ns *NetworkSampler) Name() string {
+	return "NetworkSampler"
 }
-
-func (ns *NetworkSampler) Name() string { return "NetworkSampler" }
 
 func (ns *NetworkSampler) Interval() time.Duration {
 	return ns.sampleInterval

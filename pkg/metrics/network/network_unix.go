@@ -16,19 +16,20 @@ import (
 	"github.com/shirou/gopsutil/v3/net"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
-	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	network_helpers "github.com/newrelic/infrastructure-agent/pkg/helpers/network"
 )
 
 type NetworkSampler struct {
-	context         agent.AgentContext
-	lastRun         time.Time
-	lastNetStats    map[string]net.IOCountersStat
-	hasBootstrapped bool
-	stopChannel     chan bool
-	waitForCleanup  *sync.WaitGroup
-	sampleInterval  time.Duration
+	context                 agent.AgentContext
+	lastRun                 time.Time
+	lastNetStats            map[string]net.IOCountersStat
+	hasBootstrapped         bool
+	stopChannel             chan bool
+	waitForCleanup          *sync.WaitGroup
+	sampleInterval          time.Duration
+	networkInterfaceFilters map[string][]string
+	debug                   bool
 }
 
 // Returns false if the given network stats should not be added to the "All" total.
@@ -39,69 +40,59 @@ type NetworkSampler struct {
 // 	return true
 // }
 
-func (ss *NetworkSampler) Sample() (results sample.EventBatch, err error) {
+func (ns *NetworkSampler) Sample() (results sample.EventBatch, err error) {
 	defer func() {
 		if panicErr := recover(); panicErr != nil {
 			err = fmt.Errorf("Panic in NetworkSampler.Sample: %v\nStack: %s", panicErr, debug.Stack())
 		}
 	}()
 
-	var cfg *config.Config
-	if ss.context != nil {
-		cfg = ss.context.Config()
-	}
-
 	var elapsedMs int64
 	var elapsedSeconds float64
 	now := time.Now()
-	if ss.hasBootstrapped {
-		elapsedMs = (now.UnixNano() - ss.lastRun.UnixNano()) / 1000000
+	if ns.hasBootstrapped {
+		elapsedMs = (now.UnixNano() - ns.lastRun.UnixNano()) / 1000000
 	}
 	elapsedSeconds = float64(elapsedMs) / 1000
-	ss.lastRun = now
-	ss.hasBootstrapped = true
+	ns.lastRun = now
+	ns.hasBootstrapped = true
 
 	niList, err := net.Interfaces()
 	if err != nil {
 		return nil, err
 	}
 
-	if ss.Debug() {
+	if ns.debug {
 		helpers.LogStructureDetails(nslog, niList, "NetInterfaces", "raw", nil)
-	}
-
-	var networkInterfaceFilters map[string][]string
-	if cfg != nil {
-		networkInterfaceFilters = cfg.NetworkInterfaceFilters
 	}
 
 	reportedInterfaces := make(map[string]*NetworkSample)
 	for _, ni := range niList {
 
-		if network_helpers.ShouldIgnoreInterface(networkInterfaceFilters, ni.Name) {
+		if network_helpers.ShouldIgnoreInterface(ns.networkInterfaceFilters, ni.Name) {
 			continue
 		}
 
-		sample := &NetworkSample{}
-		sample.Type("NetworkSample")
+		s := &NetworkSample{}
+		s.Type("NetworkSample")
 
-		sample.InterfaceName = ni.Name
-		sample.HardwareAddress = ni.HardwareAddr
+		s.InterfaceName = ni.Name
+		s.HardwareAddress = ni.HardwareAddr
 
-		sample.State = STATE_DOWN
+		s.State = STATE_DOWN
 		for _, flag := range ni.Flags {
 			if flag == FLAG_STATE_UP {
-				sample.State = STATE_UP
+				s.State = STATE_UP
 				break
 			}
 		}
 
 		ipv4, ipv6 := network_helpers.IPAddressesByType(ni.Addrs)
-		sample.IpV4Address = ipv4
-		sample.IpV6Address = ipv6
+		s.IpV4Address = ipv4
+		s.IpV6Address = ipv6
 
-		reportedInterfaces[ni.Name] = sample
-		results = append(results, sample)
+		reportedInterfaces[ni.Name] = s
+		results = append(results, s)
 	}
 
 	ioCounters, err := net.IOCounters(true)
@@ -110,20 +101,20 @@ func (ss *NetworkSampler) Sample() (results sample.EventBatch, err error) {
 		return nil, err
 	}
 
-	if ss.Debug() {
+	if ns.debug {
 		helpers.LogStructureDetails(nslog, ioCounters, "IOCounters", "raw", nil)
 	}
 
 	nextNetStats := make(map[string]net.IOCountersStat)
 	for _, counter := range ioCounters {
-		if ss.lastNetStats != nil {
+		if ns.lastNetStats != nil {
 			interfaceName := counter.Name
-			sample := reportedInterfaces[interfaceName]
-			if sample == nil {
+			s := reportedInterfaces[interfaceName]
+			if s == nil {
 				continue
 			}
 
-			if lastStats, ok := ss.lastNetStats[interfaceName]; ok {
+			if lastStats, ok := ns.lastNetStats[interfaceName]; ok {
 				bytesSent := acquire.CalculateSafeDelta(counter.BytesSent, lastStats.BytesSent, elapsedSeconds)
 				bytesRecv := acquire.CalculateSafeDelta(counter.BytesRecv, lastStats.BytesRecv, elapsedSeconds)
 
@@ -136,24 +127,24 @@ func (ss *NetworkSampler) Sample() (results sample.EventBatch, err error) {
 				dropSent := acquire.CalculateSafeDelta(counter.Dropout, lastStats.Dropout, elapsedSeconds)
 				dropRecv := acquire.CalculateSafeDelta(counter.Dropin, lastStats.Dropin, elapsedSeconds)
 
-				sample.TransmitBytesPerSec = &bytesSent
-				sample.TransmitPacketsPerSec = &packetsSent
-				sample.TransmitErrorsPerSec = &errSent
-				sample.TransmitDroppedPerSec = &dropSent
+				s.TransmitBytesPerSec = &bytesSent
+				s.TransmitPacketsPerSec = &packetsSent
+				s.TransmitErrorsPerSec = &errSent
+				s.TransmitDroppedPerSec = &dropSent
 
-				sample.ReceiveBytesPerSec = &bytesRecv
-				sample.ReceivePacketsPerSec = &packetsRecv
-				sample.ReceiveErrorsPerSec = &errRecv
-				sample.ReceiveDroppedPerSec = &dropRecv
+				s.ReceiveBytesPerSec = &bytesRecv
+				s.ReceivePacketsPerSec = &packetsRecv
+				s.ReceiveErrorsPerSec = &errRecv
+				s.ReceiveDroppedPerSec = &dropRecv
 			}
 		}
 		nextNetStats[counter.Name] = counter
 	}
-	ss.lastNetStats = nextNetStats
+	ns.lastNetStats = nextNetStats
 
-	if ss.Debug() {
-		for _, sample := range results {
-			helpers.LogStructureDetails(nslog, sample.(*NetworkSample), "NetworkSample", "final", nil)
+	if ns.debug {
+		for _, s := range results {
+			helpers.LogStructureDetails(nslog, s.(*NetworkSample), "NetworkSample", "final", nil)
 		}
 	}
 	return results, nil
