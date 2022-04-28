@@ -15,7 +15,6 @@ import (
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/sirupsen/logrus"
 
-	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
@@ -75,15 +74,17 @@ type IOCountersStat interface {
 }
 
 type Sampler struct {
-	context          agent.AgentContext
-	lastRun          time.Time
-	lastDiskStats    map[string]IOCountersStat
-	lastSamples      sample.EventBatch
-	hasBootstrapped  bool
-	stopChannel      chan bool
-	waitForCleanup   *sync.WaitGroup
-	storageUtilities SampleWrapper
-	sampleRate       time.Duration
+	lastRun                    time.Time
+	lastDiskStats              map[string]IOCountersStat
+	lastSamples                sample.EventBatch
+	hasBootstrapped            bool
+	stopChannel                chan bool
+	waitForCleanup             *sync.WaitGroup
+	storageUtilities           SampleWrapper
+	sampleRate                 time.Duration
+	customSupportedFileSystems []string
+	isContainerized            bool
+	overrideHostRoot           string
 }
 
 type SampleWrapper interface {
@@ -93,37 +94,35 @@ type SampleWrapper interface {
 	CalculateSampleValues(counter, lastStats IOCountersStat, elapsedMs int64) *Sample
 }
 
-func NewSampler(context agent.AgentContext) *Sampler {
-	sampleRateSec := config.DefaultStorageSamplerRateSecs
-	if context != nil {
-		sampleRateSec = context.Config().MetricsStorageSampleRate
-	}
+func NewSampler(metricsStorageSampleRate int, partitionsTTL string, isContainerized, winRemovableDrives bool, customSupportedFileSystems []string, overrideHostRoot string) *Sampler {
+	sampleRateSec := metricsStorageSampleRate
 
 	return &Sampler{
-		context:          context,
-		waitForCleanup:   &sync.WaitGroup{},
-		storageUtilities: NewStorageSampleWrapper(context.Config()),
-		sampleRate:       time.Second * time.Duration(sampleRateSec),
+		waitForCleanup:             &sync.WaitGroup{},
+		storageUtilities:           NewStorageSampleWrapper(partitionsTTL, isContainerized, winRemovableDrives),
+		sampleRate:                 time.Second * time.Duration(sampleRateSec),
+		customSupportedFileSystems: customSupportedFileSystems,
+		overrideHostRoot:           overrideHostRoot,
+		isContainerized:            isContainerized,
 	}
 }
 
 func (ss *Sampler) useCustomSupportedFileSystems() {
-	if ss.context != nil {
-		customSupportedFileSystems := ss.context.Config().CustomSupportedFileSystems
-		if customSupportedFileSystems != nil && len(customSupportedFileSystems) > 0 {
-			var newCustomSupportedFileSystems = map[string]bool{}
-			for _, customfs := range customSupportedFileSystems {
-				// if custom fs found in list of supported, keep it
-				_, found := SupportedFileSystems[customfs]
-				if found {
-					newCustomSupportedFileSystems[customfs] = true
-				}
+	customSupportedFileSystems := ss.customSupportedFileSystems
+	if customSupportedFileSystems != nil && len(customSupportedFileSystems) > 0 {
+		var newCustomSupportedFileSystems = map[string]bool{}
+		for _, customfs := range customSupportedFileSystems {
+			// if custom fs found in list of supported, keep it
+			_, found := SupportedFileSystems[customfs]
+			if found {
+				newCustomSupportedFileSystems[customfs] = true
 			}
-			// replace original supported fs with new custom set of fs
-			SupportedFileSystems = newCustomSupportedFileSystems
-			sslog.WithField("supportedFileSystems", SupportedFileSystems).Debug("Using custom supported file systems.")
 		}
+		// replace original supported fs with new custom set of fs
+		SupportedFileSystems = newCustomSupportedFileSystems
+		sslog.WithField("supportedFileSystems", SupportedFileSystems).Debug("Using custom supported file systems.")
 	}
+
 }
 
 func (p *PartitionStat) IsReadOnly() bool {
@@ -177,9 +176,6 @@ func (ss *Sampler) Sample() (samples sample.EventBatch, err error) {
 	}()
 
 	var cfg *config.Config
-	if ss.context != nil {
-		cfg = ss.context.Config()
-	}
 
 	var elapsedMs int64
 	now := time.Now()
@@ -196,8 +192,8 @@ func (ss *Sampler) Sample() (samples sample.EventBatch, err error) {
 	}
 
 	var mountPointPrefix string
-	if cfg != nil && cfg.IsContainerized {
-		mountPointPrefix = cfg.OverrideHostRoot
+	if cfg != nil && ss.isContainerized {
+		mountPointPrefix = ss.overrideHostRoot
 	}
 
 	//make sure we have a set, not a list

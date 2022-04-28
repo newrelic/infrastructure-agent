@@ -52,8 +52,14 @@ func RegisterPlugins(a *agent.Agent) error {
 
 	sender := metricsSender.NewSender(a.Context)
 	procSampler := metrics.NewProcsMonitor(a.Context)
-	storageSampler := storage.NewSampler(a.Context)
-	// Prime Storage Sampler, ignoring results
+	storageSampler := storage.NewSampler(
+		config.MetricsStorageSampleRate,
+		config.PartitionsTTL,
+		config.IsContainerized,
+		config.WinRemovableDrives,
+		config.CustomSupportedFileSystems,
+		config.OverrideHostRoot,
+	)	// Prime Storage Sampler, ignoring results
 	slog.Debug("Prewarming Sampler Cache.")
 	if _, err := storageSampler.Sample(); err != nil {
 		slog.WithError(err).Debug("Warming up Storage Sampler Cache.")

@@ -17,7 +17,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/acquire"
 	"github.com/shirou/gopsutil/v3/disk"
@@ -131,15 +130,15 @@ type BlockDevice struct {
 	Name   string
 }
 
-func NewStorageSampleWrapper(cfg *config.Config) SampleWrapper {
-	ttl, err := time.ParseDuration(cfg.PartitionsTTL)
+func NewStorageSampleWrapper(partitionsTTL string, isContainerized, winRemovableDrives bool) SampleWrapper {
+	ttl, err := time.ParseDuration(partitionsTTL)
 	if err != nil {
 		ttl = time.Minute // for tests with an unset ttl
 	}
 	ssw := LinuxStorageSampleWrapper{
 		partitions: PartitionsCache{
 			ttl:             ttl,
-			isContainerized: cfg != nil && cfg.IsContainerized,
+			isContainerized: isContainerized,
 			partitionsFunc:  fetchPartitions,
 		},
 	}

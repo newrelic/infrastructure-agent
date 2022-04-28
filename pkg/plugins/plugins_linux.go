@@ -111,7 +111,14 @@ func RegisterPlugins(agent *agnt.Agent) error {
 
 	sender := metricsSender.NewSender(agent.Context)
 	procSampler := process.NewProcessSampler(agent.Context)
-	storageSampler := storage.NewSampler(agent.Context)
+	storageSampler := storage.NewSampler(
+		config.MetricsStorageSampleRate,
+		config.PartitionsTTL,
+		config.IsContainerized,
+		config.WinRemovableDrives,
+		config.CustomSupportedFileSystems,
+		config.OverrideHostRoot,
+		)
 	nfsSampler := nfs.NewSampler(agent.Context)
 	networkSampler := network.NewNetworkSampler(agent.Context)
 	systemSampler := metrics.NewSystemSampler(agent.Context, storageSampler)

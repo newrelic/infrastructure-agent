@@ -11,7 +11,6 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/v3/disk"
 )
@@ -79,8 +78,8 @@ func (ssw *WinStorageSampleWrapper) CalculateSampleValues(counter, lastStats IOC
 	panic(errors.Errorf("%#v is neither *WmiIoCountersStat nor (*PdhIoCountersStat)", counter))
 }
 
-func NewStorageSampleWrapper(cfg *config.Config) SampleWrapper {
-	ttl, err := time.ParseDuration(cfg.PartitionsTTL)
+func NewStorageSampleWrapper(partitionsTTL string, isContainerized, winRemovableDrives bool) SampleWrapper {
+	ttl, err := time.ParseDuration(partitionsTTL)
 	if err != nil {
 		ttl = time.Minute // for tests with an unset ttl
 	}
@@ -91,8 +90,8 @@ func NewStorageSampleWrapper(cfg *config.Config) SampleWrapper {
 		legacy: cfg.LegacyStorageSampler,
 		partitions: PartitionsCache{
 			ttl:             ttl,
-			isContainerized: cfg != nil && cfg.IsContainerized,
-			partitionsFunc:  fetchPartitions(cfg.WinRemovableDrives),
+			isContainerized: isContainerized,
+			partitionsFunc:  fetchPartitions(winRemovableDrives),
 		},
 		pdhCounters: PdhIoCounters{},
 	}

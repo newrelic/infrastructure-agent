@@ -1,9 +1,11 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+//go:build darwin
+// +build darwin
+
 package storage
 
 import (
-	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/shirou/gopsutil/v3/disk"
 	"strings"
 	"sync"
@@ -36,15 +38,15 @@ func (d DarwinIoCountersStat) Source() string {
 	return "gopsutil"
 }
 
-func NewStorageSampleWrapper(cfg *config.Config) SampleWrapper {
-	ttl, err := time.ParseDuration(cfg.PartitionsTTL)
+func NewStorageSampleWrapper(partitionsTTL string, isContainerized, winRemovableDrives bool) SampleWrapper {
+	ttl, err := time.ParseDuration(partitionsTTL)
 	if err != nil {
 		ttl = time.Minute // for tests with an unset ttl
 	}
 	ssw := DarwinStorageSampleWrapper{
 		partitionsCache: PartitionsCache{
 			ttl:             ttl,
-			isContainerized: cfg != nil && cfg.IsContainerized,
+			isContainerized: isContainerized,
 			partitionsFunc:  fetchPartitions,
 		},
 	}

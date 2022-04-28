@@ -21,19 +21,31 @@ import (
 )
 
 func TestNewStorageSampler(t *testing.T) {
-	ctx := new(mocks.AgentContext)
-	ctx.On("Config").Return(&config.Config{})
+	cfg := config.Config{}
 
-	m := NewSampler(ctx)
+	m := NewSampler(
+		cfg.MetricsStorageSampleRate,
+		cfg.PartitionsTTL,
+		cfg.IsContainerized,
+		cfg.WinRemovableDrives,
+		cfg.CustomSupportedFileSystems,
+		cfg.OverrideHostRoot,
+	)
 
 	assert.NotNil(t, m)
 }
 
 func TestStorageSample(t *testing.T) {
-	ctx := new(mocks.AgentContext)
-	ctx.On("Config").Return(&config.Config{})
+	cfg := config.Config{}
 
-	m := NewSampler(ctx)
+	m := NewSampler(
+		cfg.MetricsStorageSampleRate,
+		cfg.PartitionsTTL,
+		cfg.IsContainerized,
+		cfg.WinRemovableDrives,
+		cfg.CustomSupportedFileSystems,
+		cfg.OverrideHostRoot,
+	)
 
 	result, err := m.Sample()
 
@@ -70,9 +82,16 @@ func TestSampleWithCustomFilesystemList(t *testing.T) {
 		"userAgent",
 		test.EmptyFFRetriever)
 	assert.NoError(t, err)
-	testAgentConfig := testAgent.Context
+	testAgentConfig := testAgent.Context.Config()
 
-	m := NewSampler(testAgentConfig)
+	m := NewSampler(
+		testAgentConfig.MetricsStorageSampleRate,
+		testAgentConfig.PartitionsTTL,
+		testAgentConfig.IsContainerized,
+		testAgentConfig.WinRemovableDrives,
+		testAgentConfig.CustomSupportedFileSystems,
+		testAgentConfig.OverrideHostRoot,
+	)
 	testSampleQueue := make(chan sample.EventBatch, 2)
 	metrics.StartSamplerRoutine(m, testSampleQueue)
 	assert.NoError(t, err)
@@ -126,7 +145,16 @@ func BenchmarkStorage(b *testing.B) {
 	ctx := new(mocks.AgentContext)
 	ctx.On("Config").Return(&config.Config{})
 
-	m := NewSampler(ctx)
+	cfg := config.Config{}
+
+	m := NewSampler(
+		cfg.MetricsStorageSampleRate,
+		cfg.PartitionsTTL,
+		cfg.IsContainerized,
+		cfg.WinRemovableDrives,
+		cfg.CustomSupportedFileSystems,
+		cfg.OverrideHostRoot,
+	)
 
 	for n := 0; n < b.N; n++ {
 		_, _ = m.Sample()
