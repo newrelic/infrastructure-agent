@@ -121,7 +121,12 @@ func RegisterPlugins(agent *agnt.Agent) error {
 		)
 	nfsSampler := nfs.NewSampler(agent.Context)
 	networkSampler := network.NewNetworkSampler(agent.Context)
-	systemSampler := metrics.NewSystemSampler(agent.Context, storageSampler)
+	systemSampler := metrics.NewSystemSampler(
+		storageSampler,
+		config.MetricsSystemSampleRate,
+		config.IgnoreReclaimable,
+		config.Debug,
+		)
 
 	// Prime Storage Sampler, ignoring results
 	if !storageSampler.Disabled() {

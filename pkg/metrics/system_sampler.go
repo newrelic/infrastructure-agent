@@ -41,19 +41,23 @@ type SystemSampler struct {
 	stopChannel     chan bool
 	waitForCleanup  *sync.WaitGroup
 	debug           bool //TODO remove this
-	sampleIntertval time.Duration
+	sampleInterval time.Duration
 }
 
 func NewSystemSampler(storageSampler *storage.Sampler, metricsSystemSampleRate int, ignoreReclaimable bool, debug bool) *SystemSampler {
 
 	return &SystemSampler{
-		CpuMonitor:      NewCPUMonitor(debug),
-		DiskMonitor:     NewDiskMonitor(storageSampler),
-		LoadMonitor:     NewLoadMonitor(),
-		MemoryMonitor:   NewMemoryMonitor(ignoreReclaimable),
-		waitForCleanup:  &sync.WaitGroup{},
-		sampleIntertval: time.Second * time.Duration(metricsSystemSampleRate),
+		CpuMonitor:     NewCPUMonitor(debug),
+		DiskMonitor:    NewDiskMonitor(storageSampler),
+		LoadMonitor:    NewLoadMonitor(),
+		MemoryMonitor:  NewMemoryMonitor(ignoreReclaimable),
+		waitForCleanup: &sync.WaitGroup{},
+		sampleInterval: time.Second * time.Duration(metricsSystemSampleRate),
 	}
+}
+
+func (s *SystemSampler) Interval() time.Duration{
+	return s.sampleInterval
 }
 
 func (s *SystemSampler) Name() string { return "SystemSampler" }
@@ -61,7 +65,7 @@ func (s *SystemSampler) Name() string { return "SystemSampler" }
 func (s *SystemSampler) OnStartup() {}
 
 func (s *SystemSampler) Disabled() bool {
-	return s.sampleIntertval <= config.FREQ_DISABLE_SAMPLING
+	return s.sampleInterval <= config.FREQ_DISABLE_SAMPLING
 }
 
 func (s *SystemSampler) Sample() (results sample.EventBatch, err error) {

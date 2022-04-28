@@ -40,8 +40,12 @@ func RegisterPlugins(a *agent.Agent) error {
 		config.OverrideHostRoot,
 	)	//nfsSampler := nfs.NewSampler(a.Context)
 	networkSampler := network.NewNetworkSampler(a.Context)
-	systemSampler := metrics.NewSystemSampler(a.Context, storageSampler)
-
+	systemSampler := metrics.NewSystemSampler(
+		storageSampler,
+		config.MetricsSystemSampleRate,
+		config.IgnoreReclaimable,
+		config.Debug,
+	)
 	sender.RegisterSampler(systemSampler)
 	sender.RegisterSampler(storageSampler)
 	//sender.RegisterSampler(nfsSampler)

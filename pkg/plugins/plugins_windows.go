@@ -72,7 +72,12 @@ func RegisterPlugins(a *agent.Agent) error {
 		slog.WithError(err).Debug("Warming up Network Sampler Cache.")
 	}
 
-	systemSampler := metrics.NewSystemSampler(a.Context, storageSampler)
+	systemSampler := metrics.NewSystemSampler(
+		storageSampler,
+		config.MetricsSystemSampleRate,
+		config.IgnoreReclaimable,
+		config.Debug,
+	)
 	sender.RegisterSampler(systemSampler)
 	sender.RegisterSampler(storageSampler)
 	sender.RegisterSampler(networkSampler)

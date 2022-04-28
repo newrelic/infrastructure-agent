@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/shirou/gopsutil/v3/disk"
 
@@ -403,12 +402,19 @@ func (s *MockStorageSampleWrapper) CalculateSampleValues(counter, lastStats IOCo
 }
 
 func TestIgnoredDevice(t *testing.T) {
-	ctx := new(mocks.AgentContext)
-	ctx.On("Config").Return(&config.Config{
+	cfg :=config.Config{
 		FileDevicesIgnored: []string{"sda2", "vg-data"},
-	})
+	}
 
-	ss := NewSampler(ctx)
+	ss := NewSampler(
+		cfg.MetricsStorageSampleRate,
+		cfg.PartitionsTTL,
+		cfg.IsContainerized,
+		cfg.WinRemovableDrives,
+		cfg.CustomSupportedFileSystems,
+		cfg.OverrideHostRoot,
+	)
+
 	assert.NotNil(t, ss)
 	ss.storageUtilities = &MockStorageSampleWrapper{partitions: partitionStats}
 

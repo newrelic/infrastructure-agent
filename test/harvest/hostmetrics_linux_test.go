@@ -6,7 +6,6 @@
 package harvest
 
 import (
-	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics"
@@ -20,13 +19,24 @@ import (
 )
 
 func TestHostSharedMemory(t *testing.T) {
-	ctx := new(mocks.AgentContext)
-	ctx.On("Config").Return(&config.Config{
+	cfg := config.Config{
 		MetricsNetworkSampleRate: 1,
-	})
-	storageSampler := storage.NewSampler(ctx)
+	}
+	storageSampler := storage.NewSampler(
+		cfg.MetricsStorageSampleRate,
+		cfg.PartitionsTTL,
+		cfg.IsContainerized,
+		cfg.WinRemovableDrives,
+		cfg.CustomSupportedFileSystems,
+		cfg.OverrideHostRoot,
+	)
 
-	systemSampler := metrics.NewSystemSampler(ctx, storageSampler)
+	systemSampler := metrics.NewSystemSampler(
+		storageSampler,
+		cfg.MetricsSystemSampleRate,
+		cfg.IgnoreReclaimable,
+		cfg.Debug,
+	)
 
 	sampleB, _ := systemSampler.Sample()
 	beforeSample := sampleB[0].(*metrics.SystemSample)
@@ -53,13 +63,24 @@ func TestHostSharedMemory(t *testing.T) {
 }
 
 func TestHostCachedMemory(t *testing.T) {
-	ctx := new(mocks.AgentContext)
-	ctx.On("Config").Return(&config.Config{
+	cfg := config.Config{
 		MetricsNetworkSampleRate: 1,
-	})
-	storageSampler := storage.NewSampler(ctx)
+	}
+	storageSampler := storage.NewSampler(
+		cfg.MetricsStorageSampleRate,
+		cfg.PartitionsTTL,
+		cfg.IsContainerized,
+		cfg.WinRemovableDrives,
+		cfg.CustomSupportedFileSystems,
+		cfg.OverrideHostRoot,
+	)
 
-	systemSampler := metrics.NewSystemSampler(ctx, storageSampler)
+	systemSampler := metrics.NewSystemSampler(
+		storageSampler,
+		cfg.MetricsSystemSampleRate,
+		cfg.IgnoreReclaimable,
+		cfg.Debug,
+	)
 
 	sampleB, _ := systemSampler.Sample()
 	beforeSample := sampleB[0].(*metrics.SystemSample)
@@ -90,11 +111,17 @@ func TestHostCachedMemory(t *testing.T) {
 }
 
 func TestHostDisk(t *testing.T) {
-	ctx := new(mocks.AgentContext)
-	ctx.On("Config").Return(&config.Config{
+	cfg := config.Config{
 		MetricsNetworkSampleRate: 1,
-	})
-	storageSampler := storage.NewSampler(ctx)
+	}
+	storageSampler := storage.NewSampler(
+		cfg.MetricsStorageSampleRate,
+		cfg.PartitionsTTL,
+		cfg.IsContainerized,
+		cfg.WinRemovableDrives,
+		cfg.CustomSupportedFileSystems,
+		cfg.OverrideHostRoot,
+	)
 	storageSamples, _ := storageSampler.Sample()
 
 	storageSample := &storage.Sample{}
@@ -131,13 +158,24 @@ func TestHostDisk(t *testing.T) {
 }
 
 func TestHostSlabMemory(t *testing.T) {
-	ctx := new(mocks.AgentContext)
-	ctx.On("Config").Return(&config.Config{
+	cfg := config.Config{
 		MetricsNetworkSampleRate: 1,
-	})
-	storageSampler := storage.NewSampler(ctx)
+	}
+	storageSampler := storage.NewSampler(
+		cfg.MetricsStorageSampleRate,
+		cfg.PartitionsTTL,
+		cfg.IsContainerized,
+		cfg.WinRemovableDrives,
+		cfg.CustomSupportedFileSystems,
+		cfg.OverrideHostRoot,
+	)
 
-	systemSampler := metrics.NewSystemSampler(ctx, storageSampler)
+	systemSampler := metrics.NewSystemSampler(
+		storageSampler,
+		cfg.MetricsSystemSampleRate,
+		cfg.IgnoreReclaimable,
+		cfg.Debug,
+	)
 
 	sampleB, _ := systemSampler.Sample()
 	beforeSample := sampleB[0].(*metrics.SystemSample)
