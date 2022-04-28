@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
@@ -32,25 +31,15 @@ var (
 )
 
 // NewProcessSampler creates and returns a new process Sampler, given an agent context.
-func NewProcessSampler(ctx agent.AgentContext) sampler.Sampler {
-	hasConfig := ctx != nil && ctx.Config() != nil
+func NewProcessSampler(metricsProcessSampleRate, containerMetadataCacheLimit int, dockerApiVersion string, runMode string, disableZeroRSSFilter, stripCommandLine bool, getServiceForPid func(int) (string, bool)) sampler.Sampler {
 
-	ttlSecs := config.DefaultContainerCacheMetadataLimit
-	apiVersion := ""
-	interval := config.FREQ_INTERVAL_FLOOR_PROCESS_METRICS
-	if hasConfig {
-		cfg := ctx.Config()
-		ttlSecs = cfg.ContainerMetadataCacheLimit
-		apiVersion = cfg.DockerApiVersion
-		interval = cfg.MetricsProcessSampleRate
-	}
-	harvester := newHarvester(ctx)
-	dockerSampler := metrics.NewDockerSampler(time.Duration(ttlSecs)*time.Second, apiVersion)
+	harvest := newHarvester(runMode, disableZeroRSSFilter, stripCommandLine, getServiceForPid)
+	dockerSampler := metrics.NewDockerSampler(time.Duration(containerMetadataCacheLimit)*time.Second, dockerApiVersion)
 
 	return &processSampler{
-		harvest:          harvester,
+		harvest:          harvest,
 		containerSampler: dockerSampler,
-		interval:         time.Second * time.Duration(interval),
+		interval:         time.Second * time.Duration(metricsProcessSampleRate),
 	}
 
 }

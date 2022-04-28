@@ -8,7 +8,6 @@
 package process
 
 import (
-	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/acquire"
@@ -19,18 +18,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func newHarvester(ctx agent.AgentContext, cache *cache) *linuxHarvester {
-	cfg := ctx.Config()
-	// If not config, assuming root mode as default
-	privileged := cfg == nil || cfg.RunMode == config.ModeRoot || cfg.RunMode == config.ModePrivileged
-	disableZeroRSSFilter := cfg != nil && cfg.DisableZeroRSSFilter
-	stripCommandLine := (cfg != nil && cfg.StripCommandLine) || (cfg == nil && config.DefaultStripCommandLine)
+func newHarvester(cache *cache, runMode string, disableZeroRSSFilter, stripCommandLine bool, getServiceForPid func(int) (string, bool)) *linuxHarvester {
+	privileged := runMode == config.ModeRoot || runMode == config.ModePrivileged
 
 	return &linuxHarvester{
 		privileged:           privileged,
 		disableZeroRSSFilter: disableZeroRSSFilter,
 		stripCommandLine:     stripCommandLine,
-		serviceForPid:        ctx.GetServiceForPid,
+		serviceForPid:        getServiceForPid,
 		cache:                cache,
 	}
 }

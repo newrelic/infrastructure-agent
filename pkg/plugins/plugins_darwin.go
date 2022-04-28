@@ -30,7 +30,15 @@ func RegisterPlugins(a *agent.Agent) error {
 	}
 
 	sender := metricsSender.NewSender(a.Context)
-	procSampler := process.NewProcessSampler(a.Context)
+	procSampler := process.NewProcessSampler(
+		config.MetricsProcessSampleRate,
+		config.ContainerMetadataCacheLimit,
+		config.DockerApiVersion,
+		config.RunMode,
+		config.DisableZeroRSSFilter,
+		config.StripCommandLine,
+		agent.GetContext().GetServiceForPid,
+	)
 	storageSampler := storage.NewSampler(
 		config.MetricsStorageSampleRate,
 		config.PartitionsTTL,

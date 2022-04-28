@@ -110,7 +110,16 @@ func RegisterPlugins(agent *agnt.Agent) error {
 	}
 
 	sender := metricsSender.NewSender(agent.Context)
-	procSampler := process.NewProcessSampler(agent.Context)
+
+	procSampler := process.NewProcessSampler(
+		config.MetricsProcessSampleRate,
+		config.ContainerMetadataCacheLimit,
+		config.DockerApiVersion,
+		config.RunMode,
+		config.DisableZeroRSSFilter,
+		config.StripCommandLine,
+		agent.GetContext().GetServiceForPid,
+	)
 	storageSampler := storage.NewSampler(
 		config.MetricsStorageSampleRate,
 		config.PartitionsTTL,
@@ -119,12 +128,15 @@ func RegisterPlugins(agent *agnt.Agent) error {
 		config.CustomSupportedFileSystems,
 		config.OverrideHostRoot,
 	)
-	nfsSampler := nfs.NewSampler(config.MetricsNFSSampleRate, config.DetailedNFS)
+	nfsSampler := nfs.NewSampler(
+		config.MetricsNFSSampleRate,
+		config.DetailedNFS,
+	)
 	networkSampler := network.NewNetworkSampler(
 		config.MetricsNetworkSampleRate,
 		config.NetworkInterfaceFilters,
 		config.Debug,
-		)
+	)
 	systemSampler := metrics.NewSystemSampler(
 		storageSampler,
 		config.MetricsSystemSampleRate,

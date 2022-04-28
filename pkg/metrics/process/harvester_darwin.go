@@ -9,7 +9,6 @@
 package process
 
 import (
-	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
@@ -19,12 +18,9 @@ import (
 	"time"
 )
 
-func newHarvester(ctx agent.AgentContext) *darwinHarvester {
-	cfg := ctx.Config()
+func newHarvester(runMode string, disableZeroRSSFilter, stripCommandLine bool, getServiceForPid func(int) (string, bool)) *darwinHarvester {
 	// If not config, assuming root mode as default
-	privileged := cfg == nil || cfg.RunMode == config.ModeRoot || cfg.RunMode == config.ModePrivileged
-	disableZeroRSSFilter := cfg != nil && cfg.DisableZeroRSSFilter
-	stripCommandLine := (cfg != nil && cfg.StripCommandLine) || (cfg == nil && config.DefaultStripCommandLine)
+	privileged := runMode == config.ModeRoot || runMode == config.ModePrivileged
 	//decouple the process from the harvester
 	s := NewProcessRetrieverCached(time.Second * 10)
 	processRetriever := s.ProcessById
@@ -33,7 +29,7 @@ func newHarvester(ctx agent.AgentContext) *darwinHarvester {
 		privileged:           privileged,
 		disableZeroRSSFilter: disableZeroRSSFilter,
 		stripCommandLine:     stripCommandLine,
-		serviceForPid:        ctx.GetServiceForPid,
+		serviceForPid:        getServiceForPid,
 		processRetriever:     processRetriever,
 	}
 }
