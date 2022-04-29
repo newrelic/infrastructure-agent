@@ -28,15 +28,15 @@ import (
 )
 
 type NetworkSampler struct {
-	context         agent.AgentContext
-	lastRun         time.Time
-	lastNetStats    map[uint32]IOCountersWithIndexStat
-	hasBootstrapped bool
-	stopChannel     chan bool
-	waitForCleanup  *sync.WaitGroup
-	sampleInterval  time.Duration
+	context                 agent.AgentContext
+	lastRun                 time.Time
+	lastNetStats            map[uint32]IOCountersWithIndexStat
+	hasBootstrapped         bool
+	stopChannel             chan bool
+	waitForCleanup          *sync.WaitGroup
+	sampleInterval          time.Duration
 	networkInterfaceFilters map[string][]string
-	debug bool
+	debug                   bool
 }
 
 func (ss *NetworkSampler) Sample() (results sample.EventBatch, err error) {

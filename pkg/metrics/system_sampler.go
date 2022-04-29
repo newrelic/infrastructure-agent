@@ -33,14 +33,14 @@ type SystemSample struct {
 }
 
 type SystemSampler struct {
-	CpuMonitor      *CPUMonitor
-	DiskMonitor     *DiskMonitor
-	LoadMonitor     *LoadMonitor
-	MemoryMonitor   *MemoryMonitor
-	context         agent.AgentContext
-	stopChannel     chan bool
-	waitForCleanup  *sync.WaitGroup
-	debug           bool //TODO remove this
+	CpuMonitor     *CPUMonitor
+	DiskMonitor    *DiskMonitor
+	LoadMonitor    *LoadMonitor
+	MemoryMonitor  *MemoryMonitor
+	context        agent.AgentContext
+	stopChannel    chan bool
+	waitForCleanup *sync.WaitGroup
+	debug          bool //TODO remove this
 	sampleInterval time.Duration
 }
 
@@ -56,7 +56,7 @@ func NewSystemSampler(storageSampler *storage.Sampler, metricsSystemSampleRate i
 	}
 }
 
-func (s *SystemSampler) Interval() time.Duration{
+func (s *SystemSampler) Interval() time.Duration {
 	return s.sampleInterval
 }
 

@@ -402,7 +402,7 @@ func (s *MockStorageSampleWrapper) CalculateSampleValues(counter, lastStats IOCo
 }
 
 func TestIgnoredDevice(t *testing.T) {
-	cfg :=config.Config{
+	cfg := config.Config{
 		FileDevicesIgnored: []string{"sda2", "vg-data"},
 	}
 
