@@ -178,7 +178,7 @@ func NewConfig(verbose int, features map[string]bool, passthroughEnvs, configFol
 		AgentFeatures:          features,
 		DefinitionFolders:      definitionFolders,
 		Verbose:                verbose,
-		PassthroughEnvironment: append(passthroughEnvs, constants.DefaultInheritedEnv...),
+		PassthroughEnvironment: passthroughEnvs,
 	}
 }
 

@@ -23,7 +23,7 @@ func init() {
 	}
 	// NOTE: On Windows, we need at least ComSpec for the agent to be able to run batch files
 	// and SystemRoot for the integration to be able to use the networking layer in some libraries.
-	defaultPassthroughEnvironment = []string{"ComSpec", "SystemRoot"}
+	defaultPassthroughEnvironment = []string{"ComSpec", "SystemRoot", "APPDATA", "Path", "PATH", "PATHEXT", "ProgramData", "ProgramFiles", "ProgramFiles(x86)", "TEMP", "TMP"}
 
 	programData := os.Getenv("ProgramData")
 	defaultAppDataDir = filepath.Join(programData, defaultAppDataSubDir)
