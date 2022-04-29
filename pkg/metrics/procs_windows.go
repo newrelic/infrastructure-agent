@@ -26,7 +26,6 @@ import (
 
 	"github.com/StackExchange/wmi"
 
-	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 )
 
@@ -322,51 +321,56 @@ func getSystemTimes() (*SystemTimes, error) {
 }
 
 type ProcsMonitor struct {
-	context              agent.AgentContext
-	processInterrogator  ProcessInterrogator
-	containerSampler     ContainerSampler
-	procCache            map[string]*ProcessCacheEntry
-	hasAlreadyRun        bool // Indicates whether the monitor has been run already (used for CPU time calculation)
-	lastRun              time.Time
-	currentSystemTime    *SystemTimes
-	previousSystemTime   *SystemTimes
-	previousProcessTimes map[string]*SystemTimes
-	stopChannel          chan bool
-	waitForCleanup       *sync.WaitGroup
-	getAllProcs          func() ([]win32_Process, error)
-	getMemoryInfo        func(int32) (*MemoryInfoStat, error)
-	getStatus            func(int32) (string, error)
-	getUsername          func(int32) (string, error)
-	getTimes             func(int32) (*SystemTimes, error)
-	getCommandLine       func(uint32) (string, error)
+	processInterrogator       ProcessInterrogator
+	containerSampler          ContainerSampler
+	procCache                 map[string]*ProcessCacheEntry
+	hasAlreadyRun             bool // Indicates whether the monitor has been run already (used for CPU time calculation)
+	lastRun                   time.Time
+	currentSystemTime         *SystemTimes
+	previousSystemTime        *SystemTimes
+	previousProcessTimes      map[string]*SystemTimes
+	stopChannel               chan bool
+	waitForCleanup            *sync.WaitGroup
+	getAllProcs               func() ([]win32_Process, error)
+	getMemoryInfo             func(int32) (*MemoryInfoStat, error)
+	getStatus                 func(int32) (string, error)
+	getUsername               func(int32) (string, error)
+	getTimes                  func(int32) (*SystemTimes, error)
+	getCommandLine            func(uint32) (string, error)
+	debug                     bool
+	disableZeroRSSFilter      bool
+	enableElevatedProcessPriv bool
+	metricsProcessSampleRate  int
+	stripCommandLine          bool
+	getServiceForPid          func(int) (string, bool)
 }
 
-func NewProcsMonitor(context agent.AgentContext) *ProcsMonitor {
-	var apiVersion string
-	ttlSecs := config.DefaultContainerCacheMetadataLimit
-	if context != nil && context.Config() != nil {
-		if len(context.Config().AllowedListProcessSample) > 0 {
-			allowedListProcessing = true
-			for _, processName := range context.Config().AllowedListProcessSample {
-				processNames[strings.ToLower(processName)] = true
-			}
+func NewProcsMonitor(containerMetadataCacheLimit int, dockerApiVersion string, allowedListProcessSample []string, debug, disableZeroRSSFilter, enableElevatedProcessPriv, stripCommandLine bool, metricsProcessSampleRate int, getServiceForPid func(int) (string, bool)) *ProcsMonitor {
+	if len(allowedListProcessSample) > 0 {
+		allowedListProcessing = true
+		for _, processName := range allowedListProcessSample {
+			processNames[strings.ToLower(processName)] = true
 		}
-		ttlSecs = context.Config().ContainerMetadataCacheLimit
-		apiVersion = context.Config().DockerApiVersion
 	}
+
 	return &ProcsMonitor{
-		context:              context,
-		procCache:            make(map[string]*ProcessCacheEntry),
-		containerSampler:     NewDockerSampler(time.Duration(ttlSecs)*time.Second, apiVersion),
-		previousProcessTimes: make(map[string]*SystemTimes),
-		processInterrogator:  NewInternalProcessInterrogator(true),
-		waitForCleanup:       &sync.WaitGroup{},
-		getAllProcs:          getAllWin32Procs(getWin32APIProcessPath),
-		getMemoryInfo:        getMemoryInfo,
-		getStatus:            getStatus,
-		getUsername:          getProcessUsername,
-		getTimes:             getProcessTimes,
-		getCommandLine:       getProcessCommandLineWMI,
+		procCache:                 make(map[string]*ProcessCacheEntry),
+		containerSampler:          NewDockerSampler(time.Duration(containerMetadataCacheLimit)*time.Second, dockerApiVersion),
+		previousProcessTimes:      make(map[string]*SystemTimes),
+		processInterrogator:       NewInternalProcessInterrogator(true),
+		waitForCleanup:            &sync.WaitGroup{},
+		getAllProcs:               getAllWin32Procs(getWin32APIProcessPath),
+		getMemoryInfo:             getMemoryInfo,
+		getStatus:                 getStatus,
+		getUsername:               getProcessUsername,
+		getTimes:                  getProcessTimes,
+		getCommandLine:            getProcessCommandLineWMI,
+		debug:                     debug,
+		disableZeroRSSFilter:      disableZeroRSSFilter,
+		enableElevatedProcessPriv: enableElevatedProcessPriv,
+		metricsProcessSampleRate:  metricsProcessSampleRate,
+		stripCommandLine:          stripCommandLine,
+		getServiceForPid:          getServiceForPid,
 	}
 }
 
@@ -689,11 +693,7 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 						continue
 					}
 
-					hasConfig := self.context != nil && self.context.Config() != nil
-					stripCmdLine := (hasConfig && self.context.Config().StripCommandLine) ||
-						(!hasConfig && config.DefaultStripCommandLine)
-
-					if stripCmdLine {
+					if self.stripCommandLine {
 						sample.CmdLine = *winProc.ExecutablePath
 					} else {
 						sample.CmdLine, err = self.getCommandLine(winProc.ProcessID)
@@ -723,10 +723,9 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 				// If we know of a service for this pid, that'll be the name.
 				// We can fall back to the command name if nothing else is available.
 				sample.ProcessDisplayName = sample.CommandName
-				if self.context != nil {
-					if serviceName, ok := self.context.GetServiceForPid(int(pid)); ok {
-						sample.ProcessDisplayName = serviceName
-					}
+
+				if serviceName, ok := self.getServiceForPid(int(pid)); ok {
+					sample.ProcessDisplayName = serviceName
 				}
 
 				// Process Status For Windows
@@ -844,24 +843,15 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 }
 
 func (self *ProcsMonitor) Debug() bool {
-	if self.context == nil {
-		return false
-	}
-	return self.context.Config().Debug
+	return self.debug
 }
 
 func (self *ProcsMonitor) DisableZeroRSSFilter() bool {
-	if self.context == nil {
-		return false
-	}
-	return self.context.Config().DisableZeroRSSFilter
+	return self.disableZeroRSSFilter
 }
 
 func (self *ProcsMonitor) EnableElevatedProcessPriv() bool {
-	if self.context == nil {
-		return false
-	}
-	return self.context.Config().EnableElevatedProcessPriv
+	return self.enableElevatedProcessPriv
 }
 
 // deprecated. Used only by the windows ProcsMonitor
@@ -871,11 +861,7 @@ func cpuTotal(t *cpu.TimesStat) float64 {
 }
 
 func (self *ProcsMonitor) intervalSecs() int {
-	if self.context != nil {
-		return self.context.Config().MetricsProcessSampleRate
-	}
-
-	return config.FREQ_INTERVAL_FLOOR_PROCESS_METRICS
+	return self.metricsProcessSampleRate
 }
 
 func (self *ProcsMonitor) Name() string {

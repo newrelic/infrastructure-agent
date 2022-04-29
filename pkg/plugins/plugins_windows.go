@@ -51,7 +51,17 @@ func RegisterPlugins(a *agent.Agent) error {
 	}
 
 	sender := metricsSender.NewSender(a.Context)
-	procSampler := metrics.NewProcsMonitor(a.Context)
+	procSampler := metrics.NewProcsMonitor(
+		config.ContainerMetadataCacheLimit,
+		config.DockerApiVersion,
+		config.AllowedListProcessSample,
+		config.Debug,
+		config.DisableZeroRSSFilter,
+		config.EnableElevatedProcessPriv,
+		config.StripCommandLine,
+		config.MetricsProcessSampleRate,
+		a.Context.GetServiceForPid,
+	)
 	storageSampler := storage.NewSampler(
 		config.MetricsStorageSampleRate,
 		config.PartitionsTTL,
@@ -59,7 +69,7 @@ func RegisterPlugins(a *agent.Agent) error {
 		config.WinRemovableDrives,
 		config.CustomSupportedFileSystems,
 		config.OverrideHostRoot,
-	)	// Prime Storage Sampler, ignoring results
+	) // Prime Storage Sampler, ignoring results
 	slog.Debug("Prewarming Sampler Cache.")
 	if _, err := storageSampler.Sample(); err != nil {
 		slog.WithError(err).Debug("Warming up Storage Sampler Cache.")

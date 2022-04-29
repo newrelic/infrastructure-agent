@@ -44,8 +44,17 @@ func TestProcessAllowedList(t *testing.T) {
 		"userAgent",
 		ffTest.EmptyFFRetriever)
 	assert.NoError(t, err)
-	testAgentConfig := testAgent.Context
-	pm := NewProcsMonitor(testAgentConfig)
+	pm := NewProcsMonitor(
+		cfg.ContainerMetadataCacheLimit,
+		cfg.DockerApiVersion,
+		cfg.AllowedListProcessSample,
+		cfg.Debug,
+		cfg.DisableZeroRSSFilter,
+		cfg.EnableElevatedProcessPriv,
+		cfg.StripCommandLine,
+		cfg.MetricsProcessSampleRate,
+		testAgent.GetContext().GetServiceForPid,
+	)
 	results, err := pm.Sample()
 	assert.NoError(t, err)
 	assert.Len(t, results, 1)
