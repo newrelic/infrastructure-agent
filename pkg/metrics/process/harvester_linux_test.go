@@ -35,7 +35,7 @@ func TestLinuxHarvester_IsPrivileged(t *testing.T) {
 			ctx.On("GetServiceForPid", mock.Anything).Return("", false)
 
 			cache := newCache()
-			h := newHarvester(ctx, &cache)
+			h := newHarvester(&cache, ctx.Config().RunMode, ctx.Config().DisableZeroRSSFilter, ctx.Config().StripCommandLine, ctx.GetServiceForPid)
 
 			// If not privileged, it is expected to not report neither FDs nor IO counters
 			sample, err := h.Do(int32(os.Getpid()), 100)
@@ -56,7 +56,7 @@ func TestLinuxHarvester_Pids(t *testing.T) {
 	ctx := new(mocks.AgentContext)
 	ctx.On("Config").Return(&config.Config{})
 	cache := newCache()
-	h := newHarvester(ctx, &cache)
+	h := newHarvester(&cache, ctx.Config().RunMode, ctx.Config().DisableZeroRSSFilter, ctx.Config().StripCommandLine, ctx.GetServiceForPid)
 
 	// When th Pids are retrieved
 	pids, err := h.Pids()
@@ -75,7 +75,7 @@ func TestLinuxHarvester_Do(t *testing.T) {
 	ctx.On("Config").Return(&config.Config{})
 	ctx.On("GetServiceForPid", mock.Anything).Return("", false)
 	cache := newCache()
-	h := newHarvester(ctx, &cache)
+	h := newHarvester(&cache, ctx.Config().RunMode, ctx.Config().DisableZeroRSSFilter, ctx.Config().StripCommandLine, ctx.GetServiceForPid)
 
 	// When retrieving for a given process sample (e.g. the current testing executable)
 	sample, err := h.Do(int32(os.Getpid()), 0)
@@ -108,7 +108,7 @@ func TestLinuxHarvester_Do_Privileged(t *testing.T) {
 	ctx.On("Config").Return(&config.Config{RunMode: config.ModeRoot})
 	ctx.On("GetServiceForPid", mock.Anything).Return("", false)
 	cache := newCache()
-	h := newHarvester(ctx, &cache)
+	h := newHarvester(&cache, ctx.Config().RunMode, ctx.Config().DisableZeroRSSFilter, ctx.Config().StripCommandLine, ctx.GetServiceForPid)
 
 	// When retrieving for a given process sample (e.g. the current testing executable)
 	sample, err := h.Do(int32(os.Getpid()), 0)
@@ -144,7 +144,7 @@ func TestLinuxHarvester_Do_DisableStripCommandLine(t *testing.T) {
 	ctx.On("Config").Return(&config.Config{StripCommandLine: false})
 	ctx.On("GetServiceForPid", mock.Anything).Return("", false)
 	cache := newCache()
-	h := newHarvester(ctx, &cache)
+	h := newHarvester(&cache, ctx.Config().RunMode, ctx.Config().DisableZeroRSSFilter, ctx.Config().StripCommandLine, ctx.GetServiceForPid)
 
 	testhelpers.Eventually(t, 5*time.Second, func(t require.TestingT) {
 		// When retrieving for a given process sample (e.g. the current testing executable)
@@ -172,7 +172,7 @@ func TestLinuxHarvester_Do_EnableStripCommandLine(t *testing.T) {
 	ctx.On("Config").Return(&config.Config{StripCommandLine: true})
 	ctx.On("GetServiceForPid", mock.Anything).Return("", false)
 	cache := newCache()
-	h := newHarvester(ctx, &cache)
+	h := newHarvester(&cache, ctx.Config().RunMode, ctx.Config().DisableZeroRSSFilter, ctx.Config().StripCommandLine, ctx.GetServiceForPid)
 
 	testhelpers.Eventually(t, 5*time.Second, func(t require.TestingT) {
 		// When retrieving for a given process sample (e.g. the current testing executable)
@@ -197,7 +197,7 @@ func TestLinuxHarvester_Do_InvalidateCache_DifferentCmd(t *testing.T) {
 	// That has cached an old process sharing the PID with a new process
 	cache := newCache()
 	cache.Add(currentPid, &cacheEntry{process: &linuxProcess{cmdLine: "something old"}})
-	h := newHarvester(ctx, &cache)
+	h := newHarvester(&cache, ctx.Config().RunMode, ctx.Config().DisableZeroRSSFilter, ctx.Config().StripCommandLine, ctx.GetServiceForPid)
 
 	// When the process is harvested
 	sample, err := h.Do(currentPid, 0)
@@ -219,7 +219,7 @@ func TestLinuxHarvester_Do_InvalidateCache_DifferentPid(t *testing.T) {
 	// That has cached an old process sharing the PID with a new process
 	cache := newCache()
 	cache.Add(currentPid, &cacheEntry{process: &linuxProcess{stats: procStats{ppid: -1}}})
-	h := newHarvester(ctx, &cache)
+	h := newHarvester(&cache, ctx.Config().RunMode, ctx.Config().DisableZeroRSSFilter, ctx.Config().StripCommandLine, ctx.GetServiceForPid)
 
 	// When the process is harvested
 	sample, err := h.Do(currentPid, 0)
@@ -236,7 +236,7 @@ func TestLinuxHarvester_GetServiceForPid(t *testing.T) {
 	// That matches a given PID with an existing service name
 	ctx.On("GetServiceForPid", os.Getpid()).Return("MyServiceIdentifier", true)
 	cache := newCache()
-	h := newHarvester(ctx, &cache)
+	h := newHarvester(&cache, ctx.Config().RunMode, ctx.Config().DisableZeroRSSFilter, ctx.Config().StripCommandLine, ctx.GetServiceForPid)
 
 	// When retrieving the process sampler
 	sample, err := h.Do(int32(os.Getpid()), 0)
@@ -257,7 +257,7 @@ func TestLinuxHarvester_GetServiceForPid_OnEmptyUseCommandName(t *testing.T) {
 	// That matches a given PID with an existing service name that is EMPTY
 	ctx.On("GetServiceForPid", os.Getpid()).Return("", true)
 	cache := newCache()
-	h := newHarvester(ctx, &cache)
+	h := newHarvester(&cache, ctx.Config().RunMode, ctx.Config().DisableZeroRSSFilter, ctx.Config().StripCommandLine, ctx.GetServiceForPid)
 
 	// When retrieving the process sampler
 	sample, err := h.Do(int32(os.Getpid()), 0)

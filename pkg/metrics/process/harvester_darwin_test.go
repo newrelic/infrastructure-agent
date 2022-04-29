@@ -82,7 +82,7 @@ func Test_newHarvester(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := new(mocks.AgentContext)
 			ctx.On("Config").Once().Return(tt.cfg)
-			h := newHarvester(ctx)
+			h := newHarvester(ctx.Config().RunMode, ctx.Config().DisableZeroRSSFilter, ctx.Config().StripCommandLine, ctx.GetServiceForPid)
 			assert.Equal(t, tt.expectedPrivileged, h.privileged)
 			assert.Equal(t, tt.expectedDisableZeroRSSFilter, h.disableZeroRSSFilter)
 			assert.Equal(t, tt.expectedStripCommandLine, h.stripCommandLine)
@@ -98,7 +98,7 @@ func TestDarwinHarvester_populateStaticData_OnErrorOnCmd(t *testing.T) {
 	cfg := &config.Config{RunMode: config.ModeRoot}
 	ctx.On("Config").Once().Return(cfg)
 
-	h := newHarvester(ctx)
+	h := newHarvester(ctx.Config().RunMode, ctx.Config().DisableZeroRSSFilter, ctx.Config().StripCommandLine, ctx.GetServiceForPid)
 	errorOnCmd := errors.New("this is some error")
 	snapshot.ShouldReturnCmdLine(!h.stripCommandLine, "", errorOnCmd)
 
@@ -126,7 +126,7 @@ func TestDarwinHarvester_populateStaticData_LogOnErrorOnUsername(t *testing.T) {
 	log.SetOutput(&output)
 	log.SetLevel(logrus.DebugLevel)
 
-	h := newHarvester(ctx)
+	h := newHarvester(ctx.Config().RunMode, ctx.Config().DisableZeroRSSFilter, ctx.Config().StripCommandLine, ctx.GetServiceForPid)
 	errorOnUsername := errors.New("this is some username error")
 	snapshot.ShouldReturnCmdLine(!h.stripCommandLine, cmdLine, nil)
 	snapshot.ShouldReturnUsername("", errorOnUsername)
@@ -170,7 +170,7 @@ func TestDarwinHarvester_populateStaticData_NoErrorOnUsername(t *testing.T) {
 	log.SetOutput(&output)
 	log.SetLevel(logrus.DebugLevel)
 
-	h := newHarvester(ctx)
+	h := newHarvester(ctx.Config().RunMode, ctx.Config().DisableZeroRSSFilter, ctx.Config().StripCommandLine, ctx.GetServiceForPid)
 	snapshot.ShouldReturnCmdLine(!h.stripCommandLine, cmdLine, nil)
 	snapshot.ShouldReturnUsername(username, nil)
 	snapshot.ShouldReturnPid(pid)
@@ -258,7 +258,7 @@ func TestDarwinHarvester_populateGauges(t *testing.T) {
 			cfg := &config.Config{RunMode: config.ModeRoot}
 			ctx.On("Config").Once().Return(cfg)
 
-			h := newHarvester(ctx)
+			h := newHarvester(ctx.Config().RunMode, ctx.Config().DisableZeroRSSFilter, ctx.Config().StripCommandLine, ctx.GetServiceForPid)
 
 			snapshot.ShouldReturnCPUTimes(tt.cpuInfo, nil)
 			snapshot.ShouldReturnStatus(tt.status)
@@ -291,7 +291,7 @@ func TestDarwinHarvester_populateGauges_NoCpuInfo(t *testing.T) {
 	cfg := &config.Config{RunMode: config.ModeRoot}
 	ctx.On("Config").Once().Return(cfg)
 
-	h := newHarvester(ctx)
+	h := newHarvester(ctx.Config().RunMode, ctx.Config().DisableZeroRSSFilter, ctx.Config().StripCommandLine, ctx.GetServiceForPid)
 
 	cpuInfoErr := errors.New("this is an error")
 	snapshot.ShouldReturnCPUTimes(CPUInfo{}, cpuInfoErr)
@@ -321,7 +321,7 @@ func TestDarwinHarvester_determineProcessDisplayName_OnProcessIdInfoAvailable(t 
 	log.SetOutput(&output)
 	log.SetLevel(logrus.DebugLevel)
 
-	h := newHarvester(ctx)
+	h := newHarvester(ctx.Config().RunMode, ctx.Config().DisableZeroRSSFilter, ctx.Config().StripCommandLine, ctx.GetServiceForPid)
 
 	sample := &types.ProcessSample{CommandName: commandName, ProcessID: int32(processId)}
 	name := h.determineProcessDisplayName(sample)
@@ -347,7 +347,7 @@ func TestDarwinHarvester_determineProcessDisplayName_OnProcessIdInfoNotAvailable
 	ctx.On("Config").Once().Return(cfg)
 	ctx.On("GetServiceForPid", processId).Once().Return(processName, ok)
 
-	h := newHarvester(ctx)
+	h := newHarvester(ctx.Config().RunMode, ctx.Config().DisableZeroRSSFilter, ctx.Config().StripCommandLine, ctx.GetServiceForPid)
 
 	sample := &types.ProcessSample{CommandName: commandName, ProcessID: int32(processId)}
 	name := h.determineProcessDisplayName(sample)
@@ -381,7 +381,7 @@ func TestDarwinHarvester_Do_DontReportIfMemoryZero(t *testing.T) {
 	proc.ShouldReturnTimes(&cpu.TimesStat{User: 34, System: 0.45}, nil)
 	proc.ShouldReturnUsername("some username", nil)
 
-	h := newHarvester(ctx)
+	h := newHarvester(ctx.Config().RunMode, ctx.Config().DisableZeroRSSFilter, ctx.Config().StripCommandLine, ctx.GetServiceForPid)
 	h.processRetriever = func(int32) (Process, error) {
 		return proc, nil
 	}
@@ -421,7 +421,7 @@ func TestDarwinHarvester_Do_NoError(t *testing.T) {
 	proc.ShouldReturnTimes(&cpu.TimesStat{User: 34, System: 0.45}, nil)
 	proc.ShouldReturnUsername("some username", nil)
 
-	h := newHarvester(ctx)
+	h := newHarvester(ctx.Config().RunMode, ctx.Config().DisableZeroRSSFilter, ctx.Config().StripCommandLine, ctx.GetServiceForPid)
 	h.processRetriever = func(int32) (Process, error) {
 		return proc, nil
 	}
@@ -457,7 +457,7 @@ func TestDarwinHarvester_Do_ErrorOnProcError(t *testing.T) {
 	ctx.On("Config").Once().Return(cfg)
 
 	procErr := errors.New("some error message")
-	h := newHarvester(ctx)
+	h := newHarvester(ctx.Config().RunMode, ctx.Config().DisableZeroRSSFilter, ctx.Config().StripCommandLine, ctx.GetServiceForPid)
 	h.processRetriever = func(int32) (Process, error) {
 		return nil, procErr
 	}
