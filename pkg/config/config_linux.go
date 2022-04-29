@@ -44,6 +44,9 @@ func init() {
 	defaultFluentBitParsers = "parsers.conf"
 	defaultFluentBitNRLib = "out_newrelic.so"
 
+	// add PATH environment variable to all integrations
+	defaultPassthroughEnvironment = []string{"PATH"}
+
 	// this is the default dir the infra sdk uses to store "temporary" data
 	defaultIntegrationsTempDir = filepath.Join("/tmp", "nr-integrations")
 }
