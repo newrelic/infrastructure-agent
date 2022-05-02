@@ -27,8 +27,6 @@ import (
 	"time"
 
 	selfInstrumentation "github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
-	"github.com/newrelic/infrastructure-agent/pkg/config/migrate"
-
 	"github.com/newrelic/infrastructure-agent/internal/httpapi"
 	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
 
@@ -121,7 +119,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		err := migrate.V3toV4(v3tov4Args[0], v3tov4Args[1], v3tov4Args[2], v3tov4Args[3] == "true")
+		err := integrationsConfig.V3toV4(v3tov4Args[0], v3tov4Args[1], v3tov4Args[2], v3tov4Args[3] == "true")
 
 		if err != nil {
 			fmt.Println(err)
@@ -371,7 +369,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 
 	integrationEmitter := emitter.NewIntegrationEmittor(agt, dmEmitter, ffManager)
 
-	cfgLoader := integrationsConfig.NewPathLoader()
+	cfgLoader := integrationsConfig.NewPathLoader(pluginRegistry)
 	integrationManager := v4.NewManager(
 		v4ManagerConfig,
 		cfgLoader,

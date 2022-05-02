@@ -7,8 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/config/envvar"
-	"github.com/newrelic/infrastructure-agent/pkg/config/migrate"
-	config_v32 "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v3/config"
+	v3config "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v3/config"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/files"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"gopkg.in/yaml.v2"
@@ -42,11 +41,11 @@ type Loader interface {
 
 type pathLoader struct {
 	isDirectory    func(path string) (bool, error)
-	pluginRegistry *config_v32.PluginRegistry
+	pluginRegistry *v3config.PluginRegistry
 }
 
 // NewPathLoader returns a new instance of a config Loader.
-func NewPathLoader(pluginRegistry *config_v32.PluginRegistry) Loader {
+func NewPathLoader(pluginRegistry *v3config.PluginRegistry) Loader {
 	return &pathLoader{
 		isDirectory:    isDirectory,
 		pluginRegistry: pluginRegistry,
@@ -168,9 +167,9 @@ func (pl *pathLoader) loadConfigIntoBytes(path string) ([]byte, error) {
 }
 
 func (pl *pathLoader) migrateLegacyConfig(path string) ([]byte, error) {
-	v3Configuration := config_v32.PluginInstanceWrapper{}
+	v3Configuration := v3config.PluginInstanceWrapper{}
 
-	err := migrate.ReadAndUnmarshallConfig(path, &v3Configuration)
+	err := ReadAndUnmarshallConfig(path, &v3Configuration)
 	if err != nil {
 		return nil, fmt.Errorf("error reading old config configuration: %w", err)
 	}
@@ -180,7 +179,7 @@ func (pl *pathLoader) migrateLegacyConfig(path string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error reading old config configuration: %w", err)
 	}
-	v4Conf, err := migrate.PopulateV4Config(*v3Definition, v3Configuration)
+	v4Conf, err := PopulateV4Config(*v3Definition, v3Configuration)
 	if err != nil {
 		return nil, fmt.Errorf("error reading old config configuration: %w", err)
 	}
