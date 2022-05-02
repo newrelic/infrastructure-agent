@@ -30,7 +30,7 @@ type V3toV4Result struct {
 	V3toV4Result string `json:"migrateV3toV4Result"`
 }
 
-func V3toV4(pathConfiguration string, pathDefinition string, pathOutput string, overwrite bool) error {
+func MigrateV3toV4(pathConfiguration string, pathDefinition string, pathOutput string, overwrite bool) error {
 
 	if _, err := os.Stat(pathOutput); err == nil && !overwrite {
 		return fmt.Errorf("file '%s' already exist and overwrite option is set to false", pathOutput)

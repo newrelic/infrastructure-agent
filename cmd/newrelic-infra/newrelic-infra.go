@@ -119,7 +119,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		err := integrationsConfig.V3toV4(v3tov4Args[0], v3tov4Args[1], v3tov4Args[2], v3tov4Args[3] == "true")
+		err := integrationsConfig.MigrateV3toV4(v3tov4Args[0], v3tov4Args[1], v3tov4Args[2], v3tov4Args[3] == "true")
 
 		if err != nil {
 			fmt.Println(err)
