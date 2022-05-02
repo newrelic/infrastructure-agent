@@ -34,6 +34,7 @@ func init() {
 		"ComSpec",
 		"LOCALAPPDATA",
 		"Path",
+		"PATH",
 		"PATHEXT",
 		"ProgramData",
 		"ProgramFiles",
