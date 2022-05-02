@@ -269,7 +269,7 @@ func TestManager_ErrorLoadingV3IntegrationsIfNoDefinition(t *testing.T) {
 	for i := range hook.AllEntries() {
 		fmt.Println(hook.AllEntries()[i]) // Use stdout as logger is in discard mode and we never run tests in verbose
 	}
-	assert.Equal(t, "can't load integrations file", hook.AllEntries()[0].Message)
+	assert.Equal(t, "can't load integrations file. This may happen if you are editing a file and saving intermediate changes", hook.AllEntries()[0].Message)
 	assert.Equal(t, "v3-config.yaml", hook.AllEntries()[0].Data["file"])
 
 	assert.Len(t, hook.AllEntries(), 1)
@@ -294,7 +294,7 @@ func TestManager_LogWarningForInvalidYaml(t *testing.T) {
 	// THEN one long entry found
 	require.NotEmpty(t, hook.AllEntries())
 	entry := hook.LastEntry()
-	assert.Equal(t, "can't load integrations file", entry.Message)
+	assert.Equal(t, "can't load integrations file. This may happen if you are editing a file and saving intermediate changes", entry.Message)
 	assert.Equal(t, logrus.WarnLevel, entry.Level)
 }
 
