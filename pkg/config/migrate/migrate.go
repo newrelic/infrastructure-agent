@@ -73,7 +73,6 @@ func ReadAndUnmarshallConfig(path string, out interface{}) error {
 	}
 	defer file.Close()
 
-
 	err = yaml.NewDecoder(file).Decode(out)
 	if err != nil {
 		return fmt.Errorf("decoding %s, %w", path, err)
