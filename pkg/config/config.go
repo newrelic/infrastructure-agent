@@ -53,6 +53,9 @@ var clog = log.WithComponent("Configuration")
 // Configuration type to Map include_matching_metrics setting env var
 type IncludeMetricsMap map[string][]string
 
+// Logging filters
+type LogFilters map[string][]interface{}
+
 //
 // IMPORTANT NOTE: If you add new config fields, consider checking the ignore list in
 // the plugins/agent_config.go plugin to not send undesired fields as inventory
@@ -1110,12 +1113,13 @@ func NewTroubleshootCfg(isTroubleshootMode, agentLogsToFile bool, agentLogFile s
 
 // LogConfig map all logging configuration options
 type LogConfig struct {
-	File                 string `yaml:"file" envconfig:"file"`
-	Level                string `yaml:"level" envconfig:"level"`
-	Format               string `yaml:"format" envconfig:"format"`
-	Forward              *bool  `yaml:"forward,omitempty" envconfig:"forward"`
-	ToStdout             *bool  `yaml:"stdout,omitempty" envconfig:"stdout"`
-	SmartLevelEntryLimit *int   `yaml:"smart_level_entry_limit,omitempty" envconfig:"smart_level_entry_limit"`
+	File                 string     `yaml:"file" envconfig:"file"`
+	Level                string     `yaml:"level" envconfig:"level"`
+	Format               string     `yaml:"format" envconfig:"format"`
+	Forward              *bool      `yaml:"forward,omitempty" envconfig:"forward"`
+	ToStdout             *bool      `yaml:"stdout,omitempty" envconfig:"stdout"`
+	SmartLevelEntryLimit *int       `yaml:"smart_level_entry_limit,omitempty" envconfig:"smart_level_entry_limit"`
+	Filters              LogFilters `yaml:"filters,omitempty" envconfig:"filters"`
 }
 
 func coalesce(values ...string) string {
@@ -1136,7 +1140,12 @@ func coalesceBool(values ...*bool) bool {
 	return false
 }
 
-func (config *Config) loadLogConfig() error {
+func (config *Config) loadLogConfig() {
+	// populate LogConfig object from old configuration options
+	if reflect.DeepEqual(config.Log, LogConfig{}) {
+		config.populateLogConfig()
+		return
+	}
 	// backwards compatability with non struct log configuration options
 	config.LogFile = coalesce(config.Log.File, config.LogFile)
 	config.LogFormat = coalesce(config.Log.Format, config.LogFormat)
@@ -1162,7 +1171,32 @@ func (config *Config) loadLogConfig() error {
 			config.Verbose = TraceTroubleshootLogging
 		}
 	}
-	return nil
+}
+
+func (config *Config) populateLogConfig() {
+	boolPtr := func(a bool) *bool {
+		return &a
+	}
+	config.Log = LogConfig{
+		File:                 config.LogFile,
+		Format:               config.LogFormat,
+		ToStdout:             &config.LogToStdout,
+		Forward:              boolPtr(false),
+		SmartLevelEntryLimit: &config.SmartVerboseModeEntryLimit,
+	}
+	switch config.Verbose {
+	case SmartVerboseLogging:
+		config.Log.Level = "smart"
+	case NonVerboseLogging:
+		config.Log.Level = "info"
+	case VerboseLogging, TroubleshootLogging:
+		config.Log.Level = "debug"
+	case TraceLogging, TraceTroubleshootLogging:
+		config.Log.Level = "trace"
+	}
+	if config.Verbose == TroubleshootLogging || config.Verbose == TraceTroubleshootLogging {
+		config.Log.Forward = boolPtr(true)
+	}
 }
 
 // LogForward log forwarder config values.
@@ -1682,12 +1716,8 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 		return
 	}
 
-	// Map new Log configuration to old Verbose level
-	err = cfg.loadLogConfig()
-	if err != nil {
-		err = fmt.Errorf("invalid log configuration: %w", err)
-		return
-	}
+	//  Map new Log configuration
+	cfg.loadLogConfig()
 
 	// For now, make any level of verbosity between [1,3] printing out debugging info
 	// until we refactor and use the corresponding level for each value
@@ -1998,6 +2028,19 @@ func (c *CustomAttributeMap) DataMap() (d data.Map) {
 }
 
 func (i *IncludeMetricsMap) Decode(value string) error {
+	data := []byte(value)
+
+	// Clear current Map
+	for k := range *i {
+		delete(*i, k)
+	}
+
+	if err := yaml.Unmarshal(data, i); err != nil {
+		return err
+	}
+	return nil
+}
+func (i *LogFilters) Decode(value string) error {
 	data := []byte(value)
 
 	// Clear current Map
