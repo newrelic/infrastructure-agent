@@ -31,11 +31,12 @@ const (
 
 // FluentBit INPUT plugin types
 const (
-	fbInputTypeTail    = "tail"
-	fbInputTypeSystemd = "systemd"
-	fbInputTypeWinlog  = "winlog"
-	fbInputTypeSyslog  = "syslog"
-	fbInputTypeTcp     = "tcp"
+	fbInputTypeTail      = "tail"
+	fbInputTypeSystemd   = "systemd"
+	fbInputTypeWinlog    = "winlog"
+	fbInputTypeWinevtlog = "winevtlog"
+	fbInputTypeSyslog    = "syslog"
+	fbInputTypeTcp       = "tcp"
 )
 
 // FluentBit FILTER plugin types
@@ -96,6 +97,7 @@ type LogCfg struct {
 	Tcp        *LogTcpCfg        `yaml:"tcp"`
 	Fluentbit  *LogExternalFBCfg `yaml:"fluentbit"`
 	Winlog     *LogWinlogCfg     `yaml:"winlog"`
+	Winevtlog  *LogWinevtlogCfg  `yaml:"winevtlog"`
 }
 
 // LogSyslogCfg logging integration config from customer defined YAML, specific for the Syslog input plugin
@@ -106,6 +108,12 @@ type LogSyslogCfg struct {
 }
 
 type LogWinlogCfg struct {
+	Channel         string   `yaml:"channel"`
+	CollectEventIds []string `yaml:"collect-eventids"`
+	ExcludeEventIds []string `yaml:"exclude-eventids"`
+}
+
+type LogWinevtlogCfg struct {
 	Channel         string   `yaml:"channel"`
 	CollectEventIds []string `yaml:"collect-eventids"`
 	ExcludeEventIds []string `yaml:"exclude-eventids"`
@@ -124,7 +132,7 @@ type LogExternalFBCfg struct {
 
 // IsValid validates struct as there's no constructor to enforce it.
 func (l *LogCfg) IsValid() bool {
-	return l.Name != "" && (l.File != "" || l.Systemd != "" || l.Syslog != nil || l.Tcp != nil || l.Fluentbit != nil || l.Winlog != nil)
+	return l.Name != "" && (l.File != "" || l.Systemd != "" || l.Syslog != nil || l.Tcp != nil || l.Fluentbit != nil || l.Winlog != nil || l.Winevtlog != nil)
 }
 
 // FBCfg FluentBit automatically generated configuration.
@@ -150,7 +158,7 @@ func (c FBCfg) Format() (result string, externalCfg FBCfgExternal, err error) {
 	return buf.String(), c.ExternalCfg, nil
 }
 
-// FBCfgInput FluentBit INPUT config block for either "tail", "systemd", "winlog" or "syslog" plugins.
+// FBCfgInput FluentBit INPUT config block for either "tail", "systemd", "winlog", "winevtlog" or "syslog" plugins.
 // Tail plugin expected shape:
 //  [INPUT]
 //    Name tail
@@ -307,6 +315,8 @@ func parseConfigBlock(l LogCfg, logsHomeDir string) (input FBCfgInput, filters [
 		input, filters, err = parseTcpInput(l)
 	} else if l.Winlog != nil {
 		input, filters, err = parseWinlogInput(l, dbPath)
+	} else if l.Winevtlog != nil {
+		input, filters, err = parseWinevtlogInput(l, dbPath)
 	}
 
 	if err != nil {
@@ -368,7 +378,7 @@ func parseTcpInput(l LogCfg) (input FBCfgInput, filters []FBCfgFilter, err error
 func parseWinlogInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBCfgFilter, err error) {
 	input = newWinlogInput(*l.Winlog, dbPath, l.Name)
 	filters = append(filters, newRecordModifierFilterForInput(l.Name, fbInputTypeWinlog, l.Attributes))
-	scriptContent, err := createLuaScript(*l.Winlog)
+	scriptContent, err := createLuaWindowsFilterScript(l.Winlog.CollectEventIds, l.Winlog.ExcludeEventIds)
 	if err != nil {
 		return FBCfgInput{}, []FBCfgFilter{}, err
 	}
@@ -382,10 +392,27 @@ func parseWinlogInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBCf
 	return input, filters, nil
 }
 
-func createLuaScript(winlog LogWinlogCfg) (scriptContent string, err error) {
+//Winevtlog: "winevtlog" plugin
+func parseWinevtlogInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBCfgFilter, err error) {
+	input = newWinevtlogInput(*l.Winevtlog, dbPath, l.Name)
+	filters = append(filters, newRecordModifierFilterForInput(l.Name, fbInputTypeWinevtlog, l.Attributes))
+	scriptContent, err := createLuaWindowsFilterScript(l.Winevtlog.CollectEventIds, l.Winevtlog.ExcludeEventIds)
+	if err != nil {
+		return FBCfgInput{}, []FBCfgFilter{}, err
+	}
+	scriptName, err := saveToTempFile([]byte(scriptContent))
+	if err != nil {
+		return FBCfgInput{}, []FBCfgFilter{}, err
+	}
+	eventIdLuaFilter := newLuaFilter(l.Name, scriptName)
+	filters = append(filters, eventIdLuaFilter)
+	filters = append(filters, newModifyFilter(l.Name))
+	return input, filters, nil
+}
+
+func createLuaWindowsFilterScript(included []string, excluded []string) (scriptContent string, err error) {
 	var fbLuaScript FBWinlogLuaScript
 	fbLuaScript.FnName = fbLuaFnNameWinlogEventFilter
-	included, excluded := winlog.CollectEventIds, winlog.ExcludeEventIds
 	fbLuaScript.IncludedEventIds, err = createConditions(included, "true")
 	if err != nil {
 		return "", err
@@ -481,6 +508,15 @@ func newSystemdInput(service string, dbPath string, tag string) FBCfgInput {
 func newWinlogInput(winlog LogWinlogCfg, dbPath string, tag string) FBCfgInput {
 	return FBCfgInput{
 		Name:     fbInputTypeWinlog,
+		Channels: winlog.Channel,
+		Tag:      tag,
+		DB:       dbPath,
+	}
+}
+
+func newWinevtlogInput(winlog LogWinevtlogCfg, dbPath string, tag string) FBCfgInput {
+	return FBCfgInput{
+		Name:     fbInputTypeWinevtlog,
 		Channels: winlog.Channel,
 		Tag:      tag,
 		DB:       dbPath,
