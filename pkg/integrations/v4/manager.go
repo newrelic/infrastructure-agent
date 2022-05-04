@@ -16,7 +16,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/config/envvar"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 
@@ -177,7 +176,7 @@ func NewConfig(verbose int, features map[string]bool, passthroughEnvs, configFol
 		AgentFeatures:          features,
 		DefinitionFolders:      definitionFolders,
 		Verbose:                verbose,
-		PassthroughEnvironment: append(passthroughEnvs, legacy.DefaultInheritedEnv...),
+		PassthroughEnvironment: passthroughEnvs,
 	}
 }
 
