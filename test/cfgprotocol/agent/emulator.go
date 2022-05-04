@@ -62,7 +62,7 @@ func New(configsDir, tempBinDir string) *Emulator {
 		config.CustomPluginInstallationDir = tempBinDir
 	})
 	cfg := ag.Context.Config()
-	integrationCfg := v4.NewConfig(
+	integrationCfg := v4.NewManagerConfig(
 		cfg.Verbose,
 		cfg.Features,
 		cfg.PassthroughEnvironment,
