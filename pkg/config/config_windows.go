@@ -23,7 +23,7 @@ func init() {
 	}
 	// NOTE: On Windows, we need at least ComSpec for the agent to be able to run batch files
 	// and SystemRoot for the integration to be able to use the networking layer in some libraries.
-	// default Windows global environment variables
+	// default Windows global environment variables excluding particulars to user
 	defaultPassthroughEnvironment = []string{
 		"ALLUSERSPROFILE",
 		"APPDATA",
