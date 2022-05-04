@@ -109,8 +109,6 @@ func (ae *Emulator) RunAgent() error {
 	definitionQ := make(chan integration.Definition, 100)
 	// queues config entries requests
 	configEntryQ := make(chan configrequest.Entry, 100)
-	// queues integration terminated definitions
-	terminateDefinitionQ := make(chan string, 100)
 
 	dmEmitter := dm2.NewEmitter(ae.agent.GetContext(), dmSender, nil, instrumentation.NoopMeasure)
 
@@ -125,11 +123,9 @@ func (ae *Emulator) RunAgent() error {
 		integrationEmitter,
 		il,
 		definitionQ,
-		terminateDefinitionQ,
 		configEntryQ,
 		tracker,
 		ae.agent.Context.IDLookup(),
-		pluginRegistry,
 	)
 
 	// Start all plugins we want the agent to run.
