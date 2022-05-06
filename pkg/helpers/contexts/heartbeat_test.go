@@ -4,6 +4,7 @@ package contexts
 
 import (
 	"context"
+	"github.com/sirupsen/logrus"
 	"testing"
 	"time"
 
@@ -14,9 +15,12 @@ import (
 func TestContexHolder_Timeout(t *testing.T) {
 	const lifeTime = 50 * time.Millisecond
 	start := time.Now()
+	lg := func() *logrus.Entry {
+		return logrus.NewEntry(logrus.New())
+	}
 
 	// GIVEN a Context with a Heartbeat lifeTime
-	ctx, _ := WithHeartBeat(context.Background(), lifeTime)
+	ctx, _ := WithHeartBeat(context.Background(), lifeTime, lg)
 
 	// WHEN we wait for the heartbeatable context to finish
 	select {
@@ -38,9 +42,12 @@ func TestContextHolder_Heartbeat(t *testing.T) {
 	const lifeTime = 100 * time.Millisecond
 	const extendUntil = 200 * time.Millisecond
 	start := time.Now()
+	lg := func() *logrus.Entry {
+		return logrus.NewEntry(logrus.New())
+	}
 
 	// GIVEN a Context with a Heartbeat lifeTime
-	ctx, actuator := WithHeartBeat(context.Background(), lifeTime)
+	ctx, actuator := WithHeartBeat(context.Background(), lifeTime, lg)
 
 	stopHeartbeating := time.After(extendUntil)
 
@@ -79,7 +86,11 @@ hbLoop:
 
 func TestContextHolder_Cancel(t *testing.T) {
 	// GIVEN a context with a heartbeat lifetime
-	ctx, actuator := WithHeartBeat(context.Background(), 30*time.Second)
+	lg := func() *logrus.Entry {
+		return logrus.NewEntry(logrus.New())
+	}
+
+	ctx, actuator := WithHeartBeat(context.Background(), 30*time.Second, lg)
 
 	// WHEN we cancel the context
 	actuator.Cancel()
@@ -100,8 +111,11 @@ func TestContextHolder_Cancel(t *testing.T) {
 func TestContextHolder_RaceConditions(t *testing.T) {
 	const lifeTime = 50 * time.Millisecond
 	const extendUntil = 200 * time.Millisecond
+	lg := func() *logrus.Entry {
+		return logrus.NewEntry(logrus.New())
+	}
 
-	ctx, actuator := WithHeartBeat(context.Background(), lifeTime)
+	ctx, actuator := WithHeartBeat(context.Background(), lifeTime, lg)
 	waitForAllHeartbeats := time.After(2 * extendUntil)
 
 	for i := 0; i < 100; i++ {
