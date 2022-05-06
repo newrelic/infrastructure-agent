@@ -218,7 +218,7 @@ func (r *runner) execute(ctx context.Context, matches *databind.Values, pidWCh, 
 	// If timeout configuration is set, wraps current context in a heartbeat-enabled timeout context
 	if def.TimeoutEnabled() {
 		var act contexts.Actuator
-		ctx, act = contexts.WithHeartBeat(ctx, def.Timeout)
+		ctx, act = contexts.WithHeartBeat(ctx, def.Timeout, r.log)
 		r.setHeartBeat(act.HeartBeat)
 	}
 

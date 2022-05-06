@@ -5,7 +5,6 @@ package contexts
 
 import (
 	"context"
-	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"sync"
 	"time"
@@ -30,12 +29,12 @@ type Actuator struct {
 
 // WithHeartBeat with return a context that is automatically cancelled if the HeartBeat function
 // from the returned Actuator is not invoked periodically before the passed lifetime expires.
-func WithHeartBeat(parent context.Context, lifeTime time.Duration) (context.Context, Actuator) {
-	ctx := heartBeatCtx{lifeTime: lifeTime}
+func WithHeartBeat(parent context.Context, timeout time.Duration, loghb log.Entry) (context.Context, Actuator) {
+	ctx := heartBeatCtx{lifeTime: timeout}
 	actuator := Actuator{HeartBeat: ctx.heartBeat}
 	ctx.Context, actuator.Cancel = context.WithCancel(parent)
-	ctx.timer = time.AfterFunc(lifeTime, func() {
-		log.Debug(fmt.Sprintf("HeartBeat timeout exceeded after %d", lifeTime))
+	ctx.timer = time.AfterFunc(timeout, func() {
+		loghb.Infof("HeartBeat timeout exceeded after %d", timeout)
 		actuator.Cancel()
 	})
 	return &ctx, actuator
