@@ -18,6 +18,9 @@ func init() {
 		filepath.Join("/usr", "local", "etc", "newrelic-infra", "newrelic-infra.yml"),
 	}
 	defaultAgentDir = filepath.Join("/usr", "local", "var", "db", "newrelic-infra")
+
+	// add PATH environment variable to all integrations
+	defaultPassthroughEnvironment = []string{"PATH"}
 }
 func runtimeValues() (userMode, agentUser, executablePath string) {
 	return ModeRoot, "", ""

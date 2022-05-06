@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
-	v3Config "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v3/config"
 	v4Config "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/config"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/fs"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/emitter"
@@ -166,7 +165,7 @@ func NewManagerConfig(verbose int, features map[string]bool, passthroughEnvs, co
 		AgentFeatures:          features,
 		DefinitionFolders:      definitionFolders,
 		Verbose:                verbose,
-		PassthroughEnvironment: append(passthroughEnvs, v3Config.DefaultInheritedEnv...),
+		PassthroughEnvironment: passthroughEnvs,
 	}
 }
 
