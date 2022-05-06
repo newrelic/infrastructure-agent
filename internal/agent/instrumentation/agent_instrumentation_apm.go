@@ -110,7 +110,7 @@ func NewAgentInstrumentationApm(license string, apmEndpoint string, telemetryEnd
 				c.Host = apmEndpoint
 			}
 		},
-		newrelic.ConfigLogger(APMLogger{}),
+		newrelic.ConfigLogger(apmLoggger{}),
 	)
 	if err != nil {
 		return nil, err
@@ -133,10 +133,10 @@ func NewAgentInstrumentationApm(license string, apmEndpoint string, telemetryEnd
 
 var aslog = log.WithComponent("AgentInstrumentation")
 
-type APMLogger struct {
+type apmLoggger struct {
 }
 
-func (A APMLogger) Error(msg string, context map[string]interface{}) {
+func (A apmLoggger) Error(msg string, context map[string]interface{}) {
 	ctx, err := json.Marshal(context)
 	l := aslog
 	if err == nil {
@@ -145,7 +145,7 @@ func (A APMLogger) Error(msg string, context map[string]interface{}) {
 	l.Error(msg)
 }
 
-func (A APMLogger) Warn(msg string, context map[string]interface{}) {
+func (A apmLoggger) Warn(msg string, context map[string]interface{}) {
 	ctx, err := json.Marshal(context)
 	l := aslog
 	if err == nil {
@@ -154,7 +154,7 @@ func (A APMLogger) Warn(msg string, context map[string]interface{}) {
 	l.Warn(msg)
 }
 
-func (A APMLogger) Info(msg string, context map[string]interface{}) {
+func (A apmLoggger) Info(msg string, context map[string]interface{}) {
 	ctx, err := json.Marshal(context)
 	l := aslog
 	if err == nil {
@@ -163,7 +163,7 @@ func (A APMLogger) Info(msg string, context map[string]interface{}) {
 	l.Info(msg)
 }
 
-func (A APMLogger) Debug(msg string, context map[string]interface{}) {
+func (A apmLoggger) Debug(msg string, context map[string]interface{}) {
 	ctx, err := json.Marshal(context)
 	l := aslog
 	if err == nil {
@@ -172,6 +172,6 @@ func (A APMLogger) Debug(msg string, context map[string]interface{}) {
 	l.Debug(msg)
 }
 
-func (A APMLogger) DebugEnabled() bool {
+func (A apmLoggger) DebugEnabled() bool {
 	return logrus.IsLevelEnabled(logrus.DebugLevel)
 }
