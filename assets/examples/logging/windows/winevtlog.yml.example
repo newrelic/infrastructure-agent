@@ -1,0 +1,49 @@
+###############################################################################
+# Log forwarder configuration winevtlog example                               #
+# Source: Windows event log                                                   #
+###############################################################################
+logs:
+  # Winevtlog log ingestion with eventId filters.
+  - name: windows-security
+    winevtlog:
+      channel: Security
+      collect-eventids:
+        - 4624
+        - 4265
+        - 4700-4800
+      exclude-eventids:
+        - 4735
+
+  # entries for the application, system, powershell, and SCOM channels
+  - name: windows-application
+    winevtlog:
+      channel: Application
+  - name: windows-system
+    winevtlog:
+      channel: System
+  - name: windows-pshell
+    winevtlog:
+      channel: Windows Powershell
+  - name: scom
+    winevtlog:
+      channel: Operations Manager
+
+  # Entry for Windows Defender Logs
+  - name: windows-defender
+    winevtlog:
+      channel: Microsoft-Windows-Windows Defender/Operational
+
+  # Entry for Windows Clustering Logs
+  - name: windows-clustering
+    winevtlog:
+      channel: Microsoft-Windows-FailoverClustering/Operational
+
+  # Entry for IIS logs with logtype attribute for automatic parsing
+  - name: iis-log
+    file: C:\inetpub\logs\LogFiles\w3svc.log
+    attributes:
+      logtype: iis_w3c
+
+# Add event IDs or ranges to collect-eventids or exclude-eventids to
+# forward or drop specific events. exclude-eventids takes precedence
+# over collect-eventids

@@ -7,6 +7,9 @@ package harvest
 
 import (
 	"io/ioutil"
+	"math/rand"
+	"os"
+	"regexp"
 	"testing"
 
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
@@ -31,6 +34,15 @@ func TestStorageSample(t *testing.T) {
 	// THAT has already sampled values in the past
 	_, err = ps.Sample()
 	require.NoError(t, err)
+
+	// AND there are write operations to a file
+	file, err := ioutil.TempFile("/tmp", "prefix")
+	require.NoError(t, err)
+	defer os.Remove(file.Name())
+	//write 1Mb to the file
+	data := make([]byte, 1024*1024)
+	rand.Read(data)
+	file.Write(data)
 
 	// WHEN it samples again
 	samples, err := ps.Sample()
@@ -61,13 +73,43 @@ func TestStorageSample(t *testing.T) {
 	assert.NotNil(t, ss.UsedBytes)
 	assert.NotZero(t, *ss.UsedBytes)
 
-	assert.NotNil(t, ss.TotalUtilizationPercent)
-	assert.NotNil(t, ss.ReadBytesPerSec)
-	assert.NotNil(t, ss.WriteBytesPerSec)
-	assert.NotNil(t, ss.ReadWriteBytesPerSecond)
-	assert.NotNil(t, ss.ReadsPerSec)
-	assert.NotNil(t, ss.WritesPerSec)
-	assert.NotNil(t, ss.ReadWriteBytesPerSecond)
+	utilizationSupported, err := distroSupportsUtilization()
+	require.NoError(t, err)
+	if utilizationSupported {
+		assert.NotNil(t, ss.TotalUtilizationPercent)
+		assert.NotNil(t, ss.ReadBytesPerSec)
+		assert.NotNil(t, ss.WriteBytesPerSec)
+		assert.NotNil(t, ss.ReadWriteBytesPerSecond)
+		assert.NotNil(t, ss.ReadsPerSec)
+		assert.NotNil(t, ss.WritesPerSec)
+		assert.NotNil(t, ss.ReadWriteBytesPerSecond)
+	}
+}
+
+// distroSupportsUtilization will return if the distro supports utilization. Some linux distros (at least in aws)
+// do not have proper information about some partitions and only have them for the whole disk. i.e. debian 8.7 :
+// cat /proc/diskstats
+// 259       0 nvme0n1 8527 0 174006 15004 15873 0 337402 3573496 0 8236 3588496
+// 259       1 nvme0n1p1 0 0 0 0 0 0 0 0 0 0 0
+// 259       2 nvme0n1p2 0 0 0 0 0 0 0 0 0 0 0
+// mount
+// /dev/nvme0n1p2 on / type ext4 (rw,relatime,data=ordered)
+func distroSupportsUtilization() (bool, error) {
+	isDebian8, err := isDebian("8")
+
+	return !isDebian8, err
+}
+
+func isDebian(version string) (bool, error) {
+	reg, err := regexp.Compile("^" + version)
+	if err != nil {
+		return false, err
+	}
+	dat, err := os.ReadFile("/etc/debian_version")
+	if reg.Match(dat) {
+		return true, nil
+	}
+	return false, nil
 }
 
 // This test assumes that the temporary folder is mounted in the same device as the root directory

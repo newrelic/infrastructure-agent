@@ -14,7 +14,6 @@ import (
 )
 
 var (
-	DefaultInheritedEnv = []string{"PATH"}
 	// finds matches of either ${blahblah} or $blahblha (and groups them)
 	regex, _ = regexp.Compile(`\$\{(.+?)[}]|\$(.+)`)
 )
