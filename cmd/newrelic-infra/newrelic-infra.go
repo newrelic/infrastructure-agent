@@ -65,7 +65,9 @@ import (
 )
 
 var (
-	dryRun                bool
+	dryRun bool
+
+	// Specifies the path to look for integrations config files when running in dry-run mode.
 	integrationConfigPath string
 	configFile            string
 	validate              bool
@@ -88,7 +90,7 @@ func elapsedTime() time.Duration {
 func init() {
 	flag.BoolVar(&dryRun, "dry_run", false, "Run the NR Infrastructure agent in dry_run mode.")
 
-	flag.StringVar(&integrationConfigPath, "integration_config_path", "", "Path for the newrelic integrations configuration files. Can be a file or a directory. (Default: plugin_dir)")
+	flag.StringVar(&integrationConfigPath, "integration_config_path", "", "Path of the newrelic integrations configuration files when running in dry-run mode. Can be a file or a directory. (Default: plugin_dir)")
 	flag.StringVar(&configFile, "config", "", "Overrides default configuration file")
 	flag.BoolVar(&validate, "validate", false, "Validate agent config and exit")
 	flag.BoolVar(&showVersion, "version", false, "Shows version details")

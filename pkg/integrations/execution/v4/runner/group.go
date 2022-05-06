@@ -73,7 +73,7 @@ func (g *Group) Run(ctx context.Context) (hasStartedAnyOHI bool) {
 }
 
 // RunOnce will execute the group of integrations just one time.
-func (g *Group) RunOnce(ctx context.Context) (done func()) {
+func (g *Group) RunOnce(ctx context.Context) {
 
 	wg := sync.WaitGroup{}
 	for _, integration := range g.integrations {
@@ -86,6 +86,5 @@ func (g *Group) RunOnce(ctx context.Context) (done func()) {
 		}()
 	}
 
-	done = wg.Wait
-	return
+	wg.Wait()
 }

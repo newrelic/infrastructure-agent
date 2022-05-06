@@ -126,6 +126,10 @@ func (g *groupContext) start(ctx context.Context) {
 	}
 }
 
+func (g *groupContext) runOnce(ctx context.Context) {
+	g.runner.RunOnce(ctx)
+}
+
 func (g *groupContext) stop() {
 	g.l.Lock()
 	defer g.l.Unlock()
@@ -263,15 +267,9 @@ func (mgr *Manager) RunOnce(ctx context.Context) {
 	for path, group := range mgr.runners.List() {
 		illog.WithField("file", path).Debug("Running integrations group once.")
 
-		group.l.Lock()
-
-		wait := group.runner.RunOnce(contextWithVerbose(ctx, mgr.managerConfig.Verbose))
-
-		group.l.Unlock()
-
 		wg.Add(1)
 		go func() {
-			wait()
+			group.runOnce(contextWithVerbose(ctx, mgr.managerConfig.Verbose))
 			wg.Done()
 		}()
 	}
