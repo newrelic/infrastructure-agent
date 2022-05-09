@@ -1,13 +1,13 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+
 package v4
 
 import (
 	"context"
 	"errors"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
-	config_v32 "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v3/config"
-	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/config"
+	v4Config "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/config"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/fs"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/emitter"
 	"os"
@@ -86,7 +86,7 @@ func (r *rgsPerPath) isGroupRunning(cfgPath string) bool {
 
 type Manager struct {
 	managerConfig            ManagerConfig
-	configLoader             config2.Loader
+	configLoader             v4Config.Loader
 	watcher                  *fsnotify.Watcher
 	runners                  *rgsPerPath
 	emitter                  emitter.Emitter
@@ -99,7 +99,6 @@ type Manager struct {
 	handleConfig             configrequest.HandleFn
 	tracker                  *track.Tracker
 	idLookup                 host.IDLookup
-	pluginRegistry           *config_v32.PluginRegistry
 }
 
 // groupContext pairs a runner.Group with its cancellation context
@@ -124,6 +123,10 @@ func (g *groupContext) start(ctx context.Context) {
 	if g.runner.Run(cctx) {
 		g.cancel = cancel
 	}
+}
+
+func (g *groupContext) runOnce(ctx context.Context) {
+	g.runner.RunOnce(ctx)
 }
 
 func (g *groupContext) stop() {
@@ -156,7 +159,7 @@ type ManagerConfig struct {
 	PassthroughEnvironment []string
 }
 
-func NewConfig(verbose int, features map[string]bool, passthroughEnvs, configFolders, definitionFolders []string) ManagerConfig {
+func NewManagerConfig(verbose int, features map[string]bool, passthroughEnvs, configFolders, definitionFolders []string) ManagerConfig {
 	return ManagerConfig{
 		ConfigPaths:            configFolders,
 		AgentFeatures:          features,
@@ -172,20 +175,21 @@ func NewConfig(verbose int, features map[string]bool, passthroughEnvs, configFol
 // The "definitionFolders" refer to the v3 definition yaml configs, placed here for v3 integrations backwards-support
 func NewManager(
 	cfg ManagerConfig,
-	configLoader config2.Loader,
+	configLoader v4Config.Loader,
 	emitter emitter.Emitter,
 	il integration.InstancesLookup,
 	definitionQ chan integration.Definition,
-	terminateDefinitionQ chan string,
 	configEntryQ chan configrequest.Entry,
 	tracker *track.Tracker,
 	idLookup host.IDLookup,
-	pluginRegistry *config_v32.PluginRegistry,
 ) *Manager {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		illog.WithError(err).Warn("can't enable hot reload")
 	}
+
+	// queues integration terminated definitions
+	terminateDefinitionQ := make(chan string, 100)
 
 	mgr := Manager{
 		managerConfig:            cfg,
@@ -202,7 +206,6 @@ func NewManager(
 		handleConfig:             configrequest.NewHandleFn(configEntryQ, terminateDefinitionQ, il, illog),
 		tracker:                  tracker,
 		idLookup:                 idLookup,
-		pluginRegistry:           pluginRegistry,
 	}
 
 	// Loads all the configuration files from the provided ConfigPaths.
@@ -257,6 +260,21 @@ func (mgr *Manager) Start(ctx context.Context) {
 	mgr.watchForFSChanges(ctx)
 }
 
+// RunOnce will run all the integration groups for one time and then exit.
+func (mgr *Manager) RunOnce(ctx context.Context) {
+	wg := sync.WaitGroup{}
+	for path, group := range mgr.runners.List() {
+		illog.WithField("file", path).Debug("Running integrations group once.")
+
+		wg.Add(1)
+		go func() {
+			group.runOnce(contextWithVerbose(ctx, mgr.managerConfig.Verbose))
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+}
+
 // EnableOHIFromFF enables an integration coming from CC request.
 func (mgr *Manager) EnableOHIFromFF(ctx context.Context, featureFlag string) error {
 	cfgPath, err := mgr.cfgPathForFF(featureFlag)
@@ -291,7 +309,7 @@ func (mgr *Manager) DisableOHIFromFF(featureFlag string) error {
 	return nil
 }
 
-func (mgr *Manager) loadEnabledRunnerGroups(cfgs map[string]config2.YAML) {
+func (mgr *Manager) loadEnabledRunnerGroups(cfgs map[string]v4Config.YAML) {
 	for path, cfg := range cfgs {
 		if rc, err := mgr.loadRunnerGroup(path, cfg, nil); err != nil {
 			illog.WithField("file", path).WithError(err).Warn("can't instantiate integrations from file")
@@ -301,7 +319,7 @@ func (mgr *Manager) loadEnabledRunnerGroups(cfgs map[string]config2.YAML) {
 	}
 }
 
-func (mgr *Manager) loadRunnerGroup(path string, cfg config2.YAML, cmdFF *runner.CmdFF) (*groupContext, error) {
+func (mgr *Manager) loadRunnerGroup(path string, cfg v4Config.YAML, cmdFF *runner.CmdFF) (*groupContext, error) {
 	f := runner.NewFeatures(mgr.managerConfig.AgentFeatures, cmdFF)
 	loader := runner.NewLoadFn(cfg, f)
 	gr, fc, err := runner.NewGroup(loader, mgr.lookup, mgr.managerConfig.PassthroughEnvironment, mgr.emitter, mgr.handleCmdReq, mgr.handleConfig, path, mgr.terminateDefinitionQueue, mgr.idLookup)
@@ -441,7 +459,7 @@ func (mgr *Manager) handleFileEvent(ctx context.Context, event *fsnotify.Event) 
 func (mgr *Manager) runIntegrationFromPath(ctx context.Context, cfgPath string, isCreate bool, elog *log.Entry, cmdFF *runner.CmdFF) {
 	cfg, err := mgr.configLoader.LoadFile(cfgPath)
 	if err != nil {
-		if err == config2.LegacyYAML {
+		if err == v4Config.LegacyYAML {
 			elog.Debug("Skipping v3 integration.")
 		} else {
 			elog.WithError(err).Warn("can't load integrations file. This may happen if you are editing a file and saving intermediate changes")
@@ -484,7 +502,7 @@ func (mgr *Manager) cfgPathForFF(featureName string) (cfgPath string, err error)
 }
 
 // auxiliary logger fields provider function
-func foundFilesLogFields(configs config2.YAMLMap) func() logrus.Fields {
+func foundFilesLogFields(configs v4Config.YAMLMap) func() logrus.Fields {
 	return func() logrus.Fields {
 		var found string
 		if len(configs) == 0 {

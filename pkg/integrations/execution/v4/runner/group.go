@@ -6,6 +6,7 @@ import (
 	"context"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/emitter"
+	"sync"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
@@ -69,4 +70,21 @@ func (g *Group) Run(ctx context.Context) (hasStartedAnyOHI bool) {
 	}
 
 	return
+}
+
+// RunOnce will execute the group of integrations just one time.
+func (g *Group) RunOnce(ctx context.Context) {
+
+	wg := sync.WaitGroup{}
+	for _, integration := range g.integrations {
+		integration.Interval = 0
+		wg.Add(1)
+		go func() {
+			r := NewRunner(integration, g.emitter, g.dSources, g.handleErrorsProvide, g.cmdReqHandle, g.configHandle, g.terminateDefinitionQ, g.idLookup)
+			r.Run(ctx, nil, nil)
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
 }
