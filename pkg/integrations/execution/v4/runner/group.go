@@ -76,14 +76,14 @@ func (g *Group) Run(ctx context.Context) (hasStartedAnyOHI bool) {
 func (g *Group) RunOnce(ctx context.Context) {
 
 	wg := sync.WaitGroup{}
-	for _, integration := range g.integrations {
-		integration.Interval = 0
+	for _, integrationDef := range g.integrations {
+		integrationDef.Interval = 0
 		wg.Add(1)
-		go func() {
-			r := NewRunner(integration, g.emitter, g.dSources, g.handleErrorsProvide, g.cmdReqHandle, g.configHandle, g.terminateDefinitionQ, g.idLookup)
+		go func(definition integration.Definition) {
+			r := NewRunner(definition, g.emitter, g.dSources, g.handleErrorsProvide, g.cmdReqHandle, g.configHandle, g.terminateDefinitionQ, g.idLookup)
 			r.Run(ctx, nil, nil)
 			wg.Done()
-		}()
+		}(integrationDef)
 	}
 
 	wg.Wait()
