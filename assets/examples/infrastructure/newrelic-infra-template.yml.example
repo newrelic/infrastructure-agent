@@ -143,7 +143,7 @@ license_key: your_license_key
 #  level: smart
 #  forward: false
 #  stdout: false
-#  smart_level_entry_limit: false
+#  smart_level_entry_limit: 500
 #
 
 #
