@@ -40,6 +40,7 @@ func NewLoadFn(cfg config2.YAML, agentAndCCFeatures *Features) LoadFn {
 			var i integration.Definition
 			i, err = integration.NewDefinition(cfgEntry, il, passthroughEnv, template)
 			if err != nil {
+				illog.WithField("integration_name", i.Name).Error(err.Error())
 				return
 			}
 
@@ -58,7 +59,11 @@ func NewLoadFn(cfg config2.YAML, agentAndCCFeatures *Features) LoadFn {
 			c[cfgEntry.When.Feature] = cfgPath
 			if agentAndCCFeatures.IsOHIExecutable(cfgEntry.When.Feature) {
 				g.integrations = append(g.integrations, i)
+				continue
 			}
+
+			// feature is enabled but not executable
+			illog.WithField("integration_name", i.Name).Debug("Features enabled but not executable, skipping integration run.")
 		}
 
 		return

@@ -267,10 +267,10 @@ func (mgr *Manager) RunOnce(ctx context.Context) {
 		illog.WithField("file", path).Debug("Running integrations group once.")
 
 		wg.Add(1)
-		go func() {
-			group.runOnce(contextWithVerbose(ctx, mgr.managerConfig.Verbose))
+		go func(g *groupContext) {
+			g.runOnce(contextWithVerbose(ctx, mgr.managerConfig.Verbose))
 			wg.Done()
-		}()
+		}(group)
 	}
 	wg.Wait()
 }
