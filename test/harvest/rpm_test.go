@@ -6,11 +6,8 @@
 package harvest
 
 import (
-	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
-	"regexp"
 	"testing"
 	"time"
 
@@ -29,12 +26,9 @@ func TestRpmPlugin(t *testing.T) {
 	if _, err := os.Stat(pluginsLinux.RpmPath); os.IsNotExist(err) {
 		t.Skip("This test must be executed in RPM-based distributions")
 	}
-	rpmDistro, err := rpmBasedDistribution()
-	if err != nil {
-		assert.FailNow(t, fmt.Sprintf("cannot detect if rpmBasedDistribution %v", err))
-	}
-	if !rpmDistro {
-		t.Skip()
+	//Some ubuntu distros have rpm installed
+	if _, err := os.Stat("/etc/debian_version"); err == nil {
+		t.Skip("This test must be executed in RPM-based distributions")
 	}
 
 	testhelpers.SetupLog()
@@ -72,24 +66,4 @@ func TestRpmPlugin(t *testing.T) {
 			},
 		},
 	})
-}
-
-// rpmBasedDistribution will return false for some distributions that have rpm installed but are not
-// rpm baed distributions
-func rpmBasedDistribution() (bool, error) {
-	content, err := ioutil.ReadFile("/etc/os-release")
-	if err != nil {
-		return false, err
-	}
-	regexps := []*regexp.Regexp{
-		regexp.MustCompile("^NAME=\"Ubuntu\""),
-		regexp.MustCompile("^NAME=\"Debian\""),
-		regexp.MustCompile("^NAME=\"SLES\""),
-	}
-	for _, reg := range regexps {
-		if reg.Match(content) {
-			return false, nil
-		}
-	}
-	return true, nil
 }
