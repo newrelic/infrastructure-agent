@@ -2184,36 +2184,63 @@ func TestLogFields(t *testing.T) {
 		"PATH":       pathEnv,
 		"CUSTOM_ARG": "testValue",
 	}
+
+	assert.Equal(t, fields["integration"], "new-plugin")
+	assert.Equal(t, fields["integration"], "new-plugin")
+	assert.Equal(t, fields["instance"], "")
+	assert.Equal(t, fields["os"], "")
+	assert.Equal(t, fields["protocolVersion"], 3)
+	assert.Equal(t, fields["workingDir"], "")
+	assert.Equal(t, fields["command"], "")
+	assert.Equal(t, fields["prefix"], ids.PluginID{Category: "", Term: ""})
+	assert.Equal(t, fields["interval"], 0)
+	assert.Equal(t, fields["commandLine"], []string{"go", "run", "test.go"})
+	assert.Equal(t, fields["arguments"], map[string]string{
+		"PATH":       "Path should be replaced by path env var",
+		"CUSTOM_ARG": "testValue",
+	})
+	assert.Equal(t, fields["labels"], map[string]string{
+		"role":        "fileserver",
+		"environment": "development",
+	})
+
 	if runtime.GOOS == "windows" {
 		require.Contains(t, fields, "env-vars")
-		envVars["ComSpec"] = os.Getenv("ComSpec")
-		envVars["SystemRoot"] = os.Getenv("SystemRoot")
+		//On Windows we add the most commong env vars in pkg/config/config_windows.go:27
+		defaultPassthroughEnvironment := []string{
+			"ALLUSERSPROFILE",
+			"APPDATA",
+			"CommonProgramFiles",
+			"CommonProgramFiles(x86)",
+			"CommonProgramW6432",
+			"COMPUTERNAME",
+			"ComSpec",
+			"LOCALAPPDATA",
+			"Path",
+			"PATH",
+			"PATHEXT",
+			"ProgramData",
+			"ProgramFiles",
+			"ProgramFiles(x86)",
+			"ProgramW6432",
+			"PSModulePath",
+			"SystemDrive",
+			"SystemRoot",
+			"TEMP",
+			"TMP",
+			"windir",
+			//We add the ones defined above
+			"VERBOSE",
+			"CUSTOM_ARG",
+		}
+		//We check that env vars are present as we cannot assert the content
+		for _, envVar := range defaultPassthroughEnvironment {
+			assert.Contains(t, fields["env-vars"], envVar)
+		}
+	} else {
+		assert.Equal(t, fields["env-vars"], envVars)
 	}
 
-	assert.Equal(
-		t,
-		logrus.Fields{
-			"integration":     "new-plugin",
-			"instance":        "",
-			"os":              "",
-			"protocolVersion": 3,
-			"workingDir":      "",
-			"command":         "",
-			"prefix":          ids.PluginID{Category: "", Term: ""},
-			"interval":        0,
-			"commandLine":     []string{"go", "run", "test.go"},
-			"env-vars":        envVars,
-			"arguments": map[string]string{
-				"PATH":       "Path should be replaced by path env var",
-				"CUSTOM_ARG": "testValue",
-			},
-			"labels": map[string]string{
-				"role":        "fileserver",
-				"environment": "development",
-			},
-		},
-		fields,
-	)
 }
 
 // Test for ParsePayloadV4 in different package
