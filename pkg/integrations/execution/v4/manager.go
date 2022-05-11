@@ -6,17 +6,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync"
+
 	"github.com/newrelic/infrastructure-agent/pkg/config/migrate"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	config_v32 "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v3/config"
 	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/config"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/fs"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/emitter"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"strings"
-	"sync"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/newrelic/infrastructure-agent/pkg/config/envvar"
@@ -116,6 +117,7 @@ type Manager struct {
 	tracker                  *track.Tracker
 	idLookup                 host.IDLookup
 	pluginRegistry           *config_v32.PluginRegistry
+	license                  string
 }
 
 // groupContext pairs a runner.Group with its cancellation context
@@ -196,6 +198,7 @@ func NewManager(
 	tracker *track.Tracker,
 	idLookup host.IDLookup,
 	pluginRegistry *config_v32.PluginRegistry,
+	license string,
 ) *Manager {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -217,6 +220,7 @@ func NewManager(
 		tracker:                  tracker,
 		idLookup:                 idLookup,
 		pluginRegistry:           pluginRegistry,
+		license:                  license,
 	}
 
 	// Loads all the configuration files in the passed configFolders
@@ -313,7 +317,7 @@ func (mgr *Manager) loadEnabledRunnerGroups(cfgs map[string]config2.YAML) {
 
 func (mgr *Manager) loadRunnerGroup(path string, cfg config2.YAML, cmdFF *runner.CmdFF) (*groupContext, error) {
 	f := runner.NewFeatures(mgr.config.AgentFeatures, cmdFF)
-	loader := runner.NewLoadFn(cfg, f)
+	loader := runner.NewLoadFn(cfg, mgr.license, f)
 	gr, fc, err := runner.NewGroup(loader, mgr.lookup, mgr.config.PassthroughEnvironment, mgr.emitter, mgr.handleCmdReq, mgr.handleConfig, path, mgr.terminateDefinitionQueue, mgr.idLookup)
 	if err != nil {
 		return nil, err

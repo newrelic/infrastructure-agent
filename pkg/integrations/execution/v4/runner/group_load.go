@@ -16,7 +16,7 @@ type LoadFn func(dr integration.InstancesLookup, passthroughEnv []string, cfgPat
 // NewLoadFn returns a function that provides partial Group holding provided configuration and
 // features cache. Optionally agent and integration "features" can be provided to be able to load
 // disabled integrations.
-func NewLoadFn(cfg config2.YAML, agentAndCCFeatures *Features) LoadFn {
+func NewLoadFn(cfg config2.YAML, license string, agentAndCCFeatures *Features) LoadFn {
 	return func(il integration.InstancesLookup, passthroughEnv []string, cfgPath string, cmdReqHandle cmdrequest.HandleFn, configHandle configrequest.HandleFn, terminateDefinitionQ chan string) (g Group, c FeaturesCache, err error) {
 		dSources, err := cfg.Databind.DataSources()
 		if err != nil {
@@ -37,6 +37,9 @@ func NewLoadFn(cfg config2.YAML, agentAndCCFeatures *Features) LoadFn {
 			if err != nil {
 				return
 			}
+
+			cfgEntry.License = license
+
 			var i integration.Definition
 			i, err = integration.NewDefinition(cfgEntry, il, passthroughEnv, template)
 			if err != nil {

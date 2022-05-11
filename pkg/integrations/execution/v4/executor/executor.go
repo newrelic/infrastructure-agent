@@ -8,9 +8,14 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"fmt"
 	"io"
+	"net/http"
 	"os/exec"
 	"sync"
+
+	"github.com/newrelic/go-agent/v3/newrelic"
+	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
 
 	"github.com/newrelic/infrastructure-agent/internal/gobackfill"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
@@ -47,6 +52,17 @@ func (r *Executor) Execute(ctx context.Context, pidChan, exitCodeCh chan<- int) 
 	go func() {
 		defer out.Close()
 		cmd := r.buildCommand(commandCtx)
+
+		_, trx := instrumentation.SelfInstrumentation.StartTransaction(context.Background(), r.Cfg.Directory)
+		defer trx.End()
+
+		// Create a payload, start the called process and pass the payload.
+		hdrs := http.Header{}
+		trx.InsertDistributedTraceHeaders(hdrs)
+
+		if hdrs.Get(newrelic.DistributedTraceNewRelicHeader) != "" {
+			cmd.Env = append(cmd.Env, fmt.Sprintf("SELF_INSTRUMENTATION_PAYLOAD=%s", hdrs.Get(newrelic.DistributedTraceNewRelicHeader)))
+		}
 
 		illog.
 			WithField("command", r.Command).

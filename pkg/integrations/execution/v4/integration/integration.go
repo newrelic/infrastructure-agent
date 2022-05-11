@@ -5,12 +5,13 @@ package integration
 import (
 	"errors"
 	"fmt"
-	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/config"
 	"io/ioutil"
 	"time"
 
+	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
+	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/config"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/executor"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/when"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
@@ -212,6 +213,17 @@ func (d *Definition) fromName(te config2.ConfigEntry, lookup InstancesLookup) er
 	// folders as different arguments
 	te.Exec = append([]string{path}, te.CLIArgs...)
 	d.runnable, err = newExecutor(&d.ExecutorConfig, te.Exec)
+
+	if instrumentation.SelfInstrumentation.GetType() == instrumentation.APMInstrumentationName {
+		d.runnable.Cfg.Environment["SELF_INSTRUMENTATION"] = "newrelic"
+		// I'm not sure which is the best way to send the LICENSE KEY to the integration
+		// so it's got in this ugly way
+		d.runnable.Cfg.Environment["NRIA_LICENSE_KEY"] = te.License
+		//d.runnable.Cfg.Environment["SELF_INSTRUMENTATION_APM_HOST"] = ""
+		//d.runnable.Cfg.Environment["SELF_INSTRUMENTATION_TELEMETRY_ENDPOINT"] = ""
+
+	}
+
 	return err
 }
 

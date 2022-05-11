@@ -17,7 +17,7 @@ const transactionInContextKey = iota
 
 const (
 	appName                = "New Relic Infrastructure Agent"
-	apmInstrumentationName = "newrelic"
+	APMInstrumentationName = "newrelic"
 )
 
 type agentInstrumentationApm struct {
@@ -63,8 +63,16 @@ func (a *agentInstrumentationApm) addHostName(metric metric) metric {
 	return metric
 }
 
+func (a *agentInstrumentationApm) GetType() string {
+	return APMInstrumentationName
+}
+
 type TransactionApm struct {
 	nrTxn *newrelic.Transaction
+}
+
+func (t *TransactionApm) InsertDistributedTraceHeaders(hdrs http.Header) {
+	t.nrTxn.InsertDistributedTraceHeaders(hdrs)
 }
 
 func (t *TransactionApm) AddAttribute(key string, value interface{}) {

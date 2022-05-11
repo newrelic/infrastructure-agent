@@ -2,9 +2,10 @@ package instrumentation
 
 import (
 	"context"
-	wlog "github.com/newrelic/infrastructure-agent/pkg/log"
 	"net/http"
 	"time"
+
+	wlog "github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
 var slog = wlog.WithComponent("SelfInstrumentation")
@@ -39,9 +40,11 @@ func NewGaugeWithAttributes(name string, val float64, attrs map[string]interface
 type AgentInstrumentation interface {
 	StartTransaction(ctx context.Context, name string) (context.Context, Transaction)
 	RecordMetric(ctx context.Context, metric metric)
+	GetType() string
 }
 
 type Transaction interface {
+	InsertDistributedTraceHeaders(hdrs http.Header)
 	StartSegment(ctx context.Context, name string) (context.Context, Segment)
 	StartExternalSegment(ctx context.Context, name string, req *http.Request) (context.Context, Segment)
 	AddAttribute(key string, value interface{})
@@ -65,8 +68,16 @@ func (n noopInstrumentation) RecordMetric(ctx context.Context, metric metric) {
 	//intentionally left empty
 }
 
+func (n noopInstrumentation) GetType() string {
+	return ""
+}
+
 type NoopTransaction struct {
 	ctx context.Context
+}
+
+func (n NoopTransaction) InsertDistributedTraceHeaders(_ http.Header) {
+	//intentionally left empty
 }
 
 func (n NoopTransaction) StartExternalSegment(ctx context.Context, name string, req *http.Request) (context.Context, Segment) {

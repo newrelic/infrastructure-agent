@@ -34,6 +34,8 @@ type ConfigEntry struct {
 	Config interface{} `yaml:"config,omitempty" json:"config"`
 	// TemplatePath specifies the path of an external configuration file. It can't coexist with Config
 	TemplatePath string `yaml:"config_template_path,omitempty" json:"config_template_path"`
+
+	License string
 }
 
 // EnableConditions condition the execution of an integration to the trueness of ALL the conditions

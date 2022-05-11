@@ -8,11 +8,6 @@ import (
 	context2 "context"
 	"flag"
 	"fmt"
-	v3 "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v3"
-	v3config "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v3/config"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/logs"
-	dm2 "github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/dm"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/emitter"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
@@ -24,6 +19,12 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	v3 "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v3"
+	v3config "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v3/config"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/logs"
+	dm2 "github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/dm"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/emitter"
 
 	selfInstrumentation "github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
 	"github.com/newrelic/infrastructure-agent/pkg/config/migrate"
@@ -379,6 +380,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		tracker,
 		agt.Context.IDLookup(),
 		pluginRegistry,
+		c.License,
 	)
 
 	// Command channel handlers
