@@ -7,7 +7,7 @@ require (
 	github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6
 	github.com/antihax/optional v1.0.0
 	github.com/aws/aws-sdk-go v1.25.14-0.20200515182354-0961961790e6
-	github.com/containerd/containerd v1.5.9 // indirect
+	github.com/containerd/containerd v1.5.10 // indirect
 	github.com/coreos/go-systemd/v22 v22.3.2
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200618181300-9dc6525e6118+incompatible
 	github.com/docker/go-connections v0.4.0 // indirect
