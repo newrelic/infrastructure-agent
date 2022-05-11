@@ -298,13 +298,6 @@ func TestRunnable_BuildCommandWithNriaPassthroughEnvironment(t *testing.T) {
 			expectedCmdEnv: []string{"PREFIX=hello", "ANOTHER_VAR=another value"},
 		},
 		{
-			name:           "one duplicated passthrough variable",
-			cfgEnv:         map[string]string{"PREFIX": "hello"},
-			osEnv:          map[string]string{"SOME_VAR": "some value", "ANOTHER_VAR": "another value"},
-			passthrough:    []string{"ANOTHER_VAR", "ANOTHER_VAR"},
-			expectedCmdEnv: []string{"PREFIX=hello", "ANOTHER_VAR=another value"},
-		},
-		{
 			name:           "multiple passthrough variable",
 			cfgEnv:         map[string]string{"PREFIX": "hello"},
 			osEnv:          map[string]string{"SOME_VAR": "some value", "ANOTHER_VAR": "another value"},
