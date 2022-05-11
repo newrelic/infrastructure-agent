@@ -4,7 +4,6 @@ package agent
 
 import (
 	goContext "context"
-	"fmt"
 	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
 	"sync"
 	"time"
@@ -122,7 +121,7 @@ type PluginEmitter interface {
 // EmitInventory sends data collected by the plugin to the agent
 func (pc *PluginCommon) EmitInventory(data PluginInventoryDataset, entity entity.Entity) {
 	_, txn := instrumentation.SelfInstrumentation.StartTransaction(goContext.Background(), "plugin.emit_inventory")
-	txn.AddAttribute("plugin_id", fmt.Sprintf("%s:%s", pc.ID.Category, pc.ID.Term))
+	txn.AddAttribute("plugin_id", pc.ID)
 	defer txn.End()
 	pc.Context.SendData(NewPluginOutput(pc.ID, entity, data))
 }

@@ -248,16 +248,28 @@ func (r *runner) execute(ctx context.Context, matches *databind.Values, pidWCh, 
 		o := out
 		go func(txn instrumentation.Transaction) {
 			defer wg.Done()
+
+			_, seg := txn.StartSegment(ctx, "handleLines")
+			defer seg.End()
+
 			r.handleLines(ctx, o.Receive.Stdout, o.ExtraLabels, o.EntityRewrite)
 		}(txn)
 
 		go func(txn instrumentation.Transaction) {
 			defer wg.Done()
+
+			_, seg := txn.StartSegment(ctx, "handleStderr")
+			defer seg.End()
+
 			r.handleStderr(o.Receive.Stderr)
 		}(txn)
 
 		go func(txn instrumentation.Transaction) {
 			defer wg.Done()
+
+			ctx, seg := txn.StartSegment(ctx, "handleExitCode")
+			defer seg.End()
+
 			r.handleErrors(ctx, o.Receive.Errors)
 
 		}(txn)
