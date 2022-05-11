@@ -2,9 +2,9 @@ package protocol
 
 import (
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/config"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 )
 
 /* The protocol is used to register integrations without the need to use config yaml files.

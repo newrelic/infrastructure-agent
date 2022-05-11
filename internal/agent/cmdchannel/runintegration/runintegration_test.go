@@ -4,14 +4,14 @@ package runintegration
 
 import (
 	"context"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/dm/testutils"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/protocol"
 	"testing"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/commandapi"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/integration"
+	dm "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm/testutils"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

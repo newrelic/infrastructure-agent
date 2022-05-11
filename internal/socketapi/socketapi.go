@@ -6,12 +6,12 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/emitter"
 	"io"
 	"net"
 	"strings"
 
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/integration"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
