@@ -10,7 +10,8 @@ import (
 
 const (
 	// These two constants can be found in old integrations as well
-	labelPrefix = "label."
+	labelPrefix     = "label."
+	labelPrefixTrim = 6
 )
 
 type IntegrationProcessor struct {

@@ -10,13 +10,26 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/golang/groupcache/lru"
 	"github.com/newrelic/infrastructure-agent/internal/agent"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
+)
+
+const (
+	maxEntityAttributeCount    = 240 // 254 - 14 (reserved for agent decorations) https://docs.newrelic.com/docs/insights/insights-data-sources/custom-data/insights-custom-data-requirements-limits
+	entityMetricsLengthWarnMgs = "metric attributes exceeds 240 limit, some might be lost"
+
+	// These two constants can be found in V4 integrations as well
+	labelPrefix     = "label."
+	labelPrefixTrim = 6
 )
 
 var (
 	DefaultInheritedEnv = []string{"PATH"}
 	// finds matches of either ${blahblah} or $blahblha (and groups them)
 	regex, _ = regexp.Compile(`\$\{(.+?)[}]|\$(.+)`)
+	rlog     = log.WithComponent("PluginRunner")
+	logLRU   = lru.New(1000) // avoid flooding the log with violations for the same entity
 )
 
 type PluginRunner struct {
@@ -76,4 +89,10 @@ func ParsePayload(raw []byte, forceV2ToV3Upgrade bool) (dataV3 protocol2.PluginD
 	dataV3, err = protocol2.ParsePayload(raw, protocolVersion)
 
 	return
+}
+
+// cfgTmp is used to store a copy of the configuration to be replaced by discovery/databinding information
+type cfgTmp struct {
+	CommandLine []string
+	Environment map[string]string
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/sirupsen/logrus"
+	"regexp"
 )
 
 const (
@@ -21,7 +22,8 @@ const (
 	entityMetricsLengthWarnMgs = "metric attributes exceeds 240 limit, some might be lost"
 
 	// These two constants can be found in V4 integrations as well
-	labelPrefix = "label."
+	labelPrefix     = "label."
+	labelPrefixTrim = 6
 )
 
 const (
@@ -32,8 +34,11 @@ const (
 )
 
 var (
-	rlog   = log.WithComponent("PluginRunner")
-	logLRU = lru.New(1000) // avoid flooding the log with violations for the same entity
+	DefaultInheritedEnv = []string{"PATH"}
+	// finds matches of either ${blahblah} or $blahblha (and groups them)
+	regex, _ = regexp.Compile(`\$\{(.+?)[}]|\$(.+)`)
+	rlog     = log.WithComponent("PluginRunner")
+	logLRU   = lru.New(1000) // avoid flooding the log with violations for the same entity
 )
 
 func EmitDataSet(
