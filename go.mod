@@ -20,7 +20,7 @@ require (
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/gorilla/mux v1.7.4 // indirect
 	github.com/julienschmidt/httprouter v1.3.0
-	github.com/kardianos/service v1.1.0
+	github.com/kardianos/service v1.2.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kolo/xmlrpc v0.0.0-20200310150728-e0350524596b
 	github.com/kr/text v0.2.0 // indirect
@@ -61,5 +61,4 @@ replace (
 	github.com/containerd/containerd v1.4.1 => github.com/containerd/containerd v1.4.8
 	github.com/containerd/containerd v1.4.3 => github.com/containerd/containerd v1.4.8
 	github.com/coreos/go-systemd/v22 v22.1.0 => github.com/newrelic-forks/go-systemd/v22 v22.1.1
-	github.com/kardianos/service v1.1.0 => github.com/newrelic-forks/service v1.1.2
 )
