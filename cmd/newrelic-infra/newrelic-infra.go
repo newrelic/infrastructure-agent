@@ -8,11 +8,6 @@ import (
 	context2 "context"
 	"flag"
 	"fmt"
-	v3 "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v3"
-	v3config "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v3/config"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/logs"
-	dm2 "github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/dm"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/emitter"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
@@ -38,10 +33,11 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/service"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/stopintegration"
 	"github.com/newrelic/infrastructure-agent/internal/agent/status"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/files"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/v3legacy"
 	"github.com/newrelic/infrastructure-agent/internal/socketapi"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/files"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins"
 	"github.com/sirupsen/logrus"
@@ -58,7 +54,11 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/fs/systemd"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/recover"
-	v4 "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
+	v4 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/logs"
 	wlog "github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/trace"
 )
@@ -345,8 +345,8 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	}
 	wlog.Instrument(instruments.Measure)
 
-	metricsSenderConfig := dm2.NewConfig(c.DMIngestURL(), c.Fedramp, c.License, time.Duration(c.DMSubmissionPeriod)*time.Second, c.MaxMetricBatchEntitiesCount, c.MaxMetricBatchEntitiesQueue)
-	dmSender, err := dm2.NewDMSender(metricsSenderConfig, transport, agt.Context.IdContext().AgentIdentity)
+	metricsSenderConfig := dm.NewConfig(c.DMIngestURL(), c.Fedramp, c.License, time.Duration(c.DMSubmissionPeriod)*time.Second, c.MaxMetricBatchEntitiesCount, c.MaxMetricBatchEntitiesQueue)
+	dmSender, err := dm.NewDMSender(metricsSenderConfig, transport, agt.Context.IdContext().AgentIdentity)
 	if err != nil {
 		return err
 	}
@@ -358,28 +358,13 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	// queues integration terminated definitions
 	terminateDefinitionQ := make(chan string, 100)
 
-	dmEmitter := dm2.NewEmitter(agt.GetContext(), dmSender, registerClient, instruments.Measure)
+	dmEmitter := dm.NewEmitter(agt.GetContext(), dmSender, registerClient, instruments.Measure)
 
 	// track stoppable integrations
 	tracker := track.NewTracker(dmEmitter)
 
-	pluginRegistry := v3config.NewPluginRegistry(pluginSourceDirs, c.PluginInstanceDirs)
-	if err := pluginRegistry.LoadPlugins(); err != nil {
-		fatal(err, "Can't load plugins.")
-	}
-
 	integrationEmitter := emitter.NewIntegrationEmittor(agt, dmEmitter, ffManager)
-	integrationManager := v4.NewManager(
-		integrationCfg,
-		integrationEmitter,
-		il,
-		definitionQ,
-		terminateDefinitionQ,
-		configEntryQ,
-		tracker,
-		agt.Context.IDLookup(),
-		pluginRegistry,
-	)
+	integrationManager := v4.NewManager(integrationCfg, integrationEmitter, il, definitionQ, terminateDefinitionQ, configEntryQ, tracker, agt.Context.IDLookup())
 
 	// Command channel handlers
 	backoffSecsC := make(chan int, 1) // 1 won't block on initial cmd-channel fetch
@@ -474,20 +459,24 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 
 	go ccService.Run(agt.Context.Ctx, agt.Context.AgentIdnOrEmpty, initCmdResponse)
 
-	//pluginConfig, err := legacy.LoadPluginConfig(pluginRegistry, c.PluginConfigFiles)
-	//if err != nil {
-	//	fatal(err, "Can't load plugin configuration.")
-	//}
-	//runner := legacy.NewPluginRunner(pluginRegistry, agt)
-	//for _, pluginConf := range pluginConfig.PluginConfigs {
-	//	if err := runner.ConfigurePlugin(pluginConf, agt.Context.ActiveEntitiesChannel()); err != nil {
-	//		fatal(err, fmt.Sprint("Can't configure plugin.", pluginConf))
-	//	}
-	//}
-	//
-	//if err := runner.ConfigureV1Plugins(agt.Context); err != nil {
-	//	aslog.WithError(err).Debug("Can't configure integrations.")
-	//}
+	pluginRegistry := legacy.NewPluginRegistry(pluginSourceDirs, c.PluginInstanceDirs)
+	if err := pluginRegistry.LoadPlugins(); err != nil {
+		fatal(err, "Can't load plugins.")
+	}
+	pluginConfig, err := legacy.LoadPluginConfig(pluginRegistry, c.PluginConfigFiles)
+	if err != nil {
+		fatal(err, "Can't load plugin configuration.")
+	}
+	runner := legacy.NewPluginRunner(pluginRegistry, agt)
+	for _, pluginConf := range pluginConfig.PluginConfigs {
+		if err := runner.ConfigurePlugin(pluginConf, agt.Context.ActiveEntitiesChannel()); err != nil {
+			fatal(err, fmt.Sprint("Can't configure plugin.", pluginConf))
+		}
+	}
+
+	if err := runner.ConfigureV1Plugins(agt.Context); err != nil {
+		aslog.WithError(err).Debug("Can't configure integrations.")
+	}
 
 	timedLog.Info("New Relic infrastructure agent is running.")
 
@@ -543,7 +532,7 @@ func newInstancesLookup(cfg v4.Configuration) integration.InstancesLookup {
 		execFolders = append(execFolders, df)
 		execFolders = append(execFolders, filepath.Join(df, executablesSubFolder))
 	}
-	legacyDefinedCommands := v3.NewDefinitionsRepo(v3.LegacyConfig{
+	legacyDefinedCommands := v3legacy.NewDefinitionsRepo(v3legacy.LegacyConfig{
 		DefinitionFolders: cfg.DefinitionFolders,
 		Verbose:           cfg.Verbose,
 	})

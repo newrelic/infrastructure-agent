@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/emitter"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -17,7 +16,8 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/newrelic/infrastructure-agent/internal/agent/status"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/integration"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/sirupsen/logrus"
 )

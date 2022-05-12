@@ -4,9 +4,9 @@ package protocol
 
 import (
 	"encoding/json"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/config"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 )
 
 type discriminator struct {

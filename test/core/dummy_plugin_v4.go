@@ -4,18 +4,18 @@
 package core
 
 import (
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/config"
-	v3 "github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v3"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/dm"
 	"testing"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags/test"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/fixtures"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/testhelp"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/fwrequest"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/fixtures"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/integration"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/testhelp"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/stretchr/testify/require"
@@ -73,7 +73,7 @@ func InventoryDatasetsForPayload(t *testing.T, payload []byte) (dss []agent.Plug
 	r := fwrequest.NewFwRequest(def, nil, nil, dataV4)
 	for _, ds := range r.Data.DataSets {
 
-		legacyDS := v3.BuildInventoryDataSet(
+		legacyDS := legacy.BuildInventoryDataSet(
 			log.WithComponent("test"),
 			ds.Inventory,
 			nil,

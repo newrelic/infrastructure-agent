@@ -19,7 +19,7 @@ $env:GOPATH = go env GOPATH
 
 Write-Output "--- Running tests"
 
-go test -ldflags '-X github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/integration.minimumIntegrationIntervalOverride=2s' $workspace\pkg\... $workspace\cmd\... $workspace\internal\... $workspace\test\...
+go test -ldflags '-X github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration.minimumIntegrationIntervalOverride=2s' $workspace\pkg\... $workspace\cmd\... $workspace\internal\... $workspace\test\...
 if (-not $?)
 {
     Write-Output "Failed running tests"

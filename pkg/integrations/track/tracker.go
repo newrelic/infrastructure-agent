@@ -5,13 +5,13 @@ package track
 
 import (
 	"context"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/dm"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/outputhandler/v4/protocol"
 	"sync"
 	"time"
 
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/fwrequest"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/integration"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 )
 
 // Tracker tracks integrations context while running so actions can be taken later on based on those.
