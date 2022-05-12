@@ -28,13 +28,13 @@ type Actuator struct {
 }
 
 // WithHeartBeat with return a context that is automatically cancelled if the HeartBeat function
-// from the returned Actuator is not invoked periodically before the passed lifetime expires.
+// from the returned Actuator is not invoked periodically before the passed timeout expires.
 func WithHeartBeat(parent context.Context, timeout time.Duration, lg log.Entry) (context.Context, Actuator) {
 	ctx := heartBeatCtx{lifeTime: timeout}
 	actuator := Actuator{HeartBeat: ctx.heartBeat}
 	ctx.Context, actuator.Cancel = context.WithCancel(parent)
 	ctx.timer = time.AfterFunc(timeout, func() {
-		lg.Infof("HeartBeat timeout exceeded after %d", timeout)
+		lg.Warnf("HeartBeat timeout exceeded after %f seconds", timeout.Seconds())
 		actuator.Cancel()
 	})
 	return &ctx, actuator
