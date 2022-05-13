@@ -555,8 +555,18 @@ func configureLogFormat(cfg config.LogConfig) {
 		formatter = jsonFormatter
 	}
 	// filters are only available in the log configuration object
-	if len(cfg.Filters) > 0 {
-		formatter = format.NewFieldFormatter(cfg.Filters, formatter)
+	// include filters (only those fields will be included) are more significant than exclude ones
+	// include and exclude filters are mutually exclusive
+	if len(cfg.IncludeFilters) > 0 {
+		formatter = format.NewFieldFormatter(cfg.IncludeFilters, true, formatter)
+	} else {
+		// by default exclude fluent-bit logs
+		if len(cfg.ExcludeFilters) == 0 {
+			cfg.ExcludeFilters = map[string][]interface{}{
+				"process": {"log-forwarder"},
+			}
+		}
+		formatter = format.NewFieldFormatter(cfg.ExcludeFilters, false, formatter)
 	}
 	wlog.SetFormatter(formatter)
 }

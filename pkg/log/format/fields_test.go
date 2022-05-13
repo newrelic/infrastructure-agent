@@ -12,7 +12,7 @@ func TestNewFieldFormatter(t *testing.T) {
 		"component": {1, "Plugin", 8908},
 	}
 	var textFormatter logrus.Formatter = &logrus.TextFormatter{}
-	formatter := NewFieldFormatter(fields, textFormatter)
+	formatter := NewFieldFormatter(fields, true, textFormatter)
 	assert.Equal(t, 3, len(formatter.fieldsSet["component"]))
 	assert.Contains(t, formatter.fieldsSet["component"], "Plugin")
 	assert.Contains(t, formatter.fieldsSet["component"], 1)
@@ -24,7 +24,7 @@ func TestFormatter(t *testing.T) {
 		"component": {1, "Plugin", 8908},
 	}
 	var textFormatter logrus.Formatter = &logrus.TextFormatter{}
-	formatter := NewFieldFormatter(fields, textFormatter)
+	formatter := NewFieldFormatter(fields, true, textFormatter)
 	actualEntry, err := formatter.Format(logrus.WithField("component", 1))
 	assert.NoError(t, err)
 	assert.NotNil(t, actualEntry)
@@ -47,7 +47,7 @@ func Benchmark(b *testing.B) {
 			logger := logrus.New()
 			logger.SetFormatter(&logrus.TextFormatter{})
 			if t.filters != nil {
-				formatter := NewFieldFormatter(t.filters, logger.Formatter)
+				formatter := NewFieldFormatter(t.filters, true, logger.Formatter)
 				logger.SetFormatter(formatter)
 			}
 			benchmarkLogger(b, logger, []logrus.Fields{

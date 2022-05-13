@@ -1113,13 +1113,15 @@ func NewTroubleshootCfg(isTroubleshootMode, agentLogsToFile bool, agentLogFile s
 
 // LogConfig map all logging configuration options
 type LogConfig struct {
-	File                 string     `yaml:"file" envconfig:"file"`
-	Level                string     `yaml:"level" envconfig:"level"`
-	Format               string     `yaml:"format" envconfig:"format"`
-	Forward              *bool      `yaml:"forward,omitempty" envconfig:"forward"`
-	ToStdout             *bool      `yaml:"stdout,omitempty" envconfig:"stdout"`
-	SmartLevelEntryLimit *int       `yaml:"smart_level_entry_limit,omitempty" envconfig:"smart_level_entry_limit"`
-	Filters              LogFilters `yaml:"filters,omitempty" envconfig:"filters"`
+	File                 string `yaml:"file" envconfig:"file"`
+	Level                string `yaml:"level" envconfig:"level"`
+	Format               string `yaml:"format" envconfig:"format"`
+	Forward              *bool  `yaml:"forward,omitempty" envconfig:"forward"`
+	ToStdout             *bool  `yaml:"stdout,omitempty" envconfig:"stdout"`
+	SmartLevelEntryLimit *int   `yaml:"smart_level_entry_limit,omitempty" envconfig:"smart_level_entry_limit"`
+
+	IncludeFilters LogFilters `yaml:"include_filters,omitempty" envconfig:"include_filters"`
+	ExcludeFilters LogFilters `yaml:"exclude_filters,omitempty" envconfig:"exclude_filters"`
 }
 
 func coalesce(values ...string) string {

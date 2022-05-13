@@ -641,8 +641,8 @@ func Test_ParseLogConfigRule_EnvVar(t *testing.T) {
 	defer os.Unsetenv("NRIA_LOG_STDOUT")
 	os.Setenv("NRIA_LOG_SMART_LEVEL_ENTRY_LIMIT", "50")
 	defer os.Unsetenv("NRIA_LOG_SMART_LEVEL_ENTRY_LIMIT")
-	os.Setenv("NRIA_LOG_FILTERS", "component:\n - ProcessSample\n - StorageSample\n")
-	defer os.Unsetenv("NRIA_LOG_FILTERS")
+	os.Setenv("NRIA_LOG_INCLUDE_FILTERS", "component:\n - ProcessSample\n - StorageSample\n")
+	defer os.Unsetenv("NRIA_LOG_INCLUDE_FILTERS")
 
 	configStr := "license_key: abc123"
 	f, err := ioutil.TempFile("", "yaml_config_test")
@@ -661,7 +661,7 @@ func Test_ParseLogConfigRule_EnvVar(t *testing.T) {
 		ToStdout:             &expectedStdout,
 		Forward:              nil,
 		SmartLevelEntryLimit: &expectedSmartLevelEntryLimit,
-		Filters:              map[string][]interface{}{"component": {"ProcessSample", "StorageSample"}},
+		IncludeFilters:       map[string][]interface{}{"component": {"ProcessSample", "StorageSample"}},
 	}
 	assert.True(t, reflect.DeepEqual(cfg.Log, expected))
 }
