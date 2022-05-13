@@ -25,7 +25,7 @@ func EnableTemporaryVerbose() {
 	prevLvl := GetLevel()
 
 	vlog.WithField("durationMin", DefaultVerboseMin).Info("setting temporal verbose logs")
-	SetLevel(logrus.DebugLevel)
+	SetLevel(logrus.TraceLevel)
 
 	go func() {
 		defer finish()
