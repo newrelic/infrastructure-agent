@@ -41,7 +41,17 @@ const (
 			}]`
 )
 
+var concurrentAgent = make(chan interface{}, 1)
+
+func lock() {
+	concurrentAgent <- 1
+}
+func free() {
+	<-concurrentAgent
+}
+
 func createAgentAndStart(t *testing.T, scenario string) *agent.Emulator {
+	lock()
 	niDir, err := ioutil.TempDir("", "newrelic-integrations")
 	require.NoError(t, err)
 	spawnerDir := filepath.Join("testdata", "go", "spawner.go")
@@ -56,6 +66,7 @@ func createAgentAndStart(t *testing.T, scenario string) *agent.Emulator {
 func Test_OneIntegrationIsExecutedV4(t *testing.T) {
 	a := createAgentAndStart(t, "v4_payload")
 	defer a.Terminate()
+	defer free()
 
 	// the agent sends samples from the integration
 	select {
@@ -66,6 +77,7 @@ func Test_OneIntegrationIsExecutedV4(t *testing.T) {
 		assert.FailNow(t, "timeout while waiting for a response")
 		return
 	}
+
 }
 
 /**
@@ -78,6 +90,7 @@ Then there are not child processes
 func Test_OneIntegrationIsExecutedAndTerminated(t *testing.T) {
 	a := createAgentAndStart(t, "scenario0")
 	defer a.Terminate()
+	defer free()
 
 	// the agent sends samples from the integration
 	select {
@@ -114,6 +127,7 @@ Then a new long running process with a new PID is launched
 func Test_IntegrationIsRelaunchedIfTerminated(t *testing.T) {
 	a := createAgentAndStart(t, "scenario1")
 	defer a.Terminate()
+	defer free()
 	// and just one integrations process is running
 	var p []*process.Process
 	var err error
@@ -159,6 +173,7 @@ func Test_IntegrationIsRelaunchedIfIntegrationDetailsAreChanged(t *testing.T) {
 	}))
 	a := createAgentAndStart(t, "scenario2")
 	defer a.Terminate()
+	defer free()
 
 	// and just one integrations process is running
 	var p []*process.Process
@@ -198,6 +213,7 @@ func Test_IntegrationConfigContainsTwoIntegrationsAndOneIsRemoved(t *testing.T) 
 	assert.Nil(t, createFile(nriCfgTemplatePath, nriCfgPath, nil))
 	a := createAgentAndStart(t, "scenario3")
 	defer a.Terminate()
+	defer free()
 	// and just one integrations process is running
 	var p1 []*process.Process
 	var p2 []*process.Process
@@ -246,6 +262,7 @@ func Test_IntegrationConfigNewRelicInfraConfigurationIsRemoved(t *testing.T) {
 	}))
 	a := createAgentAndStart(t, "scenario4")
 	defer a.Terminate()
+	defer free()
 	processNameRe := getProcessNameRegExp("nri-out-long-4")
 	var p []*process.Process
 	var err error
@@ -270,6 +287,7 @@ Then receives the temporary generated config file path is passed to the integrat
 func Test_IntegrationConfigContainsConfigTemplate(t *testing.T) {
 	a := createAgentAndStart(t, "scenario5")
 	defer a.Terminate()
+	defer free()
 
 	// the agent sends samples from the integration
 	select {
