@@ -20,7 +20,7 @@
   uri:
     url: "{{ infra_alerts_host }}/v2/alerts/conditions"
     method: POST
-    body: "{\"data\":{\"type\":\"infra_host_not_reporting\",\"name\":\"CAOS packaging tests HNR\",\"filter\":{\"and\":[{\"is\":{\"entityName\":\"{{ inventory_hostname }}\"}}]},\"enabled\":true,\"policy_id\":{{ response_policy.json.policy.id }},\"critical_threshold\":{\"duration_minutes\":5,\"no_trigger_on\":[\"shutdown\"]}}}"
+    body: "{\"data\":{\"type\":\"infra_host_not_reporting\",\"name\":\"CAOS packaging tests HNR\",\"filter\":{\"and\":[{\"is\":{\"entityName\":\"{{ iid }}:{{ inventory_hostname }}\"}}]},\"enabled\":true,\"policy_id\":{{ response_policy.json.policy.id }},\"critical_threshold\":{\"duration_minutes\":5,\"no_trigger_on\":[\"shutdown\"]}}}"
     status_code: 201
     body_format: json
     headers:
