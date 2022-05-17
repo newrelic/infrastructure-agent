@@ -1,5 +1,6 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+
 //go:build slow
 // +build slow
 
@@ -7,7 +8,8 @@ package v4
 
 import (
 	"context"
-	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
+	v4Config "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -39,7 +41,20 @@ func TestManager_HotReload_CreateAndModifyLinkFile(t *testing.T) {
 	})
 
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(ManagerConfig{ConfigPaths: []string{dir}}, config2.NewPathLoader(), emitter, integration.ErrLookup, definitionQ, track.NewTracker())
+
+	mgr := NewManager(
+		ManagerConfig{
+			ConfigPaths: []string{dir},
+		},
+		v4Config.NewPathLoader(),
+		emitter,
+		integration.ErrLookup,
+		definitionQ,
+		configEntryQ,
+		track.NewTracker(nil),
+		host.IDLookup{},
+	)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -109,10 +124,19 @@ integrations:
 
 	// WHEN the v4 integrations manager runs it
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(ManagerConfig{
-		ConfigPaths:       []string{configDir},
-		DefinitionFolders: []string{niDir},
-	}, config2.NewPathLoader(), emitter, integration.ErrLookup, definitionQ, track.NewTracker())
+	mgr := NewManager(
+		ManagerConfig{
+			ConfigPaths: []string{configDir},
+		},
+		v4Config.NewPathLoader(),
+		emitter,
+		integration.ErrLookup,
+		definitionQ,
+		configEntryQ,
+		track.NewTracker(nil),
+		host.IDLookup{},
+	)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)

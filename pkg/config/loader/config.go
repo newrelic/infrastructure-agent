@@ -4,7 +4,6 @@
 package config_loader
 
 import (
-	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/config/envvar"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"gopkg.in/yaml.v2"
@@ -33,7 +32,7 @@ func LoadYamlConfig(configObject interface{}, configFilePaths ...string) (*YAMLM
 	for _, filePath := range configFilePaths {
 		if fileExists(filePath) {
 			absPath, _ := filepath.Abs(filePath)
-			clog.Info(fmt.Sprintf("loading configuration from %s to hydrate %T", absPath, configObject))
+			clog.Debugf("loading configuration from %s to hydrate %T", absPath, configObject)
 			fd, err := os.Open(filePath)
 			if err != nil {
 				return nil, err

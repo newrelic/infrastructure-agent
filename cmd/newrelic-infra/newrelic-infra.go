@@ -8,6 +8,9 @@ import (
 	context2 "context"
 	"flag"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/helpers"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
@@ -21,8 +24,6 @@ import (
 	"time"
 
 	selfInstrumentation "github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
-	"github.com/newrelic/infrastructure-agent/pkg/config/migrate"
-
 	"github.com/newrelic/infrastructure-agent/internal/httpapi"
 	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
 
@@ -52,7 +53,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/disk"
 	"github.com/newrelic/infrastructure-agent/pkg/fs/systemd"
-	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/recover"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	v4 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4"
@@ -65,6 +65,11 @@ import (
 )
 
 var (
+	dryRun bool
+
+	// Specifies the path to look for integrations config files when running in dry-run mode.
+	integrationConfigPath string
+
 	configFile   string
 	validate     bool
 	showVersion  bool
@@ -84,6 +89,9 @@ func elapsedTime() time.Duration {
 }
 
 func init() {
+	flag.BoolVar(&dryRun, "dry_run", false, "Run the NR Infrastructure agent in dry_run mode.")
+
+	flag.StringVar(&integrationConfigPath, "integration_config_path", "", "Path of the newrelic integrations configuration files when running in dry-run mode. Can be a file or a directory. (Default: plugin_dir)")
 	flag.StringVar(&configFile, "config", "", "Overrides default configuration file")
 	flag.BoolVar(&validate, "validate", false, "Validate agent config and exit")
 	flag.BoolVar(&showVersion, "version", false, "Shows version details")
@@ -121,7 +129,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		err := migrate.V3toV4(v3tov4Args[0], v3tov4Args[1], v3tov4Args[2], v3tov4Args[3] == "true")
+		err := integrationsConfig.MigrateV3toV4(v3tov4Args[0], v3tov4Args[1], v3tov4Args[2], v3tov4Args[3] == "true")
 
 		if err != nil {
 			fmt.Println(err)
@@ -184,6 +192,11 @@ func main() {
 	if err != nil {
 		alog.WithError(err).Error("can't load configuration file")
 		os.Exit(1)
+	}
+
+	if dryRun {
+		executeIntegrationsDryRunMode(integrationConfigPath, cfg)
+		os.Exit(0)
 	}
 
 	// override YAML with CLI flags
@@ -265,16 +278,9 @@ var aslog = wlog.WithComponent("AgentService").WithFields(logrus.Fields{
 })
 
 func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
-	pluginSourceDirs := []string{
-		c.CustomPluginInstallationDir,
-		filepath.Join(c.AgentDir, "custom-integrations"),
-		filepath.Join(c.AgentDir, config.DefaultIntegrationsDir),
-		filepath.Join(c.AgentDir, "bundled-plugins"),
-		filepath.Join(c.AgentDir, "plugins"),
-	}
-	pluginSourceDirs = helpers.RemoveEmptyAndDuplicateEntries(pluginSourceDirs)
+	pluginSourceDirs := getPluginSourceDirs(c)
 
-	v4ManagerConfig := v4.NewConfig(
+	v4ManagerConfig := v4.NewManagerConfig(
 		c.Verbose,
 		c.Features,
 		c.PassthroughEnvironment,
@@ -356,8 +362,6 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	definitionQ := make(chan integration.Definition, 100)
 	// queues config entries requests
 	configEntryQ := make(chan configrequest.Entry, 100)
-	// queues integration terminated definitions
-	terminateDefinitionQ := make(chan string, 100)
 
 	dmEmitter := dm.NewEmitter(agt.GetContext(), dmSender, registerClient, instruments.Measure)
 
@@ -366,7 +370,16 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 
 	integrationEmitter := emitter.NewIntegrationEmittor(agt, dmEmitter, ffManager)
 	cfgLoader := integrationsConfig.NewPathLoader()
-	integrationManager := v4.NewManager(v4ManagerConfig, cfgLoader, integrationEmitter, il, definitionQ, terminateDefinitionQ, configEntryQ, tracker, agt.Context.IDLookup())
+	integrationManager := v4.NewManager(
+		v4ManagerConfig,
+		cfgLoader,
+		integrationEmitter,
+		il,
+		definitionQ,
+		configEntryQ,
+		tracker,
+		agt.Context.IDLookup(),
+	)
 
 	// Command channel handlers
 	backoffSecsC := make(chan int, 1) // 1 won't block on initial cmd-channel fetch
@@ -669,4 +682,68 @@ func checkEndpointReachable(
 	}
 
 	return
+}
+
+func getPluginSourceDirs(ac *config.Config) []string {
+	pluginSourceDirs := []string{
+		ac.CustomPluginInstallationDir,
+		filepath.Join(ac.AgentDir, "custom-integrations"),
+		filepath.Join(ac.AgentDir, config.DefaultIntegrationsDir),
+		filepath.Join(ac.AgentDir, "bundled-plugins"),
+		filepath.Join(ac.AgentDir, "plugins"),
+	}
+	return helpers.RemoveEmptyAndDuplicateEntries(pluginSourceDirs)
+}
+
+// executeIntegrationsDryRunMode is used for dry-run mode. It will read the integration config files,
+// execute all the integrations and print the output to stdout.
+func executeIntegrationsDryRunMode(configPath string, ac *config.Config) {
+	// Config path can be a directory with multiple integration config files or a specific config file.
+	// If configPath is not specified we use the default locations for the nr integration configs.
+	integrationConfigPaths := ac.PluginInstanceDirs
+	if configPath != "" {
+		integrationConfigPaths = []string{configPath}
+	}
+
+	v4ManagerConfig := v4.NewManagerConfig(
+		ac.Verbose,
+		ac.Features,
+		ac.PassthroughEnvironment,
+		integrationConfigPaths,
+		getPluginSourceDirs(ac),
+	)
+
+	var definitionQ chan integration.Definition
+	var configEntryQ chan configrequest.Entry
+	var tracker *track.Tracker
+
+	hostnameResolver := hostname.CreateResolver(
+		ac.OverrideHostname, ac.OverrideHostnameShort, ac.DnsHostnameResolution)
+
+	// Initialize the cloudDetector.
+	cloudHarvester := cloud.NewDetector(ac.DisableCloudMetadata, ac.CloudMaxRetryCount, ac.CloudRetryBackOffSec, ac.CloudMetadataExpiryInSec, ac.CloudMetadataDisableKeepAlive)
+	cloudHarvester.Initialize()
+
+	agentIDLookup := agent.NewIdLookup(hostnameResolver, cloudHarvester, ac.DisplayName)
+
+	pluginRegistry := legacy.NewPluginRegistry(v4ManagerConfig.DefinitionFolders, ac.PluginInstanceDirs)
+	if err := pluginRegistry.LoadPlugins(); err != nil {
+		aslog.WithError(err).Error("Can't load plugins.")
+		os.Exit(1)
+	}
+
+	integrationEmitter := emitter.NewStdoutEmitter()
+
+	cfgLoader := integrationsConfig.NewPathLoader(pluginRegistry)
+	integrationManager := v4.NewManager(
+		v4ManagerConfig,
+		cfgLoader,
+		integrationEmitter,
+		newInstancesLookup(v4ManagerConfig),
+		definitionQ,
+		configEntryQ,
+		tracker,
+		agentIDLookup,
+	)
+	integrationManager.RunOnce(context2.Background())
 }
