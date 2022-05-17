@@ -12,36 +12,36 @@ on:
 
 jobs:
   unit-test-linux:
-      uses: newrelic/infrastructure-agent/.github/workflows/component_linux_unit_test.yml@master
+      uses: newrelic/infrastructure-agent/.github/workflows/component_linux_unit_test.yml@ci_test_go1-18_TEST
       secrets:
         gh_token: ${{secrets.GITHUB_TOKEN}}
 
   harvest-test-linux:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_harvest_test.yml@master
+    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_harvest_test.yml@ci_test_go1-18_TEST
 
   unit-test-macos:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_macos_unit_test.yml@master
+    uses: newrelic/infrastructure-agent/.github/workflows/component_macos_unit_test.yml@ci_test_go1-18_TEST
 
   harvest-test-macos:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_macos_harvest_test.yml@master
+    uses: newrelic/infrastructure-agent/.github/workflows/component_macos_harvest_test.yml@ci_test_go1-18_TEST
 
   unit-test-windows:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_windows_unit_test.yml@master
+    uses: newrelic/infrastructure-agent/.github/workflows/component_windows_unit_test.yml@ci_test_go1-18_TEST
 
   proxy-tests-linux:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_proxy_test.yml@master
+    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_proxy_test.yml@ci_test_go1-18_TEST
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
 
   tools-tests-linux:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_tools_unit_test.yml@master
+    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_tools_unit_test.yml@ci_test_go1-18_TEST
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
 
   build-container:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_docker_build.yml@master
+    uses: newrelic/infrastructure-agent/.github/workflows/component_docker_build.yml@ci_test_go1-18_TEST
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
@@ -49,7 +49,7 @@ jobs:
       TAG: "0.0.0" # needed for goreleaser test builds
 
   test-build:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_build.yml@master
+    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_build.yml@ci_test_go1-18_TEST
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
