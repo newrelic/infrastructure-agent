@@ -67,7 +67,7 @@ func newLogEntryMatcher(logFilters config.LogFilters) logEntryMatcher {
 	return matcher
 }
 
-// match returns true if the entry has the fields specified by the filter configuration.
+// match returns true if the entry contains the fields specified by the filter configuration.
 func (l logEntryMatcher) match(entry *logrus.Entry) bool {
 	for key, value := range entry.Data {
 		if _, ok := l[key][value]; ok {
