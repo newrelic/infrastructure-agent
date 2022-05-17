@@ -50,10 +50,10 @@ type CustomAttributeMap map[string]interface{}
 
 var clog = log.WithComponent("Configuration")
 
-// Configuration type to Map include_matching_metrics setting env var
+// IncludeMetricsMap configuration type to Map include_matching_metrics setting env var
 type IncludeMetricsMap map[string][]string
 
-// Logging filters
+// LogFilters configuration specifies which log entries should be included/excluded.
 type LogFilters map[string][]interface{}
 
 //
@@ -1122,6 +1122,9 @@ type LogConfig struct {
 
 	IncludeFilters LogFilters `yaml:"include_filters,omitempty" envconfig:"include_filters"`
 	ExcludeFilters LogFilters `yaml:"exclude_filters,omitempty" envconfig:"exclude_filters"`
+
+	// IncludePrecedence specifies if include filters have priority over exclude filters.
+	IncludePrecedence bool `yaml:"include_precedence,omitempty" envconfig:"include_precedence"`
 }
 
 func coalesce(values ...string) string {
@@ -1148,6 +1151,7 @@ func (config *Config) loadLogConfig() {
 		config.populateLogConfig()
 		return
 	}
+
 	// backwards compatability with non struct log configuration options
 	config.LogFile = coalesce(config.Log.File, config.LogFile)
 	config.LogFormat = coalesce(config.Log.Format, config.LogFormat)
@@ -1173,6 +1177,14 @@ func (config *Config) loadLogConfig() {
 			config.Verbose = TraceTroubleshootLogging
 		}
 	}
+
+	// Add default values.
+	if len(config.Log.ExcludeFilters) == 0 {
+		// by default exclude fluent-bit logs
+		config.Log.ExcludeFilters = map[string][]interface{}{
+			"process": {"log-forwarder"},
+		}
+	}
 }
 
 func (config *Config) populateLogConfig() {
@@ -1186,6 +1198,7 @@ func (config *Config) populateLogConfig() {
 		Forward:              boolPtr(false),
 		SmartLevelEntryLimit: &config.SmartVerboseModeEntryLimit,
 	}
+
 	switch config.Verbose {
 	case SmartVerboseLogging:
 		config.Log.Level = "smart"

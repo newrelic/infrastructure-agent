@@ -9,7 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
-	"github.com/newrelic/infrastructure-agent/pkg/log/format"
+	logFilter "github.com/newrelic/infrastructure-agent/pkg/log/filter"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
 	"net"
@@ -572,17 +572,14 @@ func configureLogFormat(cfg config.LogConfig) {
 	// filters are only available in the log configuration object
 	// include filters (only those fields will be included) are more significant than exclude ones
 	// include and exclude filters are mutually exclusive
-	if len(cfg.IncludeFilters) > 0 {
-		formatter = format.NewFieldFormatter(cfg.IncludeFilters, true, formatter)
-	} else {
-		// by default exclude fluent-bit logs
-		if len(cfg.ExcludeFilters) == 0 {
-			cfg.ExcludeFilters = map[string][]interface{}{
-				"process": {"log-forwarder"},
-			}
-		}
-		formatter = format.NewFieldFormatter(cfg.ExcludeFilters, false, formatter)
+	logFilterCfg := logFilter.FilteringFormatterConfig{
+		IncludeFilters:    cfg.IncludeFilters,
+		ExcludeFilters:    cfg.ExcludeFilters,
+		IncludePrecedence: cfg.IncludePrecedence,
 	}
+
+	formatter = logFilter.NewFilteringFormatter(logFilterCfg, formatter)
+
 	wlog.SetFormatter(formatter)
 }
 
