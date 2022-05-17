@@ -1,9 +1,9 @@
 ####
 # newrelic_plugin_version - https://github.com/newrelic/newrelic-fluent-bit-output/releases
-# This file declares the different versions of the NR plugin and fluent-bit needed for Windows & Linux. 
-# For Linux is no longer need to specify the fluent-bit version due this dependency is handled at package manager level. 
+# This file declares the different versions of the NR plugin and fluent-bit needed for Windows & Linux.
+# For Linux is no longer need to specify the fluent-bit version due this dependency is handled at package manager level.
 #
-# OS, newrelic_plugin_version, fluent-bit 
+# OS, newrelic_plugin_version, fluent-bit
 
 linux,1.9.2
-windows,1.9.2,1.9.1
+windows,1.9.2,1.9.3
