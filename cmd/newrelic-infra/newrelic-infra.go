@@ -734,7 +734,7 @@ func executeIntegrationsDryRunMode(configPath string, ac *config.Config) {
 
 	integrationEmitter := emitter.NewStdoutEmitter()
 
-	cfgLoader := integrationsConfig.NewPathLoader(pluginRegistry)
+	cfgLoader := integrationsConfig.NewPathLoader()
 	integrationManager := v4.NewManager(
 		v4ManagerConfig,
 		cfgLoader,
