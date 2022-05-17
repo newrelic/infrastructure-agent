@@ -2,10 +2,15 @@ package instrumentation
 
 import (
 	"context"
-	"github.com/newrelic/go-agent/v3/newrelic"
-	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
-	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
+	"encoding/json"
 	"net/http"
+
+	"github.com/newrelic/go-agent/v3/newrelic"
+	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
+	"github.com/sirupsen/logrus"
+
+	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
 )
 
 const transactionInContextKey = iota
@@ -105,6 +110,7 @@ func NewAgentInstrumentationApm(license string, apmEndpoint string, telemetryEnd
 				c.Host = apmEndpoint
 			}
 		},
+		newrelic.ConfigLogger(apmLoggger{}),
 	)
 	if err != nil {
 		return nil, err
@@ -123,4 +129,49 @@ func NewAgentInstrumentationApm(license string, apmEndpoint string, telemetryEnd
 	}
 
 	return &agentInstrumentationApm{nrApp: nrApp, harvester: harvester, hostnameResolver: resolver}, nil
+}
+
+var aslog = log.WithComponent("AgentInstrumentation")
+
+type apmLoggger struct {
+}
+
+func (A apmLoggger) Error(msg string, context map[string]interface{}) {
+	ctx, err := json.Marshal(context)
+	l := aslog
+	if err == nil {
+		l = aslog.WithField("context", string(ctx))
+	}
+	l.Error(msg)
+}
+
+func (A apmLoggger) Warn(msg string, context map[string]interface{}) {
+	ctx, err := json.Marshal(context)
+	l := aslog
+	if err == nil {
+		l = aslog.WithField("context", string(ctx))
+	}
+	l.Warn(msg)
+}
+
+func (A apmLoggger) Info(msg string, context map[string]interface{}) {
+	ctx, err := json.Marshal(context)
+	l := aslog
+	if err == nil {
+		l = aslog.WithField("context", string(ctx))
+	}
+	l.Info(msg)
+}
+
+func (A apmLoggger) Debug(msg string, context map[string]interface{}) {
+	ctx, err := json.Marshal(context)
+	l := aslog
+	if err == nil {
+		l = aslog.WithField("context", string(ctx))
+	}
+	l.Debug(msg)
+}
+
+func (A apmLoggger) DebugEnabled() bool {
+	return logrus.IsLevelEnabled(logrus.DebugLevel)
 }

@@ -58,7 +58,7 @@ Function EmbedPrometheus {
     # download
     [string]$file="nri-prometheus-$arch.${version}.zip"
     $url="https://github.com/newrelic/nri-prometheus/releases/download/v${version}/${file}"
- 
+
     DownloadAndExtractZip -dest:"$downloadPath\nri-prometheus" -url:"$url"
 
     Copy-Item -Path "$downloadPath\nri-prometheus\New Relic\newrelic-infra\newrelic-integrations\bin\nri-prometheus.exe" -Destination "$downloadPath\nri-prometheus\nri-prometheus.exe" -Recurse -Force
@@ -82,9 +82,6 @@ Function EmbedFluentBit {
     [string]$nrfbUrl = "https://github.com/newrelic-experimental/fluent-bit-package/releases/download/$nrfbVersion/fb-windows-$arch.zip"
     DownloadAndExtractZip -dest:"$downloadPath\logging\nrfb" -url:"$nrfbUrl"
 
-    # rename fluent-bit binary name to old name
-    Rename-Item -Path "$downloadPath\logging\nrfb\td-agent-bit.exe" -NewName "fluent-bit.exe"
-
     if (-Not $skipSigning) {
         SignExecutable -executable "$downloadPath\logging\nrfb\fluent-bit.exe"
     }
@@ -100,7 +97,7 @@ Function EmbedWinpkg {
 
     [string]$url = "https://download.newrelic.com/infrastructure_agent/$UrlPath"
     DownloadAndExtractZip -dest:"$downloadPath" -url:"$url"
-    
+
     if (-Not $skipSigning) {
         SignExecutable -executable "$downloadPath\winpkg\nr-winpkg.exe"
     }

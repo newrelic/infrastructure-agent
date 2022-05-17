@@ -1,34 +1,27 @@
 module github.com/newrelic/infrastructure-agent
 
-go 1.16
+go 1.18
 
 require (
 	github.com/Microsoft/go-winio v0.5.1
 	github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6
 	github.com/antihax/optional v1.0.0
 	github.com/aws/aws-sdk-go v1.25.14-0.20200515182354-0961961790e6
-	github.com/containerd/containerd v1.5.9 // indirect
 	github.com/coreos/go-systemd/v22 v22.3.2
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200618181300-9dc6525e6118+incompatible
-	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/evanphx/json-patch v4.9.0+incompatible
 	github.com/fortytw2/leaktest v1.3.1-0.20190606143808-d73c753520d9
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/ghodss/yaml v1.0.0
-	github.com/godbus/dbus/v5 v5.0.6 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
-	github.com/gorilla/mux v1.7.4 // indirect
 	github.com/julienschmidt/httprouter v1.3.0
-	github.com/kardianos/service v1.1.0
+	github.com/kardianos/service v1.2.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kolo/xmlrpc v0.0.0-20200310150728-e0350524596b
-	github.com/kr/text v0.2.0 // indirect
-	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/newrelic/go-agent/v3 v3.15.2
 	github.com/newrelic/infra-identity-client-go v1.0.2
 	github.com/newrelic/newrelic-telemetry-sdk-go v0.8.1
-	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
 	github.com/prometheus/procfs v0.6.0
@@ -41,13 +34,51 @@ require (
 	go.opentelemetry.io/otel/exporters/metric/prometheus v0.13.0
 	golang.org/x/net v0.0.0-20220114011407-0dd24b26b47d
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9
+	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f
+	gopkg.in/yaml.v2 v2.4.0
+	gotest.tools v2.2.1-0.20181123051433-bcbf6e613274+incompatible
+)
+
+require (
+	github.com/DataDog/sketches-go v0.0.1 // indirect
+	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/cespare/xxhash/v2 v2.1.1 // indirect
+	github.com/containerd/containerd v1.5.10 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/docker/distribution v2.7.1+incompatible // indirect
+	github.com/docker/go-connections v0.4.0 // indirect
+	github.com/docker/go-units v0.4.0 // indirect
+	github.com/felixge/httpsnoop v1.0.1 // indirect
+	github.com/go-ole/go-ole v1.2.6 // indirect
+	github.com/godbus/dbus/v5 v5.0.6 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/google/go-cmp v0.5.6 // indirect
+	github.com/gorilla/mux v1.7.4 // indirect
+	github.com/jmespath/go-jmespath v0.3.0 // indirect
+	github.com/kr/text v0.2.0 // indirect
+	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
+	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
+	github.com/morikuni/aec v1.0.0 // indirect
+	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
+	github.com/opencontainers/go-digest v1.0.0 // indirect
+	github.com/opencontainers/image-spec v1.0.2 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
+	github.com/prometheus/client_model v0.2.0 // indirect
+	github.com/prometheus/common v0.10.0 // indirect
+	github.com/stretchr/objx v0.2.0 // indirect
+	github.com/tklauser/go-sysconf v0.3.9 // indirect
+	github.com/tklauser/numcpus v0.3.0 // indirect
+	github.com/yusufpapurcu/wmi v1.2.2 // indirect
+	go.opentelemetry.io/otel/sdk v0.13.0 // indirect
+	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
 	google.golang.org/genproto v0.0.0-20220118154757-00ab72f36ad5 // indirect
 	google.golang.org/grpc v1.43.0 // indirect
-	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f
-	gopkg.in/yaml.v2 v2.4.0
-	gotest.tools v2.2.1-0.20181123051433-bcbf6e613274+incompatible
+	google.golang.org/protobuf v1.27.1 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
 )
 
 replace (
@@ -61,5 +92,4 @@ replace (
 	github.com/containerd/containerd v1.4.1 => github.com/containerd/containerd v1.4.8
 	github.com/containerd/containerd v1.4.3 => github.com/containerd/containerd v1.4.8
 	github.com/coreos/go-systemd/v22 v22.1.0 => github.com/newrelic-forks/go-systemd/v22 v22.1.1
-	github.com/kardianos/service v1.1.0 => github.com/newrelic-forks/service v1.1.2
 )

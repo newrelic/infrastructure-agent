@@ -38,7 +38,7 @@ go mod download
 
 Write-Output "Installing goversioninfo..."
 $Env:Path+= ";" + $Env:GOPATH + "\bin"
-go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
+go install github.com/josephspurrier/goversioninfo/cmd/goversioninfo@latest
 
 $goMains = @(
     "$workspace\cmd\newrelic-infra"

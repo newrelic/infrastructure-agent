@@ -356,8 +356,12 @@ agent_dir: /my/overriden/agent/dir
 	c.Assert(cfg.ProxyConfigPlugin, Equals, defaultProxyConfigPlugin)
 	c.Assert(cfg.TruncTextValues, Equals, defaultTruncTextValues)
 
+	c.Assert(cfg.PassthroughEnvironment, DeepEquals, defaultPassthroughEnvironment)
+
 	if runtime.GOOS == "windows" {
 		c.Assert(cfg.WinRemovableDrives, Equals, defaultWinRemovableDrives)
+		// verify that init function configured all default environment variables
+		c.Assert(cfg.PassthroughEnvironment, HasLen, 21)
 	}
 }
 

@@ -48,7 +48,6 @@ const (
 )
 
 var (
-	DefaultInheritedEnv = []string{"PATH"}
 	// finds matches of either ${blahblah} or $blahblha (and groups them)
 	regex, _ = regexp.Compile(`\$\{(.+?)[}]|\$(.+)`)
 	rlog     = log.WithComponent("PluginRunner")
@@ -407,7 +406,7 @@ func expand(v string) string {
 func (ep *externalPlugin) appendEnvPassthrough(envVars map[string]string) {
 	// Pass the global environment variables defined in configuration, plus any defaults we always pass through
 	dedupedPassthrough := make(map[string]bool)
-	for _, k := range append(ep.Context.Config().PassthroughEnvironment, DefaultInheritedEnv...) {
+	for _, k := range ep.Context.Config().PassthroughEnvironment {
 		dedupedPassthrough[k] = true
 	}
 	for k := range dedupedPassthrough {
