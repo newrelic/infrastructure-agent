@@ -666,8 +666,9 @@ func Test_ParseLogConfigRule_EnvVar(t *testing.T) {
 		Forward:              nil,
 		SmartLevelEntryLimit: &expectedSmartLevelEntryLimit,
 		IncludeFilters:       map[string][]interface{}{"component": {"ProcessSample", "StorageSample"}},
+		ExcludeFilters:       map[string][]interface{}{"process": {"log-forwarder"}},
 	}
-	assert.True(t, reflect.DeepEqual(cfg.Log, expected))
+	assert.EqualValues(t, cfg.Log, expected)
 }
 
 func TestLoadYamlConfig_withDatabindJSONVariables(t *testing.T) {

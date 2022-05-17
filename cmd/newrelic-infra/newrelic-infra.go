@@ -569,9 +569,7 @@ func configureLogFormat(cfg config.LogConfig) {
 		}
 		formatter = jsonFormatter
 	}
-	// filters are only available in the log configuration object
-	// include filters (only those fields will be included) are more significant than exclude ones
-	// include and exclude filters are mutually exclusive
+	// Apply filters to agent logs. Filters are only available in the log configuration object.
 	logFilterCfg := logFilter.FilteringFormatterConfig{
 		IncludeFilters:    cfg.IncludeFilters,
 		ExcludeFilters:    cfg.ExcludeFilters,
