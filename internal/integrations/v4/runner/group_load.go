@@ -65,7 +65,7 @@ func NewLoadFn(cfg config2.YAML, agentAndCCFeatures *Features) LoadFn {
 			}
 
 			// feature is enabled but not executable
-			illog.WithField("integration_name", i.Name).Debug("Features enabled but not executable, skipping integration run.")
+			illog.WithField("integration_name", i.Name).Debug("Integration feature not enabled, skipping execution")
 		}
 
 		return
