@@ -48,14 +48,6 @@ endif
 
 .PHONY: validate-aws-credentials
 validate-aws-credentials:
-ifndef AWS_PROFILE
-	@echo "AWS_PROFILE variable must be provided"
-	exit 1
-endif
-ifndef AWS_REGION
-	@echo "AWS_REGION variable must be provided"
-	exit 1
-endif
 	@ACC_ID="$$(aws sts get-caller-identity --output text|awk '{print $$1}')"; \
 	if [ "$${ACC_ID}" != "$(AWS_ACCOUNT_ID)" ]; then \
 		echo "Invalid AWS account ID. Expected: $(AWS_ACCOUNT_ID), got: $${ACC_ID}."; \
@@ -117,13 +109,12 @@ endif
 	@echo 'LOG_FILE="/var/log/runner/$$(date '+%Y%m%d_%H%M').log"' >> /tmp/runner_scr.sh
 	@echo 'cd /home/ubuntu/dev/newrelic/infrastructure-agent' >> /tmp/runner_scr.sh
 	@echo 'date > $$LOG_FILE' >> /tmp/runner_scr.sh
-	@echo 'make test/automated/packaging 2>&1 >> $$LOG_FILE' >> /tmp/runner_scr.sh
+	@echo 'make test/automated-run 2>&1 >> $$LOG_FILE' >> /tmp/runner_scr.sh
 	@echo 'echo "" >> $$LOG_FILE' >> /tmp/runner_scr.sh
 	@echo 'date >> $$LOG_FILE' >> /tmp/runner_scr.sh
 	@echo 'mail -s "[RUNNER] Packaging tests results" caos-dev@newrelic.com -A $$LOG_FILE < $$LOG_FILE' >> /tmp/runner_scr.sh
 	@chmod +x /tmp/runner_scr.sh
 
-	make test/automated/provision
 	make test/runner/provision
 
 	scp -i $(SSH_KEY) /tmp/runner_scr.sh ubuntu@$(RUNNER_IP):/home/ubuntu/runner_scr.sh

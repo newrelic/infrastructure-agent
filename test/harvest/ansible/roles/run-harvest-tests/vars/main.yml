@@ -2,6 +2,7 @@
 architecture_map:
   x86_64: "amd64"
   aarch64: "arm64"
+  64-bit: "amd64"
 
 os_arch_binary_name_tpl: "harvest_%GOOS%_%GOARCH%.test"
 tests_to_run_regex: ".*"
