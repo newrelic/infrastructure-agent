@@ -1,0 +1,5 @@
+version: v1.19.0
+ignore:
+  SNYK-GOLANG-GITHUBCOMKARDIANOSSERVICE-2774700:
+    - '*':
+        reason: 'False positive: https://github.com/kardianos/service/issues/289'
