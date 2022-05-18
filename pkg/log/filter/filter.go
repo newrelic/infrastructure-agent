@@ -59,20 +59,42 @@ type logEntryMatcher map[string]map[interface{}]struct{}
 func newLogEntryMatcher(logFilters config.LogFilters) logEntryMatcher {
 	matcher := make(map[string]map[interface{}]struct{}, len(logFilters))
 	for key, values := range logFilters {
-		matcher[key] = make(map[interface{}]struct{})
+		set := make(map[interface{}]struct{})
 		for _, value := range values {
-			matcher[key][value] = struct{}{}
+			if !isTypeSupported(value) {
+				continue
+			}
+			set[value] = struct{}{}
+		}
+
+		if len(set) > 0 {
+			matcher[key] = set
 		}
 	}
+
 	return matcher
 }
 
 // match returns true if the entry contains the fields specified by the filter configuration.
 func (l logEntryMatcher) match(entry *logrus.Entry) bool {
 	for key, value := range entry.Data {
+		if !isTypeSupported(value) {
+			continue
+		}
 		if _, ok := l[key][value]; ok {
 			return true
 		}
 	}
 	return false
+}
+
+// isTypeSupported asserts if the object is supported. We want to avoid using objects that cannot be used
+// as a key in a map.
+func isTypeSupported(obj interface{}) bool {
+	switch obj.(type) {
+	case string, int:
+		return true
+	default:
+		return false
+	}
 }

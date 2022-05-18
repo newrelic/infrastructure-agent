@@ -45,7 +45,7 @@ func TestFormat(t *testing.T) {
 			Name: "WhenNotMatchingIncludeFilters_ReturnEmpty",
 			config: FilteringFormatterConfig{
 				IncludeFilters: map[string][]interface{}{
-					"unknown": nil,
+					"unknown": {"test", 3.2},
 				},
 			},
 			Entry:        logrus.WithField("component", 1).WithField("component2", "value"),
@@ -93,6 +93,26 @@ func TestFormat(t *testing.T) {
 			},
 			Entry:        logrus.WithField("component", 1).WithField("component2", "value"),
 			ExpectedLine: "",
+		},
+		{
+			Name: "UnsupportedConfig_ReturnEmpty",
+			config: FilteringFormatterConfig{
+				ExcludeFilters: map[string][]interface{}{
+					"unknown": {
+						// slices are not accepted as keys in map.
+						[]string{"value1", "value2"},
+					},
+				},
+				IncludeFilters: map[string][]interface{}{
+					"unknown": {
+						// slices are not accepted as keys in map.
+						[]string{"value1", "value2"},
+					},
+				},
+				IncludePrecedence: true,
+			},
+			Entry:        logrus.WithField("component", []string{"value1", "value2"}),
+			ExpectedLine: "time=\"0001-01-01T00:00:00Z\" level=panic component=\"[value1 value2]\"\n",
 		},
 	}
 
