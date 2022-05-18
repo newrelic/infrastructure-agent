@@ -9,6 +9,7 @@
         - 6
         - 7
         - 8
+        - 9
 
 - src: "newrelic-infra-{version}-1.el{os_version}.{arch}.rpm"
   arch:
@@ -20,6 +21,7 @@
       os_version:
         - 7
         - 8
+        - 9
 
 - src: "newrelic-infra-{version}-1.sles{os_version}.{arch}.rpm"
   arch:

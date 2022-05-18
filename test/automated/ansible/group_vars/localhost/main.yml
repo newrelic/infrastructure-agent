@@ -2,6 +2,7 @@
 
 #Ubuntu AMI: https://cloud-images.ubuntu.com/locator/ec2/
 #CentOS AMI: https://www.centos.org/download/aws-images/
+#RHEL AMI: https://access.redhat.com/solutions/15356
 #SLES:
 
 #https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/connection-prereqs.html
@@ -151,6 +152,26 @@ instances:
     username: "centos"
     platform: "linux"
     python_interpreter: "/usr/bin/python3"
+    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
+  ############################
+  # RHEL amd64
+  ############################
+  - ami: "ami-078cbc4c2d057c244"
+    type: "t2.small"
+    name: "amd64:rhel9"
+    username: "ec2-user"
+    platform: "linux"
+    python_interpreter: "/usr/bin/python"
+    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
+  ############################
+  # RHEL arm64
+  ############################
+  - ami: "ami-01089181b0aa3be51"
+    type: "t4g.small"
+    name: "arm64:rhel9"
+    username: "ec2-user"
+    platform: "linux"
+    python_interpreter: "/usr/bin/python"
     launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
   ############################
   # sles amd64
