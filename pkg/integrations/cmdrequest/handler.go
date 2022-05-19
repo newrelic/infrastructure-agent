@@ -2,10 +2,10 @@ package cmdrequest
 
 import (
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/config"
 
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest/protocol"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/integration"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/trace"
 )

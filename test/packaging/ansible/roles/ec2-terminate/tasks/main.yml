@@ -1,6 +1,6 @@
 ---
 
-- name: stop ec2 host
+- name: terminate ec2 host
   shell: aws ec2 terminate-instances --instance-ids {{ iid }}
   delegate_to: 127.0.0.1
 

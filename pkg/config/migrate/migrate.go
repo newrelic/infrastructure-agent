@@ -6,8 +6,8 @@ package migrate
 
 import (
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v3/config"
-	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/config"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
@@ -38,21 +38,21 @@ func V3toV4(pathConfiguration string, pathDefinition string, pathOutput string, 
 	}
 
 	// Reading old Definition file
-	v3Definition := config.Plugin{}
-	err := ReadAndUnmarshallConfig(pathDefinition, &v3Definition)
+	v3Definition := legacy.Plugin{}
+	err := readAndUnmarshallConfig(pathDefinition, &v3Definition)
 	if err != nil {
 		return fmt.Errorf("error reading old config definition: %w", err)
 	}
 
 	// Reading old Configuration file
-	v3Configuration := config.PluginInstanceWrapper{}
-	err = ReadAndUnmarshallConfig(pathConfiguration, &v3Configuration)
+	v3Configuration := legacy.PluginInstanceWrapper{}
+	err = readAndUnmarshallConfig(pathConfiguration, &v3Configuration)
 	if err != nil {
 		return fmt.Errorf("error reading old config configuration: %w", err)
 	}
 
 	// Populating new config
-	v4config, err := PopulateV4Config(v3Definition, v3Configuration)
+	v4config, err := populateV4Config(v3Definition, v3Configuration)
 	if err != nil {
 		return fmt.Errorf("error populating new config: %w", err)
 	}
@@ -66,7 +66,7 @@ func V3toV4(pathConfiguration string, pathDefinition string, pathOutput string, 
 	return nil
 }
 
-func ReadAndUnmarshallConfig(path string, out interface{}) error {
+func readAndUnmarshallConfig(path string, out interface{}) error {
 	file, err := os.Open(path)
 	if err != nil {
 		return fmt.Errorf("opening %s, %w", path, err)
@@ -81,7 +81,7 @@ func ReadAndUnmarshallConfig(path string, out interface{}) error {
 	return nil
 }
 
-func PopulateV4Config(v3Definition config.Plugin, v3Configuration config.PluginInstanceWrapper) (*config2.YAML, error) {
+func populateV4Config(v3Definition legacy.Plugin, v3Configuration legacy.PluginInstanceWrapper) (*config.YAML, error) {
 	if v3Configuration.IntegrationName != v3Definition.Name {
 		return nil, fmt.Errorf("IntegrationName != Name: %s!=%s", v3Configuration.IntegrationName, v3Definition.Name)
 	}
@@ -91,7 +91,7 @@ func PopulateV4Config(v3Definition config.Plugin, v3Configuration config.PluginI
 		log.Debugf("The old definitions had a os directive, %s. Usually it is not needed, use `when` field otherwhise", v3Definition.OS)
 	}
 
-	v4Config := &config2.YAML{}
+	v4Config := &config.YAML{}
 	for commandName, pluginV1Command := range v3Definition.Commands {
 		for _, pluginV1Instance := range v3Configuration.Instances {
 			if commandName == pluginV1Instance.Command {
@@ -104,8 +104,8 @@ func PopulateV4Config(v3Definition config.Plugin, v3Configuration config.PluginI
 	return v4Config, nil
 }
 
-func populateConfigEntry(pluginV1Instance *config.PluginV1Instance, pluginV1Command *config.PluginV1Command) config2.ConfigEntry {
-	configEntry := config2.ConfigEntry{}
+func populateConfigEntry(pluginV1Instance *legacy.PluginV1Instance, pluginV1Command *legacy.PluginV1Command) config.ConfigEntry {
+	configEntry := config.ConfigEntry{}
 	if len(pluginV1Command.Command) == 0 {
 		return configEntry
 	}
@@ -132,7 +132,7 @@ func populateConfigEntry(pluginV1Instance *config.PluginV1Instance, pluginV1Comm
 	return configEntry
 }
 
-func buildCLIArgs(pluginV1Command *config.PluginV1Command, configEntry *config2.ConfigEntry) {
+func buildCLIArgs(pluginV1Command *legacy.PluginV1Command, configEntry *config.ConfigEntry) {
 	for index, arg := range pluginV1Command.Command {
 		if index == 0 {
 			// the first arg in command is the binary name
@@ -149,7 +149,7 @@ func buildCLIArgs(pluginV1Command *config.PluginV1Command, configEntry *config2.
 	}
 }
 
-func writeOutput(v4Config *config2.YAML, pathDefinition string, pathConfiguration string, pathOutput string) error {
+func writeOutput(v4Config *config.YAML, pathDefinition string, pathConfiguration string, pathOutput string) error {
 	if v4Config == nil {
 		return fmt.Errorf("v4Config pointer is nil")
 	}
@@ -178,7 +178,7 @@ func writeOutput(v4Config *config2.YAML, pathDefinition string, pathConfiguratio
 	return nil
 }
 
-func writeV4Config(v4Config *config2.YAML, file *os.File) error {
+func writeV4Config(v4Config *config.YAML, file *os.File) error {
 	// see https://github.com/go-yaml/yaml/commit/7649d4548cb53a614db133b2a8ac1f31859dda8c
 	//yaml.FutureLineWrap() @TODO enable this
 

@@ -14,8 +14,7 @@ GIT_TAG    = $(shell git describe --tags --abbrev=0 --exact-match 2>/dev/null)
 GIT_DIRTY  = $(shell test -n "`git status --porcelain`" && echo "dirty" || echo "clean")
 
 GOTOOLS ?=
-GOTOOLS += github.com/jandelgado/gcov2lcov
-GOTOOLS += github.com/golangci/golangci-lint/cmd/golangci-lint@v1.43.0
+GOTOOLS += github.com/golangci/golangci-lint/cmd/golangci-lint@v1.45.2
 
 GOARCH ?= amd64
 
@@ -24,7 +23,7 @@ LDFLAGS += -X main.gitCommit=${GIT_COMMIT}
 
 TEST_FLAGS += -failfast
 TEST_FLAGS += -race
-TEST_FLAGS += -ldflags '-X github.com/newrelic/infrastructure-agent/pkg/integrations/execution/v4/integration.minimumIntegrationIntervalOverride=2s'
+TEST_FLAGS += -ldflags '-X github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration.minimumIntegrationIntervalOverride=2s'
 
 export GO111MODULE := on
 export PATH := $(PROJECT_WORKSPACE)/bin:$(PATH)
@@ -50,8 +49,6 @@ test-coverage: deps
 	@printf '\n================================================================\n'
 	@echo '[test] Testing packages: $(SOURCE_FILES)'
 	$(GO_BIN) $(GO_TEST)
-	@echo '[test] Converting: $(COVERAGE_FILE) into lcov.info'
-	@(gcov2lcov -infile=$(COVERAGE_FILE) -outfile=lcov.info)
 
 .PHONY: test
 test: deps test-only
@@ -148,7 +145,7 @@ debug-for-os:
 	@for main_package in $(MAIN_PACKAGES);\
 	do\
 		echo "[dist] Creating executable: `basename $$main_package`";\
-		$(GO_BIN) build -gcflags "all=-N -l" -ldflags '$(LDFLAGS)' -o $(DIST_DIR)/$(GOOS)-`basename $$main_package`_$(GOOS)_$(GOARCH)/`basename $$main_package` $$main_package || exit 1 ;\
+		$(GO_BIN) build -buildvcs=false -gcflags "all=-N -l" -ldflags '$(LDFLAGS)' -o $(DIST_DIR)/$(GOOS)-`basename $$main_package`_$(GOOS)_$(GOARCH)/`basename $$main_package` $$main_package || exit 1 ;\
 	done
 
 .PHONY: dist/linux
