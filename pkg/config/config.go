@@ -742,35 +742,35 @@ type Config struct {
 	// LoggingConfigsDir folder containing configuration files for the log forwarder.
 	// Default: /etc/newrelic-infra/logging.d
 	// Public: Yes
-	LoggingConfigsDir string `yaml:"logging_configs_dir "envconfig:"logging_configs_dir" public:"true"`
+	LoggingConfigsDir string `yaml:"logging_configs_dir" envconfig:"logging_configs_dir" public:"true"`
 
 	// LoggingBinDir folder containing binaries for the log forwarder.
 	// Default: /var/db/newrelic-infra/newrelic-integrations/logging/
 	// Public: No
-	LoggingBinDir string `yaml:"logging_bin_dir "envconfig:"logging_bin_dir" public:"false"`
+	LoggingBinDir string `yaml:"logging_bin_dir" envconfig:"logging_bin_dir" public:"false"`
 
 	// LoggingHomeDir folder containing plugins and other required files for the log forwarder.
 	// Default (Linux): /var/db/newrelic-infra/newrelic-integrations/logging/
 	// Default (Windows): C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\logging\
 	// Public: No
-	LoggingHomeDir string `yaml:"logging_home_dir "envconfig:"logging_home_dir" public:"false"`
+	LoggingHomeDir string `yaml:"logging_home_dir" envconfig:"logging_home_dir" public:"false"`
 
 	// FluentBitExePath is the location from where the agent can execute fluent-bit.
 	// Default (Linux): /opt/td-agent-bit/bin/td-agent-bit
 	// Default (Windows): C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\logging\fluent-bit
 	// Public: No
-	FluentBitExePath string `yaml:"fluent_bit_exe_path "envconfig:"fluent_bit_exe_path" public:"false"`
+	FluentBitExePath string `yaml:"fluent_bit_exe_path" envconfig:"fluent_bit_exe_path" public:"false"`
 
 	// FluentBitParsersPath is the location where the FluentBit parsers.conf file is placed. It is currently required
 	// by the "syslog" input plugin, specifies several message parsers and comes out-of-the-box with FluentBit.
 	// Default: /var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf
 	// Public: No
-	FluentBitParsersPath string `yaml:"fluent_bit_parsers_path "envconfig:"fluent_bit_parsers_path" public:"false"`
+	FluentBitParsersPath string `yaml:"fluent_bit_parsers_path" envconfig:"fluent_bit_parsers_path" public:"false"`
 
 	// FluentBitNRLibPath is the location from where fluent-bit can load the newrelic fluent-bit library.
 	// Default: /var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so
 	// Public: No
-	FluentBitNRLibPath string `yaml:"fluent_bit_nr_lib_path "envconfig:"fluent_bit_nr_lib_path" public:"false"`
+	FluentBitNRLibPath string `yaml:"fluent_bit_nr_lib_path" envconfig:"fluent_bit_nr_lib_path" public:"false"`
 
 	// HTTPServerEnabled By setting true this configuration parameter (used by statsD integration v1) the agent will
 	//	// open HTTP port (by default, 8001) to receive integration payloads via HTTP.
