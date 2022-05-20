@@ -31,6 +31,12 @@
     regexp: 'tag:(\s+)"[0-9\.]+",$'
     replace: 'tag:\1"{{ target_agent_version }}",'
 
+- name: replace go version
+  ansible.builtin.replace:
+    path: "/Users/{{ ansible_user }}/newrelic-infra-agent.rb"
+    regexp: '^depends_on "go@[0-9\.]+" => :build$'
+    replace: 'depends_on "go@{{go_version}}" => :build'
+
 - name: replace revision
   ansible.builtin.replace:
     path: "/Users/{{ ansible_user }}/newrelic-infra-agent.rb"

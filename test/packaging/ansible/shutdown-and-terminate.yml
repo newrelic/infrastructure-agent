@@ -45,10 +45,13 @@
         name: setup-config
       vars:
         verbose_level: '0'
+        display_name: "{{ iid }}:{{ inventory_hostname }}"
 
     - name: install agent
       include_role:
         name: agent-install
+      vars:
+        display_name: "{{ iid }}:{{ inventory_hostname }}"
 
     - name: Assert service
       include_role:
