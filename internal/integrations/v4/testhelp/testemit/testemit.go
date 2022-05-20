@@ -19,7 +19,7 @@ import (
 
 const (
 	channelBuffer  = 100
-	receiveTimeout = 45 * time.Second
+	receiveTimeout = 60 * time.Second
 )
 
 // EmittedData stores both PluginDataSetV3 metric and the plugin metadata
