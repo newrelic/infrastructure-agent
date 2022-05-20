@@ -52,20 +52,10 @@ unit-test-with-coverage: deps
 	@echo '[test] Testing packages: $(SOURCE_FILES)'
 	$(GO_BIN) $(GO_TEST)
 
-#.PHONY: slow-unit-tests
-#test-coverage-with-slow: deps
-#	@printf '\n================================================================\n'
-#	@printf 'Target: test-slow'
-#	@printf '\n================================================================\n'
-#	@echo '[test] Testing packages: $(SOURCE_FILES)'
-#	$(GO_BIN) $(GO_TEST_WITH_SLOW)
-#	@echo '[test] Converting: $(COVERAGE_FILE) into lcov.info'
-#	@(gcov2lcov -infile=$(COVERAGE_FILE) -outfile=lcov.info)
-
 .PHONY: databind-test
 databind-test: deps
 	@printf '\n================================================================\n'
-	@printf 'Target: test-slow'
+	@printf 'Target: databind-test'
 	@printf '\n================================================================\n'
 	@echo '[test] Testing packages: $(TESTS_DATABIND)'
 	$(GO_BIN) $(GO_TEST_DATABIND)
