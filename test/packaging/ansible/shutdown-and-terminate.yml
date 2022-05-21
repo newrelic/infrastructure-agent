@@ -58,10 +58,11 @@
   vars:
     # Add here hosts of the instances that doesn't support Smart HNR (shutdown detection) e.g. - "amd64:ubuntu14.04"
     instances_not_supporting_shutdown_detection: {
+      "amd64:debian-jessie"
     }
 
     host_supports_shutdown_detection: >-
-      {{ 
+      {{
         true if inventory_hostname not in instances_not_supporting_shutdown_detection
         else false
       }}
