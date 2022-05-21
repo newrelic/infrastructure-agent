@@ -27,13 +27,13 @@ else
 	exit 1
 endif
 
-.PHONY: ci/test-coverage
-ci/test-coverage: ci/deps
+.PHONY: ci/unit-test
+ci/unit-test: ci/deps
 	@docker run --rm -t \
 			--name "infrastructure-agent-test-coverage" \
 			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
 			-w /go/src/github.com/newrelic/infrastructure-agent \
-			$(BUILDER_IMG_TAG) make test-coverage
+			$(BUILDER_IMG_TAG) make unit-test-with-coverage
 
 .PHONY: ci/snyk-test
 ci/snyk-test:

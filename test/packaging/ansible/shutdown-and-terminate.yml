@@ -48,6 +48,8 @@
     - name: install agent
       include_role:
         name: agent-install
+      vars:
+        display_name: "{{ iid }}:{{ inventory_hostname }}"
 
     - name: assert service
       include_role:
