@@ -9,7 +9,7 @@
     env_vars:
 
   pre_tasks:
-    - name: iInitial cleanup # Only required for shared infra.
+    - name: initial cleanup # Only required for shared infra.
       include_role:
         name: cleanup
 
