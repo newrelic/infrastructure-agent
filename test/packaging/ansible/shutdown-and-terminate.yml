@@ -9,7 +9,7 @@
     env_vars:
 
   pre_tasks:
-    - name: Initial cleanup # Only required for shared infra.
+    - name: iInitial cleanup # Only required for shared infra.
       include_role:
         name: cleanup
 
@@ -28,10 +28,8 @@
     - name: install agent
       include_role:
         name: agent-install
-      vars:
-        display_name: "{{ iid }}:{{ inventory_hostname }}"
 
-    - name: Assert service
+    - name: assert service
       include_role:
         name: assert-service
 
@@ -45,114 +43,83 @@
         name: setup-config
       vars:
         verbose_level: '0'
+        display_name: "{{ iid }}:{{ inventory_hostname }}"
 
     - name: install agent
       include_role:
         name: agent-install
 
-    - name: Assert service
+    - name: assert service
       include_role:
         name: assert-service
 
-- name: controlled shutdown behaviour
+- name: test agent behaviour on host shutdown
   hosts: testing_hosts
   vars:
-    minutes_until_alert_opens: 10
-    minutes_until_alert_closes: 10
-    minutes_to_send_data: 3
-    # Add here name of the instances instances that doesn't support Smart HNR (shutdown detection)
+    # Add here hosts of the instances that doesn't support Smart HNR (shutdown detection) e.g. - "amd64:ubuntu14.04"
     instances_not_supporting_shutdown_detection: {
-      # e.g. - "amd64:ubuntu14.04"
     }
-    env_vars:
+
+    host_supports_shutdown_detection: >-
+      {{ 
+        true if inventory_hostname not in instances_not_supporting_shutdown_detection
+        else false
+      }}
+
   tasks:
-    - name: Delete HNR alerts
+    - name: pause a bit to let the agent send some data
+      pause:
+        minutes: 1
+
+    - name: restart the agent
       include_role:
-        name: infrastructure-alert-delete
-    - name: Running tests
-      block:
-        - name: Create HNR alerts
-          include_role:
-            name: infrastructure-alert-create
+        name: agent-restart
 
-        - name: Pause for few minutes to let the agent send some data
-          pause:
-            minutes: "{{ minutes_to_send_data }}"
+    - name: pause for a bit to let the agent initialize
+      pause:
+        seconds: 30
 
-        - name: stop the agent
-          include_role:
-            name: agent-stop
+    - name: assert agent restart don't trigger shutdown event
+      include_role:
+        name: agent-host-status-event-assert
+      vars:
+        host_status: "shutdown"
+        expect_event: false
+        since_sec_ago: 30
 
-        - name: Pause for few minutes to let the alert trigger
-          pause:
-            minutes: "{{ minutes_until_alert_opens }}"
+    - name: stop instances
+      include_role:
+        name: ec2-stop
 
-        - name: assert violation is opened
-          include_role:
-            name: infrastructure-alert-violation-assert
-          vars:
-            violation_open: true
+    - name: assert that the agent detecteded host shutdown and disconnected from the backend (only on hosts that support shutdown detection)
+      include_role:
+        name: agent-host-status-event-assert
+      vars:
+        host_status: "shutdown"
+        expect_event: "{{ host_supports_shutdown_detection }}"
+        since_sec_ago: "{{ now(True, '%s') | int - ec2_stop_time_sec | int }}"
 
-        - name: restart the agent
-          include_role:
-            name: agent-restart
+    - name: start instances
+      include_role:
+        name: ec2-start
 
-        - name: Pause for few minutes to let the incident be closed
-          pause:
-            minutes: "{{ minutes_until_alert_closes }}"
+    - name: assert the agent performed connect to the backend (only on hosts that support shutdown detection)
+      include_role:
+        name: agent-host-status-event-assert
+      vars:
+        host_status: "running"
+        expect_event: "{{ host_supports_shutdown_detection }}"
+        since_sec_ago: "{{ now(True, '%s') | int - ec2_start_time_sec | int }}"
 
-        - name: assert violation is not opened
-          include_role:
-            name: infrastructure-alert-violation-assert
-          vars:
-            violation_open: false
+    - name: terminate instances
+      include_role:
+        name: ec2-terminate
 
-        - name: stop instances
-          include_role:
-            name: ec2-stop
-
-        - name: Pause for few minutes to let the alert trigger
-          pause:
-            minutes: "{{ minutes_until_alert_opens }}"
-
-        - name: assert violation is not opened for systems that can handle shutdown detection
-          include_role:
-            name: infrastructure-alert-violation-assert
-          vars:
-            violation_open: false
-          when: inventory_hostname not in instances_not_supporting_shutdown_detection
-
-        - name: assert violation is opened for systems that cannot handle shutdown detection
-          include_role:
-            name: infrastructure-alert-violation-assert
-          vars:
-            violation_open: true
-          when: inventory_hostname in instances_not_supporting_shutdown_detection
-
-        - name: start instances
-          include_role:
-            name: ec2-start
-
-        - name: Pause for few minutes to let the agent send some data
-          pause:
-            minutes: "{{ minutes_to_send_data }}"
-
-        - name: terminate instances
-          include_role:
-            name: ec2-terminate
-
-        - name: Pause for few minutes to let the alert trigger
-          pause:
-            minutes: "{{ minutes_until_alert_opens }}"
-
-        - name: assert violation is opened
-          include_role:
-            name: infrastructure-alert-violation-assert
-          vars:
-            violation_open: true
-      always:
-        - name: Delete HNR alerts
-          include_role:
-            name: infrastructure-alert-delete
-
+    - name: assert that the agent detecteded host termination and disconnected from the backend (only on hosts that support shutdown detection)
+      include_role:
+        name: agent-host-status-event-assert
+      vars:
+        host_status: "shutdown"
+        expect_event: "{{ host_supports_shutdown_detection }}"
+        since_sec_ago: "{{ now(True, '%s') | int - ec2_terminate_time_sec | int }}"
 ...

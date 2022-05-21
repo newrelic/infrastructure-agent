@@ -1,0 +1,19 @@
+---
+- name: list host_status change events
+  delegate_to: 127.0.0.1
+
+  import_role:
+    name: execute-nrql
+  vars:
+    - nrql_query: "{{ infrastructure_event_query }}"
+
+- name: print nrqls
+  delegate_to: 127.0.0.1
+  debug:
+    msg: "{{ infrastructure_event_query }}"
+
+- name: assert host_status, expecting to change - {{ expect_event }}
+  vars:
+    expected_count: "{{ 1 if expect_event else 0 }}"
+  assert:
+    that: results[0].count == {{ expected_count }}

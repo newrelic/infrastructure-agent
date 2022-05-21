@@ -11,13 +11,17 @@
   register: existing_violations
 
 - name: assert violation exists
+  vars:
+    violating_entities_query: "[?policy_name=='{{ policy_name }}'].entity.name"
   assert:
-    that: "'{{policy_name}}' in {{ existing_violations.json.violations | map(attribute='policy_name') | flatten  }}"
+    that: "'{{entity_name}}' in {{ existing_violations.json.violations | json_query(violating_entities_query) | flatten  }}"
   when: violation_open
 
 - name: assert violation does not exists
+  vars:
+    violating_entities_query: "[?policy_name=='{{ policy_name }}'].entity.name"
   assert:
-    that: "'{{policy_name}}' not in {{ existing_violations.json.violations | map(attribute='policy_name') | flatten  }}"
+    that: "'{{entity_name}}' not in {{ existing_violations.json.violations | json_query(violating_entities_query) | flatten  }}"
   when: not violation_open
 
 ...
