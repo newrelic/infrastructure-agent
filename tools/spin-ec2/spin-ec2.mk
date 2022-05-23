@@ -40,7 +40,7 @@ ifndef MACSTADIUM_PASS
 	@echo "MACSTADIUM_PASS (MacStadium account passowrd for API) variable must be provided for \"make canaries\""
 	exit 1
 endif
-	@echo "\033[41mVerify that you are in the correct VPN if needed\033[0m"
+	@echo "\033[41mYou have 10 seconds to verify that you are in the correct VPN if needed\033[0m"
 	@sleep 10
 	tools/spin-ec2/bin/spin-ec2 canaries provision \
 									-v 'v$(VERSION)' \
