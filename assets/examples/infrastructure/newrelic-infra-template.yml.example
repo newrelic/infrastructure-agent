@@ -114,47 +114,36 @@ license_key: your_license_key
 #
 
 #
-# Option   : log_file
-# Env var  : NRIA_LOG_FILE
-# Value    : Full path and file name of the log file.
-# Default  : Linux: /var/log/newrelic-infra/newrelic-infra.log
-#            Windows: C:\Program Files\New Relic\newrelic-infra\newrelic-infra.log
+# Option   : log
+# Env var  : NRIA_LOG_FILE, NRIA_LOG_LEVEL, NRIA_LOG_FORMAT, NRIA_LOG_FORWARD, NRIA_LOG_STDOUT
+# Value    : Map configuration for the agent logging. The key-values can be any of the following:
+#            "file" Full path and file name of the log file.
+#            "format" Defines the log output format. Available values are text and json. One line per log entry.
+#            "level" Defines the log level (info, smart, debug, trace).
+#            "forward" Set to true to send logs to New Relic platform.
+#            "stdout" Set to false to disable logs in the standard output.
+#            "smart_level_entry_limit" Defines the number of entries that will be cached before being flushed. If smart level is enabled.
+# Default  : file:
+#              - Linux: /var/log/newrelic-infra/newrelic-infra.log
+#              - Windows: C:\Program Files\New Relic\newrelic-infra\newrelic-infra.log
+#            level: info
+#            format: text
+#            forward: false
+#            stdout: true
+#            smart_level_entry_limit: 1000
 # Risk     : Providing a log file path that does not yet exist causes the agent
 #            to fail on startup.
-#log_file: /temp/debug_log
-#
-
-#
-# Option   : log_format
-# Env var  : NRIA_LOG_FORMAT
-# Value    : Defines the log output format. Available values are text (default),
-#            and json. Both formats use one line per log entry.
-# Default  : text
-# Tip      : Use json when forwarding the agent logs to New Relic logs for
+# Tip      : Use json format when forwarding the agent logs to New Relic logs for
 #            troubleshooting (verbose:3).
-#
-#log_format: text
-
-#
-# Option   : log_to_stdout
-# Env var  : NRIA_LOG_TO_STDOUT
-# Value    : Set to false to disable logs in the standard output. By default all
-#            logs are displayed in both standard output and a log file.
-# Default  : true
-#
-#log_to_stdout: true
-#
-
-#
-# Option   : verbose
-# Env var  : NRIA_VERBOSE
-# Value    : Enable (1) only for troubleshooting. Use (3) to forward the
-#            agent logs to New Relic for troubleshooting.
-# Default  : 0
-# Risk     : Verbose logging can generate a lot of data very quickly.
-# Tip      : Run the agent in verbose mode only for troubleshooting. To disable
-#            verbose logging, set verbose to 0 and restart the agent.
-#verbose: 0
+# Tip      : Run the agent in debug mode only for troubleshooting. To disable
+#            debug logging, set the level to info and restart the agent.
+#log:
+#  file: /tmp/agent.log
+#  format: json
+#  level: smart
+#  forward: false
+#  stdout: false
+#  smart_level_entry_limit: 500
 #
 
 #
@@ -699,26 +688,6 @@ license_key: your_license_key
 #
 #startup_connection_timeout: 10s
 #
-
-#
-# Option   : trace
-# Env var  : NRIA_TRACE
-# Value    : Enables traces to be printed in the logs for the given features.
-#            Traces are additional log entries used for debugging purposes of
-#            specific features, and are only shown when verbose is set to True.
-# Default  : ["connect"]
-#
-#trace:
-#  - connect # (enabled by default)
-#  - attributes
-#  - hostname
-#  - dm.submission
-#  - v3.submission
-#  - metric.match
-#  - inventory
-#  - log.fw
-#  - cmdreq
-#  - proc
 
 #
 # Option   : container_cache_metadata_limit
