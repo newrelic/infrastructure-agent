@@ -29,7 +29,8 @@
                 inventory_hostname is search("debian-buster") or
                 inventory_hostname is search("centos") or
                 inventory_hostname is search("redhat") or
-                inventory_hostname is search("sles-12.5")
+                inventory_hostname is search("sles-12") or
+                inventory_hostname is search("sles-15")
                 )
 
         - name: repo setup
