@@ -73,8 +73,8 @@
   
       summary: "New Relic Infrastructure Agent"
       group: default
-    # Required packages. rpm version 4.11.3 does not support weak dependencies
-    dependencies:
+    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
+    recommends:
       - td-agent-bit
   
   # end CentOS 8 amd64

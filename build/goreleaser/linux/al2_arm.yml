@@ -71,8 +71,8 @@
   
       summary: "New Relic Infrastructure Agent"
       group: default
-    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
-#    recommends:
+    # Required packages. rpm version 4.11.3 does not support weak dependencies
+#    dependencies:
 #      - td-agent-bit
   
   # end AL2 arm
