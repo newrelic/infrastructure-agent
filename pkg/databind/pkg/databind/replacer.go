@@ -5,7 +5,6 @@ package databind
 
 import (
 	"bytes"
-	"errors"
 	"reflect"
 	"regexp"
 	"unsafe"
@@ -38,76 +37,38 @@ func Replace(vals *Values, template interface{}, options ...ReplaceOption) (tran
 	// if neither discovery nor variables, we just return the template as it
 	if len(vals.discov) == 0 {
 		if len(vals.vars) == 0 {
-			// TRICKY LOGIC HERE
-			// if no discovery nor variables, we use this invocation not to replace anything, but
-			// to check if there are variable placeholders in the template (observe that we are passing
-			// an empty discovery source in the second argument)
-			_, err := replaceAllSources(template, []discovery.Discovery{{}}, data.Map{}, rc)
-			// if the above returned error, it means it has variables. So since discovery returned
-			// no results, we will to return an empty array
-			if err != nil {
-				return transformedData, nil
-			}
+			//Historycally used to check for variables in template and return error in that case
+			//Now variables in template are allowed as they can be used in flex i.e and rc is meant
+			//to be executed internal/integrations/v4/integration/definition.go
+			//for onDemand = ignoreConfigPathVar(&foundConfigPath)
+			replaceAllSources(template, []discovery.Discovery{{}}, data.Map{}, rc)
+
 			// otherwise, it means it does not have variables, so we will return the template as it was
 			// since it was not bounded to any discovery process
 			return []data.Transformed{{Variables: template}}, nil
 		}
 		// if no discovery data but variables, we just replace variables as if they were
 		// a discovery source and leave the "common" values as empty
-		return replaceAllSources(template, []discovery.Discovery{{Variables: vals.vars}}, data.Map{}, rc)
+		return replaceAllSources(template, []discovery.Discovery{{Variables: vals.vars}}, data.Map{}, rc), nil
 	}
 
 	discoverySources := vals.discov
 	varSrc := vals.vars
 
-	return replaceAllSources(template, discoverySources, varSrc, rc)
-}
-
-// ReplaceBytes receives a byte array that may  contain ${variable} placeholders,
-// and returns an array of byte arrays replacing the variable placeholders from the respective Values.
-func ReplaceBytes(vals *Values, template []byte, options ...ReplaceOption) ([][]byte, error) {
-	rc := replaceConfig{}
-	for _, option := range options {
-		option(&rc)
-	}
-	if len(vals.discov) == 0 {
-		if len(vals.vars) == 0 {
-			// the same tricky logic as for "Replace" function
-			_, err := replaceAllBytes(template, []discovery.Discovery{{}}, data.Map{}, rc)
-			if err != nil {
-				return [][]byte{}, nil
-			}
-			return [][]byte{template}, nil
-		}
-		// if no discovery data but variables, we just replace variables as if they were
-		// a discovery source and leave the "common" values as empty
-		return replaceAllBytes(template, []discovery.Discovery{{Variables: vals.vars}}, data.Map{}, rc)
-	}
-
-	discoverySources := vals.discov
-	varSrc := vals.vars
-
-	return replaceAllBytes(template, discoverySources, varSrc, rc)
+	return replaceAllSources(template, discoverySources, varSrc, rc), nil
 }
 
 // Replaces all the discovery sources by the values in the "src" array. The common array is shared
 // If src is empty, no change is done even if there is data in the common map.
-func replaceAllSources(tmpl interface{}, src []discovery.Discovery, common data.Map, rc replaceConfig) (transformedData []data.Transformed, err error) {
+func replaceAllSources(tmpl interface{}, src []discovery.Discovery, common data.Map, rc replaceConfig) (transformedData []data.Transformed) {
 	templateVal := reflect.ValueOf(tmpl)
 	for _, discov := range src {
 		matches := 0
-		replaced, err := replaceFields([]data.Map{discov.Variables, common}, templateVal, rc, &matches)
-		if err != nil {
-			return transformedData, err
-		}
-
-		entityRewrites, err := replaceEntityRewrites([]data.Map{discov.Variables, common}, discov.EntityRewrites, rc)
-		if err != nil {
-			return transformedData, err
-		}
+		replaced := replaceFields([]data.Map{discov.Variables, common}, templateVal, rc, &matches)
+		entityRewrites := replaceEntityRewrites([]data.Map{discov.Variables, common}, discov.EntityRewrites, rc)
 
 		if matches == 0 { // the config has no variables. Returning single instance
-			return []data.Transformed{{Variables: tmpl, EntityRewrites: entityRewrites}}, nil
+			return []data.Transformed{{Variables: tmpl, EntityRewrites: entityRewrites}}
 		}
 
 		transformedData = append(transformedData,
@@ -117,10 +78,10 @@ func replaceAllSources(tmpl interface{}, src []discovery.Discovery, common data.
 				EntityRewrites:    entityRewrites,
 			})
 	}
-	return transformedData, nil
+	return transformedData
 }
 
-func replaceEntityRewrites(values []data.Map, entityRewrite []data.EntityRewrite, rc replaceConfig) ([]data.EntityRewrite, error) {
+func replaceEntityRewrites(values []data.Map, entityRewrite []data.EntityRewrite, rc replaceConfig) []data.EntityRewrite {
 
 	for i := range entityRewrite {
 		entityRewrite[i].ReplaceField = naming.AddPrefixToVariable(data.DiscoveryPrefix, entityRewrite[i].ReplaceField)
@@ -131,160 +92,127 @@ func replaceEntityRewrites(values []data.Map, entityRewrite []data.EntityRewrite
 
 	entityRewriteMatches := 0
 
-	entityRewriteReplaced, err := replaceFields(values, entityRewriteTpl, rc, &entityRewriteMatches)
-	if err != nil {
-		return nil, err
-	}
+	entityRewriteReplaced := replaceFields(values, entityRewriteTpl, rc, &entityRewriteMatches)
 
 	if entityRewriteMatches > 0 {
 		entityRewrite = entityRewriteReplaced.Interface().([]data.EntityRewrite)
 	}
-	return entityRewrite, nil
+	return entityRewrite
 }
 
-func replaceAllBytes(template []byte, src []discovery.Discovery, common data.Map, rc replaceConfig) ([][]byte, error) {
+func replaceAllBytes(template []byte, src []discovery.Discovery, common data.Map, rc replaceConfig) [][]byte {
 	var allReplaced [][]byte
 	for _, discov := range src {
 		matches := 0
-		replaced, err := replaceBytes([]data.Map{discov.Variables, common}, template, rc, &matches)
-		if err != nil {
-			return nil, err
-		}
+		replaced := replaceBytes([]data.Map{discov.Variables, common}, template, rc, &matches)
 		if matches == 0 { // the config has no variables. Returning single instance
-			return [][]byte{template}, nil
+			return [][]byte{template}
 		}
 		allReplaced = append(allReplaced, replaced)
 	}
-	return allReplaced, nil
+	return allReplaced
 }
 
-func replaceFields(values []data.Map, val reflect.Value, rc replaceConfig, matches *int) (reflect.Value, error) {
+func replaceFields(values []data.Map, val reflect.Value, rc replaceConfig, matches *int) reflect.Value {
 	switch val.Kind() {
 	case reflect.Slice:
 		// if it is a byte array, replaces it as if it were a string
 		if val.Type().Elem().Kind() == reflect.Uint8 {
-			replaced, err := replaceBytes(values, val.Bytes(), rc, matches)
-			if err != nil {
-				return reflect.Value{}, err
-			}
-			return reflect.ValueOf(replaced), nil
+			replaced := replaceBytes(values, val.Bytes(), rc, matches)
+			return reflect.ValueOf(replaced)
 		}
 		length := val.Len()
 		newSlice := reflect.MakeSlice(val.Type(), length, length)
 		for i := 0; i < length; i++ {
 			ival := val.Index(i)
-			replaced, err := replaceFields(values, ival, rc, matches)
-			if err != nil {
-				return reflect.Value{}, err
-			}
+			replaced := replaceFields(values, ival, rc, matches)
 			newSlice.Index(i).Set(replaced)
 		}
-		return newSlice, nil
+		return newSlice
 	case reflect.Ptr:
 		if val.IsNil() {
-			return val.Elem(), nil
+			return val.Elem()
 		}
-		vals, err := replaceFields(values, val.Elem(), rc, matches)
-		if err != nil {
-			return reflect.Value{}, err
-		}
+		vals := replaceFields(values, val.Elem(), rc, matches)
 		if vals.Kind() == reflect.Ptr {
-			return reflect.NewAt(val.Type(), unsafe.Pointer(vals.Pointer())), nil
+			return reflect.NewAt(val.Type(), unsafe.Pointer(vals.Pointer()))
 		}
 		if vals.CanAddr() {
-			return vals.Addr(), nil
+			return vals.Addr()
 		}
-		return val.Elem(), nil
+		return val.Elem()
 	case reflect.Interface:
-		vals, err := replaceFields(values, reflect.ValueOf(val.Interface()), rc, matches)
-		if err != nil {
-			return reflect.Value{}, err
-		}
+		vals := replaceFields(values, reflect.ValueOf(val.Interface()), rc, matches)
 		if vals.Kind() == reflect.Ptr {
-			return reflect.NewAt(val.Type(), unsafe.Pointer(vals.Pointer())), nil
+			return reflect.NewAt(val.Type(), unsafe.Pointer(vals.Pointer()))
 		}
-		return vals, nil
+		return vals
 	case reflect.String:
-		nStr, err := replaceBytes(values, []byte(val.String()), rc, matches)
-		if err != nil {
-			return reflect.Value{}, err
-		}
-		return reflect.ValueOf(string(nStr)), nil
+		nStr := replaceBytes(values, []byte(val.String()), rc, matches)
+		return reflect.ValueOf(string(nStr))
 	case reflect.Map:
 		newMap := reflect.MakeMap(val.Type())
 		keys := val.MapKeys()
 		for _, k := range keys {
 			val := val.MapIndex(k)
-			nComps, err := replaceFields(values, val, rc, matches)
-			if err != nil {
-				return reflect.Value{}, err
-			}
+			nComps := replaceFields(values, val, rc, matches)
 			newMap.SetMapIndex(k, nComps)
 		}
-		return newMap, nil
+		return newMap
 	case reflect.Struct:
 		newStruct := reflect.New(val.Type()).Elem()
 		for i := 0; i < val.NumField(); i++ {
-			nComps, err := replaceFields(values, val.Field(i), rc, matches)
-			if err != nil {
-				return reflect.Value{}, err
-			}
+			nComps := replaceFields(values, val.Field(i), rc, matches)
 			field := newStruct.Field(i)
 			if field.CanSet() && nComps.IsValid() {
 				field.Set(nComps)
 			}
 		}
-		return newStruct, nil
+		return newStruct
 	default:
-		return val, nil
+		return val
 	}
 }
 
-func replaceBytes(values []data.Map, template []byte, rc replaceConfig, nMatches *int) ([]byte, error) {
+func replaceBytes(values []data.Map, template []byte, rc replaceConfig, nMatches *int) []byte {
 	matches := regex.FindAllIndex(template, -1)
 	if len(matches) == 0 {
-		return template, nil // zero variables, all have been found and replaced
+		return template // zero variables, all have been found and replaced
 	}
 	replace := make([]byte, 0, len(template))
 	replace = append(replace, template[:matches[0][0]]...)
 	for i := 0; i < len(matches)-1; i++ {
-		value, err := variable(values, template[matches[i][0]:matches[i][1]], rc)
-		if err != nil {
-			return nil, err
-		}
+		value := variable(values, template[matches[i][0]:matches[i][1]], rc)
 		*nMatches++
 		replace = append(replace, value...)
 		replace = append(replace, template[matches[i][1]:matches[i+1][0]]...)
 	}
 	last := len(matches) - 1
-	value, err := variable(values, template[matches[last][0]:matches[last][1]], rc)
-	if err != nil {
-		return nil, err
-	}
+	value := variable(values, template[matches[last][0]:matches[last][1]], rc)
 	*nMatches++
 	replace = append(replace, value...)
 	replace = append(replace, template[matches[last][1]:]...)
-	return replace, err
+	return replace
 }
 
 // replaces a variable mark from its corresponding variable or discovered item.
-func variable(values []data.Map, match []byte, rc replaceConfig) ([]byte, error) {
+func variable(values []data.Map, match []byte, rc replaceConfig) []byte {
 	// removing ${...}
 	varName := string(bytes.Trim(match, "${}\n\r\t "))
 
 	for _, vmap := range values {
 		if value, ok := vmap[varName]; ok {
-			return []byte(value), nil
+			return []byte(value)
 		}
 	}
 
 	// if not found in the discovered/variables static sources, we ask dynamically for it
 	for _, onDemand := range rc.onDemand {
 		if value, ok := onDemand(varName); ok {
-			return value, nil
+			return value
 		}
 	}
 
 	// if the value is not found, returns the match itself
-	return match, errors.New("value not found: " + varName)
+	return match
 }
