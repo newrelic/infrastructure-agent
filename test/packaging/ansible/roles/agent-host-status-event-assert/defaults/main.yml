@@ -1,0 +1,12 @@
+---
+entity_name: "{{ iid }}:{{ inventory_hostname }}"
+
+seconds_ago: "{{ since_sec_ago if since_sec_ago is defined else 60 }}"
+
+infrastructure_event_query: >-
+  SELECT count(*) FROM InfrastructureEvent WHERE
+  entityName = '{{ entity_name }}' AND
+  format = 'inventoryChange' AND
+  source = 'system/host_status' AND
+  newValue LIKE '%{{ host_status }}%'
+  SINCE {{ seconds_ago }} SECONDS AGO
