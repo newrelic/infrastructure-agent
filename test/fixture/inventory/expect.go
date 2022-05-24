@@ -64,11 +64,7 @@ var (
 					"id":           ".kernel.panic",
 					"sysctl_value": AnyValue,
 				},
-				".kernel.printk": AnyValue,
-				".vm.block_dump": map[string]interface{}{
-					"id":           ".vm.block_dump",
-					"sysctl_value": AnyValue,
-				},
+				".kernel.printk":             AnyValue,
 				".vm.dirty_background_ratio": AnyValue,
 			},
 		},
