@@ -9,16 +9,9 @@
   debug:
     msg: "{{ getcap.stdout }}"
 
-  # based on libcap version getp output is different (https://git.kernel.org/pub/scm/libs/libcap/libcap.git/commit/?id=177cd418031b1acfcf73fe3b1af9f3279828681c)
-  # for now just affecting to debian 11.
 - name: assert caps are the same as expected
   assert:
-    that: "'{{ getcap.stdout }}' == '/usr/bin/newrelic-infra = cap_dac_read_search,cap_sys_ptrace+ep'"
-  when: ansible_os_family != "Debian" and ansible_distribution_major_version != 11
-
-- name: assert caps are the same as expected
-  assert:
-    that: "'{{ getcap.stdout }}' == '/usr/bin/newrelic-infra cap_dac_read_search,cap_sys_ptrace=ep'"
-  when: ansible_os_family == "Debian" and ansible_distribution_major_version == 11
+    that:
+      - getcap.stdout is search('cap_dac_read_search,cap_sys_ptrace.ep')
 
 ...
