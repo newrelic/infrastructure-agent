@@ -722,6 +722,51 @@ license_key: "xxx"
 	assert.Equal(t, SmartVerboseLogging, cfg.Verbose)
 }
 
+func TestLoadLogConfig_HasIncludeFilter(t *testing.T) {
+	testCases := []struct {
+		name     string
+		yamlCfg  string
+		expected bool
+	}{
+		{
+			name: "WhenOnIncludes",
+			yamlCfg: `
+log:
+  include_filters:
+    "traces":
+      - "supervisor"
+`,
+			expected: true,
+		},
+		{
+			name: "WhenNotIncluded",
+			yamlCfg: `
+log:
+  include_filters:
+`,
+			expected: false,
+		},
+		{
+			name: "WhenWildcardIsUsed",
+			yamlCfg: `
+log:
+  include_filters:
+    - "*":
+`,
+			expected: false,
+		},
+	}
+
+	for _, testCase := range testCases {
+		tmp, err := createTestFile([]byte(testCase.yamlCfg))
+		require.NoError(t, err)
+
+		cfg, err := LoadConfig(tmp.Name())
+		assert.Equal(t, testCase.expected, cfg.Log.HasIncludeFilter(TracesFieldName, SupervisorTrace))
+		os.Remove(tmp.Name())
+	}
+}
+
 func TestLoadLogConfig_BackwardsCompatability(t *testing.T) {
 	toPtr := func(a bool) *bool {
 		return &a

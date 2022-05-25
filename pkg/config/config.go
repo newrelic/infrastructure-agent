@@ -1158,6 +1158,10 @@ func (lc *LogConfig) AttachDefaultFilters() {
 
 // HasIncludeFilter returns true if key-value pair are included in the filtering configuration.
 func (lc *LogConfig) HasIncludeFilter(key, value string) bool {
+	if _, hasWildcardKey := lc.IncludeFilters[LogFilterWildcard]; hasWildcardKey {
+		return true
+	}
+
 	values, found := lc.IncludeFilters[key]
 	if !found {
 		return false
