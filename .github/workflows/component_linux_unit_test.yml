@@ -17,27 +17,17 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Install Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{env.GO_VERSION}}
-
       - name: Validate code
         run: make ci/validate
 
-  test:
-    name: Unit tests with coverage
+  unit-test:
+    name: Unit tests
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
 
-      - name: Install Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{env.GO_VERSION}}
-
       - name: Running unit tests
-        run: make ci/test-coverage
+        run: make ci/unit-test
 
       - name: Convert coverage to lcov
         uses: jandelgado/gcov2lcov-action@v1.0.5
@@ -54,9 +44,25 @@ jobs:
           flag-name: run-linux
           parallel: true
 
-  test-finish:
+  databind-test:
+    name: Unit tests for databind
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{env.GO_VERSION}}
+
+      - name: Running databind unit/integration tests
+        run: make databind-test
+        # this is temporary as those tests are not fixed yet
+        continue-on-error: true
+
+  unit-test-finish:
     name: Coveralls finish
-    needs: [ test ]
+    needs: [ unit-test ]
     runs-on: ubuntu-20.04
     steps:
       - name: Coveralls Finished

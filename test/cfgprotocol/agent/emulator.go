@@ -1,9 +1,11 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+
 package agent
 
 import (
 	"compress/gzip"
+	v4Config "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -33,7 +35,7 @@ import (
 type Emulator struct {
 	chRequests     chan http.Request
 	agent          *agent.Agent
-	integrationCfg v4.Configuration
+	integrationCfg v4.ManagerConfig
 	tempDir        string
 }
 
@@ -59,7 +61,7 @@ func New(configsDir, tempBinDir string) *Emulator {
 		config.CustomPluginInstallationDir = tempBinDir
 	})
 	cfg := ag.Context.Config()
-	integrationCfg := v4.NewConfig(
+	integrationCfg := v4.NewManagerConfig(
 		cfg.Verbose,
 		cfg.Features,
 		cfg.PassthroughEnvironment,
@@ -106,8 +108,6 @@ func (ae *Emulator) RunAgent() error {
 	definitionQ := make(chan integration.Definition, 100)
 	// queues config entries requests
 	configEntryQ := make(chan configrequest.Entry, 100)
-	// queues integration terminated definitions
-	terminateDefinitionQ := make(chan string, 100)
 
 	dmEmitter := dm.NewEmitter(ae.agent.GetContext(), dmSender, nil, instrumentation.NoopMeasure)
 
@@ -115,7 +115,16 @@ func (ae *Emulator) RunAgent() error {
 	tracker := track.NewTracker(dmEmitter)
 	il := newInstancesLookup(ae.integrationCfg)
 	integrationEmitter := emitter.NewIntegrationEmittor(ae.agent, dmEmitter, ffManager)
-	integrationManager := v4.NewManager(ae.integrationCfg, integrationEmitter, il, definitionQ, terminateDefinitionQ, configEntryQ, tracker, ae.agent.Context.IDLookup())
+	integrationManager := v4.NewManager(
+		ae.integrationCfg,
+		v4Config.NewPathLoader(),
+		integrationEmitter,
+		il,
+		definitionQ,
+		configEntryQ,
+		tracker,
+		ae.agent.Context.IDLookup(),
+	)
 
 	// Start all plugins we want the agent to run.
 	if err = plugins.RegisterPlugins(ae.agent); err != nil {
@@ -132,7 +141,7 @@ func (ae *Emulator) RunAgent() error {
 	return nil
 }
 
-func newInstancesLookup(cfg v4.Configuration) integration.InstancesLookup {
+func newInstancesLookup(cfg v4.ManagerConfig) integration.InstancesLookup {
 	const executablesSubFolder = "bin"
 
 	var execFolders []string

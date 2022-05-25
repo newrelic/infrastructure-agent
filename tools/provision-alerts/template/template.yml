@@ -269,7 +269,7 @@ policies:
       - name: System / Memory Total Bytes
         metric: memoryTotalBytes
         sample: SystemSample
-        threshold: 65537
+        threshold: 50000000
         duration: 30
         operator: "above"
         template_name: "Generic metric comparator"
@@ -317,7 +317,7 @@ policies:
       - name: System / System Memory Bytes
         metric: systemMemoryBytes
         sample: SystemSample
-        threshold: 10000000
+        threshold: 50000000
         duration: 30
         operator: "above"
         template_name: "Generic metric comparator"
@@ -398,7 +398,7 @@ policies:
       - name: Storage / System Memory Bytes
         metric: systemMemoryBytes
         sample: StorageSample
-        threshold: 10000000
+        threshold: 50000000
         duration: 30
         operator: "above"
         template_name: "Generic metric comparator"
