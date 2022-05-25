@@ -51,7 +51,7 @@ func NewPathLoader() Loader {
 // Load reads all the configuration files in a given directory. If path is a file instead of a directory
 // will try to read it as a single configuration file.
 func (pl *pathLoader) Load(path string) (YAMLMap, error) {
-	isDir, err := isDirectory(path)
+	isDir, err := pl.isDirectory(path)
 	if err != nil {
 		return nil, err
 	}
