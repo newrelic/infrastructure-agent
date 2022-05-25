@@ -6,6 +6,9 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 )
 
+// YAMLMap maps YAML config with the path of the config file as key.
+type YAMLMap map[string]YAML
+
 // YAML stores the information from a single V4 integrations file
 type YAML struct {
 	Databind     databind.YAMLConfig `yaml:",inline"`

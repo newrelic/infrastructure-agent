@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 // Contains all the bits and pieces we need to parse and manage
 // the external configuration
-package migrate
+
+package config
 
 import (
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
+	v3config "github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
@@ -31,21 +31,21 @@ type V3toV4Result struct {
 	V3toV4Result string `json:"migrateV3toV4Result"`
 }
 
-func V3toV4(pathConfiguration string, pathDefinition string, pathOutput string, overwrite bool) error {
+func MigrateV3toV4(pathConfiguration string, pathDefinition string, pathOutput string, overwrite bool) error {
 
 	if _, err := os.Stat(pathOutput); err == nil && !overwrite {
 		return fmt.Errorf("file '%s' already exist and overwrite option is set to false", pathOutput)
 	}
 
 	// Reading old Definition file
-	v3Definition := legacy.Plugin{}
+	v3Definition := v3config.Plugin{}
 	err := readAndUnmarshallConfig(pathDefinition, &v3Definition)
 	if err != nil {
 		return fmt.Errorf("error reading old config definition: %w", err)
 	}
 
 	// Reading old Configuration file
-	v3Configuration := legacy.PluginInstanceWrapper{}
+	v3Configuration := v3config.PluginInstanceWrapper{}
 	err = readAndUnmarshallConfig(pathConfiguration, &v3Configuration)
 	if err != nil {
 		return fmt.Errorf("error reading old config configuration: %w", err)
@@ -81,7 +81,7 @@ func readAndUnmarshallConfig(path string, out interface{}) error {
 	return nil
 }
 
-func populateV4Config(v3Definition legacy.Plugin, v3Configuration legacy.PluginInstanceWrapper) (*config.YAML, error) {
+func populateV4Config(v3Definition v3config.Plugin, v3Configuration v3config.PluginInstanceWrapper) (*YAML, error) {
 	if v3Configuration.IntegrationName != v3Definition.Name {
 		return nil, fmt.Errorf("IntegrationName != Name: %s!=%s", v3Configuration.IntegrationName, v3Definition.Name)
 	}
@@ -91,7 +91,7 @@ func populateV4Config(v3Definition legacy.Plugin, v3Configuration legacy.PluginI
 		log.Debugf("The old definitions had a os directive, %s. Usually it is not needed, use `when` field otherwhise", v3Definition.OS)
 	}
 
-	v4Config := &config.YAML{}
+	v4Config := &YAML{}
 	for commandName, pluginV1Command := range v3Definition.Commands {
 		for _, pluginV1Instance := range v3Configuration.Instances {
 			if commandName == pluginV1Instance.Command {
@@ -104,8 +104,8 @@ func populateV4Config(v3Definition legacy.Plugin, v3Configuration legacy.PluginI
 	return v4Config, nil
 }
 
-func populateConfigEntry(pluginV1Instance *legacy.PluginV1Instance, pluginV1Command *legacy.PluginV1Command) config.ConfigEntry {
-	configEntry := config.ConfigEntry{}
+func populateConfigEntry(pluginV1Instance *v3config.PluginV1Instance, pluginV1Command *v3config.PluginV1Command) ConfigEntry {
+	configEntry := ConfigEntry{}
 	if len(pluginV1Command.Command) == 0 {
 		return configEntry
 	}
@@ -132,7 +132,7 @@ func populateConfigEntry(pluginV1Instance *legacy.PluginV1Instance, pluginV1Comm
 	return configEntry
 }
 
-func buildCLIArgs(pluginV1Command *legacy.PluginV1Command, configEntry *config.ConfigEntry) {
+func buildCLIArgs(pluginV1Command *v3config.PluginV1Command, configEntry *ConfigEntry) {
 	for index, arg := range pluginV1Command.Command {
 		if index == 0 {
 			// the first arg in command is the binary name
@@ -149,7 +149,7 @@ func buildCLIArgs(pluginV1Command *legacy.PluginV1Command, configEntry *config.C
 	}
 }
 
-func writeOutput(v4Config *config.YAML, pathDefinition string, pathConfiguration string, pathOutput string) error {
+func writeOutput(v4Config *YAML, pathDefinition string, pathConfiguration string, pathOutput string) error {
 	if v4Config == nil {
 		return fmt.Errorf("v4Config pointer is nil")
 	}
@@ -178,7 +178,7 @@ func writeOutput(v4Config *config.YAML, pathDefinition string, pathConfiguration
 	return nil
 }
 
-func writeV4Config(v4Config *config.YAML, file *os.File) error {
+func writeV4Config(v4Config *YAML, file *os.File) error {
 	// see https://github.com/go-yaml/yaml/commit/7649d4548cb53a614db133b2a8ac1f31859dda8c
 	//yaml.FutureLineWrap() @TODO enable this
 

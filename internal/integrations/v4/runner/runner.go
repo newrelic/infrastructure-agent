@@ -118,6 +118,8 @@ func (r *runner) Run(ctx context.Context, pidWCh, exitCodeCh chan<- int) {
 		} else {
 			if when.All(r.definition.WhenConditions...) {
 				r.execute(ctx, values, pidWCh, exitCodeCh)
+			} else {
+				r.log.Debug("Integration conditions where not met, skipping execution")
 			}
 		}
 

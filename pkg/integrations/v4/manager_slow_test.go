@@ -1,5 +1,6 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+
 //go:build slow
 // +build slow
 
@@ -8,6 +9,9 @@ package v4
 import (
 	"context"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
+
+	v4Config "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
+
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -35,7 +39,21 @@ func TestManager_HotReload_CreateAndModifyLinkFile(t *testing.T) {
 	})
 
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{dir}, PassthroughEnvironment: []string{".*"}}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
+
+	mgr := NewManager(
+		ManagerConfig{
+			ConfigPaths:            []string{dir},
+			PassthroughEnvironment: []string{".*"},
+		},
+		v4Config.NewPathLoader(),
+		emitter,
+		integration.ErrLookup,
+		definitionQ,
+		configEntryQ,
+		track.NewTracker(nil),
+		host.IDLookup{},
+	)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go mgr.Start(ctx)
@@ -106,7 +124,20 @@ integrations:
 
 	// WHEN the v4 integrations manager runs it
 	emitter := &testemit.RecordEmitter{}
-	mgr := NewManager(Configuration{ConfigFolders: []string{configDir}, PassthroughEnvironment: []string{".*"}}, emitter, integration.ErrLookup, definitionQ, terminateDefinitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
+
+	mgr := NewManager(
+		ManagerConfig{
+			ConfigPaths:            []string{configDir},
+			PassthroughEnvironment: []string{".*"},
+		},
+		v4Config.NewPathLoader(),
+		emitter,
+		integration.ErrLookup,
+		definitionQ,
+		configEntryQ,
+		track.NewTracker(nil),
+		host.IDLookup{},
+	)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
