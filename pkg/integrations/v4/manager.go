@@ -1,48 +1,34 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+
 package v4
 
 import (
 	"context"
 	"errors"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/constants"
-	"github.com/newrelic/infrastructure-agent/pkg/config/envvar"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
-	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
+	v4Config "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/fs"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/files"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/runner"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
 )
 
 var illog = log.WithComponent("integrations.Manager")
-
-const (
-	// Integrations V3 configs use the "instances" key word
-	// In the current Integrations config, we use "integrations"
-	// The two fields below will allows us distinguish between both, to ignore V4
-	integrationsField    = "integrations"
-	LegacyInstancesField = "instances"
-)
-
-// not an actual error. Used for discarding V3 plugins
-var legacyYAML = errors.New("file format belongs to the old integrations format")
 
 // runner-groups contexts indexed per config path, bundling lock to support concurrent access.
 type rgsPerPath struct {
@@ -101,7 +87,8 @@ func (r *rgsPerPath) isGroupRunning(cfgPath string) bool {
 }
 
 type Manager struct {
-	config                   Configuration
+	managerConfig            ManagerConfig
+	configLoader             v4Config.Loader
 	watcher                  *fsnotify.Watcher
 	runners                  *rgsPerPath
 	emitter                  emitter.Emitter
@@ -130,6 +117,10 @@ func newGroupContext(gr runner.Group) *groupContext {
 	}
 }
 
+func (g *groupContext) runOnce(ctx context.Context) {
+	g.runner.RunOnce(ctx)
+}
+
 func (g *groupContext) start(ctx context.Context) {
 	g.l.Lock()
 	defer g.l.Unlock()
@@ -156,10 +147,10 @@ func (g *groupContext) isRunning() bool {
 	return g.cancel != nil
 }
 
-type Configuration struct {
-	// Configfolders store the YAML integrations configurations.
+type ManagerConfig struct {
+	// ConfigPaths store the YAML integrations configurations.
 	// They may also contain -config.yml files from v3 integrations
-	ConfigFolders []string
+	ConfigPaths   []string
 	AgentFeatures map[string]bool // features from agent config file
 	// DefinitionFolders store the v3 -definition.yml plugins (legacy support)
 	// and the executables where the agent will look for if only the 'name' property is specified for an integration
@@ -170,9 +161,9 @@ type Configuration struct {
 	PassthroughEnvironment []string
 }
 
-func NewConfig(verbose int, features map[string]bool, passthroughEnvs, configFolders, definitionFolders []string) Configuration {
-	return Configuration{
-		ConfigFolders:          configFolders,
+func NewManagerConfig(verbose int, features map[string]bool, passthroughEnvs, configFolders, definitionFolders []string) ManagerConfig {
+	return ManagerConfig{
+		ConfigPaths:            configFolders,
 		AgentFeatures:          features,
 		DefinitionFolders:      definitionFolders,
 		Verbose:                verbose,
@@ -185,11 +176,11 @@ func NewConfig(verbose int, features map[string]bool, passthroughEnvs, configFol
 // Usually, "configFolders" will be the value of the "pluginInstanceDir" configuration option
 // The "definitionFolders" refer to the v3 definition yaml configs, placed here for v3 integrations backwards-support
 func NewManager(
-	cfg Configuration,
+	cfg ManagerConfig,
+	configLoader v4Config.Loader,
 	emitter emitter.Emitter,
 	il integration.InstancesLookup,
 	definitionQ chan integration.Definition,
-	terminateDefinitionQ chan string,
 	configEntryQ chan configrequest.Entry,
 	tracker *track.Tracker,
 	idLookup host.IDLookup,
@@ -199,8 +190,12 @@ func NewManager(
 		illog.WithError(err).Warn("can't enable hot reload")
 	}
 
+	// queues integration terminated definitions
+	terminateDefinitionQ := make(chan string, 100)
+
 	mgr := Manager{
-		config:                   cfg,
+		managerConfig:            cfg,
+		configLoader:             configLoader,
 		runners:                  newRunnerGroupsPerCfgPath(),
 		emitter:                  emitter,
 		watcher:                  watcher,
@@ -215,29 +210,32 @@ func NewManager(
 		idLookup:                 idLookup,
 	}
 
-	// Loads all the configuration files in the passed configFolders
-	for _, folder := range cfg.ConfigFolders {
-		flog := illog.WithField("folder", folder)
+	// Loads all the configuration files from the provided ConfigPaths.
+	for _, path := range cfg.ConfigPaths {
+		flog := illog.WithField("path", path)
 
-		configs, err := configFilesIn(folder)
+		configs, err := configLoader.Load(path)
 		if err != nil {
 			elog := flog.WithError(err)
 			if os.IsNotExist(err) {
-				elog.Debug("Directory does not exist. Ignoring.")
+				elog.Debug("path does not exist. Ignoring.")
 			} else {
-				elog.Warn("can't load directory. Ignoring")
+				elog.Warn("can't load path. Ignoring")
 			}
 			continue
 		}
 
 		if watcher != nil {
-			flog.Debugf("watching %v", folder)
-			if err := watcher.Add(folder); err != nil {
+			flog.Debugf("watching %v", path)
+			if err := watcher.Add(path); err != nil {
 				flog.WithError(err).Warn("cant watch for file changes in folder")
 			}
-			for i := range configs {
-				flog.Debugf("watching :%v", i)
-				if err := watcher.Add(i); err != nil {
+			for configPath := range configs {
+				if path == configPath {
+					continue
+				}
+				flog.Debugf("watching :%v", configPath)
+				if err := watcher.Add(configPath); err != nil {
 					flog.WithError(err).Warn("cant watch for file change")
 				}
 			}
@@ -255,12 +253,27 @@ func NewManager(
 func (mgr *Manager) Start(ctx context.Context) {
 	for path, rc := range mgr.runners.List() {
 		illog.WithField("file", path).Debug("Starting integrations group.")
-		rc.start(contextWithVerbose(ctx, mgr.config.Verbose))
+		rc.start(contextWithVerbose(ctx, mgr.managerConfig.Verbose))
 	}
 
 	go mgr.handleRequestsQueue(ctx)
 
 	mgr.watchForFSChanges(ctx)
+}
+
+// RunOnce will run all the integration groups for one time and then exit.
+func (mgr *Manager) RunOnce(ctx context.Context) {
+	wg := sync.WaitGroup{}
+	for path, group := range mgr.runners.List() {
+		illog.WithField("file", path).Debug("Running integrations group once.")
+
+		wg.Add(1)
+		go func(g *groupContext) {
+			g.runOnce(contextWithVerbose(ctx, mgr.managerConfig.Verbose))
+			wg.Done()
+		}(group)
+	}
+	wg.Wait()
 }
 
 // EnableOHIFromFF enables an integration coming from CC request.
@@ -297,7 +310,7 @@ func (mgr *Manager) DisableOHIFromFF(featureFlag string) error {
 	return nil
 }
 
-func (mgr *Manager) loadEnabledRunnerGroups(cfgs map[string]config2.YAML) {
+func (mgr *Manager) loadEnabledRunnerGroups(cfgs map[string]v4Config.YAML) {
 	for path, cfg := range cfgs {
 		if rc, err := mgr.loadRunnerGroup(path, cfg, nil); err != nil {
 			illog.WithField("file", path).WithError(err).Warn("can't instantiate integrations from file")
@@ -307,10 +320,10 @@ func (mgr *Manager) loadEnabledRunnerGroups(cfgs map[string]config2.YAML) {
 	}
 }
 
-func (mgr *Manager) loadRunnerGroup(path string, cfg config2.YAML, cmdFF *runner.CmdFF) (*groupContext, error) {
-	f := runner.NewFeatures(mgr.config.AgentFeatures, cmdFF)
+func (mgr *Manager) loadRunnerGroup(path string, cfg v4Config.YAML, cmdFF *runner.CmdFF) (*groupContext, error) {
+	f := runner.NewFeatures(mgr.managerConfig.AgentFeatures, cmdFF)
 	loader := runner.NewLoadFn(cfg, f)
-	gr, fc, err := runner.NewGroup(loader, mgr.lookup, mgr.config.PassthroughEnvironment, mgr.emitter, mgr.handleCmdReq, mgr.handleConfig, path, mgr.terminateDefinitionQueue, mgr.idLookup)
+	gr, fc, err := runner.NewGroup(loader, mgr.lookup, mgr.managerConfig.PassthroughEnvironment, mgr.emitter, mgr.handleCmdReq, mgr.handleConfig, path, mgr.terminateDefinitionQueue, mgr.idLookup)
 	if err != nil {
 		return nil, err
 	}
@@ -445,9 +458,9 @@ func (mgr *Manager) handleFileEvent(ctx context.Context, event *fsnotify.Event) 
 }
 
 func (mgr *Manager) runIntegrationFromPath(ctx context.Context, cfgPath string, isCreate bool, elog *log.Entry, cmdFF *runner.CmdFF) {
-	cfg, err := loadConfig(cfgPath)
+	cfg, err := mgr.configLoader.LoadFile(cfgPath)
 	if err != nil {
-		if err == legacyYAML {
+		if err == v4Config.LegacyYAML {
 			elog.Debug("Skipping v3 integration.")
 		} else {
 			elog.WithError(err).Warn("can't load integrations file. This may happen if you are editing a file and saving intermediate changes")
@@ -489,73 +502,8 @@ func (mgr *Manager) cfgPathForFF(featureName string) (cfgPath string, err error)
 	return
 }
 
-// reads the configuration files in a given folder, and discards those not belonging to the V4 format
-func configFilesIn(folder string) (map[string]config2.YAML, error) {
-	cflog := illog.WithField("folder", folder)
-
-	yamlFiles, err := files.AllYAMLs(folder)
-	if err != nil {
-		return nil, err
-	}
-
-	configs := map[string]config2.YAML{}
-	for _, file := range yamlFiles {
-		flog := cflog.WithField("file", file.Name())
-		absolutePath := filepath.Join(folder, file.Name())
-		flog.Debug("Loading config.")
-		cfg, err := loadConfig(absolutePath)
-		if err != nil {
-			if err == legacyYAML {
-				flog.Debug("Skipping v3 integration. To be loaded in another moment.")
-			} else {
-				flog.WithError(err).Warn("can't load integrations file")
-			}
-			continue
-		}
-		configs[absolutePath] = cfg
-	}
-	return configs, nil
-}
-
-func loadConfig(path string) (config2.YAML, error) {
-	cy := config2.YAML{}
-	bytes, err := ioutil.ReadFile(path)
-	if err != nil {
-		return cy, err
-	}
-
-	bytes, err = envvar.ExpandInContent(bytes)
-	if err != nil {
-		return cy, err
-	}
-
-	if err := yaml.Unmarshal(bytes, &cy); err != nil {
-		return cy, err
-	}
-	if len(cy.Integrations) == 0 {
-		return cy, explainEmptyIntegrations(bytes)
-	}
-	return cy, nil
-}
-
-// returns why a v4 integration is empty: because it's a v3 integration or because it has a wrong format
-func explainEmptyIntegrations(bytes []byte) error {
-	var contents map[string]interface{}
-	err := yaml.Unmarshal(bytes, &contents)
-	if err != nil {
-		return err // should never happen
-	}
-	if _, ok := contents[LegacyInstancesField]; ok {
-		return legacyYAML
-	}
-	if _, ok := contents[integrationsField]; ok {
-		return errors.New("'" + integrationsField + "' seems to be empty or wrongly formatted")
-	}
-	return errors.New("missing '" + integrationsField + "' field")
-}
-
 // auxiliary logger fields provider function
-func foundFilesLogFields(configs map[string]config2.YAML) func() logrus.Fields {
+func foundFilesLogFields(configs v4Config.YAMLMap) func() logrus.Fields {
 	return func() logrus.Fields {
 		var found string
 		if len(configs) == 0 {
