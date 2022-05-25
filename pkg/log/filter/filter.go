@@ -7,9 +7,8 @@ import (
 
 // FilteringFormatterConfig is the configuration used to instantiate a new FilteringFormatter.
 type FilteringFormatterConfig struct {
-	IncludeFilters    config.LogFilters
-	ExcludeFilters    config.LogFilters
-	IncludePrecedence bool
+	IncludeFilters config.LogFilters
+	ExcludeFilters config.LogFilters
 }
 
 // FilteringFormatter decorator implementing logrus.Formatter interface.
@@ -18,37 +17,28 @@ type FilteringFormatter struct {
 	includeFilters logEntryMatcher
 	excludeFilters logEntryMatcher
 
-	// includePrecedence specifies if include filters should have more priority.
-	includePrecedence bool
-
 	wrapped logrus.Formatter
 }
 
 // NewFilteringFormatter creates a new FilteringFormatter.
 func NewFilteringFormatter(cfg FilteringFormatterConfig, wrapped logrus.Formatter) *FilteringFormatter {
 	return &FilteringFormatter{
-		includeFilters:    newLogEntryMatcher(cfg.IncludeFilters),
-		excludeFilters:    newLogEntryMatcher(cfg.ExcludeFilters),
-		includePrecedence: cfg.IncludePrecedence,
-		wrapped:           wrapped,
+		includeFilters: newLogEntryMatcher(cfg.IncludeFilters),
+		excludeFilters: newLogEntryMatcher(cfg.ExcludeFilters),
+		wrapped:        wrapped,
 	}
 }
 
 // Format renders a single log entry.
 func (f *FilteringFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	// When no include filters are specified, everything is included.
-	includeAll := len(f.includeFilters) == 0
+	// Include has precedence over exclude configuration.
+	// A log line will bypass filtering only if IS NOT Excluded or if IS Included.
+	bypassFiltering := !f.excludeFilters.match(entry) || f.includeFilters.match(entry)
 
-	shouldInclude := includeAll || f.includeFilters.match(entry)
-	if !shouldInclude {
-		return nil, nil
+	if bypassFiltering {
+		return f.wrapped.Format(entry)
 	}
-
-	if !f.includePrecedence && len(f.excludeFilters) > 0 && f.excludeFilters.match(entry) {
-		return nil, nil
-	}
-
-	return f.wrapped.Format(entry)
+	return nil, nil
 }
 
 // logEntryMatcher will try to match key-value pairs.
@@ -58,16 +48,17 @@ type logEntryMatcher map[string]map[interface{}]struct{}
 // In order to match key-value pair easily will convert []interface{} into a set.
 func newLogEntryMatcher(logFilters config.LogFilters) logEntryMatcher {
 	matcher := make(map[string]map[interface{}]struct{}, len(logFilters))
-	for key, values := range logFilters {
+	for key, value := range logFilters {
 		set := make(map[interface{}]struct{})
-		for _, value := range values {
+
+		for _, value := range value {
 			if !isTypeSupported(value) {
 				continue
 			}
 			set[value] = struct{}{}
 		}
 
-		if len(set) > 0 {
+		if len(set) > 0 || key == config.LogFilterWildcard {
 			matcher[key] = set
 		}
 	}
@@ -77,10 +68,24 @@ func newLogEntryMatcher(logFilters config.LogFilters) logEntryMatcher {
 
 // match returns true if the entry contains the fields specified by the filter configuration.
 func (l logEntryMatcher) match(entry *logrus.Entry) bool {
+	if len(l) == 0 {
+		return false
+	}
+
+	// If wildcard is configured, match everything.
+	if _, found := l[config.LogFilterWildcard]; found {
+		return true
+	}
+
 	for key, value := range entry.Data {
 		if !isTypeSupported(value) {
 			continue
 		}
+
+		if _, found := l[key][config.LogFilterWildcard]; found {
+			return true
+		}
+
 		if _, ok := l[key][value]; ok {
 			return true
 		}

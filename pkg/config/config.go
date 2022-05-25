@@ -32,6 +32,13 @@ import (
 )
 
 const (
+	// TracesFieldName can be used as a field in the structured log.
+	TracesFieldName = "traces"
+	SupervisorTrace = "supervisor"
+
+	// LogFilterWildcard will match everything.
+	LogFilterWildcard = "*"
+
 	envPrefix                 = "nria"
 	ModeUnknown               = ""
 	ModeRoot                  = "root"
@@ -44,6 +51,22 @@ const (
 	TraceLogging              = 4
 	TraceTroubleshootLogging  = 5
 	defaultMemProfileInterval = 60 * 5
+)
+
+// LogLevel type for configuring the agent log level.
+type LogLevel string
+
+const (
+	// LogLevelSmart keeps a limited cache of debug logs and output them only when an error happens.
+	LogLevelSmart LogLevel = "smart"
+	// LogLevelInfo agent will log in info level.
+	LogLevelInfo  LogLevel = "info"
+	LogLevelWarn  LogLevel = "warn"
+	LogLevelError LogLevel = "error"
+	// LogLevelDebug adds more vorbosity in the logs.
+	LogLevelDebug LogLevel = "debug"
+	// LogLevelTrace is the most verbose log level.
+	LogLevelTrace LogLevel = "trace"
 )
 
 type CustomAttributeMap map[string]interface{}
@@ -1113,18 +1136,39 @@ func NewTroubleshootCfg(isTroubleshootMode, agentLogsToFile bool, agentLogFile s
 
 // LogConfig map all logging configuration options
 type LogConfig struct {
-	File                 string `yaml:"file" envconfig:"file"`
-	Level                string `yaml:"level" envconfig:"level"`
-	Format               string `yaml:"format" envconfig:"format"`
-	Forward              *bool  `yaml:"forward,omitempty" envconfig:"forward"`
-	ToStdout             *bool  `yaml:"stdout,omitempty" envconfig:"stdout"`
-	SmartLevelEntryLimit *int   `yaml:"smart_level_entry_limit,omitempty" envconfig:"smart_level_entry_limit"`
+	File                 string   `yaml:"file" envconfig:"file"`
+	Level                LogLevel `yaml:"level" envconfig:"level"`
+	Format               string   `yaml:"format" envconfig:"format"`
+	Forward              *bool    `yaml:"forward,omitempty" envconfig:"forward"`
+	ToStdout             *bool    `yaml:"stdout,omitempty" envconfig:"stdout"`
+	SmartLevelEntryLimit *int     `yaml:"smart_level_entry_limit,omitempty" envconfig:"smart_level_entry_limit"`
 
-	IncludeFilters LogFilters `yaml:"include_filters,omitempty" envconfig:"include_filters"`
-	ExcludeFilters LogFilters `yaml:"exclude_filters,omitempty" envconfig:"exclude_filters"`
+	IncludeFilters LogFilters `yaml:"include_filters" envconfig:"include_filters"`
+	ExcludeFilters LogFilters `yaml:"exclude_filters" envconfig:"exclude_filters"`
+}
 
-	// IncludePrecedence specifies if include filters have priority over exclude filters.
-	IncludePrecedence bool `yaml:"include_precedence,omitempty" envconfig:"include_precedence"`
+func (lc *LogConfig) AttachDefaultFilters() {
+	if lc.ExcludeFilters == nil {
+		lc.ExcludeFilters = make(map[string][]interface{})
+	}
+
+	// Exclude by default supervisor traces.
+	lc.ExcludeFilters[TracesFieldName] = append(lc.ExcludeFilters[TracesFieldName], SupervisorTrace)
+}
+
+// HasIncludeFilter returns true if key-value pair are included in the filtering configuration.
+func (lc *LogConfig) HasIncludeFilter(key, value string) bool {
+	values, found := lc.IncludeFilters[key]
+	if !found {
+		return false
+	}
+
+	for _, element := range values {
+		if element == value || element == LogFilterWildcard {
+			return true
+		}
+	}
+	return false
 }
 
 func coalesce(values ...string) string {
@@ -1146,6 +1190,9 @@ func coalesceBool(values ...*bool) bool {
 }
 
 func (config *Config) loadLogConfig() {
+	// Add default ExcludeFilters
+	defer config.Log.AttachDefaultFilters()
+
 	// populate LogConfig object from old configuration options
 	if reflect.DeepEqual(config.Log, LogConfig{}) {
 		config.populateLogConfig()
@@ -1160,29 +1207,21 @@ func (config *Config) loadLogConfig() {
 		config.SmartVerboseModeEntryLimit = *config.Log.SmartLevelEntryLimit
 	}
 	switch config.Log.Level {
-	case "smart":
+	case LogLevelSmart:
 		config.Verbose = SmartVerboseLogging
-	case "warn", "info", "error":
+	case LogLevelWarn, LogLevelInfo, LogLevelError:
 		config.Verbose = 0
-	case "debug":
+	case LogLevelDebug:
 		config.Verbose = VerboseLogging
-	case "trace":
+	case LogLevelTrace:
 		config.Verbose = TraceLogging
 	}
 	if config.Log.Forward != nil && *config.Log.Forward {
 		switch config.Log.Level {
-		case "debug":
+		case LogLevelDebug:
 			config.Verbose = TroubleshootLogging
-		case "trace":
+		case LogLevelTrace:
 			config.Verbose = TraceTroubleshootLogging
-		}
-	}
-
-	// Add default values.
-	if len(config.Log.ExcludeFilters) == 0 {
-		// by default exclude fluent-bit logs
-		config.Log.ExcludeFilters = map[string][]interface{}{
-			"process": {"log-forwarder"},
 		}
 	}
 }
@@ -1201,13 +1240,13 @@ func (config *Config) populateLogConfig() {
 
 	switch config.Verbose {
 	case SmartVerboseLogging:
-		config.Log.Level = "smart"
+		config.Log.Level = LogLevelSmart
 	case NonVerboseLogging:
-		config.Log.Level = "info"
+		config.Log.Level = LogLevelInfo
 	case VerboseLogging, TroubleshootLogging:
-		config.Log.Level = "debug"
+		config.Log.Level = LogLevelDebug
 	case TraceLogging, TraceTroubleshootLogging:
-		config.Log.Level = "trace"
+		config.Log.Level = LogLevelTrace
 	}
 	if config.Verbose == TroubleshootLogging || config.Verbose == TraceTroubleshootLogging {
 		config.Log.Forward = boolPtr(true)

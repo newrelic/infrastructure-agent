@@ -450,8 +450,9 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		FluentBitExePath:     c.FluentBitExePath,
 		FluentBitNRLibPath:   c.FluentBitNRLibPath,
 		FluentBitParsersPath: c.FluentBitParsersPath,
-		FluentBitVerbose:     c.Verbose != 0,
+		FluentBitVerbose:     c.Log.Level == config.LogLevelTrace && c.Log.HasIncludeFilter(config.TracesFieldName, config.SupervisorTrace),
 	}
+
 	if fbIntCfg.IsLogForwarderAvailable() {
 		logCfgLoader := logs.NewFolderLoader(logFwCfg, agt.Context.Identity, agt.Context.HostnameResolver())
 		logSupervisor := v4.NewFBSupervisor(
@@ -571,9 +572,8 @@ func configureLogFormat(cfg config.LogConfig) {
 	}
 	// Apply filters to agent logs. Filters are only available in the log configuration object.
 	logFilterCfg := logFilter.FilteringFormatterConfig{
-		IncludeFilters:    cfg.IncludeFilters,
-		ExcludeFilters:    cfg.ExcludeFilters,
-		IncludePrecedence: cfg.IncludePrecedence,
+		IncludeFilters: cfg.IncludeFilters,
+		ExcludeFilters: cfg.ExcludeFilters,
 	}
 
 	formatter = logFilter.NewFilteringFormatter(logFilterCfg, formatter)

@@ -4,6 +4,7 @@ package v4
 
 import (
 	ctx2 "context"
+	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"strings"
 	"time"
 
@@ -178,7 +179,8 @@ func (s *Supervisor) logLine(out []byte, channel string) {
 	// avoid feedback loops
 	if !strings.Contains(strOut, componentName) {
 		if s.traceOutput {
-			s.log.Trace(strOut)
+			tLog := s.log.WithField(config.TracesFieldName, config.SupervisorTrace)
+			tLog.Trace(strOut)
 			return
 		}
 

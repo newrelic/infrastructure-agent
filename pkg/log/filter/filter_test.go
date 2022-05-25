@@ -20,16 +20,34 @@ func TestNewLogEntryMatcher(t *testing.T) {
 
 func TestFormat(t *testing.T) {
 	testCases := []struct {
-		Name         string
-		config       FilteringFormatterConfig
-		Entry        *logrus.Entry
-		ExpectedLine string
+		Name          string
+		config        FilteringFormatterConfig
+		Entries       []*logrus.Entry
+		ExpectedLines []string
 	}{
 		{
-			Name:         "WhenNoFilters_ReturnLine",
-			config:       FilteringFormatterConfig{},
-			Entry:        logrus.WithField("component", 1),
-			ExpectedLine: "time=\"0001-01-01T00:00:00Z\" level=panic component=1\n",
+			Name:   "WhenEmptyConfig_ReturnLine",
+			config: FilteringFormatterConfig{},
+			Entries: []*logrus.Entry{
+				logrus.WithField("component", 1),
+			},
+			ExpectedLines: []string{
+				"time=\"0001-01-01T00:00:00Z\" level=panic component=1\n",
+			},
+		},
+		{
+			Name: "WhenNotMatchingIncludeOrExcludeFilters_ReturnLine",
+			config: FilteringFormatterConfig{
+				IncludeFilters: map[string][]interface{}{
+					"unknown": {"test", 3.2},
+				},
+			},
+			Entries: []*logrus.Entry{
+				logrus.WithField("component", 1).WithField("component2", "value"),
+			},
+			ExpectedLines: []string{
+				"time=\"0001-01-01T00:00:00Z\" level=panic component=1 component2=value\n",
+			},
 		},
 		{
 			Name: "WhenMatchingIncludeFilters_ReturnsLine",
@@ -38,21 +56,29 @@ func TestFormat(t *testing.T) {
 					"component": {1, "Plugin", 1},
 				},
 			},
-			Entry:        logrus.WithField("component", 1).WithField("component2", "value"),
-			ExpectedLine: "time=\"0001-01-01T00:00:00Z\" level=panic component=1 component2=value\n",
+			Entries: []*logrus.Entry{
+				logrus.WithField("component", 1).WithField("component2", "value"),
+			},
+			ExpectedLines: []string{
+				"time=\"0001-01-01T00:00:00Z\" level=panic component=1 component2=value\n",
+			},
 		},
 		{
-			Name: "WhenNotMatchingIncludeFilters_ReturnEmpty",
+			Name: "WhenMatchingExcludeButNotIncludeFilters_ReturnsEmpty",
 			config: FilteringFormatterConfig{
-				IncludeFilters: map[string][]interface{}{
-					"unknown": {"test", 3.2},
+				ExcludeFilters: map[string][]interface{}{
+					"component": {1, "Plugin", 1},
 				},
 			},
-			Entry:        logrus.WithField("component", 1).WithField("component2", "value"),
-			ExpectedLine: "",
+			Entries: []*logrus.Entry{
+				logrus.WithField("component", 1).WithField("component2", "value"),
+			},
+			ExpectedLines: []string{
+				"",
+			},
 		},
 		{
-			Name: "WhenMatchingIncludeAndExcludeFilters_ReturnEmpty",
+			Name: "WhenMatchingExcludeAndIncludeFilters_ReturnLine",
 			config: FilteringFormatterConfig{
 				IncludeFilters: map[string][]interface{}{
 					"component":  {1},
@@ -62,40 +88,15 @@ func TestFormat(t *testing.T) {
 					"component2": {"value"},
 				},
 			},
-			Entry:        logrus.WithField("component", 1).WithField("component2", "value"),
-			ExpectedLine: "",
-		},
-		{
-			Name: "WhenMatchingIncludeAndExcludeFilters_WithIncludePrecedence_ReturnLine",
-			config: FilteringFormatterConfig{
-				IncludeFilters: map[string][]interface{}{
-					"component":  {1},
-					"component2": {"value"},
-				},
-				ExcludeFilters: map[string][]interface{}{
-					"component2": {"value"},
-				},
-				IncludePrecedence: true,
+			Entries: []*logrus.Entry{
+				logrus.WithField("component", 1).WithField("component2", "value"),
 			},
-			Entry:        logrus.WithField("component", 1).WithField("component2", "value"),
-			ExpectedLine: "time=\"0001-01-01T00:00:00Z\" level=panic component=1 component2=value\n",
-		},
-		{
-			Name: "WhenMatchingExcludeFilters_WithIncludePrecedence_ReturnEmpty",
-			config: FilteringFormatterConfig{
-				IncludeFilters: map[string][]interface{}{
-					"unknown": {1},
-				},
-				ExcludeFilters: map[string][]interface{}{
-					"component2": {"value"},
-				},
-				IncludePrecedence: true,
+			ExpectedLines: []string{
+				"time=\"0001-01-01T00:00:00Z\" level=panic component=1 component2=value\n",
 			},
-			Entry:        logrus.WithField("component", 1).WithField("component2", "value"),
-			ExpectedLine: "",
 		},
 		{
-			Name: "UnsupportedConfig_ReturnEmpty",
+			Name: "WhenUnsupportedConfig_ReturnEmpty",
 			config: FilteringFormatterConfig{
 				ExcludeFilters: map[string][]interface{}{
 					"unknown": {
@@ -109,10 +110,73 @@ func TestFormat(t *testing.T) {
 						[]string{"value1", "value2"},
 					},
 				},
-				IncludePrecedence: true,
 			},
-			Entry:        logrus.WithField("component", []string{"value1", "value2"}),
-			ExpectedLine: "time=\"0001-01-01T00:00:00Z\" level=panic component=\"[value1 value2]\"\n",
+			Entries: []*logrus.Entry{
+				logrus.WithField("component", []string{"value1", "value2"}),
+			},
+			ExpectedLines: []string{
+				"time=\"0001-01-01T00:00:00Z\" level=panic component=\"[value1 value2]\"\n",
+			},
+		},
+		{
+			Name: "WhenWildcardKeyProvided_FiltersEverything",
+			config: FilteringFormatterConfig{
+				ExcludeFilters: map[string][]interface{}{
+					"*": nil,
+				},
+			},
+			Entries: []*logrus.Entry{
+				logrus.WithField("component", "component_value"),
+				logrus.WithField("component2", "component_value2"),
+			},
+			ExpectedLines: []string{
+				"",
+				"",
+			},
+		},
+		{
+			Name: "WhenWildcardForValueProvided_FiltersOnlyValues",
+			config: FilteringFormatterConfig{
+				ExcludeFilters: map[string][]interface{}{
+					"filter_this": {
+						"*",
+					},
+				},
+			},
+			Entries: []*logrus.Entry{
+				logrus.WithField("component", "component_value"),
+				logrus.WithField("filter_this", "value1"),
+				logrus.WithField("filter_this", "value2"),
+				logrus.WithField("filter_this", "value3"),
+			},
+			ExpectedLines: []string{
+				"time=\"0001-01-01T00:00:00Z\" level=panic component=component_value\n",
+				"",
+				"",
+				"",
+			},
+		},
+		{
+			Name: "WhenFilterOneFieldValue_TheRestAreReturned",
+			config: FilteringFormatterConfig{
+				ExcludeFilters: map[string][]interface{}{
+					"filter_this": {
+						"value2",
+					},
+				},
+			},
+			Entries: []*logrus.Entry{
+				logrus.WithField("component", "component_value"),
+				logrus.WithField("filter_this", "value1"),
+				logrus.WithField("filter_this", "value2"),
+				logrus.WithField("filter_this", "value3"),
+			},
+			ExpectedLines: []string{
+				"time=\"0001-01-01T00:00:00Z\" level=panic component=component_value\n",
+				"time=\"0001-01-01T00:00:00Z\" level=panic filter_this=value1\n",
+				"",
+				"time=\"0001-01-01T00:00:00Z\" level=panic filter_this=value3\n",
+			},
 		},
 	}
 
@@ -121,9 +185,11 @@ func TestFormat(t *testing.T) {
 			var textFormatter logrus.Formatter = &logrus.TextFormatter{}
 			formatter := NewFilteringFormatter(testCase.config, textFormatter)
 
-			actualEntry, err := formatter.Format(testCase.Entry)
-			assert.NoError(t, err)
-			assert.Equal(t, testCase.ExpectedLine, string(actualEntry))
+			for i, entry := range testCase.Entries {
+				actualEntry, err := formatter.Format(entry)
+				assert.NoError(t, err)
+				assert.Equal(t, testCase.ExpectedLines[i], string(actualEntry))
+			}
 		})
 	}
 }
