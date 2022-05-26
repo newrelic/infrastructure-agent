@@ -178,6 +178,25 @@ func TestFormat(t *testing.T) {
 				"time=\"0001-01-01T00:00:00Z\" level=panic filter_this=value3\n",
 			},
 		},
+		{
+			Name: "WhenWildcardInIncluded_ReturnsEverything",
+			config: FilteringFormatterConfig{
+				IncludeFilters: map[string][]interface{}{
+					"*": nil,
+				},
+				ExcludeFilters: map[string][]interface{}{
+					"traces": {
+						"supervisor",
+					},
+				},
+			},
+			Entries: []*logrus.Entry{
+				logrus.WithField("trace", "supervisor"),
+			},
+			ExpectedLines: []string{
+				"time=\"0001-01-01T00:00:00Z\" level=panic trace=supervisor\n",
+			},
+		},
 	}
 
 	for _, testCase := range testCases {

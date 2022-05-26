@@ -63,7 +63,7 @@ log:
 	c.Assert(cfg.CustomAttributes["my_group"], Equals, "test group")
 	c.Assert(cfg.CustomAttributes["agent_role"], Equals, "test role")
 	c.Assert(cfg.RemoveEntitiesPeriod, Equals, "1h")
-	c.Assert(cfg.Log.Level, Equals, "debug")
+	c.Assert(cfg.Log.Level, Equals, LogLevelDebug)
 	c.Assert(*cfg.Log.Forward, Equals, true)
 	c.Assert(cfg.Log.File, Equals, "agent.log")
 }
@@ -739,15 +739,17 @@ log:
 			expected: true,
 		},
 		{
-			name: "WhenNotIncluded",
+			name: "WhenOnIncludesWithWildcardValue",
 			yamlCfg: `
 log:
   include_filters:
+    "traces":
+      - "*"
 `,
-			expected: false,
+			expected: true,
 		},
 		{
-			name: "WhenWildcardIsUsed",
+			name: "WhenWildcardAsKey",
 			yamlCfg: `
 log:
   include_filters:
@@ -755,15 +757,25 @@ log:
 `,
 			expected: false,
 		},
+		{
+			name: "WhenNotIncluded",
+			yamlCfg: `
+log:
+  include_filters:
+`,
+			expected: false,
+		},
 	}
 
 	for _, testCase := range testCases {
-		tmp, err := createTestFile([]byte(testCase.yamlCfg))
-		require.NoError(t, err)
+		t.Run(testCase.name, func(t *testing.T) {
+			tmp, err := createTestFile([]byte(testCase.yamlCfg))
+			require.NoError(t, err)
 
-		cfg, err := LoadConfig(tmp.Name())
-		assert.Equal(t, testCase.expected, cfg.Log.HasIncludeFilter(TracesFieldName, SupervisorTrace))
-		os.Remove(tmp.Name())
+			cfg, err := LoadConfig(tmp.Name())
+			assert.Equal(t, testCase.expected, cfg.Log.HasIncludeFilter(TracesFieldName, SupervisorTrace))
+			os.Remove(tmp.Name())
+		})
 	}
 }
 
