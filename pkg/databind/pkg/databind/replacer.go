@@ -165,7 +165,7 @@ func replaceFields(values []data.Map, val reflect.Value, rc replaceConfig, match
 			nComps := replaceFields(values, val.Field(i), rc, matches)
 			field := newStruct.Field(i)
 			if field.CanSet() && nComps.IsValid() {
-				field.Set(nComps.Convert(field.Type()))
+				field.Set(nComps)
 			}
 		}
 		return newStruct

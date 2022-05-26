@@ -53,20 +53,17 @@ const (
 	defaultMemProfileInterval = 60 * 5
 )
 
-// LogLevel type for configuring the agent log level.
-type LogLevel string
-
 const (
 	// LogLevelSmart keeps a limited cache of debug logs and output them only when an error happens.
-	LogLevelSmart LogLevel = "smart"
+	LogLevelSmart string = "smart"
 	// LogLevelInfo agent will log in info level.
-	LogLevelInfo  LogLevel = "info"
-	LogLevelWarn  LogLevel = "warn"
-	LogLevelError LogLevel = "error"
+	LogLevelInfo  string = "info"
+	LogLevelWarn  string = "warn"
+	LogLevelError string = "error"
 	// LogLevelDebug adds more vorbosity in the logs.
-	LogLevelDebug LogLevel = "debug"
+	LogLevelDebug string = "debug"
 	// LogLevelTrace is the most verbose log level.
-	LogLevelTrace LogLevel = "trace"
+	LogLevelTrace string = "trace"
 )
 
 type CustomAttributeMap map[string]interface{}
@@ -1136,12 +1133,12 @@ func NewTroubleshootCfg(isTroubleshootMode, agentLogsToFile bool, agentLogFile s
 
 // LogConfig map all logging configuration options
 type LogConfig struct {
-	File                 string   `yaml:"file" envconfig:"file"`
-	Level                LogLevel `yaml:"level" envconfig:"level"`
-	Format               string   `yaml:"format" envconfig:"format"`
-	Forward              *bool    `yaml:"forward,omitempty" envconfig:"forward"`
-	ToStdout             *bool    `yaml:"stdout,omitempty" envconfig:"stdout"`
-	SmartLevelEntryLimit *int     `yaml:"smart_level_entry_limit,omitempty" envconfig:"smart_level_entry_limit"`
+	File                 string `yaml:"file" envconfig:"file"`
+	Level                string `yaml:"level" envconfig:"level"`
+	Format               string `yaml:"format" envconfig:"format"`
+	Forward              *bool  `yaml:"forward,omitempty" envconfig:"forward"`
+	ToStdout             *bool  `yaml:"stdout,omitempty" envconfig:"stdout"`
+	SmartLevelEntryLimit *int   `yaml:"smart_level_entry_limit,omitempty" envconfig:"smart_level_entry_limit"`
 
 	IncludeFilters LogFilters `yaml:"include_filters" envconfig:"include_filters"`
 	ExcludeFilters LogFilters `yaml:"exclude_filters" envconfig:"exclude_filters"`
