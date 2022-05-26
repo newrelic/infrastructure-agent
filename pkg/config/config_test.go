@@ -63,7 +63,7 @@ log:
 	c.Assert(cfg.CustomAttributes["my_group"], Equals, "test group")
 	c.Assert(cfg.CustomAttributes["agent_role"], Equals, "test role")
 	c.Assert(cfg.RemoveEntitiesPeriod, Equals, "1h")
-	c.Assert(cfg.Log.Level, Equals, "debug")
+	c.Assert(cfg.Log.Level, Equals, LogLevelDebug)
 	c.Assert(*cfg.Log.Forward, Equals, true)
 	c.Assert(cfg.Log.File, Equals, "agent.log")
 }
@@ -236,7 +236,7 @@ license_key: abc123
 	c.Assert(cfg.IgnoreReclaimable, Equals, true)
 	c.Assert(cfg.ProxyValidateCerts, Equals, true)
 	c.Assert(fmt.Sprintf("%v", cfg.IncludeMetricsMatchers), Equals, "map[process.name:[regex \"kube*\"]]")
-	c.Assert(cfg.Log.Level, Equals, "debug")
+	c.Assert(cfg.Log.Level, Equals, LogLevelDebug)
 	c.Assert(cfg.Log.File, Equals, "agent.log")
 }
 
@@ -645,8 +645,8 @@ func Test_ParseLogConfigRule_EnvVar(t *testing.T) {
 	defer os.Unsetenv("NRIA_LOG_STDOUT")
 	os.Setenv("NRIA_LOG_SMART_LEVEL_ENTRY_LIMIT", "50")
 	defer os.Unsetenv("NRIA_LOG_SMART_LEVEL_ENTRY_LIMIT")
-	os.Setenv("NRIA_LOG_FILTERS", "component:\n - ProcessSample\n - StorageSample\n")
-	defer os.Unsetenv("NRIA_LOG_FILTERS")
+	os.Setenv("NRIA_LOG_INCLUDE_FILTERS", "component:\n - ProcessSample\n - StorageSample\n")
+	defer os.Unsetenv("NRIA_LOG_INCLUDE_FILTERS")
 
 	configStr := "license_key: abc123"
 	f, err := ioutil.TempFile("", "yaml_config_test")
@@ -660,14 +660,15 @@ func Test_ParseLogConfigRule_EnvVar(t *testing.T) {
 	expectedSmartLevelEntryLimit := 50
 	expected := LogConfig{
 		File:                 "agent.log",
-		Level:                "smart",
+		Level:                LogLevelSmart,
 		Format:               "json",
 		ToStdout:             &expectedStdout,
 		Forward:              nil,
 		SmartLevelEntryLimit: &expectedSmartLevelEntryLimit,
-		Filters:              map[string][]interface{}{"component": {"ProcessSample", "StorageSample"}},
+		IncludeFilters:       map[string][]interface{}{"component": {"ProcessSample", "StorageSample"}},
+		ExcludeFilters:       map[string][]interface{}{TracesFieldName: {SupervisorTrace}},
 	}
-	assert.True(t, reflect.DeepEqual(cfg.Log, expected))
+	assert.EqualValues(t, cfg.Log, expected)
 }
 
 func TestLoadYamlConfig_withDatabindJSONVariables(t *testing.T) {
@@ -721,6 +722,63 @@ license_key: "xxx"
 	assert.Equal(t, SmartVerboseLogging, cfg.Verbose)
 }
 
+func TestLoadLogConfig_HasIncludeFilter(t *testing.T) {
+	testCases := []struct {
+		name     string
+		yamlCfg  string
+		expected bool
+	}{
+		{
+			name: "WhenOnIncludes",
+			yamlCfg: `
+log:
+  include_filters:
+    "traces":
+      - "supervisor"
+`,
+			expected: true,
+		},
+		{
+			name: "WhenOnIncludesWithWildcardValue",
+			yamlCfg: `
+log:
+  include_filters:
+    "traces":
+      - "*"
+`,
+			expected: true,
+		},
+		{
+			name: "WhenWildcardAsKey",
+			yamlCfg: `
+log:
+  include_filters:
+    - "*":
+`,
+			expected: false,
+		},
+		{
+			name: "WhenNotIncluded",
+			yamlCfg: `
+log:
+  include_filters:
+`,
+			expected: false,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			tmp, err := createTestFile([]byte(testCase.yamlCfg))
+			require.NoError(t, err)
+
+			cfg, err := LoadConfig(tmp.Name())
+			assert.Equal(t, testCase.expected, cfg.Log.HasIncludeFilter(TracesFieldName, SupervisorTrace))
+			os.Remove(tmp.Name())
+		})
+	}
+}
+
 func TestLoadLogConfig_BackwardsCompatability(t *testing.T) {
 	toPtr := func(a bool) *bool {
 		return &a
@@ -759,16 +817,16 @@ func TestLoadLogConfig_Populate(t *testing.T) {
 		c                 Config
 		expectedLogConfig LogConfig
 	}{
-		{"Verbose disabled (info level) and custom log file", Config{Verbose: 0, LogFile: "agent.log"}, LogConfig{Level: "info", File: "agent.log", ToStdout: boolPtr(false), Forward: boolPtr(false), SmartLevelEntryLimit: intPtr(0)}},
-		{"Smart Verbose enabled with defined limit", Config{Verbose: 2, SmartVerboseModeEntryLimit: 200}, LogConfig{Level: "smart", File: "", ToStdout: boolPtr(false), Forward: boolPtr(false), SmartLevelEntryLimit: intPtr(200)}},
-		{"Forward Verbose enabled and stdout", Config{Verbose: 3, LogToStdout: true}, LogConfig{Level: "debug", File: "", ToStdout: boolPtr(true), Forward: boolPtr(true), SmartLevelEntryLimit: intPtr(0)}},
-		{"Trace Verbose enabled and file", Config{Verbose: 4, LogFile: "agent.log"}, LogConfig{Level: "trace", File: "agent.log", ToStdout: boolPtr(false), Forward: boolPtr(false), SmartLevelEntryLimit: intPtr(0)}},
+		{"Verbose disabled (info level) and custom log file", Config{Verbose: 0, LogFile: "agent.log"}, LogConfig{Level: LogLevelInfo, File: "agent.log", ToStdout: boolPtr(false), Forward: boolPtr(false), ExcludeFilters: LogFilters{"traces": []interface{}{"supervisor"}}, SmartLevelEntryLimit: intPtr(0)}},
+		{"Smart Verbose enabled with defined limit", Config{Verbose: 2, SmartVerboseModeEntryLimit: 200}, LogConfig{Level: LogLevelSmart, File: "", ToStdout: boolPtr(false), Forward: boolPtr(false), ExcludeFilters: LogFilters{"traces": []interface{}{"supervisor"}}, SmartLevelEntryLimit: intPtr(200)}},
+		{"Forward Verbose enabled and stdout", Config{Verbose: 3, LogToStdout: true}, LogConfig{Level: LogLevelDebug, File: "", ToStdout: boolPtr(true), Forward: boolPtr(true), ExcludeFilters: LogFilters{"traces": []interface{}{"supervisor"}}, SmartLevelEntryLimit: intPtr(0)}},
+		{"Trace Verbose enabled and file", Config{Verbose: 4, LogFile: "agent.log"}, LogConfig{Level: LogLevelTrace, File: "agent.log", ToStdout: boolPtr(false), Forward: boolPtr(false), ExcludeFilters: LogFilters{"traces": []interface{}{"supervisor"}}, SmartLevelEntryLimit: intPtr(0)}},
 	}
 
 	for _, tt := range configs {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.c.loadLogConfig()
-			assert.True(t, reflect.DeepEqual(tt.expectedLogConfig, tt.c.Log))
+			assert.Equal(t, tt.expectedLogConfig, tt.c.Log)
 		})
 	}
 }

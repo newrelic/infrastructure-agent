@@ -9,7 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
-	"github.com/newrelic/infrastructure-agent/pkg/log/format"
+	logFilter "github.com/newrelic/infrastructure-agent/pkg/log/filter"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
 	"net"
@@ -450,8 +450,9 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		FluentBitExePath:     c.FluentBitExePath,
 		FluentBitNRLibPath:   c.FluentBitNRLibPath,
 		FluentBitParsersPath: c.FluentBitParsersPath,
-		FluentBitVerbose:     c.Verbose != 0,
+		FluentBitVerbose:     c.Log.Level == config.LogLevelTrace && c.Log.HasIncludeFilter(config.TracesFieldName, config.SupervisorTrace),
 	}
+
 	if fbIntCfg.IsLogForwarderAvailable() {
 		logCfgLoader := logs.NewFolderLoader(logFwCfg, agt.Context.Identity, agt.Context.HostnameResolver())
 		logSupervisor := v4.NewFBSupervisor(
@@ -569,10 +570,14 @@ func configureLogFormat(cfg config.LogConfig) {
 		}
 		formatter = jsonFormatter
 	}
-	// filters are only available in the log configuration object
-	if len(cfg.Filters) > 0 {
-		formatter = format.NewFieldFormatter(cfg.Filters, formatter)
+	// Apply filters to agent logs. Filters are only available in the log configuration object.
+	logFilterCfg := logFilter.FilteringFormatterConfig{
+		IncludeFilters: cfg.IncludeFilters,
+		ExcludeFilters: cfg.ExcludeFilters,
 	}
+
+	formatter = logFilter.NewFilteringFormatter(logFilterCfg, formatter)
+
 	wlog.SetFormatter(formatter)
 }
 
