@@ -41,18 +41,6 @@
     dest: /home/ubuntu/.ssh/caos-dev-arm.cer
     mode: '0600'
 
-- name: Copy inventory for local infra
-  copy:
-    src: inventory.ec2
-    dest: /home/ubuntu/dev/newrelic/infrastructure-agent/test/automated/ansible/inventory.ec2
-    mode: '0600'
-
-- name: Copy inventory for local infra macos
-  copy:
-    src: inventory.macos.ec2
-    dest: /home/ubuntu/dev/newrelic/infrastructure-agent/test/automated/ansible/inventory.macos.ec2
-    mode: '0600'
-
 - name: Create folder for logs
   become: true
   file:

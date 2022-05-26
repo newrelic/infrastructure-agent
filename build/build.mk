@@ -170,22 +170,22 @@ linux/%:
 linux/harvest-tests: GOOS=linux
 linux/harvest-tests: GOARCH=amd64
 linux/harvest-tests: deps
-	go test ./test/harvest -tags="harvest" -v
+	$(GO_BIN) test ./test/harvest -tags="harvest" -v
 
 .PHONY: macos/harvest-tests
 macos/harvest-tests: GOOS=darwin
 macos/harvest-tests: GOARCH=amd64
 macos/harvest-tests: deps
-	go test ./test/harvest -tags="harvest" -v
+	$(GO_BIN) test ./test/harvest -tags="harvest" -v
 
 .PHONY: build-harvest-tests
 build-harvest-tests: deps
-	go test -c ./test/harvest -tags="harvest" -v
+	$(GO_BIN) test -c ./test/harvest -tags="harvest" -v
 
 
 .PHONY: proxy-test
 proxy-test:
 	@docker-compose -f $(CURDIR)/test/proxy/docker-compose.yml up -d ; \
-	go test --tags=proxytests ./test/proxy/; status=$$?; \
+	$(GO_BIN) test --tags=proxytests ./test/proxy/; status=$$?; \
     docker-compose -f test/proxy/docker-compose.yml down; \
     exit $$status
