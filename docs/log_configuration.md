@@ -1,6 +1,6 @@
 # Log configuration
 
-Previous to Infrastructure Agent version `1.26.0`, the logging configuration was done with any of the following options:
+Previous to Infrastructure Agent version `1.27.0`, the logging configuration was done with any of the following options:
 
 ```yaml
 # Full path and file name of the log file.
@@ -33,5 +33,5 @@ log:
   stdout: false
 ```
 
-The initial configuration options will still be available (at least for two years since the release of `1.26.0`), but we
+The initial configuration options will still be available (at least for two years since the release of `1.27.0`), but we
 strongly recommend using the new configuration.
