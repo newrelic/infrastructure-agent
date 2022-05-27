@@ -164,16 +164,22 @@ func GetEnv(key string, dfault string, combineWith ...string) string {
 	}
 }
 
+// LogStructureDetails transforms a Go structure into json and logs it as a payload trace
 func LogStructureDetails(logEntry log.Entry, sample interface{}, name, phase string, optionalFields logrus.Fields) {
-	buffer, dErr := json.Marshal(sample)
-	logger := logEntry.WithFields(optionalFields).WithFields(logrus.Fields{
-		"structure": name,
-		"location":  phase,
-	})
-	if dErr != nil {
-		logger.WithError(dErr).Debug("Can't marshal sample.")
-	} else {
-		logger.WithFields(optionalFields).Debug(string(buffer))
+	// prevent json marshall if debug is not enabled
+	if logEntry.IsDebugEnabled() {
+		if name != "" {
+			logEntry = logEntry.WithField("structure", name)
+		}
+		if phase != "" {
+			logEntry = logEntry.WithField("location", phase)
+		}
+		buffer, dErr := json.Marshal(sample)
+		if dErr != nil {
+			logEntry.WithError(dErr).Debug("Can't marshal sample.")
+		} else {
+			logEntry.WithTraceField("payload", string(buffer)).WithFields(optionalFields).Debug("Received sampler payload")
+		}
 	}
 }
 
@@ -292,6 +298,18 @@ func ObfuscateSensitiveDataFromError(originalError error) (obfuscateError error)
 		return errors.New(result)
 	}
 	return originalError
+}
+
+func ObfuscateSensitiveDataFromString(originalString string) (obfuscateString string) {
+	if originalString == "" {
+		return originalString
+	}
+
+	matched, _, result := ObfuscateSensitiveData(originalString)
+	if matched {
+		return result
+	}
+	return originalString
 }
 
 // ObfuscateSensitiveDataFromMap will is used to detect sensitive data like tokens/passwords etc and

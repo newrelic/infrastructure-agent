@@ -17,7 +17,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
-	"github.com/newrelic/infrastructure-agent/pkg/trace"
 	fixture "github.com/newrelic/infrastructure-agent/test/fixture/sample"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
@@ -541,7 +540,6 @@ func Test_EvaluatorChain_RulesWithQuotesAndSpaces(t *testing.T) {
 }
 
 func Test_EvaluatorChain_LogTraceMatcher(t *testing.T) {
-	trace.EnableOn([]string{trace.METRIC_MATCHER.String()})
 	log.SetOutput(ioutil.Discard) // discard logs so not to break race tests
 	log.SetLevel(logrus.TraceLevel)
 	defer log.SetOutput(os.Stderr) // return back to default

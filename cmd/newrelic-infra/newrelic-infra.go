@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
+	logFilter "github.com/newrelic/infrastructure-agent/pkg/log/filter"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
 	"net"
@@ -61,7 +62,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/logs"
 	wlog "github.com/newrelic/infrastructure-agent/pkg/log"
-	"github.com/newrelic/infrastructure-agent/pkg/trace"
 )
 
 var (
@@ -221,12 +221,10 @@ func main() {
 		})
 	}
 
-	configureLogFormat(cfg.LogFormat)
+	configureLogFormat(cfg.Log)
 
 	// Send logging where it's supposed to go.
 	agentLogsToFile := configureLogRedirection(cfg, memLog)
-
-	trace.EnableOn(cfg.FeatureTraces)
 
 	// Runtime config setup.
 	troubleCfg := config.NewTroubleshootCfg(cfg.IsTroubleshootMode(), agentLogsToFile, cfg.GetLogFile())
@@ -452,8 +450,9 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		FluentBitExePath:     c.FluentBitExePath,
 		FluentBitNRLibPath:   c.FluentBitNRLibPath,
 		FluentBitParsersPath: c.FluentBitParsersPath,
-		FluentBitVerbose:     c.Verbose != 0 && trace.IsEnabled(trace.LOG_FWD),
+		FluentBitVerbose:     c.Log.Level == config.LogLevelTrace && c.Log.HasIncludeFilter(config.TracesFieldName, config.SupervisorTrace),
 	}
+
 	if fbIntCfg.IsLogForwarderAvailable() {
 		logCfgLoader := logs.NewFolderLoader(logFwCfg, agt.Context.Identity, agt.Context.HostnameResolver())
 		logSupervisor := v4.NewFBSupervisor(
@@ -558,8 +557,10 @@ func newInstancesLookup(cfg v4.ManagerConfig) integration.InstancesLookup {
 }
 
 // configureLogFormat checks the config and sets the log format accordingly.
-func configureLogFormat(logFormat string) {
-	if logFormat == config.LogFormatJSON {
+func configureLogFormat(cfg config.LogConfig) {
+	// get default logrus formatter
+	var formatter logrus.Formatter = wlog.GetFormatter()
+	if cfg.Format == config.LogFormatJSON {
 		jsonFormatter := &logrus.JSONFormatter{
 			DataKey: "context",
 
@@ -567,8 +568,17 @@ func configureLogFormat(logFormat string) {
 				logrus.FieldKeyTime: "timestamp",
 			},
 		}
-		wlog.SetFormatter(jsonFormatter)
+		formatter = jsonFormatter
 	}
+	// Apply filters to agent logs. Filters are only available in the log configuration object.
+	logFilterCfg := logFilter.FilteringFormatterConfig{
+		IncludeFilters: cfg.IncludeFilters,
+		ExcludeFilters: cfg.ExcludeFilters,
+	}
+
+	formatter = logFilter.NewFilteringFormatter(logFilterCfg, formatter)
+
+	wlog.SetFormatter(formatter)
 }
 
 // Either route standard logging to stdout (for Linux, so it gets copied to syslog as appropriate)

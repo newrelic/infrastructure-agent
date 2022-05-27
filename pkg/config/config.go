@@ -32,6 +32,13 @@ import (
 )
 
 const (
+	// TracesFieldName can be used as a field in the structured log.
+	TracesFieldName = "traces"
+	SupervisorTrace = "supervisor"
+
+	// LogFilterWildcard will match everything.
+	LogFilterWildcard = "*"
+
 	envPrefix                 = "nria"
 	ModeUnknown               = ""
 	ModeRoot                  = "root"
@@ -41,15 +48,33 @@ const (
 	VerboseLogging            = 1
 	SmartVerboseLogging       = 2
 	TroubleshootLogging       = 3
+	TraceLogging              = 4
+	TraceTroubleshootLogging  = 5
 	defaultMemProfileInterval = 60 * 5
+)
+
+const (
+	// LogLevelSmart keeps a limited cache of debug logs and output them only when an error happens.
+	LogLevelSmart string = "smart"
+	// LogLevelInfo agent will log in info level.
+	LogLevelInfo  string = "info"
+	LogLevelWarn  string = "warn"
+	LogLevelError string = "error"
+	// LogLevelDebug adds more vorbosity in the logs.
+	LogLevelDebug string = "debug"
+	// LogLevelTrace is the most verbose log level.
+	LogLevelTrace string = "trace"
 )
 
 type CustomAttributeMap map[string]interface{}
 
 var clog = log.WithComponent("Configuration")
 
-// Configuration type to Map include_matching_metrics setting env var
+// IncludeMetricsMap configuration type to Map include_matching_metrics setting env var
 type IncludeMetricsMap map[string][]string
+
+// LogFilters configuration specifies which log entries should be included/excluded.
+type LogFilters map[string][]interface{}
 
 //
 // IMPORTANT NOTE: If you add new config fields, consider checking the ignore list in
@@ -187,7 +212,8 @@ type Config struct {
 	CustomAttributes CustomAttributeMap `yaml:"custom_attributes" envconfig:"custom_attributes"`
 
 	// Verbose When verbose is set to 0, verbose logging is off, but the agent still creates logs. Set this to 1 to
-	// create verbose logs to use in troubleshooting the agent. You can set this to 2 to use Smart Verbose Logs
+	// create verbose logs to use in troubleshooting the agent. You can set this to 2 to use Smart Verbose Logs. Set to
+	// 3 to forward debug logs to FluentBit. To enable log traces set this to 4, and to 5 to forward traces to FluentBit.
 	// Default: 0
 	// Public: Yes
 	Verbose int `yaml:"verbose" envconfig:"verbose"`
@@ -319,6 +345,18 @@ type Config struct {
 	// Default (Windows): C:\Program Files\New Relic\newrelic-infra\newrelic-infra.log
 	// Public: Yes
 	LogFile string `yaml:"log_file" envconfig:"log_file"`
+
+	// Log is a map of custom logging configurations. Separate keys and values with colons :, as in KEY: VALUE, and
+	// separate each key-value pair with a line break. Key-value can be any of the following:
+	// "file: path/to/file.log" defines the log file path
+	// "format: json" logging format (json, text)
+	// "level: debug" logrus log level (error, warning, info, smart, debug, trace)
+	// "forward: true" boolean to send logs to New Relic platform
+	// "stdout: true" boolean to print logs to stdout
+	// "smart_level_entry_limit: 50" number of entries that will be cached before being flushed (default: 1000)
+	// Default: none
+	// Public: Yes
+	Log LogConfig `yaml:"log" envconfig:"log"`
 
 	// PidFile contains the location on Linux where the pid file of the agent process is created. It is used at startup
 	// to ensure that no other instances of the agent are running.
@@ -685,12 +723,6 @@ type Config struct {
 	// Public: No
 	Features map[string]bool `yaml:"features" envconfig:"features" public:"false"`
 
-	// FeatureTraces enables traces (verbose logs) for a given set of features, aimed to troubleshoot issues, available
-	// features at trace/features.go
-	// Default: ["connect"]
-	// Public: No
-	FeatureTraces []string `yaml:"trace" envconfig:"trace" public:"false"`
-
 	// RegisterConcurrency Amount of workers sending parallel requests for entity registration
 	// Default: 4
 	// Public: No
@@ -881,12 +913,6 @@ type Config struct {
 	// Default: true
 	// Public: Yes
 	CloudMetadataDisableKeepAlive bool `yaml:"cloud_metadata_disable_keep_alive" envconfig:"cloud_metadata_disable_keep_alive"`
-
-	// Debug This config option used to be used as the current Verbose config option. Since version 1.0.261 this
-	// option config is deprecated and enabling it has no effect in the logging output
-	// Default: False
-	// Public: No
-	Debug bool `yaml:"debug" envconfig:"debug" public:"false"`
 
 	// RemoveEntitiesPeriod Defines the frequency to engage the process of deleting entities that haven't been reported
 	// information during the frequency interval. Valid time units are: "s" (seconds), "m" (minutes), "h" (hour).
@@ -1105,6 +1131,129 @@ func NewTroubleshootCfg(isTroubleshootMode, agentLogsToFile bool, agentLogFile s
 	return t
 }
 
+// LogConfig map all logging configuration options
+type LogConfig struct {
+	File                 string `yaml:"file" envconfig:"file"`
+	Level                string `yaml:"level" envconfig:"level"`
+	Format               string `yaml:"format" envconfig:"format"`
+	Forward              *bool  `yaml:"forward,omitempty" envconfig:"forward"`
+	ToStdout             *bool  `yaml:"stdout,omitempty" envconfig:"stdout"`
+	SmartLevelEntryLimit *int   `yaml:"smart_level_entry_limit,omitempty" envconfig:"smart_level_entry_limit"`
+
+	IncludeFilters LogFilters `yaml:"include_filters" envconfig:"include_filters"`
+	ExcludeFilters LogFilters `yaml:"exclude_filters" envconfig:"exclude_filters"`
+}
+
+func (lc *LogConfig) AttachDefaultFilters() {
+	if lc.ExcludeFilters == nil {
+		lc.ExcludeFilters = make(map[string][]interface{})
+	}
+
+	// Exclude by default supervisor traces.
+	lc.ExcludeFilters[TracesFieldName] = append(lc.ExcludeFilters[TracesFieldName], SupervisorTrace)
+}
+
+// HasIncludeFilter returns true if key-value pair are included in the filtering configuration.
+func (lc *LogConfig) HasIncludeFilter(key, value string) bool {
+	if _, hasWildcardKey := lc.IncludeFilters[LogFilterWildcard]; hasWildcardKey {
+		return true
+	}
+
+	values, found := lc.IncludeFilters[key]
+	if !found {
+		return false
+	}
+
+	for _, element := range values {
+		if element == value || element == LogFilterWildcard {
+			return true
+		}
+	}
+	return false
+}
+
+func coalesce(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func coalesceBool(values ...*bool) bool {
+	for _, value := range values {
+		if value != nil {
+			return *value
+		}
+	}
+	return false
+}
+
+func (config *Config) loadLogConfig() {
+	// Add default ExcludeFilters
+	defer config.Log.AttachDefaultFilters()
+
+	// populate LogConfig object from old configuration options
+	if reflect.DeepEqual(config.Log, LogConfig{}) {
+		config.populateLogConfig()
+		return
+	}
+
+	// backwards compatability with non struct log configuration options
+	config.LogFile = coalesce(config.Log.File, config.LogFile)
+	config.LogFormat = coalesce(config.Log.Format, config.LogFormat)
+	config.LogToStdout = coalesceBool(config.Log.ToStdout, &config.LogToStdout)
+	if config.Log.SmartLevelEntryLimit != nil {
+		config.SmartVerboseModeEntryLimit = *config.Log.SmartLevelEntryLimit
+	}
+	switch config.Log.Level {
+	case LogLevelSmart:
+		config.Verbose = SmartVerboseLogging
+	case LogLevelWarn, LogLevelInfo, LogLevelError:
+		config.Verbose = 0
+	case LogLevelDebug:
+		config.Verbose = VerboseLogging
+	case LogLevelTrace:
+		config.Verbose = TraceLogging
+	}
+	if config.Log.Forward != nil && *config.Log.Forward {
+		switch config.Log.Level {
+		case LogLevelDebug:
+			config.Verbose = TroubleshootLogging
+		case LogLevelTrace:
+			config.Verbose = TraceTroubleshootLogging
+		}
+	}
+}
+
+func (config *Config) populateLogConfig() {
+	boolPtr := func(a bool) *bool {
+		return &a
+	}
+	config.Log = LogConfig{
+		File:                 config.LogFile,
+		Format:               config.LogFormat,
+		ToStdout:             &config.LogToStdout,
+		Forward:              boolPtr(false),
+		SmartLevelEntryLimit: &config.SmartVerboseModeEntryLimit,
+	}
+
+	switch config.Verbose {
+	case SmartVerboseLogging:
+		config.Log.Level = LogLevelSmart
+	case NonVerboseLogging:
+		config.Log.Level = LogLevelInfo
+	case VerboseLogging, TroubleshootLogging:
+		config.Log.Level = LogLevelDebug
+	case TraceLogging, TraceTroubleshootLogging:
+		config.Log.Level = LogLevelTrace
+	}
+	if config.Verbose == TroubleshootLogging || config.Verbose == TraceTroubleshootLogging {
+		config.Log.Forward = boolPtr(true)
+	}
+}
+
 // LogForward log forwarder config values.
 type LogForward struct {
 	Troubleshoot Troubleshoot
@@ -1146,7 +1295,7 @@ func NewLogForward(config *Config, troubleshoot Troubleshoot) LogForward {
 // IsTroubleshootMode triggers FluentBit log forwarder to submit agent log. If agent is not running
 // under systemd service this mode enables agent logging to a log file (if not present already).
 func (c *Config) IsTroubleshootMode() bool {
-	return c.Verbose == TroubleshootLogging
+	return c.Verbose == TroubleshootLogging || c.Verbose == TraceTroubleshootLogging
 }
 
 // GetDefaultLogFile sets log file to defined app data dir or default.
@@ -1622,21 +1771,18 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 		return
 	}
 
-	// For now, make any level of verbosity == printing out debugging info
-	// until we refactor and use the Verbose attribute where Debug is used
-	// today. Debug should change to just mean "debug mode" per the command
-	// line switch meaning.
-	if cfg.Verbose > 0 {
-		cfg.Debug = true
+	//  Map new Log configuration
+	cfg.loadLogConfig()
+
+	// For now, make any level of verbosity between [1,3] printing out debugging info
+	// until we refactor and use the corresponding level for each value
+	switch cfg.Verbose {
+	case VerboseLogging, TroubleshootLogging, SmartVerboseLogging:
+		log.SetLevel(logrus.DebugLevel)
+		logrus.SetLevel(logrus.DebugLevel)
+	case TraceLogging, TraceTroubleshootLogging:
 		log.SetLevel(logrus.TraceLevel)
 		logrus.SetLevel(logrus.TraceLevel)
-		if cfg.Verbose == TroubleshootLogging {
-			cfg.Debug = true
-		}
-	}
-
-	for _, feature := range defaultTraces {
-		cfg.FeatureTraces = append(cfg.FeatureTraces, feature.String())
 	}
 
 	// dm URL is calculated based on collector url, it should be set before get it default value
@@ -1739,7 +1885,7 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	cfg.PluginInstanceDirs = helpers.RemoveEmptyAndDuplicateEntries(
 		[]string{cfg.PluginDir, defaultPluginInstanceDir, filepath.Join(cfg.AgentDir, defaultPluginActiveConfigsDir)})
 
-	if !isConfigDefined("log_file", cfgMetadata) && runtime.GOOS == "windows" {
+	if cfg.LogFile == "" && runtime.GOOS == "windows" {
 		cfg.LogFile = "true"
 	}
 
@@ -1937,6 +2083,19 @@ func (c *CustomAttributeMap) DataMap() (d data.Map) {
 }
 
 func (i *IncludeMetricsMap) Decode(value string) error {
+	data := []byte(value)
+
+	// Clear current Map
+	for k := range *i {
+		delete(*i, k)
+	}
+
+	if err := yaml.Unmarshal(data, i); err != nil {
+		return err
+	}
+	return nil
+}
+func (i *LogFilters) Decode(value string) error {
 	data := []byte(value)
 
 	// Clear current Map

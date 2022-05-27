@@ -198,13 +198,13 @@ func (p *patchSenderIngest) sendAllDeltas(allDeltas []inventoryapi.RawDeltaBlock
 
 	llog.WithField("numberOfBlocks", len(allDeltas)).Debug("Sending deltas divided in blocks.")
 	for n, deltas := range allDeltas {
-		llog.WithFieldsF(func() logrus.Fields {
+		llog.WithTraceFieldsF(func() logrus.Fields {
 			deltaJson, err := json.Marshal(deltas)
 			if err == nil {
-				return logrus.Fields{"blockNumber": n, "sizeBytes": deltas, "json": string(deltaJson)}
+				return logrus.Fields{"json": string(deltaJson)}
 			}
-			return logrus.Fields{"blockNumber": n, "sizeBytes": len(deltas), logrus.ErrorKey: err}
-		}).Debug("Sending deltas block.")
+			return logrus.Fields{logrus.ErrorKey: err}
+		}).WithFields(logrus.Fields{"blockNumber": n, "sizeBytes": len(deltas)}).Debug("Sending deltas block.")
 
 		var postDeltaResults *inventoryapi.PostDeltaResponse
 		var err error

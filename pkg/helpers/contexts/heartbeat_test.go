@@ -4,6 +4,7 @@ package contexts
 
 import (
 	"context"
+	"github.com/sirupsen/logrus"
 	"testing"
 	"time"
 
@@ -12,16 +13,19 @@ import (
 )
 
 func TestContexHolder_Timeout(t *testing.T) {
-	const lifeTime = 50 * time.Millisecond
+	const timeout = 50 * time.Millisecond
 	start := time.Now()
+	lg := func() *logrus.Entry {
+		return logrus.NewEntry(logrus.New())
+	}
 
-	// GIVEN a Context with a Heartbeat lifeTime
-	ctx, _ := WithHeartBeat(context.Background(), lifeTime)
+	// GIVEN a Context with a Heartbeat timeout
+	ctx, _ := WithHeartBeat(context.Background(), timeout, lg)
 
 	// WHEN we wait for the heartbeatable context to finish
 	select {
 	case <-ctx.Done():
-	case <-time.After(4 * lifeTime):
+	case <-time.After(4 * timeout):
 		require.Fail(t, "error waiting for context to be done")
 	}
 	duration := time.Now().Sub(start)
@@ -29,18 +33,21 @@ func TestContexHolder_Timeout(t *testing.T) {
 	// THEN the context finishes with a Canceled error
 	assert.Equal(t, context.Canceled, ctx.Err())
 
-	// AND the context does not finishes before the lifeTime
-	assert.Truef(t, duration >= lifeTime,
-		"expected cancellation time %s to be >= than lifeTime %s", duration, lifeTime)
+	// AND the context does not finishes before the timeout
+	assert.Truef(t, duration >= timeout,
+		"expected cancellation time %s to be >= than timeout %s", duration, timeout)
 }
 
 func TestContextHolder_Heartbeat(t *testing.T) {
-	const lifeTime = 100 * time.Millisecond
+	const timeout = 100 * time.Millisecond
 	const extendUntil = 200 * time.Millisecond
 	start := time.Now()
+	lg := func() *logrus.Entry {
+		return logrus.NewEntry(logrus.New())
+	}
 
-	// GIVEN a Context with a Heartbeat lifeTime
-	ctx, actuator := WithHeartBeat(context.Background(), lifeTime)
+	// GIVEN a Context with a Heartbeat timeout
+	ctx, actuator := WithHeartBeat(context.Background(), timeout, lg)
 
 	stopHeartbeating := time.After(extendUntil)
 
@@ -54,17 +61,17 @@ hbLoop:
 			require.Fail(t, "context should haven't been finished yet")
 			break hbLoop
 		default:
-			time.Sleep(lifeTime / 10)
+			time.Sleep(timeout / 10)
 			actuator.HeartBeat()
 			require.NoError(t, ctx.Err())
 		}
 	}
 
 	// THEN it does not finish until we stop heartbeating
-	// (and wait for the lifeTime to expire)
+	// (and wait for the timeout to expire)
 	select {
 	case <-ctx.Done():
-	case <-time.After(4 * lifeTime):
+	case <-time.After(4 * timeout):
 		require.Fail(t, "error waiting for context to be done")
 	}
 	duration := time.Now().Sub(start)
@@ -72,14 +79,18 @@ hbLoop:
 	// THEN the context finishes with a Canceled error
 	assert.Equal(t, context.Canceled, ctx.Err())
 
-	// AND the context does not finishes before the lifeTime plus all the extensions
+	// AND the context does not finishes before the timeout plus all the extensions
 	assert.Truef(t, duration >= extendUntil,
-		"expected cancellation time %s to be >= than lifeTime %s", duration, lifeTime)
+		"expected cancellation time %s to be >= than timeout %s", duration, timeout)
 }
 
 func TestContextHolder_Cancel(t *testing.T) {
-	// GIVEN a context with a heartbeat lifetime
-	ctx, actuator := WithHeartBeat(context.Background(), 30*time.Second)
+	// GIVEN a context with a heartbeat timeout
+	lg := func() *logrus.Entry {
+		return logrus.NewEntry(logrus.New())
+	}
+
+	ctx, actuator := WithHeartBeat(context.Background(), 30*time.Second, lg)
 
 	// WHEN we cancel the context
 	actuator.Cancel()
@@ -98,10 +109,13 @@ func TestContextHolder_Cancel(t *testing.T) {
 
 // execute with -race flag
 func TestContextHolder_RaceConditions(t *testing.T) {
-	const lifeTime = 50 * time.Millisecond
+	const timeout = 50 * time.Millisecond
 	const extendUntil = 200 * time.Millisecond
+	lg := func() *logrus.Entry {
+		return logrus.NewEntry(logrus.New())
+	}
 
-	ctx, actuator := WithHeartBeat(context.Background(), lifeTime)
+	ctx, actuator := WithHeartBeat(context.Background(), timeout, lg)
 	waitForAllHeartbeats := time.After(2 * extendUntil)
 
 	for i := 0; i < 100; i++ {
@@ -115,7 +129,7 @@ func TestContextHolder_RaceConditions(t *testing.T) {
 					require.Fail(t, "context should haven't been finished yet")
 					return
 				default:
-					time.Sleep(lifeTime / 10)
+					time.Sleep(timeout / 10)
 					actuator.HeartBeat()
 				}
 			}

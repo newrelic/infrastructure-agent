@@ -35,6 +35,10 @@ custom_attributes:
    my_group:  test group
    agent_role:  test role
 remove_entities_period: 1h
+log:
+   file: agent.log
+   forward: true
+   level: debug
 `
 	f, err := ioutil.TempFile("", "opsmatic_config_test")
 	c.Assert(err, IsNil)
@@ -59,6 +63,9 @@ remove_entities_period: 1h
 	c.Assert(cfg.CustomAttributes["my_group"], Equals, "test group")
 	c.Assert(cfg.CustomAttributes["agent_role"], Equals, "test role")
 	c.Assert(cfg.RemoveEntitiesPeriod, Equals, "1h")
+	c.Assert(cfg.Log.Level, Equals, LogLevelDebug)
+	c.Assert(*cfg.Log.Forward, Equals, true)
+	c.Assert(cfg.Log.File, Equals, "agent.log")
 }
 
 func (s *ConfigSuite) TestParseConfigBadLicense(c *C) {
@@ -179,6 +186,7 @@ proxy_validate_certificates: true
 win_removable_drives: false
 proxy_config_plugin: false
 trunc_text_values: false
+verbose: 4
 `
 	f, err := ioutil.TempFile("", "yaml_config_test")
 	c.Assert(err, IsNil)
@@ -200,6 +208,7 @@ trunc_text_values: false
 	c.Assert(cfg.WinRemovableDrives, Equals, false)
 	c.Assert(cfg.ProxyConfigPlugin, Equals, false)
 	c.Assert(cfg.TruncTextValues, Equals, false)
+	c.Assert(cfg.Verbose, Equals, 4)
 }
 
 func (s *ConfigSuite) TestEnv(c *C) {
@@ -212,6 +221,10 @@ license_key: abc123
 	defer os.Unsetenv("NRIA_PROXY_VALIDATE_CERTIFICATES")
 	os.Setenv("NRIA_INCLUDE_MATCHING_METRICS", "process.name:\n - regex \"kube*\" \n")
 	defer os.Unsetenv("NRIA_INCLUDE_MATCHING_METRICS")
+	os.Setenv("NRIA_LOG_FILE", "agent.log")
+	defer os.Unsetenv("NRIA_LOG_FILE")
+	os.Setenv("NRIA_LOG_LEVEL", "debug")
+	defer os.Unsetenv("NRIA_LOG_LEVEL")
 
 	f, err := ioutil.TempFile("", "yaml_config_test")
 	c.Assert(err, IsNil)
@@ -223,6 +236,8 @@ license_key: abc123
 	c.Assert(cfg.IgnoreReclaimable, Equals, true)
 	c.Assert(cfg.ProxyValidateCerts, Equals, true)
 	c.Assert(fmt.Sprintf("%v", cfg.IncludeMetricsMatchers), Equals, "map[process.name:[regex \"kube*\"]]")
+	c.Assert(cfg.Log.Level, Equals, LogLevelDebug)
+	c.Assert(cfg.Log.File, Equals, "agent.log")
 }
 
 func (s *ConfigSuite) TestWrongFormatDurations(c *C) {
@@ -619,6 +634,43 @@ func Test_ParseIncludeMatchingRule_EnvVar(t *testing.T) {
 	assert.True(t, reflect.DeepEqual(cfg.IncludeMetricsMatchers, expected))
 }
 
+func Test_ParseLogConfigRule_EnvVar(t *testing.T) {
+	os.Setenv("NRIA_LOG_FILE", "agent.log")
+	defer os.Unsetenv("NRIA_LOG_FILE")
+	os.Setenv("NRIA_LOG_LEVEL", "smart")
+	defer os.Unsetenv("NRIA_LOG_LEVEL")
+	os.Setenv("NRIA_LOG_FORMAT", "json")
+	defer os.Unsetenv("NRIA_LOG_FORMAT")
+	os.Setenv("NRIA_LOG_STDOUT", "false")
+	defer os.Unsetenv("NRIA_LOG_STDOUT")
+	os.Setenv("NRIA_LOG_SMART_LEVEL_ENTRY_LIMIT", "50")
+	defer os.Unsetenv("NRIA_LOG_SMART_LEVEL_ENTRY_LIMIT")
+	os.Setenv("NRIA_LOG_INCLUDE_FILTERS", "component:\n - ProcessSample\n - StorageSample\n")
+	defer os.Unsetenv("NRIA_LOG_INCLUDE_FILTERS")
+
+	configStr := "license_key: abc123"
+	f, err := ioutil.TempFile("", "yaml_config_test")
+	assert.NoError(t, err)
+	f.WriteString(configStr)
+	f.Close()
+
+	cfg, err := LoadConfig(f.Name())
+	assert.NoError(t, err)
+	expectedStdout := false
+	expectedSmartLevelEntryLimit := 50
+	expected := LogConfig{
+		File:                 "agent.log",
+		Level:                LogLevelSmart,
+		Format:               "json",
+		ToStdout:             &expectedStdout,
+		Forward:              nil,
+		SmartLevelEntryLimit: &expectedSmartLevelEntryLimit,
+		IncludeFilters:       map[string][]interface{}{"component": {"ProcessSample", "StorageSample"}},
+		ExcludeFilters:       map[string][]interface{}{TracesFieldName: {SupervisorTrace}},
+	}
+	assert.EqualValues(t, cfg.Log, expected)
+}
+
 func TestLoadYamlConfig_withDatabindJSONVariables(t *testing.T) {
 	yamlData := []byte(`
 variables:
@@ -641,6 +693,142 @@ proxy: ${var1}
 	assert.True(t, cfg.Staging)
 	assert.Equal(t, "xxx", cfg.License)
 	assert.Equal(t, "10.0.2.2:8888", cfg.Proxy)
+}
+
+func TestLoadYamlConfig_withLogVariables(t *testing.T) {
+	yamlData := []byte(`
+log:
+  file: agent.log
+  format: json
+  level: smart
+  stdout: true
+  smart_level_entry_limit: 5
+license_key: "xxx"
+`)
+
+	tmp, err := createTestFile(yamlData)
+	require.NoError(t, err)
+	defer os.Remove(tmp.Name())
+
+	cfg, err := LoadConfig(tmp.Name())
+
+	require.NoError(t, err)
+
+	assert.Equal(t, "xxx", cfg.License)
+	assert.Equal(t, "agent.log", cfg.LogFile)
+	assert.Equal(t, "json", cfg.LogFormat)
+	assert.Equal(t, true, cfg.LogToStdout)
+	assert.Equal(t, 5, cfg.SmartVerboseModeEntryLimit)
+	assert.Equal(t, SmartVerboseLogging, cfg.Verbose)
+}
+
+func TestLoadLogConfig_HasIncludeFilter(t *testing.T) {
+	testCases := []struct {
+		name     string
+		yamlCfg  string
+		expected bool
+	}{
+		{
+			name: "WhenOnIncludes",
+			yamlCfg: `
+log:
+  include_filters:
+    "traces":
+      - "supervisor"
+`,
+			expected: true,
+		},
+		{
+			name: "WhenOnIncludesWithWildcardValue",
+			yamlCfg: `
+log:
+  include_filters:
+    "traces":
+      - "*"
+`,
+			expected: true,
+		},
+		{
+			name: "WhenWildcardAsKey",
+			yamlCfg: `
+log:
+  include_filters:
+    - "*":
+`,
+			expected: false,
+		},
+		{
+			name: "WhenNotIncluded",
+			yamlCfg: `
+log:
+  include_filters:
+`,
+			expected: false,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			tmp, err := createTestFile([]byte(testCase.yamlCfg))
+			require.NoError(t, err)
+
+			cfg, err := LoadConfig(tmp.Name())
+			assert.Equal(t, testCase.expected, cfg.Log.HasIncludeFilter(TracesFieldName, SupervisorTrace))
+			os.Remove(tmp.Name())
+		})
+	}
+}
+
+func TestLoadLogConfig_BackwardsCompatability(t *testing.T) {
+	toPtr := func(a bool) *bool {
+		return &a
+	}
+	var logConfigs = []struct {
+		name    string
+		c       Config
+		verbose int
+	}{
+		{"Empty configuration", Config{Log: LogConfig{}}, NonVerboseLogging},
+		{"Debug and forward disabled", Config{Log: LogConfig{Level: "debug", Forward: toPtr(false)}}, VerboseLogging},
+		{"Debug and forward enabled", Config{Log: LogConfig{Level: "debug", Forward: toPtr(true)}}, TroubleshootLogging},
+		{"Trace and forward disabled", Config{Log: LogConfig{Level: "trace", Forward: toPtr(false)}}, TraceLogging},
+		{"Trace and forward enabled", Config{Log: LogConfig{Level: "trace", Forward: toPtr(true)}}, TraceTroubleshootLogging},
+	}
+
+	for _, tt := range logConfigs {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, NonVerboseLogging, tt.c.Verbose)
+			tt.c.loadLogConfig()
+			assert.Equal(t, tt.verbose, tt.c.Verbose)
+		})
+	}
+}
+
+func TestLoadLogConfig_Populate(t *testing.T) {
+	//TODO: migrate to generic function with go1.18
+	boolPtr := func(a bool) *bool {
+		return &a
+	}
+	intPtr := func(a int) *int {
+		return &a
+	}
+	var configs = []struct {
+		name              string
+		c                 Config
+		expectedLogConfig LogConfig
+	}{
+		{"Verbose disabled (info level) and custom log file", Config{Verbose: 0, LogFile: "agent.log"}, LogConfig{Level: LogLevelInfo, File: "agent.log", ToStdout: boolPtr(false), Forward: boolPtr(false), ExcludeFilters: LogFilters{"traces": []interface{}{"supervisor"}}, SmartLevelEntryLimit: intPtr(0)}},
+		{"Smart Verbose enabled with defined limit", Config{Verbose: 2, SmartVerboseModeEntryLimit: 200}, LogConfig{Level: LogLevelSmart, File: "", ToStdout: boolPtr(false), Forward: boolPtr(false), ExcludeFilters: LogFilters{"traces": []interface{}{"supervisor"}}, SmartLevelEntryLimit: intPtr(200)}},
+		{"Forward Verbose enabled and stdout", Config{Verbose: 3, LogToStdout: true}, LogConfig{Level: LogLevelDebug, File: "", ToStdout: boolPtr(true), Forward: boolPtr(true), ExcludeFilters: LogFilters{"traces": []interface{}{"supervisor"}}, SmartLevelEntryLimit: intPtr(0)}},
+		{"Trace Verbose enabled and file", Config{Verbose: 4, LogFile: "agent.log"}, LogConfig{Level: LogLevelTrace, File: "agent.log", ToStdout: boolPtr(false), Forward: boolPtr(false), ExcludeFilters: LogFilters{"traces": []interface{}{"supervisor"}}, SmartLevelEntryLimit: intPtr(0)}},
+	}
+
+	for _, tt := range configs {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.c.loadLogConfig()
+			assert.Equal(t, tt.expectedLogConfig, tt.c.Log)
+		})
+	}
 }
 
 func TestLoadYamlConfig_withDatabindAndEnvVars(t *testing.T) {

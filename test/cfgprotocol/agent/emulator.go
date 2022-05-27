@@ -54,7 +54,6 @@ func New(configsDir, tempBinDir string) *Emulator {
 		config.PluginDir = configsDir
 		config.LogFormat = "text"
 		config.LogToStdout = true
-		config.Debug = true
 		config.IsForwardOnly = true
 		config.Features = map[string]bool{
 			fflag.FlagProtocolV4: true,

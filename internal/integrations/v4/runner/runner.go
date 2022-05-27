@@ -5,13 +5,14 @@ package runner
 import (
 	"bytes"
 	"context"
-	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
-	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/constants"
-	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/constants"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/cache"
 
@@ -110,14 +111,14 @@ func (r *runner) Run(ctx context.Context, pidWCh, exitCodeCh chan<- int) {
 		//	exitCodeCh = make(chan int, 1)
 		//}
 
-		values, err := r.applyDiscovery()
+		discovery, info, err := r.applyDiscovery()
 		if err != nil {
 			r.log.
 				WithError(helpers.ObfuscateSensitiveDataFromError(err)).
 				Error("can't fetch discovery items")
 		} else {
 			if when.All(r.definition.WhenConditions...) {
-				r.execute(ctx, values, pidWCh, exitCodeCh)
+				r.execute(ctx, discovery, info, pidWCh, exitCodeCh)
 			} else {
 				r.log.Debug("Integration conditions where not met, skipping execution")
 			}
@@ -169,19 +170,22 @@ func LogFields(def integration.Definition) logrus.Fields {
 		fields["cfg_protocol_name"] = def.CfgProtocol.ConfigName
 		fields["parent_integration_name"] = def.CfgProtocol.ParentName
 	}
+
+	fields["runner_uid"] = def.Hash()[:10]
+
 	return fields
 }
 
 // applies dSources and returns the discovered values, if any.
-func (r *runner) applyDiscovery() (*databind.Values, error) {
+func (r *runner) applyDiscovery() (*databind.Values, databind.DiscovererInfo, error) {
 	if r.dSources == nil {
 		// nothing is discovered, but the integration can run (with the default configuration)
-		return nil, nil
+		return nil, databind.DiscovererInfo{}, nil
 	}
 	if v, err := databind.Fetch(r.dSources); err != nil {
-		return nil, err
+		return nil, r.dSources.Info, err
 	} else {
-		return &v, nil
+		return &v, r.dSources.Info, nil
 	}
 }
 
@@ -205,7 +209,7 @@ func (r *runner) heartBeat() {
 // to finish
 // For long-time running integrations, avoids starting the next
 // discover-execute cycle until all the parallel processes have ended
-func (r *runner) execute(ctx context.Context, matches *databind.Values, pidWCh, exitCodeCh chan<- int) {
+func (r *runner) execute(ctx context.Context, matches *databind.Values, discoveryInfo databind.DiscovererInfo, pidWCh, exitCodeCh chan<- int) {
 	ctx, txn := instrumentation.SelfInstrumentation.StartTransaction(ctx, "integration.v4."+r.definition.Name)
 	if hostname, ok := r.definition.ExecutorConfig.Environment["HOSTNAME"]; ok {
 		txn.AddAttribute("integration_hostname", hostname)
@@ -220,7 +224,7 @@ func (r *runner) execute(ctx context.Context, matches *databind.Values, pidWCh, 
 	// If timeout configuration is set, wraps current context in a heartbeat-enabled timeout context
 	if def.TimeoutEnabled() {
 		var act contexts.Actuator
-		ctx, act = contexts.WithHeartBeat(ctx, def.Timeout)
+		ctx, act = contexts.WithHeartBeat(ctx, def.Timeout, r.log)
 		r.setHeartBeat(act.HeartBeat)
 	}
 
@@ -235,7 +239,7 @@ func (r *runner) execute(ctx context.Context, matches *databind.Values, pidWCh, 
 	}
 
 	// Runs all the matching integration instances
-	outputs, err := r.definition.Run(ctx, matches, pidWCh, exitCodeCh)
+	outputs, err := r.definition.Run(ctx, matches, discoveryInfo, pidWCh, exitCodeCh)
 	if err != nil {
 		txn.NoticeError(err)
 		r.log.WithError(err).Error("can't start integration")
@@ -285,10 +289,13 @@ func (r *runner) handleStderr(stderr <-chan []byte) {
 	for line := range stderr {
 		r.lastStderr.Add(line)
 
+		// obfuscated stderr
+		obfuscatedLine := helpers.ObfuscateSensitiveDataFromString(string(line))
+
 		if r.log.IsDebugEnabled() {
-			r.log.WithField("line", string(line)).Info("Integration stderr (not parsed).")
+			r.log.WithField("line", obfuscatedLine).Debug("Integration stderr (not parsed).")
 		} else {
-			fields := r.stderrParser(string(line))
+			fields := r.stderrParser(obfuscatedLine)
 			if v, ok := fields["level"]; ok && (v == "error" || v == "fatal") {
 				// If a field already exists, like the time, logrus automatically adds the prefix "deps." to the
 				// Duplicated keys
@@ -311,7 +318,8 @@ func (r *runner) logErrors(ctx context.Context, errs <-chan error) {
 				return
 			}
 			flush := r.lastStderr.Flush()
-			r.log.WithError(err).WithField("stderr", flush).
+			// err contains the exit code number
+			r.log.WithError(err).WithField("stderr", helpers.ObfuscateSensitiveDataFromString(flush)).
 				Warn("integration exited with error state")
 		}
 	}

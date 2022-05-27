@@ -4,6 +4,7 @@ package v4
 
 import (
 	ctx2 "context"
+	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"strings"
 	"time"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
-	"github.com/newrelic/infrastructure-agent/pkg/trace"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 )
@@ -179,7 +179,8 @@ func (s *Supervisor) logLine(out []byte, channel string) {
 	// avoid feedback loops
 	if !strings.Contains(strOut, componentName) {
 		if s.traceOutput {
-			trace.LogFwdOutput(strOut)
+			tLog := s.log.WithField(config.TracesFieldName, config.SupervisorTrace)
+			tLog.Trace(strOut)
 			return
 		}
 

@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/newrelic/infrastructure-agent/pkg/log"
-	"github.com/newrelic/infrastructure-agent/pkg/trace"
 )
 
 var (
@@ -75,7 +74,7 @@ func CreateResolver(overrideFull, overrideShort string, dnsResolution bool) Reso
 
 	if overrideShort != "" {
 		resolver.short = func() (string, error) {
-			trace.Hostname("using override_hostname_short property '%s'", overrideShort)
+			logger.Tracef("using override_hostname_short property '%s'", overrideShort)
 			return overrideShort, nil
 		}
 	}
@@ -131,11 +130,11 @@ func (r *fallbackResolver) Query() (string, string, error) {
 	short, err := r.short()
 	var full string
 	if r.overridenFull != "" {
-		trace.Hostname("using override_hostname property '%s'", r.overridenFull)
+		logger.Tracef("using override_hostname property '%s'", r.overridenFull)
 		full = r.overridenFull
 	} else {
 		if err != nil {
-			trace.Hostname("failed to resolve short hostname: %s", err)
+			logger.Tracef("failed to resolve short hostname: %s", err)
 		} else {
 			full, err = r.full(short)
 		}
@@ -143,10 +142,10 @@ func (r *fallbackResolver) Query() (string, string, error) {
 		// and just return the full hostname as queried by the kernel (the old behaviour of the agent)
 		if r.lastFull == "" && (full == "" || full == "localhost") {
 			// In this edge case, the hostname could flip under some network name instability circumstances
-			trace.Hostname("using internal hostname")
+			logger.Trace("using internal hostname")
 			full, err = r.internal()
 			if err != nil {
-				trace.Hostname("internal hostname resolution failed")
+				logger.Trace("internal hostname resolution failed")
 			}
 			if full == "localhost" {
 				full = ""

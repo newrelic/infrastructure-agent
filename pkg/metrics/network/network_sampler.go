@@ -57,13 +57,6 @@ func NewNetworkSampler(context agent.AgentContext) *NetworkSampler {
 	}
 }
 
-func (ns *NetworkSampler) Debug() bool {
-	if ns.context == nil {
-		return false
-	}
-	return ns.context.Config().Debug
-}
-
 func (ns *NetworkSampler) Name() string { return "NetworkSampler" }
 
 func (ns *NetworkSampler) Interval() time.Duration {

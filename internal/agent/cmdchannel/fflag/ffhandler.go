@@ -10,8 +10,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/internal/os/api"
-	"github.com/newrelic/infrastructure-agent/pkg/trace"
-
 	"github.com/newrelic/infrastructure-agent/pkg/backend/commandapi"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
@@ -198,7 +196,7 @@ func (h *handler) handleEnableOHI(ctx context.Context, ff string, enable bool) {
 }
 
 func handleParallelizeInventory(ffArgs args, c *config.Config, isInitialFetch bool) {
-	trace.Inventory("parallelize FF handler initialFetch: %v, enable: %v, queue: %v",
+	ffLogger.Tracef("parallelize FF handler initialFetch: %v, enable: %v, inventory queue: %v",
 		isInitialFetch,
 		ffArgs.Enabled,
 		c.InventoryQueueLen,

@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/log"
-	"github.com/newrelic/infrastructure-agent/pkg/trace"
 	"github.com/sirupsen/logrus"
 
 	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
@@ -124,10 +123,6 @@ func newMetricsIngestSender(ctx *context, licenseKey, userAgent string, httpClie
 		getBackoffTimer:          time.NewTimer,
 		postCount:                0,
 	}
-}
-
-func (sender *metricsIngestSender) Debug() bool {
-	return sender.Context.Config().Debug
 }
 
 // Start a couple of background routines to handle incoming data and post it to the server periodically.
@@ -511,7 +506,7 @@ func (sender *metricsIngestSender) doPost(ctx goContext.Context, post []*MetricP
 		req.Header.Set(backendhttp.AgentEntityIdHeader, agentID.String())
 	}
 
-	trace.NonDMSubmission(postBytes)
+	ilog.Trace(string(postBytes))
 
 	ctx, extSeg := txn.StartExternalSegment(ctx, "event_sender", req)
 	extSeg.AddAttribute("postSize", len(postBytes))

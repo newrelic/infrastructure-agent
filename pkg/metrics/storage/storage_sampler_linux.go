@@ -396,6 +396,8 @@ func deviceMapperInfo(isContainerized bool) (mounts []MountInfoStat) {
 		return nil
 	}
 
+	unsupportedMountPoints := []log.Fields{}
+
 	for lineno, line := range lines {
 		mountInfo, err := parseMountFile(mountsFile, line)
 		if err != nil {
@@ -409,17 +411,19 @@ func deviceMapperInfo(isContainerized bool) (mounts []MountInfoStat) {
 		}
 		// could be optimized to not create the struct in the first place
 		if !isSupportedFs(mountInfo.FSType) {
-			sslog.WithFieldsF(func() log.Fields {
-				return log.Fields{
-					"mountsFile": mountsFile,
-					"lineno":     lineno,
-					"fs":         mountInfo.FSType,
-				}
-			}).Debug("Unsupported file system.")
+			unsupportedMountPoints = append(unsupportedMountPoints, log.Fields{
+				"mountsFile": mountsFile,
+				"lineno":     lineno,
+				"fs":         mountInfo.FSType,
+			})
 			continue
 		}
 		// nil = unsupported fs
 		mounts = append(mounts, mountInfo)
+	}
+
+	if len(unsupportedMountPoints) > 0 {
+		sslog.WithTraceField("mountPoints", unsupportedMountPoints).Debug("Unsupported file systems.")
 	}
 
 	return

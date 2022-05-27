@@ -107,6 +107,11 @@ func SetFormatter(formatter logrus.Formatter) {
 	w.l.SetFormatter(formatter)
 }
 
+// GetFormatter return the logger formatter.
+func GetFormatter() logrus.Formatter {
+	return w.l.Formatter
+}
+
 // SetLevel sets the standard logger level.
 func SetLevel(level logrus.Level) {
 	w.l.SetLevel(level)

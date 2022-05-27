@@ -81,7 +81,6 @@ is_containerized: false
 	c.Assert(cfg.CompactThreshold, Equals, uint64(55))
 	c.Assert(cfg.DaemontoolsRefreshSec, Equals, int64(33))
 	c.Assert(cfg.Verbose, Equals, 0)
-	c.Assert(cfg.Debug, Equals, false)
 	c.Assert(cfg.IgnoredInventoryPaths, DeepEquals, []string{"files/config/things.bar", "files/config/things.foo"})
 	c.Assert(cfg.CustomAttributes, DeepEquals, CustomAttributeMap{
 		"my_groups":   "testing group",

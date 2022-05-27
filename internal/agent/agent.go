@@ -19,10 +19,8 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
-	"github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
-	"github.com/newrelic/infrastructure-agent/pkg/trace"
-
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/metric"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
 	"github.com/sirupsen/logrus"
 
 	"github.com/newrelic/infrastructure-agent/pkg/ctl"
@@ -423,7 +421,7 @@ func New(
 	}
 
 	// Create input channel for plugins to feed data back to the agent
-	trace.Inventory("parallelize queue: %v", a.Context.cfg.InventoryQueueLen)
+	llog.Tracef("inventory parallelize queue: %v", a.Context.cfg.InventoryQueueLen)
 	a.Context.ch = make(chan PluginOutput, a.Context.cfg.InventoryQueueLen)
 	a.Context.activeEntities = make(chan string, activeEntitiesBufferLength)
 
