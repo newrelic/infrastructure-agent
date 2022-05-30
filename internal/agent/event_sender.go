@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
+	http2 "github.com/newrelic/infrastructure-agent/pkg/http"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -507,6 +508,10 @@ func (sender *metricsIngestSender) doPost(ctx goContext.Context, post []*MetricP
 	}
 
 	ilog.Trace(string(postBytes))
+
+	if logrus.GetLevel() >= logrus.DebugLevel {
+		req = http2.WithTracer(req, "eventSender")
+	}
 
 	ctx, extSeg := txn.StartExternalSegment(ctx, "event_sender", req)
 	extSeg.AddAttribute("postSize", len(postBytes))
