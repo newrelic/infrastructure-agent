@@ -509,7 +509,7 @@ func (sender *metricsIngestSender) doPost(ctx goContext.Context, post []*MetricP
 
 	ilog.Trace(string(postBytes))
 
-	if logrus.GetLevel() >= logrus.DebugLevel {
+	if log.IsLevelEnabled(logrus.TraceLevel) {
 		req = http2.WithTracer(req, "eventSender")
 	}
 

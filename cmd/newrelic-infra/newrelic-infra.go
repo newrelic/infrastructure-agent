@@ -681,7 +681,7 @@ func checkEndpointReachable(
 		return false, fmt.Errorf("unable to prepare reachability request: %v, error: %s", request, err)
 	}
 
-	if logrus.GetLevel() >= logrus.DebugLevel {
+	if wlog.IsLevelEnabled(logrus.TraceLevel) {
 		request = http2.WithTracer(request, "checkEndpointReachable")
 	}
 	client := backendhttp.GetHttpClient(timeout, transport)
