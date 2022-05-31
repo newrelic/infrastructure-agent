@@ -1,6 +1,6 @@
 ## Dry-Run
 Since version 1.27.0 the Infrastructure Agent can run integrations in Dry-Run mode for troubleshooting. In this mode, 
-the Agent will run integrations form provided configuration and it will print the integrations output in the standard 
+the Agent will run integrations from provided configuration and it will print the integrations output in the standard 
 output.
 
 This mode supports a single configuration file or a folder with multiple configuration files.
@@ -16,7 +16,7 @@ Testing single integration file:
 /usr/bin/newrelic-infra -dry_run -integration_config_path /any/absolute/path/mysql-config.yml 
 ```
 
-Testing all files insede a folder:
+Testing all files inside a folder:
 ```shell
 /usr/bin/newrelic-infra -dry_run -integration_config_path /any/absolute/path 
 ```
