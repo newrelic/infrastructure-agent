@@ -47,3 +47,11 @@ harvest*.test
 !inventory.runner.ec2
 tools/spin-ec2/bin
 build/.goreleaser_linux.yml
+
+# Local .terraform directories
+**/.terraform/*
+# .tfstate files
+*.tfstate
+*.tfstate.*
+*.auto.tfvars
+.terraform.lock.hcl
