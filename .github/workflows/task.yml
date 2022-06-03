@@ -22,11 +22,12 @@ jobs:
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: test
         run: >-
-          echo ::set-output name=task_arn::$(
+          result=$(
           aws ecs run-task
           --cluster caos-prerelease
           --task-definition test-prerelease-td
           --network-configuration "${{ secrets.ID_AWS_TASK_CFG }}"
-          --launch-type FARGATE | jq '.tasks[0].taskArn')
+          --launch-type FARGATE);
+          echo ::set-output name=task_arn::$(echo "$result" | jq '.tasks[0].taskArn')
       - name: Print task arn
         run: echo ${{ steps.test.outputs.task_arn }}
