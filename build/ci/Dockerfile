@@ -1,9 +1,12 @@
 FROM ubuntu:22.04 as ci
 
-ARG TAG=1.27.0
-# TODO: accept aws credentials
+ARG TAG_ARG=1.27.0
+ARG SSH_KEY_ARG="not a key"
 
-RUN apt update
+ENV SSH_KEY=$SSH_KEY_ARG
+ENV TAG=$TAG_ARG
+
+RUN apt-get update
 RUN DEBIAN_FRONTEND=noninteractive apt install -y make ansible wget unzip git gcc
 
 RUN wget "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"  && unzip awscli-exe-linux-x86_64.zip && ./aws/install
@@ -18,7 +21,14 @@ WORKDIR /srv/newrelic/infrastructure-agent
 
 RUN git checkout $TAG
 
-CMD ["echo", "command is missing"]
+RUN mkdir ~/.ssh/
+
+COPY ./entrypoint.sh /srv/newrelic/infrastructure-agent/entrypoint.sh
+
+RUN chmod +x /srv/newrelic/infrastructure-agent/entrypoint.sh
+
+CMD ["echo", "no command"]
+
 
 
 
