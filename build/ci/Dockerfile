@@ -4,7 +4,7 @@ ARG TAG=1.27.0
 # TODO: accept aws credentials
 
 RUN apt update
-RUN DEBIAN_FRONTEND=noninteractive apt install -y make ansible wget unzip git
+RUN DEBIAN_FRONTEND=noninteractive apt install -y make ansible wget unzip git gcc
 
 RUN wget "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"  && unzip awscli-exe-linux-x86_64.zip && ./aws/install
 
