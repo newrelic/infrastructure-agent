@@ -1,0 +1,24 @@
+name: Task
+
+on:
+  push:
+    branches:
+      - '**'
+    tags-ignore:
+      - '**'
+
+jobs:
+  main:
+    name: Main job
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.ID_AWS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.ID_AWS_KEY }}
+          aws-region: us-east-2
+
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        run: |
+          aws ecs run-task --cluster test-id-packaging --task-definition PoCCanaries:3 --network-configuration ${{ secrets.ID_AWS_TASK_CFG }} --launch-type FARGATE

@@ -1,0 +1,36 @@
+2022-04-21T08:45:57.7165811Z Current runner version: '2.290.1'
+2022-04-21T08:45:57.7191850Z ##[group]Operating System
+2022-04-21T08:45:57.7192409Z Ubuntu
+2022-04-21T08:45:57.7192692Z 20.04.4
+2022-04-21T08:45:57.7192960Z LTS
+2022-04-21T08:45:57.7193266Z ##[endgroup]
+2022-04-21T08:45:57.7193595Z ##[group]Virtual Environment
+2022-04-21T08:45:57.7193968Z Environment: ubuntu-20.04
+2022-04-21T08:45:57.7194311Z Version: 20220410.2
+2022-04-21T08:45:57.7194878Z Included Software: https://github.com/actions/virtual-environments/blob/ubuntu20/20220410.2/images/linux/Ubuntu2004-Readme.md
+2022-04-21T08:45:57.7195827Z Image Release: https://github.com/actions/virtual-environments/releases/tag/ubuntu20%2F20220410.2
+2022-04-21T08:45:57.7196313Z ##[endgroup]
+2022-04-21T08:45:57.7196675Z ##[group]Virtual Environment Provisioner
+2022-04-21T08:45:57.7197066Z 1.0.0.0-main-20220406-1
+2022-04-21T08:45:57.7197394Z ##[endgroup]
+2022-04-21T08:45:57.7198416Z ##[group]GITHUB_TOKEN Permissions
+2022-04-21T08:45:57.7199058Z Actions: write
+2022-04-21T08:45:57.7199371Z Checks: write
+2022-04-21T08:45:57.7199819Z Contents: write
+2022-04-21T08:45:57.7200140Z Deployments: write
+2022-04-21T08:45:57.7200462Z Discussions: write
+2022-04-21T08:45:57.7200785Z Issues: write
+2022-04-21T08:45:57.7201086Z Metadata: read
+2022-04-21T08:45:57.7201392Z Packages: write
+2022-04-21T08:45:57.7201699Z Pages: write
+2022-04-21T08:45:57.7202009Z PullRequests: write
+2022-04-21T08:45:57.7202372Z RepositoryProjects: write
+2022-04-21T08:45:57.7202727Z SecurityEvents: write
+2022-04-21T08:45:57.7203050Z Statuses: write
+2022-04-21T08:45:57.7203359Z ##[endgroup]
+2022-04-21T08:45:57.7206921Z Secret source: Actions
+2022-04-21T08:45:57.7207446Z Prepare workflow directory
+2022-04-21T08:45:57.8405011Z Prepare all required actions
+2022-04-21T08:45:57.8588987Z Getting action download info
+2022-04-21T08:45:58.1169794Z Download action repository 'docker/login-action@v1' (SHA:dd4fa0671be5250ee6f50aedf4cb05514abda2c7)
+2022-04-21T08:45:58.4231187Z Download action repository 'newrelic/infrastructure-publish-action@v1.2.3' (SHA:1f18364998b1f41fcb44c04da594316df13f1d15)
