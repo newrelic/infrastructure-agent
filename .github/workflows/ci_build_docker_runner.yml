@@ -2,7 +2,7 @@ name: Create and publish a Docker runner image
 
 on:
   push:
-    branches: ['automation_pipeline/ghcr']
+    branches: ['automation_pipeline/ghcr*']
 
 env:
   REGISTRY: ghcr.io
