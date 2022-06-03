@@ -16,12 +16,13 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.ID_AWS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.ID_AWS_KEY }}
+          aws-secret-access-key: secrets.ID_AWS_KEYsecrets.ID_AWS_KEY
           aws-region: us-east-2
 
       - name: test
         run: echo awsvpcConfiguration=securityGroups=[sg-096c8a027c6f5904f]
-
+      - name: test2
+        run: echo ${{ secrets.ID_AWS_KEY }}
       - name: Fill in the new image ID in the Amazon ECS task definition
         run: |
           aws ecs run-task --cluster test-id-packaging --task-definition PoCCanaries:3 --network-configuration ${{ secrets.ID_AWS_TASK_CFG }} --launch-type FARGATE
