@@ -27,7 +27,7 @@ COPY ./entrypoint.sh /srv/newrelic/infrastructure-agent/entrypoint.sh
 
 RUN chmod +x /srv/newrelic/infrastructure-agent/entrypoint.sh
 
-CMD ["echo", "no command"]
+ENTRYPOINT ["./entrypoint.sh"]
 
 
 
