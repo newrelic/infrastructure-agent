@@ -25,8 +25,7 @@ inputs:
   aws_vpc_subnet:
     description: Task Definition.
     required: true
-    
-outputs:
+
 runs:
   using: "composite"
   steps:
@@ -37,10 +36,10 @@ runs:
         go-version: '^1.18.3'
 
     - name: Run external Job
-      defaults:
-        run:
-          working-directory: ${{ github.action_path }}
-      run: go build . && go run ./external_runner
+      run: |
+        cd ${{ github.action_path }} &&\ 
+        go build . &&\
+        go run ./external_runner
       shell: bash
             shell: bash
       env:
