@@ -37,9 +37,7 @@ runs:
 
     - name: Run external Job
       run: |
-        cd ${{ github.action_path }} &&\ 
-        go build . &&\
-        go run ./external_runner
+        cd ${{ github.action_path }} && go build . && ./external_runner
       shell: bash
 
       env:
