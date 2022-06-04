@@ -17,12 +17,13 @@ jobs:
 
       - name: Upload checksums file
         uses: ./.github/actions/external_runner
+        secrets:
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          ECS_CLUSTER_NAME: ${{ secrets.ECS_CLUSTER_NAME }}
+          TASK_DEFINITION_NAME: ${{ secrets.TASK_DEFINITION_NAME }}
+          CLOUD_WATCH_LOGS_GROUP_NAME: ${{ secrets.CLOUD_WATCH_LOGS_GROUP_NAME }}
+          CLOUD_WATCH_LOGS_STREAM_NAME: ${{ secrets.CLOUD_WATCH_LOGS_STREAM_NAME }}
+          AWS_VPC_SUBNET: ${{ secrets.AWS_VPC_SUBNET }}
         with:
-          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_region: us-east-2
-          ecs_cluster_name: ${{ secrets.ECS_CLUSTER_NAME }}
-          task_definition_name: ${{ secrets.TASK_DEFINITION_NAME }}
-          cloud_watch_logs_group_name: ${{ secrets.CLOUD_WATCH_LOGS_GROUP_NAME }}
-          cloud_watch_logs_stream_name: ${{ secrets.CLOUD_WATCH_LOGS_STREAM_NAME }}
-          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
+          AWS_REGION: us-east-2
