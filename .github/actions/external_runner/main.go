@@ -118,7 +118,7 @@ func main() {
 		MaxLines:      params.MaxLogLines,
 	}
 
-	logTailer := NewCloudWatchLogTailer(logTailerConfig, loudwatchlogs.NewFromConfig(cfg))
+	logTailer := NewCloudWatchLogTailer(logTailerConfig, cloudwatchlogs.NewFromConfig(cfg))
 
 	for {
 		logs, err := logTailer.GetLogs(context.Background())
