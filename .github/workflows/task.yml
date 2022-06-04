@@ -1,4 +1,4 @@
-name: Task
+name: External task POC
 
 on:
   push:
@@ -6,28 +6,23 @@ on:
       - '**'
     tags-ignore:
       - '**'
+  workflow_dispatch:
 
 jobs:
-  main:
-    name: Main job
+  run-external_job:
     runs-on: ubuntu-20.04
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.ID_AWS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.ID_AWS_KEY }}
-          aws-region: us-east-2
 
-      - name: Fill in the new image ID in the Amazon ECS task definition
-        id: test
-        run: >-
-          result=$(
-          aws ecs run-task
-          --cluster caos_prerelease
-          --task-definition test-prerelease-td
-          --network-configuration "${{ secrets.ID_AWS_TASK_CFG }}"
-          --launch-type FARGATE);
-          echo ::set-output name=task_arn::$(echo "$result" | jq '.tasks[0].taskArn')
-      - name: Print task arn
-        run: echo ${{ steps.test.outputs.task_arn }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Upload checksums file
+        uses: ./.github/actions/external_runner
+        with:
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_region: us-east-2
+          ecs_cluster_name: ${{ secrets.ECS_CLUSTER_NAME }}
+          task_definition_name: ${{ secrets.TASK_DEFINITION_NAME }}
+          cloud_watch_logs_group_name: ${{ secrets.CLOUD_WATCH_LOGS_GROUP_NAME }}
+          cloud_watch_logs_stream_name: ${{ secrets.CLOUD_WATCH_LOGS_STREAM_NAME }}
+          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
