@@ -99,7 +99,7 @@ func main() {
 
 	taskRunner := NewTaskRunner(taskSpecs, ecs.NewFromConfig(cfg))
 
-	ctx, cancelFn := context.WithTimeout(context.Background(), time.Duration(params.TimeoutMillis))
+	ctx, cancelFn := context.WithTimeout(context.Background(), time.Duration(params.TimeoutMillis)*time.Millisecond)
 	defer cancelFn()
 
 	taskOutput, err := taskRunner.Run(ctx)
