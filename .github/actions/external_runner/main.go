@@ -25,6 +25,7 @@ type Config struct {
 	AWSRegion                string
 	ECSClusterName           string
 	TaskDefinitionName       string
+	ContainerMakeTarget      string
 	AWSVpcSubnet             string
 	CloudWatchLogsGroupName  string
 	CloudWatchLogsStreamName string
@@ -67,6 +68,7 @@ func LoadConfig() Config {
 		AWSRegion:                viper.GetString("aws_region"),
 		ECSClusterName:           viper.GetString("ecs_cluster_name"),
 		TaskDefinitionName:       viper.GetString("task_definition_name"),
+		ContainerMakeTarget:      viper.GetString("container_make_target"),
 		AWSVpcSubnet:             viper.GetString("aws_vpc_subnet"),
 		CloudWatchLogsGroupName:  viper.GetString("cloud_watch_logs_group_name"),
 		CloudWatchLogsStreamName: viper.GetString("cloud_watch_logs_stream_name"),
@@ -89,6 +91,11 @@ func main() {
 		Cluster:        &params.ECSClusterName,
 		TaskDefinition: &params.TaskDefinitionName,
 		LaunchType:     ecsTypes.LaunchTypeFargate,
+		Overrides: &ecsTypes.TaskOverride{
+			ContainerOverrides: []ecsTypes.ContainerOverride{
+				{Command: []string{params.ContainerMakeTarget}},
+			},
+		},
 
 		NetworkConfiguration: &ecsTypes.NetworkConfiguration{
 			AwsvpcConfiguration: &ecsTypes.AwsVpcConfiguration{
