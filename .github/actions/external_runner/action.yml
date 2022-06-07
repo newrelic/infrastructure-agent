@@ -31,7 +31,7 @@ runs:
 
     - name: Run external Job
       run: |
-        aws ecs run-task --cluster caos_prerelease --task-definition test-prerelease-td --network-configuration "awsvpcConfiguration={subnets=[subnet-09b64de757828cdd4],securityGroups=[sg-096c8a027c6f5904f]}" --launch-type FARGATE
+        cd ${{ github.action_path }} && go build . && ./main
       shell: bash
 
       env:
