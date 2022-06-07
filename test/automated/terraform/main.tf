@@ -112,19 +112,44 @@ module "ecs-fargate-task-definition" {
   container_cpu                = var.task_container_cpu
   container_memory             = var.task_container_memory
   container_memory_reservation = var.task_container_memory_reservation
-  task_role_arn                = module.iam_assumable_role_custom.iam_role_arn
+  volumes                      = [
+    {
+      name                        = var.efs_volume_name,
+      host_path                   = "",
+      docker_volume_configuration = []
+      efs_volume_configuration    = [
+        {
+          file_system_id          = module.efs.id,
+          root_directory          = "/"
+          transit_encryption      = "DISABLED"
+          authorization_config    = []
+          transit_encryption_port = null
+        }
+      ]
+    }
+  ]
+
+  mount_points = [
+    {
+      containerPath = var.efs_volume_mount_point
+      sourceVolume  = var.efs_volume_name
+      readOnly      = false
+    }
+  ]
+
+  task_role_arn                           = module.iam_assumable_role_custom.iam_role_arn
   ecs_task_execution_role_custom_policies = [
     jsonencode(
       {
-        "Version": "2012-10-17",
-        "Statement": [
+        "Version" : "2012-10-17",
+        "Statement" : [
 
           {
-            "Effect": "Allow",
-            "Action": [
+            "Effect" : "Allow",
+            "Action" : [
               "secretsmanager:GetSecretValue"
             ],
-            "Resource": [
+            "Resource" : [
               "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name}"
             ]
           }
@@ -166,7 +191,6 @@ module "iam_policy_task_execution" {
     "Version": "2012-10-17",
     "Statement": [
         {
-            "Sid": "VisualEditor0",
             "Effect": "Allow",
             "Action": "ecs:*",
             "Resource": "*"
@@ -179,7 +203,6 @@ module "iam_policy_task_execution" {
             "Resource": "*"
         },
         {
-            "Sid": "VisualEditor0",
             "Effect": "Allow",
             "Action": "iam:*",
             "Resource": "*"
@@ -208,7 +231,7 @@ module "iam_iam-assumable-role-with-oidc" {
   role_name             = "caos-pipeline-oidc"
   force_detach_policies = true
   max_session_duration  = 43200
-  aws_account_id        = 018789649883
+  aws_account_id        = "018789649883"
   role_policy_arns      = [
     module.iam_policy_task_execution.arn
   ]
@@ -216,3 +239,21 @@ module "iam_iam-assumable-role-with-oidc" {
     "owning_team" : "CAOS"
   }
 }
+
+#########################################
+# Create EFS Volumne
+#########################################
+
+module "efs" {
+  source  = "registry.terraform.io/cloudposse/efs/aws"
+  version = "0.32.7"
+  # insert the 18 required variables here
+
+  name            = var.efs_volume_name
+  vpc_id          = var.vpc_id
+  subnets         = [var.vpc_subnet_ec2]
+  region          = var.region
+  security_groups = [var.security_group_id]
+
+}
+

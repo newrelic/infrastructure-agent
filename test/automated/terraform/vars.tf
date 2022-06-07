@@ -10,6 +10,14 @@ variable "vpc_id" {
   default = "vpc-0a3c00f5dc8645fe0"
 }
 
+variable "security_group_id" {
+  default = "sg-044ef7bc34691164a"
+}
+
+variable "vpc_subnet_ec2" {
+  default = "subnet-09b64de757828cdd4"
+}
+
 variable "cluster_name" {
   default = "caos_prerelease"
 }
@@ -20,6 +28,14 @@ variable "task_command" {
   default = [
     "test/automated-run"
   ]
+}
+
+variable "efs_volume_mount_point" {
+  default = "/srv/runner/inventory"
+}
+
+variable "efs_volume_name" {
+  default = "pipeline-shared"
 }
 
 variable "secret_name" {
