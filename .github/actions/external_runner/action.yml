@@ -31,7 +31,7 @@ runs:
 
     - name: Run external Job
       run: |
-        cd ${{ github.action_path }} && go build . && ./main
+        aws sts get-caller-identity --output text
       shell: bash
 
       env:

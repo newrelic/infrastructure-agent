@@ -71,7 +71,7 @@ func LoadConfig() Config {
 
 func main() {
 	params := LoadConfig()
-	
+
 	cfg, err := config.LoadDefaultConfig(
 		context.TODO(),
 	)
