@@ -30,8 +30,8 @@ jobs:
         uses: ./.github/actions/external_runner
         with:
           aws_region: us-east-2
-          ecs_cluster_name: ${{ secrets.ECS_CLUSTER_NAME }}
-          task_definition_name: ${{ secrets.TASK_DEFINITION_NAME }}
-          cloud_watch_logs_group_name: ${{ secrets.CLOUD_WATCH_LOGS_GROUP_NAME }}
-          cloud_watch_logs_stream_name: ${{ secrets.CLOUD_WATCH_LOGS_STREAM_NAME }}
+          ecs_cluster_name: caos_prerelease
+          task_definition_name: test-prerelease-td
+          cloud_watch_logs_group_name: /ecs/test-prerelease
+          cloud_watch_logs_stream_name: ecs/test-prerelease
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
