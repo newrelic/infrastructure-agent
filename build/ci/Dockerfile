@@ -1,6 +1,6 @@
 FROM ubuntu:22.04 as ci
 
-ARG REF_ARG=master
+ARG REF_ARG=automation_pipeline/ghcr
 ARG SSH_KEY_ARG="not a key"
 ARG ANSIBLE_INVENTORY_FOLDER_ARG="/srv/runner/inventory/$REF_ARG"
 ARG ANSIBLE_INVENTORY_FILE_ARG="inventory.ec2"
