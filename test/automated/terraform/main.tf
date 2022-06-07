@@ -55,6 +55,34 @@ module "iam_policy_fargate" {
     "Version": "2012-10-17",
     "Statement": [
         {
+            "Action": "ec2:*",
+            "Effect": "Allow",
+            "Resource": "*"
+        }
+    ]
+}
+EOF
+
+  tags = {
+    owning_team = "CAOS"
+  }
+}
+#########################################
+# IAM Policy Fargate Task Execution
+#########################################
+module "iam_policy_fargate_execution_plan" {
+  source  = "registry.terraform.io/terraform-aws-modules/iam/aws//modules/iam-policy"
+  version = "5.1.0"
+
+  name        = "test_prerelease_fargate_execution_plan"
+  path        = "/"
+  description = "Policy for Fargate task to provision ec2 instances and logwatch"
+
+  policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
             "Effect": "Allow",
             "Action": [
                 "ecr:GetAuthorizationToken",
@@ -67,11 +95,6 @@ module "iam_policy_fargate" {
             "Resource": "*"
         },
         {
-            "Action": "ec2:*",
-            "Effect": "Allow",
-            "Resource": "*"
-        },
-        {
             "Effect": "Allow",
             "Action": [
               "secretsmanager:GetSecretValue"
@@ -79,7 +102,7 @@ module "iam_policy_fargate" {
             "Resource": [
               "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name}"
             ]
-      }
+        }
     ]
 }
 EOF
@@ -134,7 +157,9 @@ module "ecs-fargate-task-definition" {
   container_memory             = var.task_container_memory
   container_memory_reservation = var.task_container_memory_reservation
   task_role_arn                = module.iam_assumable_role_custom.iam_role_arn
-  secrets                      = [
+  permissions_boundary         = module.iam_policy_fargate_execution_plan.arn
+
+  secrets = [
     {
       "name" : "SSH_KEY",
       "valueFrom" : "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name}"
@@ -185,22 +210,22 @@ EOF
 # Create IAM assumable role OIDC
 #########################################
 module "iam_iam-assumable-role-with-oidc" {
-  source  = "registry.terraform.io/terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc"
-  version = "5.1.0"
+  source                         = "registry.terraform.io/terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc"
+  version                        = "5.1.0"
   # insert the 3 required variables here
-  provider_url = "https://token.actions.githubusercontent.com"
+  provider_url                   = "https://token.actions.githubusercontent.com"
   oidc_fully_qualified_audiences = [
     "sts.amazonaws.com"
   ]
-  create_role = true
-  role_name = "caos-pipeline-oidc"
+  create_role           = true
+  role_name             = "caos-pipeline-oidc"
   force_detach_policies = true
-  max_session_duration = 43200
-  aws_account_id = 018789649883
-  role_policy_arns = [
+  max_session_duration  = 43200
+  aws_account_id        = 018789649883
+  role_policy_arns      = [
     module.iam_policy_task_execution.arn
   ]
   tags = {
-    "owning_team": "CAOS"
+    "owning_team" : "CAOS"
   }
 }
