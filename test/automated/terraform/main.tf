@@ -67,50 +67,6 @@ EOF
     owning_team = "CAOS"
   }
 }
-#########################################
-# IAM Policy Fargate Task Execution
-#########################################
-module "iam_policy_fargate_execution_plan" {
-  source  = "registry.terraform.io/terraform-aws-modules/iam/aws//modules/iam-policy"
-  version = "5.1.0"
-
-  name        = "test_prerelease_fargate_execution_plan"
-  path        = "/"
-  description = "Policy for Fargate task to provision ec2 instances and logwatch"
-
-  policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "ecr:GetAuthorizationToken",
-                "ecr:BatchCheckLayerAvailability",
-                "ecr:GetDownloadUrlForLayer",
-                "ecr:BatchGetImage",
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
-            ],
-            "Resource": "*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-              "secretsmanager:GetSecretValue"
-            ],
-            "Resource": [
-              "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name}"
-            ]
-        }
-    ]
-}
-EOF
-
-  tags = {
-    owning_team = "CAOS"
-  }
-}
 
 module "iam_assumable_role_custom" {
   source  = "registry.terraform.io/terraform-aws-modules/iam/aws//modules/iam-assumable-role"
@@ -157,7 +113,25 @@ module "ecs-fargate-task-definition" {
   container_memory             = var.task_container_memory
   container_memory_reservation = var.task_container_memory_reservation
   task_role_arn                = module.iam_assumable_role_custom.iam_role_arn
-  permissions_boundary         = module.iam_policy_fargate_execution_plan.arn
+  ecs_task_execution_role_custom_policies = [
+    jsonencode(
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+
+          {
+            "Effect": "Allow",
+            "Action": [
+              "secretsmanager:GetSecretValue"
+            ],
+            "Resource": [
+              "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name}"
+            ]
+          }
+        ]
+      }
+    )
+  ]
 
   secrets = [
     {
