@@ -9,37 +9,37 @@ on:
   workflow_dispatch:
 
 jobs:
-  run-external_job:
-    runs-on: ubuntu-20.04
-
-    permissions:
-      id-token: write
-      contents: read
-
-    steps:
-      - uses: actions/checkout@v2
-
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          role-to-assume: arn:aws:iam::018789649883:role/caos-pipeline-oidc
-          aws-region: us-east-2
-
-      - name: Upload checksums file
-        uses: ./.github/actions/external_runner
-        with:
-          aws_region: us-east-2
-          container_make_target: test/automated/provision
-          ecs_cluster_name: caos_prerelease
-          task_definition_name: test-prerelease-td
-          cloud_watch_logs_group_name: /ecs/test-prerelease
-          cloud_watch_logs_stream_name: ecs/test-prerelease
-          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
+#  run-external_job:
+#    runs-on: ubuntu-20.04
+#
+#    permissions:
+#      id-token: write
+#      contents: read
+#
+#    steps:
+#      - uses: actions/checkout@v2
+#
+#
+#      - name: Configure AWS Credentials
+#        uses: aws-actions/configure-aws-credentials@v1
+#        with:
+#          role-to-assume: arn:aws:iam::018789649883:role/caos-pipeline-oidc
+#          aws-region: us-east-2
+#
+#      - name: Upload checksums file
+#        uses: ./.github/actions/external_runner
+#        with:
+#          aws_region: us-east-2
+#          container_make_target: test/automated/provision
+#          ecs_cluster_name: caos_prerelease
+#          task_definition_name: test-prerelease-td
+#          cloud_watch_logs_group_name: /ecs/test-prerelease
+#          cloud_watch_logs_stream_name: ecs/test-prerelease
+#          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
 
 
   run-external_job2:
-    needs: [ run-external_job ]
+#    needs: [ run-external_job ]
 
     runs-on: ubuntu-20.04
 
