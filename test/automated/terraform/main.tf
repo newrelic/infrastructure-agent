@@ -170,6 +170,19 @@ module "iam_policy_task_execution" {
             "Effect": "Allow",
             "Action": "ecs:*",
             "Resource": "*"
+        },
+        {
+            "Action": [
+                "logs:*"
+            ],
+            "Effect": "Allow",
+            "Resource": "*"
+        },
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": "iam:*",
+            "Resource": "*"
         }
     ]
 }
