@@ -6,7 +6,7 @@ ANSIBLE_INVENTORY_MACOS ?= $(CURDIR)/test/automated/ansible/inventory.macos.ec2
 
 .PHONY: test/automated/provision
 test/automated/provision: validate-aws-credentials
-	ANSIBLE_STDOUT_CALLBACK=selective ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.local -e provision_host_prefix=$(PROVISION_HOST_PREFIX) $(CURDIR)/test/automated/ansible/provision.yml
+	ANSIBLE_STDOUT_CALLBACK=selective ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.local	-e output_inventory_ext=$(ANSIBLE_INVENTORY) -e provision_host_prefix=$(PROVISION_HOST_PREFIX) $(CURDIR)/test/automated/ansible/provision.yml
 	ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO  ansible-playbook -i $(ANSIBLE_INVENTORY) $(CURDIR)/test/automated/ansible/install-requirements.yml
 	ansible-playbook $(CURDIR)/test/automated/ansible/macos-canaries.yml
 
@@ -84,7 +84,6 @@ test/automated-run:
 .PHONY: test/runner/provision
 test/runner/provision:
 	@ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO ANSIBLE_DISPLAY_OK_HOSTS=NO ansible-playbook \
-		-e output_inventory=$(ANSIBLE_INVENTORY) \
 		-i $(CURDIR)/test/automated/ansible/inventory.runner.ec2  \
 		$(CURDIR)/test/automated/ansible/provision-runner.yml
 
