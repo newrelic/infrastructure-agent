@@ -20,8 +20,6 @@ import (
 
 // Config keeps the required configuration for the action.
 type Config struct {
-	AWSAccessKeyID           string
-	AWSSecretAccessKey       string
 	AWSRegion                string
 	ECSClusterName           string
 	TaskDefinitionName       string
@@ -73,6 +71,9 @@ func LoadConfig() Config {
 
 func main() {
 	params := LoadConfig()
+
+	fmt.Println(os.Getenv("AWS_SESSION_TOKEN")[:3])
+	fmt.Println(os.Getenv("AWS_SECRET_ACCESS_KEY")[:3])
 
 	cfg, err := config.LoadDefaultConfig(
 		context.TODO(),

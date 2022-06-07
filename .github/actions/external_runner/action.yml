@@ -4,12 +4,6 @@ inputs:
   aws_region:
     description: AWS region.
     required: true
-  aws_secret_access_key:
-    description: AWS secret access key
-    required: true
-  aws_access_key_id:
-    description: AWS access key id
-    required: true
   ecs_cluster_name:
     description: ECS cluster name.
     required: true
