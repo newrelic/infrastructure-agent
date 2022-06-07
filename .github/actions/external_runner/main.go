@@ -119,26 +119,7 @@ func main() {
 	ctx, cancelFn := context.WithTimeout(context.Background(), time.Duration(params.TimeoutMillis)*time.Millisecond)
 	defer cancelFn()
 
-	containerExitCode := make(chan int, 1)
-	go func() {
-		for {
-			if _, reached := ctx.Deadline(); reached {
-				return
-			}
-
-			finished, exitcode, err := taskRunner.IsFinished()
-			if err != nil {
-				log.Printf("failed to check if task has finished: %v\n", err)
-			}
-
-			if finished {
-				containerExitCode <- exitcode
-				return
-			}
-		}
-	}()
-
-	// TODO: if fails, check the status of the container to see why failed.
+	// TODO: if fails
 	taskOutput, err := taskRunner.Run(ctx)
 	if err != nil {
 		log.Fatalf("failed to run task: %v", err)
@@ -166,10 +147,13 @@ func main() {
 			log.Printf("%s\n", *line.Message)
 		}
 
-		select {
-		case exitCode := <-containerExitCode:
+		finished, exitCode, err := taskRunner.IsFinished()
+		if err != nil {
+			log.Fatalf("failed to check if task has finished: %v", err)
+		}
+
+		if finished {
 			os.Exit(exitCode)
-		default:
 		}
 
 		if len(logs) == 0 {
