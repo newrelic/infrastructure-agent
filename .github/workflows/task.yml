@@ -27,7 +27,7 @@ jobs:
           aws-region: us-east-2
 
       - name: Upload checksums file
-          run: aws ecs list-task-definitions
+        run: aws ecs list-task-definitions
 #          with:
 #            aws_secret_access_key: ${{ secrets.ID_AWS_KEY }}
 #            aws_access_key_id: ${{ secrets.ID_AWS_KEY_ID }}
