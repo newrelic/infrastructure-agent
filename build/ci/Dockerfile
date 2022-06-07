@@ -1,10 +1,10 @@
 FROM ubuntu:22.04 as ci
 
-ARG TAG_ARG=1.27.0
+ARG REF_ARG=master
 ARG SSH_KEY_ARG="not a key"
 
 ENV SSH_KEY=$SSH_KEY_ARG
-ENV TAG=$TAG_ARG
+ENV REF=$REF_ARG
 
 RUN apt-get update
 RUN DEBIAN_FRONTEND=noninteractive apt install -y make ansible wget unzip git gcc
@@ -18,8 +18,6 @@ RUN mkdir -p /srv/newrelic
 
 RUN git clone https://github.com/newrelic/infrastructure-agent.git /srv/newrelic/infrastructure-agent
 WORKDIR /srv/newrelic/infrastructure-agent
-
-RUN git checkout $TAG
 
 RUN mkdir ~/.ssh/
 
