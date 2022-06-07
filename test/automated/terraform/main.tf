@@ -40,9 +40,9 @@ module "cloudwatch_log-group" {
 }
 
 #########################################
-# AMI
+# IAM Policy Fargate
 #########################################
-module "iam_policy" {
+module "iam_policy_fargate" {
   source  = "registry.terraform.io/terraform-aws-modules/iam/aws//modules/iam-policy"
   version = "5.1.0"
 
@@ -101,7 +101,7 @@ module "iam_assumable_role_custom" {
   custom_role_trust_policy = data.aws_iam_policy_document.custom_trust_policy.json
 
   custom_role_policy_arns = [
-    module.iam_policy.arn
+    module.iam_policy_fargate.arn
   ]
 }
 
@@ -148,5 +148,59 @@ module "ecs-fargate-task-definition" {
       "awslogs-region" : var.region,
       "awslogs-stream-prefix" : var.task_logs_prefix
     }
+  }
+}
+
+#########################################
+# IAM Policy Task execution
+#########################################
+module "iam_policy_task_execution" {
+  source  = "registry.terraform.io/terraform-aws-modules/iam/aws//modules/iam-policy"
+  version = "5.1.0"
+
+  name        = "ecs_task_execution_policy"
+  path        = "/"
+  description = "Policy for Fargate task execution"
+
+  policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": "ecs:*",
+            "Resource": "*"
+        }
+    ]
+}
+EOF
+
+  tags = {
+    owning_team = "CAOS"
+  }
+}
+
+#########################################
+# Create IAM assumable role OIDC
+#########################################
+module "iam_iam-assumable-role-with-oidc" {
+  source  = "registry.terraform.io/terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc"
+  version = "5.1.0"
+  # insert the 3 required variables here
+  provider_url = "https://token.actions.githubusercontent.com"
+  oidc_fully_qualified_audiences = [
+    "sts.amazonaws.com"
+  ]
+  create_role = true
+  role_name = "caos-pipeline-oidc"
+  force_detach_policies = true
+  max_session_duration = 43200
+  aws_account_id = 018789649883
+  role_policy_arns = [
+    module.iam_policy_task_execution.arn
+  ]
+  tags = {
+    "owning_team": "CAOS"
   }
 }
