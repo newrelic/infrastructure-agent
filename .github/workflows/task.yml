@@ -27,13 +27,25 @@ jobs:
           aws-region: us-east-2
 
       - name: Upload checksums file
-        uses: ./.github/actions/external_runner
-        with:
-          aws_secret_access_key: ${{ secrets.ID_AWS_KEY }}
-          aws_access_key_id: ${{ secrets.ID_AWS_KEY_ID }}
-          aws_region: us-east-2
-          ecs_cluster_name: ${{ secrets.ECS_CLUSTER_NAME }}
-          task_definition_name: ${{ secrets.TASK_DEFINITION_NAME }}
-          cloud_watch_logs_group_name: ${{ secrets.CLOUD_WATCH_LOGS_GROUP_NAME }}
-          cloud_watch_logs_stream_name: ${{ secrets.CLOUD_WATCH_LOGS_STREAM_NAME }}
-          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
+          run: aws ecs list-task-definitions
+#          with:
+#            aws_secret_access_key: ${{ secrets.ID_AWS_KEY }}
+#            aws_access_key_id: ${{ secrets.ID_AWS_KEY_ID }}
+#            aws_region: us-east-2
+#            ecs_cluster_name: ${{ secrets.ECS_CLUSTER_NAME }}
+#            task_definition_name: ${{ secrets.TASK_DEFINITION_NAME }}
+#            cloud_watch_logs_group_name: ${{ secrets.CLOUD_WATCH_LOGS_GROUP_NAME }}
+#            cloud_watch_logs_stream_name: ${{ secrets.CLOUD_WATCH_LOGS_STREAM_NAME }}
+#            aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
+
+#      - name: Upload checksums file
+#        uses: ./.github/actions/external_runner
+#        with:
+#          aws_secret_access_key: ${{ secrets.ID_AWS_KEY }}
+#          aws_access_key_id: ${{ secrets.ID_AWS_KEY_ID }}
+#          aws_region: us-east-2
+#          ecs_cluster_name: ${{ secrets.ECS_CLUSTER_NAME }}
+#          task_definition_name: ${{ secrets.TASK_DEFINITION_NAME }}
+#          cloud_watch_logs_group_name: ${{ secrets.CLOUD_WATCH_LOGS_GROUP_NAME }}
+#          cloud_watch_logs_stream_name: ${{ secrets.CLOUD_WATCH_LOGS_STREAM_NAME }}
+#          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
