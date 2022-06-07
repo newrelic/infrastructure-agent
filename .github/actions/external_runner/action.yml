@@ -4,12 +4,6 @@ inputs:
   aws_region:
     description: AWS region.
     required: true
-  aws_secret_access_key:
-    description: AWS secret access key
-    required: true
-  aws_access_key_id:
-    description: AWS access key id
-    required: true
   ecs_cluster_name:
     description: ECS cluster name.
     required: true
@@ -44,8 +38,6 @@ runs:
       shell: bash
 
       env:
-        AWS_SECRET_ACCESS_KEY: ${{ inputs.aws_secret_access_key }}
-        AWS_ACCESS_KEY_ID: ${{ inputs.aws_access_key_id }}
         AWS_REGION: ${{ inputs.aws_region }}
         ECS_CLUSTER_NAME: ${{ inputs.ecs_cluster_name }}
         TASK_DEFINITION_NAME: ${{ inputs.task_definition_name }}

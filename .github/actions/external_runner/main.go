@@ -20,8 +20,6 @@ import (
 
 // Config keeps the required configuration for the action.
 type Config struct {
-	AWSAccessKeyID           string
-	AWSSecretAccessKey       string
 	AWSRegion                string
 	ECSClusterName           string
 	TaskDefinitionName       string
@@ -41,8 +39,6 @@ const (
 )
 
 func LoadConfig() Config {
-	viper.BindEnv("aws_access_key_id")
-	viper.BindEnv("aws_secret_access_key")
 	viper.BindEnv("aws_region")
 	viper.BindEnv("ecs_cluster_name")
 	viper.BindEnv("task_definition_name")
@@ -64,8 +60,6 @@ func LoadConfig() Config {
 	}
 
 	return Config{
-		AWSAccessKeyID:           viper.GetString("aws_access_key_id"),
-		AWSSecretAccessKey:       viper.GetString("aws_secret_access_key"),
 		AWSRegion:                viper.GetString("aws_region"),
 		ECSClusterName:           viper.GetString("ecs_cluster_name"),
 		TaskDefinitionName:       viper.GetString("task_definition_name"),
