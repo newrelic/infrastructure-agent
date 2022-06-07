@@ -34,8 +34,8 @@ type Config struct {
 }
 
 const (
-	defaultTimeoutMillis = 120000
-	defaultMaxLogLines   = 100
+	defaultTimeoutMillis = 240000
+	defaultMaxLogLines   = 200
 
 	logLinesReqBackoff = 5 * time.Second
 )
@@ -46,6 +46,7 @@ func LoadConfig() Config {
 	viper.BindEnv("aws_region")
 	viper.BindEnv("ecs_cluster_name")
 	viper.BindEnv("task_definition_name")
+	viper.BindEnv("container_make_target")
 	viper.BindEnv("aws_vpc_subnet")
 	viper.BindEnv("cloud_watch_logs_group_name")
 	viper.BindEnv("cloud_watch_logs_stream_name")
@@ -91,17 +92,32 @@ func main() {
 		Cluster:        &params.ECSClusterName,
 		TaskDefinition: &params.TaskDefinitionName,
 		LaunchType:     ecsTypes.LaunchTypeFargate,
-		Overrides: &ecsTypes.TaskOverride{
-			ContainerOverrides: []ecsTypes.ContainerOverride{
-				{Command: []string{params.ContainerMakeTarget}},
-			},
-		},
 
 		NetworkConfiguration: &ecsTypes.NetworkConfiguration{
 			AwsvpcConfiguration: &ecsTypes.AwsVpcConfiguration{
 				Subnets: []string{params.AWSVpcSubnet},
 			},
 		},
+	}
+
+	// modify task input if command is specified
+	if params.ContainerMakeTarget != "" {
+		taskDefinition := &ecs.DescribeTaskDefinitionInput{
+			TaskDefinition: &params.TaskDefinitionName,
+		}
+
+		containerOverride := NewContainerOverride(taskDefinition, ecs.NewFromConfig(cfg))
+
+		ctx, cancelFn := context.WithTimeout(context.Background(), time.Duration(params.TimeoutMillis)*time.Millisecond)
+		defer cancelFn()
+
+		containers, err := containerOverride.GetContainersOverride(ctx, params.ContainerMakeTarget)
+		if err != nil {
+			log.Fatalf("failed: %v", err)
+		}
+		taskSpecs.Overrides = &ecsTypes.TaskOverride{
+			ContainerOverrides: containers,
+		}
 	}
 
 	taskRunner := NewTaskRunner(taskSpecs, ecs.NewFromConfig(cfg))
@@ -149,6 +165,43 @@ func main() {
 			time.Sleep(logLinesReqBackoff)
 		}
 	}
+}
+
+// ContainerOverride returns a list of containers definition with an override command
+type ContainerOverride struct {
+	specs     *ecs.DescribeTaskDefinitionInput
+	awsClient *ecs.Client
+}
+
+// NewContainerOverride returns a new ContainerOverride.
+func NewContainerOverride(taskDefinition *ecs.DescribeTaskDefinitionInput, awsClient *ecs.Client) *ContainerOverride {
+	return &ContainerOverride{
+		specs:     taskDefinition,
+		awsClient: awsClient,
+	}
+}
+
+// GetContainerOverride returns a container configuration with a new command
+func (co *ContainerOverride) GetContainersOverride(ctx context.Context, command string) ([]ecsTypes.ContainerOverride, error) {
+	var err error
+	task, err := co.awsClient.DescribeTaskDefinition(ctx, co.specs)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to describe task definitions")
+	}
+
+	containerOverrides := make([]ecsTypes.ContainerOverride, len(task.TaskDefinition.ContainerDefinitions))
+
+	for i, container := range task.TaskDefinition.ContainerDefinitions {
+		containerOverrides[i] = ecsTypes.ContainerOverride{
+			Name:                 container.Name,
+			Environment:          container.Environment,
+			EnvironmentFiles:     container.EnvironmentFiles,
+			Command:              []string{command},
+			ResourceRequirements: container.ResourceRequirements,
+		}
+	}
+
+	return containerOverrides, nil
 }
 
 // TaskRunner runs a new task based on provided specs.
