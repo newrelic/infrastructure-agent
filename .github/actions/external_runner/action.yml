@@ -10,6 +10,9 @@ inputs:
   task_definition_name:
     description: Task Definition.
     required: true
+  container_make_target:
+    description: Container make target.
+    required: true
   cloud_watch_logs_group_name:
     description: Task Definition.
     required: true
@@ -38,6 +41,7 @@ runs:
         AWS_REGION: ${{ inputs.aws_region }}
         ECS_CLUSTER_NAME: ${{ inputs.ecs_cluster_name }}
         TASK_DEFINITION_NAME: ${{ inputs.task_definition_name }}
+        CONTAINER_MAKE_TARGET: ${{ inputs.container_make_target }}
         CLOUD_WATCH_LOGS_GROUP_NAME: ${{ inputs.cloud_watch_logs_group_name }}
         CLOUD_WATCH_LOGS_STREAM_NAME: ${{ inputs.cloud_watch_logs_stream_name }}
         AWS_VPC_SUBNET: ${{ inputs.aws_vpc_subnet }}
