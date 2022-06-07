@@ -2,9 +2,15 @@ FROM ubuntu:22.04 as ci
 
 ARG REF_ARG=master
 ARG SSH_KEY_ARG="not a key"
+ARG ANSIBLE_INVENTORY_FOLDER_ARG="/srv/runner/inventory/$REF_ARG"
+ARG ANSIBLE_INVENTORY_FILE_ARG="inventory.ec2"
 
 ENV SSH_KEY=$SSH_KEY_ARG
 ENV REF=$REF_ARG
+ENV ANSIBLE_INVENTORY="$ANSIBLE_INVENTORY_FOLDER_ARG/$ANSIBLE_INVENTORY_FILE_ARG"
+
+VOLUME /srv/runner/inventory/
+RUN mkdir -p $ANSIBLE_INVENTORY_FOLDER_ARG
 
 RUN apt-get update
 RUN DEBIAN_FRONTEND=noninteractive apt install -y make ansible wget unzip git gcc

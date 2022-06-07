@@ -1,21 +1,24 @@
 PROVISION_HOST_PREFIX := $(shell whoami)-$(shell hostname)
 AWS_ACCOUNT_ID = "018789649883"# CAOS
 
+ANSIBLE_INVENTORY ?= $(CURDIR)/test/automated/ansible/inventory.ec2
+ANSIBLE_INVENTORY_MACOS ?= $(CURDIR)/test/automated/ansible/inventory.macos.ec2
+
 .PHONY: test/automated/provision
 test/automated/provision: validate-aws-credentials
 	ANSIBLE_STDOUT_CALLBACK=selective ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.local -e provision_host_prefix=$(PROVISION_HOST_PREFIX) $(CURDIR)/test/automated/ansible/provision.yml
-	ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO  ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.ec2 $(CURDIR)/test/automated/ansible/install-requirements.yml
+	ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO  ansible-playbook -i $(ANSIBLE_INVENTORY) $(CURDIR)/test/automated/ansible/install-requirements.yml
 	ansible-playbook $(CURDIR)/test/automated/ansible/macos-canaries.yml
 
 .PHONY: test/automated/termination
 test/automated/termination: validate-aws-credentials
-	ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.ec2 $(CURDIR)/test/automated/ansible/termination.yml
+	ansible-playbook -i $(ANSIBLE_INVENTORY) $(CURDIR)/test/automated/ansible/termination.yml
 
 # Allow running specific harvest tests based on regex (default to .*)
 TESTS_TO_RUN_REGEXP ?= ".*"
 .PHONY: test/automated/harvest
 test/automated/harvest:
-	ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.ec2 \
+	ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO ansible-playbook -i $(ANSIBLE_INVENTORY) \
 					-e agent_root_dir=$(CURDIR) \
 					-e tests_to_run_regex=$(TESTS_TO_RUN_REGEXP) \
 					$(CURDIR)/test/harvest/ansible/test.yml
@@ -34,7 +37,7 @@ ifndef NEW_RELIC_ACCOUNT_ID
 	@echo "NEW_RELIC_ACCOUNT_ID variable must be provided for test/automated/packaging"
 	exit 1
 endif
-	@ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO ANSIBLE_DISPLAY_OK_HOSTS=NO ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.ec2 -e nr_license_key=$(NR_LICENSE_KEY) -e nr_api_key=$(NEW_RELIC_API_KEY) -e nr_account_id=$(NEW_RELIC_ACCOUNT_ID) $(CURDIR)/test/packaging/ansible/test.yml
+	@ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO ANSIBLE_DISPLAY_OK_HOSTS=NO ansible-playbook -i $(ANSIBLE_INVENTORY) -e nr_license_key=$(NR_LICENSE_KEY) -e nr_api_key=$(NEW_RELIC_API_KEY) -e nr_account_id=$(NEW_RELIC_ACCOUNT_ID) $(CURDIR)/test/packaging/ansible/test.yml
 
 
 .PHONY: test/automated/packaging-docker
@@ -80,7 +83,10 @@ test/automated-run:
 
 .PHONY: test/runner/provision
 test/runner/provision:
-	@ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO ANSIBLE_DISPLAY_OK_HOSTS=NO ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.runner.ec2  $(CURDIR)/test/automated/ansible/provision-runner.yml
+	@ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO ANSIBLE_DISPLAY_OK_HOSTS=NO ansible-playbook \
+		-e output_inventory=$(ANSIBLE_INVENTORY) \
+		-i $(CURDIR)/test/automated/ansible/inventory.runner.ec2  \
+		$(CURDIR)/test/automated/ansible/provision-runner.yml
 
 .PHONY: test/runner/packaging
 test/runner/packaging: validate-aws-credentials
