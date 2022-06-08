@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
+	http2 "github.com/newrelic/infrastructure-agent/pkg/http"
 	logFilter "github.com/newrelic/infrastructure-agent/pkg/log/filter"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
@@ -680,6 +681,9 @@ func checkEndpointReachable(
 		return false, fmt.Errorf("unable to prepare reachability request: %v, error: %s", request, err)
 	}
 
+	if wlog.IsLevelEnabled(logrus.TraceLevel) {
+		request = http2.WithTracer(request, "checkEndpointReachable")
+	}
 	client := backendhttp.GetHttpClient(timeout, transport)
 	if _, err = client.Do(request); err != nil {
 		if e2, ok := err.(net.Error); ok && (e2.Timeout() || e2.Temporary()) {
