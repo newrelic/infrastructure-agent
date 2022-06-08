@@ -110,16 +110,6 @@ func TestGetMatchingContainers(t *testing.T) {
 		},
 	}
 
-	//cfg := discovery.Container{
-	//	Match: map[string]string{
-	//		"image": "/test-server/",
-	//	},
-	//}
-	//
-	//x, err := Discoverer(cfg)
-	//require.NoError(t, err)
-	//x()
-
 	matcher, err := discovery.NewMatcher(map[string]string{
 		"image": "/test-server/",
 	})
