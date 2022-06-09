@@ -49,3 +49,10 @@ jobs:
 
       - name: Releasing linux packages
         run: make ci/prerelease/linux-${{ env.ARCH }}
+
+      - name: Generate checksums file
+        uses: ./.github/actions/generate-checksums
+        with:
+          checksums_file_name: "checksums_linux_${{ env.ARCH }}.txt"
+          files_regex: '.*tar\.gz'
+          files_path: 'dist'

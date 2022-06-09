@@ -52,6 +52,13 @@ jobs:
       - name: Releasing all linux packages
         run: make ci/prerelease/linux
 
+      - name: Generate checksums file
+        uses: ./.github/actions/generate-checksums
+        with:
+          checksums_file_name: "checksums_linux.txt"
+          files_regex: '.*tar\.gz'
+          files_path: 'dist'
+
       - name: Publish deb to S3 action
         uses: newrelic/infrastructure-publish-action@v1.2.3
         with:
@@ -124,3 +131,13 @@ jobs:
           disable_lock: ${{ env.DISABLE_LOCK }}
           dest_prefix: ${{ env.DEST_PREFIX }}
           local_packages_path:  "/srv/dist/"
+
+  merge-checksums:
+    needs: [ packaging ]
+    uses: newrelic/infrastructure-agent/.github/workflows/component_checksums_upload.yml@master
+    secrets:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    with:
+      TAG: ${{ github.event.release.tag_name }}
+      CHECKSUMS_FILE_NAME: 'checksums_linux.txt'
+

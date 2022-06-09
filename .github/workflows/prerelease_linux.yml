@@ -78,6 +78,15 @@ jobs:
       TAG:  ${{ github.event.release.tag_name }}
       ARCH: 'legacy'
 
+  merge-checksums:
+    needs: [ packaging-amd64, packaging-arm, packaging-arm64, packaging-legacy ]
+    uses: newrelic/infrastructure-agent/.github/workflows/component_checksums_upload.yml@master
+    secrets:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    with:
+      TAG: ${{ github.event.release.tag_name }}
+      CHECKSUMS_FILE_NAME: 'checksums_linux.txt'
+
   packaging-docker:
     needs: [unit-test, harvest-test, proxy-tests]
     uses: newrelic/infrastructure-agent/.github/workflows/component_docker_packaging.yml@master

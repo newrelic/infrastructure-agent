@@ -5,6 +5,50 @@
 #
 #
 
+
+print_usage() {
+  printf -- "Usage: %s\n" $(basename "${0}")
+  printf -- "-p: Path to look for the files\n"
+  printf -- "-r: Regex to find files e.g. -f '.*tar.gz\|.*msi'\n"
+  printf -- "-n: Exact match of the filename\n"
+}
+
+SEARCH_PATH='dist'
+FIND_REGEX='.*msi\|.*rpm\|.*deb\|.*zip\|.*tar.gz'
+
+while getopts 'p:r:n:' flag
+do
+    case "${flag}" in
+        h)
+          print_usage
+          exit 0
+        ;;
+        r)
+          FIND_REGEX="${OPTARG}"
+          continue
+        ;;
+        n)
+          FILE_NAME="${OPTARG}"
+          continue
+        ;;
+        p)
+         SEARCH_PATH="${OPTARG}"
+         continue
+        ;;
+        *)
+          print_usage
+          exit 1
+        ;;
+    esac
+done
+
+if [ -n "${FILE_NAME}" ]; then
+  # Exact match of the file.
+  FIND_ARGS="-name '${FILE_NAME}'"
+else
+  FIND_ARGS="-regex '${FIND_REGEX}'"
+fi
+
 # delete_asset_by_name is used when we want to re-upload an asset that failed or was partially published.
 delete_asset_by_name() {
   artifact="${1}"
@@ -46,8 +90,8 @@ delete_asset_by_name() {
 
 MAX_ATTEMPTS=20
 ATTEMPTS=$MAX_ATTEMPTS
-cd dist
-for filename in $(find . -name "*.msi" -o -name "*.rpm" -o -name "*.deb" -o -name "*.zip" -o -name "*.tar.gz");do
+cd "${SEARCH_PATH}"
+for filename in $(eval find . "${FIND_ARGS}");do
   echo "===> Uploading to GH $TAG: ${filename}"
   while [ "${ATTEMPTS}" -gt 0 ];do
     gh release upload "${TAG}" "${filename}" --clobber

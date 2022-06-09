@@ -1,0 +1,37 @@
+name: ~ Merge and upload checksums into GH Release assets
+
+on:
+  workflow_call:
+    secrets:
+      GH_TOKEN:
+        required: true
+    inputs:
+      CHECKSUMS_FILE_NAME:
+        required: true
+        type: string
+      TAG:
+        required: true
+        type: string
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+  TAG:  ${{ inputs.TAG }}
+
+jobs:
+  merge-checksums:
+    name: Merge and upload checksums into GH Release assets
+    runs-on: ubuntu-18.04
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Merge checksums files
+        uses: ./.github/actions/generate-checksums
+        with:
+          merge: true
+          checksums_dir: 'checksums'
+          checksums_file_name: ${{ inputs.CHECKSUMS_FILE_NAME }}
+
+      - name: Upload checksum to GH
+        shell: bash
+        run: build/upload_artifacts_gh.sh -p '.' -n '${{ inputs.CHECKSUMS_FILE_NAME }}'

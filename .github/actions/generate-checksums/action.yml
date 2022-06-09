@@ -1,0 +1,43 @@
+name: 'Generate Checksums'
+description: 'Generate checksums for artifacts'
+inputs:
+  checksums_file_name:
+    description: 'file name of the resulting file containing all the generated checksums'
+  checksums_dir:
+    description: "directory where the files will be stored in the workflow"
+    default: "checksums"
+  files_regex:
+    description: 'regex for matching files that we want to generate checksums for'
+  files_path:
+    description: 'directory containing the files that we want to generate checksums for'
+  merge:
+    description: 'generate new checksums or merge existing ones'
+    type: "boolean"
+    default: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Generate checksums file
+      run: ${GITHUB_ACTION_PATH}/generate_checksums.sh -p '${{ inputs.files_path }}' -o '${{ inputs.checksums_file_name }}' -r '${{ inputs.files_regex }}'
+      shell: bash
+      if: ${{ inputs.merge == 'false' }}
+
+    - name: Upload checksums file to workflow artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ inputs.checksums_dir }}
+        path: ${{ inputs.checksums_file_name }}
+      if: ${{ inputs.merge == 'false' }}
+
+    - name: Download checksums file from workflow artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: ${{ inputs.checksums_dir }}
+        path: ${{ inputs.checksums_dir }}
+      if: ${{ inputs.merge == 'true' }}
+
+    - name: Merge checksum files
+      shell: bash
+      run: ${GITHUB_ACTION_PATH}/merge_files.sh -p ${{ inputs.checksums_dir }} -o ${{ inputs.checksums_file_name }}
+      if: ${{ inputs.merge == 'true' }}
