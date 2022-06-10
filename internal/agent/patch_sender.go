@@ -129,7 +129,7 @@ func (p *patchSenderIngest) Process() (err error) {
 		llog.WithField("offlineTime", p.resetIfOffline).
 			WithField("agentEntityIDChanged", agentEntityIDChanged).
 			WithField("entityKey", entityKey).
-			Info("Removing inventory cache")
+			Debug("Removing inventory cache")
 
 		// Removing the store for the entity would force the agent recreating a fresh Delta Store
 		if err := p.store.RemoveEntity(entityKey); err != nil {
