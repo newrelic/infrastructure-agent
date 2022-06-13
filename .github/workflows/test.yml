@@ -12,7 +12,7 @@ on:
 
 jobs:
   unit-test-linux:
-      uses: newrelic/infrastructure-agent/.github/workflows/component_linux_unit_test.yml@add_lint_linux
+      uses: newrelic/infrastructure-agent/.github/workflows/component_linux_unit_test.yml@master
       secrets:
         gh_token: ${{secrets.GITHUB_TOKEN}}
 
@@ -20,13 +20,13 @@ jobs:
     uses: newrelic/infrastructure-agent/.github/workflows/component_linux_harvest_test.yml@master
 
   unit-test-macos:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_macos_unit_test.yml@add_lint_linux
+    uses: newrelic/infrastructure-agent/.github/workflows/component_macos_unit_test.yml@master
 
   harvest-test-macos:
     uses: newrelic/infrastructure-agent/.github/workflows/component_macos_harvest_test.yml@master
 
   unit-test-windows:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_windows_unit_test.yml@add_lint_linux
+    uses: newrelic/infrastructure-agent/.github/workflows/component_windows_unit_test.yml@master
 
   proxy-tests-linux:
     uses: newrelic/infrastructure-agent/.github/workflows/component_linux_proxy_test.yml@master
