@@ -20,7 +20,7 @@ jobs:
     uses: newrelic/infrastructure-agent/.github/workflows/component_linux_harvest_test.yml@master
 
   unit-test-macos:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_macos_unit_test.yml@master
+    uses: newrelic/infrastructure-agent/.github/workflows/component_macos_unit_test.yml@add_lint_linux
 
   harvest-test-macos:
     uses: newrelic/infrastructure-agent/.github/workflows/component_macos_harvest_test.yml@master

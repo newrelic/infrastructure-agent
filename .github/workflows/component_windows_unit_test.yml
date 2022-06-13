@@ -26,7 +26,7 @@ jobs:
         run: build\windows\test.ps1
 
   run-lint:
-    name: Run lint test
+    name: Lint tests
     runs-on: windows-latest
     continue-on-error: true
     steps:
