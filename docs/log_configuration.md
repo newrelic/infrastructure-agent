@@ -41,7 +41,7 @@ strongly recommend using the new configuration.
 The new log configuration has added two new options to filter logs based on key-values (fields). They can be used in
 order to remove logging noise in a troubleshooting scenario.
 
-By default, all entries will be included in the logs (`include_filters`). To exclude some entries, we must define the
+By default, all entries will be included* in the logs (`include_filters`). To exclude some entries, we must define the
 key-values to remove using the `exclude_filters` option. The following text is a usual agent's log line:
 
 `time="2022-06-10T15:46:38Z" level=debug msg="Integration instances finished their execution. Waiting until next interval." component=integrations.runner.Runner integration_name=nri-flex runner_uid=c03734e49d`
@@ -77,4 +77,16 @@ log:
     integration_name:
       - nri-flex
       - nri-nginx
+```
+
+* The integration supervisor trace logs are excluded by default due the big amount of produced log entries, the
+  following configuration would enable them:
+
+```yaml
+log:
+  exclude_filters:
+    "*":
+  include_filters:
+    traces:
+      - supervisor
 ```
