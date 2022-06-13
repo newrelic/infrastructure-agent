@@ -21,7 +21,7 @@ jobs:
         run: make ci/validate
 
   run-lint:
-    name: Unit tests
+    name: Run lint test
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2

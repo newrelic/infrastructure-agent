@@ -90,7 +90,7 @@ validate:
 	@test -z "$(shell  $(GO_FMT) | tee /dev/stderr)"
 
 .PHONY: lint
-lint:
+lint: deps
 	@printf '\n================================================================\n'
 	@printf 'Target: lint'
 	@printf '\n================================================================\n'
