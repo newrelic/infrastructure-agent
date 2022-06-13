@@ -95,7 +95,7 @@ lint: deps
 	@printf 'Target: lint'
 	@printf '\n================================================================\n'
 	@echo '[lint] Lint packages: $(SOURCE_FILES)'
-	@golangci-lint run --new-from-rev e628b2d894399ba25651d50979e67d71f8a30de6
+	@golangci-lint run --new-from-rev=HEAD~
 
 .PHONY: gofmt
 gofmt:
