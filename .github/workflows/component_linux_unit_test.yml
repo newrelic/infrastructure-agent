@@ -27,6 +27,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Modify go.mod version to support golangci-lint
+        run: sed -i 's/go 1\.18/go 1\.17/' go.mod
+
       - name: Install Go
         uses: actions/setup-go@v2
         with:
