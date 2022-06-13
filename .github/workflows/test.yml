@@ -26,7 +26,7 @@ jobs:
     uses: newrelic/infrastructure-agent/.github/workflows/component_macos_harvest_test.yml@master
 
   unit-test-windows:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_windows_unit_test.yml@master
+    uses: newrelic/infrastructure-agent/.github/workflows/component_windows_unit_test.yml@add_lint_linux
 
   proxy-tests-linux:
     uses: newrelic/infrastructure-agent/.github/workflows/component_linux_proxy_test.yml@master

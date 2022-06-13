@@ -24,3 +24,24 @@ jobs:
 
       - name: Running unit tests
         run: build\windows\test.ps1
+
+  run-lint:
+    name: Run lint test
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Modify go.mod version to support golangci-lint
+        shell: bash
+        run: sed -i 's/go 1\.18/go 1\.17/' go.mod
+
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.17'
+
+      - name: Running lint tests
+        shell: bash
+        run: make lint
+        # this is temporary as those tests are not fixed yet
