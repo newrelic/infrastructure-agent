@@ -123,6 +123,10 @@ license_key: your_license_key
 #            "forward" Set to true to send logs to New Relic platform.
 #            "stdout" Set to false to disable logs in the standard output.
 #            "smart_level_entry_limit" Defines the number of entries that will be cached before being flushed. If smart level is enabled.
+#            "exclude_filters" A map to define the messages with a specific log field that must be excluded from the logs.
+#            "include_filters" A map to define the messages with a specific log field that must be included in the logs.
+#            If exclude_filters is set to wildcard.
+
 # Default  : file:
 #              - Linux: /var/log/newrelic-infra/newrelic-infra.log
 #              - Windows: C:\Program Files\New Relic\newrelic-infra\newrelic-infra.log
@@ -137,6 +141,7 @@ license_key: your_license_key
 #            troubleshooting (verbose:3).
 # Tip      : Run the agent in debug mode only for troubleshooting. To disable
 #            debug logging, set the level to info and restart the agent.
+# Tip      : The following configuration will only log the entries with the field integration_name=nri-flex or integration_name=nri-powerdns
 #log:
 #  file: /tmp/agent.log
 #  format: json
@@ -144,6 +149,12 @@ license_key: your_license_key
 #  forward: false
 #  stdout: false
 #  smart_level_entry_limit: 500
+#  exclude_filters:
+#    "*":
+#  include_filters:
+#    integration_name:
+#      - nri-flex
+#      - nri-powerdns
 #
 
 #
