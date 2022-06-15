@@ -1,8 +1,8 @@
 ## PGP Signed tarball packages
-Since version 1.27.2 the tarball packages are signed using [GPG](https://gnupg.org/). 
+Since version 1.27.3 the tarball packages are signed using [GPG](https://gnupg.org/). 
 
-This means that within the package `newrelic-infra_linux_1.27.2_arm64.tar.gz` we will also provide a file with 
-the signature `newrelic-infra_linux_1.27.2_arm64.tar.gz.asc` that will allow verifying the integrity of the package.
+This means that within the package `newrelic-infra_linux_1.27.3_arm64.tar.gz` we will also provide a file with 
+the signature `newrelic-infra_linux_1.27.3_arm64.tar.gz.asc` that will allow verifying the integrity of the package.
 
 ## How packages are signed
 Packages are signed using [GPG](https://gnupg.org/) public/private key pairs. New Relic will sign the packages using its 
@@ -94,7 +94,7 @@ After importing New Relic public key into the system we can use `gpg` to verify 
 command will output `Good signature from` message and it will return `0` exit code when the package is signed correcty. 
 
 ```shell
-$ gpg --verify newrelic-infra_linux_1.27.2_arm64.tar.gz.asc newrelic-infra_linux_1.27.2_arm64.tar.gz
+$ gpg --verify newrelic-infra_linux_1.27.3_arm64.tar.gz.asc newrelic-infra_linux_1.27.3_arm64.tar.gz
 
 gpg: Signature made Thu Jun  9 09:52:38 2022 UTC
 gpg:                using RSA key A758B3FBCD43BE8D123A3476BB29EE038ECCE87C
