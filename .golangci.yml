@@ -1,0 +1,27 @@
+# This file contains all available configuration options
+# with their default values.
+
+# options for analysis running
+run:
+  timeout: 10m
+
+
+# # all available settings of specific linters
+linters-settings:
+  govet:
+    # report about shadowed variables
+    check-shadowing: true
+  misspell:
+    ignore-words:
+      - newrelic
+  lll:
+    # max line length, lines longer will be reported. Default is 120.
+    # '\t' is counted as 1 character by default, and can be changed with the tab-width option
+    line-length: 300 # setting high as tests have long payloads currently
+
+linters:
+  enable-all: true
+
+issues:
+  new-from-rev: "HEAD~"
+
