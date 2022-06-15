@@ -49,8 +49,18 @@ jobs:
           username: ${{ env.DOCKER_HUB_ID }}
           password: ${{ env.DOCKER_HUB_PASSWORD }}
 
-      - name: Releasing all linux packages
+      - name: Preparing all linux packages
         run: make ci/prerelease/linux
+
+      - name: Generate checksum files
+        uses: ./.github/actions/generate-checksums
+        with:
+          files_regex: '.*\(tar.gz\|deb\|rpm\)'
+          files_path: 'dist'
+          run_sudo: true
+
+      - name: Publish linux packages
+        run: make ci/prerelease-publish
 
       - name: Publish deb to S3 action
         uses: newrelic/infrastructure-publish-action@v1.2.3
