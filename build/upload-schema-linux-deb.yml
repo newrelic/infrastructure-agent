@@ -46,5 +46,5 @@
   arch:
     - amd64
   uploads:
-    - type: apt
+    - type: file
       dest: "{dest_prefix}linux/apt/pool/main/n/newrelic-infra/"
