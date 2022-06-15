@@ -14,3 +14,18 @@
     - type: file
       override: true
       dest: "{dest_prefix}windows/386/newrelic-infra-386.msi"
+
+
+#########################
+  # UPLOAD CHECKSUMS #
+#########################
+-
+- src: "newrelic-infra-amd64.{version}.msi.sum"
+  uploads:
+    - type: file
+      dest: "{dest_prefix}windows/newrelic-infra.{version}.msi.sum"
+
+- src: "newrelic-infra-386.{version}.msi.sum"
+  uploads:
+    - type: file
+      dest: "{dest_prefix}windows/386/{src}"
