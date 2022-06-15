@@ -29,3 +29,22 @@
       os_version:
         - trusty
         - precise
+
+#########################
+  # UPLOAD CHECKSUMS #
+#########################
+
+- src: "newrelic-infra_systemd_{version}_{arch}.deb.sum"
+  arch:
+    - amd64
+    - arm64
+    - arm
+  uploads:
+    - type: file
+      dest: "{dest_prefix}linux/apt/pool/main/n/newrelic-infra/"
+- src: "newrelic-infra_upstart_{version}_{arch}.deb.sum"
+  arch:
+    - amd64
+  uploads:
+    - type: apt
+      dest: "{dest_prefix}linux/apt/pool/main/n/newrelic-infra/"
