@@ -23,7 +23,7 @@ jobs:
   run-lint:
     name: Lint tests
     continue-on-error: true
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
