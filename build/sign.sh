@@ -45,11 +45,3 @@ for deb_file in $(find -regex ".*\.\(deb\)");do
   echo "===> Signing $deb_file"
   debsigs --sign=origin --verify --check -v -k ${GPG_MAIL} $deb_file
 done
-
-# Sign TARGZ files
-for targz_file in $(find -regex ".*\.\(tar.gz\)");do
-  echo "===> Signing $targz_file"
-  gpg --sign --armor --detach-sig $targz_file
-  echo "===> Sign verification $targz_file"
-  gpg --verify ${targz_file}.asc $targz_file
-done
