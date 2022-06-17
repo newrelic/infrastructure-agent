@@ -1,7 +1,7 @@
 ---
 
 - name: log-forwarder-amd64
-  hosts: amd64
+  hosts: linux_amd64
   become: true
   gather_facts: yes
 
@@ -62,7 +62,7 @@
             name: cleanup
 
 - name: log-forwarder-arm64
-  hosts: arm64
+  hosts: linux_arm64
   become: true
   gather_facts: yes
 
