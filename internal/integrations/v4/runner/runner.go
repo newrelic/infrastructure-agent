@@ -226,6 +226,7 @@ func (r *runner) execute(ctx context.Context, matches *databind.Values, discover
 		var act contexts.Actuator
 		ctx, act = contexts.WithHeartBeat(ctx, def.Timeout, r.log)
 		r.setHeartBeat(act.HeartBeat)
+		defer act.HeartBeatStop()
 	}
 
 	// add hostID in the context to fetch and set in executor
