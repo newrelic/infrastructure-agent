@@ -68,11 +68,11 @@ variable "task_logs_prefix" {
 }
 
 variable "task_container_cpu" {
-  default = "1024"
+  default = "4096"
 }
 
 variable "task_container_memory" {
-  default = "4096"
+  default = "30720"
 }
 
 variable "task_container_memory_reservation" {
