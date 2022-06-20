@@ -1,5 +1,5 @@
 NRI_INTEGRATIONS_FILE	?= $(INCLUDE_BUILD_DIR)/embed/integrations.version
-get-nri-version			= $(shell awk -F, '/^$(1),/ {print $$2}' ${NRI_INTEGRATIONS_FILE})
+get-nri-version			= $(shell awk -F,v '/^$(1),v/ {print $$2}' ${NRI_INTEGRATIONS_FILE})
 
 NRI_PKG_DIR				?= $(PKG_DIR)
 PKG_DIR_BIN_OHIS    	?= $(NRI_PKG_DIR)/var/db/newrelic-infra/newrelic-integrations/bin

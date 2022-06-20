@@ -1,6 +1,6 @@
 ---
 
-- name: install agent linux
+- name: install agent linux (HNR)
   hosts: testing_hosts_linux
   gather_facts: yes
   become: true
@@ -33,7 +33,7 @@
       include_role:
         name: assert-service
 
-- name: install agent windows
+- name: install agent windows  (HNR)
   hosts: testing_hosts_windows
   gather_facts: yes
 
