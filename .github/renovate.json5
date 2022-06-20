@@ -4,6 +4,8 @@
     // Disable the creation of DependencyDashboard issue, we follow pull requests with Zenhub
     ":disableDependencyDashboard"
   ],
+  // Label PRs with `dependencies`.
+  "labels": ["dependencies"],
   "enabledManagers": [
     // Enable only the regex manager (for Dockerfile base image bumping).
     "regex"
