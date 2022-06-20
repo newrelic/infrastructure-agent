@@ -8,6 +8,10 @@ on:
       - '**'
   workflow_dispatch:
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
 #  run-external_job:
 #    runs-on: ubuntu-20.04
@@ -43,9 +47,6 @@ jobs:
 
     runs-on: ubuntu-20.04
 
-    permissions:
-      id-token: write
-      contents: read
 
     steps:
       - uses: actions/checkout@v2
