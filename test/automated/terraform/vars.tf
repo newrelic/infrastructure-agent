@@ -38,8 +38,20 @@ variable "efs_volume_name" {
   default = "pipeline-shared"
 }
 
-variable "secret_name" {
+variable "secret_name_ssh" {
   default = "caos/canaries/ssh_key-UBSKNA"
+}
+
+variable "secret_name_license" {
+  default = "caos/canaries/license-f9eYwe"
+}
+
+variable "secret_name_account" {
+  default = "caos/canaries/account-kKFMGP"
+}
+
+variable "secret_name_api" {
+  default = "caos/canaries/api-9q0NPb"
 }
 
 variable "task_container_image" {
