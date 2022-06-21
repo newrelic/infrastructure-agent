@@ -13,7 +13,7 @@ print_usage() {
 }
 
 SEARCH_PATH='dist'
-FIND_REGEX='.*\.\(msi\|rpm\|deb\|zip\|tar.gz\|sum\)'
+FIND_REGEX='.*\.\(msi\|rpm\|deb\|zip\|tar.gz\|sum\|cat\|\asc)'
 
 while getopts 'p:r:' flag
 do
@@ -78,7 +78,9 @@ delete_asset_by_name() {
 
 MAX_ATTEMPTS=20
 ATTEMPTS=$MAX_ATTEMPTS
+
 cd "${SEARCH_PATH}"
+
 for filename in $(find . -regex "${FIND_REGEX}" -type f);do
   echo "===> Uploading to GH $TAG: ${filename}"
   while [ "${ATTEMPTS}" -gt 0 ];do
