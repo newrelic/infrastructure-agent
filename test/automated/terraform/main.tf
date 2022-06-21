@@ -192,21 +192,26 @@ module "iam_policy_task_execution" {
     "Version": "2012-10-17",
     "Statement": [
         {
+            "Sid": "VisualEditor0",
             "Effect": "Allow",
-            "Action": "ecs:*",
-            "Resource": "*"
-        },
-        {
             "Action": [
-                "logs:*"
+                "ecs:RunTask",
+                "logs:GetLogEvents",
+                "ecs:DescribeTasks",
+                "ecs:DescribeTaskDefinition"
             ],
-            "Effect": "Allow",
             "Resource": "*"
         },
         {
+            "Sid": "VisualEditor1",
             "Effect": "Allow",
-            "Action": "iam:*",
-            "Resource": "*"
+            "Action": "iam:PassRole",
+            "Resource": "*",
+            "Condition": {
+                "StringLike": {
+                    "iam:PassedToService": "ecs-tasks.amazonaws.com"
+                }
+            }
         }
     ]
 }
@@ -227,6 +232,9 @@ module "iam_iam-assumable-role-with-oidc" {
   provider_url                   = "https://token.actions.githubusercontent.com"
   oidc_fully_qualified_audiences = [
     "sts.amazonaws.com"
+  ]
+  oidc_subjects_with_wildcards = [
+    "repo:newrelic/infrastructure-agent:*"
   ]
   create_role           = true
   role_name             = "caos-pipeline-oidc"
