@@ -82,6 +82,7 @@ ATTEMPTS=$MAX_ATTEMPTS
 cd "${SEARCH_PATH}"
 
 for filename in $(find . -regex "${FIND_REGEX}" -type f);do
+
   echo "===> Uploading to GH $TAG: ${filename}"
   while [ "${ATTEMPTS}" -gt 0 ];do
     gh release upload "${TAG}" "${filename}" --clobber
