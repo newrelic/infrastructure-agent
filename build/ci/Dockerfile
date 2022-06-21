@@ -2,10 +2,16 @@ FROM ubuntu:22.04 as ci
 
 ARG REF_ARG=automation_pipeline/ghcr
 ARG SSH_KEY_ARG="not a key"
+ARG NR_LICENSE_KEY_ARG="not a key"
+ARG NEW_RELIC_API_KEY_ARG="not a key"
+ARG NEW_RELIC_ACCOUNT_ID_ARG="not a key"
 ARG ANSIBLE_INVENTORY_FOLDER_ARG="/srv/runner/inventory/$REF_ARG"
 ARG ANSIBLE_INVENTORY_FILE_ARG="inventory.ec2"
 
 ENV SSH_KEY=$SSH_KEY_ARG
+ENV NR_LICENSE_KEY=$NR_LICENSE_KEY_ARG
+ENV NEW_RELIC_API_KEY=$NEW_RELIC_API_KEY_ARG
+ENV NEW_RELIC_ACCOUNT_ID=$NEW_RELIC_ACCOUNT_ID_ARG
 ENV REF=$REF_ARG
 ENV ANSIBLE_INVENTORY="$ANSIBLE_INVENTORY_FOLDER_ARG/$ANSIBLE_INVENTORY_FILE_ARG"
 ENV ANSIBLE_INVENTORY_FOLDER=$ANSIBLE_INVENTORY_FOLDER_ARG
@@ -33,7 +39,3 @@ COPY ./entrypoint.sh /srv/newrelic/infrastructure-agent/entrypoint.sh
 RUN chmod +x /srv/newrelic/infrastructure-agent/entrypoint.sh
 
 ENTRYPOINT ["./entrypoint.sh"]
-
-
-
-
