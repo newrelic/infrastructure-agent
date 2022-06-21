@@ -14,6 +14,7 @@
     headers:
       Api-Key: "{{ nr_api_key }}"
   register: response_policy
+  no_log: true
 
 - name: create host not reporting condition
   delegate_to: 127.0.0.1
@@ -25,5 +26,6 @@
     body_format: json
     headers:
       Api-Key: "{{ nr_api_key }}"
+  no_log: true
 
 ...
