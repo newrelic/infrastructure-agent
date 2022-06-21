@@ -52,7 +52,5 @@ for filename in $(eval find "${SEARCH_PATH}" -maxdepth 1 -regex "'${FIND_REGEX}'
    fi
 
    echo "Processing file: ${filename}, creating ${output_file}"
-   #TODO: TBD the format
-   #sha256sum "${filename}" | awk -F ' ' '{gsub(".*/", "", $2); print $1 "  " $2}' >> "${OUTPUT_FILE}"
-   sha256sum "${filename}" | awk -F ' ' '{ print $1 }' >> "${output_file}"
+   sha256sum "${filename}" | awk -F ' ' '{gsub(".*/", "", $2); print $1 "  " $2}' >> "${output_file}"
 done

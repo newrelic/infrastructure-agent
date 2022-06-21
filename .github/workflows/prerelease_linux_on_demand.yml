@@ -59,9 +59,6 @@ jobs:
           files_path: 'dist'
           run_sudo: true
 
-      - name: Publish linux packages
-        run: make ci/prerelease-publish
-
       - name: Publish deb to S3 action
         uses: newrelic/infrastructure-publish-action@v1.2.3
         with:
