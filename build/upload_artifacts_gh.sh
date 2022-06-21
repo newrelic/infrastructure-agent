@@ -47,7 +47,7 @@ delete_asset_by_name() {
 MAX_ATTEMPTS=20
 ATTEMPTS=$MAX_ATTEMPTS
 cd dist
-for filename in $(find . -name "*.msi" -o -name "*.rpm" -o -name "*.deb" -o -name "*.zip" -o -name "*.tar.gz" -o -name "*.zip.cat");do
+for filename in $(find . -name "*.msi" -o -name "*.rpm" -o -name "*.deb" -o -name "*.zip" -o -name "*.zip.cat" -o -name "*.tar.gz" -o -name "*.tar.gz.asc");do
   echo "===> Uploading to GH $TAG: ${filename}"
   while [ "${ATTEMPTS}" -gt 0 ];do
     gh release upload "${TAG}" "${filename}" --clobber
