@@ -90,12 +90,12 @@ validate:
 	@test -z "$(shell  $(GO_FMT) | tee /dev/stderr)"
 
 .PHONY: lint
-lint:
+lint: deps
 	@printf '\n================================================================\n'
 	@printf 'Target: lint'
 	@printf '\n================================================================\n'
 	@echo '[lint] Lint packages: $(SOURCE_FILES)'
-	@golangci-lint run --new-from-rev e628b2d894399ba25651d50979e67d71f8a30de6
+	@golangci-lint run
 
 .PHONY: gofmt
 gofmt:
