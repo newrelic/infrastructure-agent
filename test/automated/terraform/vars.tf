@@ -54,6 +54,10 @@ variable "secret_name_api" {
   default = "caos/canaries/api-9q0NPb"
 }
 
+variable "secret_name_windows_password" {
+  default = "caos/canaries/windows-gTLIiF"
+}
+
 variable "task_container_image" {
   default = "ghcr.io/newrelic/infrastructure-agent-ci-runner:automation_pipeline-ghcr"
 }
