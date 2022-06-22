@@ -181,6 +181,9 @@ func (s *Sampler) Sample() (eventBatch sample.EventBatch, err error) {
 	if err != nil {
 		sslog.WithError(err).Warn("Unable to retrieve NFS stats.")
 		return nil, nil
+	} else if len(samples) == 0 {
+		sslog.WithError(fmt.Errorf("no supported NFS mounts found")).Debug("Unable to retrieve NFS stats.")
+		return nil, nil
 	}
 	for _, ss := range samples {
 		ss.Type("NFSSample")
