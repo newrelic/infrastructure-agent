@@ -34,6 +34,10 @@ func populateNFS(cache map[string]statsCache, detailed bool) ([]*Sample, error) 
 			samples = append(samples, sample)
 		}
 	}
+	if len(samples) == 0 {
+		return nil, ErrNFSNotFound
+	}
+
 	return samples, nil
 }
 
