@@ -67,3 +67,76 @@
       os_version:
         - 2
         - 2022
+
+#########################
+  # UPLOAD CHECKSUMS #
+#########################
+
+- src: "newrelic-infra-{version}-1.el{os_version}.{arch}.rpm.sum"
+  arch:
+    - x86_64
+  uploads:
+    - type: file
+      dest: "{dest_prefix}linux/yum/el/{os_version}/{arch}/"
+      os_version:
+        - 6
+        - 7
+        - 8
+        - 9
+
+- src: "newrelic-infra-{version}-1.el{os_version}.{arch}.rpm.sum"
+  arch:
+    - arm
+    - arm64
+  uploads:
+    - type: file
+      dest: "{dest_prefix}linux/yum/el/{os_version}/{arch}/"
+      os_version:
+        - 7
+        - 8
+        - 9
+
+- src: "newrelic-infra-{version}-1.sles{os_version}.{arch}.rpm.sum"
+  arch:
+    - x86_64
+  uploads:
+    - type: file
+      dest: "{dest_prefix}linux/zypp/sles/{os_version}/{arch}/"
+      os_version:
+        - 11.4
+        - 12.1
+        - 12.2
+        - 12.3
+        - 12.4
+        - 12.5
+        - 15.1
+        - 15.2
+        - 15.3
+
+- src: "newrelic-infra-{version}-1.sles{os_version}.{arch}.rpm.sum"
+  arch:
+    - arm
+    - arm64
+  uploads:
+    - type: file
+      dest: "{dest_prefix}linux/zypp/sles/{os_version}/{arch}/"
+      os_version:
+        - 12.2
+        - 12.3
+        - 12.4
+        - 12.5
+        - 15.1
+        - 15.2
+        - 15.3
+
+- src: "newrelic-infra-{version}-1.amazonlinux-{os_version}.{arch}.rpm.sum"
+  arch:
+    - x86_64
+    - arm
+    - arm64
+  uploads:
+    - type: file
+      dest: "{dest_prefix}linux/yum/amazonlinux/{os_version}/{arch}/"
+      os_version:
+        - 2
+        - 2022
