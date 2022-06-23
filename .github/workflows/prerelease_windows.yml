@@ -84,7 +84,7 @@ jobs:
 
   publishing-to-s3:
     name: Publish windows artifacts into s3 staging bucket
-    uses: newrelic/infrastructure-agent/.github/workflows/component_windows_publish.yml@master
+    uses: newrelic/infrastructure-agent/.github/workflows/component_windows_publish.yml@checksums/test
     needs: [packaging]
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
