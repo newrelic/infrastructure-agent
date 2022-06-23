@@ -27,7 +27,7 @@ jobs:
         uses: ./.github/actions/external_runner
         with:
           aws_region: us-east-2
-          container_make_target: make test/automated/provision
+          container_make_target: test/automated/provision
           ecs_cluster_name: caos_prerelease
           task_definition_name: test-prerelease-td
           cloud_watch_logs_group_name: /ecs/test-prerelease
@@ -50,7 +50,7 @@ jobs:
         uses: ./.github/actions/external_runner
         with:
           aws_region: us-east-2
-          container_make_target: make test/automated/harvest
+          container_make_target: test/automated/harvest
           ecs_cluster_name: caos_prerelease
           task_definition_name: test-prerelease-td
           cloud_watch_logs_group_name: /ecs/test-prerelease
@@ -74,7 +74,7 @@ jobs:
         uses: ./.github/actions/external_runner
         with:
           aws_region: us-east-2
-          container_make_target: make test/automated/packaging
+          container_make_target: test/automated/packaging
           ecs_cluster_name: caos_prerelease
           task_definition_name: test-prerelease-td
           cloud_watch_logs_group_name: /ecs/test-prerelease
