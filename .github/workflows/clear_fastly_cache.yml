@@ -1,0 +1,15 @@
+name: Clear Fastly cache
+
+on:
+  workflow_dispatch:
+
+jobs:
+  purge-cdn:
+    name: Purge CDN
+    uses: newrelic/infrastructure-agent/.github/workflows/component_purge_cdn.yml@master
+    secrets:
+      FASTLY_KEY: ${{secrets.FASTLY_KEY }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION }}
+      AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_PRODUCTION }}
+      AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION }}
