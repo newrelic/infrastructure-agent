@@ -2,7 +2,7 @@ FROM ubuntu:22.04 as ci
 
 ARG REF_ARG=automation_pipeline/ghcr
 ARG SSH_KEY_ARG="not a key"
-ARG NR_LICENSE_KEY_ARG="not a key"
+ARG NR_LICENSE_KEY_ARG="provided by task definition"
 ARG NEW_RELIC_API_KEY_ARG="not a key"
 ARG NEW_RELIC_ACCOUNT_ID_ARG="not a key"
 ARG ANSIBLE_INVENTORY_FOLDER_ARG="/srv/runner/inventory/$REF_ARG"
