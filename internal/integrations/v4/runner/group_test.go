@@ -4,28 +4,28 @@ package runner
 
 import (
 	"context"
-	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
-	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
-
 	"github.com/fortytw2/leaktest"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/fixtures"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/testhelp"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/testhelp/testemit"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
+	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
-	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	logHelper "github.com/newrelic/infrastructure-agent/test/log"
 )
 
 var terminatedQueue = make(chan string)
@@ -291,30 +291,6 @@ func interceptGroupErrors(gr *Group) <-chan error {
 	return handledError
 }
 
-type stderrHook struct {
-	lock    sync.RWMutex
-	entries []logrus.Entry
-}
-
-func (h *stderrHook) Levels() []logrus.Level {
-	return []logrus.Level{logrus.FatalLevel, logrus.ErrorLevel}
-}
-
-func (h *stderrHook) GetEntries() []logrus.Entry {
-	h.lock.RLock()
-	defer h.lock.RUnlock()
-	entries := make([]logrus.Entry, len(h.entries))
-	copy(entries, h.entries)
-	return entries
-}
-
-func (h *stderrHook) Fire(entry *logrus.Entry) error {
-	h.lock.Lock()
-	defer h.lock.Unlock()
-	h.entries = append(h.entries, *entry)
-	return nil
-}
-
 func TestGroup_Run_IntegrationScriptPrintsErrorsAndReturnCodeIsZero(t *testing.T) {
 	defer leaktest.Check(t)()
 
@@ -329,7 +305,7 @@ func TestGroup_Run_IntegrationScriptPrintsErrorsAndReturnCodeIsZero(t *testing.T
 	require.NoError(t, err)
 
 	// WHEN we add a hook to the log to capture the "error" and "fatal" levels
-	hook := &stderrHook{}
+	hook := logHelper.NewInMemoryEntriesHook([]logrus.Level{logrus.FatalLevel, logrus.ErrorLevel})
 	log.AddHook(hook)
 
 	// WHEN the Group executes all the integrations

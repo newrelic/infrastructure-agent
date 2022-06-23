@@ -9,6 +9,8 @@
   shell: "aws ec2 run-instances --launch-template {{ item.launch_template }} --image-id {{ item.ami }} --instance-type {{ item.type }}  --subnet-id {{ subnet }} --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value={{ provision_host_prefix }}:{{ item.name }}},{Key=owning_team,Value=CAOS}]'"
   loop: "{{ instances }}"
   register: run_instances
+  tags:
+    - print_action
 
 - name: "iterate run-instances results to gather all outputs in a single structure"
   set_fact:

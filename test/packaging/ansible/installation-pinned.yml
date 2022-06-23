@@ -14,7 +14,7 @@
     - name: Installation tests suite
       vars:
         env_vars:
-        target_agent_version: "1.23.0" # minimum version for sles 12.5,15.*,debian 11 and ubuntu 20.10,21.04
+        target_agent_version: "1.27.3" # minimum version for sles 12.5,15.*,debian 11 and ubuntu 20.10,21.04,22.04
 
       block:
 

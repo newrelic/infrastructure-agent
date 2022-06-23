@@ -354,6 +354,8 @@ type Config struct {
 	// "forward: true" boolean to send logs to New Relic platform
 	// "stdout: true" boolean to print logs to stdout
 	// "smart_level_entry_limit: 50" number of entries that will be cached before being flushed (default: 1000)
+	// "include_filters: " map entry to include the log entries with the defined fields (default: all log fields)
+	// "exclude_filters: " map entry to exclude the log entries with the defined fields (default: none)
 	// Default: none
 	// Public: Yes
 	Log LogConfig `yaml:"log" envconfig:"log"`

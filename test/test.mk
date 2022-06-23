@@ -3,8 +3,8 @@ AWS_ACCOUNT_ID = "018789649883"# CAOS
 
 .PHONY: test/automated/provision
 test/automated/provision: validate-aws-credentials
-	ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.local -e provision_host_prefix=$(PROVISION_HOST_PREFIX) $(CURDIR)/test/automated/ansible/provision.yml
-	ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.ec2 $(CURDIR)/test/automated/ansible/install-requirements.yml
+	ANSIBLE_STDOUT_CALLBACK=selective ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.local -e provision_host_prefix=$(PROVISION_HOST_PREFIX) $(CURDIR)/test/automated/ansible/provision.yml
+	ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO  ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.ec2 $(CURDIR)/test/automated/ansible/install-requirements.yml
 	ansible-playbook $(CURDIR)/test/automated/ansible/macos-canaries.yml
 
 .PHONY: test/automated/termination

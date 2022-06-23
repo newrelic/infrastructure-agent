@@ -5,6 +5,7 @@ package docker
 
 import (
 	"context"
+	"net"
 	"sort"
 	"strconv"
 	"strings"
@@ -40,8 +41,6 @@ func Discoverer(d discovery.Container) (fetchDiscoveries func() (discoveries []d
 }
 
 func fetch(d discovery.Container, matcher *discovery.FieldsMatcher) ([]discovery.Discovery, error) {
-	var matches []discovery.Discovery
-
 	dc, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		return nil, err
@@ -52,6 +51,13 @@ func fetch(d discovery.Container, matcher *discovery.FieldsMatcher) ([]discovery
 	if err != nil {
 		return nil, err
 	}
+
+	return getDiscoveries(containers, matcher), nil
+}
+
+// getDiscoveries will filter container list to only the ones that match the config and extract discovery variables from those.
+func getDiscoveries(containers []types.Container, matcher *discovery.FieldsMatcher) []discovery.Discovery {
+	var matches []discovery.Discovery
 
 	for _, cont := range containers {
 		// discovery attributes that identify the container
@@ -106,8 +112,7 @@ func fetch(d discovery.Container, matcher *discovery.FieldsMatcher) ([]discovery
 			})
 		}
 	}
-
-	return matches, nil
+	return matches
 }
 
 func addPorts(cont types.Container, labels map[string]string) {
@@ -123,20 +128,24 @@ func addPorts(cont types.Container, labels map[string]string) {
 	for index, port := range cont.Ports {
 		indexStr := "." + strconv.Itoa(index)
 		labels[data.IP+indexStr] = port.IP
-		labels[data.IP] = port.IP
-
 		tIdx := types.Count(port.Type)
+
 		publicPort := strconv.Itoa(int(port.PublicPort))
 		privatePort := strconv.Itoa(int(port.PrivatePort))
-		if firstPublic {
+
+		if firstPublic && port.PublicPort > 0 && isIPv4(port.IP) {
+			labels[data.IP] = port.IP
 			labels[data.Port] = publicPort
 			firstPublic = false
 		}
+
 		labels[data.Ports+indexStr] = publicPort
+
 		if firstPrivate {
 			labels[data.PrivatePort] = privatePort
 			firstPrivate = false
 		}
+
 		labels[data.PrivatePorts+indexStr] = privatePort
 
 		// label ports by type (e.g. discovery.port.tcp.1)
@@ -149,4 +158,9 @@ func addPorts(cont types.Container, labels map[string]string) {
 			labels[data.PrivatePorts+"."+port.Type+indexStr] = privatePort
 		}
 	}
+}
+
+// isIPv4 returns true if ip string has a IPv4 format.
+func isIPv4(ip string) bool {
+	return net.ParseIP(ip).To4() != nil
 }
