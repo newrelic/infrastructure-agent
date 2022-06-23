@@ -3,7 +3,7 @@ name: Build Docker image or ci runner
 on:
   push:
     branches:
-      - "automation_pipeline/ghcr"
+      - "master"
     paths:
       - "build/ci/**"
   workflow_dispatch:
