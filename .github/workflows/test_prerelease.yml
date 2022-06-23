@@ -1,11 +1,6 @@
-name: External task POC
+name: Test pre-release
 
 on:
-  push:
-    branches:
-      - '**'
-    tags-ignore:
-      - '**'
   workflow_dispatch:
 
 permissions:
@@ -70,7 +65,7 @@ jobs:
           role-to-assume: arn:aws:iam::018789649883:role/caos-pipeline-oidc
           aws-region: us-east-2
 
-      - name: Launch harvest tests
+      - name: Launch packging tests
         uses: ./.github/actions/external_runner
         with:
           aws_region: us-east-2
