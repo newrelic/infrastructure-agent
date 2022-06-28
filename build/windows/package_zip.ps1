@@ -28,3 +28,9 @@ Copy-Item -Path "$workspace\build\package\binaries\windows\installer.ps1" -Desti
 New-Item -path "$workspace\dist" -type directory -Force
 Compress-Archive -Path "$scriptPath\target\newrelic-infra\Program Files" -DestinationPath "$workspace\dist\newrelic-infra-$arch.$version.zip" -Force
 Remove-Item "$scriptPath\target" -Force -Recurse
+
+Write-Output "Generating catalog file"
+New-FileCatalog -Path "$workspace\dist\newrelic-infra-$arch.$version.zip" -CatalogFilePath "$workspace\dist\newrelic-infra-$arch.$version.zip.cat" -CatalogVersion 2.0
+
+Write-Output "Signing catalog file"
+Set-AuthenticodeSignature -FilePath "$workspace\dist\newrelic-infra-$arch.$version.zip.cat" -Certificate (Get-Item Cert:\CurrentUser\My\DF4B8F6ACFB5CDE77FF506F895E317EEC92CF77F) -TimestampServer http://timestamp.digicert.com

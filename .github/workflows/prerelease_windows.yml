@@ -72,6 +72,12 @@ jobs:
         shell: pwsh
         run: build\windows\package_zip.ps1 -arch ${{ matrix.goarch }} -version ${{env.TAG}}
 
+      - name: Generate checksum files
+        uses: ./src/github.com/newrelic/infrastructure-agent/.github/actions/generate-checksums
+        with:
+          files_regex: '.*zip\|.*msi'
+          files_path: './src/github.com/newrelic/infrastructure-agent/dist'
+
       - name: Upload MSI to GH
         shell: bash
         run: build/upload_artifacts_gh.sh
@@ -91,6 +97,7 @@ jobs:
       AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
     with:
       ACCESS_POINT_HOST: "staging"
+      SCHEMA_BRANCH: "master"
       RUN_ID: ${{ github.run_id }}
       TAG: ${{ github.event.release.tag_name }}
       AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"

@@ -3,6 +3,7 @@
 package nfs
 
 import (
+	"errors"
 	"fmt"
 	"runtime/debug"
 	"time"
@@ -15,6 +16,8 @@ import (
 )
 
 var sslog = log.WithComponent("NFSSampler")
+
+var ErrNFSNotFound = fmt.Errorf("no supported NFS mounts found")
 
 type Sampler struct {
 	context     agent.AgentContext
@@ -179,7 +182,11 @@ func (s *Sampler) Sample() (eventBatch sample.EventBatch, err error) {
 	}()
 	samples, err := populateNFS(s.lastSamples, s.detailed)
 	if err != nil {
-		sslog.WithError(err).Warn("Unable to retrieve NFS stats.")
+		if errors.Is(err, ErrNFSNotFound) {
+			sslog.WithError(err).Debug("Unable to retrieve NFS stats.")
+		} else {
+			sslog.WithError(err).Warn("Unable to retrieve NFS stats.")
+		}
 		return nil, nil
 	}
 	for _, ss := range samples {

@@ -1,0 +1,22 @@
+name: 'Generate Checksums'
+description: 'Generate checksums for artifacts'
+inputs:
+  checksums_file_name:
+    description: 'file name of the resulting file containing all the generated checksums'
+  files_regex:
+    description: 'regex for matching files that we want to generate checksums for'
+  files_path:
+    description: 'directory containing the files that we want to generate checksums for'
+  run_sudo:
+    description: 'specify if the command should be run as sudo'
+    type: 'boolean'
+    default: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Generate checksums files
+      run: ${{ env.RUN_SUDO }} ${GITHUB_ACTION_PATH}/generate_checksums.sh -p '${{ inputs.files_path }}' -r '${{ inputs.files_regex }}' -o '${{ inputs.checksums_file_name }}'
+      shell: bash
+      env:
+        RUN_SUDO: "${{ inputs.run_sudo == 'true' && 'sudo' || '' }}"
