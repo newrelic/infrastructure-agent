@@ -13,7 +13,7 @@ print_usage() {
 }
 
 SEARCH_PATH='dist'
-FIND_REGEX='.*\.\(msi\|rpm\|deb\|zip\|tar.gz\|sum\|cat\|\asc)'
+FIND_REGEX='\.\/.+\.\(msi\|rpm\|deb\|zip\|tar\.gz\|sum\|cat\|asc\)'
 
 while getopts 'p:r:' flag
 do
