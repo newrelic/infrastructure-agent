@@ -1,6 +1,6 @@
 ---
 
-- name: install agent linux
+- name: shutdown and terminate - install agent linux
   hosts: testing_hosts_linux
   gather_facts: yes
   become: true
@@ -35,7 +35,7 @@
       include_role:
         name: assert-service
 
-- name: install agent windows
+- name: shutdown and terminate - install agent windows
   hosts: testing_hosts_windows
   gather_facts: yes
 
@@ -57,7 +57,7 @@
       include_role:
         name: assert-service
 
-- name: controlled shutdown behaviour
+- name: shutdown and terminate - controlled shutdown behaviour
   hosts: testing_hosts
   vars:
     minutes_until_alert_opens: 10

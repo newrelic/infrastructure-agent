@@ -1,10 +1,19 @@
 ---
-  # using curl as ansible.builtin.uri has some trouble with auth
-- name: "retrieve instances information"
-  shell: "curl -H 'Accept: application/json' -H 'Content-Type: application/json' -X GET -u '{{ macstadium_user }}:{{ macstadium_pass }}' https://api.macstadium.com/core/api/servers"
+
+- name: "retrieve MacStadium instances information"
+  ansible.builtin.uri:
+    url: https://api.macstadium.com/core/api/servers
+    user: "{{ macstadium_user }}"
+    password: "{{ macstadium_pass }}"
+    method: GET
+    force_basic_auth: yes
+    status_code: 200
+    body_format: json
   register: curl_result
+  no_log: true
 
 - name: "register instances attributes"
   set_fact:
-    registered_instances_macos: "{{ (curl_result.stdout  | from_json) | community.general.json_query('[*].{InstanceId: id, PublicIpAddress: ip, Name: name}') }}"
+    registered_instances_macos: "{{ curl_result.json | community.general.json_query('[*].{InstanceId: id, PublicIpAddress: ip, Name: name}') }}"
+
 ...

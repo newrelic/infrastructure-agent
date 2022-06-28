@@ -39,7 +39,7 @@ ansible_ssh_common_args='-o StrictHostKeyChecking=no'
 [windows_amd64:vars]
 ansible_winrm_transport=basic
 ansible_user=ansible
-ansible_password=TO_BE_PASSED_AS_ENV_VAR
+ansible_password={{ ansible_password_windows }}
 ansible_connection=winrm
 ansible_winrm_server_cert_validation=ignore
 ansible_winrm_scheme=https
