@@ -75,6 +75,12 @@ jobs:
         shell: pwsh
         run: build\windows\package_zip.ps1 -arch ${{ matrix.goarch }} -version ${{env.TAG}}
 
+      - name: Generate checksum files
+        uses: ./src/github.com/newrelic/infrastructure-agent/.github/actions/generate-checksums
+        with:
+          files_regex: '.*zip\|.*msi'
+          files_path: './src/github.com/newrelic/infrastructure-agent/dist'
+
       - name: Upload MSI to GH
         shell: bash
         run: build/upload_artifacts_gh.sh

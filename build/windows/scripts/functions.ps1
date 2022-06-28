@@ -21,7 +21,7 @@ Function GetIntegrationVersion {
     )
     $dir = "$scriptPath\..\..\embed"
 
-    [string]$version=$(Get-Content "$dir\integrations.version" | %{if($_ -match "^$name") { $_.Split(',')[1]; }})
+    [string]$version=$(Get-Content "$dir\integrations.version" | %{if($_ -match "^$name") { $_.Split(',')[1].substring(1); }})
     
     if ([string]::IsNullOrWhitespace($version)) {
         throw "failed to read $name version"

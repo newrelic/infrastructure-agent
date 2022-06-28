@@ -39,6 +39,9 @@ on:
       ASSETS_TYPE:
         required: true
         type: string
+      SCHEMA_BRANCH:
+        required: true
+        type: string
 
 env:
   GPG_MAIL: 'infrastructure-eng@newrelic.com'
@@ -47,7 +50,7 @@ env:
   TAG:  ${{ inputs.TAG }}
   DOCKER_HUB_ID: ${{ secrets.DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
-  SCHEMA_BRANCH: "master"
+  SCHEMA_BRANCH: ${{ inputs.SCHEMA_BRANCH }}
   AWS_S3_BUCKET_NAME: ${{ inputs.AWS_S3_BUCKET_NAME }}
   AWS_S3_LOCK_BUCKET_NAME: ${{ inputs.AWS_S3_LOCK_BUCKET_NAME }}
   RUN_ID: ${{ inputs.RUN_ID }}
@@ -83,7 +86,7 @@ jobs:
           password: ${{ env.DOCKER_HUB_PASSWORD }}
       - name: Publish ${{ matrix.assetsType }} to S3 action
         if: ${{ (env.ASSETS_TYPE == 'all' || env.ASSETS_TYPE == matrix.assetsType) }}
-        uses: newrelic/infrastructure-publish-action@v1.2.3
+        uses: newrelic/infrastructure-publish-action@v1.2.5
         with:
           tag: ${{env.TAG}}
           app_name: "newrelic-infra"
