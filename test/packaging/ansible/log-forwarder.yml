@@ -30,7 +30,8 @@
                 inventory_hostname is search("centos") or
                 inventory_hostname is regex("redhat-[78]")
                 )
-                #systemd plugin is not enabled in sles FB. Disabled until clarify this.
+                # TODO :point-up: There is no FB pkg for RH9 yet
+                # TODO :point-down: systemd plugin is not enabled in sles FB. Disabled until clarify this.
 #                inventory_hostname is search("sles-12")
 #                inventory_hostname is search("sles-15")
 
