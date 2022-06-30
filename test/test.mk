@@ -78,9 +78,9 @@ test/automated-run:
 	make test/automated/packaging
 
 .PHONY: test/runner/provision
-test/runner/provision: VERSION ?= "HEAD"
+test/runner/provision: GIT_REF ?= "HEAD"
 test/runner/provision:
-	@ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO ANSIBLE_DISPLAY_OK_HOSTS=NO ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.runner.ec2 -e version=$(VERSION) $(CURDIR)/test/automated/ansible/provision-runner.yml
+	@ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO ANSIBLE_DISPLAY_OK_HOSTS=NO ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.runner.ec2 -e git_ref=$(GIT_REF) $(CURDIR)/test/automated/ansible/provision-runner.yml
 
 .PHONY: test/runner/packaging
 test/runner/packaging: validate-aws-credentials
