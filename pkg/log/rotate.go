@@ -39,8 +39,9 @@ type FileWithRotation struct {
 	sync.Mutex
 	cfg FileWithRotationConfig
 
-	file         *os.File
-	writtenBytes int64
+	file            *os.File
+	writtenBytes    int64
+	rotateErrLogged bool
 
 	getTimeFn func() time.Time
 }
@@ -97,7 +98,13 @@ func (f *FileWithRotation) Write(b []byte) (n int, err error) {
 				return 0, fmt.Errorf("failed to re-open file after rotate failed, error: %w", openErr)
 			}
 
-			rLog.WithError(err).Error("Failed to rotate log file")
+			if !f.rotateErrLogged {
+				rLog.WithError(err).Error("Failed to rotate log file")
+				f.rotateErrLogged = true
+			}
+		} else {
+			// Reset the err flag after a successful file rotate.
+			f.rotateErrLogged = false
 		}
 	}
 
