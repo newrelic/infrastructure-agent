@@ -76,7 +76,7 @@ func (f *FileWithRotation) Close() error {
 
 // Write will check if the new content can be written into the file. If not, the file will be
 // automatically rotated.
-func (f *FileWithRotation) Write(b []byte) (n int, err error) {
+func (f *FileWithRotation) Write(b []byte) (int, error) {
 	f.Lock()
 	defer f.Unlock()
 
@@ -90,7 +90,7 @@ func (f *FileWithRotation) Write(b []byte) (n int, err error) {
 
 	// Check if the file should be rotated.
 	if f.cfg.MaxSizeInBytes > 0 && f.writtenBytes+newContentSize > f.cfg.MaxSizeInBytes {
-		err = f.rotate()
+		err := f.rotate()
 
 		// If rotation fails, we should try to continue logging in the same file.
 		if err != nil {
