@@ -4,17 +4,22 @@
 package log
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"compress/gzip"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/pkg/disk"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFormatTime(t *testing.T) {
-	date := time.Date(2022, time.January, 1, 01, 23, 45, 0, time.Local)
+	date := time.Date(2022, time.January, 1, 0o1, 23, 45, 0, time.Local)
 
 	testCases := []struct {
 		name     string
@@ -42,7 +47,7 @@ func TestFormatTime(t *testing.T) {
 }
 
 func TestGenerateFileName(t *testing.T) {
-	date := time.Date(2022, time.January, 1, 01, 23, 45, 0, time.Local)
+	date := time.Date(2022, time.January, 1, 0o1, 23, 45, 0, time.Local)
 
 	testCases := []struct {
 		name     string
@@ -186,7 +191,7 @@ func TestFileRotate(t *testing.T) {
 
 	// Mock the date for filename rename
 	file.getTimeFn = func() time.Time {
-		return time.Date(2022, time.January, 1, 01, 23, 45, 0, time.Local)
+		return time.Date(2022, time.January, 1, 0o1, 23, 45, 0, time.Local)
 	}
 
 	content := []byte{1}
@@ -374,4 +379,122 @@ func TestFailToRotateDoesntPreventLogging(t *testing.T) {
 	b, err := ioutil.ReadFile(logFile)
 	assert.NoError(t, err)
 	assert.Equal(t, "abcdefghij", string(b))
+}
+
+func TestCompress(t *testing.T) {
+	tmp := os.TempDir()
+	logFile := filepath.Join(tmp, "newrelic-infra.log")
+
+	rotatedLogFile := filepath.Join(tmp, "rotated.log")
+	compressedFile := rotatedLogFile + ".gz"
+
+	// Make sure files don't exist.
+	os.Remove(logFile)
+	os.Remove(rotatedLogFile)
+	os.Remove(compressedFile)
+
+	mb10 := 1024 * 1024 * 10
+	content := strings.Repeat("1", mb10)
+
+	// GIVEN a new NewFileWithRotation
+	cfg := FileWithRotationConfig{
+		File:            logFile,
+		MaxSizeInBytes:  int64(mb10),
+		FileNamePattern: filepath.Base(rotatedLogFile),
+		Compress:        true,
+	}
+
+	file, err := NewFileWithRotation(cfg).Open()
+
+	defer func() {
+		os.Remove(logFile)
+		os.Remove(rotatedLogFile)
+		os.Remove(compressedFile)
+	}()
+
+	// GIVEN a file with 10 mb content
+	writtenBytes, err := file.Write([]byte(content))
+	require.NoError(t, err)
+	require.Equal(t, writtenBytes, mb10)
+
+	// Write an extra byte to trigger file rotate
+	writtenBytes, err = file.Write([]byte("1"))
+	require.NoError(t, err)
+	require.Equal(t, writtenBytes, 1)
+
+	// Wait async gzip to finish
+	require.Eventually(t, func() bool {
+		// When the file to rotate doesn't exist anymore it means the gzip was created.
+		_, statErr := os.Stat(rotatedLogFile)
+
+		return os.IsNotExist(statErr)
+	}, 60*time.Second, 100*time.Millisecond, "gz file not created")
+
+	// THEN .gz file is valid and contains expected data
+	gzFile, err := os.Open(compressedFile)
+	require.NoError(t, err)
+
+	gzFileStat, err := gzFile.Stat()
+	require.NoError(t, err)
+
+	// Check the size of the .gz file to be less than 1 mb.
+	fileSizeInMb := float64(gzFileStat.Size()) / float64(mb10)
+	assert.True(t, fileSizeInMb < 1)
+
+	gzReader, err := gzip.NewReader(gzFile)
+	defer gzReader.Close()
+	assert.NoError(t, err)
+
+	resultContent, err := ioutil.ReadAll(gzReader)
+
+	assert.NoError(t, err)
+	assert.Equal(t, content, string(resultContent))
+}
+
+func TestCompressMemoryUsage(t *testing.T) {
+	tmp := os.TempDir()
+	logFile := filepath.Join(tmp, "newrelic-infra.log")
+
+	// Make sure files don't exist.
+	os.Remove(logFile)
+
+	// GIVEN a file with 300 mb content
+	file, err := disk.OpenFile(logFile, os.O_RDWR|os.O_CREATE, 0o666)
+
+	defer func() {
+		os.Remove(logFile)
+		os.Remove(logFile + ".gz")
+	}()
+
+	require.NoError(t, err)
+
+	mb300 := 1024 * 1024 * 300
+	content := strings.Repeat("1", mb300)
+	_, err = file.Write([]byte(content))
+	require.NoError(t, err)
+
+	// WHEN compressing the file using buffered reader/writer
+	var baseline, after runtime.MemStats
+
+	runtime.GC()
+
+	runtime.ReadMemStats(&baseline)
+
+	cfg := FileWithRotationConfig{
+		File:            logFile,
+		MaxSizeInBytes:  0,
+		FileNamePattern: "",
+		Compress:        true,
+	}
+
+	rotator := NewFileWithRotation(cfg)
+	assert.NoError(t, rotator.compress(logFile))
+
+	require.NoError(t, err)
+	runtime.ReadMemStats(&after)
+
+	// THEN totalAlloc doesn't exceed 1mb
+	totalAlloc := float64(after.TotalAlloc-baseline.TotalAlloc) / float64(mb300)
+
+	assert.Less(t, totalAlloc, float64(mb300/1024))
 }

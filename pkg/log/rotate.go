@@ -4,9 +4,12 @@
 package log
 
 import (
+	"bufio"
+	"compress/gzip"
 	"errors"
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/disk"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -29,6 +32,7 @@ type FileWithRotationConfig struct {
 	File            string
 	FileNamePattern string
 	MaxSizeInBytes  int64
+	Compress        bool
 }
 
 // FileWithRotation decorates a file with rotation mechanism.
@@ -157,8 +161,68 @@ func (f *FileWithRotation) rotate() error {
 		return fmt.Errorf("failed to rotate file, error while moving the current file: %v", err)
 	}
 
+	if f.cfg.Compress {
+		go func() {
+			if err := f.compress(rotateFileName); err != nil {
+				rLog.WithError(err).Error("Failed to compress rotated log file")
+
+				return
+			}
+			// Clean file that was compressed.
+			if err := os.Remove(rotateFileName); err != nil {
+				rLog.WithError(err).Error("Failed to clean rotated log file after was compressed")
+
+				return
+			}
+		}()
+	}
+
 	if err := f.open(); err != nil {
 		return fmt.Errorf("failed to create new file after rotation, error: %v", err)
+	}
+
+	return nil
+}
+
+// compress will create a .gz archive for the file provided.
+func (f *FileWithRotation) compress(file string) error {
+	srcFile, err := disk.OpenFile(file, os.O_RDWR|os.O_CREATE, 0666)
+
+	defer func() {
+		_ = srcFile.Close()
+	}()
+
+	if err != nil {
+		return fmt.Errorf("failed to compress rotated file: %s, error: %w", file, err)
+	}
+
+	srcReader := bufio.NewReader(srcFile)
+
+	dstFile, err := os.Create(fmt.Sprintf("%s.%s", file, "gz"))
+
+	defer func() {
+		_ = srcFile.Close()
+	}()
+
+	if err != nil {
+		return fmt.Errorf("failed to compress rotated file: %s, error: %w", file, err)
+	}
+
+	dstWriter := bufio.NewWriter(dstFile)
+
+	defer func() {
+		_ = dstWriter.Flush()
+	}()
+
+	gz := gzip.NewWriter(dstWriter)
+
+	defer func() {
+		_ = gz.Close()
+	}()
+
+	_, err = io.Copy(gz, srcReader)
+	if err != nil {
+		return fmt.Errorf("failed to compress rotated file: %s, error: %w", file, err)
 	}
 
 	return nil
