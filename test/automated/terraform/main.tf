@@ -151,7 +151,11 @@ module "ecs-fargate-task-definition" {
               "secretsmanager:GetSecretValue"
             ],
             "Resource" : [
-              "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name}"
+              "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_ssh}",
+              "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_license}",
+              "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_account}",
+              "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_api}",
+              "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_windows_password}"
             ]
           }
         ]
@@ -162,7 +166,23 @@ module "ecs-fargate-task-definition" {
   secrets = [
     {
       "name" : "SSH_KEY",
-      "valueFrom" : "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name}"
+      "valueFrom" : "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_ssh}"
+    },
+    {
+      "name" : "NR_LICENSE_KEY",
+      "valueFrom" : "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_license}"
+    },
+    {
+      "name" : "NEW_RELIC_ACCOUNT_ID",
+      "valueFrom" : "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_account}"
+    },
+    {
+      "name" : "NEW_RELIC_API_KEY",
+      "valueFrom" : "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_api}"
+    },
+    {
+      "name" : "ANSIBLE_PASSWORD",
+      "valueFrom" : "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_windows_password}"
     }
   ]
   log_configuration = {
