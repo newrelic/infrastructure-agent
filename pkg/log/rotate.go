@@ -9,8 +9,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -36,6 +39,7 @@ type FileWithRotationConfig struct {
 	FileNamePattern string
 	MaxSizeInBytes  int64
 	Compress        bool
+	MaxFiles        int
 }
 
 // FileWithRotation decorates a file with rotation mechanism.
@@ -164,6 +168,11 @@ func (f *FileWithRotation) rotate() error {
 		return fmt.Errorf("failed to rotate file, error while moving the current file: %v", err)
 	}
 
+	// Clean old files if MaxFiles is exceeded.
+	if err := f.purgeFiles(); err != nil {
+		rLog.WithError(err).Error("Failed to clean old rotated log files")
+	}
+
 	if f.cfg.Compress {
 		go func() {
 			if err := f.compress(rotateFileName); err != nil {
@@ -226,6 +235,50 @@ func (f *FileWithRotation) compress(file string) error {
 	_, err = io.Copy(gzFile, srcReader)
 	if err != nil {
 		return fmt.Errorf("failed to compress rotated file: %s, error: %w", file, err)
+	}
+
+	return nil
+}
+
+// purgeFiles will remove older files in case MaxFiles is exceeded.
+func (f *FileWithRotation) purgeFiles() error {
+	if f.cfg.MaxFiles < 1 {
+		// Nothing to do.
+		return nil
+	}
+	dir := filepath.Dir(f.cfg.File)
+
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return fmt.Errorf("failed to purge old rotated files, error: %w", err)
+	}
+
+	var filteredFiles []fs.FileInfo
+	for _, file := range files {
+		// Skip current file, we want to purge only rotated files.
+		fileName := filepath.Join(dir, file.Name())
+		if fileName == f.cfg.File {
+			continue
+		}
+		filteredFiles = append(filteredFiles, file)
+	}
+
+	if len(filteredFiles) <= f.cfg.MaxFiles {
+		// Nothing to do.
+		return nil
+	}
+
+	// Sort files by last modification time, older first.
+	sort.Slice(filteredFiles, func(i, j int) bool {
+		return filteredFiles[i].ModTime().After(filteredFiles[j].ModTime())
+	})
+
+	// Remove older files.
+	for _, file := range filteredFiles[:f.cfg.MaxFiles-1] {
+		fileName := filepath.Join(dir, file.Name())
+		if err := os.Remove(fileName); err != nil {
+			return err
+		}
 	}
 
 	return nil

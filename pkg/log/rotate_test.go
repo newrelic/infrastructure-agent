@@ -5,6 +5,7 @@ package log
 
 import (
 	"compress/gzip"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -496,4 +497,121 @@ func TestCompressMemoryUsage(t *testing.T) {
 	totalAlloc := float64(after.TotalAlloc-baseline.TotalAlloc) / float64(mb300)
 
 	assert.Less(t, totalAlloc, float64(mb300/1024))
+}
+
+func TestPurgeFiles(t *testing.T) {
+	tmp, err := ioutil.TempDir(os.TempDir(), "newrelic-infra")
+
+	defer func() {
+		assert.NoError(t, os.RemoveAll(tmp))
+	}()
+
+	logFile := filepath.Join(tmp, "newrelic-infra.log")
+
+	// GIVEN a log files and 5 rotated files
+	_, err = disk.OpenFile(logFile, os.O_RDWR|os.O_CREATE, filePerm)
+	assert.NoError(t, err)
+
+	defer func() {
+		assert.NoError(t, os.Remove(logFile))
+	}()
+
+	rotatedFiles := []string{
+		fmt.Sprintf("%s.%d", logFile, 1),
+		fmt.Sprintf("%s.%d", logFile, 2),
+		fmt.Sprintf("%s.%d", logFile, 3),
+		fmt.Sprintf("%s.%d", logFile, 4),
+		fmt.Sprintf("%s.%d", logFile, 5),
+	}
+
+	// Create dummy files
+	for _, rotatedFile := range rotatedFiles {
+		_, err := disk.OpenFile(rotatedFile, os.O_RDWR|os.O_CREATE, filePerm)
+
+		assert.NoError(t, err)
+	}
+
+	// Cleanup dummy files at the end.
+	defer func() {
+		for _, rotatedFile := range rotatedFiles {
+			assert.NoError(t, os.Remove(rotatedFile))
+		}
+	}()
+
+	// WITH a MaxFiles config of 3
+	cfg := FileWithRotationConfig{
+		File:            logFile,
+		MaxSizeInBytes:  0,
+		FileNamePattern: "",
+		Compress:        false,
+		MaxFiles:        3,
+	}
+
+	rotator := NewFileWithRotation(cfg)
+
+	// WHEN purgeFiles
+	err = rotator.purgeFiles()
+	assert.NoError(t, err)
+
+	// THEN only expected files remain in the directory.
+	files, err := ioutil.ReadDir(filepath.Dir(cfg.File))
+	assert.NoError(t, err)
+
+	// cfg.MaxFiles plus the current file. We only purge rotated files.
+	assert.Len(t, files, cfg.MaxFiles+1)
+
+	assert.Equal(t, files[0].Name(), filepath.Base(logFile))
+	assert.Equal(t, files[1].Name(), filepath.Base(rotatedFiles[0]))
+	assert.Equal(t, files[2].Name(), filepath.Base(rotatedFiles[1]))
+	assert.Equal(t, files[3].Name(), filepath.Base(rotatedFiles[2]))
+}
+
+func TestShouldNotPurgeFiles(t *testing.T) {
+	tmp, err := ioutil.TempDir(os.TempDir(), "newrelic-infra")
+
+	defer func() {
+		assert.NoError(t, os.RemoveAll(tmp))
+	}()
+
+	logFile := filepath.Join(tmp, "newrelic-infra.log")
+
+	// GIVEN a log files and 5 rotated files
+	_, err = disk.OpenFile(logFile, os.O_RDWR|os.O_CREATE, filePerm)
+	assert.NoError(t, err)
+
+	defer func() {
+		assert.NoError(t, os.Remove(logFile))
+	}()
+
+	rotatedFile := fmt.Sprintf("%s.%d", logFile, 1)
+	_, err = disk.OpenFile(rotatedFile, os.O_RDWR|os.O_CREATE, filePerm)
+
+	defer func() {
+		assert.NoError(t, os.Remove(rotatedFile))
+	}()
+
+	// WITH a MaxFiles config of 1
+	cfg := FileWithRotationConfig{
+		File:            logFile,
+		MaxSizeInBytes:  0,
+		FileNamePattern: "",
+		Compress:        false,
+		MaxFiles:        1,
+	}
+
+	rotator := NewFileWithRotation(cfg)
+
+	// WHEN purgeFiles
+	err = rotator.purgeFiles()
+	assert.NoError(t, err)
+
+	// THEN no files are removed
+	files, err := ioutil.ReadDir(filepath.Dir(cfg.File))
+	assert.NoError(t, err)
+
+	// cfg.MaxFiles plus the current file. We only purge rotated files.
+	assert.Len(t, files, cfg.MaxFiles+1)
+
+	assert.Equal(t, files[0].Name(), filepath.Base(logFile))
+	assert.Equal(t, files[1].Name(), filepath.Base(rotatedFile))
 }
