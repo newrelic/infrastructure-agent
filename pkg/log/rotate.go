@@ -76,11 +76,12 @@ func (f *FileWithRotation) Close() error {
 
 // Write will check if the new content can be written into the file. If not, the file will be
 // automatically rotated.
-func (f *FileWithRotation) Write(b []byte) (int, error) {
+func (f *FileWithRotation) Write(content []byte) (int, error) {
 	f.Lock()
+
 	defer f.Unlock()
 
-	newContentSize := int64(len(b))
+	newContentSize := int64(len(content))
 
 	// Make sure new content fits the max size from the configuration.
 	if newContentSize > f.cfg.MaxSizeInBytes {
@@ -112,7 +113,7 @@ func (f *FileWithRotation) Write(b []byte) (int, error) {
 		return 0, ErrFileNotOpened
 	}
 
-	writtenBytes, err := f.file.Write(b)
+	writtenBytes, err := f.file.Write(content)
 	f.writtenBytes += int64(writtenBytes)
 
 	return writtenBytes, err
