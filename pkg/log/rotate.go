@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+var rLog = WithComponent("LogRotator")
+
 // defaultDatePattern used to generate filename for the rotated file.
 const defaultDatePattern = "YYYY-MM-DD_hh-mm-ss"
 
@@ -85,8 +87,14 @@ func (f *FileWithRotation) Write(b []byte) (n int, err error) {
 	// Check if the file should be rotated.
 	if f.cfg.MaxSizeInBytes > 0 && f.writtenBytes+newContentSize > f.cfg.MaxSizeInBytes {
 		err = f.rotate()
+
+		// If rotation fails, we should try to continue logging in the same file.
 		if err != nil {
-			return
+			rLog.WithError(err).Error("Failed to rotate log file")
+
+			if openErr := f.open(); openErr != nil {
+				return 0, fmt.Errorf("failed to re-open file")
+			}
 		}
 	}
 

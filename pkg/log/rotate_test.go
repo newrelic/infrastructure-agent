@@ -335,3 +335,43 @@ func TestWhenFileNotOpen(t *testing.T) {
 	// Error is returned
 	require.ErrorIs(t, err, ErrFileNotOpened)
 }
+
+func TestFailToRotateDoesntPreventLogging(t *testing.T) {
+	tmp := os.TempDir()
+	logFile := filepath.Join(tmp, "newrelic-infra.log")
+
+	maxBytes := 2
+	// GIVEN a new NewFileWithRotation
+	cfg := FileWithRotationConfig{
+		File:           logFile,
+		MaxSizeInBytes: int64(maxBytes),
+		// Use Illegal Filename Character . to trigger rotate error.
+		FileNamePattern: ".",
+	}
+
+	file, err := NewFileWithRotation(cfg).Open()
+
+	defer func() {
+		assert.NoError(t, file.Close())
+		assert.NoError(t, os.Remove(logFile))
+	}()
+
+	assert.NoError(t, err)
+
+	// WHEN maxBytes is exceeded and rotate fails.
+	bytesToWrite := maxBytes * 5
+	for i := 0; i < bytesToWrite; i++ {
+		written, err := file.Write([]byte{byte(i + int('a'))})
+
+		// THEN no error occurred
+		assert.Equal(t, written, 1)
+		assert.NoError(t, err)
+	}
+
+	// AND no content is lost
+	assert.Equal(t, file.writtenBytes, int64(bytesToWrite))
+
+	b, err := ioutil.ReadFile(logFile)
+	assert.NoError(t, err)
+	assert.Equal(t, "abcdefghij", string(b))
+}
