@@ -32,6 +32,9 @@ type FileWithRotationConfig struct {
 }
 
 // FileWithRotation decorates a file with rotation mechanism.
+// The current file will be rotated before Write(ing) new content if that will cause exceeding the
+// configured max bytes. The rotated file will get the name from the provided pattern in the configuration.
+// If rotation fails, we will continue to write to the current log file to avoid losing data.
 type FileWithRotation struct {
 	sync.Mutex
 	cfg FileWithRotationConfig
@@ -91,7 +94,7 @@ func (f *FileWithRotation) Write(b []byte) (n int, err error) {
 		// If rotation fails, we should try to continue logging in the same file.
 		if err != nil {
 			if openErr := f.open(); openErr != nil {
-				return 0, fmt.Errorf("failed to re-open file after rotate failed, error: %v", openErr)
+				return 0, fmt.Errorf("failed to re-open file after rotate failed, error: %w", openErr)
 			}
 
 			rLog.WithError(err).Error("Failed to rotate log file")
