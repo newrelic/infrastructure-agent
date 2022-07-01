@@ -8,13 +8,14 @@ import (
 	"compress/gzip"
 	"errors"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/disk"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/pkg/disk"
 )
 
 var rLog = WithComponent("LogRotator")
@@ -22,10 +23,8 @@ var rLog = WithComponent("LogRotator")
 // defaultDatePattern used to generate filename for the rotated file.
 const defaultDatePattern = "YYYY-MM-DD_hh-mm-ss"
 
-var (
-	// ErrFileNotOpened is returned when an operation cannot be performed because the file is not opened.
-	ErrFileNotOpened = errors.New("cannot perform operation, file is not opened")
-)
+// ErrFileNotOpened is returned when an operation cannot be performed because the file is not opened.
+var ErrFileNotOpened = errors.New("cannot perform operation, file is not opened")
 
 // FileWithRotationConfig keeps the configuration for a new FileWithRotation.
 type FileWithRotationConfig struct {
@@ -125,7 +124,7 @@ func (f *FileWithRotation) Write(content []byte) (int, error) {
 
 func (f *FileWithRotation) open() error {
 	var err error
-	f.file, err = disk.OpenFile(f.cfg.File, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	f.file, err = disk.OpenFile(f.cfg.File, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
 	if err != nil {
 		return fmt.Errorf("failed to open file rotate, error: %v", err)
 	}
@@ -186,7 +185,7 @@ func (f *FileWithRotation) rotate() error {
 
 // compress will create a .gz archive for the file provided.
 func (f *FileWithRotation) compress(file string) error {
-	srcFile, err := disk.OpenFile(file, os.O_RDWR|os.O_CREATE, 0666)
+	srcFile, err := disk.OpenFile(file, os.O_RDWR|os.O_CREATE, 0o666)
 
 	defer func() {
 		_ = srcFile.Close()
@@ -214,13 +213,13 @@ func (f *FileWithRotation) compress(file string) error {
 		_ = dstWriter.Flush()
 	}()
 
-	gz := gzip.NewWriter(dstWriter)
+	gzFile := gzip.NewWriter(dstWriter)
 
 	defer func() {
-		_ = gz.Close()
+		_ = gzFile.Close()
 	}()
 
-	_, err = io.Copy(gz, srcReader)
+	_, err = io.Copy(gzFile, srcReader)
 	if err != nil {
 		return fmt.Errorf("failed to compress rotated file: %s, error: %w", file, err)
 	}
@@ -232,7 +231,6 @@ func (f *FileWithRotation) compress(file string) error {
 // If the pattern is not specified in the configuration, by default a new filename will be created with
 // the following pattern: current_file_name_defaultDatePattern.current_file_extension.
 func (f *FileWithRotation) generateFileName() string {
-
 	pattern := f.cfg.FileNamePattern
 
 	// If a custom pattern for the rotated filename wasn't provided, generated one.

@@ -115,13 +115,12 @@ func TestOpenFileWithRotation(t *testing.T) {
 
 	// GIVEN a new NewFileWithRotation
 	file, err := NewFileWithRotation(cfg).Open()
+	assert.NoError(t, err)
 
 	defer func() {
 		assert.NoError(t, file.Close())
 		assert.NoError(t, os.Remove(logFile))
 	}()
-
-	require.NoError(t, err)
 
 	// File can be opened
 	_, err = os.Stat(logFile)
@@ -139,13 +138,12 @@ func TestNewContentFitsMaxSizeInBytes(t *testing.T) {
 	}
 
 	file, err := NewFileWithRotation(cfg).Open()
+	assert.NoError(t, err)
 
 	defer func() {
 		assert.NoError(t, file.Close())
 		assert.NoError(t, os.Remove(logFile))
 	}()
-
-	require.NoError(t, err)
 
 	// WHEN writing a content that exceeds the maxSize config
 	n, err := file.Write([]byte{1, 2})
@@ -179,6 +177,7 @@ func TestFileRotate(t *testing.T) {
 	}
 
 	file, err := NewFileWithRotation(cfg).Open()
+	assert.NoError(t, err)
 
 	defer func() {
 		assert.NoError(t, file.Close())
@@ -186,8 +185,6 @@ func TestFileRotate(t *testing.T) {
 		assert.NoError(t, os.Remove(logFile))
 		assert.NoError(t, os.Remove(rotatedLogFile))
 	}()
-
-	require.NoError(t, err)
 
 	// Mock the date for filename rename
 	file.getTimeFn = func() time.Time {
@@ -242,12 +239,11 @@ func TestCloseAlreadyClosedFile(t *testing.T) {
 	}
 
 	file, err := NewFileWithRotation(cfg).Open()
+	assert.NoError(t, err)
 
 	defer func() {
 		assert.NoError(t, os.Remove(logFile))
 	}()
-
-	require.NoError(t, err)
 
 	// THEN no error on 1st close call
 	err = file.Close()
@@ -273,13 +269,12 @@ func TestWrite(t *testing.T) {
 	}
 
 	file, err := NewFileWithRotation(cfg).Open()
+	assert.NoError(t, err)
 
 	defer func() {
 		assert.NoError(t, file.Close())
 		assert.NoError(t, os.Remove(logFile))
 	}()
-
-	require.NoError(t, err)
 
 	// WHEN writing a message
 	written1, err := file.Write([]byte("message1"))
@@ -355,13 +350,12 @@ func TestFailToRotateDoesntPreventLogging(t *testing.T) {
 	}
 
 	file, err := NewFileWithRotation(cfg).Open()
+	assert.NoError(t, err)
 
 	defer func() {
 		assert.NoError(t, file.Close())
 		assert.NoError(t, os.Remove(logFile))
 	}()
-
-	assert.NoError(t, err)
 
 	// WHEN maxBytes is exceeded and rotate fails.
 	bytesToWrite := maxBytes * 5
@@ -405,6 +399,7 @@ func TestCompress(t *testing.T) {
 	}
 
 	file, err := NewFileWithRotation(cfg).Open()
+	assert.NoError(t, err)
 
 	defer func() {
 		os.Remove(logFile)
@@ -442,7 +437,11 @@ func TestCompress(t *testing.T) {
 	assert.True(t, fileSizeInMb < 1)
 
 	gzReader, err := gzip.NewReader(gzFile)
-	defer gzReader.Close()
+
+	defer func() {
+		assert.NoError(t, gzReader.Close())
+	}()
+
 	assert.NoError(t, err)
 
 	resultContent, err := ioutil.ReadAll(gzReader)
