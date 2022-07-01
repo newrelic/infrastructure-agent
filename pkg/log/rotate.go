@@ -20,8 +20,12 @@ import (
 
 var rLog = WithComponent("LogRotator")
 
-// defaultDatePattern used to generate filename for the rotated file.
-const defaultDatePattern = "YYYY-MM-DD_hh-mm-ss"
+const (
+	// defaultDatePattern used to generate filename for the rotated file.
+	defaultDatePattern = "YYYY-MM-DD_hh-mm-ss"
+	// filePerm specified the permissions while opening a file.
+	filePerm = 0o666
+)
 
 // ErrFileNotOpened is returned when an operation cannot be performed because the file is not opened.
 var ErrFileNotOpened = errors.New("cannot perform operation, file is not opened")
@@ -124,7 +128,7 @@ func (f *FileWithRotation) Write(content []byte) (int, error) {
 
 func (f *FileWithRotation) open() error {
 	var err error
-	f.file, err = disk.OpenFile(f.cfg.File, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
+	f.file, err = disk.OpenFile(f.cfg.File, os.O_RDWR|os.O_CREATE|os.O_APPEND, filePerm)
 	if err != nil {
 		return fmt.Errorf("failed to open file rotate, error: %v", err)
 	}
@@ -185,7 +189,7 @@ func (f *FileWithRotation) rotate() error {
 
 // compress will create a .gz archive for the file provided.
 func (f *FileWithRotation) compress(file string) error {
-	srcFile, err := disk.OpenFile(file, os.O_RDWR|os.O_CREATE, 0o666)
+	srcFile, err := disk.OpenFile(file, os.O_RDWR|os.O_CREATE, filePerm)
 
 	defer func() {
 		_ = srcFile.Close()

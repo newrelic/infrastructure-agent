@@ -458,7 +458,7 @@ func TestCompressMemoryUsage(t *testing.T) {
 	os.Remove(logFile)
 
 	// GIVEN a file with 300 mb content
-	file, err := disk.OpenFile(logFile, os.O_RDWR|os.O_CREATE, 0o666)
+	file, err := disk.OpenFile(logFile, os.O_RDWR|os.O_CREATE, filePerm)
 
 	defer func() {
 		os.Remove(logFile)
