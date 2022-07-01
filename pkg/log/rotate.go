@@ -90,11 +90,11 @@ func (f *FileWithRotation) Write(b []byte) (n int, err error) {
 
 		// If rotation fails, we should try to continue logging in the same file.
 		if err != nil {
-			rLog.WithError(err).Error("Failed to rotate log file")
-
 			if openErr := f.open(); openErr != nil {
-				return 0, fmt.Errorf("failed to re-open file")
+				return 0, fmt.Errorf("failed to re-open file after rotate failed")
 			}
+
+			rLog.WithError(err).Error("Failed to rotate log file")
 		}
 	}
 
