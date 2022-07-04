@@ -115,12 +115,15 @@ func TestOpenFileWithRotation(t *testing.T) {
 
 	// GIVEN a new NewFileWithRotation
 	file, err := NewFileWithRotation(cfg).Open()
+
 	assert.NoError(t, err)
 
 	defer func() {
 		assert.NoError(t, file.Close())
 		assert.NoError(t, os.Remove(logFile))
 	}()
+
+	require.NoError(t, err)
 
 	// File can be opened
 	_, err = os.Stat(logFile)
@@ -138,6 +141,7 @@ func TestNewContentFitsMaxSizeInBytes(t *testing.T) {
 	}
 
 	file, err := NewFileWithRotation(cfg).Open()
+
 	assert.NoError(t, err)
 
 	defer func() {
@@ -163,6 +167,7 @@ func TestNewContentFitsMaxSizeInBytes(t *testing.T) {
 func TestFileRotate(t *testing.T) {
 	tmp := os.TempDir()
 	logFile := filepath.Join(tmp, "newrelic-infra.log")
+
 	rotatedLogFile := filepath.Join(tmp, "newrelic-infra_2022-01-01_10-23-45.log")
 
 	// Make sure files don't exist.
@@ -177,6 +182,7 @@ func TestFileRotate(t *testing.T) {
 	}
 
 	file, err := NewFileWithRotation(cfg).Open()
+
 	assert.NoError(t, err)
 
 	defer func() {
@@ -239,11 +245,14 @@ func TestCloseAlreadyClosedFile(t *testing.T) {
 	}
 
 	file, err := NewFileWithRotation(cfg).Open()
+
 	assert.NoError(t, err)
 
 	defer func() {
 		assert.NoError(t, os.Remove(logFile))
 	}()
+
+	require.NoError(t, err)
 
 	// THEN no error on 1st close call
 	err = file.Close()
@@ -269,12 +278,15 @@ func TestWrite(t *testing.T) {
 	}
 
 	file, err := NewFileWithRotation(cfg).Open()
+
 	assert.NoError(t, err)
 
 	defer func() {
 		assert.NoError(t, file.Close())
 		assert.NoError(t, os.Remove(logFile))
 	}()
+
+	require.NoError(t, err)
 
 	// WHEN writing a message
 	written1, err := file.Write([]byte("message1"))
@@ -350,12 +362,15 @@ func TestFailToRotateDoesntPreventLogging(t *testing.T) {
 	}
 
 	file, err := NewFileWithRotation(cfg).Open()
+
 	assert.NoError(t, err)
 
 	defer func() {
 		assert.NoError(t, file.Close())
 		assert.NoError(t, os.Remove(logFile))
 	}()
+
+	assert.NoError(t, err)
 
 	// WHEN maxBytes is exceeded and rotate fails.
 	bytesToWrite := maxBytes * 5
