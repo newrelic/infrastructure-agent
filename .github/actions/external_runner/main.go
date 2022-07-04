@@ -76,16 +76,16 @@ func main() {
 	params := LoadConfig()
 	taskRunner, cfg := prepareFargateTask(params)
 
-	id, err := runFargateTask(time.Duration(params.TimeoutMillis)*time.Millisecond, taskRunner)
-
-	if err != nil{
+	timeout := time.Duration(params.TimeoutMillis) * time.Millisecond
+	id, err := runFargateTask(timeout, taskRunner)
+	if err != nil {
 		log.Fatalf("failed to run task: %v", err)
 	}
 
 	// to be able to add timeout later
 	ctx := context.Background()
 
-	streamFargateTaskLogs(ctx, params, cfg, taskRunner, id)
+	printFargateTaskLogs(ctx, params, cfg, taskRunner, id)
 }
 
 func prepareFargateTask(params Config) (*TaskRunner, aws.Config) {
@@ -148,7 +148,7 @@ func runFargateTask(timeout time.Duration, taskRunner *TaskRunner) (string, erro
 	return id, nil
 }
 
-func streamFargateTaskLogs(ctx context.Context, params Config, cfg aws.Config, taskRunner *TaskRunner, id string) {
+func printFargateTaskLogs(ctx context.Context, params Config, cfg aws.Config, taskRunner *TaskRunner, id string) {
 	logTailerConfig := CloudWatchLogTailerConfig{
 		LogGroupName:  params.CloudWatchLogsGroupName,
 		LogStreamName: fmt.Sprintf("%s/%s", params.CloudWatchLogsStreamName, id),
