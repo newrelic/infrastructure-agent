@@ -214,7 +214,7 @@ func (f *FileWithRotation) compress(file string) error {
 
 	dst := fmt.Sprintf("%s.%s", file, "gz")
 
-	dstFile, err := disk.OpenFile(file, os.O_RDWR|os.O_CREATE, filePerm)
+	dstFile, err := disk.OpenFile(dst, os.O_RDWR|os.O_CREATE, filePerm)
 	if err != nil {
 		return fmt.Errorf("failed to compress rotated file: %s, error: %w", file, err)
 	}
