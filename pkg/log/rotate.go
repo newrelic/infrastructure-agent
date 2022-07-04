@@ -192,7 +192,9 @@ func (f *FileWithRotation) compress(file string) error {
 	srcFile, err := disk.OpenFile(file, os.O_RDWR|os.O_CREATE, filePerm)
 
 	defer func() {
-		_ = srcFile.Close()
+		if err := srcFile.Close(); err != nil {
+			rLog.WithError(err).Debugf("Failed to close original file: %s after being rotated", file)
+		}
 	}()
 
 	if err != nil {
@@ -201,10 +203,13 @@ func (f *FileWithRotation) compress(file string) error {
 
 	srcReader := bufio.NewReader(srcFile)
 
-	dstFile, err := os.Create(fmt.Sprintf("%s.%s", file, "gz"))
+	dst := fmt.Sprintf("%s.%s", file, "gz")
+	dstFile, err := os.Create(dst)
 
 	defer func() {
-		_ = srcFile.Close()
+		if err := dstFile.Close(); err != nil {
+			rLog.WithError(err).Debugf("Failed to close destination file: %s after original was rotated", dst)
+		}
 	}()
 
 	if err != nil {
@@ -214,13 +219,17 @@ func (f *FileWithRotation) compress(file string) error {
 	dstWriter := bufio.NewWriter(dstFile)
 
 	defer func() {
-		_ = dstWriter.Flush()
+		if err := dstWriter.Flush(); err != nil {
+			rLog.WithError(err).Debugf("Failed to flush remaining buffer data while rotating to file: %s", dst)
+		}
 	}()
 
 	gzFile := gzip.NewWriter(dstWriter)
 
 	defer func() {
-		_ = gzFile.Close()
+		if err := gzFile.Close(); err != nil {
+			rLog.WithError(err).Debugf("Failed to close gzip writer after rotating the file: %s", file)
+		}
 	}()
 
 	_, err = io.Copy(gzFile, srcReader)
