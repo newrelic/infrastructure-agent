@@ -20,7 +20,7 @@ import (
 )
 
 func TestFormatTime(t *testing.T) {
-	date := time.Date(2022, time.January, 1, 0o1, 23, 45, 0, time.Local)
+	date := time.Date(2022, time.January, 1, 01, 23, 45, 0, time.Local)
 
 	testCases := []struct {
 		name     string
@@ -48,7 +48,8 @@ func TestFormatTime(t *testing.T) {
 }
 
 func TestGenerateFileName(t *testing.T) {
-	date := time.Date(2022, time.January, 1, 0o1, 23, 45, 0, time.Local)
+
+	date := time.Date(2022, time.January, 1, 01, 23, 45, 0, time.Local)
 
 	testCases := []struct {
 		name     string
@@ -116,12 +117,15 @@ func TestOpenFileWithRotation(t *testing.T) {
 
 	// GIVEN a new NewFileWithRotation
 	file, err := NewFileWithRotation(cfg).Open()
+
 	assert.NoError(t, err)
 
 	defer func() {
 		assert.NoError(t, file.Close())
 		assert.NoError(t, os.Remove(logFile))
 	}()
+
+	require.NoError(t, err)
 
 	// File can be opened
 	_, err = os.Stat(logFile)
@@ -139,12 +143,15 @@ func TestNewContentFitsMaxSizeInBytes(t *testing.T) {
 	}
 
 	file, err := NewFileWithRotation(cfg).Open()
+
 	assert.NoError(t, err)
 
 	defer func() {
 		assert.NoError(t, file.Close())
 		assert.NoError(t, os.Remove(logFile))
 	}()
+
+	require.NoError(t, err)
 
 	// WHEN writing a content that exceeds the maxSize config
 	n, err := file.Write([]byte{1, 2})
@@ -178,6 +185,7 @@ func TestFileRotate(t *testing.T) {
 	}
 
 	file, err := NewFileWithRotation(cfg).Open()
+
 	assert.NoError(t, err)
 
 	defer func() {
@@ -189,7 +197,7 @@ func TestFileRotate(t *testing.T) {
 
 	// Mock the date for filename rename
 	file.getTimeFn = func() time.Time {
-		return time.Date(2022, time.January, 1, 0o1, 23, 45, 0, time.Local)
+		return time.Date(2022, time.January, 1, 01, 23, 45, 0, time.Local)
 	}
 
 	content := []byte{1}
@@ -240,11 +248,14 @@ func TestCloseAlreadyClosedFile(t *testing.T) {
 	}
 
 	file, err := NewFileWithRotation(cfg).Open()
+
 	assert.NoError(t, err)
 
 	defer func() {
 		assert.NoError(t, os.Remove(logFile))
 	}()
+
+	require.NoError(t, err)
 
 	// THEN no error on 1st close call
 	err = file.Close()
@@ -270,12 +281,15 @@ func TestWrite(t *testing.T) {
 	}
 
 	file, err := NewFileWithRotation(cfg).Open()
+
 	assert.NoError(t, err)
 
 	defer func() {
 		assert.NoError(t, file.Close())
 		assert.NoError(t, os.Remove(logFile))
 	}()
+
+	require.NoError(t, err)
 
 	// WHEN writing a message
 	written1, err := file.Write([]byte("message1"))
@@ -351,12 +365,15 @@ func TestFailToRotateDoesntPreventLogging(t *testing.T) {
 	}
 
 	file, err := NewFileWithRotation(cfg).Open()
+
 	assert.NoError(t, err)
 
 	defer func() {
 		assert.NoError(t, file.Close())
 		assert.NoError(t, os.Remove(logFile))
 	}()
+
+	assert.NoError(t, err)
 
 	// WHEN maxBytes is exceeded and rotate fails.
 	bytesToWrite := maxBytes * 5

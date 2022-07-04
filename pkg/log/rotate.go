@@ -8,6 +8,7 @@ import (
 	"compress/gzip"
 	"errors"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/disk"
 	"io"
 	"io/fs"
 	"io/ioutil"
@@ -17,8 +18,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/newrelic/infrastructure-agent/pkg/disk"
 )
 
 var rLog = WithComponent("LogRotator")
@@ -30,8 +29,10 @@ const (
 	filePerm = 0o666
 )
 
-// ErrFileNotOpened is returned when an operation cannot be performed because the file is not opened.
-var ErrFileNotOpened = errors.New("cannot perform operation, file is not opened")
+var (
+	// ErrFileNotOpened is returned when an operation cannot be performed because the file is not opened.
+	ErrFileNotOpened = errors.New("cannot perform operation, file is not opened")
+)
 
 // FileWithRotationConfig keeps the configuration for a new FileWithRotation.
 type FileWithRotationConfig struct {
@@ -132,6 +133,7 @@ func (f *FileWithRotation) Write(content []byte) (int, error) {
 
 func (f *FileWithRotation) open() error {
 	var err error
+
 	f.file, err = disk.OpenFile(f.cfg.File, os.O_RDWR|os.O_CREATE|os.O_APPEND, filePerm)
 	if err != nil {
 		return fmt.Errorf("failed to open file rotate, error: %v", err)
