@@ -585,21 +585,14 @@ func TestShouldNotPurgeFiles(t *testing.T) {
 	logFile := filepath.Join(tmp, "newrelic-infra.log")
 
 	// GIVEN a log files and 5 rotated files
-	_, err = disk.OpenFile(logFile, os.O_RDWR|os.O_CREATE, filePerm)
+	file, err := disk.OpenFile(logFile, os.O_RDWR|os.O_CREATE, filePerm)
 	assert.NoError(t, err)
-
-	defer func() {
-		assert.NoError(t, os.Remove(logFile))
-	}()
+	assert.NoError(t, file.Close())
 
 	rotatedFile := fmt.Sprintf("%s.%d", logFile, 1)
-	_, err = disk.OpenFile(rotatedFile, os.O_RDWR|os.O_CREATE, filePerm)
-
+	rotated, err := disk.OpenFile(rotatedFile, os.O_RDWR|os.O_CREATE, filePerm)
 	require.NoError(t, err)
-
-	defer func() {
-		assert.NoError(t, os.Remove(rotatedFile))
-	}()
+	require.NoError(t, rotated.Close())
 
 	// WITH a MaxFiles config of 1
 	cfg := FileWithRotationConfig{
