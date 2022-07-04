@@ -288,7 +288,7 @@ func (f *FileWithRotation) purgeFiles() error {
 		return nil
 	}
 
-	// Sort files by last modification time, older first.
+	// Sort files by last modification time, the newest first.
 	sort.Slice(filteredFiles, func(i, j int) bool {
 		return filteredFiles[i].ModTime().After(filteredFiles[j].ModTime())
 	})
