@@ -4,31 +4,38 @@
 package log
 
 import (
+	"bufio"
+	"compress/gzip"
 	"errors"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/disk"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/pkg/disk"
 )
 
 var rLog = WithComponent("LogRotator")
 
-// defaultDatePattern used to generate filename for the rotated file.
-const defaultDatePattern = "YYYY-MM-DD_hh-mm-ss"
-
-var (
-	// ErrFileNotOpened is returned when an operation cannot be performed because the file is not opened.
-	ErrFileNotOpened = errors.New("cannot perform operation, file is not opened")
+const (
+	// defaultDatePattern used to generate filename for the rotated file.
+	defaultDatePattern = "YYYY-MM-DD_hh-mm-ss"
+	// filePerm specified the permissions while opening a file.
+	filePerm = 0o666
 )
+
+// ErrFileNotOpened is returned when an operation cannot be performed because the file is not opened.
+var ErrFileNotOpened = errors.New("cannot perform operation, file is not opened")
 
 // FileWithRotationConfig keeps the configuration for a new FileWithRotation.
 type FileWithRotationConfig struct {
 	File            string
 	FileNamePattern string
 	MaxSizeInBytes  int64
+	Compress        bool
 }
 
 // FileWithRotation decorates a file with rotation mechanism.
@@ -121,7 +128,8 @@ func (f *FileWithRotation) Write(content []byte) (int, error) {
 
 func (f *FileWithRotation) open() error {
 	var err error
-	f.file, err = disk.OpenFile(f.cfg.File, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+
+	f.file, err = disk.OpenFile(f.cfg.File, os.O_RDWR|os.O_CREATE|os.O_APPEND, filePerm)
 	if err != nil {
 		return fmt.Errorf("failed to open file rotate, error: %v", err)
 	}
@@ -157,8 +165,76 @@ func (f *FileWithRotation) rotate() error {
 		return fmt.Errorf("failed to rotate file, error while moving the current file: %v", err)
 	}
 
+	if f.cfg.Compress {
+		go func() {
+			if err := f.compress(rotateFileName); err != nil {
+				rLog.WithError(err).Error("Failed to compress rotated log file")
+
+				return
+			}
+			// Clean file that was compressed.
+			if err := os.Remove(rotateFileName); err != nil {
+				rLog.WithError(err).Error("Failed to clean rotated log file after was compressed")
+
+				return
+			}
+		}()
+	}
+
 	if err := f.open(); err != nil {
 		return fmt.Errorf("failed to create new file after rotation, error: %v", err)
+	}
+
+	return nil
+}
+
+// compress will create a .gz archive for the file provided.
+func (f *FileWithRotation) compress(file string) error {
+	srcFile, err := disk.OpenFile(file, os.O_RDWR|os.O_CREATE, filePerm)
+	if err != nil {
+		return fmt.Errorf("failed to compress rotated file: %s, error: %w", file, err)
+	}
+
+	defer func() {
+		if err := srcFile.Close(); err != nil {
+			rLog.WithError(err).Debugf("Failed to close original file: %s after being rotated", file)
+		}
+	}()
+
+	srcReader := bufio.NewReader(srcFile)
+
+	dst := fmt.Sprintf("%s.%s", file, "gz")
+	dstFile, err := os.Create(dst)
+
+	defer func() {
+		if err := dstFile.Close(); err != nil {
+			rLog.WithError(err).Debugf("Failed to close destination file: %s after original was rotated", dst)
+		}
+	}()
+
+	if err != nil {
+		return fmt.Errorf("failed to compress rotated file: %s, error: %w", file, err)
+	}
+
+	dstWriter := bufio.NewWriter(dstFile)
+
+	defer func() {
+		if err := dstWriter.Flush(); err != nil {
+			rLog.WithError(err).Debugf("Failed to flush remaining buffer data while rotating to file: %s", dst)
+		}
+	}()
+
+	gzFile := gzip.NewWriter(dstWriter)
+
+	defer func() {
+		if err := gzFile.Close(); err != nil {
+			rLog.WithError(err).Debugf("Failed to close gzip writer after rotating the file: %s", file)
+		}
+	}()
+
+	_, err = io.Copy(gzFile, srcReader)
+	if err != nil {
+		return fmt.Errorf("failed to compress rotated file: %s, error: %w", file, err)
 	}
 
 	return nil
@@ -168,7 +244,6 @@ func (f *FileWithRotation) rotate() error {
 // If the pattern is not specified in the configuration, by default a new filename will be created with
 // the following pattern: current_file_name_defaultDatePattern.current_file_extension.
 func (f *FileWithRotation) generateFileName() string {
-
 	pattern := f.cfg.FileNamePattern
 
 	// If a custom pattern for the rotated filename wasn't provided, generated one.
