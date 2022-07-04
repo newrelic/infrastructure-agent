@@ -9,13 +9,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
-
-	"github.com/newrelic/infrastructure-agent/pkg/disk"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/pkg/disk"
 )
 
 var rLog = WithComponent("LogRotator")
@@ -27,10 +27,8 @@ const (
 	filePerm = 0o666
 )
 
-var (
-	// ErrFileNotOpened is returned when an operation cannot be performed because the file is not opened.
-	ErrFileNotOpened = errors.New("cannot perform operation, file is not opened")
-)
+// ErrFileNotOpened is returned when an operation cannot be performed because the file is not opened.
+var ErrFileNotOpened = errors.New("cannot perform operation, file is not opened")
 
 // FileWithRotationConfig keeps the configuration for a new FileWithRotation.
 type FileWithRotationConfig struct {
@@ -246,7 +244,6 @@ func (f *FileWithRotation) compress(file string) error {
 // If the pattern is not specified in the configuration, by default a new filename will be created with
 // the following pattern: current_file_name_defaultDatePattern.current_file_extension.
 func (f *FileWithRotation) generateFileName() string {
-
 	pattern := f.cfg.FileNamePattern
 
 	// If a custom pattern for the rotated filename wasn't provided, generated one.
