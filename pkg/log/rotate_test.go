@@ -433,7 +433,7 @@ func TestCompress(t *testing.T) {
 	gzFileStat, err := gzFile.Stat()
 	require.NoError(t, err)
 
-	// Check the size of the .gz file to be less than 1 mb.
+	// Check the size of the .gz file to be less than 1 mb
 	fileSizeInMb := float64(gzFileStat.Size()) / float64(mb10)
 	assert.True(t, fileSizeInMb < 1)
 
