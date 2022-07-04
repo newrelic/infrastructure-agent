@@ -24,14 +24,18 @@ type Actuator struct {
 	// Cancel cancels the context
 	Cancel context.CancelFunc
 	// HeartBeat extends the context life time by the value the context was created with
-	HeartBeat func()
+	HeartBeat     func()
+	HeartBeatStop func()
 }
 
 // WithHeartBeat with return a context that is automatically cancelled if the HeartBeat function
 // from the returned Actuator is not invoked periodically before the passed timeout expires.
 func WithHeartBeat(parent context.Context, timeout time.Duration, lg log.Entry) (context.Context, Actuator) {
 	ctx := heartBeatCtx{lifeTime: timeout}
-	actuator := Actuator{HeartBeat: ctx.heartBeat}
+	actuator := Actuator{
+		HeartBeat:     ctx.heartBeat,
+		HeartBeatStop: ctx.heartBeatStop,
+	}
 	ctx.Context, actuator.Cancel = context.WithCancel(parent)
 	ctx.timer = time.AfterFunc(timeout, func() {
 		lg.Warnf("HeartBeat timeout exceeded after %f seconds", timeout.Seconds())
@@ -47,4 +51,10 @@ func (ctx *heartBeatCtx) heartBeat() {
 		<-ctx.timer.C
 	}
 	ctx.timer.Reset(ctx.lifeTime)
+}
+
+func (ctx *heartBeatCtx) heartBeatStop() {
+	ctx.mutex.Lock()
+	defer ctx.mutex.Unlock()
+	ctx.timer.Stop()
 }

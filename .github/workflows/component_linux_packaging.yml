@@ -47,5 +47,15 @@ jobs:
           username: ${{ env.DOCKER_HUB_ID }}
           password: ${{ env.DOCKER_HUB_PASSWORD }}
 
-      - name: Releasing linux packages
+      - name: Preparing linux packages
         run: make ci/prerelease/linux-${{ env.ARCH }}
+
+      - name: Generate checksum files
+        uses: ./.github/actions/generate-checksums
+        with:
+          files_regex: '.*\(tar.gz\|deb\|rpm\)'
+          files_path: 'dist'
+          run_sudo: true
+
+      - name: Publish linux packages
+        run: make ci/prerelease-publish

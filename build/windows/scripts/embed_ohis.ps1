@@ -37,9 +37,9 @@ Function EmbedWindowsServices {
     [string]$version = GetIntegrationVersion -name "nri-winservices"
 
     # download
-    [string]$file="nri-winservices-${version}-amd64.zip" # TODO change this with $arch when package is available.
+    [string]$file="nri-winservices-v${version}-amd64.zip" # TODO change this with $arch when package is available.
 
-    [string]$url="https://github.com/newrelic/nri-winservices/releases/download/${version}/${file}"
+    [string]$url="https://github.com/newrelic/nri-winservices/releases/download/v${version}/${file}"
 
     DownloadAndExtractZip -dest:"$downloadPath\nri-winservices" -url:"$url"
 
