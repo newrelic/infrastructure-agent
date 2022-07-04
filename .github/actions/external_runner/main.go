@@ -74,7 +74,21 @@ func LoadConfig() Config {
 
 func main() {
 	params := LoadConfig()
+	taskRunner, cfg := prepareFargateTask(params)
 
+	timeout := time.Duration(params.TimeoutMillis) * time.Millisecond
+	id, err := runFargateTask(timeout, taskRunner)
+	if err != nil {
+		log.Fatalf("failed to run task: %v", err)
+	}
+
+	// to be able to add timeout later
+	ctx := context.Background()
+
+	printFargateTaskLogs(ctx, params, cfg, taskRunner, id)
+}
+
+func prepareFargateTask(params Config) (*TaskRunner, aws.Config) {
 	cfg, err := config.LoadDefaultConfig(
 		context.TODO(),
 	)
@@ -114,12 +128,14 @@ func main() {
 		}
 	}
 
-	taskRunner := NewTaskRunner(taskSpecs, ecs.NewFromConfig(cfg))
+	return NewTaskRunner(taskSpecs, ecs.NewFromConfig(cfg)), cfg
+}
 
-	ctx, cancelFn := context.WithTimeout(context.Background(), time.Duration(params.TimeoutMillis)*time.Millisecond)
+func runFargateTask(timeout time.Duration, taskRunner *TaskRunner) (string, error) {
+	ctx, cancelFn := context.WithTimeout(context.Background(), timeout)
 	defer cancelFn()
 
-	// TODO: if fails
+	// TODO: https://github.com/newrelic/infrastructure-agent/issues/1248
 	taskOutput, err := taskRunner.Run(ctx)
 	if err != nil {
 		log.Fatalf("failed to run task: %v", err)
@@ -129,7 +145,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to configure log tailer: %v", err)
 	}
+	return id, nil
+}
 
+func printFargateTaskLogs(ctx context.Context, params Config, cfg aws.Config, taskRunner *TaskRunner, id string) {
 	logTailerConfig := CloudWatchLogTailerConfig{
 		LogGroupName:  params.CloudWatchLogsGroupName,
 		LogStreamName: fmt.Sprintf("%s/%s", params.CloudWatchLogsStreamName, id),
@@ -139,7 +158,7 @@ func main() {
 	logTailer := NewCloudWatchLogTailer(logTailerConfig, cloudwatchlogs.NewFromConfig(cfg))
 
 	for {
-		logs, err := logTailer.GetLogs(context.Background())
+		logs, err := logTailer.GetLogs(ctx)
 		if err != nil {
 			log.Fatalf("failed to read logs: %v", err)
 		}
