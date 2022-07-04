@@ -8,7 +8,7 @@
 
 - name: create inventory
   template:
-    src: "inventory.ec2.j2"
+    src: "inventory.macos.ec2.j2"
     dest: "{{ output_inventory }}"
 
 ...

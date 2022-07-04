@@ -19,4 +19,4 @@
       vars:
         output_inventory: "{{ output_inventory_macos}}"
       include_role:
-        name: create-inventory
+        name: create-macos-inventory
