@@ -264,7 +264,7 @@ func (f *FileWithRotation) purgeFiles() error {
 	// Get only files that match the pattern. Add star at the end to match also compressed files.
 	matches, err := filepath.Glob(filepath.Join(dir, globPattern+"*"))
 	if err != nil {
-		return fmt.Errorf("could not retrieve files matching the pattern: %s, error: %v", globPattern, err)
+		return fmt.Errorf("could not retrieve files matching the pattern: %s, error: %w", globPattern, err)
 	}
 
 	files, err := ioutil.ReadDir(dir)
@@ -309,6 +309,7 @@ func (f *FileWithRotation) purgeFiles() error {
 // the following pattern: current_file_name_defaultDatePattern.current_file_extension.
 func (f *FileWithRotation) generateFileName() string {
 	pattern := f.getFileNamePattern()
+
 	return formatTime(pattern, f.getTimeFn())
 }
 
@@ -318,8 +319,9 @@ func (f *FileWithRotation) generateFileNameGlob() string {
 	pattern := f.getFileNamePattern()
 
 	for token := range getTokenReplacers(time.Time{}) {
-		pattern = strings.Replace(pattern, token, "*", -1)
+		pattern = strings.ReplaceAll(pattern, token, "*")
 	}
+
 	return pattern
 }
 
@@ -341,8 +343,9 @@ func (f *FileWithRotation) getFileNamePattern() string {
 // formatTime will receive a time object and a pattern to format the current time.
 func formatTime(pattern string, ts time.Time) string {
 	for token, replacer := range getTokenReplacers(ts) {
-		pattern = strings.Replace(pattern, token, replacer, -1)
+		pattern = strings.ReplaceAll(pattern, token, replacer)
 	}
+
 	return pattern
 }
 
