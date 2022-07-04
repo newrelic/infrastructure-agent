@@ -190,16 +190,15 @@ func (f *FileWithRotation) rotate() error {
 // compress will create a .gz archive for the file provided.
 func (f *FileWithRotation) compress(file string) error {
 	srcFile, err := disk.OpenFile(file, os.O_RDWR|os.O_CREATE, filePerm)
+	if err != nil {
+		return fmt.Errorf("failed to compress rotated file: %s, error: %w", file, err)
+	}
 
 	defer func() {
 		if err := srcFile.Close(); err != nil {
 			rLog.WithError(err).Debugf("Failed to close original file: %s after being rotated", file)
 		}
 	}()
-
-	if err != nil {
-		return fmt.Errorf("failed to compress rotated file: %s, error: %w", file, err)
-	}
 
 	srcReader := bufio.NewReader(srcFile)
 
