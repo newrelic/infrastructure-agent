@@ -19,7 +19,7 @@ import (
 )
 
 func TestFormatTime(t *testing.T) {
-	date := time.Date(2022, time.January, 1, 0o1, 23, 45, 0, time.Local)
+	date := time.Date(2022, time.January, 1, 10, 23, 45, 0, time.Local)
 
 	testCases := []struct {
 		name     string
@@ -29,12 +29,12 @@ func TestFormatTime(t *testing.T) {
 		{
 			name:     "TokensAreReplaced",
 			pattern:  "YYYY/MM/DD-hh:mm:ss",
-			expected: "2022/01/01-01:23:45",
+			expected: "2022/01/01-10:23:45",
 		},
 		{
 			name:     "MultipleReplacements",
 			pattern:  "YYYY YYYY/MM MM/DD DD-hh hh:mm mm:ss ss",
-			expected: "2022 2022/01 01/01 01-01 01:23 23:45 45",
+			expected: "2022 2022/01 01/01 01-10 10:23 23:45 45",
 		},
 	}
 
@@ -47,7 +47,7 @@ func TestFormatTime(t *testing.T) {
 }
 
 func TestGenerateFileName(t *testing.T) {
-	date := time.Date(2022, time.January, 1, 0o1, 23, 45, 0, time.Local)
+	date := time.Date(2022, time.January, 1, 10, 23, 45, 0, time.Local)
 
 	testCases := []struct {
 		name     string
@@ -59,28 +59,28 @@ func TestGenerateFileName(t *testing.T) {
 			config: FileWithRotationConfig{
 				File: "newrelic-infra.log",
 			},
-			expected: "newrelic-infra_2022-01-01_01-23-45.log",
+			expected: "newrelic-infra_2022-01-01_10-23-45.log",
 		},
 		{
 			name: "FileWithPathAndDate",
 			config: FileWithRotationConfig{
 				File: "/var/log/newrelic-infra/newrelic-infra.log",
 			},
-			expected: "newrelic-infra_2022-01-01_01-23-45.log",
+			expected: "newrelic-infra_2022-01-01_10-23-45.log",
 		},
 		{
 			name: "FileWithTokensInPath",
 			config: FileWithRotationConfig{
 				File: "/var/log/newrelic-infraYYYYMMDDhhmmss/newrelic-infra.log",
 			},
-			expected: "newrelic-infra_2022-01-01_01-23-45.log",
+			expected: "newrelic-infra_2022-01-01_10-23-45.log",
 		},
 		{
 			name: "FileWithTokensInExtension",
 			config: FileWithRotationConfig{
 				File: "/var/log/newrelic-infra/newrelic-infra.logYYYYMMDDhhmmss",
 			},
-			expected: "newrelic-infra_2022-01-01_01-23-45.log20220101012345",
+			expected: "newrelic-infra_2022-01-01_10-23-45.log20220101102345",
 		},
 		{
 			name: "CustomPattern",
@@ -88,7 +88,7 @@ func TestGenerateFileName(t *testing.T) {
 				File:            "/var/log/newrelic-infra/newrelic-infra.log",
 				FileNamePattern: "xyz_YYYY:DD:MM:hh:mm:ss",
 			},
-			expected: "xyz_2022:01:01:01:23:45",
+			expected: "xyz_2022:01:01:10:23:45",
 		},
 	}
 
@@ -163,7 +163,7 @@ func TestNewContentFitsMaxSizeInBytes(t *testing.T) {
 func TestFileRotate(t *testing.T) {
 	tmp := os.TempDir()
 	logFile := filepath.Join(tmp, "newrelic-infra.log")
-	rotatedLogFile := filepath.Join(tmp, "newrelic-infra_2022-01-01_01-23-45.log")
+	rotatedLogFile := filepath.Join(tmp, "newrelic-infra_2022-01-01_10-23-45.log")
 
 	// Make sure files don't exist.
 	os.Remove(logFile)
@@ -188,7 +188,7 @@ func TestFileRotate(t *testing.T) {
 
 	// Mock the date for filename rename
 	file.getTimeFn = func() time.Time {
-		return time.Date(2022, time.January, 1, 0o1, 23, 45, 0, time.Local)
+		return time.Date(2022, time.January, 1, 10, 23, 45, 0, time.Local)
 	}
 
 	content := []byte{1}
