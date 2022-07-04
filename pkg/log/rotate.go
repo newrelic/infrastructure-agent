@@ -28,6 +28,8 @@ const (
 	defaultDatePattern = "YYYY-MM-DD_hh-mm-ss"
 	// filePerm specified the permissions while opening a file.
 	filePerm = 0o666
+	// compressedFileExt is the extension used for the compressed rotated file.
+	compressedFileExt = "gz"
 )
 
 // ErrFileNotOpened is returned when an operation cannot be performed because the file is not opened.
@@ -212,7 +214,7 @@ func (f *FileWithRotation) compress(file string) error {
 
 	srcReader := bufio.NewReader(srcFile)
 
-	dst := fmt.Sprintf("%s.%s", file, "gz")
+	dst := fmt.Sprintf("%s.%s", file, compressedFileExt)
 
 	dstFile, err := disk.OpenFile(dst, os.O_RDWR|os.O_CREATE, filePerm)
 	if err != nil {
@@ -258,6 +260,13 @@ func (f *FileWithRotation) purgeFiles() error {
 
 	dir := filepath.Dir(f.cfg.File)
 
+	globPattern := f.generateFileNameGlob()
+	// Get only files that match the pattern. Add star at the end to match also compressed files.
+	matches, err := filepath.Glob(filepath.Join(dir, globPattern+"*"))
+	if err != nil {
+		return fmt.Errorf("could not retrieve files matching the pattern: %s, error: %v", globPattern, err)
+	}
+
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return fmt.Errorf("failed to purge old rotated files, error: %w", err)
@@ -266,14 +275,12 @@ func (f *FileWithRotation) purgeFiles() error {
 	filteredFiles := make([]fs.FileInfo, 0)
 
 	for _, file := range files {
-		// Skip current file, we want to purge only rotated files.
-		fileName := filepath.Join(dir, file.Name())
-
-		if fileName == f.cfg.File {
-			continue
+		// Keep only files that match the pattern.
+		for _, match := range matches {
+			if filepath.Join(dir, file.Name()) == match {
+				filteredFiles = append(filteredFiles, file)
+			}
 		}
-
-		filteredFiles = append(filteredFiles, file)
 	}
 
 	if len(filteredFiles) <= f.cfg.MaxFiles {
@@ -287,7 +294,7 @@ func (f *FileWithRotation) purgeFiles() error {
 	})
 
 	// Remove older files.
-	for _, file := range filteredFiles[:f.cfg.MaxFiles-1] {
+	for _, file := range filteredFiles[f.cfg.MaxFiles:] {
 		fileName := filepath.Join(dir, file.Name())
 		if err := os.Remove(fileName); err != nil {
 			return fmt.Errorf("failed to purge old rotated files, error: %w", err)
@@ -301,24 +308,47 @@ func (f *FileWithRotation) purgeFiles() error {
 // If the pattern is not specified in the configuration, by default a new filename will be created with
 // the following pattern: current_file_name_defaultDatePattern.current_file_extension.
 func (f *FileWithRotation) generateFileName() string {
-	pattern := f.cfg.FileNamePattern
+	pattern := f.getFileNamePattern()
+	return formatTime(pattern, f.getTimeFn())
+}
 
-	// If a custom pattern for the rotated filename wasn't provided, generated one.
-	if pattern == "" {
-		// Insert time into the log filename.
-		ext := filepath.Ext(f.cfg.File)
-		fileName := filepath.Base(f.cfg.File)
-		fileName = strings.TrimSuffix(fileName, ext)
+// generateFileNameGlob will generate a glob for the pattern to match only files with the same
+// pattern while cleaning old files.
+func (f *FileWithRotation) generateFileNameGlob() string {
+	pattern := f.getFileNamePattern()
 
-		pattern = fmt.Sprintf("%s_%s%s", fileName, defaultDatePattern, ext)
+	for token := range getTokenReplacers(time.Time{}) {
+		pattern = strings.Replace(pattern, token, "*", -1)
+	}
+	return pattern
+}
+
+// getFileNamePattern will provide the configured filename pattern for the rotated file.
+// If a custom pattern for the rotated filename wasn't provided, we generated one based on the default values.
+func (f *FileWithRotation) getFileNamePattern() string {
+	if f.cfg.FileNamePattern != "" {
+		return f.cfg.FileNamePattern
 	}
 
-	return formatTime(pattern, f.getTimeFn())
+	// Insert time into the log filename.
+	ext := filepath.Ext(f.cfg.File)
+	fileName := filepath.Base(f.cfg.File)
+	fileName = strings.TrimSuffix(fileName, ext)
+
+	return fmt.Sprintf("%s_%s%s", fileName, defaultDatePattern, ext)
 }
 
 // formatTime will receive a time object and a pattern to format the current time.
 func formatTime(pattern string, ts time.Time) string {
-	tokens := map[string]string{
+	for token, replacer := range getTokenReplacers(ts) {
+		pattern = strings.Replace(pattern, token, replacer, -1)
+	}
+	return pattern
+}
+
+// getTokenReplacers returns a map of the supported timestamp tokens with the replacer value.
+func getTokenReplacers(ts time.Time) map[string]string {
+	return map[string]string{
 		"YYYY": fmt.Sprintf("%d", ts.Year()),
 		"MM":   fmt.Sprintf("%02d", ts.Month()),
 		"DD":   fmt.Sprintf("%02d", ts.Day()),
@@ -326,9 +356,4 @@ func formatTime(pattern string, ts time.Time) string {
 		"mm":   fmt.Sprintf("%02d", ts.Minute()),
 		"ss":   fmt.Sprintf("%02d", ts.Second()),
 	}
-
-	for token, replacer := range tokens {
-		pattern = strings.Replace(pattern, token, replacer, -1)
-	}
-	return pattern
 }

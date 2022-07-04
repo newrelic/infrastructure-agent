@@ -535,11 +535,11 @@ func TestPurgeFiles(t *testing.T) {
 	}()
 
 	rotatedFiles := []string{
-		fmt.Sprintf("%s.%d", logFile, 1),
-		fmt.Sprintf("%s.%d", logFile, 2),
-		fmt.Sprintf("%s.%d", logFile, 3),
-		fmt.Sprintf("%s.%d", logFile, 4),
-		fmt.Sprintf("%s.%d", logFile, 5),
+		fmt.Sprintf("%s.%d.bk.gz", logFile, 1),
+		fmt.Sprintf("%s.%d.bk", logFile, 2),
+		fmt.Sprintf("%s.%d.bk", logFile, 3),
+		fmt.Sprintf("%s.%d.bk", logFile, 4),
+		fmt.Sprintf("%s.%d.bk", logFile, 5),
 	}
 
 	// Create dummy files
@@ -564,12 +564,17 @@ func TestPurgeFiles(t *testing.T) {
 	cfg := FileWithRotationConfig{
 		File:            logFile,
 		MaxSizeInBytes:  0,
-		FileNamePattern: "",
+		FileNamePattern: "newrelic-infra.log.hh.bk",
 		Compress:        false,
 		MaxFiles:        3,
 	}
 
 	rotator := NewFileWithRotation(cfg)
+
+	// Mock the date for filename rename
+	rotator.getTimeFn = func() time.Time {
+		return time.Date(2022, time.January, 1, 10, 23, 45, 0, time.Local)
+	}
 
 	// WHEN purgeFiles
 	err = rotator.purgeFiles()
@@ -583,9 +588,9 @@ func TestPurgeFiles(t *testing.T) {
 	assert.Len(t, files, cfg.MaxFiles+1)
 
 	assert.Equal(t, files[0].Name(), filepath.Base(logFile))
-	assert.Equal(t, files[1].Name(), filepath.Base(rotatedFiles[0]))
-	assert.Equal(t, files[2].Name(), filepath.Base(rotatedFiles[1]))
-	assert.Equal(t, files[3].Name(), filepath.Base(rotatedFiles[2]))
+	assert.Equal(t, files[1].Name(), filepath.Base(rotatedFiles[2]))
+	assert.Equal(t, files[2].Name(), filepath.Base(rotatedFiles[3]))
+	assert.Equal(t, files[3].Name(), filepath.Base(rotatedFiles[4]))
 }
 
 func TestShouldNotPurgeFiles(t *testing.T) {
