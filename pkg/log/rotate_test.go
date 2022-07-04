@@ -531,12 +531,14 @@ func TestPurgeFiles(t *testing.T) {
 		_, err := disk.OpenFile(rotatedFile, os.O_RDWR|os.O_CREATE, filePerm)
 
 		assert.NoError(t, err)
+		time.Sleep(100 * time.Millisecond)
 	}
 
 	// Cleanup dummy files at the end.
 	defer func() {
 		for _, rotatedFile := range rotatedFiles {
-			assert.NoError(t, os.Remove(rotatedFile))
+			// Ignore this error as some files should be already removed.
+			_ = os.Remove(rotatedFile)
 		}
 	}()
 
