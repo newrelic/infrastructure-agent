@@ -511,8 +511,9 @@ func TestPurgeFiles(t *testing.T) {
 	logFile := filepath.Join(tmp, "newrelic-infra.log")
 
 	// GIVEN a log files and 5 rotated files
-	_, err = disk.OpenFile(logFile, os.O_RDWR|os.O_CREATE, filePerm)
+	file, err := disk.OpenFile(logFile, os.O_RDWR|os.O_CREATE, filePerm)
 	assert.NoError(t, err)
+	assert.NoError(t, file.Close())
 
 	defer func() {
 		assert.NoError(t, os.Remove(logFile))
@@ -528,9 +529,11 @@ func TestPurgeFiles(t *testing.T) {
 
 	// Create dummy files
 	for _, rotatedFile := range rotatedFiles {
-		_, err := disk.OpenFile(rotatedFile, os.O_RDWR|os.O_CREATE, filePerm)
+		rotatedFile, err := disk.OpenFile(rotatedFile, os.O_RDWR|os.O_CREATE, filePerm)
 
 		assert.NoError(t, err)
+		assert.NoError(t, rotatedFile.Close())
+
 		time.Sleep(100 * time.Millisecond)
 	}
 
