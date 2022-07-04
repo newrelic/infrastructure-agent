@@ -246,6 +246,7 @@ func (f *FileWithRotation) purgeFiles() error {
 		// Nothing to do.
 		return nil
 	}
+
 	dir := filepath.Dir(f.cfg.File)
 
 	files, err := ioutil.ReadDir(dir)
@@ -253,13 +254,16 @@ func (f *FileWithRotation) purgeFiles() error {
 		return fmt.Errorf("failed to purge old rotated files, error: %w", err)
 	}
 
-	var filteredFiles []fs.FileInfo
+	filteredFiles := make([]fs.FileInfo, 0)
+
 	for _, file := range files {
 		// Skip current file, we want to purge only rotated files.
 		fileName := filepath.Join(dir, file.Name())
+
 		if fileName == f.cfg.File {
 			continue
 		}
+
 		filteredFiles = append(filteredFiles, file)
 	}
 
@@ -277,7 +281,7 @@ func (f *FileWithRotation) purgeFiles() error {
 	for _, file := range filteredFiles[:f.cfg.MaxFiles-1] {
 		fileName := filepath.Join(dir, file.Name())
 		if err := os.Remove(fileName); err != nil {
-			return err
+			return fmt.Errorf("failed to purge old rotated files, error: %w", err)
 		}
 	}
 

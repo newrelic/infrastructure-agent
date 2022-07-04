@@ -502,6 +502,8 @@ func TestCompressMemoryUsage(t *testing.T) {
 func TestPurgeFiles(t *testing.T) {
 	tmp, err := ioutil.TempDir(os.TempDir(), "newrelic-infra")
 
+	require.NoError(t, err)
+
 	defer func() {
 		assert.NoError(t, os.RemoveAll(tmp))
 	}()
@@ -569,6 +571,8 @@ func TestPurgeFiles(t *testing.T) {
 func TestShouldNotPurgeFiles(t *testing.T) {
 	tmp, err := ioutil.TempDir(os.TempDir(), "newrelic-infra")
 
+	require.NoError(t, err)
+
 	defer func() {
 		assert.NoError(t, os.RemoveAll(tmp))
 	}()
@@ -585,6 +589,8 @@ func TestShouldNotPurgeFiles(t *testing.T) {
 
 	rotatedFile := fmt.Sprintf("%s.%d", logFile, 1)
 	_, err = disk.OpenFile(rotatedFile, os.O_RDWR|os.O_CREATE, filePerm)
+
+	require.NoError(t, err)
 
 	defer func() {
 		assert.NoError(t, os.Remove(rotatedFile))
