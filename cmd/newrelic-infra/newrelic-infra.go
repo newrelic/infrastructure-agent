@@ -212,8 +212,8 @@ func main() {
 		cfg.MemProfile = memprofile
 	}
 
-	if cfg.Verbose == config.SmartVerboseLogging {
-		wlog.EnableSmartVerboseMode(cfg.SmartVerboseModeEntryLimit)
+	if cfg.Log.Level == config.LogLevelSmart {
+		wlog.EnableSmartVerboseMode(*cfg.Log.SmartLevelEntryLimit)
 	}
 
 	if debug || cfg.WebProfile {

@@ -1233,6 +1233,8 @@ func (config *Config) loadLogConfig() {
 	config.LogToStdout = coalesceBool(config.Log.ToStdout, &config.LogToStdout)
 	if config.Log.SmartLevelEntryLimit != nil {
 		config.SmartVerboseModeEntryLimit = *config.Log.SmartLevelEntryLimit
+	} else {
+		config.Log.SmartLevelEntryLimit = &DefaultSmartVerboseModeEntryLimit
 	}
 	switch config.Log.Level {
 	case LogLevelSmart:
