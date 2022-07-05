@@ -1,0 +1,77 @@
+name: Test pre-release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+
+jobs:
+  provision:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::018789649883:role/caos-pipeline-oidc
+          aws-region: us-east-2
+
+      - name: Provision instances
+        uses: ./.github/actions/external_runner
+        with:
+          aws_region: us-east-2
+          container_make_target: test/automated/provision
+          ecs_cluster_name: caos_prerelease
+          task_definition_name: test-prerelease-td
+          cloud_watch_logs_group_name: /ecs/test-prerelease
+          cloud_watch_logs_stream_name: ecs/test-prerelease
+          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
+
+  harvest-tests:
+    needs: [ provision ]
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::018789649883:role/caos-pipeline-oidc
+          aws-region: us-east-2
+
+      - name: Launch harvest tests
+        uses: ./.github/actions/external_runner
+        with:
+          aws_region: us-east-2
+          container_make_target: test/automated/harvest
+          ecs_cluster_name: caos_prerelease
+          task_definition_name: test-prerelease-td
+          cloud_watch_logs_group_name: /ecs/test-prerelease
+          cloud_watch_logs_stream_name: ecs/test-prerelease
+          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
+
+  packaging-tests:
+    if: ${{ always() }}
+    needs: [ harvest-tests ]
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::018789649883:role/caos-pipeline-oidc
+          aws-region: us-east-2
+
+      - name: Launch packging tests
+        uses: ./.github/actions/external_runner
+        with:
+          aws_region: us-east-2
+          container_make_target: test/automated/packaging
+          ecs_cluster_name: caos_prerelease
+          task_definition_name: test-prerelease-td
+          cloud_watch_logs_group_name: /ecs/test-prerelease
+          cloud_watch_logs_stream_name: ecs/test-prerelease
+          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
