@@ -46,23 +46,23 @@ func (ae *Emulator) ChannelHTTPRequests() chan http.Request {
 func New(configsDir, tempBinDir string) *Emulator {
 	rc := ihttp.NewRequestRecorderClient()
 
-	ag := infra.NewAgent(rc.Client, func(config *config.Config) {
-		config.DisplayName = "my_display_name"
-		config.License = "abcdef012345"
-		config.PayloadCompressionLevel = gzip.NoCompression
-		config.Verbose = 1
-		config.PluginDir = configsDir
-		config.LogFormat = "text"
-		config.LogToStdout = true
-		config.IsForwardOnly = true
-		config.Features = map[string]bool{
+	ag := infra.NewAgent(rc.Client, func(conf *config.Config) {
+		conf.DisplayName = "my_display_name"
+		conf.License = "abcdef012345"
+		conf.PayloadCompressionLevel = gzip.NoCompression
+		conf.Log.Level = config.LogLevelDebug
+		conf.PluginDir = configsDir
+		conf.LogFormat = "text"
+		conf.LogToStdout = true
+		conf.IsForwardOnly = true
+		conf.Features = map[string]bool{
 			fflag.FlagProtocolV4: true,
 		}
-		config.CustomPluginInstallationDir = tempBinDir
+		conf.CustomPluginInstallationDir = tempBinDir
 	})
 	cfg := ag.Context.Config()
 	integrationCfg := v4.NewManagerConfig(
-		cfg.Verbose,
+		cfg.Log.VerboseEnabled(),
 		cfg.Features,
 		cfg.PassthroughEnvironment,
 		[]string{configsDir},
