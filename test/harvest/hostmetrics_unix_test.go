@@ -126,7 +126,7 @@ func TestHostSwap(t *testing.T) {
 
 func pathForTmpFile() (path string) {
 	if runtime.GOOS == "linux" {
-		path = fmt.Sprintf("%s%s", "/tmp/", "testfile")
+		path = fmt.Sprintf("%s%s", "/var/tmp/", "testfile") // /tmp is mounted as tmpfs in some systems and cannot be used for disk stats
 	} else if runtime.GOOS == "windows" {
 		path = fmt.Sprintf("%s\\%s", os.Getenv("%Temp%"), "testfile")
 	} else {
