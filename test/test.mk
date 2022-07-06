@@ -2,7 +2,6 @@ PROVISION_HOST_PREFIX := $(shell whoami)-$(shell hostname)
 AWS_ACCOUNT_ID = "018789649883"# CAOS
 
 ANSIBLE_INVENTORY ?= $(CURDIR)/test/automated/ansible/inventory.ec2
-ANSIBLE_INVENTORY_MACOS ?= $(CURDIR)/test/automated/ansible/inventory.macos.ec2
 
 .PHONY: test/automated/provision
 test/automated/provision: validate-aws-credentials
