@@ -25,7 +25,11 @@ func Test_configureLogRedirection(t *testing.T) {
 
 	// default config
 	conf := config.NewConfig()
-	conf.Log.File = logFile.Name()
+	logToStdout := false
+	conf.Log = config.LogConfig{
+		File:     logFile.Name(),
+		ToStdout: &logToStdout,
+	}
 
 	// When log redirection is configured to log file
 	assert.True(t, configureLogRedirection(conf, l))

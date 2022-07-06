@@ -1222,12 +1222,24 @@ func coalesceBool(values ...*bool) bool {
 	return false
 }
 
+// emptyLogConfig returns if the provided LogConfig is empty.
+// reflect.DeepEqual cannot be used as Filters are initialized by envconfig package.
+func emptyLogConfig(actual LogConfig) bool {
+	return actual.Level == "" && actual.File == "" &&
+		actual.Format == "" &&
+		actual.SmartLevelEntryLimit == nil &&
+		actual.ToStdout == nil &&
+		actual.Forward == nil &&
+		len(actual.ExcludeFilters) == 0 &&
+		len(actual.IncludeFilters) == 0
+}
+
 func (config *Config) loadLogConfig() {
 	// Add default ExcludeFilters
 	defer config.Log.AttachDefaultFilters()
 
 	// populate LogConfig object from old configuration options
-	if reflect.DeepEqual(config.Log, LogConfig{}) {
+	if emptyLogConfig(config.Log) {
 		config.populateLogConfig()
 		return
 	}
@@ -1281,6 +1293,9 @@ func (config *Config) populateLogConfig() {
 	case VerboseLogging, TroubleshootLogging:
 		config.Log.Level = LogLevelDebug
 	case TraceLogging, TraceTroubleshootLogging:
+		config.Log.Level = LogLevelTrace
+	// set log level to trace for any value > 5
+	default:
 		config.Log.Level = LogLevelTrace
 	}
 	if config.Verbose == TroubleshootLogging || config.Verbose == TraceTroubleshootLogging {
@@ -1595,11 +1610,6 @@ func NewConfig() *Config {
 		DefaultIntegrationsTempDir:  defaultIntegrationsTempDir,
 		IncludeMetricsMatchers:      defaultMetricsMatcherConfig,
 		InventoryQueueLen:           DefaultInventoryQueue,
-		Log: LogConfig{
-			Format:               defaultLogFormat,
-			ToStdout:             &defaultLogToStdout,
-			SmartLevelEntryLimit: &DefaultSmartVerboseModeEntryLimit,
-		},
 	}
 }
 
@@ -1817,16 +1827,16 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	//  Map new Log configuration
 	cfg.loadLogConfig()
 
-	// For now, make any level of verbosity between [1,3] printing out debugging info
-	// until we refactor and use the corresponding level for each value
-	switch cfg.Verbose {
-	case VerboseLogging, TroubleshootLogging, SmartVerboseLogging:
-		log.SetLevel(logrus.DebugLevel)
-		logrus.SetLevel(logrus.DebugLevel)
-	case TraceLogging, TraceTroubleshootLogging:
-		log.SetLevel(logrus.TraceLevel)
-		logrus.SetLevel(logrus.TraceLevel)
+	// set corresponding log level
+	logLevel, err := log.ParseLevel(cfg.Log.Level)
+	if err != nil {
+		logLevel = logrus.InfoLevel
+		nlog.WithError(err).
+			Warn("couldn't parse log level, info log level will be set")
 	}
+
+	log.SetLevel(logLevel)
+	logrus.SetLevel(logLevel)
 
 	// dm URL is calculated based on collector url, it should be set before get it default value
 	cfg.MetricURL = calculateDimensionalMetricURL(cfg.CollectorURL, cfg.License, cfg.Staging, cfg.Fedramp)
