@@ -216,12 +216,14 @@ type Config struct {
 	// 3 to forward debug logs to FluentBit. To enable log traces set this to 4, and to 5 to forward traces to FluentBit.
 	// Default: 0
 	// Public: Yes
+	// Deprecated: use Log.Level instead.
 	Verbose int `yaml:"verbose" envconfig:"verbose"`
 
 	// The number of entries that will be cached in memory before being flushed (if an error has not been logged
 	// beforehand).
 	// Default: 1000
 	// Public: Yes
+	// Deprecated: use Log.SmartLevelEntryLimit instead.
 	SmartVerboseModeEntryLimit int `yaml:"smart_verbose_mode_entry_limit" envconfig:"smart_verbose_mode_entry_limit"`
 
 	// CPUProfile takes the path of a file that will be created and used to store profiling samples related to the CPU
@@ -1324,7 +1326,10 @@ func NewLogForward(config *Config, troubleshoot Troubleshoot) LogForward {
 // IsTroubleshootMode triggers FluentBit log forwarder to submit agent log. If agent is not running
 // under systemd service this mode enables agent logging to a log file (if not present already).
 func (c *Config) IsTroubleshootMode() bool {
-	return c.Verbose == TroubleshootLogging || c.Verbose == TraceTroubleshootLogging
+	if c.Log.Forward != nil {
+		return *c.Log.Forward
+	}
+	return false
 }
 
 // GetDefaultLogFile sets log file to defined app data dir or default.
