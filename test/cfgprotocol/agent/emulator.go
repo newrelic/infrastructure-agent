@@ -46,6 +46,7 @@ func (ae *Emulator) ChannelHTTPRequests() chan http.Request {
 func New(configsDir, tempBinDir string) *Emulator {
 	rc := ihttp.NewRequestRecorderClient()
 
+	logToStdout := true
 	ag := infra.NewAgent(rc.Client, func(conf *config.Config) {
 		conf.DisplayName = "my_display_name"
 		conf.License = "abcdef012345"
@@ -53,7 +54,7 @@ func New(configsDir, tempBinDir string) *Emulator {
 		conf.Log.Level = config.LogLevelDebug
 		conf.PluginDir = configsDir
 		conf.Log.Format = "text"
-		conf.LogToStdout = true
+		conf.Log.ToStdout = &logToStdout
 		conf.IsForwardOnly = true
 		conf.Features = map[string]bool{
 			fflag.FlagProtocolV4: true,

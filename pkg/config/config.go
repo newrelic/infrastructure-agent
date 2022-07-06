@@ -588,6 +588,7 @@ type Config struct {
 	// logs in the standard output you can set this configuration option to FALSE.
 	// Default: True
 	// Public: Yes
+	// Deprecated: use Log.ToStdout instead.
 	LogToStdout bool `yaml:"log_to_stdout" envconfig:"log_to_stdout"`
 
 	// ContainerMetadataCacheLimit Time duration, in seconds, before expiring the cached containers metadata and
@@ -1594,6 +1595,11 @@ func NewConfig() *Config {
 		DefaultIntegrationsTempDir:  defaultIntegrationsTempDir,
 		IncludeMetricsMatchers:      defaultMetricsMatcherConfig,
 		InventoryQueueLen:           DefaultInventoryQueue,
+		Log: LogConfig{
+			Format:               defaultLogFormat,
+			ToStdout:             &defaultLogToStdout,
+			SmartLevelEntryLimit: &DefaultSmartVerboseModeEntryLimit,
+		},
 	}
 }
 
