@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/newrelic/infrastructure-agent/pkg/disk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -502,8 +504,10 @@ func TestCompressMemoryUsage(t *testing.T) {
 		Compress:        true,
 	}
 
+	rLog := WithComponent("test")
+
 	rotator := NewFileWithRotation(cfg)
-	assert.NoError(t, rotator.compress(logFile))
+	assert.NoError(t, rotator.compress(logFile, rLog))
 
 	require.NoError(t, err)
 	runtime.ReadMemStats(&after)
@@ -576,8 +580,10 @@ func TestPurgeFiles(t *testing.T) {
 		return time.Date(2022, time.January, 1, 10, 23, 45, 0, time.Local)
 	}
 
+	rLog := WithComponent("test")
+
 	// WHEN purgeFiles
-	err = rotator.purgeFiles()
+	err = rotator.purgeFiles(rLog)
 	assert.NoError(t, err)
 
 	// THEN only expected files remain in the directory.
@@ -625,8 +631,10 @@ func TestShouldNotPurgeFiles(t *testing.T) {
 
 	rotator := NewFileWithRotation(cfg)
 
+	rLog := WithComponent("test")
+
 	// WHEN purgeFiles
-	err = rotator.purgeFiles()
+	err = rotator.purgeFiles(rLog)
 	assert.NoError(t, err)
 
 	// THEN no files are removed
@@ -638,4 +646,71 @@ func TestShouldNotPurgeFiles(t *testing.T) {
 
 	assert.Equal(t, files[0].Name(), filepath.Base(logFile))
 	assert.Equal(t, files[1].Name(), filepath.Base(rotatedFile))
+}
+
+// TestWithLogger will set a FileWithRotation to the logger and trigger rotation functionality.
+// If global logger will be used inside FileWithRotation it can lead to a deadlock.
+func TestWithLogger(t *testing.T) {
+	tmp, err := ioutil.TempDir(os.TempDir(), "newrelic-infra")
+	require.NoError(t, err)
+
+	defer func() {
+		assert.NoError(t, os.RemoveAll(tmp))
+	}()
+
+	logFile := filepath.Join(tmp, "newrelic-infra.log")
+
+	// GIVEN a new NewFileWithRotation
+	cfg := FileWithRotationConfig{
+		File:            logFile,
+		MaxSizeInBytes:  1000,
+		MaxFiles:        1,
+		FileNamePattern: "",
+		Compress:        true,
+	}
+
+	file, err := NewFileWithRotation(cfg).Open()
+	require.NoError(t, err)
+
+	defer func() {
+		assert.NoError(t, file.Close())
+	}()
+
+	// Set file to global logger to make sure there are no deadlocks.
+	outBk := w.l.Out
+	levelBk := w.l.Level
+	SetOutput(file)
+	SetLevel(logrus.TraceLevel)
+
+	// restore
+	defer func() {
+		SetOutput(outBk)
+		SetLevel(levelBk)
+	}()
+
+	go func() {
+		// Write to logger
+		for i := 0; i < 100; i++ {
+			w.l.Debug("test")
+		}
+	}()
+
+	// cfg.MaxFiles + current log file
+	expectedFiles := cfg.MaxFiles + 1
+
+	var actualFiles int
+
+	// purging and compressing is asynchronous we have to retry.
+	require.Eventuallyf(t,
+		func() bool {
+			files, err := ioutil.ReadDir(tmp)
+			assert.NoError(t, err)
+
+			actualFiles = len(files)
+
+			return expectedFiles == actualFiles
+		},
+		10*time.Second, 100*time.Millisecond,
+		"Expected %d files, but got: %d", expectedFiles, actualFiles,
+	)
 }

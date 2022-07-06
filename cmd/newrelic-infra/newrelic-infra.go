@@ -8,11 +8,7 @@ import (
 	context2 "context"
 	"flag"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/helpers"
-	http2 "github.com/newrelic/infrastructure-agent/pkg/http"
-	logFilter "github.com/newrelic/infrastructure-agent/pkg/log/filter"
-	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
-	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
+	"io"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
@@ -24,6 +20,13 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/pkg/disk"
+	"github.com/newrelic/infrastructure-agent/pkg/helpers"
+	http2 "github.com/newrelic/infrastructure-agent/pkg/http"
+	logFilter "github.com/newrelic/infrastructure-agent/pkg/log/filter"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
 
 	selfInstrumentation "github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
 	"github.com/newrelic/infrastructure-agent/internal/httpapi"
@@ -53,7 +56,6 @@ import (
 	backendhttp "github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
-	"github.com/newrelic/infrastructure-agent/pkg/disk"
 	"github.com/newrelic/infrastructure-agent/pkg/fs/systemd"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/recover"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
@@ -131,7 +133,6 @@ func main() {
 		}
 
 		err := integrationsConfig.MigrateV3toV4(v3tov4Args[0], v3tov4Args[1], v3tov4Args[2], v3tov4Args[3] == "true")
-
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -332,7 +333,6 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		buildVersion,
 		userAgent,
 		ffManager)
-
 	if err != nil {
 		fatal(err, "Agent cannot initialize.")
 	}
@@ -527,7 +527,7 @@ func initInstrumentation(ctx context2.Context, agentMetricsEndpoint string) (ins
 		srv.Close()
 	}()
 
-	//Setup prometheus integration
+	// Setup prometheus integration
 	err = instrumentation.SetupPrometheusIntegrationConfig(ctx, agentMetricsEndpoint)
 	if err != nil {
 		return nil, err
@@ -588,43 +588,48 @@ func configureLogFormat(cfg config.LogConfig) {
 func configureLogRedirection(config *config.Config, memLog *wlog.MemLogger) (onFile bool) {
 	if config.LogFile == "" && !(config.IsTroubleshootMode() && systemd.IsAgentRunningOnSystemD()) {
 		wlog.SetOutput(os.Stdout)
-	} else {
-		// Redirect all output to both stdout and the agent's own log file.
-		logFile, err := disk.OpenFile(config.LogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-		if err != nil {
-			alog.WithField("action", "configureLogRedirection").WithError(err).Error("Can't open log file.")
-			os.Exit(1)
-		}
-		alog.WithFields(logrus.Fields{
-			"action":      "configureLogRedirection",
-			"logFile":     logFile.Name(),
-			"logToStdout": config.LogToStdout,
-		}).Debug("Redirecting output to a file.")
-		// Write all previous logs, which are stored in memLog, to the file.
-		_, err = memLog.WriteBuffer(logFile)
-		if err != nil {
-			wlog.WithError(err).Debug("Failed writing log to file.")
-		} else {
-			onFile = true
-		}
-		wlog.SetOutput(&fileAndConsoleLogger{logFile: logFile, stdout: config.LogToStdout})
+		return
 	}
+
+	// Redirect all output to both stdout and the agent's own log file.
+	logWriter, err := newLogWriter(config)
+	if err != nil {
+		alog.WithField("action", "configureLogRedirection").WithError(err).Error("Can't open log file.")
+		os.Exit(1)
+	}
+
+	alog.WithFields(logrus.Fields{
+		"action":      "configureLogRedirection",
+		"logFile":     config.LogFile,
+		"logToStdout": config.LogToStdout,
+	}).Debug("Redirecting output to a file.")
+
+	// Write all previous logs, which are stored in memLog, to the file.
+	_, err = memLog.WriteBuffer(logWriter)
+	if err != nil {
+		wlog.WithError(err).Debug("Failed writing log to file.")
+	} else {
+		onFile = true
+	}
+	wlog.SetOutput(wlog.NewStdoutTeeLogger(logWriter, config.LogToStdout))
 	return
 }
 
-// A simple logging wrapper which copies all output to both stdout and a log file to make it easier to find.
-// This is nice for Windows, since there's nothing built-in to capture all stdout from a program into some
-// kind of syslog, and we don't want to flood the system event log with uninteresting messages.
-type fileAndConsoleLogger struct {
-	logFile *os.File
-	stdout  bool
-}
-
-func (fc *fileAndConsoleLogger) Write(b []byte) (n int, err error) {
-	if fc.stdout {
-		_, _ = os.Stdout.Write(b)
+// newLogWriter returns an io.Writer to be used by the logger as an output.
+func newLogWriter(config *config.Config) (io.Writer, error) {
+	logRotateConfig := config.Log.Rotate
+	if !logRotateConfig.IsEnabled() {
+		return disk.OpenFile(config.LogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
 	}
-	return fc.logFile.Write(b)
+
+	rotateCfg := wlog.FileWithRotationConfig{
+		File:            config.LogFile,
+		FileNamePattern: logRotateConfig.FilePattern,
+		MaxSizeInBytes:  int64(logRotateConfig.MaxSizeMb) << 20,
+		MaxFiles:        logRotateConfig.MaxFiles,
+		Compress:        logRotateConfig.CompressionEnabled,
+	}
+	return wlog.NewFileWithRotation(rotateCfg).Open()
 }
 
 // waitForNetwork verifies that there is network connectivity to the collector
@@ -675,7 +680,8 @@ func waitForNetwork(collectorURL, timeout string, retries int, transport http.Ro
 func checkEndpointReachable(
 	collectorURL string,
 	timeout time.Duration,
-	transport http.RoundTripper) (timedOut bool, err error) {
+	transport http.RoundTripper,
+) (timedOut bool, err error) {
 	var request *http.Request
 	if request, err = http.NewRequest("HEAD", collectorURL, nil); err != nil {
 		return false, fmt.Errorf("unable to prepare reachability request: %v, error: %s", request, err)

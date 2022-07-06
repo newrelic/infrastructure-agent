@@ -21,8 +21,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/disk"
 )
 
-var rLog = WithComponent("LogRotator")
-
 const (
 	// defaultDatePattern used to generate filename for the rotated file.
 	defaultDatePattern = "YYYY-MM-DD_hh-mm-ss"
@@ -48,13 +46,16 @@ type FileWithRotationConfig struct {
 // The current file will be rotated before Write(ing) new content if that will cause exceeding the
 // configured max bytes. The rotated file will get the name from the provided pattern in the configuration.
 // If rotation fails, we will continue to write to the current log file to avoid losing data.
+//
+// Global logger should not be called within the synchronous methods of FileWithRotation since it can
+// lead to a deadlock. Global logger can be called from Asynchronous code.
 type FileWithRotation struct {
 	sync.Mutex
 	cfg FileWithRotationConfig
 
-	file            *os.File
-	writtenBytes    int64
-	rotateErrLogged bool
+	file *os.File
+
+	writtenBytes int64
 
 	getTimeFn func() time.Time
 }
@@ -91,7 +92,6 @@ func (f *FileWithRotation) Close() error {
 // automatically rotated.
 func (f *FileWithRotation) Write(content []byte) (int, error) {
 	f.Lock()
-
 	defer f.Unlock()
 
 	newContentSize := int64(len(content))
@@ -104,21 +104,18 @@ func (f *FileWithRotation) Write(content []byte) (int, error) {
 
 	// Check if the file should be rotated.
 	if f.cfg.MaxSizeInBytes > 0 && f.writtenBytes+newContentSize > f.cfg.MaxSizeInBytes {
-		err := f.rotate()
+		// Generate the rotation filename according to the config.
+		dir := filepath.Dir(f.cfg.File)
+		newFile := filepath.Join(dir, f.generateFileName())
 
+		err := f.rotate(newFile)
 		// If rotation fails, we should try to continue logging in the same file.
 		if err != nil {
 			if openErr := f.open(); openErr != nil {
 				return 0, fmt.Errorf("failed to re-open file after rotate failed, error: %w", openErr)
 			}
-
-			if !f.rotateErrLogged {
-				rLog.WithError(err).Error("Failed to rotate log file")
-				f.rotateErrLogged = true
-			}
 		} else {
-			// Reset the err flag after a successful file rotate.
-			f.rotateErrLogged = false
+			f.asyncPostRotateActions(newFile)
 		}
 	}
 
@@ -154,7 +151,7 @@ func (f *FileWithRotation) open() error {
 }
 
 // rotate will rename the current file according to the filename pattern and will open a new file.
-func (f *FileWithRotation) rotate() error {
+func (f *FileWithRotation) rotate(newFile string) error {
 	if f.file == nil {
 		return ErrFileNotOpened
 	}
@@ -163,33 +160,8 @@ func (f *FileWithRotation) rotate() error {
 		return fmt.Errorf("failed to rotate file, error while closing the current file: %v", err)
 	}
 
-	// Generate the rotation filename according to the config.
-	dir := filepath.Dir(f.cfg.File)
-	rotateFileName := filepath.Join(dir, f.generateFileName())
-
-	if err := os.Rename(f.cfg.File, rotateFileName); err != nil {
+	if err := os.Rename(f.cfg.File, newFile); err != nil {
 		return fmt.Errorf("failed to rotate file, error while moving the current file: %v", err)
-	}
-
-	// Clean old files if MaxFiles is exceeded.
-	if err := f.purgeFiles(); err != nil {
-		rLog.WithError(err).Error("Failed to clean old rotated log files")
-	}
-
-	if f.cfg.Compress {
-		go func() {
-			if err := f.compress(rotateFileName); err != nil {
-				rLog.WithError(err).Error("Failed to compress rotated log file")
-
-				return
-			}
-			// Clean file that was compressed.
-			if err := os.Remove(rotateFileName); err != nil {
-				rLog.WithError(err).Error("Failed to clean rotated log file after was compressed")
-
-				return
-			}
-		}()
 	}
 
 	if err := f.open(); err != nil {
@@ -199,8 +171,39 @@ func (f *FileWithRotation) rotate() error {
 	return nil
 }
 
+func (f *FileWithRotation) asyncPostRotateActions(rotatedFile string) {
+	go func() {
+		rLog := WithComponent("LogRotator")
+
+		rLog.Debugf("File %s rotated to: %s", f.cfg.File, rotatedFile)
+
+		// Clean old files if MaxFiles is exceeded.
+		if err := f.purgeFiles(rLog); err != nil {
+			rLog.WithError(err).Error("Failed to clean old rotated log files")
+		}
+
+		if f.cfg.Compress {
+			if err := f.compress(rotatedFile, rLog); err != nil {
+				rLog.WithError(err).Error("Failed to compress rotated log file")
+
+				return
+			}
+			// Clean file that was compressed.
+			if err := os.Remove(rotatedFile); err != nil {
+				rLog.WithError(err).Error("Failed to clean rotated log file after was compressed")
+
+				return
+			}
+		}
+	}()
+}
+
 // compress will create a .gz archive for the file provided.
-func (f *FileWithRotation) compress(file string) error {
+func (f *FileWithRotation) compress(file string, log Entry) error {
+	dst := fmt.Sprintf("%s.%s", file, compressedFileExt)
+
+	log.Debugf("Compressing log file: %s to: %s", file, dst)
+
 	srcFile, err := disk.OpenFile(file, os.O_RDWR|os.O_CREATE, filePerm)
 	if err != nil {
 		return fmt.Errorf("failed to compress rotated file: %s, error: %w", file, err)
@@ -208,13 +211,11 @@ func (f *FileWithRotation) compress(file string) error {
 
 	defer func() {
 		if err = srcFile.Close(); err != nil {
-			rLog.WithError(err).Debugf("Failed to close original file: %s after being rotated", file)
+			log.Debugf("Failed to close original file: %s after being rotated", file)
 		}
 	}()
 
 	srcReader := bufio.NewReader(srcFile)
-
-	dst := fmt.Sprintf("%s.%s", file, compressedFileExt)
 
 	dstFile, err := disk.OpenFile(dst, os.O_RDWR|os.O_CREATE, filePerm)
 	if err != nil {
@@ -223,7 +224,7 @@ func (f *FileWithRotation) compress(file string) error {
 
 	defer func() {
 		if err = dstFile.Close(); err != nil {
-			rLog.WithError(err).Debugf("Failed to close destination file: %s after original was rotated", dst)
+			log.Debugf("Failed to close destination file: %s after original was rotated", dst)
 		}
 	}()
 
@@ -231,7 +232,7 @@ func (f *FileWithRotation) compress(file string) error {
 
 	defer func() {
 		if err = dstWriter.Flush(); err != nil {
-			rLog.WithError(err).Debugf("Failed to flush remaining buffer data while rotating to file: %s", dst)
+			log.Debugf("Failed to flush remaining buffer data while rotating to file: %s", dst)
 		}
 	}()
 
@@ -239,7 +240,7 @@ func (f *FileWithRotation) compress(file string) error {
 
 	defer func() {
 		if err = gzFile.Close(); err != nil {
-			rLog.WithError(err).Debugf("Failed to close gzip writer after rotating the file: %s", file)
+			log.Debugf("Failed to close gzip writer after rotating the file: %s", file)
 		}
 	}()
 
@@ -252,7 +253,7 @@ func (f *FileWithRotation) compress(file string) error {
 }
 
 // purgeFiles will remove older files in case MaxFiles is exceeded.
-func (f *FileWithRotation) purgeFiles() error {
+func (f *FileWithRotation) purgeFiles(log Entry) error {
 	if f.cfg.MaxFiles < 1 {
 		// Nothing to do.
 		return nil
@@ -296,6 +297,9 @@ func (f *FileWithRotation) purgeFiles() error {
 	// Remove older files.
 	for _, file := range filteredFiles[f.cfg.MaxFiles:] {
 		fileName := filepath.Join(dir, file.Name())
+
+		log.Debugf("Purging old file: %s", fileName)
+
 		if err := os.Remove(fileName); err != nil {
 			return fmt.Errorf("failed to purge old rotated files, error: %w", err)
 		}
