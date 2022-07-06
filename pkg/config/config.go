@@ -346,6 +346,7 @@ type Config struct {
 	// Default (Linux): /var/log/newrelic-infra/newrelic-infra.log
 	// Default (Windows): C:\Program Files\New Relic\newrelic-infra\newrelic-infra.log
 	// Public: Yes
+	// Deprecated: use Log.File instead.
 	LogFile string `yaml:"log_file" envconfig:"log_file"`
 
 	// Log is a map of custom logging configurations. Separate keys and values with colons :, as in KEY: VALUE, and
@@ -1329,6 +1330,7 @@ func (c *Config) IsTroubleshootMode() bool {
 	if c.Log.Forward != nil {
 		return *c.Log.Forward
 	}
+
 	return false
 }
 
@@ -1342,11 +1344,11 @@ func (c *Config) GetDefaultLogFile() string {
 
 // GetLogFile provides configured log file.
 func (c *Config) GetLogFile() string {
-	if c.LogFile == "" || c.LogFile == "true" {
+	if c.Log.File == "" || c.Log.File == "true" {
 		return c.GetDefaultLogFile()
 	}
 
-	return c.LogFile
+	return c.Log.File
 }
 
 // LogInfo will log the configuration.
@@ -1919,13 +1921,13 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	cfg.PluginInstanceDirs = helpers.RemoveEmptyAndDuplicateEntries(
 		[]string{cfg.PluginDir, defaultPluginInstanceDir, filepath.Join(cfg.AgentDir, defaultPluginActiveConfigsDir)})
 
-	if cfg.LogFile == "" && runtime.GOOS == "windows" {
-		cfg.LogFile = "true"
+	if cfg.Log.File == "" && runtime.GOOS == "windows" {
+		cfg.Log.File = "true"
 	}
 
-	if cfg.LogFile == "true" {
-		cfg.LogFile = cfg.GetDefaultLogFile()
-		nlog.WithField("LogFile", cfg.LogFile).Debug("Logging to file.")
+	if cfg.Log.File == "true" {
+		cfg.Log.File = cfg.GetDefaultLogFile()
+		nlog.WithField("LogFile", cfg.Log.File).Debug("Logging to file.")
 	}
 
 	//Caution: PluginConfigFiles is ALWAYS defined with the default value. Is this right? Be aware any change could affect backwards compatibilities.

@@ -586,7 +586,7 @@ func configureLogFormat(cfg config.LogConfig) {
 // or copy it to stdout and a log file for Mac/Windows so we don't lose the logging when running
 // as a service.
 func configureLogRedirection(config *config.Config, memLog *wlog.MemLogger) (onFile bool) {
-	if config.LogFile == "" && !(config.IsTroubleshootMode() && systemd.IsAgentRunningOnSystemD()) {
+	if config.Log.File == "" && !(config.IsTroubleshootMode() && systemd.IsAgentRunningOnSystemD()) {
 		wlog.SetOutput(os.Stdout)
 		return
 	}

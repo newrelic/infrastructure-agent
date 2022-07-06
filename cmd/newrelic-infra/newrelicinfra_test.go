@@ -25,7 +25,7 @@ func Test_configureLogRedirection(t *testing.T) {
 
 	// When log redirection is configured to log file
 	assert.True(t, configureLogRedirection(&config.Config{
-		LogFile: logFile.Name(),
+		Log: config.LogConfig{File: logFile.Name()},
 	}, l))
 
 	// Then data previously stored in MemLogger gets written into log file
