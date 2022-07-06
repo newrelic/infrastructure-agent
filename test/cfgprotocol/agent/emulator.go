@@ -52,7 +52,7 @@ func New(configsDir, tempBinDir string) *Emulator {
 		conf.PayloadCompressionLevel = gzip.NoCompression
 		conf.Log.Level = config.LogLevelDebug
 		conf.PluginDir = configsDir
-		conf.LogFormat = "text"
+		conf.Log.Format = "text"
 		conf.LogToStdout = true
 		conf.IsForwardOnly = true
 		conf.Features = map[string]bool{

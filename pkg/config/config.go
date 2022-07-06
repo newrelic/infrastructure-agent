@@ -338,6 +338,7 @@ type Config struct {
 	// Change the log format. Current supported formats: json, common.
 	// Default: text
 	// Public: Yes
+	// Deprecated: use Log.Format instead.
 	LogFormat string `yaml:"log_format" envconfig:"log_format"`
 
 	// LogFile defines the file path for the logs.
