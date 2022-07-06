@@ -74,6 +74,7 @@ var (
 	defaultLogToStdout                   = true
 	defaultLogFormat                     = LogFormatText
 	defaultLogLevel                      = LogLevelInfo
+	defaultLogForward                    = false
 	defaultMaxInventorySize              = 1000 * 1000 // Size limit from Vortex collector service (1MB)
 	defaultPayloadCompressionLevel       = 6           // default compression level used in go, higher than this does not show tangible benefits
 	defaultPidFile                       = "/var/run/newrelic-infra/newrelic-infra.pid"

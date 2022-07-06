@@ -23,16 +23,12 @@ func Test_configureLogRedirection(t *testing.T) {
 	logFile, err := ioutil.TempFile("", "newLogs.txt")
 	require.NoError(t, err)
 
-	// default config
-	conf := config.NewConfig()
-	logToStdout := false
-	conf.Log = config.LogConfig{
-		File:     logFile.Name(),
-		ToStdout: &logToStdout,
-	}
+	// default log config
+	logConf := config.NewLogConfig()
+	logConf.File = logFile.Name()
 
 	// When log redirection is configured to log file
-	assert.True(t, configureLogRedirection(conf, l))
+	assert.True(t, configureLogRedirection(logConf, l))
 
 	// Then data previously stored in MemLogger gets written into log file
 	dat, err := ioutil.ReadFile(logFile.Name())

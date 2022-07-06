@@ -1153,6 +1153,19 @@ type LogConfig struct {
 	Rotate LogRotateConfig `yaml:"rotate" envconfig:"rotate"`
 }
 
+func NewLogConfig() *LogConfig {
+	return &LogConfig{
+		Level:                defaultLogLevel,
+		File:                 defaultLogFile,
+		Format:               defaultLogFormat,
+		Forward:              &defaultLogForward,
+		ToStdout:             &defaultLogToStdout,
+		SmartLevelEntryLimit: &DefaultSmartVerboseModeEntryLimit,
+		IncludeFilters:       make(map[string][]interface{}),
+		ExcludeFilters:       make(map[string][]interface{}),
+	}
+}
+
 func (lc *LogConfig) AttachDefaultFilters() {
 	if lc.ExcludeFilters == nil {
 		lc.ExcludeFilters = make(map[string][]interface{})
@@ -1343,9 +1356,9 @@ func NewLogForward(config *Config, troubleshoot Troubleshoot) LogForward {
 
 // IsTroubleshootMode triggers FluentBit log forwarder to submit agent log. If agent is not running
 // under systemd service this mode enables agent logging to a log file (if not present already).
-func (c *Config) IsTroubleshootMode() bool {
-	if c.Log.Forward != nil {
-		return *c.Log.Forward
+func (lc *LogConfig) IsTroubleshootMode() bool {
+	if lc.Forward != nil {
+		return *lc.Forward
 	}
 
 	return false
