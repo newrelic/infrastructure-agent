@@ -9,6 +9,7 @@
     headers:
       Api-Key: "{{ nr_api_key }}"
   register: existing_violations
+  no_log: true
 
 - name: assert violation exists
   vars:

@@ -8,4 +8,5 @@
   shell: yes | /tmp/newrelic-cli-install.sh
 
 - name: Install agent via newrelic-cli
+  no_log: true
   shell: NEW_RELIC_DOWNLOAD_URL="{{ repo_endpoint }}" NEW_RELIC_REGION=STAGING NEW_RELIC_API_KEY={{ nr_api_key }} NEW_RELIC_ACCOUNT_ID={{ nr_account_id }} /usr/local/bin/newrelic install --debug -y
