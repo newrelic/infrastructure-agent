@@ -16,6 +16,7 @@ ANSIBLE_STDOUT_CALLBACK=selective \
   ansible-playbook \
   -i test/automated/ansible/inventory.local \
   -e provision_host_prefix=$PROVISION_HOST_PREFIX \
+  -e output_inventory_ext=$ANSIBLE_INVENTORY \
   -e ansible_password_windows=$ANSIBLE_PASSWORD_WINDOWS \
   test/automated/ansible/provision.yml
 
