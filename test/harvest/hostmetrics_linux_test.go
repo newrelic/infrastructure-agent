@@ -48,7 +48,7 @@ func TestHostSharedMemory(t *testing.T) {
 		sampleB, _ = systemSampler.Sample()
 		afterSample := sampleB[0].(*metrics.SystemSample)
 
-		assert.True(st, beforeSample.MemorySharedBytes+(1024*1024) == afterSample.MemorySharedBytes, "Shared Memory used did not increase enough, SharedMemoryBefore: %f SharedMemoryAfter %f ", beforeSample.MemorySharedBytes, afterSample.MemorySharedBytes)
+		assert.True(st, afterSample.MemorySharedBytes >= beforeSample.MemorySharedBytes+(1024*1024), "Shared Memory used did not increase enough, SharedMemoryBefore: %f SharedMemoryAfter %f ", beforeSample.MemorySharedBytes, afterSample.MemorySharedBytes)
 	})
 }
 
@@ -126,7 +126,7 @@ func TestHostDisk(t *testing.T) {
 
 	assert.NotEqual(t, 0, sampleA.ReadsPerSec, "Reads per sec is 0")
 	assert.NotEqual(t, 0, sampleA.WritesPerSec, "Writes per sec is 0")
-	assert.True(t, *storageSample.UsedBytes+1e4 < sampleA.UsedBytes, "Used bytes did not increase enough, UserBytesBefore: %f UserBytesAfter %f ", storageSample.UsedBytes, sampleA.UsedBytes)
+	assert.True(t, *storageSample.UsedBytes+1e4 < sampleA.UsedBytes, "Used bytes did not increase enough, UserBytesBefore: %f UserBytesAfter %f ", *(storageSample.UsedBytes), sampleA.UsedBytes)
 
 }
 

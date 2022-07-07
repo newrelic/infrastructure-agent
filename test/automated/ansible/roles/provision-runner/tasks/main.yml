@@ -34,6 +34,7 @@
   git:
     repo: 'https://github.com/newrelic/infrastructure-agent.git'
     dest: /home/ubuntu/dev/newrelic/infrastructure-agent
+    version: "{{ git_ref }}"
 
 - name: Copy ssh key for local infra
   copy:

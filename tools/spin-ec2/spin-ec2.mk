@@ -28,8 +28,8 @@ ifndef VERSION
 	@echo "VERSION variable must be provided for \"make canaries\""
 	exit 1
 endif
-ifndef ANSIBLE_PASSWORD
-	@echo "ANSIBLE_PASSWORD variable must be provided for \"make canaries\""
+ifndef ANSIBLE_PASSWORD_WINDOWS
+	@echo "ANSIBLE_PASSWORD_WINDOWS variable must be provided for \"make canaries\""
 	exit 1
 endif
 ifndef MACSTADIUM_USER
@@ -45,7 +45,7 @@ endif
 	tools/spin-ec2/bin/spin-ec2 canaries provision \
 									-v 'v$(VERSION)' \
 									-l '$(NR_LICENSE_KEY)' \
-									-x '$(ANSIBLE_PASSWORD)' \
+									-x '$(ANSIBLE_PASSWORD_WINDOWS)' \
 									-f '$(PREFIX)' \
 									-r '$(REPO)' \
 									-p '$(PLATFORM)' \

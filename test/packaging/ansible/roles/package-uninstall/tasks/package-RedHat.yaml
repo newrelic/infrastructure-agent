@@ -4,13 +4,13 @@
   yum:
     name: newrelic-infra
     state: absent
-  when: ansible_distribution_major_version != '5' and not "python3" in ansible_python_interpreter
+  when: ansible_distribution_major_version != '5' and not ansible_python_interpreter is regex("python3$")
 
 - name: dnf remove newrelic-infra package
   dnf:
     name: newrelic-infra
     state: absent
-  when: ansible_distribution_major_version != '5' and "'python3' in ansible_python_interpreter"
+  when: ansible_distribution_major_version != '5' and ansible_python_interpreter is regex("python3$")
 
 - name: yum remove newrelic-infra package (rhel5)
   shell: yum -y remove newrelic-infra

@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	tmpIOFile = "/tmp/io"
+	tmpIOFile = "/var/tmp/io" // /tmp is mounted as tmpfs in some systems and cannot be used for disk stats
 	testFile  = "nr_test_file"
 )
 

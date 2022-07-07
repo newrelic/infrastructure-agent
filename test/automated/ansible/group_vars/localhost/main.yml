@@ -315,7 +315,7 @@ instances:
   ############################
   # amazon linux 2022 amd64
   ############################
-  - ami: "ami-02e9727a23259a4fc"
+  - ami: "ami-04a0a1bfbe6cb2189"
     type: "t3a.small"
     name: "amd64:al-2022"
     username: "ec2-user"
@@ -325,7 +325,7 @@ instances:
   ############################
   # amazon linux 2022 arm64
   ############################
-  - ami: "ami-0bf7a3324c9a03d28"
+  - ami: "ami-0a68ae72ce28cd96c"
     type: "t4g.small"
     name: "arm64:al-2022"
     username: "ec2-user"

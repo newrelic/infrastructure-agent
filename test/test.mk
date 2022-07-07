@@ -5,8 +5,11 @@ ANSIBLE_INVENTORY ?= $(CURDIR)/test/automated/ansible/inventory.ec2
 
 .PHONY: test/automated/provision
 test/automated/provision: validate-aws-credentials
-	ANSIBLE_STDOUT_CALLBACK=selective ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.local	-e output_inventory_ext=$(ANSIBLE_INVENTORY) -e provision_host_prefix=$(PROVISION_HOST_PREFIX) $(CURDIR)/test/automated/ansible/provision.yml
-	ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO  ansible-playbook -i $(ANSIBLE_INVENTORY) $(CURDIR)/test/automated/ansible/install-requirements.yml
+ifndef ANSIBLE_PASSWORD_WINDOWS
+	@echo "ANSIBLE_PASSWORD_WINDOWS variable must be provided for test/automated/provision"
+	exit 1
+endif
+	PROVISION_HOST_PREFIX=$(PROVISION_HOST_PREFIX) $(CURDIR)/test/automated/ansible/provision.sh
 
 .PHONY: test/automated/termination
 test/automated/termination: validate-aws-credentials
@@ -16,10 +19,7 @@ test/automated/termination: validate-aws-credentials
 TESTS_TO_RUN_REGEXP ?= ".*"
 .PHONY: test/automated/harvest
 test/automated/harvest:
-	ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO ansible-playbook -i $(ANSIBLE_INVENTORY) \
-					-e agent_root_dir=$(CURDIR) \
-					-e tests_to_run_regex=$(TESTS_TO_RUN_REGEXP) \
-					$(CURDIR)/test/harvest/ansible/test.yml
+	AGENT_RUN_DIR=$(CURDIR) $(CURDIR)/test/harvest/ansible/harvest.sh
 
 .PHONY: test/automated/packaging
 test/automated/packaging:
@@ -80,10 +80,9 @@ test/automated-run:
 	make test/automated/packaging
 
 .PHONY: test/runner/provision
+test/runner/provision: GIT_REF ?= "HEAD"
 test/runner/provision:
-	@ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO ANSIBLE_DISPLAY_OK_HOSTS=NO ansible-playbook \
-		-i $(CURDIR)/test/automated/ansible/inventory.runner.ec2  \
-		$(CURDIR)/test/automated/ansible/provision-runner.yml
+	@ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO ANSIBLE_DISPLAY_OK_HOSTS=NO ansible-playbook -i $(CURDIR)/test/automated/ansible/inventory.runner.ec2 -e git_ref=$(GIT_REF) $(CURDIR)/test/automated/ansible/provision-runner.yml
 
 .PHONY: test/runner/packaging
 test/runner/packaging: validate-aws-credentials
