@@ -19,6 +19,6 @@ ANSIBLE_STDOUT_CALLBACK=selective \
   -e ansible_password_windows=$ANSIBLE_PASSWORD_WINDOWS \
   test/automated/ansible/provision.yml
 
-ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO retry ansible-playbook -i test/automated/ansible/inventory.ec2 test/automated/ansible/install-requirements.yml
+ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO retry ansible-playbook -i $(ANSIBLE_INVENTORY) test/automated/ansible/install-requirements.yml
 
 retry ansible-playbook -e macstadium_user=$MACSTADIUM_USER -e macstadium_pass=$MACSTADIUM_PASS test/automated/ansible/macos-canaries.yml

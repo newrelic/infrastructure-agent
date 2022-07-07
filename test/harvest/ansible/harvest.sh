@@ -15,7 +15,7 @@ function retry () {
 ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO \
   retry \
   ansible-playbook \
-  -i test/automated/ansible/inventory.ec2 \
+  -i $(ANSIBLE_INVENTORY) \
   -e agent_root_dir=${AGENT_RUN_DIR} \
 	-e tests_to_run_regex=${TESTS_TO_RUN_REGEXP} \
 	test/harvest/ansible/test.yml
