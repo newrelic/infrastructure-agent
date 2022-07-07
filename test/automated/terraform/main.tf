@@ -181,7 +181,7 @@ module "ecs-fargate-task-definition" {
       "valueFrom" : "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_api}"
     },
     {
-      "name" : "ANSIBLE_PASSWORD",
+      "name" : "ANSIBLE_PASSWORD_WINDOWS",
       "valueFrom" : "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_windows_password}"
     }
   ]
