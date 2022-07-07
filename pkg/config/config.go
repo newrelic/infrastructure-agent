@@ -1235,24 +1235,12 @@ func coalesceBool(values ...*bool) bool {
 	return false
 }
 
-// emptyLogConfig returns if the provided LogConfig is empty.
-// reflect.DeepEqual cannot be used as Filters are initialized by envconfig package.
-func emptyLogConfig(actual LogConfig) bool {
-	return actual.Level == "" && actual.File == "" &&
-		actual.Format == "" &&
-		actual.SmartLevelEntryLimit == nil &&
-		actual.ToStdout == nil &&
-		actual.Forward == nil &&
-		len(actual.ExcludeFilters) == 0 &&
-		len(actual.IncludeFilters) == 0
-}
-
 func (config *Config) loadLogConfig() {
 	// Add default ExcludeFilters
 	defer config.Log.AttachDefaultFilters()
 
 	// populate LogConfig object from old configuration options
-	if emptyLogConfig(config.Log) {
+	if reflect.DeepEqual(config.Log, LogConfig{}) {
 		config.populateLogConfig()
 		return
 	}
