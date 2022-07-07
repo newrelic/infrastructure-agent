@@ -5,12 +5,14 @@ package agent
 
 import (
 	"compress/gzip"
-	v4Config "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	v4Config "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 
 	"github.com/newrelic/infrastructure-agent/cmd/newrelic-infra/initialize"
 	"github.com/newrelic/infrastructure-agent/internal/agent"
@@ -61,6 +63,9 @@ func New(configsDir, tempBinDir string) *Emulator {
 		config.CustomPluginInstallationDir = tempBinDir
 	})
 	cfg := ag.Context.Config()
+
+	ag.Context.SetAgentIdentity(entity.Identity{ID: 0, GUID: "agent"})
+
 	integrationCfg := v4.NewManagerConfig(
 		cfg.Verbose,
 		cfg.Features,
