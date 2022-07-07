@@ -1352,6 +1352,24 @@ func (lc *LogConfig) IsTroubleshootMode() bool {
 	return false
 }
 
+// IsStdoutEnabled returns if logs should be logged to stdout.
+func (lc *LogConfig) IsStdoutEnabled() bool {
+	if lc.ToStdout != nil {
+		return *lc.ToStdout
+	}
+
+	return defaultLogToStdout
+}
+
+// GetSmartLogLevelLimit returns the defined smart log level limit.
+func (lc *LogConfig) GetSmartLogLevelLimit() int {
+	if lc.SmartLevelEntryLimit != nil {
+		return *lc.SmartLevelEntryLimit
+	}
+
+	return DefaultSmartVerboseModeEntryLimit
+}
+
 // GetDefaultLogFile sets log file to defined app data dir or default.
 func (c *Config) GetDefaultLogFile() string {
 	if c.AppDataDir == "" {

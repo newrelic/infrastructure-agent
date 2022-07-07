@@ -213,7 +213,7 @@ func main() {
 	}
 
 	if cfg.Log.Level == config.LogLevelSmart {
-		wlog.EnableSmartVerboseMode(*cfg.Log.SmartLevelEntryLimit)
+		wlog.EnableSmartVerboseMode(cfg.Log.GetSmartLogLevelLimit())
 	}
 
 	if debug || cfg.WebProfile {
@@ -600,8 +600,8 @@ func configureLogRedirection(config *config.LogConfig, memLog *wlog.MemLogger) (
 
 	alog.WithFields(logrus.Fields{
 		"action":      "configureLogRedirection",
-		"logFile":     config.LogFile,
-		"logToStdout": config.LogToStdout,
+		"logFile":     config.File,
+		"logToStdout": config.IsStdoutEnabled(),
 	}).Debug("Redirecting output to a file.")
 
 	// Write all previous logs, which are stored in memLog, to the file.
@@ -611,19 +611,19 @@ func configureLogRedirection(config *config.LogConfig, memLog *wlog.MemLogger) (
 	} else {
 		onFile = true
 	}
-	wlog.SetOutput(wlog.NewStdoutTeeLogger(logWriter, config.LogToStdout))
+	wlog.SetOutput(wlog.NewStdoutTeeLogger(logWriter, config.IsStdoutEnabled()))
 	return
 }
 
 // newLogWriter returns an io.Writer to be used by the logger as an output.
-func newLogWriter(config *config.Config) (io.Writer, error) {
-	logRotateConfig := config.Log.Rotate
+func newLogWriter(config *config.LogConfig) (io.Writer, error) {
+	logRotateConfig := config.Rotate
 	if !logRotateConfig.IsEnabled() {
-		return disk.OpenFile(config.LogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
+		return disk.OpenFile(config.File, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
 	}
 
 	rotateCfg := wlog.FileWithRotationConfig{
-		File:            config.LogFile,
+		File:            config.File,
 		FileNamePattern: logRotateConfig.FilePattern,
 		MaxSizeInBytes:  int64(logRotateConfig.MaxSizeMb) << 20,
 		MaxFiles:        logRotateConfig.MaxFiles,
