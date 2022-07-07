@@ -59,7 +59,7 @@ variable "secret_name_windows_password" {
 }
 
 variable "task_container_image" {
-  default = "ghcr.io/newrelic/infrastructure-agent-ci-runner:automation_pipeline-ghcr"
+  default = "ghcr.io/newrelic/infrastructure-agent-ci-runner:latest"
 }
 
 variable "task_logs_group" {
