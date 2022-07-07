@@ -11,6 +11,6 @@
 
     - name: create inventory
       vars:
-        output_inventory: "inventory.ec2"
+        output_inventory: "{{ output_inventory_ext }}"
       include_role:
         name: create-inventory

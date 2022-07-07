@@ -91,27 +91,42 @@ endif
 .PHONY : ci/prerelease
 ci/prerelease: ci/deps
 ifdef TAG
-
-	# avoid container network errors in GHA runners
-	@echo "Creating iptables rule to drop invalid packages"
-	@$(shell @sudo iptables -D INPUT -i eth0 -m state --state INVALID -j DROP 2>/dev/null)
-	@sudo iptables -A INPUT -i eth0 -m state --state INVALID -j DROP
-
 	@docker run --rm -t \
 			--name "infrastructure-agent-prerelease" \
 			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
             -w /go/src/github.com/newrelic/infrastructure-agent \
 			-e PRERELEASE=true \
 			-e GITHUB_TOKEN \
-			-e DISABLE_PUBLISH \
 			-e TAG \
 			-e GPG_MAIL \
 			-e GPG_PASSPHRASE \
 			-e GPG_PRIVATE_KEY_BASE64 \
 			-e SNAPSHOT=false \
 			$(BUILDER_IMG_TAG) make release-${TARGET_OS}
+
 else
 	@echo "===> infrastructure-agent ===  [ci/prerelease/linux] TAG env variable expected to be set"
+	exit 1
+endif
+
+.PHONY : ci/prerelease-publish
+ci/prerelease-publish: ci/deps
+ifdef TAG
+	# avoid container network errors in GHA runners
+	@echo "Creating iptables rule to drop invalid packages"
+	@$(shell @sudo iptables -D INPUT -i eth0 -m state --state INVALID -j DROP 2>/dev/null)
+	@sudo iptables -A INPUT -i eth0 -m state --state INVALID -j DROP
+
+	@docker run --rm -t \
+			--name "infrastructure-agent-prerelease-publish" \
+			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
+            -w /go/src/github.com/newrelic/infrastructure-agent \
+			-e GITHUB_TOKEN \
+			-e TAG \
+			$(BUILDER_IMG_TAG) make release-publish
+
+else
+	@echo "===> infrastructure-agent ===  [ci/prerelease-publish] TAG env variable expected to be set"
 	exit 1
 endif
 

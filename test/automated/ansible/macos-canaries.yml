@@ -17,6 +17,6 @@
 
     - name: create macos canaries inventory
       vars:
-        output_inventory: "inventory.macos.ec2"
+        output_inventory: "{{ output_inventory_macos}}"
       include_role:
-        name: create-inventory
+        name: create-macos-inventory

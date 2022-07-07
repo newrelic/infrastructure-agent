@@ -35,7 +35,7 @@ func populateNFS(cache map[string]statsCache, detailed bool) ([]*Sample, error) 
 		}
 	}
 	if len(samples) == 0 {
-		return nil, fmt.Errorf("no supported NFS mounts found")
+		return nil, ErrNFSNotFound
 	}
 
 	return samples, nil
