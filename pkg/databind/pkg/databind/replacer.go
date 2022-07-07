@@ -151,14 +151,17 @@ func replaceFields(values []data.Map, val reflect.Value, rc replaceConfig, match
 		nStr := replaceBytes(values, []byte(val.String()), rc, matches)
 		return reflect.ValueOf(string(nStr))
 	case reflect.Map:
-		newMap := reflect.MakeMap(val.Type())
 		keys := val.MapKeys()
-		for _, k := range keys {
-			val := val.MapIndex(k)
-			nComps := replaceFields(values, val, rc, matches)
-			newMap.SetMapIndex(k, nComps)
+		if len(keys) > 0 {
+			newMap := reflect.MakeMap(val.Type())
+			for _, k := range keys {
+				val := val.MapIndex(k)
+				nComps := replaceFields(values, val, rc, matches)
+				newMap.SetMapIndex(k, nComps)
+			}
+			return newMap
 		}
-		return newMap
+		return val
 	case reflect.Struct:
 		newStruct := reflect.New(val.Type()).Elem()
 		for i := 0; i < val.NumField(); i++ {
