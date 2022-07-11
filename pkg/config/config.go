@@ -1352,6 +1352,11 @@ func (lc *LogConfig) IsTroubleshootMode() bool {
 	return false
 }
 
+// IsSmartLogging returns if smart level is enabled.
+func (lc *LogConfig) IsSmartLogging() bool {
+	return lc.Level == LogLevelSmart
+}
+
 // IsStdoutEnabled returns if logs should be logged to stdout.
 func (lc *LogConfig) IsStdoutEnabled() bool {
 	if lc.ToStdout != nil {
