@@ -170,10 +170,12 @@ func TestReplace_ByteSlice(t *testing.T) {
 
 func TestReplace_Struct(t *testing.T) {
 	// GIVEN a complex structure with variable marks in the inner values
+	type CustomMap map[string]interface{}
 	type testStruct struct {
 		URL       string
 		Labels    map[string]string
 		Labels2   map[string]interface{}
+		Labels3   CustomMap
 		Forget    struct{ Value string }
 		Unchanged string
 		Slice     []string
@@ -208,6 +210,7 @@ func TestReplace_Struct(t *testing.T) {
 	assert.Equal(t, "http://1.2.3.4:8888/get", ret0.URL)
 	assert.Equal(t, "jarl", ret0.Labels["hostname"])
 	assert.Equal(t, ":8888", ret0.Labels2["port"])
+	assert.Equal(t, CustomMap(nil), ret0.Labels3)
 	assert.Equal(t, "1.2.3.4:8888", ret0.Forget.Value)
 	assert.Equal(t, "not-changed", ret0.Unchanged)
 	assert.Equal(t, []string{"host: jarl", "ip: 1.2.3.4", "port: 8888"}, ret0.Slice)
@@ -217,6 +220,7 @@ func TestReplace_Struct(t *testing.T) {
 	assert.Equal(t, "http://5.6.7.8:1111/get", ret1.URL)
 	assert.Equal(t, "nopuedor", ret1.Labels["hostname"])
 	assert.Equal(t, ":1111", ret1.Labels2["port"])
+	assert.Equal(t, CustomMap(nil), ret0.Labels3)
 	assert.Equal(t, "5.6.7.8:1111", ret1.Forget.Value)
 	assert.Equal(t, "not-changed", ret1.Unchanged)
 	assert.Equal(t, []string{"host: nopuedor", "ip: 5.6.7.8", "port: 1111"}, ret1.Slice)

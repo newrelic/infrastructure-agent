@@ -681,6 +681,7 @@ variables:
 staging: true
 license_key: "xxx"
 proxy: ${var1}
+verbose: 0
 `)
 
 	tmp, err := createTestFile(yamlData)
@@ -694,6 +695,7 @@ proxy: ${var1}
 	assert.True(t, cfg.Staging)
 	assert.Equal(t, "xxx", cfg.License)
 	assert.Equal(t, "10.0.2.2:8888", cfg.Proxy)
+	assert.Equal(t, LogLevelInfo, cfg.Log.Level)
 }
 
 func TestLoadYamlConfig_withLogVariables(t *testing.T) {
