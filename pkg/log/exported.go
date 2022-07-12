@@ -37,10 +37,14 @@ type log struct {
 }
 
 // usual singleton access used on the codebase
-var w = wrap{
-	l:       logrus.StandardLogger(),
-	mu:      &sync.Mutex{},
-	measure: func(instrumentation.MetricType, instrumentation.MetricName, int64) {},
+var w = newWrappedLogger()
+
+func newWrappedLogger() wrap {
+	return wrap{
+		l:       logrus.StandardLogger(),
+		mu:      &sync.Mutex{},
+		measure: func(instrumentation.MetricType, instrumentation.MetricName, int64) {},
+	}
 }
 
 func (w *wrap) smartVerboseEnabled() bool {
