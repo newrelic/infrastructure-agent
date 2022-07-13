@@ -86,6 +86,18 @@ test/runner/provision:
 
 .PHONY: test/runner/packaging
 test/runner/packaging: validate-aws-credentials
+ifndef AGENT_VERSION
+	@echo "AGENT_VERSION variable must be provided for test/automated/packaging-docker"
+	exit 1
+endif
+ifndef ANSIBLE_INVENTORY
+	@echo "ANSIBLE_INVENTORY variable must be provided for test/automated/provision"
+	exit 1
+endif
+ifndef ANSIBLE_PASSWORD_WINDOWS
+	@echo "ANSIBLE_PASSWORD_WINDOWS variable must be provided for test/automated/provision"
+	exit 1
+endif
 ifndef NR_LICENSE_KEY
 	@echo "NR_LICENSE_KEY variable must be provided for test/automated/packaging"
 	exit 1
@@ -120,4 +132,4 @@ endif
 	make test/runner/provision
 
 	scp -i $(SSH_KEY) /tmp/runner_scr.sh ubuntu@$(RUNNER_IP):/home/ubuntu/runner_scr.sh
-	ssh -i $(SSH_KEY) -f ubuntu@$(RUNNER_IP) "NR_LICENSE_KEY=$(NR_LICENSE_KEY) NEW_RELIC_API_KEY=$(NEW_RELIC_API_KEY) NEW_RELIC_ACCOUNT_ID=$(NEW_RELIC_ACCOUNT_ID) nohup /home/ubuntu/runner_scr.sh > /dev/null 2>&1 &"
+	ssh -i $(SSH_KEY) -f ubuntu@$(RUNNER_IP) "ANSIBLE_INVENTORY=$(ANSIBLE_INVENTORY) ANSIBLE_PASSWORD_WINDOWS='$(ANSIBLE_PASSWORD_WINDOWS)' AGENT_VERSION=$(AGENT_VERSION) NR_LICENSE_KEY=$(NR_LICENSE_KEY) NEW_RELIC_API_KEY=$(NEW_RELIC_API_KEY) NEW_RELIC_ACCOUNT_ID=$(NEW_RELIC_ACCOUNT_ID) nohup /home/ubuntu/runner_scr.sh > /dev/null 2>&1 &"

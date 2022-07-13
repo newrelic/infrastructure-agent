@@ -171,7 +171,7 @@ instances:
 #    platform: "linux"
 #    python_interpreter: "/usr/bin/python"
 #    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
-  - ami: "ami-00c2a324f2cf48f09"
+  - ami: "ami-0c79914d840ad4560"
     type: "t3a.small"
     name: "amd64:sles-12.4"
     username: "ec2-user"
