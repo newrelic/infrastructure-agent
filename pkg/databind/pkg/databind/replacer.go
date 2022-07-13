@@ -116,6 +116,11 @@ func replaceAllBytes(template []byte, src []discovery.Discovery, common data.Map
 func replaceFields(values []data.Map, val reflect.Value, rc replaceConfig, matches *int) reflect.Value {
 	switch val.Kind() {
 	case reflect.Slice:
+		// return provided slice if is empty
+		if val.Len() == 0 {
+			return val
+		}
+
 		// if it is a byte array, replaces it as if it were a string
 		if val.Type().Elem().Kind() == reflect.Uint8 {
 			replaced := replaceBytes(values, val.Bytes(), rc, matches)
@@ -152,16 +157,17 @@ func replaceFields(values []data.Map, val reflect.Value, rc replaceConfig, match
 		return reflect.ValueOf(string(nStr))
 	case reflect.Map:
 		keys := val.MapKeys()
-		if len(keys) > 0 {
-			newMap := reflect.MakeMap(val.Type())
-			for _, k := range keys {
-				val := val.MapIndex(k)
-				nComps := replaceFields(values, val, rc, matches)
-				newMap.SetMapIndex(k, nComps)
-			}
-			return newMap
+		if len(keys) == 0 {
+			return val
 		}
-		return val
+
+		newMap := reflect.MakeMap(val.Type())
+		for _, k := range keys {
+			val := val.MapIndex(k)
+			nComps := replaceFields(values, val, rc, matches)
+			newMap.SetMapIndex(k, nComps)
+		}
+		return newMap
 	case reflect.Struct:
 		newStruct := reflect.New(val.Type()).Elem()
 		for i := 0; i < val.NumField(); i++ {
