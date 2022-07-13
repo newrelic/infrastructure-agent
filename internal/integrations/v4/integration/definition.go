@@ -35,6 +35,7 @@ var elog = log.WithComponent("integrations.Definition")
 type Definition struct {
 	Name            string
 	Labels          map[string]string
+	Tags            map[string]string
 	ExecutorConfig  executor.Config
 	Interval        time.Duration
 	Timeout         time.Duration
@@ -49,9 +50,10 @@ type Definition struct {
 
 func (d *Definition) Hash() string {
 	h := sha256.New()
-	identifier := fmt.Sprintf("%v%v%v%v%v%v%v%v%v%v%v%v",
+	identifier := fmt.Sprintf("%v%v%v%v%v%v%v%v%v%v%v%v%v",
 		d.Name,
 		d.Labels,
+		d.Tags,
 		d.ExecutorConfig,
 		d.Interval,
 		d.Timeout,

@@ -166,6 +166,11 @@ func LogFields(def integration.Definition) logrus.Fields {
 	for k, v := range def.Labels {
 		fields[k] = v
 	}
+
+	for k, v := range def.Tags {
+		fields[k] = v
+	}
+
 	if def.CfgProtocol != nil {
 		fields["cfg_protocol_name"] = def.CfgProtocol.ConfigName
 		fields["parent_integration_name"] = def.CfgProtocol.ParentName

@@ -356,12 +356,14 @@ func TestDefinition_Hash(t *testing.T) {
 	assert.NotNil(t, def)
 	def2 := Definition{
 		Name:           "def",
+		Tags:           map[string]string{"test": "one"},
 		ConfigTemplate: []byte("b"),
 	}
 	assert.NotNil(t, def2)
 	assert.NotEqual(t, def.Hash(), def2.Hash())
 	def3 := Definition{
 		Name:           "def",
+		Tags:           map[string]string{"test": "one"},
 		ConfigTemplate: []byte("b"),
 	}
 	assert.NotNil(t, def3)
