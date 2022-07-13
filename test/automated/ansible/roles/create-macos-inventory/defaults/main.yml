@@ -3,6 +3,5 @@
 ec2_private_key_file: "~/.ssh/caos-dev-arm.cer"
 output_inventory: "inventory.ec2"
 instance_prefix: ""
-ansible_password_windows: ""
 
 ...

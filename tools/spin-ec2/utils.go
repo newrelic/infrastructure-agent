@@ -93,8 +93,6 @@ func execNameArgsWithEnv(name string, env []string, cmdArgs ...string) {
 	cmd := exec.Command(name, cmdArgs...)
 	cmd.Env = append(os.Environ(), env...)
 
-	fmt.Println("Executing command: " + cmd.String())
-
 	stdoutIn, _ := cmd.StdoutPipe()
 	stderrIn, _ := cmd.StderrPipe()
 

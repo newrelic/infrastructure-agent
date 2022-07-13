@@ -21,6 +21,7 @@
         }
   register: response
   failed_when: "response.json.data.actor.account.nrql.results is undefined"
+  no_log: true
 
 - set_fact:
     results: "{{ response.json.data.actor.account.nrql.results }}"

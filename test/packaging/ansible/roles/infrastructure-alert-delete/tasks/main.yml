@@ -10,6 +10,7 @@
     headers:
       Api-Key: "{{ nr_api_key }}"
   register: existing_response_policy
+  no_log: true
 
 - name: fail if more than one policy found
   fail:
@@ -28,5 +29,6 @@
       Accept: application/json
   register: existing_response_policy
   when: existing_response_policy.json.policies | length == 1
+  no_log: true
 
 ...

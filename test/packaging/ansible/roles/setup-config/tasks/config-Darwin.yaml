@@ -15,5 +15,6 @@
     owner: "{{ ansible_user }}"
     group: wheel
     mode: 0644
+  no_log: true
 
 ...

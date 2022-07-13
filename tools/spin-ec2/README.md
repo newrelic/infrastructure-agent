@@ -39,9 +39,9 @@ The following example shows how to deploy infrastructure agent canaries:
 ```shell
 
 # use custom prefix instead of canary
-ANSIBLE_PASSWORD='PASS' NR_LICENSE_KEY='LICENSE' VERSION=1.24.4 PREFIX='my-own-prefix' make canaries
+ANSIBLE_PASSWORD_WINDOWS='PASS' NR_LICENSE_KEY='LICENSE' VERSION=1.24.4 PREFIX='my-own-prefix' make canaries
 
 # use custom repository for packages 
-ANSIBLE_PASSWORD='PASS' NR_LICENSE_KEY='LICENSE' VERSION=1.24.4 REPO='http://nr-downloads-ohai-testing.s3-website-us-east-1.amazonaws.com/infrastructure_agent' make canaries
+ANSIBLE_PASSWORD_WINDOWS='PASS' NR_LICENSE_KEY='LICENSE' VERSION=1.24.4 REPO='http://nr-downloads-ohai-testing.s3-website-us-east-1.amazonaws.com/infrastructure_agent' make canaries
 
 ```
