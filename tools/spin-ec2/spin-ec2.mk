@@ -61,3 +61,7 @@ canaries-prune-dry: validate-aws-credentials ec2-install-deps ec2-build
 canaries-prune: validate-aws-credentials ec2-install-deps ec2-build
 	@read -p "REAL run for canaries prune, press enter to continue"
 	tools/spin-ec2/bin/spin-ec2 canaries prune
+
+.PHONY: canaries-prune-auto
+canaries-prune-auto: validate-aws-credentials ec2-install-deps ec2-build
+	tools/spin-ec2/bin/spin-ec2 canaries prune
