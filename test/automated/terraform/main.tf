@@ -155,7 +155,9 @@ module "ecs-fargate-task-definition" {
               "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_license}",
               "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_account}",
               "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_api}",
-              "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_windows_password}"
+              "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_windows_password}",
+              "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_macstadium_user}",
+              "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_macstadium_pass}"
             ]
           }
         ]
@@ -183,6 +185,14 @@ module "ecs-fargate-task-definition" {
     {
       "name" : "ANSIBLE_PASSWORD_WINDOWS",
       "valueFrom" : "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_windows_password}"
+    },
+    {
+      "name" : "MACSTADIUM_USER",
+      "valueFrom" : "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_macstadium_user}"
+    },
+    {
+      "name" : "MACSTADIUM_PASS",
+      "valueFrom" : "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_macstadium_pass}"
     }
   ]
   log_configuration = {
