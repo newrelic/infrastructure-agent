@@ -19,7 +19,6 @@
             include_role:
               name: setup-config
             vars:
-              verbose_level: '0'
               self_instrumentation: true
 
           - name: install agent

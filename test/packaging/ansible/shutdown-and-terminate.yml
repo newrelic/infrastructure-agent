@@ -22,7 +22,6 @@
       include_role:
         name: setup-config
       vars:
-        verbose_level: '0'
         display_name: "{{ iid }}:{{ inventory_hostname }}"
 
     - name: install agent
@@ -42,7 +41,6 @@
       include_role:
         name: setup-config
       vars:
-        verbose_level: '0'
         display_name: "{{ iid }}:{{ inventory_hostname }}"
 
     - name: install agent

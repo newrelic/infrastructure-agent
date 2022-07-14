@@ -29,7 +29,14 @@ custom_attributes:
     owning_team: {{ owning_team }}
 
 display_name: {{ display_name }}
-verbose: {{ verbose }}
+log:
+  level: {{ log_level }}
+  forward: {{ log_forward }}
+  rotate:
+    max_size_mb: {{ log_rotation_mb }}
+    max_files: {{ log_rotation_max_files }}
+    compression_enabled: {{ log_rotation_compressed }}
+
 staging: {{ staging }}
 enable_process_metrics: {{ enable_process_metrics }}
 {% if self_instrumentation %}
