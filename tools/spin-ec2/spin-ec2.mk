@@ -42,7 +42,7 @@ ifndef MACSTADIUM_PASS
 endif
 	@echo "\033[41mYou have 10 seconds to verify that you are in the correct VPN if needed\033[0m"
 	@sleep 10
-	tools/spin-ec2/bin/spin-ec2 canaries provision \
+	@tools/spin-ec2/bin/spin-ec2 canaries provision \
 									-v 'v$(VERSION)' \
 									-l '$(NR_LICENSE_KEY)' \
 									-x '$(ANSIBLE_PASSWORD_WINDOWS)' \
