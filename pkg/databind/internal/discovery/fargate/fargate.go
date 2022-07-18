@@ -23,10 +23,10 @@ const (
 )
 
 type HTTPClient interface {
-	Get(url string) (resp *http.Response, err error)
+	Get(url string) (*http.Response, error)
 }
 
-var httpClient HTTPClient = http.DefaultClient
+var httpClient HTTPClient = &http.Client{} //nolint
 
 // Discoverer returns a Fargate discoverer from the provided container discovery configuration.
 // The fetching process will return an array of map values for each discovered container, with the
