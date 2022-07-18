@@ -45,6 +45,7 @@ const (
 	// These two constants can be found in V4 integrations as well
 	labelPrefix     = "label."
 	labelPrefixTrim = 6
+	tagsPrefix      = "tags."
 )
 
 var (
@@ -651,6 +652,7 @@ func (ep *externalPlugin) handleLine(line []byte, extraLabels data.Map, entityRe
 			dataSet,
 			extraAnnotations,
 			lbls,
+			nil,
 			entityRewrite,
 			protocolVersion)
 		if err != nil {
@@ -694,6 +696,7 @@ func EmitDataSet(
 	dataSet protocol.PluginDataSetV3,
 	extraAnnotations map[string]string,
 	labels map[string]string,
+	tags map[string]string,
 	entityRewrite []data.EntityRewrite,
 	protocolVersion int,
 ) error {
@@ -734,6 +737,11 @@ func EmitDataSet(
 				metric[key] = value
 			}
 		}
+
+		for key, value := range tags {
+			metric[tagsPrefix+key] = value
+		}
+
 		if integrationUser != "" {
 			metric["integrationUser"] = integrationUser
 		}
