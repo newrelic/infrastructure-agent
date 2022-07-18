@@ -19,6 +19,7 @@ const (
 	CollectorNameAttribute           = "collector.name"
 	CollectorVersionAttribute        = "collector.version"
 	labelPrefix                      = "label."
+	tagsPrefix                       = "tags."
 	labelPrefixTrim                  = 6
 	newRelicProvider                 = "newRelic"
 	agentCollector                   = "infrastructure-agent"
@@ -156,6 +157,11 @@ func (d *FwRequestMeta) LabelsAndExtraAnnotations() (map[string]string, map[stri
 		} else {
 			extraAnnotations[k] = v
 		}
+	}
+
+	// Adding tags.
+	for k, v := range d.Definition.Tags {
+		extraAnnotations[tagsPrefix+k] = v
 	}
 
 	return labels, extraAnnotations

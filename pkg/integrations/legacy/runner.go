@@ -652,7 +652,6 @@ func (ep *externalPlugin) handleLine(line []byte, extraLabels data.Map, entityRe
 			dataSet,
 			extraAnnotations,
 			lbls,
-			nil,
 			entityRewrite,
 			protocolVersion)
 		if err != nil {
@@ -696,7 +695,6 @@ func EmitDataSet(
 	dataSet protocol.PluginDataSetV3,
 	extraAnnotations map[string]string,
 	labels map[string]string,
-	tags map[string]string,
 	entityRewrite []data.EntityRewrite,
 	protocolVersion int,
 ) error {
@@ -736,10 +734,6 @@ func EmitDataSet(
 			if _, ok := metric[key]; !ok {
 				metric[key] = value
 			}
-		}
-
-		for key, value := range tags {
-			metric[tagsPrefix+key] = value
 		}
 
 		if integrationUser != "" {

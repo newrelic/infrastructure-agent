@@ -127,7 +127,6 @@ func (e *VersionAwareEmitter) emitV3(dto fwrequest.FwRequestLegacy, protocolVers
 			dataset,
 			extraAnnotations,
 			labels,
-			dto.Definition.Tags,
 			dto.EntityRewrite,
 			protocolVersion)
 		if err != nil {
