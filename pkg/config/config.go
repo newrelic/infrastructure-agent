@@ -1144,6 +1144,8 @@ type LogConfig struct {
 
 	IncludeFilters LogFilters `yaml:"include_filters" envconfig:"include_filters"`
 	ExcludeFilters LogFilters `yaml:"exclude_filters" envconfig:"exclude_filters"`
+
+	Rotate LogRotateConfig `yaml:"rotate" envconfig:"rotate"`
 }
 
 func (lc *LogConfig) AttachDefaultFilters() {
@@ -1172,6 +1174,19 @@ func (lc *LogConfig) HasIncludeFilter(key, value string) bool {
 		}
 	}
 	return false
+}
+
+// LogRotateConfig map all log rotator configuration options
+type LogRotateConfig struct {
+	MaxSizeMb          int    `yaml:"max_size_mb" envconfig:"max_size_mb"`
+	MaxFiles           int    `yaml:"max_files" envconfig:"max_files"`
+	CompressionEnabled bool   `yaml:"compression_enabled" envconfig:"compression_enabled"`
+	FilePattern        string `yaml:"file_pattern" envconfig:"file_pattern"`
+}
+
+// IsEnabled checks if log rotation is enabled.
+func (l *LogRotateConfig) IsEnabled() bool {
+	return l.MaxSizeMb > 0
 }
 
 func coalesce(values ...string) string {

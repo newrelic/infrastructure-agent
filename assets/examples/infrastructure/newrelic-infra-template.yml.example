@@ -156,6 +156,11 @@ license_key: your_license_key
 #      - nri-flex
 #      - nri-powerdns
 #
+#  rotate:
+#    max_size_mb: 1000
+#    max_files: 5
+#    compression_enabled: true
+#    file_pattern: rotated.YYYY-MM-DD_hh-mm-ss.log
 
 #
 # Option   : network_interface_filters
