@@ -238,6 +238,15 @@ func WithLabels(l map[string]string) func(EventData) {
 	}
 }
 
+// Builder for NewEventData constructor will add tags with prefix 'tag.'
+func WithTags(l map[string]string) func(EventData) {
+	return func(copy EventData) {
+		for key, value := range l {
+			copy[fmt.Sprintf("tag.%s", key)] = value
+		}
+	}
+}
+
 // Builder for NewEventData constructor will add attributes
 // if already exist in the eventData will add it with prefix 'attr.'
 func WithAttributes(a map[string]interface{}) func(EventData) {

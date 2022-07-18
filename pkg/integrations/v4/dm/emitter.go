@@ -220,6 +220,8 @@ func emitEvent(emitter agent.PluginEmitter, metadata integration.Definition, dat
 		protocol.WithLabels(labels),
 		// add extra annotations
 		protocol.WithAnnotations(annotations),
+		// add tags.
+		protocol.WithTags(metadata.Tags),
 	}
 
 	if !entityID.IsEmpty() {
