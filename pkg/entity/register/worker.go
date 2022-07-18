@@ -2,6 +2,7 @@ package register
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -191,8 +192,18 @@ func (w *worker) registerEntitiesWithRetry(ctx context.Context, entities []entit
 				continue
 			}
 		}
-		wlog.WithError(err).
-			Error("entity register request error, discarding entities.")
+
+		elog := wlog.WithError(err)
+		ent, err := json.Marshal(entities)
+
+		if err != nil {
+			wlog.WithError(err).Error("cannot marshal entities to register")
+		} else {
+			elog = elog.WithTraceField("entities", string(ent))
+		}
+
+		elog.Error("entity register request error, discarding entities.")
+
 		break
 	}
 	return nil
