@@ -44,7 +44,8 @@
           include_role:
             name: setup-config
           vars:
-            verbose_level: '3'
+            log_level: 'debug'
+            log_forward: 'true'
           when: log_forwader_supported is defined
 
         - name: install agent
@@ -101,7 +102,8 @@
           include_role:
             name: setup-config
           vars:
-            verbose_level: '3'
+            log_level: 'debug'
+            log_forward: 'true'
           when: log_forwader_supported_arm64 is defined
 
         - name: install agent

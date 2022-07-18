@@ -452,7 +452,11 @@ func provisionEphimeralCanaries(cnf canaryConf) error {
 	var playbookArguments = []string{
 		"-e", "nr_license_key=" + cnf.license,
 		"-e", "enable_process_metrics=true",
-		"-e", "verbose=3",
+		"-e", "nria_log_level=debug",
+		"-e", "nria_log_forward=true",
+		"-e", "nria_log_rotation_mb=500",
+		"-e", "nria_log_rotation_max_files=5",
+		"-e", "nria_log_rotation_compressed=true",
 		"-e", "target_agent_version=" + cnf.agentVersion[1:],
 		"-i", path.Join(curPath, inventoryProvisioned),
 	}

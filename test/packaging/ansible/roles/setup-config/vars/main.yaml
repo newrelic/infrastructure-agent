@@ -2,7 +2,11 @@
 
 # agent config:
 display_name: "{{ inventory_hostname }}"
-verbose: '{{ verbose_level }}'
+log_level: "{{ nria_log_level | default('info') }}"
+log_forward: "{{ nria_log_forward | default('false') }}"
+log_rotation_mb: "{{ nria_log_rotation_mb | default('0') }}"
+log_rotation_max_files: "{{ nria_log_rotation_max_files | default('0') }}"
+log_rotation_compressed: "{{ nria_log_rotation_compressed | default('false') }}"
 staging: 'true'
 # custom attributes:
 nr_environment: 'development'

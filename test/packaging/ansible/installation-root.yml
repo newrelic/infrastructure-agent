@@ -26,8 +26,6 @@
         - name: setup config
           include_role:
             name: setup-config
-          vars:
-            verbose_level: '0'
 
         - name: install agent
           include_role:
