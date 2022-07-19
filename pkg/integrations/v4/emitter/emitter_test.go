@@ -509,6 +509,9 @@ func TestLegacy_Emit(t *testing.T) {
 func TestProtocolV4_Emit(t *testing.T) {
 	metadata := integration.Definition{
 		InventorySource: *ids.NewPluginID("cat", "term"),
+		Tags: map[string]string{
+			"test_tag": "test_tag_val",
+		},
 	}
 	extraLabels := data.Map{
 		"label.foo":                "bar",

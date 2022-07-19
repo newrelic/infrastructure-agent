@@ -761,6 +761,7 @@ func EmitDataSet(
 						metric["reportingEndpoint"] = replacement
 					}
 				}
+
 				if reportingEntityKey, ok := metric["reportingEntityKey"]; ok {
 					replacement, err := replaceLoopbackFromField(reportingEntityKey, idLookup, protocolVersion)
 					if err != nil {

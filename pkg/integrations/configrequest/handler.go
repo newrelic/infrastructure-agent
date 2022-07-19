@@ -44,12 +44,26 @@ func NewHandleFn(configProtocolQueue chan<- Entry, terminateDefinitionQueue chan
 				logger.WithError(err).WithFields(logCtx).Warn(logFailedConfigTemplate)
 				return
 			}
+
+			// Add parent tags.
+			for k, v := range parentDefinition.Tags {
+				if ce.Tags == nil {
+					ce.Tags = make(map[string]string)
+				}
+				// Do not overwrite tags received from config protocol.
+				if _, found := ce.Tags[k]; !found {
+					ce.Tags[k] = v
+				}
+			}
+
 			def, err := integration.NewDefinition(ce, il, parentDefinition.ExecutorConfig.Passthrough, template)
 			if err != nil {
 				logger.WithError(err).WithFields(logCtx).Warn(logFailedDefinition)
 				return
 			}
+
 			def.CfgProtocol = &protocol.Context{ParentName: parentDefinition.Name, ConfigName: cfgProtocol.Name()}
+
 			if cfgDefinitions.Add(def) {
 				logger.WithFields(logCtx).WithField("definition_name", def.Name).Debug(logAddedDefinition)
 				configProtocolQueue <- Entry{def, cfgProtocol.GetConfig()}
