@@ -45,7 +45,6 @@ const (
 	// These two constants can be found in V4 integrations as well
 	labelPrefix     = "label."
 	labelPrefixTrim = 6
-	tagsPrefix      = "tags."
 )
 
 var (
