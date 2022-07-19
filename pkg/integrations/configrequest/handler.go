@@ -44,6 +44,18 @@ func NewHandleFn(configProtocolQueue chan<- Entry, terminateDefinitionQueue chan
 				logger.WithError(err).WithFields(logCtx).Warn(logFailedConfigTemplate)
 				return
 			}
+
+			// Add parent labels.
+			for key, val := range parentDefinition.Labels {
+				if ce.Labels == nil {
+					ce.Labels = make(map[string]string)
+				}
+				// Do not overwrite tags received from config protocol.
+				if _, found := ce.Labels[key]; !found {
+					ce.Labels[key] = val
+				}
+			}
+
 			def, err := integration.NewDefinition(ce, il, parentDefinition.ExecutorConfig.Passthrough, template)
 			if err != nil {
 				logger.WithError(err).WithFields(logCtx).Warn(logFailedDefinition)
