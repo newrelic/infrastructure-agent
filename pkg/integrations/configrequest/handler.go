@@ -46,13 +46,13 @@ func NewHandleFn(configProtocolQueue chan<- Entry, terminateDefinitionQueue chan
 			}
 
 			// Add parent tags.
-			for k, v := range parentDefinition.Tags {
+			for key, val := range parentDefinition.Tags {
 				if ce.Tags == nil {
 					ce.Tags = make(map[string]string)
 				}
 				// Do not overwrite tags received from config protocol.
-				if _, found := ce.Tags[k]; !found {
-					ce.Tags[k] = v
+				if _, found := ce.Tags[key]; !found {
+					ce.Tags[key] = val
 				}
 			}
 

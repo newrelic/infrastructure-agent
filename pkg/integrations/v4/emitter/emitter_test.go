@@ -506,12 +506,52 @@ func TestLegacy_Emit(t *testing.T) {
 	}
 }
 
-func TestProtocolV4_Emit(t *testing.T) {
-	metadata := integration.Definition{
-		InventorySource: *ids.NewPluginID("cat", "term"),
+func TestEmitV3_WithTags(t *testing.T) {
+	definition := integration.Definition{
+		InventorySource: ids.EmptyInventorySource,
+		Name:            "awesome-plugin",
 		Tags: map[string]string{
 			"test_tag": "test_tag_val",
 		},
+	}
+
+	integrationJsonOutput := fmt.Sprintf(integrationJsonOutput, "")
+	ma := mockAgent()
+
+	extraLabels := data.Map{}
+	var entityRewrite []data.EntityRewrite
+	mockDME := &mockDmEmitter{}
+	mockDME.On("Send", mock.Anything)
+
+	em := &VersionAwareEmitter{
+		aCtx:        ma,
+		ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true}),
+		dmEmitter:   mockDME,
+	}
+
+	err := em.Emit(definition, extraLabels, entityRewrite, []byte(integrationJsonOutput))
+	require.NoError(t, err)
+
+	for c := range ma.Calls {
+		called := ma.Calls[c]
+		if called.Method == "SendEvent" {
+			// Convert the event to a map.
+			eventMarshalled, _ := json.Marshal(called.Arguments[0])
+			var eRaw map[string]interface{}
+			err := json.Unmarshal(eventMarshalled, &eRaw)
+			assert.NoError(t, err)
+
+			// Assert the event has the tags included.
+			for key, val := range definition.Tags {
+				assert.Contains(t, eRaw, "tags."+key, val)
+			}
+		}
+	}
+}
+
+func TestProtocolV4_Emit(t *testing.T) {
+	metadata := integration.Definition{
+		InventorySource: *ids.NewPluginID("cat", "term"),
 	}
 	extraLabels := data.Map{
 		"label.foo":                "bar",
