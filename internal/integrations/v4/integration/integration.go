@@ -126,11 +126,6 @@ func NewDefinition(ce config2.ConfigEntry, lookup InstancesLookup, passthroughEn
 		return
 	}
 
-	// Add tags to definition.
-	if ce.Tags != nil {
-		d.Tags = ce.Tags
-	}
-
 	// if looking for a v3 integration from the v4 engine
 	if ce.IntegrationName != "" {
 		err = d.fromLegacyV3(ce, lookup)
