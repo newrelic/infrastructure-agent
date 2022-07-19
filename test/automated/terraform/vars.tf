@@ -58,6 +58,14 @@ variable "secret_name_windows_password" {
   default = "caos/canaries/windows-gTLIiF"
 }
 
+variable "secret_name_macstadium_user" {
+  default = "caos/canaries/macstadium_user-QXCSKB"
+}
+
+variable "secret_name_macstadium_pass" {
+  default = "caos/canaries/macstadium_pass-DvAHye"
+}
+
 variable "task_container_image" {
   default = "ghcr.io/newrelic/infrastructure-agent-ci-runner:latest"
 }
