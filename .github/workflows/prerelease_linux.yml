@@ -1,131 +1,136 @@
 name: Prerelease Linux
 
 on:
-  release:
-    types:
-      - prereleased
-    tags:
-      - '*'
+#  release:
+#    types:
+#      - prereleased
+#    tags:
+#      - '*'
+  push:
+    branches:
+      - 'ci/test-packaging'
+
+permissions:
+  id-token: write
 
 jobs:
-  unit-test:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_unit_test.yml@master
-    secrets:
-      gh_token: ${{secrets.GITHUB_TOKEN}}
-
-  harvest-test:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_harvest_test.yml@master
-
-  proxy-tests:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_proxy_test.yml@master
-    secrets:
-      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
-      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
-
-  packaging-amd64:
-    needs: [unit-test, harvest-test, proxy-tests]
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_packaging.yml@master
-    secrets:
-      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
-      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
-      GPG_MAIL: 'infrastructure-eng@newrelic.com'
-      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
-      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    with:
-      TAG:  ${{ github.event.release.tag_name }}
-      ARCH: 'amd64'
-
-  packaging-arm:
-    needs: [unit-test, harvest-test, proxy-tests]
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_packaging.yml@master
-    secrets:
-      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
-      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
-      GPG_MAIL: 'infrastructure-eng@newrelic.com'
-      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
-      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    with:
-      TAG:  ${{ github.event.release.tag_name }}
-      ARCH: 'arm'
-
-  packaging-arm64:
-    needs: [unit-test, harvest-test, proxy-tests]
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_packaging.yml@master
-    secrets:
-      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
-      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
-      GPG_MAIL: 'infrastructure-eng@newrelic.com'
-      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
-      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    with:
-      TAG:  ${{ github.event.release.tag_name }}
-      ARCH: 'arm64'
-
-  packaging-legacy:
-    needs: [unit-test, harvest-test, proxy-tests]
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_packaging.yml@master
-    secrets:
-      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
-      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
-      GPG_MAIL: 'infrastructure-eng@newrelic.com'
-      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
-      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    with:
-      TAG:  ${{ github.event.release.tag_name }}
-      ARCH: 'legacy'
-
-  packaging-docker:
-    needs: [unit-test, harvest-test, proxy-tests]
-    uses: newrelic/infrastructure-agent/.github/workflows/component_docker_packaging.yml@master
-    secrets:
-      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
-      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
-      GPG_MAIL: 'infrastructure-eng@newrelic.com'
-      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
-      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    with:
-      TAG:  ${{ github.event.release.tag_name }}
-
-  publishing-to-s3:
-    # point to staging after tests
-    name: Publish linux artifacts into s3 staging bucket
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_publish.yml@master
-    needs: [packaging-amd64, packaging-arm, packaging-arm64, packaging-legacy]
-    secrets:
-      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
-      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
-      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
-      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
-      AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
-      AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
-      AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
-    with:
-      ACCESS_POINT_HOST: "staging"
-      SCHEMA_BRANCH: "master"
-      RUN_ID: ${{ github.run_id }}
-      TAG: ${{ github.event.release.tag_name }}
-      AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
-      AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
-      ASSETS_TYPE: "all"
-
-  molecule-packaing-tests:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_molecule_packaging.yml@master
-    needs: [publishing-to-s3]
-    secrets:
-      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
-      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
-    with:
-      TAG: ${{ github.event.release.tag_name }}
-      REPO_ENDPOINT: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
+#  unit-test:
+#    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_unit_test.yml@master
+#    secrets:
+#      gh_token: ${{secrets.GITHUB_TOKEN}}
+#
+#  harvest-test:
+#    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_harvest_test.yml@master
+#
+#  proxy-tests:
+#    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_proxy_test.yml@master
+#    secrets:
+#      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+#      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+#
+#  packaging-amd64:
+#    needs: [unit-test, harvest-test, proxy-tests]
+#    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_packaging.yml@master
+#    secrets:
+#      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+#      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+#      GPG_MAIL: 'infrastructure-eng@newrelic.com'
+#      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+#      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+#      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#    with:
+#      TAG:  ${{ github.event.release.tag_name }}
+#      ARCH: 'amd64'
+#
+#  packaging-arm:
+#    needs: [unit-test, harvest-test, proxy-tests]
+#    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_packaging.yml@master
+#    secrets:
+#      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+#      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+#      GPG_MAIL: 'infrastructure-eng@newrelic.com'
+#      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+#      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+#      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#    with:
+#      TAG:  ${{ github.event.release.tag_name }}
+#      ARCH: 'arm'
+#
+#  packaging-arm64:
+#    needs: [unit-test, harvest-test, proxy-tests]
+#    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_packaging.yml@master
+#    secrets:
+#      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+#      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+#      GPG_MAIL: 'infrastructure-eng@newrelic.com'
+#      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+#      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+#      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#    with:
+#      TAG:  ${{ github.event.release.tag_name }}
+#      ARCH: 'arm64'
+#
+#  packaging-legacy:
+#    needs: [unit-test, harvest-test, proxy-tests]
+#    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_packaging.yml@master
+#    secrets:
+#      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+#      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+#      GPG_MAIL: 'infrastructure-eng@newrelic.com'
+#      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+#      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+#      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#    with:
+#      TAG:  ${{ github.event.release.tag_name }}
+#      ARCH: 'legacy'
+#
+#  packaging-docker:
+#    needs: [unit-test, harvest-test, proxy-tests]
+#    uses: newrelic/infrastructure-agent/.github/workflows/component_docker_packaging.yml@master
+#    secrets:
+#      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+#      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+#      GPG_MAIL: 'infrastructure-eng@newrelic.com'
+#      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+#      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+#      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#    with:
+#      TAG:  ${{ github.event.release.tag_name }}
+#
+#  publishing-to-s3:
+#    # point to staging after tests
+#    name: Publish linux artifacts into s3 staging bucket
+#    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_publish.yml@master
+#    needs: [packaging-amd64, packaging-arm, packaging-arm64, packaging-legacy]
+#    secrets:
+#      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+#      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+#      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+#      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+#      AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
+#      AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
+#      AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
+#      AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
+#    with:
+#      ACCESS_POINT_HOST: "staging"
+#      SCHEMA_BRANCH: "master"
+#      RUN_ID: ${{ github.run_id }}
+#      TAG: ${{ github.event.release.tag_name }}
+#      AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
+#      AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
+#      ASSETS_TYPE: "all"
+#
+#  molecule-packaing-tests:
+#    uses: newrelic/infrastructure-agent/.github/workflows/component_molecule_packaging.yml@master
+#    needs: [publishing-to-s3]
+#    secrets:
+#      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+#      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+#    with:
+#      TAG: ${{ github.event.release.tag_name }}
+#      REPO_ENDPOINT: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
 
   provision:
-    needs: [ molecule-packaing-tests ]
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
@@ -164,7 +169,7 @@ jobs:
         uses: ./.github/actions/external_runner
         with:
           aws_region: us-east-2
-          container_make_target: "test/automated/harvest PLATFORM=linux ANSIBLE_INVENTORY_FILE=linux-inventory.ec2 TAG=${{ github.event.release.tag_name }}"
+          container_make_target: "test/automated/harvest PLATFORM=linux ANSIBLE_INVENTORY_FILE=linux-inventory.ec2 TAG=1.28.0"
           ecs_cluster_name: caos_prerelease
           task_definition_name: test-prerelease-td
           cloud_watch_logs_group_name: /ecs/test-prerelease
@@ -195,7 +200,7 @@ jobs:
         uses: ./.github/actions/external_runner
         with:
           aws_region: us-east-2
-          container_make_target: "test/automated/packaging LIMIT=${{ matrix.limit }} PLATFORM=linux ANSIBLE_INVENTORY_FILE=linux-inventory.ec2 TAG=${{ github.event.release.tag_name }}"
+          container_make_target: "test/automated/packaging LIMIT=${{ matrix.limit }} PLATFORM=linux ANSIBLE_INVENTORY_FILE=linux-inventory.ec2 TAG=1.28.0"
           ecs_cluster_name: caos_prerelease
           task_definition_name: test-prerelease-td
           cloud_watch_logs_group_name: /ecs/test-prerelease
@@ -219,7 +224,7 @@ jobs:
         uses: ./.github/actions/external_runner
         with:
           aws_region: us-east-2
-          container_make_target: "canaries PLATFORM=linux VERSION=${{ github.event.inputs.tag }}"
+          container_make_target: "canaries PLATFORM=linux VERSION=1.28.0"
           ecs_cluster_name: caos_prerelease
           task_definition_name: test-prerelease-td
           cloud_watch_logs_group_name: /ecs/test-prerelease
