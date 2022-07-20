@@ -7,7 +7,9 @@
 
 - name: "provision instance"
   shell: "aws ec2 run-instances --launch-template {{ item.launch_template }} --image-id {{ item.ami }} --instance-type {{ item.type }}  --subnet-id {{ subnet }} --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value={{ provision_host_prefix }}:{{ item.name }}},{Key=owning_team,Value=CAOS}]'"
-  loop: "{{ instances }}"
+  with_items: "{{ instances | list }}"
+  when:
+    - item.platform == "{{ platform }}"
   register: run_instances
   tags:
     - print_action
@@ -17,10 +19,14 @@
     created_instances_ids: "{{ item.stdout | from_json | community.general.json_query('Instances[*].InstanceId') | flatten }}"
   loop: "{{ run_instances.results | list }}"
   register: created_instances_ids_results
+  when:
+    - item.stdout is defined #filtering output from previous command
 
 - name: "register instances_ids"
   set_fact:
     created_instances_ids: "{{ created_instances_ids_results.results | map(attribute='ansible_facts') | map(attribute='created_instances_ids') | flatten }}"
+  when:
+    - item.ansible_facts is defined #filtering output from previous command
 
 - name: "wait until instances are running"
   shell: "aws ec2 wait instance-status-ok --instance-ids {{ created_instances_ids | join(' ') }}"

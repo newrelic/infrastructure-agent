@@ -103,3 +103,122 @@ jobs:
       AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
       AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
       ASSETS_TYPE: "all"
+
+  provision:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::018789649883:role/caos-pipeline-oidc
+          aws-region: us-east-2
+
+      - name: Provision instances Linux
+        uses: ./.github/actions/external_runner
+        with:
+          aws_region: us-east-2
+          container_make_target: "test/automated/provision PLATFORM=windows ANSIBLE_INVENTORY_FILE=windows-inventory.ec2"
+          ecs_cluster_name: caos_prerelease
+          task_definition_name: test-prerelease-td
+          cloud_watch_logs_group_name: /ecs/test-prerelease
+          cloud_watch_logs_stream_name: ecs/test-prerelease
+          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
+          disable_logs: true
+
+  harvest-tests:
+    needs: [ provision ]
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::018789649883:role/caos-pipeline-oidc
+          aws-region: us-east-2
+
+      - name: Launch harvest tests
+        uses: ./.github/actions/external_runner
+        with:
+          aws_region: us-east-2
+          container_make_target: "test/automated/harvest PLATFORM=windows ANSIBLE_INVENTORY_FILE=windows-inventory.ec2 TAG=${{ github.event.release.tag_name }}"
+          ecs_cluster_name: caos_prerelease
+          task_definition_name: test-prerelease-td
+          cloud_watch_logs_group_name: /ecs/test-prerelease
+          cloud_watch_logs_stream_name: ecs/test-prerelease
+          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
+          disable_logs: true
+
+  packaging-tests:
+    needs: [ harvest-tests ]
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::018789649883:role/caos-pipeline-oidc
+          aws-region: us-east-2
+
+      - name: Launch packging tests
+        uses: ./.github/actions/external_runner
+        with:
+          aws_region: us-east-2
+          container_make_target: "test/automated/packaging PLATFORM=windows ANSIBLE_INVENTORY_FILE=windows-inventory.ec2 TAG=${{ github.event.release.tag_name }}"
+          ecs_cluster_name: caos_prerelease
+          task_definition_name: test-prerelease-td
+          cloud_watch_logs_group_name: /ecs/test-prerelease
+          cloud_watch_logs_stream_name: ecs/test-prerelease
+          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
+          disable_logs: true
+
+  canaries:
+    needs: [ harvest-tests, packaging-tests ]
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::018789649883:role/caos-pipeline-oidc
+          aws-region: us-east-2
+
+      - name: Provision canaries
+        uses: ./.github/actions/external_runner
+        with:
+          aws_region: us-east-2
+          container_make_target: "canaries PLATFORM=windows VERSION=${{ github.event.inputs.tag }}"
+          ecs_cluster_name: caos_prerelease
+          task_definition_name: test-prerelease-td
+          cloud_watch_logs_group_name: /ecs/test-prerelease
+          cloud_watch_logs_stream_name: ecs/test-prerelease
+          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
+          disable_logs: true
+
+  canaries-prune:
+    needs: [ canaries ]
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::018789649883:role/caos-pipeline-oidc
+          aws-region: us-east-2
+
+      - name: Prune old canaries
+        uses: ./.github/actions/external_runner
+        with:
+          aws_region: us-east-2
+          container_make_target: "canaries-prune-auto PLATFORM=windows"
+          ecs_cluster_name: caos_prerelease
+          task_definition_name: test-prerelease-td
+          cloud_watch_logs_group_name: /ecs/test-prerelease
+          cloud_watch_logs_stream_name: ecs/test-prerelease
+          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
+          disable_logs: true
