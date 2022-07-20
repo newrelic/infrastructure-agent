@@ -22,10 +22,16 @@ const (
 	metricAnnotationsToAdd = 6
 )
 
+type HTTPClient interface {
+	Get(url string) (*http.Response, error)
+}
+
+var httpClient HTTPClient = &http.Client{} //nolint
+
 // Discoverer returns a Fargate discoverer from the provided container discovery configuration.
 // The fetching process will return an array of map values for each discovered container, with the
 // keys discovery.port and discovery.ip
-func Discoverer(d discovery.Container) (fetchDiscoveries func() (discoveries []discovery.Discovery, err error), err error) {
+func Discoverer(d discovery.Container) (func() ([]discovery.Discovery, error), error) {
 	matcher, err := discovery.NewMatcher(d.Match)
 	if err != nil {
 		return nil, err
@@ -40,8 +46,7 @@ func Discoverer(d discovery.Container) (fetchDiscoveries func() (discoveries []d
 }
 
 func awsMetadata() (*TaskMetadata, error) {
-	client := &http.Client{}
-	resp, err := client.Get(VM_META_DATA_URL)
+	resp, err := httpClient.Get(VM_META_DATA_URL)
 	if err != nil {
 		return nil, err
 	}
