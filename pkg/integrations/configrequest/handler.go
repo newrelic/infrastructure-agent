@@ -46,10 +46,11 @@ func NewHandleFn(configProtocolQueue chan<- Entry, terminateDefinitionQueue chan
 			}
 
 			// Add parent labels.
+			if ce.Labels == nil && len(parentDefinition.Labels) > 0 {
+				ce.Labels = make(map[string]string, len(parentDefinition.Labels))
+			}
+
 			for key, val := range parentDefinition.Labels {
-				if ce.Labels == nil {
-					ce.Labels = make(map[string]string)
-				}
 				// Do not overwrite tags received from config protocol.
 				if _, found := ce.Labels[key]; !found {
 					ce.Labels[key] = val
