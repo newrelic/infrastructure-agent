@@ -125,6 +125,7 @@ jobs:
       REPO_ENDPOINT: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
 
   provision:
+    needs: [ molecule-packaing-tests ]
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2

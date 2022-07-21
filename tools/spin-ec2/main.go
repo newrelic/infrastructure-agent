@@ -365,6 +365,7 @@ func provisionMacosCanaries(cnf canaryConf) error {
 	execNameArgs("ansible-playbook",
 		"-e", "macstadium_user="+cnf.macstadiumUser,
 		"-e", "macstadium_pass="+cnf.macstadiumPass,
+		"-e", "platform="+cnf.platform,
 		"-i", path.Join(curPath, inventoryLocal),
 		path.Join(curPath, "test/automated/ansible/macos-canaries.yml"))
 
@@ -442,6 +443,7 @@ func provisionEphimeralCanaries(cnf canaryConf) error {
 		"-i", path.Join(curPath, inventoryLocal),
 		"--extra-vars", "@"+path.Join(curPath, inventoryForCreation),
 		"-e", fmt.Sprintf("instance_prefix=%s:%s:", cnf.prefix, cnf.agentVersion),
+		"-e", "platform="+cnf.platform,
 		path.Join(curPath, "test/automated/ansible/provision.yml"))
 
 	execNameArgs("ansible-playbook",
