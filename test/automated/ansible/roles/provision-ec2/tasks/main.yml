@@ -24,9 +24,7 @@
 
 - name: "register instances_ids"
   set_fact:
-    created_instances_ids: "{{ created_instances_ids_results.results | map(attribute='ansible_facts') | map(attribute='created_instances_ids') | flatten }}"
-  when:
-    - item.ansible_facts is defined #filtering output from previous command
+    created_instances_ids: "{{ created_instances_ids_results.results | selectattr('ansible_facts', 'defined') | map(attribute='ansible_facts') | map(attribute='created_instances_ids') | flatten }}"
 
 - name: "wait until instances are running"
   shell: "aws ec2 wait instance-status-ok --instance-ids {{ created_instances_ids | join(' ') }}"
