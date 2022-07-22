@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -30,6 +32,7 @@ type Config struct {
 	MaxLogLines              int
 	TimeoutMillis            int
 	DisableLogs              bool
+	FilterAnsibleLogs        bool
 }
 
 const (
@@ -37,6 +40,10 @@ const (
 	defaultMaxLogLines   = 200
 
 	logLinesReqBackoff = 5 * time.Second
+)
+
+var (
+	logAnsibleFilters = []string{"TASK\\s\\[.*\\]\\s", "PLAY\\s\\[.*\\]\\s", "PLAY\\sRECAP\\s", "ok=\\d+\\s+changed=\\d+\\s+unreachable=\\d+\\s+failed=\\d+\\s+skipped=\\d+\\s+rescued=\\d+\\s+ignored=\\d+"}
 )
 
 func LoadConfig() Config {
@@ -50,6 +57,7 @@ func LoadConfig() Config {
 	viper.BindEnv("timeout_millis")
 	viper.BindEnv("max_log_lines")
 	viper.BindEnv("disable_logs")
+	viper.BindEnv("filter_ansible_logs")
 
 	timeoutMillis := viper.GetInt("timeout_millis")
 	if timeoutMillis == 0 {
@@ -70,6 +78,7 @@ func LoadConfig() Config {
 		CloudWatchLogsGroupName:  viper.GetString("cloud_watch_logs_group_name"),
 		CloudWatchLogsStreamName: viper.GetString("cloud_watch_logs_stream_name"),
 		DisableLogs:              viper.GetBool("disable_logs"),
+		FilterAnsibleLogs:        viper.GetBool("filter_ansible_logs"),
 		TimeoutMillis:            timeoutMillis,
 		MaxLogLines:              maxLogLines,
 	}
@@ -87,8 +96,15 @@ func main() {
 
 	// to be able to add timeout later
 	ctx := context.Background()
+	var logFilters []*regexp.Regexp
 
-	printFargateTaskLogs(ctx, params, cfg, taskRunner, id)
+	if params.FilterAnsibleLogs {
+		for _, ansibleFilter := range logAnsibleFilters {
+			logFilters = append(logFilters, regexp.MustCompile(ansibleFilter))
+		}
+	}
+
+	printFargateTaskLogs(ctx, params, cfg, taskRunner, id, logFilters)
 }
 
 func prepareFargateTask(params Config) (*TaskRunner, aws.Config) {
@@ -151,7 +167,23 @@ func runFargateTask(timeout time.Duration, taskRunner *TaskRunner) (string, erro
 	return id, nil
 }
 
-func printFargateTaskLogs(ctx context.Context, params Config, cfg aws.Config, taskRunner *TaskRunner, id string) {
+// printLogLine writes the provided line into the writer if it matches any of the regular expressions
+// if no filters (regular expressions) are provided, log line will be written
+func printLogLine(line string, writer io.Writer, logFilters []*regexp.Regexp) {
+	// if no logFilters are provided, print the line
+	if len(logFilters) == 0 {
+		fmt.Fprintf(writer, "%s\n", line)
+	}
+
+	for _, filter := range logFilters {
+		if filter.MatchString(line) {
+			fmt.Fprintf(writer, "%s\n", line)
+			return
+		}
+	}
+}
+
+func printFargateTaskLogs(ctx context.Context, params Config, cfg aws.Config, taskRunner *TaskRunner, id string, logFilters []*regexp.Regexp) {
 	logTailerConfig := CloudWatchLogTailerConfig{
 		LogGroupName:  params.CloudWatchLogsGroupName,
 		LogStreamName: fmt.Sprintf("%s/%s", params.CloudWatchLogsStreamName, id),
@@ -168,7 +200,7 @@ func printFargateTaskLogs(ctx context.Context, params Config, cfg aws.Config, ta
 			}
 
 			for _, line := range logs {
-				log.Printf("%s\n", *line.Message)
+				printLogLine(*line.Message, log.Writer(), logFilters)
 			}
 		}
 
