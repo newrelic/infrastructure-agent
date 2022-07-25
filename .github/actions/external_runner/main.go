@@ -31,7 +31,6 @@ type Config struct {
 	CloudWatchLogsStreamName string
 	MaxLogLines              int
 	TimeoutMillis            int
-	DisableLogs              bool
 	//to show full logs, set LOG_FILTERS=".*"
 	LogFilters []string
 }
@@ -53,7 +52,6 @@ func LoadConfig() Config {
 	viper.BindEnv("cloud_watch_logs_stream_name")
 	viper.BindEnv("timeout_millis")
 	viper.BindEnv("max_log_lines")
-	viper.BindEnv("disable_logs")
 	viper.BindEnv("log_filters")
 
 	timeoutMillis := viper.GetInt("timeout_millis")
@@ -74,7 +72,6 @@ func LoadConfig() Config {
 		AWSVpcSubnet:             viper.GetString("aws_vpc_subnet"),
 		CloudWatchLogsGroupName:  viper.GetString("cloud_watch_logs_group_name"),
 		CloudWatchLogsStreamName: viper.GetString("cloud_watch_logs_stream_name"),
-		DisableLogs:              viper.GetBool("disable_logs"),
 		LogFilters:               viper.GetStringSlice("log_filters"),
 		TimeoutMillis:            timeoutMillis,
 		MaxLogLines:              maxLogLines,
@@ -183,7 +180,7 @@ func printFargateTaskLogs(ctx context.Context, params Config, cfg aws.Config, ta
 	logTailer := NewCloudWatchLogTailer(logTailerConfig, cloudwatchlogs.NewFromConfig(cfg))
 
 	for {
-		if !params.DisableLogs {
+		if len(logFilters) > 0 {
 			logs, err := logTailer.GetLogs(ctx)
 			if err != nil {
 				log.Fatalf("failed to read logs: %v", err)
