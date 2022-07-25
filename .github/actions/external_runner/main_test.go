@@ -6,6 +6,10 @@ import (
 	"testing"
 )
 
+var (
+	logAnsibleFilters = []string{"TASK\\s\\[.*\\]\\s", "PLAY\\s\\[.*\\]\\s", "PLAY\\sRECAP\\s", "ok=\\d+\\s+changed=\\d+\\s+unreachable=\\d+\\s+failed=\\d+\\s+skipped=\\d+\\s+rescued=\\d+\\s+ignored=\\d+"}
+)
+
 func TestPrintLogLine(t *testing.T) {
 	var tests = []struct {
 		name          string
@@ -13,7 +17,8 @@ func TestPrintLogLine(t *testing.T) {
 		inputLines    []string
 		expectedLines string
 	}{
-		{"no regexp defined", nil, []string{"test"}, "test\n"},
+		{"no regexp defined", nil, []string{"test"}, ""},
+		{"match everything regexp", []string{".*"}, []string{"test number two"}, "test number two\n"},
 		{"ansible regexp", logAnsibleFilters, []string{"test"}, ""},
 		{"ansible regexp with task output",
 			logAnsibleFilters,

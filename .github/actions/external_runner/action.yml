@@ -25,8 +25,9 @@ inputs:
   disable_logs:
     description: Disable logs.
     required: false
-  filter_ansible_logs:
-    description: Filter ansible logs. Only play, task and recap sections will be shown.
+  log_filters:
+    description: Regexp filters that will be applied to CloudWatch output. To show the full logs add the following filter ".*". By default, it filters Ansible role execution logs.
+    default: "TASK\\s\\[.*\\]\\s PLAY\\s\\[.*\\]\\s PLAY\\sRECAP\\s ok=\\d+\\s+changed=\\d+\\s+unreachable=\\d+\\s+failed=\\d+\\s+skipped=\\d+\\s+rescued=\\d+\\s+ignored=\\d+:w"
     required: false
 
 runs:
