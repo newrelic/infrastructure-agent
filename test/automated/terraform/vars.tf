@@ -46,6 +46,10 @@ variable "secret_name_license" {
   default = "caos/canaries/license-f9eYwe"
 }
 
+variable "secret_name_license_canaries" {
+  default = "caos/canaries/license_canaries-1DCE1L"
+}
+
 variable "secret_name_account" {
   default = "caos/canaries/account-kKFMGP"
 }

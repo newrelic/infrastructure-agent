@@ -37,7 +37,7 @@ module "cloudwatch_log-group" {
   version = "3.2.0"
 
   name              = var.task_logs_group
-  retention_in_days = 1
+  retention_in_days = 14
 }
 
 #########################################
@@ -173,6 +173,10 @@ module "ecs-fargate-task-definition" {
     {
       "name" : "NR_LICENSE_KEY",
       "valueFrom" : "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_license}"
+    },
+    {
+      "name" : "NR_LICENSE_KEY_CANARIES",
+      "valueFrom" : "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_license_canaries}"
     },
     {
       "name" : "NEW_RELIC_ACCOUNT_ID",
