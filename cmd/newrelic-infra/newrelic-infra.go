@@ -212,8 +212,8 @@ func main() {
 		cfg.MemProfile = memprofile
 	}
 
-	if cfg.Verbose == config.SmartVerboseLogging {
-		wlog.EnableSmartVerboseMode(cfg.SmartVerboseModeEntryLimit)
+	if cfg.Log.IsSmartLogging() {
+		wlog.EnableSmartVerboseMode(cfg.Log.GetSmartLogLevelLimit())
 	}
 
 	if debug || cfg.WebProfile {
@@ -226,10 +226,10 @@ func main() {
 	configureLogFormat(cfg.Log)
 
 	// Send logging where it's supposed to go.
-	agentLogsToFile := configureLogRedirection(cfg, memLog)
+	agentLogsToFile := configureLogRedirection(&cfg.Log, memLog)
 
 	// Runtime config setup.
-	troubleCfg := config.NewTroubleshootCfg(cfg.IsTroubleshootMode(), agentLogsToFile, cfg.GetLogFile())
+	troubleCfg := config.NewTroubleshootCfg(cfg.Log.IsTroubleshootMode(), agentLogsToFile, cfg.GetLogFile())
 	logFwCfg := config.NewLogForward(cfg, troubleCfg)
 
 	// If parsedConfig.MaxProcs < 1, leave GOMAXPROCS to its previous value,
@@ -281,7 +281,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	pluginSourceDirs := getPluginSourceDirs(c)
 
 	v4ManagerConfig := v4.NewManagerConfig(
-		c.Verbose,
+		c.Log.VerboseEnabled(),
 		c.Features,
 		c.PassthroughEnvironment,
 		c.PluginInstanceDirs,
@@ -585,8 +585,8 @@ func configureLogFormat(cfg config.LogConfig) {
 // Either route standard logging to stdout (for Linux, so it gets copied to syslog as appropriate)
 // or copy it to stdout and a log file for Mac/Windows so we don't lose the logging when running
 // as a service.
-func configureLogRedirection(config *config.Config, memLog *wlog.MemLogger) (onFile bool) {
-	if config.LogFile == "" && !(config.IsTroubleshootMode() && systemd.IsAgentRunningOnSystemD()) {
+func configureLogRedirection(config *config.LogConfig, memLog *wlog.MemLogger) (onFile bool) {
+	if config.File == "" && !(config.IsTroubleshootMode() && systemd.IsAgentRunningOnSystemD()) {
 		wlog.SetOutput(os.Stdout)
 		return
 	}
@@ -600,8 +600,8 @@ func configureLogRedirection(config *config.Config, memLog *wlog.MemLogger) (onF
 
 	alog.WithFields(logrus.Fields{
 		"action":      "configureLogRedirection",
-		"logFile":     config.LogFile,
-		"logToStdout": config.LogToStdout,
+		"logFile":     config.File,
+		"logToStdout": config.IsStdoutEnabled(),
 	}).Debug("Redirecting output to a file.")
 
 	// Write all previous logs, which are stored in memLog, to the file.
@@ -611,19 +611,19 @@ func configureLogRedirection(config *config.Config, memLog *wlog.MemLogger) (onF
 	} else {
 		onFile = true
 	}
-	wlog.SetOutput(wlog.NewStdoutTeeLogger(logWriter, config.LogToStdout))
+	wlog.SetOutput(wlog.NewStdoutTeeLogger(logWriter, config.IsStdoutEnabled()))
 	return
 }
 
 // newLogWriter returns an io.Writer to be used by the logger as an output.
-func newLogWriter(config *config.Config) (io.Writer, error) {
-	logRotateConfig := config.Log.Rotate
+func newLogWriter(config *config.LogConfig) (io.Writer, error) {
+	logRotateConfig := config.Rotate
 	if !logRotateConfig.IsEnabled() {
-		return disk.OpenFile(config.LogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
+		return disk.OpenFile(config.File, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
 	}
 
 	rotateCfg := wlog.FileWithRotationConfig{
-		File:            config.LogFile,
+		File:            config.File,
 		FileNamePattern: logRotateConfig.FilePattern,
 		MaxSizeInBytes:  int64(logRotateConfig.MaxSizeMb) << 20,
 		MaxFiles:        logRotateConfig.MaxFiles,
@@ -726,7 +726,7 @@ func executeIntegrationsDryRunMode(configPath string, ac *config.Config) {
 	}
 
 	v4ManagerConfig := v4.NewManagerConfig(
-		ac.Verbose,
+		ac.Log.VerboseEnabled(),
 		ac.Features,
 		ac.PassthroughEnvironment,
 		integrationConfigPaths,

@@ -430,7 +430,7 @@ func (ep *externalPlugin) appendEnvPassthrough(envVars map[string]string) {
 // `PassthroughEnvironment`, the value from the environment takes precedence.
 func (ep *externalPlugin) envVars() map[string]string {
 	cfg := ep.Context.Config()
-	envVars := ArgumentsToEnvVars(cfg.Verbose, ep.pluginInstance.Arguments)
+	envVars := ArgumentsToEnvVars(cfg.Log.VerboseEnabled(), ep.pluginInstance.Arguments)
 	ep.appendEnvPassthrough(envVars)
 	return envVars
 }
