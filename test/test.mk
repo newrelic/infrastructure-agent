@@ -1,5 +1,7 @@
 PROVISION_HOST_PREFIX := $(shell whoami)-$(shell hostname)
 AWS_ACCOUNT_ID = "018789649883"# CAOS
+LIMIT ?= "testing_hosts"
+
 
 ANSIBLE_INVENTORY_FOLDER ?= $(CURDIR)/test/automated/ansible
 
@@ -46,8 +48,7 @@ ifndef NEW_RELIC_ACCOUNT_ID
 	@echo "NEW_RELIC_ACCOUNT_ID variable must be provided for test/automated/packaging"
 	exit 1
 endif
-	@ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO ANSIBLE_DISPLAY_OK_HOSTS=NO ansible-playbook -i $(ANSIBLE_INVENTORY) -e nr_license_key=$(NR_LICENSE_KEY) -e nr_api_key=$(NEW_RELIC_API_KEY) -e nr_account_id=$(NEW_RELIC_ACCOUNT_ID) $(CURDIR)/test/packaging/ansible/test.yml
-
+	@ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO ANSIBLE_DISPLAY_OK_HOSTS=NO ansible-playbook -i $(ANSIBLE_INVENTORY) --limit=$(LIMIT) -e nr_license_key=$(NR_LICENSE_KEY) -e nr_api_key=$(NEW_RELIC_API_KEY) -e nr_account_id=$(NEW_RELIC_ACCOUNT_ID) $(CURDIR)/test/packaging/ansible/test.yml
 
 .PHONY: test/automated/packaging-docker
 test/automated/packaging-docker:

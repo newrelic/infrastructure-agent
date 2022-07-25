@@ -173,6 +173,13 @@ jobs:
           disable_logs: true
 
   packaging-tests:
+
+    strategy:
+      matrix:
+        limit:
+          - "linux_amd64"
+          - "linux_arm64"
+
     needs: [ harvest-tests ]
     runs-on: ubuntu-20.04
     steps:
@@ -188,7 +195,7 @@ jobs:
         uses: ./.github/actions/external_runner
         with:
           aws_region: us-east-2
-          container_make_target: "test/automated/packaging PLATFORM=linux ANSIBLE_INVENTORY_FILE=linux-inventory.ec2 TAG=${{ github.event.release.tag_name }}"
+          container_make_target: "test/automated/packaging LIMIT=${{ matrix.limit }} PLATFORM=linux ANSIBLE_INVENTORY_FILE=linux-inventory.ec2 TAG=${{ github.event.release.tag_name }}"
           ecs_cluster_name: caos_prerelease
           task_definition_name: test-prerelease-td
           cloud_watch_logs_group_name: /ecs/test-prerelease
