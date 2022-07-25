@@ -153,6 +153,7 @@ module "ecs-fargate-task-definition" {
             "Resource" : [
               "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_ssh}",
               "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_license}",
+              "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_license_canaries}",
               "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_account}",
               "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_api}",
               "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_windows_password}",
