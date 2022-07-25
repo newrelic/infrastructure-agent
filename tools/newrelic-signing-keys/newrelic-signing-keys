@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+KEYRING_FILE_NAME=newrelic-infra-keyring.gpg
+TRUSTED_GPG_D_KEYRING=/etc/apt/trusted.gpg.d/${KEYRING_FILE_NAME}
+USR_SHARE_KEYRING=/usr/share/keyrings/${KEYRING_FILE_NAME}
+KEYS_LOCATION=/opt/newrelic-signing-keys
+
+if [ ! -f ${USR_SHARE_KEYRING} ]; then
+    touch ${USR_SHARE_KEYRING}
+fi
+chmod a+r ${USR_SHARE_KEYRING}
+
+cat "${KEYS_LOCATION}/keys/current/newrelic_apt_key_current.gpg" | gpg -q --no-default-keyring --keyring ${USR_SHARE_KEYRING} --import --batch
+cat "${KEYS_LOCATION}/keys/next/newrelic_apt_key_next.gpg" | gpg -q --no-default-keyring --keyring ${USR_SHARE_KEYRING} --import --batch
+
+# backward compatibility hack
+if  ! grep "signed-by=${USR_SHARE_KEYRING}" /etc/apt/sources.list.d/newrelic-infra.list 2>/dev/null 1>/dev/null; then
+    cp -a ${USR_SHARE_KEYRING} ${TRUSTED_GPG_D_KEYRING}
+fi
+
+exit 0
