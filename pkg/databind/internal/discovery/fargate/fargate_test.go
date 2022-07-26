@@ -228,6 +228,7 @@ var (
       },
       "DesiredStatus": "RUNNING",
       "KnownStatus": "PULLED",
+      "ExitCode": 0,
       "Limits": {
         "CPU": 0
       },
@@ -279,7 +280,7 @@ var (
 				},
 				DesiredStatus: "RUNNING",
 				KnownStatus:   "RUNNING",
-				ExitCode:      "",
+				ExitCode:      0,
 				CreatedAt:     "2022-07-08T21:38:33.101192734Z",
 				StartedAt:     "2022-07-08T21:38:33.101192734Z",
 				FinishedAt:    "",
