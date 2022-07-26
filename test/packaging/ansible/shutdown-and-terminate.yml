@@ -92,6 +92,10 @@
       include_role:
         name: ec2-stop
 
+    - name: pause for a bit to let the event fire
+      pause:
+        seconds: 30
+
     - name: assert that the agent detecteded host shutdown and disconnected from the backend (only on hosts that support shutdown detection)
       include_role:
         name: agent-host-status-event-assert
@@ -115,6 +119,10 @@
     - name: terminate instances
       include_role:
         name: ec2-terminate
+
+    - name: pause for a bit to let the event fire
+      pause:
+        seconds: 30
 
     - name: assert that the agent detecteded host termination and disconnected from the backend (only on hosts that support shutdown detection)
       include_role:
