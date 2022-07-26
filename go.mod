@@ -27,7 +27,7 @@ require (
 	github.com/prometheus/procfs v0.6.0
 	github.com/shirou/gopsutil/v3 v3.21.11
 	github.com/sirupsen/logrus v1.8.1
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.8.0
 	github.com/tevino/abool v1.2.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.13.0
 	go.opentelemetry.io/otel v0.13.0
@@ -67,7 +67,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.10.0 // indirect
-	github.com/stretchr/objx v0.2.0 // indirect
+	github.com/stretchr/objx v0.4.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.9 // indirect
 	github.com/tklauser/numcpus v0.3.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
@@ -78,7 +78,7 @@ require (
 	google.golang.org/genproto v0.0.0-20220118154757-00ab72f36ad5 // indirect
 	google.golang.org/grpc v1.43.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace (
