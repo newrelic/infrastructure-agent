@@ -98,7 +98,7 @@ jobs:
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
 
   canaries:
-    needs: [ harvest-tests, packaging-tests-linux, packaging-tests-windows]
+    needs: [ harvest-tests, packaging-tests ]
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
