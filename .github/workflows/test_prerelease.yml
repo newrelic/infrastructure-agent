@@ -32,7 +32,6 @@ jobs:
           cloud_watch_logs_group_name: /ecs/test-prerelease
           cloud_watch_logs_stream_name: ecs/test-prerelease
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
-          disable_logs: true
 
   harvest-tests:
     needs: [ provision ]
@@ -56,7 +55,6 @@ jobs:
           cloud_watch_logs_group_name: /ecs/test-prerelease
           cloud_watch_logs_stream_name: ecs/test-prerelease
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
-          disable_logs: true
 
   packaging-tests:
     if: ${{ always() }}
@@ -81,7 +79,6 @@ jobs:
           cloud_watch_logs_group_name: /ecs/test-prerelease
           cloud_watch_logs_stream_name: ecs/test-prerelease
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
-          disable_logs: true
 
   canaries:
     needs: [ harvest-tests, packaging-tests ]
@@ -105,7 +102,6 @@ jobs:
           cloud_watch_logs_group_name: /ecs/test-prerelease
           cloud_watch_logs_stream_name: ecs/test-prerelease
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
-          disable_logs: true
 
   canaries-prune:
     needs: [ canaries ]
@@ -129,4 +125,3 @@ jobs:
           cloud_watch_logs_group_name: /ecs/test-prerelease
           cloud_watch_logs_stream_name: ecs/test-prerelease
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
-          disable_logs: true
