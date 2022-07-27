@@ -1,5 +1,5 @@
 IMAGE_VERSION ?= dev
-IMAGE_NAME = newrelic-signing-keys
+IMAGE_NAME = newrelic-infra-public-keys
 PKG_VERSION ?= 0.0.0
 
 .PHONY: clean

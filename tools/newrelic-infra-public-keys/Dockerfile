@@ -4,10 +4,10 @@ RUN apk add --update ruby-dev gcc make musl-dev libffi-dev xz-dev tar && \
     gem install fpm
 
 
-RUN mkdir -p /fpm/opt/newrelic-signing-keys/keys
+RUN mkdir -p /fpm/opt/newrelic-infra-public-keys/keys
 COPY .fpm /fpm
-COPY keys /fpm/opt/newrelic-signing-keys/keys
-COPY newrelic-signing-keys /fpm/newrelic-signing-keys
+COPY keys /fpm/opt/newrelic-infra-public-keys/keys
+COPY newrelic-infra-public-keys /fpm/newrelic-infra-public-keys
 
 WORKDIR /fpm
 

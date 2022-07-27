@@ -1,11 +1,11 @@
 -s dir -t deb 
--p pkg/newrelic-signing-keys-VERSION-any.deb
---name newrelic-signing-keys
+-p pkg/newrelic-infra-public-keys-VERSION-any.deb
+--name newrelic-infra-public-keys
 --license "Copyright (c) 2008-2022 New Relic, Inc. All rights reserved."
 --version 0.0.0
 --architecture all
 --depends bash
 --description "Adds New Relic current and next apt public keys to the system"
---url "https://github.com/newrelic/infrastructure-agent/tree/master/tools/newrelic-signing-keys"
+--url "https://github.com/newrelic/infrastructure-agent/tree/master/tools/newrelic-infra-public-keys"
 --maintainer "caos-team@newrelic.com"
---after-install newrelic-signing-keys
+--after-install newrelic-infra-public-keys

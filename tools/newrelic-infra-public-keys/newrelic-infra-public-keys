@@ -3,7 +3,7 @@
 KEYRING_FILE_NAME=newrelic-infra-keyring.gpg
 TRUSTED_GPG_D_KEYRING=/etc/apt/trusted.gpg.d/${KEYRING_FILE_NAME}
 USR_SHARE_KEYRING=/usr/share/keyrings/${KEYRING_FILE_NAME}
-KEYS_LOCATION=/opt/newrelic-signing-keys
+KEYS_LOCATION=/opt/newrelic-infra-public-keys
 
 if [ ! -f ${USR_SHARE_KEYRING} ]; then
     touch ${USR_SHARE_KEYRING}
