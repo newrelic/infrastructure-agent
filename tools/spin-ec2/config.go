@@ -9,7 +9,10 @@ type canaryConf struct {
 	repo            string
 	macstadiumUser  string
 	macstadiumPass  string
+	ansibleForks    int
 }
+
+const defaultAnsibleForks = 5
 
 func (c canaryConf) shouldProvisionLinux() bool {
 	return c.platform == linux || c.platform == all
