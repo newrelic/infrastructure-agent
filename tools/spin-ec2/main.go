@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/mod/semver"
 	"net/http"
+	"strconv"
 
 	"log"
 	"math/rand"
@@ -120,12 +121,14 @@ func interactiveMode() {
 	if !skipVMCreation {
 		execNameArgs("ansible-playbook",
 			"-i", path.Join(curPath, inventoryLocal),
+			"-f", strconv.Itoa(defaultAnsibleForks),
 			"--extra-vars", "@"+path.Join(curPath, inventoryForCreation),
 			"-e", "instance_prefix="+provisionHostPrefix+":",
 			path.Join(curPath, "test/automated/ansible/provision.yml"))
 
 		execNameArgs("ansible-playbook",
 			"-i", path.Join(curPath, inventoryProvisioned),
+			"-f", strconv.Itoa(defaultAnsibleForks),
 			path.Join(curPath, "test/automated/ansible/install-requirements.yml"))
 	}
 
@@ -139,7 +142,10 @@ func interactiveMode() {
 
 			var arguments []string
 
-			arguments = append(arguments, "-i", path.Join(curPath, inventoryProvisioned))
+			arguments = append(arguments,
+				"-i", path.Join(curPath, inventoryProvisioned),
+				"-f", strconv.Itoa(defaultAnsibleForks),
+			)
 
 			if chosenOpt.renderArgs() != "" {
 				arguments = append(arguments, chosenOpt.renderArgs())
@@ -270,6 +276,10 @@ func cliMode() {
 	cmdProvision.PersistentFlags().StringP("macstadium_pass", "z", "", "MacStadium api pass")
 	viper.BindPFlag("macstadium_pass", cmdProvision.PersistentFlags().Lookup("macstadium_pass"))
 
+	// Ansible forks count
+	cmdProvision.PersistentFlags().StringP("ansible_forks", "a", "5", "Ansible forks count")
+	viper.BindPFlag("ansible_forks", cmdProvision.PersistentFlags().Lookup("ansible_forks"))
+
 	var cmdPrune = &cobra.Command{
 		Use:   "prune",
 		Short: "Prune canary machines",
@@ -295,6 +305,7 @@ func canaryConfFromArgs() (canaryConf, error) {
 	repo := viper.GetString("repo")
 	macstadiumUser := viper.GetString("macstadium_user")
 	macstadiumPass := viper.GetString("macstadium_pass")
+	ansibleForks := viper.GetInt("ansible_forks")
 
 	if !semver.IsValid(agentVersion) {
 		return canaryConf{}, fmt.Errorf("agent version '%s' doesn't match the pattern 'vmajor.minor.patch' format",
@@ -310,6 +321,7 @@ func canaryConfFromArgs() (canaryConf, error) {
 		repo:            repo,
 		macstadiumUser:  macstadiumUser,
 		macstadiumPass:  macstadiumPass,
+		ansibleForks:    ansibleForks,
 	}, nil
 }
 
@@ -366,6 +378,7 @@ func provisionMacosCanaries(cnf canaryConf) error {
 		"-e", "macstadium_user="+cnf.macstadiumUser,
 		"-e", "macstadium_pass="+cnf.macstadiumPass,
 		"-e", "platform="+cnf.platform,
+		"-f", strconv.Itoa(cnf.ansibleForks),
 		"-i", path.Join(curPath, inventoryLocal),
 		path.Join(curPath, "test/automated/ansible/macos-canaries.yml"))
 
@@ -380,6 +393,7 @@ func provisionMacosCanaries(cnf canaryConf) error {
 		"--limit", "macos_current",
 		"-e", "nr_license_key=" + cnf.license,
 		"-e", "target_agent_version=" + currentVersion,
+		"-f", strconv.Itoa(cnf.ansibleForks),
 		"-i", path.Join(curPath, inventoryMacos),
 		path.Join(curPath, "test/packaging/ansible/macos-canary.yml"),
 	}
@@ -388,6 +402,7 @@ func provisionMacosCanaries(cnf canaryConf) error {
 		"--limit", "macos_previous",
 		"-e", "nr_license_key=" + cnf.license,
 		"-e", "target_agent_version=" + previousVersion,
+		"-f", strconv.Itoa(cnf.ansibleForks),
 		"-i", path.Join(curPath, inventoryMacos),
 		path.Join(curPath, "test/packaging/ansible/macos-canary.yml"),
 	}
@@ -441,6 +456,7 @@ func provisionEphimeralCanaries(cnf canaryConf) error {
 
 	execNameArgs("ansible-playbook",
 		"-i", path.Join(curPath, inventoryLocal),
+		"-f", strconv.Itoa(cnf.ansibleForks),
 		"--extra-vars", "@"+path.Join(curPath, inventoryForCreation),
 		"-e", fmt.Sprintf("instance_prefix=%s:%s:", cnf.prefix, cnf.agentVersion),
 		"-e", "platform="+cnf.platform,
@@ -460,6 +476,7 @@ func provisionEphimeralCanaries(cnf canaryConf) error {
 		"-e", "nria_log_rotation_max_files=5",
 		"-e", "nria_log_rotation_compressed=true",
 		"-e", "target_agent_version=" + cnf.agentVersion[1:],
+		"-f", strconv.Itoa(cnf.ansibleForks),
 		"-i", path.Join(curPath, inventoryProvisioned),
 	}
 	if cnf.repo != "" {
