@@ -1,5 +1,7 @@
 name: ~ Test pre-release
 
+# copy of packaging & canaries jobs required to have 1 component and chose one path or another
+
 on:
   workflow_call:
     secrets:
@@ -67,13 +69,13 @@ jobs:
           cloud_watch_logs_stream_name: ecs/test-prerelease
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
 
-  packaging-tests:
+  packaging-tests-linux:
+    if: ${{ inputs.PLATFORM == 'linux' }}
     strategy:
       matrix:
         limit:
           - "linux_amd64"
           - "linux_arm64"
-          - "windows_amd64"
 
     needs: [ harvest-tests ]
     runs-on: ubuntu-20.04
@@ -97,8 +99,57 @@ jobs:
           cloud_watch_logs_stream_name: ecs/test-prerelease
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
 
-  canaries:
-    needs: [ harvest-tests, packaging-tests ]
+  packaging-tests-windows:
+    if: ${{ inputs.PLATFORM == 'windows' }}
+    needs: [ harvest-tests ]
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
+          aws-region: us-east-2
+
+      - name: Launch packaging tests
+        uses: ./.github/actions/external_runner
+        with:
+          aws_region: us-east-2
+          container_make_target: "test/automated/packaging LIMIT=windows_amd64 PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} ANSIBLE_INVENTORY_FILE=${{ inputs.PLATFORM }}-inventory.ec2 TAG=${{ inputs.TAG }}"
+          ecs_cluster_name: caos_prerelease
+          task_definition_name: test-prerelease-td
+          cloud_watch_logs_group_name: /ecs/test-prerelease
+          cloud_watch_logs_stream_name: ecs/test-prerelease
+          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
+
+  canaries-linux:
+    if: ${{ inputs.PLATFORM == 'linux' }}
+    needs: [ packaging-tests-linux ]
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
+          aws-region: us-east-2
+
+      - name: Provision canaries
+        uses: ./.github/actions/external_runner
+        with:
+          aws_region: us-east-2
+          container_make_target: "canaries PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} VERSION=${{ inputs.TAG }}"
+          ecs_cluster_name: caos_prerelease
+          task_definition_name: test-prerelease-td
+          cloud_watch_logs_group_name: /ecs/test-prerelease
+          cloud_watch_logs_stream_name: ecs/test-prerelease
+          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
+
+  canaries-windows:
+    if: ${{ inputs.PLATFORM == 'windows' }}
+    needs: [ packaging-tests-windows ]
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
@@ -121,7 +172,8 @@ jobs:
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
 
   canaries-prune:
-    needs: [ canaries ]
+    needs: [ canaries-linux, canaries-windows ]
+    if: ${{ always() }}
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
