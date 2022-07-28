@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   test-prerelease-windows:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_prerelease_testing.yml@ci/fix-packaging-2
+    uses: newrelic/infrastructure-agent/.github/workflows/component_prerelease_testing.yml@master
     with:
       PLATFORM: "windows"
       TAG: ${{ github.event.inputs.tag }}
@@ -20,7 +20,7 @@ jobs:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
 
   test-prerelease-linux:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_prerelease_testing.yml@ci/fix-packaging-2
+    uses: newrelic/infrastructure-agent/.github/workflows/component_prerelease_testing.yml@master
     with:
       PLATFORM: "linux"
       TAG: ${{ github.event.inputs.tag }}
