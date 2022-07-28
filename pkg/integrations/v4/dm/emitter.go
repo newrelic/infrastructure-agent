@@ -167,7 +167,6 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 }
 
 func (e *emitter) emitDataset(r fwrequest.EntityFwRequest) {
-
 	labels, annos := r.LabelsAndExtraAnnotations()
 
 	plugin := agent.NewExternalPluginCommon(r.Definition.PluginID(r.Integration.Name), e.agentContext, r.Definition.Name)

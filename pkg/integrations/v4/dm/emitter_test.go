@@ -236,15 +236,26 @@ func TestEmitter_Send(t *testing.T) {
 	var fwRequestTest = []struct {
 		name               string
 		integrationPayload protocol.DataV4
+		tags               map[string]string
 	}{
-		{"Use host entity", integrationFixture.ProtocolV4.Clone().ParsedV4},
-		{"Ignore entity", integrationFixture.ProtocolV4IgnoreEntity.Clone().ParsedV4},
+		{
+			name:               "Use host entity",
+			integrationPayload: integrationFixture.ProtocolV4.Clone().ParsedV4,
+			tags: map[string]string{
+				"test_tag_key":  "test_tag_value",
+				"test_tag_key2": "test_tag_value2",
+			},
+		},
+		{
+			name:               "Ignore entity",
+			integrationPayload: integrationFixture.ProtocolV4IgnoreEntity.Clone().ParsedV4,
+		},
 	}
 
 	for _, tt := range fwRequestTest {
 		ms.wg.Add(getMetricsSend(tt.integrationPayload))
 		aCtx.SendDataWg.Add(getInventoryToSend(tt.integrationPayload))
-		em.Send(fwrequest.NewFwRequest(integration.Definition{ExecutorConfig: executor.Config{User: "root"}}, nil, nil, tt.integrationPayload))
+		em.Send(fwrequest.NewFwRequest(integration.Definition{ExecutorConfig: executor.Config{User: "root"}, Tags: tt.tags}, nil, nil, tt.integrationPayload))
 		ms.wg.Wait()
 		aCtx.SendDataWg.Wait()
 		aCtx.AssertExpectations(t)
@@ -256,7 +267,13 @@ func TestEmitter_Send(t *testing.T) {
 				actualEntityID, found := e.idCache.Get(entityName)
 				assert.True(t, found)
 				assert.Equal(t, eID, actualEntityID)
-				assert.Equal(t, actualEntityID.String(), d.Common.Attributes[fwrequest.EntityIdAttribute])
+
+				// Assert tags.
+				for expectedTag, expectedTagVal := range tt.tags {
+					tagVal, found := tt.integrationPayload.DataSets[0].Metrics[0].Attributes["tags."+expectedTag]
+					assert.True(t, found)
+					assert.Equal(t, expectedTagVal, tagVal)
+				}
 			} else {
 				entityName, err := d.Entity.Key()
 				assert.NoError(t, err)

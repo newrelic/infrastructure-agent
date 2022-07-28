@@ -45,6 +45,18 @@ func NewHandleFn(configProtocolQueue chan<- Entry, terminateDefinitionQueue chan
 				return
 			}
 
+			// Add parent tags.
+			if ce.Tags == nil && parentDefinition.Tags != nil {
+				ce.Tags = make(map[string]string, len(parentDefinition.Tags))
+			}
+
+			for key, val := range parentDefinition.Tags {
+				// Do not overwrite tags received from config protocol.
+				if _, found := ce.Tags[key]; !found {
+					ce.Tags[key] = val
+				}
+			}
+
 			// Add parent labels.
 			if ce.Labels == nil && len(parentDefinition.Labels) > 0 {
 				ce.Labels = make(map[string]string, len(parentDefinition.Labels))
@@ -62,7 +74,9 @@ func NewHandleFn(configProtocolQueue chan<- Entry, terminateDefinitionQueue chan
 				logger.WithError(err).WithFields(logCtx).Warn(logFailedDefinition)
 				return
 			}
+
 			def.CfgProtocol = &protocol.Context{ParentName: parentDefinition.Name, ConfigName: cfgProtocol.Name()}
+
 			if cfgDefinitions.Add(def) {
 				logger.WithFields(logCtx).WithField("definition_name", def.Name).Debug(logAddedDefinition)
 				configProtocolQueue <- Entry{def, cfgProtocol.GetConfig()}
