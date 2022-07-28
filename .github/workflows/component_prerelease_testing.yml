@@ -1,6 +1,9 @@
 name: ~ Test pre-release
 
-# copy of packaging & canaries jobs required to have 1 component and chose one path or another
+# 2 copy of packaging and canaries jobs required to split workflow path, but keep in the same component to reuse other jobs
+# - packaging-tests-linux & packaging-tests-windows are almost the same
+# - canaries-linux & canaries-windows are almost the same
+
 
 on:
   workflow_call:
