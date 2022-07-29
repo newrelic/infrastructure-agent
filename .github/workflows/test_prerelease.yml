@@ -20,7 +20,7 @@ jobs:
     with:
       PLATFORM: "windows"
       TAG: ${{ github.event.inputs.tag }}
-      CANARIES: ${{ github.event.inputs.canaries }}
+      CANARIES: ${{ github.event.inputs.canaries == 'true' }}
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
 
@@ -29,6 +29,6 @@ jobs:
     with:
       PLATFORM: "linux"
       TAG: ${{ github.event.inputs.tag }}
-      CANARIES: ${{ github.event.inputs.canaries }}
+      CANARIES: ${{ github.event.inputs.canaries == 'true' }}
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
