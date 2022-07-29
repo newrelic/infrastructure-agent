@@ -110,5 +110,6 @@ jobs:
     with:
       PLATFORM: "windows"
       TAG: ${{ github.event.inputs.tag }}
+      CANARIES: true
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}

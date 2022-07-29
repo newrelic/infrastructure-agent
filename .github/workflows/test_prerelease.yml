@@ -6,6 +6,10 @@ on:
       tag:
         description: 'Tag to test'
         required: true
+      canaries:
+        description: 'Should run canaries?'
+        type: boolean
+        required: true
 
 permissions:
   id-token: write
@@ -16,6 +20,7 @@ jobs:
     with:
       PLATFORM: "windows"
       TAG: ${{ github.event.inputs.tag }}
+      CANARIES: ${{ github.event.inputs.canaries }}
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
 
@@ -24,5 +29,6 @@ jobs:
     with:
       PLATFORM: "linux"
       TAG: ${{ github.event.inputs.tag }}
+      CANARIES: ${{ github.event.inputs.canaries }}
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}

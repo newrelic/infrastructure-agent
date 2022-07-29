@@ -18,6 +18,10 @@ on:
       PLATFORM:
         required: true
         type: string
+      CANARIES:
+        required: true
+        type: boolean
+
 
 env:
   AWS_ASSUME_ROLE: 'arn:aws:iam::018789649883:role/caos-pipeline-oidc'
@@ -127,7 +131,7 @@ jobs:
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
 
   canaries-linux:
-    if: ${{ inputs.PLATFORM == 'linux' }}
+    if: ${{ inputs.PLATFORM == 'linux' && inputs.CANARIES == true }}
     needs: [ packaging-tests-linux ]
     runs-on: ubuntu-20.04
     steps:
@@ -151,7 +155,7 @@ jobs:
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
 
   canaries-windows:
-    if: ${{ inputs.PLATFORM == 'windows' }}
+    if: ${{ inputs.PLATFORM == 'windows' && inputs.CANARIES == true }}
     needs: [ packaging-tests-windows ]
     runs-on: ubuntu-20.04
     steps:
