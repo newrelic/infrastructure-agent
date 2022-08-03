@@ -16,7 +16,8 @@ import (
 )
 
 var (
-	collectorURL = "https://infra-api.newrelic.com"
+	collectorURL  = "https://infra-api.newrelic.com"
+	collectorHost = "infra-api.newrelic.com"
 )
 
 func checkEndpointReachable(
@@ -84,7 +85,7 @@ func main() {
 				Error("Collector endpoint not reachable, retrying...")
 			logrus.Info("Trying to resolve address with default resolver")
 
-			addrs, err := lookupHost(true, collectorURL)
+			addrs, err := lookupHost(true, collectorHost)
 			if err != nil || len(addrs) < 1 {
 				logrus.WithError(err).Error("Could not resolve the endpoint with default net resolver")
 			} else {
@@ -92,7 +93,7 @@ func main() {
 			}
 
 			logrus.Info("Trying to resolve address with google dns resolver")
-			addrs, err = lookupHost(true, collectorURL)
+			addrs, err = lookupHost(true, collectorHost)
 			if err != nil || len(addrs) < 1 {
 				logrus.WithError(err).Error("Could not resolve the endpoint with GOOGLE net resolver")
 			} else {
