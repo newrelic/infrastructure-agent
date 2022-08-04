@@ -32,3 +32,11 @@ jobs:
       CANARIES: ${{ github.event.inputs.canaries == 'true' }}
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+
+  canary-alerts:
+    uses: newrelic/infrastructure-agent/.github/workflows/component_canary_alerts.yml@master
+    with:
+      TAG: ${{ github.event.inputs.tag }}
+      CANARIES: ${{ github.event.inputs.canaries == 'true' }}
+    secrets:
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}

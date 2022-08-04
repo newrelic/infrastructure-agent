@@ -158,7 +158,8 @@ module "ecs-fargate-task-definition" {
               "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_api}",
               "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_windows_password}",
               "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_macstadium_user}",
-              "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_macstadium_pass}"
+              "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_macstadium_pass}",
+              "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_nr_api_key}"
             ]
           }
         ]
@@ -198,6 +199,10 @@ module "ecs-fargate-task-definition" {
     {
       "name" : "MACSTADIUM_PASS",
       "valueFrom" : "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_macstadium_pass}"
+    },
+    {
+      "name" : "NR_API_KEY",
+      "valueFrom" : "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_nr_api_key}"
     }
   ]
   log_configuration = {
