@@ -55,15 +55,7 @@ func (e *emitter) processDatasetRegister(ctx context.Context, intMetadata protoc
 		return
 	}
 
-	var eID entity.ID
-	var found bool
-
-	if dataSet.Entity.IsAgent() {
-		eID, found = e.agentContext.Identity().ID, true
-	} else {
-		eID, found = e.idCache.Get(eKey)
-	}
-
+	eID, found := e.idCache.Get(eKey)
 	if found {
 		select {
 		case <-ctx.Done():

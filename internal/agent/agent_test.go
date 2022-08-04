@@ -8,12 +8,6 @@ import (
 	context2 "context"
 	"encoding/json"
 	"fmt"
-	test2 "github.com/newrelic/infrastructure-agent/pkg/backend/identityapi/test"
-	"github.com/newrelic/infrastructure-agent/pkg/entity"
-	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
-	"github.com/newrelic/infrastructure-agent/pkg/helpers/metric"
-	"github.com/newrelic/infrastructure-agent/pkg/log"
-	"github.com/newrelic/infrastructure-agent/pkg/sample"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -25,27 +19,31 @@ import (
 	"testing"
 	"time"
 
+	"github.com/newrelic/infrastructure-agent/internal/agent/delta"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags/test"
-	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
-	"github.com/newrelic/infrastructure-agent/pkg/ctl"
-	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
-
-	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
-	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
-
-	"github.com/newrelic/infrastructure-agent/internal/agent/delta"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
+	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
 	http2 "github.com/newrelic/infrastructure-agent/pkg/backend/http"
+	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/state"
+	"github.com/newrelic/infrastructure-agent/pkg/config"
+	"github.com/newrelic/infrastructure-agent/pkg/ctl"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/fingerprint"
+	"github.com/newrelic/infrastructure-agent/pkg/helpers/metric"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
+	"github.com/newrelic/infrastructure-agent/pkg/sample"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
-	"github.com/stretchr/testify/require"
 
-	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var NilIDLookup host.IDLookup
@@ -73,8 +71,9 @@ func newTesting(cfg *config.Config) *Agent {
 		panic(err)
 	}
 
+	registerClient := &identityapi.RegisterClientMock{}
 	connectSrv := NewIdentityConnectService(&MockIdentityConnectClient{}, fpHarvester)
-	provideIDs := NewProvideIDs(&test2.EmptyRegisterClient{}, state.NewRegisterSM())
+	provideIDs := NewProvideIDs(registerClient, state.NewRegisterSM())
 
 	a, err := New(
 		cfg,

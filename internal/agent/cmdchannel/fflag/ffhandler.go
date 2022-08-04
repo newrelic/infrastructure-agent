@@ -22,6 +22,7 @@ const (
 	FlagParallelizeInventory = "parallelize_inventory_enabled"
 	FlagProtocolV4           = "protocol_v4_enabled"
 	FlagFullProcess          = "full_process_sampling"
+	FlagDmRegisterDeprecated = "dm_register_deprecated"
 	// Config
 	CfgYmlRegisterEnabled        = "register_enabled"
 	CfgYmlParallelizeInventory   = "inventory_queue_len"
@@ -133,8 +134,9 @@ func (h *handler) Handle(ctx context.Context, c commandapi.Command, isInitialFet
 		return
 	}
 
-	// this is where we handle normal feature flags that are not related to OHIs
-	if ffArgs.Flag == FlagProtocolV4 || ffArgs.Flag == FlagFullProcess {
+	// this is where we handle normal feature flags that are not related to OHIs. These are meant to just enable/disable
+	// the falue of the feature flag
+	if isBasicFeatureFlag(ffArgs.Flag) {
 		h.setFFConfig(ffArgs.Flag, ffArgs.Enabled)
 		return
 	}
@@ -148,6 +150,13 @@ func (h *handler) Handle(ctx context.Context, c commandapi.Command, isInitialFet
 	h.handleEnableOHI(ctx, ffArgs.Flag, ffArgs.Enabled)
 
 	return
+}
+
+// isBasicFeatureFlag will return if the FF has no other logic than being enabled/disabled.
+func isBasicFeatureFlag(flag string) bool {
+	return flag == FlagProtocolV4 ||
+		flag == FlagFullProcess ||
+		flag == FlagDmRegisterDeprecated
 }
 
 func (h *handler) setFFConfig(ff string, enabled bool) {

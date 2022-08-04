@@ -15,7 +15,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/delta"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/http"
-	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi/test"
+	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/inventoryapi"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/state"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
@@ -39,7 +39,8 @@ func ResetPostDeltaVortex(_ entity.ID, _ []string, _ bool, _ ...*inventoryapi.Ra
 }
 
 func TestNewPatchSenderVortex(t *testing.T) {
-	ps := newSender(t, newContextWithVortex(), &delta.Store{}, http.NullHttpClient)
+	registerClient := &identityapi.RegisterClientMock{}
+	ps := newSender(t, newContextWithVortex(), &delta.Store{}, http.NullHttpClient, registerClient)
 	assert.NotNil(t, ps)
 }
 
@@ -52,7 +53,8 @@ func TestPatchSenderVortex_Process_LongTermOffline(t *testing.T) {
 	cachePluginData(t, store, "entityKey")
 
 	// And a patch sender that has been disconnected for more than 24 hours
-	psV := newSender(t, newContextWithVortex(), store, http.NullHttpClient)
+	registerClient := &identityapi.RegisterClientMock{}
+	psV := newSender(t, newContextWithVortex(), store, http.NullHttpClient, registerClient)
 	ps := psV.(*patchSenderVortex)
 	lastConnection := time.Date(2018, 12, 10, 12, 12, 12, 12, &time.Location{})
 	ps.lastConnection = lastConnection
@@ -84,7 +86,9 @@ func TestPatchSenderVortex_Process_LongTermOffline_ReconnectPlugins(t *testing.T
 	ctx := newContextWithVortex()
 	ctx.reconnecting = new(sync.Map)
 
-	psV := newSender(t, ctx, store, http.NullHttpClient)
+	registerClient := &identityapi.RegisterClientMock{}
+	registerClient.ShouldRegisterEntitiesRemoveMe(agentIdn.ID, []identityapi.RegisterEntity{{Key: "entityKey"}}, []identityapi.RegisterEntityResponse{{ID: agentIdn.ID, Name: "entityKey"}}, time.Second)
+	psV := newSender(t, ctx, store, http.NullHttpClient, registerClient)
 	ps := psV.(*patchSenderVortex)
 	ps.postDeltas = FakePostDeltaVortex
 	ps.lastConnection = lastConnection
@@ -119,7 +123,8 @@ func TestPatchSenderVortex_Process_LongTermOffline_NoDeltasToPost_UpdateLastConn
 	resetTime, _ := time.ParseDuration("24h")
 	lastConnection := time.Date(2018, 12, 12, 0, 12, 12, 12, &time.Location{})
 
-	psV := newSender(t, newContextWithVortex(), store, http.NullHttpClient)
+	registerClient := &identityapi.RegisterClientMock{}
+	psV := newSender(t, newContextWithVortex(), store, http.NullHttpClient, registerClient)
 	ps := psV.(*patchSenderVortex)
 	ps.postDeltas = FailingPostDeltaVortex
 	ps.lastConnection = lastConnection
@@ -147,7 +152,9 @@ func TestPatchSenderVortex_Process_LongTermOffline_AlreadyRemoved(t *testing.T) 
 	cachePluginData(t, store, "entityKey")
 
 	// And a patch sender that has been disconnected for more than 24 hours
-	psV := newSender(t, newContextWithVortex(), store, http.NullHttpClient)
+	registerClient := &identityapi.RegisterClientMock{}
+	registerClient.ShouldRegisterEntitiesRemoveMe(agentIdn.ID, []identityapi.RegisterEntity{{Key: "entityKey"}}, []identityapi.RegisterEntityResponse{{ID: agentIdn.ID, Name: "entityKey"}}, time.Second)
+	psV := newSender(t, newContextWithVortex(), store, http.NullHttpClient, registerClient)
 	ps := psV.(*patchSenderVortex)
 	ps.postDeltas = FailingPostDeltaVortex
 	ps.lastConnection = time.Date(2018, 12, 10, 12, 12, 12, 12, &time.Location{})
@@ -177,7 +184,9 @@ func TestPatchSenderVortex_Process_ShortTermOffline(t *testing.T) {
 	cachePluginData(t, store, "entityKey")
 
 	ctx := newContextWithVortex()
-	psV := newSender(t, ctx, store, http.NullHttpClient)
+	registerClient := &identityapi.RegisterClientMock{}
+	registerClient.ShouldRegisterEntitiesRemoveMe(agentIdn.ID, []identityapi.RegisterEntity{{Key: "entityKey"}}, []identityapi.RegisterEntityResponse{{ID: agentIdn.ID, Name: "entityKey"}}, time.Second)
+	psV := newSender(t, ctx, store, http.NullHttpClient, registerClient)
 
 	// And a patch sender that has been disconnected for less than 24 hours
 	ps := psV.(*patchSenderVortex)
@@ -214,8 +223,9 @@ func TestPatchSenderVortex_Process(t *testing.T) {
 
 	ctx := newContextWithVortex()
 	pdt := testhelpers.NewPostDeltaTracer(maxInventoryDataSize)
-
-	pSender := newSender(t, ctx, store, http.NullHttpClient)
+	registerClient := &identityapi.RegisterClientMock{}
+	registerClient.ShouldRegisterEntitiesRemoveMe(agentIdn.ID, []identityapi.RegisterEntity{{Key: "entityKey"}}, []identityapi.RegisterEntityResponse{{ID: agentIdn.ID, Name: "entityKey"}}, time.Second)
+	pSender := newSender(t, ctx, store, http.NullHttpClient, registerClient)
 	ps := pSender.(*patchSenderVortex)
 	ps.postDeltas = pdt.PostDeltasVortex
 
@@ -229,6 +239,7 @@ func TestPatchSenderVortex_Process(t *testing.T) {
 }
 
 func TestPatchSenderVortex_Process_WaitsForAgentID(t *testing.T) {
+	agentIdentity := entity.Identity{ID: 123}
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
 	store := delta.NewStore(dataDir, "localhost", maxInventoryDataSize)
@@ -240,7 +251,9 @@ func TestPatchSenderVortex_Process_WaitsForAgentID(t *testing.T) {
 
 	ctxNoID := newContextWithVortex()
 	ctxNoID.SetAgentIdentity(entity.EmptyIdentity) // empty
-	ps := newSender(t, ctxNoID, store, rc.Client)
+	registerClient := &identityapi.RegisterClientMock{}
+	registerClient.ShouldRegisterEntitiesRemoveMe(agentIdentity.ID, []identityapi.RegisterEntity{{Key: "entityKey"}}, []identityapi.RegisterEntityResponse{{ID: agentIdn.ID, Name: "entityKey"}}, time.Second)
+	ps := newSender(t, ctxNoID, store, rc.Client, registerClient)
 
 	// Process function is blocked without agent id
 	go func() {
@@ -257,7 +270,7 @@ func TestPatchSenderVortex_Process_WaitsForAgentID(t *testing.T) {
 
 	assert.Empty(t, req, "no inventory request should be sent until there is an agent-id set")
 
-	ctxNoID.SetAgentIdentity(entity.Identity{ID: 123})
+	ctxNoID.SetAgentIdentity(agentIdentity)
 	// allow sender to unblock
 	<-ready
 
@@ -271,8 +284,9 @@ func TestPatchSenderVortex_Process_DividedDeltas(t *testing.T) {
 	store := delta.NewStore(dataDir, "localhost", maxInventoryDataSize)
 	pdt := testhelpers.NewPostDeltaTracer(maxInventoryDataSize)
 	ctx := newContextWithVortex()
-
-	pSender := newSender(t, ctx, store, http.NullHttpClient)
+	registerClient := &identityapi.RegisterClientMock{}
+	registerClient.ShouldRegisterEntitiesRemoveMe(agentIdn.ID, []identityapi.RegisterEntity{{Key: "entityKey"}}, []identityapi.RegisterEntityResponse{{ID: agentIdn.ID, Name: "entityKey"}}, time.Second)
+	pSender := newSender(t, ctx, store, http.NullHttpClient, registerClient)
 	ps := pSender.(*patchSenderVortex)
 	ps.postDeltas = pdt.PostDeltasVortex
 
@@ -306,7 +320,9 @@ func TestPatchSenderVortex_Process_DisabledDeltaSplit(t *testing.T) {
 	// Given a patch sender with disabled delta split
 	pdt := testhelpers.NewPostDeltaTracer(math.MaxInt32)
 	ctx := newContextWithVortex()
-	pSender := newSender(t, ctx, store, http.NullHttpClient)
+	registerClient := &identityapi.RegisterClientMock{}
+	registerClient.ShouldRegisterEntitiesRemoveMe(agentIdn.ID, []identityapi.RegisterEntity{{Key: "entityKey"}}, []identityapi.RegisterEntityResponse{{ID: agentIdn.ID, Name: "entityKey"}}, time.Second)
+	pSender := newSender(t, ctx, store, http.NullHttpClient, registerClient)
 	ps := pSender.(*patchSenderVortex)
 	ps.postDeltas = pdt.PostDeltasVortex
 
@@ -338,7 +354,9 @@ func TestPatchSenderVortex_Process_SingleRequestDeltas(t *testing.T) {
 	// Given a patch sender
 	pdt := testhelpers.NewPostDeltaTracer(maxInventoryDataSize)
 	ctx := newContextWithVortex()
-	pSender := newSender(t, ctx, store, http.NullHttpClient)
+	registerClient := &identityapi.RegisterClientMock{}
+	registerClient.ShouldRegisterEntitiesRemoveMe(agentIdn.ID, []identityapi.RegisterEntity{{Key: "entityKey"}}, []identityapi.RegisterEntityResponse{{ID: agentIdn.ID, Name: "entityKey"}}, time.Second)
+	pSender := newSender(t, ctx, store, http.NullHttpClient, registerClient)
 	ps := pSender.(*patchSenderVortex)
 	ps.postDeltas = pdt.PostDeltasVortex
 	// And a set of deltas from different plugins, whose total size is smaller than the max inventory data size
@@ -370,7 +388,9 @@ func TestPatchSenderVortex_Process_CompactEnabled(t *testing.T) {
 	store := delta.NewStore(dataDir, "localhost", maxInventoryDataSize)
 
 	ctx := newContextWithVortex()
-	pSender := newSender(t, ctx, store, http.NullHttpClient)
+	registerClient := &identityapi.RegisterClientMock{}
+	registerClient.ShouldRegisterEntitiesRemoveMe(agentIdn.ID, []identityapi.RegisterEntity{{Key: "entityKey"}}, []identityapi.RegisterEntityResponse{{ID: agentIdn.ID, Name: "entityKey"}}, time.Second)
+	pSender := newSender(t, ctx, store, http.NullHttpClient, registerClient)
 	ps := pSender.(*patchSenderVortex)
 	ps.postDeltas = FakePostDeltaVortex
 	ps.compactEnabled = true
@@ -405,7 +425,9 @@ func TestPatchSenderVortex_Process_Reset(t *testing.T) {
 	ctx := newContextWithVortex()
 	ctx.cfg.CompactEnabled = true
 
-	pSender := newSender(t, ctx, store, http.NullHttpClient)
+	registerClient := &identityapi.RegisterClientMock{}
+	registerClient.ShouldRegisterEntitiesRemoveMe(agentIdn.ID, []identityapi.RegisterEntity{{Key: "entityKey"}}, []identityapi.RegisterEntityResponse{{ID: agentIdn.ID, Name: "entityKey"}}, time.Second)
+	pSender := newSender(t, ctx, store, http.NullHttpClient, registerClient)
 	ps := pSender.(*patchSenderVortex)
 	ps.postDeltas = ResetPostDeltaVortex
 	ps.resetIfOffline = resetTime
@@ -435,8 +457,9 @@ func TestPatchSenderVortex_Process_Reset(t *testing.T) {
 	assert.True(t, storageSize < 10, "%v not smaller than 10", storageSize)
 }
 
-func newSender(t *testing.T, ctx *context, store *delta.Store, client http.Client) patchSender {
-	pSender, err := newPatchSenderVortex("entityKey", agentKey, ctx, store, "user-agent", ctx.Identity, NewProvideIDs(test.NewIncrementalRegister(), state.NewRegisterSM()), entity.NewKnownIDs(), client)
+func newSender(t *testing.T, ctx *context, store *delta.Store, client http.Client, registerClient identityapi.RegisterClient) patchSender { // nolint:ireturn
+	t.Helper()
+	pSender, err := newPatchSenderVortex("entityKey", agentKey, ctx, store, "user-agent", ctx.Identity, NewProvideIDs(registerClient, state.NewRegisterSM()), entity.NewKnownIDs(), client)
 	require.NoError(t, err)
 	return pSender
 }

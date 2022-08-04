@@ -362,7 +362,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	// queues config entries requests
 	configEntryQ := make(chan configrequest.Entry, 100)
 
-	dmEmitter := dm.NewEmitter(agt.GetContext(), dmSender, registerClient, instruments.Measure)
+	dmEmitter := dm.NewEmitter(agt.GetContext(), dmSender, registerClient, instruments.Measure, ffManager)
 
 	// track stoppable integrations
 	tracker := track.NewTracker(dmEmitter)

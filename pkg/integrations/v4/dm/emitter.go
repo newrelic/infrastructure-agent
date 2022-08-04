@@ -70,6 +70,7 @@ type emitter struct {
 	registerMaxBatchTime      time.Duration
 	verboseLogLevel           int
 	measure                   instrumentation.Measure
+	ffRetriever               feature_flags.Retriever
 }
 
 type Emitter interface {
@@ -80,8 +81,9 @@ func NewEmitter(
 	agentContext agent.AgentContext,
 	dmSender MetricsSender,
 	registerClient identityapi.RegisterClient,
-	measure instrumentation.Measure) Emitter {
-
+	measure instrumentation.Measure,
+	ffRetriever feature_flags.Retriever,
+) Emitter {
 	return &emitter{
 		retryBo:                   backoff.NewDefaultBackoff(),
 		maxRetryBo:                time.Duration(agentContext.Config().RegisterMaxRetryBoSecs) * time.Second,
@@ -98,6 +100,7 @@ func NewEmitter(
 		registerMaxBatchTime:      defaultRegisterBatchSecs * time.Second,
 		verboseLogLevel:           agentContext.Config().Log.VerboseEnabled(),
 		measure:                   measure,
+		ffRetriever:               ffRetriever,
 	}
 }
 
@@ -149,16 +152,28 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 
 		case req := <-e.reqsQueue:
 			e.measure(instrumentation.Counter, instrumentation.DMDatasetsReceived, int64(len(req.Data.DataSets)))
+
+		loop:
 			for _, ds := range req.Data.DataSets {
 				select {
 				case _ = <-ctx.Done():
 					return
 				default:
 					if ds.IgnoreEntity {
-						// Should not contain entity attributes
-						e.processDatasetNoRegister(req.Data.Integration, req.FwRequestMeta, ds)
-					} else {
+						e.emidDatasetWithEmptyEntity(req.Data.Integration, req.FwRequestMeta, ds)
+						continue loop //nolint:nlreturn
+					}
+					if ds.Entity.IsAgent() {
+						e.emitDatasetForAgent(ctx, req.Data.Integration, req.FwRequestMeta, ds)
+						continue loop //nolint:nlreturn
+					}
+					deprecateRegisterFFEnabled, deprecateRegisterFFExists := e.ffRetriever.GetFeatureFlag(fflag.FlagDmRegisterDeprecated)
+					if !deprecateRegisterFFExists || (deprecateRegisterFFExists && !deprecateRegisterFFEnabled) {
 						e.processDatasetRegister(ctx, req.Data.Integration, req.FwRequestMeta, ds)
+						continue loop //nolint:nlreturn
+					}
+					if deprecateRegisterFFExists && deprecateRegisterFFEnabled {
+						elog.Warn("Register for DM integrations is deprecated.")
 					}
 				}
 			}
