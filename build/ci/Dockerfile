@@ -11,7 +11,7 @@ ENV ANSIBLE_INVENTORY_FOLDER=$ANSIBLE_INVENTORY_FOLDER_ARG
 VOLUME /srv/runner/inventory/
 
 RUN apt-get update
-RUN DEBIAN_FRONTEND=noninteractive apt install -y make ansible wget unzip git gcc curl
+RUN DEBIAN_FRONTEND=noninteractive apt install -y make ansible wget unzip git gcc curl jq
 
 RUN wget "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"  && unzip awscli-exe-linux-x86_64.zip && ./aws/install
 
