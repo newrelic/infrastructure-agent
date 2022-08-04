@@ -23,8 +23,8 @@ require (
 	github.com/newrelic/infra-identity-client-go v1.0.2
 	github.com/newrelic/newrelic-telemetry-sdk-go v0.8.1
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.7.1
-	github.com/prometheus/procfs v0.6.0
+	github.com/prometheus/client_golang v1.12.2
+	github.com/prometheus/procfs v0.7.3
 	github.com/shirou/gopsutil/v3 v3.21.11
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.8.0
@@ -43,7 +43,7 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/DataDog/sketches-go v0.0.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/cespare/xxhash/v2 v2.1.1 // indirect
+	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/containerd/containerd v1.5.13 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.0+incompatible // indirect
@@ -67,13 +67,13 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
-	github.com/prometheus/common v0.10.0 // indirect
+	github.com/prometheus/common v0.32.1 // indirect
 	github.com/stretchr/objx v0.4.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.9 // indirect
 	github.com/tklauser/numcpus v0.3.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opentelemetry.io/otel/sdk v0.13.0 // indirect
-	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
+	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
 	google.golang.org/genproto v0.0.0-20220118154757-00ab72f36ad5 // indirect
