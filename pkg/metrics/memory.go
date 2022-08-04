@@ -40,11 +40,6 @@ func (mm *MemoryMonitor) Sample() (result *MemorySample, err error) {
 		return nil, err
 	}
 
-	swap, err := mem.SwapMemory()
-	if err != nil {
-		return nil, err
-	}
-
 	memoryFreePercent := float64(0)
 	memoryUsedPercent := float64(0)
 	if memory.Total > 0 {
@@ -52,7 +47,7 @@ func (mm *MemoryMonitor) Sample() (result *MemorySample, err error) {
 		memoryUsedPercent = 100.0 - memoryFreePercent
 	}
 
-	return &MemorySample{
+	memorySample := &MemorySample{
 		MemoryTotal:       float64(memory.Total),
 		MemoryFree:        float64(memory.Available),
 		MemoryUsed:        float64(memory.Used),
@@ -62,9 +57,17 @@ func (mm *MemoryMonitor) Sample() (result *MemorySample, err error) {
 
 		MemoryFreePercent: memoryFreePercent,
 		MemoryUsedPercent: memoryUsedPercent,
+	}
 
-		SwapTotal: float64(swap.Total),
-		SwapUsed:  float64(swap.Used),
-		SwapFree:  float64(swap.Free),
-	}, nil
+	swap, err := mem.SwapMemory()
+	if err != nil {
+		syslog.WithError(err).Warn("Could not retrieve swap memory stats")
+		return memorySample, nil
+	}
+
+	memorySample.SwapUsed = float64(swap.Total)
+	memorySample.SwapUsed = float64(swap.Used)
+	memorySample.SwapFree = float64(swap.Free)
+
+	return memorySample, nil
 }
