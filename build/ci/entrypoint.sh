@@ -7,4 +7,4 @@ git fetch origin
 git checkout $REF
 git pull origin $REF
 mkdir -p $ANSIBLE_INVENTORY_FOLDER
-ANSIBLE_INVENTORY=$ANSIBLE_INVENTORY make $target
+make $target

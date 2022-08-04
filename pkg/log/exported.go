@@ -8,7 +8,9 @@
 package log
 
 import (
+	"fmt"
 	"io"
+	"strings"
 	"sync"
 
 	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
@@ -37,10 +39,14 @@ type log struct {
 }
 
 // usual singleton access used on the codebase
-var w = wrap{
-	l:       logrus.StandardLogger(),
-	mu:      &sync.Mutex{},
-	measure: func(instrumentation.MetricType, instrumentation.MetricName, int64) {},
+var w = newWrappedLogger()
+
+func newWrappedLogger() wrap {
+	return wrap{
+		l:       logrus.StandardLogger(),
+		mu:      &sync.Mutex{},
+		measure: func(instrumentation.MetricType, instrumentation.MetricName, int64) {},
+	}
 }
 
 func (w *wrap) smartVerboseEnabled() bool {
@@ -88,6 +94,31 @@ func Instrument(m instrumentation.Measure) {
 	defer w.mu.Unlock()
 
 	w.measure = m
+}
+
+// ParseLevel takes a string level and returns the Logrus log level constant.
+// Same implementation as logrus adding custom "smart" level mapping to debug.
+func ParseLevel(lvl string) (logrus.Level, error) {
+	switch strings.ToLower(lvl) {
+	case "panic":
+		return logrus.PanicLevel, nil
+	case "fatal":
+		return logrus.FatalLevel, nil
+	case "error":
+		return logrus.ErrorLevel, nil
+	case "warn", "warning":
+		return logrus.WarnLevel, nil
+	case "info":
+		return logrus.InfoLevel, nil
+	case "debug", "smart":
+		return logrus.DebugLevel, nil
+	case "trace":
+		return logrus.TraceLevel, nil
+	}
+
+	var l logrus.Level
+
+	return l, fmt.Errorf("not a valid logrus Level: %q", lvl)
 }
 
 // SetOutput sets the standard logger output.

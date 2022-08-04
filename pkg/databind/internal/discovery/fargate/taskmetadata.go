@@ -78,7 +78,7 @@ type awsContainer struct {
 	KnownStatus string `json:"KnownStatus"`
 
 	// The exit code for the container. This parameter is omitted if the container has not exited.
-	ExitCode string `json:"ExitCode"`
+	ExitCode int `json:"ExitCode"` //nolint
 
 	// The time stamp for when the container was created. This parameter is omitted if the container has not been created yet.
 	CreatedAt string `json:"CreatedAt"`

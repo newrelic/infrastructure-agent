@@ -209,6 +209,7 @@ verbose: 4
 	c.Assert(cfg.ProxyConfigPlugin, Equals, false)
 	c.Assert(cfg.TruncTextValues, Equals, false)
 	c.Assert(cfg.Verbose, Equals, 4)
+	c.Assert(cfg.Log.Level, Equals, LogLevelTrace)
 }
 
 func (s *ConfigSuite) TestEnv(c *C) {
@@ -668,7 +669,7 @@ func Test_ParseLogConfigRule_EnvVar(t *testing.T) {
 		IncludeFilters:       map[string][]interface{}{"component": {"ProcessSample", "StorageSample"}},
 		ExcludeFilters:       map[string][]interface{}{TracesFieldName: {SupervisorTrace}},
 	}
-	assert.EqualValues(t, cfg.Log, expected)
+	assert.EqualValues(t, expected, cfg.Log)
 }
 
 func TestLoadYamlConfig_withDatabindJSONVariables(t *testing.T) {
@@ -680,6 +681,7 @@ variables:
 staging: true
 license_key: "xxx"
 proxy: ${var1}
+verbose: 0
 `)
 
 	tmp, err := createTestFile(yamlData)
@@ -693,6 +695,7 @@ proxy: ${var1}
 	assert.True(t, cfg.Staging)
 	assert.Equal(t, "xxx", cfg.License)
 	assert.Equal(t, "10.0.2.2:8888", cfg.Proxy)
+	assert.Equal(t, LogLevelInfo, cfg.Log.Level)
 }
 
 func TestLoadYamlConfig_withLogVariables(t *testing.T) {
@@ -720,6 +723,7 @@ license_key: "xxx"
 	assert.Equal(t, true, cfg.LogToStdout)
 	assert.Equal(t, 5, cfg.SmartVerboseModeEntryLimit)
 	assert.Equal(t, SmartVerboseLogging, cfg.Verbose)
+	assert.Equal(t, LogLevelSmart, cfg.Log.Level)
 }
 
 func TestLoadLogConfig_HasIncludeFilter(t *testing.T) {

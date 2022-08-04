@@ -123,3 +123,13 @@ jobs:
     with:
       TAG: ${{ github.event.release.tag_name }}
       REPO_ENDPOINT: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
+
+  test-prerelease:
+    needs: [molecule-packaing-tests]
+    uses: newrelic/infrastructure-agent/.github/workflows/component_prerelease_testing.yml@master
+    with:
+      PLATFORM: "linux"
+      TAG: ${{ github.event.inputs.tag }}
+      CANARIES: true
+    secrets:
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}

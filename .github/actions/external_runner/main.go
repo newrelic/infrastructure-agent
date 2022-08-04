@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -29,6 +31,8 @@ type Config struct {
 	CloudWatchLogsStreamName string
 	MaxLogLines              int
 	TimeoutMillis            int
+	//to show full logs, set LOG_FILTERS=".*"
+	LogFilters []string
 }
 
 const (
@@ -48,6 +52,7 @@ func LoadConfig() Config {
 	viper.BindEnv("cloud_watch_logs_stream_name")
 	viper.BindEnv("timeout_millis")
 	viper.BindEnv("max_log_lines")
+	viper.BindEnv("log_filters")
 
 	timeoutMillis := viper.GetInt("timeout_millis")
 	if timeoutMillis == 0 {
@@ -67,6 +72,7 @@ func LoadConfig() Config {
 		AWSVpcSubnet:             viper.GetString("aws_vpc_subnet"),
 		CloudWatchLogsGroupName:  viper.GetString("cloud_watch_logs_group_name"),
 		CloudWatchLogsStreamName: viper.GetString("cloud_watch_logs_stream_name"),
+		LogFilters:               viper.GetStringSlice("log_filters"),
 		TimeoutMillis:            timeoutMillis,
 		MaxLogLines:              maxLogLines,
 	}
@@ -74,6 +80,12 @@ func LoadConfig() Config {
 
 func main() {
 	params := LoadConfig()
+
+	logFilters := make([]*regexp.Regexp, len(params.LogFilters))
+	for i, filter := range params.LogFilters {
+		logFilters[i] = regexp.MustCompile(filter)
+	}
+
 	taskRunner, cfg := prepareFargateTask(params)
 
 	timeout := time.Duration(params.TimeoutMillis) * time.Millisecond
@@ -85,7 +97,7 @@ func main() {
 	// to be able to add timeout later
 	ctx := context.Background()
 
-	printFargateTaskLogs(ctx, params, cfg, taskRunner, id)
+	printFargateTaskLogs(ctx, params, cfg, taskRunner, id, logFilters)
 }
 
 func prepareFargateTask(params Config) (*TaskRunner, aws.Config) {
@@ -148,7 +160,17 @@ func runFargateTask(timeout time.Duration, taskRunner *TaskRunner) (string, erro
 	return id, nil
 }
 
-func printFargateTaskLogs(ctx context.Context, params Config, cfg aws.Config, taskRunner *TaskRunner, id string) {
+// printLogLine writes the provided line into the writer if it matches any of the regular expressions
+func printLogLine(line string, writer io.Writer, logFilters []*regexp.Regexp) {
+	for _, filter := range logFilters {
+		if filter.MatchString(line) {
+			fmt.Fprintf(writer, "%s\n", line)
+			return
+		}
+	}
+}
+
+func printFargateTaskLogs(ctx context.Context, params Config, cfg aws.Config, taskRunner *TaskRunner, id string, logFilters []*regexp.Regexp) {
 	logTailerConfig := CloudWatchLogTailerConfig{
 		LogGroupName:  params.CloudWatchLogsGroupName,
 		LogStreamName: fmt.Sprintf("%s/%s", params.CloudWatchLogsStreamName, id),
@@ -158,12 +180,15 @@ func printFargateTaskLogs(ctx context.Context, params Config, cfg aws.Config, ta
 	logTailer := NewCloudWatchLogTailer(logTailerConfig, cloudwatchlogs.NewFromConfig(cfg))
 
 	for {
-		logs, err := logTailer.GetLogs(ctx)
-		if err != nil {
-			log.Fatalf("failed to read logs: %v", err)
-		}
-		for _, line := range logs {
-			log.Printf("%s\n", *line.Message)
+		if len(logFilters) > 0 {
+			logs, err := logTailer.GetLogs(ctx)
+			if err != nil {
+				log.Fatalf("failed to read logs: %v", err)
+			}
+
+			for _, line := range logs {
+				printLogLine(*line.Message, log.Writer(), logFilters)
+			}
 		}
 
 		finished, exitCode, err := taskRunner.IsFinished()
@@ -175,9 +200,7 @@ func printFargateTaskLogs(ctx context.Context, params Config, cfg aws.Config, ta
 			os.Exit(exitCode)
 		}
 
-		if len(logs) == 0 {
-			time.Sleep(logLinesReqBackoff)
-		}
+		time.Sleep(logLinesReqBackoff)
 	}
 }
 

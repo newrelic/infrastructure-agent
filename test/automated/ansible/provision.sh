@@ -18,8 +18,12 @@ ANSIBLE_STDOUT_CALLBACK=selective \
   -e provision_host_prefix=$PROVISION_HOST_PREFIX \
   -e output_inventory_ext=$ANSIBLE_INVENTORY \
   -e ansible_password_windows=$ANSIBLE_PASSWORD_WINDOWS \
+  -e platform=$PLATFORM \
+  -f $ANSIBLE_FORKS \
   test/automated/ansible/provision.yml
 
-ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO retry ansible-playbook -i $ANSIBLE_INVENTORY test/automated/ansible/install-requirements.yml
+ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO retry ansible-playbook -f $ANSIBLE_FORKS -i $ANSIBLE_INVENTORY test/automated/ansible/install-requirements.yml
 
-retry ansible-playbook -e macstadium_user=$MACSTADIUM_USER -e macstadium_pass=$MACSTADIUM_PASS test/automated/ansible/macos-canaries.yml
+if [[ "$PLATFORM" -eq "macos" || "$PLATFORM" -eq "all" ]];then
+  retry ansible-playbook -e macstadium_user=$MACSTADIUM_USER -e macstadium_pass=$MACSTADIUM_PASS test/automated/ansible/macos-canaries.yml
+fi

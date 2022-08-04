@@ -46,6 +46,10 @@ variable "secret_name_license" {
   default = "caos/canaries/license-f9eYwe"
 }
 
+variable "secret_name_license_canaries" {
+  default = "caos/canaries/license_canaries-1DCE1L"
+}
+
 variable "secret_name_account" {
   default = "caos/canaries/account-kKFMGP"
 }
@@ -56,6 +60,14 @@ variable "secret_name_api" {
 
 variable "secret_name_windows_password" {
   default = "caos/canaries/windows-gTLIiF"
+}
+
+variable "secret_name_macstadium_user" {
+  default = "caos/canaries/macstadium_user-QXCSKB"
+}
+
+variable "secret_name_macstadium_pass" {
+  default = "caos/canaries/macstadium_pass-DvAHye"
 }
 
 variable "task_container_image" {

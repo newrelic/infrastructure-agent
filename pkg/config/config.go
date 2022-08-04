@@ -216,12 +216,14 @@ type Config struct {
 	// 3 to forward debug logs to FluentBit. To enable log traces set this to 4, and to 5 to forward traces to FluentBit.
 	// Default: 0
 	// Public: Yes
+	// Deprecated: use Log.Level instead.
 	Verbose int `yaml:"verbose" envconfig:"verbose"`
 
 	// The number of entries that will be cached in memory before being flushed (if an error has not been logged
 	// beforehand).
 	// Default: 1000
 	// Public: Yes
+	// Deprecated: use Log.SmartLevelEntryLimit instead.
 	SmartVerboseModeEntryLimit int `yaml:"smart_verbose_mode_entry_limit" envconfig:"smart_verbose_mode_entry_limit"`
 
 	// CPUProfile takes the path of a file that will be created and used to store profiling samples related to the CPU
@@ -336,6 +338,7 @@ type Config struct {
 	// Change the log format. Current supported formats: json, common.
 	// Default: text
 	// Public: Yes
+	// Deprecated: use Log.Format instead.
 	LogFormat string `yaml:"log_format" envconfig:"log_format"`
 
 	// LogFile defines the file path for the logs.
@@ -344,6 +347,7 @@ type Config struct {
 	// Default (Linux): /var/log/newrelic-infra/newrelic-infra.log
 	// Default (Windows): C:\Program Files\New Relic\newrelic-infra\newrelic-infra.log
 	// Public: Yes
+	// Deprecated: use Log.File instead.
 	LogFile string `yaml:"log_file" envconfig:"log_file"`
 
 	// Log is a map of custom logging configurations. Separate keys and values with colons :, as in KEY: VALUE, and
@@ -584,6 +588,7 @@ type Config struct {
 	// logs in the standard output you can set this configuration option to FALSE.
 	// Default: True
 	// Public: Yes
+	// Deprecated: use Log.ToStdout instead.
 	LogToStdout bool `yaml:"log_to_stdout" envconfig:"log_to_stdout"`
 
 	// ContainerMetadataCacheLimit Time duration, in seconds, before expiring the cached containers metadata and
@@ -1144,6 +1149,21 @@ type LogConfig struct {
 
 	IncludeFilters LogFilters `yaml:"include_filters" envconfig:"include_filters"`
 	ExcludeFilters LogFilters `yaml:"exclude_filters" envconfig:"exclude_filters"`
+
+	Rotate LogRotateConfig `yaml:"rotate" envconfig:"rotate"`
+}
+
+func NewLogConfig() *LogConfig {
+	return &LogConfig{
+		Level:                defaultLogLevel,
+		File:                 defaultLogFile,
+		Format:               defaultLogFormat,
+		Forward:              &defaultLogForward,
+		ToStdout:             &defaultLogToStdout,
+		SmartLevelEntryLimit: &DefaultSmartVerboseModeEntryLimit,
+		IncludeFilters:       make(map[string][]interface{}),
+		ExcludeFilters:       make(map[string][]interface{}),
+	}
 }
 
 func (lc *LogConfig) AttachDefaultFilters() {
@@ -1172,6 +1192,29 @@ func (lc *LogConfig) HasIncludeFilter(key, value string) bool {
 		}
 	}
 	return false
+}
+
+// LogRotateConfig map all log rotator configuration options
+type LogRotateConfig struct {
+	MaxSizeMb          int    `yaml:"max_size_mb" envconfig:"max_size_mb"`
+	MaxFiles           int    `yaml:"max_files" envconfig:"max_files"`
+	CompressionEnabled bool   `yaml:"compression_enabled" envconfig:"compression_enabled"`
+	FilePattern        string `yaml:"file_pattern" envconfig:"file_pattern"`
+}
+
+// IsEnabled checks if log rotation is enabled.
+func (l *LogRotateConfig) IsEnabled() bool {
+	return l.MaxSizeMb > 0
+}
+
+// VerboseEnabled return 1 if debug or higher log level is enabled.
+// The primary purpose is for backwards compatibility with Verbose int attribute.
+func (lc *LogConfig) VerboseEnabled() int {
+	if lc.Level == LogLevelDebug || lc.Level == LogLevelTrace {
+		return 1
+	}
+
+	return 0
 }
 
 func coalesce(values ...string) string {
@@ -1208,6 +1251,8 @@ func (config *Config) loadLogConfig() {
 	config.LogToStdout = coalesceBool(config.Log.ToStdout, &config.LogToStdout)
 	if config.Log.SmartLevelEntryLimit != nil {
 		config.SmartVerboseModeEntryLimit = *config.Log.SmartLevelEntryLimit
+	} else {
+		config.Log.SmartLevelEntryLimit = &DefaultSmartVerboseModeEntryLimit
 	}
 	switch config.Log.Level {
 	case LogLevelSmart:
@@ -1249,6 +1294,9 @@ func (config *Config) populateLogConfig() {
 	case VerboseLogging, TroubleshootLogging:
 		config.Log.Level = LogLevelDebug
 	case TraceLogging, TraceTroubleshootLogging:
+		config.Log.Level = LogLevelTrace
+	// set log level to trace for any value > 5
+	default:
 		config.Log.Level = LogLevelTrace
 	}
 	if config.Verbose == TroubleshootLogging || config.Verbose == TraceTroubleshootLogging {
@@ -1296,8 +1344,35 @@ func NewLogForward(config *Config, troubleshoot Troubleshoot) LogForward {
 
 // IsTroubleshootMode triggers FluentBit log forwarder to submit agent log. If agent is not running
 // under systemd service this mode enables agent logging to a log file (if not present already).
-func (c *Config) IsTroubleshootMode() bool {
-	return c.Verbose == TroubleshootLogging || c.Verbose == TraceTroubleshootLogging
+func (lc *LogConfig) IsTroubleshootMode() bool {
+	if lc.Forward != nil {
+		return *lc.Forward
+	}
+
+	return false
+}
+
+// IsSmartLogging returns if smart level is enabled.
+func (lc *LogConfig) IsSmartLogging() bool {
+	return lc.Level == LogLevelSmart
+}
+
+// IsStdoutEnabled returns if logs should be logged to stdout.
+func (lc *LogConfig) IsStdoutEnabled() bool {
+	if lc.ToStdout != nil {
+		return *lc.ToStdout
+	}
+
+	return defaultLogToStdout
+}
+
+// GetSmartLogLevelLimit returns the defined smart log level limit.
+func (lc *LogConfig) GetSmartLogLevelLimit() int {
+	if lc.SmartLevelEntryLimit != nil {
+		return *lc.SmartLevelEntryLimit
+	}
+
+	return DefaultSmartVerboseModeEntryLimit
 }
 
 // GetDefaultLogFile sets log file to defined app data dir or default.
@@ -1310,11 +1385,11 @@ func (c *Config) GetDefaultLogFile() string {
 
 // GetLogFile provides configured log file.
 func (c *Config) GetLogFile() string {
-	if c.LogFile == "" || c.LogFile == "true" {
+	if c.Log.File == "" || c.Log.File == "true" {
 		return c.GetDefaultLogFile()
 	}
 
-	return c.LogFile
+	return c.Log.File
 }
 
 // LogInfo will log the configuration.
@@ -1776,16 +1851,16 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	//  Map new Log configuration
 	cfg.loadLogConfig()
 
-	// For now, make any level of verbosity between [1,3] printing out debugging info
-	// until we refactor and use the corresponding level for each value
-	switch cfg.Verbose {
-	case VerboseLogging, TroubleshootLogging, SmartVerboseLogging:
-		log.SetLevel(logrus.DebugLevel)
-		logrus.SetLevel(logrus.DebugLevel)
-	case TraceLogging, TraceTroubleshootLogging:
-		log.SetLevel(logrus.TraceLevel)
-		logrus.SetLevel(logrus.TraceLevel)
+	// set corresponding log level
+	logLevel, err := log.ParseLevel(cfg.Log.Level)
+	if err != nil {
+		logLevel = logrus.InfoLevel
+		nlog.WithError(err).
+			Warn("couldn't parse log level, info log level will be set")
 	}
+
+	log.SetLevel(logLevel)
+	logrus.SetLevel(logLevel)
 
 	// dm URL is calculated based on collector url, it should be set before get it default value
 	cfg.MetricURL = calculateDimensionalMetricURL(cfg.CollectorURL, cfg.License, cfg.Staging, cfg.Fedramp)
@@ -1887,13 +1962,13 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	cfg.PluginInstanceDirs = helpers.RemoveEmptyAndDuplicateEntries(
 		[]string{cfg.PluginDir, defaultPluginInstanceDir, filepath.Join(cfg.AgentDir, defaultPluginActiveConfigsDir)})
 
-	if cfg.LogFile == "" && runtime.GOOS == "windows" {
-		cfg.LogFile = "true"
+	if cfg.Log.File == "" && runtime.GOOS == "windows" {
+		cfg.Log.File = "true"
 	}
 
-	if cfg.LogFile == "true" {
-		cfg.LogFile = cfg.GetDefaultLogFile()
-		nlog.WithField("LogFile", cfg.LogFile).Debug("Logging to file.")
+	if cfg.Log.File == "true" {
+		cfg.Log.File = cfg.GetDefaultLogFile()
+		nlog.WithField("LogFile", cfg.Log.File).Debug("Logging to file.")
 	}
 
 	//Caution: PluginConfigFiles is ALWAYS defined with the default value. Is this right? Be aware any change could affect backwards compatibilities.

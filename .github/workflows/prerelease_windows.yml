@@ -12,7 +12,7 @@ env:
   GO_VERSION: '1.18'
   PFX_CERTIFICATE_BASE64: ${{ secrets.OHAI_PFX_CERTIFICATE_BASE64 }} # base64 encoded
   PFX_CERTIFICATE_DESCRIPTION: 'New Relic'
-  PFX_PASSPHRASE:  ${{ secrets.OHAI_PFX_PASSPHRASE }}
+  PFX_PASSPHRASE: ${{ secrets.OHAI_PFX_PASSPHRASE }}
   SNYK_TOKEN: ${{ secrets.CAOS_SNYK_TOKEN }}
   TAG: ${{ github.event.release.tag_name }}
   DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
@@ -85,7 +85,7 @@ jobs:
   publishing-to-s3:
     name: Publish windows artifacts into s3 staging bucket
     uses: newrelic/infrastructure-agent/.github/workflows/component_windows_publish.yml@master
-    needs: [packaging]
+    needs: [ packaging ]
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
@@ -103,3 +103,13 @@ jobs:
       AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
       AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
       ASSETS_TYPE: "all"
+
+  test-prerelease:
+    needs: [publishing-to-s3]
+    uses: newrelic/infrastructure-agent/.github/workflows/component_prerelease_testing.yml@master
+    with:
+      PLATFORM: "windows"
+      TAG: ${{ github.event.inputs.tag }}
+      CANARIES: true
+    secrets:
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}

@@ -343,7 +343,7 @@ func TestDeltas_HarvestAfterStoreCleanup(t *testing.T) {
 			"some":      "attr",
 			"someother": "other_attr",
 		}
-		cfg.Verbose = 1
+		cfg.Log.Level = config.LogLevelDebug
 	})
 	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 

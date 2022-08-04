@@ -63,7 +63,7 @@ To compile and build the agent run these commands:
   ```powershell
   PS C:\> ./win_build.ps1
   ```
-* Docker: see the [instructions](/build/container/README.md) for building a Docker image.
+* Docker: see the [instructions](build/container/README.md) for building a Docker image.
 
 > To build the agent on CentOS 5 use Go 1.9
 

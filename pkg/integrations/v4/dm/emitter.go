@@ -96,7 +96,7 @@ func NewEmitter(
 		registerMaxBatchSize:      defaultRegisterBatchSize,
 		registerMaxBatchBytesSize: defaultRegisterBatchBytesSize,
 		registerMaxBatchTime:      defaultRegisterBatchSecs * time.Second,
-		verboseLogLevel:           agentContext.Config().Verbose,
+		verboseLogLevel:           agentContext.Config().Log.VerboseEnabled(),
 		measure:                   measure,
 	}
 }

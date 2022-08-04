@@ -26,8 +26,6 @@
         - name: Setup config
           include_role:
             name: setup-config
-          vars:
-            verbose_level: '0'
 
         - name: Package install
           include_role:
@@ -50,8 +48,6 @@
         - name: setup config
           include_role:
             name: setup-config
-          vars:
-            verbose_level: '0'
 
         - name: Package install
           include_role:

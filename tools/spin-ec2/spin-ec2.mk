@@ -17,11 +17,12 @@ ec2: ec2-install-deps ec2-build
 
 .PHONY: canaries
 canaries: PREFIX ?= canary
+canaries: ANSIBLE_FORKS ?= 5
 canaries: REPO ?= http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent
-canaries: PLATFORM ?= "all"
+canaries: PLATFORM ?= all
 canaries: validate-aws-credentials ec2-install-deps ec2-build
-ifndef NR_LICENSE_KEY
-	@echo "NR_LICENSE_KEY variable must be provided for \"make canaries\""
+ifndef NR_LICENSE_KEY_CANARIES
+	@echo "NR_LICENSE_KEY_CANARIES variable must be provided for \"make canaries\""
 	exit 1
 endif
 ifndef VERSION
@@ -44,13 +45,14 @@ endif
 	@sleep 10
 	@tools/spin-ec2/bin/spin-ec2 canaries provision \
 									-v 'v$(VERSION)' \
-									-l '$(NR_LICENSE_KEY)' \
+									-l '$(NR_LICENSE_KEY_CANARIES)' \
 									-x '$(ANSIBLE_PASSWORD_WINDOWS)' \
 									-f '$(PREFIX)' \
 									-r '$(REPO)' \
 									-p '$(PLATFORM)' \
 									-u '$(MACSTADIUM_USER)' \
-									-z '$(MACSTADIUM_PASS)'
+									-z '$(MACSTADIUM_PASS)' \
+									-a '$(ANSIBLE_FORKS)'
 
 .PHONY: canaries-prune-dry
 canaries-prune-dry: validate-aws-credentials ec2-install-deps ec2-build
@@ -60,4 +62,8 @@ canaries-prune-dry: validate-aws-credentials ec2-install-deps ec2-build
 .PHONY: canaries-prune
 canaries-prune: validate-aws-credentials ec2-install-deps ec2-build
 	@read -p "REAL run for canaries prune, press enter to continue"
+	tools/spin-ec2/bin/spin-ec2 canaries prune
+
+.PHONY: canaries-prune-auto
+canaries-prune-auto: validate-aws-credentials ec2-install-deps ec2-build
 	tools/spin-ec2/bin/spin-ec2 canaries prune

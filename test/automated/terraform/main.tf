@@ -37,7 +37,7 @@ module "cloudwatch_log-group" {
   version = "3.2.0"
 
   name              = var.task_logs_group
-  retention_in_days = 1
+  retention_in_days = 14
 }
 
 #########################################
@@ -153,9 +153,12 @@ module "ecs-fargate-task-definition" {
             "Resource" : [
               "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_ssh}",
               "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_license}",
+              "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_license_canaries}",
               "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_account}",
               "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_api}",
-              "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_windows_password}"
+              "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_windows_password}",
+              "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_macstadium_user}",
+              "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_macstadium_pass}"
             ]
           }
         ]
@@ -173,6 +176,10 @@ module "ecs-fargate-task-definition" {
       "valueFrom" : "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_license}"
     },
     {
+      "name" : "NR_LICENSE_KEY_CANARIES",
+      "valueFrom" : "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_license_canaries}"
+    },
+    {
       "name" : "NEW_RELIC_ACCOUNT_ID",
       "valueFrom" : "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_account}"
     },
@@ -183,6 +190,14 @@ module "ecs-fargate-task-definition" {
     {
       "name" : "ANSIBLE_PASSWORD_WINDOWS",
       "valueFrom" : "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_windows_password}"
+    },
+    {
+      "name" : "MACSTADIUM_USER",
+      "valueFrom" : "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_macstadium_user}"
+    },
+    {
+      "name" : "MACSTADIUM_PASS",
+      "valueFrom" : "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_macstadium_pass}"
     }
   ]
   log_configuration = {
