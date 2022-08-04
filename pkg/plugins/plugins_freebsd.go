@@ -11,13 +11,14 @@ import (
 
 func RegisterPlugins(a *agent.Agent) error {
 
-        storageSampler := storage.NewSampler(a.Context)
-        sender := metricsSender.NewSender(a.Context)
-        systemSampler := metrics.NewSystemSampler(a.Context, storageSampler)
+	storageSampler := storage.NewSampler(a.Context)
+	sender := metricsSender.NewSender(a.Context)
+	systemSampler := metrics.NewSystemSampler(a.Context, storageSampler)
 
-        sender.RegisterSampler(systemSampler)
+	sender.RegisterSampler(storageSampler)
+	sender.RegisterSampler(systemSampler)
 
-        a.RegisterMetricsSender(sender)
+	a.RegisterMetricsSender(sender)
 
-        return nil
+	return nil
 }

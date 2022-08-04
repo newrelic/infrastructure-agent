@@ -12,10 +12,8 @@ import (
 
 var (
 	SupportedFileSystems = map[string]bool{
-		"apfs":  true,
-		"hfs":   true,
-		"exfat": true,
-		"ext4": true,
+		"ufs": true,
+		"zfs": true,
 	}
 )
 
