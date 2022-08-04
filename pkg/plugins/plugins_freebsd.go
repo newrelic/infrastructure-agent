@@ -4,12 +4,16 @@ package plugins
 
 import (
 	"github.com/newrelic/infrastructure-agent/internal/agent"
+	"github.com/newrelic/infrastructure-agent/internal/plugins/freebsd"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics"
 	metricsSender "github.com/newrelic/infrastructure-agent/pkg/metrics/sender"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
 )
 
 func RegisterPlugins(a *agent.Agent) error {
+
+	a.RegisterPlugin(freebsd.NewHostinfoPlugin(a.Context, a.GetCloudHarvester()))
+	a.RegisterPlugin(NewHostAliasesPlugin(a.Context, a.GetCloudHarvester()))
 
 	storageSampler := storage.NewSampler(a.Context)
 	sender := metricsSender.NewSender(a.Context)
