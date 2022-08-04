@@ -1,7 +1,7 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-//go:build linux || darwin
-// +build linux darwin
+//go:build linux || darwin || freebsd
+// +build linux darwin freebsd
 
 package ctl
 

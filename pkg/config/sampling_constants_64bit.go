@@ -1,7 +1,7 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-//go:build (linux || darwin || windows) && (amd64 || arm64 || mips64 || mips64le || ppc64 || ppc64le || s390x)
-// +build linux darwin windows
+//go:build (linux || darwin || windows || freebsd) && (amd64 || arm64 || mips64 || mips64le || ppc64 || ppc64le || s390x)
+// +build linux darwin windows freebsd
 // +build amd64 arm64 mips64 mips64le ppc64 ppc64le s390x
 
 //

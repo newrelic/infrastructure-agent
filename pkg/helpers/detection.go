@@ -18,4 +18,5 @@ const (
 	OS_UNKNOWN
 
 	LINUX_COREOS
+	FREEBSD
 )
