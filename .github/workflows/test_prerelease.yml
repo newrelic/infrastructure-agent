@@ -34,6 +34,7 @@ jobs:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
 
   canary-alerts:
+    needs: [test-prerelease-windows, test-prerelease-linux]
     uses: newrelic/infrastructure-agent/.github/workflows/component_canary_alerts.yml@master
     with:
       TAG: ${{ github.event.inputs.tag }}

@@ -1,14 +1,10 @@
-name: ~ Canary alerts | Create
+name: ~ Canary alerts | Prune
 
 on:
   workflow_call:
     secrets:
       AWS_VPC_SUBNET:
         required: true
-    inputs:
-      TAG:
-        required: true
-        type: string
 
 env:
   AWS_ASSUME_ROLE: 'arn:aws:iam::018789649883:role/caos-pipeline-oidc'
@@ -29,15 +25,15 @@ jobs:
           role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
           aws-region: us-east-2
 
-      - name: Creating alerts for canaries
+      - name: Removing alerts for canaries
         uses: ./.github/actions/external_runner
         with:
           aws_region: us-east-2
-          container_make_target: "provision-alerts/pre-release TAG=${{ inputs.TAG }}"
+          container_make_target: "provision-alerts-delete/pre-release"
           ecs_cluster_name: caos_prerelease
           task_definition_name: test-prerelease-td
           cloud_watch_logs_group_name: /ecs/test-prerelease
           cloud_watch_logs_stream_name: ecs/test-prerelease
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
           log_filters: |
-            provisioning\salerts\sfor
+            deleting\salerts\sfor
