@@ -58,7 +58,7 @@ func (mm *MemoryMonitor) Sample() (result *MemorySample, err error) {
 		memoryUsedPercent = 100.0 - memoryFreePercent
 	}
 
-	memorySample := &MemorySample{
+	return &MemorySample{
 		MemoryTotal:       float64(memory.Total),
 		MemoryFree:        float64(memory.Available),
 		MemoryUsed:        float64(memory.Used),
@@ -68,10 +68,7 @@ func (mm *MemoryMonitor) Sample() (result *MemorySample, err error) {
 
 		MemoryFreePercent: memoryFreePercent,
 		MemoryUsedPercent: memoryUsedPercent,
-	}
 
 		SwapSample: *swap,
 	}, nil
-
-	return memorySample, nil
 }
