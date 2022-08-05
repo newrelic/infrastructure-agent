@@ -25,6 +25,14 @@ import (
 	test "github.com/newrelic/infrastructure-agent/test/databind"
 )
 
+const (
+	tempCredentials = `[kms_test]
+aws_access_key_id = SOME_KEY
+aws_secret_access_key = SOME_SECRET
+`
+	tempFileName = "/tmp/kms_test"
+)
+
 func TestMain(m *testing.M) {
 
 	if err := test.ComposeUp("./docker-compose.yml"); err != nil {
@@ -45,9 +53,18 @@ func TestMain(m *testing.M) {
 		break
 	}
 
+	//create temporary credentials file
+	os.Setenv("AWS_PROFILE", "kms_test")
+	err := os.WriteFile(tempFileName, []byte(tempCredentials), 0644)
+	if err != nil {
+		log.Println("cannot create temporary credentials", err.Error())
+		os.Exit(-1)
+	}
+
 	exitValChn := make(chan int, 1)
 	func() {
 		defer test.ComposeDown("./docker-compose.yml")
+		defer os.Remove(tempFileName)
 		exitValChn <- m.Run()
 	}()
 
@@ -68,7 +85,8 @@ variables:
       region: eu-west-1
       disableSSL: true
       endpoint: http://localhost:18080
-`, data)
+      credential_file: %s
+`, data, tempFileName)
 
 	values := fetch(t, input)
 	t.Log(values)
@@ -94,7 +112,8 @@ variables:
       region: eu-west-1
       disableSSL: true
       endpoint: http://localhost:18080
-`, data)
+      credential_file: %s
+`, data, tempFileName)
 
 	values := fetch(t, input)
 	tmpl := map[string]string{
@@ -121,7 +140,8 @@ variables:
       region: eu-west-1
       disableSSL: true
       endpoint: http://localhost:18080
-`, data)
+      credential_file: %s
+`, data, tempFileName)
 
 	values := fetch(t, input)
 	tmpl := map[string]string{
@@ -142,8 +162,10 @@ func encode(t *testing.T, data string) (string, func()) {
 		WithDisableSSL(true).
 		WithRegion("eu-west-2")
 
-	kmsSession, err := session.NewSession(cfgs)
-	require.NoError(t, err)
+	kmsSession := session.Must(session.NewSessionWithOptions(session.Options{
+		Config:            *cfgs,
+		SharedConfigFiles: []string{tempFileName},
+	}))
 
 	k := kms.New(kmsSession)
 	keys, err := k.ListKeys(&kms.ListKeysInput{})
