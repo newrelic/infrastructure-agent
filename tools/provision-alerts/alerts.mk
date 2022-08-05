@@ -3,7 +3,7 @@ PROVISION_ALERTS_WORKSPACE	?= $(CURDIR)/tools/provision-alerts
 .PHONY: provision-alerts/fetch-inventory
 provision-alerts/fetch-inventory:
 	@echo "fetching inventory..."
-	rm $(CURDIR)/tools/provision-alerts/inventory.ec2
+	rm $(CURDIR)/tools/provision-alerts/inventory.ec2 || true
 	bash $(CURDIR)/tools/provision-alerts/fetch_inventory.sh $(TAG) > $(CURDIR)/tools/provision-alerts/inventory.ec2
 
 .PHONY: provision-alerts/automatic
