@@ -283,8 +283,14 @@ func cliMode() {
 	var cmdPrune = &cobra.Command{
 		Use:   "prune",
 		Short: "Prune canary machines",
-		Long:  `prun is used to remove old canary machines.`,
+		Long:  `prune is used to remove old canary machines.`,
 		RunE:  pruneCanaries,
+	}
+	var cmdPreviousCanaryVersion = &cobra.Command{
+		Use:   "previous_canary_version",
+		Short: "Get previous canary version",
+		Long:  `Get previous canary version to be used in automatic alerts.`,
+		RunE:  previousCanaryVersion,
 	}
 
 	cmdPrune.PersistentFlags().Bool("dry_run", false, "dry run")
@@ -293,6 +299,7 @@ func cliMode() {
 	cmdRoot := &cobra.Command{Use: "spin-ec2"}
 	cmdRoot.AddCommand(cmdCanaries)
 	cmdCanaries.AddCommand(cmdProvision, cmdPrune)
+	cmdCanaries.AddCommand(cmdProvision, cmdPreviousCanaryVersion)
 	cmdRoot.Execute()
 }
 
@@ -519,6 +526,24 @@ func pruneCanaries(cmd *cobra.Command, args []string) error {
 	}
 
 	return terminateInstances(idsToTerminate, instances, dryRun)
+}
+
+// pruneCanaries removes all aws instances except the
+// ones that have the latest 2 version of infra-agent installed.
+func previousCanaryVersion(cmd *cobra.Command, args []string) error {
+	instances, err := getAWSInstances(hostPrefix + ":v")
+	if err != nil {
+		return err
+	}
+
+	previousVersion, err := getPreviousCanaryVersion(instances)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("%s", previousVersion)
+
+	return nil
 }
 
 // latestRelease returns tha latest release (pre-released not taken into account)

@@ -1,5 +1,15 @@
 PROVISION_ALERTS_WORKSPACE	?= $(CURDIR)/tools/provision-alerts
 
+.PHONY: provision-alerts/fetch-inventory
+provision-alerts/fetch-inventory:
+	@echo "fetching inventory..."
+	rm $(CURDIR)/tools/provision-alerts/inventory.ec2
+	bash $(CURDIR)/tools/provision-alerts/fetch_inventory.sh $(TAG) > $(CURDIR)/tools/provision-alerts/inventory.ec2
+
+.PHONY: provision-alerts/automatic
+provision-alerts/automatic: validate-aws-credentials ec2-install-deps ec2-build provision-alerts/fetch-inventory
+	@echo "creating alerts with inventory from $(CURDIR)/tools/provision-alerts/inventory.ec2"
+	bash $(CURDIR)/tools/provision-alerts/create_alerts.sh $(CURDIR)/tools/provision-alerts/inventory.ec2 $(NR_API_KEY)
 
 .PHONY: provision-alerts-install-deps
 provision-alerts-install-deps:

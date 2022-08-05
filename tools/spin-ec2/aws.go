@@ -93,6 +93,21 @@ func terminateInstances(idsToTerminate []string, instances map[string]string, dr
 	return nil
 }
 
+func getPreviousCanaryVersion(instances map[string]string) (string, error) {
+	versions, err := detectVersions(instances)
+	if err != nil {
+		return "", err
+	}
+
+	if len(versions) < 2 {
+		return "", fmt.Errorf("in order to use it, you need to provision 2 versions of canaries first")
+	}
+
+	semver.Sort(versions)
+
+	return versions[len(versions)-2], nil
+}
+
 // getInstancesToPrune will filter the instances that should be terminated.
 func getInstancesToPrune(instances map[string]string) ([]string, error) {
 	versions, err := detectVersions(instances)
