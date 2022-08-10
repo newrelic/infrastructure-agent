@@ -1,0 +1,42 @@
+name: Prerelease Linux
+
+on:
+  release:
+    types:
+      - prereleased
+    tags:
+      - '*'
+
+env:
+  PGK_VERSION: 1.2.3
+
+jobs:
+  packaging:
+    name: Build newrelic infra public keys package
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKER_HUB_ID }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
+
+      - name: Preparing linux packages
+        run: cd tools/newrelic-infra-public-keys && PGK_VERSION=${{ env.PGK_VERSION }} make build
+
+      - name: Sign package
+        run: echo "todo sign package"
+
+      - name: Generate checksum files
+        uses: ./.github/actions/generate-checksums
+        with:
+          files_regex: '.*\(deb\)'
+          files_path: 'dist'
+          run_sudo: true
+
+        # copy this target to final repo
+      - name: Publish linux packages
+        run: make ci/prerelease-publish
