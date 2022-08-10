@@ -154,6 +154,31 @@ jobs:
           cloud_watch_logs_stream_name: ecs/test-prerelease
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
 
+  canaries-macos:
+    # leverage linux workflow as we don't have macos packaging tests yet
+    if: ${{ inputs.PLATFORM == 'linux' && inputs.CANARIES == true }}
+    needs: [ packaging-tests-linux ]
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
+          aws-region: us-east-2
+
+      - name: Provision canaries
+        uses: ./.github/actions/external_runner
+        with:
+          aws_region: us-east-2
+          container_make_target: "canaries PLATFORM=macos ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} VERSION=${{ inputs.TAG }}"
+          ecs_cluster_name: caos_prerelease
+          task_definition_name: test-prerelease-td
+          cloud_watch_logs_group_name: /ecs/test-prerelease
+          cloud_watch_logs_stream_name: ecs/test-prerelease
+          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
+
   canaries-windows:
     if: ${{ inputs.PLATFORM == 'windows' && inputs.CANARIES == true }}
     needs: [ packaging-tests-windows ]
