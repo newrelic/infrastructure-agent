@@ -1,4 +1,4 @@
-name: Provision Canary alerts
+name: 🐦 Canary alerts | provision
 
 on:
   workflow_dispatch:
