@@ -1,0 +1,19 @@
+name: Provision Canary alerts
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to test'
+        required: true
+
+permissions:
+  id-token: write
+
+jobs:
+  canary-alerts-delete:
+    uses: newrelic/infrastructure-agent/.github/workflows/component_canary_alerts.yml@master
+    secrets:
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+      CANARIES: true
+      TAG: ${{ github.event.inputs.tag }}

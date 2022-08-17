@@ -9,6 +9,9 @@ on:
       TAG:
         required: true
         type: string
+      CANARIES:
+        required: true
+        type: boolean
 
 env:
   AWS_ASSUME_ROLE: 'arn:aws:iam::018789649883:role/caos-pipeline-oidc'
@@ -19,6 +22,7 @@ permissions:
 
 jobs:
   provision:
+    if: ${{ inputs.CANARIES == true }}
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
