@@ -1,4 +1,4 @@
-name: Delete Canary alerts
+name: 🧹 Canary alerts | delete
 
 on:
   workflow_dispatch:
