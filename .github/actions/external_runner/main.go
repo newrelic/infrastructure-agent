@@ -25,14 +25,13 @@ type Config struct {
 	AWSRegion                string
 	ECSClusterName           string
 	TaskDefinitionName       string
-	ContainerMakeTarget      string
+	ContainerMakeTarget      []string // If is set as a string it will unmarshall as a slice with 1 string
 	AWSVpcSubnet             string
 	CloudWatchLogsGroupName  string
 	CloudWatchLogsStreamName string
 	MaxLogLines              int
 	TimeoutMillis            int
-	//to show full logs, set LOG_FILTERS=".*"
-	LogFilters []string
+	LogFilters               []string // To show full logs, set LOG_FILTERS=".*"
 }
 
 const (
@@ -68,7 +67,7 @@ func LoadConfig() Config {
 		AWSRegion:                viper.GetString("aws_region"),
 		ECSClusterName:           viper.GetString("ecs_cluster_name"),
 		TaskDefinitionName:       viper.GetString("task_definition_name"),
-		ContainerMakeTarget:      viper.GetString("container_make_target"),
+		ContainerMakeTarget:      viper.GetStringSlice("container_make_target"),
 		AWSVpcSubnet:             viper.GetString("aws_vpc_subnet"),
 		CloudWatchLogsGroupName:  viper.GetString("cloud_watch_logs_group_name"),
 		CloudWatchLogsStreamName: viper.GetString("cloud_watch_logs_stream_name"),
@@ -121,7 +120,7 @@ func prepareFargateTask(params Config) (*TaskRunner, aws.Config) {
 	}
 
 	// modify task input if command is specified
-	if params.ContainerMakeTarget != "" {
+	if len(params.ContainerMakeTarget) > 0 {
 		taskDefinition := &ecs.DescribeTaskDefinitionInput{
 			TaskDefinition: &params.TaskDefinitionName,
 		}
@@ -219,7 +218,7 @@ func NewContainerOverride(taskDefinition *ecs.DescribeTaskDefinitionInput, awsCl
 }
 
 // GetContainerOverride returns a container configuration with a new command
-func (co *ContainerOverride) GetContainersOverride(ctx context.Context, command string) ([]ecsTypes.ContainerOverride, error) {
+func (co *ContainerOverride) GetContainersOverride(ctx context.Context, command []string) ([]ecsTypes.ContainerOverride, error) {
 	var err error
 	task, err := co.awsClient.DescribeTaskDefinition(ctx, co.specs)
 	if err != nil {
@@ -233,7 +232,7 @@ func (co *ContainerOverride) GetContainersOverride(ctx context.Context, command 
 			Name:                 container.Name,
 			Environment:          container.Environment,
 			EnvironmentFiles:     container.EnvironmentFiles,
-			Command:              []string{command},
+			Command:              command,
 			ResourceRequirements: container.ResourceRequirements,
 		}
 	}
