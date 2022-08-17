@@ -1,4 +1,4 @@
-name: 🧹 Canary alerts | delete
+name: 🐦 🧹 Canary alerts | delete
 
 on:
   workflow_dispatch:
