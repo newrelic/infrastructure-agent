@@ -1,5 +1,5 @@
 ---
-name: "Code Scanning - Action"
+name: 🔍 Code Scanning
 
 on:
   push:
