@@ -1,4 +1,4 @@
-name: ~ macOS | Run unit tests
+name: 🚧 macOS | Run unit tests
 
 on:
   workflow_call:

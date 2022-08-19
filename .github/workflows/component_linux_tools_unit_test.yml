@@ -1,4 +1,4 @@
-name: ~ Linux | Run unit tests for tools
+name: 🚧 Linux | Run unit tests for tools
 
 on:
   workflow_call:

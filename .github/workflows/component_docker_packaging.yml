@@ -1,4 +1,4 @@
-name: ~ Docker | Build and upload images as RC
+name: 🚧 Docker | Build and upload images as RC
 
 on:
   workflow_call:

@@ -1,4 +1,4 @@
-name: ~ Windows | Run unit tests
+name: 🚧 Windows | Run unit tests
 
 on:
   workflow_call:
