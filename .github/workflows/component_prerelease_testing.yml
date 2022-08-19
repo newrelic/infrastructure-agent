@@ -1,4 +1,4 @@
-name: ⬜️ ~ Test pre-release
+name: 🚧 ~ Test pre-release
 
 # 2 copy of packaging and canaries jobs required to split workflow path, but keep in the same component to reuse other jobs
 # - packaging-tests-linux & packaging-tests-windows are almost the same
