@@ -91,6 +91,13 @@ jobs:
     with:
       TAG:  ${{ github.event.release.tag_name }}
 
+  docker-trivy-critical:
+    needs: [packaging-docker]
+    uses: newrelic/infrastructure-agent/.github/workflows/component_trivy.yml@master
+    with:
+      tag: "${{ github.event.release.tag_name }}-rc"
+      severity: "CRITICAL"
+
   publishing-to-s3:
     # point to staging after tests
     name: Publish linux artifacts into s3 staging bucket

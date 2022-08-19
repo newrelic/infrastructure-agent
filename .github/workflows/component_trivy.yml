@@ -1,0 +1,47 @@
+name: 🕵🏼 Trivy
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+      severity:
+        required: true
+        type: string
+
+jobs:
+  trivy_scanner:
+    name: Trivy scanner for docker
+    runs-on: ubuntu-20.04
+    steps:
+
+      - name: newrelic/infrastructure
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "docker.io/newrelic/infrastructure:${{ github.event.inputs.tag }}"
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: "${{ inputs.severity }}"
+
+      - name: newrelic/k8s-events-forwarder
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "docker.io/newrelic/k8s-events-forwarder:${{ github.event.inputs.tag }}"
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: "${{ inputs.severity }}"
+
+      - name: newrelic/nri-forwarder
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "docker.io/newrelic/nri-forwarder:${{ github.event.inputs.tag }}"
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: "${{ inputs.severity }}"
