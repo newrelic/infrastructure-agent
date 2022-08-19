@@ -1,4 +1,4 @@
-name: Build Docker image or ci runner
+name: 🚀 🐳 Build Docker image or ci runner
 
 on:
   workflow_dispatch:
