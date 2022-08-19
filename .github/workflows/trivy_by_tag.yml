@@ -1,4 +1,4 @@
-name: Trivy scanner for docker by tag
+name: 🕵🏼 Trivy scanner for docker by tag
 on:
   workflow_dispatch:
     inputs:

@@ -1,4 +1,4 @@
-name: Trivy scanner for docker
+name: 🕵🏼 Trivy scanner for docker
 on:
   schedule:
     # Scheduled to run hourly

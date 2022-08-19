@@ -1,4 +1,4 @@
-name: ~ Linux | Run harvest tests
+name: 🚧 Linux | Run harvest tests
 
 on:
   workflow_call:
