@@ -92,8 +92,8 @@ func TestContextHolder_Cancel(t *testing.T) {
 
 	ctx, actuator := WithHeartBeat(context.Background(), 30*time.Second, lg)
 
-	// WHEN we cancel the context
-	actuator.Cancel()
+	// WHEN we stop the heartbeat, the context must be canceled
+	actuator.HeartBeatStop()
 
 	// THEN the context is done before it expired
 	select {
