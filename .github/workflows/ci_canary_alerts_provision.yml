@@ -11,9 +11,10 @@ permissions:
   id-token: write
 
 jobs:
-  canary-alerts-delete:
+  canary-alerts:
     uses: newrelic/infrastructure-agent/.github/workflows/component_canary_alerts.yml@master
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+    with:
       CANARIES: true
       TAG: ${{ github.event.inputs.tag }}
