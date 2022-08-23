@@ -109,7 +109,7 @@ jobs:
     uses: newrelic/infrastructure-agent/.github/workflows/component_prerelease_testing.yml@master
     with:
       PLATFORM: "windows"
-      TAG: ${{ github.event.inputs.tag }}
+      TAG: ${{ github.event.release.tag_name }}
       CANARIES: true
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
