@@ -17,12 +17,12 @@ type heartBeatCtx struct {
 	timer    *time.Timer
 	mutex    sync.Mutex
 	lifeTime time.Duration
+	// cancel cancels the context
+	cancel context.CancelFunc
 }
 
 // Actuator allows operating with a heartbeatable context
 type Actuator struct {
-	// Cancel cancels the context
-	Cancel context.CancelFunc
 	// HeartBeat extends the context life time by the value the context was created with
 	HeartBeat     func()
 	HeartBeatStop func()
@@ -36,10 +36,10 @@ func WithHeartBeat(parent context.Context, timeout time.Duration, lg log.Entry) 
 		HeartBeat:     ctx.heartBeat,
 		HeartBeatStop: ctx.heartBeatStop,
 	}
-	ctx.Context, actuator.Cancel = context.WithCancel(parent)
+	ctx.Context, ctx.cancel = context.WithCancel(parent)
 	ctx.timer = time.AfterFunc(timeout, func() {
 		lg.Warnf("HeartBeat timeout exceeded after %f seconds", timeout.Seconds())
-		actuator.Cancel()
+		ctx.cancel()
 	})
 	return &ctx, actuator
 }
@@ -56,5 +56,6 @@ func (ctx *heartBeatCtx) heartBeat() {
 func (ctx *heartBeatCtx) heartBeatStop() {
 	ctx.mutex.Lock()
 	defer ctx.mutex.Unlock()
+	defer ctx.cancel()
 	ctx.timer.Stop()
 }
