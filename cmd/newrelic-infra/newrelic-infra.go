@@ -8,11 +8,12 @@ import (
 	context2 "context"
 	"flag"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/dnstests"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"go.uber.org/multierr"
 	"io"
-	"net"
 	"net/http"
 	_ "net/http/pprof"
-	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -23,7 +24,6 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/pkg/disk"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
-	http2 "github.com/newrelic/infrastructure-agent/pkg/http"
 	logFilter "github.com/newrelic/infrastructure-agent/pkg/log/filter"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
@@ -682,23 +682,22 @@ func checkEndpointReachable(
 	timeout time.Duration,
 	transport http.RoundTripper,
 ) (timedOut bool, err error) {
-	var request *http.Request
-	if request, err = http.NewRequest("HEAD", collectorURL, nil); err != nil {
-		return false, fmt.Errorf("unable to prepare reachability request: %v, error: %s", request, err)
+
+	// custom test suit to check endpoint's reachability using different implementation
+	testCases := []func(string, time.Duration, http.RoundTripper, log.Entry) (bool, error){
+		dnstests.CheckEndpointReachable,
+		dnstests.CheckEndpointReachableDefaultTransport,
+		dnstests.CheckEndpointReachableDefaultHttpHeadClient,
+		dnstests.CheckEndpointReachableCustomDNS,
+		dnstests.CheckEndpointReachableGoResolverCustom,
 	}
 
-	if wlog.IsLevelEnabled(logrus.TraceLevel) {
-		request = http2.WithTracer(request, "checkEndpointReachable")
-	}
-	client := backendhttp.GetHttpClient(timeout, transport)
-	if _, err = client.Do(request); err != nil {
-		if e2, ok := err.(net.Error); ok && (e2.Timeout() || e2.Temporary()) {
+	for _, test := range testCases {
+		timed, testErr := test(collectorURL, timeout, transport, aslog)
+		if timed {
 			timedOut = true
 		}
-		if errURL, ok := err.(*url.Error); ok {
-			aslog.WithError(errURL).Warn("URL error detected. May be a configuration problem or a network connectivity issue.")
-			timedOut = true
-		}
+		err = multierr.Append(err, testErr)
 	}
 
 	return
