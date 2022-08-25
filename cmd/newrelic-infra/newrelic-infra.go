@@ -687,10 +687,20 @@ func checkEndpointReachable(
 	testCases := []func(string, time.Duration, http.RoundTripper, log.Entry) (bool, error){
 		dnstests.CheckEndpointReachable,
 		dnstests.CheckEndpointReachableDefaultTransport,
+		dnstests.CheckEndpointReachableEmptyClient,
 		dnstests.CheckEndpointReachableDefaultHttpHeadClient,
 		dnstests.CheckEndpointReachableCustomDNS,
 		dnstests.CheckEndpointReachableGoResolverCustom,
 	}
+
+	for _, test := range testCases {
+		test(collectorURL, timeout, transport, aslog)
+	}
+
+	// do manual lookup
+	dnstests.ManualLookup()
+
+	aslog.Info("********** Re-trying checkpoint after manual dnslookup tests **********")
 
 	for _, test := range testCases {
 		timed, testErr := test(collectorURL, timeout, transport, aslog)
@@ -699,8 +709,12 @@ func checkEndpointReachable(
 		}
 		err = multierr.Append(err, testErr)
 	}
+	if err != nil {
+		aslog.WithError(err).Error("no connectivity with collector url")
+	}
 
-	return
+	// skip error to test other features
+	return false, nil
 }
 
 func getPluginSourceDirs(ac *config.Config) []string {

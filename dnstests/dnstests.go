@@ -31,7 +31,7 @@ func CheckEndpointReachable(
 	}
 	request = http2.WithTracer(request, "checkEndpointReachable")
 	client := backendhttp.GetHttpClient(timeout, transport)
-	if _, err = client.Do(request); err != nil {
+	if resp, err := client.Do(request); err != nil {
 		if e2, ok := err.(net.Error); ok && (e2.Timeout() || e2.Temporary()) {
 			timedOut = true
 		}
@@ -39,7 +39,11 @@ func CheckEndpointReachable(
 			logger.WithError(errURL).Warn("URL error detected. May be a configuration problem or a network connectivity issue.")
 			timedOut = true
 		}
-		logger.WithError(err).Warn("default_agent_implementation: FAIL")
+		if resp != nil {
+			logger.WithError(err).WithField("StatusCode", resp.StatusCode).Warn("default_agent_implementation: FAIL")
+		} else {
+			logger.WithError(err).Warn("default_agent_implementation: FAIL")
+		}
 	} else {
 		logger.WithError(err).Warn("default_agent_implementation: OK")
 	}
@@ -72,6 +76,33 @@ func CheckEndpointReachableDefaultTransport(
 		}
 	}
 	logger.Info("************** End default_transport **************")
+
+	return
+}
+
+func CheckEndpointReachableEmptyClient(
+	collectorURL string,
+	timeout time.Duration,
+	transport http.RoundTripper,
+	logger log.Entry,
+) (timedOut bool, err error) {
+
+	logger.Info("************** Checking endpoint reachability using empty_client **************")
+	var request *http.Request
+	if request, err = http.NewRequest("HEAD", collectorURL, nil); err != nil {
+		return false, fmt.Errorf("unable to prepare reachability request: %v, error: %s", request, err)
+	}
+
+	client := http.Client{
+		Timeout: timeout,
+	}
+	if resp, err := client.Do(request); err != nil {
+		logrus.WithError(err).Error(fmt.Sprintf("cannot Head Default transport With tracer %s", collectorURL))
+	} else {
+		logrus.WithField("StatusCode", resp.StatusCode).Info("empty_client : OK")
+	}
+
+	logger.Info("************** End empty_client **************")
 
 	return
 }
@@ -190,4 +221,31 @@ func CheckEndpointReachableCustomDNS(
 	}
 	logger.Info("************** End custom_dns_resolver **************")
 	return
+}
+
+func ManualLookup() {
+	/*********************************************/
+	//go native LookupHost default resolver
+	/*********************************************/
+	logrus.Info("************** go native LookupHost default resolver *******************")
+	addrs, err := net.LookupHost(collectorHost)
+	if err != nil {
+		logrus.WithError(err).Error(fmt.Sprintf("cannot resolve %s", collectorHost))
+	} else {
+		logrus.WithField("addrs", addrs).Info("Native lookup host default resolver : OK")
+	}
+
+	/*********************************************/
+	//go native LookupHost PreferGo Default resolver
+	/*********************************************/
+	logrus.Info("************** go native LookupHost PreferGo Default resolver *******************")
+	resolver := net.DefaultResolver
+	resolver.PreferGo = true
+	addrs, err = resolver.LookupHost(context.Background(), collectorHost)
+	if err != nil {
+		logrus.WithError(err).Error(fmt.Sprintf("cannot resolve %s", collectorHost))
+	} else {
+		logrus.WithField("addrs", addrs).Info("go native LookupHost PreferGo resolver : OK")
+	}
+
 }
