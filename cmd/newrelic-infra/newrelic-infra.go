@@ -714,7 +714,8 @@ func checkEndpointReachable(
 	}
 
 	// skip error to test other features
-	return false, nil
+	// true will make running this function multiple times
+	return true, nil
 }
 
 func getPluginSourceDirs(ac *config.Config) []string {
