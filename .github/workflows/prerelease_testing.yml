@@ -36,7 +36,7 @@ jobs:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
 
   test-prerelease-linux:
-    if: ${{ github.event.inputs.windows == 'true' }}
+    if: ${{ github.event.inputs.linux == 'true' }}
     uses: newrelic/infrastructure-agent/.github/workflows/component_prerelease_testing.yml@master
     with:
       PLATFORM: "linux"
