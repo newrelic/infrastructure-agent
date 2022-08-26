@@ -39,6 +39,7 @@ log:
    file: agent.log
    forward: true
    level: debug
+logging_retry_limit: 10
 `
 	f, err := ioutil.TempFile("", "opsmatic_config_test")
 	c.Assert(err, IsNil)
@@ -66,6 +67,7 @@ log:
 	c.Assert(cfg.Log.Level, Equals, LogLevelDebug)
 	c.Assert(*cfg.Log.Forward, Equals, true)
 	c.Assert(cfg.Log.File, Equals, "agent.log")
+	c.Assert(cfg.LoggingRetryLimit, Equals, "10")
 }
 
 func (s *ConfigSuite) TestParseConfigBadLicense(c *C) {
