@@ -10,7 +10,7 @@
       ip: "{{ item.PublicIpAddress }}"
       username: "{{ username }}"
       name: "{{ item.Name }}"
-      python_interpreter: "{{ python_interpreter }}"
+      python_interpreter: "{{ (item.Name is search('arm')) | ternary(python_interpreter_arm, python_interpreter) }}"
   loop: "{{ registered_instances_macos }}"
   when:  item.Name is search("current")
   register: instances_current
@@ -25,7 +25,7 @@
       ip: "{{ item.PublicIpAddress }}"
       username: "{{ username }}"
       name: "{{ item.Name }}"
-      python_interpreter: "{{ python_interpreter }}"
+      python_interpreter: "{{ (item.Name is search('arm')) | ternary(python_interpreter_arm, python_interpreter) }}"
   loop: "{{ registered_instances_macos }}"
   when:  item.Name is search("previous")
   register: instances_previous
