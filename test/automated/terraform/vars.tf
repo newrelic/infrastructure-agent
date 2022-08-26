@@ -70,6 +70,10 @@ variable "secret_name_macstadium_pass" {
   default = "caos/canaries/macstadium_pass-DvAHye"
 }
 
+variable "secret_name_macstadium_sudo_pass" {
+  default = "caos/canaries/macstadium_sudo_pass-4h4DKS"
+}
+
 variable "secret_name_nr_api_key" {
   default = "caos/canaries/nr_api_key-xadBYJ"
 }
