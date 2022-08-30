@@ -173,7 +173,8 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 						continue loop //nolint:nlreturn
 					}
 					if deprecateRegisterFFExists && deprecateRegisterFFEnabled {
-						elog.Warn("Register for DM integrations is deprecated.")
+						elog.WithField("integration_name", req.Definition.Name).
+							Warn("Register for DM integrations is deprecated and therefore the data for this integration will not be sent. Check for the latest version of the integration.")
 					}
 				}
 			}
