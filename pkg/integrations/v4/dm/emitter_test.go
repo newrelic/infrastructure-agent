@@ -382,7 +382,7 @@ func TestEmitter_ShouldNotSendDataWhenDeprecatedRegisterFFIsEnabled(t *testing.T
 	}, time.Second, 10*time.Millisecond, "isProcessing should not be set")
 
 	assert.Len(t, hook.GetEntries(), 1)
-	assert.Equal(t, "Register for DM integrations is deprecated.", hook.GetEntries()[0].Message)
+	assert.Equal(t, "Register for DM integrations is deprecated and therefore the data for this integration will not be sent. Check for the latest version of the integration.", hook.GetEntries()[0].Message)
 
 	// Mocks expectations assertions
 	mock.AssertExpectationsForObjects(t, ffRetriever, aCtx, registerClient)
