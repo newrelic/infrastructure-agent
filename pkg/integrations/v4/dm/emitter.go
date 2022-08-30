@@ -167,12 +167,11 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 						e.emitDatasetForAgent(ctx, req.Data.Integration, req.FwRequestMeta, ds)
 						continue loop //nolint:nlreturn
 					}
-					deprecateRegisterFFEnabled, deprecateRegisterFFExists := e.ffRetriever.GetFeatureFlag(fflag.FlagDmRegisterDeprecated)
-					if !deprecateRegisterFFExists || (deprecateRegisterFFExists && !deprecateRegisterFFEnabled) {
+					FFEnabled, FFExists := e.ffRetriever.GetFeatureFlag(fflag.FlagDmRegisterDeprecated)
+					if isRegisterEnabled(FFEnabled, FFExists) {
 						e.processDatasetRegister(ctx, req.Data.Integration, req.FwRequestMeta, ds)
 						continue loop //nolint:nlreturn
-					}
-					if deprecateRegisterFFExists && deprecateRegisterFFEnabled {
+					} else {
 						elog.WithField("integration_name", req.Definition.Name).
 							Warn("Register for DM integrations is deprecated and therefore the data for this integration will not be sent. Check for the latest version of the integration.")
 					}
@@ -180,6 +179,12 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 			}
 		}
 	}
+}
+
+// isRegisterEnabled checks if the Feature Flag for register exists, and only if the FF it exists and it is not enabled
+// register will be considered enabled
+func isRegisterEnabled(deprecateRegisterFFEnabled bool, deprecateRegisterFFExists bool) bool {
+	return !deprecateRegisterFFExists || (deprecateRegisterFFExists && !deprecateRegisterFFEnabled)
 }
 
 func (e *emitter) emitDataset(r fwrequest.EntityFwRequest) {
