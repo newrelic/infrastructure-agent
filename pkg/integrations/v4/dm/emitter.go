@@ -160,7 +160,7 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 					return
 				default:
 					if ds.IgnoreEntity {
-						e.emidDatasetWithEmptyEntity(req.Data.Integration, req.FwRequestMeta, ds)
+						e.emitDatasetWithEmptyEntity(req.Data.Integration, req.FwRequestMeta, ds)
 						continue loop //nolint:nlreturn
 					}
 					if ds.Entity.IsAgent() {

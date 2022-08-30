@@ -8,9 +8,9 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 )
 
-// emidDatasetWithEmptyEntity will emit the dataset with an empty entity and entity will be created in the backend
+// emitDatasetWithEmptyEntity will emit the dataset with an empty entity and entity will be created in the backend
 // through entity synthesis.
-func (e *emitter) emidDatasetWithEmptyEntity(intMetadata protocol.IntegrationMetadata, reqMetadata fwrequest.FwRequestMeta, dataSet protocol.Dataset) {
+func (e *emitter) emitDatasetWithEmptyEntity(intMetadata protocol.IntegrationMetadata, reqMetadata fwrequest.FwRequestMeta, dataSet protocol.Dataset) {
 	agentVersion := e.agentContext.Version()
 	e.emitDataset(fwrequest.NewEntityFwRequest(dataSet, entity.EmptyID, reqMetadata, intMetadata, agentVersion))
 }
