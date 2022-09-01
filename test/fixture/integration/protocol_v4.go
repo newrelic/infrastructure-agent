@@ -4,6 +4,7 @@ package integration
 
 import (
 	"encoding/json"
+
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 )
@@ -14,39 +15,8 @@ type ProtocolParsingPair struct {
 	ParsedV4 protocol.DataV4
 }
 
-// aims to avoid data mutation when processing structs from global fixture variables
-func (p *ProtocolParsingPair) Clone() (clone ProtocolParsingPair) {
-	clone = *p
-	dss := clone.ParsedV4.DataSets
-	clone.ParsedV4.DataSets = []protocol.Dataset{}
-	for _, ds := range dss {
-
-		// Common.Attributes
-		ca := make(map[string]interface{}, len(ds.Common.Attributes))
-		for k, v := range ds.Common.Attributes {
-			ca[k] = v
-		}
-		ds.Common.Attributes = ca
-
-		// Metrics.Attributes
-		ms := make([]protocol.Metric, len(ds.Metrics))
-		for _, m := range ds.Metrics {
-			a := make(map[string]interface{}, len(m.Attributes))
-			for k, v := range m.Attributes {
-				a[k] = v
-			}
-			m.Attributes = a
-		}
-		ds.Metrics = ms
-
-		// same might be required for Events & Inventory
-
-		clone.ParsedV4.DataSets = append(clone.ParsedV4.DataSets, ds)
-	}
-	return clone
-}
-
 var (
+	// nolint:gochecknoglobals
 	ProtocolV4TwoEntities = ProtocolParsingPair{
 		Payload: []byte(`{
   "protocol_version": "4",
@@ -174,13 +144,14 @@ var (
 					Common: protocol.Common{
 						Timestamp:  &ts,
 						Interval:   &interval,
-						Attributes: map[string]interface{}{}},
+						Attributes: map[string]interface{}{},
+					},
 					Metrics: []protocol.Metric{
 						{
 							Name: "b.gauge",
 							Type: "gauge",
-							//Timestamp:  (*int64)(nil),
-							//Interval:   (*int64)(nil),
+							// Timestamp:  (*int64)(nil),
+							// Interval:   (*int64)(nil),
 							Attributes: map[string]interface{}{
 								"key1": "val2",
 							},
@@ -204,13 +175,14 @@ var (
 					Common: protocol.Common{
 						Timestamp:  &ts,
 						Interval:   &interval,
-						Attributes: map[string]interface{}{}},
+						Attributes: map[string]interface{}{},
+					},
 					Metrics: []protocol.Metric{
 						{
 							Name: "a.gauge",
 							Type: "gauge",
-							//Timestamp:  (*int64)(nil),
-							//Interval:   (*int64)(nil),
+							// Timestamp:  (*int64)(nil),
+							// Interval:   (*int64)(nil),
 							Attributes: map[string]interface{}{
 								"key1": "val1",
 							},
@@ -242,6 +214,7 @@ var (
 		},
 	}
 
+	// nolint:gochecknoglobals
 	ProtocolV4 = ProtocolParsingPair{
 		Payload: []byte(`
 	{
@@ -306,8 +279,8 @@ var (
 						{
 							Name: "redis.metric1",
 							Type: "count",
-							//Timestamp:  (*int64)(nil),
-							//Interval:   (*int64)(nil),
+							// Timestamp:  (*int64)(nil),
+							// Interval:   (*int64)(nil),
 							Attributes: map[string]interface{}{},
 							Value:      json.RawMessage("93"),
 						},
@@ -316,7 +289,8 @@ var (
 						Name:        "unique name",
 						Type:        "RedisInstance",
 						DisplayName: "human readable name",
-						Metadata:    map[string]interface{}{}},
+						Metadata:    map[string]interface{}{},
+					},
 					Inventory: map[string]protocol.InventoryData{
 						"inventory_foo": {"value": "bar"},
 					},
@@ -334,7 +308,184 @@ var (
 		},
 	}
 
+	// nolint:gochecknoglobals
 	ProtocolV4IgnoreEntity = ProtocolParsingPair{
+		Payload: []byte(`
+	{
+	  "protocol_version": "4",
+	  "integration": {
+		"name": "integration name",
+		"version": "integration version"
+	  },
+	  "data": [
+		{
+		  "ignore_entity": true,
+		  "common": {
+			"timestamp": 1531414060739,
+			"interval.ms": 10000,
+			"attributes": {
+			  "targetName": "localhost:9178",
+			  "scrapeUrl": "http://localhost:9178",
+			}
+		  },
+		  "metrics":[
+			{
+			  "name": "redis.metric1",
+			  "type": "count",
+			  "value": 93,
+			  "attributes": {}
+			},
+			{
+			  "name": "redis.metric2",
+			  "type": "count",
+			  "value": 94,
+			  "attributes": {}
+			}
+		  ],
+		}
+	  ]
+	}`),
+		ParsedV4: protocol.DataV4{
+			PluginProtocolVersion: protocol.PluginProtocolVersion{
+				RawProtocolVersion: "4",
+			},
+			Integration: protocol.IntegrationMetadata{
+				Name:    "integration name",
+				Version: "integration version",
+			},
+			DataSets: []protocol.Dataset{
+				{
+					IgnoreEntity: true,
+					Common: protocol.Common{
+						Timestamp: &ts,
+						Interval:  &interval,
+						Attributes: map[string]interface{}{
+							"targetName": "localhost:9178",
+							"scrapeUrl":  "http://localhost:9178",
+						},
+					},
+					Metrics: []protocol.Metric{
+						{
+							Name: "redis.metric1",
+							Type: "count",
+							// Timestamp:  (*int64)(nil),
+							// Interval:   (*int64)(nil),
+							Attributes: map[string]interface{}{},
+							Value:      json.RawMessage("93"),
+						},
+						{
+							Name: "redis.metric2",
+							Type: "count",
+							// Timestamp:  (*int64)(nil),
+							// Interval:   (*int64)(nil),
+							Attributes: map[string]interface{}{},
+							Value:      json.RawMessage("94"),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// nolint:gochecknoglobals
+	ProtocolV4DontIgnoreEntityIntegration = ProtocolParsingPair{
+		Payload: []byte(`
+	{
+	  "protocol_version": "4",
+	  "integration": {
+		"name": "integration name",
+		"version": "integration version"
+	  },
+	  "data": [
+		{
+		  "ignore_entity": false,
+		  "common": {},
+		  "entity": {
+			"name": "WIN_SERVICE:localhost:w32time",
+			"displayName": "Windows Time",
+			"type": "WIN_SERVICE",
+			"metadata": {
+			  "display_name": "Windows Time",
+			  "hostname": "EC2AMAZ-CTQEKQM",
+			  "process_id": "1784",
+			  "run_as": "NT AUTHORITY\\LocalService",
+			  "service_name": "w32time",
+			  "start_mode": "auto"
+			}
+		  },
+		  "metrics":[
+			{
+			  "name": "redis.metric1",
+			  "type": "count",
+			  "value": 93,
+			  "attributes": {}
+			},
+			{
+			  "name": "redis.metric2",
+			  "type": "count",
+			  "value": 94,
+			  "attributes": {}
+			}
+		  ],
+		}
+	  ]
+	}`),
+		ParsedV4: protocol.DataV4{
+			PluginProtocolVersion: protocol.PluginProtocolVersion{
+				RawProtocolVersion: "4",
+			},
+			Integration: protocol.IntegrationMetadata{
+				Name:    "integration name",
+				Version: "integration version",
+			},
+			DataSets: []protocol.Dataset{
+				{
+					IgnoreEntity: false,
+					Entity: entity.Fields{
+						Name:        "WIN_SERVICE:localhost:w32time",
+						Type:        "WIN_SERVICE",
+						DisplayName: "Windows Time",
+						Metadata: map[string]interface{}{
+							"display_name": "Windows Time",
+							"hostname":     "EC2AMAZ-CTQEKQM",
+							"process_id":   "1784",
+							"run_as":       "NT AUTHORITY\\LocalService",
+							"service_name": "w32time",
+							"start_mode":   "auto",
+						},
+					},
+					Common: protocol.Common{
+						Timestamp: &ts,
+						Interval:  &interval,
+						Attributes: map[string]interface{}{
+							"targetName": "localhost:9178",
+							"scrapeUrl":  "http://localhost:9178",
+						},
+					},
+					Metrics: []protocol.Metric{
+						{
+							Name: "redis.metric1",
+							Type: "count",
+							// Timestamp:  (*int64)(nil),
+							// Interval:   (*int64)(nil),
+							Attributes: map[string]interface{}{},
+							Value:      json.RawMessage("93"),
+						},
+						{
+							Name: "redis.metric2",
+							Type: "count",
+							// Timestamp:  (*int64)(nil),
+							// Interval:   (*int64)(nil),
+							Attributes: map[string]interface{}{},
+							Value:      json.RawMessage("94"),
+						},
+					},
+				},
+			},
+		},
+	}
+	// nolint:gochecknoglobals
+	ProtocolV4NoEntityDontIgnoreEntityAgent = ProtocolParsingPair{
 		Payload: []byte(`
 	{
 	  "protocol_version": "4",
@@ -380,28 +531,29 @@ var (
 			},
 			DataSets: []protocol.Dataset{
 				{
-					IgnoreEntity: true,
+					IgnoreEntity: false,
 					Common: protocol.Common{
 						Timestamp: &ts,
 						Interval:  &interval,
 						Attributes: map[string]interface{}{
 							"targetName": "localhost:9178",
 							"scrapeUrl":  "http://localhost:9178",
-						}},
+						},
+					},
 					Metrics: []protocol.Metric{
 						{
 							Name: "redis.metric1",
 							Type: "count",
-							//Timestamp:  (*int64)(nil),
-							//Interval:   (*int64)(nil),
+							// Timestamp:  (*int64)(nil),
+							// Interval:   (*int64)(nil),
 							Attributes: map[string]interface{}{},
 							Value:      json.RawMessage("93"),
 						},
 						{
 							Name: "redis.metric2",
 							Type: "count",
-							//Timestamp:  (*int64)(nil),
-							//Interval:   (*int64)(nil),
+							// Timestamp:  (*int64)(nil),
+							// Interval:   (*int64)(nil),
 							Attributes: map[string]interface{}{},
 							Value:      json.RawMessage("94"),
 						},
@@ -410,7 +562,7 @@ var (
 			},
 		},
 	}
-	// internal
-	interval = int64(10000)
-	ts       = int64(1531414060739)
+	// internal.
+	interval = int64(10000)         // nolint:gochecknoglobals,gomnd
+	ts       = int64(1531414060739) // nolint:gochecknoglobals,gomnd
 )
