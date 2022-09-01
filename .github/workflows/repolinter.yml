@@ -1,6 +1,6 @@
 # NOTE: This file should always be named `repolinter.yml` to allow
 # workflow_dispatch to work properly
-name: Repolinter Action
+name: 🔍 Repolinter
 
 # NOTE: This workflow will ONLY check the default branch!
 # Currently there is no elegant way to specify the default

@@ -1,4 +1,4 @@
-name: Prerelease Linux
+name: 🚀 🐧 Prerelease Linux
 
 on:
   release:
@@ -13,8 +13,9 @@ jobs:
     secrets:
       gh_token: ${{secrets.GITHUB_TOKEN}}
 
-  harvest-test:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_harvest_test.yml@master
+# OS is deprecated
+#  harvest-test:
+#    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_harvest_test.yml@master
 
   proxy-tests:
     uses: newrelic/infrastructure-agent/.github/workflows/component_linux_proxy_test.yml@master
@@ -23,7 +24,7 @@ jobs:
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
 
   packaging-amd64:
-    needs: [unit-test, harvest-test, proxy-tests]
+    needs: [unit-test, proxy-tests]
     uses: newrelic/infrastructure-agent/.github/workflows/component_linux_packaging.yml@master
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
@@ -37,7 +38,7 @@ jobs:
       ARCH: 'amd64'
 
   packaging-arm:
-    needs: [unit-test, harvest-test, proxy-tests]
+    needs: [unit-test, proxy-tests]
     uses: newrelic/infrastructure-agent/.github/workflows/component_linux_packaging.yml@master
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
@@ -51,7 +52,7 @@ jobs:
       ARCH: 'arm'
 
   packaging-arm64:
-    needs: [unit-test, harvest-test, proxy-tests]
+    needs: [unit-test, proxy-tests]
     uses: newrelic/infrastructure-agent/.github/workflows/component_linux_packaging.yml@master
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
@@ -65,7 +66,7 @@ jobs:
       ARCH: 'arm64'
 
   packaging-legacy:
-    needs: [unit-test, harvest-test, proxy-tests]
+    needs: [unit-test, proxy-tests]
     uses: newrelic/infrastructure-agent/.github/workflows/component_linux_packaging.yml@master
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
@@ -79,7 +80,7 @@ jobs:
       ARCH: 'legacy'
 
   packaging-docker:
-    needs: [unit-test, harvest-test, proxy-tests]
+    needs: [unit-test, proxy-tests]
     uses: newrelic/infrastructure-agent/.github/workflows/component_docker_packaging.yml@master
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
@@ -90,6 +91,13 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     with:
       TAG:  ${{ github.event.release.tag_name }}
+
+  docker-trivy-critical:
+    needs: [packaging-docker]
+    uses: newrelic/infrastructure-agent/.github/workflows/component_trivy.yml@master
+    with:
+      tag: "${{ github.event.release.tag_name }}-rc"
+      severity: "CRITICAL"
 
   publishing-to-s3:
     # point to staging after tests
@@ -129,7 +137,7 @@ jobs:
     uses: newrelic/infrastructure-agent/.github/workflows/component_prerelease_testing.yml@master
     with:
       PLATFORM: "linux"
-      TAG: ${{ github.event.inputs.tag }}
+      TAG: ${{ github.event.release.tag_name }}
       CANARIES: true
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}

@@ -1,5 +1,5 @@
 ---
-name: Testing
+name: 🔍 Testing
 
 on:
   push:
@@ -16,8 +16,9 @@ jobs:
       secrets:
         gh_token: ${{secrets.GITHUB_TOKEN}}
 
-  harvest-test-linux:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_harvest_test.yml@master
+# OS is deprecated
+#  harvest-test-linux:
+#    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_harvest_test.yml@master
 
   unit-test-macos:
     uses: newrelic/infrastructure-agent/.github/workflows/component_macos_unit_test.yml@master

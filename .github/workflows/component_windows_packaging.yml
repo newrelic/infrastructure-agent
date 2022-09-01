@@ -1,5 +1,5 @@
 #TBD - some arguments were not possible to pass
-name: ~ Windows | Produce packages
+name: 🚧 Windows | Produce packages
 
 on:
   workflow_call:
@@ -29,7 +29,7 @@ env:
   TAG: ${{ inputs.TAG }}
   GOPATH: ${{ inputs.GOPATH }}
   GITHUB_SHA: ${{ inputs.GITHUB_SHA }}
-  GO_VERSION: '1.18'
+  GO_VERSION: '1.18.5'
 
 jobs:
   packaging:

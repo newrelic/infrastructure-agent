@@ -1,4 +1,4 @@
-name: ~ Docker | Publish image
+name: 🚧 Docker | Publish image
 
 on:
   workflow_call:

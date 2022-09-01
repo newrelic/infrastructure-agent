@@ -1,4 +1,4 @@
-name: ~ Test agent package installation
+name: 🚧 Test agent package installation
 
 on:
   workflow_call:

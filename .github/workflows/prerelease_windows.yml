@@ -1,4 +1,4 @@
-name: Prerelease Windows
+name: 🚀 🪟 Prerelease Windows
 
 on:
   release:
@@ -9,7 +9,7 @@ on:
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  GO_VERSION: '1.18'
+  GO_VERSION: '1.18.5'
   PFX_CERTIFICATE_BASE64: ${{ secrets.OHAI_PFX_CERTIFICATE_BASE64 }} # base64 encoded
   PFX_CERTIFICATE_DESCRIPTION: 'New Relic'
   PFX_PASSPHRASE: ${{ secrets.OHAI_PFX_PASSPHRASE }}
@@ -109,7 +109,7 @@ jobs:
     uses: newrelic/infrastructure-agent/.github/workflows/component_prerelease_testing.yml@master
     with:
       PLATFORM: "windows"
-      TAG: ${{ github.event.inputs.tag }}
+      TAG: ${{ github.event.release.tag_name }}
       CANARIES: true
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}

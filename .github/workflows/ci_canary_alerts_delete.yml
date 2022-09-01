@@ -1,0 +1,13 @@
+name: 🚀 🐦 🧹 Canary alerts | delete
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+
+jobs:
+  canary-alerts-delete:
+    uses: newrelic/infrastructure-agent/.github/workflows/component_canary_alerts_delete.yml@master
+    secrets:
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}

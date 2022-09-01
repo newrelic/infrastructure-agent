@@ -1,4 +1,4 @@
-name: ~ Linux |Run proxy tests
+name: 🚧 Linux |Run proxy tests
 
 on:
   workflow_call:
@@ -9,7 +9,7 @@ on:
         required: true
 
 env:
-  GO_VERSION: '1.18'
+  GO_VERSION: '1.18.5'
 
 jobs:
   test:

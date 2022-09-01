@@ -1,4 +1,4 @@
-name: Test pre-release
+name: 🚀 🛠 Test pre-release
 
 on:
   workflow_dispatch:
@@ -10,12 +10,23 @@ on:
         description: 'Should run canaries?'
         type: boolean
         required: true
+      linux:
+        description: 'Should run tests for Linux platform?'
+        type: boolean
+        default: true
+        required: false
+      windows:
+        description: 'Should run tests for Windows platform?'
+        type: boolean
+        default: true
+        required: false
 
 permissions:
   id-token: write
 
 jobs:
   test-prerelease-windows:
+    if: ${{ github.event.inputs.windows == 'true' }}
     uses: newrelic/infrastructure-agent/.github/workflows/component_prerelease_testing.yml@master
     with:
       PLATFORM: "windows"
@@ -25,9 +36,19 @@ jobs:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
 
   test-prerelease-linux:
+    if: ${{ github.event.inputs.linux == 'true' }}
     uses: newrelic/infrastructure-agent/.github/workflows/component_prerelease_testing.yml@master
     with:
       PLATFORM: "linux"
+      TAG: ${{ github.event.inputs.tag }}
+      CANARIES: ${{ github.event.inputs.canaries == 'true' }}
+    secrets:
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+
+  canary-alerts:
+    needs: [test-prerelease-windows, test-prerelease-linux]
+    uses: newrelic/infrastructure-agent/.github/workflows/component_canary_alerts.yml@master
+    with:
       TAG: ${{ github.event.inputs.tag }}
       CANARIES: ${{ github.event.inputs.canaries == 'true' }}
     secrets:

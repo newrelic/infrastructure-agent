@@ -41,6 +41,10 @@ ifndef MACSTADIUM_PASS
 	@echo "MACSTADIUM_PASS (MacStadium account passowrd for API) variable must be provided for \"make canaries\""
 	exit 1
 endif
+ifndef MACSTADIUM_SUDO_PASS
+	@echo "MACSTADIUM_SUDO_PASS (MacStadium sudo password) variable must be provided for \"make canaries\""
+	exit 1
+endif
 	@echo "\033[41mYou have 10 seconds to verify that you are in the correct VPN if needed\033[0m"
 	@sleep 10
 	@tools/spin-ec2/bin/spin-ec2 canaries provision \
@@ -52,6 +56,7 @@ endif
 									-p '$(PLATFORM)' \
 									-u '$(MACSTADIUM_USER)' \
 									-z '$(MACSTADIUM_PASS)' \
+									-s '$(MACSTADIUM_SUDO_PASS)' \
 									-a '$(ANSIBLE_FORKS)'
 
 .PHONY: canaries-prune-dry

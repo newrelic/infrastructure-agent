@@ -276,6 +276,10 @@ func cliMode() {
 	cmdProvision.PersistentFlags().StringP("macstadium_pass", "z", "", "MacStadium api pass")
 	viper.BindPFlag("macstadium_pass", cmdProvision.PersistentFlags().Lookup("macstadium_pass"))
 
+	// Macstadium sudo pass
+	cmdProvision.PersistentFlags().StringP("macstadium_sudo_pass", "s", "", "MacStadium sudo pass")
+	viper.BindPFlag("macstadium_sudo_pass", cmdProvision.PersistentFlags().Lookup("macstadium_sudo_pass"))
+
 	// Ansible forks count
 	cmdProvision.PersistentFlags().StringP("ansible_forks", "a", "5", "Ansible forks count")
 	viper.BindPFlag("ansible_forks", cmdProvision.PersistentFlags().Lookup("ansible_forks"))
@@ -283,8 +287,14 @@ func cliMode() {
 	var cmdPrune = &cobra.Command{
 		Use:   "prune",
 		Short: "Prune canary machines",
-		Long:  `prun is used to remove old canary machines.`,
+		Long:  `prune is used to remove old canary machines.`,
 		RunE:  pruneCanaries,
+	}
+	var cmdPreviousCanaryVersion = &cobra.Command{
+		Use:   "previous_canary_version",
+		Short: "Get previous canary version",
+		Long:  `Get previous canary version to be used in automatic alerts.`,
+		RunE:  previousCanaryVersion,
 	}
 
 	cmdPrune.PersistentFlags().Bool("dry_run", false, "dry run")
@@ -293,6 +303,7 @@ func cliMode() {
 	cmdRoot := &cobra.Command{Use: "spin-ec2"}
 	cmdRoot.AddCommand(cmdCanaries)
 	cmdCanaries.AddCommand(cmdProvision, cmdPrune)
+	cmdCanaries.AddCommand(cmdProvision, cmdPreviousCanaryVersion)
 	cmdRoot.Execute()
 }
 
@@ -305,6 +316,7 @@ func canaryConfFromArgs() (canaryConf, error) {
 	repo := viper.GetString("repo")
 	macstadiumUser := viper.GetString("macstadium_user")
 	macstadiumPass := viper.GetString("macstadium_pass")
+	macstadiumSudoPass := viper.GetString("macstadium_sudo_pass")
 	ansibleForks := viper.GetInt("ansible_forks")
 
 	if !semver.IsValid(agentVersion) {
@@ -313,15 +325,16 @@ func canaryConfFromArgs() (canaryConf, error) {
 	}
 
 	return canaryConf{
-		license:         license,
-		agentVersion:    agentVersion,
-		platform:        platform,
-		ansiblePassword: ansiblePassword,
-		prefix:          prefix,
-		repo:            repo,
-		macstadiumUser:  macstadiumUser,
-		macstadiumPass:  macstadiumPass,
-		ansibleForks:    ansibleForks,
+		license:            license,
+		agentVersion:       agentVersion,
+		platform:           platform,
+		ansiblePassword:    ansiblePassword,
+		prefix:             prefix,
+		repo:               repo,
+		macstadiumUser:     macstadiumUser,
+		macstadiumPass:     macstadiumPass,
+		macstadiumSudoPass: macstadiumSudoPass,
+		ansibleForks:       ansibleForks,
 	}, nil
 }
 
@@ -377,6 +390,7 @@ func provisionMacosCanaries(cnf canaryConf) error {
 	execNameArgs("ansible-playbook",
 		"-e", "macstadium_user="+cnf.macstadiumUser,
 		"-e", "macstadium_pass="+cnf.macstadiumPass,
+		"-e", "macstadium_sudo_pass="+cnf.macstadiumSudoPass,
 		"-e", "platform="+cnf.platform,
 		"-f", strconv.Itoa(cnf.ansibleForks),
 		"-i", path.Join(curPath, inventoryLocal),
@@ -519,6 +533,24 @@ func pruneCanaries(cmd *cobra.Command, args []string) error {
 	}
 
 	return terminateInstances(idsToTerminate, instances, dryRun)
+}
+
+// pruneCanaries removes all aws instances except the
+// ones that have the latest 2 version of infra-agent installed.
+func previousCanaryVersion(cmd *cobra.Command, args []string) error {
+	instances, err := getAWSInstances(hostPrefix + ":v")
+	if err != nil {
+		return err
+	}
+
+	previousVersion, err := getPreviousCanaryVersion(instances)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("%s", previousVersion)
+
+	return nil
 }
 
 // latestRelease returns tha latest release (pre-released not taken into account)
