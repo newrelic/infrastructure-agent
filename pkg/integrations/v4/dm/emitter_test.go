@@ -3,6 +3,8 @@
 package dm
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -25,7 +27,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
-	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi/test"
+	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
@@ -35,13 +37,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
 	integrationFixture "github.com/newrelic/infrastructure-agent/test/fixture/integration"
-)
-
-var (
-	testIdentity = entity.Identity{
-		ID:   1,
-		GUID: "abcdef",
-	}
+	log2 "github.com/newrelic/infrastructure-agent/test/log"
 )
 
 func TestParsePayloadV4(t *testing.T) {
@@ -128,56 +124,92 @@ func (m *mockedMetricsSender) SendMetricsWithCommonAttributes(commonAttributes p
 }
 
 func TestEmitter_Send_usingIDCache(t *testing.T) {
-	data := integrationFixture.ProtocolV4TwoEntities.Clone().ParsedV4
-
-	firstEntity := entity.Entity{Key: entity.Key(data.DataSets[0].Entity.Name), ID: entity.ID(1)}
-	secondEntity := entity.Entity{Key: entity.Key(data.DataSets[1].Entity.Name), ID: entity.ID(2)}
-
-	aCtx := getAgentContext("TestEmitter_Send_usingIDCache")
-	aCtx.On("SendEvent", mock.Anything, mock.Anything)
-
-	aCtx.On("SendData", agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "Sample"}, Entity: firstEntity, Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_payload_one", "value": "foo-one"}}, NotApplicable: false})
-	aCtx.On("SendData", agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "Sample"}, Entity: secondEntity, Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_payload_two", "value": "bar-two"}}, NotApplicable: false})
-
-	aCtx.SendDataWg.Add(2)
-
-	dmSender := &mockedMetricsSender{
-		wg: sync.WaitGroup{},
+	testCases := []struct {
+		name      string
+		FFEnabled bool
+		FFExists  bool
+	}{
+		{
+			name:      "dm_register_deprecated FF non existent not enabled",
+			FFEnabled: false,
+			FFExists:  false,
+		},
+		{
+			name:      "dm_register_deprecated FF existent enabled (not possible but for safety)",
+			FFEnabled: true,
+			FFExists:  false,
+		},
+		{
+			name:      "dm_register_deprecated FF existent and disabled",
+			FFEnabled: false,
+			FFExists:  true,
+		},
 	}
-	dmSender.
-		On("SendMetricsWithCommonAttributes", mock.AnythingOfType("protocol.Common"), mock.AnythingOfType("[]protocol.Metric")).
-		Return(nil)
-	dmSender.wg.Add(2)
 
-	em := NewEmitter(aCtx, dmSender, &test.EmptyRegisterClient{}, instrumentation.NoopMeasure)
-	e := em.(*emitter)
+	for i := range testCases {
+		testCase := testCases[i]
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
 
-	e.idCache.Put(entity.Key(fmt.Sprintf("%s:%s", data.DataSets[0].Entity.Type, data.DataSets[0].Entity.Name)), firstEntity.ID)
-	e.idCache.Put(entity.Key(fmt.Sprintf("%s:%s", data.DataSets[1].Entity.Type, data.DataSets[1].Entity.Name)), secondEntity.ID)
+			ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+			data := CopyProtocolParsingPair(t, integrationFixture.ProtocolV4TwoEntities).ParsedV4
 
-	req := fwrequest.NewFwRequest(integration.Definition{}, nil, nil, data)
+			firstEntity := entity.Entity{Key: entity.Key(data.DataSets[0].Entity.Name), ID: entity.ID(1)}
+			secondEntity := entity.Entity{Key: entity.Key(data.DataSets[1].Entity.Name), ID: entity.ID(2)}
 
-	em.Send(req)
+			aCtx := getAgentContext("TestEmitter_Send_usingIDCache")
+			aCtx.On("SendEvent", mock.Anything, mock.Anything)
 
-	dmSender.wg.Wait()
-	aCtx.SendDataWg.Wait()
+			aCtx.On("SendData", agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "Sample"}, Entity: firstEntity, Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_payload_one", "value": "foo-one"}}, NotApplicable: false})
+			aCtx.On("SendData", agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "Sample"}, Entity: secondEntity, Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_payload_two", "value": "bar-two"}}, NotApplicable: false})
 
-	aCtx.AssertExpectations(t)
+			dmSender := &mockedMetricsSender{
+				wg: sync.WaitGroup{},
+			}
+			dmSender.
+				On("SendMetricsWithCommonAttributes", mock.AnythingOfType("protocol.Common"), mock.AnythingOfType("[]protocol.Metric")).
+				Return(nil)
+			aCtx.SendDataWg.Add(2)
+			dmSender.wg.Add(2)
 
-	// Should add Entity Id ('nr.entity.id') to Common attributes
-	firstDMetricsSent := dmSender.Calls[0].Arguments[1].([]protocol.Metric)
-	assert.Len(t, firstDMetricsSent, 1)
-	assert.Equal(t, firstEntity.ID.String(), firstDMetricsSent[0].Attributes[fwrequest.EntityIdAttribute])
+			ffRetriever.ShouldGetFeatureFlag("dm_register_deprecated", testCase.FFEnabled, testCase.FFExists)
+			ffRetriever.ShouldGetFeatureFlag("dm_register_deprecated", testCase.FFEnabled, testCase.FFExists)
 
-	secondDMetricsSent := dmSender.Calls[1].Arguments[1].([]protocol.Metric)
-	assert.Len(t, secondDMetricsSent, 1)
-	assert.Equal(t, secondEntity.ID.String(), secondDMetricsSent[0].Attributes[fwrequest.EntityIdAttribute])
+			registerClient := &identityapi.RegisterClientMock{}
+			emtr := NewEmitter(aCtx, dmSender, registerClient, instrumentation.NoopMeasure, ffRetriever)
+			emtrStruct := emtr.(*emitter) // nolint:forcetypeassert
+
+			emtrStruct.idCache.Put(entity.Key(fmt.Sprintf("%s:%s", data.DataSets[0].Entity.Type, data.DataSets[0].Entity.Name)), firstEntity.ID)
+			emtrStruct.idCache.Put(entity.Key(fmt.Sprintf("%s:%s", data.DataSets[1].Entity.Type, data.DataSets[1].Entity.Name)), secondEntity.ID)
+
+			req := fwrequest.NewFwRequest(integration.Definition{}, nil, nil, data)
+
+			emtr.Send(req)
+
+			dmSender.wg.Wait()
+			aCtx.SendDataWg.Wait()
+
+			// Should add Entity Id ('nr.entity.id') to Common attributes
+			firstDMetricsSent := dmSender.Calls[0].Arguments[1].([]protocol.Metric) // nolint:forcetypeassert
+			assert.Len(t, firstDMetricsSent, 1)
+			assert.Equal(t, firstEntity.ID.String(), firstDMetricsSent[0].Attributes[fwrequest.EntityIdAttribute])
+
+			secondDMetricsSent := dmSender.Calls[1].Arguments[1].([]protocol.Metric) // nolint:forcetypeassert
+			assert.Len(t, secondDMetricsSent, 1)
+			assert.Equal(t, secondEntity.ID.String(), secondDMetricsSent[0].Attributes[fwrequest.EntityIdAttribute])
+
+			// Mocks expectations assertions
+			mock.AssertExpectationsForObjects(t, ffRetriever, aCtx, registerClient)
+		})
+	}
 }
 
 func TestEmitter_Send_ignoreEntity(t *testing.T) {
-	data := integrationFixture.ProtocolV4IgnoreEntity.Clone().ParsedV4
+	data := CopyProtocolParsingPair(t, integrationFixture.ProtocolV4IgnoreEntity).ParsedV4
 
-	aCtx := getAgentContext("TestEmitter_Send_ignoreEntity")
+	aCtx := &mocks.AgentContext{}
+	aCtx.On("Config").Return(config.NewConfig())
+	aCtx.On("Version").Return("dev")
 
 	dmSender := &mockedMetricsSender{
 		wg: sync.WaitGroup{},
@@ -186,13 +218,16 @@ func TestEmitter_Send_ignoreEntity(t *testing.T) {
 		On("SendMetricsWithCommonAttributes", mock.AnythingOfType("protocol.Common"), mock.AnythingOfType("[]protocol.Metric")).
 		Return(nil)
 
-	em := NewEmitter(aCtx, dmSender, &test.EmptyRegisterClient{}, instrumentation.NoopMeasure)
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+
+	registerClient := &identityapi.RegisterClientMock{}
+	emtr := NewEmitter(aCtx, dmSender, registerClient, instrumentation.NoopMeasure, ffRetriever)
 
 	dmSender.wg.Add(getMetricsSend(data))
 
 	req := fwrequest.NewFwRequest(integration.Definition{}, nil, nil, data)
 
-	em.Send(req)
+	emtr.Send(req)
 
 	dmSender.wg.Wait()
 	aCtx.SendDataWg.Wait()
@@ -201,70 +236,209 @@ func TestEmitter_Send_ignoreEntity(t *testing.T) {
 	fmt.Println(dmSender.Calls[0].Arguments)
 	firstDMetricsSent := dmSender.Calls[0].Arguments[1].([]protocol.Metric)
 	assert.NotContains(t, firstDMetricsSent[0].Attributes, fwrequest.EntityIdAttribute)
+
+	// Mocks expectations assertions
+	mock.AssertExpectationsForObjects(t, ffRetriever, aCtx, registerClient)
 }
 
 func TestEmitter_Send(t *testing.T) {
-	// configure mocks for emitter
-	eID := entity.ID(1) // 1 as provided by test.NewIncrementalRegister
-
-	aCtx := getAgentContext("TestEmitter_Send")
-	aCtx.On("SendData",
-		agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "integration name"}, Entity: entity.New("unique name", eID), Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_foo", "value": "bar"}, protocol.InventoryData{"entityKey": "unique name", "id": "integrationUser", "value": "root"}}, NotApplicable: false})
-
-	aCtx.On("SendEvent", mock.Anything, entity.Key("unique name")).Run(assertEventData(t))
-
-	aCtx.On("Identity").Return(
-		entity.Identity{
-			ID: entity.ID(321), // agent one
-		},
-	)
-
-	ms := &mockedMetricsSender{
-		wg: sync.WaitGroup{},
-	}
-	ms.
-		On("SendMetricsWithCommonAttributes", mock.AnythingOfType("protocol.Common"), mock.AnythingOfType("[]protocol.Metric")).
-		Return(nil)
-
-	em := NewEmitter(aCtx, ms, test.NewIncrementalRegister(), instrumentation.NoopMeasure)
-
-	// avoid waiting for more data to create register submission batch
-	e := em.(*emitter)
-	e.registerMaxBatchSize = 1
-
 	// set tests cases
-	var fwRequestTest = []struct {
+	testCases := []struct {
 		name               string
 		integrationPayload protocol.DataV4
+		ffExists           bool
+		ffEnabled          bool
+		register           bool
+		tags               map[string]string
 	}{
-		{"Use host entity", integrationFixture.ProtocolV4.Clone().ParsedV4},
-		{"Ignore entity", integrationFixture.ProtocolV4IgnoreEntity.Clone().ParsedV4},
+		{
+			name:               "Use host entity",
+			integrationPayload: CopyProtocolParsingPair(t, integrationFixture.ProtocolV4).ParsedV4,
+			ffExists:           true,
+			ffEnabled:          false,
+			register:           true,
+			tags: map[string]string{
+				"test_tag_key":  "test_tag_value",
+				"test_tag_key2": "test_tag_value2",
+			},
+		},
+		{name: "Ignore entity no FF", integrationPayload: CopyProtocolParsingPair(t, integrationFixture.ProtocolV4IgnoreEntity).ParsedV4, ffExists: false, ffEnabled: false},
+		{name: "Ignore entity no FF but enabled (not possible)", integrationPayload: CopyProtocolParsingPair(t, integrationFixture.ProtocolV4IgnoreEntity).ParsedV4, ffExists: false, ffEnabled: true},
+		{name: "Ignore entity FF enabled", integrationPayload: CopyProtocolParsingPair(t, integrationFixture.ProtocolV4IgnoreEntity).ParsedV4, ffExists: true, ffEnabled: true},
 	}
 
-	for _, tt := range fwRequestTest {
-		ms.wg.Add(getMetricsSend(tt.integrationPayload))
-		aCtx.SendDataWg.Add(getInventoryToSend(tt.integrationPayload))
-		em.Send(fwrequest.NewFwRequest(integration.Definition{ExecutorConfig: executor.Config{User: "root"}}, nil, nil, tt.integrationPayload))
-		ms.wg.Wait()
-		aCtx.SendDataWg.Wait()
-		aCtx.AssertExpectations(t)
-
-		for _, d := range tt.integrationPayload.DataSets {
-			if !d.IgnoreEntity {
-				entityName, err := d.Entity.Key()
-				assert.NoError(t, err)
-				actualEntityID, found := e.idCache.Get(entityName)
-				assert.True(t, found)
-				assert.Equal(t, eID, actualEntityID)
-				assert.Equal(t, actualEntityID.String(), d.Common.Attributes[fwrequest.EntityIdAttribute])
+	for i := range testCases {
+		testCase := testCases[i]
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			// configure mocks for emitter
+			eID := entity.ID(1) // 1 as provided by test.NewIncrementalRegister
+			agentEntityID := entity.ID(321)
+			aCtx := &mocks.AgentContext{}
+			if testCase.register {
+				aCtx = getAgentContext("TestEmitter_Send")
+				aCtx.On("SendData",
+					agent.PluginOutput{
+						Id:     ids.PluginID{Category: "integration", Term: "integration name"},
+						Entity: entity.New("unique name", eID),
+						Data: agent.PluginInventoryDataset{
+							protocol.InventoryData{"id": "inventory_foo", "value": "bar"},
+							protocol.InventoryData{"entityKey": "unique name", "id": "integrationUser", "value": "root"},
+						},
+						NotApplicable: false,
+					},
+				)
+				aCtx.On("SendEvent", mock.Anything, entity.Key("unique name")).Run(assertEventData(t))
+				aCtx.On("Identity").Return(entity.Identity{ID: agentEntityID})
 			} else {
-				entityName, err := d.Entity.Key()
-				assert.NoError(t, err)
-				assert.Equal(t, entity.EmptyKey, entityName)
-				assert.NotContains(t, d.Common.Attributes, fwrequest.EntityIdAttribute)
+				aCtx.On("Config").Return(config.NewConfig())
+				aCtx.On("Version").Return("dev")
 			}
 
-		}
+			metricSender := &mockedMetricsSender{
+				wg: sync.WaitGroup{},
+			}
+			metricSender.
+				On("SendMetricsWithCommonAttributes", mock.AnythingOfType("protocol.Common"), mock.AnythingOfType("[]protocol.Metric")).
+				Return(nil)
+
+			ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+			registerClient := &identityapi.RegisterClientMock{}
+			emtr := NewEmitter(aCtx, metricSender, registerClient, instrumentation.NoopMeasure, ffRetriever)
+
+			// avoid waiting for more data to create register submission batch
+			emtrStruct := emtr.(*emitter) // nolint:forcetypeassert
+			emtrStruct.registerMaxBatchSize = 1
+
+			if testCase.register {
+				responses := []identityapi.RegisterEntityResponse{{ID: eID, Name: testCase.integrationPayload.DataSets[0].Entity.Name}}
+				registerClient.ShouldRegisterBatchEntities(agentEntityID, []entity.Fields{testCase.integrationPayload.DataSets[0].Entity}, responses)
+				ffRetriever.ShouldGetFeatureFlag("dm_register_deprecated", testCase.ffExists, testCase.ffEnabled)
+			}
+			metricSender.wg.Add(getMetricsSend(testCase.integrationPayload))
+			aCtx.SendDataWg.Add(getInventoryToSend(testCase.integrationPayload))
+			emtr.Send(fwrequest.NewFwRequest(integration.Definition{ExecutorConfig: executor.Config{User: "root"}, Tags: testCase.tags}, nil, nil, testCase.integrationPayload))
+			metricSender.wg.Wait()
+			aCtx.SendDataWg.Wait()
+			for _, dataSet := range testCase.integrationPayload.DataSets {
+				if !dataSet.IgnoreEntity {
+					entityName, err := dataSet.Entity.Key()
+					assert.NoError(t, err)
+					actualEntityID, found := emtrStruct.idCache.Get(entityName)
+					assert.True(t, found)
+					assert.Equal(t, eID, actualEntityID)
+					assert.Equal(t, actualEntityID.String(), dataSet.Common.Attributes[fwrequest.EntityIdAttribute])
+
+					// Assert tags.
+					for expectedTag, expectedTagVal := range testCase.tags {
+						tagVal, found := testCase.integrationPayload.DataSets[0].Metrics[0].Attributes["tags."+expectedTag]
+						assert.True(t, found)
+						assert.Equal(t, expectedTagVal, tagVal)
+					}
+				} else {
+					entityName, err := dataSet.Entity.Key()
+					assert.NoError(t, err)
+					assert.Equal(t, entity.EmptyKey, entityName)
+					assert.NotContains(t, dataSet.Common.Attributes, fwrequest.EntityIdAttribute)
+				}
+			}
+			// Mocks expectations assertions
+			mock.AssertExpectationsForObjects(t, ffRetriever, aCtx, registerClient)
+		})
+	}
+}
+
+func TestEmitter_ShouldNotSendDataWhenDeprecatedRegisterFFIsEnabled(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithCancel(context.Background())
+
+	aCtx := &mocks.AgentContext{}
+	aCtx.On("Config").Return(config.NewConfig())
+	aCtx.MockedContext = ctx
+
+	hook := log2.NewInMemoryEntriesHook([]logrus.Level{logrus.WarnLevel})
+	log.AddHook(hook)
+	log.SetLevel(logrus.WarnLevel)
+
+	ms := &mockedMetricsSender{}
+
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+	registerClient := &identityapi.RegisterClientMock{}
+	emtr := NewEmitter(aCtx, ms, registerClient, instrumentation.NoopMeasure, ffRetriever)
+
+	// avoid waiting for more data to create register submission batch
+	emtrStruct := emtr.(*emitter) // nolint:forcetypeassert
+	emtrStruct.registerMaxBatchSize = 1
+
+	fwRequestTest := CopyProtocolParsingPair(t, integrationFixture.ProtocolV4DontIgnoreEntityIntegration).ParsedV4
+
+	ffRetriever.ShouldGetExistingFeatureFlag("dm_register_deprecated", true)
+	emtr.Send(fwrequest.NewFwRequest(integration.Definition{ExecutorConfig: executor.Config{User: "root"}}, nil, nil, fwRequestTest))
+	time.Sleep(time.Millisecond * 50) // Give it time to parse the request before cancelling
+	cancel()
+
+	assert.Eventuallyf(t, func() bool {
+		return emtrStruct.isProcessing.IsNotSet()
+	}, time.Second, 10*time.Millisecond, "isProcessing should not be set")
+
+	assert.Len(t, hook.GetEntries(), 1)
+	assert.Equal(t, "Register for DM integrations is deprecated and therefore the data for this integration will not be sent. Check for the latest version of the integration.", hook.GetEntries()[0].Message)
+
+	// Mocks expectations assertions
+	mock.AssertExpectationsForObjects(t, ffRetriever, aCtx, registerClient)
+}
+
+func TestEmitter_ShouldRegisterFFDoesNotExistOrIsDisabled(t *testing.T) {
+	t.Parallel()
+	// set tests cases
+	testCases := []struct {
+		name               string
+		integrationPayload protocol.DataV4
+		FFExists           bool
+		FFEnabled          bool
+	}{
+		{name: "Do not ignore entity, FF non existent", integrationPayload: CopyProtocolParsingPair(t, integrationFixture.ProtocolV4DontIgnoreEntityIntegration).ParsedV4, FFExists: false, FFEnabled: false},
+		{name: "Do not ignore entity, FF disabled", integrationPayload: CopyProtocolParsingPair(t, integrationFixture.ProtocolV4DontIgnoreEntityIntegration).ParsedV4, FFExists: true, FFEnabled: false},
+	}
+
+	for i := range testCases {
+		testCase := testCases[i]
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			identity := entity.Identity{ID: entity.ID(321)}
+			// configure mocks for emitter
+			aCtx := getAgentContext("localhost")
+			aCtx.On("Identity").Return(identity)
+
+			metricSender := &mockedMetricsSender{
+				wg: sync.WaitGroup{},
+			}
+			metricSender.
+				On("SendMetricsWithCommonAttributes", mock.AnythingOfType("protocol.Common"), mock.AnythingOfType("[]protocol.Metric")).
+				Return(nil)
+
+			ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+
+			registerClient := &identityapi.RegisterClientMock{}
+			ent := testCase.integrationPayload.DataSets[0].Entity
+			registerClient.ShouldRegisterBatchEntities(identity.ID, []entity.Fields{ent}, []identityapi.RegisterEntityResponse{{ID: identity.ID, Name: ent.Name}})
+
+			emtr := NewEmitter(aCtx, metricSender, registerClient, instrumentation.NoopMeasure, ffRetriever)
+
+			// avoid waiting for more data to create register submission batch
+			emtrStruct := emtr.(*emitter) // nolint:forcetypeassert
+			emtrStruct.registerMaxBatchSize = 1
+
+			ffRetriever.ShouldGetFeatureFlag("dm_register_deprecated", testCase.FFExists, testCase.FFEnabled)
+			metricSender.wg.Add(getMetricsSend(testCase.integrationPayload))
+			aCtx.SendDataWg.Add(getInventoryToSend(testCase.integrationPayload))
+			emtr.Send(fwrequest.NewFwRequest(integration.Definition{ExecutorConfig: executor.Config{User: "root"}}, nil, nil, testCase.integrationPayload))
+			metricSender.wg.Wait()
+			aCtx.SendDataWg.Wait()
+
+			// Mocks expectations assertions
+			mock.AssertExpectationsForObjects(t, ffRetriever, aCtx, registerClient)
+		})
 	}
 }
 
@@ -276,24 +450,27 @@ func TestEmitter_Send_failedToSubmitMetrics_dropAndLog(t *testing.T) {
 	log.SetLevel(logrus.WarnLevel)
 
 	identity := entity.Identity{ID: entity.ID(321)}
-	data := integrationFixture.ProtocolV4.Clone().ParsedV4
+	data := CopyProtocolParsingPair(t, integrationFixture.ProtocolV4).ParsedV4
 
-	ctx := getAgentContext("TestEmitter_Send_failedToSubmitMetrics")
-	ctx.On("SendData", mock.Anything)
-	ctx.On("SendEvent", mock.Anything, mock.Anything)
-	ctx.On("Identity").Return(identity)
-	ctx.SendDataWg.Add(1)
+	aCtx := getAgentContext("TestEmitter_Send_failedToSubmitMetrics")
+	aCtx.On("SendData", mock.Anything)
+	aCtx.On("SendEvent", mock.Anything, mock.Anything)
+	aCtx.SendDataWg.Add(1)
 
 	ms := &mockedMetricsSender{wg: sync.WaitGroup{}}
 	ms.On("SendMetricsWithCommonAttributes", mock.Anything, mock.Anything).Return(errors.New("failed to submit metrics"))
 	ms.wg.Add(1)
 
-	em := NewEmitter(ctx, ms, test.NewIncrementalRegister(), instrumentation.NoopMeasure).(*emitter)
-	em.idCache.Put(entity.Key(fmt.Sprintf("%s:%s", data.DataSets[0].Entity.Type, data.DataSets[0].Entity.Name)), identity.ID)
-	em.Send(fwrequest.NewFwRequest(integration.Definition{Name: "nri-test", ExecutorConfig: executor.Config{User: "root"}}, nil, nil, data))
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+	ffRetriever.ShouldNotGetFeatureFlag("dm_register_deprecated")
+
+	registerClient := &identityapi.RegisterClientMock{}
+	emtr := NewEmitter(aCtx, ms, registerClient, instrumentation.NoopMeasure, ffRetriever).(*emitter) // nolint:forcetypeassert
+	emtr.idCache.Put(entity.Key(fmt.Sprintf("%s:%s", data.DataSets[0].Entity.Type, data.DataSets[0].Entity.Name)), identity.ID)
+	emtr.Send(fwrequest.NewFwRequest(integration.Definition{Name: "nri-test", ExecutorConfig: executor.Config{User: "root"}}, nil, nil, data))
 
 	ms.wg.Wait()
-	ctx.SendDataWg.Wait()
+	aCtx.SendDataWg.Wait()
 
 	var entry *logrus.Entry
 	assert.Eventually(t, func() bool {
@@ -307,6 +484,9 @@ func TestEmitter_Send_failedToSubmitMetrics_dropAndLog(t *testing.T) {
 	assert.Equal(t, "nri-test", entry.Data["integration_name"])
 	assert.EqualError(t, entry.Data["error"].(error), "failed to submit metrics")
 	assert.Equal(t, logrus.WarnLevel, entry.Level, "expected for a Warn log level")
+
+	// Mocks expectations assertions
+	mock.AssertExpectationsForObjects(t, ffRetriever, aCtx, registerClient)
 }
 
 func Test_NrEntityIdConst(t *testing.T) {
@@ -398,5 +578,16 @@ func getMetricsSend(data protocol.DataV4) (toSend int) {
 			toSend += 1
 		}
 	}
+	return
+}
+
+// aims to avoid data mutation when processing structs from global fixture variables.
+func CopyProtocolParsingPair(t *testing.T, p integrationFixture.ProtocolParsingPair) (clone integrationFixture.ProtocolParsingPair) {
+	t.Helper()
+	m, err := json.Marshal(p)
+	require.NoError(t, err)
+	err = json.Unmarshal(m, &clone)
+	require.NoError(t, err)
+
 	return
 }

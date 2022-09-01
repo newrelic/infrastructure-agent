@@ -22,6 +22,7 @@ type ConfigEntry struct {
 	User         string            `yaml:"integration_user" json:"integration_user"`
 	WorkDir      string            `yaml:"working_dir" json:"working_dir"`
 	Labels       map[string]string `yaml:"labels" json:"labels"`
+	Tags         map[string]string `yaml:"tags" json:"tags"`
 	When         EnableConditions  `yaml:"when" json:"when"`
 
 	// Legacy definition commands

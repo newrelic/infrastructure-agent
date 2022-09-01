@@ -70,6 +70,7 @@ type emitter struct {
 	registerMaxBatchTime      time.Duration
 	verboseLogLevel           int
 	measure                   instrumentation.Measure
+	ffRetriever               feature_flags.Retriever
 }
 
 type Emitter interface {
@@ -80,8 +81,9 @@ func NewEmitter(
 	agentContext agent.AgentContext,
 	dmSender MetricsSender,
 	registerClient identityapi.RegisterClient,
-	measure instrumentation.Measure) Emitter {
-
+	measure instrumentation.Measure,
+	ffRetriever feature_flags.Retriever,
+) Emitter {
 	return &emitter{
 		retryBo:                   backoff.NewDefaultBackoff(),
 		maxRetryBo:                time.Duration(agentContext.Config().RegisterMaxRetryBoSecs) * time.Second,
@@ -98,6 +100,7 @@ func NewEmitter(
 		registerMaxBatchTime:      defaultRegisterBatchSecs * time.Second,
 		verboseLogLevel:           agentContext.Config().Log.VerboseEnabled(),
 		measure:                   measure,
+		ffRetriever:               ffRetriever,
 	}
 }
 
@@ -149,16 +152,28 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 
 		case req := <-e.reqsQueue:
 			e.measure(instrumentation.Counter, instrumentation.DMDatasetsReceived, int64(len(req.Data.DataSets)))
+
+		loop:
 			for _, ds := range req.Data.DataSets {
 				select {
 				case _ = <-ctx.Done():
 					return
 				default:
 					if ds.IgnoreEntity {
-						// Should not contain entity attributes
-						e.processDatasetNoRegister(req.Data.Integration, req.FwRequestMeta, ds)
-					} else {
+						e.emitDatasetWithEmptyEntity(req.Data.Integration, req.FwRequestMeta, ds)
+						continue loop //nolint:nlreturn
+					}
+					if ds.Entity.IsAgent() {
+						e.emitDatasetForAgent(ctx, req.Data.Integration, req.FwRequestMeta, ds)
+						continue loop //nolint:nlreturn
+					}
+					FFEnabled, FFExists := e.ffRetriever.GetFeatureFlag(fflag.FlagDmRegisterDeprecated)
+					if isRegisterEnabled(FFEnabled, FFExists) {
 						e.processDatasetRegister(ctx, req.Data.Integration, req.FwRequestMeta, ds)
+						continue loop //nolint:nlreturn
+					} else {
+						elog.WithField("integration_name", req.Definition.Name).
+							Warn("Register for DM integrations is deprecated and therefore the data for this integration will not be sent. Check for the latest version of the integration.")
 					}
 				}
 			}
@@ -166,8 +181,13 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 	}
 }
 
-func (e *emitter) emitDataset(r fwrequest.EntityFwRequest) {
+// isRegisterEnabled checks if the Feature Flag for register exists, and only if the FF it exists and it is not enabled
+// register will be considered enabled.
+func isRegisterEnabled(deprecateRegisterFFEnabled bool, deprecateRegisterFFExists bool) bool {
+	return !deprecateRegisterFFExists || (deprecateRegisterFFExists && !deprecateRegisterFFEnabled)
+}
 
+func (e *emitter) emitDataset(r fwrequest.EntityFwRequest) {
 	labels, annos := r.LabelsAndExtraAnnotations()
 
 	plugin := agent.NewExternalPluginCommon(r.Definition.PluginID(r.Integration.Name), e.agentContext, r.Definition.Name)

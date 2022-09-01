@@ -25,6 +25,9 @@ variables:
     ttl: 1s
 integrations:
   - exec: /path/to/executable
+    tags:
+      test: basic
+      env: production
   - exec: /path/to/another/executable
 `)
 	config := YAML{}
@@ -33,6 +36,6 @@ integrations:
 	require.Contains(t, config.Databind.Variables, "myVariable")
 	assert.Equal(t, "1s", config.Databind.Variables["myVariable"].TTL)
 	assert.Len(t, config.Integrations, 2)
-	assert.Contains(t, config.Integrations, ConfigEntry{Exec: ShlexOpt{"/path/to/executable"}})
+	assert.Contains(t, config.Integrations, ConfigEntry{Exec: ShlexOpt{"/path/to/executable"}, Tags: map[string]string{"env": "production", "test": "basic"}})
 	assert.Contains(t, config.Integrations, ConfigEntry{Exec: ShlexOpt{"/path/to/another/executable"}})
 }
