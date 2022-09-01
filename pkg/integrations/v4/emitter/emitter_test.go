@@ -507,6 +507,7 @@ func TestLegacy_Emit(t *testing.T) {
 }
 
 func TestEmitV3_WithTags(t *testing.T) {
+	t.Parallel()
 	definition := integration.Definition{
 		InventorySource: ids.EmptyInventorySource,
 		Name:            "awesome-plugin",
@@ -515,30 +516,31 @@ func TestEmitV3_WithTags(t *testing.T) {
 		},
 	}
 
-	integrationJsonOutput := fmt.Sprintf(integrationJsonOutput, "")
-	ma := mockAgent()
+	integrationJSONOutput := fmt.Sprintf(integrationJsonOutput, "")
+	agentContext := mockAgent()
 
 	extraLabels := data.Map{}
 	var entityRewrite []data.EntityRewrite
 	mockDME := &mockDmEmitter{}
 	mockDME.On("Send", mock.Anything)
 
-	em := &VersionAwareEmitter{
-		aCtx:        ma,
+	emtr := &VersionAwareEmitter{
+		aCtx:        agentContext,
 		ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true}),
 		dmEmitter:   mockDME,
 	}
 
-	err := em.Emit(definition, extraLabels, entityRewrite, []byte(integrationJsonOutput))
+	err := emtr.Emit(definition, extraLabels, entityRewrite, []byte(integrationJSONOutput))
 	require.NoError(t, err)
 
-	for c := range ma.Calls {
-		called := ma.Calls[c]
+	for c := range agentContext.Calls {
+		called := agentContext.Calls[c]
 		if called.Method == "SendEvent" {
 			// Convert the event to a map.
-			eventMarshalled, _ := json.Marshal(called.Arguments[0])
+			eventMarshalled, err := json.Marshal(called.Arguments[0])
+			require.NoError(t, err)
 			var eRaw map[string]interface{}
-			err := json.Unmarshal(eventMarshalled, &eRaw)
+			err = json.Unmarshal(eventMarshalled, &eRaw)
 			assert.NoError(t, err)
 
 			// Assert the event has the tags included.
