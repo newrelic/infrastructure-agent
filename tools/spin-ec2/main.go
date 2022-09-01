@@ -124,6 +124,7 @@ func interactiveMode() {
 			"-f", strconv.Itoa(defaultAnsibleForks),
 			"--extra-vars", "@"+path.Join(curPath, inventoryForCreation),
 			"-e", "instance_prefix="+provisionHostPrefix+":",
+			"-e", "platform=all",
 			path.Join(curPath, "test/automated/ansible/provision.yml"))
 
 		execNameArgs("ansible-playbook",
