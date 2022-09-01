@@ -182,7 +182,7 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 }
 
 // isRegisterEnabled checks if the Feature Flag for register exists, and only if the FF it exists and it is not enabled
-// register will be considered enabled
+// register will be considered enabled.
 func isRegisterEnabled(deprecateRegisterFFEnabled bool, deprecateRegisterFFExists bool) bool {
 	return !deprecateRegisterFFExists || (deprecateRegisterFFExists && !deprecateRegisterFFEnabled)
 }
