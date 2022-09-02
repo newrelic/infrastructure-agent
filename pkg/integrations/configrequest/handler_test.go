@@ -69,6 +69,7 @@ func Test_addAndRemoveDefinitions(t *testing.T) {
 
 	// then just 1 is executed and 1 removed
 	assert.Len(t, configProtocolQueue, 1)
+
 	for len(configProtocolQueue) > 0 {
 		subDefinition := <-configProtocolQueue
 		assert.Equal(t, subDefinition.Definition.Labels, expectedLabels)

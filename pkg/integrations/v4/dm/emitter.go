@@ -187,16 +187,16 @@ func isRegisterEnabled(deprecateRegisterFFEnabled bool, deprecateRegisterFFExist
 	return !deprecateRegisterFFExists || (deprecateRegisterFFExists && !deprecateRegisterFFEnabled)
 }
 
-func (e *emitter) emitDataset(r fwrequest.EntityFwRequest) {
-	labels, annos := r.LabelsAndExtraAnnotations()
+func (e *emitter) emitDataset(req fwrequest.EntityFwRequest) {
+	labels, annos := req.LabelsAndExtraAnnotations()
 
-	plugin := agent.NewExternalPluginCommon(r.Definition.PluginID(r.Integration.Name), e.agentContext, r.Definition.Name)
+	plugin := agent.NewExternalPluginCommon(req.Definition.PluginID(req.Integration.Name), e.agentContext, req.Definition.Name)
 
-	emitInventory(&plugin, r.Definition, r.Integration, r.ID(), r.Data, labels)
+	emitInventory(&plugin, req.Definition, req.Integration, req.ID(), req.Data, labels)
 
-	emitEvent(&plugin, r.Definition, r.Data, labels, annos, r.ID())
+	emitEvent(&plugin, req.Definition, req.Data, labels, annos, req.ID())
 
-	emitMetrics(e.metricsSender, r.Definition, r.Data, annos, labels)
+	emitMetrics(e.metricsSender, req.Definition, req.Data, annos, labels)
 }
 
 func emitMetrics(metricSender MetricsSender,
