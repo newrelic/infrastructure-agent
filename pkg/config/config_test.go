@@ -39,7 +39,7 @@ log:
    file: agent.log
    forward: true
    level: debug
-logging_retry_limit: 10
+   logging_retry_limit: 10
 `
 	f, err := ioutil.TempFile("", "opsmatic_config_test")
 	c.Assert(err, IsNil)
