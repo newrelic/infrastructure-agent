@@ -13,6 +13,31 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestReplace_OnDemand_ByteSlice(t *testing.T) {
+	// GIVEN a byte array with variable marks in the inner values
+	template := []byte("Hello ${name.yours},\nMy name is ${name.mine}.\nGoodbye!")
+	// WHEN they are replaced by a set of two discovered items and an OnDemand provider
+	ctx := &Values{
+		discov: []discovery.Discovery{
+			{Variables: data.Map{"name.yours": "Fred"}},
+			{Variables: data.Map{"name.yours": "Marc"}},
+		}}
+	ret, err := ReplaceBytes(ctx, template, Provided(func(name string) (value []byte, found bool) {
+		if name == "name.mine" {
+			return []byte("Anna"), true
+		}
+		return nil, false
+	}))
+	require.NoError(t, err)
+
+	// THEN two replaced instances are returned
+	require.Len(t, ret, 2)
+
+	// AND both replaced instances have all the variables replaced according to the discovered items
+	assert.Equal(t, []byte("Hello Fred,\nMy name is Anna.\nGoodbye!"), ret[0])
+	assert.Equal(t, []byte("Hello Marc,\nMy name is Anna.\nGoodbye!"), ret[1])
+}
+
 func TestReplace_OnDemand(t *testing.T) {
 	// GIVEN a complex structure with variable marks in the inner values
 	type testStruct struct {
@@ -67,28 +92,13 @@ func TestFetchReplace_OnDemand_VarNotFound(t *testing.T) {
 		"myVar":    "${myVar}",
 		"mySecret": "${varNotFound}",
 	}
-	transformed, err := Replace(&vals, template, Provided(func(key string) (value []byte, found bool) {
+	_, err := Replace(&vals, template, Provided(func(key string) (value []byte, found bool) {
 		if key == "myVar" {
 			return []byte("hello"), true
 		}
 		return nil, false
 	}))
 
-	expected := []data.Transformed{
-		{
-			Variables: map[string]string{
-				"hello": "world", "bye": "you", "myVar": "hello", "mySecret": "${varNotFound}",
-			},
-			MetricAnnotations: data.InterfaceMapToMap(nil),
-		},
-		{
-			Variables: map[string]string{
-				"hello": "nen", "bye": "nano", "myVar": "hello", "mySecret": "${varNotFound}",
-			},
-			MetricAnnotations: data.InterfaceMapToMap(nil),
-		},
-	}
 	// THEN an error is returned
-	assert.NoError(t, err)
-	assert.Equal(t, expected, transformed)
+	assert.Error(t, err)
 }

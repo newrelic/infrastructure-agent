@@ -45,7 +45,6 @@ func TestRun(t *testing.T) {
 	assert.Equal(t, "error line", testhelp.ChannelRead(outs[0].Receive.Stderr))
 }
 
-// TestRun_NoDiscovery non-existent discovery entry will be used as it is
 func TestRun_NoDiscovery(t *testing.T) {
 	defer leaktest.Check(t)()
 
@@ -54,7 +53,7 @@ func TestRun_NoDiscovery(t *testing.T) {
 		InstanceName: "foo",
 		Exec:         testhelp.Command(fixtures.BasicCmd),
 		Env: map[string]string{
-			"PREFIX": "${discovery.foo}",
+			"CONFIG": "${discovery.foo}",
 		},
 	}, ErrLookup, nil, nil)
 	require.NoError(t, err)
@@ -64,9 +63,7 @@ func TestRun_NoDiscovery(t *testing.T) {
 	require.NoError(t, err)
 
 	// THEN no tasks are executed
-	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[0].Receive.Stdout))
-	assert.Equal(t, "error line", testhelp.ChannelRead(outs[0].Receive.Stderr))
-	assert.Equal(t, "${discovery.foo}-", testhelp.ChannelRead(outs[0].Receive.Stdout))
+	assert.Empty(t, outs)
 }
 
 func TestRun_Discovery(t *testing.T) {

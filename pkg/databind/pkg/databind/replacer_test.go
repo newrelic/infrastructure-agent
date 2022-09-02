@@ -21,7 +21,7 @@ func TestReplace_NoVars_EmptyContext(t *testing.T) {
 		URL  string
 		User string
 		Num  int
-	}{"http://www.google.com", "${foo}", 123}
+	}{"http://www.google.com", "foo", 123}
 
 	// When it is invoked with an empty context
 	ret, err := Replace(&Values{}, exampleConfig)
@@ -33,31 +33,6 @@ func TestReplace_NoVars_EmptyContext(t *testing.T) {
 	assert.Equal(t, exampleConfig, ret[0].Variables)
 }
 
-func TestReplace_NoVars_EmptyContext_onDemandShouldBeExecuted(t *testing.T) {
-	// Given a configuration with no discoverable variables
-	exampleConfig := struct {
-		URL  string
-		User string
-		Num  int
-	}{"http://www.google.com", "${foo}", 123}
-
-	foundConfigPath := false
-	onDemand := func(key string) (value []byte, found bool) {
-		foundConfigPath = true
-		return nil, false
-	}
-	// When it is invoked with an empty context
-	ret, err := Replace(&Values{}, exampleConfig, Provided(onDemand))
-	require.NoError(t, err)
-
-	// The original configuration is returned, without modifications, as it is
-	// assuming that the template is not subject to discovery
-	require.Len(t, ret, 1)
-	assert.Equal(t, exampleConfig, ret[0].Variables)
-	// AND onDemand should be executed
-	assert.True(t, foundConfigPath)
-}
-
 func TestReplace_Vars_EmptyContext(t *testing.T) {
 	// Given a configuration with variables placeholder that do not match any discovery data
 	type example struct {
@@ -66,19 +41,13 @@ func TestReplace_Vars_EmptyContext(t *testing.T) {
 		Num  int
 	}
 	cfg := example{"${myVar}", "${myOtherVar}", 123}
-	expected := []data.Transformed{
-		{
-			Variables: cfg,
-		},
-	}
 
 	// When it is invoked with an empty context
 	ret, err := Replace(&Values{}, cfg)
 	require.NoError(t, err)
 
-	// Configuration is returned as it is
-	require.Len(t, ret, 1)
-	assert.Equal(t, expected, ret)
+	// No configuration is returned, as it is assuming no discovery matches
+	require.Len(t, ret, 0)
 }
 
 func TestReplace_NoVars_PopulatedContext(t *testing.T) {
@@ -158,14 +127,15 @@ func TestReplace_ByteSlice(t *testing.T) {
 			{Variables: data.Map{"name.yours": "Fred"}},
 			{Variables: data.Map{"name.yours": "Marc"}},
 		}}
-	ret, _ := Replace(ctx, template)
+	ret, err := ReplaceBytes(ctx, template)
+	require.NoError(t, err)
 
 	// THEN two replaced instances are returned
 	require.Len(t, ret, 2)
 
 	// AND both replaced instances have all the variables replaced according to the discovered items
-	assert.Equal(t, []byte("Hello Fred,\nMy name is Anna.\nGoodbye!"), ret[0].Variables)
-	assert.Equal(t, []byte("Hello Marc,\nMy name is Anna.\nGoodbye!"), ret[1].Variables)
+	assert.Equal(t, []byte("Hello Fred,\nMy name is Anna.\nGoodbye!"), ret[0])
+	assert.Equal(t, []byte("Hello Marc,\nMy name is Anna.\nGoodbye!"), ret[1])
 }
 
 func TestReplace_Struct(t *testing.T) {
@@ -370,26 +340,10 @@ func TestFetchReplace_VarNotFound(t *testing.T) {
 		"myVar":    "${myVar}",
 		"mySecret": "${varNotFound}",
 	}
-	expected := []data.Transformed{
-		{
-			Variables: map[string]string{
-				"hello": "world", "bye": "you", "myVar": "myValue", "mySecret": "${varNotFound}",
-			},
-			MetricAnnotations: data.InterfaceMapToMap(nil),
-		},
-		{
-			Variables: map[string]string{
-				"hello": "nen", "bye": "nano", "myVar": "myValue", "mySecret": "${varNotFound}",
-			},
-			MetricAnnotations: data.InterfaceMapToMap(nil),
-		},
-	}
+	_, err = Replace(&vals, template)
 
-	transformedData, err := Replace(&vals, template)
-
-	// THEN no error is returned and the not found variables are left as they are
-	assert.NoError(t, err)
-	assert.Equal(t, expected, transformedData)
+	// THEN an error is returned
+	assert.Error(t, err)
 }
 
 func TestFetchReplace_NoMatches_WithVars(t *testing.T) {
@@ -494,13 +448,139 @@ func TestFetchReplace_NoMatches_VarsPlaceholders(t *testing.T) {
 	template := map[string]string{
 		"variable": "${something}",
 	}
-
 	matches, err := Replace(&vals, template)
 
-	// THEN NO errors are returned, and the template is left as it is
+	// THEN NO errors are returned, but zero matches (as discovery just did not found
+	// any target to apply
 	require.NoError(t, err)
+	assert.Len(t, matches, 0)
+}
+
+func TestFetchReplaceBytes_VarNotFound(t *testing.T) {
+	// GIVEN a discovery source that returns 2 matches
+	discoverer := discoverer{fetch: func() ([]discovery.Discovery, error) {
+		return []discovery.Discovery{{Variables: data.Map{"hello": "world", "bye": "you"}},
+			{Variables: data.Map{"hello": "nen", "bye": "nano"}}}, nil
+	}}
+	// AND a set of variables defined by the user
+	variable := func(value string) *gatherer {
+		return &gatherer{fetch: func() (interface{}, error) {
+			return value, nil
+		}}
+	}
+	ctx := Sources{
+		clock:      time.Now,
+		discoverer: &discoverer,
+		variables: map[string]*gatherer{
+			"myVar": variable("myValue"),
+		},
+	}
+	vals, err := Fetch(&ctx)
+	require.NoError(t, err)
+
+	// WHEN this data is replaced against a given template, where some variables are not found
+	_, err = ReplaceBytes(&vals, []byte("Hello ${hello} how ${myVar} ${varNotFound}?"))
+
+	// THEN an error is returned
+	assert.Error(t, err)
+}
+
+func TestFetchReplaceBytes_NoMatches_WithVars(t *testing.T) {
+	// GIVEN a discovery source that returns no matches
+	discoverer := discoverer{fetch: func() ([]discovery.Discovery, error) {
+		return []discovery.Discovery{}, nil
+	}}
+	// AND a set of variables defined by the user
+	variable := func(value string) *gatherer {
+		return &gatherer{fetch: func() (interface{}, error) {
+			return value, nil
+		}}
+	}
+	ctx := Sources{
+		clock:      time.Now,
+		discoverer: &discoverer,
+		variables: map[string]*gatherer{
+			"myVar": variable("myValue"),
+		},
+	}
+	vals, err := Fetch(&ctx)
+	require.NoError(t, err)
+
+	// WHEN this data is replaced against a given template
+	matches, err := ReplaceBytes(&vals, []byte("${myVar}"))
+	require.NoError(t, err)
+
+	// THEN a match is returned, for the given variable
 	assert.Len(t, matches, 1)
-	assert.Equal(t, "${something}", matches[0].Variables.(map[string]string)["variable"])
+	assert.Equal(t, "myValue", string(matches[0]))
+}
+
+func TestFetchReplaceBytes_MultipleMatches_NoVarsPlaceholders(t *testing.T) {
+	// GIVEN a discovery source that returns multiple matches
+	discoverer := discoverer{fetch: func() ([]discovery.Discovery, error) {
+		return []discovery.Discovery{
+			{Variables: data.Map{"hello": "world", "bye": "you"}},
+			{Variables: data.Map{"hello": "nen", "bye": "nano"}}}, nil
+	}}
+	ctx := Sources{
+		clock:      time.Now,
+		discoverer: &discoverer,
+		variables:  map[string]*gatherer{},
+	}
+	vals, err := Fetch(&ctx)
+	require.NoError(t, err)
+
+	// WHEN this data is replaced against a template without variable placeholders
+	matches, err := ReplaceBytes(&vals, []byte("hello"))
+	require.NoError(t, err)
+
+	// THEN only one match is returned, with no values replaced
+	assert.Len(t, matches, 1)
+	assert.Equal(t, "hello", string(matches[0]))
+}
+
+func TestFetchReplaceBytes_NoMatches_NoVarsPlaceholders(t *testing.T) {
+	// GIVEN a discovery source that returns NO matches
+	discoverer := discoverer{fetch: func() ([]discovery.Discovery, error) {
+		return []discovery.Discovery{}, nil
+	}}
+	ctx := Sources{
+		clock:      time.Now,
+		discoverer: &discoverer,
+		variables:  map[string]*gatherer{},
+	}
+	vals, err := Fetch(&ctx)
+	require.NoError(t, err)
+
+	// WHEN this data is replaced against a template that do not use variables
+	matches, err := ReplaceBytes(&vals, []byte("hello"))
+	require.NoError(t, err)
+
+	// THEN only one match is returned, with the values replaced
+	require.Len(t, matches, 1)
+	assert.Equal(t, "hello", string(matches[0]))
+}
+
+func TestFetchReplaceBytes_NoMatches_VarsPlaceholders(t *testing.T) {
+	// GIVEN a discovery source that returns NO matches
+	discoverer := discoverer{fetch: func() ([]discovery.Discovery, error) {
+		return []discovery.Discovery{}, nil
+	}}
+	ctx := Sources{
+		clock:      time.Now,
+		discoverer: &discoverer,
+		variables:  map[string]*gatherer{},
+	}
+	vals, err := Fetch(&ctx)
+	require.NoError(t, err)
+
+	// WHEN this data is replaced against a template that uses variables
+	matches, err := ReplaceBytes(&vals, []byte("${something}"))
+
+	// THEN NO errors are returned, but zero matches (as discovery just did not found
+	// any target to apply
+	require.NoError(t, err)
+	assert.Len(t, matches, 0)
 }
 
 func TestReplace_EntityRewrite(t *testing.T) {
