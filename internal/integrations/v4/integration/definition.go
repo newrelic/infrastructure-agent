@@ -24,7 +24,14 @@ import (
 )
 
 const (
-	configPathEnv     = "CONFIG_PATH"
+	// configPathEnv adds extra configuration to OHIs that cannot be passed using arguments.
+	// Kept for backwards compatibility. However, it's not very specific and can cause collision with
+	// inventory CONFIG_PATH config option of some integrations. Use ohiConfigPathEnv instead.
+	configPathEnv = "CONFIG_PATH"
+
+	// ohiConfigPathEnv adds extra configuration to OHIs that cannot be passed using arguments.
+	ohiConfigPathEnv = "OHI_" + configPathEnv
+
 	configPathVarName = "config.path"
 	configPathHolder  = "${" + configPathVarName + "}"
 )
@@ -166,6 +173,7 @@ func (d *Definition) Run(ctx context.Context, bindVals *databind.Values, discove
 				}
 			} else {
 				dc.Executor.Cfg.Environment[configPathEnv] = templateFile
+				dc.Executor.Cfg.Environment[ohiConfigPathEnv] = templateFile
 			}
 		} else {
 			logger.Debug("Found a nil ConfigTemplate.")
