@@ -172,8 +172,13 @@ func (d *Definition) Run(ctx context.Context, bindVals *databind.Values, discove
 					}
 				}
 			} else {
-				dc.Executor.Cfg.Environment[configPathEnv] = templateFile
 				dc.Executor.Cfg.Environment[ohiConfigPathEnv] = templateFile
+
+				if _, found := dc.Executor.Cfg.Environment[configPathEnv]; !found {
+					dc.Executor.Cfg.Environment[configPathEnv] = templateFile
+				} else {
+					logger.Debug("'CONFIG_PATH' already defined in integration configuration, skipping config template.")
+				}
 			}
 		} else {
 			logger.Debug("Found a nil ConfigTemplate.")
