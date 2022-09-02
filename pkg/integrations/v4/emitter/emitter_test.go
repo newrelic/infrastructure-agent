@@ -533,8 +533,8 @@ func TestEmitV3_WithTags(t *testing.T) {
 	err := emtr.Emit(definition, extraLabels, entityRewrite, []byte(integrationJSONOutput))
 	require.NoError(t, err)
 
-	for c := range agentContext.Calls {
-		called := agentContext.Calls[c]
+	for call := range agentContext.Calls {
+		called := agentContext.Calls[call]
 		if called.Method == "SendEvent" {
 			// Convert the event to a map.
 			eventMarshalled, err := json.Marshal(called.Arguments[0])
