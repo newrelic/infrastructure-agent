@@ -517,7 +517,7 @@ func TestEmitV3_WithTags(t *testing.T) {
 	}
 
 	integrationJSONOutput := fmt.Sprintf(integrationJsonOutput, "")
-	agentContext := mockAgent()
+	agentContextMock := mockAgent()
 
 	extraLabels := data.Map{}
 	var entityRewrite []data.EntityRewrite
@@ -525,7 +525,7 @@ func TestEmitV3_WithTags(t *testing.T) {
 	mockDME.On("Send", mock.Anything)
 
 	emtr := &VersionAwareEmitter{
-		aCtx:        agentContext,
+		aCtx:        agentContextMock,
 		ffRetriever: feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: true}),
 		dmEmitter:   mockDME,
 	}
@@ -533,8 +533,8 @@ func TestEmitV3_WithTags(t *testing.T) {
 	err := emtr.Emit(definition, extraLabels, entityRewrite, []byte(integrationJSONOutput))
 	require.NoError(t, err)
 
-	for call := range agentContext.Calls {
-		called := agentContext.Calls[call]
+	for call := range agentContextMock.Calls {
+		called := agentContextMock.Calls[call]
 		if called.Method == "SendEvent" {
 			// Convert the event to a map.
 			eventMarshalled, err := json.Marshal(called.Arguments[0])
