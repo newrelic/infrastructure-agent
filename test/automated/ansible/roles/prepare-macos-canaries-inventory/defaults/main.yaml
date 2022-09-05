@@ -2,5 +2,6 @@
 
 username: ec2-user
 python_interpreter: /usr/local/bin/python3
+python_interpreter_arm: /usr/bin/python3
 
 ...

@@ -124,6 +124,7 @@ func interactiveMode() {
 			"-f", strconv.Itoa(defaultAnsibleForks),
 			"--extra-vars", "@"+path.Join(curPath, inventoryForCreation),
 			"-e", "instance_prefix="+provisionHostPrefix+":",
+			"-e", "platform=all",
 			path.Join(curPath, "test/automated/ansible/provision.yml"))
 
 		execNameArgs("ansible-playbook",
@@ -276,6 +277,10 @@ func cliMode() {
 	cmdProvision.PersistentFlags().StringP("macstadium_pass", "z", "", "MacStadium api pass")
 	viper.BindPFlag("macstadium_pass", cmdProvision.PersistentFlags().Lookup("macstadium_pass"))
 
+	// Macstadium sudo pass
+	cmdProvision.PersistentFlags().StringP("macstadium_sudo_pass", "s", "", "MacStadium sudo pass")
+	viper.BindPFlag("macstadium_sudo_pass", cmdProvision.PersistentFlags().Lookup("macstadium_sudo_pass"))
+
 	// Ansible forks count
 	cmdProvision.PersistentFlags().StringP("ansible_forks", "a", "5", "Ansible forks count")
 	viper.BindPFlag("ansible_forks", cmdProvision.PersistentFlags().Lookup("ansible_forks"))
@@ -312,6 +317,7 @@ func canaryConfFromArgs() (canaryConf, error) {
 	repo := viper.GetString("repo")
 	macstadiumUser := viper.GetString("macstadium_user")
 	macstadiumPass := viper.GetString("macstadium_pass")
+	macstadiumSudoPass := viper.GetString("macstadium_sudo_pass")
 	ansibleForks := viper.GetInt("ansible_forks")
 
 	if !semver.IsValid(agentVersion) {
@@ -320,15 +326,16 @@ func canaryConfFromArgs() (canaryConf, error) {
 	}
 
 	return canaryConf{
-		license:         license,
-		agentVersion:    agentVersion,
-		platform:        platform,
-		ansiblePassword: ansiblePassword,
-		prefix:          prefix,
-		repo:            repo,
-		macstadiumUser:  macstadiumUser,
-		macstadiumPass:  macstadiumPass,
-		ansibleForks:    ansibleForks,
+		license:            license,
+		agentVersion:       agentVersion,
+		platform:           platform,
+		ansiblePassword:    ansiblePassword,
+		prefix:             prefix,
+		repo:               repo,
+		macstadiumUser:     macstadiumUser,
+		macstadiumPass:     macstadiumPass,
+		macstadiumSudoPass: macstadiumSudoPass,
+		ansibleForks:       ansibleForks,
 	}, nil
 }
 
@@ -384,6 +391,7 @@ func provisionMacosCanaries(cnf canaryConf) error {
 	execNameArgs("ansible-playbook",
 		"-e", "macstadium_user="+cnf.macstadiumUser,
 		"-e", "macstadium_pass="+cnf.macstadiumPass,
+		"-e", "macstadium_sudo_pass="+cnf.macstadiumSudoPass,
 		"-e", "platform="+cnf.platform,
 		"-f", strconv.Itoa(cnf.ansibleForks),
 		"-i", path.Join(curPath, inventoryLocal),

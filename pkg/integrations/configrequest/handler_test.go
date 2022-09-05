@@ -42,15 +42,21 @@ func Test_addAndRemoveDefinitions(t *testing.T) {
 	cp1, err := cfgprotocol.GetConfigProtocolBuilder(firstPayload).Build()
 	assert.NoError(t, err)
 
+	expectedLabels := map[string]string{"env": "test"}
+	parentDefinition := integration.Definition{
+		Labels: expectedLabels,
+	}
+
 	// When is processed by the handle function
-	handleFunction(cp1, c, integration.Definition{})
+	handleFunction(cp1, c, parentDefinition)
 
 	// Then the two integrations are sent to the queue for being executed and no runner is terminated
 	assert.Len(t, configProtocolQueue, 2)
 	assert.Len(t, terminateDefinitionQueue, 0)
 
 	for len(configProtocolQueue) > 0 {
-		<-configProtocolQueue
+		subDefinition := <-configProtocolQueue
+		assert.Equal(t, subDefinition.Definition.Labels, expectedLabels)
 	}
 
 	// Given the cache with the previous integrations loaded and a second payload of cfg request
@@ -59,10 +65,16 @@ func Test_addAndRemoveDefinitions(t *testing.T) {
 	cp2, err := cfgprotocol.GetConfigProtocolBuilder(secondPayload).Build()
 	assert.NoError(t, err)
 	// When the handle function is executed again
-	handleFunction(cp2, c, integration.Definition{})
+	handleFunction(cp2, c, parentDefinition)
 
 	// then just 1 is executed and 1 removed
 	assert.Len(t, configProtocolQueue, 1)
+
+	for len(configProtocolQueue) > 0 {
+		subDefinition := <-configProtocolQueue
+		assert.Equal(t, subDefinition.Definition.Labels, expectedLabels)
+	}
+
 	assert.Len(t, terminateDefinitionQueue, 1)
 
 }

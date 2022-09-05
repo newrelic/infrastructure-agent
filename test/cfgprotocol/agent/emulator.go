@@ -110,7 +110,8 @@ func (ae *Emulator) RunAgent() error {
 	// queues config entries requests
 	configEntryQ := make(chan configrequest.Entry, 100)
 
-	dmEmitter := dm.NewEmitter(ae.agent.GetContext(), dmSender, nil, instrumentation.NoopMeasure)
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+	dmEmitter := dm.NewEmitter(ae.agent.GetContext(), dmSender, nil, instrumentation.NoopMeasure, ffRetriever)
 
 	// track stoppable integrations
 	tracker := track.NewTracker(dmEmitter)
