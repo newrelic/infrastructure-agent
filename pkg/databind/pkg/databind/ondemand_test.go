@@ -21,7 +21,8 @@ func TestReplace_OnDemand_ByteSlice(t *testing.T) {
 		discov: []discovery.Discovery{
 			{Variables: data.Map{"name.yours": "Fred"}},
 			{Variables: data.Map{"name.yours": "Marc"}},
-		}}
+		},
+	}
 	ret, err := ReplaceBytes(ctx, template, Provided(func(name string) (value []byte, found bool) {
 		if name == "name.mine" {
 			return []byte("Anna"), true
@@ -80,17 +81,19 @@ func TestReplace_OnDemand(t *testing.T) {
 func TestFetchReplace_OnDemand_VarNotFound(t *testing.T) {
 	// GIVEN a set of discovery values
 	vals := Values{
-		discov: []discovery.Discovery{{Variables: data.Map{"hello": "world", "bye": "you"}},
-			{Variables: data.Map{"hello": "nen", "bye": "nano"}}},
+		discov: []discovery.Discovery{
+			{Variables: data.Map{"discovery.hello": "world", "discovery.bye": "you"}},
+			{Variables: data.Map{"discovery.hello": "nen", "discovery.bye": "nano"}},
+		},
 	}
 
 	// WHEN they are discovered against a given template with dynamically provided variables
 	// and some of the variables can't be dynamically found
 	template := map[string]string{
-		"hello":    "${hello}",
-		"bye":      "${bye}",
-		"myVar":    "${myVar}",
-		"mySecret": "${varNotFound}",
+		"hello":    "${discovery.hello}",
+		"bye":      "${discovery.bye}",
+		"myVar":    "${discovery.myVar}",
+		"mySecret": "${discovery.varNotFound}",
 	}
 	_, err := Replace(&vals, template, Provided(func(key string) (value []byte, found bool) {
 		if key == "myVar" {

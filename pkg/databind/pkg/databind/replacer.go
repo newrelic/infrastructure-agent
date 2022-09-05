@@ -8,6 +8,7 @@ import (
 	"errors"
 	"reflect"
 	"regexp"
+	"strings"
 	"unsafe"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery"
@@ -163,7 +164,7 @@ func replaceFields(values []data.Map, val reflect.Value, rc replaceConfig, match
 	case reflect.Slice:
 		// return provided slice if is empty
 		if val.Len() == 0 {
-			return val
+			return val, nil
 		}
 
 		// if it is a byte array, replaces it as if it were a string
@@ -218,7 +219,7 @@ func replaceFields(values []data.Map, val reflect.Value, rc replaceConfig, match
 	case reflect.Map:
 		keys := val.MapKeys()
 		if len(keys) == 0 {
-			return val
+			return val, nil
 		}
 
 		newMap := reflect.MakeMap(val.Type())
@@ -292,6 +293,11 @@ func variable(values []data.Map, match []byte, rc replaceConfig) ([]byte, error)
 		if value, ok := onDemand(varName); ok {
 			return value, nil
 		}
+	}
+
+	// if the placeholder is not from discovery and variable was not found, return it as it is
+	if !strings.HasPrefix(varName, "discovery.") {
+		return match, nil
 	}
 
 	// if the value is not found, returns the match itself

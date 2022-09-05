@@ -66,6 +66,32 @@ func TestRun_NoDiscovery(t *testing.T) {
 	assert.Empty(t, outs)
 }
 
+func TestRun_NoDiscoveryButFlexVariables(t *testing.T) {
+	t.Parallel()
+	defer leaktest.Check(t)()
+
+	// GIVEN a definition entry with discovery sources
+	def, err := NewDefinition(config.ConfigEntry{
+		InstanceName: "foo",
+		Exec:         testhelp.Command(fixtures.BasicCmd),
+		Env: map[string]string{
+			"CONFIG": "${flexVariable}",
+		},
+	}, ErrLookup, nil, nil)
+	require.NoError(t, err)
+
+	// WHEN the def is executed with no discovery matches
+	outs, err := def.Run(context.Background(), &databind.Values{}, databind.DiscovererInfo{}, nil, nil)
+	require.NoError(t, err)
+
+	// THEN no tasks are executed
+	// THEN the tasks are executed with the given configuration
+	assert.NoError(t, testhelp.ChannelErrClosed(outs[0].Receive.Errors))
+	assert.Equal(t, "stdout line", testhelp.ChannelRead(outs[0].Receive.Stdout))
+	assert.Equal(t, "error line", testhelp.ChannelRead(outs[0].Receive.Stderr))
+	assert.Equal(t, "-", testhelp.ChannelRead(outs[0].Receive.Stdout))
+}
+
 func TestRun_Discovery(t *testing.T) {
 	defer leaktest.Check(t)()
 
@@ -388,5 +414,4 @@ func TestNewDefinition_LowerCasedEnvGetsUppercased(t *testing.T) {
 	for _, v := range []string{strings.ToUpper(envA), strings.ToUpper(envB), strings.ToUpper(envC)} {
 		require.Equal(t, "random-val", def.ExecutorConfig.Environment[v])
 	}
-
 }

@@ -16,6 +16,7 @@ import (
 )
 
 func TestReplace_NoVars_EmptyContext(t *testing.T) {
+	t.Parallel()
 	// Given a configuration with no discoverable variables
 	exampleConfig := struct {
 		URL  string
@@ -34,13 +35,14 @@ func TestReplace_NoVars_EmptyContext(t *testing.T) {
 }
 
 func TestReplace_Vars_EmptyContext(t *testing.T) {
+	t.Parallel()
 	// Given a configuration with variables placeholder that do not match any discovery data
 	type example struct {
 		URL  string
 		User string
 		Num  int
 	}
-	cfg := example{"${myVar}", "${myOtherVar}", 123}
+	cfg := example{"${discovery.myVar}", "${discovery.myOtherVar}", 123}
 
 	// When it is invoked with an empty context
 	ret, err := Replace(&Values{}, cfg)
@@ -51,6 +53,7 @@ func TestReplace_Vars_EmptyContext(t *testing.T) {
 }
 
 func TestReplace_NoVars_PopulatedContext(t *testing.T) {
+	t.Parallel()
 	// Given a configuration with no discoverable variables
 	exampleConfig := struct {
 		URL  string
@@ -61,7 +64,8 @@ func TestReplace_NoVars_PopulatedContext(t *testing.T) {
 	// When it is invoked with a populated context
 	ret, err := Replace(&Values{discov: []discovery.Discovery{
 		{Variables: data.Map{"hi": "ho"}},
-		{Variables: data.Map{"hi": "ha"}}}}, exampleConfig)
+		{Variables: data.Map{"hi": "ha"}},
+	}}, exampleConfig)
 	require.NoError(t, err)
 
 	// The original configuration is returned, without modifications
@@ -70,6 +74,7 @@ func TestReplace_NoVars_PopulatedContext(t *testing.T) {
 }
 
 func TestReplace_Map(t *testing.T) {
+	t.Parallel()
 	// GIVEN a complex map with variable marks in the inner values
 	type fakeStruct struct {
 		Host string
@@ -118,6 +123,7 @@ func TestReplace_Map(t *testing.T) {
 }
 
 func TestReplace_ByteSlice(t *testing.T) {
+	t.Parallel()
 	// GIVEN a byte array with variable marks in the inner values
 	template := []byte("Hello ${name.yours},\nMy name is ${name.mine}.\nGoodbye!")
 	// WHEN they are replaced by a set of two discovered items
@@ -126,7 +132,8 @@ func TestReplace_ByteSlice(t *testing.T) {
 		discov: []discovery.Discovery{
 			{Variables: data.Map{"name.yours": "Fred"}},
 			{Variables: data.Map{"name.yours": "Marc"}},
-		}}
+		},
+	}
 	ret, err := ReplaceBytes(ctx, template)
 	require.NoError(t, err)
 
@@ -139,6 +146,7 @@ func TestReplace_ByteSlice(t *testing.T) {
 }
 
 func TestReplace_Struct(t *testing.T) {
+	t.Parallel()
 	// GIVEN a complex structure with variable marks in the inner values
 	type CustomMap map[string]interface{}
 	type CustomArray []int
@@ -202,11 +210,13 @@ func TestReplace_Struct(t *testing.T) {
 }
 
 func TestFetchReplace_WithVars(t *testing.T) {
+	t.Parallel()
 	// GIVEN a discovery source that returns 2 matches
 	discoverer := discoverer{fetch: func() ([]discovery.Discovery, error) {
 		return []discovery.Discovery{
 			{Variables: data.Map{"hello": "world", "bye": "you"}},
-			{Variables: data.Map{"hello": "nen", "bye": "nano"}}}, nil
+			{Variables: data.Map{"hello": "nen", "bye": "nano"}},
+		}, nil
 	}}
 	// AND a set of variables defined by the user
 	variable := func(value string) *gatherer {
@@ -257,6 +267,7 @@ func TestFetchReplace_WithVars(t *testing.T) {
 }
 
 func TestFetchReplace_ComplexVars(t *testing.T) {
+	t.Parallel()
 	// GIVEN a variable that returns a complex object
 	omelette := gatherer{fetch: func() (interface{}, error) {
 		return map[string]interface{}{
@@ -311,11 +322,13 @@ func TestFetchReplace_ComplexVars(t *testing.T) {
 }
 
 func TestFetchReplace_VarNotFound(t *testing.T) {
+	t.Parallel()
 	// GIVEN a discovery source that returns 2 matches
 	discoverer := discoverer{fetch: func() ([]discovery.Discovery, error) {
 		return []discovery.Discovery{
-			{Variables: data.Map{"hello": "world", "bye": "you"}},
-			{Variables: data.Map{"hello": "nen", "bye": "nano"}}}, nil
+			{Variables: data.Map{"discovery.hello": "world", "discovery.bye": "you"}},
+			{Variables: data.Map{"discovery.hello": "nen", "discovery.bye": "nano"}},
+		}, nil
 	}}
 	// AND a set of variables defined by the user
 	variable := func(value string) *gatherer {
@@ -327,7 +340,7 @@ func TestFetchReplace_VarNotFound(t *testing.T) {
 		clock:      time.Now,
 		discoverer: &discoverer,
 		variables: map[string]*gatherer{
-			"myVar": variable("myValue"),
+			"discovery.myVar": variable("myValue"),
 		},
 	}
 	vals, err := Fetch(&ctx)
@@ -335,10 +348,10 @@ func TestFetchReplace_VarNotFound(t *testing.T) {
 
 	// WHEN this data is replaced against a given template, where some variables are not found
 	template := map[string]string{
-		"hello":    "${hello}",
-		"bye":      "${bye}",
-		"myVar":    "${myVar}",
-		"mySecret": "${varNotFound}",
+		"hello":    "${discovery.hello}",
+		"bye":      "${discovery.bye}",
+		"myVar":    "${discovery.myVar}",
+		"mySecret": "${discovery.varNotFound}",
 	}
 	_, err = Replace(&vals, template)
 
@@ -347,6 +360,7 @@ func TestFetchReplace_VarNotFound(t *testing.T) {
 }
 
 func TestFetchReplace_NoMatches_WithVars(t *testing.T) {
+	t.Parallel()
 	// GIVEN a discovery source that returns no matches
 	discoverer := discoverer{fetch: func() ([]discovery.Discovery, error) {
 		return []discovery.Discovery{}, nil
@@ -380,11 +394,13 @@ func TestFetchReplace_NoMatches_WithVars(t *testing.T) {
 }
 
 func TestFetchReplace_MultipleMatches_NoVarsPlaceholders(t *testing.T) {
+	t.Parallel()
 	// GIVEN a discovery source that returns multiple matches
 	discoverer := discoverer{fetch: func() ([]discovery.Discovery, error) {
 		return []discovery.Discovery{
-			{Variables: data.Map{"hello": "world", "bye": "you"}},
-			{Variables: data.Map{"hello": "nen", "bye": "nano"}}}, nil
+			{Variables: data.Map{"discovery.hello": "world", "discovery.bye": "you"}},
+			{Variables: data.Map{"discovery.hello": "nen", "discovery.bye": "nano"}},
+		}, nil
 	}}
 	ctx := Sources{
 		clock:      time.Now,
@@ -407,6 +423,7 @@ func TestFetchReplace_MultipleMatches_NoVarsPlaceholders(t *testing.T) {
 }
 
 func TestFetchReplace_NoMatches_NoVarsPlaceholders(t *testing.T) {
+	t.Parallel()
 	// GIVEN a discovery source that returns NO matches
 	discoverer := discoverer{fetch: func() ([]discovery.Discovery, error) {
 		return []discovery.Discovery{}, nil
@@ -431,7 +448,8 @@ func TestFetchReplace_NoMatches_NoVarsPlaceholders(t *testing.T) {
 	assert.Equal(t, "hello", matches[0].Variables.(map[string]string)["variable"])
 }
 
-func TestFetchReplace_NoMatches_VarsPlaceholders(t *testing.T) {
+func TestFetchReplace_NoMatches_DiscoveryPrefixedVarsPlaceholders(t *testing.T) {
+	t.Parallel()
 	// GIVEN a discovery source that returns NO matches
 	discoverer := discoverer{fetch: func() ([]discovery.Discovery, error) {
 		return []discovery.Discovery{}, nil
@@ -446,7 +464,7 @@ func TestFetchReplace_NoMatches_VarsPlaceholders(t *testing.T) {
 
 	// WHEN this data is replaced against a template that uses variables
 	template := map[string]string{
-		"variable": "${something}",
+		"variable": "${discovery.something}",
 	}
 	matches, err := Replace(&vals, template)
 
@@ -456,11 +474,40 @@ func TestFetchReplace_NoMatches_VarsPlaceholders(t *testing.T) {
 	assert.Len(t, matches, 0)
 }
 
+func TestFetchReplace_NoMatches_NonPrefixedVarsPlaceholders(t *testing.T) {
+	t.Parallel()
+	// GIVEN a discovery source that returns NO matches
+	disc := discoverer{fetch: func() ([]discovery.Discovery, error) {
+		return []discovery.Discovery{}, nil
+	}}
+	ctx := Sources{
+		clock:      time.Now,
+		discoverer: &disc,
+		variables:  map[string]*gatherer{},
+	}
+	vals, err := Fetch(&ctx)
+	require.NoError(t, err)
+
+	// WHEN this data is replaced against a template that uses variables
+	template := map[string]string{
+		"variable": "${something}",
+	}
+	matches, err := Replace(&vals, template)
+	require.NoError(t, err)
+
+	// THEN only one match is returned, with the placeholder as it is
+	require.Len(t, matches, 1)
+	assert.Equal(t, "${something}", matches[0].Variables.(map[string]string)["variable"]) // nolint:forcetypeassert
+}
+
 func TestFetchReplaceBytes_VarNotFound(t *testing.T) {
+	t.Parallel()
 	// GIVEN a discovery source that returns 2 matches
 	discoverer := discoverer{fetch: func() ([]discovery.Discovery, error) {
-		return []discovery.Discovery{{Variables: data.Map{"hello": "world", "bye": "you"}},
-			{Variables: data.Map{"hello": "nen", "bye": "nano"}}}, nil
+		return []discovery.Discovery{
+			{Variables: data.Map{"discovery.hello": "world", "discovery.bye": "you"}},
+			{Variables: data.Map{"discovery.hello": "nen", "discovery.bye": "nano"}},
+		}, nil
 	}}
 	// AND a set of variables defined by the user
 	variable := func(value string) *gatherer {
@@ -472,20 +519,21 @@ func TestFetchReplaceBytes_VarNotFound(t *testing.T) {
 		clock:      time.Now,
 		discoverer: &discoverer,
 		variables: map[string]*gatherer{
-			"myVar": variable("myValue"),
+			"discovery.myVar": variable("myValue"),
 		},
 	}
 	vals, err := Fetch(&ctx)
 	require.NoError(t, err)
 
 	// WHEN this data is replaced against a given template, where some variables are not found
-	_, err = ReplaceBytes(&vals, []byte("Hello ${hello} how ${myVar} ${varNotFound}?"))
+	_, err = ReplaceBytes(&vals, []byte("Hello ${discovery.hello} how ${discovery.myVar} ${discovery.varNotFound}?"))
 
 	// THEN an error is returned
 	assert.Error(t, err)
 }
 
 func TestFetchReplaceBytes_NoMatches_WithVars(t *testing.T) {
+	t.Parallel()
 	// GIVEN a discovery source that returns no matches
 	discoverer := discoverer{fetch: func() ([]discovery.Discovery, error) {
 		return []discovery.Discovery{}, nil
@@ -516,11 +564,13 @@ func TestFetchReplaceBytes_NoMatches_WithVars(t *testing.T) {
 }
 
 func TestFetchReplaceBytes_MultipleMatches_NoVarsPlaceholders(t *testing.T) {
+	t.Parallel()
 	// GIVEN a discovery source that returns multiple matches
 	discoverer := discoverer{fetch: func() ([]discovery.Discovery, error) {
 		return []discovery.Discovery{
 			{Variables: data.Map{"hello": "world", "bye": "you"}},
-			{Variables: data.Map{"hello": "nen", "bye": "nano"}}}, nil
+			{Variables: data.Map{"hello": "nen", "bye": "nano"}},
+		}, nil
 	}}
 	ctx := Sources{
 		clock:      time.Now,
@@ -540,6 +590,7 @@ func TestFetchReplaceBytes_MultipleMatches_NoVarsPlaceholders(t *testing.T) {
 }
 
 func TestFetchReplaceBytes_NoMatches_NoVarsPlaceholders(t *testing.T) {
+	t.Parallel()
 	// GIVEN a discovery source that returns NO matches
 	discoverer := discoverer{fetch: func() ([]discovery.Discovery, error) {
 		return []discovery.Discovery{}, nil
@@ -562,6 +613,7 @@ func TestFetchReplaceBytes_NoMatches_NoVarsPlaceholders(t *testing.T) {
 }
 
 func TestFetchReplaceBytes_NoMatches_VarsPlaceholders(t *testing.T) {
+	t.Parallel()
 	// GIVEN a discovery source that returns NO matches
 	discoverer := discoverer{fetch: func() ([]discovery.Discovery, error) {
 		return []discovery.Discovery{}, nil
@@ -575,7 +627,7 @@ func TestFetchReplaceBytes_NoMatches_VarsPlaceholders(t *testing.T) {
 	require.NoError(t, err)
 
 	// WHEN this data is replaced against a template that uses variables
-	matches, err := ReplaceBytes(&vals, []byte("${something}"))
+	matches, err := ReplaceBytes(&vals, []byte("${discovery.something}"))
 
 	// THEN NO errors are returned, but zero matches (as discovery just did not found
 	// any target to apply
