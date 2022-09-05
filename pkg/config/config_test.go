@@ -35,11 +35,11 @@ custom_attributes:
    my_group:  test group
    agent_role:  test role
 remove_entities_period: 1h
+logging_retry_limit: 10
 log:
    file: agent.log
    forward: true
    level: debug
-   logging_retry_limit: 10
 `
 	f, err := ioutil.TempFile("", "opsmatic_config_test")
 	c.Assert(err, IsNil)
