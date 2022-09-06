@@ -16,7 +16,7 @@ var logFwdCfg = config.LogForward{
 	License:    "licenseKey",
 	IsStaging:  false,
 	IsFedramp:  false,
-	RetryLimit: "1",
+	RetryLimit: "5",
 	ProxyCfg: config.LogForwardProxy{
 		IgnoreSystemProxy: true,
 		Proxy:             "https://https-proxy:3129",
@@ -61,7 +61,7 @@ var outputBlock = FBCfgOutput{
 	CABundleFile:      "/cabundles/proxycert.pem",
 	CABundleDir:       "/cabundles",
 	ValidateCerts:     true,
-	Retry_Limit:       "1",
+	Retry_Limit:       "5",
 }
 
 func TestNewFBConf(t *testing.T) {

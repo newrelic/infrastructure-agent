@@ -76,7 +76,6 @@ type IncludeMetricsMap map[string][]string
 // LogFilters configuration specifies which log entries should be included/excluded.
 type LogFilters map[string][]interface{}
 
-//
 // IMPORTANT NOTE: If you add new config fields, consider checking the ignore list in
 // the plugins/agent_config.go plugin to not send undesired fields as inventory
 //
@@ -796,7 +795,7 @@ type Config struct {
 
 	// LoggingRetryLimit determines the value of the Retry_Limit for the New Relic fluent-bit output plugin.
 	// https://github.com/newrelic/newrelic-fluent-bit-output/blob/7cbb4393aa36e48bad783231182f707037ebf217/README.md#retry-logic
-	// Default: 1
+	// Default: "5"
 	// Public: No
 	LoggingRetryLimit string `yaml:"logging_retry_limit" envconfig:"logging_retry_limit" public:"false"`
 
