@@ -39,14 +39,8 @@ func Replace(vals *Values, template interface{}, options ...ReplaceOption) (tran
 	// if neither discovery nor variables, we just return the template as it
 	if len(vals.discov) == 0 {
 		if len(vals.vars) == 0 {
-			// TRICKY LOGIC HERE
-			// if no discovery nor variables, we use this invocation not to replace anything, but
-			// to check if there are variable placeholders in the template (observe that we are passing
-			// an empty discovery source in the second argument)
-			_, err := replaceAllSources(template, []discovery.Discovery{{}}, data.Map{}, rc)
-			// if the above returned error, it means it has variables. So since discovery returned
-			// no results, we will to return an empty array
-			if err != nil {
+			// if the template has discovery variables but they could not be replaced return an empty slice of templates
+			if hasDiscoveryVariables(template, rc) {
 				return transformedData, nil
 			}
 			// otherwise, it means it does not have variables, so we will return the template as it was
@@ -62,6 +56,13 @@ func Replace(vals *Values, template interface{}, options ...ReplaceOption) (tran
 	varSrc := vals.vars
 
 	return replaceAllSources(template, discoverySources, varSrc, rc)
+}
+
+// hasDiscoveryVariables returns if the template has variables.
+func hasDiscoveryVariables(template interface{}, rc replaceConfig) bool {
+	_, err := replaceAllSources(template, []discovery.Discovery{{}}, data.Map{}, rc)
+	// if the above returned error, it means it has variables
+	return err != nil
 }
 
 // ReplaceBytes receives a byte array that may  contain ${variable} placeholders,
@@ -122,7 +123,6 @@ func replaceAllSources(tmpl interface{}, src []discovery.Discovery, common data.
 }
 
 func replaceEntityRewrites(values []data.Map, entityRewrite []data.EntityRewrite, rc replaceConfig) ([]data.EntityRewrite, error) {
-
 	for i := range entityRewrite {
 		entityRewrite[i].ReplaceField = naming.AddPrefixToVariable(data.DiscoveryPrefix, entityRewrite[i].ReplaceField)
 		entityRewrite[i].Match = naming.AddPrefixToVariable(data.DiscoveryPrefix, entityRewrite[i].Match)
