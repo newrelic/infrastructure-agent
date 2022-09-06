@@ -21,7 +21,7 @@ platforms:
     groups:
       - testing_hosts_linux
   - name: ubuntu-1804
-    image: ubuntu:18.04
+    image: ubuntu:bionic-20220801
     privileged: true
     dockerfile: Dockerfile.ub1804
     command: "/sbin/init"
