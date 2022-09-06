@@ -48,6 +48,7 @@ func inputRecordModifier(i string, m string) FBCfgFilter {
 
 func withFeedramp(cfg config.LogForward) config.LogForward {
 	cfg.IsFedramp = true
+
 	return cfg
 }
 
