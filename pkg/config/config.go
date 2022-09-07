@@ -76,7 +76,6 @@ type IncludeMetricsMap map[string][]string
 // LogFilters configuration specifies which log entries should be included/excluded.
 type LogFilters map[string][]interface{}
 
-//
 // IMPORTANT NOTE: If you add new config fields, consider checking the ignore list in
 // the plugins/agent_config.go plugin to not send undesired fields as inventory
 //
@@ -794,6 +793,12 @@ type Config struct {
 	// Public: No
 	LoggingHomeDir string `yaml:"logging_home_dir" envconfig:"logging_home_dir" public:"false"`
 
+	// LoggingRetryLimit determines the value of the Retry_Limit for the New Relic fluent-bit output plugin.
+	// https://github.com/newrelic/newrelic-fluent-bit-output/blob/7cbb4393aa36e48bad783231182f707037ebf217/README.md#retry-logic
+	// Default: "5"
+	// Public: No
+	LoggingRetryLimit string `yaml:"logging_retry_limit" envconfig:"logging_retry_limit" public:"false"`
+
 	// FluentBitExePath is the location from where the agent can execute fluent-bit.
 	// Default (Linux): /opt/td-agent-bit/bin/td-agent-bit
 	// Default (Windows): C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\logging\fluent-bit
@@ -1313,6 +1318,7 @@ type LogForward struct {
 	IsFedramp    bool
 	IsStaging    bool
 	ProxyCfg     LogForwardProxy
+	RetryLimit   string
 }
 
 type LogForwardProxy struct {
@@ -1332,6 +1338,7 @@ func NewLogForward(config *Config, troubleshoot Troubleshoot) LogForward {
 		License:      config.License,
 		IsFedramp:    config.Fedramp,
 		IsStaging:    config.Staging,
+		RetryLimit:   config.LoggingRetryLimit,
 		ProxyCfg: LogForwardProxy{
 			IgnoreSystemProxy: config.IgnoreSystemProxy,
 			Proxy:             config.Proxy,
@@ -1586,6 +1593,7 @@ func NewConfig() *Config {
 		DebugLogSec:                   defaultDebugLogSec,
 		TruncTextValues:               defaultTruncTextValues,
 		LogFormat:                     defaultLogFormat,
+		LoggingRetryLimit:             defaultLoggingRetryLimit,
 		HTTPServerHost:                defaultHTTPServerHost,
 		HTTPServerPort:                defaultHTTPServerPort,
 		TCPServerPort:                 defaultTCPServerPort,

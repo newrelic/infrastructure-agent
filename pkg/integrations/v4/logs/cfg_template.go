@@ -121,6 +121,9 @@ var fbConfigFormat = `{{- range .Inputs }}
     {{- if not .Output.ValidateCerts }}
     validateProxyCerts  false
     {{- end }}
+    {{- if .Output.Retry_Limit}}
+    Retry_Limit         {{ .Output.Retry_Limit }}
+    {{- end}}
 {{ end -}}
 
 {{- if .ExternalCfg.CfgFilePath }}
