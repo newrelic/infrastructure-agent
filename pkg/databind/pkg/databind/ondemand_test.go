@@ -14,6 +14,7 @@ import (
 )
 
 func TestReplace_OnDemand_ByteSlice(t *testing.T) {
+	t.Parallel()
 	// GIVEN a byte array with variable marks in the inner values
 	template := []byte("Hello ${name.yours},\nMy name is ${name.mine}.\nGoodbye!")
 	// WHEN they are replaced by a set of two discovered items and an OnDemand provider
@@ -27,6 +28,7 @@ func TestReplace_OnDemand_ByteSlice(t *testing.T) {
 		if name == "name.mine" {
 			return []byte("Anna"), true
 		}
+
 		return nil, false
 	}))
 	require.NoError(t, err)

@@ -68,42 +68,44 @@ func hasDiscoveryVariables(template interface{}, rc replaceConfig) bool {
 // ReplaceBytes receives a byte array that may  contain ${variable} placeholders,
 // and returns an array of byte arrays replacing the variable placeholders from the respective Values.
 func ReplaceBytes(vals *Values, template []byte, options ...ReplaceOption) ([][]byte, error) {
-	rc := replaceConfig{}
+	replaceConf := replaceConfig{}
 	for _, option := range options {
-		option(&rc)
+		option(&replaceConf)
 	}
+
 	if len(vals.discov) == 0 {
 		if len(vals.vars) == 0 {
 			// the same tricky logic as for "Replace" function
-			_, err := replaceAllBytes(template, []discovery.Discovery{{}}, data.Map{}, rc)
+			_, err := replaceAllBytes(template, []discovery.Discovery{{}}, data.Map{}, replaceConf)
 			if err != nil {
-				return [][]byte{}, nil
+				return [][]byte{}, nil //nolint:nilerr
 			}
+
 			return [][]byte{template}, nil
 		}
 		// if no discovery data but variables, we just replace variables as if they were
 		// a discovery source and leave the "common" values as empty
-		return replaceAllBytes(template, []discovery.Discovery{{Variables: vals.vars}}, data.Map{}, rc)
+		return replaceAllBytes(template, []discovery.Discovery{{Variables: vals.vars}}, data.Map{}, replaceConf)
 	}
 
 	discoverySources := vals.discov
 	varSrc := vals.vars
 
-	return replaceAllBytes(template, discoverySources, varSrc, rc)
+	return replaceAllBytes(template, discoverySources, varSrc, replaceConf)
 }
 
 // Replaces all the discovery sources by the values in the "src" array. The common array is shared
 // If src is empty, no change is done even if there is data in the common map.
-func replaceAllSources(tmpl interface{}, src []discovery.Discovery, common data.Map, rc replaceConfig) (transformedData []data.Transformed, err error) {
+func replaceAllSources(tmpl interface{}, src []discovery.Discovery, common data.Map, replaceConf replaceConfig) (transformedData []data.Transformed, err error) {
 	templateVal := reflect.ValueOf(tmpl)
 	for _, discov := range src {
 		matches := 0
-		replaced, err := replaceFields([]data.Map{discov.Variables, common}, templateVal, rc, &matches)
+		replaced, err := replaceFields([]data.Map{discov.Variables, common}, templateVal, replaceConf, &matches)
 		if err != nil {
 			return transformedData, err
 		}
 
-		entityRewrites, err := replaceEntityRewrites([]data.Map{discov.Variables, common}, discov.EntityRewrites, rc)
+		entityRewrites, err := replaceEntityRewrites([]data.Map{discov.Variables, common}, discov.EntityRewrites, replaceConf)
 		if err != nil {
 			return transformedData, err
 		}
@@ -119,10 +121,11 @@ func replaceAllSources(tmpl interface{}, src []discovery.Discovery, common data.
 				EntityRewrites:    entityRewrites,
 			})
 	}
+
 	return transformedData, nil
 }
 
-func replaceEntityRewrites(values []data.Map, entityRewrite []data.EntityRewrite, rc replaceConfig) ([]data.EntityRewrite, error) {
+func replaceEntityRewrites(values []data.Map, entityRewrite []data.EntityRewrite, replaceConf replaceConfig) ([]data.EntityRewrite, error) {
 	for i := range entityRewrite {
 		entityRewrite[i].ReplaceField = naming.AddPrefixToVariable(data.DiscoveryPrefix, entityRewrite[i].ReplaceField)
 		entityRewrite[i].Match = naming.AddPrefixToVariable(data.DiscoveryPrefix, entityRewrite[i].Match)
@@ -132,7 +135,7 @@ func replaceEntityRewrites(values []data.Map, entityRewrite []data.EntityRewrite
 
 	entityRewriteMatches := 0
 
-	entityRewriteReplaced, err := replaceFields(values, entityRewriteTpl, rc, &entityRewriteMatches)
+	entityRewriteReplaced, err := replaceFields(values, entityRewriteTpl, replaceConf, &entityRewriteMatches)
 	if err != nil {
 		return nil, err
 	}
@@ -140,6 +143,7 @@ func replaceEntityRewrites(values []data.Map, entityRewrite []data.EntityRewrite
 	if entityRewriteMatches > 0 {
 		entityRewrite = entityRewriteReplaced.Interface().([]data.EntityRewrite)
 	}
+
 	return entityRewrite, nil
 }
 
@@ -156,10 +160,12 @@ func replaceAllBytes(template []byte, src []discovery.Discovery, common data.Map
 		}
 		allReplaced = append(allReplaced, replaced)
 	}
+
 	return allReplaced, nil
 }
 
-func replaceFields(values []data.Map, val reflect.Value, rc replaceConfig, matches *int) (reflect.Value, error) {
+// nolint:funlen,gocognit,cyclop
+func replaceFields(values []data.Map, val reflect.Value, replaceConf replaceConfig, matches *int) (reflect.Value, error) {
 	switch val.Kind() {
 	case reflect.Slice:
 		// return provided slice if is empty
@@ -169,28 +175,28 @@ func replaceFields(values []data.Map, val reflect.Value, rc replaceConfig, match
 
 		// if it is a byte array, replaces it as if it were a string
 		if val.Type().Elem().Kind() == reflect.Uint8 {
-			replaced, err := replaceBytes(values, val.Bytes(), rc, matches)
+			replaced, err := replaceBytes(values, val.Bytes(), replaceConf, matches)
 			if err != nil {
 				return reflect.Value{}, err
 			}
-			return reflect.ValueOf(replaced), nil
+			return reflect.ValueOf(replaced), nil //nolint:nlreturn
 		}
 		length := val.Len()
 		newSlice := reflect.MakeSlice(val.Type(), length, length)
 		for i := 0; i < length; i++ {
 			ival := val.Index(i)
-			replaced, err := replaceFields(values, ival, rc, matches)
+			replaced, err := replaceFields(values, ival, replaceConf, matches)
 			if err != nil {
 				return reflect.Value{}, err
 			}
 			newSlice.Index(i).Set(replaced)
 		}
-		return newSlice, nil
+		return newSlice, nil //nolint:nlreturn
 	case reflect.Ptr:
 		if val.IsNil() {
 			return val.Elem(), nil
 		}
-		vals, err := replaceFields(values, val.Elem(), rc, matches)
+		vals, err := replaceFields(values, val.Elem(), replaceConf, matches)
 		if err != nil {
 			return reflect.Value{}, err
 		}
@@ -200,22 +206,22 @@ func replaceFields(values []data.Map, val reflect.Value, rc replaceConfig, match
 		if vals.CanAddr() {
 			return vals.Addr(), nil
 		}
-		return val.Elem(), nil
+		return val.Elem(), nil //nolint:nlreturn
 	case reflect.Interface:
-		vals, err := replaceFields(values, reflect.ValueOf(val.Interface()), rc, matches)
+		vals, err := replaceFields(values, reflect.ValueOf(val.Interface()), replaceConf, matches)
 		if err != nil {
 			return reflect.Value{}, err
 		}
 		if vals.Kind() == reflect.Ptr {
 			return reflect.NewAt(val.Type(), unsafe.Pointer(vals.Pointer())), nil
 		}
-		return vals, nil
+		return vals, nil //nolint:nlreturn
 	case reflect.String:
-		nStr, err := replaceBytes(values, []byte(val.String()), rc, matches)
+		nStr, err := replaceBytes(values, []byte(val.String()), replaceConf, matches)
 		if err != nil {
 			return reflect.Value{}, err
 		}
-		return reflect.ValueOf(string(nStr)), nil
+		return reflect.ValueOf(string(nStr)), nil //nolint:nlreturn
 	case reflect.Map:
 		keys := val.MapKeys()
 		if len(keys) == 0 {
@@ -225,17 +231,17 @@ func replaceFields(values []data.Map, val reflect.Value, rc replaceConfig, match
 		newMap := reflect.MakeMap(val.Type())
 		for _, k := range keys {
 			val := val.MapIndex(k)
-			nComps, err := replaceFields(values, val, rc, matches)
+			nComps, err := replaceFields(values, val, replaceConf, matches)
 			if err != nil {
 				return reflect.Value{}, err
 			}
 			newMap.SetMapIndex(k, nComps)
 		}
-		return newMap, nil
+		return newMap, nil //nolint:nlreturn
 	case reflect.Struct:
 		newStruct := reflect.New(val.Type()).Elem()
 		for i := 0; i < val.NumField(); i++ {
-			nComps, err := replaceFields(values, val.Field(i), rc, matches)
+			nComps, err := replaceFields(values, val.Field(i), replaceConf, matches)
 			if err != nil {
 				return reflect.Value{}, err
 			}
@@ -244,13 +250,13 @@ func replaceFields(values []data.Map, val reflect.Value, rc replaceConfig, match
 				field.Set(nComps)
 			}
 		}
-		return newStruct, nil
+		return newStruct, nil //nolint:nlreturn
 	default:
 		return val, nil
 	}
 }
 
-func replaceBytes(values []data.Map, template []byte, rc replaceConfig, nMatches *int) ([]byte, error) {
+func replaceBytes(values []data.Map, template []byte, replaceConf replaceConfig, nMatches *int) ([]byte, error) {
 	matches := regex.FindAllIndex(template, -1)
 	if len(matches) == 0 {
 		return template, nil // zero variables, all have been found and replaced
@@ -258,7 +264,7 @@ func replaceBytes(values []data.Map, template []byte, rc replaceConfig, nMatches
 	replace := make([]byte, 0, len(template))
 	replace = append(replace, template[:matches[0][0]]...)
 	for i := 0; i < len(matches)-1; i++ {
-		value, err := variable(values, template[matches[i][0]:matches[i][1]], rc)
+		value, err := variable(values, template[matches[i][0]:matches[i][1]], replaceConf)
 		if err != nil {
 			return nil, err
 		}
@@ -267,18 +273,19 @@ func replaceBytes(values []data.Map, template []byte, rc replaceConfig, nMatches
 		replace = append(replace, template[matches[i][1]:matches[i+1][0]]...)
 	}
 	last := len(matches) - 1
-	value, err := variable(values, template[matches[last][0]:matches[last][1]], rc)
+	value, err := variable(values, template[matches[last][0]:matches[last][1]], replaceConf)
 	if err != nil {
 		return nil, err
 	}
 	*nMatches++
 	replace = append(replace, value...)
 	replace = append(replace, template[matches[last][1]:]...)
+
 	return replace, err
 }
 
 // replaces a variable mark from its corresponding variable or discovered item.
-func variable(values []data.Map, match []byte, rc replaceConfig) ([]byte, error) {
+func variable(values []data.Map, match []byte, replaceConf replaceConfig) ([]byte, error) {
 	// removing ${...}
 	varName := string(bytes.Trim(match, "${}\n\r\t "))
 
@@ -289,7 +296,7 @@ func variable(values []data.Map, match []byte, rc replaceConfig) ([]byte, error)
 	}
 
 	// if not found in the discovered/variables static sources, we ask dynamically for it
-	for _, onDemand := range rc.onDemand {
+	for _, onDemand := range replaceConf.onDemand {
 		if value, ok := onDemand(varName); ok {
 			return value, nil
 		}
@@ -301,5 +308,5 @@ func variable(values []data.Map, match []byte, rc replaceConfig) ([]byte, error)
 	}
 
 	// if the value is not found, returns the match itself
-	return match, errors.New("value not found: " + varName)
+	return match, errors.New("value not found: " + varName) //nolint:goerr113
 }

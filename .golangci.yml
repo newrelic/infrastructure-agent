@@ -21,6 +21,8 @@ linters-settings:
   wsl:
     allow-cuddle-declarations: true
     allow-assign-and-anything: true
+    allow-assign-and-call: true
+    allow-multiline-assign: true
 
 linters:
   enable-all: true
@@ -33,6 +35,8 @@ linters:
     # intentionally disabled
     - exhaustivestruct
     - testpackage
+    # disabled as with disabling declarations individually doesn't seem to cover all cases :(
+    - wsl
 
 issues:
   new-from-rev: "HEAD~"

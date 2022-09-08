@@ -503,23 +503,23 @@ func TestFetchReplace_NoMatches_NonPrefixedVarsPlaceholders(t *testing.T) {
 func TestFetchReplaceBytes_VarNotFound(t *testing.T) {
 	t.Parallel()
 	// GIVEN a discovery source that returns 2 matches
-	discoverer := discoverer{fetch: func() ([]discovery.Discovery, error) {
+	disc := discoverer{fetch: func() ([]discovery.Discovery, error) {
 		return []discovery.Discovery{
 			{Variables: data.Map{"discovery.hello": "world", "discovery.bye": "you"}},
 			{Variables: data.Map{"discovery.hello": "nen", "discovery.bye": "nano"}},
 		}, nil
 	}}
 	// AND a set of variables defined by the user
-	variable := func(value string) *gatherer {
+	varGatherer := func(value string) *gatherer {
 		return &gatherer{fetch: func() (interface{}, error) {
 			return value, nil
 		}}
 	}
 	ctx := Sources{
 		clock:      time.Now,
-		discoverer: &discoverer,
+		discoverer: &disc,
 		variables: map[string]*gatherer{
-			"discovery.myVar": variable("myValue"),
+			"discovery.myVar": varGatherer("myValue"),
 		},
 	}
 	vals, err := Fetch(&ctx)
@@ -535,20 +535,20 @@ func TestFetchReplaceBytes_VarNotFound(t *testing.T) {
 func TestFetchReplaceBytes_NoMatches_WithVars(t *testing.T) {
 	t.Parallel()
 	// GIVEN a discovery source that returns no matches
-	discoverer := discoverer{fetch: func() ([]discovery.Discovery, error) {
+	disc := discoverer{fetch: func() ([]discovery.Discovery, error) {
 		return []discovery.Discovery{}, nil
 	}}
 	// AND a set of variables defined by the user
-	variable := func(value string) *gatherer {
+	varGatherer := func(value string) *gatherer {
 		return &gatherer{fetch: func() (interface{}, error) {
 			return value, nil
 		}}
 	}
 	ctx := Sources{
 		clock:      time.Now,
-		discoverer: &discoverer,
+		discoverer: &disc,
 		variables: map[string]*gatherer{
-			"myVar": variable("myValue"),
+			"myVar": varGatherer("myValue"),
 		},
 	}
 	vals, err := Fetch(&ctx)
@@ -566,7 +566,7 @@ func TestFetchReplaceBytes_NoMatches_WithVars(t *testing.T) {
 func TestFetchReplaceBytes_MultipleMatches_NoVarsPlaceholders(t *testing.T) {
 	t.Parallel()
 	// GIVEN a discovery source that returns multiple matches
-	discoverer := discoverer{fetch: func() ([]discovery.Discovery, error) {
+	disc := discoverer{fetch: func() ([]discovery.Discovery, error) {
 		return []discovery.Discovery{
 			{Variables: data.Map{"hello": "world", "bye": "you"}},
 			{Variables: data.Map{"hello": "nen", "bye": "nano"}},
@@ -574,7 +574,7 @@ func TestFetchReplaceBytes_MultipleMatches_NoVarsPlaceholders(t *testing.T) {
 	}}
 	ctx := Sources{
 		clock:      time.Now,
-		discoverer: &discoverer,
+		discoverer: &disc,
 		variables:  map[string]*gatherer{},
 	}
 	vals, err := Fetch(&ctx)
@@ -592,12 +592,12 @@ func TestFetchReplaceBytes_MultipleMatches_NoVarsPlaceholders(t *testing.T) {
 func TestFetchReplaceBytes_NoMatches_NoVarsPlaceholders(t *testing.T) {
 	t.Parallel()
 	// GIVEN a discovery source that returns NO matches
-	discoverer := discoverer{fetch: func() ([]discovery.Discovery, error) {
+	disc := discoverer{fetch: func() ([]discovery.Discovery, error) {
 		return []discovery.Discovery{}, nil
 	}}
 	ctx := Sources{
 		clock:      time.Now,
-		discoverer: &discoverer,
+		discoverer: &disc,
 		variables:  map[string]*gatherer{},
 	}
 	vals, err := Fetch(&ctx)
@@ -615,12 +615,12 @@ func TestFetchReplaceBytes_NoMatches_NoVarsPlaceholders(t *testing.T) {
 func TestFetchReplaceBytes_NoMatches_VarsPlaceholders(t *testing.T) {
 	t.Parallel()
 	// GIVEN a discovery source that returns NO matches
-	discoverer := discoverer{fetch: func() ([]discovery.Discovery, error) {
+	disc := discoverer{fetch: func() ([]discovery.Discovery, error) {
 		return []discovery.Discovery{}, nil
 	}}
 	ctx := Sources{
 		clock:      time.Now,
-		discoverer: &discoverer,
+		discoverer: &disc,
 		variables:  map[string]*gatherer{},
 	}
 	vals, err := Fetch(&ctx)
