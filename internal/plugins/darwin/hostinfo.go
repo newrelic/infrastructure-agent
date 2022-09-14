@@ -286,6 +286,7 @@ func splitRightSubstring(output, substring, separator string) string {
 	if right == -1 {
 		return ""
 	}
+
 	return output[start : start+right]
 }
 
@@ -314,7 +315,7 @@ func intelProcessorData(output string) processorInfo {
 }
 
 func (hip *HostinfoPlugin) getHardwareOverview() (hardwareOverview, error) {
-	processorInfo := processorInfo{}
+	var cpuInfo processorInfo
 
 	out, err := hip.readDataFromCmd("system_profiler", "SPHardwareDataType")
 	if err != nil {
@@ -323,9 +324,9 @@ func (hip *HostinfoPlugin) getHardwareOverview() (hardwareOverview, error) {
 
 	// arm architecture provides Chip keyword instead of Processor
 	if strings.Contains(out, "Chip:") {
-		processorInfo = armProcessorData(out)
+		cpuInfo = armProcessorData(out)
 	} else {
-		processorInfo = intelProcessorData(out)
+		cpuInfo = intelProcessorData(out)
 	}
 
 	memory, err := memoryToKb(splitRightSubstring(out, "Memory: ", "\n"))
@@ -346,7 +347,7 @@ func (hip *HostinfoPlugin) getHardwareOverview() (hardwareOverview, error) {
 		splitRightSubstring(out, "Model Identifier: ", "\n"),
 		memory,
 		uuid,
-		processorInfo,
+		cpuInfo,
 	}, nil
 }
 
