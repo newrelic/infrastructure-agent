@@ -270,36 +270,16 @@ type processorInfo struct {
 	TotalNumberOfCores string
 }
 
-// splitRightSubstring returns the first remaining part from the end of a substring
-// and a given separator, if no substring or separator is found, and empty
-// string is returned.
-// Example: splitRightSubstring("Hello: bye$", "Hello: ", "$") -> "bye"
-func splitRightSubstring(output, substring, separator string) string {
-	idx := strings.Index(output, substring)
-	// substring not found
-	if idx == -1 {
-		return ""
-	}
-	start := idx + len(substring)
-	right := strings.Index(output[start:], separator)
-	// separator not found
-	if right == -1 {
-		return ""
-	}
-
-	return output[start : start+right]
-}
-
 // armProcessorData return the processor information from an arm architecture
 // output.
 func armProcessorData(output string) processorInfo {
 	return processorInfo{
-		ProcessorName: splitRightSubstring(output, "Chip: ", "\n"),
+		ProcessorName: helpers.SplitRightSubstring(output, "Chip: ", "\n"),
 		// arm architectures have one processor
 		NumberOfProcessors: "1",
 		// Apple doesn’t particularly expose the clock speed on Apple silicon configurations.
 		ProcessorSpeed:     "",
-		TotalNumberOfCores: splitRightSubstring(output, "Total Number of Cores: ", " "),
+		TotalNumberOfCores: helpers.SplitRightSubstring(output, "Total Number of Cores: ", " "),
 	}
 }
 
@@ -307,10 +287,10 @@ func armProcessorData(output string) processorInfo {
 // output.
 func intelProcessorData(output string) processorInfo {
 	return processorInfo{
-		ProcessorName:      splitRightSubstring(output, "Processor Name: ", "\n"),
-		NumberOfProcessors: splitRightSubstring(output, "Number of Processors: ", "\n"),
-		ProcessorSpeed:     splitRightSubstring(output, "Processor Speed: ", "\n"),
-		TotalNumberOfCores: splitRightSubstring(output, "Total Number of Cores: ", "\n"),
+		ProcessorName:      helpers.SplitRightSubstring(output, "Processor Name: ", "\n"),
+		NumberOfProcessors: helpers.SplitRightSubstring(output, "Number of Processors: ", "\n"),
+		ProcessorSpeed:     helpers.SplitRightSubstring(output, "Processor Speed: ", "\n"),
+		TotalNumberOfCores: helpers.SplitRightSubstring(output, "Total Number of Cores: ", "\n"),
 	}
 }
 
@@ -329,22 +309,22 @@ func (hip *HostinfoPlugin) getHardwareOverview() (hardwareOverview, error) {
 		cpuInfo = intelProcessorData(out)
 	}
 
-	memory, err := memoryToKb(splitRightSubstring(out, "Memory: ", "\n"))
+	memory, err := memoryToKb(helpers.SplitRightSubstring(out, "Memory: ", "\n"))
 	if err != nil {
 		hlog.WithFields(logrus.Fields{
-			"line": splitRightSubstring(out, "Memory: ", "\n"),
+			"line": helpers.SplitRightSubstring(out, "Memory: ", "\n"),
 		}).Debug("Unexpected format for 'Memory' field.")
 	}
 
-	uuid := splitRightSubstring(out, "Hardware UUID: ", "\n")
+	uuid := helpers.SplitRightSubstring(out, "Hardware UUID: ", "\n")
 	if !validateHardwareUUID(uuid) {
 		hlog.WithError(err).Debug("Error detecting hardware UUID")
 		uuid = "unknown"
 	}
 
 	return hardwareOverview{
-		splitRightSubstring(out, "Model Name: ", "\n"),
-		splitRightSubstring(out, "Model Identifier: ", "\n"),
+		helpers.SplitRightSubstring(out, "Model Name: ", "\n"),
+		helpers.SplitRightSubstring(out, "Model Identifier: ", "\n"),
 		memory,
 		uuid,
 		cpuInfo,
