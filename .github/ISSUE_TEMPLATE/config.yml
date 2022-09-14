@@ -1,5 +1,12 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Feature Request
+    url:  https://issues.newrelic.com
+    about: We consolidated multiple channels that were used to file Feature Requests (FRs). In the spirit of improving the visibility of FRs, 
+    we believe it's best for them to be submitted through the New Relic Issue Tracker. This single tool will enable better aggregation of FRs 
+    and improve our ability to synthesize requests and provide better value to our users. You can see and vote for other FRs submitted by all users.
+    
+    We welcome feature requests from our open-source community through the New Relic Issue Tracker.
   - name: Troubleshooting
     url:  https://github.com/newrelic/infrastructure-agent/blob/master/README.md#support
     about: Check out the README for troubleshooting directions
