@@ -5,15 +5,16 @@ package helpers
 import (
 	"encoding/json"
 	"fmt"
-	databind "github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
-	"github.com/pkg/errors"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	databind "github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -509,4 +510,70 @@ func TestObfuscateSensitiveDataFromError(t *testing.T) {
 func TestObfuscateSensitiveDataFromError_nill(t *testing.T) {
 	err := ObfuscateSensitiveDataFromError(nil)
 	assert.Nil(t, err)
+}
+
+func TestSplitRightSubstring(t *testing.T) {
+	var testCases = []struct {
+		name      string
+		output    string
+		substring string
+		separator string
+		expected  string
+	}{
+		{name: "Empty input",
+			output:    "",
+			substring: "",
+			separator: "",
+			expected:  "",
+		},
+		{name: "Empty substring",
+			output:    "Hello bye yes",
+			substring: "",
+			separator: "$",
+			expected:  "",
+		},
+		{name: "Empty separator",
+			output:    "Hello bye yes",
+			substring: "bye",
+			separator: "",
+			expected:  "",
+		},
+		{name: "Word separator",
+			output:    "Hello bye yes",
+			substring: "Hello ",
+			separator: " yes",
+			expected:  "bye",
+		},
+		{name: "Dot separator",
+			output:    "Fosdem: A lot of questions.",
+			substring: "Fosdem: ",
+			separator: ".",
+			expected:  "A lot of questions",
+		},
+		{name: "Newline separator",
+			output: `Fosdem: A lot of questions
+`,
+			substring: "Fosdem: ",
+			separator: "\n",
+			expected:  "A lot of questions",
+		},
+		{name: "Substring high slice bound",
+			output:    "Fosdem: A lot of questions",
+			substring: "Fosdem: A lot of questions",
+			separator: "",
+			expected:  "",
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(
+				t,
+				SplitRightSubstring(tt.output,
+					tt.substring,
+					tt.separator,
+				),
+				tt.expected)
+		})
+	}
 }
