@@ -175,6 +175,7 @@ func TestSplitRightSubstring(t *testing.T) {
 			expected:  "",
 		},
 	}
+
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(
@@ -269,29 +270,32 @@ func TestData(t *testing.T) {
 		},
 	}
 
-	hip := HostinfoPlugin{
-		PluginCommon: agent.PluginCommon{
-			ID:      ids.HostInfo,
-			Context: testing2.NewMockAgent(),
-		},
-		cloudHarvester: cloud.NewDetector(true, 0, 0, 0, true),
-	}
-	hip.Context.Config().DisableCloudMetadata = true
-	hip.Context.Config().RunMode = "root"
-
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			hip.readDataFromCmd = func(cmd string, args ...string) (string, error) {
-				if cmd == "system_profiler" {
-					return tt.systemProfilerOutput, nil
-				} else if cmd == "uname" {
-					return tt.unameOutput, nil
-				}
-				return ``, errors.New("unknown command")
+			t.Parallel()
+			hip := HostinfoPlugin{
+				PluginCommon: agent.PluginCommon{
+					ID:      ids.HostInfo,
+					Context: testing2.NewMockAgent(),
+				},
+				readDataFromCmd: func(cmd string, args ...string) (string, error) {
+					if cmd == "system_profiler" {
+						return tt.systemProfilerOutput, nil
+					} else if cmd == "uname" {
+						return tt.unameOutput, nil
+					}
+
+					return ``, errors.New("unknown command")
+				},
+
+				cloudHarvester: cloud.NewDetector(true, 0, 0, 0, true),
 			}
+			hip.Context.Config().DisableCloudMetadata = true
+			hip.Context.Config().RunMode = "root"
 			//Some values (distro, upSince) are being read from the host, so commented until fix those (out of scope in this task)
 			//assert.Equal(t, expected, hip.Data()[0])
-			data := hip.Data()[0].(*HostInfoData)
+			data, ok := hip.Data()[0].(*HostInfoData)
+			assert.Equal(t, true, ok)
 
 			assert.Equal(t, tt.expectedData.System, data.System)
 			//assert.Equal(t, expected.Distro, data.Distro)
