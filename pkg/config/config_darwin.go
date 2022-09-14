@@ -3,8 +3,6 @@
 package config
 
 import (
-	"path/filepath"
-
 	"github.com/kelseyhightower/envconfig"
 )
 
@@ -12,16 +10,11 @@ const (
 	defaultConnectEnabled = true
 )
 
-func init() {
-	defaultConfigFiles = []string{
-		"newrelic-infra.yml",
-		filepath.Join("/usr", "local", "etc", "newrelic-infra", "newrelic-infra.yml"),
-	}
-	defaultAgentDir = filepath.Join("/usr", "local", "var", "db", "newrelic-infra")
-
+func init() { //nolint:gochecknoinits
 	// add PATH environment variable to all integrations
 	defaultPassthroughEnvironment = []string{"PATH"}
 }
+
 func runtimeValues() (userMode, agentUser, executablePath string) {
 	return ModeRoot, "", ""
 }
