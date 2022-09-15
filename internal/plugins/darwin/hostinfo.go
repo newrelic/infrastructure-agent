@@ -270,44 +270,13 @@ type processorInfo struct {
 	TotalNumberOfCores string
 }
 
-// armProcessorData return the processor information from an arm architecture
-// output.
-func armProcessorData(output string) processorInfo {
-	return processorInfo{
-		ProcessorName: helpers.SplitRightSubstring(output, "Chip: ", "\n"),
-		// arm architectures have one processor
-		NumberOfProcessors: "1",
-		// Apple doesn’t particularly expose the clock speed on Apple silicon configurations.
-		ProcessorSpeed:     "",
-		TotalNumberOfCores: helpers.SplitRightSubstring(output, "Total Number of Cores: ", " "),
-	}
-}
-
-// intelProcessorData return the processor information from an intel architecture
-// output.
-func intelProcessorData(output string) processorInfo {
-	return processorInfo{
-		ProcessorName:      helpers.SplitRightSubstring(output, "Processor Name: ", "\n"),
-		NumberOfProcessors: helpers.SplitRightSubstring(output, "Number of Processors: ", "\n"),
-		ProcessorSpeed:     helpers.SplitRightSubstring(output, "Processor Speed: ", "\n"),
-		TotalNumberOfCores: helpers.SplitRightSubstring(output, "Total Number of Cores: ", "\n"),
-	}
-}
-
 func (hip *HostinfoPlugin) getHardwareOverview() (hardwareOverview, error) {
-	var cpuInfo processorInfo
-
 	out, err := hip.readDataFromCmd("system_profiler", "SPHardwareDataType")
 	if err != nil {
 		return hardwareOverview{}, err
 	}
 
-	// arm architecture provides Chip keyword instead of Processor
-	if strings.Contains(out, "Chip:") {
-		cpuInfo = armProcessorData(out)
-	} else {
-		cpuInfo = intelProcessorData(out)
-	}
+	cpuInfo := getProcessorData(out)
 
 	memory, err := memoryToKb(helpers.SplitRightSubstring(out, "Memory: ", "\n"))
 	if err != nil {

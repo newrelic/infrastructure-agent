@@ -21,6 +21,8 @@ linters-settings:
   wsl:
     allow-cuddle-declarations: true
     allow-assign-and-anything: true
+  funlen:
+    lines: 100
 
 linters:
   enable-all: true
