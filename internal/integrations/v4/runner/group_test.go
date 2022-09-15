@@ -78,7 +78,7 @@ func TestGroup_Run_Inventory(t *testing.T) {
 	te := &testemit.RecordEmitter{}
 	loader := NewLoadFn(config2.YAML{
 		Integrations: []config2.ConfigEntry{
-			{InstanceName: "nri-test", Exec: testhelp.GoRun(fixtures.InventoryGoFile, "key1=val1", "key2=val2"),
+			{InstanceName: "nri-test", Exec: testhelp.Command(fixtures.InventoryScriptFile, "key1=val1", "key2=val2"),
 				Labels: map[string]string{"foo": "bar", "ou": "yea"}},
 		},
 	}, nil)
