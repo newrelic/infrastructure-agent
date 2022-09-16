@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -41,21 +42,24 @@ const (
 	defaultBucket = "nr-downloads-ohai-staging"
 	defaultRegion = "us-east-1"
 	// more keys could be added if issues arise
-	defaultKeys                = "/infrastructure_agent/linux/apt/dists/focal/main/binary-amd64/Packages.bz2,"
 	fastlyPurgeURL             = "https://api.fastly.com/service/2RMeBJ1ZTGnNJYvrWMgQhk/purge_all"
 	replicationStatusCompleted = "COMPLETED" // in s3.ReplicationStatusComplete is set to COMPLETE, which is wrong
+	aptDistributionsPath       = "infrastructure_agent/linux/apt/dists/"
+	aptDistributionPackageFile = "main/binary-amd64/Packages.bz2"
 )
 
-var bucket, region, keysStr, fastlyKey string
-var timeoutS3, timeoutCDN time.Duration
-var attempts int
-var verbose bool
+var (
+	bucket, region, keysStr, fastlyKey string
+	timeoutS3, timeoutCDN              time.Duration
+	attempts                           int
+	verbose                            bool
+)
 
 func init() {
 	flag.BoolVar(&verbose, "v", false, "Verbose output.")
 	flag.StringVar(&bucket, "b", defaultBucket, "Bucket name.")
 	flag.StringVar(&region, "r", defaultRegion, "Region name.")
-	flag.StringVar(&keysStr, "k", defaultKeys, "Keys separated by comma.")
+	flag.StringVar(&keysStr, "k", "", "Keys separated by comma.")
 	flag.IntVar(&attempts, "a", 5, "Retry attempts per key.")
 	flag.DurationVar(&timeoutS3, "t", 10*time.Second, "Timeout to fetch an S3 object.")
 	flag.DurationVar(&timeoutCDN, "c", 30*time.Second, "Timeout to request CDN purge.")
@@ -76,7 +80,17 @@ func main() {
 	sess := session.Must(session.NewSession())
 	cl := s3.New(sess, aws.NewConfig().WithRegion(region))
 
-	keys := strings.Split(keysStr, ",")
+	var keys []string
+	if keysStr != "" {
+		keys = strings.Split(keysStr, ",")
+	} else {
+		var err error
+		keys, err = getDefaultKeys(cl)
+		if err != nil {
+			logInfo("cannot get default keys, error: %v", err)
+			os.Exit(1)
+		}
+	}
 	for _, key := range keys {
 		if key != "" {
 			if err := waitForKeyReplication(ctx, key, cl, attempts); err != nil {
@@ -105,7 +119,7 @@ func waitForKeyReplication(ctx context.Context, key string, cl *s3.S3, triesLeft
 		}
 		triesLeft--
 
-		var ctxT = ctx
+		ctxT := ctx
 		var cancelFn func()
 		if timeoutS3 > 0 {
 			ctxT, cancelFn = context.WithTimeout(ctx, timeoutS3)
@@ -149,7 +163,7 @@ func waitForKeyReplication(ctx context.Context, key string, cl *s3.S3, triesLeft
 }
 
 func purgeCDN(ctx context.Context) error {
-	var ctxT = ctx
+	ctxT := ctx
 	var cancelFn func()
 	if timeoutCDN > 0 {
 		ctxT, cancelFn = context.WithTimeout(ctx, timeoutCDN)
@@ -174,6 +188,29 @@ func purgeCDN(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func getDefaultKeys(cl *s3.S3) ([]string, error) {
+	return aptDistributionsPackageFilesKeys(cl)
+}
+
+func aptDistributionsPackageFilesKeys(cl *s3.S3) ([]string, error) {
+	input := &s3.ListObjectsV2Input{
+		Bucket:    &bucket,
+		Prefix:    aws.String(aptDistributionsPath),
+		Delimiter: aws.String("/"),
+	}
+
+	out, err := cl.ListObjectsV2(input)
+	if err != nil {
+		return []string{}, err
+	}
+
+	var res []string
+	for _, content := range out.CommonPrefixes {
+		res = append(res, path.Join(*content.Prefix, aptDistributionPackageFile))
+	}
+	return res, nil
 }
 
 func logInfo(format string, v ...interface{}) {
