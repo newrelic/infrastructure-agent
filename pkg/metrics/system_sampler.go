@@ -91,43 +91,68 @@ func (s *SystemSampler) Sample() (results sample.EventBatch, err error) {
 
 	// Collect CPU
 	ctx, seg := trx.StartSegment(ctx, "cpu sample")
-	if cpuSample, err := s.CpuMonitor.Sample(); err != nil {
+
+	cpuSample, err := s.CpuMonitor.Sample()
+	if err != nil {
+		seg.End()
+
 		return nil, err
-	} else {
-		sysSample.CPUSample = cpuSample
 	}
+
+	sysSample.CPUSample = cpuSample
 	seg.End()
 
+	// Collect Disk
 	ctx, seg = trx.StartSegment(ctx, "disk sample")
-	if diskSample, err := s.DiskMonitor.Sample(); err != nil {
+
+	diskSample, err := s.DiskMonitor.Sample()
+	if err != nil {
+		seg.End()
+
 		return nil, err
-	} else {
-		sysSample.DiskSample = diskSample
 	}
+
+	sysSample.DiskSample = diskSample
 	seg.End()
 
+	// Collect Load
 	ctx, seg = trx.StartSegment(ctx, "load sample")
-	if loadSample, err := s.LoadMonitor.Sample(); err != nil {
+
+	loadSample, err := s.LoadMonitor.Sample()
+	if err != nil {
+		seg.End()
+
 		return nil, err
-	} else {
-		sysSample.LoadSample = loadSample
 	}
+
+	sysSample.LoadSample = loadSample
 	seg.End()
 
+	// Collect Memory
 	ctx, seg = trx.StartSegment(ctx, "memory sample")
-	if memorySample, err := s.MemoryMonitor.Sample(); err != nil {
+
+	memorySample, err := s.MemoryMonitor.Sample()
+	if err != nil {
+		seg.End()
+
 		return nil, err
-	} else {
-		sysSample.MemorySample = memorySample
 	}
+
+	sysSample.MemorySample = memorySample
+
 	seg.End()
 
-	ctx, seg = trx.StartSegment(ctx, "host sample")
-	if hostSample, err := s.HostMonitor.Sample(); err != nil {
+	// Collect Host
+	_, seg = trx.StartSegment(ctx, "host sample")
+
+	hostSample, err := s.HostMonitor.Sample()
+	if err != nil {
+		seg.End()
+
 		return nil, err
-	} else {
-		sysSample.HostSample = hostSample
 	}
+
+	sysSample.HostSample = hostSample
 	seg.End()
 
 	helpers.LogStructureDetails(syslog, sysSample, "SystemSample", "final", nil)
