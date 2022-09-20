@@ -38,8 +38,8 @@ func TestData(t *testing.T) {
       Chip: Apple M1 Max
       Total Number of Cores: 10 (8 performance and 2 efficiency)
       Memory: 64 GB
-      System Firmware Version: 7459.141.1
-      OS Loader Version: 7459.141.1
+      System Firmware Version: 7411.111.1
+      OS Loader Version: 7411.111.1
       Serial Number (system): H9AAAAA9WK
       Hardware UUID: E62094F3-9A33-5555-5555-F4C3A1E16AC5
       Provisioning UDID: 00006000-000000000C1A801E
