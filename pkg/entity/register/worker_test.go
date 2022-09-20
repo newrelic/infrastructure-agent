@@ -105,7 +105,7 @@ func TestWorker_Run_SendsWhenBatchLimitIsReached(t *testing.T) {
 		maxBatchByteSize     int
 		expectedBatchesCount int
 		givenEntitiesCount   int
-		expectedEntityName   [][]string //TODO fix naming
+		expectedEntityName   [][]string
 		batchDuration        time.Duration
 		timeout              time.Duration
 	}{
@@ -142,7 +142,7 @@ func TestWorker_Run_SendsWhenBatchLimitIsReached(t *testing.T) {
 		{
 			name:                 "given_a_batch_byte_limit_of_2_entities_size_when_2_entities_are_submitted_then_register_is_called_in_a_single_batch",
 			maxBatchSize:         10,                                              // high number to prevent send by this setting
-			maxBatchByteSize:     (&entity.Fields{Name: "test-1"}).JsonSize() * 2, //calc based on number of entities per batch
+			maxBatchByteSize:     (&entity.Fields{Name: "test-1"}).JsonSize() * 2, // calc based on number of entities per batch
 			givenEntitiesCount:   2,
 			expectedBatchesCount: 1,
 			expectedEntityName:   [][]string{{"test-0", "test-1"}},
@@ -152,12 +152,12 @@ func TestWorker_Run_SendsWhenBatchLimitIsReached(t *testing.T) {
 		{
 			name:                 "given_a_batch_byte_limit_of_2_entities_size_when_3_entities_are_submitted_then_register_is_called_with_1_batch_by_limit_and_other_batch_by_timer",
 			maxBatchSize:         10,                                              // high number to prevent send by this setting
-			maxBatchByteSize:     (&entity.Fields{Name: "test-1"}).JsonSize() * 2, //calc based on number of entities per batch
+			maxBatchByteSize:     (&entity.Fields{Name: "test-1"}).JsonSize() * 2, // calc based on number of entities per batch
 			givenEntitiesCount:   3,
 			expectedBatchesCount: 1,
 			expectedEntityName:   [][]string{{"test-0", "test-1"}, {"test-2"}},
 			batchDuration:        50 * time.Millisecond,
-			timeout:              100 * time.Millisecond,
+			timeout:              150 * time.Millisecond,
 		},
 	}
 
