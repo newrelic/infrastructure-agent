@@ -46,7 +46,8 @@ const (
 	replicationStatusCompleted = "COMPLETED" // in s3.ReplicationStatusComplete is set to COMPLETE, which is wrong
 	aptDistributionsPath       = "infrastructure_agent/linux/apt/dists/"
 	aptDistributionPackageFile = "main/binary-amd64/Packages.bz2"
-	rpmDistributionsPath       = "infrastructure_agent/linux/yum/"
+	rhDistributionsPath        = "infrastructure_agent/linux/yum/"
+	zypperDistributionsPath    = "infrastructure_agent/linux/zypp/"
 )
 
 var (
@@ -197,12 +198,17 @@ func getDefaultKeys(cl *s3.S3) ([]string, error) {
 		return nil, err
 	}
 
-	rpmKeys, err := rpmDistributionsMetadataFilesKeys(cl)
+	rhKeys, err := rpmDistributionsMetadataFilesKeys(cl, rhDistributionsPath)
 	if err != nil {
 		return nil, err
 	}
 
-	return append(aptKeys, rpmKeys...), nil
+	zypperKeys, err := rpmDistributionsMetadataFilesKeys(cl, zypperDistributionsPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return append(aptKeys, append(rhKeys, zypperKeys...)...), nil
 }
 
 func listFoldersInPath(cl *s3.S3, s3path string) ([]string, error) {
@@ -238,8 +244,8 @@ func aptDistributionsPackageFilesKeys(cl *s3.S3) ([]string, error) {
 
 	return res, nil
 }
-func rpmDistributionsMetadataFilesKeys(cl *s3.S3) ([]string, error) {
-	rpmDistrosPaths, err := listFoldersInPath(cl, rpmDistributionsPath)
+func rpmDistributionsMetadataFilesKeys(cl *s3.S3, distributionPath string) ([]string, error) {
+	rpmDistrosPaths, err := listFoldersInPath(cl, distributionPath)
 	if err != nil {
 		return nil, err
 	}
