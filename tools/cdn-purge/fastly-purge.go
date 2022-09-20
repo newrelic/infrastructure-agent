@@ -46,6 +46,7 @@ const (
 	replicationStatusCompleted = "COMPLETED" // in s3.ReplicationStatusComplete is set to COMPLETE, which is wrong
 	aptDistributionsPath       = "infrastructure_agent/linux/apt/dists/"
 	aptDistributionPackageFile = "main/binary-amd64/Packages.bz2"
+	rpmDistributionsPath       = "infrastructure_agent/linux/yum/"
 )
 
 var (
@@ -191,13 +192,23 @@ func purgeCDN(ctx context.Context) error {
 }
 
 func getDefaultKeys(cl *s3.S3) ([]string, error) {
-	return aptDistributionsPackageFilesKeys(cl)
+	aptKeys, err := aptDistributionsPackageFilesKeys(cl)
+	if err != nil {
+		return nil, err
+	}
+
+	rpmKeys, err := rpmDistributionsMetadataFilesKeys(cl)
+	if err != nil {
+		return nil, err
+	}
+
+	return append(aptKeys, rpmKeys...), nil
 }
 
-func aptDistributionsPackageFilesKeys(cl *s3.S3) ([]string, error) {
+func listFoldersInPath(cl *s3.S3, s3path string) ([]string, error) {
 	input := &s3.ListObjectsV2Input{
 		Bucket:    &bucket,
-		Prefix:    aws.String(aptDistributionsPath),
+		Prefix:    aws.String(s3path),
 		Delimiter: aws.String("/"),
 	}
 
@@ -208,8 +219,50 @@ func aptDistributionsPackageFilesKeys(cl *s3.S3) ([]string, error) {
 
 	var res []string
 	for _, content := range out.CommonPrefixes {
-		res = append(res, path.Join(*content.Prefix, aptDistributionPackageFile))
+		res = append(res, *content.Prefix)
 	}
+
+	return res, nil
+}
+
+func aptDistributionsPackageFilesKeys(cl *s3.S3) ([]string, error) {
+	aptDistrosPaths, err := listFoldersInPath(cl, aptDistributionsPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var res []string
+	for _, aptDistroPath := range aptDistrosPaths {
+		res = append(res, path.Join(aptDistroPath, aptDistributionPackageFile))
+	}
+
+	return res, nil
+}
+func rpmDistributionsMetadataFilesKeys(cl *s3.S3) ([]string, error) {
+	rpmDistrosPaths, err := listFoldersInPath(cl, rpmDistributionsPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var res []string
+	for _, rpmDistroPath := range rpmDistrosPaths {
+		rpmDistrosVersions, err := listFoldersInPath(cl, rpmDistroPath)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, rpmDistroVersion := range rpmDistrosVersions {
+			rpmDistrosArchs, err := listFoldersInPath(cl, rpmDistroVersion)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, rpmDistrosArch := range rpmDistrosArchs {
+				res = append(res, fmt.Sprintf("%srepodata/repomd.xml", rpmDistrosArch))
+			}
+		}
+	}
+
 	return res, nil
 }
 
