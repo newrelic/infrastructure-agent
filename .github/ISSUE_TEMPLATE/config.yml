@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Feature Request
+    url:  https://issues.newrelic.com
+    about: We welcome feature requests from our open-source community through the New Relic Issue Tracker.
   - name: Troubleshooting
     url:  https://github.com/newrelic/infrastructure-agent/blob/master/README.md#support
     about: Check out the README for troubleshooting directions
