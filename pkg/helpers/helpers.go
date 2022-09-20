@@ -405,3 +405,23 @@ func ObfuscateSensitiveData(value string) (matched, isField bool, result string)
 func CloseQuietly(file io.Closer) {
 	_ = file.Close()
 }
+
+// SplitRightSubstring returns the first remaining part from the end of a substring
+// and a given separator, if no substring or separator is found, and empty
+// string is returned.
+// Example: SplitRightSubstring("Hello: bye$", "Hello: ", "$") -> "bye"
+func SplitRightSubstring(output, substring, separator string) string {
+	idx := strings.Index(output, substring)
+	// substring not found
+	if idx == -1 {
+		return ""
+	}
+	start := idx + len(substring)
+	right := strings.Index(output[start:], separator)
+	// separator not found
+	if right == -1 {
+		return ""
+	}
+
+	return output[start : start+right]
+}

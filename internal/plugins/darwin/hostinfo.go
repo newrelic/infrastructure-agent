@@ -7,6 +7,11 @@ package darwin
 
 import (
 	"fmt"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/os/distro"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
@@ -16,10 +21,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/sirupsen/logrus"
-	"regexp"
-	"strconv"
-	"strings"
-	"time"
 )
 
 var (
@@ -118,12 +119,18 @@ func (hip *HostinfoPlugin) gatherHostinfo(context agent.AgentContext) *HostInfoD
 		cpuNum = totalNumberOfCores / numberOfProcessors
 	}
 
+	cpuName := ho.ProcessorName
+	// arm architectures do not provide processor speed
+	if ho.ProcessorSpeed != "" {
+		cpuName = fmt.Sprintf("%s @ %s", ho.ProcessorName, ho.ProcessorSpeed)
+	}
+
 	data := &HostInfoData{
 		System:          "system",
 		Distro:          distro.GetDistro(),
 		KernelVersion:   kernelVersion,
 		HostType:        hip.getHostType(ho),
-		CpuName:         fmt.Sprintf("%s @ %s", ho.ProcessorName, ho.ProcessorSpeed),
+		CpuName:         cpuName,
 		CpuNum:          fmt.Sprintf("%d", cpuNum),
 		TotalCpu:        ho.TotalNumberOfCores,
 		Ram:             ho.Memory,
@@ -247,72 +254,50 @@ func (self *HostinfoPlugin) setCloudMetadata(data *HostInfoData) (err error) {
 
 // hardwareOverview structure keeps the values extracted from osX system_profiler.
 type hardwareOverview struct {
-	ModelName          string
-	ModelIdentifier    string
+	ModelName       string
+	ModelIdentifier string
+	Memory          string
+	HardwareUUID    string
+	processorInfo
+}
+
+// processorInfo structure keeps the values extracted from osX system_profiler
+// for the processor information.
+type processorInfo struct {
 	ProcessorName      string
 	ProcessorSpeed     string
-	Memory             string
 	NumberOfProcessors string
 	TotalNumberOfCores string
-	HardwareUUID       string
 }
 
 func (hip *HostinfoPlugin) getHardwareOverview() (hardwareOverview, error) {
-	result := hardwareOverview{}
-
 	out, err := hip.readDataFromCmd("system_profiler", "SPHardwareDataType")
 	if err != nil {
-		return result, err
+		return hardwareOverview{}, err
 	}
 
-	for _, line := range strings.Split(out, "\n") {
-		line = strings.TrimSpace(line)
+	cpuInfo := getProcessorData(out)
 
-		if strings.HasPrefix(line, "Model Name: ") {
-			result.ModelName = strings.TrimPrefix(line, "Model Name: ")
-		}
-
-		if strings.HasPrefix(line, "Model Identifier: ") {
-			result.ModelIdentifier = strings.TrimPrefix(line, "Model Identifier: ")
-		}
-
-		if strings.HasPrefix(line, "Processor Name: ") {
-			result.ProcessorName = strings.TrimPrefix(line, "Processor Name: ")
-		}
-
-		if strings.HasPrefix(line, "Processor Speed: ") {
-			result.ProcessorSpeed = strings.TrimPrefix(line, "Processor Speed: ")
-		}
-
-		if strings.HasPrefix(line, "Number of Processors: ") {
-			result.NumberOfProcessors = strings.TrimPrefix(line, "Number of Processors: ")
-		}
-
-		if strings.HasPrefix(line, "Total Number of Cores: ") {
-			result.TotalNumberOfCores = strings.TrimPrefix(line, "Total Number of Cores: ")
-		}
-
-		if strings.HasPrefix(line, "Hardware UUID: ") {
-			uuid := strings.TrimPrefix(line, "Hardware UUID: ")
-			if !validateHardwareUUID(uuid) {
-				hlog.WithError(err).Debug("Error detecting hardware UUID")
-				result.HardwareUUID = "unknown"
-			} else {
-				result.HardwareUUID = uuid
-			}
-		}
-
-		if strings.HasPrefix(line, "Memory: ") {
-			result.Memory, err = memoryToKb(strings.TrimPrefix(line, "Memory: "))
-			if err != nil {
-				hlog.WithFields(logrus.Fields{
-					"line": line,
-				}).Debug("Unexpected format for 'Memory' field.")
-			}
-		}
+	memory, err := memoryToKb(helpers.SplitRightSubstring(out, "Memory: ", "\n"))
+	if err != nil {
+		hlog.WithFields(logrus.Fields{
+			"line": helpers.SplitRightSubstring(out, "Memory: ", "\n"),
+		}).Debug("Unexpected format for 'Memory' field.")
 	}
 
-	return result, nil
+	uuid := helpers.SplitRightSubstring(out, "Hardware UUID: ", "\n")
+	if !validateHardwareUUID(uuid) {
+		hlog.WithError(err).Debug("Error detecting hardware UUID")
+		uuid = "unknown"
+	}
+
+	return hardwareOverview{
+		helpers.SplitRightSubstring(out, "Model Name: ", "\n"),
+		helpers.SplitRightSubstring(out, "Model Identifier: ", "\n"),
+		memory,
+		uuid,
+		cpuInfo,
+	}, nil
 }
 
 func validateHardwareUUID(uuid string) bool {
