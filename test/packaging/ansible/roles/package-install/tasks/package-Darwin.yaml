@@ -1,9 +1,20 @@
+- name: register brew path
+  shell: "echo '/opt/homebrew/bin/brew'"
+  register: brew_path
+  when: ansible_architecture == "arm64"
+
+- name: register brew path
+  shell: "echo '/usr/local/bin/brew'"
+  register: brew_path
+  when: ansible_architecture == "x86_64"
+
 - name: Stop launchctl service
-  command: /usr/local/bin/brew services stop newrelic-infra-agent
+  command: "{{ brew_path }} services stop newrelic-infra-agent"
+  ignore_errors: yes
 
 - name: Agent uninstall
   become: false
-  command: /usr/local/bin/brew uninstall --force newrelic-infra-agent
+  command: "{{ brew_path }} uninstall --force newrelic-infra-agent"
   ignore_errors: yes
 
 - name: cleanup | Remove files
@@ -17,7 +28,7 @@
 
 - name: Install agent
   become: false
-  command: "/usr/local/bin/brew reinstall --formula --build-from-source /Users/{{ ansible_user }}/newrelic-infra-agent.rb"
+  command: "{{ brew_path }}  reinstall --formula --build-from-source /Users/{{ ansible_user }}/newrelic-infra-agent.rb"
 
 - name: Start launchctl service
-  command: /usr/local/bin/brew services start newrelic-infra-agent
+  command: "{{ brew_path }} services start newrelic-infra-agent"
