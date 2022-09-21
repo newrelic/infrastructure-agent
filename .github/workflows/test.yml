@@ -11,6 +11,10 @@ on:
       - README.md
 
 jobs:
+
+  linter-linux:
+    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_linter.yml@master
+
   unit-test-linux:
       uses: newrelic/infrastructure-agent/.github/workflows/component_linux_unit_test.yml@master
       secrets:
