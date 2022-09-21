@@ -11,7 +11,6 @@ env:
   SNYK_TOKEN: ${{ secrets.CAOS_SNYK_TOKEN }}
   DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
-  TAG: "0.0.0"
 
 jobs:
   scan-deps:
@@ -50,6 +49,8 @@ jobs:
 
       - name: Build agent binaries
         run: make ci/build
+        with:
+          TAG: DEV_CI
 
       - name: Build container agent (amd64)
         run: make -C build/container/ build/base-amd64
