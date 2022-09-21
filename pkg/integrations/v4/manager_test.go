@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -21,6 +20,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/testhelp/testemit"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/v3legacy"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
@@ -341,7 +341,7 @@ func TestManager_HotReload_Add(t *testing.T) {
 
 	// WHEN we add a new integration file to the directory
 	require.NoError(t, ioutil.WriteFile(filepath.Join(dir, "new-integration.yaml"),
-		[]byte(v4LongTimeConfig), 0666))
+		[]byte(v4LongTimeConfig), 0o666))
 
 	// THEN a new integration is started
 	metric = expectOneMetric(t, emitter, "longtime")
@@ -382,8 +382,8 @@ func TestManager_HotReload_Modify(t *testing.T) {
 	// THEN the integration is restarted
 	testhelpers.Eventually(t, 5*time.Second, func(t require.TestingT) {
 		// waiting to empty the previous process queue and receive a "first" value again
-		metric = expectOneMetric(t, emitter, "hotreload-test")
-		require.Equal(t, "first", metric["value"])
+		firstMetric := expectOneMetric(t, emitter, "hotreload-test")
+		require.Equal(t, "first", firstMetric["value"])
 	})
 	// AND the integration reflects the changes in the configuration file
 	metric = expectOneMetric(t, emitter, "hotreload-test")
@@ -425,7 +425,7 @@ func TestManager_HotReload_ModifyLinkFile(t *testing.T) {
 	bs, err := ioutil.ReadFile(filepath.Join(dir, "first_config"))
 	require.NoError(t, err)
 	require.NoError(t, ioutil.WriteFile(
-		filepath.Join(dir, "second_config"), bs, 0644))
+		filepath.Join(dir, "second_config"), bs, 0o644))
 	require.NoError(t, fileAppend(
 		filepath.Join(dir, "second_config"),
 		"      - modifiedValue\n"))
@@ -495,7 +495,8 @@ func TestManager_PassthroughEnv(t *testing.T) {
 		"my-configs.yml": `
 integrations:
   - name: nri-simple
-`})
+`,
+	})
 	require.NoError(t, err)
 
 	// WHEN the manager sets the PassthroughEnvironment configuration to an existing variable
@@ -530,7 +531,8 @@ integrations:
   - name: nri-simple
     env:
       VALUE: value-from-config
-`})
+`,
+	})
 	require.NoError(t, err)
 
 	// WHEN the manager that sets the PassthroughEnvironment configuration
@@ -563,7 +565,7 @@ func TestManager_LegacyIntegrations(t *testing.T) {
 	require.NoError(t, err)
 	defer removeTempFiles(t, definitionsDir)
 	binDir := filepath.Join(definitionsDir, "bin")
-	require.NoError(t, os.Mkdir(binDir, 0777))
+	require.NoError(t, os.Mkdir(binDir, 0o777))
 	require.NoError(t, testhelp.GoBuild(fixtures.LongTimeGoFile, filepath.Join(binDir, "longtime"+fixtures.CmdExtension)))
 
 	// AND a v4 configuration folder that references commands from the above definitions
@@ -578,7 +580,8 @@ integrations:
     command: use_env
     arguments:
       value: goodbye
-`})
+`,
+	})
 	require.NoError(t, err)
 	defer removeTempFiles(t, configDir)
 
@@ -612,7 +615,7 @@ func TestManager_LegacyIntegrations_PassthroughEnv(t *testing.T) {
 	require.NoError(t, err)
 	defer removeTempFiles(t, definitionsDir)
 	binDir := filepath.Join(definitionsDir, "bin")
-	require.NoError(t, os.Mkdir(binDir, 0777))
+	require.NoError(t, os.Mkdir(binDir, 0o777))
 	require.NoError(t, testhelp.GoBuild(fixtures.LongTimeGoFile, filepath.Join(binDir, "longtime"+fixtures.CmdExtension)))
 
 	// AND a v4 configuration folder that references a command from the above definitions
@@ -622,7 +625,8 @@ integrations:
   - name: say-something
     integration_name: com.newrelic.longtime
     command: use_env
-`})
+`,
+	})
 	require.NoError(t, err)
 
 	// WHEN the v4 integrations manager loads the legacy definition
@@ -670,7 +674,8 @@ integrations:
   - name: nri-simple       # the 'name' directive does not accept arguments (use 'exec')
     env:                   # but allows using environment variables as configuration
       VALUE: my-value
-`})
+`,
+	})
 	require.NoError(t, err)
 
 	// WHEN the v4 integrations manager recognizes the above folders
@@ -709,7 +714,8 @@ integrations:
       event_type: YAMLEvent
       map:
         hello: foo
-`})
+`,
+	})
 	require.NoError(t, err)
 	defer removeTempFiles(t, configDir)
 
@@ -742,7 +748,7 @@ func TestManager_EnableFeature_WhenFeatureOnOHICfgAndAgentCfgIsDisabledAndEnable
 	mgr := NewManager(ManagerConfig{
 		ConfigPaths:            []string{dir},
 		PassthroughEnvironment: passthroughEnv,
-		//AgentFeatures: map[string]bool{"docker_enabled": false},
+		// AgentFeatures: map[string]bool{"docker_enabled": false},
 	}, config.NewPathLoader(), e, integration.ErrLookup, definitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
 
 	// AND the manager loads and executes the integrations in the folder
@@ -1023,6 +1029,7 @@ func TestManager_anIntegrationCanSpawnAnotherOne(t *testing.T) {
 	metric := expectOneMetric(t, emitter, "cmd-req-name")
 	assert.Equal(t, "ShellTestSample", metric["event_type"])
 }
+
 func TestManager_cfgProtocolSpawnIntegrationV3Payload(t *testing.T) {
 	skipIfWindows(t)
 	// GIVEN a configuration file for an integration that will send a cfg protocol payload
@@ -1045,6 +1052,7 @@ func TestManager_cfgProtocolSpawnIntegrationV3Payload(t *testing.T) {
 	metric := expectOneMetric(t, emitter, "spawned_integration")
 	assert.Equal(t, "ShellTestSample", metric["event_type"])
 }
+
 func TestManager_cfgProtocolSpawnIntegrationV4Payload(t *testing.T) {
 	skipIfWindows(t)
 	// GIVEN a configuration file for an integration that will send a cfg protocol payload
@@ -1066,6 +1074,7 @@ func TestManager_cfgProtocolSpawnIntegrationV4Payload(t *testing.T) {
 	// THEN the integration is executed, requesting a new integration run that generates telemetry data of v4 protocol
 	assert.Len(t, expectNMetrics(t, emitter, "spawned_integration", 1), 1)
 }
+
 func TestManager_cfgProtocolSpawnedIntegrationCannotSpawnIntegration(t *testing.T) {
 	skipIfWindows(t)
 	log.SetOutput(ioutil.Discard)  // discard logs so not to break race tests
@@ -1119,7 +1128,8 @@ integrations:
       event_type: YAMLEvent
       map:
         hello: {{ SOME_VAR }}  
-`})
+`,
+	})
 	require.NoError(t, err)
 	defer removeTempFiles(t, configDir)
 
@@ -1195,7 +1205,7 @@ func tempFiles(pathContents map[string]string) (directory string, err error) {
 		return "", err
 	}
 	for path, content := range pathContents {
-		if err := ioutil.WriteFile(filepath.Join(dir, path), []byte(content), 0666); err != nil {
+		if err := ioutil.WriteFile(filepath.Join(dir, path), []byte(content), 0o600); err != nil {
 			return "", err
 		}
 	}
