@@ -824,7 +824,7 @@ func (a *Agent) Run() (err error) {
 			{
 				debugInfo, err := a.debugProvide()
 				if err != nil {
-					alog.WithError(err).Error("debug error")
+					alog.WithError(err).Debug("failed to get debug stats")
 				} else if debugInfo != "" {
 					alog.Debug(debugInfo)
 				}
