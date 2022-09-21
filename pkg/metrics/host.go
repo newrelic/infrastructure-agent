@@ -22,7 +22,7 @@ func NewHostMonitor() *HostMonitor {
 func (m *HostMonitor) Sample() (*HostSample, error) {
 	uptime, err := host.Uptime()
 	if err != nil {
-		return &HostSample{}, fmt.Errorf("cannot sample uptime: %w", err)
+		return nil, fmt.Errorf("cannot sample uptime: %w", err)
 	}
 
 	return &HostSample{Uptime: uptime}, nil
