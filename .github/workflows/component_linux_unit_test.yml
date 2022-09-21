@@ -11,35 +11,6 @@ env:
 
 
 jobs:
-  validate:
-    name: Validate code
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Validate code
-        run: make ci/validate
-
-  run-lint:
-    name: Lint tests
-    continue-on-error: true
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: '0'
-
-      - name: Modify go.mod version to support golangci-lint
-        run: sed -i 's/go 1\.18/go 1\.17/' go.mod
-
-      - name: Install Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: '1.17'
-
-      - name: Running lint tests
-        run: make lint
-        # this is temporary as those tests are not fixed yet
 
   unit-test:
     name: Unit tests
