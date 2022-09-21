@@ -55,3 +55,5 @@ build/.goreleaser_linux.yml
 *.tfstate.*
 *.auto.tfvars
 .terraform.lock.hcl
+
+THIRD_PARTY_NOTICES_GENERATED.md

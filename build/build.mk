@@ -15,7 +15,8 @@ GIT_TAG    = $(shell git describe --tags --abbrev=0 --exact-match 2>/dev/null)
 GIT_DIRTY  = $(shell test -n "`git status --porcelain`" && echo "dirty" || echo "clean")
 
 GOTOOLS ?=
-GOTOOLS += github.com/golangci/golangci-lint/cmd/golangci-lint@v1.45.2
+GOTOOLS += " github.com/golangci/golangci-lint/cmd/golangci-lint@v1.45.2"
+GOTOOLS += " go.elastic.co/go-licence-detector@v0.5.0"
 
 GOARCH ?= amd64
 
@@ -38,7 +39,9 @@ deps:
 	@printf '\n================================================================\n'
 	@printf 'Target: go-get'
 	@printf '\n================================================================\n'
-	@$(GO_BIN) get $(GOTOOLS)
+	@for tool in $(GOTOOLS); do \
+		$(GO_BIN) install $$tool; \
+	done
 	@$(GO_BIN) mod tidy
 	@$(GO_BIN) mod vendor
 	@echo '[go-get] Done.'
@@ -189,3 +192,17 @@ proxy-test:
 	$(GO_BIN) test --tags=proxytests ./test/proxy/; status=$$?; \
     docker-compose -f test/proxy/docker-compose.yml down; \
     exit $$status
+
+.PHONY: third-party-notices
+third-party-notices: OUT ?= THIRD_PARTY_NOTICES.md
+third-party-notices: deps
+	@go list -mod=mod -m -json all | go-licence-detector \
+		-rules assets/licence/rules.json \
+		-noticeTemplate assets/licence/THIRD_PARTY_NOTICES.md.tmpl \
+		-noticeOut $(OUT)
+#		-includeIndirect
+
+.PHONY: third-party-notices-check
+third-party-notices-check:
+	@OUT=THIRD_PARTY_NOTICES_GENERATED.md make third-party-notices
+	@diff THIRD_PARTY_NOTICES_GENERATED.md THIRD_PARTY_NOTICES.md 2>&1 > /dev/null || (echo "THIRD_PARTY_NOTICES.md should be generated"; exit 1)
