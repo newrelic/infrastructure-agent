@@ -55,7 +55,6 @@ func NewProcessSampler(ctx agent.AgentContext) sampler.Sampler {
 		cache:            &cache,
 		interval:         time.Second * time.Duration(interval),
 	}
-
 }
 
 func (ps *processSampler) OnStartup() {}
@@ -106,13 +105,17 @@ func (ps *processSampler) Sample() (results sample.EventBatch, err error) {
 		}
 	}
 
+	pidsWithError := make(map[string][]int32)
+
 	for _, pid := range pids {
 		var processSample *types.ProcessSample
 		var err error
 
 		processSample, err = ps.harvest.Do(pid, elapsedSeconds)
 		if err != nil {
-			mplog.WithError(err).WithField("pid", pid).Debug("Skipping process.")
+			if mplog.IsDebugEnabled() {
+				pidsWithError[err.Error()] = append(pidsWithError[err.Error()], pid)
+			}
 			continue
 		}
 
@@ -121,6 +124,12 @@ func (ps *processSampler) Sample() (results sample.EventBatch, err error) {
 		}
 
 		results = append(results, ps.normalizeSample(processSample))
+	}
+
+	if mplog.IsDebugEnabled() {
+		for strErr, pids := range pidsWithError {
+			mplog.WithError(fmt.Errorf("%s", strErr)).WithField("PIDs", pids).Debug("Skipping processes.")
+		}
 	}
 
 	ps.cache.items.RemoveUntilLen(len(pids))
