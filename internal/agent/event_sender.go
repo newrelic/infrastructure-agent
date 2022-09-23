@@ -507,7 +507,7 @@ func (sender *metricsIngestSender) doPost(ctx goContext.Context, post []*MetricP
 		req.Header.Set(backendhttp.AgentEntityIdHeader, agentID.String())
 	}
 
-	ilog.Trace(string(postBytes))
+	ilog.WithField(config.TracesFieldName, config.FeatureTrace)
 
 	if log.IsLevelEnabled(logrus.TraceLevel) {
 		req = http2.WithTracer(req, "eventSender")

@@ -205,11 +205,13 @@ func (h *handler) handleEnableOHI(ctx context.Context, ff string, enable bool) {
 }
 
 func handleParallelizeInventory(ffArgs args, c *config.Config, isInitialFetch bool) {
-	ffLogger.Tracef("parallelize FF handler initialFetch: %v, enable: %v, inventory queue: %v",
-		isInitialFetch,
-		ffArgs.Enabled,
-		c.InventoryQueueLen,
-	)
+	ffLogger.
+		WithField(config.TracesFieldName, config.FeatureTrace).
+		Tracef("parallelize FF handler initialFetch: %v, enable: %v, inventory queue: %v",
+			isInitialFetch,
+			ffArgs.Enabled,
+			c.InventoryQueueLen,
+		)
 	// feature already in desired state
 	if (ffArgs.Enabled && c.InventoryQueueLen > 0) || (!ffArgs.Enabled && c.InventoryQueueLen == 0) {
 		return

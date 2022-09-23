@@ -4,6 +4,7 @@ package plugins
 
 import (
 	"github.com/newrelic/infrastructure-agent/internal/agent"
+	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 )
@@ -36,7 +37,9 @@ func (self *CustomAttrsPlugin) Run() {
 	data := agent.PluginInventoryDataset{CustomAttrs(self.customAttributes)}
 	entityKey := self.Context.EntityKey()
 
-	aclog.Tracef("run, entity: %s, data: %+v", entityKey, self.customAttributes)
+	aclog.
+		WithField(config.TracesFieldName, config.FeatureTrace).
+		Tracef("run, entity: %s, data: %+v", entityKey, self.customAttributes)
 
 	self.EmitInventory(data, entity.NewFromNameWithoutID(entityKey))
 }

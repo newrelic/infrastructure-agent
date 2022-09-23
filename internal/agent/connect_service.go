@@ -5,6 +5,7 @@ package agent
 import (
 	goContext "context"
 	"errors"
+	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
@@ -47,7 +48,7 @@ func (ic *identityConnectService) Connect() entity.Identity {
 			continue
 		}
 
-		logger.Tracef("connect request with fingerprint: %+v", f)
+		logger.WithField(config.TracesFieldName, config.FeatureTrace).Tracef("connect request with fingerprint: %+v", f)
 
 		ids, retry, err := ic.client.Connect(f)
 
@@ -107,7 +108,7 @@ func (ic *identityConnectService) ConnectUpdate(agentIdn entity.Identity) (entit
 
 	var retryBO *backoff.Backoff
 	for {
-		logger.Tracef("connect update request with fingerprint: %+v", f)
+		logger.WithField(config.TracesFieldName, config.FeatureTrace).Tracef("connect update request with fingerprint: %+v", f)
 		retry, entityIdn, err := ic.client.ConnectUpdate(agentIdn, f)
 		if retry.After > 0 {
 			logger.WithField("retryAfter", retry.After).Debug("Connect update retry requested.")

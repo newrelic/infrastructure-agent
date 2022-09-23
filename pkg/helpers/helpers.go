@@ -143,7 +143,7 @@ func SanitizeCommandLine(cmd string) string {
 	return cleanCommand
 }
 
-//GetEnv retrieves the environment variable key. If it does not exist it returns the default.
+// GetEnv retrieves the environment variable key. If it does not exist it returns the default.
 // From gopsutil
 func GetEnv(key string, dfault string, combineWith ...string) string {
 	value := os.Getenv(key)
@@ -362,7 +362,8 @@ var r = regexp.MustCompile(`(?i)(?:pass|token|cert|auth|key|secret|salt|cred|pw)
 // ObfuscateSensitiveData is used to detect sensitive data like tokens/passwords etc and
 // replace them by *.
 // e.g. NRIA_CUSTOM_PASSWORD=1234               => NRIA_CUSTOM_PASSWORD=*
-//      /usr/bin/custom_cmd -pwd 1234 -arg2 abc => /usr/bin/custom_cmd -pwd * -arg2 abc
+//
+//	/usr/bin/custom_cmd -pwd 1234 -arg2 abc => /usr/bin/custom_cmd -pwd * -arg2 abc
 func ObfuscateSensitiveData(value string) (matched, isField bool, result string) {
 
 	matches := r.FindAllStringSubmatchIndex(value, -1)

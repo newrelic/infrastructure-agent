@@ -5,6 +5,7 @@ package dm
 import (
 	"errors"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"io"
 	"math"
 	"net/http"
@@ -34,7 +35,7 @@ func (l *telemetryErrLogger) Write(p []byte) (n int, err error) {
 		telemetryLogger.Debug(string(p))
 	case "audit":
 		// payload should be logged only when customer enabled dm.submission feature traces.
-		telemetryLogger.Trace(string(p))
+		telemetryLogger.WithField(config.TracesFieldName, config.FeatureTrace)
 	}
 
 	return len(p), nil

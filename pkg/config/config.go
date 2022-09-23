@@ -35,6 +35,7 @@ const (
 	// TracesFieldName can be used as a field in the structured log.
 	TracesFieldName = "traces"
 	SupervisorTrace = "supervisor"
+	FeatureTrace    = "feature"
 
 	// LogFilterWildcard will match everything.
 	LogFilterWildcard = "*"
@@ -1176,8 +1177,8 @@ func (lc *LogConfig) AttachDefaultFilters() {
 		lc.ExcludeFilters = make(map[string][]interface{})
 	}
 
-	// Exclude by default supervisor traces.
-	lc.ExcludeFilters[TracesFieldName] = append(lc.ExcludeFilters[TracesFieldName], SupervisorTrace)
+	// Exclude by default supervisor and feature traces.
+	lc.ExcludeFilters[TracesFieldName] = append(lc.ExcludeFilters[TracesFieldName], SupervisorTrace, FeatureTrace)
 }
 
 // HasIncludeFilter returns true if key-value pair are included in the filtering configuration.

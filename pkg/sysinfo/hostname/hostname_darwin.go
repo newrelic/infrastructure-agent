@@ -7,6 +7,7 @@ package hostname
 
 import (
 	"errors"
+	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"net"
 	"strings"
@@ -52,7 +53,9 @@ func getFqdnHostname(osHost string) (string, error) {
 		if hosts[0] == "localhost" {
 			continue
 		}
-		logger.Tracef("found FQDN hosts: %s", strings.Join(hosts, ", "))
+		logger.
+			WithField(config.TracesFieldName, config.FeatureTrace).
+			Tracef("found FQDN hosts: %s", strings.Join(hosts, ", "))
 		return strings.TrimSuffix(hosts[0], "."), nil
 	}
 	return "", errors.New("can't lookup FQDN")

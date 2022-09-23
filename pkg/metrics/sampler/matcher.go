@@ -75,12 +75,16 @@ func (p matcher) Evaluate(event interface{}) bool {
 		return false
 	}
 	isMatch := p.Evaluator(p.ExpectedValue, actualValue)
-	mlog.Tracef("'%v' matches expression %v >> '%v': %v", actualValue, p.PropertyName, p.ExpectedValue, isMatch)
+	mlog.
+		WithField(config.TracesFieldName, config.FeatureTrace).
+		Tracef("'%v' matches expression %v >> '%v': %v", actualValue, p.PropertyName, p.ExpectedValue, isMatch)
 	return isMatch
 }
 
 func getMapValue(object map[string]interface{}, fieldNames []string) interface{} {
-	mlog.Tracef("Searching map[string]interface{} for fields %v", fieldNames)
+	mlog.
+		WithField(config.TracesFieldName, config.FeatureTrace).
+		Tracef("Searching map[string]interface{} for fields %v", fieldNames)
 	for i := range fieldNames {
 		obj := object[fieldNames[i]]
 		if obj != nil {
@@ -98,7 +102,9 @@ func getFieldValue(object interface{}, fieldNames []string) interface{} {
 
 	// If a struct then try and get it by field
 	if v.Kind() == reflect.Struct {
-		mlog.Tracef("Searching Struct for fields %v", fieldNames)
+		mlog.
+			WithField(config.TracesFieldName, config.FeatureTrace).
+			Tracef("Searching Struct for fields %v", fieldNames)
 		for i := range fieldNames {
 			fv := v.FieldByName(fieldNames[i])
 			if fv.IsValid() && fv.CanInterface() {
@@ -113,7 +119,9 @@ func getFieldValue(object interface{}, fieldNames []string) interface{} {
 	case types.FlatProcessSample: // types.FlatProcessSample is a map so check if any of the field names contains a value
 		return getMapValue(v.Interface().(types.FlatProcessSample), fieldNames)
 	default:
-		mlog.Tracef("Fields %v does NOT exist in sample.", fieldNames)
+		mlog.
+			WithField(config.TracesFieldName, config.FeatureTrace).
+			Tracef("Fields %v does NOT exist in sample.", fieldNames)
 		return nil
 	}
 }
@@ -139,7 +147,7 @@ func regularExpressionEvaluator(expected interface{}, actual interface{}) bool {
 	return regex.MatchString(fmt.Sprintf("%v", actual))
 }
 
-//newExpressionMatcher returns a new ExpressionMatcher
+// newExpressionMatcher returns a new ExpressionMatcher
 func newExpressionMatcher(dimensionName string, expr string) ExpressionMatcher {
 	return build(dimensionName, expr)
 }
@@ -192,9 +200,11 @@ func cacheRegex(pattern string) error {
 // For example:
 // - process.name
 //   - "test"
+//
 // - process.executable
 //   - "/bin/test"
 //   - regex "^/opt/newrelic/"
+//
 // will create an evaluator chain with 2 entries. The first one will have 1 evaluator. The second 2 evaluators
 type MatcherChain struct {
 	Matchers map[string][]ExpressionMatcher
@@ -231,8 +241,9 @@ func NewMatcherChain(expressions config.IncludeMetricsMap) MatcherChain {
 
 // Evaluate returns the result of compare an event with a chain of matching rules
 // return:
-//  - true, if event match with evaluator criteria chain
-//  - false, if event do not match with evaluator criteria chain
+//   - true, if event match with evaluator criteria chain
+//   - false, if event do not match with evaluator criteria chain
+//
 // If there is no matchers will return true.
 func (ec MatcherChain) Evaluate(event interface{}) bool {
 	var result = true
@@ -266,7 +277,9 @@ func NewSampleMatchFn(enableProcessMetrics *bool, includeMetricsMatchers config.
 		// if config option is not set, check if we have rules defined. those take precedence over the FF
 		ec := NewMatcherChain(includeMetricsMatchers)
 		if ec.Enabled {
-			mlog.Tracef("EnableProcessMetrics is EMPTY and rules ARE defined, process metrics will be ENABLED for matching processes")
+			mlog.
+				WithField(config.TracesFieldName, config.FeatureTrace).
+				Tracef("EnableProcessMetrics is EMPTY and rules ARE defined, process metrics will be ENABLED for matching processes")
 			return func(sample interface{}) bool {
 				return ec.Evaluate(sample)
 			}
@@ -288,19 +301,27 @@ func NewSampleMatchFn(enableProcessMetrics *bool, includeMetricsMatchers config.
 	}
 
 	if excludeProcessMetrics(enableProcessMetrics) {
-		mlog.Trace("EnableProcessMetrics is FALSE, process metrics will be DISABLED")
+		mlog.
+			WithField(config.TracesFieldName, config.FeatureTrace).
+			Trace("EnableProcessMetrics is FALSE, process metrics will be DISABLED")
 		return func(sample interface{}) bool {
 			switch sample.(type) {
 			case *types.ProcessSample:
-				mlog.Trace("Got a sample of type '*types.ProcessSample' so excluding sample.")
+				mlog.
+					WithField(config.TracesFieldName, config.FeatureTrace).
+					Trace("Got a sample of type '*types.ProcessSample' so excluding sample.")
 				// no process samples are included
 				return false
 			case *types.FlatProcessSample:
-				mlog.Trace("Got a sample of type '*types.FlatProcessSample' so excluding sample.")
+				mlog.
+					WithField(config.TracesFieldName, config.FeatureTrace).
+					Trace("Got a sample of type '*types.FlatProcessSample' so excluding sample.")
 				// no flat process samples are included
 				return false
 			default:
-				mlog.Tracef("Got a sample of type '%s' that should not be excluded.", reflect.TypeOf(sample).String())
+				mlog.
+					WithField(config.TracesFieldName, config.FeatureTrace).
+					Tracef("Got a sample of type '%s' that should not be excluded.", reflect.TypeOf(sample).String())
 				// other samples are included
 				return true
 			}
@@ -309,13 +330,17 @@ func NewSampleMatchFn(enableProcessMetrics *bool, includeMetricsMatchers config.
 
 	ec := NewMatcherChain(includeMetricsMatchers)
 	if ec.Enabled {
-		mlog.Trace("EnableProcessMetrics is TRUE and rules ARE defined, process metrics will be ENABLED for matching processes")
+		mlog.
+			WithField(config.TracesFieldName, config.FeatureTrace).
+			Trace("EnableProcessMetrics is TRUE and rules ARE defined, process metrics will be ENABLED for matching processes")
 		return func(sample interface{}) bool {
 			return ec.Evaluate(sample)
 		}
 	}
 
-	mlog.Trace("EnableProcessMetrics is TRUE and rules are NOT defined, ALL process metrics will be ENABLED")
+	mlog.
+		WithField(config.TracesFieldName, config.FeatureTrace).
+		Trace("EnableProcessMetrics is TRUE and rules are NOT defined, ALL process metrics will be ENABLED")
 	return func(sample interface{}) bool {
 		// all process samples are included
 		return true
