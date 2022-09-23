@@ -185,12 +185,12 @@ func (c *context) SetAgentIdentity(id entity.Identity) {
 	c.id.SetAgentIdentity(id)
 }
 
-//IDLookup returns the IDLookup map.
+// IDLookup returns the IDLookup map.
 func (c *context) IDLookup() host.IDLookup {
 	return c.idLookup
 }
 
-//NewContext creates a new context.
+// NewContext creates a new context.
 func NewContext(
 	cfg *config.Config,
 	buildVersion string,
@@ -421,7 +421,7 @@ func New(
 	}
 
 	// Create input channel for plugins to feed data back to the agent
-	llog.Tracef("inventory parallelize queue: %v", a.Context.cfg.InventoryQueueLen)
+	llog.WithField(config.TracesFieldName, config.FeatureTrace).Tracef("inventory parallelize queue: %v", a.Context.cfg.InventoryQueueLen)
 	a.Context.ch = make(chan PluginOutput, a.Context.cfg.InventoryQueueLen)
 	a.Context.activeEntities = make(chan string, activeEntitiesBufferLength)
 

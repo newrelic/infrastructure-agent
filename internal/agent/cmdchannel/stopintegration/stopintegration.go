@@ -5,6 +5,7 @@ package stopintegration
 import (
 	"context"
 	"encoding/json"
+	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"runtime"
 	"time"
 
@@ -32,7 +33,7 @@ func NewHandler(tracker *track.Tracker, il integration.InstancesLookup, dmEmitte
 			return cmdchannel.ErrOSNotSupported
 		}
 
-		l.Trace("stop integration request received")
+		l.WithField(config.TracesFieldName, config.FeatureTrace).Trace("stop integration request received")
 
 		var args runintegration.RunIntArgs
 		if err = json.Unmarshal(cmd.Args, &args); err != nil {

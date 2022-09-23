@@ -9,6 +9,8 @@ import (
 	"errors"
 	"net"
 	"strings"
+
+	"github.com/newrelic/infrastructure-agent/pkg/config"
 )
 
 // Looks up for the Fully Qualified Domain Name.
@@ -25,7 +27,9 @@ func getFqdnHostname(osHost string) (string, error) {
 		if err != nil || len(hosts) == 0 {
 			return "", err
 		}
-		logger.Tracef("found FQDN hosts: %s", strings.Join(hosts, ", "))
+		logger.
+			WithField(config.TracesFieldName, config.FeatureTrace).
+			Tracef("found FQDN hosts: %s", strings.Join(hosts, ", "))
 		return strings.TrimSuffix(hosts[0], "."), nil
 	}
 	return "", errors.New("can't lookup FQDN")
