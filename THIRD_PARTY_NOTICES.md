@@ -30,6 +30,14 @@ Distributed under the following license(s):
 
 
 
+## [github.com/antihax/optional](https://github.com/antihax/optional)
+
+Distributed under the following license(s):
+
+* MIT
+
+
+
 ## [github.com/aws/aws-sdk-go](https://github.com/aws/aws-sdk-go)
 
 Distributed under the following license(s):
@@ -38,7 +46,7 @@ Distributed under the following license(s):
 
 
 
-## [github.com/newrelic-forks/go-systemd/v22](https://github.com/newrelic-forks/go-systemd)
+## [github.com/coreos/go-systemd/v22](https://github.com/coreos/go-systemd)
 
 Distributed under the following license(s):
 
@@ -78,6 +86,14 @@ Distributed under the following license(s):
 
 
 
+## [github.com/ghodss/yaml](https://github.com/ghodss/yaml)
+
+Distributed under the following license(s):
+
+* MIT
+
+
+
 ## [github.com/golang/groupcache](https://github.com/golang/groupcache)
 
 Distributed under the following license(s):
@@ -102,7 +118,7 @@ Distributed under the following license(s):
 
 
 
-## [github.com/newrelic-forks/service](https://github.com/newrelic-forks/service)
+## [github.com/kardianos/service](https://github.com/kardianos/service)
 
 Distributed under the following license(s):
 
@@ -126,7 +142,23 @@ Distributed under the following license(s):
 
 
 
-## [github.com/newrelic-forks/newrelic-telemetry-sdk-go](https://github.com/newrelic-forks/newrelic-telemetry-sdk-go)
+## [github.com/newrelic/go-agent/v3](https://github.com/newrelic/go-agent)
+
+Distributed under the following license(s):
+
+* Apache-2.0
+
+
+
+## [github.com/newrelic/infra-identity-client-go](https://github.com/newrelic/infra-identity-client-go)
+
+Distributed under the following license(s):
+
+* Apache-2.0
+
+
+
+## [github.com/newrelic/newrelic-telemetry-sdk-go](https://github.com/newrelic/newrelic-telemetry-sdk-go)
 
 Distributed under the following license(s):
 
@@ -142,6 +174,14 @@ Distributed under the following license(s):
 
 
 
+## [github.com/prometheus/client_golang](https://github.com/prometheus/client_golang)
+
+Distributed under the following license(s):
+
+* Apache-2.0
+
+
+
 ## [github.com/prometheus/procfs](https://github.com/prometheus/procfs)
 
 Distributed under the following license(s):
@@ -150,7 +190,7 @@ Distributed under the following license(s):
 
 
 
-## [github.com/shirou/gopsutil](https://github.com/shirou/gopsutil)
+## [github.com/shirou/gopsutil/v3](https://github.com/shirou/gopsutil)
 
 Distributed under the following license(s):
 
@@ -171,6 +211,38 @@ Distributed under the following license(s):
 Distributed under the following license(s):
 
 * MIT
+
+
+
+## [github.com/tevino/abool](https://github.com/tevino/abool)
+
+Distributed under the following license(s):
+
+* MIT
+
+
+
+## [go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp](https://go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp)
+
+Distributed under the following license(s):
+
+* Apache-2.0
+
+
+
+## [go.opentelemetry.io/otel](https://go.opentelemetry.io/otel)
+
+Distributed under the following license(s):
+
+* Apache-2.0
+
+
+
+## [go.opentelemetry.io/otel/exporters/metric/prometheus](https://go.opentelemetry.io/otel/exporters/metric/prometheus)
+
+Distributed under the following license(s):
+
+* Apache-2.0
 
 
 

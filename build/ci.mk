@@ -1,8 +1,9 @@
 BUILDER_IMG_TAG = infrastructure-agent-builder
 
 .PHONY: ci/deps
+ci/deps:GH_ARCH ?= amd64
 ci/deps:
-	@docker build -t $(BUILDER_IMG_TAG) -f $(CURDIR)/build/Dockerfile $(CURDIR)
+	@docker build -t $(BUILDER_IMG_TAG) --build-arg GH_ARCH=$(GH_ARCH) -f $(CURDIR)/build/Dockerfile $(CURDIR)
 
 .PHONY: ci/validate
 ci/validate: ci/deps
@@ -161,3 +162,10 @@ ci/sync-s3/testing: ci/validate-aws-credentials
 	@aws s3 rm --recursive s3://nr-downloads-ohai-testing/infrastructure_agent
 	@aws s3 cp --recursive --exclude '*/infrastructure_agent/beta/*' --exclude '*/infrastructure_agent/test/*' --exclude '*/newrelic-infra.repo' s3://nr-downloads-main/infrastructure_agent/ s3://nr-downloads-ohai-testing/infrastructure_agent/
 
+.PHONY: ci/third-party-notices-check
+ci/third-party-notices-check: ci/deps
+	@docker run --rm -t \
+			--name "infrastructure-agent-third-party-notices" \
+			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
+			-w /go/src/github.com/newrelic/infrastructure-agent \
+			$(BUILDER_IMG_TAG) make third-party-notices-check
