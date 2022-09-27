@@ -1,0 +1,59 @@
+ALL_SRC := $(shell find . -name '*.go' -not -path '*/vendor/*' -type f)
+
+GOTOOLS ?=
+GOTOOLS += " github.com/golangci/golangci-lint/cmd/golangci-lint@v1.45.2"
+GOTOOLS += " go.elastic.co/go-licence-detector@v0.5.0"
+GOTOOLS += " github.com/google/addlicense@04bfe4ee9ca5764577b029acc6a1957fd1997153"
+
+ADDLICENCESE=addlicense
+
+
+.PHONY: deps
+deps:
+	@printf '\n================================================================\n'
+	@printf 'Target: go-get'
+	@printf '\n================================================================\n'
+	@for tool in $(GOTOOLS); do \
+		$(GO_BIN) install $$tool; \
+	done
+	@$(GO_BIN) mod tidy
+	@$(GO_BIN) mod vendor
+	@echo '[go-get] Done.'
+
+
+.PHONY: addlicense
+addlicense: deps
+	@ADDLICENCESEOUT=`$(ADDLICENCESE) -y "" -ignore "vendor/**" -s=only -c 'New Relic Corporation. All rights reserved.' $(ALL_SRC) 2>&1`; \
+		if [ "$$ADDLICENCESEOUT" ]; then \
+			echo "$(ADDLICENCESE) FAILED => addlicense errors:\n"; \
+			echo "$$ADDLICENCESEOUT\n"; \
+			exit 1; \
+		else \
+			echo "Add License ($(ADDLICENCESE)) finished successfully"; \
+		fi
+
+.PHONY: checklicense
+checklicense: deps
+	@ADDLICENCESEOUT=`$(ADDLICENCESE) -ignore "vendor/**" -check $(ALL_SRC) 2>&1`; \
+		if [ "$$ADDLICENCESEOUT" ]; then \
+			echo "$(ADDLICENCESE) FAILED => addlicense errors:\n"; \
+			echo "$$ADDLICENCESEOUT\n"; \
+			echo "Use 'make addlicense' to add header licenses this."; \
+			exit 1; \
+		else \
+			echo "Check License ($(ADDLICENCESE)) finished successfully"; \
+		fi
+
+.PHONY: third-party-notices
+third-party-notices: OUT ?= THIRD_PARTY_NOTICES.md
+third-party-notices: deps
+	@go list -mod=mod -m -json all | go-licence-detector \
+		-rules assets/licence/rules.json \
+		-noticeTemplate assets/licence/THIRD_PARTY_NOTICES.md.tmpl \
+		-noticeOut $(OUT)
+#		-includeIndirect
+
+.PHONY: third-party-notices-check
+third-party-notices-check:
+	@OUT=THIRD_PARTY_NOTICES_GENERATED.md make third-party-notices
+	@diff THIRD_PARTY_NOTICES_GENERATED.md THIRD_PARTY_NOTICES.md 2>&1 > /dev/null || (echo "THIRD_PARTY_NOTICES.md should be generated"; exit 1)

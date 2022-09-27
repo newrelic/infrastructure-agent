@@ -35,3 +35,6 @@ include $(INCLUDE_TEST_DIR)/test.mk
 
 # tools
 include $(INCLUDE_TOOLS_DIR)/tools.mk
+
+# common utils
+include ./Makefile.Common

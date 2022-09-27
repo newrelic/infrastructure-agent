@@ -169,3 +169,11 @@ ci/third-party-notices-check: ci/deps
 			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
 			-w /go/src/github.com/newrelic/infrastructure-agent \
 			$(BUILDER_IMG_TAG) make third-party-notices-check
+
+.PHONY: ci/license-header-check
+ci/license-header-check: ci/deps
+	@docker run --rm -t \
+			--name "infrastructure-agent-third-party-notices" \
+			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
+			-w /go/src/github.com/newrelic/infrastructure-agent \
+			$(BUILDER_IMG_TAG) make checklicense
