@@ -9,20 +9,27 @@ ADDLICENCESE=addlicense
 
 
 .PHONY: deps
-deps:
+deps: install-tools
 	@printf '\n================================================================\n'
 	@printf 'Target: go-get'
 	@printf '\n================================================================\n'
-	@for tool in $(GOTOOLS); do \
-		$(GO_BIN) install $$tool; \
-	done
 	@$(GO_BIN) mod tidy
 	@$(GO_BIN) mod vendor
 	@echo '[go-get] Done.'
 
+.PHONY: install-tools
+install-tools:
+	@printf '\n================================================================\n'
+	@printf 'Target: go-install'
+	@printf '\n================================================================\n'
+	@for tool in $(GOTOOLS); do \
+		$(GO_BIN) install $$tool; \
+	done
+	@echo '[go-install] Done.'
+
 
 .PHONY: addlicense
-addlicense: deps
+addlicense: install-tools
 	@ADDLICENCESEOUT=`$(ADDLICENCESE) -y "" -ignore "vendor/**" -s=only -c 'New Relic Corporation. All rights reserved.' $(ALL_SRC) 2>&1`; \
 		if [ "$$ADDLICENCESEOUT" ]; then \
 			echo "$(ADDLICENCESE) FAILED => addlicense errors:\n"; \
@@ -33,7 +40,7 @@ addlicense: deps
 		fi
 
 .PHONY: checklicense
-checklicense: deps
+checklicense: install-tools
 	@ADDLICENCESEOUT=`$(ADDLICENCESE) -ignore "vendor/**" -check $(ALL_SRC) 2>&1`; \
 		if [ "$$ADDLICENCESEOUT" ]; then \
 			echo "$(ADDLICENCESE) FAILED => addlicense errors:\n"; \
