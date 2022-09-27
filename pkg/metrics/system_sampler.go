@@ -5,18 +5,16 @@ package metrics
 import (
 	context2 "context"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
-
-	"github.com/newrelic/infrastructure-agent/pkg/log"
-	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
-
 	"runtime/debug"
 	"sync"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
+	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
 )
 
@@ -30,6 +28,7 @@ type SystemSample struct {
 	*LoadSample
 	*MemorySample
 	*DiskSample
+	*HostSample
 }
 
 type SystemSampler struct {
@@ -37,6 +36,7 @@ type SystemSampler struct {
 	DiskMonitor    *DiskMonitor
 	LoadMonitor    *LoadMonitor
 	MemoryMonitor  *MemoryMonitor
+	HostMonitor    *HostMonitor
 	context        agent.AgentContext
 	stopChannel    chan bool
 	waitForCleanup *sync.WaitGroup
@@ -49,6 +49,7 @@ func NewSystemSampler(context agent.AgentContext, storageSampler *storage.Sample
 		DiskMonitor:    NewDiskMonitor(storageSampler),
 		LoadMonitor:    NewLoadMonitor(),
 		MemoryMonitor:  NewMemoryMonitor(cfg.IgnoreReclaimable),
+		HostMonitor:    NewHostMonitor(),
 		context:        context,
 		waitForCleanup: &sync.WaitGroup{},
 	}
@@ -80,49 +81,82 @@ func (s *SystemSampler) Sample() (results sample.EventBatch, err error) {
 		}
 	}()
 	ctx := context2.Background()
-	//Example of detailed sampler. Having the context as param to Sample(ctx context.Context) would allow
-	//us check for existing transaction and reuse it instead of creating new one.
+	// Example of detailed sampler. Having the context as param to Sample(ctx context.Context) would allow
+	// us check for existing transaction and reuse it instead of creating new one.
 	ctx, trx := instrumentation.SelfInstrumentation.StartTransaction(ctx, "system-sampler-detailed")
 	defer trx.End()
 
-	sample := &SystemSample{}
-	sample.Type("SystemSample")
+	sysSample := &SystemSample{}
+	sysSample.Type("SystemSample")
 
 	// Collect CPU
 	ctx, seg := trx.StartSegment(ctx, "cpu sample")
-	if cpuSample, err := s.CpuMonitor.Sample(); err != nil {
+
+	cpuSample, err := s.CpuMonitor.Sample()
+	if err != nil {
+		seg.End()
+
 		return nil, err
-	} else {
-		sample.CPUSample = cpuSample
 	}
+
+	sysSample.CPUSample = cpuSample
 	seg.End()
 
+	// Collect Disk
 	ctx, seg = trx.StartSegment(ctx, "disk sample")
-	if diskSample, err := s.DiskMonitor.Sample(); err != nil {
+
+	diskSample, err := s.DiskMonitor.Sample()
+	if err != nil {
+		seg.End()
+
 		return nil, err
-	} else {
-		sample.DiskSample = diskSample
 	}
+
+	sysSample.DiskSample = diskSample
 	seg.End()
 
+	// Collect Load
 	ctx, seg = trx.StartSegment(ctx, "load sample")
-	if loadSample, err := s.LoadMonitor.Sample(); err != nil {
+
+	loadSample, err := s.LoadMonitor.Sample()
+	if err != nil {
+		seg.End()
+
 		return nil, err
-	} else {
-		sample.LoadSample = loadSample
 	}
+
+	sysSample.LoadSample = loadSample
 	seg.End()
 
+	// Collect Memory
 	ctx, seg = trx.StartSegment(ctx, "memory sample")
-	if memorySample, err := s.MemoryMonitor.Sample(); err != nil {
+
+	memorySample, err := s.MemoryMonitor.Sample()
+	if err != nil {
+		seg.End()
+
 		return nil, err
-	} else {
-		sample.MemorySample = memorySample
 	}
+
+	sysSample.MemorySample = memorySample
+
 	seg.End()
 
-	helpers.LogStructureDetails(syslog, sample, "SystemSample", "final", nil)
-	results = append(results, sample)
+	// Collect Host
+	_, seg = trx.StartSegment(ctx, "host sample")
+
+	hostSample, err := s.HostMonitor.Sample()
+	if err != nil {
+		seg.End()
+
+		return nil, err
+	}
+
+	sysSample.HostSample = hostSample
+	seg.End()
+
+	helpers.LogStructureDetails(syslog, sysSample, "SystemSample", "final", nil)
+	results = append(results, sysSample)
 
 	return
 }
