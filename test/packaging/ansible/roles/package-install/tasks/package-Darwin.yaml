@@ -1,13 +1,24 @@
+- name: register brew path
+  ansible.builtin.set_fact:
+    brew_path: /opt/homebrew
+    when: ansible_architecture == "arm64"
+
+- name: register brew path
+  ansible.builtin.set_fact:
+    brew_path: /usr/local
+  when: ansible_architecture == "x86_64"
+
 - name: Stop launchctl service
-  command: /usr/local/bin/brew services stop newrelic-infra-agent
+  command: "{{ brew_path }}/bin/brew services stop newrelic-infra-agent"
+  ignore_errors: yes
 
 - name: Agent uninstall
   become: false
-  command: /usr/local/bin/brew uninstall --force newrelic-infra-agent
+  command: "{{ brew_path }}/bin/brew uninstall --force newrelic-infra-agent"
   ignore_errors: yes
 
 - name: cleanup | Remove files
-  command: rm -rf /usr/local/Cellar/newrelic-infra-agent
+  command: "rm -rf {{ brew_path }}/Cellar/newrelic-infra-agent"
 
   # Avoid errors with commit hash on tag recreation
 - name: delete brew cache (avoid tag recreation commit error)
@@ -17,7 +28,7 @@
 
 - name: Install agent
   become: false
-  command: "/usr/local/bin/brew reinstall --formula --build-from-source /Users/{{ ansible_user }}/newrelic-infra-agent.rb"
+  command: "{{ brew_path }}/bin/brew reinstall --formula --build-from-source /Users/{{ ansible_user }}/newrelic-infra-agent.rb"
 
 - name: Start launchctl service
-  command: /usr/local/bin/brew services start newrelic-infra-agent
+  command: "{{ brew_path }}/bin/brew services start newrelic-infra-agent"

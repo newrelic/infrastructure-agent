@@ -4,18 +4,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"golang.org/x/mod/semver"
-	"net/http"
-	"strconv"
-
 	"log"
 	"math/rand"
+	"net/http"
 	"os"
 	"os/user"
 	"path"
+	"strconv"
 	"time"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"golang.org/x/mod/semver"
 )
 
 const (
@@ -56,7 +56,6 @@ func main() {
 }
 
 func interactiveMode() {
-
 	skipVMCreationString := askUser(fmt.Sprintf("Do you want to skip VM provision  [(%s)es / (%s)o / (%s)uit]: [no] ", colorizeGreen("y"), colorizeYellow("n"), colorizeRed("q")))
 
 	if skipVMCreationString == "yes" || skipVMCreationString == "y" {
@@ -134,7 +133,6 @@ func interactiveMode() {
 	}
 
 	if len(chosenProvisionOptions) > 0 {
-
 		for _, chosenOpt := range chosenProvisionOptions {
 
 			if chosenOpt.playbook == "" {
@@ -227,8 +225,7 @@ func createVMs() string {
 }
 
 func cliMode() {
-
-	var cmdCanaries = &cobra.Command{
+	cmdCanaries := &cobra.Command{
 		Use:   "canaries",
 		Short: "Canary machines tools for infrastructure-agent",
 		Long:  `canaries command is used for infrastructure-agent canary machines.`,
@@ -236,7 +233,7 @@ func cliMode() {
 		Run:   func(cmd *cobra.Command, args []string) {},
 	}
 
-	var cmdProvision = &cobra.Command{
+	cmdProvision := &cobra.Command{
 		Use:   "provision",
 		Short: "Provision canary machines",
 		Long:  `provision is used to deploy canary machines with infrastructure-agent installed.`,
@@ -285,13 +282,13 @@ func cliMode() {
 	cmdProvision.PersistentFlags().StringP("ansible_forks", "a", "5", "Ansible forks count")
 	viper.BindPFlag("ansible_forks", cmdProvision.PersistentFlags().Lookup("ansible_forks"))
 
-	var cmdPrune = &cobra.Command{
+	cmdPrune := &cobra.Command{
 		Use:   "prune",
 		Short: "Prune canary machines",
 		Long:  `prune is used to remove old canary machines.`,
 		RunE:  pruneCanaries,
 	}
-	var cmdPreviousCanaryVersion = &cobra.Command{
+	cmdPreviousCanaryVersion := &cobra.Command{
 		Use:   "previous_canary_version",
 		Short: "Get previous canary version",
 		Long:  `Get previous canary version to be used in automatic alerts.`,
@@ -341,7 +338,6 @@ func canaryConfFromArgs() (canaryConf, error) {
 
 // provisionCanaries will provision aws machines with the infra-agent installed.
 func provisionCanaries(cmd *cobra.Command, args []string) error {
-
 	cnf, err := canaryConfFromArgs()
 	if err != nil {
 		return err
@@ -372,7 +368,6 @@ func provisionCanaries(cmd *cobra.Command, args []string) error {
 }
 
 func provisionMacosCanaries(cnf canaryConf) error {
-
 	// Get the latest release to be installed as previous (pre-release will be current)
 	previousVersion, err := latestRelease()
 	if err != nil {
@@ -400,11 +395,11 @@ func provisionMacosCanaries(cnf canaryConf) error {
 	// Rename the ansible hostname to include agent version. This is temporary until we provision macos on demand
 	// pre-release		--> current
 	// latest release	--> previous
-	execNameArgs("sed", "-i.bak", fmt.Sprintf("s/canary:current/%s:%s/g", cnf.prefix, currentVersion), path.Join(curPath, inventoryMacos))
-	execNameArgs("sed", "-i.bak", fmt.Sprintf("s/canary:previous/%s:%s/g", cnf.prefix, previousVersion), path.Join(curPath, inventoryMacos))
+	execNameArgs("sed", "-i.bak", fmt.Sprintf("s/canary:current/%s:v%s/g", cnf.prefix, currentVersion), path.Join(curPath, inventoryMacos))
+	execNameArgs("sed", "-i.bak", fmt.Sprintf("s/canary:previous/%s:v%s/g", cnf.prefix, previousVersion), path.Join(curPath, inventoryMacos))
 	execNameArgs("rm", fmt.Sprintf("%s.bak", path.Join(curPath, inventoryMacos)))
 
-	var argumentsMacosCurrent = []string{
+	argumentsMacosCurrent := []string{
 		"--limit", "macos_current",
 		"-e", "nr_license_key=" + cnf.license,
 		"-e", "target_agent_version=" + currentVersion,
@@ -413,7 +408,7 @@ func provisionMacosCanaries(cnf canaryConf) error {
 		path.Join(curPath, "test/packaging/ansible/macos-canary.yml"),
 	}
 
-	var argumentsMacosPrevious = []string{
+	argumentsMacosPrevious := []string{
 		"--limit", "macos_previous",
 		"-e", "nr_license_key=" + cnf.license,
 		"-e", "target_agent_version=" + previousVersion,
@@ -429,7 +424,6 @@ func provisionMacosCanaries(cnf canaryConf) error {
 }
 
 func provisionWindowsCanaries(cnf canaryConf) error {
-
 	ansibleGroupVars, err := readAnsibleGroupVars()
 	if err != nil {
 		return err
@@ -457,7 +451,7 @@ func provisionLinuxCanaries(cnf canaryConf) error {
 	}
 
 	prepareAnsibleConfig(opts, fmt.Sprintf("%s:%s", cnf.prefix, cnf.agentVersion))
-	//ansible password is not needed for linux
+	// ansible password is not needed for linux
 	cnf.ansiblePassword = ""
 
 	return provisionEphimeralCanaries(cnf)
@@ -482,7 +476,7 @@ func provisionEphimeralCanaries(cnf canaryConf) error {
 		path.Join(curPath, "/test/automated/ansible/install-requirements.yml"))
 
 	provisionOpts := newProvisionOptions()[OptionInstallVersionStaging]
-	var playbookArguments = []string{
+	playbookArguments := []string{
 		"-e", "nr_license_key=" + cnf.license,
 		"-e", "enable_process_metrics=true",
 		"-e", "nria_log_level=debug",

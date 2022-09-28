@@ -1,8 +1,18 @@
 ---
 
+- name: register brew path
+  ansible.builtin.set_fact:
+    brew_path: /opt/homebrew
+    when: ansible_architecture == "arm64"
+
+- name: register brew path
+  ansible.builtin.set_fact:
+    brew_path: /usr/local
+  when: ansible_architecture == "x86_64"
+
 - name: ensure configuration folder exists
   ansible.builtin.file:
-    path: /usr/local/etc/newrelic-infra
+    path: "{{ brew_path }}/etc/newrelic-infra"
     state: directory
     group: wheel
     owner: "{{ ansible_user }}"
@@ -11,7 +21,7 @@
 - name: install infra-agent configuration file
   template:
     src: ../files/etc/newrelic-infra.yml.j2
-    dest: /usr/local/etc/newrelic-infra/newrelic-infra.yml
+    dest: "{{ brew_path }}/etc/newrelic-infra/newrelic-infra.yml"
     owner: "{{ ansible_user }}"
     group: wheel
     mode: 0644
