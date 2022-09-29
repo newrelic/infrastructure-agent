@@ -686,6 +686,18 @@ license_key: your_license_key
 #
 
 #
+# Option   : logging_retry_limit
+# Env var  : NRIA_LOGGING_RETRY_LIMIT
+# Value    : Number of retries the logging forwarder should attempt. 
+#            Integer values are for the number of intended retries. 
+#            Other possible values include `False` to set the number of retries to infinite 
+#            and `no_retries` to turn off the retry functionality entirely.
+# Default  : 5s
+#
+#logging_retry_limit: 5
+#
+
+#
 # Option   : startup_connection_retry_time
 # Env var  : NRIA_STARTUP_CONNECTION_RETRY_TIME
 # Value    : Time to wait before the agent retries the request for checking New
