@@ -14,10 +14,6 @@ GIT_SHA    = $(shell git rev-parse --short HEAD)
 GIT_TAG    = $(shell git describe --tags --abbrev=0 --exact-match 2>/dev/null)
 GIT_DIRTY  = $(shell test -n "`git status --porcelain`" && echo "dirty" || echo "clean")
 
-GOTOOLS ?=
-GOTOOLS += " github.com/golangci/golangci-lint/cmd/golangci-lint@v1.45.2"
-GOTOOLS += " go.elastic.co/go-licence-detector@v0.5.0"
-
 GOARCH ?= amd64
 
 LDFLAGS += -X main.buildVersion=$(VERSION)
@@ -33,18 +29,6 @@ export PATH := $(PROJECT_WORKSPACE)/bin:$(PATH)
 GO_TEST ?= test $(TEST_OPTIONS) --tags=slow $(TEST_FLAGS) $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=30m
 GO_TEST_DATABIND ?= test $(TEST_OPTIONS) --tags=databind $(TEST_FLAGS) $(TESTS_DATABIND) -run $(TEST_PATTERN) -timeout=30m
 GO_FMT 	?= gofmt -s -w -l $(SOURCE_FILES_DIR)
-
-.PHONY: deps
-deps:
-	@printf '\n================================================================\n'
-	@printf 'Target: go-get'
-	@printf '\n================================================================\n'
-	@for tool in $(GOTOOLS); do \
-		$(GO_BIN) install $$tool; \
-	done
-	@$(GO_BIN) mod tidy
-	@$(GO_BIN) mod vendor
-	@echo '[go-get] Done.'
 
 .PHONY: unit-test-with-coverage
 unit-test-with-coverage: TEST_FLAGS += -covermode=atomic -coverprofile=$(COVERAGE_FILE)
@@ -192,17 +176,3 @@ proxy-test:
 	$(GO_BIN) test --tags=proxytests ./test/proxy/; status=$$?; \
     docker-compose -f test/proxy/docker-compose.yml down; \
     exit $$status
-
-.PHONY: third-party-notices
-third-party-notices: OUT ?= THIRD_PARTY_NOTICES.md
-third-party-notices: deps
-	@go list -mod=mod -m -json all | go-licence-detector \
-		-rules assets/licence/rules.json \
-		-noticeTemplate assets/licence/THIRD_PARTY_NOTICES.md.tmpl \
-		-noticeOut $(OUT)
-#		-includeIndirect
-
-.PHONY: third-party-notices-check
-third-party-notices-check:
-	@OUT=THIRD_PARTY_NOTICES_GENERATED.md make third-party-notices
-	@diff THIRD_PARTY_NOTICES_GENERATED.md THIRD_PARTY_NOTICES.md 2>&1 > /dev/null || (echo "THIRD_PARTY_NOTICES.md should be generated"; exit 1)

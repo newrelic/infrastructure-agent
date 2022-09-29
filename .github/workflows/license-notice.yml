@@ -1,4 +1,4 @@
-name: 👥 Third party notices
+name: 👥 License notices
 
 on:
   push:
@@ -9,7 +9,7 @@ env:
 
 jobs:
   security:
-    name: Run third party licenses check
+    name: Run licenses check
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
@@ -20,3 +20,5 @@ jobs:
           password: ${{ env.DOCKER_HUB_PASSWORD }}
       - name: Ensure that third party notices is up to date
         run: make ci/third-party-notices-check
+      - name: Ensure all internal files contain license header
+        run: make ci/license-header-check
