@@ -7,6 +7,7 @@ require (
 	github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6
 	github.com/antihax/optional v1.0.0
 	github.com/aws/aws-sdk-go v1.44.69
+	github.com/beevik/ntp v0.3.0
 	github.com/coreos/go-systemd/v22 v22.3.2
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200618181300-9dc6525e6118+incompatible
 	github.com/evanphx/json-patch v4.9.0+incompatible

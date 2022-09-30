@@ -26,7 +26,7 @@ func TestHostSharedMemory(t *testing.T) {
 	})
 	storageSampler := storage.NewSampler(ctx)
 
-	systemSampler := metrics.NewSystemSampler(ctx, storageSampler)
+	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil)
 
 	sampleB, _ := systemSampler.Sample()
 	beforeSample := sampleB[0].(*metrics.SystemSample)
@@ -59,7 +59,7 @@ func TestHostCachedMemory(t *testing.T) {
 	})
 	storageSampler := storage.NewSampler(ctx)
 
-	systemSampler := metrics.NewSystemSampler(ctx, storageSampler)
+	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil)
 
 	sampleB, _ := systemSampler.Sample()
 	beforeSample := sampleB[0].(*metrics.SystemSample)
@@ -137,7 +137,7 @@ func TestHostSlabMemory(t *testing.T) {
 	})
 	storageSampler := storage.NewSampler(ctx)
 
-	systemSampler := metrics.NewSystemSampler(ctx, storageSampler)
+	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil)
 
 	sampleB, _ := systemSampler.Sample()
 	beforeSample := sampleB[0].(*metrics.SystemSample)

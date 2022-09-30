@@ -5,25 +5,45 @@ package metrics
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/shirou/gopsutil/v3/host"
 )
 
 type HostSample struct {
-	Uptime uint64 `json:"uptime"`
+	Uptime    uint64   `json:"uptime"`
+	NtpOffset *float64 `json:"ntpOffset,omitempty"`
 }
 
-type HostMonitor struct{}
+type HostMonitor struct {
+	ntpMonitor NtpMonitor
+}
 
-func NewHostMonitor() *HostMonitor {
-	return &HostMonitor{}
+type NtpMonitor interface {
+	Offset() (time.Duration, error)
+}
+
+func NewHostMonitor(ntpMonitor NtpMonitor) *HostMonitor {
+	return &HostMonitor{ntpMonitor: ntpMonitor}
 }
 
 func (m *HostMonitor) Sample() (*HostSample, error) {
+	hostSample := &HostSample{}
 	uptime, err := host.Uptime()
 	if err != nil {
 		return nil, fmt.Errorf("cannot sample uptime: %w", err)
 	}
+	hostSample.Uptime = uptime
 
-	return &HostSample{Uptime: uptime}, nil
+	if m.ntpMonitor != nil {
+		ntpOffset, err := m.ntpMonitor.Offset()
+		if err != nil {
+			syslog.WithError(err).Error("cannot get ntp offset")
+		} else {
+			seconds := ntpOffset.Seconds()
+			hostSample.NtpOffset = &seconds
+		}
+	}
+
+	return hostSample, nil
 }

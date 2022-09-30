@@ -17,8 +17,7 @@ import (
 	. "gopkg.in/check.v1"
 )
 
-type ConfigSuite struct {
-}
+type ConfigSuite struct{}
 
 var _ = Suite(&ConfigSuite{})
 
@@ -114,12 +113,10 @@ license_key: `
 		}
 		c.Assert(cfg.License, Equals, test.parsedKey)
 	}
-
 }
 
 func (s *ConfigSuite) TestValidateConfigFrequencySettings(c *C) {
-
-	var testCases = []struct {
+	testCases := []struct {
 		req      int64
 		min      int64
 		def      int64
@@ -332,7 +329,7 @@ agent_dir: /my/overriden/agent/dir
 	c.Assert(cfg.MaxMetricBatchEntitiesCount, Equals, 300)
 	c.Assert(cfg.MaxMetricBatchEntitiesQueue, Equals, 1000)
 
-	var expectedMetricEndpoint = defaultMetricsIngestEndpoint
+	expectedMetricEndpoint := defaultMetricsIngestEndpoint
 	if cfg.ConnectEnabled {
 		expectedMetricEndpoint = defaultMetricsIngestV2Endpoint
 	}
@@ -366,6 +363,11 @@ agent_dir: /my/overriden/agent/dir
 		// verify that init function configured all default environment variables
 		c.Assert(cfg.PassthroughEnvironment, HasLen, 21)
 	}
+
+	c.Assert(cfg.Ntp.Enabled, Equals, defaultNtpEnabled)
+	c.Assert(cfg.Ntp.Pool, DeepEquals, defaultNtpPool)
+	c.Assert(cfg.Ntp.Timeout, DeepEquals, defaultNtpTimeout)
+	c.Assert(cfg.Ntp.Interval, DeepEquals, defaultNtpInterval)
 }
 
 func (s *ConfigSuite) TestCalculateCollectorURL(c *C) {
@@ -529,14 +531,14 @@ func TestPublicFields_Empty(t *testing.T) {
 }
 
 func TestPublicFields_New(t *testing.T) {
-	var config = NewConfig()
+	config := NewConfig()
 
 	_, err := config.PublicFields()
 	assert.NoError(t, err)
 }
 
 func TestPublicFields_HidePrivate(t *testing.T) {
-	var config = NewConfig()
+	config := NewConfig()
 	config.CollectorURL = "test"
 
 	actual, err := config.PublicFields()
@@ -547,7 +549,7 @@ func TestPublicFields_HidePrivate(t *testing.T) {
 }
 
 func TestPublicFields_Public(t *testing.T) {
-	var config = NewConfig()
+	config := NewConfig()
 	config.Proxy = "test"
 
 	actual, err := config.PublicFields()
@@ -559,7 +561,7 @@ func TestPublicFields_Public(t *testing.T) {
 }
 
 func TestPublicFields_DereferencePointers(t *testing.T) {
-	var config = NewConfig()
+	config := NewConfig()
 	b := true
 	config.EnableProcessMetrics = &b
 
@@ -572,7 +574,7 @@ func TestPublicFields_DereferencePointers(t *testing.T) {
 }
 
 func TestPublicFields_Obfuscate(t *testing.T) {
-	var config = NewConfig()
+	config := NewConfig()
 	config.License = "testabcd"
 
 	actual, err := config.PublicFields()
@@ -789,7 +791,7 @@ func TestLoadLogConfig_BackwardsCompatability(t *testing.T) {
 	toPtr := func(a bool) *bool {
 		return &a
 	}
-	var logConfigs = []struct {
+	logConfigs := []struct {
 		name    string
 		c       Config
 		verbose int
@@ -811,14 +813,14 @@ func TestLoadLogConfig_BackwardsCompatability(t *testing.T) {
 }
 
 func TestLoadLogConfig_Populate(t *testing.T) {
-	//TODO: migrate to generic function with go1.18
+	// TODO: migrate to generic function with go1.18
 	boolPtr := func(a bool) *bool {
 		return &a
 	}
 	intPtr := func(a int) *int {
 		return &a
 	}
-	var configs = []struct {
+	configs := []struct {
 		name              string
 		c                 Config
 		expectedLogConfig LogConfig
@@ -833,6 +835,67 @@ func TestLoadLogConfig_Populate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.c.loadLogConfig()
 			assert.Equal(t, tt.expectedLogConfig, tt.c.Log)
+		})
+	}
+}
+
+func TestLoadNtpConfig(t *testing.T) {
+	testCases := []struct {
+		name     string
+		yamlCfg  string
+		expected NtpConfig
+	}{
+		{
+			name:    "Default",
+			yamlCfg: ``,
+			expected: NtpConfig{
+				Enabled:  defaultNtpEnabled,
+				Pool:     defaultNtpPool,
+				Timeout:  defaultNtpTimeout,
+				Interval: defaultNtpInterval,
+			},
+		},
+		{
+			name: "Disabled",
+			yamlCfg: `
+ntp:
+  enabled: false
+`,
+			expected: NtpConfig{
+				Enabled:  false,
+				Pool:     defaultNtpPool,
+				Timeout:  defaultNtpTimeout,
+				Interval: defaultNtpInterval,
+			},
+		},
+		{
+			name: "Custom server pool, interval and timeout",
+			yamlCfg: `
+ntp:
+  pool:
+    - "one.server.com"
+    - "two.server.com"
+    - "three.server.com"
+  interval: 10
+  timeout: 300
+`,
+			expected: NtpConfig{
+				Enabled:  defaultNtpEnabled,
+				Pool:     []string{"one.server.com", "two.server.com", "three.server.com"},
+				Timeout:  300,
+				Interval: 10,
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			tmp, err := createTestFile([]byte(testCase.yamlCfg))
+			require.NoError(t, err)
+
+			cfg, err := LoadConfig(tmp.Name())
+			assert.Equal(t, testCase.expected, cfg.Ntp)
+			os.Remove(tmp.Name())
 		})
 	}
 }

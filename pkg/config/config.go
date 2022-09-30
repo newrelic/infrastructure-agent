@@ -1123,6 +1123,17 @@ type Config struct {
 	// Default: empty
 	// Public: No
 	SelfInstrumentationTelemetryEndpoint string `yaml:"self_instrumentation_telemetry_endpoint" envconfig:"self_instrumentation_telemetry_endpoint"`
+
+	// Ntp is a map for ntp configuration. It is enabled by default and it uses public ntp server pool https://www.ntppool.org/en/use.html
+	// Separate keys and values with colons :, as in KEY: VALUE, and separate each key-value pair with a line break.
+	// Key-value can be any of the following:
+	// "enabled: boolean" flag to enable/disable the ntp values (Default: true)
+	// "pool: []string" list of ntp servers (Default: ["0.pool.ntp.org","1.pool.ntp.org","2.pool.ntp.org","3.pool.ntp.org"])
+	// "interval: int" interval in minutes to check ntp servers  (Default: 15)
+	// "timeout: int" ntp request timeout value in seconds (Default: 10)
+	// Default: none
+	// Public: Yes
+	Ntp NtpConfig `yaml:"ntp" envconfig:"ntp"`
 }
 
 // Troubleshoot trobleshoot mode configuration.
@@ -1221,6 +1232,23 @@ func (lc *LogConfig) VerboseEnabled() int {
 	}
 
 	return 0
+}
+
+// NtpConfig map all ntp configuration options.
+type NtpConfig struct {
+	Pool     []string `yaml:"pool" envconfig:"pool"`
+	Enabled  bool     `yaml:"enabled" envconfig:"enabled"`
+	Interval uint     `yaml:"interval" envconfig:"interval"`
+	Timeout  uint     `yaml:"timeout" envconfig:"timeout"`
+}
+
+func NewNtpConfig() NtpConfig {
+	return NtpConfig{
+		Pool:     defaultNtpPool,
+		Enabled:  defaultNtpEnabled,
+		Interval: defaultNtpInterval,
+		Timeout:  defaultNtpTimeout,
+	}
 }
 
 func coalesce(values ...string) string {
@@ -1643,6 +1671,7 @@ func NewConfig() *Config {
 		DefaultIntegrationsTempDir:  defaultIntegrationsTempDir,
 		IncludeMetricsMatchers:      defaultMetricsMatcherConfig,
 		InventoryQueueLen:           DefaultInventoryQueue,
+		Ntp:                         NewNtpConfig(),
 	}
 }
 
@@ -1706,7 +1735,6 @@ func isConfigDefined(key string, cfgMetadata config_loader.YAMLMetadata) bool {
 // Plugins have to implement the logic in which they disable themselves
 // if their frequency equals FREQ_DISABLE_SAMPLING.
 func ValidateConfigFrequencySetting(req, min, def int64, disable bool) time.Duration {
-
 	if req <= FREQ_DISABLE_SAMPLING || disable && req == FREQ_DEFAULT_SAMPLING {
 		return FREQ_DISABLE_SAMPLING
 	}
@@ -1888,7 +1916,7 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 		cfg.CommandChannelURL = calculateCmdChannelURL(cfg.License, cfg.Staging, cfg.Fedramp)
 	}
 
-	//InventoryIngestEndpoint default value defined in NewConfig
+	// InventoryIngestEndpoint default value defined in NewConfig
 	nlog.WithField("InventoryIngestEndpoint", cfg.InventoryIngestEndpoint).
 		Debug("Inventory ingest endpoint.")
 
@@ -1903,16 +1931,16 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 			cfg.CommandChannelURL + cfg.CommandChannelEndpoint,
 			cfg.CollectorURL + cfg.MetricsIngestEndpoint,
 			cfg.CollectorURL + cfg.InventoryIngestEndpoint,
-			//cfg.DMIngestURL(), // dimensional metrics without shimming not available yet
+			// cfg.DMIngestURL(), // dimensional metrics without shimming not available yet
 			// no endpoint value to checking log ingest reachability
 		}
 	}
 
-	//MetricsIngestEndpoint default value defined in NewConfig
+	// MetricsIngestEndpoint default value defined in NewConfig
 	nlog.WithField("MetricsIngestEndpoint", cfg.MetricsIngestEndpoint).
 		Debug("Metrics ingest endpoint.")
 
-	//IdentityIngestEndpoint default value defined in NewConfig
+	// IdentityIngestEndpoint default value defined in NewConfig
 	nlog.WithField("IdentityIngestEndpoint", cfg.IdentityIngestEndpoint).
 		Debug("Identity ingest endpoint.")
 
@@ -1925,7 +1953,7 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 		cfg.OfflineLoggingMode = true
 	}
 
-	//AgentDir default value defined in NewConfig
+	// AgentDir default value defined in NewConfig
 	nlog.WithField("AgentDir", cfg.AgentDir).Debug("Default output directory.")
 
 	if defaultAppDataDir != "" && cfg.AppDataDir == "" {
@@ -1934,7 +1962,7 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	}
 
 	if cfg.AppDataDir != "" {
-		if err = disk.MkdirAll(cfg.AppDataDir, 0755); err != nil {
+		if err = disk.MkdirAll(cfg.AppDataDir, 0o755); err != nil {
 			nlog.WithError(err).Warn("can't create application data directory. Setting it to default")
 			cfg.AppDataDir = ""
 		}
@@ -1980,7 +2008,7 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 		nlog.WithField("LogFile", cfg.Log.File).Debug("Logging to file.")
 	}
 
-	//Caution: PluginConfigFiles is ALWAYS defined with the default value. Is this right? Be aware any change could affect backwards compatibilities.
+	// Caution: PluginConfigFiles is ALWAYS defined with the default value. Is this right? Be aware any change could affect backwards compatibilities.
 	cfg.PluginConfigFiles = defaultPluginConfigFiles
 
 	if cfg.PayloadCompressionLevel < gzip.NoCompression || cfg.PayloadCompressionLevel > gzip.BestCompression {
@@ -2088,23 +2116,23 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 		cfg.LegacyStorageSampler = true
 	}
 
-	//DockerApiVersion default value defined in NewConfig
+	// DockerApiVersion default value defined in NewConfig
 	nlog.WithField("DockerApiVersion", cfg.DockerApiVersion).Debug("Docker client API version.")
-	//FingerprintUpdateFreqSec default value defined in NewConfig
+	// FingerprintUpdateFreqSec default value defined in NewConfig
 	nlog.WithField("FingerprintUpdateFreqSec", cfg.FingerprintUpdateFreqSec).Debug("Fingerprint update freq.")
-	//DnsHostnameResolution value defined in NewConfig
+	// DnsHostnameResolution value defined in NewConfig
 	nlog.WithField("DnsHostnameResolution", cfg.DnsHostnameResolution).Debug("DNS hostname resolution.")
-	//IgnoreReclaimable value defined in NewConfig
+	// IgnoreReclaimable value defined in NewConfig
 	nlog.WithField("IgnoreReclaimable", cfg.IgnoreReclaimable).Debug("Ignoring reclaimable memory.")
-	//CloudMaxRetryCount default value defined in NewConfig
+	// CloudMaxRetryCount default value defined in NewConfig
 	nlog.WithField("CloudMaxRetryCount", cfg.CloudMaxRetryCount).Debug("Cloud detection max retry count on error.")
-	//CloudRetryBackOffSec default value defined in NewConfig
+	// CloudRetryBackOffSec default value defined in NewConfig
 	nlog.WithField("CloudRetryBackOffSec", cfg.CloudRetryBackOffSec).Debug("Cloud detection retry backOff on error.")
-	//CloudMetadataDisableKeepAlive default value defined in NewConfig
+	// CloudMetadataDisableKeepAlive default value defined in NewConfig
 	nlog.WithField("CloudMetadataDisableKeepAlive", cfg.CloudMetadataDisableKeepAlive).Debug("Cloud metadata keep-alive.")
-	//ProxyValidateCerts default value defined in NewConfig
+	// ProxyValidateCerts default value defined in NewConfig
 	nlog.WithField("ProxyValidateCerts", cfg.ProxyValidateCerts).Debug("Proxy certificate verification.")
-	//ProxyConfigPlugin default value defined in NewConfig
+	// ProxyConfigPlugin default value defined in NewConfig
 	nlog.WithField("ProxyConfigPlugin", cfg.ProxyConfigPlugin).Debug("Default proxy config plugin enabled.")
 
 	if runtime.GOOS == "windows" && !isConfigDefined("win_removable_drives", cfgMetadata) {
@@ -2112,7 +2140,7 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 		nlog.WithField("WinRemovableDrives", cfg.WinRemovableDrives).Debug("Using default Windows removable drives storage sampling.")
 	}
 
-	//defaultCloudMetadataExpiryInSec default value defined in NewConfig
+	// defaultCloudMetadataExpiryInSec default value defined in NewConfig
 	nlog.WithField("defaultCloudMetadataExpiryInSec", defaultCloudMetadataExpiryInSec).Debug("Using default cloud metadata expiry time.")
 
 	cfg.IsForwardOnly = cfg.IsForwardOnly || cfg.K8sIntegration
@@ -2181,6 +2209,7 @@ func (i *IncludeMetricsMap) Decode(value string) error {
 	}
 	return nil
 }
+
 func (i *LogFilters) Decode(value string) error {
 	data := []byte(value)
 

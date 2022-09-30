@@ -104,6 +104,10 @@ var (
 	defaultWinRemovableDrives            = true
 	defaultMetricsMatcherConfig          = IncludeMetricsMap{}
 	defaultRegisterMaxRetryBoSecs        = 60
+	defaultNtpPool                       = []string{} // i.e: []string{"time.cloudflare.com"}
+	defaultNtpEnabled                    = true
+	defaultNtpInterval                   = uint(15)   // minutes
+	defaultNtpTimeout                    = uint(5000) // millisecods
 )
 
 // Default internal values

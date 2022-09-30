@@ -22,7 +22,7 @@ func TestUptime(t *testing.T) {
 		MetricsNetworkSampleRate: 1,
 	})
 	storageSampler := storage.NewSampler(ctx)
-	systemSampler := metrics.NewSystemSampler(ctx, storageSampler)
+	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil)
 
 	sampleB1, _ := systemSampler.Sample()
 	sample1 := sampleB1[0].(*metrics.SystemSample)

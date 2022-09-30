@@ -42,14 +42,14 @@ type SystemSampler struct {
 	waitForCleanup *sync.WaitGroup
 }
 
-func NewSystemSampler(context agent.AgentContext, storageSampler *storage.Sampler) *SystemSampler {
+func NewSystemSampler(context agent.AgentContext, storageSampler *storage.Sampler, ntpMonitor NtpMonitor) *SystemSampler {
 	cfg := context.Config()
 	return &SystemSampler{
 		CpuMonitor:     NewCPUMonitor(context),
 		DiskMonitor:    NewDiskMonitor(storageSampler),
 		LoadMonitor:    NewLoadMonitor(),
 		MemoryMonitor:  NewMemoryMonitor(cfg.IgnoreReclaimable),
-		HostMonitor:    NewHostMonitor(),
+		HostMonitor:    NewHostMonitor(ntpMonitor),
 		context:        context,
 		waitForCleanup: &sync.WaitGroup{},
 	}
