@@ -33,9 +33,11 @@ import (
 
 const (
 	// TracesFieldName can be used as a field in the structured log.
-	TracesFieldName = "traces"
-	SupervisorTrace = "supervisor"
-	FeatureTrace    = "feature"
+	TracesFieldName      = "traces"
+	TracesFieldComponent = "component"
+	SupervisorTrace      = "supervisor"
+	HttpTracer           = "HttpTracer"
+	FeatureTrace         = "feature"
 
 	// LogFilterWildcard will match everything.
 	LogFilterWildcard = "*"
