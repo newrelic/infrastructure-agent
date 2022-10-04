@@ -3,9 +3,10 @@
 package metrics
 
 import (
-	"github.com/shirou/gopsutil/v3/mem"
 	"strings"
 	"testing"
+
+	"github.com/shirou/gopsutil/v3/mem"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,6 +22,18 @@ func TestMemoryMonitor_IgnoreReclaimable_Sample(t *testing.T) {
 	assert.NotZero(t, sample.MemoryFree)
 	assert.NotZero(t, sample.MemoryUsed)
 	assert.InDelta(t, sample.MemoryTotal, sample.MemoryFree+sample.MemoryUsed, 0.1)
+
+	assert.InDelta(t, sample.SwapTotal, sample.SwapFree+sample.SwapUsed, 0.1)
+}
+
+func TestNotNullSwapMemory(t *testing.T) {
+	m := NewMemoryMonitor(true)
+
+	sample, err := m.Sample()
+	require.NoError(t, err)
+
+	assert.NotNil(t, sample.SwapIn)
+	assert.NotNil(t, sample.SwapOut)
 
 	assert.InDelta(t, sample.SwapTotal, sample.SwapFree+sample.SwapUsed, 0.1)
 }

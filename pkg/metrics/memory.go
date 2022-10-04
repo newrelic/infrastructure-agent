@@ -9,6 +9,15 @@ import (
 	"github.com/shirou/gopsutil/v3/mem"
 )
 
+type SwapSample struct {
+	SwapTotal float64 `json:"swapTotalBytes"`
+	SwapFree  float64 `json:"swapFreeBytes"`
+	SwapUsed  float64 `json:"swapUsedBytes"`
+	// only available (gopsutil) in Linux
+	SwapIn  *float64 `json:"swapInBytes,omitempty"`
+	SwapOut *float64 `json:"swapOutBytes,omitempty"`
+}
+
 type MemorySample struct {
 	MemoryTotal       float64 `json:"memoryTotalBytes"`
 	MemoryFree        float64 `json:"memoryFreeBytes"`
@@ -18,12 +27,7 @@ type MemorySample struct {
 	MemoryCachedBytes float64 `json:"memoryCachedBytes"`
 	MemorySlabBytes   float64 `json:"memorySlabBytes"`
 	MemorySharedBytes float64 `json:"memorySharedBytes"`
-
-	SwapTotal    float64 `json:"swapTotalBytes"`
-	SwapFree     float64 `json:"swapFreeBytes"`
-	SwapUsed     float64 `json:"swapUsedBytes"`
-	SwapInBytes  float64 `json:"swapInBytes"`
-	SwapOutBytes float64 `json:"swapOutBytes"`
+	SwapSample
 }
 
 type MemoryMonitor struct {
@@ -42,7 +46,7 @@ func (mm *MemoryMonitor) Sample() (result *MemorySample, err error) {
 		return nil, err
 	}
 
-	swap, err := mem.SwapMemory()
+	swap, err := swapMemory()
 	if err != nil {
 		return nil, err
 	}
@@ -65,9 +69,6 @@ func (mm *MemoryMonitor) Sample() (result *MemorySample, err error) {
 		MemoryFreePercent: memoryFreePercent,
 		MemoryUsedPercent: memoryUsedPercent,
 
-		SwapTotal:    float64(swap.Total),
-		SwapUsed:     float64(swap.Used),
-		SwapInBytes:  float64(swap.Sin),
-		SwapOutBytes: float64(swap.Sout),
+		SwapSample: *swap,
 	}, nil
 }
