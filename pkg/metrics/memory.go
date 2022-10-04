@@ -19,9 +19,11 @@ type MemorySample struct {
 	MemorySlabBytes   float64 `json:"memorySlabBytes"`
 	MemorySharedBytes float64 `json:"memorySharedBytes"`
 
-	SwapTotal float64 `json:"swapTotalBytes"`
-	SwapFree  float64 `json:"swapFreeBytes"`
-	SwapUsed  float64 `json:"swapUsedBytes"`
+	SwapTotal    float64 `json:"swapTotalBytes"`
+	SwapFree     float64 `json:"swapFreeBytes"`
+	SwapUsed     float64 `json:"swapUsedBytes"`
+	SwapInBytes  float64 `json:"swapInBytes"`
+	SwapOutBytes float64 `json:"swapOutBytes"`
 }
 
 type MemoryMonitor struct {
@@ -63,8 +65,9 @@ func (mm *MemoryMonitor) Sample() (result *MemorySample, err error) {
 		MemoryFreePercent: memoryFreePercent,
 		MemoryUsedPercent: memoryUsedPercent,
 
-		SwapTotal: float64(swap.Total),
-		SwapUsed:  float64(swap.Used),
-		SwapFree:  float64(swap.Free),
+		SwapTotal:    float64(swap.Total),
+		SwapUsed:     float64(swap.Used),
+		SwapInBytes:  float64(swap.Sin),
+		SwapOutBytes: float64(swap.Sout),
 	}, nil
 }
