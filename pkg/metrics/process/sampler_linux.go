@@ -4,6 +4,7 @@ package process
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -105,17 +106,18 @@ func (ps *processSampler) Sample() (results sample.EventBatch, err error) {
 		}
 	}
 
-	pidsWithError := make(map[string][]int32)
-
 	for _, pid := range pids {
 		var processSample *types.ProcessSample
 		var err error
 
 		processSample, err = ps.harvest.Do(pid, elapsedSeconds)
 		if err != nil {
-			if mplog.IsDebugEnabled() {
-				pidsWithError[err.Error()] = append(pidsWithError[err.Error()], pid)
+			procLog := mplog.WithError(err)
+			if errors.Is(err, errProcessWithoutRSS) {
+				procLog = procLog.WithField(config.TracesFieldName, config.ProcessTrace)
 			}
+
+			procLog.WithField("pid", pid).Debug("Skipping process.")
 			continue
 		}
 
@@ -124,12 +126,6 @@ func (ps *processSampler) Sample() (results sample.EventBatch, err error) {
 		}
 
 		results = append(results, ps.normalizeSample(processSample))
-	}
-
-	if mplog.IsDebugEnabled() {
-		for strErr, pids := range pidsWithError {
-			mplog.WithError(fmt.Errorf("%s", strErr)).WithField("PIDs", pids).Debug("Skipping processes.")
-		}
 	}
 
 	ps.cache.items.RemoveUntilLen(len(pids))

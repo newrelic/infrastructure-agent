@@ -669,7 +669,7 @@ func Test_ParseLogConfigRule_EnvVar(t *testing.T) {
 		Forward:              nil,
 		SmartLevelEntryLimit: &expectedSmartLevelEntryLimit,
 		IncludeFilters:       map[string][]interface{}{"component": {"ProcessSample", "StorageSample"}},
-		ExcludeFilters:       map[string][]interface{}{TracesFieldName: {SupervisorTrace, FeatureTrace}},
+		ExcludeFilters:       map[string][]interface{}{TracesFieldName: {SupervisorTrace, FeatureTrace, ProcessTrace}},
 	}
 	assert.EqualValues(t, expected, cfg.Log)
 }
@@ -823,10 +823,10 @@ func TestLoadLogConfig_Populate(t *testing.T) {
 		c                 Config
 		expectedLogConfig LogConfig
 	}{
-		{"Verbose disabled (info level) and custom log file", Config{Verbose: 0, LogFile: "agent.log"}, LogConfig{Level: LogLevelInfo, File: "agent.log", ToStdout: boolPtr(false), Forward: boolPtr(false), ExcludeFilters: LogFilters{"traces": []interface{}{"supervisor", "feature"}}, SmartLevelEntryLimit: intPtr(0)}},
-		{"Smart Verbose enabled with defined limit", Config{Verbose: 2, SmartVerboseModeEntryLimit: 200}, LogConfig{Level: LogLevelSmart, File: "", ToStdout: boolPtr(false), Forward: boolPtr(false), ExcludeFilters: LogFilters{"traces": []interface{}{"supervisor", "feature"}}, SmartLevelEntryLimit: intPtr(200)}},
-		{"Forward Verbose enabled and stdout", Config{Verbose: 3, LogToStdout: true}, LogConfig{Level: LogLevelDebug, File: "", ToStdout: boolPtr(true), Forward: boolPtr(true), ExcludeFilters: LogFilters{"traces": []interface{}{"supervisor", "feature"}}, SmartLevelEntryLimit: intPtr(0)}},
-		{"Trace Verbose enabled and file", Config{Verbose: 4, LogFile: "agent.log"}, LogConfig{Level: LogLevelTrace, File: "agent.log", ToStdout: boolPtr(false), Forward: boolPtr(false), ExcludeFilters: LogFilters{"traces": []interface{}{"supervisor", "feature"}}, SmartLevelEntryLimit: intPtr(0)}},
+		{"Verbose disabled (info level) and custom log file", Config{Verbose: 0, LogFile: "agent.log"}, LogConfig{Level: LogLevelInfo, File: "agent.log", ToStdout: boolPtr(false), Forward: boolPtr(false), ExcludeFilters: LogFilters{"traces": []interface{}{"supervisor", "feature", "process"}}, SmartLevelEntryLimit: intPtr(0)}},
+		{"Smart Verbose enabled with defined limit", Config{Verbose: 2, SmartVerboseModeEntryLimit: 200}, LogConfig{Level: LogLevelSmart, File: "", ToStdout: boolPtr(false), Forward: boolPtr(false), ExcludeFilters: LogFilters{"traces": []interface{}{"supervisor", "feature", "process"}}, SmartLevelEntryLimit: intPtr(200)}},
+		{"Forward Verbose enabled and stdout", Config{Verbose: 3, LogToStdout: true}, LogConfig{Level: LogLevelDebug, File: "", ToStdout: boolPtr(true), Forward: boolPtr(true), ExcludeFilters: LogFilters{"traces": []interface{}{"supervisor", "feature", "process"}}, SmartLevelEntryLimit: intPtr(0)}},
+		{"Trace Verbose enabled and file", Config{Verbose: 4, LogFile: "agent.log"}, LogConfig{Level: LogLevelTrace, File: "agent.log", ToStdout: boolPtr(false), Forward: boolPtr(false), ExcludeFilters: LogFilters{"traces": []interface{}{"supervisor", "feature", "process"}}, SmartLevelEntryLimit: intPtr(0)}},
 	}
 
 	for _, tt := range configs {

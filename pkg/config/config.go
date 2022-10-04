@@ -36,6 +36,7 @@ const (
 	TracesFieldName = "traces"
 	SupervisorTrace = "supervisor"
 	FeatureTrace    = "feature"
+	ProcessTrace    = "process"
 
 	// LogFilterWildcard will match everything.
 	LogFilterWildcard = "*"
@@ -1178,7 +1179,7 @@ func (lc *LogConfig) AttachDefaultFilters() {
 	}
 
 	// Exclude by default supervisor and feature traces.
-	lc.ExcludeFilters[TracesFieldName] = append(lc.ExcludeFilters[TracesFieldName], SupervisorTrace, FeatureTrace)
+	lc.ExcludeFilters[TracesFieldName] = append(lc.ExcludeFilters[TracesFieldName], SupervisorTrace, FeatureTrace, ProcessTrace)
 }
 
 // HasIncludeFilter returns true if key-value pair are included in the filtering configuration.
