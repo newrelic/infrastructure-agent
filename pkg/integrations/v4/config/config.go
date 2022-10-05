@@ -34,7 +34,8 @@ type ConfigEntry struct {
 	// Config embeds a configuration file as a string. It can't coexist with TemplatePath
 	Config interface{} `yaml:"config" json:"config"`
 	// TemplatePath specifies the path of an external configuration file. It can't coexist with Config
-	TemplatePath string `yaml:"config_template_path" json:"config_template_path"`
+	TemplatePath  string `yaml:"config_template_path" json:"config_template_path"`
+	LogsQueueSize int    `yaml:"logs_queue_size" json:"logs_queue_size"`
 }
 
 // EnableConditions condition the execution of an integration to the trueness of ALL the conditions

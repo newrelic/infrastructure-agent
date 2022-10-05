@@ -43,7 +43,7 @@ var (
 	logrusRegexp = regexp.MustCompile(`([^\s]*?)=(".*?[^\\]"|&{.*?}|[^\s]*)`)
 )
 
-//generic types to handle the stderr log parsing
+// generic types to handle the stderr log parsing
 type logFields map[string]interface{}
 type logParser func(line string) (fields logFields)
 
@@ -86,6 +86,7 @@ func NewRunner(
 		definition:     intDef,
 		heartBeatFunc:  func() {},
 		stderrParser:   parseLogrusFields,
+		lastStderr:     newStderrQueue(intDef.LogsQueueSize),
 		terminateQueue: terminateQ,
 		cache:          cache.CreateCache(),
 		idLookup:       idLookup,
