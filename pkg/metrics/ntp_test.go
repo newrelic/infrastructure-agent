@@ -194,19 +194,19 @@ func TestOffset_AllHostErrorShouldReturnError(t *testing.T) {
 	ntpMonitor := NewNtp([]string{"one", "two", "three"}, timeout, interval)
 	ntpMonitor.ntpQuery = ntpQueryMock([]ntpResp{
 		{
-			err: errors.New("this is an error"),
+			err: errors.New("this is an error1"),
 		},
 		{
-			err: errors.New("this is an error"),
+			err: errors.New("this is an error2"),
 		},
 		{
-			err: errors.New("this is an error"),
+			err: errors.New("this is an error3"),
 		},
 	}...)
 	ntpMonitor.now = nowMock("2022-09-28 16:02:45")
 	offset, err := ntpMonitor.Offset()
 	assert.Equal(t, time.Duration(0), offset)
-	assert.ErrorIs(t, ErrGettingNtpOffset, err)
+	assert.ErrorAs(t, err, &ErrGettingNtpOffset)
 }
 
 // nolint:unparam

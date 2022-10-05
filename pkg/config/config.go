@@ -1133,7 +1133,7 @@ type Config struct {
 	// "timeout: int" ntp request timeout value in seconds (Default: 10)
 	// Default: none
 	// Public: Yes
-	Ntp NtpConfig `yaml:"ntp" envconfig:"ntp"`
+	Ntp NtpConfig `yaml:"ntp_sample" envconfig:"ntp_sample"`
 }
 
 // Troubleshoot trobleshoot mode configuration.

@@ -254,6 +254,14 @@ Distributed under the following license(s):
 
 
 
+## [go.uber.org/multierr](https://go.uber.org/multierr)
+
+Distributed under the following license(s):
+
+* MIT
+
+
+
 ## [golang.org/x/net](https://golang.org/x/net)
 
 Distributed under the following license(s):

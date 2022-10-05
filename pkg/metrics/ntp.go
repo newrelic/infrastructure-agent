@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/beevik/ntp"
+	"go.uber.org/multierr"
 )
 
 const (
@@ -80,17 +81,19 @@ func (p *Ntp) Offset() (time.Duration, error) {
 
 	var offsets []time.Duration
 
+	var ntpQueryErr error
 	for _, host := range p.pool {
 		response, err := p.ntpQuery(host, ntp.QueryOptions{Timeout: p.timeout})
 		if err == nil {
 			offsets = append(offsets, response.ClockOffset)
 		} else {
-			syslog.WithError(err).WithField("ntp_host", host).WithField("timeout", p.timeout).Warn("error getting ntp offset")
+			ntpQueryErr = multierr.Append(ntpQueryErr, err)
+			syslog.WithError(err).WithField("ntp_host", host).WithField("timeout", p.timeout).Debug("error getting ntp offset")
 		}
 	}
 
 	if len(offsets) == 0 {
-		return 0, ErrGettingNtpOffset
+		return 0, multierr.Append(ErrGettingNtpOffset, ntpQueryErr)
 	}
 
 	// calculate average from all hosts values
