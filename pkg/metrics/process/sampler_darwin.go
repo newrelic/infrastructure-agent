@@ -116,6 +116,7 @@ func (ps *processSampler) Sample() (results sample.EventBatch, err error) {
 			}
 
 			procLog.WithField("pid", pid).Debug("Skipping process.")
+			continue
 		}
 
 		if dockerDecorator != nil {
