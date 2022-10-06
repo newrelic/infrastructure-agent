@@ -1127,8 +1127,8 @@ type Config struct {
 	// Ntp is a map for ntp configuration. It is enabled by default and it uses public ntp server pool https://www.ntppool.org/en/use.html
 	// Separate keys and values with colons :, as in KEY: VALUE, and separate each key-value pair with a line break.
 	// Key-value can be any of the following:
-	// "enabled: boolean" flag to enable/disable the ntp values (Default: true)
-	// "pool: []string" list of ntp servers (Default: ["0.pool.ntp.org","1.pool.ntp.org","2.pool.ntp.org","3.pool.ntp.org"])
+	// "enabled: boolean" flag to enable/disable the ntp values (Default: false)
+	// "pool: []string" list of ntp servers (Default: [])
 	// "interval: int" interval in minutes to check ntp servers  (Default: 15)
 	// "timeout: int" ntp request timeout value in seconds (Default: 10)
 	// Default: none
