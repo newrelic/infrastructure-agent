@@ -19,3 +19,17 @@ func gopsMemorySample() (*mem.VirtualMemoryStat, error) {
 	memory.Used = memory.Total - memory.Available
 	return memory, nil
 }
+
+// returns the available swap metrics.
+func swapMemory() (*SwapSample, error) {
+	swap, err := mem.SwapMemory()
+	if err != nil {
+		return nil, err
+	}
+
+	return &SwapSample{
+		SwapFree:  float64(swap.Free),
+		SwapTotal: float64(swap.Total),
+		SwapUsed:  float64(swap.Used),
+	}, nil
+}
