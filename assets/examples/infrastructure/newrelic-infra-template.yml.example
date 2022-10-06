@@ -138,7 +138,7 @@ license_key: your_license_key
 # Risk     : Providing a log file path that does not yet exist causes the agent
 #            to fail on startup.
 # Tip      : Use json format when forwarding the agent logs to New Relic logs for
-#            troubleshooting (verbose:3).
+#            troubleshooting (foward: true).
 # Tip      : Run the agent in debug mode only for troubleshooting. To disable
 #            debug logging, set the level to info and restart the agent.
 # Tip      : The following configuration will only log the entries with the field integration_name=nri-flex or integration_name=nri-powerdns
