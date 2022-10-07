@@ -8,6 +8,7 @@ import (
 	context2 "context"
 	"flag"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/cmd/newrelic-infra/dnschecks"
 	"io"
 	"net"
 	"net/http"
@@ -303,6 +304,14 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	}
 
 	aslog.Info("Checking network connectivity...")
+
+	if c.Log.HasIncludeFilter(config.TracesFieldComponent, config.HttpTracer) {
+		err := dnschecks.RunChecks(c.CollectorURL, c.StartupConnectionTimeout, transport, aslog)
+		if err != nil {
+			os.Exit(1)
+		}
+	}
+
 	err := waitForNetwork(c.CollectorURL, c.StartupConnectionTimeout, c.StartupConnectionRetries, transport)
 	if err != nil {
 		fatal(err, "Can't reach the New Relic collector.")
