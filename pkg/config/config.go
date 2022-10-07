@@ -1124,7 +1124,7 @@ type Config struct {
 	// Public: No
 	SelfInstrumentationTelemetryEndpoint string `yaml:"self_instrumentation_telemetry_endpoint" envconfig:"self_instrumentation_telemetry_endpoint"`
 
-	// Ntp is a map for ntp configuration. It is enabled by default and it uses public ntp server pool https://www.ntppool.org/en/use.html
+	// Ntp is a map for ntp configuration. It is disabled by default.
 	// Separate keys and values with colons :, as in KEY: VALUE, and separate each key-value pair with a line break.
 	// Key-value can be any of the following:
 	// "enabled: boolean" flag to enable/disable the ntp values (Default: false)
