@@ -46,12 +46,13 @@ func TestNewNtp_Interval(t *testing.T) {
 		},
 	}
 
+	timeout := uint(100)
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			ntp := NewNtp(testCase.pool, 100, testCase.interval)
+			ntp := NewNtp(testCase.pool, timeout, testCase.interval)
 			assert.Equal(t, testCase.expectedInterval, ntp.interval)
 			assert.Equal(t, testCase.expectedPool, ntp.pool)
-			assert.Equal(t, 100*time.Minute, ntp.timeout)
+			assert.Equal(t, time.Duration(timeout)*time.Millisecond, ntp.timeout)
 		})
 	}
 }
