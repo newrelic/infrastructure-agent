@@ -858,7 +858,7 @@ func TestLoadNtpConfig(t *testing.T) {
 		{
 			name: "Disabled",
 			yamlCfg: `
-ntp:
+ntp_sample:
   enabled: false
 `,
 			expected: NtpConfig{
@@ -871,7 +871,7 @@ ntp:
 		{
 			name: "Custom server pool, interval and timeout",
 			yamlCfg: `
-ntp:
+ntp_sample:
   pool:
     - "one.server.com"
     - "two.server.com"
@@ -881,6 +881,25 @@ ntp:
 `,
 			expected: NtpConfig{
 				Enabled:  defaultNtpEnabled,
+				Pool:     []string{"one.server.com", "two.server.com", "three.server.com"},
+				Timeout:  300,
+				Interval: 10,
+			},
+		},
+		{
+			name: "Custom server pool, interval and timeout",
+			yamlCfg: `
+ntp_sample:
+  enabled: true
+  pool:
+    - "one.server.com"
+    - "two.server.com"
+    - "three.server.com"
+  interval: 10
+  timeout: 300
+`,
+			expected: NtpConfig{
+				Enabled:  true,
 				Pool:     []string{"one.server.com", "two.server.com", "three.server.com"},
 				Timeout:  300,
 				Interval: 10,
