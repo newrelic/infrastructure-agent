@@ -692,7 +692,7 @@ license_key: your_license_key
 #            Integer values are for the number of intended retries. 
 #            Other possible values include `False` to set the number of retries to infinite 
 #            and `no_retries` to turn off the retry functionality entirely.
-# Default  : 5s
+# Default  : 5
 #
 #logging_retry_limit: 5
 #
