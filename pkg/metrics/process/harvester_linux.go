@@ -69,7 +69,7 @@ func (ps *linuxHarvester) Do(pid int32, elapsedSeconds float64) (*types.ProcessS
 
 	// We don't need to report processes which are not using memory. This filters out certain kernel processes.
 	if !ps.disableZeroRSSFilter && cached.process.VmRSS() == 0 {
-		return nil, errors.New("process with zero rss")
+		return nil, errProcessWithoutRSS
 	}
 
 	// Creates a fresh process sample and populates it with the metrics data

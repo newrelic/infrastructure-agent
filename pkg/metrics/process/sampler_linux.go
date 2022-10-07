@@ -4,6 +4,7 @@ package process
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -55,7 +56,6 @@ func NewProcessSampler(ctx agent.AgentContext) sampler.Sampler {
 		cache:            &cache,
 		interval:         time.Second * time.Duration(interval),
 	}
-
 }
 
 func (ps *processSampler) OnStartup() {}
@@ -112,7 +112,12 @@ func (ps *processSampler) Sample() (results sample.EventBatch, err error) {
 
 		processSample, err = ps.harvest.Do(pid, elapsedSeconds)
 		if err != nil {
-			mplog.WithError(err).WithField("pid", pid).Debug("Skipping process.")
+			procLog := mplog.WithError(err)
+			if errors.Is(err, errProcessWithoutRSS) {
+				procLog = procLog.WithField(config.TracesFieldName, config.ProcessTrace)
+			}
+
+			procLog.WithField("pid", pid).Debug("Skipping process.")
 			continue
 		}
 

@@ -17,7 +17,7 @@ linters-settings:
   lll:
     # max line length, lines longer will be reported. Default is 120.
     # '\t' is counted as 1 character by default, and can be changed with the tab-width option
-    line-length: 300 # setting high as tests have long payloads currently
+    line-length: 350 # setting high as tests have long payloads currently
   wsl:
     allow-cuddle-declarations: true
     allow-assign-and-anything: true
