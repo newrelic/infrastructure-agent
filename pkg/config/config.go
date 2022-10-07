@@ -800,8 +800,8 @@ type Config struct {
 	// LoggingRetryLimit determines the value of the Retry_Limit for the New Relic fluent-bit output plugin.
 	// https://github.com/newrelic/newrelic-fluent-bit-output/blob/7cbb4393aa36e48bad783231182f707037ebf217/README.md#retry-logic
 	// Default: "5"
-	// Public: No
-	LoggingRetryLimit string `yaml:"logging_retry_limit" envconfig:"logging_retry_limit" public:"false"`
+	// Public: Yes
+	LoggingRetryLimit string `yaml:"logging_retry_limit" envconfig:"logging_retry_limit" public:"true"`
 
 	// FluentBitExePath is the location from where the agent can execute fluent-bit.
 	// Default (Linux): /opt/td-agent-bit/bin/td-agent-bit
@@ -1181,7 +1181,7 @@ func (lc *LogConfig) AttachDefaultFilters() {
 	}
 
 	// Exclude by default supervisor and feature traces.
-	lc.ExcludeFilters[TracesFieldName] = append(lc.ExcludeFilters[TracesFieldName], SupervisorTrace, FeatureTrace)
+	lc.ExcludeFilters[TracesFieldName] = append(lc.ExcludeFilters[TracesFieldName], SupervisorTrace, FeatureTrace, ProcessTrace)
 }
 
 // HasIncludeFilter returns true if key-value pair are included in the filtering configuration.
