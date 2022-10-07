@@ -33,7 +33,6 @@ type FBSupervisorConfig struct {
 
 // IsLogForwarderAvailable checks whether all the required files for FluentBit execution are available
 func (c *FBSupervisorConfig) IsLogForwarderAvailable() bool {
-
 	if _, err := os.Stat(c.FluentBitExePath); err != nil {
 		sFBLogger.WithField("fbExePath", c.FluentBitExePath).Debug("Fluent Bit exe not found.")
 		return false
@@ -53,9 +52,7 @@ func (c *FBSupervisorConfig) IsLogForwarderAvailable() bool {
 // SendEventFn wrapper for sending events to nr.
 type SendEventFn func(event sample.Event, entityKey entity.Key)
 
-var (
-	ObserverName = "LogForwarderSupervisor"
-)
+var ObserverName = "LogForwarderSupervisor" // nolint:gochecknoglobals
 
 // NewFBSupervisor builds a Fluent Bit supervisor which forwards the output to agent logs.
 func NewFBSupervisor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader, agentIDNotifier id.UpdateNotifyFn, notifier hostname.ChangeNotifier, sendEventFn SendEventFn) *Supervisor {
@@ -91,7 +88,6 @@ func fbPostRunActions(sendEventFn SendEventFn) func(ctx2.Context, cmdExitStatus)
 // buildFbExecutor builds the function required by supervisor when running the process.
 func buildFbExecutor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader) func() (Executor, error) {
 	return func() (Executor, error) {
-
 		cfgContent, externalCfg, cErr := cfgLoader.LoadAndFormat()
 		if cErr != nil {
 			return nil, cErr
@@ -122,6 +118,9 @@ func buildFbExecutor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 
 		fbExecutor := executor.FromCmdSlice(args, &executor.Config{
 			IntegrationName: "fluent-bit",
+			Environment: map[string]string{
+				"NR_LICENSE_KEY_ENV_VAR": cfgLoader.GetLicenseKey(),
+			},
 		})
 		return &fbExecutor, nil
 	}

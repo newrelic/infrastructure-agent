@@ -101,7 +101,7 @@ var fbConfigFormat = `{{- range .Inputs }}
     Name                {{ .Output.Name }}
     Match               {{ .Output.Match }}
     {{- if .Output.LicenseKey }}
-    licenseKey          {{ .Output.LicenseKey }}
+    licenseKey          ${NR_LICENSE_KEY_ENV_VAR}
     {{- end }}
     {{- if .Output.Endpoint }}
     endpoint            {{ .Output.Endpoint }}

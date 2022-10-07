@@ -42,6 +42,10 @@ func (l *CfgLoader) GetConfigDir() string {
 	return l.config.ConfigsDir
 }
 
+func (l *CfgLoader) GetLicenseKey() string {
+	return l.config.License
+}
+
 // LoadAll loads and parses the logging configuration. It returns ok=false in case an error occurred, which should block
 // the start of the log forwarding feature.
 func (l *CfgLoader) LoadAll() (c FBCfg, ok bool) {

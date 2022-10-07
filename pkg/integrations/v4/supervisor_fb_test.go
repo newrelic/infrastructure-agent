@@ -3,10 +3,17 @@
 package v4
 
 import (
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
 	"testing"
+
+	executor2 "github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
+	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
+	"github.com/newrelic/infrastructure-agent/pkg/config"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/logs"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFBSupervisorConfig_IsLogForwarderAvailable(t *testing.T) {
@@ -76,4 +83,25 @@ func TestFBSupervisorConfig_IsLogForwarderAvailable(t *testing.T) {
 	if err := os.Remove(existing); err != nil {
 		assert.FailNow(t, "Could not remove temporary test file")
 	}
+}
+
+func TestFBSupervisorConfig_LicenseKeyShouldBePassedAsEnvVar(t *testing.T) {
+	t.Parallel()
+
+	fbConf := FBSupervisorConfig{}
+	agentIdentity := func() entity.Identity {
+		return entity.Identity{ID: 13}
+	}
+	hostnameResolver := testhelpers.NewFakeHostnameResolver("full_hostname", "short_hostname", nil)
+	license := "some_license"
+	c := config.LogForward{License: license, Troubleshoot: config.Troubleshoot{Enabled: true}}
+
+	confLoader := logs.NewFolderLoader(c, agentIdentity, hostnameResolver)
+	executorBuilder := buildFbExecutor(fbConf, confLoader)
+
+	exec, err := executorBuilder()
+	require.NoError(t, err)
+
+	assert.Contains(t, exec.(*executor2.Executor).Cfg.Environment, "NR_LICENSE_KEY_ENV_VAR")       // nolint:forcetypeassert
+	assert.Equal(t, exec.(*executor2.Executor).Cfg.Environment["NR_LICENSE_KEY_ENV_VAR"], license) //nolint:forcetypeassert
 }
