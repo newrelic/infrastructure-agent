@@ -1,5 +1,7 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+
+// nolint:gomnd
 package fixture
 
 import (
@@ -28,9 +30,11 @@ var SystemSample = metrics.SystemSample{
 		MemoryTotal: 1,
 		MemoryFree:  2,
 		MemoryUsed:  3,
-		SwapTotal:   4,
-		SwapFree:    5,
-		SwapUsed:    6,
+		SwapSample: metrics.SwapSample{
+			SwapTotal: 4,
+			SwapFree:  5,
+			SwapUsed:  6,
+		},
 	},
 	DiskSample: &metrics.DiskSample{
 		UsedBytes:               1,

@@ -11,11 +11,15 @@
 package process
 
 import (
+	"fmt"
+
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 )
 
 var mplog = log.WithComponent("ProcessSampler")
+
+var errProcessWithoutRSS = fmt.Errorf("process with zero rss")
 
 // Harvester manages sampling for individual processes. It is used by the Process Sampler to get information about the
 // existing processes.

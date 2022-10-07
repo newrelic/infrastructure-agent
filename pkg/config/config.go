@@ -38,6 +38,7 @@ const (
 	SupervisorTrace      = "supervisor"
 	HttpTracer           = "HttpTracer"
 	FeatureTrace         = "feature"
+	ProcessTrace         = "process"
 
 	// LogFilterWildcard will match everything.
 	LogFilterWildcard = "*"

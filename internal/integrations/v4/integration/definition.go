@@ -34,6 +34,7 @@ var elog = log.WithComponent("integrations.Definition")
 // Definition is a n `-exec` yaml entry. It will execute the provided command line or array of commands
 type Definition struct {
 	Name            string
+	LogsQueueSize   int
 	Labels          map[string]string
 	Tags            map[string]string
 	ExecutorConfig  executor.Config
@@ -50,8 +51,9 @@ type Definition struct {
 
 func (d *Definition) Hash() string {
 	h := sha256.New()
-	identifier := fmt.Sprintf("%v%v%v%v%v%v%v%v%v%v%v%v%v",
+	identifier := fmt.Sprintf("%v%v%v%v%v%v%v%v%v%v%v%v%v%v",
 		d.Name,
+		d.LogsQueueSize,
 		d.Labels,
 		d.Tags,
 		d.ExecutorConfig,
