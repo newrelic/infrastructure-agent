@@ -5,9 +5,14 @@ on:
     # min, hour, day of the month, month (1 - 12 or JAN-DEC), day of the week (0 - 6 or SUN-SAT)
     - cron:  '0 8 * * *'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to scan'
+        required: false
+        default: 'latest'
 jobs:
   docker-trivy:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_trivy.yml@master
+    uses: ./.github/workflows/component_trivy.yml
     with:
-      tag: "latest"
-      severity: "CRITICAL,HIGH"
+      tag: "${{ github.event.inputs.tag }}"
+      severity: "CRITICAL,HIGH,MEDIUM"
