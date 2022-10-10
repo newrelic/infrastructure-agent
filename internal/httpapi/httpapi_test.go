@@ -395,7 +395,11 @@ func Test_waitUntilReadyOrError_ShouldEndInCaseOfNoErrorButNotSuccess(t *testing
 	srv, err := NewServer(&noopReporter{}, em)
 	require.NoError(t, err)
 
+	readinessProbeTimeoutBak := readinessProbeTimeout
 	readinessProbeTimeout = time.Millisecond * 200
+	defer func() {
+		readinessProbeTimeout = readinessProbeTimeoutBak
+	}()
 
 	errCh := make(chan error, 1)
 	errCh <- nil
