@@ -35,10 +35,9 @@ const (
 	readinessProbeRetryBackoff = 100 * time.Millisecond
 )
 
-var (
-	ErrUrlUnreachable     = errors.New("cannot reach url")
-	readinessProbeTimeout = time.Second * 5
-)
+const readinessProbeTimeout = time.Second * 5
+
+var ErrUrlUnreachable = errors.New("cannot reach url")
 
 type responseError struct {
 	Error string `json:"error"`
@@ -54,6 +53,7 @@ type Server struct {
 	emitter       emitter.Emitter
 	statusReadyCh chan struct{}
 	ingestReadyCh chan struct{}
+	timeout       time.Duration
 }
 
 // ComponentConfig stores configuration for a server component.
@@ -107,6 +107,7 @@ func NewServer(r status.Reporter, em emitter.Emitter) (*Server, error) {
 		emitter:       em,
 		ingestReadyCh: make(chan struct{}),
 		statusReadyCh: make(chan struct{}),
+		timeout:       readinessProbeTimeout,
 	}, nil
 }
 
@@ -254,7 +255,7 @@ func (s *Server) waitUntilReadyOrError(address string, path string, tlsEnabled b
 	}
 
 	url := fmt.Sprintf("%s://%s%s", scheme, address, path)
-	timer := time.NewTimer(readinessProbeTimeout)
+	timer := time.NewTimer(s.timeout)
 
 	for {
 		// we don't test the local server when tls is enabled and validate client is false
