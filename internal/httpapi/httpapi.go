@@ -269,6 +269,7 @@ func (s *Server) waitUntilReadyOrError(address string, path string, tlsEnabled b
 			}
 		case <-timer.C:
 			err = fmt.Errorf("error reading url:%s %w", url, ErrUrlUnreachable)
+
 			return err
 		default:
 		}
