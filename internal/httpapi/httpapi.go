@@ -255,7 +255,7 @@ func (s *Server) waitUntilReadyOrError(address string, path string, tlsEnabled b
 
 	url := fmt.Sprintf("%s://%s%s", scheme, address, path)
 	timer := time.NewTimer(readinessProbeTimeout)
-LOOP:
+
 	for {
 		// we don't test the local server when tls is enabled and validate client is false
 		if (tlsEnabled && !validateTLSClient) || s.isGetSuccessful(client, url) {
@@ -265,11 +265,11 @@ LOOP:
 		select {
 		case err = <-serverErrCh:
 			if err != nil {
-				break LOOP
+				return err
 			}
 		case <-timer.C:
 			err = fmt.Errorf("error reading url:%s %w", url, ErrUrlUnreachable)
-			break LOOP
+			return err
 		default:
 		}
 		time.Sleep(readinessProbeRetryBackoff)
