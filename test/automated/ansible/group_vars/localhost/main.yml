@@ -312,26 +312,26 @@ instances:
     platform: "linux"
     python_interpreter: "/usr/bin/python"
     launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
-#  ############################
-#  # amazon linux 2022 amd64
-#  ############################
-#  - ami: "ami-04a0a1bfbe6cb2189"
-#    type: "t3a.small"
-#    name: "amd64:al-2022"
-#    username: "ec2-user"
-#    platform: "linux"
-#    python_interpreter: "/usr/bin/python3"
-#    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
-#  ############################
-#  # amazon linux 2022 arm64
-#  ############################
-#  - ami: "ami-0a68ae72ce28cd96c"
-#    type: "t4g.small"
-#    name: "arm64:al-2022"
-#    username: "ec2-user"
-#    platform: "linux"
-#    python_interpreter: "/usr/bin/python3"
-#    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
+  ############################
+  # amazon linux 2022 amd64
+  ############################
+  - ami: "ami-09a0187acf6bdfe59"
+    type: "t3a.small"
+    name: "amd64:al-2022"
+    username: "ec2-user"
+    platform: "linux"
+    python_interpreter: "/usr/bin/python3"
+    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
+  ############################
+  # amazon linux 2022 arm64
+  ############################
+  - ami: "ami-0d20d440a115a6737"
+    type: "t4g.small"
+    name: "arm64:al-2022"
+    username: "ec2-user"
+    platform: "linux"
+    python_interpreter: "/usr/bin/python3"
+    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
   ############################
   # windows amd64
   ############################
