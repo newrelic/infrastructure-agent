@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
@@ -34,7 +35,9 @@ const (
 	readinessProbeRetryBackoff = 100 * time.Millisecond
 )
 
-var ErrServerStopped = errors.New("server stopped")
+const readinessProbeTimeout = time.Second * 5
+
+var ErrURLUnreachable = errors.New("cannot reach url")
 
 type responseError struct {
 	Error string `json:"error"`
@@ -42,13 +45,15 @@ type responseError struct {
 
 // Server runtime for status API server.
 type Server struct {
-	Ingest     ComponentConfig
-	Status     ComponentConfig
-	reporter   status.Reporter
-	logger     log.Entry
-	definition integration.Definition
-	emitter    emitter.Emitter
-	readyCh    chan struct{}
+	Ingest        ComponentConfig
+	Status        ComponentConfig
+	reporter      status.Reporter
+	logger        log.Entry
+	definition    integration.Definition
+	emitter       emitter.Emitter
+	statusReadyCh chan struct{}
+	ingestReadyCh chan struct{}
+	timeout       time.Duration
 }
 
 // ComponentConfig stores configuration for a server component.
@@ -96,133 +101,186 @@ func NewServer(r status.Reporter, em emitter.Emitter) (*Server, error) {
 	}
 
 	return &Server{
-		logger:     log.WithComponent(componentName),
-		reporter:   r,
-		definition: d,
-		emitter:    em,
-		readyCh:    make(chan struct{}),
+		logger:        log.WithComponent(componentName),
+		reporter:      r,
+		definition:    d,
+		emitter:       em,
+		ingestReadyCh: make(chan struct{}),
+		statusReadyCh: make(chan struct{}),
+		timeout:       readinessProbeTimeout,
 	}, nil
 }
 
-// Serve serves status API requests.
+// Serve serves status API requests and ingest.
 // Nice2Have: context cancellation.
 func (s *Server) Serve(ctx context.Context) {
-	if s.Status.enabled {
-		go func() {
-			s.logger.WithFields(logrus.Fields{
-				"address": s.Status.address,
-			}).Debug("Status API starting listening.")
+	if !s.Status.enabled && !s.Ingest.enabled {
+		return
+	}
 
-			router := httprouter.New()
-			// read only API
-			router.GET(statusAPIPathReady, s.handleReady)
-			router.GET(statusEntityAPIPath, s.handleEntity)
-			router.GET(statusAPIPath, s.handle(false))
-			router.GET(statusOnlyErrorsAPIPath, s.handle(true))
-			// local only API
-			err := http.ListenAndServe(s.Status.address, router)
-			if err != nil {
-				s.logger.WithError(err).Error("unable to start Status-API")
-				return
+	var serversWg sync.WaitGroup
+	var statusErr, ingestErr error
+
+	if s.Status.enabled {
+		serversWg.Add(1)
+		go func() {
+			statusErr = s.serveStatus(ctx)
+			if statusErr != nil {
+				s.logger.WithError(statusErr).Error("error serving agent status")
 			}
-			s.logger.Debug("Status API stopped.")
+			close(s.statusReadyCh)
+			serversWg.Done()
 		}()
+	} else {
+		close(s.statusReadyCh)
 	}
 
 	if s.Ingest.enabled {
+		serversWg.Add(1)
 		go func() {
-			err := s.serveIngest()
-			if err != nil {
-				log.WithError(err).Error("Ingest server error")
+			ingestErr = s.serveIngest(ctx)
+			if ingestErr != nil {
+				s.logger.WithError(ingestErr).Error("error serving agent ingest")
 			}
+			close(s.ingestReadyCh)
+			serversWg.Done()
 		}()
+	} else {
+		close(s.ingestReadyCh)
 	}
 
-	c := http.Client{}
-	var ingestReady, statusReady bool
-	for {
-		if !ingestReady && s.Ingest.enabled {
-			scheme := "http://"
-			if s.Ingest.tls.enabled {
-				scheme = "https://"
-				c.Transport = &http.Transport{
-					TLSClientConfig: &tls.Config{
-						InsecureSkipVerify: true,
-					},
-				}
-			}
+	serversWg.Wait()
 
-			if s.Ingest.tls.validateClient {
-				// If client validation is enabled, we cannot probe the /ready path wihtout a valid certificate, which
-				// might not be available to us. For this reason we must lie and tell it is ready without probing.
-				ingestReady = true
-			} else {
-				ingestReady = s.isGetSuccessful(c, scheme+s.Ingest.address+ingestAPIPathReady)
-			}
-		}
-		if !statusReady && s.Status.enabled {
-			scheme := "http://"
-			statusReady = s.isGetSuccessful(c, scheme+s.Status.address+statusAPIPathReady)
-		}
-
-		if s.allReadyOrDisabled(ingestReady, statusReady) {
-			break
-		}
-		time.Sleep(readinessProbeRetryBackoff)
+	if statusErr != nil && ingestErr != nil {
+		return
 	}
-	close(s.readyCh)
 
 	<-ctx.Done()
 }
 
+// serveStatus serves status API requests.
+func (s *Server) serveStatus(_ context.Context) error {
+	statusServerErr := make(chan error, 1)
+
+	go func() {
+		defer close(statusServerErr)
+		s.logger.WithFields(logrus.Fields{
+			"address": s.Status.address,
+		}).Debug("Status API starting listening.")
+
+		router := httprouter.New()
+		// read only API
+		router.GET(statusAPIPathReady, s.handleReady)
+		router.GET(statusEntityAPIPath, s.handleEntity)
+		router.GET(statusAPIPath, s.handle(false))
+		router.GET(statusOnlyErrorsAPIPath, s.handle(true))
+		// local only API
+		err := http.ListenAndServe(s.Status.address, router)
+		statusServerErr <- err
+
+		if err != nil {
+			s.logger.WithError(err).Error("unable to start Status-API")
+
+			return
+		}
+
+		s.logger.Debug("Status API stopped.")
+	}()
+
+	return s.waitUntilReadyOrError(s.Status.address, statusAPIPathReady, s.Status.tls.enabled, s.Status.tls.validateClient, statusServerErr)
+}
+
 // serveIngest creates and starts an HTTP server handling ingestAPIPathReady and ingestAPIPath using Config.Ingest
-func (s *Server) serveIngest() error {
-	s.logger.WithFields(logrus.Fields{
-		"address": s.Ingest.address,
-	}).Debug("Ingest API starting listening.")
+func (s *Server) serveIngest(_ context.Context) error {
+	serverErr := make(chan error, 1)
 
-	router := httprouter.New()
-	router.GET(ingestAPIPathReady, s.handleReady)
-	router.POST(ingestAPIPath, s.handleIngest)
+	go func() {
+		defer close(serverErr)
+		s.logger.WithFields(logrus.Fields{
+			"address": s.Ingest.address,
+		}).Debug("Ingest API starting listening.")
 
-	server := &http.Server{
-		Handler: router,
-		Addr:    s.Ingest.address,
-	}
+		router := httprouter.New()
+		router.GET(ingestAPIPathReady, s.handleReady)
+		router.POST(ingestAPIPath, s.handleIngest)
 
-	if s.Ingest.tls.enabled {
-		if s.Ingest.tls.validateClient {
-			err := addMTLS(server, s.Ingest.tls.caPath)
+		server := &http.Server{
+			Handler: router,
+			Addr:    s.Ingest.address,
+		}
+
+		if s.Ingest.tls.enabled {
+			if s.Ingest.tls.validateClient {
+				err := addMTLS(server, s.Ingest.tls.caPath)
+				if err != nil {
+					serverErr <- fmt.Errorf("creating mTLS server: %w", err)
+
+					return
+				}
+			}
+
+			s.logger.Debug("starting tls server")
+			err := server.ListenAndServeTLS(s.Ingest.tls.certPath, s.Ingest.tls.keyPath)
 			if err != nil {
-				return fmt.Errorf("creating mTLS server: %w", err)
+				serverErr <- fmt.Errorf("starting tls server: %w", err)
+
+				return
 			}
 		}
 
-		s.logger.Debug("starting tls server")
-		err := server.ListenAndServeTLS(s.Ingest.tls.certPath, s.Ingest.tls.keyPath)
+		err := server.ListenAndServe()
 		if err != nil {
-			return fmt.Errorf("starting tls server: %w", err)
+			s.logger.WithError(err).Error("Ingest server error")
+		}
+		serverErr <- err
+	}()
+
+	return s.waitUntilReadyOrError(s.Ingest.address, ingestAPIPathReady, s.Ingest.tls.enabled, s.Status.tls.validateClient, serverErr)
+}
+
+// waitUntilReadyOrError makes http request to address if server didn't return an error.
+// It has a timeout to prevent staying in an infinite loop
+func (s *Server) waitUntilReadyOrError(address string, path string, tlsEnabled bool, validateTLSClient bool, serverErrCh <-chan error) error {
+	var err error
+	client := http.Client{}
+	scheme := "http"
+
+	if tlsEnabled {
+		scheme = "https"
+		client.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true, //nolint:gosec
+			},
 		}
 	}
 
-	err := server.ListenAndServe()
-	if err != nil {
-		return fmt.Errorf("starting Ingest server: %w", err)
+	url := fmt.Sprintf("%s://%s%s", scheme, address, path)
+	timer := time.NewTimer(s.timeout)
+
+	for {
+		// we don't test the local server when tls is enabled and validate client is false
+		if (tlsEnabled && !validateTLSClient) || s.isGetSuccessful(client, url) {
+			break
+		}
+		// if the server is not running and returned an error we stop trying and return the error
+		select {
+		case err = <-serverErrCh:
+			if err != nil {
+				return err
+			}
+		case <-timer.C:
+			err = fmt.Errorf("error reading url:%s %w", url, ErrURLUnreachable)
+
+			return err
+		default:
+		}
+		time.Sleep(readinessProbeRetryBackoff)
 	}
 
-	return ErrServerStopped
+	return err
 }
 
-func (s *Server) allReadyOrDisabled(ingestReady, statusReady bool) bool {
-	if s.Ingest.enabled && !ingestReady {
-		return false
-	}
-	if s.Status.enabled && !statusReady {
-		return false
-	}
-	return true
-}
-
+// isGetSuccessful makes a http request to URL and returns true statusCode == 200.
 func (s *Server) isGetSuccessful(c http.Client, URL string) bool {
 	postReq, err := http.NewRequest(http.MethodGet, URL, bytes.NewReader([]byte{}))
 	if err != nil {
@@ -238,9 +296,11 @@ func (s *Server) isGetSuccessful(c http.Client, URL string) bool {
 	return resp.StatusCode == http.StatusOK
 }
 
-// WaitUntilReady blocks the call until server is ready to accept connections.
-func (s *Server) WaitUntilReady() {
-	_, _ = <-s.readyCh
+// waitUntilReady blocks the call until server is ready to accept connections.
+// currently only used in tests
+func (s *Server) waitUntilReady() {
+	<-s.ingestReadyCh
+	<-s.statusReadyCh
 }
 
 // handle returns a HTTP handler function for full status report or just errors status report.
