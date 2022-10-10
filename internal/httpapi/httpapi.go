@@ -37,7 +37,7 @@ const (
 
 const readinessProbeTimeout = time.Second * 5
 
-var ErrUrlUnreachable = errors.New("cannot reach url")
+var ErrURLUnreachable = errors.New("cannot reach url")
 
 type responseError struct {
 	Error string `json:"error"`
@@ -269,7 +269,7 @@ func (s *Server) waitUntilReadyOrError(address string, path string, tlsEnabled b
 				return err
 			}
 		case <-timer.C:
-			err = fmt.Errorf("error reading url:%s %w", url, ErrUrlUnreachable)
+			err = fmt.Errorf("error reading url:%s %w", url, ErrURLUnreachable)
 
 			return err
 		default:

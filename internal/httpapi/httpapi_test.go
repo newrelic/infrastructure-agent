@@ -401,7 +401,7 @@ func Test_waitUntilReadyOrError_ShouldEndInCaseOfNoErrorButNotSuccess(t *testing
 	errCh <- nil
 	close(errCh)
 	err = srv.waitUntilReadyOrError("localhost", "/path", false, false, errCh)
-	assert.ErrorIs(t, err, ErrUrlUnreachable)
+	assert.ErrorIs(t, err, ErrURLUnreachable)
 }
 
 func TestServer_ServerErrorsShouldBeLogged(t *testing.T) {
