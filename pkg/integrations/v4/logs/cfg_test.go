@@ -65,7 +65,6 @@ var outputBlock = FBCfgOutput{
 }
 
 func TestNewFBConf(t *testing.T) {
-
 	outputBlockFedramp := outputBlock
 	outputBlockFedramp.Endpoint = fedrampEndpoint
 	outputBlockMultipleRetries := outputBlock
@@ -80,11 +79,14 @@ func TestNewFBConf(t *testing.T) {
 		ohiCfg LogsCfg
 		want   FBCfg
 	}{
-		{"empty", logFwdCfg, LogsCfg{},
+		{
+			"empty", logFwdCfg,
+			LogsCfg{},
 			FBCfg{
 				Inputs:  []FBCfgInput{},
 				Filters: []FBCfgFilter{},
-			}},
+			},
+		},
 		{"single input", logFwdCfg, LogsCfg{
 			{
 				Name: "log-file",
@@ -692,7 +694,6 @@ func TestNewFBConf(t *testing.T) {
 }
 
 func TestFBConfigForWinlog(t *testing.T) {
-
 	nameTest := "input winlog + eventId filtering"
 	input := LogsCfg{
 		{
@@ -752,7 +753,6 @@ func TestFBConfigForWinlog(t *testing.T) {
 }
 
 func TestFBConfigForWinevtlog(t *testing.T) {
-
 	nameTest := "input winevtlog + eventId filtering"
 	input := LogsCfg{
 		{
@@ -907,7 +907,7 @@ func TestFBCfgFormat(t *testing.T) {
 [OUTPUT]
     Name                newrelic
     Match               *
-    licenseKey          licenseKey
+    licenseKey          ${NR_LICENSE_KEY_ENV_VAR}
     validateProxyCerts  false
 
 @INCLUDE /path/to/fb/config
@@ -1078,7 +1078,7 @@ func TestFBCfgFormatWithHostname(t *testing.T) {
 [OUTPUT]
     Name                newrelic
     Match               *
-    licenseKey          licenseKey
+    licenseKey          ${NR_LICENSE_KEY_ENV_VAR}
     proxy               https://https-proxy:3129
     ignoreSystemProxy   true
     caBundleFile        /cabundles/proxycert.pem
