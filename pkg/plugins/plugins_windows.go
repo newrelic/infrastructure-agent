@@ -66,7 +66,11 @@ func RegisterPlugins(a *agent.Agent) error {
 		slog.WithError(err).Debug("Warming up Network Sampler Cache.")
 	}
 
-	systemSampler := metrics.NewSystemSampler(a.Context, storageSampler)
+	var ntpMonitor metrics.NtpMonitor
+	if config.Ntp.Enabled {
+		ntpMonitor = metrics.NewNtp(config.Ntp.Pool, config.Ntp.Timeout, config.Ntp.Interval)
+	}
+	systemSampler := metrics.NewSystemSampler(a.Context, storageSampler, ntpMonitor)
 	sender.RegisterSampler(systemSampler)
 	sender.RegisterSampler(storageSampler)
 	sender.RegisterSampler(networkSampler)

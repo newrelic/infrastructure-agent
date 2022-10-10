@@ -8,6 +8,11 @@ package harvest
 
 import (
 	"fmt"
+	"os"
+	"runtime"
+	"testing"
+	"time"
+
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
@@ -15,10 +20,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"os"
-	"runtime"
-	"testing"
-	"time"
 )
 
 const timeout = 5 * time.Second
@@ -29,7 +30,7 @@ func TestHostCPU(t *testing.T) {
 		MetricsNetworkSampleRate: 1,
 	})
 	storageSampler := storage.NewSampler(ctx)
-	systemSampler := metrics.NewSystemSampler(ctx, storageSampler)
+	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil)
 
 	sampleB, _ := systemSampler.Sample()
 	beforeSample := sampleB[0].(*metrics.SystemSample)
@@ -70,7 +71,7 @@ func TestHostMemory(t *testing.T) {
 	})
 	storageSampler := storage.NewSampler(ctx)
 
-	systemSampler := metrics.NewSystemSampler(ctx, storageSampler)
+	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil)
 
 	sampleB, _ := systemSampler.Sample()
 	beforeSample := sampleB[0].(*metrics.SystemSample)
@@ -114,7 +115,7 @@ func TestHostSwap(t *testing.T) {
 	})
 	storageSampler := storage.NewSampler(ctx)
 
-	systemSampler := metrics.NewSystemSampler(ctx, storageSampler)
+	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil)
 
 	sampleB, _ := systemSampler.Sample()
 	sample := sampleB[0].(*metrics.SystemSample)

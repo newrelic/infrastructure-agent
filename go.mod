@@ -7,6 +7,7 @@ require (
 	github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6
 	github.com/antihax/optional v1.0.0
 	github.com/aws/aws-sdk-go v1.44.69
+	github.com/beevik/ntp v0.3.0
 	github.com/coreos/go-systemd/v22 v22.3.2
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200618181300-9dc6525e6118+incompatible
 	github.com/evanphx/json-patch v4.9.0+incompatible
@@ -32,6 +33,7 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.13.0
 	go.opentelemetry.io/otel v0.13.0
 	go.opentelemetry.io/otel/exporters/metric/prometheus v0.13.0
+	go.uber.org/multierr v1.8.0
 	golang.org/x/net v0.0.0-20220906165146-f3363e06e74c
 	golang.org/x/sys v0.0.0-20220803195053-6e608f9ce704
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f
@@ -73,6 +75,7 @@ require (
 	github.com/tklauser/numcpus v0.3.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opentelemetry.io/otel/sdk v0.13.0 // indirect
+	go.uber.org/atomic v1.7.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.6 // indirect

@@ -15,7 +15,7 @@ func TestNewSystemSampler(t *testing.T) {
 	ctx := new(mocks.AgentContext)
 	ctx.On("Config").Return(&config.Config{})
 
-	m := NewSystemSampler(ctx, nil)
+	m := NewSystemSampler(ctx, nil, nil)
 
 	assert.NotNil(t, m)
 }
@@ -25,7 +25,7 @@ func TestSystemSample(t *testing.T) {
 	ctx.On("Config").Return(&config.Config{})
 
 	storage := storage.NewSampler(ctx)
-	m := NewSystemSampler(ctx, storage)
+	m := NewSystemSampler(ctx, storage, nil)
 
 	result, err := m.Sample()
 
@@ -38,7 +38,7 @@ func BenchmarkSystem(b *testing.B) {
 	ctx.On("Config").Return(&config.Config{})
 
 	storage := storage.NewSampler(ctx)
-	m := NewSystemSampler(ctx, storage)
+	m := NewSystemSampler(ctx, storage, nil)
 	for n := 0; n < b.N; n++ {
 		m.Sample()
 	}

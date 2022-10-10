@@ -46,6 +46,14 @@ Distributed under the following license(s):
 
 
 
+## [github.com/beevik/ntp](https://github.com/beevik/ntp)
+
+Distributed under the following license(s):
+
+* BSD-2-Clause
+
+
+
 ## [github.com/coreos/go-systemd/v22](https://github.com/coreos/go-systemd)
 
 Distributed under the following license(s):
@@ -243,6 +251,14 @@ Distributed under the following license(s):
 Distributed under the following license(s):
 
 * Apache-2.0
+
+
+
+## [go.uber.org/multierr](https://go.uber.org/multierr)
+
+Distributed under the following license(s):
+
+* MIT
 
 
 

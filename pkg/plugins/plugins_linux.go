@@ -114,7 +114,12 @@ func RegisterPlugins(agent *agnt.Agent) error {
 	storageSampler := storage.NewSampler(agent.Context)
 	nfsSampler := nfs.NewSampler(agent.Context)
 	networkSampler := network.NewNetworkSampler(agent.Context)
-	systemSampler := metrics.NewSystemSampler(agent.Context, storageSampler)
+
+	var ntpMonitor metrics.NtpMonitor
+	if config.Ntp.Enabled {
+		ntpMonitor = metrics.NewNtp(config.Ntp.Pool, config.Ntp.Timeout, config.Ntp.Interval)
+	}
+	systemSampler := metrics.NewSystemSampler(agent.Context, storageSampler, ntpMonitor)
 
 	// Prime Storage Sampler, ignoring results
 	if !storageSampler.Disabled() {
