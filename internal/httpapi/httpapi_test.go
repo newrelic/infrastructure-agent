@@ -397,6 +397,7 @@ func Test_waitUntilReadyOrError_ShouldEndInCaseOfNoErrorButNotSuccess(t *testing
 
 	readinessProbeTimeoutBak := readinessProbeTimeout
 	readinessProbeTimeout = time.Millisecond * 200
+
 	defer func() {
 		readinessProbeTimeout = readinessProbeTimeoutBak
 	}()
