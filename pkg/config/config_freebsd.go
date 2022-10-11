@@ -15,9 +15,11 @@ const (
 func init() {
 	defaultConfigFiles = []string{
 		"newrelic-infra.yml",
-		filepath.Join("/usr", "local", "etc", "newrelic-infra", "newrelic-infra.yml"),
+		filepath.Join("/etc", "newrelic-infra.yml"),
+		filepath.Join("/etc", "newrelic-infra", "newrelic-infra.yml"),
 	}
-	defaultAgentDir = filepath.Join("/usr", "local", "var", "db", "newrelic-infra")
+	defaultAgentDir = filepath.Join("/var", "db", "newrelic-infra")
+	defaultLogFile = filepath.Join("/var", "db", "newrelic-infra", "newrelic-infra.log")
 
 	// add PATH environment variable to all integrations
 	defaultPassthroughEnvironment = []string{"PATH"}
