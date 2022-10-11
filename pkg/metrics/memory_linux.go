@@ -155,23 +155,3 @@ func reclaimableAsUsedParseMemInfo(lines []string) (*mem.VirtualMemoryStat, erro
 
 	return ret, nil
 }
-
-// returns the available swap metrics.
-func swapMemory() (*SwapSample, error) {
-	swap, err := mem.SwapMemory()
-	if err != nil {
-		return nil, err
-	}
-
-	floatToReference := func(value float64) *float64 {
-		return &value
-	}
-
-	return &SwapSample{
-		SwapFree:  float64(swap.Free),
-		SwapTotal: float64(swap.Total),
-		SwapUsed:  float64(swap.Used),
-		SwapIn:    floatToReference(float64(swap.Sin)),
-		SwapOut:   floatToReference(float64(swap.Sout)),
-	}, nil
-}
