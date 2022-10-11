@@ -3,7 +3,6 @@
 package metrics
 
 import (
-	"errors"
 	"fmt"
 	"runtime/debug"
 
@@ -55,7 +54,8 @@ func (mm *MemoryMonitor) Sample() (result *MemorySample, err error) {
 
 	swap, err := swapMemory()
 	if err != nil {
-		if errors.Is(err, errNoSwapDevicesFound) {
+		// gopsutil does not export the error
+		if err.Error() == errNoSwapDevicesFound.Error() {
 			sslog.WithError(err).Info("can't get swap sampler metrics")
 		} else {
 			return nil, err
