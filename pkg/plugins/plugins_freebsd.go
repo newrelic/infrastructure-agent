@@ -12,12 +12,18 @@ import (
 
 func RegisterPlugins(a *agent.Agent) error {
 
+	config := a.GetContext().Config()
+
 	a.RegisterPlugin(freebsd.NewHostinfoPlugin(a.Context, a.GetCloudHarvester()))
 	a.RegisterPlugin(NewHostAliasesPlugin(a.Context, a.GetCloudHarvester()))
 
 	storageSampler := storage.NewSampler(a.Context)
 	sender := metricsSender.NewSender(a.Context)
-	systemSampler := metrics.NewSystemSampler(a.Context, storageSampler)
+	var ntpMonitor metrics.NtpMonitor
+	if config.Ntp.Enabled {
+		ntpMonitor = metrics.NewNtp(config.Ntp.Pool, config.Ntp.Timeout, config.Ntp.Interval)
+	}
+	systemSampler := metrics.NewSystemSampler(a.Context, storageSampler, ntpMonitor)
 
 	sender.RegisterSampler(storageSampler)
 	sender.RegisterSampler(systemSampler)

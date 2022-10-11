@@ -3,10 +3,17 @@
 package metrics
 
 import (
+	"errors"
 	"fmt"
 	"runtime/debug"
 
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/shirou/gopsutil/v3/mem"
+)
+
+var (
+	errNoSwapDevicesFound = fmt.Errorf("no swap devices found")
+	sslog                 = log.WithComponent("SystemSampler")
 )
 
 type SwapSample struct {
@@ -27,7 +34,7 @@ type MemorySample struct {
 	MemoryCachedBytes float64 `json:"memoryCachedBytes"`
 	MemorySlabBytes   float64 `json:"memorySlabBytes"`
 	MemorySharedBytes float64 `json:"memorySharedBytes"`
-	SwapSample
+	*SwapSample
 }
 
 type MemoryMonitor struct {
@@ -48,7 +55,11 @@ func (mm *MemoryMonitor) Sample() (result *MemorySample, err error) {
 
 	swap, err := swapMemory()
 	if err != nil {
-		return nil, err
+		if errors.Is(err, errNoSwapDevicesFound) {
+			sslog.WithError(err).Info("can't get swap sampler metrics")
+		} else {
+			return nil, err
+		}
 	}
 
 	memoryFreePercent := float64(0)
@@ -69,6 +80,6 @@ func (mm *MemoryMonitor) Sample() (result *MemorySample, err error) {
 		MemoryFreePercent: memoryFreePercent,
 		MemoryUsedPercent: memoryUsedPercent,
 
-		SwapSample: *swap,
+		SwapSample: swap,
 	}, nil
 }
