@@ -154,6 +154,7 @@ const (
 	OptionTestsStaging
 	OptionHarvestTests
 	OptionInstallVersionStaging
+	OptionInstallDocker
 )
 
 func newProvisionOptions() provisionOptions {
@@ -208,6 +209,12 @@ func newProvisionOptions() provisionOptions {
 		id:                 6,
 		name:               "install given version of agent from STG",
 		playbook:           "test/packaging/ansible/installation-agent-pinned-no-clean.yml",
+		licenseKeyRequired: true,
+	}
+	opts[OptionInstallDocker] = provisionOption{
+		id:                 7,
+		name:               "install given version of dockerized agent",
+		playbook:           "test/packaging/ansible/docker-canary.yml",
 		licenseKeyRequired: true,
 	}
 

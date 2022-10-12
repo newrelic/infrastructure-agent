@@ -1,0 +1,9 @@
+---
+
+- name: update yum
+  shell: yum update -y
+
+- name: install docker
+  shell: amazon-linux-extras install -y docker docker-compose-plugin
+
+...

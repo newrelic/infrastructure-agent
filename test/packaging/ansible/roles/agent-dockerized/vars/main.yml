@@ -1,0 +1,6 @@
+---
+
+# agent config:
+display_name: "{{ inventory_hostname }}-docker-{{ current_or_previous }}"
+
+...
