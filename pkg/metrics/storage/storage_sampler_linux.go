@@ -27,15 +27,16 @@ import (
 var (
 	mountSource          = ""
 	SupportedFileSystems = map[string]bool{
-		"xfs":   true,
-		"btrfs": true,
-		"ext":   true,
-		"ext2":  true,
-		"ext3":  true,
-		"ext4":  true,
-		"hfs":   true,
-		"vxfs":  true,
-		"zfs":   true,
+		"xfs":      true,
+		"btrfs":    true,
+		"ext":      true,
+		"ext2":     true,
+		"ext3":     true,
+		"ext4":     true,
+		"hfs":      true,
+		"vxfs":     true,
+		"zfs":      true,
+		"reiserfs": true,
 	}
 	deviceRegexp      = regexp.MustCompile("^/dev/([a-z0-9]+)")
 	lvmRegexp         = regexp.MustCompile("^/dev/mapper/(.*)")
