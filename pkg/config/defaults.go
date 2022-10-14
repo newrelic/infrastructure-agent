@@ -136,3 +136,7 @@ func getDefaultFacterHomeDir() (string, error) {
 	}
 	return usr.HomeDir, nil
 }
+
+func GetDefaultConfigFiles() []string {
+	return defaultConfigFiles
+}

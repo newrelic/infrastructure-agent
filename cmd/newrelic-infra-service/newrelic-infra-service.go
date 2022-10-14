@@ -5,25 +5,27 @@
 package main
 
 import (
+	"context"
 	"os"
 
-	"github.com/newrelic/infrastructure-agent/internal/agent/service"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
+
+var buildVersion = "development"
 
 func main() {
 	log.SetOutput(os.Stdout)
 	log.Info("Creating service...")
 
-	// Create a native service wrapper for the agent and start it up.
-	agentSvc, err := service.New(os.Args...)
+	ctx, cancel := context.WithCancel(context.Background())
 
+	spvsr, err := newSupervisor(ctx, os.Args...)
 	if err != nil {
-		log.WithError(err).Error("Initializing service manager support...")
+		log.WithError(err).Error("cannot create supervisor")
 		os.Exit(1)
 	}
-
-	if err = agentSvc.Run(); err != nil {
+	if err := spvsr.run(); err != nil {
+		cancel()
 		log.WithError(err).Warn("Service exiting abnormally.")
 	}
 }

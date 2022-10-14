@@ -19,6 +19,7 @@ const (
 
 func init() {
 	defaultConfigFiles = []string{
+		filepath.Join("/etc", "newrelic-infra-effective.yml"),
 		"newrelic-infra.yml",
 		filepath.Join("/etc", "newrelic-infra.yml"),
 		filepath.Join("/etc", "newrelic-infra", "newrelic-infra.yml"),
