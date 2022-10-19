@@ -277,14 +277,12 @@ func parseMountInfo(line string) (mi MountInfoStat, err error) {
 
 	if len(fields) >= separator+4 {
 		superOpts := strings.Split(fields[separator+3], ",")
-		if len(superOpts) > 0 {
-			for _, superOpt := range superOpts {
-				if superOpt == "ro" || superOpt == "rw" {
-					if mi.Opts != "" {
-						mi.Opts += ","
-					}
-					mi.Opts += superOpt
+		for _, superOpt := range superOpts {
+			if superOpt == "ro" || superOpt == "rw" {
+				if mi.Opts != "" {
+					mi.Opts += ","
 				}
+				mi.Opts += superOpt
 			}
 		}
 	}
