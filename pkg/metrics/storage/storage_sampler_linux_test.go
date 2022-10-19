@@ -213,6 +213,8 @@ func TestParseMountinfo(t *testing.T) {
 		"39 0 8:3 / / rw,relatime shared:1 - xfs /dev/sda3 rw,attr2,inode64,logbsize=256k,sunit=512,swidth=512,noquota",
 		"45 39 8:1 / /boot rw,relatime shared:28 - xfs /dev/sda1 rw,attr2,inode64,logbsize=256k,sunit=512,swidth=512,noquota",
 		"46 39 253:0 / /notes rw,relatime shared:29 - xfs /dev/mapper/vg--stuff rw,attr2,inode64,sunit=512,swidth=512,noquota",
+		"51 39 253:0 / /notes rw,relatime shared:29 - xfs /dev/mapper/vg--stuff ro,attr2,inode64,sunit=512,swidth=512,noquota",
+		"62 39 253:0 / /notes ro,relatime shared:29 - xfs /dev/mapper/vg--stuff1 rw",
 	}
 	var expectedMountInfoStats = []MountInfoStat{
 		{
@@ -224,7 +226,7 @@ func TestParseMountinfo(t *testing.T) {
 			MajMin:      "8:3",
 			FSType:      "xfs",
 			MountSource: "/dev/sda3",
-			Opts:        "rw,relatime",
+			Opts:        "rw,relatime,rw",
 		},
 		{
 			mountID:     45,
@@ -235,7 +237,7 @@ func TestParseMountinfo(t *testing.T) {
 			MajMin:      "8:1",
 			FSType:      "xfs",
 			MountSource: "/dev/sda1",
-			Opts:        "rw,relatime",
+			Opts:        "rw,relatime,rw",
 		},
 		{
 			mountID:  46,
@@ -247,7 +249,31 @@ func TestParseMountinfo(t *testing.T) {
 			MajMin:      "253:0",
 			FSType:      "xfs",
 			MountSource: "/dev/mapper/vg--stuff",
-			Opts:        "rw,relatime",
+			Opts:        "rw,relatime,rw",
+		},
+		{
+			mountID:  51,
+			parentID: 39,
+			//we return the full name instead of dm-0 (that mapping should be done in CalculateDeviceMappings)
+			Device:      "/dev/mapper/vg--stuff",
+			MountPoint:  "/notes",
+			Root:        "/",
+			MajMin:      "253:0",
+			FSType:      "xfs",
+			MountSource: "/dev/mapper/vg--stuff",
+			Opts:        "rw,relatime,ro",
+		},
+		{
+			mountID:  62,
+			parentID: 39,
+			//we return the full name instead of dm-0 (that mapping should be done in CalculateDeviceMappings)
+			Device:      "/dev/mapper/vg--stuff1",
+			MountPoint:  "/notes",
+			Root:        "/",
+			MajMin:      "253:0",
+			FSType:      "xfs",
+			MountSource: "/dev/mapper/vg--stuff1",
+			Opts:        "ro,relatime,rw",
 		},
 	}
 
