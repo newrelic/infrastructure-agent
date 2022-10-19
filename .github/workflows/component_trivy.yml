@@ -14,8 +14,8 @@ jobs:
   trivy_scanner:
     name: Trivy scanner for docker
     runs-on: ubuntu-20.04
+    if: ${{ ! github.event.schedule }} # Table output
     steps:
-
       - name: newrelic/infrastructure
         uses: aquasecurity/trivy-action@master
         with:
@@ -45,3 +45,38 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: "${{ inputs.severity }}"
+
+  trivy_scanner_scheduled:
+    name: Scheduled Trivy scanner for docker
+    runs-on: ubuntu-20.04
+    if: ${{ github.event.schedule }} # Upload sarif when running periodically
+    steps:
+      - name: Sarif newrelic/infrastructure
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "docker.io/newrelic/infrastructure:${{ github.event.inputs.tag }}"
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          vuln-type: 'os,library'
+          severity: "${{ inputs.severity }}"
+          exit-code: '1'
+          ignore-unfixed: true
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: ${{ always() }}
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Send notification to Slack Workflow
+        if: ${{ failure() }}
+        id: slack
+        uses: slackapi/slack-github-action@v1.22.0
+        with:
+          # This data can be any valid JSON from a previous step in the GitHub Action
+          payload: |
+            {
+              "text": ":rotating_light: Hi CAOS, critical or high vulnerabilities found, see: https://github.com/newrelic/infrastructure-agent/security/code-scanning?query=is%3Aopen+branch%3Amaster+tool%3ATrivy :rotating_light:"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.CAOS_SLACK_WEBHOOK }}
