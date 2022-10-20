@@ -12,6 +12,8 @@ on:
 jobs:
   docker-trivy:
     uses: ./.github/workflows/component_trivy.yml
+    secrets:
+      slack_webhook: ${{ secrets.CAOS_SLACK_WEBHOOK }}
     with:
       tag: "${{ github.event.inputs.tag }}"
       severity: "CRITICAL,HIGH"
