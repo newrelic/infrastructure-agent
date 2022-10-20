@@ -160,7 +160,7 @@ func TestWorker_Run_SendsWhenBatchLimitIsReached(t *testing.T) {
 			expectedBatchesCount: 1,
 			expectedEntityName:   [][]string{{"test-0", "test-1"}, {"test-2"}},
 			batchDuration:        50 * time.Millisecond,
-			timeout:              150 * time.Millisecond,
+			timeout:              250 * time.Millisecond,
 		},
 	}
 
