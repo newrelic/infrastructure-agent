@@ -163,15 +163,30 @@ func swapMemory() (*SwapSample, error) {
 		return nil, err
 	}
 
-	floatToReference := func(value float64) *float64 {
-		return &value
-	}
-
 	return &SwapSample{
 		SwapFree:  float64(swap.Free),
 		SwapTotal: float64(swap.Total),
 		SwapUsed:  float64(swap.Used),
 		SwapIn:    floatToReference(float64(swap.Sin)),
 		SwapOut:   floatToReference(float64(swap.Sout)),
+	}, nil
+}
+
+// returns the memory metrics.
+func memorySample(memStat *mem.VirtualMemoryStat, swap *SwapSample, memoryFreePercent float64, memoryUsedPercent float64) (*MemorySample, error) {
+	return &MemorySample{
+		MemoryTotal:       float64(memStat.Total),
+		MemoryFree:        float64(memStat.Available),
+		MemoryUsed:        float64(memStat.Used),
+		MemoryCachedBytes: float64(memStat.Cached),
+		MemorySlabBytes:   float64(memStat.Slab),
+		MemorySharedBytes: float64(memStat.Shared),
+		MemoryBuffers:     floatToReference(float64(memStat.Buffers)),
+		MemoryKernelFree:  floatToReference(float64(memStat.Free)),
+
+		MemoryFreePercent: memoryFreePercent,
+		MemoryUsedPercent: memoryUsedPercent,
+
+		SwapSample: *swap,
 	}, nil
 }

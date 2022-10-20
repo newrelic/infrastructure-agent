@@ -12,6 +12,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestMemoryMonitor_SampleLInux(t *testing.T) {
+	t.Parallel()
+	m := NewMemoryMonitor(false)
+
+	sample, err := m.Sample()
+	require.NoError(t, err)
+
+	// linux specific values
+	assert.NotZero(t, sample.MemoryKernelFree)
+	assert.NotZero(t, sample.MemoryBuffers)
+}
+
 func TestMemoryMonitor_IgnoreReclaimable_Sample(t *testing.T) {
 	m := NewMemoryMonitor(true)
 
@@ -60,7 +72,6 @@ func TestMemoryMonitor_ReclaimableValues(t *testing.T) {
 	// And The monitor that considers reclaimable memory as free should have MemFree >= than the other monitor
 	require.True(t, sf.MemoryFree > su.MemoryFree,
 		"%v (MemoryFree without reclaimable) should be > %v (MemoryFree with reclaimable)", sf.MemoryFree, su.MemoryFree)
-
 }
 
 var memInfoWithMemAvailable = `MemTotal:        2040788 kB

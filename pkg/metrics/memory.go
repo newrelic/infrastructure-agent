@@ -19,14 +19,16 @@ type SwapSample struct {
 }
 
 type MemorySample struct {
-	MemoryTotal       float64 `json:"memoryTotalBytes"`
-	MemoryFree        float64 `json:"memoryFreeBytes"`
-	MemoryUsed        float64 `json:"memoryUsedBytes"`
-	MemoryFreePercent float64 `json:"memoryFreePercent"`
-	MemoryUsedPercent float64 `json:"memoryUsedPercent"`
-	MemoryCachedBytes float64 `json:"memoryCachedBytes"`
-	MemorySlabBytes   float64 `json:"memorySlabBytes"`
-	MemorySharedBytes float64 `json:"memorySharedBytes"`
+	MemoryTotal       float64  `json:"memoryTotalBytes"`
+	MemoryFree        float64  `json:"memoryFreeBytes"`
+	MemoryUsed        float64  `json:"memoryUsedBytes"`
+	MemoryFreePercent float64  `json:"memoryFreePercent"`
+	MemoryUsedPercent float64  `json:"memoryUsedPercent"`
+	MemoryCachedBytes float64  `json:"memoryCachedBytes"`
+	MemorySlabBytes   float64  `json:"memorySlabBytes"`
+	MemorySharedBytes float64  `json:"memorySharedBytes"`
+	MemoryBuffers     *float64 `json:"memoryBuffers,omitempty"`
+	MemoryKernelFree  *float64 `json:"memoryKernelFree,omitempty"`
 	SwapSample
 }
 
@@ -58,17 +60,9 @@ func (mm *MemoryMonitor) Sample() (result *MemorySample, err error) {
 		memoryUsedPercent = 100.0 - memoryFreePercent
 	}
 
-	return &MemorySample{
-		MemoryTotal:       float64(memory.Total),
-		MemoryFree:        float64(memory.Available),
-		MemoryUsed:        float64(memory.Used),
-		MemoryCachedBytes: float64(memory.Cached),
-		MemorySlabBytes:   float64(memory.Slab),
-		MemorySharedBytes: float64(memory.Shared),
+	return memorySample(memory, swap, memoryFreePercent, memoryUsedPercent)
+}
 
-		MemoryFreePercent: memoryFreePercent,
-		MemoryUsedPercent: memoryUsedPercent,
-
-		SwapSample: *swap,
-	}, nil
+func floatToReference(value float64) *float64 {
+	return &value
 }

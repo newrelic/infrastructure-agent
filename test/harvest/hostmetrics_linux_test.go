@@ -6,6 +6,16 @@
 package harvest
 
 import (
+	"context"
+	"errors"
+	"io/ioutil"
+	"os"
+	"os/exec"
+	"syscall"
+	"testing"
+
+	"github.com/shirou/gopsutil/v3/disk"
+
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
@@ -13,10 +23,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"io/ioutil"
-	"os"
-	"os/exec"
-	"testing"
 )
 
 func TestHostSharedMemory(t *testing.T) {
@@ -127,7 +133,6 @@ func TestHostDisk(t *testing.T) {
 	assert.NotEqual(t, 0, sampleA.ReadsPerSec, "Reads per sec is 0")
 	assert.NotEqual(t, 0, sampleA.WritesPerSec, "Writes per sec is 0")
 	assert.True(t, *storageSample.UsedBytes+1e4 < sampleA.UsedBytes, "Used bytes did not increase enough, UserBytesBefore: %f UserBytesAfter %f ", *(storageSample.UsedBytes), sampleA.UsedBytes)
-
 }
 
 func TestHostSlabMemory(t *testing.T) {
@@ -160,4 +165,57 @@ func TestHostSlabMemory(t *testing.T) {
 		expectedIncreaseBytes := 500000.0
 		assert.True(t, beforeSample.MemorySlabBytes+expectedIncreaseBytes <= afterSample.MemorySlabBytes, "Slab memory used did not increase enough, expected %f increase, SlabMemoryBefore: %f SlabMemoryAfter %f ", expectedIncreaseBytes, beforeSample.MemorySlabBytes, afterSample.MemorySlabBytes)
 	})
+}
+
+func TestHostBuffersMemory(t *testing.T) {
+	ctx := new(mocks.AgentContext)
+	ctx.On("Config").Return(&config.Config{
+		MetricsNetworkSampleRate: 1,
+	})
+	storageSampler := storage.NewSampler(ctx)
+	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil)
+
+	// clear cache
+	err := ioutil.WriteFile("/proc/sys/vm/drop_caches", []byte("3"), 0o200)
+	require.NoError(t, err)
+
+	// take the first sample to compare with
+	sampleB, _ := systemSampler.Sample()
+	beforeSample := sampleB[0].(*metrics.SystemSample)
+
+	// reading directly from dist will increase the buffered memory
+	// https://tldp.org/LDP/sag/html/buffer-cache.html
+	root, err := rootDevice()
+	require.NoError(t, err)
+
+	fd, err := syscall.Open(root, syscall.O_RDONLY, 0o777)
+	require.NoError(t, err)
+
+	expectedIncreaseBytes := float64(10 * 1024 * 1024)
+	buffer := make([]byte, expectedIncreaseBytes, expectedIncreaseBytes)
+	_, err = syscall.Read(fd, buffer)
+	require.NoError(t, err)
+
+	err = syscall.Close(fd)
+	require.NoError(t, err)
+
+	// second sample to compare with
+	sampleB, _ = systemSampler.Sample()
+	afterSample := sampleB[0].(*metrics.SystemSample)
+
+	assert.True(t, beforeSample.MemoryBuffers+expectedIncreaseBytes <= afterSample.MemoryBuffers, "MemoryBuffers used did not increase enough, expected an increase by %f MemoryBuffersBefore: %f MemoryBuffersAfter %f ", expectedIncreaseBytes, beforeSample.MemoryBuffers, afterSample.MemoryBuffers)
+}
+
+func rootDevice() (string, error) {
+	all := true
+	parts, err := disk.PartitionsWithContext(context.Background(), all)
+	if err != nil {
+		return "", err
+	}
+	for _, part := range parts {
+		if part.Mountpoint == "/" {
+			return part.Device, nil
+		}
+	}
+	return "", errors.New("for some reason I could not find the root device 🤷‍")
 }
