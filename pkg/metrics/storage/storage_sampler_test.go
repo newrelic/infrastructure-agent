@@ -275,12 +275,8 @@ func TestPopulatePartition(t *testing.T) {
 	for _, tt := range partitionTests {
 		t.Run(tt.name, func(t *testing.T) {
 			actualSample := Sample{}
-
 			populatePartition(tt.partition, &actualSample)
-
 			assert.Equal(t, tt.expected, actualSample)
 		})
-
 	}
-
 }
