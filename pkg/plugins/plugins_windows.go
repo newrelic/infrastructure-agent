@@ -67,8 +67,8 @@ func RegisterPlugins(a *agent.Agent) error {
 	}
 
 	var ntpMonitor metrics.NtpMonitor
-	if config.Ntp.Enabled {
-		ntpMonitor = metrics.NewNtp(config.Ntp.Pool, config.Ntp.Timeout, config.Ntp.Interval)
+	if config.NtpMetrics.Enabled {
+		ntpMonitor = metrics.NewNtp(config.NtpMetrics.Pool, config.NtpMetrics.Timeout, config.NtpMetrics.Interval)
 	}
 	systemSampler := metrics.NewSystemSampler(a.Context, storageSampler, ntpMonitor)
 	sender.RegisterSampler(systemSampler)

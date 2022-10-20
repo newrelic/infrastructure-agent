@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Contains all the bits and pieces we need to parse and manage
 // the external configuration
+//nolint:tagliatelle
 package config
 
 import (
@@ -1127,7 +1128,7 @@ type Config struct {
 	// Public: No
 	SelfInstrumentationTelemetryEndpoint string `yaml:"self_instrumentation_telemetry_endpoint" envconfig:"self_instrumentation_telemetry_endpoint"`
 
-	// Ntp is a map for ntp configuration. It is disabled by default.
+	// NtpMetrics is a map for ntp configuration. It is disabled by default.
 	// Separate keys and values with colons :, as in KEY: VALUE, and separate each key-value pair with a line break.
 	// Key-value can be any of the following:
 	// "enabled: boolean" flag to enable/disable the ntp values (Default: false)
@@ -1136,7 +1137,7 @@ type Config struct {
 	// "timeout: int" ntp request timeout value in seconds (Default: 10)
 	// Default: none
 	// Public: Yes
-	Ntp NtpConfig `yaml:"ntp_sample" envconfig:"ntp_sample"`
+	NtpMetrics NtpConfig `yaml:"ntp_metrics" envconfig:"ntp_metrics"`
 }
 
 // Troubleshoot trobleshoot mode configuration.
@@ -1674,7 +1675,7 @@ func NewConfig() *Config {
 		DefaultIntegrationsTempDir:  defaultIntegrationsTempDir,
 		IncludeMetricsMatchers:      defaultMetricsMatcherConfig,
 		InventoryQueueLen:           DefaultInventoryQueue,
-		Ntp:                         NewNtpConfig(),
+		NtpMetrics:                  NewNtpConfig(),
 	}
 }
 

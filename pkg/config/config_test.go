@@ -364,10 +364,10 @@ agent_dir: /my/overriden/agent/dir
 		c.Assert(cfg.PassthroughEnvironment, HasLen, 21)
 	}
 
-	c.Assert(cfg.Ntp.Enabled, Equals, defaultNtpEnabled)
-	c.Assert(cfg.Ntp.Pool, DeepEquals, defaultNtpPool)
-	c.Assert(cfg.Ntp.Timeout, DeepEquals, defaultNtpTimeout)
-	c.Assert(cfg.Ntp.Interval, DeepEquals, defaultNtpInterval)
+	c.Assert(cfg.NtpMetrics.Enabled, Equals, defaultNtpEnabled)
+	c.Assert(cfg.NtpMetrics.Pool, DeepEquals, defaultNtpPool)
+	c.Assert(cfg.NtpMetrics.Timeout, DeepEquals, defaultNtpTimeout)
+	c.Assert(cfg.NtpMetrics.Interval, DeepEquals, defaultNtpInterval)
 }
 
 func (s *ConfigSuite) TestCalculateCollectorURL(c *C) {
@@ -858,7 +858,7 @@ func TestLoadNtpConfig(t *testing.T) {
 		{
 			name: "Disabled",
 			yamlCfg: `
-ntp_sample:
+ntp_metrics:
   enabled: false
 `,
 			expected: NtpConfig{
@@ -871,7 +871,7 @@ ntp_sample:
 		{
 			name: "Custom server pool, interval and timeout",
 			yamlCfg: `
-ntp_sample:
+ntp_metrics:
   pool:
     - "one.server.com"
     - "two.server.com"
@@ -889,7 +889,7 @@ ntp_sample:
 		{
 			name: "Custom server pool, interval and timeout",
 			yamlCfg: `
-ntp_sample:
+ntp_metrics:
   enabled: true
   pool:
     - "one.server.com"
@@ -913,7 +913,7 @@ ntp_sample:
 			require.NoError(t, err)
 
 			cfg, err := LoadConfig(tmp.Name())
-			assert.Equal(t, testCase.expected, cfg.Ntp)
+			assert.Equal(t, testCase.expected, cfg.NtpMetrics)
 			os.Remove(tmp.Name())
 		})
 	}

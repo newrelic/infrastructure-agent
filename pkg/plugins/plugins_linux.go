@@ -116,8 +116,8 @@ func RegisterPlugins(agent *agnt.Agent) error {
 	networkSampler := network.NewNetworkSampler(agent.Context)
 
 	var ntpMonitor metrics.NtpMonitor
-	if config.Ntp.Enabled {
-		ntpMonitor = metrics.NewNtp(config.Ntp.Pool, config.Ntp.Timeout, config.Ntp.Interval)
+	if config.NtpMetrics.Enabled {
+		ntpMonitor = metrics.NewNtp(config.NtpMetrics.Pool, config.NtpMetrics.Timeout, config.NtpMetrics.Interval)
 	}
 	systemSampler := metrics.NewSystemSampler(agent.Context, storageSampler, ntpMonitor)
 
