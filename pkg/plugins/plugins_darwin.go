@@ -34,9 +34,10 @@ func RegisterPlugins(a *agent.Agent) error {
 	storageSampler := storage.NewSampler(a.Context)
 	// nfsSampler := nfs.NewSampler(a.Context)
 	networkSampler := network.NewNetworkSampler(a.Context)
+
 	var ntpMonitor metrics.NtpMonitor
-	if config.Ntp.Enabled {
-		ntpMonitor = metrics.NewNtp(config.Ntp.Pool, config.Ntp.Timeout, config.Ntp.Interval)
+	if config.NtpMetrics.Enabled {
+		ntpMonitor = metrics.NewNtp(config.NtpMetrics.Pool, config.NtpMetrics.Timeout, config.NtpMetrics.Interval)
 	}
 	systemSampler := metrics.NewSystemSampler(a.Context, storageSampler, ntpMonitor)
 
