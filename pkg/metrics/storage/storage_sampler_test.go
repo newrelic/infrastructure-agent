@@ -194,3 +194,93 @@ func TestAsValidFloatPtr(t *testing.T) {
 		})
 	}
 }
+
+func TestPopulatePartition(t *testing.T) {
+
+	var partitionTests = []struct {
+		name      string
+		partition PartitionStat
+		expected  Sample
+	}{
+		{
+			"rw_ext4",
+			PartitionStat{
+				Device:     "/dev/sda",
+				Mountpoint: "/",
+				Fstype:     "ext4",
+				Opts:       "rw",
+			},
+			Sample{
+				BaseSample: BaseSample{
+					MountPoint:     "/",
+					Device:         "/dev/sda",
+					IsReadOnly:     "false",
+					FileSystemType: "ext4",
+				},
+			},
+		},
+		{
+			"ro_ext2",
+			PartitionStat{
+				Device:     "/dev/sda",
+				Mountpoint: "/",
+				Fstype:     "ext2",
+				Opts:       "ro",
+			},
+			Sample{
+				BaseSample: BaseSample{
+					MountPoint:     "/",
+					Device:         "/dev/sda",
+					IsReadOnly:     "true",
+					FileSystemType: "ext2",
+				},
+			},
+		},
+		{
+			"rwro_ext3",
+			PartitionStat{
+				Device:     "/dev/sda",
+				Mountpoint: "/",
+				Fstype:     "ext3",
+				Opts:       "rw,ro",
+			},
+			Sample{
+				BaseSample: BaseSample{
+					MountPoint:     "/",
+					Device:         "/dev/sda",
+					IsReadOnly:     "true",
+					FileSystemType: "ext3",
+				},
+			},
+		},
+		{
+			"rorw_ext3",
+			PartitionStat{
+				Device:     "/dev/sda",
+				Mountpoint: "/",
+				Fstype:     "ext3",
+				Opts:       "ro,rw",
+			},
+			Sample{
+				BaseSample: BaseSample{
+					MountPoint:     "/",
+					Device:         "/dev/sda",
+					IsReadOnly:     "true",
+					FileSystemType: "ext3",
+				},
+			},
+		},
+	}
+
+	for _, tt := range partitionTests {
+		t.Run(tt.name, func(t *testing.T) {
+			actualSample := Sample{}
+
+			populatePartition(tt.partition, &actualSample)
+
+			assert.Equal(t, tt.expected, actualSample)
+		})
+
+	}
+
+}
