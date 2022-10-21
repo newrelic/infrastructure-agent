@@ -46,7 +46,7 @@ jobs:
         uses: ./.github/actions/external_runner
         with:
           aws_region: us-east-2
-          container_make_target: "canaries PLATFORM=linux ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} VERSION=${{ inputs.TAG }}"
+          container_make_target: "canaries PLATFORM=linux ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} VERSION=${{ github.event.inputs.tag }}"
           ecs_cluster_name: caos_prerelease
           task_definition_name: test-prerelease-td
           cloud_watch_logs_group_name: /ecs/test-prerelease
@@ -70,7 +70,7 @@ jobs:
         uses: ./.github/actions/external_runner
         with:
           aws_region: us-east-2
-          container_make_target: "canaries PLATFORM=macos ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} VERSION=${{ inputs.TAG }}"
+          container_make_target: "canaries PLATFORM=macos ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} VERSION=${{ github.event.inputs.tag }}"
           ecs_cluster_name: caos_prerelease
           task_definition_name: test-prerelease-td
           cloud_watch_logs_group_name: /ecs/test-prerelease
@@ -93,7 +93,7 @@ jobs:
         uses: ./.github/actions/external_runner
         with:
           aws_region: us-east-2
-          container_make_target: "canaries PLATFORM=windows ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} VERSION=${{ inputs.TAG }}"
+          container_make_target: "canaries PLATFORM=windows ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} VERSION=${{ github.event.inputs.tag }}"
           ecs_cluster_name: caos_prerelease
           task_definition_name: test-prerelease-td
           cloud_watch_logs_group_name: /ecs/test-prerelease
