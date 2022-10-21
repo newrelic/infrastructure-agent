@@ -247,10 +247,7 @@ func (ss *Sampler) Sample() (samples sample.EventBatch, err error) {
 		s := &Sample{}
 		s.Type("StorageSample")
 		s.ElapsedSampleDeltaMs = elapsedMs
-		s.FileSystemType = p.Fstype
-		s.MountPoint = p.Mountpoint // Ensure we use the reported mount point, not the prefixed one
-		s.Device = p.Device
-		s.IsReadOnly = strconv.FormatBool(p.IsReadOnly())
+		populatePartition(p, s)
 		populateUsage(fsUsage, s)
 
 		// we can have multiple mountpoints for the same device
@@ -410,6 +407,13 @@ func populateUsage(fsUsage *disk.UsageStat, dest *Sample) {
 	dest.FreePercent = asValidFloatPtr(&freePercent)
 
 	populateUsageOS(fsUsage, dest)
+}
+
+func populatePartition(p PartitionStat, dest *Sample) {
+	dest.FileSystemType = p.Fstype
+	dest.MountPoint = p.Mountpoint // Ensure we use the reported mount point, not the prefixed one
+	dest.Device = p.Device
+	dest.IsReadOnly = strconv.FormatBool(p.IsReadOnly())
 }
 
 func asValidFloatPtr(value *float64) *float64 {

@@ -274,6 +274,19 @@ func parseMountInfo(line string) (mi MountInfoStat, err error) {
 	mi.FSType = fields[separator+1]
 	mi.MountSource = fields[separator+2]
 	mi.Device = fields[separator+2]
+
+	if len(fields) >= separator+4 {
+		superOpts := strings.Split(fields[separator+3], ",")
+		for _, superOpt := range superOpts {
+			if superOpt == "ro" || superOpt == "rw" {
+				if mi.Opts != "" {
+					mi.Opts += ","
+				}
+				mi.Opts += superOpt
+			}
+		}
+	}
+
 	return
 }
 
