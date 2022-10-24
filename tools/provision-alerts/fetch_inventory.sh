@@ -80,7 +80,7 @@ for ins in $INSTANCES;do
       break
     fi
   done
-  echo "$NAME ansible_host=$PRIVATE_IP ansible_user=$USERNAME ansible_python_interpreter=$PYTHON iid=$IID"
+  echo "$NAME ansible_host=$PRIVATE_IP ansible_user=$USERNAME ansible_python_interpreter=$PYTHON iid=$IID platform=linux"
 done
 
 cat << EOF
@@ -125,7 +125,7 @@ for ins in $INSTANCES;do
       break
     fi
   done
-  echo "$NAME ansible_host=$PRIVATE_IP ansible_user=$USERNAME ansible_python_interpreter=$PYTHON iid=$IID"
+  echo "$NAME ansible_host=$PRIVATE_IP ansible_user=$USERNAME ansible_python_interpreter=$PYTHON iid=$IID platform=linux"
 done
 
 cat << EOF
@@ -145,7 +145,7 @@ for ins in $INSTANCES;do
     continue
   fi
 
-  echo "$NAME ansible_host=$PRIVATE_IP iid=$IID"
+  echo "$NAME ansible_host=$PRIVATE_IP iid=$IID platform=windows"
 done
 
 cat << EOF
@@ -165,7 +165,7 @@ for ins in $INSTANCES;do
     continue
   fi
 
-  echo "$NAME ansible_host=$PRIVATE_IP "
+  echo "$NAME ansible_host=$PRIVATE_IP platform=macos"
 done
 
 cat << EOF
