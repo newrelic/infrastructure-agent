@@ -11,6 +11,15 @@ on:
       - README.md
 
 jobs:
+  test-prerelease:
+    needs:
+    uses: newrelic/infrastructure-agent/.github/workflows/component_prerelease_testing.yml@master
+    with:
+      PLATFORM: "linux"
+      TAG: "1.33.0"
+      CANARIES: false
+    secrets:
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
 
   linter-linux:
     uses: newrelic/infrastructure-agent/.github/workflows/component_linux_linter.yml@master
