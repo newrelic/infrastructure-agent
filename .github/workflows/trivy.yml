@@ -1,8 +1,8 @@
 name: 🕵🏼 Trivy scanner for docker
 on:
   schedule:
-    # Scheduled to run daily at 8 a.m
-    - cron:  '0 8 * * *'
+    # Scheduled to run at 8 a.m on every day-of-week from Monday through Friday.
+    - cron:  '0 8 * * 1-5'
   workflow_dispatch:
     inputs:
       tag:
