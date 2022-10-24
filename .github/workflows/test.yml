@@ -12,7 +12,6 @@ on:
 
 jobs:
   test-prerelease:
-    needs:
     uses: newrelic/infrastructure-agent/.github/workflows/component_prerelease_testing.yml@master
     with:
       PLATFORM: "linux"
