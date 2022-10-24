@@ -1,4 +1,3 @@
-build/ci/Dockerfile
 FROM ubuntu:22.04 as ci
 
 ARG REF_ARG="master"
