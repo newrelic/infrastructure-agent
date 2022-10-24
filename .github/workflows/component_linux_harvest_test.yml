@@ -21,6 +21,10 @@ jobs:
         with:
           go-version: ${{env.GO_VERSION}}
 
+      - run: |
+          # https://github.com/actions/setup-go/issues/107
+          cp -f `which go` /usr/bin/go
+
       - name: Setup node
         run: sudo apt install musl-dev
 
