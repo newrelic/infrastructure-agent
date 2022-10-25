@@ -27,6 +27,8 @@ ANSIBLE_STDOUT_CALLBACK=selective \
   test/automated/ansible/provision.yml
 fi
 
+ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO retry ansible-playbook -f $ANSIBLE_FORKS -i $ANSIBLE_INVENTORY test/automated/ansible/install-requirements.yml
+
 if [[ "$PLATFORM" == "macos" || "$PLATFORM" == "all" ]];then
   retry ansible-playbook \
   -e macstadium_user=$MACSTADIUM_USER \
@@ -35,5 +37,3 @@ if [[ "$PLATFORM" == "macos" || "$PLATFORM" == "all" ]];then
    -e output_inventory_macos=$ANSIBLE_INVENTORY \
   test/automated/ansible/macos-canaries.yml
 fi
-
-ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO retry ansible-playbook -f $ANSIBLE_FORKS -i $ANSIBLE_INVENTORY test/automated/ansible/install-requirements.yml
