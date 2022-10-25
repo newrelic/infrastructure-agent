@@ -2,7 +2,7 @@ version: '3'
 
 services:
   newrelic-infra:
-    container_name: newrelic-infra
+    container_name: "newrelic-infra-{{ target_agent_version }}"
     image: "newrelic/infrastructure:{{ target_agent_version }}"
     cap_add:
       - SYS_PTRACE
@@ -16,4 +16,5 @@ services:
       NRIA_LICENSE_KEY: "{{ nr_license_key }}"
       NRIA_DISPLAY_NAME: "{{ display_name }}"
       STAGING: true
+      NRIA_DISABLE_CLOUD_METADATA: true
     restart: unless-stopped

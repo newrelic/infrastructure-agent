@@ -1,0 +1,6 @@
+---
+
+- name: Run docker compose
+  shell: "docker compose -f /srv/newrelic-infra_{{ target_agent_version }}/docker-compose_{{ target_agent_version }}.yml up -d --force-recreate"
+  
+...
