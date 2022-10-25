@@ -1,4 +1,4 @@
-name: 🧹 macOS | Run validate and linter
+name: 🧹 Windows | Run validate and linter
 
 on:
   workflow_call:
@@ -10,16 +10,16 @@ jobs:
 
   run-lint:
     name: Lint tests
-    runs-on: macos-11
+    runs-on: windows-latest
     continue-on-error: true
-
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: '0'
 
       - name: Modify go.mod version to support golangci-lint
-        run: sed -i -e 's/go 1\.18/go 1\.17/' go.mod
+        shell: bash
+        run: sed -i 's/go 1\.18/go 1\.17/' go.mod
 
       - name: Install Go
         uses: actions/setup-go@v2
@@ -27,4 +27,6 @@ jobs:
           go-version: '1.17'
 
       - name: Running lint tests
+        shell: bash
         run: make lint
+        # this is temporary as those tests are not fixed yet
