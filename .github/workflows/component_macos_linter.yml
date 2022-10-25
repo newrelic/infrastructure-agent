@@ -8,15 +8,6 @@ env:
 
 jobs:
 
-  validate:
-    name: Validate code
-    runs-on: macos-11
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Validate code
-        run: make ci/validate
-
   run-lint:
     name: Lint tests
     runs-on: macos-11
