@@ -33,6 +33,9 @@ jobs:
   harvest-test-macos:
     uses: newrelic/infrastructure-agent/.github/workflows/component_macos_harvest_test.yml@master
 
+  linter-windows:
+    uses: newrelic/infrastructure-agent/.github/workflows/component_windows_linter.yml@master
+
   unit-test-windows:
     uses: newrelic/infrastructure-agent/.github/workflows/component_windows_unit_test.yml@master
 
