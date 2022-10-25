@@ -15,6 +15,7 @@ function retry () {
   return "$status"
 }
 
+if [[ "$PLATFORM" != "macos" ]];then
 ANSIBLE_STDOUT_CALLBACK=selective \
   ansible-playbook \
   -i test/automated/ansible/inventory.local \
@@ -24,9 +25,15 @@ ANSIBLE_STDOUT_CALLBACK=selective \
   -e platform=$PLATFORM \
   -f $ANSIBLE_FORKS \
   test/automated/ansible/provision.yml
-
-ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO retry ansible-playbook -f $ANSIBLE_FORKS -i $ANSIBLE_INVENTORY test/automated/ansible/install-requirements.yml
+fi
 
 if [[ "$PLATFORM" == "macos" || "$PLATFORM" == "all" ]];then
-  retry ansible-playbook -e macstadium_user=$MACSTADIUM_USER -e macstadium_sudo_pass=$MACSTADIUM_SUDO_PASS -e macstadium_pass=$MACSTADIUM_PASS test/automated/ansible/macos-canaries.yml
+  retry ansible-playbook \
+  -e macstadium_user=$MACSTADIUM_USER \
+  -e macstadium_sudo_pass=$MACSTADIUM_SUDO_PASS \
+  -e macstadium_pass=$MACSTADIUM_PASS \
+   -e output_inventory_macos=$ANSIBLE_INVENTORY \
+  test/automated/ansible/macos-canaries.yml
 fi
+
+ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO retry ansible-playbook -f $ANSIBLE_FORKS -i $ANSIBLE_INVENTORY test/automated/ansible/install-requirements.yml
