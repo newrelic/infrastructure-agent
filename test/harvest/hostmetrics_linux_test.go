@@ -191,7 +191,7 @@ func TestHostBuffersMemory(t *testing.T) {
 	fd, err := syscall.Open(root, syscall.O_RDONLY, 0o777)
 	require.NoError(t, err)
 
-	expectedIncreaseBytes := 10 * 1024 * 1024
+	expectedIncreaseBytes := float64(10 * 1024 * 1024)
 	buffer := make([]byte, expectedIncreaseBytes, expectedIncreaseBytes)
 	_, err = syscall.Read(fd, buffer)
 	require.NoError(t, err)
@@ -203,7 +203,7 @@ func TestHostBuffersMemory(t *testing.T) {
 	sampleB, _ = systemSampler.Sample()
 	afterSample := sampleB[0].(*metrics.SystemSample)
 
-	assert.True(t, *beforeSample.MemoryBuffers+float64(expectedIncreaseBytes) <= *afterSample.MemoryBuffers, "MemoryBuffers used did not increase enough, expected an increase by %f MemoryBuffersBefore: %f MemoryBuffersAfter %f ", expectedIncreaseBytes, beforeSample.MemoryBuffers, afterSample.MemoryBuffers)
+	assert.True(t, beforeSample.MemoryBuffers+expectedIncreaseBytes <= afterSample.MemoryBuffers, "MemoryBuffers used did not increase enough, expected an increase by %f MemoryBuffersBefore: %f MemoryBuffersAfter %f ", expectedIncreaseBytes, beforeSample.MemoryBuffers, afterSample.MemoryBuffers)
 }
 
 func rootDevice() (string, error) {
