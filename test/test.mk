@@ -31,7 +31,7 @@ test/automated/termination: validate-aws-credentials
 TESTS_TO_RUN_REGEXP ?= ".*"
 .PHONY: test/automated/harvest
 test/automated/harvest:
-	AGENT_RUN_DIR=$(CURDIR) ANSIBLE_FORKS=$(ANSIBLE_FORKS) $(CURDIR)/test/harvest/ansible/harvest.sh
+	AGENT_RUN_DIR=$(CURDIR) ANSIBLE_FORKS=$(ANSIBLE_FORKS) ANSIBLE_INVENTORY=$(ANSIBLE_INVENTORY) $(CURDIR)/test/harvest/ansible/harvest.sh
 
 .PHONY: test/automated/packaging
 test/automated/packaging:
