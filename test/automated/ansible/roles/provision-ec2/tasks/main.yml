@@ -30,13 +30,18 @@
   shell: "aws ec2 wait instance-status-ok --instance-ids {{ created_instances_ids | join(' ') }}"
 
 - name: "retrieve instances information"
-  shell: "aws ec2 describe-instances --instance-ids {{ created_instances_ids | join(' ') }}"
+  vars:
+    ids: "{{ created_instances_ids | join(' ') }}"
+  shell: "aws ec2 describe-instances --instance-ids {{ ids }}"
   register: instances_information
+  when: ids != ""
 
 - name: "register instances attributes"
   set_fact:
     registered_instances: "{{ (instances_information.stdout  | from_json) | community.general.json_query('Reservations[*].Instances[*].{InstanceId: InstanceId, ImageId: ImageId, PublicIpAddress: PublicIpAddress, PrivateIpAddress: PrivateIpAddress, Architecture: Architecture}') | list | flatten }}"
   register: all_registered_instances
+  when:
+    - instances_information.stdout is defined
 
 - name: add ip address for linux/amd64
   ansible.builtin.set_fact:
@@ -49,6 +54,7 @@
       python_interpreter: "{{ item.1.python_interpreter }}"
   loop: "{{ registered_instances | product(instances) | list }}"
   when:
+    - registered_instances is defined
     - item.0.ImageId == item.1.ami
     - item.1.name is search("amd64")
     - item.1.platform == "linux"
@@ -65,6 +71,7 @@
       python_interpreter: "{{ item.1.python_interpreter }}"
   loop: "{{ registered_instances | product(instances) | list }}"
   when:
+    - registered_instances is defined
     - item.0.ImageId == item.1.ami
     - item.1.name is search("arm64")
     - item.1.platform == "linux"
@@ -80,6 +87,7 @@
       name: "{{ item.1.name }}"
   loop: "{{ registered_instances | product(instances) | list }}"
   when:
+    - registered_instances is defined
     - item.0.ImageId == item.1.ami
     - item.1.name is search("amd64")
     - item.1.platform == "windows"
@@ -97,7 +105,10 @@
     instances_for_inventory_linux_amd64: "{{ instances_data_linux_amd64.results | selectattr('ansible_facts', 'defined') | map(attribute='ansible_facts') | map(attribute='instance_data') | list }}"
     instances_for_inventory_linux_arm64: "{{ instances_data_linux_arm64.results | selectattr('ansible_facts', 'defined') | map(attribute='ansible_facts') | map(attribute='instance_data') | list }}"
     instances_for_inventory_windows_amd64: "{{ instances_data_windows_amd64.results | selectattr('ansible_facts', 'defined') | map(attribute='ansible_facts') | map(attribute='instance_data') | list }}"
-
+  when:
+    - instances_data_linux_amd64.results is defined
+    - instances_data_linux_arm64.results is defined
+    - instances_data_windows_amd64.results is defined
 - debug:
     var: "{{ item }}"
   loop:

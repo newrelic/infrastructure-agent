@@ -15,6 +15,11 @@ on:
         type: boolean
         default: true
         required: false
+      macos:
+        description: 'Should run tests for MacOS platform?'
+        type: boolean
+        default: true
+        required: false
       windows:
         description: 'Should run tests for Windows platform?'
         type: boolean
@@ -40,6 +45,16 @@ jobs:
     uses: newrelic/infrastructure-agent/.github/workflows/component_prerelease_testing.yml@master
     with:
       PLATFORM: "linux"
+      TAG: ${{ github.event.inputs.tag }}
+      CANARIES: ${{ github.event.inputs.canaries == 'true' }}
+    secrets:
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+
+  test-prerelease-macos:
+    if: ${{ github.event.inputs.macos == 'true' }}
+    uses: newrelic/infrastructure-agent/.github/workflows/component_prerelease_testing.yml@master
+    with:
+      PLATFORM: "macos"
       TAG: ${{ github.event.inputs.tag }}
       CANARIES: ${{ github.event.inputs.canaries == 'true' }}
     secrets:
