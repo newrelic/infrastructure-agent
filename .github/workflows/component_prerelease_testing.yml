@@ -42,7 +42,7 @@ jobs:
           role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
           aws-region: us-east-2
 
-      - name: Provision instances Linux
+      - name: Provision instances ${{ inputs.PLATFORM }}
         uses: ./.github/actions/external_runner
         with:
           aws_region: us-east-2
