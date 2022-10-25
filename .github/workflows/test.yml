@@ -20,9 +20,8 @@ jobs:
       secrets:
         gh_token: ${{secrets.GITHUB_TOKEN}}
 
-# OS is deprecated
-#  harvest-test-linux:
-#    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_harvest_test.yml@master
+  harvest-test-linux:
+    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_harvest_test.yml@master
 
   unit-test-macos:
     uses: newrelic/infrastructure-agent/.github/workflows/component_macos_unit_test.yml@master

@@ -5,11 +5,14 @@ function retry () {
   until [ $retries -eq 0 ]
   do
     "$@"
-    if [ $? -eq 0 ];then
+    status="$?"
+    if [ "$status" -eq 0 ];then
       break
     fi
     ((retries--))
   done
+
+  return "$status"
 }
 
 ANSIBLE_STDOUT_CALLBACK=selective \
