@@ -1,4 +1,4 @@
-name: 🕵🏼 Trivy
+name: 🚧 🕵🏼 Trivy
 
 on:
   workflow_call:
@@ -79,7 +79,7 @@ jobs:
           # This data can be any valid JSON from a previous step in the GitHub Action
           payload: |
             {
-              "text": ":rotating_light: Hi CAOS, critical or high vulnerabilities found, see: https://github.com/newrelic/infrastructure-agent/security/code-scanning?query=is%3Aopen+branch%3Amaster+tool%3ATrivy :rotating_light:"
+              "text": ":rotating_light: Hi CAOS (@hero), critical or high vulnerabilities found, see: https://github.com/newrelic/infrastructure-agent/security/code-scanning?query=is%3Aopen+branch%3Amaster+tool%3ATrivy :rotating_light:"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.slack_webhook }}
