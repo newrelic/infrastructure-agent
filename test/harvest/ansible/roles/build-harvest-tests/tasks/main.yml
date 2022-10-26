@@ -13,7 +13,7 @@
   loop: "{{ goos_arch.darwin }}"
 
 - name: build harvest tests for every os/arch combination
-  ansible.builtin.shell: "GOOS=windows GOARCH={{item}} make build-harvest-tests && mv {{ default_binary_name }}.exe {{ os_arch_binary_name_tpl | replace('%GOOS%', 'win32nt') | replace('%GOARCH%', item) }}"
+  ansible.builtin.shell: "GOOS=windows GOARCH={{item}} make build-harvest-tests && mv {{ default_binary_name }}.exe {{ os_arch_binary_name_tpl | replace('%GOOS%', 'win32nt') | replace('%GOARCH%', item) }}.exe"
   args:
     chdir: "{{ agent_root_dir }}"
   loop: "{{ goos_arch.windows }}"
