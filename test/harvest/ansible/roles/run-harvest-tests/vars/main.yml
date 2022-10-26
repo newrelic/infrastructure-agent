@@ -4,5 +4,5 @@ architecture_map:
   aarch64: "arm64"
   64-bit: "amd64"
 
-os_arch_binary_name_tpl: "harvest_%GOOS%_%GOARCH%.test"
+os_arch_binary_name_tpl: "harvest_%GOOS%_%GOARCH%.test{{ '.exe' if ansible_system == 'Win32NT' else '' }}"
 tests_to_run_regex: ".*"
