@@ -482,7 +482,7 @@ func provisionEphimeralCanaries(cnf canaryConf) error {
 	playbookArguments := []string{
 		"-e", "nr_license_key=" + cnf.license,
 		"-e", "enable_process_metrics=true",
-		"-e", "nria_log_level=debug",
+		"-e", "nria_log_level=info",
 		"-e", "nria_log_forward=true",
 		"-e", "nria_log_rotation_mb=500",
 		"-e", "nria_log_rotation_max_files=5",
