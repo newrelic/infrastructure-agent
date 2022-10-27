@@ -5,7 +5,6 @@ package agent
 
 import (
 	"compress/gzip"
-	v4Config "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -24,6 +23,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	v4 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4"
+	v4Config "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins"
@@ -79,6 +79,7 @@ func New(configsDir, tempBinDir string) *Emulator {
 }
 
 func (ae *Emulator) Terminate() {
+	ae.agent.Context.CancelFn()
 	ae.agent.Terminate()
 	os.RemoveAll(ae.tempDir)
 }
