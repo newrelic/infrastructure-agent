@@ -30,7 +30,10 @@ inputs:
       PLAY\sRECAP\s
       ok=\d+\s+changed=\d+\s+unreachable=\d+\s+failed=\d+\s+skipped=\d+\s+rescued=\d+\s+ignored=\d+
     required: false
-
+  action_id:
+    description: Identifier for the job that triggered the action.
+    default: ${{ github.job }}
+    required: false
 runs:
   using: "composite"
   steps:
