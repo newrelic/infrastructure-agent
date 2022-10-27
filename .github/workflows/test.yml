@@ -11,32 +11,6 @@ on:
       - README.md
 
 jobs:
-  test-prerelease-linux:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_prerelease_testing.yml@master
-    with:
-      PLATFORM: "linux"
-      TAG: "1.33.0"
-      CANARIES: false
-    secrets:
-      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
-
-  test-prerelease-macos:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_prerelease_testing.yml@master
-    with:
-      PLATFORM: "macos"
-      TAG: "1.33.0"
-      CANARIES: false
-    secrets:
-      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
-
-  test-prerelease-windows:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_prerelease_testing.yml@master
-    with:
-      PLATFORM: "windows"
-      TAG: "1.33.0"
-      CANARIES: false
-    secrets:
-      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
 
   test-vars:
     name: Lint tests
