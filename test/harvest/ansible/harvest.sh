@@ -10,6 +10,7 @@ function retry () {
       break
     fi
     ((retries--))
+    echo '[ALLOW_MSG]: execution failed, retrying...'
   done
 
   return "$status"

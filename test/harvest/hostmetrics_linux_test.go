@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"syscall"
 	"testing"
 
 	"github.com/shirou/gopsutil/v3/disk"
@@ -167,44 +168,42 @@ func TestHostSlabMemory(t *testing.T) {
 }
 
 func TestHostBuffersMemory(t *testing.T) {
-	t.Skip("skipping - compilation error")
+	ctx := new(mocks.AgentContext)
+	ctx.On("Config").Return(&config.Config{
+		MetricsNetworkSampleRate: 1,
+	})
+	storageSampler := storage.NewSampler(ctx)
+	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil)
 
-	//ctx := new(mocks.AgentContext)
-	//ctx.On("Config").Return(&config.Config{
-	//	MetricsNetworkSampleRate: 1,
-	//})
-	//storageSampler := storage.NewSampler(ctx)
-	//systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil)
-	//
-	//// clear cache
-	//err := ioutil.WriteFile("/proc/sys/vm/drop_caches", []byte("3"), 0o200)
-	//require.NoError(t, err)
-	//
-	//// take the first sample to compare with
-	//sampleB, _ := systemSampler.Sample()
-	//beforeSample := sampleB[0].(*metrics.SystemSample)
-	//
-	//// reading directly from dist will increase the buffered memory
-	//// https://tldp.org/LDP/sag/html/buffer-cache.html
-	//root, err := rootDevice()
-	//require.NoError(t, err)
-	//
-	//fd, err := syscall.Open(root, syscall.O_RDONLY, 0o777)
-	//require.NoError(t, err)
-	//
-	//expectedIncreaseBytes := float64(10 * 1024 * 1024)
-	//buffer := make([]byte, expectedIncreaseBytes, expectedIncreaseBytes)
-	//_, err = syscall.Read(fd, buffer)
-	//require.NoError(t, err)
-	//
-	//err = syscall.Close(fd)
-	//require.NoError(t, err)
-	//
-	//// second sample to compare with
-	//sampleB, _ = systemSampler.Sample()
-	//afterSample := sampleB[0].(*metrics.SystemSample)
-	//
-	//assert.True(t, beforeSample.MemoryBuffers+expectedIncreaseBytes <= afterSample.MemoryBuffers, "MemoryBuffers used did not increase enough, expected an increase by %f MemoryBuffersBefore: %f MemoryBuffersAfter %f ", expectedIncreaseBytes, beforeSample.MemoryBuffers, afterSample.MemoryBuffers)
+	// clear cache
+	err := ioutil.WriteFile("/proc/sys/vm/drop_caches", []byte("3"), 0o200)
+	require.NoError(t, err)
+
+	// take the first sample to compare with
+	sampleB, _ := systemSampler.Sample()
+	beforeSample := sampleB[0].(*metrics.SystemSample)
+
+	// reading directly from dist will increase the buffered memory
+	// https://tldp.org/LDP/sag/html/buffer-cache.html
+	root, err := rootDevice()
+	require.NoError(t, err)
+
+	fd, err := syscall.Open(root, syscall.O_RDONLY, 0o777)
+	require.NoError(t, err)
+
+	expectedIncreaseBytes := 10 * 1024 * 1024
+	buffer := make([]byte, expectedIncreaseBytes, expectedIncreaseBytes)
+	_, err = syscall.Read(fd, buffer)
+	require.NoError(t, err)
+
+	err = syscall.Close(fd)
+	require.NoError(t, err)
+
+	// second sample to compare with
+	sampleB, _ = systemSampler.Sample()
+	afterSample := sampleB[0].(*metrics.SystemSample)
+
+	assert.True(t, (*beforeSample.MemoryBuffers)+float64(expectedIncreaseBytes) <= *afterSample.MemoryBuffers, "MemoryBuffers used did not increase enough, expected an increase by %f MemoryBuffersBefore: %f MemoryBuffersAfter %f ", expectedIncreaseBytes, beforeSample.MemoryBuffers, afterSample.MemoryBuffers)
 }
 
 func rootDevice() (string, error) {
