@@ -220,9 +220,9 @@ func printFargateTaskLogs(ctx context.Context, params Config, cfg aws.Config, ta
 }
 
 func printLogsInfo(params Config, taskID string) {
-	fmt.Fprintf(log.Writer(), "Fetching logs from: %s/%s", params.CloudWatchLogsStreamName, taskID)
-	fmt.Fprintf(log.Writer(), "Download full logs:")
-	fmt.Fprintf(log.Writer(), "aws logs get-log-events --log-group-name %s --log-stream-name %s --output text > %s.output.txt",
+	fmt.Fprintf(log.Writer(), "Fetching logs from: %s/%s\n", params.CloudWatchLogsStreamName, taskID)
+	fmt.Fprintf(log.Writer(), "Download full logs:\n")
+	fmt.Fprintf(log.Writer(), "aws logs get-log-events --log-group-name %s --log-stream-name %s --output text > %s.output.txt\n",
 		params.CloudWatchLogsStreamName, taskID, params.ActionID)
 }
 
