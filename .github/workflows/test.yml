@@ -20,7 +20,7 @@ jobs:
 
       - name: Modify go.mod version to support golangci-lint
         shell: bash
-        run: echo {{github.action}} {{github.job}}
+        run: echo ${{ github.action }} ${{ github.job }}
 
 #  packaging-tests-linux:
 #    if: ${{ inputs.PLATFORM == 'linux' }}
