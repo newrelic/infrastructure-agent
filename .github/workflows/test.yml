@@ -38,56 +38,85 @@ jobs:
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
 
-  linter-linux:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_linter.yml@master
+  test-vars:
+    name: Lint tests
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
 
-  unit-test-linux:
-      uses: newrelic/infrastructure-agent/.github/workflows/component_linux_unit_test.yml@master
-      secrets:
-        gh_token: ${{secrets.GITHUB_TOKEN}}
+      - name: Modify go.mod version to support golangci-lint
+        shell: bash
+        run: echo {{github.action}} {{github.job}}
 
-  harvest-test-linux:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_harvest_test.yml@master
-
-  linter-macos:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_macos_linter.yml@master
-
-  unit-test-macos:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_macos_unit_test.yml@master
-
-  harvest-test-macos:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_macos_harvest_test.yml@master
-
-  linter-windows:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_windows_linter.yml@master
-
-  unit-test-windows:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_windows_unit_test.yml@master
-
-  proxy-tests-linux:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_proxy_test.yml@master
-    secrets:
-      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
-      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
-
-  tools-tests-linux:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_tools_unit_test.yml@master
-    secrets:
-      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
-      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
-
-  build-container:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_docker_build.yml@master
-    secrets:
-      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
-      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
-    with:
-      TAG: "0.0.0" # needed for goreleaser test builds
-
-  test-build:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_build.yml@master
-    secrets:
-      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
-      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
-    with:
-      TAG: "0.0.0" # needed for goreleaser test builds
+#  packaging-tests-linux:
+#    if: ${{ inputs.PLATFORM == 'linux' }}
+#    strategy:
+#      matrix:
+#        limit:
+#          - "linux_amd64"
+#          - "linux_arm64"
+#
+#    needs: [ harvest-tests ]
+#    runs-on: ubuntu-20.04
+#    steps:
+#      - uses: actions/checkout@v2
+#
+#      - name: Configure AWS Credentials
+#        uses: aws-actions/configure-aws-credentials@v1
+#        with:
+#          role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
+#          aws-region: us-east-2
+#
+#  linter-linux:
+#    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_linter.yml@master
+#
+#  unit-test-linux:
+#      uses: newrelic/infrastructure-agent/.github/workflows/component_linux_unit_test.yml@master
+#      secrets:
+#        gh_token: ${{secrets.GITHUB_TOKEN}}
+#
+#  harvest-test-linux:
+#    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_harvest_test.yml@master
+#
+#  linter-macos:
+#    uses: newrelic/infrastructure-agent/.github/workflows/component_macos_linter.yml@master
+#
+#  unit-test-macos:
+#    uses: newrelic/infrastructure-agent/.github/workflows/component_macos_unit_test.yml@master
+#
+#  harvest-test-macos:
+#    uses: newrelic/infrastructure-agent/.github/workflows/component_macos_harvest_test.yml@master
+#
+#  linter-windows:
+#    uses: newrelic/infrastructure-agent/.github/workflows/component_windows_linter.yml@master
+#
+#  unit-test-windows:
+#    uses: newrelic/infrastructure-agent/.github/workflows/component_windows_unit_test.yml@master
+#
+#  proxy-tests-linux:
+#    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_proxy_test.yml@master
+#    secrets:
+#      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+#      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+#
+#  tools-tests-linux:
+#    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_tools_unit_test.yml@master
+#    secrets:
+#      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+#      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+#
+#  build-container:
+#    uses: newrelic/infrastructure-agent/.github/workflows/component_docker_build.yml@master
+#    secrets:
+#      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+#      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+#    with:
+#      TAG: "0.0.0" # needed for goreleaser test builds
+#
+#  test-build:
+#    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_build.yml@master
+#    secrets:
+#      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+#      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+#    with:
+#      TAG: "0.0.0" # needed for goreleaser test builds
