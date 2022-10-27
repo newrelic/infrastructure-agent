@@ -35,11 +35,14 @@ type Config struct {
 	MaxLogLines              int
 	TimeoutMillis            int
 	LogFilters               []string // To show full logs, set LOG_FILTERS=".*"
+	ActionID                 string   // Used to distinguish the job that launched the action
 }
 
 const (
 	defaultTimeoutMillis = 240000
 	defaultMaxLogLines   = 200
+
+	defaultActionID = "unknown"
 
 	logLinesReqBackoff = 5 * time.Second
 )
@@ -55,6 +58,7 @@ func LoadConfig() Config {
 	viper.BindEnv("timeout_millis")
 	viper.BindEnv("max_log_lines")
 	viper.BindEnv("log_filters")
+	viper.BindEnv("action_id")
 
 	timeoutMillis := viper.GetInt("timeout_millis")
 	if timeoutMillis == 0 {
@@ -64,6 +68,11 @@ func LoadConfig() Config {
 	maxLogLines := viper.GetInt("max_log_lines")
 	if maxLogLines == 0 {
 		maxLogLines = defaultMaxLogLines
+	}
+
+	actionID := viper.GetString("action_id")
+	if actionID == "" {
+		actionID = defaultActionID
 	}
 
 	return Config{
@@ -77,6 +86,7 @@ func LoadConfig() Config {
 		LogFilters:               viper.GetStringSlice("log_filters"),
 		TimeoutMillis:            timeoutMillis,
 		MaxLogLines:              maxLogLines,
+		ActionID:                 actionID,
 	}
 }
 
@@ -179,6 +189,9 @@ func printFargateTaskLogs(ctx context.Context, params Config, cfg aws.Config, ta
 		MaxLines:      params.MaxLogLines,
 	}
 
+	// Add information to identify cloudwatch logs stream.
+	printLogsInfo(params, id)
+
 	logTailer := NewCloudWatchLogTailer(logTailerConfig, cloudwatchlogs.NewFromConfig(cfg))
 
 	for {
@@ -204,6 +217,13 @@ func printFargateTaskLogs(ctx context.Context, params Config, cfg aws.Config, ta
 
 		time.Sleep(logLinesReqBackoff)
 	}
+}
+
+func printLogsInfo(params Config, taskID string) {
+	fmt.Fprintf(log.Writer(), "Fetching logs from: %s/%s", params.CloudWatchLogsStreamName, taskID)
+	fmt.Fprintf(log.Writer(), "Download full logs:")
+	fmt.Fprintf(log.Writer(), "aws logs get-log-events --log-group-name %s --log-stream-name %s --output text > %s.output.txt",
+		params.CloudWatchLogsStreamName, taskID, params.ActionID)
 }
 
 // ContainerOverride returns a list of containers definition with an override command
