@@ -25,7 +25,7 @@ inputs:
   log_filters:
     description: Regexp filters that will be applied to CloudWatch output. To show the full logs add the following filter ".*". By default, it filters Ansible role execution logs.
     default: |
-      ^\[ALLOW_MSG\].+
+      \[ALLOW_MSG\].+
       TASK\s\[.*\]\s
       PLAY\s\[.*\]\s
       PLAY\sRECAP\s
