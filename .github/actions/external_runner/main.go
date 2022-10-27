@@ -220,10 +220,11 @@ func printFargateTaskLogs(ctx context.Context, params Config, cfg aws.Config, ta
 }
 
 func printLogsInfo(params Config, taskID string) {
-	fmt.Fprintf(log.Writer(), "Fetching logs from: %s/%s\n", params.CloudWatchLogsStreamName, taskID)
+	source := fmt.Sprintf("%s/%s", params.CloudWatchLogsStreamName, taskID)
+	fmt.Fprintf(log.Writer(), "Fetching logs from: %s\n", source)
 	fmt.Fprintf(log.Writer(), "Download full logs:\n")
-	fmt.Fprintf(log.Writer(), "aws logs get-log-events --log-group-name %s --log-stream-name %s --output text > %s.output.txt\n",
-		params.CloudWatchLogsStreamName, taskID, params.ActionID)
+	fmt.Fprintf(log.Writer(), "aws logs get-log-events --log-group-name /%s --log-stream-name %s --output text > %s.output.txt\n",
+		params.CloudWatchLogsStreamName, source, params.ActionID)
 }
 
 // ContainerOverride returns a list of containers definition with an override command
