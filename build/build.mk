@@ -167,6 +167,7 @@ macos/harvest-tests: deps
 	$(GO_BIN) test ./test/harvest -tags="harvest" -v
 
 .PHONY: build-harvest-tests
+build-harvest-tests: CGO_ENABLED=1
 build-harvest-tests: deps
 	$(GO_BIN) test -c ./test/harvest -tags="harvest" -v
 
