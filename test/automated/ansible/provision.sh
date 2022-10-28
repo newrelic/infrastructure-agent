@@ -2,7 +2,7 @@
 
 function retry () {
   retries=5
-  until [ $retries -eq 0 ]
+  until [ "$retries" -eq 0 ]
   do
     "$@"
     status="$?"
@@ -10,7 +10,10 @@ function retry () {
       break
     fi
     ((retries--))
-    echo '[ALLOW_MSG]: execution failed, retrying...'
+
+    if [ "$retries" -gt 0 ]; then
+      echo '[ALLOW_MSG]: execution failed, retrying...'
+    fi
   done
 
   return "$status"

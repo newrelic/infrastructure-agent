@@ -40,7 +40,8 @@ func TestHostSharedMemory(t *testing.T) {
 	f, err := os.Create("/dev/shm/test")
 	require.NoError(t, err)
 
-	for i := 0; i < 1024*1024; i++ {
+	bytesToWrite := 1024 * 1024
+	for i := 0; i < bytesToWrite; i++ {
 		f.Write([]byte("0"))
 	}
 
@@ -54,7 +55,8 @@ func TestHostSharedMemory(t *testing.T) {
 		sampleB, _ = systemSampler.Sample()
 		afterSample := sampleB[0].(*metrics.SystemSample)
 
-		assert.True(st, afterSample.MemorySharedBytes >= beforeSample.MemorySharedBytes+(1024*1024), "Shared Memory used did not increase enough, SharedMemoryBefore: %f SharedMemoryAfter %f ", beforeSample.MemorySharedBytes, afterSample.MemorySharedBytes)
+		diffTolerance := 100000
+		assert.True(st, afterSample.MemorySharedBytes >= beforeSample.MemorySharedBytes+float64(bytesToWrite-diffTolerance), "Shared Memory used did not increase enough, SharedMemoryBefore: %f SharedMemoryAfter %f ", beforeSample.MemorySharedBytes, afterSample.MemorySharedBytes)
 	})
 }
 
@@ -203,7 +205,9 @@ func TestHostBuffersMemory(t *testing.T) {
 	sampleB, _ = systemSampler.Sample()
 	afterSample := sampleB[0].(*metrics.SystemSample)
 
-	assert.True(t, (*beforeSample.MemoryBuffers)+float64(expectedIncreaseBytes) <= *afterSample.MemoryBuffers, "MemoryBuffers used did not increase enough, expected an increase by %f MemoryBuffersBefore: %f MemoryBuffersAfter %f ", expectedIncreaseBytes, beforeSample.MemoryBuffers, afterSample.MemoryBuffers)
+	diffTolerance := 100000
+
+	assert.True(t, (*beforeSample.MemoryBuffers)+float64(expectedIncreaseBytes-diffTolerance) <= *afterSample.MemoryBuffers, "MemoryBuffers used did not increase enough, expected an increase by %d MemoryBuffersBefore: %f MemoryBuffersAfter %f ", expectedIncreaseBytes, *beforeSample.MemoryBuffers, *afterSample.MemoryBuffers)
 }
 
 func rootDevice() (string, error) {
