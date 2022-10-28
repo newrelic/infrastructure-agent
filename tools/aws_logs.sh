@@ -10,12 +10,12 @@ needs_arg() { if [ -z "$OPTARG" ]; then die "Missing arg for --$OPT option"; fi;
 
 print_usage() {
   printf -- "Usage: %s\n" $(basename "${0}")
-  printf -- "-l --list:        List available streams for the groupname\n"
-  printf -- "-g --group-name:  AWS Log Group Name\n"
-  printf -- "-s --stream-name: AWS Log Stream Name\n"
-  printf -- "-t --tail:        Tail the logs stream and output to stdout\n"
-  printf -- "-o --output-file: File where to output\n"
-  printf -- "-h --help:        Help page\n"
+  printf -- "-l --list=<count>:               List last <count> streams for the group name ordered by latest usage desc\n"
+  printf -- "-g --group-name=<group name>:    AWS Log Group Name\n"
+  printf -- "-s --stream-name=<stream name>:  AWS Log Stream Name\n"
+  printf -- "-t --tail:                       Tail the logs stream and output to stdout\n"
+  printf -- "-o --output-file=<file name>:    File where to output\n"
+  printf -- "-h --help:                       Help page\n"
 }
 
 while getopts l:g:o:s:-:th OPT; do
