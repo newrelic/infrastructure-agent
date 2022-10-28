@@ -8,8 +8,10 @@ package harvest
 
 import (
 	"fmt"
+	"github.com/shirou/gopsutil/v3/cpu"
 	"os"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -31,6 +33,14 @@ func TestHostCPU(t *testing.T) {
 	})
 	storageSampler := storage.NewSampler(ctx)
 	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil)
+
+	// Hacky method to skip this test when CGO (required by gopsutils.cpu.Times() on darwin impl) is not available for tests build.
+	// Context: harvest tests are build in container before pushed to the runner machine for execution.
+	// CGO_ENABLE=1 will fail when building inside the container
+	_, err := cpu.Times(false)
+	if err != nil && strings.Contains(err.Error(), "not implemented") {
+		t.Skipf("TODO: skipping this because is not supported on macos when CGO is disabled")
+	}
 
 	sampleB, _ := systemSampler.Sample()
 	beforeSample := sampleB[0].(*metrics.SystemSample)
