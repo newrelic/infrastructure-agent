@@ -47,9 +47,8 @@ fi
 # Clean the output file
 > "${outputFile}"
 
+paginationArg="--start-from-head"
 while : ; do
-    paginationArg="--start-from-head"
-
     if [[ "${nextToken}" != "" ]]; then
         paginationArg="--next-token ${nextToken}"
     fi
