@@ -10,14 +10,15 @@ needs_arg() { if [ -z "$OPTARG" ]; then die "Missing arg for --$OPT option"; fi;
 
 print_usage() {
   printf -- "Usage: %s\n" $(basename "${0}")
-  printf -- "-g --group-name:  AWS Log Group Name\n"
-  printf -- "-s --stream-name: AWS Log Stream Name\n"
-  printf -- "-t --tail:        Tail the logs stream and output to stdout\n"
-  printf -- "-o --output-file: File where to output\n"
-  printf -- "-h --help:        Help page\n"
+  printf -- "-l --list=<count>:               List last <count> streams for the group name ordered by latest usage desc\n"
+  printf -- "-g --group-name=<group name>:    AWS Log Group Name\n"
+  printf -- "-s --stream-name=<stream name>:  AWS Log Stream Name\n"
+  printf -- "-t --tail:                       Tail the logs stream and output to stdout\n"
+  printf -- "-o --output-file=<file name>:    File where to output\n"
+  printf -- "-h --help:                       Help page\n"
 }
 
-while getopts g:o:s:-:th OPT; do
+while getopts l:g:o:s:-:th OPT; do
   if [ "$OPT" = "-" ]; then   # long option: reformulate OPT and OPTARG
     OPT="${OPTARG%%=*}"       # extract long option name
     OPTARG="${OPTARG#$OPT}"   # extract long option argument (may be empty)
@@ -27,6 +28,7 @@ while getopts g:o:s:-:th OPT; do
     g | group-name )     needs_arg; groupName="$OPTARG" ;;
     s | stream-name )    needs_arg; streamName="$OPTARG" ;;
     o | output-file )    needs_arg; outputFile="$OPTARG" ;;
+    l | list )           needs_arg; listSize="$OPTARG" ;;
     t | tail )           tail=true ;;
     h | help )     print_usage; exit 0 ;;
     ??* )          die "Illegal option --$OPT" ;;  # bad long option
@@ -38,6 +40,14 @@ shift $((OPTIND-1)) # remove parsed options and args from $@ list
 # Validate parameters
 if [[ "${groupName}" == "" ]]; then
     die "Missing -g --group-name option"
+fi
+
+# Output only the available streams
+if [[ "${listSize}" -gt 0 ]]; then
+    result="$(aws logs describe-log-streams --limit ${listSize} --log-group-name ${groupName} --order-by LastEventTime --descending)"
+    status=$?
+    echo "${result}" | jq -r '.logStreams[] | [.logStreamName, (.creationTime/1000 | 'todate')] | @tsv | .'
+    exit "${status}"
 fi
 
 if [[ "${streamName}" == "" ]]; then
@@ -64,10 +74,10 @@ while : ; do
     fi
 
     result=$(echo "${result}" | jq -r '.events[] | [.timestamp, .message] | @tsv | .')
-    
-    # In tail mode we print results to stdout
+
     if [[ "${tail}" == "true" ]]; then
-        printf -- "%s" "${result}"
+        # In tail mode we print results to stdout
+        [[  "${result}" != ""  ]] && printf -- "%s\n" "${result}"
     else
         echo "Writing logs page to file: ${newToken}"
         echo "${result}" >> "${outputFile}"
