@@ -17,7 +17,7 @@ print_usage() {
   printf -- "-h --help:        Help page\n"
 }
 
-while getopts gos::th-: OPT; do
+while getopts g:o:s:-:th OPT; do
   if [ "$OPT" = "-" ]; then   # long option: reformulate OPT and OPTARG
     OPT="${OPTARG%%=*}"       # extract long option name
     OPTARG="${OPTARG#$OPT}"   # extract long option argument (may be empty)
