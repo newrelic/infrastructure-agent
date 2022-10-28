@@ -15,7 +15,6 @@
 
 
 - hosts: testing_hosts
-  become: true
   gather_facts: yes
 
   tasks:

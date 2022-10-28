@@ -28,14 +28,22 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestServe_Status(t *testing.T) {
-	t.Parallel()
+type HTTPAPITestSuite struct {
+	suite.Suite
+}
 
+// nolint:paralleltest
+func TestHTTPAPITestSuite(t *testing.T) {
+	suite.Run(t, new(HTTPAPITestSuite))
+}
+
+func (suite *HTTPAPITestSuite) TestServe_Status() {
 	// Given a running HTTP endpoint
 	port, err := networkHelpers.TCPPort()
-	require.NoError(t, err)
+	require.NoError(suite.T(), err)
 
 	serverOk := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
@@ -44,7 +52,7 @@ func TestServe_Status(t *testing.T) {
 
 	// And a status reporter monitoring it
 	endpoints := []string{serverOk.URL}
-	l := log.WithComponent(t.Name())
+	logger := log.WithComponent(suite.T().Name())
 	timeout := 100 * time.Millisecond
 	transport := &http.Transport{}
 	emptyIDProvide := func() entity.Identity {
@@ -52,12 +60,12 @@ func TestServe_Status(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	r := status.NewReporter(ctx, l, endpoints, timeout, transport, emptyIDProvide, "user-agent", "agent-key")
+	r := status.NewReporter(ctx, logger, endpoints, timeout, transport, emptyIDProvide, "user-agent", "agent-key")
 
 	// When agent status API server is ready
 	em := &testemit.RecordEmitter{}
 	s, err := NewServer(r, em)
-	require.NoError(t, err)
+	require.NoError(suite.T(), err)
 	s.Status.Enable("localhost", port)
 	defer cancel()
 
@@ -67,31 +75,29 @@ func TestServe_Status(t *testing.T) {
 
 	// And a request to the status API is sent
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d%s", port, statusAPIPath), nil)
-	require.NoError(t, err)
+	require.NoError(suite.T(), err)
 	client := http.Client{}
 
 	res, err := client.Do(req)
-	require.NoError(t, err)
+	require.NoError(suite.T(), err)
 	defer res.Body.Close()
 
 	// Then response contains a report for the monitored endpoint
-	require.Equal(t, http.StatusOK, res.StatusCode)
+	require.Equal(suite.T(), http.StatusOK, res.StatusCode)
 
 	var gotReport status.Report
 	json.NewDecoder(res.Body).Decode(&gotReport)
-	require.Len(t, gotReport.Checks.Endpoints, 1)
+	require.Len(suite.T(), gotReport.Checks.Endpoints, 1)
 	e := gotReport.Checks.Endpoints[0]
-	assert.Empty(t, e.Error)
-	assert.True(t, e.Reachable)
-	assert.Equal(t, serverOk.URL, e.URL)
+	assert.Empty(suite.T(), e.Error)
+	assert.True(suite.T(), e.Reachable)
+	assert.Equal(suite.T(), serverOk.URL, e.URL)
 }
 
-func TestServe_OnlyErrors(t *testing.T) {
-	t.Parallel()
-
+func (suite *HTTPAPITestSuite) TestServe_OnlyErrors() {
 	// Given a running HTTP endpoint and an errored one (which times out)
 	port, err := networkHelpers.TCPPort()
-	require.NoError(t, err)
+	require.NoError(suite.T(), err)
 
 	serverOk := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
@@ -104,7 +110,7 @@ func TestServe_OnlyErrors(t *testing.T) {
 
 	// And a status reporter monitoring these endpoints
 	endpoints := []string{serverOk.URL, serverTimeout.URL}
-	l := log.WithComponent(t.Name())
+	logger := log.WithComponent(suite.T().Name())
 	timeout := 100 * time.Millisecond
 	transport := &http.Transport{}
 	emptyIDProvide := func() entity.Identity {
@@ -112,13 +118,13 @@ func TestServe_OnlyErrors(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	r := status.NewReporter(ctx, l, endpoints, timeout, transport, emptyIDProvide, "user-agent", "agent-key")
+	r := status.NewReporter(ctx, logger, endpoints, timeout, transport, emptyIDProvide, "user-agent", "agent-key")
 
 	// When agent status API server is ready
 	em := &testemit.RecordEmitter{}
 
 	s, err := NewServer(r, em)
-	require.NoError(t, err)
+	require.NoError(suite.T(), err)
 	s.Status.Enable("localhost", port)
 
 	go s.Serve(ctx)
@@ -127,29 +133,27 @@ func TestServe_OnlyErrors(t *testing.T) {
 
 	// And a request to the status API is sent
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d%s", port, statusOnlyErrorsAPIPath), nil)
-	require.NoError(t, err)
+	require.NoError(suite.T(), err)
 	client := http.Client{}
 
 	res, err := client.Do(req)
-	require.NoError(t, err)
+	require.NoError(suite.T(), err)
 	defer res.Body.Close()
 
 	// Then response contains a report for the monitored endpoint
-	require.Equal(t, http.StatusOK, res.StatusCode)
+	require.Equal(suite.T(), http.StatusOK, res.StatusCode)
 
 	var gotReport status.Report
 	json.NewDecoder(res.Body).Decode(&gotReport)
-	require.Len(t, gotReport.Checks.Endpoints, 1, "only errored endpoint should be reported")
+	require.Len(suite.T(), gotReport.Checks.Endpoints, 1, "only errored endpoint should be reported")
 	e := gotReport.Checks.Endpoints[0]
-	assert.NotEmpty(t, e.Error)
-	assert.False(t, e.Reachable)
-	assert.Equal(t, serverTimeout.URL, e.URL)
+	assert.NotEmpty(suite.T(), e.Error)
+	assert.False(suite.T(), e.Reachable)
+	assert.Equal(suite.T(), serverTimeout.URL, e.URL)
 }
 
-func TestServe_Entity(t *testing.T) {
-	t.Parallel()
-
-	l := log.WithComponent(t.Name())
+func (suite *HTTPAPITestSuite) TestServe_Entity() {
+	logger := log.WithComponent(suite.T().Name())
 	timeout := 100 * time.Millisecond
 	transport := &http.Transport{}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -174,12 +178,12 @@ func TestServe_Entity(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		suite.T().Run(tt.name, func(t *testing.T) {
 			// Given a running HTTP endpoint and an errored one (which times out)
 			port, err := networkHelpers.TCPPort()
 			require.NoError(t, err)
 
-			r := status.NewReporter(ctx, l, []string{}, timeout, transport, tt.idProvide, "user-agent", "agent-key")
+			r := status.NewReporter(ctx, logger, []string{}, timeout, transport, tt.idProvide, "user-agent", "agent-key")
 			// When agent status API server is ready
 			em := &testemit.RecordEmitter{}
 			s, err := NewServer(r, em)
@@ -212,15 +216,13 @@ func TestServe_Entity(t *testing.T) {
 	}
 }
 
-func TestServe_IngestData(t *testing.T) {
-	t.Parallel()
-
+func (suite *HTTPAPITestSuite) TestServe_IngestData() {
 	port, err := networkHelpers.TCPPort()
-	require.NoError(t, err)
+	require.NoError(suite.T(), err)
 
 	em := &testemit.RecordEmitter{}
 	s, err := NewServer(&noopReporter{}, em)
-	require.NoError(t, err)
+	require.NoError(suite.T(), err)
 	s.Ingest.Enable("localhost", port)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -234,26 +236,24 @@ func TestServe_IngestData(t *testing.T) {
 		client := http.Client{}
 		postReq, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%d%s", port, ingestAPIPath), bytes.NewReader(fixtures.FooBytes))
 		resp, err := client.Do(postReq)
-		require.NoError(t, err)
-		require.Equal(t, 20, resp.StatusCode/10, "status code: %v", resp.StatusCode)
+		require.NoError(suite.T(), err)
+		require.Equal(suite.T(), 20, resp.StatusCode/10, "status code: %v", resp.StatusCode)
 		close(payloadWritten)
 	}()
 
 	select {
 	case <-time.NewTimer(1000 * time.Millisecond).C:
-		t.Error("timeout waiting for HTTP request to be submitted")
+		suite.T().Error("timeout waiting for HTTP request to be submitted")
 	case <-payloadWritten:
 	}
-
-	t.Log("receiving from integration...\n")
+	suite.T().Log("receiving from integration...\n")
 	d, err := em.ReceiveFrom(IntegrationName)
-	require.NoError(t, err)
-	assert.Equal(t, "unique foo", d.DataSet.PluginDataSet.Entity.Name)
+	require.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "unique foo", d.DataSet.PluginDataSet.Entity.Name)
 }
 
-func TestServe_IngestData_mTLS(t *testing.T) {
-	t.Parallel()
-
+// nolint:funlen,cyclop
+func (suite *HTTPAPITestSuite) TestServe_IngestData_mTLS() {
 	cases := []struct {
 		name           string
 		validateClient bool
@@ -278,7 +278,7 @@ func TestServe_IngestData_mTLS(t *testing.T) {
 
 	caCertFile, err := ioutil.ReadFile("testdata/rootCA.pem")
 	if err != nil {
-		t.Fatalf("internal error: cannot load testdata CA: %v", err)
+		suite.T().Fatalf("internal error: cannot load testdata CA: %v", err)
 	}
 
 	certPool := x509.NewCertPool()
@@ -286,9 +286,7 @@ func TestServe_IngestData_mTLS(t *testing.T) {
 
 	for _, testCase := range cases {
 		testCase := testCase
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
+		suite.T().Run(testCase.name, func(t *testing.T) {
 			port, err := networkHelpers.TCPPort()
 			require.NoError(t, err)
 
@@ -324,7 +322,7 @@ func TestServe_IngestData_mTLS(t *testing.T) {
 				if testCase.sendCert {
 					cert, err := tls.LoadX509KeyPair("testdata/client-client.pem", "testdata/client-client-key.pem")
 					if err != nil {
-						// We cannot t.Fatal if we're not the main goroutine of the test.
+						// We cannot suite.T().Fatal if we're not the main goroutine of the test.
 						t.Logf("internal error: loading testdata certs: %v", err)
 						t.Fail()
 						return
@@ -356,7 +354,6 @@ func TestServe_IngestData_mTLS(t *testing.T) {
 				t.Fatal("timeout waiting for HTTP request to be submitted")
 			case <-payloadWritten:
 			}
-
 			t.Log("receiving from integration...\n")
 			d, err := em.ReceiveFrom(IntegrationName)
 			require.NoError(t, err)
@@ -365,12 +362,10 @@ func TestServe_IngestData_mTLS(t *testing.T) {
 	}
 }
 
-func TestServer_ServeShouldEndSyncrhonouslyIfDisabled(t *testing.T) {
-	t.Parallel()
-
+func (suite *HTTPAPITestSuite) TestServer_ServeShouldEndSyncrhonouslyIfDisabled() {
 	em := &testemit.RecordEmitter{}
 	srv, err := NewServer(&noopReporter{}, em)
-	require.NoError(t, err)
+	require.NoError(suite.T(), err)
 	srv.Ingest.enabled = false
 	srv.Status.enabled = false
 
@@ -381,19 +376,17 @@ func TestServer_ServeShouldEndSyncrhonouslyIfDisabled(t *testing.T) {
 
 	go func() {
 		<-timer.C
-		t.Fatal("there should not be time for this to be executed")
+		suite.T().Fatal("there should not be time for this to be executed") // nolint:staticcheck
 	}()
 
 	srv.Serve(ctx)
 	timer.Stop()
 }
 
-func Test_waitUntilReadyOrError_ShouldEndInCaseOfNoErrorButNotSuccess(t *testing.T) {
-	t.Parallel()
-
+func (suite *HTTPAPITestSuite) Test_waitUntilReadyOrError_ShouldEndInCaseOfNoErrorButNotSuccess() {
 	em := &testemit.RecordEmitter{}
 	srv, err := NewServer(&noopReporter{}, em)
-	require.NoError(t, err)
+	require.NoError(suite.T(), err)
 
 	srv.timeout = time.Millisecond * 200
 
@@ -401,17 +394,15 @@ func Test_waitUntilReadyOrError_ShouldEndInCaseOfNoErrorButNotSuccess(t *testing
 	errCh <- nil
 	close(errCh)
 	err = srv.waitUntilReadyOrError("localhost", "/path", false, false, errCh)
-	assert.ErrorIs(t, err, ErrURLUnreachable)
+	assert.ErrorIs(suite.T(), err, ErrURLUnreachable)
 }
 
-func TestServer_ServerErrorsShouldBeLogged(t *testing.T) {
-	t.Parallel()
-
+func (suite *HTTPAPITestSuite) TestServer_ServerErrorsShouldBeLogged() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
 	port, err := networkHelpers.TCPPort()
-	require.NoError(t, err)
+	require.NoError(suite.T(), err)
 
 	server := &http.Server{Addr: fmt.Sprintf("localhost:%d", port), Handler: nil}
 	defer server.Shutdown(ctx) // nolint:errcheck
@@ -421,7 +412,7 @@ func TestServer_ServerErrorsShouldBeLogged(t *testing.T) {
 
 	em := &testemit.RecordEmitter{}
 	srv, err := NewServer(&noopReporter{}, em)
-	require.NoError(t, err)
+	require.NoError(suite.T(), err)
 	srv.Ingest.Enable("localhost", port)
 	srv.Status.Enable("localhost", port)
 
@@ -438,16 +429,16 @@ func TestServer_ServerErrorsShouldBeLogged(t *testing.T) {
 		{"error": &opError, "component": "api", "message": "unable to start Status-API"},
 	}
 	entries := hook.GetEntries()
-	assert.Len(t, entries, len(expectedEntries))
+	assert.Len(suite.T(), entries, len(expectedEntries))
 
 	sort.SliceStable(entries, func(i, j int) bool {
 		return entries[i].Message < entries[j].Message
 	})
 
 	for i, entry := range entries {
-		assert.Equal(t, expectedEntries[i]["message"], entry.Message)
-		assert.Equal(t, expectedEntries[i]["component"], entry.Data["component"])
-		assert.ErrorAs(t, entry.Data["error"].(error), expectedEntries[i]["error"]) // nolint:forcetypeassert
+		assert.Equal(suite.T(), expectedEntries[i]["message"], entry.Message)
+		assert.Equal(suite.T(), expectedEntries[i]["component"], entry.Data["component"])
+		assert.ErrorAs(suite.T(), entry.Data["error"].(error), expectedEntries[i]["error"]) // nolint:forcetypeassert
 	}
 }
 
