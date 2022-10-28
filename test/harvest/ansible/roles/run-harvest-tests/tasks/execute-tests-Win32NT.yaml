@@ -1,6 +1,9 @@
 ---
 
 - name: execute tests
+  become: yes
+  become_method: runas
+  become_user: Administrator
   ansible.windows.win_shell: "{{ ansible_user_dir }}/{{ os_arch_binary_name }} --test.run=\"{{ tests_to_run_regex }}\" --test.v"
   ignore_errors: true
   register: harvest_out
