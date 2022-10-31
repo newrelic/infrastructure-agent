@@ -73,7 +73,7 @@ while : ; do
         break
     fi
 
-    result=$(echo "${result}" | jq -r '.events[] | [.timestamp, .message] | @tsv | .')
+    result=$(echo "${result}" | jq -r '.events[] | [(.timestamp/1000 | 'todate'), .message] | @tsv | .')
 
     if [[ "${tail}" == "true" ]]; then
         # In tail mode we print results to stdout
