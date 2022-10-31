@@ -102,7 +102,7 @@
       vars:
         host_status: "shutdown"
         expect_event: "{{ host_supports_shutdown_detection }}"
-        since_sec_ago: "{{ now(True, '%s') | int - ec2_stop_time_sec | int }}"
+        timestamp_ref: "{{ ec2_stop_time_sec | int }}"
 
     - name: start instances
       include_role:
@@ -114,7 +114,7 @@
       vars:
         host_status: "running"
         expect_event: "{{ host_supports_shutdown_detection }}"
-        since_sec_ago: "{{ now(True, '%s') | int - ec2_start_time_sec | int }}"
+        timestamp_ref: "{{ ec2_start_time_sec | int }}"
 
     - name: terminate instances
       include_role:
@@ -130,5 +130,5 @@
       vars:
         host_status: "shutdown"
         expect_event: "{{ host_supports_shutdown_detection }}"
-        since_sec_ago: "{{ now(True, '%s') | int - ec2_terminate_time_sec | int }}"
+        timestamp_ref: "{{ ec2_terminate_time_sec | int }}"
 ...

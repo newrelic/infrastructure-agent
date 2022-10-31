@@ -1,7 +1,11 @@
 ---
 entity_name: "{{ iid }}:{{ inventory_hostname }}"
 
-seconds_ago: "{{ since_sec_ago if since_sec_ago is defined else 60 }}"
+# Give a small time-tolerance to account for the time when "since seconds ago" is calculated
+# and the time when the query is actually performed, otherwise we could miss the value window.
+tolerance: 5
+
+seconds_ago: "{{ now(True, '%s') | int + tolerance - timestamp_ref | int if timestamp_ref is defined else (since_sec_ago if since_sec_ago is defined else 60) }}"
 
 infrastructure_event_query: >-
   SELECT count(*) FROM InfrastructureEvent WHERE
