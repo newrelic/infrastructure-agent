@@ -52,7 +52,7 @@ func TestNewNtp_Interval(t *testing.T) {
 			ntp := NewNtp(testCase.pool, timeout, testCase.interval)
 			assert.Equal(t, testCase.expectedInterval, ntp.interval)
 			assert.Equal(t, testCase.expectedPool, ntp.pool)
-			assert.Equal(t, time.Duration(timeout)*time.Millisecond, ntp.timeout)
+			assert.Equal(t, time.Duration(timeout)*time.Second, ntp.timeout)
 		})
 	}
 }
@@ -67,7 +67,7 @@ func TestNewNtp_Timeout(t *testing.T) {
 		{
 			name:            "valid timeout",
 			timeout:         125,
-			expectedTimeout: time.Duration(125) * time.Millisecond,
+			expectedTimeout: time.Duration(125) * time.Second,
 		},
 		{
 			name:            "no timeout shoulid default to 5secs",
@@ -87,45 +87,49 @@ func TestNewNtp_Timeout(t *testing.T) {
 
 func TestOffset_Cache(t *testing.T) {
 	testCases := []struct {
-		name           string
-		interval       uint
-		timeout        uint
-		offset         time.Duration
-		pool           []string
-		now            func() time.Time
-		ntpQuery       func(host string, opt ntp.QueryOptions) (*ntp.Response, error)
-		ntpResponses   []ntpResp
-		updatedAt      time.Time
-		expectedOffset time.Duration
-		expectedError  error
+		name              string
+		interval          uint
+		timeout           uint
+		offset            time.Duration
+		pool              []string
+		now               func() time.Time
+		ntpQuery          func(host string, opt ntp.QueryOptions) (*ntp.Response, error)
+		ntpResponses      []ntpResp
+		updatedAt         time.Time
+		expectedOffset    time.Duration
+		expectedError     error
+		expectedUpdatedAt time.Time
 	}{
 		{
 			name:          "empty list of hosts should return error",
 			expectedError: ErrEmptyNtpHosts,
 		},
 		{
-			name:           "first request should not use cached value",
-			now:            nowMock("2022-09-28 16:02:45"),
-			pool:           []string{"one", "two"},
-			ntpResponses:   []ntpResp{{&ntp.Response{ClockOffset: 50 * time.Millisecond}, nil}, {&ntp.Response{ClockOffset: 10 * time.Millisecond}, nil}},
-			expectedOffset: 30 * time.Millisecond,
+			name:              "first request should not use cached value",
+			now:               nowMock("2022-09-28 16:02:45"),
+			pool:              []string{"one", "two"},
+			ntpResponses:      []ntpResp{{&ntp.Response{ClockOffset: 50 * time.Millisecond}, nil}, {&ntp.Response{ClockOffset: 10 * time.Millisecond}, nil}},
+			expectedOffset:    30 * time.Millisecond,
+			expectedUpdatedAt: mustParse("2006-01-02 15:04:05", "2022-09-28 16:02:45"), // same as now
 		},
 		{
-			name:           "request before interval should use cached value",
-			now:            nowMock("2022-09-28 16:02:45"),
-			updatedAt:      mustParse("2006-01-02 15:04:05", "2022-09-28 15:52:45"),
-			pool:           []string{"one", "two"},
-			offset:         20 * time.Millisecond,
-			expectedOffset: 20 * time.Millisecond,
+			name:              "request before interval should use cached value",
+			now:               nowMock("2022-09-28 16:02:45"),
+			updatedAt:         mustParse("2006-01-02 15:04:05", "2022-09-28 15:52:45"),
+			pool:              []string{"one", "two"},
+			offset:            20 * time.Millisecond,
+			expectedOffset:    20 * time.Millisecond,
+			expectedUpdatedAt: mustParse("2006-01-02 15:04:05", "2022-09-28 15:52:45"),
 		},
 		{
-			name:           "request after interval should request new value",
-			now:            nowMock("2022-09-28 16:02:45"),
-			updatedAt:      mustParse("2006-01-02 15:04:05", "2022-09-28 15:42:45"),
-			pool:           []string{"one", "two"},
-			offset:         20 * time.Millisecond,
-			ntpResponses:   []ntpResp{{&ntp.Response{ClockOffset: 50 * time.Millisecond}, nil}, {&ntp.Response{ClockOffset: 10 * time.Millisecond}, nil}},
-			expectedOffset: 30 * time.Millisecond,
+			name:              "request after interval should request new value",
+			now:               nowMock("2022-09-28 16:02:45"),
+			updatedAt:         mustParse("2006-01-02 15:04:05", "2022-09-28 15:42:45"),
+			pool:              []string{"one", "two"},
+			offset:            20 * time.Millisecond,
+			ntpResponses:      []ntpResp{{&ntp.Response{ClockOffset: 50 * time.Millisecond}, nil}, {&ntp.Response{ClockOffset: 10 * time.Millisecond}, nil}},
+			expectedOffset:    30 * time.Millisecond,
+			expectedUpdatedAt: mustParse("2006-01-02 15:04:05", "2022-09-28 16:02:45"), // same as now
 		},
 	}
 	for _, testCase := range testCases {
@@ -138,6 +142,7 @@ func TestOffset_Cache(t *testing.T) {
 			offset, err := ntpMonitor.Offset()
 			assert.Equal(t, testCase.expectedOffset, offset)
 			assert.Equal(t, testCase.expectedError, err)
+			assert.Equal(t, testCase.expectedUpdatedAt, ntpMonitor.updatedAt)
 		})
 	}
 }
