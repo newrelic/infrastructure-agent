@@ -290,6 +290,22 @@ policies:
         operator: "above"
         template_name: "Generic metric comparator"
 
+      - name: System / Memory Kernel Free
+        metric: memoryKernelFree
+        sample: SystemSample
+        threshold: 100000000
+        duration: 30
+        operator: "above"
+        template_name: "Generic metric comparator"
+
+      - name: System / Memory Buffers
+        metric: memoryBuffers
+        sample: SystemSample
+        threshold: 5000000 #~5MB
+        duration: 30
+        operator: "above"
+        template_name: "Generic metric comparator"
+
       - name: System / Swap Free Bytes
         metric: swapFreeBytes
         sample: SystemSample
