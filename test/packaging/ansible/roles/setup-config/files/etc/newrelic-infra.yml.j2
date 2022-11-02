@@ -37,6 +37,14 @@ log:
     max_files: {{ log_rotation_max_files }}
     compression_enabled: {{ log_rotation_compressed }}
 
+ntp_metrics:
+  enabled: true
+  pool:
+    - time.cloudflare.com
+    - time.google.com
+  interval: 15
+  timeout: 10
+
 staging: {{ staging }}
 enable_process_metrics: {{ enable_process_metrics }}
 {% if self_instrumentation %}

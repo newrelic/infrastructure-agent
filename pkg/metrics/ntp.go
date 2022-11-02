@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	ntpIntervalMin    = 15   // minutes
-	ntpTimeoutDefault = 5000 // milliseconds
+	ntpIntervalMin    = 15 // minutes
+	ntpTimeoutDefault = 5  // seconds
 )
 
 var (
@@ -43,7 +43,7 @@ func NewNtp(pool []string, timeout uint, interval uint) *Ntp {
 	validTimeout := guardTimeout(timeout)
 	return &Ntp{
 		pool:     pool,
-		timeout:  time.Millisecond * time.Duration(validTimeout),
+		timeout:  time.Second * time.Duration(validTimeout),
 		interval: time.Minute * time.Duration(validInterval),
 		now:      time.Now,
 		ntpQuery: ntp.QueryWithOptions,
@@ -104,6 +104,7 @@ func (p *Ntp) Offset() (time.Duration, error) {
 
 	// cache the value to be reused
 	p.offset = total / time.Duration(len(offsets))
+	p.updatedAt = p.now()
 
 	return p.offset, nil
 }
