@@ -4,15 +4,16 @@ package cloud
 
 import (
 	"fmt"
-	"github.com/aws/aws-sdk-go/private/protocol"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/aws/aws-sdk-go/private/protocol"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func newTestServer(t *testing.T, token string, tokenCounter *int32, expectedTTL string, expectedFieldName string) *httptest.Server {

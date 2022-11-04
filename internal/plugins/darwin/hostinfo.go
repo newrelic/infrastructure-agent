@@ -14,6 +14,7 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/os/distro"
+	"github.com/newrelic/infrastructure-agent/internal/plugins/common"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
@@ -56,13 +57,7 @@ type HostInfoData struct {
 	AgentMode           string `json:"agent_mode"`
 	OperatingSystem     string `json:"operating_system"`
 	ProductUuid         string `json:"product_uuid"`
-	RegionAWS           string `json:"aws_region,omitempty"`
-	RegionAzure         string `json:"region_name,omitempty"`
-	RegionGCP           string `json:"zone,omitempty"`
-	RegionAlibaba       string `json:"region_id,omitempty"`
-	AWSAccountID        string `json:"aws_account_id,omitempty"`
-	AWSAvailabilityZone string `json:"aws_availability_zone,omitempty"`
-	AWSImageID          string `json:"aws_image_id,omitempty"`
+	common.HostInfoData `mapstructure:",squash"`
 }
 
 func (hip *HostInfoData) SortKey() string {
