@@ -1,6 +1,6 @@
 ---
 - set_fact:
-    ec2_stop_time_sec: "{{ now(True, '%s') }}"
+    ec2_stop_time_sec: "{{ now(False, '%s') }}"
 
 - name: stop ec2 host
   shell: aws ec2 stop-instances --instance-ids {{ iid }}

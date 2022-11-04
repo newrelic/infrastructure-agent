@@ -1,6 +1,6 @@
 ---
 - set_fact:
-    ec2_terminate_time_sec: "{{ now(True, '%s') }}"
+    ec2_terminate_time_sec: "{{ now(False, '%s') }}"
 
 - name: terminate ec2 host
   shell: aws ec2 terminate-instances --instance-ids {{ iid }}
