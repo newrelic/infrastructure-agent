@@ -20,8 +20,5 @@ type HostInfoData struct {
 	OperatingSystem string `json:"operating_system"`
 
 	// cloud metadata
-	AwsCloudData     `mapstructure:",squash"`
-	AzureCloudData   `mapstructure:",squash"`
-	GoogleCloudData  `mapstructure:",squash"`
-	AlibabaCloudData `mapstructure:",squash"`
+	CloudData `mapstructure:",squash"`
 }
