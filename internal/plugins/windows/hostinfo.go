@@ -42,20 +42,10 @@ type HostinfoPlugin struct {
 	cloudHarvester cloud.Harvester // Gather metadata for the cloud instance.
 }
 
-type HostinfoData struct {
-	System              string `json:"id"`
+type HostInfoWindows struct {
 	WindowsPlatform     string `json:"windows_platform"`
 	WindowsFamily       string `json:"windows_family"`
 	WindowsVersion      string `json:"windows_version"`
-	HostType            string `json:"host_type"`
-	CpuName             string `json:"cpu_name"`
-	CpuNum              string `json:"cpu_num"`
-	TotalCpu            string `json:"total_cpu"`
-	Ram                 string `json:"ram"`
-	UpSince             string `json:"boot_timestamp"`
-	AgentVersion        string `json:"agent_version"`
-	AgentName           string `json:"agent_name"`
-	OperatingSystem     string `json:"operating_system"`
 	common.HostInfoData `mapstructure:",squash"`
 }
 
@@ -65,7 +55,7 @@ type cpuInfo struct {
 	totalCpu string
 }
 
-func (self *HostinfoData) SortKey() string {
+func (self *HostInfoWindows) SortKey() string {
 	return self.System
 }
 
@@ -97,22 +87,24 @@ func getHostInfo() *host.InfoStat {
 	return info
 }
 
-func (self *HostinfoPlugin) gatherHostinfo(context agent.AgentContext, info *host.InfoStat) *HostinfoData {
+func (self *HostinfoPlugin) gatherHostinfo(context agent.AgentContext, info *host.InfoStat) *HostInfoWindows {
 	cpuInfo := getCpuInfo()
-	data := &HostinfoData{
-		System:          "system",
+	data := &HostInfoWindows{
+		HostInfoData: common.HostInfoData{
+			System:          "system",
+			HostType:        self.getHostType(),
+			CpuName:         cpuInfo.name,
+			CpuNum:          cpuInfo.num,
+			TotalCpu:        cpuInfo.totalCpu,
+			Ram:             getRam(),
+			UpSince:         time.Unix(int64(info.BootTime), 0).Format("2006-01-02 15:04:05"),
+			AgentVersion:    context.Version(),
+			AgentName:       "Infrastructure",
+			OperatingSystem: info.OS,
+		},
 		WindowsPlatform: info.Platform,
 		WindowsFamily:   info.PlatformFamily,
 		WindowsVersion:  info.PlatformVersion,
-		HostType:        self.getHostType(),
-		CpuName:         cpuInfo.name,
-		CpuNum:          cpuInfo.num,
-		TotalCpu:        cpuInfo.totalCpu,
-		Ram:             getRam(),
-		UpSince:         time.Unix(int64(info.BootTime), 0).Format("2006-01-02 15:04:05"),
-		AgentVersion:    context.Version(),
-		AgentName:       "Infrastructure",
-		OperatingSystem: info.OS,
 	}
 
 	err := self.setCloudRegion(data)
@@ -132,7 +124,7 @@ func (self *HostinfoPlugin) gatherHostinfo(context agent.AgentContext, info *hos
 	return data
 }
 
-func (self *HostinfoPlugin) setCloudRegion(data *HostinfoData) (err error) {
+func (self *HostinfoPlugin) setCloudRegion(data *HostInfoWindows) (err error) {
 	if self.Context.Config().DisableCloudMetadata ||
 		self.cloudHarvester.GetCloudType() == cloud.TypeNoCloud {
 		return
@@ -158,7 +150,7 @@ func (self *HostinfoPlugin) setCloudRegion(data *HostinfoData) (err error) {
 }
 
 // Only for AWS cloud instances
-func (self *HostinfoPlugin) setCloudMetadata(data *HostinfoData) (err error) {
+func (self *HostinfoPlugin) setCloudMetadata(data *HostInfoWindows) (err error) {
 	if self.Context.Config().DisableCloudMetadata ||
 		self.cloudHarvester.GetCloudType() == cloud.TypeNoCloud {
 		return
