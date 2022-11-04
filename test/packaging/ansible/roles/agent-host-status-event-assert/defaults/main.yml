@@ -1,11 +1,10 @@
 ---
 entity_name: "{{ iid }}:{{ inventory_hostname }}"
 
-# Give a small time-tolerance to account for the time when "since seconds ago" is calculated
-# and the time when the query is actually performed, otherwise we could miss the value window.
-tolerance: 5
+# Add the difference in seconds between NR account timezone and UTC.
+nr_account_utc_offset_sec: 3600
 
-seconds_ago: "{{ now(True, '%s') | int + tolerance - timestamp_ref | int if timestamp_ref is defined else (since_sec_ago if since_sec_ago is defined else 60) }}"
+timestamp: "{{ now(True, '%s') | int - since_sec_ago | int if since_sec_ago is defined else (timestamp_ref if timestamp_ref is defined else now(True, '%s') | int - 60 | int) }}"
 
 infrastructure_event_query: >-
   SELECT count(*) FROM InfrastructureEvent WHERE
@@ -13,4 +12,4 @@ infrastructure_event_query: >-
   format = 'inventoryChange' AND
   source = 'system/host_status' AND
   newValue LIKE '%{{ host_status }}%'
-  SINCE {{ seconds_ago }} SECONDS AGO
+  SINCE {{ timestamp | int + nr_account_utc_offset_sec}}

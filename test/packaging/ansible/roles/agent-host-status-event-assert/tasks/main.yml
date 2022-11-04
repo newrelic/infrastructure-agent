@@ -12,8 +12,9 @@
   debug:
     msg: "{{ infrastructure_event_query }}"
 
-- name: assert host_status, expecting to change - {{ expect_event }}
+- name: "assert that host_status is{{ ' ' if expect_change_event else ' not '}}'{{ host_status }}'"
   vars:
-    expected_count: "{{ 1 if expect_event else 0 }}"
+    expected_count: "{{ 1 if expect_change_event else 0 }}"
   assert:
     that: results[0].count == {{ expected_count }}
+    fail_msg: "Expected '{{ host_status }}' events count to be {{ expected_count }}, but had {{ results[0].count }}"
