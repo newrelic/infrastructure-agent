@@ -8,6 +8,7 @@ package linux
 import (
 	"bufio"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/plugins/common"
 	"io/ioutil"
 	"os"
 	"regexp"
@@ -59,13 +60,7 @@ type HostinfoData struct {
 	OperatingSystem     string `json:"operating_system"`
 	ProductUuid         string `json:"product_uuid"`
 	BootId              string `json:"boot_id"`
-	RegionAWS           string `json:"aws_region,omitempty"`
-	RegionAzure         string `json:"region_name,omitempty"`
-	RegionGCP           string `json:"zone,omitempty"`
-	RegionAlibaba       string `json:"region_id,omitempty"`
-	AWSAccountID        string `json:"aws_account_id,omitempty"`
-	AWSAvailabilityZone string `json:"aws_availability_zone,omitempty"`
-	AWSImageID          string `json:"aws_image_id,omitempty"`
+	common.HostInfoData `mapstructure:",squash"`
 }
 
 func (self HostinfoData) SortKey() string {

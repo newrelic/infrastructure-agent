@@ -23,6 +23,7 @@ import (
 	"github.com/shirou/gopsutil/v3/mem"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
+	"github.com/newrelic/infrastructure-agent/internal/plugins/common"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
@@ -55,13 +56,7 @@ type HostinfoData struct {
 	AgentVersion        string `json:"agent_version"`
 	AgentName           string `json:"agent_name"`
 	OperatingSystem     string `json:"operating_system"`
-	RegionAWS           string `json:"aws_region,omitempty"`
-	RegionAzure         string `json:"region_name,omitempty"`
-	RegionGCP           string `json:"zone,omitempty"`
-	RegionAlibaba       string `json:"region_id,omitempty"`
-	AWSAccountID        string `json:"aws_account_id,omitempty"`
-	AWSAvailabilityZone string `json:"aws_availability_zone,omitempty"`
-	AWSImageID          string `json:"aws_image_id,omitempty"`
+	common.HostInfoData `mapstructure:",squash"`
 }
 
 type cpuInfo struct {
