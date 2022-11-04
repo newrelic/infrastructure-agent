@@ -126,16 +126,13 @@ func (hip *HostinfoPlugin) gatherHostinfo(context agent.AgentContext) *HostInfoD
 		ProductUuid:   ho.HardwareUUID,
 	}
 
-	err = hip.setCloudRegion(data)
-	if err != nil {
-		hlog.WithError(err).WithField("cloudType", hip.cloudHarvester.GetCloudType()).Debug(
-			"cloud region couldn't be set")
-	}
+	if !hip.Context.Config().DisableCloudMetadata {
+		cloudData, err := common.GetCloudData(hip.cloudHarvester)
+		if err != nil {
+			hlog.WithError(err).Debug("could not get cloud metadata")
+		}
 
-	err = hip.setCloudMetadata(data)
-	if err != nil {
-		hlog.WithError(err).WithField("cloudType", hip.cloudHarvester.GetCloudType()).Debug(
-			"cloud metadata couldn't be set")
+		data.CloudData = cloudData
 	}
 
 	helpers.LogStructureDetails(hlog, data, "HostInfoDarwin", "raw", nil)
@@ -182,58 +179,6 @@ func getUpSince() string {
 		return ""
 	}
 	return time.Now().Add(time.Second * -time.Duration(info.Uptime)).Format("2006-01-02 15:04:05")
-}
-
-func (hip *HostinfoPlugin) setCloudRegion(data *HostInfoDarwin) (err error) {
-	if hip.Context.Config().DisableCloudMetadata ||
-		hip.cloudHarvester.GetCloudType() == cloud.TypeNoCloud {
-		return
-	}
-
-	region, err := hip.cloudHarvester.GetRegion()
-	if err != nil {
-		return fmt.Errorf("couldn't retrieve cloud region: %v", err)
-	}
-
-	switch hip.cloudHarvester.GetCloudType() {
-	case cloud.TypeAWS:
-		data.RegionAWS = region
-	case cloud.TypeAzure:
-		data.RegionAzure = region
-	case cloud.TypeGCP:
-		data.RegionGCP = region
-	case cloud.TypeAlibaba:
-		data.RegionAlibaba = region
-	default:
-	}
-	return
-}
-
-// Only for AWS cloud instances
-func (self *HostinfoPlugin) setCloudMetadata(data *HostInfoDarwin) (err error) {
-	if self.Context.Config().DisableCloudMetadata ||
-		self.cloudHarvester.GetCloudType() == cloud.TypeNoCloud {
-		return
-	}
-
-	if self.cloudHarvester.GetCloudType() == cloud.TypeAWS {
-		imageID, err := self.cloudHarvester.GetInstanceImageID()
-		if err != nil {
-			return fmt.Errorf("couldn't retrieve cloud image ID: %v", err)
-		}
-		data.AWSImageID = imageID
-		awsAccountID, err := self.cloudHarvester.GetAccountID()
-		if err != nil {
-			return fmt.Errorf("couldn't retrieve cloud account ID: %v", err)
-		}
-		data.AWSAccountID = awsAccountID
-		availabilityZone, err := self.cloudHarvester.GetZone()
-		if err != nil {
-			return fmt.Errorf("couldn't retrieve cloud availability zone: %v", err)
-		}
-		data.AWSAvailabilityZone = availabilityZone
-	}
-	return
 }
 
 // hardwareOverview structure keeps the values extracted from osX system_profiler.
