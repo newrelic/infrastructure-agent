@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHostinfoData(t *testing.T) {
+func TestHostInfoDarwin(t *testing.T) {
 	const timeout = 5 * time.Second
 
 	testClient := ihttp.NewRequestRecorderClient()

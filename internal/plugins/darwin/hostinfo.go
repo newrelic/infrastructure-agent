@@ -37,30 +37,17 @@ type HostinfoPlugin struct {
 	readDataFromCmd func(cmd string, args ...string) (string, error)
 }
 
-// HostInfoData is the structure returned to the backend by HostinfoPlugin.
-type HostInfoData struct {
-	System        string `json:"id"`
+// HostInfoDarwin is the structure returned to the backend by HostinfoPlugin.
+type HostInfoDarwin struct {
 	Distro        string `json:"distro"`
 	KernelVersion string `json:"kernel_version"`
-	HostType      string `json:"host_type"`
-	CpuName       string `json:"cpu_name"`
-	// Number of cores within a single CPU
-	// It is shown as 'coreCount' in New Relic UI
-	CpuNum string `json:"cpu_num"`
-	// Total number of cores in all the CPUs
-	// It is shown as 'processorCount' in New Relic UI
-	TotalCpu            string `json:"total_cpu"`
-	Ram                 string `json:"ram"`
-	UpSince             string `json:"boot_timestamp"`
-	AgentVersion        string `json:"agent_version"`
-	AgentName           string `json:"agent_name"`
+
 	AgentMode           string `json:"agent_mode"`
-	OperatingSystem     string `json:"operating_system"`
 	ProductUuid         string `json:"product_uuid"`
 	common.HostInfoData `mapstructure:",squash"`
 }
 
-func (hip *HostInfoData) SortKey() string {
+func (hip *HostInfoDarwin) SortKey() string {
 	return hip.System
 }
 
@@ -89,7 +76,7 @@ func (hip *HostinfoPlugin) Data() agent.PluginInventoryDataset {
 	return agent.PluginInventoryDataset{hip.gatherHostinfo(hip.Context)}
 }
 
-func (hip *HostinfoPlugin) gatherHostinfo(context agent.AgentContext) *HostInfoData {
+func (hip *HostinfoPlugin) gatherHostinfo(context agent.AgentContext) *HostInfoDarwin {
 	ho, err := hip.getHardwareOverview()
 	if err != nil {
 		hlog.WithError(err).Error("error reading hardware overview")
@@ -120,21 +107,23 @@ func (hip *HostinfoPlugin) gatherHostinfo(context agent.AgentContext) *HostInfoD
 		cpuName = fmt.Sprintf("%s @ %s", ho.ProcessorName, ho.ProcessorSpeed)
 	}
 
-	data := &HostInfoData{
-		System:          "system",
-		Distro:          distro.GetDistro(),
-		KernelVersion:   kernelVersion,
-		HostType:        hip.getHostType(ho),
-		CpuName:         cpuName,
-		CpuNum:          fmt.Sprintf("%d", cpuNum),
-		TotalCpu:        ho.TotalNumberOfCores,
-		Ram:             ho.Memory,
-		UpSince:         getUpSince(),
-		AgentVersion:    context.Version(),
-		AgentName:       "Infrastructure",
-		AgentMode:       context.Config().RunMode,
-		OperatingSystem: "macOS",
-		ProductUuid:     ho.HardwareUUID,
+	data := &HostInfoDarwin{
+		HostInfoData: common.HostInfoData{
+			System:          "system",
+			HostType:        hip.getHostType(ho),
+			CpuName:         cpuName,
+			CpuNum:          fmt.Sprintf("%d", cpuNum),
+			TotalCpu:        ho.TotalNumberOfCores,
+			Ram:             ho.Memory,
+			UpSince:         getUpSince(),
+			AgentVersion:    context.Version(),
+			AgentName:       "Infrastructure",
+			OperatingSystem: "macOS",
+		},
+		Distro:        distro.GetDistro(),
+		KernelVersion: kernelVersion,
+		AgentMode:     context.Config().RunMode,
+		ProductUuid:   ho.HardwareUUID,
 	}
 
 	err = hip.setCloudRegion(data)
@@ -149,7 +138,7 @@ func (hip *HostinfoPlugin) gatherHostinfo(context agent.AgentContext) *HostInfoD
 			"cloud metadata couldn't be set")
 	}
 
-	helpers.LogStructureDetails(hlog, data, "HostInfoData", "raw", nil)
+	helpers.LogStructureDetails(hlog, data, "HostInfoDarwin", "raw", nil)
 
 	return data
 }
@@ -195,7 +184,7 @@ func getUpSince() string {
 	return time.Now().Add(time.Second * -time.Duration(info.Uptime)).Format("2006-01-02 15:04:05")
 }
 
-func (hip *HostinfoPlugin) setCloudRegion(data *HostInfoData) (err error) {
+func (hip *HostinfoPlugin) setCloudRegion(data *HostInfoDarwin) (err error) {
 	if hip.Context.Config().DisableCloudMetadata ||
 		hip.cloudHarvester.GetCloudType() == cloud.TypeNoCloud {
 		return
@@ -221,7 +210,7 @@ func (hip *HostinfoPlugin) setCloudRegion(data *HostInfoData) (err error) {
 }
 
 // Only for AWS cloud instances
-func (self *HostinfoPlugin) setCloudMetadata(data *HostInfoData) (err error) {
+func (self *HostinfoPlugin) setCloudMetadata(data *HostInfoDarwin) (err error) {
 	if self.Context.Config().DisableCloudMetadata ||
 		self.cloudHarvester.GetCloudType() == cloud.TypeNoCloud {
 		return

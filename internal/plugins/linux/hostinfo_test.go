@@ -82,7 +82,7 @@ func (s *HostinfoSuite) TestGetDistro(c *C) {
 	c.Assert(ok, Equals, true)
 	data := plugin.Data()
 	c.Assert(data, HasLen, 1)
-	hostInfo, ok := data[0].(*HostinfoData)
+	hostInfo, ok := data[0].(*HostInfoLinux)
 	c.Assert(ok, Equals, true)
 	c.Assert(hostInfo.Distro, HasPrefix, name)
 }
@@ -239,12 +239,12 @@ func (f *fakeHarvester) GetHarvester() (cloud.Harvester, error) {
 func TestHostinfoPluginSetCloudRegion(t *testing.T) {
 	testCases := []struct {
 		name       string
-		assertions func(*HostinfoData)
+		assertions func(*HostInfoLinux)
 		setMock    func(*fakeHarvester)
 	}{
 		{
 			name: "no cloud",
-			assertions: func(d *HostinfoData) {
+			assertions: func(d *HostInfoLinux) {
 				assert.Equal(t, "", d.RegionAWS)
 				assert.Equal(t, "", d.RegionAzure)
 				assert.Equal(t, "", d.RegionGCP)
@@ -256,7 +256,7 @@ func TestHostinfoPluginSetCloudRegion(t *testing.T) {
 		},
 		{
 			name: "cloud aws",
-			assertions: func(d *HostinfoData) {
+			assertions: func(d *HostInfoLinux) {
 				assert.Equal(t, "us-east-1", d.RegionAWS)
 				assert.Equal(t, "us-east-1a", d.AWSAvailabilityZone)
 				assert.Equal(t, "ami-12345", d.AWSImageID)
@@ -275,7 +275,7 @@ func TestHostinfoPluginSetCloudRegion(t *testing.T) {
 		},
 		{
 			name: "cloud azure",
-			assertions: func(d *HostinfoData) {
+			assertions: func(d *HostInfoLinux) {
 				assert.Equal(t, "", d.RegionAWS)
 				assert.Equal(t, "us-east-1", d.RegionAzure)
 				assert.Equal(t, "", d.RegionGCP)
@@ -288,7 +288,7 @@ func TestHostinfoPluginSetCloudRegion(t *testing.T) {
 		},
 		{
 			name: "cloud gcp",
-			assertions: func(d *HostinfoData) {
+			assertions: func(d *HostInfoLinux) {
 				assert.Equal(t, "", d.RegionAWS)
 				assert.Equal(t, "", d.RegionAzure)
 				assert.Equal(t, "us-east-1", d.RegionGCP)
@@ -300,7 +300,7 @@ func TestHostinfoPluginSetCloudRegion(t *testing.T) {
 			},
 		}, {
 			name: "cloud alibaba",
-			assertions: func(d *HostinfoData) {
+			assertions: func(d *HostInfoLinux) {
 				assert.Equal(t, "", d.RegionAWS)
 				assert.Equal(t, "", d.RegionAzure)
 				assert.Equal(t, "", d.RegionGCP)
@@ -317,7 +317,7 @@ func TestHostinfoPluginSetCloudRegion(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			h := new(fakeHarvester)
 			testCase.setMock(h)
-			data := &HostinfoData{}
+			data := &HostInfoLinux{}
 			p := &HostinfoPlugin{
 				PluginCommon: agent.PluginCommon{
 					ID:      ids.HostInfo,

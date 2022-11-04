@@ -40,30 +40,16 @@ type HostinfoPlugin struct {
 	cloudHarvester cloud.Harvester // Gather metadata for the cloud instance.
 }
 
-type HostinfoData struct {
-	System        string `json:"id"`
-	Distro        string `json:"distro"`
-	KernelVersion string `json:"kernel_version"`
-	HostType      string `json:"host_type"`
-	CpuName       string `json:"cpu_name"`
-	// Number of cores within a single CPU ('cpu cores' field in /proc/cpuinfo)
-	// It is shown as 'coreCount' in New Relic UI
-	CpuNum string `json:"cpu_num"`
-	// Total number of cores in all the CPUs ('processor' entries in /proc/cpuinfo)
-	// It is shown as 'processorCount' in New Relic UI
-	TotalCpu            string `json:"total_cpu"`
-	Ram                 string `json:"ram"`
-	UpSince             string `json:"boot_timestamp"`
-	AgentVersion        string `json:"agent_version"`
-	AgentName           string `json:"agent_name"`
+type HostInfoLinux struct {
+	Distro              string `json:"distro"`
+	KernelVersion       string `json:"kernel_version"`
 	AgentMode           string `json:"agent_mode"`
-	OperatingSystem     string `json:"operating_system"`
 	ProductUuid         string `json:"product_uuid"`
 	BootId              string `json:"boot_id"`
 	common.HostInfoData `mapstructure:",squash"`
 }
 
-func (self HostinfoData) SortKey() string {
+func (self HostInfoLinux) SortKey() string {
 	return self.System
 }
 
@@ -183,7 +169,7 @@ func getCpuNum(cpuInfoFile string, fallback string) string {
 	}
 }
 
-func (self *HostinfoPlugin) gatherHostinfo(context agent.AgentContext) *HostinfoData {
+func (self *HostinfoPlugin) gatherHostinfo(context agent.AgentContext) *HostInfoLinux {
 	infoFile := helpers.HostProc("/cpuinfo")
 	totalCpu := getTotalCpu(infoFile)
 	var productUuid string
@@ -196,22 +182,24 @@ func (self *HostinfoPlugin) gatherHostinfo(context agent.AgentContext) *Hostinfo
 		hostType = self.getHostType()
 	}
 
-	data := &HostinfoData{
-		System:          "system",
-		Distro:          distro.GetDistro(),
-		KernelVersion:   getKernelRelease(),
-		HostType:        hostType,
-		CpuName:         readProcFile(helpers.HostProc("/cpuinfo"), regexp.MustCompile(`model\sname\s*:\s`)),
-		CpuNum:          getCpuNum(infoFile, totalCpu),
-		TotalCpu:        totalCpu,
-		Ram:             readProcFile(helpers.HostProc("/meminfo"), regexp.MustCompile(`MemTotal:\s*`)),
-		UpSince:         getUpSince(),
-		AgentVersion:    context.Version(),
-		AgentName:       "Infrastructure",
-		AgentMode:       string(context.Config().RunMode),
-		OperatingSystem: runtime.GOOS,
-		ProductUuid:     productUuid,
-		BootId:          fingerprint.GetBootId(),
+	data := &HostInfoLinux{
+		HostInfoData: common.HostInfoData{
+			System:          "system",
+			HostType:        hostType,
+			CpuName:         readProcFile(helpers.HostProc("/cpuinfo"), regexp.MustCompile(`model\sname\s*:\s`)),
+			CpuNum:          getCpuNum(infoFile, totalCpu),
+			TotalCpu:        totalCpu,
+			Ram:             readProcFile(helpers.HostProc("/meminfo"), regexp.MustCompile(`MemTotal:\s*`)),
+			UpSince:         getUpSince(),
+			AgentVersion:    context.Version(),
+			AgentName:       "Infrastructure",
+			OperatingSystem: runtime.GOOS,
+		},
+		Distro:        distro.GetDistro(),
+		KernelVersion: getKernelRelease(),
+		AgentMode:     string(context.Config().RunMode),
+		ProductUuid:   productUuid,
+		BootId:        fingerprint.GetBootId(),
 	}
 	err := self.setCloudRegion(data)
 	if err != nil {
@@ -230,7 +218,7 @@ func (self *HostinfoPlugin) gatherHostinfo(context agent.AgentContext) *Hostinfo
 	return data
 }
 
-func (self *HostinfoPlugin) setCloudRegion(data *HostinfoData) (err error) {
+func (self *HostinfoPlugin) setCloudRegion(data *HostInfoLinux) (err error) {
 	if self.Context.Config().DisableCloudMetadata ||
 		self.cloudHarvester.GetCloudType() == cloud.TypeNoCloud {
 		return
@@ -256,7 +244,7 @@ func (self *HostinfoPlugin) setCloudRegion(data *HostinfoData) (err error) {
 }
 
 // Only for AWS cloud instances
-func (self *HostinfoPlugin) setCloudMetadata(data *HostinfoData) (err error) {
+func (self *HostinfoPlugin) setCloudMetadata(data *HostInfoLinux) (err error) {
 	if self.Context.Config().DisableCloudMetadata ||
 		self.cloudHarvester.GetCloudType() == cloud.TypeNoCloud {
 		return

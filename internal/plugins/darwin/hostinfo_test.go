@@ -183,12 +183,12 @@ func (f *fakeHarvester) GetHarvester() (cloud.Harvester, error) {
 func TestHostinfoPluginSetCloudRegion(t *testing.T) {
 	testCases := []struct {
 		name       string
-		assertions func(*HostInfoData)
+		assertions func(*HostInfoDarwin)
 		setMock    func(*fakeHarvester)
 	}{
 		{
 			name: "no cloud",
-			assertions: func(d *HostInfoData) {
+			assertions: func(d *HostInfoDarwin) {
 				assert.Equal(t, "", d.RegionAWS)
 				assert.Equal(t, "", d.RegionAzure)
 				assert.Equal(t, "", d.RegionGCP)
@@ -200,7 +200,7 @@ func TestHostinfoPluginSetCloudRegion(t *testing.T) {
 		},
 		{
 			name: "cloud aws",
-			assertions: func(d *HostInfoData) {
+			assertions: func(d *HostInfoDarwin) {
 				assert.Equal(t, "us-east-1", d.RegionAWS)
 				assert.Equal(t, "us-east-1a", d.AWSAvailabilityZone)
 				assert.Equal(t, "ami-12345", d.AWSImageID)
@@ -219,7 +219,7 @@ func TestHostinfoPluginSetCloudRegion(t *testing.T) {
 		},
 		{
 			name: "cloud azure",
-			assertions: func(d *HostInfoData) {
+			assertions: func(d *HostInfoDarwin) {
 				assert.Equal(t, "", d.RegionAWS)
 				assert.Equal(t, "us-east-1", d.RegionAzure)
 				assert.Equal(t, "", d.RegionGCP)
@@ -232,7 +232,7 @@ func TestHostinfoPluginSetCloudRegion(t *testing.T) {
 		},
 		{
 			name: "cloud gcp",
-			assertions: func(d *HostInfoData) {
+			assertions: func(d *HostInfoDarwin) {
 				assert.Equal(t, "", d.RegionAWS)
 				assert.Equal(t, "", d.RegionAzure)
 				assert.Equal(t, "us-east-1", d.RegionGCP)
@@ -245,7 +245,7 @@ func TestHostinfoPluginSetCloudRegion(t *testing.T) {
 		},
 		{
 			name: "cloud alibaba",
-			assertions: func(d *HostInfoData) {
+			assertions: func(d *HostInfoDarwin) {
 				assert.Equal(t, "", d.RegionAWS)
 				assert.Equal(t, "", d.RegionAzure)
 				assert.Equal(t, "", d.RegionGCP)
@@ -262,7 +262,7 @@ func TestHostinfoPluginSetCloudRegion(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			h := new(fakeHarvester)
 			testCase.setMock(h)
-			data := &HostInfoData{}
+			data := &HostInfoDarwin{}
 			p := &HostinfoPlugin{
 				PluginCommon: agent.PluginCommon{
 					ID:      ids.HostInfo,

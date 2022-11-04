@@ -17,7 +17,9 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
+	"github.com/newrelic/infrastructure-agent/internal/plugins/common"
 	pluginsLinux "github.com/newrelic/infrastructure-agent/internal/plugins/linux"
+
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
@@ -122,7 +124,7 @@ func TestHostInfo(t *testing.T) {
 		}
 	}
 
-	actualUpSince := actual.Data[0].(*pluginsLinux.HostinfoData).UpSince
+	actualUpSince := actual.Data[0].(*pluginsLinux.HostInfoLinux).UpSince
 
 	// The last |^$|unknown prevents the test to fail in some old linux distros where `uptime -s` returns
 	// error because the -s argument is not accepted.
@@ -136,22 +138,24 @@ func TestHostInfo(t *testing.T) {
 		},
 		Entity: entity.NewFromNameWithoutID(agentIdentifier),
 		Data: agent.PluginInventoryDataset{
-			&pluginsLinux.HostinfoData{
-				System:          "system",
-				Distro:          distroName,
-				KernelVersion:   kernelVersion,
-				HostType:        fmt.Sprintf("%s %s", sysVendor, productName),
-				CpuName:         cpuName,
-				CpuNum:          strconv.Itoa(cpuCores),
-				TotalCpu:        strconv.Itoa(totalCPU),
-				Ram:             ram,
-				AgentVersion:    agentVersion,
-				AgentName:       "Infrastructure",
-				OperatingSystem: "linux",
-				ProductUuid:     productUUID,
-				BootId:          bootId,
-				UpSince:         actualUpSince,
-				AgentMode:       "privileged",
+			&pluginsLinux.HostInfoLinux{
+				HostInfoData: common.HostInfoData{
+					System:          "system",
+					HostType:        fmt.Sprintf("%s %s", sysVendor, productName),
+					CpuName:         cpuName,
+					CpuNum:          strconv.Itoa(cpuCores),
+					TotalCpu:        strconv.Itoa(totalCPU),
+					Ram:             ram,
+					AgentVersion:    agentVersion,
+					AgentName:       "Infrastructure",
+					OperatingSystem: "linux",
+					UpSince:         actualUpSince,
+				},
+				Distro:        distroName,
+				KernelVersion: kernelVersion,
+				ProductUuid:   productUUID,
+				BootId:        bootId,
+				AgentMode:     "privileged",
 			},
 		},
 	}
