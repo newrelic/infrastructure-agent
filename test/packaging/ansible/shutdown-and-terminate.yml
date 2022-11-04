@@ -85,7 +85,7 @@
         name: agent-host-status-event-assert
       vars:
         host_status: "shutdown"
-        expect_event: false
+        expect_change_event: false
         since_sec_ago: 30
 
     - name: stop instances
@@ -101,7 +101,7 @@
         name: agent-host-status-event-assert
       vars:
         host_status: "shutdown"
-        expect_event: "{{ host_supports_shutdown_detection }}"
+        expect_change_event: "{{ host_supports_shutdown_detection }}"
         timestamp_ref: "{{ ec2_stop_time_sec | int }}"
 
     - name: start instances
@@ -113,7 +113,7 @@
         name: agent-host-status-event-assert
       vars:
         host_status: "running"
-        expect_event: "{{ host_supports_shutdown_detection }}"
+        expect_change_event: "{{ host_supports_shutdown_detection }}"
         timestamp_ref: "{{ ec2_start_time_sec | int }}"
 
     - name: terminate instances
@@ -129,6 +129,6 @@
         name: agent-host-status-event-assert
       vars:
         host_status: "shutdown"
-        expect_event: "{{ host_supports_shutdown_detection }}"
+        expect_change_event: "{{ host_supports_shutdown_detection }}"
         timestamp_ref: "{{ ec2_terminate_time_sec | int }}"
 ...
