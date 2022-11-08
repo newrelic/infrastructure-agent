@@ -55,7 +55,9 @@ if [[ "${streamName}" == "" ]]; then
 fi
 
 # Clean the output file
-> "${outputFile}"
+if [[ "${tail}" == false ]]; then
+  > "${outputFile}"
+fi
 
 paginationArg="--start-from-head"
 while : ; do
