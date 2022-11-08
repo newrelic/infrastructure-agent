@@ -156,7 +156,7 @@ jobs:
 
   canaries-macos:
     # leverage linux workflow as we don't have macos packaging tests yet
-    if: ${{ inputs.PLATFORM == 'linux' && inputs.CANARIES == true }}
+    if: ${{ inputs.PLATFORM == 'macos' && inputs.CANARIES == true }}
     needs: [ packaging-tests-linux ]
     runs-on: ubuntu-20.04
     steps:
