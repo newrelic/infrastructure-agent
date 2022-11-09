@@ -24,7 +24,6 @@ type AwsCloudData struct {
 
 type AzureCloudData struct {
 	RegionAzure           string `json:"region_name,omitempty"`
-	AzureImageID          string `json:"azure_image_id,omitempty"`
 	AzureSubscriptionID   string `json:"azure_subscription_id,omitempty"`
 	AzureAvailabilityZone string `json:"azure_availability_zone,omitempty"`
 }
@@ -37,51 +36,65 @@ type AlibabaCloudData struct {
 	RegionAlibaba string `json:"region_id,omitempty"`
 }
 
-func GetCloudData(cloudHarvester cloud.Harvester) (CloudData, error) {
-	var cloudData CloudData
-	var err error
-	var imageID, accountID, availabilityZone string
-
-	if cloudHarvester.GetCloudType() == cloud.TypeNoCloud {
-		return cloudData, nil
-	}
-
-	region, err := cloudHarvester.GetRegion()
+// getAWSCloudData gathers the exported information for the AWS Cloud.
+func getAWSCloudData(cloudHarvester cloud.Harvester) (awsData AwsCloudData, err error) {
+	awsData.RegionAWS, err = cloudHarvester.GetRegion()
 	if err != nil {
-		return cloudData, fmt.Errorf("couldn't retrieve cloud region: %v", err)
+		return awsData, fmt.Errorf("couldn't retrieve cloud region: %w", err)
 	}
 
-	// Fetch additional cloud metadata only for AWS or Azure clouds
-	if cloudHarvester.GetCloudType() == cloud.TypeAWS || cloudHarvester.GetCloudType() == cloud.TypeAzure {
-		imageID, err = cloudHarvester.GetInstanceImageID()
-		if err != nil {
-			return cloudData, fmt.Errorf("couldn't retrieve cloud image ID: %v", err)
-		}
-		accountID, err = cloudHarvester.GetAccountID()
-		if err != nil {
-			return cloudData, fmt.Errorf("couldn't retrieve cloud account ID: %v", err)
-		}
-		availabilityZone, err = cloudHarvester.GetZone()
-		if err != nil {
-			return cloudData, fmt.Errorf("couldn't retrieve cloud availability zone: %v", err)
-		}
+	awsData.AWSImageID, err = cloudHarvester.GetInstanceImageID()
+	if err != nil {
+		return awsData, fmt.Errorf("couldn't retrieve cloud image ID: %w", err)
 	}
 
+	awsData.AWSAccountID, err = cloudHarvester.GetAccountID()
+	if err != nil {
+		return awsData, fmt.Errorf("couldn't retrieve cloud account ID: %w", err)
+	}
+
+	awsData.AWSAvailabilityZone, err = cloudHarvester.GetZone()
+	if err != nil {
+		return awsData, fmt.Errorf("couldn't retrieve cloud availability zone: %w", err)
+	}
+
+	return
+}
+
+// getAzureCloudData gathers the exported information for the Azure Cloud.
+func getAzureCloudData(cloudHarvester cloud.Harvester) (azureData AzureCloudData, err error) {
+	azureData.RegionAzure, err = cloudHarvester.GetRegion()
+	if err != nil {
+		return azureData, fmt.Errorf("couldn't retrieve cloud region: %w", err)
+	}
+
+	azureData.AzureSubscriptionID, err = cloudHarvester.GetAccountID()
+	if err != nil {
+		return azureData, fmt.Errorf("couldn't retrieve cloud account ID: %w", err)
+	}
+
+	azureData.AzureAvailabilityZone, err = cloudHarvester.GetZone()
+	if err != nil {
+		return azureData, fmt.Errorf("couldn't retrieve cloud availability zone: %w", err)
+	}
+
+	return
+}
+
+// GetCloudData will populate a CloudData structure depending on the cloud type.
+func GetCloudData(cloudHarvester cloud.Harvester) (cloudData CloudData, err error) {
 	switch cloudHarvester.GetCloudType() {
 	case cloud.TypeAWS:
-		cloudData.RegionAWS = region
-		cloudData.AWSImageID = imageID
-		cloudData.AWSAccountID = accountID
-		cloudData.AWSAvailabilityZone = availabilityZone
+		cloudData.AwsCloudData, err = getAWSCloudData(cloudHarvester)
 	case cloud.TypeAzure:
-		cloudData.RegionAzure = region
-		cloudData.AzureImageID = imageID
-		cloudData.AzureSubscriptionID = accountID
-		cloudData.AzureAvailabilityZone = availabilityZone
+		cloudData.AzureCloudData, err = getAzureCloudData(cloudHarvester)
 	case cloud.TypeGCP:
-		cloudData.RegionGCP = region
+		cloudData.RegionGCP, err = cloudHarvester.GetRegion()
 	case cloud.TypeAlibaba:
-		cloudData.RegionAlibaba = region
+		cloudData.RegionAlibaba, err = cloudHarvester.GetRegion()
+	case cloud.TypeNoCloud:
+		return
 	}
-	return cloudData, nil
+
+	return
 }
