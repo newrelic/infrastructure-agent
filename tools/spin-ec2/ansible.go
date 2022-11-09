@@ -216,6 +216,10 @@ func newProvisionOptions() provisionOptions {
 		name:               "install given version of dockerized agent",
 		playbook:           "test/packaging/ansible/docker-canary.yml",
 		licenseKeyRequired: true,
+		args: map[string]string{
+			"current_or_previous":  "current",
+			"target_agent_version": "latest",
+		},
 	}
 
 	return opts
