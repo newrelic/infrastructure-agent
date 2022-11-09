@@ -157,6 +157,9 @@ is_root() {
 install_upstart_agent() {
     echo "Installing scripts for upstart..."
 
+    # Try stopping the service in case of upgrade.
+    initctl stop newrelic-infra || true
+
     # Prepare Init script.
     service_file="/etc/init/newrelic-infra.conf"
     cp ./etc/init_scripts/upstart/newrelic-infra "${service_file}"
@@ -179,6 +182,10 @@ install_upstart_agent() {
 
 install_systemd_agent() {
     echo "Installing scripts for systemd..."
+
+    # Try stopping the service in case of upgrade.
+    systemctl stop newrelic-infra || true
+
     # Prepare Init script.
     service_file="/etc/systemd/system/newrelic-infra.service"
     cp ./etc/init_scripts/systemd/newrelic-infra.service "${service_file}"
@@ -203,6 +210,9 @@ install_sysv_agent() {
     echo "Installing scripts for sysv..."
     service_file=/etc/init.d/newrelic-infra
     cp ./etc/init_scripts/sysv/newrelic-infra "${service_file}"
+
+    # Try stopping the service in case of upgrade.
+    ${service_file} stop || true
 
     if ! is_root; then
         sed -i "s/USER=root/USER=${NRIA_USER}/g" "$service_file"
