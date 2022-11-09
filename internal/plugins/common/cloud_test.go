@@ -111,7 +111,6 @@ func TestGetCloudData(t *testing.T) {
 				assert.Equal(t, "northeurope", d.RegionAzure)
 				assert.Equal(t, "", d.RegionGCP)
 				assert.Equal(t, "", d.RegionAlibaba)
-				assert.Equal(t, "12345", d.AzureImageID)
 				assert.Equal(t, "1", d.AzureAvailabilityZone)
 				assert.Equal(t, "x123", d.AzureSubscriptionID)
 			},
@@ -119,7 +118,6 @@ func TestGetCloudData(t *testing.T) {
 				h.On("GetAccountID").Return("x123", nil)
 				h.On("GetCloudType").Return(cloud.TypeAzure)
 				h.On("GetRegion").Return("northeurope", nil)
-				h.On("GetInstanceImageID").Return("12345", nil)
 				h.On("GetZone").Return("1", nil)
 			},
 		},
