@@ -6,6 +6,7 @@
 package linux
 
 import (
+	"github.com/newrelic/infrastructure-agent/internal/plugins/common"
 	"io/ioutil"
 	"os"
 	"regexp"
@@ -19,8 +20,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/newrelic/infrastructure-agent/internal/agent"
-	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 
 	. "github.com/newrelic/infrastructure-agent/pkg/go-better-check"
@@ -280,10 +279,16 @@ func TestHostinfoPluginSetCloudRegion(t *testing.T) {
 				assert.Equal(t, "us-east-1", d.RegionAzure)
 				assert.Equal(t, "", d.RegionGCP)
 				assert.Equal(t, "", d.RegionAlibaba)
+				assert.Equal(t, "12345", d.AzureImageID)
+				assert.Equal(t, "europe", d.AzureLocation)
+				assert.Equal(t, "x123", d.AzureSubscriptionID)
 			},
 			setMock: func(h *fakeHarvester) {
+				h.On("GetAccountID").Return("x123", nil)
 				h.On("GetCloudType").Return(cloud.TypeAzure)
 				h.On("GetRegion").Return("us-east-1", nil)
+				h.On("GetInstanceImageID").Return("12345", nil)
+				h.On("GetZone").Return("europe", nil)
 			},
 		},
 		{
@@ -318,15 +323,9 @@ func TestHostinfoPluginSetCloudRegion(t *testing.T) {
 			h := new(fakeHarvester)
 			testCase.setMock(h)
 			data := &HostInfoLinux{}
-			p := &HostinfoPlugin{
-				PluginCommon: agent.PluginCommon{
-					ID:      ids.HostInfo,
-					Context: testing2.NewMockAgent(),
-				},
-				cloudHarvester: h,
-			}
-			_ = p.setCloudRegion(data)
-			_ = p.setCloudMetadata(data)
+			cloudData, err := common.GetCloudData(h)
+			assert.NoError(t, err)
+			data.CloudData = cloudData
 			testCase.assertions(data)
 			h.AssertExpectations(t)
 		})

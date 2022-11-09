@@ -107,73 +107,18 @@ func (self *HostinfoPlugin) gatherHostinfo(context agent.AgentContext, info *hos
 		WindowsVersion:  info.PlatformVersion,
 	}
 
-	err := self.setCloudRegion(data)
-	if err != nil {
-		hlog.WithError(err).WithField("cloudType", self.cloudHarvester.GetCloudType()).Debug(
-			"cloud region couldn't be set")
-	}
+	if !self.Context.Config().DisableCloudMetadata {
+		cloudData, err := common.GetCloudData(self.cloudHarvester)
+		if err != nil {
+			hlog.WithError(err).Debug("could not get cloud metadata")
+		}
 
-	err = self.setCloudMetadata(data)
-	if err != nil {
-		hlog.WithError(err).WithField("cloudType", self.cloudHarvester.GetCloudType()).Debug(
-			"cloud metadata couldn't be set")
+		data.CloudData = cloudData
 	}
 
 	helpers.LogStructureDetails(hlog, data, "HostInfoData", "raw", nil)
 
 	return data
-}
-
-func (self *HostinfoPlugin) setCloudRegion(data *HostInfoWindows) (err error) {
-	if self.Context.Config().DisableCloudMetadata ||
-		self.cloudHarvester.GetCloudType() == cloud.TypeNoCloud {
-		return
-	}
-
-	region, err := self.cloudHarvester.GetRegion()
-	if err != nil {
-		return fmt.Errorf("couldn't retrieve cloud region: %v", err)
-	}
-
-	switch self.cloudHarvester.GetCloudType() {
-	case cloud.TypeAWS:
-		data.RegionAWS = region
-	case cloud.TypeAzure:
-		data.RegionAzure = region
-	case cloud.TypeGCP:
-		data.RegionGCP = region
-	case cloud.TypeAlibaba:
-		data.RegionAlibaba = region
-	default:
-	}
-	return
-}
-
-// Only for AWS cloud instances
-func (self *HostinfoPlugin) setCloudMetadata(data *HostInfoWindows) (err error) {
-	if self.Context.Config().DisableCloudMetadata ||
-		self.cloudHarvester.GetCloudType() == cloud.TypeNoCloud {
-		return
-	}
-
-	if self.cloudHarvester.GetCloudType() == cloud.TypeAWS {
-		imageID, err := self.cloudHarvester.GetInstanceImageID()
-		if err != nil {
-			return fmt.Errorf("couldn't retrieve cloud image ID: %v", err)
-		}
-		data.AWSImageID = imageID
-		awsAccountID, err := self.cloudHarvester.GetAccountID()
-		if err != nil {
-			return fmt.Errorf("couldn't retrieve cloud account ID: %v", err)
-		}
-		data.AWSAccountID = awsAccountID
-		availabilityZone, err := self.cloudHarvester.GetZone()
-		if err != nil {
-			return fmt.Errorf("couldn't retrieve cloud availability zone: %v", err)
-		}
-		data.AWSAvailabilityZone = availabilityZone
-	}
-	return
 }
 
 func getCpuInfo() *cpuInfo {
