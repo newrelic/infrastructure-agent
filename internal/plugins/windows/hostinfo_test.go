@@ -172,19 +172,19 @@ func TestHostinfoPluginSetCloudRegion(t *testing.T) {
 			name: "cloud azure",
 			assertions: func(d *HostInfoWindows) {
 				assert.Equal(t, "", d.RegionAWS)
-				assert.Equal(t, "us-east-1", d.RegionAzure)
+				assert.Equal(t, "northeurope", d.RegionAzure)
 				assert.Equal(t, "", d.RegionGCP)
 				assert.Equal(t, "", d.RegionAlibaba)
 				assert.Equal(t, "12345", d.AzureImageID)
-				assert.Equal(t, "europe", d.AzureLocation)
+				assert.Equal(t, "1", d.AzureAvailabilityZone)
 				assert.Equal(t, "x123", d.AzureSubscriptionID)
 			},
 			setMock: func(h *fakeHarvester) {
 				h.On("GetAccountID").Return("x123", nil)
 				h.On("GetCloudType").Return(cloud.TypeAzure)
-				h.On("GetRegion").Return("us-east-1", nil)
+				h.On("GetRegion").Return("northeurope", nil)
 				h.On("GetInstanceImageID").Return("12345", nil)
-				h.On("GetZone").Return("europe", nil)
+				h.On("GetZone").Return("1", nil)
 			},
 		},
 		{
