@@ -12,10 +12,11 @@ import (
 )
 
 // Metadata sample: https://docs.microsoft.com/en-us/azure/virtual-machines/linux/instance-metadata-service?tabs=linux
+// API versions: https://learn.microsoft.com/en-us/azure/virtual-machines/windows/instance-metadata-service?tabs=windows#endpoint-categories
 
 const (
 	// azureEndpoint is the URL used for requesting Azure metadata.
-	azureEndpoint = "http://169.254.169.254/metadata/instance?api-version=2017-04-02"
+	azureEndpoint = "http://169.254.169.254/metadata/instance?api-version=2017-12-01"
 )
 
 // AzureHarvester is used to fetch data from Azure api.

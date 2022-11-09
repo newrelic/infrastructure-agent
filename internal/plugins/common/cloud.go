@@ -23,10 +23,10 @@ type AwsCloudData struct {
 }
 
 type AzureCloudData struct {
-	RegionAzure         string `json:"region_name,omitempty"`
-	AzureImageID        string `json:"azure_image_id,omitempty"`
-	AzureSubscriptionID string `json:"azure_subscription_id,omitempty"`
-	AzureLocation       string `json:"azure_location,omitempty"`
+	RegionAzure           string `json:"region_name,omitempty"`
+	AzureImageID          string `json:"azure_image_id,omitempty"`
+	AzureSubscriptionID   string `json:"azure_subscription_id,omitempty"`
+	AzureAvailabilityZone string `json:"azure_availability_zone,omitempty"`
 }
 
 type GoogleCloudData struct {
@@ -77,7 +77,7 @@ func GetCloudData(cloudHarvester cloud.Harvester) (CloudData, error) {
 		cloudData.RegionAzure = region
 		cloudData.AzureImageID = imageID
 		cloudData.AzureSubscriptionID = accountID
-		cloudData.AzureLocation = availabilityZone
+		cloudData.AzureAvailabilityZone = availabilityZone
 	case cloud.TypeGCP:
 		cloudData.RegionGCP = region
 	case cloud.TypeAlibaba:
