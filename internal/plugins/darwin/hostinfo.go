@@ -6,6 +6,7 @@
 package darwin
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -19,7 +20,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
-	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/sirupsen/logrus"
 )
@@ -32,7 +32,7 @@ var (
 // HostinfoPlugin returns metadata of the host.
 type HostinfoPlugin struct {
 	agent.PluginCommon
-	cloudHarvester cloud.Harvester // Gather metadata for the cloud instance.
+	common.HostInfo
 
 	readDataFromCmd func(cmd string, args ...string) (string, error)
 }
@@ -51,13 +51,13 @@ func (hip *HostInfoDarwin) SortKey() string {
 	return hip.System
 }
 
-func NewHostinfoPlugin(ctx agent.AgentContext, cloudHarvester cloud.Harvester) agent.Plugin {
+func NewHostinfoPlugin(ctx agent.AgentContext, hostInfo common.HostInfo) agent.Plugin {
 	return &HostinfoPlugin{
 		PluginCommon: agent.PluginCommon{
 			ID:      ids.HostInfo,
 			Context: ctx,
 		},
-		cloudHarvester: cloudHarvester,
+		HostInfo: hostInfo,
 		readDataFromCmd: func(cmd string, args ...string) (string, error) {
 			return helpers.RunCommand(cmd, "", args...)
 		},
@@ -107,33 +107,34 @@ func (hip *HostinfoPlugin) gatherHostinfo(context agent.AgentContext) *HostInfoD
 		cpuName = fmt.Sprintf("%s @ %s", ho.ProcessorName, ho.ProcessorSpeed)
 	}
 
+	commonHostInfo, err := hip.GetHostInfo()
+	if err != nil {
+		hlog.WithError(err).Error("error fetching host data information")
+	}
+
 	data := &HostInfoDarwin{
-		HostInfoData: common.HostInfoData{
-			System:          "system",
-			HostType:        hip.getHostType(ho),
-			CpuName:         cpuName,
-			CpuNum:          fmt.Sprintf("%d", cpuNum),
-			TotalCpu:        ho.TotalNumberOfCores,
-			Ram:             ho.Memory,
-			UpSince:         getUpSince(),
-			AgentVersion:    context.Version(),
-			AgentName:       "Infrastructure",
-			OperatingSystem: "macOS",
-		},
+		HostInfoData:  commonHostInfo,
 		Distro:        distro.GetDistro(),
 		KernelVersion: kernelVersion,
 		AgentMode:     context.Config().RunMode,
 		ProductUuid:   ho.HardwareUUID,
 	}
 
-	if !hip.Context.Config().DisableCloudMetadata {
-		cloudData, err := common.GetCloudData(hip.cloudHarvester)
-		if err != nil {
-			hlog.WithError(err).Debug("could not get cloud metadata")
+	// set specific OS fields
+	if data.HostType, err = hip.GetCloudHostType(); err != nil {
+		if errors.Is(err, common.ErrNoCloudHostTypeNotAvailable) {
+			data.HostType = hip.getHostType(ho)
+		} else {
+			hlog.WithError(err).Debug("error getting host type from cloud metadata")
 		}
-
-		data.CloudData = cloudData
 	}
+
+	data.CpuName = cpuName
+	data.CpuNum = fmt.Sprintf("%d", cpuNum)
+	data.TotalCpu = ho.TotalNumberOfCores
+	data.Ram = ho.Memory
+	data.UpSince = getUpSince()
+	data.OperatingSystem = "macOS"
 
 	helpers.LogStructureDetails(hlog, data, "HostInfoDarwin", "raw", nil)
 
@@ -141,23 +142,7 @@ func (hip *HostinfoPlugin) gatherHostinfo(context agent.AgentContext) *HostInfoD
 }
 
 func (hip *HostinfoPlugin) getHostType(ho hardwareOverview) string {
-	hostType := "unknown"
-
-	if hip.Context.Config().DisableCloudMetadata ||
-		hip.cloudHarvester.GetCloudType() == cloud.TypeNoCloud ||
-		hip.cloudHarvester.GetCloudType() == cloud.TypeInProgress {
-
-		hostType = fmt.Sprintf("%s %s", ho.ModelName, ho.ModelIdentifier)
-	}
-
-	if response, err := hip.cloudHarvester.GetHostType(); err != nil {
-		hlog.WithError(err).WithField("cloudType", hip.cloudHarvester.GetCloudType()).Debug(
-			"error getting host type from cloud metadata")
-	} else {
-		hostType = response
-	}
-
-	return hostType
+	return fmt.Sprintf("%s %s", ho.ModelName, ho.ModelIdentifier)
 }
 
 func (hip *HostinfoPlugin) getKernelRelease() (string, error) {

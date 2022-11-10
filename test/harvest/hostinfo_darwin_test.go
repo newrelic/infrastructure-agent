@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/newrelic/infrastructure-agent/internal/plugins/common"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 
 	"github.com/newrelic/infrastructure-agent/pkg/backend/inventoryapi"
@@ -35,7 +36,7 @@ func TestHostInfoDarwin(t *testing.T) {
 	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
 	cloudDetector := cloud.NewDetector(true, 0, 0, 0, false)
-	a.RegisterPlugin(darwin.NewHostinfoPlugin(a.Context, cloudDetector))
+	a.RegisterPlugin(darwin.NewHostinfoPlugin(a.Context, common.NewHostInfoCommon("test", true, cloudDetector)))
 	go a.Run()
 
 	var req http.Request

@@ -7,6 +7,7 @@ package windows
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"runtime"
 	"strconv"
@@ -27,7 +28,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
-	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 )
 
 var hlog = log.WithComponent("HostInfoPlugin")
@@ -39,7 +39,7 @@ var (
 
 type HostinfoPlugin struct {
 	agent.PluginCommon
-	cloudHarvester cloud.Harvester // Gather metadata for the cloud instance.
+	common.HostInfo
 }
 
 type HostInfoWindows struct {
@@ -59,10 +59,10 @@ func (self *HostInfoWindows) SortKey() string {
 	return self.System
 }
 
-func NewHostinfoPlugin(id ids.PluginID, ctx agent.AgentContext, cloudHarvester cloud.Harvester) agent.Plugin {
+func NewHostinfoPlugin(id ids.PluginID, ctx agent.AgentContext, hostInfo common.HostInfo) agent.Plugin {
 	return &HostinfoPlugin{
-		PluginCommon:   agent.PluginCommon{ID: id, Context: ctx},
-		cloudHarvester: cloudHarvester,
+		PluginCommon: agent.PluginCommon{ID: id, Context: ctx},
+		HostInfo:     hostInfo,
 	}
 }
 
@@ -88,33 +88,34 @@ func getHostInfo() *host.InfoStat {
 }
 
 func (self *HostinfoPlugin) gatherHostinfo(context agent.AgentContext, info *host.InfoStat) *HostInfoWindows {
+	commonHostInfo, err := self.GetHostInfo()
+	if err != nil {
+		hlog.WithError(err).Error("error fetching host data information")
+	}
+
 	cpuInfo := getCpuInfo()
 	data := &HostInfoWindows{
-		HostInfoData: common.HostInfoData{
-			System:          "system",
-			HostType:        self.getHostType(),
-			CpuName:         cpuInfo.name,
-			CpuNum:          cpuInfo.num,
-			TotalCpu:        cpuInfo.totalCpu,
-			Ram:             getRam(),
-			UpSince:         time.Unix(int64(info.BootTime), 0).Format("2006-01-02 15:04:05"),
-			AgentVersion:    context.Version(),
-			AgentName:       "Infrastructure",
-			OperatingSystem: info.OS,
-		},
+		HostInfoData:    commonHostInfo,
 		WindowsPlatform: info.Platform,
 		WindowsFamily:   info.PlatformFamily,
 		WindowsVersion:  info.PlatformVersion,
 	}
 
-	if !self.Context.Config().DisableCloudMetadata {
-		cloudData, err := common.GetCloudData(self.cloudHarvester)
-		if err != nil {
-			hlog.WithError(err).Debug("could not get cloud metadata")
+	// set specific OS fields
+	if data.HostType, err = self.GetCloudHostType(); err != nil {
+		if errors.Is(err, common.ErrNoCloudHostTypeNotAvailable) {
+			data.HostType = self.getHostType()
+		} else {
+			hlog.WithError(err).Debug("error getting host type from cloud metadata")
 		}
-
-		data.CloudData = cloudData
 	}
+
+	data.CpuName = cpuInfo.name
+	data.CpuNum = cpuInfo.num
+	data.TotalCpu = cpuInfo.totalCpu
+	data.Ram = getRam()
+	data.UpSince = time.Unix(int64(info.BootTime), 0).Format("2006-01-02 15:04:05")
+	data.OperatingSystem = info.OS
 
 	helpers.LogStructureDetails(hlog, data, "HostInfoData", "raw", nil)
 
@@ -159,27 +160,15 @@ func getRam() string {
 func (self *HostinfoPlugin) getHostType() string {
 	hostType := "unknown"
 
-	if self.Context.Config().DisableCloudMetadata ||
-		self.cloudHarvester.GetCloudType() == cloud.TypeNoCloud ||
-		self.cloudHarvester.GetCloudType() == cloud.TypeInProgress {
+	if regKey, err := registry.OpenKey(registry.LOCAL_MACHINE, `SYSTEM\CurrentControlSet\Control\SystemInformation\`, registry.QUERY_VALUE); err == nil {
+		Manufacturer, _, _ := regKey.GetStringValue("SystemManufacturer")
+		ProductName, _, _ := regKey.GetStringValue("SystemProductName")
 
-		if regKey, err := registry.OpenKey(registry.LOCAL_MACHINE, `SYSTEM\CurrentControlSet\Control\SystemInformation\`, registry.QUERY_VALUE); err == nil {
-			Manufacturer, _, _ := regKey.GetStringValue("SystemManufacturer")
-			ProductName, _, _ := regKey.GetStringValue("SystemProductName")
-
-			if Manufacturer != "" && ProductName != "" {
-				hostType = strings.Trim(fmt.Sprintf("%s %s", Manufacturer, ProductName), " ")
-			}
-		} else {
-			log.WithError(err).Debug("Error getting host type from Windows Registry.")
+		if Manufacturer != "" && ProductName != "" {
+			hostType = strings.Trim(fmt.Sprintf("%s %s", Manufacturer, ProductName), " ")
 		}
-	}
-
-	if response, err := self.cloudHarvester.GetHostType(); err != nil {
-		hlog.WithError(err).WithField("cloudType", self.cloudHarvester.GetCloudType()).Debug(
-			"Error getting host type from cloud metadata")
 	} else {
-		hostType = response
+		log.WithError(err).Debug("Error getting host type from Windows Registry.")
 	}
 
 	return hostType

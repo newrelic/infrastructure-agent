@@ -111,7 +111,7 @@ func TestHostInfo(t *testing.T) {
 	os.Setenv("HOST_PROC", procDir.Path)
 
 	cloudDetector := cloud.NewDetector(true, 0, 0, 0, false)
-	hostInfoPlugin := pluginsLinux.NewHostinfoPlugin(ctx, cloudDetector)
+	hostInfoPlugin := pluginsLinux.NewHostinfoPlugin(ctx, common.NewHostInfoCommon(ctx.Version(), ctx.Config().DisableCloudMetadata, cloudDetector))
 	hostInfoPlugin.Run()
 	ctx.AssertExpectations(t)
 

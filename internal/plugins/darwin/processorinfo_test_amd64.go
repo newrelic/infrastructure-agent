@@ -88,8 +88,7 @@ func TestData(t *testing.T) {
 
 					return ``, ErrUnknownCommand
 				},
-
-				cloudHarvester: cloud.NewDetector(true, 0, 0, 0, true),
+				HostInfo: common.NewHostInfoCommon("test", true, cloud.NewDetector(true, 0, 0, 0, true)),
 			}
 			hip.Context.Config().DisableCloudMetadata = true
 			hip.Context.Config().RunMode = "root"

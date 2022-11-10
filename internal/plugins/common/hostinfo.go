@@ -3,6 +3,28 @@
 
 package common
 
+import (
+	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
+)
+
+var (
+	ErrNoCloudHostTypeNotAvailable = fmt.Errorf("unable to retrieve host type, cloud harvester not available")
+)
+
+type HostInfo interface {
+	GetHostInfo() (HostInfoData, error)
+	GetCloudHostType() (string, error)
+}
+
+type HostInfoCommon struct {
+	cloudMetadata bool
+	agentVersion  string
+	cloud.Harvester
+}
+
+var _ HostInfo = (*HostInfoCommon)(nil)
+
 type HostInfoData struct {
 	System   string `json:"id"`
 	HostType string `json:"host_type"`
@@ -21,4 +43,49 @@ type HostInfoData struct {
 
 	// cloud metadata
 	CloudData `mapstructure:",squash"`
+}
+
+func NewHostInfoCommon(agentVersion string, enableCloud bool, cloudHarvester cloud.Harvester) *HostInfoCommon {
+	return &HostInfoCommon{
+		enableCloud,
+		agentVersion,
+		cloudHarvester,
+	}
+}
+
+// GetHostInfo returns the common host information data agnostic to the OS.
+func (h *HostInfoCommon) GetHostInfo() (HostInfoData, error) {
+	var cloudInfo CloudData
+	var err error
+
+	if h.cloudMetadata {
+		cloudInfo, err = getCloudData(h)
+		if err != nil {
+			return HostInfoData{}, err
+		}
+	}
+
+	return HostInfoData{
+		System:       "system",
+		AgentName:    "Infrastructure",
+		AgentVersion: h.agentVersion,
+		CloudData:    cloudInfo,
+	}, nil
+}
+
+// GetCloudHostType returns the cloud host type if available, "unknown" if not.
+func (h *HostInfoCommon) GetCloudHostType() (string, error) {
+	hostType := "unknown"
+
+	if !h.cloudMetadata ||
+		h.GetCloudType() == cloud.TypeNoCloud ||
+		h.GetCloudType() == cloud.TypeInProgress {
+		return hostType, ErrNoCloudHostTypeNotAvailable
+	}
+
+	response, err := h.GetHostType()
+	if err != nil {
+		return hostType, err
+	}
+	return response, err
 }
