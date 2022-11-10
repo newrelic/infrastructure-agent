@@ -6,6 +6,7 @@
 package harvest
 
 import (
+	"github.com/newrelic/infrastructure-agent/internal/plugins/common"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"net/http"
 	"testing"
@@ -32,7 +33,8 @@ func TestHostInfoLinux(t *testing.T) {
 	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
 	cloudDetector := cloud.NewDetector(true, 0, 0, 0, false)
-	a.RegisterPlugin(pluginsLinux.NewHostinfoPlugin(a.Context, cloudDetector))
+	a.RegisterPlugin(pluginsLinux.NewHostinfoPlugin(a.Context,
+		common.NewHostInfoCommon(a.Context.Version(), a.Context.Config().DisableCloudMetadata, cloudDetector)))
 	go a.Run()
 
 	var req http.Request

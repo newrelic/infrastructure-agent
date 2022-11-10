@@ -6,6 +6,8 @@
 package darwin
 
 import (
+	"github.com/newrelic/infrastructure-agent/internal/plugins/common"
+	testing2 "github.com/newrelic/infrastructure-agent/internal/plugins/testing"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -116,4 +118,82 @@ func TestValidateHardwareUUID(t *testing.T) {
 			assert.Equal(t, test.expected, validateHardwareUUID(test.input))
 		})
 	}
+}
+
+type HostInfoMock struct {
+	getHostInfo      func() (common.HostInfoData, error)
+	getCloudHostType func() (string, error)
+}
+
+func (h *HostInfoMock) GetHostInfo() (common.HostInfoData, error) {
+	return h.getHostInfo()
+
+}
+
+func (h *HostInfoMock) GetCloudHostType() (string, error) {
+	return h.getCloudHostType()
+}
+
+func TestGatherHostInfoCloud(t *testing.T) {
+	var testCases = []struct {
+		mockedGetHostInfo      func() (common.HostInfoData, error)
+		mockedGetCloudHostType func() (string, error)
+		assertions             func(data *HostInfoDarwin)
+	}{
+		{
+			mockedGetHostInfo: func() (common.HostInfoData, error) {
+				data := common.HostInfoData{}
+				data.RegionAWS = "eu-west-us"
+				data.AWSImageID = "ubuntu"
+				data.AWSAccountID = "000"
+				data.AWSAvailabilityZone = "3"
+				return data, nil
+			},
+			mockedGetCloudHostType: func() (string, error) {
+				return "", nil
+			},
+			assertions: func(data *HostInfoDarwin) {
+				assert.Equal(t, "eu-west-us", data.RegionAWS)
+				assert.Equal(t, "ubuntu", data.AWSImageID)
+				assert.Equal(t, "000", data.AWSAccountID)
+				assert.Equal(t, "3", data.AWSAvailabilityZone)
+			},
+		},
+		{
+			mockedGetHostInfo: func() (common.HostInfoData, error) {
+				data := common.HostInfoData{}
+				data.RegionAzure = "eu-west-us"
+				data.AzureSubscriptionID = "1234"
+				data.AzureAvailabilityZone = "1"
+				return data, nil
+			},
+			mockedGetCloudHostType: func() (string, error) {
+				return "", nil
+			},
+			assertions: func(data *HostInfoDarwin) {
+				assert.Equal(t, "eu-west-us", data.RegionAzure)
+				assert.Equal(t, "1", data.AzureAvailabilityZone)
+				assert.Equal(t, "1234", data.AzureSubscriptionID)
+			},
+		},
+	}
+
+	hip := HostinfoPlugin{
+		readDataFromCmd: func(cmd string, args ...string) (string, error) {
+			return "", errors.New("error")
+		},
+		HostInfo: &HostInfoMock{},
+	}
+
+	for _, tt := range testCases {
+		t.Run("", func(t *testing.T) {
+			hip.HostInfo = &HostInfoMock{
+				getHostInfo:      tt.mockedGetHostInfo,
+				getCloudHostType: tt.mockedGetCloudHostType,
+			}
+			actual := hip.gatherHostinfo(testing2.NewMockAgent())
+			tt.assertions(actual)
+		})
+	}
+
 }

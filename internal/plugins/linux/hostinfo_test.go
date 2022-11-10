@@ -6,6 +6,7 @@
 package linux
 
 import (
+	"github.com/newrelic/infrastructure-agent/internal/plugins/common"
 	"io/ioutil"
 	"os"
 	"regexp"
@@ -43,7 +44,8 @@ func (s *HostinfoSuite) SetUpTest(c *C) {
 
 func (s *HostinfoSuite) NewPlugin(c *C) *HostinfoPlugin {
 	cloudDetector := cloud.NewDetector(true, 0, 0, 0, false)
-	v := NewHostinfoPlugin(s.agent, cloudDetector)
+	v := NewHostinfoPlugin(s.agent, common.NewHostInfoCommon("test", true, cloudDetector))
+
 	plugin, ok := v.(*HostinfoPlugin)
 	c.Assert(ok, Equals, true)
 	go plugin.Run()
@@ -73,7 +75,7 @@ func (s *HostinfoSuite) TestGetDistro(c *C) {
 
 	cloudDetector := cloud.NewDetector(true, 0, 0, 0, false)
 
-	v := NewHostinfoPlugin(s.agent, cloudDetector)
+	v := NewHostinfoPlugin(s.agent, common.NewHostInfoCommon("test", true, cloudDetector))
 	plugin, ok := v.(*HostinfoPlugin)
 	c.Assert(ok, Equals, true)
 	data := plugin.Data()

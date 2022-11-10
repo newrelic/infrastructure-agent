@@ -4,6 +4,7 @@
 package common
 
 import (
+	"errors"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -67,7 +68,7 @@ func (f *fakeHarvester) GetHarvester() (cloud.Harvester, error) {
 	return f, nil
 }
 
-func TestGetCloudData(t *testing.T) {
+func TestGetHostInfo(t *testing.T) {
 	testCases := []struct {
 		name       string
 		assertions func(data *HostInfoData)
@@ -80,6 +81,8 @@ func TestGetCloudData(t *testing.T) {
 				assert.Equal(t, "", d.RegionAzure)
 				assert.Equal(t, "", d.RegionGCP)
 				assert.Equal(t, "", d.RegionAlibaba)
+				assert.Equal(t, "system", d.System)
+				assert.Equal(t, "Infrastructure", d.AgentName)
 			},
 			setMock: func(h *fakeHarvester) {
 				h.On("GetCloudType").Return(cloud.TypeNoCloud)
@@ -95,6 +98,8 @@ func TestGetCloudData(t *testing.T) {
 				assert.Equal(t, "", d.RegionAzure)
 				assert.Equal(t, "", d.RegionGCP)
 				assert.Equal(t, "", d.RegionAlibaba)
+				assert.Equal(t, "system", d.System)
+				assert.Equal(t, "Infrastructure", d.AgentName)
 			},
 			setMock: func(h *fakeHarvester) {
 				h.On("GetCloudType").Return(cloud.TypeAWS)
@@ -153,11 +158,69 @@ func TestGetCloudData(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			h := new(fakeHarvester)
 			testCase.setMock(h)
-			data := &HostInfoData{}
-			cloudData, err := GetCloudData(h)
+			hostInfo := NewHostInfoCommon("test", true, h)
+			data, err := hostInfo.GetHostInfo()
 			assert.NoError(t, err)
-			data.CloudData = cloudData
-			testCase.assertions(data)
+			testCase.assertions(&data)
+			h.AssertExpectations(t)
+		})
+	}
+}
+
+func TestGetCloudHostType(t *testing.T) {
+	testCases := []struct {
+		name       string
+		assertions func(string, error)
+		setMock    func(*fakeHarvester)
+	}{
+		{
+			name: "no cloud",
+			assertions: func(tp string, err error) {
+				assert.Equal(t, "unknown", tp)
+				assert.ErrorIs(t, ErrNoCloudHostTypeNotAvailable, err)
+			},
+			setMock: func(h *fakeHarvester) {
+				h.On("GetCloudType").Return(cloud.TypeNoCloud)
+			},
+		},
+		{
+			name: "cloud aws",
+			assertions: func(tp string, err error) {
+				assert.Equal(t, "t2.small", tp)
+				assert.NoError(t, err)
+			}, setMock: func(h *fakeHarvester) {
+				h.On("GetCloudType").Return(cloud.TypeAWS)
+				h.On("GetHostType").Return("t2.small", nil)
+			},
+		},
+		{
+			name: "cloud azure",
+			assertions: func(tp string, err error) {
+				assert.Equal(t, "Standard_DS2", tp)
+				assert.NoError(t, err)
+			}, setMock: func(h *fakeHarvester) {
+				h.On("GetCloudType").Return(cloud.TypeAzure)
+				h.On("GetHostType").Return("Standard_DS2", nil)
+			},
+		},
+		{
+			name: "cloud error",
+			assertions: func(tp string, err error) {
+				assert.Equal(t, "unknown", tp)
+				assert.Error(t, err)
+			}, setMock: func(h *fakeHarvester) {
+				h.On("GetCloudType").Return(cloud.TypeAzure)
+				h.On("GetHostType").Return("", errors.New("endpoint not available"))
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			h := new(fakeHarvester)
+			testCase.setMock(h)
+			hostInfo := NewHostInfoCommon("test", true, h)
+			testCase.assertions(hostInfo.GetCloudHostType())
 			h.AssertExpectations(t)
 		})
 	}

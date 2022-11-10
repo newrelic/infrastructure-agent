@@ -81,8 +81,8 @@ func getAzureCloudData(cloudHarvester cloud.Harvester) (azureData AzureCloudData
 	return
 }
 
-// GetCloudData will populate a CloudData structure depending on the cloud type.
-func GetCloudData(cloudHarvester cloud.Harvester) (cloudData CloudData, err error) {
+// getCloudData will populate a CloudData structure depending on the cloud type.
+func getCloudData(cloudHarvester cloud.Harvester) (cloudData CloudData, err error) {
 	switch cloudHarvester.GetCloudType() {
 	case cloud.TypeAWS:
 		cloudData.AwsCloudData, err = getAWSCloudData(cloudHarvester)
