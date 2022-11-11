@@ -509,13 +509,6 @@ func provisionDockerCanaries(cnf canaryConf, previous bool) error {
 	provisionOpts := newProvisionOptions()[OptionInstallDocker]
 	playbookArguments := []string{
 		"-e", "nr_license_key=" + cnf.license,
-		//"-e", "enable_process_metrics=true",
-		//"-e", "nria_log_level=debug",
-		//"-e", "nria_log_forward=true",
-		//"-e", "nria_log_rotation_mb=500",
-		//"-e", "nria_log_rotation_max_files=5",
-		//"-e", "nria_log_rotation_compressed=true",
-
 		"-e", "current_or_previous=" + currentOrPrevious,
 		"-e", "target_agent_version=" + agentVersion,
 		"-f", strconv.Itoa(cnf.ansibleForks),
