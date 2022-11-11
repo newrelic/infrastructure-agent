@@ -34,7 +34,7 @@ func TestHostInfoLinux(t *testing.T) {
 
 	cloudDetector := cloud.NewDetector(true, 0, 0, 0, false)
 	a.RegisterPlugin(pluginsLinux.NewHostinfoPlugin(a.Context,
-		common.NewHostInfoCommon(a.Context.Version(), a.Context.Config().DisableCloudMetadata, cloudDetector)))
+		common.NewHostInfoCommon(a.Context.Version(), !a.Context.Config().DisableCloudMetadata, cloudDetector)))
 	go a.Run()
 
 	var req http.Request

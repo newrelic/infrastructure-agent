@@ -18,8 +18,8 @@ type HostInfo interface {
 }
 
 type HostInfoCommon struct {
-	cloudMetadata bool
-	agentVersion  string
+	cloudMonitoring bool
+	agentVersion    string
 	cloud.Harvester
 }
 
@@ -45,9 +45,10 @@ type HostInfoData struct {
 	CloudData `mapstructure:",squash"`
 }
 
-func NewHostInfoCommon(agentVersion string, enableCloud bool, cloudHarvester cloud.Harvester) *HostInfoCommon {
+// NewHostInfoCommon return a new HostInfoCommon structure that implements HostInfo.
+func NewHostInfoCommon(agentVersion string, enableCloudMonitoring bool, cloudHarvester cloud.Harvester) *HostInfoCommon {
 	return &HostInfoCommon{
-		enableCloud,
+		enableCloudMonitoring,
 		agentVersion,
 		cloudHarvester,
 	}
@@ -58,7 +59,7 @@ func (h *HostInfoCommon) GetHostInfo() (HostInfoData, error) {
 	var cloudInfo CloudData
 	var err error
 
-	if h.cloudMetadata {
+	if h.cloudMonitoring {
 		cloudInfo, err = getCloudData(h)
 		if err != nil {
 			return HostInfoData{}, err
@@ -77,7 +78,7 @@ func (h *HostInfoCommon) GetHostInfo() (HostInfoData, error) {
 func (h *HostInfoCommon) GetCloudHostType() (string, error) {
 	hostType := "unknown"
 
-	if !h.cloudMetadata ||
+	if !h.cloudMonitoring ||
 		h.GetCloudType() == cloud.TypeNoCloud ||
 		h.GetCloudType() == cloud.TypeInProgress {
 		return hostType, ErrNoCloudHostTypeNotAvailable

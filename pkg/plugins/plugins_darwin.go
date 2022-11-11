@@ -17,7 +17,7 @@ import (
 
 func RegisterPlugins(a *agent.Agent) error {
 	a.RegisterPlugin(darwin.NewHostinfoPlugin(a.Context,
-		common.NewHostInfoCommon(a.Context.Version(), a.Context.Config().DisableCloudMetadata, a.GetCloudHarvester())))
+		common.NewHostInfoCommon(a.Context.Version(), !a.Context.Config().DisableCloudMetadata, a.GetCloudHarvester())))
 	a.RegisterPlugin(NewHostAliasesPlugin(a.Context, a.GetCloudHarvester()))
 	config := a.Context.Config()
 

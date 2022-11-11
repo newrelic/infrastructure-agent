@@ -48,7 +48,7 @@ func RegisterPlugins(agent *agnt.Agent) error {
 
 	// Enabling the hostinfo plugin will make the host appear in the UI
 	agent.RegisterPlugin(pluginsLinux.NewHostinfoPlugin(agent.Context,
-		common.NewHostInfoCommon(agent.Context.Version(), agent.Context.Config().DisableCloudMetadata, agent.GetCloudHarvester())))
+		common.NewHostInfoCommon(agent.Context.Version(), !agent.Context.Config().DisableCloudMetadata, agent.GetCloudHarvester())))
 
 	agent.RegisterPlugin(NewHostAliasesPlugin(agent.Context, agent.GetCloudHarvester()))
 	agent.RegisterPlugin(NewAgentConfigPlugin(ids.PluginID{"metadata", "agent_config"}, agent.Context))
