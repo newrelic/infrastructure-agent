@@ -24,3 +24,15 @@ func configOverride(cfg *Config) {
 		clog.WithError(err).Error("unable to interpret environment variables")
 	}
 }
+
+func loadDefaultLogRotation() LogRotateConfig {
+	intPtr := func(a int) *int {
+		return &a
+	}
+	return LogRotateConfig{
+		MaxSizeMb:          intPtr(0),
+		MaxFiles:           0,
+		CompressionEnabled: false,
+		FilePattern:        "",
+	}
+}
