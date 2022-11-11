@@ -1,0 +1,10 @@
+---
+
+- name: install docker
+  include: "install-docker-{{ ansible_distribution }}.yaml"
+
+- name: ensure docker service is started
+  ansible.builtin.service:
+    name: docker
+    state: started
+...

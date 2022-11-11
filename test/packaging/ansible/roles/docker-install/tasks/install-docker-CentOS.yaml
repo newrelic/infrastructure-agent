@@ -1,0 +1,52 @@
+---
+
+- name: remove old versions of docker
+  yum:
+    name:
+      - docker
+      - docker-client
+      - docker-client-latest
+      - docker-common
+      - docker-latest
+      - docker-latest-logrotate
+      - docker-logrotate
+      - docker-engine
+    state: absent
+
+- name: install yum-utils
+  yum:
+    name: yum-utils
+    state: present
+    update_cache: yes
+
+- name: ensure centos extras repository is deleted
+  ansible.builtin.file:
+    path: /etc/yum.repos.d/centos-extras.repo
+    state: absent
+
+- name: add centos extras repo (amd64)
+  copy:
+    src: centos-extras-amd64.repo
+    dest: /etc/yum.repos.d/centos-extras.repo
+  when: ansible_architecture == "x86_64"
+
+- name: add centos extras repo (arm64)
+  copy:
+    src: centos-extras-arm64.repo
+    dest: /etc/yum.repos.d/centos-extras.repo
+  when: ansible_architecture == "aarch64"
+
+- name: add docker repo
+  shell: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+
+- name: install docker
+  yum:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-compose-plugin
+    state: present
+    update_cache: yes
+
+...

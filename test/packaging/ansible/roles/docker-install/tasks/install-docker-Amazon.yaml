@@ -1,0 +1,25 @@
+---
+
+- name: update yum
+  shell: yum update -y
+
+- name: debug
+  debug:
+    msg: "{{ ansible_distribution_major_version }}"
+
+- name: install docker
+  shell: amazon-linux-extras install -y docker
+  when: ansible_distribution_major_version == "2"
+
+- name: install docker
+  yum:
+    name:
+      - docker
+    state: present
+    update_cache: yes
+  when: ansible_distribution_major_version == "2022"
+
+- name: install docker-compose (manual)
+  shell: DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker} && mkdir -p $DOCKER_CONFIG/cli-plugins && mkdir -p /usr/local/lib/docker/cli-plugins/ && curl -SL https://github.com/docker/compose/releases/download/v2.12.2/docker-compose-linux-{{ ansible_architecture }} -o $DOCKER_CONFIG/cli-plugins/docker-compose && sudo cp $DOCKER_CONFIG/cli-plugins/docker-compose /usr/local/lib/docker/cli-plugins/docker-compose && sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+...

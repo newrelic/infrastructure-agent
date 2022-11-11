@@ -1,0 +1,22 @@
+---
+
+- hosts: testing_hosts_linux
+  become: true
+  gather_facts: yes
+
+  tasks:
+      - name: Provision docker canaries
+        vars:
+          agent_user: root
+          env_vars:
+
+        block:
+          - name: check and install docker
+            include_role:
+              name: docker-install
+
+          - name: provision docker containers
+            include_role:
+              name: agent-dockerized
+
+...

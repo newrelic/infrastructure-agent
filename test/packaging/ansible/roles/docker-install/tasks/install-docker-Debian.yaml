@@ -1,0 +1,56 @@
+---
+
+- name: remove old docker versions
+  apt:
+    name:
+      - docker
+      - docker-engine
+      - docker.io
+      - containerd
+      - runc
+    state: absent
+
+- name: install tools to verify certificate
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    state: present
+
+- name: add gpg key
+  shell: curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --yes --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+- name: add docker repo (amd64)
+  shell: echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  when: ansible_architecture == "x86_64"
+
+- name: add docker repo(arm64)
+  shell: echo "deb [arch=arm64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  when: ansible_architecture == "aarch64"
+
+- name: install docker
+  apt:
+    name:
+      - docker-ce
+    state: present
+    update_cache: yes
+    allow_unauthenticated: yes
+  when: ansible_distribution_major_version == "8"
+
+- name: install docker
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+    state: present
+    update_cache: yes
+  when: ansible_distribution_major_version != "8"
+
+- name: install docker-compose (manual)
+  shell: DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker} && mkdir -p $DOCKER_CONFIG/cli-plugins && mkdir -p /usr/local/lib/docker/cli-plugins/ && curl -SL https://github.com/docker/compose/releases/download/v2.12.2/docker-compose-linux-{{ ansible_architecture }} -o $DOCKER_CONFIG/cli-plugins/docker-compose && sudo cp $DOCKER_CONFIG/cli-plugins/docker-compose /usr/local/lib/docker/cli-plugins/docker-compose && sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+...

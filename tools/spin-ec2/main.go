@@ -351,6 +351,18 @@ func provisionCanaries(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
+		cnf.agentVersion = cnf.agentVersion[1:]
+		err = provisionLinuxDockerCanaries(cnf, false)
+		if err != nil {
+			return err
+		}
+
+		previousVersion, err := latestRelease()
+		cnf.agentVersion = previousVersion
+		err = provisionLinuxDockerCanaries(cnf, true)
+		if err != nil {
+			return err
+		}
 	}
 
 	if cnf.shouldProvisionMacos() {
@@ -459,6 +471,72 @@ func provisionLinuxCanaries(cnf canaryConf) error {
 
 	return provisionEphimeralCanaries(cnf)
 }
+func provisionLinuxDockerCanaries(cnf canaryConf, previous bool) error {
+	ansibleGroupVars, err := readAnsibleGroupVars()
+	if err != nil {
+		return err
+	}
+
+	opts, err := generateOptions(ansibleGroupVars.InstancesLinux())
+	if err != nil {
+		return err
+	}
+
+	prepareAnsibleConfig(opts, fmt.Sprintf("%s:%s", cnf.prefix, cnf.agentVersion))
+	// ansible password is not needed for linux
+	cnf.ansiblePassword = ""
+
+	return provisionDockerCanaries(cnf, previous)
+}
+
+func provisionDockerCanaries(cnf canaryConf, previous bool) error {
+	// reuse infra from the prev linux provision (can be changed later)
+
+	curPath, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	currentOrPrevious := "current"
+
+	agentVersion := cnf.agentVersion + "-rc"
+
+	if previous {
+		currentOrPrevious = "previous"
+		agentVersion = cnf.agentVersion // no '-rc' for previous
+	}
+
+	provisionOpts := newProvisionOptions()[OptionInstallDocker]
+	playbookArguments := []string{
+		"-e", "nr_license_key=" + cnf.license,
+		"-e", "current_or_previous=" + currentOrPrevious,
+		"-e", "target_agent_version=" + agentVersion,
+		"-f", strconv.Itoa(cnf.ansibleForks),
+		"-i", path.Join(curPath, inventoryProvisioned),
+	}
+	if cnf.repo != "" {
+		playbookArguments = append(playbookArguments, "-e", "repo_endpoint="+cnf.repo)
+	}
+	if cnf.ansiblePassword != "" {
+		playbookArguments = append(playbookArguments, "-e", "ansible_password="+cnf.ansiblePassword)
+	}
+	if cnf.macstadiumUser != "" {
+		playbookArguments = append(playbookArguments, "-e", "macstadium_user="+cnf.macstadiumUser)
+	}
+	if cnf.macstadiumPass != "" {
+		playbookArguments = append(playbookArguments, "-e", "macstadium_pass="+cnf.macstadiumPass)
+	}
+
+	if provisionOpts.renderArgs() != "" {
+		playbookArguments = append(playbookArguments, provisionOpts.renderArgs())
+	}
+
+	playbookArguments = append(playbookArguments, path.Join(curPath, provisionOpts.playbook))
+
+	execNameArgs("ansible-playbook", playbookArguments...)
+
+	return nil
+}
 
 func provisionEphimeralCanaries(cnf canaryConf) error {
 	curPath, err := os.Getwd()
@@ -533,8 +611,8 @@ func pruneCanaries(cmd *cobra.Command, args []string) error {
 	return terminateInstances(idsToTerminate, instances, dryRun)
 }
 
-// pruneCanaries removes all aws instances except the
-// ones that have the latest 2 version of infra-agent installed.
+// previousCanaryVersion returned previous version of canaries
+// based on ec2 instances.
 func previousCanaryVersion(cmd *cobra.Command, args []string) error {
 	instances, err := getAWSInstances(hostPrefix + ":v")
 	if err != nil {

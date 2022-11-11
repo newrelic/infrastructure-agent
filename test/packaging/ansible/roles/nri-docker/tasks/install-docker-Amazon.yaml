@@ -5,5 +5,14 @@
 
 - name: install docker
   shell: amazon-linux-extras install -y docker
+  when: ansible_distribution_major_version == "2"
+
+- name: install docker
+  yum:
+    name:
+      - docker
+    state: present
+    update_cache: yes
+  when: ansible_distribution_major_version == "2022"
 
 ...
