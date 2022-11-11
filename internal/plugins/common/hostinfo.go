@@ -87,5 +87,6 @@ func (h *HostInfoCommon) GetCloudHostType() (string, error) {
 	if err != nil {
 		return hostType, err
 	}
+
 	return response, err
 }
