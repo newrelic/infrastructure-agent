@@ -6,15 +6,12 @@
 package darwin
 
 import (
+	"github.com/newrelic/infrastructure-agent/internal/plugins/common"
+	testing2 "github.com/newrelic/infrastructure-agent/internal/plugins/testing"
 	"testing"
 
-	"github.com/newrelic/infrastructure-agent/internal/agent"
-	testing2 "github.com/newrelic/infrastructure-agent/internal/plugins/testing"
-	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
-	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestGetKernelRelease_Success(t *testing.T) {
@@ -123,157 +120,80 @@ func TestValidateHardwareUUID(t *testing.T) {
 	}
 }
 
-type fakeHarvester struct {
-	mock.Mock
+type HostInfoMock struct {
+	getHostInfo      func() (common.HostInfoData, error)
+	getCloudHostType func() (string, error)
 }
 
-// GetInstanceID will return the id of the cloud instance.
-func (f *fakeHarvester) GetInstanceID() (string, error) {
-	args := f.Called()
-	return args.String(0), args.Error(1)
+func (h *HostInfoMock) GetHostInfo() (common.HostInfoData, error) {
+	return h.getHostInfo()
+
 }
 
-// GetHostType will return the cloud instance type.
-func (f *fakeHarvester) GetHostType() (string, error) {
-	args := f.Called()
-	return args.String(0), args.Error(1)
+func (h *HostInfoMock) GetCloudHostType() (string, error) {
+	return h.getCloudHostType()
 }
 
-// GetCloudType will return the cloud type on which the instance is running.
-func (f *fakeHarvester) GetCloudType() cloud.Type {
-	args := f.Called()
-	return args.Get(0).(cloud.Type)
-}
-
-// Returns a string key which will be used as a HostSource (see host_aliases plugin).
-func (f *fakeHarvester) GetCloudSource() string {
-	args := f.Called()
-	return args.String(0)
-}
-
-// GetRegion returns the cloud region
-func (f *fakeHarvester) GetRegion() (string, error) {
-	args := f.Called()
-	return args.String(0), args.Error(1)
-}
-
-// GetZone returns the cloud zone (availability zone)
-func (f *fakeHarvester) GetZone() (string, error) {
-	args := f.Called()
-	return args.String(0), args.Error(1)
-}
-
-// GetAccount returns the cloud account ID
-func (f *fakeHarvester) GetAccountID() (string, error) {
-	args := f.Called()
-	return args.String(0), args.Error(1)
-}
-
-// GetImageID returns the cloud instance ID
-func (f *fakeHarvester) GetInstanceImageID() (string, error) {
-	args := f.Called()
-	return args.String(0), args.Error(1)
-}
-
-// GetHarvester returns instance of the Harvester detected (or instance of themselves)
-func (f *fakeHarvester) GetHarvester() (cloud.Harvester, error) {
-	return f, nil
-}
-
-func TestHostinfoPluginSetCloudRegion(t *testing.T) {
-	testCases := []struct {
-		name       string
-		assertions func(*HostInfoData)
-		setMock    func(*fakeHarvester)
+func TestGatherHostInfoCloud(t *testing.T) {
+	var testCases = []struct {
+		mockedGetHostInfo      func() (common.HostInfoData, error)
+		mockedGetCloudHostType func() (string, error)
+		assertions             func(data *HostInfoDarwin)
 	}{
 		{
-			name: "no cloud",
-			assertions: func(d *HostInfoData) {
-				assert.Equal(t, "", d.RegionAWS)
-				assert.Equal(t, "", d.RegionAzure)
-				assert.Equal(t, "", d.RegionGCP)
-				assert.Equal(t, "", d.RegionAlibaba)
+			mockedGetHostInfo: func() (common.HostInfoData, error) {
+				data := common.HostInfoData{}
+				data.RegionAWS = "eu-west-us"
+				data.AWSImageID = "ubuntu"
+				data.AWSAccountID = "000"
+				data.AWSAvailabilityZone = "3"
+				return data, nil
 			},
-			setMock: func(h *fakeHarvester) {
-				h.On("GetCloudType").Return(cloud.TypeNoCloud)
+			mockedGetCloudHostType: func() (string, error) {
+				return "", nil
 			},
-		},
-		{
-			name: "cloud aws",
-			assertions: func(d *HostInfoData) {
-				assert.Equal(t, "us-east-1", d.RegionAWS)
-				assert.Equal(t, "us-east-1a", d.AWSAvailabilityZone)
-				assert.Equal(t, "ami-12345", d.AWSImageID)
-				assert.Equal(t, "x123", d.AWSAccountID)
-				assert.Equal(t, "", d.RegionAzure)
-				assert.Equal(t, "", d.RegionGCP)
-				assert.Equal(t, "", d.RegionAlibaba)
-			},
-			setMock: func(h *fakeHarvester) {
-				h.On("GetCloudType").Return(cloud.TypeAWS)
-				h.On("GetRegion").Return("us-east-1", nil)
-				h.On("GetZone").Return("us-east-1a", nil)
-				h.On("GetInstanceImageID").Return("ami-12345", nil)
-				h.On("GetAccountID").Return("x123", nil)
+			assertions: func(data *HostInfoDarwin) {
+				assert.Equal(t, "eu-west-us", data.RegionAWS)
+				assert.Equal(t, "ubuntu", data.AWSImageID)
+				assert.Equal(t, "000", data.AWSAccountID)
+				assert.Equal(t, "3", data.AWSAvailabilityZone)
 			},
 		},
 		{
-			name: "cloud azure",
-			assertions: func(d *HostInfoData) {
-				assert.Equal(t, "", d.RegionAWS)
-				assert.Equal(t, "us-east-1", d.RegionAzure)
-				assert.Equal(t, "", d.RegionGCP)
-				assert.Equal(t, "", d.RegionAlibaba)
+			mockedGetHostInfo: func() (common.HostInfoData, error) {
+				data := common.HostInfoData{}
+				data.RegionAzure = "eu-west-us"
+				data.AzureSubscriptionID = "1234"
+				data.AzureAvailabilityZone = "1"
+				return data, nil
 			},
-			setMock: func(h *fakeHarvester) {
-				h.On("GetCloudType").Return(cloud.TypeAzure)
-				h.On("GetRegion").Return("us-east-1", nil)
+			mockedGetCloudHostType: func() (string, error) {
+				return "", nil
 			},
-		},
-		{
-			name: "cloud gcp",
-			assertions: func(d *HostInfoData) {
-				assert.Equal(t, "", d.RegionAWS)
-				assert.Equal(t, "", d.RegionAzure)
-				assert.Equal(t, "us-east-1", d.RegionGCP)
-				assert.Equal(t, "", d.RegionAlibaba)
-			},
-			setMock: func(h *fakeHarvester) {
-				h.On("GetCloudType").Return(cloud.TypeGCP)
-				h.On("GetRegion").Return("us-east-1", nil)
-			},
-		},
-		{
-			name: "cloud alibaba",
-			assertions: func(d *HostInfoData) {
-				assert.Equal(t, "", d.RegionAWS)
-				assert.Equal(t, "", d.RegionAzure)
-				assert.Equal(t, "", d.RegionGCP)
-				assert.Equal(t, "us-east-1", d.RegionAlibaba)
-			},
-			setMock: func(h *fakeHarvester) {
-				h.On("GetCloudType").Return(cloud.TypeAlibaba)
-				h.On("GetRegion").Return("us-east-1", nil)
+			assertions: func(data *HostInfoDarwin) {
+				assert.Equal(t, "eu-west-us", data.RegionAzure)
+				assert.Equal(t, "1", data.AzureAvailabilityZone)
+				assert.Equal(t, "1234", data.AzureSubscriptionID)
 			},
 		},
 	}
 
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			h := new(fakeHarvester)
-			testCase.setMock(h)
-			data := &HostInfoData{}
-			p := &HostinfoPlugin{
-				PluginCommon: agent.PluginCommon{
-					ID:      ids.HostInfo,
-					Context: testing2.NewMockAgent(),
-				},
-				cloudHarvester: h,
+	hip := HostinfoPlugin{
+		readDataFromCmd: func(cmd string, args ...string) (string, error) {
+			return "", errors.New("error")
+		},
+		HostInfo: &HostInfoMock{},
+	}
+
+	for _, tt := range testCases {
+		t.Run("", func(t *testing.T) {
+			hip.HostInfo = &HostInfoMock{
+				getHostInfo:      tt.mockedGetHostInfo,
+				getCloudHostType: tt.mockedGetCloudHostType,
 			}
-			_ = p.setCloudRegion(data)
-			_ = p.setCloudMetadata(data)
-			testCase.assertions(data)
-			h.AssertExpectations(t)
+			actual := hip.gatherHostinfo(testing2.NewMockAgent())
+			tt.assertions(actual)
 		})
 	}
+
 }

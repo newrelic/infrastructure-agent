@@ -10,9 +10,11 @@ import (
 	"testing"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
+	"github.com/newrelic/infrastructure-agent/internal/plugins/common"
 	testing2 "github.com/newrelic/infrastructure-agent/internal/plugins/testing"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
+
 	"gotest.tools/assert"
 )
 
@@ -24,7 +26,7 @@ func TestData(t *testing.T) {
 		name                 string
 		unameOutput          string
 		systemProfilerOutput string
-		expectedData         HostInfoData
+		expectedData         HostInfoDarwin
 	}{
 		{
 			name:        "Arm arch output",
@@ -45,21 +47,23 @@ func TestData(t *testing.T) {
       Provisioning UDID: 00006000-000000000C1A801E
       Activation Lock Status: Disabled
 `,
-			expectedData: HostInfoData{
-				System:          "system",
-				Distro:          "macOS 11.2.3",
-				KernelVersion:   "21.6.0",
-				HostType:        "MacBook Pro MacBookPro18,4",
-				CpuName:         "Apple M1 Max",
-				CpuNum:          "10",
-				TotalCpu:        "10",
-				Ram:             "67108864 kB",
-				UpSince:         "2021-07-01 09:59:30",
-				AgentVersion:    "mock",
-				AgentName:       "Infrastructure",
-				AgentMode:       "root",
-				OperatingSystem: "macOS",
-				ProductUuid:     "E62094F3-9A33-5555-5555-F4C3A1E16AC5",
+			expectedData: HostInfoDarwin{
+				HostInfoData: common.HostInfoData{
+					System:          "system",
+					HostType:        "MacBook Pro MacBookPro18,4",
+					CpuName:         "Apple M1 Max",
+					CpuNum:          "10",
+					TotalCpu:        "10",
+					Ram:             "67108864 kB",
+					UpSince:         "2021-07-01 09:59:30",
+					AgentVersion:    "mock",
+					AgentName:       "Infrastructure",
+					OperatingSystem: "macOS",
+				},
+				Distro:        "macOS 11.2.3",
+				KernelVersion: "21.6.0",
+				AgentMode:     "root",
+				ProductUuid:   "E62094F3-9A33-5555-5555-F4C3A1E16AC5",
 			},
 		},
 	}
@@ -82,14 +86,13 @@ func TestData(t *testing.T) {
 
 					return ``, ErrUnknownCommand
 				},
-
-				cloudHarvester: cloud.NewDetector(true, 0, 0, 0, true),
+				HostInfo: common.NewHostInfoCommon("test", true, cloud.NewDetector(true, 0, 0, 0, true)),
 			}
 			hip.Context.Config().DisableCloudMetadata = true
 			hip.Context.Config().RunMode = "root"
 			// Some values (distro, upSince) are being read from the host, so commented until fix those (out of scope in this task)
 			// assert.Equal(t, expected, hip.Data()[0])
-			data, ok := hip.Data()[0].(*HostInfoData)
+			data, ok := hip.Data()[0].(*HostInfoDarwin)
 			assert.Equal(t, true, ok)
 
 			assert.Equal(t, tt.expectedData.System, data.System)

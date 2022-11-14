@@ -10,9 +10,11 @@ import (
 	"testing"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
+	"github.com/newrelic/infrastructure-agent/internal/plugins/common"
 	testing2 "github.com/newrelic/infrastructure-agent/internal/plugins/testing"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
+
 	"gotest.tools/assert"
 )
 
@@ -24,7 +26,7 @@ func TestData(t *testing.T) {
 		name                 string
 		unameOutput          string
 		systemProfilerOutput string
-		expectedData         HostInfoData
+		expectedData         HostInfoDarwin
 	}{
 		{
 			name:        "Intel arch output",
@@ -47,21 +49,23 @@ func TestData(t *testing.T) {
       Serial Number (system): abcd
       Hardware UUID: C3805006-DFCF-11EB-BA80-0242AC130004
 `,
-			expectedData: HostInfoData{
-				System:          "system",
-				Distro:          "macOS 11.2.3",
-				KernelVersion:   "20.3.0",
-				HostType:        "MacBook Pro MacBookPro15,1",
-				CpuName:         "6-Core Intel Core i7 @ 2.6 GHz",
-				CpuNum:          "6",
-				TotalCpu:        "6",
-				Ram:             "16777216 kB",
-				UpSince:         "2021-07-01 09:59:30",
-				AgentVersion:    "mock",
-				AgentName:       "Infrastructure",
-				AgentMode:       "root",
-				OperatingSystem: "macOS",
-				ProductUuid:     "C3805006-DFCF-11EB-BA80-0242AC130004",
+			expectedData: HostInfoDarwin{
+				HostInfoData: common.HostInfoData{
+					System:          "system",
+					HostType:        "MacBook Pro MacBookPro15,1",
+					CpuName:         "6-Core Intel Core i7 @ 2.6 GHz",
+					CpuNum:          "6",
+					TotalCpu:        "6",
+					Ram:             "16777216 kB",
+					UpSince:         "2021-07-01 09:59:30",
+					AgentVersion:    "mock",
+					AgentName:       "Infrastructure",
+					OperatingSystem: "macOS",
+				},
+				Distro:        "macOS 11.2.3",
+				KernelVersion: "20.3.0",
+				AgentMode:     "root",
+				ProductUuid:   "C3805006-DFCF-11EB-BA80-0242AC130004",
 			},
 		},
 	}
@@ -84,14 +88,13 @@ func TestData(t *testing.T) {
 
 					return ``, ErrUnknownCommand
 				},
-
-				cloudHarvester: cloud.NewDetector(true, 0, 0, 0, true),
+				HostInfo: common.NewHostInfoCommon("test", true, cloud.NewDetector(true, 0, 0, 0, true)),
 			}
 			hip.Context.Config().DisableCloudMetadata = true
 			hip.Context.Config().RunMode = "root"
 			// Some values (distro, upSince) are being read from the host, so commented until fix those (out of scope in this task)
 			// assert.Equal(t, expected, hip.Data()[0])
-			data, ok := hip.Data()[0].(*HostInfoData)
+			data, ok := hip.Data()[0].(*HostInfoDarwin)
 			assert.Equal(t, true, ok)
 
 			assert.Equal(t, tt.expectedData.System, data.System)

@@ -6,6 +6,7 @@
 package harvest
 
 import (
+	"github.com/newrelic/infrastructure-agent/internal/plugins/common"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"net/http"
 	"testing"
@@ -22,7 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHostinfoData(t *testing.T) {
+func TestHostInfoLinux(t *testing.T) {
 	const timeout = 5 * time.Second
 
 	testClient := ihttp.NewRequestRecorderClient()
@@ -32,7 +33,8 @@ func TestHostinfoData(t *testing.T) {
 	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
 	cloudDetector := cloud.NewDetector(true, 0, 0, 0, false)
-	a.RegisterPlugin(pluginsLinux.NewHostinfoPlugin(a.Context, cloudDetector))
+	a.RegisterPlugin(pluginsLinux.NewHostinfoPlugin(a.Context,
+		common.NewHostInfoCommon(a.Context.Version(), !a.Context.Config().DisableCloudMetadata, cloudDetector)))
 	go a.Run()
 
 	var req http.Request

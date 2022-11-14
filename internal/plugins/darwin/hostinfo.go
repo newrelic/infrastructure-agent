@@ -6,6 +6,7 @@
 package darwin
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -14,11 +15,11 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/os/distro"
+	"github.com/newrelic/infrastructure-agent/internal/plugins/common"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
-	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/sirupsen/logrus"
 )
@@ -31,51 +32,32 @@ var (
 // HostinfoPlugin returns metadata of the host.
 type HostinfoPlugin struct {
 	agent.PluginCommon
-	cloudHarvester cloud.Harvester // Gather metadata for the cloud instance.
+	common.HostInfo
 
 	readDataFromCmd func(cmd string, args ...string) (string, error)
 }
 
-// HostInfoData is the structure returned to the backend by HostinfoPlugin.
-type HostInfoData struct {
-	System        string `json:"id"`
+// HostInfoDarwin is the structure returned to the backend by HostinfoPlugin.
+type HostInfoDarwin struct {
 	Distro        string `json:"distro"`
 	KernelVersion string `json:"kernel_version"`
-	HostType      string `json:"host_type"`
-	CpuName       string `json:"cpu_name"`
-	// Number of cores within a single CPU
-	// It is shown as 'coreCount' in New Relic UI
-	CpuNum string `json:"cpu_num"`
-	// Total number of cores in all the CPUs
-	// It is shown as 'processorCount' in New Relic UI
-	TotalCpu            string `json:"total_cpu"`
-	Ram                 string `json:"ram"`
-	UpSince             string `json:"boot_timestamp"`
-	AgentVersion        string `json:"agent_version"`
-	AgentName           string `json:"agent_name"`
+
 	AgentMode           string `json:"agent_mode"`
-	OperatingSystem     string `json:"operating_system"`
 	ProductUuid         string `json:"product_uuid"`
-	RegionAWS           string `json:"aws_region,omitempty"`
-	RegionAzure         string `json:"region_name,omitempty"`
-	RegionGCP           string `json:"zone,omitempty"`
-	RegionAlibaba       string `json:"region_id,omitempty"`
-	AWSAccountID        string `json:"aws_account_id,omitempty"`
-	AWSAvailabilityZone string `json:"aws_availability_zone,omitempty"`
-	AWSImageID          string `json:"aws_image_id,omitempty"`
+	common.HostInfoData `mapstructure:",squash"`
 }
 
-func (hip *HostInfoData) SortKey() string {
+func (hip *HostInfoDarwin) SortKey() string {
 	return hip.System
 }
 
-func NewHostinfoPlugin(ctx agent.AgentContext, cloudHarvester cloud.Harvester) agent.Plugin {
+func NewHostinfoPlugin(ctx agent.AgentContext, hostInfo common.HostInfo) agent.Plugin {
 	return &HostinfoPlugin{
 		PluginCommon: agent.PluginCommon{
 			ID:      ids.HostInfo,
 			Context: ctx,
 		},
-		cloudHarvester: cloudHarvester,
+		HostInfo: hostInfo,
 		readDataFromCmd: func(cmd string, args ...string) (string, error) {
 			return helpers.RunCommand(cmd, "", args...)
 		},
@@ -94,7 +76,7 @@ func (hip *HostinfoPlugin) Data() agent.PluginInventoryDataset {
 	return agent.PluginInventoryDataset{hip.gatherHostinfo(hip.Context)}
 }
 
-func (hip *HostinfoPlugin) gatherHostinfo(context agent.AgentContext) *HostInfoData {
+func (hip *HostinfoPlugin) gatherHostinfo(context agent.AgentContext) *HostInfoDarwin {
 	ho, err := hip.getHardwareOverview()
 	if err != nil {
 		hlog.WithError(err).Error("error reading hardware overview")
@@ -125,58 +107,42 @@ func (hip *HostinfoPlugin) gatherHostinfo(context agent.AgentContext) *HostInfoD
 		cpuName = fmt.Sprintf("%s @ %s", ho.ProcessorName, ho.ProcessorSpeed)
 	}
 
-	data := &HostInfoData{
-		System:          "system",
-		Distro:          distro.GetDistro(),
-		KernelVersion:   kernelVersion,
-		HostType:        hip.getHostType(ho),
-		CpuName:         cpuName,
-		CpuNum:          fmt.Sprintf("%d", cpuNum),
-		TotalCpu:        ho.TotalNumberOfCores,
-		Ram:             ho.Memory,
-		UpSince:         getUpSince(),
-		AgentVersion:    context.Version(),
-		AgentName:       "Infrastructure",
-		AgentMode:       context.Config().RunMode,
-		OperatingSystem: "macOS",
-		ProductUuid:     ho.HardwareUUID,
-	}
-
-	err = hip.setCloudRegion(data)
+	commonHostInfo, err := hip.GetHostInfo()
 	if err != nil {
-		hlog.WithError(err).WithField("cloudType", hip.cloudHarvester.GetCloudType()).Debug(
-			"cloud region couldn't be set")
+		hlog.WithError(err).Error("error fetching host data information")
 	}
 
-	err = hip.setCloudMetadata(data)
-	if err != nil {
-		hlog.WithError(err).WithField("cloudType", hip.cloudHarvester.GetCloudType()).Debug(
-			"cloud metadata couldn't be set")
+	data := &HostInfoDarwin{
+		HostInfoData:  commonHostInfo,
+		Distro:        distro.GetDistro(),
+		KernelVersion: kernelVersion,
+		AgentMode:     context.Config().RunMode,
+		ProductUuid:   ho.HardwareUUID,
 	}
 
-	helpers.LogStructureDetails(hlog, data, "HostInfoData", "raw", nil)
+	// set specific OS fields
+	if data.HostType, err = hip.GetCloudHostType(); err != nil {
+		if errors.Is(err, common.ErrNoCloudHostTypeNotAvailable) {
+			data.HostType = hip.getHostType(ho)
+		} else {
+			hlog.WithError(err).Debug("error getting host type from cloud metadata")
+		}
+	}
+
+	data.CpuName = cpuName
+	data.CpuNum = fmt.Sprintf("%d", cpuNum)
+	data.TotalCpu = ho.TotalNumberOfCores
+	data.Ram = ho.Memory
+	data.UpSince = getUpSince()
+	data.OperatingSystem = "macOS"
+
+	helpers.LogStructureDetails(hlog, data, "HostInfoDarwin", "raw", nil)
 
 	return data
 }
 
 func (hip *HostinfoPlugin) getHostType(ho hardwareOverview) string {
-	hostType := "unknown"
-
-	if hip.Context.Config().DisableCloudMetadata ||
-		hip.cloudHarvester.GetCloudType() == cloud.TypeNoCloud ||
-		hip.cloudHarvester.GetCloudType() == cloud.TypeInProgress {
-
-		hostType = fmt.Sprintf("%s %s", ho.ModelName, ho.ModelIdentifier)
-	}
-
-	if response, err := hip.cloudHarvester.GetHostType(); err != nil {
-		hlog.WithError(err).WithField("cloudType", hip.cloudHarvester.GetCloudType()).Debug(
-			"error getting host type from cloud metadata")
-	} else {
-		hostType = response
-	}
-
-	return hostType
+	return fmt.Sprintf("%s %s", ho.ModelName, ho.ModelIdentifier)
 }
 
 func (hip *HostinfoPlugin) getKernelRelease() (string, error) {
@@ -198,58 +164,6 @@ func getUpSince() string {
 		return ""
 	}
 	return time.Now().Add(time.Second * -time.Duration(info.Uptime)).Format("2006-01-02 15:04:05")
-}
-
-func (hip *HostinfoPlugin) setCloudRegion(data *HostInfoData) (err error) {
-	if hip.Context.Config().DisableCloudMetadata ||
-		hip.cloudHarvester.GetCloudType() == cloud.TypeNoCloud {
-		return
-	}
-
-	region, err := hip.cloudHarvester.GetRegion()
-	if err != nil {
-		return fmt.Errorf("couldn't retrieve cloud region: %v", err)
-	}
-
-	switch hip.cloudHarvester.GetCloudType() {
-	case cloud.TypeAWS:
-		data.RegionAWS = region
-	case cloud.TypeAzure:
-		data.RegionAzure = region
-	case cloud.TypeGCP:
-		data.RegionGCP = region
-	case cloud.TypeAlibaba:
-		data.RegionAlibaba = region
-	default:
-	}
-	return
-}
-
-// Only for AWS cloud instances
-func (self *HostinfoPlugin) setCloudMetadata(data *HostInfoData) (err error) {
-	if self.Context.Config().DisableCloudMetadata ||
-		self.cloudHarvester.GetCloudType() == cloud.TypeNoCloud {
-		return
-	}
-
-	if self.cloudHarvester.GetCloudType() == cloud.TypeAWS {
-		imageID, err := self.cloudHarvester.GetInstanceImageID()
-		if err != nil {
-			return fmt.Errorf("couldn't retrieve cloud image ID: %v", err)
-		}
-		data.AWSImageID = imageID
-		awsAccountID, err := self.cloudHarvester.GetAccountID()
-		if err != nil {
-			return fmt.Errorf("couldn't retrieve cloud account ID: %v", err)
-		}
-		data.AWSAccountID = awsAccountID
-		availabilityZone, err := self.cloudHarvester.GetZone()
-		if err != nil {
-			return fmt.Errorf("couldn't retrieve cloud availability zone: %v", err)
-		}
-		data.AWSAvailabilityZone = availabilityZone
-	}
-	return
 }
 
 // hardwareOverview structure keeps the values extracted from osX system_profiler.

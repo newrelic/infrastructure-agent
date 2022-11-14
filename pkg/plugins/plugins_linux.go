@@ -4,6 +4,7 @@ package plugins
 
 import (
 	agnt "github.com/newrelic/infrastructure-agent/internal/agent"
+	"github.com/newrelic/infrastructure-agent/internal/plugins/common"
 	pluginsLinux "github.com/newrelic/infrastructure-agent/internal/plugins/linux"
 	config2 "github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
@@ -46,7 +47,9 @@ func RegisterPlugins(agent *agnt.Agent) error {
 	agent.RegisterPlugin(NewCustomAttrsPlugin(agent.Context))
 
 	// Enabling the hostinfo plugin will make the host appear in the UI
-	agent.RegisterPlugin(pluginsLinux.NewHostinfoPlugin(agent.Context, agent.GetCloudHarvester()))
+	agent.RegisterPlugin(pluginsLinux.NewHostinfoPlugin(agent.Context,
+		common.NewHostInfoCommon(agent.Context.Version(), !agent.Context.Config().DisableCloudMetadata, agent.GetCloudHarvester())))
+
 	agent.RegisterPlugin(NewHostAliasesPlugin(agent.Context, agent.GetCloudHarvester()))
 	agent.RegisterPlugin(NewAgentConfigPlugin(ids.PluginID{"metadata", "agent_config"}, agent.Context))
 	if config.ProxyConfigPlugin {

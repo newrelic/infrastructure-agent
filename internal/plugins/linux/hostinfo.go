@@ -7,7 +7,9 @@ package linux
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/plugins/common"
 	"io/ioutil"
 	"os"
 	"regexp"
@@ -25,7 +27,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/fingerprint"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
-	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/sirupsen/logrus"
 )
@@ -36,39 +37,19 @@ var (
 
 type HostinfoPlugin struct {
 	agent.PluginCommon
-	cloudHarvester cloud.Harvester // Gather metadata for the cloud instance.
+	common.HostInfo
 }
 
-type HostinfoData struct {
-	System        string `json:"id"`
-	Distro        string `json:"distro"`
-	KernelVersion string `json:"kernel_version"`
-	HostType      string `json:"host_type"`
-	CpuName       string `json:"cpu_name"`
-	// Number of cores within a single CPU ('cpu cores' field in /proc/cpuinfo)
-	// It is shown as 'coreCount' in New Relic UI
-	CpuNum string `json:"cpu_num"`
-	// Total number of cores in all the CPUs ('processor' entries in /proc/cpuinfo)
-	// It is shown as 'processorCount' in New Relic UI
-	TotalCpu            string `json:"total_cpu"`
-	Ram                 string `json:"ram"`
-	UpSince             string `json:"boot_timestamp"`
-	AgentVersion        string `json:"agent_version"`
-	AgentName           string `json:"agent_name"`
+type HostInfoLinux struct {
+	Distro              string `json:"distro"`
+	KernelVersion       string `json:"kernel_version"`
 	AgentMode           string `json:"agent_mode"`
-	OperatingSystem     string `json:"operating_system"`
 	ProductUuid         string `json:"product_uuid"`
 	BootId              string `json:"boot_id"`
-	RegionAWS           string `json:"aws_region,omitempty"`
-	RegionAzure         string `json:"region_name,omitempty"`
-	RegionGCP           string `json:"zone,omitempty"`
-	RegionAlibaba       string `json:"region_id,omitempty"`
-	AWSAccountID        string `json:"aws_account_id,omitempty"`
-	AWSAvailabilityZone string `json:"aws_availability_zone,omitempty"`
-	AWSImageID          string `json:"aws_image_id,omitempty"`
+	common.HostInfoData `mapstructure:",squash"`
 }
 
-func (self HostinfoData) SortKey() string {
+func (self HostInfoLinux) SortKey() string {
 	return self.System
 }
 
@@ -156,13 +137,13 @@ func runCmd(command string, args ...string) string {
 	return string(output)
 }
 
-func NewHostinfoPlugin(ctx agent.AgentContext, cloudHarvester cloud.Harvester) agent.Plugin {
+func NewHostinfoPlugin(ctx agent.AgentContext, hostInfo common.HostInfo) agent.Plugin {
 	return &HostinfoPlugin{
 		PluginCommon: agent.PluginCommon{
 			ID:      ids.HostInfo,
 			Context: ctx,
 		},
-		cloudHarvester: cloudHarvester,
+		HostInfo: hostInfo,
 	}
 }
 
@@ -188,131 +169,61 @@ func getCpuNum(cpuInfoFile string, fallback string) string {
 	}
 }
 
-func (self *HostinfoPlugin) gatherHostinfo(context agent.AgentContext) *HostinfoData {
+func (self *HostinfoPlugin) gatherHostinfo(context agent.AgentContext) *HostInfoLinux {
 	infoFile := helpers.HostProc("/cpuinfo")
 	totalCpu := getTotalCpu(infoFile)
 	var productUuid string
-	var hostType string
 	if distro.IsCentos5() {
 		productUuid = "unknown"
-		hostType = "unknown unknown"
 	} else {
 		productUuid = getProductUuid(context.Config().RunMode)
-		hostType = self.getHostType()
 	}
 
-	data := &HostinfoData{
-		System:          "system",
-		Distro:          distro.GetDistro(),
-		KernelVersion:   getKernelRelease(),
-		HostType:        hostType,
-		CpuName:         readProcFile(helpers.HostProc("/cpuinfo"), regexp.MustCompile(`model\sname\s*:\s`)),
-		CpuNum:          getCpuNum(infoFile, totalCpu),
-		TotalCpu:        totalCpu,
-		Ram:             readProcFile(helpers.HostProc("/meminfo"), regexp.MustCompile(`MemTotal:\s*`)),
-		UpSince:         getUpSince(),
-		AgentVersion:    context.Version(),
-		AgentName:       "Infrastructure",
-		AgentMode:       string(context.Config().RunMode),
-		OperatingSystem: runtime.GOOS,
-		ProductUuid:     productUuid,
-		BootId:          fingerprint.GetBootId(),
-	}
-	err := self.setCloudRegion(data)
+	commonHostInfo, err := self.GetHostInfo()
 	if err != nil {
-		hlog.WithError(err).WithField("cloudType", self.cloudHarvester.GetCloudType()).Debug(
-			"cloud region couldn't be set")
+		hlog.WithError(err).Error("error fetching host data information")
 	}
 
-	err = self.setCloudMetadata(data)
-	if err != nil {
-		hlog.WithError(err).WithField("cloudType", self.cloudHarvester.GetCloudType()).Debug(
-			"cloud metadata couldn't be set")
+	data := &HostInfoLinux{
+		HostInfoData:  commonHostInfo,
+		Distro:        distro.GetDistro(),
+		KernelVersion: getKernelRelease(),
+		AgentMode:     string(context.Config().RunMode),
+		ProductUuid:   productUuid,
+		BootId:        fingerprint.GetBootId(),
 	}
+
+	// set specific OS fields
+	if data.HostType, err = self.GetCloudHostType(); err != nil {
+		if errors.Is(err, common.ErrNoCloudHostTypeNotAvailable) {
+			data.HostType = self.getHostType()
+		} else {
+			hlog.WithError(err).Debug("error getting host type from cloud metadata")
+		}
+	}
+
+	data.CpuName = readProcFile(helpers.HostProc("/cpuinfo"), regexp.MustCompile(`model\sname\s*:\s`))
+	data.CpuNum = getCpuNum(infoFile, totalCpu)
+	data.TotalCpu = totalCpu
+	data.Ram = readProcFile(helpers.HostProc("/meminfo"), regexp.MustCompile(`MemTotal:\s*`))
+	data.UpSince = getUpSince()
+	data.OperatingSystem = runtime.GOOS
 
 	helpers.LogStructureDetails(hlog, data, "HostInfoData", "raw", nil)
 
 	return data
 }
 
-func (self *HostinfoPlugin) setCloudRegion(data *HostinfoData) (err error) {
-	if self.Context.Config().DisableCloudMetadata ||
-		self.cloudHarvester.GetCloudType() == cloud.TypeNoCloud {
-		return
-	}
-
-	region, err := self.cloudHarvester.GetRegion()
-	if err != nil {
-		return fmt.Errorf("couldn't retrieve cloud region: %v", err)
-	}
-
-	switch self.cloudHarvester.GetCloudType() {
-	case cloud.TypeAWS:
-		data.RegionAWS = region
-	case cloud.TypeAzure:
-		data.RegionAzure = region
-	case cloud.TypeGCP:
-		data.RegionGCP = region
-	case cloud.TypeAlibaba:
-		data.RegionAlibaba = region
-	default:
-	}
-	return
-}
-
-// Only for AWS cloud instances
-func (self *HostinfoPlugin) setCloudMetadata(data *HostinfoData) (err error) {
-	if self.Context.Config().DisableCloudMetadata ||
-		self.cloudHarvester.GetCloudType() == cloud.TypeNoCloud {
-		return
-	}
-
-	if self.cloudHarvester.GetCloudType() == cloud.TypeAWS {
-		imageID, err := self.cloudHarvester.GetInstanceImageID()
-		if err != nil {
-			return fmt.Errorf("couldn't retrieve cloud image ID: %v", err)
-		}
-		data.AWSImageID = imageID
-		awsAccountID, err := self.cloudHarvester.GetAccountID()
-		if err != nil {
-			return fmt.Errorf("couldn't retrieve cloud account ID: %v", err)
-		}
-		data.AWSAccountID = awsAccountID
-		availabilityZone, err := self.cloudHarvester.GetZone()
-		if err != nil {
-			return fmt.Errorf("couldn't retrieve cloud availability zone: %v", err)
-		}
-		data.AWSAvailabilityZone = availabilityZone
-	}
-	return
-}
-
 func (self *HostinfoPlugin) getHostType() string {
-	hostType := "unknown"
-
-	if self.Context.Config().DisableCloudMetadata ||
-		self.cloudHarvester.GetCloudType() == cloud.TypeNoCloud ||
-		self.cloudHarvester.GetCloudType() == cloud.TypeInProgress {
-
-		manufacturer, err := fs.ReadFirstLine(helpers.HostSys("/devices/virtual/dmi/id/sys_vendor"))
-		if err != nil {
-			hlog.WithError(err).Error("cannot read dmi sys vendor")
-		}
-
-		name, err := fs.ReadFirstLine(helpers.HostSys("/devices/virtual/dmi/id/product_name"))
-		if err != nil {
-			hlog.WithError(err).Error("cannot read dmi product name")
-		}
-
-		hostType = fmt.Sprintf("%s %s", manufacturer, name)
+	manufacturer, err := fs.ReadFirstLine(helpers.HostSys("/devices/virtual/dmi/id/sys_vendor"))
+	if err != nil {
+		hlog.WithError(err).Error("cannot read dmi sys vendor")
 	}
 
-	if response, err := self.cloudHarvester.GetHostType(); err != nil {
-		hlog.WithError(err).WithField("cloudType", self.cloudHarvester.GetCloudType()).Debug(
-			"error getting host type from cloud metadata")
-	} else {
-		hostType = response
+	name, err := fs.ReadFirstLine(helpers.HostSys("/devices/virtual/dmi/id/product_name"))
+	if err != nil {
+		hlog.WithError(err).Error("cannot read dmi product name")
 	}
 
-	return hostType
+	return fmt.Sprintf("%s %s", manufacturer, name)
 }
