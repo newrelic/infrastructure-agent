@@ -56,22 +56,21 @@ func NewHostInfoCommon(agentVersion string, enableCloudMonitoring bool, cloudHar
 
 // GetHostInfo returns the common host information data agnostic to the OS.
 func (h *HostInfoCommon) GetHostInfo() (HostInfoData, error) {
-	var cloudInfo CloudData
 	var err error
-
-	if h.cloudMonitoring {
-		cloudInfo, err = getCloudData(h)
-		if err != nil {
-			return HostInfoData{}, err
-		}
-	}
-
-	return HostInfoData{
+	hostInfo := HostInfoData{
 		System:       "system",
 		AgentName:    "Infrastructure",
 		AgentVersion: h.agentVersion,
-		CloudData:    cloudInfo,
-	}, nil
+	}
+
+	if h.cloudMonitoring {
+		hostInfo.CloudData, err = getCloudData(h)
+		if err != nil {
+			return hostInfo, err
+		}
+	}
+
+	return hostInfo, nil
 }
 
 // GetCloudHostType returns the cloud host type if available, "unknown" if not.

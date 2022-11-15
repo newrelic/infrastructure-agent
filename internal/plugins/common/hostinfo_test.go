@@ -70,20 +70,24 @@ func (f *fakeHarvester) GetHarvester() (cloud.Harvester, error) {
 
 func TestGetHostInfo(t *testing.T) {
 	t.Parallel()
+
+	agentTestVersion := "test"
+
 	testCases := []struct {
 		name       string
-		assertions func(data *HostInfoData)
+		assertions func(data *HostInfoData, err error)
 		setMock    func(*fakeHarvester)
 	}{
 		{
 			name: "no cloud",
-			assertions: func(d *HostInfoData) {
+			assertions: func(d *HostInfoData, err error) {
 				assert.Equal(t, "", d.RegionAWS)
 				assert.Equal(t, "", d.RegionAzure)
 				assert.Equal(t, "", d.RegionGCP)
 				assert.Equal(t, "", d.RegionAlibaba)
 				assert.Equal(t, "system", d.System)
 				assert.Equal(t, "Infrastructure", d.AgentName)
+				assert.NoError(t, err)
 			},
 			setMock: func(h *fakeHarvester) {
 				h.On("GetCloudType").Return(cloud.TypeNoCloud)
@@ -91,7 +95,7 @@ func TestGetHostInfo(t *testing.T) {
 		},
 		{
 			name: "cloud aws",
-			assertions: func(d *HostInfoData) {
+			assertions: func(d *HostInfoData, err error) {
 				assert.Equal(t, "us-east-1", d.RegionAWS)
 				assert.Equal(t, "us-east-1a", d.AWSAvailabilityZone)
 				assert.Equal(t, "ami-12345", d.AWSImageID)
@@ -101,6 +105,7 @@ func TestGetHostInfo(t *testing.T) {
 				assert.Equal(t, "", d.RegionAlibaba)
 				assert.Equal(t, "system", d.System)
 				assert.Equal(t, "Infrastructure", d.AgentName)
+				assert.NoError(t, err)
 			},
 			setMock: func(h *fakeHarvester) {
 				h.On("GetCloudType").Return(cloud.TypeAWS)
@@ -112,13 +117,14 @@ func TestGetHostInfo(t *testing.T) {
 		},
 		{
 			name: "cloud azure",
-			assertions: func(d *HostInfoData) {
+			assertions: func(d *HostInfoData, err error) {
 				assert.Equal(t, "", d.RegionAWS)
 				assert.Equal(t, "northeurope", d.RegionAzure)
 				assert.Equal(t, "", d.RegionGCP)
 				assert.Equal(t, "", d.RegionAlibaba)
 				assert.Equal(t, "1", d.AzureAvailabilityZone)
 				assert.Equal(t, "x123", d.AzureSubscriptionID)
+				assert.NoError(t, err)
 			},
 			setMock: func(h *fakeHarvester) {
 				h.On("GetAccountID").Return("x123", nil)
@@ -129,11 +135,12 @@ func TestGetHostInfo(t *testing.T) {
 		},
 		{
 			name: "cloud gcp",
-			assertions: func(d *HostInfoData) {
+			assertions: func(d *HostInfoData, err error) {
 				assert.Equal(t, "", d.RegionAWS)
 				assert.Equal(t, "", d.RegionAzure)
 				assert.Equal(t, "us-east-1", d.RegionGCP)
 				assert.Equal(t, "", d.RegionAlibaba)
+				assert.NoError(t, err)
 			},
 			setMock: func(h *fakeHarvester) {
 				h.On("GetCloudType").Return(cloud.TypeGCP)
@@ -142,15 +149,33 @@ func TestGetHostInfo(t *testing.T) {
 		},
 		{
 			name: "cloud alibaba",
-			assertions: func(d *HostInfoData) {
+			assertions: func(d *HostInfoData, err error) {
 				assert.Equal(t, "", d.RegionAWS)
 				assert.Equal(t, "", d.RegionAzure)
 				assert.Equal(t, "", d.RegionGCP)
 				assert.Equal(t, "us-east-1", d.RegionAlibaba)
+				assert.NoError(t, err)
 			},
 			setMock: func(h *fakeHarvester) {
 				h.On("GetCloudType").Return(cloud.TypeAlibaba)
 				h.On("GetRegion").Return("us-east-1", nil)
+			},
+		},
+		{
+			name: "cloud error",
+			assertions: func(d *HostInfoData, err error) {
+				assert.Equal(t, "", d.RegionAWS)
+				assert.Equal(t, "", d.RegionAzure)
+				assert.Equal(t, "", d.RegionGCP)
+				assert.Equal(t, "", d.RegionAlibaba)
+				assert.Equal(t, "system", d.System)
+				assert.Equal(t, "Infrastructure", d.AgentName)
+				assert.Equal(t, agentTestVersion, d.AgentVersion)
+				assert.Error(t, err)
+			},
+			setMock: func(h *fakeHarvester) {
+				h.On("GetCloudType").Return(cloud.TypeGCP)
+				h.On("GetRegion").Return("", errors.New("cloud endpoint not reachable"))
 			},
 		},
 	}
@@ -160,10 +185,9 @@ func TestGetHostInfo(t *testing.T) {
 			t.Parallel()
 			h := new(fakeHarvester)
 			testCase.setMock(h)
-			hostInfo := NewHostInfoCommon("test", true, h)
+			hostInfo := NewHostInfoCommon(agentTestVersion, true, h)
 			data, err := hostInfo.GetHostInfo()
-			assert.NoError(t, err)
-			testCase.assertions(&data)
+			testCase.assertions(&data, err)
 			h.AssertExpectations(t)
 		})
 	}
