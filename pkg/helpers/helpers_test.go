@@ -306,6 +306,16 @@ func TestObfuscateSensitiveData_CommandLineWithArgs(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
+func TestObfuscateSensitiveData_ConfigProtocolOutput(t *testing.T) {
+	data := `{"config_protocol_version":"1","action":"register_config","config_name":"cfg-nri-ibmmq","config":{"variables":{},"integrations":[{"name":"nri-prometheus","config":{"standalone":false,"verbose":"1","transformations":[],"integration_metadata":{"version":"0.3.0","name":"nri-ibmmq""targets":["urls":["http://localhost:9157"]}]}},{"name":"ibmmq-exporter","timeout":0,  "exec":[    "/usr/local/prometheus-exporters/bin/ibmmq-exporter","--mongodb.uri","mongodb://root:supercomplex@localhost:17017","--ibmmq.connName","localhost(1414)","--ibmmq.queueManager","QM1","--ibmmq.channel","DEV.ADMIN.SVRCONN","--ibmmq.userid","admin","--ibmmq.httpListenPort","9157","--ibmmq.monitoredQueues","!SYSTEM.*,*","--ibmmq.monitoredChannels","*","--ibmmq.httpMetricPath","/metrics","--ibmmq.useStatus"],"env":{"IBMMQ_CONNECTION_PASSWORD":"passw0rd","LD_LIBRARY_PATH":"/opt/mqm/lib64:/usr/lib64","HOME":"/tmp"}}]}}`
+	expected := `{"config_protocol_version":"1","action":"register_config","config_name":"cfg-nri-ibmmq","config":{"variables":{},"integrations":[{"name":"nri-prometheus","config":{"standalone":false,"verbose":"1","transformations":[],"integration_metadata":{"version":"0.3.0","name":"nri-ibmmq""targets":["urls":["http://localhost:9157"]}]}},{"name":"ibmmq-exporter","timeout":0,  "exec":[    "/usr/local/prometheus-exporters/bin/ibmmq-exporter","--mongodb.uri","mongodb://root:<HIDDEN>@localhost:17017","--ibmmq.connName","localhost(1414)","--ibmmq.queueManager","QM1","--ibmmq.channel","DEV.ADMIN.SVRCONN","--ibmmq.userid","admin","--ibmmq.httpListenPort","9157","--ibmmq.monitoredQueues","!SYSTEM.*,*","--ibmmq.monitoredChannels","*","--ibmmq.httpMetricPath","/metrics","--ibmmq.useStatus"],"env":{"IBMMQ_CONNECTION_PASSWORD":"<HIDDEN>","LD_LIBRARY_PATH":"/opt/mqm/lib64:/usr/lib64","HOME":"/tmp"}}]}}`
+	matched, isField, actual := ObfuscateSensitiveData(data)
+
+	assert.True(t, matched)
+	assert.False(t, isField)
+	assert.Equal(t, expected, actual)
+}
+
 func TestObfuscateSensitiveData_EnvironmentVariable(t *testing.T) {
 	data := "NRIA_CUSTOM_PASSWORD=1234"
 	expected := "NRIA_CUSTOM_PASSWORD=<HIDDEN>"
