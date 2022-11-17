@@ -355,51 +355,63 @@ func ObfuscateSensitiveDataFromArray(data []string) []string {
 	return result
 }
 
-// Match if contains pass|token|cert|auth|key|secret|salt|cred|pw
-// and capturing if found the group after one of the separators: ' ', ':', '=' and '"'.
-var r = regexp.MustCompile(`(?i)(?:pass|token|cert|auth|key|secret|salt|cred|pw)(?:[^\s:="]*)(?:[\s:="]*)([^\s:="]+)?`)
+//nolint:gochecknoglobals
+var obfuscateRegexes = []*regexp.Regexp{
+	// Match if contains pass|token|cert|auth|key|secret|salt|cred|pw
+	// and capturing if found the group after one of the separators: ' ', ':', '=' and '"'.
+	regexp.MustCompile(`(?i)(?:pass|token|cert|auth|key|secret|salt|cred|pw)(?:[^\s:="]*)(?:[\s:="]*)([^\s:="]+)?`),
+	// Match password in url http://user:pass@localhost
+	regexp.MustCompile(`(?i)(?:\:\/\/\w+)(?:[\s:="]*)([a-zA-Z0-9]+)(?:[\@])`),
+}
 
 // ObfuscateSensitiveData is used to detect sensitive data like tokens/passwords etc and
 // replace them by *.
 // e.g. NRIA_CUSTOM_PASSWORD=1234               => NRIA_CUSTOM_PASSWORD=*
+// It will also obfuscate passwords defined in urls with the format: http://user:pass@localhost
 //
 //	/usr/bin/custom_cmd -pwd 1234 -arg2 abc => /usr/bin/custom_cmd -pwd * -arg2 abc
 func ObfuscateSensitiveData(value string) (matched, isField bool, result string) {
+	result = value
 
-	matches := r.FindAllStringSubmatchIndex(value, -1)
+	for _, obfuscateRegex := range obfuscateRegexes {
 
-	matched = len(matches) > 0
-	if !matched {
-		result = value
-		return
-	}
+		matches := obfuscateRegex.FindAllStringSubmatchIndex(result, -1)
 
-	var b bytes.Buffer
+		var transforms bytes.Buffer
 
-	lastEndIndex := 0
-	for _, indexes := range matches {
-		// Expect array of 4:
-		// start-end indexes of the full match
-		// start-end indexes of the group 1 (data that should be obfuscated)
-		if len(indexes) != 4 {
-			break
+		lastEndIndex := 0
+
+		for _, indexes := range matches {
+			// Expect array of 4:
+			// start-end indexes of the full match
+			// start-end indexes of the group 1 (data that should be obfuscated)
+			if len(indexes) != 4 {
+				break
+			}
+
+			startIndex := indexes[2]
+			endIndex := indexes[3]
+
+			// If the group 1 was not present there is nothing to obfuscate.
+			if startIndex == -1 || endIndex == -1 {
+				isField = len(matches) == 1
+
+				break
+			}
+
+			transforms.WriteString(result[lastEndIndex:startIndex])
+			transforms.WriteString(HiddenField)
+			lastEndIndex = endIndex
 		}
 
-		startIndex := indexes[2]
-		endIndex := indexes[3]
+		if len(matches) > 0 {
+			matched = true
 
-		// If the group 1 was not present there is nothing to obfuscate.
-		if startIndex == -1 || endIndex == -1 {
-			isField = len(matches) == 1
-			break
+			transforms.WriteString(result[lastEndIndex:])
+			result = transforms.String()
 		}
-
-		b.WriteString(value[lastEndIndex:startIndex])
-		b.WriteString(HiddenField)
-		lastEndIndex = endIndex
 	}
-	b.WriteString(value[lastEndIndex:])
-	result = b.String()
+
 	return
 }
 

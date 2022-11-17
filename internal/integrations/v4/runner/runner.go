@@ -364,14 +364,19 @@ func (r *runner) handleLines(ctx context.Context, stdout <-chan []byte, extraLab
 		}
 
 		if cfgProtocolBuilder := cfgprotocol.GetConfigProtocolBuilder(line); cfgProtocolBuilder != nil {
+			// obfuscate config protocol output
+			obfuscatedllog := r.log.WithFieldsF(func() logrus.Fields {
+				return logrus.Fields{"payload": helpers.ObfuscateSensitiveDataFromString(string(line))}
+			})
+
 			if r.handleConfig == nil {
-				llog.Warn("received config protocol request payload without a handler")
+				obfuscatedllog.Warn("received config protocol request payload without a handler")
 				continue
 			}
 			cfgProtocol, err := cfgProtocolBuilder.Build()
-			llog.WithField("version", cfgProtocol.Version()).Debug("Received config protocol request.")
+			obfuscatedllog.WithField("version", cfgProtocol.Version()).Debug("Received config protocol request.")
 			if err != nil {
-				llog.
+				obfuscatedllog.
 					WithError(err).
 					Warn("cannot build config protocol")
 				continue
