@@ -355,15 +355,14 @@ func ObfuscateSensitiveDataFromArray(data []string) []string {
 	return result
 }
 
-var (
-	obfuscateRegexes = []*regexp.Regexp{
-		// Match if contains pass|token|cert|auth|key|secret|salt|cred|pw
-		// and capturing if found the group after one of the separators: ' ', ':', '=' and '"'.
-		regexp.MustCompile(`(?i)(?:pass|token|cert|auth|key|secret|salt|cred|pw)(?:[^\s:="]*)(?:[\s:="]*)([^\s:="]+)?`),
-		// Match password in url http://user:pass@localhost
-		regexp.MustCompile(`(?i)(?:\:\/\/\w+)(?:[\s:="]*)([a-zA-Z0-9]+)(?:[\@])`),
-	}
-)
+//nolint:gochecknoglobals
+var obfuscateRegexes = []*regexp.Regexp{
+	// Match if contains pass|token|cert|auth|key|secret|salt|cred|pw
+	// and capturing if found the group after one of the separators: ' ', ':', '=' and '"'.
+	regexp.MustCompile(`(?i)(?:pass|token|cert|auth|key|secret|salt|cred|pw)(?:[^\s:="]*)(?:[\s:="]*)([^\s:="]+)?`),
+	// Match password in url http://user:pass@localhost
+	regexp.MustCompile(`(?i)(?:\:\/\/\w+)(?:[\s:="]*)([a-zA-Z0-9]+)(?:[\@])`),
+}
 
 // ObfuscateSensitiveData is used to detect sensitive data like tokens/passwords etc and
 // replace them by *.
@@ -376,11 +375,12 @@ func ObfuscateSensitiveData(value string) (matched, isField bool, result string)
 
 	for _, obfuscateRegex := range obfuscateRegexes {
 
-		matches := append(obfuscateRegex.FindAllStringSubmatchIndex(result, -1))
+		matches := obfuscateRegex.FindAllStringSubmatchIndex(result, -1)
 
-		var b bytes.Buffer
+		var transforms bytes.Buffer
 
 		lastEndIndex := 0
+
 		for _, indexes := range matches {
 			// Expect array of 4:
 			// start-end indexes of the full match
@@ -395,18 +395,20 @@ func ObfuscateSensitiveData(value string) (matched, isField bool, result string)
 			// If the group 1 was not present there is nothing to obfuscate.
 			if startIndex == -1 || endIndex == -1 {
 				isField = len(matches) == 1
+
 				break
 			}
 
-			b.WriteString(result[lastEndIndex:startIndex])
-			b.WriteString(HiddenField)
+			transforms.WriteString(result[lastEndIndex:startIndex])
+			transforms.WriteString(HiddenField)
 			lastEndIndex = endIndex
 		}
 
 		if len(matches) > 0 {
 			matched = true
-			b.WriteString(result[lastEndIndex:])
-			result = b.String()
+
+			transforms.WriteString(result[lastEndIndex:])
+			result = transforms.String()
 		}
 	}
 
