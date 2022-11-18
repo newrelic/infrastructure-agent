@@ -80,6 +80,10 @@
       pause:
         seconds: 30
 
+    - name: Get entity id
+      import_role:
+        name: get_agent_entity_id
+
     - name: assert agent restart don't trigger shutdown event
       include_role:
         name: agent-host-status-event-assert

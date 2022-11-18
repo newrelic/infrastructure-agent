@@ -1,0 +1,9 @@
+---
+- name: Read agent entity id
+
+  ansible.builtin.slurp:
+    src: "{{ entity_id_file }}"
+  register: slurpfile
+
+- set_fact:
+    entity_id: "{{ slurpfile['content'] | b64decode }}"
