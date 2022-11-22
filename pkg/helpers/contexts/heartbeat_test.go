@@ -177,8 +177,7 @@ func TestContextHolder_LateHeartbeat(t *testing.T) {
 		actuator.HeartBeat()
 	})
 
-	// THEN it does not finish until we stop HeartBeatCtx
-	// (and wait for the timeout to expire)
+	// THEN the HeartBeatCtx is done with a Canceled error
 	var duration time.Duration
 
 	select {
@@ -188,14 +187,13 @@ func TestContextHolder_LateHeartbeat(t *testing.T) {
 		require.Fail(t, "error waiting for context to be done")
 	}
 
-	// THEN the context finishes with a Canceled error
 	assert.Equal(t, context.Canceled, ctx.Err())
 
 	// AND the context does not finish before the timeout
 	assert.Truef(t, duration >= timeout,
 		"expected cancellation time %s to be >= than timeout %s", duration, timeout)
 
-	// AND no HeartBeat warning is logged
+	// AND only one HeartBeat warning is logged
 	// Wait to exceed another heartbeat timeout after the HeartBeat was submitted
 	time.Sleep(timeout * 3)
 
