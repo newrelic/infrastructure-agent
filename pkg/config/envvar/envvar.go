@@ -85,7 +85,7 @@ func removeYAMLComments(content []byte) ([]byte, error) {
 	}
 
 	// inlined comments within lines without quotes
-	rInlinedWithoutQuotes := regexp.MustCompile(`(?m:^[^"'\n]+(#.*)$)`)
+	rInlinedWithoutQuotes := regexp.MustCompile(`(?m:^[^"'\n]+\s+(#.*)$)`)
 	subMatches = rInlinedWithoutQuotes.FindAllSubmatchIndex(newContent, -1)
 
 	// retrieve matches only for "comment" capture group

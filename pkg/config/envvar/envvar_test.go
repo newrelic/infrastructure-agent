@@ -64,6 +64,9 @@ instances:
   - name: foo
     command: bar
     arguments:
+     r0: thisIsAValid#YAML
+     r1: thisIsAValid	#comment
+     r3: "f	#oo" # comment
      k0: foo # comment
      k1: foo # comment
      k2: "foo" # comment
@@ -93,6 +96,9 @@ instances:
   - name: foo
     command: bar
     arguments:
+     r0: thisIsAValid#YAML
+     r1: thisIsAValid	
+     r3: "f	#oo" 
      k0: foo 
      k1: foo 
      k2: "foo" 
