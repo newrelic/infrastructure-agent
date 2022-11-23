@@ -85,6 +85,8 @@ instances:
      q6: 'foo'# comment "foo"
      q7: 'foo#bar'
      q8: ['foo#bar', 'baz' ]  # another inline comment
+     m1: |-
+       multiline # string
      # some comments
      # some comments
     labels:
@@ -117,6 +119,8 @@ instances:
      q6: 'foo'
      q7: 'foo#bar'
      q8: ['foo#bar', 'baz' ]  
+     m1: |-
+       multiline # string
     labels:
       foo: bar
 `
