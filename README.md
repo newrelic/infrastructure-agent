@@ -1,4 +1,4 @@
-[![Community Plus header](https://github.com/newrelic/opensource-website/raw/master/src/images/categories/Community_Plus.png)](https://opensource.newrelic.com/oss-category/#community-plus)
+[![Community Plus header](https://github.com/newrelic/opensource-website/raw/main/src/images/categories/Community_Plus.png)](https://opensource.newrelic.com/oss-category/#community-plus)
 
 ![Build Status](https://github.com/newrelic/infrastructure-agent/actions/workflows/test.yml/badge.svg)
 [![Coverage Status](https://coveralls.io/repos/github/newrelic/infrastructure-agent/badge.svg?branch=master)](https://coveralls.io/github/newrelic/infrastructure-agent?branch=master)
