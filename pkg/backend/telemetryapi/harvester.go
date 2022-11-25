@@ -14,6 +14,10 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	http2 "github.com/newrelic/infrastructure-agent/pkg/http"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/sirupsen/logrus"
 )
 
 // Harvester aggregates and reports metrics and spans.
@@ -272,6 +276,10 @@ func (r response) needsRetry(_ *Config, attempts int) (bool, time.Duration) {
 }
 
 func postData(req *http.Request, client *http.Client) response {
+	if log.IsLevelEnabled(logrus.TraceLevel) {
+		req = http2.WithTracer(req, "harvester")
+	}
+
 	resp, err := client.Do(req)
 	if nil != err {
 		return response{err: fmt.Errorf("error posting data: %v", err)}

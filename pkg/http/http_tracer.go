@@ -79,9 +79,29 @@ func WithTracer(req *http.Request, requester string) *http.Request {
 			l.WithField("action", "TLSHandshakeStart").
 				Debug("")
 		},
-		TLSHandshakeDone: func(tls.ConnectionState, error) {
+		TLSHandshakeDone: func(tlsState tls.ConnectionState, err error) {
+			tlsVersion := ""
+			switch tlsState.Version {
+			case tls.VersionTLS10:
+				{
+					tlsVersion = "1.0"
+				}
+			case tls.VersionTLS11:
+				{
+					tlsVersion = "1.1"
+				}
+			case tls.VersionTLS12:
+				{
+					tlsVersion = "1.2"
+				}
+			case tls.VersionTLS13:
+				{
+					tlsVersion = "1.3"
+				}
+			}
 			l.WithField("action", "TLSHandshakeDone").
 				WithField("duration", fmt.Sprintf("%dms", time.Since(tlsStart).Milliseconds())).
+				WithField("version", tlsVersion).
 				Debug("")
 		},
 		WroteHeaders: func() {
