@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 	"sync"
 
@@ -286,26 +287,38 @@ func (cl *Client) applyRemoteConfig(config *protobufs.AgentRemoteConfig) (bool, 
 	if config == nil {
 		return false, nil
 	}
-	cl.logger.Infof("Received remote config from server, hash=%x.", config.ConfigHash)
 
 	cl.effectiveCnfLock.Lock()
 	defer cl.effectiveCnfLock.Unlock()
 
 	var configHasChanged bool
-	var err error
-
 	for name, file := range config.Config.ConfigMap {
 		if name == "" {
 			// skip instance config
 			continue
 		}
 		if isAgentConf(name) {
-			configHasChanged, err = cl.applyAgentConfig(file)
+			agentConfigHasChanged, err := cl.applyAgentConfig(file)
+			if agentConfigHasChanged {
+				cl.logger.Infof("Agent configuration changed")
+			}
 			if err != nil {
 				return false, err
 			}
+			configHasChanged = configHasChanged || agentConfigHasChanged
 		}
-		// TODO think about integrations
+		// Integration POC for demo
+		if isIntegration(name) {
+			// do not restart agent as integrations have hot reloading
+			intChanged, err := cl.applyIntegrationConfig(name, file)
+			if intChanged {
+				cl.logger.Infof("Integration changed: %s", name)
+			}
+			if err != nil {
+				return false, err
+			}
+			configHasChanged = configHasChanged || intChanged
+		}
 	}
 
 	return configHasChanged, nil
@@ -354,13 +367,58 @@ func (cl *Client) applyAgentConfig(file *protobufs.AgentConfigFile) (bool, error
 	return true, nil
 }
 
+func (cl *Client) applyIntegrationConfig(name string, file *protobufs.AgentConfigFile) (bool, error) {
+	intPath := "/etc/newrelic-infra/integrations.d"
+	confPath := path.Join(intPath, name) + "-conf.yaml"
+	// if server config is empty delete the file if it exists
+	if strings.TrimSpace(string(file.Body)) == "" && fileExists(confPath) {
+		return true, os.Remove(confPath)
+	}
+	if strings.TrimSpace(string(file.Body)) == "" && !fileExists(confPath) {
+		return false, nil
+	}
+	if !fileExists(confPath) {
+		return true, os.WriteFile(confPath, file.Body, 0o644)
+	}
+
+	existingFileConf, err := yamlFileToMap(confPath)
+	if err != nil {
+		return false, err
+	}
+	newConf, err := yamlContentToMap(file.Body)
+	if err != nil {
+		return false, err
+	}
+	if confToStr(existingFileConf) == confToStr(newConf) {
+		return false, nil
+	}
+
+	return true, os.WriteFile(confPath, file.Body, 0o644)
+}
+
+func yamlContentToMap(content []byte) (map[string]interface{}, error) {
+	var m map[string]interface{}
+	err := yaml.Unmarshal(content, &m)
+	if err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func yamlFileToMap(filePath string) (map[string]interface{}, error) {
+	yamlFile, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+	return yamlContentToMap(yamlFile)
+}
+
 func (cl *Client) removeExistingConfig() error {
 	return os.Remove(effectiveConfigDefault)
 }
 
 func isAgentConf(name string) bool {
-	return true
-	// return strings.HasPrefix(name, "newrelic-infra-")
+	return strings.HasPrefix(name, "newrelic-infra_")
 }
 
 func isIntegration(name string) bool {

@@ -16,7 +16,7 @@ func equalConfs(cnf1 *config.Config, cnf2 *config.Config) bool {
 	return confToStr(cnf1) == confToStr(cnf2)
 }
 
-func confToStr(cnf *config.Config) string {
+func confToStr(cnf interface{}) string {
 	b, _ := yaml.Marshal(cnf)
 	return string(b)
 }
@@ -27,6 +27,7 @@ func fileExists(filename string) bool {
 		if os.IsNotExist(err) {
 			return false
 		}
+		// TODO handle error
 	}
 	return true
 }
