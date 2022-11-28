@@ -23,8 +23,8 @@ type replaceConfig struct {
 // Option provide extra behaviour configuration to the replacement process.
 type ReplaceOption func(rc *replaceConfig)
 
-// This regular expression matches any variable mark ${...} with dots and index marks [ ]
-var regex = regexp.MustCompile(`\$\{[\w\d\._\s\[\]-]*\}`)
+// This regular expression matches any variable mark ${...} with dots, index marks [ ], and /.
+var regex = regexp.MustCompile(`\$\{[\w\d\._\s\[\]\/-]*\}`)
 
 // Replace receives one template, which may be a map or a struct whose string fields may
 // contain ${variable} placeholders, and returns an array of items of the same type of the

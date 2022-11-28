@@ -122,6 +122,55 @@ func TestReplace_Map(t *testing.T) {
 	assert.Equal(t, ret1["meta"], fakeStruct{"5.6.7.8 : nopuedor"})
 }
 
+func TestReplace_MapOfUrls(t *testing.T) {
+	t.Parallel()
+	// GIVEN a complex map with variable marks in the inner values
+	type fakeStruct struct {
+		Host string
+	}
+	myConfig := map[string]interface{}{
+		"url": "http://${discovery.ip/v1}:${discovery.port}/get",
+		"labels": map[string]string{
+			"hostname":  "${hostname}",
+			"unchanged": "unchanged",
+		},
+		"nothingElse": struct{}{},
+		"meta":        fakeStruct{"${discovery.ip/v1} : ${hostname}"},
+	}
+
+	// WHEN they are replaced by a set of two discovered items
+	ctx := &Values{discov: []discovery.Discovery{
+		{Variables: data.Map{"discovery.ip/v1": "1.2.3.4", "discovery.port": "8888", "hostname": "jarl"}},
+		{Variables: data.Map{"discovery.ip/v1": "5.6.7.8", "discovery.port": "1111", "hostname": "nopuedor"}},
+	}}
+	ret, err := Replace(ctx, myConfig)
+	require.NoError(t, err)
+
+	// THEN two replaced instances are returned
+	require.Len(t, ret, 2)
+
+	// AND both replaced instances have all the variables replaced according to the discovered items
+	ret0, isCorrectType := ret[0].Variables.(map[string]interface{})
+	require.Truef(t, isCorrectType, "the returned value must be of type map[string]interface{}. Was: %T", ret0)
+	assert.Equal(t, "http://1.2.3.4:8888/get", ret0["url"])
+	assert.Equal(t, struct{}{}, ret0["nothingElse"])
+	lbls0, isCorrectType := ret0["labels"].(map[string]string)
+	require.Truef(t, isCorrectType, "the inner labels must be of type map[string]string. Was: %T", lbls0)
+	assert.Equal(t, "jarl", lbls0["hostname"])
+	assert.Equal(t, "unchanged", lbls0["unchanged"])
+	assert.Equal(t, ret0["meta"], fakeStruct{"1.2.3.4 : jarl"})
+
+	ret1, isCorrectType := ret[1].Variables.(map[string]interface{})
+	require.Truef(t, isCorrectType, "the returned value must be of type map[string]interface{}. Was: %T", ret1)
+	assert.Equal(t, "http://5.6.7.8:1111/get", ret1["url"])
+	assert.Equal(t, struct{}{}, ret1["nothingElse"])
+	lbls1, isCorrectType := ret1["labels"].(map[string]string)
+	require.Truef(t, isCorrectType, "the inner labels must be of type map[string]string. Was: %T", lbls1)
+	assert.Equal(t, "nopuedor", lbls1["hostname"])
+	assert.Equal(t, "unchanged", lbls1["unchanged"])
+	assert.Equal(t, ret1["meta"], fakeStruct{"5.6.7.8 : nopuedor"})
+}
+
 func TestReplace_ByteSlice(t *testing.T) {
 	t.Parallel()
 	// GIVEN a byte array with variable marks in the inner values
