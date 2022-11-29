@@ -161,7 +161,11 @@ func (cl *Client) startSettings() types.StartSettings {
 
 // TODO find logic to handle ulid <-> agentGuid
 func (cl *Client) instanceId() ulid.ULID {
-	return ulid.MustParse("01GK1Y6ZQDN45ND467S7D191KF")
+	dat, err := os.ReadFile("/etc/newrelic-infra/ulid")
+	if err != nil {
+		return ulid.MustParse("01GK1Y6ZQDN45ND467S7D191KF")
+	}
+	return ulid.MustParse(string(dat))
 }
 
 func (cl *Client) headers() http.Header {
