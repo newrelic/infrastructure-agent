@@ -4,8 +4,10 @@
 package log
 
 import (
+	"archive/zip"
 	"compress/gzip"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -398,7 +400,7 @@ func TestCompress(t *testing.T) {
 	logFile := filepath.Join(tmp, "newrelic-infra.log")
 
 	rotatedLogFile := filepath.Join(tmp, "rotated.log")
-	compressedFile := rotatedLogFile + compressedFileExt
+	compressedFile := fmt.Sprintf("%s.%s", rotatedLogFile, compressedFileExt)
 
 	// Make sure files don't exist.
 	os.Remove(logFile)
@@ -443,26 +445,36 @@ func TestCompress(t *testing.T) {
 		return os.IsNotExist(statErr)
 	}, 60*time.Second, 100*time.Millisecond, "compressed file not created")
 
-	// THEN .gz file is valid and contains expected data
-	gzFile, err := os.Open(compressedFile)
+	// THEN the resulted file is valid and contains expected data
+	resultFile, err := os.Open(compressedFile)
 	require.NoError(t, err)
 
-	gzFileStat, err := gzFile.Stat()
+	gzFileStat, err := resultFile.Stat()
 	require.NoError(t, err)
 
 	// Check the size of the .gz file to be less than 1 mb.
 	fileSizeInMb := float64(gzFileStat.Size()) / float64(mb10)
 	assert.True(t, fileSizeInMb < 1)
 
-	gzReader, err := gzip.NewReader(gzFile)
+	var resultReader io.ReadCloser
+	if runtime.GOOS == "windows" {
+		zipReader, err := zip.OpenReader(resultFile.Name())
+		assert.NoError(t, err)
+		assert.Len(t, zipReader.File, 1)
+		
+		resultReader, err = zipReader.File[0].Open()
+		assert.NoError(t, err)
+	} else {
+		resultReader, err = gzip.NewReader(resultFile)
+	}
 
 	defer func() {
-		assert.NoError(t, gzReader.Close())
+		assert.NoError(t, resultReader.Close())
 	}()
 
 	assert.NoError(t, err)
 
-	resultContent, err := ioutil.ReadAll(gzReader)
+	resultContent, err := ioutil.ReadAll(resultReader)
 
 	assert.NoError(t, err)
 	assert.Equal(t, content, string(resultContent))
