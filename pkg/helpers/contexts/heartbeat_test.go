@@ -5,9 +5,11 @@ package contexts
 import (
 	"context"
 	"github.com/sirupsen/logrus"
+	"strings"
 	"testing"
 	"time"
 
+	testlog "github.com/newrelic/infrastructure-agent/test/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -85,12 +87,17 @@ hbLoop:
 }
 
 func TestContextHolder_Cancel(t *testing.T) {
-	// GIVEN a context with a heartbeat timeout
+	logger := logrus.New()
+	logHook := testlog.NewInMemoryEntriesHook(logrus.AllLevels)
+	logger.AddHook(logHook)
+
 	lg := func() *logrus.Entry {
-		return logrus.NewEntry(logrus.New())
+		return logrus.NewEntry(logger)
 	}
 
-	ctx, actuator := WithHeartBeat(context.Background(), 30*time.Second, lg)
+	// GIVEN a context with a heartbeat timeout
+	timeout := 100 * time.Millisecond
+	ctx, actuator := WithHeartBeat(context.Background(), timeout, lg)
 
 	// WHEN we stop the heartbeat, the context must be canceled
 	actuator.HeartBeatStop()
@@ -105,6 +112,12 @@ func TestContextHolder_Cancel(t *testing.T) {
 
 	// AND the context returns no error
 	require.Error(t, context.Canceled, ctx.Err())
+
+	// AND no HeartBeat warning is logged
+	// Wait to exceed the heartbeat timeout before checking the logs
+	time.Sleep(timeout * 2)
+
+	assert.Equal(t, 0, countLogEntriesContainingMsg(logHook.GetEntries(), "HeartBeat timeout exceeded after"))
 }
 
 // execute with -race flag
@@ -143,4 +156,56 @@ func TestContextHolder_RaceConditions(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		require.Fail(t, "error waiting for context to be done")
 	}
+}
+
+func TestContextHolder_LateHeartbeat(t *testing.T) {
+	logger := logrus.New()
+	logHook := testlog.NewInMemoryEntriesHook(logrus.AllLevels)
+	logger.AddHook(logHook)
+
+	start := time.Now()
+	lg := func() *logrus.Entry {
+		return logrus.NewEntry(logger)
+	}
+
+	// GIVEN a Context with a Heartbeat timeout
+	const timeout = 100 * time.Millisecond
+	ctx, actuator := WithHeartBeat(context.Background(), timeout, lg)
+
+	// WHEN heartbeat is emitted too late
+	time.AfterFunc(timeout*2, func() {
+		actuator.HeartBeat()
+	})
+
+	// THEN the HeartBeatCtx is done with a Canceled error
+	var duration time.Duration
+
+	select {
+	case <-ctx.Done():
+		duration = time.Now().Sub(start)
+	case <-time.After(3 * timeout):
+		require.Fail(t, "error waiting for context to be done")
+	}
+
+	assert.Equal(t, context.Canceled, ctx.Err())
+
+	// AND the context does not finish before the timeout
+	assert.Truef(t, duration >= timeout,
+		"expected cancellation time %s to be >= than timeout %s", duration, timeout)
+
+	// AND only one HeartBeat warning is logged
+	// Wait to exceed another heartbeat timeout after the HeartBeat was submitted
+	time.Sleep(timeout * 3)
+
+	assert.Equal(t, 1, countLogEntriesContainingMsg(logHook.GetEntries(), "HeartBeat timeout exceeded after"))
+}
+
+func countLogEntriesContainingMsg(entries []logrus.Entry, msg string) int {
+	result := 0
+	for _, entry := range entries {
+		if strings.Contains(entry.Message, msg) {
+			result++
+		}
+	}
+	return result
 }
