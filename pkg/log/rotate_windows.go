@@ -17,7 +17,7 @@ func copyContentToArchive(srcFileName string, src io.Reader, dst io.Writer, log 
 
 	zipWriter, err := zipFile.Create(srcFileName)
 	if err != nil {
-		return fmt.Errorf("failed to create zip file: %w", srcFileName, err)
+		return fmt.Errorf("failed to create zip file: %w", err)
 	}
 
 	_, err = io.Copy(zipWriter, src)

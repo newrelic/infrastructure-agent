@@ -232,7 +232,11 @@ func (f *FileWithRotation) compress(file string, log Entry) error {
 		}
 	}()
 
-	return copyContentToArchive(filepath.Base(file), srcReader, dstWriter, log)
+	err = copyContentToArchive(filepath.Base(file), srcReader, dstWriter, log)
+	if err != nil {
+		return fmt.Errorf("failed to compress rotated file: %s, error: %w", file, err)
+	}
+	return nil
 }
 
 // purgeFiles will remove older files in case MaxFiles is exceeded.

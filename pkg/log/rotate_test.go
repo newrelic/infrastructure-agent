@@ -398,7 +398,7 @@ func TestCompress(t *testing.T) {
 	logFile := filepath.Join(tmp, "newrelic-infra.log")
 
 	rotatedLogFile := filepath.Join(tmp, "rotated.log")
-	compressedFile := rotatedLogFile + ".gz"
+	compressedFile := rotatedLogFile + compressedFileExt
 
 	// Make sure files don't exist.
 	os.Remove(logFile)
@@ -441,7 +441,7 @@ func TestCompress(t *testing.T) {
 		_, statErr := os.Stat(rotatedLogFile)
 
 		return os.IsNotExist(statErr)
-	}, 60*time.Second, 100*time.Millisecond, "gz file not created")
+	}, 60*time.Second, 100*time.Millisecond, "compressed file not created")
 
 	// THEN .gz file is valid and contains expected data
 	gzFile, err := os.Open(compressedFile)
