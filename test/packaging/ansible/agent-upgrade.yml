@@ -9,11 +9,13 @@
     - name: initial cleanup # Only required for shared infra.
       include_role:
         name: cleanup
+      when: '"sles-15.4" not in inventory_hostname'
 
   tasks:
     - name: agent upgrade tests suite
       vars:
         env_vars:
+      when: '"sles-15.4" not in inventory_hostname'
 
       block:
 
@@ -27,12 +29,12 @@
 
         - name: pick right agent version for amd64
           set_fact:
-            target_agent_version_1: "1.34.0"
+            target_agent_version_1: "1.33.2"
           when: inventory_hostname is search("amd64")
 
         - name: pick right agent version for arm64
           set_fact:
-            target_agent_version_1: "1.34.0"
+            target_agent_version_1: "1.33.2"
           when: inventory_hostname is search("arm64")
 
         - name: install initial version
@@ -72,5 +74,6 @@
         - name: Final cleanup # Only required for shared infra.
           include_role:
             name: cleanup
+          when: '"sles-15.4" not in inventory_hostname'
 
 ...
