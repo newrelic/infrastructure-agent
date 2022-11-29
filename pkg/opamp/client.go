@@ -161,7 +161,7 @@ func (cl *Client) startSettings() types.StartSettings {
 
 // TODO find logic to handle ulid <-> agentGuid
 func (cl *Client) instanceId() ulid.ULID {
-	return ulid.MustParse("01GF15JTKSJ0A1R951T9N68H0P")
+	return ulid.MustParse("01GK1Y6ZQDN45ND467S7D191KF")
 }
 
 func (cl *Client) headers() http.Header {
