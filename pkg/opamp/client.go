@@ -48,6 +48,7 @@ type Client struct {
 
 func NewClient(ctx context.Context, agentChangedConfigCh chan<- struct{}, logger log.Entry, buildVersion string) (*Client, error) {
 	clt := client.NewHTTP(logger)
+
 	err := withAgentDescription(clt, buildVersion)
 	if err != nil {
 		return nil, fmt.Errorf("cannot set description: %w", err)
@@ -104,7 +105,7 @@ func withAgentDescription(clt client.OpAMPClient, buildVersion string) error {
 	//   that uniquely identifies the Agent in combination with other attributes.
 	// - any other attributes that are necessary for uniquely identifying the Agent's
 	//   own telemetry.
-	serviceName := "com.newrelic.infrastructure-agent"
+	serviceName := "com.newrelic.infrastructure_agent"
 	serviceVersion := buildVersion
 
 	resolver := hostnameResolver.CreateResolver("", "", false)
@@ -165,7 +166,7 @@ func (cl *Client) instanceId() ulid.ULID {
 	if err != nil {
 		return ulid.MustParse("01GK1Y6ZQDN45ND467S7D191KF")
 	}
-	return ulid.MustParse(string(dat))
+	return ulid.MustParse(strings.TrimSpace(string(dat)))
 }
 
 func (cl *Client) headers() http.Header {
