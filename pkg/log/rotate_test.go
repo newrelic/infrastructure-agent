@@ -460,7 +460,7 @@ func TestCompress(t *testing.T) {
 
 	if runtime.GOOS == "windows" {
 		var zipReader *zip.ReadCloser
-		
+
 		zipReader, err = zip.OpenReader(resultFile.Name())
 		assert.NoError(t, err)
 		assert.Len(t, zipReader.File, 1)
