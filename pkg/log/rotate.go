@@ -5,10 +5,8 @@ package log
 
 import (
 	"bufio"
-	"compress/gzip"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"io/ioutil"
 	"os"
@@ -26,8 +24,6 @@ const (
 	defaultDatePattern = "YYYY-MM-DD_hh-mm-ss"
 	// filePerm specified the permissions while opening a file.
 	filePerm = 0o666
-	// compressedFileExt is the extension used for the compressed rotated file.
-	compressedFileExt = "gz"
 )
 
 // ErrFileNotOpened is returned when an operation cannot be performed because the file is not opened.
@@ -236,20 +232,7 @@ func (f *FileWithRotation) compress(file string, log Entry) error {
 		}
 	}()
 
-	gzFile := gzip.NewWriter(dstWriter)
-
-	defer func() {
-		if err = gzFile.Close(); err != nil {
-			log.Debugf("Failed to close gzip writer after rotating the file: %s", file)
-		}
-	}()
-
-	_, err = io.Copy(gzFile, srcReader)
-	if err != nil {
-		return fmt.Errorf("failed to compress rotated file: %s, error: %w", file, err)
-	}
-
-	return nil
+	return copyContentToArchive(filepath.Base(file), srcReader, dstWriter, log)
 }
 
 // purgeFiles will remove older files in case MaxFiles is exceeded.
