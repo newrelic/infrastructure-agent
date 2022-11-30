@@ -10,7 +10,7 @@ echo "previous: $PREVIOUS"
 make provision-alerts-build
 for CURRENT in $( cat $INVENTORY | grep -v $PREVIOUS | grep linux | grep ansible_host | awk '{print $1}' );do
   export DISPLAY_NAME_CURRENT="${CURRENT}-docker-current"
-  export DISPLAY_NAME_PREVIOUS="${CURRENT}-docker-previos"
+  export DISPLAY_NAME_PREVIOUS="${CURRENT}-docker-previous"
   echo "${DISPLAY_NAME_CURRENT}:${DISPLAY_NAME_PREVIOUS}"
   NR_API_KEY=$API_KEY make provision-alerts
 done
