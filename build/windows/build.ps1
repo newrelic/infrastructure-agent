@@ -9,7 +9,7 @@ param (
 
     [string]$version="0.0.0",
     [string]$commit="default",
-    [string]$date="default",
+    [string]$date="",
 
     # Skip signing
     [switch]$skipSigning=$false,
