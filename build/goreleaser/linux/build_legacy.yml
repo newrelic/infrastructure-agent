@@ -9,6 +9,7 @@
     ldflags:
       - -s -w -X main.buildVersion={{.Version}}
       - -s -w -X main.gitCommit={{.Commit}}
+      - -s -w -X main.buildDate={{.Date}}
     goarch:
       - 386
       - mips
@@ -30,6 +31,7 @@
     ldflags:
       - -s -w -X main.buildVersion={{.Version}}
       - -s -w -X main.gitCommit={{.Commit}}
+      - -s -w -X main.buildDate={{.Date}}
     goarch:
       - 386
       - mips
@@ -51,6 +53,7 @@
     ldflags:
       - -s -w -X main.buildVersion={{.Version}}
       - -s -w -X main.gitCommit={{.Commit}}
+      - -s -w -X main.buildDate={{.Date}}
     goarch:
       - 386
       - mips

@@ -9,6 +9,7 @@ param (
 
     [string]$version="0.0.0",
     [string]$commit="default",
+    [string]$date="default",
 
     # Skip signing
     [switch]$skipSigning=$false,
@@ -86,7 +87,7 @@ Foreach ($pkg in $goMains)
     Write-Output "creating $fileName"
 
     $exe = "$workspace\target\bin\windows_$arch\$fileName.exe"
-    go build -ldflags "-X 'main.buildVersion=$version' -X 'main.gitCommit=$commit'" -o $exe $pkg
+    go build -ldflags "-X 'main.buildVersion=$version' -X 'main.gitCommit=$commit' -X 'main.buildDate=$date' -o $exe $pkg"
     if (-Not $skipSigning) {
         SignExecutable -executable "$exe"
     }

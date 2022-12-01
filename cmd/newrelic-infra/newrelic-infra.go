@@ -86,6 +86,7 @@ var (
 	buildVersion = "development"
 	gitCommit    = ""
 	svcName      = "newrelic-infra"
+	buildDate    = ""
 )
 
 func elapsedTime() time.Duration {
@@ -120,7 +121,8 @@ func main() {
 	wlog.SetOutput(memLog)
 
 	if showVersion {
-		fmt.Printf("New Relic Infrastructure Agent version: %s, GoVersion: %s, GitCommit: %s\n", buildVersion, runtime.Version(), gitCommit)
+		fmt.Printf("New Relic Infrastructure Agent version: %s, GoVersion: %s, GitCommit: %s, BuildDate: %s\n",
+			buildVersion, runtime.Version(), gitCommit, buildDate)
 		os.Exit(0)
 	}
 
