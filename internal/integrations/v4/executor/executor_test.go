@@ -185,6 +185,8 @@ func TestRunnable_Execute_Blocked(t *testing.T) {
 	// WHEN the running context is cancelled
 	cancel()
 
+	<-to.Done
+
 	// THEN the runnable has been interrupted, returning error
 	err := testhelp.ChannelErrClosed(to.Errors)
 	assert.Error(t, err)

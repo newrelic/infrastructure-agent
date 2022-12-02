@@ -8,14 +8,14 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"io"
-	"os/exec"
-	"sync"
-
+	"fmt"
 	"github.com/newrelic/infrastructure-agent/internal/gobackfill"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/constants"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"io"
+	"os/exec"
+	"sync"
 )
 
 const unknownErrExitCode = -3
@@ -42,13 +42,12 @@ func FromCmdSlice(cmd []string, cfg *Config) Executor {
 // When the process ends, all the channels are closed.
 func (r *Executor) Execute(ctx context.Context, pidChan, exitCodeCh chan<- int) OutputReceive {
 	out, receiver := NewOutput()
-	commandCtx, cancelCommand := context.WithCancel(ctx)
 
 	logger := illog.WithField("integration_name", r.Cfg.IntegrationName)
 
 	go func() {
 		defer out.Close()
-		cmd := r.buildCommand(commandCtx)
+		cmd := r.buildCommand(ctx)
 
 		logger.
 			WithField("command", r.Command).
@@ -74,6 +73,9 @@ func (r *Executor) Execute(ctx context.Context, pidChan, exitCodeCh chan<- int) 
 		allOutputForwarded := sync.WaitGroup{}
 		allOutputForwarded.Add(2)
 
+		processOutput := make(chan struct{})
+		defer close(processOutput)
+
 		// scans standard output and error pipes and forwards individual lines to a channel
 		go func() {
 			defer allOutputForwarded.Done()
@@ -88,7 +90,7 @@ func (r *Executor) Execute(ctx context.Context, pidChan, exitCodeCh chan<- int) 
 		// command context so the parent goroutine can exit
 		go func() {
 			allOutputForwarded.Wait()
-			cancelCommand()
+			processOutput <- struct{}{}
 		}()
 
 		if err = startProcess(cmd); err != nil {
@@ -101,9 +103,10 @@ func (r *Executor) Execute(ctx context.Context, pidChan, exitCodeCh chan<- int) 
 
 		// Waits for the command to finish (or be externally cancelled) and closes
 		// the OutputSend channels when all the data has been submitted
-		<-commandCtx.Done()
-		if err := cmd.Wait(); err != nil {
+		<-processOutput
+		if err = cmd.Wait(); err != nil {
 			out.Errors <- err
+			fmt.Println(len(out.Errors))
 			if exitCodeCh != nil {
 				if exitError, ok := err.(*exec.ExitError); ok {
 					exitCodeCh <- gobackfill.ExitCode(exitError)
@@ -115,7 +118,6 @@ func (r *Executor) Execute(ctx context.Context, pidChan, exitCodeCh chan<- int) 
 			exitCodeCh <- 0
 		}
 
-		allOutputForwarded.Wait() // waiting again to avoid closing output before the data is received during cancellation
 	}()
 	return receiver
 }
