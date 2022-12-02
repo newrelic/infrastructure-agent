@@ -1,4 +1,4 @@
-FROM golang:1.18.5-buster
+FROM golang:1.18.8-buster
 
 ARG GH_VERSION='2.0.0'
 ARG GH_ARCH='amd64'
