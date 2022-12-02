@@ -29,7 +29,7 @@ env:
   TAG: ${{ inputs.TAG }}
   GOPATH: ${{ inputs.GOPATH }}
   GITHUB_SHA: ${{ inputs.GITHUB_SHA }}
-  GO_VERSION: '1.18.5'
+  GO_VERSION: '1.18.8'
 
 jobs:
   packaging:
