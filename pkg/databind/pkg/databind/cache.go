@@ -16,7 +16,6 @@ type cachedEntry struct {
 	stored interface{}
 }
 
-//
 func (c *cachedEntry) get(now time.Time) (interface{}, bool) {
 	if c.stored != nil && c.time.Add(c.ttl).After(now) {
 		return c.stored, true

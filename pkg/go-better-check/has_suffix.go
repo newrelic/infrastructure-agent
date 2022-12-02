@@ -22,8 +22,7 @@ type hasSuffixChecker struct {
 //
 // For example:
 //
-//     c.Assert(value, HasSuffix, "end")
-//
+//	c.Assert(value, HasSuffix, "end")
 var HasSuffix Checker = &hasSuffixChecker{
 	&CheckerInfo{Name: "HasSuffix", Params: []string{"obtained", "expected"}},
 }

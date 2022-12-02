@@ -23,19 +23,20 @@ type CmdRequestDiscriminator struct {
 // CmdRequestV1 carries an integration payload requesting command/s execution.
 // This applies to a command request v1.
 // Payload comes from JSON decoding. Expected shape is:
-// {
-//   "command_request_version": "1",
-//   "commands": [
-//     {
-//       "name": "foo":,
-//       "command": "/foo",
-//       "args": ["-bar", "baz"],
-//       "env": {
-//         "FOO": "BAR",
-//       }
-//     }
-//   ]
-// }
+//
+//	{
+//	  "command_request_version": "1",
+//	  "commands": [
+//	    {
+//	      "name": "foo":,
+//	      "command": "/foo",
+//	      "args": ["-bar", "baz"],
+//	      "env": {
+//	        "FOO": "BAR",
+//	      }
+//	    }
+//	  ]
+//	}
 type CmdRequestV1 struct {
 	CmdRequestDiscriminator
 	Commands []CmdRequestV1Cmd `json:"commands"`

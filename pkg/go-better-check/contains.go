@@ -22,8 +22,7 @@ type containsChecker struct {
 //
 // For example:
 //
-//     c.Assert(value, Contains, "end")
-//
+//	c.Assert(value, Contains, "end")
 var Contains Checker = &containsChecker{
 	&CheckerInfo{Name: "Contains", Params: []string{"obtained", "expected"}},
 }

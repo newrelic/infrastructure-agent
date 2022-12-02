@@ -36,15 +36,15 @@ func (c *CmdFF) IsEnabledOHI(ff string) *bool {
 // NewFeatures creates a features object bundling features provided by agent and cmd-channel FF.
 // If no matching feature is found nil is returned.
 // Formats btw CC FF and config files:
-// - Cmd-Channel FF:
-//   | docker_enabled
-// - Agent yaml:
-//   | features:
-//   |  docker_enabled: true
-// - OHI yaml:
-//   | - name: nri-docker
-//   |   when:
-//   |     feature: docker_enabled
+//   - Cmd-Channel FF:
+//     | docker_enabled
+//   - Agent yaml:
+//     | features:
+//     |  docker_enabled: true
+//   - OHI yaml:
+//     | - name: nri-docker
+//     |   when:
+//     |     feature: docker_enabled
 func NewFeatures(fromAgent map[string]bool, cmdFF *CmdFF) *Features {
 	featuresFromA := make(map[string]bool)
 	for ff, enabled := range fromAgent {

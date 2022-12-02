@@ -56,10 +56,11 @@ func NewSysctlPollingMonitor(id ids.PluginID, ctx agent.AgentContext) *SysctlPlu
 }
 
 // walkSysctl will read the value of the /proc/sys item with some simple constraints:
-//   1) the file must be writable (implying it can be changed)
-//   2) the file must also be readable - there are some write only sysctls
-//   3) directories under /proc/sys are never writable so no need to explicitly
-//      check if path is a regular file or directory
+//  1. the file must be writable (implying it can be changed)
+//  2. the file must also be readable - there are some write only sysctls
+//  3. directories under /proc/sys are never writable so no need to explicitly
+//     check if path is a regular file or directory
+//
 // the walk function will also only log errors rather than causing the calling Walk
 // to ever error out - we want to log and skip unreadables rather than abort the Walk
 func (sp *SysctlPlugin) walkSysctl(path string, fi os.FileInfo, _ error) (err error) {

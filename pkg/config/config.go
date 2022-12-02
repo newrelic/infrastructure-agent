@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Contains all the bits and pieces we need to parse and manage
 // the external configuration
+//
 //nolint:tagliatelle
 package config
 

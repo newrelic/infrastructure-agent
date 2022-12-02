@@ -36,7 +36,7 @@ integrations:
     timeout: 10s
 `
 
-//TODO set correct path somehow for windows _windows?
+// TODO set correct path somehow for windows _windows?
 var promIntConfPath = "/etc/newrelic-infra/integrations.d/nr-agent-prometheus-config.yml"
 
 func SetupPrometheusIntegrationConfig(ctx context.Context, agentMetricsEndpoint string) error {

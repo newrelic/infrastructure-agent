@@ -112,7 +112,7 @@ func init() {
 	invoke = acquire.Invoke{}
 }
 
-//MountInfoStat represents linux mount information.
+// MountInfoStat represents linux mount information.
 type MountInfoStat struct {
 	mountID     int
 	parentID    int
@@ -125,7 +125,7 @@ type MountInfoStat struct {
 	Opts        string
 }
 
-//BlockDevice represents a linux fixed-sized blocks device
+// BlockDevice represents a linux fixed-sized blocks device
 type BlockDevice struct {
 	Major  string
 	Minor  string
@@ -446,8 +446,9 @@ func deviceMapperInfo(isContainerized bool) (mounts []MountInfoStat) {
 // CalculateDeviceMapping maps devices found in mount information file to diskstats device name format
 // "Normal" devices are mapped from /dev/sdxy to sdxy
 // LVM devices will are mapped from /dev/mapper/xxx to dm-z where z comes either from
-//  - Min in MajMin if we have /proc/self[1]/mountInfo
-//  - LogVol[z] if the device is named with VolGroup[x]-LogVol[z]
+//   - Min in MajMin if we have /proc/self[1]/mountInfo
+//   - LogVol[z] if the device is named with VolGroup[x]-LogVol[z]
+//
 // Mounts in /dev/root are mapped to the actual device name using /proc/partitions
 // This mapping will fail if we do not have mountInfo (for example older systems with just /proc/mounts) and the device is not named
 // with the above pattern of VolGroup-LogVol. If we find ourselves in this situation we have to refactor this a lot more and use

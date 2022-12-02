@@ -519,7 +519,7 @@ func TestStopByCancelFn_UsedBySignalHandler(t *testing.T) {
 	wg.Wait()
 }
 
-//patchSenderCallRecorder patchSender implementation for tests. It will record the calls made to Process()
+// patchSenderCallRecorder patchSender implementation for tests. It will record the calls made to Process()
 type patchSenderCallRecorder struct {
 	sync.Mutex
 	calls int

@@ -105,7 +105,7 @@ type IDAttribute struct {
 	Value string
 }
 
-//IDAttributes this sorted list ensures uniqueness for the entity key.
+// IDAttributes this sorted list ensures uniqueness for the entity key.
 type IDAttributes []IDAttribute
 
 // Fields store the identifying fields of an entity, which can be used to compose the entity Key
@@ -128,7 +128,7 @@ func (f *Fields) IsAgent() bool {
 	return len(f.Name) == 0
 }
 
-//NewKey generates an entity Key to uniquely identify this entity
+// NewKey generates an entity Key to uniquely identify this entity
 func (f *Fields) Key() (Key, error) {
 	if len(f.Name) == 0 {
 		return EmptyKey, nil // Empty value means this agent's default entity identifier

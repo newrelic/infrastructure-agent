@@ -21,8 +21,8 @@ func (svc *Service) Start(s service.Service) (err error) {
 
 // Stop stops the service
 // There can be a condition where stop messages may not handled:
-// - if we start and stop the service immediately, the agent may not stop properly
-//   and so we have to kill it forcefully
+//   - if we start and stop the service immediately, the agent may not stop properly
+//     and so we have to kill it forcefully
 func (svc *Service) Stop(s service.Service) (err error) {
 	if svc.daemon.exited.Get() {
 		return nil
@@ -42,8 +42,8 @@ func (svc *Service) Stop(s service.Service) (err error) {
 
 // Shutdown stops the service whenever the machine is restarting or shutting down
 // There can be a condition where shutdown messages may not handled:
-// - if we start the service and shutdown the host immediately, the agent may not stop properly
-//   and so we have to kill it forcefully
+//   - if we start the service and shutdown the host immediately, the agent may not stop properly
+//     and so we have to kill it forcefully
 func (svc *Service) Shutdown(s service.Service) (err error) {
 	if svc.daemon.exited.Get() {
 		return nil

@@ -43,8 +43,8 @@ type kmsGatherer struct {
 }
 
 // KMSGatherer instantiates a KMS variable gatherer from the given configuration. The fetching process
-//// will return either a map containing access paths to the stored JSON or ShortHand, or a string if the
-//// stored secret is just a string.
+// // will return either a map containing access paths to the stored JSON or ShortHand, or a string if the
+// // stored secret is just a string.
 // E.g. if the stored secret is `{"car":{"brand":"Opel","model":"Corsa"}}`, the returned Map
 // contents will be:
 // "car.brand" -> "Opel"
