@@ -24,6 +24,8 @@ type tlsConfig struct {
 	MinVersion         uint16 `yaml:"min_version"`
 	MaxVersion         uint16 `yaml:"max_version"`
 	Ca                 string `yaml:"ca"`
+	ClientCert         string `yaml:"client_cert"`
+	ClientKey          string `yaml:"client_key"`
 }
 
 func httpRequest(config *http, method string, body io.Reader) ([]byte, error) {
@@ -45,6 +47,19 @@ func httpRequest(config *http, method string, body io.Reader) ([]byte, error) {
 		rootCAs.AppendCertsFromPEM(ca)
 		tlsConfig.RootCAs = rootCAs
 	}
+
+	if config.TLSConfig.ClientCert != "" && config.TLSConfig.ClientKey != "" {
+		// Load client cert
+		cert, err := tls.LoadX509KeyPair(
+			config.TLSConfig.ClientCert,
+			config.TLSConfig.ClientKey,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("unable to read client certificate file: %s", err)
+		}
+		tlsConfig.Certificates = []tls.Certificate{cert}
+	}
+	
 	client.Transport = &gohttp.Transport{
 		TLSClientConfig: tlsConfig,
 	}
