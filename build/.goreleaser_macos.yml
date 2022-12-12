@@ -14,6 +14,7 @@ builds:
     ldflags:
       - -s -w -X main.buildVersion={{.Version}}
       - -s -w -X main.gitCommit={{.Commit}}
+      - -s -w -X main.buildDate={{.Date}}
 
   - id: darwin-newrelic-infra-ctl
     main: ./cmd/newrelic-infra-ctl
@@ -27,6 +28,7 @@ builds:
     ldflags:
       - -s -w -X main.buildVersion={{.Version}}
       - -s -w -X main.gitCommit={{.Commit}}
+      - -s -w -X main.buildDate={{.Date}}
 
   - id: darwin-newrelic-infra-service
     main: ./cmd/newrelic-infra-service
@@ -40,6 +42,7 @@ builds:
     ldflags:
       - -s -w -X main.buildVersion={{.Version}}
       - -s -w -X main.gitCommit={{.Commit}}
+      - -s -w -X main.buildDate={{.Date}}
 
 archives:
   - id: darwin-tarball-infrastructure-agent
