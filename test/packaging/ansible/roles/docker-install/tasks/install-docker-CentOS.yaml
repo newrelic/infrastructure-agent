@@ -1,17 +1,17 @@
 ---
 
-- name: remove old versions of docker
-  yum:
-    name:
-      - docker
-      - docker-client
-      - docker-client-latest
-      - docker-common
-      - docker-latest
-      - docker-latest-logrotate
-      - docker-logrotate
-      - docker-engine
-    state: absent
+#- name: remove old versions of docker
+#  yum:
+#    name:
+#      - docker
+#      - docker-client
+#      - docker-client-latest
+#      - docker-common
+#      - docker-latest
+#      - docker-latest-logrotate
+#      - docker-logrotate
+#      - docker-engine
+#    state: absent
 
 - name: install yum-utils
   yum:

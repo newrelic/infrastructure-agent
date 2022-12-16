@@ -1,14 +1,14 @@
 ---
 
-- name: remove old docker versions
-  apt:
-    name:
-      - docker
-      - docker-engine
-      - docker.io
-      - containerd
-      - runc
-    state: absent
+#- name: remove old docker versions
+#  apt:
+#    name:
+#      - docker
+#      - docker-engine
+#      - docker.io
+#      - containerd
+#      - runc
+#    state: absent
 
 - name: install tools to verify certificate
   apt:
