@@ -1,3 +1,11 @@
+---
+
+# Currently package from production is installed because stg does not have https and nr-cli verifies this
+# Until this is fixed we need to clean metadata to avoid error: "Not using downloaded repomd.xml because it is older than what we have"
+- name: clean metadata
+  command: yum clean metadata
+  when: ansible_pkg_mgr == 'yum'
+
 - name: Download newrelic-cli installer
   get_url:
     url: https://raw.githubusercontent.com/newrelic/newrelic-cli/master/scripts/install.sh

@@ -30,7 +30,7 @@ jobs:
 
   publishing-to-s3:
     name: Publish linux artifacts into s3 staging bucket
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_publish.yml@master
+    uses: ./.github/workflows/component_linux_publish.yml
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
@@ -52,7 +52,7 @@ jobs:
 
   publishing-to-s3-windows:
     name: Publish windows artifacts into s3 staging bucket
-    uses: newrelic/infrastructure-agent/.github/workflows/component_windows_publish.yml@master
+    uses: ./.github/workflows/component_windows_publish.yml
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}

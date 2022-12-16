@@ -8,6 +8,6 @@ permissions:
 
 jobs:
   canary-alerts-delete:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_canary_alerts_delete.yml@master
+    uses: ./.github/workflows/component_canary_alerts_delete.yml
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}

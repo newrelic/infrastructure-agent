@@ -17,4 +17,6 @@ project: 'infrastructure-agent'
 enable_process_metrics: 'true'
 self_instrumentation: false
 
+forward_docker_logs: false
+
 ...

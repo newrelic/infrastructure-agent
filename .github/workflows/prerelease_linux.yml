@@ -9,23 +9,19 @@ on:
 
 jobs:
   unit-test:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_unit_test.yml@master
+    uses: ./.github/workflows/component_linux_unit_test.yml
     secrets:
       gh_token: ${{secrets.GITHUB_TOKEN}}
 
-# OS is deprecated
-#  harvest-test:
-#    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_harvest_test.yml@master
-
   proxy-tests:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_proxy_test.yml@master
+    uses: ./.github/workflows/component_linux_proxy_test.yml
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
 
   packaging-amd64:
     needs: [unit-test, proxy-tests]
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_packaging.yml@master
+    uses: ./.github/workflows/component_linux_packaging.yml
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
@@ -39,7 +35,7 @@ jobs:
 
   packaging-arm:
     needs: [unit-test, proxy-tests]
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_packaging.yml@master
+    uses: ./.github/workflows/component_linux_packaging.yml
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
@@ -53,7 +49,7 @@ jobs:
 
   packaging-arm64:
     needs: [unit-test, proxy-tests]
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_packaging.yml@master
+    uses: ./.github/workflows/component_linux_packaging.yml
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
@@ -67,7 +63,7 @@ jobs:
 
   packaging-legacy:
     needs: [unit-test, proxy-tests]
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_packaging.yml@master
+    uses: ./.github/workflows/component_linux_packaging.yml
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
@@ -81,7 +77,7 @@ jobs:
 
   packaging-docker:
     needs: [unit-test, proxy-tests]
-    uses: newrelic/infrastructure-agent/.github/workflows/component_docker_packaging.yml@master
+    uses: ./.github/workflows/component_docker_packaging.yml
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
@@ -94,7 +90,7 @@ jobs:
 
   docker-trivy-critical:
     needs: [packaging-docker]
-    uses: newrelic/infrastructure-agent/.github/workflows/component_trivy.yml@master
+    uses: ./.github/workflows/component_trivy.yml
     with:
       tag: "${{ github.event.release.tag_name }}-rc"
       severity: "CRITICAL"
@@ -102,7 +98,7 @@ jobs:
   publishing-to-s3:
     # point to staging after tests
     name: Publish linux artifacts into s3 staging bucket
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_publish.yml@master
+    uses: ./.github/workflows/component_linux_publish.yml
     needs: [packaging-amd64, packaging-arm, packaging-arm64, packaging-legacy]
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
@@ -122,8 +118,8 @@ jobs:
       AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
       ASSETS_TYPE: "all"
 
-  molecule-packaing-tests:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_molecule_packaging.yml@master
+  molecule-packaging-tests:
+    uses: ./.github/workflows/component_molecule_packaging.yml
     needs: [publishing-to-s3]
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
@@ -133,21 +129,28 @@ jobs:
       REPO_ENDPOINT: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
 
   test-prerelease-linux:
-    needs: [molecule-packaing-tests]
-    uses: newrelic/infrastructure-agent/.github/workflows/component_prerelease_testing.yml@master
+    needs: [molecule-packaging-tests]
+    uses: ./.github/workflows/component_prerelease_testing.yml
     with:
       PLATFORM: "linux"
       TAG: ${{ github.event.release.tag_name }}
-      CANARIES: true
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
 
-  test-prerelease-macos:
-    needs: [molecule-packaing-tests]
-    uses: newrelic/infrastructure-agent/.github/workflows/component_prerelease_testing.yml@master
+  canaries-linux:
+    needs: [test-prerelease-linux]
+    uses: ./.github/workflows/component_canaries.yml
     with:
-      PLATFORM: "macos"
+      PLATFORM: "linux"
       TAG: ${{ github.event.release.tag_name }}
-      CANARIES: true
+    secrets:
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+
+  prune-canaries-linux:
+    needs: [canaries-linux]
+    uses: ./.github/workflows/component_canaries_prune.yml
+    with:
+      PLATFORM: "linux"
+      TAG: ${{ github.event.release.tag_name }}
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}

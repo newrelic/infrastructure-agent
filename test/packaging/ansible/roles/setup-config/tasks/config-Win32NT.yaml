@@ -7,7 +7,7 @@
 
 - name: install infra-agent configuration file
   template:
-    src: ../files/etc/newrelic-infra.yml.j2
+    src: newrelic-infra.yml.j2
     dest: C:\Program Files\New Relic\newrelic-infra\newrelic-infra.yml
   no_log: true
 

@@ -10,13 +10,13 @@ on:
 jobs:
 
   canary-alerts-delete:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_canary_alerts_delete.yml@master
+    uses: ./.github/workflows/component_canary_alerts_delete.yml
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
 
   publishing-to-s3-linux:
     name: Publish linux artifacts into s3 production bucket
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_publish.yml@master
+    uses: ./.github/workflows/component_linux_publish.yml
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
@@ -37,7 +37,7 @@ jobs:
 
   publishing-to-s3-windows:
       name: Publish linux artifacts into s3 production bucket
-      uses: newrelic/infrastructure-agent/.github/workflows/component_windows_publish.yml@master
+      uses: ./.github/workflows/component_windows_publish.yml
       secrets:
         DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
         DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
@@ -60,7 +60,7 @@ jobs:
   purge-cdn:
     name: Purge CDN
     needs: [ publishing-to-s3-windows, publishing-to-s3-linux ]
-    uses: newrelic/infrastructure-agent/.github/workflows/component_purge_cdn.yml@master
+    uses: ./.github/workflows/component_purge_cdn.yml
     secrets:
       FASTLY_KEY: ${{secrets.FASTLY_KEY }}
       AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION }}
@@ -69,7 +69,7 @@ jobs:
       AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION }}
 
   publish-docker-images:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_docker_publish.yml@master
+    uses: ./.github/workflows/component_docker_publish.yml
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
@@ -77,8 +77,8 @@ jobs:
       TAG:  ${{ github.event.release.tag_name }}
       ASSETS_TYPE: "all"
 
-  molecule-packaing-tests:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_molecule_packaging.yml@master
+  molecule-packaging-tests:
+    uses: ./.github/workflows/component_molecule_packaging.yml
     needs: [publishing-to-s3-linux]
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}

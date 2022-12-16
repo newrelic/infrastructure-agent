@@ -6,23 +6,36 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"golang.org/x/mod/semver"
 	"os/exec"
 	"regexp"
 	"strings"
+
+	"golang.org/x/mod/semver"
 )
 
 var versionRegex = regexp.MustCompile(`v[0-9]+\.[0-9]+\.[0-9]+`)
 
-// getAWSInstances return all the canary instance names mapped on ids.
-func getAWSInstances(hostPrefix string) (map[string]string, error) {
-	cmd := exec.Command("aws", []string{
+// getAWSInstances return canary instances names mapped on ids
+// it will only return instances prefixed with hostPrefix
+// if platform is not empty it will only retrieve platform specific instances
+func getAWSInstances(hostPrefix string, platform string) (map[string]string, error) {
+	args := []string{
 		"ec2",
 		"describe-instances",
 		"--output", "text",
 		"--filters", `Name=tag:Name,Values="` + hostPrefix + `*"`, `Name=instance-state-name,Values=running`,
 		"--query", "Reservations[*].Instances[*].[Tags[?Key==`Name`], InstanceId]",
-	}...)
+	}
+
+	// limit to platform if not empty. Multiple filters are treated as AND. Multiple values in filter as OR
+	switch platform {
+	case "linux":
+		args = append(args, "--filters", `Name=tag:Name,Values="*ubuntu*,*debian*,*centos*,*redhat*,*sles*,*al*"`)
+	case "windows":
+		args = append(args, "--filters", `Name=tag:Name,Values="*windows*"`)
+	}
+
+	cmd := exec.Command("aws", args...)
 
 	var out bytes.Buffer
 	var outErr bytes.Buffer
@@ -58,7 +71,6 @@ func parseAWSInstances(response string) (map[string]string, error) {
 
 // terminateInstances will terminate all instances.
 func terminateInstances(idsToTerminate []string, instances map[string]string, dryRun bool) error {
-
 	if len(idsToTerminate) == 0 {
 		return nil
 	}
@@ -67,7 +79,6 @@ func terminateInstances(idsToTerminate []string, instances map[string]string, dr
 		fmt.Println(colorizeRed(
 			fmt.Sprintf("[DryRun: '%t'] Removing the following instance: %s -> %s",
 				dryRun, id, instances[id])))
-
 	}
 
 	args := []string{

@@ -471,6 +471,7 @@ func provisionLinuxCanaries(cnf canaryConf) error {
 
 	return provisionEphimeralCanaries(cnf)
 }
+
 func provisionLinuxDockerCanaries(cnf canaryConf, previous bool) error {
 	ansibleGroupVars, err := readAnsibleGroupVars()
 	if err != nil {
@@ -552,12 +553,17 @@ func provisionEphimeralCanaries(cnf canaryConf) error {
 		"-e", "platform="+cnf.platform,
 		path.Join(curPath, "test/automated/ansible/provision.yml"))
 
-	execNameArgs("ansible-playbook",
+	playbookArguments := []string{
 		"-i", path.Join(curPath, inventoryProvisioned),
-		path.Join(curPath, "/test/automated/ansible/install-requirements.yml"))
+	}
+	if cnf.ansiblePassword != "" {
+		playbookArguments = append(playbookArguments, "-e", "ansible_password="+cnf.ansiblePassword)
+	}
+	playbookArguments = append(playbookArguments, path.Join(curPath, "/test/automated/ansible/install-requirements.yml"))
+	execNameArgs("ansible-playbook", playbookArguments...)
 
 	provisionOpts := newProvisionOptions()[OptionInstallVersionStaging]
-	playbookArguments := []string{
+	playbookArguments = []string{
 		"-e", "nr_license_key=" + cnf.license,
 		"-e", "enable_process_metrics=true",
 		"-e", "nria_log_level=smart",
@@ -566,6 +572,7 @@ func provisionEphimeralCanaries(cnf canaryConf) error {
 		"-e", "nria_log_rotation_max_files=5",
 		"-e", "nria_log_rotation_compressed=true",
 		"-e", "target_agent_version=" + cnf.agentVersion[1:],
+		"-e", "forward_docker_logs=true",
 		"-f", strconv.Itoa(cnf.ansibleForks),
 		"-i", path.Join(curPath, inventoryProvisioned),
 	}
@@ -597,8 +604,9 @@ func provisionEphimeralCanaries(cnf canaryConf) error {
 // ones that have the latest 2 version of infra-agent installed.
 func pruneCanaries(cmd *cobra.Command, args []string) error {
 	dryRun := viper.GetBool("dry_run")
+	platform := viper.GetString("platform")
 
-	instances, err := getAWSInstances(hostPrefix + ":v")
+	instances, err := getAWSInstances(hostPrefix+":v", platform)
 	if err != nil {
 		return err
 	}
@@ -614,7 +622,7 @@ func pruneCanaries(cmd *cobra.Command, args []string) error {
 // previousCanaryVersion returned previous version of canaries
 // based on ec2 instances.
 func previousCanaryVersion(cmd *cobra.Command, args []string) error {
-	instances, err := getAWSInstances(hostPrefix + ":v")
+	instances, err := getAWSInstances(hostPrefix+":v", "")
 	if err != nil {
 		return err
 	}

@@ -5,11 +5,12 @@ package main
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
 	"sort"
 	"strings"
+
+	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -82,7 +83,7 @@ func prepareAnsibleConfig(chosenOptions options, provisionHostPrefix string) {
 	if err != nil {
 		panic(err)
 	}
-	err = ioutil.WriteFile(inventoryForCreation, newConfigByte, 0644)
+	err = ioutil.WriteFile(inventoryForCreation, newConfigByte, 0o644)
 	if err != nil {
 		panic(err)
 	}
@@ -120,7 +121,6 @@ func (o provisionOptions) print() {
 }
 
 func (o provisionOptions) toString() string {
-
 	ordered := make([]int, 0)
 	for id := range o {
 		ordered = append(ordered, id)
@@ -216,10 +216,6 @@ func newProvisionOptions() provisionOptions {
 		name:               "install given version of dockerized agent",
 		playbook:           "test/packaging/ansible/docker-canary.yml",
 		licenseKeyRequired: true,
-		args: map[string]string{
-			"current_or_previous":  "current",
-			"target_agent_version": "latest",
-		},
 	}
 
 	return opts
