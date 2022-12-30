@@ -30,6 +30,10 @@
       include_role:
         name: logrotate
 
+    - name: Configure hostname
+      include_role:
+        name: hostname
+
 - hosts: testing_hosts_macos
   become: false
   gather_facts: no
@@ -43,4 +47,10 @@
       include_role:
         name: install-python
 
+- hosts: testing_hosts_windows
+  gather_facts: yes
 
+  tasks:
+    - name: Configure hostname
+      include_role:
+        name: hostname

@@ -1,0 +1,88 @@
+name: 🐤 Canaries
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to test'
+        required: true
+      linux:
+        description: '🐧 Should create canaries for Linux?'
+        type: boolean
+        default: true
+        required: false
+      macos:
+        description: '🍏 Should create canaries for MacOS?'
+        type: boolean
+        default: true
+        required: false
+      windows:
+        description: '🪟 Should create canaries for Windows?'
+        type: boolean
+        default: true
+        required: false
+      prune:
+        description: '💥 Should prune previous canaries?'
+        type: boolean
+        default: true
+        required: false
+      alerts:
+        description: '🚨 Should create alerts?'
+        type: boolean
+        default: true
+        required: false
+
+permissions:
+  id-token: write
+
+jobs:
+  canaries-windows:
+    if: ${{ github.event.inputs.windows == 'true' }}
+    uses: ./.github/workflows/component_canaries.yml
+    with:
+      PLATFORM: "windows"
+      TAG: ${{ github.event.inputs.tag }}
+    secrets:
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+
+  canaries-linux:
+    if: ${{ github.event.inputs.linux == 'true' }}
+    uses: ./.github/workflows/component_canaries.yml
+    with:
+      PLATFORM: "linux"
+      TAG: ${{ github.event.inputs.tag }}
+    secrets:
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+
+  canaries-macos:
+    if: ${{ github.event.inputs.macos == 'true' }}
+    uses: ./.github/workflows/component_canaries.yml
+    with:
+      PLATFORM: "macos"
+      TAG: ${{ github.event.inputs.tag }}
+    secrets:
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+
+  prune-previous-canaries-linux:
+    if: ${{ github.event.inputs.prune == 'true' && github.event.inputs.linux == 'true' }}
+    uses: ./.github/workflows/component_canaries_prune.yml
+    with:
+      PLATFORM: "linux"
+    secrets:
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+
+  prune-previous-canaries-windows:
+    if: ${{ github.event.inputs.prune == 'true' && github.event.inputs.windows == 'true' }}
+    uses: ./.github/workflows/component_canaries_prune.yml
+    with:
+      PLATFORM: "windows"
+    secrets:
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+
+  canary-alerts:
+    if: ${{ github.event.inputs.alerts == 'true' }}
+    uses: ./.github/workflows/component_canary_alerts.yml
+    with:
+      TAG: ${{ github.event.inputs.tag }}
+    secrets:
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}

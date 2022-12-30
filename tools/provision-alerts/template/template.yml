@@ -40,6 +40,15 @@ policies:
             )
           FROM ProcessSample WHERE displayName IN ('{{ .DisplayNameCurrent }}','{{ .DisplayNamePrevious }}')
 
+      - name: Container count comparator
+        nrql:
+          SELECT abs(
+          filter(uniqueCount(containerId),WHERE reportingAgent like '{{ .DisplayNameCurrent }}')
+          -
+          filter(uniqueCount(containerId),WHERE reportingAgent like '{{ .DisplayNamePrevious }}')
+          )
+          FROM ContainerSample WHERE reportingAgent IN ('{{ .DisplayNameCurrent }}','{{ .DisplayNamePrevious }}')
+
       - name: Process username empty
         nrql:
           SELECT count(*) FROM ProcessSample
@@ -539,3 +548,9 @@ policies:
         operator: "above"
         template_name: "Agent process metrics"
 
+#containers
+      - name: Container count
+        threshold: 0
+        duration: 10
+        operator: "above"
+        template_name: "Container count comparator"

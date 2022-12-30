@@ -13,45 +13,45 @@ on:
 jobs:
 
   linter-linux:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_linter.yml@master
+    uses: ./.github/workflows/component_linux_linter.yml
 
   unit-test-linux:
-      uses: newrelic/infrastructure-agent/.github/workflows/component_linux_unit_test.yml@master
+      uses: ./.github/workflows/component_linux_unit_test.yml
       secrets:
         gh_token: ${{secrets.GITHUB_TOKEN}}
 
   harvest-test-linux:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_harvest_test.yml@master
+    uses: ./.github/workflows/component_linux_harvest_test.yml
 
   linter-macos:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_macos_linter.yml@master
+    uses: ./.github/workflows/component_macos_linter.yml
 
   unit-test-macos:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_macos_unit_test.yml@master
+    uses: ./.github/workflows/component_macos_unit_test.yml
 
   harvest-test-macos:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_macos_harvest_test.yml@master
+    uses: ./.github/workflows/component_macos_harvest_test.yml
 
   linter-windows:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_windows_linter.yml@master
+    uses: ./.github/workflows/component_windows_linter.yml
 
   unit-test-windows:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_windows_unit_test.yml@master
+    uses: ./.github/workflows/component_windows_unit_test.yml
 
   proxy-tests-linux:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_proxy_test.yml@master
+    uses: ./.github/workflows/component_linux_proxy_test.yml
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
 
   tools-tests-linux:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_tools_unit_test.yml@master
+    uses: ./.github/workflows/component_linux_tools_unit_test.yml
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
 
   build-container:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_docker_build.yml@master
+    uses: ./.github/workflows/component_docker_build.yml
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
@@ -59,7 +59,7 @@ jobs:
       TAG: "0.0.0" # needed for goreleaser test builds
 
   test-build:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_linux_build.yml@master
+    uses: ./.github/workflows/component_linux_build.yml
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}

@@ -2,6 +2,11 @@ name: 🚀 🐳 Build Docker image or ci runner
 
 on:
   workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch for container'
+        default: master
+        required: true
 
 env:
   REGISTRY: ghcr.io
@@ -40,3 +45,5 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            REF_ARG=${{ github.event.inputs.branch }}
