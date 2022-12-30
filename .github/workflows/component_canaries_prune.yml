@@ -7,9 +7,6 @@ on:
         required: true
 
     inputs:
-      TAG:
-        required: true
-        type: string
       PLATFORM:
         required: true
         type: string

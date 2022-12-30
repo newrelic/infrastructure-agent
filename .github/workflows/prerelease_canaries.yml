@@ -21,7 +21,7 @@ on:
         type: boolean
         default: true
         required: false
-      windows:
+      prune:
         description: '💥 Should prune previous canaries?'
         type: boolean
         default: true
