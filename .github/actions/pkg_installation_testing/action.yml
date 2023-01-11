@@ -1,0 +1,35 @@
+name: 'Package installation testing'
+description: 'Test that given package can be installed from a given repo'
+inputs:
+  repo_url:
+    description: 'url to the apt/yum/zyp repository'
+  package_name:
+    description: 'name of a package'
+  package_version:
+    description: 'version of a package'
+  gpg_key:
+    description: 'gpg key to verify package signatures'
+  docker_hub_id:
+    description: 'required to avoid rate limiting'
+  docker_hub_password:
+    description: 'required to avoid rate limiting'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Configure Molecule and Ansible
+      shell: bash
+      run: |
+        sudo pipx uninstall ansible-core
+        sudo pip3 install molecule[docker]==3.6.0
+        sudo pip3 install 'rich>=10.0.0,<11.0.0'
+        sudo pip3 install ansible-lint[community]==5.3.2
+    - name: Login to DockerHub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ inputs.docker_hub_id }}
+        password: ${{ inputs.docker_hub_password }}
+    - name: Run molecule
+      shell: bash
+      run: echo "run molecule here..."
+
