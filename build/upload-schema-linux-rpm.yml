@@ -79,7 +79,7 @@
     - x86_64
   uploads:
     - type: file
-      dest: "{dest_prefix}linux/yum/el/{os_version}/{arch}/"
+      dest: "{dest_prefix}linux/yum/el/{os_version}/{arch}/{src}"
       os_version:
         - 6
         - 7
@@ -91,7 +91,7 @@
     - arm
   uploads:
     - type: file
-      dest: "{dest_prefix}linux/yum/el/{os_version}/{arch}/"
+      dest: "{dest_prefix}linux/yum/el/{os_version}/{arch}/{src}"
       os_version:
         - 7
         - 8
@@ -102,7 +102,7 @@
     - arm64
   uploads:
     - type: file
-      dest: "{dest_prefix}linux/yum/el/{os_version}/aarch64/"
+      dest: "{dest_prefix}linux/yum/el/{os_version}/aarch64/{src}"
       os_version:
         - 7
         - 8
@@ -113,7 +113,7 @@
     - x86_64
   uploads:
     - type: file
-      dest: "{dest_prefix}linux/zypp/sles/{os_version}/{arch}/"
+      dest: "{dest_prefix}linux/zypp/sles/{os_version}/{arch}/{src}"
       os_version:
         - 11.4
         - 12.1
@@ -131,7 +131,7 @@
     - arm
   uploads:
     - type: file
-      dest: "{dest_prefix}linux/zypp/sles/{os_version}/{arch}/"
+      dest: "{dest_prefix}linux/zypp/sles/{os_version}/{arch}/{src}"
       os_version:
         - 12.2
         - 12.3
@@ -147,7 +147,7 @@
     - arm64
   uploads:
     - type: file
-      dest: "{dest_prefix}linux/zypp/sles/{os_version}/aarch64/"
+      dest: "{dest_prefix}linux/zypp/sles/{os_version}/aarch64/{src}"
       os_version:
         - 12.2
         - 12.3
@@ -164,7 +164,7 @@
     - arm
   uploads:
     - type: file
-      dest: "{dest_prefix}linux/yum/amazonlinux/{os_version}/{arch}/"
+      dest: "{dest_prefix}linux/yum/amazonlinux/{os_version}/{arch}/{src}"
       os_version:
         - 2
         - 2022
@@ -174,7 +174,7 @@
     - arm64
   uploads:
     - type: file
-      dest: "{dest_prefix}linux/yum/amazonlinux/{os_version}/aarch64/"
+      dest: "{dest_prefix}linux/yum/amazonlinux/{os_version}/aarch64/{src}"
       os_version:
         - 2
         - 2022
