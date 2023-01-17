@@ -36,6 +36,11 @@ runs:
       run: ${GITHUB_ACTION_PATH}/prepare_platform.sh ${{ inputs.platforms }}
     - name: Run molecule
       shell: bash
+      env:
+        repo_base_url: ${{ inputs.repo_base_url }}
+        package_name: ${{ inputs.package_name }}
+        expected_package_version: ${{ inputs.expected_package_version }}
+        gpg_key: ${{ inputs.gpg_key }}
       run: "cd ${GITHUB_ACTION_PATH} && molecule converge"
     - name: Teardown
       shell: bash
