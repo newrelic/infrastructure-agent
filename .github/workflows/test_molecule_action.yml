@@ -1,5 +1,5 @@
 ---
-name: 🔍 Testing
+name: 🧬 Repository check
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 jobs:
 
   unit-test:
-    name: Unit tests
+    name: Molecule
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2

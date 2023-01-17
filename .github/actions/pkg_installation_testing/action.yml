@@ -33,10 +33,10 @@ runs:
         password: ${{ inputs.docker_hub_password }}
     - name: Prepare OS versions
       shell: bash
-      run: ./prepare_platform.sh ${{ inputs.platforms }}
+      run: ${GITHUB_ACTION_PATH}/prepare_platform.sh ${{ inputs.platforms }}
     - name: Run molecule
       shell: bash
-      run: "molecule converge"
+      run: "cd ${GITHUB_ACTION_PATH} && molecule converge"
     - name: Teardown
       shell: bash
-      run: "molecule destroy"
+      run: "cd ${GITHUB_ACTION_PATH} && molecule destroy"
