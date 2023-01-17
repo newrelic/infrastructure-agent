@@ -57,3 +57,5 @@ build/.goreleaser_linux.yml
 .terraform.lock.hcl
 
 THIRD_PARTY_NOTICES_GENERATED.md
+
+.github/actions/pkg_installation_testing/molecule/default/molecule.yml
