@@ -1,18 +1,20 @@
 name: 'Package installation testing'
 description: 'Test that given package can be installed from a given repo'
 inputs:
-  repo_url:
-    description: 'url to the apt/yum/zyp repository'
+  repo_base_url:
+    description: 'base url to the rpm/yum/apt repository of NR'
   package_name:
     description: 'name of a package'
-  package_version:
-    description: 'version of a package'
+  expected_package_version:
+    description: 'version of a package that should be installed'
   gpg_key:
     description: 'gpg key to verify package signatures'
   docker_hub_id:
     description: 'required to avoid rate limiting'
   docker_hub_password:
     description: 'required to avoid rate limiting'
+  platforms:
+    description: 'comma separated list of platforms with version we want to run test for'
 
 runs:
   using: "composite"
@@ -29,7 +31,12 @@ runs:
       with:
         username: ${{ inputs.docker_hub_id }}
         password: ${{ inputs.docker_hub_password }}
+    - name: Prepare OS versions
+      shell: bash
+      run: ./prepare_platform.sh ${{ inputs.platforms }}
     - name: Run molecule
       shell: bash
-      run: echo "run molecule here..."
-
+      run: "molecule converge"
+    - name: Teardown
+      shell: bash
+      run: "molecule destroy"

@@ -1,0 +1,20 @@
+---
+
+- name: install infra-agent APT key
+  apt_key:
+    url: https://download.newrelic.com/infrastructure_agent/gpg/newrelic-infra.gpg
+
+- debug: var=repo_endpoint
+
+- name: install infra-agent APT repository
+  apt_repository:
+    repo: "deb {{ repo_endpoint }}/linux/apt {{ ansible_distribution_release }} main"
+    filename: newrelic-infra
+    update_cache: no
+
+- name: Run the equivalent of "apt-get update" as a separate step
+  apt:
+    update_cache: yes
+  ignore_errors: true #ubuntu 20.10 image has broken repos so ignore errors
+
+...

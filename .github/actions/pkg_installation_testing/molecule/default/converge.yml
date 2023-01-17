@@ -1,0 +1,20 @@
+---
+- name: Converge
+  hosts: all
+  tasks:
+    - name: Installation tests suite
+      vars:
+        repo_endpoint: "{{ lookup('env', 'REPO_BASE_URL') }}"
+        env_vars: ""
+        target_agent_version: "{{ lookup('env', 'EXPECTED_PACKAGE_VERSION') }}"
+
+      block:
+        - name: Repo setup
+          include_role:
+            name: repo-setup
+        - name: Install agent
+          include_role:
+            name: package-install
+        - name: Assert version
+          include_role:
+            name: assert-version

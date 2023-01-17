@@ -1,0 +1,41 @@
+---
+name: 🔍 Testing
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+
+  unit-test:
+    name: Unit tests
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Molecule tests
+        uses: ./.github/actions/pkg_installation_testing
+        with:
+          repo_base_url: 'https://download.newrelic.com/infrastructure_agent/'
+          package_name: 'newrelic-infra'
+          expected_package_version: '1.36.1'
+          gpg_key: 'https://download.newrelic.com/infrastructure_agent/gpg/newrelic-infra.gpg'
+          platforms: "ubuntu-2204,ubuntu-2004"
+          docker_hub_id: ${{secrets.OHAI_DOCKER_HUB_ID}}
+          docker_hub_password: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+
+#  repo_base_url:
+#    description: 'base url to the rpm/yum/apt repository of NR'
+#  package_name:
+#    description: 'name of a package'
+#  expected_package_version:
+#    description: 'version of a package that should be installed'
+#  gpg_key:
+#    description: 'gpg key to verify package signatures'
+#  docker_hub_id:
+#    description: 'required to avoid rate limiting'
+#  docker_hub_password:
+#    description: 'required to avoid rate limiting'
+#  platforms:
+#    description: 'comma separated list of platforms with version we want to run test for'
