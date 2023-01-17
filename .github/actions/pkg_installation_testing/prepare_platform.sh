@@ -15,6 +15,7 @@ platforms:" > "${GITHUB_ACTION_PATH}/molecule/default/molecule.yml"
 if [[ "$PLATFORMS" == *"al-2"* ]]; then
 echo "
   - name: al-2
+    image: al-2
     dockerfile: al2.Dockerfile
     privileged: true
     environment: { container: docker }
@@ -25,6 +26,7 @@ fi
 if [[ "$PLATFORMS" == *"al-2022"* ]]; then
 echo "
   - name: al-2022
+    image: al-2022
     dockerfile: al2022.Dockerfile
     privileged: true
     environment: { container: docker }
@@ -35,6 +37,7 @@ fi
 if [[ "$PLATFORMS" == *"centos-7"* ]]; then
 echo "
   - name: centos-7
+    image: centos-7
     dockerfile: centos7.Dockerfile
     privileged: true
     environment: { container: docker }
@@ -45,6 +48,7 @@ fi
 if [[ "$PLATFORMS" == *"centos-8"* ]]; then
 echo "
   - name: centos-8
+    image: centos-8
     dockerfile: centos8.Dockerfile
     privileged: true
     environment: { container: docker }
@@ -55,6 +59,7 @@ fi
 if [[ "$PLATFORMS" == *"debian-bullseye"* ]]; then
 echo "
   - name: debian-bullseye
+    image: debian-bullseye
     privileged: true
     dockerfile: debian-bullseye.Dockerfile
     environment: { container: docker }
@@ -65,6 +70,7 @@ fi
 if [[ "$PLATFORMS" == *"debian-buster"* ]]; then
 echo "
   - name: debian-buster
+    image: debian-buster
     privileged: true
     dockerfile: debian-buster.Dockerfile
     environment: { container: docker }
@@ -75,6 +81,7 @@ fi
 if [[ "$PLATFORMS" == *"redhat-8"* ]]; then
 echo "
   - name: redhat-8
+    image: redhat-8
     privileged: true
     dockerfile: redhat8.Dockerfile
     environment: { container: docker }
@@ -85,6 +92,7 @@ fi
 if [[ "$PLATFORMS" == *"redhat-9"* ]]; then
 echo "
   - name: redhat-9
+    image: redhat-9
     privileged: true
     dockerfile: redhat9.Dockerfile
     environment: { container: docker }
@@ -95,6 +103,7 @@ fi
 if [[ "$PLATFORMS" == *"suse-15.2"* ]]; then
 echo "
   - name: suse15.2
+    image: suse15.2
     privileged: true
     dockerfile: suse15.2.Dockerfile
     environment: { container: docker }
@@ -105,6 +114,7 @@ fi
 if [[ "$PLATFORMS" == *"suse-15.3"* ]]; then
 echo "
   - name: suse15.3
+    image: suse15.3
     privileged: true
     dockerfile: suse15.3.Dockerfile
     environment: { container: docker }
@@ -115,6 +125,7 @@ fi
 if [[ "$PLATFORMS" == *"suse-15.4"* ]]; then
 echo "
   - name: suse15.4
+    image: suse15.4
     privileged: true
     dockerfile: suse15.4.Dockerfile
     environment: { container: docker }
@@ -126,6 +137,7 @@ fi
 if [[ "$PLATFORMS" == *"ubuntu-1604"* ]]; then
 echo "
   - name: ubuntu-1604
+    image: ubuntu-1604
     privileged: true
     dockerfile: ub1604.Dockerfile
     environment: { container: docker }
@@ -136,6 +148,7 @@ fi
 if [[ "$PLATFORMS" == *"ubuntu-1804"* ]]; then
 echo "
   - name: ubuntu-1804
+    image: ubuntu-1804
     privileged: true
     dockerfile: ub1804.Dockerfile
     environment: { container: docker }
@@ -146,6 +159,7 @@ fi
 if [[ "$PLATFORMS" == *"ubuntu-2004"* ]]; then
 echo "
   - name: ubuntu-2004
+    image: ubuntu-2004
     privileged: true
     dockerfile: ub2004.Dockerfile
     environment: { container: docker }
@@ -156,6 +170,7 @@ fi
 if [[ "$PLATFORMS" == *"ubuntu-2204"* ]]; then
 echo "
   - name: ubuntu-2204
+    image: ubuntu-2204
     privileged: true
     dockerfile: ub2204.Dockerfile
     environment: { container: docker }
