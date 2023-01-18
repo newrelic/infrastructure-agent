@@ -17,7 +17,7 @@ jobs:
       - name: Molecule tests
         uses: ./.github/actions/pkg_installation_testing
         with:
-          repo_base_url: 'https://download.newrelic.com/infrastructure_agent/'
+          repo_base_url: 'https://download.newrelic.com/infrastructure_agent'
           package_name: 'newrelic-infra'
           expected_package_version: '1.36.1'
           gpg_key: 'https://download.newrelic.com/infrastructure_agent/gpg/newrelic-infra.gpg'
