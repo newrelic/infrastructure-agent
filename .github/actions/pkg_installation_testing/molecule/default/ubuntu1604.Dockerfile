@@ -1,7 +1,7 @@
 FROM ubuntu:16.04
 
 RUN apt-get update \
-    && apt-get install -y init gpg ca-certificates sudo curl \
+    && apt-get install -y init ca-certificates sudo curl \
     && apt-get clean all
 
 # Adding fake systemctl
