@@ -138,6 +138,7 @@ if [[ "$PLATFORMS" == *"ubuntu-1604"* ]]; then
 echo "
   - name: ubuntu-1604
     image: ubuntu-1604
+    command: \"/sbin/init\"
     privileged: true
     dockerfile: ub1604.Dockerfile
     environment: { container: docker }
@@ -149,6 +150,7 @@ if [[ "$PLATFORMS" == *"ubuntu-1804"* ]]; then
 echo "
   - name: ubuntu-1804
     image: ubuntu-1804
+    command: \"/sbin/init\"
     privileged: true
     dockerfile: ub1804.Dockerfile
     environment: { container: docker }
@@ -160,6 +162,7 @@ if [[ "$PLATFORMS" == *"ubuntu-2004"* ]]; then
 echo "
   - name: ubuntu-2004
     image: ubuntu-2004
+    command: \"/sbin/init\"
     privileged: true
     dockerfile: ub2004.Dockerfile
     environment: { container: docker }
@@ -171,6 +174,7 @@ if [[ "$PLATFORMS" == *"ubuntu-2204"* ]]; then
 echo "
   - name: ubuntu-2204
     image: ubuntu-2204
+    command: \"/sbin/init\"
     privileged: true
     dockerfile: ub2204.Dockerfile
     environment: { container: docker }

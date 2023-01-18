@@ -7,6 +7,7 @@
         repo_endpoint: "{{ lookup('env', 'REPO_BASE_URL') }}"
         env_vars: ""
         target_agent_version: "{{ lookup('env', 'EXPECTED_PACKAGE_VERSION') }}"
+        package_name: "{{ lookup('env', 'PACKAGE_NAME') }}"
 
       block:
         - name: Repo setup
