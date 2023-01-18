@@ -140,7 +140,7 @@ echo "
     image: ubuntu-1604
     command: \"/sbin/init\"
     privileged: true
-    dockerfile: ub1604.Dockerfile
+    dockerfile: ubuntu1604.Dockerfile
     environment: { container: docker }
     groups:
       - testing_hosts_linux" >> "${GITHUB_ACTION_PATH}/molecule/default/molecule.yml"
@@ -152,7 +152,7 @@ echo "
     image: ubuntu-1804
     command: \"/sbin/init\"
     privileged: true
-    dockerfile: ub1804.Dockerfile
+    dockerfile: ubuntu1804.Dockerfile
     environment: { container: docker }
     groups:
       - testing_hosts_linux" >> "${GITHUB_ACTION_PATH}/molecule/default/molecule.yml"
@@ -164,7 +164,7 @@ echo "
     image: ubuntu-2004
     command: \"/sbin/init\"
     privileged: true
-    dockerfile: ub2004.Dockerfile
+    dockerfile: ubuntu2004.Dockerfile
     environment: { container: docker }
     groups:
       - testing_hosts_linux" >> "${GITHUB_ACTION_PATH}/molecule/default/molecule.yml"
@@ -176,7 +176,7 @@ echo "
     image: ubuntu-2204
     command: \"/sbin/init\"
     privileged: true
-    dockerfile: ub2204.Dockerfile
+    dockerfile: ubuntu2204.Dockerfile
     environment: { container: docker }
     groups:
       - testing_hosts_linux" >> "${GITHUB_ACTION_PATH}/molecule/default/molecule.yml"
