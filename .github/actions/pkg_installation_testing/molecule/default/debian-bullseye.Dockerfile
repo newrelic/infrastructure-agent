@@ -1,7 +1,7 @@
 FROM debian:bullseye
 
 RUN apt-get update \
-    && apt-get install -y init gpg ca-certificates sudo curl \
+    && apt-get install -y init gpg ca-certificates sudo curl python3 \
     && apt-get clean all
 
 # Adding fake systemctl
