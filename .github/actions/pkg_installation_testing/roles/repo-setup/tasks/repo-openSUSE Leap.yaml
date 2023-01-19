@@ -1,5 +1,6 @@
 ---
 
+# name of a file reflecting container OS version
 - name: install infra-agent Zypper repository
   zypper_repository:
     name: newrelic-infra
