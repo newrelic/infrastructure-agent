@@ -20,7 +20,7 @@
 
 - name: install infra-agent configuration file
   template:
-    src: ../files/etc/newrelic-infra.yml.j2
+    src: newrelic-infra.yml.j2
     dest: "{{ brew_path }}/etc/newrelic-infra/newrelic-infra.yml"
     owner: "{{ ansible_user }}"
     group: wheel

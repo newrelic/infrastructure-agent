@@ -18,10 +18,6 @@ on:
       PLATFORM:
         required: true
         type: string
-      CANARIES:
-        required: true
-        type: boolean
-
 
 env:
   AWS_ASSUME_ROLE: 'arn:aws:iam::018789649883:role/caos-pipeline-oidc'
@@ -124,103 +120,6 @@ jobs:
         with:
           aws_region: us-east-2
           container_make_target: "test/automated/packaging LIMIT=windows_amd64 PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} ANSIBLE_INVENTORY_FILE=${{ inputs.PLATFORM }}-inventory.ec2 TAG=${{ inputs.TAG }}"
-          ecs_cluster_name: caos_prerelease
-          task_definition_name: test-prerelease-td
-          cloud_watch_logs_group_name: /ecs/test-prerelease
-          cloud_watch_logs_stream_name: ecs/test-prerelease
-          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
-
-  canaries-linux:
-    if: ${{ inputs.PLATFORM == 'linux' && inputs.CANARIES == true }}
-    needs: [ packaging-tests-linux ]
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
-          aws-region: us-east-2
-
-      - name: Provision canaries
-        uses: ./.github/actions/external_runner
-        with:
-          aws_region: us-east-2
-          container_make_target: "canaries PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} VERSION=${{ inputs.TAG }}"
-          ecs_cluster_name: caos_prerelease
-          task_definition_name: test-prerelease-td
-          cloud_watch_logs_group_name: /ecs/test-prerelease
-          cloud_watch_logs_stream_name: ecs/test-prerelease
-          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
-
-  canaries-macos:
-    # leverage linux workflow as we don't have macos packaging tests yet
-    if: ${{ inputs.PLATFORM == 'macos' && inputs.CANARIES == true }}
-    needs: [ packaging-tests-linux ]
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
-          aws-region: us-east-2
-
-      - name: Provision canaries
-        uses: ./.github/actions/external_runner
-        with:
-          aws_region: us-east-2
-          container_make_target: "canaries PLATFORM=macos ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} VERSION=${{ inputs.TAG }}"
-          ecs_cluster_name: caos_prerelease
-          task_definition_name: test-prerelease-td
-          cloud_watch_logs_group_name: /ecs/test-prerelease
-          cloud_watch_logs_stream_name: ecs/test-prerelease
-          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
-
-  canaries-windows:
-    if: ${{ inputs.PLATFORM == 'windows' && inputs.CANARIES == true }}
-    needs: [ packaging-tests-windows ]
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
-          aws-region: us-east-2
-
-      - name: Provision canaries
-        uses: ./.github/actions/external_runner
-        with:
-          aws_region: us-east-2
-          container_make_target: "canaries PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} VERSION=${{ inputs.TAG }}"
-          ecs_cluster_name: caos_prerelease
-          task_definition_name: test-prerelease-td
-          cloud_watch_logs_group_name: /ecs/test-prerelease
-          cloud_watch_logs_stream_name: ecs/test-prerelease
-          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
-
-  canaries-prune:
-    needs: [ canaries-linux, canaries-windows ]
-    if: ${{ always() && inputs.CANARIES == true }}
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
-          aws-region: us-east-2
-
-      - name: Prune old canaries
-        uses: ./.github/actions/external_runner
-        with:
-          aws_region: us-east-2
-          container_make_target: "canaries-prune-auto PLATFORM=linux"
           ecs_cluster_name: caos_prerelease
           task_definition_name: test-prerelease-td
           cloud_watch_logs_group_name: /ecs/test-prerelease

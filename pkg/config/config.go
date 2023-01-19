@@ -1218,15 +1218,19 @@ func (lc *LogConfig) HasIncludeFilter(key, value string) bool {
 
 // LogRotateConfig map all log rotator configuration options
 type LogRotateConfig struct {
-	MaxSizeMb          int    `yaml:"max_size_mb" envconfig:"max_size_mb"`
+	MaxSizeMb          *int   `yaml:"max_size_mb" envconfig:"max_size_mb"`
 	MaxFiles           int    `yaml:"max_files" envconfig:"max_files"`
 	CompressionEnabled bool   `yaml:"compression_enabled" envconfig:"compression_enabled"`
 	FilePattern        string `yaml:"file_pattern" envconfig:"file_pattern"`
 }
 
+func (l *LogRotateConfig) IsSet() bool {
+	return l.MaxSizeMb != nil
+}
+
 // IsEnabled checks if log rotation is enabled.
 func (l *LogRotateConfig) IsEnabled() bool {
-	return l.MaxSizeMb > 0
+	return l.IsSet() && *l.MaxSizeMb > 0
 }
 
 // VerboseEnabled return 1 if debug or higher log level is enabled.
@@ -1282,6 +1286,11 @@ func (config *Config) loadLogConfig() {
 	if reflect.DeepEqual(config.Log, LogConfig{}) {
 		config.populateLogConfig()
 		return
+	}
+
+	// if windows and config.Log.Rotate == nil -> fill defaults for windows
+	if !config.Log.Rotate.IsSet() {
+		config.Log.Rotate = loadDefaultLogRotation()
 	}
 
 	// backwards compatability with non struct log configuration options

@@ -1,0 +1,19 @@
+---
+
+- name: Set displayName as hostname
+  win_hostname:
+    name: "{{ hostname }}"
+  register: res
+
+- name: Reboot
+  win_reboot:
+  when: res.reboot_required
+
+- name: Wait until host is up-and-running again
+  win_ping:
+  register: lsresult
+  until: "lsresult is not failed"
+  retries: 10
+  delay: 10
+
+...

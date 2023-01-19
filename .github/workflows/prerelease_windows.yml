@@ -26,7 +26,7 @@ env:
 
 jobs:
   unit-test:
-    uses: newrelic/infrastructure-agent/.github/workflows/component_windows_unit_test.yml@master
+    uses: ./.github/workflows/component_windows_unit_test.yml
 
   # Keeping it as no component until we figure out how to pass env variables to component
   packaging:
@@ -60,9 +60,13 @@ jobs:
         shell: pwsh
         run: build\windows\scripts\import_certificates.ps1 -pfx_passphrase "$env:PFX_PASSPHRASE" -pfx_certificate_description "$env:PFX_CERTIFICATE_DESCRIPTION"
 
+      - name: Set date environment variable for buildDate metadata
+        run: echo buildDate=$(date -u +"%Y-%m-%dT%H:%M:%SZ") >> $GITHUB_ENV
+        shell: bash
+
       - name: Build executables ${{ matrix.goarch }}
         shell: pwsh
-        run: build\windows\build.ps1 -arch ${{ matrix.goarch }} -version ${{env.TAG}} -commit "$env:GITHUB_SHA"
+        run: build\windows\build.ps1 -arch ${{ matrix.goarch }} -version ${{env.TAG}} -commit "$env:GITHUB_SHA" -date ${{env.buildDate}}
 
       - name: Create MSI package ${{ matrix.goarch }}
         shell: pwsh
@@ -84,7 +88,7 @@ jobs:
 
   publishing-to-s3:
     name: Publish windows artifacts into s3 staging bucket
-    uses: newrelic/infrastructure-agent/.github/workflows/component_windows_publish.yml@master
+    uses: ./.github/workflows/component_windows_publish.yml
     needs: [ packaging ]
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
@@ -104,12 +108,28 @@ jobs:
       AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
       ASSETS_TYPE: "all"
 
-  test-prerelease:
+  test-prerelease-windows:
     needs: [publishing-to-s3]
-    uses: newrelic/infrastructure-agent/.github/workflows/component_prerelease_testing.yml@master
+    uses: ./.github/workflows/component_prerelease_testing.yml
     with:
       PLATFORM: "windows"
       TAG: ${{ github.event.release.tag_name }}
-      CANARIES: true
+    secrets:
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+
+  canaries-windows:
+    needs: [test-prerelease-windows]
+    uses: ./.github/workflows/component_canaries.yml
+    with:
+      PLATFORM: "windows"
+      TAG: ${{ github.event.release.tag_name }}
+    secrets:
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+
+  prune-canaries-windows:
+    needs: [canaries-windows]
+    uses: ./.github/workflows/component_canaries_prune.yml
+    with:
+      PLATFORM: "windows"
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}

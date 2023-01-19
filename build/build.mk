@@ -10,6 +10,7 @@ MAIN_PACKAGES += ./cmd/$(PROJECT_NAME)-service
 MAIN_PACKAGES += ./cmd/$(PROJECT_NAME)-ctl
 
 GIT_COMMIT = $(shell git rev-parse HEAD)
+BUILD_DATE = $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 GIT_SHA    = $(shell git rev-parse --short HEAD)
 GIT_TAG    = $(shell git describe --tags --abbrev=0 --exact-match 2>/dev/null)
 GIT_DIRTY  = $(shell test -n "`git status --porcelain`" && echo "dirty" || echo "clean")
@@ -18,6 +19,7 @@ GOARCH ?= amd64
 
 LDFLAGS += -X main.buildVersion=$(VERSION)
 LDFLAGS += -X main.gitCommit=${GIT_COMMIT}
+LDFLAGS += -X main.buildDate=${BUILD_DATE}
 
 TEST_FLAGS += -failfast
 TEST_FLAGS += -race

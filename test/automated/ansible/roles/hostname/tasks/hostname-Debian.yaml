@@ -1,0 +1,8 @@
+---
+
+- name: Set displayName as hostname
+  ansible.builtin.hostname:
+    name: "{{ hostname }}"
+    use: debian
+    
+...

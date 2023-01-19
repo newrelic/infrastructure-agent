@@ -1,12 +1,13 @@
-name: 🚧 Canary alerts | Create
+name: 🚧 💥 🐤 Prune Canaries
 
 on:
   workflow_call:
     secrets:
       AWS_VPC_SUBNET:
         required: true
+
     inputs:
-      TAG:
+      PLATFORM:
         required: true
         type: string
 
@@ -18,7 +19,8 @@ permissions:
   id-token: write
 
 jobs:
-  provision:
+  canaries-prune:
+    if: ${{ always() }}
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
@@ -29,15 +31,13 @@ jobs:
           role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
           aws-region: us-east-2
 
-      - name: Creating alerts for canaries
+      - name: Prune old canaries
         uses: ./.github/actions/external_runner
         with:
           aws_region: us-east-2
-          container_make_target: "provision-alerts/pre-release TAG=${{ inputs.TAG }}"
+          container_make_target: "canaries-prune-auto PLATFORM=${{ inputs.PLATFORM }}"
           ecs_cluster_name: caos_prerelease
           task_definition_name: test-prerelease-td
           cloud_watch_logs_group_name: /ecs/test-prerelease
           cloud_watch_logs_stream_name: ecs/test-prerelease
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
-          log_filters: |
-            provisioning\salerts\sfor

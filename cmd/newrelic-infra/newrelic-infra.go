@@ -86,6 +86,7 @@ var (
 	buildVersion = "development"
 	gitCommit    = ""
 	svcName      = "newrelic-infra"
+	buildDate    = ""
 )
 
 func elapsedTime() time.Duration {
@@ -120,7 +121,8 @@ func main() {
 	wlog.SetOutput(memLog)
 
 	if showVersion {
-		fmt.Printf("New Relic Infrastructure Agent version: %s, GoVersion: %s, GitCommit: %s\n", buildVersion, runtime.Version(), gitCommit)
+		fmt.Printf("New Relic Infrastructure Agent version: %s, GoVersion: %s, GitCommit: %s, BuildDate: %s\n",
+			buildVersion, runtime.Version(), gitCommit, buildDate)
 		os.Exit(0)
 	}
 
@@ -627,14 +629,14 @@ func configureLogRedirection(config *config.LogConfig, memLog *wlog.MemLogger) (
 // newLogWriter returns an io.Writer to be used by the logger as an output.
 func newLogWriter(config *config.LogConfig) (io.Writer, error) {
 	logRotateConfig := config.Rotate
-	if !logRotateConfig.IsEnabled() {
+	if !logRotateConfig.IsSet() || !logRotateConfig.IsEnabled() {
 		return disk.OpenFile(config.File, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
 	}
 
 	rotateCfg := wlog.FileWithRotationConfig{
 		File:            config.File,
 		FileNamePattern: logRotateConfig.FilePattern,
-		MaxSizeInBytes:  int64(logRotateConfig.MaxSizeMb) << 20,
+		MaxSizeInBytes:  int64(*logRotateConfig.MaxSizeMb) << 20,
 		MaxFiles:        logRotateConfig.MaxFiles,
 		Compress:        logRotateConfig.CompressionEnabled,
 	}

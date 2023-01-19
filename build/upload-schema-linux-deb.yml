@@ -41,10 +41,10 @@
     - arm
   uploads:
     - type: file
-      dest: "{dest_prefix}linux/apt/pool/main/n/newrelic-infra/"
+      dest: "{dest_prefix}linux/apt/pool/main/n/newrelic-infra/{src}"
 - src: "newrelic-infra_upstart_{version}_{arch}.deb.sum"
   arch:
     - amd64
   uploads:
     - type: file
-      dest: "{dest_prefix}linux/apt/pool/main/n/newrelic-infra/"
+      dest: "{dest_prefix}linux/apt/pool/main/n/newrelic-infra/{src}"
