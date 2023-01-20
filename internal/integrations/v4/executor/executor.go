@@ -42,13 +42,12 @@ func FromCmdSlice(cmd []string, cfg *Config) Executor {
 // When the process ends, all the channels are closed.
 func (r *Executor) Execute(ctx context.Context, pidChan, exitCodeCh chan<- int) OutputReceive {
 	out, receiver := NewOutput()
-	commandCtx, cancelCommand := context.WithCancel(ctx)
 
 	logger := illog.WithField("integration_name", r.Cfg.IntegrationName)
 
 	go func() {
 		defer out.Close()
-		cmd := r.buildCommand(commandCtx)
+		cmd := r.buildCommand(ctx)
 
 		logger.
 			WithField("command", r.Command).
@@ -59,6 +58,7 @@ func (r *Executor) Execute(ctx context.Context, pidChan, exitCodeCh chan<- int) 
 			Debug("Running command.")
 
 		// redirecting stdin and stdout for on-the-go scanning
+		closedPipes := make(chan bool, 1)
 		cmdOutput, err := cmd.StdoutPipe()
 		if err != nil {
 			out.Errors <- err
@@ -88,7 +88,7 @@ func (r *Executor) Execute(ctx context.Context, pidChan, exitCodeCh chan<- int) 
 		// command context so the parent goroutine can exit
 		go func() {
 			allOutputForwarded.Wait()
-			cancelCommand()
+			closedPipes <- true
 		}()
 
 		if err = startProcess(cmd); err != nil {
@@ -99,9 +99,11 @@ func (r *Executor) Execute(ctx context.Context, pidChan, exitCodeCh chan<- int) 
 			pidChan <- cmd.Process.Pid
 		}
 
-		// Waits for the command to finish (or be externally cancelled) and closes
-		// the OutputSend channels when all the data has been submitted
-		<-commandCtx.Done()
+		select {
+		case <-ctx.Done():
+		case <-closedPipes:
+		}
+
 		if err := cmd.Wait(); err != nil {
 			out.Errors <- err
 			if exitCodeCh != nil {
