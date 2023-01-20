@@ -16,6 +16,17 @@
         - name: Install agent
           include_role:
             name: package-install
+        - name: Install agent
+          include_role:
+            name: package-install
+        - name: Assert version
+          include_role:
+            name: assert-version
+      rescue:
+        - debug: msg="suse requires to install the package twice"
+        - name: Install agent
+          include_role:
+            name: package-install
         - name: Assert version
           include_role:
             name: assert-version
