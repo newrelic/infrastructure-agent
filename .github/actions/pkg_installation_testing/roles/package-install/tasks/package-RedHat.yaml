@@ -3,7 +3,7 @@
 - name: Install infra-agent yum
   environment: "{{ env_vars }}"
   yum:
-    name: "newrelic-infra"
+    name: "{{ package_name }}"
     update_cache: yes
   retries: 5
   delay: 60
@@ -12,7 +12,7 @@
 - name: Install infra-agent dnf
   environment: "{{ env_vars }}"
   dnf:
-    name: "newrelic-infra"
+    name: "{{ package_name }}"
     update_cache: yes
   retries: 5
   delay: 60

@@ -3,7 +3,7 @@
 - name: zypper install infra-agent
   environment: "{{ env_vars }}"
   zypper:
-    name: "newrelic-infra"
+    name: "{{ package_name }}"
     state: present
     oldpackage: yes
     update_cache: yes
