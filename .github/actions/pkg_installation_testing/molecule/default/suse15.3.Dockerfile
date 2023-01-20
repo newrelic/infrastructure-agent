@@ -8,4 +8,4 @@ RUN zypper -n install python3 sudo curl
 # Adding fake systemctl
 RUN curl https://raw.githubusercontent.com/gdraheim/docker-systemctl-replacement/master/files/docker/systemctl.py -o /usr/local/bin/systemctl
 
-CMD ["/usr/bin/systemctl"]
+CMD ["/usr/local/bin/systemctl"]

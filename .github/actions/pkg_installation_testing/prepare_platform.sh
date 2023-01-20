@@ -60,6 +60,7 @@ if [[ "$PLATFORMS" == *"debian-bullseye"* ]]; then
 echo "
   - name: debian-bullseye
     image: debian-bullseye
+    command: \"/sbin/init\"
     privileged: true
     dockerfile: debian-bullseye.Dockerfile
     environment: { container: docker }
@@ -71,6 +72,7 @@ if [[ "$PLATFORMS" == *"debian-buster"* ]]; then
 echo "
   - name: debian-buster
     image: debian-buster
+    command: \"/sbin/init\"
     privileged: true
     dockerfile: debian-buster.Dockerfile
     environment: { container: docker }
@@ -188,11 +190,11 @@ provisioner:
   inventory:
     host_vars:
       al-2:
-        ansible_python_interpreter: python3
+        ansible_python_interpreter: python
       al-2022:
         ansible_python_interpreter: python3
       centos-7:
-        ansible_python_interpreter: python3
+        ansible_python_interpreter: python
       centos-8:
         ansible_python_interpreter: python3
       debian-bullseye:
