@@ -57,8 +57,9 @@ func (r *Executor) Execute(ctx context.Context, pidChan, exitCodeCh chan<- int) 
 			WithField("env", helpers.ObfuscateSensitiveDataFromArray(cmd.Env)).
 			Debug("Running command.")
 
+		// closedPipes will be closed once stdout and stderr pipelines have been closed
+		closedPipes := make(chan bool)
 		// redirecting stdin and stdout for on-the-go scanning
-		closedPipes := make(chan bool, 1)
 		cmdOutput, err := cmd.StdoutPipe()
 		if err != nil {
 			out.Errors <- err
@@ -88,7 +89,7 @@ func (r *Executor) Execute(ctx context.Context, pidChan, exitCodeCh chan<- int) 
 		// command context so the parent goroutine can exit
 		go func() {
 			allOutputForwarded.Wait()
-			closedPipes <- true
+			close(closedPipes)
 		}()
 
 		if err = startProcess(cmd); err != nil {
