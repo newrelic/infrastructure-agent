@@ -9,7 +9,7 @@ on:
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  GO_VERSION: '1.18.8'
+  GO_VERSION: '1.19.5'
   PFX_CERTIFICATE_BASE64: ${{ secrets.OHAI_PFX_CERTIFICATE_BASE64 }} # base64 encoded
   PFX_CERTIFICATE_DESCRIPTION: 'New Relic'
   PFX_PASSPHRASE: ${{ secrets.OHAI_PFX_PASSPHRASE }}
@@ -48,7 +48,7 @@ jobs:
           path: src/github.com/newrelic/infrastructure-agent
 
       - name: Install Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: ${{env.GO_VERSION}}
 

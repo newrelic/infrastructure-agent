@@ -22,8 +22,7 @@ type approxEqualsChecker struct {
 //
 // For example:
 //
-//     c.Assert(value, ApproxEquals, 42.0, 0.5)
-//
+//	c.Assert(value, ApproxEquals, 42.0, 0.5)
 var ApproxEquals Checker = &approxEqualsChecker{
 	&CheckerInfo{Name: "ApproxEquals", Params: []string{"obtained", "expected", "tolerance"}},
 }

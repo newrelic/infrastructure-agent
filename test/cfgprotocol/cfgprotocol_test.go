@@ -98,7 +98,8 @@ func (suite *CfgProtocolTestSuite) Test_OneIntegrationIsExecutedV4() {
 	}
 }
 
-/**
+/*
+*
 Given a config protocol integration that spawns a short running process
 When the integrations is executed
 Then there is a child process running
@@ -137,7 +138,8 @@ func (suite *CfgProtocolTestSuite) Test_OneIntegrationIsExecutedAndTerminated() 
 	})
 }
 
-/**
+/*
+*
 Given a config protocol integration that spawns a long running process
 When the long running process is killed
 Then a new long running process with a new PID is launched
@@ -180,7 +182,8 @@ func (suite *CfgProtocolTestSuite) Test_IntegrationIsRelaunchedIfTerminated() {
 	assert.NotEqual(suite.T(), oldPid, newPid)
 }
 
-/**
+/*
+*
 Given a config protocol integration that spawns a long running process
 When the configuration for the long running is updated
 Then the running long process is killed
@@ -227,7 +230,8 @@ func (suite *CfgProtocolTestSuite) Test_IntegrationIsRelaunchedIfIntegrationDeta
 	assert.Len(suite.T(), p, 1)
 }
 
-/**
+/*
+*
 Given a config protocol integration that spawns two long running process
 When one of the spawn integrations is removed
 Then one process continue running with the same PID
@@ -275,7 +279,8 @@ func (suite *CfgProtocolTestSuite) Test_IntegrationConfigContainsTwoIntegrations
 	})
 }
 
-/**
+/*
+*
 Given a config protocol integration that generates 2 differnet configs with the same integrations
 When the configuration file of the spawner is removed
 Then all running integrations are terminated
@@ -304,7 +309,8 @@ func (suite *CfgProtocolTestSuite) Test_IntegrationConfigNewRelicInfraConfigurat
 	})
 }
 
-/**
+/*
+*
 Given a config protocol integration that spawns an integration that contains a config entry
 When the integration is spawned
 Then receives the temporary generated config file path is passed to the integration

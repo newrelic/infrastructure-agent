@@ -197,12 +197,12 @@ func hasValidScheme(s string) bool {
 //
 // It does the following process:
 //
-// 1. Tries to normally connect to an HTTPS proxy
-// 2. If succeeds, uses the normal `tls.Dial` function in further connections
-// 3. If an Unknown Authority Error is returned, InsecureSkipVerify is set to true and we continue using
-//    `tls.Dial` for the following connections.
-// 4. If the secure connection is not accepted, we use an unsecured "Go1.9-like" dialer that does not
-//    performs the TLS handshake.
+//  1. Tries to normally connect to an HTTPS proxy
+//  2. If succeeds, uses the normal `tls.Dial` function in further connections
+//  3. If an Unknown Authority Error is returned, InsecureSkipVerify is set to true and we continue using
+//     `tls.Dial` for the following connections.
+//  4. If the secure connection is not accepted, we use an unsecured "Go1.9-like" dialer that does not
+//     performs the TLS handshake.
 //
 // IMPORTANT: This verification mode should be only done with legacy proxy implementation, where the
 // proxy_validate_certificates configuration option is set to false, to avoid breaking changes with legacy users since the

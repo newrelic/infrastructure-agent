@@ -31,11 +31,10 @@ func isFloatValid(f float64) error {
 //
 // Example possible uses:
 //
-//  * the number of messages put on a topic
-//  * the number of HTTP requests
-//  * the number of errors thrown
-//  * the number of support tickets answered
-//
+//   - the number of messages put on a topic
+//   - the number of HTTP requests
+//   - the number of errors thrown
+//   - the number of support tickets answered
 type AggregatedCount struct{ metricHandle }
 
 // Increment increases the Count value by one.
@@ -88,11 +87,10 @@ func (c *AggregatedCount) Increase(val float64) {
 //
 // Example possible uses:
 //
-//  * the temperature in a room
-//  * the amount of memory currently in use for a process
-//  * the bytes per second flowing into Kafka at this exact moment in time
-//  * the current speed of your car
-//
+//   - the temperature in a room
+//   - the amount of memory currently in use for a process
+//   - the bytes per second flowing into Kafka at this exact moment in time
+//   - the current speed of your car
 type AggregatedGauge struct{ metricHandle }
 
 // valueNow facilitates testing.
@@ -143,10 +141,9 @@ func (g *AggregatedGauge) Value(val float64) {
 //
 // Example possible uses:
 //
-//  * the duration and count of spans
-//  * the duration and count of transactions
-//  * the time each message spent in a queue
-//
+//   - the duration and count of spans
+//   - the duration and count of transactions
+//   - the time each message spent in a queue
 type AggregatedSummary struct{ metricHandle }
 
 // Record adds an observation to a summary.

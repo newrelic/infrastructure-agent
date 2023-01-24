@@ -2,4 +2,4 @@
 
 echo "starting"
 
-sleep 1m
+sleep 60

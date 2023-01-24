@@ -20,7 +20,8 @@ const (
 
 // Report agent status report. It contains:
 // - checks:
-//   * backend endpoints reachability statuses
+//   - backend endpoints reachability statuses
+//
 // - configuration
 // fields will be empty when ReportErrors() report no errors.
 type Report struct {

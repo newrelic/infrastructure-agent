@@ -5,5 +5,4 @@
 //
 // This package stores metrics and spans, harvests them on a given schedule, and
 // handles errors from the API response.
-//
 package telemetryapi

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Package bulk provides utilities and mechanism for sending bulk inventories to the backend, including management of
 // sources from different entities and dividing payloads when they do not fit into the size limits at backend side
-//
 package bulk
 
 import (

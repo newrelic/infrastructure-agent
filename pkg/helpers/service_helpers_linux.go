@@ -28,7 +28,8 @@ import (
 
 // Old method:
 // Man times(2): the number of clock ticks per second can be obtained using:
-// 	sysconf(_SC_CLK_TCK)
+//
+//	sysconf(_SC_CLK_TCK)
 //
 // New method:
 // Source: https://github.com/prometheus/procfs/blob/master/proc_stat.go#L25-L40

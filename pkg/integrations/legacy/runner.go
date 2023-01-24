@@ -821,7 +821,7 @@ type cfgTmp struct {
 	Environment map[string]string
 }
 
-//  cmdWrapper wraps exec.Cmd with extra labels (metric annotations) from discovery/databinding
+// cmdWrapper wraps exec.Cmd with extra labels (metric annotations) from discovery/databinding
 type cmdWrapper struct {
 	cmd               *exec.Cmd
 	entityRewrite     []data.EntityRewrite
@@ -830,7 +830,8 @@ type cmdWrapper struct {
 
 // Prepares a command object to run the given PluginCommand. If discovery is enabled, it returns as many
 // command instances as discovered items.
-//   pluginDir: The directory containing the plugin definition file, used for any relative paths
+//
+//	pluginDir: The directory containing the plugin definition file, used for any relative paths
 func (ep *externalPlugin) updateCmdWrappers(pluginDir string) {
 	ep.lock.Lock()
 	defer ep.lock.Unlock()

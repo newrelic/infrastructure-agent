@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // Shared sampling constants
-//
 package config
 
 const (

@@ -71,9 +71,10 @@ func NewSELinuxPlugin(id ids.PluginID, ctx agent.AgentContext) agent.Plugin {
 }
 
 // getDataset collects the various information we want to report about SELinux and returns a separate dataset for each type of output:
-//       basicData: Overall SELinux status - whether it's running, what mode it's in, etc.
-//      policyData: Individual SELinux policy flags - a high-level overview of SELinux configuration
-//   policyModules: Listing of policy modules in use and which version of modules are active
+//
+//	    basicData: Overall SELinux status - whether it's running, what mode it's in, etc.
+//	   policyData: Individual SELinux policy flags - a high-level overview of SELinux configuration
+//	policyModules: Listing of policy modules in use and which version of modules are active
 func (self *SELinuxPlugin) getDataset() (basicData agent.PluginInventoryDataset, policyData agent.PluginInventoryDataset, policyModules agent.PluginInventoryDataset, err error) {
 	// Get basic selinux status data using sestatus. If selinux isn't enabled or installed, this will fail.
 	output, err := helpers.RunCommand("sestatus", "", "-b")

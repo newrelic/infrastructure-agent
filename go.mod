@@ -1,6 +1,6 @@
 module github.com/newrelic/infrastructure-agent
 
-go 1.18
+go 1.19
 
 require (
 	github.com/Microsoft/go-winio v0.5.1
@@ -27,7 +27,7 @@ require (
 	github.com/prometheus/client_golang v1.12.2
 	github.com/prometheus/procfs v0.7.3
 	github.com/shirou/gopsutil/v3 v3.21.11
-	github.com/sirupsen/logrus v1.8.1
+	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.8.0
 	github.com/tevino/abool v1.2.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.13.0

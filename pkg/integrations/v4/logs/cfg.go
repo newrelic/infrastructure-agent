@@ -47,7 +47,7 @@ const (
 	fbFilterTypeModify         = "modify"
 )
 
-//Lua Script calling function
+// Lua Script calling function
 const fbLuaFnNameWinlogEventFilter = "eventIdFilter"
 
 // Winlog constants
@@ -160,17 +160,20 @@ func (c FBCfg) Format() (result string, externalCfg FBCfgExternal, err error) {
 
 // FBCfgInput FluentBit INPUT config block for either "tail", "systemd", "winlog", "winevtlog" or "syslog" plugins.
 // Tail plugin expected shape:
-//  [INPUT]
-//    Name tail
-//    Path /var/log/newrelic-infra/newrelic-infra.log
-//    Tag  nri-file
-//    DB   fb.db
+//
+//	[INPUT]
+//	  Name tail
+//	  Path /var/log/newrelic-infra/newrelic-infra.log
+//	  Tag  nri-file
+//	  DB   fb.db
+//
 // Systemd plugin expected shape:
 // [INPUT]
-//   Name           systemd
-//   Systemd_Filter _SYSTEMD_UNIT=newrelic-infra.service
-//   Tag            newrelic-infra
-//   DB             fb.db
+//
+//	Name           systemd
+//	Systemd_Filter _SYSTEMD_UNIT=newrelic-infra.service
+//	Tag            newrelic-infra
+//	DB             fb.db
 type FBCfgInput struct {
 	Name                  string
 	Tag                   string
@@ -196,10 +199,11 @@ type FBCfgInput struct {
 }
 
 // FBCfgFilter FluentBit FILTER config block, only "grep" plugin supported.
-//  [FILTER]
-//    Name   grep
-//    Match  nri-service
-//    Regex  MESSAGE info
+//
+//	[FILTER]
+//	  Name   grep
+//	  Match  nri-service
+//	  Regex  MESSAGE info
 type FBCfgFilter struct {
 	Name      string
 	Match     string
@@ -375,7 +379,7 @@ func parseTcpInput(l LogCfg) (input FBCfgInput, filters []FBCfgFilter, err error
 	return input, filters, nil
 }
 
-//Winlog: "winlog" plugin
+// Winlog: "winlog" plugin
 func parseWinlogInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBCfgFilter, err error) {
 	input = newWinlogInput(*l.Winlog, dbPath, l.Name)
 	filters = append(filters, newRecordModifierFilterForInput(l.Name, fbInputTypeWinlog, l.Attributes))
@@ -393,7 +397,7 @@ func parseWinlogInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBCf
 	return input, filters, nil
 }
 
-//Winevtlog: "winevtlog" plugin
+// Winevtlog: "winevtlog" plugin
 func parseWinevtlogInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBCfgFilter, err error) {
 	input = newWinevtlogInput(*l.Winevtlog, dbPath, l.Name)
 	filters = append(filters, newRecordModifierFilterForInput(l.Name, fbInputTypeWinevtlog, l.Attributes))

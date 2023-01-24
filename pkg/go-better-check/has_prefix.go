@@ -22,8 +22,7 @@ type hasPrefixChecker struct {
 //
 // For example:
 //
-//     c.Assert(value, HasPrefix, "end")
-//
+//	c.Assert(value, HasPrefix, "end")
 var HasPrefix Checker = &hasPrefixChecker{
 	&CheckerInfo{Name: "HasPrefix", Params: []string{"obtained", "expected"}},
 }

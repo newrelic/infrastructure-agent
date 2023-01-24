@@ -56,7 +56,7 @@ const (
 	PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 )
 
-//From gopsutil v2
+// From gopsutil v2
 type win32_Process struct {
 	Name                  string
 	ExecutablePath        *string
@@ -137,7 +137,7 @@ func (ip *InternalProcessInterrogator) FillFromStatus(sample *types.ProcessSampl
 	return nil
 }
 
-//Memory
+// Memory
 func getMemoryInfo(pid int32) (*MemoryInfoStat, error) {
 	ret := &MemoryInfoStat{}
 

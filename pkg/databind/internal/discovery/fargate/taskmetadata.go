@@ -5,7 +5,7 @@ package fargate
 
 import "time"
 
-//TaskMetadata https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint-v2.html#task-metadata-endpoint-v2-response
+// TaskMetadata https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint-v2.html#task-metadata-endpoint-v2-response
 type TaskMetadata struct {
 
 	// The name of the cluster that hosts the task.

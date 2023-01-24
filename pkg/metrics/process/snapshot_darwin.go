@@ -81,11 +81,11 @@ func (pw *darwinProcess) NumFDs() (int32, error) {
 	return -1, nil
 }
 
-/////////////////////////////
+// ///////////////////////////
 // Data to be derived from /proc/<pid>/stat in linux systems. In darwin this structure will be populated
 // if no error happens retrieving the information from process and will allow to cache some process vallues
 // to avoid calling multiple times to same method
-/////////////////////////////
+// ///////////////////////////
 type procStats struct {
 	command    string
 	ppid       int32
