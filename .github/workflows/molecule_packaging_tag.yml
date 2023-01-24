@@ -23,7 +23,7 @@ jobs:
         with:
           repo_base_url:  ${{ github.event.inputs.staging == 'true' && 'http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent' ||  'https://download.newrelic.com/infrastructure_agent'  }}
           package_name: 'newrelic-infra'
-          expected_package_version: ${{ github.event.inputs.tag }}
+          package_version: ${{ github.event.inputs.tag }}
           # not used yet
           gpg_key: 'https://download.newrelic.com/infrastructure_agent/gpg/newrelic-infra.gpg'
           platforms: "al-2,al-2022,centos-7,centos-8,debian-bullseye,debian-buster,redhat-8,redhat-9,suse-15.2,suse-15.3,suse-15.4,ubuntu-1604,ubuntu-1804,ubuntu-2004,ubuntu-2204"
