@@ -1,3 +1,4 @@
+project_name: infrastructure-agent
 snapshot:
   name_template: 0.0.0
 
