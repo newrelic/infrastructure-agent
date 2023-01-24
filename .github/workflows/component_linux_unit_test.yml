@@ -7,7 +7,7 @@ on:
         required: true
 
 env:
-  GO_VERSION: '1.19.3'
+  GO_VERSION: '1.19.5'
 
 
 jobs:
