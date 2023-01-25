@@ -254,6 +254,14 @@ func (suite *HTTPAPITestSuite) TestServe_IngestData() {
 
 // nolint:funlen,cyclop
 func (suite *HTTPAPITestSuite) TestServe_IngestData_mTLS() {
+	log.SetLevel(logrus.DebugLevel)
+	logrus.SetLevel(logrus.DebugLevel)
+
+	defer func() {
+		log.SetLevel(logrus.InfoLevel)
+		logrus.SetLevel(logrus.InfoLevel)
+	}()
+
 	cases := []struct {
 		name           string
 		validateClient bool
@@ -334,6 +342,7 @@ func (suite *HTTPAPITestSuite) TestServe_IngestData_mTLS() {
 				client.Transport = transport
 
 				postReq, err := http.NewRequest("POST", fmt.Sprintf("https://localhost:%d%s", port, ingestAPIPath), bytes.NewReader(fixtures.FooBytes))
+				t.Log(fmt.Sprintf("POST to %s", postReq.URL.String()))
 				resp, err := client.Do(postReq)
 				if testCase.shouldFail {
 					// If we are expecting this request to fail, we won't check for errors.
