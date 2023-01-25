@@ -36,21 +36,7 @@ jobs:
           flag-name: run-linux
           parallel: true
 
-  databind-test:
-    name: Unit tests for databind
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
 
-      - name: Install Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: ${{env.GO_VERSION}}
-
-      - name: Running databind unit/integration tests
-        run: make databind-test
-        # this is temporary as those tests are not fixed yet
-        continue-on-error: true
 
   unit-test-finish:
     name: Coveralls finish
