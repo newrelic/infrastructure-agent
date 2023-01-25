@@ -26,4 +26,4 @@ jobs:
           package_version: ${{ github.event.inputs.tag }}
           # not used yet
           gpg_key: 'https://download.newrelic.com/infrastructure_agent/gpg/newrelic-infra.gpg'
-          platforms: "al-2022"
+          platforms: "al-2,al-2022,centos-7,centos-8,debian-bullseye,debian-buster,redhat-8,redhat-9,suse-15.2,suse-15.3,suse-15.4,ubuntu-1604,ubuntu-1804,ubuntu-2004,ubuntu-2204"
