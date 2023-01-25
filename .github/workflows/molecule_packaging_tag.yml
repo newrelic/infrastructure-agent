@@ -27,5 +27,3 @@ jobs:
           # not used yet
           gpg_key: 'https://download.newrelic.com/infrastructure_agent/gpg/newrelic-infra.gpg'
           platforms: "al-2022"
-          docker_hub_id: ${{secrets.OHAI_DOCKER_HUB_ID}}
-          docker_hub_password: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
