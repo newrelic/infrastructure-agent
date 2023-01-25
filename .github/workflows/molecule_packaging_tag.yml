@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Molecule tests
-        uses: newrelic/pkg-installation-testing-action@copy_molecule_files
+        uses: newrelic/pkg-installation-testing-action@remove_prepare_platform_script
         with:
           repo_base_url:  ${{ github.event.inputs.staging == 'true' && 'http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent' ||  'https://download.newrelic.com/infrastructure_agent'  }}
           package_name: 'newrelic-infra'
