@@ -235,7 +235,7 @@ func (s *Server) serveIngest(_ context.Context) error {
 		serverErr <- err
 	}()
 
-	return s.waitUntilReadyOrError(s.Ingest.address, ingestAPIPathReady, s.Ingest.tls.enabled, s.Status.tls.validateClient, serverErr)
+	return s.waitUntilReadyOrError(s.Ingest.address, ingestAPIPathReady, s.Ingest.tls.enabled, s.Ingest.tls.validateClient, serverErr)
 }
 
 // waitUntilReadyOrError makes http request to address if server didn't return an error.
@@ -258,8 +258,9 @@ func (s *Server) waitUntilReadyOrError(address string, path string, tlsEnabled b
 	timer := time.NewTimer(s.timeout)
 
 	for {
-		// we don't test the local server when tls is enabled and validate client is false
-		if (tlsEnabled && !validateTLSClient) || s.isGetSuccessful(client, url) {
+		// If client validation is enabled, we cannot probe the path wihtout a valid certificate, which
+		// might not be available to us. For this reason we must lie and tell it is ready without probing.
+		if (tlsEnabled && validateTLSClient) || s.isGetSuccessful(client, url) {
 			break
 		}
 		// if the server is not running and returned an error we stop trying and return the error
