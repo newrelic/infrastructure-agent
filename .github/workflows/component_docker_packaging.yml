@@ -52,6 +52,8 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
+        with:
+          version: v0.9.1
 
       - name: Build and publish Release Candidate (RC) of base Docker image
         run: AGENT_VERSION=${{env.TAG}} make -C build/container/ clean publish/multi-arch-base-rc
