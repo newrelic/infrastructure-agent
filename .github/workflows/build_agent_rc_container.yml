@@ -1,0 +1,21 @@
+name: 🚀 🐳 Build Infra Agent Image - RC
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag'
+        required: true
+
+jobs:
+  packaging-docker:
+    uses: ./.github/workflows/component_docker_packaging.yml
+    secrets:
+      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+      GPG_MAIL: 'infrastructure-eng@newrelic.com'
+      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    with:
+      TAG: ${{ github.event.inputs.tag }}
