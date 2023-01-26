@@ -1,5 +1,5 @@
 ---
-name: 🔍 Code Scanning
+name: . 🔍 Code Scanning
 
 on:
   push:

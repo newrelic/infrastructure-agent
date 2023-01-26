@@ -1,4 +1,4 @@
-name: 🚧 Canary alerts | Prune
+name: .. 🚧 Canary alerts | Prune
 
 on:
   workflow_call:

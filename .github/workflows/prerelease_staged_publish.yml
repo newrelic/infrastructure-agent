@@ -1,4 +1,4 @@
-name: 🚀 🪜 Staged pre-release for Linux, Windows
+name: . 🚀 🪜 Staged pre-release for Linux, Windows
 
 on:
   workflow_dispatch:

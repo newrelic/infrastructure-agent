@@ -1,4 +1,4 @@
-name: 🚀 🚀 🪜 Staged release for Linux, Windows and Docker
+name: . 🚀 🚀 🪜 Staged release for Linux, Windows and Docker
 
 on:
   workflow_dispatch:

@@ -1,4 +1,4 @@
-name: 🚀 🐳 Build Infra Agent Image - RC
+name: . 🚀 🐳 Build Infra Agent Image - RC
 
 on:
   workflow_dispatch:

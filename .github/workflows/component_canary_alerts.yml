@@ -1,4 +1,4 @@
-name: 🚧 Canary alerts | Create
+name: .. 🚧 Canary alerts | Create
 
 on:
   workflow_call:

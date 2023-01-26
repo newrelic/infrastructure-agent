@@ -1,4 +1,4 @@
-name: 🚧 Docker | Compile image
+name: .. 🚧 Docker | Compile image
 
 on:
   workflow_call:
