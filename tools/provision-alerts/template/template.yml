@@ -54,6 +54,7 @@ policies:
           SELECT count(*) FROM ProcessSample
            WHERE displayName IN ('{{ .DisplayNameCurrent }}')
            AND (userName is null OR username = '')
+           AND displayName NOT LIKE '%docker%'
            AND commandName != 'systemd-timesyn'
 
       - name: Agent process metrics
