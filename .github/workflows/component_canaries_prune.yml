@@ -32,7 +32,7 @@ jobs:
           aws-region: us-east-2
 
       - name: Prune old canaries
-        uses: ./.github/actions/external_runner
+        uses: newrelic/fargate-runner-action@v1
         with:
           aws_region: us-east-2
           container_make_target: "canaries-prune-auto PLATFORM=${{ inputs.PLATFORM }}"
@@ -41,3 +41,4 @@ jobs:
           cloud_watch_logs_group_name: /ecs/test-prerelease
           cloud_watch_logs_stream_name: ecs/test-prerelease
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
+          action_id: ${{ github.run_id }}

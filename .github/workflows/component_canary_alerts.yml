@@ -30,7 +30,7 @@ jobs:
           aws-region: us-east-2
 
       - name: Creating alerts for canaries
-        uses: ./.github/actions/external_runner
+        uses: newrelic/fargate-runner-action@v1
         with:
           aws_region: us-east-2
           container_make_target: "provision-alerts/pre-release TAG=${{ inputs.TAG }}"
@@ -41,3 +41,4 @@ jobs:
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
           log_filters: |
             provisioning\salerts\sfor
+          action_id: ${{ github.run_id }}
