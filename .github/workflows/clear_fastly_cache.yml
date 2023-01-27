@@ -1,4 +1,4 @@
-name: 🚀 🧹 Clear Fastly cache
+name: . 🚀 🧹 Clear Fastly cache
 
 on:
   workflow_dispatch:

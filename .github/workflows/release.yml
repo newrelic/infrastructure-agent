@@ -1,4 +1,4 @@
-name: 🚀 🚀 Release for Linux, Windows and Docker
+name: . 🚀 🚀 Release for Linux, Windows and Docker
 
 on:
   release:

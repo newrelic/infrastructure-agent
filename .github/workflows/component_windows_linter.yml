@@ -1,4 +1,4 @@
-name: 🧹 Windows | Run validate and linter
+name: . 🧹 Windows | Run validate and linter
 
 on:
   workflow_call:
