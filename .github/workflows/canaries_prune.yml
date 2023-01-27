@@ -1,0 +1,26 @@
+name: . 💥🐤 Canaries Prune
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: '🐧🪟Limit to platform?'
+        type: choice
+        default: ''
+        options:
+          - ''
+          - linux
+          - windows
+        required: false
+
+permissions:
+  id-token: write
+
+jobs:
+
+  prune-previous-canaries:
+    uses: ./.github/workflows/component_canaries_prune.yml
+    with:
+      PLATFORM: ${{ github.event.inputs.platform }}
+    secrets:
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
