@@ -9,11 +9,6 @@ on:
 
 jobs:
 
-  canary-alerts-delete:
-    uses: ./.github/workflows/component_canary_alerts_delete.yml
-    secrets:
-      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
-
   publishing-to-s3-linux:
     name: Publish linux artifacts into s3 production bucket
     uses: ./.github/workflows/component_linux_publish.yml
