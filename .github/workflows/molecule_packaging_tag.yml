@@ -14,9 +14,6 @@ on:
 jobs:
   molecule-packaging-tests:
     uses: ./.github/workflows/component_molecule_packaging.yml
-    secrets:
-      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
-      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
     with:
       TAG: ${{ github.event.inputs.tag }}
       REPO_ENDPOINT: ${{ github.event.inputs.staging == 'true' && 'http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent' ||  'https://download.newrelic.com/infrastructure_agent'  }}
