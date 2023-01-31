@@ -119,17 +119,17 @@ func (pr *PluginRegistry) loadPluginInstance(dir string, dirOrFile os.FileInfo) 
 		return
 	}
 
-	finfo, err := os.Stat(dirOrFilePath)
+	//finfo, err := os.Stat(dirOrFilePath)
 
 	// generate migration command only for files
-	if err == nil && !finfo.IsDir() {
-		pathToDefinition := plugin.SourceFilePath
-		pathToConfigV3 := dirOrFilePath
-		defaultPluginInstanceDir := filepath.Join("/etc", "newrelic-infra", "integrations.d")
-		pathToConfigV4 := filepath.Join(defaultPluginInstanceDir, plugin.Name+"-v4.yml")
-		migrationCommand := generateMigrationCommand(pathToConfigV3, pathToDefinition, pathToConfigV4, false)
-		pilog.Warn(fmt.Sprintf("Integration v3 config detected. Recommended to migrate this config to v4 format. Command to migrate '%s'", migrationCommand))
-	}
+	//if err == nil && !finfo.IsDir() {
+	//	pathToDefinition := plugin.SourceFilePath
+	//	pathToConfigV3 := dirOrFilePath
+	//	defaultPluginInstanceDir := filepath.Join("/etc", "newrelic-infra", "integrations.d")
+	//	pathToConfigV4 := filepath.Join(defaultPluginInstanceDir, plugin.Name+"-v4.yml")
+	//	//migrationCommand := generateMigrationCommand(pathToConfigV3, pathToDefinition, pathToConfigV4, false)
+	//	//pilog.Warn(fmt.Sprintf("Integration v3 config detected. Recommended to migrate this config to v4 format. Command to migrate '%s'", migrationCommand))
+	//}
 
 	// If data binding is enabled, builds the data sources to apply them later
 	if instanceWrapper.DataBind.Enabled() {
