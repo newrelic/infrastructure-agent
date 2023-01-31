@@ -74,13 +74,13 @@ var (
 	// Specifies the path to look for integrations config files when running in dry-run mode.
 	integrationConfigPath string
 
-	configFile   string
-	validate     bool
-	showVersion  bool
-	debug        bool
-	cpuprofile   string
-	memprofile   string
-	v3tov4       string
+	configFile  string
+	validate    bool
+	showVersion bool
+	debug       bool
+	cpuprofile  string
+	memprofile  string
+	//v3tov4       string
 	verbose      int
 	startTime    time.Time
 	buildVersion = "development"
@@ -103,7 +103,7 @@ func init() {
 	flag.BoolVar(&debug, "debug", false, "Enables agent debugging functionality")
 	flag.StringVar(&cpuprofile, "cpuprofile", "", "Writes cpu profile to `file`")
 	flag.StringVar(&memprofile, "memprofile", "", "Writes memory profile to `file`")
-	flag.StringVar(&v3tov4, "v3tov4", "", "Converts v3 config into v4. v3tov4=/path/to/config:/path/to/definition:/path/to/output:overwrite")
+	//flag.StringVar(&v3tov4, "v3tov4", "", "Converts v3 config into v4. v3tov4=/path/to/config:/path/to/definition:/path/to/output:overwrite")
 
 	flag.IntVar(&verbose, "verbose", 0, "Higher numbers increase levels of logging. When enabled overrides provided config.")
 }
@@ -126,40 +126,40 @@ func main() {
 		os.Exit(0)
 	}
 
-	if v3tov4 != "" {
-
-		v3tov4Args := strings.Split(v3tov4, ":")
-
-		if len(v3tov4Args) != 4 {
-			fmt.Printf("v3tov4 argument should contain 4 parts")
-			os.Exit(1)
-		}
-
-		err := integrationsConfig.MigrateV3toV4(v3tov4Args[0], v3tov4Args[1], v3tov4Args[2], v3tov4Args[3] == "true")
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		fmt.Printf("The config has been migrated and placed in: %s", v3tov4Args[2])
-
-		// rename old files to .bk
-		err = os.Rename(v3tov4Args[0], v3tov4Args[0]+".bk")
-
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		err = os.Rename(v3tov4Args[1], v3tov4Args[1]+".bk")
-
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		os.Exit(0)
-	}
+	//if v3tov4 != "" {
+	//
+	//	v3tov4Args := strings.Split(v3tov4, ":")
+	//
+	//	if len(v3tov4Args) != 4 {
+	//		fmt.Printf("v3tov4 argument should contain 4 parts")
+	//		os.Exit(1)
+	//	}
+	//
+	//	err := integrationsConfig.MigrateV3toV4(v3tov4Args[0], v3tov4Args[1], v3tov4Args[2], v3tov4Args[3] == "true")
+	//	if err != nil {
+	//		fmt.Println(err)
+	//		os.Exit(1)
+	//	}
+	//
+	//	fmt.Printf("The config has been migrated and placed in: %s", v3tov4Args[2])
+	//
+	//	// rename old files to .bk
+	//	err = os.Rename(v3tov4Args[0], v3tov4Args[0]+".bk")
+	//
+	//	if err != nil {
+	//		fmt.Println(err)
+	//		os.Exit(1)
+	//	}
+	//
+	//	err = os.Rename(v3tov4Args[1], v3tov4Args[1]+".bk")
+	//
+	//	if err != nil {
+	//		fmt.Println(err)
+	//		os.Exit(1)
+	//	}
+	//
+	//	os.Exit(0)
+	//}
 
 	timedLog := alog.WithFieldsF(func() logrus.Fields {
 		return logrus.Fields{
