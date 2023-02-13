@@ -5,7 +5,7 @@
 
 # New Relic infrastructure agent
 
-The infrastructure agent (infra-agent) collects inventory data and metrics of your hosts and sends it to the New Relic platform. 
+The infrastructure agent (infra-agent) collects inventory data and metrics of your hosts and sends it to the New Relic platform
 
 [New Relic's infrastructure monitoring](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/get-started/introduction-new-relic-infrastructure) provides flexible,
 dynamic monitoring of your entire infrastructure, from services running in the cloud or on dedicated hosts to containers running in orchestrated environments.
