@@ -176,14 +176,6 @@
                 Execute="deferred"
                 Return="ignore"/>
 
-       <CustomAction Id="CleanupDeprecatedBundledPlugins"
-              Directory="AgentBinaryFolder"
-              ExeCommand="cmd /C &quot;rmdir /s /q &quot;.\bundled-plugins&quot;&quot;"
-              Execute="deferred"
-              Return="ignore"
-              HideTarget="no"
-              Impersonate="no" />
-
         <CustomAction Id="CleanupDeprecatedBundledPlugins"
             Directory="AgentBinaryFolder"
             ExeCommand="cmd /C &quot;rmdir /s /q &quot;.\bundled-plugins&quot;&quot;"
