@@ -1,71 +1,83 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
-  <?define Version = "$(var.AgentVersion)" ?>
-  <?define ProductId = "*" ?>
-  <?define UpgradeCode = "{527b3f06-b23d-426a-9999-c77506ee6b28}" ?>
+    <?define Version = "$(var.AgentVersion)"?>
+    <?define ProductId = "*"?>
+    <?define UpgradeCode = "{527b3f06-b23d-426a-9999-c77506ee6b28}"?>
 
-	<Product Id="$(var.ProductId)"
+    <Product Id="$(var.ProductId)"
         Name="New Relic Infrastructure Agent"
         Language="1033"
         Version="$(var.Version)"
         Manufacturer="New Relic, Inc."
         UpgradeCode="$(var.UpgradeCode)">
-		<Package Id="*"
-          InstallerVersion="200"
-          Compressed="yes"
-          InstallScope="perMachine"
-          Platform="x64"
-          Manufacturer="New Relic, Inc."
-          Comments="(c) $(var.Year) New Relic, Inc."
-          Keywords="infrastructure,agent,MSI"/>
+        <Package Id="*"
+            InstallerVersion="200"
+            Compressed="yes"
+            InstallScope="perMachine"
+            Platform="x64"
+            Manufacturer="New Relic, Inc."
+            Comments="(c) $(var.Year) New Relic, Inc."
+            Keywords="infrastructure,agent,MSI" />
 
-		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
-		<MediaTemplate EmbedCab="yes" />
+        <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+        <MediaTemplate EmbedCab="yes" />
 
         <Property Id="LICENSE_KEY" Secure="yes" />
         <Property Id="DISPLAY_NAME" Secure="yes" />
-        <Property Id="PROXY"  Secure="yes" />
+        <Property Id="PROXY" Secure="yes" />
         <Property Id="CUSTOM_ATTRIBUTES" Secure="yes" />
-        <Property Id="METRICS_SYSTEM_SAMPLE_RATE"  Secure="yes" />
-        <Property Id="METRICS_STORAGE_SAMPLE_RATE"  Secure="yes" />
-        <Property Id="METRICS_NETWORK_SAMPLE_RATE"  Secure="yes" />
-        <Property Id="METRICS_PROCESS_SAMPLE_RATE"  Secure="yes" />
-        <Property Id="PAYLOAD_COMPRESSION_LEVEL"  Secure="yes" />
+        <Property Id="METRICS_SYSTEM_SAMPLE_RATE" Secure="yes" />
+        <Property Id="METRICS_STORAGE_SAMPLE_RATE" Secure="yes" />
+        <Property Id="METRICS_NETWORK_SAMPLE_RATE" Secure="yes" />
+        <Property Id="METRICS_PROCESS_SAMPLE_RATE" Secure="yes" />
+        <Property Id="PAYLOAD_COMPRESSION_LEVEL" Secure="yes" />
 
-		<Feature Id="ProductFeature" Title="New Relic Infrastructure Agent" Level="1">
+        <Feature Id="ProductFeature" Title="New Relic Infrastructure Agent" Level="1">
             <ComponentRef Id="CMP_V1_PLUGIN_CONFIGS" />
             <ComponentRef Id="CMP_V1_CUSTOM_PLUGINS" />
             <ComponentRef Id="CMP_V1_NR_PLUGINS" />
             <ComponentRef Id="CMP_LOGGING_TOOL" />
             <ComponentRef Id="CMP_LOGGING_TOOL_CFG" />
-			<ComponentGroupRef Id="ProductComponents" />
-			<ComponentGroupRef Id="BundledPluginConfigComponents" />
-			<ComponentGroupRef Id="BundledPluginComponents" />
-      <ComponentGroupRef Id="LoggingToolComponents" />
-      <ComponentGroupRef Id="LoggingToolCfgComponents" />
-		</Feature>
-	</Product>
+            <ComponentRef Id="NewRelicInfraDataComponent" />
+            <ComponentGroupRef Id="ProductComponents" />
+            <ComponentGroupRef Id="BundledPluginConfigComponents" />
+            <ComponentGroupRef Id="BundledPluginComponents" />
+            <ComponentGroupRef Id="LoggingToolComponents" />
+            <ComponentGroupRef Id="LoggingToolCfgComponents" />
+        </Feature>
+    </Product>
 
-	<Fragment>
-		<Directory Id="TARGETDIR" Name="SourceDir">
-			<Directory Id="ProgramFiles64Folder">
-        <Directory Id="CompanyFolder" Name="New Relic">
-          <Directory Id="AgentBinaryFolder" Name="newrelic-infra">
-            <Directory Id="DataFolder" Name="data" />
-            <Directory Id="UserDataFolder" Name="user_data" />
-            <Directory Id="PluginsFolder" Name="plugins" />
-            <Directory Id="BundledPluginsFolder" Name="bundled-plugins" />
-            <Directory Id="V1PluginConfigsFolder" Name="integrations.d" />
-            <Directory Id="LoggingToolCfg" Name="logging.d" />
-            <Directory Id="V1CustomPluginsFolder" Name="custom-integrations" />
-            <Directory Id="V1NRPluginsFolder" Name="newrelic-integrations">
-              <Directory Id="LoggingTool" Name="logging" />
+    <Fragment>
+        <Directory Id="TARGETDIR" Name="SourceDir">
+            <Directory Id="CommonAppDataFolder">
+                <Directory Id="CompanyDataFolder" Name="New Relic">
+                    <Directory Id="NewRelicInfraDataFolder" Name="newrelic-infra">
+                        <Component Id="NewRelicInfraDataComponent" Guid="EF8FBC40-9727-4800-87EC-416D131FDABC">
+                            <CreateFolder>
+                                <PermissionEx Sddl="O:SYG:SYD:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)" />
+                            </CreateFolder>
+                        </Component>
+                    </Directory>
+                </Directory>
             </Directory>
-          </Directory>
+            <Directory Id="ProgramFiles64Folder">
+                <Directory Id="CompanyFolder" Name="New Relic">
+                    <Directory Id="AgentBinaryFolder" Name="newrelic-infra">
+                        <Directory Id="DataFolder" Name="data" />
+                        <Directory Id="UserDataFolder" Name="user_data" />
+                        <Directory Id="PluginsFolder" Name="plugins" />
+                        <Directory Id="BundledPluginsFolder" Name="bundled-plugins" />
+                        <Directory Id="V1PluginConfigsFolder" Name="integrations.d" />
+                        <Directory Id="LoggingToolCfg" Name="logging.d" />
+                        <Directory Id="V1CustomPluginsFolder" Name="custom-integrations" />
+                        <Directory Id="V1NRPluginsFolder" Name="newrelic-integrations">
+                            <Directory Id="LoggingTool" Name="logging" />
+                        </Directory>
+                    </Directory>
+                </Directory>
+            </Directory>
         </Directory>
-			</Directory>
-		</Directory>
-	</Fragment>
+    </Fragment>
 
     <Fragment>
       <DirectoryRef Id="V1PluginConfigsFolder">
@@ -172,16 +184,47 @@
               HideTarget="no"
               Impersonate="no" />
 
+        <CustomAction Id="CleanupDeprecatedBundledPlugins"
+            Directory="AgentBinaryFolder"
+            ExeCommand="cmd /C &quot;rmdir /s /q &quot;.\bundled-plugins&quot;&quot;"
+            Execute="deferred"
+            Return="ignore"
+            HideTarget="no"
+            Impersonate="no" />
+
+        <CustomAction Id="TakeOwnership"
+            Directory="NewRelicInfraDataFolder"
+            ExeCommand="cmd /C &quot;takeown /f &quot;[NewRelicInfraDataFolder]*&quot; /a /r /SKIPSL /d N >nul 2>&amp;1&quot;"
+            Execute="deferred"
+            Impersonate="no" />
+
+        <CustomAction Id="ResetPermissions"
+            Directory="NewRelicInfraDataFolder"
+            ExeCommand="cmd /C &quot;icacls &quot;[NewRelicInfraDataFolder]*&quot; /q /t /reset >nul 2>&amp;1&quot;"
+            Execute="deferred"
+            Impersonate="no" />
+
+        <CustomAction Id="CheckSymlinks"
+            Directory="NewRelicInfraDataFolder"
+            ExeCommand="cmd /C &quot;dir /al /s &quot;[NewRelicInfraDataFolder].&quot; >nul 2>&amp;1 &quot; &amp;&amp; (EXIT /B 1) || (EXIT /B 0)"
+            Execute="deferred"
+            Impersonate="no" />
+
         <InstallExecuteSequence>
+            <!-- Perform the check for symolic link Only on install and not on remove -->
+            <Custom Action="TakeOwnership" After="CreateFolders">NOT REMOVE</Custom>
+            <Custom Action="ResetPermissions" After="TakeOwnership">NOT REMOVE</Custom>
+            <Custom Action="CheckSymlinks" After="ResetPermissions">NOT REMOVE</Custom>
+
             <Custom Action="yamlgen.nribase" Before="RunYamlGenerator" />
             <Custom Action="yamlgen.nriconfig0" After="yamlgen.nribase" />
             <Custom Action="yamlgen.nriconfig1" After="yamlgen.nriconfig0" />
-            <Custom Action="RunYamlGenerator" Before="InstallFinalize" >
+            <Custom Action="RunYamlGenerator" Before="InstallFinalize">
                <![CDATA[ GENERATE_CONFIG ]]>
             </Custom>
             <Custom Action="CleanupDeprecatedBundledPlugins" Before="InstallFinalize" />
         </InstallExecuteSequence>
-	</Fragment>
+    </Fragment>
 
   <Fragment>
     <ComponentGroup Id="LoggingToolComponents" Directory="LoggingTool">
