@@ -20,7 +20,7 @@ on:
         type: string
 
 env:
-  AWS_ASSUME_ROLE: 'arn:aws:iam::018789649883:role/caos-pipeline-oidc'
+  AWS_ASSUME_ROLE: 'arn:aws:iam::018789649883:role/caos-pipeline-oidc-infra-agent'
   ANSIBLE_FORKS: 20
 
 permissions:
@@ -43,9 +43,9 @@ jobs:
         with:
           aws_region: us-east-2
           container_make_target: "test/automated/provision PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} ANSIBLE_INVENTORY_FILE=${{ inputs.PLATFORM }}-inventory.ec2"
-          ecs_cluster_name: caos_prerelease
-          task_definition_name: test-prerelease-td
-          cloud_watch_logs_group_name: /ecs/test-prerelease
+          ecs_cluster_name: caos_infra_agent
+          task_definition_name: infra-agent-td
+          cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
           cloud_watch_logs_stream_name: ecs/test-prerelease
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
 
@@ -66,9 +66,9 @@ jobs:
         with:
           aws_region: us-east-2
           container_make_target: "test/automated/harvest PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} ANSIBLE_INVENTORY_FILE=${{ inputs.PLATFORM }}-inventory.ec2 TAG=${{ inputs.TAG }}"
-          ecs_cluster_name: caos_prerelease
-          task_definition_name: test-prerelease-td
-          cloud_watch_logs_group_name: /ecs/test-prerelease
+          ecs_cluster_name: caos_infra_agent
+          task_definition_name: infra-agent-td
+          cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
           cloud_watch_logs_stream_name: ecs/test-prerelease
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
 
@@ -96,9 +96,9 @@ jobs:
         with:
           aws_region: us-east-2
           container_make_target: "test/automated/packaging LIMIT=${{ matrix.limit }} PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} ANSIBLE_INVENTORY_FILE=${{ inputs.PLATFORM }}-inventory.ec2 TAG=${{ inputs.TAG }}"
-          ecs_cluster_name: caos_prerelease
-          task_definition_name: test-prerelease-td
-          cloud_watch_logs_group_name: /ecs/test-prerelease
+          ecs_cluster_name: caos_infra_agent
+          task_definition_name: infra-agent-td
+          cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
           cloud_watch_logs_stream_name: ecs/test-prerelease
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
 
@@ -120,8 +120,8 @@ jobs:
         with:
           aws_region: us-east-2
           container_make_target: "test/automated/packaging LIMIT=windows_amd64 PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} ANSIBLE_INVENTORY_FILE=${{ inputs.PLATFORM }}-inventory.ec2 TAG=${{ inputs.TAG }}"
-          ecs_cluster_name: caos_prerelease
-          task_definition_name: test-prerelease-td
-          cloud_watch_logs_group_name: /ecs/test-prerelease
+          ecs_cluster_name: caos_infra_agent
+          task_definition_name: infra-agent-td
+          cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
           cloud_watch_logs_stream_name: ecs/test-prerelease
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
