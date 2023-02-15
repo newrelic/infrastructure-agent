@@ -43,6 +43,7 @@ ci/snyk-test:
 			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
 			-w /go/src/github.com/newrelic/infrastructure-agent \
 			-e SNYK_TOKEN \
+			-e GOFLAGS="-buildvcs=false" \
 			snyk/snyk:golang snyk test --severity-threshold=high
 
 .PHONY: ci/tools-test
