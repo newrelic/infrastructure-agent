@@ -8,7 +8,6 @@ import (
 	context2 "context"
 	"flag"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/cmd/newrelic-infra/dnschecks"
 	"io"
 	"net"
 	"net/http"
@@ -21,6 +20,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/cmd/newrelic-infra/dnschecks"
 
 	"github.com/newrelic/infrastructure-agent/pkg/disk"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
@@ -80,7 +81,7 @@ var (
 	debug       bool
 	cpuprofile  string
 	memprofile  string
-	//v3tov4       string
+	// v3tov4       string
 	verbose      int
 	startTime    time.Time
 	buildVersion = "development"
@@ -103,7 +104,7 @@ func init() {
 	flag.BoolVar(&debug, "debug", false, "Enables agent debugging functionality")
 	flag.StringVar(&cpuprofile, "cpuprofile", "", "Writes cpu profile to `file`")
 	flag.StringVar(&memprofile, "memprofile", "", "Writes memory profile to `file`")
-	//flag.StringVar(&v3tov4, "v3tov4", "", "Converts v3 config into v4. v3tov4=/path/to/config:/path/to/definition:/path/to/output:overwrite")
+	// flag.StringVar(&v3tov4, "v3tov4", "", "Converts v3 config into v4. v3tov4=/path/to/config:/path/to/definition:/path/to/output:overwrite")
 
 	flag.IntVar(&verbose, "verbose", 0, "Higher numbers increase levels of logging. When enabled overrides provided config.")
 }
@@ -457,13 +458,22 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		os.Exit(1)
 	}
 
-	// log-forwarder
-	fbIntCfg := v4.FBSupervisorConfig{
-		FluentBitExePath:     c.FluentBitExePath,
-		FluentBitNRLibPath:   c.FluentBitNRLibPath,
-		FluentBitParsersPath: c.FluentBitParsersPath,
-		FluentBitVerbose:     c.Log.Level == config.LogLevelTrace && c.Log.HasIncludeFilter(config.TracesFieldName, config.SupervisorTrace),
-	}
+	//// log-forwarder
+	//fbIntCfg := v4.FBSupervisorConfig{
+	//	fluentBitExePath:     c.fluentBitExePath,
+	//	FluentBitNRLibPath:   c.FluentBitNRLibPath,
+	//	FluentBitParsersPath: c.FluentBitParsersPath,
+	//	FluentBitVerbose:     c.Log.Level == config.LogLevelTrace && c.Log.HasIncludeFilter(config.TracesFieldName, config.SupervisorTrace),
+	//}
+
+	fbIntCfg := v4.NewFBSupervisorConfig(
+		c.FluentBitExePath,
+		c.FluentBitNRLibPath,
+		c.FluentBitParsersPath,
+		c.Log.Level == config.LogLevelTrace && c.Log.HasIncludeFilter(config.TracesFieldName, config.SupervisorTrace),
+		c.LoggingBinDir,
+		ffManager,
+	)
 
 	if fbIntCfg.IsLogForwarderAvailable() {
 		logCfgLoader := logs.NewFolderLoader(logFwCfg, agt.Context.Identity, agt.Context.HostnameResolver())
@@ -474,6 +484,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 			agt.Context.HostnameChangeNotifier(),
 			agt.Context.SendEvent,
 		)
+		ffHandle.SetFBRestarter(logSupervisor)
 		go logSupervisor.Run(agt.Context.Ctx)
 	} else {
 		aslog.Debug("Log forwarder is not available for this platform. The agent will start without log forwarding support.")

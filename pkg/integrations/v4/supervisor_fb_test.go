@@ -34,7 +34,7 @@ func TestFBSupervisorConfig_IsLogForwarderAvailable(t *testing.T) {
 		{
 			"incorrect: all non-existing",
 			FBSupervisorConfig{
-				FluentBitExePath:     nonExisting,
+				fluentBitExePath:     nonExisting,
 				FluentBitNRLibPath:   nonExisting,
 				FluentBitParsersPath: nonExisting,
 			},
@@ -43,7 +43,7 @@ func TestFBSupervisorConfig_IsLogForwarderAvailable(t *testing.T) {
 		{
 			"incorrect: NR lib and parsers do not exist",
 			FBSupervisorConfig{
-				FluentBitExePath:     existing,
+				fluentBitExePath:     existing,
 				FluentBitNRLibPath:   nonExisting,
 				FluentBitParsersPath: nonExisting,
 			},
@@ -52,7 +52,7 @@ func TestFBSupervisorConfig_IsLogForwarderAvailable(t *testing.T) {
 		{
 			"incorrect: parsers doesn't exist",
 			FBSupervisorConfig{
-				FluentBitExePath:     existing,
+				fluentBitExePath:     existing,
 				FluentBitNRLibPath:   existing,
 				FluentBitParsersPath: nonExisting,
 			},
@@ -61,7 +61,7 @@ func TestFBSupervisorConfig_IsLogForwarderAvailable(t *testing.T) {
 		{
 			"correct configuration",
 			FBSupervisorConfig{
-				FluentBitExePath:     existing,
+				fluentBitExePath:     existing,
 				FluentBitNRLibPath:   existing,
 				FluentBitParsersPath: existing,
 			},

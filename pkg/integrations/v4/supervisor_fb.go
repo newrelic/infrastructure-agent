@@ -7,7 +7,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
+
+	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 
 	"github.com/pkg/errors"
 
@@ -25,16 +30,35 @@ import (
 var sFBLogger = log.WithComponent("integrations.Supervisor").WithField("process", "log-forwarder")
 
 type FBSupervisorConfig struct {
-	FluentBitExePath     string
+	LoggingBinDir        string
+	fluentBitExePath     string
 	FluentBitNRLibPath   string
 	FluentBitParsersPath string
 	FluentBitVerbose     bool
+	ffRetriever          feature_flags.Retriever
+}
+
+const (
+	defaultFluentBitExe   = "td-agent-bit-2" // c&p of td-agent-bit binary for poc
+	defaultFluentBitExe19 = "td-agent-bit"
+)
+
+func NewFBSupervisorConfig(fluentBitExePath string, fluentBitNRLibPath string, fluentBitParsersPath string, fluentBitVerbose bool, loggingBinDir string, ffRetriever feature_flags.Retriever) FBSupervisorConfig {
+	return FBSupervisorConfig{
+		fluentBitExePath:     fluentBitExePath,
+		FluentBitNRLibPath:   fluentBitNRLibPath,
+		FluentBitParsersPath: fluentBitParsersPath,
+		FluentBitVerbose:     fluentBitVerbose,
+		ffRetriever:          ffRetriever,
+		LoggingBinDir:        loggingBinDir,
+	}
 }
 
 // IsLogForwarderAvailable checks whether all the required files for FluentBit execution are available
 func (c *FBSupervisorConfig) IsLogForwarderAvailable() bool {
-	if _, err := os.Stat(c.FluentBitExePath); err != nil {
-		sFBLogger.WithField("fbExePath", c.FluentBitExePath).Debug("Fluent Bit exe not found.")
+	fluentBitExePath := c.getFbPath()
+	if _, err := os.Stat(fluentBitExePath); err != nil {
+		sFBLogger.WithField("fbExePath", fluentBitExePath).Debug("Fluent Bit exe not found.")
 		return false
 	}
 	if _, err := os.Stat(c.FluentBitNRLibPath); err != nil {
@@ -47,6 +71,16 @@ func (c *FBSupervisorConfig) IsLogForwarderAvailable() bool {
 	}
 
 	return true
+}
+
+func (c *FBSupervisorConfig) getFbPath() string {
+	if c.fluentBitExePath != "" {
+		return c.fluentBitExePath
+	}
+	if enabled, exists := c.ffRetriever.GetFeatureFlag(fflag.FlagFluentBit19); exists && enabled {
+		return filepath.Join(c.LoggingBinDir, defaultFluentBitExe19)
+	}
+	return filepath.Join(c.LoggingBinDir, defaultFluentBitExe)
 }
 
 // SendEventFn wrapper for sending events to nr.
@@ -68,6 +102,7 @@ func NewFBSupervisor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader, age
 		preRunActions:          fbPreRunActions(sendEventFn),
 		postRunActions:         fbPostRunActions(sendEventFn),
 		parseOutputFn:          logs.ParseFBOutput,
+		restartCh:              make(chan struct{}, 1),
 	}
 }
 
@@ -99,7 +134,7 @@ func buildFbExecutor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 		}
 
 		args := []string{
-			fbIntCfg.FluentBitExePath,
+			fbIntCfg.getFbPath(),
 			"-c",
 			cfgTmpPath,
 			"-e",

@@ -789,7 +789,8 @@ type Config struct {
 	LoggingConfigsDir string `yaml:"logging_configs_dir" envconfig:"logging_configs_dir" public:"true"`
 
 	// LoggingBinDir folder containing binaries for the log forwarder.
-	// Default: /var/db/newrelic-infra/newrelic-integrations/logging/
+	// Default (Linux): /opt/td-agent-bit/bin
+	// Default (Windows): C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\logging
 	// Public: No
 	LoggingBinDir string `yaml:"logging_bin_dir" envconfig:"logging_bin_dir" public:"false"`
 
@@ -807,7 +808,7 @@ type Config struct {
 
 	// FluentBitExePath is the location from where the agent can execute fluent-bit.
 	// Default (Linux): /opt/td-agent-bit/bin/td-agent-bit
-	// Default (Windows): C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\logging\fluent-bit
+	// Default (Windows): C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\logging\fluent-bit.exe
 	// Public: No
 	FluentBitExePath string `yaml:"fluent_bit_exe_path" envconfig:"fluent_bit_exe_path" public:"false"`
 
@@ -1992,10 +1993,6 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 		} else if runtime.GOOS == "windows" {
 			cfg.LoggingBinDir = filepath.Join(cfg.AgentDir, DefaultIntegrationsDir, defaultLoggingBinDir)
 		}
-	}
-
-	if cfg.FluentBitExePath == "" {
-		cfg.FluentBitExePath = filepath.Join(cfg.LoggingBinDir, defaultFluentBitExe)
 	}
 
 	if cfg.LoggingHomeDir == "" {
