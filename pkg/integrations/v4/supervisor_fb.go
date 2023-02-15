@@ -5,15 +5,15 @@ package v4
 import (
 	ctx2 "context"
 	"fmt"
+	"github.com/pkg/errors"
 	"io/fs"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
 
@@ -106,6 +106,17 @@ func buildFbExecutor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 			return nil, errors.Wrap(err, "failed to create temporary fb sFBLogger config file")
 		}
 
+		if fbConfigTempFiles, err := removeFbConfigTempFiles(); err != nil || fbConfigTempFiles != nil {
+
+			for _, file := range fbConfigTempFiles {
+				log.Debugf("Removed %s config temp file.", file)
+			}
+
+			if err != nil {
+				log.WithError(err).Warn("Failed removing config temp files.")
+			}
+		}
+
 		args := []string{
 			fbIntCfg.FluentBitExePath,
 			"-c",
@@ -152,12 +163,11 @@ func saveToTempFile(config []byte) (string, error) {
 	return file.Name(), nil
 }
 
-func removeOldTempFiles() {
+func removeFbConfigTempFiles() ([]string, error) {
 
 	files, err := os.ReadDir(os.TempDir())
 	if err != nil {
-		log.WithError(err).Warn("Failed removing temp files.")
-		return
+		return nil, err
 	}
 
 	var fbConfigTempFiles []fs.DirEntry
@@ -170,6 +180,10 @@ func removeOldTempFiles() {
 
 	if len(fbConfigTempFiles) > MaxNumberOfTempFiles {
 
+		var removedConfigTempFilenames []string
+
+		luaFilterTempFileRegex := regexp.MustCompile("nr_fb_lua_filter\\d+")
+
 		sort.Slice(fbConfigTempFiles, func(i, j int) bool {
 			fileInfo1, _ := fbConfigTempFiles[i].Info()
 			fileInfo2, _ := fbConfigTempFiles[j].Info()
@@ -177,15 +191,34 @@ func removeOldTempFiles() {
 		})
 
 		for i := 0; i < len(fbConfigTempFiles)-MaxNumberOfTempFiles; i++ {
-			os.Remove(filepath.Join(os.TempDir(), fbConfigTempFiles[i].Name()))
-			//TODO log.debug
-			//TODO erro
+
+			// TODO if windows
+			fbConfigTempFileContent, err := os.ReadFile(filepath.Join(os.TempDir(), fbConfigTempFiles[i].Name()))
+
+			if err != nil {
+				return removedConfigTempFilenames, err
+			}
+
+			// remove each lua filter temp file referenced by fbConfigTempFileContent
+			for _, fbLuaFilterTempFilename := range luaFilterTempFileRegex.FindAllString(string(fbConfigTempFileContent), -1) {
+
+				if err := os.Remove(filepath.Join(os.TempDir(), fbLuaFilterTempFilename)); err != nil {
+					return removedConfigTempFilenames, err
+				}
+				removedConfigTempFilenames = append(removedConfigTempFilenames, fbLuaFilterTempFilename)
+			}
+
+			if err := os.Remove(filepath.Join(os.TempDir(), fbConfigTempFiles[i].Name())); err != nil {
+				return removedConfigTempFilenames, err
+			}
+
+			removedConfigTempFilenames = append(removedConfigTempFilenames, fbConfigTempFiles[i].Name())
 		}
 
-		log.Debug(fmt.Sprintf("Max number of temp files reached (%d). Removed %d temp file(s).",
-			MaxNumberOfTempFiles, len(fbConfigTempFiles)-MaxNumberOfTempFiles))
+		return removedConfigTempFilenames, nil
 	}
 
+	return nil, nil
 }
 
 // SupervisorEvent will be used to create an InfrastructureEvent when fb start/stop.
