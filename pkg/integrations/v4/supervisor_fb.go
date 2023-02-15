@@ -5,8 +5,12 @@ package v4
 import (
 	ctx2 "context"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -30,6 +34,10 @@ type FBSupervisorConfig struct {
 	FluentBitParsersPath string
 	FluentBitVerbose     bool
 }
+
+const (
+	MaxNumberOfTempFiles int = 5
+)
 
 // IsLogForwarderAvailable checks whether all the required files for FluentBit execution are available
 func (c *FBSupervisorConfig) IsLogForwarderAvailable() bool {
@@ -142,6 +150,42 @@ func saveToTempFile(config []byte) (string, error) {
 		return "", err
 	}
 	return file.Name(), nil
+}
+
+func removeOldTempFiles() {
+
+	files, err := os.ReadDir(os.TempDir())
+	if err != nil {
+		log.WithError(err).Warn("Failed removing temp files.")
+		return
+	}
+
+	var fbConfigTempFiles []fs.DirEntry
+
+	for _, file := range files {
+		if !file.IsDir() && strings.HasPrefix(file.Name(), "nr_fb_config") {
+			fbConfigTempFiles = append(fbConfigTempFiles, file)
+		}
+	}
+
+	if len(fbConfigTempFiles) > MaxNumberOfTempFiles {
+
+		sort.Slice(fbConfigTempFiles, func(i, j int) bool {
+			fileInfo1, _ := fbConfigTempFiles[i].Info()
+			fileInfo2, _ := fbConfigTempFiles[j].Info()
+			return fileInfo1.ModTime().Before(fileInfo2.ModTime())
+		})
+
+		for i := 0; i < len(fbConfigTempFiles)-MaxNumberOfTempFiles; i++ {
+			os.Remove(filepath.Join(os.TempDir(), fbConfigTempFiles[i].Name()))
+			//TODO log.debug
+			//TODO erro
+		}
+
+		log.Debug(fmt.Sprintf("Max number of temp files reached (%d). Removed %d temp file(s).",
+			MaxNumberOfTempFiles, len(fbConfigTempFiles)-MaxNumberOfTempFiles))
+	}
+
 }
 
 // SupervisorEvent will be used to create an InfrastructureEvent when fb start/stop.
