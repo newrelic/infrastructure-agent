@@ -20,6 +20,7 @@ variable "cluster_name" {
 
 #######################################
 # Task definition
+#######################################
 variable "task_command" {
   default = [
     "test/automated-run"
@@ -32,6 +33,10 @@ variable "efs_volume_mount_point" {
 
 variable "efs_volume_name" {
   default = "shared-infra-agent"
+}
+
+variable "canaries_security_group" {
+  default = "sg-044ef7bc34691164a"
 }
 
 variable "secret_name_ssh" {

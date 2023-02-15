@@ -22,7 +22,6 @@ module "otel_infra" {
     account_id = var.accountId
 
 
-
     cluster_name           = var.cluster_name
 
     cloudwatch_log_group = var.task_logs_group
@@ -103,6 +102,7 @@ module "otel_infra" {
 
     efs_volume_mount_point = var.efs_volume_mount_point
     efs_volume_name = var.efs_volume_name
+    canaries_security_group = var.canaries_security_group
 
     oidc_repository = "repo:newrelic/infrastructure-agent:*"
     oidc_role_name = "caos-pipeline-oidc-infra-agent"
