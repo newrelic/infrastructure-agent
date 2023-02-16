@@ -36,7 +36,7 @@ type FBSupervisorConfig struct {
 }
 
 const (
-	MaxNumberOfTempFiles int = 5
+	MaxNumberOfFbConfigTempFiles int = 50
 )
 
 // IsLogForwarderAvailable checks whether all the required files for FluentBit execution are available
@@ -106,7 +106,7 @@ func buildFbExecutor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 			return nil, errors.Wrap(err, "failed to create temporary fb sFBLogger config file")
 		}
 
-		if fbConfigTempFiles, err := removeFbConfigTempFiles(); err != nil || fbConfigTempFiles != nil {
+		if fbConfigTempFiles, err := removeFbConfigTempFiles(MaxNumberOfFbConfigTempFiles); err != nil || fbConfigTempFiles != nil {
 
 			for _, file := range fbConfigTempFiles {
 				log.Debugf("Removed %s config temp file.", file)
@@ -163,7 +163,7 @@ func saveToTempFile(config []byte) (string, error) {
 	return file.Name(), nil
 }
 
-func removeFbConfigTempFiles() ([]string, error) {
+func removeFbConfigTempFiles(maxNumberOfFbConfigTempFiles int) ([]string, error) {
 
 	files, err := os.ReadDir(os.TempDir())
 	if err != nil {
@@ -178,7 +178,7 @@ func removeFbConfigTempFiles() ([]string, error) {
 		}
 	}
 
-	if len(fbConfigTempFiles) > MaxNumberOfTempFiles {
+	if len(fbConfigTempFiles) > maxNumberOfFbConfigTempFiles {
 
 		var removedConfigTempFilenames []string
 
@@ -190,7 +190,7 @@ func removeFbConfigTempFiles() ([]string, error) {
 			return fileInfo1.ModTime().Before(fileInfo2.ModTime())
 		})
 
-		for i := 0; i < len(fbConfigTempFiles)-MaxNumberOfTempFiles; i++ {
+		for i := 0; i < len(fbConfigTempFiles)-maxNumberOfFbConfigTempFiles; i++ {
 
 			// TODO if windows
 			fbConfigTempFileContent, err := os.ReadFile(filepath.Join(os.TempDir(), fbConfigTempFiles[i].Name()))

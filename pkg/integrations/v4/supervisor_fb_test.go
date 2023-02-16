@@ -5,6 +5,7 @@ package v4
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
 	executor2 "github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
@@ -104,4 +105,88 @@ func TestFBSupervisorConfig_LicenseKeyShouldBePassedAsEnvVar(t *testing.T) {
 
 	assert.Contains(t, exec.(*executor2.Executor).Cfg.Environment, "NR_LICENSE_KEY_ENV_VAR")       // nolint:forcetypeassert
 	assert.Equal(t, exec.(*executor2.Executor).Cfg.Environment["NR_LICENSE_KEY_ENV_VAR"], license) //nolint:forcetypeassert
+}
+
+func TestRemoveFbConfigTempFiles(t *testing.T) {
+
+	configFiles := []struct {
+		name    string
+		content string
+	}{
+		{"nr_fb_config1", "nr_fb_lua_filter1,nr_fb_lua_filter2"},
+		{"nr_fb_config2", ""},
+		{"nr_fb_config3", "nr_fb_lua_filter3"},
+		{"nr_fb_config4", "nr_fb_lua_filter4"},
+		{"nr_fb_config5", ""},
+		{"nr_fb_config6", ""},
+		{"nr_fb_lua_filter1", ""},
+		{"nr_fb_lua_filter2", ""},
+		{"nr_fb_lua_filter3", ""},
+		{"nr_fb_lua_filter4", ""},
+	}
+
+	tests := []struct {
+		name                     string
+		maxNumConfFiles          int
+		expectedRemovedConfFiles []string
+		expectedKeptConfFiles    []string
+		wantErr                  bool
+	}{
+		{
+			name:                     "Any config file is removed",
+			maxNumConfFiles:          10,
+			expectedRemovedConfFiles: []string{},
+			expectedKeptConfFiles:    []string{"nr_fb_config1", "nr_fb_config2", "nr_fb_config3", "nr_fb_config4", "nr_fb_config5", "nr_fb_config6", "nr_fb_lua_filter1", "nr_fb_lua_filter2", "nr_fb_lua_filter3", "nr_fb_lua_filter4"},
+			wantErr:                  false,
+		},
+		{
+			name:                     "Config file 1 and config lua files 1 and 2 are removed",
+			maxNumConfFiles:          5,
+			expectedRemovedConfFiles: []string{"nr_fb_config1", "nr_fb_lua_filter1", "nr_fb_lua_filter2"},
+			expectedKeptConfFiles:    []string{"nr_fb_config2", "nr_fb_config3", "nr_fb_config4", "nr_fb_config5", "nr_fb_config6", "nr_fb_lua_filter3", "nr_fb_lua_filter4"},
+			wantErr:                  false,
+		},
+		{
+			name:                     "Config files 1, 2 and 3 and config lua files 1, 2 and 3 are removed",
+			maxNumConfFiles:          3,
+			expectedRemovedConfFiles: []string{"nr_fb_config1", "nr_fb_config2", "nr_fb_config3", "nr_fb_lua_filter1", "nr_fb_lua_filter2", "nr_fb_lua_filter3"},
+			expectedKeptConfFiles:    []string{"nr_fb_config4", "nr_fb_config5", "nr_fb_config6", "nr_fb_lua_filter4"},
+			wantErr:                  false,
+		},
+	}
+
+	for _, tt := range tests {
+
+		// create temp directory and set it as default directory to use for temporary files
+		tmpDir := t.TempDir()
+		t.Setenv("TMPDIR", tmpDir)
+
+		t.Run(tt.name, func(t *testing.T) {
+
+			// create config files in temp directory
+			for _, file := range configFiles {
+				addFile(t, tmpDir, file.name, file.content)
+			}
+
+			got, err := removeFbConfigTempFiles(tt.maxNumConfFiles)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("removeFbConfigTempFiles() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			// read the remaining config file names from the temp directory
+			files, err := os.Open(tmpDir)
+			require.NoError(t, err)
+			keptConfTempFilenames, err := files.Readdirnames(0)
+			require.NoError(t, err)
+
+			assert.ElementsMatchf(t, tt.expectedRemovedConfFiles, got, "Config files removed do not match")
+			assert.ElementsMatchf(t, tt.expectedKeptConfFiles, keptConfTempFilenames, "Config files kept do not match")
+		})
+	}
+}
+
+func addFile(t *testing.T, dir, name, contents string) {
+	filePath := filepath.Join(dir, name)
+	require.NoError(t, os.WriteFile(filePath, []byte(contents), 0666))
 }
