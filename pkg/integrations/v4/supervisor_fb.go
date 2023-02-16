@@ -192,7 +192,6 @@ func removeFbConfigTempFiles(maxNumberOfFbConfigTempFiles int) ([]string, error)
 
 		for i := 0; i < len(fbConfigTempFiles)-maxNumberOfFbConfigTempFiles; i++ {
 
-			// TODO if windows
 			fbConfigTempFileContent, err := os.ReadFile(filepath.Join(os.TempDir(), fbConfigTempFiles[i].Name()))
 
 			if err != nil {
