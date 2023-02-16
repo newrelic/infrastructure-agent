@@ -133,7 +133,7 @@ func TestRemoveFbConfigTempFiles(t *testing.T) {
 		wantErr                  bool
 	}{
 		{
-			name:                     "Any config file is removed",
+			name:                     "No config files are removed",
 			maxNumConfFiles:          10,
 			expectedRemovedConfFiles: []string{},
 			expectedKeptConfFiles:    []string{"nr_fb_config1", "nr_fb_config2", "nr_fb_config3", "nr_fb_config4", "nr_fb_config5", "nr_fb_config6", "nr_fb_lua_filter1", "nr_fb_lua_filter2", "nr_fb_lua_filter3", "nr_fb_lua_filter4"},
