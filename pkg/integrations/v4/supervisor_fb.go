@@ -27,6 +27,7 @@ import (
 )
 
 var sFBLogger = log.WithComponent("integrations.Supervisor").WithField("process", "log-forwarder")
+var luaFilterTempFileRegex = regexp.MustCompile("nr_fb_lua_filter\\d+")
 
 type FBSupervisorConfig struct {
 	FluentBitExePath     string
@@ -106,9 +107,9 @@ func buildFbExecutor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 			return nil, errors.Wrap(err, "failed to create temporary fb sFBLogger config file")
 		}
 
-		if fbConfigTempFiles, err := removeFbConfigTempFiles(MaxNumberOfFbConfigTempFiles); err != nil || fbConfigTempFiles != nil {
+		if removedFbConfigTempFiles, err := removeFbConfigTempFiles(MaxNumberOfFbConfigTempFiles); err != nil || removedFbConfigTempFiles != nil {
 
-			for _, file := range fbConfigTempFiles {
+			for _, file := range removedFbConfigTempFiles {
 				log.Debugf("Removed %s config temp file.", file)
 			}
 
@@ -163,6 +164,7 @@ func saveToTempFile(config []byte) (string, error) {
 	return file.Name(), nil
 }
 
+// keeps the most recent config files, up to maxNumberOfFbConfigTempFiles, and removes the rest
 func removeFbConfigTempFiles(maxNumberOfFbConfigTempFiles int) ([]string, error) {
 
 	files, err := os.ReadDir(os.TempDir())
@@ -182,8 +184,7 @@ func removeFbConfigTempFiles(maxNumberOfFbConfigTempFiles int) ([]string, error)
 
 		var removedConfigTempFilenames []string
 
-		luaFilterTempFileRegex := regexp.MustCompile("nr_fb_lua_filter\\d+")
-
+		// sort fbConfigTempFiles by ascending modification date
 		sort.Slice(fbConfigTempFiles, func(i, j int) bool {
 			fileInfo1, _ := fbConfigTempFiles[i].Info()
 			fileInfo2, _ := fbConfigTempFiles[j].Info()
@@ -191,16 +192,13 @@ func removeFbConfigTempFiles(maxNumberOfFbConfigTempFiles int) ([]string, error)
 		})
 
 		for i := 0; i < len(fbConfigTempFiles)-maxNumberOfFbConfigTempFiles; i++ {
-
-			fbConfigTempFileContent, err := os.ReadFile(filepath.Join(os.TempDir(), fbConfigTempFiles[i].Name()))
+			fbLuaFilterTempFilenames, err := extractLuaFilterFilenames(fbConfigTempFiles[i].Name())
 
 			if err != nil {
 				return removedConfigTempFilenames, err
 			}
 
-			// remove each lua filter temp file referenced by fbConfigTempFileContent
-			for _, fbLuaFilterTempFilename := range luaFilterTempFileRegex.FindAllString(string(fbConfigTempFileContent), -1) {
-
+			for _, fbLuaFilterTempFilename := range fbLuaFilterTempFilenames {
 				if err := os.Remove(filepath.Join(os.TempDir(), fbLuaFilterTempFilename)); err != nil {
 					return removedConfigTempFilenames, err
 				}
@@ -218,6 +216,23 @@ func removeFbConfigTempFiles(maxNumberOfFbConfigTempFiles int) ([]string, error)
 	}
 
 	return nil, nil
+}
+
+// extract lua filter temp filenames referenced by fbConfigTempFilename
+func extractLuaFilterFilenames(fbConfigTempFilename string) ([]string, error) {
+	fbConfigTempFileContent, err := os.ReadFile(filepath.Join(os.TempDir(), fbConfigTempFilename))
+
+	if err != nil {
+		return nil, err
+	}
+
+	var luaFilterTempFilenames []string
+
+	for _, fbLuaFilterTempFilename := range luaFilterTempFileRegex.FindAllString(string(fbConfigTempFileContent), -1) {
+		luaFilterTempFilenames = append(luaFilterTempFilenames, fbLuaFilterTempFilename)
+	}
+
+	return luaFilterTempFilenames, nil
 }
 
 // SupervisorEvent will be used to create an InfrastructureEvent when fb start/stop.

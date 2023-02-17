@@ -116,7 +116,7 @@ func TestRemoveFbConfigTempFiles(t *testing.T) {
 		{"nr_fb_config1", "nr_fb_lua_filter1,nr_fb_lua_filter2"},
 		{"nr_fb_config2", ""},
 		{"nr_fb_config3", "nr_fb_lua_filter3"},
-		{"nr_fb_config4", "nr_fb_lua_filter4"},
+		{"nr_fb_config4", "nr_fb_lua_filter0"},
 		{"nr_fb_config5", ""},
 		{"nr_fb_config6", ""},
 		{"nr_fb_lua_filter1", ""},
@@ -152,6 +152,13 @@ func TestRemoveFbConfigTempFiles(t *testing.T) {
 			expectedRemovedConfFiles: []string{"nr_fb_config1", "nr_fb_config2", "nr_fb_config3", "nr_fb_lua_filter1", "nr_fb_lua_filter2", "nr_fb_lua_filter3"},
 			expectedKeptConfFiles:    []string{"nr_fb_config4", "nr_fb_config5", "nr_fb_config6", "nr_fb_lua_filter4"},
 			wantErr:                  false,
+		},
+		{
+			name:                     "Config files 1, 2 and 3 and config lua files 1, 2 and 3 are removed. Error removing non-existing lua file 0 referenced by config file 4.",
+			maxNumConfFiles:          2,
+			expectedRemovedConfFiles: []string{"nr_fb_config1", "nr_fb_config2", "nr_fb_config3", "nr_fb_lua_filter1", "nr_fb_lua_filter2", "nr_fb_lua_filter3"},
+			expectedKeptConfFiles:    []string{"nr_fb_config4", "nr_fb_config5", "nr_fb_config6", "nr_fb_lua_filter4"},
+			wantErr:                  true,
 		},
 	}
 
