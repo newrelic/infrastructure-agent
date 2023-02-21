@@ -40,6 +40,29 @@ const (
 	MaxNumberOfFbConfigTempFiles int = 50
 )
 
+// ErrorsList error representing a list of errors
+type ErrorsList struct {
+	Errors []error
+}
+
+func (s *ErrorsList) Error() (err string) {
+	err = "List of errors: "
+	for _, e := range s.Errors {
+		err += fmt.Sprintf("%s ", e.Error())
+	}
+	return err
+}
+
+func (s *ErrorsList) Add(e error) { s.Errors = append(s.Errors, e) }
+
+// ErrorOrNil returns an error interface if the Error slice is not empty or nil otherwise
+func (s *ErrorsList) ErrorOrNil() error {
+	if s == nil || len(s.Errors) == 0 {
+		return nil
+	}
+	return s
+}
+
 // IsLogForwarderAvailable checks whether all the required files for FluentBit execution are available
 func (c *FBSupervisorConfig) IsLogForwarderAvailable() bool {
 	if _, err := os.Stat(c.FluentBitExePath); err != nil {
@@ -180,42 +203,45 @@ func removeFbConfigTempFiles(maxNumberOfFbConfigTempFiles int) ([]string, error)
 		}
 	}
 
-	if len(fbConfigTempFiles) > maxNumberOfFbConfigTempFiles {
-
-		var removedConfigTempFilenames []string
-
-		// sort fbConfigTempFiles by ascending modification date
-		sort.Slice(fbConfigTempFiles, func(i, j int) bool {
-			fileInfo1, _ := fbConfigTempFiles[i].Info()
-			fileInfo2, _ := fbConfigTempFiles[j].Info()
-			return fileInfo1.ModTime().Before(fileInfo2.ModTime())
-		})
-
-		for i := 0; i < len(fbConfigTempFiles)-maxNumberOfFbConfigTempFiles; i++ {
-			fbLuaFilterTempFilenames, err := extractLuaFilterFilenames(fbConfigTempFiles[i].Name())
-
-			if err != nil {
-				return removedConfigTempFilenames, err
-			}
-
-			for _, fbLuaFilterTempFilename := range fbLuaFilterTempFilenames {
-				if err := os.Remove(filepath.Join(os.TempDir(), fbLuaFilterTempFilename)); err != nil {
-					return removedConfigTempFilenames, err
-				}
-				removedConfigTempFilenames = append(removedConfigTempFilenames, fbLuaFilterTempFilename)
-			}
-
-			if err := os.Remove(filepath.Join(os.TempDir(), fbConfigTempFiles[i].Name())); err != nil {
-				return removedConfigTempFilenames, err
-			}
-
-			removedConfigTempFilenames = append(removedConfigTempFilenames, fbConfigTempFiles[i].Name())
-		}
-
-		return removedConfigTempFilenames, nil
+	if len(fbConfigTempFiles) <= maxNumberOfFbConfigTempFiles {
+		return nil, nil
 	}
 
-	return nil, nil
+	// sort fbConfigTempFiles by ascending modification date
+	sort.Slice(fbConfigTempFiles, func(i, j int) bool {
+		fileInfo1, _ := fbConfigTempFiles[i].Info()
+		fileInfo2, _ := fbConfigTempFiles[j].Info()
+		return fileInfo1.ModTime().Before(fileInfo2.ModTime())
+	})
+
+	var removedConfigTempFiles []string
+	var configTempFilesToRemove []string
+	var errors ErrorsList
+
+	// create list of fbConfigTempFiles to remove
+	for i := 0; i < len(fbConfigTempFiles)-maxNumberOfFbConfigTempFiles; i++ {
+		configTempFilesToRemove = append(configTempFilesToRemove, fbConfigTempFiles[i].Name())
+	}
+
+	// extract lua filter filenames from config temp files to remove
+	for _, fbLuaFilterTempFilename := range configTempFilesToRemove {
+		if fbLuaFilterTempFilenames, err := extractLuaFilterFilenames(fbLuaFilterTempFilename); err != nil {
+			errors.Add(err)
+		} else {
+			configTempFilesToRemove = append(configTempFilesToRemove, fbLuaFilterTempFilenames...)
+		}
+	}
+
+	// remove all config and lua filter temp files from temporary directory
+	for _, fbLuaFilterTempFilename := range configTempFilesToRemove {
+		if err := os.Remove(filepath.Join(os.TempDir(), fbLuaFilterTempFilename)); err != nil {
+			errors.Add(err)
+		} else {
+			removedConfigTempFiles = append(removedConfigTempFiles, fbLuaFilterTempFilename)
+		}
+	}
+
+	return removedConfigTempFiles, errors.ErrorOrNil()
 }
 
 // extract lua filter temp filenames referenced by fbConfigTempFilename
