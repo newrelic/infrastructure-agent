@@ -1,0 +1,6 @@
+SELECT abs(
+filter(uniqueCount(commandLine),WHERE displayName like '${displayNameCurrent}')
+-
+filter(uniqueCount(commandLine),WHERE displayName like '${displayNamePrevious}')
+)
+FROM ProcessSample WHERE displayName IN ('${displayNameCurrent}','${displayNamePrevious}')

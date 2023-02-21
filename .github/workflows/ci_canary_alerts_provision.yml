@@ -17,3 +17,10 @@ jobs:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
     with:
       TAG: ${{ github.event.inputs.tag }}
+      NR_ACCOUNT_ID: 1038907
+      NR_REGION: Staging
+      INSTANCE_NAME_PATTERN: canary:v${{ github.event.inputs.tag }}:*
+      TF_STATE_KEY: prerelease/state_${{ github.event.inputs.tag }}
+      TF_STATE_BUCKET: automation-pipeline-terraform-state
+      TF_STATE_REGION: us-east-2
+      POLICIES_PREFIX: "[pre-release] Canaries metric comparator"

@@ -1,0 +1,6 @@
+SELECT abs(
+filter(uniqueCount(containerId),WHERE reportingAgent like '${displayNameCurrent}')
+-
+filter(uniqueCount(containerId),WHERE reportingAgent like '${displayNamePrevious}')
+)
+FROM ContainerSample WHERE reportingAgent IN ('${displayNameCurrent}','${displayNamePrevious}')

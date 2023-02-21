@@ -1,0 +1,6 @@
+SELECT
+filter(average(numeric(${metric})),WHERE displayName like '${displayNameCurrent}')
+-
+filter(average(numeric(${metric})),WHERE displayName like '${displayNamePrevious}')
+FROM ${sample}
+WHERE displayName IN ('${displayNameCurrent}','${displayNamePrevious}')

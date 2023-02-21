@@ -9,6 +9,27 @@ on:
       TAG:
         required: true
         type: string
+      POLICIES_PREFIX:
+        required: true
+        type: string
+      NR_ACCOUNT_ID:
+        required: true
+        type: string
+      NR_REGION:
+        required: true
+        type: string
+      INSTANCE_NAME_PATTERN:
+        required: true
+        type: string
+      TF_STATE_BUCKET:
+        required: true
+        type: string
+      TF_STATE_KEY:
+        required: true
+        type: string
+      TF_STATE_REGION:
+        required: true
+        type: string
 
 env:
   AWS_ASSUME_ROLE: 'arn:aws:iam::018789649883:role/caos-pipeline-oidc-infra-agent'
@@ -33,7 +54,16 @@ jobs:
         uses: ./.github/actions/external_runner
         with:
           aws_region: us-east-2
-          container_make_target: "provision-alerts/pre-release TAG=${{ inputs.TAG }}"
+          container_make_target: > 
+            provision-alerts-terraform
+            TF_VAR_api_key=$NR_API_KEY
+            TF_VAR_account_id=${{ inputs.NR_ACCOUNT_ID }}
+            TF_VAR_region=${{ inputs.NR_REGION }}
+            TF_VAR_instance_policies_prefix="${{ inputs.POLICIES_PREFIX }}"
+            TF_VAR_instance_name_pattern="${{ inputs.INSTANCE_NAME_PATTERN }}"
+            TF_VAR_tf_state_bucket=${{ inputs.TF_STATE_BUCKET }}
+            TF_VAR_tf_state_region=${{ inputs.TF_STATE_REGION }}
+            TF_VAR_tf_state_key="${{ inputs.TF_STATE_KEY }}"
           ecs_cluster_name: caos_infra_agent
           task_definition_name: infra-agent-td
           cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent

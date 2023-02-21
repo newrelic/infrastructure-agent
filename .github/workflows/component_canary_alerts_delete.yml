@@ -29,7 +29,16 @@ jobs:
         uses: ./.github/actions/external_runner
         with:
           aws_region: us-east-2
-          container_make_target: "provision-alerts-delete/pre-release"
+          container_make_target: >
+            provision-alerts-terraform-delete
+            TF_VAR_api_key=$NR_API_KEY
+            TF_VAR_account_id=1038907
+            TF_VAR_region=Staging
+            TF_VAR_instance_policies_prefix="[pre-release] Canaries metric comparator"
+            TF_VAR_instance_name_pattern="canary:v${{ inputs.TAG }}:*"
+            TF_VAR_tf_state_bucket=automation-pipeline-terraform-state
+            TF_VAR_tf_state_region=us-east-2
+            TF_VAR_tf_state_key=prerelease/state_${{ inputs.TAG }}
           ecs_cluster_name: caos_infra_agent
           task_definition_name: infra-agent-td
           cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
