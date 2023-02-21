@@ -62,7 +62,9 @@ func TestNewReporter_Report(t *testing.T) {
 	emptyIDProvide := func() entity.Identity {
 		return entity.EmptyIdentity
 	}
-
+	emptyEntityKeyProvider := func() string {
+		return ""
+	}
 	tests := []struct {
 		name      string
 		endpoints []string
@@ -76,7 +78,7 @@ func TestNewReporter_Report(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			l := log.WithComponent(tt.name)
-			r := NewReporter(context.Background(), l, tt.endpoints, timeout, transport, emptyIDProvide, "user-agent", "agent-key")
+			r := NewReporter(context.Background(), l, tt.endpoints, timeout, transport, emptyIDProvide, emptyEntityKeyProvider, "user-agent", "agent-key")
 
 			got, err := r.Report()
 
@@ -138,7 +140,9 @@ func TestNewReporter_ReportErrors(t *testing.T) {
 	emptyIDProvide := func() entity.Identity {
 		return entity.EmptyIdentity
 	}
-
+	emptyEntityKeyProvider := func() string {
+		return ""
+	}
 	tests := []struct {
 		name      string
 		endpoints []string
@@ -152,7 +156,7 @@ func TestNewReporter_ReportErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			l := log.WithComponent(tt.name)
-			r := NewReporter(context.Background(), l, tt.endpoints, timeout, transport, emptyIDProvide, "user-agent", "agent-key")
+			r := NewReporter(context.Background(), l, tt.endpoints, timeout, transport, emptyIDProvide, emptyEntityKeyProvider, "user-agent", "agent-key")
 
 			got, err := r.ReportErrors()
 
@@ -191,13 +195,15 @@ func TestNewReporter_ReportEntity(t *testing.T) {
 	transport := &http.Transport{}
 
 	tests := []struct {
-		name    string
-		guid    string
-		want    ReportEntity
-		wantErr bool
+		name      string
+		guid      string
+		entityKey string
+		want      ReportEntity
+		wantErr   bool
 	}{
-		{"no guid", "", ReportEntity{}, false},
-		{"foo guid", "foo", ReportEntity{GUID: "foo"}, false},
+		{"no guid", "", "", ReportEntity{}, false},
+		{"foo guid", "foo", "", ReportEntity{GUID: "foo"}, false},
+		{"foo guid bar key", "foo", "bar", ReportEntity{GUID: "foo", Key: "bar"}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -207,7 +213,10 @@ func TestNewReporter_ReportEntity(t *testing.T) {
 				}
 			}
 			l := log.WithComponent(tt.name)
-			r := NewReporter(context.Background(), l, []string{}, timeout, transport, idProvide, "user-agent", "agent-key")
+			entityKeyProvider := func() string {
+				return tt.entityKey
+			}
+			r := NewReporter(context.Background(), l, []string{}, timeout, transport, idProvide, entityKeyProvider, "user-agent", "agent-key")
 
 			got, err := r.ReportEntity()
 
