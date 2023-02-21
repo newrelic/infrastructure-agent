@@ -6,9 +6,10 @@
 package darwin
 
 import (
+	"testing"
+
 	"github.com/newrelic/infrastructure-agent/internal/plugins/common"
 	testing2 "github.com/newrelic/infrastructure-agent/internal/plugins/testing"
-	"testing"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"

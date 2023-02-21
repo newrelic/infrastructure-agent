@@ -10,7 +10,7 @@ jobs:
 
   run-lint:
     name: Lint tests
-    runs-on: macos-11
+    runs-on: macos-13
     continue-on-error: true
 
     steps:
