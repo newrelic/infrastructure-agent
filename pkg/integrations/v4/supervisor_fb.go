@@ -224,8 +224,8 @@ func removeFbConfigTempFiles(maxNumberOfFbConfigTempFiles int) ([]string, error)
 	}
 
 	// extract lua filter filenames from config temp files to remove
-	for _, fbLuaFilterTempFilename := range configTempFilesToRemove {
-		if fbLuaFilterTempFilenames, err := extractLuaFilterFilenames(fbLuaFilterTempFilename); err != nil {
+	for _, configTempFileToRemove := range configTempFilesToRemove {
+		if fbLuaFilterTempFilenames, err := extractLuaFilterFilenames(configTempFileToRemove); err != nil {
 			errors.Add(err)
 		} else {
 			configTempFilesToRemove = append(configTempFilesToRemove, fbLuaFilterTempFilenames...)
@@ -233,11 +233,11 @@ func removeFbConfigTempFiles(maxNumberOfFbConfigTempFiles int) ([]string, error)
 	}
 
 	// remove all config and lua filter temp files from temporary directory
-	for _, fbLuaFilterTempFilename := range configTempFilesToRemove {
-		if err := os.Remove(filepath.Join(os.TempDir(), fbLuaFilterTempFilename)); err != nil {
+	for _, configTempFileToRemove := range configTempFilesToRemove {
+		if err := os.Remove(filepath.Join(os.TempDir(), configTempFileToRemove)); err != nil {
 			errors.Add(err)
 		} else {
-			removedConfigTempFiles = append(removedConfigTempFiles, fbLuaFilterTempFilename)
+			removedConfigTempFiles = append(removedConfigTempFiles, configTempFileToRemove)
 		}
 	}
 
