@@ -40,12 +40,12 @@ const (
 	MaxNumberOfFbConfigTempFiles int = 50
 )
 
-// ErrorsList error representing a list of errors
-type ErrorsList struct {
+// errorsList error representing a list of errors
+type errorsList struct {
 	Errors []error
 }
 
-func (s *ErrorsList) Error() (err string) {
+func (s *errorsList) Error() (err string) {
 	err = "List of errors: "
 	for _, e := range s.Errors {
 		err += fmt.Sprintf("%s ", e.Error())
@@ -53,10 +53,10 @@ func (s *ErrorsList) Error() (err string) {
 	return err
 }
 
-func (s *ErrorsList) Add(e error) { s.Errors = append(s.Errors, e) }
+func (s *errorsList) Add(e error) { s.Errors = append(s.Errors, e) }
 
 // ErrorOrNil returns an error interface if the Error slice is not empty or nil otherwise
-func (s *ErrorsList) ErrorOrNil() error {
+func (s *errorsList) ErrorOrNil() error {
 	if s == nil || len(s.Errors) == 0 {
 		return nil
 	}
@@ -216,7 +216,7 @@ func removeFbConfigTempFiles(maxNumberOfFbConfigTempFiles int) ([]string, error)
 
 	var removedConfigTempFiles []string
 	var configTempFilesToRemove []string
-	var errors ErrorsList
+	var errors errorsList
 
 	// create list of fbConfigTempFiles to remove
 	for i := 0; i < len(fbConfigTempFiles)-maxNumberOfFbConfigTempFiles; i++ {
