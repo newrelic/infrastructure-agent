@@ -58,9 +58,12 @@ func (suite *HTTPAPITestSuite) TestServe_Status() {
 	emptyIDProvide := func() entity.Identity {
 		return entity.EmptyIdentity
 	}
+	emptyEntityKeyProvider := func() string {
+		return ""
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	r := status.NewReporter(ctx, logger, endpoints, timeout, transport, emptyIDProvide, "user-agent", "agent-key")
+	r := status.NewReporter(ctx, logger, endpoints, timeout, transport, emptyIDProvide, emptyEntityKeyProvider, "user-agent", "agent-key")
 
 	// When agent status API server is ready
 	em := &testemit.RecordEmitter{}
@@ -116,9 +119,12 @@ func (suite *HTTPAPITestSuite) TestServe_OnlyErrors() {
 	emptyIDProvide := func() entity.Identity {
 		return entity.EmptyIdentity
 	}
+	emptyEntityKeyProvider := func() string {
+		return ""
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	r := status.NewReporter(ctx, logger, endpoints, timeout, transport, emptyIDProvide, "user-agent", "agent-key")
+	r := status.NewReporter(ctx, logger, endpoints, timeout, transport, emptyIDProvide, emptyEntityKeyProvider, "user-agent", "agent-key")
 
 	// When agent status API server is ready
 	em := &testemit.RecordEmitter{}
@@ -167,7 +173,9 @@ func (suite *HTTPAPITestSuite) TestServe_Entity() {
 			GUID: "foo",
 		}
 	}
-
+	emptyEntityKeyProvider := func() string {
+		return ""
+	}
 	tests := []struct {
 		name         string
 		idProvide    id.Provide
@@ -183,7 +191,7 @@ func (suite *HTTPAPITestSuite) TestServe_Entity() {
 			port, err := networkHelpers.TCPPort()
 			require.NoError(t, err)
 
-			r := status.NewReporter(ctx, logger, []string{}, timeout, transport, tt.idProvide, "user-agent", "agent-key")
+			r := status.NewReporter(ctx, logger, []string{}, timeout, transport, tt.idProvide, emptyEntityKeyProvider, "user-agent", "agent-key")
 			// When agent status API server is ready
 			em := &testemit.RecordEmitter{}
 			s, err := NewServer(r, em)

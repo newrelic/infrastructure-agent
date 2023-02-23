@@ -48,6 +48,7 @@ type EndpointReport struct {
 // ReportEntity agent entity report.
 type ReportEntity struct {
 	GUID string `json:"guid"`
+	Key  string `json:"key"`
 }
 
 // Reporter reports agent status.
@@ -61,14 +62,15 @@ type Reporter interface {
 }
 
 type nrReporter struct {
-	ctx       context.Context
-	log       log.Entry
-	endpoints []string // NR backend URLs
-	license   string
-	userAgent string
-	idProvide id.Provide
-	timeout   time.Duration
-	transport http.RoundTripper
+	ctx                    context.Context
+	log                    log.Entry
+	endpoints              []string // NR backend URLs
+	license                string
+	userAgent              string
+	idProvide              id.Provide
+	agentEntityKeyProvider func() string
+	timeout                time.Duration
+	transport              http.RoundTripper
 }
 
 // Report reports agent status.
@@ -148,6 +150,7 @@ func (r *nrReporter) report(onlyErrors bool) (report Report, err error) {
 func (r *nrReporter) ReportEntity() (re ReportEntity, err error) {
 	return ReportEntity{
 		GUID: r.idProvide().GUID.String(),
+		Key:  r.agentEntityKeyProvider(),
 	}, nil
 }
 
@@ -159,18 +162,20 @@ func NewReporter(
 	timeout time.Duration,
 	transport http.RoundTripper,
 	agentIDProvide id.Provide,
+	agentEntityKeyProvider func() string,
 	license,
 	userAgent string,
 ) Reporter {
 
 	return &nrReporter{
-		ctx:       ctx,
-		log:       l,
-		endpoints: backendEndpoints,
-		license:   license,
-		userAgent: userAgent,
-		idProvide: agentIDProvide,
-		timeout:   timeout,
-		transport: transport,
+		ctx:                    ctx,
+		log:                    l,
+		endpoints:              backendEndpoints,
+		license:                license,
+		userAgent:              userAgent,
+		idProvide:              agentIDProvide,
+		agentEntityKeyProvider: agentEntityKeyProvider,
+		timeout:                timeout,
+		transport:              transport,
 	}
 }
