@@ -5,7 +5,6 @@ package v4
 import (
 	ctx2 "context"
 	"fmt"
-	"github.com/pkg/errors"
 	"io/fs"
 	"io/ioutil"
 	"os"
@@ -16,6 +15,7 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
+	"github.com/pkg/errors"
 
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
@@ -40,26 +40,28 @@ const (
 	MaxNumberOfFbConfigTempFiles int = 50
 )
 
-// errorsList error representing a list of errors
-type errorsList struct {
+// listError error representing a list of errors.
+type listError struct {
 	Errors []error
 }
 
-func (s *errorsList) Error() (err string) {
+func (s *listError) Error() (err string) {
 	err = "List of errors: "
 	for _, e := range s.Errors {
 		err += fmt.Sprintf("%s ", e.Error())
 	}
+
 	return err
 }
 
-func (s *errorsList) Add(e error) { s.Errors = append(s.Errors, e) }
+func (s *listError) Add(e error) { s.Errors = append(s.Errors, e) }
 
-// ErrorOrNil returns an error interface if the Error slice is not empty or nil otherwise
-func (s *errorsList) ErrorOrNil() error {
+// ErrorOrNil returns an error interface if the Error slice is not empty or nil otherwise.
+func (s *listError) ErrorOrNil() error {
 	if s == nil || len(s.Errors) == 0 {
 		return nil
 	}
+
 	return s
 }
 
@@ -131,7 +133,6 @@ func buildFbExecutor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 		}
 
 		removedFbConfigTempFiles, err := removeFbConfigTempFiles(MaxNumberOfFbConfigTempFiles)
-
 		if err != nil {
 			log.WithError(err).Warn("Failed removing config temp files.")
 		}
@@ -186,12 +187,11 @@ func saveToTempFile(config []byte) (string, error) {
 	return file.Name(), nil
 }
 
-// keeps the most recent config files, up to maxNumberOfFbConfigTempFiles, and removes the rest
+// keeps the most recent config files, up to maxNumberOfFbConfigTempFiles, and removes the rest.
 func removeFbConfigTempFiles(maxNumberOfFbConfigTempFiles int) ([]string, error) {
-
 	files, err := os.ReadDir(os.TempDir())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed reading temp directory: %w", err)
 	}
 
 	var fbConfigTempFiles []fs.DirEntry
@@ -210,12 +210,13 @@ func removeFbConfigTempFiles(maxNumberOfFbConfigTempFiles int) ([]string, error)
 	sort.Slice(fbConfigTempFiles, func(i, j int) bool {
 		fileInfo1, _ := fbConfigTempFiles[i].Info()
 		fileInfo2, _ := fbConfigTempFiles[j].Info()
+
 		return fileInfo1.ModTime().Before(fileInfo2.ModTime())
 	})
 
 	var removedConfigTempFiles []string
 	var configTempFilesToRemove []string
-	var errors errorsList
+	var errors listError
 
 	// create list of fbConfigTempFiles to remove
 	for i := 0; i < len(fbConfigTempFiles)-maxNumberOfFbConfigTempFiles; i++ {
@@ -243,19 +244,14 @@ func removeFbConfigTempFiles(maxNumberOfFbConfigTempFiles int) ([]string, error)
 	return removedConfigTempFiles, errors.ErrorOrNil()
 }
 
-// extract lua filter temp filenames referenced by fbConfigTempFilename
+// extract lua filter temp filenames referenced by fbConfigTempFilename.
 func extractLuaFilterFilenames(fbConfigTempFilename string) ([]string, error) {
 	fbConfigTempFileContent, err := os.ReadFile(filepath.Join(os.TempDir(), fbConfigTempFilename))
-
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed reading config temp file: %s error: %w", fbConfigTempFilename, err)
 	}
 
-	var luaFilterTempFilenames []string
-
-	for _, fbLuaFilterTempFilename := range luaFilterTempFileRegex.FindAllString(string(fbConfigTempFileContent), -1) {
-		luaFilterTempFilenames = append(luaFilterTempFilenames, fbLuaFilterTempFilename)
-	}
+	luaFilterTempFilenames := luaFilterTempFileRegex.FindAllString(string(fbConfigTempFileContent), -1)
 
 	return luaFilterTempFilenames, nil
 }

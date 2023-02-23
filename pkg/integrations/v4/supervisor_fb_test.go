@@ -107,8 +107,8 @@ func TestFBSupervisorConfig_LicenseKeyShouldBePassedAsEnvVar(t *testing.T) {
 	assert.Equal(t, exec.(*executor2.Executor).Cfg.Environment["NR_LICENSE_KEY_ENV_VAR"], license) //nolint:forcetypeassert
 }
 
+// nolint:paralleltest
 func TestRemoveFbConfigTempFiles(t *testing.T) {
-
 	configFiles := []struct {
 		name    string
 		content string
@@ -162,22 +162,21 @@ func TestRemoveFbConfigTempFiles(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-
+	for _, test := range tests {
 		// create temp directory and set it as default directory to use for temporary files
 		tmpDir := t.TempDir()
 		t.Setenv("TMPDIR", tmpDir)
 
-		t.Run(tt.name, func(t *testing.T) {
-
+		t.Run(test.name, func(t *testing.T) {
 			// create config files in temp directory
 			for _, file := range configFiles {
 				addFile(t, tmpDir, file.name, file.content)
 			}
 
-			got, err := removeFbConfigTempFiles(tt.maxNumConfFiles)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("removeFbConfigTempFiles() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := removeFbConfigTempFiles(test.maxNumConfFiles)
+			if (err != nil) != test.wantErr {
+				t.Errorf("removeFbConfigTempFiles() error = %v, wantErr %v", err, test.wantErr)
+
 				return
 			}
 
@@ -187,13 +186,15 @@ func TestRemoveFbConfigTempFiles(t *testing.T) {
 			keptConfTempFilenames, err := files.Readdirnames(0)
 			require.NoError(t, err)
 
-			assert.ElementsMatchf(t, tt.expectedRemovedConfFiles, got, "Config files removed do not match")
-			assert.ElementsMatchf(t, tt.expectedKeptConfFiles, keptConfTempFilenames, "Config files kept do not match")
+			assert.ElementsMatchf(t, test.expectedRemovedConfFiles, got, "Config files removed do not match")
+			assert.ElementsMatchf(t, test.expectedKeptConfFiles, keptConfTempFilenames, "Config files kept do not match")
 		})
 	}
 }
 
+// nolint:gofumpt
 func addFile(t *testing.T, dir, name, contents string) {
+	t.Helper()
 	filePath := filepath.Join(dir, name)
-	require.NoError(t, os.WriteFile(filePath, []byte(contents), 0666))
+	require.NoError(t, os.WriteFile(filePath, []byte(contents), 0600))
 }
