@@ -130,15 +130,14 @@ func buildFbExecutor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 			return nil, errors.Wrap(err, "failed to create temporary fb sFBLogger config file")
 		}
 
-		if removedFbConfigTempFiles, err := removeFbConfigTempFiles(MaxNumberOfFbConfigTempFiles); err != nil || removedFbConfigTempFiles != nil {
+		removedFbConfigTempFiles, err := removeFbConfigTempFiles(MaxNumberOfFbConfigTempFiles)
 
-			for _, file := range removedFbConfigTempFiles {
-				log.Debugf("Removed %s config temp file.", file)
-			}
+		if err != nil {
+			log.WithError(err).Warn("Failed removing config temp files.")
+		}
 
-			if err != nil {
-				log.WithError(err).Warn("Failed removing config temp files.")
-			}
+		for _, file := range removedFbConfigTempFiles {
+			log.Debugf("Removed %s config temp file.", file)
 		}
 
 		args := []string{
