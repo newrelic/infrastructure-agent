@@ -21,6 +21,8 @@ module "otel_infra" {
     vpc_subnet_id = var.vpc_subnet
     account_id = var.accountId
 
+    s3_terraform_bucket_arn = var.s3_bucket
+
 
     cluster_name           = var.cluster_name
 
