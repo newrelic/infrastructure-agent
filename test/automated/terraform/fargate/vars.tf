@@ -35,6 +35,19 @@ variable "efs_volume_name" {
   default = "shared-infra-agent"
 }
 
+variable "additional_efs_security_group_rules" {
+    default = [
+    {
+      type                     = "ingress"
+      from_port                = 0
+      to_port                  = 65535
+      protocol                 = "tcp"
+      cidr_blocks              = ["10.10.0.0/24"]
+      description              = "Allow ingress traffic to EFS from trusted subnet"
+    }
+  ]
+}
+
 variable "canaries_security_group" {
   default = "sg-044ef7bc34691164a"
 }

@@ -102,6 +102,7 @@ module "otel_infra" {
 
     efs_volume_mount_point = var.efs_volume_mount_point
     efs_volume_name = var.efs_volume_name
+    additional_efs_security_group_rules = var.additional_efs_security_group_rules
     canaries_security_group = var.canaries_security_group
 
     oidc_repository = "repo:newrelic/infrastructure-agent:*"
