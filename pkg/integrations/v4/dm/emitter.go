@@ -203,7 +203,8 @@ func emitMetrics(metricSender MetricsSender,
 	metadata integration.Definition,
 	dataset protocol.Dataset,
 	annotations map[string]string,
-	labels map[string]string) {
+	labels map[string]string,
+) {
 	dmProcessor := IntegrationProcessor{
 		IntegrationInterval:         metadata.Interval,
 		IntegrationLabels:           labels,
@@ -221,7 +222,8 @@ func emitInventory(
 	integrationMetadata protocol.IntegrationMetadata,
 	entityID entity.ID,
 	dataSet protocol.Dataset,
-	labels map[string]string) {
+	labels map[string]string,
+) {
 	logEntry := elog.WithField("action", "EmitV4DataSet")
 
 	integrationUser := metadata.ExecutorConfig.User
@@ -294,7 +296,7 @@ func ParsePayloadV4(raw []byte, ffManager feature_flags.Retriever) (dataV4 proto
 		return
 	}
 
-	if enabled, ok := ffManager.GetFeatureFlag(fflag.FlagProtocolV4); !ok || !enabled {
+	if enabled, exists := ffManager.GetFeatureFlag(fflag.FlagProtocolV4); exists && !enabled {
 		err = ProtocolV4NotEnabledErr
 		return
 	}

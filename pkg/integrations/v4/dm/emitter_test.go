@@ -101,7 +101,17 @@ func TestParsePayloadV4_embeddedInventoryItems(t *testing.T) {
 }
 
 func TestParsePayloadV4_noFF(t *testing.T) {
+	t.Parallel()
 	ffm := feature_flags.NewManager(map[string]bool{})
+
+	d, err := ParsePayloadV4(integrationFixture.ProtocolV4.Payload, ffm)
+	assert.NoError(t, err)
+	assert.EqualValues(t, integrationFixture.ProtocolV4.ParsedV4, d)
+}
+
+func TestParsePayloadV4_FF_disabled(t *testing.T) {
+	t.Parallel()
+	ffm := feature_flags.NewManager(map[string]bool{fflag.FlagProtocolV4: false})
 
 	_, err := ParsePayloadV4(integrationFixture.ProtocolV4.Payload, ffm)
 	assert.Equal(t, ProtocolV4NotEnabledErr, err)
