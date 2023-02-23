@@ -20,7 +20,7 @@ require (
 	github.com/kardianos/service v1.2.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kolo/xmlrpc v0.0.0-20200310150728-e0350524596b
-	github.com/newrelic/go-agent/v3 v3.15.2
+	github.com/newrelic/go-agent/v3 v3.20.3
 	github.com/newrelic/infra-identity-client-go v1.0.2
 	github.com/newrelic/newrelic-telemetry-sdk-go v0.8.1
 	github.com/pkg/errors v0.9.1
@@ -80,7 +80,7 @@ require (
 	golang.org/x/text v0.6.0 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
 	google.golang.org/genproto v0.0.0-20220118154757-00ab72f36ad5 // indirect
-	google.golang.org/grpc v1.43.0 // indirect
+	google.golang.org/grpc v1.49.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
