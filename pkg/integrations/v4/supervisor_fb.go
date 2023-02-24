@@ -206,8 +206,8 @@ func removeFbConfigTempFiles(maxNumberOfFbConfigTempFiles int) ([]string, error)
 		return fileInfo1.ModTime().Before(fileInfo2.ModTime())
 	})
 
-	var removedConfigTempFiles []string
 	var configTempFilesToRemove []string
+	var removedConfigTempFiles []string
 	var listErrors listError
 
 	// create list of fbConfigTempFiles to remove
