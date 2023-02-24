@@ -46,9 +46,9 @@ type listError struct {
 }
 
 func (s *listError) Error() (err string) {
-	err = "List of errors: "
+	err = "List of errors:"
 	for _, e := range s.Errors {
-		err += fmt.Sprintf("%s ", e.Error())
+		err += fmt.Sprintf(" - %s", e.Error())
 	}
 
 	return err
@@ -189,17 +189,9 @@ func saveToTempFile(config []byte) (string, error) {
 
 // keeps the most recent config files, up to maxNumberOfFbConfigTempFiles, and removes the rest.
 func removeFbConfigTempFiles(maxNumberOfFbConfigTempFiles int) ([]string, error) {
-	files, err := os.ReadDir(os.TempDir())
+	fbConfigTempFiles, err := readFbConfigTempFilesFromTempDirectory()
 	if err != nil {
-		return nil, fmt.Errorf("failed reading temp directory: %w", err)
-	}
-
-	var fbConfigTempFiles []fs.DirEntry
-
-	for _, file := range files {
-		if !file.IsDir() && strings.HasPrefix(file.Name(), "nr_fb_config") {
-			fbConfigTempFiles = append(fbConfigTempFiles, file)
-		}
+		return nil, fmt.Errorf("failed reading config temp files: %w", err)
 	}
 
 	if len(fbConfigTempFiles) <= maxNumberOfFbConfigTempFiles {
@@ -216,7 +208,7 @@ func removeFbConfigTempFiles(maxNumberOfFbConfigTempFiles int) ([]string, error)
 
 	var removedConfigTempFiles []string
 	var configTempFilesToRemove []string
-	var errors listError
+	var listErrors listError
 
 	// create list of fbConfigTempFiles to remove
 	for i := 0; i < len(fbConfigTempFiles)-maxNumberOfFbConfigTempFiles; i++ {
@@ -226,7 +218,7 @@ func removeFbConfigTempFiles(maxNumberOfFbConfigTempFiles int) ([]string, error)
 	// extract lua filter filenames from config temp files to remove
 	for _, configTempFileToRemove := range configTempFilesToRemove {
 		if fbLuaFilterTempFilenames, err := extractLuaFilterFilenames(configTempFileToRemove); err != nil {
-			errors.Add(err)
+			listErrors.Add(err)
 		} else {
 			configTempFilesToRemove = append(configTempFilesToRemove, fbLuaFilterTempFilenames...)
 		}
@@ -235,13 +227,31 @@ func removeFbConfigTempFiles(maxNumberOfFbConfigTempFiles int) ([]string, error)
 	// remove all config and lua filter temp files from temporary directory
 	for _, configTempFileToRemove := range configTempFilesToRemove {
 		if err := os.Remove(filepath.Join(os.TempDir(), configTempFileToRemove)); err != nil {
-			errors.Add(err)
+			listErrors.Add(err)
 		} else {
 			removedConfigTempFiles = append(removedConfigTempFiles, configTempFileToRemove)
 		}
 	}
 
-	return removedConfigTempFiles, errors.ErrorOrNil()
+	return removedConfigTempFiles, listErrors.ErrorOrNil()
+}
+
+// return the list of temp config files from temporary directory.
+func readFbConfigTempFilesFromTempDirectory() ([]fs.DirEntry, error) {
+	files, err := os.ReadDir(os.TempDir())
+	if err != nil {
+		return nil, fmt.Errorf("failed reading temp directory: %w", err)
+	}
+
+	var fbConfigTempFiles []fs.DirEntry
+
+	for _, file := range files {
+		if !file.IsDir() && strings.HasPrefix(file.Name(), "nr_fb_config") {
+			fbConfigTempFiles = append(fbConfigTempFiles, file)
+		}
+	}
+
+	return fbConfigTempFiles, nil
 }
 
 // extract lua filter temp filenames referenced by fbConfigTempFilename.

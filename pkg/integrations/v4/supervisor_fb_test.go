@@ -192,9 +192,8 @@ func TestRemoveFbConfigTempFiles(t *testing.T) {
 	}
 }
 
-// nolint:gofumpt
 func addFile(t *testing.T, dir, name, contents string) {
 	t.Helper()
 	filePath := filepath.Join(dir, name)
-	require.NoError(t, os.WriteFile(filePath, []byte(contents), 0600))
+	require.NoError(t, os.WriteFile(filePath, []byte(contents), 0o0600))
 }
