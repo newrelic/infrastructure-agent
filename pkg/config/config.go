@@ -1142,10 +1142,12 @@ type Config struct {
 	NtpMetrics NtpConfig `yaml:"ntp_metrics" envconfig:"ntp_metrics"`
 
 	// AgentTempDir is the directory where the agent stores temporary files (i.e. fb config, discovery...)
-	// Default (Linux): /var/db/newrelic-infra/data/tmp
+	// It will be DELETED on every afent restart only if it matches default value
+	//
+	// Default (Linux): /var/db/newrelic-infra/tmp
 	// Default (MacOS AMD): /usr/local/var/db/newrelic-infra/tmp
 	// Default (MacOS ARM): /opt/homebrew/var/db/newrelic-infra/tmp
-	// Default (Windows): env(ProgramData)\New Relic\newrelic-infra\tmp
+	// Default (Windows): C:\ProgramData\New Relic\newrelic-infra\tmp
 	// Public: no
 	AgentTempDir string `yaml:"-" envconfig:"-"`
 }
