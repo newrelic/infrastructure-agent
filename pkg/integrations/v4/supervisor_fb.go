@@ -6,7 +6,6 @@ import (
 	ctx2 "context"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -26,18 +25,22 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
-var sFBLogger = log.WithComponent("integrations.Supervisor").WithField("process", "log-forwarder")
-var luaFilterTempFileRegex = regexp.MustCompile("nr_fb_lua_filter\\d+")
+var (
+	sFBLogger              = log.WithComponent("integrations.Supervisor").WithField("process", "log-forwarder")
+	luaFilterTempFileRegex = regexp.MustCompile("nr_fb_lua_filter\\d+")
+)
 
 type FBSupervisorConfig struct {
 	FluentBitExePath     string
 	FluentBitNRLibPath   string
 	FluentBitParsersPath string
 	FluentBitVerbose     bool
+	ConfTemporaryFolder  string
 }
 
 const (
 	MaxNumberOfFbConfigTempFiles int = 50
+	FbConfTempFolderNameDefault      = "fb"
 )
 
 // listError error representing a list of errors.
@@ -127,7 +130,7 @@ func buildFbExecutor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 			return nil, cErr
 		}
 
-		cfgTmpPath, err := saveToTempFile([]byte(cfgContent))
+		cfgTmpPath, err := saveToTempFile(fbIntCfg.ConfTemporaryFolder, []byte(cfgContent))
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create temporary fb sFBLogger config file")
 		}
@@ -170,9 +173,15 @@ func buildFbExecutor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 }
 
 // returns the file name
-func saveToTempFile(config []byte) (string, error) {
+func saveToTempFile(tempDir string, config []byte) (string, error) {
+	// ensure that tempdir exits
+	err := os.MkdirAll(tempDir, 0o755)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create temporary folder for fluent-bit")
+	}
+
 	// create it
-	file, err := ioutil.TempFile("", "nr_fb_config")
+	file, err := os.CreateTemp(tempDir, "nr_fb_config")
 	if err != nil {
 		return "", err
 	}
