@@ -15,7 +15,6 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
-	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -464,7 +463,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		FluentBitNRLibPath:   c.FluentBitNRLibPath,
 		FluentBitParsersPath: c.FluentBitParsersPath,
 		FluentBitVerbose:     c.Log.Level == config.LogLevelTrace && c.Log.HasIncludeFilter(config.TracesFieldName, config.SupervisorTrace),
-		ConfTemporaryFolder:  path.Join(c.AgentTempDir, v4.FbConfTempFolderNameDefault),
+		ConfTemporaryFolder:  filepath.Join(c.AgentTempDir, v4.FbConfTempFolderNameDefault),
 	}
 
 	if fbIntCfg.IsLogForwarderAvailable() {

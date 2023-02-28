@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
-	"path"
 	"path/filepath"
 	"testing"
 
@@ -117,7 +116,7 @@ func TestFBSupervisorConfig_LicenseKeyShouldBePassedAsEnvVar(t *testing.T) {
 func Test_ConfigTemporaryFolderCreation(t *testing.T) {
 	t.Parallel()
 
-	termporaryFolderPath := path.Join(os.TempDir(), fmt.Sprintf("ConfigTemporaryFolderCreation_%d", rand.Int63()))
+	termporaryFolderPath := filepath.Join(os.TempDir(), fmt.Sprintf("ConfigTemporaryFolderCreation_%d", rand.Int63()))
 	fmt.Println(termporaryFolderPath)
 	defer func() {
 		os.Remove(termporaryFolderPath)
