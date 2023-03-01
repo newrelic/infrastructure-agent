@@ -135,7 +135,7 @@ func buildFbExecutor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 			return nil, errors.Wrap(err, "failed to create temporary fb sFBLogger config file")
 		}
 
-		removedFbConfigTempFiles, err := removeFbConfigTempFiles(MaxNumberOfFbConfigTempFiles)
+		removedFbConfigTempFiles, err := removeFbConfigTempFiles(fbIntCfg.ConfTemporaryFolder, MaxNumberOfFbConfigTempFiles)
 		if err != nil {
 			log.WithError(err).Warn("Failed removing config temp files.")
 		}
@@ -197,8 +197,8 @@ func saveToTempFile(tempDir string, config []byte) (string, error) {
 }
 
 // keeps the most recent config files, up to maxNumberOfFbConfigTempFiles, and removes the rest.
-func removeFbConfigTempFiles(maxNumberOfFbConfigTempFiles int) ([]string, error) {
-	fbConfigTempFiles, err := readFbConfigTempFilesFromTempDirectory()
+func removeFbConfigTempFiles(tempDir string, maxNumberOfFbConfigTempFiles int) ([]string, error) {
+	fbConfigTempFiles, err := readFbConfigTempFilesFromTempDirectory(tempDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed reading config temp files: %w", err)
 	}
@@ -226,7 +226,7 @@ func removeFbConfigTempFiles(maxNumberOfFbConfigTempFiles int) ([]string, error)
 
 	// extract lua filter filenames from config temp files to remove
 	for _, configTempFileToRemove := range configTempFilesToRemove {
-		if fbLuaFilterTempFilenames, err := extractLuaFilterFilenames(configTempFileToRemove); err != nil {
+		if fbLuaFilterTempFilenames, err := extractLuaFilterFilenames(tempDir, configTempFileToRemove); err != nil {
 			listErrors.Add(err)
 		} else {
 			configTempFilesToRemove = append(configTempFilesToRemove, fbLuaFilterTempFilenames...)
@@ -235,7 +235,7 @@ func removeFbConfigTempFiles(maxNumberOfFbConfigTempFiles int) ([]string, error)
 
 	// remove all config and lua filter temp files from temporary directory
 	for _, configTempFileToRemove := range configTempFilesToRemove {
-		if err := os.Remove(filepath.Join(os.TempDir(), configTempFileToRemove)); err != nil {
+		if err := os.Remove(filepath.Join(tempDir, configTempFileToRemove)); err != nil {
 			listErrors.Add(err)
 		} else {
 			removedConfigTempFiles = append(removedConfigTempFiles, configTempFileToRemove)
@@ -246,8 +246,8 @@ func removeFbConfigTempFiles(maxNumberOfFbConfigTempFiles int) ([]string, error)
 }
 
 // return the list of temp config files from temporary directory.
-func readFbConfigTempFilesFromTempDirectory() ([]fs.DirEntry, error) {
-	files, err := os.ReadDir(os.TempDir())
+func readFbConfigTempFilesFromTempDirectory(tempDir string) ([]fs.DirEntry, error) {
+	files, err := os.ReadDir(tempDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed reading temp directory: %w", err)
 	}
@@ -264,8 +264,8 @@ func readFbConfigTempFilesFromTempDirectory() ([]fs.DirEntry, error) {
 }
 
 // extract lua filter temp filenames referenced by fbConfigTempFilename.
-func extractLuaFilterFilenames(fbConfigTempFilename string) ([]string, error) {
-	fbConfigTempFileContent, err := os.ReadFile(filepath.Join(os.TempDir(), fbConfigTempFilename))
+func extractLuaFilterFilenames(tempDir string, fbConfigTempFilename string) ([]string, error) {
+	fbConfigTempFileContent, err := os.ReadFile(filepath.Join(tempDir, fbConfigTempFilename))
 	if err != nil {
 		return nil, fmt.Errorf("failed reading config temp file: %s error: %w", fbConfigTempFilename, err)
 	}

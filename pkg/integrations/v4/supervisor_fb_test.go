@@ -200,7 +200,6 @@ func TestRemoveFbConfigTempFiles(t *testing.T) {
 	for _, test := range tests {
 		// create temp directory and set it as default directory to use for temporary files
 		tmpDir := t.TempDir()
-		t.Setenv("TMPDIR", tmpDir)
 
 		t.Run(test.name, func(t *testing.T) {
 			// create config files in temp directory
@@ -208,7 +207,7 @@ func TestRemoveFbConfigTempFiles(t *testing.T) {
 				addFile(t, tmpDir, file.name, file.content)
 			}
 
-			got, err := removeFbConfigTempFiles(test.maxNumConfFiles)
+			got, err := removeFbConfigTempFiles(tmpDir, test.maxNumConfFiles)
 			if (err != nil) != test.wantErr {
 				t.Errorf("removeFbConfigTempFiles() error = %v, wantErr %v", err, test.wantErr)
 
