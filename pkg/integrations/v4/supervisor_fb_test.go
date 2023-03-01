@@ -3,11 +3,13 @@
 package v4
 
 import (
+	"crypto/rand"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
+	"math"
+	"math/big"
 	"os"
-	"path/filepath"
+	"path"
 	"testing"
 
 	executor2 "github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
@@ -116,7 +118,9 @@ func TestFBSupervisorConfig_LicenseKeyShouldBePassedAsEnvVar(t *testing.T) {
 func Test_ConfigTemporaryFolderCreation(t *testing.T) {
 	t.Parallel()
 
-	termporaryFolderPath := filepath.Join(os.TempDir(), fmt.Sprintf("ConfigTemporaryFolderCreation_%d", rand.Int63()))
+	randNumber, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
+	assert.NoError(t, err)
+	termporaryFolderPath := path.Join(os.TempDir(), fmt.Sprintf("ConfigTemporaryFolderCreation_%d", randNumber))
 	fmt.Println(termporaryFolderPath)
 	defer func() {
 		os.Remove(termporaryFolderPath)
@@ -132,7 +136,7 @@ func Test_ConfigTemporaryFolderCreation(t *testing.T) {
 	confLoader := logs.NewFolderLoader(c, agentIdentity, hostnameResolver)
 	executorBuilder := buildFbExecutor(fbConf, confLoader)
 
-	_, err := executorBuilder()
+	_, err = executorBuilder()
 	require.NoError(t, err)
 	assert.DirExists(t, termporaryFolderPath)
 }
