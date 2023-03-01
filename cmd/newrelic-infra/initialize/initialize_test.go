@@ -5,6 +5,7 @@ package initialize
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"testing"
 
@@ -16,17 +17,20 @@ import (
 	logHelper "github.com/newrelic/infrastructure-agent/test/log"
 )
 
-var errForTest = errors.New("this is an error")
+var (
+	errForMkdir = errors.New("this is an error for mkdir")
+	errForRmdir = errors.New("this is an error for rmdir")
+)
 
 func Test_emptyTemporaryFolder(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		name               string
-		agentTempDir       string
-		removeFunc         func(string) error
-		mkdirFunc          func(string, os.FileMode) error
-		expectedLogEntries []string
+		name          string
+		agentTempDir  string
+		removeFunc    func(string) error
+		mkdirFunc     func(string, os.FileMode) error
+		expectedError error
 	}{
 		{
 			name:         "Empty conf option should not be deleted",
@@ -43,25 +47,25 @@ func Test_emptyTemporaryFolder(t *testing.T) {
 			mkdirFunc:    func(string, os.FileMode) error { return nil },
 		},
 		{
-			name:               "Error removing should log",
-			agentTempDir:       agentTemporaryFolder,
-			removeFunc:         func(string) error { return errForTest },
-			mkdirFunc:          func(string, os.FileMode) error { return nil },
-			expectedLogEntries: []string{"Can't empty agent temporary folder"},
+			name:          "Error removing should log",
+			agentTempDir:  agentTemporaryFolder,
+			removeFunc:    func(string) error { return errForRmdir },
+			mkdirFunc:     func(string, os.FileMode) error { return nil },
+			expectedError: fmt.Errorf("can't empty agent temporary folder: %w", errForRmdir),
 		},
 		{
-			name:               "Error creating should log",
-			agentTempDir:       agentTemporaryFolder,
-			removeFunc:         func(string) error { return nil },
-			mkdirFunc:          func(string, os.FileMode) error { return errForTest },
-			expectedLogEntries: []string{"Can't create agent temporary folder"},
+			name:          "Error creating should log",
+			agentTempDir:  agentTemporaryFolder,
+			removeFunc:    func(string) error { return nil },
+			mkdirFunc:     func(string, os.FileMode) error { return errForMkdir },
+			expectedError: fmt.Errorf("can't create agent temporary folder: %w", errForMkdir),
 		},
 		{
-			name:               "Error creating and removing should log both",
-			agentTempDir:       agentTemporaryFolder,
-			removeFunc:         func(string) error { return errForTest },
-			mkdirFunc:          func(string, os.FileMode) error { return errForTest },
-			expectedLogEntries: []string{"Can't empty agent temporary folder", "Can't create agent temporary folder"},
+			name:          "Error creating and removing should log both",
+			agentTempDir:  agentTemporaryFolder,
+			removeFunc:    func(string) error { return errForRmdir },
+			mkdirFunc:     func(string, os.FileMode) error { return errForMkdir },
+			expectedError: fmt.Errorf("can't empty agent temporary folder: %w", errForRmdir),
 		},
 	}
 
@@ -81,10 +85,8 @@ func Test_emptyTemporaryFolder(t *testing.T) {
 
 			mkdirFunc = testCase.mkdirFunc
 			removeFunc = testCase.removeFunc
-			emptyTemporaryFolder(cfg)
-			for i, entry := range hook.GetEntries() {
-				assert.Equal(t, entry.Message, testCase.expectedLogEntries[i])
-			}
+			err := emptyTemporaryFolder(cfg)
+			assert.Equal(t, testCase.expectedError, err)
 		})
 	}
 }

@@ -7,10 +7,10 @@
 package initialize
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/newrelic/infrastructure-agent/pkg/config"
-	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
 const tempFolderMode = 0o755
@@ -28,20 +28,18 @@ var (
 // Default (MacOS AMD): /usr/local/var/db/newrelic-infra/tmp
 // Default (MacOS ARM): /opt/homebrew/var/db/newrelic-infra/tmp
 // Default (Windows): c:\ProgramData\New Relic\newrelic-infra\tmp
-func emptyTemporaryFolder(cfg *config.Config) {
+func emptyTemporaryFolder(cfg *config.Config) error {
 	if cfg.AgentTempDir == agentTemporaryFolder {
 		err := removeFunc(agentTemporaryFolder)
 		if err != nil {
-			log.WithField("temporaryFolder", agentTemporaryFolder).
-				WithError(err).
-				Error("Can't empty agent temporary folder")
+			return fmt.Errorf("can't empty agent temporary folder: %w", err)
 		}
 
 		err = mkdirFunc(agentTemporaryFolder, tempFolderMode)
 		if err != nil {
-			log.WithField("temporaryFolder", agentTemporaryFolder).
-				WithError(err).
-				Error("Can't create agent temporary folder")
+			return fmt.Errorf("can't create agent temporary folder: %w", err)
 		}
 	}
+
+	return nil
 }

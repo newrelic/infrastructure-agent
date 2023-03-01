@@ -9,6 +9,7 @@ package initialize
 import (
 	"errors"
 	"fmt"
+	"os"
 	"syscall"
 
 	"github.com/sirupsen/logrus"
@@ -41,7 +42,13 @@ var priorityClasses = map[string]uint{
 // AgentService performs OS-specific initialization steps for the Agent service.
 // It is executed after the initialize.osProcess function
 func AgentService(cfg *config.Config) error {
-	emptyTemporaryFolder(cfg)
+	err := emptyTemporaryFolder(cfg)
+	if err != nil {
+		log.WithField("temporaryFolder", agentTemporaryFolder).
+			WithError(err).
+			Error("error emptying temporary folder")
+		os.Exit(1)
+	}
 
 	logger := log.WithField("action", "AgentService")
 	// Set up Windows shared WMI Interface if active
