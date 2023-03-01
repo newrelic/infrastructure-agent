@@ -10,6 +10,7 @@ import (
 	"math/big"
 	"os"
 	"path"
+	"path/filepath"
 	"testing"
 
 	executor2 "github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
