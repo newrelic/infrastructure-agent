@@ -15,7 +15,7 @@ const agentTemporaryFolder = "/opt/homebrew/var/db/newrelic-infra/tmp"
 // AgentService performs OS-specific initialization steps for the Agent service.
 // It is executed after the initialize.osProcess function.
 func AgentService(cfg *config.Config) error {
-	emptyTemporayFolder(cfg)
+	emptyTemporaryFolder(cfg)
 
 	return nil
 }

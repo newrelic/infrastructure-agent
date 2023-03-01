@@ -18,7 +18,7 @@ import (
 
 var errForTest = errors.New("this is an error")
 
-func Test_emptyTemporayFolder(t *testing.T) {
+func Test_emptyTemporaryFolder(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
@@ -81,7 +81,7 @@ func Test_emptyTemporayFolder(t *testing.T) {
 
 			mkdirFunc = testCase.mkdirFunc
 			removeFunc = testCase.removeFunc
-			emptyTemporayFolder(cfg)
+			emptyTemporaryFolder(cfg)
 			for i, entry := range hook.GetEntries() {
 				assert.Equal(t, entry.Message, testCase.expectedLogEntries[i])
 			}

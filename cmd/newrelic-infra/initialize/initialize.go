@@ -21,14 +21,14 @@ var (
 )
 
 // nolint:godot
-// emptyTemporayFolder deletes all files inside the default agent's temporary folder,
+// emptyTemporaryFolder deletes all files inside the default agent's temporary folder,
 // only if configuration option matches the default value.
 //
 // Default (Linux): /var/db/newrelic-infra/tmp
 // Default (MacOS AMD): /usr/local/var/db/newrelic-infra/tmp
 // Default (MacOS ARM): /opt/homebrew/var/db/newrelic-infra/tmp
 // Default (Windows): c:\ProgramData\New Relic\newrelic-infra\tmp
-func emptyTemporayFolder(cfg *config.Config) {
+func emptyTemporaryFolder(cfg *config.Config) {
 	if cfg.AgentTempDir == agentTemporaryFolder {
 		err := removeFunc(agentTemporaryFolder)
 		if err != nil {

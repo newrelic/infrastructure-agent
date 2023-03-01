@@ -41,7 +41,7 @@ var priorityClasses = map[string]uint{
 // AgentService performs OS-specific initialization steps for the Agent service.
 // It is executed after the initialize.osProcess function
 func AgentService(cfg *config.Config) error {
-	emptyTemporayFolder(cfg)
+	emptyTemporaryFolder(cfg)
 
 	logger := log.WithField("action", "AgentService")
 	// Set up Windows shared WMI Interface if active
