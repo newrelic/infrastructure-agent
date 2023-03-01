@@ -107,8 +107,9 @@ func TestFBSupervisorConfig_LicenseKeyShouldBePassedAsEnvVar(t *testing.T) {
 	assert.Equal(t, exec.(*executor2.Executor).Cfg.Environment["NR_LICENSE_KEY_ENV_VAR"], license) //nolint:forcetypeassert
 }
 
-// nolint:paralleltest
 func TestRemoveFbConfigTempFiles(t *testing.T) {
+	t.Parallel()
+
 	configFiles := []struct {
 		name    string
 		content string
@@ -163,17 +164,16 @@ func TestRemoveFbConfigTempFiles(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		// create temp directory and set it as default directory to use for temporary files
-		tmpDir := t.TempDir()
-		t.Setenv("TMPDIR", tmpDir)
+		// create temp directory to use it in the current unit test
+		tempDir := t.TempDir()
 
 		t.Run(test.name, func(t *testing.T) {
 			// create config files in temp directory
 			for _, file := range configFiles {
-				addFile(t, tmpDir, file.name, file.content)
+				addFile(t, tempDir, file.name, file.content)
 			}
 
-			got, err := removeFbConfigTempFiles(test.maxNumConfFiles)
+			got, err := removeFbConfigTempFiles(test.maxNumConfFiles, tempDir)
 			if (err != nil) != test.wantErr {
 				t.Errorf("removeFbConfigTempFiles() error = %v, wantErr %v", err, test.wantErr)
 
@@ -181,7 +181,7 @@ func TestRemoveFbConfigTempFiles(t *testing.T) {
 			}
 
 			// read the remaining config file names from the temp directory
-			files, err := os.Open(tmpDir)
+			files, err := os.Open(tempDir)
 			require.NoError(t, err)
 			keptConfTempFilenames, err := files.Readdirnames(0)
 			require.NoError(t, err)
