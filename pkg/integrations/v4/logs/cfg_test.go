@@ -95,13 +95,14 @@ func TestNewFBConf(t *testing.T) {
 		}, FBCfg{
 			Inputs: []FBCfgInput{
 				{
-					Name:          "tail",
-					Tag:           "log-file",
-					DB:            dbDbPath,
-					Path:          "file.path",
-					BufferMaxSize: "128k",
-					SkipLongLines: "On",
-					PathKey:       "filePath",
+					Name:           "tail",
+					Tag:            "log-file",
+					DB:             dbDbPath,
+					Path:           "file.path",
+					BufferMaxSize:  "128k",
+					MemBufferLimit: "16384k",
+					SkipLongLines:  "On",
+					PathKey:        "filePath",
 				},
 			},
 			Filters: []FBCfgFilter{
@@ -118,13 +119,14 @@ func TestNewFBConf(t *testing.T) {
 		}, FBCfg{
 			Inputs: []FBCfgInput{
 				{
-					Name:          "tail",
-					Tag:           "log-file",
-					DB:            dbDbPath,
-					Path:          "file.path",
-					BufferMaxSize: "128k",
-					SkipLongLines: "On",
-					PathKey:       "filePath",
+					Name:           "tail",
+					Tag:            "log-file",
+					DB:             dbDbPath,
+					Path:           "file.path",
+					BufferMaxSize:  "128k",
+					MemBufferLimit: "16384k",
+					SkipLongLines:  "On",
+					PathKey:        "filePath",
 				},
 			},
 			Filters: []FBCfgFilter{
@@ -141,13 +143,14 @@ func TestNewFBConf(t *testing.T) {
 		}, FBCfg{
 			Inputs: []FBCfgInput{
 				{
-					Name:          "tail",
-					Tag:           "log-file",
-					DB:            dbDbPath,
-					Path:          "file.path",
-					BufferMaxSize: "128k",
-					SkipLongLines: "On",
-					PathKey:       "filePath",
+					Name:           "tail",
+					Tag:            "log-file",
+					DB:             dbDbPath,
+					Path:           "file.path",
+					BufferMaxSize:  "128k",
+					MemBufferLimit: "16384k",
+					SkipLongLines:  "On",
+					PathKey:        "filePath",
 				},
 			},
 			Filters: []FBCfgFilter{
@@ -165,13 +168,14 @@ func TestNewFBConf(t *testing.T) {
 		}, FBCfg{
 			Inputs: []FBCfgInput{
 				{
-					Name:          "tail",
-					Tag:           "log-file",
-					DB:            dbDbPath,
-					Path:          "file.path",
-					BufferMaxSize: "128k",
-					SkipLongLines: "On",
-					PathKey:       "filePath",
+					Name:           "tail",
+					Tag:            "log-file",
+					DB:             dbDbPath,
+					Path:           "file.path",
+					BufferMaxSize:  "128k",
+					MemBufferLimit: "16384k",
+					SkipLongLines:  "On",
+					PathKey:        "filePath",
 				},
 			},
 			Filters: []FBCfgFilter{
@@ -223,13 +227,14 @@ func TestNewFBConf(t *testing.T) {
 		}, FBCfg{
 			Inputs: []FBCfgInput{
 				{
-					Name:          "tail",
-					Tag:           "one-file",
-					DB:            dbDbPath,
-					Path:          "/foo/file.foo",
-					BufferMaxSize: "128k",
-					SkipLongLines: "On",
-					PathKey:       "filePath",
+					Name:           "tail",
+					Tag:            "one-file",
+					DB:             dbDbPath,
+					Path:           "/foo/file.foo",
+					BufferMaxSize:  "128k",
+					MemBufferLimit: "16384k",
+					SkipLongLines:  "On",
+					PathKey:        "filePath",
 				},
 			},
 			Filters: []FBCfgFilter{
@@ -258,13 +263,14 @@ func TestNewFBConf(t *testing.T) {
 		}, FBCfg{
 			Inputs: []FBCfgInput{
 				{
-					Name:          "tail",
-					Tag:           "reserved-test",
-					DB:            dbDbPath,
-					Path:          "/foo/file.foo",
-					BufferMaxSize: "128k",
-					SkipLongLines: "On",
-					PathKey:       "filePath",
+					Name:           "tail",
+					Tag:            "reserved-test",
+					DB:             dbDbPath,
+					Path:           "/foo/file.foo",
+					BufferMaxSize:  "128k",
+					MemBufferLimit: "16384k",
+					SkipLongLines:  "On",
+					PathKey:        "filePath",
 				},
 			},
 			Filters: []FBCfgFilter{

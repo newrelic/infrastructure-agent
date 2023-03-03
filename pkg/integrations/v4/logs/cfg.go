@@ -26,6 +26,7 @@ const (
 	stagingEndpoint         = "https://staging-log-api.newrelic.com/log/v1"
 	logRecordModifierSource = "nri-agent"
 	defaultBufferMaxSize    = 128
+	memBufferLimit          = 16384
 	fluentBitDbName         = "fb.db"
 )
 
@@ -180,6 +181,7 @@ type FBCfgInput struct {
 	DB                    string
 	Path                  string // plugin: tail
 	BufferMaxSize         string // plugin: tail
+	MemBufferLimit        string // plugin: tail
 	PathKey               string // plugin: tail
 	SkipLongLines         string // always on
 	Systemd_Filter        string // plugin: systemd
@@ -491,13 +493,14 @@ func newFBExternalConfig(l LogExternalFBCfg) FBCfgExternal {
 
 func newFileInput(filePath string, dbPath string, tag string, bufSize int) FBCfgInput {
 	return FBCfgInput{
-		Name:          fbInputTypeTail,
-		PathKey:       "filePath",
-		Path:          filePath,
-		DB:            dbPath,
-		Tag:           tag,
-		BufferMaxSize: fmt.Sprintf("%dk", bufSize),
-		SkipLongLines: "On",
+		Name:           fbInputTypeTail,
+		PathKey:        "filePath",
+		Path:           filePath,
+		DB:             dbPath,
+		Tag:            tag,
+		BufferMaxSize:  fmt.Sprintf("%dk", bufSize),
+		MemBufferLimit: fmt.Sprintf("%dk", memBufferLimit),
+		SkipLongLines:  "On",
 	}
 }
 
