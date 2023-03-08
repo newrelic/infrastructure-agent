@@ -20,12 +20,14 @@ const (
 	FlagCategory             = "Infra_Agent"
 	FlagNameRegister         = "register_enabled"
 	FlagParallelizeInventory = "parallelize_inventory_enabled"
+	FlagInventorySendBulk    = "inventory_send_bulk_enabled"
 	FlagProtocolV4           = "protocol_v4_enabled"
 	FlagFullProcess          = "full_process_sampling"
 	FlagDmRegisterDeprecated = "dm_register_deprecated"
 	// Config
 	CfgYmlRegisterEnabled        = "register_enabled"
 	CfgYmlParallelizeInventory   = "inventory_queue_len"
+	CfgYmlInventorySendBulk      = "inventory_send_bulk"
 	CfgValueParallelizeInventory = int64(100) // default value when no config provided by user and FF enabled
 )
 
@@ -134,6 +136,11 @@ func (h *handler) Handle(ctx context.Context, c commandapi.Command, isInitialFet
 		return
 	}
 
+	if ffArgs.Flag == FlagInventorySendBulk {
+		handleInventorySendBulk(ffArgs, h.cfg, isInitialFetch)
+		return
+	}
+
 	// this is where we handle normal feature flags that are not related to OHIs. These are meant to just enable/disable
 	// the falue of the feature flag
 	if isBasicFeatureFlag(ffArgs.Flag) {
@@ -226,6 +233,10 @@ func handleParallelizeInventory(ffArgs args, c *config.Config, isInitialFetch bo
 		v = CfgValueParallelizeInventory
 	}
 
+	if c.InventoryQueueLen > 0 {
+		return
+	}
+
 	if err := c.SetIntValueByYamlAttribute(CfgYmlParallelizeInventory, v); err != nil {
 		ffLogger.
 			WithError(err).
@@ -247,6 +258,35 @@ func handleRegister(ffArgs args, c *config.Config, isInitialFetch bool) {
 		ffLogger.
 			WithError(err).
 			WithField("field", CfgYmlRegisterEnabled).
+			Warn("unable to update config value")
+	}
+
+	inventoryQueueSize := 1000
+	if c.InventoryQueueLen >= inventoryQueueSize {
+		return
+	}
+
+	if err := c.SetIntValueByYamlAttribute(CfgYmlParallelizeInventory, int64(inventoryQueueSize)); err != nil {
+		ffLogger.
+			WithError(err).
+			WithField("field", CfgYmlParallelizeInventory).
+			Warn("unable to update config value")
+	}
+}
+
+func handleInventorySendBulk(ffArgs args, c *config.Config, isInitialFetch bool) {
+	if ffArgs.Enabled == c.InventorySendBulk {
+		return
+	}
+
+	if !isInitialFetch {
+		os.Exit(api.ExitCodeRestart)
+	}
+
+	if err := c.SetBoolValueByYamlAttribute(CfgYmlInventorySendBulk, ffArgs.Enabled); err != nil {
+		ffLogger.
+			WithError(err).
+			WithField("field", CfgYmlInventorySendBulk).
 			Warn("unable to update config value")
 	}
 }

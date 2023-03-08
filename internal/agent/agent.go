@@ -1008,6 +1008,10 @@ func (a *Agent) removeOutdatedEntities(reportedEntities map[string]bool) {
 }
 
 func (c *context) SendData(data PluginOutput) {
+	// Check for cfg.InventorySendBulk just because it's handled by the FeatureFlag.
+	if c.cfg.InventorySendBulk && len(c.ch) == cap(c.ch) {
+		aclog.Debug("inventory queue is full")
+	}
 	c.ch <- data
 }
 
