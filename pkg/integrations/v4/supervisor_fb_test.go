@@ -142,8 +142,8 @@ func Test_ConfigTemporaryFolderCreation(t *testing.T) {
 	assert.DirExists(t, termporaryFolderPath)
 }
 
-// nolint:paralleltest
 func TestRemoveFbConfigTempFiles(t *testing.T) {
+	t.Parallel()
 	configFiles := []struct {
 		name    string
 		content string
@@ -202,6 +202,7 @@ func TestRemoveFbConfigTempFiles(t *testing.T) {
 		tmpDir := t.TempDir()
 
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			// create config files in temp directory
 			for _, file := range configFiles {
 				addFile(t, tmpDir, file.name, file.content)
