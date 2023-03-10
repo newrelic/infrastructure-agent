@@ -49,6 +49,8 @@ func init() {
 
 	// this is the default dir the infra sdk uses to store "temporary" data
 	defaultIntegrationsTempDir = filepath.Join("/tmp", "nr-integrations")
+
+	defaultAgentTempDir = filepath.Join(defaultAgentDir, agentTemporaryFolderName)
 }
 
 func configOverride(cfg *Config) {

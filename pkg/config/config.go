@@ -57,6 +57,7 @@ const (
 	TraceLogging              = 4
 	TraceTroubleshootLogging  = 5
 	defaultMemProfileInterval = 60 * 5
+	agentTemporaryFolderName  = "tmp"
 )
 
 const (
@@ -1139,6 +1140,16 @@ type Config struct {
 	// Default: none
 	// Public: Yes
 	NtpMetrics NtpConfig `yaml:"ntp_metrics" envconfig:"ntp_metrics"`
+
+	// AgentTempDir is the directory where the agent stores temporary files (i.e. fb config, discovery...)
+	// It will be DELETED on every agent restart only if it matches default value
+	//
+	// Default (Linux): /var/db/newrelic-infra/tmp
+	// Default (MacOS AMD): /usr/local/var/db/newrelic-infra/tmp
+	// Default (MacOS ARM): /opt/homebrew/var/db/newrelic-infra/tmp
+	// Default (Windows): C:\ProgramData\New Relic\newrelic-infra\tmp
+	// Public: no
+	AgentTempDir string `yaml:"-" envconfig:"-"`
 }
 
 // Troubleshoot trobleshoot mode configuration.
@@ -1686,6 +1697,7 @@ func NewConfig() *Config {
 		IncludeMetricsMatchers:      defaultMetricsMatcherConfig,
 		InventoryQueueLen:           DefaultInventoryQueue,
 		NtpMetrics:                  NewNtpConfig(),
+		AgentTempDir:                defaultAgentTempDir,
 	}
 }
 

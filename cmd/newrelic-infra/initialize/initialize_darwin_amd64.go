@@ -7,12 +7,25 @@
 package initialize
 
 import (
+	"os"
+
 	"github.com/newrelic/infrastructure-agent/pkg/config"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
+
+const agentTemporaryFolder = "/usr/local/var/db/newrelic-infra/tmp"
 
 // AgentService performs OS-specific initialization steps for the Agent service.
 // It is executed after the initialize.osProcess function.
 func AgentService(cfg *config.Config) error {
+	err := emptyTemporaryFolder(cfg)
+	if err != nil {
+		log.WithField("temporaryFolder", agentTemporaryFolder).
+			WithError(err).
+			Error("error emptying temporary folder")
+		os.Exit(1)
+	}
+
 	return nil
 }
 

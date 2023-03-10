@@ -3,11 +3,12 @@
 package config
 
 import (
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	. "gopkg.in/check.v1"
 )
 
@@ -125,6 +126,8 @@ log:
 	assert.Equal(t, 0, cfg.Log.Rotate.MaxFiles)
 	assert.Equal(t, false, cfg.Log.Rotate.CompressionEnabled)
 	assert.Equal(t, "", cfg.Log.Rotate.FilePattern)
+
+	assert.Equal(t, filepath.Join(cfg.AgentDir, agentTemporaryFolderName), cfg.AgentTempDir)
 }
 
 func TestRotateConfig(t *testing.T) {

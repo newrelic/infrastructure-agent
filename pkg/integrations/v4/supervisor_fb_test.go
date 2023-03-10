@@ -3,8 +3,13 @@
 package v4
 
 import (
+	"crypto/rand"
+	"fmt"
 	"io/ioutil"
+	"math"
+	"math/big"
 	"os"
+	"path"
 	"testing"
 
 	executor2 "github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
@@ -37,6 +42,7 @@ func TestFBSupervisorConfig_IsLogForwarderAvailable(t *testing.T) {
 				FluentBitExePath:     nonExisting,
 				FluentBitNRLibPath:   nonExisting,
 				FluentBitParsersPath: nonExisting,
+				ConfTemporaryFolder:  os.TempDir(),
 			},
 			false,
 		},
@@ -46,6 +52,7 @@ func TestFBSupervisorConfig_IsLogForwarderAvailable(t *testing.T) {
 				FluentBitExePath:     existing,
 				FluentBitNRLibPath:   nonExisting,
 				FluentBitParsersPath: nonExisting,
+				ConfTemporaryFolder:  os.TempDir(),
 			},
 			false,
 		},
@@ -55,6 +62,7 @@ func TestFBSupervisorConfig_IsLogForwarderAvailable(t *testing.T) {
 				FluentBitExePath:     existing,
 				FluentBitNRLibPath:   existing,
 				FluentBitParsersPath: nonExisting,
+				ConfTemporaryFolder:  os.TempDir(),
 			},
 			false,
 		},
@@ -64,6 +72,7 @@ func TestFBSupervisorConfig_IsLogForwarderAvailable(t *testing.T) {
 				FluentBitExePath:     existing,
 				FluentBitNRLibPath:   existing,
 				FluentBitParsersPath: existing,
+				ConfTemporaryFolder:  os.TempDir(),
 			},
 			true,
 		},
@@ -88,7 +97,7 @@ func TestFBSupervisorConfig_IsLogForwarderAvailable(t *testing.T) {
 func TestFBSupervisorConfig_LicenseKeyShouldBePassedAsEnvVar(t *testing.T) {
 	t.Parallel()
 
-	fbConf := FBSupervisorConfig{}
+	fbConf := FBSupervisorConfig{ConfTemporaryFolder: os.TempDir()}
 	agentIdentity := func() entity.Identity {
 		return entity.Identity{ID: 13}
 	}
@@ -104,4 +113,30 @@ func TestFBSupervisorConfig_LicenseKeyShouldBePassedAsEnvVar(t *testing.T) {
 
 	assert.Contains(t, exec.(*executor2.Executor).Cfg.Environment, "NR_LICENSE_KEY_ENV_VAR")       // nolint:forcetypeassert
 	assert.Equal(t, exec.(*executor2.Executor).Cfg.Environment["NR_LICENSE_KEY_ENV_VAR"], license) //nolint:forcetypeassert
+}
+
+func Test_ConfigTemporaryFolderCreation(t *testing.T) {
+	t.Parallel()
+
+	randNumber, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
+	assert.NoError(t, err)
+
+	termporaryFolderPath := path.Join(os.TempDir(), fmt.Sprintf("ConfigTemporaryFolderCreation_%d", randNumber))
+	defer func() {
+		os.Remove(termporaryFolderPath)
+	}()
+
+	fbConf := FBSupervisorConfig{ConfTemporaryFolder: termporaryFolderPath}
+	agentIdentity := func() entity.Identity {
+		return entity.Identity{ID: 13}
+	}
+	hostnameResolver := testhelpers.NewFakeHostnameResolver("full_hostname", "short_hostname", nil)
+	c := config.LogForward{Troubleshoot: config.Troubleshoot{Enabled: true}}
+
+	confLoader := logs.NewFolderLoader(c, agentIdentity, hostnameResolver)
+	executorBuilder := buildFbExecutor(fbConf, confLoader)
+
+	_, err = executorBuilder()
+	require.NoError(t, err)
+	assert.DirExists(t, termporaryFolderPath)
 }
