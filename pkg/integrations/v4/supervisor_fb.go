@@ -5,21 +5,18 @@ package v4
 import (
 	ctx2 "context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"time"
 
 	"github.com/pkg/errors"
 
-	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
-
-	"github.com/newrelic/infrastructure-agent/pkg/entity"
-	"github.com/newrelic/infrastructure-agent/pkg/sample"
-
 	"github.com/newrelic/infrastructure-agent/internal/agent/id"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/logs"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/newrelic/infrastructure-agent/pkg/sample"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
 )
 
 var sFBLogger = log.WithComponent("integrations.Supervisor").WithField("process", "log-forwarder")
@@ -29,7 +26,13 @@ type FBSupervisorConfig struct {
 	FluentBitNRLibPath   string
 	FluentBitParsersPath string
 	FluentBitVerbose     bool
+	ConfTemporaryFolder  string
 }
+
+const (
+	FbConfTempFolderNameDefault = "fb"
+	temporaryFolderPermissions  = 0o755
+)
 
 // IsLogForwarderAvailable checks whether all the required files for FluentBit execution are available
 func (c *FBSupervisorConfig) IsLogForwarderAvailable() bool {
@@ -93,7 +96,7 @@ func buildFbExecutor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 			return nil, cErr
 		}
 
-		cfgTmpPath, err := saveToTempFile([]byte(cfgContent))
+		cfgTmpPath, err := saveToTempFile(fbIntCfg.ConfTemporaryFolder, []byte(cfgContent))
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create temporary fb sFBLogger config file")
 		}
@@ -127,9 +130,15 @@ func buildFbExecutor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 }
 
 // returns the file name
-func saveToTempFile(config []byte) (string, error) {
+func saveToTempFile(tempDir string, config []byte) (string, error) {
+	// ensure that tempdir exits
+	err := os.MkdirAll(tempDir, temporaryFolderPermissions)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create temporary folder for fluent-bit")
+	}
+
 	// create it
-	file, err := ioutil.TempFile("", "nr_fb_config")
+	file, err := os.CreateTemp(tempDir, "nr_fb_config")
 	if err != nil {
 		return "", err
 	}

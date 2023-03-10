@@ -68,6 +68,8 @@ func init() {
 	defaultFluentBitExe = "fluent-bit.exe"
 	defaultFluentBitParsers = "parsers.conf"
 	defaultFluentBitNRLib = "out_newrelic.dll"
+
+	defaultAgentTempDir = filepath.Join(defaultAppDataDir, agentTemporaryFolderName)
 }
 
 func runtimeValues() (userMode, agentUser, executablePath string) {
