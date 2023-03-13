@@ -1,7 +1,13 @@
 ---
 
-- hosts: testing_hosts_windows
+- name: installation-windows
+  hosts: testing_hosts_windows
   gather_facts: yes
+
+  pre_tasks:
+    - name: Initial cleanup # Only required for shared infra.
+      include_role:
+        name: cleanup
 
   tasks:
     - name: Installation tests suite
@@ -16,4 +22,12 @@
           include_role:
             name: agent-install
 
+        - name: Assert version
+          include_role:
+            name: assert-version
+
+      always:
+        - name: Final cleanup # Only required for shared infra.
+          include_role:
+            name: cleanup
 ...

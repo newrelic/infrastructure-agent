@@ -63,6 +63,8 @@
     priority: extra
     # Recommended packages. If they fail to install installation of the agent will not be interrupted.
 #    recommends:
-#      - td-agent-bit
+# FB not supported yet
+#      - td-agent-bit #To be removed on removal of the ff fluent_bit_19
+#      - fluent-bit
   
   # end Debian systemd arm

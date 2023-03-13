@@ -15,7 +15,9 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
 	"github.com/newrelic/infrastructure-agent/internal/agent/id"
+	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/logs"
@@ -24,24 +26,17 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
 )
 
-var (
-	//nolint:gochecknoglobals
-	sFBLogger              = log.WithComponent("integrations.Supervisor").WithField("process", "log-forwarder")
-	luaFilterTempFileRegex = regexp.MustCompile(`nr_fb_lua_filter\d+`)
-)
-
-type FBSupervisorConfig struct {
-	FluentBitExePath     string
-	FluentBitNRLibPath   string
-	FluentBitParsersPath string
-	FluentBitVerbose     bool
-	ConfTemporaryFolder  string
-}
-
 const (
 	FbConfTempFolderNameDefault      = "fb"
 	temporaryFolderPermissions       = 0o755
 	MaxNumberOfFbConfigTempFiles int = 50
+)
+
+var (
+	//nolint:gochecknoglobals
+	sFBLogger              = log.WithComponent("integrations.Supervisor").WithField("process", "log-forwarder")
+	luaFilterTempFileRegex = regexp.MustCompile(`nr_fb_lua_filter\d+`)
+	errFbNotAvailable      = errors.New("cannot build FB executer: FB not available")
 )
 
 // listError error representing a list of errors.
@@ -69,10 +64,50 @@ func (s *listError) ErrorOrNil() error {
 	return s
 }
 
+type fBSupervisorConfig struct {
+	agentDir             string
+	integrationsDir      string
+	loggingBinDir        string
+	fluentBitExePath     string
+	FluentBitNRLibPath   string
+	FluentBitParsersPath string
+	FluentBitVerbose     bool
+	ConfTemporaryFolder  string
+	ffRetriever          feature_flags.Retriever
+}
+
+// NewFBSupervisorConfig creates a new fBSupervisorConfig that will contain the FF retriever
+// not exported to force using the constructor and ensuring it contains all necessary dependencies
+// nolint:revive
+func NewFBSupervisorConfig(
+	ffRetriever feature_flags.Retriever,
+	agentDir string,
+	integrationsDir string,
+	loggingBinDir string,
+	fluentBitExePath string,
+	fluentBitNRLibPath string,
+	fluentBitParsersPath string,
+	fluentBitVerbose bool,
+	confTempFolder string,
+) fBSupervisorConfig {
+	return fBSupervisorConfig{
+		ffRetriever:          ffRetriever,
+		agentDir:             agentDir,
+		integrationsDir:      integrationsDir,
+		loggingBinDir:        loggingBinDir,
+		fluentBitExePath:     fluentBitExePath,
+		FluentBitNRLibPath:   fluentBitNRLibPath,
+		FluentBitParsersPath: fluentBitParsersPath,
+		FluentBitVerbose:     fluentBitVerbose,
+		ConfTemporaryFolder:  confTempFolder,
+	}
+}
+
 // IsLogForwarderAvailable checks whether all the required files for FluentBit execution are available
-func (c *FBSupervisorConfig) IsLogForwarderAvailable() bool {
-	if _, err := os.Stat(c.FluentBitExePath); err != nil {
-		sFBLogger.WithField("fbExePath", c.FluentBitExePath).Debug("Fluent Bit exe not found.")
+func (c *fBSupervisorConfig) IsLogForwarderAvailable() bool {
+	fluentBitExePath := c.getFbPath()
+	if _, err := os.Stat(fluentBitExePath); err != nil {
+		sFBLogger.WithField("fbExePath", fluentBitExePath).Debug("Fluent Bit exe not found.")
 		return false
 	}
 	if _, err := os.Stat(c.FluentBitNRLibPath); err != nil {
@@ -87,13 +122,31 @@ func (c *FBSupervisorConfig) IsLogForwarderAvailable() bool {
 	return true
 }
 
+func (c *fBSupervisorConfig) getFbPath() string {
+	// manually set conf always has precedence
+	if c.fluentBitExePath != "" {
+		return c.fluentBitExePath
+	}
+
+	// only if FF exists and it's enabled, be use legacey version 1.9
+	enabled, exists := c.ffRetriever.GetFeatureFlag(fflag.FlagFluentBit19)
+
+	// value from config rules
+	loggingBinDir := c.loggingBinDir
+	if loggingBinDir == "" {
+		loggingBinDir = c.defaultLoggingBinDir(exists, enabled)
+	}
+
+	return c.defaultFluentBitExePath(exists, enabled, loggingBinDir)
+}
+
 // SendEventFn wrapper for sending events to nr.
 type SendEventFn func(event sample.Event, entityKey entity.Key)
 
 var ObserverName = "LogForwarderSupervisor" // nolint:gochecknoglobals
 
 // NewFBSupervisor builds a Fluent Bit supervisor which forwards the output to agent logs.
-func NewFBSupervisor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader, agentIDNotifier id.UpdateNotifyFn, notifier hostname.ChangeNotifier, sendEventFn SendEventFn) *Supervisor {
+func NewFBSupervisor(fbIntCfg fBSupervisorConfig, cfgLoader *logs.CfgLoader, agentIDNotifier id.UpdateNotifyFn, notifier hostname.ChangeNotifier, sendEventFn SendEventFn) *Supervisor {
 	return &Supervisor{
 		listenAgentIDChanges:   agentIDNotifier,
 		hostnameChangeNotifier: notifier,
@@ -106,6 +159,7 @@ func NewFBSupervisor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader, age
 		preRunActions:          fbPreRunActions(sendEventFn),
 		postRunActions:         fbPostRunActions(sendEventFn),
 		parseOutputFn:          logs.ParseFBOutput,
+		restartCh:              make(chan struct{}, 1),
 	}
 }
 
@@ -124,8 +178,12 @@ func fbPostRunActions(sendEventFn SendEventFn) func(ctx2.Context, cmdExitStatus)
 }
 
 // buildFbExecutor builds the function required by supervisor when running the process.
-func buildFbExecutor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader) func() (Executor, error) {
+func buildFbExecutor(fbIntCfg fBSupervisorConfig, cfgLoader *logs.CfgLoader) func() (Executor, error) {
 	return func() (Executor, error) {
+		if !fbIntCfg.IsLogForwarderAvailable() {
+			return nil, errFbNotAvailable
+		}
+
 		cfgContent, externalCfg, cErr := cfgLoader.LoadAndFormat()
 		if cErr != nil {
 			return nil, cErr
@@ -146,7 +204,7 @@ func buildFbExecutor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 		}
 
 		args := []string{
-			fbIntCfg.FluentBitExePath,
+			fbIntCfg.getFbPath(),
 			"-c",
 			cfgTmpPath,
 			"-e",

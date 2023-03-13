@@ -1,0 +1,15 @@
+---
+
+- name: Ensure fluent-bit is running
+  win_shell: "ps | ? { $_.name -eq 'fluent-bit' } | ft path -auto"
+  register: running_processes
+  become: yes
+  become_user: Administrator
+  become_method: runas
+
+- name: Fail if fluent-bit is not running from the specified path
+  fail:
+    msg: "fluent-bit is not running from the specified path"
+  when: running_processes.stdout is not search(fluent_bit_full_path_regex)
+
+...
