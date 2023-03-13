@@ -414,6 +414,12 @@ func provisionMacosCanaries(cnf canaryConf) error {
 	execNameArgs("sed", "-i.bak", fmt.Sprintf("s/canary:previous/%s:v%s/g", cnf.prefix, previousVersion), path.Join(curPath, inventoryMacos))
 	execNameArgs("rm", fmt.Sprintf("%s.bak", path.Join(curPath, inventoryMacos)))
 
+	playbookArguments := []string{
+		"-i", path.Join(curPath, inventoryMacos),
+	}
+	playbookArguments = append(playbookArguments, path.Join(curPath, "/test/automated/ansible/install-requirements.yml"))
+	execNameArgs("ansible-playbook", playbookArguments...)
+
 	argumentsMacosCurrent := []string{
 		"--limit", "macos_current",
 		"-e", "nr_license_key=" + cnf.license,
