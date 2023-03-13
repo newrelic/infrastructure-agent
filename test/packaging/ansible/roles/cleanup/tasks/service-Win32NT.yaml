@@ -1,0 +1,10 @@
+---
+
+- name: stop newrelic-infra service
+  win_service:
+    name: New Relic Infrastructure Agent
+    state: stopped
+  ignore_errors: true
+  failed_when: false
+
+...
