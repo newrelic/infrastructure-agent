@@ -1,0 +1,10 @@
+---
+
+- name: remove infra-agent files and directories
+  ansible.windows.win_file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - 'C:\Program Files\New Relic\newrelic-infra'
+
+...
