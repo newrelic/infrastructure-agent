@@ -36,9 +36,7 @@
 
 - hosts: testing_hosts_macos
   become: false
-  gather_facts: no
-  vars:
-    ansible_python_interpreter: /usr/bin/python
+  gather_facts: yes
   tasks:
     - name: install brew
       include_role:
