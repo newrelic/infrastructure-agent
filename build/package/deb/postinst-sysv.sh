@@ -24,7 +24,7 @@ if [ "$userMode" = "PRIVILEGED" ] || [ "$userMode" = "UNPRIVILEGED" ]; then
   configDir=/etc/newrelic-infra
   tmpDir=/tmp/nr-integrations
 
-  # Give nri-agent ownership over it's folder
+  # Give nri-agent ownership over its folder
   chown -R nri-agent:nri-agent ${runDir}
   chown -R nri-agent:nri-agent ${installDir}
   chown -R nri-agent:nri-agent ${logDir}

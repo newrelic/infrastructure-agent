@@ -70,7 +70,7 @@ validate() {
     if [ ! -z "${NRIA_USER}" ]; then
         sudoUser="sudo -u ${NRIA_USER} "
         if [ ! $(getent passwd ${NRIA_USER}) ] ; then
-            echo "user ${NRIA_USER} does not exists"
+            echo "user ${NRIA_USER} does not exist"
             exit 1
         fi
     fi
