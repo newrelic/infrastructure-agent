@@ -255,6 +255,9 @@ install_agent() {
             echo "Adding kernel capabilities..."
             eval "${set_cap} 'CAP_SYS_PTRACE,CAP_DAC_READ_SEARCH=+ep' ${binary}" || exit 1
         fi
+
+        chown "${NRIA_USER}" "${binary}"
+        chmod 0754 "${binary}"
     fi
 
     # Create file structure and copy files.

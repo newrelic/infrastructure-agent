@@ -47,6 +47,13 @@ if [ "$userMode" = "PRIVILEGED" ] || [ "$userMode" = "UNPRIVILEGED" ]; then
     if [ $failFlag -eq 1 ]; then
       (>&2 echo "Error setting PRIVILEGED mode. Fallbacking to UNPRIVILEGED mode")
     fi
+
+    chmod 0754 "/usr/bin/newrelic-infra" || failFlag=1
+    if [ $failFlag -eq 1 ]; then
+      # Remove capabilities given earlier if chmod fails for any reason
+      eval "$setCap -r /usr/bin/newrelic-infra"
+      (>&2 echo "Error setting PRIVILEGED mode. Fallbacking to UNPRIVILEGED mode")
+    fi
   fi
 
   if [ -e "$serviceFile" ]; then
