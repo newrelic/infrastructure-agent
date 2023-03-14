@@ -4,3 +4,4 @@ log_folder: /var/log/newrelic-infra
 db_folder: /var/db/newrelic-infra
 etc_folder: /etc/newrelic-infra
 pidfile: /var/run/newrelic-infra/newrelic-infra.pid
+nri_binary: /usr/bin/newrelic-infra
