@@ -677,6 +677,28 @@ func (a *Agent) Run() (err error) {
 		alog.WithError(err).Error("failed to start troubleshooting handler")
 	}
 
+	// Start debugger routine.
+	go func() {
+		debugTimer := time.NewTicker(time.Duration(a.Context.Config().DebugLogSec) * time.Second)
+
+		for {
+			select {
+			case <-debugTimer.C:
+				{
+					debugInfo, err := a.debugProvide()
+					if err != nil {
+						alog.WithError(err).Debug("failed to get debug stats")
+					} else if debugInfo != "" {
+						alog.Debug(debugInfo)
+					}
+				}
+			case <-a.Context.Ctx.Done():
+				debugTimer.Stop()
+				return
+			}
+		}
+	}()
+
 	if a.Context.eventSender != nil {
 		if err := a.Context.eventSender.Start(); err != nil {
 			alog.WithError(err).Error("failed to start event sender")
@@ -689,10 +711,16 @@ func (a *Agent) Run() (err error) {
 		}
 	}
 
+	a.handleInventory()
+	return nil
+}
+
+func (a *Agent) handleInventory() {
+	cfg := a.Context.cfg
+
 	// Timers
 	reapInventoryTimer := time.NewTicker(cfg.FirstReapInterval)
 	sendInventoryTimer := time.NewTimer(cfg.SendInterval) // Send any deltas every X seconds
-	debugTimer := time.Tick(time.Duration(a.Context.Config().DebugLogSec) * time.Second)
 
 	//Remove send timer
 	if !a.shouldSendInventory() {
@@ -754,7 +782,7 @@ func (a *Agent) Run() (err error) {
 	for {
 		select {
 		case <-exit:
-			return nil
+			return
 			// agent gets notified about active entities
 		case ent := <-a.Context.activeEntities:
 			reportedEntities[ent] = true
@@ -820,15 +848,6 @@ func (a *Agent) Run() (err error) {
 			}
 		case <-sendInventoryTimer.C:
 			a.sendInventory(sendInventoryTimer)
-		case <-debugTimer:
-			{
-				debugInfo, err := a.debugProvide()
-				if err != nil {
-					alog.WithError(err).Debug("failed to get debug stats")
-				} else if debugInfo != "" {
-					alog.Debug(debugInfo)
-				}
-			}
 		case <-removeEntitiesTicker.C:
 			pastPeriodReportedEntities := reportedEntities
 			reportedEntities = map[string]bool{} // reset the set of reporting entities the next period
