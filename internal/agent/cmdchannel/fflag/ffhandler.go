@@ -233,10 +233,6 @@ func handleParallelizeInventory(ffArgs args, c *config.Config, isInitialFetch bo
 		v = CfgValueParallelizeInventory
 	}
 
-	if c.InventoryQueueLen > 0 {
-		return
-	}
-
 	if err := c.SetIntValueByYamlAttribute(CfgYmlParallelizeInventory, v); err != nil {
 		ffLogger.
 			WithError(err).
@@ -260,18 +256,6 @@ func handleRegister(ffArgs args, c *config.Config, isInitialFetch bool) {
 			WithField("field", CfgYmlRegisterEnabled).
 			Warn("unable to update config value")
 	}
-
-	inventoryQueueSize := 1000
-	if c.InventoryQueueLen >= inventoryQueueSize {
-		return
-	}
-
-	if err := c.SetIntValueByYamlAttribute(CfgYmlParallelizeInventory, int64(inventoryQueueSize)); err != nil {
-		ffLogger.
-			WithError(err).
-			WithField("field", CfgYmlParallelizeInventory).
-			Warn("unable to update config value")
-	}
 }
 
 func handleInventorySendBulk(ffArgs args, c *config.Config, isInitialFetch bool) {
@@ -279,8 +263,21 @@ func handleInventorySendBulk(ffArgs args, c *config.Config, isInitialFetch bool)
 		return
 	}
 
+	// feature already in desired state
+	if (ffArgs.Enabled && c.InventorySendBulk && c.InventoryQueueLen > 0) ||
+		(!ffArgs.Enabled && !c.InventorySendBulk) {
+		return
+	}
+
 	if !isInitialFetch {
 		os.Exit(api.ExitCodeRestart)
+	}
+	
+	if err := c.SetIntValueByYamlAttribute(CfgYmlParallelizeInventory, CfgValueParallelizeInventory); err != nil {
+		ffLogger.
+			WithError(err).
+			WithField("field", CfgYmlParallelizeInventory).
+			Warn("unable to update config value")
 	}
 
 	if err := c.SetBoolValueByYamlAttribute(CfgYmlInventorySendBulk, ffArgs.Enabled); err != nil {
