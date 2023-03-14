@@ -35,7 +35,7 @@ if [ "$userMode" = "PRIVILEGED" ] || [ "$userMode" = "UNPRIVILEGED" ]; then
     failFlag=0
     # Give the Agent kernel capabilities if setcap command exists
     setCap=$(command -v setcap) || setCap="/sbin/setcap" && [ -f $setCap ] || setCap=""
-    if [ ! -z $setCap ]; then
+    if [ -n "$setCap" ]; then
       eval "$setCap CAP_SYS_PTRACE,CAP_DAC_READ_SEARCH=+ep /usr/bin/newrelic-infra" || failFlag=1
     else
       failFlag=1
