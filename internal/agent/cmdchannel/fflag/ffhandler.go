@@ -259,10 +259,6 @@ func handleRegister(ffArgs args, c *config.Config, isInitialFetch bool) {
 }
 
 func handleInventorySendBulk(ffArgs args, c *config.Config, isInitialFetch bool) {
-	if ffArgs.Enabled == c.InventorySendBulk {
-		return
-	}
-
 	// feature already in desired state
 	if (ffArgs.Enabled && c.InventorySendBulk && c.InventoryQueueLen > 0) ||
 		(!ffArgs.Enabled && !c.InventorySendBulk) {
@@ -272,7 +268,7 @@ func handleInventorySendBulk(ffArgs args, c *config.Config, isInitialFetch bool)
 	if !isInitialFetch {
 		os.Exit(api.ExitCodeRestart)
 	}
-	
+
 	if err := c.SetIntValueByYamlAttribute(CfgYmlParallelizeInventory, CfgValueParallelizeInventory); err != nil {
 		ffLogger.
 			WithError(err).
