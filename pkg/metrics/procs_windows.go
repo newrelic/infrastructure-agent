@@ -170,7 +170,6 @@ func getMemoryInfo(pid int32) (*MemoryInfoStat, error) {
 
 // Status
 func getStatus(pid int32) (string, error) {
-
 	c, err := syscall.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, uint32(pid))
 	if err != nil {
 		return PROCESS_UNKNOWN, err
@@ -191,7 +190,6 @@ func getStatus(pid int32) (string, error) {
 
 // Username
 func getProcessUsername(pid int32) (string, error) {
-
 	c, err := syscall.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, uint32(pid))
 	if err != nil {
 		return "", err
@@ -377,7 +375,6 @@ func NewProcsMonitor(context agent.AgentContext) *ProcsMonitor {
 func (self *ProcsMonitor) calcCPUPercent(pidAndCreationDate string, currentProcessTime *SystemTimes) (float64, error) {
 	var result float64
 	previousProcessTime := self.previousProcessTimes[pidAndCreationDate]
-
 	if currentProcessTime != nil && previousProcessTime != nil && self.currentSystemTime != nil && self.previousSystemTime != nil {
 		processDelta := currentProcessTime.Sub(previousProcessTime)
 		systemDelta := self.currentSystemTime.Sub(self.previousSystemTime)
@@ -394,13 +391,11 @@ func (self *ProcsMonitor) calcCPUPercent(pidAndCreationDate string, currentProce
 func (self *ProcsMonitor) calcCPUTimes(pidAndCreationDate string, currentProcessTime *SystemTimes) (*cpu.TimesStat, error) {
 	result := &cpu.TimesStat{}
 	previousProcessTime := self.previousProcessTimes[pidAndCreationDate]
-
 	if currentProcessTime != nil && previousProcessTime != nil {
 		processDelta := currentProcessTime.Sub(previousProcessTime)
 		result.System = float64(processDelta.KernelTime)
 		result.User = float64(processDelta.UserTime)
-	}
-	
+	}	
 	return result, nil
 }
 
@@ -459,14 +454,10 @@ type win32_CommandLine struct {
 	CommandLine string
 }
 
-type win32_CreationDate struct {
-	CreationDate time.Time
-}
-
 func getProcessCommandLineWMI(processId uint32) (string, error) {
 	// On Windows there is no reliable way to obtain the original command line of another process.
 	// See this for more information: https://devblogs.microsoft.com/oldnewthing/20091125-00/?p=15923
-	dst := []win32_CommandLine {}
+	dst := []win32_CommandLine{}
 
 	query := fmt.Sprintf("SELECT CommandLine FROM win32_process WHERE ProcessID = %d", processId)
 	err := wmi.QueryNamespace(query, &dst, config.DefaultWMINamespace)
@@ -633,10 +624,8 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 		return
 	}
 
-	innerSamplerFunc := func() error {
-	
-		fmt.Println(" EnableWmiForDataSample(): %v", self.EnableWmiForDataSample())
-		
+	innerSamplerFunc := func() error {	
+		fmt.Println(" EnableWmiForDataSample(): %v", self.EnableWmiForDataSample())		
 		processes, err := self.getAllProcs(self.EnableWmiForDataSample())
 		if err != nil {
 			pslog.WithError(err).Error("processes can't load")
@@ -670,6 +659,7 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 
 			pidAndCreationDate := fmt.Sprintf("%v-%v", pid, winProc.CreationDate)
 			procCacheEntry := self.procCache[pidAndCreationDate]
+
 			sample := NewProcessSample(pid)
 
 			if procCacheEntry == nil {
@@ -700,8 +690,7 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 			if proc != nil {
 				helpers.LogStructureDetails(pslog, winProc, "ProcWinProc", "raw", logrus.Fields{"pid": pid, "pidAndCreationDate": pidAndCreationDate})
 				// We saw process, so remember that for later clean up of cache
-				currentPids[pidAndCreationDate] = true
-				
+				currentPids[pidAndCreationDate] = true				
 
 				if(self.EnableWmiForDataSample()){
 					sample.MemoryRSSBytes = int64(winProc.WorkingSetSize)
