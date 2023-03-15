@@ -1,4 +1,5 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
+// Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 //go:build windows
 // +build windows
@@ -56,6 +57,10 @@ const (
 	PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 )
 
+type Win32_ProcessOwner struct {
+    User string
+}
+
 // From gopsutil v2
 type win32_Process struct {
 	Name                  string
@@ -81,6 +86,7 @@ type win32_Process struct {
 	MaximumWorkingSetSize *uint32
 	MinimumWorkingSetSize *uint32
 	OSCreationClassName   string
+	//Owner 				  Win32_ProcessOwner
 	OSName                string
 	OtherOperationCount   uint64
 	OtherTransferCount    uint64
@@ -169,6 +175,7 @@ func getMemoryInfo(pid int32) (*MemoryInfoStat, error) {
 
 // Status
 func getStatus(pid int32) (string, error) {
+
 	c, err := syscall.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, uint32(pid))
 	if err != nil {
 		return PROCESS_UNKNOWN, err
@@ -189,6 +196,7 @@ func getStatus(pid int32) (string, error) {
 
 // Username
 func getProcessUsername(pid int32) (string, error) {
+
 	c, err := syscall.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, uint32(pid))
 	if err != nil {
 		return "", err
@@ -333,7 +341,7 @@ type ProcsMonitor struct {
 	previousProcessTimes map[string]*SystemTimes
 	stopChannel          chan bool
 	waitForCleanup       *sync.WaitGroup
-	getAllProcs          func() ([]win32_Process, error)
+	getAllProcs          func(bool) ([]win32_Process, error)
 	getMemoryInfo        func(int32) (*MemoryInfoStat, error)
 	getStatus            func(int32) (string, error)
 	getUsername          func(int32) (string, error)
@@ -344,6 +352,7 @@ type ProcsMonitor struct {
 func NewProcsMonitor(context agent.AgentContext) *ProcsMonitor {
 	var apiVersion string
 	ttlSecs := config.DefaultContainerCacheMetadataLimit
+	enableWmiForDataSample:= context.Config().EnableWmiForDataSample
 	if context != nil && context.Config() != nil {
 		if len(context.Config().AllowedListProcessSample) > 0 {
 			allowedListProcessing = true
@@ -361,7 +370,7 @@ func NewProcsMonitor(context agent.AgentContext) *ProcsMonitor {
 		previousProcessTimes: make(map[string]*SystemTimes),
 		processInterrogator:  NewInternalProcessInterrogator(true),
 		waitForCleanup:       &sync.WaitGroup{},
-		getAllProcs:          getAllWin32Procs(getWin32APIProcessPath),
+		getAllProcs:          getAllWin32Procs(getWin32APIProcessPath, enableWmiForDataSample),
 		getMemoryInfo:        getMemoryInfo,
 		getStatus:            getStatus,
 		getUsername:          getProcessUsername,
@@ -373,6 +382,7 @@ func NewProcsMonitor(context agent.AgentContext) *ProcsMonitor {
 func (self *ProcsMonitor) calcCPUPercent(pidAndCreationDate string, currentProcessTime *SystemTimes) (float64, error) {
 	var result float64
 	previousProcessTime := self.previousProcessTimes[pidAndCreationDate]
+
 	if currentProcessTime != nil && previousProcessTime != nil && self.currentSystemTime != nil && self.previousSystemTime != nil {
 		processDelta := currentProcessTime.Sub(previousProcessTime)
 		systemDelta := self.currentSystemTime.Sub(self.previousSystemTime)
@@ -389,11 +399,13 @@ func (self *ProcsMonitor) calcCPUPercent(pidAndCreationDate string, currentProce
 func (self *ProcsMonitor) calcCPUTimes(pidAndCreationDate string, currentProcessTime *SystemTimes) (*cpu.TimesStat, error) {
 	result := &cpu.TimesStat{}
 	previousProcessTime := self.previousProcessTimes[pidAndCreationDate]
+
 	if currentProcessTime != nil && previousProcessTime != nil {
 		processDelta := currentProcessTime.Sub(previousProcessTime)
 		result.System = float64(processDelta.KernelTime)
 		result.User = float64(processDelta.UserTime)
 	}
+	
 	return result, nil
 }
 
@@ -452,10 +464,14 @@ type win32_CommandLine struct {
 	CommandLine string
 }
 
+type win32_CreationDate struct {
+	CreationDate time.Time
+}
+
 func getProcessCommandLineWMI(processId uint32) (string, error) {
 	// On Windows there is no reliable way to obtain the original command line of another process.
 	// See this for more information: https://devblogs.microsoft.com/oldnewthing/20091125-00/?p=15923
-	dst := []win32_CommandLine{}
+	dst := []win32_CommandLine {}
 
 	query := fmt.Sprintf("SELECT CommandLine FROM win32_process WHERE ProcessID = %d", processId)
 	err := wmi.QueryNamespace(query, &dst, config.DefaultWMINamespace)
@@ -469,8 +485,44 @@ func getProcessCommandLineWMI(processId uint32) (string, error) {
 	return dst[0].CommandLine, nil
 }
 
-func getWin32Proc(process *win32_Process, path processPathProvider) error {
+func getWin32Proc(process *win32_Process, path processPathProvider, enableWmiForDataSample bool) error {
 
+    //Use WMI and query the data for sample 
+	if(enableWmiForDataSample){
+	 	wmiData := []win32_Process {}
+
+		query := fmt.Sprintf("SELECT * FROM win32_process WHERE ProcessID = %d", process.ProcessID)
+		err := wmi.QueryNamespace(query, &wmiData, config.DefaultWMINamespace)
+		if err != nil {
+			return err
+		}
+		if len(wmiData) == 0 {
+			return fmt.Errorf("cannot get process command line wmi for process %v", process.ProcessID)
+		}
+				
+		process.CreationDate = wmiData[0].CreationDate
+		process.ReadOperationCount = wmiData[0].ReadOperationCount
+		process.ReadTransferCount = wmiData[0].ReadTransferCount
+		process.WriteOperationCount = wmiData[0].WriteOperationCount
+		process.WriteTransferCount = wmiData[0].WriteTransferCount
+		process.ExecutablePath = wmiData[0].ExecutablePath
+		//process.Owner = wmiData[0].Owner
+		process.Status = wmiData[0].Status
+		process.KernelModeTime = wmiData[0].KernelModeTime
+		process.UserModeTime = wmiData[0].UserModeTime
+		process.WorkingSetSize = wmiData[0].WorkingSetSize
+		process.PageFileUsage = wmiData[0].PageFileUsage
+		process.CommandLine = wmiData[0].CommandLine
+		process.ExecutablePath = wmiData[0].ExecutablePath
+		process.Status = wmiData[0].Status
+		process.ThreadCount = wmiData[0].ThreadCount
+		
+		return nil
+	}
+
+    
+	// On Windows there is no reliable way to obtain the original command line of another process.
+	// See this for more information: https://devblogs.microsoft.com/oldnewthing/20091125-00/?p=15923         
 	// https://docs.microsoft.com/en-us/windows/desktop/api/processthreadsapi/nf-processthreadsapi-openprocess
 	proc, err := syscall.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, process.ProcessID)
 	if err != nil {
@@ -508,8 +560,8 @@ func getWin32Proc(process *win32_Process, path processPathProvider) error {
 }
 
 // We return a func for testing purpose so we can easily mock the path provider
-func getAllWin32Procs(path processPathProvider) func() ([]win32_Process, error) {
-	return func() ([]win32_Process, error) {
+func getAllWin32Procs(path processPathProvider, enableWmiForDataSample bool) func(bool) ([]win32_Process, error) {
+	return func(enableWmiForDataSample bool) ([]win32_Process, error) {
 		var result []win32_Process
 
 		// https://docs.microsoft.com/en-us/windows/desktop/api/tlhelp32/nf-tlhelp32-createtoolhelp32snapshot
@@ -536,7 +588,7 @@ func getAllWin32Procs(path processPathProvider) func() ([]win32_Process, error) 
 					ThreadCount: entry.Threads,
 				}
 
-				err := getWin32Proc(&proc, path)
+				err := getWin32Proc(&proc, path, enableWmiForDataSample)
 				if err != nil {
 					// Something bad happened querying this process, try next one
 					pslog.WithError(err).WithFieldsF(func() logrus.Fields {
@@ -587,8 +639,10 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 	}
 
 	innerSamplerFunc := func() error {
-
-		processes, err := self.getAllProcs()
+	
+		fmt.Println(" EnableWmiForDataSample(): %v", self.EnableWmiForDataSample())
+		
+		processes, err := self.getAllProcs(self.EnableWmiForDataSample())
 		if err != nil {
 			pslog.WithError(err).Error("processes can't load")
 			return err
@@ -608,7 +662,7 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 				}
 			}
 		}
-
+		
 		currentPids := make(map[string]bool)
 		for _, winProc := range processes {
 
@@ -621,7 +675,6 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 
 			pidAndCreationDate := fmt.Sprintf("%v-%v", pid, winProc.CreationDate)
 			procCacheEntry := self.procCache[pidAndCreationDate]
-
 			sample := NewProcessSample(pid)
 
 			if procCacheEntry == nil {
@@ -653,17 +706,21 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 				helpers.LogStructureDetails(pslog, winProc, "ProcWinProc", "raw", logrus.Fields{"pid": pid, "pidAndCreationDate": pidAndCreationDate})
 				// We saw process, so remember that for later clean up of cache
 				currentPids[pidAndCreationDate] = true
+				
 
-				memInfo, err := self.getMemoryInfo(pid)
-				if err != nil {
-					logSampleError(pid, winProc, err, "can't get MemoryInfo")
-					continue
+				if(self.EnableWmiForDataSample()){
+					sample.MemoryRSSBytes = int64(winProc.WorkingSetSize)
+					sample.MemoryVMSBytes = int64(winProc.PageFileUsage)
+				}else{
+					memInfo, err := self.getMemoryInfo(pid)
+					if err != nil {
+						logSampleError(pid, winProc, err, "can't get MemoryInfo")
+						continue
+					}
+					helpers.LogStructureDetails(pslog, memInfo, "ProcMemoryInfo", "raw", logrus.Fields{"pid": pid})
+					sample.MemoryRSSBytes = int64(memInfo.RSS)
+					sample.MemoryVMSBytes = int64(memInfo.VMS)
 				}
-
-				helpers.LogStructureDetails(pslog, memInfo, "ProcMemoryInfo", "raw", logrus.Fields{"pid": pid})
-
-				sample.MemoryRSSBytes = int64(memInfo.RSS)
-				sample.MemoryVMSBytes = int64(memInfo.VMS)
 
 				// We need not report processes which are using no memory. This filters out certain kernel processes.
 				if !self.DisableZeroRSSFilter() && sample.MemoryRSSBytes == 0 {
@@ -689,15 +746,22 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 					stripCmdLine := (hasConfig && self.context.Config().StripCommandLine) ||
 						(!hasConfig && config.DefaultStripCommandLine)
 
-					if stripCmdLine {
-						sample.CmdLine = *winProc.ExecutablePath
-					} else {
-						sample.CmdLine, err = self.getCommandLine(winProc.ProcessID)
-						if err != nil {
-							logSampleError(pid, winProc, err, "can't get command line")
+					if (!self.EnableWmiForDataSample()) {
+						if stripCmdLine {
 							sample.CmdLine = *winProc.ExecutablePath
+						} else {
+							sample.CmdLine, err = self.getCommandLine(winProc.ProcessID)
+							if err != nil {
+								logSampleError(pid, winProc, err, "can't get command line")
+								sample.CmdLine = *winProc.ExecutablePath
+							}
 						}
+					} else
+					{
+					   sample.CmdLine = *winProc.CommandLine
+
 					}
+
 
 					// Need to find the key parameter for what svchost is being serviced, use that in the name
 					if sample.CommandName == SVCHOST_NAME {
@@ -726,12 +790,26 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 				}
 
 				// Process Status For Windows
-				sample.Status, err = self.getStatus(pid)
-				if err != nil {
-					logSampleError(pid, winProc, err, "can't get process status")
+				if(self.EnableWmiForDataSample()){
+					sample.Status = *winProc.Status
+				}else{
+					sample.Status, err = self.getStatus(pid)
+					if err != nil {
+						logSampleError(pid, winProc, err, "can't get process status")
+					}
 				}
-
-				currentProcessTime, err := self.getTimes(pid)
+				
+				var currentProcessTime *SystemTimes
+				var err error
+				
+				if(self.EnableWmiForDataSample()){
+					currentProcessTime = &SystemTimes{
+						KernelTime: int64(winProc.KernelModeTime),
+						UserTime: int64(winProc.UserModeTime),
+					}
+				}else{
+					currentProcessTime, err = self.getTimes(pid)
+				}
 				if err != nil {
 					logSampleError(pid, winProc, err, "can't get process times")
 				} else {
@@ -849,6 +927,14 @@ func (self *ProcsMonitor) EnableElevatedProcessPriv() bool {
 	}
 	return self.context.Config().EnableElevatedProcessPriv
 }
+
+func (self *ProcsMonitor) EnableWmiForDataSample() bool {
+	if self.context == nil {
+		return false
+	}
+	return self.context.Config().EnableWmiForDataSample
+}
+
 
 // deprecated. Used only by the windows ProcsMonitor
 func cpuTotal(t *cpu.TimesStat) float64 {
