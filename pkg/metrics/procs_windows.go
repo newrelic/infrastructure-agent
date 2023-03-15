@@ -57,10 +57,6 @@ const (
 	PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 )
 
-type Win32_ProcessOwner struct {
-    User string
-}
-
 // From gopsutil v2
 type win32_Process struct {
 	Name                  string
@@ -86,7 +82,6 @@ type win32_Process struct {
 	MaximumWorkingSetSize *uint32
 	MinimumWorkingSetSize *uint32
 	OSCreationClassName   string
-	//Owner 				  Win32_ProcessOwner
 	OSName                string
 	OtherOperationCount   uint64
 	OtherTransferCount    uint64
