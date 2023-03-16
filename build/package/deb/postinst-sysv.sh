@@ -23,6 +23,7 @@ if [ "$userMode" = "PRIVILEGED" ] || [ "$userMode" = "UNPRIVILEGED" ]; then
   logDir=/var/log/newrelic-infra
   configDir=/etc/newrelic-infra
   tmpDir=/tmp/nr-integrations
+  binPath=/usr/bin/newrelic-infra
 
   # Give nri-agent ownership over its folder
   chown -R nri-agent:nri-agent ${runDir}
@@ -30,13 +31,14 @@ if [ "$userMode" = "PRIVILEGED" ] || [ "$userMode" = "UNPRIVILEGED" ]; then
   chown -R nri-agent:nri-agent ${logDir}
   chown -R nri-agent:nri-agent ${configDir}
   chown -R nri-agent:nri-agent ${tmpDir} 2>/dev/null || true
+  chown -R nri-agent:nri-agent ${binPath}
 
   if [ "$userMode" = "PRIVILEGED" ]; then
     failFlag=0
     # Give the Agent kernel capabilities if setcap command exists
     setCap=$(command -v setcap) || setCap="/sbin/setcap" && [ -f $setCap ] || setCap=""
     if [ -n "$setCap" ]; then
-      eval "$setCap CAP_SYS_PTRACE,CAP_DAC_READ_SEARCH=+ep /usr/bin/newrelic-infra" || failFlag=1
+      eval "$setCap CAP_SYS_PTRACE,CAP_DAC_READ_SEARCH=+ep ${binPath}" || failFlag=1
     else
       failFlag=1
     fi
@@ -45,10 +47,10 @@ if [ "$userMode" = "PRIVILEGED" ] || [ "$userMode" = "UNPRIVILEGED" ]; then
       (>&2 echo "Error setting PRIVILEGED mode. Fallbacking to UNPRIVILEGED mode")
     fi
 
-    chmod 0754 "/usr/bin/newrelic-infra" || failFlag=1
+    chmod 0754 "${binPath}" || failFlag=1
     if [ $failFlag -eq 1 ]; then
       # Remove capabilities given earlier if chmod fails for any reason
-      eval "$setCap -r /usr/bin/newrelic-infra"
+      eval "$setCap -r ${binPath}"
       (>&2 echo "Error setting PRIVILEGED mode. Fallbacking to UNPRIVILEGED mode")
     fi
   fi
