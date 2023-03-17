@@ -8,6 +8,7 @@ import (
 	context2 "context"
 	"encoding/json"
 	"fmt"
+	plugin2 "github.com/newrelic/infrastructure-agent/internal/agent/plugin"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -945,7 +946,7 @@ func TestContext_SendEvent_LogTruncatedEvent(t *testing.T) {
 	original := strings.Repeat("a", metric.NRDBLimit*2)
 	truncated := original[:metric.NRDBLimit]
 	ed := map[string]interface{}{"key": original}
-	c.SendEvent(mapEvent(ed), "some key")
+	c.SendEvent(plugin2.mapEvent(ed), "some key")
 
 	written := output.String()
 	assert.Contains(t, written, fmt.Sprintf("original=\"+map[key:%s]", original))

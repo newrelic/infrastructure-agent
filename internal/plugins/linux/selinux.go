@@ -75,7 +75,7 @@ func NewSELinuxPlugin(id ids.PluginID, ctx agent.AgentContext) agent.Plugin {
 //	    basicData: Overall SELinux status - whether it's running, what mode it's in, etc.
 //	   policyData: Individual SELinux policy flags - a high-level overview of SELinux configuration
 //	policyModules: Listing of policy modules in use and which version of modules are active
-func (self *SELinuxPlugin) getDataset() (basicData agent.PluginInventoryDataset, policyData agent.PluginInventoryDataset, policyModules agent.PluginInventoryDataset, err error) {
+func (self *SELinuxPlugin) getDataset() (basicData types.PluginInventoryDataset, policyData types.PluginInventoryDataset, policyModules types.PluginInventoryDataset, err error) {
 	// Get basic selinux status data using sestatus. If selinux isn't enabled or installed, this will fail.
 	output, err := helpers.RunCommand("sestatus", "", "-b")
 	if err != nil {
@@ -97,7 +97,7 @@ func (self *SELinuxPlugin) getDataset() (basicData agent.PluginInventoryDataset,
 	return
 }
 
-func (self *SELinuxPlugin) parseSestatusOutput(output string) (basicResult agent.PluginInventoryDataset, policyResult agent.PluginInventoryDataset, err error) {
+func (self *SELinuxPlugin) parseSestatusOutput(output string) (basicResult types.PluginInventoryDataset, policyResult types.PluginInventoryDataset, err error) {
 	labelRegex, err := regexp.Compile(`([^:]*):\s+(.*)`)
 	if err != nil {
 		return
@@ -155,7 +155,7 @@ func (self *SELinuxPlugin) sELinuxActive() bool {
 	return err == nil
 }
 
-func (self *SELinuxPlugin) parseSemoduleOutput(output string) (result agent.PluginInventoryDataset, err error) {
+func (self *SELinuxPlugin) parseSemoduleOutput(output string) (result types.PluginInventoryDataset, err error) {
 	moduleRegex, err := regexp.Compile(`(\S+)\s+(\S+)`)
 	if err != nil {
 		return

@@ -8,6 +8,7 @@ package darwin
 import (
 	"errors"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"regexp"
 	"strconv"
 	"strings"
@@ -72,8 +73,8 @@ func (hip *HostinfoPlugin) Run() {
 }
 
 // Data collects the hostinfo.
-func (hip *HostinfoPlugin) Data() agent.PluginInventoryDataset {
-	return agent.PluginInventoryDataset{hip.gatherHostinfo(hip.Context)}
+func (hip *HostinfoPlugin) Data() types.PluginInventoryDataset {
+	return types.PluginInventoryDataset{hip.gatherHostinfo(hip.Context)}
 }
 
 func (hip *HostinfoPlugin) gatherHostinfo(context agent.AgentContext) *HostInfoDarwin {

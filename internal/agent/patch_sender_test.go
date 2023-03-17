@@ -5,6 +5,7 @@ package agent
 import (
 	ctx "context"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/inventory"
 	"github.com/stretchr/testify/mock"
 	"io/ioutil"
 	"math"
@@ -55,7 +56,7 @@ func ResetPostDelta(_ []string, _ entity.ID, _ bool, _ ...*inventoryapi.RawDelta
 }
 
 func TestNewPatchSender(t *testing.T) {
-	assert.Implements(t, (*patchSender)(nil), newTestPatchSender(t, "", &delta.Store{}, delta.NewLastSubmissionInMemory(), nil))
+	assert.Implements(t, (*inventory.PatchSender)(nil), newTestPatchSender(t, "", &delta.Store{}, delta.NewLastSubmissionInMemory(), nil))
 }
 
 func cachePluginData(t *testing.T, store *delta.Store, entityKey string) {

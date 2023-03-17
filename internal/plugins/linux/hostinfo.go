@@ -147,8 +147,8 @@ func NewHostinfoPlugin(ctx agent.AgentContext, hostInfo common.HostInfo) agent.P
 	}
 }
 
-func (self *HostinfoPlugin) Data() agent.PluginInventoryDataset {
-	return agent.PluginInventoryDataset{self.gatherHostinfo(self.Context)}
+func (self *HostinfoPlugin) Data() types.PluginInventoryDataset {
+	return types.PluginInventoryDataset{self.gatherHostinfo(self.Context)}
 }
 
 func (self *HostinfoPlugin) Run() {

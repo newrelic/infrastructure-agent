@@ -71,12 +71,12 @@ func (self *FacterPlugin) CanRun() bool {
 	return err == nil
 }
 
-func (self *FacterPlugin) Data() (agent.PluginInventoryDataset, error) {
+func (self *FacterPlugin) Data() (types.PluginInventoryDataset, error) {
 	services, err := self.facter.Facts()
 	if err != nil {
 		return nil, err
 	}
-	a := agent.PluginInventoryDataset{}
+	a := types.PluginInventoryDataset{}
 	for _, svc := range services {
 		a = append(a, svc)
 	}

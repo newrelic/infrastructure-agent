@@ -57,8 +57,8 @@ func NewKernelModulesPlugin(id ids.PluginID, ctx agent.AgentContext) agent.Plugi
 	}
 }
 
-func (self KernelModulesPlugin) getKernelModulesDataset() agent.PluginInventoryDataset {
-	var dataset agent.PluginInventoryDataset
+func (self KernelModulesPlugin) getKernelModulesDataset() types.PluginInventoryDataset {
+	var dataset types.PluginInventoryDataset
 
 	for _, v := range self.loadedModules {
 		dataset = append(dataset, v)

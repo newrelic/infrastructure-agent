@@ -4,8 +4,8 @@ package legacy
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 
-	"github.com/newrelic/infrastructure-agent/internal/agent"
 	event2 "github.com/newrelic/infrastructure-agent/pkg/event"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
@@ -18,8 +18,8 @@ func BuildInventoryDataSet(
 	labels map[string]string,
 	integrationUser string,
 	pluginName string,
-	entityKey string) agent.PluginInventoryDataset {
-	var inventoryDataSet agent.PluginInventoryDataset
+	entityKey string) types.PluginInventoryDataset {
+	var inventoryDataSet types.PluginInventoryDataset
 
 	for key, item := range inventoryData {
 		item["id"] = key

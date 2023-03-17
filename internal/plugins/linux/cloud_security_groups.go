@@ -52,7 +52,7 @@ func NewCloudSecurityGroupsPlugin(id ids.PluginID, ctx agent.AgentContext, harve
 	}
 }
 
-func (p *CloudSecurityGroupsPlugin) getCloudSecurityGroupsDataset() (dataset agent.PluginInventoryDataset, err error) {
+func (p *CloudSecurityGroupsPlugin) getCloudSecurityGroupsDataset() (dataset types.PluginInventoryDataset, err error) {
 	var h cloud.Harvester
 	h, err = p.harvester.GetHarvester()
 	if err != nil {
@@ -96,7 +96,7 @@ func (p *CloudSecurityGroupsPlugin) Run() {
 			refreshTimer.Stop()
 			refreshTimer = time.NewTicker(p.frequency)
 			{
-				var dataset agent.PluginInventoryDataset
+				var dataset types.PluginInventoryDataset
 				var err error
 				if dataset, err = p.getCloudSecurityGroupsDataset(); err != nil {
 					// Silence errors here, they are only advisory and the function returns an

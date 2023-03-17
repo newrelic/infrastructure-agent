@@ -24,7 +24,7 @@ import (
 
 type SysctlPlugin struct {
 	agent.PluginCommon
-	sysctls       agent.PluginInventoryDataset
+	sysctls       types.PluginInventoryDataset
 	errorsLogged  map[string]bool
 	frequency     time.Duration
 	procSysDir    string
@@ -114,7 +114,7 @@ func (sp *SysctlPlugin) newSysctlItem(filePath string, output []byte) SysctlItem
 	return SysctlItem{keyPath, strings.TrimSpace(string(output))}
 }
 
-func (sp *SysctlPlugin) Sysctls() (dataset agent.PluginInventoryDataset, err error) {
+func (sp *SysctlPlugin) Sysctls() (dataset types.PluginInventoryDataset, err error) {
 	// Clear out the list, since we're going to be repopulating it completely anyway and we want to drop any entries we don't find anymore.
 	sp.sysctls = make([]agent.Sortable, 0)
 

@@ -60,7 +60,7 @@ func (cp *dummyV4Plugin) harvest() {
 	cp.ticker <- 1
 }
 
-func InventoryDatasetsForPayload(t *testing.T, payload []byte) (dss []agent.PluginInventoryDataset) {
+func InventoryDatasetsForPayload(t *testing.T, payload []byte) (dss []types.PluginInventoryDataset) {
 	dataV4, err := dm.ParsePayloadV4(payload, test.NewFFRetrieverReturning(true, true))
 	require.NoError(t, err)
 

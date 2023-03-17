@@ -42,8 +42,8 @@ func (us UpstartService) SortKey() string {
 	return us.Name
 }
 
-func (up UpstartPlugin) getUpstartDataset() agent.PluginInventoryDataset {
-	var dataset agent.PluginInventoryDataset
+func (up UpstartPlugin) getUpstartDataset() types.PluginInventoryDataset {
+	var dataset types.PluginInventoryDataset
 
 	for _, v := range up.runningServices {
 		dataset = append(dataset, v)

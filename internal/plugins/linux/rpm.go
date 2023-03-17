@@ -66,7 +66,7 @@ func NewRpmPlugin(ctx agent.AgentContext) agent.Plugin {
 	}
 }
 
-func (p *rpmPlugin) fetchPackageInfo() (packages agent.PluginInventoryDataset, err error) {
+func (p *rpmPlugin) fetchPackageInfo() (packages types.PluginInventoryDataset, err error) {
 	output, err := helpers.RunCommand(RpmPath, "", "-qa", "--queryformat=%{NAME} %{VERSION} %{RELEASE} %{ARCH} %{INSTALLTIME} %{EPOCH}\n")
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func (p *rpmPlugin) fetchPackageInfo() (packages agent.PluginInventoryDataset, e
 	return p.parsePackageInfo(output)
 }
 
-func (p *rpmPlugin) parsePackageInfo(output string) (packages agent.PluginInventoryDataset, err error) {
+func (p *rpmPlugin) parsePackageInfo(output string) (packages types.PluginInventoryDataset, err error) {
 	// Get output and sort it alphabetically to ensure consistent ordering
 	var outputLines []string
 	scanner := bufio.NewScanner(strings.NewReader(output))

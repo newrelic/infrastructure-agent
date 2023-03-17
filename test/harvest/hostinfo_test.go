@@ -137,7 +137,7 @@ func TestHostInfo(t *testing.T) {
 			Term:     "system",
 		},
 		Entity: entity.NewFromNameWithoutID(agentIdentifier),
-		Data: agent.PluginInventoryDataset{
+		Data: types.PluginInventoryDataset{
 			&pluginsLinux.HostInfoLinux{
 				HostInfoData: common.HostInfoData{
 					System:          "system",

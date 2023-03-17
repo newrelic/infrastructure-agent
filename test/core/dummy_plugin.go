@@ -39,7 +39,7 @@ func (cp *dummyPlugin) Run() {
 	for {
 		select {
 		case <-cp.ticker:
-			dataset := agent.PluginInventoryDataset{
+			dataset := types.PluginInventoryDataset{
 				&valueEntry{Id: "dummy", Value: cp.value},
 			}
 			cp.EmitInventory(dataset, entity.NewFromNameWithoutID(cp.Context.EntityKey()))

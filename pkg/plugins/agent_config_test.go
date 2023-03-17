@@ -48,7 +48,7 @@ func TestConfig(t *testing.T) {
 			"value": value,
 		}
 	}
-	expectedPluginOutput := agent.NewPluginOutput(*pluginId, entity.NewFromNameWithoutID(agentId), agent.PluginInventoryDataset{ConfigAttrs(expectedInvItems)})
+	expectedPluginOutput := agent.NewPluginOutput(*pluginId, entity.NewFromNameWithoutID(agentId), types.PluginInventoryDataset{ConfigAttrs(expectedInvItems)})
 
 	assert.Equal(t, gotPluginOutput, expectedPluginOutput)
 	ctx.AssertExpectations(t)

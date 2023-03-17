@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"io"
 	"io/ioutil"
 	"os"
@@ -380,7 +381,7 @@ func (rs *RunnerSuite) TestRegisterInstances(c *C) {
 	})
 
 	ag := FakeAgent{
-		Plugins: map[ids.PluginID]agent.Plugin{},
+		Plugins: map[ids.PluginID]plugin.Plugin{},
 	}
 
 	reg := &PluginRegistry{
@@ -814,7 +815,7 @@ func (rs *RunnerSuite) TestEventsPluginRunV1(c *C) {
 	plugin.pluginInstance.Arguments = map[string]string{"GO_WANT_HELPER_PROCESS": "1"}
 	plugin.pluginInstance.plugin.ProtocolVersion = protocol.V1
 	plugin.pluginRunner.agent = FakeAgent{
-		Plugins: map[ids.PluginID]agent.Plugin{},
+		Plugins: map[ids.PluginID]plugin.Plugin{},
 	}
 
 	plugin.pluginRunner.closeWait.Add(1)
@@ -864,7 +865,7 @@ func TestEventsPluginRunV1OverloadingStderrBuffer(t *testing.T) {
 	plugin.pluginInstance.Arguments = map[string]string{"GO_WANT_HELPER_PROCESS": "1"}
 	plugin.pluginInstance.plugin.ProtocolVersion = protocol.V1
 	plugin.pluginRunner.agent = FakeAgent{
-		Plugins: map[ids.PluginID]agent.Plugin{},
+		Plugins: map[ids.PluginID]plugin.Plugin{},
 	}
 
 	plugin.pluginRunner.closeWait.Add(1)
@@ -1542,10 +1543,10 @@ type fakeEmitter struct {
 	lastEntityKey string
 }
 
-func (f *fakeEmitter) EmitInventoryWithPluginId(data agent.PluginInventoryDataset, entityKey string, pluginId ids.PluginID) {
+func (f *fakeEmitter) EmitInventoryWithPluginId(data types.PluginInventoryDataset, entityKey string, pluginId ids.PluginID) {
 }
 
-func (f *fakeEmitter) EmitInventory(data agent.PluginInventoryDataset, entity entity.Entity) {}
+func (f *fakeEmitter) EmitInventory(data types.PluginInventoryDataset, entity entity.Entity) {}
 
 func (f *fakeEmitter) EmitEvent(eventData map[string]interface{}, entityKey entity.Key) {
 	f.lastEventData = eventData

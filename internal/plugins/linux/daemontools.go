@@ -63,7 +63,7 @@ func daemonToolsPresent() bool {
 	return err == nil
 }
 
-func getDaemontoolsServiceStatus() (data agent.PluginInventoryDataset, pidMap map[int]string, err error) {
+func getDaemontoolsServiceStatus() (data types.PluginInventoryDataset, pidMap map[int]string, err error) {
 	pidMap = make(map[int]string)
 	var (
 		psOut []byte

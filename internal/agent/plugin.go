@@ -6,6 +6,7 @@ import (
 	goContext "context"
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"sync"
 	"time"
 
@@ -59,36 +60,6 @@ func NewExternalPluginCommon(id ids.PluginID, ctx AgentContext, name string) Plu
 	}
 }
 
-// Anything implementing the sortable interface must implement a
-// method to return a string Sort key
-type Sortable interface {
-	SortKey() string
-}
-
-type PluginInventoryDataset []Sortable // PluginInventoryDataset is a slice of sortable things
-
-// PluginInventoryDataset also implements the sort.Sort interface
-func (pd PluginInventoryDataset) Len() int           { return len(pd) }
-func (pd PluginInventoryDataset) Swap(i, j int)      { pd[i], pd[j] = pd[j], pd[i] }
-func (pd PluginInventoryDataset) Less(i, j int) bool { return pd[i].SortKey() < pd[j].SortKey() }
-
-// PluginOutput contains metadata about the inventory provided by Plugins, which will be used for its later addition
-// to the delta store
-type PluginOutput struct {
-	Id            ids.PluginID
-	Entity        entity.Entity
-	Data          PluginInventoryDataset
-	NotApplicable bool
-}
-
-func NewPluginOutput(id ids.PluginID, entity entity.Entity, data PluginInventoryDataset) PluginOutput {
-	return PluginOutput{Id: id, Entity: entity, Data: data}
-}
-
-func NewNotApplicableOutput(id ids.PluginID) PluginOutput {
-	return PluginOutput{Id: id, NotApplicable: true}
-}
-
 // Id is the accessor for the id field
 func (pc *PluginCommon) Id() ids.PluginID {
 	return pc.ID
@@ -115,16 +86,16 @@ func (pc *PluginCommon) GetExternalPluginName() string {
 }
 
 type PluginEmitter interface {
-	EmitInventory(data PluginInventoryDataset, entity entity.Entity)
+	EmitInventory(data types.PluginInventoryDataset, entity entity.Entity)
 	EmitEvent(eventData map[string]interface{}, entityKey entity.Key)
 }
 
 // EmitInventory sends data collected by the plugin to the agent
-func (pc *PluginCommon) EmitInventory(data PluginInventoryDataset, entity entity.Entity) {
+func (pc *PluginCommon) EmitInventory(data types.PluginInventoryDataset, entity entity.Entity) {
 	_, txn := instrumentation.SelfInstrumentation.StartTransaction(goContext.Background(), "plugin.emit_inventory")
 	txn.AddAttribute("plugin_id", fmt.Sprintf("%s:%s", pc.ID.Category, pc.ID.Term))
 	defer txn.End()
-	pc.Context.SendData(NewPluginOutput(pc.ID, entity, data))
+	pc.Context.SendData(types.NewPluginOutput(pc.ID, entity, data))
 }
 
 func (pc *PluginCommon) EmitEvent(eventData map[string]interface{}, entityKey entity.Key) {

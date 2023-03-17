@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"io/ioutil"
 	"os"
 	"sync"
@@ -170,8 +171,8 @@ func TestEmitter_Send_usingIDCache(t *testing.T) {
 			aCtx := getAgentContext("TestEmitter_Send_usingIDCache")
 			aCtx.On("SendEvent", mock.Anything, mock.Anything)
 
-			aCtx.On("SendData", agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "Sample"}, Entity: firstEntity, Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_payload_one", "value": "foo-one"}}, NotApplicable: false})
-			aCtx.On("SendData", agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "Sample"}, Entity: secondEntity, Data: agent.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_payload_two", "value": "bar-two"}}, NotApplicable: false})
+			aCtx.On("SendData", agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "Sample"}, Entity: firstEntity, Data: types.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_payload_one", "value": "foo-one"}}, NotApplicable: false})
+			aCtx.On("SendData", agent.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "Sample"}, Entity: secondEntity, Data: types.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_payload_two", "value": "bar-two"}}, NotApplicable: false})
 
 			dmSender := &mockedMetricsSender{
 				wg: sync.WaitGroup{},
@@ -291,7 +292,7 @@ func TestEmitter_Send(t *testing.T) {
 					agent.PluginOutput{
 						Id:     ids.PluginID{Category: "integration", Term: "integration name"},
 						Entity: entity.New("unique name", eID),
-						Data: agent.PluginInventoryDataset{
+						Data: types.PluginInventoryDataset{
 							protocol.InventoryData{"id": "inventory_foo", "value": "bar"},
 							protocol.InventoryData{"entityKey": "unique name", "id": "integrationUser", "value": "root"},
 						},

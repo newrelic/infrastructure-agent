@@ -76,7 +76,7 @@ func (self *SysvInitPlugin) Run() {
 			time.Sleep(self.frequency)
 		}
 
-		dataset := agent.PluginInventoryDataset{}
+		dataset := types.PluginInventoryDataset{}
 		pidMap := make(map[int]string)
 
 		a, err := self.services(SYSV_INIT_DIR)

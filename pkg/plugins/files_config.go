@@ -6,6 +6,7 @@ package plugins
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"io/ioutil"
 	"os"
@@ -147,7 +148,7 @@ func fileTypeString(fi os.FileInfo) (fileType string) {
 	return fileType
 }
 
-func getPluginDataset() (dataset agent.PluginInventoryDataset, err error) {
+func getPluginDataset() (dataset types.PluginInventoryDataset, err error) {
 	for filename := range monitoredFiles {
 		var d FileData
 		if d, err = getFileData(filename); err != nil {

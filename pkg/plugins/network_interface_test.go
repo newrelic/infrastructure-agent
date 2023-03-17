@@ -136,7 +136,7 @@ func TestGetNetworkInterfaceData(t *testing.T) {
 
 	ni := interfaceStatAsNetworkInterfaceData(&getTestInterfaces()[0])
 	assert.NotNil(t, ni)
-	assert.Equal(t, data, agent.PluginInventoryDataset{ni})
+	assert.Equal(t, data, types.PluginInventoryDataset{ni})
 }
 
 func TestNetworkPlugin(t *testing.T) {
@@ -144,7 +144,7 @@ func TestNetworkPlugin(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, interfaces)
 
-	pluginInventory := agent.PluginInventoryDataset{}
+	pluginInventory := types.PluginInventoryDataset{}
 	for _, ni := range interfaces {
 		pluginInventory = append(pluginInventory, interfaceStatAsNetworkInterfaceData(&ni))
 	}

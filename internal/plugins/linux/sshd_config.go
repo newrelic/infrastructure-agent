@@ -94,7 +94,7 @@ func parseSshdConfig(configText string) (values map[string]string, err error) {
 	return
 }
 
-func convertSshValuesToPluginData(configValues map[string]string) (dataset agent.PluginInventoryDataset) {
+func convertSshValuesToPluginData(configValues map[string]string) (dataset types.PluginInventoryDataset) {
 	for key, value := range configValues {
 		dataset = append(dataset, SshdConfigValue{key, value})
 	}

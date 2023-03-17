@@ -52,7 +52,7 @@ func NewUsersPlugin(ctx agent.AgentContext) agent.Plugin {
 
 // getUserDetails runs the who command, parses it's output and returns
 // a dataset of users.
-func (self UsersPlugin) getUserDetails() (dataset agent.PluginInventoryDataset) {
+func (self UsersPlugin) getUserDetails() (dataset types.PluginInventoryDataset) {
 	output, err := helpers.RunCommand("/usr/bin/env", "", "who")
 	if err != nil {
 		usrlog.WithError(err).Error("failed to fetch user information")

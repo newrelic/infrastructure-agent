@@ -5,6 +5,7 @@ package agent
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/inventory"
 	"os"
 	"strings"
 	"time"
@@ -39,10 +40,6 @@ type patchSenderIngest struct {
 	currentAgentID   entity.ID
 }
 
-type patchSender interface {
-	Process() error
-}
-
 // Reference to the `time.Now()` function  that can be stubbed for unit testing
 var timeNow = time.Now
 
@@ -51,7 +48,7 @@ var pslog = log.WithComponent("PatchSender")
 // Reference to post delta function that can be stubbed for unit testing
 type postDeltas func(entityKeys []string, entityID entity.ID, isAgent bool, deltas ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error)
 
-func newPatchSender(entityInfo entity.Entity, context AgentContext, store delta.Storage, lastSubmission delta.LastSubmissionStore, lastEntityID delta.EntityIDPersist, userAgent string, agentIDProvide id.Provide, httpClient http2.Client) (patchSender, error) {
+func newPatchSender(entityInfo entity.Entity, context AgentContext, store delta.Storage, lastSubmission delta.LastSubmissionStore, lastEntityID delta.EntityIDPersist, userAgent string, agentIDProvide id.Provide, httpClient http2.Client) (inventory.PatchSender, error) {
 	if store == nil {
 		return nil, fmt.Errorf("creating patch sender: delta store can't be nil")
 	}
