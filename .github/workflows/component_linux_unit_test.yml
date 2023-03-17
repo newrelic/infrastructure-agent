@@ -6,12 +6,7 @@ on:
       gh_token:
         required: true
 
-env:
-  GO_VERSION: '1.19.5'
-
-
 jobs:
-
   unit-test:
     name: Unit tests
     runs-on: ubuntu-20.04
@@ -43,9 +38,9 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Install Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
-          go-version: ${{env.GO_VERSION}}
+          go-version-file: 'go.mod'
 
       - name: Running databind unit/integration tests
         run: make databind-test
