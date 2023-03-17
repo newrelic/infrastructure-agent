@@ -492,15 +492,12 @@ func getWin32Proc(process *win32_Process, path processPathProvider, enableWmiFor
 		process.WriteOperationCount = wmiData[0].WriteOperationCount
 		process.WriteTransferCount = wmiData[0].WriteTransferCount
 		process.ExecutablePath = wmiData[0].ExecutablePath
-		//process.Owner = wmiData[0].Owner
 		process.Status = wmiData[0].Status
 		process.KernelModeTime = wmiData[0].KernelModeTime
 		process.UserModeTime = wmiData[0].UserModeTime
 		process.WorkingSetSize = wmiData[0].WorkingSetSize
 		process.PageFileUsage = wmiData[0].PageFileUsage
 		process.CommandLine = wmiData[0].CommandLine
-		process.ExecutablePath = wmiData[0].ExecutablePath
-		process.Status = wmiData[0].Status
 		process.ThreadCount = wmiData[0].ThreadCount
 		
 		return nil
@@ -730,6 +727,7 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 					stripCmdLine := (hasConfig && self.context.Config().StripCommandLine) ||
 						(!hasConfig && config.DefaultStripCommandLine)
 
+					
 					if (!self.EnableWmiForDataSample()) {
 						if stripCmdLine {
 							sample.CmdLine = *winProc.ExecutablePath
@@ -742,10 +740,17 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 						}
 					} else
 					{
-					   sample.CmdLine = *winProc.CommandLine
+						if stripCmdLine {
+							sample.CmdLine = *winProc.ExecutablePath
+						} else {
+							sample.CmdLine = *winProc.CommandLine
+							if sample.CmdLine == "" {
+								logSampleError(pid, winProc, err, "can't get command line")
+								sample.CmdLine = *winProc.ExecutablePath
+							}
+						}
 
 					}
-
 
 					// Need to find the key parameter for what svchost is being serviced, use that in the name
 					if sample.CommandName == SVCHOST_NAME {
