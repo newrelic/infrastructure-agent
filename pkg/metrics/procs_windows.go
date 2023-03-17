@@ -491,7 +491,6 @@ func getWin32Proc(process *win32_Process, path processPathProvider, enableWmiFor
 		process.ReadTransferCount = wmiData[0].ReadTransferCount
 		process.WriteOperationCount = wmiData[0].WriteOperationCount
 		process.WriteTransferCount = wmiData[0].WriteTransferCount
-		process.ExecutablePath = wmiData[0].ExecutablePath
 		process.Status = wmiData[0].Status
 		process.KernelModeTime = wmiData[0].KernelModeTime
 		process.UserModeTime = wmiData[0].UserModeTime
@@ -499,6 +498,24 @@ func getWin32Proc(process *win32_Process, path processPathProvider, enableWmiFor
 		process.PageFileUsage = wmiData[0].PageFileUsage
 		process.CommandLine = wmiData[0].CommandLine
 		process.ThreadCount = wmiData[0].ThreadCount
+		process.ExecutablePath = wmiData[0].ExecutablePath
+		if( *wmiData[0].ExecutablePath == "") {
+			// As administrator user if path is missing in WMI then use Openprocess method
+			proc, err := syscall.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, process.ProcessID)
+			if(err == nil) {	
+				process.ExecutablePath, err = path(proc)
+				if err != nil {
+					emptyExecutablePath := ""
+					process.ExecutablePath = &emptyExecutablePath
+					pslog.WithError(err).WithFieldsF(func() logrus.Fields {
+						return logrus.Fields{
+							"name":       process.Name,
+							"process_id": process.ProcessID,
+						}
+					}).Debug("Cannot query executable path.")
+				}
+			}	
+		}
 		
 		return nil
 	}
