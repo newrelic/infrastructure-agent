@@ -20,12 +20,14 @@ const (
 	FlagCategory             = "Infra_Agent"
 	FlagNameRegister         = "register_enabled"
 	FlagParallelizeInventory = "parallelize_inventory_enabled"
+	FlagInventorySendBulk    = "inventory_send_bulk_enabled"
 	FlagProtocolV4           = "protocol_v4_enabled"
 	FlagFullProcess          = "full_process_sampling"
 	FlagDmRegisterDeprecated = "dm_register_deprecated"
 	// Config
 	CfgYmlRegisterEnabled        = "register_enabled"
 	CfgYmlParallelizeInventory   = "inventory_queue_len"
+	CfgYmlInventorySendBulk      = "inventory_send_bulk"
 	CfgValueParallelizeInventory = int64(100) // default value when no config provided by user and FF enabled
 )
 
@@ -131,6 +133,11 @@ func (h *handler) Handle(ctx context.Context, c commandapi.Command, isInitialFet
 
 	if ffArgs.Flag == FlagNameRegister {
 		handleRegister(ffArgs, h.cfg, isInitialFetch)
+		return
+	}
+
+	if ffArgs.Flag == FlagInventorySendBulk {
+		handleInventorySendBulk(ffArgs, h.cfg, isInitialFetch)
 		return
 	}
 
@@ -247,6 +254,39 @@ func handleRegister(ffArgs args, c *config.Config, isInitialFetch bool) {
 		ffLogger.
 			WithError(err).
 			WithField("field", CfgYmlRegisterEnabled).
+			Warn("unable to update config value")
+	}
+}
+
+func handleInventorySendBulk(ffArgs args, c *config.Config, isInitialFetch bool) {
+	inventorySendBulkAlreadySet := ffArgs.Enabled == c.InventorySendBulk
+	inventoryQueueLenAlreadySet := (ffArgs.Enabled && c.InventoryQueueLen > 0) || (!ffArgs.Enabled && c.InventoryQueueLen == 0)
+
+	// feature already in desired state.
+	if inventorySendBulkAlreadySet && inventoryQueueLenAlreadySet {
+		return
+	}
+
+	if !isInitialFetch {
+		os.Exit(api.ExitCodeRestart)
+	}
+
+	v := int64(0)
+	if ffArgs.Enabled {
+		v = CfgValueParallelizeInventory
+	}
+
+	if err := c.SetIntValueByYamlAttribute(CfgYmlParallelizeInventory, v); err != nil {
+		ffLogger.
+			WithError(err).
+			WithField("field", CfgYmlParallelizeInventory).
+			Warn("unable to update config value")
+	}
+
+	if err := c.SetBoolValueByYamlAttribute(CfgYmlInventorySendBulk, ffArgs.Enabled); err != nil {
+		ffLogger.
+			WithError(err).
+			WithField("field", CfgYmlInventorySendBulk).
 			Warn("unable to update config value")
 	}
 }
