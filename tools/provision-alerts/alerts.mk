@@ -9,9 +9,9 @@ provision-alerts/fetch-inventory:
 .PHONY: provision-alerts/pre-release
 provision-alerts/pre-release: validate-aws-credentials ec2-install-deps ec2-build provision-alerts/fetch-inventory
 	@echo "creating alerts with inventory from $(CURDIR)/tools/provision-alerts/inventory.ec2"
-	bash $(CURDIR)/tools/provision-alerts/create_alerts.sh $(CURDIR)/tools/provision-alerts/inventory.ec2 $(NR_API_KEY)
+	bash $(CURDIR)/tools/provision-alerts/create_alerts.sh $(CURDIR)/tools/provision-alerts/inventory.ec2 $(NR_API_KEY) $(TAG)
 	@echo "creating alerts with inventory from $(CURDIR)/tools/provision-alerts/inventory.macos.ec2"
-	bash $(CURDIR)/tools/provision-alerts/create_alerts.sh $(CURDIR)/tools/provision-alerts/inventory.macos.ec2 $(NR_API_KEY)
+	bash $(CURDIR)/tools/provision-alerts/create_alerts.sh $(CURDIR)/tools/provision-alerts/inventory.macos.ec2 $(NR_API_KEY) $(TAG)
 
 .PHONY: provision-alerts-install-deps
 provision-alerts-install-deps:
