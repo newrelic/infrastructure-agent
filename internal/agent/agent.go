@@ -429,9 +429,7 @@ func New(
 	a.Context.ch = make(chan types.PluginOutput, a.Context.cfg.InventoryQueueLen)
 	a.Context.activeEntities = make(chan string, activeEntitiesBufferLength)
 
-	//TODO: use ff config
-	bulkInventory := false
-	if bulkInventory {
+	if cfg.InventorySendBulk {
 		patcherConfig := inventory.PatcherConfig{
 			IgnoredPaths: cfg.IgnoredInventoryPathsMap,
 		}
