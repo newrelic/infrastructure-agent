@@ -3,6 +3,7 @@
 package config
 
 import (
+	"os"
 	"path/filepath"
 )
 
@@ -12,5 +13,5 @@ func init() { //nolint:gochecknoinits
 		filepath.Join("/usr", "local", "etc", "newrelic-infra", "newrelic-infra.yml"),
 	}
 	defaultAgentDir = filepath.Join("/usr", "local", "var", "db", "newrelic-infra")
-	defaultAgentTempDir = filepath.Join(defaultAgentDir, agentTemporaryFolderName)
+	defaultAgentTempDir = os.TempDir()
 }
