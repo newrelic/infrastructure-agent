@@ -635,6 +635,17 @@ func pruneCanaries(cmd *cobra.Command, args []string) error {
 // and this is only used for that purpose
 func previousCanaryVersion(cmd *cobra.Command, args []string) error {
 	tag := viper.GetString("tag")
+
+	previousVersion, err := getPreviousVersion(tag)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%s", previousVersion)
+
+	return nil
+}
+
+func getPreviousVersion(referenceVersion string) (string, error) {
 	perPage := 100
 	page := 1
 	client := http.DefaultClient
@@ -645,27 +656,27 @@ func previousCanaryVersion(cmd *cobra.Command, args []string) error {
 		url := fmt.Sprintf("https://api.github.com/repos/newrelic/infrastructure-agent/releases?page=%d&per_page=%d", page, perPage)
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
-			return err
+			return "", err
 		}
 		req.Header.Add("Accept", "application/vnd.github+json")
 		req.Header.Add("X-GitHub-Api-Version", "2022-11-28")
 		resp, err := client.Do(req)
 		if err != nil {
-			return err
+			return "", err
 		}
 		if resp.StatusCode != 200 {
-			return fmt.Errorf("expected response code was 200 and got %d", resp.StatusCode)
+			return "", fmt.Errorf("expected response code was 200 and got %d", resp.StatusCode)
 		}
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return err
+			return "", err
 		}
 		var tagsResp []struct {
 			TagName string `json:"tag_name"`
 		}
 		err = json.Unmarshal(body, &tagsResp)
 		if err != nil {
-			return err
+			return "", err
 		}
 		if len(tagsResp) == 0 {
 			break
@@ -677,14 +688,11 @@ func previousCanaryVersion(cmd *cobra.Command, args []string) error {
 	}
 	semver.Sort(tags)
 	for i := 0; i < len(tags); i++ {
-		if tags[i] == tag && i > 1 {
+		if tags[i] == referenceVersion && i > 1 {
 			previousVersion = tags[i-1]
 		}
 	}
-
-	fmt.Printf("%s", previousVersion)
-
-	return nil
+	return previousVersion, nil
 }
 
 // latestRelease returns tha latest release (pre-released not taken into account)
