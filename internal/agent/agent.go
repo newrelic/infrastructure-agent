@@ -705,6 +705,10 @@ func (a *Agent) Run() (err error) {
 
 	// Start debugger routine.
 	go func() {
+		if a.Context.Config().DebugLogSec <= 0 {
+			return
+		}
+
 		debugTimer := time.NewTicker(time.Duration(a.Context.Config().DebugLogSec) * time.Second)
 
 		for {
@@ -1203,6 +1207,10 @@ func (c *context) setAgentKey(agentKey string) {
 }
 
 func (c *context) getAgentKey() (agentKey string) {
+	loaded := c.agentKey.Load()
+	if loaded == nil {
+		return ""
+	}
 	return c.agentKey.Load().(string)
 }
 
