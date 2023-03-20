@@ -22,7 +22,7 @@ type PatchReaper struct {
 
 var prlog = log.WithComponent("PatchReaper")
 
-func NewPatchReaper(entityKey string, store *delta.Store) *PatchReaper {
+func newPatchReaper(entityKey string, store *delta.Store) *PatchReaper {
 	if store == nil {
 		prlog.WithField("entityKey", entityKey).Error("creating patch reaper: delta store can't be nil")
 		panic("creating patch reaper: delta store can't be nil")

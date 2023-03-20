@@ -429,7 +429,7 @@ func New(
 	a.Context.ch = make(chan types.PluginOutput, a.Context.cfg.InventoryQueueLen)
 	a.Context.activeEntities = make(chan string, activeEntitiesBufferLength)
 
-	if cfg.InventorySendBulk {
+	if false {
 		patcherConfig := inventory.PatcherConfig{
 			IgnoredPaths: cfg.IgnoredInventoryPathsMap,
 		}
@@ -502,7 +502,7 @@ func (a *Agent) registerEntityInventory(entity entity.Entity) error {
 		return err
 	}
 
-	reaper := NewPatchReaper(entityKey, a.store)
+	reaper := newPatchReaper(entityKey, a.store)
 	a.inventories[entityKey] = &inventoryEntity{
 		sender: patchSender,
 		reaper: reaper,

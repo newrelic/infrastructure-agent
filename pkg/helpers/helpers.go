@@ -16,6 +16,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/log"
@@ -24,10 +25,17 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/lru"
 )
 
+type fileNameCache struct {
+	*lru.Cache
+	m sync.Mutex
+}
+
 var (
 	JsonFilesRegexp       = regexp.MustCompile("^[^~]+.json$")
-	sanitizeFileNameCache = lru.New()
-	HiddenField           = "<HIDDEN>"
+	sanitizeFileNameCache = &fileNameCache{
+		Cache: lru.New(),
+	}
+	HiddenField = "<HIDDEN>"
 )
 
 var quotations = map[uint8]bool{
@@ -220,6 +228,10 @@ func SanitizeFileName(fileName string) string {
 	if fileName == "" {
 		return fileName
 	}
+
+	sanitizeFileNameCache.m.Lock()
+	defer sanitizeFileNameCache.m.Unlock()
+
 	value, found := sanitizeFileNameCache.Get(fileName)
 	if found {
 		if stringValue, isString := value.(string); isString {

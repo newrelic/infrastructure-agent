@@ -132,8 +132,12 @@ func (p *patchSenderIngest) Process() (err error) {
 		if err := p.store.RemoveEntity(entityKey); err != nil {
 			llog.WithError(err).Warn("Could not remove inventory cache")
 		}
-		// Relaunching one-time harvesters to avoid losing the inventories after reset
-		p.context.Reconnect()
+
+		if p.context.EntityKey() == p.entityInfo.Key.String() {
+			// Relaunching one-time harvesters to avoid losing the inventories after reset
+			p.context.Reconnect()
+		}
+
 		p.lastDeltaRemoval = now
 
 		if agentEntityIDChanged {
@@ -185,7 +189,9 @@ func (p *patchSenderIngest) sendAllDeltas(allDeltas []inventoryapi.RawDeltaBlock
 		if reset {
 			llog.Debug("Full Plugin Inventory Reset Requested.")
 			p.store.ResetAllDeltas(entityKey)
-			p.context.Reconnect() // Relaunching one-time harvesters to avoid losing the inventories after reset
+			if entityKey == p.context.EntityKey() {
+				p.context.Reconnect() // Relaunching one-time harvesters to avoid losing the inventories after reset
+			}
 			err := p.store.SaveState()
 			if err != nil {
 				llog.WithError(err).Error("error after resetting deltas while flushing inventory to cache")

@@ -16,8 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const maxInventoryDataSize = 3 * 1000 * 1000
-
 var plugin = &delta.PluginInfo{
 	Source:   "metadata/plugin",
 	Plugin:   "metadata",
@@ -104,7 +102,7 @@ func TestInventories(t *testing.T) {
 	store := delta.NewStore(dataDir, "default", maxInventoryDataSize)
 
 	// And a set of registered entities
-	inv := map[string]*inventory{
+	inv := map[string]*inventoryEntity{
 		"agent_id":                nil,
 		"some_other_cool_entity":  nil,
 		"some_other_cool_entity2": nil,
@@ -160,7 +158,7 @@ func TestInventories_BulkPatchProcess(t *testing.T) {
 	store := delta.NewStore(dataDir, "default", maxInventoryDataSize)
 
 	// And a set of registered entities
-	inv := map[string]*inventory{
+	inv := map[string]*inventoryEntity{
 		"agent_id":                nil,
 		"some_other_cool_entity":  nil,
 		"some_other_cool_entity2": nil,
@@ -220,7 +218,7 @@ func TestInventories_NoDeltas(t *testing.T) {
 	store := delta.NewStore(dataDir, "default", maxInventoryDataSize)
 
 	// And a set of registered entities
-	inv := map[string]*inventory{
+	inv := map[string]*inventoryEntity{
 		"agent_id":                nil,
 		"some_other_cool_entity":  nil,
 		"some_other_cool_entity2": nil,
@@ -249,7 +247,7 @@ func TestInventories_ResetAll(t *testing.T) {
 	store := delta.NewStore(dataDir, "default", maxInventoryDataSize)
 
 	// And a set of registered entities
-	inv := map[string]*inventory{
+	inv := map[string]*inventoryEntity{
 		"agent_id":                nil,
 		"some_other_cool_entity":  nil,
 		"some_other_cool_entity2": nil,
@@ -291,7 +289,7 @@ func TestInventories_Compacting(t *testing.T) {
 	store := delta.NewStore(dataDir, "default", maxInventoryDataSize)
 
 	// And a set of registered entities
-	inv := map[string]*inventory{
+	inv := map[string]*inventoryEntity{
 		"agent_id":                nil,
 		"some_other_cool_entity":  nil,
 		"some_other_cool_entity2": nil,
