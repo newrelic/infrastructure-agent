@@ -125,7 +125,7 @@ func TestPatchSender_Process_LongTermOffline_ReconnectPlugins(t *testing.T) {
 	ps.postDeltas = FakePostDelta
 	ps.lastDeltaRemoval = endOf18.Truncate(48 * time.Hour)
 	var agentKey atomic.Value
-	agentKey.Store("test")
+	agentKey.Store(entityKey)
 	ps.context = &context{
 		reconnecting: new(sync.Map),
 		agentKey:     agentKey,

@@ -429,7 +429,7 @@ func New(
 	a.Context.ch = make(chan types.PluginOutput, a.Context.cfg.InventoryQueueLen)
 	a.Context.activeEntities = make(chan string, activeEntitiesBufferLength)
 
-	if false {
+	if true {
 		patcherConfig := inventory.PatcherConfig{
 			IgnoredPaths: cfg.IgnoredInventoryPathsMap,
 		}
