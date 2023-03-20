@@ -74,7 +74,7 @@
       summary: "New Relic Infrastructure Agent"
       group: default
     # Required packages. rpm version 4.11.3 does not support weak dependencies
-#    recommends:
-#      - fluent-bit
+    recommends:
+      - fluent-bit
   
   # end AL2023 adm64
