@@ -688,7 +688,7 @@ func getPreviousVersion(referenceVersion string) (string, error) {
 	}
 	semver.Sort(tags)
 	for i := 0; i < len(tags); i++ {
-		if tags[i] == referenceVersion && i > 1 {
+		if tags[i] == referenceVersion && i > 0 {
 			previousVersion = tags[i-1]
 		}
 	}
