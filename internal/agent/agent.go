@@ -1034,7 +1034,7 @@ func (c *context) SendEvent(event sample.Event, entityKey entity.Key) {
 		if truncated {
 			aclog.
 				WithField("entity_key", entityKey.String()).
-				WithField("length", metric.NRDBLimit).
+				WithField("length", len(origValue)).
 				WithField("original", origValue).
 				WithField("truncated", fmt.Sprintf("+%v", event)).
 				Warn("event truncated to NRDB limit")
