@@ -14,6 +14,9 @@ var fbConfigFormat = `{{- range .Inputs }}
     {{- if .BufferMaxSize }}
     Buffer_Max_Size {{ .BufferMaxSize }}
     {{- end }}
+	{{- if .MemBufferLimit }}
+    Mem_Buf_Limit {{ .MemBufferLimit }}
+    {{- end }}
     {{- if .SkipLongLines }}
     Skip_Long_Lines {{ .SkipLongLines }}
     {{- end }}
