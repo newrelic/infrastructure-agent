@@ -45,8 +45,8 @@ func (self SystemdService) SortKey() string {
 	return self.Name
 }
 
-func (self SystemdPlugin) getSystemdDataset() types.InventoryDataset {
-	var dataset types.InventoryDataset
+func (self SystemdPlugin) getSystemdDataset() types.PluginInventoryDataset {
+	var dataset types.PluginInventoryDataset
 
 	for _, v := range self.runningServices {
 		dataset = append(dataset, v)

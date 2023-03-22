@@ -8,6 +8,7 @@ package linux
 import (
 	"bufio"
 	"github.com/fsnotify/fsnotify"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"strings"

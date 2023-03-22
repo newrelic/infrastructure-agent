@@ -11,6 +11,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/fsnotify/fsnotify"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"

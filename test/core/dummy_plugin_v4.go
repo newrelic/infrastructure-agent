@@ -4,6 +4,7 @@
 package core
 
 import (
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"testing"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"

@@ -9,6 +9,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/internal/plugins/common"
 	"io/ioutil"
 	"os"

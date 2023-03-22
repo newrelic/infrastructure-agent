@@ -8,6 +8,7 @@ package linux
 import (
 	"bufio"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"os"
 	"regexp"

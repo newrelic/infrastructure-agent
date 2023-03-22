@@ -9,6 +9,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"regexp"
 	"strings"
@@ -196,10 +197,10 @@ func (self *SELinuxPlugin) Run() {
 			}
 
 			entity := entity.NewFromNameWithoutID(self.Context.EntityKey())
-			self.Context.SendData(agent.NewPluginOutput(self.Id(), entity, basicData))
-			self.Context.SendData(agent.NewPluginOutput(ids.PluginID{self.ID.Category, fmt.Sprintf("%s-policies", self.ID.Term)}, entity, policyData))
+			self.Context.SendData(types.NewPluginOutput(self.Id(), entity, basicData))
+			self.Context.SendData(types.NewPluginOutput(ids.PluginID{self.ID.Category, fmt.Sprintf("%s-policies", self.ID.Term)}, entity, policyData))
 			if self.enableSemodule {
-				self.Context.SendData(agent.NewPluginOutput(ids.PluginID{self.ID.Category, fmt.Sprintf("%s-modules", self.ID.Term)}, entity, policyModules))
+				self.Context.SendData(types.NewPluginOutput(ids.PluginID{self.ID.Category, fmt.Sprintf("%s-modules", self.ID.Term)}, entity, policyModules))
 			}
 
 			<-refreshTimer.C

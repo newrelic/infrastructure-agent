@@ -7,6 +7,7 @@ package linux
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"io/ioutil"
 	"os"
@@ -116,7 +117,7 @@ func (sp *SysctlPlugin) newSysctlItem(filePath string, output []byte) SysctlItem
 
 func (sp *SysctlPlugin) Sysctls() (dataset types.PluginInventoryDataset, err error) {
 	// Clear out the list, since we're going to be repopulating it completely anyway and we want to drop any entries we don't find anymore.
-	sp.sysctls = make([]agent.Sortable, 0)
+	sp.sysctls = make([]types.Sortable, 0)
 
 	if err := sp.fileService.walk(sp.procSysDir, sp.walkSysctl); err != nil {
 		return nil, err

@@ -6,6 +6,7 @@
 package linux
 
 import (
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"io/ioutil"
 	"time"
