@@ -207,6 +207,7 @@ func hasValidScheme(s string) bool {
 // IMPORTANT: This verification mode should be only done with legacy proxy implementation, where the
 // proxy_validate_certificates configuration option is set to false, to avoid breaking changes with legacy users since the
 // update from Go 1.9 to Go 1.10.
+//nolint
 func fallbackDialer(transport *http.Transport) func(network string, addr string) (net.Conn, error) {
 	return func(network string, addr string) (conn net.Conn, e error) {
 		// test the tlsDialer with normal configuration
