@@ -381,7 +381,7 @@ func (rs *RunnerSuite) TestRegisterInstances(c *C) {
 	})
 
 	ag := FakeAgent{
-		Plugins: map[ids.PluginID]plugin.Plugin{},
+		Plugins: map[ids.PluginID]agent.Plugin{},
 	}
 
 	reg := &PluginRegistry{
@@ -409,7 +409,7 @@ func (rs *RunnerSuite) TestRegisterInstances(c *C) {
 // customContext implements the AgentContext interface for testing purposes
 // It only has two channels to read/write events and inventory data from plugins
 type customContext struct {
-	ch  chan agent.PluginOutput
+	ch  chan types.PluginOutput
 	ev  chan sample.Event
 	cfg *config.Config
 }
@@ -440,7 +440,7 @@ func (cc customContext) GetServiceForPid(pid int) (service string, ok bool) {
 	return "", false
 }
 
-func (cc customContext) SendData(data agent.PluginOutput) {
+func (cc customContext) SendData(data types.PluginOutput) {
 	cc.ch <- data
 }
 
@@ -487,7 +487,7 @@ custom_attributes:
 	cfg, _ := config.LoadConfig(f.Name())
 
 	return customContext{
-		ch:  make(chan agent.PluginOutput),
+		ch:  make(chan types.PluginOutput),
 		ev:  make(chan sample.Event),
 		cfg: cfg,
 	}
@@ -612,8 +612,8 @@ func readFromChannel(ch chan interface{}) (interface{}, error) {
 	}
 }
 
-func readData(ch chan agent.PluginOutput) (agent.PluginOutput, error) {
-	var output agent.PluginOutput
+func readData(ch chan types.PluginOutput) (types.PluginOutput, error) {
+	var output types.PluginOutput
 
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
@@ -815,7 +815,7 @@ func (rs *RunnerSuite) TestEventsPluginRunV1(c *C) {
 	plugin.pluginInstance.Arguments = map[string]string{"GO_WANT_HELPER_PROCESS": "1"}
 	plugin.pluginInstance.plugin.ProtocolVersion = protocol.V1
 	plugin.pluginRunner.agent = FakeAgent{
-		Plugins: map[ids.PluginID]plugin.Plugin{},
+		Plugins: map[ids.PluginID]agent.Plugin{},
 	}
 
 	plugin.pluginRunner.closeWait.Add(1)
@@ -865,7 +865,7 @@ func TestEventsPluginRunV1OverloadingStderrBuffer(t *testing.T) {
 	plugin.pluginInstance.Arguments = map[string]string{"GO_WANT_HELPER_PROCESS": "1"}
 	plugin.pluginInstance.plugin.ProtocolVersion = protocol.V1
 	plugin.pluginRunner.agent = FakeAgent{
-		Plugins: map[ids.PluginID]plugin.Plugin{},
+		Plugins: map[ids.PluginID]agent.Plugin{},
 	}
 
 	plugin.pluginRunner.closeWait.Add(1)
