@@ -7,6 +7,7 @@ package windows
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"time"
 
@@ -50,7 +51,7 @@ func NewUpdatesPlugin(id ids.PluginID, ctx agent.AgentContext) agent.Plugin {
 	}
 }
 
-func (self *UpdatesPlugin) getDataset() (result agent.PluginInventoryDataset, err error) {
+func (self *UpdatesPlugin) getDataset() (result types.PluginInventoryDataset, err error) {
 	var wmiResults []Win32_QuickFixEngineering
 	wmiQuery := wmi.CreateQuery(&wmiResults, "")
 	if err = wmi.QueryNamespace(wmiQuery, &wmiResults, config.DefaultWMINamespace); err != nil {

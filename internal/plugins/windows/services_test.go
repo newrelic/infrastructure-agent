@@ -7,11 +7,11 @@ package windows
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"sort"
 	"testing"
 
 	"github.com/StackExchange/wmi"
-	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/stretchr/testify/assert"
 )
@@ -24,7 +24,7 @@ type Win32_Service struct {
 	ProcessId   uint32
 }
 
-func getDatasetWMI() (result agent.PluginInventoryDataset, err error) {
+func getDatasetWMI() (result types.PluginInventoryDataset, err error) {
 	var wmiResults []Win32_Service
 
 	// Only get running services which are set to start automatically.

@@ -5,6 +5,7 @@ package mocks
 
 import (
 	"context"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"sync"
 
 	agent "github.com/newrelic/infrastructure-agent/internal/agent"
@@ -165,7 +166,7 @@ func (_m *AgentContext) Reconnect() {
 }
 
 // SendData provides a mock function with given fields: _a0
-func (_m *AgentContext) SendData(_a0 agent.PluginOutput) {
+func (_m *AgentContext) SendData(_a0 types.PluginOutput) {
 	_m.SendDataWg.Done()
 	_m.Called(_a0)
 }
