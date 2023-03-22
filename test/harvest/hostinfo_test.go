@@ -7,6 +7,7 @@ package harvest
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"os"
 	"regexp"
@@ -15,7 +16,6 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 
-	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/internal/plugins/common"
 	pluginsLinux "github.com/newrelic/infrastructure-agent/internal/plugins/linux"
@@ -116,10 +116,10 @@ func TestHostInfo(t *testing.T) {
 	ctx.AssertExpectations(t)
 
 	// Retrieve the PluginOutput from the mock
-	var actual agent.PluginOutput
+	var actual types.PluginOutput
 	for _, call := range ctx.Calls {
 		if call.Method == "SendData" {
-			actual = call.Arguments[0].(agent.PluginOutput)
+			actual = call.Arguments[0].(types.PluginOutput)
 			break
 		}
 	}
@@ -131,7 +131,7 @@ func TestHostInfo(t *testing.T) {
 	uptimeRegex := regexp.MustCompile("^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$|^$|unknown")
 	assert.Regexp(t, uptimeRegex, actualUpSince)
 
-	expectedPluginOutput := agent.PluginOutput{
+	expectedPluginOutput := types.PluginOutput{
 		Id: ids.PluginID{
 			Category: "metadata",
 			Term:     "system",

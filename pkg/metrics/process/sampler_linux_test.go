@@ -14,6 +14,7 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
@@ -137,7 +138,7 @@ func (*dummyAgentContext) HostnameResolver() hostname.Resolver {
 
 func (*dummyAgentContext) Reconnect() {}
 
-func (*dummyAgentContext) SendData(agent.PluginOutput) {}
+func (*dummyAgentContext) SendData(types.PluginOutput) {}
 
 func (*dummyAgentContext) SendEvent(event sample.Event, entityKey entity.Key) {}
 
