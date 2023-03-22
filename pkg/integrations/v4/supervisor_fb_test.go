@@ -197,12 +197,20 @@ func TestRemoveFbConfigTempFiles(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		// create temp directory and set it as default directory to use for temporary files
-		tmpDir := t.TempDir()
+	for _, testItem := range tests {
+		// Prevent the loop variable from being captured in the closure below
+		test := testItem
 
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+
+			// create temp directory and set it as default directory to use for temporary files
+			tmpDir, err := os.MkdirTemp("", "TestRemoveFbConfigTempFiles")
+			defer os.RemoveAll(tmpDir)
+			if err != nil {
+				assert.FailNow(t, "Could not create temporary testing directory")
+			}
+
 			// create config files in temp directory
 			for _, file := range configFiles {
 				addFile(t, tmpDir, file.name, file.content)
