@@ -16,8 +16,9 @@ var (
 )
 
 type HandlerConfig struct {
-	ReapInterval time.Duration
-	SendInterval time.Duration
+	FirstReapInterval time.Duration
+	ReapInterval      time.Duration
+	SendInterval      time.Duration
 }
 
 // Handler maintains the infrastructure inventory in an updated state.
@@ -30,10 +31,11 @@ type Handler struct {
 
 	patcher Patcher
 
+	initialReap bool
+
 	dataCh chan types.PluginOutput
 
-	reapTimer *time.Ticker
-	sendTimer *time.Ticker
+	sendTimer *time.Timer
 
 	sendErrorCount uint32
 }
@@ -43,13 +45,12 @@ func NewInventoryHandler(cfg HandlerConfig, patcher Patcher) *Handler {
 	ctx, cancelFn := context2.WithCancel(context2.Background())
 
 	return &Handler{
-		cfg:       cfg,
-		reapTimer: time.NewTicker(cfg.ReapInterval),
-		sendTimer: time.NewTicker(cfg.SendInterval),
-		dataCh:    make(chan types.PluginOutput, 0),
-		ctx:       ctx,
-		cancelFn:  cancelFn,
-		patcher:   patcher,
+		cfg:         cfg,
+		dataCh:      make(chan types.PluginOutput, 0),
+		ctx:         ctx,
+		cancelFn:    cancelFn,
+		patcher:     patcher,
+		initialReap: true,
 	}
 }
 
@@ -86,11 +87,23 @@ func (h *Handler) listenForData() {
 
 // doProcess does the inventory processing.
 func (h *Handler) doProcess() {
+	h.sendTimer = time.NewTimer(h.cfg.SendInterval)
+	reapTimer := time.NewTicker(h.cfg.FirstReapInterval)
+
+	defer func() {
+		h.sendTimer.Stop()
+		reapTimer.Stop()
+	}()
+
 	for {
 		select {
 		case <-h.ctx.Done():
 			return
-		case <-h.reapTimer.C:
+		case <-reapTimer.C:
+			if h.initialReap {
+				h.initialReap = false
+				reapTimer.Reset(h.cfg.ReapInterval)
+			}
 			h.patcher.Reap()
 		case <-h.sendTimer.C:
 			h.send()

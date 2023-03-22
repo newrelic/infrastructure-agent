@@ -4,6 +4,8 @@ package core
 
 import (
 	"bytes"
+	context2 "context"
+	"github.com/stretchr/testify/suite"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -20,14 +22,34 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDeltas_nestedObjectsV4(t *testing.T) {
+type InventoryTestSuite struct {
+	suite.Suite
+	SendBulkEnabled bool
+}
+
+func TestInventorySuite_SendBulkEnabled(t *testing.T) {
+	suite.Run(t, &InventoryTestSuite{
+		SendBulkEnabled: true,
+	})
+}
+
+func TestInventorySuite_SendBulkDisabled(t *testing.T) {
+	suite.Run(t, &InventoryTestSuite{})
+}
+
+func (s *InventoryTestSuite) TestDeltas_nestedObjectsV4() {
+	t := s.T()
+
 	const timeout = 5 * time.Second
 
 	// Given an agent
 	testClient := ihttp.NewRequestRecorderClient(
 		ihttp.AcceptedResponse("test/dummy", 1),
 		ihttp.AcceptedResponse("test/dummy", 2))
-	a := infra.NewAgent(testClient.Client)
+	a := infra.NewAgent(testClient.Client, func(config *config.Config) {
+		config.InventorySendBulk = s.SendBulkEnabled
+	})
+
 	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
 	// That runs a v4 plugin with nested inventory
@@ -87,14 +109,19 @@ func TestDeltas_nestedObjectsV4(t *testing.T) {
 	})
 }
 
-func TestDeltas_BasicWorkflow(t *testing.T) {
+func (s *InventoryTestSuite) TestDeltas_BasicWorkflow() {
+	t := s.T()
+
 	const timeout = 5 * time.Second
 
 	// Given an agent
 	testClient := ihttp.NewRequestRecorderClient(
 		ihttp.AcceptedResponse("test/dummy", 1),
 		ihttp.AcceptedResponse("test/dummy", 2))
-	a := infra.NewAgent(testClient.Client)
+	a := infra.NewAgent(testClient.Client, func(config *config.Config) {
+		config.InventorySendBulk = s.SendBulkEnabled
+	})
+
 	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
 	// That runs a plugin
@@ -171,7 +198,51 @@ func TestDeltas_BasicWorkflow(t *testing.T) {
 	})
 }
 
-func TestDeltas_ResendIfFailure(t *testing.T) {
+func (s *InventoryTestSuite) TestDeltas_ForwardOnly() {
+	t := s.T()
+
+	const timeout = 5 * time.Second
+
+	// Given an agent
+	testClient := ihttp.NewRequestRecorderClient(
+		ihttp.AcceptedResponse("test/dummy", 1),
+		ihttp.AcceptedResponse("test/dummy", 2))
+	a := infra.NewAgent(testClient.Client, func(config *config.Config) {
+		config.InventorySendBulk = s.SendBulkEnabled
+		config.IsForwardOnly = true
+		config.FirstReapInterval = time.Nanosecond
+		config.SendInterval = time.Nanosecond
+	})
+
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
+
+	//Give time to at least send one request
+	ctxTimeout, _ := context2.WithTimeout(a.Context.Ctx, time.Millisecond*10)
+	a.Context.Ctx = ctxTimeout
+
+	// That runs a plugin
+	plugin := newDummyPlugin("hello", a.Context)
+	a.RegisterPlugin(plugin)
+
+	go a.Run()
+
+	// When the plugin harvests inventory data
+	plugin.harvest()
+
+	select {
+	case <-testClient.RequestCh:
+		a.Terminate()
+		assert.FailNow(t, "Agent must not send data yet")
+	case <-ctxTimeout.Done():
+		// Success
+		return
+	case <-time.After(timeout):
+		a.Terminate()
+	}
+}
+
+func (s *InventoryTestSuite) TestDeltas_ResendIfFailure() {
+	t := s.T()
 	const timeout = 5 * time.Second
 
 	// Given an agent that fails submitting the deltas in the second invocation
@@ -180,7 +251,10 @@ func TestDeltas_ResendIfFailure(t *testing.T) {
 		ihttp.ErrorResponse,
 		ihttp.AcceptedResponse("test/dummy", 2))
 
-	a := infra.NewAgent(testClient.Client)
+	a := infra.NewAgent(testClient.Client, func(config *config.Config) {
+		config.InventorySendBulk = s.SendBulkEnabled
+	})
+
 	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
 	// That runs a plugin
@@ -266,7 +340,9 @@ func TestDeltas_ResendIfFailure(t *testing.T) {
 
 }
 
-func TestDeltas_ResendAfterReset(t *testing.T) {
+func (s *InventoryTestSuite) TestDeltas_ResendAfterReset() {
+	t := s.T()
+
 	const timeout = 10 * time.Second
 
 	agentDir, err := ioutil.TempDir("", "prefix")
@@ -279,6 +355,7 @@ func TestDeltas_ResendAfterReset(t *testing.T) {
 	a := infra.NewAgent(testClient.Client, func(config *config.Config) {
 		config.SendInterval = time.Hour
 		config.AgentDir = agentDir
+		config.InventorySendBulk = s.SendBulkEnabled
 	})
 	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
@@ -303,6 +380,7 @@ func TestDeltas_ResendAfterReset(t *testing.T) {
 	// When another agent process starts again
 	a = infra.NewAgent(testClient.Client, func(config *config.Config) {
 		config.AgentDir = agentDir
+		config.InventorySendBulk = s.SendBulkEnabled
 	})
 	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 	a.RegisterPlugin(plugin1)
@@ -330,7 +408,9 @@ func TestDeltas_ResendAfterReset(t *testing.T) {
 	a.Terminate()
 }
 
-func TestDeltas_HarvestAfterStoreCleanup(t *testing.T) {
+func (s *InventoryTestSuite) TestDeltas_HarvestAfterStoreCleanup() {
+	t := s.T()
+
 	const timeout = 5 * time.Second
 
 	// Given an agent
@@ -344,6 +424,7 @@ func TestDeltas_HarvestAfterStoreCleanup(t *testing.T) {
 			"someother": "other_attr",
 		}
 		cfg.Log.Level = config.LogLevelDebug
+		cfg.InventorySendBulk = s.SendBulkEnabled
 	})
 	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
@@ -408,6 +489,28 @@ func TestDeltas_HarvestAfterStoreCleanup(t *testing.T) {
 		},
 	})
 }
+
+//func (s *InventoryTestSuite) TestDeltas_UpdateIDLookupTable() {
+//	t := s.T()
+//
+//	const timeout = 5 * time.Second
+//
+//	// Given an agent
+//	testClient := ihttp.NewRequestRecorderClient(
+//		ihttp.AcceptedResponse("metadata/attributes", 1),
+//		ihttp.ResetDeltasResponse("test/dummy"))
+//
+//	a := infra.NewAgent(testClient.Client, func(cfg *config.Config) {
+//		cfg.CustomAttributes = config.CustomAttributeMap{
+//			"some":      "attr",
+//			"someother": "other_attr",
+//		}
+//		cfg.Log.Level = config.LogLevelDebug
+//		cfg.InventorySendBulk = s.SendBulkEnabled
+//	})
+//	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
+//
+//}
 
 func BenchmarkInventoryProcessingPipeline(b *testing.B) {
 	const timeout = 5 * time.Second

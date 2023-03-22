@@ -8,6 +8,11 @@ import (
 	"github.com/sirupsen/logrus"
 	"sort"
 	"strings"
+	"time"
+)
+
+const (
+	defaultRemoveEntitiesPeriod = 48 * time.Hour
 )
 
 type PatchSender interface {
@@ -29,13 +34,34 @@ type Patcher interface {
 }
 
 type PatcherConfig struct {
-	IgnoredPaths map[string]struct{}
+	IgnoredPaths         map[string]struct{}
+	AgentEntity          entity.Entity
+	RemoveEntitiesPeriod time.Duration
 }
 
 // BasePatcher will keep the common functionality of a patcher.
 type BasePatcher struct {
 	deltaStore *delta.Store
 	cfg        PatcherConfig
+	lastClean  time.Time
+}
+
+func (b *BasePatcher) needsCleanup() bool {
+	if b.lastClean.Equal(time.Time{}) {
+		b.lastClean = time.Now()
+		return false
+	}
+
+	removePeriod := b.cfg.RemoveEntitiesPeriod
+	if removePeriod <= 0 {
+		removePeriod = defaultRemoveEntitiesPeriod
+	}
+
+	needsCleanup := b.lastClean.Add(removePeriod).Before(time.Now())
+	if needsCleanup {
+		b.lastClean = time.Now()
+	}
+	return needsCleanup
 }
 
 // save will take a PluginOutput and persist it in the store.

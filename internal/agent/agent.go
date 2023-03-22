@@ -144,10 +144,11 @@ type context struct {
 	reconnecting *sync.Map               // Plugins that must be re-executed after a long disconnection
 	ch           chan types.PluginOutput // Channel of inbound plugin data payloads
 
-	pluginOutputHandleFn func(types.PluginOutput) // Function to handle the PluginOutput (Inventory Data). When this is provided the ch would not be used (In future would be deprecared)
-	activeEntities       chan string              // Channel will be reported about the local/remote entities that are active
-	version              string
-	eventSender          eventSender
+	updateIDLookupTableFn func(hostAliases types.PluginInventoryDataset) (err error)
+	pluginOutputHandleFn  func(types.PluginOutput) // Function to handle the PluginOutput (Inventory Data). When this is provided the ch would not be used (In future would be deprecared)
+	activeEntities        chan string              // Channel will be reported about the local/remote entities that are active
+	version               string
+	eventSender           eventSender
 
 	servicePidLock     *sync.RWMutex
 	servicePids        map[string]map[int]string // Map of plugin -> (map of pid -> service)
@@ -429,18 +430,21 @@ func New(
 	a.Context.ch = make(chan types.PluginOutput, a.Context.cfg.InventoryQueueLen)
 	a.Context.activeEntities = make(chan string, activeEntitiesBufferLength)
 
-	if true {
+	if cfg.InventorySendBulk {
 		patcherConfig := inventory.PatcherConfig{
 			IgnoredPaths: cfg.IgnoredInventoryPathsMap,
+			AgentEntity:  entity.NewFromNameWithoutID(a.Context.EntityKey()),
 		}
 		patcher := inventory.NewEntityPatcher(patcherConfig, s, a.newPatchSender)
 
 		inventoryHandlerCfg := inventory.HandlerConfig{
-			SendInterval: cfg.SendInterval,
-			ReapInterval: cfg.ReapInterval,
+			SendInterval:      cfg.SendInterval,
+			FirstReapInterval: cfg.FirstReapInterval,
+			ReapInterval:      cfg.ReapInterval,
 		}
 		a.inventoryHandler = inventory.NewInventoryHandler(inventoryHandlerCfg, patcher)
 		a.Context.pluginOutputHandleFn = a.inventoryHandler.Handle
+		a.Context.updateIDLookupTableFn = a.updateIDLookupTable
 	}
 
 	if cfg.RegisterEnabled {
@@ -741,10 +745,6 @@ func (a *Agent) Run() (err error) {
 		}
 	}
 
-	if a.inventoryHandler != nil {
-		a.inventoryHandler.Start()
-	}
-
 	exit := make(chan struct{})
 
 	go func() {
@@ -761,8 +761,11 @@ func (a *Agent) Run() (err error) {
 	}()
 
 	if a.inventoryHandler != nil {
-		a.inventoryHandler.Start()
-		return
+		if a.shouldSendInventory() {
+			a.inventoryHandler.Start()
+		}
+		<-exit
+		return nil
 	}
 
 	a.handleInventory(exit)
@@ -1071,8 +1074,8 @@ func (a *Agent) removeOutdatedEntities(reportedEntities map[string]bool) {
 
 func (c *context) SendData(data types.PluginOutput) {
 	if c.pluginOutputHandleFn != nil {
-		if data.Id == hostAliasesPluginID {
-			//_ = a.updateIDLookupTable(data.Data)
+		if data.Id == hostAliasesPluginID && c.updateIDLookupTableFn != nil {
+			c.updateIDLookupTableFn(data.Data)
 		}
 		c.pluginOutputHandleFn(data)
 		return
