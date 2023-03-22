@@ -47,6 +47,7 @@ linters:
     # intentionally disabled
     - exhaustivestruct
     - testpackage
+    - gci
 
 issues:
   new-from-rev: "HEAD~"
