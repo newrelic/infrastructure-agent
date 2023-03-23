@@ -83,7 +83,7 @@ func TestPatchSender_Process_LongTermOffline(t *testing.T) {
 	// Given a delta Store
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
-	store := delta.NewStore(dataDir, "default", maxInventoryDataSize)
+	store := delta.NewStore(dataDir, "default", maxInventoryDataSize, true)
 	ls := delta.NewLastSubmissionInMemory()
 
 	// With some cached plugin data
@@ -113,7 +113,7 @@ func TestPatchSender_Process_LongTermOffline_ReconnectPlugins(t *testing.T) {
 	// Given a delta Store
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
-	store := delta.NewStore(dataDir, "default", maxInventoryDataSize)
+	store := delta.NewStore(dataDir, "default", maxInventoryDataSize, true)
 	ls := delta.NewLastSubmissionInMemory()
 
 	// With some cached plugin data
@@ -152,7 +152,7 @@ func TestPatchSender_Process_LongTermOffline_NoDeltasToPost_UpdateLastDeltaRemov
 	// Given a delta Store
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
-	store := delta.NewStore(dataDir, "default", maxInventoryDataSize)
+	store := delta.NewStore(dataDir, "default", maxInventoryDataSize, true)
 	ls := delta.NewLastSubmissionInMemory()
 	// When it has successfully submitted some deltas
 	require.NoError(t, ls.UpdateTime(time.Now()))
@@ -181,7 +181,7 @@ func TestPatchSender_Process_LongTermOffline_AlreadyRemoved(t *testing.T) {
 	// Given a delta Store
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
-	store := delta.NewStore(dataDir, "default", maxInventoryDataSize)
+	store := delta.NewStore(dataDir, "default", maxInventoryDataSize, true)
 	ls := delta.NewLastSubmissionInMemory()
 
 	// With some cached plugin data
@@ -263,7 +263,7 @@ func TestPatchSender_Process_ShortTermOffline(t *testing.T) {
 	// Given a delta Store
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
-	store := delta.NewStore(dataDir, "default", maxInventoryDataSize)
+	store := delta.NewStore(dataDir, "default", maxInventoryDataSize, true)
 	ls := delta.NewLastSubmissionInMemory()
 
 	// With some cached plugin data
@@ -297,7 +297,7 @@ func TestPatchSender_Process_DividedDeltas(t *testing.T) {
 
 	nowIsEndOf18()
 
-	store := delta.NewStore(dataDir, "localhost", maxInventoryDataSize)
+	store := delta.NewStore(dataDir, "localhost", maxInventoryDataSize, true)
 	ls := delta.NewLastSubmissionInMemory()
 	require.NoError(t, ls.UpdateTime(timeNow()))
 	ps := newTestPatchSender(t, dataDir, store, ls, getLastEntityIDMock())
@@ -333,7 +333,7 @@ func TestPatchSender_Process_DisabledDeltaSplit(t *testing.T) {
 	// Given a patch sender with disabled delta split
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
-	store := delta.NewStore(dataDir, "localhost", delta.DisableInventorySplit)
+	store := delta.NewStore(dataDir, "localhost", delta.DisableInventorySplit, true)
 	ps := newTestPatchSender(t, dataDir, store, delta.NewLastSubmissionInMemory(), getLastEntityIDMock())
 	pdt := testhelpers.NewPostDeltaTracer(math.MaxInt32)
 	ps.postDeltas = pdt.PostDeltas
@@ -362,7 +362,7 @@ func TestPatchSender_Process_SingleRequestDeltas(t *testing.T) {
 	// Given a patch sender
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
-	store := delta.NewStore(dataDir, "localhost", maxInventoryDataSize)
+	store := delta.NewStore(dataDir, "localhost", maxInventoryDataSize, true)
 	ls := delta.NewLastSubmissionInMemory()
 
 	pdt := testhelpers.NewPostDeltaTracer(maxInventoryDataSize)
@@ -399,7 +399,7 @@ func TestPatchSender_Process_CompactEnabled(t *testing.T) {
 	// Given a patch sender with compaction enabled
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
-	store := delta.NewStore(dataDir, "localhost", maxInventoryDataSize)
+	store := delta.NewStore(dataDir, "localhost", maxInventoryDataSize, true)
 	ls := delta.NewLastSubmissionInMemory()
 
 	resetTime, _ := time.ParseDuration("24h")
@@ -433,7 +433,7 @@ func TestPatchSender_Process_Reset(t *testing.T) {
 	// Given a patch sender
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
-	store := delta.NewStore(dataDir, "localhost", maxInventoryDataSize)
+	store := delta.NewStore(dataDir, "localhost", maxInventoryDataSize, true)
 	ls := delta.NewLastSubmissionInMemory()
 
 	resetTime, _ := time.ParseDuration("24h")
@@ -552,6 +552,10 @@ func (m *mockStorage) ReadDeltas(entityKey string) ([]inventoryapi.RawDeltaBlock
 }
 
 func (m *mockStorage) UpdateState(entityKey string, deltas []*inventoryapi.RawDelta, deltaStateResults *inventoryapi.DeltaStateMap) {
+}
+
+func (m *mockStorage) IsArchiveEnabled() bool {
+	return true
 }
 
 type mockEntityIDPersist struct {

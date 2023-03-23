@@ -683,6 +683,12 @@ type Config struct {
 	// Public: Yes
 	EnableWinUpdatePlugin bool `yaml:"enable_win_update_plugin" envconfig:"enable_win_update_plugin" os:"windows"`
 
+	// InventoryArchiveEnabled When enabled, the delta storage will save each successful deltas submission into
+	// .sent files in the delta store.
+	// Default: True
+	// Public: True
+	InventoryArchiveEnabled bool `yaml:"inventory_archive_enabled" envconfig:"inventory_archive_enabled" public:"true"`
+
 	// CompactEnabled When enabled, the delta storage will be compacted after its storage directory surpasses a
 	// certain threshold set by the CompactTreshold options.	Compaction works by removing the data of inactive plugins
 	// and the archived deltas of the active plugins; archive deltas are deltas that have already been sent to the
@@ -1672,6 +1678,7 @@ func NewConfig() *Config {
 		StartupConnectionRetries:    defaultStartupConnectionRetries,
 		DisableZeroRSSFilter:        defaultDisableZeroRSSFilter,
 		DisableWinSharedWMI:         defaultDisableWinSharedWMI,
+		InventoryArchiveEnabled:     defaultInventoryArchiveEnabled,
 		CompactEnabled:              defaultCompactEnabled,
 		StripCommandLine:            DefaultStripCommandLine,
 		NetworkInterfaceFilters:     defaultNetworkInterfaceFilters,
