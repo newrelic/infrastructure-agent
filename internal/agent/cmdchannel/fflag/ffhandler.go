@@ -23,15 +23,15 @@ const (
 	FlagProtocolV4           = "protocol_v4_enabled"
 	FlagFullProcess          = "full_process_sampling"
 	FlagDmRegisterDeprecated = "dm_register_deprecated"
+	FlagFluentBit19          = "fluent_bit_19"
 	// Config
 	CfgYmlRegisterEnabled        = "register_enabled"
 	CfgYmlParallelizeInventory   = "inventory_queue_len"
 	CfgValueParallelizeInventory = int64(100) // default value when no config provided by user and FF enabled
 )
 
-var (
-	ffLogger = log.WithComponent("FeatureFlagHandler")
-)
+//nolint:gochecknoglobals
+var ffLogger = log.WithComponent("FeatureFlagHandler")
 
 type args struct {
 	Category string
@@ -131,6 +131,13 @@ func (h *handler) Handle(ctx context.Context, c commandapi.Command, isInitialFet
 
 	if ffArgs.Flag == FlagNameRegister {
 		handleRegister(ffArgs, h.cfg, isInitialFetch)
+
+		return
+	}
+
+	if ffArgs.Flag == FlagFluentBit19 {
+		// FluentBit 1.9 Feature Flag is not merged yet, but it's created in the Backend so we need to take it
+		// into account and do nothing not to be trated as an OHI FF.
 		return
 	}
 
