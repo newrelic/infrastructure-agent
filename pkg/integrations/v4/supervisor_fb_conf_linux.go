@@ -8,11 +8,11 @@ import "path/filepath"
 
 const (
 	// defaults for td-agent-bit (<=1.9).
-	defaultLoggingBinDir1 = "/opt/td-agent-bit/bin"
-	defaultFluentBitExe1  = "td-agent-bit"
+	defaultLoggingBinDir1       = "/opt/td-agent-bit/bin"
+	defaultFluentBitExecutable1 = "td-agent-bit"
 	// defaults for fluent-bit (>=2.0).
-	defaultLoggingBinDir2 = "/opt/fluent-bit/bin"
-	defaultFluentBitExe2  = "fluent-bit"
+	defaultLoggingBinDir2       = "/opt/fluent-bit/bin"
+	defaultFluentBitExecutable2 = "fluent-bit"
 )
 
 func (c *fBSupervisorConfig) defaultLoggingBinDir(ffExists bool, ffEnabled bool) string {
@@ -24,9 +24,9 @@ func (c *fBSupervisorConfig) defaultLoggingBinDir(ffExists bool, ffEnabled bool)
 }
 
 func (c *fBSupervisorConfig) defaultFluentBitExePath(ffExists bool, ffEnabled bool, loggingBinDir string) string {
-	defaultFluentBitExe := defaultFluentBitExe2
+	defaultFluentBitExe := defaultFluentBitExecutable2
 	if ffExists && ffEnabled {
-		defaultFluentBitExe = defaultFluentBitExe1
+		defaultFluentBitExe = defaultFluentBitExecutable1
 	}
 
 	return filepath.Join(loggingBinDir, defaultFluentBitExe)

@@ -23,6 +23,7 @@ func Test_defaultLoggingBinDir(t *testing.T) {
 		{
 			name:                  "no ff",
 			ffExists:              false,
+			ffEnabled:             false,
 			expectedLoggingBinDir: "C:\\some\\agent\\dir\\integrations_dir\\logging",
 		},
 		{
@@ -70,6 +71,7 @@ func Test_defaultFluentBitExePath(t *testing.T) {
 		{
 			name:            "no ff",
 			ffExists:        false,
+			ffEnabled:       false,
 			expectedExePath: "C:\\some\\agent\\dir\\integrations_dir\\logging\\fluent-bit.exe",
 		},
 		{
