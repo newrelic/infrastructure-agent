@@ -192,10 +192,19 @@
             ExeCommand="cmd /C &quot;dir /al /s &quot;[NewRelicInfraDataFolder]&quot; >nul 2>&amp;1 &quot; &amp;&amp; (EXIT /B 1) || (EXIT /B 0)"
             Execute="deferred"
             Impersonate="no" />
+
+        <!-- Duplicate CheckSymlinks action because SKIPSL flag is not available in older Windows 2012.
+             When support will be dropped for 2012 this CheckSymlinks2 can be removed and add /SKIPSL flag to takeown command.
+        -->
+        <CustomAction Id="CheckSymlinks2"
+            Directory="NewRelicInfraDataFolder"
+            ExeCommand="cmd /C &quot;dir /al /s &quot;[NewRelicInfraDataFolder]&quot; >nul 2>&amp;1 &quot; &amp;&amp; (EXIT /B 1) || (EXIT /B 0)"
+            Execute="deferred"
+            Impersonate="no" />
             
         <InstallExecuteSequence>
             <!-- Perform the check for symolic link Only on install and not on remove -->
-            <Custom Action="CheckSymlinks" After="CreateFolders">NOT REMOVE</Custom>
+            <Custom Action="CheckSymlinks2" After="CreateFolders">NOT REMOVE</Custom>
             <Custom Action="TakeOwnership" After="CheckSymlinks">NOT REMOVE</Custom>
             <Custom Action="ResetPermissions" After="TakeOwnership">NOT REMOVE</Custom>
             <Custom Action="CheckSymlinks" After="ResetPermissions">NOT REMOVE</Custom>
