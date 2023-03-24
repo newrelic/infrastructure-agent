@@ -186,7 +186,7 @@
 
         <CustomAction Id="TakeOwnership"
             Directory="NewRelicInfraDataFolder"
-            ExeCommand="cmd /C &quot;takeown /f &quot;[NewRelicInfraDataFolder]*&quot; /a /r /SKIPSL /d N >nul 2>&amp;1&quot;"
+            ExeCommand="cmd /C &quot;takeown /f &quot;[NewRelicInfraDataFolder]*&quot; /a /r /d N >nul 2>&amp;1&quot;"
             Execute="deferred"
             Impersonate="no" />
 
@@ -204,7 +204,8 @@
 
         <InstallExecuteSequence>
             <!-- Perform the check for symolic link Only on install and not on remove -->
-            <Custom Action="TakeOwnership" After="CreateFolders">NOT REMOVE</Custom>
+            <Custom Action="CheckSymlinks" After="CreateFolders">NOT REMOVE</Custom>
+            <Custom Action="TakeOwnership" After="CheckSymlinks">NOT REMOVE</Custom>
             <Custom Action="ResetPermissions" After="TakeOwnership">NOT REMOVE</Custom>
             <Custom Action="CheckSymlinks" After="ResetPermissions">NOT REMOVE</Custom>
 
