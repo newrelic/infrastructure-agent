@@ -19,10 +19,6 @@ jobs:
         with:
           go-version-file: 'go.mod'
 
-      - name: Modify go.mod version to support golangci-lint
-        shell: bash
-        run: sed -i 's/go 1\.20/go 1\.17/' go.mod
-
       - name: Running lint tests
         shell: bash
         run: make lint
