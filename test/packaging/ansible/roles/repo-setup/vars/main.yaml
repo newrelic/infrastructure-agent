@@ -1,5 +1,5 @@
 ---
-go_version: 1.19
+go_version: 1.20
 repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
 
 repos_to_clean:
