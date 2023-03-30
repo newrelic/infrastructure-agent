@@ -268,7 +268,7 @@ func NewAgent(
 
 	// Initialize the cloudDetector.
 	cloudHarvester := cloud.NewDetector(cfg.DisableCloudMetadata, cfg.CloudMaxRetryCount, cfg.CloudRetryBackOffSec, cfg.CloudMetadataExpiryInSec, cfg.CloudMetadataDisableKeepAlive)
-	cloudHarvester.Initialize()
+	cloudHarvester.Initialize(cloud.WithProvider(cloud.Type(cfg.CloudProvider)))
 
 	idLookupTable := NewIdLookup(hostnameResolver, cloudHarvester, cfg.DisplayName)
 	sampleMatchFn := sampler.NewSampleMatchFn(cfg.EnableProcessMetrics, cfg.IncludeMetricsMatchers, ffRetriever)
@@ -666,6 +666,15 @@ func (a *Agent) Run() (err error) {
 
 	go a.intervalMemoryProfile()
 
+	if cloud.Type(cfg.CloudProvider).IsValidCloud() {
+		err = a.checkInstanceIDRetry(cfg.CloudMaxRetryCount, cfg.CloudRetryBackOffSec)
+		// If the cloud provider was specified but we cannot get the instance ID, agent fails
+		if err != nil {
+			alog.WithError(err).Error("Couldn't detect the instance ID for the specified cloud")
+			return
+		}
+	}
+
 	if cfg.ConnectEnabled {
 		go a.connect()
 	}
@@ -836,6 +845,25 @@ func (a *Agent) Run() (err error) {
 			a.removeOutdatedEntities(pastPeriodReportedEntities)
 		}
 	}
+}
+
+// checkInstanceIDRetry will try to read the cloud instance ID until maxRetries is reached.
+func (a *Agent) checkInstanceIDRetry(maxRetries, backoffTime int) error {
+	var err error
+	for i := 0; i < maxRetries; i++ {
+		if _, err = a.cloudHarvester.GetInstanceID(); err == nil {
+			return nil
+		}
+
+		if i == maxRetries-1 {
+			alog.WithError(err).Debug("Couldn't get any known cloud instance ID.")
+		} else {
+			alog.WithError(err).Debugf("Failed to get the instance ID, retrying in %d s.", backoffTime)
+			time.Sleep(time.Duration(backoffTime) * time.Second)
+		}
+	}
+
+	return fmt.Errorf("failed to get an instance ID after %d retries: %w", maxRetries, err)
 }
 
 func (a *Agent) cpuProfileStart() *os.File {
