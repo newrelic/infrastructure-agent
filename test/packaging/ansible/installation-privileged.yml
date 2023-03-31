@@ -14,6 +14,7 @@
     - name: Installation tests suite
       vars:
         agent_user: "nri-agent"
+        bin_mode: "0754"
         env_vars:
           NRIA_MODE: PRIVILEGED
 
