@@ -841,6 +841,29 @@ func TestCompactStoreRemoveUnusedPlugin(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestStoreNotArchiving(t *testing.T) {
+	const eKey = "entity:ID"
+	s := SetUpTest(t)
+	defer s.TearDownTest()
+
+	ds := s.SetupSavedState(t)
+	ds.archiveEnabled = false
+	ds.plugins["metadata/plugin"].setLastSentID(eKey, 2)
+	origSize, err := ds.StorageSize(ds.CacheDir)
+	require.NoError(t, err)
+
+	err = ds.archivePlugin(ds.plugins["metadata/plugin"], eKey)
+	require.NoError(t, err)
+
+	require.NoError(t, err)
+	newSize, err := ds.StorageSize(ds.CacheDir)
+	require.NoError(t, err)
+	assert.Less(t, newSize, origSize)
+
+	exists := exists(filepath.Join(ds.CacheDir, "metadata/entityID/plugin.sent"))
+	assert.False(t, exists, "expected .sent file to not exist")
+}
+
 func TestDeltaFileCorrupt(t *testing.T) {
 	s := SetUpTest(t)
 	defer s.TearDownTest()
