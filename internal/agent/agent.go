@@ -441,8 +441,9 @@ func New(
 			SendInterval:      cfg.SendInterval,
 			FirstReapInterval: cfg.FirstReapInterval,
 			ReapInterval:      cfg.ReapInterval,
+			InventoryQueueLen: cfg.InventoryQueueLen,
 		}
-		a.inventoryHandler = inventory.NewInventoryHandler(inventoryHandlerCfg, patcher)
+		a.inventoryHandler = inventory.NewInventoryHandler(ctx.Ctx, inventoryHandlerCfg, patcher)
 		a.Context.pluginOutputHandleFn = a.inventoryHandler.Handle
 		a.Context.updateIDLookupTableFn = a.updateIDLookupTable
 	}

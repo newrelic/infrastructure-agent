@@ -19,6 +19,7 @@ type HandlerConfig struct {
 	FirstReapInterval time.Duration
 	ReapInterval      time.Duration
 	SendInterval      time.Duration
+	InventoryQueueLen int
 }
 
 // Handler maintains the infrastructure inventory in an updated state.
@@ -41,13 +42,13 @@ type Handler struct {
 }
 
 // NewInventoryHandler returns a new instances of an inventory.Handler.
-func NewInventoryHandler(cfg HandlerConfig, patcher Patcher) *Handler {
-	ctx, cancelFn := context2.WithCancel(context2.Background())
+func NewInventoryHandler(ctx context2.Context, cfg HandlerConfig, patcher Patcher) *Handler {
+	ctx2, cancelFn := context2.WithCancel(ctx)
 
 	return &Handler{
 		cfg:         cfg,
-		dataCh:      make(chan types.PluginOutput, 0),
-		ctx:         ctx,
+		dataCh:      make(chan types.PluginOutput, cfg.InventoryQueueLen),
+		ctx:         ctx2,
 		cancelFn:    cancelFn,
 		patcher:     patcher,
 		initialReap: true,

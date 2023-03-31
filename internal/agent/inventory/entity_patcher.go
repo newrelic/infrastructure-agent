@@ -60,7 +60,10 @@ func (ep *EntityPatcher) Send() error {
 }
 
 func (ep *EntityPatcher) Reap() {
-	for key := range ep.entities {
+	for key, inventory := range ep.entities {
+		if !inventory.needsReaping {
+			continue
+		}
 		ep.reapEntity(key)
 	}
 }
