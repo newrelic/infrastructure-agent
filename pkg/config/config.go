@@ -1670,6 +1670,7 @@ func NewConfig() *Config {
 		DMSubmissionPeriod:            DefaultDMPeriodSecs,
 		ProxyConfigPlugin:             defaultProxyConfigPlugin,
 		ProxyValidateCerts:            defaultProxyValidateCerts,
+		CloudProvider:                 defaultCloudProvider,
 		CloudRetryBackOffSec:          defaultCloudRetryBackOffSec,
 		CloudMaxRetryCount:            defaultCloudMaxRetryCount,
 		CloudMetadataDisableKeepAlive: defaultCloudMetadataDisableKeepAlive,
@@ -2160,9 +2161,9 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	nlog.WithField("IgnoreReclaimable", cfg.IgnoreReclaimable).Debug("Ignoring reclaimable memory.")
 
 	// CloudType default value if cloud is unknown
-	if !cloud.Type(cfg.CloudProvider).IsValidCloud() {
-		nlog.WithField("CloudType", cfg.CloudProvider).Warn("Cloud type not valid or not set. Defaulting to no cloud.")
-		cfg.CloudProvider = string(cloud.TypeNoCloud)
+	if cfg.CloudProvider != "" && !cloud.Type(cfg.CloudProvider).IsValidCloud() {
+		nlog.WithField("CloudType", cfg.CloudProvider).Warn("Invalid cloud provider.")
+		cfg.CloudProvider = defaultCloudProvider
 	}
 
 	// CloudMaxRetryCount default value defined in NewConfig

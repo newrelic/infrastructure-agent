@@ -3,6 +3,9 @@ name: .. 🚧 macOS | Run unit tests
 on:
   workflow_call:
 
+env:
+  CI: true
+
 jobs:
   unit-test-macos:
     name: unit tests

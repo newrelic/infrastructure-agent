@@ -850,12 +850,12 @@ func (a *Agent) Run() (err error) {
 // checkInstanceIDRetry will try to read the cloud instance ID until maxRetries is reached.
 func (a *Agent) checkInstanceIDRetry(maxRetries, backoffTime int) error {
 	var err error
-	for i := 0; i < maxRetries; i++ {
+	for i := 0; i <= maxRetries; i++ {
 		if _, err = a.cloudHarvester.GetInstanceID(); err == nil {
 			return nil
 		}
 
-		if i == maxRetries-1 {
+		if i >= maxRetries-1 {
 			alog.WithError(err).Debug("Couldn't get any known cloud instance ID.")
 		} else {
 			alog.WithError(err).Debugf("Failed to get the instance ID, retrying in %d s.", backoffTime)
