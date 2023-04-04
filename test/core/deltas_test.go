@@ -5,6 +5,9 @@ package core
 import (
 	"bytes"
 	context2 "context"
+	agentTypes "github.com/newrelic/infrastructure-agent/internal/agent/types"
+	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
 	"github.com/stretchr/testify/suite"
 	"io/ioutil"
 	"net/http"
@@ -490,27 +493,43 @@ func (s *InventoryTestSuite) TestDeltas_HarvestAfterStoreCleanup() {
 	})
 }
 
-//func (s *InventoryTestSuite) TestDeltas_UpdateIDLookupTable() {
-//	t := s.T()
-//
-//	const timeout = 5 * time.Second
-//
-//	// Given an agent
-//	testClient := ihttp.NewRequestRecorderClient(
-//		ihttp.AcceptedResponse("metadata/attributes", 1),
-//		ihttp.ResetDeltasResponse("test/dummy"))
-//
-//	a := infra.NewAgent(testClient.Client, func(cfg *config.Config) {
-//		cfg.CustomAttributes = config.CustomAttributeMap{
-//			"some":      "attr",
-//			"someother": "other_attr",
-//		}
-//		cfg.Log.Level = config.LogLevelDebug
-//		cfg.InventorySendBulk = s.SendBulkEnabled
-//	})
-//	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
-//
-//}
+func (s *InventoryTestSuite) TestDeltas_UpdateIDLookupTable() {
+	t := s.T()
+
+	// Given an agent
+	testClient := ihttp.NewRequestRecorderClient(
+		ihttp.AcceptedResponse("metadata/attributes", 1),
+		ihttp.ResetDeltasResponse("test/dummy"))
+
+	a := infra.NewAgent(testClient.Client, func(cfg *config.Config) {
+		cfg.CustomAttributes = config.CustomAttributeMap{
+			"some":      "attr",
+			"someother": "other_attr",
+		}
+		cfg.Log.Level = config.LogLevelDebug
+		cfg.InventorySendBulk = s.SendBulkEnabled
+	})
+
+	go a.Run()
+	defer a.Terminate()
+
+	dataset := agentTypes.PluginInventoryDataset{}
+	dataset = append(dataset, sysinfo.HostAliases{
+		Alias:  "hostName.com",
+		Source: sysinfo.HOST_SOURCE_HOSTNAME,
+	})
+	dataset = append(dataset, sysinfo.HostAliases{
+		Alias:  "instanceId",
+		Source: sysinfo.HOST_SOURCE_INSTANCE_ID,
+	})
+	dataset = append(dataset, sysinfo.HostAliases{
+		Alias:  "hostName",
+		Source: sysinfo.HOST_SOURCE_HOSTNAME_SHORT,
+	})
+	a.Context.SendData(agentTypes.NewPluginOutput(ids.PluginID{Category: "metadata", Term: "host_aliases"}, entity.NewWithoutID("test"), dataset))
+
+	assert.Equal(t, "instanceId", a.Context.EntityKey())
+}
 
 func BenchmarkInventoryProcessingPipeline(b *testing.B) {
 	const timeout = 5 * time.Second

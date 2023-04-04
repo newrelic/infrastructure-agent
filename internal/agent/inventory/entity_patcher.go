@@ -65,6 +65,7 @@ func (ep *EntityPatcher) Reap() {
 			continue
 		}
 		ep.reapEntity(key)
+		inventory.needsReaping = false
 	}
 }
 
