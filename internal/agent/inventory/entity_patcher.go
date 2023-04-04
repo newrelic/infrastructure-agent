@@ -80,7 +80,7 @@ func (ep *EntityPatcher) Reap() {
 func (ep *EntityPatcher) Save(data types.PluginOutput) error {
 	ep.m.Lock()
 	defer ep.m.Unlock()
-	
+
 	if data.NotApplicable {
 		return nil
 	}
