@@ -55,9 +55,9 @@ func (ep *EntityPatcher) Send() error {
 		ep.m.Unlock()
 	}
 
+	ep.m.Lock()
 	senders := make([]PatchSender, len(ep.entities))
 
-	ep.m.Lock()
 	i := 0
 	for _, inventory := range ep.entities {
 		senders[i] = inventory.sender
