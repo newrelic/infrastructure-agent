@@ -14,6 +14,7 @@ type PatchSenderProviderFunc func(entity.Entity) (PatchSender, error)
 
 type EntityPatcher struct {
 	m sync.Mutex
+
 	BasePatcher
 	entities map[entity.Key]struct {
 		sender       PatchSender
@@ -47,17 +48,25 @@ func NewEntityPatcher(cfg PatcherConfig, deltaStore *delta.Store, patchSenderPro
 }
 
 func (ep *EntityPatcher) Send() error {
-	ep.m.Lock()
-	defer ep.m.Unlock()
-
 	if ep.needsCleanup() {
+		ep.m.Lock()
 		ep.seenEntities = make(map[entity.Key]struct{})
 		ep.cleanOutdatedEntities()
+		ep.m.Unlock()
 	}
 
+	senders := make([]PatchSender, len(ep.entities))
+
+	ep.m.Lock()
+	i := 0
 	for _, inventory := range ep.entities {
-		err := inventory.sender.Process()
-		if err != nil {
+		senders[i] = inventory.sender
+		i++
+	}
+	ep.m.Unlock()
+
+	for _, sender := range senders {
+		if err := sender.Process(); err != nil {
 			return err
 		}
 	}

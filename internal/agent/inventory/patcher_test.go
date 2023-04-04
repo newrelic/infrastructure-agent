@@ -23,7 +23,7 @@ func TestPatcher_NeedsCleanup_NeverCleaned(t *testing.T) {
 
 func TestPatcher_NeedsCleanup_DefaultRemoveEntitiesPeriodExceeded(t *testing.T) {
 	b := BasePatcher{
-		lastClean: time.Now().Add(-defaultRemoveEntitiesPeriod),
+		lastClean: time.Now().Add(-defaultRemoveEntitiesPeriod + 1),
 	}
 	assert.True(t, b.needsCleanup())
 	assert.False(t, b.needsCleanup())
