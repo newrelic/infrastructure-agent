@@ -431,9 +431,12 @@ func New(
 	a.Context.activeEntities = make(chan string, activeEntitiesBufferLength)
 
 	if cfg.InventorySendBulk {
+		removeEntitiesPeriod, _ := time.ParseDuration(a.Context.Config().RemoveEntitiesPeriod)
+
 		patcherConfig := inventory.PatcherConfig{
-			IgnoredPaths: cfg.IgnoredInventoryPathsMap,
-			AgentEntity:  entity.NewFromNameWithoutID(a.Context.EntityKey()),
+			IgnoredPaths:         cfg.IgnoredInventoryPathsMap,
+			AgentEntity:          entity.NewFromNameWithoutID(a.Context.EntityKey()),
+			RemoveEntitiesPeriod: removeEntitiesPeriod,
 		}
 		patcher := inventory.NewEntityPatcher(patcherConfig, s, a.newPatchSender)
 
@@ -754,11 +757,6 @@ func (a *Agent) Run() (err error) {
 		a.exitGracefully()
 
 		close(exit)
-
-		// Should not reach here, just a guard.
-		//<-time.After(service.GracefulExitTimeout)
-		//log.Warn("graceful stop time exceeded... forcing stop")
-		//os.Exit(0)
 	}()
 
 	if a.inventoryHandler != nil {
