@@ -6,12 +6,14 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
+	"sync"
 	"time"
 )
 
 type PatchSenderProviderFunc func(entity.Entity) (PatchSender, error)
 
 type EntityPatcher struct {
+	m sync.Mutex
 	BasePatcher
 	entities map[entity.Key]struct {
 		sender       PatchSender
@@ -45,6 +47,9 @@ func NewEntityPatcher(cfg PatcherConfig, deltaStore *delta.Store, patchSenderPro
 }
 
 func (ep *EntityPatcher) Send() error {
+	ep.m.Lock()
+	defer ep.m.Unlock()
+
 	if ep.needsCleanup() {
 		ep.seenEntities = make(map[entity.Key]struct{})
 		ep.cleanOutdatedEntities()
@@ -60,6 +65,9 @@ func (ep *EntityPatcher) Send() error {
 }
 
 func (ep *EntityPatcher) Reap() {
+	ep.m.Lock()
+	defer ep.m.Unlock()
+
 	for key, inventory := range ep.entities {
 		if !inventory.needsReaping {
 			continue
@@ -70,6 +78,9 @@ func (ep *EntityPatcher) Reap() {
 }
 
 func (ep *EntityPatcher) Save(data types.PluginOutput) error {
+	ep.m.Lock()
+	defer ep.m.Unlock()
+	
 	if data.NotApplicable {
 		return nil
 	}
