@@ -21,7 +21,7 @@ func TestCleanOutdatedEntities(t *testing.T) {
 	dataDir, err := ioutil.TempDir("", "prefix")
 	require.NoError(t, err)
 
-	deltaStore := delta.NewStore(dataDir, "default", 1024)
+	deltaStore := delta.NewStore(dataDir, "default", 1024, false)
 
 	defer os.RemoveAll(deltaStore.DataDir)
 

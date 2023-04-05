@@ -59,7 +59,7 @@ func TestPatcher_Save(t *testing.T) {
 	dataDir, err := ioutil.TempDir("", "prefix")
 	require.NoError(t, err)
 
-	deltaStore := delta.NewStore(dataDir, "default", 1024)
+	deltaStore := delta.NewStore(dataDir, "default", 1024, false)
 
 	b := BasePatcher{
 		cfg:        PatcherConfig{},
@@ -101,7 +101,7 @@ func TestPatcher_SaveIgnored(t *testing.T) {
 	dataDir, err := ioutil.TempDir("", "prefix")
 	require.NoError(t, err)
 
-	deltaStore := delta.NewStore(dataDir, "default", 1024)
+	deltaStore := delta.NewStore(dataDir, "default", 1024, false)
 
 	b := BasePatcher{
 		cfg: PatcherConfig{
