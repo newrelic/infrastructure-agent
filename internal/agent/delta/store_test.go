@@ -74,7 +74,7 @@ func TestNewDeltaStoreGolden(t *testing.T) {
 	defer os.RemoveAll(dataDir)
 
 	repoDir := filepath.Join(dataDir, "delta")
-	ds := NewStore(repoDir, "default", maxInventorySize)
+	ds := NewStore(repoDir, "default", maxInventorySize, true)
 	assert.NotNil(t, ds)
 }
 
@@ -84,7 +84,7 @@ func TestStorageSize(t *testing.T) {
 	defer os.RemoveAll(dataDir)
 
 	repoDir := filepath.Join(dataDir, "delta")
-	ds := NewStore(repoDir, "default", maxInventorySize)
+	ds := NewStore(repoDir, "default", maxInventorySize, true)
 
 	size, _ := ds.StorageSize(ds.CacheDir)
 	assert.Equal(t, uint64(0), size)
@@ -135,7 +135,7 @@ func assertSuffix(t *testing.T, expected string, actual string) bool {
 func TestArchiveFilePath(t *testing.T) {
 	s := SetUpTest(t)
 	defer s.TearDownTest()
-	ds := NewStore(s.repoDir, "default", maxInventorySize)
+	ds := NewStore(s.repoDir, "default", maxInventorySize, true)
 
 	actual := ds.archiveFilePath(s.plugin, "entity:id")
 	expected := filepath.Join("delta", ".delta_repo", "metadata", "entityid", "plugin.sent")
@@ -145,7 +145,7 @@ func TestArchiveFilePath(t *testing.T) {
 func TestDeltaFilePath(t *testing.T) {
 	s := SetUpTest(t)
 	defer s.TearDownTest()
-	ds := NewStore(s.repoDir, "default", maxInventorySize)
+	ds := NewStore(s.repoDir, "default", maxInventorySize, true)
 
 	actual := ds.DeltaFilePath(s.plugin, "entity:id:2")
 	expected := filepath.Join("delta", ".delta_repo", "metadata", "entityid2", "plugin.pending")
@@ -155,7 +155,7 @@ func TestDeltaFilePath(t *testing.T) {
 func TestCachedFilePath(t *testing.T) {
 	s := SetUpTest(t)
 	defer s.TearDownTest()
-	ds := NewStore(s.repoDir, "default", maxInventorySize)
+	ds := NewStore(s.repoDir, "default", maxInventorySize, true)
 
 	actual := ds.cachedFilePath(s.plugin, "hello!!everybody")
 	expected := filepath.Join("delta", ".delta_repo", "metadata", "hello!!everybody", "plugin.json")
@@ -165,7 +165,7 @@ func TestCachedFilePath(t *testing.T) {
 func TestSourceFilePath(t *testing.T) {
 	s := SetUpTest(t)
 	defer s.TearDownTest()
-	ds := NewStore(s.repoDir, "default", maxInventorySize)
+	ds := NewStore(s.repoDir, "default", maxInventorySize, true)
 
 	actual := ds.SourceFilePath(s.plugin, "xxxx")
 	expected := filepath.Join("delta", "metadata", "xxxx", "plugin.json")
@@ -175,7 +175,7 @@ func TestSourceFilePath(t *testing.T) {
 func TestArchiveFilePath_localEntity(t *testing.T) {
 	s := SetUpTest(t)
 	defer s.TearDownTest()
-	ds := NewStore(s.repoDir, "my-hostname", maxInventorySize)
+	ds := NewStore(s.repoDir, "my-hostname", maxInventorySize, true)
 
 	actual := ds.archiveFilePath(s.plugin, "")
 	expected := filepath.Join("delta", ".delta_repo", "metadata", localEntityFolder, "plugin.sent")
@@ -185,7 +185,7 @@ func TestArchiveFilePath_localEntity(t *testing.T) {
 func TestDeltaFilePath_localEntity(t *testing.T) {
 	s := SetUpTest(t)
 	defer s.TearDownTest()
-	ds := NewStore(s.repoDir, "my-hostname", maxInventorySize)
+	ds := NewStore(s.repoDir, "my-hostname", maxInventorySize, true)
 
 	actual := ds.DeltaFilePath(s.plugin, "")
 	expected := filepath.Join("delta", ".delta_repo", "metadata", localEntityFolder, "plugin.pending")
@@ -195,7 +195,7 @@ func TestDeltaFilePath_localEntity(t *testing.T) {
 func TestCachedFilePath_localEntity(t *testing.T) {
 	s := SetUpTest(t)
 	defer s.TearDownTest()
-	ds := NewStore(s.repoDir, "my-hostname", maxInventorySize)
+	ds := NewStore(s.repoDir, "my-hostname", maxInventorySize, true)
 
 	actual := ds.cachedFilePath(s.plugin, "")
 	expected := filepath.Join("delta", ".delta_repo", "metadata", localEntityFolder, "plugin.json")
@@ -205,7 +205,7 @@ func TestCachedFilePath_localEntity(t *testing.T) {
 func TestSourceFilePath_localEntity(t *testing.T) {
 	s := SetUpTest(t)
 	defer s.TearDownTest()
-	ds := NewStore(s.repoDir, "my-hostname", maxInventorySize)
+	ds := NewStore(s.repoDir, "my-hostname", maxInventorySize, true)
 
 	actual := ds.SourceFilePath(s.plugin, "")
 	expected := filepath.Join("delta", "metadata", localEntityFolder, "plugin.json")
@@ -215,7 +215,7 @@ func TestSourceFilePath_localEntity(t *testing.T) {
 func TestBaseDirectories(t *testing.T) {
 	s := SetUpTest(t)
 	defer s.TearDownTest()
-	ds := NewStore(s.repoDir, "default", maxInventorySize)
+	ds := NewStore(s.repoDir, "default", maxInventorySize, true)
 
 	assert.Equal(t, s.repoDir, ds.DataDir)
 	assert.Equal(t, filepath.Join(s.repoDir, CACHE_DIR), ds.CacheDir)
@@ -225,7 +225,7 @@ func TestResetAllSentDeltas(t *testing.T) {
 	s := SetUpTest(t)
 	defer s.TearDownTest()
 	const eKey = "entityKey"
-	ds := NewStore(s.repoDir, "default", maxInventorySize)
+	ds := NewStore(s.repoDir, "default", maxInventorySize, true)
 	srcFile := ds.SourceFilePath(s.plugin, eKey)
 	err := os.MkdirAll(filepath.Dir(srcFile), 0755)
 	require.NoError(t, err)
@@ -251,7 +251,7 @@ func TestResetAllSentDeltas(t *testing.T) {
 func TestUpdateLastDeltaSentNoHint(t *testing.T) {
 	s := SetUpTest(t)
 	defer s.TearDownTest()
-	ds := NewStore(s.repoDir, "default", maxInventorySize)
+	ds := NewStore(s.repoDir, "default", maxInventorySize, true)
 	s.plugin.setDeltaID("entityKey", 1)
 	ds.plugins["metadata/plugin"] = s.plugin
 	diff := make(map[string]interface{})
@@ -274,7 +274,7 @@ func TestUpdateLastDeltaSentNoHint(t *testing.T) {
 func TestUpdateLastDeltaSentNewDelta(t *testing.T) {
 	s := SetUpTest(t)
 	defer s.TearDownTest()
-	ds := NewStore(s.repoDir, "default", maxInventorySize)
+	ds := NewStore(s.repoDir, "default", maxInventorySize, true)
 	s.plugin.setDeltaID("entityKey", 1)
 	ds.plugins["metadata/plugin"] = s.plugin
 	diff := make(map[string]interface{})
@@ -301,7 +301,7 @@ func TestUpdateLastDeltaSentNewDelta(t *testing.T) {
 func TestUpdateLastDeltaSentHintResend(t *testing.T) {
 	s := SetUpTest(t)
 	defer s.TearDownTest()
-	ds := NewStore(s.repoDir, "default", maxInventorySize)
+	ds := NewStore(s.repoDir, "default", maxInventorySize, true)
 	s.plugin.setDeltaID("entityKey", 1)
 	ds.plugins["metadata/plugin"] = s.plugin
 	diff := make(map[string]interface{})
@@ -328,7 +328,7 @@ func TestUpdateLastDeltaSentHintResend(t *testing.T) {
 func TestUpdateLastDeltaSentHintRequestOlder(t *testing.T) {
 	s := SetUpTest(t)
 	defer s.TearDownTest()
-	ds := NewStore(s.repoDir, "default", maxInventorySize)
+	ds := NewStore(s.repoDir, "default", maxInventorySize, true)
 	s.plugin.setDeltaID("entityKey", 1)
 	ds.plugins["metadata/plugin"] = s.plugin
 	diff := make(map[string]interface{})
@@ -356,7 +356,7 @@ func TestUpdateLastDeltaSentHintRequestOlder(t *testing.T) {
 func TestUpdateLastDeltaSentHintIsSameAsDelta(t *testing.T) {
 	s := SetUpTest(t)
 	defer s.TearDownTest()
-	ds := NewStore(s.repoDir, "default", maxInventorySize)
+	ds := NewStore(s.repoDir, "default", maxInventorySize, true)
 	s.plugin.setDeltaID("entityKey", 1)
 	ds.plugins["metadata/plugin"] = s.plugin
 	diff := make(map[string]interface{})
@@ -386,7 +386,7 @@ func TestUpdatePluginInventoryCacheFirstRunGP(t *testing.T) {
 	defer s.TearDownTest()
 	const eKey = "entity:ID"
 
-	ds := NewStore(s.repoDir, "default", maxInventorySize)
+	ds := NewStore(s.repoDir, "default", maxInventorySize, true)
 	srcFile := ds.SourceFilePath(s.plugin, eKey)
 	err := os.MkdirAll(filepath.Dir(srcFile), 0755)
 	require.NoError(t, err)
@@ -412,7 +412,7 @@ func TestUpdatePluginInventoryCacheThreeChanges(t *testing.T) {
 	defer s.TearDownTest()
 	const eKey = "entity:ID"
 
-	ds := NewStore(s.repoDir, "default", maxInventorySize)
+	ds := NewStore(s.repoDir, "default", maxInventorySize, true)
 	srcFile := ds.SourceFilePath(s.plugin, eKey)
 	err := os.MkdirAll(filepath.Dir(srcFile), 0755)
 	require.NoError(t, err)
@@ -449,7 +449,7 @@ func TestSaveState(t *testing.T) {
 	defer s.TearDownTest()
 	const eKey = "entity:ID"
 
-	ds := NewStore(s.repoDir, "default", maxInventorySize)
+	ds := NewStore(s.repoDir, "default", maxInventorySize, true)
 	srcFile := ds.SourceFilePath(s.plugin, eKey)
 	err := os.MkdirAll(filepath.Dir(srcFile), 0755)
 	require.NoError(t, err)
@@ -497,7 +497,7 @@ func TestReadPluginIDMapNoContent(t *testing.T) {
 	defer s.TearDownTest()
 	const eKey = "entity:ID"
 
-	ds := NewStore(s.repoDir, "default", maxInventorySize)
+	ds := NewStore(s.repoDir, "default", maxInventorySize, true)
 	srcFile := ds.SourceFilePath(s.plugin, eKey)
 	err := os.MkdirAll(filepath.Dir(srcFile), 0755)
 	require.NoError(t, err)
@@ -539,7 +539,7 @@ func TestReadDeltas(t *testing.T) {
 	s := SetUpTest(t)
 	defer s.TearDownTest()
 	// Given a delta file store
-	ds := NewStore(s.repoDir, "default", maxInventorySize)
+	ds := NewStore(s.repoDir, "default", maxInventorySize, true)
 
 	// When a delta source file is created for an entity
 	const eKey = "entity:ID"
@@ -571,7 +571,7 @@ func TestReadDeltas_SamePluginWithMultipleEntitiesIncreaseIDIndependently(t *tes
 	s := SetUpTest(t)
 	defer s.TearDownTest()
 	// Given a delta file store
-	ds := NewStore(s.repoDir, "default", maxInventorySize)
+	ds := NewStore(s.repoDir, "default", maxInventorySize, true)
 
 	// When a delta source file is created for an entity
 	const e1 = "entity:ID1"
@@ -632,7 +632,7 @@ func TestReadDeltas_Divided(t *testing.T) {
 	}
 
 	// And a storer whose max inventory size is lower than the sum of the 3 (each one occupies ~150 bytes)
-	ds := NewStore(s.repoDir, "default", 350)
+	ds := NewStore(s.repoDir, "default", 350, true)
 
 	var updated bool
 	// And the deltas have been correctly stored
@@ -686,7 +686,7 @@ func TestReadDeltas_Undivided(t *testing.T) {
 	}
 
 	// And a storer whose max inventory size higher than the sum of the 3
-	ds := NewStore(s.repoDir, "default", maxInventorySize)
+	ds := NewStore(s.repoDir, "default", maxInventorySize, true)
 
 	var updated bool
 	// And the deltas have been correctly stored
@@ -728,7 +728,7 @@ func TestReadDeltas_Undivided(t *testing.T) {
 func (d *DeltaUtilsCoreSuite) SetupSavedState(t *testing.T) (ds *Store) {
 	const eKey = "entity:ID"
 
-	ds = NewStore(d.repoDir, "default", maxInventorySize)
+	ds = NewStore(d.repoDir, "default", maxInventorySize, true)
 	srcFile := ds.SourceFilePath(d.plugin, eKey)
 	err := os.MkdirAll(filepath.Dir(srcFile), 0755)
 	require.NoError(t, err)
@@ -841,11 +841,34 @@ func TestCompactStoreRemoveUnusedPlugin(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestStoreNotArchiving(t *testing.T) {
+	const eKey = "entity:ID"
+	s := SetUpTest(t)
+	defer s.TearDownTest()
+
+	ds := s.SetupSavedState(t)
+	ds.archiveEnabled = false
+	ds.plugins["metadata/plugin"].setLastSentID(eKey, 2)
+	origSize, err := ds.StorageSize(ds.CacheDir)
+	require.NoError(t, err)
+
+	err = ds.archivePlugin(ds.plugins["metadata/plugin"], eKey)
+	require.NoError(t, err)
+
+	require.NoError(t, err)
+	newSize, err := ds.StorageSize(ds.CacheDir)
+	require.NoError(t, err)
+	assert.Less(t, newSize, origSize)
+
+	exists := exists(filepath.Join(ds.CacheDir, "metadata/entityID/plugin.sent"))
+	assert.False(t, exists, "expected .sent file to not exist")
+}
+
 func TestDeltaFileCorrupt(t *testing.T) {
 	s := SetUpTest(t)
 	defer s.TearDownTest()
 	const eKey = "entity:ID"
-	ds := NewStore(s.repoDir, "default", maxInventorySize)
+	ds := NewStore(s.repoDir, "default", maxInventorySize, true)
 	srcFile := ds.SourceFilePath(s.plugin, eKey)
 	err := os.MkdirAll(filepath.Dir(srcFile), 0755)
 	require.NoError(t, err)
@@ -930,7 +953,7 @@ func TestRemoveEntity(t *testing.T) {
 	for _, dir := range directories {
 		assert.NoError(t, os.MkdirAll(dir.path, 0755))
 	}
-	store := NewStore(baseDir, "default", maxInventorySize)
+	store := NewStore(baseDir, "default", maxInventorySize, true)
 
 	// When removing data from a given entity:
 	_ = store.RemoveEntityFolders(entityToRemove)
@@ -972,7 +995,7 @@ func TestScanEntityFolders(t *testing.T) {
 	for _, dir := range directories {
 		assert.NoError(t, os.MkdirAll(dir.path, 0755))
 	}
-	store := NewStore(baseDir, "default", maxInventorySize)
+	store := NewStore(baseDir, "default", maxInventorySize, true)
 
 	// When fetching all the entities
 	entities, err := store.ScanEntityFolders()
@@ -1011,7 +1034,7 @@ func TestCollectPluginFiles(t *testing.T) {
 		require.NoError(t, err)
 		file.Close()
 	}
-	store := NewStore(baseDir, "default", maxInventorySize)
+	store := NewStore(baseDir, "default", maxInventorySize, true)
 
 	// When collecting all the plugins of a given entity
 	plugins, err := store.collectPluginFiles(store.DataDir, anEntity, helpers.JsonFilesRegexp)
@@ -1053,7 +1076,7 @@ func TestUpdatePluginInventoryCacheDeltaFileCorrupted(t *testing.T) {
 		cacheJSON := filepath.Join(cacheDir, "corrupted.json")
 
 		// And a delta storage
-		ds := NewStore(dataDir, "default", maxInventorySize)
+		ds := NewStore(dataDir, "default", maxInventorySize, true)
 		require.NoError(t, os.MkdirAll(sourceDir, 0755))
 		require.NoError(t, os.MkdirAll(cacheDir, 0755))
 		require.NoError(t, ioutil.WriteFile(sourceJSON, testCase["source"], 0644))
@@ -1094,7 +1117,7 @@ func TestDeltaRoot_WithCorruptedFile_StartFresh(t *testing.T) {
 	assert.NoError(t, err)
 
 	// WHEN the data store is create
-	ds := NewStore(dataPath, "default", maxInventorySize)
+	ds := NewStore(dataPath, "default", maxInventorySize, true)
 	assert.NotNil(t, ds)
 
 	// THEN check that the corrupted json file has been deleted

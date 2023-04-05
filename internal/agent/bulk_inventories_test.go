@@ -101,7 +101,7 @@ func TestInventories(t *testing.T) {
 	// Given a delta store
 	dataDir, err := ioutil.TempDir("", "test_inventories")
 	assert.Nil(t, err)
-	store := delta.NewStore(dataDir, "default", maxInventoryDataSize)
+	store := delta.NewStore(dataDir, "default", maxInventoryDataSize, true)
 
 	// And a set of registered entities
 	inv := map[string]*inventory{
@@ -157,7 +157,7 @@ func TestInventories_BulkPatchProcess(t *testing.T) {
 	// Given a delta store
 	dataDir, err := ioutil.TempDir("", "test_inventories")
 	assert.Nil(t, err)
-	store := delta.NewStore(dataDir, "default", maxInventoryDataSize)
+	store := delta.NewStore(dataDir, "default", maxInventoryDataSize, true)
 
 	// And a set of registered entities
 	inv := map[string]*inventory{
@@ -217,7 +217,7 @@ func TestInventories_NoDeltas(t *testing.T) {
 	// Given a delta store
 	dataDir, err := ioutil.TempDir("", "no_deltas")
 	assert.Nil(t, err)
-	store := delta.NewStore(dataDir, "default", maxInventoryDataSize)
+	store := delta.NewStore(dataDir, "default", maxInventoryDataSize, true)
 
 	// And a set of registered entities
 	inv := map[string]*inventory{
@@ -246,7 +246,7 @@ func TestInventories_ResetAll(t *testing.T) {
 	// Given a delta store
 	dataDir, err := ioutil.TempDir("", "reset_all")
 	assert.Nil(t, err)
-	store := delta.NewStore(dataDir, "default", maxInventoryDataSize)
+	store := delta.NewStore(dataDir, "default", maxInventoryDataSize, true)
 
 	// And a set of registered entities
 	inv := map[string]*inventory{
@@ -288,7 +288,7 @@ func TestInventories_Compacting(t *testing.T) {
 	// Given a delta store
 	dataDir, err := ioutil.TempDir("", "reset_all")
 	assert.Nil(t, err)
-	store := delta.NewStore(dataDir, "default", maxInventoryDataSize)
+	store := delta.NewStore(dataDir, "default", maxInventoryDataSize, true)
 
 	// And a set of registered entities
 	inv := map[string]*inventory{

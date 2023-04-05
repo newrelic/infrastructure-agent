@@ -68,7 +68,7 @@ func NewAgentWithConnectClientAndConfig(connectClient *http.Client, dataClient b
 		}
 	}
 	dataDir := filepath.Join(cfg.AgentDir, "data")
-	st := delta.NewStore(dataDir, "default", cfg.MaxInventorySize)
+	st := delta.NewStore(dataDir, "default", cfg.MaxInventorySize, cfg.InventoryArchiveEnabled)
 
 	cloudDetector := cloud.NewDetector(true, 0, 0, 0, false)
 
