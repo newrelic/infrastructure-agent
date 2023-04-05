@@ -86,6 +86,7 @@ type Storage interface {
 	ResetAllDeltas(entityKey string)
 	UpdateState(entityKey string, deltas []*inventoryapi.RawDelta, deltaStateResults *inventoryapi.DeltaStateMap)
 	SaveState() (err error)
+	IsArchiveEnabled() bool
 }
 
 // Store handles information about the storage of Deltas.
@@ -103,10 +104,12 @@ type Store struct {
 	plugins pluginSource2Info
 	// stores time of last success submission of inventory to backend
 	lastSuccessSubmission time.Time
+	// if enabled, will save archive deltas in .sent files
+	archiveEnabled bool
 }
 
 // NewStore creates a new Store and returns a pointer to it. If maxInventorySize <= 0, the inventory splitting is disabled
-func NewStore(dataDir string, defaultEntityKey string, maxInventorySize int) *Store {
+func NewStore(dataDir string, defaultEntityKey string, maxInventorySize int, archiveEnabled bool) *Store {
 	if defaultEntityKey == "" {
 		slog.Error("creating delta store: default entity ID can't be empty")
 		panic("default entity ID can't be empty")
@@ -118,6 +121,7 @@ func NewStore(dataDir string, defaultEntityKey string, maxInventorySize int) *St
 		maxInventorySize: maxInventorySize,
 		defaultEntityKey: defaultEntityKey,
 		plugins:          make(pluginSource2Info),
+		archiveEnabled:   archiveEnabled,
 	}
 
 	// Nice2Have: remove side effects from constructor
@@ -309,9 +313,11 @@ func (s *Store) archivePlugin(pluginItem *PluginInfo, entityKey string) (err err
 		}
 	}
 
-	err = s.rewriteDeltas(s.archiveFilePath(pluginItem, entityKey), os.O_CREATE|os.O_APPEND|os.O_WRONLY, archiveDeltas)
-	if err != nil {
-		return
+	if s.archiveEnabled {
+		err = s.rewriteDeltas(s.archiveFilePath(pluginItem, entityKey), os.O_CREATE|os.O_APPEND|os.O_WRONLY, archiveDeltas)
+		if err != nil {
+			return
+		}
 	}
 
 	return s.rewriteDeltas(s.DeltaFilePath(pluginItem, entityKey), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, keepDeltas)
@@ -1002,4 +1008,8 @@ func (s *Store) SavePluginSource(entityKey, category, term string, source map[st
 	}
 	err = disk.WriteFile(outputFile, sourceB, DATA_FILE_MODE)
 	return
+}
+
+func (s *Store) IsArchiveEnabled() bool {
+	return s.archiveEnabled
 }

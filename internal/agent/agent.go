@@ -297,7 +297,7 @@ func NewAgent(
 		maxInventorySize = delta.DisableInventorySplit
 	}
 
-	s := delta.NewStore(dataDir, ctx.EntityKey(), maxInventorySize)
+	s := delta.NewStore(dataDir, ctx.EntityKey(), maxInventorySize, cfg.InventoryArchiveEnabled)
 
 	transport := backendhttp.BuildTransport(cfg, backendhttp.ClientTimeout)
 

@@ -55,6 +55,7 @@ var (
 	defaultAppDataDir                    = ""
 	defaultCmdChannelEndpoint            = "/agent_commands/v1/commands"
 	defaultCmdChannelIntervalSec         = 60
+	defaultInventoryArchiveEnabled       = true
 	defaultCompactEnabled                = true
 	defaultCompactThreshold              = 20 * 1024 * 1024 // (in bytes) compact repo when it hits 20MB
 	defaultIgnoreReclaimable             = false

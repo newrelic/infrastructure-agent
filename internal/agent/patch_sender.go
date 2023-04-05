@@ -162,7 +162,7 @@ func (p *patchSenderIngest) Process() (err error) {
 		llog.WithField("numberOfDeltas", len(deltas)).Info("suppressed PostDeltas")
 	}
 
-	if p.compactEnabled {
+	if p.store.IsArchiveEnabled() && p.compactEnabled {
 		if cerr := p.store.CompactStorage(entityKey, p.compactThreshold); cerr != nil {
 			llog.WithError(cerr).WithField("compactThreshold", p.compactThreshold).
 				Error("compaction error")

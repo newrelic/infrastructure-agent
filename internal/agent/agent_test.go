@@ -65,7 +65,7 @@ func newTesting(cfg *config.Config) *Agent {
 
 	ctx := NewContext(cfg, "1.2.3", testhelpers.NullHostnameResolver, lookups, matcher)
 
-	st := delta.NewStore(dataDir, "default", cfg.MaxInventorySize)
+	st := delta.NewStore(dataDir, "default", cfg.MaxInventorySize, true)
 
 	fpHarvester, err := fingerprint.NewHarvestor(cfg, testhelpers.NullHostnameResolver, cloudDetector)
 	if err != nil {
