@@ -1013,3 +1013,7 @@ func (s *Store) SavePluginSource(entityKey, category, term string, source map[st
 func (s *Store) IsArchiveEnabled() bool {
 	return s.archiveEnabled
 }
+
+func (s *Store) SetArchiveEnabled(archiveEnabled bool) {
+	s.archiveEnabled = archiveEnabled
+}

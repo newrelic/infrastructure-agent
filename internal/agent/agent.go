@@ -449,6 +449,9 @@ func New(
 		a.inventoryHandler = inventory.NewInventoryHandler(ctx.Ctx, inventoryHandlerCfg, patcher)
 		a.Context.pluginOutputHandleFn = a.inventoryHandler.Handle
 		a.Context.updateIDLookupTableFn = a.updateIDLookupTable
+
+		// When InventorySendBulk is set disable inventory archiving.
+		a.store.SetArchiveEnabled(false)
 	}
 
 	if cfg.RegisterEnabled {
