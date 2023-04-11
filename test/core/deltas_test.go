@@ -42,7 +42,6 @@ func TestInventorySuite_ParallelInventoryHandlerDisabled(t *testing.T) {
 
 func (s *InventoryTestSuite) TestDeltas_nestedObjectsV4() {
 	t := s.T()
-
 	const timeout = 5 * time.Second
 
 	// Given an agent
