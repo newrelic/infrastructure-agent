@@ -119,7 +119,7 @@ func TestFFHandlerHandle_ParallelInventoryHandlerEnabledInitialFetch(t *testing.
 	cmd := commandapi.Command{
 		Args: []byte(`{
  			"category": "Infra_Agent",
-			"flag": "inventory_send_bulk_enabled",
+			"flag": "parallel_inventory_handler_enabled",
 			"enabled": true }`),
 	}
 	NewHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
@@ -134,7 +134,7 @@ func TestFFHandlerHandle_ParallelInventoryHandlerEnabled(t *testing.T) {
 	cmd := commandapi.Command{
 		Args: []byte(`{
  			"category": "Infra_Agent",
-			"flag": "inventory_send_bulk_enabled",
+			"flag": "parallel_inventory_handler_enabled",
 			"enabled": true }`),
 	}
 	NewHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, false)
@@ -149,7 +149,7 @@ func TestFFHandlerHandle_ParallelInventoryHandler_Disabled(t *testing.T) {
 	cmd := commandapi.Command{
 		Args: []byte(`{
  			"category": "Infra_Agent",
-			"flag": "inventory_send_bulk_enabled",
+			"flag": "parallel_inventory_handler_enabled",
 			"enabled": false }`),
 	}
 	NewHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
