@@ -95,6 +95,8 @@ func newTesting(cfg *config.Config) *Agent {
 		panic(err)
 	}
 
+	a.Init()
+
 	return a
 }
 

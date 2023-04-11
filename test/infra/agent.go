@@ -107,5 +107,6 @@ func NewAgentWithConnectClientAndConfig(connectClient *http.Client, dataClient b
 		panic(err)
 	}
 
+	a.Init()
 	return a
 }

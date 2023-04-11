@@ -663,26 +663,8 @@ func (a *Agent) setAgentKey(idLookupTable host.IDLookup) error {
 	return nil
 }
 
-// Run is the main event loop for the agent it starts up the plugins
-// kicks off a filesystem seed and watcher and listens for data from
-// the plugins
-func (a *Agent) Run() (err error) {
-	alog.Info("Starting up agent...")
-	// start listening for ipc messages
-	_ = a.notificationHandler.Start()
-
+func (a *Agent) Init() {
 	cfg := a.Context.cfg
-
-	f := a.cpuProfileStart()
-	if f != nil {
-		defer a.cpuProfileStop(f)
-	}
-
-	go a.intervalMemoryProfile()
-
-	if cfg.ConnectEnabled {
-		go a.connect()
-	}
 
 	// Configure ParallelInventoryHandler if FF is enabled.
 	if cfg.ParallelInventoryHandlerEnabled {
@@ -711,6 +693,28 @@ func (a *Agent) Run() (err error) {
 
 		// When ParallelInventoryHandlerEnabled is set disable inventory archiving.
 		a.store.SetArchiveEnabled(false)
+	}
+}
+
+// Run is the main event loop for the agent it starts up the plugins
+// kicks off a filesystem seed and watcher and listens for data from
+// the plugins
+func (a *Agent) Run() (err error) {
+	alog.Info("Starting up agent...")
+	// start listening for ipc messages
+	_ = a.notificationHandler.Start()
+
+	cfg := a.Context.cfg
+
+	f := a.cpuProfileStart()
+	if f != nil {
+		defer a.cpuProfileStop(f)
+	}
+
+	go a.intervalMemoryProfile()
+
+	if cfg.ConnectEnabled {
+		go a.connect()
 	}
 
 	alog.Debug("Starting Plugins.")
