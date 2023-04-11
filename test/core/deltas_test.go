@@ -498,8 +498,7 @@ func (s *InventoryTestSuite) TestDeltas_UpdateIDLookupTable() {
 
 	// Given an agent
 	testClient := ihttp.NewRequestRecorderClient(
-		ihttp.AcceptedResponse("metadata/attributes", 1),
-		ihttp.ResetDeltasResponse("test/dummy"))
+		ihttp.AcceptedResponse("metadata/attributes", 1))
 
 	a := infra.NewAgent(testClient.Client, func(cfg *config.Config) {
 		cfg.CustomAttributes = config.CustomAttributeMap{
@@ -512,6 +511,7 @@ func (s *InventoryTestSuite) TestDeltas_UpdateIDLookupTable() {
 
 	go a.Run()
 	defer a.Terminate()
+	assert.Equal(t, "display-name", a.Context.EntityKey())
 
 	dataset := agentTypes.PluginInventoryDataset{}
 	dataset = append(dataset, sysinfo.HostAliases{

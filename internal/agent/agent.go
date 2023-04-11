@@ -52,8 +52,9 @@ import (
 )
 
 const (
-	defaultRemoveEntitiesPeriod = 48 * time.Hour
-	activeEntitiesBufferLength  = 32
+	defaultRemoveEntitiesPeriod     = 48 * time.Hour
+	activeEntitiesBufferLength      = 32
+	defaultBulkInventoryQueueLength = 1000
 )
 
 type registerableSender interface {
@@ -439,6 +440,10 @@ func New(
 			RemoveEntitiesPeriod: removeEntitiesPeriod,
 		}
 		patcher := inventory.NewEntityPatcher(patcherConfig, s, a.newPatchSender)
+
+		if cfg.InventoryQueueLen == 0 {
+			cfg.InventoryQueueLen = defaultBulkInventoryQueueLength
+		}
 
 		inventoryHandlerCfg := inventory.HandlerConfig{
 			SendInterval:      cfg.SendInterval,

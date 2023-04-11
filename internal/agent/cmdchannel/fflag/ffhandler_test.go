@@ -112,6 +112,51 @@ func TestFFHandlerHandle_EnabledFFParallelizeInventoryDoesNotModifyProvidedConfi
 	assert.Equal(t, 123, c.InventoryQueueLen)
 }
 
+func TestFFHandlerHandle_InventorySendBulkInitialFetch(t *testing.T) {
+	c := config.Config{
+		InventorySendBulk: false,
+	}
+	cmd := commandapi.Command{
+		Args: []byte(`{
+ 			"category": "Infra_Agent",
+			"flag": "inventory_send_bulk_enabled",
+			"enabled": true }`),
+	}
+	NewHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
+
+	assert.True(t, c.InventorySendBulk)
+}
+
+func TestFFHandlerHandle_InventorySendBulk(t *testing.T) {
+	c := config.Config{
+		InventorySendBulk: true,
+	}
+	cmd := commandapi.Command{
+		Args: []byte(`{
+ 			"category": "Infra_Agent",
+			"flag": "inventory_send_bulk_enabled",
+			"enabled": true }`),
+	}
+	NewHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, false)
+
+	assert.True(t, c.InventorySendBulk)
+}
+
+func TestFFHandlerHandle_InventorySendBulk_Disabled(t *testing.T) {
+	c := config.Config{
+		InventorySendBulk: true,
+	}
+	cmd := commandapi.Command{
+		Args: []byte(`{
+ 			"category": "Infra_Agent",
+			"flag": "inventory_send_bulk_enabled",
+			"enabled": false }`),
+	}
+	NewHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
+
+	assert.False(t, c.InventorySendBulk)
+}
+
 func TestFFHandlerHandle_ExitsOnDiffValueAndNotInitialFetch(t *testing.T) {
 	type testCase struct {
 		name string

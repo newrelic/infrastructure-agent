@@ -259,28 +259,13 @@ func handleRegister(ffArgs args, c *config.Config, isInitialFetch bool) {
 }
 
 func handleInventorySendBulk(ffArgs args, c *config.Config, isInitialFetch bool) {
-	inventorySendBulkAlreadySet := ffArgs.Enabled == c.InventorySendBulk
-	inventoryQueueLenAlreadySet := (ffArgs.Enabled && c.InventoryQueueLen > 0) || (!ffArgs.Enabled && c.InventoryQueueLen == 0)
-
 	// feature already in desired state.
-	if inventorySendBulkAlreadySet && inventoryQueueLenAlreadySet {
+	if ffArgs.Enabled == c.InventorySendBulk {
 		return
 	}
 
 	if !isInitialFetch {
 		os.Exit(api.ExitCodeRestart)
-	}
-
-	v := int64(0)
-	if ffArgs.Enabled {
-		v = CfgValueParallelizeInventory
-	}
-
-	if err := c.SetIntValueByYamlAttribute(CfgYmlParallelizeInventory, v); err != nil {
-		ffLogger.
-			WithError(err).
-			WithField("field", CfgYmlParallelizeInventory).
-			Warn("unable to update config value")
 	}
 
 	if err := c.SetBoolValueByYamlAttribute(CfgYmlInventorySendBulk, ffArgs.Enabled); err != nil {
