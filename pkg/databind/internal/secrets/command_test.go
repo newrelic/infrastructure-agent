@@ -4,6 +4,7 @@
 package secrets
 
 import (
+	"reflect"
 	"runtime"
 	"testing"
 )
@@ -20,11 +21,10 @@ func TestRunCommand(t *testing.T) {
 	// Arrange
 	tests := []commandTestCase{
 		{
-			name: "Test 'echo' command",
+			name: "Test simple 'echo' command",
 			command: &Command{
-				Key:     "test",
 				CmdPath: "echo",
-				CmdArgs: &[]string{"test"},
+				CmdArgs: []string{"test"},
 			},
 			want:    "test",
 			wantErr: false,
@@ -32,12 +32,47 @@ func TestRunCommand(t *testing.T) {
 		{
 			name: "Test command with error",
 			command: &Command{
-				Key:     "test",
 				CmdPath: "unknown_command",
-				CmdArgs: &[]string{"unneeded_arg"},
+				CmdArgs: []string{"unneeded_arg"},
 			},
 			want:    nil,
 			wantErr: true,
+		},
+		{
+			name: "Command with no args",
+			command: &Command{
+				CmdPath: "echo",
+				CmdArgs: []string{},
+			},
+			want:    "",
+			wantErr: false,
+		},
+		{
+			name: "Test valid JSON output",
+			command: &Command{
+				CmdPath: "echo",
+				CmdArgs: []string{"{\"testKey\": \"testVal\"}"},
+			},
+			want:    map[string]any{"testKey": "testVal"},
+			wantErr: false,
+		},
+		{
+			name: "Test nested JSON",
+			command: &Command{
+				CmdPath: "echo",
+				CmdArgs: []string{"{\"testKey\": {\"testKey2\": \"testVal\"}}"},
+			},
+			want:    map[string]any{"testKey": map[string]any{"testKey2": "testVal"}},
+			wantErr: false,
+		},
+		{
+			name: "Test JSON with lists",
+			command: &Command{
+				CmdPath: "echo",
+				CmdArgs: []string{"{\"testKey\": [\"testVal1\", \"testVal2\"]}"},
+			},
+			want:    map[string]any{"testKey": []any{"testVal1", "testVal2"}},
+			wantErr: false,
 		},
 	}
 	if runtime.GOOS != "windows" {
@@ -45,9 +80,8 @@ func TestRunCommand(t *testing.T) {
 			{
 				name: "Test 'echo' command with arguments",
 				command: &Command{
-					Key:     "test",
 					CmdPath: "echo",
-					CmdArgs: &[]string{"-n", "test2"},
+					CmdArgs: []string{"-n", "test2"},
 				},
 				want:    "test2",
 				wantErr: false,
@@ -67,7 +101,7 @@ func TestRunCommand(t *testing.T) {
 			if (err != nil) != testCase.wantErr {
 				t.Fatalf("CommandGatherer() error = %v, wantErr %v", err, testCase.wantErr)
 			}
-			if res != testCase.want {
+			if !reflect.DeepEqual(res, testCase.want) {
 				t.Errorf("CommandGatherer() = %v, want %v", res, testCase.want)
 			}
 		})
