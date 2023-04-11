@@ -431,34 +431,6 @@ func New(
 	a.Context.ch = make(chan types.PluginOutput, a.Context.cfg.InventoryQueueLen)
 	a.Context.activeEntities = make(chan string, activeEntitiesBufferLength)
 
-	if cfg.ParallelInventoryHandlerEnabled {
-		removeEntitiesPeriod, _ := time.ParseDuration(a.Context.Config().RemoveEntitiesPeriod)
-
-		patcherConfig := inventory.PatcherConfig{
-			IgnoredPaths:         cfg.IgnoredInventoryPathsMap,
-			AgentEntity:          entity.NewFromNameWithoutID(a.Context.EntityKey()),
-			RemoveEntitiesPeriod: removeEntitiesPeriod,
-		}
-		patcher := inventory.NewEntityPatcher(patcherConfig, s, a.newPatchSender)
-
-		if cfg.InventoryQueueLen == 0 {
-			cfg.InventoryQueueLen = defaultBulkInventoryQueueLength
-		}
-
-		inventoryHandlerCfg := inventory.HandlerConfig{
-			SendInterval:      cfg.SendInterval,
-			FirstReapInterval: cfg.FirstReapInterval,
-			ReapInterval:      cfg.ReapInterval,
-			InventoryQueueLen: cfg.InventoryQueueLen,
-		}
-		a.inventoryHandler = inventory.NewInventoryHandler(ctx.Ctx, inventoryHandlerCfg, patcher)
-		a.Context.pluginOutputHandleFn = a.inventoryHandler.Handle
-		a.Context.updateIDLookupTableFn = a.updateIDLookupTable
-
-		// When ParallelInventoryHandlerEnabled is set disable inventory archiving.
-		a.store.SetArchiveEnabled(false)
-	}
-
 	if cfg.RegisterEnabled {
 		localEntityMap := entity.NewKnownIDs()
 		a.entityMap = localEntityMap
@@ -767,10 +739,37 @@ func (a *Agent) Run() (err error) {
 		close(exit)
 	}()
 
-	if a.inventoryHandler != nil {
+	if cfg.ParallelInventoryHandlerEnabled {
+		removeEntitiesPeriod, _ := time.ParseDuration(a.Context.Config().RemoveEntitiesPeriod)
+
+		patcherConfig := inventory.PatcherConfig{
+			IgnoredPaths:         cfg.IgnoredInventoryPathsMap,
+			AgentEntity:          entity.NewFromNameWithoutID(a.Context.EntityKey()),
+			RemoveEntitiesPeriod: removeEntitiesPeriod,
+		}
+		patcher := inventory.NewEntityPatcher(patcherConfig, a.store, a.newPatchSender)
+
+		if cfg.InventoryQueueLen == 0 {
+			cfg.InventoryQueueLen = defaultBulkInventoryQueueLength
+		}
+
+		inventoryHandlerCfg := inventory.HandlerConfig{
+			SendInterval:      cfg.SendInterval,
+			FirstReapInterval: cfg.FirstReapInterval,
+			ReapInterval:      cfg.ReapInterval,
+			InventoryQueueLen: cfg.InventoryQueueLen,
+		}
+		a.inventoryHandler = inventory.NewInventoryHandler(a.Context.Ctx, inventoryHandlerCfg, patcher)
+		a.Context.pluginOutputHandleFn = a.inventoryHandler.Handle
+		a.Context.updateIDLookupTableFn = a.updateIDLookupTable
+
+		// When ParallelInventoryHandlerEnabled is set disable inventory archiving.
+		a.store.SetArchiveEnabled(false)
+
 		if a.shouldSendInventory() {
 			a.inventoryHandler.Start()
 		}
+
 		<-exit
 		return nil
 	}
