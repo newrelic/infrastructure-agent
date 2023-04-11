@@ -27,16 +27,16 @@ import (
 
 type InventoryTestSuite struct {
 	suite.Suite
-	SendBulkEnabled bool
+	ParallelInventoryHandlerEnabled bool
 }
 
-func TestInventorySuite_SendBulkEnabled(t *testing.T) {
+func TestInventorySuite_ParallelInventoryHandlerEnabled(t *testing.T) {
 	suite.Run(t, &InventoryTestSuite{
-		SendBulkEnabled: true,
+		ParallelInventoryHandlerEnabled: true,
 	})
 }
 
-func TestInventorySuite_SendBulkDisabled(t *testing.T) {
+func TestInventorySuite_ParallelInventoryHandlerDisabled(t *testing.T) {
 	suite.Run(t, &InventoryTestSuite{})
 }
 
@@ -50,7 +50,7 @@ func (s *InventoryTestSuite) TestDeltas_nestedObjectsV4() {
 		ihttp.AcceptedResponse("test/dummy", 1),
 		ihttp.AcceptedResponse("test/dummy", 2))
 	a := infra.NewAgent(testClient.Client, func(config *config.Config) {
-		config.InventorySendBulk = s.SendBulkEnabled
+		config.ParallelInventoryHandlerEnabled = s.ParallelInventoryHandlerEnabled
 	})
 
 	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
@@ -122,7 +122,7 @@ func (s *InventoryTestSuite) TestDeltas_BasicWorkflow() {
 		ihttp.AcceptedResponse("test/dummy", 1),
 		ihttp.AcceptedResponse("test/dummy", 2))
 	a := infra.NewAgent(testClient.Client, func(config *config.Config) {
-		config.InventorySendBulk = s.SendBulkEnabled
+		config.ParallelInventoryHandlerEnabled = s.ParallelInventoryHandlerEnabled
 	})
 
 	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
@@ -211,7 +211,7 @@ func (s *InventoryTestSuite) TestDeltas_ForwardOnly() {
 		ihttp.AcceptedResponse("test/dummy", 1),
 		ihttp.AcceptedResponse("test/dummy", 2))
 	a := infra.NewAgent(testClient.Client, func(config *config.Config) {
-		config.InventorySendBulk = s.SendBulkEnabled
+		config.ParallelInventoryHandlerEnabled = s.ParallelInventoryHandlerEnabled
 		config.IsForwardOnly = true
 		config.FirstReapInterval = time.Nanosecond
 		config.SendInterval = time.Nanosecond
@@ -255,7 +255,7 @@ func (s *InventoryTestSuite) TestDeltas_ResendIfFailure() {
 		ihttp.AcceptedResponse("test/dummy", 2))
 
 	a := infra.NewAgent(testClient.Client, func(config *config.Config) {
-		config.InventorySendBulk = s.SendBulkEnabled
+		config.ParallelInventoryHandlerEnabled = s.ParallelInventoryHandlerEnabled
 	})
 
 	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
@@ -358,7 +358,7 @@ func (s *InventoryTestSuite) TestDeltas_ResendAfterReset() {
 	a := infra.NewAgent(testClient.Client, func(config *config.Config) {
 		config.SendInterval = time.Hour
 		config.AgentDir = agentDir
-		config.InventorySendBulk = s.SendBulkEnabled
+		config.ParallelInventoryHandlerEnabled = s.ParallelInventoryHandlerEnabled
 	})
 	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
@@ -383,7 +383,7 @@ func (s *InventoryTestSuite) TestDeltas_ResendAfterReset() {
 	// When another agent process starts again
 	a = infra.NewAgent(testClient.Client, func(config *config.Config) {
 		config.AgentDir = agentDir
-		config.InventorySendBulk = s.SendBulkEnabled
+		config.ParallelInventoryHandlerEnabled = s.ParallelInventoryHandlerEnabled
 	})
 	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 	a.RegisterPlugin(plugin1)
@@ -427,7 +427,7 @@ func (s *InventoryTestSuite) TestDeltas_HarvestAfterStoreCleanup() {
 			"someother": "other_attr",
 		}
 		cfg.Log.Level = config.LogLevelDebug
-		cfg.InventorySendBulk = s.SendBulkEnabled
+		cfg.ParallelInventoryHandlerEnabled = s.ParallelInventoryHandlerEnabled
 	})
 	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
@@ -506,7 +506,7 @@ func (s *InventoryTestSuite) TestDeltas_UpdateIDLookupTable() {
 			"someother": "other_attr",
 		}
 		cfg.Log.Level = config.LogLevelDebug
-		cfg.InventorySendBulk = s.SendBulkEnabled
+		cfg.ParallelInventoryHandlerEnabled = s.ParallelInventoryHandlerEnabled
 	})
 
 	go a.Run()

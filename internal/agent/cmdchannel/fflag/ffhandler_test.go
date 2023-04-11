@@ -112,9 +112,9 @@ func TestFFHandlerHandle_EnabledFFParallelizeInventoryDoesNotModifyProvidedConfi
 	assert.Equal(t, 123, c.InventoryQueueLen)
 }
 
-func TestFFHandlerHandle_InventorySendBulkInitialFetch(t *testing.T) {
+func TestFFHandlerHandle_ParallelInventoryHandlerEnabledInitialFetch(t *testing.T) {
 	c := config.Config{
-		InventorySendBulk: false,
+		ParallelInventoryHandlerEnabled: false,
 	}
 	cmd := commandapi.Command{
 		Args: []byte(`{
@@ -124,12 +124,12 @@ func TestFFHandlerHandle_InventorySendBulkInitialFetch(t *testing.T) {
 	}
 	NewHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
 
-	assert.True(t, c.InventorySendBulk)
+	assert.True(t, c.ParallelInventoryHandlerEnabled)
 }
 
-func TestFFHandlerHandle_InventorySendBulk(t *testing.T) {
+func TestFFHandlerHandle_ParallelInventoryHandlerEnabled(t *testing.T) {
 	c := config.Config{
-		InventorySendBulk: true,
+		ParallelInventoryHandlerEnabled: true,
 	}
 	cmd := commandapi.Command{
 		Args: []byte(`{
@@ -139,12 +139,12 @@ func TestFFHandlerHandle_InventorySendBulk(t *testing.T) {
 	}
 	NewHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, false)
 
-	assert.True(t, c.InventorySendBulk)
+	assert.True(t, c.ParallelInventoryHandlerEnabled)
 }
 
-func TestFFHandlerHandle_InventorySendBulk_Disabled(t *testing.T) {
+func TestFFHandlerHandle_ParallelInventoryHandler_Disabled(t *testing.T) {
 	c := config.Config{
-		InventorySendBulk: true,
+		ParallelInventoryHandlerEnabled: true,
 	}
 	cmd := commandapi.Command{
 		Args: []byte(`{
@@ -154,7 +154,7 @@ func TestFFHandlerHandle_InventorySendBulk_Disabled(t *testing.T) {
 	}
 	NewHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
 
-	assert.False(t, c.InventorySendBulk)
+	assert.False(t, c.ParallelInventoryHandlerEnabled)
 }
 
 func TestFFHandlerHandle_ExitsOnDiffValueAndNotInitialFetch(t *testing.T) {

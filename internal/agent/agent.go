@@ -431,7 +431,7 @@ func New(
 	a.Context.ch = make(chan types.PluginOutput, a.Context.cfg.InventoryQueueLen)
 	a.Context.activeEntities = make(chan string, activeEntitiesBufferLength)
 
-	if cfg.InventorySendBulk {
+	if cfg.ParallelInventoryHandlerEnabled {
 		removeEntitiesPeriod, _ := time.ParseDuration(a.Context.Config().RemoveEntitiesPeriod)
 
 		patcherConfig := inventory.PatcherConfig{
@@ -455,7 +455,7 @@ func New(
 		a.Context.pluginOutputHandleFn = a.inventoryHandler.Handle
 		a.Context.updateIDLookupTableFn = a.updateIDLookupTable
 
-		// When InventorySendBulk is set disable inventory archiving.
+		// When ParallelInventoryHandlerEnabled is set disable inventory archiving.
 		a.store.SetArchiveEnabled(false)
 	}
 
