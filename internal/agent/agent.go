@@ -5,7 +5,6 @@ package agent
 import (
 	context2 "context"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -16,6 +15,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
 
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
@@ -854,16 +855,15 @@ func (a *Agent) checkInstanceIDRetry(maxRetries, backoffTime int) error {
 		if _, err = a.cloudHarvester.GetInstanceID(); err == nil {
 			return nil
 		}
-
 		if i >= maxRetries-1 {
-			alog.WithError(err).Debug("Couldn't get any known cloud instance ID.")
-		} else {
-			alog.WithError(err).Debugf("Failed to get the instance ID, retrying in %d s.", backoffTime)
-			time.Sleep(time.Duration(backoffTime) * time.Second)
+			break
 		}
+
+		alog.WithError(err).Debugf("Failed to get the instance ID, retrying in %d s.", backoffTime)
+		time.Sleep(time.Duration(backoffTime) * time.Second)
 	}
 
-	return fmt.Errorf("failed to get an instance ID after %d retries: %w", maxRetries, err)
+	return fmt.Errorf("failed to get an instance ID after %d attempt(s): %w", maxRetries+1, err)
 }
 
 func (a *Agent) cpuProfileStart() *os.File {
