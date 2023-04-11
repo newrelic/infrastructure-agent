@@ -4,7 +4,10 @@
 package databind
 
 import (
+	"errors"
 	"time"
+
+	"go.uber.org/multierr"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery"
 )
@@ -78,6 +81,24 @@ func (d *gatherer) do(now time.Time) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if dataWithTTL, ok := vals.(ValuesWithTTL); ok {
+		ttl, err := dataWithTTL.TTL()
+		if err != nil && !errors.Is(err, ErrTTLNotFound) {
+			return nil, multierr.Append(ErrTTLInvalid, err)
+		}
+
+		if err == nil {
+			d.cache.ttl = ttl
+		}
+
+		valuesWithTTL, err := dataWithTTL.Data()
+		if err != nil {
+			return nil, multierr.Append(ErrDataInvalid, err)
+		}
+		vals = valuesWithTTL
+	}
+
 	d.cache.set(vals, now)
 	return vals, nil
 }

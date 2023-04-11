@@ -29,6 +29,9 @@ linters-settings:
       - default # Default section: contains all imports that could not be matched to another section type.
       - prefix(github.com/newrelic/infrastructure-agent) # Custom section: groups all imports with the specified Prefix.
 #      - blank # Blank section: contains all blank imports. This section is not present unless explicitly enabled.
+  wrapcheck:
+    ignoreSigs:
+      - multierr.Append
 
 
 linters:
