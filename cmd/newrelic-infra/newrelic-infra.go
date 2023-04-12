@@ -8,7 +8,6 @@ import (
 	context2 "context"
 	"flag"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/cmd/newrelic-infra/dnschecks"
 	"io"
 	"net"
 	"net/http"
@@ -22,6 +21,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
+	"github.com/newrelic/infrastructure-agent/cmd/newrelic-infra/dnschecks"
 	"github.com/newrelic/infrastructure-agent/pkg/disk"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	http2 "github.com/newrelic/infrastructure-agent/pkg/http"
@@ -47,7 +49,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins"
-	"github.com/sirupsen/logrus"
 
 	"github.com/newrelic/infrastructure-agent/cmd/newrelic-infra/initialize"
 	"github.com/newrelic/infrastructure-agent/internal/agent"
@@ -80,7 +81,7 @@ var (
 	debug       bool
 	cpuprofile  string
 	memprofile  string
-	//v3tov4       string
+	// v3tov4       string # v3tov4 disabled.
 	verbose      int
 	startTime    time.Time
 	buildVersion = "development"
@@ -103,7 +104,7 @@ func init() {
 	flag.BoolVar(&debug, "debug", false, "Enables agent debugging functionality")
 	flag.StringVar(&cpuprofile, "cpuprofile", "", "Writes cpu profile to `file`")
 	flag.StringVar(&memprofile, "memprofile", "", "Writes memory profile to `file`")
-	//flag.StringVar(&v3tov4, "v3tov4", "", "Converts v3 config into v4. v3tov4=/path/to/config:/path/to/definition:/path/to/output:overwrite")
+	// flag.StringVar(&v3tov4, "v3tov4", "", "Converts v3 config into v4. v3tov4=/path/to/config:/path/to/definition:/path/to/output:overwrite")
 
 	flag.IntVar(&verbose, "verbose", 0, "Higher numbers increase levels of logging. When enabled overrides provided config.")
 }
@@ -466,6 +467,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		FluentBitNRLibPath:   c.FluentBitNRLibPath,
 		FluentBitParsersPath: c.FluentBitParsersPath,
 		FluentBitVerbose:     c.Log.Level == config.LogLevelTrace && c.Log.HasIncludeFilter(config.TracesFieldName, config.SupervisorTrace),
+		ConfTemporaryFolder:  filepath.Join(c.AgentTempDir, v4.FbConfTempFolderNameDefault),
 	}
 
 	if fbIntCfg.IsLogForwarderAvailable() {

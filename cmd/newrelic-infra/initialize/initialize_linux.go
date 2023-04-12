@@ -22,6 +22,13 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
+const (
+	agentTemporaryFolder       = "/var/db/newrelic-infra/tmp"
+	pidFolderPermissions       = 0o755
+	pidFilePermissions         = 0o644
+	integrationsDirPermissions = 0o755
+)
+
 // AgentService performs OS-specific initialization steps for the Agent service.
 // It is executed after the initialize.osProcess function.
 func AgentService(cfg *config.Config) error {
@@ -63,7 +70,7 @@ func verifySingularity(pidfile string) error {
 	if os.IsNotExist(err) {
 		// If the user removed the pid file folder, recreate it.
 		// This only works when running the agent as root.
-		if err := os.MkdirAll(pidFolder, 0755); err != nil {
+		if err = os.MkdirAll(pidFolder, pidFolderPermissions); err != nil {
 			return fmt.Errorf("No pid-file. Can't create pid-file folder, err: %s", err.Error())
 		}
 	}
@@ -84,14 +91,13 @@ func verifySingularity(pidfile string) error {
 		}
 	}
 
-	if err := disk.WriteFile(pidfile, []byte(fmt.Sprintf("%d", os.Getpid())), 0644); err != nil {
+	if err := disk.WriteFile(pidfile, []byte(fmt.Sprintf("%d", os.Getpid())), pidFilePermissions); err != nil {
 		return fmt.Errorf("Can't write pid-file: %s", err)
 	}
 	return nil
 }
 
 func assertTempFolderOwnership(config *config.Config) error {
-
 	// Folder already exists. Check ownership.
 	if fi, err := os.Stat(config.DefaultIntegrationsTempDir); !os.IsNotExist(err) {
 		var currentUserUID string
@@ -133,7 +139,7 @@ func assertTempFolderOwnership(config *config.Config) error {
 	}
 
 	// If we got here, either the folder does not exist or we removed it, so let's create it.
-	err := os.MkdirAll(config.DefaultIntegrationsTempDir, 0755)
+	err := os.MkdirAll(config.DefaultIntegrationsTempDir, integrationsDirPermissions)
 	if err != nil {
 		log.WithField("folder", config.DefaultIntegrationsTempDir).
 			WithError(err).

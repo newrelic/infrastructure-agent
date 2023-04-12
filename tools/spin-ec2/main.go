@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -301,6 +302,10 @@ func cliMode() {
 	cmdPrune.PersistentFlags().Bool("dry_run", false, "dry run")
 	viper.BindPFlag("dry_run", cmdPrune.PersistentFlags().Lookup("dry_run"))
 
+	cmdPreviousCanaryVersion.PersistentFlags().StringP("tag", "t", "", "the reference tag to look previous for")
+	viper.BindPFlag("tag", cmdPreviousCanaryVersion.PersistentFlags().Lookup("tag"))
+	cmdPreviousCanaryVersion.MarkPersistentFlagRequired("tag")
+
 	cmdRoot := &cobra.Command{Use: "spin-ec2"}
 	cmdRoot.AddCommand(cmdCanaries)
 	cmdCanaries.AddCommand(cmdProvision, cmdPrune)
@@ -413,6 +418,12 @@ func provisionMacosCanaries(cnf canaryConf) error {
 	execNameArgs("sed", "-i.bak", fmt.Sprintf("s/canary:current/%s:v%s/g", cnf.prefix, currentVersion), path.Join(curPath, inventoryMacos))
 	execNameArgs("sed", "-i.bak", fmt.Sprintf("s/canary:previous/%s:v%s/g", cnf.prefix, previousVersion), path.Join(curPath, inventoryMacos))
 	execNameArgs("rm", fmt.Sprintf("%s.bak", path.Join(curPath, inventoryMacos)))
+
+	playbookArguments := []string{
+		"-i", path.Join(curPath, inventoryMacos),
+	}
+	playbookArguments = append(playbookArguments, path.Join(curPath, "/test/automated/ansible/install-requirements.yml"))
+	execNameArgs("ansible-playbook", playbookArguments...)
 
 	argumentsMacosCurrent := []string{
 		"--limit", "macos_current",
@@ -619,22 +630,69 @@ func pruneCanaries(cmd *cobra.Command, args []string) error {
 	return terminateInstances(idsToTerminate, instances, dryRun)
 }
 
-// previousCanaryVersion returned previous version of canaries
-// based on ec2 instances.
+// previousCanaryVersion returned previous agent version of the provided tag
+// using github api. Quick and dirty as we are moving to create alerts with terraform
+// and this is only used for that purpose
 func previousCanaryVersion(cmd *cobra.Command, args []string) error {
-	instances, err := getAWSInstances(hostPrefix+":v", "")
+	tag := viper.GetString("tag")
+
+	previousVersion, err := getPreviousVersion(tag)
 	if err != nil {
 		return err
 	}
-
-	previousVersion, err := getPreviousCanaryVersion(instances)
-	if err != nil {
-		return err
-	}
-
 	fmt.Printf("%s", previousVersion)
 
 	return nil
+}
+
+func getPreviousVersion(referenceVersion string) (string, error) {
+	perPage := 100
+	page := 1
+	client := http.DefaultClient
+	previousVersion := "previous version not found :("
+
+	var tags []string
+	for {
+		url := fmt.Sprintf("https://api.github.com/repos/newrelic/infrastructure-agent/releases?page=%d&per_page=%d", page, perPage)
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return "", err
+		}
+		req.Header.Add("Accept", "application/vnd.github+json")
+		req.Header.Add("X-GitHub-Api-Version", "2022-11-28")
+		resp, err := client.Do(req)
+		if err != nil {
+			return "", err
+		}
+		if resp.StatusCode != 200 {
+			return "", fmt.Errorf("expected response code was 200 and got %d", resp.StatusCode)
+		}
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return "", err
+		}
+		var tagsResp []struct {
+			TagName string `json:"tag_name"`
+		}
+		err = json.Unmarshal(body, &tagsResp)
+		if err != nil {
+			return "", err
+		}
+		if len(tagsResp) == 0 {
+			break
+		}
+		for i := range tagsResp {
+			tags = append(tags, tagsResp[i].TagName)
+		}
+		page++
+	}
+	semver.Sort(tags)
+	for i := 0; i < len(tags); i++ {
+		if tags[i] == referenceVersion && i > 0 {
+			previousVersion = tags[i-1]
+		}
+	}
+	return previousVersion, nil
 }
 
 // latestRelease returns tha latest release (pre-released not taken into account)

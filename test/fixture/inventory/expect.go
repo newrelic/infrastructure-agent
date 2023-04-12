@@ -47,9 +47,10 @@ var (
 			FullDiff: true,
 			// Checking some common /proc/sys entries that should exist in any linux host
 			Diff: map[string]interface{}{
-				".fs.file-max":    AnyValue,
-				".fs.overflowgid": AnyValue,
-				".fs.overflowuid": AnyValue,
+				".fs.file-max": AnyValue,
+				// AL2023 does not enable CONFIG_FS_OVERFLOWGID kernel configuration
+				//".fs.overflowgid": AnyValue,
+				//".fs.overflowuid": AnyValue,
 				".kernel.acct": map[string]interface{}{
 					"id":           ".kernel.acct",
 					"sysctl_value": AnyValue,

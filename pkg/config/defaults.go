@@ -112,6 +112,7 @@ var (
 )
 
 // Default internal values
+// nolint:gochecknoglobals
 var (
 	defaultAgentDir                string
 	defaultConfigFiles             []string
@@ -128,6 +129,7 @@ var (
 	defaultFluentBitParsers        string
 	defaultFluentBitNRLib          string
 	defaultIntegrationsTempDir     string
+	defaultAgentTempDir            string
 )
 
 func getDefaultFacterHomeDir() (string, error) {

@@ -223,11 +223,11 @@ func printLogsInfo(params Config, taskID string) {
 	source := fmt.Sprintf("%s/%s", params.CloudWatchLogsStreamName, taskID)
 	fmt.Fprintf(log.Writer(), "Fetching logs from: %s\n", source)
 	fmt.Fprintf(log.Writer(), "Tail logs:\n")
-	fmt.Fprintf(log.Writer(), "    tools/aws_logs.sh --group-name=/%s --stream-name=%s --tail\n",
-		params.CloudWatchLogsStreamName, source)
+	fmt.Fprintf(log.Writer(), "    tools/aws_logs.sh --group-name=%s --stream-name=%s --tail\n",
+		params.CloudWatchLogsGroupName, source)
 	fmt.Fprintf(log.Writer(), "Download full logs:\n")
-	fmt.Fprintf(log.Writer(), "    tools/aws_logs.sh --group-name=/%s --stream-name=%s --output-file=%s.txt\n",
-		params.CloudWatchLogsStreamName, source, params.ActionID)
+	fmt.Fprintf(log.Writer(), "    tools/aws_logs.sh --group-name=%s --stream-name=%s --output-file=%s.txt\n",
+		params.CloudWatchLogsGroupName, source, params.ActionID)
 }
 
 // ContainerOverride returns a list of containers definition with an override command

@@ -5,30 +5,68 @@ package v4
 import (
 	ctx2 "context"
 	"fmt"
-	"io/ioutil"
+	"io/fs"
 	"os"
+	"path/filepath"
+	"regexp"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 
-	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
-
-	"github.com/newrelic/infrastructure-agent/pkg/entity"
-	"github.com/newrelic/infrastructure-agent/pkg/sample"
-
 	"github.com/newrelic/infrastructure-agent/internal/agent/id"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/logs"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/newrelic/infrastructure-agent/pkg/sample"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
 )
 
-var sFBLogger = log.WithComponent("integrations.Supervisor").WithField("process", "log-forwarder")
+var (
+	//nolint:gochecknoglobals
+	sFBLogger              = log.WithComponent("integrations.Supervisor").WithField("process", "log-forwarder")
+	luaFilterTempFileRegex = regexp.MustCompile(`nr_fb_lua_filter\d+`)
+)
 
 type FBSupervisorConfig struct {
 	FluentBitExePath     string
 	FluentBitNRLibPath   string
 	FluentBitParsersPath string
 	FluentBitVerbose     bool
+	ConfTemporaryFolder  string
+}
+
+const (
+	FbConfTempFolderNameDefault      = "fb"
+	temporaryFolderPermissions       = 0o755
+	MaxNumberOfFbConfigTempFiles int = 50
+)
+
+// listError error representing a list of errors.
+type listError struct {
+	Errors []error
+}
+
+func (s *listError) Error() (err string) {
+	err = "List of errors:"
+	for _, e := range s.Errors {
+		err += fmt.Sprintf(" - %s", e.Error())
+	}
+
+	return err
+}
+
+func (s *listError) Add(e error) { s.Errors = append(s.Errors, e) }
+
+// ErrorOrNil returns an error interface if the Error slice is not empty or nil otherwise.
+func (s *listError) ErrorOrNil() error {
+	if s == nil || len(s.Errors) == 0 {
+		return nil
+	}
+
+	return s
 }
 
 // IsLogForwarderAvailable checks whether all the required files for FluentBit execution are available
@@ -93,9 +131,18 @@ func buildFbExecutor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 			return nil, cErr
 		}
 
-		cfgTmpPath, err := saveToTempFile([]byte(cfgContent))
+		cfgTmpPath, err := saveToTempFile(fbIntCfg.ConfTemporaryFolder, []byte(cfgContent))
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create temporary fb sFBLogger config file")
+		}
+
+		removedFbConfigTempFiles, err := removeFbConfigTempFiles(fbIntCfg.ConfTemporaryFolder, MaxNumberOfFbConfigTempFiles)
+		if err != nil {
+			log.WithError(err).Warn("Failed removing config temp files.")
+		}
+
+		for _, file := range removedFbConfigTempFiles {
+			log.Debugf("Removed %s config temp file.", file)
 		}
 
 		args := []string{
@@ -127,9 +174,15 @@ func buildFbExecutor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 }
 
 // returns the file name
-func saveToTempFile(config []byte) (string, error) {
+func saveToTempFile(tempDir string, config []byte) (string, error) {
+	// ensure that tempdir exits
+	err := os.MkdirAll(tempDir, temporaryFolderPermissions)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create temporary folder for fluent-bit")
+	}
+
 	// create it
-	file, err := ioutil.TempFile("", "nr_fb_config")
+	file, err := os.CreateTemp(tempDir, "nr_fb_config")
 	if err != nil {
 		return "", err
 	}
@@ -142,6 +195,85 @@ func saveToTempFile(config []byte) (string, error) {
 		return "", err
 	}
 	return file.Name(), nil
+}
+
+// keeps the most recent config files, up to maxNumberOfFbConfigTempFiles, and removes the rest.
+func removeFbConfigTempFiles(tempDir string, maxNumberOfFbConfigTempFiles int) ([]string, error) {
+	fbConfigTempFiles, err := readFbConfigTempFilesFromTempDirectory(tempDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed reading config temp files: %w", err)
+	}
+
+	if len(fbConfigTempFiles) <= maxNumberOfFbConfigTempFiles {
+		return nil, nil
+	}
+
+	// sort fbConfigTempFiles by ascending modification date
+	sort.Slice(fbConfigTempFiles, func(i, j int) bool {
+		fileInfo1, _ := fbConfigTempFiles[i].Info()
+		fileInfo2, _ := fbConfigTempFiles[j].Info()
+
+		return fileInfo1.ModTime().Before(fileInfo2.ModTime())
+	})
+
+	var configTempFilesToRemove []string
+	var removedConfigTempFiles []string
+	var listErrors listError
+
+	// create list of fbConfigTempFiles to remove
+	for i := 0; i < len(fbConfigTempFiles)-maxNumberOfFbConfigTempFiles; i++ {
+		configTempFilesToRemove = append(configTempFilesToRemove, fbConfigTempFiles[i].Name())
+	}
+
+	// extract lua filter filenames from config temp files to remove
+	for _, configTempFileToRemove := range configTempFilesToRemove {
+		if fbLuaFilterTempFilenames, err := extractLuaFilterFilenames(tempDir, configTempFileToRemove); err != nil {
+			listErrors.Add(err)
+		} else {
+			configTempFilesToRemove = append(configTempFilesToRemove, fbLuaFilterTempFilenames...)
+		}
+	}
+
+	// remove all config and lua filter temp files from temporary directory
+	for _, configTempFileToRemove := range configTempFilesToRemove {
+		if err := os.Remove(filepath.Join(tempDir, configTempFileToRemove)); err != nil {
+			listErrors.Add(err)
+		} else {
+			removedConfigTempFiles = append(removedConfigTempFiles, configTempFileToRemove)
+		}
+	}
+
+	return removedConfigTempFiles, listErrors.ErrorOrNil()
+}
+
+// return the list of temp config files from temporary directory.
+func readFbConfigTempFilesFromTempDirectory(tempDir string) ([]fs.DirEntry, error) {
+	files, err := os.ReadDir(tempDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed reading temp directory: %w", err)
+	}
+
+	var fbConfigTempFiles []fs.DirEntry
+
+	for _, file := range files {
+		if !file.IsDir() && strings.HasPrefix(file.Name(), "nr_fb_config") {
+			fbConfigTempFiles = append(fbConfigTempFiles, file)
+		}
+	}
+
+	return fbConfigTempFiles, nil
+}
+
+// extract lua filter temp filenames referenced by fbConfigTempFilename.
+func extractLuaFilterFilenames(tempDir string, fbConfigTempFilename string) ([]string, error) {
+	fbConfigTempFileContent, err := os.ReadFile(filepath.Join(tempDir, fbConfigTempFilename))
+	if err != nil {
+		return nil, fmt.Errorf("failed reading config temp file: %s error: %w", fbConfigTempFilename, err)
+	}
+
+	luaFilterTempFilenames := luaFilterTempFileRegex.FindAllString(string(fbConfigTempFileContent), -1)
+
+	return luaFilterTempFilenames, nil
 }
 
 // SupervisorEvent will be used to create an InfrastructureEvent when fb start/stop.

@@ -9,7 +9,6 @@ on:
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  GO_VERSION: '1.19.5'
   PFX_CERTIFICATE_BASE64: ${{ secrets.OHAI_PFX_CERTIFICATE_BASE64 }} # base64 encoded
   PFX_CERTIFICATE_DESCRIPTION: 'New Relic'
   PFX_PASSPHRASE: ${{ secrets.OHAI_PFX_PASSPHRASE }}
@@ -23,6 +22,7 @@ env:
   SCHEMA_BRANCH: ${{ github.event.release.tag_name }}
   AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
   AWS_REGION: "us-east-1"
+  REPO_WORKDIR: 'src/github.com/newrelic/infrastructure-agent'
 
 jobs:
   unit-test:
@@ -37,7 +37,7 @@ jobs:
       GOPATH: ${{ github.workspace }}
     defaults:
       run:
-        working-directory: src/github.com/newrelic/infrastructure-agent
+        working-directory: ${{ env.REPO_WORKDIR }}
     strategy:
       matrix:
         goarch: [ amd64, 386 ]
@@ -45,12 +45,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          path: src/github.com/newrelic/infrastructure-agent
+          path: ${{ env.REPO_WORKDIR }}
 
       - name: Install Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
-          go-version: ${{env.GO_VERSION}}
+          go-version-file: '${{ env.REPO_WORKDIR }}/go.mod'
 
       - name: Get PFX certificate from GH secrets
         shell: bash
@@ -80,7 +80,7 @@ jobs:
         uses: ./src/github.com/newrelic/infrastructure-agent/.github/actions/generate-checksums
         with:
           files_regex: '.*zip\|.*msi'
-          files_path: './src/github.com/newrelic/infrastructure-agent/dist'
+          files_path: './${{ env.REPO_WORKDIR }}/dist'
 
       - name: Upload MSI to GH
         shell: bash

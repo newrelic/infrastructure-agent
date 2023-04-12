@@ -50,6 +50,20 @@
   assert:
     that: st.stat.pw_name == '{{ agent_user }}'
 
+- name: stat on newrelic-infra binary
+  stat:
+    path: '{{ nri_binary }}'
+  register: st
+  failed_when: st.stat.exists == False
+
+- name: assert newrelic-infra binary belongs to the agent user
+  assert:
+    that: st.stat.pw_name == '{{ agent_user }}'
+
+- name: assert newrelic-infra binary has the correct permissions
+  assert:
+    that: st.stat.mode == '{{ bin_mode }}'
+
 - name: fetch agent service pid
   command: pgrep -f newrelic-infra-service
   register: pid

@@ -2,6 +2,7 @@
 
 INVENTORY=$1
 API_KEY=$2
+CURRENT_TAG=$3
 
 export TEMPLATE="tools/provision-alerts/template/template.yml"
 export PREFIX="[pre-release]"

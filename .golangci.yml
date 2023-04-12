@@ -23,6 +23,13 @@ linters-settings:
     allow-assign-and-anything: true
   funlen:
     lines: 100
+  gci:
+    sections:
+      - standard # Standard section: captures all standard packages.
+      - default # Default section: contains all imports that could not be matched to another section type.
+      - prefix(github.com/newrelic/infrastructure-agent) # Custom section: groups all imports with the specified Prefix.
+#      - blank # Blank section: contains all blank imports. This section is not present unless explicitly enabled.
+
 
 linters:
   enable-all: true
@@ -32,9 +39,15 @@ linters:
     - interfacer
     - maligned
     - golint
+    - deadcode
+    - ifshort
+    - varcheck
+    - structcheck
+    - nosnakecase
     # intentionally disabled
     - exhaustivestruct
     - testpackage
+    - gci
 
 issues:
   new-from-rev: "HEAD~"

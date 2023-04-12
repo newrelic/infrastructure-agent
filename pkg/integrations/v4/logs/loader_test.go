@@ -55,13 +55,14 @@ logs:
 	expectedCfg := FBCfg{
 		Inputs: []FBCfgInput{
 			{
-				Name:          "tail",
-				Tag:           "foo",
-				Path:          "/file/path",
-				BufferMaxSize: "128k",
-				DB:            dbDbPath,
-				SkipLongLines: "On",
-				PathKey:       "filePath",
+				Name:           "tail",
+				Tag:            "foo",
+				Path:           "/file/path",
+				BufferMaxSize:  "128k",
+				MemBufferLimit: "16384k",
+				DB:             dbDbPath,
+				SkipLongLines:  "On",
+				PathKey:        "filePath",
 			},
 		},
 		Filters: []FBCfgFilter{
@@ -172,13 +173,14 @@ func TestCfgLoader_LoadAll_TroubleshootLogFile(t *testing.T) {
 	assert.Equal(t, FBCfg{
 		Inputs: []FBCfgInput{
 			{
-				Name:          "tail",
-				DB:            dbDbPath,
-				Path:          "/agent_log_file",
-				BufferMaxSize: "128k",
-				SkipLongLines: "On",
-				PathKey:       "filePath",
-				Tag:           fluentBitTagTroubleshoot,
+				Name:           "tail",
+				DB:             dbDbPath,
+				Path:           "/agent_log_file",
+				BufferMaxSize:  "128k",
+				MemBufferLimit: "16384k",
+				SkipLongLines:  "On",
+				PathKey:        "filePath",
+				Tag:            fluentBitTagTroubleshoot,
 			},
 		},
 		Filters: []FBCfgFilter{

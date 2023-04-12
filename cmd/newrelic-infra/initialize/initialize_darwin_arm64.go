@@ -10,6 +10,9 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 )
 
+// only used in windows. it will be refactored.
+const agentTemporaryFolder = "/opt/homebrew/var/db/newrelic-infra/tmp"
+
 // AgentService performs OS-specific initialization steps for the Agent service.
 // It is executed after the initialize.osProcess function.
 func AgentService(cfg *config.Config) error {
