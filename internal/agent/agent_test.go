@@ -41,7 +41,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -950,4 +949,101 @@ func TestContext_SendEvent_LogTruncatedEvent(t *testing.T) {
 	written := output.String()
 	assert.Contains(t, written, fmt.Sprintf("original=\"+map[key:%s]", original))
 	assert.Contains(t, written, fmt.Sprintf("truncated=\"+map[key:%s]", truncated))
+}
+
+func TestRunsWithCloudProvider(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		cloudProvider string
+		assertFunc    func(assert.TestingT, error, ...any) bool
+		retries       int
+	}{
+		{
+			name:          "Valid cloud tries (and fails) to get metadata",
+			cloudProvider: "aws",
+			assertFunc:    assert.Error,
+			retries:       0,
+		},
+		{
+			name:          "Valid cloud tries (and fails) to get metadata after 3 retries",
+			cloudProvider: "aws",
+			assertFunc:    assert.Error,
+			retries:       3,
+		},
+	}
+
+	for _, tt := range tests {
+		testCase := tt
+
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			//nolint:exhaustruct
+			agt := newTesting(&config.Config{
+				CloudProvider:      testCase.cloudProvider,
+				CloudMaxRetryCount: testCase.retries,
+			})
+
+			err := agt.Run()
+
+			testCase.assertFunc(t, err)
+		})
+	}
+}
+
+func TestAgent_checkInstanceIDRetry(t *testing.T) {
+	t.Parallel()
+
+	type args struct {
+		maxRetries  int
+		backoffTime int
+	}
+	tests := []struct {
+		name           string
+		cloudHarvester cloud.Harvester
+		args           args
+		wantErr        bool
+	}{
+		// This will follow the same strategy as the tests for cloud (see cloud_test.go)
+		{
+			name:           "Test with valid cloudHarvester",
+			cloudHarvester: NewMockHarvester(t, cloud.TypeAWS, false),
+			args:           args{maxRetries: 3, backoffTime: 2},
+			wantErr:        false,
+		},
+		{
+			name:           "Test valid cloudHarvester with 0 retries",
+			cloudHarvester: NewMockHarvester(t, cloud.TypeAzure, true),
+			args:           args{maxRetries: 0, backoffTime: 1},
+			wantErr:        false,
+		},
+		{
+			name:           "Test with valid cloudHarvester (exhaust retries)",
+			cloudHarvester: NewMockHarvester(t, cloud.TypeGCP, false),
+			args:           args{maxRetries: 1, backoffTime: 1},
+			wantErr:        true,
+		},
+		{
+			name:           "Test with invalid cloudHarvester",
+			cloudHarvester: NewMockHarvester(t, cloud.TypeNoCloud, false),
+			args:           args{maxRetries: 4, backoffTime: 1},
+			wantErr:        true,
+		},
+	}
+
+	for _, tt := range tests {
+		testCase := tt
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			a := newTesting(nil)
+			a.cloudHarvester = testCase.cloudHarvester
+
+			if err := a.checkInstanceIDRetry(testCase.args.maxRetries, testCase.args.backoffTime); (err != nil) != testCase.wantErr {
+				t.Errorf("Agent.checkInstanceIDRetry() error = %v, wantErr %v", err, testCase.wantErr)
+			}
+		})
+	}
 }

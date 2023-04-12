@@ -6,6 +6,9 @@ on:
       gh_token:
         required: true
 
+env:
+  CI: true
+
 jobs:
   unit-test:
     name: Unit tests
