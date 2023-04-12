@@ -84,7 +84,7 @@ func (d *gatherer) do(now time.Time) (interface{}, error) {
 	if dataWithTTL, ok := vals.(ValuesWithTTL); ok {
 		ttl, err := dataWithTTL.TTL()
 		if err != nil && !errors.Is(err, ErrTTLNotFound) {
-			return nil, fmt.Errorf("invalid gathered TTL: %w", err)
+			return nil, fmt.Errorf("invalid gathered TTL: %w", err) //nolint:wrapcheck
 		}
 
 		if err == nil {
@@ -93,7 +93,7 @@ func (d *gatherer) do(now time.Time) (interface{}, error) {
 
 		valuesWithTTL, err := dataWithTTL.Data()
 		if err != nil {
-			return nil, fmt.Errorf("invalid gathered Data: %w", err)
+			return nil, fmt.Errorf("invalid gathered Data: %w", err) //nolint:wrapcheck
 		}
 		vals = valuesWithTTL
 	}
