@@ -7,9 +7,9 @@ package darwin
 
 import (
 	"errors"
+	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"testing"
 
-	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/plugins/common"
 	testing2 "github.com/newrelic/infrastructure-agent/internal/plugins/testing"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"

@@ -674,11 +674,22 @@ type Config struct {
 	// Public: Yes
 	InventoryQueueLen int `yaml:"inventory_queue_len" envconfig:"inventory_queue_len" public:"true"`
 
+	// AsyncInventoryHandlerEnabled when set to true, enables the inventory handler that parallelize processing that allows handling larger inventory payloads.
+	// Default: false
+	// Public: no
+	AsyncInventoryHandlerEnabled bool `yaml:"async_inventory_handler_enabled" envconfig:"async_inventory_handler_enabled" public:"false"`
+
 	// EnableWinUpdatePlugin enables the windows updates plugin which retrieves the lists of hotfix that are installed
 	// on the host.
 	// Default: False
 	// Public: Yes
 	EnableWinUpdatePlugin bool `yaml:"enable_win_update_plugin" envconfig:"enable_win_update_plugin" os:"windows"`
+
+	// InventoryArchiveEnabled When enabled, the delta storage will save each successful deltas submission into
+	// .sent files in the delta store.
+	// Default: True
+	// Public: True
+	InventoryArchiveEnabled bool `yaml:"inventory_archive_enabled" envconfig:"inventory_archive_enabled" public:"true"`
 
 	// CompactEnabled When enabled, the delta storage will be compacted after its storage directory surpasses a
 	// certain threshold set by the CompactTreshold options.	Compaction works by removing the data of inactive plugins
@@ -1687,6 +1698,7 @@ func NewConfig() *Config {
 		StartupConnectionRetries:    defaultStartupConnectionRetries,
 		DisableZeroRSSFilter:        defaultDisableZeroRSSFilter,
 		DisableWinSharedWMI:         defaultDisableWinSharedWMI,
+		InventoryArchiveEnabled:     defaultInventoryArchiveEnabled,
 		CompactEnabled:              defaultCompactEnabled,
 		StripCommandLine:            DefaultStripCommandLine,
 		NetworkInterfaceFilters:     defaultNetworkInterfaceFilters,

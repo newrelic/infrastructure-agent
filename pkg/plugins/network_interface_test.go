@@ -3,13 +3,13 @@
 package plugins
 
 import (
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/stretchr/testify/mock"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/network"
@@ -136,7 +136,7 @@ func TestGetNetworkInterfaceData(t *testing.T) {
 
 	ni := interfaceStatAsNetworkInterfaceData(&getTestInterfaces()[0])
 	assert.NotNil(t, ni)
-	assert.Equal(t, data, agent.PluginInventoryDataset{ni})
+	assert.Equal(t, data, types.PluginInventoryDataset{ni})
 }
 
 func TestNetworkPlugin(t *testing.T) {
@@ -144,12 +144,12 @@ func TestNetworkPlugin(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, interfaces)
 
-	pluginInventory := agent.PluginInventoryDataset{}
+	pluginInventory := types.PluginInventoryDataset{}
 	for _, ni := range interfaces {
 		pluginInventory = append(pluginInventory, interfaceStatAsNetworkInterfaceData(&ni))
 	}
 
-	expectedInventory := agent.NewPluginOutput(getPluginId(), entity.NewFromNameWithoutID(agentId), pluginInventory)
+	expectedInventory := types.NewPluginOutput(getPluginId(), entity.NewFromNameWithoutID(agentId), pluginInventory)
 	assert.NotNil(t, expectedInventory)
 
 	ctx := &mocks.AgentContext{}
@@ -168,7 +168,7 @@ func TestNetworkPlugin(t *testing.T) {
 	go plugin.Run()
 
 	args := <-ch
-	_, ok := args[0].(agent.PluginOutput)
+	_, ok := args[0].(types.PluginOutput)
 	assert.True(t, ok)
 	actualInventory := args[0]
 

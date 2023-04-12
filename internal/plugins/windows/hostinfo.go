@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"runtime"
 	"strconv"
 	"strings"
@@ -66,9 +67,9 @@ func NewHostinfoPlugin(id ids.PluginID, ctx agent.AgentContext, hostInfo common.
 	}
 }
 
-func (self *HostinfoPlugin) Data() agent.PluginInventoryDataset {
+func (self *HostinfoPlugin) Data() types.PluginInventoryDataset {
 	info := getHostInfo()
-	return agent.PluginInventoryDataset{self.gatherHostinfo(self.Context, info)}
+	return types.PluginInventoryDataset{self.gatherHostinfo(self.Context, info)}
 }
 
 func (self *HostinfoPlugin) Run() {

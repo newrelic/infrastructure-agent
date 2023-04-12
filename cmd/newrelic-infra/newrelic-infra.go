@@ -414,6 +414,9 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		aslog.WithError(err).Warn("Commands initial fetch failed.")
 	}
 
+	// Initialise the agent after fetching FF.
+	agt.Init()
+
 	if c.StatusServerEnabled || c.HTTPServerEnabled {
 		rlog := wlog.WithComponent("status.Reporter")
 		timeoutD, err := time.ParseDuration(c.StartupConnectionTimeout)

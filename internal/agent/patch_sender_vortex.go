@@ -5,6 +5,7 @@ package agent
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/inventory"
 	"os"
 	"strings"
 	"time"
@@ -48,7 +49,7 @@ var psvlog = wlog.WithComponent("PatchSenderVortex")
 // Reference to post delta function that can be stubbed for unit testing
 type postDeltasVortex func(entityID entity.ID, entityKeys []string, isAgent bool, deltas ...*inventoryapi.RawDelta) (*inventoryapi.PostDeltaResponse, error)
 
-func newPatchSenderVortex(entityKey, agentKey string, context AgentContext, store *delta.Store, userAgent string, agentIDProvide id.Provide, provideIDs ProvideIDs, entityMap entity.KnownIDs, httpClient http2.Client) (patchSender, error) {
+func newPatchSenderVortex(entityKey, agentKey string, context AgentContext, store *delta.Store, userAgent string, agentIDProvide id.Provide, provideIDs ProvideIDs, entityMap entity.KnownIDs, httpClient http2.Client) (inventory.PatchSender, error) {
 	if store == nil {
 		psvlog.WithField("entityKey", entityKey).Error("creating patch sender: delta store can't be nil")
 		panic("creating patch sender: delta store can't be nil")

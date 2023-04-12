@@ -6,6 +6,7 @@
 package linux
 
 import (
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"io/ioutil"
 	"time"
@@ -53,7 +54,7 @@ func (p *SysctlSubscriberPlugin) Run() {
 
 	var initialSubmitOk bool
 	var needsFlush bool
-	var deltas agent.PluginInventoryDataset
+	var deltas types.PluginInventoryDataset
 	for {
 		select {
 		case <-ticker.C:
@@ -68,7 +69,7 @@ func (p *SysctlSubscriberPlugin) Run() {
 			} else if needsFlush {
 				p.EmitInventory(deltas, entity.NewFromNameWithoutID(p.Context.EntityKey()))
 				needsFlush = false
-				deltas = agent.PluginInventoryDataset{}
+				deltas = types.PluginInventoryDataset{}
 			}
 			ticker.Stop()
 			ticker = time.NewTicker(p.frequency)

@@ -3,13 +3,13 @@
 package plugins
 
 import (
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"testing"
 
-	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
@@ -35,7 +35,7 @@ func TestConfig(t *testing.T) {
 
 	args := <-ch
 
-	_, ok := args[0].(agent.PluginOutput)
+	_, ok := args[0].(types.PluginOutput)
 	assert.True(t, ok)
 	gotPluginOutput := args[0]
 
@@ -48,7 +48,7 @@ func TestConfig(t *testing.T) {
 			"value": value,
 		}
 	}
-	expectedPluginOutput := agent.NewPluginOutput(*pluginId, entity.NewFromNameWithoutID(agentId), agent.PluginInventoryDataset{ConfigAttrs(expectedInvItems)})
+	expectedPluginOutput := types.NewPluginOutput(*pluginId, entity.NewFromNameWithoutID(agentId), types.PluginInventoryDataset{ConfigAttrs(expectedInvItems)})
 
 	assert.Equal(t, gotPluginOutput, expectedPluginOutput)
 	ctx.AssertExpectations(t)

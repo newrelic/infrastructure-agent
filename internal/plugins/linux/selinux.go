@@ -9,6 +9,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"regexp"
 	"strings"
@@ -75,7 +76,7 @@ func NewSELinuxPlugin(id ids.PluginID, ctx agent.AgentContext) agent.Plugin {
 //	    basicData: Overall SELinux status - whether it's running, what mode it's in, etc.
 //	   policyData: Individual SELinux policy flags - a high-level overview of SELinux configuration
 //	policyModules: Listing of policy modules in use and which version of modules are active
-func (self *SELinuxPlugin) getDataset() (basicData agent.PluginInventoryDataset, policyData agent.PluginInventoryDataset, policyModules agent.PluginInventoryDataset, err error) {
+func (self *SELinuxPlugin) getDataset() (basicData types.PluginInventoryDataset, policyData types.PluginInventoryDataset, policyModules types.PluginInventoryDataset, err error) {
 	// Get basic selinux status data using sestatus. If selinux isn't enabled or installed, this will fail.
 	output, err := helpers.RunCommand("sestatus", "", "-b")
 	if err != nil {
@@ -97,7 +98,7 @@ func (self *SELinuxPlugin) getDataset() (basicData agent.PluginInventoryDataset,
 	return
 }
 
-func (self *SELinuxPlugin) parseSestatusOutput(output string) (basicResult agent.PluginInventoryDataset, policyResult agent.PluginInventoryDataset, err error) {
+func (self *SELinuxPlugin) parseSestatusOutput(output string) (basicResult types.PluginInventoryDataset, policyResult types.PluginInventoryDataset, err error) {
 	labelRegex, err := regexp.Compile(`([^:]*):\s+(.*)`)
 	if err != nil {
 		return
@@ -155,7 +156,7 @@ func (self *SELinuxPlugin) sELinuxActive() bool {
 	return err == nil
 }
 
-func (self *SELinuxPlugin) parseSemoduleOutput(output string) (result agent.PluginInventoryDataset, err error) {
+func (self *SELinuxPlugin) parseSemoduleOutput(output string) (result types.PluginInventoryDataset, err error) {
 	moduleRegex, err := regexp.Compile(`(\S+)\s+(\S+)`)
 	if err != nil {
 		return
@@ -196,10 +197,10 @@ func (self *SELinuxPlugin) Run() {
 			}
 
 			entity := entity.NewFromNameWithoutID(self.Context.EntityKey())
-			self.Context.SendData(agent.NewPluginOutput(self.Id(), entity, basicData))
-			self.Context.SendData(agent.NewPluginOutput(ids.PluginID{self.ID.Category, fmt.Sprintf("%s-policies", self.ID.Term)}, entity, policyData))
+			self.Context.SendData(types.NewPluginOutput(self.Id(), entity, basicData))
+			self.Context.SendData(types.NewPluginOutput(ids.PluginID{self.ID.Category, fmt.Sprintf("%s-policies", self.ID.Term)}, entity, policyData))
 			if self.enableSemodule {
-				self.Context.SendData(agent.NewPluginOutput(ids.PluginID{self.ID.Category, fmt.Sprintf("%s-modules", self.ID.Term)}, entity, policyModules))
+				self.Context.SendData(types.NewPluginOutput(ids.PluginID{self.ID.Category, fmt.Sprintf("%s-modules", self.ID.Term)}, entity, policyModules))
 			}
 
 			<-refreshTimer.C

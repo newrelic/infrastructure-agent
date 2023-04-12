@@ -3,6 +3,7 @@
 package plugins
 
 import (
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/sirupsen/logrus"
@@ -57,5 +58,5 @@ func (ac *AgentConfigPlugin) Run() {
 
 	helpers.LogStructureDetails(aclog, inventoryItems, "config", "raw", logrus.Fields{})
 
-	ac.EmitInventory(agent.PluginInventoryDataset{ConfigAttrs(inventoryItems)}, entity.NewFromNameWithoutID(ac.Context.EntityKey()))
+	ac.EmitInventory(types.PluginInventoryDataset{ConfigAttrs(inventoryItems)}, entity.NewFromNameWithoutID(ac.Context.EntityKey()))
 }

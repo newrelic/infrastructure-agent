@@ -7,6 +7,7 @@ package windows
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"time"
 
@@ -97,7 +98,7 @@ func (self *ServicesPlugin) getServicePID(mgr windows.Handle, serviceName string
 	return status.ProcessId, status.CurrentState, nil
 }
 
-func (self *ServicesPlugin) getDataset() (result agent.PluginInventoryDataset, err error) {
+func (self *ServicesPlugin) getDataset() (result types.PluginInventoryDataset, err error) {
 	// Windows registry path that contains all the services on the local machine
 	key, err := registry.OpenKey(registry.LOCAL_MACHINE, `System\CurrentControlSet\Services\`, registry.QUERY_VALUE|registry.ENUMERATE_SUB_KEYS)
 	if err != nil {
