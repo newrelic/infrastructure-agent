@@ -17,18 +17,18 @@ import (
 
 const (
 	// FFs
-	FlagCategory                 = "Infra_Agent"
-	FlagNameRegister             = "register_enabled"
-	FlagParallelizeInventory     = "parallelize_inventory_enabled"
-	FlagParallelInventoryHandler = "parallel_inventory_handler_enabled"
-	FlagProtocolV4               = "protocol_v4_enabled"
-	FlagFullProcess              = "full_process_sampling"
-	FlagDmRegisterDeprecated     = "dm_register_deprecated"
+	FlagCategory              = "Infra_Agent"
+	FlagNameRegister          = "register_enabled"
+	FlagParallelizeInventory  = "parallelize_inventory_enabled"
+	FlagAsyncInventoryHandler = "async_inventory_handler_enabled"
+	FlagProtocolV4            = "protocol_v4_enabled"
+	FlagFullProcess           = "full_process_sampling"
+	FlagDmRegisterDeprecated  = "dm_register_deprecated"
 	// Config
-	CfgYmlRegisterEnabled                 = "register_enabled"
-	CfgYmlParallelizeInventory            = "inventory_queue_len"
-	CfgYmlParallelInventoryHandlerEnabled = "parallel_inventory_handler_enabled"
-	CfgValueParallelizeInventory          = int64(100) // default value when no config provided by user and FF enabled
+	CfgYmlRegisterEnabled              = "register_enabled"
+	CfgYmlParallelizeInventory         = "inventory_queue_len"
+	CfgYmlAsyncInventoryHandlerEnabled = "async_inventory_handler_enabled"
+	CfgValueParallelizeInventory       = int64(100) // default value when no config provided by user and FF enabled
 )
 
 var (
@@ -136,8 +136,8 @@ func (h *handler) Handle(ctx context.Context, c commandapi.Command, isInitialFet
 		return
 	}
 
-	if ffArgs.Flag == FlagParallelInventoryHandler {
-		handleParallelInventoryHandlerEnabled(ffArgs, h.cfg, isInitialFetch)
+	if ffArgs.Flag == FlagAsyncInventoryHandler {
+		handleAsyncInventoryHandlerEnabled(ffArgs, h.cfg, isInitialFetch)
 		return
 	}
 
@@ -258,9 +258,9 @@ func handleRegister(ffArgs args, c *config.Config, isInitialFetch bool) {
 	}
 }
 
-func handleParallelInventoryHandlerEnabled(ffArgs args, c *config.Config, isInitialFetch bool) {
+func handleAsyncInventoryHandlerEnabled(ffArgs args, c *config.Config, isInitialFetch bool) {
 	// feature already in desired state.
-	if ffArgs.Enabled == c.ParallelInventoryHandlerEnabled {
+	if ffArgs.Enabled == c.AsyncInventoryHandlerEnabled {
 		return
 	}
 
@@ -268,10 +268,10 @@ func handleParallelInventoryHandlerEnabled(ffArgs args, c *config.Config, isInit
 		os.Exit(api.ExitCodeRestart)
 	}
 
-	if err := c.SetBoolValueByYamlAttribute(CfgYmlParallelInventoryHandlerEnabled, ffArgs.Enabled); err != nil {
+	if err := c.SetBoolValueByYamlAttribute(CfgYmlAsyncInventoryHandlerEnabled, ffArgs.Enabled); err != nil {
 		ffLogger.
 			WithError(err).
-			WithField("field", CfgYmlParallelInventoryHandlerEnabled).
+			WithField("field", CfgYmlAsyncInventoryHandlerEnabled).
 			Warn("unable to update config value")
 	}
 }

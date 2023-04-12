@@ -672,10 +672,10 @@ type Config struct {
 	// Public: Yes
 	InventoryQueueLen int `yaml:"inventory_queue_len" envconfig:"inventory_queue_len" public:"true"`
 
-	// ParallelInventoryHandlerEnabled when set to true, enables the inventory handler that parallelize processing that allows handling larger inventory payloads.
+	// AsyncInventoryHandlerEnabled when set to true, enables the inventory handler that parallelize processing that allows handling larger inventory payloads.
 	// Default: false
 	// Public: no
-	ParallelInventoryHandlerEnabled bool `yaml:"parallel_inventory_handler_enabled" envconfig:"parallel_inventory_handler_enabled" public:"false"`
+	AsyncInventoryHandlerEnabled bool `yaml:"async_inventory_handler_enabled" envconfig:"async_inventory_handler_enabled" public:"false"`
 
 	// EnableWinUpdatePlugin enables the windows updates plugin which retrieves the lists of hotfix that are installed
 	// on the host.

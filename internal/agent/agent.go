@@ -666,8 +666,10 @@ func (a *Agent) setAgentKey(idLookupTable host.IDLookup) error {
 func (a *Agent) Init() {
 	cfg := a.Context.cfg
 
-	// Configure ParallelInventoryHandler if FF is enabled.
-	if cfg.ParallelInventoryHandlerEnabled {
+	// Configure AsyncInventoryHandler if FF is enabled.
+	if cfg.AsyncInventoryHandlerEnabled {
+		alog.Debug("Initialise async inventory handler")
+
 		removeEntitiesPeriod, _ := time.ParseDuration(a.Context.Config().RemoveEntitiesPeriod)
 
 		patcherConfig := inventory.PatcherConfig{
@@ -691,7 +693,7 @@ func (a *Agent) Init() {
 		a.Context.pluginOutputHandleFn = a.inventoryHandler.Handle
 		a.Context.updateIDLookupTableFn = a.updateIDLookupTable
 
-		// When ParallelInventoryHandlerEnabled is set disable inventory archiving.
+		// When AsyncInventoryHandlerEnabled is set disable inventory archiving.
 		a.store.SetArchiveEnabled(false)
 	}
 }

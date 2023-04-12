@@ -112,9 +112,9 @@ func TestFFHandlerHandle_EnabledFFParallelizeInventoryDoesNotModifyProvidedConfi
 	assert.Equal(t, 123, c.InventoryQueueLen)
 }
 
-func TestFFHandlerHandle_ParallelInventoryHandlerEnabledInitialFetch(t *testing.T) {
+func TestFFHandlerHandle_AsyncInventoryHandlerEnabledInitialFetch(t *testing.T) {
 	c := config.Config{
-		ParallelInventoryHandlerEnabled: false,
+		AsyncInventoryHandlerEnabled: false,
 	}
 	cmd := commandapi.Command{
 		Args: []byte(`{
@@ -124,12 +124,12 @@ func TestFFHandlerHandle_ParallelInventoryHandlerEnabledInitialFetch(t *testing.
 	}
 	NewHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
 
-	assert.True(t, c.ParallelInventoryHandlerEnabled)
+	assert.True(t, c.AsyncInventoryHandlerEnabled)
 }
 
-func TestFFHandlerHandle_ParallelInventoryHandlerEnabled(t *testing.T) {
+func TestFFHandlerHandle_AsyncInventoryHandlerEnabled(t *testing.T) {
 	c := config.Config{
-		ParallelInventoryHandlerEnabled: true,
+		AsyncInventoryHandlerEnabled: true,
 	}
 	cmd := commandapi.Command{
 		Args: []byte(`{
@@ -139,12 +139,12 @@ func TestFFHandlerHandle_ParallelInventoryHandlerEnabled(t *testing.T) {
 	}
 	NewHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, false)
 
-	assert.True(t, c.ParallelInventoryHandlerEnabled)
+	assert.True(t, c.AsyncInventoryHandlerEnabled)
 }
 
-func TestFFHandlerHandle_ParallelInventoryHandler_Disabled(t *testing.T) {
+func TestFFHandlerHandle_AsyncInventoryHandler_Disabled(t *testing.T) {
 	c := config.Config{
-		ParallelInventoryHandlerEnabled: true,
+		AsyncInventoryHandlerEnabled: true,
 	}
 	cmd := commandapi.Command{
 		Args: []byte(`{
@@ -154,7 +154,7 @@ func TestFFHandlerHandle_ParallelInventoryHandler_Disabled(t *testing.T) {
 	}
 	NewHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
 
-	assert.False(t, c.ParallelInventoryHandlerEnabled)
+	assert.False(t, c.AsyncInventoryHandlerEnabled)
 }
 
 func TestFFHandlerHandle_ExitsOnDiffValueAndNotInitialFetch(t *testing.T) {
