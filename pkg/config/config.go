@@ -24,6 +24,7 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/newrelic/infrastructure-agent/pkg/license"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 	"github.com/sirupsen/logrus"
 
 	config_loader "github.com/newrelic/infrastructure-agent/pkg/config/loader"
@@ -643,7 +644,7 @@ type Config struct {
 	// to have this behaviour then you can enable the entityname_integrations_v2_update option.
 	// Default: False
 	// Public: Yes
-	ForceProtocolV2toV3 bool `yaml:"entityname_integrations_v2_update"envconfig:"entityname_integrations_v2_update"`
+	ForceProtocolV2toV3 bool `yaml:"entityname_integrations_v2_update" envconfig:"entityname_integrations_v2_update"`
 
 	// DisableAllPlugins disables all the plugins except does that send data required by
 	// the platform team. Can be overridden per plugin by setting the
@@ -908,6 +909,13 @@ type Config struct {
 	// Default: False
 	// Public: Yes
 	DisableCloudInstanceId bool `yaml:"disable_cloud_instance_id" envconfig:"disable_cloud_instance_id"`
+
+	// CloudProvider This sets the cloud provider the agent is running in. When this is set up, the agent will wait
+	// until it has acquired the instance ID from the cloud provider before submitting any data to the backend.
+	// Default: ""
+	// Allowed values: aws, azure, gcp, alibaba
+	// Public: Yes
+	CloudProvider string `yaml:"cloud_provider" envconfig:"cloud_provider"`
 
 	// CloudMaxRetryCount If the agent is running in a cloud instance, the agent will try to detect the	cloud type and
 	// it will fetch metadata like: instanceID, instanceType, cloudSource, hostType.
@@ -1673,6 +1681,7 @@ func NewConfig() *Config {
 		DMSubmissionPeriod:            DefaultDMPeriodSecs,
 		ProxyConfigPlugin:             defaultProxyConfigPlugin,
 		ProxyValidateCerts:            defaultProxyValidateCerts,
+		CloudProvider:                 defaultCloudProvider,
 		CloudRetryBackOffSec:          defaultCloudRetryBackOffSec,
 		CloudMaxRetryCount:            defaultCloudMaxRetryCount,
 		CloudMetadataDisableKeepAlive: defaultCloudMetadataDisableKeepAlive,
@@ -2162,6 +2171,13 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	nlog.WithField("DnsHostnameResolution", cfg.DnsHostnameResolution).Debug("DNS hostname resolution.")
 	// IgnoreReclaimable value defined in NewConfig
 	nlog.WithField("IgnoreReclaimable", cfg.IgnoreReclaimable).Debug("Ignoring reclaimable memory.")
+
+	// CloudType default value if cloud is unknown
+	if cfg.CloudProvider != "" && !cloud.Type(cfg.CloudProvider).IsValidCloud() {
+		nlog.WithField("CloudType", cfg.CloudProvider).Warn("Invalid cloud provider.")
+		cfg.CloudProvider = defaultCloudProvider
+	}
+
 	// CloudMaxRetryCount default value defined in NewConfig
 	nlog.WithField("CloudMaxRetryCount", cfg.CloudMaxRetryCount).Debug("Cloud detection max retry count on error.")
 	// CloudRetryBackOffSec default value defined in NewConfig

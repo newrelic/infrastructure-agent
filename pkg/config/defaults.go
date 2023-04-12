@@ -34,6 +34,8 @@ const (
 )
 
 // Default configurable values
+//
+//nolint:gochecknoglobals
 var (
 	// public
 	DefaultContainerCacheMetadataLimit = 60
@@ -93,6 +95,7 @@ var (
 	defaultIdentityIngestEndpoint        = "/identity/v1"      // default: V1 endpoint root (/connect, /register/batch)
 	defaultMetricsIngestV2Endpoint       = "/infra/v2/metrics" // default: V2 endpoint root (/events/bulk), combine this with defaultCollectorURL
 	defaultFingerprintUpdateFreqSec      = 60                  // Default update freq of the fingerprint in seconds.
+	defaultCloudProvider                 = ""
 	defaultCloudMaxRetryCount            = 10
 	defaultCloudRetryBackOffSec          = 60  // In seconds.
 	defaultCloudMetadataExpiryInSec      = 300 // In seconds.

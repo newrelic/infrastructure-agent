@@ -3,6 +3,9 @@ name: .. 🚧 Windows | Run unit tests
 on:
   workflow_call:
 
+env:
+  CI: true
+
 jobs:
   test:
     name: Windows unit tests

@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -360,6 +361,81 @@ func (s *CloudDetectionSuite) TestDetectFail(c *C) {
 	c.Assert(awsHarvester.retryCount, Equals, 11) // 1 initial detection + 10 retries in background.
 
 	c.Assert(detector.GetCloudType(), Equals, TypeNoCloud)
+}
+
+func (s *CloudDetectionSuite) TestDetectWithProvider(chk *C) {
+	tests := []struct {
+		provider    string
+		harvester   Harvester
+		expected    Type
+		initialized bool
+	}{
+		{
+			provider:    "gcp",
+			harvester:   NewGCPHarvester(false),
+			expected:    TypeGCP,
+			initialized: true,
+		},
+		{
+			provider:    "alibaba",
+			harvester:   NewAlibabaHarvester(false),
+			expected:    TypeAlibaba,
+			initialized: true,
+		},
+		// Invalid provider values should keep the detector waiting in progress.
+	}
+
+	// Testing the cases below in GHA will return a valid provider being set (Azure).
+	if os.Getenv("CI") == "" {
+		tests = append(tests, []struct {
+			provider    string
+			harvester   Harvester
+			expected    Type
+			initialized bool
+		}{
+			{
+				provider:    "unknown",
+				harvester:   nil,
+				expected:    TypeInProgress,
+				initialized: false,
+			},
+			{
+				provider:    "",
+				harvester:   nil,
+				expected:    TypeInProgress,
+				initialized: false,
+			},
+		}...)
+	}
+
+	for _, test := range tests {
+		detector := NewDetector(false, 10, 0, 0, false)
+
+		done := make(chan struct{})
+
+		go func() {
+			detector.Initialize(WithProvider(Type(test.provider)))
+
+			for {
+				if detector.isInitialized() {
+					done <- struct{}{}
+				}
+			}
+		}()
+
+		select {
+		case <-done:
+		case <-time.After(time.Second):
+			close(done)
+		}
+
+		if test.expected.IsValidCloud() {
+			chk.Assert(detector.getHarvester(), FitsTypeOf, test.harvester)
+		}
+
+		chk.Assert(detector.isInitialized(), Equals, test.initialized)
+		chk.Assert(detector.GetCloudType(), Equals, test.expected)
+	}
 }
 
 func pseudoSleep(t *Timeout, period time.Duration) {

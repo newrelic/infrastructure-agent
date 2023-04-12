@@ -33,7 +33,10 @@ func (t Type) ShouldCollect() bool {
 }
 
 func (t Type) IsValidCloud() bool {
-	return t != TypeNoCloud && t != TypeInProgress
+	return t == TypeAWS ||
+		t == TypeAzure ||
+		t == TypeGCP ||
+		t == TypeAlibaba
 }
 
 var (
@@ -92,8 +95,41 @@ func NewDetector(disableCloudMetadata bool, maxRetriesNumber, retryBackOffSec, e
 	}
 }
 
+type DetectorOption func(*Detector)
+
+func WithProvider(cloudType Type) DetectorOption {
+	return func(detector *Detector) {
+		switch cloudType {
+		case TypeAWS:
+			detector.setHarvester(NewAWSHarvester(detector.disableKeepAlive))
+			detector.finishInit()
+		case TypeAzure:
+			detector.setHarvester(NewAzureHarvester(detector.disableKeepAlive))
+			detector.finishInit()
+		case TypeGCP:
+			detector.setHarvester(NewGCPHarvester(detector.disableKeepAlive))
+			detector.finishInit()
+		case TypeAlibaba:
+			detector.setHarvester(NewAlibabaHarvester(detector.disableKeepAlive))
+			detector.finishInit()
+		case TypeNoCloud:
+		case TypeInProgress:
+		default:
+		}
+	}
+}
+
 // Initialize should be called in order to Detect the cloud harvester.
-func (d *Detector) Initialize() {
+func (d *Detector) Initialize(opts ...DetectorOption) {
+	for _, opt := range opts {
+		opt(d)
+	}
+
+	// If the above options did set a harvester, we don't need to initialize.
+	if d.isInitialized() {
+		return
+	}
+
 	harvesters := []Harvester{
 		NewAWSHarvester(d.disableKeepAlive),
 		NewAzureHarvester(d.disableKeepAlive),
