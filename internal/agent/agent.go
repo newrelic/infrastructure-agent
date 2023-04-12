@@ -5,11 +5,6 @@ package agent
 import (
 	context2 "context"
 	"fmt"
-
-	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
-	"github.com/newrelic/infrastructure-agent/internal/agent/inventory"
-	"github.com/newrelic/infrastructure-agent/internal/agent/types"
-
 	"net/http"
 	"os"
 	"path/filepath"
@@ -20,6 +15,10 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
+	"github.com/newrelic/infrastructure-agent/internal/agent/inventory"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
@@ -269,8 +268,8 @@ func NewAgent(
 	cfg *config.Config,
 	buildVersion string,
 	userAgent string,
-	ffRetriever feature_flags.Retriever) (a *Agent, err error) {
-
+	ffRetriever feature_flags.Retriever,
+) (a *Agent, err error) {
 	hostnameResolver := hostname.CreateResolver(
 		cfg.OverrideHostname, cfg.OverrideHostnameShort, cfg.DnsHostnameResolution)
 
@@ -336,7 +335,6 @@ func NewAgent(
 
 	provideIDs := NewProvideIDs(registerClient, state.NewRegisterSM())
 	fpHarvester, err := fingerprint.NewHarvestor(cfg, hostnameResolver, cloudHarvester)
-
 	if err != nil {
 		return nil, err
 	}
@@ -423,7 +421,7 @@ func New(
 	llog.Debug("Bootstrap Entity Key.")
 
 	// Create the external directory for user-generated json
-	if err := disk.MkdirAll(a.extDir, 0755); err != nil {
+	if err := disk.MkdirAll(a.extDir, 0o755); err != nil {
 		llog.WithField("path", a.extDir).WithError(err).Error("External json directory could not be initialized")
 		return nil, err
 	}
@@ -575,7 +573,6 @@ func (a *Agent) DeprecatePlugin(plugin ids.PluginID) {
 
 // storePluginOutput will take a PluginOutput and persist it in the store
 func (a *Agent) storePluginOutput(pluginOutput types.PluginOutput) error {
-
 	if pluginOutput.Data == nil {
 		pluginOutput.Data = make(types.PluginInventoryDataset, 0)
 	}
@@ -722,6 +719,7 @@ func (a *Agent) Run() (err error) {
 		// If the cloud provider was specified but we cannot get the instance ID, agent fails
 		if err != nil {
 			alog.WithError(err).Error("Couldn't detect the instance ID for the specified cloud")
+
 			return
 		}
 	}
@@ -758,6 +756,7 @@ func (a *Agent) Run() (err error) {
 				}
 			case <-a.Context.Ctx.Done():
 				debugTimer.Stop()
+
 				return
 			}
 		}
@@ -790,10 +789,12 @@ func (a *Agent) Run() (err error) {
 			a.inventoryHandler.Start()
 		}
 		<-exit
+
 		return nil
 	}
 
 	a.handleInventory(exit)
+	
 	return nil
 }
 
@@ -804,9 +805,9 @@ func (a *Agent) handleInventory(exit chan struct{}) {
 	reapInventoryTimer := time.NewTicker(cfg.FirstReapInterval)
 	sendInventoryTimer := time.NewTimer(cfg.SendInterval) // Send any deltas every X seconds
 
-	//Remove send timer
+	// Remove send timer
 	if !a.shouldSendInventory() {
-		//If Stop returns false means that the timer has been already triggered
+		// If Stop returns false means that the timer has been already triggered
 		if !sendInventoryTimer.Stop() {
 			<-sendInventoryTimer.C
 		}
@@ -940,6 +941,7 @@ func (a *Agent) checkInstanceIDRetry(maxRetries, backoffTime int) error {
 		if _, err = a.cloudHarvester.GetInstanceID(); err == nil {
 			return nil
 		}
+
 		if i >= maxRetries-1 {
 			break
 		}
@@ -952,7 +954,6 @@ func (a *Agent) checkInstanceIDRetry(maxRetries, backoffTime int) error {
 }
 
 func (a *Agent) cpuProfileStart() *os.File {
-
 	// Start CPU profiling
 	if a.Context.cfg.CPUProfile == "" {
 		return nil
@@ -980,7 +981,6 @@ func (a *Agent) cpuProfileStop(f *os.File) {
 }
 
 func (a *Agent) intervalMemoryProfile() {
-
 	cfg := a.Context.cfg
 
 	if cfg.MemProfileInterval <= 0 {
@@ -998,11 +998,9 @@ func (a *Agent) intervalMemoryProfile() {
 			counter++
 		}
 	}
-
 }
 
 func (a *Agent) dumpMemoryProfile(agentRuntimeMark int) {
-
 	if a.Context.cfg.MemProfile == "" {
 		return
 	}
@@ -1021,7 +1019,6 @@ func (a *Agent) dumpMemoryProfile(agentRuntimeMark int) {
 			mlog.WithError(err).Error("could not start memory profile")
 		}
 	}
-
 }
 
 func (a *Agent) exitGracefully() {
