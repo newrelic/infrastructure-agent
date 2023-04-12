@@ -122,3 +122,34 @@ variables:
 	d := data[0].Variables.(map[string]string)
 	assert.Equal(t, "http://admin:test@example.com/", d["url"])
 }
+
+func TestPassthroughVars(t *testing.T) {
+	yaml := `
+variables:
+  creds:
+    command:
+      path: "env"
+			passthrough_environment: ["DB_USER", "DB_PASS"]
+`
+	t.Setenv("DB_USER", "username")
+	t.Setenv("DB_PASS", "password")
+
+	// FIXME modify
+	ctx, err := databind.LoadYAML([]byte(yaml))
+	assert.NoError(t, err)
+	vals, err := databind.Fetch(ctx)
+	require.NoError(t, err)
+
+	templ := map[string]string{
+		"a_key": "${creds.user}",
+	}
+	data, err := databind.Replace(&vals, templ)
+	require.NoError(t, err)
+
+	// THEN a match is returned, and the JSON fields are accessible by fields and indices
+	require.Len(t, data, 1)
+	require.IsType(t, map[string]string{}, data[0].Variables)
+	d := data[0].Variables.(map[string]string)
+	require.Contains(t, d, "a_key")
+	assert.Equal(t, "username", d["a_key"])
+}
