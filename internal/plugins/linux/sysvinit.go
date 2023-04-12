@@ -9,6 +9,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"io/ioutil"
 	"os"
@@ -76,7 +77,7 @@ func (self *SysvInitPlugin) Run() {
 			time.Sleep(self.frequency)
 		}
 
-		dataset := agent.PluginInventoryDataset{}
+		dataset := types.PluginInventoryDataset{}
 		pidMap := make(map[int]string)
 
 		a, err := self.services(SYSV_INIT_DIR)

@@ -8,6 +8,7 @@ import (
 	context2 "context"
 	"encoding/json"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -20,6 +21,7 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/delta"
+	agentTypes "github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags/test"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
@@ -35,7 +37,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/fingerprint"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/metric"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
-	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
@@ -94,6 +95,8 @@ func newTesting(cfg *config.Config) *Agent {
 		panic(err)
 	}
 
+	a.Init()
+
 	return a
 }
 
@@ -117,10 +120,10 @@ func TestIgnoreInventory(t *testing.T) {
 		_ = os.RemoveAll(a.store.DataDir)
 	}()
 
-	assert.NoError(t, a.storePluginOutput(PluginOutput{
+	assert.NoError(t, a.storePluginOutput(agentTypes.PluginOutput{
 		Id:     ids.PluginID{"test", "plugin"},
 		Entity: entity.NewFromNameWithoutID("someEntity"),
-		Data: PluginInventoryDataset{
+		Data: agentTypes.PluginInventoryDataset{
 			&TestAgentData{"yum", "value1"},
 			&TestAgentData{"myService", "value2"},
 		},
@@ -208,7 +211,7 @@ func TestUpdateIDLookupTable(t *testing.T) {
 	a := newTesting(nil)
 	defer os.RemoveAll(a.store.DataDir)
 
-	dataset := PluginInventoryDataset{}
+	dataset := agentTypes.PluginInventoryDataset{}
 	dataset = append(dataset, sysinfo.HostAliases{
 		Alias:  "hostName.com",
 		Source: sysinfo.HOST_SOURCE_HOSTNAME,
@@ -316,7 +319,7 @@ func TestRemoveOutdatedEntities(t *testing.T) {
 	// Given an agent
 	agent := newTesting(nil)
 	defer os.RemoveAll(agent.store.DataDir)
-	agent.inventories = map[string]*inventory{}
+	agent.inventories = map[string]*inventoryEntity{}
 
 	dataDir := agent.store.DataDir
 
@@ -589,7 +592,7 @@ func TestAgent_Run_DontSendInventoryIfFwdOnly(t *testing.T) {
 
 			//Inventory recording calls
 			snd := &patchSenderCallRecorder{}
-			a.inventories = map[string]*inventory{"test": {sender: snd}}
+			a.inventories = map[string]*inventoryEntity{"test": {sender: snd}}
 
 			go func() {
 				assert.NoError(t, a.Run())
@@ -719,10 +722,10 @@ func TestStorePluginOutput(t *testing.T) {
 	aV := "aValue"
 	bV := "bValue"
 	cV := "cValue"
-	err := a.storePluginOutput(PluginOutput{
+	err := a.storePluginOutput(agentTypes.PluginOutput{
 		Id:     ids.PluginID{"test", "plugin"},
 		Entity: entity.NewFromNameWithoutID("someEntity"),
-		Data: PluginInventoryDataset{
+		Data: agentTypes.PluginInventoryDataset{
 			&testAgentNullableData{"cMyService", &cV},
 			&testAgentNullableData{"aMyService", &aV},
 			&testAgentNullableData{"NilService", nil},
@@ -778,7 +781,7 @@ func BenchmarkStorePluginOutput(b *testing.B) {
 
 	for _, bm := range benchmarks {
 		b.Run(bm.name, func(b *testing.B) {
-			var dataset PluginInventoryDataset
+			var dataset agentTypes.PluginInventoryDataset
 			for i := 0; i < 6; i++ {
 				mHostInfo := &mockHostinfoData{
 					System:          fmt.Sprintf("system-%v", i),
@@ -799,7 +802,7 @@ func BenchmarkStorePluginOutput(b *testing.B) {
 				dataset = append(dataset, mHostInfo)
 			}
 
-			output := PluginOutput{
+			output := agentTypes.PluginOutput{
 				Id:     ids.PluginID{"test", "plugin"},
 				Entity: entity.NewFromNameWithoutID("someEntity"),
 				Data:   dataset,

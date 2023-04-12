@@ -9,6 +9,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"os"
 	"os/exec"
@@ -63,7 +64,7 @@ func daemonToolsPresent() bool {
 	return err == nil
 }
 
-func getDaemontoolsServiceStatus() (data agent.PluginInventoryDataset, pidMap map[int]string, err error) {
+func getDaemontoolsServiceStatus() (data types.PluginInventoryDataset, pidMap map[int]string, err error) {
 	pidMap = make(map[int]string)
 	var (
 		psOut []byte

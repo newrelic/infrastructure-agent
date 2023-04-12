@@ -4,6 +4,7 @@ package agent
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/inventory"
 	"math"
 	http2 "net/http"
 	"os"
@@ -457,7 +458,7 @@ func TestPatchSenderVortex_Process_Reset(t *testing.T) {
 	assert.True(t, storageSize < 10, "%v not smaller than 10", storageSize)
 }
 
-func newSender(t *testing.T, ctx *context, store *delta.Store, client http.Client, registerClient identityapi.RegisterClient) patchSender { // nolint:ireturn
+func newSender(t *testing.T, ctx *context, store *delta.Store, client http.Client, registerClient identityapi.RegisterClient) inventory.PatchSender { // nolint:ireturn
 	t.Helper()
 	pSender, err := newPatchSenderVortex("entityKey", agentKey, ctx, store, "user-agent", ctx.Identity, NewProvideIDs(registerClient, state.NewRegisterSM()), entity.NewKnownIDs(), client)
 	require.NoError(t, err)

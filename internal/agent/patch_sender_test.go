@@ -5,6 +5,7 @@ package agent
 import (
 	ctx "context"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/inventory"
 	"github.com/stretchr/testify/mock"
 	"io/ioutil"
 	"math"
@@ -55,7 +56,7 @@ func ResetPostDelta(_ []string, _ entity.ID, _ bool, _ ...*inventoryapi.RawDelta
 }
 
 func TestNewPatchSender(t *testing.T) {
-	assert.Implements(t, (*patchSender)(nil), newTestPatchSender(t, "", &delta.Store{}, delta.NewLastSubmissionInMemory(), nil))
+	assert.Implements(t, (*inventory.PatchSender)(nil), newTestPatchSender(t, "", &delta.Store{}, delta.NewLastSubmissionInMemory(), nil))
 }
 
 func cachePluginData(t *testing.T, store *delta.Store, entityKey string) {
@@ -124,7 +125,7 @@ func TestPatchSender_Process_LongTermOffline_ReconnectPlugins(t *testing.T) {
 	ps.postDeltas = FakePostDelta
 	ps.lastDeltaRemoval = endOf18.Truncate(48 * time.Hour)
 	var agentKey atomic.Value
-	agentKey.Store("test")
+	agentKey.Store(entityKey)
 	ps.context = &context{
 		reconnecting: new(sync.Map),
 		agentKey:     agentKey,

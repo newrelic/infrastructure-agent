@@ -4,6 +4,11 @@ package core
 
 import (
 	"bytes"
+	context2 "context"
+	agentTypes "github.com/newrelic/infrastructure-agent/internal/agent/types"
+	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
+	"github.com/stretchr/testify/suite"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -20,14 +25,33 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDeltas_nestedObjectsV4(t *testing.T) {
+type InventoryTestSuite struct {
+	suite.Suite
+	AsyncInventoryHandlerEnabled bool
+}
+
+func TestInventorySuite_AsyncInventoryHandlerEnabled(t *testing.T) {
+	suite.Run(t, &InventoryTestSuite{
+		AsyncInventoryHandlerEnabled: true,
+	})
+}
+
+func TestInventorySuite_AsyncInventoryHandlerDisabled(t *testing.T) {
+	suite.Run(t, &InventoryTestSuite{})
+}
+
+func (s *InventoryTestSuite) TestDeltas_nestedObjectsV4() {
+	t := s.T()
 	const timeout = 5 * time.Second
 
 	// Given an agent
 	testClient := ihttp.NewRequestRecorderClient(
 		ihttp.AcceptedResponse("test/dummy", 1),
 		ihttp.AcceptedResponse("test/dummy", 2))
-	a := infra.NewAgent(testClient.Client)
+	a := infra.NewAgent(testClient.Client, func(config *config.Config) {
+		config.AsyncInventoryHandlerEnabled = s.AsyncInventoryHandlerEnabled
+	})
+
 	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
 	// That runs a v4 plugin with nested inventory
@@ -87,14 +111,19 @@ func TestDeltas_nestedObjectsV4(t *testing.T) {
 	})
 }
 
-func TestDeltas_BasicWorkflow(t *testing.T) {
+func (s *InventoryTestSuite) TestDeltas_BasicWorkflow() {
+	t := s.T()
+
 	const timeout = 5 * time.Second
 
 	// Given an agent
 	testClient := ihttp.NewRequestRecorderClient(
 		ihttp.AcceptedResponse("test/dummy", 1),
 		ihttp.AcceptedResponse("test/dummy", 2))
-	a := infra.NewAgent(testClient.Client)
+	a := infra.NewAgent(testClient.Client, func(config *config.Config) {
+		config.AsyncInventoryHandlerEnabled = s.AsyncInventoryHandlerEnabled
+	})
+
 	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
 	// That runs a plugin
@@ -171,7 +200,51 @@ func TestDeltas_BasicWorkflow(t *testing.T) {
 	})
 }
 
-func TestDeltas_ResendIfFailure(t *testing.T) {
+func (s *InventoryTestSuite) TestDeltas_ForwardOnly() {
+	t := s.T()
+
+	const timeout = 5 * time.Second
+
+	// Given an agent
+	testClient := ihttp.NewRequestRecorderClient(
+		ihttp.AcceptedResponse("test/dummy", 1),
+		ihttp.AcceptedResponse("test/dummy", 2))
+	a := infra.NewAgent(testClient.Client, func(config *config.Config) {
+		config.AsyncInventoryHandlerEnabled = s.AsyncInventoryHandlerEnabled
+		config.IsForwardOnly = true
+		config.FirstReapInterval = time.Nanosecond
+		config.SendInterval = time.Nanosecond
+	})
+
+	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
+
+	//Give time to at least send one request
+	ctxTimeout, _ := context2.WithTimeout(a.Context.Ctx, time.Millisecond*10)
+	a.Context.Ctx = ctxTimeout
+
+	// That runs a plugin
+	plugin := newDummyPlugin("hello", a.Context)
+	a.RegisterPlugin(plugin)
+
+	go a.Run()
+
+	// When the plugin harvests inventory data
+	plugin.harvest()
+
+	select {
+	case <-testClient.RequestCh:
+		a.Terminate()
+		assert.FailNow(t, "Agent must not send data yet")
+	case <-ctxTimeout.Done():
+		// Success
+		return
+	case <-time.After(timeout):
+		a.Terminate()
+	}
+}
+
+func (s *InventoryTestSuite) TestDeltas_ResendIfFailure() {
+	t := s.T()
 	const timeout = 5 * time.Second
 
 	// Given an agent that fails submitting the deltas in the second invocation
@@ -180,7 +253,10 @@ func TestDeltas_ResendIfFailure(t *testing.T) {
 		ihttp.ErrorResponse,
 		ihttp.AcceptedResponse("test/dummy", 2))
 
-	a := infra.NewAgent(testClient.Client)
+	a := infra.NewAgent(testClient.Client, func(config *config.Config) {
+		config.AsyncInventoryHandlerEnabled = s.AsyncInventoryHandlerEnabled
+	})
+
 	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
 	// That runs a plugin
@@ -266,7 +342,9 @@ func TestDeltas_ResendIfFailure(t *testing.T) {
 
 }
 
-func TestDeltas_ResendAfterReset(t *testing.T) {
+func (s *InventoryTestSuite) TestDeltas_ResendAfterReset() {
+	t := s.T()
+
 	const timeout = 10 * time.Second
 
 	agentDir, err := ioutil.TempDir("", "prefix")
@@ -279,6 +357,7 @@ func TestDeltas_ResendAfterReset(t *testing.T) {
 	a := infra.NewAgent(testClient.Client, func(config *config.Config) {
 		config.SendInterval = time.Hour
 		config.AgentDir = agentDir
+		config.AsyncInventoryHandlerEnabled = s.AsyncInventoryHandlerEnabled
 	})
 	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
@@ -303,6 +382,7 @@ func TestDeltas_ResendAfterReset(t *testing.T) {
 	// When another agent process starts again
 	a = infra.NewAgent(testClient.Client, func(config *config.Config) {
 		config.AgentDir = agentDir
+		config.AsyncInventoryHandlerEnabled = s.AsyncInventoryHandlerEnabled
 	})
 	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 	a.RegisterPlugin(plugin1)
@@ -330,7 +410,9 @@ func TestDeltas_ResendAfterReset(t *testing.T) {
 	a.Terminate()
 }
 
-func TestDeltas_HarvestAfterStoreCleanup(t *testing.T) {
+func (s *InventoryTestSuite) TestDeltas_HarvestAfterStoreCleanup() {
+	t := s.T()
+
 	const timeout = 5 * time.Second
 
 	// Given an agent
@@ -344,6 +426,7 @@ func TestDeltas_HarvestAfterStoreCleanup(t *testing.T) {
 			"someother": "other_attr",
 		}
 		cfg.Log.Level = config.LogLevelDebug
+		cfg.AsyncInventoryHandlerEnabled = s.AsyncInventoryHandlerEnabled
 	})
 	a.Context.SetAgentIdentity(entity.Identity{10, "abcdef"})
 
@@ -407,6 +490,44 @@ func TestDeltas_HarvestAfterStoreCleanup(t *testing.T) {
 			},
 		},
 	})
+}
+
+func (s *InventoryTestSuite) TestDeltas_UpdateIDLookupTable() {
+	t := s.T()
+
+	// Given an agent
+	testClient := ihttp.NewRequestRecorderClient(
+		ihttp.AcceptedResponse("metadata/attributes", 1))
+
+	a := infra.NewAgent(testClient.Client, func(cfg *config.Config) {
+		cfg.CustomAttributes = config.CustomAttributeMap{
+			"some":      "attr",
+			"someother": "other_attr",
+		}
+		cfg.Log.Level = config.LogLevelDebug
+		cfg.AsyncInventoryHandlerEnabled = s.AsyncInventoryHandlerEnabled
+	})
+
+	go a.Run()
+	defer a.Terminate()
+	assert.Equal(t, "display-name", a.Context.EntityKey())
+
+	dataset := agentTypes.PluginInventoryDataset{}
+	dataset = append(dataset, sysinfo.HostAliases{
+		Alias:  "hostName.com",
+		Source: sysinfo.HOST_SOURCE_HOSTNAME,
+	})
+	dataset = append(dataset, sysinfo.HostAliases{
+		Alias:  "instanceId",
+		Source: sysinfo.HOST_SOURCE_INSTANCE_ID,
+	})
+	dataset = append(dataset, sysinfo.HostAliases{
+		Alias:  "hostName",
+		Source: sysinfo.HOST_SOURCE_HOSTNAME_SHORT,
+	})
+	a.Context.SendData(agentTypes.NewPluginOutput(ids.PluginID{Category: "metadata", Term: "host_aliases"}, entity.NewWithoutID("test"), dataset))
+
+	assert.Equal(t, "instanceId", a.Context.EntityKey())
 }
 
 func BenchmarkInventoryProcessingPipeline(b *testing.B) {

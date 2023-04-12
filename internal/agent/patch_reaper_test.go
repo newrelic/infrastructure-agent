@@ -14,6 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const maxInventoryDataSize = 3 * 1000 * 1000
+
 func TestPatchReapNoCacheExists(t *testing.T) {
 	fixture, err := ioutil.ReadFile(filepath.Join("fixtures", "packages_rpm_delta.json"))
 	if err != nil {

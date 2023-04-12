@@ -7,6 +7,7 @@ package linux
 
 import (
 	"bufio"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"os/exec"
 	"regexp"
@@ -44,8 +45,8 @@ func (self SystemdService) SortKey() string {
 	return self.Name
 }
 
-func (self SystemdPlugin) getSystemdDataset() agent.PluginInventoryDataset {
-	var dataset agent.PluginInventoryDataset
+func (self SystemdPlugin) getSystemdDataset() types.PluginInventoryDataset {
+	var dataset types.PluginInventoryDataset
 
 	for _, v := range self.runningServices {
 		dataset = append(dataset, v)

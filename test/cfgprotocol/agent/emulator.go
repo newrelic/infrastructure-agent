@@ -136,6 +136,7 @@ func (ae *Emulator) RunAgent() error {
 	}
 	go integrationManager.Start(ae.agent.Context.Ctx)
 	go func() {
+		ae.agent.Init()
 		if err := ae.agent.Run(); err != nil {
 			panic(err)
 		}

@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -90,6 +91,7 @@ type Storage interface {
 
 // Store handles information about the storage of Deltas.
 type Store struct {
+	l sync.Mutex
 	// DataDir holds the agent data directory
 	DataDir string
 	// CacheDir holds the agent cache directory
@@ -743,12 +745,16 @@ func (s *Store) ReadDeltas(entityKey string) ([]inventoryapi.RawDeltaBlock, erro
 }
 
 func (s *Store) ChangeDefaultEntity(newEntityKey string) {
+	s.l.Lock()
+	defer s.l.Unlock()
 	s.defaultEntityKey = newEntityKey
 }
 
 // EntityFolder provides the folder name for a given entity ID, or for the agent default entity in case entityKey is an
 // empty string
 func (s *Store) EntityFolder(entityKey string) string {
+	s.l.Lock()
+	defer s.l.Unlock()
 	if entityKey == "" || entityKey == s.defaultEntityKey {
 		return localEntityFolder
 	}
@@ -1006,4 +1012,8 @@ func (s *Store) SavePluginSource(entityKey, category, term string, source map[st
 
 func (s *Store) IsArchiveEnabled() bool {
 	return s.archiveEnabled
+}
+
+func (s *Store) SetArchiveEnabled(archiveEnabled bool) {
+	s.archiveEnabled = archiveEnabled
 }

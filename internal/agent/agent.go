@@ -6,6 +6,8 @@ import (
 	context2 "context"
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
+	"github.com/newrelic/infrastructure-agent/internal/agent/inventory"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -50,8 +52,9 @@ import (
 )
 
 const (
-	defaultRemoveEntitiesPeriod = 48 * time.Hour
-	activeEntitiesBufferLength  = 32
+	defaultRemoveEntitiesPeriod     = 48 * time.Hour
+	activeEntitiesBufferLength      = 32
+	defaultBulkInventoryQueueLength = 1000
 )
 
 type registerableSender interface {
@@ -59,16 +62,24 @@ type registerableSender interface {
 	Stop() error
 }
 
+type inventoryEntity struct {
+	reaper       *PatchReaper
+	sender       inventory.PatchSender
+	needsReaping bool
+	needsCleanup bool
+}
+
 type Agent struct {
 	inv                 inventoryState
-	plugins             []Plugin              // Slice of registered plugins
-	oldPlugins          []ids.PluginID        // Deprecated plugins whose cached data must be removed, if existing
-	agentDir            string                // Base data directory for the agent
-	extDir              string                // Location of external data input
-	userAgent           string                // User-Agent making requests to warlock
-	inventories         map[string]*inventory // Inventory reaper and sender instances (key: entity ID)
-	Context             *context              // Agent context data that is passed around the place
+	plugins             []Plugin                    // Slice of registered plugins
+	oldPlugins          []ids.PluginID              // Deprecated plugins whose cached data must be removed, if existing
+	agentDir            string                      // Base data directory for the agent
+	extDir              string                      // Location of external data input
+	userAgent           string                      // User-Agent making requests to warlock
+	inventories         map[string]*inventoryEntity // Inventory reaper and sender instances (key: entity ID)
+	Context             *context                    // Agent context data that is passed around the place
 	metricsSender       registerableSender
+	inventoryHandler    *inventory.Handler
 	store               *delta.Store
 	debugProvide        debug.Provide
 	httpClient          backendhttp.Client // http client for both data submission types: events and inventory
@@ -87,14 +98,6 @@ type inventoryState struct {
 	sendErrorCount uint32
 }
 
-// inventory holds the reaper and sender for the inventories of a given entity (local or remote), as well as their status
-type inventory struct {
-	reaper       *patchReaper
-	sender       patchSender
-	needsReaping bool
-	needsCleanup bool
-}
-
 var (
 	alog  = log.WithComponent("Agent")
 	aclog = log.WithComponent("AgentContext")
@@ -103,7 +106,7 @@ var (
 // AgentContext defines the interfaces between plugins and the agent
 type AgentContext interface {
 	Context() context2.Context
-	SendData(PluginOutput)
+	SendData(types.PluginOutput)
 	SendEvent(event sample.Event, entityKey entity.Key)
 	Unregister(ids.PluginID)
 	// Reconnecting tells the agent that this plugin must be re-executed when the agent reconnects after long time
@@ -134,16 +137,19 @@ type AgentContext interface {
 // available to the various plugins and satisfies the
 // AgentContext interface
 type context struct {
-	Ctx            context2.Context
-	CancelFn       context2.CancelFunc
-	cfg            *config.Config
-	id             *id.Context
-	agentKey       atomic.Value
-	reconnecting   *sync.Map         // Plugins that must be re-executed after a long disconnection
-	ch             chan PluginOutput // Channel of inbound plugin data payloads
-	activeEntities chan string       // Channel will be reported about the local/remote entities that are active
-	version        string
-	eventSender    eventSender
+	Ctx          context2.Context
+	CancelFn     context2.CancelFunc
+	cfg          *config.Config
+	id           *id.Context
+	agentKey     atomic.Value
+	reconnecting *sync.Map               // Plugins that must be re-executed after a long disconnection
+	ch           chan types.PluginOutput // Channel of inbound plugin data payloads
+
+	updateIDLookupTableFn func(hostAliases types.PluginInventoryDataset) (err error)
+	pluginOutputHandleFn  func(types.PluginOutput) // Function to handle the PluginOutput (Inventory Data). When this is provided the ch would not be used (In future would be deprecared)
+	activeEntities        chan string              // Channel will be reported about the local/remote entities that are active
+	version               string
+	eventSender           eventSender
 
 	servicePidLock     *sync.RWMutex
 	servicePids        map[string]map[int]string // Map of plugin -> (map of pid -> service)
@@ -400,7 +406,7 @@ func New(
 	notificationHandler.RegisterHandler(ipc.Shutdown, a.gracefulShutdown)
 
 	// Instantiate reaper and sender
-	a.inventories = map[string]*inventory{}
+	a.inventories = map[string]*inventoryEntity{}
 
 	// Make sure the network is working before continuing with identity
 	if err := checkCollectorConnectivity(ctx.Ctx, cfg, backoff.NewRetrier(), a.userAgent, a.Context.getAgentKey(), transport); err != nil {
@@ -422,7 +428,7 @@ func New(
 
 	// Create input channel for plugins to feed data back to the agent
 	llog.WithField(config.TracesFieldName, config.FeatureTrace).Tracef("inventory parallelize queue: %v", a.Context.cfg.InventoryQueueLen)
-	a.Context.ch = make(chan PluginOutput, a.Context.cfg.InventoryQueueLen)
+	a.Context.ch = make(chan types.PluginOutput, a.Context.cfg.InventoryQueueLen)
 	a.Context.activeEntities = make(chan string, activeEntitiesBufferLength)
 
 	if cfg.RegisterEnabled {
@@ -472,25 +478,33 @@ func (a *Agent) registerEntityInventory(entity entity.Entity) error {
 
 	alog.WithField("entityKey", entityKey).
 		WithField("entityID", entity.ID).Debug("Registering inventory for entity.")
-	var inv inventory
 
+	var patchSender inventory.PatchSender
 	var err error
 	if a.Context.cfg.RegisterEnabled {
-		inv.sender, err = newPatchSenderVortex(entityKey, a.Context.getAgentKey(), a.Context, a.store, a.userAgent, a.Context.Identity, a.provideIDs, a.entityMap, a.httpClient)
+		patchSender, err = newPatchSenderVortex(entityKey, a.Context.getAgentKey(), a.Context, a.store, a.userAgent, a.Context.Identity, a.provideIDs, a.entityMap, a.httpClient)
 	} else {
-		fileName := a.store.EntityFolder(entity.Key.String())
-		lastSubmission := delta.NewLastSubmissionStore(a.store.DataDir, fileName)
-		lastEntityID := delta.NewEntityIDFilePersist(a.store.DataDir, fileName)
-		inv.sender, err = newPatchSender(entity, a.Context, a.store, lastSubmission, lastEntityID, a.userAgent, a.Context.Identity, a.httpClient)
+		patchSender, err = a.newPatchSender(entity)
 	}
 	if err != nil {
 		return err
 	}
 
-	inv.reaper = newPatchReaper(entityKey, a.store)
-	a.inventories[entityKey] = &inv
+	reaper := newPatchReaper(entityKey, a.store)
+	a.inventories[entityKey] = &inventoryEntity{
+		sender: patchSender,
+		reaper: reaper,
+	}
 
 	return nil
+}
+
+func (a *Agent) newPatchSender(entity entity.Entity) (inventory.PatchSender, error) {
+	fileName := a.store.EntityFolder(entity.Key.String())
+	lastSubmission := delta.NewLastSubmissionStore(a.store.DataDir, fileName)
+	lastEntityID := delta.NewEntityIDFilePersist(a.store.DataDir, fileName)
+
+	return newPatchSender(entity, a.Context, a.store, lastSubmission, lastEntityID, a.userAgent, a.Context.Identity, a.httpClient)
 }
 
 // removes the inventory object references to free the memory, and the respective directories
@@ -516,8 +530,8 @@ func (a *Agent) Terminate() {
 	a.mtx.Lock()
 	defer a.mtx.Unlock()
 	alog.Debug("Terminating running plugins.")
-	for _, plugin := range a.plugins {
-		switch p := plugin.(type) {
+	for _, agentPlugin := range a.plugins {
+		switch p := agentPlugin.(type) {
 		case Killable:
 			p.Kill()
 		}
@@ -558,25 +572,25 @@ func (a *Agent) DeprecatePlugin(plugin ids.PluginID) {
 }
 
 // storePluginOutput will take a PluginOutput and persist it in the store
-func (a *Agent) storePluginOutput(plugin PluginOutput) error {
+func (a *Agent) storePluginOutput(pluginOutput types.PluginOutput) error {
 
-	if plugin.Data == nil {
-		plugin.Data = make(PluginInventoryDataset, 0)
+	if pluginOutput.Data == nil {
+		pluginOutput.Data = make(types.PluginInventoryDataset, 0)
 	}
 
-	sort.Sort(plugin.Data)
+	sort.Sort(pluginOutput.Data)
 
 	// Filter out ignored inventory data before writing the file out
 	var sortKey string
 	ignore := a.Context.Config().IgnoredInventoryPathsMap
 	simplifiedPluginData := make(map[string]interface{})
 DataLoop:
-	for _, data := range plugin.Data {
+	for _, data := range pluginOutput.Data {
 		if data == nil {
 			continue
 		}
 		sortKey = data.SortKey()
-		pluginSource := fmt.Sprintf("%s/%s", plugin.Id, sortKey)
+		pluginSource := fmt.Sprintf("%s/%s", pluginOutput.Id, sortKey)
 		if _, ok := ignore[strings.ToLower(pluginSource)]; ok {
 			continue DataLoop
 		}
@@ -584,9 +598,9 @@ DataLoop:
 	}
 
 	return a.store.SavePluginSource(
-		plugin.Entity.Key.String(),
-		plugin.Id.Category,
-		plugin.Id.Term,
+		pluginOutput.Entity.Key.String(),
+		pluginOutput.Id.Category,
+		pluginOutput.Id.Term,
 		simplifiedPluginData,
 	)
 }
@@ -595,13 +609,13 @@ DataLoop:
 // we don't return until all plugins have been started
 func (a *Agent) startPlugins() {
 	// iterate over and start each plugin
-	for _, plugin := range a.plugins {
-		plugin.LogInfo()
+	for _, agentPlugin := range a.plugins {
+		agentPlugin.LogInfo()
 		go func(p Plugin) {
 			_, trx := instrumentation.SelfInstrumentation.StartTransaction(context2.Background(), fmt.Sprintf("plugin. %s ", p.Id().String()))
 			defer trx.End()
 			p.Run()
-		}(plugin)
+		}(agentPlugin)
 	}
 }
 
@@ -617,7 +631,7 @@ func (a *Agent) LogExternalPluginsInfo() {
 
 var hostAliasesPluginID = ids.PluginID{Category: "metadata", Term: "host_aliases"}
 
-func (a *Agent) updateIDLookupTable(hostAliases PluginInventoryDataset) (err error) {
+func (a *Agent) updateIDLookupTable(hostAliases types.PluginInventoryDataset) (err error) {
 	newIDLookupTable := make(map[string]string)
 	for _, hAliases := range hostAliases {
 		if alias, ok := hAliases.(sysinfo.HostAliases); ok {
@@ -649,6 +663,41 @@ func (a *Agent) setAgentKey(idLookupTable host.IDLookup) error {
 	return nil
 }
 
+func (a *Agent) Init() {
+	cfg := a.Context.cfg
+
+	// Configure AsyncInventoryHandler if FF is enabled.
+	if cfg.AsyncInventoryHandlerEnabled {
+		alog.Debug("Initialise async inventory handler")
+
+		removeEntitiesPeriod, _ := time.ParseDuration(a.Context.Config().RemoveEntitiesPeriod)
+
+		patcherConfig := inventory.PatcherConfig{
+			IgnoredPaths:         cfg.IgnoredInventoryPathsMap,
+			AgentEntity:          entity.NewFromNameWithoutID(a.Context.EntityKey()),
+			RemoveEntitiesPeriod: removeEntitiesPeriod,
+		}
+		patcher := inventory.NewEntityPatcher(patcherConfig, a.store, a.newPatchSender)
+
+		if cfg.InventoryQueueLen == 0 {
+			cfg.InventoryQueueLen = defaultBulkInventoryQueueLength
+		}
+
+		inventoryHandlerCfg := inventory.HandlerConfig{
+			SendInterval:      cfg.SendInterval,
+			FirstReapInterval: cfg.FirstReapInterval,
+			ReapInterval:      cfg.ReapInterval,
+			InventoryQueueLen: cfg.InventoryQueueLen,
+		}
+		a.inventoryHandler = inventory.NewInventoryHandler(a.Context.Ctx, inventoryHandlerCfg, patcher)
+		a.Context.pluginOutputHandleFn = a.inventoryHandler.Handle
+		a.Context.updateIDLookupTableFn = a.updateIDLookupTable
+
+		// When AsyncInventoryHandlerEnabled is set disable inventory archiving.
+		a.store.SetArchiveEnabled(false)
+	}
+}
+
 // Run is the main event loop for the agent it starts up the plugins
 // kicks off a filesystem seed and watcher and listens for data from
 // the plugins
@@ -677,6 +726,32 @@ func (a *Agent) Run() (err error) {
 		alog.WithError(err).Error("failed to start troubleshooting handler")
 	}
 
+	// Start debugger routine.
+	go func() {
+		if a.Context.Config().DebugLogSec <= 0 {
+			return
+		}
+
+		debugTimer := time.NewTicker(time.Duration(a.Context.Config().DebugLogSec) * time.Second)
+
+		for {
+			select {
+			case <-debugTimer.C:
+				{
+					debugInfo, err := a.debugProvide()
+					if err != nil {
+						alog.WithError(err).Debug("failed to get debug stats")
+					} else if debugInfo != "" {
+						alog.Debug(debugInfo)
+					}
+				}
+			case <-a.Context.Ctx.Done():
+				debugTimer.Stop()
+				return
+			}
+		}
+	}()
+
 	if a.Context.eventSender != nil {
 		if err := a.Context.eventSender.Start(); err != nil {
 			alog.WithError(err).Error("failed to start event sender")
@@ -689,10 +764,34 @@ func (a *Agent) Run() (err error) {
 		}
 	}
 
+	exit := make(chan struct{})
+
+	go func() {
+		<-a.Context.Ctx.Done()
+
+		a.exitGracefully()
+
+		close(exit)
+	}()
+
+	if a.inventoryHandler != nil {
+		if a.shouldSendInventory() {
+			a.inventoryHandler.Start()
+		}
+		<-exit
+		return nil
+	}
+
+	a.handleInventory(exit)
+	return nil
+}
+
+func (a *Agent) handleInventory(exit chan struct{}) {
+	cfg := a.Context.cfg
+
 	// Timers
 	reapInventoryTimer := time.NewTicker(cfg.FirstReapInterval)
 	sendInventoryTimer := time.NewTimer(cfg.SendInterval) // Send any deltas every X seconds
-	debugTimer := time.Tick(time.Duration(a.Context.Config().DebugLogSec) * time.Second)
 
 	//Remove send timer
 	if !a.shouldSendInventory() {
@@ -731,21 +830,6 @@ func (a *Agent) Run() (err error) {
 		_ = a.registerEntityInventory(entity.NewFromNameWithoutID(a.Context.EntityKey()))
 	}
 
-	exit := make(chan struct{})
-
-	go func() {
-		<-a.Context.Ctx.Done()
-
-		a.exitGracefully(sendInventoryTimer, reapInventoryTimer, removeEntitiesTicker)
-
-		close(exit)
-
-		// Should not reach here, just a guard.
-		//<-time.After(service.GracefulExitTimeout)
-		//log.Warn("graceful stop time exceeded... forcing stop")
-		//os.Exit(0)
-	}()
-
 	// three states
 	//  -- reading data to write to json
 	//  -- reaping
@@ -754,7 +838,16 @@ func (a *Agent) Run() (err error) {
 	for {
 		select {
 		case <-exit:
-			return nil
+			if sendInventoryTimer != nil {
+				sendInventoryTimer.Stop()
+			}
+			if reapInventoryTimer != nil {
+				reapInventoryTimer.Stop()
+			}
+			if removeEntitiesTicker != nil {
+				removeEntitiesTicker.Stop()
+			}
+			return
 			// agent gets notified about active entities
 		case ent := <-a.Context.activeEntities:
 			reportedEntities[ent] = true
@@ -820,15 +913,6 @@ func (a *Agent) Run() (err error) {
 			}
 		case <-sendInventoryTimer.C:
 			a.sendInventory(sendInventoryTimer)
-		case <-debugTimer:
-			{
-				debugInfo, err := a.debugProvide()
-				if err != nil {
-					alog.WithError(err).Debug("failed to get debug stats")
-				} else if debugInfo != "" {
-					alog.Debug(debugInfo)
-				}
-			}
 		case <-removeEntitiesTicker.C:
 			pastPeriodReportedEntities := reportedEntities
 			reportedEntities = map[string]bool{} // reset the set of reporting entities the next period
@@ -911,18 +995,9 @@ func (a *Agent) dumpMemoryProfile(agentRuntimeMark int) {
 
 }
 
-func (a *Agent) exitGracefully(sendTimer *time.Timer, reapTimer, removeEntitiesTicker *time.Ticker) {
+func (a *Agent) exitGracefully() {
 	log.Info("Gracefully Exiting")
 
-	if sendTimer != nil {
-		sendTimer.Stop()
-	}
-	if reapTimer != nil {
-		reapTimer.Stop()
-	}
-	if removeEntitiesTicker != nil {
-		removeEntitiesTicker.Stop()
-	}
 	if a.Context.eventSender != nil {
 		if err := a.Context.eventSender.Stop(); err != nil {
 			log.WithError(err).Error("failed to stop event sender")
@@ -932,6 +1007,10 @@ func (a *Agent) exitGracefully(sendTimer *time.Timer, reapTimer, removeEntitiesT
 		if err := a.metricsSender.Stop(); err != nil {
 			log.WithError(err).Error("failed to stop metrics subsystem")
 		}
+	}
+
+	if a.inventoryHandler != nil {
+		a.inventoryHandler.Stop()
 	}
 
 	if a.notificationHandler != nil {
@@ -1007,10 +1086,13 @@ func (a *Agent) removeOutdatedEntities(reportedEntities map[string]bool) {
 	alog.WithField("remaining", len(a.inventories)).Debug("Some entities may remain registered.")
 }
 
-func (c *context) SendData(data PluginOutput) {
-	// Check for cfg.InventorySendBulk just because it's handled by the FeatureFlag.
-	if c.cfg.InventorySendBulk && len(c.ch) == cap(c.ch) {
-		aclog.Debug("inventory queue is full")
+func (c *context) SendData(data types.PluginOutput) {
+	if c.pluginOutputHandleFn != nil {
+		if data.Id == hostAliasesPluginID && c.updateIDLookupTableFn != nil {
+			c.updateIDLookupTableFn(data.Data)
+		}
+		c.pluginOutputHandleFn(data)
+		return
 	}
 	c.ch <- data
 }
@@ -1063,7 +1145,7 @@ func (c *context) SendEvent(event sample.Event, entityKey entity.Key) {
 }
 
 func (c *context) Unregister(id ids.PluginID) {
-	c.ch <- NewNotApplicableOutput(id)
+	c.ch <- types.NewNotApplicableOutput(id)
 }
 
 func (c *context) Config() *config.Config {
@@ -1118,11 +1200,11 @@ func (c *context) Reconnect() {
 
 // triggerAddReconnecting is used with sync.Map.Range to iterate through all plugins and reconnect them
 func triggerAddReconnecting(l log.Entry) func(pluginID interface{}, plugin interface{}) bool {
-	return func(pluginID, plugin interface{}) bool {
+	return func(pluginID, agentPlugin interface{}) bool {
 		l.WithField("plugin", pluginID).Debug("Reconnecting plugin.")
 		func(p Plugin) {
 			go p.Run()
-		}(plugin.(Plugin))
+		}(agentPlugin.(Plugin))
 		return true
 	}
 }
@@ -1142,6 +1224,10 @@ func (c *context) setAgentKey(agentKey string) {
 }
 
 func (c *context) getAgentKey() (agentKey string) {
+	loaded := c.agentKey.Load()
+	if loaded == nil {
+		return ""
+	}
 	return c.agentKey.Load().(string)
 }
 

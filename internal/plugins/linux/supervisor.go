@@ -7,6 +7,7 @@ package linux
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"net/http"
 	"strconv"
@@ -96,7 +97,7 @@ func (self *SupervisorPlugin) CanRun() bool {
 	return err == nil
 }
 
-func (self *SupervisorPlugin) Data() (agent.PluginInventoryDataset, map[int]string, error) {
+func (self *SupervisorPlugin) Data() (types.PluginInventoryDataset, map[int]string, error) {
 	client, err := self.GetClient()
 	if err != nil {
 		return nil, nil, err
@@ -105,7 +106,7 @@ func (self *SupervisorPlugin) Data() (agent.PluginInventoryDataset, map[int]stri
 	if err != nil {
 		return nil, nil, err
 	}
-	a := agent.PluginInventoryDataset{}
+	a := types.PluginInventoryDataset{}
 	pidMap := make(map[int]string)
 	for _, proc := range procs {
 		if proc.State != 10 && proc.State != 20 {
