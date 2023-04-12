@@ -794,7 +794,7 @@ func (a *Agent) Run() (err error) {
 	}
 
 	a.handleInventory(exit)
-	
+
 	return nil
 }
 
