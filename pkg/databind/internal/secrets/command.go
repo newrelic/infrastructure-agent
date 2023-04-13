@@ -4,23 +4,36 @@
 package secrets
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"regexp"
 	"strings"
+	"time"
 )
 
 type Command struct {
-	CmdPath string   `yaml:"path"`
-	CmdArgs []string `yaml:"args,omitempty"`
+	Path           string   `yaml:"path"`
+	Args           []string `yaml:"args,omitempty"`
+	PassthroughEnv []string `yaml:"passthrough_environment,omitempty"`
 }
 
 type commandGatherer struct {
 	cfg *Command
 }
 
-var ErrNoPath = errors.New("command secrets must have a path parameter in order to be set")
+// Error handling
+var (
+	ErrNoPath                 = errors.New("secrets gatherer command must have a path parameter in order to be executed")
+	ErrEmptyResponse          = errors.New("the command returned an empty response")
+	ErrInvalidResponse        = errors.New("the command returned an invalid response")
+	ErrParseResNoData         = errors.New("missing required field 'data'")
+	ErrParseResInvalidData    = errors.New("invalid type for field 'data'")
+	ErrParseResTTLInvalidType = errors.New("invalid type for field 'ttl'")
+)
 
 func validationError(err error) error {
 	return fmt.Errorf("validation error: %w", err)
@@ -30,8 +43,68 @@ func runCommandError(err error) error {
 	return fmt.Errorf("failed to run command: %w", err)
 }
 
-func (c *Command) Validate() error {
-	if c.CmdPath == "" {
+func parseCmdResponseError(err error) error {
+	return fmt.Errorf("failed to parse command response: %w", err)
+}
+
+// End error handling
+
+type cmdResponse struct {
+	CmdTTL  string         `json:"ttl,omitempty"`
+	CmdData map[string]any `json:"data"`
+}
+
+// Custom unmarshaler for cmdResponse.
+// The top-level field "data" is required, but the field "ttl" is optional.
+func (c *cmdResponse) UnmarshalJSON(data []byte) error {
+	// Top-level field "data" is required
+	genericRes := map[string]any{}
+	if err := json.Unmarshal(data, &genericRes); err != nil {
+		return err
+	}
+	if _, ok := genericRes["data"]; !ok {
+		return parseCmdResponseError(ErrParseResNoData)
+	}
+	// The nested data field must be either a string or a map[string]any.
+	if d, err := stringOrMapStringAny(genericRes["data"]); err != nil {
+		return parseCmdResponseError(ErrParseResInvalidData)
+	} else {
+		c.CmdData = d
+	}
+	if ttl, ok := genericRes["ttl"]; ok {
+		if s, ok := ttl.(string); ok {
+			c.CmdTTL = s
+		} else {
+			return parseCmdResponseError(ErrParseResTTLInvalidType)
+		}
+	}
+	return nil
+}
+
+func (c cmdResponse) TTL() (time.Duration, error) {
+	return time.ParseDuration(c.CmdTTL)
+}
+
+func (c cmdResponse) Data() (map[string]any, error) {
+	// The nested data field must be either a string or a map[string]any.
+	// If it's a string, we return it as a map[string]any with a single key
+	return stringOrMapStringAny(c.CmdData)
+}
+
+func stringOrMapStringAny(v interface{}) (map[string]any, error) {
+	if m, ok := v.(map[string]any); ok {
+		return m, nil
+	}
+
+	if s, ok := v.(string); ok {
+		return map[string]any{"string": s}, nil
+	}
+
+	return nil, fmt.Errorf("invalid type: %T", v)
+}
+
+func (cmd *Command) Validate() error {
+	if cmd.Path == "" {
 		return validationError(ErrNoPath)
 	}
 
@@ -53,37 +126,111 @@ func CommandGatherer(cmd *Command) func() (any, error) {
 			return nil, err
 		}
 
-		return dt, err
+		return dt, nil
 	}
 }
 
-func (c *commandGatherer) get() (any, error) {
-	res, err := runCommand(c.cfg.CmdPath, c.cfg.CmdArgs)
+func (cg *commandGatherer) get() (any, error) {
+	res, err := runCommand(cg.cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	result := map[string]any{}
-	if err := json.Unmarshal(res, &result); err != nil {
-		slog.WithError(err).Debugf("failed converting command output to json: %v. Returning string", err)
+	return parsePayload(res)
+}
 
-		return strings.TrimSpace(string(res)), nil
+func parsePayload(payload []byte) (any, error) {
+	// Parse result as cmdResponse
+	var cmdRes cmdResponse
+	if err := json.Unmarshal(payload, &cmdRes); err == nil {
+		return cmdRes, nil
 	}
 
-	return result, nil
+	// Parse result as map[string]any
+	var obj map[string]any
+	if err := json.Unmarshal(payload, &obj); err == nil {
+		return obj, nil
+	}
+
+	// Return the string if possible
+	str := string(payload)
+	if len(str) > 0 {
+		return str, nil
+	}
+	return nil, parseCmdResponseError(ErrInvalidResponse)
 }
 
 // runCommand executes the given command and returns the contents of `stdout`.
-func runCommand(path string, args []string) ([]byte, error) {
-	_, err := exec.LookPath(path)
-	if err != nil {
+func runCommand(cmd *Command) ([]byte, error) {
+	if _, err := exec.LookPath(cmd.Path); err != nil {
 		return nil, runCommandError(err)
 	}
 
-	res, err := exec.Command(path, args...).Output()
+	command := exec.Command(cmd.Path, cmd.Args...)
+	command.Env = setCmdEnv(cmd.PassthroughEnv)
+
+	res, err := command.Output()
 	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			return nil, runCommandError(fmt.Errorf("%s: %s", exitErr.Error(), string(exitErr.Stderr)))
+		}
 		return nil, runCommandError(err)
 	}
 
-	return res, nil
+	trimmedRes := bytes.TrimSpace(res)
+	// If the command output is empty, return an error
+	if len(trimmedRes) == 0 {
+		return nil, runCommandError(ErrEmptyResponse)
+	}
+
+	return trimmedRes, nil
+}
+
+// setCmdEnv will clear the environment variables of the given command and set only
+// the ones provided in the `passthrough_environment` config.
+// `passthrough_environment` can be a list of environment variables or regular expressions.
+func setCmdEnv(passthroughEnv []string) []string {
+	set := make(map[string]string)
+	env := getOSEnv()
+
+	for _, k := range passthroughEnv {
+		r, err := regexp.Compile(k)
+		if err != nil {
+			if v, ok := os.LookupEnv(k); ok {
+				set[k] = v
+			}
+		} else {
+			for k, v := range env {
+				if r.MatchString(k) {
+					set[k] = v
+				}
+			}
+		}
+	}
+
+	return toEnvVarSlice(set)
+}
+
+// getOSEnv returns the current environment variables in a friendlier structure.
+func getOSEnv() map[string]string {
+	env := make(map[string]string)
+	for _, envVar := range os.Environ() {
+		pair := strings.SplitN(envVar, "=", 2)
+		if len(pair) != 2 {
+			continue
+		}
+		env[pair[0]] = pair[1]
+	}
+	return env
+}
+
+// toEnvVarSlice converts a map of environment variables to a slice of strings in the format `key=value`.
+// This is the format expected by the `exec` package's `Cmd.Env` field.
+func toEnvVarSlice(env map[string]string) []string {
+	res := []string{}
+	for k, v := range env {
+		res = append(res, fmt.Sprintf("%s=%s", k, v))
+	}
+	return res
 }
