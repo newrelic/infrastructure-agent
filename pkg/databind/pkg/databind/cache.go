@@ -4,6 +4,8 @@
 package databind
 
 import (
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery"
@@ -78,6 +80,24 @@ func (d *gatherer) do(now time.Time) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if dataWithTTL, ok := vals.(ValuesWithTTL); ok {
+		ttl, err := dataWithTTL.TTL()
+		if err != nil && !errors.Is(err, ErrTTLNotFound) {
+			return nil, fmt.Errorf("invalid gathered TTL: %w", err) //nolint:wrapcheck
+		}
+
+		if err == nil {
+			d.cache.ttl = ttl
+		}
+
+		valuesWithTTL, err := dataWithTTL.Data()
+		if err != nil {
+			return nil, fmt.Errorf("invalid gathered Data: %w", err) //nolint:wrapcheck
+		}
+		vals = valuesWithTTL
+	}
+
 	d.cache.set(vals, now)
 	return vals, nil
 }
