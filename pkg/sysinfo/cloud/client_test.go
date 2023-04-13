@@ -14,12 +14,16 @@ import (
 )
 
 func TestHttpClientTimeout(t *testing.T) {
+	// decrease default's client timeout to prevent long running tests
+	defaultClientTimeout = 2 * time.Second
+
 	t.Parallel()
 
 	testURI := "/valid"
 	mux := http.NewServeMux()
 	mux.Handle(testURI, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(defaultDialTimeout * 2)
+		// do not respond till client's timeout * 2
+		time.Sleep(defaultClientTimeout * 2)
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("i-db519dd1\n"))
@@ -31,8 +35,7 @@ func TestHttpClientTimeout(t *testing.T) {
 	// create default fast client
 	client := clientWithFastTimeout(false)
 
-	resp, err := client.Get(fmt.Sprintf("%s/%s", server.URL, testURI))
-	defer resp.Body.Close()
+	_, err := client.Get(fmt.Sprintf("%s/%s", server.URL, testURI))
 
 	// should fail as server hangs more time than the defaultDialTimeout
 	assert.Error(t, err)

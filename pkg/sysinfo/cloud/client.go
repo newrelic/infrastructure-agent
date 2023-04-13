@@ -13,11 +13,15 @@ var (
 	// limits the time spent establishing a TCP connection.
 	defaultDialTimeout   = 2 * time.Second
 	defaultDialKeepAlive = 30 * time.Second
+
+	// decreased default's http client timeout to prevent the agent being initialized for 2 minutes.
+	defaultClientTimeout = 30 * time.Second
 )
 
 // DRY function to construct a standard client for making cloud metadata calls that timeout quickly.
 func clientWithFastTimeout(disableKeepAlive bool) *http.Client {
 	return &http.Client{
+		Timeout: defaultClientTimeout,
 		Transport: &http.Transport{
 			DialContext: (&net.Dialer{
 				Timeout:   defaultDialTimeout,
