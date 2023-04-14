@@ -25,7 +25,7 @@ type commandGatherer struct {
 	cfg *Command
 }
 
-// Error handling
+// Error handling.
 var (
 	ErrNoPath                 = errors.New("secrets gatherer command must have a path parameter in order to be executed")
 	ErrEmptyResponse          = errors.New("the command returned an empty response")
@@ -47,7 +47,15 @@ func parseCmdResponseError(err error) error {
 	return fmt.Errorf("failed to parse command response: %w", err)
 }
 
-// End error handling
+func invalidTypeError(t interface{}) error {
+	return fmt.Errorf("invalid type: %T", t)
+}
+
+func commandExitError(exitErr *exec.ExitError) error {
+	return fmt.Errorf("%s: %s", exitErr.Error(), string(exitErr.Stderr))
+}
+
+// End error handling.
 
 type cmdResponse struct {
 	CmdTTL  string         `json:"ttl,omitempty"`
@@ -62,15 +70,18 @@ func (c *cmdResponse) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &genericRes); err != nil {
 		return err
 	}
+
 	if _, ok := genericRes["data"]; !ok {
 		return parseCmdResponseError(ErrParseResNoData)
 	}
 	// The nested data field must be either a string or a map[string]any.
-	if d, err := stringOrMapStringAny(genericRes["data"]); err != nil {
+
+	d, err := stringOrMapStringAny(genericRes["data"])
+	if err != nil {
 		return parseCmdResponseError(ErrParseResInvalidData)
-	} else {
-		c.CmdData = d
 	}
+
+	c.CmdData = d
 	if ttl, ok := genericRes["ttl"]; ok {
 		if s, ok := ttl.(string); ok {
 			c.CmdTTL = s
@@ -78,6 +89,7 @@ func (c *cmdResponse) UnmarshalJSON(data []byte) error {
 			return parseCmdResponseError(ErrParseResTTLInvalidType)
 		}
 	}
+
 	return nil
 }
 
@@ -91,16 +103,16 @@ func (c cmdResponse) Data() (map[string]any, error) {
 	return stringOrMapStringAny(c.CmdData)
 }
 
-func stringOrMapStringAny(v interface{}) (map[string]any, error) {
-	if m, ok := v.(map[string]any); ok {
+func stringOrMapStringAny(val any) (map[string]any, error) {
+	if m, ok := val.(map[string]any); ok {
 		return m, nil
 	}
 
-	if s, ok := v.(string); ok {
+	if s, ok := val.(string); ok {
 		return map[string]any{"string": s}, nil
 	}
 
-	return nil, fmt.Errorf("invalid type: %T", v)
+	return nil, invalidTypeError(val)
 }
 
 func (cmd *Command) Validate() error {
@@ -166,14 +178,15 @@ func runCommand(cmd *Command) ([]byte, error) {
 		return nil, runCommandError(err)
 	}
 
-	command := exec.Command(cmd.Path, cmd.Args...)
+	// Runnign arbitrary commands can be unsafe. Linter will complain
+	command := exec.Command(cmd.Path, cmd.Args...) //nolint:gosec
 	command.Env = setCmdEnv(cmd.PassthroughEnv)
 
 	res, err := command.Output()
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
-			return nil, runCommandError(fmt.Errorf("%s: %s", exitErr.Error(), string(exitErr.Stderr)))
+			return nil, runCommandError(commandExitError(exitErr))
 		}
 		return nil, runCommandError(err)
 	}
@@ -195,14 +208,14 @@ func setCmdEnv(passthroughEnv []string) []string {
 	env := getOSEnv()
 
 	for _, k := range passthroughEnv {
-		r, err := regexp.Compile(k)
+		regex, err := regexp.Compile(k)
 		if err != nil {
 			if v, ok := os.LookupEnv(k); ok {
 				set[k] = v
 			}
 		} else {
 			for k, v := range env {
-				if r.MatchString(k) {
+				if regex.MatchString(k) {
 					set[k] = v
 				}
 			}
@@ -215,13 +228,16 @@ func setCmdEnv(passthroughEnv []string) []string {
 // getOSEnv returns the current environment variables in a friendlier structure.
 func getOSEnv() map[string]string {
 	env := make(map[string]string)
+	keyValuePairLen := 2
+
 	for _, envVar := range os.Environ() {
-		pair := strings.SplitN(envVar, "=", 2)
-		if len(pair) != 2 {
+		pair := strings.SplitN(envVar, "=", keyValuePairLen)
+		if len(pair) != keyValuePairLen {
 			continue
 		}
 		env[pair[0]] = pair[1]
 	}
+
 	return env
 }
 
@@ -232,5 +248,6 @@ func toEnvVarSlice(env map[string]string) []string {
 	for k, v := range env {
 		res = append(res, fmt.Sprintf("%s=%s", k, v))
 	}
+
 	return res
 }

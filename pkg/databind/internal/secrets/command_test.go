@@ -16,7 +16,7 @@ type commandTestCase struct {
 	wantErr bool
 }
 
-func TestRunCommand(t *testing.T) {
+func TestCommandGatherer(t *testing.T) {
 	// Arrange
 	tests := []commandTestCase{
 		{
@@ -86,9 +86,9 @@ func TestRunCommand(t *testing.T) {
 				Args:           []string{"{\"ttl\": \"1h\", \"data\": {\"testKey\": \"testVal\"}}"},
 				PassthroughEnv: nil,
 			},
-			want:    cmdResponse{
+			want: cmdResponse{
 				CmdData: map[string]any{"testKey": "testVal"},
-				CmdTTL: "1h",
+				CmdTTL:  "1h",
 			},
 			wantErr: false,
 		},
@@ -125,20 +125,20 @@ func TestRunCommand(t *testing.T) {
 				want:    "TEST_ENV_VAR=test",
 				wantErr: false,
 			},
-					{
-			name: "cmdResponse with env",
-			command: &Command{
-				Path:           "sh",
-				// Careful with the escaping sequences here!
-				Args:           []string{"-c", `echo \{\"ttl\":\"1h\",\"data\":\{\"testKey\":\"$TEST_ENV_VAR\"\}\}`},
-				PassthroughEnv: []string{"TEST_ENV_VAR"},
+			{
+				name: "cmdResponse with env",
+				command: &Command{
+					Path: "sh",
+					// Careful with the escaping sequences here!
+					Args:           []string{"-c", `echo \{\"ttl\":\"1h\",\"data\":\{\"testKey\":\"$TEST_ENV_VAR\"\}\}`},
+					PassthroughEnv: []string{"TEST_ENV_VAR"},
+				},
+				want: cmdResponse{
+					CmdData: map[string]any{"testKey": "test"},
+					CmdTTL:  "1h",
+				},
+				wantErr: false,
 			},
-			want:    cmdResponse{
-				CmdData: map[string]any{"testKey": "test"},
-				CmdTTL: "1h",
-			},
-			wantErr: false,
-		},
 		}...)
 	}
 
@@ -189,6 +189,7 @@ func Test_parsePayload(t *testing.T) {
 			payload: []byte("{\"data\": \"testVal\"}"),
 			want: cmdResponse{
 				CmdData: map[string]any{"string": "testVal"},
+				CmdTTL:  "",
 			},
 			wantErr: false,
 		},
@@ -197,6 +198,7 @@ func Test_parsePayload(t *testing.T) {
 			payload: []byte("{\"data\": {\"testKey\": \"testVal\"}}"),
 			want: cmdResponse{
 				CmdData: map[string]any{"testKey": "testVal"},
+				CmdTTL:  "",
 			},
 			wantErr: false,
 		},
@@ -229,7 +231,7 @@ func Test_parsePayload(t *testing.T) {
 		{
 			name:    "Invalid cmdResponse output (invalid data field)",
 			payload: []byte("{\"data\": [\"testVal\"], \"ttl\": \"30s\"}"),
-			want:    map[string]any{
+			want: map[string]any{
 				"data": []any{"testVal"},
 				"ttl":  "30s",
 			},
@@ -262,6 +264,7 @@ func Test_parsePayload(t *testing.T) {
 	}
 }
 
+//nolint:paralleltest
 func Test_setCmdEnv(t *testing.T) {
 	type args struct {
 		env []string
@@ -321,6 +324,7 @@ func Test_setCmdEnv(t *testing.T) {
 			want: []string{"TEST_ENV=test", "TEST_ENV2=test", "TEST_ENV3=test"},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			for k, v := range tt.env {
@@ -336,25 +340,31 @@ func Test_setCmdEnv(t *testing.T) {
 // slicesHaveSameContent checks if two slices have the same content disregarding order.
 func slicesHaveSameContent(t *testing.T, got, want []string) bool {
 	t.Helper()
+
 	if len(got) != len(want) {
 		return false
 	}
 	count1 := make(map[string]bool)
 	count2 := make(map[string]bool)
+
 	for _, v := range got {
 		count1[v] = true
 	}
+
 	for _, v := range want {
 		count2[v] = true
 	}
+
 	for k, v := range count1 {
 		if count2[k] != v {
 			return false
 		}
 	}
+
 	return true
 }
 
+//nolint:paralleltest
 func Test_runCommand(t *testing.T) {
 	type args struct {
 		cmd *Command
@@ -371,8 +381,9 @@ func Test_runCommand(t *testing.T) {
 			name: "Command with arguments",
 			args: args{
 				cmd: &Command{
-					Path: "echo",
-					Args: []string{"test"},
+					Path:           "echo",
+					Args:           []string{"test"},
+					PassthroughEnv: nil,
 				},
 			},
 			env:     nil,
@@ -396,7 +407,9 @@ func Test_runCommand(t *testing.T) {
 			name: "Empty responses are invalid",
 			args: args{
 				cmd: &Command{
-					Path: "echo",
+					Path:           "echo",
+					Args:           nil,
+					PassthroughEnv: nil,
 				},
 			},
 			env:     nil,
@@ -447,6 +460,7 @@ func Test_runCommand(t *testing.T) {
 			got, err := runCommand(tt.args.cmd)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("runCommand() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
