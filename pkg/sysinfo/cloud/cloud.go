@@ -4,8 +4,6 @@ package cloud
 
 import (
 	"errors"
-	"net"
-	"net/http"
 	"sync"
 	"time"
 
@@ -323,19 +321,6 @@ func (d *Detector) detect(harvesters ...Harvester) error {
 		}
 	}
 	return ErrCouldNotDetect
-}
-
-// DRY function to construct a standard client for making cloud metadata calls that timeout quickly.
-func clientWithFastTimeout(disableKeepAlive bool) *http.Client {
-	return &http.Client{
-		Transport: &http.Transport{
-			DialContext: (&net.Dialer{
-				Timeout:   2 * time.Second,
-				KeepAlive: 30 * time.Second,
-			}).DialContext, // time out after 2 seconds => non-cloud instance.
-			DisableKeepAlives: disableKeepAlive,
-		},
-	}
 }
 
 // Timeout is used to check if a period of time has passed.
