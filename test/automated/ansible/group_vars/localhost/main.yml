@@ -315,7 +315,7 @@ instances:
   ############################
   # amazon linux 2023 amd64
   ############################
-  - ami: "ami-08e418a1b6b57f757"
+  - ami: "ami-0103f211a154d64a6"
     type: "t3a.small"
     name: "amd64:al-2023"
     username: "ec2-user"
@@ -325,7 +325,7 @@ instances:
   ############################
   # amazon linux 2023 arm64
   ############################
-  - ami: "ami-0f05d12ad762dc77c"
+  - ami: "ami-07d16074c2fdf3a19"
     type: "t4g.small"
     name: "arm64:al-2023"
     username: "ec2-user"
