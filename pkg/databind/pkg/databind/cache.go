@@ -18,8 +18,12 @@ type cachedEntry struct {
 	stored interface{}
 }
 
+func (c *cachedEntry) getExpirationTime() time.Time {
+	return c.time.Add(c.ttl)
+}
+
 func (c *cachedEntry) get(now time.Time) (interface{}, bool) {
-	if c.stored != nil && c.time.Add(c.ttl).After(now) {
+	if c.stored != nil && c.getExpirationTime().After(now) {
 		return c.stored, true
 	}
 	c.stored = nil
