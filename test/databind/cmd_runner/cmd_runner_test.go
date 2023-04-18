@@ -62,7 +62,6 @@ variables:
 	data, err := databind.Replace(&vals, templ)
 	require.NoError(t, err)
 
-	// THEN a match is returned, and the JSON fields are accessible by fields and indices
 	require.Len(t, data, 1)
 	require.IsType(t, map[string]string{}, data[0].Variables)
 	d := data[0].Variables.(map[string]string)
@@ -89,7 +88,6 @@ variables:
 	data, err := databind.Replace(&vals, templ)
 	require.NoError(t, err)
 
-	// THEN a match is returned, and the JSON fields are accessible by fields and indices
 	require.Len(t, data, 1)
 	require.IsType(t, &config.Config{}, data[0].Variables)
 	d := data[0].Variables.(*config.Config)
@@ -116,7 +114,6 @@ variables:
 	data, err := databind.Replace(&vals, templ)
 	require.NoError(t, err)
 
-	// THEN a match is returned, and the JSON fields are accessible by fields and indices
 	require.Len(t, data, 1)
 	require.IsType(t, map[string]string{}, data[0].Variables)
 	d := data[0].Variables.(map[string]string)
@@ -128,13 +125,14 @@ func TestPassthroughVars(t *testing.T) {
 variables:
   creds:
     command:
-      path: "env"
-			passthrough_environment: ["DB_USER", "DB_PASS"]
+      path: "sh"
+      # Careful with escaping characters here
+      args: ["-c", "echo \\{\\\"user\\\":\\\"$DB_USER\\\",\\\"pass\\\":\\\"$DB_PASS\\\"\\}"]
+      passthrough_environment: ["DB_USER", "DB_PASS"]
 `
-	t.Setenv("DB_USER", "username")
-	t.Setenv("DB_PASS", "password")
+	t.Setenv("DB_USER", "usernameValue")
+	t.Setenv("DB_PASS", "passwordValue")
 
-	// FIXME modify
 	ctx, err := databind.LoadYAML([]byte(yaml))
 	assert.NoError(t, err)
 	vals, err := databind.Fetch(ctx)
@@ -142,14 +140,76 @@ variables:
 
 	templ := map[string]string{
 		"a_key": "${creds.user}",
+		"b_key": "${creds.pass}",
 	}
 	data, err := databind.Replace(&vals, templ)
 	require.NoError(t, err)
 
-	// THEN a match is returned, and the JSON fields are accessible by fields and indices
 	require.Len(t, data, 1)
 	require.IsType(t, map[string]string{}, data[0].Variables)
 	d := data[0].Variables.(map[string]string)
 	require.Contains(t, d, "a_key")
-	assert.Equal(t, "username", d["a_key"])
+	assert.Equal(t, "usernameValue", d["a_key"])
+	require.Contains(t, d, "b_key")
+	assert.Equal(t, "passwordValue", d["b_key"])
+}
+
+func TestDataWithTTL(t *testing.T) {
+	yaml := `
+variables:
+  creds:
+    command:
+      path: "echo"
+      args: ['{"ttl":"1234s","data":{"user":"test1","pass":"test2"}}']
+`
+
+	ctx, err := databind.LoadYAML([]byte(yaml))
+	assert.NoError(t, err)
+	vals, err := databind.Fetch(ctx)
+	require.NoError(t, err)
+
+	templ := map[string]string{
+		"a_key": "${creds.user}",
+		"b_key": "${creds.pass}",
+	}
+	data, err := databind.Replace(&vals, templ)
+	require.NoError(t, err)
+
+	require.Len(t, data, 1)
+	require.IsType(t, map[string]string{}, data[0].Variables)
+	d := data[0].Variables.(map[string]string)
+	require.Contains(t, d, "a_key")
+	assert.Equal(t, "test1", d["a_key"])
+	require.Contains(t, d, "b_key")
+	assert.Equal(t, "test2", d["b_key"])
+}
+
+func TestDataWithTTL_NestedData(t *testing.T) {
+	yaml := `
+variables:
+  creds:
+    command:
+      path: "echo"
+      args: ['{"ttl":"1234s","data":{"account":{"user":"test1","pass":"test2"}}}']
+`
+
+	ctx, err := databind.LoadYAML([]byte(yaml))
+	assert.NoError(t, err)
+	vals, err := databind.Fetch(ctx)
+	require.NoError(t, err)
+
+	templ := map[string]string{
+		"a_key": "${creds.account.user}",
+		"b_key": "${creds.account.pass}",
+	}
+	data, err := databind.Replace(&vals, templ)
+	require.NoError(t, err)
+
+	require.Len(t, data, 1)
+	require.IsType(t, map[string]string{}, data[0].Variables)
+	d := data[0].Variables.(map[string]string)
+	require.Contains(t, d, "a_key")
+	assert.Equal(t, "test1", d["a_key"])
+	require.Contains(t, d, "b_key")
+	assert.Equal(t, "test2", d["b_key"])
 }

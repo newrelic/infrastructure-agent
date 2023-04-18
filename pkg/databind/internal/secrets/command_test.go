@@ -86,7 +86,7 @@ func TestCommandGatherer(t *testing.T) {
 				Args:           []string{"{\"ttl\": \"1h\", \"data\": {\"testKey\": \"testVal\"}}"},
 				PassthroughEnv: nil,
 			},
-			want: cmdResponse{
+			want: &cmdResponse{
 				CmdData: map[string]any{"testKey": "testVal"},
 				CmdTTL:  "1h",
 			},
@@ -133,7 +133,7 @@ func TestCommandGatherer(t *testing.T) {
 					Args:           []string{"-c", `echo \{\"ttl\":\"1h\",\"data\":\{\"testKey\":\"$TEST_ENV_VAR\"\}\}`},
 					PassthroughEnv: []string{"TEST_ENV_VAR"},
 				},
-				want: cmdResponse{
+				want: &cmdResponse{
 					CmdData: map[string]any{"testKey": "test"},
 					CmdTTL:  "1h",
 				},
@@ -187,8 +187,8 @@ func Test_parsePayload(t *testing.T) {
 		{
 			name:    "Valid cmdResponse output with data field set to a string",
 			payload: []byte("{\"data\": \"testVal\"}"),
-			want: cmdResponse{
-				CmdData: map[string]any{"string": "testVal"},
+			want: &cmdResponse{
+				CmdData: map[string]any{"testVal": "testVal"},
 				CmdTTL:  "",
 			},
 			wantErr: false,
@@ -196,7 +196,7 @@ func Test_parsePayload(t *testing.T) {
 		{
 			name:    "Valid cmdResponse output with data field set to a map[string]any",
 			payload: []byte("{\"data\": {\"testKey\": \"testVal\"}}"),
-			want: cmdResponse{
+			want: &cmdResponse{
 				CmdData: map[string]any{"testKey": "testVal"},
 				CmdTTL:  "",
 			},
@@ -205,7 +205,7 @@ func Test_parsePayload(t *testing.T) {
 		{
 			name:    "Valid cmdResponse output with data field set to a map[string]any and ttl field",
 			payload: []byte("{\"data\": {\"testKey\": \"testVal\"}, \"ttl\": \"30s\"}"),
-			want: cmdResponse{
+			want: &cmdResponse{
 				CmdData: map[string]any{"testKey": "testVal"},
 				CmdTTL:  "30s",
 			},
@@ -431,6 +431,19 @@ func Test_runCommand(t *testing.T) {
 				},
 				env:     map[string]string{"TEST_ENV": "testFromEnv"},
 				want:    []byte("testFromEnv"),
+				wantErr: false,
+			},
+			{
+				name: "Command with JSON arguments and env (Unix))",
+				args: args{
+					cmd: &Command{
+						Path:           "sh",
+						Args:           []string{"-c", "echo {\\\"data\\\": \\\"$TEST_ENV\\\"}"},
+						PassthroughEnv: []string{"TEST_ENV"},
+					},
+				},
+				env:     map[string]string{"TEST_ENV": "testFromEnv"},
+				want:    []byte("{\"data\": \"testFromEnv\"}"),
 				wantErr: false,
 			},
 		}...)

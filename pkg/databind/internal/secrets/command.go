@@ -93,13 +93,13 @@ func (c *cmdResponse) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (c cmdResponse) TTL() (time.Duration, error) {
+func (c *cmdResponse) TTL() (time.Duration, error) {
 	return time.ParseDuration(c.CmdTTL)
 }
 
-func (c cmdResponse) Data() (map[string]any, error) {
+func (c *cmdResponse) Data() (map[string]any, error) {
 	// The nested data field must be either a string or a map[string]any.
-	// If it's a string, we return it as a map[string]any with a single key
+	// If it's a string, we return it as a map[string]any with a single key equal to the string value.
 	return stringOrMapStringAny(c.CmdData)
 }
 
@@ -109,7 +109,8 @@ func stringOrMapStringAny(val any) (map[string]any, error) {
 	}
 
 	if s, ok := val.(string); ok {
-		return map[string]any{"string": s}, nil
+		// The string value can be referenced as a key.
+		return map[string]any{s: s}, nil
 	}
 
 	return nil, invalidTypeError(val)
@@ -129,6 +130,12 @@ func (cmd *Command) Validate() error {
 // contents will be:
 // "account.user"     -> "test1"
 // "account.password" -> "test2".
+// For command return values that include a "data" field and an optional "ttl" field, the access paths
+// will consider the "data" field as the root of the JSON.
+// E.g. if the stored Secret is `{"data":{"user":"test1","password":"test2"}}`, the returned Map
+// contents will be:
+// "user"     -> "test1"
+// "password" -> "test2".
 func CommandGatherer(cmd *Command) func() (any, error) {
 	cfg := commandGatherer{cmd}
 
@@ -153,7 +160,7 @@ func (cg *commandGatherer) get() (any, error) {
 
 func parsePayload(payload []byte) (any, error) {
 	// Parse result as cmdResponse
-	var cmdRes cmdResponse
+	var cmdRes *cmdResponse
 	if err := json.Unmarshal(payload, &cmdRes); err == nil {
 		return cmdRes, nil
 	}
