@@ -54,6 +54,14 @@ Distributed under the following license(s):
 
 
 
+## [github.com/containerd/containerd](https://github.com/containerd/containerd)
+
+Distributed under the following license(s):
+
+* Apache-2.0
+
+
+
 ## [github.com/coreos/go-systemd/v22](https://github.com/coreos/go-systemd)
 
 Distributed under the following license(s):
@@ -87,6 +95,22 @@ Distributed under the following license(s):
 
 
 ## [github.com/fsnotify/fsnotify](https://github.com/fsnotify/fsnotify)
+
+Distributed under the following license(s):
+
+* BSD-3-Clause
+
+
+
+## [github.com/ghodss/yaml](https://github.com/ghodss/yaml)
+
+Distributed under the following license(s):
+
+* MIT
+
+
+
+## [github.com/gogo/protobuf](https://github.com/gogo/protobuf)
 
 Distributed under the following license(s):
 
@@ -159,6 +183,14 @@ Distributed under the following license(s):
 
 
 ## [github.com/newrelic/newrelic-telemetry-sdk-go](https://github.com/newrelic/newrelic-telemetry-sdk-go)
+
+Distributed under the following license(s):
+
+* Apache-2.0
+
+
+
+## [github.com/opencontainers/runtime-spec](https://github.com/opencontainers/runtime-spec)
 
 Distributed under the following license(s):
 

@@ -325,9 +325,9 @@ func convertCPUTimes(s string) (ret float64, err error) {
 	if err != nil {
 		return ret, err
 	}
-	h, err := strconv.Atoi(_t[0])
+	h, _ := strconv.Atoi(_t[0])
 	t += h * 100
-	h, err = strconv.Atoi(_t[1])
+	h, _ = strconv.Atoi(_t[1])
 	t += h
 	return float64(t) / ClockTicks, nil
 }

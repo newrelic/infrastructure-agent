@@ -6,10 +6,10 @@ import (
 	"errors"
 
 	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/sirupsen/logrus"
 
-	"github.com/newrelic/infrastructure-agent/pkg/metrics"
 	"github.com/shirou/gopsutil/v3/process"
 )
 
@@ -33,7 +33,8 @@ func IsContainerized(pid int32, dockerAPIVersion string) (isContainerized bool, 
 	p := &types.ProcessSample{
 		ProcessID: pid,
 	}
-	d := metrics.NewDockerSampler(60, dockerAPIVersion)
+	dockerSampler := metrics.NewDockerSampler(60, dockerAPIVersion) //nolint:gomnd
+
 	logger := log.WithFieldsF(func() logrus.Fields {
 		return logrus.Fields{
 			"action":    "IsContainerized",
@@ -41,10 +42,11 @@ func IsContainerized(pid int32, dockerAPIVersion string) (isContainerized bool, 
 			"pid":       pid,
 		}
 	})
-	if d.Enabled() {
+
+	if dockerSampler.Enabled() {
 		logger.Info("Docker is enabled, checking for containerized agent")
 		var dc metrics.ProcessDecorator
-		dc, err = d.NewDecorator()
+		dc, err = dockerSampler.NewDecorator()
 		if err != nil {
 			return
 		}

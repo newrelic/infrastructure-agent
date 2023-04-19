@@ -357,7 +357,7 @@ func NewProcsMonitor(context agent.AgentContext) *ProcsMonitor {
 	return &ProcsMonitor{
 		context:              context,
 		procCache:            make(map[string]*ProcessCacheEntry),
-		containerSampler:     NewDockerSampler(time.Duration(ttlSecs)*time.Second, apiVersion),
+		containerSampler:     getContainerSampler(time.Duration(ttlSecs)*time.Second, apiVersion),
 		previousProcessTimes: make(map[string]*SystemTimes),
 		processInterrogator:  NewInternalProcessInterrogator(true),
 		waitForCleanup:       &sync.WaitGroup{},
@@ -594,17 +594,17 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 			return err
 		}
 
-		var dockerDecorator ProcessDecorator = nil
+		var containerDecorator ProcessDecorator = nil
 		if self.containerSampler.Enabled() {
-			dockerDecorator, err = self.containerSampler.NewDecorator()
+			containerDecorator, err = self.containerSampler.NewDecorator()
 			if err != nil {
 				if id := containerIDFromNotRunningErr(err); id != "" {
 					if _, ok := containerNotRunningErrs[id]; !ok {
 						containerNotRunningErrs[id] = struct{}{}
-						pslog.WithError(err).Warn("instantiating docker sampler process decorator")
+						pslog.WithError(err).Warn("instantiating container sampler process decorator")
 					}
 				} else {
-					pslog.WithError(err).Warn("instantiating docker sampler process decorator")
+					pslog.WithError(err).Warn("instantiating container sampler process decorator")
 				}
 			}
 		}
@@ -797,8 +797,8 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 				}
 
 				sample.Type("ProcessSample")
-				if dockerDecorator != nil {
-					dockerDecorator.Decorate(sample)
+				if containerDecorator != nil {
+					containerDecorator.Decorate(sample)
 				}
 				procCacheEntry.lastSample = sample
 				results = append(results, sample)
@@ -888,4 +888,23 @@ func containerIDFromNotRunningErr(err error) string {
 		return ""
 	}
 	return msg[len(prefix):j]
+}
+
+func getContainerSampler(duration time.Duration, dockerAPIVersion string) ContainerSampler { //nolint:ireturn
+	// Tries setting up docker sampler
+	dockerSampler := NewDockerSampler(duration, dockerAPIVersion)
+	if dockerSampler.Enabled() {
+		return dockerSampler
+	}
+	// Docker seems to not be enabled. Trying with containerd
+	pslog.Debug("Docker seems to not be enabled. Trying containerd-based container sampler")
+
+	containerdSampler := NewContainerdSampler(duration)
+	if containerdSampler.Enabled() {
+		return containerdSampler
+	}
+	// No more container runtimes available, returning default docker sampler
+	mplog.Debug("No container runtimes available, returning default, containerd-based container sampler")
+
+	return containerdSampler
 }
