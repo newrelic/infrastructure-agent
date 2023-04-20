@@ -241,7 +241,7 @@ func getOSEnv() map[string]string {
 // toEnvVarSlice converts a map of environment variables to a slice of strings in the format `key=value`.
 // This is the format expected by the `exec` package's `Cmd.Env` field.
 func toEnvVarSlice(env map[string]string) []string {
-	res := []string{}
+	res := make([]string, 0, len(env))
 	for k, v := range env {
 		res = append(res, fmt.Sprintf("%s=%s", k, v))
 	}
