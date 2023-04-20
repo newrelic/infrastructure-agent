@@ -49,7 +49,7 @@ type cmdResponse struct {
 	CmdData map[string]any `json:"data"`
 }
 
-// Custom unmarshaler for cmdResponse.
+// UnmarshalJSON is the custom unmarshaler for cmdResponse.
 // The top-level field "data" is required, but the field "ttl" is optional.
 func (c *cmdResponse) UnmarshalJSON(data []byte) error {
 	// Top-level field "data" is required
@@ -59,13 +59,13 @@ func (c *cmdResponse) UnmarshalJSON(data []byte) error {
 	}
 
 	if _, ok := genericRes["data"]; !ok {
-		return fmt.Errorf("%w: %w", ErrParseCommandResponse, ErrParseResNoData)
+		return fmt.Errorf("%w: %v", ErrParseCommandResponse, ErrParseResNoData)
 	}
 	// The nested data field must be either a string or a map[string]any.
 
 	d, err := stringOrMapStringAny(genericRes["data"])
 	if err != nil {
-		return fmt.Errorf("%w: %w", ErrParseCommandResponse, ErrParseResInvalidData)
+		return fmt.Errorf("%w: %v", ErrParseCommandResponse, ErrParseResInvalidData)
 	}
 
 	c.CmdData = d
@@ -74,7 +74,7 @@ func (c *cmdResponse) UnmarshalJSON(data []byte) error {
 		if s, ok := ttl.(string); ok {
 			c.CmdTTL = s
 		} else {
-			return fmt.Errorf("%w: %w", ErrParseCommandResponse, ErrParseResTTLInvalidType)
+			return fmt.Errorf("%w: %v", ErrParseCommandResponse, ErrParseResTTLInvalidType)
 		}
 	}
 
@@ -106,7 +106,7 @@ func stringOrMapStringAny(val any) (map[string]any, error) {
 
 func (cmd *Command) Validate() error {
 	if cmd.Path == "" {
-		return fmt.Errorf("%w: %w", ErrValidation, ErrNoPath)
+		return fmt.Errorf("%w: %v", ErrValidation, ErrNoPath)
 	}
 
 	return nil
@@ -165,13 +165,13 @@ func parsePayload(payload []byte) (any, error) {
 		return str, nil
 	}
 
-	return nil, fmt.Errorf("%w: %w", ErrParseCommandResponse, ErrInvalidResponse)
+	return nil, fmt.Errorf("%w: %v", ErrParseCommandResponse, ErrInvalidResponse)
 }
 
 // runCommand executes the given command and returns the contents of `stdout`.
 func runCommand(cmd *Command) ([]byte, error) {
 	if _, err := exec.LookPath(cmd.Path); err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrCommandRun, err)
+		return nil, fmt.Errorf("%w: %v", ErrCommandRun, err)
 	}
 
 	// Runnign arbitrary commands can be unsafe. Linter will complain
@@ -183,15 +183,15 @@ func runCommand(cmd *Command) ([]byte, error) {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
 
-			return nil, fmt.Errorf("%w: %w", ErrCommandRun, commandExitError(exitErr))
+			return nil, fmt.Errorf("%w: %v", ErrCommandRun, commandExitError(exitErr))
 		}
-		return nil, fmt.Errorf("%w: %w", ErrCommandRun, err)
+		return nil, fmt.Errorf("%w: %v", ErrCommandRun, err)
 	}
 
 	trimmedRes := bytes.TrimSpace(res)
 	// If the command output is empty, return an error
 	if len(trimmedRes) == 0 {
-		return nil, fmt.Errorf("%w: %w", ErrCommandRun, err)
+		return nil, fmt.Errorf("%w: %v", ErrCommandRun, ErrEmptyResponse)
 	}
 
 	return trimmedRes, nil
