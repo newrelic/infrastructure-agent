@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
@@ -66,7 +65,7 @@ func (g *kmsGatherer) get() (interface{}, error) {
 		return g.retrieve([]byte(secret.Data))
 	}
 	if secret.File != "" {
-		dt, err := ioutil.ReadFile(secret.File)
+		dt, err := os.ReadFile(secret.File)
 		if err != nil {
 			return nil, fmt.Errorf("unable to read aws-kms secret file '%s': %s", secret.File, err)
 		}

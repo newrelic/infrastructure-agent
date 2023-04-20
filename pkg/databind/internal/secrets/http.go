@@ -8,8 +8,8 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io"
-	"io/ioutil"
 	gohttp "net/http"
+	"os"
 )
 
 type http struct {
@@ -38,7 +38,7 @@ func httpRequest(config *http, method string, body io.Reader) ([]byte, error) {
 
 	if config.TLSConfig.Ca != "" {
 		rootCAs := x509.NewCertPool()
-		ca, err := ioutil.ReadFile(config.TLSConfig.Ca)
+		ca, err := os.ReadFile(config.TLSConfig.Ca)
 		if err != nil {
 			return nil, fmt.Errorf("unable to read certificate authority file: %s", err)
 		}
@@ -68,10 +68,10 @@ func httpRequest(config *http, method string, body io.Reader) ([]byte, error) {
 	}()
 
 	if res.StatusCode != gohttp.StatusOK {
-		_, _ = io.Copy(ioutil.Discard, res.Body)
+		_, _ = io.Copy(io.Discard, res.Body)
 		return nil, fmt.Errorf("error response received from server: %s", res.Status)
 	}
-	b, err := ioutil.ReadAll(res.Body)
+	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read http response body: %s", err)
 	}

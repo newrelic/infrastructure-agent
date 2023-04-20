@@ -11,7 +11,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery"
 )
 
-// cachedEntry allows storing a value for a given Time-To-Leave
+// cachedEntry allows storing a value for a given Time-To-Live.
 type cachedEntry struct {
 	ttl    time.Duration
 	time   time.Time // time the object has been stored
