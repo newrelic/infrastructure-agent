@@ -18,7 +18,7 @@ import (
 type Command struct {
 	Path           string   `yaml:"path"`
 	Args           []string `yaml:"args,omitempty"`
-	PassthroughEnv []string `yaml:"passthrough_environment,omitempty"` //nolint:tagliatelle
+	PassthroughEnv []string `yaml:"passthrough_environment,omitempty"`
 }
 
 type commandGatherer struct {

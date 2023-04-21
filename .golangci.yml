@@ -51,6 +51,7 @@ linters:
     - exhaustivestruct
     - testpackage
     - gci
+    - tagliatelle
 
 issues:
   new-from-rev: "HEAD~"
