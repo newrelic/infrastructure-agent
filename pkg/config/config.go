@@ -1148,8 +1148,8 @@ type Config struct {
 	// Public: Yes
 	NtpMetrics NtpConfig `yaml:"ntp_metrics" envconfig:"ntp_metrics"`
 
-	// HttpHeaders allows specifying extra headers for the http requests performed by the agent to the backend.
-	// e.g. proxy headers.
+	// Http allows specifying extra configuration for the http client.
+	// e.g. adding proxy headers.
 	// Default: none
 	// Public: Yes
 	Http HttpConfig `yaml:"http" envconfig:"http"`
