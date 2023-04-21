@@ -26,7 +26,7 @@ func NewRequestDecoratorTransport(configurator config.Provider, transport http.R
 func (t *requestDecorator) RoundTrip(req *http.Request) (*http.Response, error) {
 	cfg := t.configurator.Provide()
 
-	for key, val := range cfg.HttpHeaders {
+	for key, val := range cfg.Http.Headers {
 		req.Header.Add(key, val)
 	}
 

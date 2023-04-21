@@ -39,6 +39,9 @@ log:
    file: agent.log
    forward: true
    level: debug
+http:
+  headers:
+    "test-key": "test-value"
 `
 	f, err := ioutil.TempFile("", "opsmatic_config_test")
 	c.Assert(err, IsNil)
@@ -67,6 +70,10 @@ log:
 	c.Assert(*cfg.Log.Forward, Equals, true)
 	c.Assert(cfg.Log.File, Equals, "agent.log")
 	c.Assert(cfg.LoggingRetryLimit, Equals, "10")
+
+	c.Assert(cfg.Http.Headers, DeepEquals, KeyValMap{
+		"test-key": "test-value",
+	})
 }
 
 func (s *ConfigSuite) TestParseConfigBadLicense(c *C) {

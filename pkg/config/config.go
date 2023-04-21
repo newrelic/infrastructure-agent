@@ -1152,7 +1152,7 @@ type Config struct {
 	// e.g. proxy headers.
 	// Default: none
 	// Public: Yes
-	HttpHeaders HttpHeadersConfig `yaml:"http_headers" envconfig:"http_headers"`
+	Http HttpConfig `yaml:"http" envconfig:"http"`
 
 	// AgentTempDir is the directory where the agent stores temporary files (i.e. fb config, discovery...)
 	// It will be DELETED on every agent restart only if it matches default value
@@ -1165,10 +1165,19 @@ type Config struct {
 	AgentTempDir string `yaml:"-" envconfig:"-"`
 }
 
-type HttpHeadersConfig map[string]string
+// KeyValMap is used whenever a key value pair configuration is required.
+type KeyValMap map[string]string
 
-func NewHttpHeadersConfig() HttpHeadersConfig {
-	return map[string]string{}
+// HttpConfig is the configuration to unmarshal http custom configuration.
+type HttpConfig struct {
+	Headers KeyValMap `yaml:"headers" envconfig:"headers"`
+}
+
+// NewHttpConfig returns a new instance of HttpConfig.
+func NewHttpConfig() HttpConfig {
+	return HttpConfig{
+		Headers: make(KeyValMap),
+	}
 }
 
 // Troubleshoot trobleshoot mode configuration.
@@ -1722,7 +1731,7 @@ func NewConfig() *Config {
 		IncludeMetricsMatchers:      defaultMetricsMatcherConfig,
 		InventoryQueueLen:           DefaultInventoryQueue,
 		NtpMetrics:                  NewNtpConfig(),
-		HttpHeaders:                 NewHttpHeadersConfig(),
+		Http:                        NewHttpConfig(),
 		AgentTempDir:                defaultAgentTempDir,
 	}
 }

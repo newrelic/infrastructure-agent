@@ -53,16 +53,13 @@ func NewAgentWithConnectClient(connectClient *http.Client, dataClient backendhtt
 		StartupConnectionRetries: 3,
 		StartupConnectionTimeout: "5s",
 		OfflineTimeToReset:       config.DefaultOfflineTimeToReset,
-		HttpHeaders:              config.NewHttpHeadersConfig(),
+		Http:                     config.NewHttpConfig(),
 	}
-	connectClient.Transport = backendhttp.NewRequestDecoratorTransport(cfg, connectClient.Transport)
-	transport := backendhttp.NewRequestDecoratorTransport(cfg, infra.ToRoundTripper(dataClient))
 
-	return NewAgentWithConnectClientAndConfig(connectClient, transport.RoundTrip, cfg, configurator...)
+	return NewAgentWithConnectClientAndConfig(connectClient, dataClient, cfg, configurator...)
 }
 
 func NewAgentWithConnectClientAndConfig(connectClient *http.Client, dataClient backendhttp.Client, cfg *config.Config, configurator ...func(*config.Config)) *agent.Agent {
-
 	for _, c := range configurator {
 		c(cfg)
 	}
@@ -89,6 +86,8 @@ func NewAgentWithConnectClientAndConfig(connectClient *http.Client, dataClient b
 		panic(err)
 	}
 
+	connectClient.Transport = backendhttp.NewRequestDecoratorTransport(cfg, connectClient.Transport)
+
 	connectC, err := identityapi.NewIdentityConnectClient("url", "license", "user-agent", gzip.BestCompression, true, connectClient.Do)
 	if err != nil {
 		panic(err)
@@ -110,6 +109,7 @@ func NewAgentWithConnectClientAndConfig(connectClient *http.Client, dataClient b
 	provideIDs := agent.NewProvideIDs(registerC, state.NewRegisterSM())
 	transport := backendhttp.BuildTransport(cfg, backendhttp.ClientTimeout)
 	transport = backendhttp.NewRequestDecoratorTransport(cfg, transport)
+	dataClient = backendhttp.NewRequestDecoratorTransport(cfg, infra.ToRoundTripper(dataClient)).RoundTrip
 	a, err := agent.New(cfg, ctx, "user-agent", lookups, st, connectSrv, provideIDs, dataClient, transport, cloudDetector, fingerprintHarvester, ctl.NewNotificationHandlerWithCancellation(nil))
 	if err != nil {
 		panic(err)
