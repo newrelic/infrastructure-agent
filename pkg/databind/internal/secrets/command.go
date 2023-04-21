@@ -33,23 +33,10 @@ var (
 	ErrParseResNoData         = errors.New("missing required field 'data'")
 	ErrParseResInvalidData    = errors.New("invalid type for field 'data'")
 	ErrParseResTTLInvalidType = errors.New("invalid type for field 'ttl'")
+	ErrValidation             = errors.New("validation error")
+	ErrCommandRun             = errors.New("failed to run command")
+	ErrParseCommandResponse   = errors.New("failed to parse command response")
 )
-
-func validationError(err error) error {
-	return fmt.Errorf("validation error: %w", err)
-}
-
-func runCommandError(err error) error {
-	return fmt.Errorf("failed to run command: %w", err)
-}
-
-func parseCmdResponseError(err error) error {
-	return fmt.Errorf("failed to parse command response: %w", err)
-}
-
-func invalidTypeError(t interface{}) error {
-	return fmt.Errorf("invalid type: %T", t)
-}
 
 func commandExitError(exitErr *exec.ExitError) error {
 	return fmt.Errorf("%s: %s", exitErr.Error(), string(exitErr.Stderr))
@@ -62,7 +49,7 @@ type cmdResponse struct {
 	CmdData map[string]any `json:"data"`
 }
 
-// Custom unmarshaler for cmdResponse.
+// UnmarshalJSON is the custom unmarshaler for cmdResponse.
 // The top-level field "data" is required, but the field "ttl" is optional.
 func (c *cmdResponse) UnmarshalJSON(data []byte) error {
 	// Top-level field "data" is required
@@ -72,21 +59,22 @@ func (c *cmdResponse) UnmarshalJSON(data []byte) error {
 	}
 
 	if _, ok := genericRes["data"]; !ok {
-		return parseCmdResponseError(ErrParseResNoData)
+		return fmt.Errorf("%w: %v", ErrParseCommandResponse, ErrParseResNoData)
 	}
 	// The nested data field must be either a string or a map[string]any.
 
 	d, err := stringOrMapStringAny(genericRes["data"])
 	if err != nil {
-		return parseCmdResponseError(ErrParseResInvalidData)
+		return fmt.Errorf("%w: %v", ErrParseCommandResponse, ErrParseResInvalidData)
 	}
 
 	c.CmdData = d
+
 	if ttl, ok := genericRes["ttl"]; ok {
 		if s, ok := ttl.(string); ok {
 			c.CmdTTL = s
 		} else {
-			return parseCmdResponseError(ErrParseResTTLInvalidType)
+			return fmt.Errorf("%w: %v", ErrParseCommandResponse, ErrParseResTTLInvalidType)
 		}
 	}
 
@@ -113,12 +101,12 @@ func stringOrMapStringAny(val any) (map[string]any, error) {
 		return map[string]any{s: s}, nil
 	}
 
-	return nil, invalidTypeError(val)
+	return nil, fmt.Errorf("%w: invalid type: %T", ErrParseCommandResponse, val)
 }
 
 func (cmd *Command) Validate() error {
 	if cmd.Path == "" {
-		return validationError(ErrNoPath)
+		return fmt.Errorf("%w: %v", ErrValidation, ErrNoPath)
 	}
 
 	return nil
@@ -176,13 +164,14 @@ func parsePayload(payload []byte) (any, error) {
 	if len(str) > 0 {
 		return str, nil
 	}
-	return nil, parseCmdResponseError(ErrInvalidResponse)
+
+	return nil, fmt.Errorf("%w: %v", ErrParseCommandResponse, ErrInvalidResponse)
 }
 
 // runCommand executes the given command and returns the contents of `stdout`.
 func runCommand(cmd *Command) ([]byte, error) {
 	if _, err := exec.LookPath(cmd.Path); err != nil {
-		return nil, runCommandError(err)
+		return nil, fmt.Errorf("%w: %v", ErrCommandRun, err)
 	}
 
 	// Runnign arbitrary commands can be unsafe. Linter will complain
@@ -193,15 +182,16 @@ func runCommand(cmd *Command) ([]byte, error) {
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
-			return nil, runCommandError(commandExitError(exitErr))
+
+			return nil, fmt.Errorf("%w: %v", ErrCommandRun, commandExitError(exitErr))
 		}
-		return nil, runCommandError(err)
+		return nil, fmt.Errorf("%w: %v", ErrCommandRun, err)
 	}
 
 	trimmedRes := bytes.TrimSpace(res)
 	// If the command output is empty, return an error
 	if len(trimmedRes) == 0 {
-		return nil, runCommandError(ErrEmptyResponse)
+		return nil, fmt.Errorf("%w: %v", ErrCommandRun, ErrEmptyResponse)
 	}
 
 	return trimmedRes, nil
@@ -251,7 +241,7 @@ func getOSEnv() map[string]string {
 // toEnvVarSlice converts a map of environment variables to a slice of strings in the format `key=value`.
 // This is the format expected by the `exec` package's `Cmd.Env` field.
 func toEnvVarSlice(env map[string]string) []string {
-	res := []string{}
+	res := make([]string, 0, len(env))
 	for k, v := range env {
 		res = append(res, fmt.Sprintf("%s=%s", k, v))
 	}

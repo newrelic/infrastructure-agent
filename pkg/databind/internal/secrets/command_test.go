@@ -142,7 +142,7 @@ func TestCommandGatherer(t *testing.T) {
 		}...)
 	}
 
-	for _, tt := range tests {
+	for _, tt := range tests { //nolint:paralleltest
 		testCase := tt
 		t.Run(testCase.name, func(t *testing.T) {
 			for _, env := range testCase.command.PassthroughEnv {
@@ -325,13 +325,13 @@ func Test_setCmdEnv(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			for k, v := range tt.env {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			for k, v := range testCase.env {
 				t.Setenv(k, v)
 			}
-			if got := setCmdEnv(tt.args.env); !slicesHaveSameContent(t, got, tt.want) {
-				t.Errorf("setCmdEnv() = %v, want %v", got, tt.want)
+			if got := setCmdEnv(testCase.args.env); !slicesHaveSameContent(t, got, testCase.want) {
+				t.Errorf("setCmdEnv() = %v, want %v", got, testCase.want)
 			}
 		})
 	}
@@ -465,20 +465,20 @@ func Test_runCommand(t *testing.T) {
 		}...)
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			for k, v := range tt.env {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			for k, v := range testCase.env {
 				t.Setenv(k, v)
 			}
-			got, err := runCommand(tt.args.cmd)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("runCommand() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := runCommand(testCase.args.cmd)
+			if (err != nil) != testCase.wantErr {
+				t.Errorf("runCommand() error = %v, wantErr %v", err, testCase.wantErr)
 
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
+			if !reflect.DeepEqual(got, testCase.want) {
 				// Represent as string for readability
-				t.Errorf("runCommand() = %s, want %s", got, tt.want)
+				t.Errorf("runCommand() = %s, want %s", got, testCase.want)
 			}
 		})
 	}
