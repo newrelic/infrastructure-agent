@@ -70,16 +70,6 @@ func NewRequestRecorderClient(responses ...http.Response) *RequestRecorderClient
 	}
 }
 
-// SuccessResponseWithPayload creates a http response using the payload provided.
-func SuccessResponseWithPayload(payload []byte) http.Response {
-	closer := ioutil.NopCloser(bytes.NewReader(payload))
-	return http.Response{
-		Header:     http.Header{},
-		StatusCode: http.StatusCreated,
-		Body:       closer,
-	}
-}
-
 // AcceptedResponse creates a mock http.Response with a StatusAccepted code.
 func AcceptedResponse(pluginId string, lastDeltaId int) http.Response {
 	return http.Response{
