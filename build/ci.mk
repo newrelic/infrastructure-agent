@@ -34,6 +34,7 @@ ci/unit-test: ci/deps
 			--name "infrastructure-agent-test-coverage" \
 			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
 			-w /go/src/github.com/newrelic/infrastructure-agent \
+			--env CI \
 			$(BUILDER_IMG_TAG) make unit-test-with-coverage
 
 .PHONY: ci/snyk-test

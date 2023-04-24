@@ -27,14 +27,14 @@ type Inventories struct {
 	ctx AgentContext
 
 	// reference to the inventories from agent
-	inventories *map[string]*inventory
+	inventories *map[string]*inventoryEntity
 }
 
 // backendPost defines the prototype for a function that submits the bulk of PostDeltaBody objects to the backend
 type backendPost func(reqs []inventoryapi.PostDeltaBody) ([]inventoryapi.BulkDeltaResponse, error)
 
 // NewInventories instantiates and returns a new Inventories object given the configuration passed as arguments
-func NewInventories(store *delta.Store, ctx AgentContext, client *inventoryapi.IngestClient, inventories *map[string]*inventory,
+func NewInventories(store *delta.Store, ctx AgentContext, client *inventoryapi.IngestClient, inventories *map[string]*inventoryEntity,
 	agentIdentifier string, compactEnabled bool, compactThreshold uint64, maxDataSize int) Inventories {
 
 	b := bulk.NewBuffer(maxDataSize)

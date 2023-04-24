@@ -39,9 +39,15 @@ linters:
     - interfacer
     - maligned
     - golint
+    - deadcode
+    - ifshort
+    - varcheck
+    - structcheck
+    - nosnakecase
     # intentionally disabled
     - exhaustivestruct
     - testpackage
+    - gci
 
 issues:
   new-from-rev: "HEAD~"

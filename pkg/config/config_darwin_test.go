@@ -8,7 +8,6 @@ package config
 import (
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -42,7 +41,7 @@ custom_attributes:
 	assert.Equal(t, false, cfg.Log.Rotate.CompressionEnabled)
 	assert.Equal(t, "", cfg.Log.Rotate.FilePattern)
 
-	assert.Equal(t, filepath.Join(cfg.AgentDir, agentTemporaryFolderName), cfg.AgentTempDir)
+	assert.Equal(t, os.TempDir(), cfg.AgentTempDir)
 }
 
 func TestRotateConfig(t *testing.T) {

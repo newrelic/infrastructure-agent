@@ -4,6 +4,7 @@ package plugins
 
 import (
 	"github.com/newrelic/infrastructure-agent/internal/agent"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
@@ -34,7 +35,7 @@ func NewCustomAttrsPlugin(ctx agent.AgentContext) agent.Plugin {
 func (self *CustomAttrsPlugin) Run() {
 	self.Context.AddReconnecting(self)
 
-	data := agent.PluginInventoryDataset{CustomAttrs(self.customAttributes)}
+	data := types.PluginInventoryDataset{CustomAttrs(self.customAttributes)}
 	entityKey := self.Context.EntityKey()
 
 	aclog.

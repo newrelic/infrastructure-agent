@@ -4,6 +4,7 @@ package testing
 
 import (
 	"context"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
@@ -21,7 +22,7 @@ import (
 )
 
 type MockAgent struct {
-	ch         chan agent.PluginOutput
+	ch         chan types.PluginOutput
 	registered bool
 	cfg        *config.Config
 	entities   chan string
@@ -42,7 +43,7 @@ func (m *MockAgent) Identity() entity.Identity {
 func NewMockAgent() *MockAgent {
 	return &MockAgent{
 		registered: true,
-		ch:         make(chan agent.PluginOutput, 1),
+		ch:         make(chan types.PluginOutput, 1),
 		cfg: &config.Config{
 			SupervisorRefreshSec: 1,
 			SupervisorRpcSocket:  "/tmp/supervisor.sock.test",
@@ -65,7 +66,7 @@ func (self *MockAgent) WithConfig(cfg *config.Config) *MockAgent {
 	return self
 }
 
-func (self *MockAgent) GetData(c *C) (output agent.PluginOutput) {
+func (self *MockAgent) GetData(c *C) (output types.PluginOutput) {
 	select {
 	case output = <-self.ch:
 	case <-time.After(50 * time.Millisecond):
@@ -74,7 +75,7 @@ func (self *MockAgent) GetData(c *C) (output agent.PluginOutput) {
 	return
 }
 
-func (self *MockAgent) SendData(data agent.PluginOutput) {
+func (self *MockAgent) SendData(data types.PluginOutput) {
 	self.ch <- data
 }
 
@@ -84,7 +85,7 @@ func (self *MockAgent) SendEvent(event sample.Event, entityKey entity.Key) {
 
 func (self *MockAgent) Unregister(id ids.PluginID) {
 	self.registered = false
-	self.ch <- agent.NewNotApplicableOutput(id)
+	self.ch <- types.NewNotApplicableOutput(id)
 }
 
 func (self *MockAgent) Config() *config.Config {

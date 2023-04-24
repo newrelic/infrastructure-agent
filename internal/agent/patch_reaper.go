@@ -14,21 +14,21 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// patchReaper gets the inventory data that has changed since the last reap and commits it into storage
-type patchReaper struct {
+// PatchReaper gets the inventory data that has changed since the last reap and commits it into storage
+type PatchReaper struct {
 	entityKey string
 	store     *delta.Store
 }
 
 var prlog = log.WithComponent("PatchReaper")
 
-func newPatchReaper(entityKey string, store *delta.Store) *patchReaper {
+func newPatchReaper(entityKey string, store *delta.Store) *PatchReaper {
 	if store == nil {
 		prlog.WithField("entityKey", entityKey).Error("creating patch reaper: delta store can't be nil")
 		panic("creating patch reaper: delta store can't be nil")
 	}
 
-	return &patchReaper{
+	return &PatchReaper{
 		entityKey: entityKey,
 		store:     store,
 	}
@@ -36,13 +36,14 @@ func newPatchReaper(entityKey string, store *delta.Store) *patchReaper {
 
 // CleanupOldPlugins deletes old json from plugins that have been
 // deprecated or are no longer used
-func (p *patchReaper) CleanupOldPlugins(plugins []ids.PluginID) {
+func (p *PatchReaper) CleanupOldPlugins(plugins []ids.PluginID) {
 	for _, plugin := range plugins {
 		// first check if file exists
 		filename := filepath.Join(p.store.DataDir, plugin.Category, fmt.Sprintf("%s.json", plugin.Term))
 		if _, err := os.Stat(filename); err != nil {
 			continue
 		}
+
 		// next, remove the source file first, which will show
 		// as a deleted delta
 		if err := os.Remove(filename); err != nil {
@@ -55,7 +56,7 @@ func (p *patchReaper) CleanupOldPlugins(plugins []ids.PluginID) {
 }
 
 // Reap generates deltas from last iteration and persist.
-func (p *patchReaper) Reap() {
+func (p *PatchReaper) Reap() {
 	err := p.store.UpdatePluginsInventoryCache(p.entityKey)
 	if err != nil {
 		prlog.WithFields(logrus.Fields{

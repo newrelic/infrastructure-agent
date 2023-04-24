@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"io"
 	"io/ioutil"
 	"os"
@@ -408,7 +409,7 @@ func (rs *RunnerSuite) TestRegisterInstances(c *C) {
 // customContext implements the AgentContext interface for testing purposes
 // It only has two channels to read/write events and inventory data from plugins
 type customContext struct {
-	ch  chan agent.PluginOutput
+	ch  chan types.PluginOutput
 	ev  chan sample.Event
 	cfg *config.Config
 }
@@ -439,7 +440,7 @@ func (cc customContext) GetServiceForPid(pid int) (service string, ok bool) {
 	return "", false
 }
 
-func (cc customContext) SendData(data agent.PluginOutput) {
+func (cc customContext) SendData(data types.PluginOutput) {
 	cc.ch <- data
 }
 
@@ -486,7 +487,7 @@ custom_attributes:
 	cfg, _ := config.LoadConfig(f.Name())
 
 	return customContext{
-		ch:  make(chan agent.PluginOutput),
+		ch:  make(chan types.PluginOutput),
 		ev:  make(chan sample.Event),
 		cfg: cfg,
 	}
@@ -611,8 +612,8 @@ func readFromChannel(ch chan interface{}) (interface{}, error) {
 	}
 }
 
-func readData(ch chan agent.PluginOutput) (agent.PluginOutput, error) {
-	var output agent.PluginOutput
+func readData(ch chan types.PluginOutput) (types.PluginOutput, error) {
+	var output types.PluginOutput
 
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
@@ -1542,10 +1543,10 @@ type fakeEmitter struct {
 	lastEntityKey string
 }
 
-func (f *fakeEmitter) EmitInventoryWithPluginId(data agent.PluginInventoryDataset, entityKey string, pluginId ids.PluginID) {
+func (f *fakeEmitter) EmitInventoryWithPluginId(data types.PluginInventoryDataset, entityKey string, pluginId ids.PluginID) {
 }
 
-func (f *fakeEmitter) EmitInventory(data agent.PluginInventoryDataset, entity entity.Entity) {}
+func (f *fakeEmitter) EmitInventory(data types.PluginInventoryDataset, entity entity.Entity) {}
 
 func (f *fakeEmitter) EmitEvent(eventData map[string]interface{}, entityKey entity.Key) {
 	f.lastEventData = eventData

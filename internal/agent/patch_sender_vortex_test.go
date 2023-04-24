@@ -4,6 +4,7 @@ package agent
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/inventory"
 	"math"
 	http2 "net/http"
 	"os"
@@ -48,7 +49,7 @@ func TestPatchSenderVortex_Process_LongTermOffline(t *testing.T) {
 	// Given a delta Store
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
-	store := delta.NewStore(dataDir, "default", maxInventoryDataSize)
+	store := delta.NewStore(dataDir, "default", maxInventoryDataSize, true)
 	// With some cached plugin data
 	cachePluginData(t, store, "entityKey")
 
@@ -73,7 +74,7 @@ func TestPatchSenderVortex_Process_LongTermOffline_ReconnectPlugins(t *testing.T
 	// Given a delta Store
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
-	store := delta.NewStore(dataDir, "default", maxInventoryDataSize)
+	store := delta.NewStore(dataDir, "default", maxInventoryDataSize, true)
 
 	// With some cached plugin data
 	cachePluginData(t, store, "entityKey")
@@ -117,7 +118,7 @@ func TestPatchSenderVortex_Process_LongTermOffline_NoDeltasToPost_UpdateLastConn
 	// Given a delta Store
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
-	store := delta.NewStore(dataDir, "default", maxInventoryDataSize)
+	store := delta.NewStore(dataDir, "default", maxInventoryDataSize, true)
 
 	// And a patch sender that has been disconnected for less than 24 hours
 	resetTime, _ := time.ParseDuration("24h")
@@ -146,7 +147,7 @@ func TestPatchSenderVortex_Process_LongTermOffline_AlreadyRemoved(t *testing.T) 
 	// Given a delta Store
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
-	store := delta.NewStore(dataDir, "default", maxInventoryDataSize)
+	store := delta.NewStore(dataDir, "default", maxInventoryDataSize, true)
 
 	// With some cached plugin data
 	cachePluginData(t, store, "entityKey")
@@ -179,7 +180,7 @@ func TestPatchSenderVortex_Process_ShortTermOffline(t *testing.T) {
 	// Given a delta Store
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
-	store := delta.NewStore(dataDir, "default", maxInventoryDataSize)
+	store := delta.NewStore(dataDir, "default", maxInventoryDataSize, true)
 	// With some cached plugin data
 	cachePluginData(t, store, "entityKey")
 
@@ -214,7 +215,7 @@ func TestPatchSenderVortex_Process_ShortTermOffline(t *testing.T) {
 func TestPatchSenderVortex_Process(t *testing.T) {
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
-	store := delta.NewStore(dataDir, "localhost", maxInventoryDataSize)
+	store := delta.NewStore(dataDir, "localhost", maxInventoryDataSize, true)
 	// set of deltas from different plugins, whose total size is smaller than the max inventory data size
 	testhelpers.PopulateDeltas(dataDir, "entityKey", []testhelpers.FakeDeltaEntry{
 		{Source: "plugin1/plugin1", DeltasSize: maxInventoryDataSize / 10, BodySize: 100},
@@ -242,7 +243,7 @@ func TestPatchSenderVortex_Process_WaitsForAgentID(t *testing.T) {
 	agentIdentity := entity.Identity{ID: 123}
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
-	store := delta.NewStore(dataDir, "localhost", maxInventoryDataSize)
+	store := delta.NewStore(dataDir, "localhost", maxInventoryDataSize, true)
 	testhelpers.PopulateDeltas(dataDir, "entityKey", []testhelpers.FakeDeltaEntry{
 		{Source: "test/dummy", DeltasSize: maxInventoryDataSize, BodySize: 100},
 	})
@@ -281,7 +282,7 @@ func TestPatchSenderVortex_Process_DividedDeltas(t *testing.T) {
 	// Given a patch sender
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
-	store := delta.NewStore(dataDir, "localhost", maxInventoryDataSize)
+	store := delta.NewStore(dataDir, "localhost", maxInventoryDataSize, true)
 	pdt := testhelpers.NewPostDeltaTracer(maxInventoryDataSize)
 	ctx := newContextWithVortex()
 	registerClient := &identityapi.RegisterClientMock{}
@@ -315,7 +316,7 @@ func TestPatchSenderVortex_Process_DividedDeltas(t *testing.T) {
 func TestPatchSenderVortex_Process_DisabledDeltaSplit(t *testing.T) {
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
-	store := delta.NewStore(dataDir, "localhost", delta.DisableInventorySplit)
+	store := delta.NewStore(dataDir, "localhost", delta.DisableInventorySplit, true)
 
 	// Given a patch sender with disabled delta split
 	pdt := testhelpers.NewPostDeltaTracer(math.MaxInt32)
@@ -349,7 +350,7 @@ func TestPatchSenderVortex_Process_DisabledDeltaSplit(t *testing.T) {
 func TestPatchSenderVortex_Process_SingleRequestDeltas(t *testing.T) {
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
-	store := delta.NewStore(dataDir, "localhost", maxInventoryDataSize)
+	store := delta.NewStore(dataDir, "localhost", maxInventoryDataSize, true)
 
 	// Given a patch sender
 	pdt := testhelpers.NewPostDeltaTracer(maxInventoryDataSize)
@@ -385,7 +386,7 @@ func TestPatchSenderVortex_Process_CompactEnabled(t *testing.T) {
 	// Given a patch sender with compaction enabled
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
-	store := delta.NewStore(dataDir, "localhost", maxInventoryDataSize)
+	store := delta.NewStore(dataDir, "localhost", maxInventoryDataSize, true)
 
 	ctx := newContextWithVortex()
 	registerClient := &identityapi.RegisterClientMock{}
@@ -418,7 +419,7 @@ func TestPatchSenderVortex_Process_Reset(t *testing.T) {
 	// Given a patch sender
 	dataDir, err := TempDeltaStoreDir()
 	assert.NoError(t, err)
-	store := delta.NewStore(dataDir, "localhost", maxInventoryDataSize)
+	store := delta.NewStore(dataDir, "localhost", maxInventoryDataSize, true)
 
 	resetTime, _ := time.ParseDuration("24h")
 	lastConnection := time.Date(2018, 12, 12, 0, 12, 12, 12, &time.Location{})
@@ -457,7 +458,7 @@ func TestPatchSenderVortex_Process_Reset(t *testing.T) {
 	assert.True(t, storageSize < 10, "%v not smaller than 10", storageSize)
 }
 
-func newSender(t *testing.T, ctx *context, store *delta.Store, client http.Client, registerClient identityapi.RegisterClient) patchSender { // nolint:ireturn
+func newSender(t *testing.T, ctx *context, store *delta.Store, client http.Client, registerClient identityapi.RegisterClient) inventory.PatchSender { // nolint:ireturn
 	t.Helper()
 	pSender, err := newPatchSenderVortex("entityKey", agentKey, ctx, store, "user-agent", ctx.Identity, NewProvideIDs(registerClient, state.NewRegisterSM()), entity.NewKnownIDs(), client)
 	require.NoError(t, err)

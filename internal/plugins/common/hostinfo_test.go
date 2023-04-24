@@ -176,7 +176,6 @@ func TestGetHostInfo(t *testing.T) {
 			},
 			setMock: func(h *fakeHarvester) {
 				h.On("GetCloudType").Return(cloud.TypeGCP)
-				// nolint:err113
 				h.On("GetRegion").Return("", errors.New("cloud endpoint not reachable"))
 			},
 		},

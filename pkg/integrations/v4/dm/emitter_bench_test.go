@@ -177,7 +177,7 @@ package dm
 //	return context.TODO()
 //}
 //
-//func (n noopAgentContext) SendData(output agent.PluginOutput) {
+//func (n noopAgentContext) SendData(output types.PluginOutput) {
 //	panic("implement me")
 //}
 //
