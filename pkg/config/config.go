@@ -73,9 +73,13 @@ const (
 	LogLevelTrace string = "trace"
 )
 
-type CustomAttributeMap map[string]interface{}
+var (
+	ErrUnableToParseConfigFile = fmt.Errorf("unable to parse configuration file")
+	ErrDatabindApply           = fmt.Errorf("databind error")
+	clog                       = log.WithComponent("Configuration")
+)
 
-var clog = log.WithComponent("Configuration")
+type CustomAttributeMap map[string]interface{}
 
 // IncludeMetricsMap configuration type to Map include_matching_metrics setting env var
 type IncludeMetricsMap map[string][]string
@@ -1611,7 +1615,7 @@ func LoadConfig(configFile string) (cfg *Config, err error) {
 	cfg = NewConfig()
 	cfgMetadata, err := config_loader.LoadYamlConfig(cfg, filesToCheck...)
 	if err != nil {
-		err = fmt.Errorf("unable to parse configuration file %s: %s", configFile, err)
+		err = fmt.Errorf("%w, %s: %s", ErrUnableToParseConfigFile, configFile, err.Error())
 		return
 	}
 
@@ -1622,6 +1626,13 @@ func LoadConfig(configFile string) (cfg *Config, err error) {
 
 	templateConfig := NewConfig()
 	templateConfigMetadata, err := config_loader.LoadYamlConfig(templateConfig, filesToCheck...)
+
+	if err != nil {
+		err = fmt.Errorf("%w, %s: %s", ErrUnableToParseConfigFile, configFile, err.Error())
+
+		return
+	}
+
 	if len(templateConfig.Databind.Variables) > 0 {
 		cfg.templateConfig = templateConfig
 		cfg.templateConfig.databindSources = cfg.databindSources
@@ -1645,11 +1656,12 @@ func ApplyDatabind(cfg *Config) (*Config, error) {
 	var err error
 	if cfg.databindSources == nil {
 		cfg.databindSources, err = cfg.Databind.DataSources()
+
+		if err != nil {
+			return cfg, fmt.Errorf("%w: %v", ErrDatabindApply, err)
+		}
 	}
 
-	if err != nil {
-		return cfg, err
-	}
 	//_, err = databind.Fetch(sources)
 	vals, err := databind.Fetch(cfg.databindSources)
 	if err != nil {
@@ -1659,12 +1671,14 @@ func ApplyDatabind(cfg *Config) (*Config, error) {
 		matches, errD := databind.Replace(&vals, cfg)
 		if errD != nil {
 			cfg.Databind = databind.YAMLAgentConfig{}
+
 			return cfg, err
 		}
 
 		if len(matches) != 1 {
 			err = fmt.Errorf("unexpected config file variables replacement amount")
 			cfg.Databind = databind.YAMLAgentConfig{}
+
 			return cfg, err
 		}
 		transformed := matches[0]
@@ -1672,6 +1686,7 @@ func ApplyDatabind(cfg *Config) (*Config, error) {
 		if !ok {
 			err = fmt.Errorf("unexpected config file variables replacement type")
 			cfg.Databind = databind.YAMLAgentConfig{}
+
 			return cfg, err
 		}
 

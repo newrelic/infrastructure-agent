@@ -50,6 +50,7 @@ func (s *Sources) GetSoonestTTL() time.Time {
 			soonestExpiration = expTime
 		}
 	}
+
 	return soonestExpiration
 }
 

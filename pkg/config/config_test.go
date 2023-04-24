@@ -914,6 +914,7 @@ license_key: YYY
 
 	tmp, err := createTestFile(yamlData)
 	require.NoError(t, err)
+
 	defer os.Remove(tmp.Name())
 
 	cfg, err := LoadConfig(tmp.Name())
@@ -933,10 +934,12 @@ license_key: YYY
 
 	tmp, err := createTestFile(yamlData)
 	require.NoError(t, err)
+
 	defer os.Remove(tmp.Name())
 
 	os.Setenv("SOME_LICENSE", "XXX")
 	cfg, err := LoadConfig(tmp.Name())
+
 	os.Unsetenv("SOME_LICENSE")
 
 	require.NoError(t, err)
@@ -960,12 +963,12 @@ license_key: ${license}
 	require.NoError(t, err)
 	defer os.Remove(tmp.Name())
 
-	os.Setenv("SOME_LICENSE", "AAA")
+	t.Setenv("SOME_LICENSE", "AAA")
 	cfg, err := LoadConfig(tmp.Name())
 	require.NoError(t, err)
 	assert.Equal(t, "AAA", cfg.License)
 
-	os.Setenv("SOME_LICENSE", "BBB")
+	t.Setenv("SOME_LICENSE", "BBB")
 	refreshedCfg := cfg.Provide()
 
 	assert.Equal(t, "AAA", refreshedCfg.License, "ttl didn't expire for AAA")
@@ -976,7 +979,6 @@ license_key: ${license}
 
 	refreshedCfg = cfg.Provide()
 	assert.Equal(t, "BBB", refreshedCfg.License, "ttl didn't expire for BBB")
-
 }
 
 func BenchmarkDatabindRefresh(b *testing.B) {
@@ -994,20 +996,15 @@ license_key: ${license}
 
 	tmp, err := createTestFile(yamlData)
 	require.NoError(b, err)
+
 	defer os.Remove(tmp.Name())
 
-	os.Setenv("SOME_LICENSE", "XXX")
+	b.Setenv("SOME_LICENSE", "XXX")
 	cfg, err := LoadConfig(tmp.Name())
 
 	for i := 0; i < b.N; i++ {
-		//content := fmt.Sprintf("%d", i)
-		//os.Setenv("SOME_LICENSE", content)
 		cfg.Provide()
-		//assert.Equal(b, content, refreshedCfg.License)
 	}
-
-	os.Unsetenv("SOME_LICENSE")
-
 }
 
 func createTestFile(data []byte) (*os.File, error) {
