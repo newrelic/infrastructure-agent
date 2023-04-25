@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestRequestDecorator(t *testing.T) {
+func TestRequestDecorator_AddHeaders(t *testing.T) {
 
 	cfg := &config.Config{
 		Http: config.HttpConfig{
