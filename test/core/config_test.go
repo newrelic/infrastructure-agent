@@ -98,7 +98,7 @@ func TestHttpHeaders_Connect(t *testing.T) {
 		ConnectEnabled:           true,
 		Http: config.HttpConfig{
 			Headers: map[string]string{
-				"Test_key": "test_value",
+				"Content-Encoding": "gzip2",
 			},
 		},
 	}
@@ -118,9 +118,8 @@ func TestHttpHeaders_Connect(t *testing.T) {
 
 	assert.Equal(t, req.URL.Path, "url/connect")
 	assert.EqualValues(t, req.Header, map[string][]string{
-		"Content-Encoding": {"gzip"},
+		"Content-Encoding": {"gzip", "gzip2"},
 		"Content-Type":     {"application/json"},
-		"Test_key":         {"test_value"},
 		"User-Agent":       {"user-agent"},
 		"X-License-Key":    {"license"},
 	})
