@@ -100,3 +100,18 @@ func (s *ResponseStack) Pop() *Response {
 	*s = (*s)[:len(*s)-1]
 	return d
 }
+
+type RequestInterceptorMock struct {
+	req chan *http.Request
+}
+
+func NewRequestInterceptorMock() *RequestInterceptorMock {
+	return &RequestInterceptorMock{
+		req: make(chan *http.Request, 1),
+	}
+}
+
+func (r *RequestInterceptorMock) RoundTrip(req *http.Request) (*http.Response, error) {
+	r.req <- req
+	return nil, nil
+}
