@@ -41,6 +41,19 @@ type Sources struct {
 	variables  map[string]*gatherer // key: variable name
 }
 
+func (s *Sources) GetSoonestTTL() time.Time {
+	var soonestExpiration time.Time
+	for _, v := range s.variables {
+		expTime := v.cache.getExpirationTime()
+
+		if soonestExpiration.IsZero() || expTime.Before(soonestExpiration) {
+			soonestExpiration = expTime
+		}
+	}
+
+	return soonestExpiration
+}
+
 // NewValues returns an instance of value
 func NewValues(vars data.Map, discoveries ...discovery.Discovery) Values {
 	return Values{

@@ -233,8 +233,13 @@ func replaceFields(values []data.Map, val reflect.Value, rc replaceConfig, match
 		}
 		return newMap, nil
 	case reflect.Struct:
-		newStruct := reflect.New(val.Type()).Elem()
+		valT := val.Type()
+		newStruct := reflect.New(valT).Elem()
 		for i := 0; i < val.NumField(); i++ {
+			valTag := valT.Field(i).Tag.Get("databind")
+			if valTag == "ignored" {
+				continue
+			}
 			nComps, err := replaceFields(values, val.Field(i), rc, matches)
 			if err != nil {
 				return reflect.Value{}, err

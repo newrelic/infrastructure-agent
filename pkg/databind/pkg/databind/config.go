@@ -108,7 +108,6 @@ func (dc *YAMLAgentConfig) DataSources() (*Sources, error) {
 		clock:     time.Now,
 		variables: map[string]*gatherer{},
 	}
-
 	for vName, vEntry := range dc.Variables {
 		ttl, err := duration(vEntry.TTL, defaultVariablesTTL)
 		if err != nil {

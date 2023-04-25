@@ -73,9 +73,13 @@ const (
 	LogLevelTrace string = "trace"
 )
 
-type CustomAttributeMap map[string]interface{}
+var (
+	ErrUnableToParseConfigFile = fmt.Errorf("unable to parse configuration file")
+	ErrDatabindApply           = fmt.Errorf("databind error")
+	clog                       = log.WithComponent("Configuration")
+)
 
-var clog = log.WithComponent("Configuration")
+type CustomAttributeMap map[string]interface{}
 
 // IncludeMetricsMap configuration type to Map include_matching_metrics setting env var
 type IncludeMetricsMap map[string][]string
@@ -96,6 +100,12 @@ type Provider interface {
 // Configuration structs
 // Use the 'public' annotation to specify the visibility of the config option: false/obfuscate [default: true]
 type Config struct {
+	// templateConf contains parsed config withour databind applied
+	templateConfig         *Config                    `databind:"ignored"`
+	refreshedConfig        *Config                    `databind:"ignored"`
+	templateConfigMetadata config_loader.YAMLMetadata `databind:"ignored"`
+	databindSources        *databind.Sources          `databind:"ignored"`
+
 	// Databind provides varaiable (secrets, discovery) replacement capabilities for the configuration.
 	Databind databind.YAMLAgentConfig `yaml:",inline" public:"false"`
 
@@ -1317,6 +1327,32 @@ func coalesceBool(values ...*bool) bool {
 	return false
 }
 
+func (cfg *Config) Provide() *Config {
+	// if no template, nothing to refresh
+	if cfg.templateConfig == nil {
+		return cfg
+	}
+
+	// if ttl expired, try to refresh config
+	if cfg.templateConfig.databindSources != nil && cfg.templateConfig.databindSources.GetSoonestTTL().Before(time.Now()) {
+		refreshedConfig, err := ApplyDatabind(cfg.templateConfig)
+
+		if err == nil {
+			err = NormalizeConfig(refreshedConfig, cfg.templateConfigMetadata)
+
+			if err == nil {
+				cfg.refreshedConfig = refreshedConfig
+			}
+		}
+	}
+
+	if cfg.refreshedConfig != nil {
+		return cfg.refreshedConfig
+	}
+
+	return cfg
+}
+
 func (config *Config) loadLogConfig() {
 	// Add default ExcludeFilters
 	defer config.Log.AttachDefaultFilters()
@@ -1597,57 +1633,42 @@ func (c *Config) PublicFields() (map[string]string, error) {
 	return result, nil
 }
 
-// Provide implements Provider interface.
-func (c *Config) Provide() *Config {
-	// TODO: add logic for refreshing here.
-	return c
-}
-
 func LoadConfig(configFile string) (cfg *Config, err error) {
 	var filesToCheck []string
 	if configFile != "" {
 		filesToCheck = append(filesToCheck, configFile)
 	}
-	filesToCheck = append(filesToCheck, defaultConfigFiles...)
 
+	filesToCheck = append(filesToCheck, defaultConfigFiles...)
 	cfg = NewConfig()
 	cfgMetadata, err := config_loader.LoadYamlConfig(cfg, filesToCheck...)
 	if err != nil {
-		err = fmt.Errorf("unable to parse configuration file %s: %s", configFile, err)
+		err = fmt.Errorf("%w, %s: %s", ErrUnableToParseConfigFile, configFile, err.Error())
 		return
 	}
 
-	// After the config file has loaded,  override via any environment variables
+	cfg, err = ApplyDatabind(cfg)
+	if err != nil {
+		return
+	}
+
+	templateConfig := NewConfig()
+	templateConfigMetadata, err := config_loader.LoadYamlConfig(templateConfig, filesToCheck...)
+
+	if err != nil {
+		err = fmt.Errorf("%w, %s: %s", ErrUnableToParseConfigFile, configFile, err.Error())
+
+		return
+	}
+
+	if len(templateConfig.Databind.Variables) > 0 {
+		cfg.templateConfig = templateConfig
+		cfg.templateConfig.databindSources = cfg.databindSources
+		cfg.templateConfigMetadata = *templateConfigMetadata
+	}
+
+	// After the config file has loaded, override via any environment variables
 	configOverride(cfg)
-
-	sources, err := cfg.Databind.DataSources()
-	if err != nil {
-		return
-	}
-	//_, err = databind.Fetch(sources)
-	vals, err := databind.Fetch(sources)
-	if err != nil {
-		return
-	}
-	if vals.VarsLen() > 0 {
-		cfg.Databind = databind.YAMLAgentConfig{}
-		matches, errD := databind.Replace(&vals, cfg)
-		if errD != nil {
-			return
-		}
-
-		if len(matches) != 1 {
-			err = fmt.Errorf("unexpected config file variables replacement amount")
-			return
-		}
-		transformed := matches[0]
-		replacedCfg, ok := transformed.Variables.(*Config)
-		if !ok {
-			err = fmt.Errorf("unexpected config file variables replacement type")
-			return
-		}
-		cfg = replacedCfg
-	}
 
 	cfg.RunMode, cfg.AgentUser, cfg.ExecutablePath = runtimeValues()
 
@@ -1657,6 +1678,52 @@ func LoadConfig(configFile string) (cfg *Config, err error) {
 	err = NormalizeConfig(cfg, *cfgMetadata)
 
 	return
+}
+
+func ApplyDatabind(cfg *Config) (*Config, error) {
+	var err error
+	if cfg.databindSources == nil {
+		cfg.databindSources, err = cfg.Databind.DataSources()
+
+		if err != nil {
+			return cfg, fmt.Errorf("%w: %v", ErrDatabindApply, err)
+		}
+	}
+
+	//_, err = databind.Fetch(sources)
+	vals, err := databind.Fetch(cfg.databindSources)
+	if err != nil {
+		return cfg, err
+	}
+	if vals.VarsLen() > 0 {
+		matches, errD := databind.Replace(&vals, cfg)
+		if errD != nil {
+			cfg.Databind = databind.YAMLAgentConfig{}
+
+			return cfg, err
+		}
+
+		if len(matches) != 1 {
+			err = fmt.Errorf("unexpected config file variables replacement amount")
+			cfg.Databind = databind.YAMLAgentConfig{}
+
+			return cfg, err
+		}
+		transformed := matches[0]
+		replacedCfg, ok := transformed.Variables.(*Config)
+		if !ok {
+			err = fmt.Errorf("unexpected config file variables replacement type")
+			cfg.Databind = databind.YAMLAgentConfig{}
+
+			return cfg, err
+		}
+
+		replacedCfg.databindSources = cfg.databindSources
+
+		return replacedCfg, nil
+	}
+
+	return cfg, nil
 }
 
 // NewConfig returns the default Config.
