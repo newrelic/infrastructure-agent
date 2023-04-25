@@ -24,6 +24,20 @@ type RequestRecorderClient struct {
 	RequestCh chan http.Request
 }
 
+type toRoundTipper struct {
+	c backendhttp.Client
+}
+
+func (r *toRoundTipper) RoundTrip(req *http.Request) (*http.Response, error) {
+	return r.c(req)
+}
+
+func ToRoundTripper(client backendhttp.Client) http.RoundTripper {
+	return &toRoundTipper{
+		c: client,
+	}
+}
+
 type ResponseOption = func(http.Response)
 
 // NewRequestRecorderClient creates a new RequestRecorderClient, passing the
@@ -35,7 +49,7 @@ func NewRequestRecorderClient(responses ...http.Response) *RequestRecorderClient
 
 	responseIndex := 0
 
-	httpClient := func(req *http.Request) (*http.Response, error) {
+	transportFn := func(req *http.Request) (*http.Response, error) {
 		requestCh <- *req
 
 		if responseIndex < len(responses) {
@@ -51,7 +65,7 @@ func NewRequestRecorderClient(responses ...http.Response) *RequestRecorderClient
 	}
 
 	return &RequestRecorderClient{
-		Client:    httpClient,
+		Client:    transportFn,
 		RequestCh: requestCh,
 	}
 }

@@ -4,6 +4,7 @@ package infra
 
 import (
 	"compress/gzip"
+	infra "github.com/newrelic/infrastructure-agent/test/infra/http"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
@@ -34,13 +35,14 @@ func NewAgent(dataClient backendhttp.Client, configurator ...func(*config.Config
 
 func NewAgentFromConfig(cfg *config.Config) *agent.Agent {
 	transport := backendhttp.BuildTransport(cfg, backendhttp.ClientTimeout)
+	transport = backendhttp.NewRequestDecoratorTransport(cfg, transport)
 	dataClient := backendhttp.GetHttpClient(backendhttp.ClientTimeout, transport)
 	return NewAgentWithConnectClientAndConfig(NewSuccessConnectHttpClient(), dataClient.Do, cfg)
 }
 
 // NewAgentWithConnectClient create a new agent for testing with a provided connect-client.
 func NewAgentWithConnectClient(connectClient *http.Client, dataClient backendhttp.Client, configurator ...func(*config.Config)) *agent.Agent {
-	return NewAgentWithConnectClientAndConfig(connectClient, dataClient, &config.Config{
+	cfg := &config.Config{
 		IgnoredInventoryPaths:    []string{"test/plugin/yum"},
 		MaxInventorySize:         config.DefaultMaxMetricsBatchSizeBytes,
 		DisplayName:              "display-name",
@@ -51,11 +53,13 @@ func NewAgentWithConnectClient(connectClient *http.Client, dataClient backendhtt
 		StartupConnectionRetries: 3,
 		StartupConnectionTimeout: "5s",
 		OfflineTimeToReset:       config.DefaultOfflineTimeToReset,
-	}, configurator...)
+		Http:                     config.NewHttpConfig(),
+	}
+
+	return NewAgentWithConnectClientAndConfig(connectClient, dataClient, cfg, configurator...)
 }
 
 func NewAgentWithConnectClientAndConfig(connectClient *http.Client, dataClient backendhttp.Client, cfg *config.Config, configurator ...func(*config.Config)) *agent.Agent {
-
 	for _, c := range configurator {
 		c(cfg)
 	}
@@ -82,6 +86,8 @@ func NewAgentWithConnectClientAndConfig(connectClient *http.Client, dataClient b
 		panic(err)
 	}
 
+	connectClient.Transport = backendhttp.NewRequestDecoratorTransport(cfg, connectClient.Transport)
+
 	connectC, err := identityapi.NewIdentityConnectClient("url", "license", "user-agent", gzip.BestCompression, true, connectClient.Do)
 	if err != nil {
 		panic(err)
@@ -102,6 +108,8 @@ func NewAgentWithConnectClientAndConfig(connectClient *http.Client, dataClient b
 
 	provideIDs := agent.NewProvideIDs(registerC, state.NewRegisterSM())
 	transport := backendhttp.BuildTransport(cfg, backendhttp.ClientTimeout)
+	transport = backendhttp.NewRequestDecoratorTransport(cfg, transport)
+	dataClient = backendhttp.NewRequestDecoratorTransport(cfg, infra.ToRoundTripper(dataClient)).RoundTrip
 	a, err := agent.New(cfg, ctx, "user-agent", lookups, st, connectSrv, provideIDs, dataClient, transport, cloudDetector, fingerprintHarvester, ctl.NewNotificationHandlerWithCancellation(nil))
 	if err != nil {
 		panic(err)

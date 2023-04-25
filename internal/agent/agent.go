@@ -295,6 +295,7 @@ func NewAgent(
 	s := delta.NewStore(dataDir, ctx.EntityKey(), maxInventorySize)
 
 	transport := backendhttp.BuildTransport(cfg, backendhttp.ClientTimeout)
+	transport = backendhttp.NewRequestDecoratorTransport(cfg, transport)
 
 	httpClient := backendhttp.GetHttpClient(backendhttp.ClientTimeout, transport)
 
