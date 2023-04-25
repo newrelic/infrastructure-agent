@@ -11,7 +11,6 @@ import (
 )
 
 func TestRequestDecorator_AddHeaders(t *testing.T) {
-
 	cfg := &config.Config{
 		Http: config.HttpConfig{
 			Headers: map[string]string{
