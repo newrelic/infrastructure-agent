@@ -83,6 +83,13 @@ type IncludeMetricsMap map[string][]string
 // LogFilters configuration specifies which log entries should be included/excluded.
 type LogFilters map[string][]interface{}
 
+// Provider will retrieve the configuration.
+// If changes will be required (e.g. refreshing) will be applied now.
+type Provider interface {
+	// Provide will retrieve the configuration.
+	Provide() *Config
+}
+
 // IMPORTANT NOTE: If you add new config fields, consider checking the ignore list in
 // the plugins/agent_config.go plugin to not send undesired fields as inventory
 //
@@ -1141,6 +1148,12 @@ type Config struct {
 	// Public: Yes
 	NtpMetrics NtpConfig `yaml:"ntp_metrics" envconfig:"ntp_metrics"`
 
+	// Http allows specifying extra configuration for the http client.
+	// e.g. adding proxy headers.
+	// Default: none
+	// Public: Yes
+	Http HttpConfig `yaml:"http" envconfig:"http"`
+
 	// AgentTempDir is the directory where the agent stores temporary files (i.e. fb config, discovery...)
 	// It will be DELETED on every agent restart only if it matches default value
 	//
@@ -1150,6 +1163,21 @@ type Config struct {
 	// Default (Windows): C:\ProgramData\New Relic\newrelic-infra\tmp
 	// Public: no
 	AgentTempDir string `yaml:"-" envconfig:"-"`
+}
+
+// KeyValMap is used whenever a key value pair configuration is required.
+type KeyValMap map[string]string
+
+// HttpConfig is the configuration to unmarshal http custom configuration.
+type HttpConfig struct {
+	Headers KeyValMap `yaml:"headers" envconfig:"headers"`
+}
+
+// NewHttpConfig returns a new instance of HttpConfig.
+func NewHttpConfig() HttpConfig {
+	return HttpConfig{
+		Headers: make(KeyValMap),
+	}
 }
 
 // Troubleshoot trobleshoot mode configuration.
@@ -1569,6 +1597,12 @@ func (c *Config) PublicFields() (map[string]string, error) {
 	return result, nil
 }
 
+// Provide implements Provider interface.
+func (c *Config) Provide() *Config {
+	// TODO: add logic for refreshing here.
+	return c
+}
+
 func LoadConfig(configFile string) (cfg *Config, err error) {
 	var filesToCheck []string
 	if configFile != "" {
@@ -1697,6 +1731,7 @@ func NewConfig() *Config {
 		IncludeMetricsMatchers:      defaultMetricsMatcherConfig,
 		InventoryQueueLen:           DefaultInventoryQueue,
 		NtpMetrics:                  NewNtpConfig(),
+		Http:                        NewHttpConfig(),
 		AgentTempDir:                defaultAgentTempDir,
 	}
 }
