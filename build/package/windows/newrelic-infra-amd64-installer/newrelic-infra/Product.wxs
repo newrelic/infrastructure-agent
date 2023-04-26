@@ -198,7 +198,7 @@
 
         <CustomAction Id="CheckSymlinks"
             Directory="NewRelicInfraDataFolder"
-            ExeCommand="cmd /C &quot;dir /al /s &quot;[NewRelicInfraDataFolder].&quot; >nul 2>&amp;1 &quot; &amp;&amp; (EXIT /B 1) || (EXIT /B 0)"
+            ExeCommand="cmd /C &quot;dir /al /s &quot;[CompanyDataFolder]&quot; >nul 2>&amp;1 &quot; &amp;&amp; (EXIT /B 1) || (EXIT /B 0)"
             Execute="deferred"
             Impersonate="no" />
 
@@ -207,14 +207,14 @@
           -->
           <CustomAction Id="CheckSymlinks2"
               Directory="NewRelicInfraDataFolder"
-              ExeCommand="cmd /C &quot;dir /al /s &quot;[NewRelicInfraDataFolder]&quot; >nul 2>&amp;1 &quot; &amp;&amp; (EXIT /B 1) || (EXIT /B 0)"
+              ExeCommand="cmd /C &quot;dir /al /s &quot;[CompanyDataFolder]&quot; >nul 2>&amp;1 &quot; &amp;&amp; (EXIT /B 1) || (EXIT /B 0)"
               Execute="deferred"
               Impersonate="no" />
 
         <InstallExecuteSequence>
             <!-- Perform the check for symolic link Only on install and not on remove -->
-            <Custom Action="CheckSymlinks2" After="CreateFolders">NOT REMOVE</Custom>
-            <Custom Action="TakeOwnership" After="CheckSymlinks">NOT REMOVE</Custom>
+            <Custom Action="CheckSymlinks2" Before="CreateFolders">NOT REMOVE</Custom>
+            <Custom Action="TakeOwnership" After="CheckSymlinks2">NOT REMOVE</Custom>
             <Custom Action="ResetPermissions" After="TakeOwnership">NOT REMOVE</Custom>
             <Custom Action="CheckSymlinks" After="ResetPermissions">NOT REMOVE</Custom>
 
