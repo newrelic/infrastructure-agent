@@ -213,7 +213,7 @@
             <Custom Action="CheckSymlinksCommonAppDataFolder" Before="CreateFolders">NOT REMOVE</Custom>
             <Custom Action="CheckSymlinksCompanyDataFolder" Before="CreateFolders">NOT REMOVE</Custom>
 
-            <Custom Action="TakeOwnership" After="CheckSymlinksCompanyDataFolder">NOT REMOVE</Custom>
+            <Custom Action="TakeOwnership" After="CreateFolders">NOT REMOVE</Custom>
             <Custom Action="ResetPermissions" After="TakeOwnership">NOT REMOVE</Custom>
 
             <Custom Action="yamlgen.nribase" Before="RunYamlGenerator" />
