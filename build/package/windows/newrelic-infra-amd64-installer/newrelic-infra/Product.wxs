@@ -185,21 +185,25 @@
             Impersonate="no" />
 
         <CustomAction Id="TakeOwnership"
+            Directory="NewRelicInfraDataFolder"
             ExeCommand="cmd /C &quot;takeown /f &quot;[NewRelicInfraDataFolder]*&quot; /a /r /d N >nul 2>&amp;1&quot;"
             Execute="deferred"
             Impersonate="no" />
 
         <CustomAction Id="ResetPermissions"
+            Directory="NewRelicInfraDataFolder"
             ExeCommand="cmd /C &quot;icacls &quot;[NewRelicInfraDataFolder]*&quot; /q /t /reset >nul 2>&amp;1&quot;"
             Execute="deferred"
             Impersonate="no" />
 
         <CustomAction Id="CheckSymlinksCommonAppDataFolder"
+            Directory="CommonAppDataFolder"
             ExeCommand="cmd /C &quot;dir /al &quot;[CommonAppDataFolder]New Relic*&quot; >nul 2>&amp;1 &quot; &amp;&amp; (EXIT /B 1) || (EXIT /B 0)"
             Execute="deferred"
             Impersonate="no" />
 
         <CustomAction Id="CheckSymlinksCompanyDataFolder"
+            Directory="CommonAppDataFolder"
             ExeCommand="cmd /C &quot;dir /al /s &quot;[CompanyDataFolder]&quot; >nul 2>&amp;1 &quot; &amp;&amp; (EXIT /B 1) || (EXIT /B 0)"
             Execute="deferred"
             Impersonate="no" />
