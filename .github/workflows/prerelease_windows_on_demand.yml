@@ -116,7 +116,7 @@ jobs:
           AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
           AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
         with:
-          tag: ${{env.TAG}}
+          tag: ${{env.VERSION}}
           app_name: "newrelic-infra"
           repo_name: "newrelic/infrastructure-agent"
           schema: "custom"
