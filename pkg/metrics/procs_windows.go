@@ -904,7 +904,7 @@ func getContainerSampler(duration time.Duration, dockerAPIVersion string) Contai
 		return containerdSampler
 	}
 	// No more container runtimes available, returning default docker sampler
-	mplog.Debug("No container runtimes available, returning default, containerd-based container sampler")
+	pslog.Debug("No container runtimes available, returning default, containerd-based container sampler")
 
 	return containerdSampler
 }
