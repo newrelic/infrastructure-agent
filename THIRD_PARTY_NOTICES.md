@@ -190,6 +190,22 @@ Distributed under the following license(s):
 
 
 
+## [github.com/opencontainers/go-digest](https://github.com/opencontainers/go-digest)
+
+Distributed under the following license(s):
+
+* Apache-2.0
+
+
+
+## [github.com/opencontainers/image-spec](https://github.com/opencontainers/image-spec)
+
+Distributed under the following license(s):
+
+* Apache-2.0
+
+
+
 ## [github.com/opencontainers/runtime-spec](https://github.com/opencontainers/runtime-spec)
 
 Distributed under the following license(s):
