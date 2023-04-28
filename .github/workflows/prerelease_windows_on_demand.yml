@@ -6,6 +6,9 @@ on:
       branch:
         description: 'Branch to build from'
         required: true
+      version:
+        description: 'Version to be given to the packages'
+        default: '0.0.0'
       dest_prefix:
         description: 'Repo prefix'
         required: true
@@ -21,6 +24,7 @@ env:
   PFX_PASSPHRASE:  ${{ secrets.OHAI_PFX_PASSPHRASE }}
   SNYK_TOKEN: ${{ secrets.CAOS_SNYK_TOKEN }}
   TAG: "0.0.0"
+  VERSION:  ${{ inputs.version }}
   DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
   # required for GHA publish action, should be moved into optional
@@ -64,15 +68,15 @@ jobs:
 
       - name: Build executables ${{ matrix.goarch }}
         shell: pwsh
-        run: build\windows\build.ps1 -arch ${{ matrix.goarch }} -version ${{env.TAG}} -commit "$env:GITHUB_SHA" -date ${{env.buildDate}}
+        run: build\windows\build.ps1 -arch ${{ matrix.goarch }} -version ${{env.VERSION}} -commit "$env:GITHUB_SHA" -date ${{env.buildDate}}
 
       - name: Create MSI package ${{ matrix.goarch }}
         shell: pwsh
-        run: build\windows\package_msi.ps1 -arch ${{ matrix.goarch }} -version ${{env.TAG}}
+        run: build\windows\package_msi.ps1 -arch ${{ matrix.goarch }} -version ${{env.VERSION}}
 
       - name: Create zip package ${{ matrix.goarch }}
         shell: pwsh
-        run: build\windows\package_zip.ps1 -arch ${{ matrix.goarch }} -version ${{env.TAG}}
+        run: build\windows\package_zip.ps1 -arch ${{ matrix.goarch }} -version ${{env.VERSION}}
 
       - name: Archive production artifacts
         uses: actions/upload-artifact@v2 #v3 just got released and was not working in windows
