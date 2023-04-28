@@ -37,7 +37,7 @@ func TestInitializeContainerdClientWithoutContainerd(t *testing.T) {
 
 	containerdClient, err := initializeContainerdClient()
 
-	assert.EqualError(t, err, "containerd sampler error: containerd error: no active containerd instance found")
+	assert.EqualError(t, err, "containerd sampler: containerd error: no active containerd instance found")
 	assert.Nil(t, containerdClient)
 }
 
@@ -48,7 +48,7 @@ func TestContainerdProcessDecoratorNoContainers(t *testing.T) {
 	pidsCache := newPidsCache(metadataCacheTTL)
 
 	_, err := newContainerdDecorator(mock, pidsCache)
-	assert.EqualError(t, err, "containerd sampler error: no containers")
+	assert.EqualError(t, err, "containerd sampler: no containers")
 }
 
 func TestContainerdProcessDecoratorNoProcessContainers(t *testing.T) {
@@ -58,7 +58,7 @@ func TestContainerdProcessDecoratorNoProcessContainers(t *testing.T) {
 	pidsCache := newPidsCache(metadataCacheTTL)
 
 	_, err := newContainerdDecorator(mock, pidsCache)
-	assert.EqualError(t, err, "containerd sampler error: Unable to get pids for container")
+	assert.EqualError(t, err, "containerd sampler: unable to get pids for container")
 }
 
 // func TestContainerdProcessDecoratorDecorateProcessSampleBadProcessID(t *testing.T) {

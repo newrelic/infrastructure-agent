@@ -19,11 +19,11 @@ import (
 var (
 	cslog = log.WithComponent("ContainerdSampler") //nolint:gochecknoglobals
 
-	ErrContainerdSampler      = errors.New("containerd sampler error")
-	ErrInitializeContainerd   = errors.New("Unable to initialize containerd client")
-	ErrCannotGetPids          = errors.New("Unable to get pids for container")
-	ErrCannotGetTask          = errors.New("Unable to get task for container")
-	ErrCannotGetContainerInfo = errors.New("Unable to get container info")
+	errContainerdSampler      = errors.New("containerd sampler")
+	errInitializeContainerd   = errors.New("unable to initialize containerd client")
+	errCannotGetPids          = errors.New("unable to get pids for container")
+	errCannotGetTask          = errors.New("unable to get task for container")
+	errCannotGetContainerInfo = errors.New("unable to get container info")
 )
 
 type ContainerdSampler struct {
@@ -36,7 +36,7 @@ type ContainerdSampler struct {
 func initializeContainerdClient() (helpers.ContainerdInterface, error) { //nolint:ireturn
 	containerdClient := &helpers.ContainerdClient{}
 	if err := containerdClient.Initialize(); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrContainerdSampler, err)
+		return nil, fmt.Errorf("%s: %w", errContainerdSampler.Error(), err)
 	}
 
 	return containerdClient, nil
@@ -68,7 +68,7 @@ func (d *ContainerdSampler) Enabled() bool {
 
 	d.containerdClient, err = initializeContainerdClient()
 	if err != nil {
-		cslog.WithError(err).Debug(ErrInitializeContainerd.Error())
+		cslog.WithError(err).Debug(errInitializeContainerd.Error())
 
 		return false
 	}
@@ -109,7 +109,7 @@ func (d *containerdDecorator) pidsContainers() (map[uint32]helpers.ContainerdMet
 
 	containersPerNamespace, err := d.containerdClient.Containers()
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrContainerdSampler, err)
+		return nil, fmt.Errorf("%s: %w", errContainerdSampler.Error(), err)
 	}
 
 	for namespace, containers := range containersPerNamespace {
@@ -143,16 +143,16 @@ func (d *containerdDecorator) pidsWithCache(container containerd.Container, name
 	ctx := namespaces.WithNamespace(context.Background(), namespace)
 	task, err := container.Task(ctx, nil)
 	if err != nil {
-		cslog.WithError(err).WithField("container", container.ID()).Debug(ErrCannotGetTask.Error())
+		cslog.WithError(err).WithField("container", container.ID()).Debug(errCannotGetTask.Error())
 
-		return fmt.Errorf("%w: %v", ErrContainerdSampler, err)
+		return fmt.Errorf("%s: %w", errContainerdSampler.Error(), err)
 	}
 
 	pidsList, err := task.Pids(ctx)
 	if err != nil {
-		cslog.WithError(err).WithField("container", container.ID()).Debug(ErrCannotGetPids.Error())
+		cslog.WithError(err).WithField("container", container.ID()).Debug(errCannotGetPids.Error())
 
-		return fmt.Errorf("%w: %v", ErrContainerdSampler, err)
+		return fmt.Errorf("%s: %w", errContainerdSampler.Error(), err)
 	}
 
 	cachedPids := make([]uint32, 0, len(pidsList))
@@ -174,7 +174,7 @@ func (d *containerdDecorator) Decorate(process *metricTypes.ProcessSample) {
 		// Get container information
 		cInfo, err := helpers.GetContainerdInfo(containerMeta)
 		if err != nil {
-			cslog.WithError(err).WithField("container", containerMeta.Container.ID()).Debug(ErrCannotGetContainerInfo.Error())
+			cslog.WithError(err).WithField("container", containerMeta.Container.ID()).Debug(errCannotGetContainerInfo.Error())
 		}
 
 		process.ContainerImage = cInfo.ImageID

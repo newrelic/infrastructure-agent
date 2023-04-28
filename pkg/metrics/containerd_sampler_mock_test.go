@@ -7,6 +7,7 @@ package metrics
 
 import (
 	"context"
+	"errors"
 	"syscall"
 
 	"github.com/containerd/containerd"
@@ -18,7 +19,9 @@ import (
 	"github.com/opencontainers/runtime-spec/specs-go"
 )
 
-// Implements ContainerdInterface (pkgs/helpers/containerd_utils.go)
+var errUnimplemented = errors.New("unimplemented")
+
+// Implements ContainerdInterface (pkgs/helpers/containerd_utils.go).
 type MockBaseContainerdImpl struct{}
 
 func (m *MockBaseContainerdImpl) Initialize() error {
@@ -26,7 +29,7 @@ func (m *MockBaseContainerdImpl) Initialize() error {
 }
 
 func (m *MockBaseContainerdImpl) Namespaces() ([]string, error) {
-	return nil, nil
+	return nil, errUnimplemented
 }
 
 func (m *MockBaseContainerdImpl) Containers(_ ...string) (map[string][]containerd.Container, error) {
@@ -37,7 +40,7 @@ func (m *MockBaseContainerdImpl) ContainerProcesses(containerID string) ([]conta
 	return nil, errContainerDoesNotExist(containerID)
 }
 
-// Implements ContainerdInterface (pkgs/helpers/containerd_utils.go)
+// Implements ContainerdInterface (pkgs/helpers/containerd_utils.go).
 type MockContainerContainerdImpl struct{}
 
 func (mc *MockContainerContainerdImpl) Initialize() error {
@@ -45,7 +48,7 @@ func (mc *MockContainerContainerdImpl) Initialize() error {
 }
 
 func (mc *MockContainerContainerdImpl) Namespaces() ([]string, error) {
-	return nil, nil
+	return nil, errUnimplemented
 }
 
 func (mc *MockContainerContainerdImpl) Containers(_ ...string) (map[string][]containerd.Container, error) {
@@ -54,9 +57,9 @@ func (mc *MockContainerContainerdImpl) Containers(_ ...string) (map[string][]con
 	return map[string][]containerd.Container{"default": {container}}, nil
 }
 
-func (mc *MockContainerContainerdImpl) ContainerProcesses(containerID string) ([]containerd.ProcessInfo, error) {
+func (mc *MockContainerContainerdImpl) ContainerProcesses(_ string) ([]containerd.ProcessInfo, error) {
 	// container := MockContainerContainerdImpl{}
-	return nil, nil
+	return nil, errUnimplemented
 }
 
 type MockContainerWithDataContainerdImpl struct{}
@@ -66,7 +69,7 @@ func (mc *MockContainerWithDataContainerdImpl) Initialize() error {
 }
 
 func (mc *MockContainerWithDataContainerdImpl) Namespaces() ([]string, error) {
-	return nil, nil
+	return nil, errUnimplemented
 }
 
 func (mc *MockContainerWithDataContainerdImpl) Containers(_ ...string) (map[string][]containerd.Container, error) {
@@ -108,11 +111,11 @@ func (m *MockContainerdContainer) Delete(_ context.Context, _ ...containerd.Dele
 }
 
 func (m *MockContainerdContainer) NewTask(_ context.Context, _ cio.Creator, _ ...containerd.NewTaskOpts) (containerd.Task, error) { //nolint:ireturn
-	return nil, nil
+	return nil, errUnimplemented
 }
 
 func (m *MockContainerdContainer) Spec(_ context.Context) (*oci.Spec, error) {
-	return nil, nil //nolint:nilnil
+	return nil, errUnimplemented
 }
 
 func (m *MockContainerdContainer) Task(_ context.Context, _ cio.Attach) (containerd.Task, error) { //nolint:ireturn
@@ -120,7 +123,7 @@ func (m *MockContainerdContainer) Task(_ context.Context, _ cio.Attach) (contain
 }
 
 func (m *MockContainerdContainer) Image(_ context.Context) (containerd.Image, error) { //nolint:ireturn
-	return nil, nil
+	return nil, errUnimplemented
 }
 
 func (m *MockContainerdContainer) Labels(_ context.Context) (map[string]string, error) {
@@ -131,11 +134,11 @@ func (m *MockContainerdContainer) Labels(_ context.Context) (map[string]string, 
 }
 
 func (m *MockContainerdContainer) SetLabels(_ context.Context, _ map[string]string) (map[string]string, error) {
-	return nil, nil //nolint:nilnil
+	return nil, errUnimplemented
 }
 
 func (m *MockContainerdContainer) Extensions(_ context.Context) (map[string]prototypes.Any, error) {
-	return nil, nil //nolint:nilnil
+	return nil, errUnimplemented
 }
 
 func (m *MockContainerdContainer) Update(_ context.Context, _ ...containerd.UpdateContainerOpts) error {
@@ -143,7 +146,7 @@ func (m *MockContainerdContainer) Update(_ context.Context, _ ...containerd.Upda
 }
 
 func (m *MockContainerdContainer) Checkpoint(_ context.Context, _ string, _ ...containerd.CheckpointOpts) (containerd.Image, error) { //nolint:ireturn
-	return nil, nil
+	return nil, errUnimplemented
 }
 
 // END: Mock implementation for containerd.Container interface.
@@ -164,7 +167,7 @@ func (m *MockContainerdTask) Start(_ context.Context) error {
 }
 
 func (m *MockContainerdTask) Delete(_ context.Context, _ ...containerd.ProcessDeleteOpts) (*containerd.ExitStatus, error) {
-	return nil, nil
+	return nil, errUnimplemented
 }
 
 func (m *MockContainerdTask) Kill(_ context.Context, _ syscall.Signal, _ ...containerd.KillOpts) error {
@@ -172,7 +175,7 @@ func (m *MockContainerdTask) Kill(_ context.Context, _ syscall.Signal, _ ...cont
 }
 
 func (m *MockContainerdTask) Wait(_ context.Context) (<-chan containerd.ExitStatus, error) {
-	return nil, nil
+	return nil, errUnimplemented
 }
 
 func (m *MockContainerdTask) CloseIO(_ context.Context, _ ...containerd.IOCloserOpts) error {
@@ -183,12 +186,12 @@ func (m *MockContainerdTask) Resize(_ context.Context, _, _ uint32) error {
 	return nil
 }
 
-func (m *MockContainerdTask) IO() cio.IO {
+func (m *MockContainerdTask) IO() cio.IO { //nolint:ireturn
 	return nil
 }
 
 func (m *MockContainerdTask) Status(_ context.Context) (containerd.Status, error) {
-	return containerd.Status{}, nil
+	return containerd.Status{}, nil //nolint:exhaustruct
 }
 
 func (m *MockContainerdTask) Pause(_ context.Context) error {
@@ -199,32 +202,32 @@ func (m *MockContainerdTask) Resume(_ context.Context) error {
 	return nil
 }
 
-func (m *MockContainerdTask) Exec(_ context.Context, _ string, _ *specs.Process, _ cio.Creator) (containerd.Process, error) {
-	return nil, nil
+func (m *MockContainerdTask) Exec(_ context.Context, _ string, _ *specs.Process, _ cio.Creator) (containerd.Process, error) { //nolint:ireturn
+	return nil, errUnimplemented
 }
 
 func (m *MockContainerdTask) Pids(_ context.Context) ([]containerd.ProcessInfo, error) {
-	return nil, ErrCannotGetPids
+	return nil, errCannotGetPids
 }
 
-func (m *MockContainerdTask) Checkpoint(_ context.Context, _ ...containerd.CheckpointTaskOpts) (containerd.Image, error) {
-	return nil, nil
+func (m *MockContainerdTask) Checkpoint(_ context.Context, _ ...containerd.CheckpointTaskOpts) (containerd.Image, error) { //nolint:ireturn
+	return nil, errUnimplemented
 }
 
 func (m *MockContainerdTask) Update(_ context.Context, _ ...containerd.UpdateTaskOpts) error {
 	return nil
 }
 
-func (m *MockContainerdTask) LoadProcess(_ context.Context, _ string, _ cio.Attach) (containerd.Process, error) {
-	return nil, nil
+func (m *MockContainerdTask) LoadProcess(_ context.Context, _ string, _ cio.Attach) (containerd.Process, error) { //nolint:ireturn
+	return nil, errUnimplemented
 }
 
 func (m *MockContainerdTask) Metrics(_ context.Context) (*types.Metric, error) {
-	return nil, nil
+	return nil, errUnimplemented
 }
 
 func (m *MockContainerdTask) Spec(_ context.Context) (*oci.Spec, error) {
-	return nil, nil
+	return nil, errUnimplemented
 }
 
 // END: Mock implementation for containerd.Task interface.

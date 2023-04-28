@@ -134,6 +134,7 @@ func GetContainerdInfo(containerMeta ContainerdMetadata) (ContainerInfo, error) 
 	containerID := containerMeta.Container.ID()
 
 	ctx := namespaces.WithNamespace(context.Background(), containerMeta.Namespace)
+
 	containerLabels, err := containerMeta.Container.Labels(ctx)
 	if err != nil {
 		return ContainerInfo{}, containerdError(err)
