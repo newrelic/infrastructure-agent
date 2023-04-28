@@ -94,17 +94,63 @@ type Provider interface {
 	Provide() *Config
 }
 
+type DynamicConfig struct {
+	databindSources        *databind.Sources
+	templateConfigMetadata *config_loader.YAMLMetadata
+	templateConfig         *Config
+	refreshedConfig        *Config
+}
+
+func (dc *DynamicConfig) Provide() *Config {
+
+	if dc.isEmpty() {
+		return nil
+	}
+
+	if dc.isCached() && !dc.isExpired() {
+		return dc.getCached()
+	}
+
+	var err error
+	dc.refreshedConfig, err = ApplyDatabind(dc)
+
+	if err != nil {
+		clog.Debug("config provider failed to apply databind")
+		return nil
+	}
+
+	err = NormalizeConfig(dc.refreshedConfig, *dc.templateConfigMetadata)
+	if err != nil {
+		clog.Debug("config provider failed to apply normalizer")
+		return nil
+	}
+
+	return dc.refreshedConfig
+}
+
+func (dc *DynamicConfig) isExpired() bool {
+	return dc.databindSources.GetSoonestTTL().Before(time.Now())
+}
+
+func (dc *DynamicConfig) getCached() *Config {
+	return dc.refreshedConfig
+}
+
+func (dc *DynamicConfig) isCached() bool {
+	return dc.refreshedConfig != nil
+}
+
+func (dc *DynamicConfig) isEmpty() bool {
+	return dc.databindSources == nil
+}
+
 // IMPORTANT NOTE: If you add new config fields, consider checking the ignore list in
 // the plugins/agent_config.go plugin to not send undesired fields as inventory
 //
 // Configuration structs
 // Use the 'public' annotation to specify the visibility of the config option: false/obfuscate [default: true]
 type Config struct {
-	// templateConf contains parsed config withour databind applied
-	templateConfig         *Config                    `databind:"ignored"`
-	refreshedConfig        *Config                    `databind:"ignored"`
-	templateConfigMetadata config_loader.YAMLMetadata `databind:"ignored"`
-	databindSources        *databind.Sources          `databind:"ignored"`
+	dynamicConfig *DynamicConfig `databind:"ignored"`
 
 	// Databind provides varaiable (secrets, discovery) replacement capabilities for the configuration.
 	Databind databind.YAMLAgentConfig `yaml:",inline" public:"false"`
@@ -1328,26 +1374,12 @@ func coalesceBool(values ...*bool) bool {
 }
 
 func (cfg *Config) Provide() *Config {
-	// if no template, nothing to refresh
-	if cfg.templateConfig == nil {
-		return cfg
-	}
 
-	// if ttl expired, try to refresh config
-	if cfg.templateConfig.databindSources != nil && cfg.templateConfig.databindSources.GetSoonestTTL().Before(time.Now()) {
-		refreshedConfig, err := ApplyDatabind(cfg.templateConfig)
-
-		if err == nil {
-			err = NormalizeConfig(refreshedConfig, cfg.templateConfigMetadata)
-
-			if err == nil {
-				cfg.refreshedConfig = refreshedConfig
-			}
+	if cfg.dynamicConfig != nil {
+		refreshedConfig := cfg.dynamicConfig.Provide()
+		if refreshedConfig != nil {
+			return refreshedConfig
 		}
-	}
-
-	if cfg.refreshedConfig != nil {
-		return cfg.refreshedConfig
 	}
 
 	return cfg
@@ -1633,38 +1665,36 @@ func (c *Config) PublicFields() (map[string]string, error) {
 	return result, nil
 }
 
-func LoadConfig(configFile string) (cfg *Config, err error) {
+func LoadConfig(configFile string) (*Config, error) {
 	var filesToCheck []string
 	if configFile != "" {
 		filesToCheck = append(filesToCheck, configFile)
 	}
 
 	filesToCheck = append(filesToCheck, defaultConfigFiles...)
-	cfg = NewConfig()
+	cfg := NewConfig()
 	cfgMetadata, err := config_loader.LoadYamlConfig(cfg, filesToCheck...)
 	if err != nil {
 		err = fmt.Errorf("%w, %s: %s", ErrUnableToParseConfigFile, configFile, err.Error())
-		return
+		return cfg, err
 	}
 
-	cfg, err = ApplyDatabind(cfg)
-	if err != nil {
-		return
-	}
+	if !cfg.Databind.IsEmpty() {
+		dynamicConfig := DynamicConfig{}
+		dynamicConfig.databindSources, err = cfg.Databind.DataSources()
 
-	templateConfig := NewConfig()
-	templateConfigMetadata, err := config_loader.LoadYamlConfig(templateConfig, filesToCheck...)
-
-	if err != nil {
-		err = fmt.Errorf("%w, %s: %s", ErrUnableToParseConfigFile, configFile, err.Error())
-
-		return
-	}
-
-	if len(templateConfig.Databind.Variables) > 0 {
-		cfg.templateConfig = templateConfig
-		cfg.templateConfig.databindSources = cfg.databindSources
-		cfg.templateConfigMetadata = *templateConfigMetadata
+		if err != nil {
+			return cfg, err
+		}
+		dynamicConfig.templateConfigMetadata = cfgMetadata
+		templateConfig := NewConfig()
+		_, err = config_loader.LoadYamlConfig(templateConfig, filesToCheck...)
+		dynamicConfig.templateConfig = templateConfig
+		cfg.dynamicConfig = &dynamicConfig
+		cfg, err = ApplyDatabind(&dynamicConfig)
+		if err != nil {
+			return cfg, err
+		}
 	}
 
 	// After the config file has loaded, override via any environment variables
@@ -1677,53 +1707,42 @@ func LoadConfig(configFile string) (cfg *Config, err error) {
 	// above and place each one at the bottom of this ordering
 	err = NormalizeConfig(cfg, *cfgMetadata)
 
-	return
+	return cfg, err
 }
 
-func ApplyDatabind(cfg *Config) (*Config, error) {
+func ApplyDatabind(dynamicConfig *DynamicConfig) (*Config, error) {
 	var err error
-	if cfg.databindSources == nil {
-		cfg.databindSources, err = cfg.Databind.DataSources()
 
-		if err != nil {
-			return cfg, fmt.Errorf("%w: %v", ErrDatabindApply, err)
-		}
+	if dynamicConfig == nil {
+		return nil, fmt.Errorf("no databind found")
 	}
 
-	//_, err = databind.Fetch(sources)
-	vals, err := databind.Fetch(cfg.databindSources)
+	vals, err := databind.Fetch(dynamicConfig.databindSources)
 	if err != nil {
-		return cfg, err
+		return nil, err
 	}
-	if vals.VarsLen() > 0 {
-		matches, errD := databind.Replace(&vals, cfg)
-		if errD != nil {
-			cfg.Databind = databind.YAMLAgentConfig{}
-
-			return cfg, err
-		}
-
-		if len(matches) != 1 {
-			err = fmt.Errorf("unexpected config file variables replacement amount")
-			cfg.Databind = databind.YAMLAgentConfig{}
-
-			return cfg, err
-		}
-		transformed := matches[0]
-		replacedCfg, ok := transformed.Variables.(*Config)
-		if !ok {
-			err = fmt.Errorf("unexpected config file variables replacement type")
-			cfg.Databind = databind.YAMLAgentConfig{}
-
-			return cfg, err
-		}
-
-		replacedCfg.databindSources = cfg.databindSources
-
-		return replacedCfg, nil
+	if vals.VarsLen() == 0 {
+		return nil, fmt.Errorf("no data sources provided")
+	}
+	matches, errD := databind.Replace(&vals, dynamicConfig.templateConfig)
+	if errD != nil {
+		return nil, err
 	}
 
-	return cfg, nil
+	if len(matches) != 1 {
+		err = fmt.Errorf("unexpected config file variables replacement amount")
+		return nil, err
+	}
+	transformed := matches[0]
+	resultConfig, ok := transformed.Variables.(*Config)
+	if !ok {
+		err = fmt.Errorf("unexpected config file variables replacement type")
+		return nil, err
+	}
+
+	resultConfig.dynamicConfig = dynamicConfig
+
+	return resultConfig, nil
 }
 
 // NewConfig returns the default Config.

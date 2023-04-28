@@ -26,6 +26,10 @@ type YAMLAgentConfig struct {
 	Variables map[string]varEntry `yaml:"variables,omitempty" json:"variables,omitempty"` // key: variable name
 }
 
+func (y *YAMLAgentConfig) IsEmpty() bool {
+	return len(y.Variables) == 0
+}
+
 type YAMLConfig struct {
 	YAMLAgentConfig `yaml:",inline"`
 	Discovery       struct {
