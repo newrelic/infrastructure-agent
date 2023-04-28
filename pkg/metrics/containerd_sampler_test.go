@@ -55,7 +55,7 @@ func TestContainerdProcessDecoratorNoContainers(t *testing.T) {
 func TestContainerdProcessDecoratorNoProcessContainers(t *testing.T) {
 	t.Parallel()
 
-	mock := &MockContainerContainerdImpl{}
+	mock := &MockContainerWithNoPids{} //nolint:exhaustruct
 	pidsCache := newPidsCache(metadataCacheTTL)
 
 	_, err := newContainerdDecorator(mock, pidsCache)

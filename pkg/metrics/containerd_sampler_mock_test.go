@@ -40,12 +40,10 @@ func (m *MockBaseContainerdImpl) Containers(_ ...string) (map[string][]container
 	return nil, errNoContainers
 }
 
-func (m *MockBaseContainerdImpl) ContainerProcesses(containerID string) ([]containerd.ProcessInfo, error) {
-	return nil, errContainerDoesNotExist(containerID)
-}
-
 // Implements ContainerdInterface (pkgs/helpers/containerd_utils.go).
-type MockContainerContainerdImpl struct{}
+type MockContainerContainerdImpl struct {
+	MockBaseContainerdImpl
+}
 
 func (mc *MockContainerContainerdImpl) Initialize() error {
 	return nil
@@ -61,19 +59,8 @@ func (mc *MockContainerContainerdImpl) Containers(_ ...string) (map[string][]con
 	return map[string][]containerd.Container{"default": {container}}, nil
 }
 
-func (mc *MockContainerContainerdImpl) ContainerProcesses(_ string) ([]containerd.ProcessInfo, error) {
-	// container := MockContainerContainerdImpl{}
-	return nil, errUnimplemented
-}
-
-type MockContainerWithDataContainerdImpl struct{}
-
-func (mc *MockContainerWithDataContainerdImpl) Initialize() error {
-	return nil
-}
-
-func (mc *MockContainerWithDataContainerdImpl) Namespaces() ([]string, error) {
-	return nil, errUnimplemented
+type MockContainerWithDataContainerdImpl struct {
+	MockBaseContainerdImpl
 }
 
 func (mc *MockContainerWithDataContainerdImpl) Containers(_ ...string) (map[string][]containerd.Container, error) {
@@ -82,14 +69,14 @@ func (mc *MockContainerWithDataContainerdImpl) Containers(_ ...string) (map[stri
 	return container.Containers()
 }
 
-func (mc *MockContainerWithDataContainerdImpl) ContainerProcesses(cID string) ([]containerd.ProcessInfo, error) {
-	if cID != containerID {
-		return nil, errContainerNotFound
-	}
+type MockContainerWithNoPids struct {
+	MockBaseContainerdImpl
+}
 
-	processes := []containerd.ProcessInfo{{Pid: 123}}
+func (mc *MockContainerWithNoPids) Containers(_ ...string) (map[string][]containerd.Container, error) {
+	container := &MockContainerdContainerNoPids{} //nolint:exhaustruct
 
-	return processes, nil
+	return map[string][]containerd.Container{"default": {container}}, nil
 }
 
 // Mock implementation for containerd.Container interface.
@@ -154,6 +141,14 @@ func (m *MockContainerdContainer) Checkpoint(_ context.Context, _ string, _ ...c
 }
 
 // END: Mock implementation for containerd.Container interface.
+
+type MockContainerdContainerNoPids struct {
+	MockContainerdContainer
+}
+
+func (m *MockContainerdContainerNoPids) Task(_ context.Context, _ cio.Attach) (containerd.Task, error) { //nolint:ireturn
+	return &MockContainerdTaskNoPids{}, nil //nolint:exhaustruct
+}
 
 // Mock implementation for containerd.Task interface.
 type MockContainerdTask struct{}
@@ -239,6 +234,14 @@ func (m *MockContainerdTask) Spec(_ context.Context) (*oci.Spec, error) {
 }
 
 // END: Mock implementation for containerd.Task interface.
+
+type MockContainerdTaskNoPids struct {
+	MockContainerdTask
+}
+
+func (m *MockContainerdTaskNoPids) Pids(_ context.Context) ([]containerd.ProcessInfo, error) {
+	return nil, errCannotGetPids
+}
 
 // Mock implementation for containerd.Image interface.
 type MockContainerdImage struct{}
