@@ -357,7 +357,7 @@ func NewProcsMonitor(context agent.AgentContext) *ProcsMonitor {
 	return &ProcsMonitor{
 		context:              context,
 		procCache:            make(map[string]*ProcessCacheEntry),
-		containerSampler:     getContainerSampler(time.Duration(ttlSecs)*time.Second, apiVersion),
+		containerSampler:     GetContainerSampler(time.Duration(ttlSecs)*time.Second, apiVersion),
 		previousProcessTimes: make(map[string]*SystemTimes),
 		processInterrogator:  NewInternalProcessInterrogator(true),
 		waitForCleanup:       &sync.WaitGroup{},
@@ -888,23 +888,4 @@ func containerIDFromNotRunningErr(err error) string {
 		return ""
 	}
 	return msg[len(prefix):j]
-}
-
-func getContainerSampler(duration time.Duration, dockerAPIVersion string) ContainerSampler { //nolint:ireturn
-	// Tries setting up docker sampler
-	dockerSampler := NewDockerSampler(duration, dockerAPIVersion)
-	if dockerSampler.Enabled() {
-		return dockerSampler
-	}
-	// Docker seems to not be enabled. Trying with containerd
-	pslog.Debug("Docker seems to not be enabled. Trying containerd-based container sampler")
-
-	containerdSampler := NewContainerdSampler(duration)
-	if containerdSampler.Enabled() {
-		return containerdSampler
-	}
-	// No more container runtimes available, returning default docker sampler
-	pslog.Debug("No container runtimes available, returning default, containerd-based container sampler")
-
-	return containerdSampler
 }

@@ -33,7 +33,7 @@ func IsContainerized(pid int32, dockerAPIVersion string) (isContainerized bool, 
 	p := &types.ProcessSample{
 		ProcessID: pid,
 	}
-	dockerSampler := metrics.NewDockerSampler(60, dockerAPIVersion) //nolint:gomnd
+	containerSampler := metrics.GetContainerSampler(60, dockerAPIVersion) //nolint:gomnd
 
 	logger := log.WithFieldsF(func() logrus.Fields {
 		return logrus.Fields{
@@ -43,10 +43,10 @@ func IsContainerized(pid int32, dockerAPIVersion string) (isContainerized bool, 
 		}
 	})
 
-	if dockerSampler.Enabled() {
-		logger.Info("Docker is enabled, checking for containerized agent")
+	if containerSampler.Enabled() {
+		logger.Info("A container runtime is enabled, checking for containerized agent")
 		var dc metrics.ProcessDecorator
-		dc, err = dockerSampler.NewDecorator()
+		dc, err = containerSampler.NewDecorator()
 		if err != nil {
 			return
 		}

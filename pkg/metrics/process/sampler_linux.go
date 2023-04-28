@@ -48,7 +48,7 @@ func NewProcessSampler(ctx agent.AgentContext) sampler.Sampler {
 	}
 	cache := newCache()
 	harvest := newHarvester(ctx, &cache)
-	containerSampler := getContainerSampler(time.Duration(ttlSecs)*time.Second, apiVersion)
+	containerSampler := metrics.GetContainerSampler(time.Duration(ttlSecs)*time.Second, apiVersion)
 
 	return &processSampler{
 		harvest:          harvest,
@@ -164,23 +164,4 @@ func containerIDFromNotRunningErr(err error) string {
 		return ""
 	}
 	return msg[len(prefix):j]
-}
-
-func getContainerSampler(duration time.Duration, dockerAPIVersion string) metrics.ContainerSampler { //nolint:ireturn
-	// Tries setting up docker sampler
-	dockerSampler := metrics.NewDockerSampler(duration, dockerAPIVersion)
-	if dockerSampler.Enabled() {
-		return dockerSampler
-	}
-	// Docker seems to not be enabled. Trying with containerd
-	mplog.Debug("Docker seems to not be enabled. Trying containerd-based container sampler")
-
-	containerdSampler := metrics.NewContainerdSampler(duration)
-	if containerdSampler.Enabled() {
-		return containerdSampler
-	}
-	// No more container runtimes available, returning default docker sampler
-	mplog.Debug("No container runtimes available, returning default, containerd-based container sampler")
-
-	return containerdSampler
 }

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/lru"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 	metricTypes "github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 )
 
@@ -15,6 +16,27 @@ const containerSamplerRetries = 100
 type ContainerSampler interface {
 	Enabled() bool
 	NewDecorator() (ProcessDecorator, error)
+}
+
+// getContainerSampler returns the first available container sampler.
+func GetContainerSampler(cacheTTL time.Duration, dockerAPIVersion string) ContainerSampler { //nolint:ireturn
+	clog := log.WithComponent("ContainerSampler")
+	// Tries setting up docker sampler
+	dockerSampler := NewDockerSampler(cacheTTL, dockerAPIVersion)
+	if dockerSampler.Enabled() {
+		return dockerSampler
+	}
+	// Docker seems to not be enabled. Trying with containerd
+	clog.Debug("Docker seems to not be enabled. Trying containerd-based container sampler")
+
+	containerdSampler := NewContainerdSampler(cacheTTL)
+	if containerdSampler.Enabled() {
+		return containerdSampler
+	}
+	// No more container runtimes available, returning default docker sampler
+	clog.Debug("No container runtimes available, returning default, containerd-based container sampler")
+
+	return containerdSampler
 }
 
 type ProcessDecorator interface {
