@@ -40,9 +40,8 @@ type namespace = string
 // Containerd is the interface for containerd operations.
 type ContainerdInterface interface {
 	Initialize() error
-	Namespaces() ([]string, error)
-	Containers(...string) (map[namespace][]containerd.Container, error)
-	ContainerProcesses(containerID string) ([]containerd.ProcessInfo, error)
+	Containers(...namespace) (map[namespace][]containerd.Container, error)
+	Namespaces() ([]namespace, error)
 }
 
 // ContainerdClient is the client for containerd.
@@ -126,10 +125,10 @@ func IsContainerdRunning() bool {
 		return false
 	}
 
-	return sock.Mode()&os.ModeSocket != 0
+	return (sock.Mode() & os.ModeSocket) != 0
 }
 
-// getContainerInfo returns detailed information about a container.
+// getContainerdInfo returns detailed information about a container.
 func GetContainerdInfo(containerMeta ContainerdMetadata) (ContainerInfo, error) {
 	containerID := containerMeta.Container.ID()
 
@@ -155,24 +154,4 @@ func GetContainerdInfo(containerMeta ContainerdMetadata) (ContainerInfo, error) 
 		ImageID:   containerImageID,
 		Labels:    containerLabels,
 	}, nil
-}
-
-// ContainerProcesses returns the processes for a container.
-func (cc *ContainerdClient) ContainerProcesses(containerID string) ([]containerd.ProcessInfo, error) {
-	container, err := cc.client.LoadContainer(context.Background(), containerID)
-	if err != nil {
-		return nil, containerdError(err)
-	}
-
-	task, err := container.Task(context.Background(), nil)
-	if err != nil {
-		return nil, containerdError(err)
-	}
-
-	processes, err := task.Pids(context.Background())
-	if err != nil {
-		return nil, containerdError(err)
-	}
-
-	return processes, nil
 }
