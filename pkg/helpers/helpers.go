@@ -114,8 +114,9 @@ func FlattenJson(parentKey string, data map[string]interface{}, jsonMap map[stri
 				b, err := json.Marshal(v)
 				if err != nil {
 					flatValue = fmt.Sprintf("could not serialize json: %s", err.Error())
+				} else {
+					flatValue = string(b)
 				}
-				flatValue = fmt.Sprintf("%s", b)
 			default:
 				flatValue = fmt.Sprintf("%s", v)
 			}
