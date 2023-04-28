@@ -5,26 +5,31 @@ package helpers
 import (
 	"net"
 	"net/http"
-	"net/http/httputil"
 )
 
 type PersistentSocketTransport struct {
-	c *httputil.ClientConn
+	c *http.Client
 }
 
-func (self *PersistentSocketTransport) RoundTrip(req *http.Request) (r *http.Response, err error) {
-	r, err = self.c.Do(req)
-	return
+func (pst *PersistentSocketTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	return pst.c.Do(req) //nolint:wrapcheck
 }
 
 func NewSocketTransport(path string) (*PersistentSocketTransport, error) {
-	var (
-		c   net.Conn
-		err error
-	)
-	if c, err = net.Dial("unix", path); err != nil {
+	_, err := socketDial("unix", path)
+	if err != nil {
 		return nil, err
 	}
-	clientConn := httputil.NewClientConn(c, nil)
-	return &PersistentSocketTransport{clientConn}, nil
+
+	httpClient := &http.Client{ //nolint:exhaustruct
+		Transport: &http.Transport{ //nolint:exhaustruct
+			Dial: socketDial,
+		},
+	}
+
+	return &PersistentSocketTransport{httpClient}, nil
+}
+
+func socketDial(_, addr string) (net.Conn, error) {
+	return net.Dial("unix", addr) //nolint:wrapcheck
 }
