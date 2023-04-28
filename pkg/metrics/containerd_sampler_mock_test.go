@@ -14,8 +14,12 @@ import (
 	"github.com/containerd/containerd/api/types"
 	"github.com/containerd/containerd/cio"
 	"github.com/containerd/containerd/containers"
+	"github.com/containerd/containerd/content"
+	"github.com/containerd/containerd/images"
 	"github.com/containerd/containerd/oci"
 	prototypes "github.com/gogo/protobuf/types"
+	"github.com/opencontainers/go-digest"
+	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/opencontainers/runtime-spec/specs-go"
 )
 
@@ -123,7 +127,7 @@ func (m *MockContainerdContainer) Task(_ context.Context, _ cio.Attach) (contain
 }
 
 func (m *MockContainerdContainer) Image(_ context.Context) (containerd.Image, error) { //nolint:ireturn
-	return nil, errUnimplemented
+	return &MockContainerdImage{}, nil
 }
 
 func (m *MockContainerdContainer) Labels(_ context.Context) (map[string]string, error) {
@@ -207,7 +211,11 @@ func (m *MockContainerdTask) Exec(_ context.Context, _ string, _ *specs.Process,
 }
 
 func (m *MockContainerdTask) Pids(_ context.Context) ([]containerd.ProcessInfo, error) {
-	return nil, errCannotGetPids
+	return []containerd.ProcessInfo{
+		{ //nolint:exhaustruct
+			Pid: 123,
+		},
+	}, nil
 }
 
 func (m *MockContainerdTask) Checkpoint(_ context.Context, _ ...containerd.CheckpointTaskOpts) (containerd.Image, error) { //nolint:ireturn
@@ -231,3 +239,53 @@ func (m *MockContainerdTask) Spec(_ context.Context) (*oci.Spec, error) {
 }
 
 // END: Mock implementation for containerd.Task interface.
+
+// Mock implementation for containerd.Image interface.
+type MockContainerdImage struct{}
+
+func (m *MockContainerdImage) Name() string {
+	return "image1"
+}
+
+func (m *MockContainerdImage) Target() ocispec.Descriptor {
+	return ocispec.Descriptor{
+		Digest: digest.Digest("sha256:1234567890"),
+	}
+}
+
+func (m *MockContainerdImage) Labels() map[string]string {
+	return nil
+}
+
+func (m *MockContainerdImage) Unpack(_ context.Context, _ string, _ ...containerd.UnpackOpt) error {
+	return errUnimplemented
+}
+
+func (m *MockContainerdImage) RootFS(_ context.Context) ([]digest.Digest, error) { //nolint:ireturn
+	return nil, errUnimplemented
+}
+
+func (m *MockContainerdImage) Size(_ context.Context) (int64, error) {
+	return 0, errUnimplemented
+}
+
+func (m *MockContainerdImage) Usage(_ context.Context, _ ...containerd.UsageOpt) (int64, error) {
+	return 0, errUnimplemented
+}
+func (m *MockContainerdImage) Config(_ context.Context) (ocispec.Descriptor, error) {
+	return ocispec.Descriptor{}, errUnimplemented
+}
+
+func (m *MockContainerdImage) IsUnpacked(_ context.Context, _ string) (bool, error) {
+	return false, errUnimplemented
+}
+
+func (m *MockContainerdImage) ContentStore() content.Store {
+	return nil
+}
+
+func (m *MockContainerdImage) Metadata() images.Image {
+	return images.Image{}
+}
+
+// END: Mock implementation for containerd.Image interface.

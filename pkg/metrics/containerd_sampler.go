@@ -181,6 +181,8 @@ func (d *containerdDecorator) Decorate(process *metricTypes.ProcessSample) {
 		process.ContainerImageName = cInfo.ImageName
 		process.ContainerLabels = cInfo.Labels
 		process.ContainerID = cInfo.ID
+		// seems that containerd does not distinguish container name and container ID
+		process.ContainerName = cInfo.ID
 		process.Contained = "true"
 	}
 }
