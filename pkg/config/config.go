@@ -119,14 +119,14 @@ func (dc *DynamicConfig) Provide() *Config {
 	dc.refreshedConfig, err = applyDatabind(dc)
 
 	if err != nil {
-		clog.WithError(err).Debug("config provider failed to apply databind")
+		clog.WithError(err).Debug("Config provider failed to apply databind")
 
 		return nil
 	}
 
 	err = NormalizeConfig(dc.refreshedConfig, *dc.templateConfigMetadata)
 	if err != nil {
-		clog.WithError(err).Debug("config provider failed to apply normalizer")
+		clog.WithError(err).Debug("Config provider failed to apply normalizer")
 
 		return nil
 	}
@@ -1732,7 +1732,7 @@ func applyDatabind(dynamicConfig *DynamicConfig) (*Config, error) {
 
 	if dynamicConfig == nil {
 		//nolint:wrapcheck
-		return nil, fmt.Errorf("%w", ErrNoDatabindFound)
+		return nil, ErrNoDatabindFound
 	}
 
 	vals, err := databind.Fetch(dynamicConfig.databindSources)
@@ -1742,7 +1742,7 @@ func applyDatabind(dynamicConfig *DynamicConfig) (*Config, error) {
 
 	if vals.VarsLen() == 0 {
 		//nolint:wrapcheck
-		return nil, fmt.Errorf("%w", ErrNoDatabindSources)
+		return nil, ErrNoDatabindSources
 	}
 
 	matches, errD := databind.Replace(&vals, dynamicConfig.templateConfig)
@@ -1752,7 +1752,7 @@ func applyDatabind(dynamicConfig *DynamicConfig) (*Config, error) {
 
 	if len(matches) != 1 {
 		//nolint:wrapcheck
-		return nil, fmt.Errorf("%w", ErrUnexpectedVariablesAmount)
+		return nil, ErrUnexpectedVariablesAmount
 	}
 	transformed := matches[0]
 
