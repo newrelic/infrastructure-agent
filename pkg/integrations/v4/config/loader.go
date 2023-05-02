@@ -5,13 +5,14 @@ package config
 
 import (
 	"errors"
-	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/files"
-	"github.com/newrelic/infrastructure-agent/pkg/config/envvar"
-	"github.com/newrelic/infrastructure-agent/pkg/log"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/files"
+	"github.com/newrelic/infrastructure-agent/pkg/config/envvar"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"gopkg.in/yaml.v3"
 )
 
 var clLog = log.WithComponent("integrations.config.Loader")

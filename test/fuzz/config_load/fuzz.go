@@ -15,13 +15,13 @@ import (
 // Fuzz test for weird behaviour on agent config ingest.
 func Fuzz(data []byte) int {
 	c := config.Config{}
-	meta, err := configLoader.ParseConfig(data, &c)
+	err := configLoader.ParseConfig(data, &c)
 	// we still would like to look for no errors which might break oncoming config sanitization
 	if err != nil {
 		return 0
 	}
 
-	err = config.NormalizeConfig(&c, *meta)
+	err = config.NormalizeConfig(&c)
 	// discourage mutation when no error
 	if err == nil {
 		return -1

@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // Integration fixture that validates a YAML file passed as argument. It expects a YAML in the following form:

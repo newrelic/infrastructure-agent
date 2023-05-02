@@ -7,14 +7,15 @@ package config
 
 import (
 	"fmt"
-	v3config "github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
-	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"syscall"
+
+	v3config "github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
+	log "github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v3"
 )
 
 const (

@@ -13,7 +13,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/fs"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 var loaderLogger = log.WithComponent("integrations.Supervisor.Loader").WithField("process", "log-forwarder")

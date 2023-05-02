@@ -34,7 +34,7 @@ func LoadPluginConfig(registry *PluginRegistry, configFiles []string) (*PluginsT
 		}
 		configFilePaths = append(configFilePaths, configFile)
 	}
-	_, err := config_loader.LoadYamlConfig(pluginsToml, configFilePaths...)
+	err := config_loader.LoadYamlConfig(pluginsToml, configFilePaths...)
 	if err != nil {
 		return nil, err
 	}

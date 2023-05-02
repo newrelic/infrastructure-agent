@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery/command"
-	yaml "gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v3"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery/docker"

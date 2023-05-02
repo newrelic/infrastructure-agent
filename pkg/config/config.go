@@ -20,7 +20,7 @@ import (
 	"sync"
 	"time"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/newrelic/infrastructure-agent/pkg/license"
@@ -1596,7 +1596,7 @@ func LoadConfig(configFile string) (cfg *Config, err error) {
 	filesToCheck = append(filesToCheck, defaultConfigFiles...)
 
 	cfg = NewConfig()
-	cfgMetadata, err := config_loader.LoadYamlConfig(cfg, filesToCheck...)
+	err = config_loader.LoadYamlConfig(cfg, filesToCheck...)
 	if err != nil {
 		err = fmt.Errorf("unable to parse configuration file %s: %s", configFile, err)
 		return
@@ -1639,7 +1639,7 @@ func LoadConfig(configFile string) (cfg *Config, err error) {
 	// Move any other post processing steps that clean up or announce settings to be
 	// after both config file and env variable processing is complete. Need to review each of the items
 	// above and place each one at the bottom of this ordering
-	err = NormalizeConfig(cfg, *cfgMetadata)
+	err = NormalizeConfig(cfg)
 
 	return
 }
@@ -1707,6 +1707,7 @@ func NewConfig() *Config {
 		FilesConfigOn:               defaultFilesConfigOn,
 		PayloadCompressionLevel:     defaultPayloadCompressionLevel,
 		EnableWinUpdatePlugin:       defaultWinUpdatePlugin,
+		WinRemovableDrives:          defaultWinRemovableDrives,
 		LogToStdout:                 defaultLogToStdout,
 		IpData:                      defaultIpData,
 		ContainerMetadataCacheLimit: DefaultContainerCacheMetadataLimit,
@@ -1908,7 +1909,7 @@ func urlRegionPrefix(licenseKey string) string {
 	return ""
 }
 
-func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err error) {
+func NormalizeConfig(cfg *Config) (err error) {
 	nlog := clog.WithField("action", "NormalizeConfig")
 
 	cfg.IgnoredInventoryPathsMap = make(map[string]struct{})
@@ -2188,11 +2189,6 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	nlog.WithField("ProxyValidateCerts", cfg.ProxyValidateCerts).Debug("Proxy certificate verification.")
 	// ProxyConfigPlugin default value defined in NewConfig
 	nlog.WithField("ProxyConfigPlugin", cfg.ProxyConfigPlugin).Debug("Default proxy config plugin enabled.")
-
-	if runtime.GOOS == "windows" && !isConfigDefined("win_removable_drives", cfgMetadata) {
-		cfg.WinRemovableDrives = defaultWinRemovableDrives
-		nlog.WithField("WinRemovableDrives", cfg.WinRemovableDrives).Debug("Using default Windows removable drives storage sampling.")
-	}
 
 	// defaultCloudMetadataExpiryInSec default value defined in NewConfig
 	nlog.WithField("defaultCloudMetadataExpiryInSec", defaultCloudMetadataExpiryInSec).Debug("Using default cloud metadata expiry time.")

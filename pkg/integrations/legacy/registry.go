@@ -155,11 +155,11 @@ func (pr *PluginRegistry) loadPluginInstance(dir string, dirOrFile os.FileInfo) 
 
 func loadPluginInstanceWrapper(pluginInstanceFilePath string) (pluginInstanceWrapper *PluginInstanceWrapper, err error) {
 	var decodedPluginInstanceWrapper PluginInstanceWrapper
-	if _, err = config_loader.LoadYamlConfig(&decodedPluginInstanceWrapper, pluginInstanceFilePath); err != nil {
+	if err = config_loader.LoadYamlConfig(&decodedPluginInstanceWrapper, pluginInstanceFilePath); err != nil {
 		return
 	}
 
-	_, err = config_loader.LoadYamlConfig(&decodedPluginInstanceWrapper.DataBind, pluginInstanceFilePath)
+	err = config_loader.LoadYamlConfig(&decodedPluginInstanceWrapper.DataBind, pluginInstanceFilePath)
 
 	return &decodedPluginInstanceWrapper, err
 }
@@ -256,7 +256,7 @@ func isInitialized(p ids.PluginID) bool {
 func (pr *PluginRegistry) loadPlugin(pluginPath string) (plugin *Plugin, err error) {
 	plog.WithField("definitionFile", pluginPath).Debug("Found integration definition file.")
 	var decodedPlugin Plugin
-	if _, err = config_loader.LoadYamlConfig(&decodedPlugin, pluginPath); err != nil {
+	if err = config_loader.LoadYamlConfig(&decodedPlugin, pluginPath); err != nil {
 		return
 	}
 	decodedPlugin.SourceFilePath = pluginPath

@@ -11,7 +11,7 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/files"
