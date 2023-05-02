@@ -119,14 +119,14 @@ func (dc *DynamicConfig) Provide() *Config {
 	dc.refreshedConfig, err = applyDatabind(dc)
 
 	if err != nil {
-		clog.Debug("config provider failed to apply databind")
+		clog.WithError(err).Debug("config provider failed to apply databind")
 
 		return nil
 	}
 
 	err = NormalizeConfig(dc.refreshedConfig, *dc.templateConfigMetadata)
 	if err != nil {
-		clog.Debug("config provider failed to apply normalizer")
+		clog.WithError(err).Debug("config provider failed to apply normalizer")
 
 		return nil
 	}
@@ -1686,24 +1686,26 @@ func LoadConfig(configFile string) (*Config, error) {
 	}
 
 	if !cfg.Databind.IsEmpty() {
-		dynamicConfig := DynamicConfig{
-			databindSources:        nil,
-			templateConfigMetadata: nil,
-			templateConfig:         nil,
-			refreshedConfig:        nil,
-		}
-		dynamicConfig.databindSources, err = cfg.Databind.DataSources()
-
+		databindSources, err := cfg.Databind.DataSources()
 		if err != nil {
 			return cfg, err
 		}
-		dynamicConfig.templateConfigMetadata = cfgMetadata
 		templateConfig := NewConfig()
-		_, err = config_loader.LoadYamlConfig(templateConfig, filesToCheck...)
-		dynamicConfig.templateConfig = templateConfig
-		cfg.dynamicConfig = &dynamicConfig
-		cfg, err = applyDatabind(&dynamicConfig)
 
+		_, err = config_loader.LoadYamlConfig(templateConfig, filesToCheck...)
+		if err != nil {
+			return cfg, err
+		}
+
+		dynamicConfig := DynamicConfig{
+			databindSources:        databindSources,
+			templateConfigMetadata: cfgMetadata,
+			templateConfig:         templateConfig,
+			refreshedConfig:        nil,
+		}
+		cfg.dynamicConfig = &dynamicConfig
+
+		cfg, err = applyDatabind(&dynamicConfig)
 		if err != nil {
 			return cfg, err
 		}
