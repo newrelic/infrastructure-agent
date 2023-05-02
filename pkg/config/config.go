@@ -1688,12 +1688,14 @@ func LoadConfig(configFile string) (*Config, error) {
 	if !cfg.Databind.IsEmpty() {
 		databindSources, errD := cfg.Databind.DataSources()
 		if errD != nil {
+			//nolint:wrapcheck
 			return cfg, fmt.Errorf("%w: %v", ErrDatabindApply, errD.Error())
 		}
 		templateConfig := NewConfig()
 
 		_, errD = config_loader.LoadYamlConfig(templateConfig, filesToCheck...)
 		if errD != nil {
+			//nolint:wrapcheck
 			return cfg, fmt.Errorf("%w: %v", ErrDatabindApply, errD.Error())
 		}
 
@@ -1707,6 +1709,7 @@ func LoadConfig(configFile string) (*Config, error) {
 
 		cfg, errD = applyDatabind(&dynamicConfig)
 		if errD != nil {
+			//nolint:wrapcheck
 			return cfg, fmt.Errorf("%w: %v", ErrDatabindApply, errD.Error())
 		}
 	}
