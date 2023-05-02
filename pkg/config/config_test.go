@@ -988,6 +988,34 @@ license_key: ${license}
 	assert.Equal(t, "BBB", refreshedCfg.License, "ttl didn't expire for BBB")
 }
 
+func TestLoadYamlConfig_multipleRefreshesInARow(t *testing.T) {
+	yamlData := []byte(`
+variables:
+  license:
+    command:
+      path: "sh"
+      # Careful with escaping characters here
+      args: ["-c", "echo $SOME_LICENSE"]
+      passthrough_environment: ["SOME_LICENSE"]
+    ttl: 1s
+license_key: ${license}
+`)
+
+	tmp, err := createTestFile(yamlData)
+	require.NoError(t, err)
+
+	defer os.Remove(tmp.Name())
+
+	t.Setenv("SOME_LICENSE", "AAA")
+	cfg, err := LoadConfig(tmp.Name())
+	require.NoError(t, err)
+	assert.Equal(t, "AAA", cfg.License)
+
+	refreshedCfg := cfg.Provide().Provide().Provide().Provide().Provide()
+
+	assert.Equal(t, "AAA", refreshedCfg.License, "ttl didn't expire for AAA")
+}
+
 func BenchmarkDatabindRefresh(b *testing.B) {
 	yamlData := []byte(`
 variables:
@@ -1010,7 +1038,34 @@ license_key: ${license}
 	cfg, err := LoadConfig(tmp.Name())
 
 	for i := 0; i < b.N; i++ {
-		cfg.Provide()
+		cfg = cfg.Provide()
+	}
+}
+
+func BenchmarkDatabindDaisyChainedRefresh(b *testing.B) {
+	yamlData := []byte(`
+variables:
+  license:
+    command:
+      path: "sh"
+      # Careful with escaping characters here
+      args: ["-c", "echo $SOME_LICENSE"]
+      passthrough_environment: ["SOME_LICENSE"]
+    ttl: 0.1s
+license_key: ${license}
+`)
+
+	tmp, err := createTestFile(yamlData)
+	require.NoError(b, err)
+
+	defer os.Remove(tmp.Name())
+
+	b.Setenv("SOME_LICENSE", "XXX")
+	cfg, err := LoadConfig(tmp.Name())
+	require.NoError(b, err)
+
+	for i := 0; i < b.N; i++ {
+		cfg = cfg.Provide()
 	}
 }
 
