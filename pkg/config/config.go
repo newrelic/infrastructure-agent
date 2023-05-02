@@ -1726,6 +1726,7 @@ func applyDatabind(dynamicConfig *DynamicConfig) (*Config, error) {
 	var err error
 
 	if dynamicConfig == nil {
+		//nolint:wrapcheck
 		return nil, fmt.Errorf("%w", ErrNoDatabindFound)
 	}
 
@@ -1735,6 +1736,7 @@ func applyDatabind(dynamicConfig *DynamicConfig) (*Config, error) {
 	}
 
 	if vals.VarsLen() == 0 {
+		//nolint:wrapcheck
 		return nil, fmt.Errorf("%w", ErrNoDatabindSources)
 	}
 
@@ -1744,12 +1746,14 @@ func applyDatabind(dynamicConfig *DynamicConfig) (*Config, error) {
 	}
 
 	if len(matches) != 1 {
+		//nolint:wrapcheck
 		return nil, fmt.Errorf("%w", ErrUnexpectedVariablesAmount)
 	}
 	transformed := matches[0]
 
 	resultConfig, ok := transformed.Variables.(*Config)
 	if !ok {
+		//nolint:wrapcheck
 		return nil, fmt.Errorf("%w", ErrUnexpectedVariablesType)
 	}
 
