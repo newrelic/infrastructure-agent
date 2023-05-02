@@ -36,12 +36,9 @@ func TestLoadYamlConfig(t *testing.T) {
 		Param string `yaml:"param"`
 	}
 
-	meta, err := LoadYamlConfig(&cfg, tmp.Name())
+	err = LoadYamlConfig(&cfg, tmp.Name())
 	require.NoError(t, err)
 	assert.Equal(t, "hello", cfg.Param)
-	require.NotNil(t, meta)
-	assert.True(t, meta.Contains("param"))
-	assert.False(t, meta.Contains("otherParam"))
 }
 
 func TestMissingLoadYamlConfig(t *testing.T) {
@@ -49,12 +46,9 @@ func TestMissingLoadYamlConfig(t *testing.T) {
 		Param string `yaml:"param"`
 	}{}
 
-	meta, err := LoadYamlConfig(&cfg, "idontexist.yml")
+	err := LoadYamlConfig(&cfg, "idontexist.yml")
 	require.NoError(t, err)
 	assert.Equal(t, "", cfg.Param)
-	require.NotNil(t, meta)
-	assert.False(t, meta.Contains("param"))
-	assert.False(t, meta.Contains("otherParam"))
 }
 
 func TestLoadYamlConfig_withDatabindVariables(t *testing.T) {
@@ -80,11 +74,9 @@ baz: ${creds.user}
 		Databind databind.YAMLAgentConfig `yaml:",inline"`
 	}
 
-	meta, err := LoadYamlConfig(&cfg, tmp.Name())
+	err = LoadYamlConfig(&cfg, tmp.Name())
 
 	require.NoError(t, err)
-
-	assert.Equal(t, YAMLMetadata{"variables": true, "baz": true, "foo": true}, *meta)
 
 	assert.Equal(t, "bar", cfg.Foo)
 	assert.Equal(t, "${creds.user}", cfg.Baz)
