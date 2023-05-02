@@ -1003,6 +1003,7 @@ license_key: ${license}
 
 	tmp, err := createTestFile(yamlData)
 	require.NoError(t, err)
+
 	defer os.Remove(tmp.Name())
 
 	t.Setenv("SOME_LICENSE", "AAA")
@@ -1010,7 +1011,6 @@ license_key: ${license}
 	require.NoError(t, err)
 	assert.Equal(t, "AAA", cfg.License)
 
-	//t.Setenv("SOME_LICENSE", "BBB")
 	refreshedCfg := cfg.Provide().Provide().Provide().Provide().Provide()
 
 	assert.Equal(t, "AAA", refreshedCfg.License, "ttl didn't expire for AAA")
@@ -1062,6 +1062,7 @@ license_key: ${license}
 
 	b.Setenv("SOME_LICENSE", "XXX")
 	cfg, err := LoadConfig(tmp.Name())
+	require.NoError(b, err)
 
 	for i := 0; i < b.N; i++ {
 		cfg = cfg.Provide()

@@ -74,9 +74,13 @@ const (
 )
 
 var (
-	ErrUnableToParseConfigFile = fmt.Errorf("unable to parse configuration file")
-	ErrDatabindApply           = fmt.Errorf("databind error")
-	clog                       = log.WithComponent("Configuration")
+	ErrUnableToParseConfigFile   = fmt.Errorf("unable to parse configuration file")
+	ErrDatabindApply             = fmt.Errorf("databind error")
+	ErrNoDatabindFound           = fmt.Errorf("no databind found")
+	ErrNoDatabindSources         = fmt.Errorf("no databind sources provided")
+	ErrUnexpectedVariablesAmount = fmt.Errorf("unexpected config file variables replacement amount")
+	ErrUnexpectedVariablesType   = fmt.Errorf("unexpected config file variables replacement type")
+	clog                         = log.WithComponent("Configuration")
 )
 
 type CustomAttributeMap map[string]interface{}
@@ -112,16 +116,18 @@ func (dc *DynamicConfig) Provide() *Config {
 	}
 
 	var err error
-	dc.refreshedConfig, err = ApplyDatabind(dc)
+	dc.refreshedConfig, err = applyDatabind(dc)
 
 	if err != nil {
 		clog.Debug("config provider failed to apply databind")
+
 		return nil
 	}
 
 	err = NormalizeConfig(dc.refreshedConfig, *dc.templateConfigMetadata)
 	if err != nil {
 		clog.Debug("config provider failed to apply normalizer")
+
 		return nil
 	}
 
@@ -1680,7 +1686,12 @@ func LoadConfig(configFile string) (*Config, error) {
 	}
 
 	if !cfg.Databind.IsEmpty() {
-		dynamicConfig := DynamicConfig{}
+		dynamicConfig := DynamicConfig{
+			databindSources:        nil,
+			templateConfigMetadata: nil,
+			templateConfig:         nil,
+			refreshedConfig:        nil,
+		}
 		dynamicConfig.databindSources, err = cfg.Databind.DataSources()
 
 		if err != nil {
@@ -1691,7 +1702,8 @@ func LoadConfig(configFile string) (*Config, error) {
 		_, err = config_loader.LoadYamlConfig(templateConfig, filesToCheck...)
 		dynamicConfig.templateConfig = templateConfig
 		cfg.dynamicConfig = &dynamicConfig
-		cfg, err = ApplyDatabind(&dynamicConfig)
+		cfg, err = applyDatabind(&dynamicConfig)
+
 		if err != nil {
 			return cfg, err
 		}
@@ -1710,34 +1722,35 @@ func LoadConfig(configFile string) (*Config, error) {
 	return cfg, err
 }
 
-func ApplyDatabind(dynamicConfig *DynamicConfig) (*Config, error) {
+func applyDatabind(dynamicConfig *DynamicConfig) (*Config, error) {
 	var err error
 
 	if dynamicConfig == nil {
-		return nil, fmt.Errorf("no databind found")
+		return nil, fmt.Errorf("%w", ErrNoDatabindFound)
 	}
 
 	vals, err := databind.Fetch(dynamicConfig.databindSources)
 	if err != nil {
 		return nil, err
 	}
+
 	if vals.VarsLen() == 0 {
-		return nil, fmt.Errorf("no data sources provided")
+		return nil, fmt.Errorf("%w", ErrNoDatabindSources)
 	}
+
 	matches, errD := databind.Replace(&vals, dynamicConfig.templateConfig)
 	if errD != nil {
 		return nil, err
 	}
 
 	if len(matches) != 1 {
-		err = fmt.Errorf("unexpected config file variables replacement amount")
-		return nil, err
+		return nil, fmt.Errorf("%w", ErrUnexpectedVariablesAmount)
 	}
 	transformed := matches[0]
+
 	resultConfig, ok := transformed.Variables.(*Config)
 	if !ok {
-		err = fmt.Errorf("unexpected config file variables replacement type")
-		return nil, err
+		return nil, fmt.Errorf("%w", ErrUnexpectedVariablesType)
 	}
 
 	resultConfig.dynamicConfig = dynamicConfig
