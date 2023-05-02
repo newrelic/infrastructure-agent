@@ -1686,15 +1686,15 @@ func LoadConfig(configFile string) (*Config, error) {
 	}
 
 	if !cfg.Databind.IsEmpty() {
-		databindSources, err := cfg.Databind.DataSources()
-		if err != nil {
-			return cfg, err
+		databindSources, errD := cfg.Databind.DataSources()
+		if errD != nil {
+			return cfg, fmt.Errorf("%w: %v", ErrDatabindApply, errD.Error())
 		}
 		templateConfig := NewConfig()
 
-		_, err = config_loader.LoadYamlConfig(templateConfig, filesToCheck...)
-		if err != nil {
-			return cfg, err
+		_, errD = config_loader.LoadYamlConfig(templateConfig, filesToCheck...)
+		if errD != nil {
+			return cfg, fmt.Errorf("%w: %v", ErrDatabindApply, errD.Error())
 		}
 
 		dynamicConfig := DynamicConfig{
@@ -1705,9 +1705,9 @@ func LoadConfig(configFile string) (*Config, error) {
 		}
 		cfg.dynamicConfig = &dynamicConfig
 
-		cfg, err = applyDatabind(&dynamicConfig)
-		if err != nil {
-			return cfg, err
+		cfg, errD = applyDatabind(&dynamicConfig)
+		if errD != nil {
+			return cfg, fmt.Errorf("%w: %v", ErrDatabindApply, errD.Error())
 		}
 	}
 
