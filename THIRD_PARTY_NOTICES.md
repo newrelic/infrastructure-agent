@@ -278,11 +278,11 @@ Distributed under the following license(s):
 
 
 
-## [gopkg.in/yaml.v2](https://gopkg.in/yaml.v2)
+## [gopkg.in/yaml.v3](https://gopkg.in/yaml.v3)
 
 Distributed under the following license(s):
 
-* Apache-2.0
+* MIT
 
 
 
