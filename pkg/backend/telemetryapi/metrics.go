@@ -316,6 +316,22 @@ func (batch *metricBatch) split() []requestsBuilder {
 	}
 }
 
+// splitBatch will split the metricBatch into 2 equal parts, returning a slice of metricBatches.
+// If it cannot be splitted, then just the original metricBatch is returned.
+//
+//nolint:forcetypeassert
+func (batch *metricBatch) splitBatch() []metricBatch {
+	requestsBuilders := batch.split()
+	if requestsBuilders == nil {
+		return []metricBatch{*batch}
+	}
+
+	return []metricBatch{
+		*requestsBuilders[0].(*metricBatch),
+		*requestsBuilders[1].(*metricBatch),
+	}
+}
+
 func (batch *metricBatch) makeBody() json.RawMessage {
 	buf := &bytes.Buffer{}
 	batch.writeJSON(buf)
