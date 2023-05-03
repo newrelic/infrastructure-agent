@@ -102,14 +102,6 @@ Distributed under the following license(s):
 
 
 
-## [github.com/ghodss/yaml](https://github.com/ghodss/yaml)
-
-Distributed under the following license(s):
-
-* MIT
-
-
-
 ## [github.com/gogo/protobuf](https://github.com/gogo/protobuf)
 
 Distributed under the following license(s):
