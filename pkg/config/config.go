@@ -74,9 +74,17 @@ const (
 	LogLevelTrace string = "trace"
 )
 
-type CustomAttributeMap map[string]interface{}
+var (
+	ErrUnableToParseConfigFile   = fmt.Errorf("unable to parse configuration file")
+	ErrDatabindApply             = fmt.Errorf("databind error")
+	ErrNoDatabindFound           = fmt.Errorf("no databind found")
+	ErrNoDatabindSources         = fmt.Errorf("no databind sources provided")
+	ErrUnexpectedVariablesAmount = fmt.Errorf("unexpected config file variables replacement amount")
+	ErrUnexpectedVariablesType   = fmt.Errorf("unexpected config file variables replacement type")
+	clog                         = log.WithComponent("Configuration")
+)
 
-var clog = log.WithComponent("Configuration")
+type CustomAttributeMap map[string]interface{}
 
 // IncludeMetricsMap configuration type to Map include_matching_metrics setting env var
 type IncludeMetricsMap map[string][]string
@@ -84,12 +92,73 @@ type IncludeMetricsMap map[string][]string
 // LogFilters configuration specifies which log entries should be included/excluded.
 type LogFilters map[string][]interface{}
 
+// Provider will retrieve the configuration.
+// If changes will be required (e.g. refreshing) will be applied now.
+type Provider interface {
+	// Provide will retrieve the configuration.
+	Provide() *Config
+}
+
+type DynamicConfig struct {
+	databindSources        *databind.Sources
+	templateConfigMetadata *config_loader.YAMLMetadata
+	templateConfig         *Config
+	refreshedConfig        *Config
+}
+
+func (dc *DynamicConfig) Provide() *Config {
+
+	if dc.isEmpty() {
+		return nil
+	}
+
+	if dc.isCached() && !dc.isExpired() {
+		return dc.getCached()
+	}
+
+	var err error
+	dc.refreshedConfig, err = applyDatabind(dc)
+
+	if err != nil {
+		clog.WithError(err).Debug("Config provider failed to apply databind")
+
+		return nil
+	}
+
+	err = NormalizeConfig(dc.refreshedConfig, *dc.templateConfigMetadata)
+	if err != nil {
+		clog.WithError(err).Debug("Config provider failed to apply normalizer")
+
+		return nil
+	}
+
+	return dc.refreshedConfig
+}
+
+func (dc *DynamicConfig) isExpired() bool {
+	return dc.databindSources.GetSoonestTTL().Before(time.Now())
+}
+
+func (dc *DynamicConfig) getCached() *Config {
+	return dc.refreshedConfig
+}
+
+func (dc *DynamicConfig) isCached() bool {
+	return dc.refreshedConfig != nil
+}
+
+func (dc *DynamicConfig) isEmpty() bool {
+	return dc.databindSources == nil
+}
+
 // IMPORTANT NOTE: If you add new config fields, consider checking the ignore list in
 // the plugins/agent_config.go plugin to not send undesired fields as inventory
 //
 // Configuration structs
 // Use the 'public' annotation to specify the visibility of the config option: false/obfuscate [default: true]
 type Config struct {
+	dynamicConfig *DynamicConfig `databind:"ignored"`
+
 	// Databind provides varaiable (secrets, discovery) replacement capabilities for the configuration.
 	Databind databind.YAMLAgentConfig `yaml:",inline" public:"false"`
 
@@ -1160,6 +1229,12 @@ type Config struct {
 	// Public: Yes
 	NtpMetrics NtpConfig `yaml:"ntp_metrics" envconfig:"ntp_metrics"`
 
+	// Http allows specifying extra configuration for the http client.
+	// e.g. adding proxy headers.
+	// Default: none
+	// Public: Yes
+	Http HttpConfig `yaml:"http" envconfig:"http"`
+
 	// AgentTempDir is the directory where the agent stores temporary files (i.e. fb config, discovery...)
 	// It will be DELETED on every agent restart only if it matches default value
 	//
@@ -1169,6 +1244,21 @@ type Config struct {
 	// Default (Windows): C:\ProgramData\New Relic\newrelic-infra\tmp
 	// Public: no
 	AgentTempDir string `yaml:"-" envconfig:"-"`
+}
+
+// KeyValMap is used whenever a key value pair configuration is required.
+type KeyValMap map[string]string
+
+// HttpConfig is the configuration to unmarshal http custom configuration.
+type HttpConfig struct {
+	Headers KeyValMap `yaml:"headers" envconfig:"headers"`
+}
+
+// NewHttpConfig returns a new instance of HttpConfig.
+func NewHttpConfig() HttpConfig {
+	return HttpConfig{
+		Headers: make(KeyValMap),
+	}
 }
 
 // Troubleshoot trobleshoot mode configuration.
@@ -1306,6 +1396,18 @@ func coalesceBool(values ...*bool) bool {
 		}
 	}
 	return false
+}
+
+func (cfg *Config) Provide() *Config {
+
+	if cfg.dynamicConfig != nil {
+		refreshedConfig := cfg.dynamicConfig.Provide()
+		if refreshedConfig != nil {
+			return refreshedConfig
+		}
+	}
+
+	return cfg
 }
 
 func (config *Config) loadLogConfig() {
@@ -1588,51 +1690,51 @@ func (c *Config) PublicFields() (map[string]string, error) {
 	return result, nil
 }
 
-func LoadConfig(configFile string) (cfg *Config, err error) {
+func LoadConfig(configFile string) (*Config, error) {
 	var filesToCheck []string
 	if configFile != "" {
 		filesToCheck = append(filesToCheck, configFile)
 	}
-	filesToCheck = append(filesToCheck, defaultConfigFiles...)
 
-	cfg = NewConfig()
+	filesToCheck = append(filesToCheck, defaultConfigFiles...)
+	cfg := NewConfig()
 	cfgMetadata, err := config_loader.LoadYamlConfig(cfg, filesToCheck...)
 	if err != nil {
-		err = fmt.Errorf("unable to parse configuration file %s: %s", configFile, err)
-		return
+		err = fmt.Errorf("%w, %s: %s", ErrUnableToParseConfigFile, configFile, err.Error())
+		return cfg, err
 	}
 
-	// After the config file has loaded,  override via any environment variables
-	configOverride(cfg)
-
-	sources, err := cfg.Databind.DataSources()
-	if err != nil {
-		return
-	}
-	//_, err = databind.Fetch(sources)
-	vals, err := databind.Fetch(sources)
-	if err != nil {
-		return
-	}
-	if vals.VarsLen() > 0 {
-		cfg.Databind = databind.YAMLAgentConfig{}
-		matches, errD := databind.Replace(&vals, cfg)
+	if !cfg.Databind.IsEmpty() {
+		databindSources, errD := cfg.Databind.DataSources()
 		if errD != nil {
-			return
+			//nolint:wrapcheck
+			return cfg, fmt.Errorf("%w: %v", ErrDatabindApply, errD.Error())
+		}
+		templateConfig := NewConfig()
+
+		_, errD = config_loader.LoadYamlConfig(templateConfig, filesToCheck...)
+		if errD != nil {
+			//nolint:wrapcheck
+			return cfg, fmt.Errorf("%w: %v", ErrDatabindApply, errD.Error())
 		}
 
-		if len(matches) != 1 {
-			err = fmt.Errorf("unexpected config file variables replacement amount")
-			return
+		dynamicConfig := DynamicConfig{
+			databindSources:        databindSources,
+			templateConfigMetadata: cfgMetadata,
+			templateConfig:         templateConfig,
+			refreshedConfig:        nil,
 		}
-		transformed := matches[0]
-		replacedCfg, ok := transformed.Variables.(*Config)
-		if !ok {
-			err = fmt.Errorf("unexpected config file variables replacement type")
-			return
+		cfg.dynamicConfig = &dynamicConfig
+
+		cfg, errD = applyDatabind(&dynamicConfig)
+		if errD != nil {
+			//nolint:wrapcheck
+			return cfg, fmt.Errorf("%w: %v", ErrDatabindApply, errD.Error())
 		}
-		cfg = replacedCfg
 	}
+
+	// After the config file has loaded, override via any environment variables
+	configOverride(cfg)
 
 	cfg.RunMode, cfg.AgentUser, cfg.ExecutablePath = runtimeValues()
 
@@ -1641,7 +1743,47 @@ func LoadConfig(configFile string) (cfg *Config, err error) {
 	// above and place each one at the bottom of this ordering
 	err = NormalizeConfig(cfg, *cfgMetadata)
 
-	return
+	return cfg, err
+}
+
+func applyDatabind(dynamicConfig *DynamicConfig) (*Config, error) {
+	var err error
+
+	if dynamicConfig == nil {
+		//nolint:wrapcheck
+		return nil, ErrNoDatabindFound
+	}
+
+	vals, err := databind.Fetch(dynamicConfig.databindSources)
+	if err != nil {
+		return nil, err
+	}
+
+	if vals.VarsLen() == 0 {
+		//nolint:wrapcheck
+		return nil, ErrNoDatabindSources
+	}
+
+	matches, errD := databind.Replace(&vals, dynamicConfig.templateConfig)
+	if errD != nil {
+		return nil, err
+	}
+
+	if len(matches) != 1 {
+		//nolint:wrapcheck
+		return nil, ErrUnexpectedVariablesAmount
+	}
+	transformed := matches[0]
+
+	resultConfig, ok := transformed.Variables.(*Config)
+	if !ok {
+		//nolint:wrapcheck
+		return nil, fmt.Errorf("%w", ErrUnexpectedVariablesType)
+	}
+
+	resultConfig.dynamicConfig = dynamicConfig
+
+	return resultConfig, nil
 }
 
 // NewConfig returns the default Config.
@@ -1718,6 +1860,7 @@ func NewConfig() *Config {
 		IncludeMetricsMatchers:      defaultMetricsMatcherConfig,
 		InventoryQueueLen:           DefaultInventoryQueue,
 		NtpMetrics:                  NewNtpConfig(),
+		Http:                        NewHttpConfig(),
 		AgentTempDir:                defaultAgentTempDir,
 	}
 }

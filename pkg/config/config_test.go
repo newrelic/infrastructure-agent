@@ -39,6 +39,9 @@ log:
    file: agent.log
    forward: true
    level: debug
+http:
+  headers:
+    "test-key": "test-value"
 `
 	f, err := ioutil.TempFile("", "opsmatic_config_test")
 	c.Assert(err, IsNil)
@@ -67,6 +70,10 @@ log:
 	c.Assert(*cfg.Log.Forward, Equals, true)
 	c.Assert(cfg.Log.File, Equals, "agent.log")
 	c.Assert(cfg.LoggingRetryLimit, Equals, "10")
+
+	c.Assert(cfg.Http.Headers, DeepEquals, KeyValMap{
+		"test-key": "test-value",
+	})
 }
 
 func (s *ConfigSuite) TestParseConfigBadLicense(c *C) {
@@ -901,6 +908,165 @@ license_key: ${license}
 
 	require.NoError(t, err)
 	assert.Equal(t, "XXX", cfg.License)
+}
+
+func TestLoadYamlConfig_withDatabindNotUsed(t *testing.T) {
+	yamlData := []byte(`
+variables:
+  license:
+    test:
+      value: XXX
+license_key: YYY
+`)
+
+	tmp, err := createTestFile(yamlData)
+	require.NoError(t, err)
+
+	defer os.Remove(tmp.Name())
+
+	cfg, err := LoadConfig(tmp.Name())
+
+	require.NoError(t, err)
+	assert.Equal(t, "YYY", cfg.License)
+}
+
+func TestLoadYamlConfig_withDatabindNotUsedEnvVarsUsed(t *testing.T) {
+	yamlData := []byte(`
+variables:
+  license:
+    test:
+      value: {{ SOME_LICENSE }}
+license_key: YYY
+`)
+
+	tmp, err := createTestFile(yamlData)
+	require.NoError(t, err)
+
+	defer os.Remove(tmp.Name())
+
+	os.Setenv("SOME_LICENSE", "XXX")
+	cfg, err := LoadConfig(tmp.Name())
+
+	os.Unsetenv("SOME_LICENSE")
+
+	require.NoError(t, err)
+	assert.Equal(t, "YYY", cfg.License)
+}
+
+func TestLoadYamlConfig_withDatabindReload(t *testing.T) {
+	yamlData := []byte(`
+variables:
+  license:
+    command:
+      path: "sh"
+      # Careful with escaping characters here
+      args: ["-c", "echo $SOME_LICENSE"]
+      passthrough_environment: ["SOME_LICENSE"]
+    ttl: 1s
+license_key: ${license}
+`)
+
+	tmp, err := createTestFile(yamlData)
+	require.NoError(t, err)
+	defer os.Remove(tmp.Name())
+
+	t.Setenv("SOME_LICENSE", "AAA")
+	cfg, err := LoadConfig(tmp.Name())
+	require.NoError(t, err)
+	assert.Equal(t, "AAA", cfg.License)
+
+	t.Setenv("SOME_LICENSE", "BBB")
+	refreshedCfg := cfg.Provide()
+
+	assert.Equal(t, "AAA", refreshedCfg.License, "ttl didn't expire for AAA")
+
+	time.Sleep(2 * time.Second)
+	refreshedCfg = cfg.Provide()
+	assert.Equal(t, "BBB", refreshedCfg.License, "ttl expired for AAA and value should be updated")
+
+	refreshedCfg = cfg.Provide()
+	assert.Equal(t, "BBB", refreshedCfg.License, "ttl didn't expire for BBB")
+}
+
+func TestLoadYamlConfig_multipleRefreshesInARow(t *testing.T) {
+	yamlData := []byte(`
+variables:
+  license:
+    command:
+      path: "sh"
+      # Careful with escaping characters here
+      args: ["-c", "echo $SOME_LICENSE"]
+      passthrough_environment: ["SOME_LICENSE"]
+    ttl: 1s
+license_key: ${license}
+`)
+
+	tmp, err := createTestFile(yamlData)
+	require.NoError(t, err)
+
+	defer os.Remove(tmp.Name())
+
+	t.Setenv("SOME_LICENSE", "AAA")
+	cfg, err := LoadConfig(tmp.Name())
+	require.NoError(t, err)
+	assert.Equal(t, "AAA", cfg.License)
+
+	refreshedCfg := cfg.Provide().Provide().Provide().Provide().Provide()
+
+	assert.Equal(t, "AAA", refreshedCfg.License, "ttl didn't expire for AAA")
+}
+
+func BenchmarkDatabindRefresh(b *testing.B) {
+	yamlData := []byte(`
+variables:
+  license:
+    command:
+      path: "sh"
+      # Careful with escaping characters here
+      args: ["-c", "echo $SOME_LICENSE"]
+      passthrough_environment: ["SOME_LICENSE"]
+    ttl: 0.1s
+license_key: ${license}
+`)
+
+	tmp, err := createTestFile(yamlData)
+	require.NoError(b, err)
+
+	defer os.Remove(tmp.Name())
+
+	b.Setenv("SOME_LICENSE", "XXX")
+	cfg, err := LoadConfig(tmp.Name())
+
+	for i := 0; i < b.N; i++ {
+		cfg = cfg.Provide()
+	}
+}
+
+func BenchmarkDatabindDaisyChainedRefresh(b *testing.B) {
+	yamlData := []byte(`
+variables:
+  license:
+    command:
+      path: "sh"
+      # Careful with escaping characters here
+      args: ["-c", "echo $SOME_LICENSE"]
+      passthrough_environment: ["SOME_LICENSE"]
+    ttl: 0.1s
+license_key: ${license}
+`)
+
+	tmp, err := createTestFile(yamlData)
+	require.NoError(b, err)
+
+	defer os.Remove(tmp.Name())
+
+	b.Setenv("SOME_LICENSE", "XXX")
+	cfg, err := LoadConfig(tmp.Name())
+	require.NoError(b, err)
+
+	for i := 0; i < b.N; i++ {
+		cfg = cfg.Provide()
+	}
 }
 
 func TestLoadLogConfig_CloudProviders(t *testing.T) {

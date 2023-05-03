@@ -26,6 +26,10 @@ type YAMLAgentConfig struct {
 	Variables map[string]varEntry `yaml:"variables,omitempty" json:"variables,omitempty"` // key: variable name
 }
 
+func (y *YAMLAgentConfig) IsEmpty() bool {
+	return len(y.Variables) == 0
+}
+
 type YAMLConfig struct {
 	YAMLAgentConfig `yaml:",inline"`
 	Discovery       struct {
@@ -51,6 +55,7 @@ type varEntry struct {
 	CyberArkCLI *secrets.CyberArkCLI `yaml:"cyberark-cli,omitempty" json:"cyberark-cli,omitempty"`
 	CyberArkAPI *secrets.CyberArkAPI `yaml:"cyberark-api,omitempty" json:"cyberark-api,omitempty"`
 	Obfuscated  *secrets.Obfuscated  `yaml:"obfuscated,omitempty" json:"obfuscated,omitempty"`
+	Command     *secrets.Command     `yaml:"command,omitempty" json:"command,omitempty"`
 }
 
 // Test for testing purposes until providers get decoupled.
@@ -107,7 +112,6 @@ func (dc *YAMLAgentConfig) DataSources() (*Sources, error) {
 		clock:     time.Now,
 		variables: map[string]*gatherer{},
 	}
-
 	for vName, vEntry := range dc.Variables {
 		ttl, err := duration(vEntry.TTL, defaultVariablesTTL)
 		if err != nil {
@@ -220,11 +224,15 @@ func (y *YAMLAgentConfig) validate() error {
 
 		names[vName] = struct{}{}
 		if err := vEntry.validate(); err != nil {
-			return err
+			return fmt.Errorf("error during validation: %w", err)
 		}
 	}
 
 	return nil
+}
+
+func entryValidationError(err error) error {
+	return fmt.Errorf("entry validation error: %w", err)
 }
 
 func (v *varEntry) validate() error {
@@ -232,31 +240,39 @@ func (v *varEntry) validate() error {
 	if v.KMS != nil {
 		sections++
 		if err := v.KMS.Validate(); err != nil {
-			return err
+			return entryValidationError(err)
 		}
 	}
 	if v.Vault != nil {
 		sections++
 		if err := v.Vault.Validate(); err != nil {
-			return err
+			return entryValidationError(err)
 		}
 	}
 	if v.CyberArkCLI != nil {
 		sections++
 		if err := v.CyberArkCLI.Validate(); err != nil {
-			return err
+			return entryValidationError(err)
 		}
 	}
 	if v.CyberArkAPI != nil {
 		sections++
 		if err := v.CyberArkAPI.Validate(); err != nil {
-			return err
+			return entryValidationError(err)
 		}
 	}
 	if v.Obfuscated != nil {
 		sections++
 		if err := v.Obfuscated.Validate(); err != nil {
-			return err
+			return entryValidationError(err)
+		}
+	}
+
+	if v.Command != nil {
+		sections++
+
+		if err := v.Command.Validate(); err != nil {
+			return entryValidationError(err)
 		}
 	}
 	if sections == 0 {
@@ -296,6 +312,11 @@ func (v *varEntry) selectGatherer(ttl time.Duration) *gatherer {
 		return &gatherer{
 			cache: cachedEntry{ttl: ttl},
 			fetch: secrets.ObfuscateGatherer(v.Obfuscated),
+		}
+	} else if v.Command != nil {
+		return &gatherer{
+			cache: cachedEntry{ttl: ttl}, //nolint:exhaustruct
+			fetch: secrets.CommandGatherer(v.Command),
 		}
 	} else if v.Test != nil {
 		return &gatherer{

@@ -4,20 +4,26 @@
 package databind
 
 import (
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery"
 )
 
-// cachedEntry allows storing a value for a given Time-To-Leave
+// cachedEntry allows storing a value for a given Time-To-Live.
 type cachedEntry struct {
 	ttl    time.Duration
 	time   time.Time // time the object has been stored
 	stored interface{}
 }
 
+func (c *cachedEntry) getExpirationTime() time.Time {
+	return c.time.Add(c.ttl)
+}
+
 func (c *cachedEntry) get(now time.Time) (interface{}, bool) {
-	if c.stored != nil && c.time.Add(c.ttl).After(now) {
+	if c.stored != nil && c.getExpirationTime().After(now) {
 		return c.stored, true
 	}
 	c.stored = nil
@@ -78,6 +84,24 @@ func (d *gatherer) do(now time.Time) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if dataWithTTL, ok := vals.(ValuesWithTTL); ok {
+		ttl, err := dataWithTTL.TTL()
+		if err != nil && !errors.Is(err, ErrTTLNotFound) {
+			return nil, fmt.Errorf("invalid gathered TTL: %w", err) //nolint:wrapcheck
+		}
+
+		if err == nil {
+			d.cache.ttl = ttl
+		}
+
+		valuesWithTTL, err := dataWithTTL.Data()
+		if err != nil {
+			return nil, fmt.Errorf("invalid gathered Data: %w", err) //nolint:wrapcheck
+		}
+		vals = valuesWithTTL
+	}
+
 	d.cache.set(vals, now)
 	return vals, nil
 }

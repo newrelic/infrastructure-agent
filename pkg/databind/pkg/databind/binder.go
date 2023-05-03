@@ -4,11 +4,33 @@
 package databind
 
 import (
+	"errors"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 )
+
+var (
+	ErrTTLNotFound  = errors.New("TTL value not found")
+	ErrTTLInvalid   = errors.New("TTL value is not valid")
+	ErrDataNotFound = errors.New("data value not found")
+	ErrDataInvalid  = errors.New("data must be an map")
+)
+
+// ValuesWithTTL is the interface that a gatherer returned struct can implement to
+// allow us detecting if a secret has an expiration.
+type ValuesWithTTL interface {
+	// TTL returns the duration of the secret to expire.
+	// In case that the ttl is not present it should return ErrTTLNotFound
+	// In case the ttl is present but invalid it should return ErrTTLInvalid
+	TTL() (time.Duration, error)
+	// Data returns the data from a payload that contains a TTL. It's the struct responsibility
+	// to decide how TTL and Data are structured.
+	// In case the Data is not found it should return ErrDataNotFound
+	// In case that Data is not structured properly it should return ErrDataInvalid
+	Data() (map[string]interface{}, error)
+}
 
 // Sources holds the configuration of all the discovery and variable sources.
 // It is built from the LoadYAML function
@@ -17,6 +39,19 @@ type Sources struct {
 	discoverer *discoverer
 	Info       DiscovererInfo
 	variables  map[string]*gatherer // key: variable name
+}
+
+func (s *Sources) GetSoonestTTL() time.Time {
+	var soonestExpiration time.Time
+	for _, v := range s.variables {
+		expTime := v.cache.getExpirationTime()
+
+		if soonestExpiration.IsZero() || expTime.Before(soonestExpiration) {
+			soonestExpiration = expTime
+		}
+	}
+
+	return soonestExpiration
 }
 
 // NewValues returns an instance of value
@@ -74,7 +109,6 @@ func Fetch(ctx *Sources) (Values, error) {
 
 // Binder wraps the functions provided by this package
 type Binder interface {
-
 	// Fetch queries the Sources for discovery data and user-defined variables, and returns the
 	// acquired Values.
 	Fetch(ctx *Sources) (Values, error)

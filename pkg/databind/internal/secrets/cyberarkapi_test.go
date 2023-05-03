@@ -4,7 +4,6 @@
 package secrets
 
 import (
-	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	. "net/http"
 	"net/http/httptest"
@@ -51,7 +50,7 @@ func TestCyberArkAPI(t *testing.T) {
 	unboxed := r.(data.InterfaceMap)
 
 	if unboxed == nil {
-		fmt.Errorf("Result is nil")
+		t.Errorf("Result is nil")
 	}
 
 	if unboxed["password"] != "CI<s0H9>k2zUPXM" {
