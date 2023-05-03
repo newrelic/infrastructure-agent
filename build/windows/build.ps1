@@ -37,6 +37,10 @@ if (-not $?)
 Write-Output "Downloading go modules..."
 go mod download
 
+cd "$workspace\tools\yamlgen"
+go mod download
+cd "$workspace"
+
 Write-Output "Installing goversioninfo..."
 $Env:Path+= ";" + $Env:GOPATH + "\bin"
 go install github.com/josephspurrier/goversioninfo/cmd/goversioninfo@latest
