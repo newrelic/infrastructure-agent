@@ -4,6 +4,7 @@ package plugins
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"time"
 
@@ -41,7 +42,7 @@ func NewHostAliasesPlugin(ctx agent.AgentContext, cloudHarvester cloud.Harvester
 	}
 }
 
-func (self *HostAliasesPlugin) getHostAliasesDataset() (dataset agent.PluginInventoryDataset, err error) {
+func (self *HostAliasesPlugin) getHostAliasesDataset() (dataset types.PluginInventoryDataset, err error) {
 	fullHostname, shortHostname, err := self.resolver.Query()
 	if err != nil {
 		return nil, fmt.Errorf("error resolving hostname: %s", err)
@@ -116,7 +117,7 @@ func (self *HostAliasesPlugin) Run() {
 			refreshTimer.Stop()
 			refreshTimer = time.NewTicker(config.FREQ_PLUGIN_HOST_ALIASES * time.Second)
 			{
-				var dataset agent.PluginInventoryDataset
+				var dataset types.PluginInventoryDataset
 				var err error
 				self.logger.Debug("Starting harvest.")
 				if dataset, err = self.getHostAliasesDataset(); err != nil {

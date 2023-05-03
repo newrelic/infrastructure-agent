@@ -3,6 +3,7 @@
 package proxy
 
 import (
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"net/url"
 	"os"
@@ -51,7 +52,7 @@ func (e *entry) SortKey() string {
 // ProxyConfigPlugins reports the ProxyConfig as inventory
 type configPlugin struct {
 	agent.PluginCommon
-	config []agent.Sortable
+	config []types.Sortable
 }
 
 func ConfigPlugin(ctx agent.AgentContext) agent.Plugin {
@@ -60,7 +61,7 @@ func ConfigPlugin(ctx agent.AgentContext) agent.Plugin {
 		cfg = &config.Config{} // empty config to avoid null pointers
 	}
 
-	proxyConfig := make([]agent.Sortable, 0)
+	proxyConfig := make([]types.Sortable, 0)
 
 	if e := urlEntry(os.Getenv("HTTPS_PROXY")); e != nil {
 		e.Id = "HTTPS_PROXY"

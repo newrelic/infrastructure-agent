@@ -8,13 +8,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/backend/telemetryapi/internal"
 	"net/http"
 	"strings"
+
+	"github.com/newrelic/infrastructure-agent/pkg/backend/telemetryapi/internal"
 )
 
-const (
-	maxCompressedSizeBytes = 1 << 20
+var (
+	maxCompressedSizeBytes                                       = 1 << 20           //nolint:gochecknoglobals
+	compressFunc           func(b []byte) (*bytes.Buffer, error) = internal.Compress //nolint:gochecknoglobals
 )
 
 // request contains an http.Request and the UncompressedBody which is provided
@@ -32,9 +34,7 @@ type requestsBuilder interface {
 	split() []requestsBuilder
 }
 
-var (
-	errUnableToSplit = fmt.Errorf("unable to split large payload further")
-)
+var errUnableToSplit = fmt.Errorf("unable to split large payload further")
 
 type config struct {
 	data        []metricBatch
@@ -70,6 +70,32 @@ func newBatchRequest(ctx context.Context, r config) (reqs []request, err error) 
 	return reqs, err
 }
 
+// buildRequestsForSplittedMetricBatches will spit metricsBatch in two and build requests for each of them.
+// If there is only one batch, it will be splitted in two and call itself to create the requests.
+func buildRequestsForSplittedMetricBatches(ctx context.Context, metricsBatch []metricBatch, apiKey string, url string, userAgent string) ([]request, error) {
+	if len(metricsBatch) == 0 {
+		return nil, nil
+	}
+
+	if len(metricsBatch) > 1 {
+		half := len(metricsBatch) / 2 //nolint:gomnd
+
+		reqs1, err := buildRequests(ctx, metricsBatch[:half], apiKey, url, userAgent)
+		if err != nil {
+			return nil, err
+		}
+
+		reqs2, err := buildRequests(ctx, metricsBatch[half:], apiKey, url, userAgent)
+		if err != nil {
+			return nil, err
+		}
+
+		return append(reqs1, reqs2...), nil
+	}
+
+	return buildRequestsForSplittedMetricBatches(ctx, metricsBatch[0].splitBatch(), apiKey, url, userAgent)
+}
+
 func buildRequests(ctx context.Context, metricsBatch []metricBatch, apiKey string, url string, userAgent string) ([]request, error) {
 	var entityIds string
 	buf := &bytes.Buffer{}
@@ -93,13 +119,28 @@ func buildRequests(ctx context.Context, metricsBatch []metricBatch, apiKey strin
 	}
 
 	buf.WriteByte(']')
-	req, err := createRequest(ctx, buf.Bytes(), apiKey, url, userAgent)
+
+	uncompressed := buf.Bytes()
+
+	compressed, err := compressFunc(uncompressed)
+	if nil != err {
+		return nil, fmt.Errorf("error compressing data: %w", err)
+	}
+
+	// If compressed payload size is bigger than limit, split the metricBatches and build requests for them.
+	// If a single metricBatch is bigger than limit, then the it will be splitted in two, splitting the
+	// metrics
+	compressedLen := compressed.Len()
+	if compressedLen > maxCompressedSizeBytes {
+		return buildRequestsForSplittedMetricBatches(ctx, metricsBatch, apiKey, url, userAgent)
+	}
+
+	req, err := createRequest(ctx, uncompressed, compressed, compressedLen, apiKey, url, userAgent)
 	if err != nil {
 		return nil, err
 	}
 
-	jsonPayload := string(buf.Bytes())
-	logger.WithTraceField("json", jsonPayload).Debug("Request created")
+	logger.WithTraceField("json", string(uncompressed)).Debug("Request created")
 	req.Request.Header.Add("X-NRI-Entity-Ids", entityIds)
 	return []request{req}, err
 }
@@ -112,13 +153,8 @@ func newRequests(ctx context.Context, batch requestsBuilder, apiKey string, url 
 	return newRequestsInternal(ctx, batch, apiKey, url, userAgent, requestNeedsSplit)
 }
 
-func createRequest(ctx context.Context, rawJSON json.RawMessage, apiKey string, url string, userAgent string) (req request, err error) {
-	compressed, err := internal.Compress(rawJSON)
-	if nil != err {
-		return req, fmt.Errorf("error compressing data: %v", err)
-	}
-	compressedLen := compressed.Len()
-
+//nolint:nonamedreturns
+func createRequest(ctx context.Context, rawJSON json.RawMessage, compressed *bytes.Buffer, compressedLen int, apiKey string, url string, userAgent string) (req request, err error) {
 	reqHTTP, err := http.NewRequest("POST", url, compressed)
 	if nil != err {
 		return req, fmt.Errorf("error creating request: %v", err)
@@ -137,7 +173,16 @@ func createRequest(ctx context.Context, rawJSON json.RawMessage, apiKey string, 
 }
 
 func newRequestsInternal(ctx context.Context, batch requestsBuilder, apiKey string, url string, userAgent string, needsSplit func(request) bool) ([]request, error) {
-	req, err := createRequest(ctx, batch.makeBody(), apiKey, url, userAgent)
+	// control size
+	uncompressed := batch.makeBody()
+
+	compressed, err := compressFunc(uncompressed)
+	if nil != err {
+		return nil, fmt.Errorf("error compressing data: %w", err)
+	}
+	compressedLen := compressed.Len()
+
+	req, err := createRequest(ctx, uncompressed, compressed, compressedLen, apiKey, url, userAgent)
 	if err != nil {
 		return nil, err
 	}

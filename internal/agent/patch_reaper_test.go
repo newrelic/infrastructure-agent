@@ -14,6 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const maxInventoryDataSize = 3 * 1000 * 1000
+
 func TestPatchReapNoCacheExists(t *testing.T) {
 	fixture, err := ioutil.ReadFile(filepath.Join("fixtures", "packages_rpm_delta.json"))
 	if err != nil {
@@ -34,7 +36,7 @@ func TestPatchReapNoCacheExists(t *testing.T) {
 	}
 	defer dir.Clear()
 
-	store := delta.NewStore(dir.Path, "default", maxInventoryDataSize)
+	store := delta.NewStore(dir.Path, "default", maxInventoryDataSize, true)
 	pr := newPatchReaper("", store)
 	pr.Reap()
 	cacheFilePath := filepath.Join(
@@ -82,7 +84,7 @@ func TestPatchReapCacheUpdate(t *testing.T) {
 	}
 	defer dir.Clear()
 
-	store := delta.NewStore(dir.Path, "default", maxInventoryDataSize)
+	store := delta.NewStore(dir.Path, "default", maxInventoryDataSize, true)
 	pr := newPatchReaper("", store)
 	pr.Reap()
 	cacheFilePath := filepath.Join(
@@ -133,7 +135,7 @@ func TestPatchReapEmptyDelta(t *testing.T) {
 	)
 	s1, err := os.Stat(cacheFilePath)
 
-	store := delta.NewStore(dir.Path, "default", maxInventoryDataSize)
+	store := delta.NewStore(dir.Path, "default", maxInventoryDataSize, true)
 	pr := newPatchReaper("", store)
 	pr.Reap()
 
@@ -173,7 +175,7 @@ func BenchmarkPatchReapNoDiff(b *testing.B) {
 	}
 	defer dir.Clear()
 
-	store := delta.NewStore(dir.Path, "default", maxInventoryDataSize)
+	store := delta.NewStore(dir.Path, "default", maxInventoryDataSize, true)
 	pr := newPatchReaper("", store)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -213,7 +215,7 @@ func BenchmarkPatchReapWithDiff(b *testing.B) {
 	}
 	defer dir.Clear()
 
-	store := delta.NewStore(dir.Path, "default", maxInventoryDataSize)
+	store := delta.NewStore(dir.Path, "default", maxInventoryDataSize, true)
 	pr := newPatchReaper("", store)
 	var mockSource testhelpers.MockFile
 	for i := 0; i < b.N; i++ {

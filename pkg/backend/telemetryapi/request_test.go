@@ -1,16 +1,22 @@
 // Copyright 2019 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+//nolint:exhaustruct
 package telemetryapi
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"fmt"
 	"math/rand"
 	"testing"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/pkg/backend/telemetryapi/internal"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type testRequestBuilder struct {
@@ -576,6 +582,183 @@ func Test_newBatchRequest(t *testing.T) {
 				assert.Equal(t, expectedUserAgent, gotReqs[i].Request.Header.Get("User-Agent"))
 				assert.Equal(t, tt.wantReqs[i].xNRIEntityIdsHeader, gotReqs[i].Request.Header.Get("X-NRI-Entity-Ids"))
 				assert.Equal(t, expectedContext, gotReqs[i].Request.Context())
+			}
+		})
+	}
+}
+
+func buildMetricForTest(attributes map[string]interface{}) *Count {
+	return &Count{
+		Name:       "SomeMetric",
+		Attributes: attributes,
+		Value:      10,
+	}
+}
+
+func buildMetricsForTest(mbsAmount int, metricAmount int, attributes map[string]interface{}) []metricBatch {
+	var mbs []metricBatch
+
+	for i := 0; i < mbsAmount; i++ { //nolint:varnamelen
+		var metrics []Metric
+		for j := 0; j < metricAmount; j++ {
+			metrics = append(metrics, buildMetricForTest(attributes))
+		}
+		mb := metricBatch{
+			Identity: fmt.Sprintf("some identity %d", i),
+			Metrics:  metrics,
+		}
+		mbs = append(mbs, mb)
+	}
+
+	return mbs
+}
+
+type metricPayload struct {
+	Type  string      `json:"type"`
+	Value float32     `json:"value"`
+	Attrs interface{} `json:"attributes"`
+}
+type metricsPayload struct {
+	Common  map[string]interface{} `json:"common"`
+	Metrics []metricPayload        `json:"metrics"`
+}
+
+//nolint:funlen,paralleltest
+func Test_buildRequestsMultipleMetricsBatch(t *testing.T) {
+	attributes := map[string]interface{}{"some": "attribute"}
+
+	origMaxSize := maxCompressedSizeBytes
+	defer func() {
+		maxCompressedSizeBytes = origMaxSize
+	}()
+
+	testCases := []struct {
+		name             string
+		mbsAmount        int
+		metricAmount     int
+		attrsSize        int
+		maxLimitSize     func(batchSize int) int
+		expectedRequests [][]int
+	}{
+		{
+			name:         "no metric batch should not be splitted",
+			mbsAmount:    0,
+			metricAmount: 0,
+			maxLimitSize: func(msize int) int {
+				return origMaxSize
+			},
+			expectedRequests: [][]int{{}},
+		},
+		{
+			name:         "one small metric batch should not be splitted",
+			mbsAmount:    1,
+			metricAmount: 12,
+			maxLimitSize: func(msize int) int {
+				return origMaxSize
+			},
+			expectedRequests: [][]int{{12}},
+		},
+		{
+			name:         "multiple batches with small metrics should not be splitted",
+			mbsAmount:    5,
+			metricAmount: 12,
+			maxLimitSize: func(msize int) int {
+				return origMaxSize
+			},
+			expectedRequests: [][]int{{12, 12, 12, 12, 12}},
+		},
+		{
+			name:         "one batch with big odd metrics bigger than limit should be splitted",
+			mbsAmount:    1,
+			metricAmount: 12,
+			maxLimitSize: func(msize int) int {
+				return msize - 10
+			},
+			expectedRequests: [][]int{{6}, {6}},
+		},
+		{
+			name:         "one batch with big even metrics bigger than limit should be splitted",
+			mbsAmount:    1,
+			metricAmount: 13,
+			maxLimitSize: func(msize int) int {
+				return msize - 10
+			},
+			expectedRequests: [][]int{{6}, {7}},
+		},
+		{
+			name:         "one batch with more odd big metrics bigger than limit should be splitted",
+			mbsAmount:    1,
+			metricAmount: 20,
+			maxLimitSize: func(msize int) int {
+				return ((msize / 20) * 4) + 120 // splitted in 10 + buffer
+			},
+			expectedRequests: [][]int{{5}, {5}, {5}, {5}},
+		},
+		{
+			name:         "two batches with more even big metrics bigger than limit should be splitted",
+			mbsAmount:    2,
+			metricAmount: 20,
+			maxLimitSize: func(msize int) int {
+				return ((msize / 40) * 10) + 40 // splitted in 10 + buffer
+			},
+			expectedRequests: [][]int{{5}, {5}, {5}, {5}, {5}, {5}, {5}, {5}},
+		},
+		{
+			name:         "two batches with big metrics bigger than limit should be splitted",
+			mbsAmount:    2,
+			metricAmount: 21,
+			maxLimitSize: func(msize int) int {
+				return ((msize / 42) * 10) + 40 // splitted in 10 + buffer
+			},
+			expectedRequests: [][]int{{5}, {5}, {5}, {3}, {3}, {5}, {5}, {5}, {3}, {3}},
+		},
+	}
+
+	// non important stuff
+	ctx := context.Background()
+	apiKey := "some api key"
+	url := "some url"
+	userAgent := "some user agent"
+
+	defer func() {
+		compressFunc = internal.Compress
+	}()
+	compressFunc = func(b []byte) (*bytes.Buffer, error) {
+		buf := bytes.Buffer{}
+
+		_, err := buf.Write(b)
+		if err != nil {
+			return nil, err //nolint:wrapcheck
+		}
+
+		return &buf, nil
+	}
+
+	for i := range testCases {
+		testCase := testCases[i]
+		t.Run(testCase.name, func(t *testing.T) {
+			// build metrics to get the payload size and set the max size
+			mbs := buildMetricsForTest(testCase.mbsAmount, testCase.metricAmount, attributes)
+			if len(mbs) > 0 {
+				buf := new(bytes.Buffer)
+				mbs[0].writeJSON(buf)
+				msize := buf.Len()
+				maxCompressedSizeBytes = testCase.maxLimitSize(msize)
+			}
+
+			// build requests
+			reqs, err := buildRequests(ctx, mbs, apiKey, url, userAgent)
+			assert.NoError(t, err)
+			// assert the requests and metrics inside each request
+			assert.Len(t, reqs, len(testCase.expectedRequests))
+			for j := 0; j < len(testCase.expectedRequests); j++ { //nolint:varnamelen
+				var reqPayload []metricsPayload
+				err = json.Unmarshal(reqs[j].compressedBody, &reqPayload)
+				assert.NoError(t, err)
+				assert.Equal(t, len(testCase.expectedRequests[j]), len(reqPayload))
+				for k := 0; k < len(testCase.expectedRequests[j]); k++ {
+					assert.Len(t, reqPayload[k].Metrics, testCase.expectedRequests[j][k])
+				}
 			}
 		})
 	}

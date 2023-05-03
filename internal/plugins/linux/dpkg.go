@@ -11,6 +11,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/fsnotify/fsnotify"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
@@ -94,7 +95,7 @@ func (self *DpkgPlugin) guessInstallTime(packageName string, arch string) string
 	return fmt.Sprintf("%d", ctime.Unix())
 }
 
-func (self *DpkgPlugin) fetchPackageInfo() (packages agent.PluginInventoryDataset, err error) {
+func (self *DpkgPlugin) fetchPackageInfo() (packages types.PluginInventoryDataset, err error) {
 	output, err := helpers.RunCommand("/usr/bin/dpkg-query", "", "-W", "-f=${Package} ${Status} ${Architecture} ${Version} ${Essential} ${Priority}\n")
 	if err != nil {
 		return nil, err

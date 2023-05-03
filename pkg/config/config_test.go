@@ -1069,6 +1069,63 @@ license_key: ${license}
 	}
 }
 
+func TestLoadLogConfig_CloudProviders(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name     string
+		yamlCfg  string
+		expected string
+	}{
+		{
+			name: "Valid cloud",
+			yamlCfg: `
+license_key: "xxx"
+cloud_provider: aws
+`,
+			expected: "aws",
+		},
+		{
+			name: "Invalid cloud",
+			yamlCfg: `
+license_key: "xxx"
+cloud_provider: kubernetes
+`,
+			expected: defaultCloudProvider,
+		},
+		{
+			name: "No cloud",
+			yamlCfg: `
+license_key: "xxx"
+cloud_provider: no_cloud
+`,
+			expected: defaultCloudProvider,
+		},
+		{
+			name: "Cloud config unset",
+			yamlCfg: `
+license_key: "xxx"
+`,
+			expected: defaultCloudProvider,
+		},
+	}
+
+	for _, tt := range testCases {
+		testCase := tt
+
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			tmp, err := createTestFile([]byte(testCase.yamlCfg))
+			require.NoError(t, err)
+
+			cfg, err := LoadConfig(tmp.Name())
+			require.NoError(t, err)
+			assert.Equal(t, testCase.expected, cfg.CloudProvider)
+			os.Remove(tmp.Name())
+		})
+	}
+}
+
 func createTestFile(data []byte) (*os.File, error) {
 	tmp, err := ioutil.TempFile("", "loadconfig")
 	if err != nil {

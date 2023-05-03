@@ -3,6 +3,7 @@
 package plugins
 
 import (
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"time"
 
@@ -61,8 +62,8 @@ func (self *NetworkInterfacePlugin) WithInterfacesProvider(p network_helpers.Int
 	return self
 }
 
-func (self *NetworkInterfacePlugin) getNetworkInterfaceData() (agent.PluginInventoryDataset, error) {
-	var dataset agent.PluginInventoryDataset
+func (self *NetworkInterfacePlugin) getNetworkInterfaceData() (types.PluginInventoryDataset, error) {
+	var dataset types.PluginInventoryDataset
 
 	interfaces, err := self.getInterfaces()
 	if err != nil {

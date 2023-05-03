@@ -17,17 +17,20 @@ import (
 
 const (
 	// FFs
-	FlagCategory             = "Infra_Agent"
-	FlagNameRegister         = "register_enabled"
-	FlagParallelizeInventory = "parallelize_inventory_enabled"
+	FlagCategory              = "Infra_Agent"
+	FlagNameRegister          = "register_enabled"
+	FlagParallelizeInventory  = "parallelize_inventory_enabled"
+	FlagAsyncInventoryHandler = "async_inventory_handler_enabled"
+
 	FlagProtocolV4           = "protocol_v4_enabled"
 	FlagFullProcess          = "full_process_sampling"
 	FlagDmRegisterDeprecated = "dm_register_deprecated"
 	FlagFluentBit19          = "fluent_bit_19"
 	// Config
-	CfgYmlRegisterEnabled        = "register_enabled"
-	CfgYmlParallelizeInventory   = "inventory_queue_len"
-	CfgValueParallelizeInventory = int64(100) // default value when no config provided by user and FF enabled
+	CfgYmlRegisterEnabled              = "register_enabled"
+	CfgYmlParallelizeInventory         = "inventory_queue_len"
+	CfgYmlAsyncInventoryHandlerEnabled = "async_inventory_handler_enabled"
+	CfgValueParallelizeInventory       = int64(100) // default value when no config provided by user and FF enabled
 )
 
 //nolint:gochecknoglobals
@@ -138,6 +141,11 @@ func (h *handler) Handle(ctx context.Context, c commandapi.Command, isInitialFet
 	if ffArgs.Flag == FlagFluentBit19 {
 		// FluentBit 1.9 Feature Flag is not merged yet, but it's created in the Backend so we need to take it
 		// into account and do nothing not to be trated as an OHI FF.
+		return
+	}
+
+	if ffArgs.Flag == FlagAsyncInventoryHandler {
+		handleAsyncInventoryHandlerEnabled(ffArgs, h.cfg, isInitialFetch)
 		return
 	}
 
@@ -254,6 +262,24 @@ func handleRegister(ffArgs args, c *config.Config, isInitialFetch bool) {
 		ffLogger.
 			WithError(err).
 			WithField("field", CfgYmlRegisterEnabled).
+			Warn("unable to update config value")
+	}
+}
+
+func handleAsyncInventoryHandlerEnabled(ffArgs args, c *config.Config, isInitialFetch bool) {
+	// feature already in desired state.
+	if ffArgs.Enabled == c.AsyncInventoryHandlerEnabled {
+		return
+	}
+
+	if !isInitialFetch {
+		os.Exit(api.ExitCodeRestart)
+	}
+
+	if err := c.SetBoolValueByYamlAttribute(CfgYmlAsyncInventoryHandlerEnabled, ffArgs.Enabled); err != nil {
+		ffLogger.
+			WithError(err).
+			WithField("field", CfgYmlAsyncInventoryHandlerEnabled).
 			Warn("unable to update config value")
 	}
 }

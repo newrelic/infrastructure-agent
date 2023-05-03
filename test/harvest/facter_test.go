@@ -6,11 +6,11 @@
 package harvest
 
 import (
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"os/exec"
 	"os/user"
 	"testing"
 
-	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	pluginsLinux "github.com/newrelic/infrastructure-agent/internal/plugins/linux"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
@@ -35,9 +35,9 @@ func TestFacter(t *testing.T) {
 		FacterHomeDir:     usr.HomeDir,
 	})
 	ctx.On("EntityKey").Return(agentIdentifier)
-	ch := make(chan agent.PluginOutput)
+	ch := make(chan types.PluginOutput)
 	ctx.On("SendData", mock.Anything).Return().Run(func(args mock.Arguments) {
-		ch <- args[0].(agent.PluginOutput)
+		ch <- args[0].(types.PluginOutput)
 	})
 	ctx.SendDataWg.Add(1)
 

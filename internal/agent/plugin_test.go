@@ -3,6 +3,7 @@
 package agent
 
 import (
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"testing"
 
 	"github.com/newrelic/infrastructure-agent/pkg/config"
@@ -14,11 +15,11 @@ import (
 )
 
 func TestPluginOutput(t *testing.T) {
-	pluginOutput := NewPluginOutput(ids.PluginID{}, entity.NewFromNameWithoutID(""), nil)
+	pluginOutput := types.NewPluginOutput(ids.PluginID{}, entity.NewFromNameWithoutID(""), nil)
 	assert.False(t, pluginOutput.NotApplicable)
 	assert.NotNil(t, pluginOutput)
 
-	pluginOutput = NewNotApplicableOutput(ids.PluginID{"a", "b"})
+	pluginOutput = types.NewNotApplicableOutput(ids.PluginID{"a", "b"})
 	assert.Equal(t, ids.PluginID{"a", "b"}, pluginOutput.Id)
 	assert.True(t, pluginOutput.NotApplicable)
 }
@@ -49,14 +50,14 @@ func TestPluginIDSortable(t *testing.T) {
 func newFakeContext(resolver hostname.Resolver) *fakeContext {
 	return &fakeContext{
 		resolver: resolver,
-		data:     make(chan PluginOutput),
+		data:     make(chan types.PluginOutput),
 		ev:       make(chan sample.Event),
 	}
 }
 
 type fakeContext struct {
 	resolver hostname.Resolver
-	data     chan PluginOutput
+	data     chan types.PluginOutput
 	ev       chan sample.Event
 }
 
@@ -82,7 +83,7 @@ func (c *fakeContext) GetServiceForPid(pid int) (service string, ok bool) {
 	return "", false
 }
 
-func (c *fakeContext) SendData(data PluginOutput) {
+func (c *fakeContext) SendData(data types.PluginOutput) {
 	c.data <- data
 }
 

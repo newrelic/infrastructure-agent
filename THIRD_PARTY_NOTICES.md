@@ -94,14 +94,6 @@ Distributed under the following license(s):
 
 
 
-## [github.com/ghodss/yaml](https://github.com/ghodss/yaml)
-
-Distributed under the following license(s):
-
-* MIT
-
-
-
 ## [github.com/golang/groupcache](https://github.com/golang/groupcache)
 
 Distributed under the following license(s):

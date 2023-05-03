@@ -8,11 +8,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/newrelic/infrastructure-agent/pkg/backend/telemetryapi/internal"
 )
@@ -477,10 +478,14 @@ func TestCommonAttributes(t *testing.T) {
 		{expect: `[{"common":{},"metrics":[]}]`},
 		{start: sometime, expect: `[{"common":{"timestamp":1417136460000},"metrics":[]}]`},
 		{interval: 5 * time.Second, expect: `[{"common":{"interval.ms":5000},"metrics":[]}]`},
-		{start: sometime, interval: 5 * time.Second,
-			expect: `[{"common":{"timestamp":1417136460000,"interval.ms":5000},"metrics":[]}]`},
-		{attributesJSON: json.RawMessage(`{"zip":"zap"}`),
-			expect: `[{"common":{"attributes":{"zip":"zap"}},"metrics":[]}]`},
+		{
+			start: sometime, interval: 5 * time.Second,
+			expect: `[{"common":{"timestamp":1417136460000,"interval.ms":5000},"metrics":[]}]`,
+		},
+		{
+			attributesJSON: json.RawMessage(`{"zip":"zap"}`),
+			expect:         `[{"common":{"attributes":{"zip":"zap"}},"metrics":[]}]`,
+		},
 	}
 
 	for _, test := range testcases {
@@ -490,5 +495,114 @@ func TestCommonAttributes(t *testing.T) {
 			AttributesJSON: test.attributesJSON,
 		}
 		testBatchJSON(t, batch, test.expect)
+	}
+}
+
+//nolint:funlen,exhaustruct
+func Test_splitBatch(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name     string
+		mb       metricBatch
+		expected []metricBatch
+	}{
+		{
+			name: "empty metric batch",
+			mb: metricBatch{
+				Identity: "some identity",
+				Metrics:  nil,
+			},
+			expected: []metricBatch{
+				{
+					Identity: "some identity",
+					Metrics:  nil,
+				},
+			},
+		},
+		{
+			name: "single metric batch",
+			mb: metricBatch{
+				Identity: "some identity",
+				Metrics: []Metric{
+					Count{Name: "whatever", Value: 5.0},
+				},
+			},
+			expected: []metricBatch{
+				{
+					Identity: "some identity",
+					Metrics: []Metric{
+						Count{Name: "whatever", Value: 5.0},
+					},
+				},
+			},
+		},
+		{
+			name: "even metric batch",
+			mb: metricBatch{
+				Identity: "some identity",
+				Metrics: []Metric{
+					Count{Name: "whatever1", Value: 1.0},
+					Count{Name: "whatever2", Value: 2.0},
+					Count{Name: "whatever3", Value: 3.0},
+					Count{Name: "whatever4", Value: 4.0},
+				},
+			},
+			expected: []metricBatch{
+				{
+					Identity: "some identity",
+					Metrics: []Metric{
+						Count{Name: "whatever1", Value: 1.0},
+						Count{Name: "whatever2", Value: 2.0},
+					},
+				},
+				{
+					Identity: "some identity",
+					Metrics: []Metric{
+						Count{Name: "whatever3", Value: 3.0},
+						Count{Name: "whatever4", Value: 4.0},
+					},
+				},
+			},
+		},
+		{
+			name: "odd metric batch",
+			mb: metricBatch{
+				Identity: "some identity",
+				Metrics: []Metric{
+					Count{Name: "whatever1", Value: 1.0},
+					Count{Name: "whatever2", Value: 2.0},
+					Count{Name: "whatever3", Value: 3.0},
+					Count{Name: "whatever4", Value: 4.0},
+					Count{Name: "whatever5", Value: 5.0},
+				},
+			},
+			expected: []metricBatch{
+				{
+					Identity: "some identity",
+					Metrics: []Metric{
+						Count{Name: "whatever1", Value: 1.0},
+						Count{Name: "whatever2", Value: 2.0},
+					},
+				},
+				{
+					Identity: "some identity",
+					Metrics: []Metric{
+						Count{Name: "whatever3", Value: 3.0},
+						Count{Name: "whatever4", Value: 4.0},
+						Count{Name: "whatever5", Value: 5.0},
+					},
+				},
+			},
+		},
+	}
+	for i := range testCases {
+		testCase := testCases[i]
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			splitted := testCase.mb.splitBatch()
+			assert.Equal(t, testCase.expected, splitted)
+		})
 	}
 }

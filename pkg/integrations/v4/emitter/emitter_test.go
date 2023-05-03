@@ -5,6 +5,7 @@ package emitter
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"strings"
 	"testing"
 
@@ -14,7 +15,6 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 
-	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
@@ -498,7 +498,7 @@ func TestLegacy_Emit(t *testing.T) {
 				called := tc.ma.Calls[c]
 				if called.Method == "SendData" {
 					//t.Log(called)
-					po := called.Arguments[0].(agent.PluginOutput)
+					po := called.Arguments[0].(types.PluginOutput)
 					assert.Equal(t, tc.expectedId, po.Id)
 				}
 			}
@@ -582,7 +582,7 @@ func TestProtocolV4_Emit(t *testing.T) {
 
 		if called.Method == "SendData" {
 			//t.Log(called)
-			pluginOutput := called.Arguments[0].(agent.PluginOutput)
+			pluginOutput := called.Arguments[0].(types.PluginOutput)
 			assert.Equal(t, "unique name", pluginOutput.Entity.Key)
 			assert.Equal(t, "labels/foo", pluginOutput.Data[1].(protocol.InventoryData)["id"])
 			assert.Equal(t, "bar", pluginOutput.Data[1].(protocol.InventoryData)["value"])
@@ -837,7 +837,7 @@ func TestEmit_SendCustomAttributes_SendCAInSecureForwardMode(t *testing.T) {
 
 func mockAgent2Payloads() *mocks.AgentContext {
 	ma := mockAgent()
-	ma.On("SendData", mock.AnythingOfType("agent.PluginOutput")).Twice()
+	ma.On("SendData", mock.AnythingOfType("types.PluginOutput")).Twice()
 	ma.SendDataWg.Add(1)
 
 	return ma
@@ -857,7 +857,7 @@ func mockAgent() *mocks.AgentContext {
 	ma := &mocks.AgentContext{}
 	ma.On("EntityKey").Return("bob")
 	ma.On("IDLookup").Return(aID)
-	ma.On("SendData", mock.AnythingOfType("agent.PluginOutput")).Once()
+	ma.On("SendData", mock.AnythingOfType("types.PluginOutput")).Once()
 	ma.SendDataWg.Add(1)
 	ma.On("SendEvent", mock.AnythingOfType("agent.mapEvent"), mock.AnythingOfType("entity.Key")).Once()
 	ma.On("Config").Return(cfg)
@@ -882,7 +882,7 @@ func mockForwardAgent(isForwardOnly bool, customAttributes config.CustomAttribut
 	ma := &mocks.AgentContext{}
 	ma.On("EntityKey").Return("bob")
 	ma.On("IDLookup").Return(aID)
-	ma.On("SendData", mock.AnythingOfType("agent.PluginOutput")).Once()
+	ma.On("SendData", mock.AnythingOfType("types.PluginOutput")).Once()
 	ma.SendDataWg.Add(1)
 	ma.On("SendEvent", mock.AnythingOfType("agent.mapEvent"), mock.AnythingOfType("entity.Key")).Once()
 	ma.On("Config").Return(cfg)
