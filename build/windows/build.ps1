@@ -37,10 +37,6 @@ if (-not $?)
 Write-Output "Downloading go modules..."
 go mod download
 
-cd "$workspace\tools\yamlgen"
-go mod download
-cd "$workspace"
-
 Write-Output "Installing goversioninfo..."
 $Env:Path+= ";" + $Env:GOPATH + "\bin"
 go install github.com/josephspurrier/goversioninfo/cmd/goversioninfo@latest
@@ -49,6 +45,9 @@ $goMains = @(
     "$workspace\cmd\newrelic-infra"
     "$workspace\cmd\newrelic-infra-ctl"
     "$workspace\cmd\newrelic-infra-service"
+)
+
+$goMainsBuildInFolder = @(
     "$workspace\tools\yamlgen"
 )
 
@@ -95,4 +94,20 @@ Foreach ($pkg in $goMains)
     if (-Not $skipSigning) {
         SignExecutable -executable "$exe"
     }
+}
+
+Foreach ($pkg in $goMainsBuildInFolder)
+{
+    $fileName = ([io.fileinfo]$pkg).BaseName
+    Write-Output "creating $fileName"
+
+    $exe = "$workspace\target\bin\windows_$arch\$fileName.exe"
+
+    cd "$pkg"
+    go mod download
+    go build -ldflags "-X 'main.buildVersion=$version' -X 'main.gitCommit=$commit' -X 'main.buildDate=$date'" -o $exe
+    if (-Not $skipSigning) {
+        SignExecutable -executable "$exe"
+    }
+    cd "$workspace"
 }
