@@ -30,10 +30,33 @@ Function GetIntegrationVersion {
     return $version
 }
 
+# <To be removed on removal of the ff fluent_bit_19>
+Function GetFluentBitLegacyPluginVersion {
+    $dir = "$scriptPath\..\..\embed"
+
+    $pluginVersion = $(Get-Content "$dir/fluent-bit.version" | %{if($_ -match "^windows-legacy,") { $_.Split(',')[1]; }})
+    if ([string]::IsNullOrWhitespace($pluginVersion)) {
+        throw "failed to read nr fluent-bit plugin version"
+    }
+
+    return $pluginVersion
+}
+
+Function GetFluentBitLegacyVersion {
+    $dir = "$scriptPath\..\..\embed"
+    $fbVersion = $(Get-Content "$dir/fluent-bit.version" | %{if($_ -match "^windows-legacy,") { $_.Split(',')[2]; }})
+    if ([string]::IsNullOrWhitespace($fbVersion)) {
+        throw "failed to read nr fluent-bit 1.x version"
+    }
+
+    return $fbVersion
+}
+# </To be removed on removal of the ff fluent_bit_19>
+
 Function GetFluentBitPluginVersion {
     $dir = "$scriptPath\..\..\embed"
 
-    $pluginVersion = $(Get-Content "$dir/fluent-bit.version" | %{if($_ -match "^windows") { $_.Split(',')[1]; }})
+    $pluginVersion = $(Get-Content "$dir/fluent-bit.version" | %{if($_ -match "^windows,") { $_.Split(',')[1]; }})
     if ([string]::IsNullOrWhitespace($pluginVersion)) {
         throw "failed to read nr fluent-bit plugin version"
     }
@@ -42,9 +65,9 @@ Function GetFluentBitPluginVersion {
 }
 Function GetFluentBitVersion {
     $dir = "$scriptPath\..\..\embed"
-    $fbVersion = $(Get-Content "$dir/fluent-bit.version" | %{if($_ -match "^windows") { $_.Split(',')[2]; }})
+    $fbVersion = $(Get-Content "$dir/fluent-bit.version" | %{if($_ -match "^windows,") { $_.Split(',')[2]; }})
     if ([string]::IsNullOrWhitespace($fbVersion)) {
-        throw "failed to read nr fluent-bit version"
+        throw "failed to read nr fluent-bit 2.x version"
     }
 
     return $fbVersion
