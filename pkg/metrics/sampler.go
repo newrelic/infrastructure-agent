@@ -18,21 +18,23 @@ type ContainerSampler interface {
 	NewDecorator() (ProcessDecorator, error)
 }
 
-// getContainerSampler returns the first available container sampler.
+// GetContainerSampler returns the first available container sampler.
 func GetContainerSampler(cacheTTL time.Duration, dockerAPIVersion string) ContainerSampler { //nolint:ireturn
 	clog := log.WithComponent("ContainerSampler")
-	// Tries setting up docker sampler
-	dockerSampler := NewDockerSampler(cacheTTL, dockerAPIVersion)
-	if dockerSampler.Enabled() {
-		return dockerSampler
-	}
-	// Docker seems to not be enabled. Trying with containerd
-	clog.Debug("Docker seems to not be enabled. Trying containerd-based container sampler")
 
 	containerdSampler := NewContainerdSampler(cacheTTL)
 	if containerdSampler.Enabled() {
 		return containerdSampler
 	}
+
+	// containerd seems to not be enabled. Trying with docker API
+	clog.Debug("containerd seems to not be present. Trying docker-based container sampler")
+
+	dockerSampler := NewDockerSampler(cacheTTL, dockerAPIVersion)
+	if dockerSampler.Enabled() {
+		return dockerSampler
+	}
+
 	// No more container runtimes available, returning default docker sampler
 	clog.Debug("No container runtimes available, returning default, containerd-based container sampler")
 
