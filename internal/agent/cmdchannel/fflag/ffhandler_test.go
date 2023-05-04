@@ -139,7 +139,7 @@ func TestFFHandlerHandle_AsyncInventoryHandlerEnabledInitialFetch(t *testing.T) 
 			"flag": "async_inventory_handler_enabled",
 			"enabled": true }`),
 	}
-	NewHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
+	NewHandler(&c, feature_flags.NewManager(nil), testLogger).Handle(context.Background(), cmd, true)
 
 	assert.True(t, c.AsyncInventoryHandlerEnabled)
 }
@@ -154,7 +154,7 @@ func TestFFHandlerHandle_AsyncInventoryHandlerEnabled(t *testing.T) {
 			"flag": "async_inventory_handler_enabled",
 			"enabled": true }`),
 	}
-	NewHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, false)
+	NewHandler(&c, feature_flags.NewManager(nil), testLogger).Handle(context.Background(), cmd, false)
 
 	assert.True(t, c.AsyncInventoryHandlerEnabled)
 }
@@ -169,7 +169,7 @@ func TestFFHandlerHandle_AsyncInventoryHandler_Disabled(t *testing.T) {
 			"flag": "async_inventory_handler_enabled",
 			"enabled": false }`),
 	}
-	NewHandler(&c, feature_flags.NewManager(nil), l).Handle(context.Background(), cmd, true)
+	NewHandler(&c, feature_flags.NewManager(nil), testLogger).Handle(context.Background(), cmd, true)
 
 	assert.False(t, c.AsyncInventoryHandlerEnabled)
 }
