@@ -73,17 +73,33 @@ Function EmbedPrometheus {
 Function EmbedFluentBit {
     Write-Output "--- Embedding fluent-bit"
 
+    # <To be removed on removal of the ff fluent_bit_19>
+    # td-agent-bit (1.9)
+    $pluginLegacyVersion = GetFluentBitLegacyPluginVersion
+    $nrfbLegacyVersion = GetFluentBitLegacyVersion
+
+    [string]$pluginLegacyUrl = "https://github.com/newrelic/newrelic-fluent-bit-output/releases/download/v$pluginLegacyVersion/out_newrelic-windows-$arch-$pluginLegacyVersion.dll"
+    DownloadFile -dest:"$downloadPath\logging\nrfb" -outFile:"out_newrelic.dll" -url:"$pluginLegacyUrl"
+
+    [string]$nrfbUrl = "https://github.com/newrelic-experimental/fluent-bit-package/releases/download/$nrfbLegacyVersion/fb-windows-$arch.zip"
+    DownloadAndExtractZip -dest:"$downloadPath\logging\nrfb" -url:"$nrfbUrl"
+    # </To be removed on removal of the ff fluent_bit_19>
+
+    ## fluent-bit (2.x)
     $pluginVersion = GetFluentBitPluginVersion
     $nrfbVersion = GetFluentBitVersion
 
     [string]$pluginUrl = "https://github.com/newrelic/newrelic-fluent-bit-output/releases/download/v$pluginVersion/out_newrelic-windows-$arch-$pluginVersion.dll"
-    DownloadFile -dest:"$downloadPath\logging\nrfb" -outFile:"out_newrelic.dll" -url:"$pluginUrl"
+    DownloadFile -dest:"$downloadPath\logging\nrfb2" -outFile:"out_newrelic.dll" -url:"$pluginUrl"
 
     [string]$nrfbUrl = "https://github.com/newrelic-experimental/fluent-bit-package/releases/download/$nrfbVersion/fb-windows-$arch.zip"
-    DownloadAndExtractZip -dest:"$downloadPath\logging\nrfb" -url:"$nrfbUrl"
+    DownloadAndExtractZip -dest:"$downloadPath\logging\nrfb2" -url:"$nrfbUrl"
 
     if (-Not $skipSigning) {
+        # <To be removed on removal of the ff fluent_bit_19>
         SignExecutable -executable "$downloadPath\logging\nrfb\fluent-bit.exe"
+        # </To be removed on removal of the ff fluent_bit_19>
+        SignExecutable -executable "$downloadPath\logging\nrfb2\fluent-bit.exe"
     }
 }
 
