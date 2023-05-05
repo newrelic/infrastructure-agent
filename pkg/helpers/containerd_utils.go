@@ -128,7 +128,7 @@ func IsContainerdRunning() bool {
 	return (sock.Mode() & os.ModeSocket) != 0
 }
 
-// getContainerdInfo returns detailed information about a container.
+// GetContainerdInfo returns detailed information about a container.
 func GetContainerdInfo(containerMeta ContainerdMetadata) (ContainerInfo, error) {
 	containerID := containerMeta.Container.ID()
 
