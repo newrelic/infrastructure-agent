@@ -33,7 +33,7 @@ type ContainerdSampler struct {
 	lastCacheClean          time.Time
 }
 
-func initializeContainerdClient() (helpers.ContainerdInterface, error) { //nolint:ireturn
+func initializeContainerdClient() (*helpers.ContainerdClient, error) { //nolint:ireturn
 	containerdClient := &helpers.ContainerdClient{}
 	if err := containerdClient.Initialize(); err != nil {
 		return nil, fmt.Errorf("%s: %w", errContainerdSampler.Error(), err)
@@ -42,11 +42,11 @@ func initializeContainerdClient() (helpers.ContainerdInterface, error) { //nolin
 	return containerdClient, nil
 }
 
-func NewContainerdSampler(cacheTTL time.Duration) ContainerSampler { //nolint:ireturn
+func NewContainerdSampler(cacheTTL time.Duration) *ContainerdSampler { //nolint:ireturn
 	return NewContainerdSamplerWithClient(nil, cacheTTL)
 }
 
-func NewContainerdSamplerWithClient(client helpers.ContainerdInterface, cacheTTL time.Duration) ContainerSampler { //nolint:ireturn
+func NewContainerdSamplerWithClient(client helpers.ContainerdInterface, cacheTTL time.Duration) *ContainerdSampler { //nolint:ireturn
 	return &ContainerdSampler{ //nolint:exhaustruct
 		containerdClient: client,
 		lastCacheClean:   time.Now(),
@@ -89,7 +89,7 @@ type containerdDecorator struct {
 // compile-time assertion.
 var _ ProcessDecorator = &containerdDecorator{} //nolint:exhaustruct
 
-func newContainerdDecorator(containerdClient helpers.ContainerdInterface, pidsCache *pidsCache) (ProcessDecorator, error) { //nolint:ireturn
+func newContainerdDecorator(containerdClient helpers.ContainerdInterface, pidsCache *pidsCache) (*containerdDecorator, error) { //nolint:ireturn
 	dec := &containerdDecorator{ //nolint:exhaustruct
 		containerdClient: containerdClient,
 		cache:            pidsCache,
