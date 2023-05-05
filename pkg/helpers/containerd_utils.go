@@ -90,7 +90,7 @@ func (cc *ContainerdClient) Containers(nss ...string) (map[namespace][]container
 			return nil, containerdError(err)
 		}
 
-		return cc.containersFromNamespaces(allNamespaces)
+		nss = allNamespaces
 	}
 
 	return cc.containersFromNamespaces(nss)
@@ -99,15 +99,15 @@ func (cc *ContainerdClient) Containers(nss ...string) (map[namespace][]container
 func (cc *ContainerdClient) containersFromNamespaces(nss []string) (map[namespace][]containerd.Container, error) {
 	containersPerNamespace := map[namespace][]containerd.Container{}
 
-	for _, namespace := range nss {
-		ctx := namespaces.WithNamespace(context.Background(), namespace)
+	for _, ns := range nss {
+		ctx := namespaces.WithNamespace(context.Background(), ns)
 
 		containers, err := cc.client.Containers(ctx)
 		if err != nil {
 			return nil, containerdError(err)
 		}
 
-		containersPerNamespace[namespace] = containers
+		containersPerNamespace[ns] = containers
 	}
 
 	return containersPerNamespace, nil
