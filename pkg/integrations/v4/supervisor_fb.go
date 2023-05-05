@@ -162,6 +162,9 @@ func buildFbExecutor(fbIntCfg FBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 		if fbIntCfg.FluentBitVerbose {
 			args = append(args, "-vv")
 		}
+		
+		//specific args per OS
+		args = addOSDependantArgs(args)
 
 		fbExecutor := executor.FromCmdSlice(args, &executor.Config{
 			IntegrationName: "fluent-bit",
