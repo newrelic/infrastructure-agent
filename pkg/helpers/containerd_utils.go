@@ -37,7 +37,7 @@ type ContainerInfo struct {
 
 type namespace = string
 
-// Containerd is the interface for containerd operations.
+// ContainerdInterface is the interface for containerd operations.
 type ContainerdInterface interface {
 	Initialize() error
 	Containers(...namespace) (map[namespace][]containerd.Container, error)
