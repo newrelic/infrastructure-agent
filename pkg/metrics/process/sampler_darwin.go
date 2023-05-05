@@ -70,7 +70,7 @@ func (ps *processSampler) Disabled() bool {
 	return ps.Interval() <= config.FREQ_DISABLE_SAMPLING
 }
 
-// Sample returns samples for all the running processes, decorated with Docker runtime information, if applies.
+// Sample returns samples for all the running processes, decorated with container runtime information, if applies.
 func (ps *processSampler) Sample() (results sample.EventBatch, err error) {
 	var elapsedMs int64
 	var elapsedSeconds float64
