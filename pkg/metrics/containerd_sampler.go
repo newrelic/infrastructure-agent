@@ -28,12 +28,12 @@ var (
 
 type ContainerdSampler struct {
 	containerdClientRetries int
-	containerdClient        helpers.ContainerdInterface
+	containerdClient        *helpers.ContainerdClient
 	pidsCache               *pidsCache
 	lastCacheClean          time.Time
 }
 
-func initializeContainerdClient() (*helpers.ContainerdClient, error) { //nolint:ireturn
+func initializeContainerdClient() (*helpers.ContainerdClient, error) {
 	containerdClient := &helpers.ContainerdClient{}
 	if err := containerdClient.Initialize(); err != nil {
 		return nil, fmt.Errorf("%s: %w", errContainerdSampler.Error(), err)
@@ -42,11 +42,11 @@ func initializeContainerdClient() (*helpers.ContainerdClient, error) { //nolint:
 	return containerdClient, nil
 }
 
-func NewContainerdSampler(cacheTTL time.Duration) *ContainerdSampler { //nolint:ireturn
+func NewContainerdSampler(cacheTTL time.Duration) *ContainerdSampler {
 	return NewContainerdSamplerWithClient(nil, cacheTTL)
 }
 
-func NewContainerdSamplerWithClient(client helpers.ContainerdInterface, cacheTTL time.Duration) *ContainerdSampler { //nolint:ireturn
+func NewContainerdSamplerWithClient(client *helpers.ContainerdClient, cacheTTL time.Duration) *ContainerdSampler {
 	return &ContainerdSampler{ //nolint:exhaustruct
 		containerdClient: client,
 		lastCacheClean:   time.Now(),
