@@ -10,7 +10,7 @@ require (
 	github.com/beevik/ntp v0.3.0
 	github.com/containerd/containerd v1.5.10
 	github.com/coreos/go-systemd/v22 v22.3.2
-	github.com/docker/docker v23.0.1+incompatible
+	github.com/docker/docker v1.4.2-0.20190924003213-a8608b5b67c7
 	github.com/evanphx/json-patch v4.9.0+incompatible
 	github.com/fortytw2/leaktest v1.3.1-0.20190606143808-d73c753520d9
 	github.com/fsnotify/fsnotify v1.4.9
@@ -46,6 +46,7 @@ require (
 )
 
 require (
+	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/DataDog/sketches-go v0.0.1 // indirect
 	github.com/Microsoft/hcsshim v0.9.8 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -74,7 +75,6 @@ require (
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/moby/locker v1.0.1 // indirect
 	github.com/moby/sys/mountinfo v0.5.0 // indirect
-	github.com/moby/term v0.0.0-20221205130635-1aeaba878587 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/opencontainers/runc v1.1.6 // indirect
 	github.com/opencontainers/selinux v1.11.0 // indirect
