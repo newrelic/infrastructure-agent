@@ -518,7 +518,7 @@ policies:
 
       - name: Agent process / Memory Resident Size Bytes
         metric: memoryResidentSizeBytes
-        threshold: 5000000
+        threshold: 6000000
         duration: 60
         operator: "above"
         template_name: "Agent process metrics"
