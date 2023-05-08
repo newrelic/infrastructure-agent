@@ -2,11 +2,11 @@
 
 INVENTORY=$1
 API_KEY=$2
-CURRENT_TAG=$3
+TAG=$3
 
 export TEMPLATE="tools/provision-alerts/template/template.yml"
 export PREFIX="[pre-release]"
-export PREVIOUS=$(tools/spin-ec2/bin/spin-ec2 canaries previous_canary_version)
+export PREVIOUS=$(tools/spin-ec2/bin/spin-ec2 canaries previous_canary_version -t $TAG)
 echo "previous: $PREVIOUS"
 make provision-alerts-build
 for CURRENT in $( cat $INVENTORY | grep -v $PREVIOUS | grep linux | grep ansible_host | awk '{print $1}' );do
