@@ -21,11 +21,5 @@ func NewSocketTransport(path string) (*PersistentSocketTransport, error) {
 		return nil, err
 	}
 
-	httpClient := &http.Client{ //nolint:exhaustruct
-		Transport: &http.Transport{ //nolint:exhaustruct
-			Dial: net.Dial,
-		},
-	}
-
-	return &PersistentSocketTransport{httpClient}, nil
+	return &PersistentSocketTransport{http.DefaultClient}, nil
 }
