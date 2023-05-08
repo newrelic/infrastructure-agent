@@ -8,7 +8,7 @@ import "path/filepath"
 
 const (
 	// defaults for td-agent-bit (<=1.9).
-	defaultLoggingBinDir1 = "logging"
+	defaultLoggingBinDir1 = "logging-legacy"
 	// defaults for fluent-bit (>=2.0).
 	defaultLoggingBinDir2 = "logging"
 	// both versions have the same name.

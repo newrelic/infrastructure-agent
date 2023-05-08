@@ -6,4 +6,6 @@
 # OS, newrelic_plugin_version, fluent-bit
 
 linux,1.9.2
-windows,1.9.2,1.9.3
+windows,1.9.2,2.0.8
+#To be removed on removal of the ff fluent_bit_19
+windows-legacy,1.9.2,1.9.3

@@ -328,7 +328,7 @@ func TestNewSupervisorConfig(t *testing.T) {
 			integrationsDir:     "integrationsDir",
 			agentDir:            "some_agent_dir",
 			expectedPathLinux:   filepath.Join("/opt/td-agent-bit/bin", "td-agent-bit"),
-			expectedPathWindows: filepath.Join("some_agent_dir", "integrationsDir", "logging", "fluent-bit.exe"),
+			expectedPathWindows: filepath.Join("some_agent_dir", "integrationsDir", "logging-legacy", "fluent-bit.exe"),
 		},
 	}
 
