@@ -246,13 +246,13 @@ instances:
   ############################
   # debian amd64
   ############################
-  - ami: "ami-0d6d3e4f081c69f42"
-    type: "t3a.small"
-    name: "amd64:debian-stretch"
-    username: "admin"
-    platform: "linux"
-    python_interpreter: "/usr/bin/python3"
-    launch_template: "LaunchTemplateId=lt-01b2c565029b5bf2a,Version=2"
+#  - ami: "ami-0d6d3e4f081c69f42"
+#    type: "t3a.small"
+#    name: "amd64:debian-stretch"
+#    username: "admin"
+#    platform: "linux"
+#    python_interpreter: "/usr/bin/python3"
+#    launch_template: "LaunchTemplateId=lt-01b2c565029b5bf2a,Version=2"
   - ami: "ami-0f42acddbf04bd1b6"
     type: "t3a.small"
     name: "amd64:debian-buster"
@@ -270,13 +270,13 @@ instances:
   ############################
   # debian arm64
   ############################
-  - ami: "ami-0cc41fb90199e2764"
-    type: "m6g.medium"
-    name: "arm64:debian-stretch"
-    username: "admin"
-    platform: "linux"
-    python_interpreter: "/usr/bin/python3"
-    launch_template: "LaunchTemplateId=lt-01b2c565029b5bf2a,Version=2"
+#  - ami: "ami-0cc41fb90199e2764"
+#    type: "m6g.medium"
+#    name: "arm64:debian-stretch"
+#    username: "admin"
+#    platform: "linux"
+#    python_interpreter: "/usr/bin/python3"
+#    launch_template: "LaunchTemplateId=lt-01b2c565029b5bf2a,Version=2"
   - ami: "ami-07d2054a4befc97f7"
     type: "t4g.small"
     name: "arm64:debian-buster"
