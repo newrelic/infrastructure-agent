@@ -16,20 +16,16 @@ func (pst *PersistentSocketTransport) RoundTrip(req *http.Request) (*http.Respon
 }
 
 func NewSocketTransport(path string) (*PersistentSocketTransport, error) {
-	_, err := socketDial("unix", path)
+	_, err := net.Dial("unix", path)
 	if err != nil {
 		return nil, err
 	}
 
 	httpClient := &http.Client{ //nolint:exhaustruct
 		Transport: &http.Transport{ //nolint:exhaustruct
-			Dial: socketDial,
+			Dial: net.Dial,
 		},
 	}
 
 	return &PersistentSocketTransport{httpClient}, nil
-}
-
-func socketDial(_, addr string) (net.Conn, error) {
-	return net.Dial("unix", addr) //nolint:wrapcheck
 }
