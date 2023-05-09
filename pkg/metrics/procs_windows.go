@@ -357,7 +357,7 @@ func NewProcsMonitor(context agent.AgentContext) *ProcsMonitor {
 	return &ProcsMonitor{
 		context:              context,
 		procCache:            make(map[string]*ProcessCacheEntry),
-		containerSampler:     NewDockerSampler(time.Duration(ttlSecs)*time.Second, apiVersion),
+		containerSampler:     GetContainerSampler(time.Duration(ttlSecs)*time.Second, apiVersion),
 		previousProcessTimes: make(map[string]*SystemTimes),
 		processInterrogator:  NewInternalProcessInterrogator(true),
 		waitForCleanup:       &sync.WaitGroup{},
@@ -594,17 +594,17 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 			return err
 		}
 
-		var dockerDecorator ProcessDecorator = nil
+		var containerDecorator ProcessDecorator = nil
 		if self.containerSampler.Enabled() {
-			dockerDecorator, err = self.containerSampler.NewDecorator()
+			containerDecorator, err = self.containerSampler.NewDecorator()
 			if err != nil {
 				if id := containerIDFromNotRunningErr(err); id != "" {
 					if _, ok := containerNotRunningErrs[id]; !ok {
 						containerNotRunningErrs[id] = struct{}{}
-						pslog.WithError(err).Warn("instantiating docker sampler process decorator")
+						pslog.WithError(err).Warn("instantiating container sampler process decorator")
 					}
 				} else {
-					pslog.WithError(err).Warn("instantiating docker sampler process decorator")
+					pslog.WithError(err).Warn("instantiating container sampler process decorator")
 				}
 			}
 		}
@@ -797,8 +797,8 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 				}
 
 				sample.Type("ProcessSample")
-				if dockerDecorator != nil {
-					dockerDecorator.Decorate(sample)
+				if containerDecorator != nil {
+					containerDecorator.Decorate(sample)
 				}
 				procCacheEntry.lastSample = sample
 				results = append(results, sample)

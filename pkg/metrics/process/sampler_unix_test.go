@@ -1,3 +1,6 @@
+//go:build !windows
+// +build !windows
+
 // Copyright New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -14,7 +17,7 @@ func (cs *fakeContainerSampler) Enabled() bool {
 	return true
 }
 
-func (*fakeContainerSampler) NewDecorator() (metrics.ProcessDecorator, error) {
+func (*fakeContainerSampler) NewDecorator() (metrics.ProcessDecorator, error) { //nolint:ireturn
 	return &fakeDecorator{}, nil
 }
 

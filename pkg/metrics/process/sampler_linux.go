@@ -48,11 +48,11 @@ func NewProcessSampler(ctx agent.AgentContext) sampler.Sampler {
 	}
 	cache := newCache()
 	harvest := newHarvester(ctx, &cache)
-	dockerSampler := metrics.NewDockerSampler(time.Duration(ttlSecs)*time.Second, apiVersion)
+	containerSampler := metrics.GetContainerSampler(time.Duration(ttlSecs)*time.Second, apiVersion)
 
 	return &processSampler{
 		harvest:          harvest,
-		containerSampler: dockerSampler,
+		containerSampler: containerSampler,
 		cache:            &cache,
 		interval:         time.Second * time.Duration(interval),
 	}
@@ -88,17 +88,19 @@ func (ps *processSampler) Sample() (results sample.EventBatch, err error) {
 		return nil, err
 	}
 
-	var dockerDecorator metrics.ProcessDecorator = nil
+	var containerDecorator metrics.ProcessDecorator
+
 	if ps.containerSampler.Enabled() {
-		dockerDecorator, err = ps.containerSampler.NewDecorator()
+		containerDecorator, err = ps.containerSampler.NewDecorator()
 		if err != nil {
 			if id := containerIDFromNotRunningErr(err); id != "" {
 				if _, ok := containerNotRunningErrs[id]; !ok {
 					containerNotRunningErrs[id] = struct{}{}
-					mplog.WithError(err).Warn("instantiating docker sampler process decorator")
+
+					mplog.WithError(err).Warn("instantiating container sampler process decorator")
 				}
 			} else {
-				mplog.WithError(err).Warn("instantiating docker sampler process decorator")
+				mplog.WithError(err).Warn("instantiating container sampler process decorator")
 				if strings.Contains(err.Error(), "client is newer than server") {
 					mplog.WithError(err).Error("Only docker api version from 1.24 upwards are officially supported. You can still use the docker_api_version configuration to work with older versions. You can check https://docs.docker.com/develop/sdk/ what api version maps with each docker version.")
 				}
@@ -121,8 +123,8 @@ func (ps *processSampler) Sample() (results sample.EventBatch, err error) {
 			continue
 		}
 
-		if dockerDecorator != nil {
-			dockerDecorator.Decorate(processSample)
+		if containerDecorator != nil {
+			containerDecorator.Decorate(processSample)
 		}
 
 		results = append(results, ps.normalizeSample(processSample))
