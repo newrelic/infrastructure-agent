@@ -806,6 +806,12 @@ type Config struct {
 	// Public: No
 	EnableElevatedProcessPriv bool `yaml:"enable_elevated_process_priv" envconfig:"enable_elevated_process_priv" public:"false"`
 
+	// EnableWmiForDataSample Set to true to skip the process info query access check for fetching Process Info
+	// Default: False
+	// Public: No
+	EnableWmiForDataSample bool `yaml:"enable_wmi_data_sample" envconfig:"enable_wmi_data_sample" public:"false"`
+
+
 	// OfflineTimeToReset If the cached inventory becomes older than this time (because e.g. the agent is offline),
 	// it is reset
 	// Default: 24h
@@ -1862,6 +1868,7 @@ func NewConfig() *Config {
 		NtpMetrics:                  NewNtpConfig(),
 		Http:                        NewHttpConfig(),
 		AgentTempDir:                defaultAgentTempDir,
+
 	}
 }
 
