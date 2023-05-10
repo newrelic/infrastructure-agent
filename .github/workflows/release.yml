@@ -74,6 +74,6 @@ jobs:
 
   molecule-packaging-tests:
     uses: ./.github/workflows/component_molecule_packaging.yml
-    needs: [publishing-to-s3-linux]
+    needs: [publishing-to-s3-linux, purge-cdn]
     with:
       TAG: ${{ github.event.release.tag_name }}
