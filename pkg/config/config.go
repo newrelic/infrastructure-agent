@@ -806,6 +806,11 @@ type Config struct {
 	// Public: No
 	EnableElevatedProcessPriv bool `yaml:"enable_elevated_process_priv" envconfig:"enable_elevated_process_priv" public:"false"`
 
+	// EnableWmiProcData Set to true to get process info from WMI and skip query access check
+	// Default: False
+	// Public: No
+	EnableWmiProcData bool `yaml:"enable_wmi_proc_data" envconfig:"enable_wmi_proc_data" public:"false"`
+
 	// OfflineTimeToReset If the cached inventory becomes older than this time (because e.g. the agent is offline),
 	// it is reset
 	// Default: 24h

@@ -73,7 +73,7 @@ func TestGetAllProcesses(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// test using Win32
-	processes, err := getAllWin32Procs(getWin32APIProcessPath)()
+	processes, err := getAllWin32Procs(getWin32APIProcessPath, getWin32Proc)()
 	assert.NoError(t, err)
 
 	found := false
@@ -85,6 +85,24 @@ func TestGetAllProcesses(t *testing.T) {
 			break
 		}
 	}
+	assert.True(t, found, "Process %s not found!", exePath)
+
+	// test using Win32 WMI
+	processes, err = getAllWin32Procs(getWin32APIProcessPath, getWin32ProcFromWMI)()
+	assert.NoError(t, err)
+
+	found = false
+
+	for _, proc := range processes {
+		if proc.ProcessID == uint32(cmd.Process.Pid) {
+			assert.Equal(t, exePath, proc.Name, "Process name doesn't match")
+			assert.InDelta(t, float64(creationDate.UnixNano()), float64(proc.CreationDate.UnixNano()), float64(100*time.Millisecond), "Process %s(%d) creation time is not correct", exePath, cmd.Process.Pid)
+			found = true
+
+			break
+		}
+	}
+
 	assert.True(t, found, "Process %s not found!", exePath)
 
 	// test using WMI
@@ -181,7 +199,7 @@ func TestProcess_WithoutPath(t *testing.T) {
 	log.AddHook(hook)
 
 	// WHEN get all the processes and could no get the Path
-	processes, err := getAllWin32Procs(pathProvideError)()
+	processes, err := getAllWin32Procs(pathProvideError, getWin32Proc)()
 	assert.NoError(t, err, "Expected to have obtained all processes without any errors")
 	assert.True(t, len(processes) > 1, "Expected to have obtained at least one (notepad) process")
 
