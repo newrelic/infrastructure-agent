@@ -68,6 +68,9 @@ var fbConfigFormat = `{{- range .Inputs }}
     {{- if .TcpBufferSize }}
     Buffer_Size {{ .TcpBufferSize }}
     {{- end }}
+ 	{{- if .UseANSI }}
+    Use_ANSI {{ .UseANSI }}
+    {{- end }}
 {{ end -}}
 
 {{- range .Filters }}
