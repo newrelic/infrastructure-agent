@@ -164,7 +164,7 @@ linux/harvest-tests: deps
 .PHONY: macos/harvest-tests
 macos/harvest-tests: GOOS=darwin
 macos/harvest-tests: GOARCH=amd64
-macos/harvest-tests: CGO_ENABLED=1
+macos/harvest-tests: CGO_ENABLED=0
 macos/harvest-tests: deps
 	$(GO_BIN) test ./test/harvest -tags="harvest" -v
 
