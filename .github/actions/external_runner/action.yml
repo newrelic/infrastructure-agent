@@ -43,6 +43,8 @@ runs:
     - uses: actions/setup-go@v4
       with:
         go-version-file: 'go.mod'
+      env:
+        CGO_ENABLED: "0"
 
     - name: Run external Job
       run: |

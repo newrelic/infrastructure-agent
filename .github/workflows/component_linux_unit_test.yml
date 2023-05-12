@@ -44,6 +44,8 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version-file: 'go.mod'
+        env:
+          CGO_ENABLED: "0"
 
       - name: Running databind unit/integration tests
         run: make databind-test
