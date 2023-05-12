@@ -1,0 +1,14 @@
+---
+
+- name: Get infra agent productID
+  ansible.windows.win_powershell:
+    script: (Get-WmiObject win32_product | where{$_.name -eq "New Relic Infrastructure Agent"}).IdentifyingNumber
+  register: infra_agent_info
+
+- name: Uninstall infra agent
+  win_package:
+    product_id: "{{ infra_agent_info.output[0] }}"
+    state: absent
+  when: infra_agent_info.output[0] != None
+
+...

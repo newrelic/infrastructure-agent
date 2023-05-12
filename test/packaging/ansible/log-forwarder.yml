@@ -122,4 +122,55 @@
           include_role:
             name: cleanup
 
+
+- name: log-forwarder-windows
+  hosts: windows_amd64
+  gather_facts: yes
+
+  pre_tasks:
+    - name: Initial cleanup # Only required for shared infra.
+      include_role:
+        name: cleanup
+
+  tasks:
+    - name: Log forwarder tests suite
+      vars:
+        env_vars:
+
+      block:
+
+        - name: Define variable with supported versions
+          set_fact:
+            log_forwader_supported: true
+          when: inventory_hostname is search("windows")
+
+        - name: repo setup
+          include_role:
+            name: repo-setup
+          when: log_forwader_supported is defined
+
+        - name: setup config
+          include_role:
+            name: setup-config
+          vars:
+            log_level: 'debug'
+            log_forward: 'true'
+          when: log_forwader_supported is defined
+
+        - name: install agent
+          include_role:
+            name: agent-install
+          when: log_forwader_supported is defined
+
+        # Not available for ARM yet
+        - name: Log forwarder
+          include_role:
+            name: logging
+          when: log_forwader_supported is defined
+
+      always:
+        - name: Final cleanup # Only required for shared infra.
+          include_role:
+            name: cleanup
+
 ...
