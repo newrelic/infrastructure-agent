@@ -11,6 +11,8 @@
 
   tasks:
     - name: Installation tests suite
+      vars:
+        target_agent_version: "{{ lookup('env', 'TAG') }}"
 
       block:
 
