@@ -158,6 +158,7 @@ linux/%:
 .PHONY: linux/harvest-tests
 linux/harvest-tests: GOOS=linux
 linux/harvest-tests: GOARCH=amd64
+linux/harvest-tests: CGO_ENABLED=0
 linux/harvest-tests: deps
 	$(GO_BIN) test ./test/harvest -tags="harvest" -v
 
@@ -169,6 +170,7 @@ macos/harvest-tests: deps
 	$(GO_BIN) test ./test/harvest -tags="harvest" -v
 
 .PHONY: build-harvest-tests
+build-harvest-tests: CGO_ENABLED=0
 build-harvest-tests: deps
 	$(GO_BIN) test -c ./test/harvest -tags="harvest" -v
 
