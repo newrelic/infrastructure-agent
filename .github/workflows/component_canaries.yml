@@ -33,8 +33,16 @@ jobs:
           role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
           aws-region: us-east-2
 
+      - name: Set branch name
+        run: |
+          # Short name for current branch. For PRs, use target branch (base ref)
+          GIT_BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
+          # Is the ref a tag? If so, remove refs/tags/ prefix
+          GIT_BRANCH=${GIT_BRANCH#refs/tags/}
+          echo "GIT_BRANCH=$GIT_BRANCH" >> $GITHUB_ENV
+
       - name: Provision canaries
-        uses: ./.github/actions/external_runner
+        uses: newrelic/fargate-runner-action@main
         with:
           aws_region: us-east-2
           container_make_target: "canaries PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} VERSION=${{ inputs.TAG }}"
@@ -43,3 +51,5 @@ jobs:
           cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
           cloud_watch_logs_stream_name: ecs/test-prerelease
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
+          repo_name: "newrelic/infrastructure-agent"
+          ref: "${{ env.GIT_BRANCH }}"
