@@ -5,6 +5,11 @@
   gather_facts: no
 
   tasks:
+
+    - name: make install requirements fail
+      fail:
+        msg: "I just failed..."
+
     - name: Remove EOL repository sources
       include_role:
         name: remove-eol-sources
