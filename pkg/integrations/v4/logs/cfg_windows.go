@@ -1,7 +1,8 @@
 //go:build windows
+// +build windows
 
 /*
- * Copyright 2021 New Relic Corporation. All rights reserved.
+ * Copyright 2023 New Relic Corporation. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
