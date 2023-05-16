@@ -10,8 +10,10 @@ package logs
 
 import (
 	"os"
+	"strconv"
 	"testing"
 
+	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -122,19 +124,22 @@ func TestFBConfigForWinlog(t *testing.T) {
 		tests[1].expected.Inputs[0].UseANSI = "True"
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testItem := range tests {
+		// Prevent the loop variable from being captured in the closure below
+		test := testItem
+
+		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			fbConf, err := NewFBConf(tt.ohiCfg, &logFwdCfg, "0", "")
+			fbConf, err := NewFBConf(test.ohiCfg, &logFwdCfg, "0", "")
 			assert.NoError(t, err)
-			assert.Equal(t, tt.expected.Inputs, fbConf.Inputs)
-			assert.Equal(t, tt.expected.Filters[0], fbConf.Filters[0])
-			assert.Equal(t, tt.expected.Filters[1].Name, fbConf.Filters[1].Name)
-			assert.Equal(t, tt.expected.Filters[1].Match, fbConf.Filters[1].Match)
-			assert.Equal(t, tt.expected.Filters[1].Call, fbConf.Filters[1].Call)
+			assert.Equal(t, test.expected.Inputs, fbConf.Inputs)
+			assert.Equal(t, test.expected.Filters[0], fbConf.Filters[0])
+			assert.Equal(t, test.expected.Filters[1].Name, fbConf.Filters[1].Name)
+			assert.Equal(t, test.expected.Filters[1].Match, fbConf.Filters[1].Match)
+			assert.Equal(t, test.expected.Filters[1].Call, fbConf.Filters[1].Call)
 			assert.Contains(t, fbConf.Filters[1].Script, "nr_fb_lua_filter")
-			assert.Equal(t, tt.expected.Filters[2], fbConf.Filters[2])
-			assert.Equal(t, tt.expected.Output, fbConf.Output)
+			assert.Equal(t, test.expected.Filters[2], fbConf.Filters[2])
+			assert.Equal(t, test.expected.Output, fbConf.Output)
 			defer removeTempFile(t, fbConf.Filters[1].Script)
 		})
 	}
@@ -245,19 +250,22 @@ func TestFBConfigForWinevtlog(t *testing.T) {
 		tests[1].expected.Inputs[0].UseANSI = "True"
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testItem := range tests {
+		// Prevent the loop variable from being captured in the closure below
+		test := testItem
+
+		t.Run(testItem.name, func(t *testing.T) {
 			t.Parallel()
-			fbConf, err := NewFBConf(tt.ohiCfg, &tt.logFwd, "0", "")
+			fbConf, err := NewFBConf(test.ohiCfg, &test.logFwd, "0", "")
 			assert.NoError(t, err)
-			assert.Equal(t, tt.expected.Inputs, fbConf.Inputs)
-			assert.Equal(t, tt.expected.Filters[0], fbConf.Filters[0])
-			assert.Equal(t, tt.expected.Filters[1].Name, fbConf.Filters[1].Name)
-			assert.Equal(t, tt.expected.Filters[1].Match, fbConf.Filters[1].Match)
-			assert.Equal(t, tt.expected.Filters[1].Call, fbConf.Filters[1].Call)
+			assert.Equal(t, test.expected.Inputs, fbConf.Inputs)
+			assert.Equal(t, test.expected.Filters[0], fbConf.Filters[0])
+			assert.Equal(t, test.expected.Filters[1].Name, fbConf.Filters[1].Name)
+			assert.Equal(t, test.expected.Filters[1].Match, fbConf.Filters[1].Match)
+			assert.Equal(t, test.expected.Filters[1].Call, fbConf.Filters[1].Call)
 			assert.Contains(t, fbConf.Filters[1].Script, "nr_fb_lua_filter")
-			assert.Equal(t, tt.expected.Filters[2], fbConf.Filters[2])
-			assert.Equal(t, tt.expected.Output, fbConf.Output)
+			assert.Equal(t, test.expected.Filters[2], fbConf.Filters[2])
+			assert.Equal(t, test.expected.Output, fbConf.Output)
 			defer removeTempFile(t, fbConf.Filters[1].Script)
 		})
 	}
