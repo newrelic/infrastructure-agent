@@ -144,11 +144,6 @@
             log_forwader_supported: true
           when: inventory_hostname is search("windows")
 
-        - name: repo setup
-          include_role:
-            name: repo-setup
-          when: log_forwader_supported is defined
-
         - name: setup config
           include_role:
             name: setup-config
