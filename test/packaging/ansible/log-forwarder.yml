@@ -21,7 +21,6 @@
           set_fact:
             log_forwader_supported: true
           when: (
-                inventory_hostname is search("ubuntu16.04") or
                 inventory_hostname is search("ubuntu18.04") or
                 inventory_hostname is search("ubuntu20.04") or
                 inventory_hostname is search("debian-stretch") or
