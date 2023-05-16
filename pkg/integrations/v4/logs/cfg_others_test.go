@@ -9,11 +9,15 @@
 package logs
 
 import (
-	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
+//nolint:exhaustruct,dupl
 func TestFBConfigForWinlog(t *testing.T) {
+	t.Parallel()
 	nameTest := "input winlog + eventId filtering"
 	input := LogsCfg{
 		{
@@ -58,6 +62,7 @@ func TestFBConfigForWinlog(t *testing.T) {
 	}
 
 	t.Run(nameTest, func(t *testing.T) {
+		t.Parallel()
 		fbConf, err := NewFBConf(input, &logFwdCfg, "0", "")
 		assert.NoError(t, err)
 		assert.Equal(t, expected.Inputs, fbConf.Inputs)
@@ -72,7 +77,9 @@ func TestFBConfigForWinlog(t *testing.T) {
 	})
 }
 
+//nolint:exhaustruct,dupl
 func TestFBConfigForWinevtlog(t *testing.T) {
+	t.Parallel()
 	nameTest := "input winevtlog + eventId filtering"
 	input := LogsCfg{
 		{
@@ -117,6 +124,7 @@ func TestFBConfigForWinevtlog(t *testing.T) {
 	}
 
 	t.Run(nameTest, func(t *testing.T) {
+		t.Parallel()
 		fbConf, err := NewFBConf(input, &logFwdCfg, "0", "")
 		assert.NoError(t, err)
 		assert.Equal(t, expected.Inputs, fbConf.Inputs)
@@ -129,4 +137,12 @@ func TestFBConfigForWinevtlog(t *testing.T) {
 		assert.Equal(t, expected.Output, fbConf.Output)
 		defer removeTempFile(t, fbConf.Filters[1].Script)
 	})
+}
+
+func removeTempFile(t *testing.T, filePath string) {
+	t.Helper()
+
+	if err := os.Remove(filePath); err != nil {
+		t.Log(err)
+	}
 }

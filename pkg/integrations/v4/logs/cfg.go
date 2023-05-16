@@ -261,7 +261,7 @@ type FBCfgExternal struct {
 	ParsersFilePath string
 }
 
-// FBOSConfig contains additional FluentBit configuration per operating system
+// FBOSConfig contains additional FluentBit configuration per operating system.
 type FBOSConfig struct {
 	ForceUseANSI bool
 }
@@ -273,7 +273,7 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 		Filters: []FBCfgFilter{},
 	}
 
-	//specific config per OS
+	// specific config per OS
 	var fbOSConfig FBOSConfig
 	fbOSConfig = addOSDependantConfig(fbOSConfig)
 
@@ -316,6 +316,7 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 	return
 }
 
+//nolint:nonamedreturns,varnamelen
 func parseConfigBlock(l LogCfg, logsHomeDir string, fbOSConfig FBOSConfig) (input FBCfgInput, filters []FBCfgFilter, external FBCfgExternal, err error) {
 	if l.Fluentbit != nil {
 		external = newFBExternalConfig(*l.Fluentbit)
@@ -394,6 +395,8 @@ func parseTcpInput(l LogCfg) (input FBCfgInput, filters []FBCfgFilter, err error
 }
 
 // Winlog: "winlog" plugin
+//
+//nolint:nonamedreturns,varnamelen
 func parseWinlogInput(l LogCfg, dbPath string, fbOSConfig FBOSConfig) (input FBCfgInput, filters []FBCfgFilter, err error) {
 	input = newWinlogInput(*l.Winlog, dbPath, l.Name, fbOSConfig)
 	filters = append(filters, newRecordModifierFilterForInput(l.Name, fbInputTypeWinlog, l.Attributes))
@@ -412,6 +415,8 @@ func parseWinlogInput(l LogCfg, dbPath string, fbOSConfig FBOSConfig) (input FBC
 }
 
 // Winevtlog: "winevtlog" plugin
+//
+//nolint:nonamedreturns,varnamelen
 func parseWinevtlogInput(l LogCfg, dbPath string, fbOSConfig FBOSConfig) (input FBCfgInput, filters []FBCfgFilter, err error) {
 	input = newWinevtlogInput(*l.Winevtlog, dbPath, l.Name, fbOSConfig)
 	filters = append(filters, newRecordModifierFilterForInput(l.Name, fbInputTypeWinevtlog, l.Attributes))
@@ -525,6 +530,7 @@ func newSystemdInput(service string, dbPath string, tag string) FBCfgInput {
 	}
 }
 
+//nolint:exhaustruct
 func newWinlogInput(winlog LogWinlogCfg, dbPath string, tag string, fbOSConfig FBOSConfig) FBCfgInput {
 	fbInput := FBCfgInput{
 		Name:     fbInputTypeWinlog,
@@ -540,6 +546,7 @@ func newWinlogInput(winlog LogWinlogCfg, dbPath string, tag string, fbOSConfig F
 	return fbInput
 }
 
+//nolint:exhaustruct
 func newWinevtlogInput(winlog LogWinevtlogCfg, dbPath string, tag string, fbOSConfig FBOSConfig) FBCfgInput {
 	fbInput := FBCfgInput{
 		Name:     fbInputTypeWinevtlog,

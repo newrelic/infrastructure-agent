@@ -9,14 +9,15 @@
 package logs
 
 import (
-	"github.com/newrelic/infrastructure-agent/pkg/config"
-	"github.com/stretchr/testify/assert"
-	"strconv"
+	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
+//nolint:exhaustruct,dupl
 func TestFBConfigForWinlog(t *testing.T) {
-
+	t.Parallel()
 	tests := []struct {
 		name     string
 		logFwd   config.LogForward
@@ -123,6 +124,7 @@ func TestFBConfigForWinlog(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			fbConf, err := NewFBConf(tt.ohiCfg, &logFwdCfg, "0", "")
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected.Inputs, fbConf.Inputs)
@@ -138,8 +140,9 @@ func TestFBConfigForWinlog(t *testing.T) {
 	}
 }
 
+//nolint:exhaustruct,dupl
 func TestFBConfigForWinevtlog(t *testing.T) {
-
+	t.Parallel()
 	tests := []struct {
 		name     string
 		logFwd   config.LogForward
@@ -244,6 +247,7 @@ func TestFBConfigForWinevtlog(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			fbConf, err := NewFBConf(tt.ohiCfg, &tt.logFwd, "0", "")
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected.Inputs, fbConf.Inputs)
@@ -264,11 +268,19 @@ func hostWindowsBuildNumber() *int {
 
 	matches := platformBuildNumberRegex.FindStringSubmatch(hostInfo.PlatformVersion)
 
-	if len(matches) == 2 {
+	if len(matches) == numMatchesExpected {
 		if buildNumber, err := strconv.Atoi(matches[1]); err == nil {
 			return &buildNumber
 		}
 	}
 
 	return nil
+}
+
+func removeTempFile(t *testing.T, filePath string) {
+	t.Helper()
+
+	if err := os.Remove(filePath); err != nil {
+		t.Log(err)
+	}
 }

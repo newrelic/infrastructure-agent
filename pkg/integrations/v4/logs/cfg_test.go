@@ -3,7 +3,6 @@
 package logs
 
 import (
-	"os"
 	"testing"
 
 	"github.com/newrelic/infrastructure-agent/pkg/config"
@@ -697,14 +696,6 @@ func TestNewFBConf(t *testing.T) {
 			assert.Equal(t, tt.want, fbConf)
 		})
 	}
-}
-
-func removeTempFile(t *testing.T, filePath string) {
-	func() {
-		if err := os.Remove(filePath); err != nil {
-			t.Log(err)
-		}
-	}()
 }
 
 func TestFBCfgFormat(t *testing.T) {
