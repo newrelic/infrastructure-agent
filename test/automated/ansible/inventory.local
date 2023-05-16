@@ -1,2 +1,2 @@
-[localhost]
+[testing_hosts_linux]
 localhost ansible_connection=local
