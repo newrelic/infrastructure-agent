@@ -19,7 +19,7 @@ function retry () {
   return "$status"
 }
 
-ansible-playbook -i test/automated/ansible/inventory.local test/automated/ansible/install-requirements.yml
+retry ansible-playbook -i test/automated/ansible/inventory.local test/automated/ansible/install-requirements.yml
 
 
 #if [[ "$PLATFORM" != "macos" ]];then
