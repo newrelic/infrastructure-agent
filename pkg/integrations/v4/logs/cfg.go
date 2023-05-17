@@ -112,14 +112,14 @@ type LogWinlogCfg struct {
 	Channel         string   `yaml:"channel"`
 	CollectEventIds []string `yaml:"collect-eventids"`
 	ExcludeEventIds []string `yaml:"exclude-eventids"`
-	DisableUseANSI  bool     `yaml:"disable-use-ansi"`
+	UseANSI         string   `yaml:"use-ansi"`
 }
 
 type LogWinevtlogCfg struct {
 	Channel         string   `yaml:"channel"`
 	CollectEventIds []string `yaml:"collect-eventids"`
 	ExcludeEventIds []string `yaml:"exclude-eventids"`
-	DisableUseANSI  bool     `yaml:"disable-use-ansi"`
+	UseANSI         string   `yaml:"use-ansi"`
 }
 
 type LogTcpCfg struct {
@@ -539,8 +539,10 @@ func newWinlogInput(winlog LogWinlogCfg, dbPath string, tag string, fbOSConfig F
 		DB:       dbPath,
 	}
 
-	if fbOSConfig.ForceUseANSI && !winlog.DisableUseANSI {
-		fbInput.UseANSI = "True"
+	if useAnsi, err := strconv.ParseBool(winlog.UseANSI); err == nil {
+		fbInput.UseANSI = strconv.FormatBool(useAnsi)
+	} else if fbOSConfig.ForceUseANSI {
+		fbInput.UseANSI = strconv.FormatBool(fbOSConfig.ForceUseANSI)
 	}
 
 	return fbInput
@@ -555,8 +557,10 @@ func newWinevtlogInput(winlog LogWinevtlogCfg, dbPath string, tag string, fbOSCo
 		DB:       dbPath,
 	}
 
-	if fbOSConfig.ForceUseANSI && !winlog.DisableUseANSI {
-		fbInput.UseANSI = "True"
+	if useAnsi, err := strconv.ParseBool(winlog.UseANSI); err == nil {
+		fbInput.UseANSI = strconv.FormatBool(useAnsi)
+	} else if fbOSConfig.ForceUseANSI {
+		fbInput.UseANSI = strconv.FormatBool(fbOSConfig.ForceUseANSI)
 	}
 
 	return fbInput
