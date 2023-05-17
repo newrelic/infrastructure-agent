@@ -72,6 +72,7 @@
       group: default
     # Required packages. rpm version 4.11.3 does not support weak dependencies
     dependencies:
-      - td-agent-bit
+      - td-agent-bit #To be removed on removal of the ff fluent_bit_19
+      - fluent-bit
   
   # end AL2 arm64

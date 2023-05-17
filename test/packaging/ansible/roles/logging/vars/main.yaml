@@ -3,4 +3,12 @@
 expected_fb_version: "{{ lookup('env', 'FLUENT_BIT_VERSION') }}"
 expected_fb_arch: "{{ lookup('env', 'FLUENT_BIT_ARCH') }}"
 
+packages_linux:
+  - td-agent-bit
+  - fluent-bit
+
+windows_binaries_paths:
+  - "C:\\Program Files\\New Relic\\newrelic-infra\\newrelic-integrations\\logging\\fluent-bit.exe"
+
+fluent_bit_full_path_regex: 'C:\\Program Files\\New Relic\\newrelic-infra\\newrelic-integrations\\logging\\fluent-bit\.exe'
 ...

@@ -1,50 +1,14 @@
 ---
 
-- name: Test with retry if Fluent-Bit process started
-  command: pgrep -f td-agent-bit.*newrelic
-  register: output1
-  changed_when: false
-  until: output1.rc == 0
-  retries: 3
-  delay: 5
+- name: Assert that multiple versions (td-agent-bit and fluent-bit) are installed in linux
+  include_tasks: "multiple_version_assertion_{{ ansible_os_family }}.yaml"
+  when: ansible_system == "Linux"
 
-- name: Wait for 5 seconds before checking Fluent-Bit PID again
-  pause:
-    seconds: 5
+- name: Assert that multiple versions (td-agent-bit and fluent-bit) are installed in windows
+  include_tasks: "multiple_version_assertion_{{ ansible_system }}.yaml"
+  when: ansible_system == "Win32NT"
 
-- name: Test Fluent-Bit still running
-  command: pgrep -f td-agent-bit.*newrelic
-  register: output2
-  changed_when: false
-
-- name: Test Fluent-Bit has the same PID (process didn't died)
-  fail:
-    msg: |
-      Fluent-Bit changed pid:
-      from: {{ output1.stdout }}
-       to: {{ output2.stdout }}
-  when: output1.stdout != output2.stdout
-
-- name: Get Fluent-Bit version
-  command: "/opt/td-agent-bit/bin/td-agent-bit -V"
-  register: version
-  ignore_errors: true
-
-- name: Test Fluent-Bit has the correct version
-  fail:
-    msg: |
-      Fluent-Bit Version ouput: "{{ version.stdout }}", does't contain expected version: "{{ expected_fb_version }}"
-  when: 'expected_fb_version not in version.stdout'
-
-- name: Get Fluent-Bit build arch
-  command: "file /opt/td-agent-bit/bin/td-agent-bit"
-  register: arch
-  ignore_errors: true
-
-- name: Test Fluent-Bit has the correct arch
-  fail:
-    msg: |
-      Fluent-Bit ouput: "{{ arch.stdout }}", does't contain expected version: "{{ expected_fb_arch }}"
-  when: 'expected_fb_arch not in arch.stdout'
+- name: Assert process is running
+  include_tasks: "process_running_{{ ansible_system }}.yaml"
 
 ...

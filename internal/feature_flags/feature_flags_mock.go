@@ -36,3 +36,27 @@ func (f *FeatureFlagRetrieverMock) ShouldNotGetFeatureFlag(name string) {
 		Once().
 		Return(false, false)
 }
+
+type FeatureFlagSetterMock struct {
+	mock.Mock
+}
+
+func (f *FeatureFlagSetterMock) SetFeatureFlag(name string, enabled bool) error {
+	args := f.Called(name, enabled)
+
+	return args.Error(0)
+}
+
+func (f *FeatureFlagSetterMock) ShouldReturnNoError(name string) {
+	f.
+		On("SetFeatureFlag", name, mock.Anything).
+		Once().
+		Return(nil)
+}
+
+func (f *FeatureFlagSetterMock) ShouldReturnError(name string, err error) {
+	f.
+		On("SetFeatureFlag", name, mock.Anything).
+		Once().
+		Return(err)
+}

@@ -4,22 +4,22 @@ package v4
 
 import (
 	ctx2 "context"
-	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"strings"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/id"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
+	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
+
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 )
 
-var (
-	maxBackOff = 5 * time.Minute
-)
+//nolint:gochecknoglobals
+var maxBackOff = 5 * time.Minute
 
 // cmdExitStatus is used to signal the outcome of the last process execution.
 type cmdExitStatus int
@@ -56,14 +56,21 @@ type Supervisor struct {
 
 	preRunActions  func(ctx ctx2.Context)
 	postRunActions func(ctx ctx2.Context, exitStatus cmdExitStatus)
+
+	restartCh chan struct{}
+}
+
+func (s *Supervisor) Restart() error {
+	s.restartCh <- struct{}{}
+
+	return nil
 }
 
 func (s *Supervisor) Run(ctx ctx2.Context) {
-	restartRequest := make(chan struct{}, 1)
-	s.listenRestartRequests(ctx, restartRequest)
+	s.listenRestartRequests(ctx, s.restartCh)
 
 	// Listen for entity ID updates.
-	s.listenAgentIDChanges(restartRequest, id.NotifyOnReconnect)
+	s.listenAgentIDChanges(s.restartCh, id.NotifyOnReconnect)
 
 	hostnameUpdateCh := make(chan hostname.ChangeNotification, 1)
 	s.registerHostnameObserver(hostnameUpdateCh)
@@ -74,8 +81,9 @@ func (s *Supervisor) Run(ctx ctx2.Context) {
 	for {
 		executor, err := s.buildExecutor()
 		if err != nil {
+			s.log.WithError(err).Error("cannot build supervisor executor")
 			select {
-			case <-restartRequest:
+			case <-s.restartCh:
 				continue
 			case <-ctx.Done():
 				return
@@ -86,7 +94,7 @@ func (s *Supervisor) Run(ctx ctx2.Context) {
 		cancel, exitStatus := s.startBackgroundProcess(ctx, executor)
 
 		select {
-		case <-restartRequest:
+		case <-s.restartCh:
 			cancel()
 			<-exitStatus // Wait for the process to exit.
 		case change := <-hostnameUpdateCh:

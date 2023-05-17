@@ -31,20 +31,20 @@
       - src: 'target/nriprometheus/amd64/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
 
-#      - src: 'assets/examples/logging/linux/file.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
-#      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
-#      - src: 'assets/examples/logging/linux/syslog.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
-#      - src: 'assets/examples/logging/linux/systemd.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
-#      - src: 'assets/examples/logging/linux/tcp.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
-#      - src: 'target/fluent-bit-plugin/amd64/out_newrelic.so'
-#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-#      - src: 'assets/examples/logging/parsers.conf'
-#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
+      - src: 'assets/examples/logging/linux/file.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
+      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
+      - src: 'assets/examples/logging/linux/syslog.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
+      - src: 'assets/examples/logging/linux/systemd.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
+      - src: 'assets/examples/logging/linux/tcp.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
+      - src: 'target/fluent-bit-plugin/amd64/out_newrelic.so'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
+      - src: 'assets/examples/logging/parsers.conf'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
     empty_folders:
       - /var/db/newrelic-infra/custom-integrations
       - /var/db/newrelic-infra/integrations.d
@@ -74,7 +74,7 @@
       summary: "New Relic Infrastructure Agent"
       group: default
     # Recommended packages. If they fail to install installation of the agent will not be interrupted.
-#    recommends:
-#      - td-agent-bit
+    recommends:
+      - fluent-bit
 
   # end SLES 15.4 amd64

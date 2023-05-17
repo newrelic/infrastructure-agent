@@ -1,0 +1,15 @@
+---
+
+- name: register windows binaries info
+  win_stat:
+    path: "{{ item }}"
+  register: windows_binaries_info
+  loop: "{{ windows_binaries_paths }}"
+
+- name: assert windows binaries exists
+  fail:
+    msg: windows binary does not exist
+  when: not item.stat.exists
+  loop: "{{ windows_binaries_info.results }}"
+
+...

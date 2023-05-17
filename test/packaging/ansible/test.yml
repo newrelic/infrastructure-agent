@@ -15,6 +15,9 @@
 - name: agent installation via newrelic-cli
   import_playbook: installation-newrelic-cli.yml
 
+- name: installation windows
+  import_playbook: installation-windows.yml
+
 - name: log forwarder
   import_playbook: log-forwarder.yml
 

@@ -14,7 +14,7 @@ func CopyFile(src, dest string) error {
 	existingFileData, err := os.Stat(dest)
 	if err == nil {
 		if existingFileData.IsDir() {
-			return fmt.Errorf("cannot copy file %v in place of directory %v.", src, dest)
+			return fmt.Errorf("cannot copy file %v in place of directory %v", src, dest)
 		}
 
 		// Dest file already exists, delete it first.

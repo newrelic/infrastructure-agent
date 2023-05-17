@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package v4
 
+//nolint:gci
 import (
 	"crypto/rand"
 	"fmt"
@@ -11,13 +12,17 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"testing"
 
-	executor2 "github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
+	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/logs"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -34,13 +39,13 @@ func TestFBSupervisorConfig_IsLogForwarderAvailable(t *testing.T) {
 	// GIVEN / THEN
 	tests := []struct {
 		name string
-		cfg  FBSupervisorConfig
+		cfg  fBSupervisorConfig
 		want bool
 	}{
 		{
 			"incorrect: all non-existing",
-			FBSupervisorConfig{
-				FluentBitExePath:     nonExisting,
+			fBSupervisorConfig{
+				fluentBitExePath:     nonExisting,
 				FluentBitNRLibPath:   nonExisting,
 				FluentBitParsersPath: nonExisting,
 				ConfTemporaryFolder:  os.TempDir(),
@@ -49,8 +54,8 @@ func TestFBSupervisorConfig_IsLogForwarderAvailable(t *testing.T) {
 		},
 		{
 			"incorrect: NR lib and parsers do not exist",
-			FBSupervisorConfig{
-				FluentBitExePath:     existing,
+			fBSupervisorConfig{
+				fluentBitExePath:     existing,
 				FluentBitNRLibPath:   nonExisting,
 				FluentBitParsersPath: nonExisting,
 				ConfTemporaryFolder:  os.TempDir(),
@@ -59,8 +64,8 @@ func TestFBSupervisorConfig_IsLogForwarderAvailable(t *testing.T) {
 		},
 		{
 			"incorrect: parsers doesn't exist",
-			FBSupervisorConfig{
-				FluentBitExePath:     existing,
+			fBSupervisorConfig{
+				fluentBitExePath:     existing,
 				FluentBitNRLibPath:   existing,
 				FluentBitParsersPath: nonExisting,
 				ConfTemporaryFolder:  os.TempDir(),
@@ -69,8 +74,8 @@ func TestFBSupervisorConfig_IsLogForwarderAvailable(t *testing.T) {
 		},
 		{
 			"correct configuration",
-			FBSupervisorConfig{
-				FluentBitExePath:     existing,
+			fBSupervisorConfig{
+				fluentBitExePath:     existing,
 				FluentBitNRLibPath:   existing,
 				FluentBitParsersPath: existing,
 				ConfTemporaryFolder:  os.TempDir(),
@@ -98,7 +103,9 @@ func TestFBSupervisorConfig_IsLogForwarderAvailable(t *testing.T) {
 func TestFBSupervisorConfig_LicenseKeyShouldBePassedAsEnvVar(t *testing.T) {
 	t.Parallel()
 
-	fbConf := FBSupervisorConfig{ConfTemporaryFolder: os.TempDir()}
+	fbConf := fBSupervisorConfig{ConfTemporaryFolder: os.TempDir()}
+	bypassIsLogForwarderAvailable(t, &fbConf)
+
 	agentIdentity := func() entity.Identity {
 		return entity.Identity{ID: 13}
 	}
@@ -112,8 +119,8 @@ func TestFBSupervisorConfig_LicenseKeyShouldBePassedAsEnvVar(t *testing.T) {
 	exec, err := executorBuilder()
 	require.NoError(t, err)
 
-	assert.Contains(t, exec.(*executor2.Executor).Cfg.Environment, "NR_LICENSE_KEY_ENV_VAR")       // nolint:forcetypeassert
-	assert.Equal(t, exec.(*executor2.Executor).Cfg.Environment["NR_LICENSE_KEY_ENV_VAR"], license) //nolint:forcetypeassert
+	assert.Contains(t, exec.(*executor.Executor).Cfg.Environment, "NR_LICENSE_KEY_ENV_VAR")       // nolint:forcetypeassert
+	assert.Equal(t, exec.(*executor.Executor).Cfg.Environment["NR_LICENSE_KEY_ENV_VAR"], license) //nolint:forcetypeassert
 }
 
 func Test_ConfigTemporaryFolderCreation(t *testing.T) {
@@ -127,7 +134,9 @@ func Test_ConfigTemporaryFolderCreation(t *testing.T) {
 		os.Remove(termporaryFolderPath)
 	}()
 
-	fbConf := FBSupervisorConfig{ConfTemporaryFolder: termporaryFolderPath}
+	fbConf := fBSupervisorConfig{ConfTemporaryFolder: termporaryFolderPath}
+	bypassIsLogForwarderAvailable(t, &fbConf)
+
 	agentIdentity := func() entity.Identity {
 		return entity.Identity{ID: 13}
 	}
@@ -239,4 +248,223 @@ func addFile(t *testing.T, dir, name, contents string) {
 	t.Helper()
 	filePath := filepath.Join(dir, name)
 	require.NoError(t, os.WriteFile(filePath, []byte(contents), 0o0600))
+}
+
+//nolint:funlen
+func TestNewSupervisorConfig(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name                 string
+		ffEnabled            bool
+		ffExists             bool
+		agentDir             string
+		integrationsDir      string
+		loggingBinDir        string
+		fluentBitExePath     string
+		fluentBitNRLibPath   string
+		fluentBitParsersPath string
+		fbVerbose            bool
+		expectedPathLinux    string
+		expectedPathWindows  string
+	}{
+		{
+			name:                "configuration should rule with no ff",
+			fluentBitExePath:    "fluentBitExePath",
+			expectedPathLinux:   "fluentBitExePath",
+			expectedPathWindows: "fluentBitExePath",
+		},
+		{
+			name:                "configuration should rule with no ff and loggin dir defined",
+			loggingBinDir:       "loggingBinDir",
+			fluentBitExePath:    "fluentBitExePath",
+			expectedPathLinux:   "fluentBitExePath",
+			expectedPathWindows: "fluentBitExePath",
+		},
+		{
+			name:                "configuration should rule with ff disabled and loggin dir defined",
+			ffExists:            true,
+			loggingBinDir:       "loggingBinDir",
+			fluentBitExePath:    "fluentBitExePath",
+			expectedPathLinux:   "fluentBitExePath",
+			expectedPathWindows: "fluentBitExePath",
+		},
+		{
+			name:                "configuration should rule with ff enabled and loggin dir defined",
+			ffExists:            true,
+			ffEnabled:           true,
+			loggingBinDir:       "loggingBinDir",
+			fluentBitExePath:    "fluentBitExePath",
+			expectedPathLinux:   "fluentBitExePath",
+			expectedPathWindows: "fluentBitExePath",
+		},
+		{
+			name:                "loggingBinDir configuration should rule when no fluentBitExePath is present",
+			loggingBinDir:       "loggingBinDir",
+			integrationsDir:     "integrationsDir",
+			expectedPathLinux:   filepath.Join("loggingBinDir", "fluent-bit"),
+			expectedPathWindows: filepath.Join("loggingBinDir", "fluent-bit.exe"),
+		},
+		{
+			name:                "loggingBinDir configuration should rule when no fluentBitExePath is present with ff",
+			loggingBinDir:       "loggingBinDir",
+			integrationsDir:     "integrationsDir",
+			ffEnabled:           true,
+			ffExists:            true,
+			expectedPathLinux:   filepath.Join("loggingBinDir", "td-agent-bit"),
+			expectedPathWindows: filepath.Join("loggingBinDir", "fluent-bit.exe"),
+		},
+		{
+			name:                "no conf options without ff",
+			integrationsDir:     "integrationsDir",
+			agentDir:            "some_agent_dir",
+			expectedPathLinux:   filepath.Join("/opt/fluent-bit/bin", "fluent-bit"),
+			expectedPathWindows: filepath.Join("some_agent_dir", "integrationsDir", "logging", "fluent-bit.exe"),
+		},
+		{
+			name:                "no conf options with ff",
+			ffEnabled:           true,
+			ffExists:            true,
+			integrationsDir:     "integrationsDir",
+			agentDir:            "some_agent_dir",
+			expectedPathLinux:   filepath.Join("/opt/td-agent-bit/bin", "td-agent-bit"),
+			expectedPathWindows: filepath.Join("some_agent_dir", "integrationsDir", "logging", "fluent-bit.exe"),
+		},
+	}
+
+	// create temp directory and set it as default directory to use for temporary files
+	tmpDir := t.TempDir()
+
+	for i := range testCases {
+		testCase := testCases[i]
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+			ffRetriever.ShouldGetFeatureFlag(fflag.FlagFluentBit19, testCase.ffEnabled, testCase.ffExists)
+
+			fbIntCfg := NewFBSupervisorConfig(
+				ffRetriever,
+				testCase.agentDir,
+				testCase.integrationsDir,
+				testCase.loggingBinDir,
+				testCase.fluentBitExePath,
+				testCase.fluentBitNRLibPath,
+				testCase.fluentBitParsersPath,
+				testCase.fbVerbose,
+				tmpDir,
+			)
+
+			path := fbIntCfg.getFbPath()
+			if runtime.GOOS == "linux" {
+				assert.Equal(t, testCase.expectedPathLinux, path)
+			}
+			if runtime.GOOS == "windows" {
+				assert.Equal(t, testCase.expectedPathWindows, path)
+			}
+		})
+	}
+}
+
+func Test_buildFbExecutorFailsIfNoFbFiles(t *testing.T) {
+	t.Parallel()
+
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+	ffRetriever.ShouldNotGetFeatureFlag(fflag.FlagFluentBit19)
+
+	//nolint:goconst
+	agentDir := "agentDir"
+	integrationsDir := "integrationsDir"
+	loggingBinDir := "loggingBinDir"
+	fbVerbose := false
+	// create temp directory and set it as default directory to use for temporary files
+	tmpDir := t.TempDir()
+
+	fbIntCfg := NewFBSupervisorConfig(
+		ffRetriever,
+		agentDir,
+		integrationsDir,
+		loggingBinDir,
+		"not existent file",
+		"not existent file",
+		"not existent file",
+		fbVerbose,
+		tmpDir,
+	)
+
+	executorBuilder := buildFbExecutor(fbIntCfg, confLoaderForTest())
+	_, err := executorBuilder()
+	require.ErrorIs(t, err, errFbNotAvailable)
+}
+
+func Test_buildFbExecutor(t *testing.T) {
+	t.Parallel()
+
+	tmpDir, err := os.MkdirTemp("", "")
+	assert.NoError(t, err)
+
+	defer func() {
+		os.RemoveAll(tmpDir)
+	}()
+
+	fluentBitExePath, err := os.CreateTemp(tmpDir, "fb_exe_")
+	assert.NoError(t, err)
+	fluentBitNRLibPath, err := os.CreateTemp(tmpDir, "fb_lib")
+	assert.NoError(t, err)
+	fluentBitParsersPath, err := os.CreateTemp(tmpDir, "fb_parser")
+	assert.NoError(t, err)
+
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+	ffRetriever.ShouldNotGetFeatureFlag(fflag.FlagFluentBit19)
+
+	agentDir := "agentDir"
+	integrationsDir := "agentDir"
+	loggingBinDir := "loggingBinDir"
+	fbVerbose := false
+	// create temp directory and set it as default directory to use for temporary files
+	fbTmpDir, err := os.MkdirTemp(tmpDir, "fb_tmp_dir")
+	assert.NoError(t, err)
+
+	fbIntCfg := NewFBSupervisorConfig(
+		ffRetriever,
+		agentDir,
+		integrationsDir,
+		loggingBinDir,
+		fluentBitExePath.Name(),
+		fluentBitNRLibPath.Name(),
+		fluentBitParsersPath.Name(),
+		fbVerbose,
+		fbTmpDir,
+	)
+
+	executorBuilder := buildFbExecutor(fbIntCfg, confLoaderForTest())
+
+	exec, err := executorBuilder()
+	require.NoError(t, err)
+
+	assert.Equal(t, fbIntCfg.getFbPath(), exec.(*executor.Executor).Command)        //nolint:forcetypeassert
+	assert.Equal(t, fluentBitNRLibPath.Name(), exec.(*executor.Executor).Args[3])   //nolint:forcetypeassert
+	assert.Equal(t, fluentBitParsersPath.Name(), exec.(*executor.Executor).Args[5]) //nolint:forcetypeassert
+}
+
+func confLoaderForTest() *logs.CfgLoader {
+	agentIdentity := func() entity.Identity {
+		return entity.Identity{ID: 13}
+	}
+	hostnameResolver := testhelpers.NewFakeHostnameResolver("full_hostname", "short_hostname", nil)
+	license := "some_license"
+	c := config.LogForward{License: license, Troubleshoot: config.Troubleshoot{Enabled: true}}
+
+	return logs.NewFolderLoader(c, agentIdentity, hostnameResolver)
+}
+
+// bypassIsLogForwarderAvailable bypasses the check of some files to be able to run fb
+// this check was not done before the FF so in some tests this needs to be bypassed.
+func bypassIsLogForwarderAvailable(t *testing.T, conf *fBSupervisorConfig) {
+	t.Helper()
+	// bypass is forwarder available
+	file, err := os.CreateTemp("", "")
+	assert.NoError(t, err)
+	conf.fluentBitExePath = file.Name()
+	conf.FluentBitNRLibPath = file.Name()
+	conf.FluentBitParsersPath = file.Name()
 }
