@@ -24,49 +24,46 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/newrelic/infrastructure-agent/cmd/newrelic-infra/dnschecks"
-	"github.com/newrelic/infrastructure-agent/pkg/disk"
-	"github.com/newrelic/infrastructure-agent/pkg/helpers"
-	http2 "github.com/newrelic/infrastructure-agent/pkg/http"
-	logFilter "github.com/newrelic/infrastructure-agent/pkg/log/filter"
-	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
-	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
-
-	selfInstrumentation "github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
-	"github.com/newrelic/infrastructure-agent/internal/httpapi"
-	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
-
+	"github.com/newrelic/infrastructure-agent/cmd/newrelic-infra/initialize"
+	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel"
 	ccBackoff "github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/backoff"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/runintegration"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/service"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/stopintegration"
+	selfInstrumentation "github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
 	"github.com/newrelic/infrastructure-agent/internal/agent/status"
+	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
+	"github.com/newrelic/infrastructure-agent/internal/httpapi"
+	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/files"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/v3legacy"
 	"github.com/newrelic/infrastructure-agent/internal/socketapi"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
-	"github.com/newrelic/infrastructure-agent/pkg/plugins"
-
-	"github.com/newrelic/infrastructure-agent/cmd/newrelic-infra/initialize"
-	"github.com/newrelic/infrastructure-agent/internal/agent"
-	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/commandapi"
 	backendhttp "github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
+	"github.com/newrelic/infrastructure-agent/pkg/disk"
 	"github.com/newrelic/infrastructure-agent/pkg/fs/systemd"
+	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/recover"
+	http2 "github.com/newrelic/infrastructure-agent/pkg/http"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	v4 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4"
 	integrationsConfig "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/dm"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/emitter"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/logs"
 	wlog "github.com/newrelic/infrastructure-agent/pkg/log"
+	logFilter "github.com/newrelic/infrastructure-agent/pkg/log/filter"
+	"github.com/newrelic/infrastructure-agent/pkg/plugins"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
 )
 
 var (
@@ -464,14 +461,19 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		os.Exit(1)
 	}
 
-	// log-forwarder
-	fbIntCfg := v4.FBSupervisorConfig{
-		FluentBitExePath:     c.FluentBitExePath,
-		FluentBitNRLibPath:   c.FluentBitNRLibPath,
-		FluentBitParsersPath: c.FluentBitParsersPath,
-		FluentBitVerbose:     c.Log.Level == config.LogLevelTrace && c.Log.HasIncludeFilter(config.TracesFieldName, config.SupervisorTrace),
-		ConfTemporaryFolder:  filepath.Join(c.AgentTempDir, v4.FbConfTempFolderNameDefault),
-	}
+	fbVerbose := c.Log.Level == config.LogLevelTrace && c.Log.HasIncludeFilter(config.TracesFieldName, config.SupervisorTrace)
+	confTempFolder := filepath.Join(c.AgentTempDir, v4.FbConfTempFolderNameDefault)
+	fbIntCfg := v4.NewFBSupervisorConfig(
+		ffManager,
+		c.AgentDir,
+		config.DefaultIntegrationsDir,
+		c.LoggingBinDir,
+		c.FluentBitExePath,
+		c.FluentBitNRLibPath,
+		c.FluentBitParsersPath,
+		fbVerbose,
+		confTempFolder,
+	)
 
 	if fbIntCfg.IsLogForwarderAvailable() {
 		logCfgLoader := logs.NewFolderLoader(logFwCfg, agt.Context.Identity, agt.Context.HostnameResolver())
@@ -482,6 +484,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 			agt.Context.HostnameChangeNotifier(),
 			agt.Context.SendEvent,
 		)
+		ffHandle.SetFBRestarter(logSupervisor)
 		go logSupervisor.Run(agt.Context.Ctx)
 	} else {
 		aslog.Debug("Log forwarder is not available for this platform. The agent will start without log forwarding support.")

@@ -145,7 +145,8 @@ integrations:
       STDOUT_TYPE: cfgreq
     exec: ` + getExe(testhelp.GoRun(fixtures.CfgReqGoFile)) + "\n"
 
-var passthroughEnv = []string{"GOCACHE", "GOPATH", "HOME", "PATH", "LOCALAPPDATA"}
+//nolint:gochecknoglobals
+var passthroughEnv = []string{"GOCACHE", "GOPATH", "HOME", "PATH", "LOCALAPPDATA", "GOTMPDIR"}
 
 var (
 	definitionQ          = make(chan integration.Definition, 1000)

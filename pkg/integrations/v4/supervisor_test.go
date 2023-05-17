@@ -203,6 +203,7 @@ func NewSupervisorFromMock(supervisorMock *SupervisorMock) *Supervisor {
 		getBackOffTimer:        supervisorMock.getBackOffTimer,
 		parseOutputFn:          logs.ParseFBOutput,
 		hostnameChangeNotifier: supervisorMock.hostnameNotifier,
+		restartCh:              make(chan struct{}, 1),
 	}
 }
 
@@ -239,7 +240,6 @@ func (sm *SupervisorMock) getBackOffTimer(duration time.Duration) *time.Timer {
 }
 
 func TestSupervisor_RestartOnHostnameChange(t *testing.T) {
-
 	notifierMock := NewNotifierMock()
 	supervisorMock := NewSupervisorMock(notifierMock)
 

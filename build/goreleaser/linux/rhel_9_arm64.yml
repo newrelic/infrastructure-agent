@@ -40,10 +40,10 @@
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/{{ .Arch }}/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-#      - src: 'target/fluent-bit-plugin/{{ .Arch }}/out_newrelic.so'
-#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-#      - src: 'assets/examples/logging/parsers.conf'
-#        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
+      - src: 'target/fluent-bit-plugin/{{ .Arch }}/out_newrelic.so'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
+      - src: 'assets/examples/logging/parsers.conf'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
     empty_folders:
       - /var/db/newrelic-infra/custom-integrations
       - /var/db/newrelic-infra/integrations.d
@@ -71,8 +71,7 @@
       summary: "New Relic Infrastructure Agent"
       group: default
     # Recommended packages. If they fail to install installation of the agent will not be interrupted.
-# not supported yet
-#    dependencies:
-#      - td-agent-bit
+    recommends:
+      - fluent-bit
   
   # end RHEL 9 arm64

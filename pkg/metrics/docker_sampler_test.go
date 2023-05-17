@@ -6,6 +6,7 @@
 package metrics
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -19,7 +20,18 @@ import (
 
 const metadataCacheTTL = 30 * time.Second
 
+var (
+	errNoContainers      = errors.New("no containers")
+	errContainerNotFound = errors.New("container not found")
+)
+
+func errContainerDoesNotExist(containerID string) error {
+	return fmt.Errorf("container %q does not exist", containerID) //nolint:goerr113
+}
+
 func TestInitializeDockerClient(t *testing.T) {
+	t.Parallel()
+
 	if !helpers.IsDockerRunning() {
 		t.Skip("Docker daemon not running")
 	}
@@ -31,48 +43,58 @@ func TestInitializeDockerClient(t *testing.T) {
 }
 
 func TestInitializeDockerClientWithoutDocker(t *testing.T) {
+	t.Parallel()
+
 	if helpers.IsDockerRunning() {
 		t.Skip("Docker daemon running")
 	}
 
 	dockerClient, err := initializeDockerClient("1.24")
 
-	assert.Equal(t, helpers.ErrNoDockerd, err)
+	assert.EqualError(t, err, "docker sampler error: no active docker instance found")
 	assert.Nil(t, dockerClient)
 }
 
 func TestProcessDecoratorNoContainers(t *testing.T) {
+	t.Parallel()
+
 	mock := &MockBaseDocker{}
 	pidsCache := newPidsCache(metadataCacheTTL)
 
-	_, err := newDecoratorImpl(mock, pidsCache)
-	assert.EqualError(t, err, "no containers")
+	_, err := newDockerDecorator(mock, pidsCache)
+	assert.EqualError(t, err, "docker sampler error: no containers")
 }
 
 func TestProcessDecoratorNoTopContainers(t *testing.T) {
+	t.Parallel()
+
 	mock := &MockContainerDocker{}
 	pidsCache := newPidsCache(metadataCacheTTL)
 
-	_, err := newDecoratorImpl(mock, pidsCache)
-	assert.EqualError(t, err, "container \"cca35d9d\" does not exist")
+	_, err := newDockerDecorator(mock, pidsCache)
+	assert.EqualError(t, err, "docker sampler error: container \"cca35d9d\" does not exist")
 }
 
 func TestProcessDecoratorWrongTitles(t *testing.T) {
+	t.Parallel()
+
 	mock := &MockContainerWithDataDockerWrongTitles{}
 	pidsCache := newPidsCache(metadataCacheTTL)
 
-	_, err := newDecoratorImpl(mock, pidsCache)
+	_, err := newDockerDecorator(mock, pidsCache)
 	assert.EqualError(t, err, "no PID title found for container \"cca35d9d\" top. Returned titles: [Name CPU Private Working Set]")
 }
 
 func TestProcessDecoratorDecorateProcessSampleBadProcessID(t *testing.T) {
+	t.Parallel()
+
 	mock := &MockContainerWithDataDocker{}
 	pidsCache := newPidsCache(metadataCacheTTL)
 
-	decorator, err := newDecoratorImpl(mock, pidsCache)
+	decorator, err := newDockerDecorator(mock, pidsCache)
 	assert.NoError(t, err)
 
-	process := metricTypes.ProcessSample{ProcessID: 666, ContainerLabels: map[string]string{}}
+	process := metricTypes.ProcessSample{ProcessID: 666, ContainerLabels: map[string]string{}} //nolint:exhaustruct
 	decorator.Decorate(&process)
 
 	assert.Equal(t, process.ContainerImage, "")
@@ -84,13 +106,15 @@ func TestProcessDecoratorDecorateProcessSampleBadProcessID(t *testing.T) {
 }
 
 func TestProcessDecoratorDecorateProcessSample(t *testing.T) {
+	t.Parallel()
+
 	mock := &MockContainerWithDataDocker{}
 	pidsCache := newPidsCache(metadataCacheTTL)
 
-	decorator, err := newDecoratorImpl(mock, pidsCache)
+	decorator, err := newDockerDecorator(mock, pidsCache)
 	assert.NoError(t, err)
 
-	process := metricTypes.ProcessSample{ProcessID: 123}
+	process := metricTypes.ProcessSample{ProcessID: 123} //nolint:exhaustruct
 	decorator.Decorate(&process)
 
 	assert.Equal(t, process.ContainerImage, "14.04")
@@ -102,6 +126,8 @@ func TestProcessDecoratorDecorateProcessSample(t *testing.T) {
 }
 
 func TestPidsCacheNoContainer(t *testing.T) {
+	t.Parallel()
+
 	pidsCache := newPidsCache(0)
 
 	_, exists := pidsCache.get("FakeContainer")
@@ -109,8 +135,10 @@ func TestPidsCacheNoContainer(t *testing.T) {
 }
 
 func TestPidsCacheContainerExpired(t *testing.T) {
+	t.Parallel()
+
 	pidsCache := newPidsCache(100 * time.Millisecond)
-	pidsCache.put("container1", []int32{1, 2, 3, 5, 8, 13})
+	pidsCache.put("container1", []uint32{1, 2, 3, 5, 8, 13})
 	time.Sleep(101 * time.Millisecond)
 
 	_, exists := pidsCache.get("container1")
@@ -118,38 +146,38 @@ func TestPidsCacheContainerExpired(t *testing.T) {
 }
 
 func TestPidsCacheContainerExists(t *testing.T) {
+	t.Parallel()
+
 	pidsCache := newPidsCache(1 * time.Second)
-	pidsCache.put("container1", []int32{1, 2, 3, 5, 8, 13})
+	pidsCache.put("container1", []uint32{1, 2, 3, 5, 8, 13})
 
 	pids, exists := pidsCache.get("container1")
 	assert.True(t, exists)
-	assert.Equal(t, pids, []int32{1, 2, 3, 5, 8, 13})
+	assert.Equal(t, pids, []uint32{1, 2, 3, 5, 8, 13})
 }
 
-type MockBaseDocker struct {
-}
+type MockBaseDocker struct{}
 
 func (m *MockBaseDocker) Initialize(_ string) error {
 	return nil
 }
 
 func (m *MockBaseDocker) Containers() ([]types.Container, error) {
-	return nil, fmt.Errorf("no containers")
+	return nil, errNoContainers
 }
 
-func (m *MockBaseDocker) ContainerTop(containerID string) (titles []string, processes [][]string, err error) {
-	return nil, nil, fmt.Errorf("container \"%v\" does not exist", containerID)
+func (m *MockBaseDocker) ContainerTop(containerID string) ([]string, [][]string, error) {
+	return nil, nil, errContainerDoesNotExist(containerID)
 }
 
-type MockContainerDocker struct {
-}
+type MockContainerDocker struct{}
 
 func (mc *MockContainerDocker) Initialize(_ string) error {
 	return nil
 }
 
 func (mc *MockContainerDocker) Containers() ([]types.Container, error) {
-	container := types.Container{
+	container := types.Container{ //nolint:exhaustruct
 		ID:      "cca35d9d",
 		ImageID: "ubuntu:14.04",
 		Names:   []string{"/container1"},
@@ -160,16 +188,17 @@ func (mc *MockContainerDocker) Containers() ([]types.Container, error) {
 			"label2": "value2",
 		},
 	}
+
 	return []types.Container{container}, nil
 }
 
-func (mc *MockContainerDocker) ContainerTop(containerID string) (titles []string, processes [][]string, err error) {
+func (mc *MockContainerDocker) ContainerTop(containerID string) ([]string, [][]string, error) {
 	container := MockBaseDocker{}
+
 	return container.ContainerTop(containerID)
 }
 
-type MockContainerWithDataDocker struct {
-}
+type MockContainerWithDataDocker struct{}
 
 func (mc *MockContainerWithDataDocker) Initialize(_ string) error {
 	return nil
@@ -177,21 +206,22 @@ func (mc *MockContainerWithDataDocker) Initialize(_ string) error {
 
 func (mc *MockContainerWithDataDocker) Containers() ([]types.Container, error) {
 	container := MockContainerDocker{}
+
 	return container.Containers()
 }
 
-func (mc *MockContainerWithDataDocker) ContainerTop(containerID string) (titles []string, processes [][]string, err error) {
+func (mc *MockContainerWithDataDocker) ContainerTop(containerID string) ([]string, [][]string, error) {
 	if containerID != "cca35d9d" {
-		return nil, nil, fmt.Errorf("container not found")
+		return nil, nil, errContainerNotFound
 	}
 
-	titles = []string{"Name", "PID", "CPU", "Private Working Set"}
-	processes = [][]string{{"/container1", "123", "00:00:00.437", "598kB"}}
+	titles := []string{"Name", "PID", "CPU", "Private Working Set"}
+	processes := [][]string{{"/container1", "123", "00:00:00.437", "598kB"}}
+
 	return titles, processes, nil
 }
 
-type MockContainerWithDataDockerWrongTitles struct {
-}
+type MockContainerWithDataDockerWrongTitles struct{}
 
 func (mc *MockContainerWithDataDockerWrongTitles) Initialize(_ string) error {
 	return nil
@@ -199,15 +229,17 @@ func (mc *MockContainerWithDataDockerWrongTitles) Initialize(_ string) error {
 
 func (mc *MockContainerWithDataDockerWrongTitles) Containers() ([]types.Container, error) {
 	container := MockContainerWithDataDocker{}
+
 	return container.Containers()
 }
 
-func (mc *MockContainerWithDataDockerWrongTitles) ContainerTop(containerID string) (titles []string, processes [][]string, err error) {
+func (mc *MockContainerWithDataDockerWrongTitles) ContainerTop(containerID string) ([]string, [][]string, error) {
 	if containerID != "cca35d9d" {
-		return nil, nil, fmt.Errorf("container not found")
+		return nil, nil, errContainerNotFound
 	}
 
-	titles = []string{"Name", "CPU", "Private Working Set"}
-	processes = [][]string{{"/container1", "00:00:00.437", "598kB"}}
+	titles := []string{"Name", "CPU", "Private Working Set"}
+	processes := [][]string{{"/container1", "00:00:00.437", "598kB"}}
+
 	return titles, processes, nil
 }

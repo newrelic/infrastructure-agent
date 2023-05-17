@@ -5,7 +5,6 @@ package helpers
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -254,7 +253,7 @@ func TestReadFirstLine(t *testing.T) {
 	releaseFile := `Red Hat Enterprise Linux AS release 3 (Taroon)
 Another test line`
 
-	err := ioutil.WriteFile(filePath, []byte(releaseFile), 0644)
+	err := os.WriteFile(filePath, []byte(releaseFile), 0644)
 	require.NoError(t, err)
 
 	distro := ReadFirstLine(filePath)

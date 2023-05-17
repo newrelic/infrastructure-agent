@@ -37,10 +37,8 @@ func init() {
 		"index-1": {"tun", "tap"},
 	}
 
-	defaultLoggingBinDir = "/opt/td-agent-bit/bin"
 	defaultLoggingHomeDir = "logging"
 	defaultLoggingConfigsDir = "logging.d"
-	defaultFluentBitExe = "td-agent-bit"
 	defaultFluentBitParsers = "parsers.conf"
 	defaultFluentBitNRLib = "out_newrelic.so"
 

@@ -3,10 +3,11 @@
 package process
 
 import (
-	"github.com/shirou/gopsutil/v3/process"
 	"os"
 	"runtime"
 	"time"
+
+	"github.com/shirou/gopsutil/v3/process"
 )
 
 // darwinProcess is an implementation of the process.Snapshot interface for darwin hosts.

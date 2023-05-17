@@ -1,0 +1,7 @@
+---
+
+- name: assert tf-agent-bit and fluent-bit are installed
+  shell: dpkg -l | grep {{ item }}
+  loop: "{{ packages_linux }}"
+
+...
