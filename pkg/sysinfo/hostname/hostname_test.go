@@ -125,24 +125,49 @@ func TestHostnameResolver_FullFailsFallingBackInInternal(t *testing.T) {
 }
 
 func TestHostnameResolver_FullIsLocalhost(t *testing.T) {
-	// Given a Hostname Resolver that resolves "localhost" as full hostname
-	resolver := fallbackResolver{full: localhostFull, short: workingShort, internal: internalFull}
+	testCases := []struct {
+		name string
+	}{
+		{
+			name: "localhost",
+		},
+		{
+			name: "ip6-localhost",
+		},
+		{
+			name: "ipv6-localhost",
+		},
+		{
+			name: "ip6-loopback",
+		},
+		{
+			name: "ipv6-loopback",
+		},
+	}
+	for i := range testCases {
+		testCase := testCases[i]
+		t.Run(testCase.name, func(t *testing.T) {
+			// Given a Hostname Resolver that resolves "localhost" as full hostname
+			fullResolver := func(dns string) (string, error) { return testCase.name, nil }
+			resolver := fallbackResolver{full: fullResolver, short: workingShort, internal: internalFull}
 
-	// When the names are queried
-	full, short, err := resolver.Query()
-	// The internal kernel name is fallen back as full name
-	assert.NoError(t, err)
-	assert.Equal(t, fullName, full)
-	assert.Equal(t, shortName, short)
+			// When the names are queried
+			full, short, err := resolver.Query()
+			// The internal kernel name is fallen back as full name
+			assert.NoError(t, err)
+			assert.Equal(t, fullName, full)
+			assert.Equal(t, shortName, short)
 
-	// And if the full name stop working
-	resolver.full = failingFull
+			// And if the full name stop working
+			resolver.full = failingFull
 
-	// The stored full kernel hostname is returned anyway
-	full, short, err = resolver.Query()
-	assert.NoError(t, err)
-	assert.Equal(t, fullName, full)
-	assert.Equal(t, shortName, short)
+			// The stored full kernel hostname is returned anyway
+			full, short, err = resolver.Query()
+			assert.NoError(t, err)
+			assert.Equal(t, fullName, full)
+			assert.Equal(t, shortName, short)
+		})
+	}
 }
 
 func TestHostnameResolver_FullAndInternalAreLocalhost(t *testing.T) {
@@ -182,7 +207,6 @@ func TestHostnameResolver_FullAndInternalAreLocalhost(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, fullName, full)
 	assert.Equal(t, shortName, short)
-
 }
 
 func TestHostnameResolver_FailureOnFistInvocation(t *testing.T) {
