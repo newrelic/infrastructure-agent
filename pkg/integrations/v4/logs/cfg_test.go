@@ -713,7 +713,7 @@ func TestFBConfigForWinlog(t *testing.T) {
 	tests := []struct {
 		name     string
 		logFwd   config.LogForward
-		ohiCfg   LogsCfg
+		logsCfg  LogsCfg
 		expected FBCfg
 	}{
 		{
@@ -866,7 +866,7 @@ func TestFBConfigForWinlog(t *testing.T) {
 
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			fbConf, err := NewFBConf(test.ohiCfg, &logFwdCfg, "0", "")
+			fbConf, err := NewFBConf(test.logsCfg, &logFwdCfg, "0", "")
 			assert.NoError(t, err)
 			assert.Equal(t, test.expected.Inputs, fbConf.Inputs)
 			assert.Equal(t, test.expected.Filters[0], fbConf.Filters[0])
@@ -887,7 +887,7 @@ func TestFBConfigForWinevtlog(t *testing.T) {
 	tests := []struct {
 		name     string
 		logFwd   config.LogForward
-		ohiCfg   LogsCfg
+		logsCfg  LogsCfg
 		expected FBCfg
 	}{
 		{
@@ -1037,7 +1037,7 @@ func TestFBConfigForWinevtlog(t *testing.T) {
 
 		t.Run(testItem.name, func(t *testing.T) {
 			t.Parallel()
-			fbConf, err := NewFBConf(test.ohiCfg, &test.logFwd, "0", "")
+			fbConf, err := NewFBConf(test.logsCfg, &test.logFwd, "0", "")
 			assert.NoError(t, err)
 			assert.Equal(t, test.expected.Inputs, fbConf.Inputs)
 			assert.Equal(t, test.expected.Filters[0], fbConf.Filters[0])
@@ -1510,6 +1510,35 @@ func TestCreateConditions(t *testing.T) {
 			if gotConditions != tt.wantConditions {
 				t.Errorf("createConditions() gotConditions = %v, want %v", gotConditions, tt.wantConditions)
 			}
+		})
+	}
+}
+
+func TestDetermineUseAnsiFlagValue(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name           string
+		extConfUseANSI string
+		forceUseANSI   bool
+		expected       string
+	}{
+		{"External config and force flags as true", "true", true, "true"},
+		{"External config flag as true and force flag as false", "true", false, "true"},
+		{"External config flag as false and force flag as true", "false", true, "false"},
+		{"External config and force flags as false", "false", false, "false"},
+		{"External config flag as empty and force flag as true", "", true, "true"},
+		{"External config flag as empty and force flag as false", "", false, ""},
+		{"External config flag as invalid bool and force flag as true", "invalid-bool", true, "true"},
+		{"External config flag as invalid bool and force flag as false", "invalid-bool", false, ""},
+	}
+
+	for _, testItem := range tests {
+		// Prevent the loop variable from being captured in the closure below
+		test := testItem
+
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, test.expected, determineUseAnsiFlagValue(test.extConfUseANSI, test.forceUseANSI))
 		})
 	}
 }

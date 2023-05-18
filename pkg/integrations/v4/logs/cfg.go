@@ -532,38 +532,41 @@ func newSystemdInput(service string, dbPath string, tag string) FBCfgInput {
 
 //nolint:exhaustruct
 func newWinlogInput(winlog LogWinlogCfg, dbPath string, tag string, fbOSConfig FBOSConfig) FBCfgInput {
-	fbInput := FBCfgInput{
+	return FBCfgInput{
 		Name:     fbInputTypeWinlog,
 		Channels: winlog.Channel,
 		Tag:      tag,
 		DB:       dbPath,
+		UseANSI:  determineUseAnsiFlagValue(winlog.UseANSI, fbOSConfig.ForceUseANSI),
 	}
-
-	if useAnsi, err := strconv.ParseBool(winlog.UseANSI); err == nil {
-		fbInput.UseANSI = strconv.FormatBool(useAnsi)
-	} else if fbOSConfig.ForceUseANSI {
-		fbInput.UseANSI = strconv.FormatBool(fbOSConfig.ForceUseANSI)
-	}
-
-	return fbInput
 }
 
 //nolint:exhaustruct
 func newWinevtlogInput(winlog LogWinevtlogCfg, dbPath string, tag string, fbOSConfig FBOSConfig) FBCfgInput {
-	fbInput := FBCfgInput{
+	return FBCfgInput{
 		Name:     fbInputTypeWinevtlog,
 		Channels: winlog.Channel,
 		Tag:      tag,
 		DB:       dbPath,
+		UseANSI:  determineUseAnsiFlagValue(winlog.UseANSI, fbOSConfig.ForceUseANSI),
+	}
+}
+
+// determineUseAnsiFlagValue calculates final value of the Use_ANSI flag
+// If the Use_ANSI parameter provided in the external config files is a valid boolean, then return this value
+// Else return 'true' if forceUseANSI is true. Otherwise, return an empty string.
+//
+//nolint:goconst
+func determineUseAnsiFlagValue(extConfUseANSI string, forceUseANSI bool) string {
+	if useAnsi, err := strconv.ParseBool(extConfUseANSI); err == nil {
+		return strconv.FormatBool(useAnsi)
 	}
 
-	if useAnsi, err := strconv.ParseBool(winlog.UseANSI); err == nil {
-		fbInput.UseANSI = strconv.FormatBool(useAnsi)
-	} else if fbOSConfig.ForceUseANSI {
-		fbInput.UseANSI = strconv.FormatBool(fbOSConfig.ForceUseANSI)
+	if forceUseANSI {
+		return "true"
 	}
 
-	return fbInput
+	return ""
 }
 
 func newSyslogInput(l LogSyslogCfg, tag string, bufSize int) (FBCfgInput, error) {
