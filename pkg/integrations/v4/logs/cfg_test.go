@@ -15,9 +15,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const winServer2016BuildNumber = 14393
+const windowsServer2016BuildNumber = 14393
 
-var platformBuildNumberRegex = regexp.MustCompile(`.*Build ([0-9]+)`)
+var windowsBuildNumberRegex = regexp.MustCompile(`.*Build ([0-9]+)`)
 
 var logFwdCfg = config.LogForward{
 	HomeDir:    "/var/db/newrelic-infra/newrelic-integrations/logging",
@@ -856,7 +856,7 @@ func TestFBConfigForWinlog(t *testing.T) {
 
 	// "input winlog + eventId filtering + use ANSI by SO version" test expectations
 	// depend on Windows build number
-	if runtime.GOOS == "windows" && isWindowsBuildNumberLowerOrEqualsThan(winServer2016BuildNumber) {
+	if runtime.GOOS == "windows" && isWindowsBuildNumberLowerOrEqualsThan(windowsServer2016BuildNumber) {
 		tests[2].expected.Inputs[0].UseANSI = "true"
 	}
 
@@ -1027,7 +1027,7 @@ func TestFBConfigForWinevtlog(t *testing.T) {
 
 	// "input winevtlog + eventId filtering + use ANSI by SO version" test expectations
 	// depend on Windows build number
-	if runtime.GOOS == "windows" && isWindowsBuildNumberLowerOrEqualsThan(winServer2016BuildNumber) {
+	if runtime.GOOS == "windows" && isWindowsBuildNumberLowerOrEqualsThan(windowsServer2016BuildNumber) {
 		tests[2].expected.Inputs[0].UseANSI = "true"
 	}
 
@@ -1052,29 +1052,18 @@ func TestFBConfigForWinevtlog(t *testing.T) {
 	}
 }
 
-func isWindowsBuildNumberLowerOrEqualsThan(windowsVersionBuildNumber int) bool {
-	hostInfo := getHostInfo()
-	matches := platformBuildNumberRegex.FindStringSubmatch(hostInfo.PlatformVersion)
+func isWindowsBuildNumberLowerOrEqualsThan(windowsBuildNumber int) bool {
+	if hostInfo, err := host.Info(); err == nil {
+		matches := windowsBuildNumberRegex.FindStringSubmatch(hostInfo.PlatformVersion)
 
-	if len(matches) == 2 {
-		if buildNumber, err := strconv.Atoi(matches[1]); err == nil {
-			return buildNumber <= windowsVersionBuildNumber
+		if len(matches) == 2 {
+			if buildNumber, err2 := strconv.Atoi(matches[1]); err2 == nil {
+				return buildNumber <= windowsBuildNumber
+			}
 		}
 	}
 
 	return false
-}
-
-//nolint:exhaustruct
-func getHostInfo() *host.InfoStat {
-	info, err := host.Info()
-	if err != nil {
-		info = &host.InfoStat{
-			OS: runtime.GOOS,
-		}
-	}
-
-	return info
 }
 
 func removeTempFile(t *testing.T, filePath string) {
