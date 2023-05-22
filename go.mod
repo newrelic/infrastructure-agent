@@ -10,7 +10,7 @@ require (
 	github.com/beevik/ntp v0.3.0
 	github.com/containerd/containerd v1.5.10
 	github.com/coreos/go-systemd/v22 v22.3.2
-	github.com/docker/docker v23.0.6+incompatible
+	github.com/docker/docker v24.0.1+incompatible
 	github.com/evanphx/json-patch v4.9.0+incompatible
 	github.com/fortytw2/leaktest v1.3.1-0.20190606143808-d73c753520d9
 	github.com/fsnotify/fsnotify v1.4.9
@@ -57,7 +57,7 @@ require (
 	github.com/containerd/ttrpc v1.2.1 // indirect
 	github.com/containerd/typeurl v1.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/docker/distribution v2.8.0+incompatible // indirect
+	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c // indirect
 	github.com/docker/go-units v0.4.0 // indirect
