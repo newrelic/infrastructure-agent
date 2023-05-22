@@ -125,6 +125,7 @@ func TestHostnameResolver_FullFailsFallingBackInInternal(t *testing.T) {
 }
 
 func TestHostnameResolver_FullIsLocalhost(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		name string
 	}{
@@ -147,6 +148,7 @@ func TestHostnameResolver_FullIsLocalhost(t *testing.T) {
 	for i := range testCases {
 		testCase := testCases[i]
 		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
 			// Given a Hostname Resolver that resolves "localhost" as full hostname
 			fullResolver := func(dns string) (string, error) { return testCase.name, nil }
 			resolver := fallbackResolver{full: fullResolver, short: workingShort, internal: internalFull}
