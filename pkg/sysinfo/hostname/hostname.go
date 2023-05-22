@@ -168,7 +168,7 @@ func (r *fallbackResolver) Query() (string, string, error) {
 
 func isLocalhost(name string) bool {
 	switch name {
-	case "localhost", "ip6-localhost", "ip6-loopback", "ipv6-localhost", "ipv6-loopback": // nolint:goconst
+	case "localhost", "ip6-localhost", "ip6-loopback", "ipv6-localhost", "ipv6-loopback": //nolint:goconst
 		return true
 	}
 
