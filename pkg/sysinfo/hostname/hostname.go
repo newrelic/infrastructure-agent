@@ -5,10 +5,10 @@ package hostname
 import (
 	"errors"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"os"
 	"sync"
 
+	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
@@ -93,10 +93,10 @@ func newDNSResolver(overrideFull string) *fallbackResolver {
 }
 
 func newInternalResolver(overrideFull string) *fallbackResolver {
-	var fullResolver = func(_ string) (string, error) {
+	fullResolver := func(_ string) (string, error) {
 		return internalHostname()
 	}
-	var internalResolver = func() (string, error) {
+	internalResolver := func() (string, error) {
 		// after fullResolver has failed, this will make the fallback resolver to use the last successful resolution
 		return "", errors.New("internal hostname resolution did not work")
 	}
@@ -147,7 +147,7 @@ func (r *fallbackResolver) Query() (string, string, error) {
 		}
 		// Fixes some wrong FQDN configurations that return "localhost". We bypass the FQDN resolution and cache
 		// and just return the full hostname as queried by the kernel (the old behaviour of the agent)
-		if r.lastFull == "" && (full == "" || full == "localhost") {
+		if r.lastFull == "" && (full == "" || isLocalhost(full)) {
 			// In this edge case, the hostname could flip under some network name instability circumstances
 			logger.
 				WithField(config.TracesFieldName, config.FeatureTrace).
@@ -158,12 +158,21 @@ func (r *fallbackResolver) Query() (string, string, error) {
 					WithField(config.TracesFieldName, config.FeatureTrace).
 					Trace("internal hostname resolution failed")
 			}
-			if full == "localhost" {
+			if isLocalhost(full) {
 				full = ""
 			}
 		}
 	}
 	return r.updateAndGet(full, short, err)
+}
+
+func isLocalhost(name string) bool {
+	switch name {
+	case "localhost", "ip6-localhost", "ip6-loopback", "ipv6-localhost", "ipv6-loopback": //nolint:goconst
+		return true
+	}
+
+	return false
 }
 
 func (r *fallbackResolver) updateAndGet(queriedFull, queriedShort string, cause error) (full, short string, err error) {
