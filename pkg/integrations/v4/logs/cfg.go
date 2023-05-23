@@ -263,7 +263,7 @@ type FBCfgExternal struct {
 
 // FBOSConfig contains additional FluentBit configuration per operating system.
 type FBOSConfig struct {
-	ForceUseANSI bool
+	UseANSI bool
 }
 
 // NewFBConf creates a FluentBit config from several logging integration configs.
@@ -275,7 +275,7 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 
 	// specific config per OS
 	var fbOSConfig FBOSConfig
-	fbOSConfig = addOSDependantConfig(fbOSConfig)
+	addOSDependantConfig(&fbOSConfig)
 
 	for _, block := range loggingCfgs {
 		input, filters, external, err := parseConfigBlock(block, logFwdCfg.HomeDir, fbOSConfig)
@@ -537,7 +537,7 @@ func newWinlogInput(winlog LogWinlogCfg, dbPath string, tag string, fbOSConfig F
 		Channels: winlog.Channel,
 		Tag:      tag,
 		DB:       dbPath,
-		UseANSI:  determineUseAnsiFlagValue(winlog.UseANSI, fbOSConfig.ForceUseANSI),
+		UseANSI:  determineUseAnsiFlagValue(winlog.UseANSI, fbOSConfig.UseANSI),
 	}
 }
 
@@ -548,21 +548,21 @@ func newWinevtlogInput(winlog LogWinevtlogCfg, dbPath string, tag string, fbOSCo
 		Channels: winlog.Channel,
 		Tag:      tag,
 		DB:       dbPath,
-		UseANSI:  determineUseAnsiFlagValue(winlog.UseANSI, fbOSConfig.ForceUseANSI),
+		UseANSI:  determineUseAnsiFlagValue(winlog.UseANSI, fbOSConfig.UseANSI),
 	}
 }
 
 // determineUseAnsiFlagValue calculates final value of the Use_ANSI flag
 // If the Use_ANSI parameter provided in the external config files is a valid boolean, then return this value
-// Else return 'true' if forceUseANSI is true. Otherwise, return an empty string.
+// Else return 'true' if osUseANSI is true. Otherwise, return an empty string.
 //
 //nolint:goconst
-func determineUseAnsiFlagValue(extConfUseANSI string, forceUseANSI bool) string {
+func determineUseAnsiFlagValue(extConfUseANSI string, osUseANSI bool) string {
 	if useAnsi, err := strconv.ParseBool(extConfUseANSI); err == nil {
 		return strconv.FormatBool(useAnsi)
 	}
 
-	if forceUseANSI {
+	if osUseANSI {
 		return "true"
 	}
 

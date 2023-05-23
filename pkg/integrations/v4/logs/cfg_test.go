@@ -717,8 +717,8 @@ func TestFBConfigForWinlog(t *testing.T) {
 		expected FBCfg
 	}{
 		{
-			"input winlog + eventId filtering + use ansi flag as true", logFwdCfg,
-			LogsCfg{
+			name: "input winlog + eventId filtering + use ansi flag as true", logFwd: logFwdCfg,
+			logsCfg: LogsCfg{
 				{
 					Name: "win-security",
 					Winlog: &LogWinlogCfg{
@@ -730,7 +730,7 @@ func TestFBConfigForWinlog(t *testing.T) {
 				},
 			},
 
-			FBCfg{
+			expected: FBCfg{
 				Inputs: []FBCfgInput{
 					{
 						Name:     "winlog",
@@ -763,8 +763,8 @@ func TestFBConfigForWinlog(t *testing.T) {
 			},
 		},
 		{
-			"input winlog + eventId filtering + use ansi flag as false", logFwdCfg,
-			LogsCfg{
+			name: "input winlog + eventId filtering + use ansi flag as false", logFwd: logFwdCfg,
+			logsCfg: LogsCfg{
 				{
 					Name: "win-security",
 					Winlog: &LogWinlogCfg{
@@ -776,7 +776,7 @@ func TestFBConfigForWinlog(t *testing.T) {
 				},
 			},
 
-			FBCfg{
+			expected: FBCfg{
 				Inputs: []FBCfgInput{
 					{
 						Name:     "winlog",
@@ -809,8 +809,8 @@ func TestFBConfigForWinlog(t *testing.T) {
 			},
 		},
 		{
-			"input winlog + eventId filtering + use ANSI by SO version", logFwdCfg,
-			LogsCfg{
+			name: "input winlog + eventId filtering + use ANSI by SO version", logFwd: logFwdCfg,
+			logsCfg: LogsCfg{
 				{
 					Name: "win-security",
 					Winlog: &LogWinlogCfg{
@@ -821,7 +821,7 @@ func TestFBConfigForWinlog(t *testing.T) {
 				},
 			},
 
-			FBCfg{
+			expected: FBCfg{
 				Inputs: []FBCfgInput{
 					{
 						Name:     "winlog",
@@ -891,8 +891,8 @@ func TestFBConfigForWinevtlog(t *testing.T) {
 		expected FBCfg
 	}{
 		{
-			"input winevtlog + eventId filtering + use ansi flag as true", logFwdCfg,
-			LogsCfg{
+			name: "input winevtlog + eventId filtering + use ansi flag as true", logFwd: logFwdCfg,
+			logsCfg: LogsCfg{
 				{
 					Name: "win-security",
 					Winevtlog: &LogWinevtlogCfg{
@@ -903,7 +903,7 @@ func TestFBConfigForWinevtlog(t *testing.T) {
 					},
 				},
 			},
-			FBCfg{
+			expected: FBCfg{
 				Inputs: []FBCfgInput{
 					{
 						Name:     "winevtlog",
@@ -936,8 +936,8 @@ func TestFBConfigForWinevtlog(t *testing.T) {
 			},
 		},
 		{
-			"input winevtlog + eventId filtering + use ansi flag as false", logFwdCfg,
-			LogsCfg{
+			name: "input winevtlog + eventId filtering + use ansi flag as false", logFwd: logFwdCfg,
+			logsCfg: LogsCfg{
 				{
 					Name: "win-security",
 					Winevtlog: &LogWinevtlogCfg{
@@ -948,7 +948,7 @@ func TestFBConfigForWinevtlog(t *testing.T) {
 					},
 				},
 			},
-			FBCfg{
+			expected: FBCfg{
 				Inputs: []FBCfgInput{
 					{
 						Name:     "winevtlog",
@@ -981,8 +981,8 @@ func TestFBConfigForWinevtlog(t *testing.T) {
 			},
 		},
 		{
-			"input winevtlog + eventId filtering + use ANSI by SO version", logFwdCfg,
-			LogsCfg{
+			name: "input winevtlog + eventId filtering + use ANSI by SO version", logFwd: logFwdCfg,
+			logsCfg: LogsCfg{
 				{
 					Name: "win-security",
 					Winevtlog: &LogWinevtlogCfg{
@@ -992,7 +992,7 @@ func TestFBConfigForWinevtlog(t *testing.T) {
 					},
 				},
 			},
-			FBCfg{
+			expected: FBCfg{
 				Inputs: []FBCfgInput{
 					{
 						Name:     "winevtlog",

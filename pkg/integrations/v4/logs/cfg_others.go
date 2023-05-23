@@ -8,6 +8,5 @@
 
 package logs
 
-func addOSDependantConfig(fbOSConf FBOSConfig) FBOSConfig {
-	return fbOSConf
+func addOSDependantConfig(_ *FBOSConfig) {
 }

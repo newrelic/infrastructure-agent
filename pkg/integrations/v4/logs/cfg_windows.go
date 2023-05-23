@@ -23,7 +23,7 @@ const (
 
 var platformBuildNumberRegex = regexp.MustCompile(`.*Build ([0-9]+)`)
 
-func addOSDependantConfig(fbOSConfig FBOSConfig) FBOSConfig {
+func addOSDependantConfig(fbOSConfig *FBOSConfig) {
 	hostInfo := getHostInfo()
 
 	cfgLogger.
@@ -38,12 +38,10 @@ func addOSDependantConfig(fbOSConfig FBOSConfig) FBOSConfig {
 		if buildNumber, err := strconv.Atoi(matches[1]); err == nil {
 			if buildNumber <= winServer2016BuildNumber {
 				cfgLogger.Debug("Use_ANSI flag set as 'True'")
-				fbOSConfig.ForceUseANSI = true
+				fbOSConfig.UseANSI = true
 			}
 		}
 	}
-
-	return fbOSConfig
 }
 
 //nolint:exhaustruct
