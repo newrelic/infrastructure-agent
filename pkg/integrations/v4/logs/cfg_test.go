@@ -4,12 +4,20 @@ package logs
 
 import (
 	"os"
+	"regexp"
+	"runtime"
+	"strconv"
 	"testing"
 
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 
+	"github.com/shirou/gopsutil/v3/host"
 	"github.com/stretchr/testify/assert"
 )
+
+const windowsServer2016BuildNumber = 14393
+
+var windowsBuildNumberRegex = regexp.MustCompile(`.*Build ([0-9]+)`)
 
 var logFwdCfg = config.LogForward{
 	HomeDir:    "/var/db/newrelic-infra/newrelic-integrations/logging",
@@ -699,130 +707,371 @@ func TestNewFBConf(t *testing.T) {
 	}
 }
 
+//nolint:exhaustruct,dupl,funlen
 func TestFBConfigForWinlog(t *testing.T) {
-	nameTest := "input winlog + eventId filtering"
-	input := LogsCfg{
+	t.Parallel()
+	tests := []struct {
+		name     string
+		logFwd   config.LogForward
+		logsCfg  LogsCfg
+		expected FBCfg
+	}{
 		{
-			Name: "win-security",
-			Winlog: &LogWinlogCfg{
-				Channel:         "Security",
-				CollectEventIds: []string{"5000", "6000-6100", "7000", "7900-8100"},
-				ExcludeEventIds: []string{"6020-6060", "6070"},
-			},
-		},
-	}
-
-	expected := FBCfg{
-		Inputs: []FBCfgInput{
-			{
-				Name:     "winlog",
-				Tag:      "win-security",
-				DB:       dbDbPath,
-				Channels: "Security",
-			},
-		},
-		Filters: []FBCfgFilter{
-			inputRecordModifier("winlog", "win-security"),
-			{
-				Name:   "lua",
-				Match:  "win-security",
-				Script: "Script.lua",
-				Call:   "eventIdFilter",
-			},
-			{
-				Name:  "modify",
-				Match: "win-security",
-				Modifiers: map[string]string{
-					"Message":   "message",
-					"EventType": "WinEventType",
+			name: "input winlog + eventId filtering + use ansi flag as true", logFwd: logFwdCfg,
+			logsCfg: LogsCfg{
+				{
+					Name: "win-security",
+					Winlog: &LogWinlogCfg{
+						Channel:         "Security",
+						CollectEventIds: []string{"5000", "6000-6100", "7000", "7900-8100"},
+						ExcludeEventIds: []string{"6020-6060", "6070"},
+						UseANSI:         "true",
+					},
 				},
 			},
-			filterEntityBlock,
-		},
 
-		Output: outputBlock,
+			expected: FBCfg{
+				Inputs: []FBCfgInput{
+					{
+						Name:     "winlog",
+						Tag:      "win-security",
+						DB:       dbDbPath,
+						Channels: "Security",
+						UseANSI:  "true",
+					},
+				},
+				Filters: []FBCfgFilter{
+					inputRecordModifier("winlog", "win-security"),
+					{
+						Name:   "lua",
+						Match:  "win-security",
+						Script: "Script.lua",
+						Call:   "eventIdFilter",
+					},
+					{
+						Name:  "modify",
+						Match: "win-security",
+						Modifiers: map[string]string{
+							"Message":   "message",
+							"EventType": "WinEventType",
+						},
+					},
+					filterEntityBlock,
+				},
+
+				Output: outputBlock,
+			},
+		},
+		{
+			name: "input winlog + eventId filtering + use ansi flag as false", logFwd: logFwdCfg,
+			logsCfg: LogsCfg{
+				{
+					Name: "win-security",
+					Winlog: &LogWinlogCfg{
+						Channel:         "Security",
+						CollectEventIds: []string{"5000", "6000-6100", "7000", "7900-8100"},
+						ExcludeEventIds: []string{"6020-6060", "6070"},
+						UseANSI:         "false",
+					},
+				},
+			},
+
+			expected: FBCfg{
+				Inputs: []FBCfgInput{
+					{
+						Name:     "winlog",
+						Tag:      "win-security",
+						DB:       dbDbPath,
+						Channels: "Security",
+						UseANSI:  "false",
+					},
+				},
+				Filters: []FBCfgFilter{
+					inputRecordModifier("winlog", "win-security"),
+					{
+						Name:   "lua",
+						Match:  "win-security",
+						Script: "Script.lua",
+						Call:   "eventIdFilter",
+					},
+					{
+						Name:  "modify",
+						Match: "win-security",
+						Modifiers: map[string]string{
+							"Message":   "message",
+							"EventType": "WinEventType",
+						},
+					},
+					filterEntityBlock,
+				},
+
+				Output: outputBlock,
+			},
+		},
+		{
+			name: "input winlog + eventId filtering + use ANSI by SO version", logFwd: logFwdCfg,
+			logsCfg: LogsCfg{
+				{
+					Name: "win-security",
+					Winlog: &LogWinlogCfg{
+						Channel:         "Security",
+						CollectEventIds: []string{"5000", "6000-6100", "7000", "7900-8100"},
+						ExcludeEventIds: []string{"6020-6060", "6070"},
+					},
+				},
+			},
+
+			expected: FBCfg{
+				Inputs: []FBCfgInput{
+					{
+						Name:     "winlog",
+						Tag:      "win-security",
+						DB:       dbDbPath,
+						Channels: "Security",
+					},
+				},
+				Filters: []FBCfgFilter{
+					inputRecordModifier("winlog", "win-security"),
+					{
+						Name:   "lua",
+						Match:  "win-security",
+						Script: "Script.lua",
+						Call:   "eventIdFilter",
+					},
+					{
+						Name:  "modify",
+						Match: "win-security",
+						Modifiers: map[string]string{
+							"Message":   "message",
+							"EventType": "WinEventType",
+						},
+					},
+					filterEntityBlock,
+				},
+
+				Output: outputBlock,
+			},
+		},
 	}
 
-	t.Run(nameTest, func(t *testing.T) {
-		fbConf, err := NewFBConf(input, &logFwdCfg, "0", "")
-		assert.NoError(t, err)
-		assert.Equal(t, expected.Inputs, fbConf.Inputs)
-		assert.Equal(t, expected.Filters[0], fbConf.Filters[0])
-		assert.Equal(t, expected.Filters[1].Name, fbConf.Filters[1].Name)
-		assert.Equal(t, expected.Filters[1].Match, fbConf.Filters[1].Match)
-		assert.Equal(t, expected.Filters[1].Call, fbConf.Filters[1].Call)
-		assert.Contains(t, fbConf.Filters[1].Script, "nr_fb_lua_filter")
-		assert.Equal(t, expected.Filters[2], fbConf.Filters[2])
-		assert.Equal(t, expected.Output, fbConf.Output)
-		defer removeTempFile(t, fbConf.Filters[1].Script)
-	})
+	// "input winlog + eventId filtering + use ANSI by SO version" test expectations
+	// depend on Windows build number
+	if runtime.GOOS == "windows" && isWindowsBuildNumberLowerOrEqualsThan(windowsServer2016BuildNumber) {
+		tests[2].expected.Inputs[0].UseANSI = "true"
+	}
+
+	for _, testItem := range tests {
+		// Prevent the loop variable from being captured in the closure below
+		test := testItem
+
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			fbConf, err := NewFBConf(test.logsCfg, &logFwdCfg, "0", "")
+			assert.NoError(t, err)
+			assert.Equal(t, test.expected.Inputs, fbConf.Inputs)
+			assert.Equal(t, test.expected.Filters[0], fbConf.Filters[0])
+			assert.Equal(t, test.expected.Filters[1].Name, fbConf.Filters[1].Name)
+			assert.Equal(t, test.expected.Filters[1].Match, fbConf.Filters[1].Match)
+			assert.Equal(t, test.expected.Filters[1].Call, fbConf.Filters[1].Call)
+			assert.Contains(t, fbConf.Filters[1].Script, "nr_fb_lua_filter")
+			assert.Equal(t, test.expected.Filters[2], fbConf.Filters[2])
+			assert.Equal(t, test.expected.Output, fbConf.Output)
+			defer removeTempFile(t, fbConf.Filters[1].Script)
+		})
+	}
 }
 
+//nolint:exhaustruct,dupl,funlen
 func TestFBConfigForWinevtlog(t *testing.T) {
-	nameTest := "input winevtlog + eventId filtering"
-	input := LogsCfg{
+	t.Parallel()
+	tests := []struct {
+		name     string
+		logFwd   config.LogForward
+		logsCfg  LogsCfg
+		expected FBCfg
+	}{
 		{
-			Name: "win-security",
-			Winevtlog: &LogWinevtlogCfg{
-				Channel:         "Security",
-				CollectEventIds: []string{"5000", "6000-6100", "7000", "7900-8100"},
-				ExcludeEventIds: []string{"6020-6060", "6070"},
-			},
-		},
-	}
-
-	expected := FBCfg{
-		Inputs: []FBCfgInput{
-			{
-				Name:     "winevtlog",
-				Tag:      "win-security",
-				DB:       dbDbPath,
-				Channels: "Security",
-			},
-		},
-		Filters: []FBCfgFilter{
-			inputRecordModifier("winevtlog", "win-security"),
-			{
-				Name:   "lua",
-				Match:  "win-security",
-				Script: "Script.lua",
-				Call:   "eventIdFilter",
-			},
-			{
-				Name:  "modify",
-				Match: "win-security",
-				Modifiers: map[string]string{
-					"Message":   "message",
-					"EventType": "WinEventType",
+			name: "input winevtlog + eventId filtering + use ansi flag as true", logFwd: logFwdCfg,
+			logsCfg: LogsCfg{
+				{
+					Name: "win-security",
+					Winevtlog: &LogWinevtlogCfg{
+						Channel:         "Security",
+						CollectEventIds: []string{"5000", "6000-6100", "7000", "7900-8100"},
+						ExcludeEventIds: []string{"6020-6060", "6070"},
+						UseANSI:         "true",
+					},
 				},
 			},
-			filterEntityBlock,
-		},
+			expected: FBCfg{
+				Inputs: []FBCfgInput{
+					{
+						Name:     "winevtlog",
+						Tag:      "win-security",
+						DB:       dbDbPath,
+						Channels: "Security",
+						UseANSI:  "true",
+					},
+				},
+				Filters: []FBCfgFilter{
+					inputRecordModifier("winevtlog", "win-security"),
+					{
+						Name:   "lua",
+						Match:  "win-security",
+						Script: "Script.lua",
+						Call:   "eventIdFilter",
+					},
+					{
+						Name:  "modify",
+						Match: "win-security",
+						Modifiers: map[string]string{
+							"Message":   "message",
+							"EventType": "WinEventType",
+						},
+					},
+					filterEntityBlock,
+				},
 
-		Output: outputBlock,
+				Output: outputBlock,
+			},
+		},
+		{
+			name: "input winevtlog + eventId filtering + use ansi flag as false", logFwd: logFwdCfg,
+			logsCfg: LogsCfg{
+				{
+					Name: "win-security",
+					Winevtlog: &LogWinevtlogCfg{
+						Channel:         "Security",
+						CollectEventIds: []string{"5000", "6000-6100", "7000", "7900-8100"},
+						ExcludeEventIds: []string{"6020-6060", "6070"},
+						UseANSI:         "false",
+					},
+				},
+			},
+			expected: FBCfg{
+				Inputs: []FBCfgInput{
+					{
+						Name:     "winevtlog",
+						Tag:      "win-security",
+						DB:       dbDbPath,
+						Channels: "Security",
+						UseANSI:  "false",
+					},
+				},
+				Filters: []FBCfgFilter{
+					inputRecordModifier("winevtlog", "win-security"),
+					{
+						Name:   "lua",
+						Match:  "win-security",
+						Script: "Script.lua",
+						Call:   "eventIdFilter",
+					},
+					{
+						Name:  "modify",
+						Match: "win-security",
+						Modifiers: map[string]string{
+							"Message":   "message",
+							"EventType": "WinEventType",
+						},
+					},
+					filterEntityBlock,
+				},
+
+				Output: outputBlock,
+			},
+		},
+		{
+			name: "input winevtlog + eventId filtering + use ANSI by SO version", logFwd: logFwdCfg,
+			logsCfg: LogsCfg{
+				{
+					Name: "win-security",
+					Winevtlog: &LogWinevtlogCfg{
+						Channel:         "Security",
+						CollectEventIds: []string{"5000", "6000-6100", "7000", "7900-8100"},
+						ExcludeEventIds: []string{"6020-6060", "6070"},
+					},
+				},
+			},
+			expected: FBCfg{
+				Inputs: []FBCfgInput{
+					{
+						Name:     "winevtlog",
+						Tag:      "win-security",
+						DB:       dbDbPath,
+						Channels: "Security",
+					},
+				},
+				Filters: []FBCfgFilter{
+					inputRecordModifier("winevtlog", "win-security"),
+					{
+						Name:   "lua",
+						Match:  "win-security",
+						Script: "Script.lua",
+						Call:   "eventIdFilter",
+					},
+					{
+						Name:  "modify",
+						Match: "win-security",
+						Modifiers: map[string]string{
+							"Message":   "message",
+							"EventType": "WinEventType",
+						},
+					},
+					filterEntityBlock,
+				},
+
+				Output: outputBlock,
+			},
+		},
 	}
 
-	t.Run(nameTest, func(t *testing.T) {
-		fbConf, err := NewFBConf(input, &logFwdCfg, "0", "")
-		assert.NoError(t, err)
-		assert.Equal(t, expected.Inputs, fbConf.Inputs)
-		assert.Equal(t, expected.Filters[0], fbConf.Filters[0])
-		assert.Equal(t, expected.Filters[1].Name, fbConf.Filters[1].Name)
-		assert.Equal(t, expected.Filters[1].Match, fbConf.Filters[1].Match)
-		assert.Equal(t, expected.Filters[1].Call, fbConf.Filters[1].Call)
-		assert.Contains(t, fbConf.Filters[1].Script, "nr_fb_lua_filter")
-		assert.Equal(t, expected.Filters[2], fbConf.Filters[2])
-		assert.Equal(t, expected.Output, fbConf.Output)
-		defer removeTempFile(t, fbConf.Filters[1].Script)
-	})
+	// "input winevtlog + eventId filtering + use ANSI by SO version" test expectations
+	// depend on Windows build number
+	if runtime.GOOS == "windows" && isWindowsBuildNumberLowerOrEqualsThan(windowsServer2016BuildNumber) {
+		tests[2].expected.Inputs[0].UseANSI = "true"
+	}
+
+	for _, testItem := range tests {
+		// Prevent the loop variable from being captured in the closure below
+		test := testItem
+
+		t.Run(testItem.name, func(t *testing.T) {
+			t.Parallel()
+			fbConf, err := NewFBConf(test.logsCfg, &test.logFwd, "0", "")
+			assert.NoError(t, err)
+			assert.Equal(t, test.expected.Inputs, fbConf.Inputs)
+			assert.Equal(t, test.expected.Filters[0], fbConf.Filters[0])
+			assert.Equal(t, test.expected.Filters[1].Name, fbConf.Filters[1].Name)
+			assert.Equal(t, test.expected.Filters[1].Match, fbConf.Filters[1].Match)
+			assert.Equal(t, test.expected.Filters[1].Call, fbConf.Filters[1].Call)
+			assert.Contains(t, fbConf.Filters[1].Script, "nr_fb_lua_filter")
+			assert.Equal(t, test.expected.Filters[2], fbConf.Filters[2])
+			assert.Equal(t, test.expected.Output, fbConf.Output)
+			defer removeTempFile(t, fbConf.Filters[1].Script)
+		})
+	}
+}
+
+func isWindowsBuildNumberLowerOrEqualsThan(windowsBuildNumber int) bool {
+	if hostInfo, err := host.Info(); err == nil {
+		matches := windowsBuildNumberRegex.FindStringSubmatch(hostInfo.PlatformVersion)
+
+		if len(matches) == 2 {
+			if buildNumber, err2 := strconv.Atoi(matches[1]); err2 == nil {
+				return buildNumber <= windowsBuildNumber
+			}
+		}
+	}
+
+	return false
 }
 
 func removeTempFile(t *testing.T, filePath string) {
-	func() {
-		if err := os.Remove(filePath); err != nil {
-			t.Log(err)
-		}
-	}()
+	t.Helper()
+
+	if err := os.Remove(filePath); err != nil {
+		t.Log(err)
+	}
 }
 
 func TestFBCfgFormat(t *testing.T) {
@@ -874,6 +1123,7 @@ func TestFBCfgFormat(t *testing.T) {
     Tag  win-security
     DB   fb.db
     Channels Security
+    Use_ANSI True
 
 [FILTER]
     Name  grep
@@ -968,6 +1218,7 @@ func TestFBCfgFormat(t *testing.T) {
 				Tag:      "win-security",
 				DB:       "fb.db",
 				Channels: "Security",
+				UseANSI:  "True",
 			},
 		},
 		Filters: []FBCfgFilter{
@@ -1248,6 +1499,35 @@ func TestCreateConditions(t *testing.T) {
 			if gotConditions != tt.wantConditions {
 				t.Errorf("createConditions() gotConditions = %v, want %v", gotConditions, tt.wantConditions)
 			}
+		})
+	}
+}
+
+func TestDetermineUseAnsiFlagValue(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name           string
+		extConfUseANSI string
+		forceUseANSI   bool
+		expected       string
+	}{
+		{"External config and force flags as true", "true", true, "true"},
+		{"External config flag as true and force flag as false", "true", false, "true"},
+		{"External config flag as false and force flag as true", "false", true, "false"},
+		{"External config and force flags as false", "false", false, "false"},
+		{"External config flag as empty and force flag as true", "", true, "true"},
+		{"External config flag as empty and force flag as false", "", false, ""},
+		{"External config flag as invalid bool and force flag as true", "invalid-bool", true, "true"},
+		{"External config flag as invalid bool and force flag as false", "invalid-bool", false, ""},
+	}
+
+	for _, testItem := range tests {
+		// Prevent the loop variable from being captured in the closure below
+		test := testItem
+
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, test.expected, determineUseAnsiFlagValue(test.extConfUseANSI, test.forceUseANSI))
 		})
 	}
 }

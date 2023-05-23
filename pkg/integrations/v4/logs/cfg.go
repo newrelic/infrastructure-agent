@@ -112,12 +112,14 @@ type LogWinlogCfg struct {
 	Channel         string   `yaml:"channel"`
 	CollectEventIds []string `yaml:"collect-eventids"`
 	ExcludeEventIds []string `yaml:"exclude-eventids"`
+	UseANSI         string   `yaml:"use-ansi"`
 }
 
 type LogWinevtlogCfg struct {
 	Channel         string   `yaml:"channel"`
 	CollectEventIds []string `yaml:"collect-eventids"`
 	ExcludeEventIds []string `yaml:"exclude-eventids"`
+	UseANSI         string   `yaml:"use-ansi"`
 }
 
 type LogTcpCfg struct {
@@ -198,6 +200,7 @@ type FBCfgInput struct {
 	TcpFormat             string // plugin: tcp
 	TcpSeparator          string // plugin: tcp
 	TcpBufferSize         int    // plugin: tcp (note that the "tcp" plugin uses Buffer_Size (without "k"s!) instead of Buffer_Max_Size (with "k"s!))
+	UseANSI               string // plugin: winlog and winevtlog
 }
 
 // FBCfgFilter FluentBit FILTER config block, only "grep" plugin supported.
@@ -258,6 +261,11 @@ type FBCfgExternal struct {
 	ParsersFilePath string
 }
 
+// FBOSConfig contains additional FluentBit configuration per operating system.
+type FBOSConfig struct {
+	UseANSI bool
+}
+
 // NewFBConf creates a FluentBit config from several logging integration configs.
 func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, hostname string) (fb FBCfg, e error) {
 	fb = FBCfg{
@@ -265,8 +273,12 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 		Filters: []FBCfgFilter{},
 	}
 
+	// specific config per OS
+	var fbOSConfig FBOSConfig
+	addOSDependantConfig(&fbOSConfig)
+
 	for _, block := range loggingCfgs {
-		input, filters, external, err := parseConfigBlock(block, logFwdCfg.HomeDir)
+		input, filters, external, err := parseConfigBlock(block, logFwdCfg.HomeDir, fbOSConfig)
 		if err != nil {
 			return
 		}
@@ -304,7 +316,8 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 	return
 }
 
-func parseConfigBlock(l LogCfg, logsHomeDir string) (input FBCfgInput, filters []FBCfgFilter, external FBCfgExternal, err error) {
+//nolint:nonamedreturns,varnamelen
+func parseConfigBlock(l LogCfg, logsHomeDir string, fbOSConfig FBOSConfig) (input FBCfgInput, filters []FBCfgFilter, external FBCfgExternal, err error) {
 	if l.Fluentbit != nil {
 		external = newFBExternalConfig(*l.Fluentbit)
 		return
@@ -321,9 +334,9 @@ func parseConfigBlock(l LogCfg, logsHomeDir string) (input FBCfgInput, filters [
 	} else if l.Tcp != nil {
 		input, filters, err = parseTcpInput(l)
 	} else if l.Winlog != nil {
-		input, filters, err = parseWinlogInput(l, dbPath)
+		input, filters, err = parseWinlogInput(l, dbPath, fbOSConfig)
 	} else if l.Winevtlog != nil {
-		input, filters, err = parseWinevtlogInput(l, dbPath)
+		input, filters, err = parseWinevtlogInput(l, dbPath, fbOSConfig)
 	}
 
 	if err != nil {
@@ -382,8 +395,10 @@ func parseTcpInput(l LogCfg) (input FBCfgInput, filters []FBCfgFilter, err error
 }
 
 // Winlog: "winlog" plugin
-func parseWinlogInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBCfgFilter, err error) {
-	input = newWinlogInput(*l.Winlog, dbPath, l.Name)
+//
+//nolint:nonamedreturns,varnamelen
+func parseWinlogInput(l LogCfg, dbPath string, fbOSConfig FBOSConfig) (input FBCfgInput, filters []FBCfgFilter, err error) {
+	input = newWinlogInput(*l.Winlog, dbPath, l.Name, fbOSConfig)
 	filters = append(filters, newRecordModifierFilterForInput(l.Name, fbInputTypeWinlog, l.Attributes))
 	scriptContent, err := createLuaWindowsFilterScript(l.Winlog.CollectEventIds, l.Winlog.ExcludeEventIds)
 	if err != nil {
@@ -400,8 +415,10 @@ func parseWinlogInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBCf
 }
 
 // Winevtlog: "winevtlog" plugin
-func parseWinevtlogInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBCfgFilter, err error) {
-	input = newWinevtlogInput(*l.Winevtlog, dbPath, l.Name)
+//
+//nolint:nonamedreturns,varnamelen
+func parseWinevtlogInput(l LogCfg, dbPath string, fbOSConfig FBOSConfig) (input FBCfgInput, filters []FBCfgFilter, err error) {
+	input = newWinevtlogInput(*l.Winevtlog, dbPath, l.Name, fbOSConfig)
 	filters = append(filters, newRecordModifierFilterForInput(l.Name, fbInputTypeWinevtlog, l.Attributes))
 	scriptContent, err := createLuaWindowsFilterScript(l.Winevtlog.CollectEventIds, l.Winevtlog.ExcludeEventIds)
 	if err != nil {
@@ -513,22 +530,43 @@ func newSystemdInput(service string, dbPath string, tag string) FBCfgInput {
 	}
 }
 
-func newWinlogInput(winlog LogWinlogCfg, dbPath string, tag string) FBCfgInput {
+//nolint:exhaustruct
+func newWinlogInput(winlog LogWinlogCfg, dbPath string, tag string, fbOSConfig FBOSConfig) FBCfgInput {
 	return FBCfgInput{
 		Name:     fbInputTypeWinlog,
 		Channels: winlog.Channel,
 		Tag:      tag,
 		DB:       dbPath,
+		UseANSI:  determineUseAnsiFlagValue(winlog.UseANSI, fbOSConfig.UseANSI),
 	}
 }
 
-func newWinevtlogInput(winlog LogWinevtlogCfg, dbPath string, tag string) FBCfgInput {
+//nolint:exhaustruct
+func newWinevtlogInput(winlog LogWinevtlogCfg, dbPath string, tag string, fbOSConfig FBOSConfig) FBCfgInput {
 	return FBCfgInput{
 		Name:     fbInputTypeWinevtlog,
 		Channels: winlog.Channel,
 		Tag:      tag,
 		DB:       dbPath,
+		UseANSI:  determineUseAnsiFlagValue(winlog.UseANSI, fbOSConfig.UseANSI),
 	}
+}
+
+// determineUseAnsiFlagValue calculates final value of the Use_ANSI flag
+// If the Use_ANSI parameter provided in the external config files is a valid boolean, then return this value
+// Else return 'true' if osUseANSI is true. Otherwise, return an empty string.
+//
+//nolint:goconst
+func determineUseAnsiFlagValue(extConfUseANSI string, osUseANSI bool) string {
+	if useAnsi, err := strconv.ParseBool(extConfUseANSI); err == nil {
+		return strconv.FormatBool(useAnsi)
+	}
+
+	if osUseANSI {
+		return "true"
+	}
+
+	return ""
 }
 
 func newSyslogInput(l LogSyslogCfg, tag string, bufSize int) (FBCfgInput, error) {
