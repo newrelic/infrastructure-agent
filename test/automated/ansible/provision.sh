@@ -32,6 +32,10 @@ ANSIBLE_STDOUT_CALLBACK=selective \
 fi
 
 ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO retry ansible-playbook -f $ANSIBLE_FORKS -i $ANSIBLE_INVENTORY test/automated/ansible/install-requirements.yml
+if [ $? -ne 0 ];then
+  echo "install-requirements.yml failed"
+  exit 1
+fi
 
 if [[ "$PLATFORM" == "macos" || "$PLATFORM" == "all" ]];then
   retry ansible-playbook \
