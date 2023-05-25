@@ -1069,7 +1069,7 @@ type Config struct {
 	// ConnectEnabled It enables or disables the connect for the agent ID resolution given the agent fingerprint.
 	// If the config option is enabled it also reconnects to update the fingerprint with the given agent ID.
 	// In case this config is enabled then it adds the resolved agent ID in the header as X-NRI-Agent-Entity-Id.
-	// Default: False
+	// Default: True
 	// Public: No
 	ConnectEnabled bool `yaml:"connect_enabled" envconfig:"connect_enabled" public:"false"`
 
