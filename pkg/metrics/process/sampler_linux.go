@@ -93,6 +93,8 @@ func (ps *processSampler) Sample() (results sample.EventBatch, err error) {
 	if ps.containerSampler.Enabled() {
 		containerDecorator, err = ps.containerSampler.NewDecorator()
 		if err != nil {
+			// ensure containerDecorator is set to nil if error
+			containerDecorator = nil
 			if id := containerIDFromNotRunningErr(err); id != "" {
 				if _, ok := containerNotRunningErrs[id]; !ok {
 					containerNotRunningErrs[id] = struct{}{}

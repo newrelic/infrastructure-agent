@@ -89,7 +89,7 @@ type containerdDecorator struct {
 // compile-time assertion.
 var _ ProcessDecorator = &containerdDecorator{} //nolint:exhaustruct
 
-func newContainerdDecorator(containerdClient helpers.ContainerdInterface, pidsCache *pidsCache) (*containerdDecorator, error) { //nolint:ireturn
+func newContainerdDecorator(containerdClient helpers.ContainerdInterface, pidsCache *pidsCache) (ProcessDecorator, error) { //nolint:ireturn
 	dec := &containerdDecorator{ //nolint:exhaustruct
 		containerdClient: containerdClient,
 		cache:            pidsCache,

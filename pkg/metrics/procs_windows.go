@@ -16,16 +16,15 @@ import (
 	"unsafe"
 
 	"github.com/StackExchange/wmi"
-	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
-	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/process"
-	"github.com/sirupsen/logrus"
-
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/acquire"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/process"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -662,6 +661,8 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 		if self.containerSampler.Enabled() {
 			containerDecorator, err = self.containerSampler.NewDecorator()
 			if err != nil {
+				// ensure containerDecorator is set to nil if error
+				containerDecorator = nil
 				if id := containerIDFromNotRunningErr(err); id != "" {
 					if _, ok := containerNotRunningErrs[id]; !ok {
 						containerNotRunningErrs[id] = struct{}{}
