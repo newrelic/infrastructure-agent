@@ -8,7 +8,7 @@ require (
 	github.com/antihax/optional v1.0.0
 	github.com/aws/aws-sdk-go v1.44.69
 	github.com/beevik/ntp v0.3.0
-	github.com/containerd/containerd v1.5.10
+	github.com/containerd/containerd v1.5.18
 	github.com/coreos/go-systemd/v22 v22.3.2
 	github.com/docker/docker v24.0.1+incompatible
 	github.com/evanphx/json-patch v4.9.0+incompatible
@@ -72,7 +72,7 @@ require (
 	github.com/klauspost/compress v1.11.13 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
-	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
+	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/moby/locker v1.0.1 // indirect
 	github.com/moby/sys/mountinfo v0.5.0 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
@@ -101,13 +101,13 @@ require (
 
 replace (
 	// fixing CVEs
-	github.com/containerd/containerd v1.2.10 => github.com/containerd/containerd v1.4.8
-	github.com/containerd/containerd v1.3.0 => github.com/containerd/containerd v1.4.8
-	github.com/containerd/containerd v1.3.0-beta.2.0.20190828155532-0293cbd26c69 => github.com/containerd/containerd v1.4.8
-	github.com/containerd/containerd v1.3.1-0.20191213020239-082f7e3aed57 => github.com/containerd/containerd v1.4.8
-	github.com/containerd/containerd v1.3.2 => github.com/containerd/containerd v1.4.8
-	github.com/containerd/containerd v1.4.0-beta.2.0.20200729163537-40b22ef07410 => github.com/containerd/containerd v1.4.8
-	github.com/containerd/containerd v1.4.1 => github.com/containerd/containerd v1.4.8
-	github.com/containerd/containerd v1.4.3 => github.com/containerd/containerd v1.4.8
+	github.com/containerd/containerd v1.2.10 => github.com/containerd/containerd v1.5.18
+	github.com/containerd/containerd v1.3.0 => github.com/containerd/containerd v1.5.18
+	github.com/containerd/containerd v1.3.0-beta.2.0.20190828155532-0293cbd26c69 => github.com/containerd/containerd v1.5.18
+	github.com/containerd/containerd v1.3.1-0.20191213020239-082f7e3aed57 => github.com/containerd/containerd v1.5.18
+	github.com/containerd/containerd v1.3.2 => github.com/containerd/containerd v1.5.18
+	github.com/containerd/containerd v1.4.0-beta.2.0.20200729163537-40b22ef07410 => github.com/containerd/containerd v1.5.18
+	github.com/containerd/containerd v1.4.1 => github.com/containerd/containerd v1.5.18
+	github.com/containerd/containerd v1.4.3 => github.com/containerd/containerd v1.5.18
 	github.com/coreos/go-systemd/v22 v22.1.0 => github.com/newrelic-forks/go-systemd/v22 v22.1.1
 )
