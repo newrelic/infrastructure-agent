@@ -52,7 +52,6 @@ func (self *CPUMonitor) Sample() (sample *CPUSample, err error) {
 	}
 
 	delta := cpuDelta(&currentTimes[0], &self.last[0])
-	self.last = currentTimes
 
 	userDelta := delta.User + delta.Nice
 	systemDelta := delta.System + delta.Irq + delta.Softirq
@@ -78,6 +77,14 @@ func (self *CPUMonitor) Sample() (sample *CPUSample, err error) {
 		CPUIdlePercent:   idlePercent,
 		CPUStealPercent:  stolenPercent,
 	}
+
+	// log samples when cpuPercent is < 0
+	if sample.CPUPercent < 0 {
+		syslog.WithField("currentTimes", currentTimes).WithField("lastTimes", self.last).Warn("cpuPercent is lower than zero")
+	}
+
+	self.last = currentTimes
+
 	return
 }
 
