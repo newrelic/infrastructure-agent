@@ -125,24 +125,24 @@ func (pw *linuxProcess) Username() (string, error) {
 	return pw.user, nil
 }
 
-func (pw *linuxProcess) uid() (string, error) {
+func (pw *linuxProcess) uid() (int32, error) {
 	uuids, err := pw.process.Uids()
 	if err != nil {
-		return "", fmt.Errorf("error getting process uids: %w", err) //nolint:wrapcheck
+		return 0, fmt.Errorf("error getting process uids: %w", err) //nolint:wrapcheck
 	}
 
 	if len(uuids) == 0 {
-		return "", errInvalidUidsForProcess //nolint:wrapcheck
+		return 0, errInvalidUidsForProcess //nolint:wrapcheck
 	}
 
-	return strconv.Itoa(int(uuids[0])), nil
+	return uuids[0], nil
 }
 
 // usernameFromGetent returns the username using getent https://man7.org/linux/man-pages/man1/getent.1.html
 // getent passwd format example:
 // deleteme:x:63367:63367:Dynamic User:/:/usr/sbin/nologin
-func usernameFromGetent(uid string) (string, error) {
-	out, err := getEntCommand("/usr/bin/getent", "", []string{"passwd", uid}...)
+func usernameFromGetent(uid int32) (string, error) {
+	out, err := getEntCommand("/usr/bin/getent", "", []string{"passwd", fmt.Sprintf("%d", uid)}...)
 	if err != nil {
 		return "", err
 	}

@@ -240,7 +240,7 @@ func Test_usernameFromGetent(t *testing.T) { //nolint:paralleltest
 				getEntCommand = helpers.RunCommand
 			}()
 
-			username, err := usernameFromGetent("123")
+			username, err := usernameFromGetent(123)
 			assert.Equal(t, testCase.expectedUsername, username)
 			assert.Equal(t, testCase.expectedError, err)
 		})
