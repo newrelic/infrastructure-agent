@@ -12,9 +12,14 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"runtime"
 	"testing"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/pkg/helpers/detection"
+
+	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
@@ -249,6 +254,66 @@ exec sleep 30s   # this will change the command name to "sleep"
 	})
 }
 
+func TestProcessSamplerUsername(t *testing.T) {
+	// Given a Process Sampler
+	ps := process.NewProcessSampler(contextMock())
+
+	// And a systemd service running with Dynamic User
+	service := "/usr/bin/deleteme"
+	content := `#!/bin/bash
+while $(sleep 1);
+do
+    echo "hello world"
+done
+`
+	writeFile(t, service, os.ModePerm, content)
+	defer os.Remove(service)
+
+	systemdFile := "/etc/systemd/system/deleteme.service"
+	content = fmt.Sprintf(`[Unit]
+Description=Hello World Service
+After=systend-user-sessions.service
+
+[Service]
+Type=simple
+ExecStart=%s
+DynamicUser=yes
+`, service)
+	writeFile(t, systemdFile, os.ModePerm, content)
+	defer os.Remove(systemdFile)
+
+	_, err := helpers.RunCommand("/usr/bin/systemctl", "", "daemon-reload")
+	_, err = helpers.RunCommand("/usr/bin/systemctl", "", []string{"start", "deleteme.service"}...)
+
+	defer func() {
+		helpers.RunCommand("/usr/bin/systemctl", "", "daemon-reload")
+		helpers.RunCommand("/usr/bin/systemctl", "", []string{"stop", "deleteme.service"}...)
+	}()
+
+	assert.NoError(t, err)
+
+	// get the process id
+	pid, err := detection.GetProcessID(filepath.Base(service))
+
+	// When we get the process sample
+	sample, err := sampleProcess(ps, pid)
+	require.NoError(t, err)
+
+	// Username is not empty
+	assert.Regexp(t, fmt.Sprintf("^%v$", path.Base("deleteme")), sample.User)
+	assert.Regexp(t, service, sample.CmdLine)
+}
+
+func writeFile(t *testing.T, path string, mode os.FileMode, content string) {
+	// Given a process whose command name and command line change at runtime
+	f, err := os.Create(path)
+	require.NoError(t, err)
+	require.NoError(t, f.Chmod(mode))
+	_, err = f.Write([]byte(content))
+	require.NoError(t, err)
+	require.NoError(t, f.Close())
+}
+
 func contextMock() *mocks.AgentContext {
 	ctx := new(mocks.AgentContext)
 	ctx.On("Config").Return(&config.Config{
@@ -309,7 +374,7 @@ func sampleProcess(ps sampler.Sampler, pid int32) (*types.ProcessSample, error) 
 
 // writeDisk generates write load to the disk.
 func writeDisk(file string) error {
-	f, err := os.OpenFile(file, os.O_CREATE|os.O_WRONLY, 0666)
+	f, err := os.OpenFile(file, os.O_CREATE|os.O_WRONLY, 0o666)
 	if err != nil {
 		return err
 	}
@@ -326,7 +391,7 @@ func writeDisk(file string) error {
 
 // readDisk generates Read disk load.
 func readDisk() error {
-	f, err := os.OpenFile(testFile, os.O_RDONLY, 0666)
+	f, err := os.OpenFile(testFile, os.O_RDONLY, 0o666)
 	if err != nil {
 		return err
 	}

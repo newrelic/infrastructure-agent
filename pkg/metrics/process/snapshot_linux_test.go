@@ -1,13 +1,18 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+//
+//nolint:goerr113
 package process
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
 	"testing"
+
+	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,7 +24,7 @@ func TestLinuxProcess_CmdLine(t *testing.T) {
 	tmpDir, err := ioutil.TempDir("", "proc")
 	require.NoError(t, err)
 	processDir := path.Join(tmpDir, "12345")
-	require.NoError(t, os.MkdirAll(processDir, 0755))
+	require.NoError(t, os.MkdirAll(processDir, 0o755))
 	_ = os.Setenv("HOST_PROC", tmpDir)
 
 	testCases := []struct {
@@ -31,11 +36,13 @@ func TestLinuxProcess_CmdLine(t *testing.T) {
 		{[]byte{'/', 'b', 'i', 'n', '/', 'b', 'a', 's', 'h', 0}, "/bin/bash"},
 		{[]byte{'/', 'b', 'i', 'n', '/', 'b', 'a', 's', 'h', 0, 'a', 'r', 'g', 0}, "/bin/bash arg"},
 		{[]byte{'-', '/', 'b', 'i', 'n', '/', 'b', 'a', 's', 'h', 0, 'a', 'r', 'g', 0}, "/bin/bash arg"},
-		{[]byte{'/', 'a', ' ', 'f', 'o', 'l', 'd', 'e', 'r', '/', 'c', 'm', 'd', 0, '-', 'a', 'g', 0, 'x', 'x', 0},
-			"/a folder/cmd -ag xx"},
+		{
+			[]byte{'/', 'a', ' ', 'f', 'o', 'l', 'd', 'e', 'r', '/', 'c', 'm', 'd', 0, '-', 'a', 'g', 0, 'x', 'x', 0},
+			"/a folder/cmd -ag xx",
+		},
 	}
 	for _, tc := range testCases {
-		require.NoError(t, ioutil.WriteFile(path.Join(processDir, "cmdline"), tc.rawProcCmdline, 0666))
+		require.NoError(t, ioutil.WriteFile(path.Join(processDir, "cmdline"), tc.rawProcCmdline, 0o600))
 		lp := linuxProcess{pid: 12345}
 		actual, err := lp.CmdLine(true)
 		assert.NoError(t, err)
@@ -49,7 +56,7 @@ func TestLinuxProcess_CmdLine_NoArgs(t *testing.T) {
 	tmpDir, err := ioutil.TempDir("", "proc")
 	require.NoError(t, err)
 	processDir := path.Join(tmpDir, "12345")
-	require.NoError(t, os.MkdirAll(processDir, 0755))
+	require.NoError(t, os.MkdirAll(processDir, 0o755))
 	_ = os.Setenv("HOST_PROC", tmpDir)
 
 	testCases := []struct {
@@ -61,11 +68,13 @@ func TestLinuxProcess_CmdLine_NoArgs(t *testing.T) {
 		{[]byte{'-', 'b', 'a', 's', 'h', 0}, "bash"},
 		{[]byte{'/', 'b', 'i', 'n', '/', 'b', 'a', 's', 'h', 0}, "/bin/bash"},
 		{[]byte{'/', 'b', 'i', 'n', '/', 'b', 'a', 's', 'h', 0, 'a', 'r', 'g', 0}, "/bin/bash"},
-		{[]byte{'/', 'a', ' ', 'f', 'o', 'l', 'd', 'e', 'r', '/', 'c', 'm', 'd', 0, '-', 'a', 'g', 0, 'x', 'x', 0},
-			"/a folder/cmd"},
+		{
+			[]byte{'/', 'a', ' ', 'f', 'o', 'l', 'd', 'e', 'r', '/', 'c', 'm', 'd', 0, '-', 'a', 'g', 0, 'x', 'x', 0},
+			"/a folder/cmd",
+		},
 	}
 	for _, tc := range testCases {
-		require.NoError(t, ioutil.WriteFile(path.Join(processDir, "cmdline"), tc.rawProcCmdline, 0666))
+		require.NoError(t, ioutil.WriteFile(path.Join(processDir, "cmdline"), tc.rawProcCmdline, 0o600))
 		lp := linuxProcess{pid: 12345}
 		actual, err := lp.CmdLine(false)
 		assert.NoError(t, err)
@@ -81,7 +90,7 @@ func TestLinuxProcess_CmdLine_NotStandard(t *testing.T) {
 	tmpDir, err := ioutil.TempDir("", "proc")
 	require.NoError(t, err)
 	processDir := path.Join(tmpDir, "12345")
-	require.NoError(t, os.MkdirAll(processDir, 0755))
+	require.NoError(t, os.MkdirAll(processDir, 0o755))
 	_ = os.Setenv("HOST_PROC", tmpDir)
 
 	testCases := []struct {
@@ -90,11 +99,13 @@ func TestLinuxProcess_CmdLine_NotStandard(t *testing.T) {
 	}{
 		{[]byte("nginx: worker process"), "nginx: worker process"},
 		{[]byte("nginx: master process /usr/sbin/nginx"), "nginx: master process /usr/sbin/nginx"},
-		{[]byte("nginx: master process /usr/sbin/nginx -c /etc/nginx/nginx.conf"),
-			"nginx: master process /usr/sbin/nginx -c /etc/nginx/nginx.conf"},
+		{
+			[]byte("nginx: master process /usr/sbin/nginx -c /etc/nginx/nginx.conf"),
+			"nginx: master process /usr/sbin/nginx -c /etc/nginx/nginx.conf",
+		},
 	}
 	for _, tc := range testCases {
-		require.NoError(t, ioutil.WriteFile(path.Join(processDir, "cmdline"), tc.rawProcCmdline, 0666))
+		require.NoError(t, ioutil.WriteFile(path.Join(processDir, "cmdline"), tc.rawProcCmdline, 0o600))
 		lp := linuxProcess{pid: 12345}
 
 		// Testing both the cases with and without command line stripping
@@ -187,6 +198,51 @@ func TestParseProcStatUntrimmedCommand(t *testing.T) {
 			actual, err := parseProcStat(c.input)
 			assert.NoError(t, err)
 			assert.Equal(t, c.expected, actual)
+		})
+	}
+}
+
+func Test_usernameFromGetent(t *testing.T) { //nolint:paralleltest
+	testCases := []struct {
+		name             string
+		getEntResult     string
+		getEntError      error
+		expectedUsername string
+		expectedError    error
+	}{
+		{
+			name:             "happy path, user exists",
+			getEntResult:     "deleteme:x:63367:63367:Dynamic User:/:/usr/sbin/nologin",
+			expectedUsername: "deleteme",
+		},
+		{
+			name:             "getent returns error (i.e. does not exist)",
+			getEntError:      errors.New("some error"),
+			expectedUsername: "",
+			expectedError:    errors.New("some error"),
+		},
+		{
+			name:             "getent returns unexpected formatted entry",
+			getEntResult:     "this is an unexpected format",
+			expectedUsername: "",
+			expectedError:    errMalformedGetentEntry,
+		},
+	}
+
+	//nolint:paralleltest
+	for i := range testCases {
+		testCase := testCases[i]
+		t.Run(testCase.name, func(t *testing.T) {
+			getEntCommand = func(command string, stdin string, args ...string) (string, error) {
+				return testCase.getEntResult, testCase.getEntError
+			}
+			defer func() {
+				getEntCommand = helpers.RunCommand
+			}()
+
+			username, err := usernameFromGetent("123")
+			assert.Equal(t, testCase.expectedUsername, username)
+			assert.Equal(t, testCase.expectedError, err)
 		})
 	}
 }
