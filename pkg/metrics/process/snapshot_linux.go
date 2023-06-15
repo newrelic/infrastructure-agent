@@ -18,9 +18,9 @@ import (
 )
 
 // linuxProcess is an implementation of the process.Snapshot interface for linux hosts. It is designed to be highly
-// optimized and avoid unnecessary/duplicated system calls
+// optimized and avoid unnecessary/duplicated system calls.
 type linuxProcess struct {
-	// if privileged == false, some operations will be avoided: FD and IO count
+	// if privileged == false, some operations will be avoided: FD and IO count.
 	privileged bool
 
 	stats    procStats
@@ -28,17 +28,25 @@ type linuxProcess struct {
 	lastCPU  CPUInfo
 	lastTime time.Time
 
-	// data that will be reused between samples of the same process
+	// data that will be reused between samples of the same process.
 	pid     int32
 	user    string
 	cmdLine string
 }
 
-// needed to calculate RSS
+// needed to calculate RSS.
 var pageSize int64
 
-// needed to calculate CPU times
+// needed to calculate CPU times.
 var clockTicks int64
+
+// for testing getting username from getent.
+var getEntCommand = helpers.RunCommand //nolint:gochecknoglobals
+
+var (
+	errMalformedGetentEntry  = errors.New("malformed getent entry")
+	errInvalidUidsForProcess = errors.New("invalid uids for process")
+)
 
 func init() {
 	pageSize = int64(os.Getpagesize())
@@ -96,12 +104,54 @@ func (pw *linuxProcess) Pid() int32 {
 func (pw *linuxProcess) Username() (string, error) {
 	var err error
 	if pw.user == "" { // caching user
+		// try to get it from gopsutil and return it if ok
 		pw.user, err = pw.process.Username()
+		if err == nil {
+			return pw.user, nil
+		}
+
+		// get the uid to be retrieved from getent
+		uid, err := pw.uid()
+		if err != nil {
+			return "", err
+		}
+
+		// try to get it using getent
+		pw.user, err = usernameFromGetent(uid)
 		if err != nil {
 			return "", err
 		}
 	}
 	return pw.user, nil
+}
+
+func (pw *linuxProcess) uid() (int32, error) {
+	uuids, err := pw.process.Uids()
+	if err != nil {
+		return 0, fmt.Errorf("error getting process uids: %w", err) //nolint:wrapcheck
+	}
+
+	if len(uuids) == 0 {
+		return 0, errInvalidUidsForProcess //nolint:wrapcheck
+	}
+
+	return uuids[0], nil
+}
+
+// usernameFromGetent returns the username using getent https://man7.org/linux/man-pages/man1/getent.1.html
+// getent passwd format example:
+// deleteme:x:63367:63367:Dynamic User:/:/usr/sbin/nologin
+func usernameFromGetent(uid int32) (string, error) {
+	out, err := getEntCommand("/usr/bin/getent", "", []string{"passwd", fmt.Sprintf("%d", uid)}...)
+	if err != nil {
+		return "", err
+	}
+
+	if sepIdx := strings.Index(out, ":"); sepIdx > 0 {
+		return out[0:sepIdx], nil
+	}
+
+	return "", errMalformedGetentEntry //nolint:wrapcheck
 }
 
 func (pw *linuxProcess) IOCounters() (*process.IOCountersStat, error) {

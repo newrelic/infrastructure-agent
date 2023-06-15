@@ -3,7 +3,7 @@
 package detection
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics"
@@ -17,15 +17,21 @@ const InfraAgentProcessName = "newrelic-infra"
 
 // GetInfraAgentProcess returns the pid for the infra-agent process.
 func GetInfraAgentProcess() (int32, error) {
+	return GetProcessID(InfraAgentProcessName)
+}
+
+// GetProcessID returns the pid for the given process.
+func GetProcessID(processName string) (int32, error) {
 	ps, _ := process.Processes()
 	for _, p := range ps {
 		n, _ := p.Name()
 
-		if n == InfraAgentProcessName {
+		if n == processName {
 			return p.Pid, nil
 		}
 	}
-	return 0, errors.New("couldn't find the newrelic-infra process")
+
+	return 0, fmt.Errorf("couldn't find the %s process", processName) //nolint:goerr113,wrapcheck
 }
 
 // IsContainerized is checking if a pid is running inside a docker container.
