@@ -9,6 +9,10 @@
       include_role:
         name: remove-eol-sources
 
+    - name: re-install rpm
+      include_role:
+        name: reinstall-rpm
+
     - name: install python
       include_role:
         name: install-python
