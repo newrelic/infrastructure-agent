@@ -1,4 +1,4 @@
-FROM golang:1.19.9-bullseye
+FROM golang:1.20.5-bullseye
 
 ARG GH_VERSION='2.0.0'
 ARG GH_ARCH='amd64'
