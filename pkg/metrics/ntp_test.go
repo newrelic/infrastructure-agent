@@ -246,7 +246,7 @@ func mustParse(layout string, value string) time.Time {
 
 func buildValidNtpResponse(offset time.Duration) *ntp.Response {
 	// A response that should pass the ntp.Validate() check without errors
-	return &ntp.Response{ // nolint:exhaustruct
+	return &ntp.Response{ //nolint:exhaustruct
 		// Stratum should be not 0 and lower than 16
 		Stratum: 1,
 		// Leap should not be ntp.LeapNotInSync
