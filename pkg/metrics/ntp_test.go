@@ -108,7 +108,7 @@ func TestOffset_Cache(t *testing.T) {
 			name:              "first request should not use cached value",
 			now:               nowMock("2022-09-28 16:02:45"),
 			pool:              []string{"one", "two"},
-			ntpResponses:      []ntpResp{{&ntp.Response{ClockOffset: 50 * time.Millisecond}, nil}, {&ntp.Response{ClockOffset: 10 * time.Millisecond}, nil}},
+			ntpResponses:      []ntpResp{{buildValidNtpResponse(50 * time.Millisecond), nil}, {buildValidNtpResponse(10 * time.Millisecond), nil}},
 			expectedOffset:    30 * time.Millisecond,
 			expectedUpdatedAt: mustParse("2006-01-02 15:04:05", "2022-09-28 16:02:45"), // same as now
 		},
@@ -127,7 +127,7 @@ func TestOffset_Cache(t *testing.T) {
 			updatedAt:         mustParse("2006-01-02 15:04:05", "2022-09-28 15:42:45"),
 			pool:              []string{"one", "two"},
 			offset:            20 * time.Millisecond,
-			ntpResponses:      []ntpResp{{&ntp.Response{ClockOffset: 50 * time.Millisecond}, nil}, {&ntp.Response{ClockOffset: 10 * time.Millisecond}, nil}},
+			ntpResponses:      []ntpResp{{buildValidNtpResponse(50 * time.Millisecond), nil}, {buildValidNtpResponse(10 * time.Millisecond), nil}},
 			expectedOffset:    30 * time.Millisecond,
 			expectedUpdatedAt: mustParse("2006-01-02 15:04:05", "2022-09-28 16:02:45"), // same as now
 		},
@@ -153,15 +153,15 @@ func TestOffset_OffsetAverage(t *testing.T) {
 	ntpMonitor := NewNtp([]string{"one", "two", "three"}, timeout, interval)
 	ntpMonitor.ntpQuery = ntpQueryMock([]ntpResp{
 		{
-			resp: &ntp.Response{ClockOffset: 110 * time.Millisecond},
+			resp: buildValidNtpResponse(110 * time.Millisecond),
 			err:  nil,
 		},
 		{
-			resp: &ntp.Response{ClockOffset: 20 * time.Millisecond},
+			resp: buildValidNtpResponse(20 * time.Millisecond),
 			err:  nil,
 		},
 		{
-			resp: &ntp.Response{ClockOffset: 23 * time.Millisecond},
+			resp: buildValidNtpResponse(23 * time.Millisecond),
 			err:  nil,
 		},
 	}...)
@@ -177,14 +177,14 @@ func TestOffset_AnyHostErrorShouldNotReturnError(t *testing.T) {
 	ntpMonitor := NewNtp([]string{"one", "two", "three"}, timeout, interval)
 	ntpMonitor.ntpQuery = ntpQueryMock([]ntpResp{
 		{
-			resp: &ntp.Response{ClockOffset: 50 * time.Millisecond},
+			resp: buildValidNtpResponse(50 * time.Millisecond),
 			err:  nil,
 		},
 		{
 			err: errors.New("this is an error"),
 		},
 		{
-			resp: &ntp.Response{ClockOffset: 40 * time.Millisecond},
+			resp: buildValidNtpResponse(40 * time.Millisecond),
 			err:  nil,
 		},
 	}...)
@@ -242,4 +242,16 @@ func mustParse(layout string, value string) time.Time {
 	}
 
 	return t
+}
+
+func buildValidNtpResponse(offset time.Duration) *ntp.Response {
+	// A response that should pass the ntp.Validate() check without errors
+	return &ntp.Response{
+		// Stratum should be not 0 and lower than 16
+		Stratum: 1,
+		// Leap should not be ntp.LeapNotInSync
+		Leap: ntp.LeapNoWarning,
+
+		ClockOffset: offset,
+	}
 }
