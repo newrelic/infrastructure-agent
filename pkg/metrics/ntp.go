@@ -87,12 +87,14 @@ func (p *Ntp) Offset() (time.Duration, error) {
 		if err != nil {
 			ntpQueryErr = multierr.Append(ntpQueryErr, err)
 			syslog.WithError(err).WithField("ntp_host", host).WithField("timeout", p.timeout).Debug("error getting ntp offset")
+
 			continue
 		}
 
 		if response.Validate() != nil {
 			ntpQueryErr = multierr.Append(ntpQueryErr, err)
 			syslog.WithError(err).WithField("ntp_host", host).WithField("timeout", p.timeout).Debug("error validating ntp response, skipping")
+
 			continue
 		}
 
