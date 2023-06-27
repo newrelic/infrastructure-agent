@@ -215,6 +215,54 @@ func TestOffset_AllHostErrorShouldReturnError(t *testing.T) {
 	assert.ErrorAs(t, err, &ErrGettingNtpOffset)
 }
 
+func TestOffset_InvalidNtpResponse(t *testing.T) {
+	timeout := uint(5000)
+	interval := uint(15)
+	ntpMonitor := NewNtp([]string{"one", "two", "three"}, timeout, interval)
+	ntpMonitor.ntpQuery = ntpQueryMock([]ntpResp{
+		{
+			resp: buildInvalidNtpResponse(),
+			err:  nil,
+		},
+		{
+			resp: buildInvalidNtpResponse(),
+			err:  nil,
+		},
+		{
+			resp: buildInvalidNtpResponse(),
+			err:  nil,
+		},
+	}...)
+	ntpMonitor.now = nowMock("2022-09-28 16:02:45")
+	offset, err := ntpMonitor.Offset()
+	assert.Equal(t, time.Duration(0), offset)
+	assert.ErrorAs(t, err, &ErrGettingNtpOffset)
+}
+
+func TestOffset_AnyHostInvalidShouldNotReturnError(t *testing.T) {
+	timeout := uint(5000)
+	interval := uint(15)
+	ntpMonitor := NewNtp([]string{"one", "two", "three"}, timeout, interval)
+	ntpMonitor.ntpQuery = ntpQueryMock([]ntpResp{
+		{
+			resp: buildValidNtpResponse(50 * time.Millisecond),
+			err:  nil,
+		},
+		{
+			resp: buildInvalidNtpResponse(),
+			err:  nil,
+		},
+		{
+			resp: buildValidNtpResponse(40 * time.Millisecond),
+			err:  nil,
+		},
+	}...)
+	ntpMonitor.now = nowMock("2022-09-28 16:02:45")
+	offset, err := ntpMonitor.Offset()
+	assert.Equal(t, time.Millisecond*45, offset)
+	assert.Equal(t, nil, err)
+}
+
 // nolint:unparam
 func nowMock(dateTime string) func() time.Time {
 	return func() time.Time {
@@ -253,5 +301,15 @@ func buildValidNtpResponse(offset time.Duration) *ntp.Response {
 		Leap: ntp.LeapNoWarning,
 
 		ClockOffset: offset,
+	}
+}
+
+func buildInvalidNtpResponse() *ntp.Response {
+	// A response that should fail the ntp.Validate() check
+	return &ntp.Response{ //nolint:exhaustivestruct
+		// Stratum should be not 0 and lower than 16
+		Stratum: 0,
+		// Leap should not be ntp.LeapNotInSync
+		Leap: ntp.LeapNotInSync,
 	}
 }
