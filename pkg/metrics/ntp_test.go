@@ -216,6 +216,8 @@ func TestOffset_AllHostErrorShouldReturnError(t *testing.T) {
 }
 
 func TestOffset_InvalidNtpResponse(t *testing.T) {
+	t.Parallel()
+
 	timeout := uint(5000)
 	interval := uint(15)
 	ntpMonitor := NewNtp([]string{"one", "two", "three"}, timeout, interval)
@@ -240,6 +242,8 @@ func TestOffset_InvalidNtpResponse(t *testing.T) {
 }
 
 func TestOffset_AnyHostInvalidShouldNotReturnError(t *testing.T) {
+	t.Parallel()
+
 	timeout := uint(5000)
 	interval := uint(15)
 	ntpMonitor := NewNtp([]string{"one", "two", "three"}, timeout, interval)
@@ -306,7 +310,7 @@ func buildValidNtpResponse(offset time.Duration) *ntp.Response {
 
 func buildInvalidNtpResponse() *ntp.Response {
 	// A response that should fail the ntp.Validate() check
-	return &ntp.Response{ //nolint:exhaustivestruct
+	return &ntp.Response{ //nolint:exhaustruct
 		// Stratum should be not 0 and lower than 16
 		Stratum: 0,
 		// Leap should not be ntp.LeapNotInSync
