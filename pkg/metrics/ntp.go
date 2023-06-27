@@ -84,12 +84,23 @@ func (p *Ntp) Offset() (time.Duration, error) {
 	var ntpQueryErr error
 	for _, host := range p.pool {
 		response, err := p.ntpQuery(host, ntp.QueryOptions{Timeout: p.timeout})
-		if err == nil {
-			offsets = append(offsets, response.ClockOffset)
-		} else {
+		if err != nil {
 			ntpQueryErr = multierr.Append(ntpQueryErr, err)
 			syslog.WithError(err).WithField("ntp_host", host).WithField("timeout", p.timeout).Debug("error getting ntp offset")
+
+			continue
 		}
+
+		err = response.Validate()
+		if err != nil {
+			ntpQueryErr = multierr.Append(ntpQueryErr, err)
+			syslog.WithError(err).WithField("ntp_host", host).WithField("timeout", p.timeout).Debug("error validating ntp response, skipping")
+
+			continue
+		}
+
+		syslog.WithField("ntp_host", host).WithField("response", response).Trace("valid ntp response retrieved")
+		offsets = append(offsets, response.ClockOffset)
 	}
 
 	if len(offsets) == 0 {
