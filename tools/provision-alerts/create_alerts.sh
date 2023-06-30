@@ -17,7 +17,7 @@ for CURRENT in $( cat $INVENTORY | grep -v $PREVIOUS | grep linux | grep ansible
 done
 for CURRENT in $( cat $INVENTORY | grep -v $PREVIOUS | grep -v linux | grep ansible_host | awk '{print $1}' );do
   export DISPLAY_NAME_CURRENT=$CURRENT
-  export DISPLAY_NAME_PREVIOUS=$( echo $DISPLAY_NAME_CURRENT | sed 's/canary:[^:]*:/canary:'$PREVIOUS':/g' )
+  export DISPLAY_NAME_PREVIOUS=$( echo $DISPLAY_NAME_CURRENT | sed 's/canary:[^:]*:/canary:v'$PREVIOUS':/g' )
   echo "${DISPLAY_NAME_CURRENT}:${DISPLAY_NAME_PREVIOUS}"
   NR_API_KEY=$API_KEY make provision-alerts
 done
