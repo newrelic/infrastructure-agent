@@ -25,9 +25,18 @@ rpm --import /tmp/RPM-GPG-KEY-${GPG_MAIL}
 
 cd dist
 
+sles_regex="(.*sles12.[0-9]*\.[x86_64|arm]+\.rpm)"
+
 for rpm_file in $(find -regex ".*\.\(rpm\)");do
   echo "===> Signing $rpm_file"
-  rpm --addsign $rpm_file
+
+  # if suse 12.x, then add --rpmv3
+  if [[ $rpm_file =~ $sles_regex ]]; then
+    rpmsign --addsign --rpmv3 $rpm_file
+  else
+    rpmsign --addsign $rpm_file
+  fi
+
   echo "===> Sign verification $rpm_file"
   rpm -v --checksig $rpm_file
 done
