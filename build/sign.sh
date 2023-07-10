@@ -25,7 +25,7 @@ rpm --import /tmp/RPM-GPG-KEY-${GPG_MAIL}
 
 cd dist
 
-sles_regex="(.*sles12.[0-9]*\.[x86_64|arm]+\.rpm)"
+sles_regex="(.*sles12.*)"
 
 for rpm_file in $(find -regex ".*\.\(rpm\)");do
   echo "===> Signing $rpm_file"
