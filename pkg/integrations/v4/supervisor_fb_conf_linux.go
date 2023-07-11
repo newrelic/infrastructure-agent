@@ -4,7 +4,11 @@
 
 package v4
 
-import "path/filepath"
+import (
+	"path/filepath"
+
+	"github.com/newrelic/infrastructure-agent/pkg/helpers"
+)
 
 const (
 	// defaults for td-agent-bit (<=1.9).
@@ -16,7 +20,7 @@ const (
 )
 
 func (c *fBSupervisorConfig) defaultLoggingBinDir(ffExists bool, ffEnabled bool) string {
-	if ffExists && ffEnabled {
+	if (ffExists && ffEnabled) || onlyTdAgentInstalled() {
 		return defaultLoggingBinDir1
 	}
 
@@ -25,9 +29,16 @@ func (c *fBSupervisorConfig) defaultLoggingBinDir(ffExists bool, ffEnabled bool)
 
 func (c *fBSupervisorConfig) defaultFluentBitExePath(ffExists bool, ffEnabled bool, loggingBinDir string) string {
 	defaultFluentBitExe := defaultFluentBitExecutable2
-	if ffExists && ffEnabled {
+	if (ffExists && ffEnabled) || onlyTdAgentInstalled() {
 		defaultFluentBitExe = defaultFluentBitExecutable1
 	}
 
 	return filepath.Join(loggingBinDir, defaultFluentBitExe)
+}
+
+func onlyTdAgentInstalled() bool {
+	fbExePath := filepath.Join(defaultLoggingBinDir2, defaultFluentBitExecutable2)
+	tdExePath := filepath.Join(defaultLoggingBinDir1, defaultFluentBitExecutable1)
+
+	return helpers.FileExists(tdExePath) && !helpers.FileExists(fbExePath)
 }
