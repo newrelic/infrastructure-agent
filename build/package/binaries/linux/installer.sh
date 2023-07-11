@@ -249,6 +249,9 @@ install_agent() {
     cp ./usr/bin/* "${NRIA_BIN_DIR}"
 
     if [ "$NRIA_MODE" = "PRIVILEGED" ]; then
+        chown "${NRIA_USER}" "${binary}"
+        chmod 0754 "${binary}"
+
         # Give the Agent kernel capabilities if setcap command exists.
         set_cap=$(command -v setcap) || set_cap="/sbin/setcap" && [ -f $set_cap ] || set_cap=""
         if [ ! -z "${set_cap}" ]; then
@@ -256,8 +259,6 @@ install_agent() {
             eval "${set_cap} 'CAP_SYS_PTRACE,CAP_DAC_READ_SEARCH=+ep' ${binary}" || exit 1
         fi
 
-        chown "${NRIA_USER}" "${binary}"
-        chmod 0754 "${binary}"
     fi
 
     # Create file structure and copy files.
