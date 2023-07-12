@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/containerd/containerd"
+	"github.com/containerd/containerd/errdefs"
 	"github.com/containerd/containerd/namespaces"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 
@@ -143,8 +144,11 @@ func (d *containerdDecorator) pidsWithCache(container containerd.Container, name
 	ctx := namespaces.WithNamespace(context.Background(), namespace)
 	task, err := container.Task(ctx, nil)
 	if err != nil {
-		cslog.WithError(err).WithField("container", container.ID()).Debug(errCannotGetTask.Error())
-
+		// If no task is found for a given container, there is no execution instance of it.
+		if errdefs.IsNotFound(err) {
+			cslog.WithError(err).WithField("container", container.ID()).Debug(errCannotGetTask.Error())
+			return nil
+		}
 		return fmt.Errorf("%s: %w", errContainerdSampler.Error(), err)
 	}
 
