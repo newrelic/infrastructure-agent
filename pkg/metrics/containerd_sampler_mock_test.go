@@ -56,7 +56,14 @@ func (mc *MockContainerContainerdImpl) Namespaces() ([]string, error) {
 
 func (mc *MockContainerContainerdImpl) Containers(_ ...string) (map[string][]containerd.Container, error) {
 	// default container with a running task
-	container := &MockContainerdContainer{}
+	container := &MockContainerdContainer{
+		id: func() string {
+			return containerID
+		},
+		task: func(_ context.Context, _ cio.Attach) (containerd.Task, error) {
+			return &MockContainerdTask{}, nil
+		},
+	}
 
 	// container without a running task
 	noRunningContainer := &MockContainerdContainer{
