@@ -15,6 +15,7 @@ import (
 	"github.com/containerd/containerd/cio"
 	"github.com/containerd/containerd/containers"
 	"github.com/containerd/containerd/content"
+	"github.com/containerd/containerd/errdefs"
 	"github.com/containerd/containerd/images"
 	"github.com/containerd/containerd/oci"
 	prototypes "github.com/gogo/protobuf/types"
@@ -54,9 +55,27 @@ func (mc *MockContainerContainerdImpl) Namespaces() ([]string, error) {
 }
 
 func (mc *MockContainerContainerdImpl) Containers(_ ...string) (map[string][]containerd.Container, error) {
-	container := &MockContainerdContainer{}
+	// container with a running task
+	container := &MockContainerdContainer{
+		id: func() string {
+			return containerID
+		},
+		task: func(_ context.Context, _ cio.Attach) (containerd.Task, error) {
+			return &MockContainerdTask{}, nil
+		},
+	}
 
-	return map[string][]containerd.Container{"default": {container}}, nil
+	// container without a running task
+	noRunningContainer := &MockContainerdContainer{
+		id: func() string {
+			return containerID2
+		},
+		task: func(_ context.Context, _ cio.Attach) (containerd.Task, error) {
+			return nil, errdefs.ErrNotFound
+		},
+	}
+
+	return map[string][]containerd.Container{"default": {container, noRunningContainer}}, nil
 }
 
 type MockContainerWithDataContainerdImpl struct {
@@ -80,10 +99,13 @@ func (mc *MockContainerWithNoPids) Containers(_ ...string) (map[string][]contain
 }
 
 // Mock implementation for containerd.Container interface.
-type MockContainerdContainer struct{}
+type MockContainerdContainer struct {
+	id   func() string
+	task func(_ context.Context, _ cio.Attach) (containerd.Task, error)
+}
 
 func (m *MockContainerdContainer) ID() string {
-	return containerID
+	return m.id()
 }
 
 func (m *MockContainerdContainer) Info(_ context.Context, _ ...containerd.InfoOpts) (containers.Container, error) {
@@ -109,8 +131,8 @@ func (m *MockContainerdContainer) Spec(_ context.Context) (*oci.Spec, error) {
 	return nil, errUnimplemented
 }
 
-func (m *MockContainerdContainer) Task(_ context.Context, _ cio.Attach) (containerd.Task, error) { //nolint:ireturn
-	return &MockContainerdTask{}, nil
+func (m *MockContainerdContainer) Task(ctx context.Context, attach cio.Attach) (containerd.Task, error) { //nolint:ireturn
+	return m.task(ctx, attach)
 }
 
 func (m *MockContainerdContainer) Image(_ context.Context) (containerd.Image, error) { //nolint:ireturn
