@@ -118,6 +118,10 @@ func (d *containerdDecorator) pidsContainers() (map[uint32]helpers.ContainerdMet
 			// For each container, get the PIDs
 			err := d.pidsWithCache(container, namespace, pidsContainers)
 			if err != nil {
+				// If no task is found for a given container, there is no execution instance of it.
+				if errdefs.IsNotFound(err) {
+					continue
+				}
 				return nil, err
 			}
 		}
@@ -144,11 +148,8 @@ func (d *containerdDecorator) pidsWithCache(container containerd.Container, name
 	ctx := namespaces.WithNamespace(context.Background(), namespace)
 	task, err := container.Task(ctx, nil)
 	if err != nil {
-		// If no task is found for a given container, there is no execution instance of it.
-		if errdefs.IsNotFound(err) {
-			cslog.WithError(err).WithField("container", container.ID()).Debug(errCannotGetTask.Error())
-			return nil
-		}
+		cslog.WithError(err).WithField("container", container.ID()).Debug(errCannotGetTask.Error())
+
 		return fmt.Errorf("%s: %w", errContainerdSampler.Error(), err)
 	}
 

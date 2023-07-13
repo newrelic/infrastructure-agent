@@ -55,15 +55,8 @@ func (mc *MockContainerContainerdImpl) Namespaces() ([]string, error) {
 }
 
 func (mc *MockContainerContainerdImpl) Containers(_ ...string) (map[string][]containerd.Container, error) {
-	// container with a running task
-	container := &MockContainerdContainer{
-		id: func() string {
-			return containerID
-		},
-		task: func(_ context.Context, _ cio.Attach) (containerd.Task, error) {
-			return &MockContainerdTask{}, nil
-		},
-	}
+	// default container with a running task
+	container := &MockContainerdContainer{}
 
 	// container without a running task
 	noRunningContainer := &MockContainerdContainer{
@@ -105,6 +98,10 @@ type MockContainerdContainer struct {
 }
 
 func (m *MockContainerdContainer) ID() string {
+	// return default containerID if no custom id function is set
+	if m.id == nil {
+		return containerID
+	}
 	return m.id()
 }
 
@@ -132,6 +129,10 @@ func (m *MockContainerdContainer) Spec(_ context.Context) (*oci.Spec, error) {
 }
 
 func (m *MockContainerdContainer) Task(ctx context.Context, attach cio.Attach) (containerd.Task, error) { //nolint:ireturn
+	// return empty task if no custom task function is set
+	if m.task == nil {
+		return &MockContainerdTask{}, nil
+	}
 	return m.task(ctx, attach)
 }
 
