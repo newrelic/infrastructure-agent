@@ -21,6 +21,7 @@ type HostMonitor struct {
 
 type NtpMonitor interface {
 	Offset() (time.Duration, error)
+	ValidInterval() bool
 }
 
 func NewHostMonitor(ntpMonitor NtpMonitor) *HostMonitor {
@@ -36,12 +37,14 @@ func (m *HostMonitor) Sample() (*HostSample, error) {
 	hostSample.Uptime = uptime
 
 	if m.ntpMonitor != nil {
-		ntpOffset, err := m.ntpMonitor.Offset()
-		if err != nil {
-			syslog.WithError(err).Error("cannot get ntp offset")
-		} else {
-			seconds := ntpOffset.Seconds()
-			hostSample.NtpOffset = &seconds
+		if m.ntpMonitor.ValidInterval() {
+			ntpOffset, err := m.ntpMonitor.Offset()
+			if err != nil {
+				syslog.WithError(err).Error("cannot get ntp offset")
+			} else {
+				seconds := ntpOffset.Seconds()
+				hostSample.NtpOffset = &seconds
+			}
 		}
 	}
 

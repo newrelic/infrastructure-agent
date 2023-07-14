@@ -138,7 +138,6 @@ func TestOffset_Cache(t *testing.T) {
 			ntpMonitor.ntpQuery = ntpQueryMock(testCase.ntpResponses...)
 			ntpMonitor.now = testCase.now
 			ntpMonitor.updatedAt = testCase.updatedAt
-			ntpMonitor.offset = testCase.offset
 			offset, err := ntpMonitor.Offset()
 			assert.Equal(t, testCase.expectedOffset, offset)
 			assert.Equal(t, testCase.expectedError, err)
