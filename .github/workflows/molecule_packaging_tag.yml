@@ -1,10 +1,15 @@
-name: . 🚀 🧬 Test specific version installation
+name: . 🚀 🧬 Test package installation
 on:
+  schedule:
+    # Scheduled to run at x:00 every hour.
+    - cron: '0 * * * *'
   workflow_dispatch:
     inputs:
       tag:
         description: 'Version of the agent to test installation'
         required: true
+        type: string
+        default: '1.43.1'
       staging:
         description: 'Should run tests using staging bucket?'
         type: boolean
