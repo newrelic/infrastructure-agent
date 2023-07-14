@@ -1,0 +1,12 @@
+name: . 🚀 🧬 Test prod repository with molecule
+on:
+  schedule:
+    # Scheduled to run at x:00 every hour.
+    - cron: '0 * * * *'
+
+jobs:
+  molecule-packaging-tests:
+    uses: ./.github/workflows/component_molecule_packaging.yml
+    with:
+      TAG: 1.43.2
+      REPO_ENDPOINT: 'https://download.newrelic.com/infrastructure_agent'
