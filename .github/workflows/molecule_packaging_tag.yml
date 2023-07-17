@@ -20,5 +20,5 @@ jobs:
   molecule-packaging-tests:
     uses: ./.github/workflows/component_molecule_packaging.yml
     with:
-      TAG: ${{ github.event.inputs.tag }}
+      TAG: "${{ github.event.inputs.tag || '1.43.2' }}"
       REPO_ENDPOINT: ${{ github.event.inputs.staging == 'true' && 'http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent' ||  'https://download.newrelic.com/infrastructure_agent'  }}
