@@ -23,6 +23,7 @@ const (
 var (
 	ErrEmptyNtpHosts    = errors.New("ntp host list is empty")
 	ErrGettingNtpOffset = errors.New("cannot get ntp offset")
+	ErrNotInInterval    = errors.New("cannot query ntp servers offset inside interval")
 )
 
 type Ntp struct {
@@ -30,6 +31,7 @@ type Ntp struct {
 	timeout   time.Duration // ntp request timeout in seconds
 	interval  time.Duration // ntp request interval in minutes
 	updatedAt time.Time     // last time the ntp offset was fetched
+	offset    *float64      // cache for last offset value retrieved
 	now       func() time.Time
 	ntpQuery  func(host string, opt ntp.QueryOptions) (*ntp.Response, error)
 }
@@ -68,17 +70,17 @@ func guardInterval(interval uint) uint {
 	return interval
 }
 
-// ValidInterval returns true if we are in the correct interval to query the Ntp Offset
-func (p *Ntp) ValidInterval() bool {
-	// Servers should be queried once every p.interval
-	return p.now().Sub(p.updatedAt) < p.interval
-}
-
-// Offset returns the Ntp servers offset. To prevent stressing Ntp Servers, it should be only called if ValidInterval.
+// Offset returns the Ntp servers offset.
 func (p *Ntp) Offset() (time.Duration, error) {
 	if len(p.pool) == 0 {
 		return 0, ErrEmptyNtpHosts
 	}
+
+	if p.now().Sub(p.updatedAt) < p.interval {
+		// return error in case outside query interval
+		return 0, ErrNotInInterval
+	}
+
 	// update current interval even if error
 	defer func() {
 		p.updatedAt = p.now()
@@ -117,6 +119,9 @@ func (p *Ntp) Offset() (time.Duration, error) {
 	for _, offset := range offsets {
 		total += offset
 	}
+
+	offsetSeconds := (total / time.Duration(len(offsets))).Seconds()
+	p.offset = &offsetSeconds
 
 	return total / time.Duration(len(offsets)), nil
 }

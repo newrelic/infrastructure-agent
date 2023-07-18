@@ -85,7 +85,7 @@ func TestNewNtp_Timeout(t *testing.T) {
 	}
 }
 
-func TestOffset_Cache(t *testing.T) {
+func TestOffset_Interval(t *testing.T) {
 	testCases := []struct {
 		name              string
 		interval          uint
@@ -113,12 +113,11 @@ func TestOffset_Cache(t *testing.T) {
 			expectedUpdatedAt: mustParse("2006-01-02 15:04:05", "2022-09-28 16:02:45"), // same as now
 		},
 		{
-			name:              "request before interval should use cached value",
+			name:              "request before interval should return interval error",
 			now:               nowMock("2022-09-28 16:02:45"),
 			updatedAt:         mustParse("2006-01-02 15:04:05", "2022-09-28 15:52:45"),
 			pool:              []string{"one", "two"},
-			offset:            20 * time.Millisecond,
-			expectedOffset:    20 * time.Millisecond,
+			expectedError:     ErrNotInInterval,
 			expectedUpdatedAt: mustParse("2006-01-02 15:04:05", "2022-09-28 15:52:45"),
 		},
 		{
@@ -131,6 +130,15 @@ func TestOffset_Cache(t *testing.T) {
 			expectedOffset:    30 * time.Millisecond,
 			expectedUpdatedAt: mustParse("2006-01-02 15:04:05", "2022-09-28 16:02:45"), // same as now
 		},
+		{
+			name:              "request with query error should update updatedAt",
+			now:               nowMock("2022-09-28 16:02:45"),
+			updatedAt:         mustParse("2006-01-02 15:04:05", "2022-09-28 15:42:45"),
+			pool:              []string{"one"},
+			ntpResponses:      []ntpResp{{nil, errors.New("this is an error")}},
+			expectedError:     ErrGettingNtpOffset,
+			expectedUpdatedAt: mustParse("2006-01-02 15:04:05", "2022-09-28 16:02:45"), // same as now
+		},
 	}
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
@@ -140,7 +148,7 @@ func TestOffset_Cache(t *testing.T) {
 			ntpMonitor.updatedAt = testCase.updatedAt
 			offset, err := ntpMonitor.Offset()
 			assert.Equal(t, testCase.expectedOffset, offset)
-			assert.Equal(t, testCase.expectedError, err)
+			assert.ErrorIs(t, err, testCase.expectedError)
 			assert.Equal(t, testCase.expectedUpdatedAt, ntpMonitor.updatedAt)
 		})
 	}
