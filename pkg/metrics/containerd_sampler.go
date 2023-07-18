@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/containerd/containerd"
+	"github.com/containerd/containerd/errdefs"
 	"github.com/containerd/containerd/namespaces"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 
@@ -117,6 +118,10 @@ func (d *containerdDecorator) pidsContainers() (map[uint32]helpers.ContainerdMet
 			// For each container, get the PIDs
 			err := d.pidsWithCache(container, namespace, pidsContainers)
 			if err != nil {
+				// If no task is found for a given container, there is no execution instance of it.
+				if errdefs.IsNotFound(err) {
+					continue
+				}
 				return nil, err
 			}
 		}

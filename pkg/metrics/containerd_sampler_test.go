@@ -15,6 +15,7 @@ import (
 )
 
 const containerID = "container1"
+const containerID2 = "container2"
 
 func TestInitializeContainerdClient(t *testing.T) {
 	t.Parallel()
@@ -90,6 +91,10 @@ func TestContainerdProcessDecoratorDecorateProcessSample(t *testing.T) {
 
 	decorator, err := newContainerdDecorator(mock, pidsCache)
 	assert.NoError(t, err)
+
+	// ensure container without running state is not cached
+	_, found := pidsCache.get(containerID2)
+	assert.Equal(t, false, found)
 
 	process := metricTypes.ProcessSample{ProcessID: 123} //nolint:exhaustruct
 	decorator.Decorate(&process)
