@@ -14,11 +14,9 @@ ENV ANSIBLE_INVENTORY_FOLDER=$ANSIBLE_INVENTORY_FOLDER_ARG
 VOLUME /srv/runner/inventory/
 
 RUN apt-get update
-RUN DEBIAN_FRONTEND=noninteractive apt install -y make wget unzip git gcc curl jq python3
+RUN DEBIAN_FRONTEND=noninteractive apt install -y make wget unzip git gcc curl jq python3 pip
 
-RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
-    python3 get-pip.py --user && \
-    python3 -m pip install --user ansible==$ANSIBLE_VERSION jmespath pywinrm
+RUN python3 -m pip install --user ansible==$ANSIBLE_VERSION jmespath pywinrm
 ENV PATH=$PATH:/root/.local/bin
 
 RUN wget "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"  && unzip awscli-exe-linux-x86_64.zip && ./aws/install
