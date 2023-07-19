@@ -33,6 +33,11 @@ TESTS_TO_RUN_REGEXP ?= ".*"
 test/automated/harvest:
 	AGENT_RUN_DIR=$(CURDIR) ANSIBLE_FORKS=$(ANSIBLE_FORKS) ANSIBLE_INVENTORY=$(ANSIBLE_INVENTORY) $(CURDIR)/test/harvest/ansible/harvest.sh
 
+.PHONY: test/automated/install-requirements
+test/automated/install-requirements:
+	@ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO ANSIBLE_DISPLAY_OK_HOSTS=NO ansible-playbook -f $(ANSIBLE_FORKS)  -i $(ANSIBLE_INVENTORY) --limit=$(LIMIT) $(CURDIR)/test/automated/ansible/install-requirements.yml
+
+
 .PHONY: test/automated/packaging
 test/automated/packaging:
 ifndef NR_LICENSE_KEY
