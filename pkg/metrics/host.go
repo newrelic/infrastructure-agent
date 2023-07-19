@@ -4,6 +4,7 @@
 package metrics
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -17,6 +18,7 @@ type HostSample struct {
 
 type HostMonitor struct {
 	ntpMonitor NtpMonitor
+	ntpOffset  *float64 // cache for last offset value retrieved
 }
 
 type NtpMonitor interface {
@@ -38,11 +40,16 @@ func (m *HostMonitor) Sample() (*HostSample, error) {
 	if m.ntpMonitor != nil {
 		ntpOffset, err := m.ntpMonitor.Offset()
 		if err != nil {
-			syslog.WithError(err).Error("cannot get ntp offset")
+			// skip the error and use cached offset if interval error
+			if !errors.Is(err, ErrNotInInterval) {
+				syslog.WithError(err).Error("cannot get ntp offset")
+				m.ntpOffset = nil
+			}
 		} else {
 			seconds := ntpOffset.Seconds()
-			hostSample.NtpOffset = &seconds
+			m.ntpOffset = &seconds
 		}
+		hostSample.NtpOffset = m.ntpOffset
 	}
 
 	return hostSample, nil
