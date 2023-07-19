@@ -9,6 +9,10 @@
       include_role:
         name: remove-eol-sources
 
+    - name: Configure OpenSUSE repositories when needed
+      include_role:
+        name: opensuse-repositories
+
     - name: re-install rpm
       include_role:
         name: reinstall-rpm
