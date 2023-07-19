@@ -31,7 +31,6 @@ type Ntp struct {
 	timeout   time.Duration // ntp request timeout in seconds
 	interval  time.Duration // ntp request interval in minutes
 	updatedAt time.Time     // last time the ntp offset was fetched
-	offset    *float64      // cache for last offset value retrieved
 	now       func() time.Time
 	ntpQuery  func(host string, opt ntp.QueryOptions) (*ntp.Response, error)
 }
@@ -119,9 +118,6 @@ func (p *Ntp) Offset() (time.Duration, error) {
 	for _, offset := range offsets {
 		total += offset
 	}
-
-	offsetSeconds := (total / time.Duration(len(offsets))).Seconds()
-	p.offset = &offsetSeconds
 
 	return total / time.Duration(len(offsets)), nil
 }
