@@ -23,18 +23,23 @@ func getAWSInstances(hostPrefix string, platform string) (map[string]string, err
 		"ec2",
 		"describe-instances",
 		"--output", "text",
-		"--filters", `Name=tag:Name,Values="` + hostPrefix + `*"`, `Name=instance-state-name,Values=running`,
 		"--query", "Reservations[*].Instances[*].[Tags[?Key==`Name`], InstanceId]",
 	}
 
+	nameFilter := []string{
+		"--filters",
+		fmt.Sprintf(`Name=tag:Name,Values=%s*`, hostPrefix),
+		`Name=instance-state-name,Values=running`,
+	}
 	// limit to platform if not empty. Multiple filters are treated as AND. Multiple values in filter as OR
 	switch platform {
 	case "linux":
-		args = append(args, "--filters", `Name=tag:Name,Values="*ubuntu*,*debian*,*centos*,*redhat*,*sles*,*al*"`)
+		nameFilter = append(nameFilter, `Name=tag:Name,Values=*ubuntu*,*debian*,*centos*,*redhat*,*sles*,*al*`)
 	case "windows":
-		args = append(args, "--filters", `Name=tag:Name,Values="*windows*"`)
+		nameFilter = append(nameFilter, `Name=tag:Name,Values=windows*`)
 	}
 
+	args = append(args, nameFilter...)
 	cmd := exec.Command("aws", args...)
 
 	var out bytes.Buffer
@@ -123,7 +128,7 @@ func getPreviousCanaryVersion(instances map[string]string) (string, error) {
 }
 
 // getInstancesToPrune will filter the instances that should be terminated.
-func getInstancesToPrune(instances map[string]string) ([]string, error) {
+func getInstancesToPrune(instances map[string]string, versionsToKeep int) ([]string, error) {
 	versions, err := detectVersions(instances)
 	if err != nil {
 		return nil, err
@@ -131,7 +136,7 @@ func getInstancesToPrune(instances map[string]string) ([]string, error) {
 
 	var idsToRemove []string
 
-	for _, versionToRemove := range getVersionsToRemove(versions) {
+	for _, versionToRemove := range getVersionsToRemove(versions, versionsToKeep) {
 		for id, name := range instances {
 			if !strings.Contains(name, versionToRemove) {
 				continue
@@ -144,11 +149,11 @@ func getInstancesToPrune(instances map[string]string) ([]string, error) {
 }
 
 // getVersionsToRemove keeps the latest 2 version of infra agent.
-func getVersionsToRemove(versions []string) []string {
+func getVersionsToRemove(versions []string, versionsToKeep int) []string {
 	semver.Sort(versions)
 
-	if len(versions) > 2 {
-		return versions[:len(versions)-2]
+	if len(versions) > versionsToKeep {
+		return versions[:len(versions)-versionsToKeep]
 	}
 
 	return []string{}
