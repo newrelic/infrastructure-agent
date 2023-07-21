@@ -302,6 +302,9 @@ func cliMode() {
 	cmdPrune.PersistentFlags().Bool("dry_run", false, "dry run")
 	viper.BindPFlag("dry_run", cmdPrune.PersistentFlags().Lookup("dry_run"))
 
+	cmdPrune.PersistentFlags().String("platform", "all", "platform")
+	viper.BindPFlag("platform", cmdPrune.PersistentFlags().Lookup("platform"))
+
 	cmdPreviousCanaryVersion.PersistentFlags().StringP("tag", "t", "", "the reference tag to look previous for")
 	viper.BindPFlag("tag", cmdPreviousCanaryVersion.PersistentFlags().Lookup("tag"))
 	cmdPreviousCanaryVersion.MarkPersistentFlagRequired("tag")
@@ -622,7 +625,11 @@ func pruneCanaries(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	idsToTerminate, err := getInstancesToPrune(instances)
+	versionsToKeep := 2
+	if platform == "linux" {
+		versionsToKeep = 1
+	}
+	idsToTerminate, err := getInstancesToPrune(instances, versionsToKeep)
 	if err != nil {
 		return err
 	}
