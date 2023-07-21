@@ -1,0 +1,3 @@
+suse_versions_wo_docker:
+  - "12.3"
+  - "12.4"
