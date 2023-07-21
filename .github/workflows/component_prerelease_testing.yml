@@ -94,6 +94,7 @@ jobs:
   packaging-tests-linux:
     if: ${{ inputs.PLATFORM == 'linux' }}
     strategy:
+      fail-fast: false # i.e. don't cancel amd64 if arm64 fails
       matrix:
         limit:
           - "linux_amd64"
