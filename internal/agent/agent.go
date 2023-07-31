@@ -1307,5 +1307,5 @@ func (a *Agent) gracefulShutdown() error {
 }
 
 func (a *Agent) shouldSendInventory() bool {
-	return !a.GetContext().Config().IsForwardOnly
+	return true
 }

@@ -5,10 +5,11 @@ package agent
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/agent/inventory"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/agent/inventory"
 
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
@@ -62,6 +63,8 @@ func newPatchSender(entityInfo entity.Entity, context AgentContext, store delta.
 		inventoryURL = os.Getenv("DEV_INVENTORY_INGEST_URL")
 	}
 
+	isHostEnabled := context.Config().ConnectEnabled && !context.Config().IsForwardOnly
+
 	inventoryURL = strings.TrimSuffix(inventoryURL, "/")
 	client, err := inventoryapi.NewIngestClient(
 		inventoryURL,
@@ -70,7 +73,7 @@ func newPatchSender(entityInfo entity.Entity, context AgentContext, store delta.
 		context.Config().PayloadCompressionLevel,
 		context.EntityKey(),
 		agentIDProvide,
-		context.Config().ConnectEnabled,
+		isHostEnabled,
 		httpClient,
 	)
 	if err != nil {
@@ -120,7 +123,7 @@ func (p *patchSenderIngest) Process() (err error) {
 	lastSubmissionTimeExceeded := p.isLastSubmissionTimeExceeded(now)
 	longTimeDisconnected := lastSubmissionTimeExceeded && p.lastDeltaRemoval.Add(p.resetIfOffline).Before(now)
 
-	agentEntityIDChanged := p.agentEntityIDChanged()
+	agentEntityIDChanged := !p.cfg.IsForwardOnly && p.agentEntityIDChanged()
 
 	if longTimeDisconnected || agentEntityIDChanged {
 		llog.WithField("offlineTime", p.resetIfOffline).
