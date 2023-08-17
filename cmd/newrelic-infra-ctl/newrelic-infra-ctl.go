@@ -21,11 +21,11 @@ import (
 )
 
 var (
-	agentPID                  int
-	containerID               string
-	apiVersion                string
-	dockerContainerdNamespace string
-	containerRuntime          string
+	agentPID            int
+	containerID         string
+	apiVersion          string
+	containerdNamespace string
+	containerRuntime    string
 )
 
 func init() {
@@ -51,10 +51,10 @@ func init() {
 	)
 
 	flag.StringVar(
-		&dockerContainerdNamespace,
-		"docker-containerd-namespace",
-		config.DefaultDockerContainerdNamespace,
-		"Docker namespace in containerd [Optional] (Containerised agent)",
+		&containerdNamespace,
+		"containerd-namespace",
+		"default",
+		"Namespace in containerd where container is runing [Optional] (Containerised agent)",
 	)
 
 	flag.StringVar(
@@ -98,7 +98,7 @@ func getClient() (sender.Client, error) {
 		return sender.NewClient(agentPID)
 	}
 	if containerID != "" {
-		return sender.NewContainerClient(apiVersion, containerID, containerRuntime)
+		return sender.NewContainerClient(apiVersion, containerdNamespace, containerID, containerRuntime)
 	}
-	return sender.NewAutoDetectedClient(apiVersion, dockerContainerdNamespace, containerRuntime)
+	return sender.NewAutoDetectedClient(apiVersion, containerdNamespace, containerRuntime)
 }

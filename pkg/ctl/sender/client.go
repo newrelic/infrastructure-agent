@@ -5,9 +5,9 @@ package sender
 import (
 	"context"
 
-	"github.com/newrelic/infrastructure-agent/pkg/ipc"
-
+	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/detection"
+	"github.com/newrelic/infrastructure-agent/pkg/ipc"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
@@ -27,15 +27,15 @@ type Client interface {
 	GetID() string
 }
 
-func NewContainerClient(dockerAPIVersion, containerID, runtime string) (Client, error) {
+func NewContainerClient(dockerAPIVersion, containerdNamespace, containerID, runtime string) (Client, error) {
 	if runtime == Runtime_containerd {
-		return NewContainerdClient(containerID)
+		return NewContainerdClient(containerdNamespace, containerID)
 	}
 	return NewDockerClient(dockerAPIVersion, containerID)
 }
 
 // NewAutoDetectedClient will try to detect the NRIA instance type and return a notification client for it.
-func NewAutoDetectedClient(dockerAPIVersion, dockerContainerdNamespace, containerRuntime string) (Client, error) {
+func NewAutoDetectedClient(dockerAPIVersion, containerdNamespace, containerRuntime string) (Client, error) {
 	pid, err := detection.GetInfraAgentProcess()
 	if err != nil {
 		return nil, err
@@ -43,13 +43,13 @@ func NewAutoDetectedClient(dockerAPIVersion, dockerContainerdNamespace, containe
 
 	clog.WithField("pid", pid).Info("found agent")
 
-	inContainer, containerID, err := detection.IsContainerized(pid, dockerAPIVersion, dockerContainerdNamespace)
+	inContainer, containerID, err := detection.IsContainerized(pid, dockerAPIVersion, config.DefaultDockerContainerdNamespace)
 	if err != nil {
 		clog.WithError(err).Info("Container ID not identified")
 	}
 
 	if inContainer {
-		return NewContainerClient(dockerAPIVersion, containerID, containerRuntime)
+		return NewContainerClient(dockerAPIVersion, containerdNamespace, containerID, containerRuntime)
 	}
 	return NewClient(int(pid))
 }
