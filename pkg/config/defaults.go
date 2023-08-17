@@ -40,6 +40,7 @@ var (
 	// public
 	DefaultContainerCacheMetadataLimit = 60
 	DefaultDockerApiVersion            = "1.24" // minimum supported API by Docker 18.09.0
+	DefaultDockerContainerdNamespace   = "moby"
 	DefaultHeartBeatFrequencySecs      = 60
 	DefaultDMPeriodSecs                = 5           // default telemetry SDK value
 	DefaultMaxMetricsBatchSizeBytes    = 1000 * 1000 // Size limit from Vortex collector service (1MB)

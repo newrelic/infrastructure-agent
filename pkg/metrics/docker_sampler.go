@@ -181,7 +181,7 @@ func (d *dockerDecorator) pidsContainers() (map[uint32]types.Container, error) {
 	return pids, nil
 }
 
-// DecorateProcesses adds container information to all the processes that belong to a container.
+// Decorate adds container information to all the processes that belong to a container.
 func (d *dockerDecorator) Decorate(process *metricTypes.ProcessSample) {
 	if container, ok := d.pids[uint32(process.ProcessID)]; ok {
 		imageIDComponents := strings.Split(container.ImageID, ":")

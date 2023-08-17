@@ -18,27 +18,25 @@ type ContainerSampler interface {
 	NewDecorator() (ProcessDecorator, error)
 }
 
-// GetContainerSampler returns the first available container sampler.
-func GetContainerSampler(cacheTTL time.Duration, dockerAPIVersion string) ContainerSampler { //nolint:ireturn
+// GetContainerSamplers returns all available container samplers.
+func GetContainerSamplers(cacheTTL time.Duration, dockerAPIVersion, dockerContainerdNamespace string) []ContainerSampler { //nolint:ireturn
 	clog := log.WithComponent("ContainerSampler")
 
-	containerdSampler := NewContainerdSampler(cacheTTL)
-	if containerdSampler.Enabled() {
-		return containerdSampler
-	}
+	var containerSamplers []ContainerSampler
 
-	// containerd seems to not be enabled. Trying with docker API
-	clog.Debug("containerd seems to not be present. Trying docker-based container sampler")
+	containerdSampler := NewContainerdSampler(cacheTTL, dockerContainerdNamespace)
+	if containerdSampler.Enabled() {
+		containerSamplers = append(containerSamplers, containerdSampler)
+		clog.Debug("containerd sampler enabled")
+	}
 
 	dockerSampler := NewDockerSampler(cacheTTL, dockerAPIVersion)
 	if dockerSampler.Enabled() {
-		return dockerSampler
+		containerSamplers = append(containerSamplers, containerdSampler)
+		clog.Debug("docker sampler enabled")
 	}
 
-	// No more container runtimes available, returning default docker sampler
-	clog.Debug("No container runtimes available, returning default, containerd-based container sampler")
-
-	return containerdSampler
+	return containerSamplers
 }
 
 type ProcessDecorator interface {

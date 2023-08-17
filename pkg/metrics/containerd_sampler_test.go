@@ -6,6 +6,7 @@
 package metrics
 
 import (
+	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -49,7 +50,7 @@ func TestContainerdProcessDecoratorNoContainers(t *testing.T) {
 	mock := &MockBaseContainerdImpl{}
 	pidsCache := newPidsCache(metadataCacheTTL)
 
-	_, err := newContainerdDecorator(mock, pidsCache)
+	_, err := newContainerdDecorator(mock, pidsCache, config.DefaultDockerContainerdNamespace)
 	assert.EqualError(t, err, "containerd sampler: no containers")
 }
 
@@ -59,7 +60,7 @@ func TestContainerdProcessDecoratorNoProcessContainers(t *testing.T) {
 	mock := &MockContainerWithNoPids{} //nolint:exhaustruct
 	pidsCache := newPidsCache(metadataCacheTTL)
 
-	_, err := newContainerdDecorator(mock, pidsCache)
+	_, err := newContainerdDecorator(mock, pidsCache, config.DefaultDockerContainerdNamespace)
 	assert.EqualError(t, err, "containerd sampler: unable to get pids for container")
 }
 
@@ -69,7 +70,7 @@ func TestContainerdProcessDecoratorDecorateProcessSampleBadProcessID(t *testing.
 	mock := &MockContainerWithDataContainerdImpl{}
 	pidsCache := newPidsCache(metadataCacheTTL)
 
-	decorator, err := newContainerdDecorator(mock, pidsCache)
+	decorator, err := newContainerdDecorator(mock, pidsCache, config.DefaultDockerContainerdNamespace)
 	assert.NoError(t, err)
 
 	process := metricTypes.ProcessSample{ProcessID: 666, ContainerLabels: map[string]string{}} //nolint:exhaustruct
@@ -89,7 +90,7 @@ func TestContainerdProcessDecoratorDecorateProcessSample(t *testing.T) {
 	mock := &MockContainerWithDataContainerdImpl{}
 	pidsCache := newPidsCache(metadataCacheTTL)
 
-	decorator, err := newContainerdDecorator(mock, pidsCache)
+	decorator, err := newContainerdDecorator(mock, pidsCache, config.DefaultDockerContainerdNamespace)
 	assert.NoError(t, err)
 
 	// ensure container without running state is not cached
