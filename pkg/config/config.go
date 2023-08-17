@@ -107,7 +107,6 @@ type DynamicConfig struct {
 }
 
 func (dc *DynamicConfig) Provide() *Config {
-
 	if dc.isEmpty() {
 		return nil
 	}
@@ -1404,7 +1403,6 @@ func coalesceBool(values ...*bool) bool {
 }
 
 func (cfg *Config) Provide() *Config {
-
 	if cfg.dynamicConfig != nil {
 		refreshedConfig := cfg.dynamicConfig.Provide()
 		if refreshedConfig != nil {

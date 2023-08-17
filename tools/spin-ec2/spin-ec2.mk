@@ -60,15 +60,18 @@ endif
 									-a '$(ANSIBLE_FORKS)'
 
 .PHONY: canaries-prune-dry
+canaries-prune-dry: PLATFORM ?= all
 canaries-prune-dry: validate-aws-credentials ec2-install-deps ec2-build
 	@read -p "DRY run for canaries prune, press enter to continue"
-	tools/spin-ec2/bin/spin-ec2 canaries prune --dry_run
+	tools/spin-ec2/bin/spin-ec2 canaries prune --dry_run --platform '$(PLATFORM)'
 
 .PHONY: canaries-prune
+canaries-prune: PLATFORM ?= all
 canaries-prune: validate-aws-credentials ec2-install-deps ec2-build
 	@read -p "REAL run for canaries prune, press enter to continue"
-	tools/spin-ec2/bin/spin-ec2 canaries prune
+	tools/spin-ec2/bin/spin-ec2 canaries prune --platform '$(PLATFORM)'
 
 .PHONY: canaries-prune-auto
+canaries-prune-auto: PLATFORM ?= all
 canaries-prune-auto: validate-aws-credentials ec2-install-deps ec2-build
-	tools/spin-ec2/bin/spin-ec2 canaries prune
+	tools/spin-ec2/bin/spin-ec2 canaries prune --platform '$(PLATFORM)'

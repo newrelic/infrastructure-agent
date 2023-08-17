@@ -303,7 +303,7 @@ func cliMode() {
 	viper.BindPFlag("dry_run", cmdPrune.PersistentFlags().Lookup("dry_run"))
 
 	cmdPrune.PersistentFlags().String("platform", "all", "platform")
-	viper.BindPFlag("platform", cmdPrune.PersistentFlags().Lookup("platform"))
+	viper.BindPFlag("prune_platform", cmdPrune.PersistentFlags().Lookup("platform"))
 
 	cmdPreviousCanaryVersion.PersistentFlags().StringP("tag", "t", "", "the reference tag to look previous for")
 	viper.BindPFlag("tag", cmdPreviousCanaryVersion.PersistentFlags().Lookup("tag"))
@@ -311,8 +311,7 @@ func cliMode() {
 
 	cmdRoot := &cobra.Command{Use: "spin-ec2"}
 	cmdRoot.AddCommand(cmdCanaries)
-	cmdCanaries.AddCommand(cmdProvision, cmdPrune)
-	cmdCanaries.AddCommand(cmdProvision, cmdPreviousCanaryVersion)
+	cmdCanaries.AddCommand(cmdProvision, cmdPrune, cmdPreviousCanaryVersion)
 	cmdRoot.Execute()
 }
 
@@ -618,7 +617,7 @@ func provisionEphimeralCanaries(cnf canaryConf) error {
 // ones that have the latest 2 version of infra-agent installed.
 func pruneCanaries(cmd *cobra.Command, args []string) error {
 	dryRun := viper.GetBool("dry_run")
-	platform := viper.GetString("platform")
+	platform := viper.GetString("prune_platform")
 
 	instances, err := getAWSInstances(hostPrefix+":v", platform)
 	if err != nil {
