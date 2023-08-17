@@ -58,13 +58,6 @@ func init() {
 	)
 
 	flag.StringVar(
-		&apiVersion,
-		"docker-api-version",
-		config.DefaultDockerApiVersion,
-		"Docker API version [Optional] (Containerised agent)",
-	)
-
-	flag.StringVar(
 		&containerRuntime,
 		"container-runtime",
 		sender.Runtime_docker,
