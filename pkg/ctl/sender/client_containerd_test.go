@@ -9,13 +9,12 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 )
 
-func TestNewDockerClient(t *testing.T) {
+func TestContainerdClient(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping flaky test on windows")
 	}
 
 	type args struct {
-		apiVersion  string
 		containerID string
 	}
 	tests := []struct {
@@ -24,15 +23,14 @@ func TestNewDockerClient(t *testing.T) {
 		wantC   bool
 		wantErr bool
 	}{
-		{"no container id fails", args{apiVersion: "", containerID: ""}, false, true},
-		{"no api version does not fail", args{apiVersion: "", containerID: "123"}, true, false},
+		{"no container id fails", args{containerID: ""}, false, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if !helpers.IsDockerRunning() {
 				t.Skip("docker required for this test suite")
 			}
-			gotC, err := NewDockerClient(tt.args.apiVersion, tt.args.containerID)
+			gotC, err := NewContainerdClient(tt.args.containerID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewDockerClient() error = %v, want %v", err, tt.wantErr)
 				return
