@@ -1,19 +1,16 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+//go:build linux || darwin
+
 package sender
 
 import (
-	"runtime"
 	"testing"
 
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 )
 
 func TestContainerdClient(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping flaky test on windows")
-	}
-
 	type args struct {
 		containerID string
 		namespace   string
