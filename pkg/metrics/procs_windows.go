@@ -905,7 +905,7 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 
 				for _, containerDecorator := range containerDecorators {
 					if containerDecorator != nil {
-						containerDecorator.Decorate(processSample)
+						containerDecorator.Decorate(sample)
 					}
 				}
 				procCacheEntry.lastSample = sample
