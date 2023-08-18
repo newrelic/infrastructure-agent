@@ -1,5 +1,7 @@
-// Copyright 2020 New Relic Corporation. All rights reserved.
+// Copyright 2023 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+//go:build linux || darwin
+
 package sender
 
 import (
@@ -59,7 +61,7 @@ func (c *ContainerdClient) Notify(ctx context.Context, _ ipc.Message) error {
 	return err
 }
 
-// Return the identification for the notified agent.
+// GetID returns the identification for the notified agent.
 func (c *ContainerdClient) GetID() string {
 	return c.containerID
 }

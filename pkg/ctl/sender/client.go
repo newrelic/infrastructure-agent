@@ -11,11 +11,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
-const (
-	Runtime_docker     = "docker"
-	Runtime_containerd = "containerd"
-)
-
 var clog = log.WithComponent("NotificationClient")
 
 // Client is used to notify a running agent process.
@@ -25,13 +20,6 @@ type Client interface {
 
 	// GetID returns the identification for the notified agent.
 	GetID() string
-}
-
-func NewContainerClient(dockerAPIVersion, containerdNamespace, containerID, runtime string) (Client, error) {
-	if runtime == Runtime_containerd {
-		return NewContainerdClient(containerdNamespace, containerID)
-	}
-	return NewDockerClient(dockerAPIVersion, containerID)
 }
 
 // NewAutoDetectedClient will try to detect the NRIA instance type and return a notification client for it.
