@@ -16,6 +16,7 @@ func TestContainerdClient(t *testing.T) {
 
 	type args struct {
 		containerID string
+		namespace   string
 	}
 	tests := []struct {
 		name    string
@@ -23,14 +24,14 @@ func TestContainerdClient(t *testing.T) {
 		wantC   bool
 		wantErr bool
 	}{
-		{"no container id fails", args{containerID: ""}, false, true},
+		{"no container id fails", args{containerID: "", namespace: ""}, false, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if !helpers.IsDockerRunning() {
 				t.Skip("docker required for this test suite")
 			}
-			gotC, err := NewContainerdClient(tt.args.containerID)
+			gotC, err := NewContainerdClient(tt.args.containerID, tt.args.namespace)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewDockerClient() error = %v, want %v", err, tt.wantErr)
 				return
