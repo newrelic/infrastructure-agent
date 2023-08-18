@@ -6,13 +6,12 @@
 package metrics
 
 import (
-	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
+	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	metricTypes "github.com/newrelic/infrastructure-agent/pkg/metrics/types"
+	"github.com/stretchr/testify/assert"
 )
 
 const containerID = "container1"
