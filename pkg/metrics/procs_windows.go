@@ -662,7 +662,7 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 		}
 
 		var containerDecorators []ProcessDecorator
-		for _, containerSampler := range ps.containerSamplers {
+		for _, containerSampler := range self.containerSamplers {
 			if containerSampler.Enabled() {
 				decorator, err := containerSampler.NewDecorator()
 				if err != nil {
