@@ -11,6 +11,11 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
+const (
+	RuntimeDocker     = "docker"
+	RuntimeContainerd = "containerd"
+)
+
 var clog = log.WithComponent("NotificationClient")
 
 // Client is used to notify a running agent process.

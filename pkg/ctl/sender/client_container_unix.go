@@ -4,13 +4,8 @@
 
 package sender
 
-const (
-	Runtime_docker     = "docker"
-	Runtime_containerd = "containerd"
-)
-
 func NewContainerClient(dockerAPIVersion, containerdNamespace, containerID, runtime string) (Client, error) {
-	if runtime == Runtime_containerd {
+	if runtime == RuntimeContainerd {
 		return NewContainerdClient(containerdNamespace, containerID)
 	}
 	return NewDockerClient(dockerAPIVersion, containerID)

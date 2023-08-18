@@ -60,7 +60,7 @@ func init() {
 	flag.StringVar(
 		&containerRuntime,
 		"container-runtime",
-		sender.Runtime_docker,
+		sender.RuntimeDocker,
 		"Container runtime [Optional] ('docker' or 'containerd') (Containerised agent)",
 	)
 }
