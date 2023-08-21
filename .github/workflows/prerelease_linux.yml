@@ -123,7 +123,7 @@ jobs:
     needs: [publishing-to-s3]
     with:
       TAG: ${{ github.event.release.tag_name }}
-      REPO_ENDPOINT: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/debianbookworm"
+      REPO_ENDPOINT: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
 
   test-prerelease-linux:
     needs: [molecule-packaging-tests]

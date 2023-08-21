@@ -72,5 +72,4 @@
         - name: Final cleanup # Only required for shared infra.
           include_role:
             name: cleanup
-
 ...
