@@ -1,5 +1,11 @@
 ---
 
+- name: Install logrotate
+  apt:
+    name: logrotate
+    state: present
+    update_cache: yes
+
 - name: Create rsyslog script directory
   file: path=/usr/lib/rsyslog state=directory mode=0755
 
