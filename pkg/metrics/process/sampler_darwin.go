@@ -107,8 +107,9 @@ func (ps *processSampler) Sample() (results sample.EventBatch, err error) {
 						mplog.WithError(err).Error("Only docker api version from 1.24 upwards are officially supported. You can still use the docker_api_version configuration to work with older versions. You can check https://docs.docker.com/develop/sdk/ what api version maps with each docker version.")
 					}
 				}
+			} else {
+				containerDecorators = append(containerDecorators, decorator)
 			}
-			containerDecorators = append(containerDecorators, decorator)
 		}
 	}
 

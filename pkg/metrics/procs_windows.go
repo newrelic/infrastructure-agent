@@ -666,8 +666,6 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 			if containerSampler.Enabled() {
 				decorator, err := containerSampler.NewDecorator()
 				if err != nil {
-					// ensure containerDecorator is set to nil if error
-					decorator = nil
 					if id := containerIDFromNotRunningErr(err); id != "" {
 						if _, ok := containerNotRunningErrs[id]; !ok {
 							containerNotRunningErrs[id] = struct{}{}
@@ -676,8 +674,9 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 					} else {
 						pslog.WithError(err).Warn("instantiating container sampler process decorator")
 					}
+				} else {
+					containerDecorators = append(containerDecorators, decorator)
 				}
-				containerDecorators = append(containerDecorators, decorator)
 			}
 		}
 
