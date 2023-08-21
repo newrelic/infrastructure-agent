@@ -1,9 +1,10 @@
 ---
 go_version: 1.20
-repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
+repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/debianbookworm"
 
 repos_to_clean:
   - "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
   - "http://nr-downloads-ohai-testing.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
   - "https://download.newrelic.com/infrastructure_agent"
+  - "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/debianbookworm"
 ...
