@@ -663,20 +663,22 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 
 		var containerDecorators []ProcessDecorator
 		for _, containerSampler := range self.containerSamplers {
-			if containerSampler.Enabled() {
-				decorator, err := containerSampler.NewDecorator()
-				if err != nil {
-					if id := containerIDFromNotRunningErr(err); id != "" {
-						if _, ok := containerNotRunningErrs[id]; !ok {
-							containerNotRunningErrs[id] = struct{}{}
-							pslog.WithError(err).Warn("instantiating container sampler process decorator")
-						}
-					} else {
+			if !containerSampler.Enabled() {
+				continue
+			}
+
+			decorator, err := containerSampler.NewDecorator()
+			if err != nil {
+				if id := containerIDFromNotRunningErr(err); id != "" {
+					if _, ok := containerNotRunningErrs[id]; !ok {
+						containerNotRunningErrs[id] = struct{}{}
 						pslog.WithError(err).Warn("instantiating container sampler process decorator")
 					}
 				} else {
-					containerDecorators = append(containerDecorators, decorator)
+					pslog.WithError(err).Warn("instantiating container sampler process decorator")
 				}
+			} else {
+				containerDecorators = append(containerDecorators, decorator)
 			}
 		}
 

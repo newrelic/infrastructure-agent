@@ -93,24 +93,26 @@ func (ps *processSampler) Sample() (results sample.EventBatch, err error) {
 	var containerDecorators []metrics.ProcessDecorator
 
 	for _, containerSampler := range ps.containerSamplers {
-		if containerSampler.Enabled() {
-			decorator, err := containerSampler.NewDecorator()
-			if err != nil {
-				if id := containerIDFromNotRunningErr(err); id != "" {
-					if _, ok := containerNotRunningErrs[id]; !ok {
-						containerNotRunningErrs[id] = struct{}{}
+		if !containerSampler.Enabled() {
+			continue
+		}
 
-						mplog.WithError(err).Warn("instantiating container sampler process decorator")
-					}
-				} else {
+		decorator, err := containerSampler.NewDecorator()
+		if err != nil {
+			if id := containerIDFromNotRunningErr(err); id != "" {
+				if _, ok := containerNotRunningErrs[id]; !ok {
+					containerNotRunningErrs[id] = struct{}{}
+
 					mplog.WithError(err).Warn("instantiating container sampler process decorator")
-					if strings.Contains(err.Error(), "client is newer than server") {
-						mplog.WithError(err).Error("Only docker api version from 1.24 upwards are officially supported. You can still use the docker_api_version configuration to work with older versions. You can check https://docs.docker.com/develop/sdk/ what api version maps with each docker version.")
-					}
 				}
 			} else {
-				containerDecorators = append(containerDecorators, decorator)
+				mplog.WithError(err).Warn("instantiating container sampler process decorator")
+				if strings.Contains(err.Error(), "client is newer than server") {
+					mplog.WithError(err).Error("Only docker api version from 1.24 upwards are officially supported. You can still use the docker_api_version configuration to work with older versions. You can check https://docs.docker.com/develop/sdk/ what api version maps with each docker version.")
+				}
 			}
+		} else {
+			containerDecorators = append(containerDecorators, decorator)
 		}
 	}
 
