@@ -356,6 +356,7 @@ agent_dir: /my/overriden/agent/dir
 	c.Assert(cfg.SendInterval, Equals, defaultSendInterval)
 
 	c.Assert(cfg.DockerApiVersion, Equals, DefaultDockerApiVersion)
+	c.Assert(cfg.DockerContainerdNamespace, Equals, DefaultDockerContainerdNamespace)
 	c.Assert(cfg.SelinuxEnableSemodule, Equals, defaultSelinuxEnableSemodule)
 	c.Assert(cfg.DnsHostnameResolution, Equals, defaultDnsHostnameResolution)
 	c.Assert(cfg.IgnoreReclaimable, Equals, defaultIgnoreReclaimable)

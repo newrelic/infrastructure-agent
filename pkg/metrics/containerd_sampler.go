@@ -32,6 +32,7 @@ type ContainerdSampler struct {
 	containerdClient        *helpers.ContainerdClient
 	pidsCache               *pidsCache
 	lastCacheClean          time.Time
+	dockerNamespace         string
 }
 
 func initializeContainerdClient() (*helpers.ContainerdClient, error) {
@@ -43,15 +44,16 @@ func initializeContainerdClient() (*helpers.ContainerdClient, error) {
 	return containerdClient, nil
 }
 
-func NewContainerdSampler(cacheTTL time.Duration) *ContainerdSampler {
-	return NewContainerdSamplerWithClient(nil, cacheTTL)
+func NewContainerdSampler(cacheTTL time.Duration, dockerNamespace string) *ContainerdSampler {
+	return NewContainerdSamplerWithClient(nil, cacheTTL, dockerNamespace)
 }
 
-func NewContainerdSamplerWithClient(client *helpers.ContainerdClient, cacheTTL time.Duration) *ContainerdSampler {
+func NewContainerdSamplerWithClient(client *helpers.ContainerdClient, cacheTTL time.Duration, dockerNamespace string) *ContainerdSampler {
 	return &ContainerdSampler{ //nolint:exhaustruct
 		containerdClient: client,
 		lastCacheClean:   time.Now(),
 		pidsCache:        newPidsCache(cacheTTL),
+		dockerNamespace:  dockerNamespace,
 	}
 }
 
@@ -78,22 +80,24 @@ func (d *ContainerdSampler) Enabled() bool {
 }
 
 func (d *ContainerdSampler) NewDecorator() (ProcessDecorator, error) { //nolint:ireturn
-	return newContainerdDecorator(d.containerdClient, d.pidsCache)
+	return newContainerdDecorator(d.containerdClient, d.pidsCache, d.dockerNamespace)
 }
 
 type containerdDecorator struct {
 	containerdClient helpers.ContainerdInterface
 	cache            *pidsCache
 	pids             map[uint32]helpers.ContainerdMetadata
+	dockerNamespace  string
 }
 
 // compile-time assertion.
 var _ ProcessDecorator = &containerdDecorator{} //nolint:exhaustruct
 
-func newContainerdDecorator(containerdClient helpers.ContainerdInterface, pidsCache *pidsCache) (ProcessDecorator, error) { //nolint:ireturn
+func newContainerdDecorator(containerdClient helpers.ContainerdInterface, pidsCache *pidsCache, dockerNamespace string) (ProcessDecorator, error) { //nolint:ireturn
 	dec := &containerdDecorator{ //nolint:exhaustruct
 		containerdClient: containerdClient,
 		cache:            pidsCache,
+		dockerNamespace:  dockerNamespace,
 	}
 
 	pids, err := dec.pidsContainers()
@@ -114,6 +118,9 @@ func (d *containerdDecorator) pidsContainers() (map[uint32]helpers.ContainerdMet
 	}
 
 	for namespace, containers := range containersPerNamespace {
+		if namespace == d.dockerNamespace {
+			continue
+		}
 		for _, container := range containers {
 			// For each container, get the PIDs
 			err := d.pidsWithCache(container, namespace, pidsContainers)
@@ -174,6 +181,7 @@ func (d *containerdDecorator) pidsWithCache(container containerd.Container, name
 	return nil
 }
 
+// Decorate adds container information to all the processes that belong to a container.
 func (d *containerdDecorator) Decorate(process *metricTypes.ProcessSample) {
 	if containerMeta, ok := d.pids[uint32(process.ProcessID)]; ok {
 		// Get container information

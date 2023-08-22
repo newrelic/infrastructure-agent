@@ -18,6 +18,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
@@ -41,7 +42,7 @@ func TestProcessSampler_DockerDecorator(t *testing.T) {
 			ProcessDisplayName: "Bye",
 		},
 	}}
-	ps.containerSampler = &fakeContainerSampler{}
+	ps.containerSamplers = []metrics.ContainerSampler{&fakeContainerSampler{}}
 
 	// When asking for the process samples
 	samples, err := ps.Sample()

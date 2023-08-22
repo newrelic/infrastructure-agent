@@ -184,7 +184,7 @@ type Config struct {
 	CollectorURL string `yaml:"collector_url" envconfig:"collector_url" public:"false"`
 
 	// IdentityURL defines the base URL for the identity connect.
-	// Default: https://infra-api.newrelic.com
+	// Default: https://identity-api.newrelic.com
 	// Public: No
 	IdentityURL string `yaml:"identity_url" envconfig:"identity_url" public:"false"`
 
@@ -278,6 +278,11 @@ type Config struct {
 	// Default: 1.24
 	// Public: Yes
 	DockerApiVersion string `yaml:"docker_api_version" envconfig:"docker_api_version"`
+
+	// DockerContainerdNamespace specifies the Containerd namespace used by docker.
+	// Default: moby
+	// Public: Yes
+	DockerContainerdNamespace string `yaml:"docker_containerd_namespace" envconfig:"docker_containerd_namespace"`
 
 	// CustomAttributes is a list of custom attributes to annotate the data from this agent instance. Separate keys and
 	// values with colons :, as in KEY: VALUE, and separate each key-value pair with a line break. Keys can be any
@@ -1817,6 +1822,7 @@ func NewConfig() *Config {
 		TCPServerPort:                 defaultTCPServerPort,
 		StatusServerPort:              defaultStatusServerPort,
 		DockerApiVersion:              DefaultDockerApiVersion,
+		DockerContainerdNamespace:     DefaultDockerContainerdNamespace,
 		FingerprintUpdateFreqSec:      defaultFingerprintUpdateFreqSec,
 		CloudMetadataExpiryInSec:      defaultCloudMetadataExpiryInSec,
 		RegisterConcurrency:           defaultRegisterConcurrency,
@@ -2299,6 +2305,8 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 
 	// DockerApiVersion default value defined in NewConfig
 	nlog.WithField("DockerApiVersion", cfg.DockerApiVersion).Debug("Docker client API version.")
+	// DockerContainerdNamespace default value defined in NewConfig
+	nlog.WithField("DockerContainerdNamespace", cfg.DockerContainerdNamespace).Debug("Docker containerd namespace.")
 	// FingerprintUpdateFreqSec default value defined in NewConfig
 	nlog.WithField("FingerprintUpdateFreqSec", cfg.FingerprintUpdateFreqSec).Debug("Fingerprint update freq.")
 	// DnsHostnameResolution value defined in NewConfig

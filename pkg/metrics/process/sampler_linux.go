@@ -20,12 +20,12 @@ import (
 // processSampler is an implementation of the metrics_sender.Sampler interface, which returns runtime information about
 // the currently running processes
 type processSampler struct {
-	harvest          Harvester
-	containerSampler metrics.ContainerSampler
-	lastRun          time.Time
-	hasAlreadyRun    bool
-	interval         time.Duration
-	cache            *cache
+	harvest           Harvester
+	containerSamplers []metrics.ContainerSampler
+	lastRun           time.Time
+	hasAlreadyRun     bool
+	interval          time.Duration
+	cache             *cache
 }
 
 var (
@@ -39,22 +39,24 @@ func NewProcessSampler(ctx agent.AgentContext) sampler.Sampler {
 
 	ttlSecs := config.DefaultContainerCacheMetadataLimit
 	apiVersion := ""
+	dockerContainerdNamespace := ""
 	interval := config.FREQ_INTERVAL_FLOOR_PROCESS_METRICS
 	if hasConfig {
 		cfg := ctx.Config()
 		ttlSecs = cfg.ContainerMetadataCacheLimit
 		apiVersion = cfg.DockerApiVersion
+		dockerContainerdNamespace = cfg.DockerContainerdNamespace
 		interval = cfg.MetricsProcessSampleRate
 	}
 	cache := newCache()
 	harvest := newHarvester(ctx, &cache)
-	containerSampler := metrics.GetContainerSampler(time.Duration(ttlSecs)*time.Second, apiVersion)
+	containerSamplers := metrics.GetContainerSamplers(time.Duration(ttlSecs)*time.Second, apiVersion, dockerContainerdNamespace)
 
 	return &processSampler{
-		harvest:          harvest,
-		containerSampler: containerSampler,
-		cache:            &cache,
-		interval:         time.Second * time.Duration(interval),
+		harvest:           harvest,
+		containerSamplers: containerSamplers,
+		cache:             &cache,
+		interval:          time.Second * time.Duration(interval),
 	}
 }
 
@@ -88,13 +90,15 @@ func (ps *processSampler) Sample() (results sample.EventBatch, err error) {
 		return nil, err
 	}
 
-	var containerDecorator metrics.ProcessDecorator
+	var containerDecorators []metrics.ProcessDecorator
 
-	if ps.containerSampler.Enabled() {
-		containerDecorator, err = ps.containerSampler.NewDecorator()
+	for _, containerSampler := range ps.containerSamplers {
+		if !containerSampler.Enabled() {
+			continue
+		}
+
+		decorator, err := containerSampler.NewDecorator()
 		if err != nil {
-			// ensure containerDecorator is set to nil if error
-			containerDecorator = nil
 			if id := containerIDFromNotRunningErr(err); id != "" {
 				if _, ok := containerNotRunningErrs[id]; !ok {
 					containerNotRunningErrs[id] = struct{}{}
@@ -107,6 +111,8 @@ func (ps *processSampler) Sample() (results sample.EventBatch, err error) {
 					mplog.WithError(err).Error("Only docker api version from 1.24 upwards are officially supported. You can still use the docker_api_version configuration to work with older versions. You can check https://docs.docker.com/develop/sdk/ what api version maps with each docker version.")
 				}
 			}
+		} else {
+			containerDecorators = append(containerDecorators, decorator)
 		}
 	}
 
@@ -125,8 +131,10 @@ func (ps *processSampler) Sample() (results sample.EventBatch, err error) {
 			continue
 		}
 
-		if containerDecorator != nil {
-			containerDecorator.Decorate(processSample)
+		for _, containerDecorator := range containerDecorators {
+			if containerDecorator != nil {
+				containerDecorator.Decorate(processSample)
+			}
 		}
 
 		results = append(results, ps.normalizeSample(processSample))

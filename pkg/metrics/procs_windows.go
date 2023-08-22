@@ -323,7 +323,7 @@ type getWin32ProcFunc func(*win32_Process, processPathProvider) error
 type ProcsMonitor struct {
 	context              agent.AgentContext
 	processInterrogator  ProcessInterrogator
-	containerSampler     ContainerSampler
+	containerSamplers    []ContainerSampler
 	procCache            map[string]*ProcessCacheEntry
 	hasAlreadyRun        bool // Indicates whether the monitor has been run already (used for CPU time calculation)
 	lastRun              time.Time
@@ -341,7 +341,10 @@ type ProcsMonitor struct {
 }
 
 func NewProcsMonitor(context agent.AgentContext) *ProcsMonitor {
-	var apiVersion string
+	var (
+		apiVersion                string
+		dockerContainerdNamespace string
+	)
 	ttlSecs := config.DefaultContainerCacheMetadataLimit
 	getProcFunc := getWin32Proc
 	if context != nil && context.Config() != nil {
@@ -353,6 +356,7 @@ func NewProcsMonitor(context agent.AgentContext) *ProcsMonitor {
 		}
 		ttlSecs = context.Config().ContainerMetadataCacheLimit
 		apiVersion = context.Config().DockerApiVersion
+		dockerContainerdNamespace = context.Config().DockerContainerdNamespace
 
 		if context.Config().EnableWmiProcData {
 			getProcFunc = getWin32ProcFromWMI
@@ -361,7 +365,7 @@ func NewProcsMonitor(context agent.AgentContext) *ProcsMonitor {
 	return &ProcsMonitor{
 		context:              context,
 		procCache:            make(map[string]*ProcessCacheEntry),
-		containerSampler:     GetContainerSampler(time.Duration(ttlSecs)*time.Second, apiVersion),
+		containerSamplers:    GetContainerSamplers(time.Duration(ttlSecs)*time.Second, apiVersion, dockerContainerdNamespace),
 		previousProcessTimes: make(map[string]*SystemTimes),
 		processInterrogator:  NewInternalProcessInterrogator(true),
 		waitForCleanup:       &sync.WaitGroup{},
@@ -657,12 +661,14 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 			return errProcs
 		}
 
-		var containerDecorator ProcessDecorator = nil
-		if self.containerSampler.Enabled() {
-			containerDecorator, err = self.containerSampler.NewDecorator()
+		var containerDecorators []ProcessDecorator
+		for _, containerSampler := range self.containerSamplers {
+			if !containerSampler.Enabled() {
+				continue
+			}
+
+			decorator, err := containerSampler.NewDecorator()
 			if err != nil {
-				// ensure containerDecorator is set to nil if error
-				containerDecorator = nil
 				if id := containerIDFromNotRunningErr(err); id != "" {
 					if _, ok := containerNotRunningErrs[id]; !ok {
 						containerNotRunningErrs[id] = struct{}{}
@@ -671,6 +677,8 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 				} else {
 					pslog.WithError(err).Warn("instantiating container sampler process decorator")
 				}
+			} else {
+				containerDecorators = append(containerDecorators, decorator)
 			}
 		}
 
@@ -895,8 +903,11 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 				}
 
 				sample.Type("ProcessSample")
-				if containerDecorator != nil {
-					containerDecorator.Decorate(sample)
+
+				for _, containerDecorator := range containerDecorators {
+					if containerDecorator != nil {
+						containerDecorator.Decorate(sample)
+					}
 				}
 				procCacheEntry.lastSample = sample
 				results = append(results, sample)
