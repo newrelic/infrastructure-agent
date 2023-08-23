@@ -22,7 +22,7 @@
 
 - name: download brew formula
   ansible.builtin.get_url:
-    url: "https://raw.githubusercontent.com/Homebrew/homebrew-core/master/Formula/newrelic-infra-agent.rb"
+    url: "https://raw.githubusercontent.com/Homebrew/homebrew-core/master/Formula/n/newrelic-infra-agent.rb"
     dest: "/Users/{{ ansible_user }}/newrelic-infra-agent.rb"
 
 - name: replace tag
