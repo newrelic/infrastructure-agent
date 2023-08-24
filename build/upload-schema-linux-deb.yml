@@ -19,6 +19,8 @@
         - groovy
         - hirsute
         - bullseye
+        - bookworm
+
 - src: "newrelic-infra_upstart_{version}_{arch}.deb"
   arch:
     - amd64
