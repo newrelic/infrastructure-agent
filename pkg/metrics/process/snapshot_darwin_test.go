@@ -370,7 +370,8 @@ func Test_calculatePercent(t *testing.T) {
 }
 
 //nolint:exhaustruct
-func Test_Calculate_Proces_CmdLine(t *testing.T) {
+func Test_Calculate_Process_CmdLine(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		cmdLine  string
@@ -413,7 +414,6 @@ func Test_Calculate_Proces_CmdLine(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Parallel()
 		t.Run(tt.name, func(t *testing.T) {
 			process := &ProcessMock{}
 			process.ShouldReturnCmdLine(tt.cmdLine, nil)

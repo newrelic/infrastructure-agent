@@ -5,6 +5,9 @@ package process
 
 import (
 	"bytes"
+	"math"
+	"testing"
+
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
@@ -15,8 +18,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"math"
-	"testing"
 )
 
 func Test_newHarvester(t *testing.T) {
@@ -420,6 +421,7 @@ func TestDarwinHarvester_Do_NoError(t *testing.T) {
 	proc.ShouldReturnCPUPercent(34.45, nil)
 	proc.ShouldReturnTimes(&cpu.TimesStat{User: 34, System: 0.45}, nil)
 	proc.ShouldReturnUsername("some username", nil)
+	proc.ShouldReturnCmdLine("a command", nil)
 
 	h := newHarvester(ctx)
 	h.processRetriever = func(int32) (Process, error) {
@@ -438,7 +440,7 @@ func TestDarwinHarvester_Do_NoError(t *testing.T) {
 	assert.Equal(t, 34.45, sample.CPUPercent)
 	assert.Equal(t, 34.0, math.Round(sample.CPUUserPercent*100)/100)
 	assert.Equal(t, 0.45, math.Round(sample.CPUSystemPercent*100)/100)
-	assert.Equal(t, "", sample.CmdLine)
+	assert.Equal(t, "a command", sample.CmdLine)
 	assert.Equal(t, "some status", sample.Status)
 	assert.Equal(t, int32(0), sample.ParentProcessID)
 	assert.Equal(t, int32(3), sample.ThreadCount)
