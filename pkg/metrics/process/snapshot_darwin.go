@@ -217,5 +217,5 @@ func (pw *darwinProcess) Command() string {
 // CmdLine is taken from ps. As commands can have spaces, it's difficult parse parameters
 // so no params for now
 func (pw *darwinProcess) CmdLine(withArgs bool) (string, error) {
-	return pw.cmdLine, nil
+	return pw.process.Cmdline()
 }
