@@ -233,6 +233,11 @@ func (pw *darwinProcess) CmdLine(withArgs bool) (string, error) {
 		return "", nil // zombie process
 	}
 
+	// Ignoring dash on session commands
+	if procCmdline[0:1][0] == '-' {
+		procCmdline = procCmdline[1:]
+	}
+
 	if !withArgs {
 		parts := strings.Split(procCmdline, " ")
 		procCmdline = parts[0]

@@ -382,6 +382,11 @@ func Test_Calculate_Proces_CmdLine(t *testing.T) {
 			expected: "",
 		},
 		{
+			name:     "ignoring dash on session commands",
+			cmdLine:  "-zsh",
+			expected: "zsh",
+		},
+		{
 			name:     "no arguments & args enabled",
 			cmdLine:  "/sbin/launchd",
 			args:     true,
