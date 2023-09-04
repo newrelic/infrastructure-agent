@@ -234,7 +234,7 @@ func (pw *darwinProcess) CmdLine(withArgs bool) (string, error) {
 	}
 
 	// Ignoring dash on session commands
-	if procCmdline[0:1][0] == '-' {
+	if procCmdline[0] == '-' {
 		procCmdline = procCmdline[1:]
 	}
 
