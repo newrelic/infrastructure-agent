@@ -5,9 +5,12 @@ package process
 import (
 	"os"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/process"
+
+	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 )
 
 // darwinProcess is an implementation of the process.Snapshot interface for darwin hosts.
@@ -217,5 +220,29 @@ func (pw *darwinProcess) Command() string {
 // CmdLine is taken from ps. As commands can have spaces, it's difficult parse parameters
 // so no params for now
 func (pw *darwinProcess) CmdLine(withArgs bool) (string, error) {
+	if pw.cmdLine != "" {
+		return pw.cmdLine, nil
+	}
+
+	procCmdline, err := pw.process.Cmdline()
+	if err != nil {
+		return "", nil
+	}
+
+	if len(procCmdline) == 0 {
+		return "", nil // zombie process
+	}
+
+	// Ignoring dash on session commands
+	if procCmdline[0] == '-' {
+		procCmdline = procCmdline[1:]
+	}
+
+	if !withArgs {
+		parts := strings.Split(procCmdline, " ")
+		procCmdline = parts[0]
+	}
+
+	pw.cmdLine = helpers.SanitizeCommandLine(procCmdline)
 	return pw.cmdLine, nil
 }
