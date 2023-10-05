@@ -6,14 +6,20 @@ package dnschecks
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
+
 	backendhttp "github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	http2 "github.com/newrelic/infrastructure-agent/pkg/http"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/sirupsen/logrus"
-	"net"
-	"net/http"
-	"net/url"
-	"time"
+)
+
+const (
+	LOG_PREFIX = " ====== "
 )
 
 func RunChecks(
@@ -48,6 +54,18 @@ func RunChecks(
 	return nil
 }
 
+func startLogMessage(logger log.Entry, testName string) {
+	logger.Info(LOG_PREFIX + strings.ToUpper("Checking endpoint reachability using "+testName) + LOG_PREFIX)
+}
+
+func endLogMessage(logger log.Entry, testName string, err error) {
+	if err != nil {
+		logger.WithError(err).Error(LOG_PREFIX + strings.ToUpper("Endpoint reachability using "+testName+" FAILED") + LOG_PREFIX)
+	} else {
+		logger.Info(LOG_PREFIX + strings.ToUpper("Endpoint reachability using "+testName+" SUCCEED") + LOG_PREFIX)
+	}
+}
+
 func checkEndpointReachable(
 	collectorURL string,
 	timeout time.Duration,
@@ -55,7 +73,7 @@ func checkEndpointReachable(
 	logger log.Entry,
 ) (timedOut bool, err error) {
 
-	logger.Info("Checking endpoint reachability using default_agent_implementation")
+	startLogMessage(logger, "configured agent's HTTP client")
 	var request *http.Request
 	if request, err = http.NewRequest("HEAD", collectorURL, nil); err != nil {
 		return false, fmt.Errorf("unable to prepare reachability request: %v, error: %s", request, err)
@@ -67,14 +85,12 @@ func checkEndpointReachable(
 			timedOut = true
 		}
 		if errURL, ok := err.(*url.Error); ok {
-			logger.WithError(errURL).Warn("URL error detected. May be a configuration problem or a network connectivity issue.")
+			err = fmt.Errorf("URL error detected. May be a configuration problem or a network connectivity issue.: %w", errURL)
 			timedOut = true
 		}
-		logger.WithError(err).Warn("default_agent_implementation: FAIL")
-	} else {
-		logger.WithError(err).Warn("default_agent_implementation: OK")
 	}
-	logger.Info("End default_agent_implementation")
+
+	endLogMessage(logger, "configured agent's HTTP client", err)
 
 	return
 }
@@ -86,23 +102,17 @@ func checkEndpointReachableDefaultTransport(
 	logger log.Entry,
 ) (timedOut bool, err error) {
 
-	logger.Info("Checking endpoint reachability using default_transport")
+	startLogMessage(logger, "plain HTTP transport")
 	var req *http.Request
-	var resp *http.Response
 	client := backendhttp.GetHttpClient(timeout, http.DefaultTransport)
 	req, err = http.NewRequest("HEAD", collectorURL, nil)
 	if err != nil {
 		logrus.WithError(err).Error(fmt.Sprintf("cannot Create request for %s", collectorURL))
 	} else {
 		req = http2.WithTracer(req, "checkEndpointReachable")
-		resp, err = client.Do(req)
-		if err != nil {
-			logrus.WithError(err).Error(fmt.Sprintf("cannot Head Default transport With tracer %s", collectorURL))
-		} else {
-			logrus.WithField("StatusCode", resp.StatusCode).Info("default_transport : OK")
-		}
+		_, err = client.Do(req)
 	}
-	logger.Info("End default_transport")
+	endLogMessage(logger, "plain HTTP transport", err)
 
 	return
 }
@@ -114,15 +124,9 @@ func checkEndpointReachableDefaultHTTPHeadClient(
 	logger log.Entry,
 ) (timedOut bool, err error) {
 
-	logger.Info("Checking endpoint reachability using default_http_head_client")
-	var resp *http.Response
-	resp, err = http.Head(collectorURL)
-	if err != nil {
-		logrus.WithError(err).Error(fmt.Sprintf("default_http_head_client: FAIL"))
-	} else {
-		logrus.WithField("StatusCode", resp.StatusCode).Info("default_http_head_client: OK")
-	}
-	logger.Info("End default_http_head_client")
+	startLogMessage(logger, "plain HEAD request")
+	_, err = http.Head(collectorURL)
+	endLogMessage(logger, "plain HEAD request", err)
 	return
 }
 
@@ -133,7 +137,7 @@ func checkEndpointReachableGoResolverCustom(
 	logger log.Entry,
 ) (timedOut bool, err error) {
 
-	logger.Info("Checking endpoint reachability using prefer_go_resolver_custom_transport")
+	startLogMessage(logger, "Golang DNS custom resolver")
 	var req *http.Request
 	req, err = http.NewRequest("HEAD", collectorURL, nil)
 	if err != nil {
@@ -158,15 +162,9 @@ func checkEndpointReachableGoResolverCustom(
 		client := http.Client{}
 		client.Transport = customTransport
 		req = http2.WithTracer(req, "checkEndpointReachable")
-		var response *http.Response
-		response, err = http.DefaultClient.Do(req)
-		if err != nil {
-			logrus.WithError(err).Error(fmt.Sprintf("prefer_go_resolver_custom_transport: FAIL"))
-		} else {
-			logrus.WithField("statusCode", response.StatusCode).Info("prefer_go_resolver_custom_transport: OK")
-		}
+		_, err = http.DefaultClient.Do(req)
 	}
-	logger.Info("End prefer_go_resolver_custom_transport")
+	endLogMessage(logger, "Golang DNS custom resolver", err)
 	return
 }
 
@@ -177,7 +175,7 @@ func checkEndpointReachableCustomDNS(
 	logger log.Entry,
 ) (timedOut bool, err error) {
 
-	logger.Info("Checking endpoint reachability using custom_dns_resolver")
+	startLogMessage(logger, "public DNS server")
 	var req *http.Request
 	req, err = http.NewRequest("HEAD", collectorURL, nil)
 	if err != nil {
@@ -189,7 +187,7 @@ func checkEndpointReachableCustomDNS(
 			d := net.Dialer{
 				Timeout: time.Millisecond * time.Duration(10000),
 			}
-			return d.DialContext(ctx, network, "8.8.8.8:53")
+			return d.DialContext(ctx, network, "1.1.1.1:53")
 		}
 		dialer := &net.Dialer{
 			Timeout:   30 * time.Second,
@@ -211,14 +209,9 @@ func checkEndpointReachableCustomDNS(
 			logrus.WithError(err).Error(fmt.Sprintf("cannot Create request for %s", collectorURL))
 		} else {
 			req = http2.WithTracer(req, "testing")
-			resp, err := client.Do(req)
-			if err != nil {
-				logrus.WithError(err).Error(fmt.Sprintf("cannot Head Default transport With tracer %s", collectorURL))
-			} else {
-				logrus.WithField("StatusCode", resp.StatusCode).Info("custom_dns_resolver : OK")
-			}
+			_, err = client.Do(req)
 		}
 	}
-	logger.Info("End custom_dns_resolver")
+	endLogMessage(logger, "public DNS server", err)
 	return
 }
