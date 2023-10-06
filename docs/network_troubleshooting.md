@@ -43,11 +43,35 @@ RawContentLength  : 284
 
 **Linux**
 
-```bash
-$ curl -v https://infra-api.newrelic.com/cdn-cgi/trace
-```
+1. **Resolve the domain:** Use nslookup or dig to validate that the Linux system can resolve the domain to an IP address:
 
 ```
+$ nslookup infra-api.newrelic.com
+```
+
+The output should contain a name and IP address.
+
+2. **Ping the server:** Try pinging the IP address obtained above to ensure you can reach the server.
+
+```
+$ ping 162.247.241.2
+```
+
+The server should be reachable.
+
+3. **Traceroute:** Use traceroute to check the network path between your system and the server:
+
+```
+$ traceroute -I infra-api.newrelic.com
+```
+
+Analyze the output to identify potential network issues, such as high latency or packet loss.
+
+4. **Curl:** Use curl to check if the endpoint is reachable:
+
+```bash
+$ curl -v https://infra-api.newrelic.com/cdn-cgi/trace
+
 fl=366f101
 h=infra-api.newrelic.com
 ip=XX.YY.ZZ.ZZ
@@ -125,6 +149,22 @@ time="2023-10-04T17:08:10+02:00" level=debug action=WroteRequest component=HttpT
 time="2023-10-04T17:08:11+02:00" level=debug action=GotFirstResponseByte component=HttpTracer duration=1208ms requester=testing
 ```
 
+Each log line represents a different part of the network request process:
+
+1. GetConn → create a new request
+
+2. DNSStart & DNSDone → backend IP was resolved
+
+3. ConnectStart & ConnectDone
+
+4. TLSHandshakeStart & TLSHandshakeDone
+
+5. GotConn
+
+6. WroteHeaders & WroteRequest  → Request written into backend
+
+7. GotFirstResponseByte → Response from backend
+
 ## Configuration
 
 1. Enable trace logs with the HttpTracer feature
@@ -168,6 +208,24 @@ Certificates to New Relic’s endpoint are not embedded with the infrastructure 
 To fix the issue, Let’s Encrypt root authority certificates must be installed on the host, they are normally provided by the “ca-certificates” Linux package.
 
 #### Proxy being used without proper configuration
+
+```
+time="2023-08-25T12:00:58+01:00" level=error msg="metric sender can't process" component=MetricsIngestSender error="error sending events: Post \"https://infra-api.newrelic.com/infra/v2/metrics/events/bulk\": context deadline exceeded (Client.Timeout exceeded while awaiting headers)" postCount=19310 sendErrorCount=1
+```
+
+1. Verify all the Proxy configuration values are provided to the infra-agent. Filter the agent logs to find the used configuration:
+
+```
+$ cat newrelic-infra.logs | grep "Loaded configuration."
+```
+
+Assert the corresponding [values](https://docs.newrelic.com/docs/infrastructure/install-infrastructure-agent/configuration/infrastructure-agent-configuration-settings/#proxy-variables).
+
+2. Use `curl` to check if the endpoint is reachable via the proxy:
+
+```
+$ curl --proxy http://YOUR_PROXY:80 https://infra-api.newrelic.com/
+```
 
 #### DNS issues
 
