@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	LOG_PREFIX = " ====== "
+	logPrefix = " ====== "
 )
 
 func RunChecks(
@@ -55,14 +55,14 @@ func RunChecks(
 }
 
 func startLogMessage(logger log.Entry, testName string) {
-	logger.Info(LOG_PREFIX + strings.ToUpper("Checking endpoint reachability using "+testName) + LOG_PREFIX)
+	logger.Info(logPrefix + strings.ToUpper("Checking endpoint reachability using "+testName) + logPrefix)
 }
 
 func endLogMessage(logger log.Entry, testName string, err error) {
 	if err != nil {
-		logger.WithError(err).Error(LOG_PREFIX + strings.ToUpper("Endpoint reachability using "+testName+" FAILED") + LOG_PREFIX)
+		logger.WithError(err).Error(logPrefix + strings.ToUpper("Endpoint reachability using "+testName+" FAILED") + logPrefix)
 	} else {
-		logger.Info(LOG_PREFIX + strings.ToUpper("Endpoint reachability using "+testName+" SUCCEED") + LOG_PREFIX)
+		logger.Info(logPrefix + strings.ToUpper("Endpoint reachability using "+testName+" SUCCEED") + logPrefix)
 	}
 }
 
@@ -80,7 +80,9 @@ func checkEndpointReachable(
 	}
 	request = http2.WithTracer(request, "checkEndpointReachable")
 	client := backendhttp.GetHttpClient(timeout, transport)
-	if _, err = client.Do(request); err != nil {
+	var resp *http.Response
+
+	if resp, err = client.Do(request); err != nil {
 		if e2, ok := err.(net.Error); ok && (e2.Timeout() || e2.Temporary()) {
 			timedOut = true
 		}
@@ -89,6 +91,8 @@ func checkEndpointReachable(
 			timedOut = true
 		}
 	}
+
+	resp.Body.Close()
 
 	endLogMessage(logger, "configured agent's HTTP client", err)
 
@@ -110,8 +114,11 @@ func checkEndpointReachableDefaultTransport(
 		logrus.WithError(err).Error(fmt.Sprintf("cannot Create request for %s", collectorURL))
 	} else {
 		req = http2.WithTracer(req, "checkEndpointReachable")
-		_, err = client.Do(req)
+		var resp *http.Response
+		resp, err = client.Do(req)
+		resp.Body.Close()
 	}
+
 	endLogMessage(logger, "plain HTTP transport", err)
 
 	return
@@ -125,7 +132,8 @@ func checkEndpointReachableDefaultHTTPHeadClient(
 ) (timedOut bool, err error) {
 
 	startLogMessage(logger, "plain HEAD request")
-	_, err = http.Head(collectorURL)
+	_, err = http.Head(collectorURL) //nolint
+
 	endLogMessage(logger, "plain HEAD request", err)
 	return
 }
@@ -162,8 +170,11 @@ func checkEndpointReachableGoResolverCustom(
 		client := http.Client{}
 		client.Transport = customTransport
 		req = http2.WithTracer(req, "checkEndpointReachable")
-		_, err = http.DefaultClient.Do(req)
+		var resp *http.Response
+		resp, err = http.DefaultClient.Do(req)
+		resp.Body.Close()
 	}
+
 	endLogMessage(logger, "Golang DNS custom resolver", err)
 	return
 }
@@ -187,6 +198,7 @@ func checkEndpointReachableCustomDNS(
 			d := net.Dialer{
 				Timeout: time.Millisecond * time.Duration(10000),
 			}
+
 			return d.DialContext(ctx, network, "1.1.1.1:53")
 		}
 		dialer := &net.Dialer{
@@ -209,9 +221,12 @@ func checkEndpointReachableCustomDNS(
 			logrus.WithError(err).Error(fmt.Sprintf("cannot Create request for %s", collectorURL))
 		} else {
 			req = http2.WithTracer(req, "testing")
-			_, err = client.Do(req)
+			var resp *http.Response
+			resp, err = client.Do(req)
+			resp.Body.Close()
 		}
 	}
+
 	endLogMessage(logger, "public DNS server", err)
 	return
 }
