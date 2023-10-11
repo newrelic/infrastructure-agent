@@ -13,5 +13,6 @@ func init() { //nolint:gochecknoinits
 		filepath.Join("/usr", "local", "etc", "newrelic-infra", "newrelic-infra.yml"),
 	}
 	defaultAgentDir = filepath.Join("/usr", "local", "var", "db", "newrelic-infra")
+	defaultSafeBinDir = defaultAgentDir
 	defaultAgentTempDir = os.TempDir()
 }

@@ -54,6 +54,7 @@ func init() {
 	sysDrive := os.Getenv("SystemDrive") + string(filepath.Separator)
 
 	defaultAgentDir = filepath.Join(sysDrive, installationSubdir)
+	defaultSafeBinDir = defaultAgentDir
 	defaultConfigDir = defaultAgentDir
 	defaultLogFile = filepath.Join(defaultAgentDir, "newrelic-infra.log")
 	defaultPluginInstanceDir = filepath.Join(defaultAgentDir, "integrations.d")

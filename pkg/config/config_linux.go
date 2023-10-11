@@ -31,6 +31,7 @@ func init() {
 	defaultConfigDir = filepath.Join("/etc", "newrelic-infra")
 
 	defaultAgentDir = filepath.Join("/var", "db", "newrelic-infra")
+	defaultSafeBinDir = filepath.Join("/opt", "newrelic-infra")
 	defaultLogFile = filepath.Join("/var", "db", "newrelic-infra", "newrelic-infra.log")
 	defaultNetworkInterfaceFilters = map[string][]string{
 		"prefix":  {"dummy", "lo", "vmnet", "sit", "tun", "tap", "veth"},

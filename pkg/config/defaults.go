@@ -119,6 +119,7 @@ var (
 // nolint:gochecknoglobals
 var (
 	defaultAgentDir                string
+	defaultSafeBinDir              string
 	defaultConfigFiles             []string
 	defaultLogFile                 string
 	defaultNetworkInterfaceFilters map[string][]string

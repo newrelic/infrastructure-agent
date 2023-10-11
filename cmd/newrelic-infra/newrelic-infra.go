@@ -728,6 +728,8 @@ func checkEndpointReachable(
 
 func getPluginSourceDirs(ac *config.Config) []string {
 	pluginSourceDirs := []string{
+		filepath.Join(ac.SafeBinDir, config.DefaultIntegrationsDir),
+		filepath.Join(ac.SafeBinDir, "custom-integrations"),
 		ac.CustomPluginInstallationDir,
 		filepath.Join(ac.AgentDir, "custom-integrations"),
 		filepath.Join(ac.AgentDir, config.DefaultIntegrationsDir),

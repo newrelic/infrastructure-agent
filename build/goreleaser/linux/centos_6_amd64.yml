@@ -23,11 +23,11 @@
         type: config
   
       - src: 'target/nridocker/amd64/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
+        dst: '/opt/newrelic-infra/newrelic-integrations/bin/nri-docker'
       - src: 'target/nriflex/amd64/nri-flex'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
+        dst: '/opt/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/amd64/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
+        dst: '/opt/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
   
       # Upstart service conf file
       - src: 'build/package/upstart/newrelic-infra'
@@ -39,6 +39,8 @@
         dst: /etc/init.d/newrelic-infra
         type: "symlink"
     empty_folders:
+      - /opt/newrelic-infra/custom-integrations
+      - /opt/newrelic-infra/newrelic-integrations
       - /var/db/newrelic-infra/custom-integrations
       - /var/db/newrelic-infra/integrations.d
       - /var/log/newrelic-infra
