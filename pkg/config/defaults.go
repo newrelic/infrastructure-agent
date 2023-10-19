@@ -35,7 +35,7 @@ const (
 
 // Default configurable values
 //
-//nolint:gochecknoglobals
+//nolint:gochecknoglobals,gomnd
 var (
 	// public
 	DefaultContainerCacheMetadataLimit = 60
@@ -111,8 +111,8 @@ var (
 	defaultRegisterMaxRetryBoSecs        = 60
 	defaultNtpPool                       = []string{} // i.e: []string{"time.cloudflare.com"}
 	defaultNtpEnabled                    = false
-	defaultNtpInterval                   = uint(15)   // minutes
-	defaultNtpTimeout                    = uint(5000) // millisecods
+	defaultNtpInterval                   = uint(15) // minutes
+	defaultNtpTimeout                    = uint(5)  // seconds
 )
 
 // Default internal values
