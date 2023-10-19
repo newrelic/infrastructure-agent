@@ -16,6 +16,7 @@ for tarball_dirty in $(find dist -regex ".*linux.*_dirty\.\(tar.gz\)");do
   mkdir -p ${tarballContentPath}/usr/bin
   mkdir -p ${tarballContentPath}/var/{db/newrelic-infra,log/newrelic-infra,run/newrelic-infra}
   mkdir -p ${tarballContentPath}/var/db/newrelic-infra/{custom-integrations,integrations.d,newrelic-integrations}
+  mkdir -p ${tarballContentPath}/opt/newrelic-infra/{custom-integrations,newrelic-integrations}
 
   echo "===> Decompress ${tarball} in ${tarballContentPath}"
   tar -xvf ${tarball_dirty} -C ${tarballContentPath}
