@@ -18,7 +18,8 @@ import (
 	"github.com/containerd/containerd/errdefs"
 	"github.com/containerd/containerd/images"
 	"github.com/containerd/containerd/oci"
-	prototypes "github.com/gogo/protobuf/types"
+	"github.com/containerd/containerd/platforms"
+	"github.com/containerd/typeurl/v2"
 	"github.com/opencontainers/go-digest"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/opencontainers/runtime-spec/specs-go"
@@ -158,7 +159,7 @@ func (m *MockContainerdContainer) SetLabels(_ context.Context, _ map[string]stri
 	return nil, errUnimplemented
 }
 
-func (m *MockContainerdContainer) Extensions(_ context.Context) (map[string]prototypes.Any, error) {
+func (m *MockContainerdContainer) Extensions(_ context.Context) (map[string]typeurl.Any, error) {
 	return nil, errUnimplemented
 }
 
@@ -278,6 +279,14 @@ type MockContainerdImage struct{}
 
 func (m *MockContainerdImage) Name() string {
 	return "image1"
+}
+
+func (m *MockContainerdImage) Platform() platforms.MatchComparer { //nolint:ireturn
+	return nil
+}
+
+func (m *MockContainerdImage) Spec(_ context.Context) (ocispec.Image, error) {
+	return ocispec.Image{}, nil //nolint:exhaustruct
 }
 
 func (m *MockContainerdImage) Target() ocispec.Descriptor {

@@ -15,7 +15,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
-	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/files"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/v3legacy"
@@ -112,7 +111,7 @@ func (ae *Emulator) RunAgent() error {
 	configEntryQ := make(chan configrequest.Entry, 100)
 
 	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
-	dmEmitter := dm.NewEmitter(ae.agent.GetContext(), dmSender, nil, instrumentation.NoopMeasure, ffRetriever)
+	dmEmitter := dm.NewEmitter(ae.agent.GetContext(), dmSender, nil, ffRetriever)
 
 	// track stoppable integrations
 	tracker := track.NewTracker(dmEmitter)

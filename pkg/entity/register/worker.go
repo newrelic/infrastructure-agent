@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/sirupsen/logrus"
@@ -40,7 +39,6 @@ type worker struct {
 	reqsToRegisterQueue <-chan fwrequest.EntityFwRequest
 	reqsRegisteredQueue chan<- fwrequest.EntityFwRequest
 	config              WorkerConfig
-	measure             instrumentation.Measure
 }
 
 func NewWorker(
@@ -50,7 +48,6 @@ func NewWorker(
 	reqsToRegisterQueue <-chan fwrequest.EntityFwRequest,
 	reqsRegisteredQueue chan<- fwrequest.EntityFwRequest,
 	config WorkerConfig,
-	measureFn instrumentation.Measure,
 ) *worker {
 	return &worker{
 		agentIDProvide:      agentIDProvide,
@@ -59,7 +56,6 @@ func NewWorker(
 		reqsToRegisterQueue: reqsToRegisterQueue,
 		reqsRegisteredQueue: reqsRegisteredQueue,
 		config:              config,
-		measure:             measureFn,
 	}
 }
 
@@ -128,7 +124,6 @@ func (w *worker) send(ctx context.Context, batch map[entity.Key]fwrequest.Entity
 					WithField("entityName", resp.Name).
 					Errorf("failed to register entity")
 			}
-			w.measure(instrumentation.Counter, instrumentation.EntityRegisterEntitiesRegistrationFailed, 1)
 
 			continue
 		}
@@ -140,7 +135,6 @@ func (w *worker) send(ctx context.Context, batch map[entity.Key]fwrequest.Entity
 					WithField("entityID", resp.ID).
 					Warn("entity registered with warnings")
 			}
-			w.measure(instrumentation.Counter, instrumentation.EntityRegisterEntitiesRegisteredWithWarning, 1)
 		}
 
 		r, ok := batch[entity.Key(resp.Name)]
@@ -156,7 +150,6 @@ func (w *worker) send(ctx context.Context, batch map[entity.Key]fwrequest.Entity
 		} else {
 			r.RegisteredWith(resp.ID)
 			w.reqsRegisteredQueue <- r
-			w.measure(instrumentation.Counter, instrumentation.EntityRegisterEntitiesRegistered, 1)
 		}
 	}
 }

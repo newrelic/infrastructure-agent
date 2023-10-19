@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
 	log "github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
@@ -190,7 +189,7 @@ func TestWorker_Run_SendsWhenBatchLimitIsReached(t *testing.T) {
 				collector: make([][]string, 0),
 			}
 
-			w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), reqsToRegisterQueue, registeredQueue, config, instrumentation.NoopMeasure)
+			w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), reqsToRegisterQueue, registeredQueue, config)
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -235,7 +234,7 @@ func TestWorker_Run_EntityGraterThanMaxByteSize(t *testing.T) {
 		ids: []entity.ID{1},
 	}
 
-	w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), reqsToRegisterQueue, registeredQueue, config, instrumentation.NoopMeasure)
+	w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), reqsToRegisterQueue, registeredQueue, config)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -285,14 +284,14 @@ func TestWorker_registerEntitiesWithRetry_OnError_RetryBackoff(t *testing.T) {
 		MaxBatchDuration:  50 * time.Millisecond,
 		MaxRetryBo:        0,
 	}
-	w := NewWorker(agentIdentity, client, backoff, reqsToRegisterQueue, reqsRegisteredQueue, config, instrumentation.NoopMeasure)
+	worker := NewWorker(agentIdentity, client, backoff, reqsToRegisterQueue, reqsRegisteredQueue, config)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	result := make(chan []identityapi.RegisterEntityResponse, 1)
 	go func() {
-		result <- w.registerEntitiesWithRetry(ctx, []entity.Fields{{Name: "test"}})
+		result <- worker.registerEntitiesWithRetry(ctx, []entity.Fields{{Name: "test"}})
 	}()
 
 	select {
@@ -342,14 +341,14 @@ func TestWorker_registerEntitiesWithRetry_OnError_Discard(t *testing.T) {
 		MaxBatchDuration:  50 * time.Millisecond,
 		MaxRetryBo:        0,
 	}
-	w := NewWorker(agentIdentity, client, backoff, reqsToRegisterQueue, reqsRegisteredQueue, config, instrumentation.NoopMeasure)
+	worker := NewWorker(agentIdentity, client, backoff, reqsToRegisterQueue, reqsRegisteredQueue, config)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	response := make(chan []identityapi.RegisterEntityResponse, 1)
 	go func() {
-		response <- w.registerEntitiesWithRetry(ctx, []entity.Fields{{Name: "test"}})
+		response <- worker.registerEntitiesWithRetry(ctx, []entity.Fields{{Name: "test"}})
 	}()
 
 	select {
@@ -393,14 +392,14 @@ func TestWorker_registerEntitiesWithRetry_Success(t *testing.T) {
 		MaxBatchDuration:  50 * time.Millisecond,
 		MaxRetryBo:        0,
 	}
-	w := NewWorker(agentIdentity, client, backoff, reqsToRegisterQueue, reqsRegisteredQueue, config, instrumentation.NoopMeasure)
+	worker := NewWorker(agentIdentity, client, backoff, reqsToRegisterQueue, reqsRegisteredQueue, config)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	response := make(chan []identityapi.RegisterEntityResponse, 1)
 	go func() {
-		response <- w.registerEntitiesWithRetry(ctx, []entity.Fields{{Name: "test"}})
+		response <- worker.registerEntitiesWithRetry(ctx, []entity.Fields{{Name: "test"}})
 	}()
 	select {
 	case actual := <-response:
@@ -439,7 +438,7 @@ func TestWorker_send_Logging_VerboseEnabled(t *testing.T) {
 	config := WorkerConfig{
 		VerboseLogLevel: 1,
 	}
-	w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), reqsToRegisterQueue, reqsRegisteredQueue, config, instrumentation.NoopMeasure)
+	worker := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), reqsToRegisterQueue, reqsRegisteredQueue, config)
 
 	batch := map[entity.Key]fwrequest.EntityFwRequest{
 		entity.Key("error"): {
@@ -476,7 +475,7 @@ func TestWorker_send_Logging_VerboseEnabled(t *testing.T) {
 	log.SetOutput(ioutil.Discard)
 
 	batchSizeBytes := 10000
-	w.send(ctx, batch, &batchSizeBytes)
+	worker.send(ctx, batch, &batchSizeBytes)
 
 	searchLogEntries := func(expectedMessages []string, level log.Level) (found bool) {
 		for _, expectedMsg := range expectedMessages {
@@ -526,7 +525,7 @@ func TestWorker_send_Logging_VerboseDisabled(t *testing.T) {
 	config := WorkerConfig{
 		VerboseLogLevel: 0,
 	}
-	w := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), reqsToRegisterQueue, reqsRegisteredQueue, config, instrumentation.NoopMeasure)
+	worker := NewWorker(agentIdentity, client, backoff.NewDefaultBackoff(), reqsToRegisterQueue, reqsRegisteredQueue, config)
 
 	batch := map[entity.Key]fwrequest.EntityFwRequest{
 		entity.Key("error"): {
@@ -563,7 +562,7 @@ func TestWorker_send_Logging_VerboseDisabled(t *testing.T) {
 	log.SetOutput(ioutil.Discard)
 
 	batchSizeBytes := 10000
-	w.send(ctx, batch, &batchSizeBytes)
+	worker.send(ctx, batch, &batchSizeBytes)
 
 	assert.Empty(t, hook.AllEntries())
 }
