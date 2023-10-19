@@ -9,12 +9,12 @@ require (
 	github.com/aws/aws-sdk-go v1.44.69
 	github.com/beevik/ntp v0.3.0
 	github.com/containerd/containerd v1.7.7
+	github.com/containerd/typeurl/v2 v2.1.1
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/docker/docker v24.0.1+incompatible
 	github.com/evanphx/json-patch v4.9.0+incompatible
 	github.com/fortytw2/leaktest v1.3.1-0.20190606143808-d73c753520d9
 	github.com/fsnotify/fsnotify v1.6.0
-	github.com/gogo/protobuf v1.3.2
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/julienschmidt/httprouter v1.3.0
@@ -51,7 +51,6 @@ require (
 	github.com/containerd/fifo v1.1.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/ttrpc v1.2.2 // indirect
-	github.com/containerd/typeurl/v2 v2.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
@@ -61,6 +60,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/uuid v1.3.0 // indirect

@@ -62,6 +62,14 @@ Distributed under the following license(s):
 
 
 
+## [github.com/containerd/typeurl/v2](https://github.com/containerd/typeurl)
+
+Distributed under the following license(s):
+
+* Apache-2.0
+
+
+
 ## [github.com/coreos/go-systemd/v22](https://github.com/coreos/go-systemd)
 
 Distributed under the following license(s):
@@ -95,14 +103,6 @@ Distributed under the following license(s):
 
 
 ## [github.com/fsnotify/fsnotify](https://github.com/fsnotify/fsnotify)
-
-Distributed under the following license(s):
-
-* BSD-3-Clause
-
-
-
-## [github.com/gogo/protobuf](https://github.com/gogo/protobuf)
 
 Distributed under the following license(s):
 
