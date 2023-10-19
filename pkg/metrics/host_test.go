@@ -11,7 +11,7 @@ import (
 )
 
 func TestHostSample_CachedNtpOffset(t *testing.T) {
-	timeout := uint(5000)
+	timeout := uint(5)
 	interval := uint(15)
 	ntpMonitor := NewNtp([]string{"one"}, timeout, interval)
 	ntpMonitor.ntpQuery = ntpQueryMock([]ntpResp{

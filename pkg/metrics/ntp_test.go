@@ -155,7 +155,7 @@ func TestOffset_Interval(t *testing.T) {
 }
 
 func TestOffset_OffsetAverage(t *testing.T) {
-	timeout := uint(5000)
+	timeout := uint(5)
 	interval := uint(15)
 	ntpMonitor := NewNtp([]string{"one", "two", "three"}, timeout, interval)
 	ntpMonitor.ntpQuery = ntpQueryMock([]ntpResp{
@@ -179,7 +179,7 @@ func TestOffset_OffsetAverage(t *testing.T) {
 }
 
 func TestOffset_AnyHostErrorShouldNotReturnError(t *testing.T) {
-	timeout := uint(5000)
+	timeout := uint(5)
 	interval := uint(15)
 	ntpMonitor := NewNtp([]string{"one", "two", "three"}, timeout, interval)
 	ntpMonitor.ntpQuery = ntpQueryMock([]ntpResp{
@@ -202,7 +202,7 @@ func TestOffset_AnyHostErrorShouldNotReturnError(t *testing.T) {
 }
 
 func TestOffset_AllHostErrorShouldReturnError(t *testing.T) {
-	timeout := uint(5000)
+	timeout := uint(5)
 	interval := uint(15)
 	ntpMonitor := NewNtp([]string{"one", "two", "three"}, timeout, interval)
 	ntpMonitor.ntpQuery = ntpQueryMock([]ntpResp{
@@ -225,7 +225,7 @@ func TestOffset_AllHostErrorShouldReturnError(t *testing.T) {
 func TestOffset_InvalidNtpResponse(t *testing.T) {
 	t.Parallel()
 
-	timeout := uint(5000)
+	timeout := uint(5)
 	interval := uint(15)
 	ntpMonitor := NewNtp([]string{"one", "two", "three"}, timeout, interval)
 	ntpMonitor.ntpQuery = ntpQueryMock([]ntpResp{
@@ -251,7 +251,7 @@ func TestOffset_InvalidNtpResponse(t *testing.T) {
 func TestOffset_AnyHostInvalidShouldNotReturnError(t *testing.T) {
 	t.Parallel()
 
-	timeout := uint(5000)
+	timeout := uint(5)
 	interval := uint(15)
 	ntpMonitor := NewNtp([]string{"one", "two", "three"}, timeout, interval)
 	ntpMonitor.ntpQuery = ntpQueryMock([]ntpResp{
