@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
 
 	"github.com/tevino/abool"
@@ -69,7 +68,6 @@ type emitter struct {
 	registerMaxBatchBytesSize int
 	registerMaxBatchTime      time.Duration
 	verboseLogLevel           int
-	measure                   instrumentation.Measure
 	ffRetriever               feature_flags.Retriever
 }
 
@@ -81,7 +79,6 @@ func NewEmitter(
 	agentContext agent.AgentContext,
 	dmSender MetricsSender,
 	registerClient identityapi.RegisterClient,
-	measure instrumentation.Measure,
 	ffRetriever feature_flags.Retriever,
 ) Emitter {
 	return &emitter{
@@ -99,7 +96,6 @@ func NewEmitter(
 		registerMaxBatchBytesSize: defaultRegisterBatchBytesSize,
 		registerMaxBatchTime:      defaultRegisterBatchSecs * time.Second,
 		verboseLogLevel:           agentContext.Config().Log.VerboseEnabled(),
-		measure:                   measure,
 		ffRetriever:               ffRetriever,
 	}
 }
@@ -107,7 +103,6 @@ func NewEmitter(
 // Send receives data forward requests and queues them while processing them on different goroutine.
 // Processor is automatically being lazy run at first data received.
 func (e *emitter) Send(req fwrequest.FwRequest) {
-	e.measure(instrumentation.Counter, instrumentation.DMRequestsForwarded, 1)
 	e.reqsQueue <- req
 	e.lazyLoadProcessor()
 }
@@ -133,8 +128,7 @@ func (e *emitter) lazyLoadProcessor() {
 				e.retryBo,
 				e.reqsToRegisterQueue,
 				e.reqsRegisteredQueue,
-				config,
-				e.measure)
+				config)
 			go regWorker.Run(ctx)
 		}
 	}
@@ -151,7 +145,6 @@ func (e *emitter) runFwReqConsumer(ctx context.Context) {
 			return
 
 		case req := <-e.reqsQueue:
-			e.measure(instrumentation.Counter, instrumentation.DMDatasetsReceived, int64(len(req.Data.DataSets)))
 
 		loop:
 			for _, ds := range req.Data.DataSets {

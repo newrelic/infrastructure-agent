@@ -36,7 +36,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/status"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/internal/httpapi"
-	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/files"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/v3legacy"
@@ -357,12 +356,6 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		fatal(err, "Can't complete platform specific initialization.")
 	}
 
-	instruments, err := initInstrumentation(agt.GetContext().Context(), c.AgentMetricsEndpoint)
-	if err != nil {
-		return fmt.Errorf("cannot initialize prometheus exporter: %v", err)
-	}
-	wlog.Instrument(instruments.Measure)
-
 	metricsSenderConfig := dm.NewConfig(c.DMIngestURL(), c.Fedramp, c.License, time.Duration(c.DMSubmissionPeriod)*time.Second, c.MaxMetricBatchEntitiesCount, c.MaxMetricBatchEntitiesQueue)
 	dmSender, err := dm.NewDMSender(metricsSenderConfig, transport, agt.Context.IdContext().AgentIdentity)
 	if err != nil {
@@ -374,7 +367,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	// queues config entries requests
 	configEntryQ := make(chan configrequest.Entry, 100)
 
-	dmEmitter := dm.NewEmitter(agt.GetContext(), dmSender, registerClient, instruments.Measure, ffManager)
+	dmEmitter := dm.NewEmitter(agt.GetContext(), dmSender, registerClient, ffManager)
 
 	// track stoppable integrations
 	tracker := track.NewTracker(dmEmitter)
@@ -518,44 +511,6 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	timedLog.Info("New Relic infrastructure agent is running.")
 
 	return agt.Run()
-}
-
-// initInstrumentation will spawn a server and expose agent metrics through prometheus exporter.
-// By default is disabled and it only will be enabled if host:port are provided.
-// Using instrumentation.SetupPrometheusIntegrationConfig it will create prometheus
-// integration configuration (and delete it on agent shutdown process).
-func initInstrumentation(ctx context2.Context, agentMetricsEndpoint string) (instrumentation.Instrumenter, error) {
-	if agentMetricsEndpoint == "" {
-		return instrumentation.NewNoop(), nil
-	}
-
-	instruments, err := instrumentation.New()
-	if err != nil {
-		return nil, err
-	}
-
-	aslog.WithField("addr", agentMetricsEndpoint).Info("Starting Opentelemetry server")
-	srv := &http.Server{
-		Handler:      instruments.GetHandler(),
-		Addr:         agentMetricsEndpoint,
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
-	}
-
-	go srv.ListenAndServe()
-	go func() {
-		<-ctx.Done()
-		aslog.Debug("Stopping Opentelemetry server")
-		srv.Close()
-	}()
-
-	// Setup prometheus integration
-	err = instrumentation.SetupPrometheusIntegrationConfig(ctx, agentMetricsEndpoint)
-	if err != nil {
-		return nil, err
-	}
-
-	return instruments, nil
 }
 
 // newInstancesLookup creates an instance lookup that:
