@@ -164,6 +164,10 @@ func (r *Executor) buildCommand(ctx context.Context) *exec.Cmd {
 		cmd.Env = append(cmd.Env, "NRI_HOST_ID="+hostID)
 	}
 
+	for _, env := range cmd.Env {
+		fmt.Printf("COMMAND ENV: %s\n", env)
+	}
+
 	cmd.Dir = r.Cfg.Directory
 	return cmd
 }

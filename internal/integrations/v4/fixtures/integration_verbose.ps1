@@ -1,3 +1,4 @@
 
-$host.ui.WriteErrorLine("VERBOSE=" + $env:VERBOSE);
-Write-Output "stdout line";
+$verbosity = Get-ChildItem Env:VERBOSE
+$host.ui.WriteErrorLine("VERBOSE=$($verbosity.Value)")
+Write-Output "stdout line"
