@@ -1,3 +1,3 @@
 
-$host.ui.WriteErrorLine("VERBOSE=$env:VERBOSE")
-echo "stdout line"
+$host.ui.WriteErrorLine("VERBOSE=" + $env:VERBOSE);
+Write-Output "stdout line";

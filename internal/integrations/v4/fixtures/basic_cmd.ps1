@@ -5,7 +5,6 @@ Param
     $Argument
 )
 
-echo "stdout line"
+Write-Output "stdout line";
 $host.ui.WriteErrorLine('error line')
-echo "$env:PREFIX-$Argument"
-
+Write-Output "$env:PREFIX-$Argument";

@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"os/exec"
 	"sync"
@@ -93,6 +94,7 @@ func (r *Executor) Execute(ctx context.Context, pidChan, exitCodeCh chan<- int) 
 		}()
 
 		if err = startProcess(cmd); err != nil {
+			fmt.Printf("ERROR WHILE STARTING PROCESS: %v\n", err)
 			out.Errors <- err
 		}
 
