@@ -214,14 +214,6 @@ Distributed under the following license(s):
 
 
 
-## [github.com/prometheus/client_golang](https://github.com/prometheus/client_golang)
-
-Distributed under the following license(s):
-
-* Apache-2.0
-
-
-
 ## [github.com/prometheus/procfs](https://github.com/prometheus/procfs)
 
 Distributed under the following license(s):
@@ -259,30 +251,6 @@ Distributed under the following license(s):
 Distributed under the following license(s):
 
 * MIT
-
-
-
-## [go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp](https://go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp)
-
-Distributed under the following license(s):
-
-* Apache-2.0
-
-
-
-## [go.opentelemetry.io/otel](https://go.opentelemetry.io/otel)
-
-Distributed under the following license(s):
-
-* Apache-2.0
-
-
-
-## [go.opentelemetry.io/otel/exporters/metric/prometheus](https://go.opentelemetry.io/otel/exporters/metric/prometheus)
-
-Distributed under the following license(s):
-
-* Apache-2.0
 
 
 
