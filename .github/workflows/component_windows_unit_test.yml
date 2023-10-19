@@ -19,6 +19,8 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: Run shell script
+        run: go test -run TestRun .\internal\integrations\v4\executor\
 
       - name: Run shell script
         run: powershell.exe -Sta -File internal\integrations\v4\fixtures\integration_verbose.ps1
