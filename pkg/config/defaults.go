@@ -35,7 +35,7 @@ const (
 
 // Default configurable values
 //
-//nolint:gochecknoglobals
+//nolint:gochecknoglobals,gomnd
 var (
 	// public
 	DefaultContainerCacheMetadataLimit = 60
