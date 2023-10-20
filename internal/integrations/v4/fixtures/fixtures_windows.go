@@ -8,7 +8,7 @@ import (
 
 var (
 	IntegrationScript        = testhelp.Script("..\\fixtures\\integration.ps1")
-	IntegrationVerboseScript = testhelp.Script("..\\fixtures\\integration_verbose.ps1")
+	IntegrationVerboseScript = testhelp.Script("..\\fixtures\\integration\\verbose.go")
 	IntegrationPrintsErr     = testhelp.Script("..\\fixtures\\integration_err.ps1")
 	BasicCmd                 = testhelp.Script("..\\fixtures\\basic_cmd.ps1")
 	ErrorCmd                 = testhelp.Script("..\\fixtures\\error_cmd.ps1")

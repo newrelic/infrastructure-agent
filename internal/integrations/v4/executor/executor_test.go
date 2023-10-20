@@ -214,7 +214,7 @@ func TestRunnable_Execute_Verbose(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	// GIVEN a runnable instance that points to a working executable
-	r := FromCmdSlice(testhelp.Command(fixtures.IntegrationVerboseScript), execConfig(t))
+	r := FromCmdSlice(testhelp.GoRun(fixtures.VerboseIntegrationGoFile), execConfig(t))
 
 	// GIVEN verbose set to 1
 	ctx := context.WithValue(context.Background(), constants.EnableVerbose, 1)
