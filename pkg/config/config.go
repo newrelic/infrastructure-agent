@@ -404,6 +404,13 @@ type Config struct {
 	// Public: Yes
 	AgentDir string `yaml:"agent_dir" envconfig:"agent_dir"`
 
+	// SafeBinDir is the directory where the agent expects to see executables for Integrations
+	// Default (Linux): /opt/newrelic-infra
+	// Default (MacOS): /usr/local/var/db/newrelic-infra/
+	// Default (Windows): C:\Program Files\NewRelic\newrelic-infra
+	// Public: Yes
+	SafeBinDir string `yaml:"safe_bin_dir" envconfig:"safe_bin_dir"`
+
 	// ConfigDir is the main directory where the agent stores configs.
 	// Default (Linux): /etc/newrelic-infra
 	// Default (Windows): C:\Program Files\NewRelic\newrelic-infra
@@ -1811,6 +1818,7 @@ func NewConfig() *Config {
 		CommandChannelEndpoint:        defaultCmdChannelEndpoint,
 		CommandChannelIntervalSec:     defaultCmdChannelIntervalSec,
 		AgentDir:                      defaultAgentDir,
+		SafeBinDir:                    defaultSafeBinDir,
 		ConfigDir:                     defaultConfigDir,
 		SupervisorRpcSocket:           defaultSupervisorRpcSock,
 		DebugLogSec:                   defaultDebugLogSec,

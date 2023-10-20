@@ -12,7 +12,7 @@
   shell: docker run --rm -it -d --name nri-docker-nginx nginx
 
 - name: verify nri-docker reports nginx
-  shell: /var/db/newrelic-infra/newrelic-integrations/bin/nri-docker 2>/dev/null
+  shell: /opt/newrelic-infra/newrelic-integrations/bin/nri-docker 2>/dev/null
   register: nri_docker_ouptut
 
 - name: register docker command line

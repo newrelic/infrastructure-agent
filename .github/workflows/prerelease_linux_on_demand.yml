@@ -6,13 +6,17 @@ on:
       branch:
         description: 'Branch to build from'
         required: true
+      fake_tag:
+        description: 'Version to be given to the packages'
+        default: '0.0.0'
       dest_prefix:
         description: 'Repo prefix'
         required: true
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  TAG: "0.0.0"
+  TAG: ${{ inputs.fake_tag }}
+  FAKE_TAG:  ${{ inputs.fake_tag }}
   DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
   DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
   # required for GHA publish action, should be moved into optional
@@ -43,7 +47,7 @@ jobs:
           ref: ${{ env.BRANCH }}
 
       - name: "Tag this commit" # required for Goreleaser
-        run: git tag ${{ env.TAG }}
+        run: git tag ${{ env.FAKE_TAG }}
 
       - name: Login to DockerHub
         uses: docker/login-action@v1
@@ -53,6 +57,8 @@ jobs:
 
       - name: Preparing all linux packages
         run: make ci/prerelease/linux
+        env:
+          TAG: ${{ env.FAKE_TAG }}
 
       - name: Generate checksum files
         uses: ./.github/actions/generate-checksums
@@ -64,7 +70,7 @@ jobs:
       - name: Publish deb to S3 action
         uses: newrelic/infrastructure-publish-action@v1.3.4
         with:
-          tag: ${{env.TAG}}
+          tag: ${{env.FAKE_TAG}}
           app_name: "newrelic-infra"
           repo_name: "newrelic/infrastructure-agent"
           schema: "custom"
@@ -89,7 +95,7 @@ jobs:
       - name: Publish rpm to S3 action
         uses: newrelic/infrastructure-publish-action@v1.3.4
         with:
-          tag: ${{env.TAG}}
+          tag: ${{env.FAKE_TAG}}
           app_name: "newrelic-infra"
           repo_name: "newrelic/infrastructure-agent"
           schema: "custom"
@@ -113,7 +119,7 @@ jobs:
       - name: Publish targz to S3 action
         uses: newrelic/infrastructure-publish-action@v1.3.4
         with:
-          tag: ${{env.TAG}}
+          tag: ${{env.FAKE_TAG}}
           app_name: "newrelic-infra"
           repo_name: "newrelic/infrastructure-agent"
           schema: "custom"
