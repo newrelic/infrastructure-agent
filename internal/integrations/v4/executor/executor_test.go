@@ -211,6 +211,11 @@ func TestNoRaces(t *testing.T) {
 }
 
 func TestRunnable_Execute_Verbose(t *testing.T) {
+	// TODO: move Powershell script to Go or Python
+	if runtime.GOOS == "windows" {
+		t.Skip("there is a problem when executing directly powershell with environment variables")
+	}
+
 	defer leaktest.Check(t)()
 
 	// GIVEN a runnable instance that points to a working executable
