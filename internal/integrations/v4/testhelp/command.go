@@ -71,6 +71,10 @@ func GoBuild(gofile Script, dstPath string) error {
 	return nil
 }
 
+func PythonCommand(pythonfile Script, args ...string) config.ShlexOpt {
+	return append(append(getDefaultPythonBin(), string(pythonfile)), args...)
+}
+
 type Script string
 
 func WrapScript(scriptPath string) Script {
@@ -94,4 +98,11 @@ func getDefaultShlexOpt() config.ShlexOpt {
 		return config.ShlexOpt{"powershell.exe", "-Sta", "-File"}
 	}
 	return config.ShlexOpt{"/bin/sh"}
+}
+
+func getDefaultPythonBin() config.ShlexOpt {
+	if runtime.GOOS == "windows" {
+		return config.ShlexOpt{"python.exe"}
+	}
+	return config.ShlexOpt{"python3"}
 }

@@ -11,6 +11,7 @@ var (
 	IntegrationVerboseScript = testhelp.Script("..\\fixtures\\integration_verbose.ps1")
 	IntegrationPrintsErr     = testhelp.Script("..\\fixtures\\integration_err.ps1")
 	BasicCmd                 = testhelp.Script("..\\fixtures\\basic_cmd.ps1")
+	BasicCmd2                 = testhelp.Script("..\\fixtures\\basic_cmd.py")
 	ErrorCmd                 = testhelp.Script("..\\fixtures\\error_cmd.ps1")
 	BlockedCmd               = testhelp.Script("..\\fixtures\\blocked_cmd.ps1")
 	FileContentsWithArgCmd   = testhelp.Script("..\\fixtures\\filecontents_witharg.ps1")

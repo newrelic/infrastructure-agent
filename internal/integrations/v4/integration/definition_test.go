@@ -30,7 +30,7 @@ func TestRun(t *testing.T) {
 	// GIVEN a definition entry with no discovery sources
 	def, err := NewDefinition(config.ConfigEntry{
 		InstanceName: "foo",
-		Exec:         testhelp.Command(fixtures.BasicCmd),
+		Exec:         testhelp.PythonCommand(fixtures.BasicCmd2),
 	}, ErrLookup, nil, nil)
 	require.NoError(t, err)
 
@@ -51,7 +51,7 @@ func TestRun_NoDiscovery(t *testing.T) {
 	// GIVEN a definition entry with discovery sources
 	def, err := NewDefinition(config.ConfigEntry{
 		InstanceName: "foo",
-		Exec:         testhelp.Command(fixtures.BasicCmd),
+		Exec:         testhelp.PythonCommand(fixtures.BasicCmd2),
 		Env: map[string]string{
 			"CONFIG": "${discovery.foo}",
 		},

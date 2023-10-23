@@ -14,6 +14,7 @@ var (
 	IntegrationVerboseScript = testhelp.Script("../fixtures/integration_verbose.sh")
 	IntegrationPrintsErr     = testhelp.Script("../fixtures/integration_err.sh")
 	BasicCmd                 = testhelp.Script("../fixtures/basic_cmd.sh")
+	BasicCmd2                 = testhelp.Script("../fixtures/basic_cmd.sh")
 	ErrorCmd                 = testhelp.Script("../fixtures/error_cmd.sh")
 	BlockedCmd               = testhelp.Script("../fixtures/blocked_cmd.sh")
 	FileContentsCmd          = testhelp.Script("../fixtures/filecontents.sh")
