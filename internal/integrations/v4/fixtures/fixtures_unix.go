@@ -17,6 +17,7 @@ var (
 	BasicCmd2                 = testhelp.Script("../fixtures/basic_cmd.sh")
 	ErrorCmd                 = testhelp.Script("../fixtures/error_cmd.sh")
 	BlockedCmd               = testhelp.Script("../fixtures/blocked_cmd.sh")
+	BlockedCmd2               = testhelp.Script("../fixtures/blocked_cmd.sh")
 	FileContentsCmd          = testhelp.Script("../fixtures/filecontents.sh")
 	FileContentsWithArgCmd   = testhelp.Script("../fixtures/filecontents_witharg.sh")
 	FileContentsFromEnvCmd   = testhelp.Script("../fixtures/filecontents_fromenv.sh")

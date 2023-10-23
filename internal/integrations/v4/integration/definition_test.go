@@ -101,7 +101,7 @@ func TestRun_Discovery(t *testing.T) {
 	// GIVEN a definition entry with discoverable configuration
 	def, err := NewDefinition(config.ConfigEntry{
 		InstanceName: "foo",
-		Exec:         testhelp.Command(fixtures.BasicCmd, "${argument}"),
+		Exec:         testhelp.Command(fixtures.BasicCmd2, "${argument}"),
 		Env: map[string]string{
 			"PREFIX": "${prefix}",
 		},
@@ -144,7 +144,7 @@ func TestRun_CmdSlice(t *testing.T) {
 	// GIVEN a definition entry whose parameters are specified as a command array
 	def, err := NewDefinition(config.ConfigEntry{
 		InstanceName: "foo",
-		Exec:         testhelp.CommandSlice(fixtures.BasicCmd, "argument"),
+		Exec:         testhelp.PythonCommand(fixtures.BasicCmd2, "argument"),
 	}, ErrLookup, nil, nil)
 	require.NoError(t, err)
 
@@ -167,7 +167,7 @@ func TestRun_CancelPropagation(t *testing.T) {
 	// that is executed with different discovery matches
 	def, err := NewDefinition(config.ConfigEntry{
 		InstanceName: "foo",
-		Exec:         testhelp.Command(fixtures.BlockedCmd, "-f", "${argument}"),
+		Exec:         testhelp.PythonCommand(fixtures.BlockedCmd2, "-f", "${argument}"),
 	}, ErrLookup, nil, nil)
 	require.NoError(t, err)
 	vals := databind.NewValues(nil,
@@ -215,7 +215,7 @@ func TestRun_CancelPropagationWithoutReads(t *testing.T) {
 	// GIVEN a definition run
 	def, err := NewDefinition(config.ConfigEntry{
 		InstanceName: "foo",
-		Exec:         testhelp.Command(fixtures.BlockedCmd),
+		Exec:         testhelp.PythonCommand(fixtures.BlockedCmd2),
 	}, ErrLookup, nil, nil)
 	require.NoError(t, err)
 
@@ -254,12 +254,12 @@ func TestRun_Cancel_Partial(t *testing.T) {
 	// that is executed with different discovery matches
 	def, err := NewDefinition(config.ConfigEntry{
 		InstanceName: "foo",
-		Exec:         testhelp.Command("${script}"),
+		Exec:         testhelp.PythonCommand("${script}"),
 	}, ErrLookup, nil, nil)
 	require.NoError(t, err)
 	vals := databind.NewValues(nil,
-		databind.NewDiscovery(data.Map{"script": string(fixtures.BasicCmd)}, nil, nil),
-		databind.NewDiscovery(data.Map{"script": string(fixtures.BlockedCmd)}, nil, nil),
+		databind.NewDiscovery(data.Map{"script": string(fixtures.BasicCmd2)}, nil, nil),
+		databind.NewDiscovery(data.Map{"script": string(fixtures.BlockedCmd2)}, nil, nil),
 	)
 
 	parentContext, cancel := context.WithCancel(context.Background())

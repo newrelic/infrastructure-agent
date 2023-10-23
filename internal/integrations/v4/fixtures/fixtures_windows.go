@@ -14,6 +14,7 @@ var (
 	BasicCmd2                 = testhelp.Script("..\\fixtures\\basic_cmd.py")
 	ErrorCmd                 = testhelp.Script("..\\fixtures\\error_cmd.ps1")
 	BlockedCmd               = testhelp.Script("..\\fixtures\\blocked_cmd.ps1")
+	BlockedCmd2               = testhelp.Script("..\\fixtures\\blocked_cmd.py")
 	FileContentsWithArgCmd   = testhelp.Script("..\\fixtures\\filecontents_witharg.ps1")
 	SleepCmd                 = testhelp.Script("..\\fixtures\\sleep.ps1")
 	// at the moment, unsupported, as they use env vars with Powershell. Left here to avoid compile errors
