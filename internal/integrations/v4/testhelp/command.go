@@ -91,7 +91,7 @@ func CommandSlice(script Script, args ...string) []string {
 
 func getDefaultShlexOpt() config.ShlexOpt {
 	if runtime.GOOS == "windows" {
-		return config.ShlexOpt{"powershell.exe", "-Sta", "-File"}
+		return config.ShlexOpt{"bash.exe"}
 	}
 	return config.ShlexOpt{"/bin/sh"}
 }
