@@ -34,8 +34,8 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/tevino/abool v1.2.0
 	go.uber.org/multierr v1.8.0
-	golang.org/x/net v0.13.0
-	golang.org/x/sys v0.10.0
+	golang.org/x/net v0.17.0
+	golang.org/x/sys v0.13.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools v2.2.1-0.20181123051433-bcbf6e613274+incompatible
@@ -92,7 +92,7 @@ require (
 	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/oauth2 v0.10.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
-	golang.org/x/text v0.11.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/tools v0.7.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230711160842-782d3b101e98 // indirect
