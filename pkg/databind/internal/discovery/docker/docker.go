@@ -80,8 +80,10 @@ func getDiscoveries(containers []types.Container, matcher *discovery.FieldsMatch
 		for _, network := range cont.NetworkSettings.Networks {
 			if index == 0 {
 				labels[data.PrivateIP] = network.IPAddress
+				labels[data.IP] = network.IPAddress
 			}
 			labels[data.PrivateIP+"."+strconv.Itoa(index)] = network.IPAddress
+			labels[data.IP+"."+strconv.Itoa(index)] = network.IPAddress
 			index++
 		}
 
