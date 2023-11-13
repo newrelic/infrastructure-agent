@@ -740,8 +740,8 @@ type Config struct {
 	// slow, we'll still be able to run the event queue receiver and accumulate a reasonable number of batches before
 	// we fill up on batches as well.
 	// Default: 1000
-	// Public: No
-	EventQueueDepth int `yaml:"event_queue_depth" envconfig:"event_queue_depth" public:"false"` // See event_sender.go
+	// Public: Yes
+	EventQueueDepth int `yaml:"event_queue_depth" envconfig:"event_queue_depth" public:"true"` // See event_sender.go
 
 	// BatchQueueDepth We use two queues to send the events to metrics digest: (event -> eventQueue -> batch ->
 	// batchQueue -> HTTP post). This config option allow us to increase the batchQueue size.
