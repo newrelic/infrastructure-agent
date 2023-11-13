@@ -1,8 +1,5 @@
 name: . 🚀 🧬 Test package installation
 on:
-  schedule:
-    # Scheduled to run at x:00 every hour.
-    - cron: '0 * * * *'
   workflow_dispatch:
     inputs:
       tag:
@@ -20,5 +17,5 @@ jobs:
   molecule-packaging-tests:
     uses: ./.github/workflows/component_molecule_packaging.yml
     with:
-      TAG: "${{ github.event.inputs.tag || '1.47.0' }}"
+      TAG: "${{ github.event.inputs.tag }}"
       REPO_ENDPOINT: ${{ github.event.inputs.staging == 'true' && 'http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent' ||  'https://download.newrelic.com/infrastructure_agent'  }}
