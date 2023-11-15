@@ -92,7 +92,9 @@ func checkEndpointReachable(
 		}
 	}
 
-	resp.Body.Close()
+	if resp != nil {
+		resp.Body.Close()
+	}
 
 	endLogMessage(logger, "configured agent's HTTP client", err)
 
@@ -116,7 +118,12 @@ func checkEndpointReachableDefaultTransport(
 		req = http2.WithTracer(req, "checkEndpointReachable")
 		var resp *http.Response
 		resp, err = client.Do(req)
-		resp.Body.Close()
+		if err != nil {
+			logrus.WithError(err).Error(fmt.Sprintf("Request for %s failed", collectorURL))
+		}
+		if resp != nil {
+			resp.Body.Close()
+		}
 	}
 
 	endLogMessage(logger, "plain HTTP transport", err)
@@ -172,7 +179,12 @@ func checkEndpointReachableGoResolverCustom(
 		req = http2.WithTracer(req, "checkEndpointReachable")
 		var resp *http.Response
 		resp, err = http.DefaultClient.Do(req)
-		resp.Body.Close()
+		if err != nil {
+			logrus.WithError(err).Error(fmt.Sprintf("Request for %s failed", collectorURL))
+		}
+		if resp != nil {
+			resp.Body.Close()
+		}
 	}
 
 	endLogMessage(logger, "Golang DNS custom resolver", err)
@@ -223,7 +235,12 @@ func checkEndpointReachableCustomDNS(
 			req = http2.WithTracer(req, "testing")
 			var resp *http.Response
 			resp, err = client.Do(req)
-			resp.Body.Close()
+			if err != nil {
+				logrus.WithError(err).Error(fmt.Sprintf("Request for %s failed", collectorURL))
+			}
+			if resp != nil {
+				resp.Body.Close()
+			}
 		}
 	}
 
