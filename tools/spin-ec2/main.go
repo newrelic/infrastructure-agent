@@ -346,19 +346,19 @@ func canaryConfFromArgs() (canaryConf, error) {
 	}
 
 	return canaryConf{
-		license:            license,
-		agentVersion:       agentVersion,
-		platform:           platform,
-		ansiblePassword:    ansiblePassword,
-		prefix:             prefix,
-		repo:               repo,
-		macstadiumUser:     macstadiumUser,
-		macstadiumPass:     macstadiumPass,
-		macstadiumSudoPass: macstadiumSudoPass,
-		ansibleForks:       ansibleForks,
-		crowdStrikeClientID: crowdStrikeClientID,
+		license:                 license,
+		agentVersion:            agentVersion,
+		platform:                platform,
+		ansiblePassword:         ansiblePassword,
+		prefix:                  prefix,
+		repo:                    repo,
+		macstadiumUser:          macstadiumUser,
+		macstadiumPass:          macstadiumPass,
+		macstadiumSudoPass:      macstadiumSudoPass,
+		ansibleForks:            ansibleForks,
+		crowdStrikeClientID:     crowdStrikeClientID,
 		crowdStrikeClientSecret: crowdStrikeClientSecret,
-		crowdStrikeCustomerID: crowdStrikeCustomerID,
+		crowdStrikeCustomerID:   crowdStrikeCustomerID,
 	}, nil
 }
 
