@@ -1,3 +1,5 @@
+include ./test/automated/ansible/Ansible.common
+
 PROVISION_HOST_PREFIX := $(shell whoami)-$(shell hostname)
 AWS_ACCOUNT_ID = "018789649883"# CAOS
 LIMIT ?= "testing_hosts"
@@ -12,7 +14,7 @@ else
 endif
 
 .PHONY: test/automated/provision
-test/automated/provision: validate-aws-credentials
+test/automated/provision: validate-aws-credentials validate-crowdstrike-credentials
 ifndef PLATFORM
 	@echo "PLATFORM variable must be provided for test/automated/provision"
 	exit 1
@@ -70,6 +72,14 @@ validate-aws-credentials:
 		echo "Invalid AWS account ID. Expected: $(AWS_ACCOUNT_ID), got: $${ACC_ID}."; \
 		exit 1; \
 	fi
+
+.PHONY: validate-crowdstrike-credentials
+validate-crowdstrike-credentials:
+	# @ACC_ID="$$(aws sts get-caller-identity --output text|awk '{print $$1}')"; \
+	# if [ "$${ACC_ID}" != "$(AWS_ACCOUNT_ID)" ]; then \
+	# 	echo "Invalid AWS account ID. Expected: $(AWS_ACCOUNT_ID), got: $${ACC_ID}."; \
+	# 	exit 1; \
+	# fi
 
 .PHONY: test/automated
 test/automated:

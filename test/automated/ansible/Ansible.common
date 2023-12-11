@@ -1,0 +1,17 @@
+ANSIBLE_FOLDER ?= $(CURDIR)/test/automated/ansible
+REQUIREMENTS_FILE ?= $(ANSIBLE_FOLDER)/requirements.yml
+
+ROLES_PATH:=$(ANSIBLE_FOLDER)/external/roles
+COLLECTIONS_PATH:=$(ANSIBLE_FOLDER)/external/collections
+
+$(ROLES_PATH) $(COLLECTIONS_PATH):
+	@mkdir -p $@
+
+.PHONY: ansible/dependencies
+ansible/dependencies: $(ROLES_PATH) $(COLLECTIONS_PATH)
+	ansible-galaxy role install -r $(REQUIREMENTS_FILE) -p $(ROLES_PATH)
+	ansible-galaxy collection install -r $(REQUIREMENTS_FILE) -p $(COLLECTIONS_PATH)
+
+.PHONY: ansible/clean
+ansible/clean:
+	rm -rf $(ROLES_PATH) $(COLLECTIONS_PATH)
