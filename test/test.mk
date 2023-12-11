@@ -75,11 +75,20 @@ validate-aws-credentials:
 
 .PHONY: validate-crowdstrike-credentials
 validate-crowdstrike-credentials:
-	# @ACC_ID="$$(aws sts get-caller-identity --output text|awk '{print $$1}')"; \
-	# if [ "$${ACC_ID}" != "$(AWS_ACCOUNT_ID)" ]; then \
-	# 	echo "Invalid AWS account ID. Expected: $(AWS_ACCOUNT_ID), got: $${ACC_ID}."; \
-	# 	exit 1; \
-	# fi
+# CrowdStrike Falcon variables
+ifndef CROWDSTRIKE_CLIENT_ID
+	@echo "CROWDSTRIKE_CLIENT_ID (Crowdstrike client ID) variable must be provided for \"make canaries\""
+	exit 1
+endif
+ifndef CROWDSTRIKE_CLIENT_SECRET
+	@echo "CROWDSTRIKE_CLIENT_SECRET (Crowdstrike client secret) variable must be provided for \"make canaries\""
+	exit 1
+endif
+ifndef CROWDSTRIKE_CUSTOMER_ID
+	@echo "CROWDSTRIKE_CUSTOMER_ID (Crowdstrike customer ID) variable must be provided for \"make canaries\""
+	exit 1
+endif
+# END CrowdStrike Falcon variables
 
 .PHONY: test/automated
 test/automated:

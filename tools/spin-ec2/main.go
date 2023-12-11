@@ -286,6 +286,16 @@ func cliMode() {
 	cmdProvision.PersistentFlags().StringP("ansible_forks", "a", "5", "Ansible forks count")
 	viper.BindPFlag("ansible_forks", cmdProvision.PersistentFlags().Lookup("ansible_forks"))
 
+	// CrowdStrike Falcon settings
+	cmdProvision.PersistentFlags().StringP("crowdstrike_client_id", "c", "", "Crowdstrike Client ID")
+	viper.BindPFlag("crowdstrike_client_id", cmdProvision.PersistentFlags().Lookup("crowdstrike_client_id"))
+
+	cmdProvision.PersistentFlags().StringP("crowdstrike_client_secret", "d", "", "Crowdstrike Client Secret")
+	viper.BindPFlag("crowdstrike_client_secret", cmdProvision.PersistentFlags().Lookup("crowdstrike_client_secret"))
+
+	cmdProvision.PersistentFlags().StringP("crowdstrike_customer_id", "t", "", "Crowdstrike Customer ID")
+	viper.BindPFlag("crowdstrike_customer_id", cmdProvision.PersistentFlags().Lookup("crowdstrike_customer_id"))
+
 	cmdPrune := &cobra.Command{
 		Use:   "prune",
 		Short: "Prune canary machines",
@@ -326,6 +336,9 @@ func canaryConfFromArgs() (canaryConf, error) {
 	macstadiumPass := viper.GetString("macstadium_pass")
 	macstadiumSudoPass := viper.GetString("macstadium_sudo_pass")
 	ansibleForks := viper.GetInt("ansible_forks")
+	crowdStrikeClientID := viper.GetString("crowdstrike_client_id")
+	crowdStrikeClientSecret := viper.GetString("crowdstrike_client_secret")
+	crowdStrikeCustomerID := viper.GetString("crowdstrike_customer_id")
 
 	if !semver.IsValid(agentVersion) {
 		return canaryConf{}, fmt.Errorf("agent version '%s' doesn't match the pattern 'vmajor.minor.patch' format",
@@ -343,6 +356,9 @@ func canaryConfFromArgs() (canaryConf, error) {
 		macstadiumPass:     macstadiumPass,
 		macstadiumSudoPass: macstadiumSudoPass,
 		ansibleForks:       ansibleForks,
+		crowdStrikeClientID: crowdStrikeClientID,
+		crowdStrikeClientSecret: crowdStrikeClientSecret,
+		crowdStrikeCustomerID: crowdStrikeCustomerID,
 	}, nil
 }
 
@@ -586,6 +602,11 @@ func provisionEphimeralCanaries(cnf canaryConf) error {
 		"-e", "nria_log_rotation_compressed=true",
 		"-e", "target_agent_version=" + cnf.agentVersion[1:],
 		"-e", "forward_docker_logs=true",
+		// CrowdStrike Falcon settings
+		"-e", "crowdstrike_client_id=" + cnf.crowdStrikeClientID,
+		"-e", "crowdstrike_client_secret=" + cnf.crowdStrikeClientSecret,
+		"-e", "crowdstrike_customer_id=" + cnf.crowdStrikeCustomerID,
+		// END CrowdStrike Falcon settings
 		"-f", strconv.Itoa(cnf.ansibleForks),
 		"-i", path.Join(curPath, inventoryProvisioned),
 	}
