@@ -20,7 +20,7 @@ canaries: PREFIX ?= canary
 canaries: ANSIBLE_FORKS ?= 5
 canaries: REPO ?= http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent
 canaries: PLATFORM ?= all
-canaries: validate-aws-credentials ec2-install-deps ec2-build validate-crowdstrike-credentials # FIXME: Ansible dependencies?
+canaries: validate-aws-credentials ec2-install-deps ec2-build ansible/dependencies validate-crowdstrike-credentials # FIXME: Ansible dependencies?
 ifndef NR_LICENSE_KEY_CANARIES
 	@echo "NR_LICENSE_KEY_CANARIES variable must be provided for \"make canaries\""
 	exit 1
@@ -59,8 +59,7 @@ endif
 									-s '$(MACSTADIUM_SUDO_PASS)' \
 									-a '$(ANSIBLE_FORKS)' \
 									-c '$(CROWDSTRIKE_CLIENT_ID)' \
-									-d '$(CROWDSTRIKE_CLIENT_SECRET)' \
-									-t '$(CROWDSTRIKE_CUSTOMER_ID)'
+									-d '$(CROWDSTRIKE_CLIENT_SECRET)'
 
 .PHONY: canaries-prune-dry
 canaries-prune-dry: PLATFORM ?= all

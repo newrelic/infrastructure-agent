@@ -16,7 +16,7 @@ type canaryConf struct {
 	ansibleForks            int
 	crowdStrikeClientID     string
 	crowdStrikeClientSecret string
-	crowdStrikeCustomerID   string
+	// crowdStrikeCustomerID   string
 }
 
 const defaultAnsibleForks = 5

@@ -3,18 +3,6 @@
 - hosts: testing_hosts_linux
   become: true
   gather_facts: no
-  vars:
-    falcon_client_id: <FALCON_CLIENT_ID>
-    falcon_client_secret: <FALCON_CLIENT_SECRET>
-  roles:
-    - role: crowdstrike.falcon.falcon_install
-      vars:
-        falcon_sensor_version_decrement: 2
-    - role: crowdstrike.falcon.falcon_configure
-      vars:
-        # falcon_cid is autodetected using falcon_client_id|secret vars
-        falcon_tags: 'falcon,example,tags'
-
 
   tasks:
     - name: Remove EOL repository sources
@@ -44,6 +32,12 @@
 - hosts: testing_hosts_linux
   become: true
   gather_facts: yes
+  vars:
+    falcon_client_id: "{{ lookup('ansible.builtin.env', 'crowdstrike_client_id') }}"
+    falcon_client_secret: "{{ lookup('ansible.builtin.env', 'crowdstrike_client_secret') }}"
+  roles:
+    - role: crowdstrike.falcon.falcon_install
+    - role: crowdstrike.falcon.falcon_configure
 
   tasks:
     - name: Configure logrotate
@@ -57,6 +51,13 @@
 - hosts: testing_hosts_macos
   become: false
   gather_facts: yes
+  vars:
+    falcon_client_id: "{{ lookup('ansible.builtin.env', 'crowdstrike_client_id') }}"
+    falcon_client_secret: "{{ lookup('ansible.builtin.env', 'crowdstrike_client_secret') }}"
+  roles:
+    - role: crowdstrike.falcon.falcon_install
+    - role: crowdstrike.falcon.falcon_configure
+
   tasks:
     - name: install brew
       include_role:
@@ -71,6 +72,12 @@
 
 - hosts: testing_hosts_windows
   gather_facts: yes
+  vars:
+    falcon_client_id: "{{ lookup('ansible.builtin.env', 'crowdstrike_client_id') }}"
+    falcon_client_secret: "{{ lookup('ansible.builtin.env', 'crowdstrike_client_secret') }}"
+  roles:
+    - role: crowdstrike.falcon.falcon_install
+    - role: crowdstrike.falcon.falcon_configure
 
   tasks:
     - name: Configure hostname
