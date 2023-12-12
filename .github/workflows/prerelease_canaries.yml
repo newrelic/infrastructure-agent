@@ -44,7 +44,7 @@ jobs:
       TAG: ${{ github.event.inputs.tag }}
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
-      CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTIKRE_CLIENT_ID}}
+      CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
       CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
 
   canaries-linux:
@@ -55,7 +55,7 @@ jobs:
       TAG: ${{ github.event.inputs.tag }}
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
-      CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTIKRE_CLIENT_ID}}
+      CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
       CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
 
   canaries-macos:
@@ -66,7 +66,7 @@ jobs:
       TAG: ${{ github.event.inputs.tag }}
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
-      CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTIKRE_CLIENT_ID}}
+      CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
       CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
 
   prune-previous-canaries-linux:
