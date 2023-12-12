@@ -25,21 +25,29 @@
       include_role:
         name: install-gpg
 
+# CrowdStrike Falcon install
 - hosts: testing_hosts
   become: true
   gather_facts: yes
   tasks:
+    - name: install brew
+      include_role:
+        name: install-brew
+      when: ansible_facts['os_family'] == "Darwin"
     # Install python
     - name: install python
       include_role:
-        name: install-python
+        name: install-python # FIXME: Mac?
     # Crowdstrike reqs
     - name: install cloudstrike-falconpy (non-windows)
       ansible.builtin.pip:
         name: crowdstrike-falconpy
+      when: ansible_facts['os_family'] != "Windows"
     - name: install cloudstrike-falconpy (windows)
       ansible.builtin.pip:
-        name: crowdstrike-falconpy # FIXME 
+        name: crowdstrike-falconpy
+      become_method: runas
+      when: ansible_facts['os_family'] == "Windows"
 
 - hosts: testing_hosts
   gather_facts: yes
@@ -62,20 +70,20 @@
       include_role:
         name: hostname
 
-- hosts: testing_hosts_macos
-  become: false
-  gather_facts: yes
-  tasks:
-    - name: install brew
-      include_role:
-        name: install-brew
-        # latest versions of brew allow running service with sudo, not necessary to downgrade
-        # comment left for reference
-#      vars:
-#        brew_version: 3.6.21 # with 4.0.* there are some problems with sudo https://github.com/Homebrew/brew/issues/14462#issuecomment-1445130069
-    - name: install python
-      include_role:
-        name: install-python
+# - hosts: testing_hosts_macos
+#   become: false
+#   gather_facts: yes
+#   tasks:
+#     - name: install brew
+#       include_role:
+#         name: install-brew
+#         # latest versions of brew allow running service with sudo, not necessary to downgrade
+#         # comment left for reference
+# #      vars:
+# #        brew_version: 3.6.21 # with 4.0.* there are some problems with sudo https://github.com/Homebrew/brew/issues/14462#issuecomment-1445130069
+#     - name: install python
+#       include_role:
+#         name: install-python
 
 - hosts: testing_hosts_windows
   gather_facts: yes
