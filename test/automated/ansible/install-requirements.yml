@@ -34,12 +34,20 @@
       include_role:
         name: install-gpg
 
+- hosts: testing_hosts
+  become: true
+  gather_facts: no
+    # Crowdstrike reqs
+    - name: install cloudstrike-falconpy
+      ansible.builtin.pip:
+        name: crowdstrike-falconpy
+
 - hosts: testing_hosts_linux
   become: true
   gather_facts: yes
   vars:
-    falcon_client_id: "{{ lookup('ansible.builtin.env', 'crowdstrike_client_id') }}"
-    falcon_client_secret: "{{ lookup('ansible.builtin.env', 'crowdstrike_client_secret') }}"
+    falcon_client_id: "{{ lookup('ansible.builtin.env', 'crowdstrike_client_id') | mandatory }}"
+    falcon_client_secret: "{{ lookup('ansible.builtin.env', 'crowdstrike_client_secret') | mandatory }}"
   roles:
     - role: crowdstrike.falcon.falcon_install
     - role: crowdstrike.falcon.falcon_configure
@@ -57,8 +65,8 @@
   become: false
   gather_facts: yes
   vars:
-    falcon_client_id: "{{ lookup('ansible.builtin.env', 'crowdstrike_client_id') }}"
-    falcon_client_secret: "{{ lookup('ansible.builtin.env', 'crowdstrike_client_secret') }}"
+    falcon_client_id: "{{ lookup('ansible.builtin.env', 'crowdstrike_client_id') | mandatory }}"
+    falcon_client_secret: "{{ lookup('ansible.builtin.env', 'crowdstrike_client_secret') | mandatory }}"
   roles:
     - role: crowdstrike.falcon.falcon_install
     - role: crowdstrike.falcon.falcon_configure
@@ -78,8 +86,8 @@
 - hosts: testing_hosts_windows
   gather_facts: yes
   vars:
-    falcon_client_id: "{{ lookup('ansible.builtin.env', 'crowdstrike_client_id') }}"
-    falcon_client_secret: "{{ lookup('ansible.builtin.env', 'crowdstrike_client_secret') }}"
+    falcon_client_id: "{{ lookup('ansible.builtin.env', 'crowdstrike_client_id') | mandatory }}"
+    falcon_client_secret: "{{ lookup('ansible.builtin.env', 'crowdstrike_client_secret') | mandatory }}"
   roles:
     - role: crowdstrike.falcon.falcon_install
     - role: crowdstrike.falcon.falcon_configure
