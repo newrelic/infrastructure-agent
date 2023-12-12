@@ -9,3 +9,25 @@ instances_without_python_brew:
   - "amd64:macos10"
   - "amd64:macos11"
   - "amd64:macos12"
+
+instances_without_python_deb:
+  - "amd64:debian-buster"
+  - "amd64:debian-bullseye"
+  - "amd64:debian-bookworm"
+  - "arm64:debian-buster"
+  - "arm64:debian-bullseye"
+  - "arm64:debian-bookworm"
+  - "amd64:ubuntu16.04"
+  - "amd64:ubuntu18.04"
+  - "amd64:ubuntu20.04"
+  - "amd64:ubuntu22.04"
+  - "arm64:ubuntu16.04"
+  - "arm64:ubuntu18.04"
+  - "arm64:ubuntu20.04"
+  - "arm64:ubuntu22.04"
+
+instances_without_python_win:
+  - "amd64:windows_2012"
+  - "amd64:windows_2016"
+  - "amd64:windows_2019"
+  - "amd64:windows_2022"

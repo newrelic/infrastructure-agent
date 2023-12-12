@@ -1,0 +1,9 @@
+---
+- name: 'install python on windows'
+  apt:
+    name: python36
+    state: present
+    update_cache: yes
+  when: inventory_hostname is search(item)
+  loop: "{{ instances_without_python_deb }}"
+...

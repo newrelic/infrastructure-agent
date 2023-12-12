@@ -1,0 +1,9 @@
+---
+- name: 'install python on windows'
+  community.windows.win_scoop:
+    name: python36
+    global: true
+    state: present
+  when: inventory_hostname is search(item)
+  loop: "{{ instances_without_python_win }}"
+...

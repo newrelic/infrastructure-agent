@@ -17,10 +17,6 @@
       include_role:
         name: reinstall-rpm
 
-    - name: install python
-      include_role:
-        name: install-python
-
     - name: Install Libcap
       include_role:
         name: install-libcap
@@ -30,12 +26,20 @@
         name: install-gpg
 
 - hosts: testing_hosts
+  become: true
   gather_facts: yes
   tasks:
+    # Install python
+    - name: install python
+      include_role:
+        name: install-python
     # Crowdstrike reqs
     - name: install cloudstrike-falconpy (non-windows)
       ansible.builtin.pip:
         name: crowdstrike-falconpy
+    - name: install cloudstrike-falconpy (windows)
+      ansible.builtin.pip:
+        name: crowdstrike-falconpy # FIXME 
 
 - hosts: testing_hosts
   gather_facts: yes
