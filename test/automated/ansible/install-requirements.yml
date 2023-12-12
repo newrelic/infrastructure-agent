@@ -30,23 +30,14 @@
         name: install-gpg
 
 - hosts: testing_hosts
-  become: true
   gather_facts: yes
   tasks:
     # Crowdstrike reqs
     - name: install cloudstrike-falconpy (non-windows)
       ansible.builtin.pip:
         name: crowdstrike-falconpy
-      when: ansible_facts['os_family'] != "Windows"
-  
-    - name: install cloudstrike-falconpy (windows)
-      ansible.builtin.pip:
-        name: crowdstrike-falconpy
-      become_method: runas
-      when: ansible_facts['os_family'] == "Windows"
 
 - hosts: testing_hosts
-  become: false
   gather_facts: yes
   vars:
     falcon_client_id: "{{ crowdstrike_client_id }}"
