@@ -14,7 +14,7 @@ else
 endif
 
 .PHONY: test/automated/provision
-test/automated/provision: validate-aws-credentials ansible/dependencies validate-crowdstrike-credentials
+test/automated/provision: validate-aws-credentials ansible/dependencies
 ifndef PLATFORM
 	@echo "PLATFORM variable must be provided for test/automated/provision"
 	exit 1
@@ -72,23 +72,6 @@ validate-aws-credentials:
 		echo "Invalid AWS account ID. Expected: $(AWS_ACCOUNT_ID), got: $${ACC_ID}."; \
 		exit 1; \
 	fi
-
-.PHONY: validate-crowdstrike-credentials
-validate-crowdstrike-credentials:
-# CrowdStrike Falcon variables
-ifndef CROWDSTRIKE_CLIENT_ID
-	@echo "CROWDSTRIKE_CLIENT_ID (Crowdstrike client ID) variable must be provided for \"make canaries\""
-	exit 1
-endif
-ifndef CROWDSTRIKE_CLIENT_SECRET
-	@echo "CROWDSTRIKE_CLIENT_SECRET (Crowdstrike client secret) variable must be provided for \"make canaries\""
-	exit 1
-endif
-# ifndef CROWDSTRIKE_CUSTOMER_ID
-# 	@echo "CROWDSTRIKE_CUSTOMER_ID (Crowdstrike customer ID) variable must be provided for \"make canaries\""
-# 	exit 1
-# endif
-# END CrowdStrike Falcon variables
 
 .PHONY: test/automated
 test/automated:

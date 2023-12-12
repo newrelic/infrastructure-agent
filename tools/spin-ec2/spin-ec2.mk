@@ -20,7 +20,7 @@ canaries: PREFIX ?= canary
 canaries: ANSIBLE_FORKS ?= 5
 canaries: REPO ?= http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent
 canaries: PLATFORM ?= all
-canaries: validate-aws-credentials ec2-install-deps ec2-build ansible/dependencies validate-crowdstrike-credentials # FIXME: Ansible dependencies?
+canaries: validate-aws-credentials ec2-install-deps ec2-build ansible/dependencies
 ifndef NR_LICENSE_KEY_CANARIES
 	@echo "NR_LICENSE_KEY_CANARIES variable must be provided for \"make canaries\""
 	exit 1
@@ -43,6 +43,15 @@ ifndef MACSTADIUM_PASS
 endif
 ifndef MACSTADIUM_SUDO_PASS
 	@echo "MACSTADIUM_SUDO_PASS (MacStadium sudo password) variable must be provided for \"make canaries\""
+	exit 1
+endif
+# CrowdStrike Falcon variables
+ifndef CROWDSTRIKE_CLIENT_ID
+	@echo "CROWDSTRIKE_CLIENT_ID (Crowdstrike client ID) variable must be provided for \"make canaries\""
+	exit 1
+endif
+ifndef CROWDSTRIKE_CLIENT_SECRET
+	@echo "CROWDSTRIKE_CLIENT_SECRET (Crowdstrike client secret) variable must be provided for \"make canaries\""
 	exit 1
 endif
 	@echo "\033[41mYou have 10 seconds to verify that you are in the correct VPN if needed\033[0m"
