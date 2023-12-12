@@ -21,6 +21,11 @@
       include_role:
         name: install-python
 
+    # Crowdstrike reqs
+    - name: install cloudstrike-falconpy
+      ansible.builtin.pip:
+        name: crowdstrike-falconpy
+
     - name: Install Libcap
       include_role:
         name: install-libcap
