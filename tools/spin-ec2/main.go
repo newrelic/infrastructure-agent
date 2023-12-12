@@ -133,6 +133,11 @@ func interactiveMode() {
 		execNameArgs("ansible-playbook",
 			"-i", path.Join(curPath, inventoryProvisioned),
 			"-f", strconv.Itoa(defaultAnsibleForks),
+			// CrowdStrike Falcon settings
+			"-e", "crowdstrike_client_id="+cnf.crowdStrikeClientID,
+			"-e", "crowdstrike_client_secret="+cnf.crowdStrikeClientSecret,
+			// "-e", "crowdstrike_customer_id=" + cnf.crowdStrikeCustomerID,
+			// END CrowdStrike Falcon settings
 			path.Join(curPath, "test/automated/ansible/install-requirements.yml"))
 	}
 
@@ -287,10 +292,10 @@ func cliMode() {
 	viper.BindPFlag("ansible_forks", cmdProvision.PersistentFlags().Lookup("ansible_forks"))
 
 	// CrowdStrike Falcon settings
-	cmdProvision.PersistentFlags().StringP("crowdstrike_client_id", "c", "", "Crowdstrike Client ID")
+	cmdProvision.PersistentFlags().StringP("crowdstrike_client_id", "c", "", "CrowdStrike Client ID")
 	viper.BindPFlag("crowdstrike_client_id", cmdProvision.PersistentFlags().Lookup("crowdstrike_client_id"))
 
-	cmdProvision.PersistentFlags().StringP("crowdstrike_client_secret", "d", "", "Crowdstrike Client Secret")
+	cmdProvision.PersistentFlags().StringP("crowdstrike_client_secret", "d", "", "CrowdStrike Client Secret")
 	viper.BindPFlag("crowdstrike_client_secret", cmdProvision.PersistentFlags().Lookup("crowdstrike_client_secret"))
 
 	// cmdProvision.PersistentFlags().StringP("crowdstrike_customer_id", "t", "", "Crowdstrike Customer ID")
@@ -439,6 +444,11 @@ func provisionMacosCanaries(cnf canaryConf) error {
 
 	playbookArguments := []string{
 		"-i", path.Join(curPath, inventoryMacos),
+		// CrowdStrike Falcon settings
+		"-e", "crowdstrike_client_id=" + cnf.crowdStrikeClientID,
+		"-e", "crowdstrike_client_secret=" + cnf.crowdStrikeClientSecret,
+		// "-e", "crowdstrike_customer_id=" + cnf.crowdStrikeCustomerID,
+		// END CrowdStrike Falcon settings
 	}
 	playbookArguments = append(playbookArguments, path.Join(curPath, "/test/automated/ansible/install-requirements.yml"))
 	execNameArgs("ansible-playbook", playbookArguments...)
@@ -584,6 +594,11 @@ func provisionEphimeralCanaries(cnf canaryConf) error {
 
 	playbookArguments := []string{
 		"-i", path.Join(curPath, inventoryProvisioned),
+		// CrowdStrike Falcon settings
+		"-e", "crowdstrike_client_id=" + cnf.crowdStrikeClientID,
+		"-e", "crowdstrike_client_secret=" + cnf.crowdStrikeClientSecret,
+		// "-e", "crowdstrike_customer_id=" + cnf.crowdStrikeCustomerID,
+		// END CrowdStrike Falcon settings
 	}
 	if cnf.ansiblePassword != "" {
 		playbookArguments = append(playbookArguments, "-e", "ansible_password="+cnf.ansiblePassword)
@@ -602,11 +617,6 @@ func provisionEphimeralCanaries(cnf canaryConf) error {
 		"-e", "nria_log_rotation_compressed=true",
 		"-e", "target_agent_version=" + cnf.agentVersion[1:],
 		"-e", "forward_docker_logs=true",
-		// CrowdStrike Falcon settings
-		"-e", "crowdstrike_client_id=" + cnf.crowdStrikeClientID,
-		"-e", "crowdstrike_client_secret=" + cnf.crowdStrikeClientSecret,
-		// "-e", "crowdstrike_customer_id=" + cnf.crowdStrikeCustomerID,
-		// END CrowdStrike Falcon settings
 		"-f", strconv.Itoa(cnf.ansibleForks),
 		"-i", path.Join(curPath, inventoryProvisioned),
 	}

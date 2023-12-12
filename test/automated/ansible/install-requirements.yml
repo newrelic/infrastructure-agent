@@ -37,6 +37,7 @@
 - hosts: testing_hosts
   become: true
   gather_facts: no
+  tasks:
     # Crowdstrike reqs
     - name: install cloudstrike-falconpy
       ansible.builtin.pip:
