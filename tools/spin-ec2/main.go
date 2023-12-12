@@ -133,11 +133,6 @@ func interactiveMode() {
 		execNameArgs("ansible-playbook",
 			"-i", path.Join(curPath, inventoryProvisioned),
 			"-f", strconv.Itoa(defaultAnsibleForks),
-			// CrowdStrike Falcon settings
-			"-e", "crowdstrike_client_id="+cnf.crowdStrikeClientID,
-			"-e", "crowdstrike_client_secret="+cnf.crowdStrikeClientSecret,
-			// "-e", "crowdstrike_customer_id=" + cnf.crowdStrikeCustomerID,
-			// END CrowdStrike Falcon settings
 			path.Join(curPath, "test/automated/ansible/install-requirements.yml"))
 	}
 
