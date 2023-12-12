@@ -21,11 +21,6 @@
       include_role:
         name: install-python
 
-    # Crowdstrike reqs
-    - name: install cloudstrike-falconpy
-      ansible.builtin.pip:
-        name: crowdstrike-falconpy
-
     - name: Install Libcap
       include_role:
         name: install-libcap
@@ -39,9 +34,16 @@
   gather_facts: no
   tasks:
     # Crowdstrike reqs
-    - name: install cloudstrike-falconpy
+    - name: install cloudstrike-falconpy (non-windows)
       ansible.builtin.pip:
         name: crowdstrike-falconpy
+      when: ansible_facts['os_family'] != "Windows"
+  
+    - name: install cloudstrike-falconpy (windows)
+      ansible.builtin.pip:
+        name: crowdstrike-falconpy
+      become_method: runas
+      when: ansible_facts['os_family'] == "Windows"
 
 - hosts: testing_hosts_linux
   become: true
