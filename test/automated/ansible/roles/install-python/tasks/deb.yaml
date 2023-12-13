@@ -1,7 +1,7 @@
 ---
 - name: 'install python on windows'
   apt:
-    name: python36
+    name: python3
     state: present
     update_cache: yes
   when: inventory_hostname is search(item)

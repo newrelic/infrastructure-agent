@@ -1,0 +1,4 @@
+---
+- include_tasks: yum.yaml
+- include_tasks: zypper.yaml
+...
