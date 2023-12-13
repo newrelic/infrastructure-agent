@@ -37,7 +37,7 @@
     # Install python
     - name: install python
       include_role:
-        name: install-python # FIXME: Mac?
+        name: install-python
     # Crowdstrike reqs
     - name: install cloudstrike-falconpy (non-windows)
       ansible.builtin.pip:
@@ -47,6 +47,7 @@
       ansible.builtin.pip:
         name: crowdstrike-falconpy
       become_method: runas
+      become_user: Administrator
       when: ansible_facts['os_family'] == "Windows"
 
 - hosts: testing_hosts
