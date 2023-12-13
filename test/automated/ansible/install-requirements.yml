@@ -26,38 +26,19 @@
         name: install-gpg
 
 # CrowdStrike Falcon install
-- hosts: testing_hosts
+- hosts: testing_hosts_linux
   become: true
   gather_facts: yes
   tasks:
-    - name: install brew
-      include_role:
-        name: install-brew
-      when: ansible_facts['os_family'] == "Darwin"
     # Install python
     - name: install python
       include_role:
         name: install-python
     # Crowdstrike reqs
-    - name: install cloudstrike-falconpy (non-windows)
+    - name: install cloudstrike-falconpy
       ansible.builtin.pip:
         name: crowdstrike-falconpy
-      when: ansible_facts['os_family'] != "Windows"
-    - name: install cloudstrike-falconpy (windows)
-      ansible.builtin.pip:
-        name: crowdstrike-falconpy
-      become_method: runas
-      become_user: Administrator
-      when: ansible_facts['os_family'] == "Windows"
 
-- hosts: testing_hosts
-  gather_facts: yes
-  vars:
-    falcon_client_id: "{{ crowdstrike_client_id }}"
-    falcon_client_secret: "{{ crowdstrike_client_secret }}"
-  roles:
-    - role: crowdstrike.falcon.falcon_install
-    - role: crowdstrike.falcon.falcon_configure
 
 - hosts: testing_hosts_linux
   become: true
@@ -71,20 +52,39 @@
       include_role:
         name: hostname
 
-# - hosts: testing_hosts_macos
-#   become: false
-#   gather_facts: yes
-#   tasks:
-#     - name: install brew
-#       include_role:
-#         name: install-brew
-#         # latest versions of brew allow running service with sudo, not necessary to downgrade
-#         # comment left for reference
-# #      vars:
-# #        brew_version: 3.6.21 # with 4.0.* there are some problems with sudo https://github.com/Homebrew/brew/issues/14462#issuecomment-1445130069
-#     - name: install python
-#       include_role:
-#         name: install-python
+- hosts: testing_hosts_macos
+  become: false
+  gather_facts: yes
+  tasks:
+    - name: install brew
+      include_role:
+        name: install-brew
+        # latest versions of brew allow running service with sudo, not necessary to downgrade
+        # comment left for reference
+#      vars:
+#        brew_version: 3.6.21 # with 4.0.* there are some problems with sudo https://github.com/Homebrew/brew/issues/14462#issuecomment-1445130069
+    - name: install python
+      include_role:
+        name: install-python
+    # Crowdstrike reqs
+    - name: install cloudstrike-falconpy
+      ansible.builtin.pip:
+        name: crowdstrike-falconpy
+
+- hosts: testing_hosts_windows
+  become: true
+  become_method: runas
+  become_user: Administrator
+  gather_facts: yes
+  tasks:
+    # Install python
+    - name: install python
+      include_role:
+        name: install-python
+    # Crowdstrike reqs
+    - name: install cloudstrike-falconpy
+      ansible.builtin.pip:
+        name: crowdstrike-falconpy
 
 - hosts: testing_hosts_windows
   gather_facts: yes
@@ -92,3 +92,12 @@
     - name: Configure hostname
       include_role:
         name: hostname
+
+- hosts: testing_hosts
+  gather_facts: yes
+  vars:
+    falcon_client_id: "{{ crowdstrike_client_id }}"
+    falcon_client_secret: "{{ crowdstrike_client_secret }}"
+  roles:
+    - role: crowdstrike.falcon.falcon_install
+    - role: crowdstrike.falcon.falcon_configure

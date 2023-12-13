@@ -4,8 +4,6 @@
     name: python36
     global: true
     state: present
-  become_method: runas
-  become_user: Administrator
   when: inventory_hostname is search(item)
   loop: "{{ instances_without_python_win }}"
 ...
