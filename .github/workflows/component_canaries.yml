@@ -5,6 +5,12 @@ on:
     secrets:
       AWS_VPC_SUBNET:
         required: true
+      CROWDSTRIKE_CLIENT_ID:
+        required: true
+      CROWDSTRIKE_CLIENT_SECRET:
+        required: true
+      CROWDSTRIKE_CUSTOMER_ID:
+        required: true
 
     inputs:
       TAG:
@@ -45,7 +51,7 @@ jobs:
         uses: newrelic/fargate-runner-action@main
         with:
           aws_region: us-east-2
-          container_make_target: "canaries PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} VERSION=${{ inputs.TAG }}"
+          container_make_target: "canaries PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} VERSION=${{ inputs.TAG }} CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
           ecs_cluster_name: caos_infra_agent
           task_definition_name: infra-agent-td
           cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent

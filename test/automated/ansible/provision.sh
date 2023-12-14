@@ -31,7 +31,14 @@ ANSIBLE_STDOUT_CALLBACK=selective \
   test/automated/ansible/provision.yml
 fi
 
-ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO retry ansible-playbook -f $ANSIBLE_FORKS -i $ANSIBLE_INVENTORY test/automated/ansible/install-requirements.yml
+ANSIBLE_DISPLAY_SKIPPED_HOSTS=NO \
+  retry ansible-playbook \
+  -f "$ANSIBLE_FORKS" \
+  -i "$ANSIBLE_INVENTORY" \
+  -e "crowdstrike_client_id=$CROWDSTRIKE_CLIENT_ID" \
+  -e "crowdstrike_client_secret=$CROWDSTRIKE_CLIENT_SECRET" \
+  -e "crowdstrike_customer_id=$CROWDSTRIKE_CUSTOMER_ID" \
+  test/automated/ansible/install-requirements.yml
 if [ $? -ne 0 ];then
   echo "install-requirements.yml failed"
   exit 1
