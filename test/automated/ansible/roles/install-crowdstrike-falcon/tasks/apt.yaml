@@ -14,7 +14,7 @@
 
 - name: 'Install the obtained DEB'
   apt:
-    name: /tmp/falcon-sensor.deb
+    deb: /tmp/falcon-sensor.deb
     state: present
   when: inventory_hostname is search(item.hostname)
   loop: "{{ apt }}"
