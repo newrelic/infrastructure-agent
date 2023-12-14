@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"runtime"
 	"testing"
+	"time"
 
 	config2 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 
@@ -32,20 +33,25 @@ func TestConfigTemplate(t *testing.T) {
 		name   string
 		config config2.ConfigEntry
 	}
-	cases := []testCase{{"Passing ${config.path} as command-line argument",
+	cases := []testCase{{
+		"Passing ${config.path} as command-line argument",
 		config2.ConfigEntry{
 			InstanceName: "test-integration",
 			Exec:         testhelp.Command(fixtures.FileContentsWithArgCmd, "${config.path}"),
 			TemplatePath: file.Name(),
-		}}}
+		},
+	}}
 	if runtime.GOOS != "windows" { // executing Powershell passing env vars has problems
-		cases = append(cases, testCase{"Using default CONFIG_PATH env var",
+		cases = append(cases, testCase{
+			"Using default CONFIG_PATH env var",
 			config2.ConfigEntry{
 				InstanceName: "test-integration",
 				Exec:         testhelp.Command(fixtures.FileContentsCmd),
 				TemplatePath: file.Name(),
-			}})
-		cases = append(cases, testCase{"Passing ${config.path} as environment variable",
+			},
+		})
+		cases = append(cases, testCase{
+			"Passing ${config.path} as environment variable",
 			config2.ConfigEntry{
 				InstanceName: "test-integration",
 				Exec:         testhelp.Command(fixtures.FileContentsFromEnvCmd),
@@ -98,20 +104,25 @@ func TestEmbeddedConfig_String(t *testing.T) {
 		name   string
 		config config2.ConfigEntry
 	}
-	cases := []testCase{{"Passing ${config.path} as command-line argument. External file embedded in yaml",
+	cases := []testCase{{
+		"Passing ${config.path} as command-line argument. External file embedded in yaml",
 		config2.ConfigEntry{
 			InstanceName: "test-integration",
 			Exec:         testhelp.Command(fixtures.FileContentsWithArgCmd, "${config.path}"),
 			Config:       "${discovery.ip}",
-		}}}
+		},
+	}}
 	if runtime.GOOS != "windows" { // executing Powershell passing env vars has problems
-		cases = append(cases, testCase{"Using default CONFIG_PATH env var. External file embedded in yaml",
+		cases = append(cases, testCase{
+			"Using default CONFIG_PATH env var. External file embedded in yaml",
 			config2.ConfigEntry{
 				InstanceName: "test-integration",
 				Exec:         testhelp.Command(fixtures.FileContentsCmd),
 				Config:       "${discovery.ip}",
-			}})
-		cases = append(cases, testCase{"Passing ${config.path} as environment variable. External file embedded in yaml",
+			},
+		})
+		cases = append(cases, testCase{
+			"Passing ${config.path} as environment variable. External file embedded in yaml",
 			config2.ConfigEntry{
 				InstanceName: "test-integration",
 				Exec:         testhelp.Command(fixtures.FileContentsFromEnvCmd),
@@ -164,6 +175,7 @@ func TestTimeout_Default(t *testing.T) {
 	// THEN the integration has a default timeout
 	assert.Equal(t, defaultTimeout, i.Timeout)
 }
+
 func TestInterval_EnvironmentVariableCustom(t *testing.T) {
 	// GIVEN a configuration with custom interval
 	// WHEN an integration is loaded from it
@@ -173,6 +185,7 @@ func TestInterval_EnvironmentVariableCustom(t *testing.T) {
 	// THEN the integration has an environment variable with the interval value
 	assert.Equal(t, "55s", i.ExecutorConfig.Environment[intervalEnvVarName])
 }
+
 func TestInterval_EnvironmentVariableCero(t *testing.T) {
 	// GIVEN a configuration with custom interval
 	// WHEN an integration is loaded from it
@@ -182,6 +195,7 @@ func TestInterval_EnvironmentVariableCero(t *testing.T) {
 	// THEN the integration has an environment variable with the interval value
 	assert.Equal(t, "0s", i.ExecutorConfig.Environment[intervalEnvVarName])
 }
+
 func TestInterval_EnvironmentVariableDefault(t *testing.T) {
 	// GIVEN a configuration with custom interval
 	// WHEN an integration is loaded from it
@@ -247,4 +261,58 @@ func TestDefinition_fromName(t *testing.T) {
 	assert.NoError(t, d.fromName(cfg, il))
 	assert.Equal(t, "/path/to/nri-foo", d.runnable.Command)
 	assert.Equal(t, []string{"arg1", "arg2"}, d.runnable.Args)
+}
+
+//nolint:paralleltest
+func Test_GetInterval(t *testing.T) {
+	testCases := []struct {
+		name     string
+		value    string
+		expected time.Duration
+	}{
+		{
+			name:     "0 should be time.zero",
+			value:    "0",
+			expected: 0 * time.Second,
+		},
+		{
+			name:     "no suffix defaults to default",
+			value:    "43",
+			expected: 30 * time.Second,
+		},
+		{
+			name:     "suffix should be taken into account",
+			value:    "123s",
+			expected: 123 * time.Second,
+		},
+		{
+			name:     "minutes suffix should be taken into account",
+			value:    "321m",
+			expected: 321 * time.Minute,
+		},
+		{
+			name:     "empty should be default value",
+			value:    "",
+			expected: defaultIntegrationInterval,
+		},
+		{
+			name:     "invalid should be default value",
+			value:    "this is not ok",
+			expected: defaultIntegrationInterval,
+		},
+		{
+			name:     "smaller than minimum should return minimum",
+			value:    "1s",
+			expected: minimumIntegrationInterval,
+		},
+	}
+
+	//nolint:paralleltest
+	for i := range testCases {
+		testCase := testCases[i]
+		t.Run(testCase.name, func(t *testing.T) {
+			dur := getInterval(testCase.value)
+			assert.Equal(t, testCase.expected, dur)
+		})
+	}
 }
