@@ -2,8 +2,11 @@
 - name: 'Download CrowdStrike Falcon EXE'
   get_url:
     url: "https://api.crowdstrike.com/sensors/entities/download-installer/v1?id={{ item.hash }}"
+    timeout: 120
     headers:
       Authorization: "Bearer {{ crowdstrike_auth.json.access_token }}"
+      Accept: "application/octet-stream"
+      Content-Type: "application/json"
     dest: C:\temp\falcon-sensor.exe
   when: inventory_hostname is search(item.hostname)
   loop: "{{ win }}"
