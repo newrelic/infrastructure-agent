@@ -1,5 +1,5 @@
 ---
-- name: 'Download CrowdStrike Falcon DEB'
+- name: 'Download CrowdStrike Falcon DEB (apt)'
   get_url:
     url: "{{ api_base_url }}/sensors/entities/download-installer/v1?id={{ item.hash }}"
     timeout: 120 

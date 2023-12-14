@@ -42,13 +42,14 @@
       include_role:
         name: logrotate
 
+    - name: Install CrowdStrike Falcon
+      include_role:
+        name: install-crowdstrike-falcon
+
     - name: Configure hostname
       include_role:
         name: hostname
 
-    - name: Install CrowdStrike Falcon
-      include_role:
-        name: install-crowdstrike-falcon
 
 - hosts: testing_hosts_macos
   become: false
@@ -57,6 +58,8 @@
     falcon_client_id: "{{ crowdstrike_client_id }}"
     falcon_client_secret: "{{ crowdstrike_client_secret }}"
     falcon_customer_id: "{{ crowdstrike_customer_id }}"
+    api_base_url: "https://api.laggar.gcw.crowdstrike.com"
+
   tasks:
     - name: install brew
       include_role:
@@ -79,12 +82,14 @@
     falcon_client_id: "{{ crowdstrike_client_id }}"
     falcon_client_secret: "{{ crowdstrike_client_secret }}"
     falcon_customer_id: "{{ crowdstrike_customer_id }}"
+    api_base_url: "https://api.laggar.gcw.crowdstrike.com"
 
   tasks:
+    - name: Install CrowdStrike Falcon
+      include_role:
+        name: install-crowdstrike-falcon
+
     - name: Configure hostname
       include_role:
         name: hostname
 
-    - name: Install CrowdStrike Falcon
-      include_role:
-        name: install-crowdstrike-falcon

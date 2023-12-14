@@ -22,7 +22,7 @@
 - name: 'Register host with CrowdStrike (Linux)'
   shell: /opt/CrowdStrike/falconctl -s --cid={{ falcon_customer_id }}
   become: true
-  when: ansible_facts['os_family'] == 'Linux'
+  when: ansible_facts['os_family'] not in ['Darwin', 'Windows']
 
 - name: 'Start CrowdStrike service (Linux)'
   service:
@@ -30,5 +30,5 @@
     state: started
     enabled: yes
   become: true
-  when: ansible_facts['os_family'] == 'Linux'
+  when: ansible_facts['os_family'] not in ['Darwin', 'Windows']
 ...

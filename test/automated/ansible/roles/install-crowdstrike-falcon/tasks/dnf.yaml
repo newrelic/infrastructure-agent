@@ -12,7 +12,7 @@
   when: inventory_hostname is search(item.hostname)
   loop: "{{ dnf }}"
 
-- name: 'Install the obtained RPM'
+- name: 'Install the obtained RPM (dnf)'
   dnf:
     name: /tmp/falcon-sensor.rpm
     state: present
