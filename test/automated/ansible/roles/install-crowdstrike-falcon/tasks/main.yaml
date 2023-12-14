@@ -1,7 +1,7 @@
 ---
 - name: 'Auth to CrowdStrike API'
   uri:
-    url: "https://api.laggar.gcw.crowdstrike.com/oauth2/token"
+    url: "{{ api_base_url }}/oauth2/token"
     method: POST
     body: "client_id={{ falcon_client_id }}&client_secret={{ falcon_client_secret }}"
     body_format: raw
