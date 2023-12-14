@@ -1,4 +1,9 @@
 ---
-- include_tasks: yum.yaml
-- include_tasks: zypper.yaml
+- name: Ensure pip3 is installed
+  raw: '/usr/bin/env python3 -m ensurepip'
+  when: ansible_facts['os_family'] != 'Windows'
+
+- name: Ensure pip3 is installed
+  raw: 'python3 -m ensurepip'
+  when: ansible_facts['os_family'] == 'Windows'
 ...

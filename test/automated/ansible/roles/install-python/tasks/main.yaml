@@ -1,6 +1,8 @@
 ---
-- include_tasks: dnf.yaml
 - include_tasks: brew.yaml
 - include_tasks: deb.yaml
+- include_tasks: dnf.yaml
+- include_tasks: yum.yaml
+- include_tasks: zyp.yaml
 - include_tasks: win.yaml
 ...

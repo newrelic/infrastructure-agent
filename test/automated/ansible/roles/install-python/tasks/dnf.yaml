@@ -1,6 +1,10 @@
 ---
 - name: 'install python on systems managed by dnf '
-  raw: 'sudo dnf -y install python36'
+  dnf:
+    name: python3
+    state: present
+    update_cache: yes
+    use_backend: dnf4
   when: inventory_hostname is search(item)
   loop: "{{ instances_without_python_dnf }}"
 ...

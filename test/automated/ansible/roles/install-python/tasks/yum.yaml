@@ -1,0 +1,9 @@
+---
+- name: 'install python on systems managed via yum '
+  yum:
+    name: python3
+    state: present
+    update_cache: yes
+  when: inventory_hostname is search(item)
+  loop: "{{ instances_without_python_yum }}"
+...

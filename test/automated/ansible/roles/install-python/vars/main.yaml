@@ -1,9 +1,34 @@
+instances_without_python_yum:
+  - "amd64:centos7"
+  - "arm64:centos7"
+  - "amd64:redhat-7.9"
+  - "arm64:redhat-7.6"
+  - "amd64:al-2"
+  - "arm64:al-2"
+
 instances_without_python_dnf:
   - "amd64:centos8"
   - "arm64:centos8"
   - "amd64:centos-stream"
   - "arm64:centos-stream"
   - "amd64:redhat-8.4"
+  - "amd64:redhat-9.0"
+  - "arm64:redhat-9.0"
+  - "amd64:al-2023"
+  - "arm64:al-2023"
+
+instances_without_python_zyp:
+  - "amd64:sles-12.3"
+  - "amd64:sles-12.4"
+  - "amd64:sles-12.5"
+  - "amd64:sles-15.1"
+  - "amd64:sles-15.2"
+  - "amd64:sles-15.3"
+  - "amd64:sles-15.4"
+  - "amd64:sles-15.5"
+  - "arm64:sles-15.3"
+  - "arm64:sles-15.4"
+  - "arm64:sles-15.5"
 
 instances_without_python_brew:
   - "amd64:macos10"

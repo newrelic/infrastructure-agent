@@ -17,6 +17,11 @@
       include_role:
         name: reinstall-rpm
 
+    # Install python3 as crowdstrike falcon via Ansible requires it
+    - name: install python3
+      include_role:
+        name: install-python
+
     - name: Install Libcap
       include_role:
         name: install-libcap
@@ -31,14 +36,19 @@
   gather_facts: yes
   tasks:
     # Install python
-    - name: install python
+    - name: install python3
       include_role:
         name: install-python
+    - name: ensure pip3 is installed
+      include_role:
+        name: ensure-pip
     # Crowdstrike reqs
     - name: install cloudstrike-falconpy
-      ansible.builtin.pip:
-        name: crowdstrike-falconpy
-
+      raw: '/usr/bin/env python3 -m pip install crowdstrike-falconpy'
+      when: ansible_facts['os_family'] != 'Windows'
+    - name: install cloudstrike-falconpy
+      raw: 'python3 -m pip install crowdstrike-falconpy'
+      when: ansible_facts['os_family'] == 'Windows'
 
 - hosts: testing_hosts_linux
   become: true
@@ -93,6 +103,7 @@
       include_role:
         name: hostname
 
+# Install CrowdStrike Falcon
 - hosts: testing_hosts
   gather_facts: yes
   vars:

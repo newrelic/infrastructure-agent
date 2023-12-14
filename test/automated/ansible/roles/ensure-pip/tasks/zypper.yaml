@@ -1,9 +1,0 @@
----
-- name: 'ensure pip is installed'
-  zypper:
-    name: python-pip
-    state: present
-    update_cache: yes
-  when: inventory_hostname is search(item)
-  loop: "{{ pip_zypper }}"
-...
