@@ -32,7 +32,10 @@
 - hosts: testing_hosts_linux
   become: true
   gather_facts: yes
-
+  vars:
+    falcon_client_id: "{{ crowdstrike_client_id }}"
+    falcon_client_secret: "{{ crowdstrike_client_secret }}"
+    falcon_customer_id: "{{ crowdstrike_customer_id }}"
   tasks:
     - name: Configure logrotate
       include_role:
@@ -42,9 +45,17 @@
       include_role:
         name: hostname
 
+    - name: Install CrowdStrike Falcon
+      include_role:
+        name: install-crowdstrike-falcon
+
 - hosts: testing_hosts_macos
   become: false
   gather_facts: yes
+  vars:
+    falcon_client_id: "{{ crowdstrike_client_id }}"
+    falcon_client_secret: "{{ crowdstrike_client_secret }}"
+    falcon_customer_id: "{{ crowdstrike_customer_id }}"
   tasks:
     - name: install brew
       include_role:
@@ -57,10 +68,22 @@
       include_role:
         name: install-python
 
+    - name: Install CrowdStrike Falcon
+      include_role:
+        name: install-crowdstrike-falcon
+
 - hosts: testing_hosts_windows
   gather_facts: yes
+  vars:
+    falcon_client_id: "{{ crowdstrike_client_id }}"
+    falcon_client_secret: "{{ crowdstrike_client_secret }}"
+    falcon_customer_id: "{{ crowdstrike_customer_id }}"
 
   tasks:
     - name: Configure hostname
       include_role:
         name: hostname
+
+    - name: Install CrowdStrike Falcon
+      include_role:
+        name: install-crowdstrike-falcon

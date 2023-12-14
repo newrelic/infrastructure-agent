@@ -1,0 +1,19 @@
+---
+- name: 'Download CrowdStrike Falcon EXE'
+  get_url:
+    url: "https://api.crowdstrike.com/sensors/entities/download-installer/v1?id={{ item.hash }}"
+    headers:
+      Authorization: "Bearer {{ crowdstrike_auth.json.access_token }}"
+    dest: C:\temp\falcon-sensor.exe
+  when: inventory_hostname is search(item.hostname)
+  loop: "{{ win }}"
+
+- name: 'Install the obtained EXE'
+  ansible.windows.win_package:
+    path: C:\temp\falcon-sensor.exe
+    state: present
+  # become: true
+  # become_method: runas
+  when: inventory_hostname is search(item.hostname)
+  loop: "{{ win }}"
+...
