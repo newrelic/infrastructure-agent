@@ -24,9 +24,10 @@ var (
 
 	// Expected struct results
 	fbCfgOutput = FBCfgOutput{
-		Name:       "newrelic",
-		Match:      "*",
-		LicenseKey: "license",
+		Name:        "newrelic",
+		Match:       "*",
+		LicenseKey:  "license",
+		SendMetrics: false,
 	}
 	fbCfgEntityDecoration = FBCfgFilter{
 		Name:  "record_modifier",
@@ -120,11 +121,12 @@ logs:
 		{"folder with valid file", onlyValidCfg, expectedCfg, true},
 		{"folder with only example (non-yml) files", onlyExampleFile, emptyCfg, false},
 		{"folder with a valid file and example (non-yml) files", exampleFileAndValidCfg, expectedCfg, true},
+		{"folder with valid file (verbose enabled)", onlyValidCfg, expectedCfg, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// SUT
-			conf := newTestConf(tt.folder, disabledTroubleshootCfg)
+			conf := newTestConf(tt.folder, disabledTroubleshootCfg, false)
 			cfg, ok := NewFolderLoader(conf, idnProvide, hostnameProvider).LoadAll()
 
 			assert.Equal(t, tt.expectOK, ok)
@@ -133,15 +135,64 @@ logs:
 	}
 }
 
+func TestCfgLoader_LoadAll_VerboseEnabled(t *testing.T) {
+	validContent := `
+logs:
+  - name: foo
+    file: /file/path
+`
+
+	validFileFolder, err := ioutil.TempDir("", "test-load-content")
+	defer os.RemoveAll(validFileFolder)
+	require.NoError(t, err)
+	addFile(t, validFileFolder, "file.yml", validContent)
+
+	expectedCfg := FBCfg{
+		Inputs: []FBCfgInput{
+			{
+				Name:           "tail",
+				Tag:            "foo",
+				Path:           "/file/path",
+				BufferMaxSize:  "128k",
+				MemBufferLimit: "16384k",
+				DB:             dbDbPath,
+				SkipLongLines:  "On",
+				PathKey:        "filePath",
+			},
+		},
+		Filters: []FBCfgFilter{
+			{
+				Name:  "record_modifier",
+				Match: "foo",
+				Records: map[string]string{
+					"fb.input": "tail",
+				},
+			},
+			fbCfgEntityDecoration,
+		},
+		Output: FBCfgOutput{
+			Name:        "newrelic",
+			Match:       "*",
+			LicenseKey:  "license",
+			SendMetrics: true,
+		},
+	}
+
+	conf := newTestConf(validFileFolder, disabledTroubleshootCfg, true)
+	cfg, ok := NewFolderLoader(conf, idnProvide, hostnameProvider).LoadAll()
+	assert.Equal(t, true, ok)
+	assert.Equal(t, expectedCfg, cfg)
+}
+
 func TestCfgLoader_LoadAll_TroubleshootDisabed(t *testing.T) {
 	disabledTroubleshootCfg := config.NewTroubleshootCfg(false, false, "")
-	_, ok := NewFolderLoader(newTestConf("", disabledTroubleshootCfg), idnProvide, hostnameProvider).LoadAll()
+	_, ok := NewFolderLoader(newTestConf("", disabledTroubleshootCfg, false), idnProvide, hostnameProvider).LoadAll()
 	assert.False(t, ok, "should return ok=false when there is no logging configuration directory and troubleshoot is disabled")
 }
 
 func TestCfgLoader_LoadAll_TroubleshootNoLogFile(t *testing.T) {
 	troublesCfg := config.NewTroubleshootCfg(true, false, "")
-	cfg, ok := NewFolderLoader(newTestConf("", troublesCfg), idnProvide, hostnameProvider).LoadAll()
+	cfg, ok := NewFolderLoader(newTestConf("", troublesCfg, false), idnProvide, hostnameProvider).LoadAll()
 	assert.Equal(t, ok, true, "Enabling troubleshoot with no logging configurations should start the log forwarder")
 	assert.Equal(t, FBCfg{
 		Inputs: []FBCfgInput{
@@ -168,7 +219,7 @@ func TestCfgLoader_LoadAll_TroubleshootNoLogFile(t *testing.T) {
 
 func TestCfgLoader_LoadAll_TroubleshootLogFile(t *testing.T) {
 	troublesCfg := config.NewTroubleshootCfg(true, true, "/agent_log_file")
-	cfg, ok := NewFolderLoader(newTestConf("", troublesCfg), idnProvide, hostnameProvider).LoadAll()
+	cfg, ok := NewFolderLoader(newTestConf("", troublesCfg, false), idnProvide, hostnameProvider).LoadAll()
 	assert.Equal(t, ok, true, "Enabling troubleshoot with no logging configurations should start the log forwarder")
 	assert.Equal(t, FBCfg{
 		Inputs: []FBCfgInput{
@@ -384,18 +435,21 @@ logs:
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// SUT
-			gotC, err := NewFolderLoader(newTestConf("", disabledTroubleshootCfg), idnProvide, hostnameProvider).parseYAML(tt.contents)
+			gotC, err := NewFolderLoader(newTestConf("", disabledTroubleshootCfg, false), idnProvide, hostnameProvider).parseYAML(tt.contents)
 			assert.Equal(t, tt.wantErr, err)
 			assert.Equal(t, tt.wantC, gotC)
 		})
 	}
 }
-
-func newTestConf(folder string, troubleCfg config.Troubleshoot) config.LogForward {
+func newTestConf(folder string, troubleCfg config.Troubleshoot, fluentBitVerbose bool) config.LogForward {
 	cfg := &config.Config{
 		LoggingHomeDir:    "/var/db/newrelic-infra/newrelic-integrations/logging",
 		LoggingConfigsDir: folder,
 		License:           "license",
+	}
+	if fluentBitVerbose {
+		cfg.Log.Level = config.LogLevelTrace
+		cfg.Log.IncludeFilters = map[string][]interface{}{"traces": {"supervisor"}}
 	}
 	return config.NewLogForward(cfg, troubleCfg)
 }
