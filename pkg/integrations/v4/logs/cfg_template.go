@@ -129,6 +129,9 @@ var fbConfigFormat = `{{- range .Inputs }}
     {{- end }}
     {{- if .Output.Retry_Limit}}
     Retry_Limit         {{ .Output.Retry_Limit }}
+    {{- end }}
+    {{- if .Output.SendMetrics}}
+    sendMetrics         {{ .Output.SendMetrics}}
     {{- end}}
 {{ end -}}
 

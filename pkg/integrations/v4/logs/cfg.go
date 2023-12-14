@@ -232,6 +232,7 @@ type FBCfgOutput struct {
 	CABundleDir       string
 	ValidateCerts     bool
 	Retry_Limit       string
+	SendMetrics       bool
 }
 
 type FBWinlogLuaScript struct {
@@ -694,6 +695,7 @@ func newNROutput(cfg *config.LogForward) FBCfgOutput {
 		CABundleDir:       cfg.ProxyCfg.CABundleDir,
 		ValidateCerts:     cfg.ProxyCfg.ValidateCerts,
 		Retry_Limit:       cfg.RetryLimit,
+		SendMetrics:       cfg.FluentBitVerbose,
 	}
 
 	if cfg.IsStaging {

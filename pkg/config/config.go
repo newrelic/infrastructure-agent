@@ -1501,14 +1501,15 @@ func (config *Config) populateLogConfig() {
 
 // LogForward log forwarder config values.
 type LogForward struct {
-	Troubleshoot Troubleshoot
-	ConfigsDir   string
-	HomeDir      string
-	License      string
-	IsFedramp    bool
-	IsStaging    bool
-	ProxyCfg     LogForwardProxy
-	RetryLimit   string
+	Troubleshoot     Troubleshoot
+	ConfigsDir       string
+	HomeDir          string
+	License          string
+	IsFedramp        bool
+	IsStaging        bool
+	ProxyCfg         LogForwardProxy
+	RetryLimit       string
+	FluentBitVerbose bool
 }
 
 type LogForwardProxy struct {
@@ -1522,13 +1523,14 @@ type LogForwardProxy struct {
 // NewLogForward creates a valid log forwarder config.
 func NewLogForward(config *Config, troubleshoot Troubleshoot) LogForward {
 	return LogForward{
-		Troubleshoot: troubleshoot,
-		ConfigsDir:   config.LoggingConfigsDir,
-		HomeDir:      config.LoggingHomeDir,
-		License:      config.License,
-		IsFedramp:    config.Fedramp,
-		IsStaging:    config.Staging,
-		RetryLimit:   config.LoggingRetryLimit,
+		Troubleshoot:     troubleshoot,
+		ConfigsDir:       config.LoggingConfigsDir,
+		HomeDir:          config.LoggingHomeDir,
+		License:          config.License,
+		IsFedramp:        config.Fedramp,
+		IsStaging:        config.Staging,
+		RetryLimit:       config.LoggingRetryLimit,
+		FluentBitVerbose: config.Log.Level == LogLevelTrace && config.Log.HasIncludeFilter(TracesFieldName, SupervisorTrace),
 		ProxyCfg: LogForwardProxy{
 			IgnoreSystemProxy: config.IgnoreSystemProxy,
 			Proxy:             config.Proxy,
