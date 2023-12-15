@@ -1,6 +1,20 @@
 ---
+
+- name: 'Auth to CrowdStrike API (Windows)'
+  win_uri:
+    url: "{{ api_base_url }}/oauth2/token"
+    url_method: POST
+    body: "client_id={{ falcon_client_id }}&client_secret={{ falcon_client_secret }}"
+    return_content: yes
+    status_code: 201
+    headers:
+      Accept: "application/json"
+      Content-Type: "application/x-www-form-urlencoded"
+  register: crowdstrike_auth
+  when: ansible_facts['os_family'] == 'Windows'
+  
 - name: 'Download CrowdStrike Falcon EXE'
-  ansible.windows.win_get_url:
+  win_get_url:
     url: "{{ api_base_url }}/sensors/entities/download-installer/v1?id={{ item.hash }}"
     url_timeout: 120
     headers:
@@ -8,11 +22,11 @@
       Accept: "application/octet-stream"
       Content-Type: "application/json"
     dest: C:\temp\falcon-sensor.exe
-  when: inventory_hostname is search(item.hostname)
+  when: ansible_facts['os_family'] == 'Windows' and inventory_hostname is search(item.hostname)
   loop: "{{ win }}"
 
 - name: 'Install the obtained EXE (windows)'
-  ansible.windows.win_package:
+  win_package:
     path: C:\temp\falcon-sensor.exe
     state: present
     arguments:
@@ -20,8 +34,8 @@
       - /quiet
       - /norestart
       - "CID={{ crowdstrike_customer_id }}"
-  # become: true
-  # become_method: runas
-  when: inventory_hostname is search(item.hostname)
+  become: true
+  become_method: runas
+  when: ansible_facts['os_family'] == 'Windows' and inventory_hostname is search(item.hostname)
   loop: "{{ win }}"
 ...
