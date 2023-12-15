@@ -1,5 +1,5 @@
 ---
-- name: 'Download CrowdStrike Falcon DEB (apt)'
+- name: 'Download CrowdStrike Falcon DEB'
   get_url:
     url: "{{ api_base_url }}/sensors/entities/download-installer/v1?id={{ item.hash }}"
     timeout: 120 
@@ -12,7 +12,7 @@
   when: inventory_hostname is search(item.hostname)
   loop: "{{ apt }}"
 
-- name: 'Install the obtained DEB'
+- name: 'Install the obtained DEB (apt)'
   apt:
     deb: /tmp/falcon-sensor.deb
     state: present
