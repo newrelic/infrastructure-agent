@@ -16,6 +16,7 @@
   zypper:
     name: /tmp/falcon-sensor.rpm
     state: present
+    disable_gpg_check: true
   when: inventory_hostname is search(item.hostname)
   loop: "{{ zyp }}"
 ...
