@@ -1,5 +1,7 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+
+//nolint:exhaustruct,paralleltest
 package logs
 
 import (
@@ -1284,9 +1286,7 @@ func TestFBCfgFormat(t *testing.T) {
 }
 
 func TestFBCfgSendMetricFormat(t *testing.T) {
-
 	getFbFormattedStr := func(sendMetrics bool) (fbStr string) {
-
 		fbOutputStrWithoutSendMetrics := `
 [OUTPUT]
     Name                newrelic
@@ -1370,13 +1370,13 @@ func TestFBCfgSendMetricFormat(t *testing.T) {
 				LicenseKey: "licenseKey",
 			},
 		}
+
 		if noSendMetrics {
 			return fbCfg
-		} else if sendMetrics {
-			fbCfg.Output.SendMetrics = true
-		} else {
-			fbCfg.Output.SendMetrics = false
 		}
+
+		fbCfg.Output.SendMetrics = sendMetrics
+
 		return fbCfg
 	}
 
