@@ -34,8 +34,6 @@
       - /quiet
       - /norestart
       - "CID={{ crowdstrike_customer_id }}"
-  become: true
-  become_method: runas
   when: ansible_facts['os_family'] == 'Windows' and inventory_hostname is search(item.hostname)
   loop: "{{ win }}"
 ...
