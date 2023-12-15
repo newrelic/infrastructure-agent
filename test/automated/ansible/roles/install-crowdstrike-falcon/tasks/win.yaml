@@ -1,8 +1,8 @@
 ---
 - name: 'Download CrowdStrike Falcon EXE'
-  get_url:
+  ansible.windows.win_get_url:
     url: "{{ api_base_url }}/sensors/entities/download-installer/v1?id={{ item.hash }}"
-    timeout: 120
+    url_timeout: 120
     headers:
       Authorization: "Bearer {{ crowdstrike_auth.json.access_token }}"
       Accept: "application/octet-stream"
