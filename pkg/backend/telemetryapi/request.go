@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	maxCompressedSizeBytes                                       = 1 << 20           //nolint:gochecknoglobals
+	maxCompressedSizeBytes                                       = 1_000_000         //nolint:gochecknoglobals
 	compressFunc           func(b []byte) (*bytes.Buffer, error) = internal.Compress //nolint:gochecknoglobals
 )
 
