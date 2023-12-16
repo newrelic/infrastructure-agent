@@ -13,7 +13,8 @@
   loop: "{{ mac }}"
 
 - name: 'Install the obtained pkg (darwin)'
-  raw: 'sudo installer -verboseR -package /tmp/falcon-sensor.pkg -target /'
+  become: true
+  raw: 'installer -verboseR -pkg /tmp/falcon-sensor.pkg -target /'
   when: inventory_hostname is search(item.hostname)
   loop: "{{ mac }}"
 ...

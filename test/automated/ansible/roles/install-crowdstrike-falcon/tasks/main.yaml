@@ -17,7 +17,7 @@
 - include_tasks: yum.yaml
 - include_tasks: apt.yaml
 - include_tasks: zyp.yaml
-# - include_tasks: mac.yaml
+- include_tasks: mac.yaml
 - include_tasks: win.yaml
 
 - name: 'Register host with CrowdStrike (Linux)'
