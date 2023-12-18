@@ -117,19 +117,11 @@ zyp:
     hash: "{{ centos8_arm64_hash }}"
 
 mac:
-  - hostname: "amd64:macos10"
+  - hostname: "amd64:macos"
     hash: "{{ mac_hash }}"
-  - hostname: "amd64:macos11"
-    hash: "{{ mac_hash }}"
-  - hostname: "amd64:macos12"
+  - hostname: "arm64:macos"
     hash: "{{ mac_hash }}"
 
 win:
-  - hostname: "amd64:windows_2012"
-    hash: "{{ win_hash }}"
-  - hostname: "amd64:windows_2016"
-    hash: "{{ win_hash }}"
-  - hostname: "amd64:windows_2019"
-    hash: "{{ win_hash }}"
-  - hostname: "amd64:windows_2022"
+  - hostname: "amd64:windows_"
     hash: "{{ win_hash }}"
