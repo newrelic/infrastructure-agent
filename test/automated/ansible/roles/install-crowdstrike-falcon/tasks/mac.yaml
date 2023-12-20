@@ -21,6 +21,8 @@
 - name: 'Register host with CrowdStrike (darwin)'
   become: true
   raw: '/Applications/Falcon.app/Contents/Resources/falconctl license {{ falcon_customer_id }}'
+  register: result
   when: inventory_hostname is search(item.hostname)
   loop: "{{ mac }}"
+  failed_when: "Error: This machine is already licensed" in result.stdout
 ...
