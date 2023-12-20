@@ -2091,7 +2091,7 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 
 	cfg.License = strings.TrimSpace(cfg.License)
 	if !license.IsValid(cfg.License) {
-		const preservedLength = 10
+		const preservedLength = 4
 		obfuscatedL := cfg.License[:preservedLength] + strings.Repeat("*", len(cfg.License)-preservedLength)
 		err = fmt.Errorf("%w: %s", ErrInvalidLicense, obfuscatedL)
 		return
