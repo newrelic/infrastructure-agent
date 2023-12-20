@@ -17,4 +17,10 @@
   raw: 'installer -verboseR -pkg /tmp/falcon-sensor.pkg -target /'
   when: inventory_hostname is search(item.hostname)
   loop: "{{ mac }}"
+
+- name: 'Register host with CrowdStrike (darwin)'
+  become: true
+  raw: '/Applications/Falcon.app/Contents/Resources/falconctl license {{ falcon_customer_id }}'
+  when: inventory_hostname is search(item.hostname)
+  loop: "{{ mac }}"
 ...
