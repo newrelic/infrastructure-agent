@@ -81,7 +81,7 @@ var (
 	ErrNoDatabindSources         = fmt.Errorf("no databind sources provided")
 	ErrUnexpectedVariablesAmount = fmt.Errorf("unexpected config file variables replacement amount")
 	ErrUnexpectedVariablesType   = fmt.Errorf("unexpected config file variables replacement type")
-	ErrInvalidLicense            = fmt.Errorf("invalid license, check agent's config file or NRIA_LICENSE_KEY environment variable")
+	ErrInvalidLicense            = fmt.Errorf("invalid license. Check agent's config file or NRIA_LICENSE_KEY environment variable")
 	clog                         = log.WithComponent("Configuration")
 )
 
@@ -2091,9 +2091,7 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 
 	cfg.License = strings.TrimSpace(cfg.License)
 	if !license.IsValid(cfg.License) {
-		const preservedLength = 4
-		obfuscatedL := cfg.License[:preservedLength] + strings.Repeat("*", len(cfg.License)-preservedLength)
-		err = fmt.Errorf("%w: %s", ErrInvalidLicense, obfuscatedL)
+		err = fmt.Errorf("%w", ErrInvalidLicense)
 		return
 	}
 
