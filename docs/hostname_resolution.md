@@ -6,7 +6,7 @@ The agent provides two fields for hostname resolution: `hostname` and `fullHostn
 
 ### Short hostname (`hostname`)
 
-The name the host knows about itself (referred here as short hostname for disambiguation). It's fetched in Linux via a [`uname` syscall](http://man7.org/linux/man-pages/man2/uname.2.html). If that syscall fails, `/proc/sys/kernel/hostname` is read for this purpose.
+The name the host knows about itself (referred here as short hostname for disambiguation). It's fetched in Linux via a [`uname` syscall](https://man7.org/linux/man-pages/man2/uname.2.html). If that syscall fails, `/proc/sys/kernel/hostname` is read for this purpose.
 
 ### Full hostname (`fullHostname`)
 
