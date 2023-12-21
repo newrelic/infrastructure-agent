@@ -5,7 +5,7 @@
 
 # New Relic infrastructure agent
 
-The infrastructure agent (infra-agent) collects inventory data and metrics of your hosts and sends it to the New Relic platform. 
+The infrastructure agent (infra-agent) collects inventory data and metrics of your hosts and sends it to the New Relic platform.
 
 [New Relic's infrastructure monitoring](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/get-started/introduction-new-relic-infrastructure) provides flexible,
 dynamic monitoring of your entire infrastructure, from services running in the cloud or on dedicated hosts to containers running in orchestrated environments.
@@ -43,7 +43,7 @@ For more information on configuration methods, precedence, and structure, see th
 
 ## Compile and build the agent
 
-This repository contains a number of scripts that facilitate building `infra-agent` for environments supported by New Relic: Linux, Windows, and Docker. 
+This repository contains a number of scripts that facilitate building `infra-agent` for environments supported by New Relic: Linux, Windows, and Docker.
 
 To build the agent for architectures and OSes different than the one where the build is running, set the [Go environment variables](https://golang.org/cmd/go/#hdr-Environment_variables) to target the desired OS/Architecture combination. For example:
 
@@ -53,7 +53,7 @@ $ make dist-for-os GOOS=linux
 
 To compile and build the agent run these commands:
 
-* Linux: 
+* Linux:
 
   ```bash
   $ make compile # On CentOS 5: make compile-centos-5
@@ -79,7 +79,7 @@ The agent could run in [root/privileged/unprivileged/administrator(win) mode](ht
 
 ## Use the agent
 
-You can [start, stop, restart, and check](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/configuration/start-stop-restart-check-infrastructure-agent-status) the Infrastructure agent from the command line. 
+You can [start, stop, restart, and check](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/configuration/start-stop-restart-check-infrastructure-agent-status) the Infrastructure agent from the command line.
 
 For more information, [see our official documentation](https://docs.newrelic.com/docs/infrastructure/install-configure-manage-infrastructure).
 
@@ -103,7 +103,7 @@ For more information, see [Testing](https://golang.org/pkg/testing/) in the offi
 
 ## Automated tests
 
-Packaging and harvest tests can be run in an automated way using ansible. 
+Packaging and harvest tests can be run in an automated way using ansible.
 
 [Packaging tests](test/packaging/ansible/README.md)
 
@@ -194,5 +194,5 @@ To all contributors, we thank you!  Without your contribution, this project woul
 
 ## License
 
-infrastructure-agent is licensed under the [Apache 2.0](http://apache.org/licenses/LICENSE-2.0.txt) License.
+infrastructure-agent is licensed under the [Apache 2.0](https://apache.org/licenses/LICENSE-2.0.txt) License.
 
