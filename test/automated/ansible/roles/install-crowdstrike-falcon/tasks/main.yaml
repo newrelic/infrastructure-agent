@@ -21,7 +21,7 @@
 - include_tasks: win.yaml
 
 - name: 'Register host with CrowdStrike (Linux)'
-  shell: /opt/CrowdStrike/falconctl -s --cid={{ falcon_customer_id }}
+  shell: /opt/CrowdStrike/falconctl -s -f --cid={{ falcon_customer_id }}
   become: true
   when: ansible_facts['os_family'] not in ['Darwin', 'Windows']
 
