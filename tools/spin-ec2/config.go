@@ -4,16 +4,20 @@
 package main
 
 type canaryConf struct {
-	license            string
-	agentVersion       string
-	platform           string
-	ansiblePassword    string
-	prefix             string
-	repo               string
-	macstadiumUser     string
-	macstadiumPass     string
-	macstadiumSudoPass string
-	ansibleForks       int
+	license                 string
+	agentVersion            string
+	platform                string
+	ansiblePassword         string
+	prefix                  string
+	repo                    string
+	macstadiumUser          string
+	macstadiumPass          string
+	macstadiumSudoPass      string
+	ansibleForks            int
+	// CrowdStrike Falcon install
+	crowdStrikeClientID     string
+	crowdStrikeClientSecret string
+	crowdStrikeCustomerID   string
 }
 
 const defaultAnsibleForks = 5
