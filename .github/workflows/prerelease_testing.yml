@@ -34,6 +34,9 @@ jobs:
       TAG: ${{ github.event.inputs.tag }}
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+      CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
+      CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
+      CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}
 
   test-prerelease-linux:
     if: ${{ github.event.inputs.linux == 'true' }}
@@ -43,6 +46,9 @@ jobs:
       TAG: ${{ github.event.inputs.tag }}
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+      CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
+      CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
+      CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}
 
   test-prerelease-macos:
     if: ${{ github.event.inputs.macos == 'true' }}
@@ -52,3 +58,6 @@ jobs:
       TAG: ${{ github.event.inputs.tag }}
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+      CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
+      CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
+      CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}
