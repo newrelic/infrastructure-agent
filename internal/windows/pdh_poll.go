@@ -8,8 +8,6 @@ package nrwin
 
 import (
 	"fmt"
-
-	"github.com/newrelic/infrastructure-agent/internal/windows/api"
 )
 
 // PdhPoll creates repeatable queries for the Windows PDH api
@@ -46,7 +44,8 @@ func NewPdhPoll(loggerFunc func(string, ...interface{}), metrics ...string) (Pdh
 
 	pdh.metrics = metrics
 	for i, metric := range metrics {
-		ret = winapi.PdhAddEnglishCounter(pdh.queryHandler, metric, uintptr(0), &pdh.counterHandles[i])
+		// TODO We put this just for test so doens't get translated
+		ret = winapi.PdhAddCounter(pdh.queryHandler, metric, uintptr(0), &pdh.counterHandles[i])
 		if ret != winapi.ERROR_SUCCESS {
 			return pdh, fmt.Errorf("adding counter for %q (error %#v)", metric, ret)
 		}

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/newrelic/infrastructure-agent/internal/windows"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
@@ -36,18 +35,7 @@ func (*PdhIoCountersStat) Source() string {
 
 // Metrics that are going to be queried
 var metricsNames = []string{
-	"\\LogicalDisk(%s)\\Disk Reads/sec",
-	"\\LogicalDisk(%s)\\Disk Read Bytes/sec",
-	"\\LogicalDisk(%s)\\Disk Writes/sec",
-	"\\LogicalDisk(%s)\\Disk Write Bytes/sec",
-	"\\LogicalDisk(%s)\\%% Disk Time",
-	"\\LogicalDisk(%s)\\%% Disk Read Time",
-	"\\LogicalDisk(%s)\\%% Disk Write Time",
-
-	"\\LogicalDisk(%s)\\Avg. Disk Queue Length",
-	"\\LogicalDisk(%s)\\Avg. Disk Read Queue Length",
-	"\\LogicalDisk(%s)\\Avg. Disk Write Queue Length",
-	"\\LogicalDisk(%s)\\Current Disk Queue Length",
+	"\\Disco lógico(%s)\\Lecturas de disco/s",
 }
 
 // Metric indices in the "metrics" array
@@ -127,18 +115,7 @@ func (io *PdhIoCounters) IoCounters(partitions []PartitionStat) (map[string]IOCo
 	counters := map[string]IOCountersStat{}
 	for _, p := range partitions {
 		counters[p.Device] = &PdhIoCountersStat{
-			ReadsPerSec:      values[fmt.Sprintf(metricsNames[readsSec], p.Device)],
-			ReadBytesPerSec:  values[fmt.Sprintf(metricsNames[readBytesSec], p.Device)],
-			WritesPerSec:     values[fmt.Sprintf(metricsNames[writesSec], p.Device)],
-			WriteBytesPerSec: values[fmt.Sprintf(metricsNames[writeBytesSec], p.Device)],
-			TimePercent:      values[fmt.Sprintf(metricsNames[timePercent], p.Device)],
-			ReadTimePercent:  values[fmt.Sprintf(metricsNames[readTimePercent], p.Device)],
-			WriteTimePercent: values[fmt.Sprintf(metricsNames[writeTimePercent], p.Device)],
-
-			AvgQueueLen:      values[fmt.Sprintf(metricsNames[avgQueueLen], p.Device)],
-			AvgReadQueueLen:  values[fmt.Sprintf(metricsNames[avgReadQueueLen], p.Device)],
-			AvgWriteQueueLen: values[fmt.Sprintf(metricsNames[avgWriteQueueLen], p.Device)],
-			CurrentQueueLen:  values[fmt.Sprintf(metricsNames[currentQueueLen], p.Device)],
+			ReadsPerSec: values[fmt.Sprintf(metricsNames[readsSec], p.Device)],
 		}
 	}
 	return counters, nil
