@@ -4,12 +4,15 @@
 package config_loader
 
 import (
-	"github.com/newrelic/infrastructure-agent/pkg/config/envvar"
-	"github.com/newrelic/infrastructure-agent/pkg/log"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/newrelic/infrastructure-agent/pkg/config/envvar"
+	"github.com/newrelic/infrastructure-agent/pkg/helpers"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
+
+	"gopkg.in/yaml.v2"
 )
 
 var clog = log.WithComponent("Configuration loader")
@@ -30,7 +33,7 @@ func LoadYamlConfig(configObject interface{}, configFilePaths ...string) (*YAMLM
 	var keys YAMLMetadata
 
 	for _, filePath := range configFilePaths {
-		if fileExists(filePath) {
+		if helpers.FileExists(filePath) {
 			absPath, _ := filepath.Abs(filePath)
 			clog.Debugf("loading configuration from %s to hydrate %T", absPath, configObject)
 			fd, err := os.Open(filePath)
@@ -76,14 +79,4 @@ func ParseConfig(rawConfig []byte, configObject interface{}) (keys *YAMLMetadata
 	keys = &k
 
 	return
-}
-
-func fileExists(filename string) bool {
-	_, err := os.Stat(filename)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return false
-		}
-	}
-	return true
 }

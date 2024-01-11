@@ -4,11 +4,12 @@ package process
 
 import (
 	"errors"
+	"testing"
+
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/process"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"testing"
 )
 
 func Test_collectProcStats_NameError(t *testing.T) {
@@ -364,6 +365,67 @@ func Test_calculatePercent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			percent := calculatePercent(tt.t1, tt.t2, tt.delta, tt.numcpu)
 			assert.Equal(t, tt.expectedPercent, percent)
+		})
+	}
+}
+
+//nolint:exhaustruct
+func Test_Calculate_Process_CmdLine(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name     string
+		cmdLine  string
+		args     bool
+		expected string
+	}{
+		{
+			name:     "empty",
+			cmdLine:  "",
+			expected: "",
+		},
+		{
+			name:     "ignoring dash on session commands",
+			cmdLine:  "-zsh",
+			expected: "zsh",
+		},
+		{
+			name:     "no arguments & args enabled",
+			cmdLine:  "/sbin/launchd",
+			args:     true,
+			expected: "/sbin/launchd",
+		},
+		{
+			name:     "no arguments & args disabled",
+			cmdLine:  "/sbin/launchd",
+			args:     false,
+			expected: "/sbin/launchd",
+		},
+		{
+			name:     "arguments & args enabled",
+			cmdLine:  "/sbin/launchd -arg_a=1 -arg_b 2",
+			args:     true,
+			expected: "/sbin/launchd -arg_a=1 -arg_b 2",
+		},
+		{
+			name:     "arguments & args disabled",
+			cmdLine:  "/sbin/launchd -arg_a=1 -arg_b 2",
+			args:     false,
+			expected: "/sbin/launchd",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			process := &ProcessMock{}
+			process.ShouldReturnCmdLine(tt.cmdLine, nil)
+			darwinProcess := darwinProcess{
+				process: process,
+			}
+
+			result, err := darwinProcess.CmdLine(tt.args)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

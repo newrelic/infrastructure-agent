@@ -15,8 +15,7 @@ import (
 
 // ContainerdSocket is the default socket for containerd.
 const (
-	unixContainerdSocket  = "/run/containerd/containerd.sock"
-	windowsContainerdPipe = `\\.\pipe\containerd-containerd`
+	UnixContainerdSocket = "/run/containerd/containerd.sock"
 )
 
 // ErrNoContainerd is returned when containerd is not running.
@@ -60,7 +59,7 @@ func (cc *ContainerdClient) Initialize() error {
 		return containerdError(ErrNoContainerd)
 	}
 
-	client, err := containerd.New(unixContainerdSocket)
+	client, err := containerd.New(UnixContainerdSocket)
 	if err != nil {
 		return containerdError(err)
 	}
@@ -115,12 +114,10 @@ func (cc *ContainerdClient) containersFromNamespaces(nss []string) (map[namespac
 
 func IsContainerdRunning() bool {
 	if runtime.GOOS == "windows" {
-		_, err := os.Stat(windowsContainerdPipe)
-
-		return err == nil
+		return false
 	}
 
-	sock, err := os.Stat(unixContainerdSocket)
+	sock, err := os.Stat(UnixContainerdSocket)
 	if err != nil {
 		return false
 	}

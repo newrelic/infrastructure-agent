@@ -5,7 +5,6 @@ package fixtures
 import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/testhelp"
 	"path"
-	"runtime"
 )
 
 var (
@@ -16,8 +15,5 @@ var (
 )
 
 func getExtension() string {
-	if runtime.GOOS == "windows" {
-		return ".ps1"
-	}
 	return ".sh"
 }

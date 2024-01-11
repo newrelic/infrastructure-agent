@@ -45,9 +45,22 @@ ifndef MACSTADIUM_SUDO_PASS
 	@echo "MACSTADIUM_SUDO_PASS (MacStadium sudo password) variable must be provided for \"make canaries\""
 	exit 1
 endif
+# CrowdStrike Falcon variables
+ifndef CROWDSTRIKE_CLIENT_ID
+	@echo "CROWDSTRIKE_CLIENT_ID (Crowdstrike client ID) variable must be provided for \"make canaries\""
+	exit 1
+endif
+ifndef CROWDSTRIKE_CLIENT_SECRET
+	@echo "CROWDSTRIKE_CLIENT_SECRET (Crowdstrike client secret) variable must be provided for \"make canaries\""
+	exit 1
+endif
+ifndef CROWDSTRIKE_CUSTOMER_ID
+	@echo "CROWDSTRIKE_CUSTOMER_ID (Crowdstrike customer ID) variable must be provided for \"make canaries\""
+	exit 1
+endif
 	@echo "\033[41mYou have 10 seconds to verify that you are in the correct VPN if needed\033[0m"
 	@sleep 10
-	@tools/spin-ec2/bin/spin-ec2 canaries provision \
+	tools/spin-ec2/bin/spin-ec2 canaries provision \
 									-v 'v$(VERSION)' \
 									-l '$(NR_LICENSE_KEY_CANARIES)' \
 									-x '$(ANSIBLE_PASSWORD_WINDOWS)' \
@@ -57,18 +70,24 @@ endif
 									-u '$(MACSTADIUM_USER)' \
 									-z '$(MACSTADIUM_PASS)' \
 									-s '$(MACSTADIUM_SUDO_PASS)' \
-									-a '$(ANSIBLE_FORKS)'
+									-a '$(ANSIBLE_FORKS)' \
+									-c '$(CROWDSTRIKE_CLIENT_ID)' \
+									-d '$(CROWDSTRIKE_CLIENT_SECRET)' \
+									-t '$(CROWDSTRIKE_CUSTOMER_ID)'
 
 .PHONY: canaries-prune-dry
+canaries-prune-dry: PLATFORM ?= all
 canaries-prune-dry: validate-aws-credentials ec2-install-deps ec2-build
 	@read -p "DRY run for canaries prune, press enter to continue"
-	tools/spin-ec2/bin/spin-ec2 canaries prune --dry_run
+	tools/spin-ec2/bin/spin-ec2 canaries prune --dry_run --platform '$(PLATFORM)'
 
 .PHONY: canaries-prune
+canaries-prune: PLATFORM ?= all
 canaries-prune: validate-aws-credentials ec2-install-deps ec2-build
 	@read -p "REAL run for canaries prune, press enter to continue"
-	tools/spin-ec2/bin/spin-ec2 canaries prune
+	tools/spin-ec2/bin/spin-ec2 canaries prune --platform '$(PLATFORM)'
 
 .PHONY: canaries-prune-auto
+canaries-prune-auto: PLATFORM ?= all
 canaries-prune-auto: validate-aws-credentials ec2-install-deps ec2-build
-	tools/spin-ec2/bin/spin-ec2 canaries prune
+	tools/spin-ec2/bin/spin-ec2 canaries prune --platform '$(PLATFORM)'

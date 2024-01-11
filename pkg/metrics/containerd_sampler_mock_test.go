@@ -15,9 +15,11 @@ import (
 	"github.com/containerd/containerd/cio"
 	"github.com/containerd/containerd/containers"
 	"github.com/containerd/containerd/content"
+	"github.com/containerd/containerd/errdefs"
 	"github.com/containerd/containerd/images"
 	"github.com/containerd/containerd/oci"
-	prototypes "github.com/gogo/protobuf/types"
+	"github.com/containerd/containerd/platforms"
+	"github.com/containerd/typeurl/v2"
 	"github.com/opencontainers/go-digest"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/opencontainers/runtime-spec/specs-go"
@@ -54,9 +56,27 @@ func (mc *MockContainerContainerdImpl) Namespaces() ([]string, error) {
 }
 
 func (mc *MockContainerContainerdImpl) Containers(_ ...string) (map[string][]containerd.Container, error) {
-	container := &MockContainerdContainer{}
+	// default container with a running task
+	container := &MockContainerdContainer{
+		id: func() string {
+			return containerID
+		},
+		task: func(_ context.Context, _ cio.Attach) (containerd.Task, error) {
+			return &MockContainerdTask{}, nil
+		},
+	}
 
-	return map[string][]containerd.Container{"default": {container}}, nil
+	// container without a running task
+	noRunningContainer := &MockContainerdContainer{
+		id: func() string {
+			return containerID2
+		},
+		task: func(_ context.Context, _ cio.Attach) (containerd.Task, error) {
+			return nil, errdefs.ErrNotFound
+		},
+	}
+
+	return map[string][]containerd.Container{"default": {container, noRunningContainer}}, nil
 }
 
 type MockContainerWithDataContainerdImpl struct {
@@ -80,10 +100,17 @@ func (mc *MockContainerWithNoPids) Containers(_ ...string) (map[string][]contain
 }
 
 // Mock implementation for containerd.Container interface.
-type MockContainerdContainer struct{}
+type MockContainerdContainer struct {
+	id   func() string
+	task func(_ context.Context, _ cio.Attach) (containerd.Task, error)
+}
 
 func (m *MockContainerdContainer) ID() string {
-	return containerID
+	// return default containerID if no custom id function is set
+	if m.id == nil {
+		return containerID
+	}
+	return m.id()
 }
 
 func (m *MockContainerdContainer) Info(_ context.Context, _ ...containerd.InfoOpts) (containers.Container, error) {
@@ -109,8 +136,12 @@ func (m *MockContainerdContainer) Spec(_ context.Context) (*oci.Spec, error) {
 	return nil, errUnimplemented
 }
 
-func (m *MockContainerdContainer) Task(_ context.Context, _ cio.Attach) (containerd.Task, error) { //nolint:ireturn
-	return &MockContainerdTask{}, nil
+func (m *MockContainerdContainer) Task(ctx context.Context, attach cio.Attach) (containerd.Task, error) { //nolint:ireturn
+	// return empty task if no custom task function is set
+	if m.task == nil {
+		return &MockContainerdTask{}, nil
+	}
+	return m.task(ctx, attach)
 }
 
 func (m *MockContainerdContainer) Image(_ context.Context) (containerd.Image, error) { //nolint:ireturn
@@ -128,7 +159,7 @@ func (m *MockContainerdContainer) SetLabels(_ context.Context, _ map[string]stri
 	return nil, errUnimplemented
 }
 
-func (m *MockContainerdContainer) Extensions(_ context.Context) (map[string]prototypes.Any, error) {
+func (m *MockContainerdContainer) Extensions(_ context.Context) (map[string]typeurl.Any, error) {
 	return nil, errUnimplemented
 }
 
@@ -248,6 +279,14 @@ type MockContainerdImage struct{}
 
 func (m *MockContainerdImage) Name() string {
 	return "image1"
+}
+
+func (m *MockContainerdImage) Platform() platforms.MatchComparer { //nolint:ireturn
+	return nil
+}
+
+func (m *MockContainerdImage) Spec(_ context.Context) (ocispec.Image, error) {
+	return ocispec.Image{}, nil //nolint:exhaustruct
 }
 
 func (m *MockContainerdImage) Target() ocispec.Descriptor {

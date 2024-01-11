@@ -8,9 +8,13 @@
     brew_path: /usr/local
   when: ansible_architecture == "x86_64"
 
+# Need to download https://formulae.brew.sh/api/formula.jws.json but cannot as root! Run `brew update` without `sudo` first then try again.
+- name: brew update
+  command: "{{ brew_path }}/bin/brew update"
+  become: false
+
 - name: Stop launchctl service
-  command: "{{ brew_path }}/bin/brew services stop newrelic-infra-agent"
-  ignore_errors: yes
+  shell: "HOMEBREW_NO_INSTALL_FROM_API=1 {{ brew_path }}/bin/brew services stop newrelic-infra-agent"
 
 - name: Agent uninstall
   become: false
@@ -18,7 +22,11 @@
   ignore_errors: yes
 
 - name: cleanup | Remove files
-  command: "rm -rf {{ brew_path }}/Cellar/newrelic-infra-agent"
+  command: "rm -rf {{ brew_path }}/{{ item }}"
+  loop:
+    - "Cellar/newrelic-infra-agent"
+    - "opt/newrelic-infra-agent"
+    - "var/homebrew/linked/newrelic-infra-agent"
 
   # Avoid errors with commit hash on tag recreation
 - name: delete brew cache (avoid tag recreation commit error)
@@ -31,4 +39,4 @@
   command: "{{ brew_path }}/bin/brew reinstall --formula --build-from-source /Users/{{ ansible_user }}/newrelic-infra-agent.rb"
 
 - name: Start launchctl service
-  command: "{{ brew_path }}/bin/brew services start newrelic-infra-agent"
+  shell: "HOMEBREW_NO_INSTALL_FROM_API=1 {{ brew_path }}/bin/brew services start newrelic-infra-agent"

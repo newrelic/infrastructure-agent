@@ -35,11 +35,12 @@ const (
 
 // Default configurable values
 //
-//nolint:gochecknoglobals
+//nolint:gochecknoglobals,gomnd
 var (
 	// public
 	DefaultContainerCacheMetadataLimit = 60
 	DefaultDockerApiVersion            = "1.24" // minimum supported API by Docker 18.09.0
+	DefaultDockerContainerdNamespace   = "moby"
 	DefaultHeartBeatFrequencySecs      = 60
 	DefaultDMPeriodSecs                = 5           // default telemetry SDK value
 	DefaultMaxMetricsBatchSizeBytes    = 1000 * 1000 // Size limit from Vortex collector service (1MB)
@@ -110,14 +111,15 @@ var (
 	defaultRegisterMaxRetryBoSecs        = 60
 	defaultNtpPool                       = []string{} // i.e: []string{"time.cloudflare.com"}
 	defaultNtpEnabled                    = false
-	defaultNtpInterval                   = uint(15)   // minutes
-	defaultNtpTimeout                    = uint(5000) // millisecods
+	defaultNtpInterval                   = uint(15) // minutes
+	defaultNtpTimeout                    = uint(5)  // seconds
 )
 
 // Default internal values
 // nolint:gochecknoglobals
 var (
 	defaultAgentDir                string
+	defaultSafeBinDir              string
 	defaultConfigFiles             []string
 	defaultLogFile                 string
 	defaultNetworkInterfaceFilters map[string][]string

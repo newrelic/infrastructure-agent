@@ -36,16 +36,18 @@
         type: config
   
       - src: 'target/nridocker/{{ .Arch }}/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
+        dst: '/opt/newrelic-infra/newrelic-integrations/bin/nri-docker'
       - src: 'target/nriflex/{{ .Arch }}/nri-flex'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-flex'
+        dst: '/opt/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/{{ .Arch }}/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
+        dst: '/opt/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
   #    - src: 'target/fluent-bit-plugin/{{ .Arch }}/out_newrelic.so'
   #      dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
   #    - src: 'assets/examples/logging/parsers.conf'
   #      dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
     empty_folders:
+      - /opt/newrelic-infra/custom-integrations
+      - /opt/newrelic-infra/newrelic-integrations
       - /var/db/newrelic-infra/custom-integrations
       - /var/db/newrelic-infra/integrations.d
       - /var/log/newrelic-infra

@@ -30,7 +30,7 @@ func TestDocker(t *testing.T) {
 	ctx.On("GetServiceForPid", mock.Anything).Return("", false)
 
 	procs := NewProcsMonitor(ctx)
-	procs.containerSampler = docker
+	procs.containerSamplers = []ContainerSampler{docker}
 	procs.getAllProcs = mockGetAllWin32Procs
 	procs.getMemoryInfo = mockGetMemoryInfo
 	procs.getStatus = mockGetStatus

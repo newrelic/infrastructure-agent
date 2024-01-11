@@ -22,9 +22,9 @@ type dockerClient struct {
 // RequiredContainerIDErr is the error to return when container ID is not provided.
 var RequiredContainerIDErr = errors.New("container ID of the agent is required")
 
-// NewContainerisedClient creates a containerised agent control client for Docker containers.
+// NewDockerClient creates a containerised agent control client for Docker containers.
 // Didn't use helpers.DockerClient because it'll broad the interface breaking SRP.
-func NewContainerisedClient(apiVersion string, containerID string) (c Client, err error) {
+func NewDockerClient(apiVersion string, containerID string) (c Client, err error) {
 	if containerID == "" {
 		err = RequiredContainerIDErr
 		return

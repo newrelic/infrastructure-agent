@@ -1283,6 +1283,288 @@ func TestFBCfgFormat(t *testing.T) {
 	assert.Equal(t, expected, result)
 }
 
+func TestFBCfgSendMetricFormat(t *testing.T) {
+
+	getFbFormattedStr := func(sendMetrics bool) (fbStr string) {
+
+		fbOutputStrWithoutSendMetrics := `
+[OUTPUT]
+    Name                newrelic
+    Match               *
+    licenseKey          ${NR_LICENSE_KEY_ENV_VAR}
+    validateProxyCerts  false
+`
+		fbOutputStrWithSendMetricsTrue := `
+[OUTPUT]
+    Name                newrelic
+    Match               *
+    licenseKey          ${NR_LICENSE_KEY_ENV_VAR}
+    validateProxyCerts  false
+    sendMetrics         true
+`
+		fbStr = `
+[INPUT]
+    Name tail
+    Path /path/to/folder/*
+    Buffer_Max_Size 32k
+    Skip_Long_Lines On
+    Path_Key filePath
+    Tag  some-folder
+    DB   fb.db
+
+[FILTER]
+    Name  record_modifier
+    Match some-folder
+    Record fb.input tail
+    Record key1 value1
+    Record key2 value2
+
+[FILTER]
+    Name  record_modifier
+    Match *
+    Record entity.guid.INFRA testGUID
+    Record fb.source nri-agent
+`
+		if sendMetrics {
+			return fbStr + fbOutputStrWithSendMetricsTrue
+		} else {
+			return fbStr + fbOutputStrWithoutSendMetrics
+		}
+	}
+
+	getFBCfg := func(noSendMetrics bool, sendMetrics bool) FBCfg {
+		fbCfg := FBCfg{
+			Inputs: []FBCfgInput{
+				{
+					Name:          "tail",
+					Tag:           "some-folder",
+					DB:            "fb.db",
+					Path:          "/path/to/folder/*",
+					BufferMaxSize: "32k",
+					SkipLongLines: "On",
+					PathKey:       "filePath",
+				},
+			},
+			Filters: []FBCfgFilter{
+				{
+					Name:  "record_modifier",
+					Match: "some-folder",
+					Records: map[string]string{
+						"fb.input": "tail",
+						"key1":     "value1",
+						"key2":     "value2",
+					},
+				},
+				{
+					Name:  "record_modifier",
+					Match: "*",
+					Records: map[string]string{
+						"entity.guid.INFRA": "testGUID",
+						"fb.source":         "nri-agent",
+					},
+				},
+			},
+			Output: FBCfgOutput{
+				Name:       "newrelic",
+				Match:      "*",
+				LicenseKey: "licenseKey",
+			},
+		}
+		if noSendMetrics {
+			return fbCfg
+		} else if sendMetrics {
+			fbCfg.Output.SendMetrics = true
+		} else {
+			fbCfg.Output.SendMetrics = false
+		}
+		return fbCfg
+	}
+
+	tests := []struct {
+		name  string
+		fbCfg FBCfg
+		want  string
+	}{
+		{
+			name:  "FbCfg format without send metrics config (default)",
+			fbCfg: getFBCfg(true, false),
+			want:  getFbFormattedStr(false),
+		},
+		{
+			name:  "FbCfg format with send metrics config set to false",
+			fbCfg: getFBCfg(false, false),
+			want:  getFbFormattedStr(false),
+		},
+		{
+			name:  "FbCfg format without send metrics config set to true",
+			fbCfg: getFBCfg(false, true),
+			want:  getFbFormattedStr(true),
+		},
+	}
+
+	for _, testItem := range tests {
+		t.Run(testItem.name, func(t *testing.T) {
+			actualFbStr, extCfg, err := testItem.fbCfg.Format()
+			assert.Empty(t, err)
+			assert.Empty(t, extCfg)
+			assert.Equal(t, testItem.want, actualFbStr)
+		})
+	}
+}
+
+func TestFBCfgSendMetricFalseFormat(t *testing.T) {
+	expected := `
+[INPUT]
+    Name tail
+    Path /path/to/folder/*
+    Buffer_Max_Size 32k
+    Skip_Long_Lines On
+    Path_Key filePath
+    Tag  some-folder
+    DB   fb.db
+
+[FILTER]
+    Name  record_modifier
+    Match some-folder
+    Record fb.input tail
+    Record key1 value1
+    Record key2 value2
+
+[FILTER]
+    Name  record_modifier
+    Match *
+    Record entity.guid.INFRA testGUID
+    Record fb.source nri-agent
+
+[OUTPUT]
+    Name                newrelic
+    Match               *
+    licenseKey          ${NR_LICENSE_KEY_ENV_VAR}
+    validateProxyCerts  false
+`
+
+	fbCfg := FBCfg{
+		Inputs: []FBCfgInput{
+			{
+				Name:          "tail",
+				Tag:           "some-folder",
+				DB:            "fb.db",
+				Path:          "/path/to/folder/*",
+				BufferMaxSize: "32k",
+				SkipLongLines: "On",
+				PathKey:       "filePath",
+			},
+		},
+		Filters: []FBCfgFilter{
+			{
+				Name:  "record_modifier",
+				Match: "some-folder",
+				Records: map[string]string{
+					"fb.input": "tail",
+					"key1":     "value1",
+					"key2":     "value2",
+				},
+			},
+			{
+				Name:  "record_modifier",
+				Match: "*",
+				Records: map[string]string{
+					"entity.guid.INFRA": "testGUID",
+					"fb.source":         "nri-agent",
+				},
+			},
+		},
+		Output: FBCfgOutput{
+			Name:        "newrelic",
+			Match:       "*",
+			LicenseKey:  "licenseKey",
+			SendMetrics: false,
+		},
+	}
+
+	result, extCfg, err := fbCfg.Format()
+	assert.Empty(t, err)
+	assert.Empty(t, extCfg)
+	assert.Equal(t, expected, result)
+}
+
+func TestFBCfgSendMetricTrueFormat(t *testing.T) {
+	expected := `
+[INPUT]
+    Name tail
+    Path /path/to/folder/*
+    Buffer_Max_Size 32k
+    Skip_Long_Lines On
+    Path_Key filePath
+    Tag  some-folder
+    DB   fb.db
+
+[FILTER]
+    Name  record_modifier
+    Match some-folder
+    Record fb.input tail
+    Record key1 value1
+    Record key2 value2
+
+[FILTER]
+    Name  record_modifier
+    Match *
+    Record entity.guid.INFRA testGUID
+    Record fb.source nri-agent
+
+[OUTPUT]
+    Name                newrelic
+    Match               *
+    licenseKey          ${NR_LICENSE_KEY_ENV_VAR}
+    validateProxyCerts  false
+    sendMetrics         true
+`
+
+	fbCfg := FBCfg{
+		Inputs: []FBCfgInput{
+			{
+				Name:          "tail",
+				Tag:           "some-folder",
+				DB:            "fb.db",
+				Path:          "/path/to/folder/*",
+				BufferMaxSize: "32k",
+				SkipLongLines: "On",
+				PathKey:       "filePath",
+			},
+		},
+		Filters: []FBCfgFilter{
+			{
+				Name:  "record_modifier",
+				Match: "some-folder",
+				Records: map[string]string{
+					"fb.input": "tail",
+					"key1":     "value1",
+					"key2":     "value2",
+				},
+			},
+			{
+				Name:  "record_modifier",
+				Match: "*",
+				Records: map[string]string{
+					"entity.guid.INFRA": "testGUID",
+					"fb.source":         "nri-agent",
+				},
+			},
+		},
+		Output: FBCfgOutput{
+			Name:        "newrelic",
+			Match:       "*",
+			LicenseKey:  "licenseKey",
+			SendMetrics: true,
+		},
+	}
+
+	result, extCfg, err := fbCfg.Format()
+	assert.Empty(t, err)
+	assert.Empty(t, extCfg)
+	assert.Equal(t, expected, result)
+}
+
 func TestFBLuaFormat(t *testing.T) {
 	expected := `function winlog_test(tag, timestamp, record)
     eventId = record["EventID"]

@@ -3,7 +3,7 @@
 *A Library of Checker Extensions for the Check Package*
 
 This library provides useful extensions to the unit testing framework provided
-by the [check.v1](http://labix.org/gocheck) package. It is completely
+by the [check.v1](https://labix.org/gocheck) package. It is completely
 compatible with `go test`.
 
 The `check` package provides a basic `Checker` interface that is the basis for

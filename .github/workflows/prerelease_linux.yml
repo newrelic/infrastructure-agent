@@ -133,6 +133,9 @@ jobs:
       TAG: ${{ github.event.release.tag_name }}
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+      CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
+      CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
+      CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}
 
   canaries-linux:
     needs: [test-prerelease-linux]
@@ -142,6 +145,9 @@ jobs:
       TAG: ${{ github.event.release.tag_name }}
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+      CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
+      CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
+      CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}
 
   prune-canaries-linux:
     needs: [canaries-linux]

@@ -8,13 +8,14 @@ package metrics
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
+	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	metricTypes "github.com/newrelic/infrastructure-agent/pkg/metrics/types"
+	"github.com/stretchr/testify/assert"
 )
 
 const containerID = "container1"
+const containerID2 = "container2"
 
 func TestInitializeContainerdClient(t *testing.T) {
 	t.Parallel()
@@ -48,7 +49,7 @@ func TestContainerdProcessDecoratorNoContainers(t *testing.T) {
 	mock := &MockBaseContainerdImpl{}
 	pidsCache := newPidsCache(metadataCacheTTL)
 
-	_, err := newContainerdDecorator(mock, pidsCache)
+	_, err := newContainerdDecorator(mock, pidsCache, config.DefaultDockerContainerdNamespace)
 	assert.EqualError(t, err, "containerd sampler: no containers")
 }
 
@@ -58,7 +59,7 @@ func TestContainerdProcessDecoratorNoProcessContainers(t *testing.T) {
 	mock := &MockContainerWithNoPids{} //nolint:exhaustruct
 	pidsCache := newPidsCache(metadataCacheTTL)
 
-	_, err := newContainerdDecorator(mock, pidsCache)
+	_, err := newContainerdDecorator(mock, pidsCache, config.DefaultDockerContainerdNamespace)
 	assert.EqualError(t, err, "containerd sampler: unable to get pids for container")
 }
 
@@ -68,7 +69,7 @@ func TestContainerdProcessDecoratorDecorateProcessSampleBadProcessID(t *testing.
 	mock := &MockContainerWithDataContainerdImpl{}
 	pidsCache := newPidsCache(metadataCacheTTL)
 
-	decorator, err := newContainerdDecorator(mock, pidsCache)
+	decorator, err := newContainerdDecorator(mock, pidsCache, config.DefaultDockerContainerdNamespace)
 	assert.NoError(t, err)
 
 	process := metricTypes.ProcessSample{ProcessID: 666, ContainerLabels: map[string]string{}} //nolint:exhaustruct
@@ -88,8 +89,12 @@ func TestContainerdProcessDecoratorDecorateProcessSample(t *testing.T) {
 	mock := &MockContainerWithDataContainerdImpl{}
 	pidsCache := newPidsCache(metadataCacheTTL)
 
-	decorator, err := newContainerdDecorator(mock, pidsCache)
+	decorator, err := newContainerdDecorator(mock, pidsCache, config.DefaultDockerContainerdNamespace)
 	assert.NoError(t, err)
+
+	// ensure container without running state is not cached
+	_, found := pidsCache.get(containerID2)
+	assert.Equal(t, false, found)
 
 	process := metricTypes.ProcessSample{ProcessID: 123} //nolint:exhaustruct
 	decorator.Decorate(&process)

@@ -1,10 +1,12 @@
-name: . 🚀 🧬 Test specific version installation
+name: . 🚀 🧬 Test package installation
 on:
   workflow_dispatch:
     inputs:
       tag:
         description: 'Version of the agent to test installation'
         required: true
+        type: string
+        default: '1.47.0'
       staging:
         description: 'Should run tests using staging bucket?'
         type: boolean
@@ -15,5 +17,5 @@ jobs:
   molecule-packaging-tests:
     uses: ./.github/workflows/component_molecule_packaging.yml
     with:
-      TAG: ${{ github.event.inputs.tag }}
+      TAG: "${{ github.event.inputs.tag }}"
       REPO_ENDPOINT: ${{ github.event.inputs.staging == 'true' && 'http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent' ||  'https://download.newrelic.com/infrastructure_agent'  }}

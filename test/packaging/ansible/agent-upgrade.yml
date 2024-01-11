@@ -27,12 +27,12 @@
 
         - name: pick right agent version for amd64
           set_fact:
-            target_agent_version_1: "1.39.0"
+            target_agent_version_1: "1.47.0"
           when: inventory_hostname is search("amd64")
 
         - name: pick right agent version for arm64
           set_fact:
-            target_agent_version_1: "1.39.0"
+            target_agent_version_1: "1.47.0"
           when: inventory_hostname is search("arm64")
 
         - name: install initial version
@@ -54,7 +54,7 @@
             name: agent-upgrade
           vars:
             # this used only for check that latest is grater than given
-            target_agent_version: "1.39.0"
+            target_agent_version: "1.47.0"
 
         - name: assert service countinues running after upgrade
           include_role:
@@ -72,5 +72,4 @@
         - name: Final cleanup # Only required for shared infra.
           include_role:
             name: cleanup
-
 ...

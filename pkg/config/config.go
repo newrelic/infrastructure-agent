@@ -81,6 +81,7 @@ var (
 	ErrNoDatabindSources         = fmt.Errorf("no databind sources provided")
 	ErrUnexpectedVariablesAmount = fmt.Errorf("unexpected config file variables replacement amount")
 	ErrUnexpectedVariablesType   = fmt.Errorf("unexpected config file variables replacement type")
+	ErrInvalidLicense            = fmt.Errorf("invalid license. Check agent's config file or NRIA_LICENSE_KEY environment variable")
 	clog                         = log.WithComponent("Configuration")
 )
 
@@ -107,7 +108,6 @@ type DynamicConfig struct {
 }
 
 func (dc *DynamicConfig) Provide() *Config {
-
 	if dc.isEmpty() {
 		return nil
 	}
@@ -185,7 +185,7 @@ type Config struct {
 	CollectorURL string `yaml:"collector_url" envconfig:"collector_url" public:"false"`
 
 	// IdentityURL defines the base URL for the identity connect.
-	// Default: https://infra-api.newrelic.com
+	// Default: https://identity-api.newrelic.com
 	// Public: No
 	IdentityURL string `yaml:"identity_url" envconfig:"identity_url" public:"false"`
 
@@ -279,6 +279,11 @@ type Config struct {
 	// Default: 1.24
 	// Public: Yes
 	DockerApiVersion string `yaml:"docker_api_version" envconfig:"docker_api_version"`
+
+	// DockerContainerdNamespace specifies the Containerd namespace used by docker.
+	// Default: moby
+	// Public: Yes
+	DockerContainerdNamespace string `yaml:"docker_containerd_namespace" envconfig:"docker_containerd_namespace"`
 
 	// CustomAttributes is a list of custom attributes to annotate the data from this agent instance. Separate keys and
 	// values with colons :, as in KEY: VALUE, and separate each key-value pair with a line break. Keys can be any
@@ -399,6 +404,13 @@ type Config struct {
 	// Default (Windows): C:\Program Files\NewRelic\newrelic-infra
 	// Public: Yes
 	AgentDir string `yaml:"agent_dir" envconfig:"agent_dir"`
+
+	// SafeBinDir is the directory where the agent expects to see executables for Integrations
+	// Default (Linux): /opt/newrelic-infra
+	// Default (MacOS): /usr/local/var/db/newrelic-infra/
+	// Default (Windows): C:\Program Files\NewRelic\newrelic-infra
+	// Public: Yes
+	SafeBinDir string `yaml:"safe_bin_dir" envconfig:"safe_bin_dir"`
 
 	// ConfigDir is the main directory where the agent stores configs.
 	// Default (Linux): /etc/newrelic-infra
@@ -729,8 +741,8 @@ type Config struct {
 	// slow, we'll still be able to run the event queue receiver and accumulate a reasonable number of batches before
 	// we fill up on batches as well.
 	// Default: 1000
-	// Public: No
-	EventQueueDepth int `yaml:"event_queue_depth" envconfig:"event_queue_depth" public:"false"` // See event_sender.go
+	// Public: Yes
+	EventQueueDepth int `yaml:"event_queue_depth" envconfig:"event_queue_depth" public:"true"` // See event_sender.go
 
 	// BatchQueueDepth We use two queues to send the events to metrics digest: (event -> eventQueue -> batch ->
 	// batchQueue -> HTTP post). This config option allow us to increase the batchQueue size.
@@ -1404,7 +1416,6 @@ func coalesceBool(values ...*bool) bool {
 }
 
 func (cfg *Config) Provide() *Config {
-
 	if cfg.dynamicConfig != nil {
 		refreshedConfig := cfg.dynamicConfig.Provide()
 		if refreshedConfig != nil {
@@ -1491,14 +1502,15 @@ func (config *Config) populateLogConfig() {
 
 // LogForward log forwarder config values.
 type LogForward struct {
-	Troubleshoot Troubleshoot
-	ConfigsDir   string
-	HomeDir      string
-	License      string
-	IsFedramp    bool
-	IsStaging    bool
-	ProxyCfg     LogForwardProxy
-	RetryLimit   string
+	Troubleshoot     Troubleshoot
+	ConfigsDir       string
+	HomeDir          string
+	License          string
+	IsFedramp        bool
+	IsStaging        bool
+	ProxyCfg         LogForwardProxy
+	RetryLimit       string
+	FluentBitVerbose bool
 }
 
 type LogForwardProxy struct {
@@ -1512,13 +1524,14 @@ type LogForwardProxy struct {
 // NewLogForward creates a valid log forwarder config.
 func NewLogForward(config *Config, troubleshoot Troubleshoot) LogForward {
 	return LogForward{
-		Troubleshoot: troubleshoot,
-		ConfigsDir:   config.LoggingConfigsDir,
-		HomeDir:      config.LoggingHomeDir,
-		License:      config.License,
-		IsFedramp:    config.Fedramp,
-		IsStaging:    config.Staging,
-		RetryLimit:   config.LoggingRetryLimit,
+		Troubleshoot:     troubleshoot,
+		ConfigsDir:       config.LoggingConfigsDir,
+		HomeDir:          config.LoggingHomeDir,
+		License:          config.License,
+		IsFedramp:        config.Fedramp,
+		IsStaging:        config.Staging,
+		RetryLimit:       config.LoggingRetryLimit,
+		FluentBitVerbose: config.Log.Level == LogLevelTrace && config.Log.HasIncludeFilter(TracesFieldName, SupervisorTrace),
 		ProxyCfg: LogForwardProxy{
 			IgnoreSystemProxy: config.IgnoreSystemProxy,
 			Proxy:             config.Proxy,
@@ -1808,6 +1821,7 @@ func NewConfig() *Config {
 		CommandChannelEndpoint:        defaultCmdChannelEndpoint,
 		CommandChannelIntervalSec:     defaultCmdChannelIntervalSec,
 		AgentDir:                      defaultAgentDir,
+		SafeBinDir:                    defaultSafeBinDir,
 		ConfigDir:                     defaultConfigDir,
 		SupervisorRpcSocket:           defaultSupervisorRpcSock,
 		DebugLogSec:                   defaultDebugLogSec,
@@ -1819,6 +1833,7 @@ func NewConfig() *Config {
 		TCPServerPort:                 defaultTCPServerPort,
 		StatusServerPort:              defaultStatusServerPort,
 		DockerApiVersion:              DefaultDockerApiVersion,
+		DockerContainerdNamespace:     DefaultDockerContainerdNamespace,
 		FingerprintUpdateFreqSec:      defaultFingerprintUpdateFreqSec,
 		CloudMetadataExpiryInSec:      defaultCloudMetadataExpiryInSec,
 		RegisterConcurrency:           defaultRegisterConcurrency,
@@ -2076,7 +2091,7 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 
 	cfg.License = strings.TrimSpace(cfg.License)
 	if !license.IsValid(cfg.License) {
-		err = fmt.Errorf("invalid license: %s, check agent's config file or NRIA_LICENSE_KEY environment variable", cfg.License)
+		err = fmt.Errorf("%w", ErrInvalidLicense)
 		return
 	}
 
@@ -2301,6 +2316,8 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 
 	// DockerApiVersion default value defined in NewConfig
 	nlog.WithField("DockerApiVersion", cfg.DockerApiVersion).Debug("Docker client API version.")
+	// DockerContainerdNamespace default value defined in NewConfig
+	nlog.WithField("DockerContainerdNamespace", cfg.DockerContainerdNamespace).Debug("Docker containerd namespace.")
 	// FingerprintUpdateFreqSec default value defined in NewConfig
 	nlog.WithField("FingerprintUpdateFreqSec", cfg.FingerprintUpdateFreqSec).Debug("Fingerprint update freq.")
 	// DnsHostnameResolution value defined in NewConfig

@@ -35,11 +35,11 @@ func GetProcessID(processName string) (int32, error) {
 }
 
 // IsContainerized is checking if a pid is running inside a docker container.
-func IsContainerized(pid int32, dockerAPIVersion string) (isContainerized bool, containerID string, err error) {
+func IsContainerized(pid int32, dockerAPIVersion, dockerContainerdNamespace string) (isContainerized bool, containerID string, err error) {
 	p := &types.ProcessSample{
 		ProcessID: pid,
 	}
-	containerSampler := metrics.GetContainerSampler(60, dockerAPIVersion) //nolint:gomnd
+	containerSamplers := metrics.GetContainerSamplers(60, dockerAPIVersion, dockerContainerdNamespace) //nolint:gomnd
 
 	logger := log.WithFieldsF(func() logrus.Fields {
 		return logrus.Fields{
@@ -49,14 +49,16 @@ func IsContainerized(pid int32, dockerAPIVersion string) (isContainerized bool, 
 		}
 	})
 
-	if containerSampler.Enabled() {
-		logger.Info("A container runtime is enabled, checking for containerized agent")
-		var dc metrics.ProcessDecorator
-		dc, err = containerSampler.NewDecorator()
-		if err != nil {
-			return
+	for _, containerSampler := range containerSamplers {
+		if containerSampler.Enabled() {
+			logger.Info("A container runtime is enabled, checking for containerized agent")
+			var dc metrics.ProcessDecorator
+			dc, err = containerSampler.NewDecorator()
+			if err != nil {
+				return
+			}
+			dc.Decorate(p)
 		}
-		dc.Decorate(p)
 	}
 
 	logger.WithField("containerID", p.ContainerID).Info("Containerized agent found in container")

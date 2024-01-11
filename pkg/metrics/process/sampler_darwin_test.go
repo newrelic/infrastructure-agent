@@ -4,12 +4,15 @@ package process
 
 import (
 	"errors"
+	"testing"
+
+	"github.com/newrelic/infrastructure-agent/pkg/metrics"
+
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"testing"
 )
 
 func TestProcessSampler_Sample(t *testing.T) {
@@ -110,7 +113,7 @@ func TestProcessSampler_Sample_DockerDecorator(t *testing.T) {
 	harvester := &HarvesterMock{}
 	sampler := NewProcessSampler(ctx).(*processSampler)
 	sampler.harvest = harvester
-	sampler.containerSampler = &fakeContainerSampler{}
+	sampler.containerSamplers = []metrics.ContainerSampler{&fakeContainerSampler{}}
 
 	samples := []*types.ProcessSample{
 		{

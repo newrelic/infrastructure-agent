@@ -7,14 +7,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"io/ioutil"
 	"os"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/newrelic/infrastructure-agent/internal/instrumentation"
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 
 	"github.com/sirupsen/logrus"
 	logTest "github.com/sirupsen/logrus/hooks/test"
@@ -187,7 +186,7 @@ func TestEmitter_Send_usingIDCache(t *testing.T) {
 			ffRetriever.ShouldGetFeatureFlag("dm_register_deprecated", testCase.FFEnabled, testCase.FFExists)
 
 			registerClient := &identityapi.RegisterClientMock{}
-			emtr := NewEmitter(aCtx, dmSender, registerClient, instrumentation.NoopMeasure, ffRetriever)
+			emtr := NewEmitter(aCtx, dmSender, registerClient, ffRetriever)
 			emtrStruct := emtr.(*emitter) // nolint:forcetypeassert
 
 			emtrStruct.idCache.Put(entity.Key(fmt.Sprintf("%s:%s", data.DataSets[0].Entity.Type, data.DataSets[0].Entity.Name)), firstEntity.ID)
@@ -232,7 +231,7 @@ func TestEmitter_Send_ignoreEntity(t *testing.T) {
 	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
 
 	registerClient := &identityapi.RegisterClientMock{}
-	emtr := NewEmitter(aCtx, dmSender, registerClient, instrumentation.NoopMeasure, ffRetriever)
+	emtr := NewEmitter(aCtx, dmSender, registerClient, ffRetriever)
 
 	dmSender.wg.Add(getMetricsSend(data))
 
@@ -315,7 +314,7 @@ func TestEmitter_Send(t *testing.T) {
 
 			ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
 			registerClient := &identityapi.RegisterClientMock{}
-			emtr := NewEmitter(aCtx, metricSender, registerClient, instrumentation.NoopMeasure, ffRetriever)
+			emtr := NewEmitter(aCtx, metricSender, registerClient, ffRetriever)
 
 			// avoid waiting for more data to create register submission batch
 			emtrStruct := emtr.(*emitter) // nolint:forcetypeassert
@@ -375,7 +374,7 @@ func TestEmitter_ShouldNotSendDataWhenDeprecatedRegisterFFIsEnabled(t *testing.T
 
 	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
 	registerClient := &identityapi.RegisterClientMock{}
-	emtr := NewEmitter(aCtx, ms, registerClient, instrumentation.NoopMeasure, ffRetriever)
+	emtr := NewEmitter(aCtx, ms, registerClient, ffRetriever)
 
 	// avoid waiting for more data to create register submission batch
 	emtrStruct := emtr.(*emitter) // nolint:forcetypeassert
@@ -434,7 +433,7 @@ func TestEmitter_ShouldRegisterFFDoesNotExistOrIsDisabled(t *testing.T) {
 			ent := testCase.integrationPayload.DataSets[0].Entity
 			registerClient.ShouldRegisterBatchEntities(identity.ID, []entity.Fields{ent}, []identityapi.RegisterEntityResponse{{ID: identity.ID, Name: ent.Name}})
 
-			emtr := NewEmitter(aCtx, metricSender, registerClient, instrumentation.NoopMeasure, ffRetriever)
+			emtr := NewEmitter(aCtx, metricSender, registerClient, ffRetriever)
 
 			// avoid waiting for more data to create register submission batch
 			emtrStruct := emtr.(*emitter) // nolint:forcetypeassert
@@ -476,7 +475,7 @@ func TestEmitter_Send_failedToSubmitMetrics_dropAndLog(t *testing.T) {
 	ffRetriever.ShouldNotGetFeatureFlag("dm_register_deprecated")
 
 	registerClient := &identityapi.RegisterClientMock{}
-	emtr := NewEmitter(aCtx, ms, registerClient, instrumentation.NoopMeasure, ffRetriever).(*emitter) // nolint:forcetypeassert
+	emtr := NewEmitter(aCtx, ms, registerClient, ffRetriever).(*emitter) //nolint:forcetypeassert
 	emtr.idCache.Put(entity.Key(fmt.Sprintf("%s:%s", data.DataSets[0].Entity.Type, data.DataSets[0].Entity.Name)), identity.ID)
 	emtr.Send(fwrequest.NewFwRequest(integration.Definition{Name: "nri-test", ExecutorConfig: executor.Config{User: "root"}}, nil, nil, data))
 

@@ -286,6 +286,15 @@ func cliMode() {
 	cmdProvision.PersistentFlags().StringP("ansible_forks", "a", "5", "Ansible forks count")
 	viper.BindPFlag("ansible_forks", cmdProvision.PersistentFlags().Lookup("ansible_forks"))
 
+	cmdProvision.PersistentFlags().StringP("crowdstrike_client_id", "c", "", "CrowdStrike Client ID")
+	viper.BindPFlag("crowdstrike_client_id", cmdProvision.PersistentFlags().Lookup("crowdstrike_client_id"))
+
+	cmdProvision.PersistentFlags().StringP("crowdstrike_client_secret", "d", "", "CrowdStrike Client Secret")
+	viper.BindPFlag("crowdstrike_client_secret", cmdProvision.PersistentFlags().Lookup("crowdstrike_client_secret"))
+
+	cmdProvision.PersistentFlags().StringP("crowdstrike_customer_id", "t", "", "Crowdstrike Customer ID")
+	viper.BindPFlag("crowdstrike_customer_id", cmdProvision.PersistentFlags().Lookup("crowdstrike_customer_id"))
+
 	cmdPrune := &cobra.Command{
 		Use:   "prune",
 		Short: "Prune canary machines",
@@ -302,14 +311,16 @@ func cliMode() {
 	cmdPrune.PersistentFlags().Bool("dry_run", false, "dry run")
 	viper.BindPFlag("dry_run", cmdPrune.PersistentFlags().Lookup("dry_run"))
 
+	cmdPrune.PersistentFlags().String("platform", "all", "platform")
+	viper.BindPFlag("prune_platform", cmdPrune.PersistentFlags().Lookup("platform"))
+
 	cmdPreviousCanaryVersion.PersistentFlags().StringP("tag", "t", "", "the reference tag to look previous for")
 	viper.BindPFlag("tag", cmdPreviousCanaryVersion.PersistentFlags().Lookup("tag"))
 	cmdPreviousCanaryVersion.MarkPersistentFlagRequired("tag")
 
 	cmdRoot := &cobra.Command{Use: "spin-ec2"}
 	cmdRoot.AddCommand(cmdCanaries)
-	cmdCanaries.AddCommand(cmdProvision, cmdPrune)
-	cmdCanaries.AddCommand(cmdProvision, cmdPreviousCanaryVersion)
+	cmdCanaries.AddCommand(cmdProvision, cmdPrune, cmdPreviousCanaryVersion)
 	cmdRoot.Execute()
 }
 
@@ -324,6 +335,9 @@ func canaryConfFromArgs() (canaryConf, error) {
 	macstadiumPass := viper.GetString("macstadium_pass")
 	macstadiumSudoPass := viper.GetString("macstadium_sudo_pass")
 	ansibleForks := viper.GetInt("ansible_forks")
+	crowdStrikeClientID := viper.GetString("crowdstrike_client_id")
+	crowdStrikeClientSecret := viper.GetString("crowdstrike_client_secret")
+	crowdStrikeCustomerID := viper.GetString("crowdstrike_customer_id")
 
 	if !semver.IsValid(agentVersion) {
 		return canaryConf{}, fmt.Errorf("agent version '%s' doesn't match the pattern 'vmajor.minor.patch' format",
@@ -331,16 +345,19 @@ func canaryConfFromArgs() (canaryConf, error) {
 	}
 
 	return canaryConf{
-		license:            license,
-		agentVersion:       agentVersion,
-		platform:           platform,
-		ansiblePassword:    ansiblePassword,
-		prefix:             prefix,
-		repo:               repo,
-		macstadiumUser:     macstadiumUser,
-		macstadiumPass:     macstadiumPass,
-		macstadiumSudoPass: macstadiumSudoPass,
-		ansibleForks:       ansibleForks,
+		license:                 license,
+		agentVersion:            agentVersion,
+		platform:                platform,
+		ansiblePassword:         ansiblePassword,
+		prefix:                  prefix,
+		repo:                    repo,
+		macstadiumUser:          macstadiumUser,
+		macstadiumPass:          macstadiumPass,
+		macstadiumSudoPass:      macstadiumSudoPass,
+		ansibleForks:            ansibleForks,
+		crowdStrikeClientID:     crowdStrikeClientID,
+		crowdStrikeClientSecret: crowdStrikeClientSecret,
+		crowdStrikeCustomerID:   crowdStrikeCustomerID,
 	}, nil
 }
 
@@ -421,6 +438,9 @@ func provisionMacosCanaries(cnf canaryConf) error {
 
 	playbookArguments := []string{
 		"-i", path.Join(curPath, inventoryMacos),
+		"-e", "crowdstrike_client_id=" + cnf.crowdStrikeClientID,
+		"-e", "crowdstrike_client_secret=" + cnf.crowdStrikeClientSecret,
+		"-e", "crowdstrike_customer_id=" + cnf.crowdStrikeCustomerID,
 	}
 	playbookArguments = append(playbookArguments, path.Join(curPath, "/test/automated/ansible/install-requirements.yml"))
 	execNameArgs("ansible-playbook", playbookArguments...)
@@ -566,6 +586,10 @@ func provisionEphimeralCanaries(cnf canaryConf) error {
 
 	playbookArguments := []string{
 		"-i", path.Join(curPath, inventoryProvisioned),
+		// CrowdStrike Falcon settings
+		"-e", "crowdstrike_client_id=" + cnf.crowdStrikeClientID,
+		"-e", "crowdstrike_client_secret=" + cnf.crowdStrikeClientSecret,
+		"-e", "crowdstrike_customer_id=" + cnf.crowdStrikeCustomerID,
 	}
 	if cnf.ansiblePassword != "" {
 		playbookArguments = append(playbookArguments, "-e", "ansible_password="+cnf.ansiblePassword)
@@ -615,14 +639,18 @@ func provisionEphimeralCanaries(cnf canaryConf) error {
 // ones that have the latest 2 version of infra-agent installed.
 func pruneCanaries(cmd *cobra.Command, args []string) error {
 	dryRun := viper.GetBool("dry_run")
-	platform := viper.GetString("platform")
+	platform := viper.GetString("prune_platform")
 
 	instances, err := getAWSInstances(hostPrefix+":v", platform)
 	if err != nil {
 		return err
 	}
 
-	idsToTerminate, err := getInstancesToPrune(instances)
+	versionsToKeep := 2
+	if platform == "linux" {
+		versionsToKeep = 1
+	}
+	idsToTerminate, err := getInstancesToPrune(instances, versionsToKeep)
 	if err != nil {
 		return err
 	}

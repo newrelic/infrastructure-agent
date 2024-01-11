@@ -18,18 +18,14 @@ jobs:
         with:
           go-version-file: 'go.mod'
 
-      - run: |
-          # https://github.com/actions/setup-go/issues/107
-          cp -f `which go` /usr/bin/go
-
       - name: Setup node
         run: sudo apt install musl-dev
 
       - name: Fix GOROOT to be run with sudo
         run: |
           mkdir -p /home/runner/.config/go
-          echo GOROOT=$( go env GOROOT ) > /home/runner/.config/go/env
-          echo GOTOOLDIR=$( go env GOTOOLDIR ) >> /home/runner/.config/go/env
+          echo GOROOT="$( go env GOROOT )" > /home/runner/.config/go/env
+          echo GOTOOLDIR="$( go env GOTOOLDIR )" >> /home/runner/.config/go/env
           sudo -E go env
 
       - name: Running Harvest tests

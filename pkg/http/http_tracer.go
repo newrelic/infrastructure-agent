@@ -6,11 +6,12 @@ package http
 import (
 	"crypto/tls"
 	"fmt"
-	wlog "github.com/newrelic/infrastructure-agent/pkg/log"
 	"net/http"
 	"net/http/httptrace"
 	"net/textproto"
 	"time"
+
+	wlog "github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
 var tlog = wlog.WithComponent("HttpTracer")

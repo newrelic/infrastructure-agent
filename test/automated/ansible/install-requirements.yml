@@ -9,6 +9,10 @@
       include_role:
         name: remove-eol-sources
 
+    - name: Configure OpenSUSE repositories when needed
+      include_role:
+        name: opensuse-repositories
+
     - name: re-install rpm
       include_role:
         name: reinstall-rpm
@@ -28,33 +32,64 @@
 - hosts: testing_hosts_linux
   become: true
   gather_facts: yes
-
+  vars:
+    falcon_client_id: "{{ crowdstrike_client_id }}"
+    falcon_client_secret: "{{ crowdstrike_client_secret }}"
+    falcon_customer_id: "{{ crowdstrike_customer_id }}"
+    api_base_url: "https://api.laggar.gcw.crowdstrike.com"
   tasks:
     - name: Configure logrotate
       include_role:
         name: logrotate
 
+    - name: Install CrowdStrike Falcon
+      include_role:
+        name: install-crowdstrike-falcon
+
     - name: Configure hostname
       include_role:
         name: hostname
+
 
 - hosts: testing_hosts_macos
   become: false
   gather_facts: yes
+  vars:
+    falcon_client_id: "{{ crowdstrike_client_id }}"
+    falcon_client_secret: "{{ crowdstrike_client_secret }}"
+    falcon_customer_id: "{{ crowdstrike_customer_id }}"
+    api_base_url: "https://api.laggar.gcw.crowdstrike.com"
+
   tasks:
     - name: install brew
       include_role:
         name: install-brew
-      vars:
-        brew_version: 3.6.21 # with 4.0.* there are some problems with sudo https://github.com/Homebrew/brew/issues/14462#issuecomment-1445130069
+        # latest versions of brew allow running service with sudo, not necessary to downgrade
+        # comment left for reference
+#      vars:
+#        brew_version: 3.6.21 # with 4.0.* there are some problems with sudo https://github.com/Homebrew/brew/issues/14462#issuecomment-1445130069
     - name: install python
       include_role:
         name: install-python
 
+    - name: Install CrowdStrike Falcon
+      include_role:
+        name: install-crowdstrike-falcon
+
 - hosts: testing_hosts_windows
   gather_facts: yes
+  vars:
+    falcon_client_id: "{{ crowdstrike_client_id }}"
+    falcon_client_secret: "{{ crowdstrike_client_secret }}"
+    falcon_customer_id: "{{ crowdstrike_customer_id }}"
+    api_base_url: "https://api.laggar.gcw.crowdstrike.com"
 
   tasks:
+    - name: Install CrowdStrike Falcon
+      include_role:
+        name: install-crowdstrike-falcon
+
     - name: Configure hostname
       include_role:
         name: hostname
+
