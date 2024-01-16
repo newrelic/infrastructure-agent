@@ -10,6 +10,9 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
+//nolint:gochecknoglobals
+var plog = sslog.WithComponent("PDH Windows")
+
 type PdhIoCountersStat struct {
 	ReadsPerSec      float64
 	ReadBytesPerSec  float64
@@ -75,7 +78,7 @@ type PdhIoCounters struct {
 
 // If the partitions have changed, the PDH query is recreated
 func (io *PdhIoCounters) updateQuery(partitions []PartitionStat) error {
-	//Checking if the partitions table has changed
+	// Checking if the partitions table has changed
 	changed := false
 	if len(io.partitions) != len(partitions) {
 		changed = true
@@ -88,11 +91,11 @@ func (io *PdhIoCounters) updateQuery(partitions []PartitionStat) error {
 		}
 	}
 	if changed || !io.started {
-		sslog.Debug("Creating new PDH query.")
+		plog.Debug("Creating new PDH query.")
 		io.partitions = map[string][]string{}
 		metrics := make([]string, 0, len(metricsNames)*len(partitions))
 		for _, p := range partitions {
-			sslog.WithField("partition", fmt.Sprintf("%#v", p)).Debug("Creating partition queries.")
+			plog.WithField("partition", fmt.Sprintf("%#v", p)).Debug("Creating partition queries.")
 			io.partitions[p.Device] = make([]string, 0, len(metrics))
 			for _, mn := range metricsNames {
 				metrics = append(metrics, fmt.Sprintf(mn, p.Device))
@@ -102,12 +105,13 @@ func (io *PdhIoCounters) updateQuery(partitions []PartitionStat) error {
 		if io.started {
 			err = io.pdh.Close()
 			if err != nil {
-				sslog.WithError(err).Debug("Closing PDH")
+				plog.WithError(err).Debug("Closing PDH")
 			}
 		}
 		io.started = false // If "NewPdhPoll" fails, the PdhPoll must be recreated in the next update
 		io.pdh, err = nrwin.NewPdhPoll(log.Debugf, metrics...)
 		if err != nil {
+			plog.WithError(err).Debug("NewPdhPoll failed")
 			return err
 		}
 		io.started = true
@@ -141,6 +145,9 @@ func (io *PdhIoCounters) IoCounters(partitions []PartitionStat) (map[string]IOCo
 			CurrentQueueLen:  values[fmt.Sprintf(metricsNames[currentQueueLen], p.Device)],
 		}
 	}
+
+	plog.WithField("counters", counters).Debug("IoCounters")
+
 	return counters, nil
 }
 

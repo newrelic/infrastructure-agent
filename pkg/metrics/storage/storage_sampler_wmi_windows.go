@@ -12,6 +12,9 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 )
 
+//nolint:gochecknoglobals
+var vlog = sslog.WithComponent("VMI Windows")
+
 // WmiIoCountersStat provides IOCountersStat implementation for WMI
 type WmiIoCountersStat struct {
 	Raw       Win32_PerfRawData_PerfDisk_LogicalDisk
@@ -87,6 +90,11 @@ func CalculateWmiSampleValues(counter *WmiIoCountersStat, lastStats *WmiIoCounte
 	result.ReadUtilizationPercent = &read
 	result.WriteUtilizationPercent = &write
 
+	vlog.
+		WithField("ReadUtilizationPercent", *result.ReadUtilizationPercent).
+		WithField("WriteUtilizationPercent", *result.WriteUtilizationPercent).
+		Debug("CalculateWmiSampleValues")
+
 	return result
 }
 
@@ -112,6 +120,9 @@ func WmiIoCounters() (map[string]IOCountersStat, error) {
 	if err != nil {
 		return ret, err
 	}
+
+	vlog.WithField("PerfDisk_LogicalDisk_Values", formatted).Debug("WmiIoCounters")
+
 	for _, d := range formatted {
 		if len(d.Name) > 3 { // not get _Total or Harddrive
 			continue

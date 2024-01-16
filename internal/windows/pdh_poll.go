@@ -10,7 +10,11 @@ import (
 	"fmt"
 
 	"github.com/newrelic/infrastructure-agent/internal/windows/api"
+	"github.com/newrelic/infrastructure-agent/pkg/log" //nolint:depguard
 )
+
+//nolint:gochecknoglobals
+var plog = log.WithComponent("PDHPoll")
 
 // PdhPoll creates repeatable queries for the Windows PDH api
 type PdhPoll struct {
@@ -57,6 +61,7 @@ func NewPdhPoll(loggerFunc func(string, ...interface{}), metrics ...string) (Pdh
 
 // At the moment, the poller is limited to metrics that can be represented as a float64
 func (pdh *PdhPoll) Poll() (map[string]float64, error) {
+	plog.Debug("polling start")
 	ret := winapi.PdhCollectQueryData(pdh.queryHandler)
 	if ret != winapi.ERROR_SUCCESS {
 		return nil, fmt.Errorf("collect query returned with %#v", ret)
@@ -80,6 +85,9 @@ func (pdh *PdhPoll) Poll() (map[string]float64, error) {
 		}
 		counters[pdh.metrics[i]] = perf.DoubleValue
 	}
+
+	plog.WithField("counters", counters).Debug("polling end")
+
 	return counters, nil
 }
 
