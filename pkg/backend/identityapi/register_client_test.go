@@ -218,7 +218,7 @@ func TestRegisterClient_RegisterEntity(t *testing.T) {
 	}
 
 	mc.On("RegisterPost",
-		mock.AnythingOfType("*context.emptyCtx"),
+		mock.Anything,
 		"ExpectedUserAgent",
 		"ExpectedXLicenseKey",
 		expectedRegisterRequest,

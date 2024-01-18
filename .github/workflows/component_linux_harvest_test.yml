@@ -19,7 +19,10 @@ jobs:
           go-version-file: 'go.mod'
 
       - name: Setup node
-        run: sudo apt install musl-dev
+        run: |
+          # FIXIT: This hack is done because the installed go version is not modified on the env vars
+          cp -f `which go` /usr/bin/go
+          sudo apt install musl-dev
 
       - name: Fix GOROOT to be run with sudo
         run: |

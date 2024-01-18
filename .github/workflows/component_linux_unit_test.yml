@@ -16,8 +16,16 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Install Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: 'go.mod'
+
       - name: Running unit tests
-        run: make ci/unit-test
+        run: |
+          # FIXIT: This hack is done because the installed go version is not modified on the env vars
+          cp -f `which go` /usr/bin/go 
+          make ci/unit-test
 
       - name: Convert coverage to lcov
         uses: jandelgado/gcov2lcov-action@v1.0.5
@@ -46,7 +54,10 @@ jobs:
           go-version-file: 'go.mod'
 
       - name: Running databind unit/integration tests
-        run: make databind-test
+        run:  |
+          # FIXIT: This hack is done because the installed go version is not modified on the env vars
+          cp -f `which go` /usr/bin/go 
+          make databind-test
         # this is temporary as those tests are not fixed yet
         continue-on-error: true
 
