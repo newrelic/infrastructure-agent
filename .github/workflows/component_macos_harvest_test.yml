@@ -19,4 +19,7 @@ jobs:
           go-version-file: 'go.mod'
 
       - name: Running Harvest tests
-        run: sudo -E make linux/harvest-tests
+        run: |
+          # FIXIT: This hack is done because the installed go version is not modified on the env vars
+          cp -f `which go` /usr/bin/go 
+          sudo -E make linux/harvest-tests
