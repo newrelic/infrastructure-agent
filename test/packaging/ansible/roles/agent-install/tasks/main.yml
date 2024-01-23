@@ -1,5 +1,0 @@
----
-
-- include: "install-{{ ansible_system }}.yaml"
-
-...

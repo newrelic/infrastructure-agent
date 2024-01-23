@@ -1,3 +1,0 @@
-nr_agent_path: "{{ 'C:\\ProgramData\\New Relic' if ansible_system == 'Win32NT' else '/var/db' }}"
-
-entity_id_file: "{{ nr_agent_path }}/newrelic-infra/data/last_entityID/__nria_localentity"

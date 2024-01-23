@@ -1,6 +1,0 @@
----
-
-- include: "package-{{ ansible_os_family }}.yaml"
-- include: "assert-service-stopped-{{ ansible_system }}.yaml"
-
-...

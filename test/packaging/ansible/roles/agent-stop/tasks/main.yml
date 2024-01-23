@@ -1,5 +1,0 @@
----
-
-- include: "stop-{{ ansible_system }}.yaml"
-
-...

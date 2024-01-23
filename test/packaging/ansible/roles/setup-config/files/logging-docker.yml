@@ -1,4 +1,0 @@
-# Send Docker containers logs to NR
-logs:
-  - name: docker
-    systemd: docker

@@ -6,9 +6,11 @@
   gather_facts: yes
 
   pre_tasks:
-    - name: Initial cleanup # Only required for shared infra.
+    - name: Initial cleanup
       include_role:
-        name: cleanup
+        name: caos.ansible_roles.infra_agent
+      vars:
+        uninstall: true
 
   tasks:
     - name: Installation tests suite
@@ -16,15 +18,20 @@
 
         - name: install agent via newrelic-cli
           include_role:
-            name: agent-install-newrelic-cli
+            name: caos.ansible_roles.newrelic_cli
 
-        - name: Assert service
+        - name: assert service countinues running after upgrade
           include_role:
-            name: assert-service
+            name: caos.ansible_roles.assert_service_status
+          vars:
+            services_running:
+              - "newrelic-infra.service"
 
       always:
-        - name: Final cleanup # Only required for shared infra.
+        - name: Final cleanup
           include_role:
-            name: cleanup
+            name: caos.ansible_roles.infra_agent
+          vars:
+            uninstall: true
 
 ...

@@ -1,9 +1,0 @@
----
-
-- name: apt-get remove newrelic-infra package
-  apt:
-    name: newrelic-infra
-    state: absent
-    purge: yes
-
-...

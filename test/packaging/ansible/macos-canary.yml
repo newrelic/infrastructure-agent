@@ -11,18 +11,10 @@
           env_vars:
 
         block:
-          - name: repo setup
-            include_role:
-              name: repo-setup
-
-          - name: setup config
-            include_role:
-              name: setup-config
-            vars:
-              self_instrumentation: true
-
           - name: install agent
             include_role:
-              name: agent-install
+              name: caos.ansible_roles.infra_agent
+            vars:
+              self_instrumentation: true
 
 ...

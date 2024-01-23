@@ -1,41 +1,28 @@
 ---
 # this is not a test, should be moved away from this folder later
 
+# Linux
 - name: installation-agent-no-clean
   hosts: testing_hosts_linux
   become: true
   gather_facts: yes
 
   pre_tasks:
-    - name: Initial cleanup # Only required for shared infra.
+    - name: Initial cleanup
       include_role:
-        name: cleanup
+        name: caos.ansible_roles.infra_agent
+      vars:
+        uninstall: true
+        cleanup: true
 
   tasks:
     - name: Installation tests suite
-      vars:
-        agent_user: root
-        bin_mode: "0755"
-        env_vars:
 
       block:
 
-        - name: repo setup
-          include_role:
-            name: repo-setup
-
-        - name: setup config
-          include_role:
-            name: setup-config
-
         - name: install agent
           include_role:
-            name: agent-install
-
-        - name: Assert root
-          include_role:
-            name: assert-agent-user
-          when: ansible_system != "Darwin"
+            name: caos.ansible_roles.infra_agent
 
 # Windows
 - name: installation-agent-no-clean
@@ -47,15 +34,7 @@
 
       block:
 
-        - name: setup config
-          include_role:
-            name: setup-config
-
         - name: install agent
           include_role:
-            name: agent-install
-
-        - name: Assert service
-          include_role:
-            name: assert-service
+            name: caos.ansible_roles.infra_agent
 ...

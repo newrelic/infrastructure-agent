@@ -11,12 +11,10 @@
           env_vars:
 
         block:
-          - name: check and install docker
-            include_role:
-              name: docker-install
-
           - name: provision docker containers
             include_role:
-              name: agent-dockerized
+              name: caos.ansible_roles.infra_agent
+            vars:
+              is_containerized: true
 
 ...

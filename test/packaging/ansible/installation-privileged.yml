@@ -6,9 +6,11 @@
   gather_facts: yes
 
   pre_tasks:
-    - name: Initial cleanup # Only required for shared infra.
+    - name: Initial cleanup
       include_role:
-        name: cleanup
+        name: caos.ansible_roles.infra_agent
+      vars:
+        uninstall: true
 
   tasks:
     - name: Installation tests suite
@@ -20,29 +22,39 @@
 
       block:
 
-      - name: repo setup
-        include_role:
-          name: repo-setup
-
-      - name: setup config
-        include_role:
-          name: setup-config
-
       - name: install agent
         include_role:
-          name: agent-install
+          name: caos.ansible_roles.infra_agent
 
-      - name: Assert privileged capabilities
+      - name: assert privileged caps
         include_role:
-          name: assert-privileged-caps
+          name: caos.ansible_roles.assert_privileged_caps
+        vars:
+          executable: "/usr/bin/newrelic-infra"
+          caps:
+            - cap_dac_read_search
+            - cap_sys_ptrace.ep
 
       - name: Assert rootless
         include_role:
-          name: assert-agent-user
+          name: caos.ansible_roles.assert_ownership
+        vars:
+          username: "{{ agent_user }}"
+          user_processes:
+            - newrelic-infra-service
+
+      - name: Assert permissions
+        include_role:
+          name: caos.ansible_roles.assert_permissions
+        vars:
+          files:
+            /usr/bin/newrelic-infra: "{{ bin_mode }}"
 
       always:
-        - name: Final cleanup # Only required for shared infra.
+        - name: Final cleanup
           include_role:
-            name: cleanup
+            name: caos.ansible_roles.infra_agent
+          vars:
+            uninstall: true
 
 ...

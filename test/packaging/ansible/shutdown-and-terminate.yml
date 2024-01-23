@@ -6,52 +6,39 @@
   become: true
   vars:
     agent_user: root
-    env_vars:
 
   pre_tasks:
-    - name: initial cleanup # Only required for shared infra.
+    - name: Initial cleanup
       include_role:
-        name: cleanup
+        name: caos.ansible_roles.infra_agent
+      vars:
+        uninstall: true
 
   tasks:
-    - name: repo setup
-      include_role:
-        name: repo-setup
-
-    - name: setup config
-      include_role:
-        name: setup-config
-      vars:
-        display_name: "{{ iid }}:{{ inventory_hostname }}"
-
     - name: install agent
       include_role:
-        name: agent-install
-
-    - name: assert service
-      include_role:
-        name: assert-service
+        name: caos.ansible_roles.infra_agent
+      vars:
+        display_name: "{{ iid }}:{{ inventory_hostname }}"
 
 - name: install agent windows  (HNR)
   hosts: testing_hosts_windows
   gather_facts: yes
 
-  tasks:
-    - name: setup config
+  pre_tasks:
+    - name: Initial cleanup
       include_role:
-        name: setup-config
+        name: caos.ansible_roles.infra_agent
       vars:
-        display_name: "{{ iid }}:{{ inventory_hostname }}"
+        uninstall: true
 
+  tasks:
     - name: install agent
       include_role:
-        name: agent-install
+        name: caos.ansible_roles.infra_agent
       vars:
         display_name: "{{ iid }}:{{ inventory_hostname }}"
 
-    - name: assert service
-      include_role:
-        name: assert-service
 
 - name: test agent behaviour on host shutdown
   hosts: testing_hosts
@@ -74,19 +61,22 @@
 
     - name: restart the agent
       include_role:
-        name: agent-restart
+        name: caos.ansible_roles.service_status
+      vars:
+        service_name: "newrelic-infra"
+        action: "restart"
 
     - name: pause for a bit to let the agent initialize
       pause:
         seconds: 30
 
     - name: Get entity id
-      import_role:
-        name: get_agent_entity_id
+      include_role:
+        name: caos.ansible_roles.infra_agent_get_entity_id
 
     - name: assert agent restart don't trigger shutdown event
       include_role:
-        name: agent-host-status-event-assert
+        name: caos.ansible_roles.assert_host_status_event
       vars:
         host_status: "shutdown"
         expect_change_event: false
@@ -94,7 +84,10 @@
 
     - name: stop instances
       include_role:
-        name: ec2-stop
+        name: caos.ansible_roles.ec2_instance
+      vars:
+        action: stop
+        instance_id: "{{ iid }}"
 
     - name: pause for a bit to let the event fire
       pause:
@@ -102,7 +95,7 @@
 
     - name: assert that the agent detecteded host shutdown and disconnected from the backend (only on hosts that support shutdown detection)
       include_role:
-        name: agent-host-status-event-assert
+        name: caos.ansible_roles.assert_host_status_event
       vars:
         host_status: "shutdown"
         expect_change_event: "{{ host_supports_shutdown_detection }}"
@@ -110,11 +103,14 @@
 
     - name: start instances
       include_role:
-        name: ec2-start
+        name: caos.ansible_roles.ec2_instance
+      vars:
+        action: start
+        instance_id: "{{ iid }}"
 
     - name: assert the agent performed connect to the backend (only on hosts that support shutdown detection)
       include_role:
-        name: agent-host-status-event-assert
+        name: caos.ansible_roles.assert_host_status_event
       vars:
         host_status: "running"
         expect_change_event: "{{ host_supports_shutdown_detection }}"
@@ -122,7 +118,10 @@
 
     - name: terminate instances
       include_role:
-        name: ec2-terminate
+        name: caos.ansible_roles.ec2_instance
+      vars:
+        action: terminate
+        instance_id: "{{ iid }}"
 
     - name: pause for a bit to let the event fire
       pause:
@@ -130,7 +129,7 @@
 
     - name: assert that the agent detecteded host termination and disconnected from the backend (only on hosts that support shutdown detection)
       include_role:
-        name: agent-host-status-event-assert
+        name: caos.ansible_roles.assert_host_status_event
       vars:
         host_status: "shutdown"
         expect_change_event: "{{ host_supports_shutdown_detection }}"

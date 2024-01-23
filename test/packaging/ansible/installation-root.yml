@@ -6,45 +6,44 @@
   gather_facts: yes
 
   pre_tasks:
-    - name: Initial cleanup # Only required for shared infra.
+    - name: Initial cleanup
       include_role:
-        name: cleanup
-      when: ansible_system != "Darwin"
+        name: caos.ansible_roles.infra_agent
+      vars:
+        uninstall: true
 
   tasks:
     - name: Installation tests suite
       vars:
-        agent_user: root
-        bin_mode: "0755"
-        env_vars:
+        agent_user: "root"
+        bin_mode: "0754"
 
       block:
 
-        - name: repo setup
-          include_role:
-            name: repo-setup
-
-        - name: setup config
-          include_role:
-            name: setup-config
-
         - name: install agent
           include_role:
-            name: agent-install
+            name: caos.ansible_roles.infra_agent
 
         - name: Assert root
           include_role:
-            name: assert-agent-user
-          when: ansible_system != "Darwin"
+            name: caos.ansible_roles.assert_ownership
+          vars:
+            username: "{{ agent_user }}"
+            user_processes:
+              - newrelic-infra-service
 
-#        - name: test nri-docker integration
-#          include_role:
-#            name: nri-docker
-#          when: ansible_system != "Darwin"
+        - name: Assert permissions
+          include_role:
+            name: caos.ansible_roles.assert_permissions
+          vars:
+            files:
+              /usr/bin/newrelic-infra: "{{ bin_mode }}"
 
       always:
-        - name: Final cleanup # Only required for shared infra.
+        - name: Final cleanup
           include_role:
-            name: cleanup
-          when: ansible_system != "Darwin"
+            name: caos.ansible_roles.infra_agent
+          vars:
+            uninstall: true
+
 ...
