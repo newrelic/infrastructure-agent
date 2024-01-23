@@ -5,9 +5,11 @@
   gather_facts: yes
 
   pre_tasks:
-    - name: Initial cleanup # Only required for shared infra.
+    - name: Initial cleanup
       include_role:
-        name: cleanup
+        name: caos.ansible_roles.infra_agent
+      vars:
+        uninstall: true
 
   tasks:
     - name: Installation tests suite
@@ -16,20 +18,24 @@
 
       block:
 
-        - name: setup config
-          include_role:
-            name: setup-config
-
         - name: install agent
           include_role:
-            name: agent-install
+            name: caos.ansible_roles.infra_agent
+          vars:
+            target_version: "{{ target_agent_version }}"
 
         - name: Assert version
           include_role:
-            name: assert-version
+            name: caos.ansible_roles.assert_version
+          vars:
+            target_versions:
+              - exec: '"C:\Program Files\New Relic\newrelic-infra\newrelic-infra.exe" "--version"'
+                version: "{{ target_agent_version }}"
 
       always:
-        - name: Final cleanup # Only required for shared infra.
+        - name: Final cleanup
           include_role:
-            name: cleanup
+            name: caos.ansible_roles.infra_agent
+          vars:
+            uninstall: true
 ...

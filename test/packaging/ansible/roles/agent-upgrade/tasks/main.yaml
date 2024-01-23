@@ -1,6 +1,0 @@
----
-
-- include: "upgrade-{{ ansible_os_family }}.yaml"
-- include: "assert-latest-version-{{ ansible_system }}.yaml"
-
-...

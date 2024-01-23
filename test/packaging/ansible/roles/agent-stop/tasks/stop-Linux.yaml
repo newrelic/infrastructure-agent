@@ -1,9 +1,0 @@
----
-
-- name: stop the agent
-  become: true
-  service:
-    name: newrelic-infra
-    state: stopped
-
-...

@@ -6,9 +6,11 @@
   gather_facts: yes
 
   pre_tasks:
-    - name: Initial cleanup # Only required for shared infra.
+    - name: Initial cleanup
       include_role:
-        name: cleanup
+        name: caos.ansible_roles.infra_agent
+      vars:
+        uninstall: true
 
   tasks:
     - name: Log forwarder tests suite
@@ -34,22 +36,13 @@
 #                inventory_hostname is search("sles-12")
 #                inventory_hostname is search("sles-15")
 
-        - name: repo setup
-          include_role:
-            name: repo-setup
-          when: log_forwader_supported is defined
-
-        - name: setup config
-          include_role:
-            name: setup-config
-          vars:
-            log_level: 'debug'
-            log_forward: 'true'
-          when: log_forwader_supported is defined
 
         - name: install agent
           include_role:
-            name: agent-install
+            name: caos.ansible_roles.infra_agent
+          vars:
+            log_level: 'debug'
+            log_forward: 'true'
           when: log_forwader_supported is defined
 
         # Not available for ARM yet
@@ -59,9 +52,11 @@
           when: log_forwader_supported is defined
 
       always:
-        - name: Final cleanup # Only required for shared infra.
+        - name: Final cleanup
           include_role:
-            name: cleanup
+            name: caos.ansible_roles.infra_agent
+          vars:
+            uninstall: true
 
 - name: log-forwarder-arm64
   hosts: linux_arm64
@@ -69,9 +64,11 @@
   gather_facts: yes
 
   pre_tasks:
-    - name: Initial cleanup # Only required for shared infra.
+    - name: Initial cleanup
       include_role:
-        name: cleanup
+        name: caos.ansible_roles.infra_agent
+      vars:
+        uninstall: true
 
   tasks:
     - name: Log forwarder tests suite
@@ -92,22 +89,12 @@
                 inventory_hostname is search("centos7")
             )
 
-        - name: repo setup
+        - name: install agent
           include_role:
-            name: repo-setup
-          when: log_forwader_supported_arm64 is defined
-
-        - name: setup config
-          include_role:
-            name: setup-config
+            name: caos.ansible_roles.infra_agent
           vars:
             log_level: 'debug'
             log_forward: 'true'
-          when: log_forwader_supported_arm64 is defined
-
-        - name: install agent
-          include_role:
-            name: agent-install
           when: log_forwader_supported_arm64 is defined
 
         # Not available for ARM yet
@@ -117,9 +104,11 @@
           when: log_forwader_supported_arm64 is defined
 
       always:
-        - name: Final cleanup # Only required for shared infra.
+        - name: Final cleanup
           include_role:
-            name: cleanup
+            name: caos.ansible_roles.infra_agent
+          vars:
+            uninstall: true
 
 
 - name: log-forwarder-windows
@@ -127,9 +116,11 @@
   gather_facts: yes
 
   pre_tasks:
-    - name: Initial cleanup # Only required for shared infra.
+    - name: Initial cleanup
       include_role:
-        name: cleanup
+        name: caos.ansible_roles.infra_agent
+      vars:
+        uninstall: true
 
   tasks:
     - name: Log forwarder tests suite
@@ -143,17 +134,12 @@
             log_forwader_supported: true
           when: inventory_hostname is search("windows")
 
-        - name: setup config
+        - name: install agent
           include_role:
-            name: setup-config
+            name: caos.ansible_roles.infra_agent
           vars:
             log_level: 'debug'
             log_forward: 'true'
-          when: log_forwader_supported is defined
-
-        - name: install agent
-          include_role:
-            name: agent-install
           when: log_forwader_supported is defined
 
         # Not available for ARM yet
@@ -163,8 +149,10 @@
           when: log_forwader_supported is defined
 
       always:
-        - name: Final cleanup # Only required for shared infra.
+        - name: Final cleanup
           include_role:
-            name: cleanup
+            name: caos.ansible_roles.infra_agent
+          vars:
+            uninstall: true
 
 ...

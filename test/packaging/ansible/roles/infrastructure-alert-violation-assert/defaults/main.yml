@@ -1,4 +1,0 @@
-infra_alerts_host: "https://staging-infra-api.newrelic.com"
-alerts_host: "https://staging-api.newrelic.com"
-entity_name: "{{ iid }}:{{ inventory_hostname }}"
-policy_name: "CAOS packaging tests HNR {{ inventory_hostname }}"

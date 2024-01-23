@@ -1,6 +1,0 @@
----
-
-- name: Start launchctl service
-  command: /usr/local/bin/brew services restart newrelic-infra-agent
-
-...

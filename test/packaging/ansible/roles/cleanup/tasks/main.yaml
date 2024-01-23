@@ -1,7 +1,0 @@
----
-
-- include: "service-{{ ansible_system }}.yaml"
-- include: "package-{{ ansible_os_family }}.yaml"
-- include: "files-{{ ansible_system }}.yaml"
-
-...

@@ -1,8 +1,0 @@
----
-
-- name: zypper uninstall infra-agent
-  zypper:
-    name: newrelic-infra
-    state: absent
-
-...

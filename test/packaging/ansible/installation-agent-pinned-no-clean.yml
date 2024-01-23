@@ -1,39 +1,39 @@
 ---
 # this is not a test, should be moved away from this folder later
 
+# Linux
 - name: installation-agent-pinned-no-clean
   hosts: testing_hosts_linux
   become: true
   gather_facts: yes
 
   pre_tasks:
-    - name: Initial cleanup # Only required for shared infra.
+    - name: Initial cleanup
       include_role:
-        name: cleanup
+        name: caos.ansible_roles.infra_agent
+      vars:
+        uninstall: true
 
   tasks:
     - name: Installation tests suite
       vars:
         agent_user: root
-        env_vars:
 
       block:
 
-        - name: Repo Setup
+        - name: install agent
           include_role:
-            name: repo-setup
+            name: caos.ansible_roles.infra_agent
+          vars:
+            target_version: "{{ target_agent_version }}"
 
-        - name: Setup config
+        - name: Assert version
           include_role:
-            name: setup-config
-
-        - name: Package install
-          include_role:
-            name: package-install-pinned
-
-        - name: Assert service
-          include_role:
-            name: assert-service
+            name: caos.ansible_roles.assert_version
+          vars:
+            target_versions:
+              - exec: "/usr/bin/newrelic-infra --version"
+                version: "{{ target_agent_version }}"
 
 # Windows
 - name: installation-agent-pinned-no-clean
@@ -45,17 +45,18 @@
 
       block:
 
-        - name: setup config
+        - name: install agent
           include_role:
-            name: setup-config
+            name: caos.ansible_roles.infra_agent
+          vars:
+            target_version: "{{ target_agent_version }}"
 
-        - name: Package install
+        - name: Assert version
           include_role:
-            name: package-install-pinned
-
-        - name: Assert service
-          include_role:
-            name: assert-service
-...
+            name: caos.ansible_roles.assert_version
+          vars:
+            target_versions:
+              - exec: '"C:\Program Files\New Relic\newrelic-infra\newrelic-infra.exe" "--version"'
+                version: "{{ target_agent_version }}"
 
 ...

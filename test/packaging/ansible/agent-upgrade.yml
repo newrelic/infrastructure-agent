@@ -6,59 +6,47 @@
   gather_facts: yes
 
   pre_tasks:
-    - name: initial cleanup # Only required for shared infra.
+    - name: Initial cleanup
       include_role:
-        name: cleanup
+        name: caos.ansible_roles.infra_agent
+      vars:
+        uninstall: true
 
   tasks:
     - name: agent upgrade tests suite
       vars:
-        env_vars:
+        target_agent_version: "1.47.0"
 
       block:
 
-        - name: repo setup
+        - name: install agent
           include_role:
-            name: repo-setup
-
-        - name: setup config
-          include_role:
-            name: setup-config
-
-        - name: pick right agent version for amd64
-          set_fact:
-            target_agent_version_1: "1.47.0"
-          when: inventory_hostname is search("amd64")
-
-        - name: pick right agent version for arm64
-          set_fact:
-            target_agent_version_1: "1.47.0"
-          when: inventory_hostname is search("arm64")
-
-        - name: install initial version
-          include_role:
-            name: package-install-pinned
+            name: caos.ansible_roles.infra_agent
           vars:
-            target_agent_version: "{{ target_agent_version_1 }}"
+            target_version: "{{ target_agent_version }}"
 
-        - name: assert service is running
+        - name: Assert version
           include_role:
-            name: assert-service
+            name: caos.ansible_roles.assert_version
+          vars:
+            target_versions:
+              - exec: "/usr/bin/newrelic-infra --version"
+                version: "{{ target_agent_version }}"
 
         - name: get initial agent PID
           command: pgrep -f newrelic-infra-service
           register: agent_pid
 
-        - name: upgrade agent
+        - name: install latest agent
           include_role:
-            name: agent-upgrade
-          vars:
-            # this used only for check that latest is grater than given
-            target_agent_version: "1.47.0"
+            name: caos.ansible_roles.infra_agent
 
         - name: assert service countinues running after upgrade
           include_role:
-            name: assert-service
+            name: caos.ansible_roles.assert_service_status
+          vars:
+            services_running:
+              - "newrelic-infra.service"
 
         - name: get agent PID after upgrade
           command: pgrep -f newrelic-infra-service
@@ -68,8 +56,18 @@
           assert:
             that: agent_pid.stdout != updated_agent_pid.stdout
 
+        - name: register installed version
+          shell: "newrelic-infra --version | egrep -o 'New Relic Infrastructure Agent version: [0-9\\.]+' | egrep -o '[0-9\\.]+'"
+          register: installed_version
+
+        - name: assert installed version is bigger than initial version
+          assert:
+            that: "{{ installed_version.stdout is version(target_agent_version, '>') }}"
+
       always:
-        - name: Final cleanup # Only required for shared infra.
+        - name: Final cleanup
           include_role:
-            name: cleanup
+            name: caos.ansible_roles.infra_agent
+          vars:
+            uninstall: true
 ...
