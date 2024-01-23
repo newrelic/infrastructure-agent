@@ -31,7 +31,7 @@
           vars:
             target_versions:
               - exec: "/usr/bin/newrelic-infra --version"
-                version: "{{ target_version }}"
+                version: "{{ target_agent_version }}"
 
       always:
         - name: Final cleanup

@@ -1,0 +1,42 @@
+[localhost]
+localhost ansible_connection=local
+
+[testing_hosts:children]
+linux_amd64
+linux_arm64
+windows_amd64
+
+[testing_hosts_linux:children]
+linux_amd64
+linux_arm64
+
+[testing_hosts_windows:children]
+windows_amd64
+
+[linux_amd64]
+%{ for index, vms in agent-ids ~}
+%{ if platform[index] == "linux" && strcontains(vms, "amd64") }${vms} ansible_user=${agent-user[index]} ansible_host=${agent-private-ip[index]} ansible_python_interpreter=${agent-python[index]} iid=${instance-id[index]}%{ endif }
+%{ endfor ~}
+
+[linux_arm64]
+%{ for index, vms in agent-ids ~}
+%{ if platform[index] == "linux" && strcontains(vms, "arm64") }${vms} ansible_user=${agent-user[index]} ansible_host=${agent-private-ip[index]} ansible_python_interpreter=${agent-python[index]} iid=${instance-id[index]}%{ endif }
+%{ endfor ~}
+
+[windows_amd64]
+%{ for index, vms in agent-ids ~}
+%{ if platform[index] == "windows" }${vms} ansible_host=${agent-private-ip[index]} iid=${instance-id[index]}%{ endif }
+%{ endfor ~}
+
+[testing_hosts_linux:vars]
+ansible_ssh_private_key_file=~/.ssh/caos-dev-arm.cer
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+
+[windows_amd64:vars]
+ansible_winrm_transport=basic
+ansible_user=ansible
+ansible_password=${windows_password}
+ansible_connection=winrm
+ansible_winrm_server_cert_validation=ignore
+ansible_winrm_scheme=https
+ansible_port=5986

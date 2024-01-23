@@ -1,6 +1,0 @@
----
-- name: 'install python on systems managed by dnf '
-  raw: 'sudo dnf -y install python36'
-  when: inventory_hostname is search(item)
-  loop: "{{ instances_without_python_dnf }}"
-...

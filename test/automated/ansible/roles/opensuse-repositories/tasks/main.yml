@@ -1,9 +1,0 @@
----
-
-- include_tasks: configure_opensuse_repository.yml
-  when: inventory_hostname is search(item.key)
-  loop: "{{ instances_requiring_opensuse_repos | dict2items }}"
-  vars:
-    suse_repo_base_url: "{{ item.value }}"
-
-...

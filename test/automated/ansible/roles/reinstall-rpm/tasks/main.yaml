@@ -1,5 +1,0 @@
----
-- include_tasks: dnf.yaml
-  when: inventory_hostname is search(item)
-  loop: "{{ instances_to_reinstall_rpm_dnf }}"
-...

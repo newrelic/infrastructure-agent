@@ -16,7 +16,7 @@
     - name: Installation tests suite
       vars:
         agent_user: "root"
-        bin_mode: "0754"
+        bin_mode: "0755"
 
       block:
 
