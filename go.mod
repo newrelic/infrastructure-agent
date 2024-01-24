@@ -11,7 +11,7 @@ require (
 	github.com/containerd/containerd v1.7.7
 	github.com/containerd/typeurl/v2 v2.1.1
 	github.com/coreos/go-systemd/v22 v22.5.0
-	github.com/docker/docker v24.0.1+incompatible
+	github.com/docker/docker v24.0.7+incompatible
 	github.com/evanphx/json-patch v4.9.0+incompatible
 	github.com/fortytw2/leaktest v1.3.1-0.20190606143808-d73c753520d9
 	github.com/fsnotify/fsnotify v1.6.0
