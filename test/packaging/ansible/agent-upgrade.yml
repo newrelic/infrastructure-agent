@@ -40,6 +40,8 @@
         - name: install latest agent
           include_role:
             name: caos.ansible_roles.infra_agent
+          vars:
+            install_only_if_present: "yes"
 
         - name: assert service countinues running after upgrade
           include_role:
