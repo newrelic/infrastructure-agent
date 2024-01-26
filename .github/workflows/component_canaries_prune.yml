@@ -45,7 +45,7 @@ jobs:
           aws_region: us-east-2
           container_make_target: "canaries-prune-auto PLATFORM=${{ inputs.PLATFORM }}"
           ecs_cluster_name: caos_infra_agent
-          task_definition_name: infra-agent-td
+          task_definition_name: infra-agent
           cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
           cloud_watch_logs_stream_name: ecs/test-prerelease
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
