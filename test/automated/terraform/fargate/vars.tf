@@ -93,7 +93,7 @@ variable "secret_name_nr_api_key" {
 }
 
 variable "task_container_image" {
-  default = "ghcr.io/newrelic/infrastructure-agent-ci-runner:latest"
+  default = "ghcr.io/newrelic/fargate-runner-action:latest"
 }
 
 variable "task_logs_group" {
