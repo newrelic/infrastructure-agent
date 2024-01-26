@@ -53,7 +53,7 @@ jobs:
           aws_region: us-east-2
           container_make_target: "canaries PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} VERSION=${{ inputs.TAG }} CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
           ecs_cluster_name: caos_infra_agent
-          task_definition_name: infra-agent-td
+          task_definition_name: infra-agent
           cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
           cloud_watch_logs_stream_name: ecs/test-prerelease
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
