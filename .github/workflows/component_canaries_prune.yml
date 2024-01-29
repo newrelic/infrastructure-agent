@@ -7,6 +7,9 @@ on:
         required: true
 
     inputs:
+      TAG:
+        required: true
+        type: string
       PLATFORM:
         required: true
         type: string
@@ -19,8 +22,9 @@ permissions:
   id-token: write
 
 jobs:
-  canaries-prune:
-    if: ${{ always() }}
+
+  canaries-prune-linux:
+    if: ${{ inputs.PLATFORM == 'linux' || inputs.PLATFORM == '' }}
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
@@ -39,11 +43,15 @@ jobs:
           GIT_BRANCH=${GIT_BRANCH#refs/tags/}
           echo "GIT_BRANCH=$GIT_BRANCH" >> $GITHUB_ENV
 
-      - name: Prune old canaries
+      - name: set vars for legibility (state, inventory ...)
+        run: |
+          echo "TERRAFORM_STATE=canaries-linux-${{ inputs.TAG }}"  >> $GITHUB_ENV
+
+      - name: Clean previous canaries instances Linux
         uses: newrelic/fargate-runner-action@main
         with:
           aws_region: us-east-2
-          container_make_target: "canaries-prune-auto PLATFORM=${{ inputs.PLATFORM }}"
+          container_make_target: "test/provision/clean TERRAFORM_STATE_KEY=${{ env.TERRAFORM_STATE }} PREFIX=canary INVENTORY_OUTPUT=NOT_USED TAG_OR_UNIQUE_NAME=${{ inputs.TAG }} PLATFORM=linux CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
           ecs_cluster_name: caos_infra_agent
           task_definition_name: infra-agent
           cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
@@ -51,3 +59,75 @@ jobs:
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
           repo_name: "newrelic/infrastructure-agent"
           ref: "${{ env.GIT_BRANCH }}"
+          log_filters: |
+            \[ALLOW_MSG\].+
+            TASK\s\[.*\]\s
+            PLAY\s\[.*\]\s
+            PLAY\sRECAP\s
+            Apply\scomplete!
+            ok=\d+\s+changed=\d+\s+unreachable=\d+\s+failed=\d+\s+skipped=\d+\s+rescued=\d+\s+ignored=\d+
+
+  canaries-prune-windows:
+    if: ${{ inputs.PLATFORM == 'windows' || inputs.PLATFORM == '' }}
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
+          aws-region: us-east-2
+
+      - name: Set branch name
+        run: |
+          # Short name for current branch. For PRs, use target branch (base ref)
+          GIT_BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
+          # Is the ref a tag? If so, remove refs/tags/ prefix
+          GIT_BRANCH=${GIT_BRANCH#refs/tags/}
+          echo "GIT_BRANCH=$GIT_BRANCH" >> $GITHUB_ENV
+
+      - name: set vars for legibility (state, inventory ...)
+        run: |
+          echo "PREVIOUS_TERRAFORM_STATE=canaries-windows-${{ inputs.TAG }}-previous"  >> $GITHUB_ENV
+          echo "TERRAFORM_STATE=canaries-windows-${{ inputs.TAG }}-current"  >> $GITHUB_ENV
+
+      - name: Clean previous canaries instances Windows (previous)
+        uses: newrelic/fargate-runner-action@main
+        with:
+          aws_region: us-east-2
+          container_make_target: "test/provision/clean TERRAFORM_STATE_KEY=${{ env.PREVIOUS_TERRAFORM_STATE }} PREFIX=canary INVENTORY_OUTPUT=NOT_USED TAG_OR_UNIQUE_NAME=${{ inputs.TAG }} PLATFORM=windows CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
+          ecs_cluster_name: caos_infra_agent
+          task_definition_name: infra-agent
+          cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
+          cloud_watch_logs_stream_name: ecs/test-prerelease
+          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
+          repo_name: "newrelic/infrastructure-agent"
+          ref: "${{ env.GIT_BRANCH }}"
+          log_filters: |
+            \[ALLOW_MSG\].+
+            TASK\s\[.*\]\s
+            PLAY\s\[.*\]\s
+            PLAY\sRECAP\s
+            Apply\scomplete!
+            ok=\d+\s+changed=\d+\s+unreachable=\d+\s+failed=\d+\s+skipped=\d+\s+rescued=\d+\s+ignored=\d+
+
+      - name: Clean previous canaries instances Windows (current)
+        uses: newrelic/fargate-runner-action@main
+        with:
+          aws_region: us-east-2
+          container_make_target: "test/provision/clean TERRAFORM_STATE_KEY=${{ env.TERRAFORM_STATE }} PREFIX=canary INVENTORY_OUTPUT=NOT_USED TAG_OR_UNIQUE_NAME=${{ inputs.TAG }} PLATFORM=windows CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
+          ecs_cluster_name: caos_infra_agent
+          task_definition_name: infra-agent
+          cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
+          cloud_watch_logs_stream_name: ecs/test-prerelease
+          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
+          repo_name: "newrelic/infrastructure-agent"
+          ref: "${{ env.GIT_BRANCH }}"
+          log_filters: |
+            \[ALLOW_MSG\].+
+            TASK\s\[.*\]\s
+            PLAY\s\[.*\]\s
+            PLAY\sRECAP\s
+            Apply\scomplete!
+            ok=\d+\s+changed=\d+\s+unreachable=\d+\s+failed=\d+\s+skipped=\d+\s+rescued=\d+\s+ignored=\d+

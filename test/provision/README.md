@@ -4,7 +4,7 @@ The purpose of this tool is to easily deploy EC2 instances and run an Ansible
 playbook to prepare them for further tests.
 
 Deployment parameters like the EC2 AMIs and the Ansible playbook can be customized
-in the Terraform file [./terraform/caos-linux.auto.tfvars.dist](./terraform/caos-linux.auto.tfvars.dist). Note
+in the Terraform file [./terraform/caos.auto.tfvars.dist](./terraform/caos-linux.auto.tfvars.dist). Note
 that already has some defaults of our environment.
 
 Run provisioning:
