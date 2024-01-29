@@ -39,11 +39,4 @@
             files:
               /usr/bin/newrelic-infra: "{{ bin_mode }}"
 
-      always:
-        - name: Final cleanup
-          include_role:
-            name: caos.ansible_roles.infra_agent
-          vars:
-            uninstall: true
-
 ...

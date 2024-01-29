@@ -51,12 +51,6 @@
             name: logging
           when: log_forwader_supported is defined
 
-      always:
-        - name: Final cleanup
-          include_role:
-            name: caos.ansible_roles.infra_agent
-          vars:
-            uninstall: true
 
 - name: log-forwarder-arm64
   hosts: linux_arm64
@@ -103,12 +97,6 @@
             name: logging
           when: log_forwader_supported_arm64 is defined
 
-      always:
-        - name: Final cleanup
-          include_role:
-            name: caos.ansible_roles.infra_agent
-          vars:
-            uninstall: true
 
 
 - name: log-forwarder-windows
@@ -147,12 +135,5 @@
           include_role:
             name: logging
           when: log_forwader_supported is defined
-
-      always:
-        - name: Final cleanup
-          include_role:
-            name: caos.ansible_roles.infra_agent
-          vars:
-            uninstall: true
 
 ...

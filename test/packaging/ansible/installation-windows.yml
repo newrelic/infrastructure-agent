@@ -32,10 +32,4 @@
               - exec: '"C:\Program Files\New Relic\newrelic-infra\newrelic-infra.exe" "--version"'
                 version: "{{ target_agent_version }}"
 
-      always:
-        - name: Final cleanup
-          include_role:
-            name: caos.ansible_roles.infra_agent
-          vars:
-            uninstall: true
 ...
