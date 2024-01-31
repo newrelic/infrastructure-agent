@@ -1259,8 +1259,8 @@ type Config struct {
 	// Default (MacOS AMD): /usr/local/var/db/newrelic-infra/tmp
 	// Default (MacOS ARM): /opt/homebrew/var/db/newrelic-infra/tmp
 	// Default (Windows): C:\ProgramData\New Relic\newrelic-infra\tmp
-	// Public: no
-	AgentTempDir string `yaml:"-" envconfig:"-"`
+	// Public: No
+	AgentTempDir string `envconfig:"agent_temp_dir" yaml:"agent_temp_dir"`
 }
 
 // KeyValMap is used whenever a key value pair configuration is required.
