@@ -7,27 +7,27 @@
   tasks:
     - name: Remove EOL repository sources
       include_role:
-        name: remove-eol-sources
+        name: caos.ansible_roles.remove-eol-sources
 
     - name: Configure OpenSUSE repositories when needed
       include_role:
-        name: opensuse-repositories
+        name: caos.ansible_roles.opensuse-repositories
 
     - name: re-install rpm
       include_role:
-        name: reinstall-rpm
+        name: caos.ansible_roles.reinstall-rpm
 
     - name: install python
       include_role:
-        name: install-python
+        name: caos.ansible_roles.install-python
 
     - name: Install Libcap
       include_role:
-        name: install-libcap
+        name: caos.ansible_roles.install-libcap
 
     - name: Install GPG
       include_role:
-        name: install-gpg
+        name: caos.ansible_roles.install-gpg
 
 - hosts: testing_hosts_linux
   become: true
@@ -40,15 +40,15 @@
   tasks:
     - name: Configure logrotate
       include_role:
-        name: logrotate
+        name: caos.ansible_roles.logrotate
 
     - name: Install CrowdStrike Falcon
       include_role:
-        name: install-crowdstrike-falcon
+        name: caos.ansible_roles.install-crowdstrike-falcon
 
     - name: Configure hostname
       include_role:
-        name: hostname
+        name: caos.ansible_roles.hostname
 
 
 - hosts: testing_hosts_macos
@@ -63,18 +63,18 @@
   tasks:
     - name: install brew
       include_role:
-        name: install-brew
+        name: caos.ansible_roles.install-brew
         # latest versions of brew allow running service with sudo, not necessary to downgrade
         # comment left for reference
 #      vars:
 #        brew_version: 3.6.21 # with 4.0.* there are some problems with sudo https://github.com/Homebrew/brew/issues/14462#issuecomment-1445130069
     - name: install python
       include_role:
-        name: install-python
+        name: caos.ansible_roles.install-python
 
     - name: Install CrowdStrike Falcon
       include_role:
-        name: install-crowdstrike-falcon
+        name: caos.ansible_roles.install-crowdstrike-falcon
 
 - hosts: testing_hosts_windows
   gather_facts: yes
@@ -87,9 +87,9 @@
   tasks:
     - name: Install CrowdStrike Falcon
       include_role:
-        name: install-crowdstrike-falcon
+        name: caos.ansible_roles.install-crowdstrike-falcon
 
     - name: Configure hostname
       include_role:
-        name: hostname
+        name: caos.ansible_roles.hostname
 
