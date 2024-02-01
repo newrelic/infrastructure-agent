@@ -31,9 +31,9 @@
             name: caos.ansible_roles.assert_files
           vars:
             processes:
-              newrelic-infra-service:
+              - name: newrelic-infra-service
                 owner: "{{ agent_user }}"
             files:
-              /usr/bin/newrelic-infra:
+              - name: /usr/bin/newrelic-infra
                 permissions: "{{ bin_mode }}"
 ...
