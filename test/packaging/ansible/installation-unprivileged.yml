@@ -25,6 +25,8 @@
       - name: install agent
         include_role:
           name: caos.ansible_roles.infra_agent
+        vars:
+          repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
 
       - name: assert no privileged caps
         include_role:
