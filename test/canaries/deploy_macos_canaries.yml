@@ -23,8 +23,6 @@
       include_role:
         name: caos.ansible_roles.install-crowdstrike-falcon
 
----
-
 - hosts: macos_current
   become: true
   gather_facts: yes
