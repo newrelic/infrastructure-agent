@@ -10,18 +10,18 @@
   tasks:
     - name: Install brew
       include_role:
-        name: caos.ansible_roles.install-brew
+        name: caos.ansible_roles.install_brew
         # latest versions of brew allow running service with sudo, not necessary to downgrade
         # comment left for reference
 #      vars:
 #        brew_version: 3.6.21 # with 4.0.* there are some problems with sudo https://github.com/Homebrew/brew/issues/14462#issuecomment-1445130069
     - name: Install python
       include_role:
-        name: caos.ansible_roles.install-python
+        name: caos.ansible_roles.install_python
 
     - name: Install CrowdStrike Falcon
       include_role:
-        name: caos.ansible_roles.install-crowdstrike-falcon
+        name: caos.ansible_roles.install_crowdstrike_falcon
 
 - hosts: macos_current
   become: true
