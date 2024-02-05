@@ -409,3 +409,46 @@ func Test_parseLogrusFields(t *testing.T) {
 		})
 	}
 }
+
+//nolint:paralleltest
+func Test_parseSDKFields(t *testing.T) {
+	tests := map[string]struct {
+		input string
+		want  logrus.Fields
+	}{
+		"debug": {`[DEBUG] Temperature changes`, logrus.Fields{
+			"level": `debug`,
+			"msg":   `Temperature changes`,
+		}},
+		"info": {`[INFO] A group of walrus emerges from the ocean`, logrus.Fields{
+			"level": `info`,
+			"msg":   `A group of walrus emerges from the ocean`,
+		}},
+		"fatal": {`[FATAL] The ice breaks!`, logrus.Fields{
+			"level": `fatal`,
+			"msg":   `The ice breaks!`,
+		}},
+		"error": {`[ERR] Error creating connection to SQL Server: lookup mssql on 192.168.65.5:53: no such host`, logrus.Fields{
+			"level": `error`,
+			"msg":   `Error creating connection to SQL Server: lookup mssql on 192.168.65.5:53: no such host`,
+		}},
+		"with-escaped-quotes": {`[WARN] The group's number \"increased\" tremendously!`, logrus.Fields{
+			"level": `warn`,
+			"msg":   `The group's number \"increased\" tremendously!`,
+		}},
+
+		"not matching": {`simple line`, nil},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			out := parseSDKFields(tc.input)
+
+			for k, v := range tc.want {
+				val, ok := out[k]
+				assert.True(t, ok)
+				assert.Equal(t, v, val)
+			}
+		})
+	}
+}
