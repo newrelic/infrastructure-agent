@@ -1,6 +1,7 @@
 collections:
   - name: git+https://github.com/newrelic-experimental/caos-ansible-roles.git#/caos.ansible_roles/
     type: git
+    version: NR-164384_add_macos_roles
 
 roles:
   - name: geerlingguy.pip
