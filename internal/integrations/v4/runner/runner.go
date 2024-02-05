@@ -41,6 +41,7 @@ var (
 	//2- map: &{any character}
 	//3- word: any character except spaces
 	logrusRegexp = regexp.MustCompile(`([^\s]*?)=(".*?[^\\]"|&{.*?}|[^\s]*)`)
+	sdkLogRegexp = regexp.MustCompile(`\[([^\]]*)\]\s*(.+)`)
 )
 
 // generic types to handle the stderr log parsing
@@ -56,7 +57,7 @@ type runner struct {
 	log            log.Entry
 	definition     integration.Definition
 	handleErrors   func(context.Context, <-chan error) // by default, runner.logErrors. Replaceable for testing purposes
-	stderrParser   logParser
+	stderrParser   []logParser
 	lastStderr     stderrQueue
 	healthCheck    sync.Once
 	heartBeatFunc  func()
@@ -85,7 +86,7 @@ func NewRunner(
 		dSources:       dSources,
 		definition:     intDef,
 		heartBeatFunc:  func() {},
-		stderrParser:   parseLogrusFields,
+		stderrParser:   []logParser{parseSDKFields, parseLogrusFields},
 		lastStderr:     newStderrQueue(intDef.LogsQueueSize),
 		terminateQueue: terminateQ,
 		cache:          cache.CreateCache(),
@@ -298,16 +299,38 @@ func (r *runner) handleStderr(stderr <-chan []byte) {
 
 		// obfuscated stderr
 		obfuscatedLine := helpers.ObfuscateSensitiveDataFromString(string(line))
+		var lineWasParsed bool
 
-		if r.log.IsDebugEnabled() {
-			r.log.WithField("line", obfuscatedLine).Debug("Integration stderr (not parsed).")
-		} else {
-			fields := r.stderrParser(obfuscatedLine)
-			if v, ok := fields["level"]; ok && (v == "error" || v == "fatal") {
+		for _, errParser := range r.stderrParser {
+			fields := errParser(obfuscatedLine)
+
+			if lvl, ok := fields["level"]; ok {
 				// If a field already exists, like the time, logrus automatically adds the prefix "deps." to the
 				// Duplicated keys
-				r.log.WithFields(logrus.Fields(fields)).Info("received an integration log line")
+				logLine := r.log.WithFields(logrus.Fields(fields))
+				logMessage := "integration log"
+
+				lvl, ok := lvl.(string)
+				if ok {
+					switch strings.ToLower(lvl) {
+					// We will set all this levels as debug to not be shown by default
+					case "info", "debug", "warn", "warning":
+						logLine.Debug(logMessage)
+					case "trace":
+						logLine.Trace(logMessage)
+					default:
+						logLine.Error(logMessage)
+					}
+
+					lineWasParsed = true
+
+					break
+				}
 			}
+		}
+
+		if !lineWasParsed {
+			r.log.WithField("line", obfuscatedLine).Debug("Integration stderr (not parsed).")
 		}
 	}
 }
@@ -428,4 +451,23 @@ func parseLogrusFields(line string) (fields logFields) {
 	}
 
 	return
+}
+
+func parseSDKFields(line string) logFields {
+	matches := sdkLogRegexp.FindAllStringSubmatch(line, -1)
+	if len(matches) == 0 {
+		return nil
+	}
+
+	lvl, msg := matches[0][1], matches[0][2]
+
+	level := strings.ToLower(lvl)
+	if level == "err" {
+		level = "error"
+	}
+
+	return logFields{
+		"level": level,
+		"msg":   msg,
+	}
 }

@@ -185,3 +185,144 @@ func Test_runner_Run_handlesCfgProtocol(t *testing.T) {
 		return false
 	}, time.Second, 10*time.Millisecond)
 }
+
+//nolint:exhaustruct,funlen
+func Test_runner_Run_Integration_Log(t *testing.T) {
+	t.Parallel()
+
+	if runtime.GOOS == "windows" {
+		t.Skip()
+	}
+
+	log.SetOutput(ioutil.Discard)                  // discard logs so not to break race tests
+	t.Cleanup(func() { log.SetOutput(os.Stderr) }) // return back to default
+
+	hook := new(test.Hook)
+	log.AddHook(hook)
+
+	log.SetLevel(logrus.TraceLevel)
+
+	testCases := []struct {
+		name           string
+		logLine        string
+		expectedLogMsg string
+		expectedLevel  logrus.Level
+	}{
+		{
+			name:           "SDK_Info_log",
+			logLine:        "[INFO] This is an info message",
+			expectedLogMsg: "This is an info message",
+			expectedLevel:  logrus.DebugLevel,
+		},
+		{
+			name:           "SDK_Debug_log",
+			logLine:        "[DEBUG] This is a debug message",
+			expectedLogMsg: "This is a debug message",
+			expectedLevel:  logrus.DebugLevel,
+		},
+		{
+			name:           "SDK_Trace_log",
+			logLine:        "[TRACE] This is a trace message",
+			expectedLogMsg: "This is a trace message",
+			expectedLevel:  logrus.TraceLevel,
+		},
+		{
+			name:           "SDK_Warning_log",
+			logLine:        "[WARN] This is a warning message",
+			expectedLogMsg: "This is a warning message",
+			expectedLevel:  logrus.DebugLevel,
+		},
+		{
+			name:           "SDK_Error_log",
+			logLine:        "[ERR] This is an error message",
+			expectedLogMsg: "This is an error message",
+			expectedLevel:  logrus.ErrorLevel,
+		},
+		{
+			name:           "SDK_Fatal_log",
+			logLine:        "[FATAL] This is a fatal message",
+			expectedLogMsg: "This is a fatal message",
+			expectedLevel:  logrus.ErrorLevel,
+		},
+		{
+			name:           "Logrus_Info_log",
+			logLine:        "level=info msg=\"This is an info message\"",
+			expectedLogMsg: "This is an info message",
+			expectedLevel:  logrus.DebugLevel,
+		},
+		{
+			name:           "Logrus_Debug_log",
+			logLine:        "level=debug msg=\"This is a debug message\"",
+			expectedLogMsg: "This is a debug message",
+			expectedLevel:  logrus.DebugLevel,
+		},
+		{
+			name:           "Logrus_Trace_log",
+			logLine:        "level=trace msg=\"This is a trace message\"",
+			expectedLogMsg: "This is a trace message",
+			expectedLevel:  logrus.TraceLevel,
+		},
+		{
+			name:           "Logrus_Warning_log",
+			logLine:        "level=warning msg=\"This is a warning message\"",
+			expectedLogMsg: "This is a warning message",
+			expectedLevel:  logrus.DebugLevel,
+		},
+		{
+			name:           "Logrus_Error_log",
+			logLine:        "level=error msg=\"This is an error message\"",
+			expectedLogMsg: "This is an error message",
+			expectedLevel:  logrus.ErrorLevel,
+		},
+		{
+			name:           "Logrus_Fatal_log",
+			logLine:        "level=fatal msg=\"This is a fatal message\"",
+			expectedLogMsg: "This is a fatal message",
+			expectedLevel:  logrus.ErrorLevel,
+		},
+		{
+			name:           "Obfuscated_log",
+			logLine:        "This is a parser-orphan log",
+			expectedLogMsg: "Integration stderr (not parsed).",
+			expectedLevel:  logrus.DebugLevel,
+		},
+	}
+
+	for _, tt := range testCases {
+		testCase := tt
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			// GIVEN a runner that receives a cfg request without a handle function.
+			def, err := integration.NewDefinition(config.ConfigEntry{
+				InstanceName: testCase.name,
+				Exec:         testhelp.Command(fixtures.EchoFromEnv),
+				Env:          map[string]string{"STDERR_STRING": testCase.logLine},
+			}, integration.ErrLookup, nil, nil)
+			require.NoError(t, err)
+
+			e := &testemit.RecordEmitter{}
+			r := NewRunner(def, e, nil, nil, cmdrequest.NoopHandleFn, nil, nil, host.IDLookup{})
+
+			// WHEN the runner executes the binary and handle the payload.
+			ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+			t.Cleanup(func() { cancel() })
+			r.Run(ctx, nil, nil)
+
+			var lastEntry *logrus.Entry
+			// THEN log entry found.
+			assert.Eventually(t, func() bool {
+				entries := hook.AllEntries()
+				for _, e := range entries {
+					if e.Data["msg"] == testCase.expectedLogMsg || e.Message == testCase.expectedLogMsg {
+						lastEntry = e
+
+						return true
+					}
+				}
+
+				return false
+			}, time.Second, 100*time.Millisecond)
+			assert.Equal(t, testCase.expectedLevel, lastEntry.Level)
+		})
+	}
+}
