@@ -26,7 +26,7 @@ endif
 	ansible-playbook -f $(ANSIBLE_FORKS) -i $(ANSIBLE_INVENTORY) "$(ANSIBLE_FOLDER)/deploy_canaries.yml" -e "current_version=$(VERSION) previous_version=$(PREVIOUS_VERSION) nr_license_key=$(NR_LICENSE_KEY_CANARIES) docker_username=$(DOCKER_USERNAME) docker_password=$(DOCKER_PASSWORD)"
 
 .PHONY: macos-canaries
-macos-canaries:
+macos-canaries: ansible/dependencies
 ifndef ANSIBLE_INVENTORY
 	$(error ANSIBLE_INVENTORY is not set)
 endif
