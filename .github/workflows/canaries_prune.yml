@@ -8,12 +8,13 @@ on:
         type: choice
         default: ''
         options:
-          - ''
-          - linux
-          - windows
+          - 'all'
+          - 'linux'
+          - 'windows'
         required: false
       tag:
         description: 'Tag to prune'
+        type: string
         required: true
 
 permissions:

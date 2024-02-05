@@ -24,7 +24,7 @@ permissions:
 jobs:
 
   canaries-prune-linux:
-    if: ${{ inputs.PLATFORM == 'linux' || inputs.PLATFORM == '' }}
+    if: ${{ inputs.PLATFORM == 'linux' || inputs.PLATFORM == 'all' }}
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
@@ -68,7 +68,7 @@ jobs:
             ok=\d+\s+changed=\d+\s+unreachable=\d+\s+failed=\d+\s+skipped=\d+\s+rescued=\d+\s+ignored=\d+
 
   canaries-prune-windows:
-    if: ${{ inputs.PLATFORM == 'windows' || inputs.PLATFORM == '' }}
+    if: ${{ inputs.PLATFORM == 'windows' || inputs.PLATFORM == 'all' }}
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
