@@ -28,8 +28,9 @@ permissions:
   id-token: write
 
 jobs:
-  canaries:
+  canaries_macos:
     runs-on: ubuntu-20.04
+    if: ${{ inputs.PLATFORM == 'macos' }}
     steps:
       - uses: actions/checkout@v2
 
@@ -52,6 +53,164 @@ jobs:
         with:
           aws_region: us-east-2
           container_make_target: "canaries PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} VERSION=${{ inputs.TAG }} CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
+          ecs_cluster_name: caos_infra_agent
+          task_definition_name: infra-agent
+          cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
+          cloud_watch_logs_stream_name: ecs/test-prerelease
+          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
+          repo_name: "newrelic/infrastructure-agent"
+          ref: "${{ env.GIT_BRANCH }}"
+
+  canaries_linux:
+    runs-on: ubuntu-20.04
+    if: ${{ inputs.PLATFORM == 'linux' }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
+          aws-region: us-east-2
+
+      - name: Set branch name
+        run: |
+          # Short name for current branch. For PRs, use target branch (base ref)
+          GIT_BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
+          # Is the ref a tag? If so, remove refs/tags/ prefix
+          GIT_BRANCH=${GIT_BRANCH#refs/tags/}
+          echo "GIT_BRANCH=$GIT_BRANCH" >> $GITHUB_ENV
+
+      - name: Add to env current and previous versions
+        run: .github/workflows/scripts/set_version.sh ${{ inputs.TAG }}
+
+      - name: set vars for legibility (state, inventory ...)
+        run: |
+          echo "PREVIOUS_TERRAFORM_STATE=canaries-${{ inputs.PLATFORM }}-${{ env.PREVIOUS_NR_VERSION }}"  >> $GITHUB_ENV
+          echo "TERRAFORM_STATE=canaries-${{ inputs.PLATFORM }}-${{ inputs.TAG }}"  >> $GITHUB_ENV
+          echo "INVENTORY_OUTPUT=/srv/runner/inventory/canary-${{ inputs.TAG }}-${{ inputs.PLATFORM }}-inventory.ec2"  >> $GITHUB_ENV
+
+      - name: Provision instances ${{ inputs.PLATFORM }}
+        uses: newrelic/fargate-runner-action@main
+        with:
+          aws_region: us-east-2
+          container_make_target: "test/provision TERRAFORM_STATE_KEY=${{ env.TERRAFORM_STATE }} PREFIX=canary INVENTORY_OUTPUT=${{ env.INVENTORY_OUTPUT }} TAG_OR_UNIQUE_NAME=${{ inputs.TAG }} PLATFORM=${{ inputs.PLATFORM }} CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
+          ecs_cluster_name: caos_infra_agent
+          task_definition_name: infra-agent
+          cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
+          cloud_watch_logs_stream_name: ecs/test-prerelease
+          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
+          repo_name: "newrelic/infrastructure-agent"
+          ref: "${{ env.GIT_BRANCH }}"
+          log_filters: |
+            \[ALLOW_MSG\].+
+            TASK\s\[.*\]\s
+            PLAY\s\[.*\]\s
+            PLAY\sRECAP\s
+            Apply\scomplete!
+            ok=\d+\s+changed=\d+\s+unreachable=\d+\s+failed=\d+\s+skipped=\d+\s+rescued=\d+\s+ignored=\d+
+
+      - name: Install Infra Agent
+        uses: newrelic/fargate-runner-action@main
+        with:
+          aws_region: us-east-2
+          container_make_target: "terraform-canaries ANSIBLE_INVENTORY=${{ env.INVENTORY_OUTPUT }} PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} VERSION=${{ env.NR_VERSION }} PREVIOUS_VERSION=${{ env.PREVIOUS_NR_VERSION }} CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
+          ecs_cluster_name: caos_infra_agent
+          task_definition_name: infra-agent
+          cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
+          cloud_watch_logs_stream_name: ecs/test-prerelease
+          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
+          repo_name: "newrelic/infrastructure-agent"
+          ref: "${{ env.GIT_BRANCH }}"
+
+  canaries_windows:
+    runs-on: ubuntu-20.04
+    if: ${{ inputs.PLATFORM == 'windows' }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
+          aws-region: us-east-2
+
+      - name: Set branch name
+        run: |
+          # Short name for current branch. For PRs, use target branch (base ref)
+          GIT_BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
+          # Is the ref a tag? If so, remove refs/tags/ prefix
+          GIT_BRANCH=${GIT_BRANCH#refs/tags/}
+          echo "GIT_BRANCH=$GIT_BRANCH" >> $GITHUB_ENV
+
+      - name: Add to env current and previous versions
+        run: .github/workflows/scripts/set_version.sh ${{ inputs.TAG }}
+
+      - name: set vars for legibility (state, inventory ...)
+        run: |
+          echo "TERRAFORM_STATE_PREVIOUS=canaries-${{ inputs.PLATFORM }}-${{ inputs.TAG }}-previous"  >> $GITHUB_ENV
+          echo "TERRAFORM_STATE_CURRENT=canaries-${{ inputs.PLATFORM }}-${{ inputs.TAG }}-current"  >> $GITHUB_ENV
+          echo "INVENTORY_PREVIOUS=/srv/runner/inventory/canary-${{ inputs.TAG }}-${{ inputs.PLATFORM }}-previous-inventory.ec2"  >> $GITHUB_ENV
+          echo "INVENTORY_CURRENT=/srv/runner/inventory/canary-${{ inputs.TAG }}-${{ inputs.PLATFORM }}-current-inventory.ec2"  >> $GITHUB_ENV
+          
+      - name: Provision instances ${{ inputs.PLATFORM }} previous
+        uses: newrelic/fargate-runner-action@main
+        with:
+          aws_region: us-east-2
+          container_make_target: "test/provision TERRAFORM_STATE_KEY=${{ env.TERRAFORM_STATE_PREVIOUS }} PREFIX=canary INVENTORY_OUTPUT=${{ env.INVENTORY_PREVIOUS }} TAG_OR_UNIQUE_NAME=${{ env.PREVIOUS_NR_VERSION }} PLATFORM=${{ inputs.PLATFORM }} CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
+          ecs_cluster_name: caos_infra_agent
+          task_definition_name: infra-agent
+          cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
+          cloud_watch_logs_stream_name: ecs/test-prerelease
+          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
+          repo_name: "newrelic/infrastructure-agent"
+          ref: "${{ env.GIT_BRANCH }}"
+          log_filters: |
+            \[ALLOW_MSG\].+
+            TASK\s\[.*\]\s
+            PLAY\s\[.*\]\s
+            PLAY\sRECAP\s
+            Apply\scomplete!
+            ok=\d+\s+changed=\d+\s+unreachable=\d+\s+failed=\d+\s+skipped=\d+\s+rescued=\d+\s+ignored=\d+
+
+      - name: Provision instances ${{ inputs.PLATFORM }} current
+        uses: newrelic/fargate-runner-action@main
+        with:
+          aws_region: us-east-2
+          container_make_target: "test/provision TERRAFORM_STATE_KEY=${{ env.TERRAFORM_STATE_CURRENT }} PREFIX=canary INVENTORY_OUTPUT=${{ env.INVENTORY_CURRENT }} TAG_OR_UNIQUE_NAME=${{ env.NR_VERSION }} PLATFORM=${{ inputs.PLATFORM }} CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
+          ecs_cluster_name: caos_infra_agent
+          task_definition_name: infra-agent
+          cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
+          cloud_watch_logs_stream_name: ecs/test-prerelease
+          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
+          repo_name: "newrelic/infrastructure-agent"
+          ref: "${{ env.GIT_BRANCH }}"
+          log_filters: |
+            \[ALLOW_MSG\].+
+            TASK\s\[.*\]\s
+            PLAY\s\[.*\]\s
+            PLAY\sRECAP\s
+            Apply\scomplete!
+            ok=\d+\s+changed=\d+\s+unreachable=\d+\s+failed=\d+\s+skipped=\d+\s+rescued=\d+\s+ignored=\d+
+
+      - name: Install Infra Agent previous
+        uses: newrelic/fargate-runner-action@main
+        with:
+          aws_region: us-east-2
+          container_make_target: "terraform-canaries ANSIBLE_INVENTORY=${{ env.INVENTORY_PREVIOUS }} PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} VERSION=${{ env.PREVIOUS_NR_VERSION }} PREVIOUS_VERSION='NOT_USED_VALUE' CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
+          ecs_cluster_name: caos_infra_agent
+          task_definition_name: infra-agent
+          cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
+          cloud_watch_logs_stream_name: ecs/test-prerelease
+          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
+          repo_name: "newrelic/infrastructure-agent"
+          ref: "${{ env.GIT_BRANCH }}"
+
+      - name: Install Infra Agent current
+        uses: newrelic/fargate-runner-action@main
+        with:
+          aws_region: us-east-2
+          container_make_target: "terraform-canaries ANSIBLE_INVENTORY=${{ env.INVENTORY_CURRENT }} PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} VERSION=${{ env.NR_VERSION }} PREVIOUS_VERSION='NOT_USED_VALUE' CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
           ecs_cluster_name: caos_infra_agent
           task_definition_name: infra-agent
           cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent

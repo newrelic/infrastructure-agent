@@ -1,0 +1,58 @@
+---
+# Linux
+- name: canaries
+  hosts: testing_hosts_linux
+  become: true
+  gather_facts: yes
+
+  tasks:
+    - name: 🐤Canaries
+      vars:
+        enable_process_metrics: true
+        nria_log_level: "smart"
+        nria_log_forward: true
+        nria_log_rotation_mb: 500
+        nria_log_rotation_max_files: 5
+        nria_log_rotation_compressed: true
+        forward_docker_logs: true
+
+      block:
+
+        - name: install latest agent on host
+          include_role:
+            name: caos.ansible_roles.infra_agent
+          vars:
+            target_version: "{{ current_version }}"
+
+        - name: install latest agent in container
+          include_role:
+            name: caos.ansible_roles.infra_agent
+          vars:
+            is_containerized: true
+            target_version: "{{ current_version }}-rc"
+            display_name: "{{ inventory_hostname }}-current"
+
+        - name: install previous agent in container
+          include_role:
+            name: caos.ansible_roles.infra_agent
+          vars:
+            is_containerized: true
+            target_version: "{{ previous_version }}"
+            display_name: "{{ inventory_hostname }}-previous"
+
+# Windows
+- name: installation-agent-no-clean
+  hosts: testing_hosts_windows
+  gather_facts: yes
+
+  tasks:
+    - name: Installation tests suite
+
+      block:
+
+        - name: install agent
+          include_role:
+            name: caos.ansible_roles.infra_agent
+          vars:
+            target_version: "{{ current_version }}"
+...

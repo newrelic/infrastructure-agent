@@ -8,10 +8,14 @@ on:
         type: choice
         default: ''
         options:
-          - ''
-          - linux
-          - windows
+          - 'all'
+          - 'linux'
+          - 'windows'
         required: false
+      tag:
+        description: 'Tag to prune'
+        type: string
+        required: true
 
 permissions:
   id-token: write
@@ -22,5 +26,6 @@ jobs:
     uses: ./.github/workflows/component_canaries_prune.yml
     with:
       PLATFORM: ${{ github.event.inputs.platform }}
+      TAG: ${{ github.event.inputs.tag }}
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}

@@ -36,6 +36,9 @@ include $(INCLUDE_TEST_DIR)/test.mk
 # provisioning
 include $(INCLUDE_TEST_DIR)/provision/Makefile
 
+# canaries
+include $(INCLUDE_TEST_DIR)/canaries/Makefile
+
 # tools
 include $(INCLUDE_TOOLS_DIR)/tools.mk
 

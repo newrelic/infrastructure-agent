@@ -1,0 +1,6 @@
+collections:
+  - name: git+https://github.com/newrelic-experimental/caos-ansible-roles.git#/caos.ansible_roles/
+    type: git
+
+roles:
+  - name: geerlingguy.pip
