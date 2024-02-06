@@ -23,24 +23,6 @@
     #   include_role:
     #     name: caos.ansible_roles.install_crowdstrike_falcon
 
-- hosts: macos_current
-  become: true
-  gather_facts: yes
-
-  tasks:
-      - name: Installation tests suite
-        vars:
-          agent_user: root
-          env_vars:
-
-        block:
-          - name: Install infra agent
-            include_role:
-              name: caos.ansible_roles.infra_agent
-            vars:
-              self_instrumentation: true
-              target_agent_version: "{{ current_version }}"
-
 - hosts: macos_previous
   become: true
   gather_facts: yes
@@ -58,4 +40,23 @@
             vars:
               self_instrumentation: true
               target_agent_version: "{{ previous_version }}"
+
+- hosts: macos_current
+  become: true
+  gather_facts: yes
+
+  tasks:
+      - name: Installation tests suite
+        vars:
+          agent_user: root
+          env_vars:
+
+        block:
+          - name: Install infra agent
+            include_role:
+              name: caos.ansible_roles.infra_agent
+            vars:
+              self_instrumentation: true
+              target_agent_version: "{{ previous_version }}"
+
 ...
