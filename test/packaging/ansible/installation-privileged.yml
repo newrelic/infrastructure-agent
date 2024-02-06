@@ -25,6 +25,8 @@
       - name: install agent
         include_role:
           name: caos.ansible_roles.infra_agent
+        vars:
+          repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
 
       - name: assert privileged caps
         include_role:
@@ -37,24 +39,12 @@
 
       - name: Assert rootless
         include_role:
-          name: caos.ansible_roles.assert_ownership
+          name: caos.ansible_roles.assert_files
         vars:
-          username: "{{ agent_user }}"
-          user_processes:
-            - newrelic-infra-service
-
-      - name: Assert permissions
-        include_role:
-          name: caos.ansible_roles.assert_permissions
-        vars:
+          processes:
+            - name: newrelic-infra-service
+              owner: "{{ agent_user }}"
           files:
-            /usr/bin/newrelic-infra: "{{ bin_mode }}"
-
-      always:
-        - name: Final cleanup
-          include_role:
-            name: caos.ansible_roles.infra_agent
-          vars:
-            uninstall: true
-
+            - name: /usr/bin/newrelic-infra
+              permissions: "{{ bin_mode }}"
 ...

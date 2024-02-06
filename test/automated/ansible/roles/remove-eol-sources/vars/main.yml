@@ -1,4 +1,0 @@
-instances_with_eol_repos:
-  - "amd64:debian-jessie"
-  - "amd64:centos8"
-  - "arm64:centos8"

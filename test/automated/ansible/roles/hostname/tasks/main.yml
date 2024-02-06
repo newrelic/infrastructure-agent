@@ -1,9 +1,0 @@
----
-
-- name: register hostname
-  ansible.builtin.set_fact:
-    hostname: "{{ inventory_hostname | regex_replace('[_\\.:]', '-') }}"
-
-- include_tasks: "hostname-{{ ansible_os_family }}.yaml"
-
-...

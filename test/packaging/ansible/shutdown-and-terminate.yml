@@ -20,6 +20,7 @@
         name: caos.ansible_roles.infra_agent
       vars:
         display_name: "{{ iid }}:{{ inventory_hostname }}"
+        repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
 
 - name: install agent windows  (HNR)
   hosts: testing_hosts_windows

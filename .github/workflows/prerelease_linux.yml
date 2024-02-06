@@ -131,6 +131,7 @@ jobs:
     with:
       PLATFORM: "linux"
       TAG: ${{ github.event.release.tag_name }}
+      TAG_OR_UNIQUE_NAME: "${{ github.event.release.tag_name }}-linux"
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
       CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}

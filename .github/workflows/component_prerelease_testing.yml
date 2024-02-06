@@ -24,6 +24,9 @@ on:
       PLATFORM:
         required: true
         type: string
+      TAG_OR_UNIQUE_NAME:
+        required: true
+        type: string
 
 env:
   AWS_ASSUME_ROLE: 'arn:aws:iam::018789649883:role/caos-pipeline-oidc-infra-agent'
@@ -56,7 +59,7 @@ jobs:
         uses: newrelic/fargate-runner-action@main
         with:
           aws_region: us-east-2
-          container_make_target: "test/automated/provision PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} ANSIBLE_INVENTORY_FILE=${{ inputs.PLATFORM }}-inventory.ec2 CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
+          container_make_target: "test/provision PREFIX=pkg-tests INVENTORY_OUTPUT=/srv/runner/inventory/${{ inputs.TAG_OR_UNIQUE_NAME }}-inventory.ec2 TAG_OR_UNIQUE_NAME=${{ inputs.TAG_OR_UNIQUE_NAME }} PLATFORM=${{ inputs.PLATFORM }} CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
           ecs_cluster_name: caos_infra_agent
           task_definition_name: infra-agent
           cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
@@ -96,7 +99,7 @@ jobs:
         uses: newrelic/fargate-runner-action@main
         with:
           aws_region: us-east-2
-          container_make_target: "test/automated/harvest PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} ANSIBLE_INVENTORY_FILE=${{ inputs.PLATFORM }}-inventory.ec2 TAG=${{ inputs.TAG }}"
+          container_make_target: "test/automated/harvest PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} ANSIBLE_INVENTORY_FOLDER=/srv/runner/inventory ANSIBLE_INVENTORY_FILE=${{ inputs.TAG_OR_UNIQUE_NAME }}-inventory.ec2 TAG=${{ inputs.TAG }}"
           ecs_cluster_name: caos_infra_agent
           task_definition_name: infra-agent
           cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
@@ -137,7 +140,7 @@ jobs:
         uses: newrelic/fargate-runner-action@main
         with:
           aws_region: us-east-2
-          container_make_target: "test/automated/packaging LIMIT=${{ matrix.limit }} PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} ANSIBLE_INVENTORY_FILE=${{ inputs.PLATFORM }}-inventory.ec2 TAG=${{ inputs.TAG }}"
+          container_make_target: "test/automated/packaging LIMIT=${{ matrix.limit }} PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }}  ANSIBLE_INVENTORY_FOLDER=/srv/runner/inventory ANSIBLE_INVENTORY_FILE=${{ inputs.TAG_OR_UNIQUE_NAME }}-inventory.ec2 TAG=${{ inputs.TAG }}"
           ecs_cluster_name: caos_infra_agent
           task_definition_name: infra-agent
           cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
@@ -171,7 +174,7 @@ jobs:
         uses: newrelic/fargate-runner-action@main
         with:
           aws_region: us-east-2
-          container_make_target: "test/automated/packaging LIMIT=windows_amd64 PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} ANSIBLE_INVENTORY_FILE=${{ inputs.PLATFORM }}-inventory.ec2 TAG=${{ inputs.TAG }}"
+          container_make_target: "test/automated/packaging LIMIT=windows_amd64 PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }}  ANSIBLE_INVENTORY_FOLDER=/srv/runner/inventory ANSIBLE_INVENTORY_FILE=${{ inputs.TAG_OR_UNIQUE_NAME }}-inventory.ec2 TAG=${{ inputs.TAG }}"
           ecs_cluster_name: caos_infra_agent
           task_definition_name: infra-agent
           cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
@@ -179,3 +182,85 @@ jobs:
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
           repo_name: "newrelic/infrastructure-agent"
           ref: "${{ env.GIT_BRANCH }}"
+
+  provision-clean-linux:
+    if: ${{ inputs.PLATFORM == 'linux' }}
+    needs: [ packaging-tests-linux ]
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
+          aws-region: us-east-2
+
+      - name: Set branch name
+        run: |
+          # Short name for current branch. For PRs, use target branch (base ref)
+          GIT_BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
+          # Is the ref a tag? If so, remove refs/tags/ prefix
+          GIT_BRANCH=${GIT_BRANCH#refs/tags/}
+          echo "GIT_BRANCH=$GIT_BRANCH" >> $GITHUB_ENV
+
+      - name: Clean instances ${{ inputs.PLATFORM }}
+        uses: newrelic/fargate-runner-action@main
+        with:
+          aws_region: us-east-2
+          container_make_target: "test/provision/clean TAG_OR_UNIQUE_NAME=${{ inputs.TAG_OR_UNIQUE_NAME }}"
+          ecs_cluster_name: caos_infra_agent
+          task_definition_name: infra-agent
+          cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
+          cloud_watch_logs_stream_name: ecs/test-prerelease
+          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
+          repo_name: "newrelic/infrastructure-agent"
+          ref: "${{ env.GIT_BRANCH }}"
+          log_filters: |
+            \[ALLOW_MSG\].+
+            TASK\s\[.*\]\s
+            PLAY\s\[.*\]\s
+            PLAY\sRECAP\s
+            Apply\scomplete!
+            ok=\d+\s+changed=\d+\s+unreachable=\d+\s+failed=\d+\s+skipped=\d+\s+rescued=\d+\s+ignored=\d+
+
+  provision-clean-windows:
+      if: ${{ inputs.PLATFORM == 'windows' }}
+      needs: [ packaging-tests-windows ]
+      runs-on: ubuntu-20.04
+      steps:
+        - uses: actions/checkout@v2
+
+        - name: Configure AWS Credentials
+          uses: aws-actions/configure-aws-credentials@v1
+          with:
+            role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
+            aws-region: us-east-2
+
+        - name: Set branch name
+          run: |
+            # Short name for current branch. For PRs, use target branch (base ref)
+            GIT_BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
+            # Is the ref a tag? If so, remove refs/tags/ prefix
+            GIT_BRANCH=${GIT_BRANCH#refs/tags/}
+            echo "GIT_BRANCH=$GIT_BRANCH" >> $GITHUB_ENV
+
+        - name: Clean instances ${{ inputs.PLATFORM }}
+          uses: newrelic/fargate-runner-action@main
+          with:
+            aws_region: us-east-2
+            container_make_target: "test/provision/clean TAG_OR_UNIQUE_NAME=${{ inputs.TAG_OR_UNIQUE_NAME }}"
+            ecs_cluster_name: caos_infra_agent
+            task_definition_name: infra-agent
+            cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
+            cloud_watch_logs_stream_name: ecs/test-prerelease
+            aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
+            repo_name: "newrelic/infrastructure-agent"
+            ref: "${{ env.GIT_BRANCH }}"
+            log_filters: |
+              \[ALLOW_MSG\].+
+              TASK\s\[.*\]\s
+              PLAY\s\[.*\]\s
+              PLAY\sRECAP\s
+              Apply\scomplete!
+              ok=\d+\s+changed=\d+\s+unreachable=\d+\s+failed=\d+\s+skipped=\d+\s+rescued=\d+\s+ignored=\d+

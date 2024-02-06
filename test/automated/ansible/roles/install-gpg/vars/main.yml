@@ -1,7 +1,0 @@
-instances_without_gpg:
-  - "amd64:debian-buster"
-  - "arm64:debian-buster"
-  - "amd64:debian-bullseye"
-  - "arm64:debian-bullseye"
-  - "amd64:debian-bookworm"
-  - "arm64:debian-bookworm"

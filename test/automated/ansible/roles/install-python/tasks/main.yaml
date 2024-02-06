@@ -1,4 +1,0 @@
----
-- include_tasks: dnf.yaml
-- include_tasks: brew.yaml
-...

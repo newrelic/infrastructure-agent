@@ -1,3 +1,0 @@
-instances_to_reinstall_rpm_dnf:
-  - "amd64:centos-stream"
-  - "arm64:centos-stream"

@@ -1,6 +1,0 @@
-instances_requiring_opensuse_repos:
-  "sles-12.3": http://download.opensuse.org/distribution/12.3/repo/oss/
-  "sles-12.4": http://download.opensuse.org/distribution/12.3/repo/oss/
-  "sles-15.1": http://download.opensuse.org/distribution/leap/15.1/repo/oss/
-  "sles-15.2": http://download.opensuse.org/distribution/leap/15.2/repo/oss/
-

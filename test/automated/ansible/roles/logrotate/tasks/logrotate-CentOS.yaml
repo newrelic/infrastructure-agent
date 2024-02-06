@@ -1,8 +1,0 @@
----
-
-- name: Configure logrotate for syslog
-  template:
-    src: "syslog-RH{{ ansible_distribution_major_version }}.j2"
-    dest: "/etc/logrotate.d/rsyslog"
-
-...

@@ -23,6 +23,7 @@
             name: caos.ansible_roles.infra_agent
           vars:
             target_version: "{{ target_agent_version }}"
+            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
 
         - name: Assert version
           include_role:
@@ -32,10 +33,4 @@
               - exec: '"C:\Program Files\New Relic\newrelic-infra\newrelic-infra.exe" "--version"'
                 version: "{{ target_agent_version }}"
 
-      always:
-        - name: Final cleanup
-          include_role:
-            name: caos.ansible_roles.infra_agent
-          vars:
-            uninstall: true
 ...

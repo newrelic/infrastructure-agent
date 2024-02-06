@@ -13,18 +13,6 @@ else
   ANSIBLE_INVENTORY = $(ANSIBLE_INVENTORY_FOLDER)/$(ANSIBLE_INVENTORY_FILE)
 endif
 
-.PHONY: test/automated/provision
-test/automated/provision: validate-aws-credentials
-ifndef PLATFORM
-	@echo "PLATFORM variable must be provided for test/automated/provision"
-	exit 1
-endif
-ifndef ANSIBLE_PASSWORD_WINDOWS
-	@echo "ANSIBLE_PASSWORD_WINDOWS variable must be provided for test/automated/provision"
-	exit 1
-endif
-	PROVISION_HOST_PREFIX=$(PROVISION_HOST_PREFIX) ANSIBLE_FORKS=$(ANSIBLE_FORKS) PLATFORM=$(PLATFORM) ANSIBLE_INVENTORY=$(ANSIBLE_INVENTORY) $(CURDIR)/test/automated/ansible/provision.sh
-
 .PHONY: test/automated/termination
 test/automated/termination: validate-aws-credentials
 	ansible-playbook -i $(ANSIBLE_INVENTORY) $(CURDIR)/test/automated/ansible/termination.yml
