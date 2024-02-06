@@ -48,7 +48,7 @@
 
     - name: Configure hostname
       include_role:
-        name: hostname
+        name: caos.ansible_roles.hostname
 
 
 - hosts: testing_hosts_macos
@@ -91,5 +91,5 @@
 
     - name: Configure hostname
       include_role:
-        name: hostname
+        name: caos.ansible_roles.hostname
 
