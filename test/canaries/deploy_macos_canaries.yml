@@ -40,6 +40,7 @@
             vars:
               self_instrumentation: true
               target_agent_version: "{{ current_version }}"
+              go_version: 1.21
 
 - hosts: macos_previous
   become: true
@@ -58,4 +59,5 @@
             vars:
               self_instrumentation: true
               target_agent_version: "{{ previous_version }}"
+              go_version: 1.21
 ...
