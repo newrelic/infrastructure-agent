@@ -8,11 +8,16 @@ ANSIBLE_FOLDER := $(CURDIR)/test/provision/terraform
 
 .PHONY: terraform/backend
 terraform/backend:
+ifndef TERRAFORM_STATE_KEY
+	$(error TERRAFORM_STATE_KEY is undefined)
+endif
+	sed "s/TERRAFORM_STATE_KEY/${TERRAFORM_STATE_KEY}/g" "$(TERRAFORM_DIR)/terraform.backend.tf.dist" > "$(TERRAFORM_DIR)/terraform.backend.tf"
 ifndef TAG_OR_UNIQUE_NAME
 	$(error TAG_OR_UNIQUE_NAME is undefined)
 endif
-	sed "s/TAG_OR_UNIQUE_NAME/${TAG_OR_UNIQUE_NAME}/g" "$(TERRAFORM_DIR)/terraform.backend.tf.dist" > "$(TERRAFORM_DIR)/terraform.backend.tf"
-	sed "s/TAG_OR_UNIQUE_NAME/${TAG_OR_UNIQUE_NAME}/g" "$(TERRAFORM_DIR)/caos-linux.auto.tfvars.dist" > "$(TERRAFORM_DIR)/caos.auto.tfvars"
+	cp "$(TERRAFORM_DIR)/caos.auto.tfvars.dist" "$(TERRAFORM_DIR)/caos.auto.tfvars"
+	sed -i -e "s/PREFIX/$(PREFIX)/g" "$(TERRAFORM_DIR)/caos.auto.tfvars"
+	sed -i -e "s/TAG_OR_UNIQUE_NAME/$(TAG_OR_UNIQUE_NAME)/g" "$(TERRAFORM_DIR)/caos.auto.tfvars"
 
 .PHONY: test/provision
 test/provision: terraform/backend
@@ -43,10 +48,10 @@ endif
 .PHONY: test/provision/clean
 test/provision/clean: terraform/backend ansible/clean
 	terraform -chdir=$(TERRAFORM_DIR) init -reconfigure && \
+	TF_VAR_nr_license_key="$(NR_LICENSE_KEY)" \
 	TF_VAR_platform="$(PLATFORM)" \
 	TF_VAR_windows_password="$(ANSIBLE_PASSWORD_WINDOWS)" \
 	TF_VAR_inventory_output="$(INVENTORY_OUTPUT)" \
-	TF_VAR_nr_license_key="$(NR_LICENSE_KEY)" \
     terraform -chdir=$(TERRAFORM_DIR) destroy -auto-approve && \
 	rm "$(TERRAFORM_DIR)/terraform.backend.tf" "$(TERRAFORM_DIR)/caos.auto.tfvars"
 	$(MAKE) ansible/clean ANSIBLE_FOLDER=$(ANSIBLE_FOLDER)
