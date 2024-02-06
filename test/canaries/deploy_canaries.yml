@@ -23,6 +23,7 @@
             name: caos.ansible_roles.infra_agent
           vars:
             target_version: "{{ current_version }}"
+            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
 
         - name: install latest agent in container
           include_role:
@@ -55,4 +56,5 @@
             name: caos.ansible_roles.infra_agent
           vars:
             target_version: "{{ current_version }}"
+            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
 ...
