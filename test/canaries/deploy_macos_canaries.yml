@@ -13,8 +13,8 @@
         name: caos.ansible_roles.install_brew
         # latest versions of brew allow running service with sudo, not necessary to downgrade
         # comment left for reference
-#      vars:
-#        brew_version: 3.6.21 # with 4.0.* there are some problems with sudo https://github.com/Homebrew/brew/issues/14462#issuecomment-1445130069
+        vars:
+          brew_version: 3.6.21 # with 4.0.* there are some problems with sudo https://github.com/Homebrew/brew/issues/14462#issuecomment-1445130069
     - name: Install python
       include_role:
         name: caos.ansible_roles.install_python
