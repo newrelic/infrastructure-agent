@@ -9,12 +9,14 @@
 
   tasks:
     - name: Install brew
+      vars:
+        brew_version: 3.6.21
       include_role:
         name: caos.ansible_roles.install_brew
         # latest versions of brew allow running service with sudo, not necessary to downgrade
         # comment left for reference
-        vars:
-          brew_version: 3.6.21 # with 4.0.* there are some problems with sudo https://github.com/Homebrew/brew/issues/14462#issuecomment-1445130069
+      # vars:
+      #   brew_version: 3.6.21 # with 4.0.* there are some problems with sudo https://github.com/Homebrew/brew/issues/14462#issuecomment-1445130069
     - name: Install python
       include_role:
         name: caos.ansible_roles.install_python
@@ -23,7 +25,7 @@
     #   include_role:
     #     name: caos.ansible_roles.install_crowdstrike_falcon
 
-- hosts: macos_previous
+- hosts: testing_hosts_macos
   become: true
   gather_facts: yes
 
@@ -41,22 +43,22 @@
               self_instrumentation: true
               target_agent_version: "{{ previous_version }}"
 
-- hosts: macos_current
-  become: true
-  gather_facts: yes
-
-  tasks:
-      - name: Installation tests suite
-        vars:
-          agent_user: root
-          env_vars:
-
-        block:
-          - name: Install infra agent
-            include_role:
-              name: caos.ansible_roles.infra_agent
-            vars:
-              self_instrumentation: true
-              target_agent_version: "{{ previous_version }}"
+# - hosts: macos_current
+#   become: true
+#   gather_facts: yes
+#
+#   tasks:
+#       - name: Installation tests suite
+#         vars:
+#           agent_user: root
+#           env_vars:
+#
+#         block:
+#           - name: Install infra agent
+#             include_role:
+#               name: caos.ansible_roles.infra_agent
+#             vars:
+#               self_instrumentation: true
+#               target_agent_version: "{{ previous_version }}"
 
 ...
