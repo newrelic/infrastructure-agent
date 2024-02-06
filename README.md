@@ -105,6 +105,10 @@ For more information, see [Testing](https://golang.org/pkg/testing/) in the offi
 
 Packaging and harvest tests can be run in an automated way using ansible.
 
+Provisioning for automated tests is done via terraform:
+[Provision](test/provision/README.md)
+
+Packaging and Harvest tests are run using Ansible:
 [Packaging tests](test/packaging/ansible/README.md)
 
 [Harvest tests](test/harvest/ansible/README.md)
@@ -123,7 +127,7 @@ make test/automated
 Individual targets:
 ```bash
 # provision ec2 instances (test/automated/ansible/inventory.ec2 will be created)
-make test/automated/provision
+make test/provision TAG_OR_UNIQUE_NAME=release_1.0 
 
 # run harvest tests using test/automated/ansible/inventory.ec2 inventory
 make test/automated/harvest
