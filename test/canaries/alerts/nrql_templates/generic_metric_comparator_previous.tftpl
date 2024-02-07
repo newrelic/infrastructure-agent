@@ -1,0 +1,9 @@
+SELECT
+    filter(${coalesce(function, "average")}(${coalesce(function,"numeric")}(${metric})),WHERE displayName like '${display_name_previous}')
+    -
+    filter(${coalesce(function, "average")}(${coalesce(function,"numeric")}(${metric})),WHERE displayName like '${display_name_current}')
+FROM ${sample}
+WHERE displayName IN ('${display_name_current}','${display_name_previous}')
+%{ for k, v in wheres }
+  AND ${k}='${v}'
+%{ endfor }
