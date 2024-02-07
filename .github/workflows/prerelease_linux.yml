@@ -1,5 +1,4 @@
 name: . 🚀 🐧 Prerelease Linux
-
 on:
   release:
     types:
@@ -155,5 +154,6 @@ jobs:
     uses: ./.github/workflows/component_canaries_prune.yml
     with:
       PLATFORM: "linux"
+      TAG: ${{ github.event.release.tag_name }}
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
