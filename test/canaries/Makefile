@@ -50,6 +50,9 @@ ifndef CROWDSTRIKE_CUSTOMER_ID
 	$(error CROWDSTRIKE_CUSTOMER_ID \(Crowdstrike customer ID\) variable must be provided)
 	exit 1
 endif
+ifndef PREVIOUS_VERSION
+	$(error PREVIOUS_VERSION is not set)
+endif
 	@ansible-playbook -f $(ANSIBLE_FORKS) -i $(ANSIBLE_INVENTORY) "$(ANSIBLE_FOLDER)/inventory_macos_canaries.yml" -e "macstadium_user=$(MACSTADIUM_USER) macstadium_pass=$(MACSTADIUM_PASS) macstadium_sudo_pass=$(MACSTADIUM_SUDO_PASS) output_inventory_macos=$(CURDIR)/inventory.macos.ec2 platform=macos"
 	sed -i.bak "s/canary:current/canary-macos:v$(VERSION)/g" $(CURDIR)/inventory.macos.ec2
 	sed -i.bak "s/canary:previous/canary-macos:v$(PREVIOUS_VERSION)/g" $(CURDIR)/inventory.macos.ec2
