@@ -19,3 +19,4 @@ variable "redhat_display_names" {}
 variable "sles_display_names" {}
 variable "amazonlinux_display_names" {}
 variable "centos_display_names" {}
+variable "macos_display_names" {}

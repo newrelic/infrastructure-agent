@@ -1,4 +1,3 @@
-
 module "alerts" {
   source = "/Users/rcoll/Documents/github/newrelic-experimental/env-provisioner/terraform/nr-alerts"
 
@@ -15,5 +14,6 @@ module "alerts" {
         var.amazonlinux_display_names,
         var.centos_display_names,
         var.ubuntu_display_names
+        var.macos_display_names
   ])
 }

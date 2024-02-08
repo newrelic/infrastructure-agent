@@ -581,6 +581,14 @@ windows_display_names = [
     { previous = "canary:v1.48.4:windows_2022", current = "canary:v1.48.5:windows_2022" }
 ]
 
+macos_display_names = [
+    # Macosx
+    { previous = "canary:v1.48.4:windows_2012", current = "canary:v1.48.5:windows_2012" },
+    { previous = "canary:v1.48.4:windows_2016", current = "canary:v1.48.5:windows_2016" },
+    { previous = "canary:v1.48.4:windows_2019", current = "canary:v1.48.5:windows_2019" },
+    { previous = "canary:v1.48.4:windows_2022", current = "canary:v1.48.5:windows_2022" }
+]
+
 ubuntu_display_names = [
     # Ubuntu AMD
     { previous = "canary:1.48.5-amd64:ubuntu16.04-previous", current = "canary:1.48.5-amd64:ubuntu16.04-current" },
