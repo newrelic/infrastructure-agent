@@ -25,6 +25,7 @@
 
 - hosts: macos_current
   gather_facts: yes
+  become: yes
 
   tasks:
       - name: Installation tests suite
@@ -43,6 +44,7 @@
 
 - hosts: macos_previous
   gather_facts: yes
+  become: yes
 
   tasks:
       - name: Installation tests suite
