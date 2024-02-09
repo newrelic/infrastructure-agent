@@ -575,10 +575,10 @@ conditions            = [
 
 windows_display_names = [
     # Windows
-    { previous = "canary:vPREVIOUS_VERSION:windows_2012", current = "canary:vVERSION:windows_2012" },
-    { previous = "canary:vPREVIOUS_VERSION:windows_2016", current = "canary:vVERSION:windows_2016" },
-    { previous = "canary:vPREVIOUS_VERSION:windows_2019", current = "canary:vVERSION:windows_2019" },
-    { previous = "canary:vPREVIOUS_VERSION:windows_2022", current = "canary:vVERSION:windows_2022" }
+    { previous = "canary:PREVIOUS_VERSION:windows_2012", current = "canary:VERSION:windows_2012" },
+    { previous = "canary:PREVIOUS_VERSION:windows_2016", current = "canary:VERSION:windows_2016" },
+    { previous = "canary:PREVIOUS_VERSION:windows_2019", current = "canary:VERSION:windows_2019" },
+    { previous = "canary:PREVIOUS_VERSION:windows_2022", current = "canary:VERSION:windows_2022" }
 ]
 
 macos_display_names = [

@@ -33,8 +33,8 @@ ifeq ("$(wildcard $(PROVISION_ALERTS_TERRAFORM_WORKSPACE)/vars.auto.tfvars)","")
 	@cp $(PROVISION_ALERTS_TERRAFORM_WORKSPACE)/vars.auto.tfvars.dist $(PROVISION_ALERTS_TERRAFORM_WORKSPACE)/vars.auto.tfvars
 endif
 	sed "s/TERRAFORM_STATE_KEY/${TERRAFORM_STATE_KEY}/g" "$(PROVISION_ALERTS_TERRAFORM_WORKSPACE)/state.tf.dist" > "$(PROVISION_ALERTS_TERRAFORM_WORKSPACE)/state.tf"
-	sed -i.bak "s/vVERSION/v$(VERSION)/g" $(PROVISION_ALERTS_TERRAFORM_WORKSPACE)/vars.auto.tfvars
-	sed -i.bak "s/vPREVIOUS_VERSION/v$(PREVIOUS_VERSION)/g" $(PROVISION_ALERTS_TERRAFORM_WORKSPACE)/vars.auto.tfvars
+	sed -i.bak "s/VERSION/$(VERSION)/g" $(PROVISION_ALERTS_TERRAFORM_WORKSPACE)/vars.auto.tfvars
+	sed -i.bak "s/PREVIOUS_VERSION/$(PREVIOUS_VERSION)/g" $(PROVISION_ALERTS_TERRAFORM_WORKSPACE)/vars.auto.tfvars
 	@cd $(PROVISION_ALERTS_TERRAFORM_WORKSPACE) \
     && terraform get -update \
     && terraform init -reconfigure
