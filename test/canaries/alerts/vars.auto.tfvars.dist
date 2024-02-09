@@ -1,6 +1,6 @@
-api_key               = "***" # NR User Api Key
-account_id            = 0 # NR Account ID
-region                = "US" # US | EU | Staging
+# api_key               = "***" # NR User Api Key
+# account_id            = 0 # NR Account ID
+# region                = "US" # US | EU | Staging
 policies_prefix       = "[pre-release] Infra Agent Canaries metric comparator"
 conditions            = [
   {
@@ -575,100 +575,103 @@ conditions            = [
 
 windows_display_names = [
     # Windows
-    { previous = "canary:v1.48.4:windows_2012", current = "canary:v1.48.5:windows_2012" },
-    { previous = "canary:v1.48.4:windows_2016", current = "canary:v1.48.5:windows_2016" },
-    { previous = "canary:v1.48.4:windows_2019", current = "canary:v1.48.5:windows_2019" },
-    { previous = "canary:v1.48.4:windows_2022", current = "canary:v1.48.5:windows_2022" }
+    { previous = "canary:vPREVIOUS_VERSION:windows_2012", current = "canary:vVERSION:windows_2012" },
+    { previous = "canary:vPREVIOUS_VERSION:windows_2016", current = "canary:vVERSION:windows_2016" },
+    { previous = "canary:vPREVIOUS_VERSION:windows_2019", current = "canary:vVERSION:windows_2019" },
+    { previous = "canary:vPREVIOUS_VERSION:windows_2022", current = "canary:vVERSION:windows_2022" }
 ]
 
 macos_display_names = [
     # Macosx
-    { previous = "canary:v1.48.4:windows_2012", current = "canary:v1.48.5:windows_2012" },
-    { previous = "canary:v1.48.4:windows_2016", current = "canary:v1.48.5:windows_2016" },
-    { previous = "canary:v1.48.4:windows_2019", current = "canary:v1.48.5:windows_2019" },
-    { previous = "canary:v1.48.4:windows_2022", current = "canary:v1.48.5:windows_2022" }
+    { previous = "canary-macos:vPREVIOUS_VERSION:amd64:macos12", current = "canary-macos:v1.49.0:amd64:macos12" },
+    { previous = "canary-macos:vPREVIOUS_VERSION:amd64:macos13", current = "canary-macos:v1.49.0:amd64:macos13" },
+    { previous = "canary-macos:vPREVIOUS_VERSION:amd64:macos14", current = "canary-macos:v1.49.0:amd64:macos14" },
+
+    # arm
+    { previous = "canary-macos:vPREVIOUS_VERSION:arm64:macos13", current = "canary-macos:v1.49.0:arm64:macos14" },
+    { previous = "canary-macos:vPREVIOUS_VERSION:arm64:macos14", current = "canary-macos:v1.49.0:arm64:macos14" },
 ]
 
 ubuntu_display_names = [
     # Ubuntu AMD
-    { previous = "canary:1.48.5-amd64:ubuntu16.04-previous", current = "canary:1.48.5-amd64:ubuntu16.04-current" },
-    { previous = "canary:1.48.5-amd64:ubuntu18.04-previous", current = "canary:1.48.5-amd64:ubuntu18.04-current" },
-    { previous = "canary:1.48.5-amd64:ubuntu20.04-previous", current = "canary:1.48.5-amd64:ubuntu20.04-current" },
-    { previous = "canary:1.48.5-amd64:ubuntu22.04-previous", current = "canary:1.48.5-amd64:ubuntu22.04-current" },
+    { previous = "canary:VERSION-amd64:ubuntu16.04-previous", current = "canary:VERSION-amd64:ubuntu16.04-current" },
+    { previous = "canary:VERSION-amd64:ubuntu18.04-previous", current = "canary:VERSION-amd64:ubuntu18.04-current" },
+    { previous = "canary:VERSION-amd64:ubuntu20.04-previous", current = "canary:VERSION-amd64:ubuntu20.04-current" },
+    { previous = "canary:VERSION-amd64:ubuntu22.04-previous", current = "canary:VERSION-amd64:ubuntu22.04-current" },
 
     # Ubuntu ARM
-    { previous = "canary:1.48.5-arm64:ubuntu16.04-previous", current = "canary:1.48.5-arm64:ubuntu16.04-current" },
-    { previous = "canary:1.48.5-arm64:ubuntu18.04-previous", current = "canary:1.48.5-arm64:ubuntu18.04-current" },
-    { previous = "canary:1.48.5-arm64:ubuntu20.04-previous", current = "canary:1.48.5-arm64:ubuntu20.04-current" },
-    { previous = "canary:1.48.5-arm64:ubuntu22.04-previous", current = "canary:1.48.5-arm64:ubuntu22.04-current" }
+    { previous = "canary:VERSION-arm64:ubuntu16.04-previous", current = "canary:VERSION-arm64:ubuntu16.04-current" },
+    { previous = "canary:VERSION-arm64:ubuntu18.04-previous", current = "canary:VERSION-arm64:ubuntu18.04-current" },
+    { previous = "canary:VERSION-arm64:ubuntu20.04-previous", current = "canary:VERSION-arm64:ubuntu20.04-current" },
+    { previous = "canary:VERSION-arm64:ubuntu22.04-previous", current = "canary:VERSION-arm64:ubuntu22.04-current" }
 ]
 
 redhat_display_names = [
     # RedHat AMD
-    { previous = "canary:1.48.5-amd64:redhat-8.4-previous", current = "canary:1.48.5-amd64:redhat-8.4-current" },
-    { previous = "canary:1.48.5-amd64:redhat-7.6-previous", current = "canary:1.48.5-amd64:redhat-7.6-current" },
-    { previous = "canary:1.48.5-amd64:redhat-7.9-previous", current = "canary:1.48.5-amd64:redhat-7.9-current" },
-    { previous = "canary:1.48.5-amd64:redhat-9.0-previous", current ="canary:1.48.5-amd64:redhat-9.0-current" },
+    { previous = "canary:VERSION-amd64:redhat-8.4-previous", current = "canary:VERSION-amd64:redhat-8.4-current" },
+    { previous = "canary:VERSION-amd64:redhat-7.6-previous", current = "canary:VERSION-amd64:redhat-7.6-current" },
+    { previous = "canary:VERSION-amd64:redhat-7.9-previous", current = "canary:VERSION-amd64:redhat-7.9-current" },
+    { previous = "canary:VERSION-amd64:redhat-9.0-previous", current ="canary:VERSION-amd64:redhat-9.0-current" },
 
     # RedHat ARM
-    { previous = "canary:1.48.5-arm64:redhat-8.4-previous", current = "canary:1.48.5-arm64:redhat-8.4-current" },
-    { previous = "canary:1.48.5-arm64:redhat-7.6-previous", current = "canary:1.48.5-arm64:redhat-7.6-current" },
-    { previous = "canary:1.48.5-arm64:redhat-7.9-previous", current = "canary:1.48.5-arm64:redhat-7.9-current" },
-    { previous = "canary:1.48.5-arm64:redhat-9.0-previous", current = "canary:1.48.5-arm64:redhat-9.0-current" },
+    { previous = "canary:VERSION-arm64:redhat-8.4-previous", current = "canary:VERSION-arm64:redhat-8.4-current" },
+    { previous = "canary:VERSION-arm64:redhat-7.6-previous", current = "canary:VERSION-arm64:redhat-7.6-current" },
+    { previous = "canary:VERSION-arm64:redhat-7.9-previous", current = "canary:VERSION-arm64:redhat-7.9-current" },
+    { previous = "canary:VERSION-arm64:redhat-9.0-previous", current = "canary:VERSION-arm64:redhat-9.0-current" },
 ]
 
 debian_display_names = [
     # Debian AMD
-    { previous = "canary:1.48.5-amd64:debian-bullseye-previous", current = "canary:1.48.5-amd64:debian-bullseye-current" },
-    { previous = "canary:1.48.5-amd64:debian-bookworm-previous", current = "canary:1.48.5-amd64:debian-bookworm-current" },
-    { previous = "canary:1.48.5-amd64:debian-buster-previous", current = "canary:1.48.5-amd64:debian-buster-current" },
+    { previous = "canary:VERSION-amd64:debian-bullseye-previous", current = "canary:VERSION-amd64:debian-bullseye-current" },
+    { previous = "canary:VERSION-amd64:debian-bookworm-previous", current = "canary:VERSION-amd64:debian-bookworm-current" },
+    { previous = "canary:VERSION-amd64:debian-buster-previous", current = "canary:VERSION-amd64:debian-buster-current" },
 
     # Debian ARM
-    { previous = "canary:1.48.5-arm64:debian-bullseye-previous", current = "canary:1.48.5-arm64:debian-bullseye-current" },
-    { previous = "canary:1.48.5-arm64:debian-bookworm-previous", current = "canary:1.48.5-arm64:debian-bookworm-current" },
-    { previous = "canary:1.48.5-arm64:debian-buster-previous", current = "canary:1.48.5-arm64:debian-buster-current" },
+    { previous = "canary:VERSION-arm64:debian-bullseye-previous", current = "canary:VERSION-arm64:debian-bullseye-current" },
+    { previous = "canary:VERSION-arm64:debian-bookworm-previous", current = "canary:VERSION-arm64:debian-bookworm-current" },
+    { previous = "canary:VERSION-arm64:debian-buster-previous", current = "canary:VERSION-arm64:debian-buster-current" },
 ]
 
 centos_display_names = [
     # Centos AMD
-    { previous = "canary:1.48.5-amd64:centos-7-previous", current = "canary:1.48.5-amd64:centos-7-current" },
-    { previous = "canary:1.48.5-amd64:centos-8-previous", current = "canary:1.48.5-amd64:centos-8-current" },
-    { previous = "canary:1.48.5-amd64:centos-stream-previous", current = "canary:1.48.5-amd64:centos-stream-current" },
+    { previous = "canary:VERSION-amd64:centos-7-previous", current = "canary:VERSION-amd64:centos-7-current" },
+    { previous = "canary:VERSION-amd64:centos-8-previous", current = "canary:VERSION-amd64:centos-8-current" },
+    { previous = "canary:VERSION-amd64:centos-stream-previous", current = "canary:VERSION-amd64:centos-stream-current" },
 
     # Centos ARM
-    { previous = "canary:1.48.5-arm64:centos-7-previous", current = "canary:1.48.5-arm64:centos-7-current" },
-    { previous = "canary:1.48.5-arm64:centos-8-previous", current = "canary:1.48.5-arm64:centos-8-current" },
-    { previous = "canary:1.48.5-arm64:centos-stream-previous", current = "canary:1.48.5-arm64:centos-stream-current" },
+    { previous = "canary:VERSION-arm64:centos-7-previous", current = "canary:VERSION-arm64:centos-7-current" },
+    { previous = "canary:VERSION-arm64:centos-8-previous", current = "canary:VERSION-arm64:centos-8-current" },
+    { previous = "canary:VERSION-arm64:centos-stream-previous", current = "canary:VERSION-arm64:centos-stream-current" },
 ]
 
 amazonlinux_display_names = [
     # AmazonLinux AMD
-    { previous = "canary:1.48.5-amd64:al-2-previous", current = "canary:1.48.5-amd64:al-2-current" },
-    { previous = "canary:1.48.5-amd64:al-2023-previous", current = "canary:1.48.5-amd64:al-2023-current" },
+    { previous = "canary:VERSION-amd64:al-2-previous", current = "canary:VERSION-amd64:al-2-current" },
+    { previous = "canary:VERSION-amd64:al-2023-previous", current = "canary:VERSION-amd64:al-2023-current" },
 
     # AmazonLinux ARM
-    { previous = "canary:1.48.5-arm64:al-2-previous", current = "canary:1.48.5-arm64:al-2-current" },
-    { previous = "canary:1.48.5-arm64:al-2023-previous", current = "canary:1.48.5-arm64:al-2023-current" },
+    { previous = "canary:VERSION-arm64:al-2-previous", current = "canary:VERSION-arm64:al-2-current" },
+    { previous = "canary:VERSION-arm64:al-2023-previous", current = "canary:VERSION-arm64:al-2023-current" },
 ]
 
 sles_display_names = [
     # SUSE AMD
-    { previous = "canary:1.48.5-amd64:sles-12.3-previous", current = "canary:1.48.5-amd64:sles-12.3-current" },
-    { previous = "canary:1.48.5-amd64:sles-12.4-previous", current = "canary:1.48.5-amd64:sles-12.4-current" },
-    { previous = "canary:1.48.5-amd64:sles-12.5-previous", current = "canary:1.48.5-amd64:sles-12.5-current" },
-    { previous = "canary:1.48.5-amd64:sles-15.1-previous", current = "canary:1.48.5-amd64:sles-15.1-current" },
-    { previous = "canary:1.48.5-amd64:sles-15.2-previous", current = "canary:1.48.5-amd64:sles-15.2-current" },
-    { previous = "canary:1.48.5-amd64:sles-15.3-previous", current = "canary:1.48.5-amd64:sles-15.3-current" },
-    { previous = "canary:1.48.5-amd64:sles-15.4-previous", current = "canary:1.48.5-amd64:sles-15.4-current" },
-    { previous = "canary:1.48.5-amd64:sles-15.5-previous", current = "canary:1.48.5-amd64:sles-15.5-current" },
+    { previous = "canary:VERSION-amd64:sles-12.3-previous", current = "canary:VERSION-amd64:sles-12.3-current" },
+    { previous = "canary:VERSION-amd64:sles-12.4-previous", current = "canary:VERSION-amd64:sles-12.4-current" },
+    { previous = "canary:VERSION-amd64:sles-12.5-previous", current = "canary:VERSION-amd64:sles-12.5-current" },
+    { previous = "canary:VERSION-amd64:sles-15.1-previous", current = "canary:VERSION-amd64:sles-15.1-current" },
+    { previous = "canary:VERSION-amd64:sles-15.2-previous", current = "canary:VERSION-amd64:sles-15.2-current" },
+    { previous = "canary:VERSION-amd64:sles-15.3-previous", current = "canary:VERSION-amd64:sles-15.3-current" },
+    { previous = "canary:VERSION-amd64:sles-15.4-previous", current = "canary:VERSION-amd64:sles-15.4-current" },
+    { previous = "canary:VERSION-amd64:sles-15.5-previous", current = "canary:VERSION-amd64:sles-15.5-current" },
 
     # SUSE ARM
-    { previous = "canary:1.48.5-arm64:sles-12.3-previous", current = "canary:1.48.5-arm64:sles-12.3-current" },
-    { previous = "canary:1.48.5-arm64:sles-12.4-previous", current = "canary:1.48.5-arm64:sles-12.4-current" },
-    { previous = "canary:1.48.5-arm64:sles-12.5-previous", current = "canary:1.48.5-arm64:sles-12.5-current" },
-    { previous = "canary:1.48.5-arm64:sles-15.1-previous", current = "canary:1.48.5-arm64:sles-15.1-current" },
-    { previous = "canary:1.48.5-arm64:sles-15.2-previous", current = "canary:1.48.5-arm64:sles-15.2-current" },
-    { previous = "canary:1.48.5-arm64:sles-15.3-previous", current = "canary:1.48.5-arm64:sles-15.3-current" },
-    { previous = "canary:1.48.5-arm64:sles-15.4-previous", current = "canary:1.48.5-arm64:sles-15.4-current" },
-    { previous = "canary:1.48.5-arm64:sles-15.5-previous", current = "canary:1.48.5-arm64:sles-15.5-current" }
+    { previous = "canary:VERSION-arm64:sles-12.3-previous", current = "canary:VERSION-arm64:sles-12.3-current" },
+    { previous = "canary:VERSION-arm64:sles-12.4-previous", current = "canary:VERSION-arm64:sles-12.4-current" },
+    { previous = "canary:VERSION-arm64:sles-12.5-previous", current = "canary:VERSION-arm64:sles-12.5-current" },
+    { previous = "canary:VERSION-arm64:sles-15.1-previous", current = "canary:VERSION-arm64:sles-15.1-current" },
+    { previous = "canary:VERSION-arm64:sles-15.2-previous", current = "canary:VERSION-arm64:sles-15.2-current" },
+    { previous = "canary:VERSION-arm64:sles-15.3-previous", current = "canary:VERSION-arm64:sles-15.3-current" },
+    { previous = "canary:VERSION-arm64:sles-15.4-previous", current = "canary:VERSION-arm64:sles-15.4-current" },
+    { previous = "canary:VERSION-arm64:sles-15.5-previous", current = "canary:VERSION-arm64:sles-15.5-current" }
 ]
