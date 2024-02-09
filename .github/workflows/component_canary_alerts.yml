@@ -5,6 +5,10 @@ on:
     secrets:
       AWS_VPC_SUBNET:
         required: true
+      CANARIES_NR_API_KEY:
+        required: true
+      NR_ACCOUNT_ID:
+        required: true
     inputs:
       TAG:
         required: true
