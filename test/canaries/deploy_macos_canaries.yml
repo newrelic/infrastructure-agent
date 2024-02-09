@@ -24,7 +24,6 @@
     #     name: caos.ansible_roles.install_crowdstrike_falcon
 
 - hosts: macos_current
-  become: true
   gather_facts: yes
 
   tasks:
@@ -43,7 +42,6 @@
               go_version: 1.21
 
 - hosts: macos_previous
-  become: true
   gather_facts: yes
 
   tasks:
