@@ -41,6 +41,7 @@
               self_instrumentation: true
               target_agent_version: "{{ current_version }}"
               go_version: 1.21
+              display_name: "{{ inventory_hostname }}-current"
 
 - hosts: macos_previous
   gather_facts: yes
@@ -60,4 +61,5 @@
               self_instrumentation: true
               target_agent_version: "{{ previous_version }}"
               go_version: 1.21
+              display_name: "{{ inventory_hostname }}-previous"
 ...
