@@ -255,6 +255,7 @@ func NewManager(
 func (mgr *Manager) Start(ctx context.Context) {
 	for path, rc := range mgr.runners.List() {
 		illog.WithField("file", path).Debug("Starting integrations group.")
+		ctx = contextWithTmpDir(ctx, mgr.managerConfig.TempDir)
 		rc.start(contextWithVerbose(ctx, mgr.managerConfig.Verbose))
 	}
 
@@ -271,6 +272,7 @@ func (mgr *Manager) RunOnce(ctx context.Context) {
 
 		wg.Add(1)
 		go func(g *groupContext) {
+			ctx = contextWithTmpDir(ctx, mgr.managerConfig.TempDir)
 			g.runOnce(contextWithVerbose(ctx, mgr.managerConfig.Verbose))
 			wg.Done()
 		}(group)
@@ -523,4 +525,8 @@ func foundFilesLogFields(configs v4Config.YAMLMap) func() logrus.Fields {
 
 func contextWithVerbose(ctx context.Context, verbose int) context.Context {
 	return context.WithValue(ctx, constants.EnableVerbose, verbose)
+}
+
+func contextWithTmpDir(ctx context.Context, tmpDir string) context.Context {
+	return context.WithValue(ctx, constants.TmpDir, tmpDir)
 }

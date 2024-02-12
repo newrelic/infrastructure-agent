@@ -162,6 +162,12 @@ func (r *Executor) buildCommand(ctx context.Context) *exec.Cmd {
 		cmd.Env = append(cmd.Env, "NRI_HOST_ID="+hostID)
 	}
 
+	tmpDir, ok := ctx.Value(constants.TmpDir).(string)
+
+	if ok && tmpDir != "" {
+		cmd.Env = append(cmd.Env, "TEMP_DIR="+tmpDir)
+	}
+
 	cmd.Dir = r.Cfg.Directory
 	return cmd
 }
