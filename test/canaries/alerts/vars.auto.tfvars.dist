@@ -575,21 +575,21 @@ conditions            = [
 
 windows_display_names = [
     # Windows
-    { previous = "canary:PREVIOUS_VERSION:windows_2012", current = "canary:VERSION:windows_2012" },
-    { previous = "canary:PREVIOUS_VERSION:windows_2016", current = "canary:VERSION:windows_2016" },
-    { previous = "canary:PREVIOUS_VERSION:windows_2019", current = "canary:VERSION:windows_2019" },
-    { previous = "canary:PREVIOUS_VERSION:windows_2022", current = "canary:VERSION:windows_2022" }
+    { previous = "canary:PREVIOUS_VERSION-amd64:windows_2012", current = "canary:VERSION-amd64:windows_2012" },
+    { previous = "canary:PREVIOUS_VERSION-amd64:windows_2016", current = "canary:VERSION-amd64:windows_2016" },
+    { previous = "canary:PREVIOUS_VERSION-amd64:windows_2019", current = "canary:VERSION-amd64:windows_2019" },
+    { previous = "canary:PREVIOUS_VERSION-amd64:windows_2022", current = "canary:VERSION-amd64:windows_2022" }
 ]
 
 macos_display_names = [
     # Macosx
-    { previous = "canary-macos:vPREVIOUS_VERSION:amd64:macos12", current = "canary-macos:v1.49.0:amd64:macos12" },
-    { previous = "canary-macos:vPREVIOUS_VERSION:amd64:macos13", current = "canary-macos:v1.49.0:amd64:macos13" },
-    { previous = "canary-macos:vPREVIOUS_VERSION:amd64:macos14", current = "canary-macos:v1.49.0:amd64:macos14" },
+    { previous = "canary-macos:vPREVIOUS_VERSION:amd64:macos12", current = "canary-macos:vVERSION:amd64:macos12" },
+    { previous = "canary-macos:vPREVIOUS_VERSION:amd64:macos13", current = "canary-macos:vVERSION:amd64:macos13" },
+    { previous = "canary-macos:vPREVIOUS_VERSION:amd64:macos14", current = "canary-macos:vVERSION::amd64:macos14" },
 
     # arm
-    { previous = "canary-macos:vPREVIOUS_VERSION:arm64:macos13", current = "canary-macos:v1.49.0:arm64:macos14" },
-    { previous = "canary-macos:vPREVIOUS_VERSION:arm64:macos14", current = "canary-macos:v1.49.0:arm64:macos14" },
+    { previous = "canary-macos:vPREVIOUS_VERSION:arm64:macos13", current = "canary-macos:vVERSION:arm64:macos14" },
+    { previous = "canary-macos:vPREVIOUS_VERSION:arm64:macos14", current = "canary-macos:vVERSION:arm64:macos14" },
 ]
 
 ubuntu_display_names = [
