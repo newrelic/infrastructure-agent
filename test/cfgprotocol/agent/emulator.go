@@ -63,6 +63,7 @@ func New(configsDir, tempBinDir string) *Emulator {
 	cfg := ag.Context.Config()
 	integrationCfg := v4.NewManagerConfig(
 		cfg.Log.VerboseEnabled(),
+		cfg.DefaultIntegrationsTempDir,
 		cfg.Features,
 		cfg.PassthroughEnvironment,
 		[]string{configsDir},
@@ -155,6 +156,7 @@ func newInstancesLookup(cfg v4.ManagerConfig) integration.InstancesLookup {
 	legacyDefinedCommands := v3legacy.NewDefinitionsRepo(v3legacy.LegacyConfig{
 		DefinitionFolders: cfg.DefinitionFolders,
 		Verbose:           cfg.Verbose,
+		TempDir:           cfg.TempDir,
 	})
 	return integration.InstancesLookup{
 		Legacy: legacyDefinedCommands.NewDefinitionCommand,

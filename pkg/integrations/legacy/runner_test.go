@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"io"
 	"io/ioutil"
 	"os"
@@ -19,6 +18,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
@@ -1230,6 +1231,7 @@ func TestGenerateExecCmdWithDatabind(t *testing.T) {
 				Environment: map[string]string{
 					"PATH":       os.Getenv("PATH"), // The config has a PATH set as well, but the env var should take precedence.
 					"VERBOSE":    "0",
+					"TEMP_DIR":   "a/path",
 					"CUSTOM_ARG": "testValue",
 					"ComSpec":    os.Getenv("ComSpec"),
 					"SystemRoot": os.Getenv("SystemRoot"),
@@ -1262,6 +1264,7 @@ func TestGenerateExecCmdWithDatabind(t *testing.T) {
 	}
 	assert.Equal(t, os.Getenv("PATH"), envVarMap["PATH"]) // The config has a PATH set as well, but the env var should take precedence
 	assert.Equal(t, "0", envVarMap["VERBOSE"])            // Should be set based on config
+	assert.Equal(t, "a/path", envVarMap["TEMP_DIR"])      // Should be set based on config
 	assert.Equal(t, "testValue", envVarMap["CUSTOM_ARG"]) // Should match the config on the plugin instance
 
 	// In config.go, these environment variables are also configured to pass through
@@ -1430,6 +1433,7 @@ func (rs *RunnerSuite) TestGenerateExecWithEnvVars(c *C) {
 	}
 	c.Assert(envVarMap["PATH"], Equals, os.Getenv("PATH"))             // The config has a PATH set as well, but the env var should take precedence
 	c.Assert(envVarMap["VERBOSE"], Equals, "0")                        // Should be set based on config
+	c.Assert(envVarMap["TEMP_DIR"], Equals, "a/path")                  // Should be set based on config
 	c.Assert(envVarMap["CUSTOM_ARG"], Equals, "testValue")             // Should match the config on the plugin instance
 	c.Assert(envVarMap["PASSWORD1"], Equals, "pa$$word")               // should be kept
 	c.Assert(envVarMap["PASSWORD2"], Equals, "pa$tor")                 // should be kept
@@ -2182,6 +2186,7 @@ func TestLogFields(t *testing.T) {
 
 	envVars := map[string]string{
 		"VERBOSE":    "0",
+		"TEMP_DIR":   "",
 		"PATH":       pathEnv,
 		"CUSTOM_ARG": "testValue",
 	}
@@ -2232,6 +2237,7 @@ func TestLogFields(t *testing.T) {
 			"windir",
 			//We add the ones defined above
 			"VERBOSE",
+			"TEMP_DIR",
 			"CUSTOM_ARG",
 		}
 		//We check that env vars are present as we cannot assert the content

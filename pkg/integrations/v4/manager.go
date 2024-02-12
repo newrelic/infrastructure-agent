@@ -6,18 +6,17 @@ package v4
 import (
 	"context"
 	"errors"
-	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/constants"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	v4Config "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
-
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/fs"
 
 	"github.com/fsnotify/fsnotify"
@@ -157,16 +156,19 @@ type ManagerConfig struct {
 	DefinitionFolders []string
 	// Defines verbosity level in v3 legacy integrations
 	Verbose int
+	// Defines TempDir folder in v3 legacy integrations
+	TempDir string
 	// PassthroughEnvironment holds a copy of its homonym in config.Config.
 	PassthroughEnvironment []string
 }
 
-func NewManagerConfig(verbose int, features map[string]bool, passthroughEnvs, configFolders, definitionFolders []string) ManagerConfig {
+func NewManagerConfig(verbose int, tempDir string, features map[string]bool, passthroughEnvs, configFolders, definitionFolders []string) ManagerConfig {
 	return ManagerConfig{
 		ConfigPaths:            configFolders,
 		AgentFeatures:          features,
 		DefinitionFolders:      definitionFolders,
 		Verbose:                verbose,
+		TempDir:                tempDir,
 		PassthroughEnvironment: passthroughEnvs,
 	}
 }
