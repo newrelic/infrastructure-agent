@@ -13,10 +13,5 @@ variable "region" {}
 variable "policies_prefix" {}
 variable "conditions" {}
 variable "windows_display_names" {}
-variable "ubuntu_display_names" {}
-variable "debian_display_names" {}
-variable "redhat_display_names" {}
-variable "sles_display_names" {}
-variable "amazonlinux_display_names" {}
-variable "centos_display_names" {}
+variable "linux_display_names" {}
 variable "macos_display_names" {}

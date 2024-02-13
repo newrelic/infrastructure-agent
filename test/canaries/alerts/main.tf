@@ -8,12 +8,7 @@ module "alerts" {
   conditions            = var.conditions
   display_names         = flatten([
         var.windows_display_names,
-        var.sles_display_names,
-        var.redhat_display_names,
-        var.debian_display_names,
-        var.amazonlinux_display_names,
-        var.centos_display_names,
-        var.ubuntu_display_names,
+        var.linux_display_names,
         var.macos_display_names
   ])
 }
