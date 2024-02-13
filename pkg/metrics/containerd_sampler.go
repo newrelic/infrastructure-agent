@@ -21,7 +21,7 @@ var (
 	cslog = log.WithComponent("ContainerdSampler") //nolint:gochecknoglobals
 
 	errContainerdSampler      = errors.New("containerd sampler")
-	errInitializeContainerd   = errors.New("unable to initialize containerd client")
+	errInitializeContainerd   = errors.New("unable to initialize containerd client, could be not installed on the host")
 	errCannotGetPids          = errors.New("unable to get pids for container")
 	errCannotGetTask          = errors.New("unable to get task for container")
 	errCannotGetContainerInfo = errors.New("unable to get container info")
@@ -71,7 +71,7 @@ func (d *ContainerdSampler) Enabled() bool {
 
 	d.containerdClient, err = initializeContainerdClient()
 	if err != nil {
-		cslog.WithError(err).Debug(errInitializeContainerd.Error())
+		cslog.WithError(err).Warn(errInitializeContainerd.Error())
 
 		return false
 	}
