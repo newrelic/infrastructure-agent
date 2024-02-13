@@ -17,5 +17,7 @@ jobs:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
       NR_ACCOUNT_ID: ${{secrets.NR_ACCOUNT_ID}}
       CANARIES_NR_API_KEY: ${{secrets.CANARIES_NR_API_KEY}}
+      MACSTADIUM_USER: ${{secrets.MACSTADIUM_USER}}
+      MACSTADIUM_PASSWORD: ${{secrets.MACSTADIUM_PASSWORD}}
     with:
       TAG: ${{ github.event.inputs.tag }}

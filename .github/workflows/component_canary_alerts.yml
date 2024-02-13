@@ -9,6 +9,10 @@ on:
         required: true
       NR_ACCOUNT_ID:
         required: true
+      MACSTADIUM_USER:
+        required: true
+      MACSTADIUM_PASSWORD:
+        required: true
     inputs:
       TAG:
         required: true
@@ -60,6 +64,8 @@ jobs:
             PREVIOUS_VERSION=${{ env.PREVIOUS_NR_VERSION }}
             VERSION=${{ inputs.TAG }}
             TERRAFORM_STATE_KEY=${{ env.TERRAFORM_STATE }}
+            MACSTADIUM_USER=${{ secrets.MACSTADIUM_USER }}
+            MACSTADIUM_PASSWORD=${{ secrets.MACSTADIUM_PASSWORD }}
           ecs_cluster_name: caos_infra_agent
           task_definition_name: infra-agent
           cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
