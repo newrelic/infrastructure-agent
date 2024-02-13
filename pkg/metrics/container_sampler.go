@@ -27,13 +27,15 @@ func GetContainerSamplers(cacheTTL time.Duration, dockerAPIVersion, dockerContai
 	containerdSampler := NewContainerdSampler(cacheTTL, dockerContainerdNamespace)
 	if containerdSampler.Enabled() {
 		containerSamplers = append(containerSamplers, containerdSampler)
-		clog.Debug("containerd sampler enabled")
+
+		clog.Info("containerd sampler enabled")
 	}
 
 	dockerSampler := NewDockerSampler(cacheTTL, dockerAPIVersion)
 	if dockerSampler.Enabled() {
 		containerSamplers = append(containerSamplers, dockerSampler)
-		clog.Debug("docker sampler enabled")
+
+		clog.Info("docker sampler enabled")
 	}
 
 	return containerSamplers
