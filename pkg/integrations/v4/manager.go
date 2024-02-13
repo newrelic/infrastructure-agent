@@ -253,9 +253,10 @@ func NewManager(
 
 // Start in background the v4 integrations lifecycle management, including hot reloading, interval and timeout management
 func (mgr *Manager) Start(ctx context.Context) {
+	ctx = contextWithTmpDir(ctx, mgr.managerConfig.TempDir)
+
 	for path, rc := range mgr.runners.List() {
 		illog.WithField("file", path).Debug("Starting integrations group.")
-		ctx = contextWithTmpDir(ctx, mgr.managerConfig.TempDir)
 		rc.start(contextWithVerbose(ctx, mgr.managerConfig.Verbose))
 	}
 
@@ -295,6 +296,8 @@ func (mgr *Manager) EnableOHIFromFF(ctx context.Context, featureFlag string) err
 		Name:    featureFlag,
 		Enabled: true,
 	}
+
+	ctx = contextWithTmpDir(ctx, mgr.managerConfig.TempDir)
 
 	mgr.runIntegrationFromPath(ctx, cfgPath, false, &illog, &cmdFF)
 
