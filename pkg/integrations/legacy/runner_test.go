@@ -517,6 +517,7 @@ func newFakePlugin(ctx customContext, pluginVersion int) externalPlugin {
 				Arguments: map[string]string{
 					"PATH":       "Path should be replaced by path env var",
 					"CUSTOM_ARG": "testValue",
+					"TEMP_DIR":   "a/path",
 				},
 			},
 			pluginRunner: &PluginRunner{
@@ -1433,7 +1434,6 @@ func (rs *RunnerSuite) TestGenerateExecWithEnvVars(c *C) {
 	}
 	c.Assert(envVarMap["PATH"], Equals, os.Getenv("PATH"))             // The config has a PATH set as well, but the env var should take precedence
 	c.Assert(envVarMap["VERBOSE"], Equals, "0")                        // Should be set based on config
-	c.Assert(envVarMap["TEMP_DIR"], Equals, "a/path")                  // Should be set based on config
 	c.Assert(envVarMap["CUSTOM_ARG"], Equals, "testValue")             // Should match the config on the plugin instance
 	c.Assert(envVarMap["PASSWORD1"], Equals, "pa$$word")               // should be kept
 	c.Assert(envVarMap["PASSWORD2"], Equals, "pa$tor")                 // should be kept
@@ -2186,7 +2186,7 @@ func TestLogFields(t *testing.T) {
 
 	envVars := map[string]string{
 		"VERBOSE":    "0",
-		"TEMP_DIR":   "",
+		"TEMP_DIR":   "a/path",
 		"PATH":       pathEnv,
 		"CUSTOM_ARG": "testValue",
 	}
@@ -2204,6 +2204,7 @@ func TestLogFields(t *testing.T) {
 	assert.Equal(t, fields["arguments"], map[string]string{
 		"PATH":       "Path should be replaced by path env var",
 		"CUSTOM_ARG": "testValue",
+		"TEMP_DIR":   "a/path",
 	})
 	assert.Equal(t, fields["labels"], map[string]string{
 		"role":        "fileserver",
