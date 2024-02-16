@@ -48,6 +48,7 @@ type DefinitionContext struct {
 type LegacyConfig struct {
 	DefinitionFolders []string
 	Verbose           int
+	TempDir           string
 }
 
 // DefinitionsRepo stores all the definitions from all the files
@@ -125,7 +126,7 @@ func (dcb *DefinitionsRepo) NewDefinitionCommand(dcc integration.DefinitionComma
 	// Legacy integrations don't allow setting the environment, as it will be used
 	// for passing the "arguments" entry.
 	dcc.Common.ExecutorConfig.Environment =
-		legacy.ArgumentsToEnvVars(dcb.Config.Verbose, dcc.Arguments)
+		legacy.ArgumentsToEnvVars(dcb.Config.Verbose, dcb.Config.TempDir, dcc.Arguments)
 
 	// We need to set the Working Directory to the folder where the definition file is placed
 	dcc.Common.ExecutorConfig.Directory = definition.Dir

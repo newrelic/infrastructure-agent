@@ -372,9 +372,10 @@ func (ep *externalPlugin) detailedLogFields() logrus.Fields {
 // ArgumentsToEnvVars returns the environment variables that will be passed to the
 // external plugin command. This implies that the plugin arguments are
 // passed as environment variables to the integrations.
-func ArgumentsToEnvVars(verbose int, arguments map[string]string) map[string]string {
+func ArgumentsToEnvVars(verbose int, tempDir string, arguments map[string]string) map[string]string {
 	envVars := make(map[string]string)
 	envVars["VERBOSE"] = fmt.Sprintf("%v", verbose)
+	envVars["TEMP_DIR"] = fmt.Sprintf("%s", tempDir)
 
 	// Pass the integration arguments as environment variables to the command
 	for k, v := range arguments {
@@ -430,7 +431,7 @@ func (ep *externalPlugin) appendEnvPassthrough(envVars map[string]string) {
 // `PassthroughEnvironment`, the value from the environment takes precedence.
 func (ep *externalPlugin) envVars() map[string]string {
 	cfg := ep.Context.Config()
-	envVars := ArgumentsToEnvVars(cfg.Log.VerboseEnabled(), ep.pluginInstance.Arguments)
+	envVars := ArgumentsToEnvVars(cfg.Log.VerboseEnabled(), cfg.DefaultIntegrationsTempDir, ep.pluginInstance.Arguments)
 	ep.appendEnvPassthrough(envVars)
 	return envVars
 }

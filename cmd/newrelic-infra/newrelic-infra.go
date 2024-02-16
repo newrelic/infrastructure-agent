@@ -282,6 +282,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 
 	v4ManagerConfig := v4.NewManagerConfig(
 		c.Log.VerboseEnabled(),
+		c.DefaultIntegrationsTempDir,
 		c.Features,
 		c.PassthroughEnvironment,
 		c.PluginInstanceDirs,
@@ -526,6 +527,7 @@ func newInstancesLookup(cfg v4.ManagerConfig) integration.InstancesLookup {
 	legacyDefinedCommands := v3legacy.NewDefinitionsRepo(v3legacy.LegacyConfig{
 		DefinitionFolders: cfg.DefinitionFolders,
 		Verbose:           cfg.Verbose,
+		TempDir:           cfg.TempDir,
 	})
 	return integration.InstancesLookup{
 		Legacy: legacyDefinedCommands.NewDefinitionCommand,
@@ -705,6 +707,7 @@ func executeIntegrationsDryRunMode(configPath string, ac *config.Config) {
 
 	v4ManagerConfig := v4.NewManagerConfig(
 		ac.Log.VerboseEnabled(),
+		ac.DefaultIntegrationsTempDir,
 		ac.Features,
 		ac.PassthroughEnvironment,
 		integrationConfigPaths,

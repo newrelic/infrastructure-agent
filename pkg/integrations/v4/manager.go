@@ -6,18 +6,17 @@ package v4
 import (
 	"context"
 	"errors"
-	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/constants"
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/track"
 	v4Config "github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
-
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/fs"
 
 	"github.com/fsnotify/fsnotify"
@@ -157,16 +156,19 @@ type ManagerConfig struct {
 	DefinitionFolders []string
 	// Defines verbosity level in v3 legacy integrations
 	Verbose int
+	// Defines TempDir folder in v3 legacy integrations
+	TempDir string
 	// PassthroughEnvironment holds a copy of its homonym in config.Config.
 	PassthroughEnvironment []string
 }
 
-func NewManagerConfig(verbose int, features map[string]bool, passthroughEnvs, configFolders, definitionFolders []string) ManagerConfig {
+func NewManagerConfig(verbose int, tempDir string, features map[string]bool, passthroughEnvs, configFolders, definitionFolders []string) ManagerConfig {
 	return ManagerConfig{
 		ConfigPaths:            configFolders,
 		AgentFeatures:          features,
 		DefinitionFolders:      definitionFolders,
 		Verbose:                verbose,
+		TempDir:                tempDir,
 		PassthroughEnvironment: passthroughEnvs,
 	}
 }
@@ -251,6 +253,8 @@ func NewManager(
 
 // Start in background the v4 integrations lifecycle management, including hot reloading, interval and timeout management
 func (mgr *Manager) Start(ctx context.Context) {
+	ctx = contextWithTmpDir(ctx, mgr.managerConfig.TempDir)
+
 	for path, rc := range mgr.runners.List() {
 		illog.WithField("file", path).Debug("Starting integrations group.")
 		rc.start(contextWithVerbose(ctx, mgr.managerConfig.Verbose))
@@ -269,6 +273,7 @@ func (mgr *Manager) RunOnce(ctx context.Context) {
 
 		wg.Add(1)
 		go func(g *groupContext) {
+			ctx = contextWithTmpDir(ctx, mgr.managerConfig.TempDir)
 			g.runOnce(contextWithVerbose(ctx, mgr.managerConfig.Verbose))
 			wg.Done()
 		}(group)
@@ -291,6 +296,8 @@ func (mgr *Manager) EnableOHIFromFF(ctx context.Context, featureFlag string) err
 		Name:    featureFlag,
 		Enabled: true,
 	}
+
+	ctx = contextWithTmpDir(ctx, mgr.managerConfig.TempDir)
 
 	mgr.runIntegrationFromPath(ctx, cfgPath, false, &illog, &cmdFF)
 
@@ -521,4 +528,8 @@ func foundFilesLogFields(configs v4Config.YAMLMap) func() logrus.Fields {
 
 func contextWithVerbose(ctx context.Context, verbose int) context.Context {
 	return context.WithValue(ctx, constants.EnableVerbose, verbose)
+}
+
+func contextWithTmpDir(ctx context.Context, tmpDir string) context.Context {
+	return context.WithValue(ctx, constants.TmpDir, tmpDir)
 }

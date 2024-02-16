@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"io"
 	"io/ioutil"
 	"os"
@@ -19,6 +18,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
@@ -516,6 +517,7 @@ func newFakePlugin(ctx customContext, pluginVersion int) externalPlugin {
 				Arguments: map[string]string{
 					"PATH":       "Path should be replaced by path env var",
 					"CUSTOM_ARG": "testValue",
+					"TEMP_DIR":   "a/path",
 				},
 			},
 			pluginRunner: &PluginRunner{
@@ -1230,6 +1232,7 @@ func TestGenerateExecCmdWithDatabind(t *testing.T) {
 				Environment: map[string]string{
 					"PATH":       os.Getenv("PATH"), // The config has a PATH set as well, but the env var should take precedence.
 					"VERBOSE":    "0",
+					"TEMP_DIR":   "a/path",
 					"CUSTOM_ARG": "testValue",
 					"ComSpec":    os.Getenv("ComSpec"),
 					"SystemRoot": os.Getenv("SystemRoot"),
@@ -1262,6 +1265,7 @@ func TestGenerateExecCmdWithDatabind(t *testing.T) {
 	}
 	assert.Equal(t, os.Getenv("PATH"), envVarMap["PATH"]) // The config has a PATH set as well, but the env var should take precedence
 	assert.Equal(t, "0", envVarMap["VERBOSE"])            // Should be set based on config
+	assert.Equal(t, "a/path", envVarMap["TEMP_DIR"])      // Should be set based on config
 	assert.Equal(t, "testValue", envVarMap["CUSTOM_ARG"]) // Should match the config on the plugin instance
 
 	// In config.go, these environment variables are also configured to pass through
@@ -2182,6 +2186,7 @@ func TestLogFields(t *testing.T) {
 
 	envVars := map[string]string{
 		"VERBOSE":    "0",
+		"TEMP_DIR":   "a/path",
 		"PATH":       pathEnv,
 		"CUSTOM_ARG": "testValue",
 	}
@@ -2199,6 +2204,7 @@ func TestLogFields(t *testing.T) {
 	assert.Equal(t, fields["arguments"], map[string]string{
 		"PATH":       "Path should be replaced by path env var",
 		"CUSTOM_ARG": "testValue",
+		"TEMP_DIR":   "a/path",
 	})
 	assert.Equal(t, fields["labels"], map[string]string{
 		"role":        "fileserver",
@@ -2232,6 +2238,7 @@ func TestLogFields(t *testing.T) {
 			"windir",
 			//We add the ones defined above
 			"VERBOSE",
+			"TEMP_DIR",
 			"CUSTOM_ARG",
 		}
 		//We check that env vars are present as we cannot assert the content

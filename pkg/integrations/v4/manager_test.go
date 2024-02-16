@@ -988,6 +988,68 @@ func TestManager_StartWithVerboseFalse(t *testing.T) {
 	})
 }
 
+func TestManager_StartWithTempDir(t *testing.T) {
+	// GIVEN a configuration file for an OHI with feature in it
+	dir, err := tempFiles(map[string]string{
+		"foo.yaml": getV4VerboseCheckYAML(t),
+	})
+	require.NoError(t, err)
+	defer removeTempFiles(t, dir)
+
+	// AND an integrations manager and with feature enabled within agent config
+	emitter := &testemit.RecordEmitter{}
+	mgr := NewManager(ManagerConfig{
+		ConfigPaths:            []string{dir},
+		PassthroughEnvironment: passthroughEnv,
+	}, config.NewPathLoader(), emitter, integration.ErrLookup, definitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
+
+	// AND the manager starts
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go mgr.Start(ctx)
+
+	d := getEmittedData(t, emitter, "verbose-check")
+	assert.Contains(t, d.DataSet.Metrics, protocol.MetricData{
+		"value":      "true",
+		"event_type": "THIS_IS_A_TEST",
+	})
+	assert.NotContains(t, d.DataSet.Metrics, protocol.MetricData{
+		"event_type": "TEMP_DIR",
+	})
+}
+
+func TestManager_StartWithoutTempDir(t *testing.T) {
+	// GIVEN a configuration file for an OHI with feature in it
+	dir, err := tempFiles(map[string]string{
+		"foo.yaml": getV4VerboseCheckYAML(t),
+	})
+	require.NoError(t, err)
+	defer removeTempFiles(t, dir)
+
+	// AND an integrations manager and with feature enabled within agent config
+	emitter := &testemit.RecordEmitter{}
+	mgr := NewManager(ManagerConfig{
+		ConfigPaths:            []string{dir},
+		PassthroughEnvironment: passthroughEnv,
+		TempDir:                "/my-custom/path",
+	}, config.NewPathLoader(), emitter, integration.ErrLookup, definitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
+
+	// AND the manager starts
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go mgr.Start(ctx)
+
+	d := getEmittedData(t, emitter, "verbose-check")
+	assert.Contains(t, d.DataSet.Metrics, protocol.MetricData{
+		"value":      "true",
+		"event_type": "THIS_IS_A_TEST",
+	})
+	assert.Contains(t, d.DataSet.Metrics, protocol.MetricData{
+		"value":      "/my-custom/path",
+		"event_type": "TEMP_DIR",
+	})
+}
+
 func getV4VerboseCheckYAML(t *testing.T) string {
 	//      GOTMPDIR: %s
 	//      GOCACHE: %s
