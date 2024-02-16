@@ -375,7 +375,7 @@ func (ep *externalPlugin) detailedLogFields() logrus.Fields {
 func ArgumentsToEnvVars(verbose int, tempDir string, arguments map[string]string) map[string]string {
 	envVars := make(map[string]string)
 	envVars["VERBOSE"] = fmt.Sprintf("%v", verbose)
-	envVars["TEMP_DIR"] = fmt.Sprintf("%s", tempDir)
+	envVars["TEMP_DIR"] = tempDir
 
 	// Pass the integration arguments as environment variables to the command
 	for k, v := range arguments {
