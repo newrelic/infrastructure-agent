@@ -319,7 +319,7 @@ func (r *runner) handleStderr(stderr <-chan []byte) {
 					case "trace":
 						logLine.Trace(logMessage)
 					default:
-						logLine.Error(logMessage)
+						logLine.Debug(logMessage)
 					}
 
 					lineWasParsed = true
