@@ -18,6 +18,26 @@ variable "cluster_name" {
   default = "caos_infra_agent"
 }
 
+# CrowdStrike Falcon secrets
+
+variable "secret_name_crowdstrike_client_id" {
+  default = "caos/canaries/crowdstrike_falcon_client_id-N7nGXx"
+}
+
+variable "secret_name_crowdstrike_client_secret" {
+  default = "caos/canaries/crowdstrike_falcon_client_secret-l9EIhi"
+}
+
+variable "secret_name_crowdstrike_customer_id" {
+  default = "caos/canaries/crowdstrike_falcon_customer_id-f7n7rI"
+}
+
+variable "secret_name_crowdstrike_ansible_role_key" {
+  default = "caos/crowdstrike/ansible-role-key-DPyrW4"
+}
+
+####
+
 #######################################
 # Task definition
 #######################################

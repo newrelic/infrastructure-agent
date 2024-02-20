@@ -3,8 +3,15 @@ REQUIREMENTS_FILE ?= $(ANSIBLE_FOLDER)/requirements.yml
 
 .PHONY: ansible/dependencies
 ansible/dependencies: $(ROLES_PATH) $(COLLECTIONS_PATH)
-	ansible-galaxy role install --force -r $(REQUIREMENTS_FILE)
-	ansible-galaxy collection install --force -r $(REQUIREMENTS_FILE)
+ifdef SSH_KEY
+	eval $$(ssh-agent -s) && \
+	ssh-add $(SSH_KEY) && \
+	ansible-galaxy role install --force -r $(REQUIREMENTS_FILE) -p $(ROLES_PATH) && \
+	ansible-galaxy collection install --force -r $(REQUIREMENTS_FILE) -p $(COLLECTIONS_PATH)
+else
+	ansible-galaxy role install --force -r $(REQUIREMENTS_FILE) -p $(ROLES_PATH)
+	ansible-galaxy collection instal--force -r $(REQUIREMENTS_FILE) -p $(COLLECTIONS_PATH)
+endif
 
 .PHONY: ansible/clean
 ansible/clean:
