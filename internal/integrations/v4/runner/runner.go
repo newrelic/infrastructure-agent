@@ -12,6 +12,7 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/constants"
+	"github.com/newrelic/infrastructure-agent/pkg/config" //nolint:depguard
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/cache"
@@ -310,19 +311,28 @@ func (r *runner) handleStderr(stderr <-chan []byte) {
 				logLine := r.log.WithFields(logrus.Fields(fields))
 				logMessage := "integration log"
 
+				lineWasParsed = true
+
+				if r.log.IsDebugEnabled() {
+					// If Debug is enabled the level is ignored.
+					logLine.Debug(logMessage)
+
+					break
+				}
+
 				lvl, ok := lvl.(string)
 				if ok {
 					switch strings.ToLower(lvl) {
-					// We will set all this levels as debug to not be shown by default
+					// We only want to respect Fatal and Error levels.
 					case "info", "debug", "warn", "warning":
 						logLine.Debug(logMessage)
 					case "trace":
 						logLine.Trace(logMessage)
 					default:
-						logLine.Error(logMessage)
+						// This error log line has the filtered-by-default "integration-errors" component.
+						// Unless included on the config, this log lines won't be logged by the agent.
+						logLine.WithComponent(config.IntegrationsErrorsValue).Error(logMessage)
 					}
-
-					lineWasParsed = true
 
 					break
 				}

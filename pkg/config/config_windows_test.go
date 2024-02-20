@@ -113,7 +113,9 @@ func Test_ParseLogConfigRule_EnvVar(t *testing.T) {
 		Forward:              nil,
 		SmartLevelEntryLimit: &expectedSmartLevelEntryLimit,
 		IncludeFilters:       map[string][]interface{}{"component": {"ProcessSample", "StorageSample"}},
-		ExcludeFilters:       map[string][]interface{}{TracesFieldName: {SupervisorTrace, FeatureTrace, ProcessTrace}},
+		ExcludeFilters: map[string][]interface{}{
+			TracesFieldName: {SupervisorTrace, FeatureTrace, ProcessTrace}, IntegrationsErrorsField: {IntegrationsErrorsValue},
+		},
 		Rotate: LogRotateConfig{
 			MaxSizeMb:          intPtr(100),
 			MaxFiles:           5,
