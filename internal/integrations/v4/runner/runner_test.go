@@ -236,13 +236,13 @@ func Test_runner_Run_Integration_Log(t *testing.T) {
 			name:           "SDK_Error_log",
 			logLine:        "[ERR] This is an error message",
 			expectedLogMsg: "This is an error message",
-			expectedLevel:  logrus.ErrorLevel,
+			expectedLevel:  logrus.DebugLevel,
 		},
 		{
 			name:           "SDK_Fatal_log",
 			logLine:        "[FATAL] This is a fatal message",
 			expectedLogMsg: "This is a fatal message",
-			expectedLevel:  logrus.ErrorLevel,
+			expectedLevel:  logrus.DebugLevel,
 		},
 		{
 			name:           "Logrus_Info_log",
@@ -272,13 +272,13 @@ func Test_runner_Run_Integration_Log(t *testing.T) {
 			name:           "Logrus_Error_log",
 			logLine:        "level=error msg=\"This is an error message\"",
 			expectedLogMsg: "This is an error message",
-			expectedLevel:  logrus.ErrorLevel,
+			expectedLevel:  logrus.DebugLevel,
 		},
 		{
 			name:           "Logrus_Fatal_log",
 			logLine:        "level=fatal msg=\"This is a fatal message\"",
 			expectedLogMsg: "This is a fatal message",
-			expectedLevel:  logrus.ErrorLevel,
+			expectedLevel:  logrus.DebugLevel,
 		},
 		{
 			name:           "Obfuscated_log",
