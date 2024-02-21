@@ -1,0 +1,10 @@
+SELECT abs(
+    filter(${coalesce(function, "uniquecount")}(containerId),WHERE reportingAgent like '${display_name_current}')
+    -
+    filter(${coalesce(function, "uniquecount")}(containerId),WHERE reportingAgent like '${display_name_previous}')
+)
+FROM ContainerSample
+WHERE reportingAgent IN ('${display_name_current}','${display_name_previous}')
+%{ for k, v in wheres }
+  AND ${k}='${v}'
+%{ endfor }

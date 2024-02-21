@@ -1,0 +1,8 @@
+SELECT abs(
+filter(average(numeric(${metric})),WHERE displayName like '${display_name_current}')
+-
+filter(average(numeric(${metric})),WHERE displayName like '${display_name_previous}')
+)
+FROM ProcessSample
+WHERE commandLine like '%newrelic-infra%'
+AND displayName IN ('${display_name_current}','${display_name_previous}')

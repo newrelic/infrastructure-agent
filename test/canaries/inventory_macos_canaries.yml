@@ -1,0 +1,13 @@
+---
+
+- hosts: localhost
+  become: false
+  gather_facts: no
+
+  tasks:
+    - name: Featch, prepare and create macos canaries inventory
+      vars:
+        username: administrator
+        output_inventory: "{{ output_inventory_macos | default('inventory.macos.ec2') }}"
+      include_role:
+        name: caos.ansible_roles.prepare_macos_inventory

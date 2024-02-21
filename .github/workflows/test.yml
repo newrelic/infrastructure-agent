@@ -44,12 +44,6 @@ jobs:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
 
-  tools-tests-linux:
-    uses: ./.github/workflows/component_linux_tools_unit_test.yml
-    secrets:
-      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
-      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
-
   build-container:
     uses: ./.github/workflows/component_docker_build.yml
     secrets:

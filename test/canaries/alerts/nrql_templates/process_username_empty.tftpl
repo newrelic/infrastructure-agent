@@ -1,0 +1,7 @@
+SELECT count(*)
+FROM ProcessSample
+WHERE displayName IN ('${display_name_current}')
+AND (userName is null OR username = '')
+AND displayName NOT LIKE '%current%'
+AND displayName NOT LIKE '%previous%'
+AND commandName != 'systemd-timesyn'

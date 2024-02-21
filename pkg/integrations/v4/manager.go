@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
+
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/constants"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"

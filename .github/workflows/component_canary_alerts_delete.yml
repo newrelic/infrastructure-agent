@@ -5,6 +5,18 @@ on:
     secrets:
       AWS_VPC_SUBNET:
         required: true
+      CANARIES_NR_API_KEY:
+        required: true
+      NR_ACCOUNT_ID:
+        required: true
+      MACSTADIUM_USER:
+        required: true
+      MACSTADIUM_PASSWORD:
+        required: true
+    inputs:
+      TAG:
+        required: true
+        type: string
 
 env:
   AWS_ASSUME_ROLE: 'arn:aws:iam::018789649883:role/caos-pipeline-oidc-infra-agent'
@@ -33,17 +45,33 @@ jobs:
           GIT_BRANCH=${GIT_BRANCH#refs/tags/}
           echo "GIT_BRANCH=$GIT_BRANCH" >> $GITHUB_ENV
 
-      - name: Removing alerts for canaries
+      - name: Add to env current and previous versions
+        run: .github/workflows/scripts/set_version.sh ${{ inputs.TAG }}
+
+      - name: set vars for legibility (state, inventory ...)
+        run: |
+          echo "TERRAFORM_STATE=canaries-alerts-${{ inputs.TAG }}"  >> $GITHUB_ENV
+
+      - name: Remove alerts for canaries
         uses: newrelic/fargate-runner-action@main
         with:
           aws_region: us-east-2
-          container_make_target: "provision-alerts-delete/pre-release"
+          container_make_target: >
+            alerts-clean
+            TF_VAR_api_key=${{ secrets.CANARIES_NR_API_KEY }}
+            TF_VAR_account_id=${{ secrets.NR_ACCOUNT_ID }}
+            TF_VAR_region=Staging
+            PREVIOUS_VERSION=${{ env.PREVIOUS_NR_VERSION }}
+            VERSION=${{ inputs.TAG }}
+            TERRAFORM_STATE_KEY=${{ env.TERRAFORM_STATE }}
+            MACSTADIUM_USER=${{ secrets.MACSTADIUM_USER }}
+            MACSTADIUM_PASSWORD=${{ secrets.MACSTADIUM_PASSWORD }}
           ecs_cluster_name: caos_infra_agent
           task_definition_name: infra-agent
           cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
           cloud_watch_logs_stream_name: ecs/test-prerelease
           aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
           log_filters: |
-            deleting\salerts\sfor
+            provisioning\salerts\sfor
           repo_name: "newrelic/infrastructure-agent"
           ref: "${{ env.GIT_BRANCH }}"
