@@ -43,6 +43,9 @@ const (
 	FeatureTrace         = "feature"
 	ProcessTrace         = "process"
 
+	IntegrationsErrorsField = "component"
+	IntegrationsErrorsValue = "integration-errors"
+
 	// LogFilterWildcard will match everything.
 	LogFilterWildcard = "*"
 
@@ -1332,6 +1335,9 @@ func (lc *LogConfig) AttachDefaultFilters() {
 
 	// Exclude by default supervisor and feature traces.
 	lc.ExcludeFilters[TracesFieldName] = append(lc.ExcludeFilters[TracesFieldName], SupervisorTrace, FeatureTrace, ProcessTrace)
+
+	// Exclude all integration error logs by default
+	lc.ExcludeFilters[IntegrationsErrorsField] = append(lc.ExcludeFilters[IntegrationsErrorsField], IntegrationsErrorsValue)
 }
 
 // HasIncludeFilter returns true if key-value pair are included in the filtering configuration.

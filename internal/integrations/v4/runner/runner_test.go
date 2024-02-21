@@ -200,8 +200,6 @@ func Test_runner_Run_Integration_Log(t *testing.T) {
 	hook := new(test.Hook)
 	log.AddHook(hook)
 
-	log.SetLevel(logrus.TraceLevel)
-
 	testCases := []struct {
 		name           string
 		logLine        string
@@ -224,7 +222,7 @@ func Test_runner_Run_Integration_Log(t *testing.T) {
 			name:           "SDK_Trace_log",
 			logLine:        "[TRACE] This is a trace message",
 			expectedLogMsg: "This is a trace message",
-			expectedLevel:  logrus.TraceLevel,
+			expectedLevel:  logrus.DebugLevel,
 		},
 		{
 			name:           "SDK_Warning_log",
@@ -260,7 +258,7 @@ func Test_runner_Run_Integration_Log(t *testing.T) {
 			name:           "Logrus_Trace_log",
 			logLine:        "level=trace msg=\"This is a trace message\"",
 			expectedLogMsg: "This is a trace message",
-			expectedLevel:  logrus.TraceLevel,
+			expectedLevel:  logrus.DebugLevel,
 		},
 		{
 			name:           "Logrus_Warning_log",
@@ -291,7 +289,8 @@ func Test_runner_Run_Integration_Log(t *testing.T) {
 	for _, tt := range testCases {
 		testCase := tt
 		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
+			log.SetLevel(testCase.expectedLevel)
+
 			// GIVEN a runner that receives a cfg request without a handle function.
 			def, err := integration.NewDefinition(config.ConfigEntry{
 				InstanceName: testCase.name,
