@@ -3,7 +3,7 @@ include $(CURDIR)/test/ansible/Ansible.common
 
 TERRAFORM_DIR := $(CURDIR)/test/provision/terraform
 ANSIBLE_FOLDER := $(CURDIR)/test/provision/terraform
-SSH_KEY ?= $(HOME)/.ssh/crowdstrike_ansible_role_key
+CROWDSTRIKE_REPO_SSH_KEY ?= $(HOME)/.ssh/crowdstrike_ansible_role_key
 
 .DEFAULT_GOAL := provision
 
@@ -38,7 +38,7 @@ ifndef INVENTORY_OUTPUT
 	$(error INVENTORY_OUTPUT is undefined)
 endif
 	sed -i "s/PREFIX:/${PREFIX}:/g" "$(TERRAFORM_DIR)/caos.auto.tfvars"
-	$(MAKE) ansible/dependencies ANSIBLE_FOLDER="$(ANSIBLE_FOLDER)" SSH_KEY=$(SSH_KEY)
+	$(MAKE) ansible/dependencies ANSIBLE_FOLDER="$(ANSIBLE_FOLDER)" CROWDSTRIKE_REPO_SSH_KEY=$(CROWDSTRIKE_REPO_SSH_KEY)
 	terraform -chdir=$(TERRAFORM_DIR) init -reconfigure && \
 	TF_VAR_platform="$(PLATFORM)" \
 	TF_VAR_windows_password="$(ANSIBLE_PASSWORD_WINDOWS)" \

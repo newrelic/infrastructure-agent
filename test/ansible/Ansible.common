@@ -3,9 +3,9 @@ REQUIREMENTS_FILE ?= $(ANSIBLE_FOLDER)/requirements.yml
 
 .PHONY: ansible/dependencies
 ansible/dependencies: $(ROLES_PATH) $(COLLECTIONS_PATH)
-ifdef SSH_KEY
+ifdef CROWDSTRIKE_REPO_SSH_KEY
 	eval $$(ssh-agent -s) && \
-	ssh-add $(SSH_KEY) && \
+	ssh-add $(CROWDSTRIKE_REPO_SSH_KEY) && \
 	ansible-galaxy role install --force -r $(REQUIREMENTS_FILE) -p $(ROLES_PATH) && \
 	ansible-galaxy collection install --force -r $(REQUIREMENTS_FILE) -p $(COLLECTIONS_PATH)
 else
