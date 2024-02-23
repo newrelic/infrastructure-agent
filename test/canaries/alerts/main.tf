@@ -1,5 +1,5 @@
 module "alerts" {
-  source = "git::https://github.com/newrelic-experimental/env-provisioner//terraform/nr-alerts?ref=NR-164384_provide_keyvalues"
+  source = "git::https://github.com/newrelic-experimental/env-provisioner//terraform/nr-alerts"
 
   api_key               = var.api_key
   account_id            = var.account_id
