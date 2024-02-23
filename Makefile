@@ -33,12 +33,12 @@ include $(INCLUDE_BUILD_DIR)/release.mk
 # test
 include $(INCLUDE_TEST_DIR)/test.mk
 
-# provisioning
-include $(INCLUDE_TEST_DIR)/provision/Makefile
-
 # canaries
 include $(INCLUDE_TEST_DIR)/canaries/Makefile
 include $(INCLUDE_TEST_DIR)/canaries/alerts/Makefile
+
+# provisioning
+include $(INCLUDE_TEST_DIR)/provision/Makefile
 
 # tools
 include $(INCLUDE_TOOLS_DIR)/tools.mk
