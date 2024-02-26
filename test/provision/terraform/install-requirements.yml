@@ -44,9 +44,9 @@
   become: true
   gather_facts: yes
   vars:
-    falcon_client_id: "{{ crowdstrike_client_id }}"
-    falcon_client_secret: "{{ crowdstrike_client_secret }}"
-    falcon_customer_id: "{{ crowdstrike_customer_id }}"
+    falcon_client_id: "{{ lookup('env', 'CROWDSTRIKE_CLIENT_ID') }}"
+    falcon_client_secret: "{{ lookup('env', 'CROWDSTRIKE_CLIENT_SECRET') }}"
+    falcon_customer_id: "{{ lookup('env', 'CROWDSTRIKE_CUSTOMER_ID') }}"
     api_base_url: "https://api.laggar.gcw.crowdstrike.com"
   tasks:
     - name: Configure logrotate
@@ -64,9 +64,9 @@
 - hosts: testing_hosts_windows
   gather_facts: yes
   vars:
-    falcon_client_id: "{{ crowdstrike_client_id }}"
-    falcon_client_secret: "{{ crowdstrike_client_secret }}"
-    falcon_customer_id: "{{ crowdstrike_customer_id }}"
+    falcon_client_id: "{{ lookup('env', 'CROWDSTRIKE_CLIENT_ID') }}"
+    falcon_client_secret: "{{ lookup('env', 'CROWDSTRIKE_CLIENT_SECRET') }}"
+    falcon_customer_id: "{{ lookup('env', 'CROWDSTRIKE_CUSTOMER_ID') }}"
     api_base_url: "https://api.laggar.gcw.crowdstrike.com"
 
   tasks:
@@ -82,9 +82,9 @@
   become: false
   gather_facts: yes
   vars:
-    falcon_client_id: "{{ crowdstrike_client_id }}"
-    falcon_client_secret: "{{ crowdstrike_client_secret }}"
-    falcon_customer_id: "{{ crowdstrike_customer_id }}"
+    falcon_client_id: "{{ lookup('env', 'CROWDSTRIKE_CLIENT_ID') }}"
+    falcon_client_secret: "{{ lookup('env', 'CROWDSTRIKE_CLIENT_SECRET') }}"
+    falcon_customer_id: "{{ lookup('env', 'CROWDSTRIKE_CUSTOMER_ID') }}"
     api_base_url: "https://api.laggar.gcw.crowdstrike.com"
 
   tasks:
