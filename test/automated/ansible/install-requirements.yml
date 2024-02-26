@@ -44,7 +44,7 @@
 
     - name: Install CrowdStrike Falcon
       include_role:
-        name: newrelic.crowdstrike_provision.install-crowdstrike-falcon
+        name: newrelic.crowdstrike_provision.install_crowdstrike_falcon
 
     - name: Configure hostname
       include_role:
@@ -74,7 +74,7 @@
 
     - name: Install CrowdStrike Falcon
       include_role:
-        name: newrelic.crowdstrike_provision.install-crowdstrike-falcon
+        name: newrelic.crowdstrike_provision.install_crowdstrike_falcon
 
 - hosts: testing_hosts_windows
   gather_facts: yes
@@ -87,7 +87,7 @@
   tasks:
     - name: Install CrowdStrike Falcon
       include_role:
-        name: newrelic.crowdstrike_provision.install-crowdstrike-falcon
+        name: newrelic.crowdstrike_provision.install_crowdstrike_falcon
 
     - name: Configure hostname
       include_role:

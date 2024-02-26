@@ -21,7 +21,7 @@
 
     - name: Install CrowdStrike Falcon
       include_role:
-        name: newrelic.crowdstrike_provision.install-crowdstrike-falcon
+        name: newrelic.crowdstrike_provision.install_crowdstrike_falcon
 
 - hosts: macos_current
   gather_facts: yes
