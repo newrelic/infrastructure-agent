@@ -51,7 +51,7 @@ locals {
 }
 
 module "env-provisioner" {
-  source             = "git::https://github.com/newrelic-experimental/env-provisioner//terraform/otel-ec2?ref=NR-164382_add_windows_instances"
+  source             = "git::https://github.com/newrelic-experimental/env-provisioner//terraform/otel-ec2"
   ec2_prefix         = var.ec2_prefix
   ec2_filters        = local.filtered_ec2
   ec2_delimiter      = "-"
