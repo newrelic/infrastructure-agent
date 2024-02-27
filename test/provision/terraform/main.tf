@@ -38,7 +38,11 @@ variable "windows_ec2" {
   default = ""
 }
 
-variable "linux_ec2" {
+variable "linux_ec2_amd" {
+  default = ""
+}
+
+variable "linux_ec2_arm" {
   default = ""
 }
 
@@ -47,7 +51,7 @@ variable "ec2_prefix" {
 }
 
 locals {
-    filtered_ec2 = var.platform == "windows" ? var.windows_ec2 : var.linux_ec2
+    filtered_ec2 = var.platform == "windows" ? var.windows_ec2 : flatten([var.linux_ec2_amd, var.linux_ec2_arm])
 }
 
 module "env-provisioner" {
