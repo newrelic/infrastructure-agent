@@ -27,6 +27,7 @@ const (
 	logRecordModifierSource = "nri-agent"
 	defaultBufferMaxSize    = 128
 	memBufferLimit          = 16384
+	fbFileWatchLimit		= 1024
 	fluentBitDbName         = "fb.db"
 )
 
@@ -99,6 +100,12 @@ type LogCfg struct {
 	Fluentbit  *LogExternalFBCfg `yaml:"fluentbit"`
 	Winlog     *LogWinlogCfg     `yaml:"winlog"`
 	Winevtlog  *LogWinevtlogCfg  `yaml:"winevtlog"`
+	TargetFilesCnt int
+}
+
+type TooManyFilesWarning struct {
+	TotalFiles int
+	LogsCfg    LogsCfg
 }
 
 // LogSyslogCfg logging integration config from customer defined YAML, specific for the Syslog input plugin
@@ -159,6 +166,20 @@ func (c FBCfg) Format() (result string, externalCfg FBCfgExternal, err error) {
 	}
 
 	return buf.String(), c.ExternalCfg, nil
+}
+
+func (c TooManyFilesWarning) Format() (result string, err error) {
+	buf := new(bytes.Buffer)
+	tpl, err := template.New("too many files warning").Parse(tooManyFilesWarnMsg)
+	if err != nil {
+		return "", errors.Wrap(err, "cannot parse too many files warning message template")
+	}
+	err = tpl.Execute(buf, c)
+	if err != nil {
+		return "", errors.Wrap(err, "cannot write too many files warning message template")
+	}
+
+	return buf.String(), nil
 }
 
 // FBCfgInput FluentBit INPUT config block for either "tail", "systemd", "winlog", "winevtlog" or "syslog" plugins.
@@ -278,7 +299,11 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 	var fbOSConfig FBOSConfig
 	addOSDependantConfig(&fbOSConfig)
 
-	for _, block := range loggingCfgs {
+	totalFiles := 0
+	for i := 0; i < len(loggingCfgs); i++ {
+		block := loggingCfgs[i]
+		loggingCfgs[i].TargetFilesCnt = getTotalTargetFilesForPath(block)
+		totalFiles += loggingCfgs[i].TargetFilesCnt
 		input, filters, external, err := parseConfigBlock(block, logFwdCfg.HomeDir, fbOSConfig)
 		if err != nil {
 			return
@@ -294,6 +319,18 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 		} else if (external != FBCfgExternal{}) {
 			fb.ExternalCfg = external
 		}
+	}
+
+	if totalFiles > fbFileWatchLimit {
+		warningDetails := TooManyFilesWarning{
+			TotalFiles: totalFiles,
+			LogsCfg:    loggingCfgs,
+		}
+		warningMessage, err := warningDetails.Format()
+		if err != nil {
+			return FBCfg{}, err
+		}
+		cfgLogger.Warn(warningMessage)
 	}
 
 	if (len(fb.Inputs) == 0 && fb.ExternalCfg == FBCfgExternal{}) {
@@ -315,6 +352,15 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 	fb.Output = newNROutput(logFwdCfg)
 
 	return
+}
+
+func getTotalTargetFilesForPath(l LogCfg) int {
+	files, err := filepath.Glob(l.File)
+	if err != nil {
+		cfgLogger.WithField("filePath", l.File).Error("Error while computing target file count for the file path")
+		return 0
+	}
+	return len(files)
 }
 
 //nolint:nonamedreturns,varnamelen
