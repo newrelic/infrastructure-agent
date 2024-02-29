@@ -157,17 +157,17 @@ var tooManyFilesWarnMsg = `
 The amount of open files targeted by your Log Forwarding configuration
 files ({{ .TotalFiles }}) exceeds the recommended maximum (1024). The Operating System
 may kill the Log Forwarder process or not even allow it to start.
-These are the amount of files targeted by each of your configuration blocks:
-
+These are the amount of files targeted by each of your configuration blocks:{{"\n"}}
 
 {{- range .LogsCfg }}
+{{- if .TargetFilesCnt }}
 - name: {{ .Name }}
   file: {{ .File }}
   targeted files: {{ .TargetFilesCnt }}
 {{ end -}}
+{{ end -}}
 
-
-We recommend the following tips:
+{{"\n"}}We recommend the following tips:
 - Consider adjusting the wildcards used in the "file" configuration attributes
 to target a smaller amount of files
 - Consider using another log rotation strategy that uses a different naming

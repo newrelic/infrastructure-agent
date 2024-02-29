@@ -27,7 +27,7 @@ const (
 	logRecordModifierSource = "nri-agent"
 	defaultBufferMaxSize    = 128
 	memBufferLimit          = 16384
-	fbFileWatchLimit		= 1024
+	fbFileWatchLimit        = 1024
 	fluentBitDbName         = "fb.db"
 )
 
@@ -89,17 +89,17 @@ type YAML struct {
 
 // LogCfg logging integration config from customer defined YAML.
 type LogCfg struct {
-	Name       string            `yaml:"name"`
-	File       string            `yaml:"file"`        // ...
-	MaxLineKb  int               `yaml:"max_line_kb"` // Setup the max value of the buffer while reading lines.
-	Systemd    string            `yaml:"systemd"`     // ...
-	Pattern    string            `yaml:"pattern"`
-	Attributes map[string]string `yaml:"attributes"`
-	Syslog     *LogSyslogCfg     `yaml:"syslog"`
-	Tcp        *LogTcpCfg        `yaml:"tcp"`
-	Fluentbit  *LogExternalFBCfg `yaml:"fluentbit"`
-	Winlog     *LogWinlogCfg     `yaml:"winlog"`
-	Winevtlog  *LogWinevtlogCfg  `yaml:"winevtlog"`
+	Name           string            `yaml:"name"`
+	File           string            `yaml:"file"`        // ...
+	MaxLineKb      int               `yaml:"max_line_kb"` // Setup the max value of the buffer while reading lines.
+	Systemd        string            `yaml:"systemd"`     // ...
+	Pattern        string            `yaml:"pattern"`
+	Attributes     map[string]string `yaml:"attributes"`
+	Syslog         *LogSyslogCfg     `yaml:"syslog"`
+	Tcp            *LogTcpCfg        `yaml:"tcp"`
+	Fluentbit      *LogExternalFBCfg `yaml:"fluentbit"`
+	Winlog         *LogWinlogCfg     `yaml:"winlog"`
+	Winevtlog      *LogWinevtlogCfg  `yaml:"winevtlog"`
 	TargetFilesCnt int
 }
 
@@ -355,9 +355,12 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 }
 
 func getTotalTargetFilesForPath(l LogCfg) int {
+	if l.File == "" {
+		return 0
+	}
 	files, err := filepath.Glob(l.File)
 	if err != nil {
-		cfgLogger.WithField("filePath", l.File).Error("Error while computing target file count for the file path")
+		cfgLogger.WithField("filePath", l.File).Error("Error while reading files under the given file path")
 		return 0
 	}
 	return len(files)
