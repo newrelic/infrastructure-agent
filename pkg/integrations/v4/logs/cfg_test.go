@@ -1813,3 +1813,247 @@ func TestDetermineUseAnsiFlagValue(t *testing.T) {
 		})
 	}
 }
+
+func TestGetTotalTargetFilesForPath(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name          string
+		logCfg        LogCfg
+		expectedCount int
+	}{
+		{
+			"File path log config",
+			LogCfg{
+				Name: "log-file-1",
+				File: "./*_test.go", // we count the number of test files in /pkg/integrations/v4/logs/ folder
+			},
+			4,
+		},
+		{
+			"Non file path log config - Syslog",
+			LogCfg{
+				Name: "syslog-tcp-test",
+				Syslog: &LogSyslogCfg{
+					URI:    "tcp://0.0.0.0:5140",
+					Parser: "syslog-rfc5424",
+				},
+			},
+			0,
+		},
+	}
+
+	for _, testItem := range tests {
+		// Prevent the loop variable from being captured in the closure below
+		test := testItem
+
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			actualCount := getTotalTargetFilesForPath(test.logCfg)
+			assert.Equal(t, actualCount, test.expectedCount)
+		})
+	}
+}
+
+func TestNewFbConfForTargetFileCount(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name          string
+		logFwd        config.LogForward
+		logsCfg       LogsCfg
+		expectedCount int
+	}{
+		{
+			"Target File Count test for File path config",
+			logFwdCfg,
+			LogsCfg{
+				{
+					Name: "log-file-1",
+					File: "./*_test.go", // we count the number of test files in /pkg/integrations/v4/logs/ folder
+				},
+			},
+			4,
+		},
+		{
+			"Target File Count test-2 for File path config",
+			logFwdCfg,
+			LogsCfg{
+				{
+					Name: "log-file-1",
+					File: "./*.go", // we count the number of go files in /pkg/integrations/v4/logs/ folder
+				},
+			},
+			11,
+		},
+		{
+			"Target File Count test-2 for Non-file path config",
+			logFwdCfg,
+			LogsCfg{
+				{
+					Name: "syslog-tcp-test",
+					Syslog: &LogSyslogCfg{
+						URI:    "tcp://0.0.0.0:5140",
+						Parser: "syslog-rfc5424",
+					},
+				},
+			},
+			0,
+		},
+	}
+
+	for _, testItem := range tests {
+		// Prevent the loop variable from being captured in the closure below
+		test := testItem
+
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			NewFBConf(test.logsCfg, &test.logFwd, "0", "")
+			assert.Equal(t, test.expectedCount, test.logsCfg[0].TargetFilesCnt)
+		})
+	}
+}
+func TestTooManyFilesWarningFormat(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name              string
+		warningDetails    TooManyFilesWarning
+		expectedOutputMsg string
+	}{
+		{
+			"Too Many files with multiple file paths",
+			TooManyFilesWarning{
+				1500,
+				LogsCfg{
+					{
+						Name:           "log-file-1",
+						File:           "file.path-1",
+						TargetFilesCnt: 1000,
+					},
+					{
+						Name:           "log-file-2",
+						File:           "file.path-2",
+						TargetFilesCnt: 500,
+					},
+				},
+			},
+			`
+The amount of open files targeted by your Log Forwarding configuration
+files (1500) exceeds the recommended maximum (1024). The Operating System
+may kill the Log Forwarder process or not even allow it to start.
+These are the amount of files targeted by each of your configuration blocks:
+
+- name: log-file-1
+  file: file.path-1
+  targeted files: 1000
+
+- name: log-file-2
+  file: file.path-2
+  targeted files: 500
+
+We recommend the following tips:
+- Consider adjusting the wildcards used in the "file" configuration attributes
+to target a smaller amount of files
+- Consider using another log rotation strategy that uses a different naming
+for the rotated logs (i.e. my_log.log.20240214 instead of my_log.20240214.log)
+- You may also consider increasing the maximum amount of allowed file
+descriptors and inotify watchers. See: https://docs.newrelic.com/docs/logs/forward-logs/forward-your-logs-using-infrastructure-agent/#too-many-files
+
+If the maximum amount of allowed file descriptors and inotify watchers are increased already by following the above link,
+ignore this warning message.
+`,
+		},
+		{
+			"Too Many files with Syslog, Tcplog, ystemdlog, winlog, wineventlog",
+			TooManyFilesWarning{
+				1500,
+				LogsCfg{
+					{
+						Name:           "log-file-1",
+						File:           "file.path-1",
+						TargetFilesCnt: 1000,
+					},
+					{
+						Name:           "log-file-2",
+						File:           "file.path-2",
+						TargetFilesCnt: 500,
+					},
+					{
+						Name: "syslog-tcp-test",
+						Syslog: &LogSyslogCfg{
+							URI:    "tcp://0.0.0.0:5140",
+							Parser: "syslog-rfc5424",
+						},
+					},
+					{
+						Name: "tcp-test",
+						Tcp: &LogTcpCfg{
+							Uri:       "tcp://0.0.0.0:2222",
+							Format:    "none",
+							Separator: `\\n`,
+						},
+						MaxLineKb: 64,
+					},
+					{
+						Name:    "dummy_systemd",
+						Systemd: "service_name",
+						Pattern: "foo",
+					},
+					{
+						Name: "win-security",
+						Winlog: &LogWinlogCfg{
+							Channel:         "Security",
+							CollectEventIds: []string{"5000", "6000-6100", "7000", "7900-8100"},
+							ExcludeEventIds: []string{"6020-6060", "6070"},
+							UseANSI:         "true",
+						},
+					},
+					{
+						Name: "win-security",
+						Winevtlog: &LogWinevtlogCfg{
+							Channel:         "Security",
+							CollectEventIds: []string{"5000", "6000-6100", "7000", "7900-8100"},
+							ExcludeEventIds: []string{"6020-6060", "6070"},
+							UseANSI:         "true",
+						},
+					},
+				},
+			},
+			`
+The amount of open files targeted by your Log Forwarding configuration
+files (1500) exceeds the recommended maximum (1024). The Operating System
+may kill the Log Forwarder process or not even allow it to start.
+These are the amount of files targeted by each of your configuration blocks:
+
+- name: log-file-1
+  file: file.path-1
+  targeted files: 1000
+
+- name: log-file-2
+  file: file.path-2
+  targeted files: 500
+
+We recommend the following tips:
+- Consider adjusting the wildcards used in the "file" configuration attributes
+to target a smaller amount of files
+- Consider using another log rotation strategy that uses a different naming
+for the rotated logs (i.e. my_log.log.20240214 instead of my_log.20240214.log)
+- You may also consider increasing the maximum amount of allowed file
+descriptors and inotify watchers. See: https://docs.newrelic.com/docs/logs/forward-logs/forward-your-logs-using-infrastructure-agent/#too-many-files
+
+If the maximum amount of allowed file descriptors and inotify watchers are increased already by following the above link,
+ignore this warning message.
+`,
+		},
+	}
+
+	for _, testItem := range tests {
+		// Prevent the loop variable from being captured in the closure below
+		test := testItem
+
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			actualWarningMsg, err := test.warningDetails.Format()
+			assert.NoError(t, err)
+			assert.Equal(t, test.expectedOutputMsg, actualWarningMsg)
+		})
+	}
+}
