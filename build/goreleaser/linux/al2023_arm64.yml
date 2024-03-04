@@ -73,7 +73,7 @@
       summary: "New Relic Infrastructure Agent"
       group: default
     # Recommended packages. If they fail to install installation of the agent will not be interrupted.
-#    recommends:
-#      - fluent-bit
+    recommends:
+      - fluent-bit
   
   # end AL2023 arm64
