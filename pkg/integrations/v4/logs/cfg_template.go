@@ -155,12 +155,12 @@ var fbLuaScriptFormat = `function {{ .FnName }}(tag, timestamp, record)
 
 var tooManyFilesWarnMsg = `
 The amount of open files targeted by your Log Forwarding configuration
-files ({{ .TotalFiles }}) exceeds the recommended maximum (1024). The Operating System
+files ({{ .TotalFiles }}) exceeds the recommended maximum ({{ .DefaultFileLimit }}). The Operating System
 may kill the Log Forwarder process or not even allow it to start.
 These are the amount of files targeted by each of your configuration blocks:{{"\n"}}
 
 {{- range .LogsCfg }}
-{{- if .TargetFilesCnt }}
+{{- if .File }}
 - name: {{ .Name }}
   file: {{ .File }}
   targeted files: {{ .TargetFilesCnt }}
@@ -175,6 +175,6 @@ for the rotated logs (i.e. my_log.log.20240214 instead of my_log.20240214.log)
 - You may also consider increasing the maximum amount of allowed file
 descriptors and inotify watchers. See: https://docs.newrelic.com/docs/logs/forward-logs/forward-your-logs-using-infrastructure-agent/#too-many-files
 
-If the maximum amount of allowed file descriptors and inotify watchers are increased already by following the above link,
-ignore this warning message.
+Please note that this is a friendly warning message. If your operating system allows more than {{ .DefaultFileLimit }} file descriptors/inotify watchers 
+or if you already increased their maximum amount by following the above link, you can safely ignore this message.
 `

@@ -1830,6 +1830,22 @@ func TestGetTotalTargetFilesForPath(t *testing.T) {
 			4,
 		},
 		{
+			"File path log config with no matches",
+			LogCfg{
+				Name: "log-file-1",
+				File: "./*_test.infra", // we count the number of test files in /pkg/integrations/v4/logs/ folder
+			},
+			0,
+		},
+		{
+			"File path log config with non-existing folder",
+			LogCfg{
+				Name: "log-file-1",
+				File: "./test/*_test.go", // we count the number of test files in /pkg/integrations/v4/logs/ folder
+			},
+			0,
+		},
+		{
 			"Non file path log config - Syslog",
 			LogCfg{
 				Name: "syslog-tcp-test",
@@ -1922,6 +1938,7 @@ func TestTooManyFilesWarningFormat(t *testing.T) {
 			"Too Many files with multiple file paths",
 			TooManyFilesWarning{
 				1500,
+				fbFileWatchLimit,
 				LogsCfg{
 					{
 						Name:           "log-file-1",
@@ -1932,6 +1949,11 @@ func TestTooManyFilesWarningFormat(t *testing.T) {
 						Name:           "log-file-2",
 						File:           "file.path-2",
 						TargetFilesCnt: 500,
+					},
+					{
+						Name:           "log-file-3",
+						File:           "file.path-3",
+						TargetFilesCnt: 0,
 					},
 				},
 			},
@@ -1949,6 +1971,10 @@ These are the amount of files targeted by each of your configuration blocks:
   file: file.path-2
   targeted files: 500
 
+- name: log-file-3
+  file: file.path-3
+  targeted files: 0
+
 We recommend the following tips:
 - Consider adjusting the wildcards used in the "file" configuration attributes
 to target a smaller amount of files
@@ -1957,14 +1983,15 @@ for the rotated logs (i.e. my_log.log.20240214 instead of my_log.20240214.log)
 - You may also consider increasing the maximum amount of allowed file
 descriptors and inotify watchers. See: https://docs.newrelic.com/docs/logs/forward-logs/forward-your-logs-using-infrastructure-agent/#too-many-files
 
-If the maximum amount of allowed file descriptors and inotify watchers are increased already by following the above link,
-ignore this warning message.
+Please note that this is a friendly warning message. If your operating system allows more than 1024 file descriptors/inotify watchers 
+or if you already increased their maximum amount by following the above link, you can safely ignore this message.
 `,
 		},
 		{
 			"Too Many files with Syslog, Tcplog, ystemdlog, winlog, wineventlog",
 			TooManyFilesWarning{
 				1500,
+				fbFileWatchLimit,
 				LogsCfg{
 					{
 						Name:           "log-file-1",
@@ -2039,8 +2066,8 @@ for the rotated logs (i.e. my_log.log.20240214 instead of my_log.20240214.log)
 - You may also consider increasing the maximum amount of allowed file
 descriptors and inotify watchers. See: https://docs.newrelic.com/docs/logs/forward-logs/forward-your-logs-using-infrastructure-agent/#too-many-files
 
-If the maximum amount of allowed file descriptors and inotify watchers are increased already by following the above link,
-ignore this warning message.
+Please note that this is a friendly warning message. If your operating system allows more than 1024 file descriptors/inotify watchers 
+or if you already increased their maximum amount by following the above link, you can safely ignore this message.
 `,
 		},
 	}

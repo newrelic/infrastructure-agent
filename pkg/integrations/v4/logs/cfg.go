@@ -104,8 +104,9 @@ type LogCfg struct {
 }
 
 type TooManyFilesWarning struct {
-	TotalFiles int
-	LogsCfg    LogsCfg
+	TotalFiles       int
+	DefaultFileLimit int
+	LogsCfg          LogsCfg
 }
 
 // LogSyslogCfg logging integration config from customer defined YAML, specific for the Syslog input plugin
@@ -300,8 +301,7 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 	addOSDependantConfig(&fbOSConfig)
 
 	totalFiles := 0
-	for i := 0; i < len(loggingCfgs); i++ {
-		block := loggingCfgs[i]
+	for i, block := range loggingCfgs {
 		loggingCfgs[i].TargetFilesCnt = getTotalTargetFilesForPath(block)
 		totalFiles += loggingCfgs[i].TargetFilesCnt
 		input, filters, external, err := parseConfigBlock(block, logFwdCfg.HomeDir, fbOSConfig)
@@ -323,14 +323,14 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 
 	if totalFiles > fbFileWatchLimit {
 		warningDetails := TooManyFilesWarning{
-			TotalFiles: totalFiles,
-			LogsCfg:    loggingCfgs,
+			TotalFiles:       totalFiles,
+			DefaultFileLimit: fbFileWatchLimit,
+			LogsCfg:          loggingCfgs,
 		}
-		warningMessage, err := warningDetails.Format()
-		if err != nil {
-			return FBCfg{}, err
+		if warningMessage, err := warningDetails.Format(); err == nil {
+			cfgLogger.Warn(warningMessage)
 		}
-		cfgLogger.Warn(warningMessage)
+
 	}
 
 	if (len(fb.Inputs) == 0 && fb.ExternalCfg == FBCfgExternal{}) {
@@ -360,7 +360,7 @@ func getTotalTargetFilesForPath(l LogCfg) int {
 	}
 	files, err := filepath.Glob(l.File)
 	if err != nil {
-		cfgLogger.WithField("filePath", l.File).Error("Error while reading files under the given file path")
+		cfgLogger.WithField("filePath", l.File).WithError(err)
 		return 0
 	}
 	return len(files)
