@@ -175,6 +175,7 @@ for the rotated logs (i.e. my_log.log.20240214 instead of my_log.20240214.log)
 - You may also consider increasing the maximum amount of allowed file
 descriptors and inotify watchers. See: https://docs.newrelic.com/docs/logs/forward-logs/forward-your-logs-using-infrastructure-agent/#too-many-files
 
-Please note that this is a friendly warning message. If your operating system allows more than {{ .DefaultFileLimit }} file descriptors/inotify watchers 
-or if you already increased their maximum amount by following the above link, you can safely ignore this message.
-`
+Please note that this is a friendly warning message. You can safely ignore this message 
+if your operating system allows more than {{ .DefaultFileLimit }} file descriptors/inotify watchers 
+or if you have already increased their maximum amount by following the above link.
+s`

@@ -360,7 +360,7 @@ func getTotalTargetFilesForPath(l LogCfg) int {
 	}
 	files, err := filepath.Glob(l.File)
 	if err != nil {
-		cfgLogger.WithField("filePath", l.File).WithError(err)
+		cfgLogger.WithField("filePath", l.File).Warn("Error while reading file path." + err.Error())
 		return 0
 	}
 	return len(files)
