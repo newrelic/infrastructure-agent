@@ -597,7 +597,7 @@ func configureLogRedirection(config *config.LogConfig, memLog *wlog.MemLogger) (
 func newLogWriter(config *config.LogConfig) (io.Writer, error) {
 	logRotateConfig := config.Rotate
 	if !logRotateConfig.IsSet() || !logRotateConfig.IsEnabled() {
-		return disk.OpenFile(config.File, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
+		return disk.OpenFile(config.File, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o600)
 	}
 
 	rotateCfg := wlog.FileWithRotationConfig{
