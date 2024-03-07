@@ -23,7 +23,7 @@ const (
 	// defaultDatePattern used to generate filename for the rotated file.
 	defaultDatePattern = "YYYY-MM-DD_hh-mm-ss"
 	// filePerm specified the permissions while opening a file.
-	filePerm = 0o666
+	filePerm = 0o600
 )
 
 // ErrFileNotOpened is returned when an operation cannot be performed because the file is not opened.
