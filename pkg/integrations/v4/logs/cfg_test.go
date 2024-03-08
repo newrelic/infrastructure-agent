@@ -1135,20 +1135,21 @@ func TestFBCfgFormat(t *testing.T) {
 [FILTER]
     Name  record_modifier
     Match some-folder
-    Record fb.input tail
-    Record key1 value1
-    Record key2 value2
+    Record "fb.input" "tail"
+    Record "key1" "value1"
+    Record "key2" "value2"
+    Record "key3 with space" "value3 with space"
 
 [FILTER]
     Name  record_modifier
     Match *
-    Record entity.guid.INFRA testGUID
-    Record fb.source nri-agent
+    Record "entity.guid.INFRA" "testGUID"
+    Record "fb.source" "nri-agent"
 
 [FILTER]
     Name  record_modifier
     Match win-security
-    Record fb.input winlog
+    Record "fb.input" "winlog"
 
 [FILTER]
     Name  lua
@@ -1233,9 +1234,10 @@ func TestFBCfgFormat(t *testing.T) {
 				Name:  "record_modifier",
 				Match: "some-folder",
 				Records: map[string]string{
-					"fb.input": "tail",
-					"key1":     "value1",
-					"key2":     "value2",
+					"fb.input":        "tail",
+					"key1":            "value1",
+					"key2":            "value2",
+					"key3 with space": "value3 with space",
 				},
 			},
 			{
@@ -1315,15 +1317,15 @@ func TestFBCfgSendMetricFormat(t *testing.T) {
 [FILTER]
     Name  record_modifier
     Match some-folder
-    Record fb.input tail
-    Record key1 value1
-    Record key2 value2
+    Record "fb.input" "tail"
+    Record "key1" "value1"
+    Record "key2" "value2"
 
 [FILTER]
     Name  record_modifier
     Match *
-    Record entity.guid.INFRA testGUID
-    Record fb.source nri-agent
+    Record "entity.guid.INFRA" "testGUID"
+    Record "fb.source" "nri-agent"
 `
 		if sendMetrics {
 			return fbStr + fbOutputStrWithSendMetricsTrue
@@ -1426,15 +1428,15 @@ func TestFBCfgSendMetricFalseFormat(t *testing.T) {
 [FILTER]
     Name  record_modifier
     Match some-folder
-    Record fb.input tail
-    Record key1 value1
-    Record key2 value2
+    Record "fb.input" "tail"
+    Record "key1" "value1"
+    Record "key2" "value2"
 
 [FILTER]
     Name  record_modifier
     Match *
-    Record entity.guid.INFRA testGUID
-    Record fb.source nri-agent
+    Record "entity.guid.INFRA" "testGUID"
+    Record "fb.source" "nri-agent"
 
 [OUTPUT]
     Name                newrelic
@@ -1502,15 +1504,15 @@ func TestFBCfgSendMetricTrueFormat(t *testing.T) {
 [FILTER]
     Name  record_modifier
     Match some-folder
-    Record fb.input tail
-    Record key1 value1
-    Record key2 value2
+    Record "fb.input" "tail"
+    Record "key1" "value1"
+    Record "key2" "value2"
 
 [FILTER]
     Name  record_modifier
     Match *
-    Record entity.guid.INFRA testGUID
-    Record fb.source nri-agent
+    Record "entity.guid.INFRA" "testGUID"
+    Record "fb.source" "nri-agent"
 
 [OUTPUT]
     Name                newrelic
@@ -1610,9 +1612,9 @@ func TestFBCfgFormatWithHostname(t *testing.T) {
 [FILTER]
     Name  record_modifier
     Match *
-    Record entity.guid.INFRA testGUID
-    Record hostname ubuntu
-    Record plugin.type nri-agent
+    Record "entity.guid.INFRA" "testGUID"
+    Record "hostname" "ubuntu"
+    Record "plugin.type" "nri-agent"
 
 [OUTPUT]
     Name                newrelic
