@@ -6,6 +6,7 @@ package main
 
 import (
 	context2 "context"
+	_ "crypto/tls/fipsonly"
 	"flag"
 	"fmt"
 	"io"
