@@ -1,8 +1,8 @@
 # Include Ansible dependencies common installation strategy
-include $(CURDIR)/test/ansible/Ansible.common
+include ../ansible/Ansible.common
 
-TERRAFORM_DIR := $(CURDIR)/test/provision/terraform
-ANSIBLE_FOLDER := $(CURDIR)/test/provision/terraform
+TERRAFORM_DIR := ./terraform
+ANSIBLE_FOLDER := ./terraform
 
 .DEFAULT_GOAL := provision
 
@@ -19,8 +19,8 @@ endif
 	sed -i -e "s/PREFIX/$(PREFIX)/g" "$(TERRAFORM_DIR)/caos.auto.tfvars"
 	sed -i -e "s/TAG_OR_UNIQUE_NAME/$(TAG_OR_UNIQUE_NAME)/g" "$(TERRAFORM_DIR)/caos.auto.tfvars"
 
-.PHONY: test/provision
-test/provision: terraform/backend
+.PHONY: provision
+provision: terraform/backend
 ifndef PLATFORM
 	$(error PLATFORM is undefined)
 endif
@@ -45,8 +45,8 @@ endif
 	TF_VAR_inventory_output="$(INVENTORY_OUTPUT)" \
 	terraform -chdir=$(TERRAFORM_DIR) apply -auto-approve
 
-.PHONY: test/provision/clean
-test/provision/clean: terraform/backend ansible/clean
+.PHONY: clean
+clean: terraform/backend ansible/clean
 	terraform -chdir=$(TERRAFORM_DIR) init -reconfigure && \
 	TF_VAR_nr_license_key="$(NR_LICENSE_KEY)" \
 	TF_VAR_platform="$(PLATFORM)" \
