@@ -103,12 +103,6 @@ type LogCfg struct {
 	TargetFilesCnt int
 }
 
-type TooManyFilesWarning struct {
-	TotalFiles       int
-	DefaultFileLimit int
-	LogsCfg          LogsCfg
-}
-
 // LogSyslogCfg logging integration config from customer defined YAML, specific for the Syslog input plugin
 type LogSyslogCfg struct {
 	URI             string `yaml:"uri"`
@@ -167,20 +161,6 @@ func (c FBCfg) Format() (result string, externalCfg FBCfgExternal, err error) {
 	}
 
 	return buf.String(), c.ExternalCfg, nil
-}
-
-func (c TooManyFilesWarning) Format() (result string, err error) {
-	buf := new(bytes.Buffer)
-	tpl, err := template.New("too many files warning").Parse(tooManyFilesWarnMsg)
-	if err != nil {
-		return "", errors.Wrap(err, "cannot parse too many files warning message template")
-	}
-	err = tpl.Execute(buf, c)
-	if err != nil {
-		return "", errors.Wrap(err, "cannot write too many files warning message template")
-	}
-
-	return buf.String(), nil
 }
 
 // FBCfgInput FluentBit INPUT config block for either "tail", "systemd", "winlog", "winevtlog" or "syslog" plugins.
@@ -322,15 +302,21 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 	}
 
 	if totalFiles > fbFileWatchLimit {
-		warningDetails := TooManyFilesWarning{
-			TotalFiles:       totalFiles,
-			DefaultFileLimit: fbFileWatchLimit,
-			LogsCfg:          loggingCfgs,
-		}
-		if warningMessage, err := warningDetails.Format(); err == nil {
-			cfgLogger.Warn(warningMessage)
-		}
 
+		warningMessage := fmt.Sprintf(""+
+			"The amount of open files targeted by your Log Forwarding configuration files (%d) exceeds the recommended maximum (%d). "+
+			"The Operating System may kill the Log Forwarder process or not even allow it to start. "+
+			"To increase the maximum amount of allowed file descriptors and inotify watcher, "+
+			"please check this link: https://docs.newrelic.com/docs/logs/forward-logs/forward-your-logs-using-infrastructure-agent/#too-many-files.  "+
+			"Please note that this is a friendly warning message. You can safely ignore this message if your operating system allows more than %d file descriptors/inotify watchers "+
+			"or if you have already increased their maximum amount by following the above link.",
+			totalFiles, fbFileWatchLimit, fbFileWatchLimit)
+
+		cfgLogger.Warn(warningMessage)
+
+		for _, logCfg := range loggingCfgs {
+			cfgLogger.Trace(fmt.Sprintf("FilePath: %s :::: TargetFilesCount: %d", logCfg.File, logCfg.TargetFilesCnt))
+		}
 	}
 
 	if (len(fb.Inputs) == 0 && fb.ExternalCfg == FBCfgExternal{}) {
