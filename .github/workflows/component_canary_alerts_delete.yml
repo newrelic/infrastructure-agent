@@ -57,7 +57,7 @@ jobs:
         with:
           aws_region: us-east-2
           container_make_target: >
-            alerts-clean
+            -C test/canaries/alerts alerts-clean
             TF_VAR_api_key=${{ secrets.CANARIES_NR_API_KEY }}
             TF_VAR_account_id=${{ secrets.NR_ACCOUNT_ID }}
             TF_VAR_region=Staging

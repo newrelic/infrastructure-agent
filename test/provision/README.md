@@ -21,5 +21,5 @@ In the background, it automates the deployment of the [Otel-ec2](https://github.
 Destroy the provisioned instances:
 ```shell
 // You must have valid AWS credentials at this point
-make test/provision/clean
+make -C test/provision
 ```
