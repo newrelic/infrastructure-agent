@@ -100,7 +100,7 @@ type LogCfg struct {
 	Fluentbit      *LogExternalFBCfg `yaml:"fluentbit"`
 	Winlog         *LogWinlogCfg     `yaml:"winlog"`
 	Winevtlog      *LogWinevtlogCfg  `yaml:"winevtlog"`
-	TargetFilesCnt int
+	targetFilesCnt int
 }
 
 // LogSyslogCfg logging integration config from customer defined YAML, specific for the Syslog input plugin
@@ -282,8 +282,8 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 
 	totalFiles := 0
 	for i, block := range loggingCfgs {
-		loggingCfgs[i].TargetFilesCnt = getTotalTargetFilesForPath(block)
-		totalFiles += loggingCfgs[i].TargetFilesCnt
+		loggingCfgs[i].targetFilesCnt = getTotalTargetFilesForPath(block)
+		totalFiles += loggingCfgs[i].targetFilesCnt
 		input, filters, external, err := parseConfigBlock(block, logFwdCfg.HomeDir, fbOSConfig)
 		if err != nil {
 			return
@@ -315,7 +315,7 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 		cfgLogger.Warn(warningMessage)
 
 		for _, logCfg := range loggingCfgs {
-			cfgLogger.Trace(fmt.Sprintf("FilePath: %s :::: TargetFilesCount: %d", logCfg.File, logCfg.TargetFilesCnt))
+			cfgLogger.Trace(fmt.Sprintf("FilePath: %s :::: TargetFilesCount: %d", logCfg.File, logCfg.targetFilesCnt))
 		}
 	}
 

@@ -1923,7 +1923,7 @@ func TestNewFbConfForTargetFileCount(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			NewFBConf(test.logsCfg, &test.logFwd, "0", "")
-			assert.Equal(t, test.expectedCount, test.logsCfg[0].TargetFilesCnt)
+			assert.Equal(t, test.expectedCount, test.logsCfg[0].targetFilesCnt)
 		})
 	}
 }
