@@ -1815,3 +1815,117 @@ func TestDetermineUseAnsiFlagValue(t *testing.T) {
 		})
 	}
 }
+
+func TestGetTotalTargetFilesForPath(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name          string
+		logCfg        LogCfg
+		expectedCount int
+	}{
+		{
+			"File path log config",
+			LogCfg{
+				Name: "log-file-1",
+				File: "./*_test.go", // we count the number of test files in /pkg/integrations/v4/logs/ folder
+			},
+			4,
+		},
+		{
+			"File path log config with no matches",
+			LogCfg{
+				Name: "log-file-1",
+				File: "./*_test.infra", // we count the number of test files in /pkg/integrations/v4/logs/ folder
+			},
+			0,
+		},
+		{
+			"File path log config with non-existing folder",
+			LogCfg{
+				Name: "log-file-1",
+				File: "./test/*_test.go", // we count the number of test files in /pkg/integrations/v4/logs/ folder
+			},
+			0,
+		},
+		{
+			"Non file path log config - Syslog",
+			LogCfg{
+				Name: "syslog-tcp-test",
+				Syslog: &LogSyslogCfg{
+					URI:    "tcp://0.0.0.0:5140",
+					Parser: "syslog-rfc5424",
+				},
+			},
+			0,
+		},
+	}
+
+	for _, testItem := range tests {
+		// Prevent the loop variable from being captured in the closure below
+		test := testItem
+
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			actualCount := getTotalTargetFilesForPath(test.logCfg)
+			assert.Equal(t, actualCount, test.expectedCount)
+		})
+	}
+}
+
+func TestNewFbConfForTargetFileCount(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name          string
+		logFwd        config.LogForward
+		logsCfg       LogsCfg
+		expectedCount int
+	}{
+		{
+			"Target File Count test for File path config",
+			logFwdCfg,
+			LogsCfg{
+				{
+					Name: "log-file-1",
+					File: "./*_test.go", // we count the number of test files in /pkg/integrations/v4/logs/ folder
+				},
+			},
+			4,
+		},
+		{
+			"Target File Count test-2 for File path config",
+			logFwdCfg,
+			LogsCfg{
+				{
+					Name: "log-file-1",
+					File: "./*.go", // we count the number of go files in /pkg/integrations/v4/logs/ folder
+				},
+			},
+			11,
+		},
+		{
+			"Target File Count test-2 for Non-file path config",
+			logFwdCfg,
+			LogsCfg{
+				{
+					Name: "syslog-tcp-test",
+					Syslog: &LogSyslogCfg{
+						URI:    "tcp://0.0.0.0:5140",
+						Parser: "syslog-rfc5424",
+					},
+				},
+			},
+			0,
+		},
+	}
+
+	for _, testItem := range tests {
+		// Prevent the loop variable from being captured in the closure below
+		test := testItem
+
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			NewFBConf(test.logsCfg, &test.logFwd, "0", "")
+			assert.Equal(t, test.expectedCount, test.logsCfg[0].targetFilesCnt)
+		})
+	}
+}
