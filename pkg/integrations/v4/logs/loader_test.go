@@ -291,14 +291,16 @@ logs:
     attributes:
       key1: value1
       key2: value2
+      key3 with space: value3 with space
 `)
 	structWithAttributes := LogsCfg{
 		{
 			Name: "attributed-file",
 			File: "/foo/bar.log",
 			Attributes: map[string]string{
-				"key1": "value1",
-				"key2": "value2",
+				"key1":            "value1",
+				"key2":            "value2",
+				"key3 with space": "value3 with space",
 			},
 		},
 	}
