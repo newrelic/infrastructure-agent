@@ -1,7 +1,7 @@
 # Include Ansible dependencies common installation strategy
-include $(CURDIR)/test/ansible/Ansible.common
+include ../ansible/Ansible.common
 
-ANSIBLE_FOLDER := $(CURDIR)/test/canaries
+ANSIBLE_FOLDER := $(CURDIR)
 ANSIBLE_FORKS ?= 20
 CROWDSTRIKE_REPO_SSH_KEY ?= $(HOME)/.ssh/crowdstrike_ansible_role_key
 

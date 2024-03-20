@@ -1,8 +1,7 @@
 # Include AWS common features
-include $(CURDIR)/test/ansible/Ansible.common
+include ../../ansible/Ansible.common
 
-# FIXME: Makefile should be able to be run from its relative path
-PROVISION_ALERTS_TERRAFORM_WORKSPACE	?= $(CURDIR)/test/canaries/alerts
+PROVISION_ALERTS_TERRAFORM_WORKSPACE	?= $(CURDIR)
 
 .DEFAULT_GOAL := provision-alerts-terraform
 

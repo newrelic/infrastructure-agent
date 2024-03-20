@@ -1,6 +1,3 @@
-variable "ec2_infra_agents" {
-  default = {}
-}
 variable "nr_license_key" {
   default = ""
 }
@@ -37,10 +34,31 @@ variable "inventory_output" {
   default = "./inventory.ec2"
 }
 
+variable "windows_ec2" {
+  default = ""
+}
+
+variable "linux_ec2_amd" {
+  default = ""
+}
+
+variable "linux_ec2_arm" {
+  default = ""
+}
+
+variable "ec2_prefix" {
+  default = ""
+}
+
+locals {
+    filtered_ec2 = var.platform == "windows" ? var.windows_ec2 : flatten([var.linux_ec2_amd, var.linux_ec2_arm])
+}
+
 module "env-provisioner" {
   source             = "git::https://github.com/newrelic-experimental/env-provisioner//terraform/otel-ec2"
-  ec2_otels         =    {for key, val in var.ec2_infra_agents:
-                            key => val if val.platform == var.platform || var.platform == "all"}
+  ec2_prefix         = var.ec2_prefix
+  ec2_filters        = local.filtered_ec2
+  ec2_delimiter      = "-"
 
   nr_license_key     = var.nr_license_key
   otlp_endpoint      = var.otlp_endpoint

@@ -27,6 +27,7 @@ const (
 	logRecordModifierSource = "nri-agent"
 	defaultBufferMaxSize    = 128
 	memBufferLimit          = 16384
+	fbFileWatchLimit        = 1024
 	fluentBitDbName         = "fb.db"
 )
 
@@ -88,17 +89,18 @@ type YAML struct {
 
 // LogCfg logging integration config from customer defined YAML.
 type LogCfg struct {
-	Name       string            `yaml:"name"`
-	File       string            `yaml:"file"`        // ...
-	MaxLineKb  int               `yaml:"max_line_kb"` // Setup the max value of the buffer while reading lines.
-	Systemd    string            `yaml:"systemd"`     // ...
-	Pattern    string            `yaml:"pattern"`
-	Attributes map[string]string `yaml:"attributes"`
-	Syslog     *LogSyslogCfg     `yaml:"syslog"`
-	Tcp        *LogTcpCfg        `yaml:"tcp"`
-	Fluentbit  *LogExternalFBCfg `yaml:"fluentbit"`
-	Winlog     *LogWinlogCfg     `yaml:"winlog"`
-	Winevtlog  *LogWinevtlogCfg  `yaml:"winevtlog"`
+	Name           string            `yaml:"name"`
+	File           string            `yaml:"file"`        // ...
+	MaxLineKb      int               `yaml:"max_line_kb"` // Setup the max value of the buffer while reading lines.
+	Systemd        string            `yaml:"systemd"`     // ...
+	Pattern        string            `yaml:"pattern"`
+	Attributes     map[string]string `yaml:"attributes"`
+	Syslog         *LogSyslogCfg     `yaml:"syslog"`
+	Tcp            *LogTcpCfg        `yaml:"tcp"`
+	Fluentbit      *LogExternalFBCfg `yaml:"fluentbit"`
+	Winlog         *LogWinlogCfg     `yaml:"winlog"`
+	Winevtlog      *LogWinevtlogCfg  `yaml:"winevtlog"`
+	targetFilesCnt int
 }
 
 // LogSyslogCfg logging integration config from customer defined YAML, specific for the Syslog input plugin
@@ -278,7 +280,10 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 	var fbOSConfig FBOSConfig
 	addOSDependantConfig(&fbOSConfig)
 
-	for _, block := range loggingCfgs {
+	totalFiles := 0
+	for i, block := range loggingCfgs {
+		loggingCfgs[i].targetFilesCnt = getTotalTargetFilesForPath(block)
+		totalFiles += loggingCfgs[i].targetFilesCnt
 		input, filters, external, err := parseConfigBlock(block, logFwdCfg.HomeDir, fbOSConfig)
 		if err != nil {
 			return
@@ -293,6 +298,24 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 			cfgLogger.Warn("External Fluent Bit configuration specified more than once. Only first one is considered, please remove any duplicates from the configuration.")
 		} else if (external != FBCfgExternal{}) {
 			fb.ExternalCfg = external
+		}
+	}
+
+	if totalFiles > fbFileWatchLimit {
+
+		warningMessage := fmt.Sprintf(""+
+			"The amount of open files targeted by your Log Forwarding configuration files (%d) exceeds the recommended maximum (%d). "+
+			"The Operating System may kill the Log Forwarder process or not even allow it to start. "+
+			"To increase the maximum amount of allowed file descriptors and inotify watcher, "+
+			"please check this link: https://docs.newrelic.com/docs/logs/forward-logs/forward-your-logs-using-infrastructure-agent/#too-many-files.  "+
+			"Please note that this is a friendly warning message. You can safely ignore this message if your operating system allows more than %d file descriptors/inotify watchers "+
+			"or if you have already increased their maximum amount by following the above link.",
+			totalFiles, fbFileWatchLimit, fbFileWatchLimit)
+
+		cfgLogger.Warn(warningMessage)
+
+		for _, logCfg := range loggingCfgs {
+			cfgLogger.Trace(fmt.Sprintf("FilePath: %s :::: TargetFilesCount: %d", logCfg.File, logCfg.targetFilesCnt))
 		}
 	}
 
@@ -315,6 +338,18 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 	fb.Output = newNROutput(logFwdCfg)
 
 	return
+}
+
+func getTotalTargetFilesForPath(l LogCfg) int {
+	if l.File == "" {
+		return 0
+	}
+	files, err := filepath.Glob(l.File)
+	if err != nil {
+		cfgLogger.WithField("filePath", l.File).Warn("Error while reading file path." + err.Error())
+		return 0
+	}
+	return len(files)
 }
 
 //nolint:nonamedreturns,varnamelen

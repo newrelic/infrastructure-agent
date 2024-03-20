@@ -86,7 +86,7 @@ var fbConfigFormat = `{{- range .Inputs }}
     {{- end }}
     {{- if .Records }}
         {{- range $key, $value := .Records }}
-    Record {{ $key }} {{ $value }}
+    Record "{{ $key }}" "{{ $value }}"
         {{- end }}
     {{- end }}
     {{- if .Modifiers }}

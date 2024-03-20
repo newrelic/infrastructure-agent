@@ -14,15 +14,12 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Install Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
 
       - name: Setup node
-        run: |
-          # FIXIT: This hack is done because the installed go version is not modified on the env vars
-          cp -f `which go` /usr/bin/go
-          sudo apt install musl-dev
+        run: sudo apt install musl-dev
 
       - name: Fix GOROOT to be run with sudo
         run: |

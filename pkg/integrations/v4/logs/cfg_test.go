@@ -1135,20 +1135,21 @@ func TestFBCfgFormat(t *testing.T) {
 [FILTER]
     Name  record_modifier
     Match some-folder
-    Record fb.input tail
-    Record key1 value1
-    Record key2 value2
+    Record "fb.input" "tail"
+    Record "key1" "value1"
+    Record "key2" "value2"
+    Record "key3 with space" "value3 with space"
 
 [FILTER]
     Name  record_modifier
     Match *
-    Record entity.guid.INFRA testGUID
-    Record fb.source nri-agent
+    Record "entity.guid.INFRA" "testGUID"
+    Record "fb.source" "nri-agent"
 
 [FILTER]
     Name  record_modifier
     Match win-security
-    Record fb.input winlog
+    Record "fb.input" "winlog"
 
 [FILTER]
     Name  lua
@@ -1233,9 +1234,10 @@ func TestFBCfgFormat(t *testing.T) {
 				Name:  "record_modifier",
 				Match: "some-folder",
 				Records: map[string]string{
-					"fb.input": "tail",
-					"key1":     "value1",
-					"key2":     "value2",
+					"fb.input":        "tail",
+					"key1":            "value1",
+					"key2":            "value2",
+					"key3 with space": "value3 with space",
 				},
 			},
 			{
@@ -1315,15 +1317,15 @@ func TestFBCfgSendMetricFormat(t *testing.T) {
 [FILTER]
     Name  record_modifier
     Match some-folder
-    Record fb.input tail
-    Record key1 value1
-    Record key2 value2
+    Record "fb.input" "tail"
+    Record "key1" "value1"
+    Record "key2" "value2"
 
 [FILTER]
     Name  record_modifier
     Match *
-    Record entity.guid.INFRA testGUID
-    Record fb.source nri-agent
+    Record "entity.guid.INFRA" "testGUID"
+    Record "fb.source" "nri-agent"
 `
 		if sendMetrics {
 			return fbStr + fbOutputStrWithSendMetricsTrue
@@ -1426,15 +1428,15 @@ func TestFBCfgSendMetricFalseFormat(t *testing.T) {
 [FILTER]
     Name  record_modifier
     Match some-folder
-    Record fb.input tail
-    Record key1 value1
-    Record key2 value2
+    Record "fb.input" "tail"
+    Record "key1" "value1"
+    Record "key2" "value2"
 
 [FILTER]
     Name  record_modifier
     Match *
-    Record entity.guid.INFRA testGUID
-    Record fb.source nri-agent
+    Record "entity.guid.INFRA" "testGUID"
+    Record "fb.source" "nri-agent"
 
 [OUTPUT]
     Name                newrelic
@@ -1502,15 +1504,15 @@ func TestFBCfgSendMetricTrueFormat(t *testing.T) {
 [FILTER]
     Name  record_modifier
     Match some-folder
-    Record fb.input tail
-    Record key1 value1
-    Record key2 value2
+    Record "fb.input" "tail"
+    Record "key1" "value1"
+    Record "key2" "value2"
 
 [FILTER]
     Name  record_modifier
     Match *
-    Record entity.guid.INFRA testGUID
-    Record fb.source nri-agent
+    Record "entity.guid.INFRA" "testGUID"
+    Record "fb.source" "nri-agent"
 
 [OUTPUT]
     Name                newrelic
@@ -1610,9 +1612,9 @@ func TestFBCfgFormatWithHostname(t *testing.T) {
 [FILTER]
     Name  record_modifier
     Match *
-    Record entity.guid.INFRA testGUID
-    Record hostname ubuntu
-    Record plugin.type nri-agent
+    Record "entity.guid.INFRA" "testGUID"
+    Record "hostname" "ubuntu"
+    Record "plugin.type" "nri-agent"
 
 [OUTPUT]
     Name                newrelic
@@ -1810,6 +1812,120 @@ func TestDetermineUseAnsiFlagValue(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			assert.Equal(t, test.expected, determineUseAnsiFlagValue(test.extConfUseANSI, test.forceUseANSI))
+		})
+	}
+}
+
+func TestGetTotalTargetFilesForPath(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name          string
+		logCfg        LogCfg
+		expectedCount int
+	}{
+		{
+			"File path log config",
+			LogCfg{
+				Name: "log-file-1",
+				File: "./*_test.go", // we count the number of test files in /pkg/integrations/v4/logs/ folder
+			},
+			4,
+		},
+		{
+			"File path log config with no matches",
+			LogCfg{
+				Name: "log-file-1",
+				File: "./*_test.infra", // we count the number of test files in /pkg/integrations/v4/logs/ folder
+			},
+			0,
+		},
+		{
+			"File path log config with non-existing folder",
+			LogCfg{
+				Name: "log-file-1",
+				File: "./test/*_test.go", // we count the number of test files in /pkg/integrations/v4/logs/ folder
+			},
+			0,
+		},
+		{
+			"Non file path log config - Syslog",
+			LogCfg{
+				Name: "syslog-tcp-test",
+				Syslog: &LogSyslogCfg{
+					URI:    "tcp://0.0.0.0:5140",
+					Parser: "syslog-rfc5424",
+				},
+			},
+			0,
+		},
+	}
+
+	for _, testItem := range tests {
+		// Prevent the loop variable from being captured in the closure below
+		test := testItem
+
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			actualCount := getTotalTargetFilesForPath(test.logCfg)
+			assert.Equal(t, actualCount, test.expectedCount)
+		})
+	}
+}
+
+func TestNewFbConfForTargetFileCount(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name          string
+		logFwd        config.LogForward
+		logsCfg       LogsCfg
+		expectedCount int
+	}{
+		{
+			"Target File Count test for File path config",
+			logFwdCfg,
+			LogsCfg{
+				{
+					Name: "log-file-1",
+					File: "./*_test.go", // we count the number of test files in /pkg/integrations/v4/logs/ folder
+				},
+			},
+			4,
+		},
+		{
+			"Target File Count test-2 for File path config",
+			logFwdCfg,
+			LogsCfg{
+				{
+					Name: "log-file-1",
+					File: "./*.go", // we count the number of go files in /pkg/integrations/v4/logs/ folder
+				},
+			},
+			11,
+		},
+		{
+			"Target File Count test-2 for Non-file path config",
+			logFwdCfg,
+			LogsCfg{
+				{
+					Name: "syslog-tcp-test",
+					Syslog: &LogSyslogCfg{
+						URI:    "tcp://0.0.0.0:5140",
+						Parser: "syslog-rfc5424",
+					},
+				},
+			},
+			0,
+		},
+	}
+
+	for _, testItem := range tests {
+		// Prevent the loop variable from being captured in the closure below
+		test := testItem
+
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			NewFBConf(test.logsCfg, &test.logFwd, "0", "")
+			assert.Equal(t, test.expectedCount, test.logsCfg[0].targetFilesCnt)
 		})
 	}
 }
