@@ -31,6 +31,7 @@ include $(INCLUDE_BUILD_DIR)/ci.mk
 include $(INCLUDE_BUILD_DIR)/release.mk
 
 # test
+include $(INCLUDE_TEST_DIR)/common.mk
 include $(INCLUDE_TEST_DIR)/test.mk
 
 # tools

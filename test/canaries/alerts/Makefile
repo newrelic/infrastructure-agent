@@ -1,5 +1,6 @@
 # Include AWS common features
-include ../../ansible/Ansible.common
+include ../../ansible/common.mk
+include ../../common.mk
 
 PROVISION_ALERTS_TERRAFORM_WORKSPACE	?= $(CURDIR)
 

@@ -1,4 +1,4 @@
-include $(CURDIR)/test/ansible/Ansible.common
+include $(CURDIR)/test/ansible/common.mk
 
 PROVISION_HOST_PREFIX := $(shell whoami)-$(shell hostname)
 AWS_ACCOUNT_ID = "018789649883"# CAOS
@@ -52,11 +52,3 @@ ifndef AGENT_VERSION
 else
 	bash $(CURDIR)/test/packaging/docker.sh
 endif
-
-.PHONY: validate-aws-credentials
-validate-aws-credentials:
-	@ACC_ID="$$(aws sts get-caller-identity --output text|awk '{print $$1}')"; \
-	if [ "$${ACC_ID}" != "$(AWS_ACCOUNT_ID)" ]; then \
-		echo "Invalid AWS account ID. Expected: $(AWS_ACCOUNT_ID), got: $${ACC_ID}."; \
-		exit 1; \
-	fi

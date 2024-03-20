@@ -1,5 +1,5 @@
 # Include Ansible dependencies common installation strategy
-include ../ansible/Ansible.common
+include ../ansible/common.mk
 
 ANSIBLE_FOLDER := $(CURDIR)
 ANSIBLE_FORKS ?= 20
