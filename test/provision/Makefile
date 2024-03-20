@@ -1,6 +1,7 @@
 # Include Ansible dependencies common installation strategy
 include ../ansible/Ansible.common
 
+CROWDSTRIKE_REPO_SSH_KEY ?= $(HOME)/.ssh/crowdstrike_ansible_role_key
 TERRAFORM_DIR := ./terraform
 ANSIBLE_FOLDER := ./terraform
 
@@ -37,7 +38,7 @@ ifndef INVENTORY_OUTPUT
 	$(error INVENTORY_OUTPUT is undefined)
 endif
 	sed -i "s/PREFIX:/${PREFIX}:/g" "$(TERRAFORM_DIR)/caos.auto.tfvars"
-	$(MAKE) ansible/dependencies ANSIBLE_FOLDER="$(ANSIBLE_FOLDER)"
+	$(MAKE) ansible/dependencies ANSIBLE_FOLDER="$(ANSIBLE_FOLDER)" CROWDSTRIKE_REPO_SSH_KEY=$(CROWDSTRIKE_REPO_SSH_KEY)
 	terraform -chdir=$(TERRAFORM_DIR) init -reconfigure && \
 	TF_VAR_platform="$(PLATFORM)" \
 	TF_VAR_windows_password="$(ANSIBLE_PASSWORD_WINDOWS)" \

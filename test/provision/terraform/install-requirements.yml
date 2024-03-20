@@ -43,11 +43,19 @@
 - hosts: testing_hosts_linux
   become: true
   gather_facts: yes
-
+  vars:
+    falcon_client_id: "{{ lookup('env', 'CROWDSTRIKE_CLIENT_ID') }}"
+    falcon_client_secret: "{{ lookup('env', 'CROWDSTRIKE_CLIENT_SECRET') }}"
+    falcon_customer_id: "{{ lookup('env', 'CROWDSTRIKE_CUSTOMER_ID') }}"
+    api_base_url: "https://api.laggar.gcw.crowdstrike.com"
   tasks:
     - name: Configure logrotate
       include_role:
         name: caos.ansible_roles.logrotate
+
+    - name: Install CrowdStrike Falcon
+      include_role:
+        name: newrelic.crowdstrike_provision.install_crowdstrike_falcon
 
     - name: Configure hostname
       include_role:
@@ -55,8 +63,42 @@
 
 - hosts: testing_hosts_windows
   gather_facts: yes
+  vars:
+    falcon_client_id: "{{ lookup('env', 'CROWDSTRIKE_CLIENT_ID') }}"
+    falcon_client_secret: "{{ lookup('env', 'CROWDSTRIKE_CLIENT_SECRET') }}"
+    falcon_customer_id: "{{ lookup('env', 'CROWDSTRIKE_CUSTOMER_ID') }}"
+    api_base_url: "https://api.laggar.gcw.crowdstrike.com"
 
   tasks:
+    - name: Install CrowdStrike Falcon
+      include_role:
+        name: newrelic.crowdstrike_provision.install_crowdstrike_falcon
+
     - name: Configure hostname
       include_role:
         name: caos.ansible_roles.hostname
+
+- hosts: testing_hosts_macos
+  become: false
+  gather_facts: yes
+  vars:
+    falcon_client_id: "{{ lookup('env', 'CROWDSTRIKE_CLIENT_ID') }}"
+    falcon_client_secret: "{{ lookup('env', 'CROWDSTRIKE_CLIENT_SECRET') }}"
+    falcon_customer_id: "{{ lookup('env', 'CROWDSTRIKE_CUSTOMER_ID') }}"
+    api_base_url: "https://api.laggar.gcw.crowdstrike.com"
+
+  tasks:
+    - name: Install brew
+      include_role:
+        name: caos.ansible_roles.install_brew
+        # latest versions of brew allow running service with sudo, not necessary to downgrade
+        # comment left for reference
+#      vars:
+#        brew_version: 3.6.21 # with 4.0.* there are some problems with sudo https://github.com/Homebrew/brew/issues/14462#issuecomment-1445130069
+    - name: Install python
+      include_role:
+        name: caos.ansible_roles.install_python
+
+    - name: Install CrowdStrike Falcon
+      include_role:
+        name: newrelic.crowdstrike_provision.install_crowdstrike_falcon
