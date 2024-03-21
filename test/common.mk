@@ -1,3 +1,5 @@
+AWS_ACCOUNT_ID = "018789649883"# CAOS
+
 .PHONY: validate-aws-credentials
 validate-aws-credentials:
 	@ACC_ID="$$(aws sts get-caller-identity --output text|awk '{print $$1}')"; \
