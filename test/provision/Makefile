@@ -1,11 +1,11 @@
-# Include Ansible dependencies common installation strategy
-include ../ansible/common.mk
-
 CROWDSTRIKE_REPO_SSH_KEY ?= $(HOME)/.ssh/crowdstrike_ansible_role_key
 TERRAFORM_DIR := ./terraform
 ANSIBLE_FOLDER := ./terraform
 
 .DEFAULT_GOAL := provision
+
+# Include Ansible dependencies common installation strategy
+include ../ansible/common.mk
 
 .PHONY: terraform/backend
 terraform/backend:
