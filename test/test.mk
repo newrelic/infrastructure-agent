@@ -1,5 +1,3 @@
-include $(CURDIR)/test/ansible/common.mk
-
 PROVISION_HOST_PREFIX := $(shell whoami)-$(shell hostname)
 AWS_ACCOUNT_ID = "018789649883"# CAOS
 LIMIT ?= "testing_hosts"
@@ -12,6 +10,8 @@ ifeq ($(origin ANSIBLE_INVENTORY_FILE), undefined)
 else
   ANSIBLE_INVENTORY = $(ANSIBLE_INVENTORY_FOLDER)/$(ANSIBLE_INVENTORY_FILE)
 endif
+
+include $(CURDIR)/test/ansible/common.mk
 
 .PHONY: test/automated/termination
 test/automated/termination: validate-aws-credentials
