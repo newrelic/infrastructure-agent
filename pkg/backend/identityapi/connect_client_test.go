@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -109,7 +110,7 @@ func TestConnectRetryTime(t *testing.T) {
 	client, err := NewIdentityConnectClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, true, mockHttp)
 	assert.NoError(t, err)
 
-	entityId, retryPolicy, err := client.Connect(fp)
+	entityID, retryPolicy, err := client.Connect(fp, Metadata{})
 	if assert.Error(t, err) {
 		assert.Equal(t, err.Error(), "ingest rejected connect: 429 429 TOO MANY REQUESTS {\"identity\":{\"entityId\":999666333,\"GUID\":\"FOO\"}}")
 	}
@@ -119,7 +120,7 @@ func TestConnectRetryTime(t *testing.T) {
 		MaxBackOff: 5 * time.Minute,
 	}
 	assert.EqualValues(t, expectedRetryPolicy, retryPolicy)
-	assert.EqualValues(t, entity.EmptyIdentity, entityId)
+	assert.EqualValues(t, entity.EmptyIdentity, entityID)
 }
 
 func TestConnectErrorNoRetryAfterHeader(t *testing.T) {
@@ -144,7 +145,7 @@ func TestConnectErrorNoRetryAfterHeader(t *testing.T) {
 	client, err := NewIdentityConnectClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, true, mockHttp)
 	assert.NoError(t, err)
 
-	entityId, retryPolicy, err := client.Connect(fp)
+	entityID, retryPolicy, err := client.Connect(fp, Metadata{})
 	if assert.Error(t, err) {
 		assert.Equal(t, err.Error(), "ingest rejected connect: 500 500 SERVER ERROR {\"identity\":{\"entityId\":999666333,\"GUID\":\"FOO\"}}")
 	}
@@ -154,7 +155,7 @@ func TestConnectErrorNoRetryAfterHeader(t *testing.T) {
 		MaxBackOff: 5 * time.Minute,
 	}
 	assert.EqualValues(t, expectedRetryPolicy, retryPolicy)
-	assert.EqualValues(t, entity.EmptyIdentity, entityId)
+	assert.EqualValues(t, entity.EmptyIdentity, entityID)
 }
 
 func TestConnectErrorTrialExpired(t *testing.T) {
@@ -179,7 +180,7 @@ func TestConnectErrorTrialExpired(t *testing.T) {
 	client, err := NewIdentityConnectClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, true, mockHttp)
 	assert.NoError(t, err)
 
-	entityId, retryPolicy, err := client.Connect(fp)
+	entityID, retryPolicy, err := client.Connect(fp, Metadata{})
 	if assert.Error(t, err) {
 		assert.Equal(t, err.Error(), "ingest rejected connect: 403 403 forbidden {\"identity\":{\"entityId\":999666333,\"GUID\":\"FOO\"}}")
 	}
@@ -189,7 +190,7 @@ func TestConnectErrorTrialExpired(t *testing.T) {
 		MaxBackOff: 1 * time.Hour,
 	}
 	assert.EqualValues(t, expectedRetryPolicy, retryPolicy)
-	assert.EqualValues(t, entity.EmptyIdentity, entityId)
+	assert.EqualValues(t, entity.EmptyIdentity, entityID)
 }
 
 func TestConnectErrorTrialInactive(t *testing.T) {
@@ -215,7 +216,7 @@ func TestConnectErrorTrialInactive(t *testing.T) {
 	client, err := NewIdentityConnectClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, true, mockHttp)
 	assert.NoError(t, err)
 
-	entityId, retryPolicy, err := client.Connect(fp)
+	entityID, retryPolicy, err := client.Connect(fp, Metadata{})
 	if assert.Error(t, err) {
 		assert.Equal(t, err.Error(), "ingest rejected connect: 403 403 forbidden {\"identity\":{\"entityId\":999666333,\"GUID\":\"FOO\"}}")
 	}
@@ -225,7 +226,7 @@ func TestConnectErrorTrialInactive(t *testing.T) {
 		MaxBackOff: 5 * time.Minute,
 	}
 	assert.EqualValues(t, expectedRetryPolicy, retryPolicy)
-	assert.EqualValues(t, entity.EmptyIdentity, entityId)
+	assert.EqualValues(t, entity.EmptyIdentity, entityID)
 }
 
 func TestConnectFingerprint(t *testing.T) {
@@ -245,7 +246,7 @@ func TestConnectFingerprint(t *testing.T) {
 	client, err := NewIdentityConnectClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, true, mockHttp)
 	assert.NoError(t, err)
 
-	entityId, retryPolicy, err := client.Connect(fp)
+	entityID, retryPolicy, err := client.Connect(fp, Metadata{})
 	assert.NoError(t, err)
 
 	expectedRetryPolicy := backendhttp.RetryPolicy{
@@ -254,7 +255,7 @@ func TestConnectFingerprint(t *testing.T) {
 	}
 
 	assert.EqualValues(t, expectedRetryPolicy, retryPolicy)
-	assert.EqualValues(t, expectedIdentity, entityId)
+	assert.EqualValues(t, expectedIdentity, entityID)
 }
 
 func TestConnectOk(t *testing.T) {
@@ -265,12 +266,12 @@ func TestConnectOk(t *testing.T) {
 	client, err := NewIdentityConnectClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, true, mockHttp)
 	assert.NoError(t, err)
 
-	entityId, retryPolicy, err := client.Connect(fingerprint.Fingerprint{})
+	entityID, retryPolicy, err := client.Connect(fingerprint.Fingerprint{}, Metadata{})
 	assert.NoError(t, err)
 	assert.EqualValues(t, EmptyRetryTime, retryPolicy.After)
 	assert.EqualValues(t, EmptyRetryTime, retryPolicy.MaxBackOff)
 
-	assert.EqualValues(t, expectedIdentity, entityId)
+	assert.EqualValues(t, expectedIdentity, entityID)
 }
 
 func TestConnectOkWithNoGUID(t *testing.T) {
@@ -281,12 +282,12 @@ func TestConnectOkWithNoGUID(t *testing.T) {
 	client, err := NewIdentityConnectClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, true, mockHttp)
 	assert.NoError(t, err)
 
-	entityId, retryPolicy, err := client.Connect(fingerprint.Fingerprint{})
+	entityID, retryPolicy, err := client.Connect(fingerprint.Fingerprint{}, Metadata{})
 	assert.NoError(t, err)
 	assert.EqualValues(t, EmptyRetryTime, retryPolicy.After)
 	assert.EqualValues(t, EmptyRetryTime, retryPolicy.MaxBackOff)
 
-	assert.EqualValues(t, entity.Identity{ID: testAgentEntityId}, entityId)
+	assert.EqualValues(t, entity.Identity{ID: testAgentEntityId}, entityID)
 }
 
 func TestConnectMakeUrl(t *testing.T) {
@@ -374,7 +375,7 @@ func Test_identityClient_ConnectUpdateReturnsEntityID(t *testing.T) {
 	}
 	fp := generateDefaultFingerprint()
 
-	_, entityID, err := client.ConnectUpdate(entity.Identity{ID: 1}, fp)
+	_, entityID, err := client.ConnectUpdate(entity.Identity{ID: 1}, fp, Metadata{})
 	assert.NoError(t, err)
 	assert.Equal(t, expectedIdentity, entityID)
 }
@@ -395,5 +396,30 @@ func Test_identityClient_DisconnectReturnsNoErr(t *testing.T) {
 
 	err := client.Disconnect(1, ReasonHostShutdown)
 
+	assert.NoError(t, err)
+}
+
+func TestConnectRequestSendsMetadata(t *testing.T) {
+	metadata := Metadata{"host.id": "some value"}
+
+	mockHttp := func(t *testing.T, metadata2 Metadata) func(req *http.Request) (*http.Response, error) {
+		return func(req *http.Request) (*http.Response, error) {
+			var postBody postConnectBody
+			body, err := io.ReadAll(req.Body)
+			assert.NoError(t, err)
+			err = json.Unmarshal(body, &postBody)
+			assert.NoError(t, err)
+			assert.Equal(t, metadata2, postBody.Metadata)
+
+			resp, err := getConnectResponse()
+			return resp, nil
+		}
+	}(t, metadata)
+
+	client := identityClient{userAgent: testUserAgent, licenseKey: testLicenseKey, httpClient: mockHttp}
+
+	fp := generateDefaultFingerprint()
+
+	_, _, err := client.Connect(fp, metadata)
 	assert.NoError(t, err)
 }

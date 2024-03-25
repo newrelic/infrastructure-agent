@@ -3,7 +3,13 @@
 package agent
 
 import (
+	"errors"
+	"regexp"
 	"testing"
+
+	"github.com/newrelic/infrastructure-agent/pkg/log"
+	logHelper "github.com/newrelic/infrastructure-agent/test/log"
+	"github.com/sirupsen/logrus"
 
 	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
 
@@ -14,19 +20,16 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/fingerprint"
 )
 
-var (
-	testEntityId = entity.Identity{ID: 999666333}
-)
+var testEntityId = entity.Identity{ID: 999666333}
 
-type MockIdentityConnectClient struct {
-}
+type MockIdentityConnectClient struct{}
 
-func (icc *MockIdentityConnectClient) Connect(fp fingerprint.Fingerprint) (entity.Identity, backendhttp.RetryPolicy, error) {
+func (icc *MockIdentityConnectClient) Connect(fingerprint fingerprint.Fingerprint, metadata identityapi.Metadata) (entity.Identity, backendhttp.RetryPolicy, error) {
 	var retry backendhttp.RetryPolicy
 	return testEntityId, retry, nil
 }
 
-func (icc *MockIdentityConnectClient) ConnectUpdate(entityID entity.Identity, fp fingerprint.Fingerprint) (backendhttp.RetryPolicy, entity.Identity, error) {
+func (icc *MockIdentityConnectClient) ConnectUpdate(entityID entity.Identity, fp fingerprint.Fingerprint, metadata identityapi.Metadata) (backendhttp.RetryPolicy, entity.Identity, error) {
 	var retry backendhttp.RetryPolicy
 	return retry, testEntityId, nil
 }
@@ -36,23 +39,49 @@ func (icc *MockIdentityConnectClient) Disconnect(entityID entity.ID, state ident
 }
 
 func TestConnect(t *testing.T) {
-	service := NewIdentityConnectService(&MockIdentityConnectClient{}, &fingerprint.MockHarvestor{})
+	metadataHarvester := &identityapi.MetadataHarvesterMock{}
+	defer metadataHarvester.AssertExpectations(t)
+	metadataHarvester.ShouldHarvest(identityapi.Metadata{})
+
+	service := NewIdentityConnectService(&MockIdentityConnectClient{}, &fingerprint.MockHarvestor{}, metadataHarvester)
 
 	assert.Equal(t, testEntityId, service.Connect())
 }
 
+func TestConnectOnMetadataError(t *testing.T) {
+	metadataHarvester := &identityapi.MetadataHarvesterMock{}
+	defer metadataHarvester.AssertExpectations(t)
+	metadataHarvester.ShouldNotHarvest(errors.New("some error"))
+	metadataHarvester.ShouldHarvest(identityapi.Metadata{})
+
+	// WHEN we add a hook to the log to capture the "error" and "fatal" levels
+	hook := logHelper.NewInMemoryEntriesHook([]logrus.Level{logrus.ErrorLevel})
+	log.AddHook(hook)
+
+	service := NewIdentityConnectService(&MockIdentityConnectClient{}, &fingerprint.MockHarvestor{}, metadataHarvester)
+
+	assert.Equal(t, testEntityId, service.Connect())
+	assert.True(t, hook.EntryWithMessageExists(regexp.MustCompile(`metadata harvest failed`)))
+}
+
 func TestConnectUpdate(t *testing.T) {
-	service := NewIdentityConnectService(&MockIdentityConnectClient{}, &fingerprint.MockHarvestor{})
+	metadataHarvester := &identityapi.MetadataHarvesterMock{}
+	defer metadataHarvester.AssertExpectations(t)
+	metadataHarvester.ShouldHarvest(identityapi.Metadata{})
+
+	service := NewIdentityConnectService(&MockIdentityConnectClient{}, &fingerprint.MockHarvestor{}, metadataHarvester)
 	entityIdn, err := service.ConnectUpdate(entity.Identity{ID: 1})
 	assert.NoError(t, err)
 	assert.Equal(t, testEntityId, entityIdn)
 }
 
 func Test_ConnectUpdate_ReturnsSameIDForSameFingerprint(t *testing.T) {
+	metadataHarvester := identityapi.MetadataHarvesterMock{}
+	defer metadataHarvester.AssertExpectations(t)
 	harvester := &fingerprint.MockHarvestor{}
 	mockFingerprint, _ := harvester.Harvest()
 	// explicitly setting null client to make sure we're not calling it IF we have the same fingerprint
-	service := NewIdentityConnectService(nil, harvester)
+	service := NewIdentityConnectService(nil, harvester, &metadataHarvester)
 	service.lastFingerprint = mockFingerprint
 
 	agentIdn := entity.Identity{ID: 1}
@@ -67,7 +96,9 @@ func Test_ConnectUpdate_ReturnsSameDifferentIDForDifferentFingerprint(t *testing
 	mockFingerprint, _ := harvester.Harvest()
 	mockFingerprint.Hostname = "someHostName"
 
-	service := NewIdentityConnectService(&MockIdentityConnectClient{}, harvester)
+	metadataHarvester := identityapi.MetadataHarvesterMock{}
+
+	service := NewIdentityConnectService(&MockIdentityConnectClient{}, harvester, &metadataHarvester)
 	service.lastFingerprint = mockFingerprint
 
 	agentIdn := entity.Identity{ID: 1}

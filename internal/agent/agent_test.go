@@ -8,7 +8,6 @@ import (
 	context2 "context"
 	"encoding/json"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -37,6 +36,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/fingerprint"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/metric"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
@@ -71,8 +71,11 @@ func newTesting(cfg *config.Config) *Agent {
 		panic(err)
 	}
 
+	metadataHarvester := &identityapi.MetadataHarvesterMock{}
+	metadataHarvester.ShouldHarvest(identityapi.Metadata{})
+
 	registerClient := &identityapi.RegisterClientMock{}
-	connectSrv := NewIdentityConnectService(&MockIdentityConnectClient{}, fpHarvester)
+	connectSrv := NewIdentityConnectService(&MockIdentityConnectClient{}, fpHarvester, metadataHarvester)
 	provideIDs := NewProvideIDs(registerClient, state.NewRegisterSM())
 
 	a, err := New(
@@ -89,7 +92,6 @@ func newTesting(cfg *config.Config) *Agent {
 		fpHarvester,
 		ctl.NewNotificationHandlerWithCancellation(nil),
 	)
-
 	if err != nil {
 		panic(err)
 	}
@@ -143,7 +145,6 @@ func TestIgnoreInventory(t *testing.T) {
 }
 
 func TestServicePidMap(t *testing.T) {
-
 	ctx := NewContext(&config.Config{}, "", testhelpers.NullHostnameResolver, NilIDLookup, matcher)
 	svc, ok := ctx.GetServiceForPid(1)
 	assert.False(t, ok)
@@ -325,16 +326,16 @@ func TestRemoveOutdatedEntities(t *testing.T) {
 	// With a set of registered entities
 	for _, id := range []string{"entity:1", "entity:2", "entity:3"} {
 		agent.registerEntityInventory(entity.NewFromNameWithoutID(id))
-		assert.NoError(t, os.MkdirAll(filepath.Join(dataDir, aPlugin, helpers.SanitizeFileName(id)), 0755))
-		assert.NoError(t, os.MkdirAll(filepath.Join(dataDir, anotherPlugin, helpers.SanitizeFileName(id)), 0755))
+		assert.NoError(t, os.MkdirAll(filepath.Join(dataDir, aPlugin, helpers.SanitizeFileName(id)), 0o755))
+		assert.NoError(t, os.MkdirAll(filepath.Join(dataDir, anotherPlugin, helpers.SanitizeFileName(id)), 0o755))
 	}
 	// With some entity inventory folders from previous executions
-	assert.NoError(t, os.MkdirAll(filepath.Join(dataDir, aPlugin, "entity4"), 0755))
-	assert.NoError(t, os.MkdirAll(filepath.Join(dataDir, aPlugin, "entity5"), 0755))
-	assert.NoError(t, os.MkdirAll(filepath.Join(dataDir, aPlugin, "entity6"), 0755))
-	assert.NoError(t, os.MkdirAll(filepath.Join(dataDir, anotherPlugin, "entity4"), 0755))
-	assert.NoError(t, os.MkdirAll(filepath.Join(dataDir, anotherPlugin, "entity5"), 0755))
-	assert.NoError(t, os.MkdirAll(filepath.Join(dataDir, anotherPlugin, "entity6"), 0755))
+	assert.NoError(t, os.MkdirAll(filepath.Join(dataDir, aPlugin, "entity4"), 0o755))
+	assert.NoError(t, os.MkdirAll(filepath.Join(dataDir, aPlugin, "entity5"), 0o755))
+	assert.NoError(t, os.MkdirAll(filepath.Join(dataDir, aPlugin, "entity6"), 0o755))
+	assert.NoError(t, os.MkdirAll(filepath.Join(dataDir, anotherPlugin, "entity4"), 0o755))
+	assert.NoError(t, os.MkdirAll(filepath.Join(dataDir, anotherPlugin, "entity5"), 0o755))
+	assert.NoError(t, os.MkdirAll(filepath.Join(dataDir, anotherPlugin, "entity6"), 0o755))
 
 	// When not all the entities reported information during the last period
 	entitiesThatReported := map[string]bool{
@@ -585,11 +586,11 @@ func TestAgent_Run_DontSendInventoryIfFwdOnly(t *testing.T) {
 				SendInterval:      tt.sendInterval,
 			}
 			a := newTesting(cfg)
-			//Give time to at least send one request
+			// Give time to at least send one request
 			ctxTimeout, _ := context2.WithTimeout(a.Context.Ctx, time.Millisecond*10)
 			a.Context.Ctx = ctxTimeout
 
-			//Inventory recording calls
+			// Inventory recording calls
 			snd := &patchSenderCallRecorder{}
 			a.inventories = map[string]*inventoryEntity{"test": {sender: snd}}
 
@@ -913,8 +914,7 @@ func Test_ProcessSampling(t *testing.T) {
 	}
 }
 
-type fakeEventSender struct {
-}
+type fakeEventSender struct{}
 
 func (f fakeEventSender) QueueEvent(_ sample.Event, _ entity.Key) error {
 	return nil
@@ -929,7 +929,7 @@ func (f fakeEventSender) Stop() error {
 }
 
 func TestContext_SendEvent_LogTruncatedEvent(t *testing.T) {
-	//Capture the logs
+	// Capture the logs
 	var output bytes.Buffer
 	log.SetOutput(&output)
 	log.EnableSmartVerboseMode(1000)

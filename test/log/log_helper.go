@@ -4,8 +4,10 @@
 package log
 
 import (
-	"github.com/sirupsen/logrus"
+	"regexp"
 	"sync"
+
+	"github.com/sirupsen/logrus"
 )
 
 type InMemoryEntriesHook struct {
@@ -28,6 +30,15 @@ func (h *InMemoryEntriesHook) GetEntries() []logrus.Entry {
 	entries := make([]logrus.Entry, len(h.entries))
 	copy(entries, h.entries)
 	return entries
+}
+
+func (h *InMemoryEntriesHook) EntryWithMessageExists(entry *regexp.Regexp) bool {
+	for _, e := range h.GetEntries() {
+		if entry.Match([]byte(e.Message)) {
+			return true
+		}
+	}
+	return false
 }
 
 func (h *InMemoryEntriesHook) Fire(entry *logrus.Entry) error {
