@@ -105,6 +105,9 @@ func Test_ConnectUpdate_ReturnsSameDifferentIDForDifferentFingerprint(t *testing
 	mockFingerprint.Hostname = "someHostName"
 
 	metadataHarvester := identityapi.MetadataHarvesterMock{}
+	defer metadataHarvester.AssertExpectations(t)
+
+	metadataHarvester.ShouldHarvest(identityapi.Metadata{})
 
 	service := NewIdentityConnectService(&MockIdentityConnectClient{}, harvester, &metadataHarvester)
 	service.lastFingerprint = mockFingerprint
