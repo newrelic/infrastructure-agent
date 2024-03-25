@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
-	infra "github.com/newrelic/infrastructure-agent/test/infra/http"
+	infra "github.com/newrelic/infrastructure-agent/test/infra/http" //nolint:depguard
 
 	"github.com/newrelic/infrastructure-agent/pkg/ctl"
 
