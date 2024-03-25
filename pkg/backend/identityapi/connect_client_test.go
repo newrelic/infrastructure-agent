@@ -1,5 +1,7 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+//
+//nolint:cyclop
 package identityapi
 
 import (
@@ -11,6 +13,8 @@ import (
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/stretchr/testify/assert"
 
@@ -266,6 +270,7 @@ func TestConnectOk(t *testing.T) {
 	client, err := NewIdentityConnectClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, true, mockHttp)
 	assert.NoError(t, err)
 
+	//nolint:exhaustruct
 	entityID, retryPolicy, err := client.Connect(fingerprint.Fingerprint{}, Metadata{})
 	assert.NoError(t, err)
 	assert.EqualValues(t, EmptyRetryTime, retryPolicy.After)
@@ -282,11 +287,13 @@ func TestConnectOkWithNoGUID(t *testing.T) {
 	client, err := NewIdentityConnectClient(testUrl, testLicenseKey, testUserAgent, gzip.BestCompression, true, mockHttp)
 	assert.NoError(t, err)
 
+	//nolint:exhaustruct
 	entityID, retryPolicy, err := client.Connect(fingerprint.Fingerprint{}, Metadata{})
 	assert.NoError(t, err)
 	assert.EqualValues(t, EmptyRetryTime, retryPolicy.After)
 	assert.EqualValues(t, EmptyRetryTime, retryPolicy.MaxBackOff)
 
+	//nolint:exhaustruct
 	assert.EqualValues(t, entity.Identity{ID: testAgentEntityId}, entityID)
 }
 
@@ -375,6 +382,7 @@ func Test_identityClient_ConnectUpdateReturnsEntityID(t *testing.T) {
 	}
 	fp := generateDefaultFingerprint()
 
+	//nolint:exhaustruct
 	_, entityID, err := client.ConnectUpdate(entity.Identity{ID: 1}, fp, Metadata{})
 	assert.NoError(t, err)
 	assert.Equal(t, expectedIdentity, entityID)
@@ -396,30 +404,35 @@ func Test_identityClient_DisconnectReturnsNoErr(t *testing.T) {
 
 	err := client.Disconnect(1, ReasonHostShutdown)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestConnectRequestSendsMetadata(t *testing.T) {
+	t.Parallel()
 	metadata := Metadata{"host.id": "some value"}
 
-	mockHttp := func(t *testing.T, metadata2 Metadata) func(req *http.Request) (*http.Response, error) {
+	mockHTTP := func(t *testing.T, metadata2 Metadata) func(req *http.Request) (*http.Response, error) {
+		t.Helper()
+
 		return func(req *http.Request) (*http.Response, error) {
 			var postBody postConnectBody
 			body, err := io.ReadAll(req.Body)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			err = json.Unmarshal(body, &postBody)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, metadata2, postBody.Metadata)
 
 			resp, err := getConnectResponse()
+			require.NoError(t, err)
+
 			return resp, nil
 		}
-	}(t, metadata)
+	}(t, metadata) //nolint:bodyclose
 
-	client := identityClient{userAgent: testUserAgent, licenseKey: testLicenseKey, httpClient: mockHttp}
+	client := identityClient{userAgent: testUserAgent, licenseKey: testLicenseKey, httpClient: mockHTTP, svcUrl: ""}
 
 	fp := generateDefaultFingerprint()
 
 	_, _, err := client.Connect(fp, metadata)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }

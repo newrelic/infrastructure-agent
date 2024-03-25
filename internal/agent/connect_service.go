@@ -5,12 +5,13 @@ package agent
 import (
 	goContext "context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
-	"github.com/newrelic/infrastructure-agent/pkg/config"
+	"github.com/newrelic/infrastructure-agent/pkg/config" //nolint:depguard
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/fingerprint"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
@@ -28,6 +29,7 @@ var ErrEmptyEntityID = errors.New("the agentID provided is empty. make sure you 
 
 var logger = log.WithComponent("IdentityConnectService")
 
+//nolint:revive
 func NewIdentityConnectService(client identityapi.IdentityConnectClient, fingerprintHarvest fingerprint.Harvester, metadataHarvester identityapi.MetadataHarvester) *identityConnectService {
 	return &identityConnectService{
 		fingerprintHarvest: fingerprintHarvest,
@@ -56,6 +58,7 @@ func (ic *identityConnectService) Connect() entity.Identity {
 		if err != nil {
 			logger.WithError(err).Error("metadata harvest failed")
 			time.Sleep(1 * time.Second)
+
 			continue
 		}
 
@@ -117,7 +120,7 @@ func (ic *identityConnectService) ConnectUpdate(agentIdn entity.Identity) (entit
 
 	metatada, err := ic.metadataHarvester.Harvest()
 	if err != nil {
-		return agentIdn, err
+		return agentIdn, fmt.Errorf("failed to harvest metadata: %w", err)
 	}
 
 	var retryBO *backoff.Backoff

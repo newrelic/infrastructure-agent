@@ -12,6 +12,7 @@ type MetadataHarvesterMock struct {
 func (m *MetadataHarvesterMock) Harvest() (Metadata, error) {
 	args := m.Called()
 
+	//nolint:forcetypeassert,wrapcheck
 	return args.Get(0).(Metadata), args.Error(1)
 }
 

@@ -7,10 +7,13 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMetadataHarvesterDefault(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		name     string
 		envVars  map[string]string
@@ -19,6 +22,7 @@ func TestMetadataHarvesterDefault(t *testing.T) {
 		{
 			name:     "no env vars empty metadata",
 			expected: Metadata{},
+			envVars:  map[string]string{},
 		},
 		{
 			name:     "no host id expects empty metadata",
@@ -31,24 +35,26 @@ func TestMetadataHarvesterDefault(t *testing.T) {
 			expected: Metadata{"host.id": "the host id"},
 		},
 	}
+
 	for i := range testCases {
 		testCase := testCases[i]
 		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
 			// Set environment variables
 			for envVarKey, envVar := range testCase.envVars {
 				err := os.Setenv(envVarKey, envVar)
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 
 			harvester := MetadataHarvesterDefault{}
 			actualMetadata, err := harvester.Harvest()
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, testCase.expected, actualMetadata)
 
 			// Unset environment variables
 			for envVarKey := range testCase.envVars {
 				err := os.Unsetenv(envVarKey)
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}

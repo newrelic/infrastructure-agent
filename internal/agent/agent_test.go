@@ -1,6 +1,7 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
+//
+// nolint:exhaustruct
 package agent
 
 import (
@@ -36,7 +37,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/fingerprint"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/metric"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
-	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/types" //nolint:depguard
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
@@ -326,16 +327,16 @@ func TestRemoveOutdatedEntities(t *testing.T) {
 	// With a set of registered entities
 	for _, id := range []string{"entity:1", "entity:2", "entity:3"} {
 		agent.registerEntityInventory(entity.NewFromNameWithoutID(id))
-		assert.NoError(t, os.MkdirAll(filepath.Join(dataDir, aPlugin, helpers.SanitizeFileName(id)), 0o755))
-		assert.NoError(t, os.MkdirAll(filepath.Join(dataDir, anotherPlugin, helpers.SanitizeFileName(id)), 0o755))
+		require.NoError(t, os.MkdirAll(filepath.Join(dataDir, aPlugin, helpers.SanitizeFileName(id)), 0o755))
+		require.NoError(t, os.MkdirAll(filepath.Join(dataDir, anotherPlugin, helpers.SanitizeFileName(id)), 0o755))
 	}
 	// With some entity inventory folders from previous executions
-	assert.NoError(t, os.MkdirAll(filepath.Join(dataDir, aPlugin, "entity4"), 0o755))
-	assert.NoError(t, os.MkdirAll(filepath.Join(dataDir, aPlugin, "entity5"), 0o755))
-	assert.NoError(t, os.MkdirAll(filepath.Join(dataDir, aPlugin, "entity6"), 0o755))
-	assert.NoError(t, os.MkdirAll(filepath.Join(dataDir, anotherPlugin, "entity4"), 0o755))
-	assert.NoError(t, os.MkdirAll(filepath.Join(dataDir, anotherPlugin, "entity5"), 0o755))
-	assert.NoError(t, os.MkdirAll(filepath.Join(dataDir, anotherPlugin, "entity6"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dataDir, aPlugin, "entity4"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dataDir, aPlugin, "entity5"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dataDir, aPlugin, "entity6"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dataDir, anotherPlugin, "entity4"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dataDir, anotherPlugin, "entity5"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dataDir, anotherPlugin, "entity6"), 0o755))
 
 	// When not all the entities reported information during the last period
 	entitiesThatReported := map[string]bool{

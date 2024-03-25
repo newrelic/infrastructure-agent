@@ -98,6 +98,8 @@ func NewIdentityConnectClient(
 
 // Perform the Connect step. The Agent must supply a fingerprint for the host. Backend should reply
 // with a unique Entity ID across NR.
+//
+//nolint:cyclop
 func (ic *identityClient) Connect(fingerprint fingerprint.Fingerprint, metadata Metadata) (ids entity.Identity, retry backendhttp.RetryPolicy, err error) {
 	buf, err := ic.marshal(postConnectBody{
 		Fingerprint: fingerprint,
@@ -162,6 +164,7 @@ func (ic *identityClient) Connect(fingerprint fingerprint.Fingerprint, metadata 
 }
 
 // ConnectUpdate is used to update the host fingerprint of the entityID to the backend.
+// nolint:cyclop
 func (ic *identityClient) ConnectUpdate(entityIdn entity.Identity, fingerprint fingerprint.Fingerprint, metadata Metadata) (retry backendhttp.RetryPolicy, ids entity.Identity, err error) {
 	buf, err := ic.marshal(postConnectBody{
 		Fingerprint: fingerprint,

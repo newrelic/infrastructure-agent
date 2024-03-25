@@ -1,5 +1,7 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+
+//nolint:exhaustruct
 package agent
 
 import (
@@ -7,7 +9,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/newrelic/infrastructure-agent/pkg/log" //nolint:depguard
 	logHelper "github.com/newrelic/infrastructure-agent/test/log"
 	"github.com/sirupsen/logrus"
 
@@ -20,21 +22,24 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/fingerprint"
 )
 
-var testEntityId = entity.Identity{ID: 999666333}
+// nolint:gochecknoglobals
+var testEntityID = entity.Identity{ID: 999666333}
 
 type MockIdentityConnectClient struct{}
 
-func (icc *MockIdentityConnectClient) Connect(fingerprint fingerprint.Fingerprint, metadata identityapi.Metadata) (entity.Identity, backendhttp.RetryPolicy, error) {
+func (icc *MockIdentityConnectClient) Connect(_ fingerprint.Fingerprint, _ identityapi.Metadata) (entity.Identity, backendhttp.RetryPolicy, error) {
 	var retry backendhttp.RetryPolicy
-	return testEntityId, retry, nil
+
+	return testEntityID, retry, nil
 }
 
-func (icc *MockIdentityConnectClient) ConnectUpdate(entityID entity.Identity, fp fingerprint.Fingerprint, metadata identityapi.Metadata) (backendhttp.RetryPolicy, entity.Identity, error) {
+func (icc *MockIdentityConnectClient) ConnectUpdate(_ entity.Identity, _ fingerprint.Fingerprint, _ identityapi.Metadata) (backendhttp.RetryPolicy, entity.Identity, error) {
 	var retry backendhttp.RetryPolicy
-	return retry, testEntityId, nil
+
+	return retry, testEntityID, nil
 }
 
-func (icc *MockIdentityConnectClient) Disconnect(entityID entity.ID, state identityapi.DisconnectReason) error {
+func (icc *MockIdentityConnectClient) Disconnect(_ entity.ID, _ identityapi.DisconnectReason) error {
 	return nil
 }
 
@@ -45,12 +50,15 @@ func TestConnect(t *testing.T) {
 
 	service := NewIdentityConnectService(&MockIdentityConnectClient{}, &fingerprint.MockHarvestor{}, metadataHarvester)
 
-	assert.Equal(t, testEntityId, service.Connect())
+	assert.Equal(t, testEntityID, service.Connect())
 }
 
 func TestConnectOnMetadataError(t *testing.T) {
+	t.Parallel()
+
 	metadataHarvester := &identityapi.MetadataHarvesterMock{}
 	defer metadataHarvester.AssertExpectations(t)
+	//nolint:goerr113
 	metadataHarvester.ShouldNotHarvest(errors.New("some error"))
 	metadataHarvester.ShouldHarvest(identityapi.Metadata{})
 
@@ -60,7 +68,7 @@ func TestConnectOnMetadataError(t *testing.T) {
 
 	service := NewIdentityConnectService(&MockIdentityConnectClient{}, &fingerprint.MockHarvestor{}, metadataHarvester)
 
-	assert.Equal(t, testEntityId, service.Connect())
+	assert.Equal(t, testEntityID, service.Connect())
 	assert.True(t, hook.EntryWithMessageExists(regexp.MustCompile(`metadata harvest failed`)))
 }
 
@@ -72,7 +80,7 @@ func TestConnectUpdate(t *testing.T) {
 	service := NewIdentityConnectService(&MockIdentityConnectClient{}, &fingerprint.MockHarvestor{}, metadataHarvester)
 	entityIdn, err := service.ConnectUpdate(entity.Identity{ID: 1})
 	assert.NoError(t, err)
-	assert.Equal(t, testEntityId, entityIdn)
+	assert.Equal(t, testEntityID, entityIdn)
 }
 
 func Test_ConnectUpdate_ReturnsSameIDForSameFingerprint(t *testing.T) {
@@ -105,6 +113,6 @@ func Test_ConnectUpdate_ReturnsSameDifferentIDForDifferentFingerprint(t *testing
 	entityID, err := service.ConnectUpdate(agentIdn)
 
 	assert.NoError(t, err)
-	assert.Equal(t, testEntityId, entityID)
-	assert.NotEqual(t, testEntityId, agentIdn)
+	assert.Equal(t, testEntityID, entityID)
+	assert.NotEqual(t, testEntityID, agentIdn)
 }
