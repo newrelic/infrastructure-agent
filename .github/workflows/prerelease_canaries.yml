@@ -78,8 +78,10 @@ jobs:
     outputs:
       previous_tag: ${{ steps.previous_tag_step.outputs.PREVIOUS_TAG }}
     steps:
+      - uses: actions/checkout@v2
+
       - id: previous_tag_step
-        run: .github/workflows/scripts/previous_version.sh ${{ inputs.TAG }} >> "$GITHUB_OUTPUT"
+        run: ./.github/workflows/scripts/previous_version.sh ${{ inputs.TAG }} >> "$GITHUB_OUTPUT"
 
   prune-previous-canaries-linux:
     needs: get_previous_tag
