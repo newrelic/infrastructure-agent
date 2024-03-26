@@ -38,7 +38,7 @@ func TestMetadataHarvesterDefault(t *testing.T) {
 
 	for i := range testCases {
 		testCase := testCases[i]
-		t.Run(testCase.name, func(t *testing.T) { //nolint:paralleltest
+		t.Run(testCase.name, func(t *testing.T) {
 			// Set environment variables
 			for envVarKey, envVar := range testCase.envVars {
 				err := os.Setenv(envVarKey, envVar)
