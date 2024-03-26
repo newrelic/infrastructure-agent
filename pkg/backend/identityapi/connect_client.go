@@ -33,8 +33,8 @@ var (
 var ilog = log.WithComponent("IdentityConnectClient")
 
 type IdentityConnectClient interface {
-	Connect(fingerprint fingerprint.Fingerprint) (entity.Identity, backendhttp.RetryPolicy, error)
-	ConnectUpdate(entity.Identity, fingerprint.Fingerprint) (backendhttp.RetryPolicy, entity.Identity, error)
+	Connect(fingerprint fingerprint.Fingerprint, metadata Metadata) (entity.Identity, backendhttp.RetryPolicy, error)
+	ConnectUpdate(entityID entity.Identity, fingerprint fingerprint.Fingerprint, metadata Metadata) (backendhttp.RetryPolicy, entity.Identity, error)
 	Disconnect(entityID entity.ID, reason DisconnectReason) error
 }
 
@@ -49,6 +49,7 @@ type identityClient struct {
 
 type postConnectBody struct {
 	Fingerprint fingerprint.Fingerprint `json:"fingerprint"`
+	Metadata    Metadata                `json:"metadata"`
 	Type        string                  `json:"type"`
 	Protocol    string                  `json:"protocol"`
 	EntityID    entity.ID               `json:"entityId,omitempty"`
@@ -97,13 +98,15 @@ func NewIdentityConnectClient(
 
 // Perform the Connect step. The Agent must supply a fingerprint for the host. Backend should reply
 // with a unique Entity ID across NR.
-func (ic *identityClient) Connect(fingerprint fingerprint.Fingerprint) (ids entity.Identity, retry backendhttp.RetryPolicy, err error) {
+//
+//nolint:cyclop
+func (ic *identityClient) Connect(fingerprint fingerprint.Fingerprint, metadata Metadata) (ids entity.Identity, retry backendhttp.RetryPolicy, err error) {
 	buf, err := ic.marshal(postConnectBody{
 		Fingerprint: fingerprint,
+		Metadata:    metadata,
 		Type:        ic.agentType(),
 		Protocol:    "v1",
 	})
-
 	if err != nil {
 		return
 	}
@@ -161,9 +164,11 @@ func (ic *identityClient) Connect(fingerprint fingerprint.Fingerprint) (ids enti
 }
 
 // ConnectUpdate is used to update the host fingerprint of the entityID to the backend.
-func (ic *identityClient) ConnectUpdate(entityIdn entity.Identity, fingerprint fingerprint.Fingerprint) (retry backendhttp.RetryPolicy, ids entity.Identity, err error) {
+// nolint:cyclop
+func (ic *identityClient) ConnectUpdate(entityIdn entity.Identity, fingerprint fingerprint.Fingerprint, metadata Metadata) (retry backendhttp.RetryPolicy, ids entity.Identity, err error) {
 	buf, err := ic.marshal(postConnectBody{
 		Fingerprint: fingerprint,
+		Metadata:    metadata,
 		Type:        ic.agentType(),
 		Protocol:    "v1",
 		EntityID:    entityIdn.ID,

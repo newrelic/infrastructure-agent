@@ -5,12 +5,13 @@ package agent
 import (
 	goContext "context"
 	"errors"
-	"github.com/newrelic/infrastructure-agent/pkg/config"
+	"fmt"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/backoff"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
+	"github.com/newrelic/infrastructure-agent/pkg/config" //nolint:depguard
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/fingerprint"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
@@ -20,6 +21,7 @@ type identityConnectService struct {
 	fingerprintHarvest fingerprint.Harvester
 	lastFingerprint    fingerprint.Fingerprint
 	client             identityapi.IdentityConnectClient
+	metadataHarvester  identityapi.MetadataHarvester
 }
 
 // ErrEmptyEntityID is returned when the entityID is empty.
@@ -27,10 +29,12 @@ var ErrEmptyEntityID = errors.New("the agentID provided is empty. make sure you 
 
 var logger = log.WithComponent("IdentityConnectService")
 
-func NewIdentityConnectService(client identityapi.IdentityConnectClient, fingerprintHarvest fingerprint.Harvester) *identityConnectService {
+//nolint:revive
+func NewIdentityConnectService(client identityapi.IdentityConnectClient, fingerprintHarvest fingerprint.Harvester, metadataHarvester identityapi.MetadataHarvester) *identityConnectService {
 	return &identityConnectService{
 		fingerprintHarvest: fingerprintHarvest,
 		client:             client,
+		metadataHarvester:  metadataHarvester,
 	}
 }
 
@@ -50,7 +54,15 @@ func (ic *identityConnectService) Connect() entity.Identity {
 
 		logger.WithField(config.TracesFieldName, config.FeatureTrace).Tracef("connect request with fingerprint: %+v", f)
 
-		ids, retry, err := ic.client.Connect(f)
+		metatada, err := ic.metadataHarvester.Harvest()
+		if err != nil {
+			logger.WithError(err).Error("metadata harvest failed")
+			time.Sleep(1 * time.Second)
+
+			continue
+		}
+
+		ids, retry, err := ic.client.Connect(f, metatada)
 
 		if !ids.ID.IsEmpty() {
 			logger.
@@ -106,10 +118,15 @@ func (ic *identityConnectService) ConnectUpdate(agentIdn entity.Identity) (entit
 	// fingerprint changed, so let's store it for the next round
 	ic.lastFingerprint = f
 
+	metatada, err := ic.metadataHarvester.Harvest()
+	if err != nil {
+		return agentIdn, fmt.Errorf("failed to harvest metadata: %w", err)
+	}
+
 	var retryBO *backoff.Backoff
 	for {
 		logger.WithField(config.TracesFieldName, config.FeatureTrace).Tracef("connect update request with fingerprint: %+v", f)
-		retry, entityIdn, err := ic.client.ConnectUpdate(agentIdn, f)
+		retry, entityIdn, err := ic.client.ConnectUpdate(agentIdn, f, metatada)
 		if retry.After > 0 {
 			logger.WithField("retryAfter", retry.After).Debug("Connect update retry requested.")
 			retryBO = nil

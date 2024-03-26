@@ -4,11 +4,12 @@ package infra
 
 import (
 	"compress/gzip"
-	infra "github.com/newrelic/infrastructure-agent/test/infra/http"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
 	"time"
+
+	infra "github.com/newrelic/infrastructure-agent/test/infra/http" //nolint:depguard
 
 	"github.com/newrelic/infrastructure-agent/pkg/ctl"
 
@@ -81,7 +82,6 @@ func NewAgentWithConnectClientAndConfig(connectClient *http.Client, dataClient b
 	ctx := agent.NewContext(cfg, "1.2.3", testhelpers.NewFakeHostnameResolver("foobar", "foo", nil), lookups, matcher)
 
 	fingerprintHarvester, err := fingerprint.NewHarvestor(cfg, testhelpers.NullHostnameResolver, cloudDetector)
-
 	if err != nil {
 		panic(err)
 	}
@@ -93,7 +93,9 @@ func NewAgentWithConnectClientAndConfig(connectClient *http.Client, dataClient b
 		panic(err)
 	}
 
-	connectSrv := agent.NewIdentityConnectService(connectC, fingerprintHarvester)
+	connectMetadataHarvester := identityapi.NewMetadataHarvesterDefault()
+
+	connectSrv := agent.NewIdentityConnectService(connectC, fingerprintHarvester, connectMetadataHarvester)
 
 	registerC, err := identityapi.NewRegisterClient(
 		"url",

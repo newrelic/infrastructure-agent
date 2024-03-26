@@ -340,7 +340,9 @@ func NewAgent(
 		return nil, err
 	}
 
-	connectSrv := NewIdentityConnectService(connectClient, fpHarvester)
+	connectMetadataHarvester := identityapi.NewMetadataHarvesterDefault()
+
+	connectSrv := NewIdentityConnectService(connectClient, fpHarvester, connectMetadataHarvester)
 
 	// notificationHandler will map ipc messages to functions
 	notificationHandler := ctl.NewNotificationHandlerWithCancellation(ctx.Ctx)
