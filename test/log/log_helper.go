@@ -4,6 +4,7 @@
 package log
 
 import (
+	"errors"
 	"regexp"
 	"sync"
 
@@ -35,6 +36,17 @@ func (h *InMemoryEntriesHook) GetEntries() []logrus.Entry {
 func (h *InMemoryEntriesHook) EntryWithMessageExists(entry *regexp.Regexp) bool {
 	for _, e := range h.GetEntries() {
 		if entry.MatchString(e.Message) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (h *InMemoryEntriesHook) EntryWithErrorExists(err error) bool {
+	for _, e := range h.GetEntries() {
+		//nolint:forcetypeassert
+		if errors.Is(err, e.Data["error"].(error)) {
 			return true
 		}
 	}
