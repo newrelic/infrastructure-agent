@@ -17,6 +17,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/proxy"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostid"
 )
 
 func registerForwarderHeartbeat(a *agnt.Agent) {
@@ -122,7 +123,7 @@ func RegisterPlugins(agent *agnt.Agent) error {
 	if config.NtpMetrics.Enabled {
 		ntpMonitor = metrics.NewNtp(config.NtpMetrics.Pool, config.NtpMetrics.Timeout, config.NtpMetrics.Interval)
 	}
-	systemSampler := metrics.NewSystemSampler(agent.Context, storageSampler, ntpMonitor)
+	systemSampler := metrics.NewSystemSampler(agent.Context, storageSampler, ntpMonitor, hostid.NewProviderEnv())
 
 	// Prime Storage Sampler, ignoring results
 	if !storageSampler.Disabled() {

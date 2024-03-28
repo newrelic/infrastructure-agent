@@ -8,18 +8,20 @@ package harvest
 
 import (
 	"fmt"
-	"github.com/shirou/gopsutil/v3/cpu"
 	"os"
 	"runtime"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/cpu"
+
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -32,7 +34,11 @@ func TestHostCPU(t *testing.T) {
 		MetricsNetworkSampleRate: 1,
 	})
 	storageSampler := storage.NewSampler(ctx)
-	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil)
+
+	hostIDProvider := &hostid.ProviderMock{}
+	hostIDProvider.On("Provide").Return("some-host-id", nil)
+
+	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil, hostIDProvider)
 
 	// Hacky method to skip this test when CGO (required by gopsutils.cpu.Times() on darwin impl) is not available for tests build.
 	// Context: harvest tests are build in container before pushed to the runner machine for execution.
@@ -81,7 +87,10 @@ func TestHostMemory(t *testing.T) {
 	})
 	storageSampler := storage.NewSampler(ctx)
 
-	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil)
+	hostIDProvider := &hostid.ProviderMock{}
+	hostIDProvider.On("Provide").Return("some-host-id", nil)
+
+	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil, hostIDProvider)
 
 	sampleB, _ := systemSampler.Sample()
 	beforeSample := sampleB[0].(*metrics.SystemSample)
@@ -125,7 +134,10 @@ func TestHostSwap(t *testing.T) {
 	})
 	storageSampler := storage.NewSampler(ctx)
 
-	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil)
+	hostIDProvider := &hostid.ProviderMock{}
+	hostIDProvider.On("Provide").Return("some-host-id", nil)
+
+	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil, hostIDProvider)
 
 	sampleB, _ := systemSampler.Sample()
 	sample := sampleB[0].(*metrics.SystemSample)

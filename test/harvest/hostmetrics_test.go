@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostid"
+
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics"
@@ -22,7 +24,11 @@ func TestUptime(t *testing.T) {
 		MetricsNetworkSampleRate: 1,
 	})
 	storageSampler := storage.NewSampler(ctx)
-	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil)
+
+	hostIDProvider := &hostid.ProviderMock{}
+	hostIDProvider.On("Provide").Return("some-host-id", nil)
+
+	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil, hostIDProvider)
 
 	sampleB1, _ := systemSampler.Sample()
 	sample1 := sampleB1[0].(*metrics.SystemSample)

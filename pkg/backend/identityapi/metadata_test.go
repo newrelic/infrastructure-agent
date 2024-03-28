@@ -4,57 +4,42 @@
 package identityapi
 
 import (
-	"os"
+	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestMetadataHarvesterDefault(t *testing.T) {
+func TestMetadataHarvesterDefaultHostIdeProvided(t *testing.T) {
 	t.Parallel()
-	testCases := []struct {
-		name     string
-		envVars  map[string]string
-		expected Metadata
-	}{
-		{
-			name:     "no env vars empty metadata",
-			expected: Metadata{},
-			envVars:  map[string]string{},
-		},
-		{
-			name:     "no host id expects empty metadata",
-			envVars:  map[string]string{"one_env_var": "some value"},
-			expected: Metadata{},
-		},
-		{
-			name:     "NR_HOST_ID expects the host_id",
-			envVars:  map[string]string{"one_env_var": "some value", "NR_HOST_ID": "the host id"},
-			expected: Metadata{"host.id": "the host id"},
-		},
-	}
 
-	for i := range testCases {
-		testCase := testCases[i]
-		t.Run(testCase.name, func(t *testing.T) {
-			// Set environment variables
-			for envVarKey, envVar := range testCase.envVars {
-				err := os.Setenv(envVarKey, envVar)
-				require.NoError(t, err)
-			}
+	hostIDProvider := &hostid.ProviderMock{} //nolint:exhaustruct
+	defer hostIDProvider.AssertExpectations(t)
 
-			harvester := MetadataHarvesterDefault{}
-			actualMetadata, err := harvester.Harvest()
-			require.NoError(t, err)
-			assert.Equal(t, testCase.expected, actualMetadata)
+	harvester := NewMetadataHarvesterDefault(hostIDProvider)
 
-			// Unset environment variables
-			for envVarKey := range testCase.envVars {
-				err := os.Unsetenv(envVarKey)
-				require.NoError(t, err)
-			}
-		})
-	}
+	hostIDProvider.ShouldProvide("some-host-id")
+
+	metadata, err := harvester.Harvest()
+	require.NoError(t, err)
+	assert.Equal(t, "some-host-id", metadata[hostIDAttribute])
+}
+
+func TestMetadataHarvesterDefaultErrorOnHostId(t *testing.T) {
+	t.Parallel()
+
+	hostIDProvider := &hostid.ProviderMock{} //nolint:exhaustruct
+	defer hostIDProvider.AssertExpectations(t)
+
+	harvester := NewMetadataHarvesterDefault(hostIDProvider)
+
+	//nolint:goerr113
+	providerErr := errors.New("some error")
+	hostIDProvider.ShouldNotProvide(providerErr)
+
+	metadata, err := harvester.Harvest()
+	require.ErrorAs(t, err, &providerErr)
+	assert.NotContains(t, metadata, hostIDAttribute)
 }

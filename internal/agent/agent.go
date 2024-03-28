@@ -16,6 +16,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostid"
+
 	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
 	"github.com/newrelic/infrastructure-agent/internal/agent/inventory"
 	"github.com/newrelic/infrastructure-agent/internal/agent/types"
@@ -340,7 +342,7 @@ func NewAgent(
 		return nil, err
 	}
 
-	connectMetadataHarvester := identityapi.NewMetadataHarvesterDefault()
+	connectMetadataHarvester := identityapi.NewMetadataHarvesterDefault(hostid.NewProviderEnv())
 
 	connectSrv := NewIdentityConnectService(connectClient, fpHarvester, connectMetadataHarvester)
 
