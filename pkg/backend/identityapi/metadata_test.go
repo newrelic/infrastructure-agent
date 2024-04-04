@@ -37,7 +37,7 @@ func TestMetadataHarvesterDefaultErrorOnHostId(t *testing.T) {
 
 	//nolint:goerr113
 	providerErr := errors.New("some error")
-	hostIDProvider.ShouldNotProvide(providerErr)
+	hostIDProvider.ShouldReturnErr(providerErr)
 
 	metadata, err := harvester.Harvest()
 	require.ErrorAs(t, err, &providerErr)

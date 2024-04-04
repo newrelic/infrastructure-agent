@@ -117,7 +117,7 @@ func TestSystemSample_HostIDErrorShouldBeLogged(t *testing.T) {
 
 	//nolint:goerr113
 	providerErr := errors.New("some error")
-	hostIDProvider.ShouldNotProvide(providerErr)
+	hostIDProvider.ShouldReturnErr(providerErr)
 
 	storage := storage.NewSampler(ctx)
 	m := NewSystemSampler(ctx, storage, nil, hostIDProvider)

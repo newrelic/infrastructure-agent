@@ -19,6 +19,6 @@ func (m *ProviderMock) ShouldProvide(hostID string) {
 	m.On("Provide").Once().Return(hostID, nil)
 }
 
-func (m *ProviderMock) ShouldNotProvide(err error) {
+func (m *ProviderMock) ShouldReturnErr(err error) {
 	m.On("Provide").Once().Return("", err)
 }
