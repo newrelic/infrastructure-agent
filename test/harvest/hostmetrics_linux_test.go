@@ -14,15 +14,16 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/shirou/gopsutil/v3/disk"
-
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/shirou/gopsutil/v3/disk"
 )
 
 func TestHostSharedMemory(t *testing.T) {
@@ -32,7 +33,10 @@ func TestHostSharedMemory(t *testing.T) {
 	})
 	storageSampler := storage.NewSampler(ctx)
 
-	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil)
+	hostIDProvider := &hostid.ProviderMock{}
+	hostIDProvider.On("Provide").Return("some-host-id", nil)
+
+	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil, hostid.NewProviderEnv())
 
 	sampleB, _ := systemSampler.Sample()
 	beforeSample := sampleB[0].(*metrics.SystemSample)
@@ -67,7 +71,10 @@ func TestHostCachedMemory(t *testing.T) {
 	})
 	storageSampler := storage.NewSampler(ctx)
 
-	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil)
+	hostIDProvider := &hostid.ProviderMock{}
+	hostIDProvider.On("Provide").Return("some-host-id", nil)
+
+	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil, hostIDProvider)
 
 	sampleB, _ := systemSampler.Sample()
 	beforeSample := sampleB[0].(*metrics.SystemSample)
@@ -144,7 +151,10 @@ func TestHostSlabMemory(t *testing.T) {
 	})
 	storageSampler := storage.NewSampler(ctx)
 
-	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil)
+	hostIDProvider := &hostid.ProviderMock{}
+	hostIDProvider.On("Provide").Return("some-host-id", nil)
+
+	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil, hostIDProvider)
 
 	sampleB, _ := systemSampler.Sample()
 	beforeSample := sampleB[0].(*metrics.SystemSample)
@@ -175,7 +185,11 @@ func TestHostBuffersMemory(t *testing.T) {
 		MetricsNetworkSampleRate: 1,
 	})
 	storageSampler := storage.NewSampler(ctx)
-	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil)
+
+	hostIDProvider := &hostid.ProviderMock{}
+	hostIDProvider.On("Provide").Return("some-host-id", nil)
+
+	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil, hostIDProvider)
 
 	// clear cache
 	err := ioutil.WriteFile("/proc/sys/vm/drop_caches", []byte("3"), 0o200)

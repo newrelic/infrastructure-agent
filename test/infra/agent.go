@@ -12,8 +12,8 @@ import (
 	infra "github.com/newrelic/infrastructure-agent/test/infra/http" //nolint:depguard
 
 	"github.com/newrelic/infrastructure-agent/pkg/ctl"
-
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostid" //nolint:depguard
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/delta"
@@ -93,7 +93,7 @@ func NewAgentWithConnectClientAndConfig(connectClient *http.Client, dataClient b
 		panic(err)
 	}
 
-	connectMetadataHarvester := identityapi.NewMetadataHarvesterDefault()
+	connectMetadataHarvester := identityapi.NewMetadataHarvesterDefault(hostid.NewProviderEnv())
 
 	connectSrv := agent.NewIdentityConnectService(connectC, fingerprintHarvester, connectMetadataHarvester)
 

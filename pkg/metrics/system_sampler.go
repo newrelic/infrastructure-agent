@@ -16,6 +16,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostid"
 )
 
 var syslog = log.WithComponent("SystemSampler")
@@ -29,6 +30,7 @@ type SystemSample struct {
 	*MemorySample
 	*DiskSample
 	*HostSample
+	HostID string `json:"host.id,omitempty"`
 }
 
 type SystemSampler struct {
@@ -40,9 +42,10 @@ type SystemSampler struct {
 	context        agent.AgentContext
 	stopChannel    chan bool
 	waitForCleanup *sync.WaitGroup
+	hostIDProvider hostid.Provider
 }
 
-func NewSystemSampler(context agent.AgentContext, storageSampler *storage.Sampler, ntpMonitor NtpMonitor) *SystemSampler {
+func NewSystemSampler(context agent.AgentContext, storageSampler *storage.Sampler, ntpMonitor NtpMonitor, hostIDProvider hostid.Provider) *SystemSampler {
 	cfg := context.Config()
 	return &SystemSampler{
 		CpuMonitor:     NewCPUMonitor(context),
@@ -52,6 +55,7 @@ func NewSystemSampler(context agent.AgentContext, storageSampler *storage.Sample
 		HostMonitor:    NewHostMonitor(ntpMonitor),
 		context:        context,
 		waitForCleanup: &sync.WaitGroup{},
+		hostIDProvider: hostIDProvider,
 	}
 }
 
@@ -154,6 +158,13 @@ func (s *SystemSampler) Sample() (results sample.EventBatch, err error) {
 
 	sysSample.HostSample = hostSample
 	seg.End()
+
+	hostID, hostIDErr := s.hostIDProvider.Provide()
+	if hostIDErr != nil {
+		syslog.WithError(hostIDErr).Error("cannot retrieve host_id")
+	} else {
+		sysSample.HostID = hostID
+	}
 
 	helpers.LogStructureDetails(syslog, sysSample, "SystemSample", "final", nil)
 	results = append(results, sysSample)

@@ -13,6 +13,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/proxy"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostid"
 )
 
 func RegisterPlugins(a *agent.Agent) error {
@@ -41,7 +42,7 @@ func RegisterPlugins(a *agent.Agent) error {
 	if config.NtpMetrics.Enabled {
 		ntpMonitor = metrics.NewNtp(config.NtpMetrics.Pool, config.NtpMetrics.Timeout, config.NtpMetrics.Interval)
 	}
-	systemSampler := metrics.NewSystemSampler(a.Context, storageSampler, ntpMonitor)
+	systemSampler := metrics.NewSystemSampler(a.Context, storageSampler, ntpMonitor, hostid.NewProviderEnv())
 
 	sender.RegisterSampler(systemSampler)
 	sender.RegisterSampler(storageSampler)

@@ -32,6 +32,8 @@ linters-settings:
   wrapcheck:
     ignoreSigs:
       - multierr.Append
+      - errors.Join
+
 
 
 linters:
@@ -52,6 +54,7 @@ linters:
     - testpackage
     - gci
     - tagliatelle
+    - depguard #disabled until configure properly
 
 issues:
   new-from-rev: "HEAD~"
