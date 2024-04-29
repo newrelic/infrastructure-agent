@@ -135,13 +135,6 @@ instances:
     platform: "linux"
     python_interpreter: "/usr/bin/python"
     launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
-  - ami: "ami-0e44499c443e91acd" # based on suse-sles-15-sp2-byos-v20220128-hvm-ssd-x86_64
-    type: "t3a.small"
-    name: "amd64:sles-15.2"
-    username: "ec2-user"
-    platform: "linux"
-    python_interpreter: "/usr/bin/python3"
-    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
   - ami: "ami-0446c700e1dc61753" # based on suse-sles-15-sp3-v20210622-hvm-ssd-x86_64
     type: "t3a.small"
     name: "amd64:sles-15.3"
