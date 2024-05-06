@@ -77,6 +77,12 @@ jobs:
         shell: pwsh
         run: build\windows\package_zip.ps1 -arch ${{ matrix.goarch }} -version ${{env.FAKE_TAG}}
 
+      - name: Generate checksum files
+        uses: ./src/github.com/newrelic/infrastructure-agent/.github/actions/generate-checksums
+        with:
+          files_regex: '.*zip\|.*msi'
+          files_path: './${{ env.REPO_WORKDIR }}/dist'
+
       - name: Archive production artifacts
         uses: actions/upload-artifact@v2 #v3 just got released and was not working in windows
         with:
