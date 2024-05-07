@@ -41,7 +41,7 @@ func CyberArkCLIGatherer(cyberArkCLI *CyberArkCLI) func() (interface{}, error) {
 }
 
 func (g *cyberArkCLIGatherer) get() (data.InterfaceMap, error) {
-	cmd := cyberArkExecCommand(g.cfg.CLI, "GetPassword", "-p", "AppDescs.AppID="+g.cfg.AppID, "-p", "Query=Safe="+g.cfg.Safe+";Folder="+g.cfg.Folder+";Object="+g.cfg.Object, "-o", "Password")
+	cmd := g.cyberArkExecCommand()
 	var out bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &out
