@@ -78,7 +78,7 @@ jobs:
         run: build\windows\package_zip.ps1 -arch ${{ matrix.goarch }} -version ${{env.FAKE_TAG}}
 
       - name: Generate checksum files
-        uses: ./src/github.com/newrelic/infrastructure-agent/.github/actions/generate-checksums
+        uses: ./.github/actions/generate-checksums
         with:
           files_regex: '.*zip\|.*msi'
           files_path: './${{ env.REPO_WORKDIR }}/dist'
