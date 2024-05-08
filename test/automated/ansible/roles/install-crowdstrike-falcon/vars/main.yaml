@@ -61,6 +61,8 @@ yum:
     hash: "{{ al2_arm64_hash }}"
 
 apt:
+  - hostname: "amd64:ubuntu24.04"
+    hash: "{{ ubuntu_debian_amd64_hash}}"
   - hostname: "amd64:ubuntu22.04"
     hash: "{{ ubuntu_debian_amd64_hash}}"
   - hostname: "amd64:ubuntu20.04"
@@ -69,6 +71,8 @@ apt:
     hash: "{{ ubuntu_debian_amd64_hash}}"
   - hostname: "amd64:ubuntu16.04"
     hash: "{{ ubuntu_debian_amd64_hash}}"
+  - hostname: "arm64:ubuntu24.04"
+    hash: "{{ ubuntu_arm64_hash }}"
   - hostname: "arm64:ubuntu22.04"
     hash: "{{ ubuntu_arm64_hash }}"
   - hostname: "arm64:ubuntu20.04"
