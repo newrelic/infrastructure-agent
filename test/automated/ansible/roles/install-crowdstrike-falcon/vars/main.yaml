@@ -90,8 +90,6 @@ apt:
 zyp:
   - hostname: "amd64:sles-12.5"
     hash: "{{ sles12_amd64_hash }}"
-  - hostname: "amd64:sles-15.2"
-    hash: "{{ sles15_amd64_hash }}"
   - hostname: "amd64:sles-15.3"
     hash: "{{ sles15_amd64_hash }}"
   - hostname: "amd64:sles-15.4"
