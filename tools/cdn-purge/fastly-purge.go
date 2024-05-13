@@ -107,6 +107,7 @@ func main() {
 
 	if err := purgeCDN(ctx); err != nil {
 		logInfo("cannot purge CDN, error: %v", err)
+		os.Exit(1)
 	}
 }
 
