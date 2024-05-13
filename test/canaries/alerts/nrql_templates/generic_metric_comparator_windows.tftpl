@@ -1,0 +1,11 @@
+SELECT abs(
+    filter(${coalesce(function, "average")}(${coalesce(function, "numeric")}(${metric})),WHERE displayName like '${display_name_current}')
+    -
+    filter(${coalesce(function, "average")}(${coalesce(function, "numeric")}(${metric})),WHERE displayName like '${display_name_previous}')
+)
+FROM ${sample}
+WHERE displayName IN ('${display_name_current}','${display_name_previous}')
+%{ for k, v in wheres }
+  AND ${k}='${v}'
+%{ endfor }
+AND operatingSystem = 'windows'

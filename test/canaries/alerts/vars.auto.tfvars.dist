@@ -22,24 +22,6 @@ conditions            = [
     template_name = "./nrql_templates/generic_metric_comparator.tftpl"
   },
   {
-    name          = "System / Core Count"
-    metric        = "coreCount"
-    sample        = "SystemSample"
-    threshold     = 0
-    duration      = 600
-    operator      = "above"
-    template_name = "./nrql_templates/generic_metric_comparator.tftpl"
-  },
-  {
-    name          = "System / Cpu IOWait Percent"
-    metric        = "cpuIOWaitPercent"
-    sample        = "SystemSample"
-    threshold     = 0.5 # max 0.112 in last week
-    duration      = 1800
-    operator      = "above"
-    template_name = "./nrql_templates/generic_metric_comparator.tftpl"
-  },
-  {
     name          = "System / Cpu Idle Percent"
     metric        = "cpuIdlePercent"
     sample        = "SystemSample"
@@ -293,13 +275,22 @@ conditions            = [
     template_name = "./nrql_templates/generic_metric_comparator.tftpl"
   },
   {
-    name          = "System / Swap Free Bytes"
+    name          = "System / Swap Free Bytes Windows"
+    metric        = "swapFreeBytes"
+    sample        = "SystemSample"
+    threshold     = 100000000
+    duration      = 600
+    operator      = "above"
+    template_name = "./nrql_templates/generic_metric_comparator_windows.tftpl"
+  },
+  {
+    name          = "System / Swap Free Bytes Linux"
     metric        = "swapFreeBytes"
     sample        = "SystemSample"
     threshold     = 0
     duration      = 600
     operator      = "above"
-    template_name = "./nrql_templates/generic_metric_comparator.tftpl"
+    template_name = "./nrql_templates/generic_metric_comparator_linux.tftpl"
   },
   {
     name          = "System / Swap Total Bytes"
@@ -314,10 +305,19 @@ conditions            = [
     name          = "System / Swap Used Bytes"
     metric        = "swapUsedBytes"
     sample        = "SystemSample"
+    threshold     = 100000000
+    duration      = 600
+    operator      = "above"
+    template_name = "./nrql_templates/generic_metric_comparator_windows.tftpl"
+  },
+  {
+    name          = "System / Swap Used Bytes"
+    metric        = "swapUsedBytes"
+    sample        = "SystemSample"
     threshold     = 0
     duration      = 600
     operator      = "above"
-    template_name = "./nrql_templates/generic_metric_comparator.tftpl"
+    template_name = "./nrql_templates/generic_metric_comparator_linux.tftpl"
   },
   {
     name          = "System / System Memory Bytes"
