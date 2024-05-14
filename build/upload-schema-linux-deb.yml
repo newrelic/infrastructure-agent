@@ -9,6 +9,7 @@
       src_repo: "{access_point_host}/infrastructure_agent/linux/apt"
       dest: "{dest_prefix}linux/apt/"
       os_version:
+        - noble
         - jammy
         - focal
         - bionic
