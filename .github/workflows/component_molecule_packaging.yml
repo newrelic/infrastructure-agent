@@ -19,7 +19,7 @@ env:
 jobs:
   molecule-test-packages:
     name: Test package installation
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: newrelic/pkg-installation-testing-action@v1
         with:
