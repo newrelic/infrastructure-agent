@@ -12,7 +12,6 @@ jobs:
     uses: ./.github/workflows/component_macos_unit_test.yml
 
   canaries-macos:
-    needs: [ test-prerelease-macos ]
     uses: ./.github/workflows/component_canaries.yml
     with:
       PLATFORM: "macos"
