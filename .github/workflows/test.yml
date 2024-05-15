@@ -51,6 +51,7 @@ jobs:
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
     with:
       TAG: "0.0.0" # needed for goreleaser test builds
+      PUBLISH: false
 
   test-build:
     uses: ./.github/workflows/component_linux_build.yml

@@ -11,10 +11,14 @@ on:
       TAG:
         required: true
         type: string
+      PUBLISH:
+        default: false
+        required: true
+        type: boolean
 
 env:
   TAG: ${{ inputs.TAG }}
-  DOCKER_PUBLISH: true
+  DOCKER_PUBLISH: ${{ inputs.PUBLISH == true }}
 
 jobs:
   build-container:
