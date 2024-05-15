@@ -10,6 +10,6 @@
     dest: "{{ ansible_user_dir }}/{{ os_arch_binary_name }}"
     mode: '0755'
 
-- include: "execute-tests-{{ ansible_system }}.yaml"
+- include_tasks: "execute-tests-{{ ansible_system }}.yaml"
 
 ...
