@@ -21,8 +21,8 @@
 - name: log forwarder
   import_playbook: log-forwarder.yml
 
-- name: agent upgrade
-  import_playbook: agent-upgrade.yml
+# - name: agent upgrade
+#   import_playbook: agent-upgrade.yml
 
 - name: shutdown , terminate and HNR alerts
   import_playbook: shutdown-and-terminate.yml
