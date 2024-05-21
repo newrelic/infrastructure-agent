@@ -11,11 +11,6 @@ on:
         type: boolean
         default: true
         required: false
-      macos:
-        description: '🍏 Should run tests for MacOS platform?'
-        type: boolean
-        default: true
-        required: false
       windows:
         description: '🪟 Should run tests for Windows platform?'
         type: boolean
@@ -51,17 +46,3 @@ jobs:
       CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
       CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
       CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}
-
-  test-prerelease-macos:
-    if: ${{ github.event.inputs.macos == 'true' }}
-    uses: ./.github/workflows/component_prerelease_testing.yml
-    with:
-      PLATFORM: "macos"
-      TAG: ${{ github.event.inputs.tag }}
-      TAG_OR_UNIQUE_NAME: "${{ github.event.inputs.tag }}-macos"
-    secrets:
-      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
-      CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
-      CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
-      CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}
-
