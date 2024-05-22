@@ -150,7 +150,7 @@ jobs:
       CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}
 
   get_previous_tag:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     outputs:
       previous_tag: ${{ steps.previous_tag_step.outputs.PREVIOUS_TAG }}
     steps:
