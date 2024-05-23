@@ -133,11 +133,21 @@ jobs:
       CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
       CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}
 
+  get_previous_tag:
+    runs-on: ubuntu-latest
+    outputs:
+      previous_tag: ${{ steps.previous_tag_step.outputs.PREVIOUS_TAG }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - id: previous_tag_step
+        run: ./.github/workflows/scripts/previous_version.sh ${{ github.event.release.tag_name }} >> "$GITHUB_OUTPUT"
+
   prune-canaries-windows:
-    needs: [canaries-windows]
+    needs: [canaries-windows, get_previous_tag]
     uses: ./.github/workflows/component_canaries_prune.yml
     with:
       PLATFORM: "windows"
-      TAG: ${{ github.event.release.tag_name }}
+      TAG: ${{ needs.get_previous_tag.outputs.previous_tag }}
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
