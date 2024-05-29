@@ -13,10 +13,6 @@ endif
 
 include $(CURDIR)/test/ansible/common.mk
 
-.PHONY: test/automated/termination
-test/automated/termination: validate-aws-credentials
-	ansible-playbook -i $(ANSIBLE_INVENTORY) $(CURDIR)/test/automated/ansible/termination.yml
-
 # Allow running specific harvest tests based on regex (default to .*)
 TESTS_TO_RUN_REGEXP ?= ".*"
 .PHONY: test/automated/harvest

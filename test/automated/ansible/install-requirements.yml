@@ -3,31 +3,39 @@
 - hosts: testing_hosts_linux
   become: true
   gather_facts: no
+  vars:
+    instances_requiring_opensuse_repos:
+      "sles-15.2": http://download.opensuse.org/distribution/leap/15.2/repo/oss/
 
   tasks:
     - name: Remove EOL repository sources
       include_role:
-        name: caos.ansible_roles.remove-eol-sources
+        name: caos.ansible_roles.remove_eol_sources
 
     - name: Configure OpenSUSE repositories when needed
       include_role:
-        name: caos.ansible_roles.opensuse-repositories
+        name: caos.ansible_roles.opensuse_repositories
+      loop: "{{ instances_requiring_opensuse_repos | dict2items }}"
+      when: inventory_hostname is search(item.key)
+      vars:
+        suse_repo_base_url: "{{ item.value }}"
+        suse_version: "{{ inventory_hostname | regex_replace('[^:]+:[^:]+:sles-', '') }}"
 
     - name: re-install rpm
       include_role:
-        name: caos.ansible_roles.reinstall-rpm
+        name: caos.ansible_roles.reinstall_rpm
 
     - name: install python
       include_role:
-        name: caos.ansible_roles.install-python
+        name: caos.ansible_roles.install_python
 
     - name: Install Libcap
       include_role:
-        name: caos.ansible_roles.install-libcap
+        name: caos.ansible_roles.install_libcap
 
     - name: Install GPG
       include_role:
-        name: caos.ansible_roles.install-gpg
+        name: caos.ansible_roles.install_gpg
 
 - hosts: testing_hosts_linux
   become: true
@@ -61,16 +69,16 @@
     api_base_url: "https://api.laggar.gcw.crowdstrike.com"
 
   tasks:
-    - name: install brew
+    - name: Install brew
       include_role:
-        name: caos.ansible_roles.install-brew
+        name: caos.ansible_roles.install_brew
         # latest versions of brew allow running service with sudo, not necessary to downgrade
         # comment left for reference
 #      vars:
 #        brew_version: 3.6.21 # with 4.0.* there are some problems with sudo https://github.com/Homebrew/brew/issues/14462#issuecomment-1445130069
-    - name: install python
+    - name: Install python
       include_role:
-        name: caos.ansible_roles.install-python
+        name: caos.ansible_roles.install_python
 
     - name: Install CrowdStrike Falcon
       include_role:

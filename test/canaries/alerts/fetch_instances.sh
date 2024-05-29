@@ -23,7 +23,7 @@ if [ -z "${MACSTADIUM_PASSWORD}" ];then
 fi
 
 INSTANCES=$( aws ec2 describe-instances --no-paginate \
-  --filters 'Name=instance-state-code,Values=16' \
+  --filters 'Name=instance-state-code,Values=16' 'Name=tag:Name,Values=canary:*' \
   --query 'Reservations[*].Instances[*].{PrivateIpAddress:PrivateIpAddress,Name:[Tags[?Key==`Name`].Value][0][0],InstanceId:InstanceId}' \
   | jq -c '.[]' \
   | tr -d "[]{}\""
