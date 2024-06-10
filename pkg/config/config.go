@@ -390,10 +390,18 @@ type Config struct {
 	// Public: No
 	IsForwardOnly bool `yaml:"is_forward_only" envconfig:"is_forward_only" public:"false"`
 
-	// IsSecureForwardOnly has the same behaviour as `IsForwardOnly` but with some inventory data and a heartbeat
+	// IsSecureForwardOnly has the same behaviour as the default but without sending host metrics.
+	// It creates the host entity, sends inventory data and does a heartbeat to not expire the host entity,
+	// it also sends integrations data.
 	// Default: False
 	// Public: No
 	IsSecureForwardOnly bool `yaml:"is_secure_forward_only" envconfig:"is_secure_forward_only" public:"false"`
+
+	// IsIntegrationsOnly has the same behaviour as the default but without creating the host entity on entity platform and
+	// without sending host metrics, it notifies EP to skip the entity by sending the integrations_only inventory entry.
+	// Default: False
+	// Public: No
+	IsIntegrationsOnly bool `envconfig:"is_integrations_only" public:"false" yaml:"is_integrations_only"`
 
 	// K8sIntegration enables the K8sIntegrationSample, this sample returns the names of the integrations that
 	// the agent has configured.

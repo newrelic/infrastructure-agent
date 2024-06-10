@@ -34,12 +34,16 @@ func RegisterPlugins(a *agent.Agent) error {
 
 	a.RegisterPlugin(NewCustomAttrsPlugin(a.Context))
 
-	if config.IsSecureForwardOnly {
-		// We need heartbeat samples.
+	if config.IsIntegrationsOnly {
+		registerIntegrationsOnlyPlugin(a)
+	}
+
+	if isHeartbeatOnlyMode(config) {
 		sender := metricsSender.NewSender(a.Context)
 		heartBeatSampler := metrics.NewHeartbeatSampler(a.Context)
 		sender.RegisterSampler(heartBeatSampler)
 		a.RegisterMetricsSender(sender)
+
 		return nil
 	}
 

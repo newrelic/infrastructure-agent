@@ -20,13 +20,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostid"
 )
 
-func registerForwarderHeartbeat(a *agnt.Agent) {
-	sender := metricsSender.NewSender(a.Context)
-	heartBeatSampler := metrics.NewHeartbeatSampler(a.Context)
-	sender.RegisterSampler(heartBeatSampler)
-	a.RegisterMetricsSender(sender)
-}
-
 func RegisterPlugins(agent *agnt.Agent) error {
 	config := agent.GetContext().Config()
 	// Deprecating a pluging causes the agent to delete its inventory
@@ -57,8 +50,16 @@ func RegisterPlugins(agent *agnt.Agent) error {
 		agent.RegisterPlugin(proxy.ConfigPlugin(agent.Context))
 	}
 
-	if config.IsSecureForwardOnly {
-		registerForwarderHeartbeat(agent)
+	if config.IsIntegrationsOnly {
+		registerIntegrationsOnlyPlugin(agent)
+	}
+
+	if isHeartbeatOnlyMode(config) {
+		sender := metricsSender.NewSender(agent.Context)
+		heartBeatSampler := metrics.NewHeartbeatSampler(agent.Context)
+		sender.RegisterSampler(heartBeatSampler)
+		agent.RegisterMetricsSender(sender)
+
 		return nil
 	}
 
