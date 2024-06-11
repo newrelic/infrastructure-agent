@@ -5,5 +5,5 @@
 #
 # OS, newrelic_plugin_version, fluent-bit
 
-linux,1.19.1
-windows,1.19.1,1.9.3
+linux,2.0.0
+windows,2.0.0,1.9.3
