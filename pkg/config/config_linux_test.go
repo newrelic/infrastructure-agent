@@ -39,6 +39,7 @@ is_containerized: false
 	c.Assert(cfg.IsContainerized, Equals, false)
 	c.Assert(cfg.IsForwardOnly, Equals, false)
 	c.Assert(cfg.IsSecureForwardOnly, Equals, false)
+	c.Assert(cfg.IsIntegrationsOnly, Equals, false)
 
 	_ = os.Setenv("NRIA_LICENSE_KEY", "abcd1234")
 	_ = os.Setenv("NRIA_COMPACTION_THRESHOLD", "55")
@@ -55,6 +56,7 @@ is_containerized: false
 	_ = os.Setenv("NRIA_IS_CONTAINERIZED", "true")
 	_ = os.Setenv("NRIA_IS_FORWARD_ONLY", "true")
 	_ = os.Setenv("NRIA_IS_SECURE_FORWARD_ONLY", "true")
+	_ = os.Setenv("NRIA_IS_INTEGRATIONS_ONLY", "true")
 
 	defer func() {
 		_ = os.Unsetenv("NRIA_LICENSE_KEY")
@@ -71,6 +73,7 @@ is_containerized: false
 		_ = os.Unsetenv("NRIA_IS_CONTAINERIZED")
 		_ = os.Unsetenv("NRIA_IS_FORWARD_ONLY")
 		_ = os.Unsetenv("NRIA_IS_SECURE_FORWARD_ONLY")
+		_ = os.Unsetenv("NRIA_IS_INTEGRATIONS_ONLY")
 
 		_ = os.Unsetenv("HOST_SYS")
 		_ = os.Unsetenv("HOST_ETC")
@@ -97,6 +100,7 @@ is_containerized: false
 	c.Assert(cfg.IsContainerized, Equals, true)
 	c.Assert(cfg.IsForwardOnly, Equals, true)
 	c.Assert(cfg.IsSecureForwardOnly, Equals, true)
+	c.Assert(cfg.IsIntegrationsOnly, Equals, true)
 }
 
 func TestDefaultConfig(t *testing.T) {

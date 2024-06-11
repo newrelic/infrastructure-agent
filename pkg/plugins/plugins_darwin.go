@@ -32,6 +32,19 @@ func RegisterPlugins(a *agent.Agent) error {
 		a.RegisterPlugin(NewConfigFilePlugin(*ids.NewPluginID("files", "config"), a.Context))
 	}
 
+	if config.IsIntegrationsOnly {
+		registerIntegrationsOnlyPlugin(a)
+	}
+
+	if isHeartbeatOnlyMode(config) {
+		sender := metricsSender.NewSender(a.Context)
+		heartBeatSampler := metrics.NewHeartbeatSampler(a.Context)
+		sender.RegisterSampler(heartBeatSampler)
+		a.RegisterMetricsSender(sender)
+
+		return nil
+	}
+
 	sender := metricsSender.NewSender(a.Context)
 	procSampler := process.NewProcessSampler(a.Context)
 	storageSampler := storage.NewSampler(a.Context)
