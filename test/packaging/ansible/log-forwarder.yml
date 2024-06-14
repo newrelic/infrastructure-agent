@@ -25,11 +25,10 @@
           when: (
                 inventory_hostname is search("ubuntu18.04") or
                 inventory_hostname is search("ubuntu20.04") or
-                inventory_hostname is search("ubuntu22.04") or
                 inventory_hostname is search("debian-stretch") or
                 inventory_hostname is search("debian-jessie") or
                 inventory_hostname is search("debian-buster") or
-                inventory_hostname is search("centos") or
+                inventory_hostname is search("centos[78]") or
                 inventory_hostname is regex("redhat-[78]")
                 )
                 # TODO :point-up: There is no FB pkg for RH9 yet
