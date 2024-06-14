@@ -20,6 +20,9 @@ var fbConfigFormat = `{{- range .Inputs }}
     {{- if .SkipLongLines }}
     Skip_Long_Lines {{ .SkipLongLines }}
     {{- end }}
+    {{- if .MultilineParser }}
+    Multiline.Parser {{ .MultilineParser }}
+    {{- end }}
     {{- if .PathKey }}
     Path_Key {{ .PathKey }}
     {{- end }}

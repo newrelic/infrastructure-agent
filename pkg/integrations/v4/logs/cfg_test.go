@@ -1929,3 +1929,193 @@ func TestNewFbConfForTargetFileCount(t *testing.T) {
 		})
 	}
 }
+
+func TestMultilineParserFBCfgFormat(t *testing.T) {
+	expected := `
+[INPUT]
+    Name tail
+    Path /path/to/folder/*
+    Buffer_Max_Size 32k
+    Skip_Long_Lines On
+    Multiline.Parser go
+    Path_Key filePath
+    Tag  some-folder
+    DB   fb.db
+
+[FILTER]
+    Name  grep
+    Match some-folder
+    Regex log foo
+
+[FILTER]
+    Name  record_modifier
+    Match some-folder
+    Record "fb.input" "tail"
+    Record "key1" "value1"
+    Record "key2" "value2"
+    Record "key3 with space" "value3 with space"
+
+[FILTER]
+    Name  record_modifier
+    Match *
+    Record "entity.guid.INFRA" "testGUID"
+    Record "fb.source" "nri-agent"
+
+[OUTPUT]
+    Name                newrelic
+    Match               *
+    licenseKey          ${NR_LICENSE_KEY_ENV_VAR}
+    validateProxyCerts  false
+
+@INCLUDE /path/to/fb/config
+`
+
+	fbCfg := FBCfg{
+		Inputs: []FBCfgInput{
+			{
+				Name:            "tail",
+				Tag:             "some-folder",
+				DB:              "fb.db",
+				Path:            "/path/to/folder/*",
+				BufferMaxSize:   "32k",
+				SkipLongLines:   "On",
+				MultilineParser: "go",
+				PathKey:         "filePath",
+			},
+		},
+		Filters: []FBCfgFilter{
+			{
+				Name:  "grep",
+				Match: "some-folder",
+				Regex: "log foo",
+			},
+			{
+				Name:  "record_modifier",
+				Match: "some-folder",
+				Records: map[string]string{
+					"fb.input":        "tail",
+					"key1":            "value1",
+					"key2":            "value2",
+					"key3 with space": "value3 with space",
+				},
+			},
+			{
+				Name:  "record_modifier",
+				Match: "*",
+				Records: map[string]string{
+					"entity.guid.INFRA": "testGUID",
+					"fb.source":         "nri-agent",
+				},
+			},
+		},
+		Output: FBCfgOutput{
+			Name:       "newrelic",
+			Match:      "*",
+			LicenseKey: "licenseKey",
+		},
+		ExternalCfg: FBCfgExternal{
+			CfgFilePath:     "/path/to/fb/config",
+			ParsersFilePath: "/path/to/fb/parsers",
+		},
+	}
+
+	result, extCfg, err := fbCfg.Format()
+	assert.Empty(t, err)
+	assert.Equal(t, "/path/to/fb/parsers", extCfg.ParsersFilePath)
+	assert.Equal(t, expected, result)
+}
+
+func TestMlParserFBCfgWithMultipleParsers(t *testing.T) {
+	expected := `
+[INPUT]
+    Name tail
+    Path /path/to/folder/*
+    Buffer_Max_Size 32k
+    Skip_Long_Lines On
+    Multiline.Parser go, java, python
+    Path_Key filePath
+    Tag  some-folder
+    DB   fb.db
+
+[FILTER]
+    Name  grep
+    Match some-folder
+    Regex log foo
+
+[FILTER]
+    Name  record_modifier
+    Match some-folder
+    Record "fb.input" "tail"
+    Record "key1" "value1"
+    Record "key2" "value2"
+    Record "key3 with space" "value3 with space"
+
+[FILTER]
+    Name  record_modifier
+    Match *
+    Record "entity.guid.INFRA" "testGUID"
+    Record "fb.source" "nri-agent"
+
+[OUTPUT]
+    Name                newrelic
+    Match               *
+    licenseKey          ${NR_LICENSE_KEY_ENV_VAR}
+    validateProxyCerts  false
+
+@INCLUDE /path/to/fb/config
+`
+
+	fbCfg := FBCfg{
+		Inputs: []FBCfgInput{
+			{
+				Name:            "tail",
+				Tag:             "some-folder",
+				DB:              "fb.db",
+				Path:            "/path/to/folder/*",
+				BufferMaxSize:   "32k",
+				SkipLongLines:   "On",
+				MultilineParser: "go, java, python",
+				PathKey:         "filePath",
+			},
+		},
+		Filters: []FBCfgFilter{
+			{
+				Name:  "grep",
+				Match: "some-folder",
+				Regex: "log foo",
+			},
+			{
+				Name:  "record_modifier",
+				Match: "some-folder",
+				Records: map[string]string{
+					"fb.input":        "tail",
+					"key1":            "value1",
+					"key2":            "value2",
+					"key3 with space": "value3 with space",
+				},
+			},
+			{
+				Name:  "record_modifier",
+				Match: "*",
+				Records: map[string]string{
+					"entity.guid.INFRA": "testGUID",
+					"fb.source":         "nri-agent",
+				},
+			},
+		},
+		Output: FBCfgOutput{
+			Name:       "newrelic",
+			Match:      "*",
+			LicenseKey: "licenseKey",
+		},
+		ExternalCfg: FBCfgExternal{
+			CfgFilePath:     "/path/to/fb/config",
+			ParsersFilePath: "/path/to/fb/parsers",
+		},
+	}
+
+	result, extCfg, err := fbCfg.Format()
+	assert.Empty(t, err)
+	assert.Equal(t, "/path/to/fb/parsers", extCfg.ParsersFilePath)
+	assert.Equal(t, expected, result)
+}
