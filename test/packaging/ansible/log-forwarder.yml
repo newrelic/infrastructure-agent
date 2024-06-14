@@ -78,7 +78,6 @@
           when: (
                 inventory_hostname is search("ubuntu18.04") or
                 inventory_hostname is search("ubuntu20.04") or
-                inventory_hostname is search("ubuntu22.04") or
                 inventory_hostname is search("debian-stretch") or
                 inventory_hostname is search("debian-jessie") or
                 inventory_hostname is search("debian-buster") or
