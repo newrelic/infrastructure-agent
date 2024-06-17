@@ -64,46 +64,6 @@ func TestHostSharedMemory(t *testing.T) {
 	})
 }
 
-func TestHostCachedMemory(t *testing.T) {
-	ctx := new(mocks.AgentContext)
-	ctx.On("Config").Return(&config.Config{
-		MetricsNetworkSampleRate: 1,
-	})
-	storageSampler := storage.NewSampler(ctx)
-
-	hostIDProvider := &hostid.ProviderMock{}
-	hostIDProvider.On("Provide").Return("some-host-id", nil)
-
-	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil, hostIDProvider)
-
-	sampleB, _ := systemSampler.Sample()
-	beforeSample := sampleB[0].(*metrics.SystemSample)
-
-	f, err := ioutil.TempFile("/tmp", "")
-	assert.NoError(t, err)
-	defer os.Remove(f.Name())
-
-	// Force memory spike
-	for i := 0; i < 1e5; i++ {
-		f.Write([]byte("00000000000000000000"))
-	}
-
-	f.Sync()
-	f.Close()
-
-	_, err = ioutil.ReadFile(f.Name())
-
-	assert.NoError(t, err)
-
-	testhelpers.Eventually(t, timeout, func(st require.TestingT) {
-		sampleB, _ = systemSampler.Sample()
-		afterSample := sampleB[0].(*metrics.SystemSample)
-
-		expectedIncreaseBytes := 500000.0
-		assert.True(st, beforeSample.MemoryCachedBytes+expectedIncreaseBytes <= afterSample.MemoryCachedBytes, "CachedMemory used did not increase enough, expected an increase by %f CachedMemoryBefore: %f CachedMemoryAfter %f ", expectedIncreaseBytes, beforeSample.MemoryCachedBytes, afterSample.MemoryCachedBytes)
-	})
-}
-
 func TestHostDisk(t *testing.T) {
 	ctx := new(mocks.AgentContext)
 	ctx.On("Config").Return(&config.Config{
@@ -142,6 +102,46 @@ func TestHostDisk(t *testing.T) {
 	assert.NotEqual(t, 0, sampleA.ReadsPerSec, "Reads per sec is 0")
 	assert.NotEqual(t, 0, sampleA.WritesPerSec, "Writes per sec is 0")
 	assert.True(t, *storageSample.UsedBytes+1e4 < sampleA.UsedBytes, "Used bytes did not increase enough, UserBytesBefore: %f UserBytesAfter %f ", *(storageSample.UsedBytes), sampleA.UsedBytes)
+}
+
+func TestHostCachedMemory(t *testing.T) {
+	ctx := new(mocks.AgentContext)
+	ctx.On("Config").Return(&config.Config{
+		MetricsNetworkSampleRate: 1,
+	})
+	storageSampler := storage.NewSampler(ctx)
+
+	hostIDProvider := &hostid.ProviderMock{}
+	hostIDProvider.On("Provide").Return("some-host-id", nil)
+
+	systemSampler := metrics.NewSystemSampler(ctx, storageSampler, nil, hostIDProvider)
+
+	sampleB, _ := systemSampler.Sample()
+	beforeSample := sampleB[0].(*metrics.SystemSample)
+
+	f, err := ioutil.TempFile("/tmp", "")
+	assert.NoError(t, err)
+	defer os.Remove(f.Name())
+
+	// Force memory spike
+	for i := 0; i < 1e5; i++ {
+		f.Write([]byte("00000000000000000000"))
+	}
+
+	f.Sync()
+	f.Close()
+
+	_, err = ioutil.ReadFile(f.Name())
+
+	assert.NoError(t, err)
+
+	testhelpers.Eventually(t, timeout, func(st require.TestingT) {
+		sampleB, _ = systemSampler.Sample()
+		afterSample := sampleB[0].(*metrics.SystemSample)
+
+		expectedIncreaseBytes := 500000.0
+		assert.True(st, beforeSample.MemoryCachedBytes+expectedIncreaseBytes <= afterSample.MemoryCachedBytes, "CachedMemory used did not increase enough, expected an increase by %f CachedMemoryBefore: %f CachedMemoryAfter %f ", expectedIncreaseBytes, beforeSample.MemoryCachedBytes, afterSample.MemoryCachedBytes)
+	})
 }
 
 func TestHostSlabMemory(t *testing.T) {
