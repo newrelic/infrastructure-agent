@@ -126,7 +126,7 @@
 
     - name: pause for a bit to let the event fire
       pause:
-        seconds: 30
+        seconds: 45
 
     - name: assert that the agent detecteded host termination and disconnected from the backend (only on hosts that support shutdown detection)
       include_role:
