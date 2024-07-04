@@ -40,6 +40,7 @@ var (
 	// https://docs.microsoft.com/en-us/windows/desktop/api/winbase/nf-winbase-queryfullprocessimagenamew
 	queryFullProcessImageName = modkernel32.NewProc("QueryFullProcessImageNameW")
 	containerNotRunningErrs   = map[string]struct{}{}
+	containerSamplerGetter    = GetContainerSamplers //nolint:gochecknoglobals
 )
 
 const (
@@ -347,6 +348,7 @@ func NewProcsMonitor(context agent.AgentContext) *ProcsMonitor {
 	)
 	ttlSecs := config.DefaultContainerCacheMetadataLimit
 	getProcFunc := getWin32Proc
+	var containerSamplers []ContainerSampler
 	if context != nil && context.Config() != nil {
 		if len(context.Config().AllowedListProcessSample) > 0 {
 			allowedListProcessing = true
@@ -361,11 +363,15 @@ func NewProcsMonitor(context agent.AgentContext) *ProcsMonitor {
 		if context.Config().EnableWmiProcData {
 			getProcFunc = getWin32ProcFromWMI
 		}
+
+		if context.Config().ProcessContainerDecoration {
+			containerSamplers = containerSamplerGetter(time.Duration(ttlSecs)*time.Second, apiVersion, dockerContainerdNamespace)
+		}
 	}
 	return &ProcsMonitor{
 		context:              context,
 		procCache:            make(map[string]*ProcessCacheEntry),
-		containerSamplers:    GetContainerSamplers(time.Duration(ttlSecs)*time.Second, apiVersion, dockerContainerdNamespace),
+		containerSamplers:    containerSamplers,
 		previousProcessTimes: make(map[string]*SystemTimes),
 		processInterrogator:  NewInternalProcessInterrogator(true),
 		waitForCleanup:       &sync.WaitGroup{},

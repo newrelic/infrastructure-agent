@@ -30,6 +30,7 @@ type processSampler struct {
 var (
 	_                       sampler.Sampler = (*processSampler)(nil) // static interface assertion
 	containerNotRunningErrs                 = map[string]struct{}{}
+	containerSamplerGetter                  = metrics.GetContainerSamplers //nolint:gochecknoglobals
 )
 
 // NewProcessSampler creates and returns a new process Sampler, given an agent context.
@@ -38,17 +39,21 @@ func NewProcessSampler(ctx agent.AgentContext) sampler.Sampler {
 
 	ttlSecs := config.DefaultContainerCacheMetadataLimit
 	apiVersion := ""
-	interval := config.FREQ_INTERVAL_FLOOR_PROCESS_METRICS
 	dockerContainerdNamespace := ""
+	interval := config.FREQ_INTERVAL_FLOOR_PROCESS_METRICS
+	var containerSamplers []metrics.ContainerSampler
 	if hasConfig {
 		cfg := ctx.Config()
 		ttlSecs = cfg.ContainerMetadataCacheLimit
 		apiVersion = cfg.DockerApiVersion
 		dockerContainerdNamespace = cfg.DockerContainerdNamespace
 		interval = cfg.MetricsProcessSampleRate
+
+		if cfg.ProcessContainerDecoration {
+			containerSamplers = containerSamplerGetter(time.Duration(ttlSecs)*time.Second, apiVersion, dockerContainerdNamespace)
+		}
 	}
 	harvester := newHarvester(ctx)
-	containerSamplers := metrics.GetContainerSamplers(time.Duration(ttlSecs)*time.Second, apiVersion, dockerContainerdNamespace)
 
 	return &processSampler{
 		harvest:           harvester,
