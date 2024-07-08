@@ -216,6 +216,24 @@ func TestProcessSampler_Sample_DockerDecoratorEnabledByDefault(t *testing.T) {
 	assert.Equal(t, expected, sampler.containerSamplers)
 }
 
+//nolint:paralleltest
+func TestProcessSampler_Sample_DockerDecoratorEnabledWithNoConfig(t *testing.T) {
+	ctx := new(mocks.AgentContext)
+	ctx.On("Config").Return(nil)
+
+	containerSamplerGetter = func(cacheTTL time.Duration, dockerAPIVersion, dockerContainerdNamespace string) []ContainerSampler {
+		return []ContainerSampler{&fakeContainerSampler{}}
+	}
+
+	defer func() {
+		containerSamplerGetter = GetContainerSamplers
+	}()
+
+	expected := []ContainerSampler{&fakeContainerSampler{}}
+	sampler := NewProcsMonitor(ctx)
+	assert.Equal(t, expected, sampler.containerSamplers)
+}
+
 func Benchmark_checkContainerNotRunning(b *testing.B) {
 	err := errors.New("Error response from daemon: Container e9c57d578de9e487f6f703d04b1b237b1ff3d926d9cc2a4adfcbe8e1946e841f is not running")
 	for i := 0; i < b.N; i++ {

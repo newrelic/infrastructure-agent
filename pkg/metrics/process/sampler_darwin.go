@@ -48,11 +48,12 @@ func NewProcessSampler(ctx agent.AgentContext) sampler.Sampler {
 		apiVersion = cfg.DockerApiVersion
 		dockerContainerdNamespace = cfg.DockerContainerdNamespace
 		interval = cfg.MetricsProcessSampleRate
-
-		if cfg.ProcessContainerDecoration {
-			containerSamplers = containerSamplerGetter(time.Duration(ttlSecs)*time.Second, apiVersion, dockerContainerdNamespace)
-		}
 	}
+
+	if (hasConfig && ctx.Config().ProcessContainerDecoration) || !hasConfig {
+		containerSamplers = containerSamplerGetter(time.Duration(ttlSecs)*time.Second, apiVersion, dockerContainerdNamespace)
+	}
+
 	harvester := newHarvester(ctx)
 
 	return &processSampler{

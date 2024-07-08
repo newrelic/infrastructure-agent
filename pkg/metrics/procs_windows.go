@@ -349,7 +349,9 @@ func NewProcsMonitor(context agent.AgentContext) *ProcsMonitor {
 	ttlSecs := config.DefaultContainerCacheMetadataLimit
 	getProcFunc := getWin32Proc
 	var containerSamplers []ContainerSampler
-	if context != nil && context.Config() != nil {
+	hasConfig := context != nil && context.Config() != nil
+
+	if hasConfig {
 		if len(context.Config().AllowedListProcessSample) > 0 {
 			allowedListProcessing = true
 			for _, processName := range context.Config().AllowedListProcessSample {
@@ -363,11 +365,12 @@ func NewProcsMonitor(context agent.AgentContext) *ProcsMonitor {
 		if context.Config().EnableWmiProcData {
 			getProcFunc = getWin32ProcFromWMI
 		}
-
-		if context.Config().ProcessContainerDecoration {
-			containerSamplers = containerSamplerGetter(time.Duration(ttlSecs)*time.Second, apiVersion, dockerContainerdNamespace)
-		}
 	}
+
+	if (hasConfig && context.Config().ProcessContainerDecoration) || !hasConfig {
+		containerSamplers = containerSamplerGetter(time.Duration(ttlSecs)*time.Second, apiVersion, dockerContainerdNamespace)
+	}
+
 	return &ProcsMonitor{
 		context:              context,
 		procCache:            make(map[string]*ProcessCacheEntry),
