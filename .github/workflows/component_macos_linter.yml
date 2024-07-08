@@ -7,7 +7,7 @@ jobs:
 
   run-lint:
     name: Lint tests
-    runs-on: macos-11
+    runs-on: macos-latest
     continue-on-error: true
 
     steps:
