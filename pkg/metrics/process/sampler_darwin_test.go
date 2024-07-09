@@ -18,7 +18,7 @@ import (
 func TestProcessSampler_Sample(t *testing.T) {
 	ctx := new(mocks.AgentContext)
 	cfg := &config.Config{RunMode: config.ModeRoot}
-	ctx.On("Config").Times(3).Return(cfg)
+	ctx.On("Config").Times(4).Return(cfg)
 
 	harvester := &HarvesterMock{}
 	sampler := NewProcessSampler(ctx).(*processSampler)
@@ -61,7 +61,7 @@ func TestProcessSampler_Sample(t *testing.T) {
 func TestProcessSampler_Sample_ErrorOnProcessShouldNotStop(t *testing.T) {
 	ctx := new(mocks.AgentContext)
 	cfg := &config.Config{RunMode: config.ModeRoot}
-	ctx.On("Config").Times(3).Return(cfg)
+	ctx.On("Config").Times(4).Return(cfg)
 
 	harvester := &HarvesterMock{}
 	sampler := NewProcessSampler(ctx).(*processSampler)
@@ -108,7 +108,7 @@ func TestProcessSampler_Sample_ErrorOnProcessShouldNotStop(t *testing.T) {
 func TestProcessSampler_Sample_DockerDecorator(t *testing.T) {
 	ctx := new(mocks.AgentContext)
 	cfg := &config.Config{RunMode: config.ModeRoot}
-	ctx.On("Config").Times(3).Return(cfg)
+	ctx.On("Config").Times(4).Return(cfg)
 
 	harvester := &HarvesterMock{}
 	sampler := NewProcessSampler(ctx).(*processSampler)
