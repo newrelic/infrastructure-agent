@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -65,6 +66,66 @@ func TestProcessSampler_DockerDecorator(t *testing.T) {
 		assert.Equal(t, "value1", (*flatProcessSample)["containerLabel_label1"])
 		assert.Equal(t, "value2", (*flatProcessSample)["containerLabel_label2"])
 	}
+}
+
+//nolint:paralleltest
+func TestProcessSampler_Sample_DisabledDockerDecorator(t *testing.T) {
+	ctx := new(mocks.AgentContext)
+	cfg := config.NewConfig()
+	cfg.ProcessContainerDecoration = false
+	ctx.On("Config").Times(4).Return(cfg)
+
+	// The container sampler getter should not be called
+	containerSamplerGetter = func(cacheTTL time.Duration, dockerAPIVersion, dockerContainerdNamespace string) []metrics.ContainerSampler {
+		t.Errorf("containerSamplerGetter should not be called")
+
+		return nil
+	}
+
+	defer func() {
+		containerSamplerGetter = metrics.GetContainerSamplers
+	}()
+
+	var expected []metrics.ContainerSampler
+	sampler := NewProcessSampler(ctx).(*processSampler) //nolint:forcetypeassert
+	assert.Equal(t, expected, sampler.containerSamplers)
+}
+
+//nolint:paralleltest
+func TestProcessSampler_Sample_DockerDecoratorEnabledByDefault(t *testing.T) {
+	ctx := new(mocks.AgentContext)
+	cfg := config.NewConfig()
+	ctx.On("Config").Times(4).Return(cfg)
+
+	containerSamplerGetter = func(cacheTTL time.Duration, dockerAPIVersion, dockerContainerdNamespace string) []metrics.ContainerSampler {
+		return []metrics.ContainerSampler{&fakeContainerSampler{}}
+	}
+
+	defer func() {
+		containerSamplerGetter = metrics.GetContainerSamplers
+	}()
+
+	expected := []metrics.ContainerSampler{&fakeContainerSampler{}}
+	sampler := NewProcessSampler(ctx).(*processSampler) //nolint:forcetypeassert
+	assert.Equal(t, expected, sampler.containerSamplers)
+}
+
+//nolint:paralleltest
+func TestProcessSampler_Sample_DockerDecoratorEnabledWithNoConfig(t *testing.T) {
+	ctx := new(mocks.AgentContext)
+	ctx.On("Config").Times(2).Return(nil)
+
+	containerSamplerGetter = func(cacheTTL time.Duration, dockerAPIVersion, dockerContainerdNamespace string) []metrics.ContainerSampler {
+		return []metrics.ContainerSampler{&fakeContainerSampler{}}
+	}
+
+	defer func() {
+		containerSamplerGetter = metrics.GetContainerSamplers
+	}()
+
+	expected := []metrics.ContainerSampler{&fakeContainerSampler{}}
+	sampler := NewProcessSampler(ctx).(*processSampler) //nolint:forcetypeassert
+	assert.Equal(t, expected, sampler.containerSamplers)
 }
 
 type harvesterMock struct {

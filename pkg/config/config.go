@@ -1272,6 +1272,11 @@ type Config struct {
 	// Default (Windows): C:\ProgramData\New Relic\newrelic-infra\tmp
 	// Public: No
 	AgentTempDir string `envconfig:"agent_temp_dir" yaml:"agent_temp_dir"`
+
+	// ProcessContainerDecoration controls if the ProcessSample gets decorated with Container Information
+	// Default: true
+	// Public: Yes
+	ProcessContainerDecoration bool `envconfig:"process_container_decoration" yaml:"process_container_decoration"`
 }
 
 // KeyValMap is used whenever a key value pair configuration is required.
@@ -1896,6 +1901,7 @@ func NewConfig() *Config {
 		NtpMetrics:                  NewNtpConfig(),
 		Http:                        NewHttpConfig(),
 		AgentTempDir:                defaultAgentTempDir,
+		ProcessContainerDecoration:  defaultProcessContainerDecoration,
 	}
 }
 

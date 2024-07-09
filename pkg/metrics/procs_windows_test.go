@@ -9,6 +9,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -173,6 +175,65 @@ func Test_checkContainerNotRunning(t *testing.T) {
 	}
 }
 
+//nolint:paralleltest
+func TestProcessSampler_Sample_DisabledDockerDecorator(t *testing.T) {
+	ctx := new(mocks.AgentContext)
+	cfg := config.NewConfig()
+	cfg.ProcessContainerDecoration = false
+	ctx.On("Config").Return(cfg)
+
+	// The container sampler getter should not be called
+	containerSamplerGetter = func(cacheTTL time.Duration, dockerAPIVersion, dockerContainerdNamespace string) []ContainerSampler {
+		t.Errorf("containerSamplerGetter should not be called")
+
+		return nil
+	}
+	defer func() {
+		containerSamplerGetter = GetContainerSamplers
+	}()
+
+	var expected []ContainerSampler
+	sampler := NewProcsMonitor(ctx)
+	assert.Equal(t, expected, sampler.containerSamplers)
+}
+
+//nolint:paralleltest
+func TestProcessSampler_Sample_DockerDecoratorEnabledByDefault(t *testing.T) {
+	ctx := new(mocks.AgentContext)
+	cfg := config.NewConfig()
+	ctx.On("Config").Return(cfg)
+
+	containerSamplerGetter = func(cacheTTL time.Duration, dockerAPIVersion, dockerContainerdNamespace string) []ContainerSampler {
+		return []ContainerSampler{&fakeContainerSampler{}}
+	}
+
+	defer func() {
+		containerSamplerGetter = GetContainerSamplers
+	}()
+
+	expected := []ContainerSampler{&fakeContainerSampler{}}
+	sampler := NewProcsMonitor(ctx)
+	assert.Equal(t, expected, sampler.containerSamplers)
+}
+
+//nolint:paralleltest
+func TestProcessSampler_Sample_DockerDecoratorEnabledWithNoConfig(t *testing.T) {
+	ctx := new(mocks.AgentContext)
+	ctx.On("Config").Return(nil)
+
+	containerSamplerGetter = func(cacheTTL time.Duration, dockerAPIVersion, dockerContainerdNamespace string) []ContainerSampler {
+		return []ContainerSampler{&fakeContainerSampler{}}
+	}
+
+	defer func() {
+		containerSamplerGetter = GetContainerSamplers
+	}()
+
+	expected := []ContainerSampler{&fakeContainerSampler{}}
+	sampler := NewProcsMonitor(ctx)
+	assert.Equal(t, expected, sampler.containerSamplers)
+}
+
 func Benchmark_checkContainerNotRunning(b *testing.B) {
 	err := errors.New("Error response from daemon: Container e9c57d578de9e487f6f703d04b1b237b1ff3d926d9cc2a4adfcbe8e1946e841f is not running")
 	for i := 0; i < b.N; i++ {
@@ -232,4 +293,24 @@ func assertLogProcessData(t *testing.T, name string, id uint32, logEntries []*lo
 
 func pathProvideError(_ syscall.Handle) (*string, error) {
 	return nil, errors.New("error retrieving the process path")
+}
+
+type fakeContainerSampler struct{}
+
+func (cs *fakeContainerSampler) Enabled() bool {
+	return true
+}
+
+func (*fakeContainerSampler) NewDecorator() (ProcessDecorator, error) { //nolint:ireturn
+	return &fakeDecorator{}, nil
+}
+
+type fakeDecorator struct{}
+
+func (pd *fakeDecorator) Decorate(process *types.ProcessSample) {
+	process.ContainerImage = "decorated"
+	process.ContainerLabels = map[string]string{
+		"label1": "value1",
+		"label2": "value2",
+	}
 }

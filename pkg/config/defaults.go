@@ -113,6 +113,7 @@ var (
 	defaultNtpEnabled                    = false
 	defaultNtpInterval                   = uint(15) // minutes
 	defaultNtpTimeout                    = uint(5)  // seconds
+	defaultProcessContainerDecoration    = true
 )
 
 // Default internal values

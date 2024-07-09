@@ -40,6 +40,7 @@ var (
 	// https://docs.microsoft.com/en-us/windows/desktop/api/winbase/nf-winbase-queryfullprocessimagenamew
 	queryFullProcessImageName = modkernel32.NewProc("QueryFullProcessImageNameW")
 	containerNotRunningErrs   = map[string]struct{}{}
+	containerSamplerGetter    = GetContainerSamplers //nolint:gochecknoglobals
 )
 
 const (
@@ -347,7 +348,10 @@ func NewProcsMonitor(context agent.AgentContext) *ProcsMonitor {
 	)
 	ttlSecs := config.DefaultContainerCacheMetadataLimit
 	getProcFunc := getWin32Proc
-	if context != nil && context.Config() != nil {
+	var containerSamplers []ContainerSampler
+	hasConfig := context != nil && context.Config() != nil
+
+	if hasConfig {
 		if len(context.Config().AllowedListProcessSample) > 0 {
 			allowedListProcessing = true
 			for _, processName := range context.Config().AllowedListProcessSample {
@@ -362,10 +366,15 @@ func NewProcsMonitor(context agent.AgentContext) *ProcsMonitor {
 			getProcFunc = getWin32ProcFromWMI
 		}
 	}
+
+	if (hasConfig && context.Config().ProcessContainerDecoration) || !hasConfig {
+		containerSamplers = containerSamplerGetter(time.Duration(ttlSecs)*time.Second, apiVersion, dockerContainerdNamespace)
+	}
+
 	return &ProcsMonitor{
 		context:              context,
 		procCache:            make(map[string]*ProcessCacheEntry),
-		containerSamplers:    GetContainerSamplers(time.Duration(ttlSecs)*time.Second, apiVersion, dockerContainerdNamespace),
+		containerSamplers:    containerSamplers,
 		previousProcessTimes: make(map[string]*SystemTimes),
 		processInterrogator:  NewInternalProcessInterrogator(true),
 		waitForCleanup:       &sync.WaitGroup{},
