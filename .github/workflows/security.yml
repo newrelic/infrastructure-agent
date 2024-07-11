@@ -52,13 +52,14 @@ jobs:
       - name: Build agent binaries
         run: make ci/build TAG=DEV_CI
 
+        # don't use buildx so the image gets added to the docker local registry
       - name: Build container agent (amd64)
-        run: make -C build/container/ build/base-amd64
+        run: make -C build/container/ build/base-amd64 DOCKER_BUILD_TAG_PREFIX=pr USE_BUILDX=false
 
-      - name: Scan newrelic/infrastructure container image
+      - name: Scan the created container image
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "newrelic/infrastructure:build-amd64"
+          image-ref: "newrelic/infrastructure:pr-amd64"
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
