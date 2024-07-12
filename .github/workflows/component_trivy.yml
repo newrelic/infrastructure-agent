@@ -22,7 +22,7 @@ jobs:
       - name: newrelic/infrastructure
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "docker.io/newrelic/infrastructure:${{ github.event.inputs.tag }}"
+          image-ref: "docker.io/newrelic/infrastructure:${{ inputs.tag }}"
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
@@ -32,7 +32,7 @@ jobs:
       - name: newrelic/k8s-events-forwarder
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "docker.io/newrelic/k8s-events-forwarder:${{ github.event.inputs.tag }}"
+          image-ref: "docker.io/newrelic/k8s-events-forwarder:${{ inputs.tag }}"
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
@@ -42,7 +42,7 @@ jobs:
       - name: newrelic/nri-forwarder
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "docker.io/newrelic/nri-forwarder:${{ github.event.inputs.tag }}"
+          image-ref: "docker.io/newrelic/nri-forwarder:${{ inputs.tag }}"
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
@@ -60,7 +60,7 @@ jobs:
       - name: Sarif newrelic/infrastructure
         uses: aquasecurity/trivy-action@0.8.0
         with:
-          image-ref: "docker.io/newrelic/infrastructure:${{ github.event.inputs.tag }}"
+          image-ref: "docker.io/newrelic/infrastructure:${{ inputs.tag }}"
           format: 'sarif'
           output: 'trivy-results.sarif'
           vuln-type: 'os,library'
