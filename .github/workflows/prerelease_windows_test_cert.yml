@@ -74,5 +74,12 @@ jobs:
           # Name of the artifact to upload.
           # Optional. Default is 'artifact'
           name: windows msi
-          path: dist/newrelic-infra-amd64.0.99.999.msi
+          path: ./dist/newrelic-infra-amd64.0.99.999.msi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          # Name of the artifact to upload.
+          # Optional. Default is 'artifact'
+          name: windows msi
+          path: D:\a\infrastructure-agent\infrastructure-agent\src\github.com\newrelic\infrastructure-agent\dist\newrelic-infra-amd64.0.99.999.msi
 
