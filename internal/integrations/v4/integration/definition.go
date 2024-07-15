@@ -4,9 +4,15 @@ package integration
 
 import (
 	"context"
+	"path/filepath"
+
+	//nolint:gosec // ignore G501: Import blocklist: crypto/md5
+	"crypto/md5"
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
@@ -17,10 +23,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/config"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
-
-	"io/ioutil"
-	"os"
-	"strings"
 )
 
 const (
@@ -216,7 +218,8 @@ func noOnDemand(_ string) ([]byte, bool) {
 // returns the file name
 func newTempFile(template []byte) (string, error) {
 	// create it
-	file, err := ioutil.TempFile("", "discovered")
+	fileName := filepath.Join(os.TempDir(), getDiscoveredTemplateFileName(template))
+	file, err := os.Create(fileName)
 	if err != nil {
 		return "", errors.New("can't create config file template: " + err.Error())
 	}
@@ -226,6 +229,11 @@ func newTempFile(template []byte) (string, error) {
 		return "", errors.New("can't write into config file template: " + err.Error())
 	}
 	return file.Name(), nil
+}
+
+//nolint:gosec // ignore G401: MD5 usage
+func getDiscoveredTemplateFileName(template []byte) string {
+	return fmt.Sprintf("%s%x", "discovered", md5.Sum(template))
 }
 
 // returns an executor from the given execPath, that can be a string (one-line path and arguments),

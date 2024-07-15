@@ -345,6 +345,7 @@ func TestRun_RemoveExternalConfig(t *testing.T) {
 		path, err := newTempFile(template)
 		if err == nil {
 			createdConfigs = append(createdConfigs, path)
+			require.Equal(t, getDiscoveredTemplateFileName(template), filepath.Base(path))
 		}
 		return path, err
 	}

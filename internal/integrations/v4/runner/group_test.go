@@ -258,7 +258,7 @@ func TestGroup_Run_ConfigPathUpdated(t *testing.T) {
 	defer cancel()
 	_ = group.Run(ctx)
 
-	// THEN the emitted config path from discovery is different each time
+	// THEN the emitted config path from discovery is not different each time
 	dataset, err := te.ReceiveFrom("cfgpath")
 	require.NoError(t, err)
 	metrics := dataset.DataSet.Metrics
@@ -278,7 +278,7 @@ func TestGroup_Run_ConfigPathUpdated(t *testing.T) {
 	require.NotEmpty(t, secondValue)
 	require.NotEqual(t, "${config.path}", secondValue)
 
-	assert.NotEqual(t, firstValue, secondValue)
+	assert.Equal(t, firstValue, secondValue)
 }
 
 func interceptGroupErrors(gr *Group) <-chan error {
