@@ -164,6 +164,19 @@ func TestEmbeddedConfig_String(t *testing.T) {
 			i, err := NewDefinition(tc.config, ErrLookup, nil, config)
 			require.NoError(t, err)
 
+			// (spy function to get which files have been created)
+			var createdConfigs []string
+			i.newTempFile = func(template []byte) (string, error) {
+				//nolint: govet
+				path, err := newTempFile(template)
+				if err == nil {
+					createdConfigs = append(createdConfigs, path)
+					require.Equal(t, getDiscoveredTemplateFileName(template), filepath.Base(path))
+				}
+
+				return path, err
+			}
+
 			disc := databind.NewValues(nil,
 				databind.NewDiscovery(data.Map{"discovery.ip": "1.2.3.4"}, nil, nil),
 				databind.NewDiscovery(data.Map{"discovery.ip": "5.6.7.8"}, nil, nil),
@@ -185,6 +198,14 @@ func TestEmbeddedConfig_String(t *testing.T) {
 				assert.Containsf(t, expectedIPs, line, "unexpected value: %q", line)
 				delete(expectedIPs, line)
 			}
+
+			// THEN the external configuration file has been removed
+			testhelpers.Eventually(t, 5*time.Second, func(t require.TestingT) {
+				for _, path := range createdConfigs {
+					_, err := os.Stat(path)
+					assert.Truef(t, os.IsNotExist(err), "expecting file %q to not exist. Error: %v", path, err)
+				}
+			})
 		})
 	}
 }
