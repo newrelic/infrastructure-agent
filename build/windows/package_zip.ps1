@@ -33,4 +33,4 @@ Write-Output "Generating catalog file"
 New-FileCatalog -Path "$workspace\dist\newrelic-infra-$arch.$version.zip" -CatalogFilePath "$workspace\dist\newrelic-infra-$arch.$version.zip.cat" -CatalogVersion 2.0
 
 Write-Output "Signing catalog file"
-Set-AuthenticodeSignature -FilePath "$workspace\dist\newrelic-infra-$arch.$version.zip.cat" -Certificate (Get-Item Cert:\CurrentUser\My\DF4B8F6ACFB5CDE77FF506F895E317EEC92CF77F) -TimestampServer http://timestamp.digicert.com
+Set-AuthenticodeSignature -FilePath "$workspace\dist\newrelic-infra-$arch.$version.zip.cat" -Certificate (Get-Item Cert:\CurrentUser\My\99C80227B0FD6238225C5E27227115F511EC0C1A) -TimestampServer http://timestamp.digicert.com
