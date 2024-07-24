@@ -69,6 +69,17 @@ release/pkg-linux: release/get-fluentbit-linux-arm64
 	@echo "=== [release/pkg-linux] PRE-RELEASE compiling all binaries, creating packages, archives"
 	$(GORELEASER_BIN) release --config $(GORELEASER_CONFIG_LINUX) $(PKG_FLAGS)
 
+.PHONY : release/pkg-linux-fips
+release/pkg-linux-fips: release/deps release/clean generate-goreleaser-multiarch-fips
+release/pkg-linux-fips: release/get-integrations-amd64 #NO FIPS ASSETS AVAILABLE FOR NOW
+release/pkg-linux-fips: release/get-integrations-arm64 #NO FIPS ASSETS AVAILABLE FOR NOW
+# release/pkg-linux-fips: release/get-integrations-arm #NO FIPS ASSETS AVAILABLE FOR NOW
+release/pkg-linux-fips: release/get-fluentbit-linux-amd64 #NO FIPS ASSETS AVAILABLE FOR NOW
+# #release/pkg-linux: release/get-fluentbit-linux-arm
+release/pkg-linux-fips: release/get-fluentbit-linux-arm64 #NO FIPS ASSETS AVAILABLE FOR NOW
+	@echo "=== [release/pkg-linux-fips] PRE-RELEASE compiling all binaries, creating packages, archives"
+	$(GORELEASER_BIN) release --config $(GORELEASER_CONFIG_LINUX) $(PKG_FLAGS)
+
 .PHONY : release/pkg-linux-amd64
 release/pkg-linux-amd64: release/deps release/clean
 release/pkg-linux-amd64: generate-goreleaser-amd64
@@ -84,11 +95,11 @@ release/pkg-linux-arm: release/get-integrations-arm
 	@echo "=== [release/pkg-linux-arm] PRE-RELEASE compiling all binaries, creating packages, archives"
 	$(GORELEASER_BIN) release --config $(GORELEASER_CONFIG_LINUX) $(PKG_FLAGS)
 
-.PHONY : release/pkg-linux-arm64
-release/pkg-linux-arm64: release/deps release/clean generate-goreleaser-arm64
-release/pkg-linux-arm64: release/get-integrations-arm64
-release/pkg-linux-arm64: release/get-fluentbit-linux-arm64
-	@echo "=== [release/pkg-linux-arm64] PRE-RELEASE compiling all binaries, creating packages, archives"
+.PHONY : release/pkg-linux-fips-arm64
+release/pkg-linux-fips-arm64: release/deps release/clean generate-goreleaser-fips-arm64
+release/pkg-linux-fips-arm64: release/get-integrations-arm64
+release/pkg-linux-fips-arm64: release/get-fluentbit-linux-arm64
+	@echo "=== [release/pkg-linux-arm64] PRE-RELEASE compiling all fips binaries, creating packages, archives"
 	$(GORELEASER_BIN) release --config $(GORELEASER_CONFIG_LINUX) $(PKG_FLAGS)
 
 .PHONY : release/pkg-linux-legacy
@@ -127,6 +138,11 @@ release/sign:
 	@echo "=== [release/sign] signing packages"
 	@bash $(CURDIR)/build/sign.sh
 
+.PHONY : release/sign-fips
+release/sign-fips:
+	@echo "=== [release/sign] signing packages"
+	@bash $(CURDIR)/build/sign_fips.sh
+
 .PHONY : release-publish
 release-publish:
 	@echo "=== [release/publish] publishing artifacts"
@@ -135,6 +151,10 @@ release-publish:
 .PHONY : release-linux
 release-linux: release/pkg-linux release/fix-tarballs-linux release/sign
 	@echo "=== [release-linux] full pre-release cycle complete for nix"
+
+.PHONY : release-linux-fips
+release-linux-fips: release/pkg-linux-fips release/fix-tarballs-linux release/sign-fips
+	@echo "=== [release-linux] full pre-release cycle complete for nix - FIPS"
 
 .PHONY : release-linux-amd64
 release-linux-amd64: release/pkg-linux-amd64 release/fix-tarballs-linux release/sign
@@ -146,6 +166,10 @@ release-linux-arm: release/pkg-linux-arm release/fix-tarballs-linux release/sign
 
 .PHONY : release-linux-arm64
 release-linux-arm64: release/pkg-linux-arm64 release/fix-tarballs-linux release/sign
+	@echo "=== [release-linux-arm64] full pre-release cycle complete for nix"
+
+.PHONY : release-linux-fips-arm64
+release-linux-fips-arm64: release/pkg-linux-arm64 release/fix-tarballs-linux release/sign
 	@echo "=== [release-linux-arm64] full pre-release cycle complete for nix"
 
 .PHONY : release-linux-legacy
@@ -311,6 +335,42 @@ generate-goreleaser-multiarch:
   		$(CURDIR)/build/goreleaser/linux/sles_155_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_156_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_156_arm.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_156_arm64.yml\
+  		 > $(GORELEASER_CONFIG_LINUX)
+
+.PHONY : generate-goreleaser-multiarch-fips
+generate-goreleaser-multiarch-fips:
+	cat $(CURDIR)/build/goreleaser/linux/header.yml\
+		$(CURDIR)/build/goreleaser/linux/build_amd64_fips.yml\
+		$(CURDIR)/build/goreleaser/linux/build_arm64_fips.yml\
+		$(CURDIR)/build/goreleaser/linux/archives_header.yml\
+		$(CURDIR)/build/goreleaser/linux/archives_amd64.yml\
+		$(CURDIR)/build/goreleaser/linux/archives_arm64.yml\
+		$(CURDIR)/build/goreleaser/linux/nfpms_header.yml\
+		$(CURDIR)/build/goreleaser/linux/al2023_amd64.yml\
+		$(CURDIR)/build/goreleaser/linux/al2023_arm64.yml\
+  		$(CURDIR)/build/goreleaser/linux/al2_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/al2_arm64.yml\
+  		$(CURDIR)/build/goreleaser/linux/centos_7_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/centos_7_arm64.yml\
+  		$(CURDIR)/build/goreleaser/linux/centos_8_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/centos_8_arm64.yml\
+  		$(CURDIR)/build/goreleaser/linux/rhel_9_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/rhel_9_arm64.yml\
+  		$(CURDIR)/build/goreleaser/linux/debian_systemd_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/debian_systemd_arm64.yml\
+  		$(CURDIR)/build/goreleaser/linux/debian_upstart_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_125_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_125_arm64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_152_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_152_arm64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_153_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_153_arm64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_154_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_154_arm64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_155_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_155_arm64.yml\
+		$(CURDIR)/build/goreleaser/linux/sles_156_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_156_arm64.yml\
   		 > $(GORELEASER_CONFIG_LINUX)
 
