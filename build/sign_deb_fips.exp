@@ -1,0 +1,19 @@
+#!/usr/bin/expect -f
+
+# Retrieve the arguments
+set deb_file [lindex $argv 0];
+set GPG_PASSPHRASE [lindex $argv 1];
+set GPG_MAIL [lindex $argv 2];  # Capture GPG_MAIL
+
+# Set an infinite timeout to allow for longer operations
+set timeout -1
+
+# Start the signing process using dpkg-sig
+spawn dpkg-sig --sign builder -k $GPG_MAIL $deb_file
+
+# Handle the passphrase prompt
+expect "Enter passphrase:"
+send -- "$GPG_PASSPHRASE\r"
+
+# Wait until the process completes
+expect eof
