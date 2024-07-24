@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 //go:generate goversioninfo
 
-//go:build !fips
+//go:build fips
 
 package main
 
 import (
+	_ "crypto/tls/fipsonly"
 	"github.com/newrelic/infrastructure-agent/internal/agent/service"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"os"

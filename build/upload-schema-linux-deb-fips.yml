@@ -1,0 +1,53 @@
+---
+- src: "newrelic-infra_systemd_{version}_{arch}_fips.deb"
+  arch:
+    - amd64
+    - arm64
+    # - arm
+  uploads:
+    - type: apt
+      src_repo: "{access_point_host}/infrastructure_agent/linux/apt"
+      dest: "{dest_prefix}linux/apt/"
+      os_version:
+        - noble
+        - jammy
+        - focal
+        - bionic
+        - xenial
+        - buster
+        - jessie
+        - stretch
+        - groovy
+        - hirsute
+        - bullseye
+        - bookworm
+
+- src: "newrelic-infra_upstart_{version}_{arch}_fips.deb"
+  arch:
+    - amd64
+  uploads:
+    - type: apt
+      src_repo: "{access_point_host}/infrastructure_agent/linux/apt"
+      dest: "{dest_prefix}linux/apt/"
+      os_version:
+        - trusty
+        - precise
+
+#########################
+  # UPLOAD CHECKSUMS #
+#########################
+
+- src: "newrelic-infra_systemd_{version}_{arch}_fips.deb.sum"
+  arch:
+    - amd64
+    - arm64
+    # - arm
+  uploads:
+    - type: file
+      dest: "{dest_prefix}linux/apt/pool/main/n/newrelic-infra/{src}"
+- src: "newrelic-infra_upstart_{version}_{arch}_fips.deb.sum"
+  arch:
+    - amd64
+  uploads:
+    - type: file
+      dest: "{dest_prefix}linux/apt/pool/main/n/newrelic-infra/{src}"
