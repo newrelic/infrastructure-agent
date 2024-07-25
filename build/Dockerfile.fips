@@ -18,7 +18,12 @@ RUN apt-get update && \
         cmake \
         wget \
         gcc-arm-linux-gnueabi \
-        gcc-aarch64-linux-gnu
+        gcc-aarch64-linux-gnu \
+        gcc-mips-linux-gnu \
+        gcc-mips64-linux-gnu \
+        gcc-mips64el-linux-gnu \
+        gcc-ppc64le-linux-gnu \
+        gcc-s390x-linux-gnu
 
 # Install Go 1.21.6
 RUN curl -sSL https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz -o go${GO_VERSION}.linux-amd64.tar.gz && \
