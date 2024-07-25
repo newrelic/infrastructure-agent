@@ -8,8 +8,15 @@ ARG GO_VERSION=1.21.6
 RUN apt-get update && \
     apt-get install -y \
         software-properties-common && \
-    add-apt-repository ppa:ubuntu-toolchain-r/test && \
+    apt-get clean
+
+# Add toolchain PPA
+RUN add-apt-repository ppa:ubuntu-toolchain-r/test && \
     apt-get update && \
+    apt-get clean
+
+# Install core dependencies
+RUN apt-get update && \
     apt-get install -y \
         curl \
         gnupg2 \
@@ -20,15 +27,19 @@ RUN apt-get update && \
         zip \
         git \
         cmake \
-        wget \
-        gcc-arm-linux-gnueabi \
-        gcc-aarch64-linux-gnu \
-        gcc-mips-linux-gnu \
-        gcc-mips64-linux-gnu \
-        gcc-mips64el-linux-gnu \
-        gcc-ppc64le-linux-gnu \
-        gcc-s390x-linux-gnu
+        wget && \
+    apt-get clean
 
+# Install cross-compilers incrementally and log each step
+RUN apt-get update && \
+    apt-get install -y gcc-arm-linux-gnueabi && echo "Installed gcc-arm-linux-gnueabi" && \
+    apt-get install -y gcc-aarch64-linux-gnu && echo "Installed gcc-aarch64-linux-gnu" && \
+    apt-get install -y gcc-mips-linux-gnu && echo "Installed gcc-mips-linux-gnu" && \
+    apt-get install -y gcc-mips64-linux-gnu && echo "Installed gcc-mips64-linux-gnu" && \
+    apt-get install -y gcc-mips64el-linux-gnu && echo "Installed gcc-mips64el-linux-gnu" && \
+    apt-get install -y gcc-ppc64le-linux-gnu && echo "Installed gcc-ppc64le-linux-gnu" && \
+    apt-get install -y gcc-s390x-linux-gnu && echo "Installed gcc-s390x-linux-gnu" && \
+    apt-get clean
 # Install Go 1.21.6
 RUN curl -sSL https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz -o go${GO_VERSION}.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz && \
