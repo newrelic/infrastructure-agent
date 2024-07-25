@@ -16,7 +16,7 @@ RUN apt-get update && \
         zip \
         git \
         cmake \
-        wget \
+        wget 
 # Install cross-compilers individually
 RUN apt-get update && \
     apt-get install -y \
