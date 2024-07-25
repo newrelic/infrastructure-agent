@@ -26,8 +26,6 @@ RUN apt-get update && \
     apt-get install -y \
         gcc-mips-linux-gnu && \
     apt-get install -y \
-        gcc-ppc64le-linux-gnu && \
-    apt-get install -y \
         gcc-s390x-linux-gnu
 
 # Install Go 1.21.6
