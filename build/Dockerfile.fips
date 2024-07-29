@@ -4,27 +4,22 @@ FROM ubuntu:16.04
 # Define Go version
 ARG GO_VERSION=1.21.6
 
-# Install required tools and libraries
-RUN apt-get update && \
-    apt-get install -y \
-        curl \
-        gnupg2 \
-        gnupg-agent \
-        build-essential \
-        rpm \
-        unzip \
-        zip \
-        git \
-        cmake \
-        wget \
-        gcc
-# Install cross-compilers individually
-# RUN apt-get update && \
-#     apt-get install -y gcc-arm-linux-gnueabi && \
-#     apt-get install -y gcc-aarch64-linux-gnu && \
-#     apt-get install -y gcc-mips-linux-gnu && \
-#     apt-get install -y gcc-s390x-linux-gnu && \
-#     apt-get install -y gcc-mips64-linux-gnuabi64
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    git \
+    tar \
+    gcc \
+    gcc-multilib \
+    g++ \
+    build-essential \
+    software-properties-common \
+    python-software-properties
+
+# # Manually install cross-compilers
+# RUN apt-get install -y \
+# gcc-5-multilib-mips-linux-gnu
 
 # Install Go 1.21.6
 RUN curl -sSL https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz -o go${GO_VERSION}.linux-amd64.tar.gz && \
