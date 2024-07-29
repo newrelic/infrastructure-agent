@@ -16,17 +16,15 @@ RUN apt-get update && \
         zip \
         git \
         cmake \
-        wget 
+        wget \
+        gcc
 # Install cross-compilers individually
-RUN apt-get update && \
-    apt-get install -y \
-        gcc-arm-linux-gnueabi && \
-    apt-get install -y \
-        gcc-aarch64-linux-gnu && \
-    apt-get install -y \
-        gcc-mips-linux-gnu && \
-    apt-get install -y \
-        gcc-s390x-linux-gnu
+# RUN apt-get update && \
+#     apt-get install -y gcc-arm-linux-gnueabi && \
+#     apt-get install -y gcc-aarch64-linux-gnu && \
+#     apt-get install -y gcc-mips-linux-gnu && \
+#     apt-get install -y gcc-s390x-linux-gnu && \
+#     apt-get install -y gcc-mips64-linux-gnuabi64
 
 # Install Go 1.21.6
 RUN curl -sSL https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz -o go${GO_VERSION}.linux-amd64.tar.gz && \
