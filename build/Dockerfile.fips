@@ -16,8 +16,7 @@ RUN apt-get update && apt-get install -y \
     g++ \
     build-essential \
     software-properties-common \
-    python-software-properties \
-    arm-linux-gnueabi-gcc
+    python-software-properties
 
 # # Manually install cross-compilers
 # RUN apt-get install -y \
