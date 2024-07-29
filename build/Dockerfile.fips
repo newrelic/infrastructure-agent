@@ -7,6 +7,7 @@ ARG GO_VERSION=1.21.6
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
+    curl \
     wget \
     git \
     tar \
