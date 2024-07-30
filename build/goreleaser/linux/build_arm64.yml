@@ -4,7 +4,7 @@
     binary: newrelic-infra
     env:
       - CGO_ENABLED=1
-      - CC=gcc-aarch64-linux-gnu
+      - CC=gcc-arm-linux-gnueabi
     goos:
       - linux
     ldflags:
@@ -19,7 +19,7 @@
     binary: newrelic-infra-ctl
     env:
       - CGO_ENABLED=1
-      - CC=gcc-aarch64-linux-gnu
+      - CC=gcc-arm-linux-gnueabi
     goos:
       - linux
     ldflags:
@@ -34,7 +34,7 @@
     binary: newrelic-infra-service
     env:
       - CGO_ENABLED=1
-      - CC=gcc-aarch64-linux-gnu
+      - CC=gcc-arm-linux-gnueabi
     goos:
       - linux
     ldflags:
