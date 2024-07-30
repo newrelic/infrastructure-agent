@@ -12,11 +12,12 @@ RUN apt-get update && apt-get install -y \
     git \
     tar \
     gcc \
-    gcc-multilib \
     g++ \
     build-essential \
     software-properties-common \
-    python-software-properties
+    python-software-properties \
+    gcc-arm-linux-gnueabi \
+    gcc-aarch64-linux-gnu
 
 # # Manually install cross-compilers
 # RUN apt-get install -y \
