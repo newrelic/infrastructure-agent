@@ -8,6 +8,7 @@ import (
 	"runtime"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/pkg/errors"
 )
@@ -45,7 +46,7 @@ func (dc *DockerClient) Initialize(apiVersion string) (err error) {
 }
 
 func (dc *DockerClient) Containers() ([]types.Container, error) {
-	return dc.client.ContainerList(context.Background(), types.ContainerListOptions{})
+	return dc.client.ContainerList(context.Background(), container.ListOptions{})
 }
 
 func (dc *DockerClient) ContainerTop(containerID string) (titles []string, processes [][]string, err error) {
