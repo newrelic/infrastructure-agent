@@ -32,9 +32,9 @@ for rpm_file in $(find -regex ".*\.\(rpm\)");do
 
   # if suse 12.x, then add --rpmv3
   if [[ $rpm_file =~ $sles_regex ]]; then
-    rpmsign --addsign --rpmv3 $rpm_file
+    rpmsign -v --addsign --rpmv3 $rpm_file
   else
-    rpmsign --addsign $rpm_file
+    rpmsign -v --addsign $rpm_file
   fi
 
   echo "===> Sign verification $rpm_file"
