@@ -14,7 +14,7 @@ echo "%_gpg_name ${GPG_MAIL}" >> ~/.rpmmacros
 echo "%_signature gpg" >> ~/.rpmmacros
 echo "%_gpg_path /root/.gnupg" >> ~/.rpmmacros
 echo "%_gpgbin /usr/bin/gpg2" >> ~/.rpmmacros
-echo "%__gpg_sign_cmd   %{__gpg} gpg --verbose --no-armor --yes --batch --pinentry-mode loopback --passphrase ${GPG_PASSPHRASE} --no-secmem-warning -u "%{_gpg_name}" -sbo %{__signature_filename} %{__plaintext_filename}" >> ~/.rpmmacros
+echo "%__gpg_sign_cmd   %{__gpg} gpg2 --verbose --no-armor --yes --batch --pinentry-mode loopback --passphrase ${GPG_PASSPHRASE} --no-secmem-warning -u "%{_gpg_name}" -sbo %{__signature_filename} %{__plaintext_filename}" >> ~/.rpmmacros
 
 echo "===> Importing GPG private key from GHA secrets..."
 printf %s ${GPG_PRIVATE_KEY_BASE64} | base64 -d | gpg --batch --import -
