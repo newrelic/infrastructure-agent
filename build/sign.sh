@@ -9,6 +9,8 @@ set -e
 #
 
 # Set gpg-agent defaults
+GNUPGHOME="/root/.gnupg"
+
 echo "${GPG_PASSPHRASE}" > "${GNUPGHOME}/gpg-passphrase"
 echo "passphrase-file ${GNUPGHOME}/gpg-passphrase" >> "$GNUPGHOME/gpg.conf"
 echo 'allow-loopback-pinentry' >> "${GNUPGHOME}/gpg-agent.conf"
