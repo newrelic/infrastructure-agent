@@ -8,13 +8,21 @@ set -e
 #
 #
 
+# Set gpg-agent defaults
+echo "${GPG_PASSPHRASE}" > "${GNUPGHOME}/gpg-passphrase"
+echo "passphrase-file ${GNUPGHOME}/gpg-passphrase" >> "$GNUPGHOME/gpg.conf"
+echo 'allow-loopback-pinentry' >> "${GNUPGHOME}/gpg-agent.conf"
+echo 'pinentry-mode loopback' >> "${GNUPGHOME}/gpg.conf"
+echo 'use-agent' >> "${GNUPGHOME}/gpg.conf"
+echo RELOADAGENT | gpg-connect-agent
+
 # Sign RPM's
 echo "===> Create .rpmmacros to sign rpm's from Goreleaser"
 echo "%_gpg_name ${GPG_MAIL}" >> ~/.rpmmacros
 echo "%_signature gpg" >> ~/.rpmmacros
 echo "%_gpg_path /root/.gnupg" >> ~/.rpmmacros
-echo "%_gpgbin /usr/bin/gpg2" >> ~/.rpmmacros
-echo "%__gpg_sign_cmd   %{__gpg} gpg2 --verbose --no-armor --yes --batch --pinentry-mode loopback --passphrase ${GPG_PASSPHRASE} --no-secmem-warning -u "%{_gpg_name}" -sbo %{__signature_filename} %{__plaintext_filename}" >> ~/.rpmmacros
+echo "%__gpgbin /usr/bin/gpg2" >> ~/.rpmmacros
+echo "%__gpg_sign_cmd   %{__gpg} gpg --verbose --no-armor --yes --batch --pinentry-mode loopback --passphrase ${GPG_PASSPHRASE} --no-secmem-warning -u "%{_gpg_name}" -sbo %{__signature_filename} %{__plaintext_filename}" >> ~/.rpmmacros
 
 echo "===> Importing GPG private key from GHA secrets..."
 printf %s ${GPG_PRIVATE_KEY_BASE64} | base64 -d | gpg --batch --import -
@@ -41,14 +49,6 @@ for rpm_file in $(find -regex ".*\.\(rpm\)");do
   rpm -v --checksig $rpm_file
 done
 
-# Sign DEB's
-GNUPGHOME="/root/.gnupg"
-echo "${GPG_PASSPHRASE}" > "${GNUPGHOME}/gpg-passphrase"
-echo "passphrase-file ${GNUPGHOME}/gpg-passphrase" >> "$GNUPGHOME/gpg.conf"
-echo 'allow-loopback-pinentry' >> "${GNUPGHOME}/gpg-agent.conf"
-echo 'pinentry-mode loopback' >> "${GNUPGHOME}/gpg.conf"
-echo 'use-agent' >> "${GNUPGHOME}/gpg.conf"
-echo RELOADAGENT | gpg-connect-agent
 
 for deb_file in $(find -regex ".*\.\(deb\)");do
   echo "===> Signing $deb_file"
