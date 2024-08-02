@@ -1,5 +1,5 @@
 # Use Ubuntu 16.04 as the base image
-FROM ubuntu:18.04
+FROM ubuntu:16.04
 
 # Define Go version
 ARG GO_VERSION=1.21.6
