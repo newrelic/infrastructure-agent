@@ -36,7 +36,7 @@ for rpm_file in $(find -regex ".*\.\(rpm\)");do
   if [[ $rpm_file =~ $sles_regex ]]; then
     rpmsign -v --addsign --rpmv3 $rpm_file
   else
-    ./build/sign.exp
+    ../build/sign.exp
   fi
 
   echo "===> Sign verification $rpm_file"
