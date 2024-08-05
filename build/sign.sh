@@ -34,6 +34,8 @@ for rpm_file in $(find -regex ".*\.\(rpm\)");do
   if [[ $rpm_file =~ $sles_regex ]]; then
     echo ${GPG_PASSPHRASE} | rpmsign -v --addsign --rpmv3 $rpm_file
   else
+    rpmsign --version
+    rpmsign --showrc
     echo ${GPG_PASSPHRASE} | rpmsign -v --addsign $rpm_file
   fi
 
