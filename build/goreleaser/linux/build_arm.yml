@@ -3,7 +3,8 @@
     main: ./cmd/newrelic-infra
     binary: newrelic-infra
     env:
-      - CGO_ENABLED=0
+      - CGO_ENABLED=1
+      - CC=arm-linux-gnueabi-gcc
     goos:
       - linux
     ldflags:
@@ -17,7 +18,8 @@
     main: ./cmd/newrelic-infra-ctl
     binary: newrelic-infra-ctl
     env:
-      - CGO_ENABLED=0
+      - CGO_ENABLED=1
+      - CC=arm-linux-gnueabi-gcc
     goos:
       - linux
     ldflags:
@@ -31,7 +33,8 @@
     main: ./cmd/newrelic-infra-service
     binary: newrelic-infra-service
     env:
-      - CGO_ENABLED=0
+      - CGO_ENABLED=1
+      - CC=arm-linux-gnueabi-gcc
     goos:
       - linux
     ldflags:

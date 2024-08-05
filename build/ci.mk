@@ -3,7 +3,7 @@ BUILDER_IMG_TAG = infrastructure-agent-builder
 .PHONY: ci/deps
 ci/deps:GH_ARCH ?= amd64
 ci/deps:
-	@docker build -t $(BUILDER_IMG_TAG) --build-arg GH_ARCH=$(GH_ARCH) -f $(CURDIR)/build/Dockerfile $(CURDIR)
+	@docker build -t $(BUILDER_IMG_TAG) --build-arg GH_ARCH=$(GH_ARCH) -f $(CURDIR)/build/Dockerfile.fips $(CURDIR)
 
 .PHONY: ci/validate
 ci/validate: ci/deps
