@@ -59,14 +59,11 @@ release/get-fluentbit-linux-arm64:
 	@FB_ARCH=arm64 make get-fluentbit-linux
 
 .PHONY : release/pkg-linux
-release/pkg-linux: release/deps release/clean generate-goreleaser-multiarch
+release/pkg-linux: release/deps release/clean
+release/pkg-linux: generate-goreleaser-amd64
 release/pkg-linux: release/get-integrations-amd64
-release/pkg-linux: release/get-integrations-arm64
-release/pkg-linux: release/get-integrations-arm
 release/pkg-linux: release/get-fluentbit-linux-amd64
-#release/pkg-linux: release/get-fluentbit-linux-arm
-release/pkg-linux: release/get-fluentbit-linux-arm64
-	@echo "=== [release/pkg-linux] PRE-RELEASE compiling all binaries, creating packages, archives"
+	@echo "=== [release/pkg-linux-amd64] PRE-RELEASE compiling all binaries, creating packages, archives"
 	$(GORELEASER_BIN) release --config $(GORELEASER_CONFIG_LINUX) $(PKG_FLAGS)
 
 .PHONY : release/pkg-linux-amd64
@@ -169,23 +166,7 @@ generate-goreleaser-amd64:
 		$(CURDIR)/build/goreleaser/linux/nfpms_header.yml\
 		$(CURDIR)/build/goreleaser/linux/al2023_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/al2_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/centos_6_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/centos_7_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/centos_8_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/rhel_9_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/debian_systemd_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/debian_upstart_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/sles_114_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/sles_121_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/sles_122_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/sles_123_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/sles_124_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/sles_125_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/sles_151_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/sles_152_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/sles_153_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/sles_154_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/sles_155_amd64.yml\
   		 > $(GORELEASER_CONFIG_LINUX)
 
 .PHONY : generate-goreleaser-arm
