@@ -1,4 +1,7 @@
 #!/usr/bin/expect -f
+
+set rpm_file [lindex $argv 0]; # Grab the first command line parameter
+
 set timeout -1
 spawn rpmsign -v --addsign $rpm_file
 expect "Enter pass phrase:"
