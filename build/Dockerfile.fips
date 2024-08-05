@@ -9,14 +9,11 @@ ARG GO_VERSION=1.21.6
 RUN apt-get update && apt-get install -y \
     curl \
     wget \
-    expect \
     git \
     tar \
     gcc \
     g++ \
     gnupg2 \
-    gnupg-agent \
-    debsigs \
     rpm \
     build-essential \
     software-properties-common \
@@ -45,7 +42,7 @@ ARG GH_ARCH='amd64'
 RUN curl -L https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_${GH_ARCH}.deb -o gh_${GH_VERSION}_linux_${GH_ARCH}.deb && \
     dpkg -i gh_${GH_VERSION}_linux_${GH_ARCH}.deb && \
     rm gh_${GH_VERSION}_linux_${GH_ARCH}.deb
-
+    
 # Optional: Set Go environment flags
 ENV GOFLAGS="-buildvcs=false"
 

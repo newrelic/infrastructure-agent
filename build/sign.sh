@@ -8,10 +8,6 @@ set -e
 #
 #
 
-# Configure GPG Agent
-export GPG_TTY=$(tty)
-gpg-agent --daemon
-
 # Sign RPM's
 echo "===> Create .rpmmacros to sign rpm's from Goreleaser"
 echo "%_gpg_name ${GPG_MAIL}" >> ~/.rpmmacros
