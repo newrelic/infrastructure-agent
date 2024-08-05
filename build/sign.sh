@@ -14,7 +14,7 @@ echo "%_gpg_name ${GPG_MAIL}" >> ~/.rpmmacros
 echo "%_signature gpg" >> ~/.rpmmacros
 echo "%_gpg_path /root/.gnupg" >> ~/.rpmmacros
 echo "%_gpgbin /usr/bin/gpg" >> ~/.rpmmacros
-echo "%__gpg_sign_cmd   %{__gpg} gpg --no-verbose --no-armor --batch  --passphrase-fd 0  --no-secmem-warning -u "%{_gpg_name}" -sbo %{__signature_filename} %{__plaintext_filename}" >> ~/.rpmmacros
+echo "%__gpg_sign_cmd   %{__gpg} gpg --no-verbose --no-armor --batch --pinentry-mode loopback --passphrase ${GPG_PASSPHRASE} --no-secmem-warning -u "%{_gpg_name}" -sbo %{__signature_filename} %{__plaintext_filename}" >> ~/.rpmmacros
 
 echo "===> Importing GPG private key from GHA secrets..."
 printf %s ${GPG_PRIVATE_KEY_BASE64} | base64 -d | gpg --batch --import -
@@ -32,11 +32,9 @@ for rpm_file in $(find -regex ".*\.\(rpm\)");do
 
   # if suse 12.x, then add --rpmv3
   if [[ $rpm_file =~ $sles_regex ]]; then
-    echo ${GPG_PASSPHRASE} | rpmsign -v --addsign --rpmv3 $rpm_file
+    rpmsign -v --addsign --rpmv3 $rpm_file
   else
-    rpmsign --version
-    rpmsign --showrc
-    echo ${GPG_PASSPHRASE} | rpmsign -v --addsign $rpm_file
+    ./sign.exp
   fi
 
   echo "===> Sign verification $rpm_file"
