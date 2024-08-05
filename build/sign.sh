@@ -8,12 +8,6 @@ set -e
 #
 #
 
-# Allow loopback pinentry for GPG
-GNUPGHOME="/root/.gnupg"
-echo 'allow-loopback-pinentry' >> "${GNUPGHOME}/gpg-agent.conf"
-echo RELOADAGENT | gpg-connect-agent
-
-
 # Sign RPM's
 echo "===> Create .rpmmacros to sign rpm's from Goreleaser"
 echo "%_gpg_name ${GPG_MAIL}" >> ~/.rpmmacros
@@ -51,6 +45,9 @@ for rpm_file in $(find -regex ".*\.\(rpm\)");do
 done
 
 # Sign DEB's
+# Allow loopback pinentry for GPG
+GNUPGHOME="/root/.gnupg"
+echo 'allow-loopback-pinentry' >> "${GNUPGHOME}/gpg-agent.conf"
 echo "${GPG_PASSPHRASE}" > "${GNUPGHOME}/gpg-passphrase"
 echo "passphrase-file ${GNUPGHOME}/gpg-passphrase" >> "$GNUPGHOME/gpg.conf"
 echo 'pinentry-mode loopback' >> "${GNUPGHOME}/gpg.conf"
