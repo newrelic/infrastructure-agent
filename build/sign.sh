@@ -27,8 +27,6 @@ cd dist
 
 sles_regex="(.*sles12.*)"
 
-echo $(pwd)
-
 for rpm_file in $(find -regex ".*\.\(rpm\)");do
   echo "===> Signing $rpm_file"
 
