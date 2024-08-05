@@ -10,6 +10,7 @@ set -e
 
 # Allow loopback pinentry for GPG
 GNUPGHOME="/root/.gnupg"
+mkdir -p GNUPGHOME
 touch "${GNUPGHOME}/gpg-agent.conf" || exit
 echo 'allow-loopback-pinentry' >> "${GNUPGHOME}/gpg-agent.conf"
 echo RELOADAGENT | gpg-connect-agent
