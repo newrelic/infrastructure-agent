@@ -8,6 +8,12 @@ set -e
 #
 #
 
+# Start gpg-agent if not running
+if ! pgrep -x "gpg-agent" > /dev/null
+then
+    echo "Starting gpg-agent..."
+    eval $(gpg-agent --daemon)
+fi
 # Sign RPM's
 echo "===> Create .rpmmacros to sign rpm's from Goreleaser"
 echo "%_gpg_name ${GPG_MAIL}" >> ~/.rpmmacros
