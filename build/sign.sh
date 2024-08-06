@@ -8,12 +8,6 @@ set -e
 #
 #
 
-# Start gpg-agent if not running
-if ! pgrep -x "gpg-agent" > /dev/null
-then
-    echo "Starting gpg-agent..."
-    eval $(gpg-agent --daemon)
-fi
 # Sign RPM's
 echo "===> Create .rpmmacros to sign rpm's from Goreleaser"
 echo "%_gpg_name ${GPG_MAIL}" >> ~/.rpmmacros
@@ -52,7 +46,7 @@ GNUPGHOME="/root/.gnupg"
 echo "${GPG_PASSPHRASE}" > "${GNUPGHOME}/gpg-passphrase"
 echo "passphrase-file ${GNUPGHOME}/gpg-passphrase" >> "$GNUPGHOME/gpg.conf"
 # echo 'allow-loopback-pinentry' >> "${GNUPGHOME}/gpg-agent.conf"
-# echo 'pinentry-mode loopback' >> "${GNUPGHOME}/gpg.conf"
+echo 'pinentry-mode loopback' >> "${GNUPGHOME}/gpg.conf"
 echo 'use-agent' >> "${GNUPGHOME}/gpg.conf"
 echo RELOADAGENT | gpg-connect-agent
 
