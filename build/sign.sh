@@ -44,7 +44,7 @@ done
 # Sign DEB's
 GNUPGHOME="/root/.gnupg"
 echo "${GPG_PASSPHRASE}" > "${GNUPGHOME}/gpg-passphrase"
-# echo "passphrase-file ${GNUPGHOME}/gpg-passphrase" >> "$GNUPGHOME/gpg.conf"
+echo "passphrase-file ${GNUPGHOME}/gpg-passphrase" >> "$GNUPGHOME/gpg.conf"
 echo 'allow-loopback-pinentry' >> "${GNUPGHOME}/gpg-agent.conf"
 echo 'pinentry-mode loopback' >> "${GNUPGHOME}/gpg.conf"
 echo 'use-agent' >> "${GNUPGHOME}/gpg.conf"
@@ -59,6 +59,7 @@ done
 for targz_file in $(find -regex ".*\.\(tar.gz\)");do
   echo "===> Signing $targz_file"
   gpg --sign --armor --detach-sig $targz_file
+  ../build/sign_tar.exp $rpm_file ${GPG_PASSPHRASE}
   echo "===> Sign verification $targz_file"
   gpg --verify ${targz_file}.asc $targz_file
 done
