@@ -7,6 +7,20 @@ set -e
 #
 #
 #
+# Function to start gpg-agent if not running
+start_gpg_agent() {
+    if ! pgrep -x "gpg-agent" > /dev/null
+    then
+        echo "Starting gpg-agent..."
+        eval $(gpg-agent --daemon)
+    else
+        echo "gpg-agent is already running."
+    fi
+}
+
+# Ensure gpg-agent is running
+start_gpg_agent
+
 
 # Sign RPM's
 echo "===> Create .rpmmacros to sign rpm's from Goreleaser"
