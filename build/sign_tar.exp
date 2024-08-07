@@ -4,8 +4,14 @@ set timeout -1
 set targz_file [lindex $argv 0]
 set passphrase [lindex $argv 1]
 
-set timeout -1
 spawn gpg --sign --armor --detach-sig $targz_file
-expect "Enter passphrase:"
-send -- "$passphrase\r"
-expect eof
+expect {
+    "Enter passphrase:" {
+        send -- "$passphrase\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+        exit [lindex $result 3]
+    }
+}
