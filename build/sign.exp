@@ -5,6 +5,6 @@ set GPG_PASSPHRASE [lindex $argv 1];
 
 set timeout -1
 spawn rpmsign -v --addsign $rpm_file
-expect "Enter passphrase:"
+expect "Enter pass phrase:"
 send -- "${GPG_PASSPHRASE}\r"
 expect eof
