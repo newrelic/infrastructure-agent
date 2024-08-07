@@ -45,8 +45,8 @@ done
 GNUPGHOME="/root/.gnupg"
 echo "${GPG_PASSPHRASE}" > "${GNUPGHOME}/gpg-passphrase"
 echo "passphrase-file ${GNUPGHOME}/gpg-passphrase" >> "$GNUPGHOME/gpg.conf"
-echo 'allow-loopback-pinentry' >> "${GNUPGHOME}/gpg-agent.conf"
-echo 'pinentry-mode loopback' >> "${GNUPGHOME}/gpg.conf"
+# echo 'allow-loopback-pinentry' >> "${GNUPGHOME}/gpg-agent.conf"
+# echo 'pinentry-mode loopback' >> "${GNUPGHOME}/gpg.conf"
 echo 'use-agent' >> "${GNUPGHOME}/gpg.conf"
 echo RELOADAGENT | gpg-connect-agent
 
