@@ -7,6 +7,9 @@ set passphrase [lindex $argv 1]
 # Ensure the GPG_TTY is set correctly
 set env(GPG_TTY) [exec /bin/sh -c "tty"]
 
+# Debug output to verify the correct file is being processed
+puts "Expect script signing file: $targz_file"
+
 spawn gpg --sign --armor --detach-sig $targz_file
 expect {
     "Enter passphrase:" {

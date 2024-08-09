@@ -69,13 +69,16 @@ for deb_file in $(find -regex ".*\.\(deb\)");do
   debsigs --sign=origin --verify --check -v -k ${GPG_MAIL} $deb_file
 done
 
-# Make sure the sign_tar.exp script is executable
-chmod +x ../build/sign_tar.exp
 
 # Sign TARGZ files
-for targz_file in $(find -regex ".*\.\(tar.gz\)");do
+for targz_file in $(find . -type f -name "*.tar.gz"); do
   echo "===> Signing $targz_file"
   ../build/sign_tar.exp $targz_file ${GPG_PASSPHRASE}
-  echo "===> Sign verification $targz_file"
-  gpg --verify ${targz_file}.asc $targz_file
+  asc_file="${targz_file}.asc"
+  if [ -f "$asc_file" ]; then
+    echo "===> Sign verification $targz_file"
+    gpg --verify "$asc_file" "$targz_file"
+  else
+    echo "Error: Signature file $asc_file not found."
+  fi
 done
