@@ -75,7 +75,7 @@ chmod +x ../build/sign_tar.exp
 # Sign TARGZ files
 for targz_file in $(find -regex ".*\.\(tar.gz\)");do
   echo "===> Signing $targz_file"
-  ../build/sign_tar.exp $rpm_file ${GPG_PASSPHRASE}
+  ../build/sign_tar.exp $targz_file ${GPG_PASSPHRASE}
   echo "===> Sign verification $targz_file"
-  gpg --verify ../build/${targz_file}.asc $targz_file
+  gpg --verify ${targz_file}.asc $targz_file
 done
