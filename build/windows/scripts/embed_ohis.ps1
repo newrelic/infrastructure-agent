@@ -92,7 +92,7 @@ Function EmbedFluentBit {
     [string]$pluginUrl = "https://github.com/newrelic/newrelic-fluent-bit-output/releases/download/v$pluginVersion/out_newrelic-windows-$arch-$pluginVersion.dll"
     DownloadFile -dest:"$downloadPath\logging\nrfb2" -outFile:"out_newrelic.dll" -url:"$pluginUrl"
 
-    [string]$nrfbUrl = "https://github.com/newrelic-experimental/fluent-bit-package/releases/download/$nrfbVersion/fb-windows-$arch.zip"
+    [string]$nrfbUrl = "https://logging-fb-windows-packages.s3.us-east-2.amazonaws.com/fb-windows-$nrfbVersion-$arch.zip"
     DownloadAndExtractZip -dest:"$downloadPath\logging\nrfb2" -url:"$nrfbUrl"
 
     if (-Not $skipSigning) {
