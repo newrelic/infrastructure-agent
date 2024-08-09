@@ -4,6 +4,7 @@ package status
 
 import (
 	"context"
+	http2 "github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -24,6 +25,10 @@ func TestNewReporter_Report(t *testing.T) {
 		time.Sleep(10 * time.Second)
 	}))
 	defer serverTimeout.Close()
+	serverUnauthorized := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(401)
+	}))
+	defer serverUnauthorized.Close()
 
 	assert.Eventually(t,
 		func() bool {
@@ -33,29 +38,54 @@ func TestNewReporter_Report(t *testing.T) {
 		time.Second, 10*time.Millisecond)
 
 	endpointsOk := []string{serverOk.URL}
+	healthEndpointOK := serverOk.URL
 	endpointsTimeout := []string{serverTimeout.URL}
+	healthEndpointTimeout := serverTimeout.URL
 	endpointsMixed := []string{serverOk.URL, serverTimeout.URL}
+	healthEndpointUnauthorized := serverUnauthorized.URL
 
-	expectReportOk := Report{Checks: &ChecksReport{Endpoints: []EndpointReport{{
-		URL:       serverOk.URL,
-		Reachable: true,
-	}}}}
-	expectReportTimeout := Report{Checks: &ChecksReport{Endpoints: []EndpointReport{{
-		URL:       serverTimeout.URL,
-		Reachable: false,
-		Error:     endpointTimeoutMsg, // substring is enough, it'll assert via "string contains"
-	}}}}
-	expectReportMixed := Report{Checks: &ChecksReport{Endpoints: []EndpointReport{
-		{
-			URL:       serverOk.URL,
-			Reachable: true,
+	expectReportOk := Report{Checks: &ChecksReport{
+		Endpoints: []EndpointReport{
+			{
+				URL:       serverOk.URL,
+				Reachable: true,
+			},
 		},
-		{
-			URL:       serverTimeout.URL,
-			Reachable: false,
-			Error:     endpointTimeoutMsg,
+		Health: HealthReport{
+			Healthy: true,
 		},
-	}}}
+	}}
+
+	expectReportTimeout := Report{Checks: &ChecksReport{
+		Endpoints: []EndpointReport{
+			{
+				URL:   serverTimeout.URL,
+				Error: endpointTimeoutMsg, // substring is enough, it'll assert via "string contains"
+			},
+		},
+		Health: HealthReport{
+			Healthy: false,
+			Error:   "context deadline exceeded",
+		},
+	}}
+
+	expectReportMixed := Report{Checks: &ChecksReport{
+		Endpoints: []EndpointReport{
+			{
+				URL:       serverOk.URL,
+				Reachable: true,
+			},
+			{
+				URL:       serverTimeout.URL,
+				Reachable: false,
+				Error:     endpointTimeoutMsg,
+			},
+		},
+		Health: HealthReport{
+			Healthy: false,
+			Error:   http2.ErrUnexepectedResponseCode.Error(),
+		},
+	}}
 
 	timeout := 10 * time.Millisecond
 	transport := &http.Transport{}
@@ -66,19 +96,20 @@ func TestNewReporter_Report(t *testing.T) {
 		return ""
 	}
 	tests := []struct {
-		name      string
-		endpoints []string
-		want      Report
-		wantErr   bool
+		name           string
+		endpoints      []string
+		healthEndpoint string
+		want           Report
+		wantErr        bool
 	}{
-		{"connectivity ok", endpointsOk, expectReportOk, false},
-		{"connectivity timedout", endpointsTimeout, expectReportTimeout, false},
-		{"connectivities ok and timeout", endpointsMixed, expectReportMixed, false},
+		{"connectivity ok", endpointsOk, healthEndpointOK, expectReportOk, false},
+		{"connectivity timedout", endpointsTimeout, healthEndpointTimeout, expectReportTimeout, false},
+		{"connectivities ok and timeout and unhealthy", endpointsMixed, healthEndpointUnauthorized, expectReportMixed, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			l := log.WithComponent(tt.name)
-			r := NewReporter(context.Background(), l, tt.endpoints, timeout, transport, emptyIDProvide, emptyEntityKeyProvider, "user-agent", "agent-key")
+			r := NewReporter(context.Background(), l, tt.endpoints, tt.healthEndpoint, timeout, transport, emptyIDProvide, emptyEntityKeyProvider, "user-agent", "agent-key")
 
 			got, err := r.Report()
 
@@ -103,6 +134,8 @@ func TestNewReporter_Report(t *testing.T) {
 				assert.Equal(t, expectedEndpoint.Reachable, gotEndpoint.Reachable)
 				assert.Contains(t, gotEndpoint.Error, expectedEndpoint.Error)
 			}
+			assert.Equal(t, tt.want.Checks.Health.Healthy, got.Checks.Health.Healthy)
+			assert.Contains(t, got.Checks.Health.Error, tt.want.Checks.Health.Error)
 		})
 	}
 }
@@ -118,6 +151,7 @@ func TestNewReporter_ReportErrors(t *testing.T) {
 	defer serverTimeout.Close()
 
 	endpointsOk := []string{serverOk.URL}
+	healthEndpointOK := serverOk.URL
 	endpointsTimeout := []string{serverTimeout.URL}
 	endpointsMixed := []string{serverOk.URL, serverTimeout.URL}
 
@@ -156,7 +190,7 @@ func TestNewReporter_ReportErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			l := log.WithComponent(tt.name)
-			r := NewReporter(context.Background(), l, tt.endpoints, timeout, transport, emptyIDProvide, emptyEntityKeyProvider, "user-agent", "agent-key")
+			r := NewReporter(context.Background(), l, tt.endpoints, healthEndpointOK, timeout, transport, emptyIDProvide, emptyEntityKeyProvider, "user-agent", "agent-key")
 
 			got, err := r.ReportErrors()
 
@@ -216,7 +250,7 @@ func TestNewReporter_ReportEntity(t *testing.T) {
 			entityKeyProvider := func() string {
 				return tt.entityKey
 			}
-			r := NewReporter(context.Background(), l, []string{}, timeout, transport, idProvide, entityKeyProvider, "user-agent", "agent-key")
+			r := NewReporter(context.Background(), l, []string{}, "", timeout, transport, idProvide, entityKeyProvider, "user-agent", "agent-key")
 
 			got, err := r.ReportEntity()
 
@@ -227,6 +261,75 @@ func TestNewReporter_ReportEntity(t *testing.T) {
 			}
 
 			assert.Equal(t, tt.guid, got.GUID)
+		})
+	}
+}
+
+func TestNewReporter_ReportHealth(t *testing.T) {
+	serverOk := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+	}))
+	defer serverOk.Close()
+	serverTimeout := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(10 * time.Second)
+	}))
+	defer serverTimeout.Close()
+	serverUnauthorized := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(401)
+	}))
+	defer serverUnauthorized.Close()
+
+	assert.Eventually(t,
+		func() bool {
+			res, err := serverOk.Client().Get(serverOk.URL)
+			return err == nil && res.StatusCode == 200
+		},
+		time.Second, 10*time.Millisecond)
+
+	healthEndpointOK := serverOk.URL
+	healthEndpointTimeout := serverTimeout.URL
+	healthEndpointUnauthorized := serverUnauthorized.URL
+
+	expectReportOk := HealthReport{
+		Healthy: true,
+	}
+
+	expectReportTimeout := HealthReport{
+		Healthy: false,
+		Error:   "context deadline exceeded",
+	}
+
+	expectReportUnauthorized := HealthReport{
+		Healthy: false,
+		Error:   http2.ErrUnexepectedResponseCode.Error(),
+	}
+
+	timeout := 10 * time.Millisecond
+	transport := &http.Transport{}
+	emptyIDProvide := func() entity.Identity {
+		return entity.EmptyIdentity
+	}
+	emptyEntityKeyProvider := func() string {
+		return ""
+	}
+	tests := []struct {
+		name           string
+		healthEndpoint string
+		want           HealthReport
+	}{
+		{"connectivity ok", healthEndpointOK, expectReportOk},
+		{"connectivity timedout", healthEndpointTimeout, expectReportTimeout},
+		{"unhealthy", healthEndpointUnauthorized, expectReportUnauthorized},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := log.WithComponent(tt.name)
+			r := NewReporter(context.Background(), l, nil, tt.healthEndpoint, timeout, transport, emptyIDProvide, emptyEntityKeyProvider, "user-agent", "agent-key")
+
+			got := r.ReportHealth()
+
+			assert.Equal(t, tt.want.Healthy, got.Healthy)
+			assert.Contains(t, got.Error, tt.want.Error)
 		})
 	}
 }
