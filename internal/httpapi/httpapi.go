@@ -30,6 +30,7 @@ const (
 	statusOnlyErrorsAPIPath    = "/v1/status/errors"
 	statusEntityAPIPath        = "/v1/status/entity"
 	statusAPIPathReady         = "/v1/status/ready"
+	statusHealthAPIPath        = "/v1/status/health"
 	ingestAPIPath              = "/v1/data"
 	ingestAPIPathReady         = "/v1/data/ready"
 	readinessProbeRetryBackoff = 100 * time.Millisecond
@@ -174,6 +175,7 @@ func (s *Server) serveStatus(_ context.Context) error {
 		router.GET(statusEntityAPIPath, s.handleEntity)
 		router.GET(statusAPIPath, s.handle(false))
 		router.GET(statusOnlyErrorsAPIPath, s.handle(true))
+		router.GET(statusHealthAPIPath, s.handleHealth)
 		// local only API
 		err := http.ListenAndServe(s.Status.address, router)
 		statusServerErr <- err
@@ -348,6 +350,26 @@ func (s *Server) handleReady(w http.ResponseWriter, r *http.Request, ps httprout
 	w.WriteHeader(http.StatusOK)
 }
 
+func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	health := s.reporter.ReportHealth()
+	body, err := json.Marshal(health)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		s.logger.WithError(err).Warn("couldn't encode Status report")
+		return
+	}
+
+	if !health.Healthy {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	_, err = w.Write(body)
+	if err != nil {
+		s.logger.Warn("cannot write entity response, error: " + err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+}
+
 func (s *Server) handleEntity(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	re, err := s.reporter.ReportEntity()
 	if err != nil {
@@ -374,7 +396,6 @@ func (s *Server) handleEntity(w http.ResponseWriter, r *http.Request, ps httprou
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
 }
 
 func (s *Server) handleIngest(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

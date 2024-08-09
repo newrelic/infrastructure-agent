@@ -21,6 +21,7 @@ const (
 // Report agent status report. It contains:
 // - checks:
 //   - backend endpoints reachability statuses
+//   - backend communication healthiness
 //
 // - configuration
 // fields will be empty when ReportErrors() report no errors.
@@ -31,6 +32,7 @@ type Report struct {
 
 type ChecksReport struct {
 	Endpoints []EndpointReport `json:"endpoints,omitempty"`
+	Health    HealthReport     `json:"health,omitempty"`
 }
 
 // ConfigReport configuration used for status report.
@@ -43,6 +45,12 @@ type EndpointReport struct {
 	URL       string `json:"url"`
 	Reachable bool   `json:"reachable"`
 	Error     string `json:"error,omitempty"`
+}
+
+// HealthReport represents the backend communication healthiness status.
+type HealthReport struct {
+	Healthy bool   `json:"healthy"`
+	Error   string `json:"error,omitempty"`
 }
 
 // ReportEntity agent entity report.
@@ -59,12 +67,15 @@ type Reporter interface {
 	ReportErrors() (Report, error)
 	// ReportEntity agent entity report.
 	ReportEntity() (ReportEntity, error)
+	// ReportHealth agent healthy report.
+	ReportHealth() HealthReport
 }
 
 type nrReporter struct {
 	ctx                    context.Context
 	log                    log.Entry
 	endpoints              []string // NR backend URLs
+	healthEndpoint         string   // NR command backend URL to check communication healthiness
 	license                string
 	userAgent              string
 	idProvide              id.Provide
@@ -119,8 +130,17 @@ func (r *nrReporter) report(onlyErrors bool) (report Report, err error) {
 		}(ep)
 	}
 
+	hReportC := make(chan HealthReport, 1)
+	wg.Add(1)
+
+	go func() {
+		hReportC <- r.getHealth(agentID)
+		wg.Done()
+	}()
+
 	wg.Wait()
 	close(eReportsC)
+	close(hReportC)
 
 	var errored bool
 	var eReports []EndpointReport
@@ -132,16 +152,17 @@ func (r *nrReporter) report(onlyErrors bool) (report Report, err error) {
 			errored = true
 		}
 	}
+	hreport := <-hReportC
 
 	if !onlyErrors || errored {
 		if report.Checks == nil {
 			report.Checks = &ChecksReport{}
 		}
 		report.Checks.Endpoints = eReports
+		report.Checks.Health = hreport
 		report.Config = &ConfigReport{
 			ReachabilityTimeout: r.timeout.String(),
 		}
-
 	}
 
 	return
@@ -154,11 +175,36 @@ func (r *nrReporter) ReportEntity() (re ReportEntity, err error) {
 	}, nil
 }
 
+func (r *nrReporter) ReportHealth() HealthReport {
+	agentID := r.idProvide().ID.String()
+	return r.getHealth(agentID)
+}
+
+func (r *nrReporter) getHealth(agentID string) HealthReport {
+	health, err := backendhttp.CheckEndpointHealthiness(
+		r.ctx,
+		r.healthEndpoint,
+		r.license,
+		r.userAgent,
+		agentID,
+		r.timeout,
+		r.transport,
+	)
+	healthReport := HealthReport{
+		Healthy: health,
+	}
+	if err != nil {
+		healthReport.Error = err.Error()
+	}
+	return healthReport
+}
+
 // NewReporter creates a new status reporter.
 func NewReporter(
 	ctx context.Context,
 	l log.Entry,
 	backendEndpoints []string,
+	healthEndpoint string,
 	timeout time.Duration,
 	transport http.RoundTripper,
 	agentIDProvide id.Provide,
@@ -171,6 +217,7 @@ func NewReporter(
 		ctx:                    ctx,
 		log:                    l,
 		endpoints:              backendEndpoints,
+		healthEndpoint:         healthEndpoint,
 		license:                license,
 		userAgent:              userAgent,
 		idProvide:              agentIDProvide,

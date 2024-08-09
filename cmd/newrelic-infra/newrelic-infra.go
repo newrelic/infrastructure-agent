@@ -418,7 +418,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 			// This should never happen, as the correct format is checked during NormalizeConfig.
 			aslog.WithError(err).Error("invalid startup_connection_timeout value, cannot run status server")
 		} else {
-			rep := status.NewReporter(agt.Context.Ctx, rlog, c.StatusEndpoints, timeoutD, transport, agt.Context.AgentIdnOrEmpty, agt.Context.EntityKey, c.License, userAgent)
+			rep := status.NewReporter(agt.Context.Ctx, rlog, c.StatusEndpoints, c.HealthEndpoint, timeoutD, transport, agt.Context.AgentIdnOrEmpty, agt.Context.EntityKey, c.License, userAgent)
 
 			apiSrv, err := httpapi.NewServer(rep, integrationEmitter)
 			if c.HTTPServerEnabled {
