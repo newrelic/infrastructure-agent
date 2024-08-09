@@ -69,6 +69,8 @@ for deb_file in $(find -regex ".*\.\(deb\)");do
   debsigs --sign=origin --verify --check -v -k ${GPG_MAIL} $deb_file
 done
 
+# Make sure the sign_tar.exp script is executable
+chmod +x ../build/sign_tar.exp
 
 # Sign TARGZ files
 for targz_file in $(find . -type f -name "*.tar.gz"); do
