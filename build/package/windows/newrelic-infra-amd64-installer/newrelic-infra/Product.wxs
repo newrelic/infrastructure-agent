@@ -37,12 +37,14 @@
             <ComponentRef Id="CMP_V1_CUSTOM_PLUGINS" />
             <ComponentRef Id="CMP_V1_NR_PLUGINS" />
             <ComponentRef Id="CMP_LOGGING_TOOL" />
+            <ComponentRef Id="CMP_LOGGING_TOOL_FB2" />
             <ComponentRef Id="CMP_LOGGING_TOOL_CFG" />
             <ComponentRef Id="NewRelicInfraDataComponent" />
             <ComponentGroupRef Id="ProductComponents" />
             <ComponentGroupRef Id="BundledPluginConfigComponents" />
             <ComponentGroupRef Id="BundledPluginComponents" />
             <ComponentGroupRef Id="LoggingToolComponents" />
+            <ComponentGroupRef Id="LoggingToolFB2Components" />
             <ComponentGroupRef Id="LoggingToolCfgComponents" />
         </Feature>
     </Product>
@@ -71,7 +73,8 @@
                         <Directory Id="LoggingToolCfg" Name="logging.d" />
                         <Directory Id="V1CustomPluginsFolder" Name="custom-integrations" />
                         <Directory Id="V1NRPluginsFolder" Name="newrelic-integrations">
-                            <Directory Id="LoggingTool" Name="logging" />
+                            <Directory Id="LoggingTool" Name="logging-legacy" />
+                            <Directory Id="LoggingToolFB2" Name="logging" />
                         </Directory>
                     </Directory>
                 </Directory>
@@ -97,6 +100,11 @@
       </DirectoryRef>
       <DirectoryRef Id="LoggingTool">
           <Component Id="CMP_LOGGING_TOOL" Guid="97CBE086-FE32-44FE-B035-9B7D66A422AD" KeyPath="yes">
+              <CreateFolder />
+          </Component>
+      </DirectoryRef>
+        <DirectoryRef Id="LoggingToolFB2">
+            <Component Id="CMP_LOGGING_TOOL_FB2" Guid="AA775C42-74B2-4260-A477-3CC57B5D5842" KeyPath="yes">
               <CreateFolder />
           </Component>
       </DirectoryRef>
@@ -226,6 +234,7 @@
         </InstallExecuteSequence>
     </Fragment>
 
+  <!-- <To be removed on removal of the ff fluent_bit_19> -->
   <Fragment>
     <ComponentGroup Id="LoggingToolComponents" Directory="LoggingTool">
         <Component Id="CMP_LOGGING_TOOL_BIN" Guid="015B10A1-7843-4961-B221-CBB449A6646C" Win64="yes">
@@ -250,6 +259,32 @@
         </Component>
     </ComponentGroup>
   </Fragment>
+  <!-- </To be removed on removal of the ff fluent_bit_19> -->
+
+  <Fragment>
+      <ComponentGroup Id="LoggingToolFB2Components" Directory="LoggingToolFB2">
+          <Component Id="CMP_LOGGING_FB2_TOOL_BIN" Guid="297401DE-6C77-4523-AE2D-E2B4982A34E2" Win64="yes">
+            <File Id="FILE_LOGGING_FB2_TOOL_BIN"
+                Source="$(var.EmbedBinariesPath)logging\nrfb2\fluent-bit.exe"
+                  KeyPath="yes" />
+          </Component>
+          <Component Id="CMP_LOGGING_FB2_TOOL_DLL" Guid="B0652EBD-1F42-46CA-B1F6-2BAB76117A04" Win64="yes">
+            <File Id="FILE_LOGGING_FB2_TOOL_DLL"
+                Source="$(var.EmbedBinariesPath)logging\nrfb2\fluent-bit.dll"
+                  KeyPath="yes" />
+          </Component>
+          <Component Id="CMP_NR_LOGGING_FB2_TOOL_DLL" Guid="76F95029-80F0-4CB2-96B2-D414608E92F7" Win64="yes">
+            <File Id="FILE_NR_LOGGING_FB2_TOOL_DLL"
+                Source="$(var.EmbedBinariesPath)logging\nrfb2\out_newrelic.dll"
+                  KeyPath="yes" />
+          </Component>
+          <Component Id="CMP_NR_LOGGING_FB2_TOOL_PARSERS" Guid="52DC6B7E-EF16-4A49-8A2D-F963030B0916" Win64="yes">
+            <File Id="FILE_NR_LOGGING_FB2_TOOL_PARSERS"
+                Source="$(var.ExternalFilesPath)examples\logging\parsers.conf"
+                  KeyPath="yes" />
+          </Component>
+      </ComponentGroup>
+    </Fragment>
 
   <Fragment>
     <ComponentGroup Id="LoggingToolCfgComponents" Directory="LoggingToolCfg">
