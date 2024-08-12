@@ -67,7 +67,7 @@ Function GetFluentBitVersion {
     $dir = "$scriptPath\..\..\embed"
     $fbVersion = $(Get-Content "$dir/fluent-bit.version" | %{if($_ -match "^windows,") { $_.Split(',')[2]; }})
     if ([string]::IsNullOrWhitespace($fbVersion)) {
-        throw "failed to read nr fluent-bit 2.x version"
+        throw "failed to read nr fluent-bit 3.x version"
     }
 
     return $fbVersion

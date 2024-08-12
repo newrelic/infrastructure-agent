@@ -311,7 +311,7 @@ func TestNewSupervisorConfig(t *testing.T) {
 			integrationsDir:     "integrationsDir",
 			ffEnabled:           true,
 			ffExists:            true,
-			expectedPathLinux:   filepath.Join("loggingBinDir", "td-agent-bit"),
+			expectedPathLinux:   filepath.Join("loggingBinDir", "fluent-bit"),
 			expectedPathWindows: filepath.Join("loggingBinDir", "fluent-bit.exe"),
 		},
 		{
@@ -327,7 +327,7 @@ func TestNewSupervisorConfig(t *testing.T) {
 			ffExists:            true,
 			integrationsDir:     "integrationsDir",
 			agentDir:            "some_agent_dir",
-			expectedPathLinux:   filepath.Join("/opt/td-agent-bit/bin", "td-agent-bit"),
+			expectedPathLinux:   filepath.Join("/opt/fluent-bit/bin", "fluent-bit"),
 			expectedPathWindows: filepath.Join("some_agent_dir", "integrationsDir", "logging-legacy", "fluent-bit.exe"),
 		},
 	}

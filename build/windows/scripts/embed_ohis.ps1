@@ -85,7 +85,7 @@ Function EmbedFluentBit {
     DownloadAndExtractZip -dest:"$downloadPath\logging\nrfb" -url:"$nrfbUrl"
     # </To be removed on removal of the ff fluent_bit_19>
 
-    ## fluent-bit (2.x)
+    ## fluent-bit (3.x)
     $pluginVersion = GetFluentBitPluginVersion
     $nrfbVersion = GetFluentBitVersion
 
