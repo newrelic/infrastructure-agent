@@ -12,7 +12,7 @@ import (
 // ComposeUp builds in the background the `docker-compose.yml` file that is passed as argument. It returns a
 // function that must be invoked to destroy the spawned cluster.
 func ComposeUp(file string) error {
-	cmd := exec.Command("docker-compose", "-f", file, "up", "--build", "-d")
+	cmd := exec.Command("docker", "compose", "-f", file, "up", "--build", "-d")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%s -> %s", err.Error(), string(output))
@@ -22,7 +22,7 @@ func ComposeUp(file string) error {
 
 // ComposeDown destroys the cluster defined in the file. Not usually invoked.
 func ComposeDown(file string) {
-	cmd := exec.Command("docker-compose", "-f", file, "down")
+	cmd := exec.Command("docker", "compose", "-f", file, "down")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "%s -> %s", err.Error(), string(output))

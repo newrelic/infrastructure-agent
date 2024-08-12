@@ -31,7 +31,7 @@ tag), the rest of components run in their own container.
 To run the tests:
 
 ```
-docker-compose -f test/proxy/docker-compose.yml up --build
+docker compose -f test/proxy/docker-compose.yml up --build
 go test --tags=proxytests ./test/proxy/
 ```
 
@@ -39,7 +39,7 @@ Everytime you run the test with modification on agent or squid configurations or
 In order to do that either run:
 
 ```
-docker-compose -f test/proxy/docker-compose.yml down
+docker compose -f test/proxy/docker-compose.yml down
 ```
 Or if you've stopped the containers using `Ctrl+C` then you should run:
 ```
