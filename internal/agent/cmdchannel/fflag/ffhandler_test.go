@@ -310,7 +310,7 @@ func TestSrv_InitialFetch_EnablesFb19(t *testing.T) {
 				"name": "set_feature_flag",
 				"arguments": {
 					"category": "Infra_Agent",
-					"flag": "fluent_bit_19",
+					"flag": "fluent_bit_19_win",
 					"enabled": true
 				}
 			}

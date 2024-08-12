@@ -19,17 +19,17 @@ const (
 	defaultFluentBitExecutable2 = "fluent-bit"
 )
 
-func (c *fBSupervisorConfig) defaultLoggingBinDir(ffExists bool, ffEnabled bool) string {
-	if (ffExists && ffEnabled) || onlyTdAgentInstalled() {
+func (c *fBSupervisorConfig) defaultLoggingBinDir(_ bool, _ bool) string {
+	if onlyTdAgentInstalled() {
 		return defaultLoggingBinDir1
 	}
 
 	return defaultLoggingBinDir2
 }
 
-func (c *fBSupervisorConfig) defaultFluentBitExePath(ffExists bool, ffEnabled bool, loggingBinDir string) string {
+func (c *fBSupervisorConfig) defaultFluentBitExePath(_ bool, _ bool, loggingBinDir string) string {
 	defaultFluentBitExe := defaultFluentBitExecutable2
-	if (ffExists && ffEnabled) || onlyTdAgentInstalled() {
+	if onlyTdAgentInstalled() {
 		defaultFluentBitExe = defaultFluentBitExecutable1
 	}
 

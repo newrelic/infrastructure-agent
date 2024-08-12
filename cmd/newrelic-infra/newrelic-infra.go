@@ -455,6 +455,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		os.Exit(1)
 	}
 
+	fbVerbose := c.Log.Level == config.LogLevelTrace && c.Log.HasIncludeFilter(config.TracesFieldName, config.SupervisorTrace)
 	confTempFolder := filepath.Join(c.AgentTempDir, v4.FbConfTempFolderNameDefault)
 	fbIntCfg := v4.NewFBSupervisorConfig(
 		ffManager,
@@ -464,7 +465,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		c.FluentBitExePath,
 		c.FluentBitNRLibPath,
 		c.FluentBitParsersPath,
-		logFwCfg.FluentBitVerbose,
+		fbVerbose,
 		confTempFolder,
 	)
 

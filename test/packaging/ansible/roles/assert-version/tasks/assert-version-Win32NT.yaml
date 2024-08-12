@@ -1,0 +1,12 @@
+---
+
+- name: Assert expected version
+  ansible.windows.win_command: '"C:\Program Files\New Relic\newrelic-infra\newrelic-infra.exe" "--version"'
+  register: check
+
+- name: Stdout from version grep
+  fail:
+    msg: "{{ check.stdout | regex_search('New Relic Infrastructure Agent version: ([^,]+)', '\\1') | first }} does not match {{ target_agent_version }}"
+  when: "{{ check.stdout | regex_search('New Relic Infrastructure Agent version: ([^,]+)', '\\1') | first != target_agent_version }}"
+
+...
