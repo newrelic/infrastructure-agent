@@ -169,13 +169,6 @@ instances:
   ############################
   # redhat amd64
   ############################
-  - ami: "ami-0680f7cf1ea8cb793"
-    type: "t3a.small"
-    name: "amd64:redhat-7.9"
-    username: "ec2-user"
-    platform: "linux"
-    python_interpreter: "/usr/bin/python"
-    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
   - ami: "ami-0ba62214afa52bec7"
     type: "t3a.small"
     name: "amd64:redhat-8.4"
@@ -193,13 +186,6 @@ instances:
   ############################
   # redhat arm64
   ############################
-  - ami: "ami-0302c1ecc74930ba5"
-    type: "t4g.small"
-    name: "arm64:redhat-7.6"
-    username: "ec2-user"
-    platform: "linux"
-    python_interpreter: "/usr/bin/python"
-    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
   - ami: "ami-01089181b0aa3be51"
     type: "t4g.small"
     name: "arm64:redhat-9.0"

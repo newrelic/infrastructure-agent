@@ -161,22 +161,13 @@
             log_forwader_supported: true
           when: inventory_hostname is search("windows")
 
-        - name: repo setup
+        - name: install agent
           include_role:
-            name: repo-setup
-          when: log_forwader_supported is defined
-
-        - name: setup config
-          include_role:
-            name: setup-config
+            name: caos.ansible_roles.infra_agent
           vars:
             log_level: 'debug'
             log_forward: 'true'
-          when: log_forwader_supported is defined
-
-        - name: install agent
-          include_role:
-            name: agent-install
+            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
           when: log_forwader_supported is defined
 
         # Not available for ARM yet
