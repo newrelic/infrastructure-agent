@@ -270,12 +270,6 @@ instances:
   ############################
   # windows amd64
   ############################
-  - ami: "ami-0c5d73971003d1ab0"
-    type: "t3a.small"
-    name: "amd64:windows_2012"
-    username: "ansible"
-    platform: "windows"
-    launch_template: "LaunchTemplateId=lt-005e12ef728c179bf,Version=3"
   - ami: "ami-03d46abfa414238dd"
     type: "t3a.small"
     name: "amd64:windows_2016"
