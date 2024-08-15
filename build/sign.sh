@@ -44,12 +44,7 @@ sles_regex="(.*sles12.*)"
 for rpm_file in $(find -regex ".*\.\(rpm\)");do
   echo "===> Signing $rpm_file"
 
-  # if suse 12.x, then add --rpmv3
-  if [[ $rpm_file =~ $sles_regex ]]; then
-     rpmsign -v --addsign --rpmv3 $rpm_file
-  else
-    ../build/sign.exp $rpm_file ${GPG_PASSPHRASE}
-  fi
+  ../build/sign.exp $rpm_file ${GPG_PASSPHRASE}
 
   echo "===> Sign verification $rpm_file"
   rpm -v --checksig $rpm_file
