@@ -979,10 +979,15 @@ type Config struct {
 	// Public: Yes
 	StatusServerPort int `yaml:"status_server_port" envconfig:"status_server_port"`
 
-	// StatusServerPort Set the port for status server.
+	// StatusEndpoints Status endpoints to check reachability.
 	// Default: IdentityURL, CommandChannelURL, MetricsIngestURL, InventoryIngestURL
 	// Public: Yes
 	StatusEndpoints []string `yaml:"status_endpoints" envconfig:"status_endpoints"`
+
+	// HealthEndpoint to check backend connection healthiness.
+	// Default: CommandChannelURL
+	// Public: Yes
+	HealthEndpoint string `envconfig:"health_endpoint" yaml:"health_endpoint"`
 
 	// AppDataDir This option is only for Windows. It defines the path to store data in a different path than the
 	// program files directory.
@@ -2164,6 +2169,10 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 			// cfg.DMIngestURL(), // dimensional metrics without shimming not available yet
 			// no endpoint value to checking log ingest reachability
 		}
+	}
+
+	if cfg.HealthEndpoint == "" {
+		cfg.HealthEndpoint = cfg.CommandChannelURL + cfg.CommandChannelEndpoint
 	}
 
 	// MetricsIngestEndpoint default value defined in NewConfig

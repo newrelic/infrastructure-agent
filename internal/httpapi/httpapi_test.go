@@ -1,5 +1,7 @@
 // Copyright 2021 NewServer Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+
+//nolint:exhaustruct,noctx
 package httpapi
 
 import (
@@ -43,15 +45,16 @@ func TestHTTPAPITestSuite(t *testing.T) {
 func (suite *HTTPAPITestSuite) TestServe_Status() {
 	// Given a running HTTP endpoint
 	port, err := networkHelpers.TCPPort()
-	require.NoError(suite.T(), err)
+	suite.Require().NoError(err)
 
 	serverOk := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 	}))
 	defer serverOk.Close()
 
 	// And a status reporter monitoring it
 	endpoints := []string{serverOk.URL}
+	healthEndpoint := serverOk.URL
 	logger := log.WithComponent(suite.T().Name())
 	timeout := 100 * time.Millisecond
 	transport := &http.Transport{}
@@ -63,7 +66,7 @@ func (suite *HTTPAPITestSuite) TestServe_Status() {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	r := status.NewReporter(ctx, logger, endpoints, timeout, transport, emptyIDProvide, emptyEntityKeyProvider, "user-agent", "agent-key")
+	r := status.NewReporter(ctx, logger, endpoints, healthEndpoint, timeout, transport, emptyIDProvide, emptyEntityKeyProvider, "user-agent", "agent-key")
 
 	// When agent status API server is ready
 	em := &testemit.RecordEmitter{}
@@ -95,6 +98,9 @@ func (suite *HTTPAPITestSuite) TestServe_Status() {
 	assert.Empty(suite.T(), e.Error)
 	assert.True(suite.T(), e.Reachable)
 	assert.Equal(suite.T(), serverOk.URL, e.URL)
+	h := gotReport.Checks.Health
+	suite.Require().True(h.Healthy)
+	suite.Require().Empty(h.Error)
 }
 
 func (suite *HTTPAPITestSuite) TestServe_OnlyErrors() {
@@ -103,7 +109,7 @@ func (suite *HTTPAPITestSuite) TestServe_OnlyErrors() {
 	require.NoError(suite.T(), err)
 
 	serverOk := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 	}))
 	defer serverOk.Close()
 	serverTimeout := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -113,6 +119,7 @@ func (suite *HTTPAPITestSuite) TestServe_OnlyErrors() {
 
 	// And a status reporter monitoring these endpoints
 	endpoints := []string{serverOk.URL, serverTimeout.URL}
+	healthEndpoint := serverOk.URL
 	logger := log.WithComponent(suite.T().Name())
 	timeout := 100 * time.Millisecond
 	transport := &http.Transport{}
@@ -124,7 +131,7 @@ func (suite *HTTPAPITestSuite) TestServe_OnlyErrors() {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	r := status.NewReporter(ctx, logger, endpoints, timeout, transport, emptyIDProvide, emptyEntityKeyProvider, "user-agent", "agent-key")
+	r := status.NewReporter(ctx, logger, endpoints, healthEndpoint, timeout, transport, emptyIDProvide, emptyEntityKeyProvider, "user-agent", "agent-key")
 
 	// When agent status API server is ready
 	em := &testemit.RecordEmitter{}
@@ -191,7 +198,7 @@ func (suite *HTTPAPITestSuite) TestServe_Entity() {
 			port, err := networkHelpers.TCPPort()
 			require.NoError(t, err)
 
-			r := status.NewReporter(ctx, logger, []string{}, timeout, transport, tt.idProvide, emptyEntityKeyProvider, "user-agent", "agent-key")
+			r := status.NewReporter(ctx, logger, []string{}, "", timeout, transport, tt.idProvide, emptyEntityKeyProvider, "user-agent", "agent-key")
 			// When agent status API server is ready
 			em := &testemit.RecordEmitter{}
 			s, err := NewServer(r, em)
@@ -220,6 +227,75 @@ func (suite *HTTPAPITestSuite) TestServe_Entity() {
 				json.NewDecoder(res.Body).Decode(&gotReport)
 				assert.Equal(t, tt.idProvide().GUID.String(), gotReport.GUID)
 			}
+		})
+	}
+}
+
+func (suite *HTTPAPITestSuite) TestServe_Health() {
+	// Given a running HTTP endpoint
+	port, err := networkHelpers.TCPPort()
+	suite.Require().NoError(err)
+	var requestsDone int
+
+	serverOk := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if requestsDone > 0 {
+			w.WriteHeader(http.StatusUnauthorized)
+		}
+		w.WriteHeader(http.StatusOK)
+		requestsDone++
+	}))
+	defer serverOk.Close()
+
+	// And a status reporter monitoring it
+	logger := log.WithComponent(suite.T().Name())
+	timeout := 100 * time.Millisecond
+	transport := &http.Transport{}
+	emptyIDProvide := func() entity.Identity {
+		return entity.EmptyIdentity
+	}
+	emptyEntityKeyProvider := func() string {
+		return ""
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	r := status.NewReporter(ctx, logger, []string{}, serverOk.URL, timeout, transport, emptyIDProvide, emptyEntityKeyProvider, "user-agent", "agent-key")
+
+	// When agent status API server is ready
+	em := &testemit.RecordEmitter{}
+	server, err := NewServer(r, em)
+	suite.Require().NoError(err)
+	server.Status.Enable("localhost", port)
+
+	go server.Serve(ctx)
+
+	server.waitUntilReady()
+
+	tests := []struct {
+		name       string
+		healthy    bool
+		statusCode int
+	}{
+		{"healthy", true, http.StatusOK},
+		{"unhealthy", false, http.StatusInternalServerError},
+	}
+	for _, testCase := range tests {
+		suite.T().Run(testCase.name, func(t *testing.T) {
+			// And a request to the status API is sent
+			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d%s", port, statusHealthAPIPath), nil)
+			suite.Require().NoError(err)
+			client := http.Client{}
+
+			res, err := client.Do(req)
+			suite.Require().NoError(err)
+			defer res.Body.Close()
+
+			suite.Require().Equal(testCase.statusCode, res.StatusCode)
+
+			var gotReport status.HealthReport
+			_ = json.NewDecoder(res.Body).Decode(&gotReport)
+			suite.Require().Equal(testCase.healthy, gotReport.Healthy)
 		})
 	}
 }
@@ -462,4 +538,8 @@ func (r *noopReporter) ReportErrors() (status.Report, error) {
 
 func (r *noopReporter) ReportEntity() (re status.ReportEntity, err error) {
 	return status.ReportEntity{}, nil
+}
+
+func (r *noopReporter) ReportHealth() status.HealthReport {
+	return status.HealthReport{}
 }
