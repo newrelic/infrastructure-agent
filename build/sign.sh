@@ -59,9 +59,14 @@ echo "passphrase-file ${GNUPGHOME}/gpg-passphrase" >> "$GNUPGHOME/gpg.conf"
 echo 'use-agent' >> "${GNUPGHOME}/gpg.conf"
 echo RELOADAGENT | gpg-connect-agent
 
-for deb_file in $(find -regex ".*\.\(deb\)");do
+for deb_file in $(find -regex ".*\.\(deb\)"); do
   echo "===> Signing $deb_file"
-  debsigs --sign=origin --verify --check -v -k ${GPG_MAIL} $deb_file
+
+  # Run the sign_deb.exp script to sign the .deb file
+  ../build/sign_deb.exp $deb_file ${GPG_PASSPHRASE}
+
+  echo "===> Sign verification $deb_file"
+  debsigs --verify --check -v $deb_file
 done
 
 # Make sure the sign_tar.exp script is executable
