@@ -50,6 +50,9 @@ for rpm_file in $(find -regex ".*\.\(rpm\)");do
   rpm -v --checksig $rpm_file
 done
 
+# Make sure the sign_deb.exp script is executable
+chmod +x ../build/sign_deb.exp
+
 # Sign DEB's
 GNUPGHOME="/root/.gnupg"
 echo "${GPG_PASSPHRASE}" > "${GNUPGHOME}/gpg-passphrase"
