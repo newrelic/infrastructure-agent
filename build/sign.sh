@@ -70,7 +70,7 @@ for deb_file in $(find -regex ".*\.\(deb\)"); do
 
 
   echo "===> Sign verification $deb_file"
-  debsigs --verify --check -v $deb_file
+  dpkg-sig --verify $deb_file
 done
 
 # Make sure the sign_tar.exp script is executable

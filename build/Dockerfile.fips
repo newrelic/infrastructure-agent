@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install -y \
     software-properties-common \
     python-software-properties \
     gcc-arm-linux-gnueabi \
+    dpkg-sig \
     gcc-aarch64-linux-gnu
 
 # # Manually install cross-compilers

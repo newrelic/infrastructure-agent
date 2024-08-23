@@ -9,7 +9,7 @@ set GPG_MAIL [lindex $argv 2];  # Added this line to capture GPG_MAIL
 set timeout -1
 
 # Start the signing process
-spawn debsigs --sign=origin --verify --check -v -k $GPG_MAIL $deb_file
+spawn debsigs --sign=origin --check -v -k $GPG_MAIL $deb_file
 
 # Handle the passphrase prompt
 expect "Enter passphrase:"
