@@ -66,7 +66,8 @@ for deb_file in $(find -regex ".*\.\(deb\)"); do
   echo "===> Signing $deb_file"
 
   # Run the sign_deb.exp script to sign the .deb file
-  ../build/sign_deb.exp $deb_file ${GPG_PASSPHRASE}
+../build/sign_deb.exp $deb_file ${GPG_PASSPHRASE} ${GPG_MAIL}
+
 
   echo "===> Sign verification $deb_file"
   debsigs --verify --check -v $deb_file

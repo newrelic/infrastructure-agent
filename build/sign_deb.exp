@@ -3,16 +3,17 @@
 # Retrieve the arguments
 set deb_file [lindex $argv 0];
 set GPG_PASSPHRASE [lindex $argv 1];
+set GPG_MAIL [lindex $argv 2];  # Added this line to capture GPG_MAIL
 
 # Set an infinite timeout to allow for longer operations
 set timeout -1
 
 # Start the signing process
-spawn debsigs --sign=origin --verify --check -v -k ${GPG_MAIL} $deb_file
+spawn debsigs --sign=origin --verify --check -v -k $GPG_MAIL $deb_file
 
 # Handle the passphrase prompt
 expect "Enter passphrase:"
-send -- "${GPG_PASSPHRASE}\r"
+send -- "$GPG_PASSPHRASE\r"
 
 # Wait until the process completes
 expect eof
