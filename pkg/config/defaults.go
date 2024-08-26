@@ -107,7 +107,8 @@ var (
 	defaultProxyValidateCerts            = false
 	defaultProxyConfigPlugin             = true
 	defaultWinRemovableDrives            = true
-	defaultMetricsMatcherConfig          = IncludeMetricsMap{}
+	defaultIncludeMetricsMatcherConfig   = IncludeMetricsMap{}
+	defaultExcludeMetricsMatcherConfig   = ExcludeMetricsMap{}
 	defaultRegisterMaxRetryBoSecs        = 60
 	defaultNtpPool                       = []string{} // i.e: []string{"time.cloudflare.com"}
 	defaultNtpEnabled                    = false
