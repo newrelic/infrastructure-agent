@@ -59,13 +59,12 @@ release/get-fluentbit-linux-arm64:
 	@FB_ARCH=arm64 make get-fluentbit-linux
 
 .PHONY : release/pkg-linux
-release/pkg-linux: release/deps release/clean
-release/pkg-linux: generate-goreleaser-amd64
+release/pkg-linux: release/deps release/clean generate-goreleaser-multiarch
 release/pkg-linux: release/get-integrations-amd64
 release/pkg-linux: release/get-integrations-arm64
 release/pkg-linux: release/get-integrations-arm
 release/pkg-linux: release/get-fluentbit-linux-amd64
-release/pkg-linux: release/get-fluentbit-linux-arm
+# release/pkg-linux: release/get-fluentbit-linux-arm
 release/pkg-linux: release/get-fluentbit-linux-arm64
 	@echo "=== [release/pkg-linux-amd64] PRE-RELEASE compiling all binaries, creating packages, archives"
 	$(GORELEASER_BIN) release --config $(GORELEASER_CONFIG_LINUX) $(PKG_FLAGS)
