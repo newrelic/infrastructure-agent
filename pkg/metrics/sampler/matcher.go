@@ -26,13 +26,17 @@ var (
 	}
 )
 
+// MatcherFn func that returns whether an event/sample is matched. It satisfies
+// the metrics matcher (processor.MatcherChain) interface.
+type MatcherFn func(event any) bool
+
 // IncludeSampleMatchFn func that returns whether an event/sample should be included, it satisfies
 // the metrics matcher (processor.MatcherChain) interface.
-type IncludeSampleMatchFn func(sample interface{}) bool
+type IncludeSampleMatchFn = MatcherFn
 
 // ExcludeSampleMatchFn func that returns whether an event/sample should be excluded, it satisfies
 // the metrics matcher (processor.MatcherChain) interface.
-type ExcludeSampleMatchFn = IncludeSampleMatchFn
+type ExcludeSampleMatchFn = MatcherFn
 
 // ExpressionMatcher is an interface every evaluator must implement
 type ExpressionMatcher interface {
