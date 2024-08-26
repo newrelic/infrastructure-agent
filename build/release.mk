@@ -60,7 +60,6 @@ release/get-fluentbit-linux-arm64:
 
 .PHONY : release/pkg-linux
 release/pkg-linux: release/deps release/clean generate-goreleaser-multiarch
-release/pkg-linux: release/pkg-linux-legacy
 release/pkg-linux: release/get-integrations-amd64
 release/pkg-linux: release/get-integrations-arm64
 release/pkg-linux: release/get-integrations-arm
