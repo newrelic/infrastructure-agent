@@ -32,11 +32,11 @@ type MatcherFn func(event any) bool
 
 // IncludeSampleMatchFn func that returns whether an event/sample should be included, it satisfies
 // the metrics matcher (processor.MatcherChain) interface.
-type IncludeSampleMatchFn = MatcherFn
+type IncludeSampleMatchFn MatcherFn
 
 // ExcludeSampleMatchFn func that returns whether an event/sample should be excluded, it satisfies
 // the metrics matcher (processor.MatcherChain) interface.
-type ExcludeSampleMatchFn = MatcherFn
+type ExcludeSampleMatchFn MatcherFn
 
 // ExpressionMatcher is an interface every evaluator must implement
 type ExpressionMatcher interface {

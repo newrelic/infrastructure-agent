@@ -90,11 +90,13 @@ var (
 
 type CustomAttributeMap map[string]interface{}
 
+type MetricsMap map[string][]string
+
 // IncludeMetricsMap configuration type to Map include_matching_metrics setting env var
-type IncludeMetricsMap map[string][]string
+type IncludeMetricsMap MetricsMap
 
 // IncludeMetricsMap configuration type to Map exclude_matching_metrics setting env var.
-type ExcludeMetricsMap = IncludeMetricsMap
+type ExcludeMetricsMap MetricsMap
 
 // LogFilters configuration specifies which log entries should be included/excluded.
 type LogFilters map[string][]interface{}
