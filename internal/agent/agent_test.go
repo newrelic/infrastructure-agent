@@ -63,7 +63,7 @@ func newTesting(cfg *config.Config) *Agent {
 	cloudDetector := cloud.NewDetector(true, 0, 0, 0, false)
 	lookups := NewIdLookup(hostname.CreateResolver("", "", true), cloudDetector, cfg.DisplayName)
 
-	ctx := NewContext(cfg, "1.2.3", testhelpers.NullHostnameResolver, lookups, matcher)
+	ctx := NewContext(cfg, "1.2.3", testhelpers.NullHostnameResolver, lookups, matcher, matcher)
 
 	st := delta.NewStore(dataDir, "default", cfg.MaxInventorySize, true)
 
@@ -146,7 +146,7 @@ func TestIgnoreInventory(t *testing.T) {
 }
 
 func TestServicePidMap(t *testing.T) {
-	ctx := NewContext(&config.Config{}, "", testhelpers.NullHostnameResolver, NilIDLookup, matcher)
+	ctx := NewContext(&config.Config{}, "", testhelpers.NullHostnameResolver, NilIDLookup, matcher, matcher)
 	svc, ok := ctx.GetServiceForPid(1)
 	assert.False(t, ok)
 	assert.Len(t, svc, 0)
@@ -941,7 +941,8 @@ func TestContext_SendEvent_LogTruncatedEvent(t *testing.T) {
 		"0.0.0",
 		testhelpers.NewFakeHostnameResolver("foobar", "foo", nil),
 		NilIDLookup,
-		func(sample interface{}) bool { return true },
+		matcher,
+		matcher,
 	)
 	c.eventSender = fakeEventSender{}
 
