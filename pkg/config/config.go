@@ -94,7 +94,7 @@ type CustomAttributeMap map[string]interface{}
 type IncludeMetricsMap map[string][]string
 
 // IncludeMetricsMap configuration type to Map exclude_matching_metrics setting env var.
-type ExcludeMetricsMap map[string][]string
+type ExcludeMetricsMap = IncludeMetricsMap
 
 // LogFilters configuration specifies which log entries should be included/excluded.
 type LogFilters map[string][]interface{}
@@ -2457,21 +2457,6 @@ func (i *IncludeMetricsMap) Decode(value string) error {
 	if err := yaml.Unmarshal(data, i); err != nil {
 		return err
 	}
-	return nil
-}
-
-func (i *ExcludeMetricsMap) Decode(value string) error {
-	data := []byte(value)
-
-	// Clear current Map
-	for k := range *i {
-		delete(*i, k)
-	}
-
-	if err := yaml.Unmarshal(data, i); err != nil {
-		return err
-	}
-
 	return nil
 }
 

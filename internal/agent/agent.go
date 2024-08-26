@@ -284,7 +284,7 @@ func NewAgent(
 
 	idLookupTable := NewIdLookup(hostnameResolver, cloudHarvester, cfg.DisplayName)
 	sampleMatchFn := sampler.NewSampleMatchFn(cfg.EnableProcessMetrics, cfg.IncludeMetricsMatchers, ffRetriever)
-	sampleExcludeFn := sampler.NewSampleMatchFn(cfg.EnableProcessMetrics, config.IncludeMetricsMap(cfg.ExcludeMetricsMatchers), ffRetriever)
+	sampleExcludeFn := sampler.NewSampleMatchFn(cfg.EnableProcessMetrics, cfg.ExcludeMetricsMatchers, ffRetriever)
 	ctx := NewContext(cfg, buildVersion, hostnameResolver, idLookupTable, sampleMatchFn, sampleExcludeFn)
 
 	agentKey, err := idLookupTable.AgentKey()
