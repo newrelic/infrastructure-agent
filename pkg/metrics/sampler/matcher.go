@@ -30,6 +30,10 @@ var (
 // the metrics matcher (processor.MatcherChain) interface.
 type IncludeSampleMatchFn func(sample interface{}) bool
 
+// ExcludeSampleMatchFn func that returns whether an event/sample should be excluded, it satisfies
+// the metrics matcher (processor.MatcherChain) interface.
+type ExcludeSampleMatchFn = IncludeSampleMatchFn
+
 // ExpressionMatcher is an interface every evaluator must implement
 type ExpressionMatcher interface {
 	// Evaluate compare property value with evaluator criteria and
