@@ -283,9 +283,9 @@ func NewAgent(
 	cloudHarvester.Initialize(cloud.WithProvider(cloud.Type(cfg.CloudProvider)))
 
 	idLookupTable := NewIdLookup(hostnameResolver, cloudHarvester, cfg.DisplayName)
-	sampleMatchFn := sampler.NewSampleMatchFn(cfg.EnableProcessMetrics, cfg.IncludeMetricsMatchers, ffRetriever)
-	sampleExcludeFn := sampler.NewSampleMatchFn(cfg.EnableProcessMetrics, config.IncludeMetricsMap(cfg.ExcludeMetricsMatchers), ffRetriever)
-	ctx := NewContext(cfg, buildVersion, hostnameResolver, idLookupTable, sampleMatchFn, sampler.ExcludeSampleMatchFn(sampleExcludeFn))
+	sampleMatchFn := sampler.NewSampleMatchFn(cfg.EnableProcessMetrics, config.MetricsMap(cfg.IncludeMetricsMatchers), ffRetriever)
+	sampleExcludeFn := sampler.NewSampleMatchFn(cfg.EnableProcessMetrics, config.MetricsMap(cfg.ExcludeMetricsMatchers), ffRetriever)
+	ctx := NewContext(cfg, buildVersion, hostnameResolver, idLookupTable, sampler.IncludeSampleMatchFn(sampleMatchFn), sampler.ExcludeSampleMatchFn(sampleExcludeFn))
 
 	agentKey, err := idLookupTable.AgentKey()
 	if err != nil {
