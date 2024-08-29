@@ -90,8 +90,13 @@ var (
 
 type CustomAttributeMap map[string]interface{}
 
+type MetricsMap map[string][]string
+
 // IncludeMetricsMap configuration type to Map include_matching_metrics setting env var
-type IncludeMetricsMap map[string][]string
+type IncludeMetricsMap MetricsMap
+
+// IncludeMetricsMap configuration type to Map exclude_matching_metrics setting env var.
+type ExcludeMetricsMap MetricsMap
 
 // LogFilters configuration specifies which log entries should be included/excluded.
 type LogFilters map[string][]interface{}
@@ -1229,6 +1234,16 @@ type Config struct {
 	// Public: Yes
 	IncludeMetricsMatchers IncludeMetricsMap `yaml:"include_matching_metrics" envconfig:"include_matching_metrics"`
 
+	// ExcludeMetricsMatchers Configuration of the metrics matchers that determine which metric data should the agent
+	// filter out and not send to the New Relic backend.
+	// If no configuration is defined, the previous behaviour is maintained, i.e., every metric data captured is sent.
+	// If a configuration is defined, then only metric data not matching the configuration is sent.
+	// Note that ALL DATA MATCHED WILL BE DROPPED.
+	// Also note that at present it ONLY APPLIES to metric data related to processes. All other metric data is still being sent as usual.
+	// Default: none
+	// Public: Yes
+	ExcludeMetricsMatchers ExcludeMetricsMap `envconfig:"exclude_matching_metrics" yaml:"exclude_matching_metrics"`
+
 	// AgentMetricsEndpoint Set the endpoint (host:port) for the HTTP server the agent will use to server OpenMetrics
 	// if empty the server will be not spawned
 	// Default: empty
@@ -1901,7 +1916,8 @@ func NewConfig() *Config {
 		MetricsNFSSampleRate:        DefaultMetricsNFSSampleRate,
 		SmartVerboseModeEntryLimit:  DefaultSmartVerboseModeEntryLimit,
 		DefaultIntegrationsTempDir:  defaultIntegrationsTempDir,
-		IncludeMetricsMatchers:      defaultMetricsMatcherConfig,
+		IncludeMetricsMatchers:      defaultIncludeMetricsMatcherConfig,
+		ExcludeMetricsMatchers:      defaultExcludeMetricsMatcherConfig,
 		InventoryQueueLen:           DefaultInventoryQueue,
 		NtpMetrics:                  NewNtpConfig(),
 		Http:                        NewHttpConfig(),

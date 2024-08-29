@@ -160,6 +160,7 @@ type context struct {
 	EntityMap          entity.KnownIDs
 	idLookup           host.IDLookup
 	shouldIncludeEvent sampler.IncludeSampleMatchFn
+	shouldExcludeEvent sampler.ExcludeSampleMatchFn
 }
 
 func (c *context) Context() context2.Context {
@@ -206,6 +207,7 @@ func NewContext(
 	resolver hostname.ResolverChangeNotifier,
 	lookup host.IDLookup,
 	sampleMatchFn sampler.IncludeSampleMatchFn,
+	sampleExcludeFn sampler.ExcludeSampleMatchFn,
 ) *context {
 	ctx, cancel := context2.WithCancel(context2.Background())
 
@@ -223,6 +225,7 @@ func NewContext(
 		resolver:           resolver,
 		idLookup:           lookup,
 		shouldIncludeEvent: sampleMatchFn,
+		shouldExcludeEvent: sampleExcludeFn,
 		agentKey:           agentKey,
 	}
 }
@@ -280,8 +283,9 @@ func NewAgent(
 	cloudHarvester.Initialize(cloud.WithProvider(cloud.Type(cfg.CloudProvider)))
 
 	idLookupTable := NewIdLookup(hostnameResolver, cloudHarvester, cfg.DisplayName)
-	sampleMatchFn := sampler.NewSampleMatchFn(cfg.EnableProcessMetrics, cfg.IncludeMetricsMatchers, ffRetriever)
-	ctx := NewContext(cfg, buildVersion, hostnameResolver, idLookupTable, sampleMatchFn)
+	sampleMatchFn := sampler.NewSampleMatchFn(cfg.EnableProcessMetrics, config.MetricsMap(cfg.IncludeMetricsMatchers), ffRetriever)
+	sampleExcludeFn := sampler.NewSampleMatchFn(cfg.EnableProcessMetrics, config.MetricsMap(cfg.ExcludeMetricsMatchers), ffRetriever)
+	ctx := NewContext(cfg, buildVersion, hostnameResolver, idLookupTable, sampler.IncludeSampleMatchFn(sampleMatchFn), sampler.ExcludeSampleMatchFn(sampleExcludeFn))
 
 	agentKey, err := idLookupTable.AgentKey()
 	if err != nil {
@@ -1158,7 +1162,10 @@ func (c *context) SendEvent(event sample.Event, entityKey entity.Key) {
 		}
 	}
 
-	includeSample := c.shouldIncludeEvent(event)
+	// check if event should be included
+	// include takes precedence, so the event will be included if
+	// it IS NOT EXCLUDED or if it IS INCLUDED
+	includeSample := !c.shouldExcludeEvent(event) || c.shouldIncludeEvent(event)
 	if !includeSample {
 		aclog.
 			WithField("entity_key", entityKey.String()).

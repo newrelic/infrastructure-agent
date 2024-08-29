@@ -63,7 +63,7 @@ func newTesting(cfg *config.Config) *Agent {
 	cloudDetector := cloud.NewDetector(true, 0, 0, 0, false)
 	lookups := NewIdLookup(hostname.CreateResolver("", "", true), cloudDetector, cfg.DisplayName)
 
-	ctx := NewContext(cfg, "1.2.3", testhelpers.NullHostnameResolver, lookups, matcher)
+	ctx := NewContext(cfg, "1.2.3", testhelpers.NullHostnameResolver, lookups, matcher, matcher)
 
 	st := delta.NewStore(dataDir, "default", cfg.MaxInventorySize, true)
 
@@ -146,7 +146,7 @@ func TestIgnoreInventory(t *testing.T) {
 }
 
 func TestServicePidMap(t *testing.T) {
-	ctx := NewContext(&config.Config{}, "", testhelpers.NullHostnameResolver, NilIDLookup, matcher)
+	ctx := NewContext(&config.Config{}, "", testhelpers.NullHostnameResolver, NilIDLookup, matcher, matcher)
 	svc, ok := ctx.GetServiceForPid(1)
 	assert.False(t, ok)
 	assert.Len(t, svc, 0)
@@ -915,6 +915,65 @@ func Test_ProcessSampling(t *testing.T) {
 	}
 }
 
+func Test_ProcessSamplingExcludes(t *testing.T) {
+	t.Parallel()
+
+	someSample := &types.ProcessSample{
+		ProcessDisplayName: "some-process",
+	}
+
+	type testCase struct {
+		name string
+		c    *config.Config
+		ff   feature_flags.Retriever
+		want bool
+	}
+	testCases := []testCase{
+		{
+			name: "Include not matching must not exclude",
+			c:    &config.Config{IncludeMetricsMatchers: map[string][]string{"process.name": {"does-not-match"}}, DisableCloudMetadata: true},
+			ff:   test.NewFFRetrieverReturning(false, false),
+			want: false,
+		},
+		{
+			name: "Include matching should not exclude",
+			c:    &config.Config{IncludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}}, DisableCloudMetadata: true},
+			ff:   test.NewFFRetrieverReturning(false, false),
+			want: false,
+		},
+		{
+			name: "Exclude matching should exclude",
+			c:    &config.Config{ExcludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}}, DisableCloudMetadata: true},
+			ff:   test.NewFFRetrieverReturning(false, false),
+			want: true,
+		},
+		{
+			name: "Exclude not matching should not exclude",
+			c:    &config.Config{ExcludeMetricsMatchers: map[string][]string{"process.name": {"does-not-match"}}, DisableCloudMetadata: true},
+			ff:   test.NewFFRetrieverReturning(false, false),
+			want: false,
+		},
+		{
+			name: "Exclude matching should exclude even if include is configured",
+			c:    &config.Config{IncludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}}, ExcludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}}, DisableCloudMetadata: true},
+			ff:   test.NewFFRetrieverReturning(false, false),
+			want: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		testCase := tc
+		a, _ := NewAgent(testCase.c, "test", "userAgent", testCase.ff)
+
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			actual := a.Context.shouldExcludeEvent(someSample)
+			assert.Equal(t, testCase.want, actual)
+		})
+	}
+}
+
 type fakeEventSender struct{}
 
 func (f fakeEventSender) QueueEvent(_ sample.Event, _ entity.Key) error {
@@ -941,7 +1000,8 @@ func TestContext_SendEvent_LogTruncatedEvent(t *testing.T) {
 		"0.0.0",
 		testhelpers.NewFakeHostnameResolver("foobar", "foo", nil),
 		NilIDLookup,
-		func(sample interface{}) bool { return true },
+		matcher,
+		matcher,
 	)
 	c.eventSender = fakeEventSender{}
 
