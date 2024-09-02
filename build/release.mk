@@ -308,6 +308,8 @@ generate-goreleaser-multiarch:
   		$(CURDIR)/build/goreleaser/linux/sles_155_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_155_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_155_arm64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_156_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_156_arm64.yml\
   		 > $(GORELEASER_CONFIG_LINUX)
 
 .PHONY : generate-goreleaser-for-docker
