@@ -211,6 +211,7 @@ generate-goreleaser-amd64:
   		$(CURDIR)/build/goreleaser/linux/sles_153_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_154_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_155_arm.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_156_arm.yml\
   		 > $(GORELEASER_CONFIG_LINUX)
 
 .PHONY : generate-goreleaser-arm64
@@ -309,6 +310,7 @@ generate-goreleaser-multiarch:
   		$(CURDIR)/build/goreleaser/linux/sles_155_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_155_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_156_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_156_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_156_arm64.yml\
   		 > $(GORELEASER_CONFIG_LINUX)
 
