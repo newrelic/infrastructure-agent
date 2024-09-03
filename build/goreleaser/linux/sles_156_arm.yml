@@ -16,17 +16,6 @@
       - rpm
     bindir: /usr/bin
     contents:
-#      - src: 'assets/examples/logging/linux/file.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
-#      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
-#      - src: 'assets/examples/logging/linux/syslog.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
-#      - src: 'assets/examples/logging/linux/systemd.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
-#      - src: 'assets/examples/logging/linux/tcp.yml.example'
-#        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
-
       - src: 'build/package/systemd/newrelic-infra.service'
         dst: '/etc/systemd/system/newrelic-infra.service'
       - src: 'LICENSE'
