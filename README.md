@@ -25,11 +25,11 @@ dynamic monitoring of your entire infrastructure, from services running in the c
 
 ## Compatibility and requirements
 
-Go 1.11 or higher is required to build the infrastructure agent.
-
 You can build the agent for any OS and architecture [supported by Go](https://golang.org/doc/install#requirements);
 New Relic does not provide support for all of them.
 For more information on operating systems supported by New Relic, see the [agent compatibility docs](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/getting-started/compatibility-requirements-new-relic-infrastructure).
+
+See minimun Go version required on the [go.mod](/go.mod) file.
 
 ### Set up your license key
 

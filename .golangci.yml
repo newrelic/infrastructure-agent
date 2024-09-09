@@ -49,6 +49,9 @@ linters:
     - varcheck
     - structcheck
     - nosnakecase
+    - execinquery
+    - gomnd
+    - exportloopref
     # intentionally disabled
     - exhaustivestruct
     - testpackage
