@@ -1,7 +1,7 @@
 ALL_SRC := $(shell find . -name '*.go' -not -path '*/vendor/*' -type f)
 
 GOTOOLS ?=
-GOTOOLS += " github.com/golangci/golangci-lint/cmd/golangci-lint@v1.60.3"
+GOTOOLS += " github.com/golangci/golangci-lint/cmd/golangci-lint@v1.55.0"
 GOTOOLS += " go.elastic.co/go-licence-detector@v0.5.0"
 GOTOOLS += " github.com/google/addlicense@04bfe4ee9ca5764577b029acc6a1957fd1997153"
 
