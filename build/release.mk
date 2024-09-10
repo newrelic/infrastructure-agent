@@ -250,6 +250,7 @@ generate-goreleaser-multiarch:
 		$(CURDIR)/build/goreleaser/linux/build_amd64.yml\
 		$(CURDIR)/build/goreleaser/linux/build_arm.yml\
 		$(CURDIR)/build/goreleaser/linux/build_arm64.yml\
+		$(CURDIR)/build/goreleaser/linux/build_legacy.yml\
 		$(CURDIR)/build/goreleaser/linux/archives_header.yml\
 		$(CURDIR)/build/goreleaser/linux/archives_amd64.yml\
 		$(CURDIR)/build/goreleaser/linux/archives_arm.yml\
