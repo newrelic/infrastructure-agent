@@ -79,7 +79,7 @@ validate:
 	@test -z "$(shell  $(GO_FMT) | tee /dev/stderr)"
 
 .PHONY: lint
-lint: deps
+lint: install-tools
 	@printf '\n================================================================\n'
 	@printf 'Target: lint'
 	@printf '\n================================================================\n'
