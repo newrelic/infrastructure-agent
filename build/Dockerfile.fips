@@ -23,8 +23,7 @@ RUN apt-get update && apt-get install -y \
     python-software-properties \
     gcc-arm-linux-gnueabi \
     dpkg-sig \
-    gcc-aarch64-linux-gnu \
-    gcc-s390x-linux-gnu
+    gcc-aarch64-linux-gnu
 
 
 # # Manually install cross-compilers
