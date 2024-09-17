@@ -276,19 +276,14 @@ generate-goreleaser-multiarch:
   		$(CURDIR)/build/goreleaser/linux/debian_systemd_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/debian_upstart_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_125_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/sles_125_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_125_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_152_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/sles_152_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_152_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_153_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/sles_153_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_153_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_154_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/sles_154_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_154_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_155_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/sles_155_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_155_arm64.yml\
   		 > $(GORELEASER_CONFIG_LINUX)
 

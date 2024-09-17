@@ -50,11 +50,11 @@
     - type: zypp
       dest: "{dest_prefix}linux/zypp/sles/{os_version}/{arch}/"
       os_version:
-        - 12.2
-        - 12.3
-        - 12.4
+        # - 12.2
+        # - 12.3
+        # - 12.4
         - 12.5
-        - 15.1
+        # - 15.1
         - 15.2
         - 15.3
         - 15.4
@@ -153,11 +153,11 @@
     - type: file
       dest: "{dest_prefix}linux/zypp/sles/{os_version}/aarch64/{src}"
       os_version:
-        - 12.2
-        - 12.3
-        - 12.4
+        # - 12.2
+        # - 12.3
+        # - 12.4
         - 12.5
-        - 15.1
+        # - 15.1
         - 15.2
         - 15.3
         - 15.4
