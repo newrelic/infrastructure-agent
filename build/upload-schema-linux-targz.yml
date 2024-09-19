@@ -4,16 +4,16 @@
     - type: file
       dest: "{dest_prefix}binaries/linux/{arch}/{src}"
   arch:
-    - 386
+    # - 386
     - amd64
-    - arm
+    # - arm
     - arm64
-    - mips
-    - mips64
-    - mips64le
-    - mipsle
-    - ppc64le
-    - s390x
+    # - mips
+    # - mips64
+    # - mips64le
+    # - mipsle
+    # - ppc64le
+    # - s390x
 
 #########################
   # UPLOAD CHECKSUMS #
@@ -24,16 +24,16 @@
     - type: file
       dest: "{dest_prefix}binaries/linux/{arch}/{src}"
   arch:
-    - 386
+    # - 386
     - amd64
-    - arm
+    # - arm
     - arm64
-    - mips
-    - mips64
-    - mips64le
-    - mipsle
-    - ppc64le
-    - s390x
+    # - mips
+    # - mips64
+    # - mips64le
+    # - mipsle
+    # - ppc64le
+    # - s390x
 
 #########################
   # UPLOAD SIGNATURE #
@@ -44,13 +44,13 @@
     - type: file
       dest: "{dest_prefix}binaries/linux/{arch}/{src}"
   arch:
-    - 386
+    # - 386
     - amd64
-    - arm
+    # - arm
     - arm64
-    - mips
-    - mips64
-    - mips64le
-    - mipsle
-    - ppc64le
-    - s390x
+    # - mips
+    # - mips64
+    # - mips64le
+    # - mipsle
+    # - ppc64le
+    # - s390x
