@@ -4,6 +4,7 @@
     binary: newrelic-infra
     env:
       - CGO_ENABLED=1
+      - GOEXPERIMENT=boringcrypto
       - CGO_CFLAGS="-march=zEC12"
     goos:
       - linux
@@ -38,6 +39,7 @@
     binary: newrelic-infra-service
     env:
       - CGO_ENABLED=1
+      - GOEXPERIMENT=boringcrypto
       - CGO_CFLAGS="-march=zEC12"
     goos:
       - linux
@@ -57,6 +59,7 @@
     binary: newrelic-infra
     env:
       - CGO_ENABLED=1
+      - GOEXPERIMENT=boringcrypto
     goos:
       - linux
     ldflags:
@@ -78,6 +81,7 @@
     binary: newrelic-infra-ctl
     env:
       - CGO_ENABLED=1
+      - GOEXPERIMENT=boringcrypto
     goos:
       - linux
     ldflags:
@@ -99,6 +103,7 @@
     binary: newrelic-infra-service
     env:
       - CGO_ENABLED=1
+      - GOEXPERIMENT=boringcrypto
     goos:
       - linux
     ldflags:

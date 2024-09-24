@@ -4,6 +4,7 @@
     binary: newrelic-infra
     env:
       - CGO_ENABLED=1
+      - GOEXPERIMENT=boringcrypto
     goos:
       - linux
     ldflags:
@@ -18,6 +19,7 @@
     binary: newrelic-infra-ctl
     env:
       - CGO_ENABLED=1
+      - GOEXPERIMENT=boringcrypto
     goos:
       - linux
     ldflags:
@@ -32,6 +34,7 @@
     binary: newrelic-infra-service
     env:
       - CGO_ENABLED=1
+      - GOEXPERIMENT=boringcrypto
     goos:
       - linux
     ldflags:

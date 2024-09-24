@@ -4,6 +4,7 @@
     binary: newrelic-infra
     env:
       - CGO_ENABLED=1
+      - GOEXPERIMENT=boringcrypto
       - CC=aarch64-linux-gnu-gcc
     goos:
       - linux
@@ -19,6 +20,7 @@
     binary: newrelic-infra-ctl
     env:
       - CGO_ENABLED=1
+      - GOEXPERIMENT=boringcrypto
       - CC=aarch64-linux-gnu-gcc
     goos:
       - linux
@@ -34,6 +36,7 @@
     binary: newrelic-infra-service
     env:
       - CGO_ENABLED=1
+      - GOEXPERIMENT=boringcrypto
       - CC=aarch64-linux-gnu-gcc
     goos:
       - linux
