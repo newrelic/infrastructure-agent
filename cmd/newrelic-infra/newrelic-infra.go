@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	_ "net/http/pprof"
+	_ "crypto/tls/fipsonly"
 	"net/url"
 	"os"
 	"os/signal"
@@ -20,7 +21,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
 	"github.com/sirupsen/logrus"
 
 	"github.com/newrelic/infrastructure-agent/cmd/newrelic-infra/dnschecks"

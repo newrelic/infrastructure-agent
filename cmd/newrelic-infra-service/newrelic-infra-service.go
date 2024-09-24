@@ -6,7 +6,7 @@ package main
 
 import (
 	"os"
-
+	_ "crypto/tls/fipsonly"
 	"github.com/newrelic/infrastructure-agent/internal/agent/service"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )

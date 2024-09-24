@@ -12,7 +12,7 @@ import (
 	"os/signal"
 	"runtime"
 	"syscall"
-
+	_ "crypto/tls/fipsonly"
 	"github.com/newrelic/infrastructure-agent/pkg/ipc"
 
 	"github.com/newrelic/infrastructure-agent/pkg/config"
