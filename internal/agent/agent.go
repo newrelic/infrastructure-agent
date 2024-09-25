@@ -283,9 +283,36 @@ func NewAgent(
 	cloudHarvester.Initialize(cloud.WithProvider(cloud.Type(cfg.CloudProvider)))
 
 	idLookupTable := NewIdLookup(hostnameResolver, cloudHarvester, cfg.DisplayName)
+
+	// Matchers logic:
+	// * If enable_process_metrics is defined and false, no process will be sent
+	// * If enable_process_metrics is not defined ( == nil ) AND there are include_metrics_matchers,
+	// then only the metrics that match the include_metrics_matchers will be sent
+	// * If enable_process_metrics is not defined ( == nil ) AND there are exclude_metrics_matchers,
+	// exlude list is ignored and no process is sent
+	// * If enable_process_metrics == true AND there are include_metrics_matchers and exclude_metrics_matchers,
+	// exclude ones are ignored and only the ones that match the include_metrics_matchers are sent
+	// * If enable_process_metrics == true AND there are exlude_metrics_matchers ,
+	// all the processes but excluded ones will be sent
+	// * If all the cases where include_metrics_matchers and exclude_metrics_matchers are present,
+	// exclude ones will be ignored
+
 	sampleMatchFn := sampler.NewSampleMatchFn(cfg.EnableProcessMetrics, config.MetricsMap(cfg.IncludeMetricsMatchers), ffRetriever)
-	sampleExcludeFn := sampler.NewSampleMatchFn(cfg.EnableProcessMetrics, config.MetricsMap(cfg.ExcludeMetricsMatchers), ffRetriever)
-	ctx := NewContext(cfg, buildVersion, hostnameResolver, idLookupTable, sampler.IncludeSampleMatchFn(sampleMatchFn), sampler.ExcludeSampleMatchFn(sampleExcludeFn))
+	// by default, do not apply exclude metrics matchers, only if no include ones are present
+	sampleExcludeFn := func(event any) bool {
+		return true
+	}
+	if len(cfg.IncludeMetricsMatchers) == 0 &&
+		cfg.EnableProcessMetrics != nil &&
+		*cfg.EnableProcessMetrics &&
+		len(cfg.ExcludeMetricsMatchers) > 0 {
+		sampleExcludeFn = sampler.NewSampleMatchFn(cfg.EnableProcessMetrics, config.MetricsMap(cfg.ExcludeMetricsMatchers), ffRetriever)
+		// if there are not include matchers at all, we remove the matcher to exclude by default
+		sampleMatchFn = func(event any) bool {
+			return false
+		}
+	}
+	ctx := NewContext(cfg, buildVersion, hostnameResolver, idLookupTable, sampler.IncludeSampleMatchFn(sampleMatchFn), sampleExcludeFn)
 
 	agentKey, err := idLookupTable.AgentKey()
 	if err != nil {
@@ -1165,7 +1192,7 @@ func (c *context) SendEvent(event sample.Event, entityKey entity.Key) {
 	// check if event should be included
 	// include takes precedence, so the event will be included if
 	// it IS NOT EXCLUDED or if it IS INCLUDED
-	includeSample := !c.shouldExcludeEvent(event) || c.shouldIncludeEvent(event)
+	includeSample := c.includeEvent(event)
 	if !includeSample {
 		aclog.
 			WithField("entity_key", entityKey.String()).
@@ -1180,6 +1207,13 @@ func (c *context) SendEvent(event sample.Event, entityKey entity.Key) {
 			"entityKey", entityKey,
 		).WithError(err).Error("could not queue event")
 	}
+}
+
+func (c *context) includeEvent(event any) bool {
+	shouldInclude := c.shouldIncludeEvent(event)
+	shouldExclude := c.shouldExcludeEvent(event)
+
+	return shouldInclude || !shouldExclude
 }
 
 func (c *context) Unregister(id ids.PluginID) {

@@ -922,42 +922,64 @@ func Test_ProcessSamplingExcludes(t *testing.T) {
 		ProcessDisplayName: "some-process",
 	}
 
+	boolAsPointer := func(val bool) *bool {
+		return &val
+	}
+
 	type testCase struct {
-		name string
-		c    *config.Config
-		ff   feature_flags.Retriever
-		want bool
+		name          string
+		c             *config.Config
+		ff            feature_flags.Retriever
+		expectInclude bool
 	}
 	testCases := []testCase{
 		{
-			name: "Include not matching must not exclude",
-			c:    &config.Config{IncludeMetricsMatchers: map[string][]string{"process.name": {"does-not-match"}}, DisableCloudMetadata: true},
-			ff:   test.NewFFRetrieverReturning(false, false),
-			want: false,
+			name:          "Include not matching must not include",
+			c:             &config.Config{EnableProcessMetrics: boolAsPointer(true), IncludeMetricsMatchers: map[string][]string{"process.name": {"does-not-match"}}, DisableCloudMetadata: true},
+			ff:            test.NewFFRetrieverReturning(false, false),
+			expectInclude: false,
 		},
 		{
-			name: "Include matching should not exclude",
-			c:    &config.Config{IncludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}}, DisableCloudMetadata: true},
-			ff:   test.NewFFRetrieverReturning(false, false),
-			want: false,
+			name:          "Include matching should not exclude",
+			c:             &config.Config{EnableProcessMetrics: boolAsPointer(true), IncludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}}, DisableCloudMetadata: true},
+			ff:            test.NewFFRetrieverReturning(false, false),
+			expectInclude: true,
 		},
 		{
-			name: "Exclude matching should exclude",
-			c:    &config.Config{ExcludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}}, DisableCloudMetadata: true},
-			ff:   test.NewFFRetrieverReturning(false, false),
-			want: true,
+			name:          "Exclude matching should exclude with process metrics enabled",
+			c:             &config.Config{EnableProcessMetrics: boolAsPointer(true), ExcludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}}, DisableCloudMetadata: true},
+			ff:            test.NewFFRetrieverReturning(false, false),
+			expectInclude: false,
 		},
 		{
-			name: "Exclude not matching should not exclude",
-			c:    &config.Config{ExcludeMetricsMatchers: map[string][]string{"process.name": {"does-not-match"}}, DisableCloudMetadata: true},
-			ff:   test.NewFFRetrieverReturning(false, false),
-			want: false,
+			name:          "Exclude matching should exclude",
+			c:             &config.Config{ExcludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}}, DisableCloudMetadata: true},
+			ff:            test.NewFFRetrieverReturning(false, false),
+			expectInclude: false,
 		},
 		{
-			name: "Exclude matching should exclude even if include is configured",
-			c:    &config.Config{IncludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}}, ExcludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}}, DisableCloudMetadata: true},
-			ff:   test.NewFFRetrieverReturning(false, false),
-			want: true,
+			name:          "Exclude not matching should not exclude with process metrics enabled",
+			c:             &config.Config{EnableProcessMetrics: boolAsPointer(true), ExcludeMetricsMatchers: map[string][]string{"process.name": {"does-not-match"}}, DisableCloudMetadata: true},
+			ff:            test.NewFFRetrieverReturning(false, false),
+			expectInclude: true,
+		},
+		{
+			name:          "Exclude not matching should not exclude",
+			c:             &config.Config{ExcludeMetricsMatchers: map[string][]string{"process.name": {"does-not-match"}}, DisableCloudMetadata: true},
+			ff:            test.NewFFRetrieverReturning(false, false),
+			expectInclude: false,
+		},
+		{
+			name:          "Include matching should include even if exclude is configured with process metrics enabled",
+			c:             &config.Config{EnableProcessMetrics: boolAsPointer(true), IncludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}}, ExcludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}}, DisableCloudMetadata: true},
+			ff:            test.NewFFRetrieverReturning(false, false),
+			expectInclude: true,
+		},
+		{
+			name:          "Include matching should be include even when enable_process_metrics is not defined (nil)",
+			c:             &config.Config{IncludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}}, ExcludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}}, DisableCloudMetadata: true},
+			ff:            test.NewFFRetrieverReturning(false, false),
+			expectInclude: true,
 		},
 	}
 
@@ -968,8 +990,205 @@ func Test_ProcessSamplingExcludes(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			actual := a.Context.shouldExcludeEvent(someSample)
-			assert.Equal(t, testCase.want, actual)
+			assert.Equal(t, testCase.expectInclude, a.Context.includeEvent(someSample))
+		})
+	}
+}
+
+func Test_ProcessSamplingExcludesAllCases(t *testing.T) {
+	t.Parallel()
+
+	someSample := &types.ProcessSample{
+		ProcessDisplayName: "some-process",
+	}
+
+	boolAsPointer := func(val bool) *bool {
+		return &val
+	}
+
+	type testCase struct {
+		name                   string
+		processMetricsEnabled  *bool
+		IncludeMetricsMatchers map[string][]string
+		ExcludeMetricsMatchers map[string][]string
+		expectInclude          bool
+	}
+
+	//nolint:dupword
+	// Test cases
+	// EnableProcessMetrics | IncludeMetricsMatchers | ExcludeMetricsMatchers | Expected include
+	// nil | nil | nil | false
+	// nil | [process that matches ] | nil | true
+	// nil | [process that not matches ] | nil | false
+	// nil | [process that matches ] | [process that matches ] | true
+	// nil | [process that not matches ] | [process that not matche ] | false
+	// nil | nil | [process that matches ] | false
+	// nil | nil | [process that not matches ] | false
+	// false | nil | nil | false
+	// false | [process that matches ] | nil | false
+	// false | nil |  [process that not matche ] | false
+	// false | [process that matches ] | [process that matches ] | false
+	// false | [process that not matches ] | [process that not matche ] | false
+	// true | nil | nil | true
+	// true | [process that matches ] | nil | true
+	// true | [process that not matches ] | nil | false
+	// true | [process that matches ] | [process that matches ] | true
+	// true | [process that not matches ] | [process that not matche ] | false
+	// true | nil  | [process that matches ] | false
+	// true | nil  | [process that not matches ] | true
+
+	testCases := []testCase{
+		{
+			name:                   "nil | nil | nil | false",
+			processMetricsEnabled:  nil,
+			IncludeMetricsMatchers: nil,
+			ExcludeMetricsMatchers: nil,
+			expectInclude:          false,
+		},
+		{
+			name:                   "nil | [process that matches] | nil | true",
+			processMetricsEnabled:  nil,
+			IncludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}},
+			ExcludeMetricsMatchers: nil,
+			expectInclude:          true,
+		},
+		{
+			name:                   "nil | [process that not matches] | nil | false",
+			processMetricsEnabled:  nil,
+			IncludeMetricsMatchers: map[string][]string{"process.name": {"does-not-match"}},
+			ExcludeMetricsMatchers: nil,
+			expectInclude:          false,
+		},
+		{
+			name:                   "nil | [process that matches] | [process that matches] | true",
+			processMetricsEnabled:  nil,
+			IncludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}},
+			ExcludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}},
+			expectInclude:          true,
+		},
+		{
+			name:                   "nil | [process that not matches] | [process that not matches] | false",
+			processMetricsEnabled:  nil,
+			IncludeMetricsMatchers: map[string][]string{"process.name": {"does-not-match"}},
+			ExcludeMetricsMatchers: map[string][]string{"process.name": {"does-not-match"}},
+			expectInclude:          false,
+		},
+		{
+			name:                   "nil | nil | [process that matches] | false",
+			processMetricsEnabled:  nil,
+			IncludeMetricsMatchers: nil,
+			ExcludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}},
+			expectInclude:          false,
+		},
+		{
+			name:                   "nil | nil | [process that not matches] | false",
+			processMetricsEnabled:  nil,
+			IncludeMetricsMatchers: nil,
+			ExcludeMetricsMatchers: map[string][]string{"process.name": {"does-not-match"}},
+			expectInclude:          false,
+		},
+		{
+			name:                   "false | nil | nil | false",
+			processMetricsEnabled:  boolAsPointer(false),
+			IncludeMetricsMatchers: nil,
+			ExcludeMetricsMatchers: nil,
+			expectInclude:          false,
+		},
+		{
+			name:                   "false | [process that matches] | nil | false",
+			processMetricsEnabled:  boolAsPointer(false),
+			IncludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}},
+			ExcludeMetricsMatchers: nil,
+			expectInclude:          false,
+		},
+		{
+			name:                   "false | nil | [process that not matches] | false",
+			processMetricsEnabled:  boolAsPointer(false),
+			IncludeMetricsMatchers: nil,
+			ExcludeMetricsMatchers: map[string][]string{"process.name": {"does-not-match"}},
+			expectInclude:          false,
+		},
+		{
+			name:                   "false | [process that matches] | [process that matches] | false",
+			processMetricsEnabled:  boolAsPointer(false),
+			IncludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}},
+			ExcludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}},
+			expectInclude:          false,
+		},
+		{
+			name:                   "false | [process that not matches] | [process that not matches] | false",
+			processMetricsEnabled:  boolAsPointer(false),
+			IncludeMetricsMatchers: map[string][]string{"process.name": {"does-not-match"}},
+			ExcludeMetricsMatchers: map[string][]string{"process.name": {"does-not-match"}},
+			expectInclude:          false,
+		},
+		{
+			name:                   "true | nil | nil | true",
+			processMetricsEnabled:  boolAsPointer(true),
+			IncludeMetricsMatchers: nil,
+			ExcludeMetricsMatchers: nil,
+			expectInclude:          true,
+		},
+		{
+			name:                   "true | [process that matches] | nil | true",
+			processMetricsEnabled:  boolAsPointer(true),
+			IncludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}},
+			ExcludeMetricsMatchers: nil,
+			expectInclude:          true,
+		},
+		{
+			name:                   "true | [process that not matches] | nil | false",
+			processMetricsEnabled:  boolAsPointer(true),
+			IncludeMetricsMatchers: map[string][]string{"process.name": {"does-not-match"}},
+			ExcludeMetricsMatchers: nil,
+			expectInclude:          false,
+		},
+		{
+			name:                   "true | [process that matches] | [process that matches] | true",
+			processMetricsEnabled:  boolAsPointer(true),
+			IncludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}},
+			ExcludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}},
+			expectInclude:          true,
+		},
+		{
+			name:                   "true | [process that not matches] | [process that not matches] | false",
+			processMetricsEnabled:  boolAsPointer(true),
+			IncludeMetricsMatchers: map[string][]string{"process.name": {"does-not-match"}},
+			ExcludeMetricsMatchers: map[string][]string{"process.name": {"does-not-match"}},
+			expectInclude:          false,
+		},
+		{
+			name:                   "true | nil | [process that matches] | false",
+			processMetricsEnabled:  boolAsPointer(true),
+			IncludeMetricsMatchers: nil,
+			ExcludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}},
+			expectInclude:          false,
+		},
+		{
+			name:                   "true | nil | [process that not matches] | true",
+			processMetricsEnabled:  boolAsPointer(true),
+			IncludeMetricsMatchers: nil,
+			ExcludeMetricsMatchers: map[string][]string{"process.name": {"does-not-match"}},
+			expectInclude:          true,
+		},
+	}
+
+	for _, tc := range testCases {
+		testCase := tc
+		cnf := &config.Config{
+			EnableProcessMetrics:   testCase.processMetricsEnabled,
+			IncludeMetricsMatchers: testCase.IncludeMetricsMatchers,
+			ExcludeMetricsMatchers: testCase.ExcludeMetricsMatchers,
+			DisableCloudMetadata:   true,
+		}
+
+		ff := test.NewFFRetrieverReturning(false, false)
+		a, _ := NewAgent(cnf, "test", "userAgent", ff)
+
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			assert.Equal(t, testCase.expectInclude, a.Context.includeEvent(someSample))
 		})
 	}
 }
