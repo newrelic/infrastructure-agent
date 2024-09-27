@@ -9,9 +9,9 @@
     goos:
       - linux
     ldflags:
-      - -s -w -X main.buildVersion={{.Version}}
-      - -s -w -X main.gitCommit={{.Commit}}
-      - -s -w -X main.buildDate={{.Date}}
+      - -X main.buildVersion={{.Version}}
+      - -X main.gitCommit={{.Commit}}
+      - -X main.buildDate={{.Date}}
     goarch:
       - arm64
   
@@ -25,9 +25,9 @@
     goos:
       - linux
     ldflags:
-      - -s -w -X main.buildVersion={{.Version}}
-      - -s -w -X main.gitCommit={{.Commit}}
-      - -s -w -X main.buildDate={{.Date}}
+      - -X main.buildVersion={{.Version}}
+      - -X main.gitCommit={{.Commit}}
+      - -X main.buildDate={{.Date}}
     goarch:
       - arm64
   
@@ -41,9 +41,9 @@
     goos:
       - linux
     ldflags:
-      - -s -w -X main.buildVersion={{.Version}}
-      - -s -w -X main.gitCommit={{.Commit}}
-      - -s -w -X main.buildDate={{.Date}}
+      - -X main.buildVersion={{.Version}}
+      - -X main.gitCommit={{.Commit}}
+      - -X main.buildDate={{.Date}}
     goarch:
       - arm64
   # end build arm64
