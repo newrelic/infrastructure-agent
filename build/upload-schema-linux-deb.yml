@@ -1,5 +1,5 @@
 ---
-- src: "newrelic-infra_systemd_{version}_{arch}.deb"
+- src: "newrelic-infra_systemd_{version}_{arch}_fips.deb"
   arch:
     - amd64
     - arm64
@@ -22,7 +22,7 @@
         - bullseye
         - bookworm
 
-- src: "newrelic-infra_upstart_{version}_{arch}.deb"
+- src: "newrelic-infra_upstart_{version}_{arch}_fips.deb"
   arch:
     - amd64
   uploads:
@@ -37,7 +37,7 @@
   # UPLOAD CHECKSUMS #
 #########################
 
-- src: "newrelic-infra_systemd_{version}_{arch}.deb.sum"
+- src: "newrelic-infra_systemd_{version}_{arch}_fips.deb.sum"
   arch:
     - amd64
     - arm64
@@ -45,7 +45,7 @@
   uploads:
     - type: file
       dest: "{dest_prefix}linux/apt/pool/main/n/newrelic-infra/{src}"
-- src: "newrelic-infra_upstart_{version}_{arch}.deb.sum"
+- src: "newrelic-infra_upstart_{version}_{arch}_fips.deb.sum"
   arch:
     - amd64
   uploads:
