@@ -138,6 +138,11 @@ release/sign:
 	@echo "=== [release/sign] signing packages"
 	@bash $(CURDIR)/build/sign.sh
 
+.PHONY : release/sign-fips
+release/sign:
+	@echo "=== [release/sign] signing packages"
+	@bash $(CURDIR)/build/sign_fips.sh
+
 .PHONY : release-publish
 release-publish:
 	@echo "=== [release/publish] publishing artifacts"
@@ -146,6 +151,10 @@ release-publish:
 .PHONY : release-linux
 release-linux: release/pkg-linux release/fix-tarballs-linux release/sign
 	@echo "=== [release-linux] full pre-release cycle complete for nix"
+
+.PHONY : release-linux-fips
+release-linux: release/pkg-linux-fips release/fix-tarballs-linux release/sign-fips
+	@echo "=== [release-linux] full pre-release cycle complete for nix - FIPS"
 
 .PHONY : release-linux-amd64
 release-linux-amd64: release/pkg-linux-amd64 release/fix-tarballs-linux release/sign
@@ -265,10 +274,12 @@ generate-goreleaser-multiarch:
 		$(CURDIR)/build/goreleaser/linux/build_amd64.yml\
 		$(CURDIR)/build/goreleaser/linux/build_arm.yml\
 		$(CURDIR)/build/goreleaser/linux/build_arm64.yml\
+		$(CURDIR)/build/goreleaser/linux/build_legacy.yml\
 		$(CURDIR)/build/goreleaser/linux/archives_header.yml\
 		$(CURDIR)/build/goreleaser/linux/archives_amd64.yml\
 		$(CURDIR)/build/goreleaser/linux/archives_arm.yml\
 		$(CURDIR)/build/goreleaser/linux/archives_arm64.yml\
+		$(CURDIR)/build/goreleaser/linux/archives_legacy.yml\
 		$(CURDIR)/build/goreleaser/linux/nfpms_header.yml\
 		$(CURDIR)/build/goreleaser/linux/al2023_amd64.yml\
 		$(CURDIR)/build/goreleaser/linux/al2023_arm.yml\
@@ -290,47 +301,61 @@ generate-goreleaser-multiarch:
   		$(CURDIR)/build/goreleaser/linux/debian_systemd_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/debian_systemd_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/debian_upstart_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_114_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_121_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_122_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_122_arm.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_122_arm64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_123_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_123_arm.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_123_arm64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_124_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_124_arm.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_124_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_125_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_125_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_125_arm64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_151_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_151_arm.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_151_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_152_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_152_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_152_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_153_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_153_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_153_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_154_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_154_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_154_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_155_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_155_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_155_arm64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_156_amd64.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_156_arm.yml\
+  		$(CURDIR)/build/goreleaser/linux/sles_156_arm64.yml\
   		 > $(GORELEASER_CONFIG_LINUX)
 
 .PHONY : generate-goreleaser-multiarch-fips
 generate-goreleaser-multiarch-fips:
 	cat $(CURDIR)/build/goreleaser/linux/header.yml\
-		$(CURDIR)/build/goreleaser/linux/build_amd64.yml\
-		$(CURDIR)/build/goreleaser/linux/build_arm.yml\
-		$(CURDIR)/build/goreleaser/linux/build_arm64.yml\
+		$(CURDIR)/build/goreleaser/linux/build_amd64_fips.yml\
+		$(CURDIR)/build/goreleaser/linux/build_arm64_fips.yml\
 		$(CURDIR)/build/goreleaser/linux/archives_header.yml\
 		$(CURDIR)/build/goreleaser/linux/archives_amd64.yml\
-		$(CURDIR)/build/goreleaser/linux/archives_arm.yml\
 		$(CURDIR)/build/goreleaser/linux/archives_arm64.yml\
 		$(CURDIR)/build/goreleaser/linux/nfpms_header.yml\
 		$(CURDIR)/build/goreleaser/linux/al2023_amd64.yml\
-		$(CURDIR)/build/goreleaser/linux/al2023_arm.yml\
 		$(CURDIR)/build/goreleaser/linux/al2023_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/al2_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/al2_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/al2_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/centos_6_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/centos_7_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/centos_7_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/centos_7_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/centos_8_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/centos_8_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/centos_8_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/rhel_9_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/rhel_9_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/rhel_9_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/debian_systemd_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/debian_systemd_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/debian_systemd_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/debian_upstart_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_125_amd64.yml\

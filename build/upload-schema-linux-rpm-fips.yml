@@ -13,7 +13,7 @@
 
 - src: "newrelic-infra-{version}-1.el{os_version}.{arch}.rpm"
   arch:
-    - arm
+    # - arm
     - arm64
   uploads:
     - type: yum
@@ -88,16 +88,16 @@
         - 8
         - 9
 
-- src: "newrelic-infra-{version}-1.el{os_version}.{arch}.rpm.sum"
-  arch:
-    - arm
-  uploads:
-    - type: file
-      dest: "{dest_prefix}linux/yum/el/{os_version}/{arch}/{src}"
-      os_version:
-        - 7
-        - 8
-        - 9
+# - src: "newrelic-infra-{version}-1.el{os_version}.{arch}.rpm.sum"
+#   arch:
+#     - arm
+#   uploads:
+#     - type: file
+#       dest: "{dest_prefix}linux/yum/el/{os_version}/{arch}/{src}"
+#       os_version:
+#         - 7
+#         - 8
+#         - 9
 
 - src: "newrelic-infra-{version}-1.el{os_version}.{arch}.rpm.sum"
   arch:
@@ -166,7 +166,7 @@
 - src: "newrelic-infra-{version}-1.amazonlinux-{os_version}.{arch}.rpm.sum"
   arch:
     - x86_64
-    - arm
+    # - arm
   uploads:
     - type: file
       dest: "{dest_prefix}linux/yum/amazonlinux/{os_version}/{arch}/{src}"
