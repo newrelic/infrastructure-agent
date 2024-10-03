@@ -71,12 +71,12 @@ release/pkg-linux: release/get-fluentbit-linux-arm64
 
 .PHONY : release/pkg-linux-fips
 release/pkg-linux-fips: release/deps release/clean generate-goreleaser-multiarch-fips
-release/pkg-linux-fips: release/get-integrations-amd64 #NO FIPS ASSETS AVAILABLE FOR NOW
-release/pkg-linux-fips: release/get-integrations-arm64 #NO FIPS ASSETS AVAILABLE FOR NOW
-release/pkg-linux-fips: release/get-integrations-arm #NO FIPS ASSETS AVAILABLE FOR NOW
-release/pkg-linux-fips: release/get-fluentbit-linux-amd64 #NO FIPS ASSETS AVAILABLE FOR NOW
-#release/pkg-linux: release/get-fluentbit-linux-arm
-release/pkg-linux-fips: release/get-fluentbit-linux-arm64 #NO FIPS ASSETS AVAILABLE FOR NOW
+# release/pkg-linux-fips: release/get-integrations-amd64 #NO FIPS ASSETS AVAILABLE FOR NOW
+# release/pkg-linux-fips: release/get-integrations-arm64 #NO FIPS ASSETS AVAILABLE FOR NOW
+# release/pkg-linux-fips: release/get-integrations-arm #NO FIPS ASSETS AVAILABLE FOR NOW
+# release/pkg-linux-fips: release/get-fluentbit-linux-amd64 #NO FIPS ASSETS AVAILABLE FOR NOW
+# #release/pkg-linux: release/get-fluentbit-linux-arm
+# release/pkg-linux-fips: release/get-fluentbit-linux-arm64 #NO FIPS ASSETS AVAILABLE FOR NOW
 	@echo "=== [release/pkg-linux-fips] PRE-RELEASE compiling all binaries, creating packages, archives"
 	$(GORELEASER_BIN) release --config $(GORELEASER_CONFIG_LINUX) $(PKG_FLAGS)
 
@@ -340,6 +340,7 @@ generate-goreleaser-multiarch-fips:
 	cat $(CURDIR)/build/goreleaser/linux/header.yml\
 		$(CURDIR)/build/goreleaser/linux/build_amd64_fips.yml\
 		$(CURDIR)/build/goreleaser/linux/build_arm64_fips.yml\
+		$(CURDIR)/build/goreleaser/linux/build_legacy_fips.yml\
 		$(CURDIR)/build/goreleaser/linux/archives_header.yml\
 		$(CURDIR)/build/goreleaser/linux/archives_amd64.yml\
 		$(CURDIR)/build/goreleaser/linux/archives_arm64.yml\

@@ -1,0 +1,67 @@
+  # build other arch
+  - id: linux-agent-legacy
+    main: ./cmd/newrelic-infra
+    binary: newrelic-infra
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    ldflags:
+      - -s -w -X main.buildVersion={{.Version}}
+      - -s -w -X main.gitCommit={{.Commit}}
+      - -s -w -X main.buildDate={{.Date}}
+    goarch:
+      - 386
+      - mips
+      - mips64
+      - mipsle
+      - mips64le
+      - ppc64le
+      - s390x
+    gomips:
+      - hardfloat
+  
+  - id: linux-ctl-legacy
+    main: ./cmd/newrelic-infra-ctl
+    binary: newrelic-infra-ctl
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    ldflags:
+      - -s -w -X main.buildVersion={{.Version}}
+      - -s -w -X main.gitCommit={{.Commit}}
+      - -s -w -X main.buildDate={{.Date}}
+    goarch:
+      - 386
+      - mips
+      - mips64
+      - mipsle
+      - mips64le
+      - ppc64le
+      - s390x
+    gomips:
+      - hardfloat
+  
+  - id: linux-service-legacy
+    main: ./cmd/newrelic-infra-service
+    binary: newrelic-infra-service
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    ldflags:
+      - -s -w -X main.buildVersion={{.Version}}
+      - -s -w -X main.gitCommit={{.Commit}}
+      - -s -w -X main.buildDate={{.Date}}
+    goarch:
+      - 386
+      - mips
+      - mips64
+      - mipsle
+      - mips64le
+      - ppc64le
+      - s390x
+    gomips:
+      - hardfloat
+  # end build other arch
