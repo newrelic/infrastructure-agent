@@ -5,7 +5,6 @@ FROM ubuntu:16.04
 ARG GO_VERSION=1.21.6
 # Define build-time arguments for the GitHub CLI version and architecture
 ARG GH_VERSION='2.0.0'
-# ARG GH_ARCH='amd64'
 
 
 # Install dependencies
@@ -43,9 +42,9 @@ ENV PATH="/usr/local/go/bin:${PATH}"
 ENV GOPATH="/go"
 
 # Download and install the GitHub CLI
-RUN curl -L https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.deb -o gh_${GH_VERSION}_linux_amd64.deb && \
-    dpkg -i gh_${GH_VERSION}_linux_amd64.deb && \
-    rm gh_${GH_VERSION}_linux_amd64.deb
+RUN curl -L https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_${GH_ARCH}.deb -o gh_${GH_VERSION}_linux_${GH_ARCH}.deb && \
+    dpkg -i gh_${GH_VERSION}_linux_${GH_ARCH}.deb && \
+    rm gh_${GH_VERSION}_linux_${GH_ARCH}.deb
 
 # Optional: Set Go environment flags
 ENV GOFLAGS="-buildvcs=false"

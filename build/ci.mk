@@ -6,6 +6,9 @@ MODE=?
 ci/deps:GH_ARCH ?= amd64
 ci/deps:
 	@docker build -t $(BUILDER_IMG_TAG) --build-arg GH_ARCH=$(GH_ARCH) -f $(CURDIR)/build/Dockerfile $(CURDIR)
+
+.PHONY: ci/deps-fips
+ci/deps-fips:GH_ARCH ?= amd64
 ci/deps-fips:
 	@docker build -t $(BUILDER_IMG_TAG_FIPS) --build-arg GH_ARCH=$(GH_ARCH) -f $(CURDIR)/build/Dockerfile.fips $(CURDIR)
 

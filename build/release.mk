@@ -139,7 +139,7 @@ release/sign:
 	@bash $(CURDIR)/build/sign.sh
 
 .PHONY : release/sign-fips
-release/sign:
+release/sign-fips:
 	@echo "=== [release/sign] signing packages"
 	@bash $(CURDIR)/build/sign_fips.sh
 
@@ -153,7 +153,7 @@ release-linux: release/pkg-linux release/fix-tarballs-linux release/sign
 	@echo "=== [release-linux] full pre-release cycle complete for nix"
 
 .PHONY : release-linux-fips
-release-linux: release/pkg-linux-fips release/fix-tarballs-linux release/sign-fips
+release-linux-fips: release/pkg-linux-fips release/fix-tarballs-linux release/sign-fips
 	@echo "=== [release-linux] full pre-release cycle complete for nix - FIPS"
 
 .PHONY : release-linux-amd64
