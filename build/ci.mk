@@ -142,7 +142,7 @@ ifdef TAG
 
 
 else
-	@echo "===> infrastructure-agent ===  [ci/prerelease/linux] TAG env variable expected to be set"
+	@echo "===> infrastructure-agent ===  [ci/prerelease/linux-fips] TAG env variable expected to be set"
 	exit 1
 endif
 
