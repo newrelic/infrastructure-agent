@@ -340,7 +340,6 @@ generate-goreleaser-multiarch-fips:
 	cat $(CURDIR)/build/goreleaser/linux/header.yml\
 		$(CURDIR)/build/goreleaser/linux/build_amd64_fips.yml\
 		$(CURDIR)/build/goreleaser/linux/build_arm64_fips.yml\
-		$(CURDIR)/build/goreleaser/linux/build_legacy_fips.yml\
 		$(CURDIR)/build/goreleaser/linux/archives_header.yml\
 		$(CURDIR)/build/goreleaser/linux/archives_amd64.yml\
 		$(CURDIR)/build/goreleaser/linux/archives_arm64.yml\
