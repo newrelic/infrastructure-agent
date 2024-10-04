@@ -63,7 +63,7 @@
 - src: "newrelic-infra-{version}-1.amazonlinux-{os_version}.{arch}.rpm"
   arch:
     - x86_64
-    - arm
+    # - arm
     - arm64
   uploads:
     - type: yum
