@@ -79,7 +79,7 @@ chmod +x ../build/sign_tar_fips.exp
 # Sign TARGZ files
 for targz_file in $(find . -type f -name "*.tar.gz"); do
   echo "===> Signing $targz_file"
-  ../build/sign_tar.exp $targz_file ${GPG_PASSPHRASE}
+  ../build/sign_tar_fips.exp $targz_file ${GPG_PASSPHRASE}
   asc_file="${targz_file}.asc"
   if [ -f "$asc_file" ]; then
     echo "===> Sign verification $targz_file"
