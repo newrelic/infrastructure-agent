@@ -1,5 +1,5 @@
 ---
-- src: "newrelic-infra-{version}-1.el{os_version}.{arch}.rpm"
+- src: "newrelic-infra-{version}-1.el{os_version}.{arch}_fips.rpm"
   arch:
     - x86_64
   uploads:
@@ -11,7 +11,7 @@
         - 8
         - 9
 
-- src: "newrelic-infra-{version}-1.el{os_version}.{arch}.rpm"
+- src: "newrelic-infra-{version}-1.el{os_version}.{arch}_fips.rpm"
   arch:
     # - arm
     - arm64
@@ -23,7 +23,7 @@
         - 8
         - 9
 
-- src: "newrelic-infra-{version}-1.sles{os_version}.{arch}.rpm"
+- src: "newrelic-infra-{version}-1.sles{os_version}.{arch}_fips.rpm"
   arch:
     - x86_64
   uploads:
@@ -42,7 +42,7 @@
         - 15.4
         - 15.5
 
-- src: "newrelic-infra-{version}-1.sles{os_version}.{arch}.rpm"
+- src: "newrelic-infra-{version}-1.sles{os_version}.{arch}_fips.rpm"
   arch:
     # - arm
     - arm64
@@ -60,7 +60,7 @@
         - 15.4
         - 15.5
 
-- src: "newrelic-infra-{version}-1.amazonlinux-{os_version}.{arch}.rpm"
+- src: "newrelic-infra-{version}-1.amazonlinux-{os_version}.{arch}_fips.rpm"
   arch:
     - x86_64
     # - arm
@@ -76,7 +76,7 @@
   # UPLOAD CHECKSUMS #
 #########################
 
-- src: "newrelic-infra-{version}-1.el{os_version}.{arch}.rpm.sum"
+- src: "newrelic-infra-{version}-1.el{os_version}.{arch}_fips.rpm.sum"
   arch:
     - x86_64
   uploads:
@@ -99,7 +99,7 @@
 #         - 8
 #         - 9
 
-- src: "newrelic-infra-{version}-1.el{os_version}.{arch}.rpm.sum"
+- src: "newrelic-infra-{version}-1.el{os_version}.{arch}_fips.rpm.sum"
   arch:
     - arm64
   uploads:
@@ -110,7 +110,7 @@
         - 8
         - 9
 
-- src: "newrelic-infra-{version}-1.sles{os_version}.{arch}.rpm.sum"
+- src: "newrelic-infra-{version}-1.sles{os_version}.{arch}_fips.rpm.sum"
   arch:
     - x86_64
   uploads:
@@ -146,7 +146,7 @@
 #         - 15.4
 #         - 15.5
 
-- src: "newrelic-infra-{version}-1.sles{os_version}.{arch}.rpm.sum"
+- src: "newrelic-infra-{version}-1.sles{os_version}.{arch}_fips.rpm.sum"
   arch:
     - arm64
   uploads:
@@ -163,7 +163,7 @@
         - 15.4
         - 15.5
 
-- src: "newrelic-infra-{version}-1.amazonlinux-{os_version}.{arch}.rpm.sum"
+- src: "newrelic-infra-{version}-1.amazonlinux-{os_version}.{arch}_fips.rpm.sum"
   arch:
     - x86_64
     # - arm
@@ -174,7 +174,7 @@
         - 2
         - 2023
 
-- src: "newrelic-infra-{version}-1.amazonlinux-{os_version}.{arch}.rpm.sum"
+- src: "newrelic-infra-{version}-1.amazonlinux-{os_version}.{arch}_fips.rpm.sum"
   arch:
     - arm64
   uploads:
