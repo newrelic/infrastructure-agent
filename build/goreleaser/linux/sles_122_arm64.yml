@@ -6,7 +6,7 @@
       - linux-ctl-arm64
       - linux-service-arm64
     package_name: newrelic-infra
-    file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.sles12.2.{{ .Arch }}"
+    file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.sles12.2.{{ .Arch }}{{ .Env.FIPS }}"
     vendor: 'New Relic, Inc.'
     homepage: 'https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes'
     maintainer: 'caos-team@newrelic.com'
