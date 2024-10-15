@@ -5,7 +5,7 @@
     env:
       - CGO_ENABLED=1
       - GOEXPERIMENT=boringcrypto
-      - FIPS="_fips"
+      # - FIPS="_fips"
     goos:
       - linux
     ldflags:
@@ -21,7 +21,7 @@
     env:
       - CGO_ENABLED=1
       - GOEXPERIMENT=boringcrypto
-      - FIPS="_fips"
+      # - FIPS="_fips"
     goos:
       - linux
     ldflags:
@@ -37,7 +37,7 @@
     env:
       - CGO_ENABLED=1
       - GOEXPERIMENT=boringcrypto
-      - FIPS="_fips"
+      # - FIPS="_fips"
     goos:
       - linux
     ldflags:
