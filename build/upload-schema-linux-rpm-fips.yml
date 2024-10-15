@@ -6,7 +6,7 @@
     - type: yum
       dest: "{dest_prefix}linux/yum/el/{os_version}/{arch}/"
       os_version:
-        - 6
+        # - 6
         - 7
         - 8
         - 9
