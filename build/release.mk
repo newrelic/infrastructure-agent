@@ -348,7 +348,6 @@ generate-goreleaser-multiarch-fips:
 		$(CURDIR)/build/goreleaser/linux/al2023_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/al2_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/al2_arm64.yml\
-  		$(CURDIR)/build/goreleaser/linux/centos_6_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/centos_7_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/centos_7_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/centos_8_amd64.yml\
