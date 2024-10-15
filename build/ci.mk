@@ -116,6 +116,7 @@ ifdef TAG
 			-e GPG_PASSPHRASE \
 			-e GPG_PRIVATE_KEY_BASE64 \
 			-e SNAPSHOT=false \
+			-e FIPS \
 			$(BUILDER_IMG_TAG) make release-${TARGET_OS}
 
 
@@ -138,6 +139,7 @@ ifdef TAG
 			-e GPG_PASSPHRASE \
 			-e GPG_PRIVATE_KEY_BASE64 \
 			-e SNAPSHOT=false \
+			-e FIPS \
 			$(BUILDER_IMG_TAG_FIPS) make release-${TARGET_OS}
 
 
