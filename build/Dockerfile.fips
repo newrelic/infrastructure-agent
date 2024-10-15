@@ -50,7 +50,5 @@ RUN curl -L https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_
 # Optional: Set Go environment flags
 ENV GOFLAGS="-buildvcs=false"
 
-# Setting fips variable for naming convention
-ENV FIPS="_fips"
 # Optional: Configure git
 RUN git config --global --add safe.directory /go/src/github.com/newrelic/infrastructure-agent

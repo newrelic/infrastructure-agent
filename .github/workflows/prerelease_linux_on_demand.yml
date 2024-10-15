@@ -64,12 +64,14 @@ jobs:
         run: make ci/prerelease/linux
         env:
           TAG: ${{ env.FAKE_TAG }}
+          FIPS: ""
 
       - name: Preparing all FIPS linux packages
         if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'FIPS' }}
         run: make ci/prerelease/linux-fips
         env:
           TAG: ${{ env.FAKE_TAG }}
+          FIPS: "_fips"
 
       - name: Generate checksum files
         uses: ./.github/actions/generate-checksums
