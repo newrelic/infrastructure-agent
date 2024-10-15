@@ -6,7 +6,7 @@
       - CGO_ENABLED=1
       - GOEXPERIMENT=boringcrypto
       - CC=aarch64-linux-gnu-gcc
-      - FIPS=_fips
+      - FIPS="_fips"
     goos:
       - linux
     ldflags:
@@ -23,7 +23,7 @@
       - CGO_ENABLED=1
       - GOEXPERIMENT=boringcrypto
       - CC=aarch64-linux-gnu-gcc
-      - FIPS=_fips
+      - FIPS="_fips"
     goos:
       - linux
     ldflags:
@@ -40,7 +40,7 @@
       - CGO_ENABLED=1
       - GOEXPERIMENT=boringcrypto
       - CC=aarch64-linux-gnu-gcc
-      - FIPS=_fips
+      - FIPS="_fips"
     goos:
       - linux
     ldflags:
