@@ -19,7 +19,8 @@ import (
 )
 
 const (
-	logPrefix = " ====== "
+	logPrefix     = " ====== "
+	dialerTimeout = 10000 // 10000 milliseconds = 10 seconds
 )
 
 func RunChecks(
@@ -158,12 +159,15 @@ func checkEndpointReachableGoResolverCustom(
 	if err != nil {
 		logrus.WithError(err).Error(fmt.Sprintf("cannot Create request for %s", collectorURL))
 	} else {
-		resolver := net.DefaultResolver
-		resolver.PreferGo = true
+		customResolver := &net.Resolver{
+			PreferGo:     true,
+			Dial:         nil,
+			StrictErrors: false,
+		}
 		dialer := &net.Dialer{
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,
-			Resolver:  resolver,
+			Resolver:  customResolver,
 		}
 		customTransport := &http.Transport{
 			Proxy:                 http.ProxyFromEnvironment,
@@ -174,11 +178,15 @@ func checkEndpointReachableGoResolverCustom(
 			TLSHandshakeTimeout:   10 * time.Second,
 			ExpectContinueTimeout: 1 * time.Second,
 		}
-		client := http.Client{}
-		client.Transport = customTransport
-		req = http2.WithTracer(req, "checkEndpointReachable")
+		client := http.Client{
+			Transport:     customTransport,
+			Jar:           nil,
+			Timeout:       timeout,
+			CheckRedirect: nil,
+		}
+		req = http2.WithTracer(req, "checkEndpointReachableGoResolverCustom")
 		var resp *http.Response
-		resp, err = http.DefaultClient.Do(req)
+		resp, err = client.Do(req)
 		if err != nil {
 			logrus.WithError(err).Error(fmt.Sprintf("Request for %s failed", collectorURL))
 		}
@@ -204,19 +212,23 @@ func checkEndpointReachableCustomDNS(
 	if err != nil {
 		logrus.WithError(err).Error(fmt.Sprintf("cannot Create request for %s", collectorURL))
 	} else {
-		resolver := net.DefaultResolver
-		resolver.PreferGo = true
-		resolver.Dial = func(ctx context.Context, network, address string) (net.Conn, error) {
-			d := net.Dialer{
-				Timeout: time.Millisecond * time.Duration(10000),
-			}
+		customResolver := &net.Resolver{
+			PreferGo: true,
+			Dial: func(ctx context.Context, network, _ string) (net.Conn, error) {
+				//nolint:exhaustruct
+				d := net.Dialer{
+					Timeout: time.Millisecond * time.Duration(dialerTimeout),
+				}
 
-			return d.DialContext(ctx, network, "1.1.1.1:53")
+				//nolint:wrapcheck
+				return d.DialContext(ctx, network, "1.1.1.1:53")
+			},
+			StrictErrors: false,
 		}
 		dialer := &net.Dialer{
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,
-			Resolver:  resolver,
+			Resolver:  customResolver,
 		}
 		customTransport := &http.Transport{
 			Proxy:                 http.ProxyFromEnvironment,
@@ -227,20 +239,21 @@ func checkEndpointReachableCustomDNS(
 			TLSHandshakeTimeout:   10 * time.Second,
 			ExpectContinueTimeout: 1 * time.Second,
 		}
-		client := backendhttp.GetHttpClient(timeout, customTransport)
-		req, err = http.NewRequest("HEAD", collectorURL, nil)
+		client := http.Client{
+			Transport:     customTransport,
+			Jar:           nil,
+			CheckRedirect: nil,
+			Timeout:       timeout,
+		}
+		req = http2.WithTracer(req, "checkEndpointReachableCustomDNS")
+		var resp *http.Response
+		resp, err = client.Do(req)
 		if err != nil {
-			logrus.WithError(err).Error(fmt.Sprintf("cannot Create request for %s", collectorURL))
-		} else {
-			req = http2.WithTracer(req, "testing")
-			var resp *http.Response
-			resp, err = client.Do(req)
-			if err != nil {
-				logrus.WithError(err).Error(fmt.Sprintf("Request for %s failed", collectorURL))
-			}
-			if resp != nil {
-				resp.Body.Close()
-			}
+			logrus.WithError(err).Error(fmt.Sprintf("Request for %s failed", collectorURL))
+		}
+
+		if resp != nil {
+			resp.Body.Close()
 		}
 	}
 
