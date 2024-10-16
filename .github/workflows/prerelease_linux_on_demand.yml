@@ -134,6 +134,7 @@ jobs:
           apt_skip_mirror:  true
 
       - name: Publish NON-FIPS rpm to S3 action
+        if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == '' }}
         uses: newrelic/infrastructure-publish-action@v1.3.4
         with:
           tag: ${{env.FAKE_TAG}}
@@ -158,6 +159,7 @@ jobs:
           local_packages_path:  "/srv/dist/"
 
       - name: Publish FIPS rpm to S3 action
+        if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'FIPS' }}
         uses: newrelic/infrastructure-publish-action@v1.3.4
         with:
           tag: ${{env.FAKE_TAG}}
@@ -182,6 +184,7 @@ jobs:
           local_packages_path:  "/srv/dist/"
 
       - name: Publish NON-FIPS targz to S3 action
+        if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == '' }}
         uses: newrelic/infrastructure-publish-action@v1.3.4
         with:
           tag: ${{env.FAKE_TAG}}
@@ -206,6 +209,7 @@ jobs:
           local_packages_path:  "/srv/dist/"
 
       - name: Publish FIPS targz to S3 action
+        if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'FIPS' }}
         uses: newrelic/infrastructure-publish-action@v1.3.4
         with:
           tag: ${{env.FAKE_TAG}}
