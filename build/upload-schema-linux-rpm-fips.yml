@@ -83,7 +83,7 @@
     - type: file
       dest: "{dest_prefix}linux/yum/el/{os_version}/{arch}/{src}"
       os_version:
-        - 6
+        # - 6
         - 7
         - 8
         - 9
