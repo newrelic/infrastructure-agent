@@ -159,6 +159,9 @@ func createRequest(ctx context.Context, rawJSON json.RawMessage, compressed *byt
 	if nil != err {
 		return req, fmt.Errorf("error creating request: %v", err)
 	}
+
+	logger.WithTraceField("compressed_data_size", compressedLen).Debug("Request created")
+
 	reqHTTP.Header.Add("Content-Type", "application/json")
 	reqHTTP.Header.Add("Api-Key", apiKey)
 	reqHTTP.Header.Add("Content-Encoding", "gzip")
