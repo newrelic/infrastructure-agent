@@ -767,8 +767,9 @@ func Test_buildRequestsMultipleMetricsBatch(t *testing.T) {
 		})
 	}
 }
+
+//nolint:paralleltest
 func TestCreateRequest(t *testing.T) {
-	t.Parallel()
 	tests := map[string]struct {
 		rawJSON                json.RawMessage
 		compressedPayload      *bytes.Buffer
@@ -787,8 +788,6 @@ func TestCreateRequest(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
 			ctx := context.Background()
 			// Mock compressFunc
 			origCompressFunc := compressFunc
