@@ -1,4 +1,3 @@
-
   # build arm
   - id: linux-agent-arm
     main: ./cmd/newrelic-infra

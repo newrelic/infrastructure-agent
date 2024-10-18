@@ -1,4 +1,3 @@
-
   # build amd64
   - id: linux-agent-amd64
     main: ./cmd/newrelic-infra
