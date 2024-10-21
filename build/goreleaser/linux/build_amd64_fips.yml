@@ -5,7 +5,6 @@
     env:
       - CGO_ENABLED=1
       - GOEXPERIMENT=boringcrypto
-      # - FIPS="_fips"
     goos:
       - linux
     ldflags:
@@ -18,12 +17,11 @@
       - fips
   
   - id: linux-ctl-amd64
-    main: ./cmd/newrelic-infra-ctl-fips
+    main: ./cmd/newrelic-infra-ctl
     binary: newrelic-infra-ctl
     env:
       - CGO_ENABLED=1
       - GOEXPERIMENT=boringcrypto
-      # - FIPS="_fips"
     goos:
       - linux
     ldflags:
@@ -35,13 +33,12 @@
     tags:
       - fips
   
-  - id: linux-service-amd64-fips
+  - id: linux-service-amd64
     main: ./cmd/newrelic-infra-service
     binary: newrelic-infra-service
     env:
       - CGO_ENABLED=1
       - GOEXPERIMENT=boringcrypto
-      # - FIPS="_fips"
     goos:
       - linux
     ldflags:
