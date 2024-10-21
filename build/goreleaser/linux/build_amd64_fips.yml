@@ -1,6 +1,6 @@
   # build amd64
   - id: linux-agent-amd64
-    main: ./cmd/newrelic-infra-fips
+    main: ./cmd/newrelic-infra
     binary: newrelic-infra
     env:
       - CGO_ENABLED=1

@@ -1,6 +1,6 @@
   # build arm64
   - id: linux-agent-arm64
-    main: ./cmd/newrelic-infra-fips
+    main: ./cmd/newrelic-infra
     binary: newrelic-infra
     env:
       - CGO_ENABLED=1
