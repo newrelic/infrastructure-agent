@@ -1,6 +1,6 @@
   # build arm64
   - id: linux-agent-arm64
-    main: ./cmd/newrelic-infra
+    main: ./cmd/newrelic-infra-fips
     binary: newrelic-infra
     env:
       - CGO_ENABLED=1
@@ -15,9 +15,11 @@
       - -s -w -X main.buildDate={{.Date}}
     goarch:
       - arm64
+    tags:
+      - fips
   
   - id: linux-ctl-arm64
-    main: ./cmd/newrelic-infra-ctl
+    main: ./cmd/newrelic-infra-ctl-fips
     binary: newrelic-infra-ctl
     env:
       - CGO_ENABLED=1
@@ -32,9 +34,11 @@
       - -s -w -X main.buildDate={{.Date}}
     goarch:
       - arm64
+    tags:
+      - fips
   
   - id: linux-service-arm64
-    main: ./cmd/newrelic-infra-service
+    main: ./cmd/newrelic-infra-service-fips
     binary: newrelic-infra-service
     env:
       - CGO_ENABLED=1
@@ -49,4 +53,6 @@
       - -s -w -X main.buildDate={{.Date}}
     goarch:
       - arm64
+    tags:
+      - fips
   # end build arm64
