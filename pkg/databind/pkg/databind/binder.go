@@ -12,8 +12,6 @@ import (
 )
 
 var (
-	ErrTTLNotFound  = errors.New("TTL value not found")
-	ErrTTLInvalid   = errors.New("TTL value is not valid")
 	ErrDataNotFound = errors.New("data value not found")
 	ErrDataInvalid  = errors.New("data must be an map")
 )

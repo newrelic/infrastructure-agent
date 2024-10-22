@@ -10,6 +10,7 @@ import (
 	"go.uber.org/multierr"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery"
+	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/secrets"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 
 	"github.com/stretchr/testify/assert"
@@ -117,16 +118,16 @@ func (ttl dataWithTTL) TTL() (time.Duration, error) {
 	var ttlData string
 
 	if _, ok = ttl["ttl"]; !ok {
-		return 0, ErrTTLNotFound
+		return 0, secrets.ErrTTLNotFound
 	}
 
 	if ttlData, ok = ttl["ttl"].(string); !ok {
-		return 0, ErrTTLInvalid
+		return 0, secrets.ErrTTLNotFound
 	}
 
 	t, err := time.ParseDuration(ttlData)
 	if err != nil {
-		return 0, multierr.Append(ErrTTLInvalid, err)
+		return 0, multierr.Append(secrets.ErrTTLInvalid, err)
 	}
 
 	return t, nil
@@ -172,22 +173,21 @@ func Test_GathererCacheTtlFromPayload(t *testing.T) {
 			expectedTTLInCache: time.Second * 12,
 		},
 		{
-			name:            "ttl wrong implementation should respect original ttl",
+			name:            "invalid ttl should fallback to default ttl",
 			cacheInitialTTL: time.Second * 35,
 			mockData: dataWithTTL{
 				"ttl":  "invalid duration",
 				"data": map[string]interface{}{"some data": "in a map"},
 			},
-			expectedError:      ErrTTLInvalid,
-			expectedTTLInCache: time.Second * 35,
+			expectedTTLInCache: defaultVariablesTTL,
 		},
 		{
-			name:            "ttl implementation with no ttl should respect original ttl",
+			name:            "no ttl shoul fallback to default ttl",
 			cacheInitialTTL: time.Second * 35,
 			mockData: dataWithTTL{
 				"data": map[string]interface{}{"some data": "in a map"},
 			},
-			expectedTTLInCache: time.Second * 35,
+			expectedTTLInCache: defaultVariablesTTL,
 		},
 	}
 
