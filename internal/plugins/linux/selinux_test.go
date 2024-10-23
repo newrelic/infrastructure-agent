@@ -5,7 +5,9 @@
 
 package linux
 
-import . "gopkg.in/check.v1"
+import (
+	. "gopkg.in/check.v1"
+)
 
 type SELinuxSuite struct{}
 
@@ -114,4 +116,33 @@ func (ss *SELinuxSuite) TestParseSEModules(c *C) {
 	c.Check(resultMap["aiccu"], Equals, "1.0.0")
 	c.Check(resultMap["audioentropy"], Equals, "1.6.0")
 	c.Check(len(resultMap), Equals, 17)
+}
+
+var newSampleSemoduleOutput = `abrt
+accountsd
+ada
+afs
+aiccu
+aide
+amanda
+amtu
+antivirus
+apache
+apcupsd
+arpwatch
+asterisk
+audioentropy
+automount
+avahi
+awstats
+`
+
+func (ss *SELinuxSuite) TestParseSEModulesVersionNotFoundCheck(c *C) {
+	plugin := SELinuxPlugin{}
+
+	_, err := plugin.parseSemoduleOutput(sampleSemoduleOutput)
+	if err != nil {
+		c.Fatal(err)
+	}
+	c.Check(err, Equals, ErrSEModuleVersionNotFound)
 }
