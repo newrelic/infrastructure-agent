@@ -179,7 +179,8 @@ func Test_GathererCacheTtlFromPayload(t *testing.T) {
 				"ttl":  "invalid duration",
 				"data": map[string]interface{}{"some data": "in a map"},
 			},
-			expectedTTLInCache: defaultVariablesTTL,
+			expectedError:      secrets.ErrTTLInvalid,
+			expectedTTLInCache: time.Second * 35,
 		},
 		{
 			name:            "no ttl shoul fallback to default ttl",
