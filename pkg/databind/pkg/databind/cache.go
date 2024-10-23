@@ -90,7 +90,7 @@ func (d *gatherer) do(now time.Time) (interface{}, error) {
 	if dataWithTTL, ok := vals.(ValuesWithTTL); ok {
 		ttl, err := dataWithTTL.TTL()
 		if err != nil {
-			if errors.Is(err, secrets.ErrTTLNotFound) || errors.Is(err, secrets.ErrTTLInvalid) {
+			if errors.Is(err, secrets.ErrTTLNotFound) {
 				// infra-agent will start even when TTL is not provided
 				log.Warn("Please provide TTL. Using Default TTL")
 				d.cache.ttl = defaultVariablesTTL
