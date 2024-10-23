@@ -140,7 +140,7 @@ awstats
 func (ss *SELinuxSuite) TestParseSEModulesVersionNotFoundCheck(c *C) {
 	plugin := SELinuxPlugin{}
 
-	_, err := plugin.parseSemoduleOutput(sampleSemoduleOutput)
+	_, err := plugin.parseSemoduleOutput(newSampleSemoduleOutput)
 	if err != nil {
 		c.Fatal(err)
 	}

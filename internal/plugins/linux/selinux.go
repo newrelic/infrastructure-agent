@@ -94,25 +94,25 @@ func (self *SELinuxPlugin) getDataset() (basicData types.PluginInventoryDataset,
 		if output, err = helpers.RunCommand("cat /etc/os-release", ""); err != nil {
 			return
 		}
-		var validLinuxVersion bool
-		if validLinuxVersion, err = self.isVaildLinuxVersion(output); err != nil {
+		var inValidLinuxVersion bool
+		if inValidLinuxVersion, err = self.isInVaildLinuxVersion(output); err != nil {
 			return
 		}
-		if validLinuxVersion {
+		if inValidLinuxVersion {
+			sllog.Warn("Skipping to run semodule -l as the RHEL version is greater than 8")
+		} else {
 			if output, err = helpers.RunCommand("semodule", "", "-l"); err != nil {
 				return
 			}
 			if policyModules, err = self.parseSemoduleOutput(output); err != nil {
 				return
 			}
-		} else {
-			sllog.Warn("Skipping to run semodule -l as the RHEL version is greater than 8")
 		}
 	}
 	return
 }
 
-func (self *SELinuxPlugin) isVaildLinuxVersion(output string) (hasValidLinuxVersion bool, err error) {
+func (self *SELinuxPlugin) isInVaildLinuxVersion(output string) (hasValidLinuxVersion bool, err error) {
 	scanner := bufio.NewScanner(strings.NewReader(output))
 	var osName, version string
 	for scanner.Scan() {
@@ -133,7 +133,7 @@ func (self *SELinuxPlugin) isVaildLinuxVersion(output string) (hasValidLinuxVers
 		return
 	}
 
-	return strings.Contains(strings.ToLower(osName), "red hat enterprise linux") && versionFloat < 8, nil
+	return strings.Contains(strings.ToLower(osName), "red hat enterprise linux") && versionFloat > 8, nil
 }
 
 func (self *SELinuxPlugin) parseSestatusOutput(output string) (basicResult types.PluginInventoryDataset, policyResult types.PluginInventoryDataset, err error) {
