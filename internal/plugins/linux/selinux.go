@@ -9,11 +9,13 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/agent/types"
-	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 
@@ -26,6 +28,7 @@ import (
 
 var sllog = log.WithPlugin("Selinux")
 var ErrSELinuxDisabled = errors.New("SELinux status: disabled")
+var ErrSEModuleVersionNotFound = errors.New("didn't find versions for the modules")
 
 type SELinuxPlugin struct {
 	agent.PluginCommon
@@ -88,14 +91,49 @@ func (self *SELinuxPlugin) getDataset() (basicData types.PluginInventoryDataset,
 
 	if self.enableSemodule {
 		// Get versions of policy modules installed using semodule
-		if output, err = helpers.RunCommand("semodule", "", "-l"); err != nil {
+		if output, err = helpers.RunCommand("cat /etc/os-release", ""); err != nil {
 			return
 		}
-		if policyModules, err = self.parseSemoduleOutput(output); err != nil {
+		var validLinuxVersion bool
+		if validLinuxVersion, err = self.isVaildLinuxVersion(output); err != nil {
 			return
+		}
+		if validLinuxVersion {
+			if output, err = helpers.RunCommand("semodule", "", "-l"); err != nil {
+				return
+			}
+			if policyModules, err = self.parseSemoduleOutput(output); err != nil {
+				return
+			}
+		} else {
+			sllog.Warn("Skipping to run semodule -l as the RHEL version is greater than 8")
 		}
 	}
 	return
+}
+
+func (self *SELinuxPlugin) isVaildLinuxVersion(output string) (hasValidLinuxVersion bool, err error) {
+	scanner := bufio.NewScanner(strings.NewReader(output))
+	var osName, version string
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "NAME=") {
+			osName = strings.Trim(line[len("NAME="):], "\"")
+		}
+		if strings.HasPrefix(line, "VERSION_ID=") {
+			version = strings.Trim(line[len("VERSION_ID="):], "\"")
+		}
+		if osName != "" && version != "" {
+			break
+		}
+	}
+
+	versionFloat, err := strconv.ParseFloat(version, 64)
+	if err != nil {
+		return
+	}
+
+	return strings.Contains(strings.ToLower(osName), "red hat enterprise linux") && versionFloat < 8, nil
 }
 
 func (self *SELinuxPlugin) parseSestatusOutput(output string) (basicResult types.PluginInventoryDataset, policyResult types.PluginInventoryDataset, err error) {
@@ -166,7 +204,10 @@ func (self *SELinuxPlugin) parseSemoduleOutput(output string) (result types.Plug
 		line := scanner.Text()
 
 		moduleMatches := moduleRegex.FindAllStringSubmatch(line, -1)
-		if moduleMatches != nil {
+		if moduleMatches == nil {
+			sllog.Error("Didn't find the submatch.")
+			return nil, ErrSEModuleVersionNotFound
+		} else {
 			id := moduleMatches[0][1]
 			version := moduleMatches[0][2]
 			result = append(result, SELinuxPolicyModule{id, version})
