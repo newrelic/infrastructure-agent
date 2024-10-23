@@ -36,9 +36,8 @@ var (
 	ErrValidation             = errors.New("validation error")
 	ErrCommandRun             = errors.New("failed to run command")
 	ErrParseCommandResponse   = errors.New("failed to parse command response")
-
-	ErrTTLNotFound = errors.New("TTL value not found")
-	ErrTTLInvalid  = errors.New("TTL value is not valid")
+	ErrTTLNotFound            = errors.New("TTL value not found")
+	ErrTTLInvalid             = errors.New("TTL value is not valid")
 )
 
 func commandExitError(exitErr *exec.ExitError) error {
@@ -87,14 +86,15 @@ func (c *cmdResponse) UnmarshalJSON(data []byte) error {
 func (c *cmdResponse) TTL() (time.Duration, error) {
 
 	if c.CmdTTL == "" {
-		return 0, ErrTTLNotFound
+		return 0, ErrTTLNotFound //nolint:wrapcheck
 	}
 
-	if duration, err := time.ParseDuration(c.CmdTTL); err != nil {
-		return 0, ErrTTLInvalid
-	} else {
-		return duration, nil
+	duration, err := time.ParseDuration(c.CmdTTL)
+	if err != nil {
+		return 0, ErrTTLInvalid //nolint:wrapcheck
 	}
+
+	return duration, nil
 }
 
 func (c *cmdResponse) Data() (map[string]any, error) {
