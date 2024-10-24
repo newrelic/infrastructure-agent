@@ -92,11 +92,7 @@ func (d *gatherer) do(now time.Time) (interface{}, error) {
 		if err != nil {
 			if errors.Is(err, secrets.ErrTTLNotFound) {
 				// infra-agent will start even when TTL is not provided
-				log.Warn(fmt.Printf(
-					"%s. Using Default TTL (%s)",
-					secrets.ErrTTLNotFound,
-					time.Duration(defaultVariablesTTL)*time.Second
-				))
+				log.Warnf("%s. Using Default TTL (%s)", secrets.ErrTTLNotFound, defaultVariablesTTL)
 				d.cache.ttl = defaultVariablesTTL
 			} else {
 				return nil, fmt.Errorf("invalid gathered TTL: %w", err) //nolint:wrapcheck
