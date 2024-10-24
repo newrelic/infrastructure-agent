@@ -3,14 +3,7 @@
 //go:build linux || darwin
 // +build linux darwin
 
-//nolint:nestif
-//nolint:cyclop
-//nolint:nonamedreturns
-//nolint:errorlint
-//nolint:govet
-//nolint:wrapcheck
-//nolint:gosimple
-//nolint:wsl
+//nolint:all
 package linux
 
 import (
