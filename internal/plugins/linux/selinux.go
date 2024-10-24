@@ -85,22 +85,23 @@ func (seLinuxPlugin *SELinuxPlugin) getDataset() (types.PluginInventoryDataset, 
 	var err error
 	output, err := helpers.RunCommand("sestatus", "", "-b")
 	if err != nil {
-		return nil, nil, nil, errors.Unwrap(err)
+		return nil, nil, nil, fmt.Errorf("trying to wrap: %w", err)
 	}
 
 	basicData, policyData, err = seLinuxPlugin.parseSestatusOutput(output)
 	if err != nil {
-		return nil, nil, nil, errors.Unwrap(err)
+		return nil, nil, nil, fmt.Errorf("trying to wrap: %w", err)
 	}
 
 	if seLinuxPlugin.enableSemodule {
 		// Get versions of policy modules installed using semodule
 		if output, err = helpers.RunCommand("semodule", "", "-l"); err != nil {
-			return nil, nil, nil, errors.Unwrap(err)
+			return nil, nil, nil, fmt.Errorf("trying to wrap: %w", err)
 		}
 
 		policyModules = seLinuxPlugin.parseSemoduleOutput(output)
 	}
+
 	return basicData, policyData, policyModules, nil
 }
 
@@ -174,7 +175,7 @@ func (seLinuxPlugin *SELinuxPlugin) parseLabel(labelMatches [][]string) (types.P
 		value := labelMatches[0][2]
 
 		if label == "SELinux status" && value == "disabled" {
-			return nil, errors.Unwrap(ErrSELinuxDisabled)
+			return nil, fmt.Errorf("trying to wrap: %w", ErrSELinuxDisabled)
 		}
 
 		if entityID, ok := SELinuxConfigProperties[label]; ok {
