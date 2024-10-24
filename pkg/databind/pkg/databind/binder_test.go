@@ -183,7 +183,7 @@ func Test_GathererCacheTtlFromPayload(t *testing.T) {
 			expectedTTLInCache: time.Second * 35,
 		},
 		{
-			name:            "no ttl shoul fallback to default ttl",
+			name:            "no ttl should fallback to default ttl",
 			cacheInitialTTL: time.Second * 35,
 			mockData: dataWithTTL{
 				"data": map[string]interface{}{"some data": "in a map"},
