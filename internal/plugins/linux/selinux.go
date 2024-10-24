@@ -3,6 +3,10 @@
 //go:build linux || darwin
 // +build linux darwin
 
+//nolint:nestif
+//nolint:cyclop
+//nolint:nonamedreturns
+
 package linux
 
 import (
@@ -39,14 +43,14 @@ type SELinuxConfigValue struct {
 	Value string `json:"value"`
 }
 
-func (configValue SELinuxConfigValue) SortKey() string { return configValue.Key }
+func (self SELinuxConfigValue) SortKey() string { return self.Key }
 
 type SELinuxPolicyModule struct {
 	Key     string `json:"id"`
 	Version string `json:"version"`
 }
 
-func (policyModule SELinuxPolicyModule) SortKey() string { return policyModule.Key }
+func (self SELinuxPolicyModule) SortKey() string { return self.Key }
 
 // Output we care about - if the label from sestatus output matches a key, we'll
 // return its value using this map's value as the ID for the inventory entity.
@@ -77,35 +81,28 @@ func NewSELinuxPlugin(id ids.PluginID, ctx agent.AgentContext) agent.Plugin {
 //	    basicData: Overall SELinux status - whether it's running, what mode it's in, etc.
 //	   policyData: Individual SELinux policy flags - a high-level overview of SELinux configuration
 //	policyModules: Listing of policy modules in use and which version of modules are active
-func (seLinuxPlugin *SELinuxPlugin) getDataset() (types.PluginInventoryDataset, types.PluginInventoryDataset, types.PluginInventoryDataset, error) {
+func (self *SELinuxPlugin) getDataset() (basicData types.PluginInventoryDataset, policyData types.PluginInventoryDataset, policyModules types.PluginInventoryDataset, err error) {
 	// Get basic selinux status data using sestatus. If selinux isn't enabled or installed, this will fail.
-	var basicData types.PluginInventoryDataset
-	var policyData types.PluginInventoryDataset
-	var policyModules types.PluginInventoryDataset
-	var err error
 	output, err := helpers.RunCommand("sestatus", "", "-b")
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("trying to wrap: %w", err)
+		return
 	}
 
-	basicData, policyData, err = seLinuxPlugin.parseSestatusOutput(output)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("trying to wrap: %w", err)
+	if basicData, policyData, err = self.parseSestatusOutput(output); err != nil {
+		return
 	}
 
-	if seLinuxPlugin.enableSemodule {
+	if self.enableSemodule {
 		// Get versions of policy modules installed using semodule
 		if output, err = helpers.RunCommand("semodule", "", "-l"); err != nil {
-			return nil, nil, nil, fmt.Errorf("trying to wrap: %w", err)
+			return
 		}
-
-		policyModules = seLinuxPlugin.parseSemoduleOutput(output)
+		policyModules = self.parseSemoduleOutput(output)
 	}
-
-	return basicData, policyData, policyModules, nil
+	return
 }
 
-func (seLinuxPlugin *SELinuxPlugin) parseSestatusOutput(output string) (basicResult types.PluginInventoryDataset, policyResult types.PluginInventoryDataset, err error) {
+func (self *SELinuxPlugin) parseSestatusOutput(output string) (basicResult types.PluginInventoryDataset, policyResult types.PluginInventoryDataset, err error) {
 	labelRegex, err := regexp.Compile(`([^:]*):\s+(.*)`)
 	if err != nil {
 		return
@@ -127,80 +124,44 @@ func (seLinuxPlugin *SELinuxPlugin) parseSestatusOutput(output string) (basicRes
 		} else if scanningPolicyBooleans {
 			// We're going through policy booleans of the format "policy_name       on/off"
 			policyBooleanMatches := policyBooleanRegex.FindAllStringSubmatch(line, -1)
-			// if policyBooleanMatches != nil {
-			// 	label := policyBooleanMatches[0][1]
-			// 	value := policyBooleanMatches[0][2]
-			// 	policyResult = append(policyResult, SELinuxConfigValue{fmt.Sprintf("%s", label), value})
-			// }
-			policyResult = seLinuxPlugin.parsePolicyBooleans(policyBooleanMatches)
-
+			if policyBooleanMatches != nil {
+				label := policyBooleanMatches[0][1]
+				value := policyBooleanMatches[0][2]
+				policyResult = append(policyResult, SELinuxConfigValue{fmt.Sprintf("%s", label), value})
+			}
 		} else {
 			// We're scanning general status output of the format "Label:        value"
 			labelMatches := labelRegex.FindAllStringSubmatch(line, -1)
-			basicResult, err = seLinuxPlugin.parseLabel(labelMatches)
-			if err != nil {
-				return nil, nil, err
+			if labelMatches != nil {
+				label := labelMatches[0][1]
+				value := labelMatches[0][2]
+				if label == "SELinux status" && value == "disabled" {
+					return nil, nil, ErrSELinuxDisabled
+				}
+				if entityID, ok := SELinuxConfigProperties[label]; ok {
+					basicResult = append(basicResult, SELinuxConfigValue{entityID, value})
+				}
 			}
-			// if labelMatches != nil {
-			// 	label := labelMatches[0][1]
-			// 	value := labelMatches[0][2]
-			// 	if label == "SELinux status" && value == "disabled" {
-			// 		return nil, nil, ErrSELinuxDisabled
-			// 	}
-			// 	if entityID, ok := SELinuxConfigProperties[label]; ok {
-			// 		basicResult = append(basicResult, SELinuxConfigValue{entityID, value})
-			// 	}
-			// }
 		}
 	}
 
 	return
 }
 
-func (seLinuxPlugin *SELinuxPlugin) parsePolicyBooleans(policyBooleanMatches [][]string) types.PluginInventoryDataset {
-	var policyResult types.PluginInventoryDataset
-	if policyBooleanMatches != nil {
-		label := policyBooleanMatches[0][1]
-		value := policyBooleanMatches[0][2]
-		policyResult = append(policyResult, SELinuxConfigValue{label, value})
-	}
-
-	return policyResult
-}
-
-func (seLinuxPlugin *SELinuxPlugin) parseLabel(labelMatches [][]string) (types.PluginInventoryDataset, error) {
-	var basicResult types.PluginInventoryDataset
-	if labelMatches != nil {
-		label := labelMatches[0][1]
-		value := labelMatches[0][2]
-
-		if label == "SELinux status" && value == "disabled" {
-			return nil, fmt.Errorf("trying to wrap: %w", ErrSELinuxDisabled)
-		}
-
-		if entityID, ok := SELinuxConfigProperties[label]; ok {
-			basicResult = append(basicResult, SELinuxConfigValue{entityID, value})
-		}
-	}
-
-	return basicResult, nil
-}
-
-func (seLinuxPlugin *SELinuxPlugin) sELinuxActive() bool {
+func (self *SELinuxPlugin) sELinuxActive() bool {
 	output, err := helpers.RunCommand("sestatus", "", "-b")
 	if err != nil {
 		sllog.WithError(err).Debug("Unable to use SELinux.")
 		return false
 	}
 
-	if _, _, err = seLinuxPlugin.parseSestatusOutput(output); err == ErrSELinuxDisabled {
+	if _, _, err = self.parseSestatusOutput(output); err == ErrSELinuxDisabled {
 		sllog.WithError(err).Debug("Unable to use SELinux.")
 	}
 	return err == nil
 }
 
-func (seLinuxPlugin *SELinuxPlugin) parseSemoduleOutput(output string) types.PluginInventoryDataset {
-	var result types.PluginInventoryDataset
+func (self *SELinuxPlugin) parseSemoduleOutput(output string) (result types.PluginInventoryDataset) {
 	// Capture "zero-or-more elements" of whitespaces and non-whitespaces for the optional version field
 	moduleRegex := regexp.MustCompile(`(\S+)\s*(\S*)`)
 	scanner := bufio.NewScanner(strings.NewReader(output))
@@ -221,47 +182,40 @@ func (seLinuxPlugin *SELinuxPlugin) parseSemoduleOutput(output string) types.Plu
 			result = append(result, SELinuxPolicyModule{id, version})
 		}
 	}
-
-	return result
+	return
 }
 
-func (seLinuxPlugin *SELinuxPlugin) Run() {
-	if seLinuxPlugin.frequency <= config.FREQ_DISABLE_SAMPLING {
+func (self *SELinuxPlugin) Run() {
+	if self.frequency <= config.FREQ_DISABLE_SAMPLING {
 		sllog.Debug("Disabled.")
 		return
 	}
 
-	if seLinuxPlugin.sELinuxActive() {
-		seLinuxPlugin.RunCommands()
+	if self.sELinuxActive() {
+		if self.enableSemodule {
+			distro := helpers.GetLinuxDistro()
+			if distro == helpers.LINUX_REDHAT || distro == helpers.LINUX_AWS_REDHAT {
+				sllog.Warn("enabling 'semodule' may report performance issues in RedHat-based distributions")
+			}
+		}
+
+		refreshTimer := time.NewTicker(self.frequency)
+		for {
+			basicData, policyData, policyModules, err := self.getDataset()
+			if err != nil {
+				sllog.WithError(err).Error("selinux can't get dataset")
+			}
+
+			entity := entity.NewFromNameWithoutID(self.Context.EntityKey())
+			self.Context.SendData(types.NewPluginOutput(self.Id(), entity, basicData))
+			self.Context.SendData(types.NewPluginOutput(ids.PluginID{self.ID.Category, fmt.Sprintf("%s-policies", self.ID.Term)}, entity, policyData))
+			if self.enableSemodule {
+				self.Context.SendData(types.NewPluginOutput(ids.PluginID{self.ID.Category, fmt.Sprintf("%s-modules", self.ID.Term)}, entity, policyModules))
+			}
+
+			<-refreshTimer.C
+		}
 	} else {
-		seLinuxPlugin.Unregister()
-	}
-}
-
-func (seLinuxPlugin *SELinuxPlugin) RunCommands() {
-	if seLinuxPlugin.enableSemodule {
-		distro := helpers.GetLinuxDistro()
-		if distro == helpers.LINUX_REDHAT || distro == helpers.LINUX_AWS_REDHAT {
-			sllog.Warn("enabling 'semodule' may report performance issues in RedHat-based distributions")
-		}
-	}
-
-	refreshTimer := time.NewTicker(seLinuxPlugin.frequency)
-
-	for {
-		basicData, policyData, policyModules, err := seLinuxPlugin.getDataset()
-		if err != nil {
-			sllog.WithError(err).Error("selinux can't get dataset")
-		}
-
-		entity := entity.NewFromNameWithoutID(seLinuxPlugin.Context.EntityKey())
-		seLinuxPlugin.Context.SendData(types.NewPluginOutput(seLinuxPlugin.Id(), entity, basicData))
-		seLinuxPlugin.Context.SendData(types.NewPluginOutput(ids.PluginID{Category: seLinuxPlugin.ID.Category, Term: fmt.Sprintf("%s-policies", seLinuxPlugin.ID.Term)}, entity, policyData))
-
-		if seLinuxPlugin.enableSemodule {
-			seLinuxPlugin.Context.SendData(types.NewPluginOutput(ids.PluginID{Category: seLinuxPlugin.ID.Category, Term: fmt.Sprintf("%s-modules", seLinuxPlugin.ID.Term)}, entity, policyModules))
-		}
-
-		<-refreshTimer.C
+		self.Unregister()
 	}
 }
