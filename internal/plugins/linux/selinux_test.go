@@ -103,10 +103,7 @@ awstats	1.2.0
 func (ss *SELinuxSuite) TestParseSEModules(c *C) {
 	plugin := SELinuxPlugin{}
 
-	result, err := plugin.parseSemoduleOutput(sampleSemoduleOutput)
-	if err != nil {
-		c.Fatal(err)
-	}
+	result := plugin.parseSemoduleOutput(sampleSemoduleOutput)
 
 	resultMap := make(map[string]string)
 	for _, entity := range result {
@@ -118,39 +115,34 @@ func (ss *SELinuxSuite) TestParseSEModules(c *C) {
 	c.Check(len(resultMap), Equals, 17)
 }
 
-var sampleSemoduleOutputWithoutVersions = `abrt
-accountsd
-ada
-afs
-aiccu
-aide
-amanda
-amtu
-antivirus
-apache
-apcupsd
-arpwatch
-asterisk
-audioentropy
-automount
-avahi
-awstats
-`
-
-func (ss *SELinuxSuite) TestParseSEModulesEmptyVersionCheck(ch *C) {
+func (ss *SELinuxSuite) TestParseSEModulesEmptyVersionCheck(chk *C) {
 	plugin := SELinuxPlugin{}
-
-	result, err := plugin.parseSemoduleOutput(sampleSemoduleOutputWithoutVersions)
-	if err != nil {
-		ch.Fatal(err)
-	}
+	var sampleSemoduleOutputWithoutVersions = `abrt
+	accountsd
+	ada
+	afs
+	aiccu
+	aide
+	amanda
+	amtu
+	antivirus
+	apache
+	apcupsd
+	arpwatch
+	asterisk
+	audioentropy
+	automount
+	avahi
+	awstats
+	`
+	result := plugin.parseSemoduleOutput(sampleSemoduleOutputWithoutVersions)
 
 	resultMap := make(map[string]string)
 	for _, entity := range result {
 		resultMap[entity.SortKey()] = entity.(SELinuxPolicyModule).Version
 	}
 
-	ch.Check(resultMap["abrt"], Equals, "")
-	ch.Check(resultMap["accountsd"], Equals, "")
-	ch.Check(len(resultMap), Equals, 17)
+	chk.Check(resultMap["abrt"], Equals, "")
+	chk.Check(resultMap["accountsd"], Equals, "")
+	chk.Check(len(resultMap), Equals, 17)
 }

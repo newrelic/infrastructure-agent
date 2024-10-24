@@ -79,30 +79,29 @@ func NewSELinuxPlugin(id ids.PluginID, ctx agent.AgentContext) agent.Plugin {
 //	policyModules: Listing of policy modules in use and which version of modules are active
 func (seLinuxPlugin *SELinuxPlugin) getDataset() (types.PluginInventoryDataset, types.PluginInventoryDataset, types.PluginInventoryDataset, error) {
 	// Get basic selinux status data using sestatus. If selinux isn't enabled or installed, this will fail.
-	var basicData = types.PluginInventoryDataset{}
-	var policyData = types.PluginInventoryDataset{}
-	var policyModules = types.PluginInventoryDataset{}
+	var basicData types.PluginInventoryDataset
+	var policyData types.PluginInventoryDataset
+	var policyModules types.PluginInventoryDataset
 	var err error
 	output, err := helpers.RunCommand("sestatus", "", "-b")
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, errors.Unwrap(err)
 	}
 
-	if basicData, policyData, err = seLinuxPlugin.parseSestatusOutput(output); err != nil {
-		return nil, nil, nil, err
+	basicData, policyData, err = seLinuxPlugin.parseSestatusOutput(output)
+	if err != nil {
+		return nil, nil, nil, errors.Unwrap(err)
 	}
 
 	if seLinuxPlugin.enableSemodule {
 		// Get versions of policy modules installed using semodule
 		if output, err = helpers.RunCommand("semodule", "", "-l"); err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, errors.Unwrap(err)
 		}
 
-		if policyModules, err = seLinuxPlugin.parseSemoduleOutput(output); err != nil {
-			return nil, nil, nil, err
-		}
+		policyModules = seLinuxPlugin.parseSemoduleOutput(output)
 	}
-	return basicData, policyData, policyModules, err
+	return basicData, policyData, policyModules, nil
 }
 
 func (seLinuxPlugin *SELinuxPlugin) parseSestatusOutput(output string) (basicResult types.PluginInventoryDataset, policyResult types.PluginInventoryDataset, err error) {
@@ -157,27 +156,33 @@ func (seLinuxPlugin *SELinuxPlugin) parseSestatusOutput(output string) (basicRes
 	return
 }
 
-func (seLinuxPlugin *SELinuxPlugin) parsePolicyBooleans(policyBooleanMatches [][]string) (policyResult types.PluginInventoryDataset) {
+func (seLinuxPlugin *SELinuxPlugin) parsePolicyBooleans(policyBooleanMatches [][]string) types.PluginInventoryDataset {
+	var policyResult types.PluginInventoryDataset
 	if policyBooleanMatches != nil {
 		label := policyBooleanMatches[0][1]
 		value := policyBooleanMatches[0][2]
-		policyResult = append(policyResult, SELinuxConfigValue{fmt.Sprintf("%s", label), value})
+		policyResult = append(policyResult, SELinuxConfigValue{label, value})
 	}
-	return
+
+	return policyResult
 }
 
-func (seLinuxPlugin *SELinuxPlugin) parseLabel(labelMatches [][]string) (basicResult types.PluginInventoryDataset, err error) {
+func (seLinuxPlugin *SELinuxPlugin) parseLabel(labelMatches [][]string) (types.PluginInventoryDataset, error) {
+	var basicResult types.PluginInventoryDataset
 	if labelMatches != nil {
 		label := labelMatches[0][1]
 		value := labelMatches[0][2]
+
 		if label == "SELinux status" && value == "disabled" {
-			return nil, ErrSELinuxDisabled
+			return nil, errors.Unwrap(ErrSELinuxDisabled)
 		}
+
 		if entityID, ok := SELinuxConfigProperties[label]; ok {
 			basicResult = append(basicResult, SELinuxConfigValue{entityID, value})
 		}
 	}
-	return
+
+	return basicResult, nil
 }
 
 func (seLinuxPlugin *SELinuxPlugin) sELinuxActive() bool {
@@ -193,9 +198,8 @@ func (seLinuxPlugin *SELinuxPlugin) sELinuxActive() bool {
 	return err == nil
 }
 
-func (seLinuxPlugin *SELinuxPlugin) parseSemoduleOutput(output string) (types.PluginInventoryDataset, error) {
-	var result = types.PluginInventoryDataset{}
-	var err error
+func (seLinuxPlugin *SELinuxPlugin) parseSemoduleOutput(output string) types.PluginInventoryDataset {
+	var result types.PluginInventoryDataset
 	// Capture "zero-or-more elements" of whitespaces and non-whitespaces for the optional version field
 	moduleRegex := regexp.MustCompile(`(\S+)\s*(\S*)`)
 	scanner := bufio.NewScanner(strings.NewReader(output))
@@ -216,7 +220,8 @@ func (seLinuxPlugin *SELinuxPlugin) parseSemoduleOutput(output string) (types.Pl
 			result = append(result, SELinuxPolicyModule{id, version})
 		}
 	}
-	return result, err
+
+	return result
 }
 
 func (seLinuxPlugin *SELinuxPlugin) Run() {
@@ -241,6 +246,7 @@ func (seLinuxPlugin *SELinuxPlugin) RunCommands() {
 	}
 
 	refreshTimer := time.NewTicker(seLinuxPlugin.frequency)
+
 	for {
 		basicData, policyData, policyModules, err := seLinuxPlugin.getDataset()
 		if err != nil {
