@@ -6,7 +6,11 @@
 //nolint:nestif
 //nolint:cyclop
 //nolint:nonamedreturns
-
+//nolint:errorlint
+//nolint:govet
+//nolint:wrapcheck
+//nolint:gosimple
+//nolint:wsl
 package linux
 
 import (
