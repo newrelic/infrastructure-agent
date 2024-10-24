@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery"
+	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/secrets"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
 // cachedEntry allows storing a value for a given Time-To-Live.
@@ -87,11 +89,15 @@ func (d *gatherer) do(now time.Time) (interface{}, error) {
 
 	if dataWithTTL, ok := vals.(ValuesWithTTL); ok {
 		ttl, err := dataWithTTL.TTL()
-		if err != nil && !errors.Is(err, ErrTTLNotFound) {
-			return nil, fmt.Errorf("invalid gathered TTL: %w", err) //nolint:wrapcheck
-		}
-
-		if err == nil {
+		if err != nil {
+			if errors.Is(err, secrets.ErrTTLNotFound) {
+				// infra-agent will start even when TTL is not provided
+				log.Warnf("%s. Using Default TTL (%s)", secrets.ErrTTLNotFound, defaultVariablesTTL)
+				d.cache.ttl = defaultVariablesTTL
+			} else {
+				return nil, fmt.Errorf("invalid gathered TTL: %w", err) //nolint:wrapcheck
+			}
+		} else {
 			d.cache.ttl = ttl
 		}
 
