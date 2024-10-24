@@ -118,7 +118,7 @@ func (ss *SELinuxSuite) TestParseSEModules(c *C) {
 	c.Check(len(resultMap), Equals, 17)
 }
 
-var semoduleOutputWithoutVersions = `abrt
+var sampleSemoduleOutputWithoutVersions = `abrt
 accountsd
 ada
 afs
@@ -137,12 +137,12 @@ avahi
 awstats
 `
 
-func (ss *SELinuxSuite) TestParseSEModulesEmptyVersionCheck(c *C) {
+func (ss *SELinuxSuite) TestParseSEModulesEmptyVersionCheck(ch *C) {
 	plugin := SELinuxPlugin{}
 
-	result, err := plugin.parseSemoduleOutput(semoduleOutputWithoutVersions)
+	result, err := plugin.parseSemoduleOutput(sampleSemoduleOutputWithoutVersions)
 	if err != nil {
-		c.Fatal(err)
+		ch.Fatal(err)
 	}
 
 	resultMap := make(map[string]string)
@@ -150,7 +150,7 @@ func (ss *SELinuxSuite) TestParseSEModulesEmptyVersionCheck(c *C) {
 		resultMap[entity.SortKey()] = entity.(SELinuxPolicyModule).Version
 	}
 
-	c.Check(resultMap["abrt"], Equals, "")
-	c.Check(resultMap["accountsd"], Equals, "")
-	c.Check(len(resultMap), Equals, 17)
+	ch.Check(resultMap["abrt"], Equals, "")
+	ch.Check(resultMap["accountsd"], Equals, "")
+	ch.Check(len(resultMap), Equals, 17)
 }
