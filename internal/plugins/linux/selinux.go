@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -41,14 +40,14 @@ type SELinuxConfigValue struct {
 	Value string `json:"value"`
 }
 
-func (self SELinuxConfigValue) SortKey() string { return self.Key }
+func (configValue SELinuxConfigValue) SortKey() string { return configValue.Key }
 
 type SELinuxPolicyModule struct {
 	Key     string `json:"id"`
 	Version string `json:"version"`
 }
 
-func (self SELinuxPolicyModule) SortKey() string { return self.Key }
+func (policyModule SELinuxPolicyModule) SortKey() string { return policyModule.Key }
 
 // Output we care about - if the label from sestatus output matches a key, we'll
 // return its value using this map's value as the ID for the inventory entity.
@@ -79,64 +78,29 @@ func NewSELinuxPlugin(id ids.PluginID, ctx agent.AgentContext) agent.Plugin {
 //	    basicData: Overall SELinux status - whether it's running, what mode it's in, etc.
 //	   policyData: Individual SELinux policy flags - a high-level overview of SELinux configuration
 //	policyModules: Listing of policy modules in use and which version of modules are active
-func (self *SELinuxPlugin) getDataset() (basicData types.PluginInventoryDataset, policyData types.PluginInventoryDataset, policyModules types.PluginInventoryDataset, err error) {
+func (seLinuxPlugin *SELinuxPlugin) getDataset() (basicData types.PluginInventoryDataset, policyData types.PluginInventoryDataset, policyModules types.PluginInventoryDataset, err error) {
 	// Get basic selinux status data using sestatus. If selinux isn't enabled or installed, this will fail.
 	output, err := helpers.RunCommand("sestatus", "", "-b")
 	if err != nil {
 		return
 	}
-	if basicData, policyData, err = self.parseSestatusOutput(output); err != nil {
+	if basicData, policyData, err = seLinuxPlugin.parseSestatusOutput(output); err != nil {
 		return
 	}
 
-	if self.enableSemodule {
+	if seLinuxPlugin.enableSemodule {
 		// Get versions of policy modules installed using semodule
-		if output, err = helpers.RunCommand("cat /etc/os-release", ""); err != nil {
+		if output, err = helpers.RunCommand("semodule", "", "-l"); err != nil {
 			return
 		}
-		var inValidLinuxVersion bool
-		if inValidLinuxVersion, err = self.isInVaildLinuxVersion(output); err != nil {
+		if policyModules, err = seLinuxPlugin.parseSemoduleOutput(output); err != nil {
 			return
-		}
-		if inValidLinuxVersion {
-			sllog.Warn("Skipping to run semodule -l as the RHEL version is greater than 8")
-		} else {
-			if output, err = helpers.RunCommand("semodule", "", "-l"); err != nil {
-				return
-			}
-			if policyModules, err = self.parseSemoduleOutput(output); err != nil {
-				return
-			}
 		}
 	}
 	return
 }
 
-func (self *SELinuxPlugin) isInVaildLinuxVersion(output string) (hasValidLinuxVersion bool, err error) {
-	scanner := bufio.NewScanner(strings.NewReader(output))
-	var osName, version string
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.HasPrefix(line, "NAME=") {
-			osName = strings.Trim(line[len("NAME="):], "\"")
-		}
-		if strings.HasPrefix(line, "VERSION_ID=") {
-			version = strings.Trim(line[len("VERSION_ID="):], "\"")
-		}
-		if osName != "" && version != "" {
-			break
-		}
-	}
-
-	versionFloat, err := strconv.ParseFloat(version, 64)
-	if err != nil {
-		return
-	}
-
-	return strings.Contains(strings.ToLower(osName), "red hat enterprise linux") && versionFloat > 8, nil
-}
-
-func (self *SELinuxPlugin) parseSestatusOutput(output string) (basicResult types.PluginInventoryDataset, policyResult types.PluginInventoryDataset, err error) {
+func (seLinuxPlugin *SELinuxPlugin) parseSestatusOutput(output string) (basicResult types.PluginInventoryDataset, policyResult types.PluginInventoryDataset, err error) {
 	labelRegex, err := regexp.Compile(`([^:]*):\s+(.*)`)
 	if err != nil {
 		return
@@ -182,71 +146,76 @@ func (self *SELinuxPlugin) parseSestatusOutput(output string) (basicResult types
 	return
 }
 
-func (self *SELinuxPlugin) sELinuxActive() bool {
+func (seLinuxPlugin *SELinuxPlugin) sELinuxActive() bool {
 	output, err := helpers.RunCommand("sestatus", "", "-b")
 	if err != nil {
 		sllog.WithError(err).Debug("Unable to use SELinux.")
 		return false
 	}
-	if _, _, err = self.parseSestatusOutput(output); err == ErrSELinuxDisabled {
+	if _, _, err = seLinuxPlugin.parseSestatusOutput(output); err == ErrSELinuxDisabled {
 		sllog.WithError(err).Debug("Unable to use SELinux.")
 	}
 	return err == nil
 }
 
-func (self *SELinuxPlugin) parseSemoduleOutput(output string) (result types.PluginInventoryDataset, err error) {
-	moduleRegex, err := regexp.Compile(`(\S+)\s+(\S+)`)
+func (seLinuxPlugin *SELinuxPlugin) parseSemoduleOutput(output string) (result types.PluginInventoryDataset, err error) {
+	// Capture "zero-or-more elements" of whitespaces and non-whitespaces for the optional version field
+	moduleRegex, err := regexp.Compile(`(\S+)\s*(\S*)`)
 	if err != nil {
 		return
 	}
 	scanner := bufio.NewScanner(strings.NewReader(output))
+	const captureGroupsMinLen = 2
 	for scanner.Scan() {
 		line := scanner.Text()
 
 		moduleMatches := moduleRegex.FindAllStringSubmatch(line, -1)
-		if moduleMatches == nil {
-			sllog.Error("Didn't find the submatch.")
-			return nil, ErrSEModuleVersionNotFound
-		} else {
+		if moduleMatches != nil {
 			id := moduleMatches[0][1]
-			version := moduleMatches[0][2]
+
+			// Guard against the second capture group not existing
+			version := ""
+			if len(moduleMatches[0]) > captureGroupsMinLen {
+				version = moduleMatches[0][2]
+			}
+
 			result = append(result, SELinuxPolicyModule{id, version})
 		}
 	}
 	return
 }
 
-func (self *SELinuxPlugin) Run() {
-	if self.frequency <= config.FREQ_DISABLE_SAMPLING {
+func (seLinuxPlugin *SELinuxPlugin) Run() {
+	if seLinuxPlugin.frequency <= config.FREQ_DISABLE_SAMPLING {
 		sllog.Debug("Disabled.")
 		return
 	}
 
-	if self.sELinuxActive() {
-		if self.enableSemodule {
+	if seLinuxPlugin.sELinuxActive() {
+		if seLinuxPlugin.enableSemodule {
 			distro := helpers.GetLinuxDistro()
 			if distro == helpers.LINUX_REDHAT || distro == helpers.LINUX_AWS_REDHAT {
 				sllog.Warn("enabling 'semodule' may report performance issues in RedHat-based distributions")
 			}
 		}
 
-		refreshTimer := time.NewTicker(self.frequency)
+		refreshTimer := time.NewTicker(seLinuxPlugin.frequency)
 		for {
-			basicData, policyData, policyModules, err := self.getDataset()
+			basicData, policyData, policyModules, err := seLinuxPlugin.getDataset()
 			if err != nil {
 				sllog.WithError(err).Error("selinux can't get dataset")
 			}
 
-			entity := entity.NewFromNameWithoutID(self.Context.EntityKey())
-			self.Context.SendData(types.NewPluginOutput(self.Id(), entity, basicData))
-			self.Context.SendData(types.NewPluginOutput(ids.PluginID{self.ID.Category, fmt.Sprintf("%s-policies", self.ID.Term)}, entity, policyData))
-			if self.enableSemodule {
-				self.Context.SendData(types.NewPluginOutput(ids.PluginID{self.ID.Category, fmt.Sprintf("%s-modules", self.ID.Term)}, entity, policyModules))
+			entity := entity.NewFromNameWithoutID(seLinuxPlugin.Context.EntityKey())
+			seLinuxPlugin.Context.SendData(types.NewPluginOutput(seLinuxPlugin.Id(), entity, basicData))
+			seLinuxPlugin.Context.SendData(types.NewPluginOutput(ids.PluginID{Category: seLinuxPlugin.ID.Category, Term: fmt.Sprintf("%s-policies", seLinuxPlugin.ID.Term)}, entity, policyData))
+			if seLinuxPlugin.enableSemodule {
+				seLinuxPlugin.Context.SendData(types.NewPluginOutput(ids.PluginID{Category: seLinuxPlugin.ID.Category, Term: fmt.Sprintf("%s-modules", seLinuxPlugin.ID.Term)}, entity, policyModules))
 			}
 
 			<-refreshTimer.C
 		}
 	} else {
-		self.Unregister()
+		seLinuxPlugin.Unregister()
 	}
 }
