@@ -84,7 +84,6 @@ func (self *SELinuxPlugin) getDataset() (basicData types.PluginInventoryDataset,
 	if err != nil {
 		return
 	}
-
 	if basicData, policyData, err = self.parseSestatusOutput(output); err != nil {
 		return
 	}
@@ -151,7 +150,6 @@ func (self *SELinuxPlugin) sELinuxActive() bool {
 		sllog.WithError(err).Debug("Unable to use SELinux.")
 		return false
 	}
-
 	if _, _, err = self.parseSestatusOutput(output); err == ErrSELinuxDisabled {
 		sllog.WithError(err).Debug("Unable to use SELinux.")
 	}
