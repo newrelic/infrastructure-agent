@@ -3,8 +3,6 @@
     "config:base",
     // go dependencies and auto-merge configuration: https://github.com/newrelic/coreint-automation/blob/main/renovate-base.json5
     "github>newrelic/coreint-automation:renovate-base.json5",
-    // Disable the creation of DependencyDashboard issue, we follow pull requests with Zenhub
-    ":disableDependencyDashboard"
   ],
   // Label PRs with `dependencies`.
   "labels": ["dependencies"],

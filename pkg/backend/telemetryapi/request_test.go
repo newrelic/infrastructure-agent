@@ -10,10 +10,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"regexp"
 	"testing"
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/backend/telemetryapi/internal"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
+	logHelper "github.com/newrelic/infrastructure-agent/test/log"
+	"github.com/sirupsen/logrus"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -760,6 +764,60 @@ func Test_buildRequestsMultipleMetricsBatch(t *testing.T) {
 					assert.Len(t, reqPayload[k].Metrics, testCase.expectedRequests[j][k])
 				}
 			}
+		})
+	}
+}
+
+//nolint:paralleltest
+func TestCreateRequest(t *testing.T) {
+	tests := map[string]struct {
+		rawJSON                json.RawMessage
+		compressedPayload      *bytes.Buffer
+		compressedLen          int
+		apiKey, url, userAgent string
+	}{
+		"successful request creation": {
+			rawJSON:           json.RawMessage(`{"key":"value"}`),
+			compressedPayload: bytes.NewBufferString("compressed data"),
+			compressedLen:     14,
+			apiKey:            "test-api-key",
+			url:               "http://test-url",
+			userAgent:         "test-user-agent",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			ctx := context.Background()
+			// Mock compressFunc
+			origCompressFunc := compressFunc
+			defer func() { compressFunc = origCompressFunc }()
+			compressFunc = func(_ []byte) (*bytes.Buffer, error) {
+				return test.compressedPayload, nil
+			}
+			// Mock log
+			hook := logHelper.NewInMemoryEntriesHook([]logrus.Level{logrus.DebugLevel})
+			log.AddHook(hook)
+			log.SetLevel(logrus.TraceLevel)
+			// Test
+			req, err := createRequest(ctx, test.rawJSON, test.compressedPayload, test.compressedLen, test.apiKey, test.url, test.userAgent)
+			// Assert
+			require.NoError(t, err)
+			assert.Equal(t, "application/json", req.Request.Header.Get("Content-Type"))
+			assert.Equal(t, test.apiKey, req.Request.Header.Get("Api-Key"))
+			assert.Equal(t, "gzip", req.Request.Header.Get("Content-Encoding"))
+			assert.Equal(t, test.userAgent, req.Request.Header.Get("User-Agent"))
+			assert.Equal(t, test.url, req.Request.URL.String())
+			assert.Equal(t, ctx, req.Request.Context())
+			assert.Equal(t, test.rawJSON, req.UncompressedBody)
+			assert.Equal(t, test.compressedPayload.Bytes(), req.compressedBody)
+			assert.Equal(t, test.compressedLen, req.compressedBodyLength)
+			// Assert log
+			assert.True(t, hook.EntryWithMessageExists(regexp.MustCompile(`Request created`)))
+			logEntries := hook.GetEntries()
+			assert.Len(t, logEntries, 1)
+			assert.Equal(t, logrus.DebugLevel, logEntries[0].Level)
+			assert.Equal(t, test.compressedLen, logEntries[0].Data["compressed_data_size"])
 		})
 	}
 }

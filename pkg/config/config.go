@@ -90,8 +90,13 @@ var (
 
 type CustomAttributeMap map[string]interface{}
 
+type MetricsMap map[string][]string
+
 // IncludeMetricsMap configuration type to Map include_matching_metrics setting env var
-type IncludeMetricsMap map[string][]string
+type IncludeMetricsMap MetricsMap
+
+// IncludeMetricsMap configuration type to Map exclude_matching_metrics setting env var.
+type ExcludeMetricsMap MetricsMap
 
 // LogFilters configuration specifies which log entries should be included/excluded.
 type LogFilters map[string][]interface{}
@@ -979,10 +984,15 @@ type Config struct {
 	// Public: Yes
 	StatusServerPort int `yaml:"status_server_port" envconfig:"status_server_port"`
 
-	// StatusServerPort Set the port for status server.
+	// StatusEndpoints Status endpoints to check reachability.
 	// Default: IdentityURL, CommandChannelURL, MetricsIngestURL, InventoryIngestURL
 	// Public: Yes
 	StatusEndpoints []string `yaml:"status_endpoints" envconfig:"status_endpoints"`
+
+	// HealthEndpoint to check backend connection healthiness.
+	// Default: CommandChannelURL
+	// Public: Yes
+	HealthEndpoint string `envconfig:"health_endpoint" yaml:"health_endpoint"`
 
 	// AppDataDir This option is only for Windows. It defines the path to store data in a different path than the
 	// program files directory.
@@ -1223,6 +1233,16 @@ type Config struct {
 	// Default: none
 	// Public: Yes
 	IncludeMetricsMatchers IncludeMetricsMap `yaml:"include_matching_metrics" envconfig:"include_matching_metrics"`
+
+	// ExcludeMetricsMatchers Configuration of the metrics matchers that determine which metric data should the agent
+	// filter out and not send to the New Relic backend.
+	// If no configuration is defined, the previous behaviour is maintained, i.e., every metric data captured is sent.
+	// If a configuration is defined, then only metric data not matching the configuration is sent.
+	// Note that ALL DATA MATCHED WILL BE DROPPED.
+	// Also note that at present it ONLY APPLIES to metric data related to processes. All other metric data is still being sent as usual.
+	// Default: none
+	// Public: Yes
+	ExcludeMetricsMatchers ExcludeMetricsMap `envconfig:"exclude_matching_metrics" yaml:"exclude_matching_metrics"`
 
 	// AgentMetricsEndpoint Set the endpoint (host:port) for the HTTP server the agent will use to server OpenMetrics
 	// if empty the server will be not spawned
@@ -1896,7 +1916,8 @@ func NewConfig() *Config {
 		MetricsNFSSampleRate:        DefaultMetricsNFSSampleRate,
 		SmartVerboseModeEntryLimit:  DefaultSmartVerboseModeEntryLimit,
 		DefaultIntegrationsTempDir:  defaultIntegrationsTempDir,
-		IncludeMetricsMatchers:      defaultMetricsMatcherConfig,
+		IncludeMetricsMatchers:      defaultIncludeMetricsMatcherConfig,
+		ExcludeMetricsMatchers:      defaultExcludeMetricsMatcherConfig,
 		InventoryQueueLen:           DefaultInventoryQueue,
 		NtpMetrics:                  NewNtpConfig(),
 		Http:                        NewHttpConfig(),
@@ -2164,6 +2185,10 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 			// cfg.DMIngestURL(), // dimensional metrics without shimming not available yet
 			// no endpoint value to checking log ingest reachability
 		}
+	}
+
+	if cfg.HealthEndpoint == "" {
+		cfg.HealthEndpoint = cfg.CommandChannelURL + cfg.CommandChannelEndpoint
 	}
 
 	// MetricsIngestEndpoint default value defined in NewConfig

@@ -79,7 +79,7 @@ validate:
 	@test -z "$(shell  $(GO_FMT) | tee /dev/stderr)"
 
 .PHONY: lint
-lint: deps
+lint: install-tools
 	@printf '\n================================================================\n'
 	@printf 'Target: lint'
 	@printf '\n================================================================\n'
@@ -177,7 +177,7 @@ build-harvest-tests: deps
 
 .PHONY: proxy-test
 proxy-test:
-	@docker-compose -f $(CURDIR)/test/proxy/docker-compose.yml up -d ; \
+	@docker compose -f $(CURDIR)/test/proxy/docker-compose.yml up -d ; \
 	$(GO_BIN) test --tags=proxytests ./test/proxy/; status=$$?; \
-    docker-compose -f test/proxy/docker-compose.yml down; \
+    docker compose -f test/proxy/docker-compose.yml down; \
     exit $$status

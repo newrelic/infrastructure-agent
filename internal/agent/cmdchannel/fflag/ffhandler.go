@@ -26,7 +26,7 @@ const (
 	FlagProtocolV4           = "protocol_v4_enabled"
 	FlagFullProcess          = "full_process_sampling"
 	FlagDmRegisterDeprecated = "dm_register_deprecated"
-	FlagFluentBit19          = "fluent_bit_19"
+	FlagFluentBit19          = "fluent_bit_19_win"
 	// Config
 	CfgYmlRegisterEnabled              = "register_enabled"
 	CfgYmlParallelizeInventory         = "inventory_queue_len"

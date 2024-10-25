@@ -1,10 +1,13 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+
+//nolint:wrapcheck
 package http
 
 import (
 	"context"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -18,6 +21,8 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/sirupsen/logrus"
 )
+
+var ErrUnexepectedResponseCode = errors.New("endpoint returned and unexpected response code")
 
 func GetHttpClient(
 	httpTimeout time.Duration,
@@ -85,27 +90,33 @@ var NullHttpClient = func(req *http.Request) (res *http.Response, err error) {
 	return
 }
 
-func CheckEndpointReachability(ctx context.Context, l log.Entry, endpointURL, license, userAgent, agentID string, timeout time.Duration, transport http.RoundTripper) (timedOut bool, err error) {
-	var request *http.Request
-	if request, err = http.NewRequest("HEAD", endpointURL, nil); err != nil {
-		return false, fmt.Errorf("unable to prepare availability request: %v, error: %s", request, err)
-	}
+func CheckEndpointReachability(
+	ctx context.Context,
+	logger log.Entry,
+	endpointURL string,
+	license string,
+	userAgent string,
+	agentID string,
+	timeout time.Duration,
+	transport http.RoundTripper,
+) (bool, error) {
+	var timedOut bool
 
-	request = request.WithContext(ctx)
-	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("User-Agent", userAgent)
-	request.Header.Set(LicenseHeader, license)
-	request.Header.Set(EntityKeyHeader, agentID)
+	request, err := buildRequest(ctx, endpointURL, "HEAD", userAgent, license, agentID)
+	if err != nil {
+		return false, err
+	}
 
 	client := GetHttpClient(timeout, transport)
 
 	// all status codes are acceptable as request has been replied by the endpoint
-	if _, err = client.Do(request); err != nil {
+	resp, err := client.Do(request)
+	if err != nil {
 		if e2, ok := err.(net.Error); ok && (e2.Timeout() || e2.Temporary()) {
 			timedOut = true
 		}
 		if _, ok := err.(*url.Error); ok {
-			l.WithError(err).
+			logger.WithError(err).
 				WithField("userAgent", userAgent).
 				WithField("timeout", timeout).
 				WithField("url", endpointURL).
@@ -114,5 +125,56 @@ func CheckEndpointReachability(ctx context.Context, l log.Entry, endpointURL, li
 		}
 	}
 
-	return
+	if resp != nil {
+		_ = resp.Body.Close()
+	}
+
+	return timedOut, err
+}
+
+func CheckEndpointHealthiness(
+	ctx context.Context,
+	endpointURL string,
+	license string,
+	userAgent string,
+	agentID string,
+	timeout time.Duration,
+	transport http.RoundTripper,
+) (bool, error) {
+	request, err := buildRequest(ctx, endpointURL, "GET", userAgent, license, agentID)
+	if err != nil {
+		return false, err
+	}
+
+	client := GetHttpClient(timeout, transport)
+
+	resp, err := client.Do(request)
+	if err != nil {
+		return false, err
+	}
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted && resp.StatusCode != http.StatusNoContent {
+		return false, fmt.Errorf("%w, status_code: %d", ErrUnexepectedResponseCode, resp.StatusCode)
+	}
+
+	return true, nil
+}
+
+func buildRequest(ctx context.Context, endpointURL, method, userAgent, license, agentID string) (*http.Request, error) {
+	request, err := http.NewRequest(method, endpointURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("unable to prepare availability request: %v, error: %w", request, err)
+	}
+
+	request = request.WithContext(ctx)
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("User-Agent", userAgent)
+	request.Header.Set(LicenseHeader, license)
+	request.Header.Set(EntityKeyHeader, agentID)
+
+	return request, nil
 }

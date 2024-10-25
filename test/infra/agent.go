@@ -79,7 +79,7 @@ func NewAgentWithConnectClientAndConfig(connectClient *http.Client, dataClient b
 
 	lookups := agent.NewIdLookup(hostname.CreateResolver(cfg.OverrideHostname, cfg.OverrideHostnameShort, cfg.DnsHostnameResolution), cloudDetector, cfg.DisplayName)
 
-	ctx := agent.NewContext(cfg, "1.2.3", testhelpers.NewFakeHostnameResolver("foobar", "foo", nil), lookups, matcher)
+	ctx := agent.NewContext(cfg, "1.2.3", testhelpers.NewFakeHostnameResolver("foobar", "foo", nil), lookups, matcher, matcher)
 
 	fingerprintHarvester, err := fingerprint.NewHarvestor(cfg, testhelpers.NullHostnameResolver, cloudDetector)
 	if err != nil {

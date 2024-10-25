@@ -549,7 +549,7 @@ func Test_EvaluatorChain_LogTraceMatcher(t *testing.T) {
 	javaProcessSample := types.ProcessSample{ProcessDisplayName: "java", CmdLine: "/bin/java"}
 
 	rule := config.IncludeMetricsMap{"process.name": {"java"}}
-	ec := sampler.NewMatcherChain(rule)
+	ec := sampler.NewMatcherChain(config.MetricsMap(rule))
 
 	assert.Len(t, ec.Matchers, len(rule))
 	assert.EqualValues(t, true, ec.Evaluate(javaProcessSample))
@@ -741,7 +741,7 @@ func TestNewSampleMatchFn(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			matchFn := sampler.NewSampleMatchFn(tt.args.enableProcessMetrics, tt.args.includeMetricsMatchers, tt.args.ffRetriever)
+			matchFn := sampler.NewSampleMatchFn(tt.args.enableProcessMetrics, config.MetricsMap(tt.args.includeMetricsMatchers), tt.args.ffRetriever)
 			assert.Equal(t, tt.include, matchFn(tt.args.sample))
 		})
 	}

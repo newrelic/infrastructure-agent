@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/counter"
@@ -47,7 +48,7 @@ func fetch(d discovery.Container, matcher *discovery.FieldsMatcher) ([]discovery
 	}
 	defer dc.Close()
 
-	containers, err := dc.ContainerList(context.Background(), types.ContainerListOptions{})
+	containers, err := dc.ContainerList(context.Background(), container.ListOptions{})
 	if err != nil {
 		return nil, err
 	}

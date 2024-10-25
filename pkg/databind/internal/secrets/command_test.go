@@ -92,6 +92,19 @@ func TestCommandGatherer(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "cmdResponseWithDataWithoutTTL",
+			command: &Command{
+				Path:           "echo",
+				Args:           []string{"{\"data\": {\"testKey\": \"testVal\"}}"},
+				PassthroughEnv: nil,
+			},
+			want: &cmdResponse{
+				CmdData: map[string]any{"testKey": "testVal"},
+				CmdTTL:  "",
+			},
+			wantErr: false,
+		},
 	}
 	if runtime.GOOS != "windows" {
 		tests = append(tests, []commandTestCase{

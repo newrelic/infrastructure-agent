@@ -40,7 +40,7 @@ func Test_defaultLoggingBinDir(t *testing.T) {
 			name:           "enabled ff",
 			ffExists:       true,
 			ffEnabled:      true,
-			expectedBinDir: "/opt/td-agent-bit/bin",
+			expectedBinDir: "/opt/fluent-bit/bin",
 		},
 	}
 
@@ -86,7 +86,7 @@ func Test_defaultFluentBitExePath(t *testing.T) {
 			name:            "enabled ff",
 			ffExists:        true,
 			ffEnabled:       true,
-			expectedExePath: "/opt/td-agent-bit/bin/td-agent-bit",
+			expectedExePath: "/opt/fluent-bit/bin/fluent-bit",
 		},
 	}
 
