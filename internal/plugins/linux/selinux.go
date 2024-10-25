@@ -3,17 +3,19 @@
 //go:build linux || darwin
 // +build linux darwin
 
+//nolint:all
 package linux
 
 import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/agent/types"
-	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 
@@ -91,9 +93,7 @@ func (self *SELinuxPlugin) getDataset() (basicData types.PluginInventoryDataset,
 		if output, err = helpers.RunCommand("semodule", "", "-l"); err != nil {
 			return
 		}
-		if policyModules, err = self.parseSemoduleOutput(output); err != nil {
-			return
-		}
+		policyModules = self.parseSemoduleOutput(output)
 	}
 	return
 }
@@ -156,19 +156,24 @@ func (self *SELinuxPlugin) sELinuxActive() bool {
 	return err == nil
 }
 
-func (self *SELinuxPlugin) parseSemoduleOutput(output string) (result types.PluginInventoryDataset, err error) {
-	moduleRegex, err := regexp.Compile(`(\S+)\s+(\S+)`)
-	if err != nil {
-		return
-	}
+func (self *SELinuxPlugin) parseSemoduleOutput(output string) (result types.PluginInventoryDataset) {
+	// Capture "zero-or-more elements" of whitespaces and non-whitespaces for the optional version field
+	moduleRegex := regexp.MustCompile(`(\S+)\s*(\S*)`)
 	scanner := bufio.NewScanner(strings.NewReader(output))
+	const captureGroupsMinLen = 2
 	for scanner.Scan() {
 		line := scanner.Text()
 
 		moduleMatches := moduleRegex.FindAllStringSubmatch(line, -1)
 		if moduleMatches != nil {
 			id := moduleMatches[0][1]
-			version := moduleMatches[0][2]
+
+			// Guard against the second capture group not existing
+			version := ""
+			if len(moduleMatches[0]) > captureGroupsMinLen {
+				version = moduleMatches[0][2]
+			}
+
 			result = append(result, SELinuxPolicyModule{id, version})
 		}
 	}
