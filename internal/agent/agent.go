@@ -296,7 +296,6 @@ func NewAgent(
 	// all the processes but excluded ones will be sent
 	// * If all the cases where include_metrics_matchers and exclude_metrics_matchers are present,
 	// exclude ones will be ignored
-
 	sampleMatchFn := sampler.NewSampleMatchFn(cfg.EnableProcessMetrics, config.MetricsMap(cfg.IncludeMetricsMatchers), ffRetriever)
 	// by default, do not apply exclude metrics matchers, only if no include ones are present
 	sampleExcludeFn := func(event any) bool {
@@ -1192,7 +1191,7 @@ func (c *context) SendEvent(event sample.Event, entityKey entity.Key) {
 	// check if event should be included
 	// include takes precedence, so the event will be included if
 	// it IS NOT EXCLUDED or if it IS INCLUDED
-	includeSample := c.includeEvent(event)
+	includeSample := c.IncludeEvent(event)
 	if !includeSample {
 		aclog.
 			WithField("entity_key", entityKey.String()).
@@ -1209,7 +1208,7 @@ func (c *context) SendEvent(event sample.Event, entityKey entity.Key) {
 	}
 }
 
-func (c *context) includeEvent(event any) bool {
+func (c *context) IncludeEvent(event any) bool {
 	shouldInclude := c.shouldIncludeEvent(event)
 	shouldExclude := c.shouldExcludeEvent(event)
 
