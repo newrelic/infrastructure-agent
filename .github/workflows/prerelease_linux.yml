@@ -33,7 +33,7 @@ jobs:
       ARCH: 'amd64'
       FIPS: ""
   
-  packaging-amd64:
+  packaging-amd64-fips:
     needs: [unit-test, proxy-tests]
     uses: ./.github/workflows/component_linux_packaging.yml
     secrets:
@@ -79,7 +79,7 @@ jobs:
       FIPS: ""
 
 
-  packaging-arm64:
+  packaging-arm64-fips:
     needs: [unit-test, proxy-tests]
     uses: ./.github/workflows/component_linux_packaging.yml
     secrets:
