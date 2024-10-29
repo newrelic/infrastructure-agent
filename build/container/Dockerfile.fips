@@ -1,5 +1,5 @@
-# Public Ubuntu base image
-ARG base_image=ubuntu:22.04
+# FIPS compliant base image
+ARG base_image=cf-registry.nr-ops.net/newrelic/base-ubuntu:22.04-fips
 
 FROM $base_image AS core
 
@@ -22,7 +22,7 @@ COPY $version_file /newrelic/VERSION
 LABEL com.newrelic.image.version=$image_version \
       com.newrelic.infra-agent.version=$agent_version \
       com.newrelic.maintainer="infrastructure-eng@newrelic.com" \
-      com.newrelic.description="New Relic Infrastructure agent for monitoring the underlying host."
+      com.newrelic.description="FIPS Compliant New Relic Infrastructure agent for monitoring the underlying host."
 
 ENV NRIA_IS_CONTAINERIZED=true
 ENV NRIA_OVERRIDE_HOST_ROOT=/host
