@@ -26,6 +26,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/metric"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
+	process_sample_types "github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/sirupsen/logrus"
 
 	"github.com/newrelic/infrastructure-agent/pkg/ctl"
@@ -1208,11 +1209,21 @@ func (c *context) SendEvent(event sample.Event, entityKey entity.Key) {
 	}
 }
 
+// Decides wether an event will be included or not.
+// This kind of filtering only applies to ProcessSamples,
+// so that's what we check here.
 func (c *context) IncludeEvent(event any) bool {
-	shouldInclude := c.shouldIncludeEvent(event)
-	shouldExclude := c.shouldExcludeEvent(event)
+	switch event.(type) {
+	// rule is applied to process samples
+	case *process_sample_types.ProcessSample, *process_sample_types.FlatProcessSample:
+		shouldInclude := c.shouldIncludeEvent(event)
+		shouldExclude := c.shouldExcludeEvent(event)
 
-	return shouldInclude || !shouldExclude
+		return shouldInclude || !shouldExclude
+	default:
+		// other samples are included
+		return true
+	}
 }
 
 func (c *context) Unregister(id ids.PluginID) {

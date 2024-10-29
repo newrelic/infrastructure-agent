@@ -300,13 +300,9 @@ func NewSampleMatchFn(enableProcessMetrics *bool, metricsMatchers config.Metrics
 		return matcherForDisabledMetrics()
 	}
 
-	matcherChain := NewMatcherChain(metricsMatchers)
-	if matcherChain.Enabled {
-		mlog.
-			WithField(config.TracesFieldName, config.FeatureTrace).
-			Trace("EnableProcessMetrics is TRUE and rules ARE defined, process metrics will be ENABLED for matching processes")
-
-		return matcherChain.Evaluate
+	matcher := matcherFromMetricsMatchers(metricsMatchers)
+	if matcher != nil {
+		return matcher
 	}
 
 	mlog.
