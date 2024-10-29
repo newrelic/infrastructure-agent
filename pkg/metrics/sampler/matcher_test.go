@@ -755,15 +755,15 @@ func Test_ProcessSamplingExcludes(t *testing.T) {
 	someProcessSample := &types.ProcessSample{
 		ProcessDisplayName: "some-process",
 	}
-	// someNetworkSample := network.NetworkSample{InterfaceName: "eth0"}
-	// someSystemSample := metrics.SystemSample{
-	// 	CPUSample: &metrics.CPUSample{
-	// 		CPUPercent: 50,
-	// 	},
-	// }
-	// someStorageSample := storage.BaseSample{
-	// 	Device: "/dev/sda1",
-	// }
+	someNetworkSample := network.NetworkSample{InterfaceName: "eth0"}
+	someSystemSample := metrics.SystemSample{
+		CPUSample: &metrics.CPUSample{
+			CPUPercent: 50,
+		},
+	}
+	someStorageSample := storage.BaseSample{
+		Device: "/dev/sda1",
+	}
 
 	boolAsPointer := func(val bool) *bool {
 		return &val
@@ -828,16 +828,16 @@ func Test_ProcessSamplingExcludes(t *testing.T) {
 
 	for _, tc := range testCases {
 		testCase := tc
-		a, _ := agent.NewAgent(testCase.c, "test", "userAgent", testCase.ff)
+		agent, _ := agent.NewAgent(testCase.c, "test", "userAgent", testCase.ff)
 
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			assert.Equal(t, testCase.expectInclude, a.Context.IncludeEvent(someProcessSample))
+			assert.Equal(t, testCase.expectInclude, agent.Context.IncludeEvent(someProcessSample))
 			// In all cases, events that are not ProcessSamples should always be included!
-			// assert.True(t, a.Context.IncludeEvent(someSystemSample))
-			// assert.True(t, a.Context.IncludeEvent(someNetworkSample))
-			// assert.True(t, a.Context.IncludeEvent(someStorageSample))
+			assert.True(t, agent.Context.IncludeEvent(someSystemSample))
+			assert.True(t, agent.Context.IncludeEvent(someNetworkSample))
+			assert.True(t, agent.Context.IncludeEvent(someStorageSample))
 		})
 	}
 }
