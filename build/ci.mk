@@ -62,17 +62,21 @@ ci/tools-test: ci/deps
 			-w /go/src/github.com/newrelic/infrastructure-agent \
 			$(BUILDER_IMG_TAG) make tools-test
 
-.PHONY : ci/prerelease/linux
+.PHONY : ci/prerelease/linux #For use with github workflow: prerelease_linux_on_demand
 ci/prerelease/linux:
 	TARGET_OS=linux $(MAKE) ci/prerelease
 
-.PHONY : ci/prerelease/linux-fips
+.PHONY : ci/prerelease/linux-fips #For use with github workflow: prerelease_linux_on_demand
 ci/prerelease/linux-fips:
 	TARGET_OS=linux-fips $(MAKE) ci/prerelease-fips
 
 .PHONY : ci/prerelease/linux-amd64
 ci/prerelease/linux-amd64:
 	TARGET_OS=linux-amd64 $(MAKE) ci/prerelease
+
+.PHONY : ci/prerelease/linux-amd64-fips
+ci/prerelease/linux-amd64:
+	TARGET_OS=linux-amd64-fips $(MAKE) ci/prerelease-fips
 
 .PHONY : ci/prerelease/linux-arm
 ci/prerelease/linux-arm:
@@ -81,6 +85,10 @@ ci/prerelease/linux-arm:
 .PHONY : ci/prerelease/linux-arm64
 ci/prerelease/linux-arm64:
 	TARGET_OS=linux-arm64 $(MAKE) ci/prerelease
+
+.PHONY : ci/prerelease/linux-arm64-fips
+ci/prerelease/linux-arm64:
+	TARGET_OS=linux-arm64-fips $(MAKE) ci/prerelease-fips
 
 .PHONY : ci/prerelease/linux-legacy
 ci/prerelease/linux-legacy:
