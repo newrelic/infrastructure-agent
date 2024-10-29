@@ -248,61 +248,6 @@ func Test_Evaluator_WithUnMappedFields(t *testing.T) {
 	}
 }
 
-// Test_Evaluator_WithNonProcessSamples tests that other sample types keep working as expected
-func Test_Evaluator_WithNonProcessSamples(t *testing.T) {
-	networkSample := network.NetworkSample{InterfaceName: "eth0"}
-	systemSample := metrics.SystemSample{
-		CPUSample: &metrics.CPUSample{
-			CPUPercent: 50,
-		},
-	}
-	storageSample := storage.BaseSample{
-		Device: "/dev/sda1",
-	}
-
-	type testCase struct {
-		name  string
-		input interface{}
-		rules map[string][]string
-		want  bool
-	}
-
-	cases := []testCase{
-		{
-			name:  "NetworkSample",
-			input: networkSample,
-			rules: map[string][]string{
-				"process.name": {"foobar"},
-			},
-			want: true,
-		},
-		{
-			name:  "SystemSample",
-			input: systemSample,
-			rules: map[string][]string{
-				"process.name": {"foobar"},
-			},
-			want: true,
-		},
-		{
-			name:  "StorageSample",
-			input: storageSample,
-			rules: map[string][]string{
-				"process.name": {"foobar"},
-			},
-			want: true,
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			ec := sampler.NewMatcherChain(tc.rules)
-			assert.Len(t, ec.Matchers, len(tc.rules))
-			assert.EqualValues(t, tc.want, ec.Evaluate(tc.input))
-		})
-	}
-}
-
 func Test_EvaluatorChain_WithMultipleRuleAttribute(t *testing.T) {
 
 	type testCase struct {
@@ -742,7 +687,7 @@ func TestNewSampleMatchFn(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			matchFn := sampler.NewSampleMatchFn(tt.args.enableProcessMetrics, config.MetricsMap(tt.args.includeMetricsMatchers), tt.args.ffRetriever)
+			matchFn := sampler.NewIncludeSampleMatchFn(tt.args.enableProcessMetrics, tt.args.includeMetricsMatchers, tt.args.ffRetriever)
 			assert.Equal(t, tt.include, matchFn(tt.args.sample))
 		})
 	}

@@ -26,7 +26,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/metric"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
-	process_sample_types "github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/sirupsen/logrus"
 
 	"github.com/newrelic/infrastructure-agent/pkg/ctl"
@@ -297,7 +296,7 @@ func NewAgent(
 	// all the processes but excluded ones will be sent
 	// * If all the cases where include_metrics_matchers and exclude_metrics_matchers are present,
 	// exclude ones will be ignored
-	sampleMatchFn := sampler.NewSampleMatchFn(cfg.EnableProcessMetrics, config.MetricsMap(cfg.IncludeMetricsMatchers), ffRetriever)
+	sampleMatchFn := sampler.NewIncludeSampleMatchFn(cfg.EnableProcessMetrics, cfg.IncludeMetricsMatchers, ffRetriever)
 	// by default, do not apply exclude metrics matchers, only if no include ones are present
 	sampleExcludeFn := func(event any) bool {
 		return true
@@ -306,7 +305,7 @@ func NewAgent(
 		cfg.EnableProcessMetrics != nil &&
 		*cfg.EnableProcessMetrics &&
 		len(cfg.ExcludeMetricsMatchers) > 0 {
-		sampleExcludeFn = sampler.NewSampleMatchFn(cfg.EnableProcessMetrics, config.MetricsMap(cfg.ExcludeMetricsMatchers), ffRetriever)
+		sampleExcludeFn = sampler.NewExcludeSampleMatchFn(cfg.EnableProcessMetrics, cfg.ExcludeMetricsMatchers, ffRetriever)
 		// if there are not include matchers at all, we remove the matcher to exclude by default
 		sampleMatchFn = func(event any) bool {
 			return false
@@ -1210,20 +1209,11 @@ func (c *context) SendEvent(event sample.Event, entityKey entity.Key) {
 }
 
 // Decides wether an event will be included or not.
-// This kind of filtering only applies to ProcessSamples,
-// so that's what we check here.
 func (c *context) IncludeEvent(event any) bool {
-	switch event.(type) {
-	// rule is applied to process samples
-	case *process_sample_types.ProcessSample, *process_sample_types.FlatProcessSample:
-		shouldInclude := c.shouldIncludeEvent(event)
-		shouldExclude := c.shouldExcludeEvent(event)
+	shouldInclude := c.shouldIncludeEvent(event)
+	shouldExclude := c.shouldExcludeEvent(event)
 
-		return shouldInclude || !shouldExclude
-	default:
-		// other samples are included
-		return true
-	}
+	return shouldInclude || !shouldExclude
 }
 
 func (c *context) Unregister(id ids.PluginID) {
