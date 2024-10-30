@@ -4,7 +4,6 @@
 // +build linux
 
 //nolint:revive
-//exhaustruct:ignore
 package linux
 
 import (
@@ -118,6 +117,7 @@ func (ss *SELinuxSuite) TestParseSEModules(c *C) {
 }
 
 func (ss *SELinuxSuite) TestParseSEModulesEmptyVersionCheck(chk *C) {
+	//exhaustruct:ignore
 	plugin := SELinuxPlugin{}
 	var sampleSemoduleOutputWithoutVersions = `abrt
 	accountsd
