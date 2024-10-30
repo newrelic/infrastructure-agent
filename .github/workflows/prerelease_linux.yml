@@ -7,8 +7,19 @@ on:
       - '*'
 
 jobs:
+  unit-test:
+    uses: ./.github/workflows/component_linux_unit_test.yml
+    secrets:
+      gh_token: ${{secrets.GITHUB_TOKEN}}
+
+  proxy-tests:
+    uses: ./.github/workflows/component_linux_proxy_test.yml
+    secrets:
+      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+
   packaging-amd64:
-    needs: [unit-test, proxy-tests]
+  #  needs: [unit-test, proxy-tests]
     uses: ./.github/workflows/component_linux_packaging.yml
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
@@ -23,7 +34,7 @@ jobs:
       FIPS: ""
   
   packaging-amd64-fips:
-    needs: [unit-test, proxy-tests]
+  #  needs: [unit-test, proxy-tests]
     uses: ./.github/workflows/component_linux_packaging.yml
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
@@ -38,7 +49,7 @@ jobs:
       FIPS: "_fips"
 
   packaging-arm:
-    needs: [unit-test, proxy-tests]
+  #  needs: [unit-test, proxy-tests]
     uses: ./.github/workflows/component_linux_packaging.yml
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
@@ -53,7 +64,7 @@ jobs:
       FIPS: ""
 
   packaging-arm64:
-    needs: [unit-test, proxy-tests]
+  #  needs: [unit-test, proxy-tests]
     uses: ./.github/workflows/component_linux_packaging.yml
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
@@ -67,9 +78,8 @@ jobs:
       ARCH: 'arm64'
       FIPS: ""
 
-
   packaging-arm64-fips:
-    needs: [unit-test, proxy-tests]
+  #  needs: [unit-test, proxy-tests]
     uses: ./.github/workflows/component_linux_packaging.yml
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
@@ -83,9 +93,8 @@ jobs:
       ARCH: 'arm64-fips'
       FIPS: "_fips"
 
-
   packaging-legacy:
-    needs: [unit-test, proxy-tests]
+  #  needs: [unit-test, proxy-tests]
     uses: ./.github/workflows/component_linux_packaging.yml
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
