@@ -3,6 +3,8 @@
 //go:build linux
 // +build linux
 
+//nolint:revive
+//nolint:exhaustruct
 package linux
 
 import (
@@ -139,7 +141,9 @@ func (ss *SELinuxSuite) TestParseSEModulesEmptyVersionCheck(chk *C) {
 
 	resultMap := make(map[string]string)
 	for _, entity := range result {
-		resultMap[entity.SortKey()] = entity.(SELinuxPolicyModule).Version
+		key := entity.SortKey()
+		version := entity.(SELinuxPolicyModule).Version
+		resultMap[key] = version
 	}
 
 	chk.Check(resultMap["abrt"], Equals, "")
