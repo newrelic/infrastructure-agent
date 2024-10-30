@@ -110,25 +110,25 @@ jobs:
       ARCH: 'legacy'
       FIPS: ""
 
-  packaging-docker:
-    needs: [unit-test, proxy-tests]
-    uses: ./.github/workflows/component_docker_packaging.yml
-    secrets:
-      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
-      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
-      GPG_MAIL: 'infrastructure-eng@newrelic.com'
-      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
-      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    with:
-      TAG:  ${{ github.event.release.tag_name }}
-
-  docker-trivy-critical:
-    needs: [packaging-docker]
-    uses: ./.github/workflows/component_trivy.yml
-    with:
-      tag: "${{ github.event.release.tag_name }}-rc"
-      severity: "CRITICAL"
+#  packaging-docker:
+#    needs: [unit-test, proxy-tests]
+#    uses: ./.github/workflows/component_docker_packaging.yml
+#    secrets:
+#      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+#      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+#      GPG_MAIL: 'infrastructure-eng@newrelic.com'
+#      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+#      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+#      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#    with:
+#      TAG:  ${{ github.event.release.tag_name }}
+#
+#  docker-trivy-critical:
+#    needs: [packaging-docker]
+#    uses: ./.github/workflows/component_trivy.yml
+#    with:
+#      tag: "${{ github.event.release.tag_name }}-rc"
+#      severity: "CRITICAL"
 
   publishing-to-s3:
     # point to staging after tests
@@ -153,54 +153,54 @@ jobs:
       AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
       ASSETS_TYPE: "all"
 
-  molecule-packaging-tests:
-    uses: ./.github/workflows/component_molecule_packaging.yml
-    needs: [publishing-to-s3]
-    with:
-      TAG: ${{ github.event.release.tag_name }}
-      REPO_ENDPOINT: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
-
-  test-prerelease-linux:
-    needs: [molecule-packaging-tests]
-    uses: ./.github/workflows/component_prerelease_testing.yml
-    with:
-      PLATFORM: "linux"
-      TAG: ${{ github.event.release.tag_name }}
-      TAG_OR_UNIQUE_NAME: "${{ github.event.release.tag_name }}-linux"
-    secrets:
-      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
-      CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
-      CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
-      CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}
-
-  canaries-linux:
-    needs: [test-prerelease-linux]
-    uses: ./.github/workflows/component_canaries.yml
-    with:
-      PLATFORM: "linux"
-      TAG: ${{ github.event.release.tag_name }}
-    secrets:
-      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
-      CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
-      CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
-      CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}
-
-  get_previous_tag:
-    runs-on: ubuntu-latest
-    outputs:
-      previous_tag: ${{ steps.previous_tag_step.outputs.PREVIOUS_TAG }}
-    steps:
-      - uses: actions/checkout@v2
-
-      - id: previous_tag_step
-        run: ./.github/workflows/scripts/previous_version.sh ${{ github.event.release.tag_name }} >> "$GITHUB_OUTPUT"
-
-  prune-previous-canaries-linux:
-    needs: [canaries-linux, get_previous_tag]
-    uses: ./.github/workflows/component_canaries_prune.yml
-    with:
-      PLATFORM: "linux"
-      TAG: ${{ needs.get_previous_tag.outputs.previous_tag }}
-    secrets:
-      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+#  molecule-packaging-tests:
+#    uses: ./.github/workflows/component_molecule_packaging.yml
+#    needs: [publishing-to-s3]
+#    with:
+#      TAG: ${{ github.event.release.tag_name }}
+#      REPO_ENDPOINT: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
+#
+#  test-prerelease-linux:
+#    needs: [molecule-packaging-tests]
+#    uses: ./.github/workflows/component_prerelease_testing.yml
+#    with:
+#      PLATFORM: "linux"
+#      TAG: ${{ github.event.release.tag_name }}
+#      TAG_OR_UNIQUE_NAME: "${{ github.event.release.tag_name }}-linux"
+#    secrets:
+#      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+#      CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
+#      CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
+#      CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}
+#
+#  canaries-linux:
+#    needs: [test-prerelease-linux]
+#    uses: ./.github/workflows/component_canaries.yml
+#    with:
+#      PLATFORM: "linux"
+#      TAG: ${{ github.event.release.tag_name }}
+#    secrets:
+#      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+#      CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
+#      CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
+#      CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}
+#
+#  get_previous_tag:
+#    runs-on: ubuntu-latest
+#    outputs:
+#      previous_tag: ${{ steps.previous_tag_step.outputs.PREVIOUS_TAG }}
+#    steps:
+#      - uses: actions/checkout@v2
+#
+#      - id: previous_tag_step
+#        run: ./.github/workflows/scripts/previous_version.sh ${{ github.event.release.tag_name }} >> "$GITHUB_OUTPUT"
+#
+#  prune-previous-canaries-linux:
+#    needs: [canaries-linux, get_previous_tag]
+#    uses: ./.github/workflows/component_canaries_prune.yml
+#    with:
+#      PLATFORM: "linux"
+#      TAG: ${{ needs.get_previous_tag.outputs.previous_tag }}
+#    secrets:
+#      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
 

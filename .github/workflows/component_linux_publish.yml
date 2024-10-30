@@ -76,6 +76,9 @@ jobs:
           - "targz"
           - "deb"
           - "rpm"
+          - "targz-fips"
+          - "deb-fips"
+          - "rpm-fips"
 
     steps:
       - name: Login to DockerHub
@@ -106,3 +109,5 @@ jobs:
           gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
           gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
           disable_lock: ${{ env.DISABLE_LOCK }}
+          # TODO: remove after testing
+          dest_prefix: dadams_fips_prerelease
