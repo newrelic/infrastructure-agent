@@ -305,7 +305,7 @@ func NewAgent(
 		cfg.EnableProcessMetrics != nil &&
 		*cfg.EnableProcessMetrics &&
 		len(cfg.ExcludeMetricsMatchers) > 0 {
-		sampleExcludeFn = sampler.NewExcludeSampleMatchFn(cfg.EnableProcessMetrics, cfg.ExcludeMetricsMatchers, ffRetriever)
+		sampleExcludeFn = sampler.NewExcludeSampleMatchFn(cfg.ExcludeMetricsMatchers)
 		// if there are not include matchers at all, we remove the matcher to exclude by default
 		sampleMatchFn = func(event any) bool {
 			return false
@@ -1195,7 +1195,7 @@ func (c *context) SendEvent(event sample.Event, entityKey entity.Key) {
 	if !includeSample {
 		aclog.
 			WithField("entity_key", entityKey.String()).
-			WithField("event", fmt.Sprintf("+%v", event)).
+			WithField("event", fmt.Sprintf("%#v", event)).
 			Debug("event excluded by metric matcher")
 		return
 	}
