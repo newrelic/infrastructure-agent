@@ -4,7 +4,6 @@
 // +build linux
 
 //nolint:revive
-//nolint:exhaustruct
 package linux
 
 import (
@@ -118,7 +117,10 @@ func (ss *SELinuxSuite) TestParseSEModules(c *C) {
 }
 
 func (ss *SELinuxSuite) TestParseSEModulesEmptyVersionCheck(chk *C) {
-	plugin := SELinuxPlugin{}
+	plugin := SELinuxPlugin{
+		frequency:      1000,
+		enableSemodule: true,
+	}
 	var sampleSemoduleOutputWithoutVersions = `abrt
 	accountsd
 	ada
@@ -142,8 +144,11 @@ func (ss *SELinuxSuite) TestParseSEModulesEmptyVersionCheck(chk *C) {
 	resultMap := make(map[string]string)
 	for _, entity := range result {
 		key := entity.SortKey()
-		version := entity.(SELinuxPolicyModule).Version
-		resultMap[key] = version
+		seLinuxPolicyModule, ok := entity.(SELinuxPolicyModule)
+		if !ok {
+			chk.Fatal("error occured!!")
+		}
+		resultMap[key] = seLinuxPolicyModule.Version
 	}
 
 	chk.Check(resultMap["abrt"], Equals, "")
