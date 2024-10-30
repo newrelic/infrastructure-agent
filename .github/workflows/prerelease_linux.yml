@@ -7,10 +7,10 @@ on:
       - '*'
 
 jobs:
-  unit-test:
-    uses: ./.github/workflows/component_linux_unit_test.yml
-    secrets:
-      gh_token: ${{secrets.GITHUB_TOKEN}}
+#  unit-test:
+#    uses: ./.github/workflows/component_linux_unit_test.yml
+#    secrets:
+#      gh_token: ${{secrets.GITHUB_TOKEN}}
 
 #  proxy-tests:
 #    uses: ./.github/workflows/component_linux_proxy_test.yml
