@@ -89,10 +89,10 @@ release/pkg-linux-amd64: release/get-fluentbit-linux-amd64
 	$(GORELEASER_BIN) release --config $(GORELEASER_CONFIG_LINUX) $(PKG_FLAGS)
 
 .PHONY : release/pkg-linux-amd64-fips
-release/pkg-linux-amd64: release/deps release/clean
-release/pkg-linux-amd64: generate-goreleaser-amd64-fips
-release/pkg-linux-amd64: release/get-integrations-amd64
-release/pkg-linux-amd64: release/get-fluentbit-linux-amd64
+release/pkg-linux-amd64-fips: release/deps release/clean
+release/pkg-linux-amd64-fips: generate-goreleaser-amd64-fips
+release/pkg-linux-amd64-fips: release/get-integrations-amd64
+release/pkg-linux-amd64-fips: release/get-fluentbit-linux-amd64
 	@echo "=== [release/pkg-linux-amd64-fips] PRE-RELEASE compiling all binaries, creating packages, archives"
 	$(GORELEASER_BIN) release --config $(GORELEASER_CONFIG_LINUX) $(PKG_FLAGS)
 
@@ -104,16 +104,16 @@ release/pkg-linux-arm: release/get-integrations-arm
 	$(GORELEASER_BIN) release --config $(GORELEASER_CONFIG_LINUX) $(PKG_FLAGS)
 
 .PHONY : release/pkg-linux-arm64
-release/pkg-linux-fips-arm64: release/deps release/clean generate-goreleaser-arm64
-release/pkg-linux-fips-arm64: release/get-integrations-arm64
-release/pkg-linux-fips-arm64: release/get-fluentbit-linux-arm64
+release/pkg-linux-arm64: release/deps release/clean generate-goreleaser-arm64
+release/pkg-linux-arm64: release/get-integrations-arm64
+release/pkg-linux-arm64: release/get-fluentbit-linux-arm64
 	@echo "=== [release/pkg-linux-arm64] PRE-RELEASE compiling all fips binaries, creating packages, archives"
 	$(GORELEASER_BIN) release --config $(GORELEASER_CONFIG_LINUX) $(PKG_FLAGS)
 
 .PHONY : release/pkg-linux-arm64-fips
-release/pkg-linux-fips-arm64: release/deps release/clean generate-goreleaser-arm64-fips
-release/pkg-linux-fips-arm64: release/get-integrations-arm64
-release/pkg-linux-fips-arm64: release/get-fluentbit-linux-arm64
+release/pkg-linux-arm64-fips: release/deps release/clean generate-goreleaser-arm64-fips
+release/pkg-linux-arm64-fips: release/get-integrations-arm64
+release/pkg-linux-arm64-fips: release/get-fluentbit-linux-arm64
 	@echo "=== [release/pkg-linux-arm64-fips] PRE-RELEASE compiling all fips binaries, creating packages, archives"
 	$(GORELEASER_BIN) release --config $(GORELEASER_CONFIG_LINUX) $(PKG_FLAGS)
 
@@ -176,20 +176,20 @@ release-linux-amd64: release/pkg-linux-amd64 release/fix-tarballs-linux release/
 	@echo "=== [release-linux-amd64] full pre-release cycle complete for nix"
 
 .PHONY : release-linux-amd64-fips
-release-linux-amd64: release/pkg-linux-amd64-fips release/fix-tarballs-linux release/sign-fips
-	@echo "=== [release-linux-amd64] full pre-release cycle complete for nix"
+release-linux-amd64-fips: release/pkg-linux-amd64-fips release/fix-tarballs-linux release/sign-fips
+	@echo "=== [release-linux-amd64-fips] full pre-release cycle complete for nix"
 
 .PHONY : release-linux-arm
 release-linux-arm: release/pkg-linux-arm release/fix-tarballs-linux release/sign
 	@echo "=== [release-linux-arm] full pre-release cycle complete for nix"
 
 .PHONY : release-linux-arm64
-release-linux-arm64: release/pkg-linux-arm64 release/fix-tarballs-linux release/sign-fips
+release-linux-arm64: release/pkg-linux-arm64 release/fix-tarballs-linux release/sign
 	@echo "=== [release-linux-arm64] full pre-release cycle complete for nix"
 
 .PHONY : release-linux-arm64-fips
-release-linux-fips-arm64: release/pkg-linux-arm64-fips release/fix-tarballs-linux release/sign
-	@echo "=== [release-linux-arm64] full pre-release cycle complete for nix"
+release-linux-arm64-fips: release/pkg-linux-arm64-fips release/fix-tarballs-linux release/sign-fips
+	@echo "=== [release-linux-arm64-fips] full pre-release cycle complete for nix"
 
 .PHONY : release-linux-legacy
  release-linux-legacy: release/pkg-linux-legacy release/fix-tarballs-linux release/sign

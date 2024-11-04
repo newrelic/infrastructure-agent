@@ -75,7 +75,7 @@ ci/prerelease/linux-amd64:
 	TARGET_OS=linux-amd64 $(MAKE) ci/prerelease
 
 .PHONY : ci/prerelease/linux-amd64-fips
-ci/prerelease/linux-amd64:
+ci/prerelease/linux-amd64-fips:
 	TARGET_OS=linux-amd64-fips $(MAKE) ci/prerelease-fips
 
 .PHONY : ci/prerelease/linux-arm
@@ -87,7 +87,7 @@ ci/prerelease/linux-arm64:
 	TARGET_OS=linux-arm64 $(MAKE) ci/prerelease
 
 .PHONY : ci/prerelease/linux-arm64-fips
-ci/prerelease/linux-arm64:
+ci/prerelease/linux-arm64-fips:
 	TARGET_OS=linux-arm64-fips $(MAKE) ci/prerelease-fips
 
 .PHONY : ci/prerelease/linux-legacy
