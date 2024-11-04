@@ -41,4 +41,3 @@
     goarch:
       - arm64
   # end build arm64
-  
