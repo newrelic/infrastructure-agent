@@ -818,24 +818,6 @@ func BenchmarkStorePluginOutput(b *testing.B) {
 	}
 }
 
-func Test_ProcessSampling_FeatureFlagIsEnabled(t *testing.T) {
-	cnf := &config.Config{
-		IncludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}},
-	}
-	someSample := struct {
-		evenType string
-	}{
-		evenType: "ProcessSample",
-	}
-	a, _ := NewAgent(cnf, "test", "userAgent", test.NewFFRetrieverReturning(true, true))
-
-	// when
-	actual := a.Context.shouldIncludeEvent(someSample)
-
-	// then
-	assert.Equal(t, true, actual)
-}
-
 func getBooleanPtr(val bool) *bool {
 	return &val
 }

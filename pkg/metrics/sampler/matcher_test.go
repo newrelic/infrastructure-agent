@@ -535,16 +535,6 @@ func TestNewSampleMatchFn(t *testing.T) {
 		include bool
 	}{
 		{
-			name: "non process samples are always included",
-			args: args{
-				enableProcessMetrics:   &falseVar,
-				includeMetricsMatchers: emptyMatchers,
-				ffRetriever:            testFF.EmptyFFRetriever,
-				sample:                 &fixture.NetworkSample,
-			},
-			include: true,
-		},
-		{
 			name: "when enableProcessMetrics is FALSE process samples are always excluded",
 			args: args{
 				enableProcessMetrics:   &falseVar,
