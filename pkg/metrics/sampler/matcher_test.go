@@ -687,7 +687,7 @@ func TestNewSampleMatchFn(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			matchFn := sampler.NewIncludeSampleMatchFn(tt.args.enableProcessMetrics, tt.args.includeMetricsMatchers, tt.args.ffRetriever)
+			matchFn := sampler.NewIncludeProcessSampleMatchFn(tt.args.enableProcessMetrics, tt.args.includeMetricsMatchers, tt.args.ffRetriever)
 			assert.Equal(t, tt.include, matchFn(tt.args.sample))
 		})
 	}

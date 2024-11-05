@@ -30,13 +30,13 @@ var (
 // the metrics matcher (processor.MatcherChain) interface.
 type MatcherFn func(event any) bool
 
-// IncludeSampleMatchFn func that returns whether an event/sample should be included, it satisfies
+// IncludeProcessSampleMatchFn func that returns whether an event/sample should be included, it satisfies
 // the metrics matcher (processor.MatcherChain) interface.
-type IncludeSampleMatchFn MatcherFn
+type IncludeProcessSampleMatchFn MatcherFn
 
-// ExcludeSampleMatchFn func that returns whether an event/sample should be excluded, it satisfies
+// ExcludeProcessSampleMatchFn func that returns whether an event/sample should be excluded, it satisfies
 // the metrics matcher (processor.MatcherChain) interface.
-type ExcludeSampleMatchFn MatcherFn
+type ExcludeProcessSampleMatchFn MatcherFn
 
 // ExpressionMatcher is an interface every evaluator must implement
 type ExpressionMatcher interface {
@@ -262,17 +262,12 @@ func (ne constantMatcher) String() string {
 	return fmt.Sprint(ne.value)
 }
 
-// NewIncludeSampleMatchFn returns a function `func(sample) bool` that determinesif the sample
+// NewIncludeProcessSampleMatchFn returns a function `func(sample) bool` that determinesif the sample
 // should be included (true) as an event or not (false). Note that this is NOT the negation
-// of `NewExcludeSampleMatchFn`.
+// of `NewExcludeProcessSampleMatchFn`.
 // The include decision logic only applies to ProcessSamples. Other kinds of samples are always included.
-func NewIncludeSampleMatchFn(enableProcessMetrics *bool, metricsMatchers config.IncludeMetricsMap, ffRetriever feature_flags.Retriever) MatcherFn {
+func NewIncludeProcessSampleMatchFn(enableProcessMetrics *bool, metricsMatchers config.IncludeMetricsMap, ffRetriever feature_flags.Retriever) MatcherFn {
 	return func(sample any) bool {
-		// We return early if the sample is not a ProcessSample.
-		if !isProcessSample(sample) {
-			// Include this event
-			return true
-		}
 
 		// Continuing with the logic
 		// configuration option always takes precedence over FF and matchers configuration
@@ -305,33 +300,24 @@ func NewIncludeSampleMatchFn(enableProcessMetrics *bool, metricsMatchers config.
 
 		mlog.
 			WithField(config.TracesFieldName, config.FeatureTrace).
-			Trace("EnableProcessMetrics is TRUE and rules are NOT defined, ALL process metrics will be ENABLED")
+			Trace("EnableProcessMetrics is TRUE and rules are NOT defined, ALL process metrics will be ENABLED unless excluded_matching_metrics rules are defined")
 
 		return true
 	}
 }
 
-// NewExcludeSampleMatchFn returns a function `func(sample) bool` that determinesif the sample
+// NewExcludeProcessSampleMatchFn returns a function `func(sample) bool` that determinesif the sample
 // should be excluded (true) as an event or not (false). Note that this is NOT the negation
-// of `NewIncludeSampleMatchFn`. In particular, we don't check here for the `enableProcessMetrics`
+// of `NewIncludeProcessSampleMatchFn`. In particular, we don't check here for the `enableProcessMetrics`
 // being unset or disabled because it is checked before calling this function at `agent.NewAgent`.
 // The exclude decision logic only applies to ProcessSamples. Other kinds of samples are never excluded.
-func NewExcludeSampleMatchFn(metricsMatchers config.ExcludeMetricsMap) MatcherFn {
+func NewExcludeProcessSampleMatchFn(metricsMatchers config.ExcludeMetricsMap) MatcherFn {
 	return func(sample any) bool {
-		// We return early if the sample is not a ProcessSample.
-		if !isProcessSample(sample) {
-			// Do NOT exclude this event
-			return false
-		}
 
 		matcher := matcherFromMetricsMatchers(config.MetricsMap(metricsMatchers))
 		if matcher != nil {
 			return matcher(sample)
 		}
-
-		mlog.
-			WithField(config.TracesFieldName, config.FeatureTrace).
-			Trace("EnableProcessMetrics is TRUE and rules are NOT defined, ALL process metrics will be ENABLED")
 
 		return false
 	}
@@ -349,13 +335,4 @@ func matcherFromMetricsMatchers(metricsMatchers config.MetricsMap) MatcherFn {
 	}
 
 	return nil
-}
-
-func isProcessSample(sample any) bool {
-	switch sample.(type) {
-	case *types.ProcessSample, *types.FlatProcessSample:
-		return true
-	default:
-		return false
-	}
 }

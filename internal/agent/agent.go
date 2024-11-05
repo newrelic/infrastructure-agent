@@ -26,6 +26,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/metric"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
+	process_sample_types "github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/sirupsen/logrus"
 
 	"github.com/newrelic/infrastructure-agent/pkg/ctl"
@@ -159,8 +160,8 @@ type context struct {
 	resolver           hostname.ResolverChangeNotifier
 	EntityMap          entity.KnownIDs
 	idLookup           host.IDLookup
-	shouldIncludeEvent sampler.IncludeSampleMatchFn
-	shouldExcludeEvent sampler.ExcludeSampleMatchFn
+	shouldIncludeEvent sampler.IncludeProcessSampleMatchFn
+	shouldExcludeEvent sampler.ExcludeProcessSampleMatchFn
 }
 
 func (c *context) Context() context2.Context {
@@ -206,8 +207,8 @@ func NewContext(
 	buildVersion string,
 	resolver hostname.ResolverChangeNotifier,
 	lookup host.IDLookup,
-	sampleMatchFn sampler.IncludeSampleMatchFn,
-	sampleExcludeFn sampler.ExcludeSampleMatchFn,
+	sampleMatchFn sampler.IncludeProcessSampleMatchFn,
+	sampleExcludeFn sampler.ExcludeProcessSampleMatchFn,
 ) *context {
 	ctx, cancel := context2.WithCancel(context2.Background())
 
@@ -296,22 +297,22 @@ func NewAgent(
 	// all the processes but excluded ones will be sent
 	// * If all the cases where include_metrics_matchers and exclude_metrics_matchers are present,
 	// exclude ones will be ignored
-	sampleMatchFn := sampler.NewIncludeSampleMatchFn(cfg.EnableProcessMetrics, cfg.IncludeMetricsMatchers, ffRetriever)
+	processSampleMatchFn := sampler.NewIncludeProcessSampleMatchFn(cfg.EnableProcessMetrics, cfg.IncludeMetricsMatchers, ffRetriever)
 	// by default, do not apply exclude metrics matchers, only if no include ones are present
-	sampleExcludeFn := func(event any) bool {
+	processSampleExcludeFn := func(event any) bool {
 		return true
 	}
 	if len(cfg.IncludeMetricsMatchers) == 0 &&
 		cfg.EnableProcessMetrics != nil &&
 		*cfg.EnableProcessMetrics &&
 		len(cfg.ExcludeMetricsMatchers) > 0 {
-		sampleExcludeFn = sampler.NewExcludeSampleMatchFn(cfg.ExcludeMetricsMatchers)
+		processSampleExcludeFn = sampler.NewExcludeProcessSampleMatchFn(cfg.ExcludeMetricsMatchers)
 		// if there are not include matchers at all, we remove the matcher to exclude by default
-		sampleMatchFn = func(event any) bool {
+		processSampleMatchFn = func(event any) bool {
 			return false
 		}
 	}
-	ctx := NewContext(cfg, buildVersion, hostnameResolver, idLookupTable, sampler.IncludeSampleMatchFn(sampleMatchFn), sampleExcludeFn)
+	ctx := NewContext(cfg, buildVersion, hostnameResolver, idLookupTable, sampler.IncludeProcessSampleMatchFn(processSampleMatchFn), processSampleExcludeFn)
 
 	agentKey, err := idLookupTable.AgentKey()
 	if err != nil {
@@ -1210,10 +1211,17 @@ func (c *context) SendEvent(event sample.Event, entityKey entity.Key) {
 
 // Decides wether an event will be included or not.
 func (c *context) IncludeEvent(event any) bool {
-	shouldInclude := c.shouldIncludeEvent(event)
-	shouldExclude := c.shouldExcludeEvent(event)
+	switch event.(type) {
+	// rule is applied to process samples only
+	case *process_sample_types.ProcessSample, *process_sample_types.FlatProcessSample:
+		shouldInclude := c.shouldIncludeEvent(event)
+		shouldExclude := c.shouldExcludeEvent(event)
 
-	return shouldInclude || !shouldExclude
+		return shouldInclude || !shouldExclude
+	default:
+		// other samples are included
+		return true
+	}
 }
 
 func (c *context) Unregister(id ids.PluginID) {
