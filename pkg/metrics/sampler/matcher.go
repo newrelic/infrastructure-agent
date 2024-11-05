@@ -265,6 +265,7 @@ func (ne constantMatcher) String() string {
 // NewIncludeSampleMatchFn returns a function `func(sample) bool` that determinesif the sample
 // should be included (true) as an event or not (false). Note that this is NOT the negation
 // of `NewExcludeSampleMatchFn`.
+// The include decision logic only applies to ProcessSamples. Other kinds of samples are always included.
 func NewIncludeSampleMatchFn(enableProcessMetrics *bool, metricsMatchers config.IncludeMetricsMap, ffRetriever feature_flags.Retriever) MatcherFn {
 	return func(sample any) bool {
 		// We return early if the sample is not a ProcessSample.
@@ -314,6 +315,7 @@ func NewIncludeSampleMatchFn(enableProcessMetrics *bool, metricsMatchers config.
 // should be excluded (true) as an event or not (false). Note that this is NOT the negation
 // of `NewIncludeSampleMatchFn`. In particular, we don't check here for the `enableProcessMetrics`
 // being unset or disabled because it is checked before calling this function at `agent.NewAgent`.
+// The exclude decision logic only applies to ProcessSamples. Other kinds of samples are never excluded.
 func NewExcludeSampleMatchFn(metricsMatchers config.ExcludeMetricsMap) MatcherFn {
 	return func(sample any) bool {
 		// We return early if the sample is not a ProcessSample.
