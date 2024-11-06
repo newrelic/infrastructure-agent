@@ -30,13 +30,13 @@ var (
 // the metrics matcher (processor.MatcherChain) interface.
 type MatcherFn func(event any) bool
 
-// IncludeSampleMatchFn func that returns whether an event/sample should be included, it satisfies
+// IncludeProcessSampleMatchFn func that returns whether an event/sample should be included, it satisfies
 // the metrics matcher (processor.MatcherChain) interface.
-type IncludeSampleMatchFn MatcherFn
+type IncludeProcessSampleMatchFn MatcherFn
 
-// ExcludeSampleMatchFn func that returns whether an event/sample should be excluded, it satisfies
+// ExcludeProcessSampleMatchFn func that returns whether an event/sample should be excluded, it satisfies
 // the metrics matcher (processor.MatcherChain) interface.
-type ExcludeSampleMatchFn MatcherFn
+type ExcludeProcessSampleMatchFn MatcherFn
 
 // ExpressionMatcher is an interface every evaluator must implement
 type ExpressionMatcher interface {
@@ -74,10 +74,6 @@ type matcher struct {
 }
 
 func (p matcher) Evaluate(event interface{}) bool {
-	if skipSample(event, typesToEvaluate) {
-		return true
-	}
-
 	actualValue := getFieldValue(event, p.PropertyName)
 	if actualValue == nil {
 		return false
@@ -132,17 +128,6 @@ func getFieldValue(object interface{}, fieldNames []string) interface{} {
 			Tracef("Fields %v does NOT exist in sample.", fieldNames)
 		return nil
 	}
-}
-
-// determine is this is a sample that should be evaluated
-// we are only checking ProcessSamples at this point, so only those should be evaluated
-func skipSample(sample interface{}, typesToEvaluate map[string]bool) bool {
-	v := reflect.TypeOf(sample)
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-	// skip if not "registered"
-	return !typesToEvaluate[v.Name()]
 }
 
 func literalExpressionEvaluator(expected interface{}, actual interface{}) bool {
@@ -277,70 +262,64 @@ func (ne constantMatcher) String() string {
 	return fmt.Sprint(ne.value)
 }
 
-// NewSampleMatchFn creates new includeSampleMatchFn func, enableProcessMetrics might be nil when
-// value was not set.
-func NewSampleMatchFn(enableProcessMetrics *bool, metricsMatchers config.MetricsMap, ffRetriever feature_flags.Retriever) MatcherFn {
-	// configuration option always takes precedence over FF and matchers configuration
-	if enableProcessMetrics == nil {
-		matcher := matcherFromMetricsMatchers(metricsMatchers)
-		if matcher != nil {
-			return matcher
+// NewIncludeProcessSampleMatchFn returns a function `func(sample) bool` that determinesif the sample
+// should be included (true) as an event or not (false). Note that this is NOT the negation
+// of `NewExcludeProcessSampleMatchFn`.
+// The include decision logic only applies to ProcessSamples. Other kinds of samples are always included.
+func NewIncludeProcessSampleMatchFn(enableProcessMetrics *bool, metricsMatchers config.IncludeMetricsMap, ffRetriever feature_flags.Retriever) MatcherFn {
+	return func(sample any) bool {
+
+		// Continuing with the logic
+		// configuration option always takes precedence over FF and matchers configuration
+		if enableProcessMetrics == nil {
+			matcher := matcherFromMetricsMatchers(config.MetricsMap(metricsMatchers))
+			if matcher != nil {
+				return matcher(sample)
+			}
+
+			// configuration option is not defined and feature flag is present, FF determines, otherwise
+			// all process samples will be excluded. Note that this is not exactly the negation
+			// of `NewExcludeSampleMatchFn`.
+			enabled, exists := ffRetriever.GetFeatureFlag(fflag.FlagFullProcess)
+
+			return exists && enabled
 		}
 
-		// configuration option is not defined and feature flag is present, FF determines, otherwise
-		// all process samples will be excluded
-		return matcherFromFeatureFlag(ffRetriever)
-	}
+		if !*enableProcessMetrics {
+			mlog.
+				WithField(config.TracesFieldName, config.FeatureTrace).
+				Trace("EnableProcessMetrics is FALSE, process metrics will be DISABLED")
 
-	if excludeProcessMetrics(enableProcessMetrics) {
+			return false
+		}
+
+		matcher := matcherFromMetricsMatchers(config.MetricsMap(metricsMatchers))
+		if matcher != nil {
+			return matcher(sample)
+		}
+
 		mlog.
 			WithField(config.TracesFieldName, config.FeatureTrace).
-			Trace("EnableProcessMetrics is FALSE, process metrics will be DISABLED")
+			Trace("EnableProcessMetrics is TRUE and rules are NOT defined, ALL process metrics will be ENABLED unless excluded_matching_metrics rules are defined")
 
-		return matcherForDisabledMetrics()
-	}
-
-	matcherChain := NewMatcherChain(metricsMatchers)
-	if matcherChain.Enabled {
-		mlog.
-			WithField(config.TracesFieldName, config.FeatureTrace).
-			Trace("EnableProcessMetrics is TRUE and rules ARE defined, process metrics will be ENABLED for matching processes")
-
-		return matcherChain.Evaluate
-	}
-
-	mlog.
-		WithField(config.TracesFieldName, config.FeatureTrace).
-		Trace("EnableProcessMetrics is TRUE and rules are NOT defined, ALL process metrics will be ENABLED")
-
-	return func(sample interface{}) bool {
-		// all process samples are included
 		return true
 	}
 }
 
-func matcherForDisabledMetrics() MatcherFn {
-	return func(sample interface{}) bool {
-		switch sample.(type) {
-		case *types.ProcessSample:
-			mlog.
-				WithField(config.TracesFieldName, config.FeatureTrace).
-				Trace("Got a sample of type '*types.ProcessSample' so excluding sample.")
-			// no process samples are included
-			return false
-		case *types.FlatProcessSample:
-			mlog.
-				WithField(config.TracesFieldName, config.FeatureTrace).
-				Trace("Got a sample of type '*types.FlatProcessSample' so excluding sample.")
-			// no flat process samples are included
-			return false
-		default:
-			mlog.
-				WithField(config.TracesFieldName, config.FeatureTrace).
-				Tracef("Got a sample of type '%s' that should not be excluded.", reflect.TypeOf(sample).String())
-			// other samples are included
-			return true
+// NewExcludeProcessSampleMatchFn returns a function `func(sample) bool` that determinesif the sample
+// should be excluded (true) as an event or not (false). Note that this is NOT the negation
+// of `NewIncludeProcessSampleMatchFn`. In particular, we don't check here for the `enableProcessMetrics`
+// being unset or disabled because it is checked before calling this function at `agent.NewAgent`.
+// The exclude decision logic only applies to ProcessSamples. Other kinds of samples are never excluded.
+func NewExcludeProcessSampleMatchFn(metricsMatchers config.ExcludeMetricsMap) MatcherFn {
+	return func(sample any) bool {
+
+		matcher := matcherFromMetricsMatchers(config.MetricsMap(metricsMatchers))
+		if matcher != nil {
+			return matcher(sample)
 		}
+
+		return false
 	}
 }
 
@@ -356,26 +335,4 @@ func matcherFromMetricsMatchers(metricsMatchers config.MetricsMap) MatcherFn {
 	}
 
 	return nil
-}
-
-func matcherFromFeatureFlag(ffRetriever feature_flags.Retriever) MatcherFn {
-	return func(sample any) bool {
-		_, isProcessSample := sample.(*types.ProcessSample)
-		_, isFlatProcessSample := sample.(*types.FlatProcessSample)
-
-		if !isProcessSample && !isFlatProcessSample {
-			return true
-		}
-
-		enabled, exists := ffRetriever.GetFeatureFlag(fflag.FlagFullProcess)
-
-		return exists && enabled
-	}
-}
-
-func excludeProcessMetrics(enableProcessMetrics *bool) bool {
-	if enableProcessMetrics == nil || *enableProcessMetrics {
-		return false
-	}
-	return true
 }

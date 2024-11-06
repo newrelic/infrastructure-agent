@@ -8,6 +8,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	testFF "github.com/newrelic/infrastructure-agent/internal/feature_flags/test"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
@@ -233,61 +234,6 @@ func Test_Evaluator_WithUnMappedFields(t *testing.T) {
 			rules: map[string][]string{
 				"process.unmappedField": {"somevalue"},
 				"process.name":          {"java"},
-			},
-			want: true,
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			ec := sampler.NewMatcherChain(tc.rules)
-			assert.Len(t, ec.Matchers, len(tc.rules))
-			assert.EqualValues(t, tc.want, ec.Evaluate(tc.input))
-		})
-	}
-}
-
-// Test_Evaluator_WithNonProcessSamples tests that other sample types keep working as expected
-func Test_Evaluator_WithNonProcessSamples(t *testing.T) {
-	networkSample := network.NetworkSample{InterfaceName: "eth0"}
-	systemSample := metrics.SystemSample{
-		CPUSample: &metrics.CPUSample{
-			CPUPercent: 50,
-		},
-	}
-	storageSample := storage.BaseSample{
-		Device: "/dev/sda1",
-	}
-
-	type testCase struct {
-		name  string
-		input interface{}
-		rules map[string][]string
-		want  bool
-	}
-
-	cases := []testCase{
-		{
-			name:  "NetworkSample",
-			input: networkSample,
-			rules: map[string][]string{
-				"process.name": {"foobar"},
-			},
-			want: true,
-		},
-		{
-			name:  "SystemSample",
-			input: systemSample,
-			rules: map[string][]string{
-				"process.name": {"foobar"},
-			},
-			want: true,
-		},
-		{
-			name:  "StorageSample",
-			input: storageSample,
-			rules: map[string][]string{
-				"process.name": {"foobar"},
 			},
 			want: true,
 		},
@@ -589,16 +535,6 @@ func TestNewSampleMatchFn(t *testing.T) {
 		include bool
 	}{
 		{
-			name: "non process samples are always included",
-			args: args{
-				enableProcessMetrics:   &falseVar,
-				includeMetricsMatchers: emptyMatchers,
-				ffRetriever:            testFF.EmptyFFRetriever,
-				sample:                 &fixture.NetworkSample,
-			},
-			include: true,
-		},
-		{
 			name: "when enableProcessMetrics is FALSE process samples are always excluded",
 			args: args{
 				enableProcessMetrics:   &falseVar,
@@ -741,8 +677,102 @@ func TestNewSampleMatchFn(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			matchFn := sampler.NewSampleMatchFn(tt.args.enableProcessMetrics, config.MetricsMap(tt.args.includeMetricsMatchers), tt.args.ffRetriever)
+			matchFn := sampler.NewIncludeProcessSampleMatchFn(tt.args.enableProcessMetrics, tt.args.includeMetricsMatchers, tt.args.ffRetriever)
 			assert.Equal(t, tt.include, matchFn(tt.args.sample))
+		})
+	}
+}
+
+//nolint:exhaustruct
+func Test_ProcessSamplingExcludes(t *testing.T) {
+	t.Parallel()
+
+	someProcessSample := &types.ProcessSample{
+		ProcessDisplayName: "some-process",
+	}
+	someNetworkSample := network.NetworkSample{InterfaceName: "eth0"}
+	someSystemSample := metrics.SystemSample{
+		CPUSample: &metrics.CPUSample{
+			CPUPercent: 50,
+		},
+	}
+	someStorageSample := storage.BaseSample{
+		Device: "/dev/sda1",
+	}
+
+	boolAsPointer := func(val bool) *bool {
+		return &val
+	}
+
+	type testCase struct {
+		name          string
+		c             *config.Config
+		ff            feature_flags.Retriever
+		expectInclude bool
+	}
+	testCases := []testCase{
+		{
+			name:          "Include not matching must not include",
+			c:             &config.Config{EnableProcessMetrics: boolAsPointer(true), IncludeMetricsMatchers: map[string][]string{"process.name": {"does-not-match"}}, DisableCloudMetadata: true},
+			ff:            testFF.NewFFRetrieverReturning(false, false),
+			expectInclude: false,
+		},
+		{
+			name:          "Include matching should not exclude",
+			c:             &config.Config{EnableProcessMetrics: boolAsPointer(true), IncludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}}, DisableCloudMetadata: true},
+			ff:            testFF.NewFFRetrieverReturning(false, false),
+			expectInclude: true,
+		},
+		{
+			name:          "Exclude matching should exclude with process metrics enabled",
+			c:             &config.Config{EnableProcessMetrics: boolAsPointer(true), ExcludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}}, DisableCloudMetadata: true},
+			ff:            testFF.NewFFRetrieverReturning(false, false),
+			expectInclude: false,
+		},
+		{
+			name:          "Exclude matching should exclude",
+			c:             &config.Config{ExcludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}}, DisableCloudMetadata: true},
+			ff:            testFF.NewFFRetrieverReturning(false, false),
+			expectInclude: false,
+		},
+		{
+			name:          "Exclude not matching should not exclude with process metrics enabled",
+			c:             &config.Config{EnableProcessMetrics: boolAsPointer(true), ExcludeMetricsMatchers: map[string][]string{"process.name": {"does-not-match"}}, DisableCloudMetadata: true},
+			ff:            testFF.NewFFRetrieverReturning(false, false),
+			expectInclude: true,
+		},
+		{
+			name:          "Exclude not matching should not exclude",
+			c:             &config.Config{ExcludeMetricsMatchers: map[string][]string{"process.name": {"does-not-match"}}, DisableCloudMetadata: true},
+			ff:            testFF.NewFFRetrieverReturning(false, false),
+			expectInclude: false,
+		},
+		{
+			name:          "Include matching should include even if exclude is configured with process metrics enabled",
+			c:             &config.Config{EnableProcessMetrics: boolAsPointer(true), IncludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}}, ExcludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}}, DisableCloudMetadata: true},
+			ff:            testFF.NewFFRetrieverReturning(false, false),
+			expectInclude: true,
+		},
+		{
+			name:          "Include matching should be include even when enable_process_metrics is not defined (nil)",
+			c:             &config.Config{IncludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}}, ExcludeMetricsMatchers: map[string][]string{"process.name": {"some-process"}}, DisableCloudMetadata: true},
+			ff:            testFF.NewFFRetrieverReturning(false, false),
+			expectInclude: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		testCase := tc
+		agent, _ := agent.NewAgent(testCase.c, "test", "userAgent", testCase.ff)
+
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			assert.Equal(t, testCase.expectInclude, agent.Context.IncludeEvent(someProcessSample))
+			// In all cases, events that are not ProcessSamples should always be included!
+			assert.True(t, agent.Context.IncludeEvent(someSystemSample))
+			assert.True(t, agent.Context.IncludeEvent(someNetworkSample))
+			assert.True(t, agent.Context.IncludeEvent(someStorageSample))
 		})
 	}
 }
