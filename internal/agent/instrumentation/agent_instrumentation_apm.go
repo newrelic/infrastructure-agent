@@ -113,6 +113,7 @@ func NewAgentInstrumentationApm(license string, apmEndpoint string, telemetryEnd
 				c.Host = apmEndpoint
 			}
 		},
+		newrelic.ConfigFromEnvironment(),
 		newrelic.ConfigLogger(apmLoggger{}),
 	)
 	if err != nil {
