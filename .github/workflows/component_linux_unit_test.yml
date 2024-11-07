@@ -24,18 +24,11 @@ jobs:
       - name: Running unit tests
         run: make ci/unit-test
 
-      - name: Convert coverage to lcov
-        uses: jandelgado/gcov2lcov-action@v1.0.5
-        with:
-          infile: coverage.out
-          outfile: coverage.lcov
-
       - name: Coveralls Parallel
-        uses: coverallsapp/github-action@master
-        continue-on-error: true
+        uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.gh_token }}
-          path-to-lcov: coverage.lcov
+          path-to-lcov: ./coverage.out
           flag-name: run-linux
           parallel: true
 
@@ -61,8 +54,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Coveralls Finished
-        uses: coverallsapp/github-action@master
-        continue-on-error: true
+        uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.gh_token }}
           parallel-finished: true
