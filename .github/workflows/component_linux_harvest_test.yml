@@ -21,12 +21,11 @@ jobs:
       - name: Setup node
         run: sudo apt install musl-dev
 
-      - name: Fix GOROOT to be run with sudo
+      - name: Run harvest tests
         run: |
-          mkdir -p /home/runner/.config/go
-          echo GOROOT="$( go env GOROOT )" > /home/runner/.config/go/env
-          echo GOTOOLDIR="$( go env GOTOOLDIR )" >> /home/runner/.config/go/env
-          sudo -E go env
+          # Set up installed Go version for root user, to not use the default from the runner
+          # GO_BIN is used by the Makefile
+          export GO_BIN="$( which go)"
 
-      - name: Running Harvest tests
-        run: sudo -E make linux/harvest-tests
+          sudo -E make linux/harvest-tests
+
