@@ -6,14 +6,12 @@
     - type: yum
       dest: "{dest_prefix}linux/yum/el/{os_version}/{arch}/"
       os_version:
-        # - 6
         - 7
         - 8
         - 9
 
 - src: "newrelic-infra-{version}-1.el{os_version}.{arch}_fips.rpm"
   arch:
-    # - arm
     - arm64
   uploads:
     - type: yum
@@ -30,13 +28,7 @@
     - type: zypp
       dest: "{dest_prefix}linux/zypp/sles/{os_version}/{arch}/"
       os_version:
-        # - 11.4
-        # - 12.1
-        # - 12.2
-        # - 12.3
-        # - 12.4
         - 12.5
-        # - 15.1
         - 15.2
         - 15.3
         - 15.4
@@ -44,17 +36,12 @@
 
 - src: "newrelic-infra-{version}-1.sles{os_version}.{arch}_fips.rpm"
   arch:
-    # - arm
     - arm64
   uploads:
     - type: zypp
       dest: "{dest_prefix}linux/zypp/sles/{os_version}/{arch}/"
       os_version:
-        # - 12.2
-        # - 12.3
-        # - 12.4
         - 12.5
-        # - 15.1
         - 15.2
         - 15.3
         - 15.4
@@ -63,7 +50,6 @@
 - src: "newrelic-infra-{version}-1.amazonlinux-{os_version}.{arch}_fips.rpm"
   arch:
     - x86_64
-    # - arm
     - arm64
   uploads:
     - type: yum
@@ -83,21 +69,9 @@
     - type: file
       dest: "{dest_prefix}linux/yum/el/{os_version}/{arch}/{src}"
       os_version:
-        # - 6
         - 7
         - 8
         - 9
-
-# - src: "newrelic-infra-{version}-1.el{os_version}.{arch}.rpm.sum"
-#   arch:
-#     - arm
-#   uploads:
-#     - type: file
-#       dest: "{dest_prefix}linux/yum/el/{os_version}/{arch}/{src}"
-#       os_version:
-#         - 7
-#         - 8
-#         - 9
 
 - src: "newrelic-infra-{version}-1.el{os_version}.{arch}_fips.rpm.sum"
   arch:
@@ -117,34 +91,11 @@
     - type: file
       dest: "{dest_prefix}linux/zypp/sles/{os_version}/{arch}/{src}"
       os_version:
-        # - 11.4
-        # - 12.1
-        # - 12.2
-        # - 12.3
-        # - 12.4
         - 12.5
-        # - 15.1
         - 15.2
         - 15.3
         - 15.4
         - 15.5
-
-# - src: "newrelic-infra-{version}-1.sles{os_version}.{arch}.rpm.sum"
-#   arch:
-#     - arm
-#   uploads:
-#     - type: file
-#       dest: "{dest_prefix}linux/zypp/sles/{os_version}/{arch}/{src}"
-#       os_version:
-#         - 12.2
-#         - 12.3
-#         - 12.4
-#         - 12.5
-#         - 15.1
-#         - 15.2
-#         - 15.3
-#         - 15.4
-#         - 15.5
 
 - src: "newrelic-infra-{version}-1.sles{os_version}.{arch}_fips.rpm.sum"
   arch:
@@ -153,11 +104,7 @@
     - type: file
       dest: "{dest_prefix}linux/zypp/sles/{os_version}/aarch64/{src}"
       os_version:
-        # - 12.2
-        # - 12.3
-        # - 12.4
         - 12.5
-        # - 15.1
         - 15.2
         - 15.3
         - 15.4
@@ -166,7 +113,6 @@
 - src: "newrelic-infra-{version}-1.amazonlinux-{os_version}.{arch}_fips.rpm.sum"
   arch:
     - x86_64
-    # - arm
   uploads:
     - type: file
       dest: "{dest_prefix}linux/yum/amazonlinux/{os_version}/{arch}/{src}"

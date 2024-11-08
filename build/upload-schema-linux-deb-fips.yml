@@ -3,7 +3,6 @@
   arch:
     - amd64
     - arm64
-    # - arm
   uploads:
     - type: apt
       src_repo: "{access_point_host}/infrastructure_agent/linux/apt"
@@ -41,7 +40,6 @@
   arch:
     - amd64
     - arm64
-    # - arm
   uploads:
     - type: file
       dest: "{dest_prefix}linux/apt/pool/main/n/newrelic-infra/{src}"

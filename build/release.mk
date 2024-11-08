@@ -154,7 +154,7 @@ release-linux: release/pkg-linux release/fix-tarballs-linux release/sign
 
 .PHONY : release-linux-fips
 release-linux-fips: release/pkg-linux-fips release/fix-tarballs-linux release/sign-fips
-	@echo "=== [release-linux] full pre-release cycle complete for nix - FIPS"
+	@echo "=== [release-linux-fips] full pre-release cycle complete for nix - FIPS"
 
 .PHONY : release-linux-amd64
 release-linux-amd64: release/pkg-linux-amd64 release/fix-tarballs-linux release/sign

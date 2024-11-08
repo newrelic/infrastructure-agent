@@ -2,9 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //go:generate goversioninfo
 
-//go:build !fips
-// +build !fips
-
 package main
 
 import (
