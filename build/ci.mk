@@ -7,11 +7,6 @@ ci/deps:GH_ARCH ?= amd64
 ci/deps:
 	@docker build -t $(BUILDER_IMG_TAG) --build-arg GH_ARCH=$(GH_ARCH) -f $(CURDIR)/build/Dockerfile $(CURDIR)
 
-.PHONY: ci/deps-fips
-ci/deps-fips:GH_ARCH ?= amd64
-ci/deps-fips:
-	@docker build -t $(BUILDER_IMG_TAG_FIPS) --build-arg GH_ARCH=$(GH_ARCH) -f $(CURDIR)/build/Dockerfile.fips $(CURDIR)
-
 .PHONY: ci/validate
 ci/validate: ci/deps
 	@docker run --rm -t \
@@ -68,7 +63,7 @@ ci/prerelease/linux:
 
 .PHONY : ci/prerelease/linux-fips
 ci/prerelease/linux-fips:
-	TARGET_OS=linux-fips $(MAKE) ci/prerelease-fips
+	TARGET_OS=linux-fips $(MAKE) ci/prerelease
 
 .PHONY : ci/prerelease/linux-amd64
 ci/prerelease/linux-amd64:
@@ -124,24 +119,6 @@ else
 	@echo "===> infrastructure-agent ===  [ci/prerelease/linux] TAG env variable expected to be set"
 	exit 1
 endif
-
-.PHONY : ci/prerelease-fips
-ci/prerelease-fips: ci/deps-fips
-ifdef TAG
-	@docker run --rm -t \
-			--name "infrastructure-agent-prerelease" \
-			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
-            -w /go/src/github.com/newrelic/infrastructure-agent \
-			-e PRERELEASE=true \
-			-e GITHUB_TOKEN \
-			-e TAG \
-			-e GPG_MAIL \
-			-e GPG_PASSPHRASE \
-			-e GPG_PRIVATE_KEY_BASE64 \
-			-e SNAPSHOT=false \
-			-e FIPS \
-			$(BUILDER_IMG_TAG_FIPS) make release-${TARGET_OS}
-
 
 else
 	@echo "===> infrastructure-agent ===  [ci/prerelease/linux-fips] TAG env variable expected to be set"
