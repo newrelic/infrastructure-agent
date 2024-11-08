@@ -13,9 +13,9 @@ on:
         description: 'Repo prefix'
         required: true
       BUILD_MODE:
-        description: 'Enable Normal, FIPS or ALL'
+        description: 'Enable NON-FIPS, FIPS or ALL'
         required: false
-        default: '' # "ALL" "FIPS":
+        default: 'ALL' # "ALL" "NON-FIPS" "FIPS":
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -60,7 +60,7 @@ jobs:
           password: ${{ env.DOCKER_HUB_PASSWORD }}
 
       - name: Preparing all NON-FIPS linux packages
-        if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == '' }}
+        if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'NON-FIPS' }}
         run: make ci/prerelease/linux
         env:
           TAG: ${{ env.FAKE_TAG }}
@@ -74,7 +74,7 @@ jobs:
           run_sudo: true
 
       - name: Publish NON-FIPS deb to S3 action
-        if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == '' }}
+        if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'NON-FIPS' }}
         uses: newrelic/infrastructure-publish-action@v1.3.4
         with:
           tag: ${{env.FAKE_TAG}}
@@ -100,7 +100,7 @@ jobs:
           apt_skip_mirror:  true
 
       - name: Publish NON-FIPS rpm to S3 action
-        if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == '' }}
+        if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'NON-FIPS' }}
         uses: newrelic/infrastructure-publish-action@v1.3.4
         with:
           tag: ${{env.FAKE_TAG}}
@@ -125,7 +125,7 @@ jobs:
           local_packages_path:  "/srv/dist/"
 
       - name: Publish NON-FIPS targz to S3 action
-        if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == '' }}
+        if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'NON-FIPS' }}
         uses: newrelic/infrastructure-publish-action@v1.3.4
         with:
           tag: ${{env.FAKE_TAG}}
