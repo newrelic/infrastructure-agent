@@ -113,8 +113,6 @@ ifdef TAG
 			-e SNAPSHOT=false \
 			-e FIPS \
 			$(BUILDER_IMG_TAG) make release-${TARGET_OS}
-
-
 else
 	@echo "===> infrastructure-agent ===  [ci/prerelease/linux] TAG env variable expected to be set"
 	exit 1
