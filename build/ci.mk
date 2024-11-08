@@ -118,11 +118,6 @@ else
 	exit 1
 endif
 
-else
-	@echo "===> infrastructure-agent ===  [ci/prerelease/linux-fips] TAG env variable expected to be set"
-	exit 1
-endif
-
 .PHONY : ci/prerelease-publish
 ci/prerelease-publish: ci/deps
 ifdef TAG
