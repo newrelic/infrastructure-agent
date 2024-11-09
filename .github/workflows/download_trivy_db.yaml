@@ -1,0 +1,40 @@
+name: Update Trivy Cache
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Update daily at 00:00 - before scheduled trivy scan
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  update-trivy-db:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Setup oras
+        uses: oras-project/setup-oras@v1
+
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      - name: Download and extract the vulnerability DB
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/.cache/trivy/db
+          # try GHCR, fallback to ECR
+          { oras pull ghcr.io/aquasecurity/trivy-db:2 } || { oras pull public.ecr.aws/aquasecurity/trivy-db:2 }
+          tar -xzf db.tar.gz -C $GITHUB_WORKSPACE/.cache/trivy/db
+          rm db.tar.gz
+
+      # Also recommended by trivy docs for non-java projects as jars could be embedded in unexpected places
+      - name: Download and extract the Java DB
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/.cache/trivy/java-db
+          # try GHCR, fallback to ECR
+          { oras pull ghcr.io/aquasecurity/trivy-java-db:1 } || { oras pull public.ecr.aws/aquasecurity/trivy-java-db:1 }
+          tar -xzf javadb.tar.gz -C $GITHUB_WORKSPACE/.cache/trivy/java-db
+          rm javadb.tar.gz
+
+      - name: Cache DBs
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}/.cache/trivy
+          key: cache-trivy-${{ steps.date.outputs.date }}
