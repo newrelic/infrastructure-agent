@@ -15,7 +15,7 @@
   tasks:
     - name: Installation tests suite
       vars:
-        target_agent_version: "1.52.3" # minimum version for ubuntu 24
+        target_agent_version: "1.57.1" # minimum version for ubuntu sles 15.6
 
       block:
 
