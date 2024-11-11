@@ -28,6 +28,10 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: "${{ inputs.severity }}"
+        env:
+          # dbs are downloaded async in download_trivy_db.yml
+          TRIVY_SKIP_DB_UPDATE: true
+          TRIVY_SKIP_JAVA_DB_UPDATE: true
 
       - name: newrelic/k8s-events-forwarder
         uses: aquasecurity/trivy-action@master
@@ -38,6 +42,10 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: "${{ inputs.severity }}"
+        env:
+          # dbs are downloaded async in download_trivy_db.yml
+          TRIVY_SKIP_DB_UPDATE: true
+          TRIVY_SKIP_JAVA_DB_UPDATE: true
 
       - name: newrelic/nri-forwarder
         uses: aquasecurity/trivy-action@master
@@ -48,6 +56,10 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: "${{ inputs.severity }}"
+        env:
+          # dbs are downloaded async in download_trivy_db.yml
+          TRIVY_SKIP_DB_UPDATE: true
+          TRIVY_SKIP_JAVA_DB_UPDATE: true
 
   trivy_scanner_scheduled:
     name: Scheduled Trivy scanner for docker
@@ -67,6 +79,10 @@ jobs:
           severity: "${{ inputs.severity }}"
           exit-code: '1'
           ignore-unfixed: true
+        env:
+          # dbs are downloaded async in download_trivy_db.yml
+          TRIVY_SKIP_DB_UPDATE: true
+          TRIVY_SKIP_JAVA_DB_UPDATE: true
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
