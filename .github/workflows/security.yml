@@ -66,3 +66,6 @@ jobs:
           vuln-type: 'os,library'
           severity: "HIGH,CRITICAL"
           skip-dirs: "/var"
+        env:
+          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db
+          TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db

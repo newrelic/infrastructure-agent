@@ -28,6 +28,9 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: "${{ inputs.severity }}"
+        env:
+          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db
+          TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db
 
       - name: newrelic/k8s-events-forwarder
         uses: aquasecurity/trivy-action@master
@@ -38,6 +41,9 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: "${{ inputs.severity }}"
+        env:
+          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db
+          TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db
 
       - name: newrelic/nri-forwarder
         uses: aquasecurity/trivy-action@master
@@ -48,6 +54,9 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: "${{ inputs.severity }}"
+        env:
+          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db
+          TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db
 
   trivy_scanner_scheduled:
     name: Scheduled Trivy scanner for docker
@@ -58,7 +67,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Sarif newrelic/infrastructure
-        uses: aquasecurity/trivy-action@0.8.0
+        uses: aquasecurity/trivy-action@master
         with:
           image-ref: "docker.io/newrelic/infrastructure:${{ inputs.tag }}"
           format: 'sarif'
@@ -67,6 +76,9 @@ jobs:
           severity: "${{ inputs.severity }}"
           exit-code: '1'
           ignore-unfixed: true
+        env:
+          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db
+          TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
