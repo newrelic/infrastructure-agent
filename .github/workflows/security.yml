@@ -66,7 +66,3 @@ jobs:
           vuln-type: 'os,library'
           severity: "HIGH,CRITICAL"
           skip-dirs: "/var"
-        env:
-          # dbs are downloaded async in download_trivy_db.yml
-          TRIVY_SKIP_DB_UPDATE: true
-          TRIVY_SKIP_JAVA_DB_UPDATE: true
