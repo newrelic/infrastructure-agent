@@ -9,8 +9,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
-	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -18,6 +16,9 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 
 	"github.com/StackExchange/wmi"
 	ffTest "github.com/newrelic/infrastructure-agent/internal/feature_flags/test"
@@ -312,5 +313,156 @@ func (pd *fakeDecorator) Decorate(process *types.ProcessSample) {
 	process.ContainerLabels = map[string]string{
 		"label1": "value1",
 		"label2": "value2",
+	}
+}
+
+//nolint:paralleltest,exhaustruct,forcetypeassert,nlreturn,testifylint,funlen
+func TestSample(t *testing.T) {
+	ptrToTime := func(t time.Time) *time.Time {
+		return &t
+	}
+
+	ptrToString := func(s string) *string {
+		return &s
+	}
+
+	tests := map[string]struct {
+		allProcs             []win32_Process
+		previousProcessTimes []*SystemTimes
+		hasAlreadyRun        bool
+		currentSystemTime    *SystemTimes
+		previousSystemTime   *SystemTimes
+		lastRun              time.Time
+		mockGetStatus        func(_ int32) (string, error)
+		mockGetMemoryInfo    func(_ int32) (*MemoryInfoStat, error)
+		mockGetTimes         func(pid int32) (*SystemTimes, error)
+		mockGetSystemTimes   func() (*SystemTimes, error)
+	}{
+		"sample collection delayed by 2 hours": {
+			allProcs: []win32_Process{
+				{
+					Name:           "proc1",
+					ProcessID:      123,
+					ExecutablePath: ptrToString("path1"),
+					CreationDate:   ptrToTime(time.Date(2024, 10, 25, 12, 13, 36, 801202800, time.FixedZone("IST", 5*60*60+30*60))),
+					Status:         ptrToString("running"),
+				},
+				{
+					Name:           "proc2",
+					ProcessID:      234,
+					ExecutablePath: ptrToString("path2"),
+					CreationDate:   ptrToTime(time.Date(2024, 10, 25, 12, 13, 36, 801202800, time.FixedZone("IST", 5*60*60+30*60))),
+					Status:         ptrToString("running"),
+				},
+			},
+			previousProcessTimes: []*SystemTimes{
+				{
+					IdleTime:   0,
+					KernelTime: 87812500,
+					UserTime:   59843750,
+				},
+				{
+					IdleTime:   0,
+					KernelTime: 7656250,
+					UserTime:   953125045,
+				},
+			},
+			hasAlreadyRun: true,
+			currentSystemTime: &SystemTimes{
+				IdleTime:   3790431875000,
+				KernelTime: 458463437500,
+				UserTime:   1037076406250,
+			},
+			previousSystemTime: &SystemTimes{
+				IdleTime:   3790431875000,
+				KernelTime: 456003281250,
+				UserTime:   314551562500,
+			},
+			lastRun: time.Date(2024, 10, 25, 16, 13, 36, 801202800, time.FixedZone("IST", 5*60*60+30*60)),
+			mockGetStatus: func(_ int32) (string, error) {
+				return "running", nil
+			},
+			mockGetMemoryInfo: func(_ int32) (*MemoryInfoStat, error) {
+				return &MemoryInfoStat{
+					RSS:  43,
+					VMS:  54,
+					Swap: 24,
+				}, nil
+			},
+			mockGetTimes: func(pid int32) (*SystemTimes, error) {
+				mapPidSystemTimes := map[int32]*SystemTimes{
+					123: {
+						IdleTime:   0,
+						KernelTime: 87812500,
+						UserTime:   59843750,
+					},
+					234: {
+						IdleTime:   0,
+						KernelTime: 7656250,
+						UserTime:   723478688795,
+					},
+				}
+				return mapPidSystemTimes[pid], nil
+			},
+			mockGetSystemTimes: func() (*SystemTimes, error) {
+				return &SystemTimes{
+					IdleTime:   3790431875000,
+					KernelTime: 458463437500,
+					UserTime:   1037076406250,
+				}, nil
+			},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			ctx := new(mocks.AgentContext)
+			cfg := config.NewConfig()
+			cfg.ProcessContainerDecoration = false
+			ctx.On("Config").Return(cfg)
+			for idx, proc := range test.allProcs {
+				ctx.On("GetServiceForPid", int(proc.ProcessID)).Return(fmt.Sprintf("service%d", idx+1), true)
+			}
+			sampler := NewProcsMonitor(ctx)
+			sampler.containerSamplers = []ContainerSampler{
+				&fakeContainerSampler{},
+			}
+			sampler.getAllProcs = func() ([]win32_Process, error) {
+				return test.allProcs, nil
+			}
+			sampler.procCache = map[string]*ProcessCacheEntry{}
+			sampler.previousProcessTimes = map[string]*SystemTimes{}
+			for idx, proc := range test.allProcs {
+				procInterrogator, _ := sampler.processInterrogator.NewProcess(int32(proc.ProcessID))
+				sampler.procCache[fmt.Sprintf("%d-%s", proc.ProcessID, proc.CreationDate.String())] = &ProcessCacheEntry{
+					process: procInterrogator,
+					lastSample: &types.ProcessSample{
+						ProcessID:   int32(proc.ProcessID),
+						CommandName: proc.Name,
+					},
+				}
+				sampler.previousProcessTimes[fmt.Sprintf("%d-%s", proc.ProcessID, proc.CreationDate.String())] = test.previousProcessTimes[idx]
+			}
+			sampler.currentSystemTime = test.currentSystemTime
+			sampler.previousSystemTime = test.previousSystemTime
+			sampler.hasAlreadyRun = test.hasAlreadyRun
+			sampler.lastRun = test.lastRun
+			sampler.getStatus = test.mockGetStatus
+			sampler.getMemoryInfo = test.mockGetMemoryInfo
+			sampler.getTimes = test.mockGetTimes
+			sampler.getSystemTimes = test.mockGetSystemTimes
+
+			results, err := sampler.Sample()
+			assert.NoError(t, err)
+			assert.Equal(t, len(results), 2, "No results returned from sampler.Sample()")
+
+			for idx, sample := range results {
+				sample := sample.(*types.ProcessSample)
+				assert.LessOrEqual(t, sample.CPUUserPercent, 100.0, fmt.Sprintf("process %v: CPUUserPercent should be less than or equal to 100", idx))
+				assert.LessOrEqual(t, sample.CPUSystemPercent, 100.0, fmt.Sprintf("process %v: CPUSystemPercent should be less than or equal to 100", idx))
+				assert.GreaterOrEqual(t, sample.CPUUserPercent, 0.0, fmt.Sprintf("process %v: CPUUserPercent should be greater than or equal to 0", idx))
+				assert.GreaterOrEqual(t, sample.CPUSystemPercent, 0.0, fmt.Sprintf("process %v: CPUSystemPercent should be greater than or equal to 0", idx))
+			}
+		})
 	}
 }

@@ -339,6 +339,7 @@ type ProcsMonitor struct {
 	getUsername          func(int32) (string, error)
 	getTimes             func(int32) (*SystemTimes, error)
 	getCommandLine       func(uint32) (string, error)
+	getSystemTimes       func() (*SystemTimes, error)
 }
 
 func NewProcsMonitor(context agent.AgentContext) *ProcsMonitor {
@@ -384,6 +385,7 @@ func NewProcsMonitor(context agent.AgentContext) *ProcsMonitor {
 		getUsername:          getProcessUsername,
 		getTimes:             getProcessTimes,
 		getCommandLine:       getProcessCommandLineWMI,
+		getSystemTimes:       getSystemTimes,
 	}
 }
 
@@ -655,7 +657,7 @@ func (self *ProcsMonitor) Sample() (results sample.EventBatch, err error) {
 	wmiProcDataEnabled := self.EnableWmiProcData()
 	elapsedSeconds := self.calcElapsedTimeInSeconds()
 
-	self.currentSystemTime, err = getSystemTimes()
+	self.currentSystemTime, err = self.getSystemTimes()
 	if err != nil {
 		self.currentSystemTime = nil
 		pslog.WithError(err).Error("process sampler can't determine system time")
