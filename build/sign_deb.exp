@@ -17,3 +17,5 @@ send -- "$GPG_PASSPHRASE\r"
 
 # Wait until the process completes
 expect eof
+
+
