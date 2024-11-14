@@ -50,9 +50,6 @@ for rpm_file in $(find -regex ".*\.\(rpm\)");do
   rpm -v --checksig $rpm_file
 done
 
-# Make sure the sign_deb.exp script is executable
-chmod +x ../build/sign_deb.exp
-
 # Sign DEB's
 GNUPGHOME="/root/.gnupg"
 echo "${GPG_PASSPHRASE}" > "${GNUPGHOME}/gpg-passphrase"
@@ -72,9 +69,6 @@ for deb_file in $(find -regex ".*\.\(deb\)"); do
   echo "===> Sign verification $deb_file"
   dpkg-sig --verify $deb_file
 done
-
-# Make sure the sign_tar.exp script is executable
-chmod +x ../build/sign_tar.exp
 
 # Sign TARGZ files
 for targz_file in $(find . -type f -name "*.tar.gz"); do
