@@ -100,7 +100,22 @@ endif
 .PHONY : ci/prerelease
 ci/prerelease: ci/deps
 ifdef TAG
-	@docker run --rm -t \
+	ifdef FIPS
+		@docker run --rm -t \
+			--name "infrastructure-agent-prerelease" \
+			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
+			-w /go/src/github.com/newrelic/infrastructure-agent \
+			-e PRERELEASE=true \
+			-e GITHUB_TOKEN \
+			-e TAG \
+			-e GPG_MAIL \
+			-e GPG_PASSPHRASE \
+			-e GPG_PRIVATE_KEY_BASE64 \
+			-e SNAPSHOT=false \
+			-e FIPS \
+			$(BUILDER_IMG_TAG) make release-${TARGET_OS}
+	else
+		@docker run --rm -t \
 			--name "infrastructure-agent-prerelease" \
 			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
             -w /go/src/github.com/newrelic/infrastructure-agent \
@@ -111,8 +126,9 @@ ifdef TAG
 			-e GPG_PASSPHRASE \
 			-e GPG_PRIVATE_KEY_BASE64 \
 			-e SNAPSHOT=false \
-			-e FIPS \
+			-e FIPS="" \
 			$(BUILDER_IMG_TAG) make release-${TARGET_OS}
+	endif
 else
 	@echo "===> infrastructure-agent ===  [ci/prerelease/linux] TAG env variable expected to be set"
 	exit 1
