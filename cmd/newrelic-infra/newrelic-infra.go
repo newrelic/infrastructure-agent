@@ -8,7 +8,6 @@ import (
 	context2 "context"
 	"flag"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"io"
 	"net"
 	"net/http"
@@ -21,6 +20,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/newrelic/infrastructure-agent/cmd/newrelic-infra/dnschecks"
 	"github.com/newrelic/infrastructure-agent/cmd/newrelic-infra/initialize"
