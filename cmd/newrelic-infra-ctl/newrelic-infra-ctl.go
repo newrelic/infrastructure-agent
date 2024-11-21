@@ -8,11 +8,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/ipc"
 	"os"
 	"os/signal"
 	"runtime"
 	"syscall"
+
+	"github.com/newrelic/infrastructure-agent/pkg/ipc"
 
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/ctl/sender"
