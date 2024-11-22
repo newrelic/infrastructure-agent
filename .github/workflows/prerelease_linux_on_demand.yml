@@ -15,7 +15,7 @@ on:
       BUILD_MODE:
         description: 'Enable NON-FIPS, FIPS or ALL'
         required: false
-        default: 'ALL' # "ALL" "NON-FIPS" "FIPS":
+        default: 'NON-FIPS' # "ALL" "NON-FIPS" "FIPS":
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -64,7 +64,6 @@ jobs:
         run: make ci/prerelease/linux
         env:
           TAG: ${{ env.FAKE_TAG }}
-          FIPS: ""
 
       - name: Generate checksum files
         uses: ./.github/actions/generate-checksums
@@ -154,7 +153,7 @@ jobs:
         run: make ci/prerelease/linux-fips
         env:
           TAG: ${{ env.FAKE_TAG }}
-          FIPS: "_fips"
+          FIPS: "-fips"
 
       - name: Generate checksum files
         uses: ./.github/actions/generate-checksums
@@ -168,7 +167,7 @@ jobs:
         uses: newrelic/infrastructure-publish-action@v1.3.4
         with:
           tag: ${{env.FAKE_TAG}}
-          app_name: "newrelic-infra"
+          app_name: "newrelic-infra-fips"
           repo_name: "newrelic/infrastructure-agent"
           schema: "custom"
           schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.BRANCH }}/build/upload-schema-linux-deb-fips.yml"
@@ -194,7 +193,7 @@ jobs:
         uses: newrelic/infrastructure-publish-action@v1.3.4
         with:
           tag: ${{env.FAKE_TAG}}
-          app_name: "newrelic-infra"
+          app_name: "newrelic-infra-fips"
           repo_name: "newrelic/infrastructure-agent"
           schema: "custom"
           schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.BRANCH }}/build/upload-schema-linux-rpm-fips.yml"
@@ -219,7 +218,7 @@ jobs:
         uses: newrelic/infrastructure-publish-action@v1.3.4
         with:
           tag: ${{env.FAKE_TAG}}
-          app_name: "newrelic-infra"
+          app_name: "newrelic-infra-fips"
           repo_name: "newrelic/infrastructure-agent"
           schema: "custom"
           schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.BRANCH }}/build/upload-schema-linux-targz-fips.yml"
