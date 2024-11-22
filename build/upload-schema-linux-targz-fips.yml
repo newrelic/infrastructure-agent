@@ -1,5 +1,5 @@
 ---
-- src: "newrelic-infra_linux_{version}_{arch}_fips.tar.gz"
+- src: "newrelic-infra-fips_linux_{version}_{arch}.tar.gz"
   uploads:
     - type: file
       dest: "{dest_prefix}binaries/linux/{arch}/{src}"
@@ -11,7 +11,7 @@
   # UPLOAD CHECKSUMS #
 #########################
 
-- src: "newrelic-infra_linux_{version}_{arch}_fips.tar.gz.sum"
+- src: "newrelic-infra-fips_linux_{version}_{arch}.tar.gz.sum"
   uploads:
     - type: file
       dest: "{dest_prefix}binaries/linux/{arch}/{src}"
@@ -23,7 +23,7 @@
   # UPLOAD SIGNATURE #
 #########################
 
-- src: "newrelic-infra_linux_{version}_{arch}_fips.tar.gz.asc"
+- src: "newrelic-infra-fips_linux_{version}_{arch}.tar.gz.asc"
   uploads:
     - type: file
       dest: "{dest_prefix}binaries/linux/{arch}/{src}"
