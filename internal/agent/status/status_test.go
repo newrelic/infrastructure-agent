@@ -145,10 +145,7 @@ func TestNewReporter_Report(t *testing.T) {
 				assert.Contains(t, gotEndpoint.Error, expectedEndpoint.Error)
 			}
 			assert.Equal(t, tt.want.Checks.Health.Healthy, got.Checks.Health.Healthy)
-			// Allows retries if server responds with incorrect error
-			assert.Eventually(t, func() bool {
-				return assert.Contains(t, got.Checks.Health.Error, tt.want.Checks.Health.Error)
-			}, timeout, 10*time.Millisecond)
+			assert.Contains(t, got.Checks.Health.Error, tt.want.Checks.Health.Error)
 		})
 	}
 }
