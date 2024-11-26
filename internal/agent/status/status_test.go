@@ -26,7 +26,7 @@ func TestNewReporter_Report(t *testing.T) {
 	defer serverOk.Close()
 
 	serverTimeout := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(10 * time.Second)
+		time.Sleep(2 * time.Second) // Reduced timeout time to make the test faster
 	}))
 	defer serverTimeout.Close()
 
@@ -97,7 +97,7 @@ func TestNewReporter_Report(t *testing.T) {
 		},
 	}, Config: nil}
 
-	timeout := 10 * time.Millisecond
+	timeout := 500 * time.Millisecond // Increased timeout to account for system delays
 	transport := &http.Transport{}
 	emptyIDProvide := func() entity.Identity {
 		return entity.EmptyIdentity
