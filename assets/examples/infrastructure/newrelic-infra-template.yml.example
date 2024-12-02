@@ -78,11 +78,12 @@ license_key: your_license_key
 # Env var  : NRIA_CUSTOM_ATTRIBUTES
 # Value    : Use optional key-value pairs to build filter sets, group your
 #            results, annotate your data, etc.
+#            These are added as tags to the host entity.
 #
 #custom_attributes:
-#  environment: production
-#  service: login service
-#  team: alpha-team
+#  label.environment: production
+#  label.service: login service
+#  label.team: alpha-team
 #
 
 #
