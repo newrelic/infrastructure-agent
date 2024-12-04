@@ -2,9 +2,9 @@ BUILDER_IMG_TAG = infrastructure-agent-builder
 BUILDER_IMG_TAG_FIPS = infrastructure-agent-builder-fips
 MODE=?
 
-ifndef FIPS
-    export FIPS = ""
-endif
+# ifndef FIPS
+#     export FIPS = ""
+# endif
 
 .PHONY: ci/deps
 ci/deps:GH_ARCH ?= amd64
