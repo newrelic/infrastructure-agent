@@ -113,7 +113,7 @@ ifdef TAG
 			-e GPG_PASSPHRASE \
 			-e GPG_PRIVATE_KEY_BASE64 \
 			-e SNAPSHOT=false \
-			-e $(FIPS) \
+			-e FIPS=$(FIPS) \
 			$(BUILDER_IMG_TAG) make release-${TARGET_OS}
 else
 	@echo "===> infrastructure-agent ===  [ci/prerelease/linux] TAG env variable expected to be set"
