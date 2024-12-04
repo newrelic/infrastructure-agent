@@ -5,8 +5,8 @@
       - linux-agent-amd64
       - linux-ctl-amd64
       - linux-service-amd64
-    package_name: newrelic-infra{{FIPS:+-$FIPS}}
-    file_name_template: "newrelic-infra{{FIPS:+-$FIPS}}-{{ .Env.TAG }}-1.amazonlinux-2023.{{ .Arch }}"
+    package_name: newrelic-infra{{ .Env.FIPS }}
+    file_name_template: "newrelic-infra{{ .Env.FIPS }}-{{ .Env.TAG }}-1.amazonlinux-2023.{{ .Arch }}"
     vendor: 'New Relic, Inc.'
     homepage: 'https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes'
     maintainer: 'caos-team@newrelic.com'
