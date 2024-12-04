@@ -6,6 +6,8 @@ MODE=?
 #     export FIPS = ""
 # endif
 
+FIPS ?= ""
+
 .PHONY: ci/deps
 ci/deps:GH_ARCH ?= amd64
 ci/deps:
