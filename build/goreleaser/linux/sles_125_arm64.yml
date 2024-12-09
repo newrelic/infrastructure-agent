@@ -5,7 +5,7 @@
       - linux-agent-arm64
       - linux-ctl-arm64
       - linux-service-arm64
-    package_name: newrelic-infra{{ .Env.FIPS }}
+    package_name: "newrelic-infra{{ .Env.FIPS }}"
     file_name_template: "newrelic-infra{{ .Env.FIPS }}-{{ .Env.TAG }}-1.sles12.5.{{ .Arch }}"
     vendor: 'New Relic, Inc.'
     homepage: 'https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes'
