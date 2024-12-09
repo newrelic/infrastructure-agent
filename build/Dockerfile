@@ -2,7 +2,7 @@
 FROM ubuntu:16.04
 
 # Define Go version
-ARG GO_VERSION=1.22.0
+ARG GO_VERSION=1.22.10
 # Define build-time arguments for the GitHub CLI version and architecture
 ARG GH_VERSION='2.0.0'
 ARG GH_ARCH='amd64'
@@ -39,7 +39,7 @@ RUN curl -sSL https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz -o go${GO
     rm go${GO_VERSION}.linux-amd64.tar.gz
 
 # Set Go environment variables
-ENV PATH="/usr/local/go/bin:${PATH}"
+ENV PATH="/usr/local/go/bin:/go/bin:${PATH}"
 ENV GOPATH="/go"
 
 # Download and install the GitHub CLI
