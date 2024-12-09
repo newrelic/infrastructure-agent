@@ -1,5 +1,4 @@
 BUILDER_IMG_TAG = infrastructure-agent-builder
-BUILDER_IMG_TAG_FIPS = infrastructure-agent-builder-fips
 MODE=?
 
 FIPS?=
