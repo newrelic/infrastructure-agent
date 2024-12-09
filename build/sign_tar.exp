@@ -1,0 +1,23 @@
+#!/usr/bin/expect -f
+
+set timeout -1
+set targz_file [lindex $argv 0]
+set passphrase [lindex $argv 1]
+
+# Ensure the GPG_TTY is set correctly
+set env(GPG_TTY) [exec /bin/sh -c "tty"]
+
+# Debug output to verify the correct file is being processed
+puts "Expect script signing file: $targz_file"
+
+spawn gpg --sign --armor --detach-sig $targz_file
+expect {
+    "Enter passphrase:" {
+        send -- "$passphrase\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+        exit [lindex $result 3]
+    }
+}

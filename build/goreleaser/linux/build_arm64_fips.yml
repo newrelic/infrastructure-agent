@@ -3,7 +3,9 @@
     main: ./cmd/newrelic-infra
     binary: newrelic-infra
     env:
-      - CGO_ENABLED=0
+      - CGO_ENABLED=1
+      - GOEXPERIMENT=boringcrypto
+      - CC=aarch64-linux-gnu-gcc
     goos:
       - linux
     ldflags:
@@ -12,12 +14,16 @@
       - -s -w -X main.buildDate={{.Date}}
     goarch:
       - arm64
+    tags:
+      - fips
   
   - id: linux-ctl-arm64
     main: ./cmd/newrelic-infra-ctl
     binary: newrelic-infra-ctl
     env:
-      - CGO_ENABLED=0
+      - CGO_ENABLED=1
+      - GOEXPERIMENT=boringcrypto
+      - CC=aarch64-linux-gnu-gcc
     goos:
       - linux
     ldflags:
@@ -26,12 +32,16 @@
       - -s -w -X main.buildDate={{.Date}}
     goarch:
       - arm64
+    tags:
+      - fips
   
   - id: linux-service-arm64
     main: ./cmd/newrelic-infra-service
     binary: newrelic-infra-service
     env:
-      - CGO_ENABLED=0
+      - CGO_ENABLED=1
+      - GOEXPERIMENT=boringcrypto
+      - CC=aarch64-linux-gnu-gcc
     goos:
       - linux
     ldflags:
@@ -40,4 +50,6 @@
       - -s -w -X main.buildDate={{.Date}}
     goarch:
       - arm64
+    tags:
+      - fips
   # end build arm64
