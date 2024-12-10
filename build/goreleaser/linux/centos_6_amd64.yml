@@ -44,13 +44,19 @@
       - src: /lib/init/upstart-job
         dst: /etc/init.d/newrelic-infra
         type: "symlink"
-    empty_folders:
-      - /opt/newrelic-infra/custom-integrations
-      - /opt/newrelic-infra/newrelic-integrations
-      - /var/db/newrelic-infra/custom-integrations
-      - /var/db/newrelic-infra/integrations.d
-      - /var/log/newrelic-infra
-      - /var/run/newrelic-infra
+
+      - dst: /opt/newrelic-infra/custom-integrations
+        type: dir
+      - dst: /opt/newrelic-infra/newrelic-integrations
+        type: dir
+      - dst: /var/db/newrelic-infra/custom-integrations
+        type: dir
+      - dst: /var/db/newrelic-infra/integrations.d
+        type: dir
+      - dst: /var/log/newrelic-infra
+        type: dir
+      - dst: /var/run/newrelic-infra
+        type: dir
     # Scripts to execute during the installation of the package.
     scripts:
       preinstall: "build/package/before-install.sh"
