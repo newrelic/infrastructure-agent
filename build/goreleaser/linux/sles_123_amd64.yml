@@ -7,8 +7,8 @@
       - linux-service-amd64
     package_name: "newrelic-infra{{ .Env.FIPS }}"
     file_name_template: >-
-      {{- .ProjectName }}{{ .Env.FIPS }}-
-      {{ .Env.TAG }}-1.sles12.3.
+      newrelic-infra{{ .Env.FIPS }}-
+      {{- .Env.TAG }}-1.sles12.3.
       {{- if eq .Arch "amd64" -}}x86_64
       {{- else -}}
       {{ .Arch }}
