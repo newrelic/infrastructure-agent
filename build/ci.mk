@@ -101,6 +101,7 @@ ifdef TAG
 			-e PRERELEASE=true \
 			-e GITHUB_TOKEN \
 			-e TAG \
+			-e CURRENT_YEAR \
 			-e GPG_MAIL \
 			-e GPG_PASSPHRASE \
 			-e GPG_PRIVATE_KEY_BASE64 \
@@ -125,6 +126,7 @@ ifdef TAG
 			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
             -w /go/src/github.com/newrelic/infrastructure-agent \
 			-e GITHUB_TOKEN \
+			-e CURRENT_YEAR \
 			-e TAG \
 			$(BUILDER_IMG_TAG) make release-publish
 
@@ -140,6 +142,7 @@ dev/release/pkg: ci/deps
 			-v $(CURDIR):/go/src/github.com/newrelic/infrastructure-agent \
             -w /go/src/github.com/newrelic/infrastructure-agent \
 			-e TAG=0.0.0 \
+			-e CURRENT_YEAR \
 			-e SNAPSHOT=true \
 			$(BUILDER_IMG_TAG) make release/pkg-linux
 

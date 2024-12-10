@@ -6,6 +6,7 @@ INCLUDE_TOOLS_DIR	?= $(PROJECT_WORKSPACE)/tools
 PROJECT_NAME		:= newrelic-infra
 TARGET_DIR			?= $(PROJECT_WORKSPACE)/target
 DIST_DIR			?= $(PROJECT_WORKSPACE)/dist
+CURRENT_YEAR 		:= $(shell date +%Y)
 TARGET_DIR_CENTOS5	= $(TARGET_DIR)/el_5
 UNAME_S				:= $(shell uname -s)
 COVERAGE_FILE       ?= coverage.out
