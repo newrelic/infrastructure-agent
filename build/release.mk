@@ -1,9 +1,9 @@
 BUILD_DIR			   := $(CURDIR)/bin
-GORELEASER_VERSION	   := v0.169.0
+GORELEASER_VERSION	   := v2.4.4
 GORELEASER_BIN		   ?= bin/goreleaser
 GORELEASER_CONFIG_LINUX ?= $(CURDIR)/build/.goreleaser_linux.yml
 GORELEASER_CONFIG_MACOS ?= $(CURDIR)/build/.goreleaser_macos.yml
-PKG_FLAGS              ?= --rm-dist
+PKG_FLAGS              ?= --clean
 
 bin:
 	@mkdir -p $(BUILD_DIR)
@@ -384,7 +384,7 @@ endif
 # snapshot replaces version tag for local builds, also --skip-validate to avoid git errors
 SNAPSHOT := ${SNAPSHOT}
 ifeq ($(SNAPSHOT), true)
-	PKG_FLAGS += --snapshot --skip-validate
+	PKG_FLAGS += --snapshot --skip=validate
 endif
 
 OS := $(shell uname -s)
