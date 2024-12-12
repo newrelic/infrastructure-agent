@@ -154,6 +154,11 @@ jobs:
         env:
           TAG: ${{ env.FAKE_TAG }}
           FIPS: "-fips"
+      - name: Test FIPS binaries for fips compliance
+        if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'FIPS' }}
+        uses: newrelic/coreint-automation/test-fips-action@v3
+        with:
+          binaries_path: "./dist"
 
       - name: Generate checksum files
         uses: ./.github/actions/generate-checksums
