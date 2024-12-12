@@ -28,3 +28,7 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
       - name: Build all platforms:arch
         run: make ci/build
+      - name: Test FIPS binaries for fips compliance
+        uses: newrelic/coreint-automation/test-fips-action@v3
+        with:
+          binaries_path: "./dist"
