@@ -1,6 +1,4 @@
 BUILDER_IMG_TAG = infrastructure-agent-builder
-MODE=?
-
 FIPS?=
 
 .PHONY: ci/deps
