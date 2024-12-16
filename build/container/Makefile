@@ -23,6 +23,10 @@ ifeq ($(AGENT_ARCH), arm)
 	AGENT_ARCH := $(AGENT_ARCH)_6
 endif
 
+ifeq ($(AGENT_ARCH), arm64)
+	AGENT_ARCH := $(AGENT_ARCH)_v8.0
+endif
+
 ifeq ($(AGENT_ARCH), amd64)
 	AGENT_ARCH := $(AGENT_ARCH)_v1
 endif
