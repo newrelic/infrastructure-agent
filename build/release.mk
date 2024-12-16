@@ -99,7 +99,7 @@ release/pkg-linux-arm: release/get-integrations-arm
 release/pkg-linux-arm64: release/deps release/clean generate-goreleaser-arm64
 release/pkg-linux-arm64: release/get-integrations-arm64
 release/pkg-linux-arm64: release/get-fluentbit-linux-arm64
-	@echo "=== [release/pkg-linux-arm64] PRE-RELEASE compiling all fips binaries, creating packages, archives"
+	@echo "=== [release/pkg-linux-arm64] PRE-RELEASE compiling all binaries, creating packages, archives"
 	$(GORELEASER_BIN) release --config $(GORELEASER_CONFIG_LINUX) $(PKG_FLAGS)
 
 .PHONY : release/pkg-linux-legacy
