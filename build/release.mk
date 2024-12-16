@@ -163,10 +163,6 @@ release-linux-arm: release/pkg-linux-arm release/fix-tarballs-linux release/sign
 release-linux-arm64: release/pkg-linux-arm64 release/fix-tarballs-linux release/sign
 	@echo "=== [release-linux-arm64] full pre-release cycle complete for nix"
 
-.PHONY : release-linux-fips-arm64
-release-linux-fips-arm64: release/pkg-linux-arm64 release/fix-tarballs-linux release/sign
-	@echo "=== [release-linux-arm64] full pre-release cycle complete for nix"
-
 .PHONY : release-linux-legacy
  release-linux-legacy: release/pkg-linux-legacy release/fix-tarballs-linux release/sign
 	@echo "=== [release-linux-legacy] full pre-release cycle complete for nix"
