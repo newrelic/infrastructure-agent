@@ -1,66 +1,52 @@
-version: 2
-project_name: infrastructure-agent
-
-snapshot:
-  version_template: 0.0.0
-
-builds:
-  - id: darwin-newrelic-infra
+  # build amd64
+  - id: linux-agent-amd64
     main: ./cmd/newrelic-infra
     binary: newrelic-infra
     env:
       - CGO_ENABLED=1
+      - GOEXPERIMENT=boringcrypto
     goos:
-      - darwin
-    goarch:
-      - amd64
+      - linux
     ldflags:
       - -s -w -X main.buildVersion={{.Version}}
       - -s -w -X main.gitCommit={{.Commit}}
       - -s -w -X main.buildDate={{.Date}}
-
-  - id: darwin-newrelic-infra-ctl
+    goarch:
+      - amd64
+    tags:
+      - fips
+  
+  - id: linux-ctl-amd64
     main: ./cmd/newrelic-infra-ctl
     binary: newrelic-infra-ctl
     env:
       - CGO_ENABLED=1
+      - GOEXPERIMENT=boringcrypto
     goos:
-      - darwin
-    goarch:
-      - amd64
+      - linux
     ldflags:
       - -s -w -X main.buildVersion={{.Version}}
       - -s -w -X main.gitCommit={{.Commit}}
       - -s -w -X main.buildDate={{.Date}}
-
-  - id: darwin-newrelic-infra-service
+    goarch:
+      - amd64
+    tags:
+      - fips
+  
+  - id: linux-service-amd64
     main: ./cmd/newrelic-infra-service
     binary: newrelic-infra-service
     env:
       - CGO_ENABLED=1
+      - GOEXPERIMENT=boringcrypto
     goos:
-      - darwin
-    goarch:
-      - amd64
+      - linux
     ldflags:
       - -s -w -X main.buildVersion={{.Version}}
       - -s -w -X main.gitCommit={{.Commit}}
       - -s -w -X main.buildDate={{.Date}}
-
-archives:
-  - id: darwin-tarball-infrastructure-agent
-    builds:
-      - darwin-newrelic-infra
-      - darwin-newrelic-infra-ctl
-      - darwin-newrelic-infra-service
-    name_template: "newrelic-infra_{{.Os}}_{{ .Env.TAG }}_{{ .Arch }}_dirty"
-    wrap_in_directory: false
-    format: tar.gz
-    files:
-      - none*
-
-release:
-  disable: true
-
-checksum:
-  disable: true
+    goarch:
+      - amd64
+    tags:
+      - fips
+  # end build amd64

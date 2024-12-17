@@ -5,8 +5,14 @@
       - linux-agent-amd64
       - linux-ctl-amd64
       - linux-service-amd64
-    package_name: newrelic-infra
-    file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.sles11.4.{{ .Arch }}"
+    package_name: "newrelic-infra{{ .Env.FIPS }}"
+    file_name_template: >-
+      newrelic-infra{{ .Env.FIPS }}-
+      {{- .Env.TAG }}-1.sles11.4.
+      {{- if eq .Arch "amd64" -}}x86_64
+      {{- else -}}
+      {{ .Arch }}
+      {{- end }}
     vendor: 'New Relic, Inc.'
     homepage: 'https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes'
     maintainer: 'caos-team@newrelic.com'
@@ -32,13 +38,19 @@
         dst: '/opt/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/amd64/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/opt/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-    empty_folders:
-      - /opt/newrelic-infra/custom-integrations
-      - /opt/newrelic-infra/newrelic-integrations
-      - /var/db/newrelic-infra/custom-integrations
-      - /var/db/newrelic-infra/integrations.d
-      - /var/log/newrelic-infra
-      - /var/run/newrelic-infra
+
+      - dst: /opt/newrelic-infra/custom-integrations
+        type: dir
+      - dst: /opt/newrelic-infra/newrelic-integrations
+        type: dir
+      - dst: /var/db/newrelic-infra/custom-integrations
+        type: dir
+      - dst: /var/db/newrelic-infra/integrations.d
+        type: dir
+      - dst: /var/log/newrelic-infra
+        type: dir
+      - dst: /var/run/newrelic-infra
+        type: dir
       # Scripts to execute during the installation of the package.
     scripts:
       preinstall: "build/package/before-install.sh"
@@ -50,8 +62,6 @@
       - opspro-agent-sysv
     epoch: 0
     release: 1.sles11.4
-    replacements:
-      amd64: x86_64
     rpm:
       scripts:
         posttrans: "build/package/rpm/postinst-sysv.sh"

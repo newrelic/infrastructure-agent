@@ -1,0 +1,10 @@
+#!/usr/bin/expect -f
+
+set rpm_file [lindex $argv 0];
+set GPG_PASSPHRASE [lindex $argv 1];
+
+set timeout -1
+spawn rpmsign -v --addsign $rpm_file
+expect "Enter pass phrase:"
+send -- "${GPG_PASSPHRASE}\r"
+expect eof

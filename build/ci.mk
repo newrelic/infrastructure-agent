@@ -1,4 +1,5 @@
 BUILDER_IMG_TAG = infrastructure-agent-builder
+FIPS?=
 
 .PHONY: ci/deps
 ci/deps:GH_ARCH ?= amd64
@@ -59,6 +60,10 @@ ci/tools-test: ci/deps
 ci/prerelease/linux:
 	TARGET_OS=linux $(MAKE) ci/prerelease
 
+.PHONY : ci/prerelease/linux-fips
+ci/prerelease/linux-fips:
+	TARGET_OS=linux-fips $(MAKE) ci/prerelease
+
 .PHONY : ci/prerelease/linux-amd64
 ci/prerelease/linux-amd64:
 	TARGET_OS=linux-amd64 $(MAKE) ci/prerelease
@@ -105,8 +110,8 @@ ifdef TAG
 			-e GPG_PASSPHRASE \
 			-e GPG_PRIVATE_KEY_BASE64 \
 			-e SNAPSHOT=false \
+			-e FIPS=$(FIPS) \
 			$(BUILDER_IMG_TAG) make release-${TARGET_OS}
-
 else
 	@echo "===> infrastructure-agent ===  [ci/prerelease/linux] TAG env variable expected to be set"
 	exit 1
