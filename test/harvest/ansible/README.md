@@ -10,7 +10,8 @@ localhost ansible_connection=local
 
 [testing_hosts]
 amd64:debian-buster ansible_host=192.168.1.12 ansible_user=admin ansible_python_interpreter=/usr/bin/python3 
-amd64:centos7 ansible_host=192.168.1.13 ansible_user=centos ansible_python_interpreter=/usr/bin/python 
+amd64:centos7 ansible_host=192.168.1.13 ansible_user=centos ansible_python_interpreter=/usr/bin/python
+amd64:al-2023-fips ansible_host=192.168.1.14 ansible_user=ec2-user ansible_python_interpreter=/usr/bin/python3
 ```
 
 ## Playbooks

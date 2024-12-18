@@ -271,6 +271,16 @@ instances:
     platform: "linux"
     python_interpreter: "/usr/bin/python3"
     launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
+  #################################
+  # amazon linux 2023 amd64 FIPS
+  #################################
+  - ami: "ami-055e5159af8fc0b69" # TODO: Update the AMI
+    type: "t3a.small"
+    name: "amd64:al-2023-fips"
+    username: "ec2-user"
+    platform: "linux"
+    python_interpreter: "/usr/bin/python3"
+    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3" #TODO: Update the launch template
   ############################
   # amazon linux 2023 arm64
   ############################
