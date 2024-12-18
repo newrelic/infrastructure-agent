@@ -12,19 +12,19 @@ OHI_OS   ?= linux
 NRI_DOCKER_VERSION ?= $(call get-nri-version,nri-docker)
 NRI_DOCKER_ARCH    ?= $(OHI_ARCH)
 NRI_DOCKER_OS      ?= $(OHI_OS)
-NRI_DOCKER_URL     ?= https://download.newrelic.com/infrastructure_agent/binaries/$(NRI_DOCKER_OS)/$(NRI_DOCKER_ARCH)/nri-docker_$(NRI_DOCKER_OS)_$(NRI_DOCKER_VERSION)_$(NRI_DOCKER_ARCH).tar.gz
+NRI_DOCKER_URL     ?= https://download.newrelic.com/infrastructure_agent/binaries/$(NRI_DOCKER_OS)/$(NRI_DOCKER_ARCH)/nri-docker$(FIPS)_$(NRI_DOCKER_OS)_$(NRI_DOCKER_VERSION)_$(NRI_DOCKER_ARCH).tar.gz
 
 # flex
 NRI_FLEX_VERSION   ?= $(call get-nri-version,nri-flex)
 NRI_FLEX_ARCH      ?= $(OHI_ARCH)
 NRI_FLEX_OS        ?= $(OHI_OS)
-NRI_FLEX_URL       ?= https://github.com/newrelic/nri-flex/releases/download/v$(NRI_FLEX_VERSION)/nri-flex_$(NRI_FLEX_OS)_$(NRI_FLEX_VERSION)_$(NRI_FLEX_ARCH).tar.gz
+NRI_FLEX_URL       ?= https://github.com/newrelic/nri-flex/releases/download/v$(NRI_FLEX_VERSION)/nri-flex$(FIPS)_$(NRI_FLEX_OS)_$(NRI_FLEX_VERSION)_$(NRI_FLEX_ARCH).tar.gz
 
 # prometheus
 NRI_PROMETHEUS_VERSION   ?= $(call get-nri-version,nri-prometheus)
 NRI_PROMETHEUS_ARCH      ?= $(OHI_ARCH)
 NRI_PROMETHEUS_OS        ?= $(OHI_OS)
-NRI_PROMETHEUS_URL       ?= https://github.com/newrelic/nri-prometheus/releases/download/v$(NRI_PROMETHEUS_VERSION)/nri-prometheus_$(NRI_PROMETHEUS_OS)_$(NRI_PROMETHEUS_VERSION)_$(NRI_PROMETHEUS_ARCH).tar.gz
+NRI_PROMETHEUS_URL       ?= https://github.com/newrelic/nri-prometheus/releases/download/v$(NRI_PROMETHEUS_VERSION)/nri-prometheus$(FIPS)_$(NRI_PROMETHEUS_OS)_$(NRI_PROMETHEUS_VERSION)_$(NRI_PROMETHEUS_ARCH).tar.gz
 
 .PHONY: get-integrations
 get-integrations: get-nri-docker
