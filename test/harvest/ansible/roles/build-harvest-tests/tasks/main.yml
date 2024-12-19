@@ -9,6 +9,15 @@
     creates: "{{ os_arch_binary_name_tpl | replace('%GOOS%', 'linux') | replace('%GOARCH%', item) }}"
   loop: "{{ goos_arch.linux }}"
 
+- name: Build harvest tests for Linux arch combination - FIPS
+  ansible.builtin.shell: >
+    CGO_ENABLED=1 GOEXPERIMENT=boringcrypto GOOS=linux CC=aarch64-linux-gnu-gcc GOARCH={{ item }} make build-harvest-tests-fips &&
+    mv {{ default_binary_name }} {{ os_arch_binary_name_tpl_fips | replace('%GOOS%', 'linux') | replace('%GOARCH%', item) }}
+  args:
+    chdir: "{{ agent_root_dir }}"
+    creates: "{{ os_arch_binary_name_tpl_fips | replace('%GOOS%', 'linux') | replace('%GOARCH%', item) }}"
+  loop: "{{ goos_arch.linux_fips }}"
+
 - name: Build harvest tests for Darwin arch combination
   ansible.builtin.shell: >
     GOOS=darwin GOARCH={{ item }} make build-harvest-tests &&
