@@ -1,0 +1,24 @@
+name: . 🔍🔍 Show the latest added packages into the S3 repository
+
+on:
+  workflow_dispatch:
+    inputs:
+      count:
+        description: 'Show the latest N packages'
+        type: string
+        default: '1000'
+        required: true
+
+jobs:
+  list-packages:
+    name: List latest added packages into the S3 repository
+    runs-on: ubuntu-20.04
+    steps:
+      - name: List latest packages in S3
+        run: |
+          TZ="UTC" aws s3 ls s3://nr-downloads-main/infrastructure_agent/ --recursive | sort | grep -E "\.(rpm|deb)$" | tail -n ${{ github.event.inputs.count }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION }}
+          AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_PRODUCTION }}
+          AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION }}
