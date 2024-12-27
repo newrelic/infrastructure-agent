@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/http"
 	"sync"
@@ -67,6 +67,7 @@ func NewHarvester(options ...func(*Config)) (*Harvester, error) {
 	}
 
 	if cfg.APIKey == "" {
+		cancel()
 		return nil, errAPIKeyUnset
 	}
 
@@ -100,7 +101,6 @@ func NewHarvester(options ...func(*Config)) (*Harvester, error) {
 
 	h.config.logDebug(map[string]interface{}{
 		"event":                  "harvester created",
-		"api-key":                h.config.APIKey,
 		"harvest-period-seconds": h.config.HarvestPeriod.Seconds(),
 		"metrics-url-override":   h.config.MetricsURLOverride,
 		"spans-url-override":     h.config.SpansURLOverride,
@@ -293,9 +293,9 @@ func postData(req *http.Request, client *http.Client) response {
 
 	// On success, metrics ingest returns 202, span ingest returns 200.
 	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusAccepted {
-		r.body, _ = ioutil.ReadAll(resp.Body)
+		r.body, _ = io.ReadAll(resp.Body)
 	} else {
-		_, _ = ioutil.ReadAll(resp.Body)
+		_, _ = io.ReadAll(resp.Body)
 		r.err = fmt.Errorf("unexpected post response code: %d: %s",
 			resp.StatusCode, http.StatusText(resp.StatusCode))
 	}
@@ -441,7 +441,7 @@ func harvestRequest(req request, cfg *Config) {
 
 		// Reattach request body because the original one has already been read
 		// and closed.
-		req.Request.Body = ioutil.NopCloser(bytes.NewBuffer(req.compressedBody))
+		req.Request.Body = io.NopCloser(bytes.NewBuffer(req.compressedBody))
 	}
 }
 
