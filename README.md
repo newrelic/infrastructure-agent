@@ -17,7 +17,6 @@ dynamic monitoring of your entire infrastructure, from services running in the c
 - [Use the agent](#use-the-agent)
 - [Testing](#testing)
 - [Documentation](#documentation)
-- [To do](#to-do)
 - [Support](#support)
 - [Privacy](#privacy)
 - [Contribute](#contribute)
@@ -146,15 +145,6 @@ make test/automated/termination
 
 Find more documentation about the overall architecture, components, and workflows in [the docs
 directory](docs).
-
-## To do
-
-Provide full CI via GitHub Actions:
-- Integrations tests pipeline
-  * Platform tests
-  * Window tests & builds
-  * Installation tests
-  * Fuzz testing
 
 ## Support
 
