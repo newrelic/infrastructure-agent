@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       count:
-        description: 'Amount of files to show'
+        description: 'Number of files to show'
         type: string
         default: '500'
         required: true
       date_time:
-        description: 'Date and time to show files added before and after (YYYY-MM-DD HH:MM:SS)'
+        description: 'UTC Date and time to show files added before and after (YYYY-MM-DD HH:MM:SS)'
         type: string
         required: true
 
