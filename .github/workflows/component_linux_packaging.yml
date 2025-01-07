@@ -22,6 +22,10 @@ on:
       ARCH:
         required: true
         type: string
+      FIPS:
+        required: false
+        type: boolean
+        default: false
 
 env:
   GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -32,6 +36,7 @@ env:
   DOCKER_HUB_ID: ${{ secrets.DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
   ARCH: ${{ inputs.ARCH }}
+  FIPS: ${{ inputs.FIPS == true && '-fips' || '' }}
 
 jobs:
   packaging:
@@ -49,6 +54,8 @@ jobs:
 
       - name: Preparing linux packages
         run: make ci/prerelease/linux-${{ env.ARCH }}
+        env:
+          FIPS: ${{ env.FIPS }}
 
       - name: Generate checksum files
         uses: ./.github/actions/generate-checksums
