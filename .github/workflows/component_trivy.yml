@@ -12,6 +12,13 @@ on:
       severity:
         required: true
         type: string
+      FIPS:
+        required: false
+        type: boolean
+        default: false
+
+env:
+  FIPS: ${{ inputs.FIPS == true && '-fips' || '' }}
 
 jobs:
   trivy_scanner:
@@ -22,7 +29,7 @@ jobs:
       - name: newrelic/infrastructure
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "docker.io/newrelic/infrastructure:${{ inputs.tag }}"
+          image-ref: "docker.io/newrelic/infrastructure${{ env.FIPS }}:${{ inputs.tag }}"
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
@@ -35,7 +42,7 @@ jobs:
       - name: newrelic/k8s-events-forwarder
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "docker.io/newrelic/k8s-events-forwarder:${{ inputs.tag }}"
+          image-ref: "docker.io/newrelic/k8s-events-forwarder${{ env.FIPS }}:${{ inputs.tag }}"
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
@@ -48,7 +55,7 @@ jobs:
       - name: newrelic/nri-forwarder
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "docker.io/newrelic/nri-forwarder:${{ inputs.tag }}"
+          image-ref: "docker.io/newrelic/nri-forwarder${{ env.FIPS }}:${{ inputs.tag }}"
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
@@ -69,7 +76,7 @@ jobs:
       - name: Sarif newrelic/infrastructure
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "docker.io/newrelic/infrastructure:${{ inputs.tag }}"
+          image-ref: "docker.io/newrelic/infrastructure${{ env.FIPS }}:${{ inputs.tag }}"
           format: 'sarif'
           output: 'trivy-results.sarif'
           vuln-type: 'os,library'
