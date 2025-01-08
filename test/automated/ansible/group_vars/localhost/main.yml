@@ -271,12 +271,32 @@ instances:
     platform: "linux"
     python_interpreter: "/usr/bin/python3"
     launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
+  #################################
+  # amazon linux 2023 amd64 FIPS
+  #################################
+  - ami: "ami-085fa628e46dcb929"
+    type: "t3a.small"
+    name: "amd64:al-2023-fips"
+    username: "ec2-user"
+    platform: "linux"
+    python_interpreter: "/usr/bin/python3"
+    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
   ############################
   # amazon linux 2023 arm64
   ############################
   - ami: "ami-07d16074c2fdf3a19"
     type: "t4g.small"
     name: "arm64:al-2023"
+    username: "ec2-user"
+    platform: "linux"
+    python_interpreter: "/usr/bin/python3"
+    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
+  #################################
+  # amazon linux 2023 arm64 FIPS
+  #################################
+  - ami: "ami-06014e12b8efb52e2"
+    type: "t4g.small"
+    name: "arm64:al-2023-fips"
     username: "ec2-user"
     platform: "linux"
     python_interpreter: "/usr/bin/python3"

@@ -1,15 +1,26 @@
 ---
 
-- name: register os/arch specific binary name
-  set_fact:
-    os_arch_binary_name: "{{ os_arch_binary_name_tpl | replace('%GOOS%',ansible_system|lower) | replace('%GOARCH%',architecture_map[ansible_architecture]) }}"
+- name: Register os/arch specific binary name
+  ansible.builtin.set_fact:
+    os_arch_binary_name: "{{ os_arch_binary_name_tpl
+      | replace('%GOOS%', ansible_system | lower)
+      | replace('%GOARCH%', architecture_map[ansible_architecture]) }}"
+  when: "'-fips' not in inventory_hostname"
 
-- name: copy binary
+- name: Register os/arch specific binary name - FIPS
+  ansible.builtin.set_fact:
+    os_arch_binary_name: "{{ os_arch_binary_name_tpl_fips
+      | replace('%GOOS%', ansible_system | lower)
+      | replace('%GOARCH%', architecture_map[ansible_architecture]) }}"
+  when: "'-fips' in inventory_hostname"
+
+- name: Copy binary
   ansible.builtin.copy:
     src: "{{ agent_root_dir }}/{{ os_arch_binary_name }}"
     dest: "{{ ansible_user_dir }}/{{ os_arch_binary_name }}"
     mode: '0755'
 
-- include_tasks: "execute-tests-{{ ansible_system }}.yaml"
+- name: Include OS-specific test tasks
+  ansible.builtin.include_tasks: "execute-tests-{{ ansible_system }}.yaml"
 
 ...

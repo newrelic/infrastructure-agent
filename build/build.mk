@@ -174,6 +174,12 @@ build-harvest-tests: CGO_ENABLED=0
 build-harvest-tests: deps
 	$(GO_BIN) test -c ./test/harvest -tags="harvest" -v
 
+.PHONY: build-harvest-tests-fips
+build-harvest-tests-fips: CGO_ENABLED=1
+build-harvest-tests-fips: GOEXPERIMENT=boringcrypto
+build-harvest-tests-fips: deps
+	$(GO_BIN) test -c ./test/harvest -tags="harvest,fips" -v
+
 
 .PHONY: proxy-test
 proxy-test:
