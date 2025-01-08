@@ -36,8 +36,12 @@ RUN apk add --no-cache --upgrade \
     #   libpthread.so.0 => /lib64/ld-linux-x86-64.so.2 (0x7f2bbbd0f000)
     #   libc.so.6 => /lib64/ld-linux-x86-64.so.2 (0x7f2bbbd0f000)
     # As musl and glibc are compatible, this symlink fixes the missing dependency
+    # The simlink is added both for amd64 and arm64 architectures
     && mkdir /lib64 \
     && ln -s /lib/libc.musl-x86_64.so.1 /lib64/ld-linux-x86-64.so.2 \
+    && ln -s /lib/libc.musl-aarch64.so.1 /lib64/ld-linux-aarch64.so.1 \
+    # libresolv.so.2 is needed when CGO is enabled so we add the glibc compatibility for Alpine
+    && apk add --no-cache gcompat \
     && apk add --no-cache tini
 
 # Tini is now available at /sbin/tini
