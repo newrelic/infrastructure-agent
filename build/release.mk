@@ -110,6 +110,11 @@ release/pkg-linux-for-docker: release/deps release/clean generate-goreleaser-for
 	@echo "=== [release/pkg-linux-for-docker] PRE-RELEASE compiling all binaries"
 	$(GORELEASER_BIN) release --config $(GORELEASER_CONFIG_LINUX) $(PKG_FLAGS)
 
+.PHONY : release/pkg-linux-for-docker-fips
+release/pkg-linux-for-docker-fips: release/deps release/clean generate-goreleaser-for-docker-fips
+	@echo "=== [release/pkg-linux-for-docker-fips] PRE-RELEASE compiling all binaries"
+	$(GORELEASER_BIN) release --config $(GORELEASER_CONFIG_LINUX) $(PKG_FLAGS)
+
 .PHONY : release/pkg-macos
 release/pkg-macos: release/deps release/clean
 #release/pkg-macos: release/get-integrations-amd64-macos NO ASSETS AVAILABLE FOR NOW
@@ -168,6 +173,10 @@ release-linux-arm64: release/pkg-linux-arm64 release/fix-tarballs-linux release/
 .PHONY : release-linux-for-docker
 release-linux-for-docker: release/pkg-linux-for-docker
 	@echo "=== [release-linux-for-docker] compiling assets for docker"
+
+.PHONY : release-linux-for-docker-fips
+release-linux-for-docker-fips: release/pkg-linux-for-docker-fips
+	@echo "=== [release-linux-for-docker-fips] compiling assets for docker - FIPS"
 
 .PHONY : release-macos
 release-macos: release/pkg-macos release/fix-tarballs-macos
@@ -369,6 +378,13 @@ generate-goreleaser-for-docker:
 		$(CURDIR)/build/goreleaser/linux/build_amd64.yml\
 		$(CURDIR)/build/goreleaser/linux/build_arm.yml\
 		$(CURDIR)/build/goreleaser/linux/build_arm64.yml\
+  		 > $(GORELEASER_CONFIG_LINUX)
+
+.PHONY : generate-goreleaser-for-docker-fips
+generate-goreleaser-for-docker-fips:
+	cat $(CURDIR)/build/goreleaser/linux/header.yml\
+		$(CURDIR)/build/goreleaser/linux/build_amd64_fips.yml\
+		$(CURDIR)/build/goreleaser/linux/build_arm64_fips.yml\
   		 > $(GORELEASER_CONFIG_LINUX)
 
 ifndef SNAPSHOT

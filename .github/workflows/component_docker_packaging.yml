@@ -19,6 +19,10 @@ on:
       TAG:
         required: true
         type: string
+      FIPS:
+        required: false
+        type: boolean
+        default: false
 
 env:
   GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -29,6 +33,7 @@ env:
   DOCKER_HUB_ID: ${{ secrets.DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
   DOCKER_PUBLISH: true
+  FIPS: ${{ inputs.FIPS == true && '-fips' || '' }}
 
 jobs:
   packaging:
@@ -47,7 +52,7 @@ jobs:
           password: ${{ env.DOCKER_HUB_PASSWORD }}
 
       - name: Compiling binaries for linux amd64, arm, arm64
-        run: make ci/prerelease/linux-for-docker
+        run: make ci/prerelease/linux-for-docker${{env.FIPS}}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -58,10 +63,10 @@ jobs:
           version: v0.9.1
 
       - name: Build and publish Release Candidate (RC) of base Docker image
-        run: AGENT_VERSION=${{env.TAG}} make -C build/container/ clean publish/multi-arch-base-rc
+        run: AGENT_VERSION=${{env.TAG}} FIPS=${{env.FIPS}} make -C build/container/ clean publish/multi-arch-base-rc
 
       - name: Build and publish Release Candidate (RC) of forwarder Docker image
-        run: AGENT_VERSION=${{env.TAG}} make -C build/container/ clean publish/multi-arch-forwarder-rc
+        run: AGENT_VERSION=${{env.TAG}} FIPS=${{env.FIPS}} make -C build/container/ clean publish/multi-arch-forwarder-rc
 
       - name: Build and publish Release Candidate (RC) of k8s-events-forwarders Docker image
-        run: AGENT_VERSION=${{env.TAG}} make -C build/container/ clean publish/multi-arch-k8s-events-forwarder-rc
+        run: AGENT_VERSION=${{env.TAG}} FIPS=${{env.FIPS}} make -C build/container/ clean publish/multi-arch-k8s-events-forwarder-rc
