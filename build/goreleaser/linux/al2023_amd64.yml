@@ -88,5 +88,7 @@
     # Required packages. rpm version 4.11.3 does not support weak dependencies
     recommends:
       - fluent-bit
+    conflicts:
+      - newrelic-infra{{ if eq .Env.FIPS "" -}}-fips{{ end }}
   
   # end AL2023 adm64
