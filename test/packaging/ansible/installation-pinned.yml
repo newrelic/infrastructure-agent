@@ -18,22 +18,12 @@
 
       block:
         - name: Install agent
-          # when: "'-fips' not in inventory_hostname"
           ansible.builtin.include_role:
             name: caos.ansible_roles.infra_agent
           vars:
             target_version: "{{ target_agent_version }}"
             repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
-
-        # TODO: https://new-relic.atlassian.net/browse/NR-355845 Uncomment when FIPS version is available for the minimum version
-        # - name: Install agent - FIPS
-        #   when: "'-fips' in inventory_hostname"
-        #   ansible.builtin.include_role:
-        #     name: caos.ansible_roles.infra_agent
-        #   vars:
-        #     target_version: "{{ target_agent_version }}"
-        #     repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
-        #     fips_enabled: true
+            fips_enabled: "{{ '-fips' in inventory_hostname }}"
 
         - name: Assert version
           ansible.builtin.include_role:

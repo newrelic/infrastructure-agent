@@ -19,27 +19,29 @@
       block:
 
         - name: install latest agent on host
-          include_role:
+          ansible.builtin.include_role:
             name: caos.ansible_roles.infra_agent
           vars:
-            target_version: "{{ current_version }}"
             repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
+            fips_enabled: "{{ '-fips' in inventory_hostname }}"
 
         - name: install latest agent in container
-          include_role:
+          ansible.builtin.include_role:
             name: caos.ansible_roles.infra_agent
           vars:
             is_containerized: true
             target_version: "{{ current_version }}-rc"
             display_name: "{{ inventory_hostname }}-current"
+            fips_enabled: "{{ '-fips' in inventory_hostname }}"
 
         - name: install previous agent in container
-          include_role:
+          ansible.builtin.include_role:
             name: caos.ansible_roles.infra_agent
           vars:
             is_containerized: true
             target_version: "{{ previous_version }}"
             display_name: "{{ inventory_hostname }}-previous"
+            fips_enabled: "{{ '-fips' in inventory_hostname }}"
 
 # Windows
 - name: installation-agent-no-clean
