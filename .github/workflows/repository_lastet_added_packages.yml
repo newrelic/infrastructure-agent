@@ -8,13 +8,23 @@ on:
         type: string
         default: '1000'
         required: true
+      environment:
+        type: choice
+        required: true
+        description: 'Environment to run the action'
+        options:
+          - staging
+          - production
+        default: 'staging'
+
 
 jobs:
   list-packages:
     name: List latest added packages into the S3 repository
     runs-on: ubuntu-20.04
     steps:
-      - name: List latest packages in S3
+      - name: List latest packages in Production S3
+        if: ${{ github.event.inputs.environment == 'production' }}
         run: |
           TZ="UTC" aws s3 ls s3://nr-downloads-main/infrastructure_agent/ --recursive | sort | grep -E "\.(rpm|deb)$" | tail -n ${{ github.event.inputs.count }}
         env:
@@ -22,3 +32,13 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION }}
           AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_PRODUCTION }}
           AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION }}
+
+      - name: List latest packages in Staging S3
+        if: ${{ github.event.inputs.environment == 'staging' }}
+        run: |
+          TZ="UTC" aws s3 ls s3://nr-downloads-ohai-staging/infrastructure_agent/ --recursive | sort | grep -E "\.(rpm|deb)$" | tail -n ${{ github.event.inputs.count }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
+          AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
+          AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
