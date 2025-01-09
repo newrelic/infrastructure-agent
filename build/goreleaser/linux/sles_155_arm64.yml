@@ -79,6 +79,8 @@
         posttrans: "build/package/rpm/postinst-systemd.sh"
       summary: "New Relic Infrastructure Agent"
       group: default
+    conflicts:
+      - newrelic-infra{{ if eq .Env.FIPS "" -}}-fips{{ end }}
     # Recommended packages. If they fail to install installation of the agent will not be interrupted.
 #    recommends:
 # FB not supported yet
