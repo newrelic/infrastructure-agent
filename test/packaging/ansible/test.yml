@@ -1,30 +1,35 @@
 ---
 
-- name: pinned version agent installation
+- name: Pinned version agent installation
   import_playbook: installation-pinned.yml
+  when: "'-fips' not in inventory_hostname" # TODO: https://new-relic.atlassian.net/browse/NR-355841
 
-- name: agent installation as root
+- name: Agent installation as root
   import_playbook: installation-root.yml
 
-- name: privileged mode agent installation
+- name: Privileged mode agent installation
   import_playbook: installation-privileged.yml
 
-- name: unprivileged mode agent installation
+- name: Unprivileged mode agent installation
   import_playbook: installation-unprivileged.yml
 
-- name: agent installation via newrelic-cli
+- name: Agent installation via newrelic-cli
   import_playbook: installation-newrelic-cli.yml
+  when: "'-fips' not in inventory_hostname" # FIPS not supported via newrelic-cli in initial release
 
-- name: installation windows
+- name: Installation windows
   import_playbook: installation-windows.yml
 
-- name: log forwarder
+- name: Log forwarder
   import_playbook: log-forwarder.yml
+  when: "'-fips' not in inventory_hostname" # We only have AL-2023 images for FIPS for now
 
-- name: agent upgrade
+- name: Agent upgrade
   import_playbook: agent-upgrade.yml
+  when: "'-fips' not in inventory_hostname" # TODO: https://new-relic.atlassian.net/browse/NR-355851
 
-- name: shutdown , terminate and HNR alerts
+- name: Shutdown , terminate and HNR alerts
   import_playbook: shutdown-and-terminate.yml
+  when: "'al-2023' not in inventory_hostname" # TODO: https://new-relic.atlassian.net/browse/NR-282854 AL-2023 fails this test 80% of the time
 
 ...

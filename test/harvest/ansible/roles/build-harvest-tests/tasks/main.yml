@@ -1,21 +1,41 @@
 ---
 
-- name: build harvest tests for every os/arch combination
-  ansible.builtin.shell: "CGO_ENABLED=0 GOOS=linux GOARCH={{item}} make build-harvest-tests && mv {{ default_binary_name }} {{ os_arch_binary_name_tpl | replace('%GOOS%', 'linux') | replace('%GOARCH%', item) }}"
+- name: Build harvest tests for Linux arch combination
+  ansible.builtin.shell: >
+    CGO_ENABLED=0 GOOS=linux GOARCH={{ item }} make build-harvest-tests &&
+    mv {{ default_binary_name }} {{ os_arch_binary_name_tpl | replace('%GOOS%', 'linux') | replace('%GOARCH%', item) }}
   args:
     chdir: "{{ agent_root_dir }}"
+    creates: "{{ os_arch_binary_name_tpl | replace('%GOOS%', 'linux') | replace('%GOARCH%', item) }}"
   loop: "{{ goos_arch.linux }}"
 
-- name: build harvest tests for every os/arch combination
-  ansible.builtin.shell: "GOOS=darwin GOARCH={{item}} make build-harvest-tests && mv {{ default_binary_name }} {{ os_arch_binary_name_tpl | replace('%GOOS%', 'darwin') | replace('%GOARCH%', item) }}"
+- name: Build harvest tests for Linux arch combination - FIPS
+  ansible.builtin.shell: >
+    CGO_ENABLED=1 GOEXPERIMENT=boringcrypto GOOS=linux GOARCH={{ item }}
+    {% if item == 'arm64' %}CC=aarch64-linux-gnu-gcc{% endif %}
+    make build-harvest-tests-fips &&
+    mv {{ default_binary_name }} {{ os_arch_binary_name_tpl_fips | replace('%GOOS%', 'linux') | replace('%GOARCH%', item) }}
   args:
     chdir: "{{ agent_root_dir }}"
+    creates: "{{ os_arch_binary_name_tpl_fips | replace('%GOOS%', 'linux') | replace('%GOARCH%', item) }}"
+  loop: "{{ goos_arch.linux_fips }}"
+
+- name: Build harvest tests for Darwin arch combination
+  ansible.builtin.shell: >
+    GOOS=darwin GOARCH={{ item }} make build-harvest-tests &&
+    mv {{ default_binary_name }} {{ os_arch_binary_name_tpl | replace('%GOOS%', 'darwin') | replace('%GOARCH%', item) }}
+  args:
+    chdir: "{{ agent_root_dir }}"
+    creates: "{{ os_arch_binary_name_tpl | replace('%GOOS%', 'darwin') | replace('%GOARCH%', item) }}"
   loop: "{{ goos_arch.darwin }}"
 
-- name: build harvest tests for every os/arch combination
-  ansible.builtin.shell: "GOOS=windows GOARCH={{item}} make build-harvest-tests && mv {{ default_binary_name }}.exe {{ os_arch_binary_name_tpl | replace('%GOOS%', 'win32nt') | replace('%GOARCH%', item) }}.exe"
+- name: Build harvest tests for Windows arch combination
+  ansible.builtin.shell: >
+    GOOS=windows GOARCH={{ item }} make build-harvest-tests &&
+    mv {{ default_binary_name }}.exe {{ os_arch_binary_name_tpl | replace('%GOOS%', 'win32nt') | replace('%GOARCH%', item) }}.exe
   args:
     chdir: "{{ agent_root_dir }}"
+    creates: "{{ os_arch_binary_name_tpl | replace('%GOOS%', 'win32nt') | replace('%GOARCH%', item) }}.exe"
   loop: "{{ goos_arch.windows }}"
 
 

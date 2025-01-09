@@ -1,13 +1,12 @@
 ---
-
-- name: installation-unprivileged
+- name: Installation-unprivileged
   hosts: testing_hosts_linux
   become: true
-  gather_facts: yes
+  gather_facts: true
 
   pre_tasks:
     - name: Initial cleanup
-      include_role:
+      ansible.builtin.include_role:
         name: caos.ansible_roles.infra_agent
       vars:
         uninstall: true
@@ -21,28 +20,36 @@
           NRIA_MODE: UNPRIVILEGED
 
       block:
+        - name: Install agent
+          when: "'-fips' not in inventory_hostname"
+          ansible.builtin.include_role:
+            name: caos.ansible_roles.infra_agent
+          vars:
+            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
 
-      - name: install agent
-        include_role:
-          name: caos.ansible_roles.infra_agent
-        vars:
-          repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
+        - name: Install agent - FIPS
+          when: "'-fips' in inventory_hostname"
+          ansible.builtin.include_role:
+            name: caos.ansible_roles.infra_agent
+          vars:
+            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
+            fips_enabled: true
 
-      - name: assert no privileged caps
-        include_role:
-          name: caos.ansible_roles.assert_privileged_caps
-        vars:
-          executable: "/usr/bin/newrelic-infra"
-          caps: []
+        - name: Assert no privileged caps
+          ansible.builtin.include_role:
+            name: caos.ansible_roles.assert_privileged_caps
+          vars:
+            executable: "/usr/bin/newrelic-infra"
+            caps: []
 
-      - name: Assert rootless
-        include_role:
-          name: caos.ansible_roles.assert_files
-        vars:
-          processes:
-            - name: newrelic-infra-service
-              owner: "{{ agent_user }}"
-          files:
-            - name: /usr/bin/newrelic-infra
-              permissions: "{{ bin_mode }}"
+        - name: Assert rootless
+          ansible.builtin.include_role:
+            name: caos.ansible_roles.assert_files
+          vars:
+            processes:
+              - name: newrelic-infra-service
+                owner: "{{ agent_user }}"
+            files:
+              - name: /usr/bin/newrelic-infra
+                permissions: "{{ bin_mode }}"
 ...
