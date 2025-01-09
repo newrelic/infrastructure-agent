@@ -1,0 +1,105 @@
+name: . ⚠️⚠️⚠️ Recover S3 Repository back in time ⚠️⚠️⚠️
+
+on:
+  workflow_dispatch:
+    inputs:
+      date_time:
+        description: 'UTC DateTime to recover the S3 repository back in time (MM-DD-YYYY HH:MM:SS +0)'
+        type: string
+        required: true
+      path:
+        description: 'Path under infrastructure_agent folder to recover (w/o leading slash, with trailing slash)'
+        type: string
+        required: true
+      environment:
+        type: choice
+        required: true
+        description: 'Environment to run the action'
+        options:
+          - staging
+          - production
+        default: 'staging'
+
+env:
+  MANDATORY_PREFIX: 'infrastructure_agent/'
+  IMAGE: 'ghcr.io/newrelic-forks/s3-pit-restore:latest'
+  AWS_REGION: "us-east-1"
+  TEMP_AWS_PROFILE: temp_aws_profile
+
+jobs:
+  recover-s3-repository:
+    name: Execute S3 PIT restore
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Validate datetime
+        run: |
+          datetime="${{ github.event.inputs.date_time }}"
+          # Use Python's strptome (same as s3-pit-restore) to check if it's a valid datetime
+          python3 -c "from datetime import datetime; datetime.strptime('$datetime', '%m-%d-%Y %H:%M:%S %z')" 2> /dev/null
+          exit_code=$?          
+          if [ $exit_code -ne 0 ]]; then
+            exit 1
+          fi
+
+      - name: Validate path input does not have leading nor trailing slash
+        run: |
+          s3_path="${{ github.event.inputs.path }}"
+          # Check if the path has a leading slash
+          if [[ "$s3_path" == /* ]]; then
+            echo "Invalid path: should not have a leading slash."
+            return 1
+          fi
+      
+          # Check if the path has a trailing slash
+          if [[ "$s3_path" == */ ]]; then
+            echo "Invalid path: should not have a trailing slash."
+            return 1
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          repository: newrelic-forks/s3-pit-restore
+          ref: master
+
+      - name: Setup AWS credentials for Production
+        if: ${{ env.ENVIRONMENT == 'production' }}
+        run: |
+          ./setup_aws_credentials.sh
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION }}
+          AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_PRODUCTION }}
+          AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION }}
+          TEMP_AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
+
+      - name: Run S3 PIT restore
+        if: ${{ env.ENVIRONMENT == 'production' }}
+        run: |
+          BUCKET="nr-downloads-main" \
+          PREFIX="${{ env.MANDATORY_PREFIX }}${{ github.event.inputs.path }}" \
+          TIME="${{ github.event.inputs.date_time }}" \
+          IMAGE="${{ env.IMAGE }}" \
+          AWS_PROFILE="${{ env.TEMP_AWS_PROFILE }}" \
+          make restore
+
+      - name: Setup AWS credentials for Staging
+        if: ${{ env.ENVIRONMENT == 'staging' }}
+        run: |
+          ./setup_aws_credentials.sh
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
+          AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
+          AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
+          TEMP_AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
+
+      - name: Run S3 PIT restore in Staging S3
+        if: ${{ env.ENVIRONMENT == 'staging' }}
+        run: |
+          BUCKET="nr-downloads-ohai-staging" \
+          PREFIX="${{ env.MANDATORY_PREFIX }}${{ env.S3_PATH }}" \
+          TIME="${{ env.DATETIME }}" \
+          IMAGE="${{ env.IMAGE }}" \
+          AWS_PROFILE="${{ env.TEMP_AWS_PROFILE }}" \
+          make restore
