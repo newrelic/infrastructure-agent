@@ -22,6 +22,9 @@ import (
 var (
 	wlog = log.WithComponent("RegisterWorker")
 )
+var (
+	elog = log.WithComponent("integrations.emitter.Emitter")
+)
 
 // WorkerConfig will provide all configuration parameters for a register worker.
 type WorkerConfig struct {
@@ -112,7 +115,14 @@ func (w *worker) send(ctx context.Context, batch map[entity.Key]fwrequest.Entity
 
 	var entities []entity.Fields
 	for _, r := range batch {
-		entities = append(entities, r.Data.Entity)
+		entity := r.Data.Entity
+		// Add labels to Metadata
+		if r.Definition.Labels != nil && len(r.Definition.Labels) > 0 {
+			for key, value := range r.Definition.Labels {
+				entity.Metadata[key] = value
+			}
+		}
+		entities = append(entities, entity)
 	}
 
 	responses := w.registerEntitiesWithRetry(ctx, entities)
