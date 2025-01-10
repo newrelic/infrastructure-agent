@@ -22,9 +22,6 @@ import (
 var (
 	wlog = log.WithComponent("RegisterWorker")
 )
-var (
-	elog = log.WithComponent("integrations.emitter.Emitter")
-)
 
 // WorkerConfig will provide all configuration parameters for a register worker.
 type WorkerConfig struct {
