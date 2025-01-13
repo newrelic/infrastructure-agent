@@ -592,3 +592,23 @@ func TestUpdateEntityMetadata(t *testing.T) {
 	updateEntityMetadata(entity, labels)
 	assert.Equal(t, expected, entity)
 }
+func TestUpdateEntityMetadata_NilLabels(t *testing.T) {
+	t.Parallel()
+	expected := &entity.Fields{
+		Name:         "WIN_SERVICE:testWindows:newrelic-infra",
+		Type:         "WIN_SERVICE",
+		IDAttributes: nil,
+		DisplayName:  "New Relic Infrastructure Agent",
+		Metadata:     map[string]interface{}{},
+	}
+	var labels map[string]string
+	entity := &entity.Fields{
+		Name:         "WIN_SERVICE:testWindows:newrelic-infra",
+		Type:         "WIN_SERVICE",
+		IDAttributes: nil,
+		DisplayName:  "New Relic Infrastructure Agent",
+		Metadata:     map[string]interface{}{},
+	}
+	updateEntityMetadata(entity, labels)
+	assert.Equal(t, expected, entity)
+}
