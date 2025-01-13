@@ -81,7 +81,8 @@
     # Recommended packages. If they fail to install installation of the agent will not be interrupted.
     recommends:
       - fluent-bit
+    # conflicts is not "templatable", so we add the conflicts-suffix-placeholder to be replaced later
     conflicts:
-      - newrelic-infra{{ if eq .Env.FIPS "" -}}-fips{{ end }}
+      - newrelic-infra#conflicts-suffix-placeholder#
   
   # end AL2023 arm64
