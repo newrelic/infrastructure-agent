@@ -1,13 +1,12 @@
 ---
-
-- name: installation-privileged
+- name: Installation-privileged
   hosts: testing_hosts_linux
   become: true
-  gather_facts: yes
+  gather_facts: true
 
   pre_tasks:
     - name: Initial cleanup
-      include_role:
+      ansible.builtin.include_role:
         name: caos.ansible_roles.infra_agent
       vars:
         uninstall: true
@@ -21,30 +20,30 @@
           NRIA_MODE: PRIVILEGED
 
       block:
+        - name: Install agent
+          ansible.builtin.include_role:
+            name: caos.ansible_roles.infra_agent
+          vars:
+            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
+            fips_enabled: "{{ '-fips' in inventory_hostname }}"
 
-      - name: install agent
-        include_role:
-          name: caos.ansible_roles.infra_agent
-        vars:
-          repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
+        - name: Assert privileged caps
+          ansible.builtin.include_role:
+            name: caos.ansible_roles.assert_privileged_caps
+          vars:
+            executable: "/usr/bin/newrelic-infra"
+            caps:
+              - cap_dac_read_search
+              - cap_sys_ptrace.ep
 
-      - name: assert privileged caps
-        include_role:
-          name: caos.ansible_roles.assert_privileged_caps
-        vars:
-          executable: "/usr/bin/newrelic-infra"
-          caps:
-            - cap_dac_read_search
-            - cap_sys_ptrace.ep
-
-      - name: Assert rootless
-        include_role:
-          name: caos.ansible_roles.assert_files
-        vars:
-          processes:
-            - name: newrelic-infra-service
-              owner: "{{ agent_user }}"
-          files:
-            - name: /usr/bin/newrelic-infra
-              permissions: "{{ bin_mode }}"
+        - name: Assert rootless
+          ansible.builtin.include_role:
+            name: caos.ansible_roles.assert_files
+          vars:
+            processes:
+              - name: newrelic-infra-service
+                owner: "{{ agent_user }}"
+            files:
+              - name: /usr/bin/newrelic-infra
+                permissions: "{{ bin_mode }}"
 ...

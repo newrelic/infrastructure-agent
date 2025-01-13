@@ -82,5 +82,7 @@
     dependencies:
       - td-agent-bit #To be removed on removal of the ff fluent_bit_19
       - fluent-bit
+    conflicts:
+      - newrelic-infra{{ if eq .Env.FIPS "" -}}-fips{{ end }}
   
   # end AL2 arm64

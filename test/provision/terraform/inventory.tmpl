@@ -15,12 +15,12 @@ windows_amd64
 
 [linux_amd64]
 %{ for index, vms in agent-ids ~}
-%{ if platform[index] == "linux" && strcontains(vms, "amd64") }${vms} ansible_user=${agent-user[index]} ansible_host=${agent-private-ip[index]} ansible_python_interpreter=${agent-python[index]} iid=${instance-id[index]}%{ endif }
+%{ if platform[index] == "linux" && strcontains(vms, "amd64") }${vms} ansible_user=${agent-user[index]} ansible_host=${agent-private-ip[index]} ansible_python_interpreter=${agent-python[index]} iid=${instance-id[index]} ansible_ssh_common_args='-o StrictHostKeyChecking=no%{ if strcontains(vms, "fips") } -o Ciphers=aes256-ctr,aes192-ctr,aes128-ctr -o KexAlgorithms=ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521 -o MACs=hmac-sha2-256,hmac-sha2-512%{ endif }'%{ endif }
 %{ endfor ~}
 
 [linux_arm64]
 %{ for index, vms in agent-ids ~}
-%{ if platform[index] == "linux" && strcontains(vms, "arm64") }${vms} ansible_user=${agent-user[index]} ansible_host=${agent-private-ip[index]} ansible_python_interpreter=${agent-python[index]} iid=${instance-id[index]}%{ endif }
+%{ if platform[index] == "linux" && strcontains(vms, "arm64") }${vms} ansible_user=${agent-user[index]} ansible_host=${agent-private-ip[index]} ansible_python_interpreter=${agent-python[index]} iid=${instance-id[index]} ansible_ssh_common_args='-o StrictHostKeyChecking=no%{ if strcontains(vms, "fips") } -o Ciphers=aes256-ctr,aes192-ctr,aes128-ctr -o KexAlgorithms=ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521 -o MACs=hmac-sha2-256,hmac-sha2-512%{ endif }'%{ endif }
 %{ endfor ~}
 
 [windows_amd64]
@@ -30,7 +30,6 @@ windows_amd64
 
 [testing_hosts_linux:vars]
 ansible_ssh_private_key_file=~/.ssh/caos-dev-arm.cer
-ansible_ssh_common_args='-o StrictHostKeyChecking=no'
 
 [windows_amd64:vars]
 ansible_winrm_transport=basic

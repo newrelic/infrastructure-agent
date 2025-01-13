@@ -71,12 +71,10 @@ release/pkg-linux: release/get-fluentbit-linux-arm64
 
 .PHONY : release/pkg-linux-fips
 release/pkg-linux-fips: release/deps release/clean generate-goreleaser-multiarch-fips
-release/pkg-linux-fips: release/get-integrations-amd64 #NO FIPS ASSETS AVAILABLE FOR NOW
-release/pkg-linux-fips: release/get-integrations-arm64 #NO FIPS ASSETS AVAILABLE FOR NOW
-# release/pkg-linux-fips: release/get-integrations-arm #NO FIPS ASSETS AVAILABLE FOR NOW
-release/pkg-linux-fips: release/get-fluentbit-linux-amd64 #NO FIPS ASSETS AVAILABLE FOR NOW
-# #release/pkg-linux: release/get-fluentbit-linux-arm
-release/pkg-linux-fips: release/get-fluentbit-linux-arm64 #NO FIPS ASSETS AVAILABLE FOR NOW
+release/pkg-linux-fips: release/get-integrations-amd64
+release/pkg-linux-fips: release/get-integrations-arm64
+release/pkg-linux-fips: release/get-fluentbit-linux-amd64
+release/pkg-linux-fips: release/get-fluentbit-linux-arm64
 	@echo "=== [release/pkg-linux-fips] PRE-RELEASE compiling all binaries, creating packages, archives"
 	$(GORELEASER_BIN) release --config $(GORELEASER_CONFIG_LINUX) $(PKG_FLAGS)
 
@@ -110,6 +108,11 @@ release/pkg-linux-legacy: release/deps release/clean generate-goreleaser-legacy
 .PHONY : release/pkg-linux-for-docker
 release/pkg-linux-for-docker: release/deps release/clean generate-goreleaser-for-docker
 	@echo "=== [release/pkg-linux-for-docker] PRE-RELEASE compiling all binaries"
+	$(GORELEASER_BIN) release --config $(GORELEASER_CONFIG_LINUX) $(PKG_FLAGS)
+
+.PHONY : release/pkg-linux-for-docker-fips
+release/pkg-linux-for-docker-fips: release/deps release/clean generate-goreleaser-for-docker-fips
+	@echo "=== [release/pkg-linux-for-docker-fips] PRE-RELEASE compiling all binaries"
 	$(GORELEASER_BIN) release --config $(GORELEASER_CONFIG_LINUX) $(PKG_FLAGS)
 
 .PHONY : release/pkg-macos
@@ -171,6 +174,10 @@ release-linux-arm64: release/pkg-linux-arm64 release/fix-tarballs-linux release/
 release-linux-for-docker: release/pkg-linux-for-docker
 	@echo "=== [release-linux-for-docker] compiling assets for docker"
 
+.PHONY : release-linux-for-docker-fips
+release-linux-for-docker-fips: release/pkg-linux-for-docker-fips
+	@echo "=== [release-linux-for-docker-fips] compiling assets for docker - FIPS"
+
 .PHONY : release-macos
 release-macos: release/pkg-macos release/fix-tarballs-macos
 	@echo "=== [release-macos] full pre-release cycle complete for macOS"
@@ -178,7 +185,7 @@ release-macos: release/pkg-macos release/fix-tarballs-macos
 .PHONY : generate-goreleaser-amd64
 generate-goreleaser-amd64:
 	cat $(CURDIR)/build/goreleaser/linux/header.yml\
-		$(CURDIR)/build/goreleaser/linux/build_amd64.yml\
+		$(CURDIR)/build/goreleaser/linux/build_amd64$(subst -,_,$(FIPS)).yml\
 		$(CURDIR)/build/goreleaser/linux/archives_header.yml\
 		$(CURDIR)/build/goreleaser/linux/archives_amd64.yml\
 		$(CURDIR)/build/goreleaser/linux/nfpms_header.yml\
@@ -232,7 +239,7 @@ generate-goreleaser-amd64:
 .PHONY : generate-goreleaser-arm64
 generate-goreleaser-arm64:
 	cat $(CURDIR)/build/goreleaser/linux/header.yml\
-		$(CURDIR)/build/goreleaser/linux/build_arm64.yml\
+		$(CURDIR)/build/goreleaser/linux/build_arm64$(subst -,_,$(FIPS)).yml\
 		$(CURDIR)/build/goreleaser/linux/archives_header.yml\
 		$(CURDIR)/build/goreleaser/linux/archives_arm64.yml\
 		$(CURDIR)/build/goreleaser/linux/nfpms_header.yml\
@@ -371,6 +378,13 @@ generate-goreleaser-for-docker:
 		$(CURDIR)/build/goreleaser/linux/build_amd64.yml\
 		$(CURDIR)/build/goreleaser/linux/build_arm.yml\
 		$(CURDIR)/build/goreleaser/linux/build_arm64.yml\
+  		 > $(GORELEASER_CONFIG_LINUX)
+
+.PHONY : generate-goreleaser-for-docker-fips
+generate-goreleaser-for-docker-fips:
+	cat $(CURDIR)/build/goreleaser/linux/header.yml\
+		$(CURDIR)/build/goreleaser/linux/build_amd64_fips.yml\
+		$(CURDIR)/build/goreleaser/linux/build_arm64_fips.yml\
   		 > $(GORELEASER_CONFIG_LINUX)
 
 ifndef SNAPSHOT

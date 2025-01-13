@@ -14,6 +14,8 @@
 
   tasks:
     - name: agent upgrade tests suite
+      # TODO: https://new-relic.atlassian.net/browse/NR-355851 Update when two releases with FIPS are done
+      # Also add FIPS tests
       vars:
         target_agent_version: "1.57.1"
 

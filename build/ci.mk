@@ -84,6 +84,10 @@ ci/prerelease/linux-legacy:
 ci/prerelease/linux-for-docker:
 	TARGET_OS=linux-for-docker $(MAKE) ci/prerelease
 
+.PHONY : ci/prerelease/linux-for-docker-fips
+ci/prerelease/linux-for-docker-fips:
+	TARGET_OS=linux-for-docker-fips $(MAKE) ci/prerelease
+
 
 .PHONY : ci/prerelease/macos
 ci/prerelease/macos:

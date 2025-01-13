@@ -16,6 +16,7 @@ DOCKER_BUILD_TAG_PREFIX	?= build
 DOCKER_TAG_LATEST	?= latest
 USE_BUILDX			?= false
 DOCKER_PUBLISH		?= false
+FIPS                ?=
 
 AGENT_ARCH ?= $(DOCKER_ARCH)
 
@@ -50,12 +51,12 @@ AGENT_VERSION                  ?= 0.0.0
 IMAGE_VERSION                  ?= $(AGENT_VERSION)
 
 NS                             ?= newrelic
-REPO                           ?= infrastructure
+REPO                           ?= infrastructure${FIPS}
 IMAGE_NAME                     ?= ${NS}/${REPO}
 CORE_IMAGE_NAME                ?= ${IMAGE_NAME}-core
 BASE_IMAGE_NAME                ?= ${IMAGE_NAME}
-K8S_FWD_IMAGE_NAME			   ?= ${NS}/k8s-events-forwarder
-FWD_IMAGE_NAME			   	   ?= ${NS}/nri-forwarder
+K8S_FWD_IMAGE_NAME			   ?= ${NS}/k8s-events-forwarder${FIPS}
+FWD_IMAGE_NAME			   	   ?= ${NS}/nri-forwarder${FIPS}
 DOCKER_IMAGE_NAME			   ?= ${BASE_IMAGE_NAME}
 
 AGENT_BIN                      ?= newrelic-infra
@@ -265,19 +266,29 @@ publish/multi-arch-base-manifest :
 	@printf 'Target: publish/base-manifest\n'
 	@printf 'Image: $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)'
 	@printf '\n================================================================\n'
+ifeq ($(FIPS),)
 	@(docker manifest create \
     $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64)
+else
+	@(docker manifest create \
+    $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
+    	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 \
+    	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64)
+endif
 	@docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)
+
 
 # [RC] Shortcut to build all supported multi arch bases and publish as RC
 .PHONY : publish/multi-arch-base-rc
 publish/multi-arch-base-rc : export IMAGE_VERSION=$(AGENT_VERSION)-rc
 publish/multi-arch-base-rc : export DOCKER_BUILD_TAG_PREFIX=$(IMAGE_VERSION)
 publish/multi-arch-base-rc : build/base-arm64
+ifeq ($(FIPS),)
 publish/multi-arch-base-rc : build/base-arm
+endif
 publish/multi-arch-base-rc : build/base-amd64
 publish/multi-arch-base-rc : publish/multi-arch-base-manifest
 
@@ -301,11 +312,18 @@ publish/multi-arch-k8s-events-forwarder-manifest :
 	@printf 'Target: publish/k8s-events-forwarder-manifest\n'
 	@printf 'Image: $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)'
 	@printf '\n================================================================\n'
+ifeq ($(FIPS),)
 	@(docker manifest create \
     $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64)
+else
+	@(docker manifest create \
+    $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
+    	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 \
+    	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64)
+endif
 	@docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)
 
 # [RC] Shortcut to build all supported multi arch k8s-events-forwarders and publish as RC
@@ -313,7 +331,9 @@ publish/multi-arch-k8s-events-forwarder-manifest :
 publish/multi-arch-k8s-events-forwarder-rc : export IMAGE_VERSION=$(AGENT_VERSION)-rc
 publish/multi-arch-k8s-events-forwarder-rc : export DOCKER_BUILD_TAG_PREFIX=$(IMAGE_VERSION)
 publish/multi-arch-k8s-events-forwarder-rc : build/k8s-events-forwarder-arm64
+ifeq ($(FIPS),)
 publish/multi-arch-k8s-events-forwarder-rc : build/k8s-events-forwarder-arm
+endif
 publish/multi-arch-k8s-events-forwarder-rc : build/k8s-events-forwarder-amd64
 publish/multi-arch-k8s-events-forwarder-rc : publish/multi-arch-k8s-events-forwarder-manifest
 
@@ -337,11 +357,18 @@ publish/multi-arch-forwarder-manifest :
 	@printf 'Target: publish/forwarder-manifest\n'
 	@printf 'Image: $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)'
 	@printf '\n================================================================\n'
+ifeq ($(FIPS),)
 	@(docker manifest create \
     $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64)
+else
+	@(docker manifest create \
+    $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
+    	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 \
+    	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64)
+endif
 	@docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)
 
 
@@ -350,7 +377,9 @@ publish/multi-arch-forwarder-manifest :
 publish/multi-arch-forwarder-rc : export IMAGE_VERSION=$(AGENT_VERSION)-rc
 publish/multi-arch-forwarder-rc : export DOCKER_BUILD_TAG_PREFIX=$(IMAGE_VERSION)
 publish/multi-arch-forwarder-rc : build/forwarder-arm64
+ifeq ($(FIPS),)
 publish/multi-arch-forwarder-rc : build/forwarder-arm
+endif
 publish/multi-arch-forwarder-rc : build/forwarder-amd64
 publish/multi-arch-forwarder-rc : publish/multi-arch-forwarder-manifest
 

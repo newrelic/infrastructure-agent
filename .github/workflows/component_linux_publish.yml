@@ -76,6 +76,9 @@ jobs:
           - "targz"
           - "deb"
           - "rpm"
+        suffix:
+          - ""
+          - "-fips"
 
     steps:
       - name: Login to DockerHub
@@ -89,10 +92,10 @@ jobs:
         uses: newrelic/infrastructure-publish-action@v1.3.4
         with:
           tag: ${{env.TAG}}
-          app_name: "newrelic-infra"
+          app_name: "newrelic-infra${{ matrix.suffix }}"
           repo_name: "newrelic/infrastructure-agent"
           schema: "custom"
-          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.SCHEMA_BRANCH }}/build/upload-schema-linux-${{ matrix.assetsType }}.yml"
+          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.SCHEMA_BRANCH }}/build/upload-schema-linux-${{ matrix.assetsType }}${{ matrix.suffix }}.yml"
           aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}

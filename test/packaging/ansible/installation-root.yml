@@ -1,13 +1,13 @@
 ---
 
-- name: installation-root
+- name: Installation-root
   hosts: testing_hosts_linux
   become: true
-  gather_facts: yes
+  gather_facts: true
 
   pre_tasks:
     - name: Initial cleanup
-      include_role:
+      ansible.builtin.include_role:
         name: caos.ansible_roles.infra_agent
       vars:
         uninstall: true
@@ -20,14 +20,15 @@
 
       block:
 
-        - name: install agent
-          include_role:
+        - name: Install agent
+          ansible.builtin.include_role:
             name: caos.ansible_roles.infra_agent
           vars:
             repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
+            fips_enabled: "{{ '-fips' in inventory_hostname }}"
 
         - name: Assert root
-          include_role:
+          ansible.builtin.include_role:
             name: caos.ansible_roles.assert_files
           vars:
             processes:

@@ -31,6 +31,21 @@ jobs:
     with:
       TAG:  ${{ github.event.release.tag_name }}
       ARCH: 'amd64'
+  
+  packaging-amd64-fips:
+    needs: [unit-test, proxy-tests]
+    uses: ./.github/workflows/component_linux_packaging.yml
+    secrets:
+      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+      GPG_MAIL: 'infrastructure-eng@newrelic.com'
+      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    with:
+      TAG:  ${{ github.event.release.tag_name }}
+      ARCH: 'amd64'
+      FIPS: true
 
   packaging-arm:
     needs: [unit-test, proxy-tests]
@@ -59,6 +74,21 @@ jobs:
     with:
       TAG:  ${{ github.event.release.tag_name }}
       ARCH: 'arm64'
+
+  packaging-arm64-fips:
+    needs: [unit-test, proxy-tests]
+    uses: ./.github/workflows/component_linux_packaging.yml
+    secrets:
+      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+      GPG_MAIL: 'infrastructure-eng@newrelic.com'
+      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    with:
+      TAG:  ${{ github.event.release.tag_name }}
+      ARCH: 'arm64'
+      FIPS: true
 
   packaging-legacy:
     needs: [unit-test, proxy-tests]
@@ -94,11 +124,33 @@ jobs:
       tag: "${{ github.event.release.tag_name }}-rc"
       severity: "CRITICAL"
 
+  packaging-docker-fips:
+    needs: [unit-test, proxy-tests]
+    uses: ./.github/workflows/component_docker_packaging.yml
+    secrets:
+      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+      GPG_MAIL: 'infrastructure-eng@newrelic.com'
+      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    with:
+      TAG:  ${{ github.event.release.tag_name }}
+      FIPS: true
+
+  docker-fips-trivy-critical:
+    needs: [packaging-docker-fips]
+    uses: ./.github/workflows/component_trivy.yml
+    with:
+      tag: "${{ github.event.release.tag_name }}-rc"
+      severity: "CRITICAL"
+      FIPS: true
+
   publishing-to-s3:
     # point to staging after tests
     name: Publish linux artifacts into s3 staging bucket
     uses: ./.github/workflows/component_linux_publish.yml
-    needs: [packaging-amd64, packaging-arm, packaging-arm64, packaging-legacy]
+    needs: [packaging-amd64, packaging-amd64-fips, packaging-arm, packaging-arm64, packaging-arm64-fips, packaging-legacy]
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}

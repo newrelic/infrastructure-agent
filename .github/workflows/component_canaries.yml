@@ -32,10 +32,10 @@ jobs:
     runs-on: ubuntu-20.04
     if: ${{ inputs.PLATFORM == 'macos' }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
           aws-region: us-east-2
@@ -68,10 +68,10 @@ jobs:
     runs-on: ubuntu-20.04
     if: ${{ inputs.PLATFORM == 'linux' }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
           aws-region: us-east-2
@@ -130,10 +130,10 @@ jobs:
     runs-on: ubuntu-20.04
     if: ${{ inputs.PLATFORM == 'windows' }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
           aws-region: us-east-2

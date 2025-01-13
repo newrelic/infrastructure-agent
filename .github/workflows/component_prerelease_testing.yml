@@ -39,10 +39,10 @@ jobs:
   provision:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
           aws-region: us-east-2
@@ -79,10 +79,10 @@ jobs:
     needs: [ provision ]
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
           aws-region: us-east-2
@@ -120,13 +120,14 @@ jobs:
     needs: [ harvest-tests ]
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
           aws-region: us-east-2
+          role-duration-seconds: 7200
 
       - name: Set branch name
         run: |
@@ -154,10 +155,10 @@ jobs:
     needs: [ harvest-tests ]
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
           aws-region: us-east-2
@@ -188,10 +189,10 @@ jobs:
     needs: [ packaging-tests-linux ]
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
           aws-region: us-east-2
@@ -229,10 +230,10 @@ jobs:
       needs: [ packaging-tests-windows ]
       runs-on: ubuntu-20.04
       steps:
-        - uses: actions/checkout@v2
+        - uses: actions/checkout@v4
 
         - name: Configure AWS Credentials
-          uses: aws-actions/configure-aws-credentials@v1
+          uses: aws-actions/configure-aws-credentials@v4
           with:
             role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
             aws-region: us-east-2
