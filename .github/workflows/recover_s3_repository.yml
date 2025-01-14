@@ -128,7 +128,7 @@ jobs:
         if: ${{ github.event.inputs.environment == 'staging' }}
         run: |
           BUCKET="nr-downloads-ohai-staging" \
-          PREFIX="${{ env.MANDATORY_PREFIX }}${{ env.S3_PATH }}" \
+          PREFIX="${{ env.MANDATORY_PREFIX }}${{ github.event.inputs.path }}" \
           TIME="${{ env.DATE_TIME }}" \
           IMAGE="${{ env.IMAGE }}" \
           AWS_PROFILE="${{ env.TEMP_AWS_PROFILE }}" \
