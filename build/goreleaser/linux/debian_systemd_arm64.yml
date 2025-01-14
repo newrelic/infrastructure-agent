@@ -73,7 +73,8 @@
     recommends:
       - td-agent-bit #To be removed on removal of the ff fluent_bit_19
       - fluent-bit
+    # conflicts is not "templatable", so we add the conflicts-suffix-placeholder to be replaced later
     conflicts:
-      - newrelic-infra{{ if eq .Env.FIPS "" -}}-fips{{ end }}
+      - newrelic-infra#conflicts-suffix-placeholder#
   
   # end Debian systemd arm64
