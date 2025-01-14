@@ -46,7 +46,7 @@ jobs:
     steps:
       - name: Validate datetime
         run: |
-          set -e
+          echo "Validating that datetime is in correct format"
           datetime="${{ github.event.inputs.date_month }}-${{ github.event.inputs.date_day }}-${{ github.event.inputs.date_year }} ${{ github.event.inputs.time }} +0000"
           # Use Python's strptome (same as s3-pit-restore) to check if it's a valid datetime
           python3 -c "from datetime import datetime; datetime.strptime('$datetime', '%m-%d-%Y %H:%M:%S %z')" 2> /dev/null
@@ -54,6 +54,18 @@ jobs:
           if [ $exit_code -ne 0 ]; then
             exit 1
           fi
+          echo "datetime format is correct"
+          echo ""
+          
+          echo "Validating that datetime is not in the future"
+          # check that datetime is not in the future
+          python3 -c "from datetime import datetime,timezone; import sys; sys.exit(1) if datetime.strptime('$datetime', '%m-%d-%Y %H:%M:%S %z') >= datetime.now(timezone.utc) else sys.exit(0)"
+          exit_code=$?          
+          if [ $exit_code -ne 0 ]; then
+            exit 1
+          fi
+          echo "datetime is not in the future"
+          
           echo "DATE_TIME=$datetime" >> $GITHUB_ENV
 
       - name: Validate path input does not have leading nor trailing slash
@@ -79,7 +91,7 @@ jobs:
           ref: master
 
       - name: Setup AWS credentials for Production
-        if: ${{ env.ENVIRONMENT == 'production' }}
+        if: ${{ github.event.inputs.environment == 'production' }}
         run: |
           ./setup_aws_credentials.sh
         env:
@@ -90,7 +102,7 @@ jobs:
           TEMP_AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
 
       - name: Run S3 PIT restore
-        if: ${{ env.ENVIRONMENT == 'production' }}
+        if: ${{ github.event.inputs.environment == 'production' }}
         run: |
           BUCKET="nr-downloads-main" \
           PREFIX="${{ env.MANDATORY_PREFIX }}${{ github.event.inputs.path }}" \
@@ -100,7 +112,7 @@ jobs:
           make restore
 
       - name: Setup AWS credentials for Staging
-        if: ${{ env.ENVIRONMENT == 'staging' }}
+        if: ${{ github.event.inputs.environment == 'staging' }}
         run: |
           ./setup_aws_credentials.sh
         env:
@@ -111,7 +123,7 @@ jobs:
           TEMP_AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
 
       - name: Run S3 PIT restore in Staging S3
-        if: ${{ env.ENVIRONMENT == 'staging' }}
+        if: ${{ github.event.inputs.environment == 'staging' }}
         run: |
           BUCKET="nr-downloads-ohai-staging" \
           PREFIX="${{ env.MANDATORY_PREFIX }}${{ env.S3_PATH }}" \
