@@ -21,7 +21,7 @@ on:
 jobs:
   list-packages:
     name: List latest added packages into the S3 repository
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - name: List latest packages in Production S3
         if: ${{ github.event.inputs.environment == 'production' }}
