@@ -106,13 +106,23 @@ func (w *worker) Run(ctx context.Context) {
 		}
 	}
 }
+func updateEntityMetadata(entity *entity.Fields, labels map[string]string) {
+	if len(labels) > 0 {
+		for key, value := range labels {
+			entity.Metadata[key] = value
+		}
+	}
+}
 
 func (w *worker) send(ctx context.Context, batch map[entity.Key]fwrequest.EntityFwRequest, batchSizeBytes *int) {
 	defer w.resetBatch(batch, batchSizeBytes)
 
 	var entities []entity.Fields
 	for _, r := range batch {
-		entities = append(entities, r.Data.Entity)
+		entity := r.Data.Entity
+		// Add labels to Metadata
+		updateEntityMetadata(&entity, r.Definition.Labels)
+		entities = append(entities, entity)
 	}
 
 	responses := w.registerEntitiesWithRetry(ctx, entities)
