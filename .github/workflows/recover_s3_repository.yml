@@ -3,12 +3,25 @@ name: . ⚠️⚠️⚠️ Recover S3 Repository back in time ⚠️⚠️⚠️
 on:
   workflow_dispatch:
     inputs:
-      date_time:
-        description: 'UTC DateTime to recover the S3 repository back in time (MM-DD-YYYY HH:MM:SS +0)'
+      #description: 'UTC DateTime to recover the S3 repository back in time (MM-DD-YYYY HH:MM:SS +0)'
+      date_year:
+        description: 'UTC Date YEAR (YYYY) to recover the S3 repository back in time'
+        type: string
+        required: true
+      date_month:
+        description: 'UTC Date MONTH (MM) to recover the S3 repository back in time'
+        type: string
+        required: true
+      date_day:
+        description: 'UTC Date DAY (DD) to recover the S3 repository back in time'
+        type: string
+        required: true
+      time:
+        description: 'UTC Time (HH:MM:SS) to recover the S3 repository back in time'
         type: string
         required: true
       path:
-        description: 'Path under infrastructure_agent folder to recover (w/o leading slash, with trailing slash)'
+        description: 'Path under infrastructure_agent folder to recover (w/o leading nor trailing slash)'
         type: string
         required: true
       environment:
@@ -29,31 +42,46 @@ env:
 jobs:
   recover-s3-repository:
     name: Execute S3 PIT restore
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Validate datetime
         run: |
-          datetime="${{ github.event.inputs.date_time }}"
+          echo "Validating that datetime is in correct format"
+          datetime="${{ github.event.inputs.date_month }}-${{ github.event.inputs.date_day }}-${{ github.event.inputs.date_year }} ${{ github.event.inputs.time }} +0000"
           # Use Python's strptome (same as s3-pit-restore) to check if it's a valid datetime
           python3 -c "from datetime import datetime; datetime.strptime('$datetime', '%m-%d-%Y %H:%M:%S %z')" 2> /dev/null
           exit_code=$?          
-          if [ $exit_code -ne 0 ]]; then
+          if [ $exit_code -ne 0 ]; then
             exit 1
           fi
+          echo "datetime format is correct"
+          echo ""
+          
+          echo "Validating that datetime is not in the future"
+          # check that datetime is not in the future
+          python3 -c "from datetime import datetime,timezone; import sys; sys.exit(1) if datetime.strptime('$datetime', '%m-%d-%Y %H:%M:%S %z') >= datetime.now(timezone.utc) else sys.exit(0)"
+          exit_code=$?          
+          if [ $exit_code -ne 0 ]; then
+            exit 1
+          fi
+          echo "datetime is not in the future"
+          
+          echo "DATE_TIME=$datetime" >> $GITHUB_ENV
 
       - name: Validate path input does not have leading nor trailing slash
         run: |
+          set -e
           s3_path="${{ github.event.inputs.path }}"
           # Check if the path has a leading slash
           if [[ "$s3_path" == /* ]]; then
             echo "Invalid path: should not have a leading slash."
-            return 1
+            exit 1
           fi
       
           # Check if the path has a trailing slash
           if [[ "$s3_path" == */ ]]; then
             echo "Invalid path: should not have a trailing slash."
-            return 1
+            exit 1
           fi
 
       - name: Checkout repository
@@ -63,7 +91,7 @@ jobs:
           ref: master
 
       - name: Setup AWS credentials for Production
-        if: ${{ env.ENVIRONMENT == 'production' }}
+        if: ${{ github.event.inputs.environment == 'production' }}
         run: |
           ./setup_aws_credentials.sh
         env:
@@ -71,20 +99,21 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION }}
           AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_PRODUCTION }}
           AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION }}
+          AWS_SESSION_DURATION_SECONDS: 14400
           TEMP_AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
 
       - name: Run S3 PIT restore
-        if: ${{ env.ENVIRONMENT == 'production' }}
+        if: ${{ github.event.inputs.environment == 'production' }}
         run: |
           BUCKET="nr-downloads-main" \
           PREFIX="${{ env.MANDATORY_PREFIX }}${{ github.event.inputs.path }}" \
-          TIME="${{ github.event.inputs.date_time }}" \
+          TIME="${{ env.DATE_TIME }}" \
           IMAGE="${{ env.IMAGE }}" \
           AWS_PROFILE="${{ env.TEMP_AWS_PROFILE }}" \
           make restore
 
       - name: Setup AWS credentials for Staging
-        if: ${{ env.ENVIRONMENT == 'staging' }}
+        if: ${{ github.event.inputs.environment == 'staging' }}
         run: |
           ./setup_aws_credentials.sh
         env:
@@ -92,14 +121,15 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
           AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
           AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
+          AWS_SESSION_DURATION_SECONDS: 14400
           TEMP_AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
 
       - name: Run S3 PIT restore in Staging S3
-        if: ${{ env.ENVIRONMENT == 'staging' }}
+        if: ${{ github.event.inputs.environment == 'staging' }}
         run: |
           BUCKET="nr-downloads-ohai-staging" \
-          PREFIX="${{ env.MANDATORY_PREFIX }}${{ env.S3_PATH }}" \
-          TIME="${{ env.DATETIME }}" \
+          PREFIX="${{ env.MANDATORY_PREFIX }}${{ github.event.inputs.path }}" \
+          TIME="${{ env.DATE_TIME }}" \
           IMAGE="${{ env.IMAGE }}" \
           AWS_PROFILE="${{ env.TEMP_AWS_PROFILE }}" \
           make restore

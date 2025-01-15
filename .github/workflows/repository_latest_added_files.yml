@@ -8,8 +8,20 @@ on:
         type: string
         default: '500'
         required: true
-      date_time:
-        description: 'UTC Date and time to show files added before and after (YYYY-MM-DD HH:MM:SS)'
+      date_year:
+        description: 'UTC Date YEAR (YYYY) to recover the S3 repository back in time'
+        type: string
+        required: true
+      date_month:
+        description: 'UTC Date MONTH (MM) to recover the S3 repository back in time'
+        type: string
+        required: true
+      date_day:
+        description: 'UTC Date DAY (DD) to recover the S3 repository back in time'
+        type: string
+        required: true
+      time:
+        description: 'UTC Time (HH:MM:SS) to recover the S3 repository back in time'
         type: string
         required: true
       environment:
@@ -24,11 +36,12 @@ on:
 jobs:
   list-files:
     name: List files added before and after datetime
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Validate datetime
         run: |
-          datetime="${{ github.event.inputs.date_time }}"
+          set -e
+          datetime="${{ github.event.inputs.date_year }}-${{ github.event.inputs.date_month }}-${{ github.event.inputs.date_day }} ${{ github.event.inputs.time }}"
           # Regular expression to match the format YYYY-MM-DD HH:MM:SS
           regex="^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$"
       
@@ -38,11 +51,12 @@ jobs:
           else
             exit 1
           fi
+          echo "DATE_TIME=$datetime" >> $GITHUB_ENV
 
       - name: List files created before and after datetime in Production S3
         if: ${{ github.event.inputs.environment == 'production' }}
         run: |
-          TZ="UTC" aws s3 ls s3://nr-downloads-main/infrastructure_agent/ --recursive | sort | grep --color  -m 1 -C {{ github.event.inputs.count }} "^${{ github.event.inputs.date_time }}"
+          TZ="UTC" aws s3 ls s3://nr-downloads-main/infrastructure_agent/ --recursive | sort | grep --color  -m 1 -C ${{ github.event.inputs.count }} "^${{ env.DATE_TIME }}"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION }}
@@ -52,7 +66,7 @@ jobs:
       - name: List files created before and after datetime in Staging S3
         if: ${{ github.event.inputs.environment == 'staging' }}
         run: |
-          TZ="UTC" aws s3 ls s3://nr-downloads-ohai-staging/infrastructure_agent/ --recursive | sort | grep --color  -m 1 -C {{ github.event.inputs.count }} "^${{ github.event.inputs.date_time }}"
+          TZ="UTC" aws s3 ls s3://nr-downloads-ohai-staging/infrastructure_agent/ --recursive | sort | grep --color  -m 1 -C ${{ github.event.inputs.count }} "^${{ env.DATE_TIME }}"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
