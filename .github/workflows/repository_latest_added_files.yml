@@ -9,19 +9,19 @@ on:
         default: '500'
         required: true
       date_year:
-        description: 'UTC Date YEAR (YYYY) to recover the S3 repository back in time'
+        description: 'UTC Date YEAR (YYYY)'
         type: string
         required: true
       date_month:
-        description: 'UTC Date MONTH (MM) to recover the S3 repository back in time'
+        description: 'UTC Date MONTH (MM)'
         type: string
         required: true
       date_day:
-        description: 'UTC Date DAY (DD) to recover the S3 repository back in time'
+        description: 'UTC Date DAY (DD)'
         type: string
         required: true
       time:
-        description: 'UTC Time (HH:MM:SS) to recover the S3 repository back in time'
+        description: 'UTC Time (HH:MM:SS)'
         type: string
         required: true
       environment:
