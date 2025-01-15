@@ -1,0 +1,36 @@
+name: . 🔍🔍 Show the latest added packages into the S3 repository
+
+on:
+  push:
+    branches:
+      - test_aws_credentials_duration
+
+
+jobs:
+  test-aws-session-duration:
+    name: Test AWS session duration
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Test AWS session duration
+        run: |
+          # Define the total duration and interval in seconds
+          total_duration=$((4 * 60 * 60))  # 4 hours in seconds
+          interval=300                     # 5 minutes in seconds
+          
+          # Get the current time in seconds since epoch
+          start_time=$(date +%s)
+          
+          # Run the command every 5 minutes for 4 hours
+          while [ $(( $(date +%s) - start_time )) -lt $total_duration ]; do
+            # Execute the command
+            TZ="UTC" aws s3 ls s3://nr-downloads-ohai-staging/infrastructure_agent/ --recursive | sort | grep -E "\.(rpm|deb)$" | tail -n 5
+          
+            # Sleep for the specified interval
+            sleep $interval
+          done
+
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
+          AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
+          AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
