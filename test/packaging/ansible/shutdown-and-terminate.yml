@@ -13,6 +13,7 @@
         name: caos.ansible_roles.infra_agent
       vars:
         uninstall: true
+        fips_enabled: "{{ '-fips' in inventory_hostname }}"
 
   tasks:
     - name: Install agent
