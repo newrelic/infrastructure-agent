@@ -22,7 +22,6 @@
 
       block:
         - name: Install agent
-          when: "'-fips' not in inventory_hostname"
           ansible.builtin.include_role:
             name: caos.ansible_roles.infra_agent
           vars:
