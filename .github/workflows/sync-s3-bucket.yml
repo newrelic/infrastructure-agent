@@ -1,0 +1,80 @@
+name: . ⚠️Sync S3 Staging/Testing bucket from Production ⚠️
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        required: true
+        description: 'Bucket to sync'
+        options:
+          - staging
+          - preview-staging
+          - testing
+        default: 'staging'
+
+env:
+  AWS_REGION: "us-east-1"
+  TEMP_AWS_PROFILE: temp_aws_profile
+
+jobs:
+  recover-s3-repository:
+    name: Synchronize S3 bucket from Production
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout Infra Agent repository
+        uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - name: Checkout s3-pit-restore repository for aws-credentials setup script
+        uses: actions/checkout@v4
+        with:
+          repository: newrelic-forks/s3-pit-restore
+          ref: master
+          path: s3-pit-restore
+
+      - name: Setup AWS credentials for Staging
+        if: ${{ github.event.inputs.environment == 'staging' || github.event.inputs.environment == 'preview-staging' }}
+        run: |
+          ./s3-pit-restore/setup_aws_credentials.sh
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
+          AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
+          AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
+          AWS_SESSION_DURATION_SECONDS: 14400
+          TEMP_AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
+
+      - name: Setup AWS credentials for Testing
+        if: ${{ github.event.inputs.environment == 'testing' }}
+        run: |
+          ./s3-pit-restore/setup_aws_credentials.sh
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_TESTING }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_TESTING }}
+          AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_TESTING }}
+          AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_TESTING }}
+          AWS_SESSION_DURATION_SECONDS: 14400
+          TEMP_AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
+
+      - name: Run sync on Staging
+        if: ${{ github.event.inputs.environment == 'staging' }}
+        run: |
+          AWS_REGION="${{ env.AWS_REGION }}" \
+          AWS_PROFILE="${{ env.TEMP_AWS_PROFILE }}" \
+          make ci/sync-s3/staging
+
+      - name: Run sync on Preview Staging
+        if: ${{ github.event.inputs.environment == 'preview-staging' }}
+        run: |
+          AWS_REGION="${{ env.AWS_REGION }}" \
+          AWS_PROFILE="${{ env.TEMP_AWS_PROFILE }}" \
+          make ci/sync-s3/preview-staging
+
+      - name: Run sync on Testing
+        if: ${{ github.event.inputs.environment == 'testing' }}
+        run: |
+          AWS_REGION="${{ env.AWS_REGION }}" \
+          AWS_PROFILE="${{ env.TEMP_AWS_PROFILE }}" \
+          make ci/sync-s3/testing
