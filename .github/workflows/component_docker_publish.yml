@@ -21,6 +21,7 @@ env:
   ASSETS_TYPE: ${{ inputs.ASSETS_TYPE }}
   DOCKER_HUB_ID: ${{ secrets.DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+  FIPS: '-fips'
 
 jobs:
   publish-docker-images:
