@@ -21,7 +21,6 @@ env:
   ASSETS_TYPE: ${{ inputs.ASSETS_TYPE }}
   DOCKER_HUB_ID: ${{ secrets.DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
-  FIPS: '-fips'
 
 jobs:
   publish-docker-images:
@@ -57,19 +56,19 @@ jobs:
         run: make -C build/container/ clean publish/multi-arch-k8s-events-forwarder-latest AGENT_VERSION=${{env.TAG}}
 
       - name: Publish tag of base Docker image FIPS
-        run: make -C build/container/ clean publish/multi-arch-base-tag AGENT_VERSION=${{env.TAG}} FIPS=${{env.FIPS}}
+        run: make -C build/container/ clean publish/multi-arch-base-tag AGENT_VERSION=${{env.TAG}} FIPS=-fips
 
       - name: Publish latest of base Docker image FIPS
-        run: make -C build/container/ clean publish/multi-arch-base-latest AGENT_VERSION=${{env.TAG}} FIPS=${{env.FIPS}}
+        run: make -C build/container/ clean publish/multi-arch-base-latest AGENT_VERSION=${{env.TAG}} FIPS=-fips
 
       - name: Publish tag of forwarder Docker image FIPS
-        run: make -C build/container/ clean publish/multi-arch-forwarder-tag AGENT_VERSION=${{env.TAG}} FIPS=${{env.FIPS}}
+        run: make -C build/container/ clean publish/multi-arch-forwarder-tag AGENT_VERSION=${{env.TAG}} FIPS=-fips
 
       - name: Publish latest of forwarder Docker image FIPS
-        run: make -C build/container/ clean publish/multi-arch-forwarder-latest AGENT_VERSION=${{env.TAG}} FIPS=${{env.FIPS}}
+        run: make -C build/container/ clean publish/multi-arch-forwarder-latest AGENT_VERSION=${{env.TAG}} FIPS=-fips
 
       - name: Publish tag of k8s-events-forwarders Docker image FIPS
-        run: make -C build/container/ clean publish/multi-arch-k8s-events-forwarder-tag AGENT_VERSION=${{env.TAG}} FIPS=${{env.FIPS}}
+        run: make -C build/container/ clean publish/multi-arch-k8s-events-forwarder-tag AGENT_VERSION=${{env.TAG}} FIPS=-fips
 
       - name: Publish latest of k8s-events-forwarders Docker image FIPS
-        run: make -C build/container/ clean publish/multi-arch-k8s-events-forwarder-latest AGENT_VERSION=${{env.TAG}} FIPS=${{env.FIPS}}
+        run: make -C build/container/ clean publish/multi-arch-k8s-events-forwarder-latest AGENT_VERSION=${{env.TAG}} FIPS=-fips
