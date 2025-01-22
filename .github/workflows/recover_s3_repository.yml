@@ -66,6 +66,14 @@ jobs:
           fi
           echo "datetime is not in the future"
           
+          echo "Validating that datetime is max 7 days in the past"
+          python3 -c "from datetime import datetime, timezone, timedelta; import sys; sys.exit(0) if datetime.strptime('$datetime', '%m-%d-%Y %H:%M:%S %z') >= datetime.now(timezone.utc) - timedelta(days=7) else sys.exit(1)"
+          exit_code=$?          
+          if [ $exit_code -ne 0 ]; then
+            exit 1
+          fi
+          echo "datetime cannot be more than 7 days in the past"
+          
           echo "DATE_TIME=$datetime" >> $GITHUB_ENV
 
       - name: Validate path input does not have leading nor trailing slash
