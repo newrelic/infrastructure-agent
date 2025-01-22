@@ -23,7 +23,7 @@ on:
       path:
         description: 'Path under infrastructure_agent folder to recover (w/o leading nor trailing slash)'
         type: string
-        required: true
+        required: false
       environment:
         type: choice
         required: true
@@ -113,12 +113,7 @@ jobs:
       - name: Run S3 PIT restore
         if: ${{ github.event.inputs.environment == 'production' }}
         run: |
-          BUCKET="nr-downloads-main" \
-          PREFIX="${{ env.MANDATORY_PREFIX }}${{ github.event.inputs.path }}" \
-          TIME="${{ env.DATE_TIME }}" \
-          IMAGE="${{ env.IMAGE }}" \
-          AWS_PROFILE="${{ env.TEMP_AWS_PROFILE }}" \
-          make restore
+          echo "${{ env.MANDATORY_PREFIX }}${{ github.event.inputs.path }}" \
 
       - name: Setup AWS credentials for Staging
         if: ${{ github.event.inputs.environment == 'staging' }}
@@ -135,9 +130,4 @@ jobs:
       - name: Run S3 PIT restore in Staging S3
         if: ${{ github.event.inputs.environment == 'staging' }}
         run: |
-          BUCKET="nr-downloads-ohai-staging" \
-          PREFIX="${{ env.MANDATORY_PREFIX }}${{ github.event.inputs.path }}" \
-          TIME="${{ env.DATE_TIME }}" \
-          IMAGE="${{ env.IMAGE }}" \
-          AWS_PROFILE="${{ env.TEMP_AWS_PROFILE }}" \
-          make restore
+          echo "${{ env.MANDATORY_PREFIX }}${{ github.event.inputs.path }}" \
