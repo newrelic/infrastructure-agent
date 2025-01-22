@@ -1183,9 +1183,15 @@ func (c *context) SendEvent(event sample.Event, entityKey entity.Key) {
 			aclog.
 				WithField("entity_key", entityKey.String()).
 				WithField("length", len(origValue)).
+				Warn("event truncated to NRDB limit")
+			// Log the actual event as a debug, to not pollute the non-verbose logs
+			// with potentially large messages.
+			aclog.
+				WithField("entity_key", entityKey.String()).
+				WithField("length", len(origValue)).
 				WithField("original", origValue).
 				WithField("truncated", fmt.Sprintf("+%v", event)).
-				Warn("event truncated to NRDB limit")
+				Debug("event truncated to NRDB limit debug")
 		}
 	}
 

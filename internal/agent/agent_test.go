@@ -43,6 +43,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -1113,7 +1114,7 @@ func TestContext_SendEvent_LogTruncatedEvent(t *testing.T) {
 	// Capture the logs
 	var output bytes.Buffer
 	log.SetOutput(&output)
-	log.EnableSmartVerboseMode(1000)
+	log.SetLevel(logrus.DebugLevel)
 
 	cfg := config.Config{TruncTextValues: true}
 	c := NewContext(
