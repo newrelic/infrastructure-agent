@@ -23,7 +23,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/register"
 	"github.com/newrelic/infrastructure-agent/pkg/fwrequest"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/sirupsen/logrus"
@@ -185,7 +184,7 @@ func (e *emitter) emitDataset(req fwrequest.EntityFwRequest) {
 
 	plugin := agent.NewExternalPluginCommon(req.Definition.PluginID(req.Integration.Name), e.agentContext, req.Definition.Name)
 
-	emitInventory(&plugin, req.Definition, req.Integration, req.ID(), req.Data, labels)
+	emitInventory(&plugin, req.Definition, req.Integration, req.ID(), req.Data, annos, labels)
 
 	emitEvent(&plugin, req.Definition, req.Data, labels, annos, req.ID())
 
@@ -215,6 +214,7 @@ func emitInventory(
 	integrationMetadata protocol.IntegrationMetadata,
 	entityID entity.ID,
 	dataSet protocol.Dataset,
+	annotations map[string]string,
 	labels map[string]string,
 ) {
 	logEntry := elog.WithField("action", "EmitV4DataSet")
@@ -222,9 +222,18 @@ func emitInventory(
 	integrationUser := metadata.ExecutorConfig.User
 
 	if len(dataSet.Inventory) > 0 {
-		inventoryDataSet := legacy.BuildInventoryDataSet(
-			logEntry, dataSet.Inventory, labels, integrationUser, integrationMetadata.Name,
-			dataSet.Entity.Name)
+		dmProcessor := IntegrationProcessor{
+			IntegrationInterval:         metadata.Interval,
+			IntegrationLabels:           labels,
+			IntegrationExtraAnnotations: annotations,
+		}
+		inventoryDataSet := dmProcessor.ProcessInventory(logEntry, dataSet.Inventory, labels, integrationUser, integrationMetadata.Name,
+			dataSet.Entity.Name, dataSet.Common)
+		// inventoryDataSet := legacy.BuildInventoryDataSet(
+		// 	logEntry, dataSet.Inventory, labels, integrationUser, integrationMetadata.Name,
+		// 	dataSet.Entity.Name)
+		// Add attributes
+
 		entityKey := entity.Key(dataSet.Entity.Name)
 		emitter.EmitInventory(inventoryDataSet, entity.New(entityKey, entityID))
 	}

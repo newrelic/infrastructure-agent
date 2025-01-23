@@ -3,9 +3,14 @@
 package dm
 
 import (
-	"github.com/newrelic/infrastructure-agent/pkg/entity"
-	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
+	"fmt"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/legacy"
+	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
 const (
@@ -18,6 +23,30 @@ type IntegrationProcessor struct {
 	IntegrationInterval         time.Duration
 	IntegrationLabels           map[string]string
 	IntegrationExtraAnnotations map[string]string
+}
+
+// ProcessInventory
+func (p *IntegrationProcessor) ProcessInventory(
+	entryLog log.Entry,
+	inventoryData map[string]protocol.InventoryData,
+	labels map[string]string,
+	integrationUser string,
+	pluginName string,
+	entityKey string,
+	common protocol.Common,
+) types.PluginInventoryDataset {
+
+	inventoryDataSet := legacy.BuildInventoryDataSet(entryLog, inventoryData, labels, integrationUser, pluginName, entityKey)
+
+	for key, value := range common.Attributes {
+		inventoryDataSet = append(inventoryDataSet, protocol.InventoryData{
+			"id":        fmt.Sprintf("labels/%s", key),
+			"value":     value,
+			"entityKey": entityKey,
+		})
+	}
+
+	return inventoryDataSet
 }
 
 // ProcessMetrics metrics processing (decoration)
