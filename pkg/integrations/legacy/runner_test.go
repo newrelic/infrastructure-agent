@@ -679,7 +679,9 @@ func (rs *RunnerSuite) TestPluginHandleOutputV1(c *C) {
 	c.Assert(len(rd.Data), Equals, 8)
 	c.Assert(rd.Data[0].SortKey(), Equals, "first")
 
-	invData := rd.Data[5].(protocol.InventoryData)
+	invData, success := rd.Data[5].(protocol.InventoryData)
+	c.Assert(success, Equals, true) // checking successful type conversion
+
 	c.Assert(invData["id"], Equals, "integrationUser")
 	c.Assert(invData["value"], Equals, "test")
 
@@ -1598,9 +1600,7 @@ func TestEmitPayloadV2NoDisplayNameNoEntityName(t *testing.T) {
 
 func createMockConfigWithDataMap(attrs map[string]interface{}) *config.Config {
 	customAttrs := config.CustomAttributeMap(attrs)
-	return &config.Config{
-		CustomAttributes: customAttrs,
-	}
+	return &config.Config{CustomAttributes: customAttrs}
 }
 
 func TestEmitDataSet_OnAddHostnameDecoratesWithHostname(t *testing.T) {
