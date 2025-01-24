@@ -1600,7 +1600,7 @@ func TestEmitPayloadV2NoDisplayNameNoEntityName(t *testing.T) {
 
 func createMockConfigWithDataMap(attrs map[string]interface{}) *config.Config {
 	customAttrs := config.CustomAttributeMap(attrs)
-	return &config.Config{CustomAttributes: customAttrs}
+	return &config.Config{CustomAttributes: customAttrs} //nolint:exhaustruct
 }
 
 func TestEmitDataSet_OnAddHostnameDecoratesWithHostname(t *testing.T) {
