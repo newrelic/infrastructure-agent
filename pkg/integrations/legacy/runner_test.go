@@ -676,10 +676,10 @@ func (rs *RunnerSuite) TestPluginHandleOutputV1(c *C) {
 	c.Assert(err, IsNil)
 
 	c.Assert(rd, NotNil)
-	c.Assert(len(rd.Data), Equals, 4)
+	c.Assert(len(rd.Data), Equals, 8)
 	c.Assert(rd.Data[0].SortKey(), Equals, "first")
 
-	invData := rd.Data[3].(protocol.InventoryData)
+	invData := rd.Data[5].(protocol.InventoryData)
 	c.Assert(invData["id"], Equals, "integrationUser")
 	c.Assert(invData["value"], Equals, "test")
 
@@ -690,7 +690,7 @@ func (rs *RunnerSuite) TestPluginHandleOutputV1(c *C) {
 	c.Assert(event["integrationUser"], Equals, "test")
 
 	for _, labelKey := range labelKeys {
-		if rd.Data[1].SortKey() != labelKey && rd.Data[2].SortKey() != labelKey {
+		if rd.Data[3].SortKey() != labelKey && rd.Data[4].SortKey() != labelKey {
 			c.Errorf("There isn't label '%s'' in the inventory", labelKey)
 		}
 	}
@@ -831,7 +831,7 @@ func (rs *RunnerSuite) TestEventsPluginRunV1(c *C) {
 	c.Assert(err, IsNil)
 
 	c.Assert(rd, NotNil)
-	c.Assert(len(rd.Data), Equals, 3)
+	c.Assert(len(rd.Data), Equals, 7)
 	c.Assert(rd.Data[0].SortKey(), Equals, "first")
 
 	c.Assert(event, NotNil)
@@ -1030,7 +1030,7 @@ func (rs *RunnerSuite) TestHandleOutputV1(c *C) {
 	c.Assert(err, IsNil)
 
 	// labels are added as inventory
-	c.Assert(len(rd.Data)-len(labelKeys), Equals, 3)
+	c.Assert(len(rd.Data)-len(labelKeys), Equals, 7)
 
 	firstData := rd.Data[0]
 	inv := firstData.(protocol.InventoryData)
@@ -1596,6 +1596,13 @@ func TestEmitPayloadV2NoDisplayNameNoEntityName(t *testing.T) {
 	assert.EqualValues(t, "my-agent-id", emitter.lastEventData["entityKey"])
 }
 
+func createMockConfigWithDataMap(attrs map[string]interface{}) *config.Config {
+	customAttrs := config.CustomAttributeMap(attrs)
+	return &config.Config{
+		CustomAttributes: customAttrs,
+	}
+}
+
 func TestEmitDataSet_OnAddHostnameDecoratesWithHostname(t *testing.T) {
 	evType := "foo"
 	user := "user"
@@ -1626,6 +1633,7 @@ func TestEmitDataSet_OnAddHostnameDecoratesWithHostname(t *testing.T) {
 	ctx.On("EntityKey").Return(agentIdentifier)
 	ctx.On("HostnameResolver").Return(newFixedHostnameResolver(hn, "short"))
 	ctx.On("IDLookup").Return(newFixedIDLookup())
+	ctx.On("Config").Return(createMockConfigWithDataMap(make(map[string]interface{})))
 
 	em := &fakeEmitter{}
 	extraAnnotations := map[string]string{}
@@ -1677,6 +1685,7 @@ func TestEmitDataSet_EntityNameLocalhostIsNotReplacedWithHostnameV2(t *testing.T
 	ctx.On("EntityKey").Return(agID)
 	ctx.On("HostnameResolver").Return(newFixedHostnameResolver("foo.bar", "short"))
 	ctx.On("IDLookup").Return(newFixedIDLookup())
+	ctx.On("Config").Return(createMockConfigWithDataMap(make(map[string]interface{})))
 
 	em := &fakeEmitter{}
 	extraAnnotations := map[string]string{}
@@ -1724,6 +1733,7 @@ func TestEmitDataSet_EntityNameLocalhostIsReplacedWithHostnameV3(t *testing.T) {
 	ctx.On("EntityKey").Return(agID)
 	ctx.On("HostnameResolver").Return(newFixedHostnameResolver("foo.bar", "short"))
 	ctx.On("IDLookup").Return(newFixedIDLookup())
+	ctx.On("Config").Return(createMockConfigWithDataMap(make(map[string]interface{})))
 
 	em := &fakeEmitter{}
 	extraAnnotations := map[string]string{}
@@ -1772,6 +1782,7 @@ func TestEmitDataSet_MetricHostnameIsReplacedIfLocalhostV3(t *testing.T) {
 	ctx.On("EntityKey").Return(agID)
 	ctx.On("HostnameResolver").Return(newFixedHostnameResolver("foo.bar", "short"))
 	ctx.On("IDLookup").Return(newFixedIDLookup())
+	ctx.On("Config").Return(createMockConfigWithDataMap(make(map[string]interface{})))
 
 	em := &fakeEmitter{}
 	extraAnnotations := map[string]string{}
@@ -1821,6 +1832,7 @@ func TestEmitDataSet_ReportingFieldsAreReplacedIfLocalhostV3(t *testing.T) {
 	ctx.On("EntityKey").Return(agID)
 	ctx.On("HostnameResolver").Return(newFixedHostnameResolver("foo.bar", "short"))
 	ctx.On("IDLookup").Return(newFixedIDLookup())
+	ctx.On("Config").Return(createMockConfigWithDataMap(make(map[string]interface{})))
 
 	em := &fakeEmitter{}
 	extraAnnotations := map[string]string{}
@@ -1869,6 +1881,7 @@ func TestEmitDataSet_LogsEntityViolationsOncePerEntity(t *testing.T) {
 	ctx.On("EntityKey").Return(agID)
 	ctx.On("HostnameResolver").Return(newFixedHostnameResolver("foo.bar", "short"))
 	ctx.On("IDLookup").Return(newFixedIDLookup())
+	ctx.On("Config").Return(createMockConfigWithDataMap(make(map[string]interface{})))
 
 	em := &fakeEmitter{}
 	extraAnnotations := map[string]string{}
@@ -1906,6 +1919,7 @@ func TestEmitDataSet_DoNotOverrideExistingMetrics(t *testing.T) {
 	ctx.On("EntityKey").Return("agent-id")
 	ctx.On("HostnameResolver").Return(newFixedHostnameResolver("long", "short"))
 	ctx.On("IDLookup").Return(newFixedIDLookup())
+	ctx.On("Config").Return(createMockConfigWithDataMap(make(map[string]interface{})))
 	em := &fakeEmitter{}
 	extraAnnotations := map[string]string{
 		"cluster_name":       "K8sDiscoveredCluster",

@@ -4,8 +4,9 @@
 package core
 
 import (
-	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"testing"
+
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags/test"
@@ -78,8 +79,11 @@ func InventoryDatasetsForPayload(t *testing.T, payload []byte) (dss []types.Plug
 			log.WithComponent("test"),
 			ds.Inventory,
 			nil,
+			nil,
 			"integrationUser",
 			dataV4.Integration.Name,
+			dataV4.Integration.Version,
+			"agent_id",
 			ds.Entity.Name,
 		)
 
