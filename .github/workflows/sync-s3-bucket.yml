@@ -25,7 +25,7 @@ jobs:
       - name: Checkout Infra Agent repository
         uses: actions/checkout@v4
         with:
-          ref: master
+          ref: ci_automate_s3_staging_bucket_TEST
 
       - name: Checkout s3-pit-restore repository for aws-credentials setup script
         uses: actions/checkout@v4
