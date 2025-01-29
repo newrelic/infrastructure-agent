@@ -166,17 +166,17 @@ endif
 .PHONY : ci/sync-s3/staging
 ci/sync-s3/staging: ci/validate-aws-credentials
 	@aws s3 rm --recursive s3://nr-downloads-ohai-staging/infrastructure_agent
-	@aws s3 cp --recursive --exclude '*/infrastructure_agent/beta/*' --exclude '*/infrastructure_agent/test/*' --exclude '*/newrelic-infra.repo' s3://nr-downloads-main/infrastructure_agent/ s3://nr-downloads-ohai-staging/infrastructure_agent/
+	@aws s3 cp --recursive --copy-props metadata-directive --exclude '*/infrastructure_agent/beta/*' --exclude '*/infrastructure_agent/test/*' --exclude '*/newrelic-infra.repo' s3://nr-downloads-main/infrastructure_agent/ s3://nr-downloads-ohai-staging/infrastructure_agent/
 
 .PHONY : ci/sync-s3/testing
 ci/sync-s3/testing: ci/validate-aws-credentials
 	@aws s3 rm --recursive s3://nr-downloads-ohai-testing/infrastructure_agent
-	@aws s3 cp --recursive --exclude '*/infrastructure_agent/beta/*' --exclude '*/infrastructure_agent/test/*' --exclude '*/newrelic-infra.repo' s3://nr-downloads-main/infrastructure_agent/ s3://nr-downloads-ohai-testing/infrastructure_agent/
+	@aws s3 cp --recursive --copy-props metadata-directive --exclude '*/infrastructure_agent/beta/*' --exclude '*/infrastructure_agent/test/*' --exclude '*/newrelic-infra.repo' s3://nr-downloads-main/infrastructure_agent/ s3://nr-downloads-ohai-testing/infrastructure_agent/
 
 .PHONY : ci/sync-s3/preview-staging
 ci/sync-s3/preview-staging: ci/validate-aws-credentials
 	@aws s3 rm --recursive s3://nr-downloads-ohai-staging/preview
-	@aws s3 cp --recursive --exclude '*/newrelic-infra.repo' s3://nr-downloads-main/preview/ s3://nr-downloads-ohai-staging/preview/
+	@aws s3 cp --recursive --copy-props metadata-directive --exclude '*/newrelic-infra.repo' s3://nr-downloads-main/preview/ s3://nr-downloads-ohai-staging/preview/
 
 .PHONY: ci/third-party-notices-check
 ci/third-party-notices-check: ci/deps
