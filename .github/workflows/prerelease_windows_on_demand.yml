@@ -106,7 +106,7 @@ jobs:
           name: windows-assets
 
       - name: Publish msi to S3 action
-        uses: newrelic/infrastructure-publish-action@v1.3.4
+        uses: newrelic/infrastructure-publish-action@v1
         env:
           DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
           DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
