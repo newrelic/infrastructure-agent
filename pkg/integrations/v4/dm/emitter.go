@@ -185,7 +185,9 @@ func (e *emitter) emitDataset(req fwrequest.EntityFwRequest) {
 
 	plugin := agent.NewExternalPluginCommon(req.Definition.PluginID(req.Integration.Name), e.agentContext, req.Definition.Name)
 
-	emitInventory(&plugin, req.Definition, req.Integration, req.ID(), req.Data, labels)
+	customAttr := e.agentContext.Config().CustomAttributes.DataMap()
+	agentIdentifier := e.agentContext.EntityKey()
+	emitInventory(&plugin, req.Definition, req.Integration, req.ID(), req.Data, labels, customAttr, agentIdentifier)
 
 	emitEvent(&plugin, req.Definition, req.Data, labels, annos, req.ID())
 
@@ -216,6 +218,8 @@ func emitInventory(
 	entityID entity.ID,
 	dataSet protocol.Dataset,
 	labels map[string]string,
+	customAttr map[string]string,
+	reportingAgent string,
 ) {
 	logEntry := elog.WithField("action", "EmitV4DataSet")
 
@@ -223,8 +227,8 @@ func emitInventory(
 
 	if len(dataSet.Inventory) > 0 {
 		inventoryDataSet := legacy.BuildInventoryDataSet(
-			logEntry, dataSet.Inventory, labels, integrationUser, integrationMetadata.Name,
-			dataSet.Entity.Name)
+			logEntry, dataSet.Inventory, labels, customAttr, integrationUser, integrationMetadata.Name,
+			integrationMetadata.Version, reportingAgent, dataSet.Entity.Name)
 		entityKey := entity.Key(dataSet.Entity.Name)
 		emitter.EmitInventory(inventoryDataSet, entity.New(entityKey, entityID))
 	}
