@@ -9,6 +9,11 @@ on:
       fake_tag:
         description: 'Version to be given to the packages'
         default: '0.0.0'
+      skip_mirror_repo:
+        type: boolean
+        required: true
+        description: 'Skip mirroring the repository'
+        default: 'true'
       dest_prefix:
         description: 'Repo prefix'
         required: true
@@ -27,11 +32,17 @@ env:
   GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
   GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
   BRANCH: ${{ github.event.inputs.branch }}
+  # publish packages to a custom path
   DEST_PREFIX: ${{ github.event.inputs.dest_prefix }}
+  # force all custom packages to be published to a fixed path
+  FIXED_PREFIX: "testing-pre-releases"
+  # using infrastructure_agent as suffix allows use to mirror an on_demand repo
+  FIXED_SUFFIX: "infrastructure_agent/"
+  # skip mirror repo for a single package test, or allow mirroring to have multiple packages in a custom repo
+  SKIP_MIRROR_REPO: ${{ github.event.inputs.skip_mirror_repo }}
   AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
   AWS_REGION: "us-east-1"
   AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
-  ACCESS_POINT_HOST: "staging"
   RUN_ID: ${{ github.run_id }}
   GPG_MAIL: 'infrastructure-eng@newrelic.com'
   AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
@@ -46,6 +57,18 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
+      - name: dest_prefix for testing
+        run: |
+          # append trailing slash if no present
+          dest_prefix="${{ env.DEST_PREFIX }}"
+          if [[ "${dest_prefix}" != */ ]]; then
+            dest_prefix="${dest_prefix}/"
+          fi
+          echo "DEST_PREFIX=${{ env.FIXED_PREFIX }}/${dest_prefix}${{ env.FIXED_SUFFIX }}" >> $GITHUB_ENV
+          # remove trailing slash from dest prefix
+          dest_prefix="${dest_prefix%/}"
+          echo "ACCESS_POINT_HOST=http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/${{ env.FIXED_PREFIX }}/${dest_prefix}" >> $GITHUB_ENV
+
       - uses: actions/checkout@v3
         with:
           ref: ${{ env.BRANCH }}
@@ -74,7 +97,7 @@ jobs:
 
       - name: Publish NON-FIPS deb to S3 action
         if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'NON-FIPS' }}
-        uses: newrelic/infrastructure-publish-action@v1.3.4
+        uses: newrelic/infrastructure-publish-action@v1
         with:
           tag: ${{env.FAKE_TAG}}
           app_name: "newrelic-infra"
@@ -96,11 +119,11 @@ jobs:
           disable_lock: ${{ env.DISABLE_LOCK }}
           dest_prefix: ${{ env.DEST_PREFIX }}
           local_packages_path:  "/srv/dist/"
-          apt_skip_mirror:  true
+          apt_skip_mirror:  ${{ env.SKIP_MIRROR_REPO }}
 
       - name: Publish NON-FIPS rpm to S3 action
         if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'NON-FIPS' }}
-        uses: newrelic/infrastructure-publish-action@v1.3.4
+        uses: newrelic/infrastructure-publish-action@v1
         with:
           tag: ${{env.FAKE_TAG}}
           app_name: "newrelic-infra"
@@ -125,7 +148,7 @@ jobs:
 
       - name: Publish NON-FIPS targz to S3 action
         if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'NON-FIPS' }}
-        uses: newrelic/infrastructure-publish-action@v1.3.4
+        uses: newrelic/infrastructure-publish-action@v1
         with:
           tag: ${{env.FAKE_TAG}}
           app_name: "newrelic-infra"
@@ -169,7 +192,7 @@ jobs:
 
       - name: Publish FIPS deb to S3 action
         if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'FIPS' }}
-        uses: newrelic/infrastructure-publish-action@v1.3.4
+        uses: newrelic/infrastructure-publish-action@v1
         with:
           tag: ${{env.FAKE_TAG}}
           app_name: "newrelic-infra-fips"
@@ -191,11 +214,11 @@ jobs:
           disable_lock: ${{ env.DISABLE_LOCK }}
           dest_prefix: ${{ env.DEST_PREFIX }}
           local_packages_path:  "/srv/dist/"
-          apt_skip_mirror:  true
+          apt_skip_mirror:  ${{ env.SKIP_MIRROR_REPO }}
 
       - name: Publish FIPS rpm to S3 action
         if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'FIPS' }}
-        uses: newrelic/infrastructure-publish-action@v1.3.4
+        uses: newrelic/infrastructure-publish-action@v1
         with:
           tag: ${{env.FAKE_TAG}}
           app_name: "newrelic-infra-fips"
@@ -220,7 +243,7 @@ jobs:
 
       - name: Publish FIPS targz to S3 action
         if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'FIPS' }}
-        uses: newrelic/infrastructure-publish-action@v1.3.4
+        uses: newrelic/infrastructure-publish-action@v1
         with:
           tag: ${{env.FAKE_TAG}}
           app_name: "newrelic-infra-fips"
