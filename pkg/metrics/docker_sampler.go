@@ -69,7 +69,7 @@ func (d *DockerSampler) Enabled() bool {
 
 	d.dockerClient, err = initializeDockerClient(d.apiVersion)
 	if err != nil {
-		dslog.WithError(err).Warn("unable to initialize docker client, could be not installed on the host")
+		dslog.WithError(err).Info("unable to initialize docker client, maybe it is not installed on the host")
 
 		return false
 	}
