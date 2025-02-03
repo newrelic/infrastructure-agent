@@ -111,6 +111,9 @@ func (e *emitter) lazyLoadProcessor() {
 	if e.isProcessing.IsNotSet() {
 		e.isProcessing.Set()
 		ctx := e.agentContext.Context()
+		agentResolver := e.agentContext.HostnameResolver()
+		fullHostname, shortHostname, _ := agentResolver.Query()
+		elog.WithField("overridehostname", fullHostname).WithField("overridehostname", shortHostname).Warn("emitter.go overridehostname config")
 
 		go e.runFwReqConsumer(ctx)
 		go e.runReqsRegisteredConsumer(ctx)
@@ -121,6 +124,7 @@ func (e *emitter) lazyLoadProcessor() {
 				MaxBatchDuration:  e.registerMaxBatchTime,
 				MaxRetryBo:        e.maxRetryBo,
 				VerboseLogLevel:   e.verboseLogLevel,
+				OverrideHostname:  shortHostname,
 			}
 			regWorker := register.NewWorker(
 				e.agentContext.Identity,
