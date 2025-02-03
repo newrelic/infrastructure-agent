@@ -112,8 +112,7 @@ func (e *emitter) lazyLoadProcessor() {
 		e.isProcessing.Set()
 		ctx := e.agentContext.Context()
 		agentResolver := e.agentContext.HostnameResolver()
-		fullHostname, shortHostname, _ := agentResolver.Query()
-		elog.WithField("overridehostname", fullHostname).WithField("overridehostname", shortHostname).Warn("emitter.go overridehostname config")
+		_, shortHostname, _ := agentResolver.Query()
 
 		go e.runFwReqConsumer(ctx)
 		go e.runReqsRegisteredConsumer(ctx)

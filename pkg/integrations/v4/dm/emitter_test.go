@@ -36,6 +36,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
+	hostIdentifier "github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
 	integrationFixture "github.com/newrelic/infrastructure-agent/test/fixture/integration"
 	log2 "github.com/newrelic/infrastructure-agent/test/log"
 )
@@ -220,6 +221,9 @@ func TestEmitter_Send_ignoreEntity(t *testing.T) {
 	aCtx := &mocks.AgentContext{}
 	aCtx.On("Config").Return(config.NewConfig())
 	aCtx.On("Version").Return("dev")
+	hostnameResolver := hostIdentifier.CreateResolver(
+		config.NewConfig().OverrideHostname, config.NewConfig().OverrideHostnameShort, config.NewConfig().DnsHostnameResolution)
+	aCtx.On("HostnameResolver").Return(hostnameResolver)
 
 	dmSender := &mockedMetricsSender{
 		wg: sync.WaitGroup{},
@@ -303,6 +307,9 @@ func TestEmitter_Send(t *testing.T) {
 			} else {
 				aCtx.On("Config").Return(config.NewConfig())
 				aCtx.On("Version").Return("dev")
+				hostnameResolver := hostIdentifier.CreateResolver(
+					config.NewConfig().OverrideHostname, config.NewConfig().OverrideHostnameShort, config.NewConfig().DnsHostnameResolution)
+				aCtx.On("HostnameResolver").Return(hostnameResolver)
 			}
 
 			metricSender := &mockedMetricsSender{
@@ -364,6 +371,9 @@ func TestEmitter_ShouldNotSendDataWhenDeprecatedRegisterFFIsEnabled(t *testing.T
 
 	aCtx := &mocks.AgentContext{}
 	aCtx.On("Config").Return(config.NewConfig())
+	hostnameResolver := hostIdentifier.CreateResolver(
+		config.NewConfig().OverrideHostname, config.NewConfig().OverrideHostnameShort, config.NewConfig().DnsHostnameResolution)
+	aCtx.On("HostnameResolver").Return(hostnameResolver)
 	aCtx.MockedContext = ctx
 
 	hook := log2.NewInMemoryEntriesHook([]logrus.Level{logrus.WarnLevel})
@@ -563,11 +573,13 @@ func getAgentContext(hostname string) *mocks.AgentContext {
 	if hostname != "" {
 		idLookup[sysinfo.HOST_SOURCE_INSTANCE_ID] = hostname
 	}
+	hostnameResolver := hostIdentifier.CreateResolver(
+		config.NewConfig().OverrideHostname, config.NewConfig().OverrideHostnameShort, config.NewConfig().DnsHostnameResolution)
 	agentCtx.On("EntityKey").Return(hostname)
 	agentCtx.On("IDLookup").Return(idLookup)
 	agentCtx.On("Version").Return("dev")
 	agentCtx.On("Config").Return(config.NewConfig())
-
+	agentCtx.On("HostnameResolver").Return(hostnameResolver)
 	return agentCtx
 }
 
