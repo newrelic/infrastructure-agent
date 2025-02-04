@@ -892,6 +892,9 @@ func mockForwardAgent(isForwardOnly bool, customAttributes config.CustomAttribut
 	ma.On("SendEvent", mock.AnythingOfType("agent.mapEvent"), mock.AnythingOfType("entity.Key")).Once()
 	ma.On("Config").Return(cfg)
 	ma.On("SendEvent", mock.Anything, entity.Key("bob")).Twice()
+	hostnameResolver := hostname.CreateResolver(
+		config.NewConfig().OverrideHostname, config.NewConfig().OverrideHostnameShort, config.NewConfig().DnsHostnameResolution)
+	ma.On("HostnameResolver").Return(hostnameResolver)
 
 	return ma
 }
