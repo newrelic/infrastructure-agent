@@ -100,7 +100,6 @@ func (e *VersionAwareEmitter) Emit(definition integration.Definition, extraLabel
 		}
 		agentResolver := e.aCtx.HostnameResolver()
 		_, overrideHostname, _ := agentResolver.Query()
-		// var dataSet protocol.Dataset
 
 		for _, dataSet := range pluginDataV4.DataSets {
 			// Only update hostname for windows services

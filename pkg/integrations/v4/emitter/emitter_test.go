@@ -5,12 +5,14 @@ package emitter
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"strings"
 	"testing"
 
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
+
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/fwrequest"
+	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
 	integration2 "github.com/newrelic/infrastructure-agent/test/fixture/integration"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
@@ -862,6 +864,9 @@ func mockAgent() *mocks.AgentContext {
 	ma.On("SendEvent", mock.AnythingOfType("agent.mapEvent"), mock.AnythingOfType("entity.Key")).Once()
 	ma.On("Config").Return(cfg)
 	ma.On("SendEvent", mock.Anything, entity.Key("bob")).Twice()
+	hostnameResolver := hostname.CreateResolver(
+		config.NewConfig().OverrideHostname, config.NewConfig().OverrideHostnameShort, config.NewConfig().DnsHostnameResolution)
+	ma.On("HostnameResolver").Return(hostnameResolver)
 
 	return ma
 }
