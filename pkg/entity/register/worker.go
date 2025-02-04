@@ -30,7 +30,6 @@ type WorkerConfig struct {
 	MaxBatchDuration  time.Duration
 	MaxRetryBo        time.Duration
 	VerboseLogLevel   int
-	OverrideHostname  string
 }
 
 type worker struct {
@@ -91,11 +90,6 @@ func (w *worker) Run(ctx context.Context) {
 			}
 			// TODO update when entity key retrieval is fixed
 			eKey := entity.Key(req.Data.Entity.Name)
-			overrideHostname := w.config.OverrideHostname
-			// Only update hostname for windows services
-			if overrideHostname != "" && req.Data.Entity.Type == "WIN_SERVICE" {
-				req.Data.Entity.Metadata["hostname"] = overrideHostname
-			}
 			batch[eKey] = req
 			batchSizeBytes += entitySizeBytes
 
