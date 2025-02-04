@@ -98,7 +98,14 @@ func (e *VersionAwareEmitter) Emit(definition integration.Definition, extraLabel
 			elog.WithError(err).WithFields(fields).Warn("can't parse v4 integration output")
 			return err
 		}
-
+		agentResolver := e.aCtx.HostnameResolver()
+		_, overrideHostname, _ := agentResolver.Query()
+		for _, dataSet := range pluginDataV4.DataSets {
+			// Only update hostname for windows services
+			if overrideHostname != "" && dataSet.Entity.Type == "WIN_SERVICE" {
+				dataSet.Entity.Metadata["hostname"] = overrideHostname
+			}
+		}
 		e.dmEmitter.Send(fwrequest.NewFwRequest(definition, extraLabels, entityRewrite, pluginDataV4))
 		return nil
 	}
