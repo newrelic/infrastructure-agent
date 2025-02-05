@@ -1,3 +1,5 @@
+// Copyright 2020 New Relic Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 package legacy
 
 import (
@@ -6,7 +8,6 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/protocol"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestBuildInventoryDataSet(t *testing.T) {
@@ -168,14 +169,14 @@ func TestBuildInventoryDataSet(t *testing.T) {
 			// Check for expected labels and their values
 			for labelID, expectedValue := range tt.wantLabelValues {
 				exists, actualValue := findItemAndValueInPluginInventoryDataset(result, labelID)
-				require.True(t, exists, "missing expected label %s", labelID)
+				assert.Truef(t, exists, "missing expected label %s", labelID)
 				assert.Equal(t, expectedValue, actualValue, "unexpected value for label %s", labelID)
 			}
 
 			// Verify inventory data items exist
 			for key := range tt.inventoryData {
 				exists, _ := findItemAndValueInPluginInventoryDataset(result, key)
-				require.True(t, exists, "missing inventory item with ID %s", key)
+				assert.Truef(t, exists, "missing inventory item with ID %s", key)
 			}
 		})
 	}
