@@ -1,10 +1,9 @@
 name: . ⚠️🔧 Test Recover S3 Repository back in time 🔧️⚠️
 
 on:
-  workflow_dispatch:
-  schedule:
-   #Scheduled to run at 7 a.m on every day-of-week from Monday through Friday.
-    - cron: "0 7 * * 1-5"
+  push:
+    branches:
+      - ci/disaster_recovery_dry_run_TEST
 
 env:
   MANDATORY_PREFIX: 'infrastructure_agent/test_disaster_recovery'
@@ -108,6 +107,15 @@ jobs:
         run: |
           aws s3 rm --recursive "${{ env.TEST_FOLDER_ABS_PATH }}.original"
 
+      - name: fail just to test
+        run: |
+          set +e
+          TZ="UTC" aws s3 ls ${{ env.TEST_FOLDER_ABS_PATH }}.original
+          if [ $? -eq 1 ]; then
+            echo "original folder ${{ env.TEST_FOLDER_ABS_PATH }}.original should not exist"
+            exit 1
+          fi
+
       - name: Send notification to Slack Workflow
         if: ${{ failure() }}
         id: slack
@@ -115,8 +123,9 @@ jobs:
         with:
           payload: |
             {
-              "text": ":rotating_light: Test Recover S3 Repository failed :warning: @hero check <${{ env.GITHUB_JOB_URL }}> :rotating_light:"
+              "text": ":rotating_light: THIS IS A TEST Test Recover S3 Repository failed :warning: @hero check <${{ env.GITHUB_JOB_URL }}> :rotating_light:"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.OHAI_PRIVATE_SLACK_WEBHOOK }}
           GITHUB_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
