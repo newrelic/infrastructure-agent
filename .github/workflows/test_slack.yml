@@ -1,0 +1,21 @@
+name: . 🕵🏼 Slack Webhook Test
+on:
+  push:
+    branches:
+      - test_slack_webhook
+jobs:
+  trivy_scanner_scheduled:
+    name: Slack Webhook Test
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Send notification to Slack Workflow
+        id: slack
+        uses: slackapi/slack-github-action@v1.22.0
+        with:
+          # This data can be any valid JSON from a previous step in the GitHub Action
+          payload: |
+            {
+              "text": ":rotating_light: Hello my friend :wave:. This is a test. If you see this, please ping @rruizdegauna . Thanks :homerdisappear: :rotating_light:"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.OHAI_PRIVATE_SLACK_WEBHOOK }}
