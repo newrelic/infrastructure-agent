@@ -703,6 +703,8 @@ func (rs *RunnerSuite) TestPluginHandleOutputV1(c *C) {
 
 			if expectedValue, exists := expectedLabelValues[id]; exists {
 				c.Assert(value, Equals, expectedValue)
+			} else {
+				c.Fatalf("Expected label: %v not found in Inventory", id)
 			}
 		}
 	}
@@ -1620,6 +1622,8 @@ func TestEmitPayloadV2NoDisplayNameNoEntityName(t *testing.T) {
 
 			if expectedValue, exists := expectedLabelValues[id]; exists {
 				assert.EqualValues(t, value, expectedValue)
+			} else {
+				assert.Fail(t, "Expected label not found in Inventory", "Label: %s not found in inventory", id)
 			}
 		}
 	}
@@ -1643,6 +1647,8 @@ func TestEmitPayloadV2NoDisplayNameNoEntityName(t *testing.T) {
 
 			if expectedValue, exists := expectedLabelValues[id]; exists {
 				assert.EqualValues(t, value, expectedValue)
+			} else {
+				assert.Fail(t, "Expected label not found in Inventory", "Label: %s not found in inventory", id)
 			}
 		}
 	}
