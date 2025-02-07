@@ -4,6 +4,7 @@ package legacy
 
 import (
 	"fmt"
+
 	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 
 	event2 "github.com/newrelic/infrastructure-agent/pkg/event"
@@ -12,12 +13,22 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	integrationUserID    = "integrationUser"
+	integrationNameID    = "integrationName"
+	integrationVersionID = "integrationVersion"
+	reportingAgentID     = "reportingAgent"
+)
+
 func BuildInventoryDataSet(
 	entryLog log.Entry,
 	inventoryData map[string]protocol.InventoryData,
 	labels map[string]string,
+	customAttr map[string]string,
 	integrationUser string,
 	pluginName string,
+	pluginVersion string,
+	reportingAgent string,
 	entityKey string) types.PluginInventoryDataset {
 	var inventoryDataSet types.PluginInventoryDataset
 
@@ -31,20 +42,39 @@ func BuildInventoryDataSet(
 		}
 	}
 
-	for key, value := range labels {
+	addLabeledData := func(id string, value string) {
 		inventoryDataSet = append(inventoryDataSet, protocol.InventoryData{
-			"id":        fmt.Sprintf("labels/%s", key),
+			"id":        id,
 			"value":     value,
 			"entityKey": entityKey,
 		})
 	}
 
+	for key, value := range customAttr {
+		// Do not set in the case of duplicate key
+		if _, exists := labels[key]; !exists {
+			addLabeledData(fmt.Sprintf("labels/%s", key), value)
+		}
+	}
+
+	for key, value := range labels {
+		addLabeledData(fmt.Sprintf("labels/%s", key), value)
+	}
+
 	if integrationUser != "" {
-		inventoryDataSet = append(inventoryDataSet, protocol.InventoryData{
-			"id":        "integrationUser",
-			"value":     integrationUser,
-			"entityKey": entityKey,
-		})
+		addLabeledData(integrationUserID, integrationUser)
+	}
+
+	if pluginName != "" {
+		addLabeledData(integrationNameID, pluginName)
+	}
+
+	if pluginVersion != "" {
+		addLabeledData(integrationVersionID, pluginVersion)
+	}
+
+	if reportingAgent != "" {
+		addLabeledData(reportingAgentID, reportingAgent)
 	}
 
 	return inventoryDataSet

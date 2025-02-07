@@ -167,11 +167,21 @@ func TestEmitter_Send_usingIDCache(t *testing.T) {
 			firstEntity := entity.Entity{Key: entity.Key(data.DataSets[0].Entity.Name), ID: entity.ID(1)}
 			secondEntity := entity.Entity{Key: entity.Key(data.DataSets[1].Entity.Name), ID: entity.ID(2)}
 
-			aCtx := getAgentContext("TestEmitter_Send_usingIDCache")
+			aCtx := getAgentContext("mock_reporting_agent")
 			aCtx.On("SendEvent", mock.Anything, mock.Anything)
 
-			aCtx.On("SendData", types.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "Sample"}, Entity: firstEntity, Data: types.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_payload_one", "value": "foo-one"}}, NotApplicable: false})
-			aCtx.On("SendData", types.PluginOutput{Id: ids.PluginID{Category: "integration", Term: "Sample"}, Entity: secondEntity, Data: types.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_payload_two", "value": "bar-two"}}, NotApplicable: false})
+			aCtx.On("SendData", types.PluginOutput{
+				Id:            ids.PluginID{Category: "integration", Term: "Sample"},
+				Entity:        firstEntity,
+				Data:          types.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_payload_one", "value": "foo-one"}, protocol.InventoryData{"entityKey": "entity.name", "id": "integrationName", "value": "Sample"}, protocol.InventoryData{"entityKey": "entity.name", "id": "integrationVersion", "value": "1.2.3"}, protocol.InventoryData{"entityKey": "entity.name", "id": "reportingAgent", "value": "mock_reporting_agent"}},
+				NotApplicable: false,
+			})
+			aCtx.On("SendData", types.PluginOutput{
+				Id:            ids.PluginID{Category: "integration", Term: "Sample"},
+				Entity:        secondEntity,
+				Data:          types.PluginInventoryDataset{protocol.InventoryData{"id": "inventory_payload_two", "value": "bar-two"}, protocol.InventoryData{"entityKey": "entity.name", "id": "integrationName", "value": "Sample"}, protocol.InventoryData{"entityKey": "entity.name", "id": "integrationVersion", "value": "1.2.3"}, protocol.InventoryData{"entityKey": "entity.name", "id": "reportingAgent", "value": "mock_reporting_agent"}},
+				NotApplicable: false,
+			})
 
 			dmSender := &mockedMetricsSender{
 				wg: sync.WaitGroup{},
@@ -220,6 +230,7 @@ func TestEmitter_Send_ignoreEntity(t *testing.T) {
 	aCtx := &mocks.AgentContext{}
 	aCtx.On("Config").Return(config.NewConfig())
 	aCtx.On("Version").Return("dev")
+	aCtx.On("EntityKey").Return("mock_reporting_agent")
 
 	dmSender := &mockedMetricsSender{
 		wg: sync.WaitGroup{},
@@ -286,7 +297,7 @@ func TestEmitter_Send(t *testing.T) {
 			agentEntityID := entity.ID(321)
 			aCtx := &mocks.AgentContext{}
 			if testCase.register {
-				aCtx = getAgentContext("TestEmitter_Send")
+				aCtx = getAgentContext("mock_reporting_agent")
 				aCtx.On("SendData",
 					types.PluginOutput{
 						Id:     ids.PluginID{Category: "integration", Term: "integration name"},
@@ -294,15 +305,20 @@ func TestEmitter_Send(t *testing.T) {
 						Data: types.PluginInventoryDataset{
 							protocol.InventoryData{"id": "inventory_foo", "value": "bar"},
 							protocol.InventoryData{"entityKey": "unique name", "id": "integrationUser", "value": "root"},
+							protocol.InventoryData{"entityKey": "unique name", "id": "integrationName", "value": "integration name"},
+							protocol.InventoryData{"entityKey": "unique name", "id": "integrationVersion", "value": "integration version"},
+							protocol.InventoryData{"entityKey": "unique name", "id": "reportingAgent", "value": "mock_reporting_agent"},
 						},
 						NotApplicable: false,
 					},
 				)
 				aCtx.On("SendEvent", mock.Anything, entity.Key("unique name")).Run(assertEventData(t))
 				aCtx.On("Identity").Return(entity.Identity{ID: agentEntityID})
+				aCtx.On("EntityKey").Return("mock_reporting_agent")
 			} else {
 				aCtx.On("Config").Return(config.NewConfig())
 				aCtx.On("Version").Return("dev")
+				aCtx.On("EntityKey").Return("mock_reporting_agent")
 			}
 
 			metricSender := &mockedMetricsSender{
