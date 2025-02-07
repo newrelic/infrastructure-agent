@@ -107,3 +107,29 @@ jobs:
       - name: Delete .original
         run: |
           aws s3 rm --recursive "${{ env.TEST_FOLDER_ABS_PATH }}.original"
+
+      - name: Send Slack notification to OHAI
+        if: ${{ failure() }}
+        id: slack
+        uses: slackapi/slack-github-action@v1.22.0
+        with:
+          payload: |
+            {
+              "text": ":rotating_light: Dry-Run Recover S3 Repository failed :warning: :warning: :warning: @hero check <${{ env.GITHUB_JOB_URL }}> :rotating_light:"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.OHAI_PRIVATE_SLACK_WEBHOOK }}
+          GITHUB_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Send Slack notification to AC
+        if: ${{ failure() }}
+        id: slack
+        uses: slackapi/slack-github-action@v1.22.0
+        with:
+          payload: |
+            {
+              "text": ":rotating_light: Dry-Run Recover S3 Repository failed :warning: :warning: :warning: @hero check <${{ env.GITHUB_JOB_URL }}> :rotating_light:"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SUPER_SECRET_AGENT_SLACK_WEBHOOK }}
+          GITHUB_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
