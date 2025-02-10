@@ -248,6 +248,7 @@ func main() {
 	}
 
 	alog.Info("this is just a test")
+	alog.Info("this is just another test")
 
 	err = initializeAgentAndRun(cfg, logFwCfg)
 	if err != nil {
