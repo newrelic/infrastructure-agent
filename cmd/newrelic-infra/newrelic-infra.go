@@ -247,6 +247,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	alog.Info("this is just a test")
+
 	err = initializeAgentAndRun(cfg, logFwCfg)
 	if err != nil {
 		timedLog.WithError(err).Error("Agent run returned an error.")
