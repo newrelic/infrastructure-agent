@@ -1,4 +1,4 @@
-name: . ⚠️🔧 Test Recover S3 Repository back in time 🔧️⚠️
+name: . ⚠️🔧 Test Recover S3 Repository back in time [STAGING] 🔧️⚠️
 
 on:
   workflow_dispatch:
@@ -49,7 +49,7 @@ jobs:
           echo "Just to periodically ensure the procedure works" >> DISASTER_TEST_README.md
           aws s3 cp DISASTER_TEST_README.md s3://${{ env.BUCKET_NAME }}/${{ env.MANDATORY_PREFIX }}/README.md
           echo "This file should be present after running the procedure" > PERPETUAL_FILE.md
-          aws s3 cp PERPETUAL_FILE.md s3://${{ env.BUCKET_NAME }}/${{ env.MANDATORY_PREFIX }}/${{ env.TEST_FOLDER }}/PERPETUAL_FILE.md
+          aws s3 cp PERPETUAL_FILE.md ${{ env.TEST_FOLDER_ABS_PATH }}/PERPETUAL_FILE.md
 
       - name: ensure folders from previous execution do not exist
         run: |
@@ -110,7 +110,6 @@ jobs:
 
       - name: Send Slack notification to OHAI
         if: ${{ failure() }}
-        id: slack
         uses: slackapi/slack-github-action@v1
         with:
           payload: |
@@ -123,7 +122,6 @@ jobs:
 
       - name: Send Slack notification to AC
         if: ${{ failure() }}
-        id: slack
         uses: slackapi/slack-github-action@v1
         with:
           payload: |
