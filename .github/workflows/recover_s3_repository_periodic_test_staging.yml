@@ -106,7 +106,9 @@ jobs:
 
       - name: Delete .original
         run: |
-          aws s3 rm --recursive "${{ env.TEST_FOLDER_ABS_PATH }}.original"
+          aws s3 rm ${{ env.TEST_FOLDER_ABS_PATH }}.original/${{ env.TESTING_FILE }}
+          aws s3 rm ${{ env.TEST_FOLDER_ABS_PATH }}.original/PERPETUAL_FILE.md
+          aws s3 rm "${{ env.TEST_FOLDER_ABS_PATH }}.original"
 
       - name: Send Slack notification to OHAI
         if: ${{ failure() }}

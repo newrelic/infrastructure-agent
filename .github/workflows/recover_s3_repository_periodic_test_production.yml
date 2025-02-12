@@ -5,6 +5,9 @@ on:
   schedule:
    #Scheduled to run at 7 a.m on every day-of-week from Monday through Friday.
     - cron: "0 7 * * 1-5"
+  push:
+    branches:
+      - ci/disaster_recovery_dry_run_prod_TEST
 
 env:
   MANDATORY_PREFIX: 'infrastructure_agent/test_disaster_recovery'
@@ -106,7 +109,9 @@ jobs:
 
       - name: Delete .original
         run: |
-          aws s3 rm --recursive "${{ env.TEST_FOLDER_ABS_PATH }}.original"
+          aws s3 rm "${{ env.TEST_FOLDER_ABS_PATH }}.original/${{ env.TESTING_FILE }}"
+          aws s3 rm "${{ env.TEST_FOLDER_ABS_PATH }}.original/PERPETUAL_FILE.md"
+          aws s3 rm "${{ env.TEST_FOLDER_ABS_PATH }}.original"
 
       - name: Send Slack notification to OHAI
         if: ${{ failure() }}
