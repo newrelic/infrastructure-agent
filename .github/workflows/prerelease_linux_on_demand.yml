@@ -35,7 +35,7 @@ env:
   # publish packages to a custom path
   DEST_PREFIX: ${{ github.event.inputs.dest_prefix }}
   # force all custom packages to be published to a fixed path
-  FIXED_PREFIX: "testing-pre-releases"
+  FIXED_PREFIX: "infrastructure_agent/20250218-game-day"
   # using infrastructure_agent as suffix allows use to mirror an on_demand repo
   FIXED_SUFFIX: "infrastructure_agent/"
   # skip mirror repo for a single package test, or allow mirroring to have multiple packages in a custom repo
