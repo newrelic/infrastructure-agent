@@ -21,7 +21,7 @@ on:
         type: string
         required: true
       time:
-        description: 'UTC Time (HH:MM:SS)'
+        description: 'UTC Time (HH:MM:SS) (minutes and seconds optional)'
         type: string
         required: true
       environment:
@@ -32,6 +32,11 @@ on:
           - staging
           - production
         default: 'staging'
+      filter:
+        description: 'filter by regex in staging'
+        type: string
+        default: '.*'
+        required: false
 
 jobs:
   list-files:
@@ -43,12 +48,9 @@ jobs:
           set -e
           datetime="${{ github.event.inputs.date_year }}-${{ github.event.inputs.date_month }}-${{ github.event.inputs.date_day }} ${{ github.event.inputs.time }}"
           # Regular expression to match the format YYYY-MM-DD HH:MM:SS
-          regex="^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$"
+          regex="^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}(:[0-9]{2}){0,2}$"
       
-          if [[ $datetime =~ $regex ]]; then
-            # Use date command to check if it's a valid date
-            date -d "$datetime" >/dev/null 2>&1 || exit 1
-          else
+          if [[ ! $datetime =~ $regex ]]; then
             exit 1
           fi
           echo "DATE_TIME=$datetime" >> $GITHUB_ENV
@@ -66,7 +68,7 @@ jobs:
       - name: List files created before and after datetime in Staging S3
         if: ${{ github.event.inputs.environment == 'staging' }}
         run: |
-          TZ="UTC" aws s3 ls s3://nr-downloads-ohai-staging/infrastructure_agent/ --recursive | sort | grep --color  -m 1 -C ${{ github.event.inputs.count }} "^${{ env.DATE_TIME }}"
+          TZ="UTC" aws s3 ls s3://nr-downloads-ohai-staging/infrastructure_agent/ --recursive | sort | grep -E "${{ github.event.inputs.filter }}" | grep --color  -m 1 -C ${{ github.event.inputs.count }} "^${{ env.DATE_TIME }}"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
