@@ -16,6 +16,11 @@ on:
           - staging
           - production
         default: 'staging'
+      filter:
+        description: 'filter by regex in staging'
+        type: string
+        default: '.*'
+        required: false
 
 
 jobs:
@@ -36,7 +41,7 @@ jobs:
       - name: List latest packages in Staging S3
         if: ${{ github.event.inputs.environment == 'staging' }}
         run: |
-          TZ="UTC" aws s3 ls s3://nr-downloads-ohai-staging/infrastructure_agent/ --recursive | sort | grep -E "\.(rpm|deb)$" | tail -n ${{ github.event.inputs.count }}
+          TZ="UTC" aws s3 ls s3://nr-downloads-ohai-staging/infrastructure_agent/ --recursive | sort | grep -E "${{ github.event.inputs.filter }}" | grep -E "\.(rpm|deb)$" | tail -n ${{ github.event.inputs.count }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
