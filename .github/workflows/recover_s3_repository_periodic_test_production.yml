@@ -45,7 +45,7 @@ jobs:
 
       - name: set README and a file that will not be rolled back
         run: |
-          echo "This folder is meant to test the disaster recevery dry-run." > DISASTER_TEST_README.md
+          echo "This folder is meant to test the disaster recovery test." > DISASTER_TEST_README.md
           echo "Just to periodically ensure the procedure works" >> DISASTER_TEST_README.md
           aws s3 cp DISASTER_TEST_README.md s3://${{ env.BUCKET_NAME }}/${{ env.MANDATORY_PREFIX }}/README.md
           echo "This file should be present after running the procedure" > PERPETUAL_FILE.md
@@ -67,7 +67,7 @@ jobs:
 
       - name: Get current datetime and sleep for a couple of minutes
         run: |
-          now=$( date +"%m-%d-%Y %H:%M:%S %z" )
+          now=$( date --utc +"%m-%d-%Y %H:%M:%S %z" )
           echo "INIT_DATETIME=$now" >> $GITHUB_ENV
           sleep 120
 
@@ -116,7 +116,7 @@ jobs:
         with:
           payload: |
             {
-              "text": ":rotating_light: Dry-Run Recover S3 Repository failed :warning: :warning: :warning: @hero check <${{ env.GITHUB_JOB_URL }}> :rotating_light:"
+              "text": ":rotating_light: Testing Recover S3 Repository failed :warning: :warning: :warning: @hero check <${{ env.GITHUB_JOB_URL }}> :rotating_light:"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.OHAI_SLACK_WEBHOOK }}
@@ -128,7 +128,7 @@ jobs:
         with:
           payload: |
             {
-              "text": ":rotating_light: Dry-Run Recover S3 Repository failed :warning: :warning: :warning: @hero check <${{ env.GITHUB_JOB_URL }}> :rotating_light:"
+              "text": ":rotating_light: Testing Recover S3 Repository failed :warning: :warning: :warning: @hero check <${{ env.GITHUB_JOB_URL }}> :rotating_light:"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.AC_SLACK_WEBHOOK }}
