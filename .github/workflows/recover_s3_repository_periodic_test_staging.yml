@@ -1,0 +1,135 @@
+name: . ⚠️🔧 Test Recover S3 Repository back in time [STAGING] 🔧️⚠️
+
+on:
+  workflow_dispatch:
+  schedule:
+   #Scheduled to run at 7 a.m on every day-of-week from Monday through Friday.
+    - cron: "0 7 * * 1-5"
+
+env:
+  MANDATORY_PREFIX: 'infrastructure_agent/test_disaster_recovery'
+  TEST_FOLDER: 'test'
+  IMAGE: 'ghcr.io/newrelic-forks/s3-pit-restore:latest'
+  AWS_REGION: 'us-east-1'
+  TEMP_AWS_PROFILE: 'temp_aws_profile'
+  BUCKET_NAME: 'nr-downloads-ohai-staging'
+  TESTING_FILE: 'test.txt'
+
+jobs:
+  recover-s3-repository:
+    name: Execute S3 PIT restore for testing disaster recovery
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          repository: newrelic-forks/s3-pit-restore
+          ref: master
+
+      - name: Setup AWS credentials for Staging
+        run: |
+          ./setup_aws_credentials.sh
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
+          AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
+          AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
+          AWS_SESSION_DURATION_SECONDS: 14400
+          TEMP_AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
+
+      - name: Add aws credentials and paths to env
+        run: |
+          echo AWS_PROFILE="${{ env.TEMP_AWS_PROFILE }}" >> $GITHUB_ENV
+          echo AWS_REGION="${{ env.AWS_REGION }}" >> $GITHUB_ENV
+          echo TEST_FOLDER_ABS_PATH="s3://${{ env.BUCKET_NAME }}/${{ env.MANDATORY_PREFIX }}/${{ env.TEST_FOLDER }}" >> $GITHUB_ENV
+
+      - name: set README and a file that will not be rolled back
+        run: |
+          echo "This folder is meant to test the disaster recovery test." > DISASTER_TEST_README.md
+          echo "Just to periodically ensure the procedure works" >> DISASTER_TEST_README.md
+          aws s3 cp DISASTER_TEST_README.md s3://${{ env.BUCKET_NAME }}/${{ env.MANDATORY_PREFIX }}/README.md
+          echo "This file should be present after running the procedure" > PERPETUAL_FILE.md
+          aws s3 cp PERPETUAL_FILE.md ${{ env.TEST_FOLDER_ABS_PATH }}/PERPETUAL_FILE.md
+
+      - name: ensure folders from previous execution do not exist
+        run: |
+          set +e
+          TZ="UTC" aws s3 ls ${{ env.TEST_FOLDER_ABS_PATH }}.original
+          if [ $? -eq 0 ]; then
+            echo "original folder ${{ env.TEST_FOLDER_ABS_PATH }}.original should not exist"
+            exit 1
+          fi
+          TZ="UTC" aws s3 ls ${{ env.TEST_FOLDER_ABS_PATH }}.restored
+          if [ $? -eq 0 ]; then
+            echo "restored folder ${{ env.TEST_FOLDER_ABS_PATH }}.restored should not exist"
+            exit 1
+          fi
+
+      - name: Get current datetime and sleep for a couple of minutes
+        run: |
+          now=$( date --utc +"%m-%d-%Y %H:%M:%S %z" )
+          echo "INIT_DATETIME=$now" >> $GITHUB_ENV
+          sleep 120
+
+      - name: create a file in the bucket to be rolled back (this file should be deleted by the procedure)
+        run: |
+          echo "this is a test" > ${{ env.TESTING_FILE }}
+          aws s3 cp ${{ env.TESTING_FILE }} ${{ env.TEST_FOLDER_ABS_PATH }}/${{ env.TESTING_FILE }}
+          # ensure the file is there
+          TZ="UTC" aws s3 ls ${{ env.TEST_FOLDER_ABS_PATH }}/${{ env.TESTING_FILE }}
+
+      - name: Run S3 PIT restore in Staging S3 for the test folder
+        run: |
+          BUCKET="${{ env.BUCKET_NAME }}" \
+          PREFIX="${{ env.MANDATORY_PREFIX }}/${{ env.TEST_FOLDER }}" \
+          TIME="${{ env.INIT_DATETIME }}" \
+          IMAGE="${{ env.IMAGE }}" \
+          AWS_PROFILE="${{ env.TEMP_AWS_PROFILE }}" \
+          make restore
+
+      - name: Ensure the perpetual file exists
+        run: |
+          TZ="UTC" aws s3 ls ${{ env.TEST_FOLDER_ABS_PATH }}/PERPETUAL_FILE.md
+
+      - name: Ensure the rollbacked file does not exist
+        run: |
+          set +e
+          TZ="UTC" aws s3 ls ${{ env.TEST_FOLDER_ABS_PATH }}/${{ env.TESTING_FILE }}
+          if [ $? -eq 0 ]; then
+              echo "The file ${{ env.TEST_FOLDER_ABS_PATH }}/${{ env.TESTING_FILE }} should have been deleted"
+              exit 1
+          fi
+
+      - name: Ensure the original with the original file exists
+        run: |
+          TZ="UTC" aws s3 ls ${{ env.TEST_FOLDER_ABS_PATH }}.original/${{ env.TESTING_FILE }}
+
+      - name: Delete .original
+        run: |
+          aws s3 rm ${{ env.TEST_FOLDER_ABS_PATH }}.original/${{ env.TESTING_FILE }}
+          aws s3 rm ${{ env.TEST_FOLDER_ABS_PATH }}.original/PERPETUAL_FILE.md
+          aws s3 rm "${{ env.TEST_FOLDER_ABS_PATH }}.original"
+
+      - name: Send Slack notification to OHAI
+        if: ${{ failure() }}
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": ":rotating_light: Testing Recover S3 Repository failed :warning: :warning: :warning: @hero check <${{ env.GITHUB_JOB_URL }}> :rotating_light:"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.OHAI_SLACK_WEBHOOK }}
+          GITHUB_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Send Slack notification to AC
+        if: ${{ failure() }}
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": ":rotating_light: Testing Recover S3 Repository failed :warning: :warning: :warning: @hero check <${{ env.GITHUB_JOB_URL }}> :rotating_light:"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.AC_SLACK_WEBHOOK }}
+          GITHUB_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
