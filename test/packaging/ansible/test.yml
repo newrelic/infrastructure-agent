@@ -2,7 +2,6 @@
 
 - name: Pinned version agent installation
   import_playbook: installation-pinned.yml
-  when: "'-fips' not in inventory_hostname" # TODO: https://new-relic.atlassian.net/browse/NR-355845
 
 - name: Agent installation as root
   import_playbook: installation-root.yml
@@ -26,7 +25,6 @@
 
 - name: Agent upgrade
   import_playbook: agent-upgrade.yml
-  when: "'-fips' not in inventory_hostname" # TODO: https://new-relic.atlassian.net/browse/NR-355851
 
 - name: Shutdown , terminate and HNR alerts
   import_playbook: shutdown-and-terminate.yml
