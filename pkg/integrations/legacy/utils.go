@@ -13,22 +13,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	integrationUserID    = "integrationUser"
-	integrationNameID    = "integrationName"
-	integrationVersionID = "integrationVersion"
-	reportingAgentID     = "reportingAgent"
-)
-
 func BuildInventoryDataSet(
 	entryLog log.Entry,
 	inventoryData map[string]protocol.InventoryData,
 	labels map[string]string,
-	customAttr map[string]string,
 	integrationUser string,
 	pluginName string,
-	pluginVersion string,
-	reportingAgent string,
 	entityKey string) types.PluginInventoryDataset {
 	var inventoryDataSet types.PluginInventoryDataset
 
@@ -42,39 +32,20 @@ func BuildInventoryDataSet(
 		}
 	}
 
-	addLabeledData := func(id string, value string) {
+	for key, value := range labels {
 		inventoryDataSet = append(inventoryDataSet, protocol.InventoryData{
-			"id":        id,
+			"id":        fmt.Sprintf("labels/%s", key),
 			"value":     value,
 			"entityKey": entityKey,
 		})
 	}
 
-	for key, value := range customAttr {
-		// Do not set in the case of duplicate key
-		if _, exists := labels[key]; !exists {
-			addLabeledData(fmt.Sprintf("labels/%s", key), value)
-		}
-	}
-
-	for key, value := range labels {
-		addLabeledData(fmt.Sprintf("labels/%s", key), value)
-	}
-
 	if integrationUser != "" {
-		addLabeledData(integrationUserID, integrationUser)
-	}
-
-	if pluginName != "" {
-		addLabeledData(integrationNameID, pluginName)
-	}
-
-	if pluginVersion != "" {
-		addLabeledData(integrationVersionID, pluginVersion)
-	}
-
-	if reportingAgent != "" {
-		addLabeledData(reportingAgentID, reportingAgent)
+		inventoryDataSet = append(inventoryDataSet, protocol.InventoryData{
+			"id":        "integrationUser",
+			"value":     integrationUser,
+			"entityKey": entityKey,
+		})
 	}
 
 	return inventoryDataSet
