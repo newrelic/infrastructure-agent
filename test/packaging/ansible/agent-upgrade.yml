@@ -11,13 +11,12 @@
         name: caos.ansible_roles.infra_agent
       vars:
         uninstall: true
+        fips_enabled: "{{ '-fips' in inventory_hostname }}"
 
   tasks:
     - name: agent upgrade tests suite
-      # TODO: https://new-relic.atlassian.net/browse/NR-355851 Update when two releases with FIPS are done
-      # Also add FIPS tests
       vars:
-        target_agent_version: "1.57.1"
+        target_agent_version: "1.60.0"
 
       block:
 
@@ -27,6 +26,7 @@
           vars:
             target_version: "{{ target_agent_version }}"
             repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
+            fips_enabled: "{{ '-fips' in inventory_hostname }}"
 
         - name: Assert version
           include_role:
@@ -45,6 +45,7 @@
             name: caos.ansible_roles.infra_agent
           vars:
             install_only_if_present: "yes"
+            fips_enabled: "{{ '-fips' in inventory_hostname }}"
 
         - name: assert service countinues running after upgrade
           include_role:
@@ -75,4 +76,5 @@
             name: caos.ansible_roles.infra_agent
           vars:
             uninstall: true
+            fips_enabled: "{{ '-fips' in inventory_hostname }}"
 ...

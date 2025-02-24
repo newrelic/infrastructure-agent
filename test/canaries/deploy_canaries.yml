@@ -35,8 +35,6 @@
             fips_enabled: "{{ '-fips' in inventory_hostname }}"
 
         - name: install previous agent in container
-          # Remove the "when" condition after second release https://new-relic.atlassian.net/browse/NR-355851
-          when: "'-fips' not in inventory_hostname"
           ansible.builtin.include_role:
             name: caos.ansible_roles.infra_agent
           vars:
