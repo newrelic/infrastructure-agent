@@ -5,7 +5,16 @@
 
 package linux
 
-import . "gopkg.in/check.v1"
+import (
+	"testing"
+
+	. "gopkg.in/check.v1"
+)
+
+// Register test suite
+func TestSshdConfig(t *testing.T) {
+	TestingT(t)
+}
 
 type SshdConfigSuite struct{}
 

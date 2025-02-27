@@ -6,12 +6,13 @@
 package linux
 
 import (
-	"github.com/newrelic/infrastructure-agent/internal/plugins/common"
 	"io/ioutil"
 	"os"
 	"regexp"
 	"testing"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/plugins/common"
 
 	"github.com/newrelic/infrastructure-agent/internal/os/distro"
 	"github.com/newrelic/infrastructure-agent/internal/os/fs"
@@ -23,6 +24,11 @@ import (
 	. "github.com/newrelic/infrastructure-agent/pkg/go-better-check"
 	. "gopkg.in/check.v1"
 )
+
+// Register test suite
+func TestHostinfo(t *testing.T) {
+	TestingT(t)
+}
 
 type HostinfoSuite struct {
 	agent *testing2.MockAgent

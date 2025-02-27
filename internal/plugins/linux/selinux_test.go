@@ -7,8 +7,15 @@
 package linux
 
 import (
+	"testing"
+
 	. "gopkg.in/check.v1"
 )
+
+// Register test suite
+func TestSELinux(t *testing.T) {
+	TestingT(t)
+}
 
 type SELinuxSuite struct{}
 

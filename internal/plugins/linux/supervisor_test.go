@@ -6,11 +6,13 @@
 package linux
 
 import (
-	"github.com/newrelic/infrastructure-agent/internal/plugins/testing"
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"testing"
 	"time"
+
+	testHelper "github.com/newrelic/infrastructure-agent/internal/plugins/testing"
 
 	"github.com/kolo/xmlrpc"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
@@ -49,9 +51,14 @@ sleep 10
 `
 )
 
+// Register test suite
+func TestSupervisor(t *testing.T) {
+	TestingT(t)
+}
+
 type SupervisorSuite struct {
 	client            *xmlrpc.Client
-	agent             *testing.MockAgent
+	agent             *testHelper.MockAgent
 	config            *config.Config
 	supervisorCommand *exec.Cmd
 }
@@ -81,7 +88,7 @@ func (s *SupervisorSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 	s.client = client
 
-	s.agent = testing.NewMockAgent()
+	s.agent = testHelper.NewMockAgent()
 	v := NewSupervisorPlugin(ids.PluginID{"supervisor", "supervisor"}, s.agent)
 	plugin, ok := v.(*SupervisorPlugin)
 	c.Assert(ok, Equals, true)
@@ -103,7 +110,7 @@ func (s *SupervisorSuite) TearDownSuite(c *C) {
 }
 
 func (s *SupervisorSuite) SetUpTest(c *C) {
-	s.agent = testing.NewMockAgent()
+	s.agent = testHelper.NewMockAgent()
 }
 
 func (s *SupervisorSuite) TestProcs(c *C) {

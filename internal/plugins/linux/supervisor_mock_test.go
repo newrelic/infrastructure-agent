@@ -7,21 +7,28 @@ package linux
 
 import (
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/plugins/testing"
+	"testing"
 	"time"
+
+	testHelper "github.com/newrelic/infrastructure-agent/internal/plugins/testing"
 
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	. "gopkg.in/check.v1"
 )
 
+// Register test suite
+func TestSupervisorMock(t *testing.T) {
+	TestingT(t)
+}
+
 type SuperMockSuite struct {
-	agent *testing.MockAgent
+	agent *testHelper.MockAgent
 }
 
 var _ = Suite(&SuperMockSuite{})
 
 func (s *SuperMockSuite) SetUpTest(c *C) {
-	s.agent = testing.NewMockAgent()
+	s.agent = testHelper.NewMockAgent()
 }
 
 func (s *SuperMockSuite) TestSupervisorAllGood(c *C) {

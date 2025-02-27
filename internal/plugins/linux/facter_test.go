@@ -8,16 +8,22 @@ package linux
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/plugins/testing"
 	"io/ioutil"
 	"strings"
+	"testing"
 	"time"
 
+	testHelper "github.com/newrelic/infrastructure-agent/internal/plugins/testing"
 	. "gopkg.in/check.v1"
 )
 
+// Register test suite
+func TestFacter(t *testing.T) {
+	TestingT(t)
+}
+
 type FacterSuite struct {
-	agent *testing.MockAgent
+	agent *testHelper.MockAgent
 }
 
 var _ = Suite(&FacterSuite{})
@@ -29,7 +35,7 @@ func (s *FacterSuite) TearDownSuite(c *C) {
 }
 
 func (s *FacterSuite) SetUpTest(c *C) {
-	s.agent = testing.NewMockAgent()
+	s.agent = testHelper.NewMockAgent()
 }
 
 func (s *FacterSuite) TestGetFacterData(c *C) {

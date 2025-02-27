@@ -8,9 +8,15 @@ package linux
 import (
 	"bufio"
 	"bytes"
+	"testing"
 
 	. "gopkg.in/check.v1"
 )
+
+// Register test suite
+func TestDaemontools(t *testing.T) {
+	TestingT(t)
+}
 
 // boilerplate
 
