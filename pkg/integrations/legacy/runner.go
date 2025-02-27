@@ -707,11 +707,9 @@ func EmitDataSet(
 	if err != nil {
 		return fmt.Errorf("couldn't determine a unique entity Key: %s", err.Error())
 	}
-	// Custom attributes are from infra agent config
-	customAttr := ctx.Config().CustomAttributes.DataMap()
 
 	if len(dataSet.Inventory) > 0 {
-		inventoryDataSet := BuildInventoryDataSet(elog, dataSet.Inventory, labels, customAttr, integrationUser, pluginName, pluginVersion, agentIdentifier, entityKey.String())
+		inventoryDataSet := BuildInventoryDataSet(elog, dataSet.Inventory, labels, integrationUser, pluginName, entityKey.String())
 		emitter.EmitInventory(inventoryDataSet, entity.NewWithoutID(entityKey))
 	}
 

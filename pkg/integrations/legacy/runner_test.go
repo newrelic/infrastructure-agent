@@ -509,7 +509,7 @@ func newFakePlugin(ctx customContext, pluginVersion int) externalPlugin {
 				Context: ctx,
 			},
 			pluginInstance: &PluginV1Instance{
-				Labels: map[string]string{"role": "fileserver", "environment": "development", "agent_role": "overwrite agent role"},
+				Labels: map[string]string{"role": "fileserver", "environment": "development"},
 				plugin: &Plugin{
 					Name:            "new-plugin",
 					ProtocolVersion: pluginVersion,
@@ -573,7 +573,7 @@ func newFakePluginWithEnvVars(pluginVersion int) externalPlugin {
 			Context: ctx,
 		},
 		pluginInstance: &PluginV1Instance{
-			Labels: map[string]string{"role": "fileserver", "environment": "development", "agent_role": "overwrite agent role"},
+			Labels: map[string]string{"role": "fileserver", "environment": "development"},
 			plugin: &Plugin{
 				Name:            "new-plugin",
 				ProtocolVersion: pluginVersion,
@@ -676,6 +676,12 @@ func (rs *RunnerSuite) TestPluginHandleOutputV1(c *C) {
 	c.Assert(err, IsNil)
 
 	c.Assert(rd, NotNil)
+	c.Assert(len(rd.Data), Equals, 4)
+	c.Assert(rd.Data[0].SortKey(), Equals, "first")
+
+	invData := rd.Data[3].(protocol.InventoryData)
+	c.Assert(invData["id"], Equals, "integrationUser")
+	c.Assert(invData["value"], Equals, "test")
 
 	c.Assert(event, NotNil)
 	c.Assert(event["event_type"], Equals, "LoadBalancerSample")
@@ -683,29 +689,9 @@ func (rs *RunnerSuite) TestPluginHandleOutputV1(c *C) {
 	c.Assert(event["value"], Equals, "random")
 	c.Assert(event["integrationUser"], Equals, "test")
 
-	expectedLabelValues := map[string]string{
-		"first":              "fake",
-		"labels/my_group":    "test group",
-		"labels/role":        "fileserver",
-		"labels/environment": "development",
-		"labels/agent_role":  "overwrite agent role",
-		"integrationUser":    "test",
-		"integrationName":    "test",
-		"integrationVersion": "1.0.0",
-	}
-
-	c.Assert(len(rd.Data), Equals, 8)
-
-	for _, item := range rd.Data {
-		if invData, ok := item.(protocol.InventoryData); ok {
-			id, _ := invData["id"].(string)
-			value, _ := invData["value"].(string)
-
-			if expectedValue, exists := expectedLabelValues[id]; exists {
-				c.Assert(value, Equals, expectedValue)
-			} else {
-				c.Fatalf("Expected label: %v not found in Inventory", id)
-			}
+	for _, labelKey := range labelKeys {
+		if rd.Data[1].SortKey() != labelKey && rd.Data[2].SortKey() != labelKey {
+			c.Errorf("There isn't label '%s'' in the inventory", labelKey)
 		}
 	}
 }
@@ -740,7 +726,6 @@ func (rs *RunnerSuite) TestPluginHandleOutputEventsV1(c *C) {
 	// labels from pluginInstance
 	c.Assert(event["label.environment"], Equals, "development")
 	c.Assert(event["label.role"], Equals, "fileserver")
-	c.Assert(event["label.agent_role"], Equals, "overwrite agent role")
 
 	// labels from databind
 	c.Assert(event["label.expected"], Equals, "extra label")
@@ -846,7 +831,7 @@ func (rs *RunnerSuite) TestEventsPluginRunV1(c *C) {
 	c.Assert(err, IsNil)
 
 	c.Assert(rd, NotNil)
-	c.Assert(len(rd.Data), Equals, 7)
+	c.Assert(len(rd.Data), Equals, 3)
 	c.Assert(rd.Data[0].SortKey(), Equals, "first")
 
 	c.Assert(event, NotNil)
@@ -1045,7 +1030,7 @@ func (rs *RunnerSuite) TestHandleOutputV1(c *C) {
 	c.Assert(err, IsNil)
 
 	// labels are added as inventory
-	c.Assert(len(rd.Data)-len(labelKeys), Equals, 7)
+	c.Assert(len(rd.Data)-len(labelKeys), Equals, 3)
 
 	firstData := rd.Data[0]
 	inv := firstData.(protocol.InventoryData)
@@ -1560,16 +1545,12 @@ func TestParsePayloadV3(t *testing.T) {
 type fakeEmitter struct {
 	lastEventData map[string]interface{}
 	lastEntityKey string
-	inventory     types.PluginInventoryDataset
 }
 
 func (f *fakeEmitter) EmitInventoryWithPluginId(data types.PluginInventoryDataset, entityKey string, pluginId ids.PluginID) {
-	f.inventory = data
 }
 
-func (f *fakeEmitter) EmitInventory(data types.PluginInventoryDataset, entity entity.Entity) {
-	f.inventory = data
-}
+func (f *fakeEmitter) EmitInventory(data types.PluginInventoryDataset, entity entity.Entity) {}
 
 func (f *fakeEmitter) EmitEvent(eventData map[string]interface{}, entityKey entity.Key) {
 	f.lastEventData = eventData
@@ -1605,29 +1586,6 @@ func TestEmitPayloadV2NoDisplayNameNoEntityName(t *testing.T) {
 	assert.EqualValues(t, "Motorbike", emitter.lastEventData["entityName"])
 	assert.EqualValues(t, "motorbike:street_hawk", emitter.lastEventData["entityKey"])
 
-	expectedLabelValues := map[string]string{
-		"integrationUser":    "testuser",
-		"integrationName":    "test/test",
-		"integrationVersion": "x.y.z",
-		"reportingAgent":     "my-agent-id",
-		"motor":              "", // we are type converting to string so motor does not have a value
-	}
-
-	assert.EqualValues(t, len(emitter.inventory), 5)
-
-	for _, item := range emitter.inventory {
-		if invData, ok := item.(protocol.InventoryData); ok {
-			id, _ := invData["id"].(string)
-			value, _ := invData["value"].(string)
-
-			if expectedValue, exists := expectedLabelValues[id]; exists {
-				assert.EqualValues(t, value, expectedValue)
-			} else {
-				assert.Fail(t, "Expected label not found in Inventory", "Label: %s not found in inventory", id)
-			}
-		}
-	}
-
 	// Local entity, no displayName, no entityName
 	assert.NoError(t, EmitDataSet(ctx, &emitter, "test/test", "x.y.z", "testuser", rd.DataSets[2], extraAnnotations, labels, entityRewrite, version))
 	_, ok := emitter.lastEventData["displayName"]
@@ -1636,27 +1594,6 @@ func TestEmitPayloadV2NoDisplayNameNoEntityName(t *testing.T) {
 	assert.False(t, ok)
 	// but entityKey is the agent key
 	assert.EqualValues(t, "my-agent-id", emitter.lastEventData["entityKey"])
-
-	// Check inventory data
-	assert.EqualValues(t, len(emitter.inventory), 5)
-
-	for _, item := range emitter.inventory {
-		if invData, ok := item.(protocol.InventoryData); ok {
-			id, _ := invData["id"].(string)
-			value, _ := invData["value"].(string)
-
-			if expectedValue, exists := expectedLabelValues[id]; exists {
-				assert.EqualValues(t, value, expectedValue)
-			} else {
-				assert.Fail(t, "Expected label not found in Inventory", "Label: %s not found in inventory", id)
-			}
-		}
-	}
-}
-
-func createMockConfigWithDataMap(attrs map[string]interface{}) *config.Config {
-	customAttrs := config.CustomAttributeMap(attrs)
-	return &config.Config{CustomAttributes: customAttrs} //nolint:all
 }
 
 func TestEmitDataSet_OnAddHostnameDecoratesWithHostname(t *testing.T) {
@@ -1689,7 +1626,6 @@ func TestEmitDataSet_OnAddHostnameDecoratesWithHostname(t *testing.T) {
 	ctx.On("EntityKey").Return(agentIdentifier)
 	ctx.On("HostnameResolver").Return(newFixedHostnameResolver(hn, "short"))
 	ctx.On("IDLookup").Return(newFixedIDLookup())
-	ctx.On("Config").Return(createMockConfigWithDataMap(make(map[string]interface{})))
 
 	em := &fakeEmitter{}
 	extraAnnotations := map[string]string{}
@@ -1741,7 +1677,6 @@ func TestEmitDataSet_EntityNameLocalhostIsNotReplacedWithHostnameV2(t *testing.T
 	ctx.On("EntityKey").Return(agID)
 	ctx.On("HostnameResolver").Return(newFixedHostnameResolver("foo.bar", "short"))
 	ctx.On("IDLookup").Return(newFixedIDLookup())
-	ctx.On("Config").Return(createMockConfigWithDataMap(make(map[string]interface{})))
 
 	em := &fakeEmitter{}
 	extraAnnotations := map[string]string{}
@@ -1789,7 +1724,6 @@ func TestEmitDataSet_EntityNameLocalhostIsReplacedWithHostnameV3(t *testing.T) {
 	ctx.On("EntityKey").Return(agID)
 	ctx.On("HostnameResolver").Return(newFixedHostnameResolver("foo.bar", "short"))
 	ctx.On("IDLookup").Return(newFixedIDLookup())
-	ctx.On("Config").Return(createMockConfigWithDataMap(make(map[string]interface{})))
 
 	em := &fakeEmitter{}
 	extraAnnotations := map[string]string{}
@@ -1838,7 +1772,6 @@ func TestEmitDataSet_MetricHostnameIsReplacedIfLocalhostV3(t *testing.T) {
 	ctx.On("EntityKey").Return(agID)
 	ctx.On("HostnameResolver").Return(newFixedHostnameResolver("foo.bar", "short"))
 	ctx.On("IDLookup").Return(newFixedIDLookup())
-	ctx.On("Config").Return(createMockConfigWithDataMap(make(map[string]interface{})))
 
 	em := &fakeEmitter{}
 	extraAnnotations := map[string]string{}
@@ -1888,7 +1821,6 @@ func TestEmitDataSet_ReportingFieldsAreReplacedIfLocalhostV3(t *testing.T) {
 	ctx.On("EntityKey").Return(agID)
 	ctx.On("HostnameResolver").Return(newFixedHostnameResolver("foo.bar", "short"))
 	ctx.On("IDLookup").Return(newFixedIDLookup())
-	ctx.On("Config").Return(createMockConfigWithDataMap(make(map[string]interface{})))
 
 	em := &fakeEmitter{}
 	extraAnnotations := map[string]string{}
@@ -1937,7 +1869,6 @@ func TestEmitDataSet_LogsEntityViolationsOncePerEntity(t *testing.T) {
 	ctx.On("EntityKey").Return(agID)
 	ctx.On("HostnameResolver").Return(newFixedHostnameResolver("foo.bar", "short"))
 	ctx.On("IDLookup").Return(newFixedIDLookup())
-	ctx.On("Config").Return(createMockConfigWithDataMap(make(map[string]interface{})))
 
 	em := &fakeEmitter{}
 	extraAnnotations := map[string]string{}
@@ -1975,7 +1906,6 @@ func TestEmitDataSet_DoNotOverrideExistingMetrics(t *testing.T) {
 	ctx.On("EntityKey").Return("agent-id")
 	ctx.On("HostnameResolver").Return(newFixedHostnameResolver("long", "short"))
 	ctx.On("IDLookup").Return(newFixedIDLookup())
-	ctx.On("Config").Return(createMockConfigWithDataMap(make(map[string]interface{})))
 	em := &fakeEmitter{}
 	extraAnnotations := map[string]string{
 		"cluster_name":       "K8sDiscoveredCluster",
@@ -2277,7 +2207,8 @@ func TestLogFields(t *testing.T) {
 		"TEMP_DIR":   "a/path",
 	})
 	assert.Equal(t, fields["labels"], map[string]string{
-		"agent_role": "overwrite agent role", "environment": "development", "role": "fileserver",
+		"role":        "fileserver",
+		"environment": "development",
 	})
 
 	if runtime.GOOS == "windows" {
