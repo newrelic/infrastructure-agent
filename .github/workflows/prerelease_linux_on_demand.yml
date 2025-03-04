@@ -97,7 +97,7 @@ jobs:
 
       - name: Publish NON-FIPS deb to S3 action
         if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'NON-FIPS' }}
-        uses: newrelic/infrastructure-publish-action@v1
+        uses: newrelic/infrastructure-publish-action@fb041c3e231f29ef7c3171ad212e10ff420e0911
         with:
           tag: ${{env.FAKE_TAG}}
           app_name: "newrelic-infra"
