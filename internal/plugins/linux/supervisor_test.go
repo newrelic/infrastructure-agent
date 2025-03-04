@@ -51,9 +51,9 @@ sleep 10
 `
 )
 
-// Register test suite
+// Register test suite.
 func TestSupervisor(t *testing.T) {
-	TestingT(t)
+	t.Parallel()
 }
 
 type SupervisorSuite struct {

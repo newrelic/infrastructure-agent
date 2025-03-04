@@ -17,9 +17,9 @@ import (
 	. "gopkg.in/check.v1"
 )
 
-// Register test suite
+// Register test suite.
 func TestFacter(t *testing.T) {
-	TestingT(t)
+	t.Parallel()
 }
 
 type FacterSuite struct {

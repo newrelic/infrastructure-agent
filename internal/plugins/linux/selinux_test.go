@@ -12,9 +12,9 @@ import (
 	. "gopkg.in/check.v1"
 )
 
-// Register test suite
+// Register test suite.
 func TestSELinux(t *testing.T) {
-	TestingT(t)
+	t.Parallel()
 }
 
 type SELinuxSuite struct{}

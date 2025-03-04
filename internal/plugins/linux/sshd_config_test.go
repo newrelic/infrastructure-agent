@@ -8,19 +8,19 @@ package linux
 import (
 	"testing"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
-// Register test suite
+// Register test suite.
 func TestSshdConfig(t *testing.T) {
-	TestingT(t)
+	t.Parallel()
 }
 
 type SshdConfigSuite struct{}
 
-var _ = Suite(&SshdConfigSuite{})
+var _ = check.Suite(&SshdConfigSuite{})
 
-func (self *SshdConfigSuite) TestParseSshdConfig(c *C) {
+func (self *SshdConfigSuite) TestParseSshdConfig(c *check.C) {
 	testInputs := map[string]struct {
 		configText     string
 		expectedConfig map[string]string
@@ -55,7 +55,7 @@ PermitRootLogin no
 
 	for _, inputs := range testInputs {
 		config, err := parseSshdConfig(inputs.configText)
-		c.Check(err, IsNil)
-		c.Check(config, DeepEquals, inputs.expectedConfig)
+		c.Check(err, check.IsNil)
+		c.Check(config, check.DeepEquals, inputs.expectedConfig)
 	}
 }
