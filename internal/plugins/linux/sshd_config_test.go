@@ -20,7 +20,7 @@ type SshdConfigSuite struct{}
 
 var _ = check.Suite(&SshdConfigSuite{})
 
-func (self *SshdConfigSuite) TestParseSshdConfig(c *check.C) {
+func (s *SshdConfigSuite) TestParseSshdConfig(c *check.C) {
 	testInputs := map[string]struct {
 		configText     string
 		expectedConfig map[string]string
