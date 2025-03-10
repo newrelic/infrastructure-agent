@@ -31,6 +31,20 @@ Function EmbedFlex {
     }
 }
 
+# Adding nri-docker.
+Function EmbedDocker {
+    Write-Output "--- Embedding nri-docker"
+
+    [string]$version = GetIntegrationVersion -name "nri-docker"
+    [string]$url="https://github.com/newrelic/nri-docker/releases/download/v${version}/nri-docker_windows_${version}_${arch}.zip"
+
+    DownloadAndExtractZip -dest:"$downloadPath\nri-docker" -url:"$url"
+
+    if (-Not $skipSigning) {
+        SignExecutable -executable "$downloadPath\nri-docker\nri-docker.exe"
+    }
+}
+
 # # Adding windows services.
 Function EmbedWindowsServices {
     Write-Output "--- Embedding win-services"
@@ -130,6 +144,7 @@ New-Item -ItemType Directory -Force -Path "$downloadPath"
 Write-Output "--- Embedding external components"
 
 EmbedFlex
+EmbedDocker
 EmbedWindowsServices
 EmbedPrometheus
 EmbedFluentBit
