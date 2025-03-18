@@ -9,6 +9,7 @@ import (
 	context2 "context"
 	"encoding/json"
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -52,7 +53,7 @@ var NilIDLookup host.IDLookup
 
 var matcher = func(interface{}) bool { return true }
 
-func newTesting(cfg *config.Config) *Agent {
+func newTesting(cfg *config.Config, ffRetriever feature_flags.Retriever) *Agent {
 	dataDir, err := ioutil.TempDir("", "prefix")
 	if err != nil {
 		panic(err)
@@ -93,6 +94,7 @@ func newTesting(cfg *config.Config) *Agent {
 		cloudDetector,
 		fpHarvester,
 		ctl.NewNotificationHandlerWithCancellation(nil),
+		ffRetriever,
 	)
 	if err != nil {
 		panic(err)
@@ -113,12 +115,13 @@ func (self *TestAgentData) SortKey() string {
 }
 
 func TestIgnoreInventory(t *testing.T) {
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
 	a := newTesting(&config.Config{
 		IgnoredInventoryPathsMap: map[string]struct{}{
 			"test/plugin/yum": {},
 		},
 		MaxInventorySize: 1024,
-	})
+	}, ffRetriever)
 	defer func() {
 		_ = os.RemoveAll(a.store.DataDir)
 	}()
@@ -161,7 +164,8 @@ func TestServicePidMap(t *testing.T) {
 }
 
 func TestSetAgentKeysDisplayInstance(t *testing.T) {
-	a := newTesting(nil)
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+	a := newTesting(nil, ffRetriever)
 	defer os.RemoveAll(a.store.DataDir)
 
 	idMap := host.IDLookup{
@@ -176,7 +180,8 @@ func TestSetAgentKeysDisplayInstance(t *testing.T) {
 
 // Test that empty strings in the identity map are properly ignored in favor of non-empty ones
 func TestSetAgentKeysInstanceEmptyString(t *testing.T) {
-	a := newTesting(nil)
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+	a := newTesting(nil, ffRetriever)
 	defer os.RemoveAll(a.store.DataDir)
 
 	keys := host.IDLookup{
@@ -190,7 +195,8 @@ func TestSetAgentKeysInstanceEmptyString(t *testing.T) {
 }
 
 func TestSetAgentKeysDisplayNameMatchesHostName(t *testing.T) {
-	a := newTesting(nil)
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+	a := newTesting(nil, ffRetriever)
 	defer os.RemoveAll(a.store.DataDir)
 
 	keyMap := host.IDLookup{
@@ -203,14 +209,16 @@ func TestSetAgentKeysDisplayNameMatchesHostName(t *testing.T) {
 }
 
 func TestSetAgentKeysNoValues(t *testing.T) {
-	a := newTesting(nil)
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+	a := newTesting(nil, ffRetriever)
 	defer os.RemoveAll(a.store.DataDir)
 
 	assert.Error(t, a.setAgentKey(host.IDLookup{}))
 }
 
 func TestUpdateIDLookupTable(t *testing.T) {
-	a := newTesting(nil)
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+	a := newTesting(nil, ffRetriever)
 	defer os.RemoveAll(a.store.DataDir)
 
 	dataset := agentTypes.PluginInventoryDataset{}
@@ -319,7 +327,8 @@ func TestRemoveOutdatedEntities(t *testing.T) {
 	const anotherPlugin = "anotherPlugin"
 
 	// Given an agent
-	agent := newTesting(nil)
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+	agent := newTesting(nil, ffRetriever)
 	defer os.RemoveAll(agent.store.DataDir)
 	agent.inventories = map[string]*inventoryEntity{}
 
@@ -377,7 +386,8 @@ func TestRemoveOutdatedEntities(t *testing.T) {
 
 func TestReconnectablePlugins(t *testing.T) {
 	// Given an agent
-	a := newTesting(nil)
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+	a := newTesting(nil, ffRetriever)
 	defer os.RemoveAll(a.store.DataDir)
 
 	wg := sync.WaitGroup{}
@@ -487,7 +497,8 @@ func (killingPlugin) IsExternal() bool              { return false }
 func (killingPlugin) GetExternalPluginName() string { return "" }
 
 func TestTerminate(t *testing.T) {
-	a := newTesting(nil)
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+	a := newTesting(nil, ffRetriever)
 	defer func() {
 		_ = os.RemoveAll(a.store.DataDir)
 	}()
@@ -506,7 +517,9 @@ func TestStopByCancelFn_UsedBySignalHandler(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
-	a := newTesting(nil)
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+	ffRetriever.ShouldGetFeatureFlag(fflag.FlagFullInventoryDeletion, false, false)
+	a := newTesting(nil, ffRetriever)
 
 	defer func() {
 		_ = os.RemoveAll(a.store.DataDir)
@@ -587,7 +600,10 @@ func TestAgent_Run_DontSendInventoryIfFwdOnly(t *testing.T) {
 				FirstReapInterval: tt.firstReapInterval,
 				SendInterval:      tt.sendInterval,
 			}
-			a := newTesting(cfg)
+
+			ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+			ffRetriever.ShouldGetFeatureFlag(fflag.FlagFullInventoryDeletion, false, false)
+			a := newTesting(cfg, ffRetriever)
 			// Give time to at least send one request
 			ctxTimeout, _ := context2.WithTimeout(a.Context.Ctx, time.Millisecond*10)
 			a.Context.Ctx = ctxTimeout
@@ -719,7 +735,8 @@ func (self *testAgentNullableData) SortKey() string {
 }
 
 func TestStorePluginOutput(t *testing.T) {
-	a := newTesting(nil)
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+	a := newTesting(nil, ffRetriever)
 	defer os.RemoveAll(a.store.DataDir)
 	aV := "aValue"
 	bV := "bValue"
@@ -769,7 +786,8 @@ func (self mockHostinfoData) SortKey() string {
 }
 
 func BenchmarkStorePluginOutput(b *testing.B) {
-	a := newTesting(&config.Config{MaxInventorySize: 1000 * 1000})
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+	a := newTesting(&config.Config{MaxInventorySize: 1000 * 1000}, ffRetriever)
 	defer os.RemoveAll(a.store.DataDir)
 
 	distroName := "Fedora 29 (Cloud Edition)"
@@ -1166,11 +1184,12 @@ func TestRunsWithCloudProvider(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
+			ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
 			//nolint:exhaustruct
 			agt := newTesting(&config.Config{
 				CloudProvider:      testCase.cloudProvider,
 				CloudMaxRetryCount: testCase.retries,
-			})
+			}, ffRetriever)
 
 			err := agt.Run()
 
@@ -1224,7 +1243,8 @@ func TestAgent_checkInstanceIDRetry(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			a := newTesting(nil)
+			ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+			a := newTesting(nil, ffRetriever)
 			a.cloudHarvester = testCase.cloudHarvester
 
 			if err := a.checkInstanceIDRetry(testCase.args.maxRetries, testCase.args.backoffTime); (err != nil) != testCase.wantErr {

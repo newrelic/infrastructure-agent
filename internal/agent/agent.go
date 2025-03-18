@@ -18,6 +18,7 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostid"
 
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
 	"github.com/newrelic/infrastructure-agent/internal/agent/instrumentation"
 	"github.com/newrelic/infrastructure-agent/internal/agent/inventory"
 	"github.com/newrelic/infrastructure-agent/internal/agent/types"
@@ -95,6 +96,7 @@ type Agent struct {
 	agentID             *entity.ID                               // pointer as it's referred from several points
 	mtx                 sync.Mutex                               // Protect plugins
 	notificationHandler *ctl.NotificationHandlerWithCancellation // Handle ipc messaging.
+	ffRetriever         feature_flags.Retriever
 }
 
 type inventoryState struct {
@@ -393,6 +395,7 @@ func NewAgent(
 		cloudHarvester,
 		fpHarvester,
 		notificationHandler,
+		ffRetriever,
 	)
 }
 
@@ -410,6 +413,7 @@ func New(
 	cloudHarvester cloud.Harvester,
 	fpHarvester fingerprint.Harvester,
 	notificationHandler *ctl.NotificationHandlerWithCancellation,
+	ffRetriever feature_flags.Retriever,
 ) (*Agent, error) {
 	a := &Agent{
 		Context:             ctx,
@@ -422,6 +426,7 @@ func New(
 		connectSrv:          connectSrv,
 		provideIDs:          provideIDs,
 		notificationHandler: notificationHandler,
+		ffRetriever:         ffRetriever,
 	}
 
 	a.plugins = make([]Plugin, 0)
@@ -819,6 +824,20 @@ func (a *Agent) Run() (err error) {
 
 		close(exit)
 	}()
+
+	// We check FF to delete the whole inventory and trigger the whoel inventory send
+	// This will bypass the deltas cache and force the inventory to be sent after restarting the Agent
+	if a.ffRetriever != nil {
+		alog.Debug("readding FlagFullInventoryDeletion feature flag")
+
+		ffFullInventoryDeletionEnabled, ffExists := a.ffRetriever.GetFeatureFlag(fflag.FlagFullInventoryDeletion)
+		if ffExists && ffFullInventoryDeletionEnabled {
+			alog.Info("Cleaning inventory cache and forcing full inventory report")
+			a.store.ResetAllDeltas(a.Context.EntityKey())
+		}
+	} else {
+		alog.Warn("Feature flags retriever is not available")
+	}
 
 	if a.inventoryHandler != nil {
 		if a.shouldSendInventory() {

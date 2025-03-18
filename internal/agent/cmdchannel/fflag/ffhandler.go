@@ -23,10 +23,11 @@ const (
 	FlagParallelizeInventory  = "parallelize_inventory_enabled"
 	FlagAsyncInventoryHandler = "async_inventory_handler_enabled"
 
-	FlagProtocolV4           = "protocol_v4_enabled"
-	FlagFullProcess          = "full_process_sampling"
-	FlagDmRegisterDeprecated = "dm_register_deprecated"
-	FlagFluentBit19          = "fluent_bit_19_win"
+	FlagProtocolV4            = "protocol_v4_enabled"
+	FlagFullProcess           = "full_process_sampling"
+	FlagDmRegisterDeprecated  = "dm_register_deprecated"
+	FlagFluentBit19           = "fluent_bit_19_win"
+	FlagFullInventoryDeletion = "full_inventory_deletion"
 	// Config
 	CfgYmlRegisterEnabled              = "register_enabled"
 	CfgYmlParallelizeInventory         = "inventory_queue_len"
@@ -183,7 +184,8 @@ func (h *handler) Handle(ctx context.Context, c commandapi.Command, isInitialFet
 func isBasicFeatureFlag(flag string) bool {
 	return flag == FlagProtocolV4 ||
 		flag == FlagFullProcess ||
-		flag == FlagDmRegisterDeprecated
+		flag == FlagDmRegisterDeprecated ||
+		flag == FlagFullInventoryDeletion
 }
 
 func (h *handler) setFFConfig(ff string, enabled bool) {

@@ -4,6 +4,8 @@ package infra
 
 import (
 	"compress/gzip"
+	"context"
+
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
@@ -17,6 +19,7 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/agent/delta"
+	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
 	backendhttp "github.com/newrelic/infrastructure-agent/pkg/backend/http"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/identityapi"
@@ -112,7 +115,8 @@ func NewAgentWithConnectClientAndConfig(connectClient *http.Client, dataClient b
 	transport := backendhttp.BuildTransport(cfg, backendhttp.ClientTimeout)
 	transport = backendhttp.NewRequestDecoratorTransport(cfg, transport)
 	dataClient = backendhttp.NewRequestDecoratorTransport(cfg, infra.ToRoundTripper(dataClient)).RoundTrip
-	a, err := agent.New(cfg, ctx, "user-agent", lookups, st, connectSrv, provideIDs, dataClient, transport, cloudDetector, fingerprintHarvester, ctl.NewNotificationHandlerWithCancellation(nil))
+	ffRetriever := feature_flags.NewManager(map[string]bool{})
+	a, err := agent.New(cfg, ctx, "user-agent", lookups, st, connectSrv, provideIDs, dataClient, transport, cloudDetector, fingerprintHarvester, ctl.NewNotificationHandlerWithCancellation(context.TODO()), ffRetriever)
 	if err != nil {
 		panic(err)
 	}
