@@ -541,7 +541,7 @@ func TestStopByCancelFn_UsedBySignalHandler(t *testing.T) {
 	}
 
 	go func() {
-		assert.NoError(t, agent.Run())
+		require.NoError(t, agent.Run())
 		wg.Done()
 	}()
 
@@ -626,7 +626,7 @@ func TestAgent_Run_DontSendInventoryIfFwdOnly(t *testing.T) {
 			agent.inventories = map[string]*inventoryEntity{"test": {sender: snd}}
 
 			go func() {
-				assert.NoError(t, agent.Run())
+				require.NoError(t, agent.Run())
 				wg.Done()
 			}()
 			wg.Wait()
