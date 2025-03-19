@@ -9,7 +9,6 @@ import (
 	context2 "context"
 	"encoding/json"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -20,6 +19,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/delta"
 	agentTypes "github.com/newrelic/infrastructure-agent/internal/agent/types"
@@ -116,17 +117,18 @@ func (self *TestAgentData) SortKey() string {
 
 func TestIgnoreInventory(t *testing.T) {
 	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
-	a := newTesting(&config.Config{
+	agent := newTesting(&config.Config{
 		IgnoredInventoryPathsMap: map[string]struct{}{
 			"test/plugin/yum": {},
 		},
 		MaxInventorySize: 1024,
 	}, ffRetriever)
+
 	defer func() {
-		_ = os.RemoveAll(a.store.DataDir)
+		_ = os.RemoveAll(agent.store.DataDir)
 	}()
 
-	assert.NoError(t, a.storePluginOutput(agentTypes.PluginOutput{
+	require.NoError(t, agent.storePluginOutput(agentTypes.PluginOutput{
 		Id:     ids.PluginID{"test", "plugin"},
 		Entity: entity.NewFromNameWithoutID("someEntity"),
 		Data: agentTypes.PluginInventoryDataset{
@@ -135,7 +137,7 @@ func TestIgnoreInventory(t *testing.T) {
 		},
 	}))
 
-	restoredDataBytes, err := ioutil.ReadFile(filepath.Join(a.store.DataDir, "test", "someEntity", "plugin.json"))
+	restoredDataBytes, err := ioutil.ReadFile(filepath.Join(agent.store.DataDir, "test", "someEntity", "plugin.json"))
 	require.NoError(t, err)
 
 	var restoredData map[string]interface{}
@@ -165,8 +167,9 @@ func TestServicePidMap(t *testing.T) {
 
 func TestSetAgentKeysDisplayInstance(t *testing.T) {
 	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
-	a := newTesting(nil, ffRetriever)
-	defer os.RemoveAll(a.store.DataDir)
+	agent := newTesting(nil, ffRetriever)
+
+	defer os.RemoveAll(agent.store.DataDir)
 
 	idMap := host.IDLookup{
 		sysinfo.HOST_SOURCE_DISPLAY_NAME: "displayName",
@@ -174,15 +177,17 @@ func TestSetAgentKeysDisplayInstance(t *testing.T) {
 		sysinfo.HOST_SOURCE_INSTANCE_ID:  "instanceId",
 	}
 
-	a.setAgentKey(idMap)
-	assert.Equal(t, idMap[sysinfo.HOST_SOURCE_INSTANCE_ID], a.Context.EntityKey())
+	err := agent.setAgentKey(idMap)
+	require.NoError(t, err)
+	assert.Equal(t, idMap[sysinfo.HOST_SOURCE_INSTANCE_ID], agent.Context.EntityKey())
 }
 
 // Test that empty strings in the identity map are properly ignored in favor of non-empty ones
 func TestSetAgentKeysInstanceEmptyString(t *testing.T) {
 	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
-	a := newTesting(nil, ffRetriever)
-	defer os.RemoveAll(a.store.DataDir)
+	agent := newTesting(nil, ffRetriever)
+
+	defer os.RemoveAll(agent.store.DataDir)
 
 	keys := host.IDLookup{
 		sysinfo.HOST_SOURCE_DISPLAY_NAME: "displayName",
@@ -190,36 +195,41 @@ func TestSetAgentKeysInstanceEmptyString(t *testing.T) {
 		sysinfo.HOST_SOURCE_INSTANCE_ID:  "",
 	}
 
-	a.setAgentKey(keys)
-	assert.Equal(t, keys[sysinfo.HOST_SOURCE_DISPLAY_NAME], a.Context.EntityKey())
+	err := agent.setAgentKey(keys)
+	require.NoError(t, err)
+	assert.Equal(t, keys[sysinfo.HOST_SOURCE_DISPLAY_NAME], agent.Context.EntityKey())
 }
 
 func TestSetAgentKeysDisplayNameMatchesHostName(t *testing.T) {
 	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
-	a := newTesting(nil, ffRetriever)
-	defer os.RemoveAll(a.store.DataDir)
+	agent := newTesting(nil, ffRetriever)
+
+	defer os.RemoveAll(agent.store.DataDir)
 
 	keyMap := host.IDLookup{
 		sysinfo.HOST_SOURCE_DISPLAY_NAME: "hostName",
 		sysinfo.HOST_SOURCE_HOSTNAME:     "hostName",
 	}
 
-	a.setAgentKey(keyMap)
-	assert.Equal(t, "hostName", a.Context.EntityKey())
+	err := agent.setAgentKey(keyMap)
+	require.NoError(t, err)
+	assert.Equal(t, "hostName", agent.Context.EntityKey())
 }
 
 func TestSetAgentKeysNoValues(t *testing.T) {
 	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
-	a := newTesting(nil, ffRetriever)
-	defer os.RemoveAll(a.store.DataDir)
+	agent := newTesting(nil, ffRetriever)
 
-	assert.Error(t, a.setAgentKey(host.IDLookup{}))
+	defer os.RemoveAll(agent.store.DataDir)
+
+	require.Error(t, agent.setAgentKey(host.IDLookup{}))
 }
 
 func TestUpdateIDLookupTable(t *testing.T) {
 	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
-	a := newTesting(nil, ffRetriever)
-	defer os.RemoveAll(a.store.DataDir)
+	agent := newTesting(nil, ffRetriever)
+
+	defer os.RemoveAll(agent.store.DataDir)
 
 	dataset := agentTypes.PluginInventoryDataset{}
 	dataset = append(dataset, sysinfo.HostAliases{
@@ -235,8 +245,8 @@ func TestUpdateIDLookupTable(t *testing.T) {
 		Source: sysinfo.HOST_SOURCE_HOSTNAME_SHORT,
 	})
 
-	assert.NoError(t, a.updateIDLookupTable(dataset))
-	assert.Equal(t, "instanceId", a.Context.EntityKey())
+	require.NoError(t, agent.updateIDLookupTable(dataset))
+	assert.Equal(t, "instanceId", agent.Context.EntityKey())
 }
 
 func TestIDLookup_EntityNameCloudInstance(t *testing.T) {
@@ -251,7 +261,7 @@ func TestIDLookup_EntityNameCloudInstance(t *testing.T) {
 
 	name, err := l.AgentShortEntityName()
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "instance-id", name)
 }
 
@@ -266,7 +276,7 @@ func TestIDLookup_EntityNameAzure(t *testing.T) {
 	}
 	name, err := l.AgentShortEntityName()
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "azure-id", name)
 }
 
@@ -281,7 +291,7 @@ func TestIDLookup_EntityNameGCP(t *testing.T) {
 	}
 	name, err := l.AgentShortEntityName()
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "gcp-id", name)
 }
 
@@ -296,7 +306,7 @@ func TestIDLookup_EntityNameAlibaba(t *testing.T) {
 	}
 	name, err := l.AgentShortEntityName()
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "alibaba-id", name)
 }
 
@@ -307,7 +317,7 @@ func TestIDLookup_EntityNameDisplayName(t *testing.T) {
 	}
 	name, err := l.AgentShortEntityName()
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "display-name", name)
 }
 
@@ -318,7 +328,7 @@ func TestIDLookup_EntityNameShortName(t *testing.T) {
 	}
 	name, err := l.AgentShortEntityName()
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "short", name)
 }
 
@@ -375,8 +385,8 @@ func TestRemoveOutdatedEntities(t *testing.T) {
 		_, err1 := os.Stat(filepath.Join(dataDir, aPlugin, entity.Folder))
 		_, err2 := os.Stat(filepath.Join(dataDir, anotherPlugin, entity.Folder))
 		if entity.ShouldBeRegistered {
-			assert.NoError(t, err1)
-			assert.NoError(t, err2)
+			require.NoError(t, err1)
+			require.NoError(t, err2)
 		} else {
 			assert.True(t, os.IsNotExist(err1))
 			assert.True(t, os.IsNotExist(err2))
@@ -387,30 +397,31 @@ func TestRemoveOutdatedEntities(t *testing.T) {
 func TestReconnectablePlugins(t *testing.T) {
 	// Given an agent
 	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
-	a := newTesting(nil, ffRetriever)
-	defer os.RemoveAll(a.store.DataDir)
+	agent := newTesting(nil, ffRetriever)
+
+	defer os.RemoveAll(agent.store.DataDir)
 
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 	// With a set of registered plugins
 	nrp := nonReconnectingPlugin{invocations: 0, wg: &wg}
-	a.RegisterPlugin(&nrp)
-	rp := reconnectingPlugin{invocations: 0, context: a.Context, wg: &wg}
-	a.RegisterPlugin(&rp)
+	agent.RegisterPlugin(&nrp)
+	reconnPlugin := reconnectingPlugin{invocations: 0, context: agent.Context, wg: &wg}
+	agent.RegisterPlugin(&reconnPlugin)
 
 	// That successfully started
-	a.startPlugins()
-	assert.NoError(t, wait(time.Second, &wg))
+	agent.startPlugins()
+	require.NoError(t, wait(time.Second, &wg))
 
 	// When the agent reconnects
 	wg.Add(1)
-	a.Context.Reconnect()
-	assert.NoError(t, wait(time.Second, &wg))
+	agent.Context.Reconnect()
+	require.NoError(t, wait(time.Second, &wg))
 
 	// The non-reconnecting plugins are not invoked again
 	assert.Equal(t, 1, nrp.invocations)
 	// And the reconnecting plugins are invoked again
-	assert.Equal(t, 2, rp.invocations)
+	assert.Equal(t, 2, reconnPlugin.invocations)
 }
 
 func TestCheckConnectionRetry(t *testing.T) {
@@ -430,7 +441,7 @@ func TestCheckConnectionRetry(t *testing.T) {
 
 	// The agent should eventually connect
 	a, err := NewAgent(cnf, "testing-timeouts", "userAgent", ffFetcher)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, a)
 }
 
@@ -451,7 +462,7 @@ func TestCheckConnectionTimeout(t *testing.T) {
 
 	// The agent stops reconnecting after retrying as configured
 	_, err := NewAgent(cnf, "testing-timeouts", "userAgent", ffFetcher)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_checkCollectorConnectivity_NoTimeoutOnInfiniteRetries(t *testing.T) {
@@ -476,7 +487,7 @@ func Test_checkCollectorConnectivity_NoTimeoutOnInfiniteRetries(t *testing.T) {
 	// Then no timeout error is returned
 	select {
 	case err := <-connErr:
-		assert.Error(t, err)
+		require.Error(t, err)
 		// this should never be triggered
 		t.Fail()
 	case <-time.After(100 * time.Millisecond):
@@ -498,17 +509,18 @@ func (killingPlugin) GetExternalPluginName() string { return "" }
 
 func TestTerminate(t *testing.T) {
 	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
-	a := newTesting(nil, ffRetriever)
+	agent := newTesting(nil, ffRetriever)
 	defer func() {
-		_ = os.RemoveAll(a.store.DataDir)
+		_ = os.RemoveAll(agent.store.DataDir)
 	}()
-	a.plugins = []Plugin{
+	agent.plugins = []Plugin{
 		&killingPlugin{killed: false}, &killingPlugin{killed: false}, &killingPlugin{killed: false},
 	}
 
-	a.Terminate()
-	assert.Len(t, a.plugins, 3)
-	for _, plugin := range a.plugins {
+	agent.Terminate()
+	assert.Len(t, agent.plugins, 3)
+
+	for _, plugin := range agent.plugins {
 		assert.True(t, plugin.(*killingPlugin).killed)
 	}
 }
@@ -519,21 +531,21 @@ func TestStopByCancelFn_UsedBySignalHandler(t *testing.T) {
 
 	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
 	ffRetriever.ShouldGetFeatureFlag(fflag.FlagFullInventoryDeletion, false, false)
-	a := newTesting(nil, ffRetriever)
+	agent := newTesting(nil, ffRetriever)
 
 	defer func() {
-		_ = os.RemoveAll(a.store.DataDir)
+		_ = os.RemoveAll(agent.store.DataDir)
 	}()
-	a.plugins = []Plugin{
+	agent.plugins = []Plugin{
 		&killingPlugin{killed: false}, &killingPlugin{killed: false}, &killingPlugin{killed: false},
 	}
 
 	go func() {
-		assert.NoError(t, a.Run())
+		assert.NoError(t, agent.Run())
 		wg.Done()
 	}()
 
-	a.Context.CancelFn()
+	agent.Context.CancelFn()
 	wg.Wait()
 }
 
@@ -603,17 +615,18 @@ func TestAgent_Run_DontSendInventoryIfFwdOnly(t *testing.T) {
 
 			ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
 			ffRetriever.ShouldGetFeatureFlag(fflag.FlagFullInventoryDeletion, false, false)
-			a := newTesting(cfg, ffRetriever)
+			agent := newTesting(cfg, ffRetriever)
 			// Give time to at least send one request
-			ctxTimeout, _ := context2.WithTimeout(a.Context.Ctx, time.Millisecond*10)
-			a.Context.Ctx = ctxTimeout
+			ctxTimeout, cancel := context2.WithTimeout(agent.Context.Ctx, time.Millisecond*10)
+			defer cancel()
+			agent.Context.Ctx = ctxTimeout
 
 			// Inventory recording calls
 			snd := &patchSenderCallRecorder{}
-			a.inventories = map[string]*inventoryEntity{"test": {sender: snd}}
+			agent.inventories = map[string]*inventoryEntity{"test": {sender: snd}}
 
 			go func() {
-				assert.NoError(t, a.Run())
+				assert.NoError(t, agent.Run())
 				wg.Done()
 			}()
 			wg.Wait()
@@ -736,12 +749,14 @@ func (self *testAgentNullableData) SortKey() string {
 
 func TestStorePluginOutput(t *testing.T) {
 	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
-	a := newTesting(nil, ffRetriever)
-	defer os.RemoveAll(a.store.DataDir)
+	agent := newTesting(nil, ffRetriever)
+
+	defer os.RemoveAll(agent.store.DataDir)
+
 	aV := "aValue"
 	bV := "bValue"
 	cV := "cValue"
-	err := a.storePluginOutput(agentTypes.PluginOutput{
+	err := agent.storePluginOutput(agentTypes.PluginOutput{
 		Id:     ids.PluginID{"test", "plugin"},
 		Entity: entity.NewFromNameWithoutID("someEntity"),
 		Data: agentTypes.PluginInventoryDataset{
@@ -752,9 +767,9 @@ func TestStorePluginOutput(t *testing.T) {
 		},
 	})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	sourceFile := filepath.Join(a.store.DataDir, "test", "someEntity", "plugin.json")
+	sourceFile := filepath.Join(agent.store.DataDir, "test", "someEntity", "plugin.json")
 	sourceB, err := ioutil.ReadFile(sourceFile)
 	require.NoError(t, err)
 
@@ -787,8 +802,9 @@ func (self mockHostinfoData) SortKey() string {
 
 func BenchmarkStorePluginOutput(b *testing.B) {
 	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
-	a := newTesting(&config.Config{MaxInventorySize: 1000 * 1000}, ffRetriever)
-	defer os.RemoveAll(a.store.DataDir)
+	agent := newTesting(&config.Config{MaxInventorySize: 1000 * 1000}, ffRetriever)
+
+	defer os.RemoveAll(agent.store.DataDir)
 
 	distroName := "Fedora 29 (Cloud Edition)"
 	benchmarks := []struct {
@@ -830,7 +846,7 @@ func BenchmarkStorePluginOutput(b *testing.B) {
 
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				_ = a.storePluginOutput(output)
+				_ = agent.storePluginOutput(output)
 			}
 			b.StopTimer()
 		})
@@ -907,10 +923,10 @@ func Test_ProcessSampling(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		a, _ := NewAgent(tc.c, "test", "userAgent", tc.ff)
+		agent, _ := NewAgent(tc.c, "test", "userAgent", tc.ff)
 
 		t.Run(tc.name, func(t *testing.T) {
-			actual := a.Context.shouldIncludeEvent(someSample)
+			actual := agent.Context.shouldIncludeEvent(someSample)
 			assert.Equal(t, tc.want, actual)
 		})
 	}
@@ -1104,12 +1120,12 @@ func Test_ProcessSamplingExcludesAllCases(t *testing.T) {
 		}
 
 		ff := test.NewFFRetrieverReturning(false, false)
-		a, _ := NewAgent(cnf, "test", "userAgent", ff)
+		agent, _ := NewAgent(cnf, "test", "userAgent", ff)
 
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			assert.Equal(t, testCase.expectInclude, a.Context.IncludeEvent(someSample))
+			assert.Equal(t, testCase.expectInclude, agent.Context.IncludeEvent(someSample))
 		})
 	}
 }
@@ -1244,10 +1260,10 @@ func TestAgent_checkInstanceIDRetry(t *testing.T) {
 			t.Parallel()
 
 			ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
-			a := newTesting(nil, ffRetriever)
-			a.cloudHarvester = testCase.cloudHarvester
+			agent := newTesting(nil, ffRetriever)
+			agent.cloudHarvester = testCase.cloudHarvester
 
-			if err := a.checkInstanceIDRetry(testCase.args.maxRetries, testCase.args.backoffTime); (err != nil) != testCase.wantErr {
+			if err := agent.checkInstanceIDRetry(testCase.args.maxRetries, testCase.args.backoffTime); (err != nil) != testCase.wantErr {
 				t.Errorf("Agent.checkInstanceIDRetry() error = %v, wantErr %v", err, testCase.wantErr)
 			}
 		})

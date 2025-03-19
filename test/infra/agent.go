@@ -116,11 +116,12 @@ func NewAgentWithConnectClientAndConfig(connectClient *http.Client, dataClient b
 	transport = backendhttp.NewRequestDecoratorTransport(cfg, transport)
 	dataClient = backendhttp.NewRequestDecoratorTransport(cfg, infra.ToRoundTripper(dataClient)).RoundTrip
 	ffRetriever := feature_flags.NewManager(map[string]bool{})
-	a, err := agent.New(cfg, ctx, "user-agent", lookups, st, connectSrv, provideIDs, dataClient, transport, cloudDetector, fingerprintHarvester, ctl.NewNotificationHandlerWithCancellation(context.TODO()), ffRetriever)
+	agent, err := agent.New(cfg, ctx, "user-agent", lookups, st, connectSrv, provideIDs, dataClient, transport, cloudDetector, fingerprintHarvester, ctl.NewNotificationHandlerWithCancellation(context.TODO()), ffRetriever)
 	if err != nil {
 		panic(err)
 	}
 
-	a.Init()
-	return a
+	agent.Init()
+
+	return agent
 }
