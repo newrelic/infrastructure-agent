@@ -109,7 +109,7 @@ func removeYAMLComments(content []byte) ([]byte, error) {
 	return removeMatches(newContent, commentMatches)
 }
 
-// Helper function to check if a position is inside quotes
+// Helper function to check if a position is inside quotes.
 func isInsideQuotes(content []byte, position int) bool {
 	singleQuoteOpen := false
 	doubleQuoteOpen := false
