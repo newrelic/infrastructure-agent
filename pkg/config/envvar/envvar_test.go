@@ -85,6 +85,7 @@ instances:
      q6: 'foo'# comment "foo"
      q7: 'foo#bar'
      q8: ['foo#bar', 'baz' ]  # another inline comment
+	 q9: 'foo "bar" "#bar"'
      # some comments
      # some comments
     labels:
@@ -117,6 +118,7 @@ instances:
      q6: 'foo'
      q7: 'foo#bar'
      q8: ['foo#bar', 'baz' ]  
+	 q9: 'foo "bar" "#bar"'
     labels:
       foo: bar
 `
