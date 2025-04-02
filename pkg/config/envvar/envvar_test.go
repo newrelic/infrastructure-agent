@@ -61,8 +61,8 @@ func Test_removeYAMLComments(t *testing.T) {
 	comments := `integration_name: com.newrelic.mysql
 
 instances:
-  - name: foo
-    command: bar
+  - name: "foo '#name'"
+    command: 'bar #Command' 
     arguments:
      r0: thisIsAValid#YAML
      r1: thisIsAValid	#comment
@@ -85,6 +85,8 @@ instances:
      q6: 'foo'# comment "foo"
      q7: 'foo#bar'
      q8: ['foo#bar', 'baz' ]  # another inline comment
+	 q9: 'foo "bar" "#bar"'
+	 q10: "foo \" bar"
      # some comments
      # some comments
     labels:
@@ -93,8 +95,8 @@ instances:
 	commentsStripped := `integration_name: com.newrelic.mysql
 
 instances:
-  - name: foo
-    command: bar
+  - name: "foo '#name'"
+    command: 'bar #Command' 
     arguments:
      r0: thisIsAValid#YAML
      r1: thisIsAValid	
@@ -117,6 +119,8 @@ instances:
      q6: 'foo'
      q7: 'foo#bar'
      q8: ['foo#bar', 'baz' ]  
+	 q9: 'foo "bar" "#bar"'
+	 q10: "foo \" bar"
     labels:
       foo: bar
 `

@@ -74,8 +74,17 @@ func removeYAMLComments(content []byte) ([]byte, error) {
 		// 0,1: 1st capt group
 		// ...
 		// 8,9: 5th capt group <comment>
+		// Ensure we only process the comment capture group
 		if len(indexes) == 10 {
-			commentMatches = append(commentMatches, []int{indexes[8], indexes[9]})
+			// Extract the matched comment
+			commentStart := indexes[8]
+			commentEnd := indexes[9]
+			// Check if the comment is inside quotes
+			if isInsideQuotes(newContent, commentStart) {
+				continue // Skip this match as it's inside quotes
+			}
+			// Add the comment match
+			commentMatches = append(commentMatches, []int{commentStart, commentEnd})
 		}
 	}
 
@@ -98,6 +107,23 @@ func removeYAMLComments(content []byte) ([]byte, error) {
 	}
 
 	return removeMatches(newContent, commentMatches)
+}
+
+// Helper function to check if a position is inside quotes.
+func isInsideQuotes(content []byte, position int) bool {
+	singleQuoteOpen := false
+	doubleQuoteOpen := false
+
+	for i := 0; i < position; i++ {
+		if content[i] == '\'' && !doubleQuoteOpen {
+			singleQuoteOpen = !singleQuoteOpen
+		} else if content[i] == '"' && !singleQuoteOpen {
+			doubleQuoteOpen = !doubleQuoteOpen
+		}
+	}
+
+	// If either single or double quotes are open, the position is inside quotes
+	return singleQuoteOpen || doubleQuoteOpen
 }
 
 func removeMatches(content []byte, matches [][]int) ([]byte, error) {
