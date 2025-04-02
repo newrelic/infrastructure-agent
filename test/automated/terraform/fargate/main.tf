@@ -7,7 +7,7 @@ provider "aws" {
 #########################################
 terraform {
   backend "s3" {
-    bucket = "automation-pipeline-terraform-state"
+    bucket = "automation-pipeline-terraform-states"
     key    = "state_testing"
     region = "us-east-2"
   }
