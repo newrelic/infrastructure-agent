@@ -5,9 +5,10 @@ package emitter
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"strings"
 	"testing"
+
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/fwrequest"
@@ -39,18 +40,18 @@ const integrationJsonOutputV2 = `{
     {
       "entity": {
         "name": "cluster/clusterFoo",
-        "type": "arn:aws:ecs:us-east-2:018789649883"
+        "type": "arn:aws:ecs:us-east-2:971422713139"
       },
       "metrics": [
         {
-          "arn": "arn:aws:ecs:us-east-2:018789649883:cluster/clusterFoo",
+          "arn": "arn:aws:ecs:us-east-2:971422713139:cluster/clusterFoo",
           "clusterName": "clusterFoo",
           "event_type": "EcsClusterSample"
         }
       ],
       "inventory": {
         "cluster": {
-          "arn": "arn:aws:ecs:us-east-2:018789649883:cluster/clusterFoo",
+          "arn": "arn:aws:ecs:us-east-2:971422713139:cluster/clusterFoo",
           "name": "clusterFoo"
         }
       },
@@ -61,7 +62,7 @@ const integrationJsonOutputV2 = `{
       "inventory": {
         "host": {
           "awsRegion": "us-east-2",
-          "ecsClusterArn": "arn:aws:ecs:us-east-2:018789649883:cluster/clusterFoo",
+          "ecsClusterArn": "arn:aws:ecs:us-east-2:971422713139:cluster/clusterFoo",
           "ecsClusterName": "clusterFoo",
           "ecsLaunchType": "fargate"
         }

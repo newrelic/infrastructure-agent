@@ -3,15 +3,15 @@ variable "region" {
 }
 
 variable "accountId" {
-  default = "018789649883"
+  default = "971422713139"
 }
 
 variable "vpc_id" {
-  default = "vpc-0a3c00f5dc8645fe0"
+  default = "vpc-0bc4f5a177616dbdf"
 }
 
 variable "vpc_subnet" {
-  default = "subnet-09b64de757828cdd4"
+  default = "subnet-0c2046d7a0595aa2c"
 }
 
 variable "cluster_name" {
@@ -21,19 +21,19 @@ variable "cluster_name" {
 # CrowdStrike Falcon secrets
 
 variable "secret_name_crowdstrike_client_id" {
-  default = "caos/canaries/crowdstrike_falcon_client_id-N7nGXx"
+  default = "caos/canaries/crowdstrike_falcon_client_id-PdGhfd"
 }
 
 variable "secret_name_crowdstrike_client_secret" {
-  default = "caos/canaries/crowdstrike_falcon_client_secret-l9EIhi"
+  default = "caos/canaries/crowdstrike_falcon_client_secret-qRp9I9"
 }
 
 variable "secret_name_crowdstrike_customer_id" {
-  default = "caos/canaries/crowdstrike_falcon_customer_id-f7n7rI"
+  default = "caos/canaries/crowdstrike_falcon_customer_id-3Zcbbk"
 }
 
 variable "secret_name_crowdstrike_ansible_role_key" {
-  default = "caos/crowdstrike/ansible-role-key-DPyrW4"
+  default = "caos/crowdstrike/ansible-role-key-n3JhqI"
 }
 
 ####
@@ -69,47 +69,47 @@ variable "additional_efs_security_group_rules" {
 }
 
 variable "canaries_security_group" {
-  default = "sg-044ef7bc34691164a"
+  default = "sg-075f379cc5612e984"
 }
 
 variable "secret_name_ssh" {
-  default = "caos/canaries/ssh_key-UBSKNA"
+  default = "caos/canaries/ssh_key-0ZnfDz"
 }
 
 variable "secret_name_license" {
-  default = "caos/canaries/license-f9eYwe"
+  default = "caos/canaries/license-PJP9uk"
 }
 
 variable "secret_name_license_canaries" {
-  default = "caos/canaries/license_canaries-1DCE1L"
+  default = "caos/canaries/license_canaries-VVcT0q"
 }
 
 variable "secret_name_account" {
-  default = "caos/canaries/account-kKFMGP"
+  default = "caos/canaries/account-EOzJkq"
 }
 
 variable "secret_name_api" {
-  default = "caos/canaries/api-9q0NPb"
+  default = "caos/canaries/api-rnTPmn"
 }
 
 variable "secret_name_windows_password" {
-  default = "caos/canaries/windows-gTLIiF"
+  default = "caos/canaries/windows-rJ9Tep"
 }
 
 variable "secret_name_macstadium_user" {
-  default = "caos/canaries/macstadium_user-QXCSKB"
+  default = "caos/canaries/macstadium_user-2s39p7"
 }
 
 variable "secret_name_macstadium_pass" {
-  default = "caos/canaries/macstadium_pass-DvAHye"
+  default = "caos/canaries/macstadium_pass-H1EYQd"
 }
 
 variable "secret_name_macstadium_sudo_pass" {
-  default = "caos/canaries/macstadium_sudo_pass-4h4DKS"
+  default = "caos/canaries/macstadium_sudo_pass-dhVHqK"
 }
 
 variable "secret_name_nr_api_key" {
-  default = "caos/canaries/nr_api_key-xadBYJ"
+  default = "caos/canaries/nr_api_key-gY3vau"
 }
 
 variable "task_container_image" {
@@ -133,5 +133,5 @@ variable "task_logs_prefix" {
 }
 
 variable "s3_bucket" {
-  default = "arn:aws:s3:::automation-pipeline-terraform-state"
+  default = "arn:aws:s3:::automation-pipeline-terraform-states"
 }

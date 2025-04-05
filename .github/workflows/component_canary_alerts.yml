@@ -19,7 +19,7 @@ on:
         type: string
 
 env:
-  AWS_ASSUME_ROLE: 'arn:aws:iam::018789649883:role/caos-pipeline-oidc-infra-agent'
+  AWS_ASSUME_ROLE: 'arn:aws:iam::971422713139:role/caos-pipeline-oidc-infra-agent'
   ANSIBLE_FORKS: 20
 
 permissions:

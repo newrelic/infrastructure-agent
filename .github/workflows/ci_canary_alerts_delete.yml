@@ -14,7 +14,7 @@ jobs:
   canary-alerts-delete:
     uses: ./.github/workflows/component_canary_alerts_delete.yml
     secrets:
-      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET_OHAI}}
       NR_ACCOUNT_ID: ${{secrets.NR_ACCOUNT_ID}}
       CANARIES_NR_API_KEY: ${{secrets.CANARIES_NR_API_KEY}}
       MACSTADIUM_USER: ${{secrets.MACSTADIUM_USER}}
