@@ -28,6 +28,7 @@ const (
 	FlagDmRegisterDeprecated  = "dm_register_deprecated"
 	FlagFluentBit19           = "fluent_bit_19_win"
 	FlagFullInventoryDeletion = "full_inventory_deletion"
+	FlagFluentBitMetrics      = "fluent_bit_metrics"
 	// Config
 	CfgYmlRegisterEnabled              = "register_enabled"
 	CfgYmlParallelizeInventory         = "inventory_queue_len"
