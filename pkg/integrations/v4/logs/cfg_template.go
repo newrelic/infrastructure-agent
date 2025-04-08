@@ -169,7 +169,7 @@ var fbConfigFormat = `{{- range .Inputs }}
     caBundleDir         {{ .CABundleDir }}
     {{- end }}
     {{- if not .ValidateCerts }}
-    tls.verify  Off
+    validateProxyCerts  false
     {{- end }}
     {{- if .Retry_Limit}}
     Retry_Limit         {{ .Retry_Limit }}

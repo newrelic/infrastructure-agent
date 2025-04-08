@@ -186,7 +186,8 @@ func isBasicFeatureFlag(flag string) bool {
 	return flag == FlagProtocolV4 ||
 		flag == FlagFullProcess ||
 		flag == FlagDmRegisterDeprecated ||
-		flag == FlagFullInventoryDeletion
+		flag == FlagFullInventoryDeletion ||
+		flag == FlagFluentBitMetrics
 }
 
 func (h *handler) setFFConfig(ff string, enabled bool) {

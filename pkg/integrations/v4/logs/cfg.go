@@ -313,11 +313,11 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 	// specific config per OS
 	var fbOSConfig FBOSConfig
 	addOSDependantConfig(&fbOSConfig)
-
-	enabled, exists := ff.GetFeatureFlag(fflag.FlagFluentBitMetrics)
-	enableMetrics := enabled && exists
-
-	fmt.Println("enabled", enabled, "exists", exists)
+	enableMetrics := false
+	if ff != nil {
+		enabled, exists := ff.GetFeatureFlag(fflag.FlagFluentBitMetrics)
+		enableMetrics = enabled && exists
+	}
 
 	totalFiles := 0
 	for i, block := range loggingCfgs {
