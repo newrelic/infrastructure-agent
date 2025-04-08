@@ -1,6 +1,6 @@
 ec2_prefix = "PREFIX:TAG_OR_UNIQUE_NAME"
 
-windows_ec2 = ["windows_2016", "windows_2019", "windows_2022"]
+windows_ec2 = ["windows_2016", "windows_2019", "windows_2022", "windows_2025"]
 
 linux_ec2_amd = ["amd64:ubuntu24.04", "amd64:ubuntu22.04", "amd64:ubuntu20.04", "amd64:ubuntu18.04", "amd64:ubuntu16.04", "amd64:centos-stream", "amd64:sles-12.5", "amd64:sles-15.3",  "amd64:sles-15.4", "amd64:sles-15.5", "amd64:sles-15.6", "amd64:redhat-8.4", "amd64:redhat-9.0", "amd64:debian-bookworm", "amd64:al-2", "amd64:al-2023", "amd64:al-2023-fips"]
 

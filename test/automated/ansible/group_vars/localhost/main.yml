@@ -315,6 +315,12 @@ instances:
     username: "ansible"
     platform: "windows"
     launch_template: "LaunchTemplateId=lt-005e12ef728c179bf,Version=3"
+  - ami: "ami-00447dbdb9a46c432"
+    type: "t3a.small"
+    name: "amd64:windows_2025"
+    username: "ansible"
+    platform: "windows"
+    launch_template: "LaunchTemplateId=lt-005e12ef728c179bf,Version=3"
 
 ...
 
