@@ -3,11 +3,12 @@
 package logs
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
+	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/stretchr/testify/assert"
@@ -23,11 +24,12 @@ var (
 	_, hostName, _   = hostnameProvider.Query()
 
 	// Expected struct results
-	fbCfgOutput = FBCfgOutput{
+	fbCfgOutput = []FBCfgOutput{{
 		Name:        "newrelic",
 		Match:       "*",
 		LicenseKey:  "license",
 		SendMetrics: false,
+	},
 	}
 	fbCfgEntityDecoration = FBCfgFilter{
 		Name:  "record_modifier",
@@ -36,7 +38,7 @@ var (
 			"entity.guid.INFRA": "FOOBAR",
 			"plugin.type":       logRecordModifierSource,
 			"hostname":          hostName,
-		}, // see idnProvide below
+		},
 	}
 	idnProvide = func() entity.Identity {
 		return entity.Identity{
@@ -46,7 +48,9 @@ var (
 	}
 )
 
-func TestCfgLoader_LoadAll(t *testing.T) {
+func TestCfgLoaderLoadAll(t *testing.T) {
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+	ffRetriever.On("GetFeatureFlag", fflag.FlagFluentBitMetrics).Return(false, false)
 	validContent := `
 logs:
   - name: foo
@@ -79,33 +83,28 @@ logs:
 		Output: fbCfgOutput,
 	}
 
-	// Empty directory
-	emptyDir, err := ioutil.TempDir("", "test-load-empty")
-	defer os.RemoveAll(emptyDir)
+	emptyDir, err := os.MkdirTemp("", "test-load-empty")
 	require.NoError(t, err)
+	t.Cleanup(func() { os.RemoveAll(emptyDir) })
 
-	// Directory containing one empty file with yml extension
-	onlyEmptyCfg, err := ioutil.TempDir("", "test-load-non-empty")
-	defer os.RemoveAll(onlyEmptyCfg)
+	onlyEmptyCfg, err := os.MkdirTemp("", "test-load-non-empty")
 	require.NoError(t, err)
+	t.Cleanup(func() { os.RemoveAll(onlyEmptyCfg) })
 	addFile(t, onlyEmptyCfg, "empty.yml", "")
 
-	// Directory containing a single valid configuration file
-	onlyValidCfg, err := ioutil.TempDir("", "test-load-content")
-	defer os.RemoveAll(onlyValidCfg)
+	onlyValidCfg, err := os.MkdirTemp("", "test-load-content")
 	require.NoError(t, err)
+	t.Cleanup(func() { os.RemoveAll(onlyValidCfg) })
 	addFile(t, onlyValidCfg, "valid.yml", validContent)
 
-	// Directory containing only one example file
-	onlyExampleFile, err := ioutil.TempDir("", "test-load-content")
-	defer os.RemoveAll(onlyExampleFile)
+	onlyExampleFile, err := os.MkdirTemp("", "test-load-content")
 	require.NoError(t, err)
+	t.Cleanup(func() { os.RemoveAll(onlyExampleFile) })
 	addFile(t, onlyExampleFile, "file.yml.example", validContent)
 
-	// Directory containing one example file and one valid configuration file
-	exampleFileAndValidCfg, err := ioutil.TempDir("", "test-load-content")
-	defer os.RemoveAll(onlyExampleFile)
+	exampleFileAndValidCfg, err := os.MkdirTemp("", "test-load-content")
 	require.NoError(t, err)
+	t.Cleanup(func() { os.RemoveAll(exampleFileAndValidCfg) })
 	addFile(t, exampleFileAndValidCfg, "file.yml.example", validContent)
 	addFile(t, exampleFileAndValidCfg, "valid.yml", validContent)
 
@@ -116,18 +115,18 @@ logs:
 		expectOK bool
 	}{
 		{"empty folder", emptyDir, emptyCfg, false},
-		{"non existing folder", "/some-non-existing-folder", emptyCfg, false},
-		{"non empty folder with YML file but no configs", onlyEmptyCfg, emptyCfg, false},
+		{"non-existing folder", "/some-non-existing-folder", emptyCfg, false},
+		{"non-empty folder with YML file but no configs", onlyEmptyCfg, emptyCfg, false},
 		{"folder with valid file", onlyValidCfg, expectedCfg, true},
-		{"folder with only example (non-yml) files", onlyExampleFile, emptyCfg, false},
-		{"folder with a valid file and example (non-yml) files", exampleFileAndValidCfg, expectedCfg, true},
+		{"folder with only example (non-YML) files", onlyExampleFile, emptyCfg, false},
+		{"folder with a valid file and example (non-YML) files", exampleFileAndValidCfg, expectedCfg, true},
 		{"folder with valid file (verbose enabled)", onlyValidCfg, expectedCfg, true},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// SUT
 			conf := newTestConf(tt.folder, disabledTroubleshootCfg, false)
-			cfg, ok := NewFolderLoader(conf, idnProvide, hostnameProvider).LoadAll()
+			cfg, ok := NewFolderLoader(conf, idnProvide, hostnameProvider).LoadAll(ffRetriever)
 
 			assert.Equal(t, tt.expectOK, ok)
 			assert.Equal(t, tt.wantCfg, cfg)
@@ -142,9 +141,9 @@ logs:
     file: /file/path
 `
 
-	validFileFolder, err := ioutil.TempDir("", "test-load-content")
-	defer os.RemoveAll(validFileFolder)
+	validFileFolder, err := os.MkdirTemp("", "test-load-content")
 	require.NoError(t, err)
+	t.Cleanup(func() { os.RemoveAll(validFileFolder) })
 	addFile(t, validFileFolder, "file.yml", validContent)
 
 	expectedCfg := FBCfg{
@@ -170,30 +169,36 @@ logs:
 			},
 			fbCfgEntityDecoration,
 		},
-		Output: FBCfgOutput{
+		Output: []FBCfgOutput{{
 			Name:        "newrelic",
 			Match:       "*",
 			LicenseKey:  "license",
 			SendMetrics: true,
-		},
+		}},
 	}
 
 	conf := newTestConf(validFileFolder, disabledTroubleshootCfg, true)
-	cfg, ok := NewFolderLoader(conf, idnProvide, hostnameProvider).LoadAll()
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+	ffRetriever.On("GetFeatureFlag", fflag.FlagFluentBitMetrics).Return(false, false)
+	cfg, ok := NewFolderLoader(conf, idnProvide, hostnameProvider).LoadAll(ffRetriever)
 	assert.Equal(t, true, ok)
 	assert.Equal(t, expectedCfg, cfg)
 }
 
-func TestCfgLoader_LoadAll_TroubleshootDisabed(t *testing.T) {
+func TestCfgLoader_LoadAll_TroubleshootDisabled(t *testing.T) {
 	disabledTroubleshootCfg := config.NewTroubleshootCfg(false, false, "")
-	_, ok := NewFolderLoader(newTestConf("", disabledTroubleshootCfg, false), idnProvide, hostnameProvider).LoadAll()
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+	ffRetriever.On("GetFeatureFlag", fflag.FlagFluentBitMetrics).Return(false, false)
+	_, ok := NewFolderLoader(newTestConf("", disabledTroubleshootCfg, false), idnProvide, hostnameProvider).LoadAll(ffRetriever)
 	assert.False(t, ok, "should return ok=false when there is no logging configuration directory and troubleshoot is disabled")
 }
 
 func TestCfgLoader_LoadAll_TroubleshootNoLogFile(t *testing.T) {
 	troublesCfg := config.NewTroubleshootCfg(true, false, "")
-	cfg, ok := NewFolderLoader(newTestConf("", troublesCfg, false), idnProvide, hostnameProvider).LoadAll()
-	assert.Equal(t, ok, true, "Enabling troubleshoot with no logging configurations should start the log forwarder")
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+	ffRetriever.On("GetFeatureFlag", fflag.FlagFluentBitMetrics).Return(false, false)
+	cfg, ok := NewFolderLoader(newTestConf("", troublesCfg, false), idnProvide, hostnameProvider).LoadAll(ffRetriever)
+	assert.True(t, ok, "Enabling troubleshoot with no logging configurations should start the log forwarder")
 	assert.Equal(t, FBCfg{
 		Inputs: []FBCfgInput{
 			{
@@ -219,8 +224,10 @@ func TestCfgLoader_LoadAll_TroubleshootNoLogFile(t *testing.T) {
 
 func TestCfgLoader_LoadAll_TroubleshootLogFile(t *testing.T) {
 	troublesCfg := config.NewTroubleshootCfg(true, true, "/agent_log_file")
-	cfg, ok := NewFolderLoader(newTestConf("", troublesCfg, false), idnProvide, hostnameProvider).LoadAll()
-	assert.Equal(t, ok, true, "Enabling troubleshoot with no logging configurations should start the log forwarder")
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+	ffRetriever.On("GetFeatureFlag", fflag.FlagFluentBitMetrics).Return(false, false)
+	cfg, ok := NewFolderLoader(newTestConf("", troublesCfg, false), idnProvide, hostnameProvider).LoadAll(ffRetriever)
+	assert.True(t, ok, "Enabling troubleshoot with a log file should start the log forwarder")
 	assert.Equal(t, FBCfg{
 		Inputs: []FBCfgInput{
 			{
@@ -351,8 +358,7 @@ logs:
 		{
 			Name: "syslog-unix-tcp-test",
 			Syslog: &LogSyslogCfg{
-				URI:             "unix_tcp:///var/tcp-socket-test",
-				Parser:          "syslog-rfc3164",
+				URI: "unix_tcp:///var/tcp-socket-test", Parser: "syslog-rfc3164",
 				UnixPermissions: "0644",
 			},
 		},
@@ -469,5 +475,5 @@ func (m *mockHostnameResolver) Long() string {
 
 func addFile(t *testing.T, dir, name, contents string) {
 	filePath := filepath.Join(dir, name)
-	require.NoError(t, ioutil.WriteFile(filePath, []byte(contents), 0666))
+	require.NoError(t, os.WriteFile(filePath, []byte(contents), 0666))
 }
