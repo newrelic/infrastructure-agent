@@ -169,7 +169,9 @@ var fbConfigFormat = `{{- range .Inputs }}
     caBundleDir         {{ .CABundleDir }}
     {{- end }}
     {{- if not .ValidateCerts }}
+    {{- if eq .Name "newrelic" }}
     validateProxyCerts  false
+    {{- end }}
     {{- end }}
     {{- if .Retry_Limit}}
     Retry_Limit         {{ .Retry_Limit }}

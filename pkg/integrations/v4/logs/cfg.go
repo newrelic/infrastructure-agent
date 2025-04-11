@@ -821,6 +821,7 @@ func newNROutput(cfg *config.LogForward, hostname string, enableMetrics bool) []
 			Uri:       fmt.Sprintf("/prometheus/v1/write?prometheus_server=%s", hostname),
 			Header:    fmt.Sprintf("Authorization Bearer %s", cfg.License),
 			Tls:       "On",
+			Host:      productionMetricsEndpoint,
 			TlsVerify: "Off",
 			// 	//TODO : Include hostID as well
 			AddLabel: map[string]string{
