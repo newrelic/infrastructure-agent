@@ -2221,7 +2221,7 @@ func TestNewFBConfWithEnabledMetrics(t *testing.T) {
 						Port:            2020,
 						Tag:             "fb_metrics",
 						Metrics_Path:    "/api/v2/metrics/prometheus",
-						Scrape_Interval: "10s",
+						Scrape_Interval: "60s",
 					},
 				},
 				Filters: []FBCfgFilter{
@@ -2258,6 +2258,7 @@ func TestNewFBConfWithEnabledMetrics(t *testing.T) {
 						Port:   443,
 						Uri:    "/prometheus/v1/write?prometheus_server=hostname",
 						Header: "Authorization Bearer licenseKey",
+						Host:   "metric-api.newrelic.com",
 						AddLabel: map[string]string{
 							"app":      "fluent-bit",
 							"source":   "host",

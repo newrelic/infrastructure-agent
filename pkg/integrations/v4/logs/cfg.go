@@ -382,7 +382,7 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 			Port:            2020,
 			Tag:             "fb_metrics",
 			Metrics_Path:    "/api/v2/metrics/prometheus",
-			Scrape_Interval: "10s",
+			Scrape_Interval: "60s",
 		})
 	}
 
