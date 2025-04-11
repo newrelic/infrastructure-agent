@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
+	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 
 	"github.com/shirou/gopsutil/v3/host"
@@ -62,7 +64,7 @@ func withFeedramp(cfg config.LogForward) config.LogForward {
 	return cfg
 }
 
-var outputBlock = FBCfgOutput{
+var outputBlock = []FBCfgOutput{{
 	Name:              "newrelic",
 	Match:             "*",
 	LicenseKey:        "licenseKey",
@@ -72,16 +74,53 @@ var outputBlock = FBCfgOutput{
 	CABundleDir:       "/cabundles",
 	ValidateCerts:     true,
 	Retry_Limit:       "5",
+},
+}
+
+var outputBlockFedramp = []FBCfgOutput{{
+	Name:              "newrelic",
+	Match:             "*",
+	LicenseKey:        "licenseKey",
+	IgnoreSystemProxy: true,
+	Proxy:             "https://https-proxy:3129",
+	CABundleFile:      "/cabundles/proxycert.pem",
+	CABundleDir:       "/cabundles",
+	ValidateCerts:     true,
+	Retry_Limit:       "5",
+	Endpoint:          fedrampEndpoint,
+},
+}
+
+var outputBlockMultipleRetries = []FBCfgOutput{{
+	Name:              "newrelic",
+	Match:             "*",
+	LicenseKey:        "licenseKey",
+	IgnoreSystemProxy: true,
+	Proxy:             "https://https-proxy:3129",
+	CABundleFile:      "/cabundles/proxycert.pem",
+	CABundleDir:       "/cabundles",
+	ValidateCerts:     true,
+	Retry_Limit:       "4",
+},
+}
+
+var outputWithMetrics = []FBCfgOutput{{
+	Name:              "newrelic",
+	Match:             "*",
+	LicenseKey:        "licenseKey",
+	IgnoreSystemProxy: true,
+	Proxy:             "https://https-proxy:3129",
+	CABundleFile:      "/cabundles/proxycert.pem",
+	CABundleDir:       "/cabundles",
+	ValidateCerts:     true,
+	Retry_Limit:       "4",
+},
 }
 
 func TestNewFBConf(t *testing.T) {
-	outputBlockFedramp := outputBlock
-	outputBlockFedramp.Endpoint = fedrampEndpoint
-	outputBlockMultipleRetries := outputBlock
 
 	logFwdCfgMultipleRetries := logFwdCfg
 	logFwdCfgMultipleRetries.RetryLimit = "4"
-	outputBlockMultipleRetries.Retry_Limit = "4"
 
 	tests := []struct {
 		name   string
@@ -699,10 +738,15 @@ func TestNewFBConf(t *testing.T) {
 			Output: outputBlock,
 		}},
 	}
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+	ffRetriever.On("GetFeatureFlag", fflag.FlagFluentBitMetrics).Return(false, true).Times(len(tests))
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fbConf, err := NewFBConf(tt.ohiCfg, &tt.logFwd, "0", "")
+			ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+			ffRetriever.On("GetFeatureFlag", fflag.FlagFluentBitMetrics).Return(false, false)
+
+			fbConf, err := NewFBConf(tt.ohiCfg, &tt.logFwd, "0", "", ffRetriever)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, fbConf)
 		})
@@ -861,6 +905,8 @@ func TestFBConfigForWinlog(t *testing.T) {
 	if runtime.GOOS == "windows" && isWindowsBuildNumberLowerOrEqualsThan(windowsServer2016BuildNumber) {
 		tests[2].expected.Inputs[0].UseANSI = "true"
 	}
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+	ffRetriever.On("GetFeatureFlag", fflag.FlagFluentBitMetrics).Return(false, true).Times(len(tests))
 
 	for _, testItem := range tests {
 		// Prevent the loop variable from being captured in the closure below
@@ -868,7 +914,7 @@ func TestFBConfigForWinlog(t *testing.T) {
 
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			fbConf, err := NewFBConf(test.logsCfg, &logFwdCfg, "0", "")
+			fbConf, err := NewFBConf(test.logsCfg, &logFwdCfg, "0", "", ffRetriever)
 			assert.NoError(t, err)
 			assert.Equal(t, test.expected.Inputs, fbConf.Inputs)
 			assert.Equal(t, test.expected.Filters[0], fbConf.Filters[0])
@@ -1032,6 +1078,8 @@ func TestFBConfigForWinevtlog(t *testing.T) {
 	if runtime.GOOS == "windows" && isWindowsBuildNumberLowerOrEqualsThan(windowsServer2016BuildNumber) {
 		tests[2].expected.Inputs[0].UseANSI = "true"
 	}
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+	ffRetriever.On("GetFeatureFlag", fflag.FlagFluentBitMetrics).Return(false, true).Times(len(tests))
 
 	for _, testItem := range tests {
 		// Prevent the loop variable from being captured in the closure below
@@ -1039,7 +1087,7 @@ func TestFBConfigForWinevtlog(t *testing.T) {
 
 		t.Run(testItem.name, func(t *testing.T) {
 			t.Parallel()
-			fbConf, err := NewFBConf(test.logsCfg, &test.logFwd, "0", "")
+			fbConf, err := NewFBConf(test.logsCfg, &test.logFwd, "0", "", ffRetriever)
 			assert.NoError(t, err)
 			assert.Equal(t, test.expected.Inputs, fbConf.Inputs)
 			assert.Equal(t, test.expected.Filters[0], fbConf.Filters[0])
@@ -1270,11 +1318,11 @@ func TestFBCfgFormat(t *testing.T) {
 				},
 			},
 		},
-		Output: FBCfgOutput{
+		Output: []FBCfgOutput{{
 			Name:       "newrelic",
 			Match:      "*",
 			LicenseKey: "licenseKey",
-		},
+		}},
 		ExternalCfg: FBCfgExternal{
 			CfgFilePath:     "/path/to/fb/config",
 			ParsersFilePath: "/path/to/fb/parsers",
@@ -1366,10 +1414,11 @@ func TestFBCfgSendMetricFormat(t *testing.T) {
 					},
 				},
 			},
-			Output: FBCfgOutput{
+			Output: []FBCfgOutput{{
 				Name:       "newrelic",
 				Match:      "*",
 				LicenseKey: "licenseKey",
+			},
 			},
 		}
 
@@ -1377,7 +1426,7 @@ func TestFBCfgSendMetricFormat(t *testing.T) {
 			return fbCfg
 		}
 
-		fbCfg.Output.SendMetrics = sendMetrics
+		fbCfg.Output[0].SendMetrics = sendMetrics
 
 		return fbCfg
 	}
@@ -1476,12 +1525,12 @@ func TestFBCfgSendMetricFalseFormat(t *testing.T) {
 				},
 			},
 		},
-		Output: FBCfgOutput{
+		Output: []FBCfgOutput{{
 			Name:        "newrelic",
 			Match:       "*",
 			LicenseKey:  "licenseKey",
 			SendMetrics: false,
-		},
+		}},
 	}
 
 	result, extCfg, err := fbCfg.Format()
@@ -1553,12 +1602,12 @@ func TestFBCfgSendMetricTrueFormat(t *testing.T) {
 				},
 			},
 		},
-		Output: FBCfgOutput{
+		Output: []FBCfgOutput{{
 			Name:        "newrelic",
 			Match:       "*",
 			LicenseKey:  "licenseKey",
 			SendMetrics: true,
-		},
+		}},
 	}
 
 	result, extCfg, err := fbCfg.Format()
@@ -1627,7 +1676,7 @@ func TestFBCfgFormatWithHostname(t *testing.T) {
     validateProxyCerts  false
 `
 
-	outputBlock := FBCfgOutput{
+	outputBlock := []FBCfgOutput{{
 		Name:       "newrelic",
 		Match:      "*",
 		LicenseKey: "licenseKey",
@@ -1639,7 +1688,7 @@ func TestFBCfgFormatWithHostname(t *testing.T) {
 		CABundleFile:      "/cabundles/proxycert.pem",
 		CABundleDir:       "/cabundles",
 		ValidateCerts:     false,
-	}
+	}}
 
 	fbCfg := FBCfg{
 		Inputs: []FBCfgInput{
@@ -1917,6 +1966,8 @@ func TestNewFbConfForTargetFileCount(t *testing.T) {
 			0,
 		},
 	}
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+	ffRetriever.On("GetFeatureFlag", fflag.FlagFluentBitMetrics).Return(false, false).Times(len(tests))
 
 	for _, testItem := range tests {
 		// Prevent the loop variable from being captured in the closure below
@@ -1924,7 +1975,7 @@ func TestNewFbConfForTargetFileCount(t *testing.T) {
 
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			NewFBConf(test.logsCfg, &test.logFwd, "0", "")
+			NewFBConf(test.logsCfg, &test.logFwd, "0", "", ffRetriever)
 			assert.Equal(t, test.expectedCount, test.logsCfg[0].targetFilesCnt)
 		})
 	}
@@ -2008,11 +2059,11 @@ func TestMultilineParserFBCfgFormat(t *testing.T) {
 				},
 			},
 		},
-		Output: FBCfgOutput{
+		Output: []FBCfgOutput{{
 			Name:       "newrelic",
 			Match:      "*",
 			LicenseKey: "licenseKey",
-		},
+		}},
 		ExternalCfg: FBCfgExternal{
 			CfgFilePath:     "/path/to/fb/config",
 			ParsersFilePath: "/path/to/fb/parsers",
@@ -2103,11 +2154,11 @@ func TestMlParserFBCfgWithMultipleParsers(t *testing.T) {
 				},
 			},
 		},
-		Output: FBCfgOutput{
+		Output: []FBCfgOutput{{
 			Name:       "newrelic",
 			Match:      "*",
 			LicenseKey: "licenseKey",
-		},
+		}},
 		ExternalCfg: FBCfgExternal{
 			CfgFilePath:     "/path/to/fb/config",
 			ParsersFilePath: "/path/to/fb/parsers",
@@ -2118,4 +2169,124 @@ func TestMlParserFBCfgWithMultipleParsers(t *testing.T) {
 	assert.Empty(t, err)
 	assert.Equal(t, "/path/to/fb/parsers", extCfg.ParsersFilePath)
 	assert.Equal(t, expected, result)
+}
+
+func TestNewFBConfWithEnabledMetrics(t *testing.T) {
+	logFwdCfg := config.LogForward{
+		HomeDir:    "/var/db/newrelic-infra/newrelic-integrations/logging",
+		License:    "licenseKey",
+		RetryLimit: "5",
+		ProxyCfg: config.LogForwardProxy{
+			IgnoreSystemProxy: true,
+			Proxy:             "https://https-proxy:3129",
+			CABundleFile:      "/cabundles/proxycert.pem",
+			CABundleDir:       "/cabundles",
+			ValidateCerts:     true,
+		},
+	}
+
+	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+	ffRetriever.On("GetFeatureFlag", fflag.FlagFluentBitMetrics).Return(true, true)
+	test := []struct {
+		name   string
+		logFwd config.LogForward
+		ohiCfg LogsCfg
+		want   FBCfg
+	}{
+		{
+			name:   "single input",
+			logFwd: logFwdCfg,
+			ohiCfg: LogsCfg{
+				{
+					Name: "log-file",
+					File: "file.path",
+				},
+			},
+			want: FBCfg{
+				Inputs: []FBCfgInput{
+					{
+						Name:           "tail",
+						Tag:            "log-file",
+						DB:             dbDbPath,
+						Path:           "file.path",
+						BufferMaxSize:  "128k",
+						MemBufferLimit: "16384k",
+						SkipLongLines:  "On",
+						PathKey:        "filePath",
+					},
+					{
+						Name:            "prometheus_scrape",
+						Alias:           "fb-metrics-collector",
+						Host:            "127.0.0.1",
+						Port:            2020,
+						Tag:             "fb_metrics",
+						Metrics_Path:    "/api/v2/metrics/prometheus",
+						Scrape_Interval: "60s",
+					},
+				},
+				Filters: []FBCfgFilter{
+					inputRecordModifier("tail", "log-file"),
+					filterEntityBlockMetrics,
+				},
+				Service: []FBCfgService{
+					{
+						Flush:        1,
+						Log_Level:    "info",
+						Daemon:       "off",
+						Parsers_File: "parsers.conf",
+						HTTP_Server:  "On",
+						HTTP_Listen:  "0.0.0.0",
+						HTTP_Port:    2020,
+					},
+				},
+				Output: []FBCfgOutput{
+					{
+						Name:              "newrelic",
+						Match:             "*",
+						LicenseKey:        "licenseKey",
+						IgnoreSystemProxy: true,
+						Proxy:             "https://https-proxy:3129",
+						CABundleFile:      "/cabundles/proxycert.pem",
+						CABundleDir:       "/cabundles",
+						ValidateCerts:     true,
+						Retry_Limit:       "5",
+					},
+					{
+						Name:   "prometheus_remote_write",
+						Match:  "fb_metrics",
+						Alias:  "fb-metrics-forwarder",
+						Port:   443,
+						Uri:    "/prometheus/v1/write?prometheus_server=hostname",
+						Header: "Authorization Bearer licenseKey",
+						Host:   "metric-api.newrelic.com",
+						AddLabel: map[string]string{
+							"app":      "fluent-bit",
+							"source":   "host",
+							"os":       "darwin", // OS & Arch as per test system setup
+							"hostname": "hostname",
+							"arch":     "arm64",
+						},
+						Tls:       "On",
+						TlsVerify: "Off",
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range test {
+		fbConf, err := NewFBConf(tt.ohiCfg, &tt.logFwd, "1234", "hostname", ffRetriever)
+
+		assert.NoError(t, err)
+		assert.Equal(t, tt.want, fbConf)
+	}
+}
+
+var filterEntityBlockMetrics = FBCfgFilter{
+	Name:  "record_modifier",
+	Match: "*",
+	Records: map[string]string{
+		"entity.guid.INFRA": "1234",
+		"plugin.type":       "nri-agent",
+		"hostname":          "hostname",
+	},
 }
