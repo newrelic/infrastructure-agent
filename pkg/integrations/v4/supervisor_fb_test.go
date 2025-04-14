@@ -415,6 +415,7 @@ func Test_buildFbExecutor(t *testing.T) {
 
 	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
 	ffRetriever.ShouldNotGetFeatureFlag(fflag.FlagFluentBit19)
+	ffRetriever.ShouldNotGetFeatureFlag(fflag.FlagFluentBitMetrics)
 
 	agentDir := "agentDir"
 	integrationsDir := "agentDir"

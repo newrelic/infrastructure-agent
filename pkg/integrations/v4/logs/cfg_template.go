@@ -74,6 +74,21 @@ var fbConfigFormat = `{{- range .Inputs }}
  	{{- if .UseANSI }}
     Use_ANSI {{ .UseANSI }}
     {{- end }}
+    {{- if .Alias }}
+    Alias {{ .Alias }}
+    {{- end }}
+    {{- if .Port }}
+    Port {{ .Port }}
+    {{- end }}
+    {{- if .Host }}
+    Host {{ .Host }}
+    {{- end }}
+    {{- if .Metrics_Path }}
+    Metrics_Path {{ .Metrics_Path }}
+    {{- end }}
+    {{- if .Scrape_Interval }}
+    Scrape_Interval {{ .Scrape_Interval }}
+    {{- end }}
 {{ end -}}
 
 {{- range .Filters }}
@@ -105,37 +120,91 @@ var fbConfigFormat = `{{- range .Inputs }}
     {{- end }}
 {{ end -}}
 
-{{- if .Output }}
+{{- range .Service }}
+[SERVICE]
+    {{- if .Flush }}
+    Flush         {{ .Flush }}
+    {{- end }}
+    {{- if .Log_Level }}
+    Log_Level     {{ .Log_Level }}
+    {{- end }}
+    {{- if .Daemon }}
+    Daemon        {{ .Daemon }}
+    {{- end }}
+    {{- if .Parsers_File }}
+    Parsers_File  {{ .Parsers_File }}
+    {{- end }}
+    {{- if .HTTP_Server }}
+    HTTP_Server   {{ .HTTP_Server }}
+    {{- end }}
+    {{- if .HTTP_Listen }}
+    HTTP_Listen   {{ .HTTP_Listen }}
+    {{- end }}
+    {{- if .HTTP_Port }}
+    HTTP_Port     {{ .HTTP_Port }}
+    {{- end }}
+{{ end -}}
+
+ 
+{{- range .Output }}
 [OUTPUT]
-    Name                {{ .Output.Name }}
-    Match               {{ .Output.Match }}
-    {{- if .Output.LicenseKey }}
+    Name                {{ .Name }}
+    Match               {{ .Match }}
+    {{- if .LicenseKey }}
     licenseKey          ${NR_LICENSE_KEY_ENV_VAR}
     {{- end }}
-    {{- if .Output.Endpoint }}
-    endpoint            {{ .Output.Endpoint }}
+    {{- if .Endpoint }}
+    endpoint            {{ .Endpoint }}
     {{- end }}
-    {{- if .Output.Proxy }}
-    proxy               {{ .Output.Proxy }}
+    {{- if .Proxy }}
+    proxy               {{ .Proxy }}
     {{- end }}
-	{{- if .Output.IgnoreSystemProxy }}
+	{{- if .IgnoreSystemProxy }}
     ignoreSystemProxy   true
     {{- end }}
-	{{- if .Output.CABundleFile }}
-    caBundleFile        {{ .Output.CABundleFile }}
+	{{- if .CABundleFile }}
+    caBundleFile        {{ .CABundleFile }}
     {{- end }}
-    {{- if .Output.CABundleDir }}
-    caBundleDir         {{ .Output.CABundleDir }}
+    {{- if .CABundleDir }}
+    caBundleDir         {{ .CABundleDir }}
     {{- end }}
-    {{- if not .Output.ValidateCerts }}
+    {{- if not .ValidateCerts }}
+    {{- if eq .Name "newrelic" }}
     validateProxyCerts  false
     {{- end }}
-    {{- if .Output.Retry_Limit}}
-    Retry_Limit         {{ .Output.Retry_Limit }}
     {{- end }}
-    {{- if .Output.SendMetrics}}
-    sendMetrics         {{ .Output.SendMetrics}}
+    {{- if .Retry_Limit}}
+    Retry_Limit         {{ .Retry_Limit }}
+    {{- end }}
+    {{- if .SendMetrics}}
+    sendMetrics         {{ .SendMetrics}}
     {{- end}}
+    {{- if .Alias }}
+    Alias               {{ .Alias }}
+    {{- end }}
+    {{- if .Host }}
+    Host                {{ .Host }}
+    {{- end }}
+    {{- if .Port }}
+    Port                {{ .Port }}
+    {{- end }}
+    {{- if .Uri }}
+    Uri                 {{ .Uri }}
+    {{- end }}
+    {{- if .Header }}
+    Header              {{ .Header }}
+    {{- end }}
+    {{- if .Tls }}
+    Tls                 {{ .Tls }}
+    {{- end }}
+    {{- if .TlsVerify }}
+    Tls.verify          {{ .TlsVerify }}
+    {{- end }}
+    {{- if .AddLabel }}
+        {{- range $key, $value := .AddLabel }}
+    add_label           {{ $key }} {{ $value }}
+        {{- end }}
+    {{- end }}
 {{ end -}}
 
 {{- if .ExternalCfg.CfgFilePath }}

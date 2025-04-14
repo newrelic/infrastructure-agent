@@ -184,7 +184,7 @@ func buildFbExecutor(fbIntCfg fBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 			return nil, errFbNotAvailable
 		}
 
-		cfgContent, externalCfg, cErr := cfgLoader.LoadAndFormat()
+		cfgContent, externalCfg, cErr := cfgLoader.LoadAndFormat(fbIntCfg.ffRetriever)
 		if cErr != nil {
 			return nil, cErr
 		}
