@@ -373,10 +373,10 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 		},
 	})
 
-	//Including Prometheus scrapper input plugin by default to pull Fluent bit metrics based on ff
+	// Including Prometheus scrapper input plugin by default to pull Fluent bit metrics based on ff
 	includePrometheusScrapperInputPlugin(&fb, enableMetrics)
 
-	//including service to expose port , Prometheus metric collection needs the HTTP server to be online at port 2020
+	// Including service to expose port , Prometheus metric collection needs the HTTP server to be online at port 2020
 	includeService(&fb, enableMetrics)
 
 	// Newrelic OUTPUT plugin will send all the collected logs to Vortex along with Prometheus output plugin
