@@ -83,11 +83,11 @@ var fbConfigFormat = `{{- range .Inputs }}
     {{- if .Host }}
     Host {{ .Host }}
     {{- end }}
-    {{- if .Metrics_Path }}
-    Metrics_Path {{ .Metrics_Path }}
+    {{- if .MetricsPath }}
+    Metrics_Path {{ .MetricsPath }}
     {{- end }}
-    {{- if .Scrape_Interval }}
-    Scrape_Interval {{ .Scrape_Interval }}
+    {{- if .ScrapeInterval }}
+    Scrape_Interval {{ .ScrapeInterval }}
     {{- end }}
 {{ end -}}
 
@@ -125,23 +125,23 @@ var fbConfigFormat = `{{- range .Inputs }}
     {{- if .Flush }}
     Flush         {{ .Flush }}
     {{- end }}
-    {{- if .Log_Level }}
-    Log_Level     {{ .Log_Level }}
+    {{- if .LogLevel }}
+    Log_Level     {{ .LogLevel }}
     {{- end }}
     {{- if .Daemon }}
     Daemon        {{ .Daemon }}
     {{- end }}
-    {{- if .Parsers_File }}
-    Parsers_File  {{ .Parsers_File }}
+    {{- if .ParsersFile }}
+    Parsers_File  {{ .ParsersFile }}
     {{- end }}
-    {{- if .HTTP_Server }}
-    HTTP_Server   {{ .HTTP_Server }}
+    {{- if .HTTPServer }}
+    HTTP_Server   {{ .HTTPServer }}
     {{- end }}
-    {{- if .HTTP_Listen }}
-    HTTP_Listen   {{ .HTTP_Listen }}
+    {{- if .HTTPListen }}
+    HTTP_Listen   {{ .HTTPListen }}
     {{- end }}
-    {{- if .HTTP_Port }}
-    HTTP_Port     {{ .HTTP_Port }}
+    {{- if .HTTPPort }}
+    HTTP_Port     {{ .HTTPPort }}
     {{- end }}
 {{ end -}}
 
@@ -188,17 +188,17 @@ var fbConfigFormat = `{{- range .Inputs }}
     {{- if .Port }}
     Port                {{ .Port }}
     {{- end }}
-    {{- if .Uri }}
-    Uri                 {{ .Uri }}
+    {{- if .URI }}
+    Uri                 {{ .URI }}
     {{- end }}
     {{- if .Header }}
     Header              {{ .Header }}
     {{- end }}
-    {{- if .Tls }}
-    Tls                 {{ .Tls }}
+    {{- if .TLS }}
+    Tls                 {{ .TLS }}
     {{- end }}
-    {{- if .TlsVerify }}
-    Tls.verify          {{ .TlsVerify }}
+    {{- if .TLSVerify }}
+    Tls.verify          {{ .TLSVerify }}
     {{- end }}
     {{- if .AddLabel }}
         {{- range $key, $value := .AddLabel }}

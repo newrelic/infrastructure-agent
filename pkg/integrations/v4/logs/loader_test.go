@@ -185,7 +185,7 @@ logs:
 	assert.Equal(t, expectedCfg, cfg)
 }
 
-func TestCfgLoader_LoadAll_TroubleshootDisabled(t *testing.T) {
+func TestCfgLoaderTroubleshootDisabled(t *testing.T) {
 	disabledTroubleshootCfg := config.NewTroubleshootCfg(false, false, "")
 	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
 	ffRetriever.On("GetFeatureFlag", fflag.FlagFluentBitMetrics).Return(false, false)
@@ -193,7 +193,7 @@ func TestCfgLoader_LoadAll_TroubleshootDisabled(t *testing.T) {
 	assert.False(t, ok, "should return ok=false when there is no logging configuration directory and troubleshoot is disabled")
 }
 
-func TestCfgLoader_LoadAll_TroubleshootNoLogFile(t *testing.T) {
+func TestCfgLoaderTroubleshootNoLogFile(t *testing.T) {
 	troublesCfg := config.NewTroubleshootCfg(true, false, "")
 	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
 	ffRetriever.On("GetFeatureFlag", fflag.FlagFluentBitMetrics).Return(false, false)

@@ -17,6 +17,7 @@ import (
 
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const windowsServer2016BuildNumber = 14393
@@ -92,19 +93,6 @@ var outputBlockFedramp = []FBCfgOutput{{
 }
 
 var outputBlockMultipleRetries = []FBCfgOutput{{
-	Name:              "newrelic",
-	Match:             "*",
-	LicenseKey:        "licenseKey",
-	IgnoreSystemProxy: true,
-	Proxy:             "https://https-proxy:3129",
-	CABundleFile:      "/cabundles/proxycert.pem",
-	CABundleDir:       "/cabundles",
-	ValidateCerts:     true,
-	Retry_Limit:       "4",
-},
-}
-
-var outputWithMetrics = []FBCfgOutput{{
 	Name:              "newrelic",
 	Match:             "*",
 	LicenseKey:        "licenseKey",
@@ -2215,13 +2203,13 @@ func TestNewFBConfWithEnabledMetrics(t *testing.T) {
 						PathKey:        "filePath",
 					},
 					{
-						Name:            "prometheus_scrape",
-						Alias:           "fb-metrics-collector",
-						Host:            "127.0.0.1",
-						Port:            2020,
-						Tag:             "fb_metrics",
-						Metrics_Path:    "/api/v2/metrics/prometheus",
-						Scrape_Interval: "60s",
+						Name:           "prometheus_scrape",
+						Alias:          "fb-metrics-collector",
+						Host:           "127.0.0.1",
+						Port:           2020,
+						Tag:            "fb_metrics",
+						MetricsPath:    "/api/v2/metrics/prometheus",
+						ScrapeInterval: "60s",
 					},
 				},
 				Filters: []FBCfgFilter{
@@ -2230,13 +2218,13 @@ func TestNewFBConfWithEnabledMetrics(t *testing.T) {
 				},
 				Service: []FBCfgService{
 					{
-						Flush:        1,
-						Log_Level:    "info",
-						Daemon:       "off",
-						Parsers_File: "parsers.conf",
-						HTTP_Server:  "On",
-						HTTP_Listen:  "0.0.0.0",
-						HTTP_Port:    2020,
+						Flush:       1,
+						LogLevel:    "info",
+						Daemon:      "off",
+						ParsersFile: "parsers.conf",
+						HTTPServer:  "On",
+						HTTPListen:  "0.0.0.0",
+						HTTPPort:    2020,
 					},
 				},
 				Output: []FBCfgOutput{
@@ -2256,7 +2244,7 @@ func TestNewFBConfWithEnabledMetrics(t *testing.T) {
 						Match:  "fb_metrics",
 						Alias:  "fb-metrics-forwarder",
 						Port:   443,
-						Uri:    "/prometheus/v1/write?prometheus_server=hostname",
+						URI:    "/prometheus/v1/write?prometheus_server=hostname",
 						Header: "Authorization Bearer licenseKey",
 						Host:   "metric-api.newrelic.com",
 						AddLabel: map[string]string{
@@ -2266,8 +2254,8 @@ func TestNewFBConfWithEnabledMetrics(t *testing.T) {
 							"hostname": "hostname",
 							"arch":     "arm64",
 						},
-						Tls:       "On",
-						TlsVerify: "Off",
+						TLS:       "On",
+						TLSVerify: "Off",
 					},
 				},
 			},
@@ -2276,7 +2264,7 @@ func TestNewFBConfWithEnabledMetrics(t *testing.T) {
 	for _, tt := range test {
 		fbConf, err := NewFBConf(tt.ohiCfg, &tt.logFwd, "1234", "hostname", ffRetriever)
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, tt.want, fbConf)
 	}
 }
