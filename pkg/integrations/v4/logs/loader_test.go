@@ -185,6 +185,7 @@ logs:
 	assert.Equal(t, expectedCfg, cfg)
 }
 
+//nolint:exhaustruct
 func TestCfgLoaderTroubleshootDisabled(t *testing.T) {
 	disabledTroubleshootCfg := config.NewTroubleshootCfg(false, false, "")
 	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
@@ -193,6 +194,7 @@ func TestCfgLoaderTroubleshootDisabled(t *testing.T) {
 	assert.False(t, ok, "should return ok=false when there is no logging configuration directory and troubleshoot is disabled")
 }
 
+//nolint:exhaustruct
 func TestCfgLoaderTroubleshootNoLogFile(t *testing.T) {
 	troublesCfg := config.NewTroubleshootCfg(true, false, "")
 	ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}

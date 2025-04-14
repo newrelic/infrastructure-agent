@@ -19,6 +19,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/license"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 var cfgLogger = log.WithComponent("integrations.Supervisor.Config").WithField("process", "log-forwarder")
@@ -372,23 +373,25 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 		},
 	})
 
-	//Including promethous scrapper input plugin by default to pull Fluent bit metrics based on ff
+	//Including Prometheus scrapper input plugin by default to pull Fluent bit metrics based on ff
 	includePrometheusScrapperInputPlugin(&fb, enableMetrics)
 
 	//including service to expose port , Prometheus metric collection needs the HTTP server to be online at port 2020
 	includeService(&fb, enableMetrics)
 
-	// Newrelic OUTPUT plugin will send all the collected logs to Vortex along with Promethous output plugin
+	// Newrelic OUTPUT plugin will send all the collected logs to Vortex along with Prometheus output plugin
 	fb.Output = newNROutput(logFwdCfg, hostname, enableMetrics)
 
-	return
+	return fb, nil
 }
 
 func isMetricsEnabled(ff feature_flags.Retriever) bool {
 	if ff != nil {
 		enabled, exists := ff.GetFeatureFlag(fflag.FlagFluentBitMetrics)
+
 		return enabled && exists
 	}
+
 	return false
 }
 
@@ -409,7 +412,7 @@ func includeService(fb *FBCfg, enableMetrics bool) {
 
 func includePrometheusScrapperInputPlugin(fb *FBCfg, enableMetrics bool) {
 	if enableMetrics {
-		fb.Inputs = append(fb.Inputs, FBCfgInput{
+		fb.Inputs = append(fb.Inputs, FBCfgInput{ //nolint:exhaustruct
 			Name:           "prometheus_scrape",
 			Alias:          "fb-metrics-collector",
 			Host:           "127.0.0.1",
@@ -810,7 +813,7 @@ func getSystemInfo() (string, string, error) {
 func newNROutput(cfg *config.LogForward, hostname string, enableMetrics bool) []FBCfgOutput {
 	os, arch, err := getSystemInfo()
 	if err != nil {
-		fmt.Sprintf("Error retrieving system info: OS: %s, Hostname: %s, Error: %v\n", os, hostname, err)
+		logrus.WithError(err).Error(fmt.Sprintf("Error retrieving system info: OS: %s, Hostname: %s, Error: %v\n", os, hostname, err))
 	}
 	outputs := []FBCfgOutput{
 		{
