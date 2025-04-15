@@ -2250,9 +2250,9 @@ func TestNewFBConfWithEnabledMetrics(t *testing.T) {
 						AddLabel: map[string]string{
 							"app":      "fluent-bit",
 							"source":   "host",
-							"os":       "darwin", // OS & Arch as per test system setup
+							"os":       runtime.GOOS, // OS & Arch as per test system setup
 							"hostname": "hostname",
-							"arch":     "arm64",
+							"arch":     runtime.GOARCH,
 						},
 						TLS:       "On",
 						TLSVerify: "Off",
