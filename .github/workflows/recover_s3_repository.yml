@@ -91,53 +91,13 @@ jobs:
             echo "Invalid path: should not have a trailing slash."
             exit 1
           fi
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          repository: newrelic-forks/s3-pit-restore
-          ref: master
-
-      - name: Setup AWS credentials for Production
-        if: ${{ github.event.inputs.environment == 'production' }}
-        run: |
-          ./setup_aws_credentials.sh
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION }}
-          AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_PRODUCTION }}
-          AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION }}
-          AWS_SESSION_DURATION_SECONDS: 14400
-          TEMP_AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
-
-      - name: Run S3 PIT restore
-        if: ${{ github.event.inputs.environment == 'production' }}
-        run: |
-          BUCKET="nr-downloads-main" \
-          PREFIX="${{ env.MANDATORY_PREFIX }}${{ github.event.inputs.path }}" \
-          TIME="${{ env.DATE_TIME }}" \
-          IMAGE="${{ env.IMAGE }}" \
-          AWS_PROFILE="${{ env.TEMP_AWS_PROFILE }}" \
-          make restore
-
-      - name: Setup AWS credentials for Staging
-        if: ${{ github.event.inputs.environment == 'staging' }}
-        run: |
-          ./setup_aws_credentials.sh
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
-          AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
-          AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
-          AWS_SESSION_DURATION_SECONDS: 14400
-          TEMP_AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
+          
+          if  [[ "$s3_path" == "" ]]; then
+            echo "MANDATORY_PREFIX=infrastructure_agent" >> $GITHUB_ENV
+          fi
 
       - name: Run S3 PIT restore in Staging S3
         if: ${{ github.event.inputs.environment == 'staging' }}
         run: |
-          BUCKET="nr-downloads-ohai-staging" \
-          PREFIX="${{ env.MANDATORY_PREFIX }}${{ github.event.inputs.path }}" \
-          TIME="${{ env.DATE_TIME }}" \
-          IMAGE="${{ env.IMAGE }}" \
-          AWS_PROFILE="${{ env.TEMP_AWS_PROFILE }}" \
-          make restore
+         echo PREFIX="${{ env.MANDATORY_PREFIX }}${{ github.event.inputs.path }}"
+         
