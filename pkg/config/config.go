@@ -1058,7 +1058,6 @@ type Config struct {
 	// Default: true
 	// Public: Yes
 	CloudMetadataDisableKeepAlive bool `yaml:"cloud_metadata_disable_keep_alive" envconfig:"cloud_metadata_disable_keep_alive"`
-
 	// RemoveEntitiesPeriod Defines the frequency to engage the process of deleting entities that haven't been reported
 	// information during the frequency interval. Valid time units are: "s" (seconds), "m" (minutes), "h" (hour).
 	// Default: 48h
