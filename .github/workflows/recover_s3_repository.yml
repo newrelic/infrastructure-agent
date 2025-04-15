@@ -91,6 +91,10 @@ jobs:
             echo "Invalid path: should not have a trailing slash."
             exit 1
           fi
+          
+          if  [[ "$s3_path" == "" ]]; then
+            echo "MANDATORY_PREFIX=infrastructure_agent" >> $GITHUB_ENV
+          fi
 
       - name: Checkout repository
         uses: actions/checkout@v4
