@@ -54,7 +54,7 @@ env:
 jobs:
   packaging:
     name: Build and publish packages to custom repo
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: dest_prefix for testing
