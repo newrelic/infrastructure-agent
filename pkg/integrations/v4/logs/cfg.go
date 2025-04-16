@@ -40,6 +40,12 @@ const (
 	fluentBitDBName             = "fb.db"
 	fbDefaultPort               = 2020
 	fbDefaultOutputPort         = 443
+	fbHostPort                  = "127.0.0.1"
+	fbMetricsPath               = "/api/v2/metrics/prometheus"
+	fbScrapeInterval            = "60s"
+	fbMetricsTag                = "fb_metrics"
+	fbLabel                     = "fluent-bit"
+	fbhostLabel                 = "host"
 )
 
 // FluentBit INPUT plugin types
@@ -379,7 +385,7 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 	// Including service to expose port , Prometheus metric collection needs the HTTP server to be online at port 2020
 	includeService(&fb, enableMetrics)
 
-	// Newrelic OUTPUT plugin will send all the collected logs to Vortex along with Prometheus output plugin
+	// Newrelic OUTPUT plugin which will send all the collected logs to Vortex and with Prometheus output plugin which forwards FB metrics to NR
 	fb.Output = newNROutput(logFwdCfg, hostname, enableMetrics)
 
 	return fb, nil
@@ -415,11 +421,11 @@ func includePrometheusScrapperInputPlugin(fb *FBCfg, enableMetrics bool) {
 		fb.Inputs = append(fb.Inputs, FBCfgInput{ //nolint:exhaustruct
 			Name:           "prometheus_scrape",
 			Alias:          "fb-metrics-collector",
-			Host:           "127.0.0.1",
+			Host:           fbHostPort,
 			Port:           fbDefaultPort,
-			Tag:            "fb_metrics",
-			MetricsPath:    "/api/v2/metrics/prometheus",
-			ScrapeInterval: "60s",
+			Tag:            fbMetricsTag,
+			MetricsPath:    fbMetricsPath,
+			ScrapeInterval: fbScrapeInterval,
 		})
 	}
 }
@@ -833,7 +839,7 @@ func newNROutput(cfg *config.LogForward, hostname string, enableMetrics bool) []
 	if enableMetrics {
 		outputs = append(outputs, FBCfgOutput{
 			Name:      "prometheus_remote_write",
-			Match:     "fb_metrics",
+			Match:     fbMetricsTag,
 			Alias:     "fb-metrics-forwarder",
 			Port:      fbDefaultOutputPort,
 			URI:       fmt.Sprintf("/prometheus/v1/write?prometheus_server=%s", hostname),
@@ -843,8 +849,8 @@ func newNROutput(cfg *config.LogForward, hostname string, enableMetrics bool) []
 			TLSVerify: "Off",
 			// 	//TODO : Include hostID as well
 			AddLabel: map[string]string{
-				"app":      "fluent-bit",
-				"source":   "host",
+				"app":      fbLabel,
+				"source":   fbhostLabel,
 				"os":       os,
 				"hostname": hostname,
 				"arch":     arch,
