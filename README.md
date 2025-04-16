@@ -36,6 +36,7 @@ Before using the agent, you need to add the [New Relic license key](https://docs
 The default location is:
 
 * Linux: `/etc/newrelic-infra.yml`
+* MacOS Apple Silicon: `/opt/homebrew/etc/newrelic-infra/newrelic-infra.yml`
 * Windows: `C:\Program Files\New Relic\newrelic-infra\newrelic-infra.yml`
 
 For more information on configuration methods, precedence, and structure, see the [Configure the Infrastructure agent](https://docs.newrelic.com/docs/infrastructure/install-configure-infrastructure/configuration/configure-infrastructure-agent) document.
@@ -52,7 +53,7 @@ $ make dist-for-os GOOS=linux
 
 To compile and build the agent run these commands:
 
-* Linux:
+* Linux/MacOS:
 
   ```bash
   $ make compile # On CentOS 5: make compile-centos-5
