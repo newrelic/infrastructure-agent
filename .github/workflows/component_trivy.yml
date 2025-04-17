@@ -23,7 +23,7 @@ env:
 jobs:
   trivy_scanner:
     name: Trivy scanner for docker
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     if: ${{ ! github.event.schedule }} # Table output
     steps:
       - name: newrelic/infrastructure
@@ -67,7 +67,7 @@ jobs:
 
   trivy_scanner_scheduled:
     name: Scheduled Trivy scanner for docker
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     if: ${{ github.event.schedule }} # Upload sarif when running periodically
     steps:
       - name: Checkout

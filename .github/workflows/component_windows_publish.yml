@@ -70,7 +70,7 @@ env:
 jobs:
   publish:
     name: Publish windows artifacts into s3 staging bucket
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     strategy:
       max-parallel: 1
