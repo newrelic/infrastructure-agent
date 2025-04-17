@@ -82,7 +82,7 @@ func rpmBasedDistribution() (bool, error) {
 		return false, err
 	}
 	regexps := []*regexp.Regexp{
-		regexp.MustCompile("^NAME=\"Ubuntu\""),
+		regexp.MustCompile("(?m)^NAME=\"Ubuntu\""),
 		regexp.MustCompile("^NAME=\"Debian\""),
 		regexp.MustCompile("^NAME=\"SLES\""),
 	}
