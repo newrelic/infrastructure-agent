@@ -91,7 +91,7 @@ jobs:
 
   publish:
     name: Build and upload artifacts into GH Release assets
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     needs: [ packaging ]
     strategy:
       matrix:

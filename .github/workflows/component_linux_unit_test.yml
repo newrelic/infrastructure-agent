@@ -12,7 +12,7 @@ env:
 jobs:
   unit-test:
     name: Unit tests
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
 
@@ -34,7 +34,7 @@ jobs:
 
   databind-test:
     name: Unit tests for databind
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
 
@@ -51,7 +51,7 @@ jobs:
   unit-test-finish:
     name: Coveralls finish
     needs: [ unit-test ]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Coveralls Finished
         uses: coverallsapp/github-action@v2
