@@ -36,6 +36,7 @@ Before using the agent, you need to add the [New Relic license key](https://docs
 The default location is:
 
 * Linux: `/etc/newrelic-infra.yml`
+* MacOS Intel: `/usr/local/etc/newrelic-infra/newrelic-infra.yml`
 * MacOS Apple Silicon: `/opt/homebrew/etc/newrelic-infra/newrelic-infra.yml`
 * Windows: `C:\Program Files\New Relic\newrelic-infra\newrelic-infra.yml`
 
