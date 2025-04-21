@@ -82,7 +82,7 @@ func rpmBasedDistribution() (bool, error) {
 		return false, err
 	}
 	regexps := []*regexp.Regexp{
-		regexp.MustCompile("^NAME=\"Ubuntu\""),
+		regexp.MustCompile("(?m)^NAME=\"Ubuntu\""), // Enables matching "NAME=\"Ubuntu\"" as the start of any line within multiline content
 		regexp.MustCompile("^NAME=\"Debian\""),
 		regexp.MustCompile("^NAME=\"SLES\""),
 	}
