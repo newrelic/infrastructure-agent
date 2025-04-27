@@ -38,7 +38,7 @@ env:
 jobs:
   packaging:
     name: Build and upload docker images as RC
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     steps:
       - uses: actions/checkout@v2

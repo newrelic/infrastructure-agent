@@ -67,7 +67,7 @@ env:
 jobs:
   publish:
     name: Publish linux artifacts into s3 staging bucket
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     strategy:
       max-parallel: 1

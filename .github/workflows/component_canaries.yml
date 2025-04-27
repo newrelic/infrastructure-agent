@@ -29,7 +29,7 @@ permissions:
 
 jobs:
   canaries_macos:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     if: ${{ inputs.PLATFORM == 'macos' }}
     steps:
       - uses: actions/checkout@v4
@@ -65,7 +65,7 @@ jobs:
           ref: "${{ env.GIT_BRANCH }}"
 
   canaries_linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     if: ${{ inputs.PLATFORM == 'linux' }}
     steps:
       - uses: actions/checkout@v4
@@ -127,7 +127,7 @@ jobs:
           ref: "${{ env.GIT_BRANCH }}"
 
   canaries_windows:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     if: ${{ inputs.PLATFORM == 'windows' }}
     steps:
       - uses: actions/checkout@v4

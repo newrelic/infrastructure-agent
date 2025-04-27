@@ -68,7 +68,7 @@ jobs:
       CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}
 
   get_previous_tag:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     # Map a step output to a job output
     outputs:
       previous_tag: ${{ steps.previous_tag_step.outputs.PREVIOUS_TAG }}

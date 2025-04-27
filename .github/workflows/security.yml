@@ -15,7 +15,7 @@ env:
 jobs:
   scan-deps:
     name: Run security checks Snyk
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - name: Login to DockerHub

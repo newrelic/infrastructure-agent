@@ -26,7 +26,7 @@ jobs:
   publish-docker-images:
     if: ${{ inputs.ASSETS_TYPE == 'all' || inputs.ASSETS_TYPE == 'docker' }}
     name: Create versioned and latest images from RC
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     steps:
       - uses: actions/checkout@v2
