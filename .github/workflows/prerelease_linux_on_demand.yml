@@ -17,7 +17,6 @@ on:
       dest_prefix:
         description: 'Repo prefix'
         required: true
-        default: 'sandbox'
       BUILD_MODE:
         description: 'Enable NON-FIPS, FIPS or ALL'
         required: false
