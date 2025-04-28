@@ -12,6 +12,7 @@ on:
       dest_prefix:
         description: 'Repo prefix'
         required: true
+        default: 'sandbox'
   push:
     branches:
       - 'prerelease-on-demand_*'
