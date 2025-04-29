@@ -116,17 +116,17 @@ func checkSafeDir(dirPath string) error {
 	}
 
 	for folder != child { // While we don't reach the drive letter
-		stat, err := os.Lstat(folder)
+		_, err := os.Lstat(folder)
 		if err != nil {
 			return err
 		}
-		if !stat.IsDir() {
-			return fmt.Errorf("folder %s is not a directory", folder)
-		}
+
 		attrs, err := windows.GetFileAttributes(windows.StringToUTF16Ptr(folder))
+
 		if err != nil {
 			return err
 		}
+
 		if attrs&windows.FILE_ATTRIBUTE_REPARSE_POINT != 0 {
 			return fmt.Errorf("junctions and symlinks are not allowed: %s", folder)
 		}
