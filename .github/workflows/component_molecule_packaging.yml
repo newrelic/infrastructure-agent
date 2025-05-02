@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Test NON-FIPS package installation
-        uses: newrelic/pkg-installation-testing-action@NR-379045
+        uses: newrelic/pkg-installation-testing-action@v1
         with:
           gpg_key: 'https://download.newrelic.com/infrastructure_agent/gpg/newrelic-infra.gpg'
           repo_base_url: ${{ inputs.REPO_ENDPOINT }}
@@ -30,7 +30,7 @@ jobs:
           package_version: ${{ inputs.TAG }}
           platforms: "al2,al2023,debian-bullseye,debian-bookworm,redhat8,redhat9,rocky9,suse15.3,suse15.4,suse15.5,suse15.6,ubuntu1604,ubuntu1804,ubuntu2004,ubuntu2204,ubuntu2404"
       - name: Test FIPS package installation
-        uses: newrelic/pkg-installation-testing-action@NR-379045
+        uses: newrelic/pkg-installation-testing-action@v1
         with:
           gpg_key: 'https://download.newrelic.com/infrastructure_agent/gpg/newrelic-infra.gpg'
           repo_base_url: ${{ inputs.REPO_ENDPOINT }}
