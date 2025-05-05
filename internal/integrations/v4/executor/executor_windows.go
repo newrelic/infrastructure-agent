@@ -54,7 +54,7 @@ func processHandle(cmd *exec.Cmd) (windows.Handle, error) {
 	}
 
 	// Avoid Unsafe handle access to obtain a fresh, valid handle for the process
-	// Add nolint to avoid G115 false positive
+	// Add nolint to avoid G115 false positive (the tool has flagged a potential integer overflow issue when it actually doesn't exist)
 	handle, err := windows.OpenProcess(windows.PROCESS_SET_INFORMATION|windows.PROCESS_QUERY_INFORMATION, false, uint32(cmd.Process.Pid)) //nolint:gosec
 
 	if err != nil {
