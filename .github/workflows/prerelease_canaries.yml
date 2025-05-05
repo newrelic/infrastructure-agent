@@ -38,7 +38,7 @@ jobs:
       PLATFORM: "windows"
       TAG: ${{ github.event.inputs.tag }}
     secrets:
-      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET_OHAI}}
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
       CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
       CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
       CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}
@@ -50,7 +50,7 @@ jobs:
       PLATFORM: "linux"
       TAG: ${{ github.event.inputs.tag }}
     secrets:
-      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET_OHAI}}
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
       CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
       CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
       CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}
@@ -62,7 +62,7 @@ jobs:
       PLATFORM: "macos"
       TAG: ${{ github.event.inputs.tag }}
     secrets:
-      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET_OHAI}}
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
       CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
       CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
       CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}
@@ -86,7 +86,7 @@ jobs:
       PLATFORM: "linux"
       TAG: ${{ needs.get_previous_tag.outputs.previous_tag }}
     secrets:
-      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET_OHAI}}
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
 
   prune-previous-canaries-windows:
     needs: get_previous_tag
@@ -96,5 +96,5 @@ jobs:
       PLATFORM: "windows"
       TAG: ${{ needs.get_previous_tag.outputs.previous_tag }}
     secrets:
-      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET_OHAI}}
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
 

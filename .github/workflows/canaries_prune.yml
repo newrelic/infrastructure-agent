@@ -28,4 +28,4 @@ jobs:
       PLATFORM: ${{ github.event.inputs.platform }}
       TAG: ${{ github.event.inputs.tag }}
     secrets:
-      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET_OHAI}}
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
