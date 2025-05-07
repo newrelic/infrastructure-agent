@@ -5,10 +5,11 @@ package fingerprint
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 	"gotest.tools/assert"
-	"testing"
 )
 
 type MockHostNameResolver struct{}
@@ -38,7 +39,7 @@ func NewCloudHarvester(cloudId string, cloudType cloud.Type, error bool) *MockCl
 
 func (a *MockCloudHarvester) GetInstanceID() (string, error) {
 	if a.error {
-		return "", fmt.Errorf(a.ErrorMessage)
+		return "", fmt.Errorf("%v", a.ErrorMessage)
 	}
 	return a.cloudId, nil
 }
