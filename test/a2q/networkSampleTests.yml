@@ -1,0 +1,92 @@
+apiVersion: v1
+kind: TestSuite
+metadata:
+  name: NetworkSample - MELT
+  namespace: infra-agent
+  team: OHAI
+  owningTeam: OHAI
+  environment: ${var.sutEnvironment}
+  x-category: melt
+  x-period: 5m
+spec:
+  tests:
+    - nrql: "FROM NetworkSample SELECT agentName WHERE displayName = '${var.display_name_current}' LIMIT 1"
+      name: Check agent name current
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "agentName"
+          equals: "Infrastructure"
+    - nrql: "FROM NetworkSample SELECT agentName WHERE displayName = '${var.display_name_previous}' LIMIT 1"
+      name: Check agent name previous
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "agentName"
+          equals: "Infrastructure"
+    - nrql: "SELECT abs(filter(average(receiveBytesPerSecond), WHERE displayName = '${var.display_name_current}') - filter(average(receiveBytesPerSecond), WHERE displayName = '${var.display_name_previous}')) AS 'Receive Bytes Per Second Difference' FROM NetworkSample SINCE 5 minutes AGO"
+      name: Receive Bytes Per Second Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Receive Bytes Per Second Difference']"
+          less: 100
+    - nrql: "SELECT abs(filter(average(receiveDroppedPerSecond), WHERE displayName = '${var.display_name_current}') - filter(average(receiveDroppedPerSecond), WHERE displayName = '${var.display_name_previous}')) AS 'Receive Dropped Per Second Difference' FROM NetworkSample SINCE 5 minutes AGO"
+      name: Receive Dropped Per Second Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Receive Dropped Per Second Difference']"
+          less: 2
+    - nrql: "SELECT abs(filter(average(receiveErrorsPerSecond), WHERE displayName = '${var.display_name_current}') - filter(average(receiveErrorsPerSecond), WHERE displayName = '${var.display_name_previous}')) AS 'Receive Errors Per Second Difference' FROM NetworkSample SINCE 5 minutes AGO"
+      name: Receive Errors Per Second Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Receive Errors Per Second Difference']"
+          less: 2
+    - nrql: "SELECT abs(filter(average(receivePacketsPerSecond), WHERE displayName = '${var.display_name_current}') - filter(average(receivePacketsPerSecond), WHERE displayName = '${var.display_name_previous}')) AS 'Receive Packets Per Second Difference' FROM NetworkSample SINCE 5 minutes AGO"
+      name: Receive Packets Per Second Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Receive Packets Per Second Difference']"
+          less: 1
+    - nrql: "SELECT abs(filter(average(transmitBytesPerSecond), WHERE displayName = '${var.display_name_current}') - filter(average(transmitBytesPerSecond), WHERE displayName = '${var.display_name_previous}')) AS 'Transmit Bytes Per Second Difference' FROM NetworkSample SINCE 5 minutes AGO"
+      name: Transmit Bytes Per Second Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Transmit Bytes Per Second Difference']"
+          less: 300
+    - nrql: "SELECT abs(filter(average(transmitDroppedPerSecond), WHERE displayName = '${var.display_name_current}') - filter(average(transmitDroppedPerSecond), WHERE displayName = '${var.display_name_previous}')) AS 'Transmit Dropped Per Second Difference' FROM NetworkSample SINCE 5 minutes AGO"
+      name: Transmit Dropped Per Second Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Transmit Dropped Per Second Difference']"
+          less: 2
+    - nrql: "SELECT abs(filter(average(transmitErrorsPerSecond), WHERE displayName = '${var.display_name_current}') - filter(average(transmitErrorsPerSecond), WHERE displayName = '${var.display_name_previous}')) AS 'Transmit Errors Per Second Difference' FROM NetworkSample SINCE 5 minutes AGO"
+      name: Transmit Errors Per Second Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Transmit Errors Per Second Difference']"
+          less: 2
+    - nrql: "SELECT abs(filter(average(transmitPacketsPerSecond), WHERE displayName = '${var.display_name_current}') - filter(average(transmitPacketsPerSecond), WHERE displayName = '${var.display_name_previous}')) AS 'Transmit Packets Per Second Difference' FROM NetworkSample SINCE 5 minutes AGO"
+      name: Transmit Packets Per Second Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Transmit Packets Per Second Difference']"
+          less: 1
