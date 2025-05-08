@@ -1,0 +1,268 @@
+apiVersion: v1
+kind: TestSuite
+metadata:
+  name: SystemSample - MELT
+  namespace: infra-agent
+  team: OHAI
+  owningTeam: OHAI
+  environment: ${var.sutEnvironment}
+  x-category: melt
+  x-period: 5m
+spec:
+  tests:
+    - nrql: "FROM SystemSample SELECT agentName WHERE displayName = '${var.display_name_current}' LIMIT 1"
+      name: Check agent name current
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "agentName"
+          equals: "Infrastructure"
+    - nrql: "FROM SystemSample SELECT agentName WHERE displayName = '${var.display_name_previous}' LIMIT 1"
+      name: Check agent name previous
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "agentName"
+          equals: "Infrastructure"
+    - nrql: "SELECT abs(filter(average(cpuPercent), WHERE displayName = '${var.display_name_current}') - filter(average(cpuPercent), WHERE displayName = '${var.display_name_previous}')) AS 'CPU Percent Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: CPU Percent Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['CPU Percent Difference']"
+          less: 0.05
+    - nrql: "SELECT abs(filter(average(numeric(coreCount)), WHERE displayName = '${var.display_name_current}') - filter(average(numeric(coreCount)), WHERE displayName = '${var.display_name_previous}')) AS 'Core Count Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: Core Count Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Core Count Difference']"
+          equals: 0
+    - nrql: "SELECT abs(filter(average(cpuIOWaitPercent), WHERE displayName = '${var.display_name_current}') - filter(average(cpuIOWaitPercent), WHERE displayName = '${var.display_name_previous}')) AS 'CPU IO Wait Percent Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: CPU IO Wait Percent Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['CPU IO Wait Percent Difference']"
+          less: 0.05
+    - nrql: "SELECT abs(filter(average(cpuIdlePercent), WHERE displayName = '${var.display_name_current}') - filter(average(cpuIdlePercent), WHERE displayName = '${var.display_name_previous}')) AS 'CPU Idle Percent Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: CPU Idle Percent Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['CPU Idle Percent Difference']"
+          less: 0.05
+    - nrql: "SELECT abs(filter(average(cpuSystemPercent), WHERE displayName = '${var.display_name_current}') - filter(average(cpuSystemPercent), WHERE displayName = '${var.display_name_previous}')) AS 'CPU System Percent Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: CPU System Percent Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['CPU System Percent Difference']"
+          less: 0.05
+    - nrql: "SELECT abs(filter(average(cpuUserPercent), WHERE displayName = '${var.display_name_current}') - filter(average(cpuUserPercent), WHERE displayName = '${var.display_name_previous}')) AS 'CPU User Percent Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: CPU User Percent Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['CPU User Percent Difference']"
+          less: 0.05
+    - nrql: "SELECT abs(filter(average(diskFreeBytes), WHERE displayName = '${var.display_name_current}') - filter(average(diskFreeBytes), WHERE displayName = '${var.display_name_previous}')) AS 'Disk Free Bytes Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: Disk Free Bytes Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Disk Free Bytes Difference']"
+          less: 1000000
+    - nrql: "SELECT abs(filter(average(diskFreePercent), WHERE displayName = '${var.display_name_current}') - filter(average(diskFreePercent), WHERE displayName = '${var.display_name_previous}')) AS 'Disk Free Percent Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: Disk Free Percent Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Disk Free Percent Difference']"
+          less: 5
+    - nrql: "SELECT abs(filter(average(diskReadsPerSecond), WHERE displayName = '${var.display_name_current}') - filter(average(diskReadsPerSecond), WHERE displayName = '${var.display_name_previous}')) AS 'Disk Read Per Second Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: Disk Read Per Second Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Disk Read Per Second Difference']"
+          less: 5
+    - nrql: "SELECT abs(filter(average(diskTotalBytes), WHERE displayName = '${var.display_name_current}') - filter(average(diskTotalBytes), WHERE displayName = '${var.display_name_previous}')) AS 'Disk Total Bytes Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: Disk Total Bytes Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Disk Total Bytes Difference']"
+          less: 5
+    - nrql: "SELECT abs(filter(average(diskUsedBytes), WHERE displayName = '${var.display_name_current}') - filter(average(diskUsedBytes), WHERE displayName = '${var.display_name_previous}')) AS 'Disk Used Bytes Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: Disk Used Bytes Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Disk Used Bytes Difference']"
+          less: 1000000
+    - nrql: "SELECT abs(filter(average(diskUsedPercent), WHERE displayName = '${var.display_name_current}') - filter(average(diskUsedPercent), WHERE displayName = '${var.display_name_previous}')) AS 'Disk Used Percent Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: Disk Used Percent Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Disk Used Percent Difference']"
+          less: 3
+    - nrql: "SELECT abs(filter(average(diskUtilizationPercent), WHERE displayName = '${var.display_name_current}') - filter(average(diskUtilizationPercent), WHERE displayName = '${var.display_name_previous}')) AS 'Disk Utilization Percent Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: Disk Utilization Percent Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Disk Utilization Percent Difference']"
+          less: 0.7
+    - nrql: "SELECT abs(filter(average(diskWriteUtilizationPercent), WHERE displayName = '${var.display_name_current}') - filter(average(diskWriteUtilizationPercent), WHERE displayName = '${var.display_name_previous}')) AS 'Disk Write Utilization Percent Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: Disk Write Utilization Percent Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Disk Write Utilization Percent Difference']"
+          less: 0.5
+    - nrql: "SELECT abs(filter(average(diskWritesPerSecond), WHERE displayName = '${var.display_name_current}') - filter(average(diskWritesPerSecond), WHERE displayName = '${var.display_name_previous}')) AS 'Disk Writes Per Second Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: Disk Writes Per Second Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Disk Writes Per Second Difference']"
+          less: 10
+    - nrql: "SELECT abs(filter(average(loadAverageFifteenMinute), WHERE displayName = '${var.display_name_current}') - filter(average(loadAverageFifteenMinute), WHERE displayName = '${var.display_name_previous}')) AS 'Load Average Fifteen Minute Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: Load Average Fifteen Minute Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Load Average Fifteen Minute Difference']"
+          less: 0.5
+    - nrql: "SELECT abs(filter(average(loadAverageFiveMinute), WHERE displayName = '${var.display_name_current}') - filter(average(loadAverageFiveMinute), WHERE displayName = '${var.display_name_previous}')) AS 'Load Average Five Minute Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: Load Average Five Minute Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Load Average Five Minute Difference']"
+          less: 0.5
+    - nrql: "SELECT abs(filter(average(loadAverageOneMinute), WHERE displayName = '${var.display_name_current}') - filter(average(loadAverageOneMinute), WHERE displayName = '${var.display_name_previous}')) AS 'Load Average One Minute Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: Load Average One Minute Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Load Average One Minute Difference']"
+          less: 0.7
+    - nrql: "SELECT abs(filter(average(memoryCachedBytes), WHERE displayName = '${var.display_name_current}') - filter(average(memoryCachedBytes), WHERE displayName = '${var.display_name_previous}')) AS 'Memory Cached Bytes Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: Memory Cached Bytes Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Memory Cached Bytes Difference']"
+          less: 3000000
+    - nrql: "SELECT abs(filter(average(memoryFreeBytes), WHERE displayName = '${var.display_name_current}') - filter(average(memoryFreeBytes), WHERE displayName = '${var.display_name_previous}')) AS 'Memory Free Bytes Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: Memory Free Bytes Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Memory Free Bytes Difference']"
+          less: 100000000
+    - nrql: "SELECT abs(filter(average(memoryFreePercent), WHERE displayName = '${var.display_name_current}') - filter(average(memoryFreePercent), WHERE displayName = '${var.display_name_previous}')) AS 'Memory Free Percent Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: Memory Free Percent Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Memory Free Percent Difference']"
+          less: 5
+    - nrql: "SELECT abs(filter(average(memorySharedBytes), WHERE displayName = '${var.display_name_current}') - filter(average(memorySharedBytes), WHERE displayName = '${var.display_name_previous}')) AS 'Memory Shared Bytes Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: Memory Shared Bytes Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Memory Shared Bytes Difference']"
+          less: 15000000
+    - nrql: "SELECT abs(filter(average(memorySlabBytes), WHERE displayName = '${var.display_name_current}') - filter(average(memorySlabBytes), WHERE displayName = '${var.display_name_previous}')) AS 'Memory Slab Bytes Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: Memory Slab Bytes Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Memory Slab Bytes Difference']"
+          less: 50000000
+    - nrql: "SELECT abs(filter(average(memoryTotalBytes), WHERE displayName = '${var.display_name_current}') - filter(average(memoryTotalBytes), WHERE displayName = '${var.display_name_previous}')) AS 'Memory Total Bytes Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: Memory Total Bytes Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Memory Total Bytes Difference']"
+          less: 50000000
+    - nrql: "SELECT abs(filter(average(memoryUsedBytes), WHERE displayName = '${var.display_name_current}') - filter(average(memoryUsedBytes), WHERE displayName = '${var.display_name_previous}')) AS 'Memory Used Bytes Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: Memory Used Bytes Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Memory Used Bytes Difference']"
+          less: 100000000
+    - nrql: "SELECT abs(filter(average(memoryUsedPercent), WHERE displayName = '${var.display_name_current}') - filter(average(memoryUsedPercent), WHERE displayName = '${var.display_name_previous}')) AS 'Memory Used Percent Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: Memory Used Percent Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Memory Used Percent Difference']"
+          less: 5
+    - nrql: "SELECT abs(filter(average(memoryKernelFree), WHERE displayName = '${var.display_name_current}') - filter(average(memoryKernelFree), WHERE displayName = '${var.display_name_previous}')) AS 'Memory Kernel Free Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: Memory Kernel Free Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Memory Kernel Free Difference']"
+          less: 100000000
+    - nrql: "SELECT abs(filter(average(memoryBuffers), WHERE displayName = '${var.display_name_current}') - filter(average(memoryBuffers), WHERE displayName = '${var.display_name_previous}')) AS 'Memory Buffers Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: Memory Buffers Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Memory Buffers Difference']"
+          less: 5000000
+    - nrql: "SELECT abs(filter(average(swapTotalBytes), WHERE displayName = '${var.display_name_current}') - filter(average(swapTotalBytes), WHERE displayName = '${var.display_name_previous}')) AS 'Swap Total Bytes Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: Swap Total Bytes Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Swap Total Bytes Difference']"
+          equals: 0
+    - nrql: "SELECT abs(filter(average(numeric(systemMemoryBytes)), WHERE displayName = '${var.display_name_current}') - filter(average(numeric(systemMemoryBytes)), WHERE displayName = '${var.display_name_previous}')) AS 'System Memory Bytes Difference' FROM SystemSample SINCE 5 minutes AGO"
+      name: System Memory Bytes Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['System Memory Bytes Difference']"
+          less: 50000000
