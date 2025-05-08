@@ -1,0 +1,84 @@
+apiVersion: v1
+kind: TestSuite
+metadata:
+  name: ProcessSample - MELT
+  namespace: infra-agent
+  team: OHAI
+  owningTeam: OHAI
+  environment: ${var.sutEnvironment}
+  x-category: melt
+  x-period: 5m
+spec:
+  tests:
+    - nrql: "FROM ProcessSample SELECT agentName WHERE displayName = '${var.display_name_current}' LIMIT 1"
+      name: Check agent name current
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "agentName"
+          equals: "Infrastructure"
+    - nrql: "FROM ProcessSample SELECT agentName WHERE displayName = '${var.display_name_previous}' LIMIT 1"
+      name: Check agent name previous
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "agentName"
+          equals: "Infrastructure"
+    - nrql: "SELECT abs(filter(average(cpuPercent), WHERE displayName = '${var.display_name_current}') - filter(average(cpuPercent), WHERE displayName = '${var.display_name_previous}')) AS 'CPU Percent Difference' FROM ProcessSample SINCE 5 minutes AGO"
+      name: CPU Percent Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['CPU Percent Difference']"
+          greater: 0.3
+    - nrql: "SELECT abs(filter(average(numeric(processorCount)), WHERE displayName = '${var.display_name_current}') - filter(average(numeric(processorCount)), WHERE displayName = '${var.display_name_previous}')) AS 'Processor Count Difference' FROM ProcessSample SINCE 5 minutes AGO"
+      name: Processor Count Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Core Count Difference']"
+          greater: 7
+    - nrql: "SELECT abs(filter(average(cpuSystemPercent), WHERE displayName = '${var.display_name_current}') - filter(average(cpuSystemPercent), WHERE displayName = '${var.display_name_previous}')) AS 'CPU System Percent Difference' FROM ProcessSample SINCE 5 minutes AGO"
+      name: CPU System Percent Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['CPU System Percent Difference']"
+          greater: 0.05
+    - nrql: "SELECT abs(filter(average(cpuUserPercent), WHERE displayName = '${var.display_name_current}') - filter(average(cpuUserPercent), WHERE displayName = '${var.display_name_previous}')) AS 'CPU User Percent Difference' FROM ProcessSample SINCE 5 minutes AGO"
+      name: CPU User Percent Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['CPU User Percent Difference']"
+          greater: 0.06
+    - nrql: "SELECT abs(filter(average(ioReadBytesPerSecond), WHERE displayName = '${var.display_name_current}') - filter(average(ioReadBytesPerSecond), WHERE displayName = '${var.display_name_previous}')) AS 'IO Read Bytes PerSecond Difference' FROM ProcessSample SINCE 5 minutes AGO"
+      name: IO Read Bytes PerSecond Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['IO Read Bytes PerSecond Difference']"
+          greater: 100
+    - nrql: "SELECT abs(filter(average(ioWriteBytesPerSecond), WHERE displayName = '${var.display_name_current}') - filter(average(ioWriteBytesPerSecond), WHERE displayName = '${var.display_name_previous}')) AS 'IO Write Bytes PerSecond Difference' FROM ProcessSample SINCE 5 minutes AGO"
+      name: IO Write Bytes PerSecond Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['IO Write Bytes PerSecond Difference']"
+          greater: 100
+    - nrql: "SELECT abs(filter(average(memoryResidentSizeBytes), WHERE displayName = '${var.display_name_current}') - filter(average(memoryResidentSizeBytes), WHERE displayName = '${var.display_name_previous}')) AS 'Memory Resident Size Bytes Difference' FROM ProcessSample SINCE 5 minutes AGO"
+      name: Memory Resident Size Bytes Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Memory Resident Size Bytes Difference']"
+          greater: 5000000
