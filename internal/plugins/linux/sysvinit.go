@@ -9,8 +9,6 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/agent/types"
-	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -18,6 +16,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 
@@ -149,7 +150,7 @@ func (self *SysvInitPlugin) services(dirname string) ([]*SysvService, error) {
 		svcDetails, err := helpers.GetPidDetails(pid)
 		if err != nil {
 			if !os.IsNotExist(err) {
-				svlog.WithError(err).WithField("pidFile", pidFile).Warn("can't fetch process details for pidfile")
+				svlog.WithError(err).WithField("pidFile", pidFile).Debug("can't fetch process details for pidfile")
 			}
 			continue
 		}
