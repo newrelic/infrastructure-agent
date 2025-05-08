@@ -124,7 +124,7 @@ func checkSafeDir(dirPath string) error {
 		attrs, err := windows.GetFileAttributes(windows.StringToUTF16Ptr(folder))
 
 		if err != nil {
-			return err
+			return err //nolint:wrapcheck
 		}
 
 		if attrs&windows.FILE_ATTRIBUTE_REPARSE_POINT != 0 {
