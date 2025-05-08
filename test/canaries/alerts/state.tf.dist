@@ -3,7 +3,7 @@
 #########################################
 terraform {
   backend "s3" {
-    bucket = "automation-pipeline-terraform-state"
+    bucket = "automation-pipeline-terraform-states"
     key    = "infra-agent-pipeline/TERRAFORM_STATE_KEY"
     region = "us-east-2"
   }
