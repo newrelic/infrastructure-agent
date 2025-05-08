@@ -1,4 +1,4 @@
-ARG base_image=alpine:3.21
+ARG base_image=alpine:3.21.3
 
 FROM $base_image AS core
 
@@ -26,7 +26,12 @@ LABEL com.newrelic.image.version=$image_version \
 ENV NRIA_IS_CONTAINERIZED true
 ENV NRIA_OVERRIDE_HOST_ROOT /host
 
-RUN apk --no-cache upgrade
+# Upgrade all installed packages to their latest versions
+RUN apk --no-cache upgrade && \
+    apk add --no-cache \
+        c-ares=1.34.5-r0 \
+        sqlite-libs=3.48.0-r1 \
+        xz-libs=5.6.3-r1
 
 RUN apk add --no-cache --upgrade \
     ca-certificates \
