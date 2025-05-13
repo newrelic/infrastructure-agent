@@ -51,7 +51,7 @@ func TestEntityIDFilePersist_ErrWhenReadingFile(t *testing.T) {
 
 	le := &EntityIDFilePersist{
 		readFile: func(path string) (entity.ID, error) {
-			return entity.EmptyID, fmt.Errorf("%v", expectedMessage) //nolint:err113
+			return entity.EmptyID, fmt.Errorf("%v", expectedMessage)
 		},
 	}
 
@@ -82,7 +82,7 @@ func TestEntityIDFilePersist_ErrWhenWritingFile(t *testing.T) {
 
 	le := &EntityIDFilePersist{
 		writeFile: func(id entity.ID, filePath string) error {
-			return fmt.Errorf("%v", expectedErrMessage) //nolint:err113
+			return fmt.Errorf("%v", expectedErrMessage)
 		},
 	}
 

@@ -130,7 +130,6 @@ func (w *worker) send(ctx context.Context, batch map[entity.Key]fwrequest.Entity
 	for _, resp := range responses {
 		if resp.ErrorMsg != "" {
 			if w.config.VerboseLogLevel > 0 {
-				//nolint:err113
 				wlog.WithError(fmt.Errorf("%v", resp.ErrorMsg)).
 					WithField("entityName", resp.Name).
 					Errorf("failed to register entity")
@@ -141,7 +140,6 @@ func (w *worker) send(ctx context.Context, batch map[entity.Key]fwrequest.Entity
 
 		if w.config.VerboseLogLevel > 0 && len(resp.Warnings) > 0 {
 			for _, warn := range resp.Warnings {
-				//nolint:err113
 				wlog.WithError(fmt.Errorf("%v", warn)).
 					WithField("entityName", resp.Name).
 					WithField("entityID", resp.ID).

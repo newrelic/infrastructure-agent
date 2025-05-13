@@ -39,7 +39,7 @@ func NewCloudHarvester(cloudId string, cloudType cloud.Type, error bool) *MockCl
 
 func (a *MockCloudHarvester) GetInstanceID() (string, error) {
 	if a.error {
-		return "", fmt.Errorf("%v", a.ErrorMessage) //nolint:wrapcheck,err113
+		return "", fmt.Errorf("%v", a.ErrorMessage)
 	}
 	return a.cloudId, nil
 }
