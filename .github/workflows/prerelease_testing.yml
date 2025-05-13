@@ -42,7 +42,7 @@ jobs:
       TAG: ${{ github.event.inputs.tag }}
       TAG_OR_UNIQUE_NAME: "${{ github.event.inputs.tag }}-linux"
     secrets:
-      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET_CAOS}}
       CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
       CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
       CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}
