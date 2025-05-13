@@ -9,8 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"syscall"
-
-	"golang.org/x/sys/windows"
 )
 
 // WriteFile writes data to a file named by filename. For more info, see ioutil.Writefile.
@@ -116,18 +114,11 @@ func checkSafeDir(dirPath string) error {
 	}
 
 	for folder != child { // While we don't reach the drive letter
-		_, err := os.Lstat(folder)
+		stat, err := os.Lstat(folder)
 		if err != nil {
 			return err
 		}
-
-		attrs, err := windows.GetFileAttributes(windows.StringToUTF16Ptr(folder))
-
-		if err != nil {
-			return err
-		}
-
-		if attrs&windows.FILE_ATTRIBUTE_REPARSE_POINT != 0 {
+		if stat.Mode()&os.ModeSymlink != 0 {
 			return fmt.Errorf("junctions and symlinks are not allowed: %s", folder)
 		}
 		child = folder

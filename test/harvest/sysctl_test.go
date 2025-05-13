@@ -7,11 +7,10 @@ package harvest
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"net/http"
 	"testing"
 	"time"
-
-	"github.com/newrelic/infrastructure-agent/pkg/entity"
 
 	"github.com/fsnotify/fsnotify"
 	pluginsLinux "github.com/newrelic/infrastructure-agent/internal/plugins/linux"
@@ -101,7 +100,7 @@ func BenchmarkSysctlSubscriberRootless(b *testing.B) {
 
 	p, err := pluginsLinux.NewSysctlSubscriberMonitor(ids.PluginID{"kernel", "sysctl"}, a.Context)
 	if err != nil {
-		b.Fatalf("%v", err.Error())
+		b.Fatalf(err.Error())
 		return
 	}
 

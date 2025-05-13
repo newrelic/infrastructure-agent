@@ -5,14 +5,13 @@ package delta
 
 import (
 	"fmt"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/newrelic/infrastructure-agent/pkg/entity"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestEntityIDFilePersist_RetrieveStoredValue(t *testing.T) {
@@ -51,7 +50,7 @@ func TestEntityIDFilePersist_ErrWhenReadingFile(t *testing.T) {
 
 	le := &EntityIDFilePersist{
 		readFile: func(path string) (entity.ID, error) {
-			return entity.EmptyID, fmt.Errorf("%v", expectedMessage)
+			return entity.EmptyID, fmt.Errorf(expectedMessage)
 		},
 	}
 
@@ -82,7 +81,7 @@ func TestEntityIDFilePersist_ErrWhenWritingFile(t *testing.T) {
 
 	le := &EntityIDFilePersist{
 		writeFile: func(id entity.ID, filePath string) error {
-			return fmt.Errorf("%v", expectedErrMessage)
+			return fmt.Errorf(expectedErrMessage)
 		},
 	}
 

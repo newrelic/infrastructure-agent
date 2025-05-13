@@ -8,9 +8,9 @@ run:
 
 # # all available settings of specific linters
 linters-settings:
-  # Use shadow linter instead of govet check-shadowing
-  shadow: true
-
+  govet:
+    # report about shadowed variables
+    check-shadowing: true
   misspell:
     ignore-words:
       - newrelic

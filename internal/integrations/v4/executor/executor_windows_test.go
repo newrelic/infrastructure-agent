@@ -9,12 +9,11 @@ package executor
 
 import (
 	"context"
-	"testing"
-
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/fixtures"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/testhelp"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/sys/windows"
+	"testing"
 )
 
 const (

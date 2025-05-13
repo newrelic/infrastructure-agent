@@ -5,9 +5,9 @@ package executor
 import (
 	"context"
 	"fmt"
-	"os/exec"
-
 	"golang.org/x/sys/windows"
+	"os/exec"
+	"unsafe"
 )
 
 // userAwareCmd returns a cancellable Cmd struct to execute the given command with the provided
@@ -22,7 +22,6 @@ func startProcess(cmd *exec.Cmd) error {
 	if err != nil {
 		return err
 	}
-
 	err = setPriorityClass(cmd)
 	if err != nil {
 		illog.WithError(err).WithField("command", cmd.String()).Error("cannot set priority class to process")
@@ -53,13 +52,11 @@ func processHandle(cmd *exec.Cmd) (windows.Handle, error) {
 		return handle, fmt.Errorf("process cannot be nil pointer")
 	}
 
-	// Avoid Unsafe handle access to obtain a fresh, valid handle for the process
-	// Add nolint to avoid G115 false positive (the tool has flagged a potential integer overflow issue when it actually doesn't exist)
-	handle, err := windows.OpenProcess(windows.PROCESS_SET_INFORMATION|windows.PROCESS_QUERY_INFORMATION, false, uint32(cmd.Process.Pid)) //nolint:gosec
-
-	if err != nil {
-		return 0, fmt.Errorf("open process failed : %w", err) //nolint:wrapcheck
-	}
+	// Using unsafe operation we are using the handle inside os.Process.
+	handle = (*struct {
+		pid    int
+		handle windows.Handle
+	})(unsafe.Pointer(cmd.Process)).handle
 
 	return handle, nil
 }
