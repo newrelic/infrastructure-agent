@@ -1,6 +1,6 @@
 module yamlgen
 
-go 1.24
+go 1.23.9
 
 require (
 	github.com/ghodss/yaml v1.0.0
