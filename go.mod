@@ -1,6 +1,6 @@
 module github.com/newrelic/infrastructure-agent
 
-go 1.23.9
+go 1.23.8
 
 require (
 	github.com/Microsoft/go-winio v0.6.1

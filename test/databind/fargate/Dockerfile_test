@@ -1,4 +1,4 @@
-FROM golang:1.23.9
+FROM golang:1.23.8
 
 WORKDIR /go/src/github.com/newrelic/infrastructure-agent/
 
