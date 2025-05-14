@@ -56,7 +56,7 @@ jobs:
           echo "GIT_BRANCH=$GIT_BRANCH" >> $GITHUB_ENV
 
       - name: Provision instances ${{ inputs.PLATFORM }}
-        uses: newrelic/fargate-runner-action@main
+        uses: newrelic/fargate-runner-action@go_version_bump
         with:
           aws_region: us-east-2
           container_make_target: "-C test/provision TERRAFORM_STATE_KEY=${{ inputs.TAG_OR_UNIQUE_NAME }} PREFIX=pkg-tests INVENTORY_OUTPUT=/srv/runner/inventory/${{ inputs.TAG_OR_UNIQUE_NAME }}-inventory.ec2 TAG_OR_UNIQUE_NAME=${{ inputs.TAG_OR_UNIQUE_NAME }} PLATFORM=${{ inputs.PLATFORM }} CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
@@ -96,7 +96,7 @@ jobs:
           echo "GIT_BRANCH=$GIT_BRANCH" >> $GITHUB_ENV
 
       - name: Launch harvest tests
-        uses: newrelic/fargate-runner-action@main
+        uses: newrelic/fargate-runner-action@go_version_bump
         with:
           aws_region: us-east-2
           container_make_target: "test/automated/harvest PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} ANSIBLE_INVENTORY_FOLDER=/srv/runner/inventory ANSIBLE_INVENTORY_FILE=${{ inputs.TAG_OR_UNIQUE_NAME }}-inventory.ec2 TAG=${{ inputs.TAG }}"
@@ -138,7 +138,7 @@ jobs:
           echo "GIT_BRANCH=$GIT_BRANCH" >> $GITHUB_ENV
 
       - name: Launch packaging tests
-        uses: newrelic/fargate-runner-action@main
+        uses: newrelic/fargate-runner-action@go_version_bump
         with:
           aws_region: us-east-2
           container_make_target: "test/automated/packaging LIMIT=${{ matrix.limit }} PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }}  ANSIBLE_INVENTORY_FOLDER=/srv/runner/inventory ANSIBLE_INVENTORY_FILE=${{ inputs.TAG_OR_UNIQUE_NAME }}-inventory.ec2 TAG=${{ inputs.TAG }}"
@@ -172,7 +172,7 @@ jobs:
           echo "GIT_BRANCH=$GIT_BRANCH" >> $GITHUB_ENV
 
       - name: Launch packaging tests
-        uses: newrelic/fargate-runner-action@main
+        uses: newrelic/fargate-runner-action@go_version_bump
         with:
           aws_region: us-east-2
           container_make_target: "test/automated/packaging LIMIT=windows_amd64 PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }}  ANSIBLE_INVENTORY_FOLDER=/srv/runner/inventory ANSIBLE_INVENTORY_FILE=${{ inputs.TAG_OR_UNIQUE_NAME }}-inventory.ec2 TAG=${{ inputs.TAG }}"
@@ -206,7 +206,7 @@ jobs:
           echo "GIT_BRANCH=$GIT_BRANCH" >> $GITHUB_ENV
 
       - name: Clean instances ${{ inputs.PLATFORM }}
-        uses: newrelic/fargate-runner-action@main
+        uses: newrelic/fargate-runner-action@go_version_bump
         with:
           aws_region: us-east-2
           container_make_target: "-C test/provision clean TERRAFORM_STATE_KEY=${{ inputs.TAG_OR_UNIQUE_NAME }}  TAG_OR_UNIQUE_NAME=${{ inputs.TAG_OR_UNIQUE_NAME }}"
@@ -247,7 +247,7 @@ jobs:
             echo "GIT_BRANCH=$GIT_BRANCH" >> $GITHUB_ENV
 
         - name: Clean instances ${{ inputs.PLATFORM }}
-          uses: newrelic/fargate-runner-action@main
+          uses: newrelic/fargate-runner-action@go_version_bump
           with:
             aws_region: us-east-2
             container_make_target: "-C test/provision clean TERRAFORM_STATE_KEY=${{ inputs.TAG_OR_UNIQUE_NAME }} TAG_OR_UNIQUE_NAME=${{ inputs.TAG_OR_UNIQUE_NAME }}"
