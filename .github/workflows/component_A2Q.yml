@@ -1,0 +1,50 @@
+name: Run Docker Image Every 5 Minutes
+
+on:
+  schedule:
+    - cron: "*/5 * * * *" # Runs every 5 minutes
+  workflow_dispatch: # Allows manual triggering of the workflow
+
+jobs:
+  run-docker_1:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      # Step 2: Log in to Docker Hub
+      - name: Docker Login
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }} 
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }} 
+        run: |
+          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+      # Step 3: Pull the Docker image
+      - name: Pull Docker Image
+        run: docker pull mbolla651/a2qtest:latest 
+
+      # Step 4: Run the Docker container
+      - name: Run Docker Container
+        env:
+          ACCOUNT_ID: ${{ secrets.A2Q_ACCOUNT_ID }}
+          API_KEY: ${{ secrets.A2Q_API_KEY }}       
+          LICENSE_KEY: ${{ secrets.A2Q_LICENSE_KEY }}
+        run: |
+          for file in $(find ./test/a2q -type f -name "*.yml"); do
+            echo "Processing file: $file"
+            docker run -v ./test/a2q:/a2q --rm mbolla651/a2qtest:latest \
+              --json \
+              definition.location.file=/a2q/$(basename $file) \
+              definition.var.accountId=$ACCOUNT_ID \
+              definition.var.nrEnv=US \
+              definition.var.sutEnvironment=US \
+              definition.var.display_name_previous=madhu-newrelic-agent-1.63.0 \
+              definition.var.display_name_current=madhu-newrelic-agent-1.63.1 \
+              definition.secret.apiKey=$API_KEY \
+              result.newrelic.accountId=$ACCOUNT_ID \
+              result.newrelic.licenseKey=$LICENSE_KEY \
+              result.newrelic.env=US
+          done
