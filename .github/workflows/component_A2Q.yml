@@ -1,8 +1,9 @@
 name: Run Docker Image Every 5 Minutes
 
 on:
-  pull_request:
-    branches: [$default-branch]
+  push:
+    branches:
+      - '**'
 
 jobs:
   run-docker_1:
