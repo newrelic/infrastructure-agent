@@ -26,37 +26,37 @@ spec:
       assertions:
         - fields: "agentName"
           equals: "Infrastructure"
-    - nrql: "SELECT abs(filter(average(diskUsedBytes), WHERE displayName = '${var.display_name_current}') - filter(average(diskUsedBytes), WHERE displayName = '${var.display_name_previous}')) AS 'Disk Used Bytes Difference' FROM StorageSample SINCE 5 minutes AGO"
-      name: Disk Used Bytes Difference
+    - nrql: "SELECT average(diskUsedBytes) AS 'Disk Used Bytes Current' FROM StorageSample WHERE displayName = '${var.display_name_current}' SINCE 5 minutes AGO"
+      name: Disk Used Bytes Current
       account: ${var.accountId}
       apiKey: ${secret.apiKey}
       nrEnv: ${var.nrEnv}
       assertions:
-        - fields: "['Disk Used Bytes Difference']"
+        - fields: "['Disk Used Bytes Current']"
           greater: 1000000000
-    - nrql: "SELECT abs(filter(average(diskUsedPercent), WHERE displayName = '${var.display_name_current}') - filter(average(diskUsedPercent), WHERE displayName = '${var.display_name_previous}')) AS 'Disk Used Percent Difference' FROM StorageSample SINCE 5 minutes AGO"
-      name: Disk Used Percent Difference
+    - nrql: "SELECT average(diskUsedPercent) AS 'Disk Used Percent Current' FROM StorageSample WHERE displayName = '${var.display_name_current}' SINCE 5 minutes AGO"
+      name: Disk Used Percent Current
       account: ${var.accountId}
       apiKey: ${secret.apiKey}
       nrEnv: ${var.nrEnv}
       assertions:
-        - fields: "['Disk Used Percent Difference']"
+        - fields: "['Disk Used Percent Current']"
           greater: 0.5
-    - nrql: "SELECT abs(filter(average(diskFreeBytes), WHERE displayName = '${var.display_name_current}') - filter(average(diskFreeBytes), WHERE displayName = '${var.display_name_previous}')) AS 'Disk Free Bytes Difference' FROM StorageSample SINCE 5 minutes AGO"
-      name: Disk Free Bytes Difference
+    - nrql: "SELECT average(diskFreeBytes) AS 'Disk Free Bytes Current' FROM StorageSample WHERE displayName = '${var.display_name_current}' SINCE 5 minutes AGO"
+      name: Disk Free Bytes Current
       account: ${var.accountId}
       apiKey: ${secret.apiKey}
       nrEnv: ${var.nrEnv}
       assertions:
-        - fields: "['Disk Free Bytes Difference']"
+        - fields: "['Disk Free Bytes Current']"
           greater: 500000000
-    - nrql: "SELECT abs(filter(average(diskFreePercent), WHERE displayName = '${var.display_name_current}') - filter(average(diskFreePercent), WHERE displayName = '${var.display_name_previous}')) AS 'Disk Free Percent Difference' FROM StorageSample SINCE 5 minutes AGO"
-      name: Disk Free Percent Difference
+    - nrql: "SELECT average(diskFreePercent) AS 'Disk Free Percent Current' FROM StorageSample WHERE displayName = '${var.display_name_current}' SINCE 5 minutes AGO"
+      name: Disk Free Percent Current
       account: ${var.accountId}
       apiKey: ${secret.apiKey}
       nrEnv: ${var.nrEnv}
       assertions:
-        - fields: "['Disk Free Percent Difference']"
+        - fields: "['Disk Free Percent Current']"
           greater: 5
     - nrql: "SELECT abs(filter(average(diskTotalBytes), WHERE displayName = '${var.display_name_current}') - filter(average(diskTotalBytes), WHERE displayName = '${var.display_name_previous}')) AS 'Disk Total Bytes Difference' FROM StorageSample SINCE 5 minutes AGO"
       name: Disk Total Bytes Difference
@@ -66,35 +66,43 @@ spec:
       assertions:
         - fields: "['Disk Total Bytes Difference']"
           less: 10000
-    - nrql: "SELECT abs(filter(average(inodesUsed), WHERE displayName = '${var.display_name_current}') - filter(average(inodesUsed), WHERE displayName = '${var.display_name_previous}')) AS 'Inodes Used Difference' FROM StorageSample SINCE 5 minutes AGO"
-      name: Inodes Used Difference
+    - nrql: "SELECT average(inodesUsed) AS 'Inodes Used Current' FROM StorageSample WHERE displayName = '${var.display_name_current}' SINCE 5 minutes AGO"
+      name: Inodes Used Current
       account: ${var.accountId}
       apiKey: ${secret.apiKey}
       nrEnv: ${var.nrEnv}
       assertions:
-        - fields: "['Inodes Used Difference']"
+        - fields: "['Inodes Used Current']"
           greater: 5000
-    - nrql: "SELECT abs(filter(average(inodesFree), WHERE displayName = '${var.display_name_current}') - filter(average(inodesFree), WHERE displayName = '${var.display_name_previous}')) AS 'Inodes Free Difference' FROM StorageSample SINCE 5 minutes AGO"
-      name: Inodes Free Difference
+    - nrql: "SELECT average(inodesFree) AS 'Inodes Free Current' FROM StorageSample WHERE displayName = '${var.display_name_current} SINCE 5 minutes AGO"
+      name: Inodes Free Current
       account: ${var.accountId}
       apiKey: ${secret.apiKey}
       nrEnv: ${var.nrEnv}
       assertions:
-        - fields: "['Inodes Free Difference']"
+        - fields: "['Inodes Free Current']"
           greater: 50000
-    - nrql: "SELECT abs(filter(average(inodesTotal), WHERE displayName = '${var.display_name_current}') - filter(average(inodesTotal), WHERE displayName = '${var.display_name_previous}')) AS 'Inodes Total Difference' FROM StorageSample SINCE 5 minutes AGO"
-      name: Inodes Total Difference
+    - nrql: "SELECT average(inodesTotal) AS 'Inodes Total Current' FROM StorageSample WHERE displayName = '${var.display_name_current}' SINCE 5 minutes AGO"
+      name: Inodes Total Current
       account: ${var.accountId}
       apiKey: ${secret.apiKey}
       nrEnv: ${var.nrEnv}
       assertions:
-        - fields: "['Inodes Total Difference']"
+        - fields: "['Inodes Total Current']"
           greater: 1
-    - nrql: "SELECT abs(filter(average(inodesUsedPercent), WHERE displayName = '${var.display_name_current}') - filter(average(inodesUsedPercent), WHERE displayName = '${var.display_name_previous}')) AS 'Inodes Used Percent Difference' FROM StorageSample SINCE 5 minutes AGO"
-      name: Inodes Used Percent Difference
+    - nrql: "SELECT average(inodesUsedPercent) AS 'Inodes Used Percent Current' FROM StorageSample WHERE displayName = '${var.display_name_current}' SINCE 5 minutes AGO"
+      name: Inodes Used Percent Current
       account: ${var.accountId}
       apiKey: ${secret.apiKey}
       nrEnv: ${var.nrEnv}
       assertions:
-        - fields: "['Inodes Used Percent Difference']"
+        - fields: "['Inodes Used Percent Current']"
           greater: 0.1
+    - nrql: "SELECT abs(filter(average(systemMemoryBytes), WHERE displayName = '${var.display_name_current}') - filter(average(systemMemoryBytes), WHERE displayName = '${var.display_name_previous}')) AS 'Memory Bytes Difference' FROM StorageSample SINCE 5 minutes AGO"
+      name: Memory Bytes Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Memory Bytes Difference']"
+          less: 50000000
