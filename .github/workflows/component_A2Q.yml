@@ -77,7 +77,7 @@ jobs:
         run: |
           for file in $(find ./test/a2q -type f -name "*.yml"); do
             echo "Processing file: $file"
-            docker run --name a2qtest-container -v ./test/a2q:/a2q --rm mbolla651/a2qtest:amd64 \
+            docker run --name a2qtest-container -v ./test/a2q:/a2q mbolla651/a2qtest:amd64 \
               --json \
               definition.location.file=/a2q/$(basename $file) \
               definition.var.accountId=$ACCOUNT_ID \
@@ -88,5 +88,12 @@ jobs:
               definition.secret.apiKey=$API_KEY \
               result.newrelic.accountId=$ACCOUNT_ID \
               result.newrelic.licenseKey=$LICENSE_KEY \
-              result.newrelic.env=US || docker logs a2qtest-container
+              result.newrelic.env=US || {
+                echo "Container failed for file: $file. Capturing logs..."
+                docker logs a2qtest-container
+                docker rm a2qtest-container
+                exit 1
+              }
+            echo "Container completed successfully for file: $file"
+            docker rm a2qtest-container
           done
