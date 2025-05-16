@@ -26,59 +26,67 @@ spec:
       assertions:
         - fields: "agentName"
           equals: "Infrastructure"
-    - nrql: "SELECT abs(filter(average(cpuPercent), WHERE displayName = '${var.display_name_current}') - filter(average(cpuPercent), WHERE displayName = '${var.display_name_previous}')) AS 'CPU Percent Difference' FROM ProcessSample SINCE 5 minutes AGO"
+    - nrql: "SELECT abs(filter(average(cpuPercent), WHERE displayName = '${var.display_name_current}' and commandLine like '%newrelic-infra%') - filter(average(cpuPercent), WHERE displayName = '${var.display_name_previous}'and commandLine like '%newrelic-infra%')) AS 'CPU Percent Difference' FROM ProcessSample SINCE 5 minutes AGO"
       name: CPU Percent Difference
       account: ${var.accountId}
       apiKey: ${secret.apiKey}
       nrEnv: ${var.nrEnv}
       assertions:
         - fields: "['CPU Percent Difference']"
-          greater: 0.3
-    - nrql: "SELECT abs(filter(average(numeric(processorCount)), WHERE displayName = '${var.display_name_current}') - filter(average(numeric(processorCount)), WHERE displayName = '${var.display_name_previous}')) AS 'Processor Count Difference' FROM ProcessSample SINCE 5 minutes AGO"
+          less: 0.3
+    - nrql: "SELECT abs(filter(average(numeric(processorCount)), WHERE displayName = '${var.display_name_current}' and commandLine like '%newrelic-infra%') - filter(average(numeric(processorCount)), WHERE displayName = '${var.display_name_previous}' and commandLine like '%newrelic-infra%')) AS 'Processor Count Difference' FROM ProcessSample SINCE 5 minutes AGO"
       name: Processor Count Difference
       account: ${var.accountId}
       apiKey: ${secret.apiKey}
       nrEnv: ${var.nrEnv}
       assertions:
-        - fields: "['Core Count Difference']"
-          greater: 7
-    - nrql: "SELECT abs(filter(average(cpuSystemPercent), WHERE displayName = '${var.display_name_current}') - filter(average(cpuSystemPercent), WHERE displayName = '${var.display_name_previous}')) AS 'CPU System Percent Difference' FROM ProcessSample SINCE 5 minutes AGO"
+        - fields: "['Processor Count Difference']"
+          less: 7
+    - nrql: "SELECT abs(filter(average(cpuSystemPercent), WHERE displayName = '${var.display_name_current}' and commandLine like '%newrelic-infra%') - filter(average(cpuSystemPercent), WHERE displayName = '${var.display_name_previous}' and commandLine like '%newrelic-infra%')) AS 'CPU System Percent Difference' FROM ProcessSample SINCE 5 minutes AGO"
       name: CPU System Percent Difference
       account: ${var.accountId}
       apiKey: ${secret.apiKey}
       nrEnv: ${var.nrEnv}
       assertions:
         - fields: "['CPU System Percent Difference']"
-          greater: 0.05
-    - nrql: "SELECT abs(filter(average(cpuUserPercent), WHERE displayName = '${var.display_name_current}') - filter(average(cpuUserPercent), WHERE displayName = '${var.display_name_previous}')) AS 'CPU User Percent Difference' FROM ProcessSample SINCE 5 minutes AGO"
+          less: 0.05
+    - nrql: "SELECT abs(filter(average(cpuUserPercent), WHERE displayName = '${var.display_name_current}' and commandLine like '%newrelic-infra%') - filter(average(cpuUserPercent), WHERE displayName = '${var.display_name_previous}' and commandLine like '%newrelic-infra%')) AS 'CPU User Percent Difference' FROM ProcessSample SINCE 5 minutes AGO"
       name: CPU User Percent Difference
       account: ${var.accountId}
       apiKey: ${secret.apiKey}
       nrEnv: ${var.nrEnv}
       assertions:
         - fields: "['CPU User Percent Difference']"
-          greater: 0.06
-    - nrql: "SELECT abs(filter(average(ioReadBytesPerSecond), WHERE displayName = '${var.display_name_current}') - filter(average(ioReadBytesPerSecond), WHERE displayName = '${var.display_name_previous}')) AS 'IO Read Bytes PerSecond Difference' FROM ProcessSample SINCE 5 minutes AGO"
+          less: 0.06
+    - nrql: "SELECT abs(filter(average(ioReadBytesPerSecond), WHERE displayName = '${var.display_name_current}' and commandLine like '%newrelic-infra%') - filter(average(ioReadBytesPerSecond), WHERE displayName = '${var.display_name_previous}' and commandLine like '%newrelic-infra%')) AS 'IO Read Bytes PerSecond Difference' FROM ProcessSample SINCE 5 minutes AGO"
       name: IO Read Bytes PerSecond Difference
       account: ${var.accountId}
       apiKey: ${secret.apiKey}
       nrEnv: ${var.nrEnv}
       assertions:
         - fields: "['IO Read Bytes PerSecond Difference']"
-          greater: 100
-    - nrql: "SELECT abs(filter(average(ioWriteBytesPerSecond), WHERE displayName = '${var.display_name_current}') - filter(average(ioWriteBytesPerSecond), WHERE displayName = '${var.display_name_previous}')) AS 'IO Write Bytes PerSecond Difference' FROM ProcessSample SINCE 5 minutes AGO"
+          less: 100
+    - nrql: "SELECT abs(filter(average(ioWriteBytesPerSecond), WHERE displayName = '${var.display_name_current}' and commandLine like '%newrelic-infra%') - filter(average(ioWriteBytesPerSecond), WHERE displayName = '${var.display_name_previous}' and commandLine like '%newrelic-infra%')) AS 'IO Write Bytes PerSecond Difference' FROM ProcessSample SINCE 5 minutes AGO"
       name: IO Write Bytes PerSecond Difference
       account: ${var.accountId}
       apiKey: ${secret.apiKey}
       nrEnv: ${var.nrEnv}
       assertions:
         - fields: "['IO Write Bytes PerSecond Difference']"
-          greater: 100
-    - nrql: "SELECT abs(filter(average(memoryResidentSizeBytes), WHERE displayName = '${var.display_name_current}') - filter(average(memoryResidentSizeBytes), WHERE displayName = '${var.display_name_previous}')) AS 'Memory Resident Size Bytes Difference' FROM ProcessSample SINCE 5 minutes AGO"
+          less: 100
+    - nrql: "SELECT abs(filter(average(memoryResidentSizeBytes), WHERE displayName = '${var.display_name_current}' and commandLine like '%newrelic-infra%') - filter(average(memoryResidentSizeBytes), WHERE displayName = '${var.display_name_previous}' and commandLine like '%newrelic-infra%')) AS 'Memory Resident Size Bytes Difference' FROM ProcessSample SINCE 5 minutes AGO"
       name: Memory Resident Size Bytes Difference
       account: ${var.accountId}
       apiKey: ${secret.apiKey}
       nrEnv: ${var.nrEnv}
       assertions:
         - fields: "['Memory Resident Size Bytes Difference']"
-          greater: 5000000
+          less: 5000000
+    - nrql: "SELECT count(*) AS 'Username Empty' FROM ProcessSample WHERE displayName IN ('${var.display_name_current}') AND (userName is null OR username = '') AND  displayName NOT LIKE '%current%' AND displayName NOT LIKE '%previous%' AND commandName != 'systemd-timesyn' SINCE 5 minutes ago"
+      name: Username Empty
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Username Empty']"
+          equals: 0
