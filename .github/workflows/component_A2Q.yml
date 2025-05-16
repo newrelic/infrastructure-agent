@@ -36,6 +36,13 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
+      - name: Monitor Memory and CPU Usage
+        run: |
+          echo "Memory usage before running the JAR file:"
+          free -h
+          echo "CPU usage before running the JAR file:"
+          top -b -n 1 | head -n 10
+
       # Step 4: Run Extracted Binary
       - name: Run Extracted JAR
         env:
