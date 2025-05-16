@@ -13,14 +13,16 @@ jobs:
       # Step 1: Check out the repository
       - name: Checkout Repository
         uses: actions/checkout@v3
-        
+
       - name: Debug Environment Variables
         env:
           API_KEY: ${{ secrets.A2Q_API_KEY }}
           ACCOUNT_ID: ${{ secrets.A2Q_ACCOUNT_ID }}
+          LICENSE_KEY: ${{ secrets.A2Q_LICENSE_KEY }}
         run: |
-          echo "ACCOUNT_ID: $ACCOUNT_ID"
-          echo "API_KEY: ${API_KEY:0:5}******" # Mask the API key for security
+          echo "ACCOUNT_ID: ${ACCOUNT_ID:0:5}******" # Mask the account ID for security
+          echo "API_KEY: ${API_KEY:0:10}******" # Mask the API key for security
+          echo "LICENSE_KEY: ${LICENSE_KEY:0:10}******" # Mask the license key for security
 
       - name: Test NRQL Query
         env:
