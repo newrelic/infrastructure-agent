@@ -31,14 +31,14 @@ jobs:
           ls -l ./extracted-app
 
       # Step 4: Run Extracted Binary
-      - name: Run Extracted Binary
+      - name: Run Extracted JAR
         env:
           ACCOUNT_ID: ${{ secrets.A2Q_ACCOUNT_ID }}
           API_KEY: ${{ secrets.A2Q_API_KEY }}
           LICENSE_KEY: ${{ secrets.A2Q_LICENSE_KEY }}
         run: |
-          chmod +x ./extracted-app/your-binary
-          ./extracted-app/your-binary \
+          echo "Running the extracted JAR file..."
+          java -jar ./extracted-app/validations-core-standalone.jar \
             --json \
             definition.location.file=./test/a2q/systemSampleTests.yml \
             definition.var.accountId=$ACCOUNT_ID \
