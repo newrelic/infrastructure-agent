@@ -25,6 +25,11 @@ jobs:
           docker cp $container_id:/app ./extracted-app
           docker rm $container_id
 
+      - name: List Extracted Files
+        run: |
+          echo "Listing files in ./extracted-app:"
+          ls -l ./extracted-app
+
       # Step 4: Run Extracted Binary
       - name: Run Extracted Binary
         env:
