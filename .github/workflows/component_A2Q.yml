@@ -26,10 +26,16 @@ jobs:
 
 
       # Step 3: Test Connectivity to Metric Endpoint
-      - name: Test Connectivity to Metric Endpoint
+      - name: Debug Metric Endpoint Response
+        env:
+          LICENSE_KEY: ${{ secrets.A2Q_LICENSE_KEY }}
         run: |
-          echo "Testing connectivity to https://otlp.nr-data.net:4317/metric/v1..."
-          curl -v https://otlp.nr-data.net:4317/metric/v1 || echo "Failed to connect to Metric endpoint"
+          echo "Testing connectivity to Metric endpoint with full response..."
+          curl -v https://otlp.nr-data.net:4317/metric/v1 \
+            -H "Authorization: Bearer $LICENSE_KEY" \
+            -o response.json || echo "Failed to connect to Metric endpoint"
+          echo "Response:"
+          cat response.json
 
       # Step 4: Test Connectivity to Events Endpoint
       - name: Test Connectivity to Events Endpoint
