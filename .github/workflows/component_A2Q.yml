@@ -50,12 +50,12 @@ jobs:
       - name: Run Docker Container
         env:
           ACCOUNT_ID: ${{ secrets.A2Q_ACCOUNT_ID }}
-          API_KEY: ${{ secrets.A2Q_API_KEY }}       
+          API_KEY: ${{ secrets.A2Q_API_KEY }}
           LICENSE_KEY: ${{ secrets.A2Q_LICENSE_KEY }}
         run: |
           for file in $(find ./test/a2q -type f -name "*.yml"); do
             echo "Processing file: $file"
-            docker run -v ./test/a2q:/a2q --rm mbolla651/a2qtest:amd64 \
+            docker run --name a2qtest-container -v ./test/a2q:/a2q --rm mbolla651/a2qtest:amd64 \
               --json \
               definition.location.file=/a2q/$(basename $file) \
               definition.var.accountId=$ACCOUNT_ID \
@@ -66,5 +66,5 @@ jobs:
               definition.secret.apiKey=$API_KEY \
               result.newrelic.accountId=$ACCOUNT_ID \
               result.newrelic.licenseKey=$LICENSE_KEY \
-              result.newrelic.env=US
+              result.newrelic.env=US || docker logs a2qtest-container
           done
