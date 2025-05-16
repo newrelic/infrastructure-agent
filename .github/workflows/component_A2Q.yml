@@ -10,35 +10,49 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Set up the environment
-      - name: Set up Environment Variables
-        env:
-          NEW_RELIC_API_KEY: ${{ secrets.NEW_RELIC_API_KEY }}
-          ACCOUNT_ID: ${{ secrets.NEW_RELIC_ACCOUNT_ID }}
-        run: |
-          echo "Environment variables set."
+      # Step 1: Check out the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-      # Step 2: Run NRQL Query
-      - name: Run NRQL Query
-        env:
-          NEW_RELIC_API_KEY: ${{ secrets.NEW_RELIC_API_KEY }}
-          ACCOUNT_ID: ${{ secrets.NEW_RELIC_ACCOUNT_ID }}
-        run: |
-          echo "Running NRQL query in New Relic..."
-          curl -X POST https://api.newrelic.com/graphql \
-            -H "Content-Type: application/json" \
-            -H "API-Key: $NEW_RELIC_API_KEY" \
-            --data '{
-              "query": "{
-                actor {
-                  account(id: '$ACCOUNT_ID') {
-                    nrql(query: \"SELECT count(*) FROM Transaction SINCE 30 minutes ago\") {
-                      results
-                    }
-                  }
-                }
-              }"
-            }' > nrql_response.json
+      # Step 2: Pull Docker Image
+      - name: Pull Docker Image
+        run: docker pull mbolla651/a2qtest:amd64
 
-          echo "NRQL Query Response:"
-          cat nrql_response.json
+      # Step 3: Extract Docker Image
+      - name: Extract Docker Image
+        run: |
+          container_id=$(docker create mbolla651/a2qtest:amd64)
+          docker cp $container_id:/app ./extracted-app
+          docker rm $container_id
+
+      - name: List Extracted Files
+        run: |
+          echo "Listing files in ./extracted-app:"
+          ls -l ./extracted-app
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      # Step 4: Run Extracted Binary
+      - name: Run Extracted JAR
+        env:
+          ACCOUNT_ID: ${{ secrets.A2Q_ACCOUNT_ID }}
+          API_KEY: ${{ secrets.A2Q_API_KEY }}
+          LICENSE_KEY: ${{ secrets.A2Q_LICENSE_KEY }}
+        run: |
+          echo "Running the extracted JAR file..."
+          java -jar ./extracted-app/validations-core-standalone.jar \
+            --json \
+            definition.location.file=./test/a2q/systemSampleTests.yml \
+            definition.var.accountId=$ACCOUNT_ID \
+            definition.var.nrEnv=STG \
+            definition.var.sutEnvironment=STG \
+            definition.var.display_name_previous=madhu-newrelic-agent-1.63.0 \
+            definition.var.display_name_current=madhu-newrelic-agent-1.63.1 \
+            definition.secret.apiKey=$API_KEY \
+            result.newrelic.accountId=$ACCOUNT_ID \
+            result.newrelic.licenseKey=$LICENSE_KEY \
+            result.newrelic.env=STG
