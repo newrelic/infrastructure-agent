@@ -48,6 +48,7 @@ jobs:
 
       # Step 4: Run the Docker container
       - name: Run Docker Container
+        timeout-minutes: 15
         env:
           ACCOUNT_ID: ${{ secrets.A2Q_ACCOUNT_ID }}
           API_KEY: ${{ secrets.A2Q_API_KEY }}
