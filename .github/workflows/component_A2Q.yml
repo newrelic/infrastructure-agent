@@ -30,6 +30,12 @@ jobs:
           echo "Listing files in ./extracted-app:"
           ls -l ./extracted-app
 
+      - name: Set up Java 21
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
       # Step 4: Run Extracted Binary
       - name: Run Extracted JAR
         env:
