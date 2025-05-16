@@ -26,18 +26,21 @@ jobs:
 
 
       # Step 3: Test Connectivity to Metric Endpoint
-      - name: Debug Metric Endpoint Response
+      - name: Debug Metric Endpoint Response in Container
         env:
           LICENSE_KEY: ${{ secrets.A2Q_LICENSE_KEY }}
         run: |
-          echo "Testing connectivity to Metric endpoint with full response..."
-          curl -v -X POST https://otlp.nr-data.net:4317/metric/v1 \
-            -H "Authorization: Bearer $LICENSE_KEY" \
-            -H "Content-Type: application/json" \
-            --data '{"metrics": []}' \
-            -o response.json || echo "Failed to connect to Metric endpoint"
-          echo "Response:"
-          cat response.json
+          docker run --rm --name debug-metric-endpoint-container curlimages/curl:latest \
+            sh -c "
+              echo 'Testing connectivity to Metric endpoint with full response...';
+              curl -v -X POST https://otlp.nr-data.net:4317/metric/v1 \
+                -H 'Authorization: Bearer $LICENSE_KEY' \
+                -H 'Content-Type: application/json' \
+                --data '{\"metrics\": []}' \
+                -o response.json || echo 'Failed to connect to Metric endpoint';
+              echo 'Response:';
+              cat response.json
+            "
 
       # Step 4: Test Connectivity to Events Endpoint
       - name: Test Connectivity to Events Endpoint
