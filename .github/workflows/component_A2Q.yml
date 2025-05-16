@@ -31,8 +31,10 @@ jobs:
           LICENSE_KEY: ${{ secrets.A2Q_LICENSE_KEY }}
         run: |
           echo "Testing connectivity to Metric endpoint with full response..."
-          curl -v https://otlp.nr-data.net:4317/metric/v1 \
+          curl -v -X POST https://otlp.nr-data.net:4317/metric/v1 \
             -H "Authorization: Bearer $LICENSE_KEY" \
+            -H "Content-Type: application/json" \
+            --data '{"metrics": []}' \
             -o response.json || echo "Failed to connect to Metric endpoint"
           echo "Response:"
           cat response.json
