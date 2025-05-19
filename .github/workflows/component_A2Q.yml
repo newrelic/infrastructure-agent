@@ -7,12 +7,22 @@ on:
 
 jobs:
   run-docker_1:
-    runs-on: ubuntu-22.04-arm64
+    runs-on: ubuntu-latest
 
     steps:
       # Step 1: Check out the repository
       - name: Checkout Repository
         uses: actions/checkout@v3
+
+      - name: Install Oracle Java 23
+        run: |
+          echo "Downloading and installing Oracle Java 23..."
+          wget -q --no-check-certificate -O jdk-23.tar.gz https://download.oracle.com/java/23/latest/jdk-23_linux-x64_bin.tar.gz
+          mkdir -p /usr/lib/jvm
+          tar -xzf jdk-23.tar.gz -C /usr/lib/jvm
+          export JAVA_HOME=/usr/lib/jvm/jdk-23
+          export PATH=$JAVA_HOME/bin:$PATH
+          java -version
 
       # Step 2: Log in to Docker Hub
       - name: Log in to Docker Hub
@@ -23,7 +33,7 @@ jobs:
 
       # Step 3: Pull the Docker image
       - name: Pull Docker Image
-        run: docker pull mbolla651/a2qtest:latest 
+        run: docker pull mbolla651/a2qtest:amd64 
 
       # Step 4: Run the Docker container
       - name: Run Docker Container
@@ -34,7 +44,7 @@ jobs:
         run: |
           for file in $(find ./test/a2q -type f -name "*.yml"); do
             echo "Processing file: $file"
-            docker run -v ./test/a2q:/a2q --rm mbolla651/a2qtest:latest \
+            docker run -v ./test/a2q:/a2q --rm mbolla651/a2qtest:amd64 \
               --json \
               definition.location.file=/a2q/$(basename $file) \
               definition.var.accountId=$ACCOUNT_ID \
