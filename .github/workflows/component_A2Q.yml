@@ -14,16 +14,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Install Oracle Java 23
-        run: |
-          echo "Downloading and installing Oracle Java 23..."
-          wget -q --no-check-certificate -O jdk-23.tar.gz https://download.oracle.com/java/23/archive/jdk-23.0.2_linux-x64_bin.tar.gz
-          mkdir -p /usr/lib/jvm
-          tar -xzf jdk-23.tar.gz -C /usr/lib/jvm
-          export JAVA_HOME=/usr/lib/jvm/jdk-23
-          export PATH=$JAVA_HOME/bin:$PATH
-          java -version
-
       # Step 2: Log in to Docker Hub
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
@@ -35,6 +25,14 @@ jobs:
       - name: Pull Docker Image
         run: docker pull mbolla651/a2qtest:amd64 
 
+      # Step 5: Create a custom Docker bridge network
+      - name: Create Custom Docker Network
+        run: docker network create my_custom_network
+
+      # Step 6: Inspect the custom Docker network
+      - name: Inspect Custom Docker Network
+        run: docker network inspect my_custom_network
+
       # Step 4: Run the Docker container
       - name: Run Docker Container
         env:
@@ -44,7 +42,7 @@ jobs:
         run: |
           for file in $(find ./test/a2q -type f -name "*.yml"); do
             echo "Processing file: $file"
-            docker run -v ./test/a2q:/a2q --rm mbolla651/a2qtest:amd64 \
+            docker run -v --network my_custom_network ./test/a2q:/a2q --rm mbolla651/a2qtest:amd64 \
               --json \
               definition.location.file=/a2q/$(basename $file) \
               definition.var.accountId=$ACCOUNT_ID \
@@ -57,3 +55,5 @@ jobs:
               result.newrelic.licenseKey=$LICENSE_KEY \
               result.newrelic.env=US
           done
+      - name: Remove Custom Docker Network
+        run: docker network rm my_custom_network
