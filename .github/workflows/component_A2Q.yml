@@ -17,7 +17,7 @@ jobs:
       - name: Install Oracle Java 23
         run: |
           echo "Downloading and installing Oracle Java 23..."
-          wget -q --no-check-certificate -O jdk-23.tar.gz https://download.oracle.com/java/23/latest/jdk-23_linux-x64_bin.tar.gz
+          wget -q --no-check-certificate -O jdk-23.tar.gz https://download.oracle.com/java/23/archive/jdk-23.0.2_linux-x64_bin.tar.gz
           mkdir -p /usr/lib/jvm
           tar -xzf jdk-23.tar.gz -C /usr/lib/jvm
           export JAVA_HOME=/usr/lib/jvm/jdk-23
