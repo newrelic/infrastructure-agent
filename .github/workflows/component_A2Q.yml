@@ -42,7 +42,7 @@ jobs:
         run: |
           for file in $(find ./test/a2q -type f -name "*.yml"); do
             echo "Processing file: $file"
-            docker run -v --network my_custom_network ./test/a2q:/a2q --rm mbolla651/a2qtest:amd64 \
+            docker run --network my_custom_network -v ./test/a2q:/a2q --rm mbolla651/a2qtest:amd64 \
               --json \
               definition.location.file=/a2q/$(basename $file) \
               definition.var.accountId=$ACCOUNT_ID \
