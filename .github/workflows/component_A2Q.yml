@@ -10,6 +10,15 @@ jobs:
     runs-on: macos-latest
 
     steps:
+      - name: Install Docker
+        run: |
+          brew install --cask docker
+          open /Applications/Docker.app
+          while ! docker system info > /dev/null 2>&1; do
+            echo "Waiting for Docker to start..."
+            sleep 5
+          done
+          
       # Step 1: Check out the repository
       - name: Checkout Repository
         uses: actions/checkout@v3
