@@ -33,6 +33,15 @@ jobs:
       - name: Inspect Custom Docker Network
         run: docker network inspect my_custom_network
 
+      # Step 6: Test Connectivity to New Relic
+      - name: Test Connectivity to New Relic
+        run: curl -I https://api.newrelic.com
+
+      # Step 7: Debug Connectivity from Container
+      - name: Debug Connectivity from Container
+        run: |
+          docker run --rm --network my_custom_network mbolla651/a2qtest:amd64 curl -I https://api.newrelic.com
+
       # Step 4: Run the Docker container
       - name: Run Docker Container
         env:
