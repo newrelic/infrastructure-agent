@@ -6,19 +6,22 @@ on:
       - '**'
 
 jobs:
-  run-docker_1:
-    runs-on: macos-latest
+  run-docker-arm:
+    runs-on: ubuntu-latest  # Use Ubuntu runner (AMD64)
     steps:
+      # Step 1: Set up QEMU for ARM emulation
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: linux/arm64
+
+      # Step 2: Set up Docker Buildx for multi-architecture support
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
       # Step 1: Check out the repository
       - name: Checkout Repository
         uses: actions/checkout@v3
-
-      # Step 2: Print System Architecture
-      - name: Print System Architecture
-        run: |
-          echo "System Architecture:"
-          uname -m  # Prints the architecture (e.g., arm64 or x86_64)
-          arch      # Another way to print the architecture
 
       # Step 2: Log in to Docker Hub
       - name: Log in to Docker Hub
@@ -29,7 +32,7 @@ jobs:
 
       # Step 3: Pull the Docker image
       - name: Pull Docker Image
-        run: docker pull mbolla651/a2qtest:latest 
+        run: docker pull --platform linux/arm64 mbolla651/a2qtest:latest 
 
       # Step 4: Run the Docker container
       - name: Run Docker Container
@@ -40,7 +43,7 @@ jobs:
         run: |
           for file in $(find ./test/a2q -type f -name "*.yml"); do
             echo "Processing file: $file"
-            docker run -v ./test/a2q:/a2q --rm mbolla651/a2qtest:latest \
+            docker run --platform linux/arm64 -v ./test/a2q:/a2q --rm mbolla651/a2qtest:latest \
               --json \
               definition.location.file=/a2q/$(basename $file) \
               definition.var.accountId=$ACCOUNT_ID \
