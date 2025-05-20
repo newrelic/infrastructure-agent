@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: TestSuite
+metadata:
+  name: ContainerSample - MELT
+  namespace: infra-agent
+  team: OHAI
+  owningTeam: OHAI
+  environment: ${var.sutEnvironment}
+  x-category: melt
+  x-period: 5m
+spec:
+  tests:
+    - nrql: "FROM ContainerSample SELECT agentName WHERE reportingAgent = '${var.display_name_current}' LIMIT 1"
+      name: Check agent name current
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "agentName"
+          equals: "Infrastructure"
+    - nrql: "FROM ContainerSample SELECT agentName WHERE reportingAgent = '${var.display_name_previous}' LIMIT 1"
+      name: Check agent name previous
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "agentName"
+          equals: "Infrastructure"
+    - nrql: "SELECT filter(uniquecount(containerId), WHERE reportingAgent = '${var.display_name_current}') - filter(uniquecount(containerId), WHERE reportingAgent = '${var.display_name_previous}') AS 'Container Count Difference' FROM ContainerSample WHERE reportingAgent IN ('${var.display_name_previous}', '${var.display_name_current}')"
+      name: Container Count Difference
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "['Container Count Difference']"
+          equals: 0
