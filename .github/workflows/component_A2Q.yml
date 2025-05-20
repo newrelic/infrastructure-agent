@@ -8,20 +8,17 @@ on:
 jobs:
   run-docker_1:
     runs-on: macos-latest
-
     steps:
-      - name: Install Docker
-        run: |
-          brew install --cask docker
-          open /Applications/Docker.app
-          while ! docker system info > /dev/null 2>&1; do
-            echo "Waiting for Docker to start..."
-            sleep 5
-          done
-          
       # Step 1: Check out the repository
       - name: Checkout Repository
         uses: actions/checkout@v3
+
+      # Step 2: Print System Architecture
+      - name: Print System Architecture
+        run: |
+          echo "System Architecture:"
+          uname -m  # Prints the architecture (e.g., arm64 or x86_64)
+          arch      # Another way to print the architecture
 
       # Step 2: Log in to Docker Hub
       - name: Log in to Docker Hub
