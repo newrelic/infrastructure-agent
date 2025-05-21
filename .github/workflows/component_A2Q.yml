@@ -1,0 +1,31 @@
+name: Run Docker Image Every 5 Minutes
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  run-docker-arm:
+    runs-on: ubuntu-latest  # Use Ubuntu runner (AMD64)
+    steps:
+      # Step 1: Check out the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      # Step 2: Log in to Docker Hub
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      # Step 3: Pull the Docker image
+      - name: Pull Docker Image
+        run: |
+          docker pull mbolla651/a2q-test-runner:amd64
+
+      # Step 4: Run the Docker container
+      - name: Run Docker Container
+        run: |
+          docker run --rm mbolla651/a2q-test-runner:amd64
