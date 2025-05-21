@@ -23,9 +23,9 @@ jobs:
       # Step 3: Pull the Docker image
       - name: Pull Docker Image
         run: |
-          docker pull mbolla651/a2q-test-runner:latest
+          docker pull mbolla651/a2q-test-runner:amd64
 
       # Step 4: Run the Docker container
       - name: Run Docker Container
         run: |
-          docker run --rm mbolla651/a2q-test-runner:latest
+          docker run --rm mbolla651/a2q-test-runner:amd64
