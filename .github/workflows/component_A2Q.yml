@@ -9,16 +9,6 @@ jobs:
   run-docker-arm:
     runs-on: ubuntu-latest  # Use Ubuntu runner (AMD64)
     steps:
-      # Step 1: Set up QEMU for ARM emulation
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-        with:
-          platforms: linux/arm64
-
-      # Step 2: Set up Docker Buildx for multi-architecture support
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
       # Step 1: Check out the repository
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -32,27 +22,10 @@ jobs:
 
       # Step 3: Pull the Docker image
       - name: Pull Docker Image
-        run: docker pull --platform linux/arm64 mbolla651/a2qtest:latest 
+        run: |
+          docker pull mbolla651/a2q-test-runner:latest
 
       # Step 4: Run the Docker container
       - name: Run Docker Container
-        env:
-          ACCOUNT_ID: ${{ secrets.A2Q_ACCOUNT_ID }}
-          API_KEY: ${{ secrets.A2Q_API_KEY }}       
-          LICENSE_KEY: ${{ secrets.A2Q_LICENSE_KEY }}
         run: |
-          for file in $(find ./test/a2q -type f -name "*.yml"); do
-            echo "Processing file: $file"
-            docker run --platform linux/arm64 -v ./test/a2q:/a2q --rm mbolla651/a2qtest:latest \
-              --json \
-              definition.location.file=/a2q/$(basename $file) \
-              definition.var.accountId=$ACCOUNT_ID \
-              definition.var.nrEnv=US \
-              definition.var.sutEnvironment=US \
-              definition.var.display_name_previous=madhu-newrelic-agent-1.63.0 \
-              definition.var.display_name_current=madhu-newrelic-agent-1.63.1 \
-              definition.secret.apiKey=$API_KEY \
-              result.newrelic.accountId=$ACCOUNT_ID \
-              result.newrelic.licenseKey=$LICENSE_KEY \
-              result.newrelic.env=US
-          done
+          docker run --rm mbolla651/a2q-test-runner:latest
