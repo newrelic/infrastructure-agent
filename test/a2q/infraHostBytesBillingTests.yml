@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: TestSuite
+metadata:
+  name: InfraHostBytes - Billing
+  namespace: infra-agent
+  team: OHAI
+  owningTeam: OHAI
+  environment: ${var.sutEnvironment}
+  x-category: billing
+  x-period: 60m
+spec:
+  tests:
+    - name: NrConsumption increase
+      nrql: "SELECT filter(rate(sum(BytesIngested), 1 hour), usageMetric = 'InfraHostBytes') AS infraEvents, filter(rate(sum(BytesIngested), 1 hour), usageMetric = 'InfraProcessBytes') AS infraProcessBytes, filter(rate(sum(BytesIngested), 1 hour), usageMetric = 'InfraIntegrationBytes') AS infraIntegrationBytes, filter(rate(sum(BytesIngested), 1 hour), usageMetric = 'LoggingBytes') AS logging FROM NrConsumption WHERE usageMetric IN ('InfraHostBytes', 'InfraProcessBytes', 'InfraIntegrationBytes', 'LoggingBytes') SINCE ${var.sinceHours} HOURS AGO UNTIL ${var.untilHours} HOURS AGO"
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "infraEvents"
+          lessEquals: ${var.infraEventsIncreaseThreshold}
+        - fields: "infraProcessBytes"
+          lessEquals: ${var.infraProcessIncreaseThreshold}
+        - fields: "infraIntegrationBytes"
+          lessEquals: ${var.infraIntegrationIncreaseThreshold}
+        - fields: "logging"
+          lessEquals: ${var.loggingIncreaseThreshold}
+    - name: TDP Usage increase
+      nrql: "select filter(rate(sum(tdp.usage), 1 hour), usage.category = 'InfraHost') AS infraEvents, filter(rate(sum(tdp.usage), 1 hour), usage.category = 'InfraProcess') AS infraProcess, filter(rate(sum(tdp.usage), 1 hour), usage.category = 'InfraIntegration') AS infraIntegration, filter(rate(sum(tdp.usage), 1 hour), usage.category = 'Logging') AS logging FROM Metric WHERE account = ${var.accountId} AND usage.category IN ('InfraHost', 'InfraProcess', 'InfraIntegration', 'Logging') SINCE '${var.sinceStartTime}' UNTIL '${var.sinceEndTime}'"
+      account: ${var.accountIdTdpUsage}
+      apiKey: ${secret.apiKeyTdpUsage}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: infraEvents
+          lessEquals: ${var.infraEventsIncreaseThreshold}
+        - fields: infraProcessBytes
+          lessEquals: ${var.infraProcessIncreaseThreshold}
+        - fields: infraIntegrationBytes
+          lessEquals: ${var.infraIntegrationIncreaseThreshold}
+        - fields: logging
+          lessEquals: ${var.loggingIncreaseThreshold}
+    - name: NrConsumption decrease
+      nrql: "SELECT filter(rate(sum(BytesIngested), 1 hour), usageMetric = 'InfraHostBytes') AS infraEvents, filter(rate(sum(BytesIngested), 1 hour), usageMetric = 'InfraProcessBytes') AS infraProcessBytes, filter(rate(sum(BytesIngested), 1 hour), usageMetric = 'InfraIntegrationBytes') AS infraIntegrationBytes, filter(rate(sum(BytesIngested), 1 hour), usageMetric = 'LoggingBytes') AS logging FROM NrConsumption WHERE usageMetric IN ('InfraHostBytes', 'InfraProcessBytes', 'InfraIntegrationBytes', 'LoggingBytes') SINCE ${var.sinceHours} HOURS AGO UNTIL ${var.untilHours} HOURS AGO"
+      account: ${var.accountId}
+      apiKey: ${secret.apiKey}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: "infraEvents"
+          greaterThan: ${var.infraEventsDecreaseThreshold}
+        - fields: "infraProcessBytes"
+          greaterThan: ${var.infraProcessDecreaseThreshold}
+        - fields: "infraIntegrationBytes"
+          greaterThan: ${var.infraIntegrationDecreaseThreshold}
+        - fields: "logging"
+          greaterThan: ${var.loggingDecreaseThreshold}
+    - name: TDP Usage decrease
+      nrql: "select filter(rate(sum(tdp.usage), 1 hour), usage.category = 'InfraHost') AS infraEvents, filter(rate(sum(tdp.usage), 1 hour), usage.category = 'InfraProcess') AS infraProcessBytes, filter(rate(sum(tdp.usage), 1 hour), usage.category = 'InfraIntegration') AS infraIntegration, filter(rate(sum(tdp.usage), 1 hour), usage.category = 'Logging') AS logging FROM Metric WHERE account = ${var.accountId} AND usage.category IN ('InfraHost', 'InfraProcess', 'InfraIntegration', 'Logging') SINCE '${var.sinceStartTime}' UNTIL '${var.sinceEndTime}'"
+      account: ${var.accountIdTdpUsage}
+      apiKey: ${secret.apiKeyTdpUsage}
+      nrEnv: ${var.nrEnv}
+      assertions:
+        - fields: infraEvents
+          greaterEquals: ${var.infraEventsDecreaseThreshold}
+        - fields: infraProcessBytes
+          greaterEquals: ${var.infraProcessDecreaseThreshold}
+        - fields: infraIntegrationBytes
+          greaterEquals: ${var.infraIntegrationDecreaseThreshold}
+        - fields: logging
+          greaterEquals: ${var.loggingDecreaseThreshold}
