@@ -44,6 +44,7 @@ endif
 	TF_VAR_windows_password="$(ANSIBLE_PASSWORD_WINDOWS)" \
 	TF_VAR_nr_license_key="$(NR_LICENSE_KEY)" \
 	TF_VAR_inventory_output="$(INVENTORY_OUTPUT)" \
+	TF_VAR_is_A2Q="$(IS_A2Q)" \
 	terraform -chdir=$(TERRAFORM_DIR) apply -auto-approve
 
 .PHONY: clean

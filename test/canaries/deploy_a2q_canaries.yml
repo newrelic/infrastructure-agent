@@ -1,0 +1,56 @@
+---
+# Linux
+- name: A2Q canaries
+  hosts: testing_hosts_linux
+  become: true
+  gather_facts: yes
+
+  tasks:
+    - name: 🐤 Canaries A2Q
+      ansible.builtin.include_vars:
+        file: "vars/{{ inventory_hostname | regex_search('config[1-9]|config10') }}.yml"
+
+    - block:
+        - name: install latest agent on host
+          ansible.builtin.include_role:
+            name: caos.ansible_roles.infra_agent
+          vars:
+            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
+            nr_license_key: "{{ nr_license_key_a2q_1 }}"
+        - name: install latest agent in container
+          ansible.builtin.include_role:
+            name: caos.ansible_roles.infra_agent
+          vars:
+            is_containerized: true
+            target_version: "{{ current_version }}-rc"
+            display_name: "{{ inventory_hostname }}-current"
+            nr_license_key: "{{ nr_license_key_a2q_1 }}"
+
+        - name: install previous agent in container
+          ansible.builtin.include_role:
+            name: caos.ansible_roles.infra_agent
+          vars:
+            is_containerized: true
+            target_version: "{{ previous_version }}"
+            display_name: "{{ inventory_hostname }}-previous"
+            nr_license_key: "{{ nr_license_key_a2q_2 }}"
+
+
+# Windows
+- name: installation-agent-no-clean
+  hosts: testing_hosts_windows
+  gather_facts: yes
+
+  tasks:
+    - name: 🐤 Canaries A2Q
+      ansible.builtin.include_vars:
+        file: "vars/{{ inventory_hostname | regex_search('config[1-9]|config10') }}.yml"
+    - name: Installation tests suite
+      block:
+        - name: install agent
+          include_role:
+            name: caos.ansible_roles.infra_agent
+          vars:
+            target_version: "{{ current_version }}"
+            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
+...
