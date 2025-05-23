@@ -91,7 +91,7 @@ jobs:
         run: |
           echo "PREVIOUS_TERRAFORM_STATE=canaries-${{ inputs.PLATFORM }}-${{ env.PREVIOUS_NR_VERSION }}"  >> $GITHUB_ENV
           echo "TERRAFORM_STATE=canaries-${{ inputs.PLATFORM }}-${{ inputs.TAG }}"  >> $GITHUB_ENV
-          echo "INVENTORY_OUTPUT=/srv/runner/inventory/canary-${{ inputs.TAG }}-${{ inputs.PLATFORM }}-inventory.ec2"  >> $GITHUB_ENV
+          echo "INVENTORY_OUTPUT=/srv/runner/inventory/A2Q-canary-${{ inputs.TAG }}-${{ inputs.PLATFORM }}-inventory.ec2"  >> $GITHUB_ENV
 
       - name: Provision instances ${{ inputs.PLATFORM }}
         uses: newrelic/fargate-runner-action@main

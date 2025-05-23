@@ -1,34 +1,16 @@
 name: . 🐤 A2Q Canaries
 
-on:
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Tag to test'
-        required: true
-      linux:
-        description: '🐧 Should create canaries for Linux?'
-        type: boolean
-        default: true
-        required: false
-      windows:
-        description: '🪟 Should create canaries for Windows?'
-        type: boolean
-        default: true
-        required: false
-      prune:
-        description: '💥 Should prune previous canaries?'
-        type: boolean
-        default: true
-        required: false
-
-run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
+run-name: ${{ github.actor }} is setting up canaries for A2Q 🚀
+on: [push]
 jobs:
-  Explore-GitHub-Actions:
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "🖥️ The workflow is now ready to test your code on the runner."
-      - name: List files in the repository
-        run: |
-          ls ${{ github.workspace }}
-      - run: echo "🍏 This job's status is ${{ job.status }}."
+  create-A2Q-linux-canaries:
+    uses: ./.github/workflows/component_canaries.yml
+    with:
+      PLATFORM: "linux"
+      TAG: 1.64.0
+    secrets:
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+      CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
+      CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
+      CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}
+    
