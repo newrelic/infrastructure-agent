@@ -13,6 +13,6 @@ jobs:
       # Step 1: Trigger the webhook using curl
       - name: Trigger Webhook
         run: |
-          curl -X POST https://drug-committed-languages-inspired.trycloudflare.com/trigger \
+          curl -X POST https://motels-appeared-allied-premium.trycloudflare.com/trigger \
             -H "Content-Type: application/json" \
             -d '{"key": "value"}'
