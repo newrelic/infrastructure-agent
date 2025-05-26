@@ -1,4 +1,4 @@
-name: Run Docker Image Every 5 Minutes
+name: Trigger Webhook
 
 on:
   push:
@@ -6,26 +6,13 @@ on:
       - '**'
 
 jobs:
-  run-docker-arm:
-    runs-on: ubuntu-latest  # Use Ubuntu runner (AMD64)
+  trigger-webhook:
+    runs-on: ubuntu-latest
+
     steps:
-      # Step 1: Check out the repository
-      - name: Checkout Repository
-        uses: actions/checkout@v3
-
-      # Step 2: Log in to Docker Hub
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-
-      # Step 3: Pull the Docker image
-      - name: Pull Docker Image
+      # Step 1: Trigger the webhook using curl
+      - name: Trigger Webhook
         run: |
-          docker pull mbolla651/a2q-test-runner:amd64
-
-      # Step 4: Run the Docker container
-      - name: Run Docker Container
-        run: |
-          docker run --rm mbolla651/a2q-test-runner:amd64
+          curl -X POST https://drug-committed-languages-inspired.trycloudflare.com/trigger \
+            -H "Content-Type: application/json" \
+            -d '{"key": "value"}'
