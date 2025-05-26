@@ -31,7 +31,7 @@
           vars:
             is_containerized: true
             target_version: "{{ current_version }}-rc"
-            display_name: "{{ inventory_hostname }}-current"
+            display_name: "{{ inventory_hostname }}-current-a2q"
             fips_enabled: "{{ '-fips' in inventory_hostname }}"
 
         - name: install previous agent in container
@@ -40,7 +40,7 @@
           vars:
             is_containerized: true
             target_version: "{{ previous_version }}"
-            display_name: "{{ inventory_hostname }}-previous"
+            display_name: "{{ inventory_hostname }}-previous-a2q"
             fips_enabled: "{{ '-fips' in inventory_hostname }}"
 
 # Windows

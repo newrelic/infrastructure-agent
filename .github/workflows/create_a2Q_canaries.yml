@@ -7,7 +7,7 @@ jobs:
     uses: ./.github/workflows/component_canaries.yml
     with:
       PLATFORM: "linux"
-      TAG: 1.64.0
+      TAG: 1.62.0
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
       CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
