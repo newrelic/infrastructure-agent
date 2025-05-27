@@ -4,7 +4,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -36,6 +38,11 @@ import (
 //	fi;
 // done
 
+// PurgeCacheRequest defines the structure for the request body to purge cache
+type PurgeCacheRequest struct {
+	PurgeEverything bool `json:"purge_everything"`
+}
+
 type result struct {
 	output s3.GetObjectOutput
 	err    error
@@ -45,7 +52,7 @@ const (
 	defaultBucket = "nr-downloads-ohai-staging"
 	defaultRegion = "us-east-1"
 	// more keys could be added if issues arise
-	fastlyPurgeURL             = "https://api.fastly.com/service/2RMeBJ1ZTGnNJYvrWMgQhk/purge_all"
+	cloudfarePurgeURL          = "https://api.cloudflare.com/client/v4/zones/ac389f8f109894ed5e2aeb2d8af3d6ce/purge_cache"
 	replicationStatusCompleted = "COMPLETED" // in s3.ReplicationStatusComplete is set to COMPLETE, which is wrong
 	aptDistributionsPath       = "infrastructure_agent/linux/apt/dists/"
 	aptDistributionPackageFile = "main/binary-amd64/Packages.bz2"
@@ -54,10 +61,10 @@ const (
 )
 
 var (
-	bucket, region, keysStr, fastlyKey string
-	timeoutS3, timeoutCDN              time.Duration
-	attempts                           int
-	verbose                            bool
+	bucket, region, keysStr, cloudfareKey string
+	timeoutS3, timeoutCDN                 time.Duration
+	attempts                              int
+	verbose                               bool
 )
 
 func init() {
@@ -74,9 +81,9 @@ func main() {
 	flag.Parse()
 
 	var ok bool
-	fastlyKey, ok = os.LookupEnv("FASTLY_KEY")
+	cloudfareKey, ok = os.LookupEnv("CLOUDFARE_KEY")
 	if !ok {
-		logInfo("missing required env-var FASTLY_KEY")
+		logInfo("missing required env-var CLOUDFARE_KEY")
 		os.Exit(1)
 	}
 
@@ -178,11 +185,27 @@ func purgeCDN(ctx context.Context) error {
 		defer cancelFn()
 	}
 
-	req, err := http.NewRequestWithContext(ctxT, http.MethodPost, fastlyPurgeURL, nil)
+	requestBody := PurgeCacheRequest{
+		PurgeEverything: true,
+	}
+
+	jsonBody, err := json.Marshal(requestBody)
+	if err != nil {
+		fmt.Printf("Error marshaling request body: %v\n", err)
+		return err
+	}
+
+	req, err := http.NewRequestWithContext(ctxT, http.MethodPost, cloudfarePurgeURL, bytes.NewBuffer(jsonBody))
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Fastly-Key", fastlyKey)
+
+	bearerToken := fmt.Sprintf("Bearer %s", cloudfareKey)
+	if bearerToken == "" {
+		return fmt.Errorf("missing required env-var CLOUDFARE_KEY")
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", bearerToken)
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -190,7 +213,7 @@ func purgeCDN(ctx context.Context) error {
 	}
 
 	if res.StatusCode < 200 || res.StatusCode >= 400 {
-		return fmt.Errorf("unexpected Fastly status: %s", res.Status)
+		return fmt.Errorf("unexpected Cloudfare status: %s", res.Status)
 	}
 
 	return nil
