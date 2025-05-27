@@ -1,4 +1,4 @@
-name: Trigger Webhook
+name: Run A2Q Tests
 
 on:
   push:
@@ -6,13 +6,45 @@ on:
       - '**'
 
 jobs:
-  trigger-webhook:
+  run-docker_1:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Trigger the webhook using curl
-      - name: Trigger Webhook
+      # Step 1: Check out the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      # Step 2: Log in to Docker Hub
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      # Step 3: Pull the Docker image
+      - name: Pull Docker Image
+        run: docker pull mbolla651/a2qtest:latest 
+
+      # Step 4: Run the Docker container
+      - name: Run Docker Container
+        env:
+          ACCOUNT_ID: ${{ secrets.A2Q_ACCOUNT_ID }}
+          API_KEY: ${{ secrets.A2Q_API_KEY }}       
+          LICENSE_KEY: ${{ secrets.A2Q_LICENSE_KEY }}
         run: |
-          curl -X POST https://motels-appeared-allied-premium.trycloudflare.com/trigger \
-            -H "Content-Type: application/json" \
-            -d '{"key": "value"}'
+          for file in $(find ./test/a2q -type f -name "*.yml"); do
+            echo "Processing file: $file"
+            docker run -v ./test/a2q:/a2q --rm mbolla651/a2qtest:latest \
+              --json \
+              --public \
+              definition.location.file=/a2q/$(basename $file) \
+              definition.var.accountId=$ACCOUNT_ID \
+              definition.var.nrEnv=US \
+              definition.var.sutEnvironment=US \
+              definition.var.display_name_previous=madhu-newrelic-agent-1.63.0 \
+              definition.var.display_name_current=madhu-newrelic-agent-1.63.1 \
+              definition.secret.apiKey=$API_KEY \
+              result.newrelic.accountId=$ACCOUNT_ID \
+              result.newrelic.licenseKey=$LICENSE_KEY \
+              result.newrelic.env=US
+          done
