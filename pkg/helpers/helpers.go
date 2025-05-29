@@ -370,11 +370,11 @@ func ObfuscateSensitiveDataFromArray(data []string) []string {
 
 //nolint:gochecknoglobals
 var obfuscateRegexes = []*regexp.Regexp{
-	// Match if contains pass|token|cert|auth|key|secret|salt|cred|pw
+	// Match if contains pass|token|cert|auth|key|secret|salt|cred|pw (should not have @ )
 	// and capturing if found the group after one of the separators: ' ', ':', '=' and '"'.
-	regexp.MustCompile(`(?i)(?:pass|token|cert|auth|key|secret|salt|cred|pw)(?:[^\s:="]*)(?:[\s:="]*)([^\s:="]+)?`),
-	// Match password in url http://user:pass@localhost
-	regexp.MustCompile(`(?i)(?:\:\/\/\w+)(?:[\s:="]*)([a-zA-Z0-9]+)(?:[\@])`),
+	regexp.MustCompile(`(?i)(?:pass|token|cert|auth|key|secret|salt|cred|pw)(?:[^\s:=@"]*)(?:[\s:="]*)([^\s:=@"]+)?`),
+	// Match password in url http://user:pass@localhost (should not have @ in password/user as it is breaking url identification in json strings)
+	regexp.MustCompile(`(?i)(?:\:\/\/\w+)(?:[\s:="]*)([a-zA-Z0-9!#$%^&*()_+\-=\[\]{}|;:'",.<>?\/~]+)(?:[@])`),
 }
 
 // ObfuscateSensitiveData is used to detect sensitive data like tokens/passwords etc and
@@ -385,18 +385,16 @@ var obfuscateRegexes = []*regexp.Regexp{
 //	/usr/bin/custom_cmd -pwd 1234 -arg2 abc => /usr/bin/custom_cmd -pwd * -arg2 abc
 func ObfuscateSensitiveData(value string) (matched, isField bool, result string) {
 	result = value
-
 	for _, obfuscateRegex := range obfuscateRegexes {
 
 		matches := obfuscateRegex.FindAllStringSubmatchIndex(result, -1)
-
 		var transforms bytes.Buffer
 
 		lastEndIndex := 0
-
 		for _, indexes := range matches {
 			// Expect array of 4:
 			// start-end indexes of the full match
+			// For array of 4 it's start-end indexes of the full match
 			// start-end indexes of the group 1 (data that should be obfuscated)
 			if len(indexes) != 4 {
 				break
