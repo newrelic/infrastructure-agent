@@ -4,7 +4,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -36,6 +38,11 @@ import (
 //	fi;
 // done
 
+// PurgeCacheRequest defines the structure for the request body to purge cache
+type PurgeCacheRequest struct {
+	PurgeEverything bool `json:"purge_everything"`
+}
+
 type result struct {
 	output s3.GetObjectOutput
 	err    error
@@ -46,6 +53,7 @@ const (
 	defaultRegion = "us-east-1"
 	// more keys could be added if issues arise
 	fastlyPurgeURL             = "https://api.fastly.com/service/2RMeBJ1ZTGnNJYvrWMgQhk/purge_all"
+	cloudfarePurgeURL          = "https://api.cloudflare.com/client/v4/zones/ac389f8f109894ed5e2aeb2d8af3d6ce/purge_cache"
 	replicationStatusCompleted = "COMPLETED" // in s3.ReplicationStatusComplete is set to COMPLETE, which is wrong
 	aptDistributionsPath       = "infrastructure_agent/linux/apt/dists/"
 	aptDistributionPackageFile = "main/binary-amd64/Packages.bz2"
@@ -54,10 +62,10 @@ const (
 )
 
 var (
-	bucket, region, keysStr, fastlyKey string
-	timeoutS3, timeoutCDN              time.Duration
-	attempts                           int
-	verbose                            bool
+	bucket, region, keysStr, fastlyKey, cloudfareKey string
+	timeoutS3, timeoutCDN                            time.Duration
+	attempts                                         int
+	verbose                                          bool
 )
 
 func init() {
@@ -74,6 +82,11 @@ func main() {
 	flag.Parse()
 
 	var ok bool
+	cloudfareKey, ok = os.LookupEnv("CLOUDFARE_KEY")
+	if !ok {
+		logInfo("missing required env-var CLOUDFARE_KEY")
+		os.Exit(1)
+	}
 	fastlyKey, ok = os.LookupEnv("FASTLY_KEY")
 	if !ok {
 		logInfo("missing required env-var FASTLY_KEY")
@@ -105,8 +118,13 @@ func main() {
 		}
 	}
 
-	if err := purgeCDN(ctx); err != nil {
-		logInfo("cannot purge CDN, error: %v", err)
+	if err := purgeCloudFareCDN(ctx); err != nil {
+		logInfo("cannot purge cloudfare CDN, error: %v", err)
+		os.Exit(1)
+	}
+
+	if err := purgeFastlyCDN(ctx); err != nil {
+		logInfo("cannot purge fastly CDN, error: %v", err)
 		os.Exit(1)
 	}
 }
@@ -168,7 +186,51 @@ func waitForKeyReplication(ctx context.Context, key string, cl *s3.S3, triesLeft
 	return nil
 }
 
-func purgeCDN(ctx context.Context) error {
+func purgeCloudFareCDN(ctx context.Context) error {
+	ctxT := ctx
+	var cancelFn func()
+	if timeoutCDN > 0 {
+		ctxT, cancelFn = context.WithTimeout(ctx, timeoutCDN)
+	}
+	if cancelFn != nil {
+		defer cancelFn()
+	}
+
+	requestBody := PurgeCacheRequest{
+		PurgeEverything: true,
+	}
+
+	jsonBody, err := json.Marshal(requestBody)
+	if err != nil {
+		fmt.Printf("Error marshaling request body: %v\n", err)
+		return err
+	}
+
+	req, err := http.NewRequestWithContext(ctxT, http.MethodPost, cloudfarePurgeURL, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return err
+	}
+
+	bearerToken := fmt.Sprintf("Bearer %s", cloudfareKey)
+	if bearerToken == "" {
+		return fmt.Errorf("missing required env-var CLOUDFARE_KEY")
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", bearerToken)
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode < 200 || res.StatusCode >= 400 {
+		return fmt.Errorf("unexpected Cloudfare status: %s", res.Status)
+	}
+
+	return nil
+}
+
+func purgeFastlyCDN(ctx context.Context) error {
 	ctxT := ctx
 	var cancelFn func()
 	if timeoutCDN > 0 {
@@ -182,6 +244,7 @@ func purgeCDN(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
 	req.Header.Set("Fastly-Key", fastlyKey)
 
 	res, err := http.DefaultClient.Do(req)
