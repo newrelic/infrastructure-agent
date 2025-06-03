@@ -1,0 +1,7 @@
+enable_process_metrics: true
+nria_log_level: "smart"
+nria_log_forward: true
+nria_log_rotation_mb: 500
+nria_log_rotation_max_files: 5
+nria_log_rotation_compressed: true
+forward_docker_logs: true

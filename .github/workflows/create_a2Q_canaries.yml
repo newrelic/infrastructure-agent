@@ -4,7 +4,7 @@ run-name: ${{ github.actor }} is setting up canaries for A2Q 🚀
 on: [push]
 jobs:
   create-A2Q-linux-canaries:
-    uses: ./.github/workflows/component_canaries.yml
+    uses: ./test/a2q/a2q_component_canaries.yml
     with:
       PLATFORM: "linux"
       TAG: 1.62.0
