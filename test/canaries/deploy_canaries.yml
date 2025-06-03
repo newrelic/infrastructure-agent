@@ -7,10 +7,10 @@
 
   tasks:
     - name: 🐤Canaries
-      include_vars:
+      ansible.builtin.include_vars:
         file: "vars/{{ inventory_hostname }}.yml"
 
-      block:
+    - block:
 
         - name: install latest agent on host
           ansible.builtin.include_role:
