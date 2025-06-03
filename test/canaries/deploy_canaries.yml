@@ -8,7 +8,7 @@
   tasks:
     - name: 🐤Canaries
       ansible.builtin.include_vars:
-        file: "vars/{{ inventory_hostname }}.yml"
+        file: "vars/{{ inventory_hostname | replace(':', '_') }}.yml"
 
     - block:
 
