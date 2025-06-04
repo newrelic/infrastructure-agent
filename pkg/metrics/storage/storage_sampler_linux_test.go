@@ -215,6 +215,7 @@ func TestParseMountinfo(t *testing.T) {
 		"46 39 253:0 / /notes rw,relatime shared:29 - xfs /dev/mapper/vg--stuff rw,attr2,inode64,sunit=512,swidth=512,noquota",
 		"51 39 253:0 / /notes rw,relatime shared:29 - xfs /dev/mapper/vg--stuff ro,attr2,inode64,sunit=512,swidth=512,noquota",
 		"62 39 253:0 / /notes ro,relatime shared:29 - xfs /dev/mapper/vg--stuff1 rw",
+		"100 23 0:44 / /mnt/efs rw,relatime shared:282 - nfs4 fs-0e26d5220431e8e2a.efs.us-east-2.amazonaws.com:/ rw,vers=4.1,rsize=1048576,wsize=1048576,namlen=255,hard,noresvport,proto=tcp,timeo=600,retrans=2,sec=sys,clientaddr=10.10.49.172,local_lock=none,addr=10.10.48.166",
 	}
 	var expectedMountInfoStats = []MountInfoStat{
 		{
@@ -275,6 +276,17 @@ func TestParseMountinfo(t *testing.T) {
 			MountSource: "/dev/mapper/vg--stuff1",
 			Opts:        "ro,relatime,rw",
 		},
+		{
+			mountID:     100,
+			parentID:    23,
+			Device:      "fs-0e26d5220431e8e2a.efs.us-east-2.amazonaws.com:/",
+			MountPoint:  "/mnt/efs",
+			Root:        "/",
+			MajMin:      "0:44",
+			FSType:      "nfs4",
+			MountSource: "fs-0e26d5220431e8e2a.efs.us-east-2.amazonaws.com:/",
+			Opts:        "rw,relatime,rw",
+		},
 	}
 
 	for i, line := range lines {
@@ -292,6 +304,7 @@ func TestIsRootFs(t *testing.T) {
 		{"Default rootfs name", "/dev/root", true},
 		{"sda partition", "/dev/sda1", false},
 		{"ssd partition", "/dev/nvme0n1p1", false},
+		{"efs partition", "/mnt/efs", false},
 	}
 	for _, tt := range rootFSTest {
 		t.Run(tt.name, func(t *testing.T) {
