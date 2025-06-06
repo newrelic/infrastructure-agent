@@ -1,0 +1,16 @@
+name: . 🐤 A2Q Canaries
+
+run-name: ${{ github.actor }} is setting up canaries for A2Q 🚀
+on: [push]
+jobs:
+  create-A2Q-linux-canaries:
+    uses: ./.github/workflows/a2q_component_canaries.yml
+    with:
+      PLATFORM: "linux"
+      TAG: 1.62.0
+    secrets:
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+      CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
+      CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
+      CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}
+    
