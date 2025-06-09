@@ -6,12 +6,14 @@
   gather_facts: yes
 
   tasks:
-    - name: 🐤Canaries
+    - name: Extract config from inventory_hostname
+      debug:
+        msg: "Matched config: {{ inventory_hostname | regex_search('config[1-9]|config10') }}"
+    - name: 🐤 Canaries
       ansible.builtin.include_vars:
-        file: "vars/{{ inventory_hostname | replace(':', '_') }}.yml"
+        file: "vars/{{ inventory_hostname | regex_search('config[1-9]|config10') }}.yml"
 
     - block:
-
         - name: install latest agent on host
           ansible.builtin.include_role:
             name: caos.ansible_roles.infra_agent
