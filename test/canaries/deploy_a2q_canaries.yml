@@ -6,10 +6,12 @@
   gather_facts: yes
 
   tasks:
-    - name: 🐤 Canaries
+    - name: 🐤 Canaries A2Q
       ansible.builtin.include_vars:
         file: "vars/{{ inventory_hostname | regex_search('config[1-9]|config10') }}.yml"
-
+    - name: Log loaded variables
+      ansible.builtin.debug:
+        msg: "Loaded variables for {{ inventory_hostname }}: {{ vars.display_name }}"
     - block:
         - name: install latest agent on host
           ansible.builtin.include_role:
@@ -24,7 +26,7 @@
           vars:
             is_containerized: true
             target_version: "{{ current_version }}-rc"
-            display_name: "{{ display_name }}-current-a2q"
+            display_name: "{{ vars.display_name }}-current-a2q"
 
         - name: install previous agent in container
           ansible.builtin.include_role:
@@ -32,5 +34,5 @@
           vars:
             is_containerized: true
             target_version: "{{ previous_version }}"
-            display_name: "{{ display_name }}-previous-a2q"
+            display_name: "{{ vars.display_name }}-previous-a2q"
 ...
