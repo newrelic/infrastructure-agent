@@ -28,7 +28,7 @@
           vars:
             is_containerized: true
             target_version: "{{ current_version }}-rc"
-            display_name: "{{ display_name }}-current-a2q"
+            display_name: "{{ (display_name | default(inventory_hostname | regex_search('config[1-9]|config10'))) }}-current-a2q"
 
         - name: install previous agent in container
           ansible.builtin.include_role:
@@ -36,5 +36,5 @@
           vars:
             is_containerized: true
             target_version: "{{ previous_version }}"
-            display_name: "{{ display_name | default(inventory_hostname | regex_search('config[1-9]|config10'))}}-previous-a2q"
+            display_name: "{{ (display_name | default(inventory_hostname | regex_search('config[1-9]|config10'))) }}-current-a2q"
 ...
