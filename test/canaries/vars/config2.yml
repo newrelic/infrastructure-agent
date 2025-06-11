@@ -5,7 +5,7 @@ nria_log_rotation_mb: 500
 nria_log_rotation_max_files: 5
 nria_log_rotation_compressed: true
 forward_docker_logs: true
-display_name: 0319t00084ux01.nordstrom.net
+display_name: "0319t00084ux01.nordstrom.net"
 custom_attributes:
   label.host: 0319t00084ux01.nordstrom.net
   label.chef_environment: nonprod
