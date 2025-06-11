@@ -1,0 +1,28 @@
+enable_process_metrics: true
+nria_log_level: "smart"
+nria_log_forward: true
+nria_log_rotation_mb: 500
+nria_log_rotation_max_files: 5
+nria_log_rotation_compressed: true
+forward_docker_logs: true
+display_name: 0319t00084ux01.nordstrom.net
+custom_attributes:
+  label.host: 0319t00084ux01.nordstrom.net
+  label.chef_environment: nonprod
+  label.chef_org: nordstrom
+  label.environment: nonprod
+  label.location: 0319
+
+override_hostname: y0319t1739
+metrics_network_sample_rate: 5
+dpkg_interval_sec: 0
+daemontools_interval_sec: 0
+facter_interval_sec: 0
+network_interface_interval_sec: 0
+cloud_security_group_refresh_sec: 0
+kernel_modules_refresh_sec: 0
+event_queue_depth: 0
+inventory_queue_len: 0
+fluent_bit_exe_path: /var/db/newrelic-infra/newrelic-integrations/logging/fluent-bit
+fluent_bit_parsers_path: /var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf
+fluent_bit_nr_lib_path: /var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so
