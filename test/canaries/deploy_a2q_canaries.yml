@@ -30,7 +30,7 @@
           vars:
             is_containerized: true
             target_version: "{{ current_version }}-rc"
-            display_name: "{{ inventory_hostname }}-current-a2q"
+            display_name: "{{ inventory_hostname }}-current"
 
         - name: install previous agent in container
           ansible.builtin.include_role:
@@ -38,5 +38,5 @@
           vars:
             is_containerized: true
             target_version: "{{ previous_version }}"
-            display_name: "{{ inventory_hostname }}-current-a2q"
+            display_name: "{{ inventory_hostname }}-previous"
 ...
