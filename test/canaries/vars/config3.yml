@@ -12,8 +12,6 @@ custom_attributes:
   label.chef_org: nordstrom
   label.environment: nonprod
   label.location: 0319
-
-override_hostname: y0319t1739
 metrics_network_sample_rate: 5
 dpkg_interval_sec: 0
 daemontools_interval_sec: 0
