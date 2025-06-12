@@ -20,9 +20,6 @@
             name: caos.ansible_roles.infra_agent
           vars:
             repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
-        - name: Debug display_name before using it
-          ansible.builtin.debug:
-            var: display_name
 
         - name: install latest agent in container
           ansible.builtin.include_role:
