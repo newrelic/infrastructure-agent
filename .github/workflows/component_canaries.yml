@@ -96,14 +96,13 @@ jobs:
               echo "PREVIOUS_TERRAFORM_STATE=a2q-canaries-${{ inputs.PLATFORM }}-${{ env.PREVIOUS_NR_VERSION }}"  >> $GITHUB_ENV
               echo "TERRAFORM_STATE=a2q-canaries-${{ inputs.PLATFORM }}-${{ inputs.TAG }}"  >> $GITHUB_ENV
               echo "INVENTORY_OUTPUT=/srv/runner/inventory/a2q-canary-${{ inputs.TAG }}-${{ inputs.PLATFORM }}-inventory.ec2"  >> $GITHUB_ENV
-              echo "CANARY_PREFIX= "a2q-canaries" >> $GITHUB_ENV
+              echo "CANARY_PREFIX= a2q-canary" >> $GITHUB_ENV
 
           else
               echo "PREVIOUS_TERRAFORM_STATE=canaries-${{ inputs.PLATFORM }}-${{ env.PREVIOUS_NR_VERSION }}"  >> $GITHUB_ENV
               echo "TERRAFORM_STATE=canaries-${{ inputs.PLATFORM }}-${{ inputs.TAG }}"  >> $GITHUB_ENV
               echo "INVENTORY_OUTPUT=/srv/runner/inventory/canary-${{ inputs.TAG }}-${{ inputs.PLATFORM }}-inventory.ec2"  >> $GITHUB_ENV
-              echo "CANARY_PREFIX= "canaries" >> $GITHUB_ENV
-
+              echo "CANARY_PREFIX= canary" >> $GITHUB_ENV
           fi
 
       - name: Provision instances ${{ inputs.PLATFORM }}
