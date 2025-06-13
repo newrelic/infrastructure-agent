@@ -9,6 +9,7 @@ include ../ansible/common.mk
 
 .PHONY: terraform-canaries
 terraform-canaries: ansible/dependencies
+	# Check for required variables
 ifndef ANSIBLE_INVENTORY
 	$(error ANSIBLE_INVENTORY is not set)
 endif
@@ -25,11 +26,12 @@ ifndef NR_LICENSE_KEY_CANARIES
 	$(error NR_LICENSE_KEY_CANARIES is not set)
 endif
 
+## Conditional Canary Deployment
 ifdef IS_A2Q
-	ansible-playbook -f $(ANSIBLE_FORKS) -i $(ANSIBLE_INVENTORY) "$(ANSIBLE_FOLDER)/deploy_a2q_canaries.yml" -e "current_version=$(VERSION) previous_version=$(PREVIOUS_VERSION) nr_license_key=$(NR_LICENSE_KEY_CANARIES) docker_username=$(DOCKER_USERNAME) docker_password=$(DOCKER_PASSWORD)"
+	    ansible-playbook -f $(ANSIBLE_FORKS) -i $(ANSIBLE_INVENTORY) "$(ANSIBLE_FOLDER)/deploy_a2q_canaries.yml" -e "current_version=$(VERSION) previous_version=$(PREVIOUS_VERSION) nr_license_key=$(NR_LICENSE_KEY_CANARIES) docker_username=$(DOCKER_USERNAME) docker_password=$(DOCKER_PASSWORD)"
+else
+	    ansible-playbook -f $(ANSIBLE_FORKS) -i $(ANSIBLE_INVENTORY) "$(ANSIBLE_FOLDER)/deploy_canaries.yml" -e "current_version=$(VERSION) previous_version=$(PREVIOUS_VERSION) nr_license_key=$(NR_LICENSE_KEY_CANARIES) docker_username=$(DOCKER_USERNAME) docker_password=$(DOCKER_PASSWORD)"
 endif
-	ansible-playbook -f $(ANSIBLE_FORKS) -i $(ANSIBLE_INVENTORY) "$(ANSIBLE_FOLDER)/deploy_canaries.yml" -e "current_version=$(VERSION) previous_version=$(PREVIOUS_VERSION) nr_license_key=$(NR_LICENSE_KEY_CANARIES) docker_username=$(DOCKER_USERNAME) docker_password=$(DOCKER_PASSWORD)"
-
 .PHONY: macos-canaries
 macos-canaries: ansible/dependencies
 ifndef ANSIBLE_INVENTORY

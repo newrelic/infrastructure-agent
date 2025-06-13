@@ -1,6 +1,6 @@
 ---
 # Linux
-- name: canaries
+- name: A2Q canaries
   hosts: testing_hosts_linux
   become: true
   gather_facts: yes
@@ -12,7 +12,7 @@
 
     - name: Log selected file
       ansible.builtin.debug:
-        msg: "Selected file: vars/{{ inventory_hostname | regex_search('config[1-9]|config10') }}.yml"
+        msg: "Selected file: {{nria_dpkg_interval_sec}}"
 
     - block:
         - name: install latest agent on host
@@ -36,4 +36,21 @@
             is_containerized: true
             target_version: "{{ previous_version }}"
             display_name: "{{ inventory_hostname }}-previous"
+
+# Windows
+- name: installation-agent-no-clean
+  hosts: testing_hosts_windows
+  gather_facts: yes
+
+  tasks:
+    - name: Installation tests suite
+
+      block:
+
+        - name: install agent
+          include_role:
+            name: caos.ansible_roles.infra_agent
+          vars:
+            target_version: "{{ current_version }}"
+            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
 ...
