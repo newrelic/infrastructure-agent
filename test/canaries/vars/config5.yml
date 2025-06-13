@@ -13,7 +13,7 @@ custom_attributes:
   label.environment: nonprod
   label.location: 0319
 override_hostname: "abc"
-nria_metrics_network_sample_rate: 5
+metrics_network_sample_rate: 5
 dpkg_interval_sec: 0
 daemontools_interval_sec: 0
 facter_interval_sec: 0
