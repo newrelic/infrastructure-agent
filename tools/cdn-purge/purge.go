@@ -21,6 +21,23 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
+// Usage:
+// go run purge.go -v
+//
+// Similar shell counterpart:
+// for i in {1..5}; do
+//	echo \$i;
+//	aws s3api head-object --bucket nr-downloads-main --key infrastructure_agent/linux/yum/el/7/x86_64/repodata/primary.sqlite.bz2
+//		|/bin/grep ReplicationStatus
+//		|/bin/grep COMPLETED
+//		&& /usr/bin/curl -i -X POST -H \"Content-Type:\application/json\" -H \"Authorization:\Bearer ${CLOUDFARE_KEY}\" -d \{"purge_everything":\true\}" https://api.cloudflare.com/client/v4/zones/ac389f8f109894ed5e2aeb2d8af3d6ce/purge_cache
+//		&& break ;
+//	/bin/sleep 60s;
+//	if [ \$i -ge 5 ]; then
+//		/usr/bin/curl -i -X POST -H \"Content-Type:\application/json\" -H \"Authorization:\Bearer ${CLOUDFARE_KEY}\" -d \{"purge_everything":\true\}" https://api.cloudflare.com/client/v4/zones/ac389f8f109894ed5e2aeb2d8af3d6ce/purge_cache;
+//	fi;
+// done
+
 // PurgeCacheRequest defines the structure for the request body to purge cache
 type PurgeCacheRequest struct {
 	PurgeEverything bool `json:"purge_everything"`
