@@ -57,7 +57,6 @@ jobs:
     needs: [ publishing-to-s3-windows, publishing-to-s3-linux ]
     uses: ./.github/workflows/component_purge_cdn.yml
     secrets:
-      FASTLY_KEY: ${{secrets.FASTLY_KEY }}
       CLOUDFARE_KEY: ${{secrets.CLOUDFARE_KEY }}
       AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION }}

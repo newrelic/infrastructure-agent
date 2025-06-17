@@ -22,7 +22,7 @@ import (
 )
 
 // Usage:
-// go run fastly-purge.go -v
+// go run purge.go -v
 //
 // Similar shell counterpart:
 // for i in {1..5}; do
@@ -30,11 +30,11 @@ import (
 //	aws s3api head-object --bucket nr-downloads-main --key infrastructure_agent/linux/yum/el/7/x86_64/repodata/primary.sqlite.bz2
 //		|/bin/grep ReplicationStatus
 //		|/bin/grep COMPLETED
-//		&& /usr/bin/curl -i -X POST -H \"Fastly-Key:\${FASTLY_KEY}\" https://api.fastly.com/service/2RMeBJ1ZTGnNJYvrWMgQhk/purge_all
+//		&& /usr/bin/curl -i -X POST -H \"Content-Type:\application/json\" -H \"Authorization:\Bearer ${CLOUDFARE_KEY}\" -d \{"purge_everything":\true\}" https://api.cloudflare.com/client/v4/zones/ac389f8f109894ed5e2aeb2d8af3d6ce/purge_cache
 //		&& break ;
 //	/bin/sleep 60s;
 //	if [ \$i -ge 5 ]; then
-//		/usr/bin/curl -i -X POST -H \"Fastly-Key:\${FASTLY_KEY}\" https://api.fastly.com/service/2RMeBJ1ZTGnNJYvrWMgQhk/purge_all;
+//		/usr/bin/curl -i -X POST -H \"Content-Type:\application/json\" -H \"Authorization:\Bearer ${CLOUDFARE_KEY}\" -d \{"purge_everything":\true\}" https://api.cloudflare.com/client/v4/zones/ac389f8f109894ed5e2aeb2d8af3d6ce/purge_cache;
 //	fi;
 // done
 
@@ -52,7 +52,6 @@ const (
 	defaultBucket = "nr-downloads-ohai-staging"
 	defaultRegion = "us-east-1"
 	// more keys could be added if issues arise
-	fastlyPurgeURL             = "https://api.fastly.com/service/2RMeBJ1ZTGnNJYvrWMgQhk/purge_all"
 	cloudfarePurgeURL          = "https://api.cloudflare.com/client/v4/zones/ac389f8f109894ed5e2aeb2d8af3d6ce/purge_cache"
 	replicationStatusCompleted = "COMPLETED" // in s3.ReplicationStatusComplete is set to COMPLETE, which is wrong
 	aptDistributionsPath       = "infrastructure_agent/linux/apt/dists/"
@@ -62,10 +61,10 @@ const (
 )
 
 var (
-	bucket, region, keysStr, fastlyKey, cloudfareKey string
-	timeoutS3, timeoutCDN                            time.Duration
-	attempts                                         int
-	verbose                                          bool
+	bucket, region, keysStr, cloudfareKey string
+	timeoutS3, timeoutCDN                 time.Duration
+	attempts                              int
+	verbose                               bool
 )
 
 func init() {
@@ -85,11 +84,6 @@ func main() {
 	cloudfareKey, ok = os.LookupEnv("CLOUDFARE_KEY")
 	if !ok {
 		logInfo("missing required env-var CLOUDFARE_KEY")
-		os.Exit(1)
-	}
-	fastlyKey, ok = os.LookupEnv("FASTLY_KEY")
-	if !ok {
-		logInfo("missing required env-var FASTLY_KEY")
 		os.Exit(1)
 	}
 
@@ -120,11 +114,6 @@ func main() {
 
 	if err := purgeCloudFareCDN(ctx); err != nil {
 		logInfo("cannot purge cloudfare CDN, error: %v", err)
-		os.Exit(1)
-	}
-
-	if err := purgeFastlyCDN(ctx); err != nil {
-		logInfo("cannot purge fastly CDN, error: %v", err)
 		os.Exit(1)
 	}
 }
@@ -225,35 +214,6 @@ func purgeCloudFareCDN(ctx context.Context) error {
 
 	if res.StatusCode < 200 || res.StatusCode >= 400 {
 		return fmt.Errorf("unexpected Cloudfare status: %s", res.Status)
-	}
-
-	return nil
-}
-
-func purgeFastlyCDN(ctx context.Context) error {
-	ctxT := ctx
-	var cancelFn func()
-	if timeoutCDN > 0 {
-		ctxT, cancelFn = context.WithTimeout(ctx, timeoutCDN)
-	}
-	if cancelFn != nil {
-		defer cancelFn()
-	}
-
-	req, err := http.NewRequestWithContext(ctxT, http.MethodPost, fastlyPurgeURL, nil)
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("Fastly-Key", fastlyKey)
-
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-
-	if res.StatusCode < 200 || res.StatusCode >= 400 {
-		return fmt.Errorf("unexpected Fastly status: %s", res.Status)
 	}
 
 	return nil
