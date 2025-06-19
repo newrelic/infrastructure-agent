@@ -295,6 +295,46 @@ instances:
     python_interpreter: "/usr/bin/python3"
     launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
   ############################
+  # alma linux 8 amd64
+  ############################
+  - ami: "ami-02825266d2b3af325"
+    type: "t4g.small"
+    name: "amd64:almalinux-8"
+    username: "ec2-user"
+    platform: "linux"
+    python_interpreter: "/usr/bin/python3"
+    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
+  ############################
+  # alma linux 8 arm64
+  ############################
+  - ami: "ami-0d5fa877615f326ff"
+    type: "t4g.small"
+    name: "arm64:almalinux-8"
+    username: "ec2-user"
+    platform: "linux"
+    python_interpreter: "/usr/bin/python3"
+    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
+  ############################
+  # alma linux 9 amd64
+  ############################
+  - ami: "ami-004ab7ad00a70a340"
+    type: "t4g.small"
+    name: "amd64:almalinux-9"
+    username: "ec2-user"
+    platform: "linux"
+    python_interpreter: "/usr/bin/python3"
+    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
+  ############################
+  # alma linux 9 arm64
+  ############################
+  - ami: "ami-04ffbb662aa930003"
+    type: "t4g.small"
+    name: "arm64:almalinux-9"
+    username: "ec2-user"
+    platform: "linux"
+    python_interpreter: "/usr/bin/python3"
+    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
+  ############################
   # windows amd64
   ############################
   - ami: "ami-03d46abfa414238dd"
