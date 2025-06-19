@@ -323,7 +323,8 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 	var fbOSConfig FBOSConfig
 	addOSDependantConfig(&fbOSConfig)
 
-	enableMetrics := isMetricsEnabled(ff)
+	// enableMetrics := isMetricsEnabled(ff)
+	enableMetrics := true
 
 	totalFiles := 0
 	for i, block := range loggingCfgs {
@@ -843,17 +844,18 @@ func newNROutput(cfg *config.LogForward, hostname string, enableMetrics bool) []
 			Alias:     "fb-metrics-forwarder",
 			Port:      fbDefaultOutputPort,
 			URI:       fmt.Sprintf("/prometheus/v1/write?prometheus_server=%s", hostname),
-			Header:    fmt.Sprintf("Authorization Bearer %s", cfg.License),
+			Header:    "Authorization Bearer ${NR_LICENSE_KEY_ENV_VAR}",
 			TLS:       "On",
 			Host:      productionMetricsEndpoint,
 			TLSVerify: "Off",
-			// 	//TODO : Include hostID as well
 			AddLabel: map[string]string{
 				"app":      fbLabel,
 				"source":   fbhostLabel,
 				"os":       os,
 				"hostname": hostname,
 				"arch":     arch,
+				// TODO Update this with the actual host ID
+				"host.id": "12345",
 			},
 		})
 	}
