@@ -1,0 +1,37 @@
+name: 'Build and Scan'
+
+on:
+  pull_request:
+
+jobs:
+  build_and_scan:
+    name: Build Image and Trigger Org Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # --- Start of Repository-Specific Build Steps ---
+      #
+      # This section must be customized for each repository's build process.
+      # The final output must be an `image-name` that the next step can use.
+      # Below is a simple example for a standard Dockerfile.
+      #
+      - name: Build local Docker image
+        id: build-image
+        run: |
+          docker build -t my-app:${{ github.sha }} .
+          echo "image-name=my-app:${{ github.sha }}" >> $GITHUB_OUTPUT
+      #
+      # --- End of Repository-Specific Build Steps ---
+
+
+      - name: Call the organization's reusable scan workflow
+        # This uses the central workflow. Ensure the path is correct for your organization.
+        uses: newrelic-csec/.github/.github/workflows/required-trivy-scan.yml@main
+        with:
+          # This passes the output from the "build-image" step above.
+          image-name: ${{ steps.build-image.outputs.image-name }}
+        # secrets:
+        #   # This passes the repository's Slack secret to the central workflow.
+        #   TEAM_SLACK_WEBHOOK_URL: ${{ secrets.TEAM_SLACK_WEBHOOK_URL }}
