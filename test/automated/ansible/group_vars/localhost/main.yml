@@ -299,7 +299,7 @@ instances:
   ############################
   - ami: "ami-02825266d2b3af325"
     type: "t4g.small"
-    name: "amd64:almalinux-8"
+    name: "amd64:alma-8"
     username: "ec2-user"
     platform: "linux"
     python_interpreter: "/usr/bin/python3"
@@ -309,7 +309,7 @@ instances:
   ############################
   - ami: "ami-0d5fa877615f326ff"
     type: "t4g.small"
-    name: "arm64:almalinux-8"
+    name: "arm64:alma-8"
     username: "ec2-user"
     platform: "linux"
     python_interpreter: "/usr/bin/python3"
@@ -319,7 +319,7 @@ instances:
   ############################
   - ami: "ami-004ab7ad00a70a340"
     type: "t4g.small"
-    name: "amd64:almalinux-9"
+    name: "amd64:alma-9"
     username: "ec2-user"
     platform: "linux"
     python_interpreter: "/usr/bin/python3"
@@ -329,7 +329,7 @@ instances:
   ############################
   - ami: "ami-04ffbb662aa930003"
     type: "t4g.small"
-    name: "arm64:almalinux-9"
+    name: "arm64:alma-9"
     username: "ec2-user"
     platform: "linux"
     python_interpreter: "/usr/bin/python3"
