@@ -1,7 +1,6 @@
 collections:
   - name: git+https://github.com/newrelic-experimental/caos-ansible-roles.git#/caos.ansible_roles/
     type: git
-    version: NR-402184-define-make-targets-to-deploy-ec-2-machines-for-ingesting-a-2-q-test-data-in-staging
   - name: git@github.com:/newrelic/shared-crowdstrike-ansible-role.git
 
 roles:

@@ -20,7 +20,8 @@ on:
         required: true
         type: string
       A2Q:
-        required: true
+        required: false
+        default: 'false'
         type: string
 
 env:
