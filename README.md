@@ -190,3 +190,4 @@ To all contributors, we thank you!  Without your contribution, this project woul
 
 infrastructure-agent is licensed under the [Apache 2.0](https://apache.org/licenses/LICENSE-2.0.txt) License.
 
+## Small change
