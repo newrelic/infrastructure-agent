@@ -5,30 +5,47 @@ package logs
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
+	"regexp"
+	"runtime"
+	"strconv"
+	"strings"
+	"text/template"
+
+	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
+	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/license"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/pkg/errors"
-	"io/ioutil"
-	"path/filepath"
-	"regexp"
-	"strconv"
-	"strings"
-	"text/template"
+	"github.com/sirupsen/logrus"
 )
 
 var cfgLogger = log.WithComponent("integrations.Supervisor.Config").WithField("process", "log-forwarder")
 
 // FluentBit default values.
 const (
-	euEndpoint              = "https://log-api.eu.newrelic.com/log/v1"
-	fedrampEndpoint         = "https://gov-log-api.newrelic.com/log/v1"
-	stagingEndpoint         = "https://staging-log-api.newrelic.com/log/v1"
-	logRecordModifierSource = "nri-agent"
-	defaultBufferMaxSize    = 128
-	memBufferLimit          = 16384
-	fbFileWatchLimit        = 1024
-	fluentBitDbName         = "fb.db"
+	euEndpoint                  = "https://log-api.eu.newrelic.com/log/v1"
+	fedrampEndpoint             = "https://gov-log-api.newrelic.com/log/v1"
+	stagingEndpoint             = "https://staging-log-api.newrelic.com/log/v1"
+	stagingMetricsEndpoint      = "staging-metric-api.newrelic.com"
+	productionMetricsEndpoint   = "metric-api.newrelic.com"
+	productionEuMetricsEndpoint = "metric-api.eu.newrelic.com"
+	fedRampMetricsEndpoint      = "gov-metric-api.newrelic.com"
+	logRecordModifierSource     = "nri-agent"
+	defaultBufferMaxSize        = 128
+	memBufferLimit              = 16384
+	fbFileWatchLimit            = 1024
+	fluentBitDBName             = "fb.db"
+	fbDefaultPort               = 2020
+	fbDefaultOutputPort         = 443
+	fbHostPort                  = "127.0.0.1"
+	fbMetricsPath               = "/api/v2/metrics/prometheus"
+	fbScrapeInterval            = "60s"
+	fbMetricsTag                = "fb_metrics"
+	fbLabel                     = "fluent-bit"
+	fbhostLabel                 = "host"
 )
 
 // FluentBit INPUT plugin types
@@ -141,12 +158,23 @@ func (l *LogCfg) IsValid() bool {
 	return l.Name != "" && (l.File != "" || l.Systemd != "" || l.Syslog != nil || l.Tcp != nil || l.Fluentbit != nil || l.Winlog != nil || l.Winevtlog != nil)
 }
 
+type FBCfgService struct {
+	Flush       int
+	LogLevel    string
+	Daemon      string
+	ParsersFile string
+	HTTPServer  string
+	HTTPListen  string
+	HTTPPort    int
+}
+
 // FBCfg FluentBit automatically generated configuration.
 type FBCfg struct {
 	Inputs      []FBCfgInput
 	Filters     []FBCfgFilter
 	ExternalCfg FBCfgExternal
-	Output      FBCfgOutput
+	Service     []FBCfgService
+	Output      []FBCfgOutput
 }
 
 // Format will return the FBCfg in the fluent bit config file format.
@@ -205,6 +233,11 @@ type FBCfgInput struct {
 	TcpSeparator          string // plugin: tcp
 	TcpBufferSize         int    // plugin: tcp (note that the "tcp" plugin uses Buffer_Size (without "k"s!) instead of Buffer_Max_Size (with "k"s!))
 	UseANSI               string // plugin: winlog and winevtlog
+	Alias                 string // plugin: prometheus
+	Host                  string
+	Port                  int
+	MetricsPath           string
+	ScrapeInterval        string
 }
 
 // FBCfgFilter FluentBit FILTER config block, only "grep" plugin supported.
@@ -237,6 +270,14 @@ type FBCfgOutput struct {
 	ValidateCerts     bool
 	Retry_Limit       string
 	SendMetrics       bool
+	Alias             string
+	Host              string
+	Port              int
+	URI               string
+	Header            string
+	TLS               string
+	TLSVerify         string
+	AddLabel          map[string]string
 }
 
 type FBWinlogLuaScript struct {
@@ -272,7 +313,7 @@ type FBOSConfig struct {
 }
 
 // NewFBConf creates a FluentBit config from several logging integration configs.
-func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, hostname string) (fb FBCfg, e error) {
+func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, hostname string, ff feature_flags.Retriever) (fb FBCfg, e error) {
 	fb = FBCfg{
 		Inputs:  []FBCfgInput{},
 		Filters: []FBCfgFilter{},
@@ -281,6 +322,9 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 	// specific config per OS
 	var fbOSConfig FBOSConfig
 	addOSDependantConfig(&fbOSConfig)
+
+	// enableMetrics := isMetricsEnabled(ff)
+	enableMetrics := true
 
 	totalFiles := 0
 	for i, block := range loggingCfgs {
@@ -336,10 +380,55 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 		},
 	})
 
-	// Newrelic OUTPUT plugin will send all the collected logs to Vortex
-	fb.Output = newNROutput(logFwdCfg)
+	// Including Prometheus scrapper input plugin by default to pull Fluent bit metrics based on ff
+	includePrometheusScrapperInputPlugin(&fb, enableMetrics)
 
-	return
+	// Including service to expose port , Prometheus metric collection needs the HTTP server to be online at port 2020
+	includeService(&fb, enableMetrics)
+
+	// Newrelic OUTPUT plugin which will send all the collected logs to Vortex and with Prometheus output plugin which forwards FB metrics to NR
+	fb.Output = newNROutput(logFwdCfg, hostname, enableMetrics)
+
+	return fb, nil
+}
+
+func isMetricsEnabled(ff feature_flags.Retriever) bool {
+	if ff != nil {
+		enabled, exists := ff.GetFeatureFlag(fflag.FlagFluentBitMetrics)
+
+		return enabled && exists
+	}
+
+	return false
+}
+
+func includeService(fb *FBCfg, enableMetrics bool) {
+	if enableMetrics {
+		fb.Service = []FBCfgService{{
+			Flush:       1,
+			LogLevel:    "info",
+			Daemon:      "off",
+			ParsersFile: "parsers.conf",
+			HTTPServer:  "On",
+			HTTPListen:  "0.0.0.0",
+			HTTPPort:    fbDefaultPort,
+		},
+		}
+	}
+}
+
+func includePrometheusScrapperInputPlugin(fb *FBCfg, enableMetrics bool) {
+	if enableMetrics {
+		fb.Inputs = append(fb.Inputs, FBCfgInput{ //nolint:exhaustruct
+			Name:           "prometheus_scrape",
+			Alias:          "fb-metrics-collector",
+			Host:           fbHostPort,
+			Port:           fbDefaultPort,
+			Tag:            fbMetricsTag,
+			MetricsPath:    fbMetricsPath,
+			ScrapeInterval: fbScrapeInterval,
+		})
+	}
 }
 
 func getTotalTargetFilesForPath(l LogCfg) int {
@@ -361,7 +450,7 @@ func parseConfigBlock(l LogCfg, logsHomeDir string, fbOSConfig FBOSConfig) (inpu
 		return
 	}
 
-	dbPath := filepath.Join(logsHomeDir, fluentBitDbName)
+	dbPath := filepath.Join(logsHomeDir, fluentBitDBName)
 
 	if l.File != "" {
 		input, filters = parseFileInput(l, dbPath)
@@ -722,33 +811,79 @@ func newModifyFilter(tag string) FBCfgFilter {
 	}
 }
 
-func newNROutput(cfg *config.LogForward) FBCfgOutput {
-	ret := FBCfgOutput{
-		Name:              "newrelic",
-		Match:             "*",
-		LicenseKey:        cfg.License,
-		IgnoreSystemProxy: cfg.ProxyCfg.IgnoreSystemProxy,
-		Proxy:             cfg.ProxyCfg.Proxy,
-		CABundleFile:      cfg.ProxyCfg.CABundleFile,
-		CABundleDir:       cfg.ProxyCfg.CABundleDir,
-		ValidateCerts:     cfg.ProxyCfg.ValidateCerts,
-		Retry_Limit:       cfg.RetryLimit,
-		SendMetrics:       cfg.FluentBitVerbose,
+func getSystemInfo() (string, string, error) {
+	os := runtime.GOOS
+	arch := runtime.GOARCH
+	return os, arch, nil
+}
+
+func newNROutput(cfg *config.LogForward, hostname string, enableMetrics bool) []FBCfgOutput {
+	os, arch, err := getSystemInfo()
+	if err != nil {
+		logrus.WithError(err).Error(fmt.Sprintf("Error retrieving system info: OS: %s, Hostname: %s, Error: %v\n", os, hostname, err))
+	}
+	outputs := []FBCfgOutput{
+		{
+			Name:              "newrelic",
+			Match:             "*",
+			LicenseKey:        cfg.License,
+			IgnoreSystemProxy: cfg.ProxyCfg.IgnoreSystemProxy,
+			Proxy:             cfg.ProxyCfg.Proxy,
+			CABundleFile:      cfg.ProxyCfg.CABundleFile,
+			CABundleDir:       cfg.ProxyCfg.CABundleDir,
+			ValidateCerts:     cfg.ProxyCfg.ValidateCerts,
+			Retry_Limit:       cfg.RetryLimit,
+			SendMetrics:       cfg.FluentBitVerbose,
+		},
+	}
+
+	if enableMetrics {
+		outputs = append(outputs, FBCfgOutput{
+			Name:      "prometheus_remote_write",
+			Match:     fbMetricsTag,
+			Alias:     "fb-metrics-forwarder",
+			Port:      fbDefaultOutputPort,
+			URI:       fmt.Sprintf("/prometheus/v1/write?prometheus_server=%s", hostname),
+			Header:    "Authorization Bearer ${NR_LICENSE_KEY_ENV_VAR}",
+			TLS:       "On",
+			Host:      productionMetricsEndpoint,
+			TLSVerify: "Off",
+			AddLabel: map[string]string{
+				"app":      fbLabel,
+				"source":   fbhostLabel,
+				"os":       os,
+				"hostname": hostname,
+				"arch":     arch,
+				// TODO Update this with the actual host ID
+				"host.id": "12345",
+			},
+		})
 	}
 
 	if cfg.IsStaging {
-		ret.Endpoint = stagingEndpoint
+		outputs[0].Endpoint = stagingEndpoint
+		if enableMetrics {
+			outputs[1].Host = stagingMetricsEndpoint
+		}
+
 	}
 
 	if cfg.IsFedramp {
-		ret.Endpoint = fedrampEndpoint
+		outputs[0].Endpoint = fedrampEndpoint
+		if enableMetrics {
+			outputs[1].Host = fedRampMetricsEndpoint
+		}
 	}
 
 	if license.IsRegionEU(cfg.License) {
-		ret.Endpoint = euEndpoint
+		outputs[0].Endpoint = euEndpoint
+		if enableMetrics {
+			outputs[1].Host = productionEuMetricsEndpoint
+		}
+
 	}
 
-	return ret
+	return outputs
 }
 
 func getBufferMaxSize(l LogCfg) int {
