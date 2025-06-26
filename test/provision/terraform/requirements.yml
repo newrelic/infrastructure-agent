@@ -1,8 +1,8 @@
 collections:
   - name: git+https://github.com/newrelic-experimental/caos-ansible-roles.git#/caos.ansible_roles/
     type: git
-    version: NR-379035-add-amis-almalinux
-  - name: git@github.com:/newrelic/shared-crowdstrike-ansible-role.git
+    version: NR-379035-support-alma-linux
+  - name: git@github.com:/abhishuraina/shared-crowdstrike-ansible-role.git
 
 roles:
   - name: geerlingguy.pip
