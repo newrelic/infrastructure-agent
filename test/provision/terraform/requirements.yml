@@ -1,5 +1,5 @@
 collections:
-  - name: git+https://github.com/newrelic-experimental/caos-ansible-roles.git#/caos.ansible_roles/
+  - name: git+https://github.com/abhishuraina/caos-ansible-roles.git#/caos.ansible_roles/
     type: git
   - name: git@github.com:/newrelic/shared-crowdstrike-ansible-role.git
 
