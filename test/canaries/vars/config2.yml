@@ -1,0 +1,19 @@
+enable_process_metrics: false
+nria_log_level: "smart"
+nria_log_forward: true
+nria_log_rotation_mb: 500
+nria_log_rotation_max_files: 5
+nria_log_rotation_compressed: true
+forward_docker_logs: true
+custom_attributes:
+  label.host: test.a.b.c.d
+  label.env: prod
+nria_metrics_network_sample_rate: 5
+nria_dpkg_interval_sec: 0
+nria_daemontools_interval_sec: 0
+nria_facter_interval_sec: 0
+nria_network_interface_interval_sec: 0
+nria_cloud_security_group_refresh_sec: 0
+nria_kernel_modules_refresh_sec: 0
+nria_event_queue_depth: 0
+nria_inventory_queue_len: 0

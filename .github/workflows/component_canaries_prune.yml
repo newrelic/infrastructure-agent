@@ -13,6 +13,11 @@ on:
       PLATFORM:
         required: true
         type: string
+      A2Q:
+        required: false
+        default: 'false'
+        type: string
+
 
 env:
   AWS_ASSUME_ROLE: 'arn:aws:iam::971422713139:role/caos-pipeline-oidc-infra-agent'
@@ -45,8 +50,11 @@ jobs:
 
       - name: set vars for legibility (state, inventory ...)
         run: |
-          echo "TERRAFORM_STATE=canaries-linux-${{ inputs.TAG }}"  >> $GITHUB_ENV
-
+          if [[ "${{ inputs.A2Q }}" == "true" ]]; then
+            echo "TERRAFORM_STATE=a2q-canaries-linux-${{ inputs.TAG }}"  >> $GITHUB_ENV
+          else
+            echo "TERRAFORM_STATE=canaries-linux-${{ inputs.TAG }}"  >> $GITHUB_ENV
+          fi
       - name: Clean previous canaries instances Linux
         uses: newrelic/fargate-runner-action@main
         with:
