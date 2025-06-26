@@ -3,6 +3,6 @@ collections:
     type: git
     version: NR-379035-support-alma-linux
   - name: git@github.com:abhishuraina/shared-crowdstrike-ansible-role.git
-
+    type: git
 roles:
   - name: geerlingguy.pip
