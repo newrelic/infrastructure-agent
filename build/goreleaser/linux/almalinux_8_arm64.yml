@@ -1,4 +1,4 @@
-  # Almalinux 9 arm
+  # Almalinux 8 arm
   
   - id: almalinux-8-infrastructure-agent-arm
     builds:
@@ -15,18 +15,7 @@
     formats:
       - rpm
     bindir: /usr/bin
-    contents:
-      #      - src: 'assets/examples/logging/linux/file.yml.example'
-      #        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
-      #      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
-      #        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
-      #      - src: 'assets/examples/logging/linux/syslog.yml.example'
-      #        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
-      #      - src: 'assets/examples/logging/linux/systemd.yml.example'
-      #        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
-      #      - src: 'assets/examples/logging/linux/tcp.yml.example'
-      #        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
-  
+    contents:  
       - src: 'build/package/systemd/newrelic-infra.service'
         dst: '/etc/systemd/system/newrelic-infra.service'
       - src: 'LICENSE'
@@ -40,11 +29,6 @@
         dst: '/opt/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/{{ .Arch }}/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/opt/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-    #      - src: 'target/fluent-bit-plugin/{{ .Arch }}/out_newrelic.so'
-    #        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-    #      - src: 'assets/examples/logging/parsers.conf'
-    #        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
-
       - dst: /opt/newrelic-infra/custom-integrations
         type: dir
       - dst: /opt/newrelic-infra/newrelic-integrations
@@ -78,10 +62,5 @@
   
       summary: "New Relic Infrastructure Agent"
       group: default
-    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
-#    recommends:
-# FB not supported yet
-#      - td-agent-bit #To be removed on removal of the ff fluent_bit_19
-#      - fluent-bit
   
   # end Almalinux 8 arm
