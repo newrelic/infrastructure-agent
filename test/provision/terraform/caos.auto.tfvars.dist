@@ -2,9 +2,9 @@ ec2_prefix = "PREFIX:TAG_OR_UNIQUE_NAME"
 
 windows_ec2 = ["windows_2016", "windows_2019", "windows_2022", "windows_2025"]
 
-linux_ec2_amd = ["amd64:ubuntu24.04", "amd64:ubuntu22.04", "amd64:ubuntu20.04", "amd64:ubuntu18.04", "amd64:ubuntu16.04", "amd64:centos-stream", "amd64:sles-12.5", "amd64:sles-15.3",  "amd64:sles-15.4", "amd64:sles-15.5", "amd64:sles-15.6", "amd64:redhat-8.4", "amd64:redhat-9.0", "amd64:debian-bookworm", "amd64:al-2", "amd64:al-2023", "amd64:al-2023-fips", "amd64:rocky-9"]
+linux_ec2_amd = ["amd64:ubuntu24.04", "amd64:ubuntu22.04", "amd64:ubuntu20.04", "amd64:ubuntu18.04", "amd64:ubuntu16.04", "amd64:centos-stream", "amd64:sles-12.5", "amd64:sles-15.3",  "amd64:sles-15.4", "amd64:sles-15.5", "amd64:sles-15.6", "amd64:redhat-8.4", "amd64:redhat-9.0", "amd64:debian-bookworm", "amd64:al-2", "amd64:al-2023", "amd64:al-2023-fips", "amd64:rocky-8", "amd64:rocky-9"]
 
-linux_ec2_arm = ["arm64:ubuntu24.04", "arm64:ubuntu22.04", "arm64:ubuntu20.04", "arm64:ubuntu18.04", "arm64:ubuntu16.04", "arm64:centos-stream",  "arm64:sles-15.4", "arm64:sles-15.5", "arm64:sles-15.6", "arm64:redhat-9.0", "arm64:debian-bookworm", "arm64:al-2", "arm64:al-2023", "arm64:al-2023-fips", "arm64:rocky-9"]
+linux_ec2_arm = ["arm64:ubuntu24.04", "arm64:ubuntu22.04", "arm64:ubuntu20.04", "arm64:ubuntu18.04", "arm64:ubuntu16.04", "arm64:centos-stream",  "arm64:sles-15.4", "arm64:sles-15.5", "arm64:sles-15.6", "arm64:redhat-9.0", "arm64:debian-bookworm", "arm64:al-2", "arm64:al-2023", "arm64:al-2023-fips", "arm64:rocky-8", "arm64:rocky-9"]
 
 ssh_pub_key      = "AAAAB3NzaC1yc2EAAAADAQABAAABAQDH9C7BS2XrtXGXFFyL0pNku/Hfy84RliqvYKpuslJFeUivf5QY6Ipi8yXfXn6TsRDbdxfGPi6oOR60Fa+4cJmCo6N5g57hBS6f2IdzQBNrZr7i1I/a3cFeK6XOc1G1tQaurx7Pu+qvACfJjLXKG66tHlaVhAHd/1l2FocgFNUDFFuKS3mnzt9hKys7sB4aO3O0OdohN/0NJC4ldV8/OmeXqqfkiPWcgPx3C8bYyXCX7QJNBHKrzbX1jW51Px7SIDWFDV6kxGwpQGGBMJg/k79gjjM+jhn4fg1/VP/Fx37mAnfLqpcTfiOkzSE80ORGefQ1XfGK/Dpa3ITrzRYW8xlR caos-dev-arm"
 pvt_key          = "~/.ssh/caos-dev-arm.cer"
