@@ -1,18 +1,12 @@
-  # Almalinux 9 amd64
+  # Almalinux 9 arm
   
-  - id: almalinux-9-infrastructure-agent
+  - id: almalinux-9-infrastructure-agent-arm
     builds:
-      - linux-agent-amd64
-      - linux-ctl-amd64
-      - linux-service-amd64
-    package_name: "newrelic-infra{{ .Env.FIPS }}"
-    file_name_template: >-
-      newrelic-infra{{ .Env.FIPS }}-
-      {{- .Env.TAG }}-1.el9.
-      {{- if eq .Arch "amd64" -}}x86_64
-      {{- else -}}
-      {{ .Arch }}
-      {{- end }}
+      - linux-agent-arm
+      - linux-ctl-arm
+      - linux-service-arm
+    package_name: newrelic-infra
+    file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.el9.{{ .Arch }}"
     vendor: 'New Relic, Inc.'
     homepage: 'https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes'
     maintainer: 'caos-team@newrelic.com'
@@ -22,35 +16,19 @@
       - rpm
     bindir: /usr/bin
     contents:
-      - src: 'assets/examples/logging/linux/file.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
-      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
-      - src: 'assets/examples/logging/linux/syslog.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
-      - src: 'assets/examples/logging/linux/systemd.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
-      - src: 'assets/examples/logging/linux/tcp.yml.example'
-        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
-  
       - src: 'build/package/systemd/newrelic-infra.service'
         dst: '/etc/systemd/system/newrelic-infra.service'
       - src: 'LICENSE'
         dst: '/var/db/newrelic-infra/LICENSE.txt'
-      - src: 'target/nridocker/amd64/etc/newrelic-infra/integrations.d/docker-config.yml'
+      - src: 'target/nridocker/{{ .Arch }}/etc/newrelic-infra/integrations.d/docker-config.yml'
         dst: '/etc/newrelic-infra/integrations.d/docker-config.yml'
         type: config
-      - src: 'target/nridocker/amd64/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
+      - src: 'target/nridocker/{{ .Arch }}/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
         dst: '/opt/newrelic-infra/newrelic-integrations/bin/nri-docker'
-      - src: 'target/nriflex/amd64/nri-flex'
+      - src: 'target/nriflex/{{ .Arch }}/nri-flex'
         dst: '/opt/newrelic-infra/newrelic-integrations/bin/nri-flex'
-      - src: 'target/nriprometheus/amd64/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
+      - src: 'target/nriprometheus/{{ .Arch }}/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/opt/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
-      - src: 'target/fluent-bit-plugin/amd64/out_newrelic.so'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
-      - src: 'assets/examples/logging/parsers.conf'
-        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
-
       - dst: /opt/newrelic-infra/custom-integrations
         type: dir
       - dst: /opt/newrelic-infra/newrelic-integrations
@@ -70,7 +48,6 @@
     scripts:
       preinstall: "build/package/before-install.sh"
       preremove: "build/package/rpm/prerm-systemd.sh"
-  
     # Packages to replace according to old packaging scripts.
     replaces:
       - opspro-agent
@@ -85,11 +62,5 @@
   
       summary: "New Relic Infrastructure Agent"
       group: default
-    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
-    recommends:
-      - fluent-bit
-    # conflicts is not "templatable", so we add the conflicts-suffix-placeholder to be replaced later
-    conflicts:
-      - newrelic-infra#conflicts-suffix-placeholder#
   
-  # end Almalinux 9 amd64
+  # end Alamlinux 9 arm

@@ -1,12 +1,12 @@
-  # Almalinux 8 arm
+  # Almalinux 8 arm64
   
-  - id: almalinux-8-infrastructure-agent-arm
+  - id: almalinux-9-infrastructure-agent-arm64
     builds:
-      - linux-agent-arm
-      - linux-ctl-arm
-      - linux-service-arm
-    package_name: newrelic-infra
-    file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.el8.{{ .Arch }}"
+      - linux-agent-arm64
+      - linux-ctl-arm64
+      - linux-service-arm64
+    package_name: "newrelic-infra{{ .Env.FIPS }}"
+    file_name_template: "newrelic-infra{{ .Env.FIPS }}-{{ .Env.TAG }}-1.el8.{{ .Arch }}"
     vendor: 'New Relic, Inc.'
     homepage: 'https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes'
     maintainer: 'caos-team@newrelic.com'
@@ -15,7 +15,18 @@
     formats:
       - rpm
     bindir: /usr/bin
-    contents:  
+    contents:
+      - src: 'assets/examples/logging/linux/file.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/file.yml.example'
+      - src: 'assets/examples/logging/linux/fluentbit.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/fluentbit.yml.example'
+      - src: 'assets/examples/logging/linux/syslog.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/syslog.yml.example'
+      - src: 'assets/examples/logging/linux/systemd.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/systemd.yml.example'
+      - src: 'assets/examples/logging/linux/tcp.yml.example'
+        dst: '/etc/newrelic-infra/logging.d/tcp.yml.example'
+  
       - src: 'build/package/systemd/newrelic-infra.service'
         dst: '/etc/systemd/system/newrelic-infra.service'
       - src: 'LICENSE'
@@ -29,6 +40,11 @@
         dst: '/opt/newrelic-infra/newrelic-integrations/bin/nri-flex'
       - src: 'target/nriprometheus/{{ .Arch }}/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
         dst: '/opt/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
+      - src: 'target/fluent-bit-plugin/{{ .Arch }}/out_newrelic.so'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
+      - src: 'assets/examples/logging/parsers.conf'
+        dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
+
       - dst: /opt/newrelic-infra/custom-integrations
         type: dir
       - dst: /opt/newrelic-infra/newrelic-integrations
@@ -62,5 +78,11 @@
   
       summary: "New Relic Infrastructure Agent"
       group: default
+    # Recommended packages. If they fail to install installation of the agent will not be interrupted.
+    recommends:
+      - fluent-bit
+    # conflicts is not "templatable", so we add the conflicts-suffix-placeholder to be replaced later
+    conflicts:
+      - newrelic-infra#conflicts-suffix-placeholder#
   
-  # end Almalinux 8 arm
+  # end Almalinux 8 arm64
