@@ -9,7 +9,6 @@ include ../ansible/common.mk
 
 .PHONY: terraform-canaries
 terraform-canaries: ansible/dependencies
-	# Check for required variables
 ifndef ANSIBLE_INVENTORY
 	$(error ANSIBLE_INVENTORY is not set)
 endif
