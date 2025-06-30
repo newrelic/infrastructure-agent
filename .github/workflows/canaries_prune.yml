@@ -16,6 +16,11 @@ on:
         description: 'Tag to prune'
         type: string
         required: true
+      A2Q:
+          description: 'Prune A2Q canaries (default: normal)'
+          type: boolean
+          default: false
+          required: false
 
 permissions:
   id-token: write
@@ -27,5 +32,6 @@ jobs:
     with:
       PLATFORM: ${{ github.event.inputs.platform }}
       TAG: ${{ github.event.inputs.tag }}
+      A2Q: ${{ github.event.inputs.A2Q }}
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}

@@ -19,6 +19,10 @@ on:
       PLATFORM:
         required: true
         type: string
+      A2Q:
+        required: false
+        default: 'false'
+        type: string
 
 env:
   AWS_ASSUME_ROLE: 'arn:aws:iam::971422713139:role/caos-pipeline-oidc-infra-agent'
@@ -55,7 +59,7 @@ jobs:
         uses: newrelic/fargate-runner-action@main
         with:
           aws_region: us-east-2
-          container_make_target: "-C test/canaries macos-canaries PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} PREVIOUS_VERSION=${{ env.PREVIOUS_NR_VERSION }} VERSION=${{ inputs.TAG }} CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
+          container_make_target: "-C test/canaries macos-canaries PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} PREVIOUS_VERSION=${{ env.PREVIOUS_NR_VERSION }} VERSION=${{ inputs.TAG }} CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }} IS_A2Q=${{ inputs.A2Q }}"
           ecs_cluster_name: caos_infra_agent
           task_definition_name: infra-agent
           cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
@@ -89,15 +93,22 @@ jobs:
 
       - name: set vars for legibility (state, inventory ...)
         run: |
-          echo "PREVIOUS_TERRAFORM_STATE=canaries-${{ inputs.PLATFORM }}-${{ env.PREVIOUS_NR_VERSION }}"  >> $GITHUB_ENV
-          echo "TERRAFORM_STATE=canaries-${{ inputs.PLATFORM }}-${{ inputs.TAG }}"  >> $GITHUB_ENV
-          echo "INVENTORY_OUTPUT=/srv/runner/inventory/canary-${{ inputs.TAG }}-${{ inputs.PLATFORM }}-inventory.ec2"  >> $GITHUB_ENV
+          if [[ "${{ inputs.A2Q }}" == "true" ]]; then
+              echo "PREVIOUS_TERRAFORM_STATE=a2q-canaries-${{ inputs.PLATFORM }}-${{ env.PREVIOUS_NR_VERSION }}"  >> $GITHUB_ENV
+              echo "TERRAFORM_STATE=a2q-canaries-${{ inputs.PLATFORM }}-${{ inputs.TAG }}"  >> $GITHUB_ENV
+              echo "INVENTORY_OUTPUT=/srv/runner/inventory/a2q-canary-${{ inputs.TAG }}-${{ inputs.PLATFORM }}-inventory.ec2"  >> $GITHUB_ENV
+
+          else
+              echo "PREVIOUS_TERRAFORM_STATE=canaries-${{ inputs.PLATFORM }}-${{ env.PREVIOUS_NR_VERSION }}"  >> $GITHUB_ENV
+              echo "TERRAFORM_STATE=canaries-${{ inputs.PLATFORM }}-${{ inputs.TAG }}"  >> $GITHUB_ENV
+              echo "INVENTORY_OUTPUT=/srv/runner/inventory/canary-${{ inputs.TAG }}-${{ inputs.PLATFORM }}-inventory.ec2"  >> $GITHUB_ENV
+          fi
 
       - name: Provision instances ${{ inputs.PLATFORM }}
         uses: newrelic/fargate-runner-action@main
         with:
           aws_region: us-east-2
-          container_make_target: "-C test/provision TERRAFORM_STATE_KEY=${{ env.TERRAFORM_STATE }} PREFIX=canary INVENTORY_OUTPUT=${{ env.INVENTORY_OUTPUT }} TAG_OR_UNIQUE_NAME=${{ inputs.TAG }} PLATFORM=${{ inputs.PLATFORM }} CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
+          container_make_target: "-C test/provision TERRAFORM_STATE_KEY=${{ env.TERRAFORM_STATE }} PREFIX=canary INVENTORY_OUTPUT=${{ env.INVENTORY_OUTPUT }} TAG_OR_UNIQUE_NAME=${{ inputs.TAG }} PLATFORM=${{ inputs.PLATFORM }} CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }} IS_A2Q=${{ inputs.A2Q }}"
           ecs_cluster_name: caos_infra_agent
           task_definition_name: infra-agent
           cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
@@ -117,7 +128,7 @@ jobs:
         uses: newrelic/fargate-runner-action@main
         with:
           aws_region: us-east-2
-          container_make_target: "-C test/canaries terraform-canaries ANSIBLE_INVENTORY=${{ env.INVENTORY_OUTPUT }} PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} VERSION=${{ env.NR_VERSION }} PREVIOUS_VERSION=${{ env.PREVIOUS_NR_VERSION }} CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
+          container_make_target: "-C test/canaries terraform-canaries ANSIBLE_INVENTORY=${{ env.INVENTORY_OUTPUT }} PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} VERSION=${{ env.NR_VERSION }} PREVIOUS_VERSION=${{ env.PREVIOUS_NR_VERSION }} CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }} IS_A2Q=${{ inputs.A2Q }}"
           ecs_cluster_name: caos_infra_agent
           task_definition_name: infra-agent
           cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
@@ -151,16 +162,23 @@ jobs:
 
       - name: set vars for legibility (state, inventory ...)
         run: |
-          echo "TERRAFORM_STATE_PREVIOUS=canaries-${{ inputs.PLATFORM }}-${{ inputs.TAG }}-previous"  >> $GITHUB_ENV
-          echo "TERRAFORM_STATE_CURRENT=canaries-${{ inputs.PLATFORM }}-${{ inputs.TAG }}-current"  >> $GITHUB_ENV
-          echo "INVENTORY_PREVIOUS=/srv/runner/inventory/canary-${{ inputs.TAG }}-${{ inputs.PLATFORM }}-previous-inventory.ec2"  >> $GITHUB_ENV
-          echo "INVENTORY_CURRENT=/srv/runner/inventory/canary-${{ inputs.TAG }}-${{ inputs.PLATFORM }}-current-inventory.ec2"  >> $GITHUB_ENV
+          if [[ "${{ inputs.A2Q }}" == "true" ]]; then
+              echo "TERRAFORM_STATE_PREVIOUS=a2q-canaries-${{ inputs.PLATFORM }}-${{ inputs.TAG }}-previous"  >> $GITHUB_ENV
+              echo "TERRAFORM_STATE_CURRENT=a2q-canaries-${{ inputs.PLATFORM }}-${{ inputs.TAG }}-current"  >> $GITHUB_ENV
+              echo "INVENTORY_PREVIOUS=/srv/runner/inventory/canary-${{ inputs.TAG }}-${{ inputs.PLATFORM }}-previous-inventory.ec2"  >> $GITHUB_ENV
+              echo "INVENTORY_CURRENT=/srv/runner/inventory/canary-${{ inputs.TAG }}-${{ inputs.PLATFORM }}-current-inventory.ec2"  >> $GITHUB_ENV
+          else
+              echo "TERRAFORM_STATE_PREVIOUS=canaries-${{ inputs.PLATFORM }}-${{ inputs.TAG }}-previous"  >> $GITHUB_ENV
+              echo "TERRAFORM_STATE_CURRENT=canaries-${{ inputs.PLATFORM }}-${{ inputs.TAG }}-current"  >> $GITHUB_ENV
+              echo "INVENTORY_PREVIOUS=/srv/runner/inventory/canary-${{ inputs.TAG }}-${{ inputs.PLATFORM }}-previous-inventory.ec2"  >> $GITHUB_ENV
+              echo "INVENTORY_CURRENT=/srv/runner/inventory/canary-${{ inputs.TAG }}-${{ inputs.PLATFORM }}-current-inventory.ec2"  >> $GITHUB_ENV
+          fi
 
       - name: Provision instances ${{ inputs.PLATFORM }} previous
         uses: newrelic/fargate-runner-action@main
         with:
           aws_region: us-east-2
-          container_make_target: "-C test/provision TERRAFORM_STATE_KEY=${{ env.TERRAFORM_STATE_PREVIOUS }} PREFIX=canary INVENTORY_OUTPUT=${{ env.INVENTORY_PREVIOUS }} TAG_OR_UNIQUE_NAME=${{ env.PREVIOUS_NR_VERSION }} PLATFORM=${{ inputs.PLATFORM }} CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
+          container_make_target: "-C test/provision TERRAFORM_STATE_KEY=${{ env.TERRAFORM_STATE_PREVIOUS }} PREFIX=canary INVENTORY_OUTPUT=${{ env.INVENTORY_PREVIOUS }} TAG_OR_UNIQUE_NAME=${{ env.PREVIOUS_NR_VERSION }} PLATFORM=${{ inputs.PLATFORM }} CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }} IS_A2Q=${{ inputs.A2Q }}"
           ecs_cluster_name: caos_infra_agent
           task_definition_name: infra-agent
           cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
@@ -180,7 +198,7 @@ jobs:
         uses: newrelic/fargate-runner-action@main
         with:
           aws_region: us-east-2
-          container_make_target: "-C test/provision TERRAFORM_STATE_KEY=${{ env.TERRAFORM_STATE_CURRENT }} PREFIX=canary INVENTORY_OUTPUT=${{ env.INVENTORY_CURRENT }} TAG_OR_UNIQUE_NAME=${{ env.NR_VERSION }} PLATFORM=${{ inputs.PLATFORM }} CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
+          container_make_target: "-C test/provision TERRAFORM_STATE_KEY=${{ env.TERRAFORM_STATE_CURRENT }} PREFIX=canary INVENTORY_OUTPUT=${{ env.INVENTORY_CURRENT }} TAG_OR_UNIQUE_NAME=${{ env.NR_VERSION }} PLATFORM=${{ inputs.PLATFORM }} CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }} IS_A2Q=${{ inputs.A2Q }}"
           ecs_cluster_name: caos_infra_agent
           task_definition_name: infra-agent
           cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
@@ -200,7 +218,7 @@ jobs:
         uses: newrelic/fargate-runner-action@main
         with:
           aws_region: us-east-2
-          container_make_target: "-C test/canaries terraform-canaries ANSIBLE_INVENTORY=${{ env.INVENTORY_PREVIOUS }} PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} VERSION=${{ env.PREVIOUS_NR_VERSION }} PREVIOUS_VERSION='NOT_USED_VALUE' CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
+          container_make_target: "-C test/canaries terraform-canaries ANSIBLE_INVENTORY=${{ env.INVENTORY_PREVIOUS }} PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} VERSION=${{ env.PREVIOUS_NR_VERSION }} PREVIOUS_VERSION='NOT_USED_VALUE' CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }} IS_A2Q=${{ inputs.A2Q }}"
           ecs_cluster_name: caos_infra_agent
           task_definition_name: infra-agent
           cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
@@ -213,7 +231,7 @@ jobs:
         uses: newrelic/fargate-runner-action@main
         with:
           aws_region: us-east-2
-          container_make_target: "-C test/canaries terraform-canaries ANSIBLE_INVENTORY=${{ env.INVENTORY_CURRENT }} PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} VERSION=${{ env.NR_VERSION }} PREVIOUS_VERSION='NOT_USED_VALUE' CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
+          container_make_target: "-C test/canaries terraform-canaries ANSIBLE_INVENTORY=${{ env.INVENTORY_CURRENT }} PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }} VERSION=${{ env.NR_VERSION }} PREVIOUS_VERSION='NOT_USED_VALUE' CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }} IS_A2Q=${{ inputs.A2Q }}"
           ecs_cluster_name: caos_infra_agent
           task_definition_name: infra-agent
           cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
