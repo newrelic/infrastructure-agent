@@ -27,7 +27,7 @@ endif
 
 ## Conditional Canary Deployment
 ifdef IS_A2Q
-	    ansible-playbook -f $(ANSIBLE_FORKS) -i $(ANSIBLE_INVENTORY) "$(ANSIBLE_FOLDER)/deploy_a2q_canaries.yml" -e "current_version=$(VERSION) previous_version=$(PREVIOUS_VERSION) nr_license_key_a2q_1=$(NR_LICENSE_KEY_CANARIES_A2Q_1) nr_license_key_a2q_2=$(NR_LICENSE_KEY_CANARIES_A2Q_2) docker_username=$(DOCKER_USERNAME) docker_password=$(DOCKER_PASSWORD) prev=${IS_PREVIOUS}"
+	    ansible-playbook -f $(ANSIBLE_FORKS) -i $(ANSIBLE_INVENTORY) "$(ANSIBLE_FOLDER)/deploy_a2q_canaries.yml" -e "current_version=$(VERSION) previous_version=$(PREVIOUS_VERSION) nr_license_key_a2q_1=$(NR_LICENSE_KEY_CANARIES_A2Q_1) nr_license_key_a2q_2=$(NR_LICENSE_KEY_CANARIES_A2Q_2) docker_username=$(DOCKER_USERNAME) docker_password=$(DOCKER_PASSWORD) is_previous=${IS_PREVIOUS}"
 else
 	    ansible-playbook -f $(ANSIBLE_FORKS) -i $(ANSIBLE_INVENTORY) "$(ANSIBLE_FOLDER)/deploy_canaries.yml" -e "current_version=$(VERSION) previous_version=$(PREVIOUS_VERSION) nr_license_key=$(NR_LICENSE_KEY_CANARIES) docker_username=$(DOCKER_USERNAME) docker_password=$(DOCKER_PASSWORD)"
 endif
