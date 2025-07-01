@@ -41,6 +41,10 @@
         file: "vars/{{ inventory_hostname | regex_search('config[1-9]|config10') }}.yml"
     - name: Installation tests suite
       block:
+        - name: Debug is_previous value
+          ansible.builtin.debug:
+            msg: "is_previous value: {{ is_previous }}, {% if is_previous %}abc{% else %}def{% endif %}"            
+            verbosity: 0
         - name: install agent
           include_role:
             name: caos.ansible_roles.infra_agent
