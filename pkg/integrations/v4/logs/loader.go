@@ -10,6 +10,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/id"
+	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/fs"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/hostname"
@@ -48,7 +49,7 @@ func (l *CfgLoader) GetLicenseKey() string {
 
 // LoadAll loads and parses the logging configuration. It returns ok=false in case an error occurred, which should block
 // the start of the log forwarding feature.
-func (l *CfgLoader) LoadAll() (c FBCfg, ok bool) {
+func (l *CfgLoader) LoadAll(ff feature_flags.Retriever) (c FBCfg, ok bool) {
 	if l.config.ConfigsDir == "" && !l.config.Troubleshoot.Enabled {
 		loaderLogger.Error("invalid config, lacking config folder or troubleshoot mode")
 		return FBCfg{}, false
@@ -75,7 +76,7 @@ func (l *CfgLoader) LoadAll() (c FBCfg, ok bool) {
 		loaderLogger.Debug("Could not determine hostname.")
 	}
 
-	c, err = NewFBConf(allFilesCfgs, &(l.config), agentGUID.String(), shortHostName)
+	c, err = NewFBConf(allFilesCfgs, &(l.config), agentGUID.String(), shortHostName, ff)
 	if err != nil {
 		loaderLogger.WithError(err).Error("could not process logging configurations")
 		return FBCfg{}, false
@@ -161,8 +162,8 @@ func (l *CfgLoader) loadTroubleshootCfg() *LogCfg {
 	return nil
 }
 
-func (l *CfgLoader) LoadAndFormat() (string, FBCfgExternal, error) {
-	fbConfig, ok := l.LoadAll()
+func (l *CfgLoader) LoadAndFormat(ff feature_flags.Retriever) (string, FBCfgExternal, error) {
+	fbConfig, ok := l.LoadAll(ff)
 	if !ok {
 		return "", FBCfgExternal{}, errors.New("failed to load log configs")
 	}
