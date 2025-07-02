@@ -97,8 +97,13 @@ jobs:
 
       - name: set vars for legibility (state, inventory ...)
         run: |
-          echo "PREVIOUS_TERRAFORM_STATE=canaries-windows-${{ inputs.TAG }}-previous"  >> $GITHUB_ENV
-          echo "TERRAFORM_STATE=canaries-windows-${{ inputs.TAG }}-current"  >> $GITHUB_ENV
+          if [[ "${{ inputs.A2Q }}" == "true" ]]; then
+            echo "PREVIOUS_TERRAFORM_STATE=a2q-canaries-windows-${{ inputs.TAG }}-previous"  >> $GITHUB_ENV
+            echo "TERRAFORM_STATE=a2q-canaries-windows-${{ inputs.TAG }}-current"  >> $GITHUB_ENV
+          else
+            echo "PREVIOUS_TERRAFORM_STATE=canaries-windows-${{ inputs.TAG }}-previous"  >> $GITHUB_ENV
+            echo "TERRAFORM_STATE=canaries-windows-${{ inputs.TAG }}-current"  >> $GITHUB_ENV
+          fi
 
       # For Windows we have 8 canaries (4 current + 4 previous). For terraform, we divide it in 2 steps/states
       # so on purge we purge 4 previous-previous and 4 previous-current
