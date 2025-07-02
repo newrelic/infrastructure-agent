@@ -1,6 +1,6 @@
 ---
 
-subnet: "subnet-0c2046d7a0595aa2c"
+subnet: "subnet-09b64de757828cdd4"
 provision_host_prefix: "caos-harvest"
 
 #https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/connection-prereqs.html

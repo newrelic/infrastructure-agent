@@ -34,4 +34,4 @@ jobs:
       TAG: ${{ github.event.inputs.tag }}
       A2Q: ${{ github.event.inputs.A2Q }}
     secrets:
-      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET_CAOS}}
