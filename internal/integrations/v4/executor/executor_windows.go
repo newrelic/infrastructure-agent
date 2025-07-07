@@ -43,7 +43,19 @@ func setPriorityClass(cmd *exec.Cmd) error {
 		return fmt.Errorf("failed to get proc handle: %v", err)
 	}
 
-	return windows.SetPriorityClass(handle, priorityClass)
+	defer func() {
+		closeErr := windows.CloseHandle(handle)
+		if closeErr != nil {
+			illog.WithError(closeErr).WithField("command", cmd.String()).Error("failed to close process handle")
+		}
+	}()
+
+	err = windows.SetPriorityClass(handle, priorityClass)
+	if err != nil {
+		return fmt.Errorf("failed to set priority class : %w", err) //nolint:wrapcheck
+	}
+
+	return nil
 }
 
 // processHandle returns windows handle from cmd
