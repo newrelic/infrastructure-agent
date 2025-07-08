@@ -59,7 +59,13 @@ jobs:
 
       - name: Import PFX certificate
         shell: pwsh
-        run: build\windows\scripts\import_certificates.ps1 -pfx_passphrase "$env:PFX_PASSPHRASE" -pfx_certificate_description "$env:PFX_CERTIFICATE_DESCRIPTION"
+        run: |
+            $rawOutput = build\windows\scripts\import_certificates.ps1 -pfx_passphrase "$env:PFX_PASSPHRASE" -pfx_certificate_description "$env:PFX_CERTIFICATE_DESCRIPTION"
+            # Extract the Thumbprint value, ensuring only the first instance is captured
+            $thumbprint = ($rawOutput | Select-String -Pattern '\[Thumbprint\]\s*\n\s*([0-9A-F]{40})' | Select-Object -First 1 | ForEach-Object { $_.Matches.Groups[1].Value }).Trim()
+            Write-Host "Thumbprint: $thumbprint"
+            # Set the thumbprint as an environment variable
+            "certThumbprint=$thumbprint" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Set date environment variable for buildDate metadata
         run: echo buildDate=$(date -u +"%Y-%m-%dT%H:%M:%SZ") >> $GITHUB_ENV
@@ -67,11 +73,11 @@ jobs:
 
       - name: Build executables ${{ matrix.goarch }}
         shell: pwsh
-        run: build\windows\build.ps1 -arch ${{ matrix.goarch }} -version ${{env.FAKE_TAG}} -commit "$env:GITHUB_SHA" -date ${{env.buildDate}}
+        run: build\windows\build.ps1 -arch ${{ matrix.goarch }} -version ${{env.FAKE_TAG}} -commit "$env:GITHUB_SHA" -date ${{env.buildDate}} -certThumbprint "$env:certThumbprint"
 
       - name: Create MSI package ${{ matrix.goarch }}
         shell: pwsh
-        run: build\windows\package_msi.ps1 -arch ${{ matrix.goarch }} -version ${{env.FAKE_TAG}}
+        run: build\windows\package_msi.ps1 -arch ${{ matrix.goarch }} -version ${{env.FAKE_TAG}} -certThumbprint "$env:certThumbprint"
 
       - name: Create zip package ${{ matrix.goarch }}
         shell: pwsh
