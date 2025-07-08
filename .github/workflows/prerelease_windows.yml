@@ -31,7 +31,7 @@ jobs:
   # Keeping it as no component until we figure out how to pass env variables to component
   packaging:
     name: Create MSI & Upload into GH Release assets
-    runs-on: windows-2019
+    runs-on: windows-2025
     needs: [ unit-test ]
     env:
       GOPATH: ${{ github.workspace }}
