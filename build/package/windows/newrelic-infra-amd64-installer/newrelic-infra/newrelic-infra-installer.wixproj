@@ -8,7 +8,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <OutputName>newrelic-infra-amd64</OutputName>
     <OutputType>Package</OutputType>
-    <SignToolPath>C:\Program Files (x86)\Windows Kits\10\bin\x64\</SignToolPath>
+    <SignToolPath>C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64\</SignToolPath>
     <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
     <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
     <Name>newrelic-infra-installer</Name>

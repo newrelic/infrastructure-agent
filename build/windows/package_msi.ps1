@@ -35,7 +35,7 @@ Write-Output $msBuild
 
 Write-Output "===> Building msi Installer"
 
-$env:path = "$env:path;C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin"
+$env:path = "$env:path;C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin"
 $WixPrjPath = "$scriptPath\..\package\windows\newrelic-infra-$arch-installer\newrelic-infra"
 . $msBuild/MSBuild.exe "$WixPrjPath\newrelic-infra-installer.wixproj" /p:AgentVersion=${version} /p:Year=$buildYear /p:SkipSigning=${skipSigning}
 
