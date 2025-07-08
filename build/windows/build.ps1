@@ -14,7 +14,9 @@ param (
     # Skip signing
     [switch]$skipSigning=$false,
     # Signing tool
-    [string]$signtool='"C:\Program Files (x86)\Windows Kits\10\bin\x64\signtool.exe"'
+    [string]$signtool='"C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64\signtool.exe"',
+    # Certificate thumbprint
+    [string]$certThumbprint=""
 )
 $scriptPath = split-path -parent $MyInvocation.MyCommand.Definition
 $workspace = "$scriptPath\..\.."
@@ -92,7 +94,7 @@ Foreach ($pkg in $goMains)
     $exe = "$workspace\target\bin\windows_$arch\$fileName.exe"
     go build -ldflags "-X 'main.buildVersion=$version' -X 'main.gitCommit=$commit' -X 'main.buildDate=$date'" -o $exe $pkg
     if (-Not $skipSigning) {
-        SignExecutable -executable "$exe"
+        SignExecutable -executable "$exe" -certThumbprint "$certThumbprint"
     }
 }
 
@@ -107,7 +109,7 @@ Foreach ($pkg in $goMainsBuildInFolder)
     go mod download
     go build -ldflags "-X 'main.buildVersion=$version' -X 'main.gitCommit=$commit' -X 'main.buildDate=$date'" -o $exe
     if (-Not $skipSigning) {
-        SignExecutable -executable "$exe"
+        SignExecutable -executable "$exe" -certThumbprint "$certThumbprint"
     }
     cd "$workspace"
 }

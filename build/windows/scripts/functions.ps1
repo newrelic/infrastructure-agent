@@ -5,14 +5,24 @@
 Function SignExecutable {
     param (
         # Signing tool
-        [string]$signtool='"C:\Program Files (x86)\Windows Kits\10\bin\x64\signtool.exe"',
-        [string]$executable=$(throw "-executable path is required")
+        [string]$signtool='"C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64\signtool.exe"',
+        [string]$executable=$(throw "-executable path is required"),
+        [string]$certThumbprint=$(throw "-certThumbprint is required")
+
+
     )
 
-    Invoke-Expression "& $signtool sign /d 'New Relic Infrastructure Agent' /n 'New Relic, Inc.' $executable"
-    if ($lastExitCode -ne 0) {
-       throw "Failed to sign $executable"
+
+    # Print the certificate thumbprint
+    Write-Output "Certificate Thumbprint: $certThumbprint"
+
+    # Use the certificate thumbprint directly from the imported certificate
+    $certThumbprint = $certThumbprint.Trim()
+    Invoke-Expression "& $signtool sign /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 /d 'New Relic Infrastructure Agent' /sha1 $certThumbprint $executable"
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to sign $executable"
     }
+
 }
 
 Function GetIntegrationVersion {

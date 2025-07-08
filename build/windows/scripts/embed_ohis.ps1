@@ -11,7 +11,9 @@ param (
     # Skip signing
     [switch]$skipSigning=$false,
     # Signing tool
-    [string]$signtool='"C:\Program Files (x86)\Windows Kits\10\bin\x64\signtool.exe"'
+    [string]$signtool='"C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64\signtool.exe"',
+    # Certificate thumbprint
+    [string]$certThumbprint=""
 )
 
 # Source build Functions.
@@ -20,6 +22,7 @@ param (
 # Adding flex.
 Function EmbedFlex {
     Write-Output "--- Embedding nri-flex"
+    Write-Output "===> thumbprint1: $certThumbprint"
 
     [string]$version = GetIntegrationVersion -name "nri-flex"
     [string]$url="https://github.com/newrelic/nri-flex/releases/download/v${version}/nri-flex_windows_${version}_${arch}.zip"
@@ -27,7 +30,7 @@ Function EmbedFlex {
     DownloadAndExtractZip -dest:"$downloadPath\nri-flex" -url:"$url"
 
     if (-Not $skipSigning) {
-        SignExecutable -executable "$downloadPath\nri-flex\nri-flex.exe"
+        SignExecutable -executable "$downloadPath\nri-flex\nri-flex.exe" -certThumbprint "$certThumbprint"
     }
 }
 
@@ -44,8 +47,8 @@ Function EmbedWindowsServices {
     DownloadAndExtractZip -dest:"$downloadPath\nri-winservices" -url:"$url"
 
     if (-Not $skipSigning) {
-        SignExecutable -executable "$downloadPath\nri-winservices\nri-winservices.exe"
-        SignExecutable -executable "$downloadPath\nri-winservices\windows_exporter.exe"
+        SignExecutable -executable "$downloadPath\nri-winservices\nri-winservices.exe" -certThumbprint "$certThumbprint"
+        SignExecutable -executable "$downloadPath\nri-winservices\windows_exporter.exe" -certThumbprint "$certThumbprint"
     }
 }
 
@@ -65,7 +68,7 @@ Function EmbedPrometheus {
     Remove-Item -Path "$downloadPath\nri-prometheus\New Relic" -Force -Recurse
 
     if (-Not $skipSigning) {
-        SignExecutable -executable "$downloadPath\nri-prometheus\nri-prometheus.exe"
+        SignExecutable -executable "$downloadPath\nri-prometheus\nri-prometheus.exe" -certThumbprint "$certThumbprint"
     }
 }
 
@@ -97,9 +100,9 @@ Function EmbedFluentBit {
 
     if (-Not $skipSigning) {
         # <To be removed on removal of the ff fluent_bit_19>
-        SignExecutable -executable "$downloadPath\logging\nrfb\fluent-bit.exe"
+        SignExecutable -executable "$downloadPath\logging\nrfb\fluent-bit.exe" -certThumbprint "$certThumbprint"
         # </To be removed on removal of the ff fluent_bit_19>
-        SignExecutable -executable "$downloadPath\logging\nrfb2\fluent-bit.exe"
+        SignExecutable -executable "$downloadPath\logging\nrfb2\fluent-bit.exe" -certThumbprint "$certThumbprint"
     }
 }
 
@@ -115,7 +118,7 @@ Function EmbedWinpkg {
     DownloadAndExtractZip -dest:"$downloadPath" -url:"$url"
 
     if (-Not $skipSigning) {
-        SignExecutable -executable "$downloadPath\winpkg\nr-winpkg.exe"
+        SignExecutable -executable "$downloadPath\winpkg\nr-winpkg.exe" -certThumbprint "$certThumbprint"
     }
 }
 

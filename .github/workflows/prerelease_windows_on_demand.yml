@@ -38,7 +38,7 @@ jobs:
   # Keeping it as no component until we figure out how to pass env variables to component
   packaging:
     name: Create MSI & Upload into GHA workflow cache
-    runs-on: windows-2019
+    runs-on: windows-2025
     strategy:
       matrix:
         goarch: [ amd64, 386 ]
@@ -59,7 +59,16 @@ jobs:
 
       - name: Import PFX certificate
         shell: pwsh
-        run: build\windows\scripts\import_certificates.ps1 -pfx_passphrase "$env:PFX_PASSPHRASE" -pfx_certificate_description "$env:PFX_CERTIFICATE_DESCRIPTION"
+        run: |
+            $rawOutput = build\windows\scripts\import_certificates.ps1 -pfx_passphrase "$env:PFX_PASSPHRASE" -pfx_certificate_description "$env:PFX_CERTIFICATE_DESCRIPTION"
+            Write-Host "Thumbprint retrieved: $($rawOutput)"
+
+            # Extract the Thumbprint value, ensuring only the first instance is captured
+            $thumbprint = ($rawOutput | Select-String -Pattern '\[Thumbprint\]\s*\n\s*([0-9A-F]{40})' | Select-Object -First 1 | ForEach-Object { $_.Matches.Groups[1].Value }).Trim()
+            Write-Host "Processed Thumbprint: $thumbprint"
+
+            # Set the thumbprint as an environment variable
+            "certThumbprint=$thumbprint" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Set date environment variable for buildDate metadata
         run: echo buildDate=$(date -u +"%Y-%m-%dT%H:%M:%SZ") >> $GITHUB_ENV
@@ -67,11 +76,11 @@ jobs:
 
       - name: Build executables ${{ matrix.goarch }}
         shell: pwsh
-        run: build\windows\build.ps1 -arch ${{ matrix.goarch }} -version ${{env.FAKE_TAG}} -commit "$env:GITHUB_SHA" -date ${{env.buildDate}}
+        run: build\windows\build.ps1 -arch ${{ matrix.goarch }} -version ${{env.FAKE_TAG}} -commit "$env:GITHUB_SHA" -date ${{env.buildDate}} -certThumbprint "$env:certThumbprint"
 
       - name: Create MSI package ${{ matrix.goarch }}
         shell: pwsh
-        run: build\windows\package_msi.ps1 -arch ${{ matrix.goarch }} -version ${{env.FAKE_TAG}}
+        run: build\windows\package_msi.ps1 -arch ${{ matrix.goarch }} -version ${{env.FAKE_TAG}} -certThumbprint "$env:certThumbprint"
 
       - name: Create zip package ${{ matrix.goarch }}
         shell: pwsh
@@ -84,7 +93,7 @@ jobs:
           files_path: './${{ env.REPO_WORKDIR }}/dist'
 
       - name: Archive production artifacts
-        uses: actions/upload-artifact@v2 #v3 just got released and was not working in windows
+        uses: actions/upload-artifact@v4 #v3 just got released and was not working in windows
         with:
           name: windows-assets
           path: dist
@@ -101,7 +110,7 @@ jobs:
 
     steps:
       - name: Download a single artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: windows-assets
 

@@ -1,7 +1,7 @@
 # Building New Relic Infrastructure agent on windows.
 ## Requirements
 1. [Go](https://golang.org/dl/)
-2. [MSBuild](https://docs.microsoft.com/en-us/visualstudio/msbuild/msbuild?view=vs-2019)
+2. [MSBuild](https://docs.microsoft.com/en-us/visualstudio/msbuild/msbuild?view=vs-2022)
 3. [Wix Toolset](https://wixtoolset.org/)
 
 ## Compile and build the agent msi package

@@ -4,22 +4,85 @@ on:
     branches:
       - test_windows_runner
 
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  PFX_CERTIFICATE_BASE64: ${{ secrets.OHAI_PFX_CERTIFICATE_BASE64 }} # base64 encoded
+  PFX_CERTIFICATE_DESCRIPTION: 'New Relic'
+  PFX_PASSPHRASE: ${{ secrets.OHAI_PFX_PASSPHRASE }}
+  SNYK_TOKEN: ${{ secrets.CAOS_SNYK_TOKEN }}
+  TAG: ${{ github.event.release.tag_name || '0.0.0'}}
+  DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
+  DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
+  # required for GHA publish action, should be moved into optional
+  GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+  GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+  SCHEMA_BRANCH: ${{ github.event.release.tag_name || '0.0.0'}}
+  AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
+  AWS_REGION: "us-east-1"
+  REPO_WORKDIR: 'src/github.com/newrelic/infrastructure-agent'
+
 jobs:
+
+  # Keeping it as no component until we figure out how to pass env variables to component
   packaging:
-    name: Verify Signtool Path
+    name: Create MSI & Upload into GH Release assets
     runs-on: windows-2025
+    env:
+      GOPATH: ${{ github.workspace }}
+    defaults:
+      run:
+        working-directory: ${{ env.REPO_WORKDIR }}
+    strategy:
+      matrix:
+        goarch: [ amd64, 386 ]
     steps:
-      - name: Verify Signtool Path
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          path: ${{ env.REPO_WORKDIR }}
+
+      - name: Install Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: '${{ env.REPO_WORKDIR }}/go.mod'
+
+      - name: Get PFX certificate from GH secrets
+        shell: bash
+        run: printf "%s" "$PFX_CERTIFICATE_BASE64" | base64 -d - > wincert.pfx
+
+      - name: Import PFX certificate
+        id: import_cert
         shell: pwsh
         run: |
-            $signtoolFolder = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin"
-            Write-Host "--- Verifying signtool folder..."
-            if (-Not (Test-Path $signtoolFolder -PathType Container)) {
-              Write-Host "ERROR: The specified signtool folder does not exist: $signtoolFolder"
-              Write-Host "--- Listing all items under the parent folder..."
-              Get-ChildItem -Path "C:\Program Files\Microsoft Visual Studio\" | ForEach-Object { Write-Host $_.Name }
-            } else {
-              Write-Host "SUCCESS: The signtool folder is valid: $signtoolFolder"
-              Write-Host "--- Listing all items under the folder..."
-              Get-ChildItem -Path $signtoolFolder | ForEach-Object { Write-Host $_.Name }
-            }
+          build\windows\scripts\set_cert_thumbprint_env.ps1 -PfxPassphrase "$env:PFX_PASSPHRASE" -PfxCertificateDescription "$env:PFX_CERTIFICATE_DESCRIPTION"
+
+      - name: Set date environment variable for buildDate metadata
+        run: echo buildDate=$(date -u +"%Y-%m-%dT%H:%M:%SZ") >> $GITHUB_ENV
+        shell: bash
+
+      - name: Build executables ${{ matrix.goarch }}
+        shell: pwsh
+        run: build\windows\build.ps1 -arch ${{ matrix.goarch }} -version ${{env.TAG}} -commit "$env:GITHUB_SHA" -date ${{env.buildDate}} -certThumbprint "$env:certThumbprint"
+
+      - name: Create MSI package ${{ matrix.goarch }}
+        shell: pwsh
+        run: build\windows\package_msi.ps1 -arch ${{ matrix.goarch }} -version ${{env.TAG}} -certThumbprint "$env:certThumbprint"
+# jobs:
+#   packaging:
+#     name: Verify Signtool Path
+#     runs-on: windows-2025
+#     steps:
+#       - name: Verify Signtool Path
+#         shell: pwsh
+#         run: |
+#             $signtoolFolder = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin"
+#             Write-Host "--- Verifying signtool folder..."
+#             if (-Not (Test-Path $signtoolFolder -PathType Container)) {
+#               Write-Host "ERROR: The specified signtool folder does not exist: $signtoolFolder"
+#               Write-Host "--- Listing all items under the parent folder..."
+#               Get-ChildItem -Path "C:\Program Files\Microsoft Visual Studio\" | ForEach-Object { Write-Host $_.Name }
+#             } else {
+#               Write-Host "SUCCESS: The signtool folder is valid: $signtoolFolder"
+#               Write-Host "--- Listing all items under the folder..."
+#               Get-ChildItem -Path $signtoolFolder | ForEach-Object { Write-Host $_.Name }
+#             }

@@ -10,7 +10,10 @@ param (
     [string]$version="0.0.0",
 
     # Skip signing
-    [switch]$skipSigning=$false
+    [switch]$skipSigning=$false,
+    # Certificate thumbprint
+    [string]$certThumbprint=""
+
 )
 
 $scriptPath = split-path -parent $MyInvocation.MyCommand.Definition
@@ -19,7 +22,7 @@ $workspace = "$scriptPath\..\.."
 $buildYear = (Get-Date).Year
 
 Write-Output "===> Embeding integrations"
-Invoke-expression -Command "$scriptPath\scripts\embed_ohis.ps1 -arch $arch $(If ($skipSigning) {"-skipSigning"})"
+Invoke-expression -Command "$scriptPath\scripts\embed_ohis.ps1 -arch $arch -certThumbprint $certThumbprint $(If ($skipSigning) {"-skipSigning"})"
 if ($lastExitCode -ne 0) {
     Write-Output "Failed to embed integration"
     exit -1
@@ -35,9 +38,9 @@ Write-Output $msBuild
 
 Write-Output "===> Building msi Installer"
 
-$env:path = "$env:path;C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin"
+$env:path = "$env:path;C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin"
 $WixPrjPath = "$scriptPath\..\package\windows\newrelic-infra-$arch-installer\newrelic-infra"
-. $msBuild/MSBuild.exe "$WixPrjPath\newrelic-infra-installer.wixproj" /p:AgentVersion=${version} /p:Year=$buildYear /p:SkipSigning=${skipSigning}
+. $msBuild/MSBuild.exe "$WixPrjPath\newrelic-infra-installer.wixproj" /p:AgentVersion=${version} /p:Year=$buildYear /p:SkipSigning=${skipSigning} /p:SignToolArgs="/fd SHA256 /tr http://timestamp.digicert.com /td SHA256 /sha1 $certThumbprint"
 
 if (-not $?)
 {

@@ -8,11 +8,19 @@
     <SchemaVersion>2.0</SchemaVersion>
     <OutputName>newrelic-infra-386</OutputName>
     <OutputType>Package</OutputType>
-    <SignToolPath>C:\Program Files (x86)\Windows Kits\10\bin\x64\</SignToolPath>
+    <SignToolPath>C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64\</SignToolPath>
     <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
     <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
     <Name>newrelic-infra-installer</Name>
     <DefineSolutionProperties>false</DefineSolutionProperties>
+  </PropertyGroup>
+    <!-- NEW: Define default values for SignToolArgs and SkipSigning -->
+  <PropertyGroup>
+    <!-- Define a default for SignToolArgs if it's not passed from MSBuild -->
+    <!-- Using SHA256 as a recommended default -->
+    <SignToolArgs Condition="'$(SignToolArgs)' == ''">/fd SHA256 /tr http://timestamp.digicert.com /td SHA256</SignToolArgs>
+    <!-- Define a default for SkipSigning if it's not passed -->
+    <SkipSigning Condition="'$(SkipSigning)' == ''">false</SkipSigning>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
@@ -46,8 +54,8 @@
       <Output TaskParameter="Value" PropertyName="DefineConstants" />
     </CreateProperty>
   </Target>
-  <Target Name="SignInstaller">
-    <Exec Command="&quot;$(SignToolPath)signtool.exe&quot; sign /d &quot;New Relic Infrastructure Agent&quot; /n &quot;New Relic, Inc.&quot; &quot;$(OutputPath)$(OutputName).msi&quot;" />
+  <Target Name="SignInstaller" Condition="'$(SkipSigning)' != 'true'">
+    <Exec Command="&quot;$(SignToolPath)signtool.exe&quot; sign $(SignToolArgs) /d &quot;New Relic Infrastructure Agent&quot; /n &quot;New Relic, Inc.&quot; &quot;$(OutputPath)$(OutputName).msi&quot;" />
     <Copy SourceFiles="$(OutputPath)$(OutputName).msi" DestinationFiles="$(OutputPath)$(OutputName).1.0.NNN.msi" />
     <!-- <Delete Files="$(OutputPath)$(OutputName).msi" /> -->
   </Target>
