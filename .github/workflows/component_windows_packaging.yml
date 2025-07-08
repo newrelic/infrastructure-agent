@@ -34,7 +34,7 @@ env:
 jobs:
   packaging:
     name: Create MSI & Upload into GH Release assets
-    runs-on: windows-2019
+    runs-on: windows-2025
     env:
       GOPATH: ${{ env.GOPATH }}
     defaults:
