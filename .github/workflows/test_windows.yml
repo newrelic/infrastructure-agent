@@ -1,0 +1,25 @@
+name: . 🚀 🪟 Test Windows Build
+on:
+  push:
+    branches:
+      - test_windows_runner
+
+jobs:
+  packaging:
+    name: Verify Signtool Path
+    runs-on: windows-2025
+    steps:
+      - name: Verify Signtool Path
+        shell: pwsh
+        run: |
+            $signtoolFolder = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin"
+            Write-Host "--- Verifying signtool folder..."
+            if (-Not (Test-Path $signtoolFolder -PathType Container)) {
+              Write-Host "ERROR: The specified signtool folder does not exist: $signtoolFolder"
+              Write-Host "--- Listing all items under the parent folder..."
+              Get-ChildItem -Path "C:\Program Files\Microsoft Visual Studio\" | ForEach-Object { Write-Host $_.Name }
+            } else {
+              Write-Host "SUCCESS: The signtool folder is valid: $signtoolFolder"
+              Write-Host "--- Listing all items under the folder..."
+              Get-ChildItem -Path $signtoolFolder | ForEach-Object { Write-Host $_.Name }
+            }
