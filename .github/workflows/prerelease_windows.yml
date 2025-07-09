@@ -58,7 +58,8 @@ jobs:
 
       - name: Import PFX certificate
         shell: pwsh
-        run: build\windows\scripts\import_certificates.ps1 -pfx_passphrase "$env:PFX_PASSPHRASE" -pfx_certificate_description "$env:PFX_CERTIFICATE_DESCRIPTION"
+        run: |
+          build\windows\scripts\set_cert_thumbprint_env.ps1 -PfxPassphrase "$env:PFX_PASSPHRASE" -PfxCertificateDescription "$env:PFX_CERTIFICATE_DESCRIPTION"
 
       - name: Set date environment variable for buildDate metadata
         run: echo buildDate=$(date -u +"%Y-%m-%dT%H:%M:%SZ") >> $GITHUB_ENV
@@ -66,11 +67,11 @@ jobs:
 
       - name: Build executables ${{ matrix.goarch }}
         shell: pwsh
-        run: build\windows\build.ps1 -arch ${{ matrix.goarch }} -version ${{env.TAG}} -commit "$env:GITHUB_SHA" -date ${{env.buildDate}}
+        run: build\windows\build.ps1 -arch ${{ matrix.goarch }} -version ${{env.TAG}} -commit "$env:GITHUB_SHA" -date ${{env.buildDate}} -certThumbprint "$env:certThumbprint"
 
       - name: Create MSI package ${{ matrix.goarch }}
         shell: pwsh
-        run: build\windows\package_msi.ps1 -arch ${{ matrix.goarch }} -version ${{env.TAG}}
+        run: build\windows\package_msi.ps1 -arch ${{ matrix.goarch }} -version ${{env.TAG}} -certThumbprint "$env:certThumbprint"
 
       - name: Create zip package ${{ matrix.goarch }}
         shell: pwsh
