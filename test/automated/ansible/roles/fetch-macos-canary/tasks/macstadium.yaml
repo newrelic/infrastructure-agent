@@ -8,6 +8,6 @@
 
 - name: "register instances attributes"
   set_fact:
-    registered_instances_macos: "{{ (curl_result.stdout  | from_json) | community.general.json_query('[*].{InstanceId: id, PublicIpAddress: ip, Name: name}') }}"
+    registered_instances_macos: "{{ (curl_result.stdout  | from_json) | community.general.json_query('[*].{InstanceId: id, PublicIpAddress: ip, Name: name}') | selectattr('Name', 'not search', 'macos12') | list }}"
   no_log: true
 
