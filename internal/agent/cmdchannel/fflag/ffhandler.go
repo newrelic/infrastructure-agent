@@ -28,6 +28,7 @@ const (
 	FlagDmRegisterDeprecated  = "dm_register_deprecated"
 	FlagFluentBit19           = "fluent_bit_19_win"
 	FlagFullInventoryDeletion = "full_inventory_deletion"
+	FlagFluentBitMetrics      = "fluent_bit_metrics"
 	// Config
 	CfgYmlRegisterEnabled              = "register_enabled"
 	CfgYmlParallelizeInventory         = "inventory_queue_len"
@@ -185,7 +186,8 @@ func isBasicFeatureFlag(flag string) bool {
 	return flag == FlagProtocolV4 ||
 		flag == FlagFullProcess ||
 		flag == FlagDmRegisterDeprecated ||
-		flag == FlagFullInventoryDeletion
+		flag == FlagFullInventoryDeletion ||
+		flag == FlagFluentBitMetrics
 }
 
 func (h *handler) setFFConfig(ff string, enabled bool) {
