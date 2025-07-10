@@ -16,6 +16,6 @@ if [ -z $TAG ];then
 fi
 
 # print previous tag
-PREVIOUS_TAG=$( git tag | grep -E "^[0-9]+\.[0-9]+\.[0-9]$" | sort | grep -B 1 $TAG | head -n 1 )
+PREVIOUS_TAG=1.65.1
 
 echo "PREVIOUS_TAG=$PREVIOUS_TAG"
