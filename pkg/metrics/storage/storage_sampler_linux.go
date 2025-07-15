@@ -37,6 +37,7 @@ var (
 		"vxfs":     true,
 		"zfs":      true,
 		"reiserfs": true,
+		"nfs4":     true,
 	}
 	deviceRegexp      = regexp.MustCompile("^/dev/([a-z0-9]+)")
 	lvmRegexp         = regexp.MustCompile("^/dev/mapper/(.*)")
