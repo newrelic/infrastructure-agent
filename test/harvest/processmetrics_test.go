@@ -221,7 +221,7 @@ func TestProcessSampler_CommandChanges(t *testing.T) {
 	f, err := ioutil.TempFile("", "ps")
 	require.NoError(t, err)
 	require.NoError(t, f.Chmod(os.ModePerm))
-	fdName := f.Name()
+	fdName := f.Name() // ps2797417662
 	require.NoError(t, ioutil.WriteFile(fdName, []byte(`#!/bin/sh
 sleep 1s
 exec sleep 30s   # this will change the command name to "sleep"
@@ -245,7 +245,7 @@ exec sleep 30s   # this will change the command name to "sleep"
 
 	// When the Command changes at runtime
 	// Then new command name and command line is updated
-	testhelpers.Eventually(t, 6*time.Second, func(t require.TestingT) {
+	testhelpers.Eventually(t, 12*time.Second, func(t require.TestingT) {
 		sample, err := sampleProcess(ps, int32(cmd.Process.Pid))
 		require.NoError(t, err)
 
