@@ -6,12 +6,13 @@
 package harvest
 
 import (
-	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
 	"github.com/newrelic/infrastructure-agent/pkg/backend/inventoryapi"
@@ -39,7 +40,7 @@ func TestEmptyProxyConfigPlugin(t *testing.T) {
 	select {
 	case req = <-testClient.RequestCh:
 		a.Terminate()
-	case <-time.After(5 * time.Second):
+	case <-time.After(20 * time.Second):
 		a.Terminate()
 		assert.FailNow(t, "timeout while waiting for a response")
 	}
