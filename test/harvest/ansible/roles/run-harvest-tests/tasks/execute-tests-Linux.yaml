@@ -5,7 +5,7 @@
   shell: "{{ ansible_user_dir }}/{{ os_arch_binary_name }} -test.run=\"{{ tests_to_run_regex }}\" -test.v"
   ignore_errors: true
   register: harvest_out
-  no_log: true
+  # no_log: true
 
 - debug:
     var: harvest_out.stderr_lines
