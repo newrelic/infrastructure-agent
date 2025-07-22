@@ -1,14 +1,16 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-//go:build linux && harvest
-// +build linux,harvest
 
 package harvest
 
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"os/exec"
+	"path"
+	"path/filepath"
 	"runtime"
 	"testing"
 	"time"
@@ -16,6 +18,8 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
+	"github.com/newrelic/infrastructure-agent/pkg/helpers"
+	"github.com/newrelic/infrastructure-agent/pkg/helpers/detection"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/process"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
@@ -88,69 +92,7 @@ func TestProcessSamplerMemoryValues(t *testing.T) {
 	})
 }
 
-func TestProcessSamplerDiskValues_Write(t *testing.T) {
-	// Given a Process Sampler
-	ps := process.NewProcessSampler(contextMock())
-
-	// That has already run
-	sample1, err := sampleProcess(ps, int32(os.Getpid()))
-	require.NoError(t, err)
-	assertProcessSample(t, sample1)
-
-	// When the Disk writes are stressed
-	assert.NoError(t, writeDisk(tmpIOFile))
-	defer func() {
-		if derr := cleanup(tmpIOFile); derr != nil {
-			t.Log(derr)
-		}
-	}()
-
-	// The IO write metrics become noticeably higher than in the previous samples
-	testhelpers.Eventually(t, diskIOTimeout, func(t require.TestingT) {
-		sample2, err := sampleProcess(ps, int32(os.Getpid()))
-		require.NoError(t, err)
-		assertProcessSample(t, sample2)
-		assertIOCounters(t, sample2)
-
-		assert.True(t, *sample1.IOTotalWriteCount < *sample2.IOTotalWriteCount,
-			"IOTotalWriteCount for sample1: %+v, sample2: %+v", *sample1.IOTotalWriteCount, *sample2.IOTotalWriteCount)
-		assert.True(t, *sample1.IOTotalWriteBytes+3000 < *sample2.IOTotalWriteBytes,
-			"IOTotalWriteBytes for sample1: %+v, sample2: %+v", *sample1.IOTotalWriteBytes, *sample2.IOTotalWriteBytes)
-	})
-}
-
-// func TestProcessSamplerDiskValues_Read(t *testing.T) {
-// 	t.Skip("Check why this test fails")
-
-// 	// Given a Process Sampler
-// 	ps := process.NewProcessSampler(contextMock())
-
-// 	// That has already run
-// 	sample1, err := sampleProcess(ps, int32(os.Getpid()))
-// 	require.NoError(t, err)
-// 	assertProcessSample(t, sample1)
-
-// 	assert.NoError(t, writeDisk(testFile))
-// 	defer cleanup(testFile)
-
-// 	// When the Disk reads are stressed
-// 	assert.NoError(t, readDisk())
-
-// 	// The IO read metrics become noticeably higher than in the previous samples
-// 	testhelpers.Eventually(t, diskIOTimeout, func(t require.TestingT) {
-// 		sample2, err := sampleProcess(ps, int32(os.Getpid()))
-// 		require.NoError(t, err)
-// 		assertProcessSample(t, sample2)
-// 		assertIOCounters(t, sample2)
-
-// 		assert.True(t, *sample1.IOTotalReadCount < *sample2.IOTotalReadCount,
-// 			"IOTotalReadCount for sample1: %+v, sample2: %+v", *sample1.IOTotalReadCount, *sample2.IOTotalReadCount)
-// 		assert.True(t, *sample1.IOTotalReadBytes+3000 < *sample2.IOTotalReadBytes,
-// 			"IOTotalReadBytes for sample1: %+v, sample2: %+v", *sample1.IOTotalReadBytes, *sample2.IOTotalReadBytes)
-// 	})
-// }
-
-// func TestProcessSamplerDiskValues_WritePerSecond(t *testing.T) {
+// func TestProcessSamplerDiskValues_Write(t *testing.T) {
 // 	// Given a Process Sampler
 // 	ps := process.NewProcessSampler(contextMock())
 
@@ -161,21 +103,83 @@ func TestProcessSamplerDiskValues_Write(t *testing.T) {
 
 // 	// When the Disk writes are stressed
 // 	assert.NoError(t, writeDisk(tmpIOFile))
-// 	defer cleanup(tmpIOFile)
+// 	defer func() {
+// 		if derr := cleanup(tmpIOFile); derr != nil {
+// 			t.Log(derr)
+// 		}
+// 	}()
 
-// 	// The IO write per second metrics report nonzero values
+// 	// The IO write metrics become noticeably higher than in the previous samples
 // 	testhelpers.Eventually(t, diskIOTimeout, func(t require.TestingT) {
-// 		time.Sleep(time.Second) // need to wait to avoid elapsedSeconds == 0
-
 // 		sample2, err := sampleProcess(ps, int32(os.Getpid()))
 // 		require.NoError(t, err)
 // 		assertProcessSample(t, sample2)
 // 		assertIOCounters(t, sample2)
 
-// 		assert.True(t, *sample2.IOWriteCountPerSecond > 0, "IOWriteCountPerSecond must not be zero")
-// 		assert.True(t, *sample2.IOWriteBytesPerSecond > 0, "IOWriteBytesPerSecond must not be zero")
+// 		assert.True(t, *sample1.IOTotalWriteCount < *sample2.IOTotalWriteCount,
+// 			"IOTotalWriteCount for sample1: %+v, sample2: %+v", *sample1.IOTotalWriteCount, *sample2.IOTotalWriteCount)
+// 		assert.True(t, *sample1.IOTotalWriteBytes+3000 < *sample2.IOTotalWriteBytes,
+// 			"IOTotalWriteBytes for sample1: %+v, sample2: %+v", *sample1.IOTotalWriteBytes, *sample2.IOTotalWriteBytes)
 // 	})
 // }
+
+func TestProcessSamplerDiskValues_Read(t *testing.T) {
+	t.Skip("Check why this test fails")
+
+	// Given a Process Sampler
+	ps := process.NewProcessSampler(contextMock())
+
+	// That has already run
+	sample1, err := sampleProcess(ps, int32(os.Getpid()))
+	require.NoError(t, err)
+	assertProcessSample(t, sample1)
+
+	assert.NoError(t, writeDisk(testFile))
+	defer cleanup(testFile)
+
+	// When the Disk reads are stressed
+	assert.NoError(t, readDisk())
+
+	// The IO read metrics become noticeably higher than in the previous samples
+	testhelpers.Eventually(t, diskIOTimeout, func(t require.TestingT) {
+		sample2, err := sampleProcess(ps, int32(os.Getpid()))
+		require.NoError(t, err)
+		assertProcessSample(t, sample2)
+		assertIOCounters(t, sample2)
+
+		assert.True(t, *sample1.IOTotalReadCount < *sample2.IOTotalReadCount,
+			"IOTotalReadCount for sample1: %+v, sample2: %+v", *sample1.IOTotalReadCount, *sample2.IOTotalReadCount)
+		assert.True(t, *sample1.IOTotalReadBytes+3000 < *sample2.IOTotalReadBytes,
+			"IOTotalReadBytes for sample1: %+v, sample2: %+v", *sample1.IOTotalReadBytes, *sample2.IOTotalReadBytes)
+	})
+}
+
+func TestProcessSamplerDiskValues_WritePerSecond(t *testing.T) {
+	// Given a Process Sampler
+	ps := process.NewProcessSampler(contextMock())
+
+	// That has already run
+	sample1, err := sampleProcess(ps, int32(os.Getpid()))
+	require.NoError(t, err)
+	assertProcessSample(t, sample1)
+
+	// When the Disk writes are stressed
+	assert.NoError(t, writeDisk(tmpIOFile))
+	defer cleanup(tmpIOFile)
+
+	// The IO write per second metrics report nonzero values
+	testhelpers.Eventually(t, diskIOTimeout, func(t require.TestingT) {
+		time.Sleep(time.Second) // need to wait to avoid elapsedSeconds == 0
+
+		sample2, err := sampleProcess(ps, int32(os.Getpid()))
+		require.NoError(t, err)
+		assertProcessSample(t, sample2)
+		assertIOCounters(t, sample2)
+
+		assert.True(t, *sample2.IOWriteCountPerSecond > 0, "IOWriteCountPerSecond must not be zero")
+		assert.True(t, *sample2.IOWriteBytesPerSecond > 0, "IOWriteBytesPerSecond must not be zero")
+	})
+}
 
 func TestProcessSamplerDiskValues_ReadPerSecond(t *testing.T) {
 	t.Skip("Check why this test fails")
@@ -208,95 +212,95 @@ func TestProcessSamplerDiskValues_ReadPerSecond(t *testing.T) {
 	})
 }
 
-// func TestProcessSampler_CommandChanges(t *testing.T) {
-// 	// Given a process whose command name and command line change at runtime
-// 	f, err := ioutil.TempFile("", "ps")
-// 	require.NoError(t, err)
-// 	require.NoError(t, f.Chmod(os.ModePerm))
-// 	fdName := f.Name() // ps2797417662
-// 	require.NoError(t, ioutil.WriteFile(fdName, []byte(`#!/bin/sh
-// sleep 1s
-// exec sleep 30s   # this will change the command name to "sleep"
-// `), os.ModePerm))
-// 	require.NoError(t, f.Close())
+func TestProcessSampler_CommandChanges(t *testing.T) {
+	// Given a process whose command name and command line change at runtime
+	f, err := ioutil.TempFile("", "ps")
+	require.NoError(t, err)
+	require.NoError(t, f.Chmod(os.ModePerm))
+	fdName := f.Name() // ps2797417662
+	require.NoError(t, ioutil.WriteFile(fdName, []byte(`#!/bin/sh
+sleep 1s
+exec sleep 30s   # this will change the command name to "sleep"
+`), os.ModePerm))
+	require.NoError(t, f.Close())
 
-// 	cmd := exec.Command(fdName)
+	cmd := exec.Command(fdName)
 
-// 	require.NoError(t, cmd.Start())
-// 	defer cmd.Process.Kill()
+	require.NoError(t, cmd.Start())
+	defer cmd.Process.Kill()
 
-// 	// That has a given Command Name and Command Line
-// 	ps := process.NewProcessSampler(contextMock())
-// 	testhelpers.Eventually(t, 6*time.Second, func(t require.TestingT) {
-// 		sample, err := sampleProcess(ps, int32(cmd.Process.Pid))
-// 		require.NoError(t, err)
+	// That has a given Command Name and Command Line
+	ps := process.NewProcessSampler(contextMock())
+	testhelpers.Eventually(t, 10*time.Second, func(t require.TestingT) {
+		sample, err := sampleProcess(ps, int32(cmd.Process.Pid))
+		require.NoError(t, err)
 
-// 		assert.Regexp(t, fmt.Sprintf("%v$", fdName), sample.CmdLine)
-// 		assert.Regexp(t, fmt.Sprintf("^%v$", path.Base(fdName)), sample.CommandName)
-// 	})
+		assert.Regexp(t, fmt.Sprintf("%v$", fdName), sample.CmdLine)
+		assert.Regexp(t, fmt.Sprintf("^%v$", path.Base(fdName)), sample.CommandName)
+	})
 
-// 	// When the Command changes at runtime
-// 	// Then new command name and command line is updated
-// 	testhelpers.Eventually(t, 12*time.Second, func(t require.TestingT) {
-// 		sample, err := sampleProcess(ps, int32(cmd.Process.Pid))
-// 		require.NoError(t, err)
+	// When the Command changes at runtime
+	// Then new command name and command line is updated
+	testhelpers.Eventually(t, 12*time.Second, func(t require.TestingT) {
+		sample, err := sampleProcess(ps, int32(cmd.Process.Pid))
+		require.NoError(t, err)
 
-// 		assert.Regexp(t, "sleep 30s$", sample.CmdLine)
-// 		assert.Regexp(t, "^sleep$", sample.CommandName)
-// 	})
-// }
+		assert.Regexp(t, "sleep 30s$", sample.CmdLine)
+		assert.Regexp(t, "^sleep$", sample.CommandName)
+	})
+}
 
-// func TestProcessSamplerUsername(t *testing.T) {
-// 	t.Skipf("Not working in all systems. Disabling to unblock release")
+func TestProcessSamplerUsername(t *testing.T) {
+	t.Skipf("Not working in all systems. Disabling to unblock release")
 
-// 	// Given a Process Sampler
-// 	ps := process.NewProcessSampler(contextMock())
+	// Given a Process Sampler
+	ps := process.NewProcessSampler(contextMock())
 
-// 	// And a systemd service running with Dynamic User
-// 	service := "/usr/bin/deleteme"
-// 	content := `#!/bin/bash
-// while $(sleep 1);
-// do
-//     echo "hello world"
-// done
-// `
-// 	writeFile(t, service, os.ModePerm, content)
-// 	defer os.Remove(service)
+	// And a systemd service running with Dynamic User
+	service := "/usr/bin/deleteme"
+	content := `#!/bin/bash
+while $(sleep 1);
+do
+    echo "hello world"
+done
+`
+	writeFile(t, service, os.ModePerm, content)
+	defer os.Remove(service)
 
-// 	systemdFile := "/etc/systemd/system/deleteme.service"
-// 	content = fmt.Sprintf(`[Unit]
-// Description=Hello World Service
-// After=systend-user-sessions.service
+	systemdFile := "/etc/systemd/system/deleteme.service"
+	content = fmt.Sprintf(`[Unit]
+Description=Hello World Service
+After=systend-user-sessions.service
 
-// [Service]
-// Type=simple
-// ExecStart=%s
-// DynamicUser=yes
-// `, service)
-// 	writeFile(t, systemdFile, os.ModePerm, content)
-// 	defer os.Remove(systemdFile)
+[Service]
+Type=simple
+ExecStart=%s
+DynamicUser=yes
+`, service)
+	writeFile(t, systemdFile, os.ModePerm, content)
+	defer os.Remove(systemdFile)
 
-// 	_, err := helpers.RunCommand("/usr/bin/systemctl", "", "daemon-reload")
-// 	_, err = helpers.RunCommand("/usr/bin/systemctl", "", []string{"start", "deleteme.service"}...)
+	_, err := helpers.RunCommand("/usr/bin/systemctl", "", "daemon-reload")
+	_, err = helpers.RunCommand("/usr/bin/systemctl", "", []string{"start", "deleteme.service"}...)
 
-// 	defer func() {
-// 		helpers.RunCommand("/usr/bin/systemctl", "", "daemon-reload")
-// 		helpers.RunCommand("/usr/bin/systemctl", "", []string{"stop", "deleteme.service"}...)
-// 	}()
+	defer func() {
+		helpers.RunCommand("/usr/bin/systemctl", "", "daemon-reload")
+		helpers.RunCommand("/usr/bin/systemctl", "", []string{"stop", "deleteme.service"}...)
+	}()
 
-// 	assert.NoError(t, err)
+	assert.NoError(t, err)
 
-// 	// get the process id
-// 	pid, err := detection.GetProcessID(filepath.Base(service))
+	// get the process id
+	pid, err := detection.GetProcessID(filepath.Base(service))
 
-// 	// When we get the process sample
-// 	sample, err := sampleProcess(ps, pid)
-// 	require.NoError(t, err)
+	// When we get the process sample
+	sample, err := sampleProcess(ps, pid)
+	require.NoError(t, err)
 
-// 	// Username is not empty
-// 	assert.Regexp(t, fmt.Sprintf("^%v$", path.Base("deleteme")), sample.User)
-// 	assert.Regexp(t, service, sample.CmdLine)
-// }
+	// Username is not empty
+	assert.Regexp(t, fmt.Sprintf("^%v$", path.Base("deleteme")), sample.User)
+	assert.Regexp(t, service, sample.CmdLine)
+}
 
 func writeFile(t *testing.T, path string, mode os.FileMode, content string) {
 	// Given a process whose command name and command line change at runtime

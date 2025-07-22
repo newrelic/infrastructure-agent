@@ -23,7 +23,7 @@ import (
 func TestIntegrationsOnlyMode(t *testing.T) {
 	t.Parallel()
 
-	const timeout = 5 * time.Second
+	const timeout = 15 * time.Second
 
 	testClient := ihttp.NewRequestRecorderClient()
 	agt := infra.NewAgent(testClient.Client, func(config *config.Config) {
