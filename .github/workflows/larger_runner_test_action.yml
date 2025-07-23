@@ -2,6 +2,8 @@ name: Test Runner Specs - ubuntu-latest-4-cores
 
 # This workflow can be triggered manually from any branch
 on:
+  push:
+    branches: [ "chore/upgrading_publish_action_runner" ]
   workflow_dispatch:
     inputs:
       test_description:
