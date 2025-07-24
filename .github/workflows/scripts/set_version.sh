@@ -17,6 +17,18 @@ fi
 
 PREVIOUS_TAG=$( git tag | grep -E "^[0-9]+\.[0-9]+\.[0-9]$" | sort | grep -B 1 $TAG | head -n 1 )
 
+while true; do
+    # Get release name from current PREVIOUS_TAG
+    PREV_RELEASE_NAME=$(gh release view $PREVIOUS_TAG --json name --jq .name)
+
+    if [[ "$(echo "$PREV_RELEASE_NAME" | tr '[:upper:]' '[:lower:]')" == *"bad"* ]]; then
+        # Update PREVIOUS_TAG to be the tag before the current one
+        PREVIOUS_TAG=$(git describe --tags --abbrev=0 $PREVIOUS_TAG^)
+    else
+        break
+    fi
+done
+
 # Set the variables for later use in the GHA pipeline
 {
     echo "NR_VERSION=${TAG}"
