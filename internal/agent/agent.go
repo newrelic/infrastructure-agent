@@ -177,6 +177,7 @@ func (c *context) AgentID() entity.ID {
 
 // AgentIdentity provides agent ID & GUID, blocking until it's available
 func (c *context) Identity() entity.Identity {
+	alog.Debug("test identity")
 	return c.id.AgentIdentity()
 }
 
@@ -1337,19 +1338,33 @@ func (c *context) getAgentKey() (agentKey string) {
 }
 
 func (a *Agent) connect() {
-	alog.Debug("Performing connect.")
-	a.Context.SetAgentIdentity(a.connectSrv.Connect())
-
 	updateFreq := time.Duration(a.Context.cfg.FingerprintUpdateFreqSec) * time.Second
+	alog.WithField("updateFrequency", updateFreq.String()).Debug("Agent connect loop starting.")
+
 	ticker := time.NewTicker(updateFreq)
+	defer ticker.Stop() // Ensure the ticker is stopped when the function exits
 
 	for range ticker.C {
-		alog.Debug("Performing connect update.")
-		identity, err := a.connectSrv.ConnectUpdate(a.Context.Identity())
+		alog.Debug("Ticker ticked. Performing connect update.")
+
+		// currentIdentity := a.Context.Identity()
+		currentIdentity := entity.Identity{
+			ID:   0, // Represents an empty entity ID
+			GUID: "uuid.New().String()",
+		}
+		alog.WithField("entityID", currentIdentity.ID).Debug("Calling ConnectUpdate with current identity.")
+
+		identity, err := a.connectSrv.ConnectUpdate(currentIdentity)
 		if err != nil {
-			alog.WithError(err).Warn("error occurred while updating the system fingerprint")
+			alog.WithError(err).Warn("Error occurred while updating the system fingerprint.")
+			// The loop continues to the next tick
 			continue
 		}
+
+		alog.WithFields(map[string]interface{}{
+			"oldEntityID": currentIdentity.ID,
+			"newEntityID": identity.ID,
+		}).Debug("ConnectUpdate successful. Setting new agent identity.")
 		a.Context.SetAgentIdentity(identity)
 	}
 }

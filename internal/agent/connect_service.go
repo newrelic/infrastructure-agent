@@ -96,7 +96,8 @@ func (ic *identityConnectService) Connect() entity.Identity {
 
 // ConnectUpdate will check for system fingerprint changes and will update it if it's the case.
 // It returns the same ID provided as argument if there is an error
-func (ic *identityConnectService) ConnectUpdate(agentIdn entity.Identity) (entityIdn entity.Identity, err error) {
+func (ic *identityConnectService) ConnectUpdate(agentIdn entity.Identity) (entityIdnOut entity.Identity, err error) {
+	logger.Debug("Connect update process started.")
 	_, txn := instrumentation.SelfInstrumentation.StartTransaction(goContext.Background(), "agent.connect_update")
 	defer txn.End()
 
@@ -106,38 +107,50 @@ func (ic *identityConnectService) ConnectUpdate(agentIdn entity.Identity) (entit
 
 	f, err := ic.fingerprintHarvest.Harvest()
 	if err != nil {
+		logger.WithError(err).Error("Failed to harvest fingerprint.")
 		return agentIdn, err
 	}
+	logger.Debug("Fingerprint harvested successfully.")
 
 	// lastFingerprint must have been set in the first connect
 	// if it didn't change, just return the same agentID
 	if ic.lastFingerprint.Equals(f) {
+		logger.Debug("Fingerprint has not changed. Skipping connect update.")
 		return agentIdn, nil
 	}
 
+	logger.Debug("Fingerprint has changed. Proceeding with connect update.")
 	// fingerprint changed, so let's store it for the next round
 	ic.lastFingerprint = f
 
-	metatada, err := ic.metadataHarvester.Harvest()
+	metadata, err := ic.metadataHarvester.Harvest()
 	if err != nil {
+		logger.WithError(err).Error("Failed to harvest metadata.")
 		return agentIdn, fmt.Errorf("failed to harvest metadata: %w", err)
 	}
+	logger.Debug("Metadata harvested successfully.")
 
 	var retryBO *backoff.Backoff
 	for {
+		logger.Debug("Entering connect update retry loop.")
 		logger.WithField(config.TracesFieldName, config.FeatureTrace).Tracef("connect update request with fingerprint: %+v", f)
-		retry, entityIdn, err := ic.client.ConnectUpdate(agentIdn, f, metatada)
-		if retry.After > 0 {
-			logger.WithField("retryAfter", retry.After).Debug("Connect update retry requested.")
-			retryBO = nil
+
+		retry, updatedEntityIdn, err := ic.client.ConnectUpdate(agentIdn, f, metadata)
+
+		// This handles the case where the update call itself is successful, but the server asks us to retry.
+		if err == nil && retry.After > 0 {
+			logger.WithField("retryAfter", retry.After).Debug("Connect update API requested a retry after a specific time.")
+			retryBO = nil // Reset backoff timer on explicit retry-after from server
 			time.Sleep(retry.After)
 			continue
 		}
 
+		// This handles cases where the update call failed (e.g., network error, 5xx status)
 		if err != nil {
-			logger.WithError(err).Warn("agent connect update attempt failed")
+			logger.WithError(err).Warn("Agent connect update attempt failed.")
 
 			if retryBO == nil {
+				logger.Debug("Initializing new backoff timer.")
 				retryBO = backoff.NewDefaultBackoff()
 			}
 			retryBOAfter := retryBO.DurationWithMax(retry.MaxBackOff)
@@ -145,7 +158,10 @@ func (ic *identityConnectService) ConnectUpdate(agentIdn entity.Identity) (entit
 			time.Sleep(retryBOAfter)
 			continue
 		}
-		return entityIdn, nil
+
+		// If we reach here, err is nil and retry.After is not > 0, so the call was successful.
+		logger.WithField("entityID", updatedEntityIdn.ID).Debug("Connect update process finished successfully.")
+		return updatedEntityIdn, nil
 	}
 }
 

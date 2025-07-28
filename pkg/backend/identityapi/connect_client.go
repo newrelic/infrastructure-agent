@@ -166,18 +166,34 @@ func (ic *identityClient) Connect(fingerprint fingerprint.Fingerprint, metadata 
 // ConnectUpdate is used to update the host fingerprint of the entityID to the backend.
 // nolint:cyclop
 func (ic *identityClient) ConnectUpdate(entityIdn entity.Identity, fingerprint fingerprint.Fingerprint, metadata Metadata) (retry backendhttp.RetryPolicy, ids entity.Identity, err error) {
-	buf, err := ic.marshal(postConnectBody{
+	// Log entry point of the function
+	ilog.WithField("entityID", entityIdn.ID).Debug("Attempting to update fingerprint.")
+
+	postBody := postConnectBody{
 		Fingerprint: fingerprint,
-		Metadata:    metadata,
+		Metadata:    metadata, // Use the parameter directly as it now has the correct type
 		Type:        ic.agentType(),
 		Protocol:    "v1",
 		EntityID:    entityIdn.ID,
-	})
+	}
+
+	// Log the request body before marshalling
+	requestBodyBytes, _ := json.Marshal(postBody)
+	ilog.WithField("body", string(requestBodyBytes)).Debug("Update request body prepared.")
+
+	buf, err := ic.marshal(postBody)
 	if err != nil {
 		return
 	}
 
-	req, err := http.NewRequest(http.MethodPut, ic.makeURL("/connect"), buf)
+	connectURL := ic.makeURL("/connect")
+	// Log the endpoint URL and method
+	ilog.WithFields(map[string]interface{}{
+		"endpoint": connectURL,
+		"method":   http.MethodPut,
+	}).Debug("Creating connect update request.")
+
+	req, err := http.NewRequest(http.MethodPut, connectURL, buf)
 	if err != nil {
 		err = fmt.Errorf("update fingerprint request failed, error: %s", err)
 		return
@@ -186,9 +202,18 @@ func (ic *identityClient) ConnectUpdate(entityIdn entity.Identity, fingerprint f
 		req.Header.Set("Content-Encoding", "gzip")
 	}
 
+	// Log the request headers
+	headersForLog := make(map[string][]string)
+	for k, v := range req.Header {
+		headersForLog[k] = v
+	}
+	ilog.WithField("headers", headersForLog).Debug("Update request headers prepared.")
+
 	resp, err := ic.do(req)
 	if err != nil {
 		err = fmt.Errorf("unable to update the fingerprint, error: %v", err)
+		// Log the error on connection failure
+		ilog.WithError(err).Error("Failed to execute connect update request.")
 		return
 	}
 	defer func() {
@@ -201,8 +226,16 @@ func (ic *identityClient) ConnectUpdate(entityIdn entity.Identity, fingerprint f
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		err = fmt.Errorf("unable to read server response during the fingerprint update, error: %s", err)
+		// Log the error on reading response body
+		ilog.WithError(err).Error("Failed to read response body for update request.")
 		return
 	}
+
+	// Log the response status code and the raw response body
+	ilog.WithFields(map[string]interface{}{
+		"statusCode":   resp.StatusCode,
+		"responseBody": string(body),
+	}).Debug("Received response from connect update endpoint.")
 
 	hasError, cause := backendhttp.IsResponseUnsuccessful(resp)
 
@@ -211,24 +244,30 @@ func (ic *identityClient) ConnectUpdate(entityIdn entity.Identity, fingerprint f
 		if retryAfterH != "" {
 			if retry.After, err = time.ParseDuration(retryAfterH + "s"); err != nil {
 				ilog.WithError(err).
-					Debug("Error parsing reEmptyRetryTimeconnect Retry-After header, continuing with exponential backoff.")
+					Debug("Error parsing connect Retry-After header, continuing with exponential backoff.")
 			}
 		}
 
 		retry.MaxBackOff = backoff.GetMaxBackoffByCause(cause)
 
 		err = inventoryapi.NewIngestError("ingest service rejected the connect step", resp.StatusCode, resp.Status, string(body))
-
+		// Log the rejection details
+		ilog.WithError(err).Warn("Connect update request rejected by ingest.")
 		return
 	}
 
 	pcr := &postConnectResponse{}
 	if err = json.Unmarshal(body, pcr); err != nil {
 		err = fmt.Errorf("unable to decode connect service response body: %s", err)
+		// Log the error on parsing the response
+		ilog.WithError(err).Error("Failed to unmarshal connect update response.")
 		return
 	}
 
 	ids = pcr.Identity.ToIdentity()
+
+	// Log successful update
+	ilog.WithField("entityID", ids.ID).Debug("Connect update request successful.")
 	return
 }
 

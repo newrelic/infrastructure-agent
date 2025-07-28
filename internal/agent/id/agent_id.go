@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
 // Provide identity provider function.
@@ -59,32 +60,43 @@ func (i *Context) AgentIdnOrEmpty() entity.Identity {
 
 // AgentID provides a non empty agent ID, blocking until it's available
 func (i *Context) AgentID() entity.ID {
+	log.Debug("AgentID called. Checking for existing identity.")
 
-	identity := i.agentIdentity.Load().(entity.Identity)
-	if !identity.ID.IsEmpty() {
+	identity, ok := i.agentIdentity.Load().(entity.Identity)
+	if ok && !identity.ID.IsEmpty() {
+		log.WithField("entityID", identity.ID).Debug("AgentID found non-empty ID immediately. Returning.")
 		return identity.ID
 	}
 
+	log.Debug("AgentID found empty ID. Will block and wait for identity to be set.")
 	done := make(chan struct{})
 
 	go func() {
 		i.sem.L.Lock()
+		log.Debug("AgentID waiter goroutine: locked. Waiting on signal.")
 		i.sem.Wait()
+		log.Debug("AgentID waiter goroutine: received signal. Unlocking.")
 		i.sem.L.Unlock()
 		close(done)
 	}()
 
+	log.Debug("AgentID: waiting for context cancellation or for 'done' signal.")
 	select {
 	case <-i.ctx.Done():
+		log.Warn("AgentID: context cancelled while waiting for identity. Broadcasting to unblock.")
 		i.sem.Broadcast()
 	case <-done:
+		log.Debug("AgentID: 'done' signal received. Proceeding to return ID.")
 	}
 
-	return i.agentIdentity.Load().(entity.Identity).ID
+	finalIdentity := i.agentIdentity.Load().(entity.Identity)
+	log.WithField("entityID", finalIdentity.ID).Debug("AgentID returning final identity.")
+	return finalIdentity.ID
 }
 
 // AgentIdentity provides agent identity, blocking until connect succeeded (GUID might still be empty).
 func (i *Context) AgentIdentity() entity.Identity {
+	log.Debug("test agent Identity")
 	_ = i.AgentID()
 
 	return i.agentIdentity.Load().(entity.Identity)
