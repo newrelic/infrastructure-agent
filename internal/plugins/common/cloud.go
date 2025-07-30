@@ -5,6 +5,7 @@ package common
 
 import (
 	"fmt"
+
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 )
 
@@ -13,6 +14,7 @@ type CloudData struct {
 	AzureCloudData   `mapstructure:",squash"`
 	GoogleCloudData  `mapstructure:",squash"`
 	AlibabaCloudData `mapstructure:",squash"`
+	OciCloudData     `mapstructure:",squash"`
 }
 
 type AwsCloudData struct {
@@ -34,6 +36,15 @@ type GoogleCloudData struct {
 
 type AlibabaCloudData struct {
 	RegionAlibaba string `json:"region_id,omitempty"`
+}
+
+type OciCloudData struct {
+	RegionOci           string `json:"oci_region,omitempty"`
+	OciAccountID        string `json:"oci_account_id,omitempty"`
+	OciAvailabilityZone string `json:"oci_availability_zone,omitempty"`
+	OciDisplayName      string `json:"oci_display_name,omitempty"`
+	OciImageID          string `json:"oci_image_id,omitempty"`
+	OciTenantID         string `json:"oci_tenant_id,omitempty"`
 }
 
 // getAWSCloudData gathers the exported information for the AWS Cloud.
@@ -81,6 +92,37 @@ func getAzureCloudData(cloudHarvester cloud.Harvester) (azureData AzureCloudData
 	return
 }
 
+// getOciCloudData gathers the exported information for the AWS Cloud.
+func getOciCloudData(cloudHarvester cloud.Harvester) (ociData OciCloudData, err error) {
+	ociData.RegionOci, err = cloudHarvester.GetRegion()
+	if err != nil {
+		return ociData, fmt.Errorf("couldn't retrieve cloud region: %w", err)
+	}
+
+	ociData.OciAccountID, err = cloudHarvester.GetAccountID()
+	if err != nil {
+		return ociData, fmt.Errorf("couldn't retrieve cloud account ID: %w", err)
+	}
+
+	ociData.OciAvailabilityZone, err = cloudHarvester.GetZone()
+	if err != nil {
+		return ociData, fmt.Errorf("couldn't retrieve cloud availability zone: %w", err)
+	}
+	ociData.OciImageID, err = cloudHarvester.GetInstanceImageID()
+	if err != nil {
+		return ociData, fmt.Errorf("couldn't retrieve cloud image ID: %w", err)
+	}
+	ociData.OciDisplayName, err = cloudHarvester.GetInstanceDisplayName()
+	if err != nil {
+		return ociData, fmt.Errorf("couldn't retrieve cloud display name: %w", err)
+	}
+	ociData.OciTenantID, err = cloudHarvester.GetInstanceTenantID()
+	if err != nil {
+		return ociData, fmt.Errorf("couldn't retrieve cloud tenant ID: %w", err)
+	}
+	return
+}
+
 // getCloudData will populate a CloudData structure depending on the cloud type.
 func getCloudData(cloudHarvester cloud.Harvester) (cloudData CloudData, err error) {
 	switch cloudHarvester.GetCloudType() {
@@ -92,6 +134,8 @@ func getCloudData(cloudHarvester cloud.Harvester) (cloudData CloudData, err erro
 		cloudData.RegionGCP, err = cloudHarvester.GetRegion()
 	case cloud.TypeAlibaba:
 		cloudData.RegionAlibaba, err = cloudHarvester.GetRegion()
+	case cloud.TypeOci:
+		cloudData.OciCloudData, err = getOciCloudData(cloudHarvester)
 	case cloud.TypeNoCloud:
 		return
 	}

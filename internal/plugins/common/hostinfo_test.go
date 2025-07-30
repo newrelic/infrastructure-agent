@@ -64,6 +64,18 @@ func (f *fakeHarvester) GetInstanceImageID() (string, error) {
 	return args.String(0), args.Error(1)
 }
 
+// GetInstanceDisplayName returns the cloud instance display name
+func (f *fakeHarvester) GetInstanceDisplayName() (string, error) {
+	args := f.Called()
+	return args.String(0), args.Error(1)
+}
+
+// GetInstanceTenantID returns the cloud instance tenant ID
+func (f *fakeHarvester) GetInstanceTenantID() (string, error) {
+	args := f.Called()
+	return args.String(0), args.Error(1)
+}
+
 // GetHarvester returns instance of the Harvester detected (or instance of themselves)
 func (f *fakeHarvester) GetHarvester() (cloud.Harvester, error) {
 	return f, nil
