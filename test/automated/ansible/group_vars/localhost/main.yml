@@ -201,6 +201,46 @@ instances:
     python_interpreter: "/usr/bin/python"
     launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
   ############################
+  # rocky linux amd64
+  ############################
+  - ami: "ami-02391db2758465a87"  # Replace with the correct Rocky Linux 8 AMI ID
+    type: "t3a.medium"
+    name: "amd64:rocky-8"
+    username: "rocky"
+    platform: "linux"
+    python_interpreter: "/usr/bin/python3"
+    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
+  ############################
+  # rocky linux arm64
+  ############################
+  - ami: "ami-0aa5b64f9b561d20f"  # Replace with the correct Rocky Linux 8 ARM64 AMI ID
+    type: "t4g.medium"
+    name: "arm64:rocky-8"
+    username: "rocky"
+    platform: "linux"
+    python_interpreter: "/usr/bin/python3"
+    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
+  ############################
+  # rocky linux amd64
+  ############################
+  - ami: "ami-05150ea4d8a533099"  # Replace with the correct Rocky Linux 9 AMI ID
+    type: "t3a.small"
+    name: "amd64:rocky-9"
+    username: "rocky"
+    platform: "linux"
+    python_interpreter: "/usr/bin/python3"
+    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
+  ############################
+  # rocky linux arm64
+  ############################
+  - ami: "ami-0cc73a60867904383"  # Replace with the correct Rocky Linux 9 ARM64 AMI ID
+    type: "t4g.small"
+    name: "arm64:rocky-9"
+    username: "rocky"
+    platform: "linux"
+    python_interpreter: "/usr/bin/python3"
+    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
+  ############################
   # debian amd64
   ############################
   - ami: "ami-08a0dab67e025361b"
