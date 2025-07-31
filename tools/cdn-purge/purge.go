@@ -291,7 +291,9 @@ func rpmDistributionsMetadataFilesKeys(cl *s3.S3, distributionPath string) ([]st
 			}
 
 			for _, rpmDistrosArch := range rpmDistrosArchs {
+				// Check both the main metadata file and its GPG signature
 				res = append(res, fmt.Sprintf("%srepodata/repomd.xml", rpmDistrosArch))
+				res = append(res, fmt.Sprintf("%srepodata/repomd.xml.asc", rpmDistrosArch))
 			}
 		}
 	}
