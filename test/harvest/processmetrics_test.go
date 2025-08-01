@@ -94,36 +94,36 @@ func TestProcessSamplerMemoryValues(t *testing.T) {
 	})
 }
 
-// func TestProcessSamplerDiskValues_Write(t *testing.T) {
-// 	// Given a Process Sampler
-// 	ps := process.NewProcessSampler(contextMock())
+func TestProcessSamplerDiskValues_Write(t *testing.T) {
+	// Given a Process Sampler
+	ps := process.NewProcessSampler(contextMock())
 
-// 	// That has already run
-// 	sample1, err := sampleProcess(ps, int32(os.Getpid()))
-// 	require.NoError(t, err)
-// 	assertProcessSample(t, sample1)
+	// That has already run
+	sample1, err := sampleProcess(ps, int32(os.Getpid()))
+	require.NoError(t, err)
+	assertProcessSample(t, sample1)
 
-// 	// When the Disk writes are stressed
-// 	assert.NoError(t, writeDisk(tmpIOFile))
-// 	defer func() {
-// 		if derr := cleanup(tmpIOFile); derr != nil {
-// 			t.Log(derr)
-// 		}
-// 	}()
+	// When the Disk writes are stressed
+	assert.NoError(t, writeDisk(tmpIOFile))
+	defer func() {
+		if derr := cleanup(tmpIOFile); derr != nil {
+			t.Log(derr)
+		}
+	}()
 
-// 	// The IO write metrics become noticeably higher than in the previous samples
-// 	testhelpers.Eventually(t, diskIOTimeout, func(t require.TestingT) {
-// 		sample2, err := sampleProcess(ps, int32(os.Getpid()))
-// 		require.NoError(t, err)
-// 		assertProcessSample(t, sample2)
-// 		assertIOCounters(t, sample2)
+	// The IO write metrics become noticeably higher than in the previous samples
+	testhelpers.Eventually(t, diskIOTimeout, func(t require.TestingT) {
+		sample2, err := sampleProcess(ps, int32(os.Getpid()))
+		require.NoError(t, err)
+		assertProcessSample(t, sample2)
+		assertIOCounters(t, sample2)
 
-// 		assert.True(t, *sample1.IOTotalWriteCount < *sample2.IOTotalWriteCount,
-// 			"IOTotalWriteCount for sample1: %+v, sample2: %+v", *sample1.IOTotalWriteCount, *sample2.IOTotalWriteCount)
-// 		assert.True(t, *sample1.IOTotalWriteBytes+3000 < *sample2.IOTotalWriteBytes,
-// 			"IOTotalWriteBytes for sample1: %+v, sample2: %+v", *sample1.IOTotalWriteBytes, *sample2.IOTotalWriteBytes)
-// 	})
-// }
+		assert.True(t, *sample1.IOTotalWriteCount < *sample2.IOTotalWriteCount,
+			"IOTotalWriteCount for sample1: %+v, sample2: %+v", *sample1.IOTotalWriteCount, *sample2.IOTotalWriteCount)
+		assert.True(t, *sample1.IOTotalWriteBytes+3000 < *sample2.IOTotalWriteBytes,
+			"IOTotalWriteBytes for sample1: %+v, sample2: %+v", *sample1.IOTotalWriteBytes, *sample2.IOTotalWriteBytes)
+	})
+}
 
 func TestProcessSamplerDiskValues_Read(t *testing.T) {
 	t.Skip("Check why this test fails")
