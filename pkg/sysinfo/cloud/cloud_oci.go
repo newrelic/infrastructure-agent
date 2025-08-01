@@ -32,15 +32,23 @@ type OCIHarvester struct {
 	displayName      string
 }
 
-// OCIHarvester returns a new instance of OCIHarvester.
+// NewOCIHarvester returns a new instance of OCIHarvester.
 func NewOCIHarvester(disableKeepAlive bool) *OCIHarvester {
 	return &OCIHarvester{
 		timeout:          NewTimeout(600),
 		disableKeepAlive: disableKeepAlive,
+		instanceID:       "",
+		hostType:         "",
+		region:           "",
+		zone:             "",
+		subscriptionID:   "",
+		imageID:          "",
+		tenantID:         "",
+		displayName:      "",
 	}
 }
 
-func (a *OCIHarvester) GetHarvester() (Harvester, error) {
+func (a *OCIHarvester) GetHarvester() (Harvester, error) { //nolint: ireturn
 	return a, nil
 }
 
@@ -161,8 +169,8 @@ func (a *OCIHarvester) GetInstanceDisplayName() (string, error) {
 	return a.displayName, nil
 }
 
-// Captures the fields we care about from the OCI metadata API
-type ociMetadata struct {
+// OCIMetadata captures the fields we care about from the OCI metadata API.
+type OCIMetadata struct {
 	Location       string `json:"canonicalRegionName"`
 	VmId           string `json:"id"`
 	VmSize         string `json:"shape"`
@@ -173,42 +181,42 @@ type ociMetadata struct {
 	DisplayName    string `json:"displayName"`
 }
 
-// GetOciMetadata is used to request metadata from OCI API.
-func GetOCIMetadata(disableKeepAlive bool) (result *ociMetadata, err error) {
+// GetOCIMetadata is used to request metadata from OCI API.
+func GetOCIMetadata(disableKeepAlive bool) (result *OCIMetadata, err error) {
 	var request *http.Request
 	if request, err = http.NewRequest(http.MethodGet, ociEndpoint, nil); err != nil {
 		err = fmt.Errorf("unable to prepare OCI metadata request: %v", request)
-		return
+		return nil, err
 	}
 	request.Header.Add("Metadata", "true")
 
 	var response *http.Response
 	if response, err = clientWithFastTimeout(disableKeepAlive).Do(request); err != nil {
 		err = fmt.Errorf("unable to fetch OCI metadata: %s", err)
-		return
+		return nil, err
 	}
 	defer response.Body.Close()
 
 	return parseOCIMetadataResponse(response)
 }
 
-// parseOciMetadataResponse is used to parse the value required from OCI response.
-func parseOCIMetadataResponse(response *http.Response) (result *ociMetadata, err error) {
+// parseOCIMetadataResponse is used to parse the value required from OCI response.
+func parseOCIMetadataResponse(response *http.Response) (result *OCIMetadata, err error) {
 	if response.StatusCode != http.StatusOK {
 		err = fmt.Errorf("cloud metadata request returned non-OK response: %d %s", response.StatusCode, response.Status)
-		return
+		return nil, err
 	}
 
 	var responseBody []byte
 	if responseBody, err = io.ReadAll(response.Body); err != nil {
 		err = fmt.Errorf("unable to read OCI metadata response body: %v", err)
-		return
+		return nil, err
 	}
 
 	if err = json.Unmarshal(responseBody, &result); err != nil {
 		err = fmt.Errorf("unable to unmarshal OCI metadata response body: %v", err)
-		return
+		return nil, err
 	}
 
-	return
+	return result, nil
 }
