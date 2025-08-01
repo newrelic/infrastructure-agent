@@ -1,6 +1,8 @@
+//go:build linux && harvest
+// +build linux,harvest
+
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 package harvest
 
 import (
