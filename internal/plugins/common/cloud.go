@@ -115,32 +115,32 @@ func getOracleCloudData(cloudHarvester cloud.Harvester) (OracleCloudData, error)
 
 	ociData.RegionOCI, err = cloudHarvester.GetRegion()
 	if err != nil {
-		return ociData, fmt.Errorf("%s: %w", ErrCloudRegionRetrievalFailed.Error(), err)
+		return ociData, fmt.Errorf("%s: %w", ErrCloudRegionRetrievalFailed.Error(), err) //nolint:wrapcheck
 	}
 
 	ociData.OCIAccountID, err = cloudHarvester.GetAccountID()
 	if err != nil {
-		return ociData, fmt.Errorf("%s: %w", ErrCloudAccountIDRetrievalFailed.Error(), err)
+		return ociData, fmt.Errorf("%s: %w", ErrCloudAccountIDRetrievalFailed.Error(), err) //nolint:wrapcheck
 	}
 
 	ociData.OCIAvailabilityZone, err = cloudHarvester.GetZone()
 	if err != nil {
-		return ociData, fmt.Errorf("%s: %w", ErrCloudZoneRetrievalFailed.Error(), err)
+		return ociData, fmt.Errorf("%s: %w", ErrCloudZoneRetrievalFailed.Error(), err) //nolint:wrapcheck
 	}
 
 	ociData.OCIImageID, err = cloudHarvester.GetInstanceImageID()
 	if err != nil {
-		return ociData, fmt.Errorf("%s: %w", ErrCloudImageIDRetrievalFailed.Error(), err)
+		return ociData, fmt.Errorf("%s: %w", ErrCloudImageIDRetrievalFailed.Error(), err) //nolint:wrapcheck
 	}
 
 	ociData.OCIDisplayName, err = cloudHarvester.GetInstanceDisplayName()
 	if err != nil {
-		return ociData, fmt.Errorf("%s: %w", ErrCloudDisplayNameRetrievalFailed.Error(), err)
+		return ociData, fmt.Errorf("%s: %w", ErrCloudDisplayNameRetrievalFailed.Error(), err) //nolint:wrapcheck
 	}
 
 	ociData.OCITenantID, err = cloudHarvester.GetInstanceTenantID()
 	if err != nil {
-		return ociData, fmt.Errorf("%s: %w", ErrCloudTenantIDRetrievalFailed.Error(), err)
+		return ociData, fmt.Errorf("%s: %w", ErrCloudTenantIDRetrievalFailed.Error(), err) //nolint:wrapcheck
 	}
 
 	return ociData, nil
