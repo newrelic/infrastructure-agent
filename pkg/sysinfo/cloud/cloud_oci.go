@@ -200,7 +200,7 @@ func GetOCIMetadata(disableKeepAlive bool) (*OCIMetadata, error) {
 	var request *http.Request
 	var err error
 	if request, err = http.NewRequest(http.MethodGet, ociEndpoint, nil); err != nil {
-		err = fmt.Errorf("%w: %v", ErrOCIRequestFailed, request)
+		err = fmt.Errorf("%w: %w", ErrOCIRequestFailed, err)
 
 		return nil, err
 	}
