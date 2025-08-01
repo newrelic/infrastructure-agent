@@ -21,7 +21,7 @@ const (
 	TypeAzure      Type = "azure"       // This instance is running in Azure.
 	TypeGCP        Type = "gcp"         // This instance is running in gcp.
 	TypeAlibaba    Type = "alibaba"     // This instance is running in alibaba.
-	TypeOci        Type = "Oci"         // This instance is running in Oracle Cloud Infrastructure (OCI).
+	TypeOCI        Type = "oci"         // This instance is running in Oracle Cloud Infrastructure (OCI).
 )
 
 var dlog = log.WithComponent("CloudDetector")
@@ -36,7 +36,7 @@ func (t Type) IsValidCloud() bool {
 		t == TypeAzure ||
 		t == TypeGCP ||
 		t == TypeAlibaba ||
-		t == TypeOci
+		t == TypeOCI
 }
 
 var (
@@ -116,8 +116,8 @@ func WithProvider(cloudType Type) DetectorOption {
 		case TypeAlibaba:
 			detector.setHarvester(NewAlibabaHarvester(detector.disableKeepAlive))
 			detector.finishInit()
-		case TypeOci:
-			detector.setHarvester(NewOciHarvester(detector.disableKeepAlive))
+		case TypeOCI:
+			detector.setHarvester(NewOCIHarvester(detector.disableKeepAlive))
 			detector.finishInit()
 		case TypeNoCloud:
 		case TypeInProgress:
@@ -142,7 +142,7 @@ func (d *Detector) Initialize(opts ...DetectorOption) {
 		NewAzureHarvester(d.disableKeepAlive),
 		NewGCPHarvester(d.disableKeepAlive),
 		NewAlibabaHarvester(d.disableKeepAlive),
-		NewOciHarvester(d.disableKeepAlive),
+		NewOCIHarvester(d.disableKeepAlive),
 	}
 	d.initialize(harvesters...)
 }

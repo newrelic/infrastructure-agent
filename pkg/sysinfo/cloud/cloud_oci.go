@@ -1,4 +1,4 @@
-// Copyright 2020 New Relic Corporation. All rights reserved.
+// Copyright 2025 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 package cloud
 
@@ -11,20 +11,19 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
 )
 
-// Metadata sample: https://docs.microsoft.com/en-us/oci/virtual-machines/linux/instance-metadata-service?tabs=linux
-// API versions: https://learn.microsoft.com/en-us/oci/virtual-machines/windows/instance-metadata-service?tabs=windows#endpoint-categories
+// Ref: https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/gettingmetadata.htm
 
 const (
-	// OciEndpoint is the URL used for requesting Oci metadata.
+	// OciEndpoint is the URL used for requesting OCI metadata.
 	ociEndpoint = "http://169.254.169.254/opc/v1/instance/"
 )
 
-// OciHarvester is used to fetch data from Oci api.
-type OciHarvester struct {
+// OCIHarvester is used to fetch data from OCI api.
+type OCIHarvester struct {
 	timeout          *Timeout
 	disableKeepAlive bool
-	instanceID       string // Cache the oci instance ID.
-	hostType         string // Cache the oci instance Type.
+	instanceID       string // Cache the OCI instance ID.
+	hostType         string // Cache the OCI instance Type.
 	region           string
 	zone             string
 	subscriptionID   string
@@ -33,23 +32,22 @@ type OciHarvester struct {
 	displayName      string
 }
 
-// OciHarvester returns a new instance of OciHarvester.
-func NewOciHarvester(disableKeepAlive bool) *OciHarvester {
-	return &OciHarvester{
+// OCIHarvester returns a new instance of OCIHarvester.
+func NewOCIHarvester(disableKeepAlive bool) *OCIHarvester {
+	return &OCIHarvester{
 		timeout:          NewTimeout(600),
 		disableKeepAlive: disableKeepAlive,
 	}
 }
 
-func (a *OciHarvester) GetHarvester() (Harvester, error) {
+func (a *OCIHarvester) GetHarvester() (Harvester, error) {
 	return a, nil
 }
 
-// GetInstanceID returns the Oci instance ID.
-func (a *OciHarvester) GetInstanceID() (string, error) {
-	//a.instanceID = "ocid1.instance.oc1.iad.anuwcljrtvlqdbycqmaxcv7d7muhpawcuwywgz6mqc7ipjyafo6dswjlmqca"
+// GetInstanceID returns the OCI instance ID.
+func (a *OCIHarvester) GetInstanceID() (string, error) {
 	if a.instanceID == "" || a.timeout.HasExpired() {
-		ociMetadata, err := GetOciMetadata(a.disableKeepAlive)
+		ociMetadata, err := GetOCIMetadata(a.disableKeepAlive)
 		if err != nil {
 			return "", err
 		}
@@ -60,35 +58,33 @@ func (a *OciHarvester) GetInstanceID() (string, error) {
 }
 
 // GetHostType will return the cloud instance type.
-func (a *OciHarvester) GetHostType() (string, error) {
-	//a.hostType = "VM.Optimized3.Flex"
+func (a *OCIHarvester) GetHostType() (string, error) {
 	if a.hostType == "" || a.timeout.HasExpired() {
-		OciMetadata, err := GetOciMetadata(a.disableKeepAlive)
+		ociMetadata, err := GetOCIMetadata(a.disableKeepAlive)
 		if err != nil {
 			return "", err
 		}
 
-		a.hostType = OciMetadata.VmSize
+		a.hostType = ociMetadata.VmSize
 	}
 
 	return a.hostType, nil
 }
 
 // GetCloudType returns the type of the cloud.
-func (a *OciHarvester) GetCloudType() Type {
-	return TypeOci
+func (a *OCIHarvester) GetCloudType() Type {
+	return TypeOCI
 }
 
 // GetCloudSource returns a string key which will be used as a HostSource (see host_aliases plugin).
-func (a *OciHarvester) GetCloudSource() string {
+func (a *OCIHarvester) GetCloudSource() string {
 	return sysinfo.HOST_SOURCE_OCI_VM_ID
 }
 
 // GetRegion will return the cloud instance region.
-func (a *OciHarvester) GetRegion() (string, error) {
-	//a.region = "iad"
+func (a *OCIHarvester) GetRegion() (string, error) {
 	if a.region == "" || a.timeout.HasExpired() {
-		ociMetadata, err := GetOciMetadata(a.disableKeepAlive)
+		ociMetadata, err := GetOCIMetadata(a.disableKeepAlive)
 		if err != nil {
 			return "", err
 		}
@@ -100,10 +96,9 @@ func (a *OciHarvester) GetRegion() (string, error) {
 }
 
 // GetAccountID returns the cloud account
-func (a *OciHarvester) GetAccountID() (string, error) {
-	//a.subscriptionID = "ocid1.compartment.oc1..aaaaaaaad544qzjef2rhbitefrir7rekhrxn6tgc2ycms2nyzooh4nydp4uq"
+func (a *OCIHarvester) GetAccountID() (string, error) {
 	if a.subscriptionID == "" || a.timeout.HasExpired() {
-		ociMetadata, err := GetOciMetadata(a.disableKeepAlive)
+		ociMetadata, err := GetOCIMetadata(a.disableKeepAlive)
 		if err != nil {
 			return "", err
 		}
@@ -115,10 +110,9 @@ func (a *OciHarvester) GetAccountID() (string, error) {
 }
 
 // GetZone returns the cloud instance zone
-func (a *OciHarvester) GetZone() (string, error) {
-	//a.zone = "jyDh:US-ASHBURN-AD-1"
+func (a *OCIHarvester) GetZone() (string, error) {
 	if a.zone == "" || a.timeout.HasExpired() {
-		ociMetadata, err := GetOciMetadata(a.disableKeepAlive)
+		ociMetadata, err := GetOCIMetadata(a.disableKeepAlive)
 		if err != nil {
 			return "", err
 		}
@@ -129,10 +123,9 @@ func (a *OciHarvester) GetZone() (string, error) {
 }
 
 // GetInstanceImageID returns the cloud instance image ID
-func (a *OciHarvester) GetInstanceImageID() (string, error) {
-	//a.imageID = "ocid1.image.oc1.iad.aaaaaaaaylsmeurrokhxpgd2kg6akdd2qkuoryzauxart5ruowwgn3gpaxua"
+func (a *OCIHarvester) GetInstanceImageID() (string, error) {
 	if a.imageID == "" || a.timeout.HasExpired() {
-		ociMetadata, err := GetOciMetadata(a.disableKeepAlive)
+		ociMetadata, err := GetOCIMetadata(a.disableKeepAlive)
 		if err != nil {
 			return "", err
 		}
@@ -143,9 +136,9 @@ func (a *OciHarvester) GetInstanceImageID() (string, error) {
 }
 
 // GetInstanceTenantID returns the cloud instance Tenant ID
-func (a *OciHarvester) GetInstanceTenantID() (string, error) {
+func (a *OCIHarvester) GetInstanceTenantID() (string, error) {
 	if a.tenantID == "" || a.timeout.HasExpired() {
-		ociMetadata, err := GetOciMetadata(a.disableKeepAlive)
+		ociMetadata, err := GetOCIMetadata(a.disableKeepAlive)
 		if err != nil {
 			return "", err
 		}
@@ -156,9 +149,9 @@ func (a *OciHarvester) GetInstanceTenantID() (string, error) {
 }
 
 // GetInstanceDisplayName returns the cloud instance DisplayName
-func (a *OciHarvester) GetInstanceDisplayName() (string, error) {
+func (a *OCIHarvester) GetInstanceDisplayName() (string, error) {
 	if a.displayName == "" || a.timeout.HasExpired() {
-		ociMetadata, err := GetOciMetadata(a.disableKeepAlive)
+		ociMetadata, err := GetOCIMetadata(a.disableKeepAlive)
 		if err != nil {
 			return "", err
 		}
@@ -168,7 +161,7 @@ func (a *OciHarvester) GetInstanceDisplayName() (string, error) {
 	return a.displayName, nil
 }
 
-// Captures the fields we care about from the Oci metadata API
+// Captures the fields we care about from the OCI metadata API
 type ociMetadata struct {
 	Location       string `json:"canonicalRegionName"`
 	VmId           string `json:"id"`
@@ -180,27 +173,27 @@ type ociMetadata struct {
 	DisplayName    string `json:"displayName"`
 }
 
-// GetOciMetadata is used to request metadata from Oci API.
-func GetOciMetadata(disableKeepAlive bool) (result *ociMetadata, err error) {
+// GetOciMetadata is used to request metadata from OCI API.
+func GetOCIMetadata(disableKeepAlive bool) (result *ociMetadata, err error) {
 	var request *http.Request
 	if request, err = http.NewRequest(http.MethodGet, ociEndpoint, nil); err != nil {
-		err = fmt.Errorf("unable to prepare Oci metadata request: %v", request)
+		err = fmt.Errorf("unable to prepare OCI metadata request: %v", request)
 		return
 	}
 	request.Header.Add("Metadata", "true")
 
 	var response *http.Response
 	if response, err = clientWithFastTimeout(disableKeepAlive).Do(request); err != nil {
-		err = fmt.Errorf("unable to fetch Oci metadata: %s", err)
+		err = fmt.Errorf("unable to fetch OCI metadata: %s", err)
 		return
 	}
 	defer response.Body.Close()
 
-	return parseOciMetadataResponse(response)
+	return parseOCIMetadataResponse(response)
 }
 
-// parseOciMetadataResponse is used to parse the value required from Oci response.
-func parseOciMetadataResponse(response *http.Response) (result *ociMetadata, err error) {
+// parseOciMetadataResponse is used to parse the value required from OCI response.
+func parseOCIMetadataResponse(response *http.Response) (result *ociMetadata, err error) {
 	if response.StatusCode != http.StatusOK {
 		err = fmt.Errorf("cloud metadata request returned non-OK response: %d %s", response.StatusCode, response.Status)
 		return
@@ -208,12 +201,12 @@ func parseOciMetadataResponse(response *http.Response) (result *ociMetadata, err
 
 	var responseBody []byte
 	if responseBody, err = io.ReadAll(response.Body); err != nil {
-		err = fmt.Errorf("unable to read Oci metadata response body: %v", err)
+		err = fmt.Errorf("unable to read OCI metadata response body: %v", err)
 		return
 	}
 
 	if err = json.Unmarshal(responseBody, &result); err != nil {
-		err = fmt.Errorf("unable to unmarshal Oci metadata response body: %v", err)
+		err = fmt.Errorf("unable to unmarshal OCI metadata response body: %v", err)
 		return
 	}
 
