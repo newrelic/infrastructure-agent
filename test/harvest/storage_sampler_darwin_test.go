@@ -8,22 +8,25 @@ package harvest
 import (
 	"testing"
 
+	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
+	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/storage"
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-// func contextMock() *mocks.AgentContext {
-// 	ctx := new(mocks.AgentContext)
-// 	ctx.On("Config").Return(&config.Config{
-// 		RunMode: config.ModeRoot,
-// 		Log:     config.LogConfig{Level: config.LogLevelDebug},
-// 	})
-// 	ctx.On("GetServiceForPid", mock.Anything).Return("service-name", true)
-// 	return ctx
-// }
+func contextMock() *mocks.AgentContext {
+	ctx := new(mocks.AgentContext)
+	ctx.On("Config").Return(&config.Config{
+		RunMode: config.ModeRoot,
+		Log:     config.LogConfig{Level: config.LogLevelDebug},
+	})
+	ctx.On("GetServiceForPid", mock.Anything).Return("service-name", true)
+	return ctx
+}
 
 func TestStorageSample(t *testing.T) {
 	du, err := disk.Usage("/")
