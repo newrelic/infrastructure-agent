@@ -30,31 +30,26 @@ func (s *CloudDetectionSuite) TestParseAWSMeta(c *C) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("i-db519dd1\n"))
-		return
 	}))
 	mux.Handle("/list", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("foo\nbar"))
-		return
 	}))
 	mux.Handle("/not200", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = w.Write([]byte("foo"))
-		return
 	}))
 	mux.Handle("/notplain", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("foo"))
-		return
 	}))
 	mux.Handle("/justgarbage", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("<html>this is some test</html>"))
-		return
 	}))
 	server := httptest.NewServer(mux)
 
@@ -296,6 +291,16 @@ func (a *MockHarvester) GetInstanceImageID() (string, error) {
 // GetZone returns the instance cloud zone.
 func (a *MockHarvester) GetZone() (string, error) {
 	return "", nil
+}
+
+// GetInstanceDisplayName returns the cloud instance display name (mock implementation)
+func (m *MockHarvester) GetInstanceDisplayName() (string, error) {
+	return "mock-display-name", nil
+}
+
+// GetInstanceTenantID returns the cloud instance tenant ID (mock implementation)
+func (m *MockHarvester) GetInstanceTenantID() (string, error) {
+	return "mock-tenant-id", nil
 }
 
 // GetHarvester returns the MockHarvester
