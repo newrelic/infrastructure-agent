@@ -25,25 +25,39 @@ type CPUMonitor struct {
 	context  agent.AgentContext
 	last     []cpu.TimesStat
 	cpuTimes func(bool) ([]cpu.TimesStat, error)
+	// Windows-specific monitor using PDH
+	windowsMonitor interface {
+		sample() (*CPUSample, error)
+		close() error
+	}
 }
 
-func NewCPUMonitor(context agent.AgentContext) *CPUMonitor {
-	return &CPUMonitor{context: context, cpuTimes: cpu.Times}
+// Close releases any resources held by the CPU monitor
+func (m *CPUMonitor) Close() error {
+	if m.windowsMonitor != nil {
+		return m.windowsMonitor.close()
+	}
+	return nil
 }
 
-func (self *CPUMonitor) Sample() (sample *CPUSample, err error) {
+func (m *CPUMonitor) Sample() (sample *CPUSample, err error) {
 	defer func() {
 		if panicErr := recover(); panicErr != nil {
-			err = fmt.Errorf("Panic in CPUMonitor.Sample: %v\nStack: %s", panicErr, debug.Stack())
+			err = fmt.Errorf("panic in CPUMonitor.Sample: %v\nStack: %s", panicErr, debug.Stack())
 		}
 	}()
 
-	if self.last == nil {
-		self.last, err = self.cpuTimes(false)
+	// Use Windows-specific implementation if available
+	if m.windowsMonitor != nil {
+		return m.windowsMonitor.sample()
+	}
+
+	if m.last == nil {
+		m.last, err = m.cpuTimes(false)
 		return &CPUSample{}, nil
 	}
 
-	currentTimes, err := self.cpuTimes(false)
+	currentTimes, err := m.cpuTimes(false)
 	helpers.LogStructureDetails(syslog, currentTimes, "CpuTimes", "raw", nil)
 
 	// in container envs we might get an empty array and the code panics after this
@@ -51,7 +65,7 @@ func (self *CPUMonitor) Sample() (sample *CPUSample, err error) {
 		return &CPUSample{}, nil
 	}
 
-	delta := cpuDelta(&currentTimes[0], &self.last[0])
+	delta := cpuDelta(&currentTimes[0], &m.last[0])
 
 	userDelta := delta.User + delta.Nice
 	systemDelta := delta.System + delta.Irq + delta.Softirq
@@ -80,10 +94,10 @@ func (self *CPUMonitor) Sample() (sample *CPUSample, err error) {
 
 	// log samples when cpuPercent is < 0
 	if sample.CPUPercent < 0 {
-		syslog.WithField("currentTimes", currentTimes).WithField("lastTimes", self.last).Warn("cpuPercent is lower than zero")
+		syslog.WithField("currentTimes", currentTimes).WithField("lastTimes", m.last).Warn("cpuPercent is lower than zero")
 	}
 
-	self.last = currentTimes
+	m.last = currentTimes
 
 	return
 }
