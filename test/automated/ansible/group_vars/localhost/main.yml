@@ -190,6 +190,13 @@ instances:
     platform: "linux"
     python_interpreter: "/usr/bin/python"
     launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
+  - ami: "ami-068d5d5ed1eeea07c"
+    type: "t3a.small"
+    name: "amd64:redhat-10.0"
+    username: "ec2-user"
+    platform: "linux"
+    python_interpreter: "/usr/bin/python3"
+    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
   ############################
   # redhat arm64
   ############################
@@ -199,6 +206,13 @@ instances:
     username: "ec2-user"
     platform: "linux"
     python_interpreter: "/usr/bin/python"
+    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
+  - ami: "ami-07b21932ee4cac8c0"
+    type: "t4g.small"
+    name: "arm64:redhat-10.0"
+    username: "ec2-user"
+    platform: "linux"
+    python_interpreter: "/usr/bin/python3"
     launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
   ############################
   # debian amd64
