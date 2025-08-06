@@ -5,9 +5,10 @@ package protocol
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestEntityData_New(t *testing.T) {
@@ -51,7 +52,7 @@ func TestEntityData_New(t *testing.T) {
 		ID:  entity.ID(1234567890),
 	}
 
-	a := map[string]interface{}{
+	attributes := map[string]any{
 		"format":          "from-attribute",
 		"foo-attribute":   "test-foo",
 		"bar-attribute":   "test-bar",
@@ -69,7 +70,7 @@ func TestEntityData_New(t *testing.T) {
 		WithIntegrationUser(u),
 		WithLabels(l),
 		WithEntity(en),
-		WithAttributes(a),
+		WithAttributes(attributes),
 		WithAnnotations(annotations),
 	)
 
@@ -78,7 +79,7 @@ func TestEntityData_New(t *testing.T) {
 
 	// eventData should remain immutable, NewEventData should copy map values
 	// Assert that maps values points to diff memory address
-	assert.NotSame(t, want, n)
+	assert.NotSame(t, &want, &n)
 }
 
 func TestEntityData_New_IgnoreHostnameAttribute(t *testing.T) {
