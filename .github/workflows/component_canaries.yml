@@ -53,6 +53,8 @@ jobs:
           echo "GIT_BRANCH=$GIT_BRANCH" >> $GITHUB_ENV
 
       - name: Add to env current and previous versions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: .github/workflows/scripts/set_version.sh ${{ inputs.TAG }}
 
       - name: Provision canaries
@@ -89,6 +91,8 @@ jobs:
           echo "GIT_BRANCH=$GIT_BRANCH" >> $GITHUB_ENV
 
       - name: Add to env current and previous versions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: .github/workflows/scripts/set_version.sh ${{ inputs.TAG }}
 
       - name: set vars for legibility (state, inventory ...)
@@ -158,6 +162,8 @@ jobs:
           echo "GIT_BRANCH=$GIT_BRANCH" >> $GITHUB_ENV
 
       - name: Add to env current and previous versions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: .github/workflows/scripts/set_version.sh ${{ inputs.TAG }}
 
       - name: set vars for legibility (state, inventory ...)

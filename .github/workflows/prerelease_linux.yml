@@ -209,6 +209,8 @@ jobs:
       - uses: actions/checkout@v2
 
       - id: previous_tag_step
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./.github/workflows/scripts/previous_version.sh ${{ github.event.release.tag_name }} >> "$GITHUB_OUTPUT"
 
   prune-previous-canaries-linux:
