@@ -195,7 +195,6 @@ generate-goreleaser-amd64:
   		$(CURDIR)/build/goreleaser/linux/centos_7_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/centos_8_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/rhel_9_amd64.yml\
-		$(CURDIR)/build/goreleaser/linux/rhel_10_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/debian_systemd_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/debian_upstart_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_114_amd64.yml\
@@ -225,7 +224,6 @@ generate-goreleaser-amd64:
   		$(CURDIR)/build/goreleaser/linux/centos_7_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/centos_8_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/rhel_9_arm.yml\
-		$(CURDIR)/build/goreleaser/linux/rhel_10_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/debian_systemd_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_122_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_123_arm.yml\
@@ -251,7 +249,6 @@ generate-goreleaser-arm64:
   		$(CURDIR)/build/goreleaser/linux/centos_7_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/centos_8_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/rhel_9_arm64.yml\
-		$(CURDIR)/build/goreleaser/linux/rhel_10_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/debian_systemd_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_122_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_123_arm64.yml\
@@ -303,9 +300,6 @@ generate-goreleaser-multiarch:
   		$(CURDIR)/build/goreleaser/linux/rhel_9_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/rhel_9_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/rhel_9_arm64.yml\
-		$(CURDIR)/build/goreleaser/linux/rhel_10_amd64.yml\
-		$(CURDIR)/build/goreleaser/linux/rhel_10_arm.yml\
-		$(CURDIR)/build/goreleaser/linux/rhel_10_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/debian_systemd_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/debian_systemd_arm.yml\
   		$(CURDIR)/build/goreleaser/linux/debian_systemd_arm64.yml\
