@@ -419,20 +419,33 @@ func (s *CloudDetectionSuite) TestDetectWithProvider(chk *C) {
 		done := make(chan struct{})
 
 		go func() {
+			defer func() {
+				// Recover from potential panic if done channel is closed
+				if r := recover(); r != nil {
+					// Channel was closed, ignore the panic
+				}
+			}()
+
 			detector.Initialize(WithProvider(Type(test.provider)))
 
 			for {
 				if detector.isInitialized() {
-					done <- struct{}{}
+					select {
+					case done <- struct{}{}:
+						return // Exit the goroutine after successful send
+					default:
+						return // Exit if channel is closed/full
+					}
 				}
+				time.Sleep(10 * time.Millisecond) // Small delay to prevent busy loop
 			}
 		}()
 
 		select {
 		case <-done:
 		case <-time.After(time.Second):
-			close(done)
 		}
+		close(done)
 
 		if test.expected.IsValidCloud() {
 			chk.Assert(detector.getHarvester(), FitsTypeOf, test.harvester)

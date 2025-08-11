@@ -175,6 +175,31 @@ func TestGetHostInfo(t *testing.T) {
 			},
 		},
 		{
+			name: "cloud oci",
+			assertions: func(data *HostInfoData, err error) {
+				assert.Equal(t, "", data.RegionAWS)
+				assert.Equal(t, "", data.RegionAzure)
+				assert.Equal(t, "", data.RegionGCP)
+				assert.Equal(t, "", data.RegionAlibaba)
+				assert.Equal(t, "us-ashburn-1", data.RegionOCI)
+				assert.Equal(t, "ocid1.compartment.oc1", data.OCIAccountID)
+				assert.Equal(t, "jyDh:US-ASHBURN-AD-1", data.OCIAvailabilityZone)
+				assert.Equal(t, "ocid1.image.oc1", data.OCIImageID)
+				assert.Equal(t, "ubunut-instance-20250722-1328", data.OCIDisplayName)
+				assert.Equal(t, "ocid1.tenancy.oc1", data.OCITenantID)
+				assert.NoError(t, err)
+			},
+			setMock: func(h *fakeHarvester) {
+				h.On("GetAccountID").Return("ocid1.compartment.oc1", nil)
+				h.On("GetCloudType").Return(cloud.TypeOCI)
+				h.On("GetRegion").Return("us-ashburn-1", nil)
+				h.On("GetZone").Return("jyDh:US-ASHBURN-AD-1", nil)
+				h.On("GetInstanceImageID").Return("ocid1.image.oc1", nil)
+				h.On("GetInstanceDisplayName").Return("ubunut-instance-20250722-1328", nil)
+				h.On("GetInstanceTenantID").Return("ocid1.tenancy.oc1", nil)
+			},
+		},
+		{
 			name: "cloud error",
 			assertions: func(data *HostInfoData, err error) {
 				assert.Equal(t, "", data.RegionAWS)
