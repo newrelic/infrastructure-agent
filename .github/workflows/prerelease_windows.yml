@@ -8,6 +8,7 @@ on:
       - '*'
 
 env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   PFX_CERTIFICATE_BASE64: ${{ secrets.OHAI_PFX_CERTIFICATE_BASE64 }} # base64 encoded
   PFX_CERTIFICATE_DESCRIPTION: 'New Relic'
