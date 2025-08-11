@@ -423,6 +423,7 @@ func (s *CloudDetectionSuite) TestDetectWithProvider(chk *C) {
 				// Recover from potential panic if done channel is closed
 				if r := recover(); r != nil {
 					// Channel was closed, ignore the panic
+					return
 				}
 			}()
 
@@ -437,6 +438,7 @@ func (s *CloudDetectionSuite) TestDetectWithProvider(chk *C) {
 						return // Exit if channel is closed/full
 					}
 				}
+
 				time.Sleep(10 * time.Millisecond) // Small delay to prevent busy loop
 			}
 		}()

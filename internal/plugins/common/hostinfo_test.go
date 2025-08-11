@@ -189,14 +189,14 @@ func TestGetHostInfo(t *testing.T) {
 				assert.Equal(t, "ocid1.tenancy.oc1", data.OCITenantID)
 				assert.NoError(t, err)
 			},
-			setMock: func(h *fakeHarvester) {
-				h.On("GetAccountID").Return("ocid1.compartment.oc1", nil)
-				h.On("GetCloudType").Return(cloud.TypeOCI)
-				h.On("GetRegion").Return("us-ashburn-1", nil)
-				h.On("GetZone").Return("jyDh:US-ASHBURN-AD-1", nil)
-				h.On("GetInstanceImageID").Return("ocid1.image.oc1", nil)
-				h.On("GetInstanceDisplayName").Return("ubunut-instance-20250722-1328", nil)
-				h.On("GetInstanceTenantID").Return("ocid1.tenancy.oc1", nil)
+			setMock: func(harvester *fakeHarvester) {
+				harvester.On("GetAccountID").Return("ocid1.compartment.oc1", nil)
+				harvester.On("GetCloudType").Return(cloud.TypeOCI)
+				harvester.On("GetRegion").Return("us-ashburn-1", nil)
+				harvester.On("GetZone").Return("jyDh:US-ASHBURN-AD-1", nil)
+				harvester.On("GetInstanceImageID").Return("ocid1.image.oc1", nil)
+				harvester.On("GetInstanceDisplayName").Return("ubunut-instance-20250722-1328", nil)
+				harvester.On("GetInstanceTenantID").Return("ocid1.tenancy.oc1", nil)
 			},
 		},
 		{
