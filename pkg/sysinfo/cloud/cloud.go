@@ -21,7 +21,6 @@ const (
 	TypeAzure      Type = "azure"       // This instance is running in Azure.
 	TypeGCP        Type = "gcp"         // This instance is running in gcp.
 	TypeAlibaba    Type = "alibaba"     // This instance is running in alibaba.
-	TypeOCI        Type = "oci"         // This instance is running in Oracle Cloud Infrastructure (OCI).
 )
 
 var dlog = log.WithComponent("CloudDetector")
@@ -35,8 +34,7 @@ func (t Type) IsValidCloud() bool {
 	return t == TypeAWS ||
 		t == TypeAzure ||
 		t == TypeGCP ||
-		t == TypeAlibaba ||
-		t == TypeOCI
+		t == TypeAlibaba
 }
 
 var (
@@ -66,10 +64,6 @@ type Harvester interface {
 	GetZone() (string, error)
 	// GetInstanceImageID returns the cloud instance image ID
 	GetInstanceImageID() (string, error)
-	// GetInstanceDisplayName returns the cloud instance displayname
-	GetInstanceDisplayName() (string, error)
-	// GetInstanceTenantID returns the cloud instance tenant ID
-	GetInstanceTenantID() (string, error)
 	// GetHarvester returns instance of the Harvester detected (or instance of themselves)
 	GetHarvester() (Harvester, error)
 }
@@ -116,9 +110,6 @@ func WithProvider(cloudType Type) DetectorOption {
 		case TypeAlibaba:
 			detector.setHarvester(NewAlibabaHarvester(detector.disableKeepAlive))
 			detector.finishInit()
-		case TypeOCI:
-			detector.setHarvester(NewOCIHarvester(detector.disableKeepAlive))
-			detector.finishInit()
 		case TypeNoCloud:
 		case TypeInProgress:
 		default:
@@ -142,7 +133,6 @@ func (d *Detector) Initialize(opts ...DetectorOption) {
 		NewAzureHarvester(d.disableKeepAlive),
 		NewGCPHarvester(d.disableKeepAlive),
 		NewAlibabaHarvester(d.disableKeepAlive),
-		NewOCIHarvester(d.disableKeepAlive),
 	}
 	d.initialize(harvesters...)
 }
@@ -249,24 +239,6 @@ func (d *Detector) GetCloudSource() string {
 		return ""
 	}
 	return cloudHarvester.GetCloudSource()
-}
-
-// GetInstanceDisplayName returns the cloud instance display name
-func (d *Detector) GetInstanceDisplayName() (string, error) {
-	cloudHarvester, err := d.GetHarvester()
-	if err != nil {
-		return "", err
-	}
-	return cloudHarvester.GetInstanceDisplayName()
-}
-
-// GetInstanceTenantID returns the cloud instance tenant ID
-func (d *Detector) GetInstanceTenantID() (string, error) {
-	cloudHarvester, err := d.GetHarvester()
-	if err != nil {
-		return "", err
-	}
-	return cloudHarvester.GetInstanceTenantID()
 }
 
 // isInitialized will check if the detector is Initialized.

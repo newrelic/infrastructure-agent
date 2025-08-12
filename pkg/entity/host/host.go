@@ -43,7 +43,6 @@ func (i IDLookup) AgentShortEntityName() (string, error) {
 		sysinfo.HOST_SOURCE_AZURE_VM_ID,
 		sysinfo.HOST_SOURCE_GCP_VM_ID,
 		sysinfo.HOST_SOURCE_ALIBABA_VM_ID,
-		sysinfo.HOST_SOURCE_OCI_VM_ID,
 		sysinfo.HOST_SOURCE_DISPLAY_NAME,
 		sysinfo.HOST_SOURCE_HOSTNAME_SHORT,
 	}

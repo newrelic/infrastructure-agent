@@ -255,7 +255,6 @@ func TestIDLookup_EntityNameCloudInstance(t *testing.T) {
 		sysinfo.HOST_SOURCE_AZURE_VM_ID:    "azure-id",
 		sysinfo.HOST_SOURCE_GCP_VM_ID:      "gcp-id",
 		sysinfo.HOST_SOURCE_ALIBABA_VM_ID:  "alibaba-id",
-		sysinfo.HOST_SOURCE_OCI_VM_ID:      "oci-id",
 		sysinfo.HOST_SOURCE_DISPLAY_NAME:   "display-name",
 		sysinfo.HOST_SOURCE_HOSTNAME_SHORT: "short",
 	}
@@ -272,7 +271,6 @@ func TestIDLookup_EntityNameAzure(t *testing.T) {
 		sysinfo.HOST_SOURCE_AZURE_VM_ID:    "azure-id",
 		sysinfo.HOST_SOURCE_GCP_VM_ID:      "gcp-id",
 		sysinfo.HOST_SOURCE_ALIBABA_VM_ID:  "alibaba-id",
-		sysinfo.HOST_SOURCE_OCI_VM_ID:      "oci-id",
 		sysinfo.HOST_SOURCE_DISPLAY_NAME:   "display-name",
 		sysinfo.HOST_SOURCE_HOSTNAME_SHORT: "short",
 	}
@@ -288,7 +286,6 @@ func TestIDLookup_EntityNameGCP(t *testing.T) {
 		sysinfo.HOST_SOURCE_AZURE_VM_ID:    "",
 		sysinfo.HOST_SOURCE_GCP_VM_ID:      "gcp-id",
 		sysinfo.HOST_SOURCE_ALIBABA_VM_ID:  "alibaba-id",
-		sysinfo.HOST_SOURCE_OCI_VM_ID:      "oci-id",
 		sysinfo.HOST_SOURCE_DISPLAY_NAME:   "display-name",
 		sysinfo.HOST_SOURCE_HOSTNAME_SHORT: "short",
 	}
@@ -304,7 +301,6 @@ func TestIDLookup_EntityNameAlibaba(t *testing.T) {
 		sysinfo.HOST_SOURCE_AZURE_VM_ID:    "",
 		sysinfo.HOST_SOURCE_GCP_VM_ID:      "",
 		sysinfo.HOST_SOURCE_ALIBABA_VM_ID:  "alibaba-id",
-		sysinfo.HOST_SOURCE_OCI_VM_ID:      "oci-id",
 		sysinfo.HOST_SOURCE_DISPLAY_NAME:   "display-name",
 		sysinfo.HOST_SOURCE_HOSTNAME_SHORT: "short",
 	}
@@ -312,24 +308,6 @@ func TestIDLookup_EntityNameAlibaba(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, "alibaba-id", name)
-}
-
-func TestIDLookup_EntityNameOCI(t *testing.T) {
-	t.Parallel()
-
-	lookup := host.IDLookup{
-		sysinfo.HOST_SOURCE_INSTANCE_ID:    "",
-		sysinfo.HOST_SOURCE_AZURE_VM_ID:    "",
-		sysinfo.HOST_SOURCE_GCP_VM_ID:      "",
-		sysinfo.HOST_SOURCE_ALIBABA_VM_ID:  "",
-		sysinfo.HOST_SOURCE_OCI_VM_ID:      "oci-id",
-		sysinfo.HOST_SOURCE_DISPLAY_NAME:   "display-name",
-		sysinfo.HOST_SOURCE_HOSTNAME_SHORT: "short",
-	}
-	name, err := lookup.AgentShortEntityName()
-
-	require.NoError(t, err)
-	assert.Equal(t, "oci-id", name)
 }
 
 func TestIDLookup_EntityNameDisplayName(t *testing.T) {

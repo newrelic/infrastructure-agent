@@ -72,14 +72,6 @@ func (a *MockCloudHarvester) GetZone() (string, error) {
 	return "", nil
 }
 
-func (a *MockCloudHarvester) GetInstanceDisplayName() (string, error) {
-	return "", nil
-}
-
-func (a *MockCloudHarvester) GetInstanceTenantID() (string, error) {
-	return "", nil
-}
-
 func (a *MockCloudHarvester) GetHarvester() (cloud.Harvester, error) {
 	return nil, nil
 }

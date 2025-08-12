@@ -4,25 +4,8 @@
 package common
 
 import (
-	"errors"
 	"fmt"
-
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
-)
-
-var (
-	// ErrCloudRegionRetrievalFailed indicates failure to retrieve cloud region.
-	ErrCloudRegionRetrievalFailed = errors.New("couldn't retrieve cloud region")
-	// ErrCloudAccountIDRetrievalFailed indicates failure to retrieve cloud account ID.
-	ErrCloudAccountIDRetrievalFailed = errors.New("couldn't retrieve cloud account ID")
-	// ErrCloudZoneRetrievalFailed indicates failure to retrieve cloud availability zone.
-	ErrCloudZoneRetrievalFailed = errors.New("couldn't retrieve cloud availability zone")
-	// ErrCloudImageIDRetrievalFailed indicates failure to retrieve cloud image ID.
-	ErrCloudImageIDRetrievalFailed = errors.New("couldn't retrieve cloud image ID")
-	// ErrCloudDisplayNameRetrievalFailed indicates failure to retrieve cloud display name.
-	ErrCloudDisplayNameRetrievalFailed = errors.New("couldn't retrieve cloud display name")
-	// ErrCloudTenantIDRetrievalFailed indicates failure to retrieve cloud tenant ID.
-	ErrCloudTenantIDRetrievalFailed = errors.New("couldn't retrieve cloud tenant ID")
 )
 
 type CloudData struct {
@@ -30,7 +13,6 @@ type CloudData struct {
 	AzureCloudData   `mapstructure:",squash"`
 	GoogleCloudData  `mapstructure:",squash"`
 	AlibabaCloudData `mapstructure:",squash"`
-	OracleCloudData  `mapstructure:",squash"`
 }
 
 type AwsCloudData struct {
@@ -52,15 +34,6 @@ type GoogleCloudData struct {
 
 type AlibabaCloudData struct {
 	RegionAlibaba string `json:"region_id,omitempty"`
-}
-
-type OracleCloudData struct {
-	RegionOCI           string `json:"oci_region,omitempty"`
-	OCIAccountID        string `json:"oci_account_id,omitempty"`
-	OCIAvailabilityZone string `json:"oci_availability_zone,omitempty"`
-	OCIImageID          string `json:"oci_image_id,omitempty"`
-	OCIDisplayName      string `json:"oci_display_name,omitempty"`
-	OCITenantID         string `json:"oci_tenant_id,omitempty"`
 }
 
 // getAWSCloudData gathers the exported information for the AWS Cloud.
@@ -108,44 +81,6 @@ func getAzureCloudData(cloudHarvester cloud.Harvester) (azureData AzureCloudData
 	return
 }
 
-// getOracleCloudData gathers the exported information for the Oracle Cloud.
-func getOracleCloudData(cloudHarvester cloud.Harvester) (OracleCloudData, error) {
-	var ociData OracleCloudData
-	var err error
-
-	ociData.RegionOCI, err = cloudHarvester.GetRegion()
-	if err != nil {
-		return ociData, fmt.Errorf("%s: %w", ErrCloudRegionRetrievalFailed.Error(), err) //nolint:wrapcheck
-	}
-
-	ociData.OCIAccountID, err = cloudHarvester.GetAccountID()
-	if err != nil {
-		return ociData, fmt.Errorf("%s: %w", ErrCloudAccountIDRetrievalFailed.Error(), err) //nolint:wrapcheck
-	}
-
-	ociData.OCIAvailabilityZone, err = cloudHarvester.GetZone()
-	if err != nil {
-		return ociData, fmt.Errorf("%s: %w", ErrCloudZoneRetrievalFailed.Error(), err) //nolint:wrapcheck
-	}
-
-	ociData.OCIImageID, err = cloudHarvester.GetInstanceImageID()
-	if err != nil {
-		return ociData, fmt.Errorf("%s: %w", ErrCloudImageIDRetrievalFailed.Error(), err) //nolint:wrapcheck
-	}
-
-	ociData.OCIDisplayName, err = cloudHarvester.GetInstanceDisplayName()
-	if err != nil {
-		return ociData, fmt.Errorf("%s: %w", ErrCloudDisplayNameRetrievalFailed.Error(), err) //nolint:wrapcheck
-	}
-
-	ociData.OCITenantID, err = cloudHarvester.GetInstanceTenantID()
-	if err != nil {
-		return ociData, fmt.Errorf("%s: %w", ErrCloudTenantIDRetrievalFailed.Error(), err) //nolint:wrapcheck
-	}
-
-	return ociData, nil
-}
-
 // getCloudData will populate a CloudData structure depending on the cloud type.
 func getCloudData(cloudHarvester cloud.Harvester) (cloudData CloudData, err error) {
 	switch cloudHarvester.GetCloudType() {
@@ -157,8 +92,6 @@ func getCloudData(cloudHarvester cloud.Harvester) (cloudData CloudData, err erro
 		cloudData.RegionGCP, err = cloudHarvester.GetRegion()
 	case cloud.TypeAlibaba:
 		cloudData.RegionAlibaba, err = cloudHarvester.GetRegion()
-	case cloud.TypeOCI:
-		cloudData.OracleCloudData, err = getOracleCloudData(cloudHarvester)
 	case cloud.TypeNoCloud:
 		return
 	}
