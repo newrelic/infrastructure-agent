@@ -315,7 +315,9 @@ func TestIDLookup_EntityNameAlibaba(t *testing.T) {
 }
 
 func TestIDLookup_EntityNameOCI(t *testing.T) {
-	l := host.IDLookup{
+	t.Parallel()
+
+	lookup := host.IDLookup{
 		sysinfo.HOST_SOURCE_INSTANCE_ID:    "",
 		sysinfo.HOST_SOURCE_AZURE_VM_ID:    "",
 		sysinfo.HOST_SOURCE_GCP_VM_ID:      "",
@@ -324,7 +326,7 @@ func TestIDLookup_EntityNameOCI(t *testing.T) {
 		sysinfo.HOST_SOURCE_DISPLAY_NAME:   "display-name",
 		sysinfo.HOST_SOURCE_HOSTNAME_SHORT: "short",
 	}
-	name, err := l.AgentShortEntityName()
+	name, err := lookup.AgentShortEntityName()
 
 	require.NoError(t, err)
 	assert.Equal(t, "oci-id", name)
