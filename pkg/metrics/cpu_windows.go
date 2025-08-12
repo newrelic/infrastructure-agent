@@ -33,7 +33,6 @@ type WindowsCPUMonitor struct {
 	started bool
 }
 
-// NewCPUMonitor creates a new Windows CPU monitor using PDH performance counters
 func NewCPUMonitor(context agent.AgentContext) *CPUMonitor {
 	winMonitor := &WindowsCPUMonitor{
 		context: context,
@@ -53,7 +52,7 @@ func (w *WindowsCPUMonitor) initializePDH() error {
 
 	var err error
 	w.pdh, err = nrwin.NewPdhPoll(
-		cpulog.Debugf,
+		syslog.Debugf,
 		processorTimeTotal,
 		userTimeTotal,
 		privilegedTimeTotal,
@@ -79,7 +78,7 @@ func (w *WindowsCPUMonitor) sample() (*CPUSample, error) {
 		return nil, fmt.Errorf("failed to poll CPU performance counters: %w", err)
 	}
 
-	helpers.LogStructureDetails(cpulog, values, "CpuPerfCounters", "raw", nil)
+	helpers.LogStructureDetails(syslog, values, "CpuPerfCounters", "raw", nil)
 
 	// Calculate percentages from performance counters
 	processorTime := values[processorTimeTotal]
@@ -117,7 +116,7 @@ func (w *WindowsCPUMonitor) sample() (*CPUSample, error) {
 
 	// Log warning if CPU percent is negative (shouldn't happen with PDH)
 	if sample.CPUPercent < 0 {
-		cpulog.WithField("values", values).Warn("cpuPercent is lower than zero")
+		syslog.WithField("values", values).Warn("cpuPercent is lower than zero")
 	}
 
 	return sample, nil
