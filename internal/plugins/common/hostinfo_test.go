@@ -275,6 +275,16 @@ func TestGetCloudHostType(t *testing.T) {
 			},
 		},
 		{
+			name: "cloud oci",
+			assertions: func(tp string, err error) {
+				assert.Equal(t, "VM.Optimized3.Flex", tp)
+				assert.NoError(t, err)
+			}, setMock: func(h *fakeHarvester) {
+				h.On("GetCloudType").Return(cloud.TypeOCI)
+				h.On("GetHostType").Return("VM.Optimized3.Flex", nil)
+			},
+		},
+		{
 			name: "cloud error",
 			assertions: func(tp string, err error) {
 				assert.Equal(t, "unknown", tp)

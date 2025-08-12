@@ -315,10 +315,11 @@ func (s *CloudDetectionSuite) TestDetectSuccessful(c *C) {
 	awsHarvester := NewMockHarvester(TypeAWS)
 	azureHarvester := NewMockHarvester(TypeAzure)
 	alibabaHarvester := NewMockHarvester(TypeAlibaba)
+	ociHarvester := NewMockHarvester(TypeOCI)
 
 	done := make(chan struct{})
 	go func() {
-		detector.initialize(gcpHarvester, awsHarvester, azureHarvester, alibabaHarvester)
+		detector.initialize(gcpHarvester, awsHarvester, azureHarvester, alibabaHarvester, ociHarvester)
 		for {
 			if detector.isInitialized() {
 				done <- struct{}{}
@@ -344,10 +345,11 @@ func (s *CloudDetectionSuite) TestDetectFail(c *C) {
 	awsHarvester := NewMockHarvester(TypeAWS)
 	azureHarvester := NewMockHarvester(TypeAzure)
 	alibabaHarvester := NewMockHarvester(TypeAlibaba)
+	ociHarvester := NewMockHarvester(TypeOCI)
 
 	done := make(chan struct{})
 	go func() {
-		detector.initialize(awsHarvester, azureHarvester, alibabaHarvester)
+		detector.initialize(awsHarvester, azureHarvester, alibabaHarvester, ociHarvester)
 		for {
 			if detector.isInitialized() {
 				done <- struct{}{}
@@ -385,6 +387,12 @@ func (s *CloudDetectionSuite) TestDetectWithProvider(chk *C) {
 			provider:    "alibaba",
 			harvester:   NewAlibabaHarvester(false),
 			expected:    TypeAlibaba,
+			initialized: true,
+		},
+		{
+			provider:    "oci",
+			harvester:   NewOCIHarvester(false),
+			expected:    TypeOCI,
 			initialized: true,
 		},
 		// Invalid provider values should keep the detector waiting in progress.
