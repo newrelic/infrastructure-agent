@@ -1,6 +1,6 @@
 module spin-ec2
 
-go 1.23.11
+go 1.23.12
 
 require (
 	github.com/spf13/cobra v1.2.1
