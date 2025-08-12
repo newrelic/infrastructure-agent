@@ -15,6 +15,7 @@ func NewCPUMonitor(context agent.AgentContext) *CPUMonitor {
 	return &CPUMonitor{
 		context:        context,
 		cpuTimes:       cpu.Times,
+		last:           nil,
 		windowsMonitor: nil,
 	}
 }

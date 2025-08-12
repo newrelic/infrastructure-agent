@@ -10,11 +10,12 @@ import (
 	"github.com/shirou/gopsutil/v3/cpu"
 )
 
-// NewCPUMonitor creates a new CPU monitor using gopsutil for non-Windows platforms
+// NewCPUMonitor creates a new CPU monitor using gopsutil for non-Windows platforms.
 func NewCPUMonitor(context agent.AgentContext) *CPUMonitor {
 	return &CPUMonitor{
 		context:        context,
 		cpuTimes:       cpu.Times,
+		last:           nil,
 		windowsMonitor: nil,
 	}
 }
