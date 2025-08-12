@@ -89,6 +89,16 @@ func (gcp *GCPHarvester) GetCloudSource() string {
 	return sysinfo.HOST_SOURCE_GCP_VM_ID
 }
 
+// GetInstanceDisplayName returns the cloud instance display name (not supported for GCP)
+func (gcp *GCPHarvester) GetInstanceDisplayName() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
+// GetInstanceTenantID returns the cloud instance tenant ID (not supported for GCP)
+func (gcp *GCPHarvester) GetInstanceTenantID() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
 // GetRegion will return the cloud instance region.
 func (gcp *GCPHarvester) GetRegion() (string, error) {
 	if gcp.zone == "" || gcp.timeout.HasExpired() {
