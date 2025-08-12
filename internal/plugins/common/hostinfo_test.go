@@ -116,6 +116,7 @@ func TestGetHostInfo(t *testing.T) {
 				assert.Equal(t, "", data.RegionAzure)
 				assert.Equal(t, "", data.RegionGCP)
 				assert.Equal(t, "", data.RegionAlibaba)
+				assert.Equal(t, "", data.RegionOCI)
 				assert.Equal(t, "system", data.System)
 				assert.Equal(t, "Infrastructure", data.AgentName)
 				assert.NoError(t, err)
@@ -135,6 +136,7 @@ func TestGetHostInfo(t *testing.T) {
 				assert.Equal(t, "northeurope", data.RegionAzure)
 				assert.Equal(t, "", data.RegionGCP)
 				assert.Equal(t, "", data.RegionAlibaba)
+				assert.Equal(t, "", data.RegionOCI)
 				assert.Equal(t, "1", data.AzureAvailabilityZone)
 				assert.Equal(t, "x123", data.AzureSubscriptionID)
 				assert.NoError(t, err)
@@ -151,6 +153,7 @@ func TestGetHostInfo(t *testing.T) {
 			assertions: func(data *HostInfoData, err error) {
 				assert.Equal(t, "", data.RegionAWS)
 				assert.Equal(t, "", data.RegionAzure)
+				assert.Equal(t, "", data.RegionOCI)
 				assert.Equal(t, "us-east-1", data.RegionGCP)
 				assert.Equal(t, "", data.RegionAlibaba)
 				assert.NoError(t, err)
@@ -166,6 +169,7 @@ func TestGetHostInfo(t *testing.T) {
 				assert.Equal(t, "", data.RegionAWS)
 				assert.Equal(t, "", data.RegionAzure)
 				assert.Equal(t, "", data.RegionGCP)
+				assert.Equal(t, "", data.RegionOCI)
 				assert.Equal(t, "us-east-1", data.RegionAlibaba)
 				assert.NoError(t, err)
 			},
