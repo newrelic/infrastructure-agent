@@ -30,31 +30,26 @@ func (s *CloudDetectionSuite) TestParseAWSMeta(c *C) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("i-db519dd1\n"))
-		return
 	}))
 	mux.Handle("/list", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("foo\nbar"))
-		return
 	}))
 	mux.Handle("/not200", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = w.Write([]byte("foo"))
-		return
 	}))
 	mux.Handle("/notplain", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("foo"))
-		return
 	}))
 	mux.Handle("/justgarbage", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("<html>this is some test</html>"))
-		return
 	}))
 	server := httptest.NewServer(mux)
 
@@ -298,6 +293,16 @@ func (a *MockHarvester) GetZone() (string, error) {
 	return "", nil
 }
 
+// GetInstanceDisplayName returns the cloud instance display name (mock implementation)
+func (m *MockHarvester) GetInstanceDisplayName() (string, error) {
+	return "mock-display-name", nil
+}
+
+// GetInstanceTenantID returns the cloud instance tenant ID (mock implementation)
+func (m *MockHarvester) GetInstanceTenantID() (string, error) {
+	return "mock-tenant-id", nil
+}
+
 // GetHarvester returns the MockHarvester
 func (m *MockHarvester) GetHarvester() (Harvester, error) {
 	return m, nil
@@ -310,10 +315,11 @@ func (s *CloudDetectionSuite) TestDetectSuccessful(c *C) {
 	awsHarvester := NewMockHarvester(TypeAWS)
 	azureHarvester := NewMockHarvester(TypeAzure)
 	alibabaHarvester := NewMockHarvester(TypeAlibaba)
+	ociHarvester := NewMockHarvester(TypeOCI)
 
 	done := make(chan struct{})
 	go func() {
-		detector.initialize(gcpHarvester, awsHarvester, azureHarvester, alibabaHarvester)
+		detector.initialize(gcpHarvester, awsHarvester, azureHarvester, alibabaHarvester, ociHarvester)
 		for {
 			if detector.isInitialized() {
 				done <- struct{}{}
@@ -339,10 +345,11 @@ func (s *CloudDetectionSuite) TestDetectFail(c *C) {
 	awsHarvester := NewMockHarvester(TypeAWS)
 	azureHarvester := NewMockHarvester(TypeAzure)
 	alibabaHarvester := NewMockHarvester(TypeAlibaba)
+	ociHarvester := NewMockHarvester(TypeOCI)
 
 	done := make(chan struct{})
 	go func() {
-		detector.initialize(awsHarvester, azureHarvester, alibabaHarvester)
+		detector.initialize(awsHarvester, azureHarvester, alibabaHarvester, ociHarvester)
 		for {
 			if detector.isInitialized() {
 				done <- struct{}{}
@@ -382,6 +389,12 @@ func (s *CloudDetectionSuite) TestDetectWithProvider(chk *C) {
 			expected:    TypeAlibaba,
 			initialized: true,
 		},
+		{
+			provider:    "oci",
+			harvester:   NewOCIHarvester(false),
+			expected:    TypeOCI,
+			initialized: true,
+		},
 		// Invalid provider values should keep the detector waiting in progress.
 	}
 
@@ -414,20 +427,35 @@ func (s *CloudDetectionSuite) TestDetectWithProvider(chk *C) {
 		done := make(chan struct{})
 
 		go func() {
+			defer func() {
+				// Recover from potential panic if done channel is closed
+				if r := recover(); r != nil {
+					// Channel was closed, ignore the panic
+					return
+				}
+			}()
+
 			detector.Initialize(WithProvider(Type(test.provider)))
 
 			for {
 				if detector.isInitialized() {
-					done <- struct{}{}
+					select {
+					case done <- struct{}{}:
+						return // Exit the goroutine after successful send
+					default:
+						return // Exit if channel is closed/full
+					}
 				}
+
+				time.Sleep(10 * time.Millisecond) // Small delay to prevent busy loop
 			}
 		}()
 
 		select {
 		case <-done:
 		case <-time.After(time.Second):
-			close(done)
 		}
+		close(done)
 
 		if test.expected.IsValidCloud() {
 			chk.Assert(detector.getHarvester(), FitsTypeOf, test.harvester)
