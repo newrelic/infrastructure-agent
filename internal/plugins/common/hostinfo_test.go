@@ -64,18 +64,6 @@ func (f *fakeHarvester) GetInstanceImageID() (string, error) {
 	return args.String(0), args.Error(1)
 }
 
-// GetInstanceDisplayName returns the cloud instance display name
-func (f *fakeHarvester) GetInstanceDisplayName() (string, error) {
-	args := f.Called()
-	return args.String(0), args.Error(1)
-}
-
-// GetInstanceTenantID returns the cloud instance tenant ID
-func (f *fakeHarvester) GetInstanceTenantID() (string, error) {
-	args := f.Called()
-	return args.String(0), args.Error(1)
-}
-
 // GetHarvester returns instance of the Harvester detected (or instance of themselves)
 func (f *fakeHarvester) GetHarvester() (cloud.Harvester, error) {
 	return f, nil
@@ -98,7 +86,6 @@ func TestGetHostInfo(t *testing.T) {
 				assert.Equal(t, "", data.RegionAzure)
 				assert.Equal(t, "", data.RegionGCP)
 				assert.Equal(t, "", data.RegionAlibaba)
-				assert.Equal(t, "", data.RegionOCI)
 				assert.Equal(t, "system", data.System)
 				assert.Equal(t, "Infrastructure", data.AgentName)
 				assert.NoError(t, err)
@@ -117,7 +104,6 @@ func TestGetHostInfo(t *testing.T) {
 				assert.Equal(t, "", data.RegionAzure)
 				assert.Equal(t, "", data.RegionGCP)
 				assert.Equal(t, "", data.RegionAlibaba)
-				assert.Equal(t, "", data.RegionOCI)
 				assert.Equal(t, "system", data.System)
 				assert.Equal(t, "Infrastructure", data.AgentName)
 				assert.NoError(t, err)
@@ -137,7 +123,6 @@ func TestGetHostInfo(t *testing.T) {
 				assert.Equal(t, "northeurope", data.RegionAzure)
 				assert.Equal(t, "", data.RegionGCP)
 				assert.Equal(t, "", data.RegionAlibaba)
-				assert.Equal(t, "", data.RegionOCI)
 				assert.Equal(t, "1", data.AzureAvailabilityZone)
 				assert.Equal(t, "x123", data.AzureSubscriptionID)
 				assert.NoError(t, err)
@@ -154,7 +139,6 @@ func TestGetHostInfo(t *testing.T) {
 			assertions: func(data *HostInfoData, err error) {
 				assert.Equal(t, "", data.RegionAWS)
 				assert.Equal(t, "", data.RegionAzure)
-				assert.Equal(t, "", data.RegionOCI)
 				assert.Equal(t, "us-east-1", data.RegionGCP)
 				assert.Equal(t, "", data.RegionAlibaba)
 				assert.NoError(t, err)
@@ -170,7 +154,6 @@ func TestGetHostInfo(t *testing.T) {
 				assert.Equal(t, "", data.RegionAWS)
 				assert.Equal(t, "", data.RegionAzure)
 				assert.Equal(t, "", data.RegionGCP)
-				assert.Equal(t, "", data.RegionOCI)
 				assert.Equal(t, "us-east-1", data.RegionAlibaba)
 				assert.NoError(t, err)
 			},
@@ -180,38 +163,12 @@ func TestGetHostInfo(t *testing.T) {
 			},
 		},
 		{
-			name: "cloud oci",
-			assertions: func(data *HostInfoData, err error) {
-				assert.Equal(t, "", data.RegionAWS)
-				assert.Equal(t, "", data.RegionAzure)
-				assert.Equal(t, "", data.RegionGCP)
-				assert.Equal(t, "", data.RegionAlibaba)
-				assert.Equal(t, "us-ashburn-1", data.RegionOCI)
-				assert.Equal(t, "ocid1.compartment.oc1", data.OCIAccountID)
-				assert.Equal(t, "jyDh:US-ASHBURN-AD-1", data.OCIAvailabilityZone)
-				assert.Equal(t, "ocid1.image.oc1", data.OCIImageID)
-				assert.Equal(t, "ubunut-instance-20250722-1328", data.OCIDisplayName)
-				assert.Equal(t, "ocid1.tenancy.oc1", data.OCITenantID)
-				assert.NoError(t, err)
-			},
-			setMock: func(harvester *fakeHarvester) {
-				harvester.On("GetAccountID").Return("ocid1.compartment.oc1", nil)
-				harvester.On("GetCloudType").Return(cloud.TypeOCI)
-				harvester.On("GetRegion").Return("us-ashburn-1", nil)
-				harvester.On("GetZone").Return("jyDh:US-ASHBURN-AD-1", nil)
-				harvester.On("GetInstanceImageID").Return("ocid1.image.oc1", nil)
-				harvester.On("GetInstanceDisplayName").Return("ubunut-instance-20250722-1328", nil)
-				harvester.On("GetInstanceTenantID").Return("ocid1.tenancy.oc1", nil)
-			},
-		},
-		{
 			name: "cloud error",
 			assertions: func(data *HostInfoData, err error) {
 				assert.Equal(t, "", data.RegionAWS)
 				assert.Equal(t, "", data.RegionAzure)
 				assert.Equal(t, "", data.RegionGCP)
 				assert.Equal(t, "", data.RegionAlibaba)
-				assert.Equal(t, "", data.RegionOCI)
 				assert.Equal(t, "system", data.System)
 				assert.Equal(t, "Infrastructure", data.AgentName)
 				assert.Equal(t, agentTestVersion, data.AgentVersion)
@@ -272,16 +229,6 @@ func TestGetCloudHostType(t *testing.T) {
 			}, setMock: func(h *fakeHarvester) {
 				h.On("GetCloudType").Return(cloud.TypeAzure)
 				h.On("GetHostType").Return("Standard_DS2", nil)
-			},
-		},
-		{
-			name: "cloud oci",
-			assertions: func(tp string, err error) {
-				assert.Equal(t, "VM.Optimized3.Flex", tp)
-				assert.NoError(t, err)
-			}, setMock: func(h *fakeHarvester) {
-				h.On("GetCloudType").Return(cloud.TypeOCI)
-				h.On("GetHostType").Return("VM.Optimized3.Flex", nil)
 			},
 		},
 		{

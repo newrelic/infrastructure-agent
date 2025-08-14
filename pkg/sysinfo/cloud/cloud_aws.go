@@ -150,16 +150,6 @@ func (a *AWSHarvester) GetCloudSource() string {
 	return sysinfo.HOST_SOURCE_INSTANCE_ID
 }
 
-// GetInstanceDisplayName returns the cloud instance display name (not supported for AWS)
-func (a *AWSHarvester) GetInstanceDisplayName() (string, error) {
-	return "", ErrMethodNotImplemented
-}
-
-// GetInstanceTenantID returns the cloud instance tenant ID (not supported for AWS)
-func (a *AWSHarvester) GetInstanceTenantID() (string, error) {
-	return "", ErrMethodNotImplemented
-}
-
 // formatURL prepares the URL used for requesting AWS metadata.
 func formatURL(baseUrl string, query string) string {
 	return baseUrl + awsMetaDataPath + query

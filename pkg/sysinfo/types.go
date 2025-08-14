@@ -12,7 +12,6 @@ const (
 	HOST_SOURCE_AZURE_VM_ID    = "azure_vm_id"
 	HOST_SOURCE_GCP_VM_ID      = "gcp_vm_id"
 	HOST_SOURCE_ALIBABA_VM_ID  = "alibaba_vm_id"
-	HOST_SOURCE_OCI_VM_ID      = "oci_vm_id"
 	HOST_SOURCE_HOSTNAME       = "hostname"
 	HOST_SOURCE_HOSTNAME_SHORT = "hostname_short"
 
@@ -31,7 +30,6 @@ var (
 		HOST_SOURCE_AZURE_VM_ID,
 		HOST_SOURCE_GCP_VM_ID,
 		HOST_SOURCE_ALIBABA_VM_ID,
-		HOST_SOURCE_OCI_VM_ID,
 		HOST_SOURCE_DISPLAY_NAME,
 		HOST_SOURCE_HOSTNAME,
 	}
