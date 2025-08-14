@@ -15,8 +15,8 @@
   tasks:
     - name: Installation tests suite
       vars:
-        target_agent_version: "1.67.0-rhel10-test" # minimum version for ubuntu sles 15.6
-        target_agent_version_fips: "1.67.0-rhel10-test" # minimum version for FIPS
+        target_agent_version: "1.67.0~rhel10_test" # hardcoded for RHEL 10 testing - matches actual repo format
+        target_agent_version_fips: "1.67.0~rhel10_test" # hardcoded for RHEL 10 FIPS testing - matches actual repo format
 
       block:
         - name: Install agent
