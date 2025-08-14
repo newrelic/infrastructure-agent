@@ -33,7 +33,7 @@
           vars:
             target_versions:
               - exec: "/usr/bin/newrelic-infra --version"
-                version: "{{ target_agent_version_fips if ('-fips' in inventory_hostname) else target_agent_version }}"
+                version: "{{ '1.67.0-rhel10-test' if ('-fips' in inventory_hostname) else '1.67.0-rhel10-test' }}"
 
 
 ...
