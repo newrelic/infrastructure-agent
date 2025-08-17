@@ -15,8 +15,8 @@
   tasks:
     - name: Installation tests suite
       vars:
-        target_agent_version: "1.67.0~rhel10_test" # hardcoded for RHEL 10 testing - matches actual repo format
-        target_agent_version_fips: "1.67.0~rhel10_test" # hardcoded for RHEL 10 FIPS testing - matches actual repo format
+        target_agent_version: "0.0.0" # hardcoded for RHEL 10 testing - matches actual repo format
+        target_agent_version_fips: "0.0.0" # hardcoded for RHEL 10 FIPS testing - matches actual repo format
 
       block:
         - name: Install agent
@@ -24,7 +24,7 @@
             name: caos.ansible_roles.infra_agent
           vars:
             target_version: "{{ target_agent_version_fips if ('-fips' in inventory_hostname) else target_agent_version }}"
-            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/testing-pre-releases/satya-test/infrastructure_agent"
+            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/testing-pre-releases/satya-rhel10/infrastructure_agent"
             fips_enabled: "{{ '-fips' in inventory_hostname }}"
 
         - name: Assert version
@@ -33,7 +33,7 @@
           vars:
             target_versions:
               - exec: "/usr/bin/newrelic-infra --version"
-                version: "{{ '1.67.0-rhel10-test' if ('-fips' in inventory_hostname) else '1.67.0-rhel10-test' }}"
+                version: "{{ target_agent_version_fips if ('-fips' in inventory_hostname) else target_agent_version }}"
 
 
 ...
