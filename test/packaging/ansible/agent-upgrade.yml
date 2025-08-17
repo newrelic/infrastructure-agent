@@ -16,7 +16,7 @@
   tasks:
     - name: agent upgrade tests suite
       vars:
-        target_agent_version: "1.60.0"
+        target_agent_version: "1.67.0-rhel10-test"
 
       block:
 
@@ -25,7 +25,7 @@
             name: caos.ansible_roles.infra_agent
           vars:
             target_version: "{{ target_agent_version }}"
-            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
+            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/testing-pre-releases/satya-test/infrastructure_agent"
             fips_enabled: "{{ '-fips' in inventory_hostname }}"
 
         - name: Assert version
