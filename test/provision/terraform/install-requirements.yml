@@ -42,19 +42,10 @@
 - hosts: testing_hosts_linux
   become: true
   gather_facts: yes
-  vars:
-    falcon_client_id: "{{ lookup('env', 'CROWDSTRIKE_CLIENT_ID') }}"
-    falcon_client_secret: "{{ lookup('env', 'CROWDSTRIKE_CLIENT_SECRET') }}"
-    falcon_customer_id: "{{ lookup('env', 'CROWDSTRIKE_CUSTOMER_ID') }}"
-    api_base_url: "https://api.laggar.gcw.crowdstrike.com"
   tasks:
     - name: Configure logrotate
       include_role:
         name: caos.ansible_roles.logrotate
-
-    - name: Install CrowdStrike Falcon
-      include_role:
-        name: newrelic.crowdstrike_provision.install_crowdstrike_falcon
 
     - name: Configure hostname
       include_role:
@@ -62,16 +53,7 @@
 
 - hosts: testing_hosts_windows
   gather_facts: yes
-  vars:
-    falcon_client_id: "{{ lookup('env', 'CROWDSTRIKE_CLIENT_ID') }}"
-    falcon_client_secret: "{{ lookup('env', 'CROWDSTRIKE_CLIENT_SECRET') }}"
-    falcon_customer_id: "{{ lookup('env', 'CROWDSTRIKE_CUSTOMER_ID') }}"
-    api_base_url: "https://api.laggar.gcw.crowdstrike.com"
-
   tasks:
-    - name: Install CrowdStrike Falcon
-      include_role:
-        name: newrelic.crowdstrike_provision.install_crowdstrike_falcon
 
     - name: Configure hostname
       include_role:
@@ -80,11 +62,6 @@
 - hosts: testing_hosts_macos
   become: false
   gather_facts: yes
-  vars:
-    falcon_client_id: "{{ lookup('env', 'CROWDSTRIKE_CLIENT_ID') }}"
-    falcon_client_secret: "{{ lookup('env', 'CROWDSTRIKE_CLIENT_SECRET') }}"
-    falcon_customer_id: "{{ lookup('env', 'CROWDSTRIKE_CUSTOMER_ID') }}"
-    api_base_url: "https://api.laggar.gcw.crowdstrike.com"
 
   tasks:
     - name: Install brew
@@ -98,6 +75,3 @@
       include_role:
         name: caos.ansible_roles.install_python
 
-    - name: Install CrowdStrike Falcon
-      include_role:
-        name: newrelic.crowdstrike_provision.install_crowdstrike_falcon
