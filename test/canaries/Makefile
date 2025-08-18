@@ -1,6 +1,5 @@
 ANSIBLE_FOLDER := $(CURDIR)
 ANSIBLE_FORKS ?= 20
-CROWDSTRIKE_REPO_SSH_KEY ?= $(HOME)/.ssh/crowdstrike_ansible_role_key
 
 .DEFAULT_GOAL := canaries
 
