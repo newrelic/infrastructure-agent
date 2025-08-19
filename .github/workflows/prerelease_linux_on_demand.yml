@@ -68,7 +68,7 @@ jobs:
           # remove trailing slash from dest prefix
           dest_prefix="${dest_prefix%/}"
           echo "ACCESS_POINT_HOST=http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/${{ env.FIXED_PREFIX }}/${dest_prefix}" >> $GITHUB_ENV
-
+          echo "testing dest_prefix=${dest_prefix} and DEST_PREFIX=${{ env.DEST_PREFIX }}"
       - uses: actions/checkout@v3
         with:
           ref: ${{ env.BRANCH }}
