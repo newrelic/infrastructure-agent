@@ -11,7 +11,7 @@ variable "vpc_id" {
 }
 
 variable "vpc_subnet" {
-  default = "	subnet-07edb511d62fecd23"
+  default = "subnet-0c2046d7a0595aa2c"
 }
 
 variable "cluster_name" {
