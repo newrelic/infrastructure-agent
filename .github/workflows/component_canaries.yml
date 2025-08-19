@@ -4,6 +4,7 @@ on:
   workflow_call:
     secrets:
       AWS_VPC_SUBNET:
+      required: true
 
     inputs:
       TAG:
