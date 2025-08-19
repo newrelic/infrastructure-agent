@@ -52,14 +52,12 @@ jobs:
         run: |
           if [[ "${{ inputs.A2Q }}" == "true" ]]; then
             echo "TERRAFORM_STATE=a2q-canaries-linux-${{ inputs.TAG }}"  >> $GITHUB_ENV
-          else
-            echo "TERRAFORM_STATE=canaries-linux-${{ inputs.TAG }}"  >> $GITHUB_ENV
-          fi
+
       - name: Clean previous canaries instances Linux
         uses: newrelic/fargate-runner-action@main
         with:
           aws_region: us-east-2
-          container_make_target: "-C test/provision clean TERRAFORM_STATE_KEY=${{ env.TERRAFORM_STATE }} PREFIX=canary INVENTORY_OUTPUT=NOT_USED TAG_OR_UNIQUE_NAME=${{ inputs.TAG }} PLATFORM=linux CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
+          container_make_target: "-C test/provision clean TERRAFORM_STATE_KEY=${{ env.TERRAFORM_STATE }} PREFIX=canary INVENTORY_OUTPUT=NOT_USED TAG_OR_UNIQUE_NAME=${{ inputs.TAG }} PLATFORM=linux"
           ecs_cluster_name: caos_infra_agent
           task_definition_name: infra-agent
           cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
@@ -75,80 +73,4 @@ jobs:
             Apply\scomplete!
             ok=\d+\s+changed=\d+\s+unreachable=\d+\s+failed=\d+\s+skipped=\d+\s+rescued=\d+\s+ignored=\d+
 
-  canaries-prune-windows:
-    if: ${{ inputs.PLATFORM == 'windows' || inputs.PLATFORM == 'all' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
-          aws-region: us-east-2
-
-      - name: Set branch name
-        run: |
-          # Short name for current branch. For PRs, use target branch (base ref)
-          GIT_BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
-          # Is the ref a tag? If so, remove refs/tags/ prefix
-          GIT_BRANCH=${GIT_BRANCH#refs/tags/}
-          echo "GIT_BRANCH=$GIT_BRANCH" >> $GITHUB_ENV
-
-      - name: set vars for legibility (state, inventory ...)
-        run: |
-          if [[ "${{ inputs.A2Q }}" == "true" ]]; then
-            echo "PREVIOUS_TERRAFORM_STATE=a2q-canaries-windows-${{ inputs.TAG }}-previous"  >> $GITHUB_ENV
-            echo "TERRAFORM_STATE=a2q-canaries-windows-${{ inputs.TAG }}-current"  >> $GITHUB_ENV
-          else
-            echo "PREVIOUS_TERRAFORM_STATE=canaries-windows-${{ inputs.TAG }}-previous"  >> $GITHUB_ENV
-            echo "TERRAFORM_STATE=canaries-windows-${{ inputs.TAG }}-current"  >> $GITHUB_ENV
-          fi
-
-      # For Windows we have 8 canaries (4 current + 4 previous). For terraform, we divide it in 2 steps/states
-      # so on purge we purge 4 previous-previous and 4 previous-current
-      # if current is 1.48.2, then previous was 1.48.1
-      # so in the previous canaries we spawn 1.48.1 (previous-current) and 1.48.0 (previous-previous)
-      - name: Clean previous canaries instances Windows (previous)
-        uses: newrelic/fargate-runner-action@main
-        with:
-          aws_region: us-east-2
-          container_make_target: "-C test/provision clean TERRAFORM_STATE_KEY=${{ env.PREVIOUS_TERRAFORM_STATE }} PREFIX=canary INVENTORY_OUTPUT=NOT_USED TAG_OR_UNIQUE_NAME=${{ inputs.TAG }} PLATFORM=windows CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
-          ecs_cluster_name: caos_infra_agent
-          task_definition_name: infra-agent
-          cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
-          cloud_watch_logs_stream_name: ecs/test-prerelease
-          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
-          repo_name: "newrelic/infrastructure-agent"
-          ref: "${{ env.GIT_BRANCH }}"
-          log_filters: |
-            \[ALLOW_MSG\].+
-            TASK\s\[.*\]\s
-            PLAY\s\[.*\]\s
-            PLAY\sRECAP\s
-            Apply\scomplete!
-            ok=\d+\s+changed=\d+\s+unreachable=\d+\s+failed=\d+\s+skipped=\d+\s+rescued=\d+\s+ignored=\d+
-
-      # For Windows we have 8 canaries (4 current + 4 previous). For terraform, we divide it in 2 steps/states
-      # so on purge we purge 4 previous-previous and 4 previous-current
-      # if current is 1.48.2, then previous was 1.48.1
-      # so in the previous canaries we spawn 1.48.1 (previous-current) and 1.48.0 (previous-previous)
-      - name: Clean previous canaries instances Windows (current)
-        uses: newrelic/fargate-runner-action@main
-        with:
-          aws_region: us-east-2
-          container_make_target: "-C test/provision clean TERRAFORM_STATE_KEY=${{ env.TERRAFORM_STATE }} PREFIX=canary INVENTORY_OUTPUT=NOT_USED TAG_OR_UNIQUE_NAME=${{ inputs.TAG }} PLATFORM=windows CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
-          ecs_cluster_name: caos_infra_agent
-          task_definition_name: infra-agent
-          cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
-          cloud_watch_logs_stream_name: ecs/test-prerelease
-          aws_vpc_subnet: ${{ secrets.AWS_VPC_SUBNET }}
-          repo_name: "newrelic/infrastructure-agent"
-          ref: "${{ env.GIT_BRANCH }}"
-          log_filters: |
-            \[ALLOW_MSG\].+
-            TASK\s\[.*\]\s
-            PLAY\s\[.*\]\s
-            PLAY\sRECAP\s
-            Apply\scomplete!
-            ok=\d+\s+changed=\d+\s+unreachable=\d+\s+failed=\d+\s+skipped=\d+\s+rescued=\d+\s+ignored=\d+
+ 

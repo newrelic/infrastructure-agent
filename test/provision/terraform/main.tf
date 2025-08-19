@@ -23,7 +23,7 @@ variable "ansible_playbook" {
 }
 
 variable "region" {
-  default = "us-east-2"
+  default = "ap-southeast-2"
 }
 
 provider "aws" {
@@ -55,7 +55,8 @@ variable "is_A2Q" {
 }
 
 locals {
-    filtered_ec2 = var.platform == "windows" ? var.windows_ec2 : flatten([var.linux_ec2_amd, var.linux_ec2_arm])
+    # Simplified for single Ubuntu instance - only use linux_ec2_amd
+    filtered_ec2 = var.linux_ec2_amd
 }
 
 module "env-provisioner" {

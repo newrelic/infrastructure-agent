@@ -19,18 +19,6 @@ on:
         required: false
 
 jobs:
-  A2Q-canaries-windows:
-    if: ${{ github.event.inputs.windows == 'true' }}
-    uses: ./.github/workflows/component_canaries.yml
-    with:
-      PLATFORM: "windows"
-      TAG: ${{ github.event.inputs.tag }}
-      A2Q: true
-    secrets:
-      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
-      CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
-      CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
-      CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}
 
   A2Q-canaries-linux:
     if: ${{ github.event.inputs.linux == 'true' }}
@@ -41,6 +29,3 @@ jobs:
       A2Q: true
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
-      CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
-      CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
-      CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}

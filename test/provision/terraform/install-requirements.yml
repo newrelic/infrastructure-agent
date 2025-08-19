@@ -3,29 +3,11 @@
 - hosts: testing_hosts_linux
   become: true
   gather_facts: no
-  vars:
-    instances_requiring_opensuse_repos:
-      "sles-15.2": http://download.opensuse.org/distribution/leap/15.2/repo/oss/
-      "sles-15.3": http://download.opensuse.org/distribution/leap/15.3/repo/oss/
-      "sles-15.4": http://download.opensuse.org/distribution/leap/15.4/repo/oss/
 
   tasks:
     - name: Remove EOL repository sources
       include_role:
         name: caos.ansible_roles.remove_eol_sources
-
-    - name: Configure OpenSUSE repositories when needed
-      include_role:
-        name: caos.ansible_roles.opensuse_repositories
-      loop: "{{ instances_requiring_opensuse_repos | dict2items }}"
-      when: inventory_hostname is search(item.key)
-      vars:
-        suse_repo_base_url: "{{ item.value }}"
-        suse_version: "{{ inventory_hostname | regex_replace('[^:]+:[^:]+:sles-', '') }}"
-
-    - name: re-install rpm
-      include_role:
-        name: caos.ansible_roles.reinstall_rpm
 
     - name: install python
       include_role:
@@ -42,62 +24,14 @@
 - hosts: testing_hosts_linux
   become: true
   gather_facts: yes
-  vars:
-    falcon_client_id: "{{ lookup('env', 'CROWDSTRIKE_CLIENT_ID') }}"
-    falcon_client_secret: "{{ lookup('env', 'CROWDSTRIKE_CLIENT_SECRET') }}"
-    falcon_customer_id: "{{ lookup('env', 'CROWDSTRIKE_CUSTOMER_ID') }}"
-    api_base_url: "https://api.laggar.gcw.crowdstrike.com"
   tasks:
     - name: Configure logrotate
       include_role:
         name: caos.ansible_roles.logrotate
-
-    - name: Install CrowdStrike Falcon
-      include_role:
-        name: newrelic.crowdstrike_provision.install_crowdstrike_falcon
-
     - name: Configure hostname
       include_role:
         name: caos.ansible_roles.hostname
 
-- hosts: testing_hosts_windows
-  gather_facts: yes
-  vars:
-    falcon_client_id: "{{ lookup('env', 'CROWDSTRIKE_CLIENT_ID') }}"
-    falcon_client_secret: "{{ lookup('env', 'CROWDSTRIKE_CLIENT_SECRET') }}"
-    falcon_customer_id: "{{ lookup('env', 'CROWDSTRIKE_CUSTOMER_ID') }}"
-    api_base_url: "https://api.laggar.gcw.crowdstrike.com"
 
-  tasks:
-    - name: Install CrowdStrike Falcon
-      include_role:
-        name: newrelic.crowdstrike_provision.install_crowdstrike_falcon
 
-    - name: Configure hostname
-      include_role:
-        name: caos.ansible_roles.hostname
 
-- hosts: testing_hosts_macos
-  become: false
-  gather_facts: yes
-  vars:
-    falcon_client_id: "{{ lookup('env', 'CROWDSTRIKE_CLIENT_ID') }}"
-    falcon_client_secret: "{{ lookup('env', 'CROWDSTRIKE_CLIENT_SECRET') }}"
-    falcon_customer_id: "{{ lookup('env', 'CROWDSTRIKE_CUSTOMER_ID') }}"
-    api_base_url: "https://api.laggar.gcw.crowdstrike.com"
-
-  tasks:
-    - name: Install brew
-      include_role:
-        name: caos.ansible_roles.install_brew
-        # latest versions of brew allow running service with sudo, not necessary to downgrade
-        # comment left for reference
-#      vars:
-#        brew_version: 3.6.21 # with 4.0.* there are some problems with sudo https://github.com/Homebrew/brew/issues/14462#issuecomment-1445130069
-    - name: Install python
-      include_role:
-        name: caos.ansible_roles.install_python
-
-    - name: Install CrowdStrike Falcon
-      include_role:
-        name: newrelic.crowdstrike_provision.install_crowdstrike_falcon
