@@ -15,8 +15,8 @@
   tasks:
     - name: Installation tests suite
       vars:
-        target_agent_version: "0.0.3" # hardcoded for RHEL 10 testing - matches actual repo format
-        target_agent_version_fips: "0.0.3" # hardcoded for RHEL 10 FIPS testing - matches actual repo format
+        target_agent_version: "0.0.4" # hardcoded for RHEL 10 testing - matches actual repo format
+        target_agent_version_fips: "0.0.4" # hardcoded for RHEL 10 FIPS testing - matches actual repo format
 
       block:
         - name: Install agent
