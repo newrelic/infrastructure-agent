@@ -1,5 +1,5 @@
 ---
-- name: Installation-pinned
+- name: Installation-pinned [testing]
   hosts: testing_hosts_linux
   become: true
   gather_facts: true
