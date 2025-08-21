@@ -59,7 +59,7 @@ jobs:
         uses: newrelic/fargate-runner-action@main
         with:
           aws_region: us-east-2
-          container_make_target: "-C test/provision clean TERRAFORM_STATE_KEY=${{ env.TERRAFORM_STATE }} PREFIX=canary INVENTORY_OUTPUT=NOT_USED TAG_OR_UNIQUE_NAME=${{ inputs.TAG }} PLATFORM=linux CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
+          container_make_target: "-C test/provision clean TERRAFORM_STATE_KEY=${{ env.TERRAFORM_STATE }} PREFIX=canary INVENTORY_OUTPUT=NOT_USED TAG_OR_UNIQUE_NAME=${{ inputs.TAG }} PLATFORM=linux"
           ecs_cluster_name: caos_infra_agent
           task_definition_name: infra-agent
           cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
@@ -113,7 +113,7 @@ jobs:
         uses: newrelic/fargate-runner-action@main
         with:
           aws_region: us-east-2
-          container_make_target: "-C test/provision clean TERRAFORM_STATE_KEY=${{ env.PREVIOUS_TERRAFORM_STATE }} PREFIX=canary INVENTORY_OUTPUT=NOT_USED TAG_OR_UNIQUE_NAME=${{ inputs.TAG }} PLATFORM=windows CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
+          container_make_target: "-C test/provision clean TERRAFORM_STATE_KEY=${{ env.PREVIOUS_TERRAFORM_STATE }} PREFIX=canary INVENTORY_OUTPUT=NOT_USED TAG_OR_UNIQUE_NAME=${{ inputs.TAG }} PLATFORM=windows"
           ecs_cluster_name: caos_infra_agent
           task_definition_name: infra-agent
           cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent
@@ -137,7 +137,7 @@ jobs:
         uses: newrelic/fargate-runner-action@main
         with:
           aws_region: us-east-2
-          container_make_target: "-C test/provision clean TERRAFORM_STATE_KEY=${{ env.TERRAFORM_STATE }} PREFIX=canary INVENTORY_OUTPUT=NOT_USED TAG_OR_UNIQUE_NAME=${{ inputs.TAG }} PLATFORM=windows CROWDSTRIKE_CLIENT_ID=${{ secrets.CROWDSTRIKE_CLIENT_ID }} CROWDSTRIKE_CLIENT_SECRET=${{ secrets.CROWDSTRIKE_CLIENT_SECRET }} CROWDSTRIKE_CUSTOMER_ID=${{ secrets.CROWDSTRIKE_CUSTOMER_ID }}"
+          container_make_target: "-C test/provision clean TERRAFORM_STATE_KEY=${{ env.TERRAFORM_STATE }} PREFIX=canary INVENTORY_OUTPUT=NOT_USED TAG_OR_UNIQUE_NAME=${{ inputs.TAG }} PLATFORM=windows"
           ecs_cluster_name: caos_infra_agent
           task_definition_name: infra-agent
           cloud_watch_logs_group_name: /ecs/test-prerelease-infra-agent

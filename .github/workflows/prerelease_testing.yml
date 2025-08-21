@@ -30,10 +30,7 @@ jobs:
       TAG_OR_UNIQUE_NAME: "${{ github.event.inputs.tag }}-windows"
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
-      CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
-      CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
-      CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}
-
+      
   test-prerelease-linux:
     if: ${{ github.event.inputs.linux == 'true' }}
     uses: ./.github/workflows/component_prerelease_testing.yml
@@ -43,6 +40,4 @@ jobs:
       TAG_OR_UNIQUE_NAME: "${{ github.event.inputs.tag }}-linux"
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
-      CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
-      CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
-      CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}
+      

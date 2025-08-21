@@ -39,10 +39,7 @@ jobs:
       TAG: ${{ github.event.inputs.tag }}
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
-      CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
-      CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
-      CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}
-
+      
   canaries-linux:
     if: ${{ github.event.inputs.linux == 'true' }}
     uses: ./.github/workflows/component_canaries.yml
@@ -51,10 +48,7 @@ jobs:
       TAG: ${{ github.event.inputs.tag }}
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
-      CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
-      CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
-      CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}
-
+      
   canaries-macos:
     if: ${{ github.event.inputs.macos == 'true' }}
     uses: ./.github/workflows/component_canaries.yml
@@ -63,10 +57,7 @@ jobs:
       TAG: ${{ github.event.inputs.tag }}
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
-      CROWDSTRIKE_CLIENT_ID: ${{secrets.CROWDSTRIKE_CLIENT_ID}}
-      CROWDSTRIKE_CLIENT_SECRET: ${{secrets.CROWDSTRIKE_CLIENT_SECRET}}
-      CROWDSTRIKE_CUSTOMER_ID: ${{secrets.CROWDSTRIKE_CUSTOMER_ID}}
-
+      
   get_previous_tag:
     runs-on: ubuntu-latest
     # Map a step output to a job output
