@@ -139,8 +139,6 @@ jobs:
 
       - name: Launch packaging tests
         uses: newrelic/fargate-runner-action@main
-        timeout-minutes: 180  # 3 hours timeout
-        continue-on-error: false
         with:
           aws_region: us-east-2
           container_make_target: "test/automated/packaging LIMIT=${{ matrix.limit }} PLATFORM=${{ inputs.PLATFORM }} ANSIBLE_FORKS=${{ env.ANSIBLE_FORKS }}  ANSIBLE_INVENTORY_FOLDER=/srv/runner/inventory ANSIBLE_INVENTORY_FILE=${{ inputs.TAG_OR_UNIQUE_NAME }}-inventory.ec2 TAG=${{ inputs.TAG }}"
