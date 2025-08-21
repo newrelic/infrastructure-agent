@@ -1,5 +1,5 @@
 ---
-- name: Installation-pinned [testing]
+- name: Installation-pinned [satya]
   hosts: testing_hosts_linux
   become: true
   gather_facts: true
@@ -16,7 +16,7 @@
     - name: Installation tests suite
       vars:
         target_agent_version: "1.67.1" # minimum version for ubuntu sles 15.6
-        target_agent_version_fips: "1.60.0" # minimum version for FIPS
+        target_agent_version_fips: "1.67.1" # minimum version for FIPS
 
       block:
         - name: Install agent
