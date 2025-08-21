@@ -28,6 +28,8 @@ var (
 )
 
 const (
+	// ociTimeout is the timeout for OCI metadata requests.
+	ociTimeout = 600
 	// OciEndpoint is the URL used for requesting OCI metadata.
 	ociEndpoint = "http://169.254.169.254/opc/v1/instance/"
 )
@@ -42,14 +44,14 @@ type OCIHarvester struct {
 	zone             string
 	subscriptionID   string
 	imageID          string
-	tenantID         string
+	vmSize           string
 	displayName      string
 }
 
 // NewOCIHarvester returns a new instance of OCIHarvester.
 func NewOCIHarvester(disableKeepAlive bool) *OCIHarvester {
 	return &OCIHarvester{
-		timeout:          NewTimeout(600),
+		timeout:          NewTimeout(ociTimeout),
 		disableKeepAlive: disableKeepAlive,
 		instanceID:       "",
 		hostType:         "",
@@ -57,7 +59,7 @@ func NewOCIHarvester(disableKeepAlive bool) *OCIHarvester {
 		zone:             "",
 		subscriptionID:   "",
 		imageID:          "",
-		tenantID:         "",
+		vmSize:           "",
 		displayName:      "",
 	}
 }
@@ -157,17 +159,17 @@ func (a *OCIHarvester) GetInstanceImageID() (string, error) {
 	return a.imageID, nil
 }
 
-// GetInstanceTenantID returns the cloud instance Tenant ID.
-func (a *OCIHarvester) GetInstanceTenantID() (string, error) {
-	if a.tenantID == "" || a.timeout.HasExpired() {
+// GetVMSize returns the cloud instance VM size.
+func (a *OCIHarvester) GetVMSize() (string, error) {
+	if a.vmSize == "" || a.timeout.HasExpired() {
 		ociMetadata, err := GetOCIMetadata(a.disableKeepAlive)
 		if err != nil {
 			return "", err
 		}
-		a.tenantID = ociMetadata.TenantID
+		a.vmSize = ociMetadata.VMSize
 	}
 
-	return a.tenantID, nil
+	return a.vmSize, nil
 }
 
 // GetInstanceDisplayName returns the cloud instance DisplayName.
@@ -191,7 +193,6 @@ type OCIMetadata struct {
 	SubscriptionID string `json:"compartmentId"`
 	Zone           string `json:"availabilityDomain"`
 	ImageID        string `json:"image"`
-	TenantID       string `json:"tenantId"`
 	DisplayName    string `json:"displayName"`
 }
 
@@ -199,18 +200,16 @@ type OCIMetadata struct {
 func GetOCIMetadata(disableKeepAlive bool) (*OCIMetadata, error) {
 	var request *http.Request
 	var err error
-	if request, err = http.NewRequest(http.MethodGet, ociEndpoint, nil); err != nil {
-		err = fmt.Errorf("%w: %w", ErrOCIRequestFailed, err)
 
-		return nil, err
+	if request, err = http.NewRequest(http.MethodGet, ociEndpoint, nil); err != nil { //nolint:noctx
+		return nil, fmt.Errorf("%w: %w", ErrOCIRequestFailed, err)
 	}
+
 	request.Header.Add("Metadata", "true")
 
 	var response *http.Response
 	if response, err = clientWithFastTimeout(disableKeepAlive).Do(request); err != nil {
-		err = fmt.Errorf("%w: %w", ErrOCIFetchFailed, err)
-
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", ErrOCIFetchFailed, err)
 	}
 	defer response.Body.Close()
 
@@ -220,24 +219,18 @@ func GetOCIMetadata(disableKeepAlive bool) (*OCIMetadata, error) {
 // parseOCIMetadataResponse is used to parse the value required from OCI response.
 func parseOCIMetadataResponse(response *http.Response) (*OCIMetadata, error) {
 	if response.StatusCode != http.StatusOK {
-		err := fmt.Errorf("%w: %d %s", ErrOCIResponseFailed, response.StatusCode, response.Status)
-
-		return nil, err
+		return nil, fmt.Errorf("%w: %d %s", ErrOCIResponseFailed, response.StatusCode, response.Status)
 	}
 
 	var responseBody []byte
 	var err error
 	if responseBody, err = io.ReadAll(response.Body); err != nil {
-		err = fmt.Errorf("%w: %w", ErrOCIReadFailed, err)
-
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", ErrOCIReadFailed, err)
 	}
 
 	var result *OCIMetadata
 	if err = json.Unmarshal(responseBody, &result); err != nil {
-		err = fmt.Errorf("%w: %w", ErrOCIUnmarshalFailed, err)
-
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", ErrOCIUnmarshalFailed, err)
 	}
 
 	return result, nil

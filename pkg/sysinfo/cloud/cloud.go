@@ -68,8 +68,8 @@ type Harvester interface {
 	GetInstanceImageID() (string, error)
 	// GetInstanceDisplayName returns the cloud instance displayname
 	GetInstanceDisplayName() (string, error)
-	// GetInstanceTenantID returns the cloud instance tenant ID
-	GetInstanceTenantID() (string, error)
+	// GetVMSize returns the cloud instance VM size
+	GetVMSize() (string, error)
 	// GetHarvester returns instance of the Harvester detected (or instance of themselves)
 	GetHarvester() (Harvester, error)
 }
@@ -233,7 +233,7 @@ func (d *Detector) GetInstanceImageID() (string, error) {
 	return cloudHarvester.GetInstanceImageID()
 }
 
-// GetCloudType will return the cloud type on which the instance is running.
+// GetZone will return the cloud zone in which the instance is running.
 func (d *Detector) GetZone() (string, error) {
 	cloudHarvester, err := d.GetHarvester()
 	if err != nil {
@@ -257,16 +257,18 @@ func (d *Detector) GetInstanceDisplayName() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return cloudHarvester.GetInstanceDisplayName()
 }
 
-// GetInstanceTenantID returns the cloud instance tenant ID
-func (d *Detector) GetInstanceTenantID() (string, error) {
+// GetVMSize returns the cloud instance VM size
+func (d *Detector) GetVMSize() (string, error) {
 	cloudHarvester, err := d.GetHarvester()
 	if err != nil {
 		return "", err
 	}
-	return cloudHarvester.GetInstanceTenantID()
+
+	return cloudHarvester.GetVMSize()
 }
 
 // isInitialized will check if the detector is Initialized.

@@ -50,7 +50,6 @@ func TestParseOCIMetadataResponse(t *testing.T) {
 			"ocpus": 1.0
 		},
 		"state": "hidden",
-		"tenantId": "ocid1.tenancy.oc1",
 		"timeCreated": 1753171691822
 	}`
 
@@ -67,6 +66,5 @@ func TestParseOCIMetadataResponse(t *testing.T) {
 	require.Equal(t, "ocid1.compartment.oc1", metadata.SubscriptionID)
 	require.Equal(t, "jyDh:US-ASHBURN-AD-1", metadata.Zone)
 	require.Equal(t, "ocid1.image.oc1", metadata.ImageID)
-	require.Equal(t, "ocid1.tenancy.oc1", metadata.TenantID)
 	require.Equal(t, "ubuntu-instance-20250722-1328", metadata.DisplayName)
 }

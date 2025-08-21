@@ -84,8 +84,8 @@ func (a *AzureHarvester) GetInstanceDisplayName() (string, error) {
 	return "", ErrMethodNotImplemented
 }
 
-// GetInstanceTenantID returns the cloud instance tenant ID (not supported for Azure)
-func (a *AzureHarvester) GetInstanceTenantID() (string, error) {
+// GetVMSize returns the cloud instance VM size (not supported for Azure)
+func (a *AzureHarvester) GetVMSize() (string, error) {
 	return "", ErrMethodNotImplemented
 }
 

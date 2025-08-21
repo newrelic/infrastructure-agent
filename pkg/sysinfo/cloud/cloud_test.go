@@ -298,9 +298,9 @@ func (m *MockHarvester) GetInstanceDisplayName() (string, error) {
 	return "mock-display-name", nil
 }
 
-// GetInstanceTenantID returns the cloud instance tenant ID (mock implementation)
-func (m *MockHarvester) GetInstanceTenantID() (string, error) {
-	return "mock-tenant-id", nil
+// GetVMSize returns the cloud instance VM size (mock implementation)
+func (m *MockHarvester) GetVMSize() (string, error) {
+	return "mock-vm-size", nil
 }
 
 // GetHarvester returns the MockHarvester

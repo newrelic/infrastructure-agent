@@ -76,7 +76,7 @@ func (a *MockCloudHarvester) GetInstanceDisplayName() (string, error) {
 	return "", nil
 }
 
-func (a *MockCloudHarvester) GetInstanceTenantID() (string, error) {
+func (a *MockCloudHarvester) GetVMSize() (string, error) {
 	return "", nil
 }
 

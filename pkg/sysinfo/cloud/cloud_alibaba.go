@@ -101,8 +101,8 @@ func (a *AlibabaHarvester) GetInstanceDisplayName() (string, error) {
 	return "", ErrMethodNotImplemented
 }
 
-// GetInstanceTenantID returns the cloud instance tenant ID (not supported for Alibaba)
-func (a *AlibabaHarvester) GetInstanceTenantID() (string, error) {
+// GetVMSize returns the cloud instance VM size (not supported for Alibaba)
+func (a *AlibabaHarvester) GetVMSize() (string, error) {
 	return "", ErrMethodNotImplemented
 }
 

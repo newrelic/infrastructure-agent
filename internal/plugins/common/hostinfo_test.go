@@ -67,12 +67,14 @@ func (f *fakeHarvester) GetInstanceImageID() (string, error) {
 // GetInstanceDisplayName returns the cloud instance display name
 func (f *fakeHarvester) GetInstanceDisplayName() (string, error) {
 	args := f.Called()
+
 	return args.String(0), args.Error(1)
 }
 
-// GetInstanceTenantID returns the cloud instance tenant ID
-func (f *fakeHarvester) GetInstanceTenantID() (string, error) {
+// GetVMSize returns the cloud instance VM size
+func (f *fakeHarvester) GetVMSize() (string, error) {
 	args := f.Called()
+
 	return args.String(0), args.Error(1)
 }
 
@@ -191,7 +193,7 @@ func TestGetHostInfo(t *testing.T) {
 				assert.Equal(t, "jyDh:US-ASHBURN-AD-1", data.OCIAvailabilityZone)
 				assert.Equal(t, "ocid1.image.oc1", data.OCIImageID)
 				assert.Equal(t, "ubunut-instance-20250722-1328", data.OCIDisplayName)
-				assert.Equal(t, "ocid1.tenancy.oc1", data.OCITenantID)
+				assert.Equal(t, "VM.Optimized3.Flex", data.OCIVMSize)
 				assert.NoError(t, err)
 			},
 			setMock: func(harvester *fakeHarvester) {
@@ -201,7 +203,7 @@ func TestGetHostInfo(t *testing.T) {
 				harvester.On("GetZone").Return("jyDh:US-ASHBURN-AD-1", nil)
 				harvester.On("GetInstanceImageID").Return("ocid1.image.oc1", nil)
 				harvester.On("GetInstanceDisplayName").Return("ubunut-instance-20250722-1328", nil)
-				harvester.On("GetInstanceTenantID").Return("ocid1.tenancy.oc1", nil)
+				harvester.On("GetVMSize").Return("VM.Optimized3.Flex", nil)
 			},
 		},
 		{

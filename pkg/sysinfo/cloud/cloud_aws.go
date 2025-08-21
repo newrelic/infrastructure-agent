@@ -155,8 +155,8 @@ func (a *AWSHarvester) GetInstanceDisplayName() (string, error) {
 	return "", ErrMethodNotImplemented
 }
 
-// GetInstanceTenantID returns the cloud instance tenant ID (not supported for AWS)
-func (a *AWSHarvester) GetInstanceTenantID() (string, error) {
+// GetVMSize returns the cloud instance VM size (not supported for AWS)
+func (a *AWSHarvester) GetVMSize() (string, error) {
 	return "", ErrMethodNotImplemented
 }
 

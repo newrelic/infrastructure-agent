@@ -21,8 +21,8 @@ var (
 	ErrCloudImageIDRetrievalFailed = errors.New("couldn't retrieve cloud image ID")
 	// ErrCloudDisplayNameRetrievalFailed indicates failure to retrieve cloud display name.
 	ErrCloudDisplayNameRetrievalFailed = errors.New("couldn't retrieve cloud display name")
-	// ErrCloudTenantIDRetrievalFailed indicates failure to retrieve cloud tenant ID.
-	ErrCloudTenantIDRetrievalFailed = errors.New("couldn't retrieve cloud tenant ID")
+	// ErrCloudVMSizeRetrievalFailed indicates failure to retrieve cloud VM size.
+	ErrCloudVMSizeRetrievalFailed = errors.New("couldn't retrieve cloud VM size")
 )
 
 type CloudData struct {
@@ -55,12 +55,12 @@ type AlibabaCloudData struct {
 }
 
 type OracleCloudData struct {
-	RegionOCI           string `json:"oci_region,omitempty"`
-	OCIAccountID        string `json:"oci_account_id,omitempty"`
-	OCIAvailabilityZone string `json:"oci_availability_zone,omitempty"`
-	OCIImageID          string `json:"oci_image_id,omitempty"`
-	OCIDisplayName      string `json:"oci_display_name,omitempty"`
-	OCITenantID         string `json:"oci_tenant_id,omitempty"`
+	RegionOCI           string `json:"oci.region,omitempty"`
+	OCIAccountID        string `json:"oci.compartmentId,omitempty"`
+	OCIAvailabilityZone string `json:"oci.availabilityDomain,omitempty"`
+	OCIImageID          string `json:"oci.imageId,omitempty"`
+	OCIDisplayName      string `json:"displayName,omitempty"`
+	OCIVMSize           string `json:"oci.shape,omitempty"`
 }
 
 // getAWSCloudData gathers the exported information for the AWS Cloud.
@@ -138,9 +138,9 @@ func getOracleCloudData(cloudHarvester cloud.Harvester) (OracleCloudData, error)
 		return ociData, fmt.Errorf("%s: %w", ErrCloudDisplayNameRetrievalFailed.Error(), err) //nolint:wrapcheck
 	}
 
-	ociData.OCITenantID, err = cloudHarvester.GetInstanceTenantID()
+	ociData.OCIVMSize, err = cloudHarvester.GetVMSize()
 	if err != nil {
-		return ociData, fmt.Errorf("%s: %w", ErrCloudTenantIDRetrievalFailed.Error(), err) //nolint:wrapcheck
+		return ociData, fmt.Errorf("%s: %w", ErrCloudVMSizeRetrievalFailed.Error(), err) //nolint:wrapcheck
 	}
 
 	return ociData, nil
