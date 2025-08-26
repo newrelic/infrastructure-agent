@@ -1,4 +1,4 @@
 collections:
-    - name: git+https://github.com/satya-nr/caos-ansible-roles.git#/caos.ansible_roles/
+    - name: git+https://github.com/newrelic-experimental/caos-ansible-roles.git#/caos.ansible_roles/
       type: git
-      version: rhel10_log_rotate_support
+      version: fix_permission_issue
