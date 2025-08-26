@@ -94,7 +94,7 @@ func (gcp *GCPHarvester) GetInstanceDisplayName() (string, error) {
 	return "", ErrMethodNotImplemented
 }
 
-// GetVMSize returns the cloud instance VM size (not supported for GCP)
+// GetVMSize returns the cloud instance VM size (not supported for GCP) //nolint:godot
 func (gcp *GCPHarvester) GetVMSize() (string, error) {
 	return "", ErrMethodNotImplemented
 }

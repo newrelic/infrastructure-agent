@@ -155,7 +155,7 @@ func (a *AWSHarvester) GetInstanceDisplayName() (string, error) {
 	return "", ErrMethodNotImplemented
 }
 
-// GetVMSize returns the cloud instance VM size (not supported for AWS)
+// GetVMSize returns the cloud instance VM size (not supported for AWS) //nolint:godot
 func (a *AWSHarvester) GetVMSize() (string, error) {
 	return "", ErrMethodNotImplemented
 }

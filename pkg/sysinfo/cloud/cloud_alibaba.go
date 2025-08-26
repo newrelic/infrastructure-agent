@@ -101,7 +101,7 @@ func (a *AlibabaHarvester) GetInstanceDisplayName() (string, error) {
 	return "", ErrMethodNotImplemented
 }
 
-// GetVMSize returns the cloud instance VM size (not supported for Alibaba)
+// GetVMSize returns the cloud instance VM size (not supported for Alibaba) //nolint:godot
 func (a *AlibabaHarvester) GetVMSize() (string, error) {
 	return "", ErrMethodNotImplemented
 }

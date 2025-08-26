@@ -298,7 +298,7 @@ func (m *MockHarvester) GetInstanceDisplayName() (string, error) {
 	return "mock-display-name", nil
 }
 
-// GetVMSize returns the cloud instance VM size (mock implementation)
+// GetVMSize returns the cloud instance VM size (mock implementation) //nolint:godot
 func (m *MockHarvester) GetVMSize() (string, error) {
 	return "mock-vm-size", nil
 }

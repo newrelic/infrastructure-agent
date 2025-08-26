@@ -202,14 +202,14 @@ func GetOCIMetadata(disableKeepAlive bool) (*OCIMetadata, error) {
 	var err error
 
 	if request, err = http.NewRequest(http.MethodGet, ociEndpoint, nil); err != nil { //nolint:noctx
-		return nil, fmt.Errorf("%w: %w", ErrOCIRequestFailed, err)
+		return nil, fmt.Errorf("%w: %w", ErrOCIRequestFailed, err) //nolint:wrapcheck
 	}
 
 	request.Header.Add("Metadata", "true")
 
 	var response *http.Response
 	if response, err = clientWithFastTimeout(disableKeepAlive).Do(request); err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrOCIFetchFailed, err)
+		return nil, fmt.Errorf("%w: %w", ErrOCIFetchFailed, err) //nolint:wrapcheck
 	}
 	defer response.Body.Close()
 
@@ -219,18 +219,18 @@ func GetOCIMetadata(disableKeepAlive bool) (*OCIMetadata, error) {
 // parseOCIMetadataResponse is used to parse the value required from OCI response.
 func parseOCIMetadataResponse(response *http.Response) (*OCIMetadata, error) {
 	if response.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%w: %d %s", ErrOCIResponseFailed, response.StatusCode, response.Status)
+		return nil, fmt.Errorf("%w: %d %s", ErrOCIResponseFailed, response.StatusCode, response.Status) //nolint:wrapcheck
 	}
 
 	var responseBody []byte
 	var err error
 	if responseBody, err = io.ReadAll(response.Body); err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrOCIReadFailed, err)
+		return nil, fmt.Errorf("%w: %w", ErrOCIReadFailed, err) //nolint:wrapcheck
 	}
 
 	var result *OCIMetadata
 	if err = json.Unmarshal(responseBody, &result); err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrOCIUnmarshalFailed, err)
+		return nil, fmt.Errorf("%w: %w", ErrOCIUnmarshalFailed, err) //nolint:wrapcheck
 	}
 
 	return result, nil

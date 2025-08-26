@@ -68,7 +68,7 @@ type Harvester interface {
 	GetInstanceImageID() (string, error)
 	// GetInstanceDisplayName returns the cloud instance displayname
 	GetInstanceDisplayName() (string, error)
-	// GetVMSize returns the cloud instance VM size
+	// GetVMSize returns the cloud instance VM size //nolint:godot
 	GetVMSize() (string, error)
 	// GetHarvester returns instance of the Harvester detected (or instance of themselves)
 	GetHarvester() (Harvester, error)
@@ -262,7 +262,7 @@ func (d *Detector) GetInstanceDisplayName() (string, error) {
 }
 
 // GetVMSize returns the cloud instance VM size
-func (d *Detector) GetVMSize() (string, error) {
+func (d *Detector) GetVMSize() (string, error) { //nolint:wrapcheck
 	cloudHarvester, err := d.GetHarvester()
 	if err != nil {
 		return "", err
