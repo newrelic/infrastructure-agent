@@ -84,7 +84,7 @@ func (a *AzureHarvester) GetInstanceDisplayName() (string, error) {
 	return "", ErrMethodNotImplemented
 }
 
-// GetVMSize returns the cloud instance VM size (not supported for Azure) //nolint:godot
+// GetVMSize returns the cloud instance VM size (not supported for Azure).
 func (a *AzureHarvester) GetVMSize() (string, error) {
 	return "", ErrMethodNotImplemented
 }

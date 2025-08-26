@@ -71,7 +71,7 @@ func (f *fakeHarvester) GetInstanceDisplayName() (string, error) {
 	return args.String(0), args.Error(1)
 }
 
-// GetVMSize returns the cloud instance VM size //nolint:godot
+// GetVMSize returns the cloud instance VM size.
 func (f *fakeHarvester) GetVMSize() (string, error) {
 	args := f.Called()
 

@@ -262,7 +262,7 @@ func (d *Detector) GetInstanceDisplayName() (string, error) {
 }
 
 // GetVMSize returns the cloud instance VM size
-func (d *Detector) GetVMSize() (string, error) { //nolint:wrapcheck
+func (d *Detector) GetVMSize() (string, error) {
 	cloudHarvester, err := d.GetHarvester()
 	if err != nil {
 		return "", err
