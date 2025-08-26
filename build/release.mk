@@ -364,8 +364,6 @@ generate-goreleaser-multiarch-fips:
   		$(CURDIR)/build/goreleaser/linux/centos_8_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/rhel_9_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/rhel_9_arm64.yml\
-		$(CURDIR)/build/goreleaser/linux/rhel_10_amd64.yml\
-		$(CURDIR)/build/goreleaser/linux/rhel_10_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/debian_systemd_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/debian_systemd_arm64.yml\
   		$(CURDIR)/build/goreleaser/linux/debian_upstart_amd64.yml\
