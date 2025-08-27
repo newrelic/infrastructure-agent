@@ -31,6 +31,7 @@ env:
   # required for GHA publish action, should be moved into optional
   GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
   GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+  GPG_PRIVATE_KEY_SHA256_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_SHA256_BASE64 }} # base64 encoded
   BRANCH: ${{ github.event.inputs.branch }}
   # publish packages to a custom path
   DEST_PREFIX: ${{ github.event.inputs.dest_prefix }}
@@ -116,6 +117,7 @@ jobs:
           # used for signing package stuff
           gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
           gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
+          gpg_private_key_sha256_base64: ${{ env.GPG_PRIVATE_KEY_SHA256_BASE64 }}
           disable_lock: ${{ env.DISABLE_LOCK }}
           dest_prefix: ${{ env.DEST_PREFIX }}
           local_packages_path:  "/srv/dist/"
@@ -142,6 +144,7 @@ jobs:
           # used for signing package stuff
           gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
           gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
+          gpg_private_key_sha256_base64: ${{ env.GPG_PRIVATE_KEY_SHA256_BASE64 }}
           disable_lock: ${{ env.DISABLE_LOCK }}
           dest_prefix: ${{ env.DEST_PREFIX }}
           local_packages_path:  "/srv/dist/"
@@ -167,6 +170,7 @@ jobs:
           # used for signing package stuff
           gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
           gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
+          gpg_private_key_sha256_base64: ${{ env.GPG_PRIVATE_KEY_SHA256_BASE64 }}
           disable_lock: ${{ env.DISABLE_LOCK }}
           dest_prefix: ${{ env.DEST_PREFIX }}
           local_packages_path:  "/srv/dist/"
@@ -211,6 +215,7 @@ jobs:
           # used for signing package stuff
           gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
           gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
+          gpg_private_key_sha256_base64: ${{ env.GPG_PRIVATE_KEY_SHA256_BASE64 }}
           disable_lock: ${{ env.DISABLE_LOCK }}
           dest_prefix: ${{ env.DEST_PREFIX }}
           local_packages_path:  "/srv/dist/"
@@ -237,6 +242,7 @@ jobs:
           # used for signing package stuff
           gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
           gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
+          gpg_private_key_sha256_base64: ${{ env.GPG_PRIVATE_KEY_SHA256_BASE64 }}
           disable_lock: ${{ env.DISABLE_LOCK }}
           dest_prefix: ${{ env.DEST_PREFIX }}
           local_packages_path:  "/srv/dist/"
@@ -262,6 +268,7 @@ jobs:
           # used for signing package stuff
           gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
           gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
+          gpg_private_key_sha256_base64: ${{ env.GPG_PRIVATE_KEY_SHA256_BASE64 }}
           disable_lock: ${{ env.DISABLE_LOCK }}
           dest_prefix: ${{ env.DEST_PREFIX }}
           local_packages_path:  "/srv/dist/"
