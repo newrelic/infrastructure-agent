@@ -330,6 +330,12 @@
             Source="$(var.EmbedBinariesPath)nri-flex\nri-flex.exe"
               KeyPath="yes" />
       </Component>
+      <!-- DOCKER -->
+      <Component Id="CMP_DOCKER_PLUGIN" Guid="2DE6EEC7-4FD6-41BC-80E1-35721579EA40" Win64="yes">
+        <File Id="FILE_DOCKER_PLUGIN"
+            Source="$(var.EmbedBinariesPath)nri-docker\nri-docker.exe"
+              KeyPath="yes" />
+      </Component>
       <!-- WINSERVICES -->
       <Component Id="CMP_WINSERVICEEXP_PLUGIN" Guid="ADF9277D-5C22-4A71-B03B-747EC6DFAB5D" Win64="yes">
         <File Id="FILE_WINSERVICEEXP_PLUGIN"
