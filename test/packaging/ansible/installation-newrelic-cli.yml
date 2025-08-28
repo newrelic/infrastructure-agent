@@ -20,7 +20,7 @@
           include_role:
             name: caos.ansible_roles.newrelic_cli
 
-        - name: assert service countinues running after upgrade
+        - name: assert service countinues running after installed agent via newrelic-cli
           include_role:
             name: caos.ansible_roles.assert_service_status
           vars:
