@@ -30,7 +30,7 @@ env:
   DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
   # required for GHA publish action, should be moved into optional
   GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
-  GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+  GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_SHA256_BASE64 }} # base64 encoded
   GPG_PRIVATE_KEY_SHA256_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_SHA256_BASE64 }} # base64 encoded
   BRANCH: ${{ github.event.inputs.branch }}
   # publish packages to a custom path
