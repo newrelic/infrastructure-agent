@@ -1,6 +1,6 @@
 module github.com/newrelic/infrastructure-agent/tools/cdn-purge
 
-go 1.23.12
+go 1.25.0
 
 require github.com/aws/aws-sdk-go v1.39.0
 
