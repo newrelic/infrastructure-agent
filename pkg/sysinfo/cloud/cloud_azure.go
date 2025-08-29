@@ -79,6 +79,16 @@ func (a *AzureHarvester) GetCloudSource() string {
 	return sysinfo.HOST_SOURCE_AZURE_VM_ID
 }
 
+// GetInstanceDisplayName returns the cloud instance display name (not supported for Azure)
+func (a *AzureHarvester) GetInstanceDisplayName() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
+// GetVMSize returns the cloud instance VM size (not supported for Azure).
+func (a *AzureHarvester) GetVMSize() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
 // GetRegion will return the cloud instance region.
 func (a *AzureHarvester) GetRegion() (string, error) {
 	if a.region == "" || a.timeout.HasExpired() {

@@ -96,6 +96,16 @@ func (a *AlibabaHarvester) GetCloudSource() string {
 	return sysinfo.HOST_SOURCE_ALIBABA_VM_ID
 }
 
+// GetInstanceDisplayName returns the cloud instance display name (not supported for Alibaba)
+func (a *AlibabaHarvester) GetInstanceDisplayName() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
+// GetVMSize returns the cloud instance VM size (not supported for Alibaba).
+func (a *AlibabaHarvester) GetVMSize() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
 // GetRegion will return the cloud instance region.
 func (a *AlibabaHarvester) GetRegion() (string, error) {
 	if a.region == "" || a.timeout.HasExpired() {
