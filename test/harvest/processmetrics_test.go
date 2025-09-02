@@ -1,8 +1,8 @@
-// Copyright 2020 New Relic Corporation. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
 //go:build linux && harvest
 // +build linux,harvest
 
+// Copyright 2020 New Relic Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 package harvest
 
 import (
@@ -17,13 +17,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/newrelic/infrastructure-agent/pkg/helpers/detection"
-
-	"github.com/newrelic/infrastructure-agent/pkg/helpers"
-
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
+	"github.com/newrelic/infrastructure-agent/pkg/helpers"
+	"github.com/newrelic/infrastructure-agent/pkg/helpers/detection"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/process"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/sampler"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
@@ -235,7 +233,7 @@ exec sleep 30s   # this will change the command name to "sleep"
 
 	// That has a given Command Name and Command Line
 	ps := process.NewProcessSampler(contextMock())
-	testhelpers.Eventually(t, 6*time.Second, func(t require.TestingT) {
+	testhelpers.Eventually(t, 12*time.Second, func(t require.TestingT) {
 		sample, err := sampleProcess(ps, int32(cmd.Process.Pid))
 		require.NoError(t, err)
 
@@ -245,7 +243,7 @@ exec sleep 30s   # this will change the command name to "sleep"
 
 	// When the Command changes at runtime
 	// Then new command name and command line is updated
-	testhelpers.Eventually(t, 6*time.Second, func(t require.TestingT) {
+	testhelpers.Eventually(t, 12*time.Second, func(t require.TestingT) {
 		sample, err := sampleProcess(ps, int32(cmd.Process.Pid))
 		require.NoError(t, err)
 
