@@ -16,9 +16,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
 // Usage:
@@ -44,7 +45,7 @@ type PurgeCacheRequest struct {
 }
 
 type result struct {
-	output s3.GetObjectOutput
+	output *s3.GetObjectOutput
 	err    error
 }
 
@@ -52,8 +53,8 @@ const (
 	defaultBucket = "nr-downloads-ohai-staging"
 	defaultRegion = "us-east-1"
 	// more keys could be added if issues arise
-	cloudfarePurgeURL          = "https://api.cloudflare.com/client/v4/zones/ac389f8f109894ed5e2aeb2d8af3d6ce/purge_cache"
-	replicationStatusCompleted = "COMPLETED" // in s3.ReplicationStatusComplete is set to COMPLETE, which is wrong
+	cloudfarePurgeURL = "https://api.cloudflare.com/client/v4/zones/ac389f8f109894ed5e2aeb2d8af3d6ce/purge_cache"
+	// replicationStatusCompleted = "COMPLETED" // in s3.ReplicationStatusComplete is set to COMPLETE, which is wrong
 	aptDistributionsPath       = "infrastructure_agent/linux/apt/dists/"
 	aptDistributionPackageFile = "main/binary-amd64/Packages.bz2"
 	rhDistributionsPath        = "infrastructure_agent/linux/yum/"
@@ -89,15 +90,18 @@ func main() {
 
 	ctx := context.Background()
 
-	sess := session.Must(session.NewSession())
-	cl := s3.New(sess, aws.NewConfig().WithRegion(region))
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
+	if err != nil {
+		log.Fatalf("unable to load SDK config, %v", err)
+	}
+	cl := s3.NewFromConfig(cfg)
 
 	var keys []string
 	if keysStr != "" {
 		keys = strings.Split(keysStr, ",")
 	} else {
 		var err error
-		keys, err = getDefaultKeys(cl)
+		keys, err = getDefaultKeys(ctx, cl)
 		if err != nil {
 			logInfo("cannot get default keys, error: %v", err)
 			os.Exit(1)
@@ -119,7 +123,7 @@ func main() {
 }
 
 // waitForKeyReplication returns nil if key was successfully replicated or is not set for replication
-func waitForKeyReplication(ctx context.Context, key string, cl *s3.S3, triesLeft int) error {
+func waitForKeyReplication(ctx context.Context, key string, cl *s3.Client, triesLeft int) error {
 	inputGetObj := s3.GetObjectInput{
 		Bucket: &bucket,
 		Key:    &key,
@@ -142,12 +146,12 @@ func waitForKeyReplication(ctx context.Context, key string, cl *s3.S3, triesLeft
 		}
 
 		resC := make(chan result)
-		go func(*s3.S3) {
-			o, err := cl.GetObjectWithContext(ctxT, &inputGetObj)
+		go func(*s3.Client) {
+			o, err := cl.GetObject(ctxT, &inputGetObj)
 			if err != nil {
 				resC <- result{err: err}
 			}
-			resC <- result{output: *o}
+			resC <- result{output: o}
 		}(cl)
 
 		select {
@@ -162,7 +166,7 @@ func waitForKeyReplication(ctx context.Context, key string, cl *s3.S3, triesLeft
 			logDebug("key: %s, attempt: %d, object: %+v", key, attempts-triesLeft, res.output)
 			// https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication-status.html
 			// aws s3api head-object --bucket foo --key "bar/..." |grep ReplicationStatus
-			if res.output.ReplicationStatus == nil || *res.output.ReplicationStatus == replicationStatusCompleted {
+			if res.output.ReplicationStatus == "" || res.output.ReplicationStatus == types.ReplicationStatusCompleted {
 				replicated = true
 			}
 		}
@@ -219,18 +223,18 @@ func purgeCloudFareCDN(ctx context.Context) error {
 	return nil
 }
 
-func getDefaultKeys(cl *s3.S3) ([]string, error) {
-	aptKeys, err := aptDistributionsPackageFilesKeys(cl)
+func getDefaultKeys(ctx context.Context, cl *s3.Client) ([]string, error) {
+	aptKeys, err := aptDistributionsPackageFilesKeys(ctx, cl)
 	if err != nil {
 		return nil, err
 	}
 
-	rhKeys, err := rpmDistributionsMetadataFilesKeys(cl, rhDistributionsPath)
+	rhKeys, err := rpmDistributionsMetadataFilesKeys(ctx, cl, rhDistributionsPath)
 	if err != nil {
 		return nil, err
 	}
 
-	zypperKeys, err := rpmDistributionsMetadataFilesKeys(cl, zypperDistributionsPath)
+	zypperKeys, err := rpmDistributionsMetadataFilesKeys(ctx, cl, zypperDistributionsPath)
 	if err != nil {
 		return nil, err
 	}
@@ -238,14 +242,14 @@ func getDefaultKeys(cl *s3.S3) ([]string, error) {
 	return append(aptKeys, append(rhKeys, zypperKeys...)...), nil
 }
 
-func listFoldersInPath(cl *s3.S3, s3path string) ([]string, error) {
+func listFoldersInPath(ctx context.Context, cl *s3.Client, s3path string) ([]string, error) {
 	input := &s3.ListObjectsV2Input{
 		Bucket:    &bucket,
 		Prefix:    aws.String(s3path),
 		Delimiter: aws.String("/"),
 	}
 
-	out, err := cl.ListObjectsV2(input)
+	out, err := cl.ListObjectsV2(ctx, input)
 	if err != nil {
 		return []string{}, err
 	}
@@ -258,8 +262,8 @@ func listFoldersInPath(cl *s3.S3, s3path string) ([]string, error) {
 	return res, nil
 }
 
-func aptDistributionsPackageFilesKeys(cl *s3.S3) ([]string, error) {
-	aptDistrosPaths, err := listFoldersInPath(cl, aptDistributionsPath)
+func aptDistributionsPackageFilesKeys(ctx context.Context, cl *s3.Client) ([]string, error) {
+	aptDistrosPaths, err := listFoldersInPath(ctx, cl, aptDistributionsPath)
 	if err != nil {
 		return nil, err
 	}
@@ -271,21 +275,21 @@ func aptDistributionsPackageFilesKeys(cl *s3.S3) ([]string, error) {
 
 	return res, nil
 }
-func rpmDistributionsMetadataFilesKeys(cl *s3.S3, distributionPath string) ([]string, error) {
-	rpmDistrosPaths, err := listFoldersInPath(cl, distributionPath)
+func rpmDistributionsMetadataFilesKeys(ctx context.Context, cl *s3.Client, distributionPath string) ([]string, error) {
+	rpmDistrosPaths, err := listFoldersInPath(ctx, cl, distributionPath)
 	if err != nil {
 		return nil, err
 	}
 
 	var res []string
 	for _, rpmDistroPath := range rpmDistrosPaths {
-		rpmDistrosVersions, err := listFoldersInPath(cl, rpmDistroPath)
+		rpmDistrosVersions, err := listFoldersInPath(ctx, cl, rpmDistroPath)
 		if err != nil {
 			return nil, err
 		}
 
 		for _, rpmDistroVersion := range rpmDistrosVersions {
-			rpmDistrosArchs, err := listFoldersInPath(cl, rpmDistroVersion)
+			rpmDistrosArchs, err := listFoldersInPath(ctx, cl, rpmDistroVersion)
 			if err != nil {
 				return nil, err
 			}

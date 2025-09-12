@@ -1,11 +1,10 @@
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-//go:build databind
-// +build databind
 
 package kms
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
@@ -15,9 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/kms"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -157,32 +156,34 @@ variables:
 
 // returns the encoded base64 value, the kms instance and the used key Id and a function that must be invoked on defer
 func encode(t *testing.T, data string) (string, func()) {
-	cfgs := aws.NewConfig().
-		WithEndpoint("http://localhost:18080").
-		WithDisableSSL(true).
-		WithRegion("eu-west-2")
+	ctx := context.TODO()
+	cfg, err := config.LoadDefaultConfig(ctx,
+		config.WithSharedCredentialsFiles([]string{tempFileName}),
+		config.WithRegion("eu-west-2"),
+	)
+	require.NoError(t, err)
 
-	kmsSession := session.Must(session.NewSessionWithOptions(session.Options{
-		Config:            *cfgs,
-		SharedConfigFiles: []string{tempFileName},
-	}))
+	k := kms.NewFromConfig(cfg, func(o *kms.Options) {
+		o.BaseEndpoint = aws.String("http://localhost:18080")
+		o.EndpointOptions.DisableHTTPS = true
 
-	k := kms.New(kmsSession)
-	keys, err := k.ListKeys(&kms.ListKeysInput{})
+	})
+
+	keys, err := k.ListKeys(ctx, &kms.ListKeysInput{})
 	require.NoError(t, err)
 	require.NotEmpty(t, keys.Keys)
 
-	ko, err := k.CreateKey(&kms.CreateKeyInput{
+	ko, err := k.CreateKey(ctx, &kms.CreateKeyInput{
 		Description: aws.String("integration test key. Remove it")})
 	require.NoError(t, err)
 	deleteKey := func() {
-		_, _ = k.ScheduleKeyDeletion(&kms.ScheduleKeyDeletionInput{
+		_, _ = k.ScheduleKeyDeletion(ctx, &kms.ScheduleKeyDeletionInput{
 			KeyId:               ko.KeyMetadata.KeyId,
-			PendingWindowInDays: aws.Int64(int64(7)), // errors if less than 7
+			PendingWindowInDays: aws.Int32(int32(7)), // errors if less than 7
 		})
 	}
 
-	eo, err := k.Encrypt(&kms.EncryptInput{
+	eo, err := k.Encrypt(ctx, &kms.EncryptInput{
 		KeyId:     ko.KeyMetadata.KeyId,
 		Plaintext: []byte(data),
 	})
