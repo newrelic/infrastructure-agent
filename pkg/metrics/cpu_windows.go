@@ -117,25 +117,23 @@ func (w *WindowsCPUMonitor) sample() (*CPUSample, error) {
 		}, nil
 	}
 
-	// Calculate CPU percentages using absolute values following Elastic Agent System Metrics approach
-	// Elastic uses: time.Duration(rawData[i].RawValue.FirstValue*100) / time.Millisecond
+	// Calculate CPU percentages using delta values following Elastic Agent System Metrics approach
+	// Elastic approach: calculate delta between samples, then sum per-core values
 	currentTimestamp := time.Now()
-	timeDelta := currentTimestamp.Sub(w.lastTimestamp)
 
-	var totalUserTime, totalPrivilegedTime, totalIdleTime float64
-	var validCoreCount int
+	var totalUserTime, totalPrivilegedTime, totalIdleTime time.Duration
 
 	// Aggregate data from all CPU cores following Elastic Agent System Metrics approach
 	lastUserTimeData := w.lastSample[userTimeAllCores]
 	lastPrivilegedTimeData := w.lastSample[privilegedTimeAllCores]
 	lastIdleTimeData := w.lastSample[idleTimeAllCores]
 
-	validCoreCount = w.calculateAbsoluteCounterDeltas(
-		userTimeData, lastUserTimeData, timeDelta, &totalUserTime, "user")
-	w.calculateAbsoluteCounterDeltas(
-		privilegedTimeData, lastPrivilegedTimeData, timeDelta, &totalPrivilegedTime, "privileged")
-	w.calculateAbsoluteCounterDeltas(
-		idleTimeData, lastIdleTimeData, timeDelta, &totalIdleTime, "idle")
+	validCoreCount := w.calculateCPUTimeDelta(
+		userTimeData, lastUserTimeData, &totalUserTime, "user")
+	w.calculateCPUTimeDelta(
+		privilegedTimeData, lastPrivilegedTimeData, &totalPrivilegedTime, "privileged")
+	w.calculateCPUTimeDelta(
+		idleTimeData, lastIdleTimeData, &totalIdleTime, "idle")
 
 	// Update last sample for next iteration
 	w.lastSample = rawData
@@ -153,26 +151,43 @@ func (w *WindowsCPUMonitor) sample() (*CPUSample, error) {
 		}, nil
 	}
 
-	// Calculate average percentages across all cores
-	avgUserTime := totalUserTime / float64(validCoreCount)
-	avgSystemTime := totalPrivilegedTime / float64(validCoreCount)
-	avgIdleTime := totalIdleTime / float64(validCoreCount)
+	// Calculate total system CPU time (sum across cores - following Elastic approach)
+	// This represents the total time spent by all CPU cores
+	totalSystemTime := totalPrivilegedTime
+	totalCPUTime := totalUserTime + totalSystemTime + totalIdleTime
+
+	if totalCPUTime == 0 {
+		// Avoid division by zero
+		return &CPUSample{
+			CPUPercent:       0,
+			CPUUserPercent:   0,
+			CPUSystemPercent: 0,
+			CPUIOWaitPercent: 0,
+			CPUIdlePercent:   0,
+			CPUStealPercent:  0,
+		}, nil
+	}
+
+	// Calculate percentages from the time deltas
+	userPercent := (float64(totalUserTime) / float64(totalCPUTime)) * 100.0
+	systemPercent := (float64(totalSystemTime) / float64(totalCPUTime)) * 100.0
+	idlePercent := (float64(totalIdleTime) / float64(totalCPUTime)) * 100.0
 
 	// CPU usage is user + system (everything except idle)
-	avgProcessorTime := avgUserTime + avgSystemTime
+	cpuUsagePercent := userPercent + systemPercent
 
 	// Ensure values are within valid ranges following Elastic Agent System Metrics validation
-	avgProcessorTime = normalizePercentage(avgProcessorTime)
-	avgUserTime = normalizePercentage(avgUserTime)
-	avgSystemTime = normalizePercentage(avgSystemTime)
-	avgIdleTime = normalizePercentage(avgIdleTime)
+	cpuUsagePercent = normalizePercentage(cpuUsagePercent)
+	userPercent = normalizePercentage(userPercent)
+	systemPercent = normalizePercentage(systemPercent)
+	idlePercent = normalizePercentage(idlePercent)
 
 	sample := &CPUSample{
-		CPUPercent:       avgProcessorTime,
-		CPUUserPercent:   avgUserTime,
-		CPUSystemPercent: avgSystemTime,
+		CPUPercent:       cpuUsagePercent,
+		CPUUserPercent:   userPercent,
+		CPUSystemPercent: systemPercent,
 		CPUIOWaitPercent: 0, // Windows doesn't have a direct equivalent to IOWait
-		CPUIdlePercent:   avgIdleTime,
+		CPUIdlePercent:   idlePercent,
 		CPUStealPercent:  0, // Windows doesn't have steal time
 	}
 
@@ -181,23 +196,21 @@ func (w *WindowsCPUMonitor) sample() (*CPUSample, error) {
 	return sample, nil
 }
 
-// calculateAbsoluteCounterDeltas calculates percentage from absolute counter values following Elastic Agent System Metrics pattern
-// Elastic approach: time.Duration(rawData[i].RawValue.FirstValue*100) / time.Millisecond
-func (w *WindowsCPUMonitor) calculateAbsoluteCounterDeltas(
+// calculateCPUTimeDelta calculates the delta between current and last counter samples
+// following Elastic Agent System Metrics approach exactly
+// Elastic approach: calculate delta, convert to time, then sum across cores
+func (w *WindowsCPUMonitor) calculateCPUTimeDelta(
 	currentData []nrwin.CPUGroupInfo,
 	lastData []nrwin.CPUGroupInfo,
-	timeDelta time.Duration,
-	total *float64,
+	total *time.Duration,
 	counterType string,
 ) int {
 	validCount := 0
-	lastDataMap := make(map[string]nrwin.CPUGroupInfo)
 
-	// Create map of last data for easy lookup
-	for _, lastInfo := range lastData {
-		if lastInfo.Name != "_Total" {
-			lastDataMap[lastInfo.Name] = lastInfo
-		}
+	// Create a map for quick lookups of last sample data
+	lastDataMap := make(map[string]nrwin.CPUGroupInfo)
+	for _, data := range lastData {
+		lastDataMap[data.Name] = data
 	}
 
 	for _, currentInfo := range currentData {
@@ -205,57 +218,39 @@ func (w *WindowsCPUMonitor) calculateAbsoluteCounterDeltas(
 			continue
 		}
 
+		// Find corresponding last sample
 		lastInfo, exists := lastDataMap[currentInfo.Name]
 		if !exists {
-			cpuWindowsLog.WithFields(map[string]interface{}{
-				"type":     counterType,
-				"instance": currentInfo.Name,
-			}).Debug("No previous sample for instance")
 			continue
 		}
 
-		// Convert raw values to milliseconds following Elastic Agent System Metrics approach
-		// values are in 100-nanosecond intervals, convert to milliseconds
-		currentTimeMs := uint64((currentInfo.RawValue.FirstValue * 100) / int64(time.Millisecond))
-		lastTimeMs := uint64((lastInfo.RawValue.FirstValue * 100) / int64(time.Millisecond))
-
-		// Calculate delta in milliseconds
-		deltaMs := int64(currentTimeMs - lastTimeMs)
-		timeDeltaMs := timeDelta.Milliseconds()
-
-		if timeDeltaMs <= 0 || deltaMs < 0 {
-			cpuWindowsLog.WithFields(map[string]interface{}{
-				"type":        counterType,
-				"instance":    currentInfo.Name,
-				"deltaMs":     deltaMs,
-				"timeDeltaMs": timeDeltaMs,
-			}).Debug("Invalid time delta")
+		// Calculate delta between current and last sample
+		// Windows performance counters are cumulative, so we need the difference
+		delta := currentInfo.RawValue.FirstValue - lastInfo.RawValue.FirstValue
+		if delta < 0 {
+			// Handle counter wrapping - skip this sample
 			continue
 		}
 
-		// Calculate percentage: (deltaMs / timeDeltaMs) * 100
-		percentage := (float64(deltaMs) / float64(timeDeltaMs)) * 100.0
+		// Convert delta to time duration following Elastic Agent System Metrics approach
+		// Elastic: idleTime := time.Duration(delta*100) / time.Millisecond
+		// The *100 converts from 100-nanosecond units to nanoseconds
+		deltaTime := time.Duration(delta * 100)
 
-		// Ensure percentage is within valid range
-		if percentage < 0 {
-			percentage = 0
-		} else if percentage > 100 {
-			percentage = 100
-		}
-
-		*total += percentage
+		// Sum across all cores (following Elastic: idle += idleTime)
+		*total += deltaTime
 		validCount++
 
 		if cpuWindowsLog.IsDebugEnabled() {
 			cpuWindowsLog.WithFields(map[string]interface{}{
-				"type":        counterType,
-				"instance":    currentInfo.Name,
-				"currentMs":   currentTimeMs,
-				"lastMs":      lastTimeMs,
-				"deltaMs":     deltaMs,
-				"timeDeltaMs": timeDeltaMs,
-				"percentage":  percentage,
-			}).Debug("Absolute counter calculation following Elastic approach")
+				"type":      counterType,
+				"instance":  currentInfo.Name,
+				"current":   currentInfo.RawValue.FirstValue,
+				"last":      lastInfo.RawValue.FirstValue,
+				"delta":     delta,
+				"deltaTime": deltaTime,
+				"totalSum":  *total,
+			}).Debug("Elastic-style CPU time delta calculation (summed across cores)")
 		}
 	}
 
