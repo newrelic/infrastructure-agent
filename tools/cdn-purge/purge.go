@@ -53,8 +53,7 @@ const (
 	defaultBucket = "nr-downloads-ohai-staging"
 	defaultRegion = "us-east-1"
 	// more keys could be added if issues arise
-	cloudfarePurgeURL = "https://api.cloudflare.com/client/v4/zones/ac389f8f109894ed5e2aeb2d8af3d6ce/purge_cache"
-	// replicationStatusCompleted = "COMPLETED" // in s3.ReplicationStatusComplete is set to COMPLETE, which is wrong
+	cloudfarePurgeURL          = "https://api.cloudflare.com/client/v4/zones/ac389f8f109894ed5e2aeb2d8af3d6ce/purge_cache"
 	aptDistributionsPath       = "infrastructure_agent/linux/apt/dists/"
 	aptDistributionPackageFile = "main/binary-amd64/Packages.bz2"
 	rhDistributionsPath        = "infrastructure_agent/linux/yum/"
@@ -90,10 +89,7 @@ func main() {
 
 	ctx := context.Background()
 
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
-	if err != nil {
-		log.Fatalf("unable to load SDK config, %v", err)
-	}
+	cfg, _ := config.LoadDefaultConfig(ctx, config.WithRegion(region))
 	cl := s3.NewFromConfig(cfg)
 
 	var keys []string

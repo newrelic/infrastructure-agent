@@ -4,14 +4,13 @@ package cloud
 
 import (
 	"fmt"
-	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/private/protocol"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -197,10 +196,7 @@ func TestNewAWSHarvester_expect_correct_const(t *testing.T) {
 }
 
 func getRandomToken() string {
-	token := make([]byte, 16)
-	rand.Read(token)
-	uuid := protocol.UUIDVersion4(token)
-	return uuid
+	return uuid.New().String()
 }
 
 func assertGetInstanceID(t *testing.T, h *AWSHarvester) {
