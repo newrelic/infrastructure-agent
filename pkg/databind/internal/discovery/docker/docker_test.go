@@ -4,17 +4,18 @@
 package docker
 
 import (
-	"github.com/docker/docker/api/types"
+	"testing"
+
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestGetMatchingContainers(t *testing.T) {
-	givenContainerList := []types.Container{
+	givenContainerList := []container.Summary{
 		{
 			ID: "484c2678906bed94a51fe12ec1fc8ac55f177453dba00c1b0ae0a22f4b655e41",
 			Names: []string{
@@ -24,7 +25,7 @@ func TestGetMatchingContainers(t *testing.T) {
 			ImageID: "sha256:8282995409c26b82d66243f169f6695115a06ce860966db549f8ca09dcbb9767",
 			Command: "/bin/bash -c 'java ${JAVA_OPTS} -jar /test-server.jar'",
 			Created: 1653916418,
-			Ports: []types.Port{
+			Ports: []container.Port{
 				{
 					IP:          "0.0.0.0",
 					PrivatePort: 7199,
@@ -44,11 +45,12 @@ func TestGetMatchingContainers(t *testing.T) {
 			State:      "running",
 			Status:     "Up 8 minutes",
 			HostConfig: struct {
-				NetworkMode string "json:\",omitempty\""
+				NetworkMode string            "json:\",omitempty\"" //nolint:tagalign
+				Annotations map[string]string "json:\",omitempty\"" //nolint:tagalign
 			}{
 				NetworkMode: "default",
 			},
-			NetworkSettings: &types.SummaryNetworkSettings{
+			NetworkSettings: &container.NetworkSettingsSummary{
 				Networks: map[string]*network.EndpointSettings{
 					"bridge": {
 						IPAMConfig:          (*network.EndpointIPAMConfig)(nil),
@@ -68,7 +70,7 @@ func TestGetMatchingContainers(t *testing.T) {
 				},
 			},
 
-			Mounts: []types.MountPoint{},
+			Mounts: []container.MountPoint{},
 		},
 	}
 

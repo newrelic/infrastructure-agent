@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 
@@ -57,7 +56,7 @@ func fetch(d discovery.Container, matcher *discovery.FieldsMatcher) ([]discovery
 }
 
 // getDiscoveries will filter container list to only the ones that match the config and extract discovery variables from those.
-func getDiscoveries(containers []types.Container, matcher *discovery.FieldsMatcher) []discovery.Discovery {
+func getDiscoveries(containers []container.Summary, matcher *discovery.FieldsMatcher) []discovery.Discovery {
 	var matches []discovery.Discovery
 
 	for _, cont := range containers {
@@ -116,7 +115,7 @@ func getDiscoveries(containers []types.Container, matcher *discovery.FieldsMatch
 	return matches
 }
 
-func addPorts(cont types.Container, labels map[string]string) {
+func addPorts(cont container.Summary, labels map[string]string) {
 	// sort ports from lower to higher so we are always consistent with the returned ports
 	sort.Slice(cont.Ports, func(i, j int) bool {
 		return cont.Ports[i].PrivatePort < cont.Ports[j].PrivatePort
