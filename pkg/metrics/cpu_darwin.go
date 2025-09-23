@@ -1,5 +1,5 @@
-//go:build !windows
-// +build !windows
+//go:build darwin
+// +build darwin
 
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
@@ -10,12 +10,11 @@ import (
 	"github.com/shirou/gopsutil/v3/cpu"
 )
 
-// NewCPUMonitor creates a new CPU monitor using gopsutil for non-Windows platforms.
+// NewCPUMonitor creates a new CPU monitor using gopsutil for Darwin/macOS
 func NewCPUMonitor(context agent.AgentContext) *CPUMonitor {
 	return &CPUMonitor{
 		context:        context,
 		cpuTimes:       cpu.Times,
-		last:           nil,
 		windowsMonitor: nil,
 	}
 }
