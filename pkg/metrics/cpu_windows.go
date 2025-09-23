@@ -28,7 +28,7 @@ const (
 	interruptTimeAllCores  = "\\Processor Information(*)\\% Interrupt Time"
 	dpcTimeAllCores        = "\\Processor Information(*)\\% DPC Time"
 
-	// Constants for calculations
+	// Constants for calculations.
 	percentageMultiplier       = 100.0 // Multiplier for percentage calculations
 	maxPercentage              = 100   // Maximum percentage value
 	nanosecondConversionFactor = 100   // Converts 100-nanosecond units to nanoseconds
@@ -270,6 +270,7 @@ func normalizePercentage(value float64) float64 {
 	if value < 0 {
 		return 0
 	}
+
 	if value > maxPercentage {
 		return maxPercentage
 	}
