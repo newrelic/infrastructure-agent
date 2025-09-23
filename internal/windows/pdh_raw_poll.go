@@ -14,6 +14,10 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 )
 
+const (
+	timestampShiftBits = 32 // Bits to shift for timestamp calculation
+)
+
 //nolint:gochecknoglobals
 var rawPollLog = log.WithComponent("PDHRawPoll")
 
@@ -79,23 +83,24 @@ func (pdh *PdhRawPoll) PollRawArray() (map[string][]CPUGroupInfo, error) {
 
 	results := map[string][]CPUGroupInfo{}
 
-	for i, cHandle := range pdh.counterHandles {
-		var bufferSize uint32 = 0
-		var bufferCount uint32 = 0
+	for counterIndex, cHandle := range pdh.counterHandles {
+		var bufferSize uint32
+		var bufferCount uint32
 
 		// First call to get buffer size
 		ret = winapi.PdhGetRawCounterArray(cHandle, &bufferSize, &bufferCount, nil)
 		if ret != winapi.PDH_MORE_DATA && ret != winapi.ERROR_SUCCESS {
 			if pdh.debugLog != nil {
-				pdh.debugLog("Error getting buffer size for %s (error %#v)", pdh.metrics[i], ret)
+				pdh.debugLog("Error getting buffer size for %s (error %#v)", pdh.metrics[counterIndex], ret)
 			}
 			continue
 		}
 
 		if bufferSize == 0 || bufferCount == 0 {
 			if pdh.debugLog != nil {
-				pdh.debugLog("No data available for %s", pdh.metrics[i])
+				pdh.debugLog("No data available for %s", pdh.metrics[counterIndex])
 			}
+			
 			continue
 		}
 
@@ -107,8 +112,9 @@ func (pdh *PdhRawPoll) PollRawArray() (map[string][]CPUGroupInfo, error) {
 		ret = winapi.PdhGetRawCounterArray(cHandle, &bufferSize, &bufferCount, itemBuffer)
 		if ret != winapi.ERROR_SUCCESS {
 			if pdh.debugLog != nil {
-				pdh.debugLog("Error getting raw counter array for %s (error %#v)", pdh.metrics[i], ret)
+				pdh.debugLog("Error getting raw counter array for %s (error %#v)", pdh.metrics[counterIndex], ret)
 			}
+			
 			continue
 		}
 
@@ -116,27 +122,29 @@ func (pdh *PdhRawPoll) PollRawArray() (map[string][]CPUGroupInfo, error) {
 		var cpuInfos []CPUGroupInfo
 		itemSize := unsafe.Sizeof(winapi.PDH_RAW_COUNTER_ITEM{})
 
-		for j := uint32(0); j < bufferCount; j++ {
+		for itemIndex := range bufferCount {
 			// Calculate offset for each item in the array
-			offset := uintptr(j) * itemSize
+			offset := uintptr(itemIndex) * itemSize
 			item := (*winapi.PDH_RAW_COUNTER_ITEM)(unsafe.Pointer(uintptr(unsafe.Pointer(itemBuffer)) + offset))
 
 			if item.SzName != nil {
-				name := winapi.UTF16PtrToString(item.SzName)
-				timestamp := uint64(item.RawValue.TimeStamp.HighDateTime)<<32 | uint64(item.RawValue.TimeStamp.LowDateTime)
+			name := winapi.UTF16PtrToString(item.SzName)
+			// Use constant instead of magic number 32
+			timestamp := uint64(item.RawValue.TimeStamp.HighDateTime)<<timestampShiftBits | uint64(item.RawValue.TimeStamp.LowDateTime)
 
-				cpuInfos = append(cpuInfos, CPUGroupInfo{
-					Name:      name,
-					RawValue:  item.RawValue,
-					Timestamp: timestamp,
-				})
-			}
+			cpuInfos = append(cpuInfos, CPUGroupInfo{
+				Name:      name,
+				RawValue:  item.RawValue,
+				Timestamp: timestamp,
+			})
+		}
 		}
 
-		results[pdh.metrics[i]] = cpuInfos
+		results[pdh.metrics[counterIndex]] = cpuInfos
 	}
 
 	rawPollLog.WithField("results", len(results)).Debug("raw polling end")
+	
 	return results, nil
 }
 

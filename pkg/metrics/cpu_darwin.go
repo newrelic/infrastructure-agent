@@ -10,7 +10,7 @@ import (
 	"github.com/shirou/gopsutil/v3/cpu"
 )
 
-// NewCPUMonitor creates a new CPU monitor using gopsutil for Darwin/macOS
+// NewCPUMonitor creates a new CPU monitor using gopsutil for Darwin/macOS.
 func NewCPUMonitor(context agent.AgentContext) *CPUMonitor {
 	return &CPUMonitor{
 		context:        context,
