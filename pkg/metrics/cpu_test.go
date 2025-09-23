@@ -301,6 +301,7 @@ func TestCPUDelta_NegativeSteal(t *testing.T) {
 }
 
 func TestWindowsCPUMonitor_RawCounterArrays(t *testing.T) {
+	t.Parallel()
 	if runtime.GOOS != "windows" {
 		t.Skip("Windows-specific test")
 	}
@@ -341,9 +342,9 @@ func TestWindowsCPUMonitor_RawCounterArrays(t *testing.T) {
 	assert.GreaterOrEqual(t, sample2.CPUIdlePercent, float64(0))
 	assert.LessOrEqual(t, sample2.CPUIdlePercent, float64(100))
 
-	// Windows-specific assertions
-	assert.Equal(t, float64(0), sample2.CPUIOWaitPercent) // Windows doesn't have IOWait
-	assert.Equal(t, float64(0), sample2.CPUStealPercent)  // Windows doesn't have steal time
+	// Windows-specific assertions - using InDelta for float comparison linting compliance
+	assert.InDelta(t, float64(0), sample2.CPUIOWaitPercent, 0.01) // Windows doesn't have IOWait
+	assert.InDelta(t, float64(0), sample2.CPUStealPercent, 0.01)  // Windows doesn't have steal time
 
 	t.Logf("Windows CPU Sample (Raw Counter Arrays): %+v", sample2)
 	t.Logf("This implementation works correctly on both single and multi-CPU group systems")

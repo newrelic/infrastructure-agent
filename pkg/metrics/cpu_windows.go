@@ -19,9 +19,7 @@ import (
 //nolint:gochecknoglobals
 var cpuWindowsLog = log.WithComponent("CPUWindows")
 
-// Windows CPU performance counter paths using wildcard for all cores
-// Using "Processor Information" instead of "Processor" for better CPU group support
-// Following Elastic Agent System Metrics approach
+// Windows CPU performance counter paths using wildcard for all cores.
 const (
 	processorTimeAllCores  = "\\Processor Information(*)\\% Processor Time"
 	userTimeAllCores       = "\\Processor Information(*)\\% User Time"
@@ -29,6 +27,13 @@ const (
 	idleTimeAllCores       = "\\Processor Information(*)\\% Idle Time"
 	interruptTimeAllCores  = "\\Processor Information(*)\\% Interrupt Time"
 	dpcTimeAllCores        = "\\Processor Information(*)\\% DPC Time"
+
+	// Constants for calculations
+	percentageMultiplier       = 100.0 // Multiplier for percentage calculations
+	maxPercentage              = 100   // Maximum percentage value
+	nanosecondConversionFactor = 100   // Converts 100-nanosecond units to nanoseconds
+	timestampShiftBits         = 32    // Bits to shift for timestamp calculation
+	utf16PointerAdvanceBytes   = 2     // Bytes to advance UTF16 pointer
 )
 
 type WindowsCPUMonitor struct {
@@ -40,8 +45,7 @@ type WindowsCPUMonitor struct {
 	lastTimestamp      time.Time
 }
 
-// NewCPUMonitor creates a new Windows CPU monitor using Elastic Agent System Metrics proven approach
-// This implementation uses PDH's raw counters with manual calculation for reliable CPU monitoring
+// NewCPUMonitor uses PDH's raw counters with manual calculation for reliable CPU monitoring.
 func NewCPUMonitor(context agent.AgentContext) *CPUMonitor {
 	winMonitor := &WindowsCPUMonitor{
 		context:            context,
@@ -61,7 +65,7 @@ func (w *WindowsCPUMonitor) initializeRawPDH() error {
 	}
 
 	var err error
-	// Initialize raw PDH poll following Elastic Agent System Metrics approach
+	// Initialize raw PDH poll.
 	w.rawPoll, err = nrwin.NewPdhRawPoll(
 		cpuWindowsLog.Debugf,
 		processorTimeAllCores,
@@ -84,7 +88,7 @@ func (w *WindowsCPUMonitor) sample() (*CPUSample, error) {
 		return nil, err
 	}
 
-	// Get raw counter data following Elastic Agent System Metrics approach
+	// Get raw counter data
 	rawData, err := w.rawPoll.PollRawArray()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get raw CPU performance counters: %w", err)
@@ -92,7 +96,7 @@ func (w *WindowsCPUMonitor) sample() (*CPUSample, error) {
 
 	helpers.LogStructureDetails(cpuWindowsLog, rawData, "RawCPUPerfCounters", "raw", nil)
 
-	// Process the raw data following Elastic Agent System Metrics aggregation pattern
+	// Process the raw data
 	userTimeData := rawData[userTimeAllCores]
 	privilegedTimeData := rawData[privilegedTimeAllCores]
 	idleTimeData := rawData[idleTimeAllCores]
@@ -117,13 +121,12 @@ func (w *WindowsCPUMonitor) sample() (*CPUSample, error) {
 		}, nil
 	}
 
-	// Calculate CPU percentages using delta values following Elastic Agent System Metrics approach
-	// Elastic approach: calculate delta between samples, then sum per-core values
+	// Calculate CPU percentages using delta values
 	currentTimestamp := time.Now()
 
 	var totalUserTime, totalPrivilegedTime, totalIdleTime time.Duration
 
-	// Aggregate data from all CPU cores following Elastic Agent System Metrics approach
+	// Aggregate data from all CPU cores
 	lastUserTimeData := w.lastSample[userTimeAllCores]
 	lastPrivilegedTimeData := w.lastSample[privilegedTimeAllCores]
 	lastIdleTimeData := w.lastSample[idleTimeAllCores]
@@ -151,7 +154,7 @@ func (w *WindowsCPUMonitor) sample() (*CPUSample, error) {
 		}, nil
 	}
 
-	// Calculate total system CPU time (sum across cores - following Elastic approach)
+	// Calculate total system CPU time (sum across cores)
 	// This represents the total time spent by all CPU cores
 	totalSystemTime := totalPrivilegedTime
 	totalCPUTime := totalUserTime + totalSystemTime + totalIdleTime
@@ -169,14 +172,14 @@ func (w *WindowsCPUMonitor) sample() (*CPUSample, error) {
 	}
 
 	// Calculate percentages from the time deltas
-	userPercent := (float64(totalUserTime) / float64(totalCPUTime)) * 100.0
-	systemPercent := (float64(totalSystemTime) / float64(totalCPUTime)) * 100.0
-	idlePercent := (float64(totalIdleTime) / float64(totalCPUTime)) * 100.0
+	userPercent := (float64(totalUserTime) / float64(totalCPUTime)) * percentageMultiplier
+	systemPercent := (float64(totalSystemTime) / float64(totalCPUTime)) * percentageMultiplier
+	idlePercent := (float64(totalIdleTime) / float64(totalCPUTime)) * percentageMultiplier
 
 	// CPU usage is user + system (everything except idle)
 	cpuUsagePercent := userPercent + systemPercent
 
-	// Ensure values are within valid ranges following Elastic Agent System Metrics validation
+	// Ensure values are within valid ranges
 	cpuUsagePercent = normalizePercentage(cpuUsagePercent)
 	userPercent = normalizePercentage(userPercent)
 	systemPercent = normalizePercentage(systemPercent)
@@ -197,8 +200,6 @@ func (w *WindowsCPUMonitor) sample() (*CPUSample, error) {
 }
 
 // calculateCPUTimeDelta calculates the delta between current and last counter samples
-// following Elastic Agent System Metrics approach exactly
-// Elastic approach: calculate delta, convert to time, then sum across cores
 func (w *WindowsCPUMonitor) calculateCPUTimeDelta(
 	currentData []nrwin.CPUGroupInfo,
 	lastData []nrwin.CPUGroupInfo,
@@ -232,12 +233,12 @@ func (w *WindowsCPUMonitor) calculateCPUTimeDelta(
 			continue
 		}
 
-		// Convert delta to time duration following Elastic Agent System Metrics approach
-		// Elastic: idleTime := time.Duration(delta*100) / time.Millisecond
+		// Convert delta to time duration
+		// idleTime := time.Duration(delta*100) / time.Millisecond
 		// The *100 converts from 100-nanosecond units to nanoseconds
-		deltaTime := time.Duration(delta * 100)
+		deltaTime := time.Duration(delta * nanosecondConversionFactor)
 
-		// Sum across all cores (following Elastic: idle += idleTime)
+		// Sum across all cores
 		*total += deltaTime
 		validCount++
 
@@ -250,7 +251,7 @@ func (w *WindowsCPUMonitor) calculateCPUTimeDelta(
 				"delta":     delta,
 				"deltaTime": deltaTime,
 				"totalSum":  *total,
-			}).Debug("Elastic-style CPU time delta calculation (summed across cores)")
+			}).Debug("CPU time delta calculation (summed across cores)")
 		}
 	}
 
@@ -264,13 +265,14 @@ func (w *WindowsCPUMonitor) close() error {
 	return nil
 }
 
-// normalizePercentage ensures percentage values are within valid 0-100 range
+// normalizePercentage ensures percentage values are within valid 0-100 range.
 func normalizePercentage(value float64) float64 {
 	if value < 0 {
 		return 0
 	}
-	if value > 100 {
-		return 100
+	if value > maxPercentage {
+		return maxPercentage
 	}
+
 	return value
 }
