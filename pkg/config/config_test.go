@@ -803,7 +803,8 @@ func TestLoadLogConfig_BackwardsCompatability(t *testing.T) {
 	}
 
 	//nolint:rangevarcopies
-	for _, tt := range logConfigs {
+	for i := range logConfigs {
+		tt := &logConfigs[i]
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, NonVerboseLogging, tt.c.Verbose)
 			tt.c.loadLogConfig()
@@ -833,7 +834,8 @@ func TestLoadLogConfig_Populate(t *testing.T) {
 	}
 
 	//nolint:rangevarcopies
-	for _, tt := range configs {
+	for i := range configs {
+		tt := &configs[i]
 		t.Run(tt.name, func(t *testing.T) {
 			tt.c.loadLogConfig()
 			assert.Equal(t, tt.expectedLogConfig, tt.c.Log)
