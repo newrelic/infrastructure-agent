@@ -701,6 +701,32 @@ license_key: "xxx"
 	assert.Equal(t, LogLevelSmart, cfg.Log.Level)
 }
 
+func TestLoadYamlConfig_withLogFormat(t *testing.T) {
+	yamlData := []byte(`
+log:
+  file: agent.log
+  format: json
+  stdout: true
+  smart_level_entry_limit: 5
+license_key: "xxx"
+`)
+
+	tmp, err := createTestFile(yamlData)
+	require.NoError(t, err)
+	defer os.Remove(tmp.Name())
+
+	cfg, err := LoadConfig(tmp.Name())
+
+	require.NoError(t, err)
+
+	assert.Equal(t, "xxx", cfg.License)
+	assert.Equal(t, "agent.log", cfg.LogFile)
+	assert.Equal(t, "json", cfg.LogFormat)
+	assert.Equal(t, true, cfg.LogToStdout)
+	assert.Equal(t, 5, cfg.SmartVerboseModeEntryLimit)
+	assert.Equal(t, LogLevelWarn, cfg.Log.Level)
+}
+
 func TestLoadLogConfig_HasIncludeFilter(t *testing.T) {
 	testCases := []struct {
 		name     string

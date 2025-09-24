@@ -1492,7 +1492,7 @@ func (config *Config) loadLogConfig() {
 
 	// Ensure a default log level if not set
 	if config.Log.Level == "" {
-		config.Log.Level = LogLevelInfo
+		config.Log.Level = LogLevelWarn
 	}
 
 	switch config.Log.Level {
