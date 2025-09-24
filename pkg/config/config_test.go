@@ -701,7 +701,7 @@ license_key: "xxx"
 	assert.Equal(t, LogLevelSmart, cfg.Log.Level)
 }
 
-// nolint
+//nolint
 func TestLoadYamlConfig_withLogFormat(t *testing.T) {
 	yamlData := []byte(`
 log:
