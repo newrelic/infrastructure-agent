@@ -802,6 +802,7 @@ func TestLoadLogConfig_BackwardsCompatability(t *testing.T) {
 		{"Trace and forward enabled", Config{Log: LogConfig{Level: "trace", Forward: toPtr(true)}}, TraceTroubleshootLogging},
 	}
 
+	//nolint:rangevarcopies
 	for _, tt := range logConfigs {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, NonVerboseLogging, tt.c.Verbose)
@@ -831,6 +832,7 @@ func TestLoadLogConfig_Populate(t *testing.T) {
 		{"Trace Verbose enabled and file", Config{Verbose: 4, LogFile: "agent.log"}, LogConfig{Level: LogLevelTrace, File: "agent.log", ToStdout: boolPtr(false), Forward: boolPtr(false), ExcludeFilters: LogFilters{"traces": []interface{}{"supervisor", "feature", "process"}, "component": []interface{}{"integration-errors"}}, SmartLevelEntryLimit: intPtr(0)}},
 	}
 
+	//nolint:rangevarcopies
 	for _, tt := range configs {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.c.loadLogConfig()
