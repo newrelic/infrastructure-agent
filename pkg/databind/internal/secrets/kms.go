@@ -5,6 +5,7 @@ package secrets
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -13,9 +14,9 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/kms"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/kms"
 )
 
 const (
@@ -99,7 +100,8 @@ func (g *kmsGatherer) retrieve(encoded []byte) (interface{}, error) {
 		dt = dt[:n] // remove decoder leading zeroes
 	}
 
-	var configFiles []string
+	var err error
+	var configLoadOptions []func(*config.LoadOptions) error
 	if secret.CredentialFile != "" {
 		tlog := slog.WithField("CredentialFile", secret.CredentialFile)
 		tlog.Debug("Adding credentials file.")
@@ -107,7 +109,7 @@ func (g *kmsGatherer) retrieve(encoded []byte) (interface{}, error) {
 		if err != nil {
 			tlog.WithError(err).Warn("could not find credentials file so ignoring it")
 		} else {
-			configFiles = append(configFiles, secret.CredentialFile)
+			configLoadOptions = append(configLoadOptions, config.WithSharedCredentialsFiles([]string{secret.CredentialFile}))
 		}
 	}
 	if secret.ConfigFile != "" {
@@ -117,31 +119,34 @@ func (g *kmsGatherer) retrieve(encoded []byte) (interface{}, error) {
 		if err != nil {
 			tlog.WithError(err).Warn("could not find config file so ignoring it")
 		} else {
-			configFiles = append(configFiles, secret.ConfigFile)
+			configLoadOptions = append(configLoadOptions, config.WithSharedConfigFiles([]string{secret.ConfigFile}))
 		}
 	}
 
-	var kmsSession *session.Session
-	cfgs := aws.NewConfig()
 	if g.cfg.Region != "" {
-		cfgs = cfgs.WithRegion(g.cfg.Region)
+		configLoadOptions = append(configLoadOptions, config.WithRegion(g.cfg.Region))
 	}
-	if g.cfg.DisableSSL {
-		cfgs = cfgs.WithDisableSSL(g.cfg.DisableSSL)
-	}
-	if g.cfg.Endpoint != "" {
-		cfgs = cfgs.WithEndpoint(g.cfg.Endpoint)
-	}
-	kmsSession = session.Must(session.NewSessionWithOptions(session.Options{
-		Config:            *cfgs,
-		SharedConfigFiles: configFiles,
-	}))
 
-	client := kms.New(kmsSession)
+	ctx := context.TODO()
+	cfg, err := config.LoadDefaultConfig(ctx, configLoadOptions...)
+
+	if err != nil {
+		return nil, fmt.Errorf("unable to load aws config for kms: %w", err)
+	}
+
+	kmsClient := kms.NewFromConfig(cfg, func(o *kms.Options) {
+		if g.cfg.Endpoint != "" {
+			o.BaseEndpoint = aws.String(g.cfg.Endpoint)
+		}
+		if g.cfg.DisableSSL {
+			o.EndpointOptions.DisableHTTPS = true
+		}
+	})
+
 	params := &kms.DecryptInput{
 		CiphertextBlob: dt,
 	}
-	res, err := client.Decrypt(params)
+	res, err := kmsClient.Decrypt(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("unable to decrypt secret with aws-kms: %s", err)
 	}

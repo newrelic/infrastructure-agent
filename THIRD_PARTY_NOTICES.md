@@ -38,7 +38,23 @@ Distributed under the following license(s):
 
 
 
-## [github.com/aws/aws-sdk-go](https://github.com/aws/aws-sdk-go)
+## [github.com/aws/aws-sdk-go-v2](https://github.com/aws/aws-sdk-go-v2)
+
+Distributed under the following license(s):
+
+* Apache-2.0
+
+
+
+## [github.com/aws/aws-sdk-go-v2/config](https://github.com/aws/aws-sdk-go-v2)
+
+Distributed under the following license(s):
+
+* Apache-2.0
+
+
+
+## [github.com/aws/aws-sdk-go-v2/service/kms](https://github.com/aws/aws-sdk-go-v2)
 
 Distributed under the following license(s):
 
@@ -131,6 +147,14 @@ Distributed under the following license(s):
 Distributed under the following license(s):
 
 * Apache-2.0
+
+
+
+## [github.com/google/uuid](https://github.com/google/uuid)
+
+Distributed under the following license(s):
+
+* BSD-3-Clause
 
 
 
