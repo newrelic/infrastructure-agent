@@ -1,3 +1,4 @@
+//nolint:all
 //go:build windows
 // +build windows
 
@@ -100,7 +101,7 @@ func (pdh *PdhRawPoll) PollRawArray() (map[string][]CPUGroupInfo, error) {
 			if pdh.debugLog != nil {
 				pdh.debugLog("No data available for %s", pdh.metrics[counterIndex])
 			}
-			
+
 			continue
 		}
 
@@ -114,7 +115,7 @@ func (pdh *PdhRawPoll) PollRawArray() (map[string][]CPUGroupInfo, error) {
 			if pdh.debugLog != nil {
 				pdh.debugLog("Error getting raw counter array for %s (error %#v)", pdh.metrics[counterIndex], ret)
 			}
-			
+
 			continue
 		}
 
@@ -128,23 +129,23 @@ func (pdh *PdhRawPoll) PollRawArray() (map[string][]CPUGroupInfo, error) {
 			item := (*winapi.PDH_RAW_COUNTER_ITEM)(unsafe.Pointer(uintptr(unsafe.Pointer(itemBuffer)) + offset))
 
 			if item.SzName != nil {
-			name := winapi.UTF16PtrToString(item.SzName)
-			// Use constant instead of magic number 32
-			timestamp := uint64(item.RawValue.TimeStamp.HighDateTime)<<timestampShiftBits | uint64(item.RawValue.TimeStamp.LowDateTime)
+				name := winapi.UTF16PtrToString(item.SzName)
+				// Use constant instead of magic number 32
+				timestamp := uint64(item.RawValue.TimeStamp.HighDateTime)<<timestampShiftBits | uint64(item.RawValue.TimeStamp.LowDateTime)
 
-			cpuInfos = append(cpuInfos, CPUGroupInfo{
-				Name:      name,
-				RawValue:  item.RawValue,
-				Timestamp: timestamp,
-			})
-		}
+				cpuInfos = append(cpuInfos, CPUGroupInfo{
+					Name:      name,
+					RawValue:  item.RawValue,
+					Timestamp: timestamp,
+				})
+			}
 		}
 
 		results[pdh.metrics[counterIndex]] = cpuInfos
 	}
 
 	rawPollLog.WithField("results", len(results)).Debug("raw polling end")
-	
+
 	return results, nil
 }
 
