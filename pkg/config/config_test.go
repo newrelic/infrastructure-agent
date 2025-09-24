@@ -785,6 +785,7 @@ log:
 	}
 }
 
+//nolint:rangevarcopies
 func TestLoadLogConfig_BackwardsCompatability(t *testing.T) {
 	toPtr := func(a bool) *bool {
 		return &a
@@ -810,7 +811,7 @@ func TestLoadLogConfig_BackwardsCompatability(t *testing.T) {
 	}
 }
 
-//nolint:exhaustruct,lll
+//nolint:exhaustruct,lll,rangevarcopies
 func TestLoadLogConfig_Populate(t *testing.T) {
 	// TODO: migrate to generic function with go1.18
 	boolPtr := func(a bool) *bool {
