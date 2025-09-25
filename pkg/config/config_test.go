@@ -1,4 +1,3 @@
-
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 package config
@@ -702,7 +701,6 @@ license_key: "xxx"
 	assert.Equal(t, LogLevelSmart, cfg.Log.Level)
 }
 
-
 func TestLoadYamlConfig_withLogFormat(t *testing.T) {
 	yamlData := []byte(`
 log:
@@ -786,7 +784,6 @@ log:
 	}
 }
 
-
 func TestLoadLogConfig_BackwardsCompatability(t *testing.T) {
 	toPtr := func(a bool) *bool {
 		return &a
@@ -813,7 +810,6 @@ func TestLoadLogConfig_BackwardsCompatability(t *testing.T) {
 		})
 	}
 }
-
 
 func TestLoadLogConfig_Populate(t *testing.T) {
 	// TODO: migrate to generic function with go1.18
