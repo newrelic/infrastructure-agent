@@ -6,10 +6,13 @@ linters:
     - tagliatelle
     - testpackage
   settings:
+    govet:
+      enable:
+        - shadow
     funlen:
       lines: 100
     lll:
-      line-length: 350
+      line-length: 120
     misspell:
       ignore-rules:
         - newrelic
