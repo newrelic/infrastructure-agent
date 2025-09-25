@@ -1489,6 +1489,12 @@ func (config *Config) loadLogConfig() {
 	} else {
 		config.Log.SmartLevelEntryLimit = &DefaultSmartVerboseModeEntryLimit
 	}
+
+	// Ensure a default log level if not set
+	if config.Log.Level == "" {
+		config.Log.Level = LogLevelWarn
+	}
+
 	switch config.Log.Level {
 	case LogLevelSmart:
 		config.Verbose = SmartVerboseLogging
