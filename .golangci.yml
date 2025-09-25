@@ -1,63 +1,57 @@
-# This file contains all available configuration options
-# with their default values.
-
-# options for analysis running
-run:
-  timeout: 10m
-
-
-# # all available settings of specific linters
-linters-settings:
-  # Use shadow linter instead of govet check-shadowing
-  shadow: true
-
-  misspell:
-    ignore-words:
-      - newrelic
-  lll:
-    # max line length, lines longer will be reported. Default is 120.
-    # '\t' is counted as 1 character by default, and can be changed with the tab-width option
-    line-length: 350 # setting high as tests have long payloads currently
-  wsl:
-    allow-cuddle-declarations: true
-    allow-assign-and-anything: true
-  funlen:
-    lines: 100
-  gci:
-    sections:
-      - standard # Standard section: captures all standard packages.
-      - default # Default section: contains all imports that could not be matched to another section type.
-      - prefix(github.com/newrelic/infrastructure-agent) # Custom section: groups all imports with the specified Prefix.
-#      - blank # Blank section: contains all blank imports. This section is not present unless explicitly enabled.
-  wrapcheck:
-    ignoreSigs:
-      - multierr.Append
-      - errors.Join
-
-
-
+version: "2"
 linters:
-  enable-all: true
+  default: all
   disable:
-    # deprecated
-    - scopelint
-    - interfacer
-    - maligned
-    - golint
-    - deadcode
-    - ifshort
-    - varcheck
-    - structcheck
-    - nosnakecase
-    # intentionally disabled
-    - exhaustivestruct
-    - testpackage
-    - gci
+    - depguard
     - tagliatelle
-    - depguard #disabled until configure properly
-
+    - testpackage
+  settings:
+    govet:
+      enable:
+        - shadow
+    funlen:
+      lines: 100
+    lll:
+      line-length: 120
+    misspell:
+      ignore-rules:
+        - newrelic
+    wrapcheck:
+      ignore-sigs:
+        - multierr.Append
+        - errors.Join
+    wsl:
+      allow-assign-and-anything: true
+      allow-cuddle-declarations: true
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 issues:
-  new-from-rev: "HEAD~"
   max-issues-per-linter: 0
   max-same-issues: 0
-
+  new-from-rev: HEAD~
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+    - goimports
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/newrelic/infrastructure-agent)
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
