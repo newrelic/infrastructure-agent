@@ -701,7 +701,7 @@ license_key: "xxx"
 	assert.Equal(t, LogLevelSmart, cfg.Log.Level)
 }
 
-// nolint
+//nolint
 func TestLoadYamlConfig_withLogFormat(t *testing.T) {
 	yamlData := []byte(`
 log:
@@ -785,7 +785,7 @@ log:
 	}
 }
 
-// nolint
+//nolint
 func TestLoadLogConfig_BackwardsCompatability(t *testing.T) {
 	toPtr := func(a bool) *bool {
 		return &a
@@ -813,7 +813,7 @@ func TestLoadLogConfig_BackwardsCompatability(t *testing.T) {
 	}
 }
 
-// nolint
+//nolint
 func TestLoadLogConfig_Populate(t *testing.T) {
 	// TODO: migrate to generic function with go1.18
 	boolPtr := func(a bool) *bool {
