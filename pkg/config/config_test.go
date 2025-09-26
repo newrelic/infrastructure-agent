@@ -777,6 +777,7 @@ func TestLoadLogConfig_BackwardsCompatability(t *testing.T) {
 	for i := range logConfigs {
 		tt := &logConfigs[i]
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			assert.Equal(t, NonVerboseLogging, tt.c.Verbose)
 			tt.c.loadLogConfig()
 			assert.Equal(t, tt.verbose, tt.c.Verbose)
@@ -807,6 +808,7 @@ func TestLoadLogConfig_Populate(t *testing.T) {
 	for i := range configs {
 		tt := &configs[i]
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			tt.c.loadLogConfig()
 			assert.Equal(t, tt.expectedLogConfig, tt.c.Log)
 		})
