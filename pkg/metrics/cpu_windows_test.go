@@ -178,9 +178,9 @@ func TestNormalizePercentage(t *testing.T) {
 
 			result := normalizePercentage(tt.input)
 
-			// Use assert.Equal for zero values, assert.InEpsilon for non-zero values
+			// Use assert.InDelta for zero values, assert.InEpsilon for non-zero values
 			if tt.expected == 0 {
-				assert.Equal(t, tt.expected, result, "normalizePercentage(%f) should return %f, got %f", tt.input, tt.expected, result)
+				assert.InDelta(t, tt.expected, result, 1e-10, "normalizePercentage(%f) should return %f, got %f", tt.input, tt.expected, result)
 			} else {
 				assert.InEpsilon(t, tt.expected, result, 1e-10, "normalizePercentage(%f) should return %f, got %f", tt.input, tt.expected, result)
 			}
