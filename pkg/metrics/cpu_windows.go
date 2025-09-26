@@ -1,7 +1,7 @@
 //go:build windows
 // +build windows
 
-// Copyright 2024 New Relic Corporation. All rights reserved.
+// Copyright 2025 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package metrics
@@ -51,7 +51,6 @@ func NewCPUMonitor(context agent.AgentContext) *CPUMonitor {
 		context:            context,
 		requiresTwoSamples: true, // PDH requires two samples for rate counters
 	}
-
 	return &CPUMonitor{
 		context:        context,
 		cpuTimes:       nil,
@@ -111,14 +110,7 @@ func (w *WindowsCPUMonitor) sample() (*CPUSample, error) {
 		w.lastTimestamp = time.Now()
 		w.requiresTwoSamples = false
 		// Return zero sample for first collection
-		return &CPUSample{
-			CPUPercent:       0,
-			CPUUserPercent:   0,
-			CPUSystemPercent: 0,
-			CPUIOWaitPercent: 0,
-			CPUIdlePercent:   0,
-			CPUStealPercent:  0,
-		}, nil
+		return defaultCPUSample, nil
 	}
 
 	// Calculate CPU percentages using delta values
@@ -144,14 +136,7 @@ func (w *WindowsCPUMonitor) sample() (*CPUSample, error) {
 
 	// If no valid data, return zero sample
 	if validCoreCount == 0 {
-		return &CPUSample{
-			CPUPercent:       0,
-			CPUUserPercent:   0,
-			CPUSystemPercent: 0,
-			CPUIOWaitPercent: 0,
-			CPUIdlePercent:   0,
-			CPUStealPercent:  0,
-		}, nil
+		return defaultCPUSample, nil
 	}
 
 	// Calculate total system CPU time (sum across cores)
@@ -161,20 +146,13 @@ func (w *WindowsCPUMonitor) sample() (*CPUSample, error) {
 
 	if totalCPUTime == 0 {
 		// Avoid division by zero
-		return &CPUSample{
-			CPUPercent:       0,
-			CPUUserPercent:   0,
-			CPUSystemPercent: 0,
-			CPUIOWaitPercent: 0,
-			CPUIdlePercent:   0,
-			CPUStealPercent:  0,
-		}, nil
+		return defaultCPUSample, nil
 	}
 
 	// Calculate percentages from the time deltas
-	userPercent := (float64(totalUserTime) / float64(totalCPUTime)) * percentageMultiplier
-	systemPercent := (float64(totalSystemTime) / float64(totalCPUTime)) * percentageMultiplier
-	idlePercent := (float64(totalIdleTime) / float64(totalCPUTime)) * percentageMultiplier
+	userPercent := calculatePercent(totalUserTime, totalCPUTime)
+	systemPercent := calculatePercent(totalSystemTime, totalCPUTime)
+	idlePercent := calculatePercent(totalIdleTime, totalCPUTime)
 
 	// CPU usage is user + system (everything except idle)
 	cpuUsagePercent := userPercent + systemPercent
@@ -230,6 +208,13 @@ func (w *WindowsCPUMonitor) calculateCPUTimeDelta(
 		delta := currentInfo.RawValue.FirstValue - lastInfo.RawValue.FirstValue
 		if delta < 0 {
 			// Handle counter wrapping - skip this sample
+			cpuWindowsLog.WithFields(map[string]interface{}{
+				"type":     counterType,
+				"instance": currentInfo.Name,
+				"current":  currentInfo.RawValue.FirstValue,
+				"last":     lastInfo.RawValue.FirstValue,
+				"delta":    delta,
+			}).Debug("Counter wrapped - skipping sample (current < last)")
 			continue
 		}
 
@@ -263,6 +248,14 @@ func (w *WindowsCPUMonitor) close() error {
 		return w.rawPoll.Close()
 	}
 	return nil
+}
+
+// calculatePercent calculates the percentage of a part relative to the total.
+func calculatePercent(part, total time.Duration) float64 {
+	if total == 0 {
+		return 0
+	}
+	return (float64(part) / float64(total)) * percentageMultiplier
 }
 
 // normalizePercentage ensures percentage values are within valid 0-100 range.
