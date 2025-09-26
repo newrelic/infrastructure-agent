@@ -177,7 +177,13 @@ func TestNormalizePercentage(t *testing.T) {
 			t.Parallel()
 
 			result := normalizePercentage(tt.input)
-			assert.InEpsilon(t, tt.expected, result, 1e-10, "normalizePercentage(%f) should return %f, got %f", tt.input, tt.expected, result)
+
+			// Use assert.Equal for zero values, assert.InEpsilon for non-zero values
+			if tt.expected == 0 {
+				assert.Equal(t, tt.expected, result, "normalizePercentage(%f) should return %f, got %f", tt.input, tt.expected, result)
+			} else {
+				assert.InEpsilon(t, tt.expected, result, 1e-10, "normalizePercentage(%f) should return %f, got %f", tt.input, tt.expected, result)
+			}
 		})
 	}
 }
@@ -375,8 +381,11 @@ func TestWindowsCPUMonitor_CalculateCPUTimeDelta(t *testing.T) {
 		return nrwin.CPUGroupInfo{
 			Name: name,
 			RawValue: winapi.PDH_RAW_COUNTER{
-				CStatus:     0,
-				TimeStamp:   winapi.FILETIME{},
+				CStatus: 0,
+				TimeStamp: winapi.FILETIME{
+					LowDateTime:  0,
+					HighDateTime: 0,
+				},
 				FirstValue:  value,
 				SecondValue: 0,
 				MultiCount:  0,
