@@ -32,7 +32,7 @@ func TestCPUSample_Windows(t *testing.T) {
 
 	result, err := monitor.Sample()
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, result)
 
 	// Test that CPU percentages are within valid ranges
@@ -177,7 +177,7 @@ func TestNormalizePercentage(t *testing.T) {
 			t.Parallel()
 
 			result := normalizePercentage(tt.input)
-			assert.Equal(t, tt.expected, result, "normalizePercentage(%f) should return %f, got %f", tt.input, tt.expected, result)
+			assert.InEpsilon(t, tt.expected, result, 1e-10, "normalizePercentage(%f) should return %f, got %f", tt.input, tt.expected, result)
 		})
 	}
 }
@@ -265,8 +265,11 @@ func TestWindowsCPUMonitor_Close(t *testing.T) {
 
 		winMonitor := &WindowsCPUMonitor{
 			context:            nil,
+			rawPoll:            nil,
 			started:            false,
 			requiresTwoSamples: true,
+			lastSample:         nil,
+			lastTimestamp:      time.Time{},
 		}
 
 		// Should not return error when closing uninitialized monitor
@@ -282,6 +285,8 @@ func TestWindowsCPUMonitor_Close(t *testing.T) {
 			rawPoll:            nil,
 			started:            true, // started but rawPoll is nil
 			requiresTwoSamples: false,
+			lastSample:         nil,
+			lastTimestamp:      time.Time{},
 		}
 
 		// Should not return error when rawPoll is nil
@@ -299,11 +304,11 @@ func TestWindowsCPUMonitor_Close(t *testing.T) {
 
 		// First close should work
 		err := monitor.Close()
-		assert.NoError(t, err, "First close should not return error")
+		require.NoError(t, err, "First close should not return error")
 
 		// Second close should also work (idempotent)
 		err = monitor.Close()
-		assert.NoError(t, err, "Second close should not return error")
+		require.NoError(t, err, "Second close should not return error")
 
 		// Third close should still work
 		err = monitor.Close()
@@ -349,9 +354,12 @@ func TestWindowsCPUMonitor_CloseResourceLeakPrevention(t *testing.T) {
 		t.Parallel()
 
 		winMonitor := &WindowsCPUMonitor{
-			started:            false,
+			context:            nil,
 			rawPoll:            nil,
+			started:            false,
 			requiresTwoSamples: true,
+			lastSample:         nil,
+			lastTimestamp:      time.Time{},
 		}
 
 		err := winMonitor.close()
@@ -367,15 +375,27 @@ func TestWindowsCPUMonitor_CalculateCPUTimeDelta(t *testing.T) {
 		return nrwin.CPUGroupInfo{
 			Name: name,
 			RawValue: winapi.PDH_RAW_COUNTER{
-				FirstValue: value,
+				CStatus:     0,
+				TimeStamp:   winapi.FILETIME{},
+				FirstValue:  value,
+				SecondValue: 0,
+				MultiCount:  0,
 			},
+			Timestamp: 0,
 		}
 	}
 
 	t.Run("Normal delta calculation", func(t *testing.T) {
 		t.Parallel()
 
-		monitor := &WindowsCPUMonitor{}
+		monitor := &WindowsCPUMonitor{
+			context:            nil,
+			rawPoll:            nil,
+			started:            false,
+			requiresTwoSamples: false,
+			lastSample:         nil,
+			lastTimestamp:      time.Time{},
+		}
 		var totalTime time.Duration
 
 		currentData := []nrwin.CPUGroupInfo{
@@ -400,7 +420,14 @@ func TestWindowsCPUMonitor_CalculateCPUTimeDelta(t *testing.T) {
 	t.Run("Skip _Total entries", func(t *testing.T) {
 		t.Parallel()
 
-		monitor := &WindowsCPUMonitor{}
+		monitor := &WindowsCPUMonitor{
+			context:            nil,
+			rawPoll:            nil,
+			started:            false,
+			requiresTwoSamples: false,
+			lastSample:         nil,
+			lastTimestamp:      time.Time{},
+		}
 		var totalTime time.Duration
 
 		currentData := []nrwin.CPUGroupInfo{
@@ -423,7 +450,14 @@ func TestWindowsCPUMonitor_CalculateCPUTimeDelta(t *testing.T) {
 	t.Run("Handle missing last data", func(t *testing.T) {
 		t.Parallel()
 
-		monitor := &WindowsCPUMonitor{}
+		monitor := &WindowsCPUMonitor{
+			context:            nil,
+			rawPoll:            nil,
+			started:            false,
+			requiresTwoSamples: false,
+			lastSample:         nil,
+			lastTimestamp:      time.Time{},
+		}
 		var totalTime time.Duration
 
 		currentData := []nrwin.CPUGroupInfo{
@@ -446,7 +480,14 @@ func TestWindowsCPUMonitor_CalculateCPUTimeDelta(t *testing.T) {
 	t.Run("Handle counter wrapping (negative delta)", func(t *testing.T) {
 		t.Parallel()
 
-		monitor := &WindowsCPUMonitor{}
+		monitor := &WindowsCPUMonitor{
+			context:            nil,
+			rawPoll:            nil,
+			started:            false,
+			requiresTwoSamples: false,
+			lastSample:         nil,
+			lastTimestamp:      time.Time{},
+		}
 		var totalTime time.Duration
 
 		currentData := []nrwin.CPUGroupInfo{
@@ -469,7 +510,14 @@ func TestWindowsCPUMonitor_CalculateCPUTimeDelta(t *testing.T) {
 	t.Run("Empty current data", func(t *testing.T) {
 		t.Parallel()
 
-		monitor := &WindowsCPUMonitor{}
+		monitor := &WindowsCPUMonitor{
+			context:            nil,
+			rawPoll:            nil,
+			started:            false,
+			requiresTwoSamples: false,
+			lastSample:         nil,
+			lastTimestamp:      time.Time{},
+		}
 		var totalTime time.Duration
 
 		currentData := []nrwin.CPUGroupInfo{}
@@ -486,7 +534,14 @@ func TestWindowsCPUMonitor_CalculateCPUTimeDelta(t *testing.T) {
 	t.Run("Empty last data", func(t *testing.T) {
 		t.Parallel()
 
-		monitor := &WindowsCPUMonitor{}
+		monitor := &WindowsCPUMonitor{
+			context:            nil,
+			rawPoll:            nil,
+			started:            false,
+			requiresTwoSamples: false,
+			lastSample:         nil,
+			lastTimestamp:      time.Time{},
+		}
 		var totalTime time.Duration
 
 		currentData := []nrwin.CPUGroupInfo{
@@ -503,7 +558,14 @@ func TestWindowsCPUMonitor_CalculateCPUTimeDelta(t *testing.T) {
 	t.Run("Zero delta", func(t *testing.T) {
 		t.Parallel()
 
-		monitor := &WindowsCPUMonitor{}
+		monitor := &WindowsCPUMonitor{
+			context:            nil,
+			rawPoll:            nil,
+			started:            false,
+			requiresTwoSamples: false,
+			lastSample:         nil,
+			lastTimestamp:      time.Time{},
+		}
 		var totalTime time.Duration
 
 		currentData := []nrwin.CPUGroupInfo{
@@ -523,7 +585,14 @@ func TestWindowsCPUMonitor_CalculateCPUTimeDelta(t *testing.T) {
 	t.Run("Large delta values", func(t *testing.T) {
 		t.Parallel()
 
-		monitor := &WindowsCPUMonitor{}
+		monitor := &WindowsCPUMonitor{
+			context:            nil,
+			rawPoll:            nil,
+			started:            false,
+			requiresTwoSamples: false,
+			lastSample:         nil,
+			lastTimestamp:      time.Time{},
+		}
 		var totalTime time.Duration
 
 		currentData := []nrwin.CPUGroupInfo{
@@ -544,7 +613,14 @@ func TestWindowsCPUMonitor_CalculateCPUTimeDelta(t *testing.T) {
 	t.Run("Multiple cores with mixed scenarios", func(t *testing.T) {
 		t.Parallel()
 
-		monitor := &WindowsCPUMonitor{}
+		monitor := &WindowsCPUMonitor{
+			context:            nil,
+			rawPoll:            nil,
+			started:            false,
+			requiresTwoSamples: false,
+			lastSample:         nil,
+			lastTimestamp:      time.Time{},
+		}
 		var totalTime time.Duration
 
 		currentData := []nrwin.CPUGroupInfo{

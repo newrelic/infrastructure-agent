@@ -155,7 +155,7 @@ func TestUTF16PtrToString_EdgeCases(t *testing.T) {
 	})
 }
 
-// BenchmarkUTF16PtrToString benchmarks the performance of the function
+// BenchmarkUTF16PtrToString benchmarks the performance of the function.
 func BenchmarkUTF16PtrToString(b *testing.B) {
 	// Create test string
 	testString := "\\Processor(_Total)\\% Processor Time"
@@ -164,12 +164,12 @@ func BenchmarkUTF16PtrToString(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_ = UTF16PtrToString(utf16Ptr)
 	}
 }
 
-// BenchmarkUTF16PtrToString_LongString benchmarks with a longer string
+// BenchmarkUTF16PtrToString_LongString benchmarks with a longer string.
 func BenchmarkUTF16PtrToString_LongString(b *testing.B) {
 	// Create a longer test string
 	testString := "This is a much longer string to test the performance of the UTF16PtrToString function with more realistic data that might be encountered in real-world scenarios"
@@ -178,12 +178,12 @@ func BenchmarkUTF16PtrToString_LongString(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_ = UTF16PtrToString(utf16Ptr)
 	}
 }
 
-// TestUTF16PtrToString_CompareWithSyscall verifies our implementation matches syscall behavior
+// TestUTF16PtrToString_CompareWithSyscall verifies our implementation matches syscall behavior.
 func TestUTF16PtrToString_CompareWithSyscall(t *testing.T) {
 	t.Parallel()
 

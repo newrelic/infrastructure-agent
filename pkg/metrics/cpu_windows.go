@@ -255,6 +255,7 @@ func calculatePercent(part, total time.Duration) float64 {
 	if total == 0 {
 		return 0
 	}
+
 	return (float64(part) / float64(total)) * percentageMultiplier
 }
 
