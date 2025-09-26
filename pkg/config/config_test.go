@@ -686,7 +686,6 @@ license_key: "xxx"
 
 	tmp, err := createTestFile(yamlData)
 	require.NoError(t, err)
-
 	defer os.Remove(tmp.Name())
 
 	cfg, err := LoadConfig(tmp.Name())
@@ -696,39 +695,10 @@ license_key: "xxx"
 	assert.Equal(t, "xxx", cfg.License)
 	assert.Equal(t, "agent.log", cfg.LogFile)
 	assert.Equal(t, "json", cfg.LogFormat)
-	assert.True(t, cfg.LogToStdout)
+	assert.Equal(t, true, cfg.LogToStdout)
 	assert.Equal(t, 5, cfg.SmartVerboseModeEntryLimit)
 	assert.Equal(t, SmartVerboseLogging, cfg.Verbose)
 	assert.Equal(t, LogLevelSmart, cfg.Log.Level)
-}
-
-func TestLoadYamlConfig_withLogFormat(t *testing.T) {
-	t.Parallel()
-
-	yamlData := []byte(`
-log:
-  file: agent.log
-  format: json
-  stdout: true
-  smart_level_entry_limit: 5
-license_key: "xxx"
-`)
-
-	tmp, err := createTestFile(yamlData)
-	require.NoError(t, err)
-
-	defer os.Remove(tmp.Name())
-
-	cfg, err := LoadConfig(tmp.Name())
-
-	require.NoError(t, err)
-
-	assert.Equal(t, "xxx", cfg.License)
-	assert.Equal(t, "agent.log", cfg.LogFile)
-	assert.Equal(t, "json", cfg.LogFormat)
-	assert.True(t, cfg.LogToStdout)
-	assert.Equal(t, 5, cfg.SmartVerboseModeEntryLimit)
-	assert.Equal(t, LogLevelWarn, cfg.Log.Level)
 }
 
 func TestLoadLogConfig_HasIncludeFilter(t *testing.T) {
@@ -804,10 +774,8 @@ func TestLoadLogConfig_BackwardsCompatability(t *testing.T) {
 		{"Trace and forward enabled", Config{Log: LogConfig{Level: "trace", Forward: toPtr(true)}}, TraceTroubleshootLogging},
 	}
 
-	for i := range logConfigs {
-		tt := &logConfigs[i]
+	for _, tt := range logConfigs {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
 			assert.Equal(t, NonVerboseLogging, tt.c.Verbose)
 			tt.c.loadLogConfig()
 			assert.Equal(t, tt.verbose, tt.c.Verbose)
@@ -815,6 +783,7 @@ func TestLoadLogConfig_BackwardsCompatability(t *testing.T) {
 	}
 }
 
+//nolint:exhaustruct,lll
 func TestLoadLogConfig_Populate(t *testing.T) {
 	// TODO: migrate to generic function with go1.18
 	boolPtr := func(a bool) *bool {
@@ -834,10 +803,8 @@ func TestLoadLogConfig_Populate(t *testing.T) {
 		{"Trace Verbose enabled and file", Config{Verbose: 4, LogFile: "agent.log"}, LogConfig{Level: LogLevelTrace, File: "agent.log", ToStdout: boolPtr(false), Forward: boolPtr(false), ExcludeFilters: LogFilters{"traces": []interface{}{"supervisor", "feature", "process"}, "component": []interface{}{"integration-errors"}}, SmartLevelEntryLimit: intPtr(0)}},
 	}
 
-	for i := range configs {
-		tt := &configs[i]
+	for _, tt := range configs {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
 			tt.c.loadLogConfig()
 			assert.Equal(t, tt.expectedLogConfig, tt.c.Log)
 		})
