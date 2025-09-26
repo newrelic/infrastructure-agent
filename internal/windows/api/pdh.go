@@ -172,8 +172,8 @@ type PDH_FMT_COUNTERVALUE_ITEM_LONG struct {
 type PDH_RAW_COUNTER struct {
 	CStatus     uint32
 	TimeStamp   FILETIME
-	FirstValue  int64
-	SecondValue int64
+	FirstValue  int64 // For rate-based counters, this is typically the numerator or the current sample value.
+	SecondValue int64 // For rate-based counters, this is typically the denominator or the previous sample value.
 	MultiCount  uint32
 }
 
@@ -494,6 +494,6 @@ func UTF16PtrToString(ptr *uint16) string {
 	}
 
 	// Convert to []uint16 slice and then to string
-	slice := (*[1 << 20]uint16)(unsafe.Pointer(ptr))[:length:length]
+	slice := unsafe.Slice(ptr, length)
 	return syscall.UTF16ToString(slice)
 }

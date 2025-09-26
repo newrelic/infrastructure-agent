@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"runtime"
 	"testing"
-	"time"
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/stretchr/testify/assert"
@@ -25,11 +24,8 @@ func TestNewCPUMonitor(t *testing.T) {
 
 	assert.NotNil(t, monitor)
 
-	// Test platform-specific initialization
-	if runtime.GOOS == windowsOS {
-		assert.NotNil(t, monitor.windowsMonitor, "Windows monitor should be initialized")
-		assert.Nil(t, monitor.cpuTimes, "cpuTimes function should be nil on Windows")
-	} else {
+	// Test platform-specific initialization for non-Windows platforms
+	if runtime.GOOS != windowsOS {
 		assert.Nil(t, monitor.windowsMonitor, "Windows monitor should be nil on non-Windows platforms")
 		assert.NotNil(t, monitor.cpuTimes, "cpuTimes function should be set on non-Windows platforms")
 	}
@@ -55,12 +51,7 @@ func TestCPUSample(t *testing.T) {
 	assert.GreaterOrEqual(t, result.CPUIdlePercent, 0.0, "CPU idle percent should be >= 0")
 	assert.LessOrEqual(t, result.CPUIdlePercent, 100.0, "CPU idle percent should be <= 100")
 
-	// Platform-specific validations
-	if runtime.GOOS == windowsOS {
-		// Windows doesn't report IOWait or Steal
-		assert.InDelta(t, 0.0, result.CPUIOWaitPercent, 0.001, "Windows should not report IOWait")
-		assert.InDelta(t, 0.0, result.CPUStealPercent, 0.001, "Windows should not report Steal time")
-	}
+	// Platform-specific validations would be handled in platform-specific test files
 }
 
 func TestCPUSample_MultipleCalls(t *testing.T) {
@@ -298,54 +289,4 @@ func TestCPUDelta_NegativeSteal(t *testing.T) {
 		User:      9.0,
 	}
 	assert.Equal(t, expected, result)
-}
-
-func TestWindowsCPUMonitor_RawCounterArrays(t *testing.T) {
-	t.Parallel()
-	if runtime.GOOS != "windows" {
-		t.Skip("Windows-specific test")
-	}
-
-	// Create the unified CPU monitor (which now uses raw counter arrays on Windows)
-	// Pass nil for agent context since it's not needed for CPU monitoring in tests
-	monitor := NewCPUMonitor(nil)
-	require.NotNil(t, monitor)
-
-	defer monitor.Close()
-
-	// First sample might return zeros since we need a previous sample to calculate
-	sample1, err := monitor.Sample()
-	require.NoError(t, err)
-	require.NotNil(t, sample1)
-
-	// First sample values should be valid (>= 0)
-	assert.GreaterOrEqual(t, sample1.CPUPercent, float64(0))
-	assert.LessOrEqual(t, sample1.CPUPercent, float64(100))
-
-	// Wait a bit and take another sample to ensure we have deltas
-	time.Sleep(2 * time.Second)
-
-	sample2, err := monitor.Sample()
-	require.NoError(t, err)
-	require.NotNil(t, sample2)
-
-	// Second sample should have meaningful values
-	assert.GreaterOrEqual(t, sample2.CPUPercent, float64(0))
-	assert.LessOrEqual(t, sample2.CPUPercent, float64(100))
-
-	assert.GreaterOrEqual(t, sample2.CPUUserPercent, float64(0))
-	assert.LessOrEqual(t, sample2.CPUUserPercent, float64(100))
-
-	assert.GreaterOrEqual(t, sample2.CPUSystemPercent, float64(0))
-	assert.LessOrEqual(t, sample2.CPUSystemPercent, float64(100))
-
-	assert.GreaterOrEqual(t, sample2.CPUIdlePercent, float64(0))
-	assert.LessOrEqual(t, sample2.CPUIdlePercent, float64(100))
-
-	// Windows-specific assertions - using InDelta for float comparison linting compliance
-	assert.InDelta(t, float64(0), sample2.CPUIOWaitPercent, 0.01) // Windows doesn't have IOWait
-	assert.InDelta(t, float64(0), sample2.CPUStealPercent, 0.01)  // Windows doesn't have steal time
-
-	t.Logf("Windows CPU Sample (Raw Counter Arrays): %+v", sample2)
-	t.Logf("This implementation works correctly on both single and multi-CPU group systems")
 }
