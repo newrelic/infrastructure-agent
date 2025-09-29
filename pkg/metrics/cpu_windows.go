@@ -21,7 +21,7 @@ import (
 var (
 	cpuWindowsLog = log.WithComponent("CPUWindows")
 
-	// ErrNoUserTimeData indicates no user time data is available
+	// ErrNoUserTimeData indicates no user time data is available.
 	ErrNoUserTimeData = errors.New("no user time data available")
 )
 
@@ -113,7 +113,7 @@ func (w *WindowsCPUMonitor) sample() (*CPUSample, error) {
 	idleTimeData := rawData[idleTimeAllCores]
 
 	if len(userTimeData) == 0 {
-		return nil, ErrNoUserTimeData
+		return nil, fmt.Errorf("failed to get CPU user time data: %w", ErrNoUserTimeData)
 	}
 
 	// For the first sample, we need two collections to calculate rates
