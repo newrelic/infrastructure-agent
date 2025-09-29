@@ -113,7 +113,7 @@ func (w *WindowsCPUMonitor) sample() (*CPUSample, error) {
 	idleTimeData := rawData[idleTimeAllCores]
 
 	if len(userTimeData) == 0 {
-		return nil, fmt.Errorf("failed to get CPU user time data: %w", ErrNoUserTimeData)
+		return nil, fmt.Errorf("failed to get CPU user time data: %w", ErrNoUserTimeData) //nolint:wrapcheck
 	}
 
 	// For the first sample, we need two collections to calculate rates
