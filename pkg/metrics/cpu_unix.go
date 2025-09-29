@@ -3,6 +3,8 @@
 
 // Copyright 2020 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+
+// Package metrics provides system metrics collection functionality for Unix-like systems.
 package metrics
 
 import (

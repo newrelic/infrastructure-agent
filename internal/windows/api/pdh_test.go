@@ -172,7 +172,8 @@ func BenchmarkUTF16PtrToString(b *testing.B) {
 // BenchmarkUTF16PtrToString_LongString benchmarks with a longer string.
 func BenchmarkUTF16PtrToString_LongString(b *testing.B) {
 	// Create a longer test string
-	testString := "This is a much longer string to test the performance of the UTF16PtrToString function with more realistic data that might be encountered in real-world scenarios"
+	testString := "This is a much longer string to test the performance of the UTF16PtrToString function " +
+		"with more realistic data that might be encountered in real-world scenarios"
 	utf16Ptr, err := syscall.UTF16PtrFromString(testString)
 	require.NoError(b, err)
 
