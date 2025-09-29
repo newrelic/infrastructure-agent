@@ -15,8 +15,8 @@
   tasks:
     - name: Installation tests suite
       vars:
-        target_agent_version: "1.57.1" # minimum version for ubuntu sles 15.6
-        target_agent_version_fips: "1.60.0" # minimum version for FIPS
+        target_agent_version: "1.68.0" 
+        target_agent_version_fips: "1.68.0" 
 
       block:
         - name: Install agent
