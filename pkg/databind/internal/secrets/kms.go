@@ -129,7 +129,6 @@ func (g *kmsGatherer) retrieve(encoded []byte) (interface{}, error) {
 
 	ctx := context.TODO()
 	cfg, err := config.LoadDefaultConfig(ctx, configLoadOptions...)
-
 	if err != nil {
 		return nil, fmt.Errorf("unable to load aws config for kms: %w", err)
 	}
@@ -138,6 +137,7 @@ func (g *kmsGatherer) retrieve(encoded []byte) (interface{}, error) {
 		if g.cfg.Endpoint != "" {
 			o.BaseEndpoint = aws.String(g.cfg.Endpoint)
 		}
+
 		if g.cfg.DisableSSL {
 			o.EndpointOptions.DisableHTTPS = true
 		}
