@@ -125,6 +125,12 @@ type (
 	PDH_HCOUNTER HANDLE // counter handle
 )
 
+// Windows FILETIME structure
+type FILETIME struct {
+	LowDateTime  uint32
+	HighDateTime uint32
+}
+
 // Union specialization for double values
 type PDH_FMT_COUNTERVALUE_DOUBLE struct {
 	CStatus     uint32
@@ -162,6 +168,21 @@ type PDH_FMT_COUNTERVALUE_ITEM_LONG struct {
 	FmtValue PDH_FMT_COUNTERVALUE_LONG
 }
 
+// Raw counter value structure
+type PDH_RAW_COUNTER struct {
+	CStatus     uint32
+	TimeStamp   FILETIME
+	FirstValue  int64 // For rate-based counters, this is typically the numerator or the current sample value.
+	SecondValue int64 // For rate-based counters, this is typically the denominator or the previous sample value.
+	MultiCount  uint32
+}
+
+// Raw counter array item structure
+type PDH_RAW_COUNTER_ITEM struct {
+	SzName   *uint16 // pointer to a string
+	RawValue PDH_RAW_COUNTER
+}
+
 var (
 	// Library
 	libpdhDll *syscall.DLL
@@ -173,6 +194,7 @@ var (
 	pdh_CollectQueryData          *syscall.Proc
 	pdh_GetFormattedCounterValue  *syscall.Proc
 	pdh_GetFormattedCounterArrayW *syscall.Proc
+	pdh_GetRawCounterArrayW       *syscall.Proc
 	pdh_OpenQuery                 *syscall.Proc
 	pdh_ValidatePathW             *syscall.Proc
 )
@@ -188,6 +210,7 @@ func init() {
 	pdh_CollectQueryData = libpdhDll.MustFindProc("PdhCollectQueryData")
 	pdh_GetFormattedCounterValue = libpdhDll.MustFindProc("PdhGetFormattedCounterValue")
 	pdh_GetFormattedCounterArrayW = libpdhDll.MustFindProc("PdhGetFormattedCounterArrayW")
+	pdh_GetRawCounterArrayW = libpdhDll.MustFindProc("PdhGetRawCounterArrayW")
 	pdh_OpenQuery = libpdhDll.MustFindProc("PdhOpenQuery")
 	pdh_ValidatePathW = libpdhDll.MustFindProc("PdhValidatePathW")
 
@@ -438,4 +461,39 @@ func PdhValidatePath(path string) uint32 {
 	ret, _, _ := pdh_ValidatePathW.Call(uintptr(unsafe.Pointer(ptxt)))
 
 	return uint32(ret)
+}
+
+// Returns an array of raw counter values for a counter that contains a wildcard character for the instance name.
+// This function is particularly useful for collecting CPU metrics from multiple CPU groups.
+// The itemBuffer must be a slice of type PDH_RAW_COUNTER_ITEM.
+func PdhGetRawCounterArray(hCounter PDH_HCOUNTER, lpdwBufferSize *uint32, lpdwBufferCount *uint32, itemBuffer *PDH_RAW_COUNTER_ITEM) uint32 {
+	ret, _, _ := pdh_GetRawCounterArrayW.Call(
+		uintptr(hCounter),
+		uintptr(unsafe.Pointer(lpdwBufferSize)),
+		uintptr(unsafe.Pointer(lpdwBufferCount)),
+		uintptr(unsafe.Pointer(itemBuffer)))
+
+	return uint32(ret)
+}
+
+// UTF16PtrToString converts a UTF16 pointer to a Go string
+func UTF16PtrToString(ptr *uint16) string {
+	if ptr == nil {
+		return ""
+	}
+
+	// Find the length of the null-terminated wide string
+	length := 0
+	for p := ptr; *p != 0; {
+		length++
+		p = (*uint16)(unsafe.Pointer(uintptr(unsafe.Pointer(p)) + 2))
+	}
+
+	if length == 0 {
+		return ""
+	}
+
+	// Convert to []uint16 slice and then to string
+	slice := unsafe.Slice(ptr, length)
+	return syscall.UTF16ToString(slice)
 }

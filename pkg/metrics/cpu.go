@@ -10,6 +10,22 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
+)
+
+//nolint:gochecknoglobals
+var (
+	cpuLog = log.WithComponent("CPUMonitor")
+
+	// defaultCPUSample is a reusable zero-value CPU sample.
+	defaultCPUSample = &CPUSample{
+		CPUPercent:       0,
+		CPUUserPercent:   0,
+		CPUSystemPercent: 0,
+		CPUIOWaitPercent: 0,
+		CPUIdlePercent:   0,
+		CPUStealPercent:  0,
+	}
 )
 
 type CPUSample struct {
@@ -25,33 +41,48 @@ type CPUMonitor struct {
 	context  agent.AgentContext
 	last     []cpu.TimesStat
 	cpuTimes func(bool) ([]cpu.TimesStat, error)
+	// Windows-specific monitor using PDH
+	windowsMonitor interface {
+		sample() (*CPUSample, error)
+		close() error
+	}
 }
 
-func NewCPUMonitor(context agent.AgentContext) *CPUMonitor {
-	return &CPUMonitor{context: context, cpuTimes: cpu.Times}
+// Close releases any resources held by the CPU monitor.
+func (m *CPUMonitor) Close() error {
+	if m.windowsMonitor != nil {
+		return m.windowsMonitor.close()
+	}
+	return nil
 }
 
-func (self *CPUMonitor) Sample() (sample *CPUSample, err error) {
+func (m *CPUMonitor) Sample() (sample *CPUSample, err error) {
 	defer func() {
 		if panicErr := recover(); panicErr != nil {
-			err = fmt.Errorf("Panic in CPUMonitor.Sample: %v\nStack: %s", panicErr, debug.Stack())
+			err = fmt.Errorf("panic in CPUMonitor.Sample: %v\nStack: %s", panicErr, debug.Stack())
 		}
 	}()
 
-	if self.last == nil {
-		self.last, err = self.cpuTimes(false)
-		return &CPUSample{}, nil
+	// Use Windows-specific implementation if available
+	if m.windowsMonitor != nil {
+		return m.windowsMonitor.sample()
 	}
 
-	currentTimes, err := self.cpuTimes(false)
-	helpers.LogStructureDetails(syslog, currentTimes, "CpuTimes", "raw", nil)
+	if m.last == nil {
+		m.last, err = m.cpuTimes(false)
+
+		return defaultCPUSample, nil
+	}
+
+	currentTimes, err := m.cpuTimes(false)
+	helpers.LogStructureDetails(cpuLog, currentTimes, "CpuTimes", "raw", nil)
 
 	// in container envs we might get an empty array and the code panics after this
 	if len(currentTimes) <= 0 {
-		return &CPUSample{}, nil
+		return defaultCPUSample, nil
 	}
 
-	delta := cpuDelta(&currentTimes[0], &self.last[0])
+	delta := cpuDelta(&currentTimes[0], &m.last[0])
 
 	userDelta := delta.User + delta.Nice
 	systemDelta := delta.System + delta.Irq + delta.Softirq
@@ -60,7 +91,8 @@ func (self *CPUMonitor) Sample() (sample *CPUSample, err error) {
 	// Determine percentage values by dividing the total CPU time by each portion, then multiply by 100 to get a percentage from 0-100.
 	var userPercent, stolenPercent, systemPercent, ioWaitPercent float64
 
-	deltaTotal := delta.Total()
+	// Calculate total manually instead of using deprecated Total() method
+	deltaTotal := delta.User + delta.Nice + delta.System + delta.Idle + delta.Iowait + delta.Irq + delta.Softirq + delta.Steal + delta.Guest + delta.GuestNice
 	if deltaTotal != 0 {
 		userPercent = userDelta / deltaTotal * 100.0
 		stolenPercent = stolenDelta / deltaTotal * 100.0
@@ -80,10 +112,10 @@ func (self *CPUMonitor) Sample() (sample *CPUSample, err error) {
 
 	// log samples when cpuPercent is < 0
 	if sample.CPUPercent < 0 {
-		syslog.WithField("currentTimes", currentTimes).WithField("lastTimes", self.last).Warn("cpuPercent is lower than zero")
+		cpuLog.WithField("currentTimes", currentTimes).WithField("lastTimes", m.last).Warn("cpuPercent is lower than zero")
 	}
 
-	self.last = currentTimes
+	m.last = currentTimes
 
 	return
 }
