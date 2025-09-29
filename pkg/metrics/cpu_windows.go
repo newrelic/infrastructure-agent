@@ -7,6 +7,7 @@
 package metrics
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -17,7 +18,12 @@ import (
 )
 
 //nolint:gochecknoglobals
-var cpuWindowsLog = log.WithComponent("CPUWindows")
+var (
+	cpuWindowsLog = log.WithComponent("CPUWindows")
+
+	// ErrNoUserTimeData indicates no user time data is available.
+	ErrNoUserTimeData = errors.New("no user time data available")
+)
 
 // Windows CPU performance counter paths using wildcard for all cores.
 const (
@@ -49,10 +55,15 @@ type WindowsCPUMonitor struct {
 func NewCPUMonitor(context agent.AgentContext) *CPUMonitor {
 	winMonitor := &WindowsCPUMonitor{
 		context:            context,
+		rawPoll:            nil,
+		started:            false,
 		requiresTwoSamples: true, // PDH requires two samples for rate counters
+		lastSample:         nil,
+		lastTimestamp:      time.Time{},
 	}
 	return &CPUMonitor{
 		context:        context,
+		last:           nil,
 		cpuTimes:       nil,
 		windowsMonitor: winMonitor,
 	}
@@ -79,6 +90,7 @@ func (w *WindowsCPUMonitor) initializeRawPDH() error {
 	}
 
 	w.started = true
+
 	return nil
 }
 
@@ -101,7 +113,7 @@ func (w *WindowsCPUMonitor) sample() (*CPUSample, error) {
 	idleTimeData := rawData[idleTimeAllCores]
 
 	if len(userTimeData) == 0 {
-		return nil, fmt.Errorf("no user time data available")
+		return nil, fmt.Errorf("failed to get CPU user time data: %w", ErrNoUserTimeData) //nolint:wrapcheck
 	}
 
 	// For the first sample, we need two collections to calculate rates
@@ -177,7 +189,7 @@ func (w *WindowsCPUMonitor) sample() (*CPUSample, error) {
 	return sample, nil
 }
 
-// calculateCPUTimeDelta calculates the delta between current and last counter samples
+// calculateCPUTimeDelta calculates the delta between current and last counter samples.
 func (w *WindowsCPUMonitor) calculateCPUTimeDelta(
 	currentData []nrwin.CPUGroupInfo,
 	lastData []nrwin.CPUGroupInfo,
@@ -215,6 +227,7 @@ func (w *WindowsCPUMonitor) calculateCPUTimeDelta(
 				"last":     lastInfo.RawValue.FirstValue,
 				"delta":    delta,
 			}).Debug("Counter wrapped - skipping sample (current < last)")
+
 			continue
 		}
 
@@ -247,6 +260,7 @@ func (w *WindowsCPUMonitor) close() error {
 	if w.started && w.rawPoll != nil {
 		return w.rawPoll.Close()
 	}
+
 	return nil
 }
 

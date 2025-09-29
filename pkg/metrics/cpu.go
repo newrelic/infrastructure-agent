@@ -3,6 +3,7 @@
 package metrics
 
 import (
+	"errors"
 	"fmt"
 	"runtime/debug"
 
@@ -16,6 +17,9 @@ import (
 //nolint:gochecknoglobals
 var (
 	cpuLog = log.WithComponent("CPUMonitor")
+
+	// ErrCPUMonitorPanic is returned when a panic occurs in CPUMonitor.Sample.
+	ErrCPUMonitorPanic = errors.New("panic in CPUMonitor.Sample")
 
 	// defaultCPUSample is a reusable zero-value CPU sample.
 	defaultCPUSample = &CPUSample{
@@ -53,13 +57,15 @@ func (m *CPUMonitor) Close() error {
 	if m.windowsMonitor != nil {
 		return m.windowsMonitor.close()
 	}
+
 	return nil
 }
 
-func (m *CPUMonitor) Sample() (sample *CPUSample, err error) {
+func (m *CPUMonitor) Sample() (*CPUSample, error) {
+	var err error
 	defer func() {
 		if panicErr := recover(); panicErr != nil {
-			err = fmt.Errorf("panic in CPUMonitor.Sample: %v\nStack: %s", panicErr, debug.Stack())
+			err = fmt.Errorf("%w: %v\nStack: %s", ErrCPUMonitorPanic, panicErr, debug.Stack())
 		}
 	}()
 
@@ -92,7 +98,8 @@ func (m *CPUMonitor) Sample() (sample *CPUSample, err error) {
 	var userPercent, stolenPercent, systemPercent, ioWaitPercent float64
 
 	// Calculate total manually instead of using deprecated Total() method
-	deltaTotal := delta.User + delta.Nice + delta.System + delta.Idle + delta.Iowait + delta.Irq + delta.Softirq + delta.Steal + delta.Guest + delta.GuestNice
+	deltaTotal := delta.User + delta.Nice + delta.System + delta.Idle + delta.Iowait +
+		delta.Irq + delta.Softirq + delta.Steal + delta.Guest + delta.GuestNice
 	if deltaTotal != 0 {
 		userPercent = userDelta / deltaTotal * 100.0
 		stolenPercent = stolenDelta / deltaTotal * 100.0
@@ -101,7 +108,7 @@ func (m *CPUMonitor) Sample() (sample *CPUSample, err error) {
 	}
 	idlePercent := 100 - userPercent - systemPercent - ioWaitPercent - stolenPercent
 
-	sample = &CPUSample{
+	sample := &CPUSample{
 		CPUPercent:       userPercent + systemPercent + ioWaitPercent + stolenPercent,
 		CPUUserPercent:   userPercent,
 		CPUSystemPercent: systemPercent,
@@ -117,7 +124,7 @@ func (m *CPUMonitor) Sample() (sample *CPUSample, err error) {
 
 	m.last = currentTimes
 
-	return
+	return sample, err
 }
 
 func cpuDelta(current, previous *cpu.TimesStat) *cpu.TimesStat {

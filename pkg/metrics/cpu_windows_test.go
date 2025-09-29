@@ -260,7 +260,8 @@ func TestCalculatePercent(t *testing.T) {
 			t.Parallel()
 
 			result := calculatePercent(tt.part, tt.total)
-			assert.InDelta(t, tt.expected, result, 0.0001, "calculatePercent(%v, %v) should return %f, got %f", tt.part, tt.total, tt.expected, result)
+			assert.InDelta(t, tt.expected, result, 0.0001,
+				"calculatePercent(%v, %v) should return %f, got %f", tt.part, tt.total, tt.expected, result)
 		})
 	}
 }

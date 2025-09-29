@@ -50,8 +50,6 @@ func TestCPUSample(t *testing.T) {
 	assert.LessOrEqual(t, result.CPUSystemPercent, 100.0, "CPU system percent should be <= 100")
 	assert.GreaterOrEqual(t, result.CPUIdlePercent, 0.0, "CPU idle percent should be >= 0")
 	assert.LessOrEqual(t, result.CPUIdlePercent, 100.0, "CPU idle percent should be <= 100")
-
-	// Platform-specific validations would be handled in platform-specific test files
 }
 
 func TestCPUSample_MultipleCalls(t *testing.T) {
@@ -91,6 +89,7 @@ func TestCPUSample_JSON_Marshaling(t *testing.T) {
 
 	// Test JSON unmarshaling
 	var unmarshaledSample CPUSample
+
 	err = json.Unmarshal(jsonData, &unmarshaledSample)
 	require.NoError(t, err)
 	assert.InDelta(t, sample.CPUPercent, unmarshaledSample.CPUPercent, 0.001)
