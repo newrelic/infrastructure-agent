@@ -1,5 +1,5 @@
 #ohi-repo-name,version
-nri-docker,v2.5.2
-nri-flex,v1.16.7
+nri-docker,v2.6.0
+nri-flex,v1.17.0
 nri-winservices,v1.3.0
 nri-prometheus,v2.27.1
