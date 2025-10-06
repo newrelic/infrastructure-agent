@@ -380,7 +380,7 @@ generate-goreleaser-multiarch-fips:
 		$(CURDIR)/build/goreleaser/linux/sles_156_amd64.yml\
   		$(CURDIR)/build/goreleaser/linux/sles_156_arm64.yml\
 		$(CURDIR)/build/goreleaser/linux/sles_157_amd64.yml\
-  		$(CURDIR)/build/goreleaser/linux/sles_157_arm64.yml |\		
+  		$(CURDIR)/build/goreleaser/linux/sles_157_arm64.yml | \
   	  sed "s/#conflicts-suffix-placeholder#//g" \
   		 > $(GORELEASER_CONFIG_LINUX)
 
