@@ -20,6 +20,13 @@ jobs:
   molecule-test-packages:
     name: Test package installation
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # test building and using pre-build containers.
+        build_docker: ["true"]
+    env:
+      TESTING: ${{ matrix.build_docker}}
     steps:
       - name: Test NON-FIPS package installation
         uses: newrelic/pkg-installation-testing-action@suse157
