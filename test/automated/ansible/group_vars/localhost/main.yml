@@ -149,7 +149,7 @@ instances:
     platform: "linux"
     python_interpreter: "/usr/bin/python3"
     launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
-  - ami: "ami-0747e95148683f30f" # need to udate 
+  - ami: "ami-01de4781572fa1285" # based on suse-sles-15-sp7-v20250619-hvm-ssd-x86_64
     type: "t3a.small"
     name: "amd64:sles-15.7"
     username: "ec2-user"
@@ -180,7 +180,7 @@ instances:
     platform: "linux"
     python_interpreter: "/usr/bin/python3"
     launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
-  - ami: "ami-009a382796e6a08cb" # Need to update
+  - ami: "ami-07a87997f8f4ef819" # based on suse-sles-15-sp7-v20250920-hvm-ssd-arm64
     type: "t4g.small"
     name: "arm64:sles-15.7"
     username: "ec2-user"
