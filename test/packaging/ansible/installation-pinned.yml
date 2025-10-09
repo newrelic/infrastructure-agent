@@ -15,8 +15,8 @@
   tasks:
     - name: Installation tests suite
       vars:
-        target_agent_version: "1.68.0" 
-        target_agent_version_fips: "1.68.0" 
+        target_agent_version: "0.0.2" 
+        target_agent_version_fips: "0.0.2" 
 
       block:
         - name: Install agent
