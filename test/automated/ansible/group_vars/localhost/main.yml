@@ -180,7 +180,7 @@ instances:
     platform: "linux"
     python_interpreter: "/usr/bin/python3"
     launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
-  - ami: "ami-07a87997f8f4ef819" # based on suse-sles-15-sp7-v20250920-hvm-ssd-arm64
+  - ami: "ami-0f26b0e0d5d3b6777" # based on suse-sles-15-sp7-v20250920-hvm-ssd-arm64
     type: "t4g.small"
     name: "arm64:sles-15.7"
     username: "ec2-user"
