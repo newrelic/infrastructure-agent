@@ -18,4 +18,4 @@ jobs:
     uses: ./.github/workflows/component_molecule_packaging.yml
     with:
       TAG: "${{ github.event.inputs.tag }}"
-      REPO_ENDPOINT: ${{ github.event.inputs.staging == 'true' && 'http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent' ||  'https://download.newrelic.com/infrastructure_agent'  }}
+      REPO_ENDPOINT: ${{ github.event.inputs.staging == 'true' && 'http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/testing-pre-releases/madhuSuse/infrastructure_agent' ||  'https://download.newrelic.com/infrastructure_agent'  }}
