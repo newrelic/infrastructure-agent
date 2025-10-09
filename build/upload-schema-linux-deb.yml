@@ -21,6 +21,7 @@
         - hirsute
         - bullseye
         - bookworm
+        - trixie
 
 - src: "newrelic-infra_upstart_{version}_{arch}.deb"
   arch:
