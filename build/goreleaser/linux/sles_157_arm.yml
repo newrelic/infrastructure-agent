@@ -1,0 +1,72 @@
+  # SLES 15.7 arm
+
+  - id: sle-15.7-infrastructure-agent-arm
+    builds:
+      - linux-agent-arm
+      - linux-ctl-arm
+      - linux-service-arm
+    package_name: newrelic-infra
+    file_name_template: "newrelic-infra-{{ .Env.TAG }}-1.sles15.7.{{ .Arch }}"
+    vendor: 'New Relic, Inc.'
+    homepage: 'https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes'
+    maintainer: 'caos-team@newrelic.com'
+    description: 'New Relic Infrastructure provides flexible, dynamic server monitoring. With real-time data collection and a UI that scales from a handful of hosts to thousands, Infrastructure is designed for modern Operations teams with fast-changing systems.'
+    license: 'Copyright (c) 2008-2021 New Relic, Inc. All rights reserved.'
+    formats:
+      - rpm
+    bindir: /usr/bin
+    contents:
+      - src: 'build/package/systemd/newrelic-infra.service'
+        dst: '/etc/systemd/system/newrelic-infra.service'
+      - src: 'LICENSE'
+        dst: '/var/db/newrelic-infra/LICENSE.txt'
+      - src: 'target/nridocker/{{ .Arch }}/etc/newrelic-infra/integrations.d/docker-config.yml'
+        dst: '/etc/newrelic-infra/integrations.d/docker-config.yml'
+        type: config
+
+      - src: 'target/nridocker/{{ .Arch }}/var/db/newrelic-infra/newrelic-integrations/bin/nri-docker'
+        dst: '/opt/newrelic-infra/newrelic-integrations/bin/nri-docker'
+      - src: 'target/nriflex/{{ .Arch }}/nri-flex'
+        dst: '/opt/newrelic-infra/newrelic-integrations/bin/nri-flex'
+      - src: 'target/nriprometheus/{{ .Arch }}/var/db/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
+        dst: '/opt/newrelic-infra/newrelic-integrations/bin/nri-prometheus'
+  #    - src: 'target/fluent-bit-plugin/{{ .Arch }}/out_newrelic.so'
+  #      dst: '/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so'
+  #    - src: 'assets/examples/logging/parsers.conf'
+  #      dst: '/var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf'
+
+      - dst: /opt/newrelic-infra/custom-integrations
+        type: dir
+      - dst: /opt/newrelic-infra/newrelic-integrations
+        type: dir
+      - dst: /var/db/newrelic-infra/custom-integrations
+        type: dir
+      - dst: /var/db/newrelic-infra/integrations.d
+        type: dir
+      - dst: /var/log/newrelic-infra
+        type: dir
+      - dst: /var/run/newrelic-infra
+        type: dir
+    epoch: 0
+    release: 1.sles15.7
+
+    # Scripts to execute during the installation of the package.
+    scripts:
+      preinstall: "build/package/before-install.sh"
+      preremove: "build/package/rpm/prerm-systemd.sh"
+
+    # Packages to replace according to old packaging scripts.
+    replaces:
+      - opspro-agent
+      - opspro-agent-systemd
+    # Section.
+    section: default
+    # Priority.
+    priority: extra
+    rpm:
+      scripts:
+        posttrans: "build/package/rpm/postinst-systemd.sh"
+      summary: "New Relic Infrastructure Agent"
+      group: default
+
+  # end SLES 15.7 arm
