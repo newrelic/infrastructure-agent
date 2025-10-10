@@ -43,7 +43,7 @@
           vars:
             log_level: 'debug'
             log_forward: 'true'
-            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/testing-pre-releases/madhuSuse/infrastructure_agent"
+            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
           when: log_forwader_supported is defined
 
         # Not available for ARM yet
@@ -90,7 +90,7 @@
           vars:
             log_level: 'debug'
             log_forward: 'true'
-            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/testing-pre-releases/madhuSuse/infrastructure_agent"
+            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
           when: log_forwader_supported_arm64 is defined
 
         # Not available for ARM yet
@@ -130,7 +130,7 @@
           vars:
             log_level: 'debug'
             log_forward: 'true'
-            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/testing-pre-releases/madhuSuse/infrastructure_agent"
+            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
           when: log_forwader_supported is defined
 
         # Not available for ARM yet
@@ -167,7 +167,7 @@
           vars:
             log_level: 'debug'
             log_forward: 'true'
-            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/testing-pre-releases/madhuSuse/infrastructure_agent"
+            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
           when: log_forwader_supported is defined
 
         # Not available for ARM yet

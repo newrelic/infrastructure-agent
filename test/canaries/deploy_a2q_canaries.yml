@@ -46,6 +46,6 @@
             name: caos.ansible_roles.infra_agent
           vars:
             target_version: "{{ current_version }}"
-            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/testing-pre-releases/madhuSuse/infrastructure_agent"
+            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
             nr_license_key: "{% if is_previous == 'true' %}{{ nr_license_key_a2q_2 }}{% else %}{{ nr_license_key_a2q_1 }}{% endif %}"
 ...

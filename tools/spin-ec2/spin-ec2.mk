@@ -18,7 +18,7 @@ ec2: ec2-install-deps ec2-build
 .PHONY: canaries
 canaries: PREFIX ?= canary
 canaries: ANSIBLE_FORKS ?= 5
-canaries: REPO ?= http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/testing-pre-releases/madhuSuse/infrastructure_agent
+canaries: REPO ?= http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent
 canaries: PLATFORM ?= all
 canaries: validate-aws-credentials ec2-install-deps ec2-build
 ifndef NR_LICENSE_KEY_CANARIES
