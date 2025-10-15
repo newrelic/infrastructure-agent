@@ -25,7 +25,7 @@
           ansible.builtin.include_role:
             name: caos.ansible_roles.infra_agent
           vars:
-            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
+            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/testing-pre-releases/abhishu-debian13/infrastructure_agent"
             fips_enabled: "{{ '-fips' in inventory_hostname }}"
 
         - name: Assert no privileged caps
