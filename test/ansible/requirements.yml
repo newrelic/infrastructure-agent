@@ -1,3 +1,4 @@
 collections:
     - name: git+https://github.com/newrelic-experimental/caos-ansible-roles.git#/caos.ansible_roles/
       type: git
+      version: NR-432265-add-debian-13
