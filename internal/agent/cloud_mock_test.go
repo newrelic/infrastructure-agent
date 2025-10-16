@@ -80,6 +80,16 @@ func (m *MockHarvester) GetZone() (string, error) {
 	return "", nil
 }
 
+// GetInstanceDisplayName returns the cloud instance display name.
+func (m *MockHarvester) GetInstanceDisplayName() (string, error) {
+	return "", nil
+}
+
+// GetVMSize returns the cloud instance VM size.
+func (m *MockHarvester) GetVMSize() (string, error) {
+	return "", nil
+}
+
 // GetHarvester returns the MockHarvester.
 func (m *MockHarvester) GetHarvester() (cloud.Harvester, error) { //nolint: ireturn
 	return m, nil
