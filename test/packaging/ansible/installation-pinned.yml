@@ -15,8 +15,8 @@
   tasks:
     - name: Installation tests suite
       vars:
-        target_agent_version: "0.0.12" # minimum version for ubuntu sles 15.6
-        target_agent_version_fips: "0.0.12" # minimum version for FIPS
+        target_agent_version: "1.57.1" # minimum version for ubuntu sles 15.6
+        target_agent_version_fips: "1.60.0" # minimum version for FIPS
 
       block:
         - name: Install agent
@@ -24,7 +24,7 @@
             name: caos.ansible_roles.infra_agent
           vars:
             target_version: "{{ target_agent_version_fips if ('-fips' in inventory_hostname) else target_agent_version }}"
-            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/testing-pre-releases/abhishu-debian13/infrastructure_agent"
+            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
             fips_enabled: "{{ '-fips' in inventory_hostname }}"
 
         - name: Assert version
