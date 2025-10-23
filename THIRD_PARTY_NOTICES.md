@@ -134,6 +134,14 @@ Distributed under the following license(s):
 
 
 
+## [github.com/godbus/dbus/v5](https://github.com/godbus/dbus)
+
+Distributed under the following license(s):
+
+* BSD-2-Clause
+
+
+
 ## [github.com/golang/groupcache](https://github.com/golang/groupcache)
 
 Distributed under the following license(s):
