@@ -42,6 +42,7 @@
         - 15.4
         - 15.5
         - 15.6
+        - 15.7
 
 - src: "newrelic-infra-{version}-1.sles{os_version}.{arch}.rpm"
   arch:
@@ -61,6 +62,7 @@
         - 15.4
         - 15.5
         - 15.6
+        - 15.7
 
 - src: "newrelic-infra-{version}-1.amazonlinux-{os_version}.{arch}.rpm"
   arch:
@@ -131,6 +133,7 @@
         - 15.4
         - 15.5
         - 15.6
+        - 15.7 
 
 - src: "newrelic-infra-{version}-1.sles{os_version}.{arch}.rpm.sum"
   arch:
@@ -149,6 +152,7 @@
         - 15.4
         - 15.5
         - 15.6
+        - 15.7
 
 - src: "newrelic-infra-{version}-1.sles{os_version}.{arch}.rpm.sum"
   arch:
@@ -167,6 +171,7 @@
         - 15.4
         - 15.5
         - 15.6
+        - 15.7
 
 - src: "newrelic-infra-{version}-1.amazonlinux-{os_version}.{arch}.rpm.sum"
   arch:
