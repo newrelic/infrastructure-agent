@@ -12,8 +12,6 @@ import (
 )
 
 func TestParseWhoOutput(t *testing.T) {
-	t.Parallel()
-
 	var outputs = []string{
 		`vagrant  pts/0        Oct 24 14:26 (10.0.2.2)
 vagrant  pts/1        Oct 24 14:26 (10.0.2.2)
