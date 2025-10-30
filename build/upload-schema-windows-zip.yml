@@ -4,11 +4,6 @@
     - type: file
       dest: "{dest_prefix}binaries/windows/amd64/{src}"
 
-- src: "newrelic-infra-386.{version}.zip"
-  uploads:
-    - type: file
-      dest: "{dest_prefix}binaries/windows/386/{src}"
-
 
 #########################
   # UPLOAD SIGNATURE #
@@ -18,11 +13,6 @@
   uploads:
     - type: file
       dest: "{dest_prefix}binaries/windows/amd64/{src}"
-
-- src: "newrelic-infra-386.{version}.zip.cat"
-  uploads:
-    - type: file
-      dest: "{dest_prefix}binaries/windows/386/{src}"
 
 
 #########################
@@ -34,7 +24,3 @@
     - type: file
       dest: "{dest_prefix}binaries/windows/amd64/{src}"
 
-- src: "newrelic-infra-386.{version}.zip.sum"
-  uploads:
-    - type: file
-      dest: "{dest_prefix}binaries/windows/386/{src}"
