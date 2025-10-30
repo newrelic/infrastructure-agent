@@ -1141,6 +1141,7 @@ type Config struct {
 	// Public: Yes
 	WinRemovableDrives bool `yaml:"win_removable_drives" envconfig:"win_removable_drives" os:"windows"` // enables removable drives in storage sampler
 
+	// (Deprecated)
 	// LegacyStorageSampler Setting this value to true will force the agent to use windows WMI (the legacy method of
 	// the Agent to grab metrics for Windows: e.g StorageSampler) and disable the new method which is using PDH library
 	// Default (amd64): False
@@ -2361,6 +2362,7 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 	}
 
 	// force WMI sampler on Windows 32-bit
+	// removing the support for 32-bit but leaving it for custom uses
 	if cfg.LegacyStorageSampler == false && runtime.GOOS == "windows" && runtime.GOARCH == "386" {
 		cfg.LegacyStorageSampler = true
 	}
