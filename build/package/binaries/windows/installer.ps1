@@ -16,19 +16,84 @@ param (
     [string]$ConfigFile       = $env:NRIA_CONFIG_FILE,
     [string]$AppDataDir       = $env:NRIA_APP_DATA_DIR,
     [string]$ServiceName      = $env:NRIA_SERVICE_NAME,
-    [switch]$ServiceOverwrite = $env:NRIA_OVERWRITE
+    [switch]$ServiceOverwrite = $env:NRIA_OVERWRITE,
+    [string]$ServiceUser      = $env:NRIA_USER,
+    [string]$ServicePass      = $env:NRIA_PASS
 )
 
-function Check-Administrator
-{
-    $user = [Security.Principal.WindowsIdentity]::GetCurrent()
-    (New-Object Security.Principal.WindowsPrincipal $user).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
+# Start logging all output to a log file
+#try {
+#    $logPath = "C:\Temp\installer_ps1.log"
+#    if (-not (Test-Path -Path (Split-Path $logPath))) {
+#        New-Item -ItemType Directory -Path (Split-Path $logPath) | Out-Null
+#    }
+#    Start-Transcript -Path $logPath -Append
+#} catch {
+#    Write-Warning "Could not start transcript logging: $_"
+#}
+
+ function Check-Administrator
+ {
+     $user = [Security.Principal.WindowsIdentity]::GetCurrent()
+     (New-Object Security.Principal.WindowsPrincipal $user).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
+ }
+
+
+ if (-Not (Check-Administrator))
+ {
+     Write-Error "Admin permission is required. Please, open a Windows PowerShell session with administrative rights.";
+     exit 1;
+ }
+
+# Check required user rights for the current user
+function Check-UserRight {
+    param(
+        [string]$RightName,
+        [string]$UserName
+    )
+    $sid = (New-Object System.Security.Principal.NTAccount($UserName)).Translate([System.Security.Principal.SecurityIdentifier]).Value
+    secedit /export /cfg $env:TEMP\secpol.cfg | Out-Null
+    $lines = Get-Content "$env:TEMP\secpol.cfg"
+    $match = $lines | Where-Object { $_ -match "^$RightName\s*=" }
+    if ($match) {
+        # Extract the value part after '=' and split by comma
+        $value = $match -replace ".*=", ""
+        $entries = $value -split ","
+        # Trim entries and check for both SID and username
+        foreach ($entry in $entries) {
+            $trimmed = $entry.Trim().TrimStart('*')
+            if ($trimmed -ieq $sid -or $trimmed -ieq $UserName) {
+                return $true
+            }
+        }
+    }
+    return $false
 }
 
-if (-Not (Check-Administrator))
-{
-    Write-Error "Admin permission is required. Please, open a Windows PowerShell session with administrative rights.";
-    exit 1;
+$requiredRights = @{
+    "SeServiceLogonRight"    = "Log on as a service"
+    "SeDebugPrivilege"       = "Debug programs"
+    "SeBackupPrivilege"      = "Back up files and directories"
+    "SeRestorePrivilege"     = "Restore files and directories"
+}
+
+if ($ServiceUser) {
+    foreach ($right in $requiredRights.Keys) {
+        if (-not (Check-UserRight $right $ServiceUser)) {
+            Write-Warning "$ServiceUser does NOT have '$($requiredRights[$right])' ($right)"
+            $missingRight = $true
+        } else {
+            Write-Host "$ServiceUser has '$($requiredRights[$right])' ($right)"
+        }
+    }
+
+    # Exit if any required right is missing
+    if ($missingRight) {
+        Write-Error "User $ServiceUser is missing one or more required rights. Exiting installation."
+        exit 1
+    }
+} else {
+    Write-Host "No ServiceUser specified, skipping privilege checks."
 }
 
 # The priority is:
@@ -113,9 +178,22 @@ Add-Content -Path $ConfigFile -Value `
 New-Service -Name $ServiceName -DisplayName 'New Relic Infrastructure Agent' -BinaryPathName "$AgentDir\newrelic-infra-service.exe -config $ConfigFile" -StartupType Automatic | Out-Null
 if ($?)
 {
+    $service = Get-WmiObject -Class Win32_Service -Filter "Name='newrelic-infra'"
+    if ($ServiceUser -and $ServicePass) {
+        Write-Host "Changing service logon to user $ServiceUser"
+        $service.Change($null,$null,$null,$null,$null,$null,$ServiceUser,$ServicePass)
+    }
+    Set-Service -Name newrelic-infra -StartupType Automatic
     Start-Service -Name $ServiceName | Out-Null
     "installation completed!"
 } else {
     "error creating service $ServiceName"
     exit 1
 }
+
+# Stop logging
+#try {
+#    Stop-Transcript
+#} catch {
+#    Write-Warning "Could not stop transcript logging: $_"
+#}
