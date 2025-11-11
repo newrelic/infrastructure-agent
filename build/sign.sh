@@ -34,7 +34,8 @@ echo "===> Importing GPG private key from GHA secrets..."
 printf %s ${GPG_PRIVATE_KEY_BASE64} | base64 -d | gpg --batch --import -
 
 echo "===> Adding binding signature for RHEL 10 compatibility..."
-gpg --batch --yes --passphrase "${GPG_PASSPHRASE}" --sign-key ${GPG_MAIL}
+echo "${GPG_MAIL}:6:" | gpg --import-ownertrust
+echo "y" | gpg --batch --yes --passphrase "${GPG_PASSPHRASE}" --command-fd 0 --sign-key ${GPG_MAIL}
 
 echo "===> Importing GPG signature, needed from Goreleaser to verify signature"
 gpg --export -a --cert-digest-algo sha256 ${GPG_MAIL} > /tmp/RPM-GPG-KEY-${GPG_MAIL}
