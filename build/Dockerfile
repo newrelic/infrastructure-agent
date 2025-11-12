@@ -2,7 +2,7 @@
 FROM ubuntu:16.04
 
 # Define Go version
-ARG GO_VERSION=1.25.0
+ARG GO_VERSION=1.25.2
 # Define build-time arguments for the GitHub CLI version and architecture
 ARG GH_VERSION='2.0.0'
 ARG GH_ARCH='amd64'
@@ -33,7 +33,7 @@ RUN apt-get update && apt-get install -y \
 # RUN apt-get install -y \
 # gcc-5-multilib-mips-linux-gnu
 
-# Install Go 1.25.0
+# Install Go 1.25.2
 RUN curl -sSL https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz -o go${GO_VERSION}.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz && \
     rm go${GO_VERSION}.linux-amd64.tar.gz
