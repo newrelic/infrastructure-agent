@@ -16,6 +16,7 @@ jobs:
       GPG_MAIL: 'infrastructure-eng@newrelic.com'
       GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
       GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      OHAI_GPG_PRIVATE_KEY_SHA256_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_SHA256_BASE64 }} # base64 encoded
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     with:
       TAG: ${{ github.event.inputs.tag }}
