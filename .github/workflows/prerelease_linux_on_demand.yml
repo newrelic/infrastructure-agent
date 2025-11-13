@@ -98,7 +98,7 @@ jobs:
 
       - name: Publish NON-FIPS deb to S3 action
         if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'NON-FIPS' }}
-        uses: newrelic/infrastructure-publish-action@v1
+        uses: newrelic/infrastructure-publish-action@rhel10
         with:
           tag: ${{env.FAKE_TAG}}
           app_name: "newrelic-infra"
@@ -125,7 +125,7 @@ jobs:
 
       - name: Publish NON-FIPS rpm to S3 action (EL10)
         if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'NON-FIPS' }}
-        uses: newrelic/infrastructure-publish-action@v1
+        uses: newrelic/infrastructure-publish-action@rhel10
         with:
           tag: ${{env.FAKE_TAG}}
           app_name: "newrelic-infra"
