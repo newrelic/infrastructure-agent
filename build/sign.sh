@@ -56,15 +56,15 @@ echo "===> Create .rpmmacros for EL10 rpm's with OHAI GPG key"
 echo "===> Importing OHAI GPG private key for EL10 from GHA secrets..."
 printf %s ${OHAI_GPG_PRIVATE_KEY_SHA256_BASE64} | base64 -d | gpg --batch --import -
 
-# Extract OHAI key ID using fingerprint (most reliable method)
-echo "===> Extracting OHAI key ID..."
-OHAI_KEY_ID=$(gpg --list-secret-keys --with-colons | grep "^fpr:" | tail -1 | cut -d: -f10)
+# Use hardcoded OHAI key ID
+echo "===> Using hardcoded OHAI key ID..."
+OHAI_KEY_ID="0779B98F"
 
 echo "===> Using OHAI Key ID: ${OHAI_KEY_ID}"
 
-# Verify we have a valid key ID
-if [ -z "$OHAI_KEY_ID" ]; then
-    echo "ERROR: Could not extract OHAI key ID"
+# Verify the key exists
+if ! gpg --list-secret-keys | grep -q "$OHAI_KEY_ID"; then
+    echo "ERROR: OHAI key ID $OHAI_KEY_ID not found"
     gpg --list-secret-keys
     exit 1
 fi
