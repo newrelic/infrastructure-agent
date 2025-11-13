@@ -52,18 +52,22 @@ done
 
 # Sign EL10 RPM's with OHAI GPG key
 echo "===> Create .rpmmacros for EL10 rpm's with OHAI GPG key"
-echo "%_gpg_name ${GPG_MAIL}" > ~/.rpmmacros_sha256
+
+echo "===> Importing OHAI GPG private key for EL10 from GHA secrets..."
+printf %s ${OHAI_GPG_PRIVATE_KEY_SHA256_BASE64} | base64 -d | gpg --batch --import -
+
+# Get the key ID of the OHAI key (last imported key)
+OHAI_KEY_ID=$(gpg --list-secret-keys --with-colons | grep -A1 "^sec" | grep "^fpr" | tail -1 | cut -d: -f10 | tail -c 17)
+
+echo "%_gpg_name ${OHAI_KEY_ID}" > ~/.rpmmacros_sha256
 echo "%_signature gpg" >> ~/.rpmmacros_sha256
 echo "%_gpg_path /root/.gnupg" >> ~/.rpmmacros_sha256
 echo "%_gpgbin /usr/bin/gpg" >> ~/.rpmmacros_sha256
 echo "%__gpg_sign_cmd   %{__gpg} gpg --no-verbose --no-armor --passphrase ${GPG_PASSPHRASE} --no-secmem-warning --digest-algo sha256 -u "%{_gpg_name}" -sbo %{__signature_filename} %{__plaintext_filename}" >> ~/.rpmmacros_sha256
 
-echo "===> Importing OHAI GPG private key for EL10 from GHA secrets..."
-printf %s ${OHAI_GPG_PRIVATE_KEY_SHA256_BASE64} | base64 -d | gpg --batch --import -
-
 echo "===> Importing OHAI GPG signature for EL10, needed from Goreleaser to verify signature"
-gpg --export -a ${GPG_MAIL} > /tmp/RPM-GPG-KEY-SHA256-${GPG_MAIL}
-rpm --import /tmp/RPM-GPG-KEY-SHA256-${GPG_MAIL}
+gpg --export -a ${OHAI_KEY_ID} > /tmp/RPM-GPG-KEY-SHA256-${OHAI_KEY_ID}
+rpm --import /tmp/RPM-GPG-KEY-SHA256-${OHAI_KEY_ID}
 
 # Backup original .rpmmacros and use SHA256 specific one
 cp ~/.rpmmacros ~/.rpmmacros_backup
