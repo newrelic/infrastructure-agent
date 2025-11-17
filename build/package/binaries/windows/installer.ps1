@@ -8,6 +8,7 @@
     with the latter having more precedence. If neither of both options is specified,
     then the default values will be used.
 #>
+
 param (
     [string]$LicenseKey       = $env:NRIA_LICENSE_KEY,
     [string]$AgentDir         = $env:NRIA_AGENT_DIR,
@@ -16,21 +17,45 @@ param (
     [string]$ConfigFile       = $env:NRIA_CONFIG_FILE,
     [string]$AppDataDir       = $env:NRIA_APP_DATA_DIR,
     [string]$ServiceName      = $env:NRIA_SERVICE_NAME,
-    [switch]$ServiceOverwrite = $env:NRIA_OVERWRITE,
-    [string]$ServiceUser      = $env:NRIA_USER,
-    [string]$ServicePass      = $env:NRIA_PASS
+    [string]$ServiceOverwrite = $env:NRIA_OVERWRITE,
+    [string]$ServiceUser,
+    [string]$ServicePass
 )
 
-# Start logging all output to a log file
-#try {
-#    $logPath = "C:\Temp\installer_ps1.log"
-#    if (-not (Test-Path -Path (Split-Path $logPath))) {
-#        New-Item -ItemType Directory -Path (Split-Path $logPath) | Out-Null
-#    }
-#    Start-Transcript -Path $logPath -Append
-#} catch {
-#    Write-Warning "Could not start transcript logging: $_"
-#}
+# DEBUG: Log script start
+$debugLog = "C:\\Temp\\installer_ps1_debug.log"
+Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] --- Script started ---")
+
+# Convert ServiceOverwrite to boolean (fix misplaced parenthesis)
+if ($null -ne $ServiceOverwrite) {
+    $ServiceOverwrite = ($ServiceOverwrite -eq "1" -or $ServiceOverwrite -eq "true" -or $ServiceOverwrite -eq $true)
+} else {
+    $ServiceOverwrite = $false
+}
+
+
+# Parse CustomActionData if present (for MSI installs)
+$CustomActionData = $env:CustomActionData
+# Parse CustomActionData if present (for MSI installs)
+$CustomActionData = $env:CustomActionData
+Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] CustomActionData: $CustomActionData")
+if ($CustomActionData) {
+    $pairs = $CustomActionData -split ';'
+    foreach ($pair in $pairs) {
+        if ($pair -match '^(.*?)=(.*)$') {
+            $key = $matches[1]
+            $val = $matches[2]
+            Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Parsed: $key = $val")
+            switch ($key) {
+                'NRIA_USER' { $ServiceUser = $val }
+                'NRIA_PASS' { $ServicePass = $val }
+            # Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] ServiceUser param: $ServiceUser")
+            # Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] ServicePass param: $ServicePass")
+
+            }
+        }
+    }
+}
 
  function Check-Administrator
  {
@@ -41,6 +66,7 @@ param (
 
  if (-Not (Check-Administrator))
  {
+    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Not running as administrator. Exiting.")
      Write-Error "Admin permission is required. Please, open a Windows PowerShell session with administrative rights.";
      exit 1;
  }
@@ -52,6 +78,11 @@ function Check-UserRight {
         [string]$UserName
     )
     $sid = (New-Object System.Security.Principal.NTAccount($UserName)).Translate([System.Security.Principal.SecurityIdentifier]).Value
+    # Extract postfix (username without prefix)
+    $User = $UserName
+    if ($UserName -match "^(.*\\)(.+)$") {
+        $User = $Matches[2]
+    }
     secedit /export /cfg $env:TEMP\secpol.cfg | Out-Null
     $lines = Get-Content "$env:TEMP\secpol.cfg"
     $match = $lines | Where-Object { $_ -match "^$RightName\s*=" }
@@ -59,10 +90,10 @@ function Check-UserRight {
         # Extract the value part after '=' and split by comma
         $value = $match -replace ".*=", ""
         $entries = $value -split ","
-        # Trim entries and check for both SID and username
+        # Trim entries and check for SID, full username, and postfix
         foreach ($entry in $entries) {
             $trimmed = $entry.Trim().TrimStart('*')
-            if ($trimmed -ieq $sid -or $trimmed -ieq $UserName) {
+            if ($trimmed -ieq $sid -or $trimmed -ieq $UserName -or $trimmed -ieq $User) {
                 return $true
             }
         }
@@ -78,22 +109,27 @@ $requiredRights = @{
 }
 
 if ($ServiceUser) {
+    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Checking rights for ServiceUser: $ServiceUser")
     foreach ($right in $requiredRights.Keys) {
         if (-not (Check-UserRight $right $ServiceUser)) {
             Write-Warning "$ServiceUser does NOT have '$($requiredRights[$right])' ($right)"
+            Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] $ServiceUser does NOT have $($requiredRights[$right]) ($right)")
             $missingRight = $true
         } else {
             Write-Host "$ServiceUser has '$($requiredRights[$right])' ($right)"
+            Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] $ServiceUser has $($requiredRights[$right]) ($right)")
         }
     }
 
     # Exit if any required right is missing
     if ($missingRight) {
+        Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] User $ServiceUser is missing one or more required rights. Exiting installation.")
         Write-Error "User $ServiceUser is missing one or more required rights. Exiting installation."
         exit 1
     }
 } else {
     Write-Host "No ServiceUser specified, skipping privilege checks."
+    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] No ServiceUser specified, skipping privilege checks.")
 }
 
 # The priority is:
@@ -125,7 +161,16 @@ if (Get-Service $ServiceName -ErrorAction SilentlyContinue)
     }
 }
 
-"Installing $(Invoke-Expression '& `".\newrelic-infra.exe`" -version')"
+
+
+if (Test-Path "$AgentDir\newrelic-infra.exe") {
+    $versionOutput = & "$AgentDir\newrelic-infra.exe" -version
+    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Installing $versionOutput")
+} else {
+    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] newrelic-infra.exe not found in $AgentDir")
+}
+Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Using configuration: AgentDir=$AgentDir, LogFile=$LogFile, PluginDir=$PluginDir, ConfigFile=$ConfigFile, AppDataDir=$AppDataDir, ServiceName=$ServiceName, ServiceOverwrite=$ServiceOverwrite")
+"Installing $versionOutput"
 Write-Host -NoNewline "Using the following configuration..."
 [PSCustomObject] @{
     AgentDir         = $AgentDir
@@ -150,6 +195,8 @@ function Get-ScriptDirectory {
 }
 
 "Creating directories..."
+$debugDirs = @($AgentDir, "$AgentDir\\custom-integrations", "$AgentDir\\newrelic-integrations", "$AgentDir\\integrations.d", $LogDir, $PluginDir, $AppDataDir)
+foreach ($d in $debugDirs) { Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Creating directory: $d") }
 $ScriptPath = Get-ScriptDirectory
 
 Create-Directory $AgentDir
@@ -164,9 +211,11 @@ Create-Directory $PluginDir
 Create-Directory $AppDataDir
 
 "Copying executables to $AgentDir..."
+Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Copying executables to $AgentDir")
 Copy-Item -Path "$ScriptPath\*.exe" -Destination "$AgentDir"
 
 "Creating config file in $ConfigFile"
+Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Creating config file in $ConfigFile")
 Clear-Content -Path $ConfigFile -ErrorAction SilentlyContinue
 Add-Content -Path $ConfigFile -Value `
     "license_key: $LicenseKey",
@@ -174,26 +223,23 @@ Add-Content -Path $ConfigFile -Value `
     "plugin_dir: $PluginDir",
     "app_data_dir: $AppDataDir"
 
-"Installing service..."
+
 New-Service -Name $ServiceName -DisplayName 'New Relic Infrastructure Agent' -BinaryPathName "$AgentDir\newrelic-infra-service.exe -config $ConfigFile" -StartupType Automatic | Out-Null
+Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Installing service...")
 if ($?)
 {
     $service = Get-WmiObject -Class Win32_Service -Filter "Name='newrelic-infra'"
     if ($ServiceUser -and $ServicePass) {
         Write-Host "Changing service logon to user $ServiceUser"
+        Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Changing service logon to user $ServiceUser")
         $service.Change($null,$null,$null,$null,$null,$null,$ServiceUser,$ServicePass)
     }
     Set-Service -Name newrelic-infra -StartupType Automatic
     Start-Service -Name $ServiceName | Out-Null
+    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] installation completed!")
     "installation completed!"
 } else {
+    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] error creating service $ServiceName")
     "error creating service $ServiceName"
     exit 1
 }
-
-# Stop logging
-#try {
-#    Stop-Transcript
-#} catch {
-#    Write-Warning "Could not stop transcript logging: $_"
-#}
