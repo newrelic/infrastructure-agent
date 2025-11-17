@@ -244,10 +244,3 @@ if ($?)
     "error creating service $ServiceName"
     exit 1
 }
-
-# Stop logging
-#try {
-#    Stop-Transcript
-#} catch {
-#    Write-Warning "Could not stop transcript logging: $_"
-#}
