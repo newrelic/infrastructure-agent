@@ -17,6 +17,7 @@
       vars:
         target_agent_version: "1.71.0" # minimum version for debian 13 & sles 15.7
         target_agent_version_fips: "1.71.0" # minimum version for debian 13 & sles 15.7
+        
       block:
         - name: Install agent
           ansible.builtin.include_role:

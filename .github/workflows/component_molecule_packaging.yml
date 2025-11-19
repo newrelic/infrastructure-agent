@@ -10,7 +10,7 @@ on:
         required: false
         type: string
         description: 'Repository endpoint to fetch packages from'
-        default: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
+        default: "https://download.newrelic.com/infrastructure_agent"
 
 env:
   TAG: ${{ inputs.TAG }}

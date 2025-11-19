@@ -9,7 +9,6 @@
         - 7
         - 8
         - 9
-        - 10
 
 - src: "newrelic-infra-fips-{version}-1.el{os_version}.{arch}.rpm"
   arch:
@@ -21,7 +20,6 @@
         - 7
         - 8
         - 9
-        - 10
 
 - src: "newrelic-infra-fips-{version}-1.sles{os_version}.{arch}.rpm"
   arch:
@@ -78,7 +76,6 @@
         - 7
         - 8
         - 9
-        - 10
 
 - src: "newrelic-infra-fips-{version}-1.el{os_version}.{arch}.rpm.sum"
   arch:
@@ -90,7 +87,6 @@
         - 7
         - 8
         - 9
-        - 10
 
 - src: "newrelic-infra-fips-{version}-1.sles{os_version}.{arch}.rpm.sum"
   arch:
