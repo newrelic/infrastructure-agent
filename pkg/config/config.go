@@ -2361,12 +2361,6 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 		cfg.FacterHomeDir = home
 	}
 
-	// force WMI sampler on Windows 32-bit
-	// removing the support for 32-bit but leaving it for custom uses
-	if cfg.LegacyStorageSampler == false && runtime.GOOS == "windows" && runtime.GOARCH == "386" {
-		cfg.LegacyStorageSampler = true
-	}
-
 	// DockerApiVersion default value defined in NewConfig
 	nlog.WithField("DockerApiVersion", cfg.DockerApiVersion).Debug("Docker client API version.")
 	// DockerContainerdNamespace default value defined in NewConfig
