@@ -122,7 +122,3 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/v3 v3.5.1 // indirect
 )
-
-// Security: Fix for CVE-2025-52881 - Race Condition Enabling Link Following
-// Using the main branch that contains the fix from https://github.com/opencontainers/selinux/pull/237
-replace github.com/opencontainers/selinux => github.com/opencontainers/selinux v0.0.0-20251106162559-4be9937fb76c
