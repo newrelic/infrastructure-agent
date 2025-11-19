@@ -1,0 +1,40 @@
+---
+- src: "newrelic-infra-fips-{version}-1.el{os_version}.{arch}.rpm"
+  arch:
+    - x86_64
+  uploads:
+    - type: yum
+      dest: "{dest_prefix}linux/yum/el/{os_version}/{arch}/"
+      os_version:
+        - 10
+
+- src: "newrelic-infra-fips-{version}-1.el{os_version}.{arch}.rpm"
+  arch:
+    - arm64
+  uploads:
+    - type: yum
+      dest: "{dest_prefix}linux/yum/el/{os_version}/{arch}/"
+      os_version:
+        - 10
+
+#########################
+  # UPLOAD CHECKSUMS #
+#########################
+
+- src: "newrelic-infra-fips-{version}-1.el{os_version}.{arch}.rpm.sum"
+  arch:
+    - x86_64
+  uploads:
+    - type: file
+      dest: "{dest_prefix}linux/yum/el/{os_version}/{arch}/{src}"
+      os_version:
+        - 10
+
+- src: "newrelic-infra-fips-{version}-1.el{os_version}.{arch}.rpm.sum"
+  arch:
+    - arm64
+  uploads:
+    - type: file
+      dest: "{dest_prefix}linux/yum/el/{os_version}/aarch64/{src}"
+      os_version:
+        - 10

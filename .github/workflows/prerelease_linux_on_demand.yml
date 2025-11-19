@@ -32,6 +32,7 @@ env:
   GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
   GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
   OHAI_GPG_PRIVATE_KEY_SHA256_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_SHA256_BASE64 }} # base64 encoded
+  OHAI_KEY_ID: ${{ secrets.OHAI_KEY_ID }}
   BRANCH: ${{ github.event.inputs.branch }}
   # publish packages to a custom path
   DEST_PREFIX: ${{ github.event.inputs.dest_prefix }}
@@ -98,7 +99,7 @@ jobs:
 
       - name: Publish NON-FIPS deb to S3 action
         if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'NON-FIPS' }}
-        uses: newrelic/infrastructure-publish-action@rhel10
+        uses: newrelic/infrastructure-publish-action@v1
         with:
           tag: ${{env.FAKE_TAG}}
           app_name: "newrelic-infra"
@@ -123,15 +124,15 @@ jobs:
           local_packages_path:  "/srv/dist/"
           apt_skip_mirror:  ${{ env.SKIP_MIRROR_REPO }}
 
-      - name: Publish NON-FIPS rpm to S3 action (EL10)
+      - name: Publish NON-FIPS rpm to S3 action for latest OS
         if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'NON-FIPS' }}
-        uses: newrelic/infrastructure-publish-action@rhel10
+        uses: newrelic/infrastructure-publish-action@v1
         with:
           tag: ${{env.FAKE_TAG}}
           app_name: "newrelic-infra"
           repo_name: "newrelic/infrastructure-agent"
           schema: "custom"
-          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.BRANCH }}/build/upload-schema-linux-rpm-el10.yml"
+          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.BRANCH }}/build/upload-schema-linux-rpm-latest.yml"
           aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
@@ -242,6 +243,31 @@ jobs:
           dest_prefix: ${{ env.DEST_PREFIX }}
           local_packages_path:  "/srv/dist/"
           apt_skip_mirror:  ${{ env.SKIP_MIRROR_REPO }}
+
+      - name: Publish FIPS rpm to S3 action for latest OS
+        if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'FIPS' }}
+        uses: newrelic/infrastructure-publish-action@v1
+        with:
+          tag: ${{env.FAKE_TAG}}
+          app_name: "newrelic-infra-fips"
+          repo_name: "newrelic/infrastructure-agent"
+          schema: "custom"
+          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.BRANCH }}/build/upload-schema-linux-rpm-fips-latest.yml"
+          aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
+          aws_s3_lock_bucket_name: ${{ env.AWS_S3_LOCK_BUCKET_NAME }}
+          access_point_host: ${{ env.ACCESS_POINT_HOST }}
+          run_id: ${{ env.RUN_ID }}
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role_session_name: ${{ env.AWS_ROLE_SESSION_NAME }}
+          aws_role_arn: ${{ env.AWS_ROLE_ARN }}
+          # used for signing package stuff
+          gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
+          gpg_private_key_base64:  ${{ env.OHAI_GPG_PRIVATE_KEY_SHA256_BASE64 }}         
+          disable_lock: ${{ env.DISABLE_LOCK }}
+          dest_prefix: ${{ env.DEST_PREFIX }}
+          local_packages_path:  "/srv/dist/"
 
       - name: Publish FIPS rpm to S3 action
         if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'FIPS' }}

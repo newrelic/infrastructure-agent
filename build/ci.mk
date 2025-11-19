@@ -114,6 +114,7 @@ ifdef TAG
 			-e GPG_PASSPHRASE \
 			-e GPG_PRIVATE_KEY_BASE64 \
 			-e OHAI_GPG_PRIVATE_KEY_SHA256_BASE64 \
+			-e OHAI_KEY_ID \
 			-e SNAPSHOT=false \
 			-e FIPS=$(FIPS) \
 			$(BUILDER_IMG_TAG) make release-${TARGET_OS}

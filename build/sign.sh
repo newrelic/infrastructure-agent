@@ -56,19 +56,6 @@ echo "===> Create .rpmmacros for EL10 rpm's with OHAI GPG key"
 echo "===> Importing OHAI GPG private key for EL10 from GHA secrets..."
 printf %s ${OHAI_GPG_PRIVATE_KEY_SHA256_BASE64} | base64 -d | gpg --batch --import -
 
-# Use hardcoded OHAI key ID
-echo "===> Using hardcoded OHAI key ID..."
-OHAI_KEY_ID="0779B98F"
-
-echo "===> Using OHAI Key ID: ${OHAI_KEY_ID}"
-
-# Verify the key exists
-if ! gpg --list-secret-keys | grep -q "$OHAI_KEY_ID"; then
-    echo "ERROR: OHAI key ID $OHAI_KEY_ID not found"
-    gpg --list-secret-keys
-    exit 1
-fi
-
 echo "%_gpg_name ${OHAI_KEY_ID}" > ~/.rpmmacros_sha256
 echo "%_signature gpg" >> ~/.rpmmacros_sha256
 echo "%_gpg_path /root/.gnupg" >> ~/.rpmmacros_sha256
