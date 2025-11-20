@@ -10,7 +10,7 @@
     # Run the unit tests
     .\test.ps1
 
-    # Build the binaries, supported architectures: [amd64, 386]
+    # Build the binaries, supported architecture: amd64 only (32-bit support deprecated)
     .\build.ps1 -skipSigning -arch amd64
 
     # Create the package
