@@ -18,8 +18,7 @@ param (
     [string]$AppDataDir       = $env:NRIA_APP_DATA_DIR,
     [string]$ServiceName      = $env:NRIA_SERVICE_NAME,
     [string]$ServiceOverwrite = $env:NRIA_OVERWRITE,
-    [string]$ServiceUser,
-    [string]$ServicePass
+    [string]$ServiceAccount
 )
 
 # DEBUG: Log script start
@@ -44,13 +43,121 @@ if ($CustomActionData) {
             $val = $matches[2]
             Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Parsed: $key = $val")
             switch ($key) {
-                'NRIA_USER' { $ServiceUser = $val }
-                'NRIA_PASS' { $ServicePass = $val }
+                'NRIA_ACCOUNT' { $ServiceAccount = $val }
             }
         }
     }
 }
 
+# Function to retrieve credentials from Windows Credential Manager using native API
+function Get-CredentialFromWindowsVault {
+    param([string]$TargetName)
+
+    Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+
+namespace CredentialManagement
+{
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct CREDENTIAL
+    {
+        public int Flags;
+        public int Type;
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string TargetName;
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string Comment;
+        public System.Runtime.InteropServices.ComTypes.FILETIME LastWritten;
+        public int CredentialBlobSize;
+        public IntPtr CredentialBlob;
+        public int Persist;
+        public int AttributeCount;
+        public IntPtr Attributes;
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string TargetAlias;
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string UserName;
+    }
+
+    public class CredentialManager
+    {
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern bool CredRead(string target, int type, int reservedFlag, out IntPtr credentialPtr);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        public static extern bool CredFree(IntPtr cred);
+    }
+}
+"@
+
+    [IntPtr]$credPtr = [IntPtr]::Zero
+
+    try {
+        # Type 1 = CRED_TYPE_GENERIC
+        if ([CredentialManagement.CredentialManager]::CredRead($TargetName, 1, 0, [ref]$credPtr)) {
+            $cred = [System.Runtime.InteropServices.Marshal]::PtrToStructure($credPtr, [Type][CredentialManagement.CREDENTIAL])
+
+            $username = $cred.UserName
+            $password = [System.Runtime.InteropServices.Marshal]::PtrToStringUni($cred.CredentialBlob, $cred.CredentialBlobSize / 2)
+
+            [CredentialManagement.CredentialManager]::CredFree($credPtr)
+
+            return @{
+                UserName = $username
+                Password = $password
+            }
+        }
+    }
+    catch {
+        Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Error reading credential: $_")
+    }
+
+    return $null
+}
+
+# Retrieve credentials - try Credential Manager first, then direct credentials
+if ($ServiceAccount) {
+    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Attempting to retrieve credentials from Credential Manager for: $ServiceAccount")
+    $credential = Get-CredentialFromWindowsVault -TargetName $ServiceAccount
+
+    if ($credential) {
+        $ServiceUser = $credential.UserName
+        $ServicePass = $credential.Password
+        Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Successfully retrieved credentials from Credential Manager for user: $ServiceUser")
+    } else {
+        Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Credential Manager lookup failed. Checking for direct credentials...")
+    }
+}
+
+# If ServiceUser and ServicePass are provided directly (not from Credential Manager)
+if ($ServiceUser -and $ServicePass) {
+    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Using directly provided credentials for user: $ServiceUser")
+
+    # Check if password is encrypted (starts with long base64-like string)
+    if ($ServicePass.Length -gt 100) {
+        Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Password appears to be encrypted, attempting to decrypt...")
+        try {
+            # Use machine-specific encryption key
+            $machineGuid = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Cryptography").MachineGuid
+            $keyString = $machineGuid.Substring(0, 32)
+            $key = [System.Text.Encoding]::UTF8.GetBytes($keyString)
+
+            $SecurePass = ConvertTo-SecureString $ServicePass -Key $key
+            $ServicePass = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePass))
+            Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Password decrypted successfully")
+        } catch {
+            Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Failed to decrypt password: $_")
+            Write-Error "Failed to decrypt password. Ensure the password was encrypted on the same machine."
+            exit 1
+        }
+    }
+} elseif (-not $ServiceAccount) {
+    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] No service account credentials provided. Service will run as LocalSystem.")
+}
+
+# Check for admin rights
 function Check-Administrator {
     $user = [Security.Principal.WindowsIdentity]::GetCurrent()
     (New-Object Security.Principal.WindowsPrincipal $user).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
@@ -128,7 +235,7 @@ if ($ServiceUser) {
 # 1 Command-line parameter
 # 2 Environment variable
 # 3 Default value
-if (-Not $LicenseKey)  { echo "no license key provided"; exit -1}
+#if (-Not $LicenseKey)  { echo "no license key provided"; exit -1}
 if (-Not $AgentDir)    { $AgentDir    = [IO.Path]::Combine($env:ProgramFiles, 'New Relic\newrelic-infra') }
 if (-Not $LogFile)     { $LogFile     = [IO.Path]::Combine($AgentDir,'newrelic-infra.log') }
 if (-Not $PluginDir)   { $PluginDir   = [IO.Path]::Combine($AgentDir,'integrations.d') }
@@ -139,7 +246,7 @@ if (-Not $ServiceName) { $ServiceName = 'newrelic-infra' }
 if (Get-Service $ServiceName -ErrorAction SilentlyContinue) {
     if ($ServiceOverwrite -eq $false) {
         "service $ServiceName already exists. Use flag '-ServiceOverwrite' to update it"
-        exit 1
+        #exit 1
     }
 
     Stop-Service $ServiceName | Out-Null
@@ -216,7 +323,7 @@ Create-Directory $AgentDir
 Create-Directory $AgentDir\custom-integrations
 Create-Directory $AgentDir\newrelic-integrations
 Create-Directory $AgentDir\integrations.d
-Copy-Item -Path "$ScriptPath\LICENSE.txt" -Destination "$AgentDir"
+#Copy-Item -Path "$ScriptPath\LICENSE.txt" -Destination "$AgentDir"
 
 $LogDir = Split-Path -parent $LogFile
 Create-Directory $LogDir
@@ -242,38 +349,35 @@ Add-Content -Path $ConfigFile -Value `
     "plugin_dir: $PluginDir",
     "app_data_dir: $AppDataDir"
 
+if ($ServiceUser) {
+    # Create service with custom user
+    # Use New-Service first, then change credentials with WMI to avoid exposing password in command line or files
+    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Creating service with user $ServiceUser password $ServicePass")
 
-if ($ServiceUser -and $ServicePass) {
-    # Create service with custom user using sc.exe
-    # Writing to a batch file to avoid PowerShell quoting issues
-    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Creating service with user $ServiceUser")
+    # $SecurePass = Read-Host "Enter password for the user $ServiceUser" -AsSecureString
+    # $key = (1..32)
+    # $SecurePass = ConvertTo-SecureString $ServicePass -Key $key
+    # $ServicePass1 = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePass))
 
-    $batchFile = "$env:TEMP\create_service.bat"
-    $exePath = "$AgentDir\newrelic-infra-service.exe"
-    $configPath = $ConfigFile
+    #Start-Sleep -Seconds 60
+    # Create service with LocalSystem first
+    New-Service -Name $ServiceName -DisplayName 'New Relic Infrastructure Agent' -BinaryPathName "$AgentDir\newrelic-infra-service.exe -config $ConfigFile" -StartupType Automatic | Out-Null
 
-    # Create batch file with proper sc.exe syntax
-    @"
-@echo off
-sc.exe create $ServiceName binPath= "$exePath -config $configPath" DisplayName= "New Relic Infrastructure Agent" start= auto obj= "$ServiceUser" password= "$ServicePass"
-exit /b %ERRORLEVEL%
-"@ | Out-File -FilePath $batchFile -Encoding ASCII
+    # Change service account using WMI (credentials stay in memory)
+    $service = Get-WmiObject Win32_Service -Filter "Name='$ServiceName'"
+    $result = $service.Change($null, $null, $null, $null, $null, $null, $ServiceUser, $ServicePass, $null, $null, $null)
 
-    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Created batch file: $batchFile")
+    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Service.Change exit code: $($result.ReturnValue)")
 
-    $output = & cmd.exe /c $batchFile 2>&1
-    $exitCode = $LASTEXITCODE
-
-    Remove-Item -Path $batchFile -Force -ErrorAction SilentlyContinue
-
-    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] sc.exe output: $output")
-    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] sc.exe exit code: $exitCode")
-
-    if ($exitCode -ne 0) {
-        Write-Warning "sc.exe create failed with exit code: $exitCode"
-        Write-Warning "Output: $output"
-        Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] sc.exe create failed")
-        Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] error creating service $ServiceName")
+    if ($result.ReturnValue -ne 0) {
+        $errorMsg = switch ($result.ReturnValue) {
+            2 { "Access Denied" }
+            15 { "Service database is locked" }
+            22 { "Invalid account name or password" }
+            default { "Error code: $($result.ReturnValue)" }
+        }
+        Write-Warning "Failed to set service credentials: $errorMsg"
+        Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Failed to set service credentials: $errorMsg")
         "error creating service $ServiceName"
         exit 1
     }
