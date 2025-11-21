@@ -72,8 +72,8 @@ func TestUTF16PtrToString(t *testing.T) {
 			utf16Ptr, err := syscall.UTF16PtrFromString(tt.input)
 			require.NoError(t, err, "Failed to create UTF16 pointer from string")
 
-			// Test the function
-			result := UTF16PtrToString(utf16Ptr)
+			// Test the function with a large enough maxLen
+			result := UTF16PtrToString(utf16Ptr, 1024)
 
 			// Verify the result
 			assert.Equal(t, tt.expected, result)
@@ -85,7 +85,7 @@ func TestUTF16PtrToString_NilPointer(t *testing.T) {
 	t.Parallel()
 
 	// Test with nil pointer
-	result := UTF16PtrToString(nil)
+	result := UTF16PtrToString(nil, 100)
 	assert.Equal(t, "", result, "Should return empty string for nil pointer")
 }
 
@@ -96,7 +96,7 @@ func TestUTF16PtrToString_ZeroLengthString(t *testing.T) {
 	nullTerminator := uint16(0)
 	ptr := &nullTerminator
 
-	result := UTF16PtrToString(ptr)
+	result := UTF16PtrToString(ptr, 100)
 	assert.Equal(t, "", result, "Should return empty string for zero-length UTF16 string")
 }
 
@@ -115,8 +115,34 @@ func TestUTF16PtrToString_ManualUTF16Array(t *testing.T) {
 	// Get pointer to first element
 	ptr := &utf16Array[0]
 
-	result := UTF16PtrToString(ptr)
+	result := UTF16PtrToString(ptr, 100)
 	assert.Equal(t, "test", result, "Should correctly parse manually created UTF16 array")
+}
+
+func TestUTF16PtrToString_BoundsCheck(t *testing.T) {
+	t.Parallel()
+
+	// Manually create a UTF16 array: "test" WITHOUT null terminator (simulating buffer end)
+	// We'll put some garbage after it to ensure we don't read it
+	utf16Array := []uint16{
+		0x0074, // 't'
+		0x0065, // 'e'
+		0x0073, // 's'
+		0x0074, // 't'
+		0xFFFF, // Garbage
+		0xFFFF, // Garbage
+	}
+
+	// Get pointer to first element
+	ptr := &utf16Array[0]
+
+	// Tell it to read only 4 chars
+	result := UTF16PtrToString(ptr, 4)
+	assert.Equal(t, "test", result, "Should stop reading at maxLen even without null terminator")
+
+	// Tell it to read only 2 chars
+	result = UTF16PtrToString(ptr, 2)
+	assert.Equal(t, "te", result, "Should stop reading at maxLen")
 }
 
 func TestUTF16PtrToString_EdgeCases(t *testing.T) {
@@ -128,7 +154,7 @@ func TestUTF16PtrToString_EdgeCases(t *testing.T) {
 		utf16Ptr, err := syscall.UTF16PtrFromString("A")
 		require.NoError(t, err)
 
-		result := UTF16PtrToString(utf16Ptr)
+		result := UTF16PtrToString(utf16Ptr, 100)
 		assert.Equal(t, "A", result)
 	})
 
@@ -139,7 +165,7 @@ func TestUTF16PtrToString_EdgeCases(t *testing.T) {
 		utf16Ptr, err := syscall.UTF16PtrFromString(input)
 		require.NoError(t, err)
 
-		result := UTF16PtrToString(utf16Ptr)
+		result := UTF16PtrToString(utf16Ptr, 100)
 		assert.Equal(t, input, result)
 	})
 
@@ -150,7 +176,7 @@ func TestUTF16PtrToString_EdgeCases(t *testing.T) {
 		utf16Ptr, err := syscall.UTF16PtrFromString(input)
 		require.NoError(t, err)
 
-		result := UTF16PtrToString(utf16Ptr)
+		result := UTF16PtrToString(utf16Ptr, 100)
 		assert.Equal(t, input, result)
 	})
 }
@@ -165,7 +191,7 @@ func BenchmarkUTF16PtrToString(b *testing.B) {
 	b.ResetTimer()
 
 	for range b.N {
-		_ = UTF16PtrToString(utf16Ptr)
+		_ = UTF16PtrToString(utf16Ptr, 1024)
 	}
 }
 
@@ -180,7 +206,7 @@ func BenchmarkUTF16PtrToString_LongString(b *testing.B) {
 	b.ResetTimer()
 
 	for range b.N {
-		_ = UTF16PtrToString(utf16Ptr)
+		_ = UTF16PtrToString(utf16Ptr, 1024)
 	}
 }
 
@@ -211,7 +237,7 @@ func TestUTF16PtrToString_CompareWithSyscall(t *testing.T) {
 				ptr := &utf16Slice[0]
 
 				// Test our function
-				ourResult := UTF16PtrToString(ptr)
+				ourResult := UTF16PtrToString(ptr, 1024)
 
 				// Compare with syscall's implementation
 				syscallResult := syscall.UTF16ToString(utf16Slice[:len(utf16Slice)-1]) // Remove null terminator for syscall

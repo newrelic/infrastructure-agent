@@ -476,15 +476,20 @@ func PdhGetRawCounterArray(hCounter PDH_HCOUNTER, lpdwBufferSize *uint32, lpdwBu
 	return uint32(ret)
 }
 
-// UTF16PtrToString converts a UTF16 pointer to a Go string
-func UTF16PtrToString(ptr *uint16) string {
-	if ptr == nil {
+// UTF16PtrToString converts a UTF16 pointer to a Go string, reading at most maxLen uint16s.
+// It stops at the first null terminator or when maxLen is reached.
+func UTF16PtrToString(ptr *uint16, maxLen uint32) string {
+	if ptr == nil || maxLen == 0 {
 		return ""
 	}
 
-	// Find the length of the null-terminated wide string
+	// Find the length of the null-terminated wide string, up to maxLen
 	length := 0
-	for p := ptr; *p != 0; {
+	p := ptr
+	for i := uint32(0); i < maxLen; i++ {
+		if *p == 0 {
+			break
+		}
 		length++
 		p = (*uint16)(unsafe.Pointer(uintptr(unsafe.Pointer(p)) + 2))
 	}
