@@ -128,7 +128,22 @@ func (pdh *PdhRawPoll) PollRawArray() (map[string][]CPUGroupInfo, error) {
 			item := (*winapi.PDH_RAW_COUNTER_ITEM)(unsafe.Pointer(uintptr(unsafe.Pointer(itemBuffer)) + offset))
 
 			if item.SzName != nil {
-				name := winapi.UTF16PtrToString(item.SzName)
+				var name string
+				
+				// Calculate remaining buffer size from the pointer to the end of the buffer
+				bufferStart := uintptr(unsafe.Pointer(&buffer[0]))
+				stringStart := uintptr(unsafe.Pointer(item.SzName))
+
+				// Calculate offset of string within buffer
+				if stringStart >= bufferStart && stringStart < bufferStart+uintptr(bufferSize) {
+					stringOffset := stringStart - bufferStart
+					remainingBytes := uintptr(bufferSize) - stringOffset
+					// Convert bytes to uint16 count (divide by 2)
+					maxLen := uint32(remainingBytes / 2)
+
+					name = winapi.UTF16PtrToString(item.SzName, maxLen)
+				}
+
 				// Use constant instead of magic number 32
 				timestamp := uint64(item.RawValue.TimeStamp.HighDateTime)<<timestampShiftBits | uint64(item.RawValue.TimeStamp.LowDateTime)
 
