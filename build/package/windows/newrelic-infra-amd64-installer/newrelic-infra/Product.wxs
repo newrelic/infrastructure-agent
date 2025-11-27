@@ -122,27 +122,6 @@
                   Name ="newrelic-infra-service.exe"
                   Source="$(var.BinariesPath)newrelic-infra-service.exe"
                   KeyPath="yes"/>
-            <ServiceInstall
-              Id="InstallAgentService"
-              Name="newrelic-infra"
-              DisplayName="New Relic Infrastructure Agent"
-              Start="auto"
-              ErrorControl="normal"
-              Type="ownProcess"
-            >
-              <util:ServiceConfig
-                FirstFailureActionType='restart'
-                SecondFailureActionType='restart'
-                ThirdFailureActionType='restart'
-                RestartServiceDelayInSeconds='30'
-                ResetPeriodInDays='1'/>
-            </ServiceInstall>
-            <ServiceControl
-              Id="sc_AgentService"
-              Name="newrelic-infra"
-              Stop="both"
-              Remove="uninstall"
-              Wait="yes" />
         </Component>
         <Component Id="CMP_AGENT_EXE" Guid="3394BD87-0135-477D-8A54-A20D4CDA8CAE" Win64="yes">
             <File Id="FILE_AgentBinaryFolder_AGENT_EXE"

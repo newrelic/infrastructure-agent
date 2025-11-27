@@ -19,10 +19,6 @@ param (
     [string]$ServiceName      = $env:NRIA_SERVICE_NAME
 )
 
-# DEBUG: Log script start
-$debugLog = "C:\\Temp\\installer_ps1_debug.log"
-Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] --- Script started ---")
-
 # Check for admin rights
 function Check-Administrator {
     $user = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -30,7 +26,6 @@ function Check-Administrator {
 }
 
 if (-Not (Check-Administrator)) {
-    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Not running as administrator. Exiting.")
     Write-Error "Admin permission is required. Please, open a Windows PowerShell session with administrative rights."
     exit 1
 }
@@ -115,20 +110,17 @@ $isUpgrade = $false
 $preservedAccount = $null
 
 if ($existingService) {
-    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Service $ServiceName already exists. Performing upgrade...")
     Write-Host "Service $ServiceName already exists. Performing upgrade..."
 
     # Get the existing service account before stopping
     $existingServiceWMI = Get-WmiObject -Class Win32_Service -Filter "name='$ServiceName'"
     if ($existingServiceWMI) {
         $preservedAccount = $existingServiceWMI.StartName
-        Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Existing service runs as: $preservedAccount")
         Write-Host "Existing service runs as: $preservedAccount"
     }
 
     # Stop the service if running
     if ($existingService.Status -eq 'Running') {
-        Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Stopping service $ServiceName...")
         Write-Host "Stopping service $ServiceName..."
         Stop-Service $ServiceName -Force | Out-Null
         Start-Sleep -Seconds 2
@@ -136,7 +128,6 @@ if ($existingService) {
 
     $isUpgrade = $true
 } else {
-    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Service $ServiceName does not exist. Performing fresh installation...")
     Write-Host "Service $ServiceName does not exist. Performing fresh installation..."
 }
 
@@ -144,12 +135,8 @@ if ($existingService) {
 
 if (Test-Path "$AgentDir\newrelic-infra.exe") {
     $versionOutput = & "$AgentDir\newrelic-infra.exe" -version
-    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Installing $versionOutput")
-} else {
-    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] newrelic-infra.exe not found in $AgentDir")
+    "Installing $versionOutput"
 }
-Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Using configuration: AgentDir=$AgentDir, LogFile=$LogFile, PluginDir=$PluginDir, ConfigFile=$ConfigFile, AppDataDir=$AppDataDir, ServiceName=$ServiceName")
-"Installing $versionOutput"
 Write-Host -NoNewline "Using the following configuration..."
 [PSCustomObject] @{
     AgentDir         = $AgentDir
@@ -176,9 +163,6 @@ $ScriptPath = Get-ScriptDirectory
 # Create directories only for fresh installation
 if (-not $isUpgrade) {
     "Creating directories..."
-    $debugDirs = @($AgentDir, "$AgentDir\\custom-integrations", "$AgentDir\\newrelic-integrations", "$AgentDir\\integrations.d", $LogDir, $PluginDir, $AppDataDir)
-    foreach ($d in $debugDirs) { Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Creating directory: $d") }
-
     Create-Directory $AgentDir
     Create-Directory $AgentDir\custom-integrations
     Create-Directory $AgentDir\newrelic-integrations
@@ -190,21 +174,17 @@ if (-not $isUpgrade) {
     Create-Directory $PluginDir
     Create-Directory $AppDataDir
 } else {
-    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Upgrade detected - skipping directory creation")
     Write-Host "Upgrade detected - skipping directory creation"
 }
 
 "Copying executables to $AgentDir..."
-Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Copying executables to $AgentDir")
 Copy-Item -Path "$ScriptPath\*.exe" -Destination "$AgentDir" -Force
 
 # For upgrades, only update config if it doesn't exist
 if ($isUpgrade -and (Test-Path $ConfigFile)) {
-    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Upgrade detected - preserving existing config file: $ConfigFile")
     Write-Host "Preserving existing configuration file: $ConfigFile"
 } else {
     "Creating config file in $ConfigFile"
-    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Creating config file in $ConfigFile")
     Clear-Content -Path $ConfigFile -ErrorAction SilentlyContinue
     Add-Content -Path $ConfigFile -Value `
         "license_key: $LicenseKey",
@@ -215,54 +195,35 @@ if ($isUpgrade -and (Test-Path $ConfigFile)) {
 
 if ($isUpgrade) {
     # Upgrade scenario: restart service with preserved account
-    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Restarting service with preserved account: $preservedAccount")
     Write-Host "Restarting service with preserved account: $preservedAccount"
-
+    
+    # Grant permissions if using a custom service account (not LocalSystem)
+    if ($preservedAccount -and $preservedAccount -ne "LocalSystem") {
+        Write-Host "Granting permissions to $preservedAccount on data directories..."
+        $username = $preservedAccount -replace '^\.\\'  # Remove .\ prefix if present
+        icacls "$AppDataDir" /grant "${username}:(OI)(CI)F" /T /Q | Out-Null
+    }
+    
     try {
         Start-Service -Name $ServiceName -ErrorAction Stop
-        Write-Host "Service restarted successfully with account: $preservedAccount"
-        Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Service restarted successfully")
-
-        # Verify service state
-        $finalService = Get-WmiObject Win32_Service -Filter "Name='$ServiceName'"
-        Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Final service state - Name: $($finalService.Name), State: $($finalService.State), StartName: $($finalService.StartName)")
-
-        Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Upgrade completed!")
         "Upgrade completed successfully!"
     } catch {
         Write-Warning "Failed to restart service: $_"
-        Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Failed to restart service: $_")
         exit 1
     }
 } else {
     # Fresh installation scenario: create service with LocalSystem
-    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Creating service with LocalSystem account")
     New-Service -Name $ServiceName -DisplayName 'New Relic Infrastructure Agent' -BinaryPathName "$AgentDir\newrelic-infra-service.exe -config $ConfigFile" -StartupType Automatic | Out-Null
 
-    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Installing service...")
-
-    # Check if service was actually created
     $serviceCreated = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
     if ($serviceCreated) {
-        Set-Service -Name newrelic-infra -StartupType Automatic
- 
         try {
             Start-Service -Name $ServiceName -ErrorAction Stop
-            Write-Host "Service started successfully"
-            Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Service started successfully")
-
-            # Final verification
-            $finalService = Get-WmiObject Win32_Service -Filter "Name='$ServiceName'"
-            Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Final service state - Name: $($finalService.Name), State: $($finalService.State), StartName: $($finalService.StartName)")
+            "Installation completed!"
         } catch {
             Write-Warning "Failed to start service: $_"
-            Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Failed to start service: $_")
         }
-
-        Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Installation completed!")
-        "Installation completed!"
     } else {
-        Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] error creating service $ServiceName")
         "error creating service $ServiceName"
         exit 1
     }
