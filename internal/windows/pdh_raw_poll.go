@@ -63,7 +63,7 @@ func NewPdhRawPoll(loggerFunc func(string, ...interface{}), metrics ...string) (
 
 	pdh.metrics = metrics
 	for i, metric := range metrics {
-		ret = winapi.PdhAddEnglishCounter(pdh.queryHandler, metric, uintptr(0), &pdh.counterHandles[i])
+		ret = winapi.PdhAddEnglishCounterWithWildcards(pdh.queryHandler, metric, uintptr(0), &pdh.counterHandles[i])
 		if ret != winapi.ERROR_SUCCESS {
 			return nil, fmt.Errorf("adding counter for %q (error %#v)", metric, ret)
 		}
