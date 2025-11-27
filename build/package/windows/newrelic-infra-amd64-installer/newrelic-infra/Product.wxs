@@ -31,7 +31,6 @@
         <Property Id="METRICS_NETWORK_SAMPLE_RATE" Secure="yes" />
         <Property Id="METRICS_PROCESS_SAMPLE_RATE" Secure="yes" />
         <Property Id="PAYLOAD_COMPRESSION_LEVEL" Secure="yes" />
-        <Property Id="NRIA_ACCOUNT" Secure="yes" />
 
         <Feature Id="ProductFeature" Title="New Relic Infrastructure Agent" Level="1">
             <ComponentRef Id="CMP_V1_PLUGIN_CONFIGS" />
@@ -187,15 +186,12 @@
                   KeyPath="yes" />
         </Component>
 		</ComponentGroup>
-        <CustomAction Id="yamlgen.nribase" Property="nribase" Value="-license_key  &quot;[LICENSE_KEY]&quot; -display_name &quot;[DISPLAY_NAME]&quot; -service_account &quot;[NRIA_ACCOUNT]&quot; -proxy &quot;[PROXY]&quot; -custom_attributes &quot;[CUSTOM_ATTRIBUTES]&quot; " />
+        <CustomAction Id="yamlgen.nribase" Property="nribase" Value="-license_key  &quot;[LICENSE_KEY]&quot; -display_name &quot;[DISPLAY_NAME]&quot; -proxy &quot;[PROXY]&quot; -custom_attributes &quot;[CUSTOM_ATTRIBUTES]&quot; " />
         <CustomAction Id="yamlgen.nriconfig0" Property="nriconfig0" Value="-metrics_system_sample_rate &quot;[METRICS_SYSTEM_SAMPLE_RATE]&quot; -metrics_storage_sample_rate &quot;[METRICS_STORAGE_SAMPLE_RATE]&quot; -metrics_network_sample_rate &quot;[METRICS_NETWORK_SAMPLE_RATE]&quot; -metrics_process_sample_rate &quot;[METRICS_PROCESS_SAMPLE_RATE]&quot;" />
         <CustomAction Id="yamlgen.nriconfig1" Property="nriconfig1" Value="-payload_compression_level &quot;[PAYLOAD_COMPRESSION_LEVEL]&quot;" />
 
-        <!-- Set the command line for the installer script (update File Id if needed) -->
-        <CustomAction Id="SetInstallerCmdWithAccount"
-                      Property="RunInstallerScript"
-                      Value="&quot;powershell.exe&quot; -ExecutionPolicy Bypass -NoProfile -File &quot;[#FILE_AgentBinaryFolder_INSTALLER_PS1]&quot; -ServiceAccount &quot;[NRIA_ACCOUNT]&quot;" />
-        <CustomAction Id="SetInstallerCmdNoAccount"
+        <!-- Set the command line for the installer script -->
+        <CustomAction Id="SetInstallerCmd"
                       Property="RunInstallerScript"
                       Value="&quot;powershell.exe&quot; -ExecutionPolicy Bypass -NoProfile -File &quot;[#FILE_AgentBinaryFolder_INSTALLER_PS1]&quot;" />
         <!-- Run the installer script using CAQuietExec -->
@@ -261,10 +257,9 @@
             </Custom>
             <Custom Action="CleanupDeprecatedBundledPlugins" Before="InstallFinalize" />
 
-            <!-- Set installer command and run installer.ps1 after files are copied, before service install -->
-            <Custom Action="SetInstallerCmdNoAccount" After="RunYamlGenerator">NOT REMOVE</Custom>
-            <Custom Action="SetInstallerCmdWithAccount" After="SetInstallerCmdNoAccount">NOT REMOVE AND NRIA_ACCOUNT &lt;&gt; ""</Custom>
-            <Custom Action="RunInstallerScript" After="SetInstallerCmdWithAccount">NOT REMOVE</Custom>
+            <!-- Set installer command and run installer.ps1 after files are copied -->
+            <Custom Action="SetInstallerCmd" After="RunYamlGenerator">NOT REMOVE</Custom>
+            <Custom Action="RunInstallerScript" After="SetInstallerCmd">NOT REMOVE</Custom>
         </InstallExecuteSequence>
     </Fragment>
 
