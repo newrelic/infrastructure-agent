@@ -7,6 +7,7 @@
 package nrwin
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"unsafe"
@@ -21,6 +22,9 @@ const (
 
 //nolint:gochecknoglobals
 var rawPollLog = log.WithComponent("PDHRawPoll")
+
+// errInvalidMetricPath indicates that PdhValidatePath rejected a non-wildcard metric.
+var errInvalidMetricPath = errors.New("invalid PDH metric path")
 
 // CPUGroupInfo represents raw CPU performance data for a single CPU core or group
 type CPUGroupInfo struct {
@@ -51,28 +55,32 @@ func NewPdhRawPoll(loggerFunc func(string, ...interface{}), metrics ...string) (
 		pdh.debugLog("Initializing NewPdhRawPoll with metrics: %v", metrics)
 	}
 
-	// Skip validation for wildcard paths since PdhValidatePath doesn't handle them properly
+	// Skip validation for wildcard paths since PdhValidatePath doesn't handle them properly.
 	for _, metric := range metrics {
 		if pdh.debugLog != nil {
 			pdh.debugLog("Checking metric path: %s", metric)
 		}
 
-		// Only validate non-wildcard paths
-		if !containsWildcard(metric) {
-			ret := winapi.PdhValidatePath(metric)
-			if winapi.ERROR_SUCCESS != ret {
-				if pdh.debugLog != nil {
-					pdh.debugLog("Validation failed for non-wildcard metric %s with error %#v", metric, ret)
-				}
-				return nil, fmt.Errorf("invalid path %q (error %#v)", metric, ret)
-			}
-			if pdh.debugLog != nil {
-				pdh.debugLog("Validation successful for non-wildcard metric: %s", metric)
-			}
-		} else {
+		if containsWildcard(metric) {
 			if pdh.debugLog != nil {
 				pdh.debugLog("Skipping validation for wildcard metric: %s", metric)
 			}
+
+			continue
+		}
+
+		ret := winapi.PdhValidatePath(metric)
+		if ret != winapi.ERROR_SUCCESS {
+			if pdh.debugLog != nil {
+				pdh.debugLog("Validation failed for non-wildcard metric %s with error %#v", metric, ret)
+			}
+
+			//nolint:wrapcheck // We want to wrap with additional context
+			return nil, fmt.Errorf("%w: %q (error %#v)", errInvalidMetricPath, metric, ret)
+		}
+
+		if pdh.debugLog != nil {
+			pdh.debugLog("Validation successful for non-wildcard metric: %s", metric)
 		}
 	}
 
@@ -89,6 +97,7 @@ func NewPdhRawPoll(loggerFunc func(string, ...interface{}), metrics ...string) (
 		}
 		return nil, fmt.Errorf("opening PDH query (error %#v)", ret)
 	}
+
 	if pdh.debugLog != nil {
 		pdh.debugLog("Successfully opened PDH query with handle: %v", pdh.queryHandler)
 	}
@@ -119,29 +128,29 @@ func NewPdhRawPoll(loggerFunc func(string, ...interface{}), metrics ...string) (
 	return &pdh, nil
 }
 
-// containsWildcard checks if a counter path contains wildcard characters
+// containsWildcard checks if a counter path contains wildcard characters.
 func containsWildcard(path string) bool {
 	return strings.Contains(path, "*") || strings.Contains(path, "?")
 }
 
-// getErrorName returns a human-readable error name for common PDH error codes
+// getErrorName returns a human-readable error name for common PDH error codes.
 func getErrorName(errorCode uint32) string {
 	switch errorCode {
-	case 0xc0000bb8:
+	case winapi.PDH_CSTATUS_NO_OBJECT:
 		return "PDH_CSTATUS_NO_OBJECT"
-	case 0xc0000bb9:
+	case winapi.PDH_CSTATUS_NO_COUNTER:
 		return "PDH_CSTATUS_NO_COUNTER"
-	case 0xc0000bba:
-		return "PDH_CSTATUS_INVALID_COUNTER"
-	case 0xc0000bbb:
-		return "PDH_CSTATUS_INVALID_INSTANCE"
-	case 0xc0000bbc:
-		return "PDH_CSTATUS_INVALID_PATH"
-	case 0xc0000bbd:
-		return "PDH_CSTATUS_BAD_COUNTERNAME"
-	case 0x800007d0:
+	case winapi.PDH_CSTATUS_INVALID_DATA:
+		return "PDH_CSTATUS_INVALID_DATA"
+	case winapi.PDH_MEMORY_ALLOCATION_FAILURE:
+		return "PDH_MEMORY_ALLOCATION_FAILURE"
+	case winapi.PDH_INVALID_HANDLE:
+		return "PDH_INVALID_HANDLE"
+	case winapi.PDH_INVALID_ARGUMENT:
+		return "PDH_INVALID_ARGUMENT"
+	case winapi.PDH_MORE_DATA:
 		return "PDH_MORE_DATA"
-	case 0x0:
+	case winapi.ERROR_SUCCESS:
 		return "ERROR_SUCCESS"
 	default:
 		return fmt.Sprintf("UNKNOWN_ERROR_%#v", errorCode)

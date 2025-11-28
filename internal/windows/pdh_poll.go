@@ -53,6 +53,7 @@ func NewPdhPoll(loggerFunc func(string, ...interface{}), metrics ...string) (Pdh
 
 	pdh.counterHandles = make([]winapi.PDH_HCOUNTER, len(metrics))
 	pdh.queryHandler = winapi.PDH_HQUERY(uintptr(0))
+
 	if pdh.debugLog != nil {
 		pdh.debugLog("Opening PDH query")
 	}
@@ -69,6 +70,7 @@ func NewPdhPoll(loggerFunc func(string, ...interface{}), metrics ...string) (Pdh
 		if pdh.debugLog != nil {
 			pdh.debugLog("Adding counter for metric: %s", metric)
 		}
+
 		ret = winapi.PdhAddEnglishCounterWithWildcards(pdh.queryHandler, metric, uintptr(0), &pdh.counterHandles[i])
 		if ret != winapi.ERROR_SUCCESS {
 			if pdh.debugLog != nil {
