@@ -33,55 +33,27 @@ func NewPdhPoll(loggerFunc func(string, ...interface{}), metrics ...string) (Pdh
 	var pdh PdhPoll
 	pdh.debugLog = loggerFunc
 
-	if pdh.debugLog != nil {
-		pdh.debugLog("Initializing NewPdhPoll with metrics: %v", metrics)
-	}
-
 	// Validating that the passed metrics exist
 	for _, metric := range metrics {
-		if pdh.debugLog != nil {
-			pdh.debugLog("Validating metric path: %s", metric)
-		}
 		ret := winapi.PdhValidatePath(metric)
 		if winapi.ERROR_SUCCESS != ret {
-			if pdh.debugLog != nil {
-				pdh.debugLog("Validation failed for metric %s with error %#v", metric, ret)
-			}
 			return pdh, fmt.Errorf("with path %q (error %#v)", metric, ret)
 		}
 	}
 
 	pdh.counterHandles = make([]winapi.PDH_HCOUNTER, len(metrics))
 	pdh.queryHandler = winapi.PDH_HQUERY(uintptr(0))
-
-	if pdh.debugLog != nil {
-		pdh.debugLog("Opening PDH query")
-	}
 	ret := winapi.PdhOpenQuery(0, 0, &pdh.queryHandler)
 	if ret != winapi.ERROR_SUCCESS {
-		if pdh.debugLog != nil {
-			pdh.debugLog("Failed to open PDH query with error %#v", ret)
-		}
 		return pdh, fmt.Errorf("opening PDH query (error %#v)", ret)
 	}
 
 	pdh.metrics = metrics
 	for i, metric := range metrics {
-		if pdh.debugLog != nil {
-			pdh.debugLog("Adding counter for metric: %s", metric)
-		}
-
-		ret = winapi.PdhAddEnglishCounterWithWildcards(pdh.queryHandler, metric, uintptr(0), &pdh.counterHandles[i])
+		ret = winapi.PdhAddEnglishCounter(pdh.queryHandler, metric, uintptr(0), &pdh.counterHandles[i])
 		if ret != winapi.ERROR_SUCCESS {
-			if pdh.debugLog != nil {
-				pdh.debugLog("Failed to add counter for %s with error %#v", metric, ret)
-			}
 			return pdh, fmt.Errorf("adding counter for %q (error %#v)", metric, ret)
 		}
-	}
-
-	if pdh.debugLog != nil {
-		pdh.debugLog("Successfully created PdhPoll for metrics: %v", metrics)
 	}
 
 	return pdh, nil
