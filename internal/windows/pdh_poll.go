@@ -9,7 +9,7 @@ package nrwin
 import (
 	"fmt"
 
-	"github.com/newrelic/infrastructure-agent/internal/windows/api"
+	winapi "github.com/newrelic/infrastructure-agent/internal/windows/api"
 	"github.com/newrelic/infrastructure-agent/pkg/log" //nolint:depguard
 )
 
