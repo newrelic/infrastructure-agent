@@ -19,16 +19,16 @@ type ConfigEntry struct {
 	Env              map[string]string `json:"env" yaml:"env"`                             // User-defined environment variables
 	Interval         string            `json:"interval" yaml:"interval"`                   // User-defined interval string (duration notation)
 	HeartbeatTimeout string            `json:"heartbeat_timeout" yaml:"heartbeat_timeout"` // User-defined timeout string for interation to try until this(duration notation)
-	Timeout          *time.Duration    `json:"timeout" yaml:"timeout"`
-	User             string            `json:"integration_user" yaml:"integration_user"`
-	WorkDir          string            `json:"working_dir" yaml:"working_dir"`
-	Labels           map[string]string `json:"labels" yaml:"labels"`
-	Tags             map[string]string `json:"tags" yaml:"tags"`
-	When             EnableConditions  `json:"when" yaml:"when"`
+	Timeout          *time.Duration    `json:"timeout"           yaml:"timeout"`
+	User             string            `json:"integration_user"  yaml:"integration_user"`
+	WorkDir          string            `json:"working_dir"       yaml:"working_dir"`
+	Labels           map[string]string `json:"labels"            yaml:"labels"`
+	Tags             map[string]string `json:"tags"              yaml:"tags"`
+	When             EnableConditions  `json:"when"              yaml:"when"`
 
 	// Legacy definition commands
-	Command         string            `json:"command" yaml:"command"`
-	Arguments       map[string]string `json:"arguments" yaml:"arguments"`
+	Command         string            `json:"command"          yaml:"command"`
+	Arguments       map[string]string `json:"arguments"        yaml:"arguments"`
 	IntegrationName string            `json:"integration_name" yaml:"integration_name"`
 	InventorySource string            `json:"inventory_source" yaml:"inventory_source"`
 
@@ -36,7 +36,7 @@ type ConfigEntry struct {
 	Config interface{} `json:"config" yaml:"config"`
 	// TemplatePath specifies the path of an external configuration file. It can't coexist with Config
 	TemplatePath  string `json:"config_template_path" yaml:"config_template_path"`
-	LogsQueueSize int    `json:"logs_queue_size" yaml:"logs_queue_size"`
+	LogsQueueSize int    `json:"logs_queue_size"      yaml:"logs_queue_size"`
 }
 
 // EnableConditions condition the execution of an integration to the trueness of ALL the conditions
