@@ -104,6 +104,7 @@ func newDefinitionWithoutLookup(ce config2.ConfigEntry, passthroughEnv []string,
 		ilog.WithField("default_timeout", defaultTimeout).Debug("Setting default timeout.")
 		d.Timeout = defaultTimeout
 	}
+
 	duration, err := time.ParseDuration(ce.HeartbeatTimeout)
 	if err != nil {
 		ilog.WithError(err).WithFields(logrus.Fields{
