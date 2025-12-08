@@ -118,7 +118,7 @@ func newDefinitionWithoutLookup(ce config2.ConfigEntry, passthroughEnv []string,
 		d.Timeout = 0
 	} else if duration < minimumTimeout {
 		ilog.WithFields(logrus.Fields{
-			"timeout":         ce.Timeout,
+			"timeout":         ce.HeartbeatTimeout,
 			"minimum_timeout": minimumTimeout,
 		}).Warn("timeout is too low (did you forget to append the time unit suffix?). Using minimum allowed value")
 		d.Timeout = minimumTimeout
