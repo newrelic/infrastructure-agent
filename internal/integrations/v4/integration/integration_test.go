@@ -264,7 +264,7 @@ heartbeat_timeout: 40
 	require.NoError(t, err)
 
 	// THEN the integration has the minimum allowed timeout
-	assert.Equal(t, minimumTimeout, i.Timeout)
+	assert.Equal(t, defaultTimeout, i.Timeout)
 }
 
 func TestTimeout_Disabled(t *testing.T) {

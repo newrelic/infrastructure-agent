@@ -109,7 +109,7 @@ func newDefinitionWithoutLookup(ce config2.ConfigEntry, passthroughEnv []string,
 	if err != nil {
 		ilog.WithFields(logrus.Fields{
 			"timeout": ce.HeartbeatTimeout,
-			"default": minimumTimeout,
+			"default": defaultTimeout,
 			"error":   err,
 		}).Debug("invalid integration timeout. Using default")
 		d.Timeout = defaultTimeout
