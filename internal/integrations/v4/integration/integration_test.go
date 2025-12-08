@@ -256,7 +256,7 @@ func TestTimeout_TooLow(t *testing.T) {
 	require.NoError(t, yaml.Unmarshal([]byte(`
 name: foo
 exec: bar
-timeout: 40
+heartbeat_timeout: 40
 `), &config))
 
 	// WHEN the integration is loaded
@@ -273,7 +273,7 @@ func TestTimeout_Disabled(t *testing.T) {
 	require.NoError(t, yaml.Unmarshal([]byte(`
 name: foo
 exec: bar
-timeout: 0
+heartbeat_timeout: 0
 `), &config))
 
 	// WHEN the integration is loaded
