@@ -13,17 +13,18 @@ import (
 
 // ConfigEntry holds an integrations YAML configuration entry. It may define multiple types of tasks
 type ConfigEntry struct {
-	InstanceName string            `yaml:"name" json:"name"`         // integration instance name
-	CLIArgs      []string          `yaml:"cli_args" json:"cli_args"` // optional when executable is deduced by "name" instead of "exec"
-	Exec         ShlexOpt          `yaml:"exec" json:"exec"`         // it may be a CLI string or a YAML array
-	Env          map[string]string `yaml:"env" json:"env"`           // User-defined environment variables
-	Interval     string            `yaml:"interval" json:"interval"` // User-defined interval string (duration notation)
-	Timeout      *time.Duration    `yaml:"timeout" json:"timeout"`
-	User         string            `yaml:"integration_user" json:"integration_user"`
-	WorkDir      string            `yaml:"working_dir" json:"working_dir"`
-	Labels       map[string]string `yaml:"labels" json:"labels"`
-	Tags         map[string]string `yaml:"tags" json:"tags"`
-	When         EnableConditions  `yaml:"when" json:"when"`
+	InstanceName     string            `yaml:"name" json:"name"`                           // integration instance name
+	CLIArgs          []string          `yaml:"cli_args" json:"cli_args"`                   // optional when executable is deduced by "name" instead of "exec"
+	Exec             ShlexOpt          `yaml:"exec" json:"exec"`                           // it may be a CLI string or a YAML array
+	Env              map[string]string `yaml:"env" json:"env"`                             // User-defined environment variables
+	Interval         string            `yaml:"interval" json:"interval"`                   // User-defined interval string (duration notation)
+	HeartbeatTimeout string            `yaml:"heartbeat_timeout" json:"heartbeat_timeout"` // User-defined timeout string for interation to try until this(duration notation)
+	Timeout          *time.Duration    `yaml:"timeout" json:"timeout"`
+	User             string            `yaml:"integration_user" json:"integration_user"`
+	WorkDir          string            `yaml:"working_dir" json:"working_dir"`
+	Labels           map[string]string `yaml:"labels" json:"labels"`
+	Tags             map[string]string `yaml:"tags" json:"tags"`
+	When             EnableConditions  `yaml:"when" json:"when"`
 
 	// Legacy definition commands
 	Command         string            `yaml:"command" json:"command"`
