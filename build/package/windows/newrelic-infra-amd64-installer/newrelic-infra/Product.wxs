@@ -31,6 +31,7 @@
         <Property Id="METRICS_NETWORK_SAMPLE_RATE" Secure="yes" />
         <Property Id="METRICS_PROCESS_SAMPLE_RATE" Secure="yes" />
         <Property Id="PAYLOAD_COMPRESSION_LEVEL" Secure="yes" />
+        <Property Id="NRIA_OVERWRITE" Secure="yes" />
 
         <Feature Id="ProductFeature" Title="New Relic Infrastructure Agent" Level="1">
             <ComponentRef Id="CMP_V1_PLUGIN_CONFIGS" />
@@ -172,7 +173,7 @@
         <!-- Set the command line for the installer script -->
         <CustomAction Id="SetInstallerCmd"
                       Property="RunInstallerScript"
-                      Value="&quot;powershell.exe&quot; -ExecutionPolicy Bypass -NoProfile -File &quot;[#FILE_AgentBinaryFolder_INSTALLER_PS1]&quot;" />
+                      Value="&quot;[System64Folder]WindowsPowerShell\v1.0\powershell.exe&quot; -ExecutionPolicy Bypass -NoProfile -Command &quot;$env:NRIA_LICENSE_KEY='[LICENSE_KEY]'; $env:NRIA_OVERWRITE='[NRIA_OVERWRITE]'; &amp; '[#FILE_AgentBinaryFolder_INSTALLER_PS1]'&quot;" />
         <!-- Run the installer script using CAQuietExec -->
         <CustomAction Id="RunInstallerScript"
                       BinaryKey="WixCA"

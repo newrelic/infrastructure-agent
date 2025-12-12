@@ -16,8 +16,69 @@ param (
     [string]$PluginDir        = $env:NRIA_PLUGIN_DIR,
     [string]$ConfigFile       = $env:NRIA_CONFIG_FILE,
     [string]$AppDataDir       = $env:NRIA_APP_DATA_DIR,
-    [string]$ServiceName      = $env:NRIA_SERVICE_NAME
+    [string]$ServiceName      = $env:NRIA_SERVICE_NAME,
+    [string]$ServiceOverwrite = $env:NRIA_OVERWRITE
 )
+
+# Convert ServiceOverwrite string to boolean
+$ServiceOverwriteBool = $false
+if ($ServiceOverwrite -eq "true" -or $ServiceOverwrite -eq "1" -or $ServiceOverwrite -eq $true) {
+    $ServiceOverwriteBool = $true
+}
+
+# Initialize debug log file
+# For user accounts: use <drive>:\Users\<username>\.newrelic
+# For SYSTEM account (MSI): use <SystemDrive>:\ProgramData\New Relic\.logs
+if ($env:USERNAME -eq "SYSTEM") {
+    $tempPath = "$env:SystemDrive\ProgramData\New Relic\newrelic-infra\tmp"
+} elseif ($env:USERPROFILE) {
+    $tempPath = "$env:USERPROFILE\.newrelic"
+} else {
+    $tempPath = "$env:SystemDrive\Windows\Temp"
+}
+$DebugLogFile = Join-Path $tempPath "newrelic_installer_debug.log"
+
+# Logging function
+function Write-DebugLog {
+    param([string]$Message)
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logEntry = "[$timestamp] $Message"
+    try {
+        # Ensure directory exists
+        $logDir = Split-Path $DebugLogFile -Parent
+        if (-not (Test-Path $logDir)) {
+            New-Item -Path $logDir -ItemType Directory -Force | Out-Null
+        }
+        # Write to log file
+        Add-Content -Path $DebugLogFile -Value $logEntry -Force
+    } catch {
+        Write-Warning "Failed to write to debug log: $_"
+    }
+    Write-Host $Message
+}
+
+# Initialize log file with startup message
+try {
+    $logDir = Split-Path $DebugLogFile -Parent
+    if (-not (Test-Path $logDir)) {
+        New-Item -Path $logDir -ItemType Directory -Force | Out-Null
+    }
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    "[$timestamp] =====================================" | Out-File -FilePath $DebugLogFile -Force
+    "[$timestamp] Installer script started" | Add-Content -Path $DebugLogFile -Force
+    "[$timestamp] Running as user: $env:USERNAME" | Add-Content -Path $DebugLogFile -Force
+    "[$timestamp] Log file: $DebugLogFile" | Add-Content -Path $DebugLogFile -Force
+    "[$timestamp] =====================================" | Add-Content -Path $DebugLogFile -Force
+
+    # Display log location prominently
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "Installation Debug Log: $DebugLogFile" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+} catch {
+    Write-Warning "Failed to initialize debug log file: $_"
+}
 
 # Check for admin rights
 function Check-Administrator {
@@ -25,10 +86,15 @@ function Check-Administrator {
     (New-Object Security.Principal.WindowsPrincipal $user).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
 }
 
+Write-DebugLog "Starting New Relic Infrastructure Agent installer"
+Write-DebugLog "Debug log file: $DebugLogFile"
+
 if (-Not (Check-Administrator)) {
+    Write-DebugLog "ERROR: Admin permission check failed"
     Write-Error "Admin permission is required. Please, open a Windows PowerShell session with administrative rights."
     exit 1
 }
+Write-DebugLog "Admin permission check passed"
 
 # Check required user rights for the current user
 function Check-UserRight {
@@ -97,45 +163,74 @@ if ($ServiceUser) {
 # 2 Environment variable
 # 3 Default value
 #if (-Not $LicenseKey)  { echo "no license key provided"; exit -1}
-if (-Not $AgentDir)    { $AgentDir    = [IO.Path]::Combine($env:ProgramFiles, 'New Relic\newrelic-infra') }
+# Use ProgramW6432 to ensure 64-bit path even when called from 32-bit process
+$programFilesPath = if ($env:ProgramW6432) { $env:ProgramW6432 } else { $env:ProgramFiles }
+if (-Not $AgentDir)    { $AgentDir    = [IO.Path]::Combine($programFilesPath, 'New Relic\newrelic-infra') }
 if (-Not $LogFile)     { $LogFile     = [IO.Path]::Combine($AgentDir,'newrelic-infra.log') }
 if (-Not $PluginDir)   { $PluginDir   = [IO.Path]::Combine($AgentDir,'integrations.d') }
 if (-Not $ConfigFile)  { $ConfigFile  = [IO.Path]::Combine($AgentDir,'newrelic-infra.yml') }
 if (-Not $AppDataDir)  { $AppDataDir  = [IO.Path]::Combine($env:ProgramData, 'New Relic\newrelic-infra') }
 if (-Not $ServiceName) { $ServiceName = 'newrelic-infra' }
 
+Write-DebugLog "Configuration parameters:"
+Write-DebugLog "  AgentDir: $AgentDir"
+Write-DebugLog "  LogFile: $LogFile"
+Write-DebugLog "  PluginDir: $PluginDir"
+Write-DebugLog "  ConfigFile: $ConfigFile"
+Write-DebugLog "  AppDataDir: $AppDataDir"
+Write-DebugLog "  ServiceName: $ServiceName"
+Write-DebugLog "  ServiceOverwrite: $ServiceOverwriteBool"
+
 # Check if service already exists
 $existingService = Get-Service $ServiceName -ErrorAction SilentlyContinue
 $isUpgrade = $false
 $preservedAccount = $null
 
+Write-DebugLog "Checking for existing service: $ServiceName"
 if ($existingService) {
-    Write-Host "Service $ServiceName already exists. Performing upgrade..."
+    Write-DebugLog "Service $ServiceName found - already exists"
 
     # Get the existing service account before stopping
     $existingServiceWMI = Get-WmiObject -Class Win32_Service -Filter "name='$ServiceName'"
     if ($existingServiceWMI) {
         $preservedAccount = $existingServiceWMI.StartName
-        Write-Host "Existing service runs as: $preservedAccount"
+        Write-DebugLog "Existing service runs as: $preservedAccount"
     }
 
     # Stop the service if running
     if ($existingService.Status -eq 'Running') {
-        Write-Host "Stopping service $ServiceName..."
+        Write-DebugLog "Stopping service $ServiceName..."
         Stop-Service $ServiceName -Force | Out-Null
         Start-Sleep -Seconds 2
+        Write-DebugLog "Service stopped successfully"
     }
 
-    $isUpgrade = $true
+    if ($ServiceOverwriteBool -eq $true) {
+        Write-DebugLog "ServiceOverwrite flag is set - removing existing service $ServiceName..."
+        if ($existingServiceWMI) {
+            $existingServiceWMI.delete() | Out-Null
+            Write-DebugLog "Service removed. Performing fresh installation..."
+            # Treat as fresh install, not upgrade
+            $isUpgrade = $false
+            $preservedAccount = $null
+        } else {
+            Write-DebugLog "ERROR: Failed to find service to remove"
+        }
+    } else {
+        Write-DebugLog "ServiceOverwrite flag not set - upgrading existing service $ServiceName..."
+        $isUpgrade = $true
+    }
+
+   
 } else {
-    Write-Host "Service $ServiceName does not exist. Performing fresh installation..."
+    Write-DebugLog "Service $ServiceName not found - performing fresh installation"
 }
 
 
 
 if (Test-Path "$AgentDir\newrelic-infra.exe") {
     $versionOutput = & "$AgentDir\newrelic-infra.exe" -version
-    "Installing $versionOutput"
+    Write-DebugLog "Installing $versionOutput"
 }
 Write-Host -NoNewline "Using the following configuration..."
 [PSCustomObject] @{
@@ -145,12 +240,15 @@ Write-Host -NoNewline "Using the following configuration..."
     ConfigFile       = $ConfigFile
     AppDataDir       = $AppDataDir
     ServiceName      = $ServiceName
+    ServiceOverwrite = $ServiceOverwriteBool
 } | Format-List
 
 Function Create-Directory ($dir) {
     if (-Not (Test-Path -Path $dir)) {
-        "Creating $dir"
+        Write-DebugLog "Creating directory: $dir"
         New-Item -ItemType directory -Path $dir | Out-Null
+    } else {
+        Write-DebugLog "Directory already exists: $dir"
     }
 }
 
@@ -162,7 +260,7 @@ $ScriptPath = Get-ScriptDirectory
 
 # Create directories only for fresh installation
 if (-not $isUpgrade) {
-    "Creating directories..."
+    Write-DebugLog "Creating directories for fresh installation"
     Create-Directory $AgentDir
     Create-Directory $AgentDir\custom-integrations
     Create-Directory $AgentDir\newrelic-integrations
@@ -174,17 +272,18 @@ if (-not $isUpgrade) {
     Create-Directory $PluginDir
     Create-Directory $AppDataDir
 } else {
-    Write-Host "Upgrade detected - skipping directory creation"
+    Write-DebugLog "Upgrade detected - skipping directory creation"
 }
 
-"Copying executables to $AgentDir..."
+Write-DebugLog "Copying executables from $ScriptPath to $AgentDir"
 Copy-Item -Path "$ScriptPath\*.exe" -Destination "$AgentDir" -Force
+Write-DebugLog "Executables copied successfully"
 
 # For upgrades, only update config if it doesn't exist
 if ($isUpgrade -and (Test-Path $ConfigFile)) {
-    Write-Host "Preserving existing configuration file: $ConfigFile"
+    Write-DebugLog "Preserving existing configuration file: $ConfigFile"
 } else {
-    "Creating config file in $ConfigFile"
+    Write-DebugLog "Creating new config file in $ConfigFile"
     Clear-Content -Path $ConfigFile -ErrorAction SilentlyContinue
     Add-Content -Path $ConfigFile -Value `
         "license_key: $LicenseKey",
@@ -195,36 +294,44 @@ if ($isUpgrade -and (Test-Path $ConfigFile)) {
 
 if ($isUpgrade) {
     # Upgrade scenario: restart service with preserved account
-    Write-Host "Restarting service with preserved account: $preservedAccount"
+    Write-DebugLog "Upgrade path: Restarting service with preserved account: $preservedAccount"
     
     # Grant permissions if using a custom service account (not LocalSystem)
     if ($preservedAccount -and $preservedAccount -ne "LocalSystem") {
-        Write-Host "Granting permissions to $preservedAccount on data directories..."
+        Write-DebugLog "Granting permissions to $preservedAccount on $AppDataDir..."
         $username = $preservedAccount -replace '^\.\\'  # Remove .\ prefix if present
         icacls "$AppDataDir" /grant "${username}:(OI)(CI)F" /T /Q | Out-Null
+        Write-DebugLog "Permissions granted successfully"
     }
     
     try {
+        Write-DebugLog "Starting service: $ServiceName"
         Start-Service -Name $ServiceName -ErrorAction Stop
-        "Upgrade completed successfully!"
+        Write-DebugLog "Upgrade completed successfully!"
     } catch {
-        Write-Warning "Failed to restart service: $_"
+        Write-DebugLog "ERROR: Failed to restart service: $_"
         exit 1
     }
 } else {
     # Fresh installation scenario: create service with LocalSystem
+    Write-DebugLog "Creating new service: $ServiceName"
+    Write-DebugLog "Binary path: $AgentDir\newrelic-infra-service.exe -config $ConfigFile"
     New-Service -Name $ServiceName -DisplayName 'New Relic Infrastructure Agent' -BinaryPathName "$AgentDir\newrelic-infra-service.exe -config $ConfigFile" -StartupType Automatic | Out-Null
 
     $serviceCreated = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
     if ($serviceCreated) {
+        Write-DebugLog "Service created successfully"
         try {
+            Write-DebugLog "Starting service: $ServiceName"
             Start-Service -Name $ServiceName -ErrorAction Stop
-            "Installation completed!"
+            Write-DebugLog "Installation completed successfully!"
         } catch {
-            Write-Warning "Failed to start service: $_"
+            Write-DebugLog "ERROR: Failed to start service: $_"
         }
     } else {
-        "error creating service $ServiceName"
+        Write-DebugLog "ERROR: Failed to create service $ServiceName"
         exit 1
     }
 }
+
+Write-DebugLog "Installer script finished"
