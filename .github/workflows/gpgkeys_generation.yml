@@ -1,0 +1,52 @@
+name: GPG Key Generation (Test)
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_message:
+        description: 'Test message to display'
+        required: false
+        default: 'Hello from GPG workflow test!'
+        type: string
+
+jobs:
+  test-workflow:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Display test message
+        run: |
+          echo "================================"
+          echo "Test Workflow Execution"
+          echo "================================"
+          echo "Message: ${{ inputs.test_message }}"
+          echo "Triggered by: ${{ github.actor }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Repository: ${{ github.repository }}"
+          echo "================================"
+      
+      - name: Check environment
+        run: |
+          echo "Operating System: $(uname -a)"
+          echo "Shell: $SHELL"
+          echo "Working Directory: $(pwd)"
+          echo "Available tools:"
+          which git
+          which gpg || echo "GPG not found"
+          which gh || echo "GitHub CLI not found"
+      
+      - name: Test file operations
+        run: |
+          echo "Creating test directory..."
+          mkdir -p test-output
+          echo "Test file created at $(date)" > test-output/test.txt
+          cat test-output/test.txt
+          echo "File operations successful!"
+      
+      - name: Success message
+        run: |
+          echo "✅ Workflow test completed successfully!"
+          echo "You can now implement the GPG key generation logic."
