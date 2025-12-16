@@ -13,43 +13,36 @@ on:
       - gpgWorkflow
 
 jobs:
-  test-workflow:
+  generate-gpg-keys:
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
       
-      - name: Display test message
+      - name: Setup GPG
         run: |
-          echo "================================"
-          echo "Test Workflow Execution"
-          echo "================================"
-          echo "Message: ${{ inputs.test_message }}"
-          echo "Triggered by: ${{ github.actor }}"
-          echo "Branch: ${{ github.ref_name }}"
-          echo "Repository: ${{ github.repository }}"
-          echo "================================"
+          echo "GPG Version:"
+          gpg --version
+          echo "Creating GPG directory..."
+          mkdir -p ~/.gnupg
+          chmod 700 ~/.gnupg
       
-      - name: Check environment
+      - name: Generate GPG Keys
+        env:
+          OHAI_GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+          GPG_KEY_NAME: "New Relic Infrastructure Agent"
+          GPG_KEY_EMAIL: "infrastructure-eng@newrelic.com"
         run: |
-          echo "Operating System: $(uname -a)"
-          echo "Shell: $SHELL"
-          echo "Working Directory: $(pwd)"
-          echo "Available tools:"
-          which git
-          which gpg || echo "GPG not found"
-          which gh || echo "GitHub CLI not found"
+          chmod +x .github/workflows/scripts/gpgkeys_generation.sh
+          .github/workflows/scripts/gpgkeys_generation.sh
       
-      - name: Test file operations
+      - name: Verify generated keys
         run: |
-          echo "Creating test directory..."
-          mkdir -p test-output
-          echo "Test file created at $(date)" > test-output/test.txt
-          cat test-output/test.txt
-          echo "File operations successful!"
-      
-      - name: Success message
-        run: |
-          echo "✅ Workflow test completed successfully!"
-          echo "You can now implement the GPG key generation logic."
+          echo "Verifying generated files..."
+          ls -lh gpg-*.asc
+          echo ""
+          echo "Public key preview:"
+          head -n 5 gpg-public-key.asc
+          echo ""
+          echo "Keys generated successfully!"
