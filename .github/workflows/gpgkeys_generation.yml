@@ -8,6 +8,9 @@ on:
         required: false
         default: 'Hello from GPG workflow test!'
         type: string
+  push:
+    branches:
+      - gpgWorkflow
 
 jobs:
   test-workflow:
