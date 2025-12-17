@@ -49,7 +49,7 @@ jobs:
       
       - name: Upload private key to GitHub Secrets
         env:
-          GH_TOKEN: ${{ secrets.GPG_UPLOAD_PAT }}
+          GH_TOKEN: ${{ secrets.OHAI_PAT }}
         run: |
           echo "Installing GitHub CLI..."
           type -p gh &> /dev/null || (curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
