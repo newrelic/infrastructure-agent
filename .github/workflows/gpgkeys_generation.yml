@@ -95,7 +95,7 @@ jobs:
           aws --version
           
           echo "Uploading public key (.gpg format) to S3..."
-          aws s3 cp public-key.gpg s3://nr-downloads-ohai-staging/testing-pre-releases/madhu_rhel10/infrastructure_agent/public-key-test.gpg --acl public-read
+          aws s3 cp public-key.gpg s3://nr-downloads-ohai-staging/infrastructure_agent/keys/newrelic_rpm_key_sha256_test.gpg --acl public-read
           
-          echo "✓ Public key uploaded to S3: s3://nr-downloads-ohai-staging/testing-pre-releases/madhu_rhel10/infrastructure_agent/public-key-test.gpg"
-          echo "✓ Public URL: http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/testing-pre-releases/madhu_rhel10/infrastructure_agent/public-key-test.gpg"
+          echo "✓ Public key uploaded to S3: s3://nr-downloads-ohai-staging/infrastructure_agent/keys/newrelic_rpm_key_sha256_test.gpg"
+          echo "✓ Public URL: http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent/keys/newrelic_rpm_key_sha256_test.gpg"
