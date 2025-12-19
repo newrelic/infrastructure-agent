@@ -937,7 +937,8 @@ type Config struct {
 	// Public: No
 	FluentBitNRLibPath string `yaml:"fluent_bit_nr_lib_path" envconfig:"fluent_bit_nr_lib_path" public:"false"`
 
-	// UseGetIfEntry2 when true, uses GetIfEntry2 (64-bit counters) instead of GetIfEntry (32-bit counters) for network metrics on Windows.
+	// UseGetIfEntry2 when true, uses GetIfEntry2 (64-bit counters) instead of GetIfEntry (32-bit counters)
+	// for network metrics on Windows.
 	// Default: false
 	// Public: Yes
 	UseGetIfEntry2 bool `yaml:"use_get_if_entry2" envconfig:"use_get_if_entry2" public:"true"`
