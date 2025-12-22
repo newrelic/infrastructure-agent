@@ -294,7 +294,7 @@ func InterfacesWithIndex() ([]InterfaceWithIndexStat, error) {
 func IOCountersForInterface(ifs []InterfaceWithIndexStat, cfg *config.Config) ([]IOCountersWithIndexStat, error) {
 
 	var ret []IOCountersWithIndexStat
-	useGetIfEntry2 := cfg != nil && cfg.UseGetIfEntry2
+	useGetIfEntry2 := cfg != nil && cfg.UseNetworkModuleV2
 
 	for _, ifi := range ifs {
 		nslog.WithFieldsF(func() logrus.Fields {
