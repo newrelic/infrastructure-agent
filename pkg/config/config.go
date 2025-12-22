@@ -941,7 +941,7 @@ type Config struct {
 	// for network metrics on Windows.
 	// Default: false
 	// Public: Yes
-	UseNetworkModuleV2 bool `yaml:"use_network_module_v2" envconfig:"use_network_module_v2" public:"true"`
+	UseNetworkModuleV2 bool `envconfig:"use_network_module_v2" public:"true" yaml:"use_network_module_v2"`
 
 	// HTTPServerEnabled By setting true this configuration parameter (used by statsD integration v1) the agent will
 	//	// open HTTP port (by default, 8001) to receive integration payloads via HTTP.
