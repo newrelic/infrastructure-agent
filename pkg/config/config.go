@@ -942,6 +942,7 @@ type Config struct {
 	// This flag is kept for backward compatibility and may be removed in the future.
 	// Default: false
 	// Public: Yes
+	//nolint:lll
 	UseWinNetworkInterfaceV2 bool `envconfig:"use_win_network_interface_v2" public:"true" yaml:"use_win_network_interface_v2"`
 
 	// HTTPServerEnabled By setting true this configuration parameter (used by statsD integration v1) the agent will
