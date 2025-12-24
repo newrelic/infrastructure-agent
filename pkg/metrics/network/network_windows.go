@@ -81,9 +81,9 @@ type MibIfRow2 struct {
 
 // getIfEntry2 calls the Windows GetIfEntry2 API
 func getIfEntry2(row *MibIfRow2) error {
-	r1, _, e1 := syscall.Syscall(procGetIfEntry2.Addr(), 1, uintptr(unsafe.Pointer(row)), 0, 0)
-	if r1 != 0 {
-		return e1
+	ret, _, err := syscall.Syscall(procGetIfEntry2.Addr(), 1, uintptr(unsafe.Pointer(row)), 0, 0)
+	if ret != 0 {
+		return err
 	}
 	return nil
 }
@@ -161,7 +161,12 @@ func (ss *NetworkSampler) Sample() (results sample.EventBatch, err error) {
 		results = append(results, sample)
 	}
 
-	ioCounters, err := IOCountersForInterface(niList, cfg)
+	var ioCounters []IOCountersWithIndexStat
+	if cfg != nil && cfg.UseWinNetworkInterfaceV2 {
+		ioCounters, err = IOCountersForInterfaceV2(niList)
+	} else {
+		ioCounters, err = IOCountersForInterface(niList)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -291,17 +296,14 @@ func InterfacesWithIndex() ([]InterfaceWithIndexStat, error) {
 	return ret, nil
 }
 
-func IOCountersForInterface(ifs []InterfaceWithIndexStat, cfg *config.Config) ([]IOCountersWithIndexStat, error) {
-
+// IOCountersForInterface uses GetIfEntry (32-bit counters)
+func IOCountersForInterface(ifs []InterfaceWithIndexStat) ([]IOCountersWithIndexStat, error) {
 	var ret []IOCountersWithIndexStat
-	useGetIfEntry2 := cfg != nil && cfg.UseNetworkModuleV2
-
 	for _, ifi := range ifs {
 		nslog.WithFieldsF(func() logrus.Fields {
 			return logrus.Fields{
-				"index":          ifi.Index,
-				"name":           ifi.Name,
-				"useGetIfEntry2": useGetIfEntry2,
+				"index": ifi.Index,
+				"name":  ifi.Name,
 			}
 		}).Debug("IOCOUNTER resolved.")
 
@@ -310,40 +312,64 @@ func IOCountersForInterface(ifs []InterfaceWithIndexStat, cfg *config.Config) ([
 			Index: ifi.Index,
 		}
 
-		if useGetIfEntry2 {
-			// Use GetIfEntry2 for 64-bit counters
-			row := MibIfRow2{InterfaceIndex: ifi.Index}
-			e := getIfEntry2(&row)
-			if e != nil {
-				return nil, os.NewSyscallError("GetIfEntry2", e)
-			}
-			c.BytesSent = row.OutOctets
-			c.BytesRecv = row.InOctets
-			c.PacketsSent = row.OutUcastPkts
-			c.PacketsRecv = row.InUcastPkts
-			c.Errin = row.InErrors
-			c.Errout = row.OutErrors
-			c.Dropin = row.InDiscards
-			c.Dropout = row.OutDiscards
-		} else {
-			// Use GetIfEntry for 32-bit counters
-			row := syscall.MibIfRow{Index: ifi.Index}
-			e := syscall.GetIfEntry(&row)
-			if e != nil {
-				return nil, os.NewSyscallError("GetIfEntry", e)
-			}
-			c.BytesSent = uint64(row.OutOctets)
-			c.BytesRecv = uint64(row.InOctets)
-			c.PacketsSent = uint64(row.OutUcastPkts)
-			c.PacketsRecv = uint64(row.InUcastPkts)
-			c.Errin = uint64(row.InErrors)
-			c.Errout = uint64(row.OutErrors)
-			c.Dropin = uint64(row.InDiscards)
-			c.Dropout = uint64(row.OutDiscards)
+		// Use GetIfEntry for 32-bit counters
+		row := syscall.MibIfRow{Index: ifi.Index}
+		e := syscall.GetIfEntry(&row)
+		if e != nil {
+			return nil, os.NewSyscallError("GetIfEntry", e)
 		}
+		c.BytesSent = uint64(row.OutOctets)
+		c.BytesRecv = uint64(row.InOctets)
+		c.PacketsSent = uint64(row.OutUcastPkts)
+		c.PacketsRecv = uint64(row.InUcastPkts)
+		c.Errin = uint64(row.InErrors)
+		c.Errout = uint64(row.OutErrors)
+		c.Dropin = uint64(row.InDiscards)
+		c.Dropout = uint64(row.OutDiscards)
 
 		ret = append(ret, c)
 	}
+	return ret, nil
+}
 
+// IOCountersForInterfaceV2 uses GetIfEntry2 (64-bit counters)
+func IOCountersForInterfaceV2(ifs []InterfaceWithIndexStat) ([]IOCountersWithIndexStat, error) {
+	var ret []IOCountersWithIndexStat
+	for _, ifi := range ifs {
+		nslog.WithFieldsF(func() logrus.Fields {
+			return logrus.Fields{
+				"index": ifi.Index,
+				"name":  ifi.Name,
+			}
+		}).Debug("IOCOUNTER resolved.")
+
+		c := IOCountersWithIndexStat{
+			Name:  ifi.Name,
+			Index: ifi.Index,
+		}
+
+		// Use GetIfEntry2 for 64-bit counters
+		row := MibIfRow2{InterfaceIndex: ifi.Index}
+		err := getIfEntry2(&row)
+		if err != nil {
+			nslog.WithFieldsF(func() logrus.Fields {
+				return logrus.Fields{
+					"interface_index": ifi.Index,
+					"error":           err,
+				}
+			}).Debug("GetIfEntry2 failed")
+			return nil, os.NewSyscallError("GetIfEntry2", err)
+		}
+		c.BytesSent = row.OutOctets
+		c.BytesRecv = row.InOctets
+		c.PacketsSent = row.OutUcastPkts
+		c.PacketsRecv = row.InUcastPkts
+		c.Errin = row.InErrors
+		c.Errout = row.OutErrors
+		c.Dropin = row.InDiscards
+		c.Dropout = row.OutDiscards
+
+		ret = append(ret, c)
+	}
 	return ret, nil
 }
