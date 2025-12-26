@@ -162,7 +162,7 @@ func (ss *NetworkSampler) Sample() (results sample.EventBatch, err error) {
 	}
 
 	var ioCounters []IOCountersWithIndexStat
-	if cfg != nil && cfg.UseWinNetworkInterfaceV2 {
+	if cfg != nil && cfg.WinNetworkInterfaceV2 {
 		ioCounters, err = IOCountersForInterfaceV2(niList)
 	} else {
 		ioCounters, err = IOCountersForInterface(niList)
