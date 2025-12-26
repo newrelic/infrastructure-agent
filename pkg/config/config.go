@@ -937,6 +937,14 @@ type Config struct {
 	// Public: No
 	FluentBitNRLibPath string `yaml:"fluent_bit_nr_lib_path" envconfig:"fluent_bit_nr_lib_path" public:"false"`
 
+	// WinNetworkInterfaceV2 when true, uses GetIfEntry2 (64-bit counters) instead of GetIfEntry (32-bit counters)
+	// for network metrics on Windows.
+	// This flag is kept for backward compatibility and may be removed in the future.
+	// Default: false
+	// Public: Yes
+	//nolint:lll
+	WinNetworkInterfaceV2 bool `envconfig:"win_network_interface_v2" public:"true" yaml:"win_network_interface_v2"`
+
 	// HTTPServerEnabled By setting true this configuration parameter (used by statsD integration v1) the agent will
 	//	// open HTTP port (by default, 8001) to receive integration payloads via HTTP.
 	// Default: False
