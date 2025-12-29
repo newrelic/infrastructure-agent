@@ -22,9 +22,9 @@ macos_previous
 [macos_current:vars]
 ansible_ssh_private_key_file={{ ec2_private_key_file }}
 ansible_ssh_common_args='-o StrictHostKeyChecking=no'
-ansible_sudo_pass='{{ macstadium_sudo_pass }}'
+ansible_sudo_pass={{ macstadium_sudo_pass }}
 
 [macos_previous:vars]
 ansible_ssh_private_key_file={{ ec2_private_key_file }}
 ansible_ssh_common_args='-o StrictHostKeyChecking=no'
-ansible_sudo_pass='{{ macstadium_sudo_pass }}'
+ansible_sudo_pass={{ macstadium_sudo_pass }}
