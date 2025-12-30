@@ -100,20 +100,30 @@ func newDefinitionWithoutLookup(ce config2.ConfigEntry, passthroughEnv []string,
 
 	// Unset timeout: default
 	// Zero or negative: disabled
-	if ce.Timeout == nil {
+	if ce.HeartbeatTimeout == "" {
 		ilog.WithField("default_timeout", defaultTimeout).Debug("Setting default timeout.")
 		d.Timeout = defaultTimeout
-	} else if *ce.Timeout <= 0 {
-		ilog.WithField("timeout", *ce.Timeout).Debug("Timeout disabled.")
-		d.Timeout = 0
-	} else if *ce.Timeout < minimumTimeout {
+	}
+
+	duration, err := time.ParseDuration(ce.HeartbeatTimeout)
+	if err != nil {
 		ilog.WithFields(logrus.Fields{
-			"timeout":         ce.Timeout,
+			"timeout": ce.HeartbeatTimeout,
+			"default": defaultTimeout,
+			"error":   err,
+		}).Debug("invalid integration timeout. Using default")
+		d.Timeout = defaultTimeout
+	} else if duration <= 0 {
+		ilog.WithField("timeout", duration).Debug("Timeout disabled.")
+		d.Timeout = 0
+	} else if duration < minimumTimeout {
+		ilog.WithFields(logrus.Fields{
+			"timeout":         ce.HeartbeatTimeout,
 			"minimum_timeout": minimumTimeout,
 		}).Warn("timeout is too low (did you forget to append the time unit suffix?). Using minimum allowed value")
 		d.Timeout = minimumTimeout
 	} else {
-		d.Timeout = *ce.Timeout
+		d.Timeout = duration
 	}
 
 	return d, nil
