@@ -149,15 +149,22 @@ public static extern void CredFree(IntPtr credentialPtr);
 # Interactive prompt for regular accounts (fallback)
 else {
     Write-Host "Please enter the credentials for the service account:" -ForegroundColor Cyan
-    $credential = Get-Credential -Message "Enter credentials for the New Relic Infrastructure Agent service"
-    
-    if (-not $credential) {
-        Write-Error "No credentials provided. Exiting."
-        exit 1
-    }
-    
-    $Username = $credential.UserName
-    $password = $credential.GetNetworkCredential().Password
+    # $credential = Get-Credential -Message "Enter credentials for the New Relic Infrastructure Agent service"
+    # if (-not $credential) {
+    #     Write-Error "No credentials provided. Exiting."
+    #     exit 1
+    # }
+    # $Username = $credential.UserName
+    # $password = $credential.GetNetworkCredential().Password
+
+    $Username = Read-Host "Username"
+    $password = Read-Host -AsSecureString "Password"
+    # Convert the secure string to plain text for use (if needed for the WMI call)
+    $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($password)
+    $passwordPlain = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
+    [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($BSTR)
+    $password = $passwordPlain
+
 }
 
 # Validate username format for regular accounts
