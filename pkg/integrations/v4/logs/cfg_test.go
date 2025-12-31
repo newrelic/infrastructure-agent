@@ -6,7 +6,6 @@ package logs
 
 import (
 	"os"
-	"regexp"
 	"runtime"
 	"strconv"
 	"testing"
@@ -19,21 +18,20 @@ import (
 
 const windowsServer2016BuildNumber = 14393
 
-
 var logFwdCfg = config.LogForward{
-    HomeDir:    "/var/db/newrelic-infra/newrelic-integrations/logging",
-    License:    "licenseKey",
-    IsStaging:  false,
-    IsFedramp:  false,
-    RetryLimit: "5",
-    HTTPClientTimeout: "10",
-    ProxyCfg: config.LogForwardProxy{
-        IgnoreSystemProxy: true,
-        Proxy:             "https://https-proxy:3129",
-        CABundleFile:      "/cabundles/proxycert.pem",
-        CABundleDir:       "/cabundles",
-        ValidateCerts:     true,
-    },
+	HomeDir:           "/var/db/newrelic-infra/newrelic-integrations/logging",
+	License:           "licenseKey",
+	IsStaging:         false,
+	IsFedramp:         false,
+	RetryLimit:        "5",
+	HTTPClientTimeout: "10",
+	ProxyCfg: config.LogForwardProxy{
+		IgnoreSystemProxy: true,
+		Proxy:             "https://https-proxy:3129",
+		CABundleFile:      "/cabundles/proxycert.pem",
+		CABundleDir:       "/cabundles",
+		ValidateCerts:     true,
+	},
 }
 
 var filterEntityBlock = FBCfgFilter{
@@ -58,10 +56,10 @@ func inputRecordModifier(i string, m string) FBCfgFilter {
 
 func withFeedramp(cfg config.LogForward) config.LogForward {
 	cfg.IsFedramp = true
-
 	return cfg
 }
 
+var outputBlock = FBCfgOutput{
 	Name:              "newrelic",
 	Match:             "*",
 	LicenseKey:        "licenseKey",
