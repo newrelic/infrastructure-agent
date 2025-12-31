@@ -5,16 +5,17 @@ package logs
 import (
 	"bytes"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/pkg/config"
-	"github.com/newrelic/infrastructure-agent/pkg/license"
-	"github.com/newrelic/infrastructure-agent/pkg/log"
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
+
+	"github.com/newrelic/infrastructure-agent/pkg/config"
+	"github.com/newrelic/infrastructure-agent/pkg/license"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
+	"github.com/pkg/errors"
 )
 
 var cfgLogger = log.WithComponent("integrations.Supervisor.Config").WithField("process", "log-forwarder")
@@ -236,6 +237,7 @@ type FBCfgOutput struct {
 	CABundleDir       string
 	ValidateCerts     bool
 	Retry_Limit       string
+	HTTPClientTimeout string
 	SendMetrics       bool
 }
 
@@ -733,6 +735,7 @@ func newNROutput(cfg *config.LogForward) FBCfgOutput {
 		CABundleDir:       cfg.ProxyCfg.CABundleDir,
 		ValidateCerts:     cfg.ProxyCfg.ValidateCerts,
 		Retry_Limit:       cfg.RetryLimit,
+		HTTPClientTimeout: cfg.HTTPClientTimeout,
 		SendMetrics:       cfg.FluentBitVerbose,
 	}
 

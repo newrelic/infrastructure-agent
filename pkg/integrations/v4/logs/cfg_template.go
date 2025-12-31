@@ -133,6 +133,9 @@ var fbConfigFormat = `{{- range .Inputs }}
     {{- if .Output.Retry_Limit}}
     Retry_Limit         {{ .Output.Retry_Limit }}
     {{- end }}
+    {{- if .Output.HTTPClientTimeout}}
+    httpClientTimeout   {{ .Output.HTTPClientTimeout }}
+    {{- end }}
     {{- if .Output.SendMetrics}}
     sendMetrics         {{ .Output.SendMetrics}}
     {{- end}}
