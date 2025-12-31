@@ -6,6 +6,7 @@ package logs
 
 import (
 	"os"
+	"regexp"
 	"runtime"
 	"strconv"
 	"testing"
@@ -17,6 +18,8 @@ import (
 )
 
 const windowsServer2016BuildNumber = 14393
+
+var windowsBuildNumberRegex = regexp.MustCompile(`.*Build ([0-9]+)`)
 
 var logFwdCfg = config.LogForward{
 	HomeDir:           "/var/db/newrelic-infra/newrelic-integrations/logging",
