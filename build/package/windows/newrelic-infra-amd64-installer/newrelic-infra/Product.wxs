@@ -160,10 +160,17 @@
                 Example: If your installer.ps1 is in build\package\binaries\windows, this path is correct.
               -->
         <Component Id="CMP_AGENT_INSTALLER_PS1" Guid="B1234567-89AB-4CDE-8F01-23456789ABCD" Win64="yes">
-            <File Id="FILE_AgentBinaryFolder_INSTALLER_PS1"
-                  Name="installer.ps1"
-                  Source="$(var.InstallerPath)installer.ps1"
-                  KeyPath="yes" />
+          <File Id="FILE_AgentBinaryFolder_INSTALLER_PS1"
+              Name="installer.ps1"
+              Source="$(var.InstallerPath)installer.ps1"
+              KeyPath="yes" />
+        </Component>
+        <!-- Add set-service-account.ps1 to the MSI -->
+        <Component Id="CMP_AGENT_SET_SERVICE_ACCOUNT_PS1" Guid="C2345678-90BC-5DEF-9A12-34567890BCDE" Win64="yes">
+          <File Id="FILE_AgentBinaryFolder_SET_SERVICE_ACCOUNT_PS1"
+              Name="set-service-account.ps1"
+              Source="$(var.InstallerPath)set-service-account.ps1"
+              KeyPath="yes" />
         </Component>
 		</ComponentGroup>
         <CustomAction Id="yamlgen.nribase" Property="nribase" Value="-license_key  &quot;[LICENSE_KEY]&quot; -display_name &quot;[DISPLAY_NAME]&quot; -proxy &quot;[PROXY]&quot; -custom_attributes &quot;[CUSTOM_ATTRIBUTES]&quot; " />
