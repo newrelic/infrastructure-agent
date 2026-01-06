@@ -28,13 +28,17 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 )
 
-// Windows API declarations for GetIfEntry2
+// Windows API declarations for GetIfEntry2.
+//
+//nolint:gochecknoglobals
 var (
 	modIphlpapi     = syscall.NewLazyDLL("iphlpapi.dll")
 	procGetIfEntry2 = modIphlpapi.NewProc("GetIfEntry2")
 )
 
-// MibIfRow2 represents the MIB_IF_ROW2 structure for 64-bit network counters
+// MibIfRow2 represents the MIB_IF_ROW2 structure for 64-bit network counters.
+//
+//nolint:revive
 type MibIfRow2 struct {
 	InterfaceLuid               uint64
 	InterfaceIndex              uint32
@@ -79,12 +83,14 @@ type MibIfRow2 struct {
 	OutQLen                     uint64
 }
 
-// getIfEntry2 calls the Windows GetIfEntry2 API
+// getIfEntry2 calls the Windows GetIfEntry2 API.
 func getIfEntry2(row *MibIfRow2) error {
+	//nolint:staticcheck
 	ret, _, err := syscall.Syscall(procGetIfEntry2.Addr(), 1, uintptr(unsafe.Pointer(row)), 0, 0)
 	if ret != 0 {
 		return err
 	}
+
 	return nil
 }
 
@@ -296,7 +302,7 @@ func InterfacesWithIndex() ([]InterfaceWithIndexStat, error) {
 	return ret, nil
 }
 
-// IOCountersForInterface uses GetIfEntry (32-bit counters)
+// IOCountersForInterface uses GetIfEntry (32-bit counters).
 func IOCountersForInterface(ifs []InterfaceWithIndexStat) ([]IOCountersWithIndexStat, error) {
 	var ret []IOCountersWithIndexStat
 	for _, ifi := range ifs {
@@ -329,12 +335,14 @@ func IOCountersForInterface(ifs []InterfaceWithIndexStat) ([]IOCountersWithIndex
 
 		ret = append(ret, c)
 	}
+
 	return ret, nil
 }
 
-// IOCountersForInterfaceV2 uses GetIfEntry2 (64-bit counters)
+// IOCountersForInterfaceV2 uses GetIfEntry2 (64-bit counters).
 func IOCountersForInterfaceV2(ifs []InterfaceWithIndexStat) ([]IOCountersWithIndexStat, error) {
-	var ret []IOCountersWithIndexStat
+	ret := make([]IOCountersWithIndexStat, 0, len(ifs))
+
 	for _, ifi := range ifs {
 		nslog.WithFieldsF(func() logrus.Fields {
 			return logrus.Fields{
@@ -343,13 +351,16 @@ func IOCountersForInterfaceV2(ifs []InterfaceWithIndexStat) ([]IOCountersWithInd
 			}
 		}).Debug("IOCOUNTER resolved.")
 
+		//nolint:exhaustruct
 		c := IOCountersWithIndexStat{
 			Name:  ifi.Name,
 			Index: ifi.Index,
 		}
 
 		// Use GetIfEntry2 for 64-bit counters
+		//nolint:exhaustruct
 		row := MibIfRow2{InterfaceIndex: ifi.Index}
+
 		err := getIfEntry2(&row)
 		if err != nil {
 			nslog.WithFieldsF(func() logrus.Fields {
@@ -358,8 +369,10 @@ func IOCountersForInterfaceV2(ifs []InterfaceWithIndexStat) ([]IOCountersWithInd
 					"error":           err,
 				}
 			}).Debug("GetIfEntry2 failed")
+
 			return nil, os.NewSyscallError("GetIfEntry2", err)
 		}
+
 		c.BytesSent = row.OutOctets
 		c.BytesRecv = row.InOctets
 		c.PacketsSent = row.OutUcastPkts
@@ -371,5 +384,6 @@ func IOCountersForInterfaceV2(ifs []InterfaceWithIndexStat) ([]IOCountersWithInd
 
 		ret = append(ret, c)
 	}
+
 	return ret, nil
 }
