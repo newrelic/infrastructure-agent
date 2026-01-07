@@ -937,6 +937,13 @@ type Config struct {
 	// Public: No
 	FluentBitNRLibPath string `yaml:"fluent_bit_nr_lib_path" envconfig:"fluent_bit_nr_lib_path" public:"false"`
 
+	// WinNetworkInterfaceV2 when true, uses GetIfEntry2 (64-bit counters) instead of GetIfEntry (32-bit counters)
+	// for network metrics on Windows.
+	// This flag is kept for backward compatibility and may be removed in the future.
+	// Default: false
+	// Public: Yes
+	WinNetworkInterfaceV2 bool `envconfig:"win_network_interface_v2" public:"true" yaml:"win_network_interface_v2"`
+
 	// HTTPServerEnabled By setting true this configuration parameter (used by statsD integration v1) the agent will
 	//	// open HTTP port (by default, 8001) to receive integration payloads via HTTP.
 	// Default: False
@@ -1141,6 +1148,7 @@ type Config struct {
 	// Public: Yes
 	WinRemovableDrives bool `yaml:"win_removable_drives" envconfig:"win_removable_drives" os:"windows"` // enables removable drives in storage sampler
 
+	// (Deprecated)
 	// LegacyStorageSampler Setting this value to true will force the agent to use windows WMI (the legacy method of
 	// the Agent to grab metrics for Windows: e.g StorageSampler) and disable the new method which is using PDH library
 	// Default (amd64): False
@@ -2358,11 +2366,6 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 				Warn("couldn't retrieve the current user's home, the HOME env variable won't be set for running facter")
 		}
 		cfg.FacterHomeDir = home
-	}
-
-	// force WMI sampler on Windows 32-bit
-	if cfg.LegacyStorageSampler == false && runtime.GOOS == "windows" && runtime.GOARCH == "386" {
-		cfg.LegacyStorageSampler = true
 	}
 
 	// DockerApiVersion default value defined in NewConfig

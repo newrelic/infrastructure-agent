@@ -10,6 +10,7 @@
 package winapi
 
 import (
+	"strings"
 	"syscall"
 	"unsafe"
 )
@@ -183,6 +184,19 @@ type PDH_RAW_COUNTER_ITEM struct {
 	RawValue PDH_RAW_COUNTER
 }
 
+// PDH_COUNTER_INFO contains metadata about a counter; we only need leading fields.
+type PDH_COUNTER_INFO struct {
+	DwLength        uint32
+	DwType          uint32
+	CVersion        uint32
+	CStatus         uint32
+	LScale          int32
+	LDefaultScale   int32
+	DwUserData      uint32
+	DwQueryUserData uintptr
+	SzFullPath      *uint16
+}
+
 var (
 	// Library
 	libpdhDll *syscall.DLL
@@ -197,6 +211,8 @@ var (
 	pdh_GetRawCounterArrayW       *syscall.Proc
 	pdh_OpenQuery                 *syscall.Proc
 	pdh_ValidatePathW             *syscall.Proc
+	pdh_GetCounterInfoW           *syscall.Proc
+	pdh_ExpandWildCardPathW       *syscall.Proc
 )
 
 func init() {
@@ -213,6 +229,8 @@ func init() {
 	pdh_GetRawCounterArrayW = libpdhDll.MustFindProc("PdhGetRawCounterArrayW")
 	pdh_OpenQuery = libpdhDll.MustFindProc("PdhOpenQuery")
 	pdh_ValidatePathW = libpdhDll.MustFindProc("PdhValidatePathW")
+	pdh_GetCounterInfoW = libpdhDll.MustFindProc("PdhGetCounterInfoW")
+	pdh_ExpandWildCardPathW = libpdhDll.MustFindProc("PdhExpandWildCardPathW")
 
 }
 
@@ -281,6 +299,165 @@ func PdhAddEnglishCounter(hQuery PDH_HQUERY, szFullCounterPath string, dwUserDat
 		uintptr(unsafe.Pointer(phCounter)))
 
 	return uint32(ret)
+}
+
+// Adds the specified language-neutral counter to the query. See the PdhAddCounter function. This function only exists on
+// Windows versions higher than Vista.
+// If PdhAddEnglishCounter is not available, PdhAddCounter is invoked
+// It handles wildcard according to the rules specified by microsoft
+// Note  If the counter path contains a wildcard character, the non-wildcard portions of the path will be localized, but wildcards will not be expanded before adding the localized counter path to the query. In this case, you will need use the following procedure to add all matching counter names to the query.
+// Make a query
+// Use PdhAddEnglishCounter with the string containing wildcards
+// Use PdhGetCounterInfo on the counter handle returned by PdhAddEnglishCounter to get a localized full path (szFullPath.) This string still contains wildcards, but the non-wildcard parts are now localized.
+// Use PdhExpandWildCardPath to expand the wildcards.
+// Use PdhAddCounter on each of the resulting paths
+func PdhAddEnglishCounterWithWildcards(hQuery PDH_HQUERY, szFullCounterPath string, dwUserData uintptr, phCounter *PDH_HCOUNTER) uint32 {
+	var targetHandle PDH_HCOUNTER
+	handlePtr := phCounter
+	if handlePtr == nil {
+		handlePtr = &targetHandle
+	}
+
+	ret := PdhAddEnglishCounter(hQuery, szFullCounterPath, dwUserData, handlePtr)
+	if ret != ERROR_SUCCESS {
+		return ret
+	}
+
+	englishHandle := *handlePtr
+
+	if !strings.ContainsAny(szFullCounterPath, "*?") {
+		if phCounter == nil {
+			return ERROR_SUCCESS
+		}
+
+		*phCounter = englishHandle
+		return ERROR_SUCCESS
+	}
+
+	localizedPath, status := localizedPathFromCounter(englishHandle)
+	if status != ERROR_SUCCESS {
+		return status
+	}
+
+	expandedPaths, status := expandWildCardPath(localizedPath)
+	if status != ERROR_SUCCESS {
+		return status
+	}
+
+	if len(expandedPaths) == 0 {
+		return PDH_NO_DATA
+	}
+
+	for _, path := range expandedPaths {
+		var localizedHandle PDH_HCOUNTER
+		addRet := PdhAddCounter(hQuery, path, dwUserData, &localizedHandle)
+		if addRet != ERROR_SUCCESS && addRet != PDH_COUNTER_ALREADY_IN_QUERY {
+			return addRet
+		}
+	}
+
+	if phCounter != nil {
+		*phCounter = englishHandle
+	}
+
+	return ERROR_SUCCESS
+}
+
+func localizedPathFromCounter(counter PDH_HCOUNTER) (string, uint32) {
+	var required uint32
+	ret, _, _ := pdh_GetCounterInfoW.Call(
+		uintptr(counter),
+		uintptr(0),
+		uintptr(unsafe.Pointer(&required)),
+		0,
+	)
+
+	status := uint32(ret)
+	if status != PDH_MORE_DATA && status != ERROR_SUCCESS {
+		return "", status
+	}
+
+	if required == 0 {
+		return "", PDH_NO_DATA
+	}
+
+	buffer := make([]byte, required)
+	ret, _, _ = pdh_GetCounterInfoW.Call(
+		uintptr(counter),
+		uintptr(0),
+		uintptr(unsafe.Pointer(&required)),
+		uintptr(unsafe.Pointer(&buffer[0])),
+	)
+
+	status = uint32(ret)
+	if status != ERROR_SUCCESS {
+		return "", status
+	}
+
+	info := (*PDH_COUNTER_INFO)(unsafe.Pointer(&buffer[0]))
+	if info.SzFullPath == nil {
+		return "", PDH_NO_DATA
+	}
+
+	return UTF16PtrToString(info.SzFullPath), ERROR_SUCCESS
+}
+
+func expandWildCardPath(localizedPath string) ([]string, uint32) {
+	pathPtr, err := syscall.UTF16PtrFromString(localizedPath)
+	if err != nil {
+		return nil, PDH_INVALID_ARGUMENT
+	}
+
+	var required uint32
+	ret, _, _ := pdh_ExpandWildCardPathW.Call(
+		0,
+		uintptr(unsafe.Pointer(pathPtr)),
+		0,
+		uintptr(unsafe.Pointer(&required)),
+		0,
+	)
+
+	status := uint32(ret)
+	if status != PDH_MORE_DATA && status != ERROR_SUCCESS {
+		return nil, status
+	}
+
+	if required == 0 {
+		return []string{}, ERROR_SUCCESS
+	}
+
+	buffer := make([]uint16, required)
+	ret, _, _ = pdh_ExpandWildCardPathW.Call(
+		0,
+		uintptr(unsafe.Pointer(pathPtr)),
+		uintptr(unsafe.Pointer(&buffer[0])),
+		uintptr(unsafe.Pointer(&required)),
+		0,
+	)
+
+	status = uint32(ret)
+	if status != ERROR_SUCCESS {
+		return nil, status
+	}
+
+	return multiSzToStrings(buffer), ERROR_SUCCESS
+}
+
+func multiSzToStrings(buffer []uint16) []string {
+	var result []string
+	start := 0
+	for index, value := range buffer {
+		if value == 0 {
+			if start == index {
+				break
+			}
+
+			result = append(result, syscall.UTF16ToString(buffer[start:index]))
+			start = index + 1
+		}
+	}
+
+	return result
 }
 
 // Closes all counters contained in the specified query, closes all handles related to the query,

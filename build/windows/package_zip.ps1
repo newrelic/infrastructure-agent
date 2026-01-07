@@ -3,8 +3,8 @@
         This script packages the New Relic Infrastructure Agent as a zip file
 #>
 param (
-    # Target architecture: amd64 (default) or 386
-    [ValidateSet("amd64", "386")]
+    # Target architecture: amd64 only (32-bit/386 support deprecated)
+    [ValidateSet("amd64")]
     [string]$arch="amd64",
     [string]$version="0.0.0"
 )

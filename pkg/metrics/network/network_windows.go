@@ -18,6 +18,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	"unsafe"
 
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
 	gopsnet "github.com/shirou/gopsutil/v3/net"
@@ -26,6 +27,72 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 )
+
+// Windows API declarations for GetIfEntry2.
+//
+//nolint:gochecknoglobals
+var (
+	modIphlpapi     = syscall.NewLazyDLL("iphlpapi.dll")
+	procGetIfEntry2 = modIphlpapi.NewProc("GetIfEntry2")
+)
+
+// MibIfRow2 represents the MIB_IF_ROW2 structure for 64-bit network counters.
+//
+//nolint:revive
+type MibIfRow2 struct {
+	InterfaceLuid               uint64
+	InterfaceIndex              uint32
+	InterfaceGuid               syscall.GUID
+	Alias                       [257]uint16
+	Description                 [257]uint16
+	PhysicalAddressLength       uint32
+	PhysicalAddress             [32]byte
+	PermanentPhysicalAddress    [32]byte
+	Mtu                         uint32
+	Type                        uint32
+	TunnelType                  uint32
+	MediaType                   uint32
+	PhysicalMediumType          uint32
+	AccessType                  uint32
+	DirectionType               uint32
+	InterfaceAndOperStatusFlags byte
+	OperStatus                  uint32
+	AdminStatus                 uint32
+	MediaConnectState           uint32
+	NetworkGuid                 syscall.GUID
+	ConnectionType              uint32
+	TransmitLinkSpeed           uint64
+	ReceiveLinkSpeed            uint64
+	InOctets                    uint64
+	InUcastPkts                 uint64
+	InNUcastPkts                uint64
+	InDiscards                  uint64
+	InErrors                    uint64
+	InUnknownProtos             uint64
+	InUcastOctets               uint64
+	InMulticastOctets           uint64
+	InBroadcastOctets           uint64
+	OutOctets                   uint64
+	OutUcastPkts                uint64
+	OutNUcastPkts               uint64
+	OutDiscards                 uint64
+	OutErrors                   uint64
+	OutUcastOctets              uint64
+	OutMulticastOctets          uint64
+	OutBroadcastOctets          uint64
+	OutQLen                     uint64
+}
+
+// getIfEntry2 calls the Windows GetIfEntry2 API.
+func getIfEntry2(row *MibIfRow2) error {
+	//nolint:staticcheck
+	ret, _, err := syscall.Syscall(procGetIfEntry2.Addr(), 1, uintptr(unsafe.Pointer(row)), 0, 0)
+	if ret != 0 {
+		return err
+	}
+
+	return nil
+}
 
 type NetworkSampler struct {
 	context         agent.AgentContext
@@ -100,7 +167,12 @@ func (ss *NetworkSampler) Sample() (results sample.EventBatch, err error) {
 		results = append(results, sample)
 	}
 
-	ioCounters, err := IOCountersForInterface(niList)
+	var ioCounters []IOCountersWithIndexStat
+	if cfg != nil && cfg.WinNetworkInterfaceV2 {
+		ioCounters, err = IOCountersForInterfaceV2(niList)
+	} else {
+		ioCounters, err = IOCountersForInterface(niList)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -230,10 +302,9 @@ func InterfacesWithIndex() ([]InterfaceWithIndexStat, error) {
 	return ret, nil
 }
 
+// IOCountersForInterface uses GetIfEntry (32-bit counters).
 func IOCountersForInterface(ifs []InterfaceWithIndexStat) ([]IOCountersWithIndexStat, error) {
-
 	var ret []IOCountersWithIndexStat
-
 	for _, ifi := range ifs {
 		nslog.WithFieldsF(func() logrus.Fields {
 			return logrus.Fields{
@@ -247,6 +318,7 @@ func IOCountersForInterface(ifs []InterfaceWithIndexStat) ([]IOCountersWithIndex
 			Index: ifi.Index,
 		}
 
+		// Use GetIfEntry for 32-bit counters
 		row := syscall.MibIfRow{Index: ifi.Index}
 		e := syscall.GetIfEntry(&row)
 		if e != nil {
@@ -260,6 +332,55 @@ func IOCountersForInterface(ifs []InterfaceWithIndexStat) ([]IOCountersWithIndex
 		c.Errout = uint64(row.OutErrors)
 		c.Dropin = uint64(row.InDiscards)
 		c.Dropout = uint64(row.OutDiscards)
+
+		ret = append(ret, c)
+	}
+
+	return ret, nil
+}
+
+// IOCountersForInterfaceV2 uses GetIfEntry2 (64-bit counters).
+func IOCountersForInterfaceV2(ifs []InterfaceWithIndexStat) ([]IOCountersWithIndexStat, error) {
+	ret := make([]IOCountersWithIndexStat, 0, len(ifs))
+
+	for _, ifi := range ifs {
+		nslog.WithFieldsF(func() logrus.Fields {
+			return logrus.Fields{
+				"index": ifi.Index,
+				"name":  ifi.Name,
+			}
+		}).Debug("IOCOUNTER resolved.")
+
+		//nolint:exhaustruct
+		c := IOCountersWithIndexStat{
+			Name:  ifi.Name,
+			Index: ifi.Index,
+		}
+
+		// Use GetIfEntry2 for 64-bit counters
+		//nolint:exhaustruct
+		row := MibIfRow2{InterfaceIndex: ifi.Index}
+
+		err := getIfEntry2(&row)
+		if err != nil {
+			nslog.WithFieldsF(func() logrus.Fields {
+				return logrus.Fields{
+					"interface_index": ifi.Index,
+					"error":           err,
+				}
+			}).Debug("GetIfEntry2 failed")
+
+			return nil, os.NewSyscallError("GetIfEntry2", err)
+		}
+
+		c.BytesSent = row.OutOctets
+		c.BytesRecv = row.InOctets
+		c.PacketsSent = row.OutUcastPkts
+		c.PacketsRecv = row.InUcastPkts
+		c.Errin = row.InErrors
+		c.Errout = row.OutErrors
+		c.Dropin = row.InDiscards
+		c.Dropout = row.OutDiscards
 
 		ret = append(ret, c)
 	}

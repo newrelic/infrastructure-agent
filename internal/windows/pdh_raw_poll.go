@@ -7,7 +7,9 @@
 package nrwin
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 	"unsafe"
 
 	winapi "github.com/newrelic/infrastructure-agent/internal/windows/api"
@@ -20,6 +22,9 @@ const (
 
 //nolint:gochecknoglobals
 var rawPollLog = log.WithComponent("PDHRawPoll")
+
+// errInvalidMetricPath indicates that PdhValidatePath rejected a non-wildcard metric.
+var errInvalidMetricPath = errors.New("invalid PDH metric path")
 
 // CPUGroupInfo represents raw CPU performance data for a single CPU core or group
 type CPUGroupInfo struct {
@@ -46,30 +51,110 @@ func NewPdhRawPoll(loggerFunc func(string, ...interface{}), metrics ...string) (
 	var pdh PdhRawPoll
 	pdh.debugLog = loggerFunc
 
-	// Validating that the passed metrics exist
+	if pdh.debugLog != nil {
+		pdh.debugLog("Initializing NewPdhRawPoll with metrics: %v", metrics)
+	}
+
+	// Skip validation for wildcard paths since PdhValidatePath doesn't handle them properly.
 	for _, metric := range metrics {
+		if pdh.debugLog != nil {
+			pdh.debugLog("Checking metric path: %s", metric)
+		}
+
+		if containsWildcard(metric) {
+			if pdh.debugLog != nil {
+				pdh.debugLog("Skipping validation for wildcard metric: %s", metric)
+			}
+
+			continue
+		}
+
 		ret := winapi.PdhValidatePath(metric)
-		if winapi.ERROR_SUCCESS != ret {
-			return nil, fmt.Errorf("invalid path %q (error %#v)", metric, ret)
+		if ret != winapi.ERROR_SUCCESS {
+			if pdh.debugLog != nil {
+				pdh.debugLog("Validation failed for non-wildcard metric %s with error %#v", metric, ret)
+			}
+
+			//nolint:wrapcheck // We want to wrap with additional context
+			return nil, fmt.Errorf("%w: %q (error %#v)", errInvalidMetricPath, metric, ret)
+		}
+
+		if pdh.debugLog != nil {
+			pdh.debugLog("Validation successful for non-wildcard metric: %s", metric)
 		}
 	}
 
 	pdh.counterHandles = make([]winapi.PDH_HCOUNTER, len(metrics))
 	pdh.queryHandler = winapi.PDH_HQUERY(uintptr(0))
+
+	if pdh.debugLog != nil {
+		pdh.debugLog("Opening PDH query")
+	}
 	ret := winapi.PdhOpenQuery(0, 0, &pdh.queryHandler)
 	if ret != winapi.ERROR_SUCCESS {
+		if pdh.debugLog != nil {
+			pdh.debugLog("Failed to open PDH query with error %#v", ret)
+		}
 		return nil, fmt.Errorf("opening PDH query (error %#v)", ret)
+	}
+
+	if pdh.debugLog != nil {
+		pdh.debugLog("Successfully opened PDH query with handle: %v", pdh.queryHandler)
 	}
 
 	pdh.metrics = metrics
 	for i, metric := range metrics {
-		ret = winapi.PdhAddEnglishCounter(pdh.queryHandler, metric, uintptr(0), &pdh.counterHandles[i])
+		if pdh.debugLog != nil {
+			pdh.debugLog("Adding counter %d/%d for metric: %s", i+1, len(metrics), metric)
+		}
+
+		ret = winapi.PdhAddEnglishCounterWithWildcards(pdh.queryHandler, metric, uintptr(0), &pdh.counterHandles[i])
 		if ret != winapi.ERROR_SUCCESS {
+			if pdh.debugLog != nil {
+				pdh.debugLog("Failed to add counter for %s with error %#v (error name: %s)", metric, ret, getErrorName(ret))
+			}
 			return nil, fmt.Errorf("adding counter for %q (error %#v)", metric, ret)
+		}
+
+		if pdh.debugLog != nil {
+			pdh.debugLog("Successfully added counter for %s with handle: %v", metric, pdh.counterHandles[i])
 		}
 	}
 
+	if pdh.debugLog != nil {
+		pdh.debugLog("Successfully created PdhRawPoll for %d metrics", len(metrics))
+	}
+
 	return &pdh, nil
+}
+
+// containsWildcard checks if a counter path contains wildcard characters.
+func containsWildcard(path string) bool {
+	return strings.Contains(path, "*") || strings.Contains(path, "?")
+}
+
+// getErrorName returns a human-readable error name for common PDH error codes.
+func getErrorName(errorCode uint32) string {
+	switch errorCode {
+	case winapi.PDH_CSTATUS_NO_OBJECT:
+		return "PDH_CSTATUS_NO_OBJECT"
+	case winapi.PDH_CSTATUS_NO_COUNTER:
+		return "PDH_CSTATUS_NO_COUNTER"
+	case winapi.PDH_CSTATUS_INVALID_DATA:
+		return "PDH_CSTATUS_INVALID_DATA"
+	case winapi.PDH_MEMORY_ALLOCATION_FAILURE:
+		return "PDH_MEMORY_ALLOCATION_FAILURE"
+	case winapi.PDH_INVALID_HANDLE:
+		return "PDH_INVALID_HANDLE"
+	case winapi.PDH_INVALID_ARGUMENT:
+		return "PDH_INVALID_ARGUMENT"
+	case winapi.PDH_MORE_DATA:
+		return "PDH_MORE_DATA"
+	case winapi.ERROR_SUCCESS:
+		return "ERROR_SUCCESS"
+	default:
+		return fmt.Sprintf("UNKNOWN_ERROR_%#v", errorCode)
+	}
 }
 
 // PollRawArray returns raw counter values for all instances of wildcard counters

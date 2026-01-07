@@ -3,8 +3,8 @@
         This script downloads all the embeded integrations for New Relic Infrastructure Agent
 #>
 param (
-    # Target architecture: amd64 (default) or 386
-    [ValidateSet("amd64", "386")]
+    # Target architecture: amd64 only (32-bit/386 support deprecated)
+    [ValidateSet("amd64")]
     [string]$arch="amd64",
     [string]$scriptPath=$(split-path -parent $MyInvocation.MyCommand.Definition),
 
@@ -108,12 +108,7 @@ Function EmbedFluentBit {
 Function EmbedWinpkg {
     Write-Output "===> Embeding Winpkg $arch"
 
-    $UrlPath = "windows/integrations/nri-winpkg/nri-winpkg.zip"
-    if($arch -eq "386") {
-        $UrlPath = "windows/386/integrations/nri-winpkg/nri-winpkg_386.zip"
-    }
-
-    [string]$url = "https://download.newrelic.com/infrastructure_agent/$UrlPath"
+    [string]$url = "https://download.newrelic.com/infrastructure_agent/windows/integrations/nri-winpkg/nri-winpkg.zip"
     DownloadAndExtractZip -dest:"$downloadPath" -url:"$url"
 
     if (-Not $skipSigning) {
