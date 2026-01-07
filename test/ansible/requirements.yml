@@ -1,4 +1,4 @@
 collections:
     - name: git+https://github.com/newrelic-experimental/caos-ansible-roles.git#/caos.ansible_roles/
       type: git
-      version: NR-312454-enable-macos-canaries-back
+      version: fix-sles-installation
