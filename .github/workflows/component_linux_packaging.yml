@@ -13,7 +13,7 @@ on:
         required: true
       GPG_PRIVATE_KEY_BASE64:
         required: true
-      OHAI_GPG_PRIVATE_KEY_SHA256_BASE64:
+      OHAI_GPG_PRIVATE_SHA256:
         required: true
       OHAI_KEY_ID:
         required: true
@@ -36,7 +36,7 @@ env:
   GPG_MAIL: ${{ secrets.GPG_MAIL }}
   GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
   GPG_PRIVATE_KEY_BASE64: ${{ secrets.GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
-  OHAI_GPG_PRIVATE_KEY_SHA256_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_SHA256_BASE64 }} # base64 encoded
+  OHAI_GPG_PRIVATE_SHA256: ${{ secrets.OHAI_GPG_PRIVATE_SHA256 }} # base64 encoded
   OHAI_KEY_ID: ${{ secrets.OHAI_KEY_ID }}
   TAG:  ${{ inputs.TAG }}
   DOCKER_HUB_ID: ${{ secrets.DOCKER_HUB_ID }}

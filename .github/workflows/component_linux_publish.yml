@@ -11,7 +11,7 @@ on:
         required: true
       GPG_PRIVATE_KEY_BASE64:
         required: true
-      OHAI_GPG_PRIVATE_KEY_SHA256_BASE64:
+      OHAI_GPG_PRIVATE_SHA256:
         required: true
       AWS_ACCESS_KEY_ID:
         required: true
@@ -49,7 +49,7 @@ env:
   GPG_MAIL: 'infrastructure-eng@newrelic.com'
   GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
   GPG_PRIVATE_KEY_BASE64: ${{ secrets.GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
-  OHAI_GPG_PRIVATE_KEY_SHA256_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_SHA256_BASE64 }} # base64 encoded
+  OHAI_GPG_PRIVATE_SHA256: ${{ secrets.OHAI_GPG_PRIVATE_SHA256 }} # base64 encoded
   TAG:  ${{ inputs.TAG }}
   DOCKER_HUB_ID: ${{ secrets.DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
@@ -133,5 +133,5 @@ jobs:
           aws_role_arn: ${{ env.AWS_ROLE_ARN }}
           # used for signing package stuff
           gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
-          gpg_private_key_base64: ${{ env.OHAI_GPG_PRIVATE_KEY_SHA256_BASE64 }}
+          gpg_private_key_base64: ${{ env.OHAI_GPG_PRIVATE_SHA256 }}
           disable_lock: ${{ env.DISABLE_LOCK }}

@@ -31,7 +31,7 @@ env:
   # required for GHA publish action, should be moved into optional
   GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
   GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
-  OHAI_GPG_PRIVATE_KEY_SHA256_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_SHA256_BASE64 }} # base64 encoded
+  OHAI_GPG_PRIVATE_SHA256: ${{ secrets.OHAI_GPG_PRIVATE_SHA256 }} # base64 encoded
   OHAI_KEY_ID: ${{ secrets.OHAI_KEY_ID }}
   BRANCH: ${{ github.event.inputs.branch }}
   # publish packages to a custom path
@@ -118,7 +118,7 @@ jobs:
           # used for signing package stuff
           gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
           gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
-          ohai_gpg_private_key_sha256_base64: ${{ env.OHAI_GPG_PRIVATE_KEY_SHA256_BASE64 }}
+          OHAI_GPG_PRIVATE_SHA256: ${{ env.OHAI_GPG_PRIVATE_SHA256 }}
           disable_lock: ${{ env.DISABLE_LOCK }}
           dest_prefix: ${{ env.DEST_PREFIX }}
           local_packages_path:  "/srv/dist/"
@@ -144,7 +144,7 @@ jobs:
           aws_role_arn: ${{ env.AWS_ROLE_ARN }}
           # used for signing package stuff
           gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
-          gpg_private_key_base64: ${{ env.OHAI_GPG_PRIVATE_KEY_SHA256_BASE64 }}
+          gpg_private_key_base64: ${{ env.OHAI_GPG_PRIVATE_SHA256 }}
           disable_lock: ${{ env.DISABLE_LOCK }}
           dest_prefix: ${{ env.DEST_PREFIX }}
           local_packages_path:  "/srv/dist/"
@@ -264,7 +264,7 @@ jobs:
           aws_role_arn: ${{ env.AWS_ROLE_ARN }}
           # used for signing package stuff
           gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
-          gpg_private_key_base64:  ${{ env.OHAI_GPG_PRIVATE_KEY_SHA256_BASE64 }}         
+          gpg_private_key_base64:  ${{ env.OHAI_GPG_PRIVATE_SHA256 }}         
           disable_lock: ${{ env.DISABLE_LOCK }}
           dest_prefix: ${{ env.DEST_PREFIX }}
           local_packages_path:  "/srv/dist/"

@@ -54,7 +54,7 @@ done
 echo "===> Create .rpmmacros for EL10 rpm's with OHAI GPG key"
 
 echo "===> Importing OHAI GPG private key for EL10 from GHA secrets..."
-printf %s ${OHAI_GPG_PRIVATE_KEY_SHA256_BASE64} | base64 -d | gpg --batch --import -
+printf %s ${OHAI_GPG_PRIVATE_SHA256} | base64 -d | gpg --batch --import -
 
 echo "%_gpg_name ${OHAI_KEY_ID}" > ~/.rpmmacros_sha256
 echo "%_signature gpg" >> ~/.rpmmacros_sha256
