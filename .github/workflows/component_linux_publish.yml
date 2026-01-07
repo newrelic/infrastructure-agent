@@ -11,6 +11,8 @@ on:
         required: true
       GPG_PRIVATE_KEY_BASE64:
         required: true
+      OHAI_GPG_PRIVATE_SHA256:
+        required: true
       AWS_ACCESS_KEY_ID:
         required: true
       AWS_SECRET_ACCESS_KEY:
@@ -47,6 +49,7 @@ env:
   GPG_MAIL: 'infrastructure-eng@newrelic.com'
   GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
   GPG_PRIVATE_KEY_BASE64: ${{ secrets.GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+  OHAI_GPG_PRIVATE_SHA256: ${{ secrets.OHAI_GPG_PRIVATE_SHA256 }} # base64 encoded
   TAG:  ${{ inputs.TAG }}
   DOCKER_HUB_ID: ${{ secrets.DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
@@ -108,4 +111,27 @@ jobs:
           # used for signing package stuff
           gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
           gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
+          disable_lock: ${{ env.DISABLE_LOCK }}
+
+      - name: Publish ${{ matrix.assetsType }} latest to S3 action
+        if: ${{ (env.ASSETS_TYPE == 'rpm' || 'rpm' == matrix.assetsType) }}
+        uses: newrelic/infrastructure-publish-action@v1
+        with:
+          tag: ${{env.TAG}}
+          app_name: "newrelic-infra${{ matrix.suffix }}"
+          repo_name: "newrelic/infrastructure-agent"
+          schema: "custom"
+          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.SCHEMA_BRANCH }}/build/upload-schema-linux-${{ matrix.assetsType }}${{ matrix.suffix }}-latest.yml"
+          aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
+          aws_s3_lock_bucket_name: ${{ env.AWS_S3_LOCK_BUCKET_NAME }}
+          access_point_host: ${{ env.ACCESS_POINT_HOST }}
+          run_id: ${{ env.RUN_ID }}
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role_session_name: ${{ env.AWS_ROLE_SESSION_NAME }}
+          aws_role_arn: ${{ env.AWS_ROLE_ARN }}
+          # used for signing package stuff
+          gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
+          gpg_private_key_base64: ${{ env.OHAI_GPG_PRIVATE_SHA256 }}
           disable_lock: ${{ env.DISABLE_LOCK }}

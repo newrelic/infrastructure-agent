@@ -27,6 +27,8 @@ jobs:
       GPG_MAIL: 'infrastructure-eng@newrelic.com'
       GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
       GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      OHAI_GPG_PRIVATE_SHA256: ${{ secrets.OHAI_GPG_PRIVATE_SHA256 }} # base64 encoded
+      OHAI_KEY_ID: ${{ secrets.OHAI_KEY_ID }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     with:
       TAG:  ${{ github.event.release.tag_name }}
@@ -41,6 +43,8 @@ jobs:
       GPG_MAIL: 'infrastructure-eng@newrelic.com'
       GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
       GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      OHAI_GPG_PRIVATE_SHA256: ${{ secrets.OHAI_GPG_PRIVATE_SHA256 }} # base64 encoded
+      OHAI_KEY_ID: ${{ secrets.OHAI_KEY_ID }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     with:
       TAG:  ${{ github.event.release.tag_name }}
@@ -56,6 +60,8 @@ jobs:
       GPG_MAIL: 'infrastructure-eng@newrelic.com'
       GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
       GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      OHAI_GPG_PRIVATE_SHA256: ${{ secrets.OHAI_GPG_PRIVATE_SHA256 }} # base64 encoded
+      OHAI_KEY_ID: ${{ secrets.OHAI_KEY_ID }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     with:
       TAG:  ${{ github.event.release.tag_name }}
@@ -70,6 +76,8 @@ jobs:
       GPG_MAIL: 'infrastructure-eng@newrelic.com'
       GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
       GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      OHAI_GPG_PRIVATE_SHA256: ${{ secrets.OHAI_GPG_PRIVATE_SHA256 }} # base64 encoded
+      OHAI_KEY_ID: ${{ secrets.OHAI_KEY_ID }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     with:
       TAG:  ${{ github.event.release.tag_name }}
@@ -84,6 +92,8 @@ jobs:
       GPG_MAIL: 'infrastructure-eng@newrelic.com'
       GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
       GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      OHAI_GPG_PRIVATE_SHA256: ${{ secrets.OHAI_GPG_PRIVATE_SHA256 }} # base64 encoded
+      OHAI_KEY_ID: ${{ secrets.OHAI_KEY_ID }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     with:
       TAG:  ${{ github.event.release.tag_name }}
@@ -99,6 +109,8 @@ jobs:
       GPG_MAIL: 'infrastructure-eng@newrelic.com'
       GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
       GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      OHAI_GPG_PRIVATE_SHA256: ${{ secrets.OHAI_GPG_PRIVATE_SHA256 }} # base64 encoded
+      OHAI_KEY_ID: ${{ secrets.OHAI_KEY_ID }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     with:
       TAG:  ${{ github.event.release.tag_name }}
@@ -113,6 +125,8 @@ jobs:
       GPG_MAIL: 'infrastructure-eng@newrelic.com'
       GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
       GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      OHAI_GPG_PRIVATE_SHA256: ${{ secrets.OHAI_GPG_PRIVATE_SHA256 }} # base64 encoded
+      OHAI_KEY_ID: ${{ secrets.OHAI_KEY_ID }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     with:
       TAG:  ${{ github.event.release.tag_name }}
@@ -133,6 +147,8 @@ jobs:
       GPG_MAIL: 'infrastructure-eng@newrelic.com'
       GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
       GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      OHAI_GPG_PRIVATE_SHA256: ${{ secrets.OHAI_GPG_PRIVATE_SHA256 }} # base64 encoded
+      OHAI_KEY_ID: ${{ secrets.OHAI_KEY_ID }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     with:
       TAG:  ${{ github.event.release.tag_name }}
@@ -156,6 +172,7 @@ jobs:
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
       GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
       GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      OHAI_GPG_PRIVATE_SHA256: ${{ secrets.OHAI_GPG_PRIVATE_SHA256 }} # base64 encoded
       AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
       AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}

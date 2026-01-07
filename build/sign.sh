@@ -22,7 +22,7 @@ start_gpg_agent() {
 start_gpg_agent
 
 
-# Sign RPM's
+# Sign RPM's (excluding EL10)
 echo "===> Create .rpmmacros to sign rpm's from Goreleaser"
 echo "%_gpg_name ${GPG_MAIL}" >> ~/.rpmmacros
 echo "%_signature gpg" >> ~/.rpmmacros
@@ -41,7 +41,7 @@ cd dist
 
 sles_regex="(.*sles12.*)"
 
-for rpm_file in $(find -regex ".*\.\(rpm\)");do
+for rpm_file in $(find -regex ".*\.\(rpm\)" | grep -v "el10");do
   echo "===> Signing $rpm_file"
 
   ../build/sign_rpm.exp $rpm_file ${GPG_PASSPHRASE}
@@ -49,6 +49,38 @@ for rpm_file in $(find -regex ".*\.\(rpm\)");do
   echo "===> Sign verification $rpm_file"
   rpm -v --checksig $rpm_file
 done
+
+# Sign EL10 RPM's with OHAI GPG key
+echo "===> Create .rpmmacros for EL10 rpm's with OHAI GPG key"
+
+echo "===> Importing OHAI GPG private key for EL10 from GHA secrets..."
+printf %s ${OHAI_GPG_PRIVATE_SHA256} | base64 -d | gpg --batch --import -
+
+echo "%_gpg_name ${OHAI_KEY_ID}" > ~/.rpmmacros_sha256
+echo "%_signature gpg" >> ~/.rpmmacros_sha256
+echo "%_gpg_path /root/.gnupg" >> ~/.rpmmacros_sha256
+echo "%_gpgbin /usr/bin/gpg" >> ~/.rpmmacros_sha256
+echo "%__gpg_sign_cmd   %{__gpg} gpg --no-verbose --no-armor --passphrase ${GPG_PASSPHRASE} --no-secmem-warning --digest-algo sha256 -u "%{_gpg_name}" -sbo %{__signature_filename} %{__plaintext_filename}" >> ~/.rpmmacros_sha256
+
+echo "===> Importing OHAI GPG signature for EL10, needed from Goreleaser to verify signature"
+gpg --export -a ${OHAI_KEY_ID} > /tmp/RPM-GPG-KEY-SHA256-${OHAI_KEY_ID}
+rpm --import /tmp/RPM-GPG-KEY-SHA256-${OHAI_KEY_ID}
+
+# Backup original .rpmmacros and use SHA256 specific one
+cp ~/.rpmmacros ~/.rpmmacros_backup
+cp ~/.rpmmacros_sha256 ~/.rpmmacros
+
+for rpm_file in $(find -regex ".*\.\(rpm\)" | grep "el10");do
+  echo "===> Signing EL10 $rpm_file with OHAI GPG key"
+
+  ../build/sign_rpm.exp $rpm_file ${GPG_PASSPHRASE}
+
+  echo "===> Sign verification $rpm_file"
+  rpm -v --checksig $rpm_file
+done
+
+# Restore original .rpmmacros
+cp ~/.rpmmacros_backup ~/.rpmmacros
 
 # Sign DEB's
 GNUPGHOME="/root/.gnupg"
