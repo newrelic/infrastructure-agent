@@ -1,0 +1,101 @@
+name: GPG Key Generation (Test)
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_message:
+        description: 'Test message to display'
+        required: false
+        default: 'Hello from GPG workflow test!'
+        type: string
+  push:
+    branches:
+      - gpgWorkflow
+
+jobs:
+  generate-gpg-keys:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup GPG
+        run: |
+          echo "GPG Version:"
+          gpg --version
+          echo "Creating GPG directory..."
+          mkdir -p ~/.gnupg
+          chmod 700 ~/.gnupg
+      
+      - name: Generate GPG Keys
+        env:
+          OHAI_GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+          GPG_KEY_NAME: "New Relic Infrastructure Agent"
+          GPG_KEY_EMAIL: "infrastructure-eng@newrelic.com"
+        run: |
+          chmod +x .github/workflows/scripts/gpgkeys_generation.sh
+          .github/workflows/scripts/gpgkeys_generation.sh
+      
+      - name: Verify generated keys
+        run: |
+          echo "Verifying generated files..."
+          ls -lh gpg-*.asc
+          echo ""
+          echo "Public key preview:"
+          head -n 5 gpg-public-key.asc
+          echo ""
+          echo "Keys generated successfully!"
+      
+      - name: Upload private key to GitHub Secrets
+        env:
+          GH_TOKEN: ${{ secrets.OHAI_PAT }}
+        run: |
+          echo "Installing GitHub CLI..."
+          type -p gh &> /dev/null || (curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+          && sudo apt update \
+          && sudo apt install gh -y)
+          
+          echo "Encoding private key to base64..."
+          ENCODED_KEY=$(cat gpg-private-key.asc | base64 -w 0)
+          
+          echo "Uploading encoded private key to GitHub secret..."
+          gh secret set OHAI_GPG_PRIVATE_KEY_TEST --body "${ENCODED_KEY}" --repo ${{ github.repository }}
+          
+          echo "✓ Private key (base64 encoded) uploaded to GitHub secret: OHAI_GPG_PRIVATE_KEY_TEST"
+      
+      - name: Export GPG key in binary format
+        run: |
+          echo "Getting Key ID..."
+          KEY_ID=$(gpg --list-keys --with-colons "infrastructure-eng@newrelic.com" | awk -F: '/^pub:/ {print $5}' | head -n 1)
+          echo "Key ID: ${KEY_ID}"
+          
+          echo "Exporting public key in .gpg binary format..."
+          gpg --export "${KEY_ID}" > public-key.gpg
+          ls -lh public-key.gpg
+          echo "✓ Binary GPG key exported"
+      
+      - name: Upload public key to AWS S3 Staging
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
+          AWS_REGION: "us-east-1"
+        run: |
+          echo "Checking AWS CLI..."
+          if ! command -v aws &> /dev/null; then
+            echo "Installing AWS CLI v2..."
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip -q awscliv2.zip
+            sudo ./aws/install
+          else
+            echo "AWS CLI already installed"
+          fi
+          aws --version
+          
+          echo "Uploading public key (.gpg format) to S3..."
+          aws s3 cp public-key.gpg s3://nr-downloads-ohai-staging/infrastructure_agent/keys/newrelic_rpm_key_sha256_test.gpg --acl public-read
+          
+          echo "✓ Public key uploaded to S3: s3://nr-downloads-ohai-staging/infrastructure_agent/keys/newrelic_rpm_key_sha256_test.gpg"
+          echo "✓ Public URL: http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent/keys/newrelic_rpm_key_sha256_test.gpg"
