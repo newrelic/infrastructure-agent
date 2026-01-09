@@ -920,6 +920,12 @@ type Config struct {
 	// Public: Yes
 	LoggingRetryLimit string `yaml:"logging_retry_limit" envconfig:"logging_retry_limit" public:"true"`
 
+	// LoggingHTTPClientTimeout sets the HTTP client timeout (in seconds) for the New Relic fluent-bit output plugin.
+	// https://github.com/newrelic/newrelic-fluent-bit-output#httpclienttimeout
+	// Default: "5"
+	// Public: Yes
+	LoggingHTTPClientTimeout string `yaml:"logging_http_client_timeout" envconfig:"logging_http_client_timeout" public:"true"`
+
 	// FluentBitExePath is the location from where the agent can execute fluent-bit.
 	// Default (Linux): /opt/td-agent-bit/bin/td-agent-bit
 	// Default (Windows): C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\logging\fluent-bit
@@ -1555,15 +1561,16 @@ func (config *Config) populateLogConfig() {
 
 // LogForward log forwarder config values.
 type LogForward struct {
-	Troubleshoot     Troubleshoot
-	ConfigsDir       string
-	HomeDir          string
-	License          string
-	IsFedramp        bool
-	IsStaging        bool
-	ProxyCfg         LogForwardProxy
-	RetryLimit       string
-	FluentBitVerbose bool
+	Troubleshoot      Troubleshoot
+	ConfigsDir        string
+	HomeDir           string
+	License           string
+	IsFedramp         bool
+	IsStaging         bool
+	ProxyCfg          LogForwardProxy
+	RetryLimit        string
+	HTTPClientTimeout string
+	FluentBitVerbose  bool
 }
 
 type LogForwardProxy struct {
@@ -1577,14 +1584,15 @@ type LogForwardProxy struct {
 // NewLogForward creates a valid log forwarder config.
 func NewLogForward(config *Config, troubleshoot Troubleshoot) LogForward {
 	return LogForward{
-		Troubleshoot:     troubleshoot,
-		ConfigsDir:       config.LoggingConfigsDir,
-		HomeDir:          config.LoggingHomeDir,
-		License:          config.License,
-		IsFedramp:        config.Fedramp,
-		IsStaging:        config.Staging,
-		RetryLimit:       config.LoggingRetryLimit,
-		FluentBitVerbose: config.Log.Level == LogLevelTrace && config.Log.HasIncludeFilter(TracesFieldName, SupervisorTrace),
+		Troubleshoot:      troubleshoot,
+		ConfigsDir:        config.LoggingConfigsDir,
+		HomeDir:           config.LoggingHomeDir,
+		License:           config.License,
+		IsFedramp:         config.Fedramp,
+		IsStaging:         config.Staging,
+		RetryLimit:        config.LoggingRetryLimit,
+		HTTPClientTimeout: config.LoggingHTTPClientTimeout,
+		FluentBitVerbose:  config.Log.Level == LogLevelTrace && config.Log.HasIncludeFilter(TracesFieldName, SupervisorTrace),
 		ProxyCfg: LogForwardProxy{
 			IgnoreSystemProxy: config.IgnoreSystemProxy,
 			Proxy:             config.Proxy,
