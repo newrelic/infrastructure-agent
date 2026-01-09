@@ -96,68 +96,6 @@ if (-Not (Check-Administrator)) {
 }
 Write-DebugLog "Admin permission check passed"
 
-# Check required user rights for the current user
-function Check-UserRight {
-    param(
-        [string]$RightName,
-        [string]$UserName
-    )
-    $sid = (New-Object System.Security.Principal.NTAccount($UserName)).Translate([System.Security.Principal.SecurityIdentifier]).Value
-    # Extract postfix (username without prefix)
-    $User = $UserName
-    if ($UserName -match "^(.*\\)(.+)$") {
-        $User = $Matches[2]
-    }
-    secedit /export /cfg $env:TEMP\secpol.cfg | Out-Null
-    $lines = Get-Content "$env:TEMP\secpol.cfg"
-    $match = $lines | Where-Object { $_ -match "^$RightName\s*=" }
-    if ($match) {
-        # Extract the value part after '=' and split by comma
-        $value = $match -replace ".*=", ""
-        $entries = $value -split ","
-        # Trim entries and check for SID, full username, and postfix
-        foreach ($entry in $entries) {
-            $trimmed = $entry.Trim().TrimStart('*')
-            if ($trimmed -ieq $sid -or $trimmed -ieq $UserName -or $trimmed -ieq $User) {
-                return $true
-            }
-        }
-    }
-    return $false
-}
-
-
-$requiredRights = @{
-    "SeServiceLogonRight"    = "Log on as a service"
-    "SeDebugPrivilege"       = "Debug programs"
-    "SeBackupPrivilege"      = "Back up files and directories"
-    "SeRestorePrivilege"     = "Restore files and directories"
-}
-
-if ($ServiceUser) {
-    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] Checking rights for ServiceUser: $ServiceUser")
-    foreach ($right in $requiredRights.Keys) {
-        if (-not (Check-UserRight $right $ServiceUser)) {
-            Write-Warning "$ServiceUser does NOT have '$($requiredRights[$right])' ($right)"
-            Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] $ServiceUser does NOT have $($requiredRights[$right]) ($right)")
-            $missingRight = $true
-        } else {
-            Write-Host "$ServiceUser has '$($requiredRights[$right])' ($right)"
-            Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] $ServiceUser has $($requiredRights[$right]) ($right)")
-        }
-    }
-
-    # Exit if any required right is missing
-    if ($missingRight) {
-        Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] User $ServiceUser is missing one or more required rights. Exiting installation.")
-        Write-Error "User $ServiceUser is missing one or more required rights. Exiting installation."
-        exit 1
-    }
-} else {
-    Write-Host "No ServiceUser specified, skipping privilege checks."
-    Add-Content -Path $debugLog -Value ("[" + (Get-Date) + "] No ServiceUser specified, skipping privilege checks.")
-}
-
 # The priority is:
 # 1 Command-line parameter
 # 2 Environment variable
