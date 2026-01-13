@@ -294,7 +294,17 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 			fb.Inputs = append(fb.Inputs, input)
 		}
 
-		fb.Filters = append(fb.Filters, filters...)
+		for _, filter := range filters {
+			_, ok := filter.Records["fb.input"]
+			if logFwdCfg.DropAttFbInput && ok {
+				// Delete fb.input if in filters
+				delete(filter.Records, "fb.input")
+			}
+			// If any records remain, add to filters
+			if len(filter.Records) > 0 {
+				fb.Filters = append(fb.Filters, filter)
+			}
+		}
 
 		if (external != FBCfgExternal{} && fb.ExternalCfg != FBCfgExternal{}) {
 			cfgLogger.Warn("External Fluent Bit configuration specified more than once. Only first one is considered, please remove any duplicates from the configuration.")
@@ -326,7 +336,7 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 	}
 
 	// This record_modifier FILTER adds common attributes for all the log records
-	fb.Filters = append(fb.Filters, FBCfgFilter{
+	commonFilter := FBCfgFilter{
 		Name:  fbFilterTypeRecordModifier,
 		Match: "*",
 		Records: map[string]string{
@@ -334,7 +344,18 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 			rAttPluginType: logRecordModifierSource,
 			rAttHostname:   hostname,
 		},
-	})
+	}
+	// Add custom_attributes if provided
+	if logFwdCfg.CommonAttributes != nil {
+		for key, value := range logFwdCfg.CommonAttributes {
+			if !isReserved(key) {
+				commonFilter.Records[key] = fmt.Sprintf("%v", value)
+			} else {
+				cfgLogger.WithField("attribute", key).Warn("attribute name is a reserved keyword and will be ignored, please use a different name")
+			}
+		}
+	}
+	fb.Filters = append(fb.Filters, commonFilter)
 
 	// Newrelic OUTPUT plugin will send all the collected logs to Vortex
 	fb.Output = newNROutput(logFwdCfg)

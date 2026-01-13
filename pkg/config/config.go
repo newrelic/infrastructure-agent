@@ -920,6 +920,14 @@ type Config struct {
 	// Public: Yes
 	LoggingRetryLimit string `yaml:"logging_retry_limit" envconfig:"logging_retry_limit" public:"true"`
 
+	// LoggingAddCustomAtts adds custom_attributes to fluent-bit forwarder tags.
+	// Default: False
+	LoggingAddCustomAtts bool `yaml:"logging_add_custom_attributes" envconfig:"logging_add_custom_attributes" public:"false"`
+
+	// LoggingDropAttFbInput drops fb.input from fluent-bit forwarder tags.
+	// Default: False
+	LoggingDropAttFbInput bool `yaml:"logging_drop_attribute_fb_input" envconfig:"logging_drop_attribute_fb_input" public:"false"`
+
 	// FluentBitExePath is the location from where the agent can execute fluent-bit.
 	// Default (Linux): /opt/td-agent-bit/bin/td-agent-bit
 	// Default (Windows): C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\logging\fluent-bit
@@ -1564,6 +1572,8 @@ type LogForward struct {
 	ProxyCfg         LogForwardProxy
 	RetryLimit       string
 	FluentBitVerbose bool
+	CommonAttributes CustomAttributeMap
+	DropAttFbInput   bool
 }
 
 type LogForwardProxy struct {
@@ -1576,15 +1586,20 @@ type LogForwardProxy struct {
 
 // NewLogForward creates a valid log forwarder config.
 func NewLogForward(config *Config, troubleshoot Troubleshoot) LogForward {
+
+	// Add any config specified common attributes for logs
+	var commonAttributes CustomAttributeMap
+	if config.LoggingAddCustomAtts {
+		commonAttributes = config.CustomAttributes
+	}
+
 	return LogForward{
-		Troubleshoot:     troubleshoot,
-		ConfigsDir:       config.LoggingConfigsDir,
-		HomeDir:          config.LoggingHomeDir,
-		License:          config.License,
-		IsFedramp:        config.Fedramp,
-		IsStaging:        config.Staging,
-		RetryLimit:       config.LoggingRetryLimit,
-		FluentBitVerbose: config.Log.Level == LogLevelTrace && config.Log.HasIncludeFilter(TracesFieldName, SupervisorTrace),
+		Troubleshoot: troubleshoot,
+		ConfigsDir:   config.LoggingConfigsDir,
+		HomeDir:      config.LoggingHomeDir,
+		License:      config.License,
+		IsFedramp:    config.Fedramp,
+		IsStaging:    config.Staging,
 		ProxyCfg: LogForwardProxy{
 			IgnoreSystemProxy: config.IgnoreSystemProxy,
 			Proxy:             config.Proxy,
@@ -1592,6 +1607,10 @@ func NewLogForward(config *Config, troubleshoot Troubleshoot) LogForward {
 			CABundleDir:       config.CABundleDir,
 			ValidateCerts:     config.ProxyValidateCerts,
 		},
+		RetryLimit:       config.LoggingRetryLimit,
+		FluentBitVerbose: config.Log.Level == LogLevelTrace && config.Log.HasIncludeFilter(TracesFieldName, SupervisorTrace),
+		CommonAttributes: commonAttributes,
+		DropAttFbInput:   config.LoggingDropAttFbInput,
 	}
 }
 
@@ -1880,6 +1899,8 @@ func NewConfig() *Config {
 		DebugLogSec:                   defaultDebugLogSec,
 		TruncTextValues:               defaultTruncTextValues,
 		LogFormat:                     defaultLogFormat,
+		LoggingAddCustomAtts:          defaultLoggingAddCustomAtts,
+		LoggingDropAttFbInput:         defaultLoggingDropAttFbInput,
 		LoggingRetryLimit:             defaultLoggingRetryLimit,
 		HTTPServerHost:                defaultHTTPServerHost,
 		HTTPServerPort:                defaultHTTPServerPort,
