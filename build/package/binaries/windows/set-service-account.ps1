@@ -198,17 +198,22 @@ if ($isGMSA) {
         exit 1
     }
     
-    # Skip permission/privilege checks for gMSA - will be handled by AD
-    Write-Host "Note: Folder permissions and user rights for gMSA must be configured separately" -ForegroundColor Yellow
-}
-# For regular accounts, perform full validation
-else {
     Write-Host ""
-    Write-Host "=== Validating User Account and Permissions ===" -ForegroundColor Cyan
+    Write-Host "Note: Folder permissions for gMSA must be configured separately (manual step required)" -ForegroundColor Yellow
+}
 
-    $usernameOnly = $Username -replace '^.*\\'
+# Validate user account and permissions
+Write-Host ""
+Write-Host "=== Validating User Account and Permissions ===" -ForegroundColor Cyan
 
-    # Check if user exists (local or domain)
+# For regular accounts, strip domain prefix for folder permissions
+# For gMSA, keep full name for user rights assignment
+$usernameOnly = $Username -replace '^.*\\'
+$usernameForRights = if ($isGMSA) { $Username } else { $usernameOnly }
+
+if (-not $isGMSA) {
+
+    # Check if user exists (local or domain) - skip for gMSA as already validated
     $userExists = Get-LocalUser -Name $usernameOnly -ErrorAction SilentlyContinue
     if (-not $userExists) {
         # Not a local user - check if it's a domain account
@@ -230,6 +235,7 @@ else {
         Write-Host "✓ Local user account exists: $usernameOnly" -ForegroundColor Green
     }
 
+    # Folder permissions - only for regular accounts (not gMSA)
     # Required folders
     $appDataDir = "C:\ProgramData\New Relic\newrelic-infra"
     $agentDir = "C:\Program Files\New Relic\newrelic-infra"
@@ -288,11 +294,13 @@ else {
     } else {
         Write-Host "User has permissions on: $agentDir" -ForegroundColor Green
     }
+}
 
-    Write-Host ""
-    Write-Host "Checking user privileges..." -ForegroundColor Cyan
+# Grant user rights for both regular accounts and gMSA
+Write-Host ""
+Write-Host "Checking user privileges..." -ForegroundColor Cyan
 
-    function Grant-UserRight {
+function Grant-UserRight {
         param([string]$User, [string]$Right, [string]$Description)
         
         Write-Host "  Granting: $Description" -ForegroundColor Yellow
@@ -331,16 +339,15 @@ else {
         }
     }
 
-    $requiredRights = @{
-        "SeServiceLogonRight" = "Log on as a service"
-        "SeDebugPrivilege" = "Debug programs"
-        "SeBackupPrivilege" = "Back up files and directories"
-        "SeRestorePrivilege" = "Restore files and directories"
-    }
+$requiredRights = @{
+    "SeServiceLogonRight" = "Log on as a service"
+    "SeDebugPrivilege" = "Debug programs"
+    "SeBackupPrivilege" = "Back up files and directories"
+    "SeRestorePrivilege" = "Restore files and directories"
+}
 
-    foreach ($right in $requiredRights.Keys) {
-        Grant-UserRight -User $usernameOnly -Right $right -Description $requiredRights[$right] | Out-Null
-    }
+foreach ($right in $requiredRights.Keys) {
+    Grant-UserRight -User $usernameForRights -Right $right -Description $requiredRights[$right] | Out-Null
 }
 
 Write-Host ""
