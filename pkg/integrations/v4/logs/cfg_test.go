@@ -22,11 +22,12 @@ const windowsServer2016BuildNumber = 14393
 var windowsBuildNumberRegex = regexp.MustCompile(`.*Build ([0-9]+)`)
 
 var logFwdCfg = config.LogForward{
-	HomeDir:    "/var/db/newrelic-infra/newrelic-integrations/logging",
-	License:    "licenseKey",
-	IsStaging:  false,
-	IsFedramp:  false,
-	RetryLimit: "5",
+	HomeDir:           "/var/db/newrelic-infra/newrelic-integrations/logging",
+	License:           "licenseKey",
+	IsStaging:         false,
+	IsFedramp:         false,
+	RetryLimit:        "5",
+	HTTPClientTimeout: "10",
 	ProxyCfg: config.LogForwardProxy{
 		IgnoreSystemProxy: true,
 		Proxy:             "https://https-proxy:3129",
@@ -58,7 +59,6 @@ func inputRecordModifier(i string, m string) FBCfgFilter {
 
 func withFeedramp(cfg config.LogForward) config.LogForward {
 	cfg.IsFedramp = true
-
 	return cfg
 }
 
@@ -72,6 +72,7 @@ var outputBlock = FBCfgOutput{
 	CABundleDir:       "/cabundles",
 	ValidateCerts:     true,
 	Retry_Limit:       "5",
+	HTTPClientTimeout: "10",
 }
 
 func TestNewFBConf(t *testing.T) {
@@ -82,6 +83,7 @@ func TestNewFBConf(t *testing.T) {
 	logFwdCfgMultipleRetries := logFwdCfg
 	logFwdCfgMultipleRetries.RetryLimit = "4"
 	outputBlockMultipleRetries.Retry_Limit = "4"
+	outputBlockMultipleRetries.HTTPClientTimeout = "10"
 
 	tests := []struct {
 		name   string
