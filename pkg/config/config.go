@@ -940,7 +940,7 @@ type Config struct {
 	// WinNetworkInterfaceV2 when true, uses GetIfEntry2 (64-bit counters) instead of GetIfEntry (32-bit counters)
 	// for network metrics on Windows.
 	// This flag is kept for backward compatibility and may be removed in the future.
-	// Default: false
+	// Default: true
 	// Public: Yes
 	WinNetworkInterfaceV2 bool `envconfig:"win_network_interface_v2" public:"true" yaml:"win_network_interface_v2"`
 
@@ -1937,6 +1937,7 @@ func NewConfig() *Config {
 		Http:                        NewHttpConfig(),
 		AgentTempDir:                defaultAgentTempDir,
 		ProcessContainerDecoration:  defaultProcessContainerDecoration,
+		WinNetworkInterfaceV2:       defaultWinNetworkInterfaceV2,
 	}
 }
 

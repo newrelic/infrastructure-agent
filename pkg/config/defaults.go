@@ -107,6 +107,7 @@ var (
 	defaultProxyValidateCerts            = false
 	defaultProxyConfigPlugin             = true
 	defaultWinRemovableDrives            = true
+	defaultWinNetworkInterfaceV2         = true
 	defaultIncludeMetricsMatcherConfig   = IncludeMetricsMap{}
 	defaultExcludeMetricsMatcherConfig   = ExcludeMetricsMap{}
 	defaultRegisterMaxRetryBoSecs        = 60
