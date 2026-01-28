@@ -924,7 +924,7 @@ type Config struct {
 	// https://github.com/newrelic/newrelic-fluent-bit-output#httpclienttimeout
 	// Default: "5"
 	// Public: Yes
-	LoggingHTTPClientTimeout string `yaml:"logging_http_client_timeout" envconfig:"logging_http_client_timeout" public:"true"`
+	LoggingHTTPClientTimeout string `envconfig:"logging_http_client_timeout" public:"true" yaml:"logging_http_client_timeout"` //nolint:lll
 
 	// FluentBitExePath is the location from where the agent can execute fluent-bit.
 	// Default (Linux): /opt/td-agent-bit/bin/td-agent-bit
