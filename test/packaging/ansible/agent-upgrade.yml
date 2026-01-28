@@ -16,7 +16,7 @@
   tasks:
     - name: agent upgrade tests suite
       vars:
-        target_agent_version: "1.71.0"
+        target_agent_version: "1.72.0"
 
       block:
 
