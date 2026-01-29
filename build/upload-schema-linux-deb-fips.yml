@@ -15,9 +15,6 @@
         - xenial
         - buster
         - jessie
-        - stretch
-        - groovy
-        - hirsute
         - bullseye
         - bookworm
         - trixie
@@ -31,7 +28,6 @@
       dest: "{dest_prefix}linux/apt/"
       os_version:
         - trusty
-        - precise
 
 #########################
   # UPLOAD CHECKSUMS #
