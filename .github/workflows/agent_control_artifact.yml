@@ -1,0 +1,186 @@
+name: Agent Control Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to process (e.g., 1.72.1 or v1.72.1)'
+        required: true
+        type: string
+
+jobs:
+  repackage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Validate release tag and extract version
+        id: validate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ inputs.tag }}"
+          echo "Validating release tag: ${TAG}"
+
+          echo "gh release view "${TAG}" --repo newrelic/infrastructure-agent "
+          # Check if release exists
+          if ! gh release view "${TAG}" --repo newrelic/infrastructure-agent >/dev/null 2>&1; then
+            echo "::error::Release tag '${TAG}' not found"
+            exit 1
+          fi
+
+          # Extract version (remove 'v' prefix if present, remove any suffix after '-')
+          VERSION="${TAG#v}"
+          VERSION="${VERSION%%-*}"
+
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "✓ Release validated: ${TAG} (version: ${VERSION})"
+
+      - name: Create workspace directories
+        run: |
+          mkdir -p downloads
+          mkdir -p extracted/windows
+          mkdir -p modified
+          mkdir -p dist/windows
+          echo "✓ Workspace directories created"
+
+      - name: Install extraction tools
+        run: |
+          echo "Installing extraction tools..."
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq \
+            msitools \
+            unzip \
+            >/dev/null 2>&1
+
+          # Verify installations
+          which msiextract unzip tar
+          echo "✓ All extraction tools installed"
+
+
+      - name: Download Windows MSI artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.validate.outputs.version }}
+          TAG: ${{ steps.validate.outputs.tag }}
+        run: |
+          cd downloads
+          echo "Downloading Windows MSI artifacts..."
+
+          PATTERN="newrelic-infra-amd64.${VERSION}.msi"
+          echo "  Downloading: ${PATTERN}*"
+          gh release download "${TAG}" \
+            --repo newrelic/infrastructure-agent \
+            --pattern "${PATTERN}*" \
+            --skip-existing || echo "::warning::Failed to download ${PATTERN}"
+
+          find .
+          cd ..
+          echo "✓ MSI download complete"
+
+
+      - name: Extract MSI artifacts
+        run: |
+          cd downloads
+          echo "Extracting MSI artifacts..."
+
+          for MSI in *.msi; do
+            [ -e "${MSI}" ] || continue
+
+            EXTRACT_DIR="../extracted/windows/"
+
+            echo "  Extracting: ${MSI} -> ${EXTRACT_DIR}"
+            mkdir -p "${EXTRACT_DIR}"
+
+            if msiextract --directory "${EXTRACT_DIR}" "${MSI}" 2>/dev/null; then
+              echo "    ✓ Extracted with msiextract"
+            else
+              echo "::warning::Failed to extract ${MSI}"
+              exit 1
+            fi
+
+            # Verify extraction
+            if [ -z "$(ls -A "${EXTRACT_DIR}")" ]; then
+              echo "::warning::Extraction resulted in empty directory: ${EXTRACT_DIR}"
+            fi
+          done
+
+          cd ..
+
+          echo "✓ MSI extraction complete"
+
+
+      - name: Repackage windows
+        run: |
+          echo "Repackaging Windows artifacts..."
+
+          SRC="extracted/windows/New Relic/newrelic-infra"
+          DEST="dist/windows"
+
+          # Create destination directories
+          mkdir -p "${DEST}/integrations"
+          mkdir -p "${DEST}/integrations.d"
+          mkdir -p "${DEST}/logging"
+
+          # Copy main executable
+          cp "${SRC}/newrelic-infra.exe" "${DEST}/newrelic-infra.exe"
+
+          # Copy integrations
+          cp "${SRC}/newrelic-integrations/nri-winservices.exe" "${DEST}/integrations/"
+          cp "${SRC}/newrelic-integrations/windows_exporter.exe" "${DEST}/integrations/"
+          cp "${SRC}/newrelic-integrations/nri-flex.exe" "${DEST}/integrations/"
+          cp "${SRC}/newrelic-integrations/nri-prometheus.exe" "${DEST}/integrations/"
+          cp "${SRC}/newrelic-integrations/nr-winpkg.exe" "${DEST}/integrations/"
+          cp "${SRC}/newrelic-integrations/newrelic-infra-winpkg-definition.yml" "${DEST}/integrations/"
+
+          # Copy logging components
+          cp "${SRC}/newrelic-integrations/logging/fluent-bit.exe" "${DEST}/logging/"
+          cp "${SRC}/newrelic-integrations/logging/fluent-bit.dll" "${DEST}/logging/"
+          cp "${SRC}/newrelic-integrations/logging/parsers.conf" "${DEST}/logging/"
+          cp "${SRC}/newrelic-integrations/logging/out_newrelic.dll" "${DEST}/logging/"
+
+          # Copy configuration files
+          cp "${SRC}/newrelic-infra.yml" "${DEST}/"
+          cp "${SRC}/integrations.d/newrelic-infra-winpkg-config.yml" "${DEST}/integrations.d/"
+          cp "${SRC}/integrations.d/winservices-config.yml.sample" "${DEST}/integrations.d/"
+
+          # Verify repackaging
+          echo "✓ Windows artifacts repackaged:"
+          find "${DEST}" -type f | sort
+
+          # Create ZIP archive
+          echo "Creating windows.zip..."
+          cd dist
+          zip -r windows.zip windows/
+          cd ..
+
+          ZIP_SIZE=$(du -h "dist/windows.zip" | cut -f1)
+          echo "✓ Created windows.zip (${ZIP_SIZE})"
+
+          # Cleanup - remove the unzipped directory
+          rm -rf "${DEST}"
+          echo "✓ Cleaned up temporary files"
+
+      - name: Upload to Agent Metadata
+        uses: newrelic/agent-metadata-action@v0.0.19
+        with:
+          newrelic-client-id: ${{ secrets.NEWRELIC_CLIENT_ID }}
+          newrelic-private-key: ${{ secrets.NEWRELIC_PRIVATE_KEY }}
+          agent-type: 'NRInfraAgent'
+          version: ${{ steps.validate.outputs.version }}
+          oci-registry: ${{ secrets.OCI_REGISTRY }}
+          oci-username: ${{ secrets.OCI_USERNAME }}
+          oci-password: ${{ secrets.OCI_PASSWORD }}
+          binaries: |
+            [
+              {
+                "name": "windows-amd64",
+                "path": "./dist/windows.zip",
+                "os": "windows",
+                "arch": "amd64",
+                "format": "zip"
+              }
+            ]
