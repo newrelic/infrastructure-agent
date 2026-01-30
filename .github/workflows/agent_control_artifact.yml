@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag to process (e.g., 1.72.1 or v1.72.1)'
+        description: 'Release tag to process (e.g., 1.72.1)'
         required: true
         type: string
 
@@ -166,12 +166,10 @@ jobs:
           # Move artifacts to temp location to survive git clean
           mkdir -p /tmp/artifacts
           cp dist/windows.zip /tmp/artifacts/
-          echo "${{ secrets.NEWRELIC_CLIENT_ID }}"
-          echo "${{ secrets.NEWRELIC_PRIVATE_KEY }}"
           echo "✓ Artifacts preserved"
 
       - name: Upload to Agent Metadata
-        uses: newrelic/agent-metadata-action@v0.0.19
+        uses: newrelic/agent-metadata-action@clean-fix
         with:
           newrelic-client-id: ${{ secrets.NEWRELIC_CLIENT_ID }}
           newrelic-private-key: ${{ secrets.NEWRELIC_PRIVATE_KEY }}
