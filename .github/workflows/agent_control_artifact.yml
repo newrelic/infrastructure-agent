@@ -122,7 +122,6 @@ jobs:
 
           # Create destination directories
           mkdir -p "${DEST}/integrations"
-          mkdir -p "${DEST}/integrations.d"
           mkdir -p "${DEST}/logging"
 
           # Copy main executable
@@ -144,8 +143,6 @@ jobs:
 
           # Copy configuration files
           cp "${SRC}/newrelic-infra.yml" "${DEST}/"
-          cp "${SRC}/integrations.d/newrelic-infra-winpkg-config.yml" "${DEST}/integrations.d/"
-          cp "${SRC}/integrations.d/winservices-config.yml.sample" "${DEST}/integrations.d/"
 
           # Verify repackaging
           echo "✓ Windows artifacts repackaged:"
@@ -164,12 +161,21 @@ jobs:
           rm -rf "${DEST}"
           echo "✓ Cleaned up temporary files"
 
+      - name: Preserve artifacts before action checkout
+        run: |
+          # Move artifacts to temp location to survive git clean
+          mkdir -p /tmp/artifacts
+          cp dist/windows.zip /tmp/artifacts/
+          echo "${{ secrets.NEWRELIC_CLIENT_ID }}"
+          echo "${{ secrets.NEWRELIC_PRIVATE_KEY }}"
+          echo "✓ Artifacts preserved"
+
       - name: Upload to Agent Metadata
         uses: newrelic/agent-metadata-action@v0.0.19
         with:
           newrelic-client-id: ${{ secrets.NEWRELIC_CLIENT_ID }}
           newrelic-private-key: ${{ secrets.NEWRELIC_PRIVATE_KEY }}
-          agent-type: 'NRInfraAgent'
+          agent-type: 'NRInfra'
           version: ${{ steps.validate.outputs.version }}
           oci-registry: ${{ secrets.OCI_REGISTRY }}
           oci-username: ${{ secrets.OCI_USERNAME }}
@@ -178,7 +184,7 @@ jobs:
             [
               {
                 "name": "windows-amd64",
-                "path": "./dist/windows.zip",
+                "path": "/tmp/artifacts/windows.zip",
                 "os": "windows",
                 "arch": "amd64",
                 "format": "zip"
