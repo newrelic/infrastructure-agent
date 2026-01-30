@@ -133,16 +133,12 @@ jobs:
           cp "${SRC}/newrelic-integrations/nri-flex.exe" "${DEST}/integrations/"
           cp "${SRC}/newrelic-integrations/nri-prometheus.exe" "${DEST}/integrations/"
           cp "${SRC}/newrelic-integrations/nr-winpkg.exe" "${DEST}/integrations/"
-          cp "${SRC}/newrelic-integrations/newrelic-infra-winpkg-definition.yml" "${DEST}/integrations/"
 
           # Copy logging components
           cp "${SRC}/newrelic-integrations/logging/fluent-bit.exe" "${DEST}/logging/"
           cp "${SRC}/newrelic-integrations/logging/fluent-bit.dll" "${DEST}/logging/"
           cp "${SRC}/newrelic-integrations/logging/parsers.conf" "${DEST}/logging/"
           cp "${SRC}/newrelic-integrations/logging/out_newrelic.dll" "${DEST}/logging/"
-
-          # Copy configuration files
-          cp "${SRC}/newrelic-infra.yml" "${DEST}/"
 
           # Verify repackaging
           echo "✓ Windows artifacts repackaged:"
