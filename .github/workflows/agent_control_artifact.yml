@@ -147,8 +147,9 @@ jobs:
           # Create ZIP archive
           echo "Creating windows.zip..."
           cd dist
-          zip -r windows.zip windows/
-          cd ..
+          cd windows
+          zip -r ../windows.zip
+          cd ../..
 
           ZIP_SIZE=$(du -h "dist/windows.zip" | cut -f1)
           echo "✓ Created windows.zip (${ZIP_SIZE})"
