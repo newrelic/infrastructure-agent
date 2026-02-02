@@ -148,7 +148,7 @@ jobs:
           echo "Creating windows.zip..."
           cd dist
           cd windows
-          zip -r ../windows.zip
+          zip -r ../windows.zip .
           cd ../..
 
           ZIP_SIZE=$(du -h "dist/windows.zip" | cut -f1)
@@ -182,6 +182,13 @@ jobs:
                 "path": "/tmp/artifacts/windows.zip",
                 "os": "windows",
                 "arch": "amd64",
+                "format": "zip"
+              },
+              {
+                "name": "windows-arm64",
+                "path": "/tmp/artifacts/windows.zip",
+                "os": "windows",
+                "arch": "arm64",
                 "format": "zip"
               }
             ]
