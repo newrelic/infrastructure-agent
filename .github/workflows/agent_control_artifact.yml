@@ -183,12 +183,5 @@ jobs:
                 "os": "windows",
                 "arch": "amd64",
                 "format": "zip"
-              },
-              {
-                "name": "windows-arm64",
-                "path": "/tmp/artifacts/windows.zip",
-                "os": "windows",
-                "arch": "arm64",
-                "format": "zip"
               }
             ]
