@@ -166,7 +166,7 @@ jobs:
           echo "✓ Artifacts preserved"
 
       - name: Upload to Agent Metadata
-        uses: newrelic/agent-metadata-action@feat/sign-index
+        uses: newrelic/agent-metadata-action@main
         with:
           newrelic-client-id: ${{ secrets.NEWRELIC_CLIENT_ID }}
           newrelic-private-key: ${{ secrets.NEWRELIC_PRIVATE_KEY }}
