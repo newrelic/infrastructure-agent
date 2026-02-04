@@ -51,6 +51,7 @@ jobs:
         with:
           gpg_key: 'https://download.newrelic.com/infrastructure_agent/keys/newrelic_rpm_key_sha256.gpg'
           repo_base_url: ${{ inputs.REPO_ENDPOINT }}
-          package_name: 'newrelic-infra'
+          package_name: 'newrelic-infra-fips'
+          exec_name: 'newrelic-infra'
           package_version: ${{ inputs.TAG }}
           platforms: "debian-trixie"
