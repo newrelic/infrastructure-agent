@@ -164,10 +164,14 @@ if ($existingService) {
     Write-DebugLog "Service $ServiceName not found - performing fresh installation"
 }
 
+function Get-ScriptDirectory {
+    Split-Path -parent $PSCommandPath
+}
 
+$ScriptPath = Get-ScriptDirectory
 
-if (Test-Path "$AgentDir\newrelic-infra.exe") {
-    $versionOutput = & "$AgentDir\newrelic-infra.exe" -version
+if (Test-Path "$ScriptPath\newrelic-infra.exe") {
+    $versionOutput = & "$ScriptPath\newrelic-infra.exe" -version
     Write-DebugLog "Installing $versionOutput"
 }
 Write-Host -NoNewline "Using the following configuration..."
@@ -189,12 +193,6 @@ Function Create-Directory ($dir) {
         Write-DebugLog "Directory already exists: $dir"
     }
 }
-
-function Get-ScriptDirectory {
-    Split-Path -parent $PSCommandPath
-}
-
-$ScriptPath = Get-ScriptDirectory
 
 # Create directories only for fresh installation
 if (-not $isUpgrade) {
