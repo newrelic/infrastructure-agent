@@ -32,11 +32,6 @@
     - type: zypp
       dest: "{dest_prefix}linux/zypp/sles/{os_version}/{arch}/"
       os_version:
-        - 11.4
-        - 12.1
-        - 12.2
-        - 12.3
-        - 12.4
         - 12.5
         - 15.1
         - 15.2
@@ -54,9 +49,6 @@
     - type: zypp
       dest: "{dest_prefix}linux/zypp/sles/{os_version}/{arch}/"
       os_version:
-        - 12.2
-        - 12.3
-        - 12.4
         - 12.5
         - 15.1
         - 15.2
@@ -126,11 +118,6 @@
     - type: file
       dest: "{dest_prefix}linux/zypp/sles/{os_version}/{arch}/{src}"
       os_version:
-        - 11.4
-        - 12.1
-        - 12.2
-        - 12.3
-        - 12.4
         - 12.5
         - 15.1
         - 15.2
@@ -147,9 +134,6 @@
     - type: file
       dest: "{dest_prefix}linux/zypp/sles/{os_version}/{arch}/{src}"
       os_version:
-        - 12.2
-        - 12.3
-        - 12.4
         - 12.5
         - 15.1
         - 15.2
@@ -166,9 +150,6 @@
     - type: file
       dest: "{dest_prefix}linux/zypp/sles/{os_version}/aarch64/{src}"
       os_version:
-        - 12.2
-        - 12.3
-        - 12.4
         - 12.5
         - 15.1
         - 15.2
