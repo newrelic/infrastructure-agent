@@ -1,5 +1,5 @@
 collections:
-  - name: git+https://github.com/newrelic-experimental/caos-ansible-roles.git#/caos.ansible_roles/
+  - name: git+https://github.com/newrelic-experimental/caos-ansible-roles.git,main#/caos.ansible_roles/
     type: git
 
 roles:
