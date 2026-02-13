@@ -1,0 +1,103 @@
+namespace: newrelic
+name: com.newrelic.infrastructure
+version: 0.1.3
+variables:
+  windows:
+    config_agent:
+      description: "Newrelic infra configuration"
+      type: yaml
+      required: false
+      default: ""
+    config_integrations:
+      description: "map of YAML configs for the OHIs"
+      type: map[string]yaml
+      required: false
+      default: { }
+    config_logging:
+      description: "map of YAML config for logging"
+      type: map[string]yaml
+      required: false
+      default: { }
+    backoff_delay:
+      description: "seconds until next retry if agent fails to start"
+      type: string
+      required: false
+      default: 20s
+    enable_file_logging:
+      description: "enable logging the on host executables' logs to files"
+      type: bool
+      required: false
+      default: false
+    health_port:
+      description: "port for the Infra Agent status server"
+      type: number
+      required: false
+      default: 18003
+    oci:
+      registry:
+        description: "Package registry url"
+        type: string
+        required: false
+        default: ghcr.io
+        variants:
+          ac_config_field: "oci_registry_urls"
+          values: [ "ghcr.io" ]
+      repository:
+        description: "Package repository name"
+        type: string
+        required: false
+        default: newrelic/testing-infra-agent
+        variants:
+          ac_config_field: "oci_repository_urls"
+          values: [ "newrelic/testing-infra-agent" ]
+    version:
+      description: "Agent version"
+      type: string
+      required: true
+deployment:
+  windows:
+    enable_file_logging: ${nr-var:enable_file_logging}
+    health:
+      interval: 5s
+      initial_delay: 5s
+      timeout: 5s
+      http:
+        path: "/v1/status/health"
+        port: ${nr-var:health_port}
+    packages:
+      infra-agent:
+        type: zip
+        download:
+          oci:
+            registry: ${nr-var:oci.registry}
+            repository: ${nr-var:oci.repository}
+            version: ${nr-var:version}
+    version:
+      path: ${nr-sub:packages.infra-agent.dir}\\newrelic-infra.exe
+      args:
+        - --version
+      regex: \d+\.\d+\.\d+
+    filesystem:
+      config:
+        newrelic-infra.yaml: |
+          ${nr-var:config_agent}
+      integrations.d: ${nr-var:config_integrations}
+      logging.d: ${nr-var:config_logging}
+    executables:
+      - id: newrelic-infra
+        path: ${nr-sub:packages.infra-agent.dir}\\newrelic-infra.exe
+        args:
+          - --config
+          - "${nr-sub:filesystem_agent_dir}\\config\\newrelic-infra.yaml"
+        env:
+          NRIA_CUSTOM_PLUGIN_INSTALLATION_DIR: "${nr-sub:packages.infra-agent.dir}\\integrations"
+          NRIA_SAFE_BIN_DIR: "${nr-sub:packages.infra-agent.dir}\\integrations"
+          NRIA_PLUGIN_DIR: "${nr-sub:filesystem_agent_dir}\\integrations.d"
+          NRIA_LOGGING_CONFIGS_DIR: "${nr-sub:filesystem_agent_dir}\\logging.d"
+          NRIA_STATUS_SERVER_ENABLED: true
+          NRIA_STATUS_SERVER_PORT: "${nr-var:health_port}"
+          NR_HOST_ID: "${nr-ac:host_id}"
+        restart_policy:
+          backoff_strategy:
+            type: fixed
+            backoff_delay: ${nr-var:backoff_delay}

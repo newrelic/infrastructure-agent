@@ -1,0 +1,7 @@
+configurationDefinitions:
+  - platform: HOST
+    description: infrastructure agent configuration 
+    type: infrastructure-config
+    version: 1.0.0
+    format: yml
+    operatingSystem: WINDOWS
