@@ -12,6 +12,8 @@ jobs:
   repackage:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    continue-on-error: true
+
 
     steps:
       - name: Checkout repository
@@ -175,6 +177,7 @@ jobs:
           oci-registry: ${{ secrets.OCI_REGISTRY }}
           oci-username: ${{ secrets.OCI_USERNAME }}
           oci-password: ${{ secrets.OCI_PASSWORD }}
+          apm-control-nr-license-key: ${{ secrets.APM_CONTROL_NR_LICENSE_KEY_STAGING }} # action app is instrumented and supported by APM Control team
           binaries: |
             [
               {

@@ -11,9 +11,3 @@ configurationDefinitions:
     version: 1.0.0
     format: yml
     operatingSystem: LINUX
-  - platform: KUBERNETESCLUSTER
-    description: infrastructure agent configuration 
-    type: infrastructure-config
-    version: 1.0.0
-    format: yml
-    operatingSystem: LINUX
