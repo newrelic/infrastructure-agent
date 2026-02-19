@@ -52,6 +52,7 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version-file: '${{ env.REPO_WORKDIR }}/go.mod'
+          check-latest: true
 
       - name: Get PFX certificate from GH secrets
         shell: bash
