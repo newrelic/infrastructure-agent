@@ -12,8 +12,6 @@ jobs:
   repackage:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    continue-on-error: true
-
 
     steps:
       - name: Checkout repository
@@ -83,6 +81,35 @@ jobs:
           cd ..
           echo "✓ MSI download complete"
 
+      - name: Validate checksums
+        env:
+          VERSION: ${{ steps.validate.outputs.version }}
+        run: |
+          cd downloads
+          echo "Validating checksums..."
+
+          MSI_FILE="newrelic-infra-amd64.${VERSION}.msi"
+          SUM_FILE="${MSI_FILE}.sum"
+
+          if [ ! -f "${SUM_FILE}" ]; then
+            echo "::error::Checksum file not found: ${SUM_FILE}"
+            exit 1
+          fi
+
+          if [ ! -f "${MSI_FILE}" ]; then
+            echo "::error::MSI file not found: ${MSI_FILE}"
+            exit 1
+          fi
+
+          # Validate checksum (format: <hash> <filename>)
+          if sha256sum -c "${SUM_FILE}"; then
+            echo "✓ Checksum validation passed for ${MSI_FILE}"
+          else
+            echo "::error::Checksum validation failed for ${MSI_FILE}"
+            exit 1
+          fi
+
+          cd ..
 
       - name: Extract MSI artifacts
         run: |
