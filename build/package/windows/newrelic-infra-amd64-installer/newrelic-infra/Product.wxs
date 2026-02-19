@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
     <?define Version = "$(var.AgentVersion)"?>
     <?define ProductId = "*"?>
@@ -31,6 +31,7 @@
         <Property Id="METRICS_NETWORK_SAMPLE_RATE" Secure="yes" />
         <Property Id="METRICS_PROCESS_SAMPLE_RATE" Secure="yes" />
         <Property Id="PAYLOAD_COMPRESSION_LEVEL" Secure="yes" />
+        <Property Id="NRIA_OVERWRITE" Secure="yes" />
 
         <Feature Id="ProductFeature" Title="New Relic Infrastructure Agent" Level="1">
             <ComponentRef Id="CMP_V1_PLUGIN_CONFIGS" />
@@ -117,104 +118,115 @@
 
 	<Fragment>
 		<ComponentGroup Id="ProductComponents" Directory="AgentBinaryFolder">
-            <Component Id="CMP_AGENT_SERVICE_EXE" Guid="6D644BF3-4A79-47DB-8FD2-4CDF6E4D2D35" Win64="yes">
-                <File Id="FILE_AgentBinaryFolder_AGENT_SERVICE_EXE"
-                      Name ="newrelic-infra-service.exe"
-                      Source="$(var.BinariesPath)newrelic-infra-service.exe"
-                      KeyPath="yes"/>
-                <ServiceInstall
-                  Id="InstallAgentService"
-                  Name="newrelic-infra"
-                  DisplayName="New Relic Infrastructure Agent"
-                  Start="auto"
-                  ErrorControl="normal"
-                  Type="ownProcess"
-                >
-                  <util:ServiceConfig
-                    FirstFailureActionType='restart'
-                    SecondFailureActionType='restart'
-                    ThirdFailureActionType='restart'
-                    RestartServiceDelayInSeconds='30'
-                    ResetPeriodInDays='1'/>
-                </ServiceInstall>
-                <ServiceControl
-                  Id="sc_AgentService"
-                  Name="newrelic-infra"
-                  Stop="both"
-                  Remove="uninstall"
-                  Wait="yes" />
-            </Component>
-            <Component Id="CMP_AGENT_EXE" Guid="3394BD87-0135-477D-8A54-A20D4CDA8CAE" Win64="yes">
-                <File Id="FILE_AgentBinaryFolder_AGENT_EXE"
-                      Source="$(var.BinariesPath)newrelic-infra.exe"
-                      KeyPath="yes"/>
-            </Component>
-            <Component Id="CMP_AGENT_CONFIG_YML" Guid="A7976B53-0B30-4E9A-AEB1-C903C28A5864" Win64="yes" NeverOverwrite="yes" Permanent="yes">
-                <File Id="FILE_AgentBinaryFolder_AGENT_CONFIG_YML"
-                      Name="newrelic-infra.yml"
-                      Source="$(var.ExternalFilesPath)\examples\infrastructure\newrelic-infra.windows.yml"
-                      KeyPath="yes" />
-            </Component>
-            <Component Id="CMP_LICENSE_TXT" Guid="BA99F9AA-967F-405C-B80B-9ACE31D98E9E" Win64="yes">
-                <File Id="FILE_AgentBinaryFolder_LICENSE_TXT"
-                      Name ="LICENSE.txt"
-                      Source="$(var.ExternalFilesPath)\examples\infrastructure\LICENSE.windows.txt"
-                      KeyPath="yes" />
-              </Component>
-            <Component Id="CMP_YAMLGENERATOR_EXE" Guid="BA69F9AA-977F-415C-B70B-9ADE31D98E9F" Win64="yes">
-                <File Id="FILE_AgentBinaryFolder_YAMLGENERATOR_EXE"
-                     Name ="yamlgen.exe"
-                     Source="$(var.BinariesPath)yamlgen.exe"
-                     KeyPath="yes" />
-            </Component>
-            <Component Id="CMP_AGENT_CTL_EXE" Guid="A9108F57-1785-46D5-A879-D2A55AEA62F6" Win64="yes">
-                  <File Id="FILE_AgentBinaryFolder_AGENT_CTL_EXE"
-                        Name ="newrelic-infra-ctl.exe"
-                        Source="$(var.BinariesPath)newrelic-infra-ctl.exe"
-                        KeyPath="yes" />
-            </Component>
+        <Component Id="CMP_AGENT_SERVICE_EXE" Guid="6D644BF3-4A79-47DB-8FD2-4CDF6E4D2D35" Win64="yes">
+            <File Id="FILE_AgentBinaryFolder_AGENT_SERVICE_EXE"
+                  Name ="newrelic-infra-service.exe"
+                  Source="$(var.BinariesPath)newrelic-infra-service.exe"
+                  KeyPath="yes"/>
+        </Component>
+        <Component Id="CMP_AGENT_EXE" Guid="3394BD87-0135-477D-8A54-A20D4CDA8CAE" Win64="yes">
+            <File Id="FILE_AgentBinaryFolder_AGENT_EXE"
+                  Source="$(var.BinariesPath)newrelic-infra.exe"
+                  KeyPath="yes"/>
+        </Component>
+        <Component Id="CMP_AGENT_CONFIG_YML" Guid="A7976B53-0B30-4E9A-AEB1-C903C28A5864" Win64="yes" NeverOverwrite="yes" Permanent="yes">
+          <File Id="FILE_AgentBinaryFolder_AGENT_CONFIG_YML"
+                Name="newrelic-infra.yml"
+                Source="$(var.ExternalFilesPath)\examples\infrastructure\newrelic-infra.windows.yml"
+                KeyPath="yes" />
+        </Component>
+        <Component Id="CMP_LICENSE_TXT" Guid="BA99F9AA-967F-405C-B80B-9ACE31D98E9E" Win64="yes">
+          <File Id="FILE_AgentBinaryFolder_LICENSE_TXT"
+                Name ="LICENSE.txt"
+                Source="$(var.ExternalFilesPath)\examples\infrastructure\LICENSE.windows.txt"
+                KeyPath="yes" />
+        </Component>
+        <Component Id="CMP_YAMLGENERATOR_EXE" Guid="BA69F9AA-977F-415C-B70B-9ADE31D98E9F" Win64="yes">
+          <File Id="FILE_AgentBinaryFolder_YAMLGENERATOR_EXE"
+                Name ="yamlgen.exe"
+                Source="$(var.BinariesPath)yamlgen.exe"
+                KeyPath="yes" />
+        </Component>
+        <Component Id="CMP_AGENT_CTL_EXE" Guid="A9108F57-1785-46D5-A879-D2A55AEA62F6" Win64="yes">
+          <File Id="FILE_AgentBinaryFolder_AGENT_CTL_EXE"
+                Name ="newrelic-infra-ctl.exe"
+                Source="$(var.BinariesPath)newrelic-infra-ctl.exe"
+                KeyPath="yes" />
+        </Component>
+        <!-- Add installer.ps1 to the MSI -->
+              <!--
+                NOTE: The Source path below must match the actual location of installer.ps1 at build time.
+                If you see LGHT0103 errors, ensure the file exists at this path relative to the .wxs file.
+                Example: If your installer.ps1 is in build\package\binaries\windows, this path is correct.
+              -->
+        <Component Id="CMP_AGENT_INSTALLER_PS1" Guid="B1234567-89AB-4CDE-8F01-23456789ABCD" Win64="yes">
+          <File Id="FILE_AgentBinaryFolder_INSTALLER_PS1"
+              Name="installer.ps1"
+              Source="$(var.InstallerPath)installer.ps1"
+              KeyPath="yes" />
+        </Component>
+        <!-- Add set-service-account.ps1 to the MSI -->
+        <Component Id="CMP_AGENT_SET_SERVICE_ACCOUNT_PS1" Guid="C2345678-90BC-5DEF-9A12-34567890BCDE" Win64="yes">
+          <File Id="FILE_AgentBinaryFolder_SET_SERVICE_ACCOUNT_PS1"
+              Name="set-service-account.ps1"
+              Source="$(var.InstallerPath)set-service-account.ps1"
+              KeyPath="yes" />
+        </Component>
 		</ComponentGroup>
         <CustomAction Id="yamlgen.nribase" Property="nribase" Value="-license_key  &quot;[LICENSE_KEY]&quot; -display_name &quot;[DISPLAY_NAME]&quot; -proxy &quot;[PROXY]&quot; -custom_attributes &quot;[CUSTOM_ATTRIBUTES]&quot; " />
         <CustomAction Id="yamlgen.nriconfig0" Property="nriconfig0" Value="-metrics_system_sample_rate &quot;[METRICS_SYSTEM_SAMPLE_RATE]&quot; -metrics_storage_sample_rate &quot;[METRICS_STORAGE_SAMPLE_RATE]&quot; -metrics_network_sample_rate &quot;[METRICS_NETWORK_SAMPLE_RATE]&quot; -metrics_process_sample_rate &quot;[METRICS_PROCESS_SAMPLE_RATE]&quot;" />
         <CustomAction Id="yamlgen.nriconfig1" Property="nriconfig1" Value="-payload_compression_level &quot;[PAYLOAD_COMPRESSION_LEVEL]&quot;" />
 
+        <!-- Set the command line for the installer script -->
+        <CustomAction Id="SetInstallerCmd"
+                      Property="RunInstallerScript"
+                      Value="&quot;[System64Folder]WindowsPowerShell\v1.0\powershell.exe&quot; -ExecutionPolicy Bypass -NoProfile -Command &quot;$env:NRIA_LICENSE_KEY='[LICENSE_KEY]'; $env:NRIA_OVERWRITE='[NRIA_OVERWRITE]'; &amp; '[#FILE_AgentBinaryFolder_INSTALLER_PS1]'&quot;" />
+        <!-- Run the installer script using CAQuietExec -->
+        <CustomAction Id="RunInstallerScript"
+                      BinaryKey="WixCA"
+                      DllEntry="CAQuietExec"
+                      Execute="deferred"
+                      Return="check"
+                      Impersonate="no"
+                      HideTarget="no" />
+
         <CustomAction Id="RunYamlGenerator"
-                Directory="AgentBinaryFolder"
-                ExeCommand="[AgentBinaryFolder]yamlgen.exe [nribase] [nriconfig0] [nriconfig1]"
-                Execute="deferred"
-                Return="ignore"/>
+                      Directory="AgentBinaryFolder"
+                      ExeCommand="[AgentBinaryFolder]yamlgen.exe [nribase] [nriconfig0] [nriconfig1]"
+                      Execute="deferred"
+                      Return="ignore"/>
 
         <CustomAction Id="CleanupDeprecatedBundledPlugins"
-            Directory="AgentBinaryFolder"
-            ExeCommand="cmd /C &quot;rmdir /s /q &quot;.\bundled-plugins&quot;&quot;"
-            Execute="deferred"
-            Return="ignore"
-            HideTarget="no"
-            Impersonate="no" />
+                      Directory="AgentBinaryFolder"
+                      ExeCommand="cmd /C &quot;rmdir /s /q &quot;.\bundled-plugins&quot;&quot;"
+                      Execute="deferred"
+                      Return="ignore"
+                      HideTarget="no"
+                      Impersonate="no" />
 
         <CustomAction Id="TakeOwnership"
-            Directory="NewRelicInfraDataFolder"
-            ExeCommand="cmd /C &quot;takeown /f &quot;[NewRelicInfraDataFolder]*&quot; /a /r /d N >nul 2>&amp;1&quot;"
-            Execute="deferred"
-            Impersonate="no" />
+                      Directory="NewRelicInfraDataFolder"
+                      ExeCommand="cmd /C &quot;takeown /f &quot;[NewRelicInfraDataFolder]*&quot; /a /r /d N >nul 2>&amp;1&quot;"
+                      Execute="deferred"
+                      Impersonate="no" />
 
         <CustomAction Id="ResetPermissions"
-            Directory="NewRelicInfraDataFolder"
-            ExeCommand="cmd /C &quot;icacls &quot;[NewRelicInfraDataFolder]*&quot; /q /t /reset >nul 2>&amp;1&quot;"
-            Execute="deferred"
-            Impersonate="no" />
+                      Directory="NewRelicInfraDataFolder"
+                      ExeCommand="cmd /C &quot;icacls &quot;[NewRelicInfraDataFolder]*&quot; /q /t /reset >nul 2>&amp;1&quot;"
+                      Execute="deferred"
+                      Impersonate="no" />
 
         <CustomAction Id="CheckSymlinksCommonAppDataFolder"
-            Directory="CommonAppDataFolder"
-            ExeCommand="cmd /C &quot;dir /al &quot;[CommonAppDataFolder]New Relic*&quot; >nul 2>&amp;1 &quot; &amp;&amp; (EXIT /B 1) || (EXIT /B 0)"
-            Execute="deferred"
-            Impersonate="no" />
+                      Directory="CommonAppDataFolder"
+                      ExeCommand="cmd /C &quot;dir /al &quot;[CommonAppDataFolder]New Relic*&quot; >nul 2>&amp;1 &quot; &amp;&amp; (EXIT /B 1) || (EXIT /B 0)"
+                      Execute="deferred"
+                      Impersonate="no" />
 
         <CustomAction Id="CheckSymlinksCompanyDataFolder"
-            Directory="CommonAppDataFolder"
-            ExeCommand="cmd /C &quot;dir /al /s &quot;[CompanyDataFolder]&quot; >nul 2>&amp;1 &quot; &amp;&amp; (EXIT /B 1) || (EXIT /B 0)"
-            Execute="deferred"
-            Impersonate="no" />
+                      Directory="CommonAppDataFolder"
+                      ExeCommand="cmd /C &quot;dir /al /s &quot;[CompanyDataFolder]&quot; >nul 2>&amp;1 &quot; &amp;&amp; (EXIT /B 1) || (EXIT /B 0)"
+                      Execute="deferred"
+                      Impersonate="no" />
 
         <InstallExecuteSequence>
             <!-- Perform the check for symbolic link Only on install and not on remove -->
@@ -231,6 +243,10 @@
                <![CDATA[ GENERATE_CONFIG ]]>
             </Custom>
             <Custom Action="CleanupDeprecatedBundledPlugins" Before="InstallFinalize" />
+
+            <!-- Set installer command and run installer.ps1 after files are copied -->
+            <Custom Action="SetInstallerCmd" After="RunYamlGenerator">NOT REMOVE</Custom>
+            <Custom Action="RunInstallerScript" After="SetInstallerCmd">NOT REMOVE</Custom>
         </InstallExecuteSequence>
     </Fragment>
 
