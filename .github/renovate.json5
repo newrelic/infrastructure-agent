@@ -1,36 +1,35 @@
 {
-  "extends": [
-    "config:base",
-    // go dependencies and auto-merge configuration: https://github.com/newrelic/coreint-automation/blob/main/renovate-base.json5
-    "github>newrelic/coreint-automation:renovate-base.json5",
+  extends: [
+    'config:recommended',
+    'github>newrelic/coreint-automation:renovate-base.json5',
   ],
-  // Label PRs with `dependencies`.
-  "labels": ["dependencies"],
-  "enabledManagers": [
-    // Enable only the regex manager (for Dockerfile base image bumping).
-    "regex"
+  labels: [
+    'dependencies',
   ],
-  "regexManagers": [
+  enabledManagers: [
+    'custom.regex',
+  ],
+  customManagers: [
     {
-      // Parse bundle image version from `base_image` ARG in Dockerfile.
-      "fileMatch": [
-        "build/container/Dockerfile$"
+      customType: 'regex',
+      managerFilePatterns: [
+        '/build/container/Dockerfile$/',
       ],
-      "datasourceTemplate": "docker",
-      "matchStrings": [
-        "base_image=(?<depName>.+):(?<currentValue>.+)"
-      ]
+      datasourceTemplate: 'docker',
+      matchStrings: [
+        'base_image=(?<depName>.+):(?<currentValue>.+)',
+      ],
     },
     {
-      // Parse version of embedded integrations.
-      "fileMatch": [
-        "build/embed/integrations.version$"
+      customType: 'regex',
+      managerFilePatterns: [
+        '/build/embed/integrations.version$/',
       ],
-      "depNameTemplate": "newrelic/{{{integrationName}}}",
-      "datasourceTemplate": "github-releases", // Version info is fetched from GitHub.
-      "matchStrings": [
-        "(?<integrationName>.+),(?<currentValue>v.+)"
-      ]
-    }
-  ]
+      depNameTemplate: 'newrelic/{{{integrationName}}}',
+      datasourceTemplate: 'github-releases',
+      matchStrings: [
+        '(?<integrationName>.+),(?<currentValue>v.+)',
+      ],
+    },
+  ],
 }
