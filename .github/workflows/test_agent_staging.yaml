@@ -1,0 +1,43 @@
+name: .. 🚧 Test agent package installation (test)
+
+on:
+  push:
+    branches:
+      - '**'
+  workflow_call:
+    inputs:
+      TAG:
+        required: true
+        type: string
+      REPO_ENDPOINT:
+        required: false
+        type: string
+        description: 'Repository endpoint to fetch packages from'
+        default: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
+
+env:
+  TAG: 1.66.0
+  REPO_ENDPOINT: ${{ inputs.REPO_ENDPOINT }}
+
+jobs:
+  molecule-test-packages:
+    name: Test package installation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test NON-FIPS package installation
+        uses: newrelic/pkg-installation-testing-action@v1.5.1
+        with:
+          gpg_key: 'http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent/gpg/newrelic-infra.gpg'
+          repo_base_url: ${{ inputs.REPO_ENDPOINT }}
+          package_name: 'newrelic-infra'
+          package_version: 1.66.0
+          platforms: "al2,al2023,debian-bullseye,debian-bookworm,redhat8,redhat9,redhat10,suse15.3,suse15.4,suse15.5,suse15.6,ubuntu1604,ubuntu1804,ubuntu2004,ubuntu2204,ubuntu2404"
+      - name: Test FIPS package installation
+        uses: newrelic/pkg-installation-testing-action@v1.5.1
+        with:
+          gpg_key: 'http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent/gpg/newrelic-infra.gpg'
+          repo_base_url: ${{ inputs.REPO_ENDPOINT }}
+          package_name: 'newrelic-infra-fips'
+          exec_name: 'newrelic-infra'
+          package_version: 1.66.0
+          platforms: "al2,al2023,debian-bullseye,debian-bookworm,redhat8,redhat9,redhat10,suse15.3,suse15.4,suse15.5,suse15.6,ubuntu1604,ubuntu1804,ubuntu2004,ubuntu2204,ubuntu2404"
