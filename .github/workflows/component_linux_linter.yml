@@ -25,6 +25,7 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version-file: 'go.mod'
+          check-latest: true
 
       - name: Running linter
         run: make lint

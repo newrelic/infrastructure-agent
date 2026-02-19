@@ -20,6 +20,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
+          check-latest: true
 
       - name: Running unit tests
         run: make ci/unit-test
@@ -42,6 +43,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
+          check-latest: true
 
       - name: Running databind unit/integration tests
         run: make databind-test
