@@ -33,7 +33,7 @@ ifeq ($(AGENT_ARCH), amd64)
 endif
 
 ifeq ($(DOCKER_PUBLISH), true)
-	DOCKER_BUILDX_EXTRA_ARGS = --push
+	DOCKER_BUILDX_EXTRA_ARGS = --output type=image,push=true
 	DOCKER_BUILDX_ARGS += $(DOCKER_BUILDX_EXTRA_ARGS)
 endif
 
@@ -77,6 +77,8 @@ DOCKER_BUILD_BASE				?= docker \
 								$(DOCKER_BUILDX_ARGS) \
 								$(DOCKER_NO_CACHE) \
 								--pull \
+								--provenance=false \
+								--sbom=false \
 								-t $(DOCKER_IMAGE_NAME):$(DOCKER_TAG_LATEST) \
 								--build-arg image_version=$(IMAGE_VERSION) \
 								--build-arg agent_version=$(AGENT_VERSION) \
