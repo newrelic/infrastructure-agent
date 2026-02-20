@@ -25,6 +25,7 @@ jobs:
           echo "Validating release tag: ${TAG}"
 
           echo "gh release view "${TAG}" --repo newrelic/infrastructure-agent "
+
           # Check if release exists
           if ! gh release view "${TAG}" --repo newrelic/infrastructure-agent >/dev/null 2>&1; then
             echo "::error::Release tag '${TAG}' not found"
@@ -41,14 +42,22 @@ jobs:
 
       - name: Create workspace directories
         run: |
-          mkdir -p downloads
-          mkdir -p extracted/windows
-          mkdir -p modified
-          mkdir -p dist/windows
+          set -euo pipefail
+
+          mkdir -p downloads extracted/windows modified dist/windows
+
+          for dir in downloads extracted/windows modified dist/windows; do
+            if [ ! -d "${dir}" ]; then
+              echo "::error::Failed to create directory: ${dir}"
+              exit 1
+            fi
+          done
+
           echo "✓ Workspace directories created"
 
       - name: Install extraction tools
         run: |
+          set -euo pipefail
           echo "Installing extraction tools..."
           sudo apt-get update -qq
           sudo apt-get install -y -qq \
@@ -67,6 +76,7 @@ jobs:
           VERSION: ${{ steps.validate.outputs.version }}
           TAG: ${{ steps.validate.outputs.tag }}
         run: |
+          set -euo pipefail
           cd downloads
           echo "Downloading Windows MSI artifacts..."
 
@@ -78,6 +88,11 @@ jobs:
             --skip-existing || echo "::warning::Failed to download ${PATTERN}"
 
           find .
+
+          if [ -z "$(find . -maxdepth 1 -type f)" ]; then
+            echo "::error::No MSI files were downloaded"
+            exit 1
+          fi
           cd ..
           echo "✓ MSI download complete"
 
@@ -113,6 +128,7 @@ jobs:
 
       - name: Extract MSI artifacts
         run: |
+          set -euo pipefail
           cd downloads
           echo "Extracting MSI artifacts..."
 
@@ -144,6 +160,7 @@ jobs:
 
       - name: Repackage windows
         run: |
+          set -euo pipefail
           echo "Repackaging Windows artifacts..."
 
           SRC="extracted/windows/New Relic/newrelic-infra"
@@ -189,6 +206,8 @@ jobs:
 
       - name: Preserve artifacts before action checkout
         run: |
+          set -euo pipefail
+
           # Move artifacts to temp location to survive git clean
           mkdir -p /tmp/artifacts
           cp dist/windows.zip /tmp/artifacts/
