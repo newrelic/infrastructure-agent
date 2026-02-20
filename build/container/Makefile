@@ -33,7 +33,11 @@ ifeq ($(AGENT_ARCH), amd64)
 endif
 
 ifeq ($(DOCKER_PUBLISH), true)
-	DOCKER_BUILDX_EXTRA_ARGS = --output type=image,push=true
+	DOCKER_BUILDX_EXTRA_ARGS = --load
+	DOCKER_BUILDX_ARGS += $(DOCKER_BUILDX_EXTRA_ARGS)
+	DOCKER_PUSH_AFTER_BUILD = true
+else
+	DOCKER_BUILDX_EXTRA_ARGS = --load
 	DOCKER_BUILDX_ARGS += $(DOCKER_BUILDX_EXTRA_ARGS)
 endif
 
@@ -90,7 +94,10 @@ DOCKER_BUILD_BASE				?= docker \
 								--build-arg nri_prometheus_version=$(PROMETHEUS_VERSION) \
 								--target $(DOCKER_TARGET) \
 								-f $(DOCKERFILE) \
-								$(INFRASTRUCTURE_WORKSPACE)
+								$(INFRASTRUCTURE_WORKSPACE); \
+								if [ "$(DOCKER_PUSH_AFTER_BUILD)" = "true" ]; then \
+									docker push $(DOCKER_IMAGE_NAME):$(DOCKER_TAG_LATEST); \
+								fi
 
 workspace :
 	@(mkdir -p $(PROJECT_WORKSPACE))
