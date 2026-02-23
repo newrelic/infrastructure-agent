@@ -75,7 +75,7 @@ PROMETHEUS_VERSION             ?= $(call get-nri-version,nri-prometheus)
 
 DOCKER_TARGET					?= base
 DOCKER_NO_CACHE					?= --no-cache
-DOCKER_BUILD_BASE				?= docker \
+DOCKER_BUILD_BASE				= docker \
 								$(DOCKER_BUILDX_CMD) \
 								build \
 								$(DOCKER_BUILDX_ARGS) \
