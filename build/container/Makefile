@@ -10,7 +10,7 @@ AGENT_BUILD_TARGET_DIR		?= $(CURDIR)/../../dist
 GOOS				?= linux
 DOCKER_ARCH				?= amd64
 DOCKER_BUILDX_CMD		?=
-DOCKER_BUILDX_ARGS		?= --platform $(GOOS)/$(DOCKER_ARCH) --provenance=false
+DOCKER_BUILDX_ARGS		?= --platform $(GOOS)/$(DOCKER_ARCH) --provenance=false --sbom=false
 DOCKER_BUILDX_EXTRA_ARGS	?= --load
 DOCKER_BUILD_TAG_PREFIX	?= build
 DOCKER_TAG_LATEST	?= latest
@@ -40,12 +40,8 @@ endif
 ifeq ($(USE_BUILDX), true)
 	DOCKER_BUILDX_CMD	= buildx
 else
-	DOCKER_BUILDX_CMD =
 	DOCKER_BUILDX_ARGS =
 endif
-
-# Always add --provenance=false when using buildx to ensure single-arch images
-DOCKER_BUILDX_PROVENANCE_FLAG = --provenance=false
 
 OHI_ARCH ?= $(DOCKER_ARCH)
 
@@ -75,11 +71,10 @@ PROMETHEUS_VERSION             ?= $(call get-nri-version,nri-prometheus)
 
 DOCKER_TARGET					?= base
 DOCKER_NO_CACHE					?= --no-cache
-DOCKER_BUILD_BASE				= docker \
+DOCKER_BUILD_BASE				?= docker \
 								$(DOCKER_BUILDX_CMD) \
 								build \
 								$(DOCKER_BUILDX_ARGS) \
-								$(if $(DOCKER_BUILDX_CMD),--provenance=false --sbom=false,) \
 								$(DOCKER_NO_CACHE) \
 								--pull \
 								-t $(DOCKER_IMAGE_NAME):$(DOCKER_TAG_LATEST) \
@@ -289,28 +284,25 @@ endif
 # [RC] Shortcut to build all supported multi arch bases and publish as RC
 .PHONY : publish/multi-arch-base-rc
 publish/multi-arch-base-rc : export IMAGE_VERSION=$(AGENT_VERSION)-rc
-publish/multi-arch-base-rc : export DOCKER_BUILD_TAG_PREFIX=$(AGENT_VERSION)-rc-test
+publish/multi-arch-base-rc : export DOCKER_BUILD_TAG_PREFIX=$(IMAGE_VERSION)
 publish/multi-arch-base-rc : build/base-arm64
 ifeq ($(FIPS),)
 publish/multi-arch-base-rc : build/base-arm
 endif
 publish/multi-arch-base-rc : build/base-amd64
-publish/multi-arch-base-rc :
-	@$(MAKE) publish/multi-arch-base-manifest
+publish/multi-arch-base-rc : publish/multi-arch-base-manifest
 
 # Shortcut to build all supported multi arch bases
 .PHONY : publish/multi-arch-base-tag
 publish/multi-arch-base-tag : export IMAGE_VERSION=$(AGENT_VERSION)
-publish/multi-arch-base-tag : export DOCKER_BUILD_TAG_PREFIX=$(AGENT_VERSION)-rc-test
-publish/multi-arch-base-tag :
-	@$(MAKE) publish/multi-arch-base-manifest
+publish/multi-arch-base-tag : export DOCKER_BUILD_TAG_PREFIX=$(AGENT_VERSION)-rc
+publish/multi-arch-base-tag : publish/multi-arch-base-manifest
 
 # Shortcut to build all supported multi arch bases
 .PHONY : publish/multi-arch-base-latest
 publish/multi-arch-base-latest : export IMAGE_VERSION=latest
-publish/multi-arch-base-latest : export DOCKER_BUILD_TAG_PREFIX=$(AGENT_VERSION)-rc-test
-publish/multi-arch-base-latest :
-	@$(MAKE) publish/multi-arch-base-manifest
+publish/multi-arch-base-latest : export DOCKER_BUILD_TAG_PREFIX=$(AGENT_VERSION)-rc
+publish/multi-arch-base-latest : publish/multi-arch-base-manifest
 
 # Creates multi acrh manifest for k8s-events-forwarder image
 .PHONY : publish/multi-arch-k8s-events-forwarder-manifest
@@ -337,28 +329,25 @@ endif
 # [RC] Shortcut to build all supported multi arch k8s-events-forwarders and publish as RC
 .PHONY : publish/multi-arch-k8s-events-forwarder-rc
 publish/multi-arch-k8s-events-forwarder-rc : export IMAGE_VERSION=$(AGENT_VERSION)-rc
-publish/multi-arch-k8s-events-forwarder-rc : export DOCKER_BUILD_TAG_PREFIX=$(AGENT_VERSION)-rc-test
+publish/multi-arch-k8s-events-forwarder-rc : export DOCKER_BUILD_TAG_PREFIX=$(IMAGE_VERSION)
 publish/multi-arch-k8s-events-forwarder-rc : build/k8s-events-forwarder-arm64
 ifeq ($(FIPS),)
 publish/multi-arch-k8s-events-forwarder-rc : build/k8s-events-forwarder-arm
 endif
 publish/multi-arch-k8s-events-forwarder-rc : build/k8s-events-forwarder-amd64
-publish/multi-arch-k8s-events-forwarder-rc :
-	@$(MAKE) publish/multi-arch-k8s-events-forwarder-manifest
+publish/multi-arch-k8s-events-forwarder-rc : publish/multi-arch-k8s-events-forwarder-manifest
 
 # Shortcut to build all supported multi arch k8s-events-forwarders
 .PHONY : publish/multi-arch-k8s-events-forwarder-tag
 publish/multi-arch-k8s-events-forwarder-tag : export IMAGE_VERSION=$(AGENT_VERSION)
-publish/multi-arch-k8s-events-forwarder-tag : export DOCKER_BUILD_TAG_PREFIX=$(AGENT_VERSION)-rc-test
-publish/multi-arch-k8s-events-forwarder-tag :
-	@$(MAKE) publish/multi-arch-k8s-events-forwarder-manifest
+publish/multi-arch-k8s-events-forwarder-tag : export DOCKER_BUILD_TAG_PREFIX=$(AGENT_VERSION)-rc
+publish/multi-arch-k8s-events-forwarder-tag : publish/multi-arch-k8s-events-forwarder-manifest
 
 # Shortcut to build all supported multi arch k8s-events-forwarders
 .PHONY : publish/multi-arch-k8s-events-forwarder-latest
 publish/multi-arch-k8s-events-forwarder-latest : export IMAGE_VERSION=latest
-publish/multi-arch-k8s-events-forwarder-latest : export DOCKER_BUILD_TAG_PREFIX=$(AGENT_VERSION)-rc-test
-publish/multi-arch-k8s-events-forwarder-latest :
-	@$(MAKE) publish/multi-arch-k8s-events-forwarder-manifest
+publish/multi-arch-k8s-events-forwarder-latest : export DOCKER_BUILD_TAG_PREFIX=$(AGENT_VERSION)-rc
+publish/multi-arch-k8s-events-forwarder-latest : publish/multi-arch-k8s-events-forwarder-manifest
 
 # Creates multi acrh manifest for forwarder image
 .PHONY : publish/multi-arch-forwarder-manifest
@@ -386,25 +375,22 @@ endif
 # [RC] Shortcut to build all supported multi arch forwarders and publish as RC
 .PHONY : publish/multi-arch-forwarder-rc
 publish/multi-arch-forwarder-rc : export IMAGE_VERSION=$(AGENT_VERSION)-rc
-publish/multi-arch-forwarder-rc : export DOCKER_BUILD_TAG_PREFIX=$(AGENT_VERSION)-rc-test
+publish/multi-arch-forwarder-rc : export DOCKER_BUILD_TAG_PREFIX=$(IMAGE_VERSION)
 publish/multi-arch-forwarder-rc : build/forwarder-arm64
 ifeq ($(FIPS),)
 publish/multi-arch-forwarder-rc : build/forwarder-arm
 endif
 publish/multi-arch-forwarder-rc : build/forwarder-amd64
-publish/multi-arch-forwarder-rc :
-	@$(MAKE) publish/multi-arch-forwarder-manifest
+publish/multi-arch-forwarder-rc : publish/multi-arch-forwarder-manifest
 
 # Shortcut to build all supported multi arch forwarders
 .PHONY : publish/multi-arch-forwarder-tag
 publish/multi-arch-forwarder-tag : export IMAGE_VERSION=$(AGENT_VERSION)
-publish/multi-arch-forwarder-tag : export DOCKER_BUILD_TAG_PREFIX=$(AGENT_VERSION)-rc-test
-publish/multi-arch-forwarder-tag :
-	@$(MAKE) publish/multi-arch-forwarder-manifest
+publish/multi-arch-forwarder-tag : export DOCKER_BUILD_TAG_PREFIX=$(AGENT_VERSION)-rc
+publish/multi-arch-forwarder-tag : publish/multi-arch-forwarder-manifest
 
 # Shortcut to build all supported multi arch forwarders
 .PHONY : publish/multi-arch-forwarder-latest
 publish/multi-arch-forwarder-latest : export IMAGE_VERSION=latest
-publish/multi-arch-forwarder-latest : export DOCKER_BUILD_TAG_PREFIX=$(AGENT_VERSION)-rc-test
-publish/multi-arch-forwarder-latest :
-	@$(MAKE) publish/multi-arch-forwarder-manifest
+publish/multi-arch-forwarder-latest : export DOCKER_BUILD_TAG_PREFIX=$(AGENT_VERSION)-rc
+publish/multi-arch-forwarder-latest : publish/multi-arch-forwarder-manifest
