@@ -10,7 +10,7 @@ AGENT_BUILD_TARGET_DIR		?= $(CURDIR)/../../dist
 GOOS				?= linux
 DOCKER_ARCH				?= amd64
 DOCKER_BUILDX_CMD		?=
-DOCKER_BUILDX_ARGS		?= --platform $(GOOS)/$(DOCKER_ARCH)
+DOCKER_BUILDX_ARGS		?= --platform $(GOOS)/$(DOCKER_ARCH) --provenance=false
 DOCKER_BUILDX_EXTRA_ARGS	?= --load
 DOCKER_BUILD_TAG_PREFIX	?= build
 DOCKER_TAG_LATEST	?= latest
@@ -44,6 +44,9 @@ else
 	DOCKER_BUILDX_ARGS =
 endif
 
+# Always add --provenance=false when using buildx to ensure single-arch images
+DOCKER_BUILDX_PROVENANCE_FLAG = --provenance=false
+
 OHI_ARCH ?= $(DOCKER_ARCH)
 
 include ../embed/integrations.mk
@@ -72,7 +75,7 @@ PROMETHEUS_VERSION             ?= $(call get-nri-version,nri-prometheus)
 
 DOCKER_TARGET					?= base
 DOCKER_NO_CACHE					?= --no-cache
-DOCKER_BUILD_BASE				= docker \
+DOCKER_BUILD_BASE				?= docker \
 								$(DOCKER_BUILDX_CMD) \
 								build \
 								$(DOCKER_BUILDX_ARGS) \
