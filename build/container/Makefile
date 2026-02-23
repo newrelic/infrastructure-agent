@@ -40,8 +40,9 @@ endif
 
 ifeq ($(USE_BUILDX), true)
 	DOCKER_BUILDX_CMD	= buildx
-	DOCKER_BUILDX_ARGS += $(DOCKER_BUILDX_EXTRA_ARGS)
+	DOCKER_BUILDX_ARGS = --platform $(GOOS)/$(DOCKER_ARCH) --provenance=false --sbom=false $(DOCKER_BUILDX_EXTRA_ARGS)
 else
+	DOCKER_BUILDX_CMD =
 	DOCKER_BUILDX_ARGS =
 endif
 
@@ -73,7 +74,7 @@ PROMETHEUS_VERSION             ?= $(call get-nri-version,nri-prometheus)
 
 DOCKER_TARGET					?= base
 DOCKER_NO_CACHE					?= --no-cache
-DOCKER_BUILD_BASE				?= docker \
+DOCKER_BUILD_BASE				= docker \
 								$(DOCKER_BUILDX_CMD) \
 								build \
 								$(DOCKER_BUILDX_ARGS) \
