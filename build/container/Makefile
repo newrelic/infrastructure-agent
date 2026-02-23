@@ -288,8 +288,8 @@ endif
 
 # [RC] Shortcut to build all supported multi arch bases and publish as RC
 .PHONY : publish/multi-arch-base-rc
-publish/multi-arch-base-rc : export IMAGE_VERSION=$(AGENT_VERSION)-rc-test
-publish/multi-arch-base-rc : export DOCKER_BUILD_TAG_PREFIX=$(IMAGE_VERSION)
+publish/multi-arch-base-rc : export IMAGE_VERSION=$(AGENT_VERSION)-rc
+publish/multi-arch-base-rc : export DOCKER_BUILD_TAG_PREFIX=$(IMAGE_VERSION)-test
 publish/multi-arch-base-rc : build/base-arm64
 ifeq ($(FIPS),)
 publish/multi-arch-base-rc : build/base-arm
@@ -333,8 +333,8 @@ endif
 
 # [RC] Shortcut to build all supported multi arch k8s-events-forwarders and publish as RC
 .PHONY : publish/multi-arch-k8s-events-forwarder-rc
-publish/multi-arch-k8s-events-forwarder-rc : export IMAGE_VERSION=$(AGENT_VERSION)-rc-test
-publish/multi-arch-k8s-events-forwarder-rc : export DOCKER_BUILD_TAG_PREFIX=$(IMAGE_VERSION)
+publish/multi-arch-k8s-events-forwarder-rc : export IMAGE_VERSION=$(AGENT_VERSION)-rc
+publish/multi-arch-k8s-events-forwarder-rc : export DOCKER_BUILD_TAG_PREFIX=$(IMAGE_VERSION)-test
 publish/multi-arch-k8s-events-forwarder-rc : build/k8s-events-forwarder-arm64
 ifeq ($(FIPS),)
 publish/multi-arch-k8s-events-forwarder-rc : build/k8s-events-forwarder-arm
@@ -379,8 +379,8 @@ endif
 
 # [RC] Shortcut to build all supported multi arch forwarders and publish as RC
 .PHONY : publish/multi-arch-forwarder-rc
-publish/multi-arch-forwarder-rc : export IMAGE_VERSION=$(AGENT_VERSION)-rc-test
-publish/multi-arch-forwarder-rc : export DOCKER_BUILD_TAG_PREFIX=$(IMAGE_VERSION)
+publish/multi-arch-forwarder-rc : export IMAGE_VERSION=$(AGENT_VERSION)-rc
+publish/multi-arch-forwarder-rc : export DOCKER_BUILD_TAG_PREFIX=$(IMAGE_VERSION)-test
 publish/multi-arch-forwarder-rc : build/forwarder-arm64
 ifeq ($(FIPS),)
 publish/multi-arch-forwarder-rc : build/forwarder-arm
