@@ -43,7 +43,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          ref: fix-docker-build  # Temporarily use fix branch instead of tag
+          ref: ${{env.TAG}}
 
       - name: Login to DockerHub
         uses: docker/login-action@v1
