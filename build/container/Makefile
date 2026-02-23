@@ -34,11 +34,13 @@ endif
 
 ifeq ($(DOCKER_PUBLISH), true)
 	DOCKER_BUILDX_EXTRA_ARGS = --push
-	DOCKER_BUILDX_ARGS += $(DOCKER_BUILDX_EXTRA_ARGS)
+else
+	DOCKER_BUILDX_EXTRA_ARGS = --load
 endif
 
 ifeq ($(USE_BUILDX), true)
 	DOCKER_BUILDX_CMD	= buildx
+	DOCKER_BUILDX_ARGS += $(DOCKER_BUILDX_EXTRA_ARGS)
 else
 	DOCKER_BUILDX_ARGS =
 endif
@@ -203,6 +205,7 @@ build/base-amd64 :
 .PHONY : build/base/%
 build/base/% : export DOCKER_ARCH=$(call baseBuildTargetArch, $@)
 build/base/% : export USE_BUILDX=true
+build/base/% : export DOCKER_PUBLISH=true
 build/base/% : export DOCKER_TAG_LATEST=$(DOCKER_BUILD_TAG_PREFIX)-$(DOCKER_ARCH)
 build/base/% :
 	@printf '\n================================================================\n'
@@ -227,6 +230,7 @@ build/forwarder-amd64 :
 .PHONY : build/forwarder/%
 build/forwarder/% : export DOCKER_ARCH=$(call baseBuildTargetArch, $@)
 build/forwarder/% : export USE_BUILDX=true
+build/forwarder/% : export DOCKER_PUBLISH=true
 build/forwarder/% : export DOCKER_TAG_LATEST=$(DOCKER_BUILD_TAG_PREFIX)-$(DOCKER_ARCH)
 build/forwarder/% :
 	@printf '\n================================================================\n'
@@ -251,6 +255,7 @@ build/k8s-events-forwarder-amd64 :
 .PHONY : build/k8s-events-forwarder/%
 build/k8s-events-forwarder/% : export DOCKER_ARCH=$(call baseBuildTargetArch, $@)
 build/k8s-events-forwarder/% : export USE_BUILDX=true
+build/k8s-events-forwarder/% : export DOCKER_PUBLISH=true
 build/k8s-events-forwarder/% : export DOCKER_TAG_LATEST=$(DOCKER_BUILD_TAG_PREFIX)-$(DOCKER_ARCH)
 build/k8s-events-forwarder/% :
 	@printf '\n================================================================\n'
