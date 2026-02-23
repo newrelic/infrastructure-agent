@@ -10,7 +10,7 @@ AGENT_BUILD_TARGET_DIR		?= $(CURDIR)/../../dist
 GOOS				?= linux
 DOCKER_ARCH				?= amd64
 DOCKER_BUILDX_CMD		?=
-DOCKER_BUILDX_ARGS		?= --platform $(GOOS)/$(DOCKER_ARCH) --provenance=false
+DOCKER_BUILDX_ARGS		?= --platform $(GOOS)/$(DOCKER_ARCH)
 DOCKER_BUILDX_EXTRA_ARGS	?= --load
 DOCKER_BUILD_TAG_PREFIX	?= build
 DOCKER_TAG_LATEST	?= latest
@@ -40,6 +40,7 @@ endif
 ifeq ($(USE_BUILDX), true)
 	DOCKER_BUILDX_CMD	= buildx
 else
+	DOCKER_BUILDX_CMD =
 	DOCKER_BUILDX_ARGS =
 endif
 
@@ -71,10 +72,11 @@ PROMETHEUS_VERSION             ?= $(call get-nri-version,nri-prometheus)
 
 DOCKER_TARGET					?= base
 DOCKER_NO_CACHE					?= --no-cache
-DOCKER_BUILD_BASE				?= docker \
+DOCKER_BUILD_BASE				= docker \
 								$(DOCKER_BUILDX_CMD) \
 								build \
 								$(DOCKER_BUILDX_ARGS) \
+								$(if $(DOCKER_BUILDX_CMD),--provenance=false --sbom=false,) \
 								$(DOCKER_NO_CACHE) \
 								--pull \
 								-t $(DOCKER_IMAGE_NAME):$(DOCKER_TAG_LATEST) \
