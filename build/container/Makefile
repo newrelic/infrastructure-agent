@@ -10,7 +10,7 @@ AGENT_BUILD_TARGET_DIR		?= $(CURDIR)/../../dist
 GOOS				?= linux
 DOCKER_ARCH				?= amd64
 DOCKER_BUILDX_CMD		?=
-DOCKER_BUILDX_ARGS		?= --platform $(GOOS)/$(DOCKER_ARCH)
+DOCKER_BUILDX_ARGS		?= --platform $(GOOS)/$(DOCKER_ARCH) --provenance=false
 DOCKER_BUILDX_EXTRA_ARGS	?= --load
 DOCKER_BUILD_TAG_PREFIX	?= build
 DOCKER_TAG_LATEST	?= latest
@@ -33,11 +33,7 @@ ifeq ($(AGENT_ARCH), amd64)
 endif
 
 ifeq ($(DOCKER_PUBLISH), true)
-	DOCKER_BUILDX_EXTRA_ARGS = --load
-	DOCKER_BUILDX_ARGS += $(DOCKER_BUILDX_EXTRA_ARGS)
-	DOCKER_PUSH_AFTER_BUILD = true
-else
-	DOCKER_BUILDX_EXTRA_ARGS = --load
+	DOCKER_BUILDX_EXTRA_ARGS = --push
 	DOCKER_BUILDX_ARGS += $(DOCKER_BUILDX_EXTRA_ARGS)
 endif
 
@@ -81,8 +77,6 @@ DOCKER_BUILD_BASE				?= docker \
 								$(DOCKER_BUILDX_ARGS) \
 								$(DOCKER_NO_CACHE) \
 								--pull \
-								--provenance=false \
-								--sbom=false \
 								-t $(DOCKER_IMAGE_NAME):$(DOCKER_TAG_LATEST) \
 								--build-arg image_version=$(IMAGE_VERSION) \
 								--build-arg agent_version=$(AGENT_VERSION) \
@@ -94,10 +88,7 @@ DOCKER_BUILD_BASE				?= docker \
 								--build-arg nri_prometheus_version=$(PROMETHEUS_VERSION) \
 								--target $(DOCKER_TARGET) \
 								-f $(DOCKERFILE) \
-								$(INFRASTRUCTURE_WORKSPACE); \
-								if [ "$(DOCKER_PUSH_AFTER_BUILD)" = "true" ]; then \
-									docker push $(DOCKER_IMAGE_NAME):$(DOCKER_TAG_LATEST); \
-								fi
+								$(INFRASTRUCTURE_WORKSPACE)
 
 workspace :
 	@(mkdir -p $(PROJECT_WORKSPACE))
@@ -276,15 +267,18 @@ publish/multi-arch-base-manifest :
 	@printf 'Image: $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)'
 	@printf '\n================================================================\n'
 ifeq ($(FIPS),)
-	@(docker buildx imagetools create -t $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
+	@(docker manifest create \
+    $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64)
 else
-	@(docker buildx imagetools create -t $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
+	@(docker manifest create \
+    $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64)
 endif
+	@docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)
 
 
 # [RC] Shortcut to build all supported multi arch bases and publish as RC
@@ -319,15 +313,18 @@ publish/multi-arch-k8s-events-forwarder-manifest :
 	@printf 'Image: $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)'
 	@printf '\n================================================================\n'
 ifeq ($(FIPS),)
-	@(docker buildx imagetools create -t $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
+	@(docker manifest create \
+    $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64)
 else
-	@(docker buildx imagetools create -t $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
+	@(docker manifest create \
+    $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64)
 endif
+	@docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)
 
 # [RC] Shortcut to build all supported multi arch k8s-events-forwarders and publish as RC
 .PHONY : publish/multi-arch-k8s-events-forwarder-rc
@@ -361,15 +358,18 @@ publish/multi-arch-forwarder-manifest :
 	@printf 'Image: $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)'
 	@printf '\n================================================================\n'
 ifeq ($(FIPS),)
-	@(docker buildx imagetools create -t $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
+	@(docker manifest create \
+    $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64)
 else
-	@(docker buildx imagetools create -t $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
+	@(docker manifest create \
+    $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64)
 endif
+	@docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)
 
 
 # [RC] Shortcut to build all supported multi arch forwarders and publish as RC
