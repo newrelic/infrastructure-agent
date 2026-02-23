@@ -146,26 +146,6 @@ build/base : base/get-integrations
 build/base : base/get-infra-agent
 build/base : DOCKER_TARGET=base
 build/base :
-	@printf '\n================================================================\n'
-	@printf 'DEBUG: Building base image\n'
-	@printf '================================================================\n'
-	@printf 'Docker buildx version:\n'
-	@docker buildx version || docker version
-	@printf '\n'
-	@printf 'Environment variables:\n'
-	@printf 'USE_BUILDX=$(USE_BUILDX)\n'
-	@printf 'DOCKER_BUILDX_CMD=$(DOCKER_BUILDX_CMD)\n'
-	@printf 'DOCKER_PUBLISH=$(DOCKER_PUBLISH)\n'
-	@printf 'DOCKER_BUILDX_EXTRA_ARGS=$(DOCKER_BUILDX_EXTRA_ARGS)\n'
-	@printf 'DOCKER_ARCH=$(DOCKER_ARCH)\n'
-	@printf 'DOCKER_TAG_LATEST=$(DOCKER_TAG_LATEST)\n'
-	@printf 'DOCKER_IMAGE_NAME=$(DOCKER_IMAGE_NAME)\n'
-	@printf '\n'
-	@printf 'DOCKER_BUILDX_ARGS=$(DOCKER_BUILDX_ARGS)\n'
-	@printf '\n'
-	@printf 'Full command:\n'
-	@printf '$(DOCKER_BUILD_BASE)\n'
-	@printf '================================================================\n\n'
 	@($(DOCKER_BUILD_BASE))
 
 .PHONY : build/forwarder
@@ -174,11 +154,6 @@ build/forwarder : base/get-infra-agent
 build/forwarder : DOCKER_TARGET=forwarder
 build/forwarder : DOCKER_IMAGE_NAME=$(FWD_IMAGE_NAME)
 build/forwarder :
-	@printf '\n================================================================\n'
-	@printf 'DEBUG: Building forwarder image\n'
-	@printf 'USE_BUILDX=$(USE_BUILDX), DOCKER_PUBLISH=$(DOCKER_PUBLISH)\n'
-	@printf 'DOCKER_BUILDX_ARGS=$(DOCKER_BUILDX_ARGS)\n'
-	@printf '================================================================\n\n'
 	@($(DOCKER_BUILD_BASE))
 
 .PHONY : build/k8s-events-forwarder
@@ -187,11 +162,6 @@ build/k8s-events-forwarder : base/get-infra-agent
 build/k8s-events-forwarder : DOCKER_TARGET=k8s-events-forwarder
 build/k8s-events-forwarder : DOCKER_IMAGE_NAME=${K8S_FWD_IMAGE_NAME}
 build/k8s-events-forwarder :
-	@printf '\n================================================================\n'
-	@printf 'DEBUG: Building k8s-events-forwarder image\n'
-	@printf 'USE_BUILDX=$(USE_BUILDX), DOCKER_PUBLISH=$(DOCKER_PUBLISH)\n'
-	@printf 'DOCKER_BUILDX_ARGS=$(DOCKER_BUILDX_ARGS)\n'
-	@printf '================================================================\n\n'
 	@($(DOCKER_BUILD_BASE))
 
 # publish to docker hub
@@ -299,32 +269,20 @@ build/k8s-events-forwarder/% :
 publish/multi-arch-base-manifest :
 	@printf '\n================================================================\n'
 	@printf 'Target: publish/base-manifest\n'
-	@printf 'Image: $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)\n'
-	@printf 'DOCKER_BUILD_TAG_PREFIX: $(DOCKER_BUILD_TAG_PREFIX)\n'
-	@printf 'FIPS: $(FIPS)\n'
-	@printf '================================================================\n'
-	@printf 'DEBUG: Inspecting source images before manifest create:\n'
-	@printf 'Checking $(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64\n'
-	@docker manifest inspect $(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 2>&1 | head -20 || true
-	@printf '\nChecking $(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64\n'
-	@docker manifest inspect $(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64 2>&1 | head -20 || true
+	@printf 'Image: $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)'
+	@printf '\n================================================================\n'
 ifeq ($(FIPS),)
-	@printf '\nChecking $(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm\n'
-	@docker manifest inspect $(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm 2>&1 | head -20 || true
-	@printf '\nDEBUG: Creating manifest with arm, arm64, amd64\n'
 	@(docker manifest create \
     $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64)
 else
-	@printf '\nDEBUG: Creating manifest with arm64, amd64 (FIPS mode)\n'
 	@(docker manifest create \
     $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION) \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-arm64 \
     	$(DOCKER_IMAGE_NAME):$(DOCKER_BUILD_TAG_PREFIX)-amd64)
 endif
-	@printf 'DEBUG: Pushing manifest $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)\n'
 	@docker manifest push $(DOCKER_IMAGE_NAME):$(IMAGE_VERSION)
 
 
@@ -332,13 +290,6 @@ endif
 .PHONY : publish/multi-arch-base-rc
 publish/multi-arch-base-rc : export IMAGE_VERSION=$(AGENT_VERSION)-rc
 publish/multi-arch-base-rc : export DOCKER_BUILD_TAG_PREFIX=$(IMAGE_VERSION)
-publish/multi-arch-base-rc :
-	@printf '\n================================================================\n'
-	@printf 'Target: publish/multi-arch-base-rc\n'
-	@printf 'AGENT_VERSION: $(AGENT_VERSION)\n'
-	@printf 'IMAGE_VERSION: $(AGENT_VERSION)-rc\n'
-	@printf 'DOCKER_BUILD_TAG_PREFIX: $(AGENT_VERSION)-rc\n'
-	@printf '================================================================\n'
 publish/multi-arch-base-rc : build/base-arm64
 ifeq ($(FIPS),)
 publish/multi-arch-base-rc : build/base-arm
