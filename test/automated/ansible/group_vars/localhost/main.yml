@@ -204,7 +204,7 @@ instances:
     platform: "linux"
     python_interpreter: "/usr/bin/python"
     launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
-  - ami: "ami-068d5d5ed1eeea07c"
+  - ami: "ami-0b999ee292b09fdba"
     type: "t3a.small"
     name: "amd64:redhat-10.0"
     username: "ec2-user"
