@@ -11,7 +11,7 @@
     homepage: 'https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes'
     maintainer: 'caos-team@newrelic.com'
     description: 'New Relic Infrastructure provides flexible, dynamic server monitoring. With real-time data collection and a UI that scales from a handful of hosts to thousands, Infrastructure is designed for modern Operations teams with fast-changing systems.'
-    license: 'Copyright (c) 2008-2024 New Relic, Inc. All rights reserved.'
+    license: "Copyright (c) 2008-2024 New Relic, Inc. All rights reserved."
     formats:
       - rpm
     bindir: /usr/bin
