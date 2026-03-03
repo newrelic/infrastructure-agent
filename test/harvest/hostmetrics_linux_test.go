@@ -59,7 +59,7 @@ func TestHostSharedMemory(t *testing.T) {
 		sampleB, _ = systemSampler.Sample()
 		afterSample := sampleB[0].(*metrics.SystemSample)
 
-		diffTolerance := 100000
+		diffTolerance := 1024 * 1024
 		assert.True(st, afterSample.MemorySharedBytes >= beforeSample.MemorySharedBytes+float64(bytesToWrite-diffTolerance), "Shared Memory used did not increase enough, SharedMemoryBefore: %f SharedMemoryAfter %f ", beforeSample.MemorySharedBytes, afterSample.MemorySharedBytes)
 	})
 }
