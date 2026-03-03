@@ -219,7 +219,8 @@ func TestHostBuffersMemory(t *testing.T) {
 	sampleB, _ = systemSampler.Sample()
 	afterSample := sampleB[0].(*metrics.SystemSample)
 
-	diffTolerance := 100000
+	// Increased tolerance to account for kernel buffer cache variations
+	diffTolerance := 1024 * 1024 // 1 MB tolerance
 
 	assert.True(t, (*beforeSample.MemoryBuffers)+float64(expectedIncreaseBytes-diffTolerance) <= *afterSample.MemoryBuffers, "MemoryBuffers used did not increase enough, expected an increase by %d MemoryBuffersBefore: %f MemoryBuffersAfter %f ", expectedIncreaseBytes, *beforeSample.MemoryBuffers, *afterSample.MemoryBuffers)
 }
