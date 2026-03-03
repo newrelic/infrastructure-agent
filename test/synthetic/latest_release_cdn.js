@@ -75,9 +75,9 @@ function checkPackagesInCDN(repo, latestRelease){
 
 function checkSLES(packagePrefix, latestRelease, archs){
   for (var i=0; i < archs.length; i++){
-    var packageStructure = packagePrefix === 'newrelic-infra' ? `${packagePrefix}-${latestRelease}-1.sles12.4.${archs[i].archInPackage}.rpm` : 
+    var packageStructure = packagePrefix === 'newrelic-infra' ? `${packagePrefix}-${latestRelease}-1.sles12.5.${archs[i].archInPackage}.rpm` : 
          `${packagePrefix}-${latestRelease}-1.${archs[i].archInPackage}.rpm`;
-    var downloadServerURI = `${downloadServerBaseURI}/linux/zypp/sles/12.4/${archs[i].archInUrl}/${packageStructure}`; 
+    var downloadServerURI = `${downloadServerBaseURI}/linux/zypp/sles/12.5/${archs[i].archInUrl}/${packageStructure}`; 
     checkFileInServer(downloadServerURI);
   }
 }
