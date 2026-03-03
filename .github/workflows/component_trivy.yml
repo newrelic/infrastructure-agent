@@ -10,8 +10,9 @@ on:
         required: true
         type: string
       severity:
-        required: true
+        required: false
         type: string
+        default: 'CRITICAL,HIGH'
       FIPS:
         required: false
         type: boolean
@@ -93,15 +94,10 @@ jobs:
         with:
           sarif_file: 'trivy-results.sarif'
 
-      - name: Send notification to Slack Workflow
+      - name: Send Slack notification
         if: ${{ failure() }}
-        id: slack
-        uses: slackapi/slack-github-action@v1.22.0
+        uses: archive/github-actions-slack@master
         with:
-          # This data can be any valid JSON from a previous step in the GitHub Action
-          payload: |
-            {
-              "text": ":rotating_light: Hi CAOS (@hero), critical or high vulnerabilities found, see: https://github.com/newrelic/infrastructure-agent/security/code-scanning?query=is%3Aopen+branch%3Amaster+tool%3ATrivy :rotating_light:"
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.slack_webhook }}
+          slack-bot-user-oauth-access-token: ${{ secrets.COREINT_SLACK_TOKEN }}
+          slack-channel: ${{ secrets.COREINT_SLACK_CHANNEL }}
+          slack-text: ":rotating_light: Hi CAOS (@hero), critical or high vulnerabilities found, see: https://github.com/newrelic/infrastructure-agent/security/code-scanning?query=is%3Aopen+branch%3Amaster+tool%3ATrivy :rotating_light:"
