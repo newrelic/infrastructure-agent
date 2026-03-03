@@ -4,7 +4,7 @@ FROM ubuntu:16.04
 # Define Go version
 ARG GO_VERSION=1.25.7
 # Define build-time arguments for the GitHub CLI version and architecture
-ARG GH_VERSION='2.0.0'
+ARG GH_VERSION='2.40.1'
 ARG GH_ARCH='amd64'
 
 
