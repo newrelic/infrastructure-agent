@@ -19,6 +19,10 @@
     Must end with $ (e.g., "DOMAIN\NewRelicAgentSvc$")
     Ignored if CMTargetname is specified.
 
+.PARAMETER SkipValidation
+    Optional. Skip gMSA validation check. Use when Test-ADServiceAccount is unavailable
+    or when you're confident the gMSA is properly configured.
+
 .EXAMPLE
     .\set-service-account.ps1
     Prompts for regular user account credentials interactively.
@@ -30,12 +34,17 @@
 .EXAMPLE
     .\set-service-account.ps1 -GMSAUsername "DOMAIN\NewRelicAgentSvc$"
     Uses a Group Managed Service Account (no password required).
+
+.EXAMPLE
+    .\set-service-account.ps1 -GMSAUsername "DOMAIN\NewRelicAgentSvc$" -SkipValidation
+    Uses a gMSA and skips the Test-ADServiceAccount validation check.
 #>
 
 param (
     [string]$ServiceName = "newrelic-infra",
     [string]$CMTargetname,
-    [string]$GMSAUsername
+    [string]$GMSAUsername,
+    [switch]$SkipValidation
 )
 
     # Check to ensure only one of $CMTargetname or $GMSAUsername is provided
@@ -177,25 +186,30 @@ if ($isGMSA) {
     Write-Host ""
     Write-Host "=== Validating gMSA Account ===" -ForegroundColor Cyan
     
-    try {
-        # Extract just the account name (remove domain prefix and $ suffix)
-        $gmsaName = ($Username -replace '^.*\\', '') -replace '\$$', ''
-        
-        # Try to test the gMSA
-        $gmsaTest = Test-ADServiceAccount -Identity $gmsaName -ErrorAction Stop
-        
-        if ($gmsaTest) {
-            Write-Host "✓ gMSA account '$gmsaName' is installed and accessible on this machine" -ForegroundColor Green
-        } else {
-            Write-Error "gMSA account '$gmsaName' is not properly installed on this machine."
+    if ($SkipValidation) {
+        Write-Host "Skipping gMSA validation (SkipValidation flag set)" -ForegroundColor Yellow
+    } else {
+        try {
+            # Extract just the account name (remove domain prefix and $ suffix)
+            $gmsaName = ($Username -replace '^.*\\', '') -replace '\$$', ''
+
+            # Try to test the gMSA
+            $gmsaTest = Test-ADServiceAccount -Identity $gmsaName -ErrorAction Stop
+
+            if ($gmsaTest) {
+                Write-Host "✓ gMSA account '$gmsaName' is installed and accessible on this machine" -ForegroundColor Green
+            } else {
+                Write-Error "gMSA account '$gmsaName' is not properly installed on this machine."
+                Write-Host "Run: Install-ADServiceAccount -Identity $gmsaName" -ForegroundColor Yellow
+                exit 1
+            }
+        } catch {
+            Write-Error "Could not verify gMSA installation: $_"
+            Write-Error "Please ensure the gMSA is properly installed and this computer is authorized."
             Write-Host "Run: Install-ADServiceAccount -Identity $gmsaName" -ForegroundColor Yellow
+            Write-Host "Or use -SkipValidation to bypass this check if you're confident the gMSA is configured correctly." -ForegroundColor Yellow
             exit 1
         }
-    } catch {
-        Write-Error "Could not verify gMSA installation: $_"
-        Write-Error "Please ensure the gMSA is properly installed and this computer is authorized."
-        Write-Host "Run: Install-ADServiceAccount -Identity $gmsaName" -ForegroundColor Yellow
-        exit 1
     }
     
     Write-Host ""
