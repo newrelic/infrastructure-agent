@@ -399,3 +399,116 @@ publish/multi-arch-forwarder-tag : publish/multi-arch-forwarder-manifest
 publish/multi-arch-forwarder-latest : export IMAGE_VERSION=latest
 publish/multi-arch-forwarder-latest : export DOCKER_BUILD_TAG_PREFIX=$(AGENT_VERSION)-rc
 publish/multi-arch-forwarder-latest : publish/multi-arch-forwarder-manifest
+
+#################################################################
+# Windows Container Targets
+#################################################################
+
+# Include fluent-bit version parsing
+include ../embed/fluent-bit.mk
+
+# Get Fluent Bit versions for Windows
+FB_VERSION_WINDOWS ?= $(call get-fb_version,windows,3)
+FB_PLUGIN_VERSION_WINDOWS ?= $(call get-fb_version,windows,2)
+
+WINDOWS_DOCKERFILE ?= $(CURDIR)/Dockerfile.windows
+WINDOWS_IMAGE_NAME ?= ${NS}/${REPO}-windows
+WINDOWS_AGENT_BIN ?= newrelic-infra
+WINDOWS_BASE_IMAGE ?= mcr.microsoft.com/windows/servercore:ltsc2022
+WINDOWS_VERSION ?= ltsc2022
+
+# Windows-specific build command
+DOCKER_BUILD_WINDOWS ?= docker \
+	build \
+	--no-cache \
+	--pull \
+	-t $(WINDOWS_IMAGE_NAME):$(DOCKER_TAG_LATEST) \
+	--build-arg base_image=$(WINDOWS_BASE_IMAGE) \
+	--build-arg image_version=$(IMAGE_VERSION) \
+	--build-arg agent_version=$(AGENT_VERSION) \
+	--build-arg version_file=VERSION \
+	--build-arg agent_bin=$(WINDOWS_AGENT_BIN) \
+	--build-arg fb_version=$(FB_VERSION_WINDOWS) \
+	--build-arg fb_plugin_version=$(FB_PLUGIN_VERSION_WINDOWS) \
+	-f $(WINDOWS_DOCKERFILE) \
+	$(INFRASTRUCTURE_WORKSPACE)
+
+# Get Windows agent binaries
+.PHONY : windows/get-infra-agent
+windows/get-infra-agent : workspace
+windows/get-infra-agent :
+	@(cp $(AGENT_BUILD_TARGET_DIR)/windows-ctl-amd64_windows_amd64_v1/*.exe $(PROJECT_WORKSPACE)/)
+	@(cp $(AGENT_BUILD_TARGET_DIR)/windows-service-amd64_windows_amd64_v1/*.exe $(PROJECT_WORKSPACE)/)
+	@(cp $(AGENT_BUILD_TARGET_DIR)/windows-agent-amd64_windows_amd64_v1/*.exe $(PROJECT_WORKSPACE)/)
+
+# Build Windows base image (generic)
+.PHONY : build/base-windows
+build/base-windows : workspace/assets
+build/base-windows : windows/get-infra-agent
+build/base-windows : export GOOS=windows
+build/base-windows : export DOCKER_ARCH=amd64
+build/base-windows :
+	@printf '\n================================================================\n'
+	@printf 'Target: build/base-windows-$(WINDOWS_VERSION)\n'
+	@printf 'Base: $(WINDOWS_BASE_IMAGE)\n'
+	@printf 'Image: $(WINDOWS_IMAGE_NAME):$(DOCKER_TAG_LATEST)\n'
+	@printf '================================================================\n'
+	@($(DOCKER_BUILD_WINDOWS))
+
+# Build Windows ltsc2022 image
+.PHONY : build/base-windows-ltsc2022
+build/base-windows-ltsc2022 : export WINDOWS_BASE_IMAGE=mcr.microsoft.com/windows/servercore:ltsc2022
+build/base-windows-ltsc2022 : export WINDOWS_VERSION=ltsc2022
+build/base-windows-ltsc2022 : export DOCKER_TAG_LATEST=$(DOCKER_BUILD_TAG_PREFIX)-windows-ltsc2022
+build/base-windows-ltsc2022 :
+	@($(MAKE) build/base-windows)
+
+# Build Windows ltsc2019 image
+.PHONY : build/base-windows-ltsc2019
+build/base-windows-ltsc2019 : export WINDOWS_BASE_IMAGE=mcr.microsoft.com/windows/servercore:ltsc2019
+build/base-windows-ltsc2019 : export WINDOWS_VERSION=ltsc2019
+build/base-windows-ltsc2019 : export DOCKER_TAG_LATEST=$(DOCKER_BUILD_TAG_PREFIX)-windows-ltsc2019
+build/base-windows-ltsc2019 :
+	@($(MAKE) build/base-windows)
+
+# Publish Windows base RC (both versions)
+.PHONY : publish/windows-base-rc
+publish/windows-base-rc : export IMAGE_VERSION=$(AGENT_VERSION)-rc
+publish/windows-base-rc : export DOCKER_BUILD_TAG_PREFIX=$(IMAGE_VERSION)
+publish/windows-base-rc : build/base-windows-ltsc2022
+publish/windows-base-rc : build/base-windows-ltsc2019
+publish/windows-base-rc :
+	@printf '\n================================================================\n'
+	@printf 'Target: publish/windows-base-rc\n'
+	@printf 'Pushing both ltsc2022 and ltsc2019 images'
+	@printf '\n================================================================\n'
+	@(docker push $(WINDOWS_IMAGE_NAME):$(IMAGE_VERSION)-windows-ltsc2022)
+	@(docker push $(WINDOWS_IMAGE_NAME):$(IMAGE_VERSION)-windows-ltsc2019)
+
+# Publish Windows base tag (both versions)
+.PHONY : publish/windows-base-tag
+publish/windows-base-tag : export IMAGE_VERSION=$(AGENT_VERSION)
+publish/windows-base-tag :
+	@printf '\n================================================================\n'
+	@printf 'Target: publish/windows-base-tag\n'
+	@printf 'Tagging and pushing versioned images'
+	@printf '\n================================================================\n'
+	@(docker tag $(WINDOWS_IMAGE_NAME):$(AGENT_VERSION)-rc-windows-ltsc2022 $(WINDOWS_IMAGE_NAME):$(IMAGE_VERSION)-ltsc2022)
+	@(docker push $(WINDOWS_IMAGE_NAME):$(IMAGE_VERSION)-ltsc2022)
+	@(docker tag $(WINDOWS_IMAGE_NAME):$(AGENT_VERSION)-rc-windows-ltsc2019 $(WINDOWS_IMAGE_NAME):$(IMAGE_VERSION)-ltsc2019)
+	@(docker push $(WINDOWS_IMAGE_NAME):$(IMAGE_VERSION)-ltsc2019)
+
+# Publish Windows base latest (both versions)
+.PHONY : publish/windows-base-latest
+publish/windows-base-latest :
+	@printf '\n================================================================\n'
+	@printf 'Target: publish/windows-base-latest\n'
+	@printf 'Tagging and pushing latest images'
+	@printf '\n================================================================\n'
+	@(docker tag $(WINDOWS_IMAGE_NAME):$(AGENT_VERSION)-rc-windows-ltsc2022 $(WINDOWS_IMAGE_NAME):latest-ltsc2022)
+	@(docker push $(WINDOWS_IMAGE_NAME):latest-ltsc2022)
+	@(docker tag $(WINDOWS_IMAGE_NAME):$(AGENT_VERSION)-rc-windows-ltsc2019 $(WINDOWS_IMAGE_NAME):latest-ltsc2019)
+	@(docker push $(WINDOWS_IMAGE_NAME):latest-ltsc2019)
+	# Also tag ltsc2022 as the default 'latest'
+	@(docker tag $(WINDOWS_IMAGE_NAME):$(AGENT_VERSION)-rc-windows-ltsc2022 $(WINDOWS_IMAGE_NAME):latest)
+	@(docker push $(WINDOWS_IMAGE_NAME):latest)

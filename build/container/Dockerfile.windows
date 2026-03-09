@@ -1,0 +1,88 @@
+# Windows Infrastructure Agent Container
+# Base image options:
+# - mcr.microsoft.com/windows/servercore:ltsc2022 (full featured, ~2GB)
+# - mcr.microsoft.com/windows/nanoserver:ltsc2022 (minimal, ~100MB, but limited compatibility)
+ARG base_image=mcr.microsoft.com/windows/servercore:ltsc2022
+
+FROM $base_image
+
+ARG image_version=0.0
+ARG agent_version=0.0
+ARG version_file=VERSION
+ARG agent_bin=newrelic-infra
+
+# Fluent Bit versions
+ARG fb_version=4.2.2
+ARG fb_plugin_version=3.4.0
+ARG arch=amd64
+
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+
+# Create directory structure
+RUN New-Item -ItemType Directory -Force -Path 'C:\Program Files\New Relic\newrelic-infra' ; \
+    New-Item -ItemType Directory -Force -Path 'C:\newrelic'
+
+# Copy the Windows agent binaries
+COPY ${agent_bin}.exe C:/Program Files/New Relic/newrelic-infra/newrelic-infra.exe
+COPY ${agent_bin}-ctl.exe C:/Program Files/New Relic/newrelic-infra/newrelic-infra-ctl.exe
+COPY ${agent_bin}-service.exe C:/Program Files/New Relic/newrelic-infra/newrelic-infra-service.exe
+
+# Copy static assets
+COPY assets C:/newrelic
+
+# Copy the VERSION file
+COPY $version_file C:/newrelic/VERSION
+
+# Install Fluent Bit for log forwarding
+RUN powershell -Command " \
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
+    Write-Host 'Downloading Fluent Bit...'; \
+    New-Item -ItemType Directory -Force -Path 'C:\Program Files\New Relic\newrelic-infra\logging\nrfb2' | Out-Null; \
+    \
+    # Download Fluent Bit package \
+    $fbUrl = \"https://logging-fb-windows-packages.s3.us-east-2.amazonaws.com/fb-windows-${env:fb_version}-${env:arch}.zip\"; \
+    Invoke-WebRequest -Uri $fbUrl -OutFile C:\fluent-bit.zip -UseBasicParsing; \
+    Expand-Archive -Path C:\fluent-bit.zip -DestinationPath 'C:\Program Files\New Relic\newrelic-infra\logging\nrfb2' -Force; \
+    Remove-Item C:\fluent-bit.zip; \
+    \
+    # Download NR Plugin \
+    $pluginUrl = \"https://github.com/newrelic/newrelic-fluent-bit-output/releases/download/v${env:fb_plugin_version}/out_newrelic-windows-${env:arch}-${env:fb_plugin_version}.dll\"; \
+    Invoke-WebRequest -Uri $pluginUrl -OutFile 'C:\Program Files\New Relic\newrelic-infra\logging\nrfb2\out_newrelic.dll' -UseBasicParsing; \
+    \
+    Write-Host 'Fluent Bit installed successfully'"
+
+# Verify Fluent Bit installation
+RUN powershell -Command " \
+    if (Test-Path 'C:\Program Files\New Relic\newrelic-infra\logging\nrfb2\fluent-bit.exe') { \
+        Write-Host 'Fluent Bit verification: OK'; \
+    } else { \
+        Write-Error 'Fluent Bit not found!'; \
+        exit 1; \
+    }"
+
+# Set metadata
+LABEL com.newrelic.image.version=$image_version \
+      com.newrelic.infra-agent.version=$agent_version \
+      com.newrelic.maintainer="infrastructure-eng@newrelic.com" \
+      com.newrelic.description="New Relic Infrastructure agent for monitoring Windows containers and hosts."
+
+# Set environment variables for containerized mode
+ENV NRIA_IS_CONTAINERIZED=true \
+    NRIA_OVERRIDE_HOST_ROOT=C:/host
+
+# Add the agent to PATH for easier access
+RUN $env:PATH = 'C:\Program Files\New Relic\newrelic-infra;' + $env:PATH ; \
+    [Environment]::SetEnvironmentVariable('PATH', $env:PATH, [EnvironmentVariableTarget]::Machine)
+
+# Expose any necessary ports (if needed for integrations)
+# EXPOSE 8001
+
+# Health check to ensure agent is running
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD powershell -Command "try { \
+        $process = Get-Process -Name 'newrelic-infra' -ErrorAction SilentlyContinue; \
+        if ($process) { exit 0 } else { exit 1 } \
+    } catch { exit 1 }"
+
+# Run the agent service
+ENTRYPOINT ["C:/Program Files/New Relic/newrelic-infra/newrelic-infra-service.exe"]
