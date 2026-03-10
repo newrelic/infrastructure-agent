@@ -23,9 +23,9 @@ RUN New-Item -ItemType Directory -Force -Path 'C:\Program Files\New Relic\newrel
     New-Item -ItemType Directory -Force -Path 'C:\newrelic'
 
 # Copy the Windows agent binaries
-COPY ${agent_bin}.exe C:/Program Files/New Relic/newrelic-infra/newrelic-infra.exe
-COPY ${agent_bin}-ctl.exe C:/Program Files/New Relic/newrelic-infra/newrelic-infra-ctl.exe
-COPY ${agent_bin}-service.exe C:/Program Files/New Relic/newrelic-infra/newrelic-infra-service.exe
+COPY ["${agent_bin}.exe", "C:/Program Files/New Relic/newrelic-infra/newrelic-infra.exe"]
+COPY ["${agent_bin}-ctl.exe", "C:/Program Files/New Relic/newrelic-infra/newrelic-infra-ctl.exe"]
+COPY ["${agent_bin}-service.exe", "C:/Program Files/New Relic/newrelic-infra/newrelic-infra-service.exe"]
 
 # Copy static assets
 COPY assets C:/newrelic
