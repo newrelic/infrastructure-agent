@@ -34,22 +34,19 @@ COPY assets C:/newrelic
 COPY $version_file C:/newrelic/VERSION
 
 # Install Fluent Bit for log forwarding
-RUN powershell -Command " \
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
+RUN [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
     Write-Host 'Downloading Fluent Bit...'; \
     New-Item -ItemType Directory -Force -Path 'C:\Program Files\New Relic\newrelic-infra\logging\nrfb2' | Out-Null; \
     \
-    # Download Fluent Bit package \
     $fbUrl = \"https://logging-fb-windows-packages.s3.us-east-2.amazonaws.com/fb-windows-${env:fb_version}-${env:arch}.zip\"; \
     Invoke-WebRequest -Uri $fbUrl -OutFile C:\fluent-bit.zip -UseBasicParsing; \
     Expand-Archive -Path C:\fluent-bit.zip -DestinationPath 'C:\Program Files\New Relic\newrelic-infra\logging\nrfb2' -Force; \
     Remove-Item C:\fluent-bit.zip; \
     \
-    # Download NR Plugin \
     $pluginUrl = \"https://github.com/newrelic/newrelic-fluent-bit-output/releases/download/v${env:fb_plugin_version}/out_newrelic-windows-${env:arch}-${env:fb_plugin_version}.dll\"; \
     Invoke-WebRequest -Uri $pluginUrl -OutFile 'C:\Program Files\New Relic\newrelic-infra\logging\nrfb2\out_newrelic.dll' -UseBasicParsing; \
     \
-    Write-Host 'Fluent Bit installed successfully'"
+    Write-Host 'Fluent Bit installed successfully'
 
 # Verify Fluent Bit installation
 RUN powershell -Command " \
