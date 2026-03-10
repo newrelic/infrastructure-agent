@@ -49,13 +49,12 @@ RUN [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tl
     Write-Host 'Fluent Bit installed successfully'
 
 # Verify Fluent Bit installation
-RUN powershell -Command " \
-    if (Test-Path 'C:\Program Files\New Relic\newrelic-infra\logging\nrfb2\fluent-bit.exe') { \
+RUN if (Test-Path 'C:\Program Files\New Relic\newrelic-infra\logging\nrfb2\fluent-bit.exe') { \
         Write-Host 'Fluent Bit verification: OK'; \
     } else { \
         Write-Error 'Fluent Bit not found!'; \
         exit 1; \
-    }"
+    }
 
 # Set metadata
 LABEL com.newrelic.image.version=$image_version \
