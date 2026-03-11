@@ -80,5 +80,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
         if ($process) { exit 0 } else { exit 1 } \
     } catch { exit 1 }"
 
-# Run the agent service
-ENTRYPOINT ["C:/Program Files/New Relic/newrelic-infra/newrelic-infra-service.exe"]
+# Run the agent directly (not as a Windows Service, which doesn't work in containers)
+ENTRYPOINT ["C:/Program Files/New Relic/newrelic-infra/newrelic-infra.exe"]
