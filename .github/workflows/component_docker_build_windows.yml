@@ -98,8 +98,8 @@ jobs:
           # Test that the image runs and shows version
           docker run --rm newrelic/infrastructure-windows:${{ inputs.TAG }}-test-rc-windows-ltsc2022 --version
 
-      # - name: Push Windows container (${{ matrix.windows_version }})
-      #   if: ${{ inputs.PUBLISH == true }}
-      #   shell: bash
-      #   run: |
-      #     docker push newrelic/infrastructure-windows:${{ inputs.TAG }}-test-rc-windows-${{ matrix.windows_version }}
+      - name: Push Windows container (${{ matrix.windows_version }})
+        if: ${{ inputs.PUBLISH == true }}
+        shell: bash
+        run: |
+          docker push newrelic/infrastructure-windows:${{ inputs.TAG }}-test-rc-windows-${{ matrix.windows_version }}
