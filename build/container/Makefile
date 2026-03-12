@@ -412,7 +412,7 @@ FB_VERSION_WINDOWS ?= $(call get-fb_version,windows,3)
 FB_PLUGIN_VERSION_WINDOWS ?= $(call get-fb_version,windows,2)
 
 WINDOWS_DOCKERFILE ?= $(CURDIR)/Dockerfile.windows
-WINDOWS_IMAGE_NAME ?= ${NS}/${REPO}-windows
+WINDOWS_IMAGE_NAME ?= ${NS}/${REPO}
 WINDOWS_AGENT_BIN ?= newrelic-infra
 WINDOWS_BASE_IMAGE ?= mcr.microsoft.com/windows/servercore:ltsc2022
 WINDOWS_VERSION ?= ltsc2022
