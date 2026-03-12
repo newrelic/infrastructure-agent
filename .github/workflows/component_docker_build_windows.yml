@@ -32,9 +32,6 @@ jobs:
     name: Building containerized Windows agent
     runs-on: windows-2022
     timeout-minutes: 120
-    strategy:
-      matrix:
-        windows_version: [ltsc2022, ltsc2019]
 
     steps:
       - name: Checkout
@@ -85,24 +82,46 @@ jobs:
           Copy-Item "target\bin\windows_amd64\newrelic-infra-ctl.exe" "dist\windows-ctl-amd64_windows_amd64_v1\"
           Copy-Item "target\bin\windows_amd64\newrelic-infra-service.exe" "dist\windows-service-amd64_windows_amd64_v1\"
 
-      - name: Build Windows container (${{ matrix.windows_version }})
+      - name: Build Windows container (ltsc2022)
         shell: bash
         timeout-minutes: 45
         run: |
           AGENT_VERSION=${{ inputs.TAG }} \
           IMAGE_VERSION=${{ inputs.TAG }}-rc \
           DOCKER_BUILD_TAG_PREFIX=${{ inputs.TAG }}-rc \
-          make -C build/container/ build/base-windows-${{ matrix.windows_version }}
+          make -C build/container/ build/base-windows-ltsc2022
 
-      - name: Test Windows container (${{ matrix.windows_version }})
+      - name: Test Windows container (ltsc2022)
         shell: pwsh
         timeout-minutes: 5
         run: |
           # Test that the image runs and shows version
-          docker run --rm newrelic/infrastructure:${{ inputs.TAG }}-rc-windows-${{ matrix.windows_version }} --version
+          docker run --rm newrelic/infrastructure:${{ inputs.TAG }}-rc-windows-ltsc2022 --version
 
-      - name: Push Windows container (${{ matrix.windows_version }})
-        if: ${{ inputs.PUBLISH == true }}
+      # - name: Push Windows container (ltsc2022)
+      #   if: ${{ inputs.PUBLISH == true }}
+      #   shell: bash
+      #   run: |
+      #     docker push newrelic/infrastructure:${{ inputs.TAG }}-rc-windows-ltsc2022
+
+      - name: Build Windows container (ltsc2019)
         shell: bash
+        timeout-minutes: 45
         run: |
-          docker push newrelic/infrastructure:${{ inputs.TAG }}-rc-windows-${{ matrix.windows_version }}
+          AGENT_VERSION=${{ inputs.TAG }} \
+          IMAGE_VERSION=${{ inputs.TAG }}-rc \
+          DOCKER_BUILD_TAG_PREFIX=${{ inputs.TAG }}-rc \
+          make -C build/container/ build/base-windows-ltsc2019
+
+      - name: Test Windows container (ltsc2019)
+        shell: pwsh
+        timeout-minutes: 5
+        run: |
+          # Test that the image runs and shows version
+          docker run --rm newrelic/infrastructure:${{ inputs.TAG }}-rc-windows-ltsc2019 --version
+
+      # - name: Push Windows container (ltsc2019)
+      #   if: ${{ inputs.PUBLISH == true }}
+      #   shell: bash
+      #   run: |
+      #     docker push newrelic/infrastructure:${{ inputs.TAG }}-rc-windows-ltsc2019
