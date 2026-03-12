@@ -16,7 +16,7 @@ on:
         required: true
         type: string
       PUBLISH:
-        default: false
+        default: true
         required: true
         type: boolean
 
