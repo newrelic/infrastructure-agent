@@ -1,0 +1,89 @@
+name: .. 🚧 Docker | Compile Windows image
+
+on:
+  workflow_call:
+    secrets:
+      DOCKER_HUB_ID:
+        required: false
+      DOCKER_HUB_PASSWORD:
+        required: false
+    inputs:
+      TAG:
+        required: true
+        type: string
+      PUBLISH:
+        default: false
+        required: true
+        type: boolean
+
+env:
+  TAG: ${{ inputs.TAG }}
+  DOCKER_PUBLISH: ${{ inputs.PUBLISH == true }}
+
+jobs:
+  build-windows-container:
+    name: Building containerized Windows agent
+    runs-on: windows-2022
+    strategy:
+      matrix:
+        windows_version: [ltsc2022, ltsc2019]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          check-latest: true
+
+      - name: Login to DockerHub
+        if: ${{ inputs.PUBLISH == true }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_ID }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+      - name: Set build date
+        shell: bash
+        run: echo "BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_ENV
+
+      - name: Build Windows binaries
+        shell: pwsh
+        run: |
+          .\build\windows\build.ps1 -arch amd64 -version ${{ inputs.TAG }} -commit "$env:GITHUB_SHA" -date "$env:BUILD_DATE"
+
+      - name: Prepare binaries for Docker build
+        shell: pwsh
+        run: |
+          # Create the dist directories expected by the Docker build
+          New-Item -ItemType Directory -Force -Path "dist\windows-agent-amd64_windows_amd64_v1"
+          New-Item -ItemType Directory -Force -Path "dist\windows-ctl-amd64_windows_amd64_v1"
+          New-Item -ItemType Directory -Force -Path "dist\windows-service-amd64_windows_amd64_v1"
+
+          # Copy the binaries to the expected locations
+          Copy-Item "target\bin\windows_amd64\newrelic-infra.exe" "dist\windows-agent-amd64_windows_amd64_v1\"
+          Copy-Item "target\bin\windows_amd64\newrelic-infra-ctl.exe" "dist\windows-ctl-amd64_windows_amd64_v1\"
+          Copy-Item "target\bin\windows_amd64\newrelic-infra-service.exe" "dist\windows-service-amd64_windows_amd64_v1\"
+
+      - name: Build Windows container (${{ matrix.windows_version }})
+        shell: bash
+        run: |
+          AGENT_VERSION=${{ inputs.TAG }} \
+          IMAGE_VERSION=${{ inputs.TAG }}-test-rc \
+          DOCKER_BUILD_TAG_PREFIX=${{ inputs.TAG }}-test-rc \
+          make -C build/container/ build/base-windows-${{ matrix.windows_version }}
+
+      - name: Test Windows container (${{ matrix.windows_version }})
+        if: ${{ inputs.PUBLISH == false && matrix.windows_version == 'ltsc2022' }}
+        shell: pwsh
+        run: |
+          # Test that the image runs and shows version
+          docker run --rm newrelic/infrastructure-windows:${{ inputs.TAG }}-test-rc-windows-ltsc2022 --version
+
+      # - name: Push Windows container (${{ matrix.windows_version }})
+      #   if: ${{ inputs.PUBLISH == true }}
+      #   shell: bash
+      #   run: |
+      #     docker push newrelic/infrastructure-windows:${{ inputs.TAG }}-test-rc-windows-${{ matrix.windows_version }}
