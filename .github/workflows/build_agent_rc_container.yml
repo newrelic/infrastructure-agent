@@ -6,9 +6,20 @@ on:
       tag:
         description: 'Tag'
         required: true
+      build_linux:
+        description: 'Build Linux containers'
+        required: false
+        type: boolean
+        default: false
+      build_windows:
+        description: 'Build Windows containers'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   packaging-docker:
+    if: ${{ github.event.inputs.build_linux == 'true' }}
     uses: ./.github/workflows/component_docker_packaging.yml
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
@@ -19,3 +30,13 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     with:
       TAG: ${{ github.event.inputs.tag }}
+
+  packaging-docker-windows:
+    if: ${{ github.event.inputs.build_windows == 'true' }}
+    uses: ./.github/workflows/component_docker_build_windows.yml
+    secrets:
+      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+    with:
+      TAG: ${{ github.event.inputs.tag }}
+      PUBLISH: true
