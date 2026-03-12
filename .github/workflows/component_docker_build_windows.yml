@@ -16,7 +16,7 @@ on:
         required: true
         type: string
       PUBLISH:
-        default: false
+        default: true
         required: true
         type: boolean
 
@@ -98,27 +98,27 @@ jobs:
           # Test that the image runs and shows version
           docker run --rm newrelic/infrastructure:${{ inputs.TAG }}-rc-windows-ltsc2022 --version
 
-      # - name: Push Windows container (ltsc2022)
-      #   if: ${{ inputs.PUBLISH == true }}
-      #   shell: bash
-      #   run: |
-      #     docker push newrelic/infrastructure:${{ inputs.TAG }}-rc-windows-ltsc2022
-
-      - name: Build Windows container (ltsc2019)
+      - name: Push Windows container (ltsc2022)
+        if: ${{ inputs.PUBLISH == true }}
         shell: bash
-        timeout-minutes: 45
         run: |
-          AGENT_VERSION=${{ inputs.TAG }} \
-          IMAGE_VERSION=${{ inputs.TAG }}-rc \
-          DOCKER_BUILD_TAG_PREFIX=${{ inputs.TAG }}-rc \
-          make -C build/container/ build/base-windows-ltsc2019
+          docker push newrelic/infrastructure:${{ inputs.TAG }}-rc-windows-ltsc2022
 
-      - name: Test Windows container (ltsc2019)
-        shell: pwsh
-        timeout-minutes: 5
-        run: |
-          # Test that the image runs and shows version
-          docker run --rm newrelic/infrastructure:${{ inputs.TAG }}-rc-windows-ltsc2019 --version
+      # - name: Build Windows container (ltsc2019)
+      #   shell: bash
+      #   timeout-minutes: 45
+      #   run: |
+      #     AGENT_VERSION=${{ inputs.TAG }} \
+      #     IMAGE_VERSION=${{ inputs.TAG }}-rc \
+      #     DOCKER_BUILD_TAG_PREFIX=${{ inputs.TAG }}-rc \
+      #     make -C build/container/ build/base-windows-ltsc2019
+
+      # - name: Test Windows container (ltsc2019)
+      #   shell: pwsh
+      #   timeout-minutes: 5
+      #   run: |
+      #     # Test that the image runs and shows version
+      #     docker run --rm newrelic/infrastructure:${{ inputs.TAG }}-rc-windows-ltsc2019 --version
 
       # - name: Push Windows container (ltsc2019)
       #   if: ${{ inputs.PUBLISH == true }}
