@@ -82,6 +82,13 @@ jobs:
           Copy-Item "target\bin\windows_amd64\newrelic-infra-ctl.exe" "dist\windows-ctl-amd64_windows_amd64_v1\"
           Copy-Item "target\bin\windows_amd64\newrelic-infra-service.exe" "dist\windows-service-amd64_windows_amd64_v1\"
 
+      - name: Prepare workspace and assets
+        shell: bash
+        run: |
+          # Clean and recreate workspace to ensure fresh assets
+          rm -rf build/container/workspace
+          make -C build/container/ workspace/assets IMAGE_VERSION=${{ inputs.TAG }}-test
+
       - name: Build Windows container (ltsc2022)
         shell: bash
         timeout-minutes: 45
