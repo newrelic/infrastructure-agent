@@ -41,10 +41,10 @@ COPY assets C:/newrelic
 COPY $version_file C:/newrelic/VERSION
 
 # Copy logging example configs to logging.d (matching Windows MSI)
-COPY assets/examples/logging/windows/file.yml.example "C:/Program Files/New Relic/newrelic-infra/logging.d/file.yml.example"
-COPY assets/examples/logging/windows/fluentbit.yml.example "C:/Program Files/New Relic/newrelic-infra/logging.d/fluentbit.yml.example"
-COPY assets/examples/logging/windows/tcp.yml.example "C:/Program Files/New Relic/newrelic-infra/logging.d/tcp.yml.example"
-COPY assets/examples/logging/windows/winlog.yml.example "C:/Program Files/New Relic/newrelic-infra/logging.d/winlog.yml.example"
+COPY ["assets/examples/logging/windows/file.yml.example", "C:/Program Files/New Relic/newrelic-infra/logging.d/file.yml.example"]
+COPY ["assets/examples/logging/windows/fluentbit.yml.example", "C:/Program Files/New Relic/newrelic-infra/logging.d/fluentbit.yml.example"]
+COPY ["assets/examples/logging/windows/tcp.yml.example", "C:/Program Files/New Relic/newrelic-infra/logging.d/tcp.yml.example"]
+COPY ["assets/examples/logging/windows/winlog.yml.example", "C:/Program Files/New Relic/newrelic-infra/logging.d/winlog.yml.example"]
 
 # Download and install bundled integrations (matching Windows MSI)
 ARG nri_flex_version=1.17.5
@@ -98,7 +98,7 @@ RUN [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tl
     Write-Host 'All integrations installed successfully'
 
 # Copy Fluent Bit parsers config (goes in same directory as fluent-bit.exe)
-COPY assets/examples/logging/parsers.conf "C:/Program Files/New Relic/newrelic-infra/newrelic-integrations/logging/parsers.conf"
+COPY ["assets/examples/logging/parsers.conf", "C:/Program Files/New Relic/newrelic-infra/newrelic-integrations/logging/parsers.conf"]
 
 # Verify integrations installation
 RUN $integrations = @( \
