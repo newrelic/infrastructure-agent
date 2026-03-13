@@ -97,6 +97,7 @@ workspace :
 
 workspace/assets : workspace
 	@(cp -r $(CURDIR)/assets $(PROJECT_WORKSPACE))
+	@(cp -r $(CURDIR)/../../assets/examples $(PROJECT_WORKSPACE)/assets/)
 	@(echo $(IMAGE_VERSION) > $(PROJECT_WORKSPACE)/VERSION)
 
 # Core
