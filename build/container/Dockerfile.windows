@@ -40,9 +40,8 @@ COPY assets C:/newrelic
 # Copy the VERSION file
 COPY $version_file C:/newrelic/VERSION
 
-# Download and install bundled integrations (matching Windows MSI)
+# Download and install bundled integrations
 ARG nri_flex_version=1.17.5
-ARG nri_winservices_version=1.4.4
 ARG nri_prometheus_version=2.27.7
 
 RUN [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
@@ -56,13 +55,6 @@ RUN [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tl
     Expand-Archive -Path C:\nri-flex.zip -DestinationPath 'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations' -Force; \
     Remove-Item C:\nri-flex.zip; \
     \
-    # nri-winservices \
-    Write-Host 'Downloading nri-winservices...'; \
-    $winservicesUrl = \"https://github.com/newrelic/nri-winservices/releases/download/v${env:nri_winservices_version}/nri-winservices-v${env:nri_winservices_version}-amd64.zip\"; \
-    Invoke-WebRequest -Uri $winservicesUrl -OutFile C:\nri-winservices.zip -UseBasicParsing; \
-    Expand-Archive -Path C:\nri-winservices.zip -DestinationPath 'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations' -Force; \
-    Remove-Item C:\nri-winservices.zip; \
-    \
     # nri-prometheus \
     Write-Host 'Downloading nri-prometheus...'; \
     $prometheusUrl = \"https://github.com/newrelic/nri-prometheus/releases/download/v${env:nri_prometheus_version}/nri-prometheus-${env:arch}.${env:nri_prometheus_version}.zip\"; \
@@ -71,13 +63,6 @@ RUN [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tl
     Copy-Item 'C:\temp-prometheus\New Relic\newrelic-infra\newrelic-integrations\bin\nri-prometheus.exe' 'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\nri-prometheus.exe' -Force; \
     Remove-Item C:\temp-prometheus -Recurse -Force; \
     Remove-Item C:\nri-prometheus.zip; \
-    \
-    # nr-winpkg \
-    Write-Host 'Downloading nr-winpkg...'; \
-    $winpkgUrl = \"https://download.newrelic.com/infrastructure_agent/windows/integrations/nri-winpkg/nri-winpkg.zip\"; \
-    Invoke-WebRequest -Uri $winpkgUrl -OutFile C:\nr-winpkg.zip -UseBasicParsing; \
-    Expand-Archive -Path C:\nr-winpkg.zip -DestinationPath 'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations' -Force; \
-    Remove-Item C:\nr-winpkg.zip; \
     \
     # Fluent Bit \
     Write-Host 'Downloading Fluent Bit...'; \
@@ -94,9 +79,7 @@ RUN [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tl
 # Verify integrations installation
 RUN $integrations = @( \
         'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\nri-flex.exe', \
-        'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\nri-winservices.exe', \
         'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\nri-prometheus.exe', \
-        'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\winpkg\nr-winpkg.exe', \
         'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\logging\fluent-bit.exe' \
     ); \
     $missing = @(); \
