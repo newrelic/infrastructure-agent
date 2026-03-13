@@ -2,7 +2,7 @@
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
     <ProductVersion>3.10</ProductVersion>
     <ProjectGuid>0a88050d-630f-4f58-8f30-677b2a5efd03</ProjectGuid>
     <SchemaVersion>2.0</SchemaVersion>
@@ -22,18 +22,18 @@
     <!-- Define a default for SkipSigning if it's not passed -->
     <SkipSigning Condition="'$(SkipSigning)' == ''">false</SkipSigning>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>Debug;ExternalFilesPath=..\..\..\..\..\assets\;BinariesPath=..\..\..\..\..\target\bin\windows_amd64\;EmbedBinariesPath=..\..\..\..\..\target\embed\bin\windows_amd64\;</DefineConstants>
+    <DefineConstants>Debug;ExternalFilesPath=..\..\..\..\..\assets\;BinariesPath=..\..\..\..\..\target\bin\windows_amd64\;EmbedBinariesPath=..\..\..\..\..\target\embed\bin\windows_amd64\;InstallerPath=..\..\..\binaries\windows\;</DefineConstants>
     <SuppressAllWarnings>True</SuppressAllWarnings>
     <Pedantic>False</Pedantic>
     <CompilerAdditionalOptions>-arch x64</CompilerAdditionalOptions>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>ExternalFilesPath=..\..\..\..\..\assets\;BinariesPath=..\..\..\..\..\target\bin\windows_amd64\;EmbedBinariesPath=..\..\..\..\..\target\embed\bin\windows_amd64\;</DefineConstants>
+    <DefineConstants>ExternalFilesPath=..\..\..\..\..\assets\;BinariesPath=..\..\..\..\..\target\bin\windows_amd64\;EmbedBinariesPath=..\..\..\..\..\target\embed\bin\windows_amd64\;InstallerPath=..\..\..\binaries\windows\;</DefineConstants>
     <CompilerAdditionalOptions>-arch x64</CompilerAdditionalOptions>
   </PropertyGroup>
   <ItemGroup>
