@@ -18,8 +18,15 @@ ARG arch=amd64
 
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
-# Create directory structure
+# Create directory structure (matching Windows MSI installer)
+# C:\Program Files\New Relic\newrelic-infra - Agent binaries and configs
+# C:\ProgramData\New Relic\newrelic-infra - Runtime app data
 RUN New-Item -ItemType Directory -Force -Path 'C:\Program Files\New Relic\newrelic-infra' ; \
+    New-Item -ItemType Directory -Force -Path 'C:\Program Files\New Relic\newrelic-infra\integrations.d' ; \
+    New-Item -ItemType Directory -Force -Path 'C:\Program Files\New Relic\newrelic-infra\logging.d' ; \
+    New-Item -ItemType Directory -Force -Path 'C:\Program Files\New Relic\newrelic-infra\custom-integrations' ; \
+    New-Item -ItemType Directory -Force -Path 'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations' ; \
+    New-Item -ItemType Directory -Force -Path 'C:\ProgramData\New Relic\newrelic-infra' ; \
     New-Item -ItemType Directory -Force -Path 'C:\newrelic'
 
 # Copy the Windows agent binaries
@@ -33,32 +40,96 @@ COPY assets C:/newrelic
 # Copy the VERSION file
 COPY $version_file C:/newrelic/VERSION
 
-# Install Fluent Bit for log forwarding
+# Copy logging example configs to logging.d (matching Windows MSI)
+COPY assets/examples/logging/windows/file.yml.example "C:/Program Files/New Relic/newrelic-infra/logging.d/file.yml.example"
+COPY assets/examples/logging/windows/fluentbit.yml.example "C:/Program Files/New Relic/newrelic-infra/logging.d/fluentbit.yml.example"
+COPY assets/examples/logging/windows/tcp.yml.example "C:/Program Files/New Relic/newrelic-infra/logging.d/tcp.yml.example"
+COPY assets/examples/logging/windows/winlog.yml.example "C:/Program Files/New Relic/newrelic-infra/logging.d/winlog.yml.example"
+
+# Download and install bundled integrations (matching Windows MSI)
+ARG nri_flex_version=1.17.5
+ARG nri_winservices_version=1.4.4
+ARG nri_prometheus_version=2.27.7
+
 RUN [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
-    Write-Host 'Downloading Fluent Bit...'; \
-    New-Item -ItemType Directory -Force -Path 'C:\Program Files\New Relic\newrelic-infra\logging\nrfb2' | Out-Null; \
     \
+    Write-Host 'Downloading bundled integrations...'; \
+    \
+    # nri-flex \
+    Write-Host 'Downloading nri-flex...'; \
+    $flexUrl = \"https://github.com/newrelic/nri-flex/releases/download/v${env:nri_flex_version}/nri-flex_windows_${env:nri_flex_version}_${env:arch}.zip\"; \
+    Invoke-WebRequest -Uri $flexUrl -OutFile C:\nri-flex.zip -UseBasicParsing; \
+    Expand-Archive -Path C:\nri-flex.zip -DestinationPath 'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations' -Force; \
+    Remove-Item C:\nri-flex.zip; \
+    \
+    # nri-winservices \
+    Write-Host 'Downloading nri-winservices...'; \
+    $winservicesUrl = \"https://github.com/newrelic/nri-winservices/releases/download/v${env:nri_winservices_version}/nri-winservices-v${env:nri_winservices_version}-amd64.zip\"; \
+    Invoke-WebRequest -Uri $winservicesUrl -OutFile C:\nri-winservices.zip -UseBasicParsing; \
+    Expand-Archive -Path C:\nri-winservices.zip -DestinationPath 'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations' -Force; \
+    Remove-Item C:\nri-winservices.zip; \
+    \
+    # nri-prometheus \
+    Write-Host 'Downloading nri-prometheus...'; \
+    $prometheusUrl = \"https://github.com/newrelic/nri-prometheus/releases/download/v${env:nri_prometheus_version}/nri-prometheus-${env:arch}.${env:nri_prometheus_version}.zip\"; \
+    Invoke-WebRequest -Uri $prometheusUrl -OutFile C:\nri-prometheus.zip -UseBasicParsing; \
+    Expand-Archive -Path C:\nri-prometheus.zip -DestinationPath C:\temp-prometheus -Force; \
+    Copy-Item 'C:\temp-prometheus\New Relic\newrelic-infra\newrelic-integrations\bin\nri-prometheus.exe' 'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\nri-prometheus.exe' -Force; \
+    Remove-Item C:\temp-prometheus -Recurse -Force; \
+    Remove-Item C:\nri-prometheus.zip; \
+    \
+    # nr-winpkg \
+    Write-Host 'Downloading nr-winpkg...'; \
+    $winpkgUrl = \"https://download.newrelic.com/infrastructure_agent/windows/integrations/nri-winpkg/nri-winpkg.zip\"; \
+    Invoke-WebRequest -Uri $winpkgUrl -OutFile C:\nr-winpkg.zip -UseBasicParsing; \
+    Expand-Archive -Path C:\nr-winpkg.zip -DestinationPath 'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations' -Force; \
+    Remove-Item C:\nr-winpkg.zip; \
+    \
+    # Fluent Bit \
+    Write-Host 'Downloading Fluent Bit...'; \
+    New-Item -ItemType Directory -Force -Path 'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\logging' | Out-Null; \
     $fbUrl = \"https://logging-fb-windows-packages.s3.us-east-2.amazonaws.com/fb-windows-${env:fb_version}-${env:arch}.zip\"; \
     Invoke-WebRequest -Uri $fbUrl -OutFile C:\fluent-bit.zip -UseBasicParsing; \
-    Expand-Archive -Path C:\fluent-bit.zip -DestinationPath 'C:\Program Files\New Relic\newrelic-infra\logging\nrfb2' -Force; \
+    Expand-Archive -Path C:\fluent-bit.zip -DestinationPath 'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\logging' -Force; \
     Remove-Item C:\fluent-bit.zip; \
-    \
     $pluginUrl = \"https://github.com/newrelic/newrelic-fluent-bit-output/releases/download/v${env:fb_plugin_version}/out_newrelic-windows-${env:arch}-${env:fb_plugin_version}.dll\"; \
-    Invoke-WebRequest -Uri $pluginUrl -OutFile 'C:\Program Files\New Relic\newrelic-infra\logging\nrfb2\out_newrelic.dll' -UseBasicParsing; \
+    Invoke-WebRequest -Uri $pluginUrl -OutFile 'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\logging\out_newrelic.dll' -UseBasicParsing; \
     \
-    Write-Host 'Fluent Bit installed successfully'
+    Write-Host 'All integrations installed successfully'
 
-# Verify Fluent Bit installation
-RUN if (Test-Path 'C:\Program Files\New Relic\newrelic-infra\logging\nrfb2\fluent-bit.exe') { \
-        Write-Host 'Fluent Bit verification: OK'; \
-    } else { \
-        Write-Error 'Fluent Bit not found!'; \
+# Copy Fluent Bit parsers config (goes in same directory as fluent-bit.exe)
+COPY assets/examples/logging/parsers.conf "C:/Program Files/New Relic/newrelic-infra/newrelic-integrations/logging/parsers.conf"
+
+# Verify integrations installation
+RUN $integrations = @( \
+        'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\nri-flex.exe', \
+        'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\nri-winservices.exe', \
+        'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\nri-prometheus.exe', \
+        'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\winpkg\nr-winpkg.exe', \
+        'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\logging\fluent-bit.exe' \
+    ); \
+    $missing = @(); \
+    foreach ($integration in $integrations) { \
+        if (Test-Path $integration) { \
+            Write-Host \"OK: $integration\"; \
+        } else { \
+            Write-Host \"MISSING: $integration\"; \
+            $missing += $integration; \
+        } \
+    }; \
+    if ($missing.Count -gt 0) { \
+        Write-Error \"Missing integrations: $missing\"; \
         exit 1; \
+    } else { \
+        Write-Host 'All integrations verified successfully'; \
     }
 
 # Set metadata
 LABEL com.newrelic.image.version=$image_version \
       com.newrelic.infra-agent.version=$agent_version \
+      com.newrelic.nri-flex.version=$nri_flex_version \
+      com.newrelic.nri-winservices.version=$nri_winservices_version \
+      com.newrelic.nri-prometheus.version=$nri_prometheus_version \
       com.newrelic.maintainer="infrastructure-eng@newrelic.com" \
       com.newrelic.description="New Relic Infrastructure agent for monitoring Windows containers and hosts."
 
