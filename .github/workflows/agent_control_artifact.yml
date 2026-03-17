@@ -119,7 +119,6 @@ jobs:
             echo "::error::No MSI files were downloaded"
             exit 1
           fi
-          cd ..
           echo "✓ MSI download complete"
 
       - name: Download Linux artifacts
@@ -132,7 +131,7 @@ jobs:
           cd downloads
           echo "Downloading Linux artifacts..."
 
-          # Download amd64 artifacts
+          # Download amd64 and arm64 artifacts
           for ARCH in amd64 arm64; do
             echo "Downloading ${ARCH} artifacts..."
 
@@ -151,8 +150,6 @@ jobs:
               --skip-existing || echo "::warning::Failed to download ${DEB_PATTERN}"
           done
 
-          find .
-
           # Verify we got the expected files
           for ARCH in amd64 arm64; do
             TARBALL="newrelic-infra_linux_${VERSION}_${ARCH}.tar.gz"
@@ -169,7 +166,6 @@ jobs:
             fi
           done
 
-          cd ..
           echo "✓ Linux download complete"
 
       - name: Validate checksums
@@ -200,7 +196,6 @@ jobs:
             exit 1
           fi
 
-          cd ..
 
       - name: Validate Linux checksums
         env:
@@ -243,7 +238,6 @@ jobs:
             fi
           done
 
-          cd ..
           echo "✓ All Linux checksums validated"
 
       - name: Extract MSI artifacts
