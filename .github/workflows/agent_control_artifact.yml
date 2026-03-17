@@ -52,18 +52,27 @@ jobs:
         run: |
           set -euo pipefail
 
-          mkdir -p downloads \
-            extracted/windows \
-            extracted/linux/amd64/tarball \
-            extracted/linux/amd64/deb \
-            extracted/linux/arm64/tarball \
-            extracted/linux/arm64/deb \
-            modified \
-            dist/windows \
-            dist/linux-amd64 \
+          DIRS=(
+            downloads
+            extracted/windows
+            extracted/linux/amd64/tarball
+            extracted/linux/amd64/deb
+            extracted/linux/arm64/tarball
+            extracted/linux/arm64/deb
+            modified
+            dist/windows
+            dist/linux-amd64
             dist/linux-arm64
+          )
 
-          for dir in downloads extracted/windows extracted/linux/amd64/tarball extracted/linux/amd64/deb extracted/linux/arm64/tarball extracted/linux/arm64/deb modified dist/windows dist/linux-amd64 dist/linux-arm64; do
+          mkdir -p "${DIRS[@]}"
+
+          for dir in "${DIRS[@]}"; do
+            if [ ! -d "${dir}" ]; then
+              echo "::error::Failed to create directory: ${dir}"
+              exit 1
+            fi
+          done
             if [ ! -d "${dir}" ]; then
               echo "::error::Failed to create directory: ${dir}"
               exit 1
