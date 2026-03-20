@@ -108,8 +108,7 @@ LABEL com.newrelic.image.version=$image_version \
       com.newrelic.description="New Relic Infrastructure agent for monitoring Windows containers and hosts."
 
 # Set environment variables for containerized mode
-ENV NRIA_IS_CONTAINERIZED=true \
-    NRIA_OVERRIDE_HOST_ROOT=C:/host
+ENV NRIA_IS_CONTAINERIZED=true
 
 # Add the agent to PATH for easier access
 RUN $env:PATH = 'C:\Program Files\New Relic\newrelic-infra;' + $env:PATH ; \
