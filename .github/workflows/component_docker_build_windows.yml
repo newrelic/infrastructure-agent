@@ -28,10 +28,10 @@ env:
   PFX_CERTIFICATE_DESCRIPTION: 'New Relic'
 
 jobs:
-  build-windows-container:
-    name: Building containerized Windows agent
+  build-windows-ltsc2022:
+    name: Build Windows container (ltsc2022)
     runs-on: windows-2022
-    timeout-minutes: 120
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
@@ -91,7 +91,7 @@ jobs:
 
       - name: Build Windows container (ltsc2022)
         shell: bash
-        timeout-minutes: 45
+        timeout-minutes: 15
         run: |
           AGENT_VERSION=${{ inputs.TAG }} \
           IMAGE_VERSION=${{ inputs.TAG }}-test \
@@ -111,9 +111,70 @@ jobs:
         run: |
           docker push newrelic/infrastructure:${{ inputs.TAG }}-test-windows-ltsc2022
 
+  build-windows-ltsc2019:
+    name: Build Windows container (ltsc2019)
+    runs-on: windows-2019
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          check-latest: true
+
+      - name: Login to DockerHub
+        if: ${{ inputs.PUBLISH == true }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_ID }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+      - name: Get PFX certificate from GH secrets
+        shell: bash
+        run: printf "%s" "$PFX_CERTIFICATE_BASE64" | base64 -d - > wincert.pfx
+
+      - name: Import PFX certificate
+        shell: pwsh
+        run: |
+          build\windows\scripts\set_cert_thumbprint_env.ps1 -PfxPassphrase "$env:PFX_PASSPHRASE" -PfxCertificateDescription "$env:PFX_CERTIFICATE_DESCRIPTION"
+
+      - name: Set build date
+        shell: bash
+        run: echo "BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_ENV
+
+      - name: Build Windows binaries
+        shell: pwsh
+        timeout-minutes: 30
+        run: |
+          .\build\windows\build.ps1 -arch amd64 -version ${{ inputs.TAG }} -commit "$env:GITHUB_SHA" -date "$env:BUILD_DATE" -certThumbprint "$env:certThumbprint"
+
+      - name: Prepare binaries for Docker build
+        shell: pwsh
+        run: |
+          # Create the dist directories expected by the Docker build
+          New-Item -ItemType Directory -Force -Path "dist\windows-agent-amd64_windows_amd64_v1"
+          New-Item -ItemType Directory -Force -Path "dist\windows-ctl-amd64_windows_amd64_v1"
+          New-Item -ItemType Directory -Force -Path "dist\windows-service-amd64_windows_amd64_v1"
+
+          # Copy the binaries to the expected locations
+          Copy-Item "target\bin\windows_amd64\newrelic-infra.exe" "dist\windows-agent-amd64_windows_amd64_v1\"
+          Copy-Item "target\bin\windows_amd64\newrelic-infra-ctl.exe" "dist\windows-ctl-amd64_windows_amd64_v1\"
+          Copy-Item "target\bin\windows_amd64\newrelic-infra-service.exe" "dist\windows-service-amd64_windows_amd64_v1\"
+
+      - name: Prepare workspace and assets
+        shell: bash
+        run: |
+          # Clean and recreate workspace to ensure fresh assets
+          rm -rf build/container/workspace
+          make -C build/container/ workspace/assets IMAGE_VERSION=${{ inputs.TAG }}-test
+
       - name: Build Windows container (ltsc2019)
         shell: bash
-        timeout-minutes: 45
+        timeout-minutes: 15
         run: |
           AGENT_VERSION=${{ inputs.TAG }} \
           IMAGE_VERSION=${{ inputs.TAG }}-test \
