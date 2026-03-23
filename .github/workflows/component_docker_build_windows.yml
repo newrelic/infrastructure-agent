@@ -111,24 +111,24 @@ jobs:
         run: |
           docker push newrelic/infrastructure:${{ inputs.TAG }}-test-windows-ltsc2022
 
-      # - name: Build Windows container (ltsc2019)
-      #   shell: bash
-      #   timeout-minutes: 45
-      #   run: |
-      #     AGENT_VERSION=${{ inputs.TAG }} \
-      #     IMAGE_VERSION=${{ inputs.TAG }}-test \
-      #     DOCKER_BUILD_TAG_PREFIX=${{ inputs.TAG }}-test \
-      #     make -C build/container/ build/base-windows-ltsc2019
+      - name: Build Windows container (ltsc2019)
+        shell: bash
+        timeout-minutes: 45
+        run: |
+          AGENT_VERSION=${{ inputs.TAG }} \
+          IMAGE_VERSION=${{ inputs.TAG }}-test \
+          DOCKER_BUILD_TAG_PREFIX=${{ inputs.TAG }}-test \
+          make -C build/container/ build/base-windows-ltsc2019
 
-      # - name: Test Windows container (ltsc2019)
-      #   shell: pwsh
-      #   timeout-minutes: 5
-      #   run: |
-      #     # Test that the image runs and shows version
-      #     docker run --rm newrelic/infrastructure:${{ inputs.TAG }}-test-windows-ltsc2019 --version
+      - name: Test Windows container (ltsc2019)
+        shell: pwsh
+        timeout-minutes: 5
+        run: |
+          # Test that the image runs and shows version
+          docker run --rm newrelic/infrastructure:${{ inputs.TAG }}-test-windows-ltsc2019 --version
 
-      # - name: Push Windows container (ltsc2019)
-      #   if: ${{ inputs.PUBLISH == true }}
-      #   shell: bash
-      #   run: |
-      #     docker push newrelic/infrastructure:${{ inputs.TAG }}-test-windows-ltsc2019
+      - name: Push Windows container (ltsc2019)
+        if: ${{ inputs.PUBLISH == true }}
+        shell: bash
+        run: |
+          docker push newrelic/infrastructure:${{ inputs.TAG }}-test-windows-ltsc2019
