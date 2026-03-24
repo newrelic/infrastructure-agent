@@ -32,7 +32,7 @@ jobs:
           fi
 
           echo "Validating release tag: ${TAG}"
-          echo "gh release view "${TAG}" --repo newrelic/infrastructure-agent "
+          echo "gh release view \"${TAG}\" --repo newrelic/infrastructure-agent"
 
           # Check if release exists
           if ! gh release view "${TAG}" --repo newrelic/infrastructure-agent >/dev/null 2>&1; then
@@ -73,11 +73,6 @@ jobs:
               exit 1
             fi
           done
-            if [ ! -d "${dir}" ]; then
-              echo "::error::Failed to create directory: ${dir}"
-              exit 1
-            fi
-          done
 
           echo "✓ Workspace directories created"
 
@@ -86,10 +81,7 @@ jobs:
           set -euo pipefail
           echo "Installing extraction tools..."
           sudo apt-get update -qq
-          sudo apt-get install -y -qq \
-            msitools \
-            unzip \
-            >/dev/null 2>&1
+          sudo apt-get install -y -qq msitools unzip >/dev/null 2>&1
 
           # Verify installations
           which msiextract unzip tar ar
