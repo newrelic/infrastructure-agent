@@ -17,14 +17,12 @@ param (
     [string]$ConfigFile       = $env:NRIA_CONFIG_FILE,
     [string]$AppDataDir       = $env:NRIA_APP_DATA_DIR,
     [string]$ServiceName      = $env:NRIA_SERVICE_NAME,
-    [string]$ServiceOverwrite = $env:NRIA_OVERWRITE
+    [switch]$ServiceOverwrite
 )
 
-# Convert ServiceOverwrite string to boolean
-$ServiceOverwriteBool = $false
-if ($ServiceOverwrite -eq "true" -or $ServiceOverwrite -eq "1" -or $ServiceOverwrite -eq $true) {
-    $ServiceOverwriteBool = $true
-}
+# $ServiceOverwrite covers direct callers using -ServiceOverwrite flag.
+# $env:NRIA_OVERWRITE covers MSI custom actions that pass it as an environment variable.
+$ServiceOverwriteBool = $ServiceOverwrite.IsPresent -or ($env:NRIA_OVERWRITE -eq "true") -or ($env:NRIA_OVERWRITE -eq "1")
 
 # Set strict error handling - any unhandled error will cause script to exit
 $ErrorActionPreference = "Stop"
@@ -143,7 +141,6 @@ try {
             Write-DebugLog "Stopping service $ServiceName..."
             try {
                 Stop-Service $ServiceName -Force -ErrorAction Stop | Out-Null
-                Start-Sleep -Seconds 2
                 Write-DebugLog "Service stopped successfully"
             } catch {
                 Write-DebugLog "ERROR: Failed to stop service: $_"
@@ -252,10 +249,21 @@ try {
         Write-DebugLog "Verified: newrelic-infra.exe exists at $AgentDir"
     }
 
-    # For upgrades, only update config if it doesn't exist
+    # Config file handling:
+    # - Upgrade with existing config: preserve it (never overwrite user's config)
+    # - MSI fresh install (ScriptPath == AgentDir) with config present: yamlgen.exe already
+    #   wrote a full config (license_key, display_name, proxy, custom_attributes, sample rates).
+    #   Do NOT overwrite it — that would silently discard all MSI properties beyond license_key.
+    # - ZIP fresh install or MSI without yamlgen output: write minimal config.
     if ($isUpgrade -and (Test-Path $ConfigFile)) {
         Write-DebugLog "Preserving existing configuration file: $ConfigFile"
+    } elseif (($ScriptPath -eq $AgentDir) -and (Test-Path $ConfigFile)) {
+        Write-DebugLog "MSI install: config already written by yamlgen, skipping"
     } else {
+        if (-Not $LicenseKey) {
+            Write-DebugLog "ERROR: LicenseKey is required for fresh installation"
+            exit -1
+        }
         Write-DebugLog "Creating new config file in $ConfigFile"
         Clear-Content -Path $ConfigFile -ErrorAction SilentlyContinue
         Add-Content -Path $ConfigFile -Value `
@@ -297,6 +305,9 @@ try {
         try {
             New-Service -Name $ServiceName -DisplayName 'New Relic Infrastructure Agent' -BinaryPathName "$AgentDir\newrelic-infra-service.exe -config $ConfigFile" -StartupType Automatic -ErrorAction Stop | Out-Null
             Write-DebugLog "Service created successfully"
+            # Restore auto-restart on crash (first failure: restart after 30s).
+            # Equivalent to the original WiX <util:ServiceConfig FirstFailureActionType='restart' RestartServiceDelayInSeconds='30'>.
+            sc.exe failure $ServiceName reset= 86400 actions= restart/30000 | Out-Null
         } catch {
             Write-DebugLog "ERROR: Failed to create service: $_"
             exit 1073

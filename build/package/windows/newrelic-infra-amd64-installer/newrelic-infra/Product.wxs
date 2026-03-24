@@ -123,6 +123,14 @@
                   Name ="newrelic-infra-service.exe"
                   Source="$(var.BinariesPath)newrelic-infra-service.exe"
                   KeyPath="yes"/>
+            <!-- Stop service on install/uninstall and remove it on uninstall.
+                 ServiceInstall was moved to installer.ps1 but ServiceControl must remain
+                 here so the MSI database knows to clean up the service on msiexec /x. -->
+            <ServiceControl Id="SC_NewRelicInfra"
+                            Name="newrelic-infra"
+                            Stop="both"
+                            Remove="uninstall"
+                            Wait="yes" />
         </Component>
         <Component Id="CMP_AGENT_EXE" Guid="3394BD87-0135-477D-8A54-A20D4CDA8CAE" Win64="yes">
             <File Id="FILE_AgentBinaryFolder_AGENT_EXE"
@@ -177,18 +185,39 @@
         <CustomAction Id="yamlgen.nriconfig0" Property="nriconfig0" Value="-metrics_system_sample_rate &quot;[METRICS_SYSTEM_SAMPLE_RATE]&quot; -metrics_storage_sample_rate &quot;[METRICS_STORAGE_SAMPLE_RATE]&quot; -metrics_network_sample_rate &quot;[METRICS_NETWORK_SAMPLE_RATE]&quot; -metrics_process_sample_rate &quot;[METRICS_PROCESS_SAMPLE_RATE]&quot;" />
         <CustomAction Id="yamlgen.nriconfig1" Property="nriconfig1" Value="-payload_compression_level &quot;[PAYLOAD_COMPRESSION_LEVEL]&quot;" />
 
-        <!-- Set the command line for the installer script -->
+        <!-- Sets the rollback command property before RunInstallerScript is scheduled.
+             On rollback, stops and deletes the service created by installer.ps1 so the
+             system is not left with an orphaned service registration. -->
+        <CustomAction Id="SetRollbackCmd"
+                      Property="RollbackInstallerScript"
+                      Value="&quot;[System64Folder]WindowsPowerShell\v1.0\powershell.exe&quot; -ExecutionPolicy Bypass -NoProfile -Command &quot;Stop-Service newrelic-infra -Force -ErrorAction SilentlyContinue; sc.exe delete newrelic-infra&quot;"
+                      HideTarget="yes" />
+        <!-- Rollback counterpart for RunInstallerScript. Executes only when the MSI rolls back
+             after RunInstallerScript has already completed. Return="ignore" ensures a cleanup
+             failure does not mask the original install error. -->
+        <CustomAction Id="RollbackInstallerScript"
+                      BinaryKey="WixCA"
+                      DllEntry="CAQuietExec"
+                      Execute="rollback"
+                      Return="ignore"
+                      Impersonate="no"
+                      HideTarget="yes" />
+
+        <!-- Set the command line for the installer script.
+             HideTarget="yes" prevents the LICENSE_KEY value from appearing in MSI verbose logs and Windows Event Log. -->
         <CustomAction Id="SetInstallerCmd"
                       Property="RunInstallerScript"
-                      Value="&quot;[System64Folder]WindowsPowerShell\v1.0\powershell.exe&quot; -ExecutionPolicy Bypass -NoProfile -Command &quot;$env:NRIA_LICENSE_KEY='[LICENSE_KEY]'; $env:NRIA_OVERWRITE='[NRIA_OVERWRITE]'; &amp; '[#FILE_AgentBinaryFolder_INSTALLER_PS1]'&quot;" />
-        <!-- Run the installer script using CAQuietExec -->
+                      Value="&quot;[System64Folder]WindowsPowerShell\v1.0\powershell.exe&quot; -ExecutionPolicy Bypass -NoProfile -Command &quot;$env:NRIA_LICENSE_KEY='[LICENSE_KEY]'; $env:NRIA_OVERWRITE='[NRIA_OVERWRITE]'; &amp; '[#FILE_AgentBinaryFolder_INSTALLER_PS1]'&quot;"
+                      HideTarget="yes" />
+        <!-- Run the installer script using CAQuietExec.
+             HideTarget="yes" prevents the command line (including LICENSE_KEY) from appearing in MSI logs and Event Log (IDs 1040/1042). -->
         <CustomAction Id="RunInstallerScript"
                       BinaryKey="WixCA"
                       DllEntry="CAQuietExec"
                       Execute="deferred"
                       Return="check"
                       Impersonate="no"
-                      HideTarget="no" />
+                      HideTarget="yes" />
 
         <CustomAction Id="RunYamlGenerator"
                       Directory="AgentBinaryFolder"
@@ -244,8 +273,12 @@
             </Custom>
             <Custom Action="CleanupDeprecatedBundledPlugins" Before="InstallFinalize" />
 
+            <!-- Register rollback handler before the deferred CA so MSI can undo service creation on failure -->
+            <Custom Action="SetRollbackCmd" After="RunYamlGenerator">NOT REMOVE</Custom>
+            <Custom Action="RollbackInstallerScript" After="SetRollbackCmd">NOT REMOVE</Custom>
+
             <!-- Set installer command and run installer.ps1 after files are copied -->
-            <Custom Action="SetInstallerCmd" After="RunYamlGenerator">NOT REMOVE</Custom>
+            <Custom Action="SetInstallerCmd" After="RollbackInstallerScript">NOT REMOVE</Custom>
             <Custom Action="RunInstallerScript" After="SetInstallerCmd">NOT REMOVE</Custom>
         </InstallExecuteSequence>
     </Fragment>

@@ -226,6 +226,7 @@ Write-Host ""
 # Determine account type and get credentials
 $credential = $null
 $isGMSA = $false
+$isBuiltinTarget = $false  # set here so all branches have it defined; updated per-branch below
 
 # Check if using gMSA
 if ($GMSAUsername) {
@@ -278,11 +279,14 @@ public static extern void CredFree(IntPtr credentialPtr);
         
         if ($success) {
             $cred = [System.Runtime.InteropServices.Marshal]::PtrToStructure($credPtr, [type][CredMan.CredentialManager+CREDENTIAL])
-            
+
             $Username = $cred.UserName
             Write-Host "Credentials found in Credential Manager for: $CMTargetname" -ForegroundColor Green
             Write-Host "Username: $Username" -ForegroundColor Green
-            
+
+            # Compute $isBuiltinTarget now that $Username is known for this branch
+            $isBuiltinTarget = ($Username -notlike '*\*') -or ($Username -match '^NT (AUTHORITY|SERVICE)\\')
+
             if ($cred.CredentialBlobSize -gt 0) {
                 $securePassword = New-Object System.Security.SecureString
                 $charCount = $cred.CredentialBlobSize / 2
@@ -293,8 +297,13 @@ public static extern void CredFree(IntPtr credentialPtr);
                 $securePassword.MakeReadOnly()
                 $credential = New-Object System.Management.Automation.PSCredential($Username, $securePassword)
                 Write-Host "Password retrieved successfully" -ForegroundColor Green
+            } elseif (-not $isBuiltinTarget) {
+                # Entry exists but has no password blob and account is not a built-in — cannot proceed
+                $credType::CredFree($credPtr)
+                Write-Error "Credential Manager entry '$CMTargetname' exists but has no stored password (CredentialBlobSize is 0). Update the credential entry and retry."
+                exit 1
             }
-            
+
             $credType::CredFree($credPtr)
         } else {
             Write-Warning "Credentials not found in Credential Manager for target: $CMTargetname"
@@ -377,12 +386,17 @@ $usernameForRights = if ($isGMSA) { $Username } else { $usernameOnly }
 # Rollback tracking - record what was newly granted so we can revert on failure
 $foldersGranted = @()
 $rightsGranted = @()
+$groupsGranted = @()
 $serviceAccountChanged = $false
 
-# Folder paths for permission checks and rollback (used by both grant and Invoke-Rollback)
+# Folder paths for permission checks and rollback (used by both grant and Invoke-Rollback).
+# Use Windows environment variables so these work on non-default drive/path installations.
+# $env:ProgramW6432 is the 64-bit Program Files path (set in WOW64); fall back to $env:ProgramFiles
+# in 64-bit PowerShell sessions where $env:ProgramW6432 may not be set.
+$programFiles64 = if ($env:ProgramW6432) { $env:ProgramW6432 } else { $env:ProgramFiles }
 $agentFolders = @(
-    "C:\ProgramData\New Relic\newrelic-infra",
-    "C:\Program Files\New Relic\newrelic-infra"
+    "$env:ProgramData\New Relic\newrelic-infra",
+    "$programFiles64\New Relic\newrelic-infra"
 )
 
 if (-not $isGMSA -and -not $isBuiltinTarget) {
@@ -535,10 +549,53 @@ $requiredRights = @{
     "SeRestorePrivilege" = "Restore files and directories"
 }
 
+# Grant-LocalGroupMembership adds the account to each group in $Groups if not already a member.
+# Returns an array of group names that were newly joined (for rollback tracking).
+function Grant-LocalGroupMembership {
+    param([string]$User, [string[]]$Groups)
+    $newlyAdded = @()
+    foreach ($group in $Groups) {
+        try {
+            $members = Get-LocalGroupMember -Group $group -ErrorAction Stop | Select-Object -ExpandProperty Name
+            if ($members -icontains $User) {
+                Write-Host "  Already member of: $group" -ForegroundColor Gray
+            } else {
+                Add-LocalGroupMember -Group $group -Member $User -ErrorAction Stop
+                $newlyAdded += $group
+                Write-Host "  ✓ Added to group: $group" -ForegroundColor Green
+            }
+        } catch {
+            Write-Warning "  Could not add '$User' to '$group': $_"
+        }
+    }
+    return $newlyAdded
+}
+
+# Revoke-LocalGroupMembership removes the account from each group in $Groups.
+function Revoke-LocalGroupMembership {
+    param([string]$User, [string[]]$Groups)
+    if (-not $Groups -or $Groups.Count -eq 0) { return }
+    foreach ($group in $Groups) {
+        try {
+            Remove-LocalGroupMember -Group $group -Member $User -ErrorAction Stop
+            Write-Host "  Removed from group: $group" -ForegroundColor Yellow
+        } catch {
+            Write-Warning "  Could not remove '$User' from '$group': $_"
+        }
+    }
+}
+
+$requiredGroups = @('Performance Monitor Users', 'Performance Log Users', 'Event Log Readers')
+
 if ($isBuiltinTarget) {
     $rightsGranted = @()
+    $groupsGranted = @()
 } else {
     $rightsGranted = Grant-UserRights -User $usernameForRights -Rights $requiredRights
+
+    Write-Host ""
+    Write-Host "Checking local group memberships..." -ForegroundColor Cyan
+    $groupsGranted = Grant-LocalGroupMembership -User $usernameOnly -Groups $requiredGroups
 }
 
 function Revoke-UserRights {
@@ -630,6 +687,9 @@ function Invoke-Rollback {
     # Only revoke rights that were newly granted in this run — same as folder permissions:
     # if the account already had the right before this script ran, leave it alone.
     Revoke-UserRights -User $usernameForRights -Rights $rightsGranted
+
+    # Remove group memberships that were newly granted in this run
+    Revoke-LocalGroupMembership -User $usernameOnly -Groups $groupsGranted
 
     Write-Host "Attempting to restart service with original account..." -ForegroundColor Yellow
     Start-AgentService -SilentOnFailure
