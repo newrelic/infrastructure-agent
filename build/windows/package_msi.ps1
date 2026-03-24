@@ -22,15 +22,7 @@ $workspace = "$scriptPath\..\.."
 $buildYear = (Get-Date).Year
 
 Write-Output "===> Embeding integrations"
-# Build argument list for embed_ohis.ps1
-$embedArgs = "-arch $arch"
-if ($certThumbprint) { $embedArgs += " -certThumbprint $certThumbprint" }
-if ($skipSigning) { $embedArgs += " -skipSigning" }
-Invoke-Expression -Command "$scriptPath\scripts\embed_ohis.ps1 $embedArgs"
-if ($lastExitCode -ne 0) {
-    Write-Output "Failed to embed integration"
-    exit -1
-}
+Invoke-expression -Command "$scriptPath\scripts\embed_ohis.ps1 -arch $arch -certThumbprint $certThumbprint $(If ($skipSigning) {"-skipSigning"})"
 
 Write-Output "===> Checking MSBuild.exe..."
 $msBuild = (Get-ItemProperty hklm:\software\Microsoft\MSBuild\ToolsVersions\4.0).MSBuildToolsPath
