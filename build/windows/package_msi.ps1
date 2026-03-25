@@ -23,7 +23,10 @@ $buildYear = (Get-Date).Year
 
 Write-Output "===> Embeding integrations"
 Invoke-expression -Command "$scriptPath\scripts\embed_ohis.ps1 -arch $arch -certThumbprint $certThumbprint $(If ($skipSigning) {"-skipSigning"})"
-
+if ($lastExitCode -ne 0) {
+    Write-Output "Failed to embed integration"
+    exit -1
+}
 Write-Output "===> Checking MSBuild.exe..."
 $msBuild = (Get-ItemProperty hklm:\software\Microsoft\MSBuild\ToolsVersions\4.0).MSBuildToolsPath
 if ($msBuild.Length -eq 0) {
