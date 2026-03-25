@@ -17,7 +17,9 @@ param (
     [string]$ConfigFile       = $env:NRIA_CONFIG_FILE,
     [string]$AppDataDir       = $env:NRIA_APP_DATA_DIR,
     [string]$ServiceName      = $env:NRIA_SERVICE_NAME,
-    [switch]$ServiceOverwrite
+    [switch]$ServiceOverwrite,
+    # Passed by the MSI rollback CA (SetRollbackCmd) to undo only what this run created.
+    [switch]$Rollback
 )
 
 # $ServiceOverwrite covers direct callers using -ServiceOverwrite flag.
@@ -38,6 +40,8 @@ if ($env:USERNAME -eq "SYSTEM") {
     $tempPath = "$env:SystemDrive\Windows\Temp"
 }
 $DebugLogFile = Join-Path $tempPath "newrelic_installer_debug.log"
+# Marker written just before New-Service so rollback knows this run created the service.
+$markerFile = Join-Path $tempPath "nri_fresh_install.marker"
 
 try {
     # Logging function
@@ -110,6 +114,32 @@ try {
     if (-Not $ConfigFile)  { $ConfigFile  = [IO.Path]::Combine($AgentDir,'newrelic-infra.yml') }
     if (-Not $AppDataDir)  { $AppDataDir  = [IO.Path]::Combine($env:ProgramData, 'New Relic\newrelic-infra') }
     if (-Not $ServiceName) { $ServiceName = 'newrelic-infra' }
+
+    # --- Rollback path ---
+    # Called by the MSI rollback CA (SetRollbackCmd in Product.wxs).
+    # Only delete the service if *this run* created it (marker present).
+    # If no marker, the service pre-existed an upgrade — leave it alone.
+    if ($Rollback.IsPresent) {
+        Write-DebugLog "Rollback invoked."
+        if (Test-Path $markerFile) {
+            Write-DebugLog "Fresh-install marker found — stopping and deleting service '$ServiceName'."
+            Stop-Service $ServiceName -Force -ErrorAction SilentlyContinue
+            sc.exe delete $ServiceName | Out-Null
+            Remove-Item $markerFile -Force -ErrorAction SilentlyContinue
+            Write-DebugLog "Rollback complete: service deleted."
+        } else {
+            Write-DebugLog "No fresh-install marker — upgrade path detected; attempting to restart pre-existing service."
+            # MSI file rollback restores the old binaries; restart the service so the
+            # machine is not left with the agent stopped after a failed upgrade.
+            Start-Service $ServiceName -ErrorAction SilentlyContinue
+            Write-DebugLog "Rollback complete: service restarted (or was already stopped before install)."
+        }
+        exit 0
+    }
+
+    # Clean up any stale marker left by a previous failed fresh install so it
+    # cannot be mistaken for a marker written by the current run.
+    Remove-Item $markerFile -Force -ErrorAction SilentlyContinue
 
     Write-DebugLog "Configuration parameters:"
     Write-DebugLog "  AgentDir: $AgentDir"
@@ -302,6 +332,9 @@ try {
         # Fresh installation scenario: create service with LocalSystem
         Write-DebugLog "Creating new service: $ServiceName"
         Write-DebugLog "Binary path: $AgentDir\newrelic-infra-service.exe -config $ConfigFile"
+        # Write marker before New-Service so that if anything fails afterward the
+        # rollback CA knows it must clean up the service created by this run.
+        "1" | Out-File -FilePath $markerFile -Force -ErrorAction SilentlyContinue
         try {
             New-Service -Name $ServiceName -DisplayName 'New Relic Infrastructure Agent' -BinaryPathName "$AgentDir\newrelic-infra-service.exe -config $ConfigFile" -StartupType Automatic -ErrorAction Stop | Out-Null
             Write-DebugLog "Service created successfully"
@@ -317,6 +350,9 @@ try {
             Write-DebugLog "Starting service: $ServiceName"
             Start-Service -Name $ServiceName -ErrorAction Stop
             Write-DebugLog "Installation completed successfully!"
+            # Install succeeded — remove the marker so a future rollback (e.g. from a
+            # subsequent failed upgrade) does not mistakenly delete this service.
+            Remove-Item $markerFile -Force -ErrorAction SilentlyContinue
         } catch {
             Write-DebugLog "ERROR: Failed to start service: $_"
             exit 1058

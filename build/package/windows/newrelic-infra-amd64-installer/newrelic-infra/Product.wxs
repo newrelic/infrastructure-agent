@@ -186,11 +186,13 @@
         <CustomAction Id="yamlgen.nriconfig1" Property="nriconfig1" Value="-payload_compression_level &quot;[PAYLOAD_COMPRESSION_LEVEL]&quot;" />
 
         <!-- Sets the rollback command property before RunInstallerScript is scheduled.
-             On rollback, stops and deletes the service created by installer.ps1 so the
-             system is not left with an orphaned service registration. -->
+             On rollback, installer.ps1 is re-invoked with -Rollback. It checks for a
+             marker file written only when New-Service was called in this run: if the
+             marker is present the service is deleted; if absent (upgrade path) the
+             pre-existing service is left intact. -->
         <CustomAction Id="SetRollbackCmd"
                       Property="RollbackInstallerScript"
-                      Value="&quot;[System64Folder]WindowsPowerShell\v1.0\powershell.exe&quot; -ExecutionPolicy Bypass -NoProfile -Command &quot;Stop-Service newrelic-infra -Force -ErrorAction SilentlyContinue; sc.exe delete newrelic-infra&quot;"
+                      Value="&quot;[System64Folder]WindowsPowerShell\v1.0\powershell.exe&quot; -ExecutionPolicy Bypass -NoProfile -Command &quot;&amp; '[#FILE_AgentBinaryFolder_INSTALLER_PS1]' -Rollback&quot;"
                       HideTarget="yes" />
         <!-- Rollback counterpart for RunInstallerScript. Executes only when the MSI rolls back
              after RunInstallerScript has already completed. Return="ignore" ensures a cleanup
