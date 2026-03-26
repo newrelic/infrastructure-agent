@@ -27,7 +27,6 @@ if ($lastExitCode -ne 0) {
     Write-Output "Failed to embed integration"
     exit -1
 }
-
 Write-Output "===> Checking MSBuild.exe..."
 $msBuild = (Get-ItemProperty hklm:\software\Microsoft\MSBuild\ToolsVersions\4.0).MSBuildToolsPath
 if ($msBuild.Length -eq 0) {
