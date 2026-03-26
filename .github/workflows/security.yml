@@ -57,7 +57,7 @@ jobs:
         run: make -C build/container/ build/base-amd64 DOCKER_BUILD_TAG_PREFIX=pr USE_BUILDX=false
 
       - name: Scan the created container image
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: "newrelic/infrastructure:pr-amd64"
           format: 'table'
