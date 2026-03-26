@@ -28,7 +28,7 @@ jobs:
     if: ${{ ! github.event.schedule }} # Table output
     steps:
       - name: newrelic/infrastructure
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: "docker.io/newrelic/infrastructure${{ env.FIPS }}:${{ inputs.tag }}"
           format: 'table'
@@ -41,7 +41,7 @@ jobs:
           TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db
 
       - name: newrelic/k8s-events-forwarder
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: "docker.io/newrelic/k8s-events-forwarder${{ env.FIPS }}:${{ inputs.tag }}"
           format: 'table'
@@ -54,7 +54,7 @@ jobs:
           TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db
 
       - name: newrelic/nri-forwarder
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: "docker.io/newrelic/nri-forwarder${{ env.FIPS }}:${{ inputs.tag }}"
           format: 'table'
@@ -75,7 +75,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Sarif newrelic/infrastructure
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: "docker.io/newrelic/infrastructure${{ env.FIPS }}:${{ inputs.tag }}"
           format: 'sarif'
