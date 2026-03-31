@@ -240,7 +240,8 @@ jobs:
         timeout-minutes: 5
         run: |
           # Test that the image runs and shows version
-          docker run --rm newrelic/infrastructure:${{ inputs.TAG }}-test-windows-ltsc2019 --version
+          # Must use --isolation=hyperv for ltsc2019 on Server 2022 host
+          docker run --rm --isolation=hyperv newrelic/infrastructure:${{ inputs.TAG }}-test-windows-ltsc2019 --version
 
       # - name: Push Windows container (ltsc2019)
       #   if: ${{ inputs.PUBLISH == true }}
