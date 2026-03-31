@@ -113,10 +113,37 @@ jobs:
 
   build-windows-ltsc2019:
     name: Build Windows container (ltsc2019)
-    runs-on: windows-2019
+    runs-on: windows-x64-8-core
     timeout-minutes: 60
 
     steps:
+      - name: Verify Hyper-V Support
+        shell: pwsh
+        run: |
+          Write-Host "Checking Hyper-V availability..."
+          $hyperv = Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All -ErrorAction SilentlyContinue
+          if ($null -eq $hyperv) {
+            Write-Host "Checking via Get-WindowsFeature (Windows Server)..."
+            $hyperv = Get-WindowsFeature -Name Hyper-V -ErrorAction SilentlyContinue
+          }
+
+          if ($null -eq $hyperv -or $hyperv.State -ne "Enabled") {
+            Write-Error "Hyper-V is not enabled. This runner needs Hyper-V to build Windows 2019 images on Windows Server 2022."
+            Write-Host "Current host OS version:"
+            [System.Environment]::OSVersion.Version
+            exit 1
+          }
+
+          Write-Host "Hyper-V is enabled"
+          Write-Host "Host OS version:"
+          [System.Environment]::OSVersion.Version
+
+          # Verify Docker can use Hyper-V isolation with ltsc2019
+          Write-Host "`nTesting Docker Hyper-V isolation with Windows Server 2019 base image..."
+          docker run --rm --isolation=hyperv mcr.microsoft.com/windows/nanoserver:ltsc2019 cmd /c echo "Hyper-V isolation works"
+
+          Write-Host "Docker Hyper-V isolation is functional for ltsc2019 images"
+
       - name: Checkout
         uses: actions/checkout@v4
 

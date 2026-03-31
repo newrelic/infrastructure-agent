@@ -417,12 +417,14 @@ WINDOWS_IMAGE_NAME ?= ${NS}/${REPO}
 WINDOWS_AGENT_BIN ?= newrelic-infra
 WINDOWS_BASE_IMAGE ?= mcr.microsoft.com/windows/servercore:ltsc2022
 WINDOWS_VERSION ?= ltsc2022
+WINDOWS_ISOLATION ?=
 
 # Windows-specific build command
 DOCKER_BUILD_WINDOWS ?= docker \
 	build \
 	--no-cache \
 	--pull \
+	$(if $(WINDOWS_ISOLATION),--isolation=$(WINDOWS_ISOLATION),) \
 	-t $(WINDOWS_IMAGE_NAME):$(DOCKER_TAG_LATEST) \
 	--build-arg base_image=$(WINDOWS_BASE_IMAGE) \
 	--build-arg image_version=$(IMAGE_VERSION) \
@@ -466,6 +468,7 @@ build/base-windows-ltsc2022 :
 
 # Build Windows ltsc2019 image
 .PHONY : build/base-windows-ltsc2019
+build/base-windows-ltsc2019 : export WINDOWS_ISOLATION=hyperv
 build/base-windows-ltsc2019 : export WINDOWS_BASE_IMAGE=mcr.microsoft.com/windows/servercore:ltsc2019
 build/base-windows-ltsc2019 : export WINDOWS_VERSION=ltsc2019
 build/base-windows-ltsc2019 : export DOCKER_TAG_LATEST=$(DOCKER_BUILD_TAG_PREFIX)-windows-ltsc2019
