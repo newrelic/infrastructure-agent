@@ -30,7 +30,7 @@ env:
 jobs:
   build-windows-ltsc2022:
     name: Build Windows container (ltsc2022)
-    runs-on: windows-2022
+    runs-on: windows-x64-8-core
     timeout-minutes: 60
 
     steps:
