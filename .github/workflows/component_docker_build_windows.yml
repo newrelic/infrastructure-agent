@@ -72,12 +72,10 @@ jobs:
       - name: Prepare binaries for Docker build
         shell: pwsh
         run: |
-          # Create the dist directories expected by the Docker build
           New-Item -ItemType Directory -Force -Path "dist\windows-agent-amd64_windows_amd64_v1"
           New-Item -ItemType Directory -Force -Path "dist\windows-ctl-amd64_windows_amd64_v1"
           New-Item -ItemType Directory -Force -Path "dist\windows-service-amd64_windows_amd64_v1"
 
-          # Copy the binaries to the expected locations
           Copy-Item "target\bin\windows_amd64\newrelic-infra.exe" "dist\windows-agent-amd64_windows_amd64_v1\"
           Copy-Item "target\bin\windows_amd64\newrelic-infra-ctl.exe" "dist\windows-ctl-amd64_windows_amd64_v1\"
           Copy-Item "target\bin\windows_amd64\newrelic-infra-service.exe" "dist\windows-service-amd64_windows_amd64_v1\"
@@ -85,7 +83,6 @@ jobs:
       - name: Prepare workspace and assets
         shell: bash
         run: |
-          # Clean and recreate workspace to ensure fresh assets
           rm -rf build/container/workspace
           make -C build/container/ workspace/assets IMAGE_VERSION=${{ inputs.TAG }}-test
 
@@ -102,14 +99,13 @@ jobs:
         shell: pwsh
         timeout-minutes: 5
         run: |
-          # Test that the image runs and shows version
           docker run --rm newrelic/infrastructure:${{ inputs.TAG }}-test-windows-ltsc2022 --version
 
-      # - name: Push Windows container (ltsc2022)
-      #   if: ${{ inputs.PUBLISH == true }}
-      #   shell: bash
-      #   run: |
-      #     docker push newrelic/infrastructure:${{ inputs.TAG }}-test-windows-ltsc2022
+      - name: Push Windows container (ltsc2022)
+        if: ${{ inputs.PUBLISH == true }}
+        shell: bash
+        run: |
+          docker push newrelic/infrastructure:${{ inputs.TAG }}-test-windows-ltsc2022
 
   build-windows-ltsc2019:
     name: Build Windows container (ltsc2019)
@@ -120,56 +116,32 @@ jobs:
       - name: Verify Hyper-V Support
         shell: pwsh
         run: |
-          Write-Host "Checking Hyper-V availability..."
-
-          # Try Windows 10/11 method first
           $hyperv = Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All -ErrorAction SilentlyContinue
           $isWindowsServer = $false
 
           if ($null -eq $hyperv) {
-            Write-Host "Checking via Get-WindowsFeature (Windows Server)..."
             $hyperv = Get-WindowsFeature -Name Hyper-V -ErrorAction SilentlyContinue
             $isWindowsServer = $true
           }
 
           if ($null -eq $hyperv) {
-            Write-Error "❌ Hyper-V feature not found on this system."
-            Write-Host "Current host OS version:"
-            [System.Environment]::OSVersion.Version
+            Write-Error "Hyper-V feature not found"
             exit 1
           }
 
-          # Check if enabled - different properties for Server vs Desktop
           $isEnabled = $false
           if ($isWindowsServer) {
-            # Windows Server uses InstallState property
-            Write-Host "Windows Server detected"
-            Write-Host "Hyper-V InstallState: $($hyperv.InstallState)"
-            Write-Host "Hyper-V Installed: $($hyperv.Installed)"
             $isEnabled = ($hyperv.Installed -eq $true) -or ($hyperv.InstallState -eq "Installed")
           } else {
-            # Windows 10/11 uses State property
-            Write-Host "Windows Desktop detected"
-            Write-Host "Hyper-V State: $($hyperv.State)"
             $isEnabled = ($hyperv.State -eq "Enabled")
           }
 
           if (-not $isEnabled) {
-            Write-Error "❌ Hyper-V is not enabled. This runner needs Hyper-V to build Windows 2019 images on Windows Server 2022."
-            Write-Host "Current host OS version:"
-            [System.Environment]::OSVersion.Version
+            Write-Error "Hyper-V is not enabled"
             exit 1
           }
 
-          Write-Host "✅ Hyper-V is enabled"
-          Write-Host "Host OS version:"
-          [System.Environment]::OSVersion.Version
-
-          # Verify Docker can use Hyper-V isolation with ltsc2019
-          Write-Host "`nTesting Docker Hyper-V isolation with Windows Server 2019 base image..."
-          docker run --rm --isolation=hyperv mcr.microsoft.com/windows/nanoserver:ltsc2019 cmd /c echo "Hyper-V isolation works"
-
-          Write-Host "✅ Docker Hyper-V isolation is functional for ltsc2019 images"
+          docker run --rm --isolation=hyperv mcr.microsoft.com/windows/nanoserver:ltsc2019 cmd /c echo "Hyper-V test passed"
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -209,12 +181,10 @@ jobs:
       - name: Prepare binaries for Docker build
         shell: pwsh
         run: |
-          # Create the dist directories expected by the Docker build
           New-Item -ItemType Directory -Force -Path "dist\windows-agent-amd64_windows_amd64_v1"
           New-Item -ItemType Directory -Force -Path "dist\windows-ctl-amd64_windows_amd64_v1"
           New-Item -ItemType Directory -Force -Path "dist\windows-service-amd64_windows_amd64_v1"
 
-          # Copy the binaries to the expected locations
           Copy-Item "target\bin\windows_amd64\newrelic-infra.exe" "dist\windows-agent-amd64_windows_amd64_v1\"
           Copy-Item "target\bin\windows_amd64\newrelic-infra-ctl.exe" "dist\windows-ctl-amd64_windows_amd64_v1\"
           Copy-Item "target\bin\windows_amd64\newrelic-infra-service.exe" "dist\windows-service-amd64_windows_amd64_v1\"
@@ -222,7 +192,6 @@ jobs:
       - name: Prepare workspace and assets
         shell: bash
         run: |
-          # Clean and recreate workspace to ensure fresh assets
           rm -rf build/container/workspace
           make -C build/container/ workspace/assets IMAGE_VERSION=${{ inputs.TAG }}-test
 
@@ -239,12 +208,10 @@ jobs:
         shell: pwsh
         timeout-minutes: 5
         run: |
-          # Test that the image runs and shows version
-          # Must use --isolation=hyperv for ltsc2019 on Server 2022 host
           docker run --rm --isolation=hyperv newrelic/infrastructure:${{ inputs.TAG }}-test-windows-ltsc2019 --version
 
-      # - name: Push Windows container (ltsc2019)
-      #   if: ${{ inputs.PUBLISH == true }}
-      #   shell: bash
-      #   run: |
-      #     docker push newrelic/infrastructure:${{ inputs.TAG }}-test-windows-ltsc2019
+      - name: Push Windows container (ltsc2019)
+        if: ${{ inputs.PUBLISH == true }}
+        shell: bash
+        run: |
+          docker push newrelic/infrastructure:${{ inputs.TAG }}-test-windows-ltsc2019
