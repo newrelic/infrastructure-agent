@@ -24,6 +24,7 @@ Copy-Item -Path "$workspace\target\bin\windows_$arch\newrelic-infra-service.exe"
 Copy-Item -Path "$workspace\target\bin\windows_$arch\yamlgen.exe" -Destination "$scriptPath\target\newrelic-infra\Program Files\New Relic\newrelic-infra\"
 Copy-Item -Path "$workspace\assets\examples\infrastructure\LICENSE.windows.txt" -Destination "$scriptPath\target\newrelic-infra\Program Files\New Relic\newrelic-infra\LICENSE.txt"
 Copy-Item -Path "$workspace\build\package\binaries\windows\installer.ps1" -Destination "$scriptPath\target\newrelic-infra\Program Files\New Relic\newrelic-infra\installer.ps1"
+Copy-Item -Path "$workspace\build\package\binaries\windows\set-service-account.ps1" -Destination "$scriptPath\target\newrelic-infra\Program Files\New Relic\newrelic-infra\set-service-account.ps1"
 
 New-Item -path "$workspace\dist" -type directory -Force
 Compress-Archive -Path "$scriptPath\target\newrelic-infra\Program Files" -DestinationPath "$workspace\dist\newrelic-infra-$arch.$version.zip" -Force
