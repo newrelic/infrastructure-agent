@@ -62,6 +62,11 @@ func withFeedramp(cfg config.LogForward) config.LogForward {
 	return cfg
 }
 
+func withJPLicense(cfg config.LogForward) config.LogForward {
+	cfg.License = "jp01xx6789012345678901234567890123456789"
+	return cfg
+}
+
 var outputBlock = FBCfgOutput{
 	Name:              "newrelic",
 	Match:             "*",
@@ -78,6 +83,9 @@ var outputBlock = FBCfgOutput{
 func TestNewFBConf(t *testing.T) {
 	outputBlockFedramp := outputBlock
 	outputBlockFedramp.Endpoint = fedrampEndpoint
+	outputBlockJP := outputBlock
+	outputBlockJP.LicenseKey = "jp01xx6789012345678901234567890123456789"
+	outputBlockJP.Endpoint = jpEndpoint
 	outputBlockMultipleRetries := outputBlock
 
 	logFwdCfgMultipleRetries := logFwdCfg
@@ -170,6 +178,30 @@ func TestNewFBConf(t *testing.T) {
 				filterEntityBlock,
 			},
 			Output: outputBlockFedramp,
+		}},
+		{"single input jp", withJPLicense(logFwdCfg), LogsCfg{
+			{
+				Name: "log-file",
+				File: "file.path",
+			},
+		}, FBCfg{
+			Inputs: []FBCfgInput{
+				{
+					Name:           "tail",
+					Tag:            "log-file",
+					DB:             dbDbPath,
+					Path:           "file.path",
+					BufferMaxSize:  "128k",
+					MemBufferLimit: "16384k",
+					SkipLongLines:  "On",
+					PathKey:        "filePath",
+				},
+			},
+			Filters: []FBCfgFilter{
+				inputRecordModifier("tail", "log-file"),
+				filterEntityBlock,
+			},
+			Output: outputBlockJP,
 		}},
 		{"input file + filter", logFwdCfg, LogsCfg{
 			{
