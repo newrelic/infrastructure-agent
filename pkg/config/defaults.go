@@ -17,6 +17,10 @@ const (
 	defaultIdentityStagingURLEu          = "https://staging-identity-api.eu.newrelic.com"
 	defaultCmdChannelURLEu               = "https://infrastructure-command-api.eu.newrelic.com"
 	defaultCmdChannelStagingURLEu        = "https://staging-infrastructure-command-api.eu.newrelic.com"
+	defaultIdentityURLJp                 = "https://identity-api.jp.newrelic.com"
+	defaultIdentityStagingURLJp          = "https://staging-identity-api.jp.newrelic.com"
+	defaultCmdChannelURLJp               = "https://infrastructure-command-api.jp.newrelic.com"
+	defaultCmdChannelStagingURLJp        = "https://staging-infrastructure-command-api.jp.newrelic.com"
 	defaultCmdChannelURL                 = "https://infrastructure-command-api.newrelic.com"
 	defaultCmdChannelStagingURL          = "https://staging-infrastructure-command-api.newrelic.com"
 	defaultIdentityURL                   = "https://identity-api.newrelic.com"
@@ -29,6 +33,7 @@ const (
 	defaultSecureFedralCmdChannelURL     = "https://gov-infrastructure-command-api.newrelic.com"
 	defaultAPMCollectorHost              = "collector.newrelic.com"
 	defaultAPMCollectorHostEu            = "collector.eu.newrelic.com"
+	defaultAPMCollectorHostJp            = "collector.jp.newrelic.com"
 	defaultSecureFederalAPMCollectorHost = "gov-collector.newrelic.com"
 	defaultAPMCollectorHostStaging       = "staging-collector.newrelic.com"
 )

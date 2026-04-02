@@ -20,8 +20,16 @@ func IsValid(licenseKey string) bool {
 // IsRegionEU returns true if license region is EU.
 func IsRegionEU(license string) bool {
 	r := GetRegion(license)
-	// only EU supported
 	if len(r) > 1 && r[:2] == "eu" {
+		return true
+	}
+	return false
+}
+
+// IsRegionJP returns true if license region is JP.
+func IsRegionJP(license string) bool {
+	r := GetRegion(license)
+	if len(r) > 1 && r[:2] == "jp" {
 		return true
 	}
 	return false
