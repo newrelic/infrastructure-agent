@@ -20,6 +20,9 @@ on:
         required: true
         type: boolean
 
+permissions:
+  contents: read
+
 env:
   TAG: ${{ inputs.TAG }}
   DOCKER_PUBLISH: ${{ inputs.PUBLISH == true }}

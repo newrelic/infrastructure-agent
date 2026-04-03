@@ -18,6 +18,9 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: read
+
 jobs:
   packaging-docker:
     if: ${{ github.event.inputs.build_linux == 'true' }}
