@@ -99,13 +99,13 @@ jobs:
         shell: pwsh
         timeout-minutes: 5
         run: |
-          docker run --rm newrelic/infrastructure:${{ inputs.TAG }}-rc-windows-ltsc2022 --version
+          docker run --rm newrelic/infrastructure:${{ inputs.TAG }}-rc-ltsc2022 --version
 
       - name: Push Windows container (ltsc2022)
         if: ${{ inputs.PUBLISH == true }}
         shell: bash
         run: |
-          docker push newrelic/infrastructure:${{ inputs.TAG }}-rc-windows-ltsc2022
+          docker push newrelic/infrastructure:${{ inputs.TAG }}-rc-ltsc2022
 
   build-windows-ltsc2019:
     name: Build Windows container (ltsc2019)
@@ -208,10 +208,10 @@ jobs:
         shell: pwsh
         timeout-minutes: 5
         run: |
-          docker run --rm --isolation=hyperv newrelic/infrastructure:${{ inputs.TAG }}-rc-windows-ltsc2019 --version
+          docker run --rm --isolation=hyperv newrelic/infrastructure:${{ inputs.TAG }}-rc-ltsc2019 --version
 
       - name: Push Windows container (ltsc2019)
         if: ${{ inputs.PUBLISH == true }}
         shell: bash
         run: |
-          docker push newrelic/infrastructure:${{ inputs.TAG }}-rc-windows-ltsc2019
+          docker push newrelic/infrastructure:${{ inputs.TAG }}-rc-ltsc2019

@@ -462,7 +462,7 @@ build/base-windows :
 .PHONY : build/base-windows-ltsc2022
 build/base-windows-ltsc2022 : export WINDOWS_BASE_IMAGE=mcr.microsoft.com/windows/servercore:ltsc2022
 build/base-windows-ltsc2022 : export WINDOWS_VERSION=ltsc2022
-build/base-windows-ltsc2022 : export DOCKER_TAG_LATEST=$(DOCKER_BUILD_TAG_PREFIX)-windows-ltsc2022
+build/base-windows-ltsc2022 : export DOCKER_TAG_LATEST=$(DOCKER_BUILD_TAG_PREFIX)-ltsc2022
 build/base-windows-ltsc2022 :
 	@($(MAKE) build/base-windows)
 
@@ -471,7 +471,7 @@ build/base-windows-ltsc2022 :
 build/base-windows-ltsc2019 : export WINDOWS_ISOLATION=hyperv
 build/base-windows-ltsc2019 : export WINDOWS_BASE_IMAGE=mcr.microsoft.com/windows/servercore:ltsc2019
 build/base-windows-ltsc2019 : export WINDOWS_VERSION=ltsc2019
-build/base-windows-ltsc2019 : export DOCKER_TAG_LATEST=$(DOCKER_BUILD_TAG_PREFIX)-windows-ltsc2019
+build/base-windows-ltsc2019 : export DOCKER_TAG_LATEST=$(DOCKER_BUILD_TAG_PREFIX)-ltsc2019
 build/base-windows-ltsc2019 :
 	@($(MAKE) build/base-windows)
 
@@ -486,8 +486,8 @@ publish/windows-base-rc :
 	@printf 'Target: publish/windows-base-rc\n'
 	@printf 'Pushing both ltsc2022 and ltsc2019 images'
 	@printf '\n================================================================\n'
-	@(docker push $(WINDOWS_IMAGE_NAME):$(IMAGE_VERSION)-windows-ltsc2022)
-	@(docker push $(WINDOWS_IMAGE_NAME):$(IMAGE_VERSION)-windows-ltsc2019)
+	@(docker push $(WINDOWS_IMAGE_NAME):$(IMAGE_VERSION)-ltsc2022)
+	@(docker push $(WINDOWS_IMAGE_NAME):$(IMAGE_VERSION)-ltsc2019)
 
 # Publish Windows base tag (both versions)
 .PHONY : publish/windows-base-tag
@@ -497,22 +497,8 @@ publish/windows-base-tag :
 	@printf 'Target: publish/windows-base-tag\n'
 	@printf 'Tagging and pushing versioned images'
 	@printf '\n================================================================\n'
-	@(docker tag $(WINDOWS_IMAGE_NAME):$(AGENT_VERSION)-rc-windows-ltsc2022 $(WINDOWS_IMAGE_NAME):$(IMAGE_VERSION)-ltsc2022)
+	@(docker tag $(WINDOWS_IMAGE_NAME):$(AGENT_VERSION)-rc-ltsc2022 $(WINDOWS_IMAGE_NAME):$(IMAGE_VERSION)-ltsc2022)
 	@(docker push $(WINDOWS_IMAGE_NAME):$(IMAGE_VERSION)-ltsc2022)
-	@(docker tag $(WINDOWS_IMAGE_NAME):$(AGENT_VERSION)-rc-windows-ltsc2019 $(WINDOWS_IMAGE_NAME):$(IMAGE_VERSION)-ltsc2019)
+	@(docker tag $(WINDOWS_IMAGE_NAME):$(AGENT_VERSION)-rc-ltsc2019 $(WINDOWS_IMAGE_NAME):$(IMAGE_VERSION)-ltsc2019)
 	@(docker push $(WINDOWS_IMAGE_NAME):$(IMAGE_VERSION)-ltsc2019)
 
-# Publish Windows base latest (both versions)
-.PHONY : publish/windows-base-latest
-publish/windows-base-latest :
-	@printf '\n================================================================\n'
-	@printf 'Target: publish/windows-base-latest\n'
-	@printf 'Tagging and pushing latest images'
-	@printf '\n================================================================\n'
-	@(docker tag $(WINDOWS_IMAGE_NAME):$(AGENT_VERSION)-rc-windows-ltsc2022 $(WINDOWS_IMAGE_NAME):latest-ltsc2022)
-	@(docker push $(WINDOWS_IMAGE_NAME):latest-ltsc2022)
-	@(docker tag $(WINDOWS_IMAGE_NAME):$(AGENT_VERSION)-rc-windows-ltsc2019 $(WINDOWS_IMAGE_NAME):latest-ltsc2019)
-	@(docker push $(WINDOWS_IMAGE_NAME):latest-ltsc2019)
-	# Also tag ltsc2022 as the default 'latest'
-	@(docker tag $(WINDOWS_IMAGE_NAME):$(AGENT_VERSION)-rc-windows-ltsc2022 $(WINDOWS_IMAGE_NAME):latest)
-	@(docker push $(WINDOWS_IMAGE_NAME):latest)

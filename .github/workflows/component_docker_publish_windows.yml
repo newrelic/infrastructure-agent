@@ -28,13 +28,13 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
       - name: Pull RC image
-        run: docker pull newrelic/infrastructure:${{ env.TAG }}-rc-windows-ltsc2022
+        run: docker pull newrelic/infrastructure:${{ env.TAG }}-rc-ltsc2022
 
       - name: Retag to release version
-        run: docker tag newrelic/infrastructure:${{ env.TAG }}-rc-windows-ltsc2022 newrelic/infrastructure:${{ env.TAG }}-windows-ltsc2022
+        run: docker tag newrelic/infrastructure:${{ env.TAG }}-rc-ltsc2022 newrelic/infrastructure:${{ env.TAG }}-ltsc2022
 
       - name: Push release image
-        run: docker push newrelic/infrastructure:${{ env.TAG }}-windows-ltsc2022
+        run: docker push newrelic/infrastructure:${{ env.TAG }}-ltsc2022
 
   publish-windows-ltsc2019:
     name: Promote Windows ltsc2019 image
@@ -48,10 +48,10 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
       - name: Pull RC image
-        run: docker pull newrelic/infrastructure:${{ env.TAG }}-rc-windows-ltsc2019
+        run: docker pull newrelic/infrastructure:${{ env.TAG }}-rc-ltsc2019
 
       - name: Retag to release version
-        run: docker tag newrelic/infrastructure:${{ env.TAG }}-rc-windows-ltsc2019 newrelic/infrastructure:${{ env.TAG }}-windows-ltsc2019
+        run: docker tag newrelic/infrastructure:${{ env.TAG }}-rc-ltsc2019 newrelic/infrastructure:${{ env.TAG }}-ltsc2019
 
       - name: Push release image
-        run: docker push newrelic/infrastructure:${{ env.TAG }}-windows-ltsc2019
+        run: docker push newrelic/infrastructure:${{ env.TAG }}-ltsc2019
