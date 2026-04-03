@@ -6,6 +6,7 @@ on:
       tag:
         description: 'Tag'
         required: true
+      # remove this after testing
       build_linux:
         description: 'Build Linux containers'
         required: false
