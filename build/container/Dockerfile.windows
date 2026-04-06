@@ -1,0 +1,128 @@
+# Windows Infrastructure Agent Container
+# Base image options:
+# - mcr.microsoft.com/windows/servercore:ltsc2022 (full featured, ~2GB)
+# - mcr.microsoft.com/windows/nanoserver:ltsc2022 (minimal, ~100MB, but limited compatibility)
+ARG base_image=mcr.microsoft.com/windows/servercore:ltsc2022
+
+FROM $base_image
+
+ARG image_version=0.0
+ARG agent_version=0.0
+ARG version_file=VERSION
+ARG agent_bin=newrelic-infra
+
+# Fluent Bit versions
+ARG fb_version=4.2.2
+ARG fb_plugin_version=3.4.0
+ARG arch=amd64
+
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+
+# Create directory structure (matching Windows MSI installer)
+# C:\Program Files\New Relic\newrelic-infra - Agent binaries and configs
+# C:\ProgramData\New Relic\newrelic-infra - Runtime app data
+RUN New-Item -ItemType Directory -Force -Path 'C:\Program Files\New Relic\newrelic-infra' ; \
+    New-Item -ItemType Directory -Force -Path 'C:\Program Files\New Relic\newrelic-infra\integrations.d' ; \
+    New-Item -ItemType Directory -Force -Path 'C:\Program Files\New Relic\newrelic-infra\logging.d' ; \
+    New-Item -ItemType Directory -Force -Path 'C:\Program Files\New Relic\newrelic-infra\custom-integrations' ; \
+    New-Item -ItemType Directory -Force -Path 'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations' ; \
+    New-Item -ItemType Directory -Force -Path 'C:\ProgramData\New Relic\newrelic-infra' ; \
+    New-Item -ItemType Directory -Force -Path 'C:\newrelic'
+
+# Copy the Windows agent binaries
+COPY ["${agent_bin}.exe", "C:/Program Files/New Relic/newrelic-infra/newrelic-infra.exe"]
+COPY ["${agent_bin}-ctl.exe", "C:/Program Files/New Relic/newrelic-infra/newrelic-infra-ctl.exe"]
+COPY ["${agent_bin}-service.exe", "C:/Program Files/New Relic/newrelic-infra/newrelic-infra-service.exe"]
+
+# Copy static assets (includes all examples at C:\newrelic\examples\)
+COPY assets C:/newrelic
+
+# Copy the VERSION file
+COPY $version_file C:/newrelic/VERSION
+
+# Download and install bundled integrations
+ARG nri_flex_version=1.17.5
+ARG nri_prometheus_version=2.27.7
+
+RUN [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
+    \
+    Write-Host 'Downloading bundled integrations...'; \
+    \
+    # nri-flex \
+    Write-Host 'Downloading nri-flex...'; \
+    $flexUrl = \"https://github.com/newrelic/nri-flex/releases/download/v${env:nri_flex_version}/nri-flex_windows_${env:nri_flex_version}_${env:arch}.zip\"; \
+    Invoke-WebRequest -Uri $flexUrl -OutFile C:\nri-flex.zip -UseBasicParsing; \
+    Expand-Archive -Path C:\nri-flex.zip -DestinationPath 'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations' -Force; \
+    Remove-Item C:\nri-flex.zip; \
+    \
+    # nri-prometheus \
+    Write-Host 'Downloading nri-prometheus...'; \
+    $prometheusUrl = \"https://github.com/newrelic/nri-prometheus/releases/download/v${env:nri_prometheus_version}/nri-prometheus-${env:arch}.${env:nri_prometheus_version}.zip\"; \
+    Invoke-WebRequest -Uri $prometheusUrl -OutFile C:\nri-prometheus.zip -UseBasicParsing; \
+    Expand-Archive -Path C:\nri-prometheus.zip -DestinationPath C:\temp-prometheus -Force; \
+    Copy-Item 'C:\temp-prometheus\New Relic\newrelic-infra\newrelic-integrations\bin\nri-prometheus.exe' 'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\nri-prometheus.exe' -Force; \
+    Remove-Item C:\temp-prometheus -Recurse -Force; \
+    Remove-Item C:\nri-prometheus.zip; \
+    \
+    # Fluent Bit \
+    Write-Host 'Downloading Fluent Bit...'; \
+    New-Item -ItemType Directory -Force -Path 'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\logging' | Out-Null; \
+    $fbUrl = \"https://logging-fb-windows-packages.s3.us-east-2.amazonaws.com/fb-windows-${env:fb_version}-${env:arch}.zip\"; \
+    Invoke-WebRequest -Uri $fbUrl -OutFile C:\fluent-bit.zip -UseBasicParsing; \
+    Expand-Archive -Path C:\fluent-bit.zip -DestinationPath 'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\logging' -Force; \
+    Remove-Item C:\fluent-bit.zip; \
+    $pluginUrl = \"https://github.com/newrelic/newrelic-fluent-bit-output/releases/download/v${env:fb_plugin_version}/out_newrelic-windows-${env:arch}-${env:fb_plugin_version}.dll\"; \
+    Invoke-WebRequest -Uri $pluginUrl -OutFile 'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\logging\out_newrelic.dll' -UseBasicParsing; \
+    \
+    Write-Host 'All integrations installed successfully'
+
+# Verify integrations installation
+RUN $integrations = @( \
+        'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\nri-flex.exe', \
+        'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\nri-prometheus.exe', \
+        'C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\logging\fluent-bit.exe' \
+    ); \
+    $missing = @(); \
+    foreach ($integration in $integrations) { \
+        if (Test-Path $integration) { \
+            Write-Host \"OK: $integration\"; \
+        } else { \
+            Write-Host \"MISSING: $integration\"; \
+            $missing += $integration; \
+        } \
+    }; \
+    if ($missing.Count -gt 0) { \
+        Write-Error \"Missing integrations: $missing\"; \
+        exit 1; \
+    } else { \
+        Write-Host 'All integrations verified successfully'; \
+    }
+
+# Set metadata
+LABEL com.newrelic.image.version=$image_version \
+      com.newrelic.infra-agent.version=$agent_version \
+      com.newrelic.nri-flex.version=$nri_flex_version \
+      com.newrelic.nri-winservices.version=$nri_winservices_version \
+      com.newrelic.nri-prometheus.version=$nri_prometheus_version \
+      com.newrelic.maintainer="infrastructure-eng@newrelic.com" \
+      com.newrelic.description="New Relic Infrastructure agent for monitoring Windows containers and hosts."
+
+# Set environment variables for containerized mode
+ENV NRIA_IS_CONTAINERIZED=true
+
+# Add the agent to PATH for easier access
+RUN $env:PATH = 'C:\Program Files\New Relic\newrelic-infra;' + $env:PATH ; \
+    [Environment]::SetEnvironmentVariable('PATH', $env:PATH, [EnvironmentVariableTarget]::Machine)
+
+# Expose any necessary ports (if needed for integrations)
+# EXPOSE 8001
+
+# Health check to ensure agent is running
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD powershell -Command "try { \
+        $process = Get-Process -Name 'newrelic-infra' -ErrorAction SilentlyContinue; \
+        if ($process) { exit 0 } else { exit 1 } \
+    } catch { exit 1 }"
+
+# Run the agent directly (not as a Windows Service, which doesn't work in containers)
+ENTRYPOINT ["C:/Program Files/New Relic/newrelic-infra/newrelic-infra.exe"]

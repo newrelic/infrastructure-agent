@@ -7,6 +7,9 @@ on:
         description: 'Tag'
         required: true
 
+permissions:
+  contents: read
+
 jobs:
   packaging-docker:
     uses: ./.github/workflows/component_docker_packaging.yml
@@ -19,3 +22,14 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     with:
       TAG: ${{ github.event.inputs.tag }}
+
+  packaging-docker-windows:
+    uses: ./.github/workflows/component_docker_build_windows.yml
+    secrets:
+      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+      PFX_CERTIFICATE_BASE64: ${{ secrets.OHAI_PFX_CERTIFICATE_BASE64 }}
+      PFX_PASSPHRASE: ${{ secrets.OHAI_PFX_PASSPHRASE }}
+    with:
+      TAG: ${{ github.event.inputs.tag }}
+      PUBLISH: true

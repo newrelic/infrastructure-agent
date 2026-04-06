@@ -1,0 +1,57 @@
+name: .. 🚧 Docker | Publish Windows image
+
+on:
+  workflow_call:
+    secrets:
+      DOCKER_HUB_ID:
+        required: true
+      DOCKER_HUB_PASSWORD:
+        required: true
+    inputs:
+      TAG:
+        required: true
+        type: string
+
+env:
+  TAG: ${{ inputs.TAG }}
+
+jobs:
+  publish-windows-ltsc2022:
+    name: Promote Windows ltsc2022 image
+    runs-on: windows-x64-8-core
+
+    steps:
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_ID }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+      - name: Pull RC image
+        run: docker pull newrelic/infrastructure:${{ env.TAG }}-rc-ltsc2022
+
+      - name: Retag to release version
+        run: docker tag newrelic/infrastructure:${{ env.TAG }}-rc-ltsc2022 newrelic/infrastructure:${{ env.TAG }}-ltsc2022
+
+      - name: Push release image
+        run: docker push newrelic/infrastructure:${{ env.TAG }}-ltsc2022
+
+  publish-windows-ltsc2019:
+    name: Promote Windows ltsc2019 image
+    runs-on: windows-x64-8-core
+
+    steps:
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_ID }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+      - name: Pull RC image
+        run: docker pull newrelic/infrastructure:${{ env.TAG }}-rc-ltsc2019
+
+      - name: Retag to release version
+        run: docker tag newrelic/infrastructure:${{ env.TAG }}-rc-ltsc2019 newrelic/infrastructure:${{ env.TAG }}-ltsc2019
+
+      - name: Push release image
+        run: docker push newrelic/infrastructure:${{ env.TAG }}-ltsc2019
