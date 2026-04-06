@@ -1,16 +1,19 @@
 name: .. 🚧 Docker | Publish Windows image
 
 on:
+  workflow_dispatch:
+    inputs:
+      TAG:
+        description: 'Tag version (e.g., 1.72.5)'
+        required: true
+        type: string
   workflow_call:
-    secrets:
-      DOCKER_HUB_ID:
-        required: true
-      DOCKER_HUB_PASSWORD:
-        required: true
     inputs:
       TAG:
         required: true
         type: string
+
+permissions: {}
 
 env:
   TAG: ${{ inputs.TAG }}
@@ -24,8 +27,8 @@ jobs:
       - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_HUB_ID }}
-          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+          username: ${{ secrets.OHAI_DOCKER_HUB_ID }}
+          password: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
 
       - name: Pull RC image
         run: docker pull newrelic/infrastructure:${{ env.TAG }}-rc-ltsc2022
@@ -44,8 +47,8 @@ jobs:
       - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_HUB_ID }}
-          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+          username: ${{ secrets.OHAI_DOCKER_HUB_ID }}
+          password: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
 
       - name: Pull RC image
         run: docker pull newrelic/infrastructure:${{ env.TAG }}-rc-ltsc2019
