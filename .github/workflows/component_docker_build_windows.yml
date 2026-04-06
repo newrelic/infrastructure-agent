@@ -119,32 +119,7 @@ jobs:
       - name: Verify Hyper-V Support
         shell: pwsh
         run: |
-          $hyperv = Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All -ErrorAction SilentlyContinue
-          $isWindowsServer = $false
-
-          if ($null -eq $hyperv) {
-            $hyperv = Get-WindowsFeature -Name Hyper-V -ErrorAction SilentlyContinue
-            $isWindowsServer = $true
-          }
-
-          if ($null -eq $hyperv) {
-            Write-Error "Hyper-V feature not found"
-            exit 1
-          }
-
-          $isEnabled = $false
-          if ($isWindowsServer) {
-            $isEnabled = ($hyperv.Installed -eq $true) -or ($hyperv.InstallState -eq "Installed")
-          } else {
-            $isEnabled = ($hyperv.State -eq "Enabled")
-          }
-
-          if (-not $isEnabled) {
-            Write-Error "Hyper-V is not enabled"
-            exit 1
-          }
-
-          docker run --rm --isolation=hyperv mcr.microsoft.com/windows/nanoserver:ltsc2019 cmd /c echo "Hyper-V test passed"
+          docker run --rm --isolation=hyperv mcr.microsoft.com/windows/nanoserver:ltsc2019 cmd /c echo "Hyper-V isolation test passed"
 
       - name: Checkout
         uses: actions/checkout@v4
