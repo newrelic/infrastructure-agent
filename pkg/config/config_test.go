@@ -394,9 +394,19 @@ func (s *ConfigSuite) TestCalculateCollectorURL(c *C) {
 		// four letter region eu, staging
 		{license: "eu01xx6789012345678901234567890123456789", expectURL: "https://staging-infra-api.eu.newrelic.com", staging: true, fedramp: false},
 		// four letter region jp
-		{license: "jp01xx6789012345678901234567890123456789", expectURL: "https://infra-api.jp.newrelic.com", staging: false, fedramp: false},
+		{
+			license:   "jp01xx6789012345678901234567890123456789",
+			expectURL: "https://infra-api.jp.newrelic.com",
+			staging:   false,
+			fedramp:   false,
+		},
 		// four letter region jp, staging
-		{license: "jp01xx6789012345678901234567890123456789", expectURL: "https://staging-infra-api.jp.newrelic.com", staging: true, fedramp: false},
+		{
+			license:   "jp01xx6789012345678901234567890123456789",
+			expectURL: "https://staging-infra-api.jp.newrelic.com",
+			staging:   true,
+			fedramp:   false,
+		},
 		// non-region license, fedramp true
 		{license: "0123456789012345678901234567890123456789", expectURL: "https://gov-infra-api.newrelic.com", staging: false, fedramp: true},
 	}
@@ -504,9 +514,15 @@ func (s *ConfigSuite) TestCalculateIdentityURL(c *C) {
 		// four letter region eu, staging
 		{license: "eu01xx6789012345678901234567890123456789", expectURL: defaultIdentityStagingURLEu, staging: true},
 		// four letter region jp
-		{license: "jp01xx6789012345678901234567890123456789", expectURL: defaultIdentityURLJp, staging: false},
+		{
+			license: "jp01xx6789012345678901234567890123456789", expectURL: defaultIdentityURLJp,
+			staging: false, fedramp: false,
+		},
 		// four letter region jp, staging
-		{license: "jp01xx6789012345678901234567890123456789", expectURL: defaultIdentityStagingURLJp, staging: true},
+		{
+			license: "jp01xx6789012345678901234567890123456789", expectURL: defaultIdentityStagingURLJp,
+			staging: true, fedramp: false,
+		},
 		// five letter region
 		{license: "gov01x6789012345678901234567890123456789", expectURL: defaultIdentityURL, staging: false},
 		// five letter region
@@ -536,9 +552,15 @@ func (s *ConfigSuite) TestCalculateCmdChannelURL(c *C) {
 		// four letter region eu, staging
 		{license: "eu01xx6789012345678901234567890123456789", expectURL: defaultCmdChannelStagingURLEu, staging: true},
 		// four letter region jp
-		{license: "jp01xx6789012345678901234567890123456789", expectURL: defaultCmdChannelURLJp, staging: false},
+		{
+			license: "jp01xx6789012345678901234567890123456789", expectURL: defaultCmdChannelURLJp,
+			staging: false, fedramp: false,
+		},
 		// four letter region jp, staging
-		{license: "jp01xx6789012345678901234567890123456789", expectURL: defaultCmdChannelStagingURLJp, staging: true},
+		{
+			license: "jp01xx6789012345678901234567890123456789", expectURL: defaultCmdChannelStagingURLJp,
+			staging: true, fedramp: false,
+		},
 		// five letter region
 		{license: "gov01x6789012345678901234567890123456789", expectURL: defaultCmdChannelURL, staging: false},
 		// five letter region

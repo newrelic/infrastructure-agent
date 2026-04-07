@@ -32,6 +32,7 @@ func IsRegionJP(license string) bool {
 	if len(r) > 1 && r[:2] == "jp" {
 		return true
 	}
+
 	return false
 }
 

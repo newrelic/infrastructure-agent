@@ -64,6 +64,7 @@ func withFeedramp(cfg config.LogForward) config.LogForward {
 
 func withJPLicense(cfg config.LogForward) config.LogForward {
 	cfg.License = "jp01xx6789012345678901234567890123456789"
+
 	return cfg
 }
 
