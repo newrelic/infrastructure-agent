@@ -2052,9 +2052,11 @@ func calculateIdentityProductionURL(licenseKey string) string {
 	if license.IsRegionEU(licenseKey) {
 		return defaultIdentityURLEu
 	}
+
 	if license.IsRegionJP(licenseKey) {
 		return defaultIdentityURLJp
 	}
+
 	return defaultIdentityURL
 }
 
@@ -2062,9 +2064,11 @@ func calculateIdentityStagingURL(licenseKey string) string {
 	if license.IsRegionEU(licenseKey) {
 		return defaultIdentityStagingURLEu
 	}
+
 	if license.IsRegionJP(licenseKey) {
 		return defaultIdentityStagingURLJp
 	}
+
 	return defaultIdentityStagingURL
 }
 
@@ -2082,9 +2086,11 @@ func calculateCmdChannelProductionURL(licenseKey string) string {
 	if license.IsRegionEU(licenseKey) {
 		return defaultCmdChannelURLEu
 	}
+
 	if license.IsRegionJP(licenseKey) {
 		return defaultCmdChannelURLJp
 	}
+
 	return defaultCmdChannelURL
 }
 
@@ -2092,9 +2098,11 @@ func calculateCmdChannelStagingURL(licenseKey string) string {
 	if license.IsRegionEU(licenseKey) {
 		return defaultCmdChannelStagingURLEu
 	}
+
 	if license.IsRegionJP(licenseKey) {
 		return defaultCmdChannelStagingURLJp
 	}
+
 	return defaultCmdChannelStagingURL
 }
 
@@ -2112,9 +2120,11 @@ func calculateSelfInstrumentationApmProductionHost(licenseKey string) string {
 	if license.IsRegionEU(licenseKey) {
 		return defaultAPMCollectorHostEu
 	}
+
 	if license.IsRegionJP(licenseKey) {
 		return defaultAPMCollectorHostJp
 	}
+
 	return defaultAPMCollectorHost
 }
 
@@ -2141,9 +2151,11 @@ func urlRegionPrefix(licenseKey string) string {
 	if license.IsRegionEU(licenseKey) {
 		return "eu."
 	}
+
 	if license.IsRegionJP(licenseKey) {
 		return "jp."
 	}
+
 	return ""
 }
 
