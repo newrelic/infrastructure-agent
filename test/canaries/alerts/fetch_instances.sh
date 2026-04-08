@@ -68,9 +68,21 @@ for ins in $INSTANCES;do
 
   if [[ "${NAME}" =~ windows ]]; then
     MACHINE=$( echo $NAME | awk -F ":" '{print $3}')
+    IS_A2Q_CURRENT=false
+    if [[ "${NAME}" =~ A2Q ]]; then
+      IS_A2Q_CURRENT=true
+    fi
     for ins2 in $INSTANCES;do
       NAME_PREVIOUS=$( echo $ins2 | awk -F "," '{print $2}' | sed "s/^Name://g" )
       if [[ ! "${NAME_PREVIOUS}" =~ $MACHINE || ! "${NAME_PREVIOUS}" =~ $PREVIOUS_VERSION ]]; then
+        continue
+      fi
+      # Ensure both instances are the same canary type (A2Q or non-A2Q)
+      IS_A2Q_PREVIOUS=false
+      if [[ "${NAME_PREVIOUS}" =~ A2Q ]]; then
+        IS_A2Q_PREVIOUS=true
+      fi
+      if [[ "${IS_A2Q_CURRENT}" != "${IS_A2Q_PREVIOUS}" ]]; then
         continue
       fi
       echo "    { previous = \"$NAME_PREVIOUS\", current = \"$NAME\"},"
