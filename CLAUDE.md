@@ -211,10 +211,11 @@ Do not manually edit:
 
 ## Skills
 
-| Command  | Action                |
-|----------|-----------------------|
-| `/build` | Compile the agent     |
-| `/test`  | Run tests             |
-| `/lint`  | Lint and format       |
-| `/mock`  | Regenerate mocks      |
-| `/pr`    | Create a pull request |
+| Command            | Action                            |
+|--------------------|-----------------------------------|
+| `/build`           | Compile the agent                 |
+| `/test`            | Run tests                         |
+| `/lint`            | Lint and format                   |
+| `/mock`            | Regenerate mocks                  |
+| `/pr`              | Create a pull request             |
+| `/container-build` | Build containerized Docker images |
