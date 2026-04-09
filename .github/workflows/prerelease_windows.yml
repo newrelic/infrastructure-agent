@@ -89,6 +89,19 @@ jobs:
         shell: bash
         run: build/upload_artifacts_gh.sh
 
+  packaging-docker-windows:
+    name: Build and publish Windows Docker RC images
+    needs: [ unit-test ]
+    uses: ./.github/workflows/component_docker_build_windows.yml
+    secrets:
+      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+      PFX_CERTIFICATE_BASE64: ${{ secrets.OHAI_PFX_CERTIFICATE_BASE64 }}
+      PFX_PASSPHRASE: ${{ secrets.OHAI_PFX_PASSPHRASE }}
+    with:
+      TAG: ${{ github.event.release.tag_name }}
+      PUBLISH: true
+
   publishing-to-s3:
     name: Publish windows artifacts into s3 staging bucket
     uses: ./.github/workflows/component_windows_publish.yml

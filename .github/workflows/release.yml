@@ -72,6 +72,14 @@ jobs:
       TAG:  ${{ github.event.release.tag_name }}
       ASSETS_TYPE: "all"
 
+  publish-docker-images-windows:
+    uses: ./.github/workflows/component_docker_publish_windows.yml
+    secrets:
+      OHAI_DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+      OHAI_DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+    with:
+      TAG: ${{ github.event.release.tag_name }}
+
   molecule-packaging-tests:
     uses: ./.github/workflows/component_molecule_packaging.yml
     needs: [publishing-to-s3-linux, purge-cdn]

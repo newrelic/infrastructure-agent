@@ -8,6 +8,11 @@ on:
         required: true
         type: string
   workflow_call:
+    secrets:
+      OHAI_DOCKER_HUB_ID:
+        required: true
+      OHAI_DOCKER_HUB_PASSWORD:
+        required: true
     inputs:
       TAG:
         required: true
