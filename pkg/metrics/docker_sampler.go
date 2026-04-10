@@ -12,7 +12,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	metricTypes "github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 
-	"github.com/docker/docker/api/types"
+	"github.com/moby/moby/api/types/container"
 	"github.com/sirupsen/logrus"
 
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
@@ -84,7 +84,7 @@ func (d *DockerSampler) NewDecorator() (ProcessDecorator, error) { //nolint:iret
 type dockerDecorator struct {
 	dockerClient helpers.Docker
 	cache        *pidsCache
-	pids         map[uint32]types.Container
+	pids         map[uint32]container.Summary
 }
 
 // compile-time assertion.
@@ -105,8 +105,25 @@ func newDockerDecorator(dockerClient helpers.Docker, cache *pidsCache) (ProcessD
 	return dec, nil
 }
 
+// Decorate adds container information to all the processes that belong to a container.
+func (d *dockerDecorator) Decorate(process *metricTypes.ProcessSample) {
+	if container, ok := d.pids[uint32(process.ProcessID)]; ok { //nolint:gosec // ProcessID is always non-negative
+		imageIDComponents := strings.Split(container.ImageID, ":")
+		process.ContainerImage = imageIDComponents[len(imageIDComponents)-1]
+		process.ContainerImageName = container.Image
+		process.ContainerLabels = container.Labels
+		process.ContainerID = container.ID
+
+		if len(container.Names) > 0 {
+			process.ContainerName = strings.TrimPrefix(container.Names[0], "/")
+		}
+
+		process.Contained = "true"
+	}
+}
+
 // topPids fills the pids map with the pids of the processes that run in the given container.
-func (d *dockerDecorator) topPids(container types.Container, pids map[uint32]types.Container) error {
+func (d *dockerDecorator) topPids(container container.Summary, pids map[uint32]container.Summary) error {
 	// If pids are in cache (and not too old), we reuse them
 	if cached, ok := d.cache.get(container.ID); ok {
 		for _, pid := range cached {
@@ -161,13 +178,13 @@ func (d *dockerDecorator) topPids(container types.Container, pids map[uint32]typ
 
 // pidsContainers returns a map where each key is the PID of a process running in a container and the value is the
 // container that contains it.
-func (d *dockerDecorator) pidsContainers() (map[uint32]types.Container, error) {
+func (d *dockerDecorator) pidsContainers() (map[uint32]container.Summary, error) {
 	containers, err := d.dockerClient.Containers()
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrDockerSampler, err)
 	}
 
-	pids := map[uint32]types.Container{}
+	pids := map[uint32]container.Summary{}
 	for _, container := range containers {
 		err := d.topPids(container, pids)
 		if err != nil {
@@ -179,20 +196,4 @@ func (d *dockerDecorator) pidsContainers() (map[uint32]types.Container, error) {
 	d.cache.compact(len(containers))
 
 	return pids, nil
-}
-
-// Decorate adds container information to all the processes that belong to a container.
-func (d *dockerDecorator) Decorate(process *metricTypes.ProcessSample) {
-	if container, ok := d.pids[uint32(process.ProcessID)]; ok {
-		imageIDComponents := strings.Split(container.ImageID, ":")
-		process.ContainerImage = imageIDComponents[len(imageIDComponents)-1]
-		process.ContainerImageName = container.Image
-		process.ContainerLabels = container.Labels
-		process.ContainerID = container.ID
-
-		if len(container.Names) > 0 {
-			process.ContainerName = strings.TrimPrefix(container.Names[0], "/")
-		}
-		process.Contained = "true"
-	}
 }

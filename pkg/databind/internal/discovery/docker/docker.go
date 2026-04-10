@@ -6,12 +6,13 @@ package docker
 import (
 	"context"
 	"net"
+	"net/netip"
 	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/client"
 
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/counter"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery"
@@ -47,12 +48,12 @@ func fetch(d discovery.Container, matcher *discovery.FieldsMatcher) ([]discovery
 	}
 	defer dc.Close()
 
-	containers, err := dc.ContainerList(context.Background(), container.ListOptions{})
+	result, err := dc.ContainerList(context.Background(), client.ContainerListOptions{}) //nolint:exhaustruct
 	if err != nil {
 		return nil, err
 	}
 
-	return getDiscoveries(containers, matcher), nil
+	return getDiscoveries(result.Items, matcher), nil
 }
 
 // getDiscoveries will filter container list to only the ones that match the config and extract discovery variables from those.
@@ -79,9 +80,10 @@ func getDiscoveries(containers []container.Summary, matcher *discovery.FieldsMat
 		index := 0
 		for _, network := range cont.NetworkSettings.Networks {
 			if index == 0 {
-				labels[data.PrivateIP] = network.IPAddress
+				labels[data.PrivateIP] = addrToString(network.IPAddress)
 			}
-			labels[data.PrivateIP+"."+strconv.Itoa(index)] = network.IPAddress
+
+			labels[data.PrivateIP+"."+strconv.Itoa(index)] = addrToString(network.IPAddress)
 			index++
 		}
 
@@ -127,14 +129,15 @@ func addPorts(cont container.Summary, labels map[string]string) {
 
 	for index, port := range cont.Ports {
 		indexStr := "." + strconv.Itoa(index)
-		labels[data.IP+indexStr] = port.IP
+		ipStr := addrToString(port.IP)
+		labels[data.IP+indexStr] = ipStr
 		tIdx := types.Count(port.Type)
 
 		publicPort := strconv.Itoa(int(port.PublicPort))
 		privatePort := strconv.Itoa(int(port.PrivatePort))
 
-		if firstPublic && port.PublicPort > 0 && isIPv4(port.IP) {
-			labels[data.IP] = port.IP
+		if firstPublic && port.PublicPort > 0 && isIPv4(ipStr) {
+			labels[data.IP] = ipStr
 			labels[data.Port] = publicPort
 			firstPublic = false
 		}
@@ -158,6 +161,17 @@ func addPorts(cont container.Summary, labels map[string]string) {
 			labels[data.PrivatePorts+"."+port.Type+indexStr] = privatePort
 		}
 	}
+}
+
+// addrToString converts a netip.Addr to string, returning "" for the zero value
+// to preserve backward compatibility with the previous docker client API where
+// IP fields were plain strings.
+func addrToString(addr netip.Addr) string {
+	if !addr.IsValid() {
+		return ""
+	}
+
+	return addr.String()
 }
 
 // isIPv4 returns true if ip string has a IPv4 format.

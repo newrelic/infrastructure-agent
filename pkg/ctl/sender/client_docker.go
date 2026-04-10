@@ -7,7 +7,7 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/pkg/ipc"
 
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/client"
 	"github.com/newrelic/infrastructure-agent/internal/os/api/signals"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/pkg/errors"
@@ -52,7 +52,9 @@ func NewDockerClient(apiVersion string, containerID string) (c Client, err error
 
 // Notify will notify a running agent process inside a docker container.
 func (c *dockerClient) Notify(ctx context.Context, _ ipc.Message) (err error) {
-	return c.client.ContainerKill(ctx, c.containerID, signals.NotificationStr)
+	_, err = c.client.ContainerKill(ctx, c.containerID, client.ContainerKillOptions{Signal: signals.NotificationStr})
+
+	return err //nolint:wrapcheck // passthrough from docker client
 }
 
 // Return the identification for the notified agent.

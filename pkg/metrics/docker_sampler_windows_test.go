@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/moby/moby/api/types/container"
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	metricTypes "github.com/newrelic/infrastructure-agent/pkg/metrics/types"
@@ -125,8 +125,8 @@ func (mc *MockContainerDocker) Initialize(_ string) error {
 	return nil
 }
 
-func (mc *MockContainerDocker) Containers() ([]types.Container, error) {
-	container := types.Container{
+func (mc *MockContainerDocker) Containers() ([]container.Summary, error) {
+	cont := container.Summary{
 		ID:      "cca35d9d",
 		ImageID: "ubuntu:14.04",
 		Names:   []string{"/container1"},
@@ -138,7 +138,8 @@ func (mc *MockContainerDocker) Containers() ([]types.Container, error) {
 		},
 		Command: "/bin/bash arg1 arg2 -password secret",
 	}
-	return []types.Container{container}, nil
+
+	return []container.Summary{cont}, nil
 }
 
 func (mc *MockContainerDocker) ContainerTop(containerID string) (titles []string, processes [][]string, err error) {

@@ -7,9 +7,8 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/client"
 	"github.com/pkg/errors"
 )
 
@@ -24,7 +23,7 @@ var (
 
 type Docker interface {
 	Initialize(apiVersion string) error
-	Containers() ([]types.Container, error)
+	Containers() ([]container.Summary, error)
 	ContainerTop(containerID string) (titles []string, processes [][]string, err error)
 }
 
@@ -45,15 +44,25 @@ func (dc *DockerClient) Initialize(apiVersion string) (err error) {
 	return
 }
 
-func (dc *DockerClient) Containers() ([]types.Container, error) {
-	return dc.client.ContainerList(context.Background(), container.ListOptions{})
+func (dc *DockerClient) Containers() ([]container.Summary, error) {
+	//nolint:exhaustruct // zero-value options is the intended default
+	result, err := dc.client.ContainerList(context.Background(), client.ContainerListOptions{})
+	if err != nil {
+		return nil, err //nolint:wrapcheck // passthrough from docker client
+	}
+
+	return result.Items, nil
 }
 
 func (dc *DockerClient) ContainerTop(containerID string) (titles []string, processes [][]string, err error) {
-	body, err := dc.client.ContainerTop(context.Background(), containerID, []string{})
+	//nolint:exhaustruct // zero-value options is the intended default
+	body, err := dc.client.ContainerTop(
+		context.Background(), containerID, client.ContainerTopOptions{},
+	)
 	if err != nil {
 		return nil, nil, err
 	}
+
 	return body.Titles, body.Processes, nil
 }
 
