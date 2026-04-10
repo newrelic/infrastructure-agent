@@ -126,7 +126,7 @@ func (mc *MockContainerDocker) Initialize(_ string) error {
 }
 
 func (mc *MockContainerDocker) Containers() ([]container.Summary, error) {
-	cont := container.Summary{
+	cont := container.Summary{ //nolint:exhaustruct
 		ID:      "cca35d9d",
 		ImageID: "ubuntu:14.04",
 		Names:   []string{"/container1"},

@@ -102,14 +102,6 @@ Distributed under the following license(s):
 
 
 
-## [github.com/docker/docker](https://github.com/docker/docker)
-
-Distributed under the following license(s):
-
-* Apache-2.0
-
-
-
 ## [github.com/evanphx/json-patch](https://github.com/evanphx/json-patch)
 
 Distributed under the following license(s):
@@ -195,6 +187,22 @@ Distributed under the following license(s):
 Distributed under the following license(s):
 
 * MIT
+
+
+
+## [github.com/moby/moby/api](https://github.com/moby/moby)
+
+Distributed under the following license(s):
+
+* Apache-2.0
+
+
+
+## [github.com/moby/moby/client](https://github.com/moby/moby)
+
+Distributed under the following license(s):
+
+* Apache-2.0
 
 
 
