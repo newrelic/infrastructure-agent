@@ -139,6 +139,9 @@ var fbConfigFormat = `{{- range .Inputs }}
     {{- if .Output.SendMetrics}}
     sendMetrics         {{ .Output.SendMetrics}}
     {{- end}}
+    {{- if .Output.Compression}}
+    compression         {{ .Output.Compression}}
+    {{- end}}
 {{ end -}}
 
 {{- if .ExternalCfg.CfgFilePath }}
