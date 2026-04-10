@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/moby/moby/api/types/container"
 	metricTypes "github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/stretchr/testify/assert"
 
@@ -162,7 +162,7 @@ func (m *MockBaseDocker) Initialize(_ string) error {
 	return nil
 }
 
-func (m *MockBaseDocker) Containers() ([]types.Container, error) {
+func (m *MockBaseDocker) Containers() ([]container.Summary, error) {
 	return nil, errNoContainers
 }
 
@@ -176,8 +176,8 @@ func (mc *MockContainerDocker) Initialize(_ string) error {
 	return nil
 }
 
-func (mc *MockContainerDocker) Containers() ([]types.Container, error) {
-	container := types.Container{ //nolint:exhaustruct
+func (mc *MockContainerDocker) Containers() ([]container.Summary, error) {
+	cont := container.Summary{ //nolint:exhaustruct
 		ID:      "cca35d9d",
 		ImageID: "ubuntu:14.04",
 		Names:   []string{"/container1"},
@@ -189,7 +189,7 @@ func (mc *MockContainerDocker) Containers() ([]types.Container, error) {
 		},
 	}
 
-	return []types.Container{container}, nil
+	return []container.Summary{cont}, nil
 }
 
 func (mc *MockContainerDocker) ContainerTop(containerID string) ([]string, [][]string, error) {
@@ -204,7 +204,7 @@ func (mc *MockContainerWithDataDocker) Initialize(_ string) error {
 	return nil
 }
 
-func (mc *MockContainerWithDataDocker) Containers() ([]types.Container, error) {
+func (mc *MockContainerWithDataDocker) Containers() ([]container.Summary, error) {
 	container := MockContainerDocker{}
 
 	return container.Containers()
@@ -227,7 +227,7 @@ func (mc *MockContainerWithDataDockerWrongTitles) Initialize(_ string) error {
 	return nil
 }
 
-func (mc *MockContainerWithDataDockerWrongTitles) Containers() ([]types.Container, error) {
+func (mc *MockContainerWithDataDockerWrongTitles) Containers() ([]container.Summary, error) {
 	container := MockContainerWithDataDocker{}
 
 	return container.Containers()

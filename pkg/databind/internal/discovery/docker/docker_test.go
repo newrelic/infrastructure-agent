@@ -4,10 +4,12 @@
 package docker
 
 import (
+	"net"
+	"net/netip"
 	"testing"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/network"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/internal/discovery"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
 	"github.com/stretchr/testify/assert"
@@ -25,15 +27,15 @@ func TestGetMatchingContainers(t *testing.T) {
 			ImageID: "sha256:8282995409c26b82d66243f169f6695115a06ce860966db549f8ca09dcbb9767",
 			Command: "/bin/bash -c 'java ${JAVA_OPTS} -jar /test-server.jar'",
 			Created: 1653916418,
-			Ports: []container.Port{
+			Ports: []container.PortSummary{
 				{
-					IP:          "0.0.0.0",
+					IP:          netip.MustParseAddr("0.0.0.0"),
 					PrivatePort: 7199,
 					PublicPort:  7199,
 					Type:        "tcp",
 				},
 				{
-					IP:          "",
+					IP:          netip.Addr{},
 					PrivatePort: 4567,
 					PublicPort:  0,
 					Type:        "tcp",
@@ -45,8 +47,8 @@ func TestGetMatchingContainers(t *testing.T) {
 			State:      "running",
 			Status:     "Up 8 minutes",
 			HostConfig: struct {
-				NetworkMode string            "json:\",omitempty\"" //nolint:tagalign
-				Annotations map[string]string "json:\",omitempty\"" //nolint:tagalign
+				NetworkMode string            `json:",omitempty"`
+				Annotations map[string]string `json:",omitempty"`
 			}{
 				NetworkMode: "default",
 			},
@@ -58,13 +60,13 @@ func TestGetMatchingContainers(t *testing.T) {
 						Aliases:             []string(nil),
 						NetworkID:           "e0effada2c3eab26fb73188d0193952ef9a3c985e64cabd76c95196000405418",
 						EndpointID:          "8e143f019bb8549a5594a31058c077eb774960b9b825f819f9593ab57a591f71",
-						Gateway:             "172.17.0.1",
-						IPAddress:           "172.17.0.2",
+						Gateway:             netip.MustParseAddr("172.17.0.1"),
+						IPAddress:           netip.MustParseAddr("172.17.0.2"),
 						IPPrefixLen:         16,
-						IPv6Gateway:         "",
-						GlobalIPv6Address:   "",
+						IPv6Gateway:         netip.Addr{},
+						GlobalIPv6Address:   netip.Addr{},
 						GlobalIPv6PrefixLen: 0,
-						MacAddress:          "02:42:ac:11:00:02",
+						MacAddress:          network.HardwareAddr(mustParseMAC("02:42:ac:11:00:02")),
 						DriverOpts:          map[string]string(nil),
 					},
 				},
@@ -152,4 +154,13 @@ func TestIsIPv4(t *testing.T) {
 			assert.Equal(t, testCase.expected, isIPv4(testCase.ip))
 		})
 	}
+}
+
+func mustParseMAC(s string) net.HardwareAddr {
+	hw, err := net.ParseMAC(s)
+	if err != nil {
+		panic(err)
+	}
+
+	return hw
 }
