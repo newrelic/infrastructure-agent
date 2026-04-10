@@ -41,7 +41,7 @@ COPY assets C:/newrelic
 COPY $version_file C:/newrelic/VERSION
 
 # Download and install bundled integrations
-ARG nri_flex_version=1.17.5
+ARG nri_flex_version=1.17.7
 ARG nri_prometheus_version=2.27.7
 
 RUN [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
