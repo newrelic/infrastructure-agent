@@ -32,6 +32,12 @@ const (
 	fluentBitDbName         = "fb.db"
 )
 
+// newrelic-fluent-bit-output plugin supported compression algorithms
+const (
+	compressionGzip = "gzip"
+	compressionZstd = "zstd"
+)
+
 // FluentBit INPUT plugin types
 const (
 	fbInputTypeTail      = "tail"
@@ -239,6 +245,7 @@ type FBCfgOutput struct {
 	Retry_Limit       string
 	HTTPClientTimeout string
 	SendMetrics       bool
+	Compression       string // compression algorithm: "gzip" or "zstd"
 }
 
 type FBWinlogLuaScript struct {
@@ -274,7 +281,7 @@ type FBOSConfig struct {
 }
 
 // NewFBConf creates a FluentBit config from several logging integration configs.
-func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, hostname string) (fb FBCfg, e error) {
+func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, hostname string, useZstdCompression bool) (fb FBCfg, e error) {
 	fb = FBCfg{
 		Inputs:  []FBCfgInput{},
 		Filters: []FBCfgFilter{},
@@ -339,7 +346,7 @@ func NewFBConf(loggingCfgs LogsCfg, logFwdCfg *config.LogForward, entityGUID, ho
 	})
 
 	// Newrelic OUTPUT plugin will send all the collected logs to Vortex
-	fb.Output = newNROutput(logFwdCfg)
+	fb.Output = newNROutput(logFwdCfg, useZstdCompression)
 
 	return
 }
@@ -724,7 +731,12 @@ func newModifyFilter(tag string) FBCfgFilter {
 	}
 }
 
-func newNROutput(cfg *config.LogForward) FBCfgOutput {
+func newNROutput(cfg *config.LogForward, useZstdCompression bool) FBCfgOutput {
+	compression := compressionGzip
+	if useZstdCompression {
+		compression = compressionZstd
+	}
+
 	ret := FBCfgOutput{
 		Name:              "newrelic",
 		Match:             "*",
@@ -737,6 +749,7 @@ func newNROutput(cfg *config.LogForward) FBCfgOutput {
 		Retry_Limit:       cfg.RetryLimit,
 		HTTPClientTimeout: cfg.HTTPClientTimeout,
 		SendMetrics:       cfg.FluentBitVerbose,
+		Compression:       compression,
 	}
 
 	if cfg.IsStaging {

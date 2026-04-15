@@ -470,7 +470,8 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	)
 
 	if fbIntCfg.IsLogForwarderAvailable() {
-		logCfgLoader := logs.NewFolderLoader(logFwCfg, agt.Context.Identity, agt.Context.HostnameResolver())
+		useZstdCompression, _ := ffManager.GetFeatureFlag(fflag.FlagFluentBitZstdCompression)
+		logCfgLoader := logs.NewFolderLoader(logFwCfg, agt.Context.Identity, agt.Context.HostnameResolver(), useZstdCompression)
 		logSupervisor := v4.NewFBSupervisor(
 			fbIntCfg,
 			logCfgLoader,

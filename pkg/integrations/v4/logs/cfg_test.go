@@ -73,6 +73,7 @@ var outputBlock = FBCfgOutput{
 	ValidateCerts:     true,
 	Retry_Limit:       "5",
 	HTTPClientTimeout: "10",
+	Compression:       "gzip",
 }
 
 func TestNewFBConf(t *testing.T) {
@@ -704,9 +705,50 @@ func TestNewFBConf(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fbConf, err := NewFBConf(tt.ohiCfg, &tt.logFwd, "0", "")
+			fbConf, err := NewFBConf(tt.ohiCfg, &tt.logFwd, "0", "", false)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, fbConf)
+		})
+	}
+}
+
+func TestNewFBConf_ZstdCompression(t *testing.T) {
+	tests := []struct {
+		name                string
+		useZstdCompression  bool
+		expectedCompression string
+	}{
+		{
+			name:                "gzip compression when feature flag disabled",
+			useZstdCompression:  false,
+			expectedCompression: "gzip",
+		},
+		{
+			name:                "zstd compression when feature flag enabled",
+			useZstdCompression:  true,
+			expectedCompression: "zstd",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logsCfg := LogsCfg{
+				{
+					Name: "test-log",
+					File: "/var/log/test.log",
+				},
+			}
+
+			fbConf, err := NewFBConf(logsCfg, &logFwdCfg, "test-guid", "test-host", tt.useZstdCompression)
+			assert.NoError(t, err)
+			assert.NotNil(t, fbConf.Output)
+			assert.Equal(t, tt.expectedCompression, fbConf.Output.Compression)
+
+			// Verify compression is included in formatted output
+			formatted, _, err := fbConf.Format()
+			assert.NoError(t, err)
+			assert.Contains(t, formatted, "compression")
+			assert.Contains(t, formatted, tt.expectedCompression)
 		})
 	}
 }
@@ -870,7 +912,7 @@ func TestFBConfigForWinlog(t *testing.T) {
 
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			fbConf, err := NewFBConf(test.logsCfg, &logFwdCfg, "0", "")
+			fbConf, err := NewFBConf(test.logsCfg, &logFwdCfg, "0", "", false)
 			assert.NoError(t, err)
 			assert.Equal(t, test.expected.Inputs, fbConf.Inputs)
 			assert.Equal(t, test.expected.Filters[0], fbConf.Filters[0])
@@ -1041,7 +1083,7 @@ func TestFBConfigForWinevtlog(t *testing.T) {
 
 		t.Run(testItem.name, func(t *testing.T) {
 			t.Parallel()
-			fbConf, err := NewFBConf(test.logsCfg, &test.logFwd, "0", "")
+			fbConf, err := NewFBConf(test.logsCfg, &test.logFwd, "0", "", false)
 			assert.NoError(t, err)
 			assert.Equal(t, test.expected.Inputs, fbConf.Inputs)
 			assert.Equal(t, test.expected.Filters[0], fbConf.Filters[0])
@@ -1926,7 +1968,7 @@ func TestNewFbConfForTargetFileCount(t *testing.T) {
 
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			NewFBConf(test.logsCfg, &test.logFwd, "0", "")
+			NewFBConf(test.logsCfg, &test.logFwd, "0", "", false)
 			assert.Equal(t, test.expectedCount, test.logsCfg[0].targetFilesCnt)
 		})
 	}
