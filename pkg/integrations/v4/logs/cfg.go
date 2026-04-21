@@ -735,6 +735,9 @@ func newNROutput(cfg *config.LogForward, useZstdCompression bool) FBCfgOutput {
 	compression := compressionGzip
 	if useZstdCompression {
 		compression = compressionZstd
+		cfgLogger.Debug("Fluent Bit configured with ZSTD compression")
+	} else {
+		cfgLogger.Debug("Fluent Bit configured with GZIP compression (default)")
 	}
 
 	ret := FBCfgOutput{
