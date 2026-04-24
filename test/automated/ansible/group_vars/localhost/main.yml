@@ -18,6 +18,13 @@ instances:
   ############################
   # ubuntu amd64
   ############################
+  - ami: "ami-0fe18bc3cfa53a248"
+    type: "t3a.small"
+    name: "amd64:ubuntu26.04"
+    username: "ubuntu"
+    platform: "linux"
+    python_interpreter: "/usr/bin/python3"
+    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
   - ami: "ami-09040d770ffe2224f"
     type: "t3a.small"
     name: "amd64:ubuntu24.04"
@@ -56,6 +63,13 @@ instances:
   ############################
   # ubuntu arm64
   ############################
+  - ami: "ami-005e7d5b13cc4b72b"
+    type: "t4g.small"
+    name: "arm64:ubuntu26.04"
+    username: "ubuntu"
+    platform: "linux"
+    python_interpreter: "/usr/bin/python3"
+    launch_template: "LaunchTemplateId=lt-0b00afb3f5110a0e6,Version=3"
   - ami: "ami-0acb327475c6fd498"
     type: "t4g.small"
     name: "arm64:ubuntu24.04"
