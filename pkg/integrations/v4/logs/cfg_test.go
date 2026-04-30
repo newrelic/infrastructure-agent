@@ -2121,3 +2121,77 @@ func TestMlParserFBCfgWithMultipleParsers(t *testing.T) {
 	assert.Equal(t, "/path/to/fb/parsers", extCfg.ParsersFilePath)
 	assert.Equal(t, expected, result)
 }
+
+func TestUnicodeEncodingFBCfgFormat(t *testing.T) {
+	expected := `
+[INPUT]
+    Name tail
+    Path /path/to/folder/*
+    Buffer_Max_Size 32k
+    Skip_Long_Lines On
+    Multiline.Parser multiline_mssql
+    Unicode.Encoding UTF-16LE
+    Path_Key filePath
+    Tag  mssql_error_log
+    DB   fb.db
+
+[FILTER]
+    Name  record_modifier
+    Match mssql_error_log
+    Record "fb.input" "tail"
+
+[FILTER]
+    Name  record_modifier
+    Match *
+    Record "entity.guid.INFRA" "testGUID"
+    Record "fb.source" "nri-agent"
+
+[OUTPUT]
+    Name                newrelic
+    Match               *
+    licenseKey          ${NR_LICENSE_KEY_ENV_VAR}
+    validateProxyCerts  false
+`
+
+	fbCfg := FBCfg{
+		Inputs: []FBCfgInput{
+			{
+				Name:            "tail",
+				Tag:             "mssql_error_log",
+				DB:              "fb.db",
+				Path:            "/path/to/folder/*",
+				BufferMaxSize:   "32k",
+				SkipLongLines:   "On",
+				MultilineParser: "multiline_mssql",
+				UnicodeEncoding: "UTF-16LE",
+				PathKey:         "filePath",
+			},
+		},
+		Filters: []FBCfgFilter{
+			{
+				Name:  "record_modifier",
+				Match: "mssql_error_log",
+				Records: map[string]string{
+					"fb.input": "tail",
+				},
+			},
+			{
+				Name:  "record_modifier",
+				Match: "*",
+				Records: map[string]string{
+					"entity.guid.INFRA": "testGUID",
+					"fb.source":         "nri-agent",
+				},
+			},
+		},
+		Output: FBCfgOutput{
+			Name:       "newrelic",
+			Match:      "*",
+			LicenseKey: "licenseKey",
+		},
+	}
+
+	result, _, err := fbCfg.Format()
+	assert.Empty(t, err)
+	assert.Equal(t, expected, result)
+}
