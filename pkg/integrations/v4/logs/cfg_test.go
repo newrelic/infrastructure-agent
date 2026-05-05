@@ -15,6 +15,7 @@ import (
 
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const windowsServer2016BuildNumber = 14393
@@ -2192,6 +2193,6 @@ func TestUnicodeEncodingFBCfgFormat(t *testing.T) {
 	}
 
 	result, _, err := fbCfg.Format()
-	assert.Empty(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expected, result)
 }
