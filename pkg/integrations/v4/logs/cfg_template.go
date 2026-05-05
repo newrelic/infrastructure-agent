@@ -23,6 +23,9 @@ var fbConfigFormat = `{{- range .Inputs }}
     {{- if .MultilineParser }}
     Multiline.Parser {{ .MultilineParser }}
     {{- end }}
+    {{- if .UnicodeEncoding }}
+    Unicode.Encoding {{ .UnicodeEncoding }}
+    {{- end }}
     {{- if .PathKey }}
     Path_Key {{ .PathKey }}
     {{- end }}
