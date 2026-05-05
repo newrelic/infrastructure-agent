@@ -8,6 +8,10 @@ on:
     tags-ignore:
       - '**'
 
+
+permissions:
+  contents: read
+
 jobs:
 
   CodeQL-Build:

@@ -3,6 +3,10 @@ name: . 🧹 macOS | Run validate and linter
 on:
   workflow_call:
 
+
+permissions:
+  contents: read
+
 jobs:
 
   run-lint:

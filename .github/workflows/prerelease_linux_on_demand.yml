@@ -22,6 +22,10 @@ on:
         required: false
         default: 'NON-FIPS' # "ALL" "NON-FIPS" "FIPS":
 
+
+permissions:
+  contents: read
+
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   TAG: ${{ inputs.fake_tag }}

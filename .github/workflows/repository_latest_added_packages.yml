@@ -18,6 +18,10 @@ on:
         default: 'staging'
 
 
+
+permissions:
+  contents: read
+
 jobs:
   list-packages:
     name: List latest added packages into the S3 repository

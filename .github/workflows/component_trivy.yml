@@ -18,6 +18,10 @@ on:
         type: boolean
         default: false
 
+
+permissions:
+  contents: read
+
 env:
   FIPS: ${{ inputs.FIPS == true && '-fips' || '' }}
 

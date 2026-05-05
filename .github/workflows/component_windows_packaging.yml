@@ -22,6 +22,10 @@ on:
         required: true
         type: string
 
+
+permissions:
+  contents: read
+
 env:
   PFX_CERTIFICATE_BASE64: ${{ secrets.PFX_CERTIFICATE_BASE64 }}
   PFX_PASSPHRASE: ${{ secrets.PFX_PASSPHRASE }}

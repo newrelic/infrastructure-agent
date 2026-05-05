@@ -3,6 +3,10 @@ name: . 🚀 🧹 Clear cache (cloudfare)
 on:
   workflow_dispatch:
 
+
+permissions:
+  contents: read
+
 jobs:
   purge-cdn:
     name: Purge CDN

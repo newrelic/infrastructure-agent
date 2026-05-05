@@ -7,6 +7,10 @@ on:
     tags:
       - '*'
 
+
+permissions:
+  contents: read
+
 jobs:
   unit-test:
     uses: ./.github/workflows/component_macos_unit_test.yml

@@ -9,6 +9,10 @@ on:
         description: 'Tag to scan'
         required: false
         default: 'latest'
+
+permissions:
+  contents: read
+
 jobs:
   docker-trivy:
     uses: ./.github/workflows/component_trivy.yml

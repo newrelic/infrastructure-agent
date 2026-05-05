@@ -6,6 +6,10 @@ on:
    #Scheduled to run at 7 a.m on every day-of-week from Monday through Friday.
     - cron: "0 7 * * 1-5"
 
+
+permissions:
+  contents: read
+
 env:
   MANDATORY_PREFIX: 'infrastructure_agent/test_disaster_recovery'
   TEST_FOLDER: 'test'
