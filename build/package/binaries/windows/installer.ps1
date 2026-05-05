@@ -331,12 +331,12 @@ try {
     } else {
         # Fresh installation scenario: create service with LocalSystem
         Write-DebugLog "Creating new service: $ServiceName"
-        Write-DebugLog "Binary path: $AgentDir\newrelic-infra-service.exe -config $ConfigFile"
+        Write-DebugLog "Binary path: `"$AgentDir\newrelic-infra-service.exe`" -config `"$ConfigFile`""
         # Write marker before New-Service so that if anything fails afterward the
         # rollback CA knows it must clean up the service created by this run.
         "1" | Out-File -FilePath $markerFile -Force -ErrorAction SilentlyContinue
         try {
-            New-Service -Name $ServiceName -DisplayName 'New Relic Infrastructure Agent' -BinaryPathName "$AgentDir\newrelic-infra-service.exe -config $ConfigFile" -StartupType Automatic -ErrorAction Stop | Out-Null
+            New-Service -Name $ServiceName -DisplayName 'New Relic Infrastructure Agent' -BinaryPathName "`"$AgentDir\newrelic-infra-service.exe`" -config `"$ConfigFile`"" -StartupType Automatic -ErrorAction Stop | Out-Null
             Write-DebugLog "Service created successfully"
             # Restore auto-restart on crash (first failure: restart after 30s).
             # Equivalent to the original WiX <util:ServiceConfig FirstFailureActionType='restart' RestartServiceDelayInSeconds='30'>.
