@@ -81,6 +81,36 @@ var outputBlock = FBCfgOutput{
 	HTTPClientTimeout: "10",
 }
 
+func TestNewNROutput_JPRegion(t *testing.T) {
+	cfg := &config.LogForward{
+		License: "jp01xx6789012345678901234567890123456789",
+	}
+
+	output := newNROutput(cfg)
+
+	assert.Equal(t, jpEndpoint, output.Endpoint)
+}
+
+func TestNewNROutput_EURegion(t *testing.T) {
+	cfg := &config.LogForward{
+		License: "eu01xx6789012345678901234567890123456789",
+	}
+
+	output := newNROutput(cfg)
+
+	assert.Equal(t, euEndpoint, output.Endpoint)
+}
+
+func TestNewNROutput_USRegion(t *testing.T) {
+	cfg := &config.LogForward{
+		License: "0123456789012345678901234567890123456789",
+	}
+
+	output := newNROutput(cfg)
+
+	assert.Equal(t, "", output.Endpoint)
+}
+
 func TestNewFBConf(t *testing.T) {
 	outputBlockFedramp := outputBlock
 	outputBlockFedramp.Endpoint = fedrampEndpoint
