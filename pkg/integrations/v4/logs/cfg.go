@@ -381,6 +381,10 @@ func parseConfigBlock(l LogCfg, logsHomeDir string, fbOSConfig FBOSConfig) (inpu
 		input, filters, err = parseWinevtlogInput(l, dbPath, fbOSConfig)
 	}
 
+	if l.UnicodeEncoding != "" && l.File == "" {
+		cfgLogger.WithField("name", l.Name).Warn("unicodeEncoding is only supported for file inputs and will be ignored")
+	}
+
 	if err != nil {
 		return
 	}

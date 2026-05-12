@@ -701,6 +701,32 @@ func TestNewFBConf(t *testing.T) {
 			},
 			Output: outputBlock,
 		}},
+		{"file input with unicodeEncoding", logFwdCfg, LogsCfg{
+			{
+				Name:            "mssql-log",
+				File:            "D:\\logs\\ERRORLOG",
+				UnicodeEncoding: "UTF-16LE",
+			},
+		}, FBCfg{
+			Inputs: []FBCfgInput{
+				{
+					Name:            "tail",
+					Tag:             "mssql-log",
+					DB:              dbDbPath,
+					Path:            "D:\\logs\\ERRORLOG",
+					BufferMaxSize:   "128k",
+					MemBufferLimit:  "16384k",
+					SkipLongLines:   "On",
+					PathKey:         "filePath",
+					UnicodeEncoding: "UTF-16LE",
+				},
+			},
+			Filters: []FBCfgFilter{
+				inputRecordModifier("tail", "mssql-log"),
+				filterEntityBlock,
+			},
+			Output: outputBlock,
+		}},
 	}
 
 	for _, tt := range tests {
