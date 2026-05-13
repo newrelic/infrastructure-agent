@@ -102,7 +102,7 @@ type LogCfg struct {
 	Winlog          *LogWinlogCfg     `yaml:"winlog"`
 	Winevtlog       *LogWinevtlogCfg  `yaml:"winevtlog"`
 	MultilineParser string            `yaml:"multilineParser"`
-	UnicodeEncoding string            `yaml:"unicodeEncoding"`
+	UnicodeEncoding string            `yaml:"Unicode.Encoding"`
 	targetFilesCnt  int
 }
 
