@@ -16,6 +16,7 @@ import (
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
 )
 
 const windowsServer2016BuildNumber = 14393
@@ -2221,4 +2222,19 @@ func TestUnicodeEncodingFBCfgFormat(t *testing.T) {
 	result, _, err := fbCfg.Format()
 	require.NoError(t, err)
 	assert.Equal(t, expected, result)
+}
+
+func TestUnicodeEncodingYAMLTag(t *testing.T) {
+	yamlInput := `
+logs:
+  - name: mssql-log
+    file: /logs/ERRORLOG
+    Unicode.Encoding: UTF-16LE
+`
+	var cfg struct {
+		Logs LogsCfg `yaml:"logs"`
+	}
+	require.NoError(t, yaml.Unmarshal([]byte(yamlInput), &cfg))
+	require.Len(t, cfg.Logs, 1)
+	assert.Equal(t, "UTF-16LE", cfg.Logs[0].UnicodeEncoding)
 }
