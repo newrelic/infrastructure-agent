@@ -2231,10 +2231,13 @@ logs:
     file: /logs/ERRORLOG
     Unicode.Encoding: UTF-16LE
 `
+
 	var cfg struct {
 		Logs LogsCfg `yaml:"logs"`
 	}
+
 	require.NoError(t, yaml.Unmarshal([]byte(yamlInput), &cfg))
+
 	require.Len(t, cfg.Logs, 1)
 	assert.Equal(t, "UTF-16LE", cfg.Logs[0].UnicodeEncoding)
 }
