@@ -6,13 +6,14 @@ package cloud
 import (
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-// output generated with: curl -s http://169.254.169.254/opc/v1/instance/
+// output generated with: curl -s -H "Authorization: Bearer Oracle" http://169.254.169.254/opc/v2/instance/
 func TestParseOCIMetadataResponse(t *testing.T) {
 	t.Parallel()
 
@@ -67,4 +68,30 @@ func TestParseOCIMetadataResponse(t *testing.T) {
 	require.Equal(t, "jyDh:US-ASHBURN-AD-1", metadata.Zone)
 	require.Equal(t, "ocid1.image.oc1", metadata.ImageID)
 	require.Equal(t, "ubuntu-instance-20250722-1328", metadata.DisplayName)
+}
+
+func TestGetOCIMetadataSendsV2AuthorizationHeader(t *testing.T) {
+	t.Parallel()
+
+	var receivedAuth string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { //nolint:varnamelen
+		receivedAuth = r.Header.Get("Authorization")
+		w.Header().Set("Content-Type", "application/json")
+
+		responseJSON := `{"id":"test-id","shape":"VM.Standard2.1","canonicalRegionName":"us-ashburn-1",` +
+			`"compartmentId":"ocid1.compartment","availabilityDomain":"AD-1","image":"ocid1.image","displayName":"test"}`
+		_, _ = w.Write([]byte(responseJSON))
+	}))
+
+	defer server.Close()
+
+	origEndpoint := ociEndpoint
+	ociEndpoint = server.URL + "/"
+
+	defer func() { ociEndpoint = origEndpoint }()
+
+	_, err := GetOCIMetadata(false)
+	require.NoError(t, err)
+	require.Equal(t, ociV2AuthorizationHeader, receivedAuth)
 }

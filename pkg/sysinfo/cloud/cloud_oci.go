@@ -30,9 +30,12 @@ var (
 const (
 	// ociTimeout is the timeout for OCI metadata requests.
 	ociTimeout = 600
-	// OciEndpoint is the URL used for requesting OCI metadata.
-	ociEndpoint = "http://169.254.169.254/opc/v1/instance/"
+	// ociV2AuthorizationHeader is the required Authorization header value for OCI IMDSv2.
+	ociV2AuthorizationHeader = "Bearer Oracle"
 )
+
+// ociEndpoint is the URL used for requesting OCI instance metadata (v2). Var to allow test overrides.
+var ociEndpoint = "http://169.254.169.254/opc/v2/instance/" //nolint:gochecknoglobals
 
 // OCIHarvester is used to fetch data from OCI api.
 type OCIHarvester struct {
@@ -205,7 +208,7 @@ func GetOCIMetadata(disableKeepAlive bool) (*OCIMetadata, error) {
 		return nil, fmt.Errorf("%w: %w", ErrOCIRequestFailed, err) //nolint:wrapcheck
 	}
 
-	request.Header.Add("Metadata", "true")
+	request.Header.Add("Authorization", ociV2AuthorizationHeader)
 
 	var response *http.Response
 	if response, err = clientWithFastTimeout(disableKeepAlive).Do(request); err != nil {
