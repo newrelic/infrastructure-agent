@@ -3,6 +3,7 @@ linters:
   default: all
   disable:
     - depguard
+    - paralleltest
     - tagliatelle
     - testpackage
   settings:
