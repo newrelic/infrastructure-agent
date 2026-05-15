@@ -102,6 +102,7 @@ type LogCfg struct {
 	Winlog          *LogWinlogCfg     `yaml:"winlog"`
 	Winevtlog       *LogWinevtlogCfg  `yaml:"winevtlog"`
 	MultilineParser string            `yaml:"multilineParser"`
+	UnicodeEncoding string            `yaml:"Unicode.Encoding"`
 	targetFilesCnt  int
 }
 
@@ -190,6 +191,7 @@ type FBCfgInput struct {
 	MemBufferLimit        string // plugin: tail
 	PathKey               string // plugin: tail
 	MultilineParser       string // plugin: tail
+	UnicodeEncoding       string // plugin: tail
 	SkipLongLines         string // always on
 	Systemd_Filter        string // plugin: systemd
 	Channels              string // plugin: winlog
@@ -379,6 +381,10 @@ func parseConfigBlock(l LogCfg, logsHomeDir string, fbOSConfig FBOSConfig) (inpu
 		input, filters, err = parseWinevtlogInput(l, dbPath, fbOSConfig)
 	}
 
+	if l.UnicodeEncoding != "" && l.File == "" {
+		cfgLogger.WithField("name", l.Name).Warn("unicodeEncoding is only supported for file inputs and will be ignored")
+	}
+
 	if err != nil {
 		return
 	}
@@ -393,7 +399,7 @@ func parseConfigBlock(l LogCfg, logsHomeDir string, fbOSConfig FBOSConfig) (inpu
 
 // Single file
 func parseFileInput(l LogCfg, dbPath string) (input FBCfgInput, filters []FBCfgFilter) {
-	input = newFileInput(l.File, dbPath, l.Name, getBufferMaxSize(l), l.MultilineParser)
+	input = newFileInput(l.File, dbPath, l.Name, getBufferMaxSize(l), l.MultilineParser, l.UnicodeEncoding)
 	filters = append(filters, newRecordModifierFilterForInput(l.Name, fbInputTypeTail, l.Attributes))
 	filters = parsePattern(l, fbGrepFieldForTail, filters)
 	return input, filters
@@ -548,7 +554,10 @@ func newFBExternalConfig(l LogExternalFBCfg) FBCfgExternal {
 	}
 }
 
-func newFileInput(filePath string, dbPath string, tag string, bufSize int, multilineParser string) FBCfgInput {
+func newFileInput(
+	filePath string, dbPath string, tag string,
+	bufSize int, multilineParser string, unicodeEncoding string,
+) FBCfgInput {
 	return FBCfgInput{
 		Name:            fbInputTypeTail,
 		PathKey:         "filePath",
@@ -558,6 +567,7 @@ func newFileInput(filePath string, dbPath string, tag string, bufSize int, multi
 		BufferMaxSize:   fmt.Sprintf("%dk", bufSize),
 		MemBufferLimit:  fmt.Sprintf("%dk", memBufferLimit),
 		MultilineParser: multilineParser,
+		UnicodeEncoding: unicodeEncoding,
 		SkipLongLines:   "On",
 	}
 }
