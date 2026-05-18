@@ -43,7 +43,7 @@ http:
   headers:
     "test-key": "test-value"
 `
-	f, err := ioutil.TempFile("", "opsmatic_config_test")
+	f, err := os.CreateTemp("", "opsmatic_config_test")
 	c.Assert(err, IsNil)
 	f.WriteString(config)
 	f.Close()
@@ -106,7 +106,7 @@ collector_url:  http://foo.bar
 license_key: `
 	for _, test := range keyTest {
 		finalConfig := fmt.Sprintf("%s%s", config, test.inputKey)
-		f, err := ioutil.TempFile("", "opsmatic_config_test")
+		f, err := os.CreateTemp("", "opsmatic_config_test")
 		c.Assert(err, IsNil)
 		f.WriteString(finalConfig)
 		f.Close()
@@ -194,7 +194,7 @@ proxy_config_plugin: false
 trunc_text_values: false
 verbose: 4
 `
-	f, err := ioutil.TempFile("", "yaml_config_test")
+	f, err := os.CreateTemp("", "yaml_config_test")
 	c.Assert(err, IsNil)
 	f.WriteString(configStr)
 	f.Close()
@@ -247,6 +247,7 @@ license_key: abc123
 	c.Assert(cfg.Log.File, Equals, "agent.log")
 }
 
+//nolint:varnamelen
 func (s *ConfigSuite) TestWrongFormatDurations(c *C) {
 	// Given wrong duration format
 	configStr := `
@@ -254,7 +255,7 @@ license_key: abc123
 startup_connection_timeout: a duck
 startup_connection_retry_time: cow and pineapples
 `
-	f, err := ioutil.TempFile("", "wrong_yaml_config_test")
+	f, err := os.CreateTemp("", "wrong_yaml_config_test")
 	c.Assert(err, IsNil)
 	f.WriteString(configStr)
 	f.Close()
@@ -389,10 +390,24 @@ func (s *ConfigSuite) TestCalculateCollectorURL(c *C) {
 		{license: "0123456789012345678901234567890123456789", expectURL: "https://infra-api.newrelic.com", staging: false, fedramp: false},
 		// non-region license, staging true
 		{license: "0123456789012345678901234567890123456789", expectURL: "https://staging-infra-api.newrelic.com", staging: true, fedramp: false},
-		// four letter region
+		// two letter region eu
 		{license: "eu01xx6789012345678901234567890123456789", expectURL: "https://infra-api.eu.newrelic.com", staging: false, fedramp: false},
-		// four letter region
+		// two letter region eu, staging
 		{license: "eu01xx6789012345678901234567890123456789", expectURL: "https://staging-infra-api.eu.newrelic.com", staging: true, fedramp: false},
+		// two letter region jp
+		{
+			license:   "jpxxxx6789012345678901234567890123456789",
+			expectURL: "https://infra-api.jp.nr-data.net",
+			staging:   false,
+			fedramp:   false,
+		},
+		// two letter region jp, staging
+		{
+			license:   "jpxxxx6789012345678901234567890123456789",
+			expectURL: "https://staging-infra-api.jp.nr-data.net",
+			staging:   true,
+			fedramp:   false,
+		},
 		// non-region license, fedramp true
 		{license: "0123456789012345678901234567890123456789", expectURL: "https://gov-infra-api.newrelic.com", staging: false, fedramp: true},
 	}
@@ -445,6 +460,22 @@ func (s *ConfigSuite) TestCalculateDimensionalMetricURL(c *C) {
 			"https://staging-metric-api.eu.newrelic.com",
 		},
 		{
+			"Default URL, jp license region, no collector URL",
+			"jpxxxx6789012345678901234567890123456789",
+			"",
+			false,
+			false,
+			"https://metric-api.jp.nr-data.net",
+		},
+		{
+			"Staging URL, jp license region, no collector URL",
+			"jpxxxx6789012345678901234567890123456789",
+			"",
+			true,
+			false,
+			"https://staging-metric-api.jp.nr-data.net",
+		},
+		{
 			"Default URL, fedramp flag, no collector URL",
 			"0123456789012345678901234567890123456789",
 			"",
@@ -468,6 +499,7 @@ func (s *ConfigSuite) TestCalculateDimensionalMetricURL(c *C) {
 	}
 }
 
+//nolint:exhaustruct
 func (s *ConfigSuite) TestCalculateIdentityURL(c *C) {
 	testcases := []struct {
 		license   string
@@ -483,6 +515,18 @@ func (s *ConfigSuite) TestCalculateIdentityURL(c *C) {
 		{license: "eu01xx6789012345678901234567890123456789", expectURL: defaultIdentityURLEu, staging: false},
 		// four letter region
 		{license: "eu01xx6789012345678901234567890123456789", expectURL: defaultIdentityStagingURLEu, staging: true},
+		// two letter region jp
+		{
+			license:   "jpxxxx6789012345678901234567890123456789",
+			expectURL: fmt.Sprintf(baseIdentityURLRegion, "jp"),
+			staging:   false, fedramp: false,
+		},
+		// two letter region jp, staging
+		{
+			license:   "jpxxxx6789012345678901234567890123456789",
+			expectURL: fmt.Sprintf(baseIdentityStagingURLRegion, "jp"),
+			staging:   true, fedramp: false,
+		},
 		// five letter region
 		{license: "gov01x6789012345678901234567890123456789", expectURL: defaultIdentityURL, staging: false},
 		// five letter region
@@ -496,6 +540,7 @@ func (s *ConfigSuite) TestCalculateIdentityURL(c *C) {
 	}
 }
 
+//nolint:exhaustruct
 func (s *ConfigSuite) TestCalculateCmdChannelURL(c *C) {
 	testcases := []struct {
 		license   string
@@ -511,6 +556,18 @@ func (s *ConfigSuite) TestCalculateCmdChannelURL(c *C) {
 		{license: "eu01xx6789012345678901234567890123456789", expectURL: defaultCmdChannelURLEu, staging: false},
 		// four letter region
 		{license: "eu01xx6789012345678901234567890123456789", expectURL: defaultCmdChannelStagingURLEu, staging: true},
+		// two letter region jp
+		{
+			license:   "jpxxxx6789012345678901234567890123456789",
+			expectURL: fmt.Sprintf(baseCmdChannelURLRegion, "jp"),
+			staging:   false, fedramp: false,
+		},
+		// two letter region jp, staging
+		{
+			license:   "jpxxxx6789012345678901234567890123456789",
+			expectURL: fmt.Sprintf(baseCmdChannelStagingURLRegion, "jp"),
+			staging:   true, fedramp: false,
+		},
 		// five letter region
 		{license: "gov01x6789012345678901234567890123456789", expectURL: defaultCmdChannelURL, staging: false},
 		// five letter region
@@ -604,6 +661,7 @@ func TestConfig_SetBoolValueByYamlAttribute(t *testing.T) {
 	assert.Error(t, c.SetBoolValueByYamlAttribute("no_a_value", false))
 }
 
+//nolint:varnamelen
 func (s *ConfigSuite) Test_ParseIncludeMatchingRules(c *C) {
 	config := `
 license_key: test
@@ -614,7 +672,7 @@ include_matching_metrics:
   process.executable:
     - regex "^some-process" 
 `
-	f, err := ioutil.TempFile("", "include_matching_rules_config_test")
+	f, err := os.CreateTemp("", "include_matching_rules_config_test")
 	c.Assert(err, IsNil)
 	_, err = f.WriteString(config)
 	c.Assert(err, IsNil)
@@ -1162,7 +1220,7 @@ license_key: "xxx"
 }
 
 func createTestFile(data []byte) (*os.File, error) {
-	tmp, err := ioutil.TempFile("", "loadconfig")
+	tmp, err := os.CreateTemp("", "loadconfig")
 	if err != nil {
 		return nil, err
 	}
@@ -1172,4 +1230,27 @@ func createTestFile(data []byte) (*os.File, error) {
 	}
 	tmp.Close()
 	return tmp, nil
+}
+
+func TestNrDomainForRegion(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name   string
+		prefix string
+		want   string
+	}{
+		{"empty prefix (US)", "", oldNRDomain},
+		{"eu region", "eu.", oldNRDomain},
+		{"jp region", "jp.", newNRDomain},
+		{"jp subregion jp01", "jp01.", newNRDomain},
+		{"single char prefix", "j", oldNRDomain},
+	}
+	for _, tc := range cases {
+		testCase := tc
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tc.want, nrDomainForRegion(tc.prefix))
+		})
+	}
 }

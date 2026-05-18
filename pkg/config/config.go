@@ -2035,7 +2035,21 @@ func calculateCollectorURL(licenseKey string, staging, fedramp bool) string {
 		return defaultSecureFederalURL
 	}
 
-	return fmt.Sprintf(baseCollectorURL, urlEnvironmentPrefix(staging), urlRegionPrefix(licenseKey))
+	prefix := urlRegionPrefix(licenseKey)
+	domain := nrDomainForRegion(prefix)
+
+	return fmt.Sprintf(baseCollectorURL, urlEnvironmentPrefix(staging), prefix, domain)
+}
+
+// nrDomainForRegion returns the NR domain to use based on the URL region prefix.
+// It compares only the first two chars of prefix against newRegions, since subregions
+// (e.g. "jp01") share the same two-char base ("jp") as their parent region.
+func nrDomainForRegion(prefix string) string {
+	if len(prefix) >= 2 && strings.Contains(newRegions, prefix[:2]) {
+		return newNRDomain
+	}
+
+	return oldNRDomain
 }
 
 func calculateIdentityURL(licenseKey string, staging, fedramp bool) string {
@@ -2049,19 +2063,29 @@ func calculateIdentityURL(licenseKey string, staging, fedramp bool) string {
 }
 
 func calculateIdentityProductionURL(licenseKey string) string {
-	// only EU supported
 	if license.IsRegionEU(licenseKey) {
 		return defaultIdentityURLEu
 	}
-	return defaultIdentityURL
+
+	r := license.GetRegionForURL(licenseKey)
+	if r == "" {
+		return defaultIdentityURL
+	}
+
+	return fmt.Sprintf(baseIdentityURLRegion, r)
 }
 
 func calculateIdentityStagingURL(licenseKey string) string {
-	// only EU supported
 	if license.IsRegionEU(licenseKey) {
 		return defaultIdentityStagingURLEu
 	}
-	return defaultIdentityStagingURL
+
+	r := license.GetRegionForURL(licenseKey)
+	if r == "" {
+		return defaultIdentityStagingURL
+	}
+
+	return fmt.Sprintf(baseIdentityStagingURLRegion, r)
 }
 
 func calculateCmdChannelURL(licenseKey string, staging, fedramp bool) string {
@@ -2075,19 +2099,29 @@ func calculateCmdChannelURL(licenseKey string, staging, fedramp bool) string {
 }
 
 func calculateCmdChannelProductionURL(licenseKey string) string {
-	// only EU supported
 	if license.IsRegionEU(licenseKey) {
 		return defaultCmdChannelURLEu
 	}
-	return defaultCmdChannelURL
+
+	r := license.GetRegionForURL(licenseKey)
+	if r == "" {
+		return defaultCmdChannelURL
+	}
+
+	return fmt.Sprintf(baseCmdChannelURLRegion, r)
 }
 
 func calculateCmdChannelStagingURL(licenseKey string) string {
-	// only EU supported
 	if license.IsRegionEU(licenseKey) {
 		return defaultCmdChannelStagingURLEu
 	}
-	return defaultCmdChannelStagingURL
+
+	r := license.GetRegionForURL(licenseKey)
+	if r == "" {
+		return defaultCmdChannelStagingURL
+	}
+
+	return fmt.Sprintf(baseCmdChannelStagingURLRegion, r)
 }
 
 func calculateSelfInstrumentationApmHost(licenseKey string, staging bool, fedramp bool) string {
@@ -2097,15 +2131,21 @@ func calculateSelfInstrumentationApmHost(licenseKey string, staging bool, fedram
 	if fedramp {
 		return defaultSecureFederalAPMCollectorHost
 	}
+
 	return calculateSelfInstrumentationApmProductionHost(licenseKey)
 }
 
 func calculateSelfInstrumentationApmProductionHost(licenseKey string) string {
-	// only EU supported
 	if license.IsRegionEU(licenseKey) {
 		return defaultAPMCollectorHostEu
 	}
-	return defaultAPMCollectorHost
+
+	r := license.GetRegionForURL(licenseKey)
+	if r == "" {
+		return defaultAPMCollectorHost
+	}
+
+	return fmt.Sprintf(baseAPMCollectorHostRegion, r)
 }
 
 func calculateDimensionalMetricURL(collectorURL string, licenseKey string, staging, fedramp bool) string {
@@ -2117,7 +2157,10 @@ func calculateDimensionalMetricURL(collectorURL string, licenseKey string, stagi
 		return defaultSecureFederalMetricURL
 	}
 
-	return fmt.Sprintf(baseDimensionalMetricURL, urlEnvironmentPrefix(staging), urlRegionPrefix(licenseKey))
+	prefix := urlRegionPrefix(licenseKey)
+	domain := nrDomainForRegion(prefix)
+
+	return fmt.Sprintf(baseDimensionalMetricURL, urlEnvironmentPrefix(staging), prefix, domain)
 }
 
 func urlEnvironmentPrefix(staging bool) string {
@@ -2128,11 +2171,18 @@ func urlEnvironmentPrefix(staging bool) string {
 }
 
 func urlRegionPrefix(licenseKey string) string {
+	// leaving this to not change anything for EU, will have to be optimised when we have clarity for
+	// all the regions.
 	if license.IsRegionEU(licenseKey) {
 		return "eu."
 	}
 
-	return ""
+	r := license.GetRegionForURL(licenseKey)
+	if r == "" {
+		return ""
+	}
+
+	return r + "."
 }
 
 func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err error) {

@@ -5,6 +5,7 @@
 package logs
 
 import (
+	"fmt"
 	"os"
 	"regexp"
 	"runtime"
@@ -77,15 +78,51 @@ var outputBlock = FBCfgOutput{
 	HTTPClientTimeout: "10",
 }
 
+func TestNewNROutput_JPRegion(t *testing.T) {
+	cfg := &config.LogForward{
+		License: "jpxxxx6789012345678901234567890123456789",
+	}
+
+	output := newNROutput(cfg)
+
+	assert.Equal(t, fmt.Sprintf(baseEndpointRegion, "jp"), output.Endpoint)
+}
+
+func TestNewNROutput_EURegion(t *testing.T) {
+	cfg := &config.LogForward{
+		License: "eu01xx6789012345678901234567890123456789",
+	}
+
+	output := newNROutput(cfg)
+
+	assert.Equal(t, euEndpoint, output.Endpoint)
+}
+
+func TestNewNROutput_USRegion(t *testing.T) {
+	cfg := &config.LogForward{
+		License: "0123456789012345678901234567890123456789",
+	}
+
+	output := newNROutput(cfg)
+
+	assert.Empty(t, output.Endpoint)
+}
+
 func TestNewFBConf(t *testing.T) {
 	outputBlockFedramp := outputBlock
 	outputBlockFedramp.Endpoint = fedrampEndpoint
+	outputBlockJP := outputBlock
+	outputBlockJP.LicenseKey = "jpxxxx6789012345678901234567890123456789"
+	outputBlockJP.Endpoint = fmt.Sprintf(baseEndpointRegion, "jp")
 	outputBlockMultipleRetries := outputBlock
 
 	logFwdCfgMultipleRetries := logFwdCfg
 	logFwdCfgMultipleRetries.RetryLimit = "4"
 	outputBlockMultipleRetries.Retry_Limit = "4"
 	outputBlockMultipleRetries.HTTPClientTimeout = "10"
+
+	logFwdCfgJP := logFwdCfg
+	logFwdCfgJP.License = "jpxxxx6789012345678901234567890123456789"
 
 	tests := []struct {
 		name   string
@@ -172,6 +209,30 @@ func TestNewFBConf(t *testing.T) {
 				filterEntityBlock,
 			},
 			Output: outputBlockFedramp,
+		}},
+		{"single input jp", logFwdCfgJP, LogsCfg{
+			{
+				Name: "log-file",
+				File: "file.path",
+			},
+		}, FBCfg{
+			Inputs: []FBCfgInput{
+				{
+					Name:           "tail",
+					Tag:            "log-file",
+					DB:             dbDbPath,
+					Path:           "file.path",
+					BufferMaxSize:  "128k",
+					MemBufferLimit: "16384k",
+					SkipLongLines:  "On",
+					PathKey:        "filePath",
+				},
+			},
+			Filters: []FBCfgFilter{
+				inputRecordModifier("tail", "log-file"),
+				filterEntityBlock,
+			},
+			Output: outputBlockJP,
 		}},
 		{"input file + filter", logFwdCfg, LogsCfg{
 			{
