@@ -1,0 +1,87 @@
+name: Publish Infrastructure Agent Release Notes
+
+on:
+  # to be enabled once stable
+  # release:
+  #   types:
+  #     - released
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish docs for (e.g. 1.55.0)'
+        required: true
+        type: string
+
+env:
+  DESTINATION_REPO: newrelic/docs-website
+  DESTINATION_FOLDER: src/content/docs/release-notes/agent-release-notes/infrastructure-release-notes
+
+jobs:
+  publish-release-notes:
+    name: Create and Publish Release Notes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Resolve tag and set names
+        id: meta
+        run: |
+          TAG="${{ github.event.release.tag_name || inputs.tag }}"
+          cleaned=$(echo "$TAG" | sed 's/\./-/g')
+          echo "agent_tag=$TAG" >> $GITHUB_OUTPUT
+          echo "branch_name=infra-agent-release-notes-${cleaned}" >> $GITHUB_OUTPUT
+          echo "notes_file=infrastructure-agent-${cleaned}.mdx" >> $GITHUB_OUTPUT
+
+      - name: Generate release notes file
+        run: .github/workflows/scripts/generate_release_notes.sh "${{ steps.meta.outputs.agent_tag }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Copy file to docs-website branch
+        uses: dmnemec/copy_file_to_another_repo_action@c93037aa10fa8893de271f19978c980d0c1a9b37 # tag v1.1.1
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.OHAI_BOT_GITHUB_TOKEN }}
+        with:
+          source_file: "${{ steps.meta.outputs.notes_file }}"
+          destination_repo: "${{ env.DESTINATION_REPO }}"
+          destination_folder: "${{ env.DESTINATION_FOLDER }}"
+          user_email: "infrastructure-eng@newrelic.com"
+          user_name: "nr-ohai-agent-bot"
+          destination_branch: "develop"
+          destination_branch_create: "${{ steps.meta.outputs.branch_name }}"
+          commit_message: "chore(infrastructure agent): add release notes for v${{ steps.meta.outputs.agent_tag }}"
+
+      - name: Create pull request
+        run: gh pr create --base "develop" --repo "$REPO" --head "$HEAD" --title "$TITLE" --body "$BODY"
+        env:
+          GH_TOKEN: ${{ secrets.OHAI_BOT_GITHUB_TOKEN }}
+          REPO: "https://github.com/${{ env.DESTINATION_REPO }}"
+          HEAD: "${{ steps.meta.outputs.branch_name }}"
+          TITLE: "Infrastructure Agent Release Notes for v${{ steps.meta.outputs.agent_tag }}"
+          BODY: "This is an automated PR generated when the Infrastructure agent is released. Please merge as soon as possible."
+
+  delete-branch-on-fail:
+    name: Delete branch on fail
+    needs: [publish-release-notes]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    if: failure()
+    steps:
+      - name: Checkout docs-website
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          token: ${{ secrets.OHAI_BOT_GITHUB_TOKEN }}
+          repository: ${{ env.DESTINATION_REPO }}
+
+      - name: Delete branch
+        run: |
+          TAG="${{ github.event.release.tag_name || inputs.tag }}"
+          cleaned=$(echo "$TAG" | sed 's/\./-/g')
+          git push origin --delete "infra-agent-release-notes-${cleaned}" --force || true
