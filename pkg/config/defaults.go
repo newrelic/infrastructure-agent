@@ -21,8 +21,8 @@ const (
 	defaultCmdChannelStagingURL          = "https://staging-infrastructure-command-api.newrelic.com"
 	defaultIdentityURL                   = "https://identity-api.newrelic.com"
 	defaultIdentityStagingURL            = "https://staging-identity-api.newrelic.com"
-	baseCollectorURL                     = "https://%sinfra-api.%snewrelic.com"
-	baseDimensionalMetricURL             = "https://%smetric-api.%snewrelic.com"
+	baseCollectorURL                     = "https://%sinfra-api.%s%s"
+	baseDimensionalMetricURL             = "https://%smetric-api.%s%s"
 	defaultSecureFederalURL              = "https://gov-infra-api.newrelic.com"
 	defaultSecureFederalMetricURL        = "https://gov-metric-api.newrelic.com"
 	defaultSecureFedralIdentityURL       = "https://gov-identity-api.newrelic.com"
@@ -31,6 +31,14 @@ const (
 	defaultAPMCollectorHostEu            = "collector.eu.newrelic.com"
 	defaultSecureFederalAPMCollectorHost = "gov-collector.newrelic.com"
 	defaultAPMCollectorHostStaging       = "staging-collector.newrelic.com"
+	baseIdentityURLRegion                = "https://identity-api.%s.nr-data.net"
+	baseIdentityStagingURLRegion         = "https://staging-identity-api.%s.nr-data.net"
+	baseCmdChannelURLRegion              = "https://infrastructure-command-api.%s.nr-data.net"
+	baseCmdChannelStagingURLRegion       = "https://staging-infrastructure-command-api.%s.nr-data.net"
+	baseAPMCollectorHostRegion           = "collector.%s.nr-data.net"
+	newRegions                           = "jp" // add new regions to the same string e.g. "jp,in"
+	newNRDomain                          = "nr-data.net"
+	oldNRDomain                          = "newrelic.com"
 )
 
 // Default configurable values

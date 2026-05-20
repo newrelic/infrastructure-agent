@@ -23,6 +23,7 @@ var cfgLogger = log.WithComponent("integrations.Supervisor.Config").WithField("p
 // FluentBit default values.
 const (
 	euEndpoint              = "https://log-api.eu.newrelic.com/log/v1"
+	baseEndpointRegion      = "https://log-api.%s.nr-data.net/log/v1"
 	fedrampEndpoint         = "https://gov-log-api.newrelic.com/log/v1"
 	stagingEndpoint         = "https://staging-log-api.newrelic.com/log/v1"
 	logRecordModifierSource = "nri-agent"
@@ -759,6 +760,8 @@ func newNROutput(cfg *config.LogForward) FBCfgOutput {
 
 	if license.IsRegionEU(cfg.License) {
 		ret.Endpoint = euEndpoint
+	} else if r := license.GetRegionForURL(cfg.License); r != "" {
+		ret.Endpoint = fmt.Sprintf(baseEndpointRegion, r)
 	}
 
 	return ret
