@@ -5,10 +5,12 @@ package core
 import (
 	"bytes"
 	context2 "context"
+	"encoding/json"
 	agentTypes "github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
 	"github.com/stretchr/testify/suite"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -28,6 +30,32 @@ import (
 type InventoryTestSuite struct {
 	suite.Suite
 	AsyncInventoryHandlerEnabled bool
+}
+
+func waitForRequestWithInventorySource(requestCh <-chan http.Request, source string, timeout time.Duration) (http.Request, bool) {
+	timeoutCh := time.After(timeout)
+	for {
+		select {
+		case req := <-requestCh:
+			reqBytes, err := io.ReadAll(req.Body)
+			if err != nil {
+				continue
+			}
+			req.Body = io.NopCloser(bytes.NewBuffer(reqBytes))
+
+			sent := inventoryapi.PostDeltaBody{}
+			if err := json.Unmarshal(reqBytes, &sent); err != nil {
+				continue
+			}
+			for _, delta := range sent.Deltas {
+				if delta.Source == source {
+					return req, true
+				}
+			}
+		case <-timeoutCh:
+			return http.Request{}, false
+		}
+	}
 }
 
 func TestInventorySuite_AsyncInventoryHandlerEnabled(t *testing.T) {
@@ -441,10 +469,8 @@ func (s *InventoryTestSuite) TestDeltas_HarvestAfterStoreCleanup() {
 	plugin.harvest()
 
 	// That has successfully submitted data on start
-	var req1 http.Request
-	select {
-	case req1 = <-testClient.RequestCh:
-	case <-time.After(timeout):
+	req1, ok := waitForRequestWithInventorySource(testClient.RequestCh, "metadata/attributes", timeout)
+	if !ok {
 		assert.FailNow(t, "timeout while waiting for a response")
 	}
 	fixture.AssertRequestContainsInventoryDeltas(t, req1, []*inventoryapi.RawDelta{
@@ -464,17 +490,13 @@ func (s *InventoryTestSuite) TestDeltas_HarvestAfterStoreCleanup() {
 	// When the server gets a reset all request
 	plugin.value = "ho"
 	plugin.harvest()
-	select {
-	case _ = <-testClient.RequestCh:
-	case <-time.After(timeout):
+	if _, ok = waitForRequestWithInventorySource(testClient.RequestCh, "test/dummy", timeout); !ok {
 		assert.FailNow(t, "timeout while waiting for a response")
 	}
 
 	// The re-connectable plugins are run again and the removed inventory is resubmitted
-	var req2 http.Request
-	select {
-	case req2 = <-testClient.RequestCh:
-	case <-time.After(timeout):
+	req2, ok := waitForRequestWithInventorySource(testClient.RequestCh, "metadata/attributes", timeout)
+	if !ok {
 		assert.FailNow(t, "timeout while waiting for a response")
 	}
 	fixture.AssertRequestContainsInventoryDeltas(t, req2, []*inventoryapi.RawDelta{
