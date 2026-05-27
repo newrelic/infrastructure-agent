@@ -227,6 +227,7 @@ Write-Host ""
 $credential = $null
 $isGMSA = $false
 $isBuiltinTarget = $false  # set here so all branches have it defined; updated per-branch below
+$builtinNames = @('LocalSystem', 'LocalService', 'NetworkService', 'SYSTEM')
 
 # Check if using gMSA
 if ($GMSAUsername) {
@@ -285,8 +286,7 @@ public static extern void CredFree(IntPtr credentialPtr);
             Write-Host "Username: $Username" -ForegroundColor Green
 
             # Compute $isBuiltinTarget now that $Username is known for this branch
-            $isBuiltinTarget = ($Username -notlike '*\*') -or ($Username -match '^NT (AUTHORITY|SERVICE)\\')
-
+            $isBuiltinTarget = ($builtinNames -icontains $Username) -or ($Username -match '^NT (AUTHORITY|SERVICE)\\')
             if ($cred.CredentialBlobSize -gt 0) {
                 $securePassword = New-Object System.Security.SecureString
                 $charCount = $cred.CredentialBlobSize / 2
@@ -318,7 +318,7 @@ else {
     $Username = Read-Host "Username"
 
     # Built-in accounts (LocalSystem, NT AUTHORITY\*, NT SERVICE\*) don't have a password
-    $isBuiltinTarget = ($Username -notlike '*\*') -or ($Username -match '^NT (AUTHORITY|SERVICE)\\')
+    $isBuiltinTarget = ($builtinNames -icontains $Username) -or ($Username -match '^NT (AUTHORITY|SERVICE)\\')
     if (-not $isBuiltinTarget) {
         $securePassword = Read-Host -AsSecureString "Password"
         $credential = New-Object System.Management.Automation.PSCredential($Username, $securePassword)
@@ -326,7 +326,7 @@ else {
 }
 
 # Validate username format for regular accounts
-if (-not $isGMSA -and $Username -notlike "*\*") {
+if (-not $isGMSA -and $Username -notlike "*\*" -and ($builtinNames -inotcontains $Username)) {
     $Username = ".\$Username"
 }
 
@@ -718,7 +718,7 @@ try {
     if ($isGMSA -or $isBuiltinTarget) {
         $result = $serviceWMI.Change($null, $null, $null, $null, $null, $null, $Username, $null, $null, $null, $null)
     } else {
-        $result = $serviceWMI.Change($null, $null, $null, $null, $null, $null, $credential.UserName, $credential.GetNetworkCredential().Password, $null, $null, $null)
+        $result = $serviceWMI.Change($null, $null, $null, $null, $null, $null, $UserName, $credential.GetNetworkCredential().Password, $null, $null, $null)
     }
 
     if ($result.ReturnValue -ne 0) {
