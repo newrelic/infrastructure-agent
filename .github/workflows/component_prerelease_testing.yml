@@ -68,6 +68,9 @@ jobs:
             PLAY\sRECAP\s
             Apply\scomplete!
             ok=\d+\s+changed=\d+\s+unreachable=\d+\s+failed=\d+\s+skipped=\d+\s+rescued=\d+\s+ignored=\d+
+            ERROR!
+            fatal:
+            Error:
 
   harvest-tests:
     needs: [ provision ]
@@ -218,6 +221,9 @@ jobs:
             PLAY\sRECAP\s
             Apply\scomplete!
             ok=\d+\s+changed=\d+\s+unreachable=\d+\s+failed=\d+\s+skipped=\d+\s+rescued=\d+\s+ignored=\d+
+            ERROR!
+            fatal:
+            Error:
 
   provision-clean-windows:
       if: ${{ inputs.PLATFORM == 'windows' }}
@@ -259,3 +265,7 @@ jobs:
               PLAY\sRECAP\s
               Apply\scomplete!
               ok=\d+\s+changed=\d+\s+unreachable=\d+\s+failed=\d+\s+skipped=\d+\s+rescued=\d+\s+ignored=\d+
+              ERROR!
+              fatal:
+              Error:
+              │\s+Error
