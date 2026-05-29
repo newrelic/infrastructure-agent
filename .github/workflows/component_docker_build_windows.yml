@@ -66,11 +66,16 @@ jobs:
         shell: bash
         run: echo "BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_ENV
 
+      - name: Strip v prefix from tag
+        id: version
+        shell: bash
+        run: echo "tag=${TAG#v}" >> $GITHUB_OUTPUT
+
       - name: Build Windows binaries
         shell: pwsh
         timeout-minutes: 30
         run: |
-          .\build\windows\build.ps1 -arch amd64 -version ${{ inputs.TAG }} -commit "$env:GITHUB_SHA" -date "$env:BUILD_DATE" -certThumbprint "$env:certThumbprint"
+          .\build\windows\build.ps1 -arch amd64 -version ${{ steps.version.outputs.tag }} -commit "$env:GITHUB_SHA" -date "$env:BUILD_DATE" -certThumbprint "$env:certThumbprint"
 
       - name: Prepare binaries for Docker build
         shell: pwsh
@@ -87,28 +92,28 @@ jobs:
         shell: bash
         run: |
           rm -rf build/container/workspace
-          make -C build/container/ workspace/assets IMAGE_VERSION=${{ inputs.TAG }}-rc
+          make -C build/container/ workspace/assets IMAGE_VERSION=${{ steps.version.outputs.tag }}-rc
 
       - name: Build Windows container (ltsc2022)
         shell: bash
         timeout-minutes: 15
         run: |
-          AGENT_VERSION=${{ inputs.TAG }} \
-          IMAGE_VERSION=${{ inputs.TAG }}-rc \
-          DOCKER_BUILD_TAG_PREFIX=${{ inputs.TAG }}-rc \
+          AGENT_VERSION=${{ steps.version.outputs.tag }} \
+          IMAGE_VERSION=${{ steps.version.outputs.tag }}-rc \
+          DOCKER_BUILD_TAG_PREFIX=${{ steps.version.outputs.tag }}-rc \
           make -C build/container/ build/base-windows-ltsc2022
 
       - name: Test Windows container (ltsc2022)
         shell: pwsh
         timeout-minutes: 5
         run: |
-          docker run --rm newrelic/infrastructure:${{ inputs.TAG }}-rc-ltsc2022 --version
+          docker run --rm newrelic/infrastructure:${{ steps.version.outputs.tag }}-rc-ltsc2022 --version
 
       - name: Push Windows container (ltsc2022)
         if: ${{ inputs.PUBLISH == true }}
         shell: bash
         run: |
-          docker push newrelic/infrastructure:${{ inputs.TAG }}-rc-ltsc2022
+          docker push newrelic/infrastructure:${{ steps.version.outputs.tag }}-rc-ltsc2022
 
   build-windows-ltsc2019:
     name: Build Windows container (ltsc2019)
@@ -150,11 +155,16 @@ jobs:
         shell: bash
         run: echo "BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_ENV
 
+      - name: Strip v prefix from tag
+        id: version
+        shell: bash
+        run: echo "tag=${TAG#v}" >> $GITHUB_OUTPUT
+
       - name: Build Windows binaries
         shell: pwsh
         timeout-minutes: 30
         run: |
-          .\build\windows\build.ps1 -arch amd64 -version ${{ inputs.TAG }} -commit "$env:GITHUB_SHA" -date "$env:BUILD_DATE" -certThumbprint "$env:certThumbprint"
+          .\build\windows\build.ps1 -arch amd64 -version ${{ steps.version.outputs.tag }} -commit "$env:GITHUB_SHA" -date "$env:BUILD_DATE" -certThumbprint "$env:certThumbprint"
 
       - name: Prepare binaries for Docker build
         shell: pwsh
@@ -171,25 +181,25 @@ jobs:
         shell: bash
         run: |
           rm -rf build/container/workspace
-          make -C build/container/ workspace/assets IMAGE_VERSION=${{ inputs.TAG }}-rc
+          make -C build/container/ workspace/assets IMAGE_VERSION=${{ steps.version.outputs.tag }}-rc
 
       - name: Build Windows container (ltsc2019)
         shell: bash
         timeout-minutes: 15
         run: |
-          AGENT_VERSION=${{ inputs.TAG }} \
-          IMAGE_VERSION=${{ inputs.TAG }}-rc \
-          DOCKER_BUILD_TAG_PREFIX=${{ inputs.TAG }}-rc \
+          AGENT_VERSION=${{ steps.version.outputs.tag }} \
+          IMAGE_VERSION=${{ steps.version.outputs.tag }}-rc \
+          DOCKER_BUILD_TAG_PREFIX=${{ steps.version.outputs.tag }}-rc \
           make -C build/container/ build/base-windows-ltsc2019
 
       - name: Test Windows container (ltsc2019)
         shell: pwsh
         timeout-minutes: 5
         run: |
-          docker run --rm --isolation=hyperv newrelic/infrastructure:${{ inputs.TAG }}-rc-ltsc2019 --version
+          docker run --rm --isolation=hyperv newrelic/infrastructure:${{ steps.version.outputs.tag }}-rc-ltsc2019 --version
 
       - name: Push Windows container (ltsc2019)
         if: ${{ inputs.PUBLISH == true }}
         shell: bash
         run: |
-          docker push newrelic/infrastructure:${{ inputs.TAG }}-rc-ltsc2019
+          docker push newrelic/infrastructure:${{ steps.version.outputs.tag }}-rc-ltsc2019
