@@ -36,7 +36,7 @@ jobs:
     name: Create MSI & Upload into GH Release assets
     runs-on: windows-2025
     env:
-      GOPATH: ${{ env.GOPATH }}
+      GOPATH: ${{ inputs.GOPATH }}
     defaults:
       run:
         working-directory: ${{ env.REPO_WORKDIR }}
