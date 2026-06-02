@@ -51,6 +51,10 @@ jobs:
           echo "This file should be present after running the procedure" > PERPETUAL_FILE.md
           aws s3 cp PERPETUAL_FILE.md ${{ env.TEST_FOLDER_ABS_PATH }}/PERPETUAL_FILE.md
 
+      - name: clean up .original folder leftover from a previous failed run
+        run: |
+          aws s3 rm --recursive ${{ env.TEST_FOLDER_ABS_PATH }}.original/
+
       - name: ensure folders from previous execution do not exist
         run: |
           set +e
