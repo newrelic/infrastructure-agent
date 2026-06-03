@@ -764,6 +764,10 @@ func newNROutput(cfg *config.LogForward) FBCfgOutput {
 		ret.Endpoint = fmt.Sprintf(baseEndpointRegion, r)
 	}
 
+	if cfg.Endpoint != "" {
+		ret.Endpoint = cfg.Endpoint
+	}
+
 	return ret
 }
 

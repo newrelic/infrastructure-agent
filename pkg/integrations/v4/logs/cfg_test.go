@@ -108,12 +108,25 @@ func TestNewNROutput_USRegion(t *testing.T) {
 	assert.Empty(t, output.Endpoint)
 }
 
+func TestNewNROutput_CustomEndpointOverride(t *testing.T) {
+	cfg := &config.LogForward{
+		License:  "eu01xx6789012345678901234567890123456789",
+		Endpoint: "https://custom-log.example.com/log/v1",
+	}
+
+	output := newNROutput(cfg)
+
+	assert.Equal(t, "https://custom-log.example.com/log/v1", output.Endpoint)
+}
+
 func TestNewFBConf(t *testing.T) {
 	outputBlockFedramp := outputBlock
 	outputBlockFedramp.Endpoint = fedrampEndpoint
 	outputBlockJP := outputBlock
 	outputBlockJP.LicenseKey = "jpxxxx6789012345678901234567890123456789"
 	outputBlockJP.Endpoint = fmt.Sprintf(baseEndpointRegion, "jp")
+	outputBlockCustom := outputBlock
+	outputBlockCustom.Endpoint = "https://custom-log.example.com/log/v1"
 	outputBlockMultipleRetries := outputBlock
 
 	logFwdCfgMultipleRetries := logFwdCfg
@@ -123,6 +136,9 @@ func TestNewFBConf(t *testing.T) {
 
 	logFwdCfgJP := logFwdCfg
 	logFwdCfgJP.License = "jpxxxx6789012345678901234567890123456789"
+
+	logFwdCfgCustom := logFwdCfg
+	logFwdCfgCustom.Endpoint = "https://custom-log.example.com/log/v1"
 
 	tests := []struct {
 		name   string
@@ -136,6 +152,32 @@ func TestNewFBConf(t *testing.T) {
 			FBCfg{
 				Inputs:  []FBCfgInput{},
 				Filters: []FBCfgFilter{},
+			},
+		},
+		{
+			"custom endpoint", logFwdCfgCustom,
+			LogsCfg{{
+				Name: "log-file",
+				File: "file.path",
+			}},
+			FBCfg{
+				Inputs: []FBCfgInput{
+					{
+						Name:           "tail",
+						Tag:            "log-file",
+						DB:             dbDbPath,
+						Path:           "file.path",
+						BufferMaxSize:  "128k",
+						MemBufferLimit: "16384k",
+						SkipLongLines:  "On",
+						PathKey:        "filePath",
+					},
+				},
+				Filters: []FBCfgFilter{
+					inputRecordModifier("tail", "log-file"),
+					filterEntityBlock,
+				},
+				Output: outputBlockCustom,
 			},
 		},
 		{"single input", logFwdCfg, LogsCfg{
