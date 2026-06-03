@@ -929,7 +929,7 @@ type Config struct {
 	// LoggingEndpoint overrides the default New Relic logs endpoint used by the Fluent Bit output plugin.
 	// Default: Empty
 	// Public: Yes
-	LoggingEndpoint string `yaml:"logging_endpoint" envconfig:"logging_endpoint" public:"true"`
+	LoggingEndpoint string `envconfig:"logging_endpoint" public:"true" yaml:"logging_endpoint"`
 
 	// FluentBitExePath is the location from where the agent can execute fluent-bit.
 	// Default (Linux): /opt/td-agent-bit/bin/td-agent-bit
