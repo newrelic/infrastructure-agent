@@ -1,6 +1,9 @@
 # Windows host
 enable_process_metrics: false
-nria_collector_url: "https://infra-api.jp.newrelic.com"
+nria_collector_url: "https://infra-api.jp.nr-data.net"
+nria_staging: false
+nria_identity_url: "https://identity-api.jp.nr-data.net"
+nria_command_channel_url: "https://infrastructure-command-api.jp.nr-data.net"
 nria_log_level: "smart"
 nria_log_forward: true
 nria_log_rotation_mb: 500
