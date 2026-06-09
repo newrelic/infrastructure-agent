@@ -926,6 +926,11 @@ type Config struct {
 	// Public: Yes
 	LoggingHTTPClientTimeout string `envconfig:"logging_http_client_timeout" public:"true" yaml:"logging_http_client_timeout"` //nolint:lll
 
+	// LoggingEndpoint overrides the default New Relic logs endpoint used by the Fluent Bit output plugin.
+	// Default: Empty
+	// Public: Yes
+	LoggingEndpoint string `envconfig:"logging_endpoint" public:"true" yaml:"logging_endpoint"`
+
 	// FluentBitExePath is the location from where the agent can execute fluent-bit.
 	// Default (Linux): /opt/td-agent-bit/bin/td-agent-bit
 	// Default (Windows): C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\logging\fluent-bit
@@ -1565,6 +1570,7 @@ type LogForward struct {
 	ConfigsDir        string
 	HomeDir           string
 	License           string
+	Endpoint          string
 	IsFedramp         bool
 	IsStaging         bool
 	ProxyCfg          LogForwardProxy
@@ -1588,6 +1594,7 @@ func NewLogForward(config *Config, troubleshoot Troubleshoot) LogForward {
 		ConfigsDir:        config.LoggingConfigsDir,
 		HomeDir:           config.LoggingHomeDir,
 		License:           config.License,
+		Endpoint:          config.LoggingEndpoint,
 		IsFedramp:         config.Fedramp,
 		IsStaging:         config.Staging,
 		RetryLimit:        config.LoggingRetryLimit,
