@@ -1,5 +1,6 @@
 # Windows host
 enable_process_metrics: false
+nria_collector_url: "https://infra-api.jp.newrelic.com"
 nria_log_level: "smart"
 nria_log_forward: true
 nria_log_rotation_mb: 500
