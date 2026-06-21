@@ -15,6 +15,7 @@
         nria_log_rotation_max_files: 5
         nria_log_rotation_compressed: true
         forward_docker_logs: true
+        staging: "{{ false if nr_license_key | regex_search('^jp') else true }}"
 
       block:
 
@@ -24,6 +25,15 @@
           vars:
             repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
             fips_enabled: "{{ '-fips' in inventory_hostname }}"
+
+        - name: remove broken docker-compose plugin if not a valid binary
+          ansible.builtin.shell: |
+            for path in "$HOME/.docker/cli-plugins/docker-compose" "/usr/local/lib/docker/cli-plugins/docker-compose"; do
+              if [ -f "$path" ] && ! file "$path" | grep -q "ELF\|Mach-O\|PE32"; then
+                rm -f "$path"
+              fi
+            done
+          become: true
 
         - name: install latest agent in container
           ansible.builtin.include_role:
@@ -50,6 +60,8 @@
 
   tasks:
     - name: Installation tests suite
+      vars:
+        staging: "{{ false if nr_license_key | regex_search('^jp') else true }}"
 
       block:
 
