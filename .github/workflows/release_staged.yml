@@ -15,6 +15,10 @@ on:
         required: true
         default: 'all'
 
+
+permissions:
+  contents: read
+
 jobs:
   publishing-to-s3-linux:
     name: Publish linux artifacts into s3 production bucket

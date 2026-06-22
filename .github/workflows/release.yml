@@ -7,6 +7,10 @@ on:
     tags:
       - '*'
 
+
+permissions:
+  contents: read
+
 jobs:
 
   publishing-to-s3-linux:

@@ -3,6 +3,10 @@ name: . 👥 License notices
 on:
   push:
 
+
+permissions:
+  contents: read
+
 env:
   DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}

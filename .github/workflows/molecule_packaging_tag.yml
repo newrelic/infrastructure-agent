@@ -13,6 +13,10 @@ on:
         default: false
         required: false
 
+
+permissions:
+  contents: read
+
 jobs:
   molecule-packaging-tests:
     uses: ./.github/workflows/component_molecule_packaging.yml

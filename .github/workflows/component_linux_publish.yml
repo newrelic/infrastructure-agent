@@ -43,6 +43,10 @@ on:
         required: true
         type: string
 
+
+permissions:
+  contents: read
+
 env:
   GPG_MAIL: 'infrastructure-eng@newrelic.com'
   GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
