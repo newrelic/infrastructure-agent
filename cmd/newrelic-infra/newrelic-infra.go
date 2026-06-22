@@ -470,7 +470,12 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	)
 
 	if fbIntCfg.IsLogForwarderAvailable() {
-		logCfgLoader := logs.NewFolderLoader(logFwCfg, agt.Context.Identity, agt.Context.HostnameResolver())
+		useZstdCompression, exists := ffManager.GetFeatureFlag(fflag.FlagFluentBitZstdCompression)
+		if !exists {
+			alog.Error("could not retrieve feature flag status for ZSTD compression, defaulting to GZIP compression")
+			useZstdCompression = false
+		}
+		logCfgLoader := logs.NewFolderLoader(logFwCfg, agt.Context.Identity, agt.Context.HostnameResolver(), useZstdCompression)
 		logSupervisor := v4.NewFBSupervisor(
 			fbIntCfg,
 			logCfgLoader,
