@@ -294,25 +294,70 @@ func TestObfuscateSensitiveData_MatchButNothingToObfuscate(t *testing.T) {
 	assert.True(t, isField)
 	assert.Equal(t, data, result)
 }
-
 func TestObfuscateSensitiveData_CommandLineWithArgs(t *testing.T) {
-	data := "/usr/bin/custom_cmd -pwd 1234 -arg2 abc"
-	expected := "/usr/bin/custom_cmd -pwd <HIDDEN> -arg2 abc"
-	matched, isField, actual := ObfuscateSensitiveData(data)
+	tests := []struct {
+		name     string
+		data     string
+		expected string
+		isField  bool
+	}{
+		{
+			name:     "Custom command with password and mongodb uri",
+			data:     "/usr/bin/custom_cmd -pwd 1234 --mongodb.uri mongodb://admin:testrw@host:27017/admin -arg2 abc",
+			expected: "/usr/bin/custom_cmd -pwd <HIDDEN> --mongodb.uri mongodb://admin:<HIDDEN>@host:27017/admin -arg2 abc",
+			isField:  false,
+		},
+		{
+			name:     "Prometheus exporter with mongodb uri and sensitive word in password",
+			data:     "/usr/local/prometheus-exporters/bin/mongodb3-exporter --mongodb.uri mongodb://admin:testpass@localhost:27017/admin --no-mongodb.direct-connect --collector.dbstats --collector.collstats",
+			expected: "/usr/local/prometheus-exporters/bin/mongodb3-exporter --mongodb.uri mongodb://admin:<HIDDEN>@localhost:27017/admin --no-mongodb.direct-connect --collector.dbstats --collector.collstats",
+			isField:  true,
+		},
+	}
 
-	assert.True(t, matched)
-	assert.False(t, isField)
-	assert.Equal(t, expected, actual)
+	//nolint:varnamelen
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			matched, isField, actual := ObfuscateSensitiveData(tc.data)
+			assert.True(t, matched)
+			assert.Equal(t, tc.isField, isField)
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
 }
 
 func TestObfuscateSensitiveData_ConfigProtocolOutput(t *testing.T) {
-	data := `{"config_protocol_version":"1","action":"register_config","config_name":"cfg-nri-ibmmq","config":{"variables":{},"integrations":[{"name":"nri-prometheus","config":{"standalone":false,"verbose":"1","transformations":[],"integration_metadata":{"version":"0.3.0","name":"nri-ibmmq""targets":["urls":["http://localhost:9157"]}]}},{"name":"ibmmq-exporter","timeout":0,  "exec":[    "/usr/local/prometheus-exporters/bin/ibmmq-exporter","--mongodb.uri","mongodb://root:supercomplex@localhost:17017","--ibmmq.connName","localhost(1414)","--ibmmq.queueManager","QM1","--ibmmq.channel","DEV.ADMIN.SVRCONN","--ibmmq.userid","admin","--ibmmq.httpListenPort","9157","--ibmmq.monitoredQueues","!SYSTEM.*,*","--ibmmq.monitoredChannels","*","--ibmmq.httpMetricPath","/metrics","--ibmmq.useStatus"],"env":{"IBMMQ_CONNECTION_PASSWORD":"passw0rd","LD_LIBRARY_PATH":"/opt/mqm/lib64:/usr/lib64","HOME":"/tmp"}}]}}`
-	expected := `{"config_protocol_version":"1","action":"register_config","config_name":"cfg-nri-ibmmq","config":{"variables":{},"integrations":[{"name":"nri-prometheus","config":{"standalone":false,"verbose":"1","transformations":[],"integration_metadata":{"version":"0.3.0","name":"nri-ibmmq""targets":["urls":["http://localhost:9157"]}]}},{"name":"ibmmq-exporter","timeout":0,  "exec":[    "/usr/local/prometheus-exporters/bin/ibmmq-exporter","--mongodb.uri","mongodb://root:<HIDDEN>@localhost:17017","--ibmmq.connName","localhost(1414)","--ibmmq.queueManager","QM1","--ibmmq.channel","DEV.ADMIN.SVRCONN","--ibmmq.userid","admin","--ibmmq.httpListenPort","9157","--ibmmq.monitoredQueues","!SYSTEM.*,*","--ibmmq.monitoredChannels","*","--ibmmq.httpMetricPath","/metrics","--ibmmq.useStatus"],"env":{"IBMMQ_CONNECTION_PASSWORD":"<HIDDEN>","LD_LIBRARY_PATH":"/opt/mqm/lib64:/usr/lib64","HOME":"/tmp"}}]}}`
-	matched, isField, actual := ObfuscateSensitiveData(data)
+	tests := []struct {
+		name     string
+		data     string
+		expected string
+		isField  bool
+	}{
+		{
+			name:     "Config protocol output with password and mongodb uri",
+			data:     `{"config_protocol_version":"1","action":"register_config","config_name":"cfg-nri-ibmmq","config":{"variables":{},"integrations":[{"name":"nri-prometheus","config":{"standalone":false,"verbose":"1","transformations":[],"integration_metadata":{"version":"0.3.0","name":"nri-ibmmq""targets":["urls":["http://localhost:9157"]}]}},{"name":"ibmmq-exporter","timeout":0,  "exec":[    "/usr/local/prometheus-exporters/bin/ibmmq-exporter","--mongodb.uri","mongodb://root:supercomplex@localhost:17017","--ibmmq.connName","localhost(1414)","--ibmmq.queueManager","QM1","--ibmmq.channel","DEV.ADMIN.SVRCONN","--ibmmq.userid","admin","--ibmmq.httpListenPort","9157","--ibmmq.monitoredQueues","!SYSTEM.*,*","--ibmmq.monitoredChannels","*","--ibmmq.httpMetricPath","/metrics","--ibmmq.useStatus"],"env":{"IBMMQ_CONNECTION_PASSWORD":"passw0rd","LD_LIBRARY_PATH":"/opt/mqm/lib64:/usr/lib64","HOME":"/tmp"}}]}}`, //nolint
+			expected: `{"config_protocol_version":"1","action":"register_config","config_name":"cfg-nri-ibmmq","config":{"variables":{},"integrations":[{"name":"nri-prometheus","config":{"standalone":false,"verbose":"1","transformations":[],"integration_metadata":{"version":"0.3.0","name":"nri-ibmmq""targets":["urls":["http://localhost:9157"]}]}},{"name":"ibmmq-exporter","timeout":0,  "exec":[    "/usr/local/prometheus-exporters/bin/ibmmq-exporter","--mongodb.uri","mongodb://root:<HIDDEN>@localhost:17017","--ibmmq.connName","localhost(1414)","--ibmmq.queueManager","QM1","--ibmmq.channel","DEV.ADMIN.SVRCONN","--ibmmq.userid","admin","--ibmmq.httpListenPort","9157","--ibmmq.monitoredQueues","!SYSTEM.*,*","--ibmmq.monitoredChannels","*","--ibmmq.httpMetricPath","/metrics","--ibmmq.useStatus"],"env":{"IBMMQ_CONNECTION_PASSWORD":"<HIDDEN>","LD_LIBRARY_PATH":"/opt/mqm/lib64:/usr/lib64","HOME":"/tmp"}}]}}`,     //nolint
+			isField:  false,
+		},
+		{
+			name:     "Config protocol output with special characters password and mongodb uri",
+			data:     `{"config_protocol_version":"1","action":"register_config","config_name":"cfg-nri-ibmmq","config":{"variables":{},"integrations":[{"name":"nri-prometheus","config":{"standalone":false,"verbose":"1","transformations":[],"integration_metadata":{"version":"0.3.0","name":"nri-ibmmq""targets":["urls":["http://user:r#wsq@localhost:9157"]}]}},{"name":"ibmmq-exporter","timeout":0,  "exec":[    "/usr/local/prometheus-exporters/bin/ibmmq-exporter","--mongodb.uri","mongodb://newrelic:rW#ord@host:27017/admin","--ibmmq.connName","localhost(1414)","--ibmmq.queueManager","QM1","--ibmmq.channel","DEV.ADMIN.SVRCONN","--ibmmq.userid","admin","--ibmmq.httpListenPort","9157","--ibmmq.monitoredQueues","!SYSTEM.*,*","--ibmmq.monitoredChannels","*","--ibmmq.httpMetricPath","/metrics","--ibmmq.useStatus"],"env":{"IBMMQ_CONNECTION_PASSWORD":"passw0rd","LD_LIBRARY_PATH":"/opt/mqm/lib64:/usr/lib64","HOME":"/tmp"}}]}}`,      //nolint
+			expected: `{"config_protocol_version":"1","action":"register_config","config_name":"cfg-nri-ibmmq","config":{"variables":{},"integrations":[{"name":"nri-prometheus","config":{"standalone":false,"verbose":"1","transformations":[],"integration_metadata":{"version":"0.3.0","name":"nri-ibmmq""targets":["urls":["http://user:<HIDDEN>@localhost:9157"]}]}},{"name":"ibmmq-exporter","timeout":0,  "exec":[    "/usr/local/prometheus-exporters/bin/ibmmq-exporter","--mongodb.uri","mongodb://newrelic:<HIDDEN>@host:27017/admin","--ibmmq.connName","localhost(1414)","--ibmmq.queueManager","QM1","--ibmmq.channel","DEV.ADMIN.SVRCONN","--ibmmq.userid","admin","--ibmmq.httpListenPort","9157","--ibmmq.monitoredQueues","!SYSTEM.*,*","--ibmmq.monitoredChannels","*","--ibmmq.httpMetricPath","/metrics","--ibmmq.useStatus"],"env":{"IBMMQ_CONNECTION_PASSWORD":"<HIDDEN>","LD_LIBRARY_PATH":"/opt/mqm/lib64:/usr/lib64","HOME":"/tmp"}}]}}`, //nolint
+			isField:  false,
+		},
+	}
 
-	assert.True(t, matched)
-	assert.False(t, isField)
-	assert.Equal(t, expected, actual)
+	//nolint:varnamelen
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			matched, isField, actual := ObfuscateSensitiveData(tc.data)
+			assert.True(t, matched)
+			assert.Equal(t, tc.isField, isField)
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
 }
 
 func TestObfuscateSensitiveData_EnvironmentVariable(t *testing.T) {
@@ -417,7 +462,9 @@ func TestObfuscateSensitiveData_ObfuscateSensitiveDataFromArray(t *testing.T) {
 		"obfuscare_next_pass",
 		"12345",
 		"NRIA_KEY=1234",
+		"NewrelicMongoDB=pa$$word@",
 		"final",
+		"mongodb_uri mongodb://newrelictest:NewrelicMongoDB@localhost:27017/admin",
 	}
 
 	expected := []string{
@@ -427,7 +474,9 @@ func TestObfuscateSensitiveData_ObfuscateSensitiveDataFromArray(t *testing.T) {
 		"obfuscare_next_pass",
 		"<HIDDEN>",
 		"NRIA_KEY=<HIDDEN>",
+		"NewrelicMongoDB=pa$$word@",
 		"final",
+		"mongodb_uri mongodb://newrelictest:<HIDDEN>@localhost:27017/admin",
 	}
 
 	actual := ObfuscateSensitiveDataFromArray(data)
