@@ -10,7 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.31.8
 	github.com/aws/aws-sdk-go-v2/service/kms v1.45.1
 	github.com/beevik/ntp v0.3.0
-	github.com/containerd/containerd v1.7.32
+	github.com/containerd/containerd v1.7.33
 	github.com/containerd/containerd/api v1.8.0
 	github.com/containerd/typeurl/v2 v2.2.0
 	github.com/coreos/go-systemd/v22 v22.5.0
