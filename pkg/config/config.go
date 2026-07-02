@@ -987,6 +987,11 @@ type Config struct {
 	// Public: Yes
 	TCPServerEnabled bool `yaml:"tcp_server_enabled" envconfig:"tcp_server_enabled"`
 
+	// TCPServerHost sets the host address the TCP server binds to.
+	// Default: localhost
+	// Public: Yes
+	TCPServerHost string `envconfig:"tcp_server_host" yaml:"tcp_server_host"`
+
 	// TCPServerPort Set the port for tcp server to receive integration payloads.
 	// Default: 8002
 	// Public: Yes
@@ -1898,6 +1903,7 @@ func NewConfig() *Config {
 		LoggingRetryLimit:             defaultLoggingRetryLimit,
 		HTTPServerHost:                defaultHTTPServerHost,
 		HTTPServerPort:                defaultHTTPServerPort,
+		TCPServerHost:                 defaultTCPServerHost,
 		TCPServerPort:                 defaultTCPServerPort,
 		StatusServerPort:              defaultStatusServerPort,
 		DockerApiVersion:              DefaultDockerApiVersion,

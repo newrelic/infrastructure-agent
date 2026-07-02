@@ -24,15 +24,15 @@ func TestPayloadFwServer_Serve(t *testing.T) {
 	require.NoError(t, err)
 
 	e := &testemit.RecordEmitter{}
-	pf := NewServer(e, port)
+	server := NewServer(e, "localhost", port)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	go pf.Serve(ctx)
+	go server.Serve(ctx)
 
 	payloadWritten := make(chan struct{})
 	go func() {
-		pf.WaitUntilReady()
+		server.WaitUntilReady()
 		conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", port))
 		require.NoError(t, err)
 		_, err = conn.Write([]byte(strings.Replace(`{

@@ -446,7 +446,7 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	}
 
 	if c.TCPServerEnabled {
-		go socketapi.NewServer(integrationEmitter, c.TCPServerPort).Serve(agt.Context.Ctx)
+		go socketapi.NewServer(integrationEmitter, c.TCPServerHost, c.TCPServerPort).Serve(agt.Context.Ctx)
 	}
 
 	// Start all plugins we want the agent to run.
