@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"syscall"
 
 	"github.com/sirupsen/logrus"
@@ -27,8 +28,9 @@ const (
 	idlePriorityClass        = 0x00000040
 	normalPriorityClass      = 0x00000020
 	realtimePriorityClass    = 0x00000100
-	agentTemporaryFolder     = "C:\\ProgramData\\New Relic\\newrelic-infra\\tmp"
 )
+
+var agentTemporaryFolder = filepath.Join(os.Getenv("ProgramData"), "New Relic", "newrelic-infra", "tmp")
 
 var priorityClasses = map[string]uint{
 	"Normal":      normalPriorityClass,
