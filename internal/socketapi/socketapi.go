@@ -20,6 +20,7 @@ const IntegrationName = "socket-api"
 
 // Server runtime for socket API server.
 type Server struct {
+	host    string
 	port    int
 	logger  log.Entry
 	emitter emitter.Emitter
@@ -27,9 +28,10 @@ type Server struct {
 }
 
 // NewServer creates a new socket API server.
-func NewServer(emitter emitter.Emitter, port int) *Server {
+func NewServer(emitter emitter.Emitter, host string, port int) *Server {
 	logger := log.WithComponent("Server")
 	return &Server{
+		host:    host,
 		port:    port,
 		logger:  logger,
 		emitter: emitter,
@@ -45,7 +47,10 @@ func (s *Server) Serve(ctx context.Context) {
 		return
 	}
 
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", s.port))
+	//nolint:exhaustruct
+	lc := net.ListenConfig{}
+
+	listener, err := lc.Listen(ctx, "tcp", fmt.Sprintf("%s:%d", s.host, s.port))
 	if err != nil {
 		s.logger.WithField("port", s.port).WithError(err).Error("trying to listen")
 		return
