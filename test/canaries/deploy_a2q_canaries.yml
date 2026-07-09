@@ -21,6 +21,7 @@
           vars:
             is_containerized: true
             target_version: "{{ current_version }}-rc"
+            install_fluent_bit: true
             display_name: "{{ inventory_hostname }}-current"
             nr_license_key: "{{ nr_license_keys_a2q[((config_num | int) - 1) * 2] }}"
 
@@ -30,6 +31,7 @@
           vars:
             is_containerized: true
             target_version: "{{ previous_version }}"
+            install_fluent_bit: true
             display_name: "{{ inventory_hostname }}-previous"
             nr_license_key: "{{ nr_license_keys_a2q[((config_num | int) - 1) * 2 + 1] }}"
 
