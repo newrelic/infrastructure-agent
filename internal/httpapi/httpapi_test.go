@@ -300,6 +300,74 @@ func (suite *HTTPAPITestSuite) TestServe_Health() {
 	}
 }
 
+func (suite *HTTPAPITestSuite) TestServe_Health_CustomPort() {
+	// Validates /v1/status/health works on non-default port configurations.
+	// Default status server port is 8003; ports like 18003 must behave identically.
+	serverOk := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer serverOk.Close()
+
+	serverUnhealthy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	defer serverUnhealthy.Close()
+
+	logger := log.WithComponent(suite.T().Name())
+	timeout := 100 * time.Millisecond
+	transport := &http.Transport{}
+	emptyIDProvide := func() entity.Identity { return entity.EmptyIdentity }
+	emptyEntityKeyProvider := func() string { return "" }
+
+	tests := []struct {
+		name           string
+		healthEndpoint string
+		expectCode     int
+		expectHealthy  bool
+	}{
+		{"healthy backend on custom port", serverOk.URL, http.StatusOK, true},
+		{"unhealthy backend on custom port", serverUnhealthy.URL, http.StatusInternalServerError, false},
+	}
+
+	for _, testCase := range tests {
+		suite.Run(testCase.name, func() {
+			port, err := networkHelpers.TCPPort()
+			suite.Require().NoError(err)
+
+			ctx := suite.T().Context()
+
+			r := status.NewReporter(
+				ctx, logger, []string{}, testCase.healthEndpoint,
+				timeout, transport, emptyIDProvide, emptyEntityKeyProvider, "user-agent", "agent-key",
+			)
+			em := &testemit.RecordEmitter{}
+			server, err := NewServer(r, em)
+			suite.Require().NoError(err)
+			server.Status.Enable("localhost", port)
+
+			go server.Serve(ctx)
+
+			server.waitUntilReady()
+
+			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d%s", port, statusHealthAPIPath), nil)
+			suite.Require().NoError(err)
+
+			res, err := http.DefaultClient.Do(req)
+			suite.Require().NoError(err)
+
+			defer res.Body.Close()
+
+			suite.Equal(testCase.expectCode, res.StatusCode)
+
+			var gotReport status.HealthReport
+
+			_ = json.NewDecoder(res.Body).Decode(&gotReport)
+
+			suite.Equal(testCase.expectHealthy, gotReport.Healthy)
+		})
+	}
+}
+
 func (suite *HTTPAPITestSuite) TestServe_IngestData() {
 	port, err := networkHelpers.TCPPort()
 	require.NoError(suite.T(), err)
@@ -524,6 +592,85 @@ func (suite *HTTPAPITestSuite) TestServer_ServerErrorsShouldBeLogged() {
 		assert.Equal(suite.T(), expectedEntries[i]["component"], entry.Data["component"])
 		assert.ErrorAs(suite.T(), entry.Data["error"].(error), expectedEntries[i]["error"]) // nolint:forcetypeassert
 	}
+}
+
+func TestComponentConfig_Enable_SetsConfiguredAddress(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		host     string
+		port     int
+		wantAddr string
+	}{
+		{"default port", "localhost", 8003, "localhost:8003"},
+		{"custom port 18003", "localhost", 18003, "localhost:18003"},
+		{"high custom port", "localhost", 49152, "localhost:49152"},
+	}
+	for _, tc := range tests { //nolint:varnamelen
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			var cc ComponentConfig
+			cc.Enable(tc.host, tc.port)
+			assert.True(t, cc.enabled)
+			assert.Equal(t, tc.wantAddr, cc.address)
+		})
+	}
+}
+
+func (suite *HTTPAPITestSuite) TestServe_StatusServerBindsToConfiguredPort() {
+	// Verifies the server binds to the port passed to Enable(), not the default (8003).
+	serverOk := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer serverOk.Close()
+
+	configuredPort, err := networkHelpers.TCPPort()
+	suite.Require().NoError(err)
+
+	logger := log.WithComponent(suite.T().Name())
+	timeout := 100 * time.Millisecond
+	transport := &http.Transport{}
+	emptyIDProvide := func() entity.Identity { return entity.EmptyIdentity }
+	emptyEntityKeyProvider := func() string { return "" }
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	r := status.NewReporter(
+		ctx, logger, []string{}, serverOk.URL,
+		timeout, transport, emptyIDProvide, emptyEntityKeyProvider, "user-agent", "agent-key",
+	)
+	em := &testemit.RecordEmitter{}
+	server, err := NewServer(r, em)
+	suite.Require().NoError(err)
+	server.Status.Enable("localhost", configuredPort)
+
+	go server.Serve(ctx)
+
+	server.waitUntilReady()
+
+	// Configured port must respond.
+	res, err := http.Get(fmt.Sprintf("http://localhost:%d%s", configuredPort, statusHealthAPIPath))
+	suite.Require().NoError(err)
+
+	defer res.Body.Close()
+
+	suite.Require().Equal(http.StatusOK, res.StatusCode)
+
+	// An unrelated port must not respond (server is not listening there).
+	otherPort, err := networkHelpers.TCPPort()
+	suite.Require().NoError(err)
+
+	client := http.Client{Timeout: 200 * time.Millisecond}
+	resp, err := client.Get(fmt.Sprintf("http://localhost:%d%s", otherPort, statusHealthAPIPath))
+
+	if resp != nil {
+		_ = resp.Body.Close()
+	}
+
+	suite.Require().Error(err, "health endpoint must not be reachable on a port other than the configured one")
 }
 
 type noopReporter struct{}
