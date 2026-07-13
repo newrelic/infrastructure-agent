@@ -21,7 +21,6 @@
           vars:
             is_containerized: true
             target_version: "{{ current_version }}-rc"
-            install_fluent_bit: true
             display_name: "{{ inventory_hostname }}-current"
             nr_license_key: "{{ nr_license_keys_a2q[((config_num | int) - 1) * 2] }}"
 
@@ -31,8 +30,23 @@
           vars:
             is_containerized: true
             target_version: "{{ previous_version }}"
-            install_fluent_bit: true
             display_name: "{{ inventory_hostname }}-previous"
+            nr_license_key: "{{ nr_license_keys_a2q[((config_num | int) - 1) * 2 + 1] }}"
+
+        - name: set up latest fluent bit log forwarding
+          ansible.builtin.include_role:
+            name: caos.ansible_roles.fluent_bit
+          vars:
+            # The role runs one container per call; invoke it once per version to A/B.
+            fluent_bit_version: "{{ current_fb_version }}"
+            nr_license_key: "{{ nr_license_keys_a2q[((config_num | int) - 1) * 2] }}"
+
+        - name: set up previous fluent bit log forwarding
+          ansible.builtin.include_role:
+            name: caos.ansible_roles.fluent_bit
+          vars:
+            # The role runs one container per call; invoke it once per version to A/B.
+            fluent_bit_version: "{{ previous_fb_version }}"
             nr_license_key: "{{ nr_license_keys_a2q[((config_num | int) - 1) * 2 + 1] }}"
 
 
