@@ -21,6 +21,7 @@ on:
 
 permissions:
   contents: read
+  security-events: write
 
 env:
   FIPS: ${{ inputs.FIPS == true && '-fips' || '' }}
