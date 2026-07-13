@@ -975,14 +975,28 @@ func (s *Store) UpdatePluginsInventoryCache(entityKey string) (err error) {
 // StorePluginOutput will take a PluginOutput blob and write it to the
 // data directory in JSON format
 func (s *Store) SavePluginSource(entityKey, category, term string, source map[string]interface{}) (err error) {
+	// Guard against path traversal (NR-574888): `term` originates from integration
+	// payloads — including the unauthenticated HTTP/TCP ingest endpoints — and is used
+	// as a filename. It must be a single, safe path component: no path separators and
+	// no ".." traversal. SanitizeFileName strips separators and other unsafe characters,
+	// so any difference means the term is not a valid, standalone filename.
+	if term == "" || term != helpers.SanitizeFileName(term) || strings.Contains(term, "..") {
+		return fmt.Errorf("invalid inventory plugin term %q: must be a plain filename without path separators or traversal", term)
+	}
+
 	// construct the plugin data directory and ensure it exists
 	outputDir := s.PluginDirPath(category, entityKey)
 	if err = disk.MkdirAll(outputDir, DATA_DIR_MODE); err != nil {
 		return err
 	}
 
-	// construct the output file path
-	outputFile := fmt.Sprintf("%s/%s.json", outputDir, term)
+	// construct the output file path (filepath.Join cleans the result)
+	outputFile := filepath.Join(outputDir, term+".json")
+
+	// Defence in depth: the resolved path must stay within outputDir.
+	if !strings.HasPrefix(outputFile, filepath.Clean(outputDir)+string(os.PathSeparator)) {
+		return fmt.Errorf("inventory plugin term %q escapes plugin directory %q", term, outputDir)
+	}
 
 	sourceB, err := json.Marshal(source)
 	if err != nil {
