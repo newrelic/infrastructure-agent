@@ -12,6 +12,10 @@ on:
         description: 'Repository endpoint to fetch packages from'
         default: "https://download.newrelic.com/infrastructure_agent"
 
+
+permissions:
+  contents: read
+
 env:
   TAG: ${{ inputs.TAG }}
   REPO_ENDPOINT: ${{ inputs.REPO_ENDPOINT }}

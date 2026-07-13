@@ -6,6 +6,10 @@ on:
     tags:
       - '*'
 
+
+permissions:
+  contents: read
+
 jobs:
   unit-test:
     uses: ./.github/workflows/component_linux_unit_test.yml

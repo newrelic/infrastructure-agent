@@ -8,6 +8,10 @@ on:
       DOCKER_HUB_PASSWORD:
         required: true
 
+
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Proxy tests
