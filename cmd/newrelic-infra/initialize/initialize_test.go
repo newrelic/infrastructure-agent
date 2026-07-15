@@ -7,12 +7,14 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/newrelic/infrastructure-agent/pkg/config"
+	v4 "github.com/newrelic/infrastructure-agent/pkg/integrations/v4"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	logHelper "github.com/newrelic/infrastructure-agent/test/log"
 )
@@ -23,7 +25,7 @@ var (
 )
 
 //nolint:tparallel
-func Test_emptyTemporaryFolder(t *testing.T) {
+func Test_emptyFbConfigTempFolder(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
@@ -38,32 +40,34 @@ func Test_emptyTemporaryFolder(t *testing.T) {
 			agentTempDir: "",
 		},
 		{
-			name:         "Some Random Existing Path should not be deleted",
-			agentTempDir: "/some/random/path",
+			name:         "Default path should be deleted",
+			agentTempDir: "/var/db/newrelic-infra/tmp",
+			removeFunc:   func(string) error { return nil },
+			mkdirFunc:    func(string, os.FileMode) error { return nil },
 		},
 		{
-			name:         "Default path should be deleted",
-			agentTempDir: agentTemporaryFolder,
+			name:         "Custom/non-default path should also be deleted",
+			agentTempDir: "/some/random/path",
 			removeFunc:   func(string) error { return nil },
 			mkdirFunc:    func(string, os.FileMode) error { return nil },
 		},
 		{
 			name:          "Error removing should log",
-			agentTempDir:  agentTemporaryFolder,
+			agentTempDir:  "/some/random/path",
 			removeFunc:    func(string) error { return errForRmdir },
 			mkdirFunc:     func(string, os.FileMode) error { return nil },
 			expectedError: fmt.Errorf("can't empty agent temporary folder: %w", errForRmdir),
 		},
 		{
 			name:          "Error creating should log",
-			agentTempDir:  agentTemporaryFolder,
+			agentTempDir:  "/some/random/path",
 			removeFunc:    func(string) error { return nil },
 			mkdirFunc:     func(string, os.FileMode) error { return errForMkdir },
 			expectedError: fmt.Errorf("can't create agent temporary folder: %w", errForMkdir),
 		},
 		{
 			name:          "Error creating and removing should log both",
-			agentTempDir:  agentTemporaryFolder,
+			agentTempDir:  "/some/random/path",
 			removeFunc:    func(string) error { return errForRmdir },
 			mkdirFunc:     func(string, os.FileMode) error { return errForMkdir },
 			expectedError: fmt.Errorf("can't empty agent temporary folder: %w", errForRmdir),
@@ -86,10 +90,39 @@ func Test_emptyTemporaryFolder(t *testing.T) {
 			hook := logHelper.NewInMemoryEntriesHook([]logrus.Level{logrus.FatalLevel, logrus.ErrorLevel})
 			log.AddHook(hook)
 
-			mkdirFunc = testCase.mkdirFunc
-			removeFunc = testCase.removeFunc
-			err := emptyTemporaryFolder(cfg)
+			var gotRemovePath, gotMkdirPath string
+
+			removeCalled, mkdirCalled := false, false
+
+			if testCase.removeFunc != nil {
+				removeFunc = func(path string) error {
+					removeCalled = true
+					gotRemovePath = path
+
+					return testCase.removeFunc(path)
+				}
+			}
+
+			if testCase.mkdirFunc != nil {
+				mkdirFunc = func(path string, mode os.FileMode) error {
+					mkdirCalled = true
+					gotMkdirPath = path
+
+					return testCase.mkdirFunc(path, mode)
+				}
+			}
+
+			err := emptyFbConfigTempFolder(cfg)
 			assert.Equal(t, testCase.expectedError, err)
+
+			expectedPath := filepath.Join(testCase.agentTempDir, v4.FbConfTempFolderNameDefault)
+			if removeCalled {
+				assert.Equal(t, expectedPath, gotRemovePath)
+			}
+
+			if mkdirCalled {
+				assert.Equal(t, expectedPath, gotMkdirPath)
+			}
 		})
 	}
 }

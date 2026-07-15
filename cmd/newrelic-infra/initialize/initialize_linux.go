@@ -23,7 +23,6 @@ import (
 )
 
 const (
-	agentTemporaryFolder       = "/var/db/newrelic-infra/tmp"
 	pidFolderPermissions       = 0o755
 	pidFilePermissions         = 0o644
 	integrationsDirPermissions = 0o755
@@ -32,6 +31,14 @@ const (
 // AgentService performs OS-specific initialization steps for the Agent service.
 // It is executed after the initialize.osProcess function.
 func AgentService(cfg *config.Config) error {
+	err := emptyFbConfigTempFolder(cfg)
+	if err != nil {
+		log.WithField("agentTempDir", cfg.AgentTempDir).
+			WithError(err).
+			Error("error emptying fb config temp folder")
+		os.Exit(1)
+	}
+
 	return nil
 }
 

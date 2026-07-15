@@ -1319,12 +1319,12 @@ type Config struct {
 	// Public: Yes
 	Http HttpConfig `yaml:"http" envconfig:"http"`
 
-	// AgentTempDir is the directory where the agent stores temporary files (i.e. fb config, discovery...)
-	// It will be DELETED on every agent restart only if it matches default value
+	// AgentTempDir is the directory where the agent stores temporary files (i.e. fb config).
+	// Its "fb" subfolder is emptied on every agent restart, regardless of whether this is
+	// set to its default value or to a custom location.
 	//
-	// Default (Linux): /var/db/newrelic-infra/tmp
-	// Default (MacOS AMD): /usr/local/var/db/newrelic-infra/tmp
-	// Default (MacOS ARM): /opt/homebrew/var/db/newrelic-infra/tmp
+	// Default (Linux): result of os.TempDir()
+	// Default (MacOS): result of os.TempDir()
 	// Default (Windows): C:\ProgramData\New Relic\newrelic-infra\tmp
 	// Public: No
 	AgentTempDir string `envconfig:"agent_temp_dir" yaml:"agent_temp_dir"`
