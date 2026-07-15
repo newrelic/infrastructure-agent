@@ -872,6 +872,17 @@ type Config struct {
 	// Public: No
 	CustomPluginInstallationDir string `yaml:"custom_plugin_installation_dir" envconfig:"custom_plugin_installation_dir" public:"false"`
 
+	// DisablePluginDefaultDirScan, when enabled, stops the agent from scanning the default integration
+	// locations, so it only loads integrations from the explicitly configured locations (safe_bin_dir,
+	// custom_plugin_installation_dir and plugin_dir). This avoids loading stale or conflicting integrations
+	// from the default locations. It skips, under agent_dir: custom-integrations, newrelic-integrations,
+	// bundled-plugins and plugins (integration binaries and v3 definitions); the default integration config
+	// dirs (e.g. /etc/newrelic-infra/integrations.d and agent_dir/integrations.d); and the legacy
+	// newrelic-infra-plugins.yml files.
+	// Default: false
+	// Public: No
+	DisablePluginDefaultDirScan bool `envconfig:"disable_plugin_default_dir_scan" public:"false" yaml:"disable_plugin_default_dir_scan"` //nolint:lll
+
 	// PluginDir Directory containing integrations configuration files of the integrations. Each integration has his
 	// own configuration file, named by default <integration_name>-config.yml, placed in a predefined location from
 	// which the agent will load on initialization.
@@ -2325,8 +2336,15 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 		cfg.FluentBitNRLibPath = filepath.Join(cfg.LoggingHomeDir, defaultFluentBitNRLib)
 	}
 
-	cfg.PluginInstanceDirs = helpers.RemoveEmptyAndDuplicateEntries(
-		[]string{cfg.PluginDir, defaultPluginInstanceDir, filepath.Join(cfg.AgentDir, defaultPluginActiveConfigsDir)})
+	// plugin_dir is the explicitly configured integration config dir and is always scanned. The default
+	// config dirs are skipped when DisablePluginDefaultDirScan is set.
+	pluginInstanceDirs := []string{cfg.PluginDir}
+	if !cfg.DisablePluginDefaultDirScan {
+		pluginInstanceDirs = append(pluginInstanceDirs,
+			defaultPluginInstanceDir, filepath.Join(cfg.AgentDir, defaultPluginActiveConfigsDir))
+	}
+
+	cfg.PluginInstanceDirs = helpers.RemoveEmptyAndDuplicateEntries(pluginInstanceDirs)
 
 	if cfg.Log.File == "" && runtime.GOOS == "windows" {
 		cfg.Log.File = "true"
@@ -2337,8 +2355,13 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 		nlog.WithField("LogFile", cfg.Log.File).Debug("Logging to file.")
 	}
 
-	// Caution: PluginConfigFiles is ALWAYS defined with the default value. Is this right? Be aware any change could affect backwards compatibilities.
-	cfg.PluginConfigFiles = defaultPluginConfigFiles
+	// PluginConfigFiles defaults to the standard newrelic-infra-plugins.yml locations.
+	// When DisablePluginDefaultDirScan is set these files are skipped.
+	if cfg.DisablePluginDefaultDirScan {
+		cfg.PluginConfigFiles = []string{}
+	} else {
+		cfg.PluginConfigFiles = defaultPluginConfigFiles
+	}
 
 	if cfg.PayloadCompressionLevel < gzip.NoCompression || cfg.PayloadCompressionLevel > gzip.BestCompression {
 		nlog.WithFields(logrus.Fields{
