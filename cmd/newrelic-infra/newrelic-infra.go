@@ -280,6 +280,13 @@ var aslog = wlog.WithComponent("AgentService").WithFields(logrus.Fields{
 func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 	pluginSourceDirs := getPluginSourceDirs(c)
 
+	integrationsMode := "standalone"
+	if c.DisablePluginDefaultDirScan {
+		integrationsMode = "agent-control-managed"
+	}
+
+	aslog.WithField("mode", integrationsMode).Info("Integration management mode")
+
 	v4ManagerConfig := v4.NewManagerConfig(
 		c.Log.VerboseEnabled(),
 		c.DefaultIntegrationsTempDir,
@@ -684,15 +691,19 @@ func checkEndpointReachable(
 }
 
 func getPluginSourceDirs(ac *config.Config) []string {
-	pluginSourceDirs := []string{
-		filepath.Join(ac.SafeBinDir, config.DefaultIntegrationsDir),
-		filepath.Join(ac.SafeBinDir, "custom-integrations"),
-		ac.CustomPluginInstallationDir,
-		filepath.Join(ac.AgentDir, "custom-integrations"),
-		filepath.Join(ac.AgentDir, config.DefaultIntegrationsDir),
-		filepath.Join(ac.AgentDir, "bundled-plugins"),
-		filepath.Join(ac.AgentDir, "plugins"),
+	pluginSourceDirs := []string{ac.CustomPluginInstallationDir}
+
+	if !ac.DisablePluginDefaultDirScan {
+		pluginSourceDirs = append(pluginSourceDirs,
+			filepath.Join(ac.SafeBinDir, config.DefaultIntegrationsDir),
+			filepath.Join(ac.SafeBinDir, "custom-integrations"),
+			filepath.Join(ac.AgentDir, "custom-integrations"),
+			filepath.Join(ac.AgentDir, config.DefaultIntegrationsDir),
+			filepath.Join(ac.AgentDir, "bundled-plugins"),
+			filepath.Join(ac.AgentDir, "plugins"),
+		)
 	}
+
 	return helpers.RemoveEmptyAndDuplicateEntries(pluginSourceDirs)
 }
 
