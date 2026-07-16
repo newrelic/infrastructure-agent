@@ -21,6 +21,7 @@
           vars:
             repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
             fips_enabled: "{{ '-fips' in inventory_hostname }}"
+            nr_license_key: "{{ nr_license_keys_a2q[((config_num | int) - 1) * 2] }}"
             fluent_bit_enabled: true
 
         - name: install latest agent in container
