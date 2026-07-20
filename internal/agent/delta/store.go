@@ -6,6 +6,7 @@ package delta
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -972,9 +973,39 @@ func (s *Store) UpdatePluginsInventoryCache(entityKey string) (err error) {
 	return
 }
 
+// ErrInvalidPluginPathComponent is returned when a plugin category or term cannot be used
+// safely as a filesystem path segment (e.g. it contains a path separator or is a bare "."/"..").
+var ErrInvalidPluginPathComponent = errors.New("invalid inventory plugin path component")
+
+// ErrPluginPathEscape is returned when the computed plugin output path would fall outside
+// the expected plugin data directory.
+var ErrPluginPathEscape = errors.New("plugin data path escapes data directory")
+
+// isValidPathComponent reports whether s is safe to use as a single filesystem
+// path segment: non-empty, not "." or "..", and unchanged by SanitizeFileName
+// (i.e. it contains none of the characters that function strips).
+func isValidPathComponent(s string) bool {
+	if s == "" || s == "." || s == ".." {
+		return false
+	}
+
+	return helpers.SanitizeFileName(s) == s
+}
+
 // StorePluginOutput will take a PluginOutput blob and write it to the
 // data directory in JSON format
 func (s *Store) SavePluginSource(entityKey, category, term string, source map[string]interface{}) (err error) {
+	// category and term can originate from an untrusted integration payload
+	// (e.g. the HTTP/TCP ingest endpoints); reject anything that isn't a plain
+	// path segment to prevent directory traversal.
+	if !isValidPathComponent(category) {
+		return fmt.Errorf("%w: category %q", ErrInvalidPluginPathComponent, category) //nolint:wrapcheck
+	}
+
+	if !isValidPathComponent(term) {
+		return fmt.Errorf("%w: term %q", ErrInvalidPluginPathComponent, term) //nolint:wrapcheck
+	}
+
 	// construct the plugin data directory and ensure it exists
 	outputDir := s.PluginDirPath(category, entityKey)
 	if err = disk.MkdirAll(outputDir, DATA_DIR_MODE); err != nil {
@@ -982,7 +1013,13 @@ func (s *Store) SavePluginSource(entityKey, category, term string, source map[st
 	}
 
 	// construct the output file path
-	outputFile := fmt.Sprintf("%s/%s.json", outputDir, term)
+	outputFile := filepath.Join(outputDir, term+".json")
+
+	// Defense in depth: ensure the resulting path is still within outputDir.
+	cleanOutputDir := filepath.Clean(outputDir) + string(os.PathSeparator)
+	if !strings.HasPrefix(filepath.Clean(outputFile), cleanOutputDir) {
+		return fmt.Errorf("%w: category %q term %q", ErrPluginPathEscape, category, term) //nolint:wrapcheck
+	}
 
 	sourceB, err := json.Marshal(source)
 	if err != nil {
