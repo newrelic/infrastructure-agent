@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"reflect"
 	"runtime"
 	"testing"
@@ -729,6 +730,104 @@ verbose: 0
 	assert.Equal(t, "xxx", cfg.License)
 	assert.Equal(t, "10.0.2.2:8888", cfg.Proxy)
 	assert.Equal(t, LogLevelInfo, cfg.Log.Level)
+}
+
+func TestLoadYamlConfig_disablePluginDefaultDirScan(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		yaml string
+		want bool
+	}{
+		{
+			// Customer does not set the option: it must default to false so the agent keeps scanning
+			// the default integration dirs (backward compatible).
+			name: "omitted defaults to false",
+			yaml: `license_key: "xxx"`,
+			want: false,
+		},
+		{
+			name: "explicitly enabled",
+			yaml: "license_key: \"xxx\"\ndisable_plugin_default_dir_scan: true",
+			want: true,
+		},
+		{
+			name: "explicitly disabled",
+			yaml: "license_key: \"xxx\"\ndisable_plugin_default_dir_scan: false",
+			want: false,
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			tmp, err := createTestFile([]byte(testCase.yaml))
+			require.NoError(t, err)
+
+			defer os.Remove(tmp.Name())
+
+			cfg, err := LoadConfig(tmp.Name())
+			require.NoError(t, err)
+
+			assert.Equal(t, testCase.want, cfg.DisablePluginDefaultDirScan)
+		})
+	}
+}
+
+// TestNormalizeConfig_disablePluginDefaultDirScan verifies the flag drops the default (standalone)
+// integration config dirs and the legacy newrelic-infra-plugins.yml files, keeping only plugin_dir.
+func TestNormalizeConfig_disablePluginDefaultDirScan(t *testing.T) {
+	t.Parallel()
+
+	const (
+		pluginDir = "/ac/integrations.d"
+		agentDir  = "/var/db/newrelic-infra"
+	)
+
+	agentConfigDir := filepath.Join(agentDir, defaultPluginActiveConfigsDir)
+
+	loadWith := func(t *testing.T, disable bool) *Config {
+		t.Helper()
+
+		yamlData := fmt.Sprintf(
+			"license_key: \"xxx\"\nagent_dir: %q\nplugin_dir: %q\ndisable_plugin_default_dir_scan: %t",
+			agentDir, pluginDir, disable)
+
+		tmp, err := createTestFile([]byte(yamlData))
+		require.NoError(t, err)
+
+		defer os.Remove(tmp.Name())
+
+		cfg, err := LoadConfig(tmp.Name())
+		require.NoError(t, err)
+
+		return cfg
+	}
+
+	t.Run("standalone scans default config dirs and legacy plugin files", func(t *testing.T) {
+		t.Parallel()
+
+		cfg := loadWith(t, false)
+
+		// agentConfigDir (agent_dir/integrations.d) is platform-independent and always appended in
+		// standalone mode; defaultPluginInstanceDir is only set on Linux/Windows, so we don't assert it here.
+		assert.Contains(t, cfg.PluginInstanceDirs, pluginDir)
+		assert.Contains(t, cfg.PluginInstanceDirs, agentConfigDir)
+		assert.Equal(t, defaultPluginConfigFiles, cfg.PluginConfigFiles)
+	})
+
+	t.Run("managed mode keeps only plugin_dir and drops legacy plugin files", func(t *testing.T) {
+		t.Parallel()
+
+		cfg := loadWith(t, true)
+
+		assert.Equal(t, []string{pluginDir}, cfg.PluginInstanceDirs)
+		assert.NotContains(t, cfg.PluginInstanceDirs, defaultPluginInstanceDir)
+		assert.NotContains(t, cfg.PluginInstanceDirs, agentConfigDir)
+		assert.Empty(t, cfg.PluginConfigFiles)
+	})
 }
 
 func TestLoadYamlConfig_withLogVariables(t *testing.T) {
