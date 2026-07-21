@@ -1,6 +1,5 @@
 collections:
   - name: git+https://github.com/newrelic-experimental/caos-ansible-roles.git#/caos.ansible_roles/
-    version: NR-551936
     type: git
 
 roles:
