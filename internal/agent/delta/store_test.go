@@ -1190,6 +1190,8 @@ func TestStore_SavePluginSource(t *testing.T) {
 		{"term with leading and trailing whitespace", "integration", "  term  ", false, nil},
 		{"term is only whitespace", "integration", "   ", false, nil},
 		{"category with whitespace", "inte gration", "term", false, nil},
+		{"whitespace-padded dot-slash", "integration", " ./ ", true, ErrInvalidPluginPathComponent},
+		{"whitespace-padded dot-dot-slash", "integration", " ../ ", true, ErrInvalidPluginPathComponent},
 	}
 
 	for _, testCase := range cases {
