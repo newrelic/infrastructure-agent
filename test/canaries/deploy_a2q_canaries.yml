@@ -15,6 +15,16 @@
         config_num: "{{ (inventory_hostname | regex_search('config([1-9]|10)', '\\1'))[0] | int }}"
 
     - block:
+        - name: install latest agent on host
+          ansible.builtin.include_role:
+            name: caos.ansible_roles.infra_agent
+          vars:
+            repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
+            fips_enabled: "{{ '-fips' in inventory_hostname }}"
+            nr_license_key: "{{ nr_license_keys_a2q[((config_num | int) - 1) * 2] }}"
+            fluent_bit_enabled: true
+            forward_system_logs: true
+
         - name: install latest agent in container
           ansible.builtin.include_role:
             name: caos.ansible_roles.infra_agent
