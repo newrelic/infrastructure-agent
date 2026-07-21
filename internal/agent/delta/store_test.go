@@ -1167,21 +1167,29 @@ func TestStore_SavePluginSource(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
-		name     string
-		category string
-		term     string
-		wantErr  bool
+		name      string
+		category  string
+		term      string
+		wantErr   bool
+		wantErrIs error
 	}{
-		{"valid category and term", "integration", "com.newrelic.nginx", false},
-		{"traversal in term", "integration", "../../../../../../etc/nr_pwned", true},
-		{"traversal in category", "../../../../../../etc", "nr_pwned", true},
-		{"term is dot-dot", "integration", "..", true},
-		{"category is dot-dot", "..", "nr_pwned", true},
-		{"term is dot", "integration", ".", true},
-		{"empty term", "integration", "", true},
-		{"empty category", "", "nr_pwned", true},
-		{"slash in term", "integration", "foo/bar", true},
-		{"backslash in term", "integration", `foo\bar`, true},
+		{"valid category and term", "integration", "com.newrelic.nginx", false, nil},
+		{"traversal in term", "integration", "../../../../../../etc/nr_pwned", true, ErrInvalidPluginPathComponent},
+		{"traversal in category", "../../../../../../etc", "nr_pwned", true, ErrInvalidPluginPathComponent},
+		{"term is dot-dot", "integration", "..", true, ErrInvalidPluginPathComponent},
+		{"category is dot-dot", "..", "nr_pwned", true, ErrInvalidPluginPathComponent},
+		{"term is dot", "integration", ".", true, ErrInvalidPluginPathComponent},
+		{"empty term", "integration", "", true, ErrInvalidPluginPathComponent},
+		{"empty category", "", "nr_pwned", true, ErrInvalidPluginPathComponent},
+		{"slash in term", "integration", "foo/bar", true, ErrInvalidPluginPathComponent},
+		{"backslash in term", "integration", `foo\bar`, true, ErrInvalidPluginPathComponent},
+		{"term with embedded dots", "integration", "foo.bar.baz", false, nil},
+		{"term with leading and trailing dots", "integration", "..foo..", false, nil},
+		{"category with leading dot", ".hidden", "term", false, nil},
+		{"term with internal whitespace", "integration", "foo bar", false, nil},
+		{"term with leading and trailing whitespace", "integration", "  term  ", false, nil},
+		{"term is only whitespace", "integration", "   ", false, nil},
+		{"category with whitespace", "inte gration", "term", false, nil},
 	}
 
 	for _, testCase := range cases {
@@ -1199,6 +1207,10 @@ func TestStore_SavePluginSource(t *testing.T) {
 
 			if testCase.wantErr {
 				require.Error(t, err)
+
+				if testCase.wantErrIs != nil {
+					require.ErrorIs(t, err, testCase.wantErrIs)
+				}
 
 				// Validation must happen before anything is written to disk.
 				var files []string
