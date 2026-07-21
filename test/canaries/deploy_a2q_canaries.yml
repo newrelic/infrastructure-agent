@@ -23,6 +23,7 @@
             fips_enabled: "{{ '-fips' in inventory_hostname }}"
             nr_license_key: "{{ nr_license_keys_a2q[((config_num | int) - 1) * 2] }}"
             fluent_bit_enabled: true
+            forward_system_logs: true
 
         - name: install latest agent in container
           ansible.builtin.include_role:
