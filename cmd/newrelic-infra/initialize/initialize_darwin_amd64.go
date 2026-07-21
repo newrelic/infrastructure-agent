@@ -7,15 +7,23 @@
 package initialize
 
 import (
-	"github.com/newrelic/infrastructure-agent/pkg/config"
-)
+	"os"
 
-// only used in windows. it will be refactored.
-const agentTemporaryFolder = "/usr/local/var/db/newrelic-infra/tmp"
+	"github.com/newrelic/infrastructure-agent/pkg/config"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
+)
 
 // AgentService performs OS-specific initialization steps for the Agent service.
 // It is executed after the initialize.osProcess function.
 func AgentService(cfg *config.Config) error {
+	err := emptyFbConfigTempFolder(cfg)
+	if err != nil {
+		log.WithField("agentTempDir", cfg.AgentTempDir).
+			WithError(err).
+			Error("error emptying fb config temp folder")
+		os.Exit(1)
+	}
+
 	return nil
 }
 
