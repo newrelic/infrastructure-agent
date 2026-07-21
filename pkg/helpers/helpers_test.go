@@ -189,19 +189,21 @@ func TestSanitizeFileName(t *testing.T) {
 		{"id<ent>if|||ier.txt", "identifier.txt"},
 		{"|<*identifier.txt::**?", "identifier.txt"},
 		{"identifier.txt", "identifier.txt"},
+		{".", ""},
+		{"..", ""},
 	}
 
 	for _, tt := range cases {
 		assert.Equal(t, tt.expected, SanitizeFileName(tt.input))
 	}
 	cacheLen := sanitizeFileNameCache.Len()
-	assert.Equal(t, cacheLen, 8, "sanitizeFileNameCache length assert failed")
+	assert.Equal(t, 10, cacheLen, "sanitizeFileNameCache length assert failed")
 
 	// Sanitize again the same value to assert that the SanitizeFileName cache correctly.
 	Case := cases[len(cases)-1]
 	assert.Equal(t, Case.expected, SanitizeFileName(Case.input))
 	cacheLen = sanitizeFileNameCache.Len()
-	assert.Equal(t, cacheLen, 8, "sanitizeFileNameCache length assert failed")
+	assert.Equal(t, 10, cacheLen, "sanitizeFileNameCache length assert failed")
 }
 
 func TestRemoveEmptyAndDuplicateEntries(t *testing.T) {

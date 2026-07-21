@@ -260,6 +260,14 @@ func SanitizeFileName(fileName string) string {
 	}
 	result := string(sanitized[:i])
 
+	// A result of exactly "." or ".." is still a path-traversal component even
+	// though it contains no separator characters: filepath.Join/Clean treat it
+	// specially. Neutralize it so callers building paths from this value can't
+	// escape a directory via a bare "." or "..".
+	if result == "." || result == ".." {
+		result = ""
+	}
+
 	// Store it to cache and prevent cache growing too big.
 	sanitizeFileNameCache.RemoveUntilLen(SanitizeFileNameCacheSize)
 	sanitizeFileNameCache.Add(fileName, result)

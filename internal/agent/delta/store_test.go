@@ -1162,3 +1162,79 @@ func TestStore_Path_PermissionDenied(t *testing.T) {
 	// THEN should return that exists as a bool
 	assert.True(t, exists)
 }
+
+func TestStore_SavePluginSource(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name      string
+		category  string
+		term      string
+		wantErr   bool
+		wantErrIs error
+	}{
+		{"valid category and term", "integration", "com.newrelic.nginx", false, nil},
+		{"traversal in term", "integration", "../../../../../../etc/nr_pwned", true, ErrInvalidPluginPathComponent},
+		{"traversal in category", "../../../../../../etc", "nr_pwned", true, ErrInvalidPluginPathComponent},
+		{"term is dot-dot", "integration", "..", true, ErrInvalidPluginPathComponent},
+		{"category is dot-dot", "..", "nr_pwned", true, ErrInvalidPluginPathComponent},
+		{"term is dot", "integration", ".", true, ErrInvalidPluginPathComponent},
+		{"empty term", "integration", "", true, ErrInvalidPluginPathComponent},
+		{"empty category", "", "nr_pwned", true, ErrInvalidPluginPathComponent},
+		{"slash in term", "integration", "foo/bar", true, ErrInvalidPluginPathComponent},
+		{"backslash in term", "integration", `foo\bar`, true, ErrInvalidPluginPathComponent},
+		{"term with embedded dots", "integration", "foo.bar.baz", false, nil},
+		{"term with leading and trailing dots", "integration", "..foo..", false, nil},
+		{"category with leading dot", ".hidden", "term", false, nil},
+		{"term with internal whitespace", "integration", "foo bar", false, nil},
+		{"term with leading and trailing whitespace", "integration", "  term  ", false, nil},
+		{"term is only whitespace", "integration", "   ", false, nil},
+		{"category with whitespace", "inte gration", "term", false, nil},
+		{"whitespace-padded dot-slash", "integration", " ./ ", true, ErrInvalidPluginPathComponent},
+		{"whitespace-padded dot-dot-slash", "integration", " ../ ", true, ErrInvalidPluginPathComponent},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			dataDir, err := TempDeltaStoreDir()
+			require.NoError(t, err)
+
+			defer os.RemoveAll(dataDir)
+
+			ds := NewStore(dataDir, "default", maxInventorySize, true)
+
+			err = ds.SavePluginSource("", testCase.category, testCase.term, map[string]any{"a": "b"})
+
+			if testCase.wantErr {
+				require.Error(t, err)
+
+				if testCase.wantErrIs != nil {
+					require.ErrorIs(t, err, testCase.wantErrIs)
+				}
+
+				// Validation must happen before anything is written to disk.
+				var files []string
+
+				err = filepath.Walk(dataDir, func(path string, info os.FileInfo, walkErr error) error {
+					if walkErr == nil && !info.IsDir() {
+						files = append(files, path)
+					}
+
+					return nil
+				})
+
+				require.NoError(t, err)
+				assert.Empty(t, files, "no file should be written when category/term is rejected")
+
+				return
+			}
+
+			require.NoError(t, err)
+
+			expected := filepath.Join(dataDir, testCase.category, "__nria_localentity", testCase.term+".json")
+			assert.FileExists(t, expected)
+		})
+	}
+}
