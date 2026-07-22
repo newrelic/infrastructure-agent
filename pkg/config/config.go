@@ -1793,6 +1793,58 @@ func (c *Config) PublicFields() (map[string]string, error) {
 	return result, nil
 }
 
+// knownEnvVarNames returns the set of NRIA_* environment variable names (uppercased,
+// including the prefix) that map to a Config field, recursing into nested config
+// structs (e.g. Log, Http) the same way envconfig.Process does.
+func knownEnvVarNames(t reflect.Type, prefix string) map[string]struct{} {
+	names := make(map[string]struct{})
+	if t.Kind() != reflect.Struct {
+		return names
+	}
+
+	for i := 0; i < t.NumField(); i++ {
+		tag := t.Field(i).Tag.Get("envconfig")
+		if tag == "" || tag == "ignored" {
+			continue
+		}
+
+		key := prefix + "_" + strings.ToUpper(tag)
+
+		fieldType := t.Field(i).Type
+		if fieldType.Kind() == reflect.Struct {
+			for name := range knownEnvVarNames(fieldType, key) {
+				names[name] = struct{}{}
+			}
+			continue
+		}
+
+		names[key] = struct{}{}
+	}
+
+	return names
+}
+
+// warnUnrecognizedEnvVars logs a warning for every NRIA_* environment variable that
+// doesn't correspond to a known Config field, so a mistyped or stale var (e.g. one set
+// by Agent Control when it launches the agent) doesn't get silently dropped.
+func warnUnrecognizedEnvVars(cfg *Config) {
+	known := knownEnvVarNames(reflect.TypeOf(*cfg), strings.ToUpper(envPrefix))
+	prefix := strings.ToUpper(envPrefix) + "_"
+
+	for _, kv := range os.Environ() {
+		name := strings.SplitN(kv, "=", 2)[0]
+		upperName := strings.ToUpper(name)
+
+		if !strings.HasPrefix(upperName, prefix) {
+			continue
+		}
+
+		if _, ok := known[upperName]; !ok {
+			clog.WithField("envVar", name).Warn("unrecognized NRIA_* environment variable, ignoring")
+		}
+	}
+}
+
 func LoadConfig(configFile string) (*Config, error) {
 	var filesToCheck []string
 	if configFile != "" {
@@ -1838,6 +1890,7 @@ func LoadConfig(configFile string) (*Config, error) {
 
 	// After the config file has loaded, override via any environment variables
 	configOverride(cfg)
+	warnUnrecognizedEnvVars(cfg)
 
 	cfg.RunMode, cfg.AgentUser, cfg.ExecutablePath = runtimeValues()
 
