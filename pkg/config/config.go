@@ -1796,25 +1796,26 @@ func (c *Config) PublicFields() (map[string]string, error) {
 // knownEnvVarNames returns the set of NRIA_* environment variable names (uppercased,
 // including the prefix) that map to a Config field, recursing into nested config
 // structs (e.g. Log, Http) the same way envconfig.Process does.
-func knownEnvVarNames(t reflect.Type, prefix string) map[string]struct{} {
+func knownEnvVarNames(structType reflect.Type, prefix string) map[string]struct{} {
 	names := make(map[string]struct{})
-	if t.Kind() != reflect.Struct {
+	if structType.Kind() != reflect.Struct {
 		return names
 	}
 
-	for i := 0; i < t.NumField(); i++ {
-		tag := t.Field(i).Tag.Get("envconfig")
+	for fieldIdx := range structType.NumField() {
+		tag := structType.Field(fieldIdx).Tag.Get("envconfig")
 		if tag == "" || tag == "ignored" {
 			continue
 		}
 
 		key := prefix + "_" + strings.ToUpper(tag)
 
-		fieldType := t.Field(i).Type
+		fieldType := structType.Field(fieldIdx).Type
 		if fieldType.Kind() == reflect.Struct {
 			for name := range knownEnvVarNames(fieldType, key) {
 				names[name] = struct{}{}
 			}
+
 			continue
 		}
 
@@ -1828,11 +1829,12 @@ func knownEnvVarNames(t reflect.Type, prefix string) map[string]struct{} {
 // doesn't correspond to a known Config field, so a mistyped or stale var (e.g. one set
 // by Agent Control when it launches the agent) doesn't get silently dropped.
 func warnUnrecognizedEnvVars(cfg *Config) {
-	known := knownEnvVarNames(reflect.TypeOf(*cfg), strings.ToUpper(envPrefix))
+	known := knownEnvVarNames(reflect.TypeOf(cfg).Elem(), strings.ToUpper(envPrefix))
 	prefix := strings.ToUpper(envPrefix) + "_"
+	keyValuePairLen := 2
 
 	for _, kv := range os.Environ() {
-		name := strings.SplitN(kv, "=", 2)[0]
+		name := strings.SplitN(kv, "=", keyValuePairLen)[0]
 		upperName := strings.ToUpper(name)
 
 		if !strings.HasPrefix(upperName, prefix) {

@@ -654,7 +654,9 @@ func TestPublicFields_Obfuscate(t *testing.T) {
 }
 
 func TestKnownEnvVarNames_TopLevelAndNestedFields(t *testing.T) {
-	known := knownEnvVarNames(reflect.TypeOf(Config{}), "NRIA")
+	t.Parallel()
+
+	known := knownEnvVarNames(reflect.TypeOf((*Config)(nil)).Elem(), "NRIA")
 
 	_, exists := known["NRIA_AGENT_DIR"]
 	assert.True(t, exists, "top-level field should be a known env var")
@@ -667,7 +669,9 @@ func TestKnownEnvVarNames_TopLevelAndNestedFields(t *testing.T) {
 }
 
 func TestKnownEnvVarNames_IgnoresIgnoredFields(t *testing.T) {
-	known := knownEnvVarNames(reflect.TypeOf(Config{}), "NRIA")
+	t.Parallel()
+
+	known := knownEnvVarNames(reflect.TypeOf((*Config)(nil)).Elem(), "NRIA")
 
 	_, exists := known["NRIA_PLUGIN_INSTANCE_DIRS"]
 	assert.False(t, exists, "envconfig:\"ignored\" fields must not be treated as settable env vars")
@@ -675,6 +679,7 @@ func TestKnownEnvVarNames_IgnoresIgnoredFields(t *testing.T) {
 
 func TestWarnUnrecognizedEnvVars(t *testing.T) {
 	var output bytes.Buffer
+
 	log.SetOutput(&output)
 	defer log.SetOutput(ioutil.Discard)
 
