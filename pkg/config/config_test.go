@@ -3,6 +3,7 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
+	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	. "gopkg.in/check.v1"
@@ -649,6 +651,50 @@ func TestPublicFields_Obfuscate(t *testing.T) {
 	actualVal, exists := actual["license_key"]
 	assert.True(t, exists)
 	assert.Equal(t, "<HIDDEN>", actualVal)
+}
+
+func TestKnownEnvVarNames_TopLevelAndNestedFields(t *testing.T) {
+	t.Parallel()
+
+	known := knownEnvVarNames(reflect.TypeOf((*Config)(nil)).Elem(), "NRIA")
+
+	_, exists := known["NRIA_AGENT_DIR"]
+	assert.True(t, exists, "top-level field should be a known env var")
+
+	_, exists = known["NRIA_LOG_LEVEL"]
+	assert.True(t, exists, "field nested under a config struct should be a known env var")
+
+	_, exists = known["NRIA_LOG_ROTATE_MAX_SIZE_MB"]
+	assert.True(t, exists, "field nested two levels deep should be a known env var")
+}
+
+func TestKnownEnvVarNames_IgnoresIgnoredFields(t *testing.T) {
+	t.Parallel()
+
+	known := knownEnvVarNames(reflect.TypeOf((*Config)(nil)).Elem(), "NRIA")
+
+	_, exists := known["NRIA_PLUGIN_INSTANCE_DIRS"]
+	assert.False(t, exists, "envconfig:\"ignored\" fields must not be treated as settable env vars")
+}
+
+func TestWarnUnrecognizedEnvVars(t *testing.T) {
+	var output bytes.Buffer
+
+	log.SetOutput(&output)
+	defer log.SetOutput(ioutil.Discard)
+
+	t.Setenv("NRIA_AGENT_DIR", "/tmp/agent")
+	t.Setenv("NRIA_LOG_LEVEL", "debug")
+	t.Setenv("NRIA_NOT_A_REAL_FIELD", "oops")
+	t.Setenv("SOME_OTHER_VAR", "ignored")
+
+	warnUnrecognizedEnvVars(NewConfig())
+
+	written := output.String()
+	assert.Contains(t, written, "NRIA_NOT_A_REAL_FIELD")
+	assert.NotContains(t, written, "NRIA_AGENT_DIR")
+	assert.NotContains(t, written, "NRIA_LOG_LEVEL")
+	assert.NotContains(t, written, "SOME_OTHER_VAR")
 }
 
 func TestConfig_SetBoolValueByYamlAttribute(t *testing.T) {
