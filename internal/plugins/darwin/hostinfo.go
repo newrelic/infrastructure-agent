@@ -58,7 +58,12 @@ func (hip *HostInfoDarwin) SortKey() string {
 func (hip HostInfoDarwin) MarshalJSON() ([]byte, error) {
 	type alias HostInfoDarwin
 
-	return common.FlattenLabels(alias(hip), hip.OCIFreeformTags)
+	data, err := common.FlattenLabels(alias(hip), hip.OCIFreeformTags)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal HostInfoDarwin: %w", err) //nolint:wrapcheck
+	}
+
+	return data, nil
 }
 
 func NewHostinfoPlugin(ctx agent.AgentContext, hostInfo common.HostInfo) agent.Plugin {

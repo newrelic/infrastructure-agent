@@ -219,6 +219,7 @@ func (a *OCIHarvester) GetFaultDomain() (string, error) {
 		if err != nil {
 			return "", err
 		}
+
 		a.faultDomain = ociMetadata.FaultDomain
 	}
 
@@ -232,6 +233,7 @@ func (a *OCIHarvester) GetHostname() (string, error) {
 		if err != nil {
 			return "", err
 		}
+
 		a.hostname = ociMetadata.Hostname
 	}
 
@@ -245,6 +247,7 @@ func (a *OCIHarvester) GetFreeformTags() (map[string]string, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		a.freeformTags = ociMetadata.FreeformTags
 	}
 
@@ -258,6 +261,7 @@ func (a *OCIHarvester) GetPrivateIP() (string, error) {
 		if err != nil {
 			return "", err
 		}
+
 		if len(vnics) > 0 {
 			a.privateIP = vnics[0].PrivateIP
 		}
@@ -328,17 +332,15 @@ func parseOCIMetadataResponse(response *http.Response) (*OCIMetadata, error) {
 
 // GetOCIVnicsMetadata is used to request VNIC metadata from OCI API.
 func GetOCIVnicsMetadata(disableKeepAlive bool) ([]OCIVnicMetadata, error) {
-	var request *http.Request
-	var err error
-
-	if request, err = http.NewRequest(http.MethodGet, ociVnicsEndpoint, nil); err != nil { //nolint:noctx
+	request, err := http.NewRequest(http.MethodGet, ociVnicsEndpoint, nil) //nolint:noctx
+	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrOCIRequestFailed, err) //nolint:wrapcheck
 	}
 
 	request.Header.Add("Authorization", ociV2AuthorizationHeader)
 
-	var response *http.Response
-	if response, err = clientWithFastTimeout(disableKeepAlive).Do(request); err != nil {
+	response, err := clientWithFastTimeout(disableKeepAlive).Do(request)
+	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrOCIFetchFailed, err) //nolint:wrapcheck
 	}
 	defer response.Body.Close()
@@ -352,14 +354,15 @@ func parseOCIVnicsMetadataResponse(response *http.Response) ([]OCIVnicMetadata, 
 		return nil, fmt.Errorf("%w: %d %s", ErrOCIResponseFailed, response.StatusCode, response.Status) //nolint:wrapcheck
 	}
 
-	var responseBody []byte
-	var err error
-	if responseBody, err = io.ReadAll(response.Body); err != nil {
+	responseBody, err := io.ReadAll(response.Body)
+	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrOCIReadFailed, err) //nolint:wrapcheck
 	}
 
 	var result []OCIVnicMetadata
-	if err = json.Unmarshal(responseBody, &result); err != nil {
+
+	err = json.Unmarshal(responseBody, &result)
+	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrOCIUnmarshalFailed, err) //nolint:wrapcheck
 	}
 

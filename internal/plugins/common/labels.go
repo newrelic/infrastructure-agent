@@ -18,7 +18,7 @@ const labelPrefix = "label."
 func FlattenLabels(v any, tags map[string]string) ([]byte, error) {
 	data, err := json.Marshal(v)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal value for label flattening: %w", err)
+		return nil, fmt.Errorf("failed to marshal value for label flattening: %w", err) //nolint:wrapcheck
 	}
 
 	if len(tags) == 0 {
@@ -26,8 +26,10 @@ func FlattenLabels(v any, tags map[string]string) ([]byte, error) {
 	}
 
 	var merged map[string]interface{}
-	if err := json.Unmarshal(data, &merged); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal value for label flattening: %w", err)
+
+	err = json.Unmarshal(data, &merged)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal value for label flattening: %w", err) //nolint:wrapcheck
 	}
 
 	for key, value := range tags {
@@ -36,7 +38,7 @@ func FlattenLabels(v any, tags map[string]string) ([]byte, error) {
 
 	flattened, err := json.Marshal(merged)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal flattened labels: %w", err)
+		return nil, fmt.Errorf("failed to marshal flattened labels: %w", err) //nolint:wrapcheck
 	}
 
 	return flattened, nil

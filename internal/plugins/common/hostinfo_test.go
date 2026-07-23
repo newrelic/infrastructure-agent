@@ -13,6 +13,10 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+// errInstancePrincipalUnavailable is a stand-in for the real OCI SDK error returned when
+// instance principal authentication is unavailable, used to test Phase 2 graceful degradation.
+var errInstancePrincipalUnavailable = errors.New("instance principal unavailable")
+
 type fakeHarvester struct {
 	mock.Mock
 }
@@ -99,7 +103,7 @@ func (f *fakeHarvester) GetFreeformTags() (map[string]string, error) {
 
 	tags, _ := args.Get(0).(map[string]string)
 
-	return tags, args.Error(1)
+	return tags, args.Error(1) //nolint:wrapcheck
 }
 
 // GetPrivateIP returns the cloud instance private IP.
@@ -147,6 +151,23 @@ func (f *fakeHarvester) GetDedicatedVMHostID() (string, error) {
 // GetHarvester returns instance of the Harvester detected (or instance of themselves)
 func (f *fakeHarvester) GetHarvester() (cloud.Harvester, error) {
 	return f, nil
+}
+
+// setMockOCIPhase1 sets up the shared Phase 1 (IMDS) mock expectations for OCI test cases,
+// leaving Phase 2 (OCI API) expectations for the caller to set based on the scenario.
+func setMockOCIPhase1(harvester *fakeHarvester) {
+	harvester.On("GetAccountID").Return("ocid1.compartment.oc1", nil)
+	harvester.On("GetCloudType").Return(cloud.TypeOCI)
+	harvester.On("GetRegion").Return("us-ashburn-1", nil)
+	harvester.On("GetZone").Return("jyDh:US-ASHBURN-AD-1", nil)
+	harvester.On("GetInstanceImageID").Return("ocid1.image.oc1", nil)
+	harvester.On("GetInstanceDisplayName").Return("ubunut-instance-20250722-1328", nil)
+	harvester.On("GetVMSize").Return("VM.Optimized3.Flex", nil)
+	harvester.On("GetFaultDomain").Return("FAULT-DOMAIN-1", nil)
+	harvester.On("GetHostname").Return("ubunut-instance-20250722-1328", nil)
+	harvester.On("GetPrivateIP").Return("10.0.0.5", nil)
+	harvester.On("GetFreeformTags").Return(map[string]string{"env": "prod"}, nil)
+	harvester.On("GetInstanceID").Return("ocid1.instance.oc1", nil)
 }
 
 func TestGetHostInfo(t *testing.T) {
@@ -277,18 +298,7 @@ func TestGetHostInfo(t *testing.T) {
 				assert.NoError(t, err)
 			},
 			setMock: func(harvester *fakeHarvester) {
-				harvester.On("GetAccountID").Return("ocid1.compartment.oc1", nil)
-				harvester.On("GetCloudType").Return(cloud.TypeOCI)
-				harvester.On("GetRegion").Return("us-ashburn-1", nil)
-				harvester.On("GetZone").Return("jyDh:US-ASHBURN-AD-1", nil)
-				harvester.On("GetInstanceImageID").Return("ocid1.image.oc1", nil)
-				harvester.On("GetInstanceDisplayName").Return("ubunut-instance-20250722-1328", nil)
-				harvester.On("GetVMSize").Return("VM.Optimized3.Flex", nil)
-				harvester.On("GetFaultDomain").Return("FAULT-DOMAIN-1", nil)
-				harvester.On("GetHostname").Return("ubunut-instance-20250722-1328", nil)
-				harvester.On("GetPrivateIP").Return("10.0.0.5", nil)
-				harvester.On("GetFreeformTags").Return(map[string]string{"env": "prod"}, nil)
-				harvester.On("GetInstanceID").Return("ocid1.instance.oc1", nil)
+				setMockOCIPhase1(harvester)
 				harvester.On("GetVCNID").Return("ocid1.vcn.oc1", nil)
 				harvester.On("GetSubnetID").Return("ocid1.subnet.oc1", nil)
 				harvester.On("GetLifecycleState").Return("RUNNING", nil)
@@ -303,31 +313,20 @@ func TestGetHostInfo(t *testing.T) {
 				assert.Equal(t, "us-ashburn-1", data.RegionOCI)
 				assert.Equal(t, "ocid1.instance.oc1", data.CloudResourceID)
 				// Phase 2 (OCI API) attributes are left empty, not an error - graceful degradation.
-				assert.Equal(t, "", data.OCIVCNID)
-				assert.Equal(t, "", data.OCISubnetID)
-				assert.Equal(t, "", data.OCILifecycleState)
-				assert.Equal(t, "", data.OCIVirtualizationType)
-				assert.Equal(t, "", data.OCIDedicatedVMHostID)
+				assert.Empty(t, data.OCIVCNID)
+				assert.Empty(t, data.OCISubnetID)
+				assert.Empty(t, data.OCILifecycleState)
+				assert.Empty(t, data.OCIVirtualizationType)
+				assert.Empty(t, data.OCIDedicatedVMHostID)
 				assert.NoError(t, err)
 			},
 			setMock: func(harvester *fakeHarvester) {
-				harvester.On("GetAccountID").Return("ocid1.compartment.oc1", nil)
-				harvester.On("GetCloudType").Return(cloud.TypeOCI)
-				harvester.On("GetRegion").Return("us-ashburn-1", nil)
-				harvester.On("GetZone").Return("jyDh:US-ASHBURN-AD-1", nil)
-				harvester.On("GetInstanceImageID").Return("ocid1.image.oc1", nil)
-				harvester.On("GetInstanceDisplayName").Return("ubunut-instance-20250722-1328", nil)
-				harvester.On("GetVMSize").Return("VM.Optimized3.Flex", nil)
-				harvester.On("GetFaultDomain").Return("FAULT-DOMAIN-1", nil)
-				harvester.On("GetHostname").Return("ubunut-instance-20250722-1328", nil)
-				harvester.On("GetPrivateIP").Return("10.0.0.5", nil)
-				harvester.On("GetFreeformTags").Return(map[string]string{"env": "prod"}, nil)
-				harvester.On("GetInstanceID").Return("ocid1.instance.oc1", nil)
-				harvester.On("GetVCNID").Return("", errors.New("instance principal unavailable"))
-				harvester.On("GetSubnetID").Return("", errors.New("instance principal unavailable"))
-				harvester.On("GetLifecycleState").Return("", errors.New("instance principal unavailable"))
-				harvester.On("GetVirtualizationType").Return("", errors.New("instance principal unavailable"))
-				harvester.On("GetDedicatedVMHostID").Return("", errors.New("instance principal unavailable"))
+				setMockOCIPhase1(harvester)
+				harvester.On("GetVCNID").Return("", errInstancePrincipalUnavailable)
+				harvester.On("GetSubnetID").Return("", errInstancePrincipalUnavailable)
+				harvester.On("GetLifecycleState").Return("", errInstancePrincipalUnavailable)
+				harvester.On("GetVirtualizationType").Return("", errInstancePrincipalUnavailable)
+				harvester.On("GetDedicatedVMHostID").Return("", errInstancePrincipalUnavailable)
 			},
 		},
 		{

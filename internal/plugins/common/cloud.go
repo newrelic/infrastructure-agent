@@ -163,14 +163,19 @@ func filterExcludedTags(tags map[string]string, excludePatterns []string) map[st
 	}
 
 	filtered := make(map[string]string, len(tags))
+
 	for key, value := range tags {
 		excluded := false
+
 		for _, pattern := range excludePatterns {
-			if matched, err := path.Match(pattern, key); err == nil && matched {
+			matched, err := path.Match(pattern, key)
+			if err == nil && matched {
 				excluded = true
+
 				break
 			}
 		}
+
 		if !excluded {
 			filtered[key] = value
 		}
@@ -179,39 +184,51 @@ func filterExcludedTags(tags map[string]string, excludePatterns []string) map[st
 	return filtered
 }
 
-// getOracleCloudData gathers the exported information for the Oracle Cloud.
-func getOracleCloudData(cloudHarvester cloud.Harvester, ociTagsExclude []string) (OracleCloudData, error) {
-	var ociData OracleCloudData
+// populateOracleIdentityData fills the region/account/zone/image/display-name/shape fields -
+// split out of getOracleCloudData purely to keep cyclomatic complexity manageable.
+func populateOracleIdentityData(cloudHarvester cloud.Harvester, ociData *OracleCloudData) error {
 	var err error
 
 	ociData.RegionOCI, err = cloudHarvester.GetRegion()
 	if err != nil {
-		return ociData, fmt.Errorf("%s: %w", ErrCloudRegionRetrievalFailed.Error(), err) //nolint:wrapcheck
+		return fmt.Errorf("%s: %w", ErrCloudRegionRetrievalFailed.Error(), err) //nolint:wrapcheck
 	}
 
 	ociData.OCIAccountID, err = cloudHarvester.GetAccountID()
 	if err != nil {
-		return ociData, fmt.Errorf("%s: %w", ErrCloudAccountIDRetrievalFailed.Error(), err) //nolint:wrapcheck
+		return fmt.Errorf("%s: %w", ErrCloudAccountIDRetrievalFailed.Error(), err) //nolint:wrapcheck
 	}
 
 	ociData.OCIAvailabilityZone, err = cloudHarvester.GetZone()
 	if err != nil {
-		return ociData, fmt.Errorf("%s: %w", ErrCloudZoneRetrievalFailed.Error(), err) //nolint:wrapcheck
+		return fmt.Errorf("%s: %w", ErrCloudZoneRetrievalFailed.Error(), err) //nolint:wrapcheck
 	}
 
 	ociData.OCIImageID, err = cloudHarvester.GetInstanceImageID()
 	if err != nil {
-		return ociData, fmt.Errorf("%s: %w", ErrCloudImageIDRetrievalFailed.Error(), err) //nolint:wrapcheck
+		return fmt.Errorf("%s: %w", ErrCloudImageIDRetrievalFailed.Error(), err) //nolint:wrapcheck
 	}
 
 	ociData.OCIDisplayName, err = cloudHarvester.GetInstanceDisplayName()
 	if err != nil {
-		return ociData, fmt.Errorf("%s: %w", ErrCloudDisplayNameRetrievalFailed.Error(), err) //nolint:wrapcheck
+		return fmt.Errorf("%s: %w", ErrCloudDisplayNameRetrievalFailed.Error(), err) //nolint:wrapcheck
 	}
 
 	ociData.OCIVMSize, err = cloudHarvester.GetVMSize()
 	if err != nil {
-		return ociData, fmt.Errorf("%s: %w", ErrCloudVMSizeRetrievalFailed.Error(), err) //nolint:wrapcheck
+		return fmt.Errorf("%s: %w", ErrCloudVMSizeRetrievalFailed.Error(), err) //nolint:wrapcheck
+	}
+
+	return nil
+}
+
+// getOracleCloudData gathers the exported information for the Oracle Cloud.
+func getOracleCloudData(cloudHarvester cloud.Harvester, ociTagsExclude []string) (OracleCloudData, error) {
+	var ociData OracleCloudData
+
+	err := populateOracleIdentityData(cloudHarvester, &ociData)
+	if err != nil {
+		return ociData, err
 	}
 
 	ociData.OCIFaultDomain, err = cloudHarvester.GetFaultDomain()
@@ -233,12 +250,14 @@ func getOracleCloudData(cloudHarvester cloud.Harvester, ociTagsExclude []string)
 	if err != nil {
 		return ociData, fmt.Errorf("%s: %w", ErrCloudFreeformTagsRetrievalFailed.Error(), err) //nolint:wrapcheck
 	}
+
 	ociData.OCIFreeformTags = filterExcludedTags(freeformTags, ociTagsExclude)
 
 	instanceID, err := cloudHarvester.GetInstanceID()
 	if err != nil {
 		return ociData, fmt.Errorf("%s: %w", ErrCloudInstanceIDRetrievalFailed.Error(), err) //nolint:wrapcheck
 	}
+
 	ociData.CloudResourceID = instanceID
 	ociData.OCIInstanceID = instanceID
 
@@ -246,30 +265,58 @@ func getOracleCloudData(cloudHarvester cloud.Harvester, ociTagsExclude []string)
 	ociData.CloudProvider = ociCloudProvider
 	ociData.CloudPlatform = ociCloudPlatform
 
-	// Phase 2 (OCI SDK + instance principal auth): best-effort only. A failure here (missing
-	// IAM policy, no instance principal available, etc.) must never block agent startup or
-	// prevent Phase 1 attributes from shipping - log and leave the attribute empty instead.
-	if ociData.OCIVCNID, err = cloudHarvester.GetVCNID(); err != nil {
-		clog.WithError(err).Debug("OCI VCN ID unavailable; leaving oci.network.vcnId empty")
-	}
-	if ociData.OCISubnetID, err = cloudHarvester.GetSubnetID(); err != nil {
-		clog.WithError(err).Debug("OCI subnet ID unavailable; leaving oci.network.subnetId empty")
-	}
-	if ociData.OCILifecycleState, err = cloudHarvester.GetLifecycleState(); err != nil {
-		clog.WithError(err).Debug("OCI lifecycle state unavailable; leaving oci.compute.lifecycleState empty")
-	}
-	if ociData.OCIVirtualizationType, err = cloudHarvester.GetVirtualizationType(); err != nil {
-		clog.WithError(err).Debug("OCI virtualization type unavailable; leaving oci.compute.virtualizationType empty")
-	}
-	if ociData.OCIDedicatedVMHostID, err = cloudHarvester.GetDedicatedVMHostID(); err != nil {
-		clog.WithError(err).Debug("OCI dedicated VM host ID unavailable; leaving oci.compute.dedicatedVmHostId empty")
-	}
+	populateOraclePhase2Data(cloudHarvester, &ociData)
 
 	return ociData, nil
 }
 
+// populateOraclePhase2Data fills the Phase 2 (OCI SDK + instance principal auth) fields on
+// ociData, best-effort only. A failure here (missing IAM policy, no instance principal
+// available, etc.) must never block agent startup or prevent Phase 1 attributes from shipping -
+// log and leave the attribute empty instead.
+func populateOraclePhase2Data(cloudHarvester cloud.Harvester, ociData *OracleCloudData) {
+	vcnID, err := cloudHarvester.GetVCNID()
+	if err != nil {
+		clog.WithError(err).Debug("OCI VCN ID unavailable; leaving oci.network.vcnId empty")
+	}
+
+	ociData.OCIVCNID = vcnID
+
+	subnetID, err := cloudHarvester.GetSubnetID()
+	if err != nil {
+		clog.WithError(err).Debug("OCI subnet ID unavailable; leaving oci.network.subnetId empty")
+	}
+
+	ociData.OCISubnetID = subnetID
+
+	lifecycleState, err := cloudHarvester.GetLifecycleState()
+	if err != nil {
+		clog.WithError(err).Debug("OCI lifecycle state unavailable; leaving oci.compute.lifecycleState empty")
+	}
+
+	ociData.OCILifecycleState = lifecycleState
+
+	virtualizationType, err := cloudHarvester.GetVirtualizationType()
+	if err != nil {
+		clog.WithError(err).Debug("OCI virtualization type unavailable; leaving oci.compute.virtualizationType empty")
+	}
+
+	ociData.OCIVirtualizationType = virtualizationType
+
+	dedicatedVMHostID, err := cloudHarvester.GetDedicatedVMHostID()
+	if err != nil {
+		clog.WithError(err).Debug("OCI dedicated VM host ID unavailable; leaving oci.compute.dedicatedVmHostId empty")
+	}
+
+	ociData.OCIDedicatedVMHostID = dedicatedVMHostID
+}
+
 // getCloudData will populate a CloudData structure depending on the cloud type.
-func getCloudData(cloudHarvester cloud.Harvester, ociTagsExclude []string) (cloudData CloudData, err error) {
+func getCloudData(cloudHarvester cloud.Harvester, ociTagsExclude []string) (CloudData, error) {
+	var cloudData CloudData
+
+	var err error
+
 	switch cloudHarvester.GetCloudType() {
 	case cloud.TypeAWS:
 		cloudData.AwsCloudData, err = getAWSCloudData(cloudHarvester)
@@ -282,8 +329,8 @@ func getCloudData(cloudHarvester cloud.Harvester, ociTagsExclude []string) (clou
 	case cloud.TypeOCI:
 		cloudData.OracleCloudData, err = getOracleCloudData(cloudHarvester, ociTagsExclude)
 	case cloud.TypeNoCloud:
-		return
+		return cloudData, err
 	}
 
-	return
+	return cloudData, err
 }
