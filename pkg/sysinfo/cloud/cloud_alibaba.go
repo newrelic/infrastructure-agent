@@ -106,6 +106,51 @@ func (a *AlibabaHarvester) GetVMSize() (string, error) {
 	return "", ErrMethodNotImplemented
 }
 
+// GetFaultDomain returns the cloud instance fault domain (not supported for Alibaba).
+func (a *AlibabaHarvester) GetFaultDomain() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
+// GetHostname returns the cloud instance hostname (not supported for Alibaba).
+func (a *AlibabaHarvester) GetHostname() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
+// GetFreeformTags returns the cloud instance freeform tags (not supported for Alibaba).
+func (a *AlibabaHarvester) GetFreeformTags() (map[string]string, error) {
+	return nil, ErrMethodNotImplemented
+}
+
+// GetPrivateIP returns the cloud instance private IP (not supported for Alibaba).
+func (a *AlibabaHarvester) GetPrivateIP() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
+// GetVCNID returns the cloud instance's VCN ID (not supported for Alibaba).
+func (a *AlibabaHarvester) GetVCNID() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
+// GetSubnetID returns the cloud instance's subnet ID (not supported for Alibaba).
+func (a *AlibabaHarvester) GetSubnetID() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
+// GetLifecycleState returns the cloud instance's lifecycle state (not supported for Alibaba).
+func (a *AlibabaHarvester) GetLifecycleState() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
+// GetVirtualizationType returns the cloud instance's virtualization type (not supported for Alibaba).
+func (a *AlibabaHarvester) GetVirtualizationType() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
+// GetDedicatedVMHostID returns the cloud instance's dedicated VM host ID (not supported for Alibaba).
+func (a *AlibabaHarvester) GetDedicatedVMHostID() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
 // GetRegion will return the cloud instance region.
 func (a *AlibabaHarvester) GetRegion() (string, error) {
 	if a.region == "" || a.timeout.HasExpired() {

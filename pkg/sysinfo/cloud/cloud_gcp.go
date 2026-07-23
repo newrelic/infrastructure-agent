@@ -99,6 +99,51 @@ func (gcp *GCPHarvester) GetVMSize() (string, error) {
 	return "", ErrMethodNotImplemented
 }
 
+// GetFaultDomain returns the cloud instance fault domain (not supported for GCP).
+func (gcp *GCPHarvester) GetFaultDomain() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
+// GetHostname returns the cloud instance hostname (not supported for GCP).
+func (gcp *GCPHarvester) GetHostname() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
+// GetFreeformTags returns the cloud instance freeform tags (not supported for GCP).
+func (gcp *GCPHarvester) GetFreeformTags() (map[string]string, error) {
+	return nil, ErrMethodNotImplemented
+}
+
+// GetPrivateIP returns the cloud instance private IP (not supported for GCP).
+func (gcp *GCPHarvester) GetPrivateIP() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
+// GetVCNID returns the cloud instance's VCN ID (not supported for GCP).
+func (gcp *GCPHarvester) GetVCNID() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
+// GetSubnetID returns the cloud instance's subnet ID (not supported for GCP).
+func (gcp *GCPHarvester) GetSubnetID() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
+// GetLifecycleState returns the cloud instance's lifecycle state (not supported for GCP).
+func (gcp *GCPHarvester) GetLifecycleState() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
+// GetVirtualizationType returns the cloud instance's virtualization type (not supported for GCP).
+func (gcp *GCPHarvester) GetVirtualizationType() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
+// GetDedicatedVMHostID returns the cloud instance's dedicated VM host ID (not supported for GCP).
+func (gcp *GCPHarvester) GetDedicatedVMHostID() (string, error) {
+	return "", ErrMethodNotImplemented
+}
+
 // GetRegion will return the cloud instance region.
 func (gcp *GCPHarvester) GetRegion() (string, error) {
 	if gcp.zone == "" || gcp.timeout.HasExpired() {

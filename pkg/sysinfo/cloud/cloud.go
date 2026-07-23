@@ -70,6 +70,24 @@ type Harvester interface {
 	GetInstanceDisplayName() (string, error)
 	// GetVMSize returns the cloud instance VM size //nolint:godot
 	GetVMSize() (string, error)
+	// GetFaultDomain returns the cloud instance fault domain
+	GetFaultDomain() (string, error)
+	// GetHostname returns the cloud instance hostname
+	GetHostname() (string, error)
+	// GetFreeformTags returns the cloud instance freeform tags
+	GetFreeformTags() (map[string]string, error)
+	// GetPrivateIP returns the cloud instance private IP
+	GetPrivateIP() (string, error)
+	// GetVCNID returns the cloud instance's VCN ID
+	GetVCNID() (string, error)
+	// GetSubnetID returns the cloud instance's subnet ID
+	GetSubnetID() (string, error)
+	// GetLifecycleState returns the cloud instance's lifecycle state
+	GetLifecycleState() (string, error)
+	// GetVirtualizationType returns the cloud instance's virtualization type
+	GetVirtualizationType() (string, error)
+	// GetDedicatedVMHostID returns the cloud instance's dedicated VM host ID
+	GetDedicatedVMHostID() (string, error)
 	// GetHarvester returns instance of the Harvester detected (or instance of themselves)
 	GetHarvester() (Harvester, error)
 }
@@ -269,6 +287,96 @@ func (d *Detector) GetVMSize() (string, error) {
 	}
 
 	return cloudHarvester.GetVMSize()
+}
+
+// GetFaultDomain returns the cloud instance fault domain
+func (d *Detector) GetFaultDomain() (string, error) {
+	cloudHarvester, err := d.GetHarvester()
+	if err != nil {
+		return "", err
+	}
+
+	return cloudHarvester.GetFaultDomain()
+}
+
+// GetHostname returns the cloud instance hostname
+func (d *Detector) GetHostname() (string, error) {
+	cloudHarvester, err := d.GetHarvester()
+	if err != nil {
+		return "", err
+	}
+
+	return cloudHarvester.GetHostname()
+}
+
+// GetFreeformTags returns the cloud instance freeform tags
+func (d *Detector) GetFreeformTags() (map[string]string, error) {
+	cloudHarvester, err := d.GetHarvester()
+	if err != nil {
+		return nil, err
+	}
+
+	return cloudHarvester.GetFreeformTags()
+}
+
+// GetPrivateIP returns the cloud instance private IP
+func (d *Detector) GetPrivateIP() (string, error) {
+	cloudHarvester, err := d.GetHarvester()
+	if err != nil {
+		return "", err
+	}
+
+	return cloudHarvester.GetPrivateIP()
+}
+
+// GetVCNID returns the cloud instance's VCN ID
+func (d *Detector) GetVCNID() (string, error) {
+	cloudHarvester, err := d.GetHarvester()
+	if err != nil {
+		return "", err
+	}
+
+	return cloudHarvester.GetVCNID()
+}
+
+// GetSubnetID returns the cloud instance's subnet ID
+func (d *Detector) GetSubnetID() (string, error) {
+	cloudHarvester, err := d.GetHarvester()
+	if err != nil {
+		return "", err
+	}
+
+	return cloudHarvester.GetSubnetID()
+}
+
+// GetLifecycleState returns the cloud instance's lifecycle state
+func (d *Detector) GetLifecycleState() (string, error) {
+	cloudHarvester, err := d.GetHarvester()
+	if err != nil {
+		return "", err
+	}
+
+	return cloudHarvester.GetLifecycleState()
+}
+
+// GetVirtualizationType returns the cloud instance's virtualization type
+func (d *Detector) GetVirtualizationType() (string, error) {
+	cloudHarvester, err := d.GetHarvester()
+	if err != nil {
+		return "", err
+	}
+
+	return cloudHarvester.GetVirtualizationType()
+}
+
+// GetDedicatedVMHostID returns the cloud instance's dedicated VM host ID
+func (d *Detector) GetDedicatedVMHostID() (string, error) {
+	cloudHarvester, err := d.GetHarvester()
+	if err != nil {
+		return "", err
+	}
+
+	return cloudHarvester.GetDedicatedVMHostID()
 }
 
 // isInitialized will check if the detector is Initialized.
