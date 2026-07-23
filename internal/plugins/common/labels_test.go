@@ -1,7 +1,7 @@
 // Copyright New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package common //nolint:revive // package name predates this file; not introducing a rename here
+package common
 
 import (
 	"encoding/json"
