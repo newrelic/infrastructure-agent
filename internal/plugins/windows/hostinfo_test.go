@@ -40,7 +40,7 @@ func (s *HostinfoSuite) SetUpTest(c *C) {
 func (s *HostinfoSuite) NewPlugin(id ids.PluginID, c *C) *HostinfoPlugin {
 	cloudDetector := cloud.NewDetector(true, 0, 0, 0, false)
 	v := NewHostinfoPlugin(id, s.agent,
-		common.NewHostInfoCommon("testing", true, cloudDetector))
+		common.NewHostInfoCommon("testing", true, nil, cloudDetector))
 	plugin, ok := v.(*HostinfoPlugin)
 	c.Assert(ok, Equals, true)
 	go plugin.Run()

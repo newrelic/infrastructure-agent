@@ -52,6 +52,15 @@ func (hip *HostInfoDarwin) SortKey() string {
 	return hip.System
 }
 
+// MarshalJSON flattens OCIFreeformTags into top-level "label.<key>" attributes. Must stay on
+// this outermost type only - adding it to an embedded type (e.g. common.HostInfoData) would be
+// promoted through anonymous embedding and silently override marshaling of this whole struct.
+func (hip HostInfoDarwin) MarshalJSON() ([]byte, error) {
+	type alias HostInfoDarwin
+
+	return common.FlattenLabels(alias(hip), hip.OCIFreeformTags)
+}
+
 func NewHostinfoPlugin(ctx agent.AgentContext, hostInfo common.HostInfo) agent.Plugin {
 	return &HostinfoPlugin{
 		PluginCommon: agent.PluginCommon{

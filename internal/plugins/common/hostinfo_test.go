@@ -5,6 +5,7 @@ package common
 
 import (
 	"errors"
+	"runtime"
 	"testing"
 
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
@@ -73,6 +74,71 @@ func (f *fakeHarvester) GetInstanceDisplayName() (string, error) {
 
 // GetVMSize returns the cloud instance VM size.
 func (f *fakeHarvester) GetVMSize() (string, error) {
+	args := f.Called()
+
+	return args.String(0), args.Error(1)
+}
+
+// GetFaultDomain returns the cloud instance fault domain.
+func (f *fakeHarvester) GetFaultDomain() (string, error) {
+	args := f.Called()
+
+	return args.String(0), args.Error(1)
+}
+
+// GetHostname returns the cloud instance hostname.
+func (f *fakeHarvester) GetHostname() (string, error) {
+	args := f.Called()
+
+	return args.String(0), args.Error(1)
+}
+
+// GetFreeformTags returns the cloud instance freeform tags.
+func (f *fakeHarvester) GetFreeformTags() (map[string]string, error) {
+	args := f.Called()
+
+	tags, _ := args.Get(0).(map[string]string)
+
+	return tags, args.Error(1)
+}
+
+// GetPrivateIP returns the cloud instance private IP.
+func (f *fakeHarvester) GetPrivateIP() (string, error) {
+	args := f.Called()
+
+	return args.String(0), args.Error(1)
+}
+
+// GetVCNID returns the cloud instance VCN ID.
+func (f *fakeHarvester) GetVCNID() (string, error) {
+	args := f.Called()
+
+	return args.String(0), args.Error(1)
+}
+
+// GetSubnetID returns the cloud instance subnet ID.
+func (f *fakeHarvester) GetSubnetID() (string, error) {
+	args := f.Called()
+
+	return args.String(0), args.Error(1)
+}
+
+// GetLifecycleState returns the cloud instance lifecycle state.
+func (f *fakeHarvester) GetLifecycleState() (string, error) {
+	args := f.Called()
+
+	return args.String(0), args.Error(1)
+}
+
+// GetVirtualizationType returns the cloud instance virtualization type.
+func (f *fakeHarvester) GetVirtualizationType() (string, error) {
+	args := f.Called()
+
+	return args.String(0), args.Error(1)
+}
+
+// GetDedicatedVMHostID returns the cloud instance dedicated VM host ID.
+func (f *fakeHarvester) GetDedicatedVMHostID() (string, error) {
 	args := f.Called()
 
 	return args.String(0), args.Error(1)
@@ -194,6 +260,20 @@ func TestGetHostInfo(t *testing.T) {
 				assert.Equal(t, "ocid1.image.oc1", data.OCIImageID)
 				assert.Equal(t, "ubunut-instance-20250722-1328", data.OCIDisplayName)
 				assert.Equal(t, "VM.Optimized3.Flex", data.OCIVMSize)
+				assert.Equal(t, "ocid1.instance.oc1", data.CloudResourceID)
+				assert.Equal(t, "ocid1.instance.oc1", data.OCIInstanceID)
+				assert.Equal(t, "FAULT-DOMAIN-1", data.OCIFaultDomain)
+				assert.Equal(t, "ubunut-instance-20250722-1328", data.OCIPrivateDNSName)
+				assert.Equal(t, "10.0.0.5", data.OCIPrivateIP)
+				assert.Equal(t, runtime.GOARCH, data.HostArch)
+				assert.Equal(t, map[string]string{"env": "prod"}, data.OCIFreeformTags)
+				assert.Equal(t, "oci", data.CloudProvider)
+				assert.Equal(t, "oci_compute", data.CloudPlatform)
+				assert.Equal(t, "ocid1.vcn.oc1", data.OCIVCNID)
+				assert.Equal(t, "ocid1.subnet.oc1", data.OCISubnetID)
+				assert.Equal(t, "RUNNING", data.OCILifecycleState)
+				assert.Equal(t, "NATIVE", data.OCIVirtualizationType)
+				assert.Equal(t, "ocid1.dedicatedvmhost.oc1", data.OCIDedicatedVMHostID)
 				assert.NoError(t, err)
 			},
 			setMock: func(harvester *fakeHarvester) {
@@ -204,6 +284,50 @@ func TestGetHostInfo(t *testing.T) {
 				harvester.On("GetInstanceImageID").Return("ocid1.image.oc1", nil)
 				harvester.On("GetInstanceDisplayName").Return("ubunut-instance-20250722-1328", nil)
 				harvester.On("GetVMSize").Return("VM.Optimized3.Flex", nil)
+				harvester.On("GetFaultDomain").Return("FAULT-DOMAIN-1", nil)
+				harvester.On("GetHostname").Return("ubunut-instance-20250722-1328", nil)
+				harvester.On("GetPrivateIP").Return("10.0.0.5", nil)
+				harvester.On("GetFreeformTags").Return(map[string]string{"env": "prod"}, nil)
+				harvester.On("GetInstanceID").Return("ocid1.instance.oc1", nil)
+				harvester.On("GetVCNID").Return("ocid1.vcn.oc1", nil)
+				harvester.On("GetSubnetID").Return("ocid1.subnet.oc1", nil)
+				harvester.On("GetLifecycleState").Return("RUNNING", nil)
+				harvester.On("GetVirtualizationType").Return("NATIVE", nil)
+				harvester.On("GetDedicatedVMHostID").Return("ocid1.dedicatedvmhost.oc1", nil)
+			},
+		},
+		{
+			name: "cloud oci - phase 2 API unavailable",
+			assertions: func(data *HostInfoData, err error) {
+				// Phase 1 (IMDS) attributes still populate.
+				assert.Equal(t, "us-ashburn-1", data.RegionOCI)
+				assert.Equal(t, "ocid1.instance.oc1", data.CloudResourceID)
+				// Phase 2 (OCI API) attributes are left empty, not an error - graceful degradation.
+				assert.Equal(t, "", data.OCIVCNID)
+				assert.Equal(t, "", data.OCISubnetID)
+				assert.Equal(t, "", data.OCILifecycleState)
+				assert.Equal(t, "", data.OCIVirtualizationType)
+				assert.Equal(t, "", data.OCIDedicatedVMHostID)
+				assert.NoError(t, err)
+			},
+			setMock: func(harvester *fakeHarvester) {
+				harvester.On("GetAccountID").Return("ocid1.compartment.oc1", nil)
+				harvester.On("GetCloudType").Return(cloud.TypeOCI)
+				harvester.On("GetRegion").Return("us-ashburn-1", nil)
+				harvester.On("GetZone").Return("jyDh:US-ASHBURN-AD-1", nil)
+				harvester.On("GetInstanceImageID").Return("ocid1.image.oc1", nil)
+				harvester.On("GetInstanceDisplayName").Return("ubunut-instance-20250722-1328", nil)
+				harvester.On("GetVMSize").Return("VM.Optimized3.Flex", nil)
+				harvester.On("GetFaultDomain").Return("FAULT-DOMAIN-1", nil)
+				harvester.On("GetHostname").Return("ubunut-instance-20250722-1328", nil)
+				harvester.On("GetPrivateIP").Return("10.0.0.5", nil)
+				harvester.On("GetFreeformTags").Return(map[string]string{"env": "prod"}, nil)
+				harvester.On("GetInstanceID").Return("ocid1.instance.oc1", nil)
+				harvester.On("GetVCNID").Return("", errors.New("instance principal unavailable"))
+				harvester.On("GetSubnetID").Return("", errors.New("instance principal unavailable"))
+				harvester.On("GetLifecycleState").Return("", errors.New("instance principal unavailable"))
+				harvester.On("GetVirtualizationType").Return("", errors.New("instance principal unavailable"))
+				harvester.On("GetDedicatedVMHostID").Return("", errors.New("instance principal unavailable"))
 			},
 		},
 		{
@@ -231,7 +355,7 @@ func TestGetHostInfo(t *testing.T) {
 			t.Parallel()
 			h := new(fakeHarvester)
 			testCase.setMock(h)
-			hostInfo := NewHostInfoCommon(agentTestVersion, true, h)
+			hostInfo := NewHostInfoCommon(agentTestVersion, true, nil, h)
 			data, err := hostInfo.GetHostInfo()
 			testCase.assertions(&data, err)
 			h.AssertExpectations(t)
@@ -304,7 +428,7 @@ func TestGetCloudHostType(t *testing.T) {
 			t.Parallel()
 			h := new(fakeHarvester)
 			testCase.setMock(h)
-			hostInfo := NewHostInfoCommon("test", true, h)
+			hostInfo := NewHostInfoCommon("test", true, nil, h)
 			testCase.assertions(hostInfo.GetCloudHostType())
 			h.AssertExpectations(t)
 		})

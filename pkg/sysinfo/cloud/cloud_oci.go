@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo"
+	"github.com/oracle/oci-go-sdk/v65/core"
 )
 
 // Ref: https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/gettingmetadata.htm
@@ -37,6 +39,9 @@ const (
 // ociEndpoint is the URL used for requesting OCI instance metadata (v2). Var to allow test overrides.
 var ociEndpoint = "http://169.254.169.254/opc/v2/instance/" //nolint:gochecknoglobals
 
+// ociVnicsEndpoint is the URL used for requesting OCI VNIC metadata (v2). Var to allow test overrides.
+var ociVnicsEndpoint = "http://169.254.169.254/opc/v2/vnics/" //nolint:gochecknoglobals
+
 // OCIHarvester is used to fetch data from OCI api.
 type OCIHarvester struct {
 	timeout          *Timeout
@@ -49,6 +54,21 @@ type OCIHarvester struct {
 	imageID          string
 	vmSize           string
 	displayName      string
+	faultDomain      string
+	hostname         string
+	freeformTags     map[string]string
+	privateIP        string
+
+	// Phase 2 (OCI SDK + instance principal auth) state. apiOnce guards a single attempt to
+	// build the SDK clients per harvester lifetime - if instance principal auth fails once,
+	// every Phase 2 getter fails fast with the same cached error instead of retrying per call.
+	apiOnce         sync.Once
+	apiInitErr      error
+	computeClient   *core.ComputeClient
+	vnClient        *core.VirtualNetworkClient
+	instanceDetails *core.Instance
+	vnic            *core.Vnic
+	subnet          *core.Subnet
 }
 
 // NewOCIHarvester returns a new instance of OCIHarvester.
@@ -64,6 +84,10 @@ func NewOCIHarvester(disableKeepAlive bool) *OCIHarvester {
 		imageID:          "",
 		vmSize:           "",
 		displayName:      "",
+		faultDomain:      "",
+		hostname:         "",
+		freeformTags:     nil,
+		privateIP:        "",
 	}
 }
 
@@ -188,15 +212,78 @@ func (a *OCIHarvester) GetInstanceDisplayName() (string, error) {
 	return a.displayName, nil
 }
 
+// GetFaultDomain returns the cloud instance fault domain.
+func (a *OCIHarvester) GetFaultDomain() (string, error) {
+	if a.faultDomain == "" || a.timeout.HasExpired() {
+		ociMetadata, err := GetOCIMetadata(a.disableKeepAlive)
+		if err != nil {
+			return "", err
+		}
+		a.faultDomain = ociMetadata.FaultDomain
+	}
+
+	return a.faultDomain, nil
+}
+
+// GetHostname returns the cloud instance hostname.
+func (a *OCIHarvester) GetHostname() (string, error) {
+	if a.hostname == "" || a.timeout.HasExpired() {
+		ociMetadata, err := GetOCIMetadata(a.disableKeepAlive)
+		if err != nil {
+			return "", err
+		}
+		a.hostname = ociMetadata.Hostname
+	}
+
+	return a.hostname, nil
+}
+
+// GetFreeformTags returns the cloud instance freeform tags.
+func (a *OCIHarvester) GetFreeformTags() (map[string]string, error) {
+	if a.freeformTags == nil || a.timeout.HasExpired() {
+		ociMetadata, err := GetOCIMetadata(a.disableKeepAlive)
+		if err != nil {
+			return nil, err
+		}
+		a.freeformTags = ociMetadata.FreeformTags
+	}
+
+	return a.freeformTags, nil
+}
+
+// GetPrivateIP returns the cloud instance private IP of its primary VNIC.
+func (a *OCIHarvester) GetPrivateIP() (string, error) {
+	if a.privateIP == "" || a.timeout.HasExpired() {
+		vnics, err := GetOCIVnicsMetadata(a.disableKeepAlive)
+		if err != nil {
+			return "", err
+		}
+		if len(vnics) > 0 {
+			a.privateIP = vnics[0].PrivateIP
+		}
+	}
+
+	return a.privateIP, nil
+}
+
 // OCIMetadata captures the fields we care about from the OCI metadata API.
 type OCIMetadata struct {
-	Location       string `json:"canonicalRegionName"`
-	VMID           string `json:"id"`
-	VMSize         string `json:"shape"`
-	SubscriptionID string `json:"compartmentId"`
-	Zone           string `json:"availabilityDomain"`
-	ImageID        string `json:"image"`
-	DisplayName    string `json:"displayName"`
+	Location       string            `json:"canonicalRegionName"`
+	VMID           string            `json:"id"`
+	VMSize         string            `json:"shape"`
+	SubscriptionID string            `json:"compartmentId"`
+	Zone           string            `json:"availabilityDomain"`
+	ImageID        string            `json:"image"`
+	DisplayName    string            `json:"displayName"`
+	FaultDomain    string            `json:"faultDomain"`
+	Hostname       string            `json:"hostname"`
+	FreeformTags   map[string]string `json:"freeformTags"`
+}
+
+// OCIVnicMetadata captures the fields we care about from the OCI VNIC metadata API.
+type OCIVnicMetadata struct {
+	VnicID    string `json:"vnicId"`
+	PrivateIP string `json:"privateIp"`
 }
 
 // GetOCIMetadata is used to request metadata from OCI API.
@@ -232,6 +319,46 @@ func parseOCIMetadataResponse(response *http.Response) (*OCIMetadata, error) {
 	}
 
 	var result *OCIMetadata
+	if err = json.Unmarshal(responseBody, &result); err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrOCIUnmarshalFailed, err) //nolint:wrapcheck
+	}
+
+	return result, nil
+}
+
+// GetOCIVnicsMetadata is used to request VNIC metadata from OCI API.
+func GetOCIVnicsMetadata(disableKeepAlive bool) ([]OCIVnicMetadata, error) {
+	var request *http.Request
+	var err error
+
+	if request, err = http.NewRequest(http.MethodGet, ociVnicsEndpoint, nil); err != nil { //nolint:noctx
+		return nil, fmt.Errorf("%w: %w", ErrOCIRequestFailed, err) //nolint:wrapcheck
+	}
+
+	request.Header.Add("Authorization", ociV2AuthorizationHeader)
+
+	var response *http.Response
+	if response, err = clientWithFastTimeout(disableKeepAlive).Do(request); err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrOCIFetchFailed, err) //nolint:wrapcheck
+	}
+	defer response.Body.Close()
+
+	return parseOCIVnicsMetadataResponse(response)
+}
+
+// parseOCIVnicsMetadataResponse is used to parse the value required from OCI VNIC response.
+func parseOCIVnicsMetadataResponse(response *http.Response) ([]OCIVnicMetadata, error) {
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%w: %d %s", ErrOCIResponseFailed, response.StatusCode, response.Status) //nolint:wrapcheck
+	}
+
+	var responseBody []byte
+	var err error
+	if responseBody, err = io.ReadAll(response.Body); err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrOCIReadFailed, err) //nolint:wrapcheck
+	}
+
+	var result []OCIVnicMetadata
 	if err = json.Unmarshal(responseBody, &result); err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrOCIUnmarshalFailed, err) //nolint:wrapcheck
 	}

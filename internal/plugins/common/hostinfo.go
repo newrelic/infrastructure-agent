@@ -20,6 +20,7 @@ type HostInfo interface {
 type HostInfoCommon struct {
 	cloudMonitoring bool
 	agentVersion    string
+	ociTagsExclude  []string
 	cloud.Harvester
 }
 
@@ -46,10 +47,11 @@ type HostInfoData struct {
 }
 
 // NewHostInfoCommon return a new HostInfoCommon structure that implements HostInfo.
-func NewHostInfoCommon(agentVersion string, enableCloudMonitoring bool, cloudHarvester cloud.Harvester) *HostInfoCommon {
+func NewHostInfoCommon(agentVersion string, enableCloudMonitoring bool, ociTagsExclude []string, cloudHarvester cloud.Harvester) *HostInfoCommon {
 	return &HostInfoCommon{
 		enableCloudMonitoring,
 		agentVersion,
+		ociTagsExclude,
 		cloudHarvester,
 	}
 }
@@ -64,7 +66,7 @@ func (h *HostInfoCommon) GetHostInfo() (HostInfoData, error) {
 	}
 
 	if h.cloudMonitoring {
-		hostInfo.CloudData, err = getCloudData(h)
+		hostInfo.CloudData, err = getCloudData(h, h.ociTagsExclude)
 		if err != nil {
 			return hostInfo, err
 		}

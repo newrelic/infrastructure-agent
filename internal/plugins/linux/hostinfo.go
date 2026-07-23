@@ -54,6 +54,15 @@ func (self HostInfoLinux) SortKey() string {
 	return self.System
 }
 
+// MarshalJSON flattens OCIFreeformTags into top-level "label.<key>" attributes. Must stay on
+// this outermost type only - adding it to an embedded type (e.g. common.HostInfoData) would be
+// promoted through anonymous embedding and silently override marshaling of this whole struct.
+func (self HostInfoLinux) MarshalJSON() ([]byte, error) {
+	type alias HostInfoLinux
+
+	return common.FlattenLabels(alias(self), self.OCIFreeformTags)
+}
+
 func getTotalCpu(cpuInfoFile string) string {
 	cpu_re := regexp.MustCompile(`processor\s*:\s*([0-9]+)`)
 	file, err := ioutil.ReadFile(cpuInfoFile)

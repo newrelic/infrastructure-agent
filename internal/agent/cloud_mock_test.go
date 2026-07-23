@@ -90,6 +90,51 @@ func (m *MockHarvester) GetVMSize() (string, error) {
 	return "", nil
 }
 
+// GetFaultDomain returns the cloud instance fault domain.
+func (m *MockHarvester) GetFaultDomain() (string, error) {
+	return "", nil
+}
+
+// GetHostname returns the cloud instance hostname.
+func (m *MockHarvester) GetHostname() (string, error) {
+	return "", nil
+}
+
+// GetFreeformTags returns the cloud instance freeform tags.
+func (m *MockHarvester) GetFreeformTags() (map[string]string, error) {
+	return nil, nil
+}
+
+// GetPrivateIP returns the cloud instance private IP.
+func (m *MockHarvester) GetPrivateIP() (string, error) {
+	return "", nil
+}
+
+// GetVCNID returns the cloud instance's VCN ID.
+func (m *MockHarvester) GetVCNID() (string, error) {
+	return "", nil
+}
+
+// GetSubnetID returns the cloud instance's subnet ID.
+func (m *MockHarvester) GetSubnetID() (string, error) {
+	return "", nil
+}
+
+// GetLifecycleState returns the cloud instance's lifecycle state.
+func (m *MockHarvester) GetLifecycleState() (string, error) {
+	return "", nil
+}
+
+// GetVirtualizationType returns the cloud instance's virtualization type.
+func (m *MockHarvester) GetVirtualizationType() (string, error) {
+	return "", nil
+}
+
+// GetDedicatedVMHostID returns the cloud instance's dedicated VM host ID.
+func (m *MockHarvester) GetDedicatedVMHostID() (string, error) {
+	return "", nil
+}
+
 // GetHarvester returns the MockHarvester.
 func (m *MockHarvester) GetHarvester() (cloud.Harvester, error) { //nolint: ireturn
 	return m, nil

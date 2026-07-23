@@ -1094,6 +1094,13 @@ type Config struct {
 	// Public: Yes
 	CloudMetadataDisableKeepAlive bool `yaml:"cloud_metadata_disable_keep_alive" envconfig:"cloud_metadata_disable_keep_alive"`
 
+	// OCITagsExclude excludes OCI freeform tags from being emitted as label.* inventory
+	// attributes. Supports glob patterns (e.g. "pipeline-*") to guard against tag churn from
+	// CI/CD pipelines writing tags like last-deploy-date on every deployment.
+	// Default: empty (no exclusions)
+	// Public: Yes
+	OCITagsExclude []string `yaml:"oci_tags_exclude" envconfig:"oci_tags_exclude"`
+
 	// RemoveEntitiesPeriod Defines the frequency to engage the process of deleting entities that haven't been reported
 	// information during the frequency interval. Valid time units are: "s" (seconds), "m" (minutes), "h" (hour).
 	// Default: 48h
