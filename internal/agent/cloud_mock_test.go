@@ -102,7 +102,7 @@ func (m *MockHarvester) GetHostname() (string, error) {
 
 // GetFreeformTags returns the cloud instance freeform tags.
 func (m *MockHarvester) GetFreeformTags() (map[string]string, error) {
-	return nil, nil
+	return map[string]string{}, nil
 }
 
 // GetPrivateIP returns the cloud instance private IP.

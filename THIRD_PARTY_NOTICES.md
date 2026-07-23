@@ -254,6 +254,14 @@ Distributed under the following license(s):
 
 
 
+## [github.com/oracle/oci-go-sdk/v65](https://github.com/oracle/oci-go-sdk)
+
+Distributed under the following license(s):
+
+* Apache-2.0
+
+
+
 ## [github.com/pkg/errors](https://github.com/pkg/errors)
 
 Distributed under the following license(s):

@@ -1,5 +1,7 @@
 // Copyright 2025 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+//
+//nolint:godoclint // package doc convention is inconsistent repo-wide; not fixing that here
 package cloud
 
 import (
@@ -27,18 +29,21 @@ func (a *OCIHarvester) initAPIClients() error {
 		provider, err := newInstancePrincipalProvider()
 		if err != nil {
 			a.apiInitErr = fmt.Errorf("%w: %w", ErrOCIAPIUnavailable, err)
+
 			return
 		}
 
 		computeClient, err := core.NewComputeClientWithConfigurationProvider(provider)
 		if err != nil {
 			a.apiInitErr = fmt.Errorf("%w: %w", ErrOCIAPIUnavailable, err)
+
 			return
 		}
 
 		vnClient, err := core.NewVirtualNetworkClientWithConfigurationProvider(provider)
 		if err != nil {
 			a.apiInitErr = fmt.Errorf("%w: %w", ErrOCIAPIUnavailable, err)
+
 			return
 		}
 
@@ -55,20 +60,21 @@ func (a *OCIHarvester) getInstanceDetails() (*core.Instance, error) {
 		return a.instanceDetails, nil
 	}
 
-	if err := a.initAPIClients(); err != nil {
-		return nil, err
+	initErr := a.initAPIClients()
+	if initErr != nil {
+		return nil, initErr
 	}
 
 	instanceID, err := a.GetInstanceID()
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrOCIAPIUnavailable, err)
+		return nil, fmt.Errorf("%w: %w", ErrOCIAPIUnavailable, err) //nolint:wrapcheck
 	}
 
-	response, err := a.computeClient.GetInstance(context.Background(), core.GetInstanceRequest{
+	response, err := a.computeClient.GetInstance(context.Background(), core.GetInstanceRequest{ //nolint:exhaustruct
 		InstanceId: &instanceID,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrOCIAPIUnavailable, err)
+		return nil, fmt.Errorf("%w: %w", ErrOCIAPIUnavailable, err) //nolint:wrapcheck
 	}
 
 	a.instanceDetails = &response.Instance
@@ -82,23 +88,25 @@ func (a *OCIHarvester) getPrimaryVnic() (*core.Vnic, error) {
 		return a.vnic, nil
 	}
 
-	if err := a.initAPIClients(); err != nil {
-		return nil, err
+	initErr := a.initAPIClients()
+	if initErr != nil {
+		return nil, initErr
 	}
 
 	vnics, err := GetOCIVnicsMetadata(a.disableKeepAlive)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrOCIAPIUnavailable, err)
-	}
-	if len(vnics) == 0 {
-		return nil, fmt.Errorf("%w: no VNICs found in IMDS", ErrOCIAPIUnavailable)
+		return nil, fmt.Errorf("%w: %w", ErrOCIAPIUnavailable, err) //nolint:wrapcheck
 	}
 
-	response, err := a.vnClient.GetVnic(context.Background(), core.GetVnicRequest{
+	if len(vnics) == 0 {
+		return nil, fmt.Errorf("%w: no VNICs found in IMDS", ErrOCIAPIUnavailable) //nolint:wrapcheck
+	}
+
+	response, err := a.vnClient.GetVnic(context.Background(), core.GetVnicRequest{ //nolint:exhaustruct
 		VnicId: &vnics[0].VnicID,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrOCIAPIUnavailable, err)
+		return nil, fmt.Errorf("%w: %w", ErrOCIAPIUnavailable, err) //nolint:wrapcheck
 	}
 
 	a.vnic = &response.Vnic
@@ -116,15 +124,16 @@ func (a *OCIHarvester) getSubnet() (*core.Subnet, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if vnic.SubnetId == nil {
-		return nil, fmt.Errorf("%w: primary VNIC has no subnet ID", ErrOCIAPIUnavailable)
+		return nil, fmt.Errorf("%w: primary VNIC has no subnet ID", ErrOCIAPIUnavailable) //nolint:wrapcheck
 	}
 
-	response, err := a.vnClient.GetSubnet(context.Background(), core.GetSubnetRequest{
+	response, err := a.vnClient.GetSubnet(context.Background(), core.GetSubnetRequest{ //nolint:exhaustruct
 		SubnetId: vnic.SubnetId,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrOCIAPIUnavailable, err)
+		return nil, fmt.Errorf("%w: %w", ErrOCIAPIUnavailable, err) //nolint:wrapcheck
 	}
 
 	a.subnet = &response.Subnet
@@ -138,6 +147,7 @@ func (a *OCIHarvester) GetVCNID() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	if subnet.VcnId == nil {
 		return "", nil
 	}
@@ -151,6 +161,7 @@ func (a *OCIHarvester) GetSubnetID() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	if vnic.SubnetId == nil {
 		return "", nil
 	}
@@ -186,6 +197,7 @@ func (a *OCIHarvester) GetDedicatedVMHostID() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	if instance.DedicatedVmHostId == nil {
 		return "", nil
 	}

@@ -4,6 +4,7 @@ package cloud
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -289,94 +290,139 @@ func (d *Detector) GetVMSize() (string, error) {
 	return cloudHarvester.GetVMSize()
 }
 
-// GetFaultDomain returns the cloud instance fault domain
+// GetFaultDomain returns the cloud instance fault domain.
 func (d *Detector) GetFaultDomain() (string, error) {
 	cloudHarvester, err := d.GetHarvester()
 	if err != nil {
 		return "", err
 	}
 
-	return cloudHarvester.GetFaultDomain()
+	faultDomain, err := cloudHarvester.GetFaultDomain()
+	if err != nil {
+		return "", fmt.Errorf("couldn't retrieve cloud fault domain: %w", err) //nolint:wrapcheck
+	}
+
+	return faultDomain, nil
 }
 
-// GetHostname returns the cloud instance hostname
+// GetHostname returns the cloud instance hostname.
 func (d *Detector) GetHostname() (string, error) {
 	cloudHarvester, err := d.GetHarvester()
 	if err != nil {
 		return "", err
 	}
 
-	return cloudHarvester.GetHostname()
+	hostname, err := cloudHarvester.GetHostname()
+	if err != nil {
+		return "", fmt.Errorf("couldn't retrieve cloud hostname: %w", err) //nolint:wrapcheck
+	}
+
+	return hostname, nil
 }
 
-// GetFreeformTags returns the cloud instance freeform tags
+// GetFreeformTags returns the cloud instance freeform tags.
 func (d *Detector) GetFreeformTags() (map[string]string, error) {
 	cloudHarvester, err := d.GetHarvester()
 	if err != nil {
 		return nil, err
 	}
 
-	return cloudHarvester.GetFreeformTags()
+	tags, err := cloudHarvester.GetFreeformTags()
+	if err != nil {
+		return nil, fmt.Errorf("couldn't retrieve cloud freeform tags: %w", err) //nolint:wrapcheck
+	}
+
+	return tags, nil
 }
 
-// GetPrivateIP returns the cloud instance private IP
+// GetPrivateIP returns the cloud instance private IP.
 func (d *Detector) GetPrivateIP() (string, error) {
 	cloudHarvester, err := d.GetHarvester()
 	if err != nil {
 		return "", err
 	}
 
-	return cloudHarvester.GetPrivateIP()
+	privateIP, err := cloudHarvester.GetPrivateIP()
+	if err != nil {
+		return "", fmt.Errorf("couldn't retrieve cloud private IP: %w", err) //nolint:wrapcheck
+	}
+
+	return privateIP, nil
 }
 
-// GetVCNID returns the cloud instance's VCN ID
+// GetVCNID returns the cloud instance's VCN ID.
 func (d *Detector) GetVCNID() (string, error) {
 	cloudHarvester, err := d.GetHarvester()
 	if err != nil {
 		return "", err
 	}
 
-	return cloudHarvester.GetVCNID()
+	vcnID, err := cloudHarvester.GetVCNID()
+	if err != nil {
+		return "", fmt.Errorf("couldn't retrieve cloud VCN ID: %w", err) //nolint:wrapcheck
+	}
+
+	return vcnID, nil
 }
 
-// GetSubnetID returns the cloud instance's subnet ID
+// GetSubnetID returns the cloud instance's subnet ID.
 func (d *Detector) GetSubnetID() (string, error) {
 	cloudHarvester, err := d.GetHarvester()
 	if err != nil {
 		return "", err
 	}
 
-	return cloudHarvester.GetSubnetID()
+	subnetID, err := cloudHarvester.GetSubnetID()
+	if err != nil {
+		return "", fmt.Errorf("couldn't retrieve cloud subnet ID: %w", err) //nolint:wrapcheck
+	}
+
+	return subnetID, nil
 }
 
-// GetLifecycleState returns the cloud instance's lifecycle state
+// GetLifecycleState returns the cloud instance's lifecycle state.
 func (d *Detector) GetLifecycleState() (string, error) {
 	cloudHarvester, err := d.GetHarvester()
 	if err != nil {
 		return "", err
 	}
 
-	return cloudHarvester.GetLifecycleState()
+	lifecycleState, err := cloudHarvester.GetLifecycleState()
+	if err != nil {
+		return "", fmt.Errorf("couldn't retrieve cloud lifecycle state: %w", err) //nolint:wrapcheck
+	}
+
+	return lifecycleState, nil
 }
 
-// GetVirtualizationType returns the cloud instance's virtualization type
+// GetVirtualizationType returns the cloud instance's virtualization type.
 func (d *Detector) GetVirtualizationType() (string, error) {
 	cloudHarvester, err := d.GetHarvester()
 	if err != nil {
 		return "", err
 	}
 
-	return cloudHarvester.GetVirtualizationType()
+	virtualizationType, err := cloudHarvester.GetVirtualizationType()
+	if err != nil {
+		return "", fmt.Errorf("couldn't retrieve cloud virtualization type: %w", err) //nolint:wrapcheck
+	}
+
+	return virtualizationType, nil
 }
 
-// GetDedicatedVMHostID returns the cloud instance's dedicated VM host ID
+// GetDedicatedVMHostID returns the cloud instance's dedicated VM host ID.
 func (d *Detector) GetDedicatedVMHostID() (string, error) {
 	cloudHarvester, err := d.GetHarvester()
 	if err != nil {
 		return "", err
 	}
 
-	return cloudHarvester.GetDedicatedVMHostID()
+	dedicatedVMHostID, err := cloudHarvester.GetDedicatedVMHostID()
+	if err != nil {
+		return "", fmt.Errorf("couldn't retrieve cloud dedicated VM host ID: %w", err) //nolint:wrapcheck
+	}
+
+	return dedicatedVMHostID, nil
 }
 
 // isInitialized will check if the detector is Initialized.
@@ -440,7 +486,6 @@ func (d *Detector) detectRetrying(harvesters ...Harvester) {
 
 // detect will check which cloud harvester is able to successfully request data from API in order to detect the cloud type.
 func (d *Detector) detect(harvesters ...Harvester) error {
-
 	for _, harvester := range harvesters {
 		if harvester == nil {
 			continue

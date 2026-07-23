@@ -89,7 +89,7 @@ func (a *MockCloudHarvester) GetHostname() (string, error) {
 }
 
 func (a *MockCloudHarvester) GetFreeformTags() (map[string]string, error) {
-	return nil, nil
+	return map[string]string{}, nil
 }
 
 func (a *MockCloudHarvester) GetPrivateIP() (string, error) {
