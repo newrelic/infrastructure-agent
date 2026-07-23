@@ -318,7 +318,7 @@ jobs:
             rm -f debian-binary control.tar.gz data.tar.gz _gpgbuilder
 
             # Verify integrations exist
-            for INTEGRATION in nri-docker nri-prometheus nri-flex; do
+            for INTEGRATION in nri-docker nri-prometheus; do
               if [ ! -f "opt/newrelic-infra/newrelic-integrations/bin/${INTEGRATION}" ]; then
                 echo "::error::Integration not found: ${INTEGRATION}"
                 exit 1
@@ -361,7 +361,6 @@ jobs:
           # Copy integrations
           cp "${SRC}/newrelic-integrations/nri-winservices.exe" "${DEST}/integrations/"
           cp "${SRC}/newrelic-integrations/windows_exporter.exe" "${DEST}/integrations/"
-          cp "${SRC}/newrelic-integrations/nri-flex.exe" "${DEST}/integrations/"
           cp "${SRC}/newrelic-integrations/nri-prometheus.exe" "${DEST}/integrations/"
           cp "${SRC}/newrelic-integrations/nr-winpkg.exe" "${DEST}/integrations/"
 
@@ -411,7 +410,6 @@ jobs:
             # Copy integrations
             cp "${DEB_SRC}/opt/newrelic-infra/newrelic-integrations/bin/nri-docker" "${DEST}/integrations/"
             cp "${DEB_SRC}/opt/newrelic-infra/newrelic-integrations/bin/nri-prometheus" "${DEST}/integrations/"
-            cp "${DEB_SRC}/opt/newrelic-infra/newrelic-integrations/bin/nri-flex" "${DEST}/integrations/"
 
             # Copy logging components
             cp "${DEB_SRC}/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so" "${DEST}/logging/"
