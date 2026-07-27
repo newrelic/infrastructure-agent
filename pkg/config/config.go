@@ -869,8 +869,8 @@ type Config struct {
 	// allows to install integrations outside the agent_dir. It has the first priority when the agent is looking for
 	// installed integrations.
 	// Default: ""
-	// Public: No
-	CustomPluginInstallationDir string `yaml:"custom_plugin_installation_dir" envconfig:"custom_plugin_installation_dir" public:"false"`
+	// Public: Yes
+	CustomPluginInstallationDir string `envconfig:"custom_plugin_installation_dir" public:"true" yaml:"custom_plugin_installation_dir"` //nolint:lll
 
 	// DisablePluginDefaultDirScan, when enabled, stops the agent from scanning the default integration
 	// locations, so it only loads integrations from the explicitly configured locations
@@ -923,8 +923,8 @@ type Config struct {
 	// LoggingHomeDir folder containing plugins and other required files for the log forwarder.
 	// Default (Linux): /var/db/newrelic-infra/newrelic-integrations/logging/
 	// Default (Windows): C:\Program Files\New Relic\newrelic-infra\newrelic-integrations\logging\
-	// Public: No
-	LoggingHomeDir string `yaml:"logging_home_dir" envconfig:"logging_home_dir" public:"false"`
+	// Public: Yes
+	LoggingHomeDir string `envconfig:"logging_home_dir" public:"true" yaml:"logging_home_dir"`
 
 	// LoggingRetryLimit determines the value of the Retry_Limit for the New Relic fluent-bit output plugin.
 	// https://github.com/newrelic/newrelic-fluent-bit-output/blob/7cbb4393aa36e48bad783231182f707037ebf217/README.md#retry-logic
@@ -1326,7 +1326,7 @@ type Config struct {
 	// Default (MacOS AMD): /usr/local/var/db/newrelic-infra/tmp
 	// Default (MacOS ARM): /opt/homebrew/var/db/newrelic-infra/tmp
 	// Default (Windows): C:\ProgramData\New Relic\newrelic-infra\tmp
-	// Public: No
+	// Public: Yes
 	AgentTempDir string `envconfig:"agent_temp_dir" yaml:"agent_temp_dir"`
 
 	// ProcessContainerDecoration controls if the ProcessSample gets decorated with Container Information
