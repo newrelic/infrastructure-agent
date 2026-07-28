@@ -9,8 +9,15 @@ on:
         description: 'Tag to scan'
         required: false
         default: 'latest'
+
+permissions:
+  contents: read
+
 jobs:
   docker-trivy:
+    permissions:
+      contents: read
+      security-events: write # caller must grant it; component_trivy.yml uploads SARIF on scheduled runs
     uses: ./.github/workflows/component_trivy.yml
     secrets:
       slack_webhook: ${{ secrets.CAOS_SLACK_WEBHOOK }}

@@ -7,6 +7,10 @@ on:
     tags:
       - '*'
 
+
+permissions:
+  contents: read
+
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -34,6 +38,8 @@ jobs:
     name: Create MSI & Upload into GH Release assets
     runs-on: windows-2025
     needs: [ unit-test ]
+    permissions:
+      contents: write # required by 'Upload MSI to GH' (build/upload_artifacts_gh.sh -> gh release upload)
     env:
       GOPATH: ${{ github.workspace }}
     defaults:

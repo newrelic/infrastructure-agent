@@ -27,6 +27,10 @@ on:
         type: boolean
         default: false
 
+
+permissions:
+  contents: read
+
 env:
   GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
   GPG_MAIL: ${{ secrets.GPG_MAIL }}
@@ -42,6 +46,8 @@ jobs:
   packaging:
     name: Build and upload ${{ inputs.ARCH }} artifacts into GH Release assets
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # 'make ci/prerelease-publish' runs build/upload_artifacts_gh.sh (gh release upload)
 
     steps:
       - uses: actions/checkout@v2

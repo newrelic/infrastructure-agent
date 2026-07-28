@@ -14,6 +14,10 @@ on:
       AWS_ROLE_SESSION_NAME:
         required: true
 
+
+permissions:
+  contents: read
+
 env:
   CLOUDFARE_KEY: ${{ secrets.CLOUDFARE_KEY }}
   AWS_S3_BUCKET_NAME: "nr-downloads-main"

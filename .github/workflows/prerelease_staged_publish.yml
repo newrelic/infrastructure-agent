@@ -11,6 +11,10 @@ on:
         required: true
         default: 'all'
 
+
+permissions:
+  contents: read
+
 env:
   GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
   GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }}

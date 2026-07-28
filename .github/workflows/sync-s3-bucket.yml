@@ -13,6 +13,10 @@ on:
           - testing
         default: 'staging'
 
+
+permissions:
+  contents: read
+
 env:
   AWS_REGION: "us-east-1"
   TEMP_AWS_PROFILE: temp_aws_profile

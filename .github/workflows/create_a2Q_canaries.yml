@@ -18,6 +18,10 @@ on:
         default: true
         required: false
 
+
+permissions:
+  contents: read
+
 jobs:
   A2Q-canaries-windows:
     if: ${{ github.event.inputs.windows == 'true' }}
