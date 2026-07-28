@@ -651,6 +651,94 @@ func TestPublicFields_Obfuscate(t *testing.T) {
 	assert.Equal(t, "<HIDDEN>", actualVal)
 }
 
+func TestPublicFields_AgentControlManagedEnvVars(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name       string
+		yamlOption string
+		setValue   func(cfg *Config)
+		expected   string
+	}{
+		{
+			name:       "agent_dir",
+			yamlOption: "agent_dir",
+			setValue:   func(cfg *Config) { cfg.AgentDir = "/opt/ac/newrelic-infra" },
+			expected:   "/opt/ac/newrelic-infra",
+		},
+		{
+			name:       "safe_bin_dir",
+			yamlOption: "safe_bin_dir",
+			setValue:   func(cfg *Config) { cfg.SafeBinDir = "/opt/ac/safe-bin" },
+			expected:   "/opt/ac/safe-bin",
+		},
+		{
+			name:       "plugin_dir",
+			yamlOption: "plugin_dir",
+			setValue:   func(cfg *Config) { cfg.PluginDir = "/opt/ac/integrations.d" },
+			expected:   "/opt/ac/integrations.d",
+		},
+		{
+			name:       "logging_configs_dir",
+			yamlOption: "logging_configs_dir",
+			setValue:   func(cfg *Config) { cfg.LoggingConfigsDir = "/opt/ac/logging.d" },
+			expected:   "/opt/ac/logging.d",
+		},
+		{
+			name:       "logging_home_dir",
+			yamlOption: "logging_home_dir",
+			setValue:   func(cfg *Config) { cfg.LoggingHomeDir = "/opt/ac/logging" },
+			expected:   "/opt/ac/logging",
+		},
+		{
+			name:       "logging_bin_dir",
+			yamlOption: "logging_bin_dir",
+			setValue:   func(cfg *Config) { cfg.LoggingBinDir = "/opt/ac/logging-bin" },
+			expected:   "/opt/ac/logging-bin",
+		},
+		{
+			name:       "custom_plugin_installation_dir",
+			yamlOption: "custom_plugin_installation_dir",
+			setValue:   func(cfg *Config) { cfg.CustomPluginInstallationDir = "/opt/ac/newrelic-integrations" },
+			expected:   "/opt/ac/newrelic-integrations",
+		},
+		{
+			name:       "agent_temp_dir",
+			yamlOption: "agent_temp_dir",
+			setValue:   func(cfg *Config) { cfg.AgentTempDir = "/opt/ac/tmp" },
+			expected:   "/opt/ac/tmp",
+		},
+		{
+			name:       "status_server_enabled",
+			yamlOption: "status_server_enabled",
+			setValue:   func(cfg *Config) { cfg.StatusServerEnabled = true },
+			expected:   "true",
+		},
+		{
+			name:       "status_server_port",
+			yamlOption: "status_server_port",
+			setValue:   func(cfg *Config) { cfg.StatusServerPort = 18003 },
+			expected:   "18003",
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			cfg := NewConfig()
+			testCase.setValue(cfg)
+
+			fields, err := cfg.PublicFields()
+			require.NoError(t, err)
+
+			actual, exists := fields[testCase.yamlOption]
+			assert.True(t, exists, "%s should be reported in inventory's public fields", testCase.yamlOption)
+			assert.Equal(t, testCase.expected, actual)
+		})
+	}
+}
+
 func TestConfig_SetBoolValueByYamlAttribute(t *testing.T) {
 	c := &Config{
 		ConnectEnabled: false,
