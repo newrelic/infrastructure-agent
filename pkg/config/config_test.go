@@ -691,6 +691,12 @@ func TestPublicFields_AgentControlManagedEnvVars(t *testing.T) {
 			expected:   "/opt/ac/logging",
 		},
 		{
+			name:       "logging_bin_dir",
+			yamlOption: "logging_bin_dir",
+			setValue:   func(cfg *Config) { cfg.LoggingBinDir = "/opt/ac/logging-bin" },
+			expected:   "/opt/ac/logging-bin",
+		},
+		{
 			name:       "custom_plugin_installation_dir",
 			yamlOption: "custom_plugin_installation_dir",
 			setValue:   func(cfg *Config) { cfg.CustomPluginInstallationDir = "/opt/ac/newrelic-integrations" },

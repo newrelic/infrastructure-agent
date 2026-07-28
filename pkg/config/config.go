@@ -917,8 +917,8 @@ type Config struct {
 
 	// LoggingBinDir folder containing binaries for the log forwarder.
 	// Default: /var/db/newrelic-infra/newrelic-integrations/logging/
-	// Public: No
-	LoggingBinDir string `yaml:"logging_bin_dir" envconfig:"logging_bin_dir" public:"false"`
+	// Public: Yes
+	LoggingBinDir string `envconfig:"logging_bin_dir" public:"true" yaml:"logging_bin_dir"`
 
 	// LoggingHomeDir folder containing plugins and other required files for the log forwarder.
 	// Default (Linux): /var/db/newrelic-infra/newrelic-integrations/logging/
