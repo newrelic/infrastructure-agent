@@ -3,7 +3,6 @@
 package config
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -14,7 +13,6 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
-	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	. "gopkg.in/check.v1"
@@ -653,48 +651,86 @@ func TestPublicFields_Obfuscate(t *testing.T) {
 	assert.Equal(t, "<HIDDEN>", actualVal)
 }
 
-func TestKnownEnvVarNames_TopLevelAndNestedFields(t *testing.T) {
+func TestPublicFields_AgentControlManagedEnvVars(t *testing.T) {
 	t.Parallel()
 
-	known := knownEnvVarNames(reflect.TypeOf((*Config)(nil)).Elem(), "NRIA")
+	cases := []struct {
+		name       string
+		yamlOption string
+		setValue   func(cfg *Config)
+		expected   string
+	}{
+		{
+			name:       "agent_dir",
+			yamlOption: "agent_dir",
+			setValue:   func(cfg *Config) { cfg.AgentDir = "/opt/ac/newrelic-infra" },
+			expected:   "/opt/ac/newrelic-infra",
+		},
+		{
+			name:       "safe_bin_dir",
+			yamlOption: "safe_bin_dir",
+			setValue:   func(cfg *Config) { cfg.SafeBinDir = "/opt/ac/safe-bin" },
+			expected:   "/opt/ac/safe-bin",
+		},
+		{
+			name:       "plugin_dir",
+			yamlOption: "plugin_dir",
+			setValue:   func(cfg *Config) { cfg.PluginDir = "/opt/ac/integrations.d" },
+			expected:   "/opt/ac/integrations.d",
+		},
+		{
+			name:       "logging_configs_dir",
+			yamlOption: "logging_configs_dir",
+			setValue:   func(cfg *Config) { cfg.LoggingConfigsDir = "/opt/ac/logging.d" },
+			expected:   "/opt/ac/logging.d",
+		},
+		{
+			name:       "logging_home_dir",
+			yamlOption: "logging_home_dir",
+			setValue:   func(cfg *Config) { cfg.LoggingHomeDir = "/opt/ac/logging" },
+			expected:   "/opt/ac/logging",
+		},
+		{
+			name:       "custom_plugin_installation_dir",
+			yamlOption: "custom_plugin_installation_dir",
+			setValue:   func(cfg *Config) { cfg.CustomPluginInstallationDir = "/opt/ac/newrelic-integrations" },
+			expected:   "/opt/ac/newrelic-integrations",
+		},
+		{
+			name:       "agent_temp_dir",
+			yamlOption: "agent_temp_dir",
+			setValue:   func(cfg *Config) { cfg.AgentTempDir = "/opt/ac/tmp" },
+			expected:   "/opt/ac/tmp",
+		},
+		{
+			name:       "status_server_enabled",
+			yamlOption: "status_server_enabled",
+			setValue:   func(cfg *Config) { cfg.StatusServerEnabled = true },
+			expected:   "true",
+		},
+		{
+			name:       "status_server_port",
+			yamlOption: "status_server_port",
+			setValue:   func(cfg *Config) { cfg.StatusServerPort = 18003 },
+			expected:   "18003",
+		},
+	}
 
-	_, exists := known["NRIA_AGENT_DIR"]
-	assert.True(t, exists, "top-level field should be a known env var")
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
 
-	_, exists = known["NRIA_LOG_LEVEL"]
-	assert.True(t, exists, "field nested under a config struct should be a known env var")
+			cfg := NewConfig()
+			testCase.setValue(cfg)
 
-	_, exists = known["NRIA_LOG_ROTATE_MAX_SIZE_MB"]
-	assert.True(t, exists, "field nested two levels deep should be a known env var")
-}
+			fields, err := cfg.PublicFields()
+			require.NoError(t, err)
 
-func TestKnownEnvVarNames_IgnoresIgnoredFields(t *testing.T) {
-	t.Parallel()
-
-	known := knownEnvVarNames(reflect.TypeOf((*Config)(nil)).Elem(), "NRIA")
-
-	_, exists := known["NRIA_PLUGIN_INSTANCE_DIRS"]
-	assert.False(t, exists, "envconfig:\"ignored\" fields must not be treated as settable env vars")
-}
-
-func TestWarnUnrecognizedEnvVars(t *testing.T) {
-	var output bytes.Buffer
-
-	log.SetOutput(&output)
-	defer log.SetOutput(ioutil.Discard)
-
-	t.Setenv("NRIA_AGENT_DIR", "/tmp/agent")
-	t.Setenv("NRIA_LOG_LEVEL", "debug")
-	t.Setenv("NRIA_NOT_A_REAL_FIELD", "oops")
-	t.Setenv("SOME_OTHER_VAR", "ignored")
-
-	warnUnrecognizedEnvVars(NewConfig())
-
-	written := output.String()
-	assert.Contains(t, written, "NRIA_NOT_A_REAL_FIELD")
-	assert.NotContains(t, written, "NRIA_AGENT_DIR")
-	assert.NotContains(t, written, "NRIA_LOG_LEVEL")
-	assert.NotContains(t, written, "SOME_OTHER_VAR")
+			actual, exists := fields[testCase.yamlOption]
+			assert.True(t, exists, "%s should be reported in inventory's public fields", testCase.yamlOption)
+			assert.Equal(t, testCase.expected, actual)
+		})
+	}
 }
 
 func TestConfig_SetBoolValueByYamlAttribute(t *testing.T) {
