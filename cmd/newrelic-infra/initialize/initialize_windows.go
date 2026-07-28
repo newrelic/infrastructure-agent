@@ -27,7 +27,6 @@ const (
 	idlePriorityClass        = 0x00000040
 	normalPriorityClass      = 0x00000020
 	realtimePriorityClass    = 0x00000100
-	agentTemporaryFolder     = "C:\\ProgramData\\New Relic\\newrelic-infra\\tmp"
 )
 
 var priorityClasses = map[string]uint{
@@ -42,11 +41,11 @@ var priorityClasses = map[string]uint{
 // AgentService performs OS-specific initialization steps for the Agent service.
 // It is executed after the initialize.osProcess function
 func AgentService(cfg *config.Config) error {
-	err := emptyTemporaryFolder(cfg)
+	err := emptyFbConfigTempFolder(cfg)
 	if err != nil {
-		log.WithField("temporaryFolder", agentTemporaryFolder).
+		log.WithField("agentTempDir", cfg.AgentTempDir).
 			WithError(err).
-			Error("error emptying temporary folder")
+			Error("error emptying fb config temp folder")
 		os.Exit(1)
 	}
 
