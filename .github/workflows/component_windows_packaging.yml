@@ -22,6 +22,10 @@ on:
         required: true
         type: string
 
+
+permissions:
+  contents: read
+
 env:
   PFX_CERTIFICATE_BASE64: ${{ secrets.PFX_CERTIFICATE_BASE64 }}
   PFX_PASSPHRASE: ${{ secrets.PFX_PASSPHRASE }}
@@ -35,6 +39,8 @@ jobs:
   packaging:
     name: Create MSI & Upload into GH Release assets
     runs-on: windows-2025
+    permissions:
+      contents: write # required by 'Upload MSI to GH' (build/upload_artifacts_gh.sh -> gh release upload)
     env:
       GOPATH: ${{ env.GOPATH }}
     defaults:

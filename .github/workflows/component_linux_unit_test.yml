@@ -6,6 +6,10 @@ on:
       gh_token:
         required: true
 
+
+permissions:
+  contents: read
+
 env:
   CI: true
 

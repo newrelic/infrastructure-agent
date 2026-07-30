@@ -12,6 +12,10 @@ on:
         required: true
         type: string
 
+
+permissions:
+  contents: read
+
 env:
   TAG: ${{ inputs.TAG }}
 

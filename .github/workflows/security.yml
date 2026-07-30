@@ -7,6 +7,10 @@ on:
     tags-ignore:
       - '**'
 
+
+permissions:
+  contents: read
+
 env:
   SNYK_TOKEN: ${{ secrets.CAOS_SNYK_TOKEN }}
   DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
