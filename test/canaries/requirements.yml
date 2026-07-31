@@ -1,5 +1,7 @@
 collections:
-  - name: git+https://github.com/newrelic-experimental/caos-ansible-roles.git#/caos.ansible_roles/
+  # TODO: temporary pin for A2Q canary docker-log-forwarding validation, revert to unpinned once
+  # https://github.com/newrelic-experimental/caos-ansible-roles/tree/feature/a2q-canaries-fluent-bit-logs is merged
+  - name: git+https://github.com/newrelic-experimental/caos-ansible-roles.git,feature/a2q-canaries-fluent-bit-logs#/caos.ansible_roles/
     type: git
 
 roles:
