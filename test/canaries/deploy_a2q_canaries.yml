@@ -38,7 +38,7 @@
             name: caos.ansible_roles.infra_agent
           vars:
             repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
-            target_version: "{{ current_version }}-rc"
+            target_version: "{{ current_version }}"
             display_name: "{{ inventory_hostname }}-logs"
             nr_license_key: "{{ nr_license_keys_a2q[((config_num | int) - 1) * 2] }}"
             log_forward: true
