@@ -70,7 +70,10 @@ func (a *OCIHarvester) getInstanceDetails() (*core.Instance, error) {
 		return nil, fmt.Errorf("%w: %w", ErrOCIAPIUnavailable, err) //nolint:wrapcheck
 	}
 
-	response, err := a.computeClient.GetInstance(context.Background(), core.GetInstanceRequest{ //nolint:exhaustruct
+	ctx, cancel := context.WithTimeout(context.Background(), defaultClientTimeout)
+	defer cancel()
+
+	response, err := a.computeClient.GetInstance(ctx, core.GetInstanceRequest{ //nolint:exhaustruct
 		InstanceId: &instanceID,
 	})
 	if err != nil {
@@ -102,7 +105,10 @@ func (a *OCIHarvester) getPrimaryVnic() (*core.Vnic, error) {
 		return nil, fmt.Errorf("%w: no VNICs found in IMDS", ErrOCIAPIUnavailable) //nolint:wrapcheck
 	}
 
-	response, err := a.vnClient.GetVnic(context.Background(), core.GetVnicRequest{ //nolint:exhaustruct
+	ctx, cancel := context.WithTimeout(context.Background(), defaultClientTimeout)
+	defer cancel()
+
+	response, err := a.vnClient.GetVnic(ctx, core.GetVnicRequest{ //nolint:exhaustruct
 		VnicId: &vnics[0].VnicID,
 	})
 	if err != nil {
@@ -129,7 +135,10 @@ func (a *OCIHarvester) getSubnet() (*core.Subnet, error) {
 		return nil, fmt.Errorf("%w: primary VNIC has no subnet ID", ErrOCIAPIUnavailable) //nolint:wrapcheck
 	}
 
-	response, err := a.vnClient.GetSubnet(context.Background(), core.GetSubnetRequest{ //nolint:exhaustruct
+	ctx, cancel := context.WithTimeout(context.Background(), defaultClientTimeout)
+	defer cancel()
+
+	response, err := a.vnClient.GetSubnet(ctx, core.GetSubnetRequest{ //nolint:exhaustruct
 		SubnetId: vnic.SubnetId,
 	})
 	if err != nil {
