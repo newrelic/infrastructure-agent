@@ -44,7 +44,7 @@ func (s *HostinfoSuite) SetUpTest(c *C) {
 
 func (s *HostinfoSuite) NewPlugin(c *C) *HostinfoPlugin {
 	cloudDetector := cloud.NewDetector(true, 0, 0, 0, false)
-	v := NewHostinfoPlugin(s.agent, common.NewHostInfoCommon("test", true, cloudDetector))
+	v := NewHostinfoPlugin(s.agent, common.NewHostInfoCommon("test", true, nil, cloudDetector))
 
 	plugin, ok := v.(*HostinfoPlugin)
 	c.Assert(ok, Equals, true)
@@ -75,7 +75,7 @@ func (s *HostinfoSuite) TestGetDistro(c *C) {
 
 	cloudDetector := cloud.NewDetector(true, 0, 0, 0, false)
 
-	v := NewHostinfoPlugin(s.agent, common.NewHostInfoCommon("test", true, cloudDetector))
+	v := NewHostinfoPlugin(s.agent, common.NewHostInfoCommon("test", true, nil, cloudDetector))
 	plugin, ok := v.(*HostinfoPlugin)
 	c.Assert(ok, Equals, true)
 	data := plugin.Data()

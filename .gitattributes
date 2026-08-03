@@ -1,0 +1,4 @@
+# Go source must always check out with LF line endings, regardless of the checkout platform's
+# core.autocrlf setting - gofmt always emits LF, so a CRLF checkout (e.g. on a Windows runner
+# with autocrlf enabled) makes even correctly-formatted files fail formatting checks.
+*.go text eol=lf

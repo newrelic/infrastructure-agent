@@ -4,13 +4,12 @@
 package common
 
 import (
-	"fmt"
+	"errors"
+
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 )
 
-var (
-	ErrNoCloudHostTypeNotAvailable = fmt.Errorf("unable to retrieve host type, cloud harvester not available")
-)
+var ErrNoCloudHostTypeNotAvailable = errors.New("unable to retrieve host type, cloud harvester not available")
 
 type HostInfo interface {
 	GetHostInfo() (HostInfoData, error)
@@ -20,6 +19,7 @@ type HostInfo interface {
 type HostInfoCommon struct {
 	cloudMonitoring bool
 	agentVersion    string
+	ociTagsExclude  []string
 	cloud.Harvester
 }
 
@@ -46,10 +46,13 @@ type HostInfoData struct {
 }
 
 // NewHostInfoCommon return a new HostInfoCommon structure that implements HostInfo.
-func NewHostInfoCommon(agentVersion string, enableCloudMonitoring bool, cloudHarvester cloud.Harvester) *HostInfoCommon {
+func NewHostInfoCommon(
+	agentVersion string, enableCloudMonitoring bool, ociTagsExclude []string, cloudHarvester cloud.Harvester,
+) *HostInfoCommon {
 	return &HostInfoCommon{
 		enableCloudMonitoring,
 		agentVersion,
+		ociTagsExclude,
 		cloudHarvester,
 	}
 }
@@ -64,7 +67,7 @@ func (h *HostInfoCommon) GetHostInfo() (HostInfoData, error) {
 	}
 
 	if h.cloudMonitoring {
-		hostInfo.CloudData, err = getCloudData(h)
+		hostInfo.CloudData, err = getCloudData(h, h.ociTagsExclude)
 		if err != nil {
 			return hostInfo, err
 		}

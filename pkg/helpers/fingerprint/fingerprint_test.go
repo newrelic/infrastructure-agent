@@ -80,6 +80,42 @@ func (a *MockCloudHarvester) GetVMSize() (string, error) {
 	return "", nil
 }
 
+func (a *MockCloudHarvester) GetFaultDomain() (string, error) {
+	return "", nil
+}
+
+func (a *MockCloudHarvester) GetHostname() (string, error) {
+	return "", nil
+}
+
+func (a *MockCloudHarvester) GetFreeformTags() (map[string]string, error) {
+	return map[string]string{}, nil
+}
+
+func (a *MockCloudHarvester) GetPrivateIP() (string, error) {
+	return "", nil
+}
+
+func (a *MockCloudHarvester) GetVCNID() (string, error) {
+	return "", nil
+}
+
+func (a *MockCloudHarvester) GetSubnetID() (string, error) {
+	return "", nil
+}
+
+func (a *MockCloudHarvester) GetLifecycleState() (string, error) {
+	return "", nil
+}
+
+func (a *MockCloudHarvester) GetVirtualizationType() (string, error) {
+	return "", nil
+}
+
+func (a *MockCloudHarvester) GetDedicatedVMHostID() (string, error) {
+	return "", nil
+}
+
 func (a *MockCloudHarvester) GetHarvester() (cloud.Harvester, error) {
 	return nil, nil
 }
