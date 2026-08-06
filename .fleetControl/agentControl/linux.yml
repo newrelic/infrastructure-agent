@@ -104,6 +104,9 @@ deployment:
           NRIA_AGENT_TEMP_DIR: "${nr-sub:filesystem_agent_dir}/newrelic-infra/tmp"
           NRIA_CUSTOM_PLUGIN_INSTALLATION_DIR: "${nr-sub:packages.infra-agent.dir}/integrations"
           NRIA_SAFE_BIN_DIR: "${nr-sub:packages.infra-agent.dir}/integrations"
+          # Only loads integrations from the explicitly configured locations (custom_plugin_installation_dir and
+          # plugin_dir), ignoring the default/standalone dirs so stale integrations are not loaded.
+          NRIA_DISABLE_PLUGIN_DEFAULT_DIR_SCAN: true
           # Config folders where integrations and logging configs parsed from local/remote values are stored and looked for.
           NRIA_PLUGIN_DIR: "${nr-sub:filesystem_agent_dir}/integrations.d"
           NRIA_LOGGING_CONFIGS_DIR: "${nr-sub:filesystem_agent_dir}/logging.d"
