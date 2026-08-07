@@ -132,6 +132,9 @@ jobs:
 
   test-prerelease-windows:
     needs: [publishing-to-s3]
+    permissions:
+      contents: read
+      id-token: write # calls component_prerelease_testing.yml which needs AWS OIDC auth
     uses: ./.github/workflows/component_prerelease_testing.yml
     with:
       PLATFORM: "windows"
@@ -142,6 +145,9 @@ jobs:
 
   canaries-windows:
     needs: [test-prerelease-windows]
+    permissions:
+      contents: read
+      id-token: write # calls component_canaries.yml which needs AWS OIDC auth
     uses: ./.github/workflows/component_canaries.yml
     with:
       PLATFORM: "windows"
@@ -161,6 +167,9 @@ jobs:
 
   prune-canaries-windows:
     needs: [canaries-windows, get_previous_tag]
+    permissions:
+      contents: read
+      id-token: write # calls component_canaries_prune.yml which needs AWS OIDC auth
     uses: ./.github/workflows/component_canaries_prune.yml
     with:
       PLATFORM: "windows"

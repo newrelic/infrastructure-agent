@@ -25,6 +25,9 @@ permissions:
 jobs:
   A2Q-canaries-windows:
     if: ${{ github.event.inputs.windows == 'true' }}
+    permissions:
+      contents: read
+      id-token: write # calls component_canaries.yml which needs AWS OIDC auth
     uses: ./.github/workflows/component_canaries.yml
     with:
       PLATFORM: "windows"
@@ -34,6 +37,9 @@ jobs:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
   A2Q-canaries-linux:
     if: ${{ github.event.inputs.linux == 'true' }}
+    permissions:
+      contents: read
+      id-token: write # calls component_canaries.yml which needs AWS OIDC auth
     uses: ./.github/workflows/component_canaries.yml
     with:
       PLATFORM: "linux"
