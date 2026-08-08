@@ -14,6 +14,22 @@ can be found at https://github.com/newrelic/infrastructure-agent/.
 
 
 
+## [github.com/Azure/azure-sdk-for-go/sdk/azidentity](https://github.com/Azure/azure-sdk-for-go)
+
+Distributed under the following license(s):
+
+* MIT
+
+
+
+## [github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets](https://github.com/Azure/azure-sdk-for-go)
+
+Distributed under the following license(s):
+
+* MIT
+
+
+
 ## [github.com/Microsoft/go-winio](https://github.com/Microsoft/go-winio)
 
 Distributed under the following license(s):

@@ -48,14 +48,15 @@ func (y *YAMLConfig) Enabled() bool {
 }
 
 type varEntry struct {
-	TTL         string               `yaml:"ttl,omitempty" json:"ttl,omitempty"`
-	Test        *Test                `yaml:"test,omitempty" json:"test,omitempty"`
-	KMS         *secrets.KMS         `yaml:"aws-kms,omitempty" json:"aws-kms,omitempty"`
-	Vault       *secrets.Vault       `yaml:"vault,omitempty" json:"vault,omitempty"`
-	CyberArkCLI *secrets.CyberArkCLI `yaml:"cyberark-cli,omitempty" json:"cyberark-cli,omitempty"`
-	CyberArkAPI *secrets.CyberArkAPI `yaml:"cyberark-api,omitempty" json:"cyberark-api,omitempty"`
-	Obfuscated  *secrets.Obfuscated  `yaml:"obfuscated,omitempty" json:"obfuscated,omitempty"`
-	Command     *secrets.Command     `yaml:"command,omitempty" json:"command,omitempty"`
+	TTL           string                 `yaml:"ttl,omitempty" json:"ttl,omitempty"`
+	Test          *Test                  `yaml:"test,omitempty" json:"test,omitempty"`
+	KMS           *secrets.KMS           `yaml:"aws-kms,omitempty" json:"aws-kms,omitempty"`
+	Vault         *secrets.Vault         `yaml:"vault,omitempty" json:"vault,omitempty"`
+	CyberArkCLI   *secrets.CyberArkCLI   `yaml:"cyberark-cli,omitempty" json:"cyberark-cli,omitempty"`
+	CyberArkAPI   *secrets.CyberArkAPI   `yaml:"cyberark-api,omitempty" json:"cyberark-api,omitempty"`
+	AzureKeyVault *secrets.AzureKeyVault `yaml:"azure-key-vault,omitempty" json:"azure-key-vault,omitempty"`
+	Obfuscated    *secrets.Obfuscated    `yaml:"obfuscated,omitempty" json:"obfuscated,omitempty"`
+	Command       *secrets.Command       `yaml:"command,omitempty" json:"command,omitempty"`
 }
 
 // Test for testing purposes until providers get decoupled.
@@ -261,6 +262,12 @@ func (v *varEntry) validate() error {
 			return entryValidationError(err)
 		}
 	}
+	if v.AzureKeyVault != nil {
+		sections++
+		if err := v.AzureKeyVault.Validate(); err != nil {
+			return entryValidationError(err)
+		}
+	}
 	if v.Obfuscated != nil {
 		sections++
 		if err := v.Obfuscated.Validate(); err != nil {
@@ -307,6 +314,11 @@ func (v *varEntry) selectGatherer(ttl time.Duration) *gatherer {
 		return &gatherer{
 			cache: cachedEntry{ttl: ttl},
 			fetch: secrets.CyberArkAPIGatherer(v.CyberArkAPI),
+		}
+	} else if v.AzureKeyVault != nil {
+		return &gatherer{
+			cache: cachedEntry{ttl: ttl},
+			fetch: secrets.AzureKeyVaultGatherer(v.AzureKeyVault),
 		}
 	} else if v.Obfuscated != nil {
 		return &gatherer{

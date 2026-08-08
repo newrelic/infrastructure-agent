@@ -42,6 +42,12 @@ variables:
     cyberark-api:
       http:
         url: https://10.1.0.5/AIMWebService/api/Accounts?AppID=NewRelic&Query=Safe=ALL-NERE-WIN-A-NEWRELIC-UP;Object=ALL-localhost-testuser
+`}, {"simple azure-key-vault variable", `
+variables:
+  myData:
+    azure-key-vault:
+      vault_url: https://my-vault.vault.azure.net/
+      secret_name: mssql-password
 `}}
 	for _, input := range inputs {
 		t.Run(input.description, func(t *testing.T) {
@@ -97,7 +103,12 @@ variables:
   myData:
     cyberark-api:
       http:
-        url: 
+        url:
+      `}, {"incomplete azure-key-vault variable", `
+variables:
+  myData:
+    azure-key-vault:
+      vault_url: https://my-vault.vault.azure.net/
       `}}
 	for _, input := range inputs {
 		t.Run(input.description, func(t *testing.T) {
