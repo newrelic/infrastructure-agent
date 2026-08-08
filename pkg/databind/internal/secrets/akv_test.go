@@ -6,6 +6,8 @@ package secrets
 import "testing"
 
 func TestAzureKeyVault_Validate(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name    string
 		cfg     AzureKeyVault
@@ -13,17 +15,17 @@ func TestAzureKeyVault_Validate(t *testing.T) {
 	}{
 		{
 			name:    "missing vault_url",
-			cfg:     AzureKeyVault{SecretName: "mssql-password"},
+			cfg:     AzureKeyVault{SecretName: "mssql-password"}, //nolint:exhaustruct
 			wantErr: true,
 		},
 		{
 			name:    "missing secret_name",
-			cfg:     AzureKeyVault{VaultURL: "https://my-vault.vault.azure.net/"},
+			cfg:     AzureKeyVault{VaultURL: "https://my-vault.vault.azure.net/"}, //nolint:exhaustruct
 			wantErr: true,
 		},
 		{
 			name:    "missing both",
-			cfg:     AzureKeyVault{},
+			cfg:     AzureKeyVault{}, //nolint:exhaustruct
 			wantErr: true,
 		},
 		{
@@ -36,13 +38,16 @@ func TestAzureKeyVault_Validate(t *testing.T) {
 		},
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			err := tc.cfg.Validate()
-			if tc.wantErr && err == nil {
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := testCase.cfg.Validate()
+			if testCase.wantErr && err == nil {
 				t.Errorf("expected an error, got nil")
 			}
-			if !tc.wantErr && err != nil {
+
+			if !testCase.wantErr && err != nil {
 				t.Errorf("expected no error, got: %v", err)
 			}
 		})

@@ -12,6 +12,12 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets"
 )
 
+var (
+	ErrAzureKeyVaultMissingVaultURL   = errors.New("azure-key-vault secrets must have a vault_url parameter to be set")
+	ErrAzureKeyVaultMissingSecretName = errors.New("azure-key-vault secrets must have a secret_name parameter to be set")
+	ErrAzureKeyVaultSecretNoValue     = errors.New("azure-key-vault secret has no value")
+)
+
 // AzureKeyVault defines the Azure Key Vault data source.
 type AzureKeyVault struct {
 	VaultURL   string `yaml:"vault_url"`
@@ -28,14 +34,13 @@ type azureKeyVaultGatherer struct {
 // (Azure VMs/AKS), and the Azure CLI - without any custom auth handling in this provider.
 // The fetching process returns the latest version of the secret's value, stored under SecretName in the
 // vault at VaultURL, as a string.
-func AzureKeyVaultGatherer(azureKeyVault *AzureKeyVault) func() (interface{}, error) {
+func AzureKeyVaultGatherer(azureKeyVault *AzureKeyVault) func() (any, error) {
 	g := azureKeyVaultGatherer{cfg: azureKeyVault}
-	return func() (interface{}, error) {
-		return g.get()
-	}
+
+	return g.get
 }
 
-func (g *azureKeyVaultGatherer) get() (interface{}, error) {
+func (g *azureKeyVaultGatherer) get() (any, error) {
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create azure-key-vault credential: %w", err)
@@ -51,8 +56,9 @@ func (g *azureKeyVaultGatherer) get() (interface{}, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve azure-key-vault secret %q: %w", g.cfg.SecretName, err)
 	}
+
 	if resp.Value == nil {
-		return nil, fmt.Errorf("azure-key-vault secret %q has no value", g.cfg.SecretName)
+		return nil, fmt.Errorf("%w: %q", ErrAzureKeyVaultSecretNoValue, g.cfg.SecretName)
 	}
 
 	return *resp.Value, nil
@@ -61,10 +67,12 @@ func (g *azureKeyVaultGatherer) get() (interface{}, error) {
 // Validate checks if the AzureKeyVault configuration is correct.
 func (g *AzureKeyVault) Validate() error {
 	if g.VaultURL == "" {
-		return errors.New("azure-key-vault secrets must have a vault_url parameter in order to be set")
+		return ErrAzureKeyVaultMissingVaultURL
 	}
+
 	if g.SecretName == "" {
-		return errors.New("azure-key-vault secrets must have a secret_name parameter in order to be set")
+		return ErrAzureKeyVaultMissingSecretName
 	}
+
 	return nil
 }

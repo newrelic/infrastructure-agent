@@ -18,8 +18,16 @@ linters:
         - newrelic
     wrapcheck:
       ignore-sigs:
+        - .Errorf(
+        - errors.New(
+        - errors.Unwrap(
+        - errors.Join(
+        - .Wrap(
+        - .Wrapf(
+        - .WithMessage(
+        - .WithMessagef(
+        - .WithStack(
         - multierr.Append
-        - errors.Join
     wsl:
       allow-assign-and-anything: true
       allow-cuddle-declarations: true

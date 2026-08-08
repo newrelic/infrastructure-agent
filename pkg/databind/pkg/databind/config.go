@@ -48,15 +48,15 @@ func (y *YAMLConfig) Enabled() bool {
 }
 
 type varEntry struct {
-	TTL           string                 `yaml:"ttl,omitempty" json:"ttl,omitempty"`
-	Test          *Test                  `yaml:"test,omitempty" json:"test,omitempty"`
-	KMS           *secrets.KMS           `yaml:"aws-kms,omitempty" json:"aws-kms,omitempty"`
-	Vault         *secrets.Vault         `yaml:"vault,omitempty" json:"vault,omitempty"`
-	CyberArkCLI   *secrets.CyberArkCLI   `yaml:"cyberark-cli,omitempty" json:"cyberark-cli,omitempty"`
-	CyberArkAPI   *secrets.CyberArkAPI   `yaml:"cyberark-api,omitempty" json:"cyberark-api,omitempty"`
-	AzureKeyVault *secrets.AzureKeyVault `yaml:"azure-key-vault,omitempty" json:"azure-key-vault,omitempty"`
-	Obfuscated    *secrets.Obfuscated    `yaml:"obfuscated,omitempty" json:"obfuscated,omitempty"`
-	Command       *secrets.Command       `yaml:"command,omitempty" json:"command,omitempty"`
+	TTL           string                 `json:"ttl,omitempty"             yaml:"ttl,omitempty"`
+	Test          *Test                  `json:"test,omitempty"            yaml:"test,omitempty"`
+	KMS           *secrets.KMS           `json:"aws-kms,omitempty"         yaml:"aws-kms,omitempty"`
+	Vault         *secrets.Vault         `json:"vault,omitempty"           yaml:"vault,omitempty"`
+	CyberArkCLI   *secrets.CyberArkCLI   `json:"cyberark-cli,omitempty"    yaml:"cyberark-cli,omitempty"`
+	CyberArkAPI   *secrets.CyberArkAPI   `json:"cyberark-api,omitempty"    yaml:"cyberark-api,omitempty"`
+	AzureKeyVault *secrets.AzureKeyVault `json:"azure-key-vault,omitempty" yaml:"azure-key-vault,omitempty"`
+	Obfuscated    *secrets.Obfuscated    `json:"obfuscated,omitempty"      yaml:"obfuscated,omitempty"`
+	Command       *secrets.Command       `json:"command,omitempty"         yaml:"command,omitempty"`
 }
 
 // Test for testing purposes until providers get decoupled.
@@ -262,9 +262,11 @@ func (v *varEntry) validate() error {
 			return entryValidationError(err)
 		}
 	}
+
 	if v.AzureKeyVault != nil {
 		sections++
-		if err := v.AzureKeyVault.Validate(); err != nil {
+
+		if err := v.AzureKeyVault.Validate(); err != nil { //nolint:noinlineerr
 			return entryValidationError(err)
 		}
 	}
@@ -317,7 +319,7 @@ func (v *varEntry) selectGatherer(ttl time.Duration) *gatherer {
 		}
 	} else if v.AzureKeyVault != nil {
 		return &gatherer{
-			cache: cachedEntry{ttl: ttl},
+			cache: cachedEntry{ttl: ttl}, //nolint:exhaustruct
 			fetch: secrets.AzureKeyVaultGatherer(v.AzureKeyVault),
 		}
 	} else if v.Obfuscated != nil {
