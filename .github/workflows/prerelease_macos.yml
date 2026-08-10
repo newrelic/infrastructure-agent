@@ -16,6 +16,9 @@ jobs:
     uses: ./.github/workflows/component_macos_unit_test.yml
 
   canaries-macos:
+    permissions:
+      contents: read
+      id-token: write # calls component_canaries.yml which needs AWS OIDC auth
     uses: ./.github/workflows/component_canaries.yml
     with:
       PLATFORM: "macos"

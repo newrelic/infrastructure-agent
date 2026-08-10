@@ -135,6 +135,9 @@ jobs:
 
   docker-trivy-critical:
     needs: [packaging-docker]
+    permissions:
+      contents: read
+      security-events: write # calls component_trivy.yml which uploads SARIF results
     uses: ./.github/workflows/component_trivy.yml
     with:
       tag: "${{ github.event.release.tag_name }}-rc"
@@ -156,6 +159,9 @@ jobs:
 
   docker-fips-trivy-critical:
     needs: [packaging-docker-fips]
+    permissions:
+      contents: read
+      security-events: write # calls component_trivy.yml which uploads SARIF results
     uses: ./.github/workflows/component_trivy.yml
     with:
       tag: "${{ github.event.release.tag_name }}-rc"
@@ -194,6 +200,9 @@ jobs:
 
   test-prerelease-linux:
     needs: [molecule-packaging-tests]
+    permissions:
+      contents: read
+      id-token: write # calls component_prerelease_testing.yml which needs AWS OIDC auth
     uses: ./.github/workflows/component_prerelease_testing.yml
     with:
       PLATFORM: "linux"
@@ -204,6 +213,9 @@ jobs:
       
   canaries-linux:
     needs: [test-prerelease-linux]
+    permissions:
+      contents: read
+      id-token: write # calls component_canaries.yml which needs AWS OIDC auth
     uses: ./.github/workflows/component_canaries.yml
     with:
       PLATFORM: "linux"
@@ -225,6 +237,9 @@ jobs:
 
   prune-previous-canaries-linux:
     needs: [canaries-linux, get_previous_tag]
+    permissions:
+      contents: read
+      id-token: write # calls component_canaries_prune.yml which needs AWS OIDC auth
     uses: ./.github/workflows/component_canaries_prune.yml
     with:
       PLATFORM: "linux"
