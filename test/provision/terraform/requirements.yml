@@ -1,6 +1,9 @@
 collections:
+  # TEMPORARY - testing NR-598649 custom-path support before it merges. Revert to the
+  # default branch (drop `version:`) before merging this PR.
   - name: git+https://github.com/newrelic-experimental/caos-ansible-roles.git#/caos.ansible_roles/
     type: git
+    version: NR-598649-custom-path-mode
 
 roles:
   - name: geerlingguy.pip

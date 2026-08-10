@@ -59,7 +59,9 @@ locals {
 }
 
 module "env-provisioner" {
-  source             = "git::https://github.com/newrelic-experimental/env-provisioner//terraform/otel-ec2"
+  # TEMPORARY - testing NR-598649 custom-path support before it merges. Revert to the
+  # default branch (drop `?ref=...`) before merging this PR.
+  source             = "git::https://github.com/newrelic-experimental/env-provisioner//terraform/otel-ec2?ref=NR-598649-a2q-custom-path-canaries"
   ec2_prefix         = var.ec2_prefix
   ec2_filters        = local.filtered_ec2
   ec2_delimiter      = "-"
