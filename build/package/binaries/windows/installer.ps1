@@ -370,7 +370,12 @@ try {
             Write-DebugLog "Setting service startup type to Automatic..."
             Set-Service -Name $ServiceName -StartupType Automatic -ErrorAction Stop
             Write-DebugLog "Service startup type set to Automatic"
-            
+        } catch {
+            Write-DebugLog "ERROR: Failed to configure service: $_"
+            exit 1058
+        }
+
+        try {
             Write-DebugLog "Starting service: $ServiceName"
             Invoke-WithRetry -OperationName "Start-Service[$ServiceName]" `
                 -AlreadySucceeded {
@@ -387,8 +392,10 @@ try {
                 }
             Write-DebugLog "Upgrade completed successfully!"
         } catch {
-            Write-DebugLog "ERROR: Failed to restart service: $_"
-            exit 1058
+            # Start-Service can race transiently right after the file-copy burst above.
+            # The service is already configured for Automatic startup, so Windows will
+            # start it on next boot - don't fail the whole upgrade over a delayed start.
+            Write-DebugLog "WARNING: Service did not start immediately after upgrade (will start on next boot, or run 'Start-Service $ServiceName' manually): $_"
         }
     } else {
         # Fresh installation scenario: create service with LocalSystem
@@ -435,13 +442,17 @@ try {
                     Start-Service -Name $ServiceName -ErrorAction Stop
                 }
             Write-DebugLog "Installation completed successfully!"
-            # Install succeeded — remove the marker so a future rollback (e.g. from a
-            # subsequent failed upgrade) does not mistakenly delete this service.
-            Remove-Item $markerFile -Force -ErrorAction SilentlyContinue
         } catch {
-            Write-DebugLog "ERROR: Failed to start service: $_"
-            exit 1058
+            # Start-Service can race transiently right after the file-copy burst above.
+            # The service is already registered with StartupType Automatic, so Windows
+            # will start it on next boot - don't fail the whole install (and trigger a
+            # destructive rollback) over a delayed start.
+            Write-DebugLog "WARNING: Service did not start immediately after install (will start on next boot, or run 'Start-Service $ServiceName' manually): $_"
         }
+        # Install succeeded (files copied, service registered) — remove the marker so a
+        # future rollback (e.g. from a subsequent failed upgrade) does not mistakenly
+        # delete this service, regardless of whether it's running yet.
+        Remove-Item $markerFile -Force -ErrorAction SilentlyContinue
     }
 
     Write-DebugLog "Installer script finished"
