@@ -103,7 +103,7 @@ func TestFBSupervisorConfig_IsLogForwarderAvailable(t *testing.T) {
 func TestFBSupervisorConfig_LicenseKeyShouldBePassedAsEnvVar(t *testing.T) {
 	t.Parallel()
 
-	fbConf := fBSupervisorConfig{ConfTemporaryFolder: os.TempDir()}
+	fbConf := fBSupervisorConfig{ConfTemporaryFolder: t.TempDir()} //nolint:exhaustruct
 	bypassIsLogForwarderAvailable(t, &fbConf)
 
 	agentIdentity := func() entity.Identity {
