@@ -1,0 +1,37 @@
+# Windows host - custom-path mode
+enable_process_metrics: false
+nria_log_level: "smart"
+nria_log_forward: true
+nria_log_rotation_mb: 500
+nria_log_rotation_max_files: 5
+nria_log_rotation_compressed: true
+forward_docker_logs: true
+custom_attributes:
+  label.host: test.config.8
+  label.chef_environment: nonprod
+  label.chef_org: config8.test
+  label.environment: nonprod
+  label.location: 0319
+nria_metrics_network_sample_rate: 5
+nria_dpkg_interval_sec: 0
+nria_daemontools_interval_sec: 0
+nria_facter_interval_sec: 0
+nria_network_interface_interval_sec: 0
+nria_cloud_security_group_refresh_sec: 0
+nria_kernel_modules_refresh_sec: 0
+nria_event_queue_depth: 0
+nria_inventory_queue_len: 0
+
+# custom-path layout - mirrors the env vars in .fleetControl/agentControl/windows.yml
+nria_custom_paths_enabled: true
+nria_agent_dir: 'C:\nr-custom\newrelic-infra'
+nria_agent_temp_dir: 'C:\nr-custom\newrelic-infra\tmp'
+nria_plugin_dir: 'C:\nr-custom\integrations.d'
+nria_custom_plugin_installation_dir: 'C:\nr-custom\integrations'
+nria_safe_bin_dir: 'C:\nr-custom\integrations'
+nria_logging_configs_dir: 'C:\nr-custom\logging.d'
+nria_logging_bin_dir: 'C:\nr-custom\logging'
+nria_logging_home_dir: 'C:\nr-custom\logging'
+nria_status_server_enabled: true
+nria_status_server_port: 18003
+nria_disable_plugin_default_dir_scan: true
