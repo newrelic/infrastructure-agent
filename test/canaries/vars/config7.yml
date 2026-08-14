@@ -1,4 +1,4 @@
-# Linux host - AC-managed custom-path mode (NR-598649)
+# Linux host - custom-path mode
 enable_process_metrics: false
 nria_log_level: "smart"
 nria_log_forward: true
