@@ -7,12 +7,14 @@
 package disk
 
 import (
-	"io/ioutil"
+	"errors"
+	"fmt"
 	"os"
+	"syscall"
 )
 
 // WriteFile is a façade to ioutil.WriteFile, which enforces safe disk access when the host configuration requires it
-var WriteFile = ioutil.WriteFile
+var WriteFile = os.WriteFile //nolint:gochecknoglobals
 
 // OpenFile is a façade to os.OpenFile, which enforces safe disk access when the host configuration requires it
 var OpenFile = os.OpenFile
@@ -20,5 +22,66 @@ var OpenFile = os.OpenFile
 // Create is a façade to os.Create, which enforces safe disk access when the host configuration requires it
 var Create = os.Create
 
-// MkdirAll is a façade to os.MkdirAll, which enforces safe disk access when the host configuration requires it
-var MkdirAll = os.MkdirAll
+// ErrUnsafeDirAfterCreate is returned by MkdirAll when the target path is not safe to use
+// right after being (re)created, most likely because another local user won the narrow
+// remove-then-create race window.
+var ErrUnsafeDirAfterCreate = errors.New("path is not safe to use after creation, possibly due to a race")
+
+// MkdirAll creates a directory path along with any necessary parents, like os.MkdirAll.
+// Unlike os.MkdirAll, it never blindly reuses a pre-existing path: if path already exists
+// but is not a real directory owned by the current user, or is writable by group/other, it
+// is removed and recreated fresh. This prevents a local attacker from planting (or
+// symlinking) a predictable path - e.g. under a world-writable /tmp - that a privileged
+// process would otherwise pick up and reuse without noticing.
+func MkdirAll(path string, perm os.FileMode) error {
+	pathInfo, err := os.Lstat(path)
+
+	switch {
+	case os.IsNotExist(err):
+		// Nothing to reuse, fall through to create below.
+	case err != nil:
+		return fmt.Errorf("failed to stat %q: %w", path, err)
+	case isSafeExistingDir(pathInfo):
+		return nil
+	default:
+		rmErr := os.RemoveAll(path)
+		if rmErr != nil {
+			return fmt.Errorf("refusing to reuse unsafe path %q, and failed to remove it: %w", path, rmErr)
+		}
+	}
+
+	err = os.MkdirAll(path, perm)
+	if err != nil {
+		return fmt.Errorf("failed to create %q: %w", path, err)
+	}
+
+	// Re-check after creation to close the remove-then-create race: if another local
+	// user won that narrow window, fail loudly instead of silently using a directory we
+	// don't actually own.
+	pathInfo, err = os.Lstat(path)
+	if err != nil {
+		return fmt.Errorf("failed to stat %q after creation: %w", path, err)
+	}
+
+	if !isSafeExistingDir(pathInfo) {
+		return fmt.Errorf("%q: %w", path, ErrUnsafeDirAfterCreate)
+	}
+
+	return nil
+}
+
+// isSafeExistingDir reports whether pathInfo describes a real directory (not a symlink),
+// owned by the current user, that is not writable by group or other.
+func isSafeExistingDir(pathInfo os.FileInfo) bool {
+	if pathInfo.Mode()&os.ModeSymlink != 0 || !pathInfo.IsDir() {
+		return false
+	}
+
+	if pathInfo.Mode().Perm()&0o022 != 0 {
+		return false
+	}
+
+	stat, ok := pathInfo.Sys().(*syscall.Stat_t)
+
+	return ok && int(stat.Uid) == os.Getuid()
+}
