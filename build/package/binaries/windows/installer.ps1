@@ -89,7 +89,7 @@ try {
                     throw
                 }
                 $delay = $DelaysSeconds[[Math]::Min($attempt - 1, $DelaysSeconds.Count - 1)]
-                Write-DebugLog "${OperationName}: attempt $attempt/$MaxAttempts - failed: $_. Retrying in ${delay}s..."
+                Write-DebugLog "${OperationName}: not ready on attempt $attempt/$MaxAttempts, trying again in ${delay}s..."
                 Start-Sleep -Seconds $delay
             }
         }
@@ -392,9 +392,7 @@ try {
                 }
             Write-DebugLog "Upgrade completed successfully!"
         } catch {
-            # Start-Service can race transiently right after the file-copy burst above.
-            # The service is already configured for Automatic startup, so Windows will
-            # start it on next boot - don't fail the whole upgrade over a delayed start.
+            # Transient SCM race; service is Automatic, so it starts on next boot regardless.
             Write-DebugLog "WARNING: Service did not start immediately after upgrade (will start on next boot, or run 'Start-Service $ServiceName' manually): $_"
         }
     } else {
@@ -443,15 +441,10 @@ try {
                 }
             Write-DebugLog "Installation completed successfully!"
         } catch {
-            # Start-Service can race transiently right after the file-copy burst above.
-            # The service is already registered with StartupType Automatic, so Windows
-            # will start it on next boot - don't fail the whole install (and trigger a
-            # destructive rollback) over a delayed start.
+            # Transient SCM race; service is Automatic, so it starts on next boot regardless.
             Write-DebugLog "WARNING: Service did not start immediately after install (will start on next boot, or run 'Start-Service $ServiceName' manually): $_"
         }
-        # Install succeeded (files copied, service registered) — remove the marker so a
-        # future rollback (e.g. from a subsequent failed upgrade) does not mistakenly
-        # delete this service, regardless of whether it's running yet.
+        # Files + registration succeeded, so clear the marker regardless of Start-Service outcome.
         Remove-Item $markerFile -Force -ErrorAction SilentlyContinue
     }
 
