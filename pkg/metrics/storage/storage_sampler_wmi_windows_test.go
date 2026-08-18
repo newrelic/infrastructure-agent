@@ -42,10 +42,14 @@ func TestWmiCalculateBytesRate(t *testing.T) {
 			Timestamp_PerfTime:   1000,
 		},
 		Formatted: Win32_PerfFormattedData_PerfDisk_LogicalDisk{
-			Name:                 "nameeee",
-			PercentDiskTime:      100,
-			PercentDiskReadTime:  90,
-			PercentDiskWriteTime: 80,
+			Name:                    "nameeee",
+			PercentDiskTime:         100,
+			PercentDiskReadTime:     90,
+			PercentDiskWriteTime:    80,
+			AvgDiskQueueLength:      4,
+			AvgDiskReadQueueLength:  3,
+			AvgDiskWriteQueueLength: 2,
+			CurrentDiskQueueLength:  1,
 		},
 	}
 	elapsedMS := int64(1500)
@@ -59,6 +63,11 @@ func TestWmiCalculateBytesRate(t *testing.T) {
 	assert.InEpsilon(t, 100, *ioSample.TotalUtilizationPercent, 0.01)
 	assert.InEpsilon(t, 90, *ioSample.ReadUtilizationPercent, 0.01)
 	assert.InEpsilon(t, 80, *ioSample.WriteUtilizationPercent, 0.01)
+
+	assert.InEpsilon(t, 4, *ioSample.AvgQueueLen, 0.01)
+	assert.InEpsilon(t, 3, *ioSample.AvgReadQueueLen, 0.01)
+	assert.InEpsilon(t, 2, *ioSample.AvgWriteQueueLen, 0.01)
+	assert.InEpsilon(t, 1, *ioSample.CurrentQueueLen, 0.01)
 }
 
 func TestWmiMarshallableSamples(t *testing.T) {
