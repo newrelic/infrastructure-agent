@@ -25,6 +25,10 @@ include $(INCLUDE_BUILD_DIR)/embed/integrations.mk
 
 include $(INCLUDE_BUILD_DIR)/embed/fluent-bit.mk
 
+# nrjmx version pin - bundled only into the Agent Control OCI package, not the
+# standalone release or the container image. See build/embed/nrjmx.mk.
+include $(INCLUDE_BUILD_DIR)/embed/nrjmx.mk
+
 # Scripts for CICD
 include $(INCLUDE_BUILD_DIR)/ci.mk
 
