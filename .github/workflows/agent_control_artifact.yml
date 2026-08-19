@@ -7,6 +7,11 @@ on:
         description: 'Release tag to process (e.g., 1.72.1)'
         required: true
         type: string
+      dry_run:
+        description: 'Skip the OCI publish step and upload dist/ as a downloadable GH Actions artifact instead'
+        required: false
+        type: boolean
+        default: false
   release:
     types: [released]
 
@@ -496,7 +501,16 @@ jobs:
           cp dist/linux-arm64.tar.gz /tmp/artifacts/
           echo "✓ Artifacts preserved"
 
+      - name: Upload dist as artifact (dry run)
+        if: ${{ inputs.dry_run == true }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-control-dist-${{ steps.validate.outputs.version }}
+          path: /tmp/artifacts/*
+          retention-days: 7
+
       - name: Upload to Agent Metadata
+        if: ${{ inputs.dry_run != true }}
         uses: newrelic/agent-metadata-action@main
         with:
           newrelic-client-id: ${{ secrets.NEWRELIC_CLIENT_ID }}
