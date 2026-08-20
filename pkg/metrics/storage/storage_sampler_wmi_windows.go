@@ -32,10 +32,14 @@ type Win32_PerfRawData_PerfDisk_LogicalDisk struct {
 }
 
 type Win32_PerfFormattedData_PerfDisk_LogicalDisk struct {
-	Name                 string
-	PercentDiskTime      uint64
-	PercentDiskReadTime  uint64
-	PercentDiskWriteTime uint64
+	Name                    string
+	PercentDiskTime         uint64
+	PercentDiskReadTime     uint64
+	PercentDiskWriteTime    uint64
+	AvgDiskQueueLength      uint64
+	AvgDiskReadQueueLength  uint64
+	AvgDiskWriteQueueLength uint64
+	CurrentDiskQueueLength  uint64
 }
 
 func (d *WmiIoCountersStat) String() string {
@@ -90,9 +94,20 @@ func CalculateWmiSampleValues(counter *WmiIoCountersStat, lastStats *WmiIoCounte
 	result.ReadUtilizationPercent = &read
 	result.WriteUtilizationPercent = &write
 
+	avgQueueLen := float64(counter.Formatted.AvgDiskQueueLength)
+	avgReadQueueLen := float64(counter.Formatted.AvgDiskReadQueueLength)
+	avgWriteQueueLen := float64(counter.Formatted.AvgDiskWriteQueueLength)
+	currentQueueLen := float64(counter.Formatted.CurrentDiskQueueLength)
+
+	result.AvgQueueLen = &avgQueueLen
+	result.AvgReadQueueLen = &avgReadQueueLen
+	result.AvgWriteQueueLen = &avgWriteQueueLen
+	result.CurrentQueueLen = &currentQueueLen
+
 	vlog.
 		WithField("ReadUtilizationPercent", *result.ReadUtilizationPercent).
 		WithField("WriteUtilizationPercent", *result.WriteUtilizationPercent).
+		WithField("CurrentQueueLen", *result.CurrentQueueLen).
 		Debug("CalculateWmiSampleValues")
 
 	return result
