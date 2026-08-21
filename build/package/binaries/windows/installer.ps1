@@ -63,6 +63,56 @@ try {
         Write-Host $Message
     }
 
+    # Generic retry helper for a service-management operation subject to SCM timing races.
+    function Invoke-WithRetry {
+        param(
+            [Parameter(Mandatory)][string]$OperationName,
+            [Parameter(Mandatory)][scriptblock]$Action,
+            # Checked before every attempt; return $true to skip $Action if already done.
+            [scriptblock]$AlreadySucceeded = { $false },
+            [int]$MaxAttempts = 4,
+            [int[]]$DelaysSeconds = @(1, 2, 3)
+        )
+        for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
+            try {
+                if (& $AlreadySucceeded) {
+                    if ($attempt -gt 1) {
+                        Write-DebugLog "${OperationName}: attempt $attempt/$MaxAttempts - already in desired state, skipping"
+                    }
+                    return
+                }
+                & $Action
+                return
+            } catch {
+                if ($attempt -ge $MaxAttempts) {
+                    Write-DebugLog "${OperationName}: all $MaxAttempts attempts failed. Last error: $_"
+                    throw
+                }
+                $delay = $DelaysSeconds[[Math]::Min($attempt - 1, $DelaysSeconds.Count - 1)]
+                Write-DebugLog "${OperationName}: not ready on attempt $attempt/$MaxAttempts, trying again in ${delay}s..."
+                Start-Sleep -Seconds $delay
+            }
+        }
+    }
+
+    # Polls a StartPending service instead of re-invoking Start-Service (which would
+    # throw noise on an already-starting service). Throws if the status moves to
+    # anything other than Running before the timeout, or if the timeout is hit.
+    function Wait-ForServiceStartPending {
+        param([string]$ServiceName, [int]$TimeoutSeconds = 3)
+        $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+        $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+        while ((Get-Date) -lt $deadline) {
+            Start-Sleep -Milliseconds 500
+            $svc.Refresh()
+            if ($svc.Status -eq 'Running') { return }
+            if ($svc.Status -ne 'StartPending') {
+                throw "Service '$ServiceName' left StartPending for '$($svc.Status)' instead of reaching Running"
+            }
+        }
+        throw "Service '$ServiceName' still StartPending after ${TimeoutSeconds}s"
+    }
+
     # Initialize log file with startup message
     try {
         $logDir = Split-Path $DebugLogFile -Parent
@@ -320,13 +370,30 @@ try {
             Write-DebugLog "Setting service startup type to Automatic..."
             Set-Service -Name $ServiceName -StartupType Automatic -ErrorAction Stop
             Write-DebugLog "Service startup type set to Automatic"
-            
+        } catch {
+            Write-DebugLog "ERROR: Failed to configure service: $_"
+            exit 1058
+        }
+
+        try {
             Write-DebugLog "Starting service: $ServiceName"
-            Start-Service -Name $ServiceName -ErrorAction Stop
+            Invoke-WithRetry -OperationName "Start-Service[$ServiceName]" `
+                -AlreadySucceeded {
+                    $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+                    return [bool]($svc -and $svc.Status -eq 'Running')
+                } `
+                -Action {
+                    $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+                    if ($svc -and $svc.Status -eq 'StartPending') {
+                        Wait-ForServiceStartPending -ServiceName $ServiceName
+                        return
+                    }
+                    Start-Service -Name $ServiceName -ErrorAction Stop
+                }
             Write-DebugLog "Upgrade completed successfully!"
         } catch {
-            Write-DebugLog "ERROR: Failed to restart service: $_"
-            exit 1058
+            # Transient SCM race; service is Automatic, so it starts on next boot regardless.
+            Write-DebugLog "WARNING: Service did not start immediately after upgrade (will start on next boot, or run 'Start-Service $ServiceName' manually): $_"
         }
     } else {
         # Fresh installation scenario: create service with LocalSystem
@@ -336,7 +403,18 @@ try {
         # rollback CA knows it must clean up the service created by this run.
         "1" | Out-File -FilePath $markerFile -Force -ErrorAction SilentlyContinue
         try {
-            New-Service -Name $ServiceName -DisplayName 'New Relic Infrastructure Agent' -BinaryPathName "`"$AgentDir\newrelic-infra-service.exe`" -config `"$ConfigFile`"" -StartupType Automatic -ErrorAction Stop | Out-Null
+            Invoke-WithRetry -OperationName "New-Service[$ServiceName]" `
+                -AlreadySucceeded {
+                    # Safe since New-Service applies all its properties atomically via CreateService.
+                    $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+                    if ($svc) {
+                        Write-DebugLog "New-Service[$ServiceName]: service already present in SCM - treating a prior attempt as having created it despite throwing, not re-creating"
+                    }
+                    return [bool]$svc
+                } `
+                -Action {
+                    New-Service -Name $ServiceName -DisplayName 'New Relic Infrastructure Agent' -BinaryPathName "`"$AgentDir\newrelic-infra-service.exe`" -config `"$ConfigFile`"" -StartupType Automatic -ErrorAction Stop | Out-Null
+                }
             Write-DebugLog "Service created successfully"
             # Restore auto-restart on crash (first failure: restart after 30s).
             # Equivalent to the original WiX <util:ServiceConfig FirstFailureActionType='restart' RestartServiceDelayInSeconds='30'>.
@@ -348,15 +426,26 @@ try {
 
         try {
             Write-DebugLog "Starting service: $ServiceName"
-            Start-Service -Name $ServiceName -ErrorAction Stop
+            Invoke-WithRetry -OperationName "Start-Service[$ServiceName]" `
+                -AlreadySucceeded {
+                    $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+                    return [bool]($svc -and $svc.Status -eq 'Running')
+                } `
+                -Action {
+                    $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+                    if ($svc -and $svc.Status -eq 'StartPending') {
+                        Wait-ForServiceStartPending -ServiceName $ServiceName
+                        return
+                    }
+                    Start-Service -Name $ServiceName -ErrorAction Stop
+                }
             Write-DebugLog "Installation completed successfully!"
-            # Install succeeded — remove the marker so a future rollback (e.g. from a
-            # subsequent failed upgrade) does not mistakenly delete this service.
-            Remove-Item $markerFile -Force -ErrorAction SilentlyContinue
         } catch {
-            Write-DebugLog "ERROR: Failed to start service: $_"
-            exit 1058
+            # Transient SCM race; service is Automatic, so it starts on next boot regardless.
+            Write-DebugLog "WARNING: Service did not start immediately after install (will start on next boot, or run 'Start-Service $ServiceName' manually): $_"
         }
+        # Files + registration succeeded, so clear the marker regardless of Start-Service outcome.
+        Remove-Item $markerFile -Force -ErrorAction SilentlyContinue
     }
 
     Write-DebugLog "Installer script finished"
