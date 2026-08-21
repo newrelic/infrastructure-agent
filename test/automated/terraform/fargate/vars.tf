@@ -75,7 +75,7 @@ variable "secret_name_license_canaries_A2Q_2" {
 }
 
 variable "secret_name_license_keys_canaries_A2Q" {
-  default = "caos/canaries/license_keys_canaries_A2Q-ozAvrS"
+  default = "caos/canaries/license_keys_canaries_A2Q_jp-Dx4cAw"
 }
 
 variable "secret_name_account" {

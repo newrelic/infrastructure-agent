@@ -20,6 +20,7 @@
             name: caos.ansible_roles.infra_agent
           vars:
             is_containerized: true
+            staging: false
             target_version: "{{ current_version }}-rc"
             display_name: "{{ inventory_hostname }}-current"
             nr_license_key: "{{ nr_license_keys_a2q[((config_num | int) - 1) * 2] }}"
@@ -29,6 +30,7 @@
             name: caos.ansible_roles.infra_agent
           vars:
             is_containerized: true
+            staging: false
             target_version: "{{ previous_version }}"
             display_name: "{{ inventory_hostname }}-previous"
             nr_license_key: "{{ nr_license_keys_a2q[((config_num | int) - 1) * 2 + 1] }}"
@@ -54,6 +56,7 @@
           include_role:
             name: caos.ansible_roles.infra_agent
           vars:
+            staging: false
             target_version: "{{ current_version }}"
             repo_endpoint: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
             nr_license_key: "{{ nr_license_keys_a2q[((config_num | int) - 1) * 2 + (1 if is_previous == 'true' else 0)] }}"
