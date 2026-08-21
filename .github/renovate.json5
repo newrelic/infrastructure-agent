@@ -31,6 +31,18 @@
       "matchStrings": [
         "(?<integrationName>.+),(?<currentValue>v.+)"
       ]
+    },
+    {
+      // Parse version of nrjmx, bundled only into the Agent Control OCI package
+      // (kept separate from integrations.version on purpose, see build/embed/nrjmx.mk).
+      "fileMatch": [
+        "build/embed/nrjmx.version$"
+      ],
+      "depNameTemplate": "newrelic/nrjmx",
+      "datasourceTemplate": "github-releases", // Version info is fetched from GitHub.
+      "matchStrings": [
+        "(?<currentValue>v.+)"
+      ]
     }
   ]
 }
