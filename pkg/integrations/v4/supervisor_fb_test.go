@@ -113,7 +113,7 @@ func TestFBSupervisorConfig_LicenseKeyShouldBePassedAsEnvVar(t *testing.T) {
 	license := "some_license"
 	c := config.LogForward{License: license, Troubleshoot: config.Troubleshoot{Enabled: true}}
 
-	confLoader := logs.NewFolderLoader(c, agentIdentity, hostnameResolver)
+	confLoader := logs.NewFolderLoader(c, agentIdentity, hostnameResolver, false)
 	executorBuilder := buildFbExecutor(fbConf, confLoader)
 
 	exec, err := executorBuilder()
@@ -143,7 +143,7 @@ func Test_ConfigTemporaryFolderCreation(t *testing.T) {
 	hostnameResolver := testhelpers.NewFakeHostnameResolver("full_hostname", "short_hostname", nil)
 	c := config.LogForward{Troubleshoot: config.Troubleshoot{Enabled: true}}
 
-	confLoader := logs.NewFolderLoader(c, agentIdentity, hostnameResolver)
+	confLoader := logs.NewFolderLoader(c, agentIdentity, hostnameResolver, false)
 	executorBuilder := buildFbExecutor(fbConf, confLoader)
 
 	_, err = executorBuilder()
@@ -454,7 +454,7 @@ func confLoaderForTest() *logs.CfgLoader {
 	license := "some_license"
 	c := config.LogForward{License: license, Troubleshoot: config.Troubleshoot{Enabled: true}}
 
-	return logs.NewFolderLoader(c, agentIdentity, hostnameResolver)
+	return logs.NewFolderLoader(c, agentIdentity, hostnameResolver, false)
 }
 
 // bypassIsLogForwarderAvailable bypasses the check of some files to be able to run fb
