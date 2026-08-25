@@ -296,27 +296,24 @@ try {
         }
     }
 
-    # Create directories only for fresh installation
-    if (-not $isUpgrade) {
-        Write-DebugLog "Creating directories for fresh installation"
-        Create-Directory $AgentDir
-        Create-Directory $AgentDir\custom-integrations
-        Create-Directory $AgentDir\newrelic-integrations
-        Create-Directory $AgentDir\integrations.d
-        
-        # Copy LICENSE.txt only for ZIP installations
-        if ($ScriptPath -ne $AgentDir) {
-            Copy-Item -Path "$ScriptPath\LICENSE.txt" -Destination "$AgentDir" -Force
-            Write-DebugLog "LICENSE.txt copied"
-        }
+    # Created unconditionally: a service still pending deletion makes $isUpgrade true even when
+    # the directories are gone, and Copy-Item would then create $AgentDir as a file, not a folder.
+    Write-DebugLog "Ensuring required directories exist"
+    Create-Directory $AgentDir
+    Create-Directory $AgentDir\custom-integrations
+    Create-Directory $AgentDir\newrelic-integrations
+    Create-Directory $AgentDir\integrations.d
 
-        $LogDir = Split-Path -parent $LogFile
-        Create-Directory $LogDir
-        Create-Directory $PluginDir
-        Create-Directory $AppDataDir
-    } else {
-        Write-DebugLog "Upgrade detected - skipping directory creation"
+    # Copy LICENSE.txt only for ZIP installations
+    if ((-not $isUpgrade) -and ($ScriptPath -ne $AgentDir)) {
+        Copy-Item -Path "$ScriptPath\LICENSE.txt" -Destination "$AgentDir" -Force
+        Write-DebugLog "LICENSE.txt copied"
     }
+
+    $LogDir = Split-Path -parent $LogFile
+    Create-Directory $LogDir
+    Create-Directory $PluginDir
+    Create-Directory $AppDataDir
 
     # Copy executables only if source and destination are different (ZIP installation)
     # For MSI installations, files are already in place
