@@ -187,17 +187,17 @@ try {
     # --- Rollback path ---
     # Called by the MSI rollback CA (SetRollbackCmd in Product.wxs).
     # Only delete the service if *this run* created it (marker present).
-    # If no marker, the service pre-existed an upgrade — leave it alone.
+    # If no marker, the service pre-existed an upgrade - leave it alone.
     if ($Rollback.IsPresent) {
         Write-DebugLog "Rollback invoked."
         if (Test-Path $markerFile) {
-            Write-DebugLog "Fresh-install marker found — stopping and deleting service '$ServiceName'."
+            Write-DebugLog "Fresh-install marker found - stopping and deleting service '$ServiceName'."
             Stop-Service $ServiceName -Force -ErrorAction SilentlyContinue
             sc.exe delete $ServiceName | Out-Null
             Remove-Item $markerFile -Force -ErrorAction SilentlyContinue
             Write-DebugLog "Rollback complete: service deleted."
         } else {
-            Write-DebugLog "No fresh-install marker — upgrade path detected; attempting to restart pre-existing service."
+            Write-DebugLog "No fresh-install marker - upgrade path detected; attempting to restart pre-existing service."
             # May no-op if old binaries aren't restored yet - StartupType Automatic self-heals it later.
             Start-Service $ServiceName -ErrorAction SilentlyContinue
             $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
