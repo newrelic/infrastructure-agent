@@ -1,5 +1,6 @@
 ANSIBLE_FOLDER := $(CURDIR)
 ANSIBLE_FORKS ?= 20
+A2Q_ENV ?= staging
 
 .DEFAULT_GOAL := canaries
 
@@ -26,7 +27,13 @@ endif
 
 ## Conditional Canary Deployment
 ifeq ($(IS_A2Q),true)
+ifeq ($(A2Q_ENV),eu)
+	    NR_KEYS_JSON='$(NR_LICENSE_KEYS_CANARIES_A2Q_EU)' ansible-playbook -f $(ANSIBLE_FORKS) -i $(ANSIBLE_INVENTORY) "$(ANSIBLE_FOLDER)/deploy_a2q_canaries.yml" -e "current_version=$(VERSION) previous_version=$(PREVIOUS_VERSION) nr_license_key_a2q_1=$(NR_LICENSE_KEY_CANARIES_A2Q_1) nr_license_key_a2q_2=$(NR_LICENSE_KEY_CANARIES_A2Q_2) docker_username=$(DOCKER_USERNAME) docker_password=$(DOCKER_PASSWORD) is_previous=${IS_PREVIOUS} a2q_staging=false nr_license_keys_a2q={{ lookup('env','NR_KEYS_JSON') | from_json }}"
+else ifeq ($(A2Q_ENV),jp)
+	    NR_KEYS_JSON='$(NR_LICENSE_KEYS_CANARIES_A2Q_JP)' ansible-playbook -f $(ANSIBLE_FORKS) -i $(ANSIBLE_INVENTORY) "$(ANSIBLE_FOLDER)/deploy_a2q_canaries.yml" -e "current_version=$(VERSION) previous_version=$(PREVIOUS_VERSION) nr_license_key_a2q_1=$(NR_LICENSE_KEY_CANARIES_A2Q_1) nr_license_key_a2q_2=$(NR_LICENSE_KEY_CANARIES_A2Q_2) docker_username=$(DOCKER_USERNAME) docker_password=$(DOCKER_PASSWORD) is_previous=${IS_PREVIOUS} a2q_staging=false nr_license_keys_a2q={{ lookup('env','NR_KEYS_JSON') | from_json }}"
+else
 	    NR_KEYS_JSON='$(NR_LICENSE_KEYS_CANARIES_A2Q)' ansible-playbook -f $(ANSIBLE_FORKS) -i $(ANSIBLE_INVENTORY) "$(ANSIBLE_FOLDER)/deploy_a2q_canaries.yml" -e "current_version=$(VERSION) previous_version=$(PREVIOUS_VERSION) nr_license_key_a2q_1=$(NR_LICENSE_KEY_CANARIES_A2Q_1) nr_license_key_a2q_2=$(NR_LICENSE_KEY_CANARIES_A2Q_2) docker_username=$(DOCKER_USERNAME) docker_password=$(DOCKER_PASSWORD) is_previous=${IS_PREVIOUS} nr_license_keys_a2q={{ lookup('env','NR_KEYS_JSON') | from_json }}"
+endif
 else
 	    ansible-playbook -f $(ANSIBLE_FORKS) -i $(ANSIBLE_INVENTORY) "$(ANSIBLE_FOLDER)/deploy_canaries.yml" -e "current_version=$(VERSION) previous_version=$(PREVIOUS_VERSION) nr_license_key=$(NR_LICENSE_KEY_CANARIES) docker_username=$(DOCKER_USERNAME) docker_password=$(DOCKER_PASSWORD)"
 endif

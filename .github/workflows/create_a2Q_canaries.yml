@@ -24,6 +24,7 @@ permissions:
 
 jobs:
   A2Q-canaries-windows:
+    # EU/JP only provision config1+config2 (both Linux) - no windows fan-out for those envs.
     if: ${{ github.event.inputs.windows == 'true' }}
     permissions:
       contents: read
@@ -33,10 +34,14 @@ jobs:
       PLATFORM: "windows"
       TAG: ${{ github.event.inputs.tag }}
       A2Q: true
+      A2Q_ENV: staging
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
   A2Q-canaries-linux:
     if: ${{ github.event.inputs.linux == 'true' }}
+    strategy:
+      matrix:
+        env: [staging, eu, jp]
     permissions:
       contents: read
       id-token: write # calls component_canaries.yml which needs AWS OIDC auth
@@ -45,5 +50,6 @@ jobs:
       PLATFORM: "linux"
       TAG: ${{ github.event.inputs.tag }}
       A2Q: true
+      A2Q_ENV: ${{ matrix.env }}
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}

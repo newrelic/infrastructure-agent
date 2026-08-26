@@ -2,6 +2,14 @@ provider "aws" {
   region = "us-east-2"
 }
 
+locals {
+  license_secret_name_a2q = (
+    var.a2q_env == "eu" ? var.secret_name_license_keys_canaries_A2Q_eu :
+    var.a2q_env == "jp" ? var.secret_name_license_keys_canaries_A2Q_jp :
+    var.secret_name_license_keys_canaries_A2Q
+  )
+}
+
 #########################################
 # State Backend
 #########################################
@@ -54,7 +62,7 @@ module "otel_infra" {
         },
         {
           "name" : "NR_LICENSE_KEYS_CANARIES_A2Q",
-          "valueFrom" : "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_license_keys_canaries_A2Q}"
+          "valueFrom" : "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${local.license_secret_name_a2q}"
         },
         {
           "name" : "NEW_RELIC_ACCOUNT_ID",
@@ -103,6 +111,8 @@ module "otel_infra" {
                   "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_license_canaries_A2Q_1}",
                   "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_license_canaries_A2Q_2}",
                   "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_license_keys_canaries_A2Q}",
+                  "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_license_keys_canaries_A2Q_eu}",
+                  "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_license_keys_canaries_A2Q_jp}",
                   "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_account}",
                   "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_api}",
                   "arn:aws:secretsmanager:${var.region}:${var.accountId}:secret:${var.secret_name_windows_password}",
