@@ -86,10 +86,6 @@ variable "secret_name_license_keys_canaries_A2Q_jp" {
   default = "caos/canaries/license_keys_canaries_A2Q_jp-Dx4cAw"
 }
 
-variable "a2q_env" {
-  default = "staging"
-}
-
 variable "secret_name_account" {
   default = "caos/canaries/account-EOzJkq"
 }
