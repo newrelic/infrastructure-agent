@@ -14,7 +14,7 @@ on:
 
 env:
   DESTINATION_REPO: newrelic/docs-website
-  DESTINATION_FOLDER: src/content/docs/release-notes/agent-release-notes/infrastructure-release-notes
+  DESTINATION_FOLDER: src/content/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes
 
 jobs:
   publish-release-notes:
@@ -43,22 +43,65 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Copy file to docs-website branch
-        uses: dmnemec/copy_file_to_another_repo_action@c93037aa10fa8893de271f19978c980d0c1a9b37 # tag v1.1.1
+      - name: Append support statement
+        run: |
+          cat >> "${{ steps.meta.outputs.notes_file }}" << 'EOF'
+
+          ### Support statement:
+
+          A new version of the agent has been released. Follow standard procedures to [update the Infrastructure agent](/docs/infrastructure/install-configure-manage-infrastructure/update-or-uninstall/update-infrastructure-agent).
+
+          We recommend updating to the latest agent version as soon as it's available. If you can't upgrade to the latest version, update your agents to a version no more than 90 days old. Read more about [keeping agents up to date](https://docs.newrelic.com/docs/new-relic-solutions/new-relic-one/install-configure/update-new-relic-agent/).
+
+          See the [New Relic Infrastructure agent EOL policy](https://docs.newrelic.com/docs/infrastructure/infrastructure-agent/infrastructure-agent-eol-policy/) for information about agent releases and support dates.
+          EOF
+
+      - name: Push release notes to docs-website branch
         env:
-          API_TOKEN_GITHUB: ${{ secrets.OHAI_BOT_GITHUB_TOKEN }}
-        with:
-          source_file: "${{ steps.meta.outputs.notes_file }}"
-          destination_repo: "${{ env.DESTINATION_REPO }}"
-          destination_folder: "${{ env.DESTINATION_FOLDER }}"
-          user_email: "coreint-dev@newrelic.com"
-          user_name: "newrelic-coreint-bot"
-          destination_branch: "develop"
-          destination_branch_create: "${{ steps.meta.outputs.branch_name }}"
-          commit_message: "chore(infrastructure agent): add release notes for v${{ steps.meta.outputs.agent_tag }}"
+          GH_TOKEN: ${{ secrets.OHAI_BOT_GITHUB_TOKEN }}
+          REPO: "${{ env.DESTINATION_REPO }}"
+          FOLDER: "${{ env.DESTINATION_FOLDER }}"
+          BRANCH: "${{ steps.meta.outputs.branch_name }}"
+          NOTES_FILE: "${{ steps.meta.outputs.notes_file }}"
+          COMMIT_MESSAGE: "chore(infrastructure agent): add release notes for v${{ steps.meta.outputs.agent_tag }}"
+        run: |
+          set -e
+          NOTES_PATH="$(pwd)/${NOTES_FILE}"
+
+          git config --global user.email "coreint-dev@newrelic.com"
+          git config --global user.name "newrelic-coreint-bot"
+
+          CLONE_DIR="$(mktemp -d)"
+          git clone --single-branch --branch develop "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" "$CLONE_DIR"
+          cd "$CLONE_DIR"
+
+          if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
+            echo "Branch $BRANCH already exists on remote — amending previous commit"
+            git fetch origin "$BRANCH"
+            git checkout -B "$BRANCH" FETCH_HEAD
+            mkdir -p "$FOLDER"
+            cp "$NOTES_PATH" "$FOLDER/"
+            git add .
+            git commit --amend --no-edit
+            git push --force origin "HEAD:$BRANCH"
+          else
+            echo "Branch $BRANCH does not exist — creating it"
+            git checkout -b "$BRANCH"
+            mkdir -p "$FOLDER"
+            cp "$NOTES_PATH" "$FOLDER/"
+            git add .
+            git commit --message "$COMMIT_MESSAGE"
+            git push -u origin "HEAD:$BRANCH"
+          fi
 
       - name: Create pull request
-        run: gh pr create --base "develop" --repo "$REPO" --head "$HEAD" --title "$TITLE" --body "$BODY"
+        run: |
+          existing_pr=$(gh pr list --repo "$REPO" --head "$HEAD" --state open --json number --jq 'length')
+          if [ "$existing_pr" != "0" ]; then
+            echo "Open PR already exists for branch $HEAD — skipping creation"
+          else
+            gh pr create --base "develop" --repo "$REPO" --head "$HEAD" --title "$TITLE" --body "$BODY"
+          fi
         env:
           GH_TOKEN: ${{ secrets.OHAI_BOT_GITHUB_TOKEN }}
           REPO: "https://github.com/${{ env.DESTINATION_REPO }}"
