@@ -5,18 +5,23 @@
 #
 # Expected GitHub release body format:
 #
-#   ### New features
-#   * Short description of feature one
-#   * Short description of feature two
+#   ### 🚀 Enhancements
+#   - Short description of feature one
 #
-#   ### Bug fixes
-#   * Short description of bug fix one
+#   ### 🐞 Bug fixes
+#   - Short description of bug fix one
 #
-#   ### Security
-#   * Short description of security fix (if any)
+#   ### 🛡️ Security notices
+#   - Short description of security fix (if any)
 #
-# Items under each heading populate the MDX frontmatter arrays used by
-# docs-website. Full markdown detail can follow each bullet on subsequent lines.
+# Heading matching is substring-based (case-insensitive) so emoji-prefixed
+# headers like "### 🚀 Enhancements" still match. Items under Enhancements /
+# Bug fixes / Security notices populate the MDX frontmatter arrays (features /
+# bugs / security) used by docs-website; trailing PR/commit refs (#123) and
+# any "in <path>" qualifier (common on dependency-bump lines) are stripped.
+# The full release body (with "## What's Changed" renamed to "## Notes" and
+# the "Full Changelog: ..." line removed) is still appended below the
+# frontmatter as-is.
 
 set -e
 
@@ -44,9 +49,12 @@ release_date = os.environ['RELEASE_DATE']
 output_file  = os.environ['OUTPUT_FILE']
 
 def extract_section(text, *headings):
-    """Return first-line bullet text from a named ### section."""
+    """Return bullet items from a ### section, matched by heading substring
+    (handles emoji-prefixed headers like '### 🚀 Enhancements')."""
     for heading in headings:
-        pattern = rf'###\s+{re.escape(heading)}\s*\n(.*?)(?=\n###|\Z)'
+        # stop at the next heading of ANY level (not just another ###), so a
+        # trailing "## Notes" / "## What's Changed" section can't be slurped in
+        pattern = rf'###[^\n]*{re.escape(heading)}[^\n]*\n(.*?)(?=\n#{{1,6}}\s|\Z)'
         match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
         if not match:
             continue
@@ -59,21 +67,76 @@ def extract_section(text, *headings):
             # strip trailing PR/commit refs: (#123) or (abc1234)
             item = re.sub(r'\s*\(#\d+\)\s*$', '', item)
             item = re.sub(r'\s*\([0-9a-f]{7,40}\)\s*$', '', item)
+            # drop trailing qualifiers like "in /some/path" (common on dependency bumps)
+            item = re.sub(r'\s+in\s+.*$', '', item, flags=re.IGNORECASE)
             item = item.strip()
             if item:
                 items.append(item)
         return items
     return []
 
-features = extract_section(body, 'New features', 'Features')
+features = extract_section(body, 'Enhancements', 'New features', 'Features')
 bugs      = extract_section(body, 'Bug fixes', 'Fixes', 'Bugfixes')
-security  = extract_section(body, 'Security')
+security  = extract_section(body, 'Security notices', 'Security')
 
 def yaml_list(items):
     if not items:
         return '[]'
     escaped = ["'" + item.replace("'", "''") + "'" for item in items]
     return '[' + ', '.join(escaped) + ']'
+
+def clean_body(text):
+    text = re.sub(r"^##\s*What's Changed\s*$", '## Notes', text, flags=re.MULTILINE | re.IGNORECASE)
+    lines = [
+        line for line in text.splitlines()
+        if not re.match(r'^\*{0,2}Full Changelog\*{0,2}:', line.strip(), re.IGNORECASE)
+    ]
+    return '\n'.join(lines)
+
+def normalize_spacing(text):
+    """Force exactly one blank line both before and after every heading
+    (regardless of how the release was authored — heading-into-content,
+    content-into-heading, or double blank lines between sections), while
+    leaving other paragraph spacing untouched."""
+    lines = text.splitlines()
+    heading_re = re.compile(r'^#{1,6}\s')
+    spaced = []
+    i = 0
+    n = len(lines)
+    while i < n:
+        line = lines[i]
+        if heading_re.match(line):
+            if spaced and spaced[-1].strip() != '':
+                spaced.append('')
+            spaced.append(line)
+            j = i + 1
+            while j < n and lines[j].strip() == '':
+                j += 1
+            if j < n:
+                spaced.append('')
+            i = j
+            continue
+        spaced.append(line)
+        i += 1
+
+    collapsed = []
+    blank_run = 0
+    for line in spaced:
+        if line.strip() == '':
+            blank_run += 1
+            if blank_run <= 1:
+                collapsed.append(line)
+        else:
+            blank_run = 0
+            collapsed.append(line)
+    while collapsed and collapsed[0].strip() == '':
+        collapsed.pop(0)
+    while collapsed and collapsed[-1].strip() == '':
+        collapsed.pop()
+    return '\n'.join(collapsed)
+
+body = clean_body(body)
+body = normalize_spacing(body)
 
 with open(output_file, 'w') as f:
     f.write(f"""\
