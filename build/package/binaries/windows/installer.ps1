@@ -99,6 +99,9 @@ try {
     function Wait-ForServiceStartPending {
         param([string]$ServiceName, [int]$TimeoutSeconds = 3)
         $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+        if (-not $svc) {
+            throw "Service '$ServiceName' no longer exists."
+        }
         $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
         while ((Get-Date) -lt $deadline) {
             Start-Sleep -Milliseconds 500
