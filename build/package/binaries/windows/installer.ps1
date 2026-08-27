@@ -63,6 +63,78 @@ try {
         Write-Host $Message
     }
 
+    # Generic retry helper for a service operation that can transiently fail right after install.
+    function Invoke-WithRetry {
+        param(
+            [Parameter(Mandatory)][string]$OperationName,
+            [Parameter(Mandatory)][scriptblock]$Action,
+            # Checked before every attempt; return $true to skip $Action if already done.
+            [scriptblock]$AlreadySucceeded = { $false },
+            [int]$MaxAttempts = 5,
+            [int[]]$DelaysSeconds = @(1, 2, 4, 8)
+        )
+        for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
+            try {
+                if (& $AlreadySucceeded) {
+                    if ($attempt -gt 1) {
+                        Write-DebugLog "${OperationName}: attempt $attempt/$MaxAttempts - already in desired state, skipping"
+                    }
+                    return
+                }
+                & $Action
+                return
+            } catch {
+                if ($attempt -ge $MaxAttempts) {
+                    Write-DebugLog "${OperationName}: attempt $attempt/$MaxAttempts failed, out of attempts: $_"
+                    throw
+                }
+                $delay = $DelaysSeconds[[Math]::Min($attempt - 1, $DelaysSeconds.Count - 1)]
+                Write-DebugLog "${OperationName}: attempt $attempt/$MaxAttempts failed: $_. Retrying in ${delay}s..."
+                Start-Sleep -Seconds $delay
+            }
+        }
+    }
+
+    # Polls instead of re-invoking Start-Service, which would just throw noise on an already-starting service.
+    function Wait-ForServiceStartPending {
+        param([string]$ServiceName, [int]$TimeoutSeconds = 3)
+        $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+        if (-not $svc) {
+            throw "Service '$ServiceName' no longer exists."
+        }
+        $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+        while ((Get-Date) -lt $deadline) {
+            Start-Sleep -Milliseconds 500
+            $svc.Refresh()
+            if ($svc.Status -eq 'Running') { return }
+            if ($svc.Status -ne 'StartPending') {
+                throw "Service '$ServiceName' left StartPending for '$($svc.Status)' instead of reaching Running"
+            }
+        }
+        throw "Service '$ServiceName' still StartPending after ${TimeoutSeconds}s"
+    }
+
+    # A missing/placeholder license key always crashes the agent - retrying Start-Service won't help.
+    function Check-LicenseKey {
+        param([string]$ConfigFile, [string]$ServiceName)
+        if (-not (Test-Path $ConfigFile)) {
+            $msg = "Config file not found at $ConfigFile - service not started. Add it, then run 'net start $ServiceName'."
+            Write-DebugLog "WARNING: $msg"
+            Write-Error $msg -ErrorAction Continue
+            return $false
+        }
+        $match = Get-Content $ConfigFile -ErrorAction SilentlyContinue | Select-String "^\s*license_key:\s*(.+?)(?:\s+#.*)?$"
+        $value = if ($match) { $match.Matches[0].Groups[1].Value.Trim().Trim("'`"") } else { "" }
+        # Mirrors pkg/license.IsValid.
+        if ($value -notmatch "^[a-zA-Z0-9]+$") {
+            $msg = "No valid license key in $ConfigFile - service not started. Set license_key, then run 'net start $ServiceName'."
+            Write-DebugLog "WARNING: $msg"
+            Write-Error $msg -ErrorAction Continue
+            return $false
+        }
+        return $true
+    }
+
     # Initialize log file with startup message
     try {
         $logDir = Split-Path $DebugLogFile -Parent
@@ -118,21 +190,22 @@ try {
     # --- Rollback path ---
     # Called by the MSI rollback CA (SetRollbackCmd in Product.wxs).
     # Only delete the service if *this run* created it (marker present).
-    # If no marker, the service pre-existed an upgrade — leave it alone.
+    # If no marker, the service pre-existed an upgrade - leave it alone.
     if ($Rollback.IsPresent) {
         Write-DebugLog "Rollback invoked."
         if (Test-Path $markerFile) {
-            Write-DebugLog "Fresh-install marker found — stopping and deleting service '$ServiceName'."
+            Write-DebugLog "Fresh-install marker found - stopping and deleting service '$ServiceName'."
             Stop-Service $ServiceName -Force -ErrorAction SilentlyContinue
             sc.exe delete $ServiceName | Out-Null
             Remove-Item $markerFile -Force -ErrorAction SilentlyContinue
             Write-DebugLog "Rollback complete: service deleted."
         } else {
-            Write-DebugLog "No fresh-install marker — upgrade path detected; attempting to restart pre-existing service."
-            # MSI file rollback restores the old binaries; restart the service so the
-            # machine is not left with the agent stopped after a failed upgrade.
+            Write-DebugLog "No fresh-install marker - upgrade path detected; attempting to restart pre-existing service."
+            # Restart so a failed upgrade doesn't leave the agent stopped;
+            # MSI restores the old binaries after this script runs.
             Start-Service $ServiceName -ErrorAction SilentlyContinue
-            Write-DebugLog "Rollback complete: service restarted (or was already stopped before install)."
+            $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+            Write-DebugLog "Rollback complete: service status is $($svc.Status)."
         }
         exit 0
     }
@@ -227,27 +300,24 @@ try {
         }
     }
 
-    # Create directories only for fresh installation
-    if (-not $isUpgrade) {
-        Write-DebugLog "Creating directories for fresh installation"
-        Create-Directory $AgentDir
-        Create-Directory $AgentDir\custom-integrations
-        Create-Directory $AgentDir\newrelic-integrations
-        Create-Directory $AgentDir\integrations.d
-        
-        # Copy LICENSE.txt only for ZIP installations
-        if ($ScriptPath -ne $AgentDir) {
-            Copy-Item -Path "$ScriptPath\LICENSE.txt" -Destination "$AgentDir" -Force
-            Write-DebugLog "LICENSE.txt copied"
-        }
+    # Created unconditionally: a service still pending deletion makes $isUpgrade true even when
+    # the directories are gone, and Copy-Item would then create $AgentDir as a file, not a folder.
+    Write-DebugLog "Ensuring required directories exist"
+    Create-Directory $AgentDir
+    Create-Directory $AgentDir\custom-integrations
+    Create-Directory $AgentDir\newrelic-integrations
+    Create-Directory $AgentDir\integrations.d
 
-        $LogDir = Split-Path -parent $LogFile
-        Create-Directory $LogDir
-        Create-Directory $PluginDir
-        Create-Directory $AppDataDir
-    } else {
-        Write-DebugLog "Upgrade detected - skipping directory creation"
+    # Copy LICENSE.txt only for ZIP installations
+    if ((-not $isUpgrade) -and ($ScriptPath -ne $AgentDir)) {
+        Copy-Item -Path "$ScriptPath\LICENSE.txt" -Destination "$AgentDir" -Force
+        Write-DebugLog "LICENSE.txt copied"
     }
+
+    $LogDir = Split-Path -parent $LogFile
+    Create-Directory $LogDir
+    Create-Directory $PluginDir
+    Create-Directory $AppDataDir
 
     # Copy executables only if source and destination are different (ZIP installation)
     # For MSI installations, files are already in place
@@ -279,21 +349,14 @@ try {
         Write-DebugLog "Verified: newrelic-infra.exe exists at $AgentDir"
     }
 
-    # Config file handling:
-    # - Upgrade with existing config: preserve it (never overwrite user's config)
-    # - MSI fresh install (ScriptPath == AgentDir) with config present: yamlgen.exe already
-    #   wrote a full config (license_key, display_name, proxy, custom_attributes, sample rates).
-    #   Do NOT overwrite it — that would silently discard all MSI properties beyond license_key.
-    # - ZIP fresh install or MSI without yamlgen output: write minimal config.
+    # Preserve any existing config rather than rewriting it - on an MSI install it may carry
+    # display_name/proxy/custom_attributes/sample rates from yamlgen that we would silently discard.
+    # Check-LicenseKey validates whatever ends up here, just before Start-Service.
     if ($isUpgrade -and (Test-Path $ConfigFile)) {
         Write-DebugLog "Preserving existing configuration file: $ConfigFile"
     } elseif (($ScriptPath -eq $AgentDir) -and (Test-Path $ConfigFile)) {
-        Write-DebugLog "MSI install: config already written by yamlgen, skipping"
+        Write-DebugLog "MSI install: config file already present, skipping"
     } else {
-        if (-Not $LicenseKey) {
-            Write-DebugLog "ERROR: LicenseKey is required for fresh installation"
-            exit -1
-        }
         Write-DebugLog "Creating new config file in $ConfigFile"
         Clear-Content -Path $ConfigFile -ErrorAction SilentlyContinue
         Add-Content -Path $ConfigFile -Value `
@@ -320,14 +383,35 @@ try {
             Write-DebugLog "Setting service startup type to Automatic..."
             Set-Service -Name $ServiceName -StartupType Automatic -ErrorAction Stop
             Write-DebugLog "Service startup type set to Automatic"
-            
-            Write-DebugLog "Starting service: $ServiceName"
-            Start-Service -Name $ServiceName -ErrorAction Stop
-            Write-DebugLog "Upgrade completed successfully!"
         } catch {
-            Write-DebugLog "ERROR: Failed to restart service: $_"
+            Write-DebugLog "ERROR: Failed to configure service: $_"
             exit 1058
         }
+
+        if (Check-LicenseKey -ConfigFile $ConfigFile -ServiceName $ServiceName) {
+            Write-DebugLog "Starting service: $ServiceName"
+            try {
+                Invoke-WithRetry -OperationName "Start-Service[$ServiceName]" `
+                    -AlreadySucceeded {
+                        $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+                        return [bool]($svc -and $svc.Status -eq 'Running')
+                    } `
+                    -Action {
+                        $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+                        if ($svc -and $svc.Status -eq 'StartPending') {
+                            Wait-ForServiceStartPending -ServiceName $ServiceName
+                            return
+                        }
+                        Start-Service -Name $ServiceName -ErrorAction Stop
+                    }
+            } catch {
+                $msg = "Failed to start service $ServiceName. Rolling back to the previous version. Last error: $_"
+                Write-DebugLog "ERROR: $msg"
+                Write-Error $msg -ErrorAction Continue
+                exit 1058
+            }
+        }
+        Write-DebugLog "Upgrade completed!"
     } else {
         # Fresh installation scenario: create service with LocalSystem
         Write-DebugLog "Creating new service: $ServiceName"
@@ -336,7 +420,19 @@ try {
         # rollback CA knows it must clean up the service created by this run.
         "1" | Out-File -FilePath $markerFile -Force -ErrorAction SilentlyContinue
         try {
-            New-Service -Name $ServiceName -DisplayName 'New Relic Infrastructure Agent' -BinaryPathName "`"$AgentDir\newrelic-infra-service.exe`" -config `"$ConfigFile`"" -StartupType Automatic -ErrorAction Stop | Out-Null
+            Invoke-WithRetry -OperationName "New-Service[$ServiceName]" `
+                -MaxAttempts 4 `
+                -AlreadySucceeded {
+                    # Safe since New-Service applies all its properties atomically via CreateService.
+                    $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+                    if ($svc) {
+                        Write-DebugLog "New-Service[$ServiceName]: service already exists, skipping"
+                    }
+                    return [bool]$svc
+                } `
+                -Action {
+                    New-Service -Name $ServiceName -DisplayName 'New Relic Infrastructure Agent' -BinaryPathName "`"$AgentDir\newrelic-infra-service.exe`" -config `"$ConfigFile`"" -StartupType Automatic -ErrorAction Stop | Out-Null
+                }
             Write-DebugLog "Service created successfully"
             # Restore auto-restart on crash (first failure: restart after 30s).
             # Equivalent to the original WiX <util:ServiceConfig FirstFailureActionType='restart' RestartServiceDelayInSeconds='30'>.
@@ -346,17 +442,31 @@ try {
             exit 1073
         }
 
-        try {
+        if (Check-LicenseKey -ConfigFile $ConfigFile -ServiceName $ServiceName) {
             Write-DebugLog "Starting service: $ServiceName"
-            Start-Service -Name $ServiceName -ErrorAction Stop
-            Write-DebugLog "Installation completed successfully!"
-            # Install succeeded — remove the marker so a future rollback (e.g. from a
-            # subsequent failed upgrade) does not mistakenly delete this service.
-            Remove-Item $markerFile -Force -ErrorAction SilentlyContinue
-        } catch {
-            Write-DebugLog "ERROR: Failed to start service: $_"
-            exit 1058
+            try {
+                Invoke-WithRetry -OperationName "Start-Service[$ServiceName]" `
+                    -AlreadySucceeded {
+                        $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+                        return [bool]($svc -and $svc.Status -eq 'Running')
+                    } `
+                    -Action {
+                        $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+                        if ($svc -and $svc.Status -eq 'StartPending') {
+                            Wait-ForServiceStartPending -ServiceName $ServiceName
+                            return
+                        }
+                        Start-Service -Name $ServiceName -ErrorAction Stop
+                    }
+            } catch {
+                $msg = "Failed to start service $ServiceName. Run 'net start $ServiceName' once resolved. Last error: $_"
+                Write-DebugLog "WARNING: $msg"
+                Write-Error $msg -ErrorAction Continue
+            }
         }
+        Write-DebugLog "Installation completed!"
+        # Files + registration succeeded, so clear the marker regardless of Start-Service outcome.
+        Remove-Item $markerFile -Force -ErrorAction SilentlyContinue
     }
 
     Write-DebugLog "Installer script finished"
