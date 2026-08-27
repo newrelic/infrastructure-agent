@@ -120,7 +120,7 @@ try {
             Write-Error $msg -ErrorAction Continue
             return $false
         }
-        $match = Get-Content $ConfigFile -ErrorAction SilentlyContinue | Select-String "^\s*license_key:\s*(.+)$"
+        $match = Get-Content $ConfigFile -ErrorAction SilentlyContinue | Select-String "^\s*license_key:\s*(.+?)(?:\s+#.*)?$"
         $value = if ($match) { $match.Matches[0].Groups[1].Value.Trim().Trim("'`"") } else { "" }
         # Mirrors pkg/license.IsValid.
         if ($value -notmatch "^[a-zA-Z0-9]+$") {
