@@ -34,9 +34,10 @@ jobs:
         run: |
           TAG="${{ github.event.release.tag_name || inputs.tag }}"
           cleaned=$(echo "$TAG" | sed 's/\./-/g')
+          version_nodots=$(echo "$TAG" | tr -d '.')
           echo "agent_tag=$TAG" >> $GITHUB_OUTPUT
           echo "branch_name=infra-agent-release-notes-${cleaned}" >> $GITHUB_OUTPUT
-          echo "notes_file=infrastructure-agent-${cleaned}.mdx" >> $GITHUB_OUTPUT
+          echo "notes_file=new-relic-infrastructure-agent-${version_nodots}.mdx" >> $GITHUB_OUTPUT
 
       - name: Generate release notes file
         run: .github/workflows/scripts/generate_release_notes.sh "${{ steps.meta.outputs.agent_tag }}"
@@ -76,23 +77,17 @@ jobs:
           cd "$CLONE_DIR"
 
           if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
-            echo "Branch $BRANCH already exists on remote — amending previous commit"
-            git fetch origin "$BRANCH"
-            git checkout -B "$BRANCH" FETCH_HEAD
-            mkdir -p "$FOLDER"
-            cp "$NOTES_PATH" "$FOLDER/"
-            git add .
-            git commit --amend --no-edit
-            git push --force origin "HEAD:$BRANCH"
-          else
-            echo "Branch $BRANCH does not exist — creating it"
-            git checkout -b "$BRANCH"
-            mkdir -p "$FOLDER"
-            cp "$NOTES_PATH" "$FOLDER/"
-            git add .
-            git commit --message "$COMMIT_MESSAGE"
-            git push -u origin "HEAD:$BRANCH"
+            echo "Branch $BRANCH already exists on remote — deleting it so it's recreated fresh from develop"
+            git push origin --delete "$BRANCH"
           fi
+
+          echo "Creating branch $BRANCH from develop"
+          git checkout -b "$BRANCH"
+          mkdir -p "$FOLDER"
+          cp "$NOTES_PATH" "$FOLDER/"
+          git add .
+          git commit --message "$COMMIT_MESSAGE"
+          git push -u origin "HEAD:$BRANCH"
 
       - name: Create pull request
         run: |
