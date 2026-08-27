@@ -31,8 +31,8 @@ if [ -z "$TAG" ]; then
   exit 1
 fi
 
-CLEANED_VERSION=$(echo "$TAG" | sed 's/\./-/g')
-OUTPUT_FILE="infrastructure-agent-${CLEANED_VERSION}.mdx"
+VERSION_NODOTS=$(echo "$TAG" | tr -d '.')
+OUTPUT_FILE="new-relic-infrastructure-agent-${VERSION_NODOTS}.mdx"
 
 RELEASE_INFO=$(gh release view "$TAG" --json publishedAt,body)
 RELEASE_DATE=$(echo "$RELEASE_INFO" | jq -r '.publishedAt | split("T")[0]')
@@ -93,6 +93,12 @@ def clean_body(text):
     ]
     return '\n'.join(lines)
 
+def linkify_pr_urls(text):
+    """Turn a bare PR URL (as GitHub's auto-generated 'in <url>' references
+    render) into a markdown link showing just #NNNN as the visible text."""
+    pattern = re.compile(r'https://github\.com/[\w.-]+/[\w.-]+/pull/(\d+)')
+    return pattern.sub(lambda m: f'[#{m.group(1)}]({m.group(0)})', text)
+
 def normalize_spacing(text):
     """Force exactly one blank line both before and after every heading
     (regardless of how the release was authored — heading-into-content,
@@ -136,6 +142,7 @@ def normalize_spacing(text):
     return '\n'.join(collapsed)
 
 body = clean_body(body)
+body = linkify_pr_urls(body)
 body = normalize_spacing(body)
 
 with open(output_file, 'w') as f:
