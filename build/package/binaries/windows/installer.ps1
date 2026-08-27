@@ -201,7 +201,8 @@ try {
             Write-DebugLog "Rollback complete: service deleted."
         } else {
             Write-DebugLog "No fresh-install marker - upgrade path detected; attempting to restart pre-existing service."
-            # May no-op if old binaries aren't restored yet - StartupType Automatic self-heals it later.
+            # Restart so a failed upgrade doesn't leave the agent stopped;
+            # MSI restores the old binaries after this script runs.
             Start-Service $ServiceName -ErrorAction SilentlyContinue
             $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
             Write-DebugLog "Rollback complete: service status is $($svc.Status)."
