@@ -19,6 +19,8 @@ endif
 	sed -i -e "s/PREFIX/$(PREFIX)/g" "$(TERRAFORM_DIR)/caos.auto.tfvars"
 	sed -i -e "s/TAG_OR_UNIQUE_NAME/$(TAG_OR_UNIQUE_NAME)/g" "$(TERRAFORM_DIR)/caos.auto.tfvars"
 
+A2Q_ENV ?= staging
+
 .PHONY: provision
 provision: terraform/backend
 ifndef PLATFORM
@@ -44,6 +46,7 @@ endif
 	TF_VAR_nr_license_key="$(NR_LICENSE_KEY)" \
 	TF_VAR_inventory_output="$(INVENTORY_OUTPUT)" \
 	TF_VAR_is_A2Q="$(IS_A2Q)" \
+	TF_VAR_a2q_env="$(A2Q_ENV)" \
 	terraform -chdir=$(TERRAFORM_DIR) apply -auto-approve
 
 .PHONY: clean
