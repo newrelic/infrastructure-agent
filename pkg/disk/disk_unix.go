@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"syscall"
 )
 
@@ -41,7 +42,7 @@ func MkdirAll(path string, perm os.FileMode) error {
 		// Nothing to reuse, fall through to create below.
 	case err != nil:
 		return fmt.Errorf("failed to stat %q: %w", path, err)
-	case isSafeExistingDir(pathInfo):
+	case isSafeExistingDir(path, pathInfo):
 		return nil
 	default:
 		rmErr := os.RemoveAll(path)
@@ -63,25 +64,66 @@ func MkdirAll(path string, perm os.FileMode) error {
 		return fmt.Errorf("failed to stat %q after creation: %w", path, err)
 	}
 
-	if !isSafeExistingDir(pathInfo) {
+	if !isSafeExistingDir(path, pathInfo) {
 		return fmt.Errorf("%q: %w", path, ErrUnsafeDirAfterCreate)
 	}
 
 	return nil
 }
 
-// isSafeExistingDir reports whether pathInfo describes a real directory (not a symlink),
-// owned by the current user, that is not writable by group or other.
-func isSafeExistingDir(pathInfo os.FileInfo) bool {
+// isSafeExistingDir reports whether pathInfo describes a real directory (not a symlink)
+// owned by the current user, that is either not writable by group/other, or is a distinct
+// mount point (e.g. a Kubernetes emptyDir/tmpfs volume).
+//
+// A separate mount point is set up by a privileged process (the container runtime/kubelet)
+// before the agent ever runs, not planted by an arbitrary local user - the "predictable
+// writable path" attack MkdirAll guards against requires being able to create the path
+// ahead of time under a shared, writable parent directory (e.g. /tmp), which isn't possible
+// for a distinct filesystem mount. Kubernetes commonly mounts emptyDir volumes as
+// world/group-writable (mode 0777), so without this exemption every such mount is wrongly
+// treated as unsafe and removed - which then fails outright when the mount is the root of a
+// read-only-root-filesystem container, since the mount point itself can't be unlinked from
+// its (read-only) parent.
+func isSafeExistingDir(path string, pathInfo os.FileInfo) bool {
 	if pathInfo.Mode()&os.ModeSymlink != 0 || !pathInfo.IsDir() {
 		return false
 	}
 
-	if pathInfo.Mode().Perm()&0o022 != 0 {
+	stat, ok := pathInfo.Sys().(*syscall.Stat_t)
+	if !ok || int(stat.Uid) != os.Getuid() {
 		return false
 	}
 
-	stat, ok := pathInfo.Sys().(*syscall.Stat_t)
+	if pathInfo.Mode().Perm()&0o022 != 0 && !isMountPoint(path, uint64(stat.Dev)) {
+		return false
+	}
 
-	return ok && int(stat.Uid) == os.Getuid()
+	return true
+}
+
+// statDev returns the device number of the filesystem containing path. It is a package-level
+// var, like the WriteFile/OpenFile/Create façades above, so tests can simulate a distinct
+// mount without needing an actual mount syscall.
+var statDev = func(path string) (dev uint64, ok bool) { //nolint:gochecknoglobals
+	info, err := os.Lstat(path)
+	if err != nil {
+		return 0, false
+	}
+
+	stat, ok := info.Sys().(*syscall.Stat_t)
+	if !ok {
+		return 0, false
+	}
+
+	return uint64(stat.Dev), true
+}
+
+// isMountPoint reports whether path is the root of a distinct filesystem mount, i.e. its
+// device number differs from its parent directory's. A failure to resolve the parent's
+// device is treated as "not a mount point" so callers fall back to the stricter permission
+// check.
+func isMountPoint(path string, dev uint64) bool {
+	parentDev, ok := statDev(filepath.Dir(path))
+
+	return ok && parentDev != dev
 }

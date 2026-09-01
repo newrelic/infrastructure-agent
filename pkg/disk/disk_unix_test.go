@@ -82,3 +82,69 @@ func TestMkdirAll_ReplacesGroupOtherWritableDir(t *testing.T) {
 	_, err = os.Stat(marker)
 	assert.True(t, os.IsNotExist(err), "unsafe directory should have been wiped, not reused")
 }
+
+// TestMkdirAll_ReusesWorldWritableMountPoint reproduces
+// https://github.com/newrelic/infrastructure-agent/issues/2324: a Kubernetes emptyDir is
+// mounted mode 0777 directly at the data dir path. Without the mount-point exemption this
+// directory is wrongly flagged as "unsafe" and wiped, which fails outright when the mount is
+// the root of a read-only-root-filesystem container (the mount point can't be unlinked from
+// its read-only parent) - exactly the fatal "refusing to reuse unsafe path ... read-only file
+// system" crash-loop reported in the issue.
+func TestMkdirAll_ReusesWorldWritableMountPoint(t *testing.T) {
+	base := t.TempDir()
+	target := filepath.Join(base, "emptydir")
+	require.NoError(t, os.Mkdir(target, 0o777))
+	require.NoError(t, os.Chmod(target, 0o777))
+
+	marker := filepath.Join(target, "marker")
+	require.NoError(t, os.WriteFile(marker, []byte("keep me"), 0o600))
+
+	restore := fakeMountPoint(t, target)
+	defer restore()
+
+	require.NoError(t, MkdirAll(target, 0o700))
+
+	content, err := os.ReadFile(marker)
+	require.NoError(t, err, "a distinct mount point should be reused, not wiped, even if world-writable")
+	assert.Equal(t, "keep me", string(content))
+}
+
+// TestMkdirAll_UnsafeNonMountPointStillReplaced guards against over-widening the exemption:
+// a world-writable directory that is NOT a distinct mount point (statDev reports the same
+// device as its parent, the common case for a directory planted under a shared writable
+// parent like /tmp) must still be treated as unsafe and wiped.
+func TestMkdirAll_UnsafeNonMountPointStillReplaced(t *testing.T) {
+	base := t.TempDir()
+	target := filepath.Join(base, "same-device")
+	require.NoError(t, os.Mkdir(target, 0o777))
+	require.NoError(t, os.Chmod(target, 0o777))
+
+	marker := filepath.Join(target, "marker")
+	require.NoError(t, os.WriteFile(marker, []byte("should be gone"), 0o600))
+
+	require.NoError(t, MkdirAll(target, 0o700))
+
+	_, err := os.Stat(marker)
+	assert.True(t, os.IsNotExist(err), "same-device writable directory should still be wiped")
+}
+
+// fakeMountPoint overrides statDev so target appears to live on a different device than its
+// parent, simulating a Kubernetes emptyDir/tmpfs mount without requiring an actual mount
+// syscall (which needs root and is Linux-specific). It restores the original statDev on
+// cleanup.
+func fakeMountPoint(t *testing.T, target string) func() {
+	t.Helper()
+
+	parent := filepath.Dir(target)
+	original := statDev
+
+	statDev = func(path string) (uint64, bool) {
+		if path == parent {
+			return 999, true // any device number distinct from target's real one
+		}
+
+		return original(path)
+	}
+
+	return func() { statDev = original }
+}
