@@ -94,7 +94,9 @@ func isSafeExistingDir(path string, pathInfo os.FileInfo) bool {
 		return false
 	}
 
-	dev := uint64(stat.Dev) //nolint:gosec // device numbers are kernel-assigned identifiers, never negative
+	//nolint:gosec,unconvert // device numbers are kernel-assigned identifiers, never negative;
+	// stat.Dev is int32 on some archs, uint64 on others - the conversion is a no-op there but widening is never wrong
+	dev := uint64(stat.Dev)
 
 	if pathInfo.Mode().Perm()&0o022 != 0 && !isMountPoint(path, dev) {
 		return false
@@ -115,7 +117,9 @@ func statDevImpl(path string) (uint64, bool) {
 		return 0, false
 	}
 
-	return uint64(stat.Dev), true //nolint:gosec // device numbers are kernel-assigned identifiers, never negative
+	//nolint:gosec,unconvert // device numbers are kernel-assigned identifiers, never negative;
+	// stat.Dev is int32 on some archs, uint64 on others - the conversion is a no-op there but widening is never wrong
+	return uint64(stat.Dev), true
 }
 
 // statDev is a package-level var, like the WriteFile/OpenFile/Create façades above, so tests
