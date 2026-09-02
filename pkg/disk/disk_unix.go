@@ -94,17 +94,17 @@ func isSafeExistingDir(path string, pathInfo os.FileInfo) bool {
 		return false
 	}
 
-	if pathInfo.Mode().Perm()&0o022 != 0 && !isMountPoint(path, uint64(stat.Dev)) {
+	dev := uint64(stat.Dev) //nolint:gosec // device numbers are kernel-assigned identifiers, never negative
+
+	if pathInfo.Mode().Perm()&0o022 != 0 && !isMountPoint(path, dev) {
 		return false
 	}
 
 	return true
 }
 
-// statDev returns the device number of the filesystem containing path. It is a package-level
-// var, like the WriteFile/OpenFile/Create façades above, so tests can simulate a distinct
-// mount without needing an actual mount syscall.
-var statDev = func(path string) (dev uint64, ok bool) { //nolint:gochecknoglobals
+// statDevImpl returns the device number of the filesystem containing path.
+func statDevImpl(path string) (uint64, bool) {
 	info, err := os.Lstat(path)
 	if err != nil {
 		return 0, false
@@ -115,8 +115,12 @@ var statDev = func(path string) (dev uint64, ok bool) { //nolint:gochecknoglobal
 		return 0, false
 	}
 
-	return uint64(stat.Dev), true
+	return uint64(stat.Dev), true //nolint:gosec // device numbers are kernel-assigned identifiers, never negative
 }
+
+// statDev is a package-level var, like the WriteFile/OpenFile/Create façades above, so tests
+// can simulate a distinct mount without needing an actual mount syscall.
+var statDev = statDevImpl //nolint:gochecknoglobals
 
 // isMountPoint reports whether path is the root of a distinct filesystem mount, i.e. its
 // device number differs from its parent directory's. A failure to resolve the parent's

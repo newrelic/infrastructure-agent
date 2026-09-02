@@ -90,6 +90,11 @@ func TestMkdirAll_ReplacesGroupOtherWritableDir(t *testing.T) {
 // the root of a read-only-root-filesystem container (the mount point can't be unlinked from
 // its read-only parent) - exactly the fatal "refusing to reuse unsafe path ... read-only file
 // system" crash-loop reported in the issue.
+//
+// It does not call t.Parallel(): it overrides the package-level statDev seam, which must not
+// run concurrently with other tests that call MkdirAll/isSafeExistingDir.
+//
+//nolint:paralleltest
 func TestMkdirAll_ReusesWorldWritableMountPoint(t *testing.T) {
 	base := t.TempDir()
 	target := filepath.Join(base, "emptydir")
@@ -114,6 +119,8 @@ func TestMkdirAll_ReusesWorldWritableMountPoint(t *testing.T) {
 // device as its parent, the common case for a directory planted under a shared writable
 // parent like /tmp) must still be treated as unsafe and wiped.
 func TestMkdirAll_UnsafeNonMountPointStillReplaced(t *testing.T) {
+	t.Parallel()
+
 	base := t.TempDir()
 	target := filepath.Join(base, "same-device")
 	require.NoError(t, os.Mkdir(target, 0o777))
