@@ -11,8 +11,6 @@ import (
 )
 
 const (
-	installationSubdir = "Program Files" + string(filepath.Separator) +
-		"New Relic" + string(filepath.Separator) + "newrelic-infra"
 	defaultAppDataSubDir  = "New Relic" + string(filepath.Separator) + "newrelic-infra"
 	defaultConnectEnabled = true
 )
@@ -51,9 +49,7 @@ func init() {
 	programData := os.Getenv("ProgramData")
 	defaultAppDataDir = filepath.Join(programData, defaultAppDataSubDir)
 
-	sysDrive := os.Getenv("SystemDrive") + string(filepath.Separator)
-
-	defaultAgentDir = filepath.Join(sysDrive, installationSubdir)
+	defaultAgentDir = filepath.Join(os.Getenv("ProgramFiles"), "New Relic", "newrelic-infra")
 	defaultSafeBinDir = defaultAgentDir
 	defaultConfigDir = defaultAgentDir
 	defaultLogFile = filepath.Join(defaultAgentDir, "newrelic-infra.log")
