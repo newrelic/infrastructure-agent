@@ -94,8 +94,8 @@ func isSafeExistingDir(path string, pathInfo os.FileInfo) bool {
 		return false
 	}
 
-	//nolint:gosec,unconvert // device numbers are kernel-assigned identifiers, never negative;
-	// stat.Dev is int32 on some archs, uint64 on others - the conversion is a no-op there but widening is never wrong
+	//nolint:unconvert // stat.Dev is already uint64 on this arch (redundant here), but int32 on
+	// others (e.g. darwin/amd64) where the widening conversion is required; kept explicit for portability
 	dev := uint64(stat.Dev)
 
 	if pathInfo.Mode().Perm()&0o022 != 0 && !isMountPoint(path, dev) {
@@ -117,8 +117,8 @@ func statDevImpl(path string) (uint64, bool) {
 		return 0, false
 	}
 
-	//nolint:gosec,unconvert // device numbers are kernel-assigned identifiers, never negative;
-	// stat.Dev is int32 on some archs, uint64 on others - the conversion is a no-op there but widening is never wrong
+	//nolint:unconvert // stat.Dev is already uint64 on this arch (redundant here), but int32 on
+	// others (e.g. darwin/amd64) where the widening conversion is required; kept explicit for portability
 	return uint64(stat.Dev), true
 }
 
