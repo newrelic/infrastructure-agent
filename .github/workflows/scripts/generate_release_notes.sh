@@ -95,8 +95,10 @@ def clean_body(text):
 
 def linkify_pr_urls(text):
     """Turn a bare PR URL (as GitHub's auto-generated 'in <url>' references
-    render) into a markdown link showing just #NNNN as the visible text."""
-    pattern = re.compile(r'https://github\.com/[\w.-]+/[\w.-]+/pull/(\d+)')
+    render) into a markdown link showing just #NNNN as the visible text.
+    Skips URLs already inside a markdown link (preceded by "](") so an
+    already-formatted [#NNNN](url)""
+    pattern = re.compile(r'(?<!\]\()https://github\.com/[\w.-]+/[\w.-]+/pull/(\d+)')
     return pattern.sub(lambda m: f'[#{m.group(1)}]({m.group(0)})', text)
 
 def normalize_spacing(text):
