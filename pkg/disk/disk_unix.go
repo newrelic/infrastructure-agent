@@ -94,9 +94,7 @@ func isSafeExistingDir(path string, pathInfo os.FileInfo) bool {
 		return false
 	}
 
-	//nolint:unconvert // stat.Dev is already uint64 on this arch (redundant here), but int32 on
-	// others (e.g. darwin/amd64) where the widening conversion is required; kept explicit for portability
-	dev := uint64(stat.Dev)
+	dev := devNumber(stat.Dev)
 
 	if pathInfo.Mode().Perm()&0o022 != 0 && !isMountPoint(path, dev) {
 		return false
@@ -117,9 +115,20 @@ func statDevImpl(path string) (uint64, bool) {
 		return 0, false
 	}
 
-	//nolint:unconvert // stat.Dev is already uint64 on this arch (redundant here), but int32 on
-	// others (e.g. darwin/amd64) where the widening conversion is required; kept explicit for portability
-	return uint64(stat.Dev), true
+	return devNumber(stat.Dev), true
+}
+
+// devKind is the set of concrete types syscall.Stat_t.Dev has across the platforms this file
+// builds for: uint64 on linux, int32 on darwin.
+type devKind interface {
+	~int8 | ~int16 | ~int32 | ~int64 | ~uint8 | ~uint16 | ~uint32 | ~uint64
+}
+
+// devNumber widens stat.Dev to uint64. It's generic purely so the conversion is never a
+// same-type no-op at any single instantiation site - keeping golangci-lint's unconvert check
+// happy without platform-specific nolint directives.
+func devNumber[T devKind](dev T) uint64 {
+	return uint64(dev)
 }
 
 // statDev is a package-level var, like the WriteFile/OpenFile/Create façades above, so tests
