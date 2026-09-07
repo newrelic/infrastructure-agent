@@ -50,7 +50,7 @@ output_file  = os.environ['OUTPUT_FILE']
 
 def extract_section(text, *headings):
     """Return bullet items from a ### section, matched by heading substring
-    (handles emoji-prefixed headers like '### 🚀 Enhancements')."""
+    (handles emoji-prefixed headers like '### [emoji] Enhancements')."""
     for heading in headings:
         # stop at the next heading of ANY level (not just another ###), so a
         # trailing "## Notes" / "## What's Changed" section can't be slurped in
@@ -97,13 +97,13 @@ def linkify_pr_urls(text):
     """Turn a bare PR URL (as GitHub's auto-generated 'in <url>' references
     render) into a markdown link showing just #NNNN as the visible text.
     Skips URLs already inside a markdown link (preceded by "](") so an
-    already-formatted [#NNNN](url)""
+    already-formatted [#NNNN](url) isn't wrapped a second time."""
     pattern = re.compile(r'(?<!\]\()https://github\.com/[\w.-]+/[\w.-]+/pull/(\d+)')
     return pattern.sub(lambda m: f'[#{m.group(1)}]({m.group(0)})', text)
 
 def normalize_spacing(text):
     """Force exactly one blank line both before and after every heading
-    (regardless of how the release was authored — heading-into-content,
+    (regardless of how the release was authored - heading-into-content,
     content-into-heading, or double blank lines between sections), while
     leaving other paragraph spacing untouched."""
     lines = text.splitlines()
