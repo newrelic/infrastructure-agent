@@ -14,6 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	cfgprotocol "github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest/protocol"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
@@ -110,4 +111,76 @@ func Test_failedToAddDefinition(t *testing.T) {
 	assert.Equal(t, logrus.WarnLevel, hook.LastEntry().Level)
 	assert.Equal(t, logFailedDefinition, hook.LastEntry().Message)
 
+}
+
+func Test_restrictedParent_clampsChildUser(t *testing.T) {
+	t.Parallel()
+
+	// Given a clean cache and queues for the handle function
+	configProtocolQueue := make(chan Entry, 10)
+	terminateDefinitionQueue := make(chan string, 10)
+
+	var lookup integration.InstancesLookup
+
+	lookup.ByName = func(_ string) (string, error) {
+		return "/path/to/nri-process-discovery", nil
+	}
+
+	var logger log.Entry
+
+	handleFunction := NewHandleFn(configProtocolQueue, terminateDefinitionQueue, lookup, logger)
+	integrationCache := cache.CreateCache()
+
+	// And a parent restricted to "nobody" whose emitted config tries to grant its child root
+	var parentDefinition integration.Definition
+
+	parentDefinition.ExecutorConfig.User = "nobody"
+
+	payload := []byte(fmt.Sprintf(commonConfig, `{ "name": "nri-1", "integration_user": "root" }`))
+	cp, err := cfgprotocol.GetConfigProtocolBuilder(payload).Build()
+	require.NoError(t, err)
+
+	// When it's processed by the handle function
+	handleFunction(cp, integrationCache, parentDefinition)
+
+	// Then the child is pinned to the parent's user, not the attacker-claimed "root"
+	require.Len(t, configProtocolQueue, 1)
+
+	entry := <-configProtocolQueue
+	assert.Equal(t, "nobody", entry.Definition.ExecutorConfig.User)
+}
+
+func Test_unrestrictedParent_keepsChildOwnUser(t *testing.T) {
+	t.Parallel()
+
+	// Given a clean cache and queues for the handle function
+	configProtocolQueue := make(chan Entry, 10)
+	terminateDefinitionQueue := make(chan string, 10)
+
+	var lookup integration.InstancesLookup
+
+	lookup.ByName = func(_ string) (string, error) {
+		return "/path/to/nri-process-discovery", nil
+	}
+
+	var logger log.Entry
+
+	handleFunction := NewHandleFn(configProtocolQueue, terminateDefinitionQueue, lookup, logger)
+	integrationCache := cache.CreateCache()
+
+	// And an unrestricted parent whose emitted config explicitly chooses a user for its child
+	var parentDefinition integration.Definition
+
+	payload := []byte(fmt.Sprintf(commonConfig, `{ "name": "nri-1", "integration_user": "postgres" }`))
+	cp, err := cfgprotocol.GetConfigProtocolBuilder(payload).Build()
+	require.NoError(t, err)
+
+	// When it's processed by the handle function
+	handleFunction(cp, integrationCache, parentDefinition)
+
+	// Then the child keeps the user it explicitly requested (no regression for legitimate use)
+	require.Len(t, configProtocolQueue, 1)
+
+	entry := <-configProtocolQueue
+	assert.Equal(t, "postgres", entry.Definition.ExecutorConfig.User)
 }
