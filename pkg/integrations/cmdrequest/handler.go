@@ -16,19 +16,20 @@ import (
 
 var (
 	// helper for testing purposes
-	NoopHandleFn = func(protocol.CmdRequestV1) {}
+	//nolint:gochecknoglobals
+	NoopHandleFn = func(protocol.CmdRequestV1, integration.Definition) {}
 )
 
-type HandleFn func(protocol.CmdRequestV1)
+type HandleFn func(protocol.CmdRequestV1, integration.Definition)
 
 // NewHandleFn creates a handler func that runs every command within the request batch independently.
 // Each command is run in parallel and won't depend on the results of the other ones.
 func NewHandleFn(definitionQueue chan<- integration.Definition, il integration.InstancesLookup, logger log.Entry) HandleFn {
-	return func(crBatch protocol.CmdRequestV1) {
+	return func(crBatch protocol.CmdRequestV1, parentDefinition integration.Definition) {
 		logger.WithField(agentConfig.TracesFieldName, agentConfig.FeatureTrace).Tracef("received payload: %+v", crBatch)
 		for _, c := range crBatch.Commands {
 
-			def, err := integration.NewDefinition(newConfigFromCmdReq(c), il, nil, nil)
+			def, err := integration.NewDefinition(newConfigFromCmdReq(c, parentDefinition.ExecutorConfig.User), il, nil, nil)
 			if err != nil {
 				logger.
 					WithField("cmd_req_version", crBatch.CommandRequestVersion).
@@ -48,23 +49,27 @@ func NewHandleFn(definitionQueue chan<- integration.Definition, il integration.I
 }
 
 // newConfigFromCmdReq creates an integration config from a command request.
-func newConfigFromCmdReq(cr protocol.CmdRequestV1Cmd) config.ConfigEntry {
+// The child always inherits the parent integration's user so a restricted
+// integration_user cannot be bypassed by a command request.
+func newConfigFromCmdReq(cmdReq protocol.CmdRequestV1Cmd, parentUser string) config.ConfigEntry {
 	// executable is provided
-	if cr.Command != "" {
+	if cmdReq.Command != "" {
 		return config.ConfigEntry{
-			InstanceName: cr.Name,
-			Exec:         append([]string{cr.Command}, cr.Args...),
-			Env:          cr.Env,
+			InstanceName: cmdReq.Name,
+			Exec:         append([]string{cmdReq.Command}, cmdReq.Args...),
+			Env:          cmdReq.Env,
 			Interval:     "0",
+			User:         parentUser,
 		}
 
 	}
 
 	// executable would be looked up by integration name
 	return config.ConfigEntry{
-		InstanceName: cr.Name,
-		CLIArgs:      cr.Args,
-		Env:          cr.Env,
+		InstanceName: cmdReq.Name,
+		CLIArgs:      cmdReq.Args,
+		Env:          cmdReq.Env,
 		Interval:     "0",
+		User:         parentUser,
 	}
 }

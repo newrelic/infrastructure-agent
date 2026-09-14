@@ -72,6 +72,13 @@ func NewHandleFn(configProtocolQueue chan<- Entry, terminateDefinitionQueue chan
 				}
 			}
 
+			// A restricted parent (non-empty integration_user) always wins over
+			// whatever user the emitted child config claims, so a sandboxed
+			// integration cannot escalate its own children's privileges.
+			if parentDefinition.ExecutorConfig.User != "" {
+				ce.User = parentDefinition.ExecutorConfig.User
+			}
+
 			def, err := integration.NewDefinition(ce, il, parentDefinition.ExecutorConfig.Passthrough, template)
 			if err != nil {
 				logger.WithError(err).WithFields(logCtx).Warn(logFailedDefinition)
