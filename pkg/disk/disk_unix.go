@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"syscall"
 )
 
@@ -72,8 +73,9 @@ func MkdirAll(path string, perm os.FileMode) error {
 }
 
 // isSafeExistingDir reports whether pathInfo describes a real directory (not a symlink)
-// owned by the current user, that is either not writable by group/other, or is a distinct
-// mount point (e.g. a Kubernetes emptyDir/tmpfs volume).
+// owned by the current user - or by a group the current user belongs to, e.g. a Kubernetes
+// fsGroup - that is either not writable by group/other, or is a distinct mount point (e.g. a
+// Kubernetes emptyDir/tmpfs volume).
 //
 // A separate mount point is set up by a privileged process (the container runtime/kubelet)
 // before the agent ever runs, not planted by an arbitrary local user - the "predictable
@@ -84,13 +86,22 @@ func MkdirAll(path string, perm os.FileMode) error {
 // treated as unsafe and removed - which then fails outright when the mount is the root of a
 // read-only-root-filesystem container, since the mount point itself can't be unlinked from
 // its (read-only) parent.
+//
+// The group check exists because Kubernetes never chowns a volume's user ownership to a
+// non-root runAsUser - fsGroup only sets the group and grants it via a supplementary group on
+// the container process, leaving the directory owned by root. Requiring uid ownership alone
+// then always fails for a non-root agent, forcing an unsafe choice between running the agent
+// (or an init container) as root and crash-looping on a read-only-root-filesystem mount. A
+// group match keeps the same security guarantee as the uid check: the mode&0o022 test below
+// still requires either a distinct mount point or no group/other write bit, so a directory
+// planted by an unrelated local user in a shared group still isn't trusted.
 func isSafeExistingDir(path string, pathInfo os.FileInfo) bool {
 	if pathInfo.Mode()&os.ModeSymlink != 0 || !pathInfo.IsDir() {
 		return false
 	}
 
 	stat, ok := pathInfo.Sys().(*syscall.Stat_t)
-	if !ok || int(stat.Uid) != os.Getuid() {
+	if !ok || !ownedByUserOrGroup(stat) {
 		return false
 	}
 
@@ -102,6 +113,37 @@ func isSafeExistingDir(path string, pathInfo os.FileInfo) bool {
 
 	return true
 }
+
+// ownedByUserOrGroup reports whether stat is owned by the current user, or by a group the
+// current user belongs to (its effective group or one of its supplementary groups) - i.e.
+// the directory's group was granted to us the way a Kubernetes fsGroup is.
+func ownedByUserOrGroup(stat *syscall.Stat_t) bool {
+	return int(stat.Uid) == currentUID() || slices.Contains(currentGroups(), int(stat.Gid))
+}
+
+// currentUIDImpl returns the current process's effective user id.
+func currentUIDImpl() int { return os.Getuid() }
+
+// currentUID is a package-level var, like the WriteFile/OpenFile/Create/statDev façades
+// above, so tests can simulate the directory being owned by a different user without needing
+// to actually run as that user.
+var currentUID = currentUIDImpl //nolint:gochecknoglobals
+
+// currentGroupsImpl returns the current process's effective group id together with its
+// supplementary group ids.
+func currentGroupsImpl() []int {
+	groups, err := os.Getgroups()
+	if err != nil {
+		return []int{os.Getgid()}
+	}
+
+	return append(groups, os.Getgid())
+}
+
+// currentGroups is a package-level var, like the WriteFile/OpenFile/Create/statDev façades
+// above, so tests can simulate the process belonging to a directory's owning group without
+// needing to actually run as that group.
+var currentGroups = currentGroupsImpl //nolint:gochecknoglobals
 
 // statDevImpl returns the device number of the filesystem containing path.
 func statDevImpl(path string) (uint64, bool) {

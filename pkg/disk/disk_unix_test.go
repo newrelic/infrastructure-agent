@@ -7,6 +7,7 @@ package disk
 import (
 	"os"
 	"path/filepath"
+	"syscall"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -133,6 +134,151 @@ func TestMkdirAll_UnsafeNonMountPointStillReplaced(t *testing.T) {
 
 	_, err := os.Stat(marker)
 	assert.True(t, os.IsNotExist(err), "same-device writable directory should still be wiped")
+}
+
+// TestMkdirAll_ReusesGroupOwnedMountPoint reproduces
+// https://github.com/newrelic/infrastructure-agent/issues/2333: a Kubernetes emptyDir is
+// chowned to a group (an fsGroup) that the agent's non-root user belongs to via a
+// supplementary group, but Kubernetes never changes the directory's *user* ownership away
+// from root. Without the group check, the ownership branch always rejects the directory
+// before the permission/mount-point check is ever reached, and MkdirAll tries to remove and
+// recreate it - which fails outright when it's the root of a read-only-root-filesystem mount.
+//
+// The directory is actually created (and thus owned) by the test process itself; currentUID
+// is faked to a different value so the uid branch is forced to fail and fall through to the
+// group check, which then matches against the test process's real, unmodified gid.
+//
+// It does not call t.Parallel(): it overrides the package-level currentUID and statDev seams,
+// which must not run concurrently with other tests that call MkdirAll/isSafeExistingDir.
+//
+//nolint:paralleltest
+func TestMkdirAll_ReusesGroupOwnedMountPoint(t *testing.T) {
+	base := t.TempDir()
+	target := filepath.Join(base, "emptydir")
+	require.NoError(t, os.Mkdir(target, 0o770))
+	require.NoError(t, os.Chmod(target, 0o770))
+
+	marker := filepath.Join(target, "marker")
+	require.NoError(t, os.WriteFile(marker, []byte("keep me"), 0o600))
+
+	restoreUID := fakeCurrentUID(t, currentUID()+1)
+	defer restoreUID()
+
+	restoreMount := fakeMountPoint(t, target)
+	defer restoreMount()
+
+	require.NoError(t, MkdirAll(target, 0o700))
+
+	content, err := os.ReadFile(marker)
+	require.NoError(t, err, "a mount point owned by a group the user belongs to should be reused, not wiped")
+	assert.Equal(t, "keep me", string(content))
+}
+
+// TestMkdirAll_UnrelatedGroupNonMountPointStillReplaced guards against over-widening the
+// group exemption: a group/other-writable directory that is NOT a distinct mount point must
+// still be treated as unsafe and wiped even when the current user's group matches its owning
+// group, matching the same rule already enforced for uid ownership.
+//
+//nolint:paralleltest
+func TestMkdirAll_UnrelatedGroupNonMountPointStillReplaced(t *testing.T) {
+	base := t.TempDir()
+	target := filepath.Join(base, "same-device-group")
+	require.NoError(t, os.Mkdir(target, 0o770))
+	require.NoError(t, os.Chmod(target, 0o770))
+
+	marker := filepath.Join(target, "marker")
+	require.NoError(t, os.WriteFile(marker, []byte("should be gone"), 0o600))
+
+	restoreUID := fakeCurrentUID(t, currentUID()+1)
+	defer restoreUID()
+
+	require.NoError(t, MkdirAll(target, 0o700))
+
+	_, err := os.Stat(marker)
+	assert.True(t, os.IsNotExist(err), "group-writable non-mount-point directory should still be wiped")
+}
+
+// TestOwnedByUserOrGroup unit-tests the ownership check in isolation, covering the case
+// isSafeExistingDir's integration tests above can't reach without root: a directory owned by
+// neither the current user nor any of its groups must be rejected outright.
+//
+//nolint:paralleltest
+func TestOwnedByUserOrGroup(t *testing.T) {
+	scenarios := []struct {
+		name     string
+		dirUID   uint32
+		dirGid   uint32
+		fakeUID  int
+		fakeGids []int
+		want     bool
+	}{
+		{
+			name:     "owned by current user",
+			dirUID:   1000,
+			dirGid:   2000,
+			fakeUID:  1000,
+			fakeGids: nil,
+			want:     true,
+		},
+		{
+			name:     "not owned by current user but group matches",
+			dirUID:   0,
+			dirGid:   2000,
+			fakeUID:  1000,
+			fakeGids: []int{2000},
+			want:     true,
+		},
+		{
+			name:     "neither user nor group matches",
+			dirUID:   0,
+			dirGid:   2000,
+			fakeUID:  1000,
+			fakeGids: []int{3000},
+			want:     false,
+		},
+	}
+
+	for _, scenario := range scenarios {
+		t.Run(scenario.name, func(t *testing.T) {
+			restoreUID := fakeCurrentUID(t, scenario.fakeUID)
+			defer restoreUID()
+
+			restoreGroups := fakeCurrentGroups(t, scenario.fakeGids)
+			defer restoreGroups()
+
+			var stat syscall.Stat_t
+
+			stat.Uid = scenario.dirUID
+			stat.Gid = scenario.dirGid
+
+			assert.Equal(t, scenario.want, ownedByUserOrGroup(&stat))
+		})
+	}
+}
+
+// fakeCurrentUID overrides currentUID so the current process appears to have uid, simulating
+// a directory owned by a different user without requiring the test process to actually run as
+// that user. It restores the original currentUID on cleanup.
+func fakeCurrentUID(t *testing.T, uid int) func() {
+	t.Helper()
+
+	original := currentUID
+	currentUID = func() int { return uid }
+
+	return func() { currentUID = original }
+}
+
+// fakeCurrentGroups overrides currentGroups so the current process appears to belong to
+// exactly gids, simulating a Kubernetes fsGroup supplementary group without requiring the
+// test process to actually run under that group. It restores the original currentGroups on
+// cleanup.
+func fakeCurrentGroups(t *testing.T, gids []int) func() {
+	t.Helper()
+
+	original := currentGroups
+	currentGroups = func() []int { return gids }
+
+	return func() { currentGroups = original }
 }
 
 // fakeMountPoint overrides statDev so target appears to live on a different device than its
