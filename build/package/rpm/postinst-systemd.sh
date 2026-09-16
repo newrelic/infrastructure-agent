@@ -54,6 +54,16 @@ if [ "$userMode" = "PRIVILEGED" ] || [ "$userMode" = "UNPRIVILEGED" ]; then
 fi
 
 if [ -e "$serviceFile" ]; then
+  # MemoryMax replaces the deprecated MemoryLimit (cgroup v1) directive and is only
+  # understood by systemd >= 231. Rewrite the unit file to use it when supported,
+  # otherwise leave MemoryLimit in place (e.g. RHEL 7's systemd 219).
+  systemdVersion=$(systemctl --version 2>/dev/null | head -n1 | grep -o '[0-9]\+' | head -n1)
+  if [ -n "$systemdVersion" ] && [ "$systemdVersion" -ge 231 ]; then
+    sed -i 's/^MemoryLimit=/MemoryMax=/' "$serviceFile"
+  fi
+fi
+
+if [ -e "$serviceFile" ]; then
 	systemctl daemon-reload || exit $?
 	systemctl enable newrelic-infra
 	systemctl start newrelic-infra
