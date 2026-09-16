@@ -1,122 +1,156 @@
 namespace: newrelic
 name: com.newrelic.infrastructure
-version: 0.1.0
+version: 1.0.0
+platform: host
+operating_system: linux
+protocol_version: "1.0"
 variables:
-  linux:
-    config_agent:
-      description: "Newrelic infra configuration"
-      type: yaml
-      required: false
-      default: ""
-    config_integrations:
-      description: "map of YAML configs for the OHIs"
-      type: map[string]yaml
-      required: false
-      default: { }
-    config_logging:
-      description: "map of YAML config for logging"
-      type: map[string]yaml
-      required: false
-      default: { }
-    backoff_delay:
-      description: "seconds until next retry if agent fails to start"
+  config_agent:
+    description: "Newrelic infra configuration"
+    type: yaml
+    required: false
+    default: ""
+    classification: config
+  config_logging:
+    description: "map of logging config file names to their contents"
+    type: string_map
+    required: false
+    default: { }
+    classification: multi-config
+  config_docker:
+    description: "nri-docker configuration"
+    type: yaml
+    required: false
+    classification: config
+    default:
+      integrations:
+        - name: nri-docker
+          when:
+            feature: docker_enabled
+            file_exists: /var/run/docker.sock
+          interval: 15s
+  backoff_delay:
+    description: "seconds until next retry if agent fails to start"
+    type: string
+    required: false
+    default: 20s
+  enable_file_logging:
+    description: "enable logging the on host executables' logs to files"
+    type: bool
+    required: false
+    default: false
+  health_port:
+    description: "port for the Infra Agent status server"
+    type: number
+    required: false
+    default: 18003
+  oci:
+    repository:
+      description: "Package repository name"
       type: string
       required: false
-      default: 20s
-    enable_file_logging:
-      description: "enable logging the on host executables' logs to files"
-      type: bool
-      required: false
-      default: false
-    health_port:
-      description: "port for the Infra Agent status server"
-      type: number
-      required: false
-      default: 18003
-    oci:
-      registry:
-        description: "Package registry url"
-        type: string
-        required: false
-        default: docker.io
-        variants:
-          ac_config_field: "oci_registry_urls"
-          values: [ "docker.io" ]
-      repository:
-        description: "Package repository name"
-        type: string
-        required: false
-        default: newrelic/infrastructure-agent-artifacts
-        variants:
-          ac_config_field: "oci_repository_urls"
-          values: [ "newrelic/infrastructure-agent-artifacts" ]
-    version:
-      description: "Agent version"
-      type: string
-      required: true
+      default: newrelic/infrastructure-agent-artifacts
+  version:
+    description: "Agent version"
+    type: string
+    required: true
 deployment:
-  linux:
-    enable_file_logging: ${nr-var:enable_file_logging}
-    health:
-      interval: 30s
-      initial_delay: 60s
-      timeout: 5s
-      http:
+  enable_file_logging: ${nr-var:enable_file_logging}
+  health:
+    interval: 30s
+    initial_delay: 60s
+    timeout: 5s
+    checks:
+      - kind: Process
+      - kind: Http
         path: "/v1/status/health"
         port: ${nr-var:health_port}
-    packages:
-      infra-agent:
-        download:
-          oci:
-            registry: ${nr-var:oci.registry}
-            repository: ${nr-var:oci.repository}
-            version: ${nr-var:version}
-            public_key_url: https://publickeys.newrelic.com/g/agent-control-oci/global/nrinfraagent/jwks.json
-    version:
+  packages:
+    infra-agent:
+      download:
+        oci:
+          repository: ${nr-var:oci.repository}
+          version: ${nr-var:version}
+          public_key_url: https://publickeys.newrelic.com/g/agent-control-oci/global/nrinfraagent/jwks.json
+  filesystem:
+    config:
+      kind: dir
+      entries:
+        newrelic-infra.yaml:
+          kind: file
+          text: |
+            ${nr-var:config_agent}
+    logging.d:
+      kind: dir_content_from_map
+      source: ${nr-var:config_logging}
+    # Agent data root (NRIA_AGENT_DIR).
+    newrelic-infra:
+      kind: dir
+      entries:
+        tmp:
+          kind: dir
+        newrelic-integrations:
+          kind: dir
+          entries:
+            # Where fluent bit .db are created. They must be persisted during the whole agent lifecycle.
+            logging:
+              kind: dir
+  shared_filesystem:
+    # OHIs config folders.
+    # infra-agent is configured through NRIA_PLUGIN_DIR, to read configs from this folder.
+    infra-agent-ohi-configs:
+      kind: dir
+      entries:
+        docker-config.yml:
+          kind: file
+          text: |
+            ${nr-var:config_docker}
+    # OHIs binaries folder.
+    # infra-agent is configured through NRIA_CUSTOM_PLUGIN_INSTALLATION_DIR and NRIA_SAFE_BIN_DIR,
+    # to read binaries from this folder.
+    infra-agent-ohi-binaries:
+      kind: dir
+      entries:
+        nri-docker:
+          kind: file
+          copy_from_file: ${nr-sub:packages.infra-agent.dir}/integrations/nri-docker
+        nri-prometheus:
+          kind: file
+          copy_from_file: ${nr-sub:packages.infra-agent.dir}/integrations/nri-prometheus
+  executables:
+    - id: newrelic-infra
       path: ${nr-sub:packages.infra-agent.dir}/newrelic-infra
       args:
-        - --version
-      regex: \d+\.\d+\.\d+
-    filesystem:
-      config:
-        newrelic-infra.yaml: |
-          ${nr-var:config_agent}
-      integrations.d: ${nr-var:config_integrations}
-      logging.d: ${nr-var:config_logging}
-    executables:
-      - id: newrelic-infra
-        path: ${nr-sub:packages.infra-agent.dir}/newrelic-infra
-        args:
-          - --config
-          - ${nr-sub:filesystem_agent_dir}/config/newrelic-infra.yaml
-        env:
-          # NRIA_AGENT_DIR is needed in order to change the root directory for the agent data on Linux.
-          # This is useful to make sure that all the data generated by the agent is stored inside the AC managed filesystem directory.
-          # Otherwise, a user could write data to a folder with lower permissions and potentially escalate privileges.
-          # For the same reason we are also changing the location of the integration binaries.
-          NRIA_AGENT_DIR: "${nr-sub:filesystem_agent_dir}/newrelic-infra"
-          # TODO
-          # This is a non public infra-agent config variable that allows us to change the location of the agent temporary files, which is used currently
-          # for storing fluent-bit generated configuration files. Currently infra-agent does not clean-up on start this directory if
-          # not on the default location, making this configs to potentially grow indefinitely with fluent-bit generated files.
-          # In the future this clean up process should be handled by the infra-agent itself or by AC file system clean up policies (same as the ones
-          # that are going to remove integration configs whenever variables are removed)
-          NRIA_AGENT_TEMP_DIR: "${nr-sub:filesystem_agent_dir}/newrelic-infra/tmp"
-          NRIA_CUSTOM_PLUGIN_INSTALLATION_DIR: "${nr-sub:packages.infra-agent.dir}/integrations"
-          NRIA_SAFE_BIN_DIR: "${nr-sub:packages.infra-agent.dir}/integrations"
-          # Only loads integrations from the explicitly configured locations (custom_plugin_installation_dir and
-          # plugin_dir), ignoring the default/standalone dirs so stale integrations are not loaded.
-          NRIA_DISABLE_PLUGIN_DEFAULT_DIR_SCAN: true
-          # Config folders where integrations and logging configs parsed from local/remote values are stored and looked for.
-          NRIA_PLUGIN_DIR: "${nr-sub:filesystem_agent_dir}/integrations.d"
-          NRIA_LOGGING_CONFIGS_DIR: "${nr-sub:filesystem_agent_dir}/logging.d"
-          # Where parsers.conf and out_newrelic.so are placed and fb.db will be created
-          NRIA_LOGGING_HOME_DIR: "${nr-sub:packages.infra-agent.dir}/logging"
-          # NRIA_LOGGING_BIN_DIR is not added because it continues being installed with apt, yum, zypp in its current location.
-          NRIA_STATUS_SERVER_ENABLED: true
-          NRIA_STATUS_SERVER_PORT: "${nr-var:health_port}"
-          NR_HOST_ID: "${nr-ac:host_id}"
-        restart_policy:
-          backoff_strategy:
-            type: fixed
-            backoff_delay: ${nr-var:backoff_delay}
+        - --config
+        - ${nr-sub:filesystem_agent_dir}/config/newrelic-infra.yaml
+      env:
+        # NRIA_AGENT_DIR is needed in order to change the root directory for the agent data on Linux.
+        # This is useful to make sure that all the data generated by the agent is stored inside the AC managed filesystem directory.
+        # Otherwise, a user could write data to a folder with lower permissions and potentially escalate privileges.
+        # For the same reason we are also changing the location of the integration binaries.
+        NRIA_AGENT_DIR: "${nr-sub:filesystem_agent_dir}/newrelic-infra"
+        NRIA_AGENT_TEMP_DIR: "${nr-sub:filesystem_agent_dir}/newrelic-infra/tmp"
+        NRIA_CUSTOM_PLUGIN_INSTALLATION_DIR: "${nr-sub:shared_filesystem_dir}/infra-agent-ohi-binaries"
+        NRIA_SAFE_BIN_DIR: "${nr-sub:shared_filesystem_dir}/infra-agent-ohi-binaries"
+        # Only loads integrations from the explicitly configured locations (custom_plugin_installation_dir and
+        # plugin_dir), ignoring the default/standalone dirs so stale integrations are not loaded.
+        NRIA_DISABLE_PLUGIN_DEFAULT_DIR_SCAN: true
+        # Config folders where integrations and logging configs parsed from local/remote values are stored and looked for.
+        NRIA_PLUGIN_DIR: "${nr-sub:shared_filesystem_dir}/infra-agent-ohi-configs"
+        # Where several fb db are created on runtime, must be persisted location.
+        NRIA_LOGGING_HOME_DIR: "${nr-sub:filesystem_agent_dir}/newrelic-infra/newrelic-integrations/logging"
+        # Path containing the logging configs that infra-agent reads (from top level path only), and uses as fluent bit configs
+        # after decoration. The decorated temporal configs used by fluent bit are created under NRIA_AGENT_TEMP_DIR/fb/*.
+        NRIA_LOGGING_CONFIGS_DIR: "${nr-sub:filesystem_agent_dir}/logging.d"
+        # NR fluent-bit output plugin and parsers, pinned independently of NRIA_LOGGING_HOME_DIR so the home dir lives in a
+        # persistent directory.
+        NRIA_FLUENT_BIT_NR_LIB_PATH: "${nr-sub:packages.infra-agent.dir}/logging/out_newrelic.so"
+        NRIA_FLUENT_BIT_PARSERS_PATH: "${nr-sub:packages.infra-agent.dir}/logging/parsers.conf"
+        # NRIA_FLUENT_BIT_EXE_PATH is not added because it continues being installed with apt, yum, zypp in its current location.
+        NRIA_STATUS_SERVER_ENABLED: true
+        NRIA_STATUS_SERVER_PORT: "${nr-var:health_port}"
+        NR_HOST_ID: "${nr-ac:host_id}"
+      restart_policy:
+        backoff_strategy:
+          type: fixed
+          backoff_delay: ${nr-var:backoff_delay}
