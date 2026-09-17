@@ -28,10 +28,40 @@ permissions:
 jobs:
 
   prune-previous-canaries:
+    if: ${{ github.event.inputs.A2Q != 'true' }}
     uses: ./.github/workflows/component_canaries_prune.yml
     with:
       PLATFORM: ${{ github.event.inputs.platform }}
       TAG: ${{ github.event.inputs.tag }}
       A2Q: ${{ github.event.inputs.A2Q }}
+    secrets:
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+
+  # A2Q canaries are always created together across staging/eu/jp (see create_a2Q_canaries.yml),
+  # so pruning fans out the same way - one trigger cleans up all three regions' linux canaries.
+  prune-a2q-canaries-linux:
+    if: ${{ github.event.inputs.A2Q == 'true' && (github.event.inputs.platform == 'linux' || github.event.inputs.platform == 'all') }}
+    strategy:
+      matrix:
+        env: [staging, eu, jp]
+    uses: ./.github/workflows/component_canaries_prune.yml
+    with:
+      PLATFORM: "linux"
+      TAG: ${{ github.event.inputs.tag }}
+      A2Q: true
+      A2Q_ENV: ${{ matrix.env }}
+    secrets:
+      AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
+
+  # EU/JP never had windows A2Q canaries (they're scoped to config1+config2, both Linux -
+  # see create_a2Q_canaries.yml), so windows A2Q pruning stays staging-only.
+  prune-a2q-canaries-windows:
+    if: ${{ github.event.inputs.A2Q == 'true' && (github.event.inputs.platform == 'windows' || github.event.inputs.platform == 'all') }}
+    uses: ./.github/workflows/component_canaries_prune.yml
+    with:
+      PLATFORM: "windows"
+      TAG: ${{ github.event.inputs.tag }}
+      A2Q: true
+      A2Q_ENV: staging
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
