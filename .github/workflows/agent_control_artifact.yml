@@ -511,7 +511,7 @@ jobs:
 
       - name: Upload to Agent Metadata
         if: ${{ inputs.dry_run != true }}
-        uses: newrelic/agent-metadata-action@main
+        uses: newrelic/agent-metadata-action/send-metadata@399d5ba876e7d03bf6215f8283d72ffb8dc8240b # v1.7.0
         with:
           newrelic-client-id: ${{ secrets.NEWRELIC_CLIENT_ID }}
           newrelic-private-key: ${{ secrets.NEWRELIC_PRIVATE_KEY }}
@@ -520,7 +520,7 @@ jobs:
           oci-registry: ${{ secrets.OCI_REGISTRY }}
           oci-username: ${{ secrets.OCI_USERNAME }}
           oci-password: ${{ secrets.OCI_PASSWORD }}
-          apm-control-nr-license-key: ${{ secrets.APM_CONTROL_NR_LICENSE_KEY_STAGING }} # action app is instrumented and supported by APM Control team
+          newrelic-license-key: ${{ secrets.APM_CONTROL_NR_LICENSE_KEY_STAGING }} # action code is instrumented and supported by AgentControl team
           binaries: |
             [
               {

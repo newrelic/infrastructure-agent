@@ -1,13 +1,23 @@
 configurationDefinitions:
   - platform: HOST
-    description: infrastructure agent configuration 
-    type: infrastructure-config
+    type: AgentConfig
     version: 1.0.0
     format: yml
     operatingSystem: WINDOWS
+    bindings:
+      - type: CONFIGURES
+        targetType: AGENT
+        target: NRInfra
+        versions:
+          - ">1.70.0"
   - platform: HOST
-    description: infrastructure agent configuration
-    type: infrastructure-config
+    type: AgentConfig
     version: 1.0.0
     format: yml
     operatingSystem: LINUX
+    bindings:
+      - type: CONFIGURES
+        targetType: AGENT
+        target: NRInfra
+        versions:
+          - ">1.70.0"
