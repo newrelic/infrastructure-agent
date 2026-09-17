@@ -511,7 +511,7 @@ jobs:
 
       - name: Upload to Agent Metadata
         if: ${{ inputs.dry_run != true }}
-        uses: newrelic/agent-metadata-action@main
+        uses: newrelic/agent-metadata-action/send-metadata@399d5ba876e7d03bf6215f8283d72ffb8dc8240b # v1.7.0
         with:
           newrelic-client-id: ${{ secrets.NEWRELIC_CLIENT_ID }}
           newrelic-private-key: ${{ secrets.NEWRELIC_PRIVATE_KEY }}
