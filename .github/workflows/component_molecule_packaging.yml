@@ -1,6 +1,16 @@
 name: .. 🚧 Test agent package installation
 
 on:
+  workflow_dispatch:
+    inputs:
+      TAG:
+        required: true
+        type: string
+      REPO_ENDPOINT:
+        required: false
+        type: string
+        description: 'Repository endpoint to fetch packages from'
+        default: "https://download.newrelic.com/infrastructure_agent"
   workflow_call:
     inputs:
       TAG:
@@ -32,7 +42,7 @@ jobs:
           repo_base_url: ${{ inputs.REPO_ENDPOINT }}
           package_name: 'newrelic-infra'
           package_version: ${{ inputs.TAG }}
-          platforms: "al2,al2023,debian-bullseye,debian-bookworm,redhat8,redhat9,redhat10,suse15.3,suse15.4,suse15.5,suse15.6,suse15.7,ubuntu1604,ubuntu1804,ubuntu2004,ubuntu2204,ubuntu2404,ubuntu2604"
+          platforms: "al2,al2023,debian-bookworm,redhat8,redhat9,redhat10,suse15.3,suse15.4,suse15.5,suse15.6,suse15.7,ubuntu1604,ubuntu1804,ubuntu2004,ubuntu2204,ubuntu2404,ubuntu2604"
       - name: Test NON-FIPS package installation for new GPG 
         uses: newrelic/pkg-installation-testing-action@v1
         with:
@@ -49,7 +59,7 @@ jobs:
           package_name: 'newrelic-infra-fips'
           exec_name: 'newrelic-infra'
           package_version: ${{ inputs.TAG }}
-          platforms: "al2,al2023,debian-bullseye,debian-bookworm,redhat8,redhat9,redhat10,suse15.3,suse15.4,suse15.5,suse15.6,suse15.7,ubuntu1604,ubuntu1804,ubuntu2004,ubuntu2204,ubuntu2404,ubuntu2604"
+          platforms: "al2,al2023,debian-bookworm,redhat8,redhat9,redhat10,suse15.3,suse15.4,suse15.5,suse15.6,suse15.7,ubuntu1604,ubuntu1804,ubuntu2004,ubuntu2204,ubuntu2404,ubuntu2604"
       - name: Test FIPS package installation for new GPG 
         uses: newrelic/pkg-installation-testing-action@v1
         with:
