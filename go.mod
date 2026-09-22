@@ -1,6 +1,6 @@
 module github.com/newrelic/infrastructure-agent
 
-go 1.26
+go 1.26.8
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.14.0
