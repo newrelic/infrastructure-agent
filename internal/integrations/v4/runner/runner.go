@@ -392,7 +392,8 @@ func (r *runner) handleLines(ctx context.Context, stdout <-chan []byte, extraLab
 					Warn("cannot deserialize integration run request payload")
 				continue
 			}
-			r.handleCmdReq(cr)
+
+			r.handleCmdReq(cr, r.definition)
 			continue
 		}
 
