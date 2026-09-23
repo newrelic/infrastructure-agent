@@ -1,6 +1,6 @@
 module github.com/newrelic/infrastructure-agent
 
-go 1.26
+go 1.26.8
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.14.0
@@ -124,7 +124,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
-	golang.org/x/crypto v0.55.0 // indirect
+	golang.org/x/crypto v0.56.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/text v0.41.0 // indirect
