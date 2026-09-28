@@ -44,6 +44,8 @@ var priorityClasses = map[string]uint{
 // AgentService performs OS-specific initialization steps for the Agent service.
 // It is executed after the initialize.osProcess function
 func AgentService(cfg *config.Config) error {
+	removeFunc = removeAllWithFallback
+
 	err := emptyTemporaryFolder(cfg)
 	if err != nil {
 		log.WithField("temporaryFolder", agentTemporaryFolder).
@@ -68,17 +70,18 @@ func AgentService(cfg *config.Config) error {
 	return nil
 }
 
-func init() {
-	removeFunc = removeAllWithFallback
-}
-
 // removeAllWithFallback behaves like os.RemoveAll, but falls back to a manual
 // recursive delete if the modern delete was rejected with ERROR_INVALID_FUNCTION.
 func removeAllWithFallback(path string) error {
 	err := os.RemoveAll(path)
-	if err == nil || !errors.Is(err, errInvalidFunction) {
-		return err
+	if err == nil {
+		return nil
 	}
+
+	if !errors.Is(err, errInvalidFunction) {
+		return fmt.Errorf("failed to remove path: %w", err)
+	}
+
 	return removeAllClassic(path)
 }
 
@@ -88,21 +91,33 @@ func removeAllClassic(path string) error {
 		if os.IsNotExist(err) {
 			return nil
 		}
-		return err
+
+		return fmt.Errorf("failed to read directory: %w", err)
 	}
+
 	for _, entry := range entries {
 		child := filepath.Join(path, entry.Name())
 		if entry.IsDir() {
-			if err := removeAllClassic(child); err != nil {
+			err = removeAllClassic(child)
+			if err != nil {
 				return err
 			}
+
 			continue
 		}
-		if err := os.Remove(child); err != nil {
-			return err
+
+		err = os.Remove(child)
+		if err != nil {
+			return fmt.Errorf("failed to remove path: %w", err)
 		}
 	}
-	return os.Remove(path)
+
+	err = os.Remove(path)
+	if err != nil {
+		return fmt.Errorf("failed to remove path: %w", err)
+	}
+
+	return nil
 }
 
 // OsProcess performs initialization steps that are exclusive to the target OS
