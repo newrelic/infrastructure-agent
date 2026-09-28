@@ -50,7 +50,7 @@ func TestRemoveAllClassic(t *testing.T) {
 		},
 		{
 			name: "empty directory",
-			build: func(t *testing.T, root string) {
+			build: func(t *testing.T, _ string) {
 				t.Helper()
 			},
 		},
@@ -78,6 +78,29 @@ func TestRemoveAllClassic_NonExistentPathReturnsNil(t *testing.T) {
 
 	err := removeAllClassic(filepath.Join(t.TempDir(), "does-not-exist"))
 	assert.NoError(t, err)
+}
+
+func TestRemoveAllClassic_PropagatesErrorFromNestedFile(t *testing.T) {
+	t.Parallel()
+
+	root := filepath.Join(t.TempDir(), "victim")
+	sub := filepath.Join(root, "sub")
+	require.NoError(t, os.MkdirAll(sub, 0o755))
+
+	locked := filepath.Join(sub, "locked.txt")
+	require.NoError(t, os.WriteFile(locked, []byte("locked"), 0o600))
+	require.NoError(t, os.Chmod(locked, 0o400))
+
+	t.Cleanup(func() {
+		_ = os.Chmod(locked, 0o600)
+	})
+
+	err := removeAllClassic(root)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to remove path")
+
+	_, statErr := os.Stat(locked)
+	assert.NoError(t, statErr, "expected locked file to survive the failed removal")
 }
 
 func TestRemoveAllWithFallback_DeletesNormally(t *testing.T) {

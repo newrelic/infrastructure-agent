@@ -107,13 +107,13 @@ func removeAllClassic(path string) error {
 		}
 
 		err = os.Remove(child)
-		if err != nil {
+		if err != nil && !os.IsNotExist(err) {
 			return fmt.Errorf("failed to remove path: %w", err)
 		}
 	}
 
 	err = os.Remove(path)
-	if err != nil {
+	if err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to remove path: %w", err)
 	}
 
