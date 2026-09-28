@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"syscall"
 
 	"github.com/sirupsen/logrus"
@@ -28,6 +29,7 @@ const (
 	normalPriorityClass      = 0x00000020
 	realtimePriorityClass    = 0x00000100
 	agentTemporaryFolder     = "C:\\ProgramData\\New Relic\\newrelic-infra\\tmp"
+	errInvalidFunction       = syscall.Errno(1)
 )
 
 var priorityClasses = map[string]uint{
@@ -47,7 +49,6 @@ func AgentService(cfg *config.Config) error {
 		log.WithField("temporaryFolder", agentTemporaryFolder).
 			WithError(err).
 			Error("error emptying temporary folder")
-		os.Exit(1)
 	}
 
 	logger := log.WithField("action", "AgentService")
@@ -65,6 +66,43 @@ func AgentService(cfg *config.Config) error {
 	}
 
 	return nil
+}
+
+func init() {
+	removeFunc = removeAllWithFallback
+}
+
+// removeAllWithFallback behaves like os.RemoveAll, but falls back to a manual
+// recursive delete if the modern delete was rejected with ERROR_INVALID_FUNCTION.
+func removeAllWithFallback(path string) error {
+	err := os.RemoveAll(path)
+	if err == nil || !errors.Is(err, errInvalidFunction) {
+		return err
+	}
+	return removeAllClassic(path)
+}
+
+func removeAllClassic(path string) error {
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	for _, entry := range entries {
+		child := filepath.Join(path, entry.Name())
+		if entry.IsDir() {
+			if err := removeAllClassic(child); err != nil {
+				return err
+			}
+			continue
+		}
+		if err := os.Remove(child); err != nil {
+			return err
+		}
+	}
+	return os.Remove(path)
 }
 
 // OsProcess performs initialization steps that are exclusive to the target OS
