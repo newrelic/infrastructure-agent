@@ -12,6 +12,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/sys/windows"
 )
 
 func TestRemoveAllClassic(t *testing.T) {
@@ -80,6 +81,30 @@ func TestRemoveAllClassic_NonExistentPathReturnsNil(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+// lockFileExclusive opens path with no sharing flags, so any attempt by
+// another handle to open it for deletion fails with a sharing violation.
+// The read-only attribute alone doesn't work for this: Windows deletes can
+// use POSIX semantics that ignore it.
+func lockFileExclusive(t *testing.T, path string) windows.Handle {
+	t.Helper()
+
+	pathPtr, err := windows.UTF16PtrFromString(path)
+	require.NoError(t, err)
+
+	handle, err := windows.CreateFile(
+		pathPtr,
+		windows.GENERIC_READ,
+		0,
+		nil,
+		windows.OPEN_EXISTING,
+		windows.FILE_ATTRIBUTE_NORMAL,
+		0,
+	)
+	require.NoError(t, err)
+
+	return handle
+}
+
 func TestRemoveAllClassic_PropagatesErrorFromNestedFile(t *testing.T) {
 	t.Parallel()
 
@@ -89,10 +114,10 @@ func TestRemoveAllClassic_PropagatesErrorFromNestedFile(t *testing.T) {
 
 	locked := filepath.Join(sub, "locked.txt")
 	require.NoError(t, os.WriteFile(locked, []byte("locked"), 0o600))
-	require.NoError(t, os.Chmod(locked, 0o400))
 
+	handle := lockFileExclusive(t, locked)
 	t.Cleanup(func() {
-		_ = os.Chmod(locked, 0o600)
+		_ = windows.CloseHandle(handle)
 	})
 
 	err := removeAllClassic(root)
