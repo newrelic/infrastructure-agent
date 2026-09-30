@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"syscall"
 
 	"github.com/sirupsen/logrus"
@@ -28,6 +29,7 @@ const (
 	normalPriorityClass      = 0x00000020
 	realtimePriorityClass    = 0x00000100
 	agentTemporaryFolder     = "C:\\ProgramData\\New Relic\\newrelic-infra\\tmp"
+	errInvalidFunction       = syscall.Errno(1)
 )
 
 var priorityClasses = map[string]uint{
@@ -42,12 +44,13 @@ var priorityClasses = map[string]uint{
 // AgentService performs OS-specific initialization steps for the Agent service.
 // It is executed after the initialize.osProcess function
 func AgentService(cfg *config.Config) error {
+	removeFunc = removeAllWithFallback
+
 	err := emptyTemporaryFolder(cfg)
 	if err != nil {
 		log.WithField("temporaryFolder", agentTemporaryFolder).
 			WithError(err).
 			Error("error emptying temporary folder")
-		os.Exit(1)
 	}
 
 	logger := log.WithField("action", "AgentService")
@@ -62,6 +65,56 @@ func AgentService(cfg *config.Config) error {
 		logger.Debug("Enabled Windows Shared WMI Interface.")
 	} else {
 		logger.Debug("Disabled Windows Shared WMI Interface.")
+	}
+
+	return nil
+}
+
+// removeAllWithFallback behaves like os.RemoveAll, but falls back to a manual
+// recursive delete if the modern delete was rejected with ERROR_INVALID_FUNCTION.
+func removeAllWithFallback(path string) error {
+	err := os.RemoveAll(path)
+	if err == nil {
+		return nil
+	}
+
+	if !errors.Is(err, errInvalidFunction) {
+		return fmt.Errorf("failed to remove path: %w", err)
+	}
+
+	return removeAllClassic(path)
+}
+
+func removeAllClassic(path string) error {
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+
+		return fmt.Errorf("failed to read directory: %w", err)
+	}
+
+	for _, entry := range entries {
+		child := filepath.Join(path, entry.Name())
+		if entry.IsDir() {
+			err = removeAllClassic(child)
+			if err != nil {
+				return err
+			}
+
+			continue
+		}
+
+		err = os.Remove(child)
+		if err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("failed to remove path: %w", err)
+		}
+	}
+
+	err = os.Remove(path)
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to remove path: %w", err)
 	}
 
 	return nil
