@@ -10,8 +10,10 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/constants"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/health"
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/configrequest"
@@ -100,6 +102,9 @@ type Manager struct {
 	handleConfig             configrequest.HandleFn
 	tracker                  *track.Tracker
 	idLookup                 host.IDLookup
+	// healthWriter is nil unless integrations health reporting is enabled and its dir is usable.
+	healthWriter *health.Writer
+	startTime    time.Time
 }
 
 // groupContext pairs a runner.Group with its cancellation context
@@ -160,6 +165,11 @@ type ManagerConfig struct {
 	TempDir string
 	// PassthroughEnvironment holds a copy of its homonym in config.Config.
 	PassthroughEnvironment []string
+	// IntegrationsHealthEnabled holds a copy of its homonym in config.Config. When set, one health
+	// file per integration configuration file is written into IntegrationsHealthDir.
+	IntegrationsHealthEnabled bool
+	// IntegrationsHealthDir holds a copy of its homonym in config.Config.
+	IntegrationsHealthDir string
 }
 
 func NewManagerConfig(verbose int, tempDir string, features map[string]bool, passthroughEnvs, configFolders, definitionFolders []string) ManagerConfig {
@@ -210,6 +220,21 @@ func NewManager(
 		handleConfig:             configrequest.NewHandleFn(configEntryQ, terminateDefinitionQ, il, illog),
 		tracker:                  tracker,
 		idLookup:                 idLookup,
+	}
+
+	mgr.startTime = time.Now()
+
+	if cfg.IntegrationsHealthEnabled {
+		switch w, err := health.NewWriter(cfg.IntegrationsHealthDir); {
+		case errors.Is(err, health.ErrEmptyDir):
+			illog.Warn("Integrations health reporting is enabled but integrations_health_dir is empty, no health files will be written")
+		case err != nil:
+			illog.WithError(err).WithField("dir", cfg.IntegrationsHealthDir).
+				Warn("Cannot enable integrations health reporting")
+		default:
+			mgr.healthWriter = w
+			illog.WithField("dir", w.Dir()).Info("Integrations health reporting enabled")
+		}
 	}
 
 	// Loads all the configuration files from the provided ConfigPaths.
@@ -336,6 +361,11 @@ func (mgr *Manager) loadRunnerGroup(path string, cfg v4Config.YAML, cmdFF *runne
 	}
 
 	mgr.featuresCache.Update(fc)
+
+	if mgr.healthWriter != nil {
+		// one health file per integration configuration file, named after it
+		gr.SetHealthReporter(health.NewReporter(filepath.Base(path), mgr.healthWriter, mgr.startTime, time.Now))
+	}
 
 	return newGroupContext(gr), nil
 }
@@ -495,6 +525,15 @@ func (mgr *Manager) stopRunnerGroup(fileName string) {
 			Info("integration file modified or deleted. Stopping running processes, if any")
 		ctx.stop()
 		mgr.runners.Remove(fileName)
+
+		if mgr.healthWriter != nil {
+			// a health file left behind would keep reporting the last verdict of a configuration
+			// file that is gone; a modified file gets a fresh one when its group is reloaded
+			if err := mgr.healthWriter.Remove(filepath.Base(fileName)); err != nil {
+				illog.WithError(err).WithField("file", fileName).
+					Warn("Cannot remove integration health file")
+			}
+		}
 	}
 }
 
