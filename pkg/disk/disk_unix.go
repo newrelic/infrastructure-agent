@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"sync/atomic"
 	"syscall"
 )
 
@@ -29,13 +30,25 @@ var Create = os.Create
 // remove-then-create race window.
 var ErrUnsafeDirAfterCreate = errors.New("path is not safe to use after creation, possibly due to a race")
 
+// SafeDirCheckEnabled toggles the ownership/mount-point safety check MkdirAll applies to a
+// pre-existing path before reusing it as-is. It defaults to false - MkdirAll
+// then behaves like plain os.MkdirAll, blindly reusing whatever is already there.
+//
+// It's an atomic.Bool rather than a plain bool because NormalizeConfig can run again
+// concurrently with MkdirAll - e.g. a dynamic config reload racing an integration executor -
+// and a plain bool would be a data race between that write and MkdirAll's reads.
+var SafeDirCheckEnabled atomic.Bool //nolint:gochecknoglobals
+
 // MkdirAll creates a directory path along with any necessary parents, like os.MkdirAll.
-// Unlike os.MkdirAll, it never blindly reuses a pre-existing path: if path already exists
-// but is not a real directory owned by the current user, or is writable by group/other, it
-// is removed and recreated fresh. This prevents a local attacker from planting (or
-// symlinking) a predictable path - e.g. under a world-writable /tmp - that a privileged
-// process would otherwise pick up and reuse without noticing.
+// When SafeDirCheckEnabled is set, it never blindly reuses a pre-existing path: if path
+// already exists but is not a real directory owned by the current user, or is writable by
+// group/other, it is removed and recreated fresh. With the check
+// disabled (the default), this is exactly os.MkdirAll.
 func MkdirAll(path string, perm os.FileMode) error {
+	if !SafeDirCheckEnabled.Load() {
+		return os.MkdirAll(path, perm) //nolint:wrapcheck
+	}
+
 	pathInfo, err := os.Lstat(path)
 
 	switch {

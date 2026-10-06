@@ -14,6 +14,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestMain enables SafeDirCheckEnabled for this file's tests, which exercise the opt-in
+// hardened check itself; it defaults to false (see TestMkdirAll_SafeDirCheckDisabledByDefault_ReusesUnsafePath
+// below for the default, disabled-by-default behavior).
+func TestMain(m *testing.M) {
+	SafeDirCheckEnabled.Store(true)
+	os.Exit(m.Run())
+}
+
 func TestMkdirAll_CreatesFreshDir(t *testing.T) {
 	t.Parallel()
 
@@ -134,6 +142,40 @@ func TestMkdirAll_UnsafeNonMountPointStillReplaced(t *testing.T) {
 
 	_, err := os.Stat(marker)
 	assert.True(t, os.IsNotExist(err), "same-device writable directory should still be wiped")
+}
+
+// TestMkdirAll_SafeDirCheckDisabledByDefault_ReusesUnsafePath guards the opt-in default: with
+// SafeDirCheckEnabled left false (the zero value, i.e. the config key "safe_dir_check_enabled"
+// unset), MkdirAll must behave exactly like plain os.MkdirAll and reuse a pre-existing path
+// unconditionally, even one that the hardened check (exercised by every other test in this
+// file, via TestMain) would flag as unsafe and wipe. This is what keeps PR #2306/#2325/#2345's
+// hardening from being a breaking change for deployments that don't opt into it.
+//
+// It does not call t.Parallel(): it overrides the package-level SafeDirCheckEnabled var, which
+// must not run concurrently with other tests.
+//
+//nolint:paralleltest
+func TestMkdirAll_SafeDirCheckDisabledByDefault_ReusesUnsafePath(t *testing.T) {
+	SafeDirCheckEnabled.Store(false)
+	defer SafeDirCheckEnabled.Store(true)
+
+	base := t.TempDir()
+	target := filepath.Join(base, "unsafe")
+	require.NoError(t, os.Mkdir(target, 0o777))
+	require.NoError(t, os.Chmod(target, 0o777))
+
+	marker := filepath.Join(target, "marker")
+	require.NoError(t, os.WriteFile(marker, []byte("keep me"), 0o600))
+
+	require.NoError(t, MkdirAll(target, 0o700))
+
+	content, err := os.ReadFile(marker)
+	require.NoError(t, err, "with the check disabled, an unsafe pre-existing path must be reused untouched")
+	assert.Equal(t, "keep me", string(content))
+
+	pathInfo, err := os.Lstat(target)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o777), pathInfo.Mode().Perm(), "mode must be left untouched, not reset to perm")
 }
 
 // TestMkdirAll_ReusesGroupOwnedMountPoint reproduces
