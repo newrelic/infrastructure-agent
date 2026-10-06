@@ -891,7 +891,7 @@ type Config struct {
 	// #2325 and #2345. It defaults to false.
 	// Default: false
 	// Public: No
-	SafeDirCheckEnabled bool `envconfig:"safe_dir_check_enabled" public:"false" yaml:"safe_dir_check_enabled"` //nolint:lll
+	SafeDirCheckEnabled bool `envconfig:"safe_dir_check_enabled" public:"false" yaml:"safe_dir_check_enabled"`
 
 	// PluginDir Directory containing integrations configuration files of the integrations. Each integration has his
 	// own configuration file, named by default <integration_name>-config.yml, placed in a predefined location from
