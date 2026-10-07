@@ -157,9 +157,8 @@ func Test_ConfigTemporaryFolderCreation(t *testing.T) {
 //
 //nolint:paralleltest
 func TestSaveToTempFile_SafeDirCheckOptIn(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("disk.SafeDirCheckEnabled only affects MkdirAll's unix ownership/mount-point check")
-	}
+	// disk.SafeDirCheckEnabled only affects MkdirAll's unix ownership/mount-point check.
+	skipIfWindows(t)
 
 	cases := []struct {
 		name           string
@@ -170,9 +169,9 @@ func TestSaveToTempFile_SafeDirCheckOptIn(t *testing.T) {
 		{name: "explicitly enabled: unsafe dir wiped and recreated", safeDirCheckOn: true, wantMarkerKept: false},
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			disk.SafeDirCheckEnabled.Store(tc.safeDirCheckOn)
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			disk.SafeDirCheckEnabled.Store(testCase.safeDirCheckOn)
 			defer disk.SafeDirCheckEnabled.Store(false)
 
 			base := t.TempDir()
@@ -187,7 +186,7 @@ func TestSaveToTempFile_SafeDirCheckOptIn(t *testing.T) {
 			require.NoError(t, err)
 
 			_, statErr := os.Stat(marker)
-			if tc.wantMarkerKept {
+			if testCase.wantMarkerKept {
 				assert.NoError(t, statErr, "unsafe dir should have been reused, not wiped")
 			} else {
 				assert.True(t, os.IsNotExist(statErr), "unsafe dir should have been wiped, not reused")

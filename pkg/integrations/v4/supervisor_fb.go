@@ -239,7 +239,8 @@ func saveToTempFile(tempDir string, config []byte) (string, error) {
 		mkdirAll = disk.MkdirAll
 	}
 
-	if err := mkdirAll(tempDir, temporaryFolderPermissions); err != nil {
+	err := mkdirAll(tempDir, temporaryFolderPermissions)
+	if err != nil {
 		return "", errors.Wrap(err, "failed to create temporary folder for fluent-bit")
 	}
 
