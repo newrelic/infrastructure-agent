@@ -45,10 +45,6 @@ var SafeDirCheckEnabled atomic.Bool //nolint:gochecknoglobals
 // group/other, it is removed and recreated fresh. With the check
 // disabled (the default), this is exactly os.MkdirAll.
 func MkdirAll(path string, perm os.FileMode) error {
-	if !SafeDirCheckEnabled.Load() {
-		return os.MkdirAll(path, perm) //nolint:wrapcheck
-	}
-
 	pathInfo, err := os.Lstat(path)
 
 	switch {

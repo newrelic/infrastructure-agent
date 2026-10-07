@@ -234,9 +234,12 @@ func buildFbExecutor(fbIntCfg fBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 
 // returns the file name
 func saveToTempFile(tempDir string, config []byte) (string, error) {
-	// ensure that tempdir exists and is safe to reuse
-	err := disk.MkdirAll(tempDir, temporaryFolderPermissions)
-	if err != nil {
+	mkdirAll := os.MkdirAll
+	if disk.SafeDirCheckEnabled.Load() {
+		mkdirAll = disk.MkdirAll
+	}
+
+	if err := mkdirAll(tempDir, temporaryFolderPermissions); err != nil {
 		return "", errors.Wrap(err, "failed to create temporary folder for fluent-bit")
 	}
 
