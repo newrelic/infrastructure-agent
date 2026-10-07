@@ -23,18 +23,20 @@ const (
 )
 
 type CfgLoader struct {
-	config           config.LogForward
-	loadFilesFn      fs.FilesInFolderFn
-	agentIDFn        id.Provide
-	hostnameResolver hostname.Resolver
+	config             config.LogForward
+	loadFilesFn        fs.FilesInFolderFn
+	agentIDFn          id.Provide
+	hostnameResolver   hostname.Resolver
+	useZstdCompression bool
 }
 
-func NewFolderLoader(c config.LogForward, agentIDFn id.Provide, hostnameResolver hostname.Resolver) *CfgLoader {
+func NewFolderLoader(c config.LogForward, agentIDFn id.Provide, hostnameResolver hostname.Resolver, useZstdCompression bool) *CfgLoader {
 	return &CfgLoader{
-		config:           c,
-		loadFilesFn:      fs.OSFilesInFolderFn,
-		agentIDFn:        agentIDFn,
-		hostnameResolver: hostnameResolver,
+		config:             c,
+		loadFilesFn:        fs.OSFilesInFolderFn,
+		agentIDFn:          agentIDFn,
+		hostnameResolver:   hostnameResolver,
+		useZstdCompression: useZstdCompression,
 	}
 }
 
@@ -75,7 +77,7 @@ func (l *CfgLoader) LoadAll() (c FBCfg, ok bool) {
 		loaderLogger.Debug("Could not determine hostname.")
 	}
 
-	c, err = NewFBConf(allFilesCfgs, &(l.config), agentGUID.String(), shortHostName)
+	c, err = NewFBConf(allFilesCfgs, &(l.config), agentGUID.String(), shortHostName, l.useZstdCompression)
 	if err != nil {
 		loaderLogger.WithError(err).Error("could not process logging configurations")
 		return FBCfg{}, false
