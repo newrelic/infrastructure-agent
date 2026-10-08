@@ -884,6 +884,15 @@ type Config struct {
 	// Public: No
 	DisablePluginDefaultDirScan bool `envconfig:"disable_plugin_default_dir_scan" public:"false" yaml:"disable_plugin_default_dir_scan"` //nolint:lll
 
+	// SafeDirCheckEnabled, when enabled, makes the agent reject and recreate any directory it
+	// manages (the data directory, integration temp dirs, ...) that isn't owned by the current
+	// user or group, or that's writable by group/other and isn't a distinct mount point -
+	// hardening added by PR #2306, with the mount-point and group-ownership exemptions added by
+	// #2325 and #2345. It defaults to false.
+	// Default: false
+	// Public: No
+	SafeDirCheckEnabled bool `envconfig:"safe_dir_check_enabled" public:"false" yaml:"safe_dir_check_enabled"`
+
 	// PluginDir Directory containing integrations configuration files of the integrations. Each integration has his
 	// own configuration file, named by default <integration_name>-config.yml, placed in a predefined location from
 	// which the agent will load on initialization.
@@ -2219,6 +2228,10 @@ func urlRegionPrefix(licenseKey string) string {
 
 func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err error) {
 	nlog := clog.WithField("action", "NormalizeConfig")
+
+	// Must happen before any disk.MkdirAll call below (or made later by the rest of the
+	// agent) so the opt-in safe-dir check is in effect from the very first one.
+	disk.SafeDirCheckEnabled.Store(cfg.SafeDirCheckEnabled)
 
 	cfg.IgnoredInventoryPathsMap = make(map[string]struct{})
 	for _, p := range cfg.IgnoredInventoryPaths {

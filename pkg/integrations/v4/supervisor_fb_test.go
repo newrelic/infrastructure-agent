@@ -20,6 +20,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
+	"github.com/newrelic/infrastructure-agent/pkg/disk"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/logs"
 
@@ -149,6 +150,49 @@ func Test_ConfigTemporaryFolderCreation(t *testing.T) {
 	_, err = executorBuilder()
 	require.NoError(t, err)
 	assert.DirExists(t, termporaryFolderPath)
+}
+
+// It does not call t.Parallel(): it overrides the package-level disk.SafeDirCheckEnabled var,
+// which must not run concurrently with other tests.
+//
+//nolint:paralleltest
+func TestSaveToTempFile_SafeDirCheckOptIn(t *testing.T) {
+	// disk.SafeDirCheckEnabled only affects MkdirAll's unix ownership/mount-point check.
+	skipIfWindows(t)
+
+	cases := []struct {
+		name           string
+		safeDirCheckOn bool
+		wantMarkerKept bool
+	}{
+		{name: "disabled by default: unsafe dir reused untouched", safeDirCheckOn: false, wantMarkerKept: true},
+		{name: "explicitly enabled: unsafe dir wiped and recreated", safeDirCheckOn: true, wantMarkerKept: false},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			disk.SafeDirCheckEnabled.Store(testCase.safeDirCheckOn)
+			defer disk.SafeDirCheckEnabled.Store(false)
+
+			base := t.TempDir()
+			tempDir := filepath.Join(base, "fb")
+			require.NoError(t, os.Mkdir(tempDir, 0o777))
+			require.NoError(t, os.Chmod(tempDir, 0o777))
+
+			marker := filepath.Join(tempDir, "marker")
+			require.NoError(t, os.WriteFile(marker, []byte("keep me"), 0o600))
+
+			_, err := saveToTempFile(tempDir, []byte("fb config"))
+			require.NoError(t, err)
+
+			_, statErr := os.Stat(marker)
+			if testCase.wantMarkerKept {
+				assert.NoError(t, statErr, "unsafe dir should have been reused, not wiped")
+			} else {
+				assert.True(t, os.IsNotExist(statErr), "unsafe dir should have been wiped, not reused")
+			}
+		})
+	}
 }
 
 func TestRemoveFbConfigTempFiles(t *testing.T) {
