@@ -901,6 +901,20 @@ type Config struct {
 	// Public: Yes
 	PluginDir string `yaml:"plugin_dir" envconfig:"plugin_dir"`
 
+	// IntegrationsHealthEnabled enables writing one health file per integration configuration file,
+	// so that a supervisor can tell which integration is failing. The files are consumed by Agent
+	// Control's file health checker.
+	// Default: False
+	// Public: Yes
+	IntegrationsHealthEnabled bool `yaml:"integrations_health_enabled" envconfig:"integrations_health_enabled"`
+
+	// IntegrationsHealthDir is the directory the integrations health files are written into. Each
+	// file is named after the integration configuration file it reports on. Ignored unless
+	// integrations_health_enabled is set.
+	// Default: Empty
+	// Public: Yes
+	IntegrationsHealthDir string `yaml:"integrations_health_dir" envconfig:"integrations_health_dir"`
+
 	// PassthroughEnvironment A list of environment variables that will be passed to all integrations. Regular
 	// expressions can also be provided to match one or multiple environment variables. If an integration already has
 	// an existing configuration option with the same name, then the environment variable
