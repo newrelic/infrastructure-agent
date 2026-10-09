@@ -8,15 +8,10 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"sync/atomic"
 	"syscall"
 
 	"golang.org/x/sys/windows"
 )
-
-// SafeDirCheckEnabled exists on Windows purely so pkg/config.NormalizeConfig can set it
-// cross-platform without build-tag gymnastics - it has no effect here.
-var SafeDirCheckEnabled atomic.Bool //nolint:gochecknoglobals
 
 // WriteFile writes data to a file named by filename. For more info, see ioutil.Writefile.
 // If the file does not exist, WriteFile creates it with permissions perm;
