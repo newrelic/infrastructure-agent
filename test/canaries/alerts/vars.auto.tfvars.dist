@@ -1,7 +1,7 @@
 # api_key               = "***" # NR User Api Key
 # account_id            = 0 # NR Account ID
 # region                = "US" # US | EU | Staging
-policies_prefix       = "[pre-release] Infra Agent Canaries metric comparator"
+policies_prefix           = "[pre-release] Infra Agent Canaries metric comparator"
 conditions            = [
   {
     name          = "System / Core Count"
