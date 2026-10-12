@@ -352,11 +352,8 @@ try {
     # Preserve any existing config rather than rewriting it - on an MSI install it may carry
     # display_name/proxy/custom_attributes/sample rates from yamlgen that we would silently discard.
     # Check-LicenseKey validates whatever ends up here, just before Start-Service.
-    if ($isUpgrade -and (Test-Path $ConfigFile)) {
-        Write-DebugLog "Preserving existing configuration file: $ConfigFile"
-    } elseif (($ScriptPath -eq $AgentDir) -and (Test-Path $ConfigFile)) {
-        Write-DebugLog "MSI install: config file already present, skipping"
-    } else {
+    $preserveConfig = (Test-Path $ConfigFile) -and ($isUpgrade -or ($ScriptPath -eq $AgentDir))
+    if (-not $preserveConfig) {
         Write-DebugLog "Creating new config file in $ConfigFile"
         Clear-Content -Path $ConfigFile -ErrorAction SilentlyContinue
         Add-Content -Path $ConfigFile -Value `
