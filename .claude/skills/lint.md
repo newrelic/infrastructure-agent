@@ -62,7 +62,7 @@ If any linting tools are missing:
 make install-tools
 ```
 
-Installs: golangci-lint v2.5.0, gofmt, gofumpt, goimports, addlicense, go-licence-detector.
+Installs: golangci-lint v2.14.0, gofmt, gofumpt, goimports, addlicense, go-licence-detector.
 
 ## Notes
 
