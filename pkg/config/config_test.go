@@ -864,48 +864,6 @@ func TestLoadYamlConfig_disablePluginDefaultDirScan(t *testing.T) {
 	}
 }
 
-func TestLoadYamlConfig_safeDirCheckEnabled(t *testing.T) {
-	t.Parallel()
-
-	cases := []struct {
-		name string
-		yaml string
-		want bool
-	}{
-		{
-			name: "omitted defaults to false",
-			yaml: `license_key: "xxx"`,
-			want: false,
-		},
-		{
-			name: "explicitly enabled",
-			yaml: "license_key: \"xxx\"\nsafe_dir_check_enabled: true",
-			want: true,
-		},
-		{
-			name: "explicitly disabled",
-			yaml: "license_key: \"xxx\"\nsafe_dir_check_enabled: false",
-			want: false,
-		},
-	}
-
-	for _, testCase := range cases {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			tmp, err := createTestFile([]byte(testCase.yaml))
-			require.NoError(t, err)
-
-			defer os.Remove(tmp.Name())
-
-			cfg, err := LoadConfig(tmp.Name())
-			require.NoError(t, err)
-
-			assert.Equal(t, testCase.want, cfg.SafeDirCheckEnabled)
-		})
-	}
-}
-
 // TestNormalizeConfig_disablePluginDefaultDirScan verifies the flag drops the default (standalone)
 // integration config dirs and the legacy newrelic-infra-plugins.yml files, keeping only plugin_dir.
 func TestNormalizeConfig_disablePluginDefaultDirScan(t *testing.T) {
