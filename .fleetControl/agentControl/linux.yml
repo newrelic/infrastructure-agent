@@ -1,6 +1,6 @@
 namespace: newrelic
 name: com.newrelic.infrastructure
-version: 1.0.0
+version: 1.0.1
 platform: host
 operating_system: linux
 protocol_version: "1.0"
@@ -59,7 +59,7 @@ deployment:
   health:
     interval: 30s
     initial_delay: 60s
-    timeout: 5s
+    timeout: 15s
     checks:
       - kind: Process
       - kind: Http
