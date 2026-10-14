@@ -250,53 +250,68 @@ jobs:
 
           NRJMX_VERSION="$(cat build/embed/nrjmx.version)"
           NRJMX_VERSION_NUM="${NRJMX_VERSION#v}"
-          LINUX_ASSET="nrjmx_linux_${NRJMX_VERSION_NUM}_noarch.tar.gz"
-          WINDOWS_ASSET="nrjmx_windows_${NRJMX_VERSION_NUM}_noarch.zip"
+          ASSET="nrjmx_linux_${NRJMX_VERSION_NUM}_noarch.tar.gz"
 
           echo "  nrjmx version: ${NRJMX_VERSION}"
+          echo "  Downloading: ${ASSET}"
+          gh release download "${NRJMX_VERSION}" \
+            --repo newrelic/nrjmx \
+            --pattern "${ASSET}" \
+            --dir downloads
 
-          for ASSET in "${LINUX_ASSET}" "${WINDOWS_ASSET}"; do
-            echo "  Downloading: ${ASSET}"
-            gh release download "${NRJMX_VERSION}" \
-              --repo newrelic/nrjmx \
-              --pattern "${ASSET}" \
-              --dir downloads
+          echo "Verifying nrjmx checksum against GitHub release digest..."
+          EXPECTED_DIGEST="$(gh api "repos/newrelic/nrjmx/releases/tags/${NRJMX_VERSION}" \
+            --jq ".assets[] | select(.name == \"${ASSET}\") | .digest" | sed 's/^sha256://')"
 
-            echo "Verifying ${ASSET} checksum against GitHub release digest..."
-            EXPECTED_DIGEST="$(gh api "repos/newrelic/nrjmx/releases/tags/${NRJMX_VERSION}" \
-              --jq ".assets[] | select(.name == \"${ASSET}\") | .digest" | sed 's/^sha256://')"
+          if [ -z "${EXPECTED_DIGEST}" ]; then
+            echo "::error::Could not resolve expected digest for ${ASSET}"
+            exit 1
+          fi
 
-            if [ -z "${EXPECTED_DIGEST}" ]; then
-              echo "::error::Could not resolve expected digest for ${ASSET}"
-              exit 1
-            fi
+          ACTUAL_DIGEST="$(sha256sum "downloads/${ASSET}" | cut -d' ' -f1)"
 
-            ACTUAL_DIGEST="$(sha256sum "downloads/${ASSET}" | cut -d' ' -f1)"
-
-            if [ "${EXPECTED_DIGEST}" != "${ACTUAL_DIGEST}" ]; then
-              echo "::error::nrjmx digest mismatch for ${ASSET}: expected ${EXPECTED_DIGEST}, got ${ACTUAL_DIGEST}"
-              exit 1
-            fi
-          done
-          echo "✓ nrjmx checksums verified"
+          if [ "${EXPECTED_DIGEST}" != "${ACTUAL_DIGEST}" ]; then
+            echo "::error::nrjmx digest mismatch: expected ${EXPECTED_DIGEST}, got ${ACTUAL_DIGEST}"
+            exit 1
+          fi
+          echo "✓ nrjmx checksum verified"
 
           echo "Extracting nrjmx..."
-          mkdir -p extracted/nrjmx extracted/nrjmx-windows
-          tar xzf "downloads/${LINUX_ASSET}" -C extracted/nrjmx
-          unzip -q "downloads/${WINDOWS_ASSET}" -d extracted/nrjmx-windows
+          mkdir -p extracted/nrjmx
+          tar xzf "downloads/${ASSET}" -C extracted/nrjmx
 
-          # The wrapper scripts are what NR_JMX_TOOL points to: nri-jmx (gojmx) executes that variable as a single
-          # program, so it cannot be a "java -jar ..." command line.
-          for f in \
-            "extracted/nrjmx/usr/lib/nrjmx/nrjmx.jar" \
-            "extracted/nrjmx/usr/bin/nrjmx" \
-            "extracted/nrjmx-windows/Program Files/New Relic/nrjmx/bin/nrjmx.bat"; do
-            if [ ! -f "${f}" ]; then
-              echo "::error::${f} not found after extraction"
-              exit 1
-            fi
-          done
-          echo "✓ nrjmx.jar and wrapper scripts extracted"
+          if [ ! -f "extracted/nrjmx/usr/lib/nrjmx/nrjmx.jar" ]; then
+            echo "::error::nrjmx.jar not found after extraction"
+            exit 1
+          fi
+          echo "✓ nrjmx.jar extracted"
+
+      - name: Check nrjmx wrapper scripts
+        run: |
+          set -euo pipefail
+
+          # The wrappers in build/embed/nrjmx replace the ones nrjmx ships, which look for a system-wide installation
+          # first (Linux) or hardcode its path (Windows). Fail if the upstream Linux wrapper changed, so that someone
+          # reviews whether ours needs to follow (new JVM options, classpath, main class...).
+          EXPECTED_WRAPPER_SHA="$(cat build/embed/nrjmx/upstream-wrapper.sha256)"
+          ACTUAL_WRAPPER_SHA="$(sha256sum extracted/nrjmx/usr/bin/nrjmx | cut -d' ' -f1)"
+          if [ "${EXPECTED_WRAPPER_SHA}" != "${ACTUAL_WRAPPER_SHA}" ]; then
+            echo "::error::The upstream nrjmx wrapper changed (expected ${EXPECTED_WRAPPER_SHA}, got ${ACTUAL_WRAPPER_SHA})."
+            echo "::error::Review build/embed/nrjmx/nrjmx and build/embed/nrjmx/nrjmx.bat, then update build/embed/nrjmx/upstream-wrapper.sha256."
+            exit 1
+          fi
+
+          # Smoke test: the wrapper must start the jar that sits next to it, from any location.
+          SMOKE_DIR="$(mktemp -d)/with space"
+          mkdir -p "${SMOKE_DIR}"
+          cp build/embed/nrjmx/nrjmx "${SMOKE_DIR}/nrjmx"
+          cp extracted/nrjmx/usr/lib/nrjmx/nrjmx.jar "${SMOKE_DIR}/"
+          chmod +x "${SMOKE_DIR}/nrjmx"
+          if ! "${SMOKE_DIR}/nrjmx" -help | grep -q '^usage: nrjmx'; then
+            echo "::error::build/embed/nrjmx/nrjmx failed to run nrjmx.jar"
+            exit 1
+          fi
+          echo "✓ nrjmx wrapper scripts checked"
 
       - name: Extract MSI artifacts
         run: |
@@ -430,7 +445,7 @@ jobs:
           cp "${SRC}/newrelic-integrations/nri-prometheus.exe" "${DEST}/integrations/"
           cp "${SRC}/newrelic-integrations/nr-winpkg.exe" "${DEST}/integrations/"
           cp "extracted/nrjmx/usr/lib/nrjmx/nrjmx.jar" "${DEST}/integrations/"
-          cp "extracted/nrjmx-windows/Program Files/New Relic/nrjmx/bin/nrjmx.bat" "${DEST}/integrations/"
+          cp "build/embed/nrjmx/nrjmx.bat" "${DEST}/integrations/"
 
           # Copy logging components
           cp "${SRC}/newrelic-integrations/logging/fluent-bit.exe" "${DEST}/logging/"
@@ -479,7 +494,7 @@ jobs:
             cp "${DEB_SRC}/opt/newrelic-infra/newrelic-integrations/bin/nri-docker" "${DEST}/integrations/"
             cp "${DEB_SRC}/opt/newrelic-infra/newrelic-integrations/bin/nri-prometheus" "${DEST}/integrations/"
             cp "extracted/nrjmx/usr/lib/nrjmx/nrjmx.jar" "${DEST}/integrations/"
-            cp "extracted/nrjmx/usr/bin/nrjmx" "${DEST}/integrations/nrjmx"
+            cp "build/embed/nrjmx/nrjmx" "${DEST}/integrations/nrjmx"
             chmod +x "${DEST}/integrations/nrjmx"
 
             # Copy logging components
