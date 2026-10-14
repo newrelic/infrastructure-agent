@@ -250,41 +250,53 @@ jobs:
 
           NRJMX_VERSION="$(cat build/embed/nrjmx.version)"
           NRJMX_VERSION_NUM="${NRJMX_VERSION#v}"
-          ASSET="nrjmx_linux_${NRJMX_VERSION_NUM}_noarch.tar.gz"
+          LINUX_ASSET="nrjmx_linux_${NRJMX_VERSION_NUM}_noarch.tar.gz"
+          WINDOWS_ASSET="nrjmx_windows_${NRJMX_VERSION_NUM}_noarch.zip"
 
           echo "  nrjmx version: ${NRJMX_VERSION}"
-          echo "  Downloading: ${ASSET}"
-          gh release download "${NRJMX_VERSION}" \
-            --repo newrelic/nrjmx \
-            --pattern "${ASSET}" \
-            --dir downloads
 
-          echo "Verifying nrjmx checksum against GitHub release digest..."
-          EXPECTED_DIGEST="$(gh api "repos/newrelic/nrjmx/releases/tags/${NRJMX_VERSION}" \
-            --jq ".assets[] | select(.name == \"${ASSET}\") | .digest" | sed 's/^sha256://')"
+          for ASSET in "${LINUX_ASSET}" "${WINDOWS_ASSET}"; do
+            echo "  Downloading: ${ASSET}"
+            gh release download "${NRJMX_VERSION}" \
+              --repo newrelic/nrjmx \
+              --pattern "${ASSET}" \
+              --dir downloads
 
-          if [ -z "${EXPECTED_DIGEST}" ]; then
-            echo "::error::Could not resolve expected digest for ${ASSET}"
-            exit 1
-          fi
+            echo "Verifying ${ASSET} checksum against GitHub release digest..."
+            EXPECTED_DIGEST="$(gh api "repos/newrelic/nrjmx/releases/tags/${NRJMX_VERSION}" \
+              --jq ".assets[] | select(.name == \"${ASSET}\") | .digest" | sed 's/^sha256://')"
 
-          ACTUAL_DIGEST="$(sha256sum "downloads/${ASSET}" | cut -d' ' -f1)"
+            if [ -z "${EXPECTED_DIGEST}" ]; then
+              echo "::error::Could not resolve expected digest for ${ASSET}"
+              exit 1
+            fi
 
-          if [ "${EXPECTED_DIGEST}" != "${ACTUAL_DIGEST}" ]; then
-            echo "::error::nrjmx digest mismatch: expected ${EXPECTED_DIGEST}, got ${ACTUAL_DIGEST}"
-            exit 1
-          fi
-          echo "✓ nrjmx checksum verified"
+            ACTUAL_DIGEST="$(sha256sum "downloads/${ASSET}" | cut -d' ' -f1)"
+
+            if [ "${EXPECTED_DIGEST}" != "${ACTUAL_DIGEST}" ]; then
+              echo "::error::nrjmx digest mismatch for ${ASSET}: expected ${EXPECTED_DIGEST}, got ${ACTUAL_DIGEST}"
+              exit 1
+            fi
+          done
+          echo "✓ nrjmx checksums verified"
 
           echo "Extracting nrjmx..."
-          mkdir -p extracted/nrjmx
-          tar xzf "downloads/${ASSET}" -C extracted/nrjmx
+          mkdir -p extracted/nrjmx extracted/nrjmx-windows
+          tar xzf "downloads/${LINUX_ASSET}" -C extracted/nrjmx
+          unzip -q "downloads/${WINDOWS_ASSET}" -d extracted/nrjmx-windows
 
-          if [ ! -f "extracted/nrjmx/usr/lib/nrjmx/nrjmx.jar" ]; then
-            echo "::error::nrjmx.jar not found after extraction"
-            exit 1
-          fi
-          echo "✓ nrjmx.jar extracted"
+          # The wrapper scripts are what NR_JMX_TOOL points to: nri-jmx (gojmx) executes that variable as a single
+          # program, so it cannot be a "java -jar ..." command line.
+          for f in \
+            "extracted/nrjmx/usr/lib/nrjmx/nrjmx.jar" \
+            "extracted/nrjmx/usr/bin/nrjmx" \
+            "extracted/nrjmx-windows/Program Files/New Relic/nrjmx/bin/nrjmx.bat"; do
+            if [ ! -f "${f}" ]; then
+              echo "::error::${f} not found after extraction"
+              exit 1
+            fi
+          done
+          echo "✓ nrjmx.jar and wrapper scripts extracted"
 
       - name: Extract MSI artifacts
         run: |
@@ -418,6 +430,7 @@ jobs:
           cp "${SRC}/newrelic-integrations/nri-prometheus.exe" "${DEST}/integrations/"
           cp "${SRC}/newrelic-integrations/nr-winpkg.exe" "${DEST}/integrations/"
           cp "extracted/nrjmx/usr/lib/nrjmx/nrjmx.jar" "${DEST}/integrations/"
+          cp "extracted/nrjmx-windows/Program Files/New Relic/nrjmx/bin/nrjmx.bat" "${DEST}/integrations/"
 
           # Copy logging components
           cp "${SRC}/newrelic-integrations/logging/fluent-bit.exe" "${DEST}/logging/"
@@ -466,6 +479,8 @@ jobs:
             cp "${DEB_SRC}/opt/newrelic-infra/newrelic-integrations/bin/nri-docker" "${DEST}/integrations/"
             cp "${DEB_SRC}/opt/newrelic-infra/newrelic-integrations/bin/nri-prometheus" "${DEST}/integrations/"
             cp "extracted/nrjmx/usr/lib/nrjmx/nrjmx.jar" "${DEST}/integrations/"
+            cp "extracted/nrjmx/usr/bin/nrjmx" "${DEST}/integrations/nrjmx"
+            chmod +x "${DEST}/integrations/nrjmx"
 
             # Copy logging components
             cp "${DEB_SRC}/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so" "${DEST}/logging/"
