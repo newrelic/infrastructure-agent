@@ -1,6 +1,6 @@
 namespace: newrelic
 name: com.newrelic.infrastructure
-version: 1.0.1
+version: 1.1.0
 platform: host
 operating_system: linux
 protocol_version: "1.0"
