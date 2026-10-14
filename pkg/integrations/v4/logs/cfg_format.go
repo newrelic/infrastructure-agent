@@ -3,7 +3,6 @@
 package logs
 
 import (
-	"fmt"
 	"path/filepath"
 	"strings"
 )
@@ -12,27 +11,11 @@ import (
 type FBConfigFormat string
 
 const (
-	// FBConfigFormatAuto lets the agent pick the format from the detected Fluent Bit version.
-	FBConfigFormatAuto FBConfigFormat = "auto"
 	// FBConfigFormatClassic is the legacy "[INPUT] / [FILTER] / [OUTPUT]" format (.conf).
 	FBConfigFormatClassic FBConfigFormat = "classic"
 	// FBConfigFormatYAML is the YAML format (.yaml), supported since Fluent Bit 3.2.
 	FBConfigFormatYAML FBConfigFormat = "yaml"
 )
-
-// ParseFBConfigFormat parses the fluent_bit_config_format setting. Empty means auto.
-func ParseFBConfigFormat(value string) (FBConfigFormat, error) {
-	switch FBConfigFormat(strings.ToLower(strings.TrimSpace(value))) {
-	case "", FBConfigFormatAuto:
-		return FBConfigFormatAuto, nil
-	case FBConfigFormatClassic:
-		return FBConfigFormatClassic, nil
-	case FBConfigFormatYAML:
-		return FBConfigFormatYAML, nil
-	default:
-		return FBConfigFormatAuto, fmt.Errorf("invalid fluent bit config format %q, expected auto, classic or yaml", value) //nolint:err113
-	}
-}
 
 // FileExtension returns the extension Fluent Bit uses to pick the config parser.
 // Fluent Bit treats any file not ending in .yaml/.yml as classic, so it must be set.

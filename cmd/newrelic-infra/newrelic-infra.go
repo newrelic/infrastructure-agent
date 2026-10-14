@@ -474,7 +474,6 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		c.FluentBitParsersPath,
 		fbVerbose,
 		confTempFolder,
-		c.FluentBitConfigFormat,
 	)
 
 	if fbIntCfg.IsLogForwarderAvailable() {

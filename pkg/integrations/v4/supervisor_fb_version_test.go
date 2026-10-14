@@ -68,7 +68,6 @@ func TestFBVersion_Support(t *testing.T) {
 	}
 }
 
-//nolint:funlen
 func TestSelectFBConfigFormat(t *testing.T) {
 	t.Parallel()
 
@@ -84,41 +83,32 @@ func TestSelectFBConfigFormat(t *testing.T) {
 
 	cases := []struct {
 		name       string
-		setting    logs.FBConfigFormat
 		version    FBVersion
 		versionErr error
 		external   logs.FBCfgExternal
 		expected   logs.FBConfigFormat
 		wantErr    error
 	}{
-		// auto, no external config
-		{"auto 1.9 classic", logs.FBConfigFormatAuto, v19, nil, noExternal, logs.FBConfigFormatClassic, nil},
-		{"auto 5.1 classic", logs.FBConfigFormatAuto, v51, nil, noExternal, logs.FBConfigFormatClassic, nil},
-		{"auto 5.9 classic", logs.FBConfigFormatAuto, v59, nil, noExternal, logs.FBConfigFormatClassic, nil},
-		{"auto 6.0 yaml", logs.FBConfigFormatAuto, v60, nil, noExternal, logs.FBConfigFormatYAML, nil},
-		{"auto unknown classic", logs.FBConfigFormatAuto, FBVersion{}, errUnknown, noExternal, logs.FBConfigFormatClassic, nil},
-		{"empty setting is auto", "", v60, nil, noExternal, logs.FBConfigFormatYAML, nil},
-		// auto, external .conf
-		{"auto 5.1 external conf", logs.FBConfigFormatAuto, v51, nil, externalConf, logs.FBConfigFormatClassic, nil},
-		{"auto 6.0 external conf", logs.FBConfigFormatAuto, v60, nil, externalConf, "", errFbExternalCfgMismatch},
-		// auto, external .yaml
-		{"auto 5.1 external yaml", logs.FBConfigFormatAuto, v51, nil, externalYAML, logs.FBConfigFormatYAML, nil},
-		{"auto 6.0 external yaml", logs.FBConfigFormatAuto, v60, nil, externalYAML, logs.FBConfigFormatYAML, nil},
-		{"auto 1.9 external yaml", logs.FBConfigFormatAuto, v19, nil, externalYAML, "", errFbYAMLNotSupported},
-		{"auto unknown external yaml", logs.FBConfigFormatAuto, FBVersion{}, errUnknown, externalYAML, logs.FBConfigFormatYAML, nil},
-		// forced formats
-		{"forced yaml 5.1", logs.FBConfigFormatYAML, v51, nil, noExternal, logs.FBConfigFormatYAML, nil},
-		{"forced yaml 1.9", logs.FBConfigFormatYAML, v19, nil, noExternal, "", errFbYAMLNotSupported},
-		{"forced yaml unknown", logs.FBConfigFormatYAML, FBVersion{}, errUnknown, noExternal, logs.FBConfigFormatYAML, nil},
-		{"forced classic 5.1", logs.FBConfigFormatClassic, v51, nil, noExternal, logs.FBConfigFormatClassic, nil},
-		{"forced classic 6.0", logs.FBConfigFormatClassic, v60, nil, noExternal, "", errFbClassicNotSupported},
-		{"forced yaml external conf", logs.FBConfigFormatYAML, v51, nil, externalConf, "", errFbExternalCfgMismatch},
-		{"forced classic external yaml", logs.FBConfigFormatClassic, v51, nil, externalYAML, "", errFbExternalCfgMismatch},
+		// no external config
+		{"1.9 classic", v19, nil, noExternal, logs.FBConfigFormatClassic, nil},
+		{"5.1 classic", v51, nil, noExternal, logs.FBConfigFormatClassic, nil},
+		{"5.9 classic", v59, nil, noExternal, logs.FBConfigFormatClassic, nil},
+		{"6.0 yaml", v60, nil, noExternal, logs.FBConfigFormatYAML, nil},
+		{"unknown classic", FBVersion{}, errUnknown, noExternal, logs.FBConfigFormatClassic, nil},
+		// external .conf
+		{"5.1 external conf", v51, nil, externalConf, logs.FBConfigFormatClassic, nil},
+		{"6.0 external conf", v60, nil, externalConf, "", errFbExternalCfgMismatch},
+		{"unknown external conf", FBVersion{}, errUnknown, externalConf, logs.FBConfigFormatClassic, nil},
+		// external .yaml
+		{"5.1 external yaml", v51, nil, externalYAML, logs.FBConfigFormatYAML, nil},
+		{"6.0 external yaml", v60, nil, externalYAML, logs.FBConfigFormatYAML, nil},
+		{"1.9 external yaml", v19, nil, externalYAML, "", errFbYAMLNotSupported},
+		{"unknown external yaml", FBVersion{}, errUnknown, externalYAML, logs.FBConfigFormatYAML, nil},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			format, err := selectFBConfigFormat(tc.setting, tc.version, tc.versionErr, tc.external)
+			format, err := selectFBConfigFormat(tc.version, tc.versionErr, tc.external)
 			assert.Equal(t, tc.expected, format)
 			if tc.wantErr == nil {
 				assert.NoError(t, err)

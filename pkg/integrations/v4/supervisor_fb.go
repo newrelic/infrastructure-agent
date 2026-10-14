@@ -73,7 +73,6 @@ type fBSupervisorConfig struct {
 	FluentBitParsersPath string
 	FluentBitVerbose     bool
 	ConfTemporaryFolder  string
-	ConfigFormat         logs.FBConfigFormat
 	ffRetriever          feature_flags.Retriever
 	versionDetector      *fbVersionDetector
 }
@@ -91,13 +90,7 @@ func NewFBSupervisorConfig(
 	fluentBitParsersPath string,
 	fluentBitVerbose bool,
 	confTempFolder string,
-	fluentBitConfigFormat string,
 ) fBSupervisorConfig {
-	configFormat, err := logs.ParseFBConfigFormat(fluentBitConfigFormat)
-	if err != nil {
-		sFBLogger.WithError(err).Warn("Using automatic Fluent Bit config format selection.")
-	}
-
 	return fBSupervisorConfig{
 		ffRetriever:          ffRetriever,
 		agentDir:             agentDir,
@@ -108,7 +101,6 @@ func NewFBSupervisorConfig(
 		FluentBitParsersPath: fluentBitParsersPath,
 		FluentBitVerbose:     fluentBitVerbose,
 		ConfTemporaryFolder:  confTempFolder,
-		ConfigFormat:         configFormat,
 		versionDetector:      newFBVersionDetector(),
 	}
 }
@@ -208,7 +200,7 @@ func buildFbExecutor(fbIntCfg fBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 
 		cfgContent, cfgFormat, externalCfg, cErr := cfgLoader.LoadAndFormatWith(
 			func(externalCfg logs.FBCfgExternal) (logs.FBConfigFormat, error) {
-				return selectFBConfigFormat(fbIntCfg.ConfigFormat, fbVersion, versionErr, externalCfg)
+				return selectFBConfigFormat(fbVersion, versionErr, externalCfg)
 			})
 		if cErr != nil {
 			return nil, cErr

@@ -353,7 +353,6 @@ func TestNewSupervisorConfig(t *testing.T) {
 				testCase.fluentBitParsersPath,
 				testCase.fbVerbose,
 				tmpDir,
-				"",
 			)
 
 			path := fbIntCfg.getFbPath()
@@ -391,7 +390,6 @@ func Test_buildFbExecutorFailsIfNoFbFiles(t *testing.T) {
 		"not existent file",
 		fbVerbose,
 		tmpDir,
-		"",
 	)
 
 	executorBuilder := buildFbExecutor(fbIntCfg, confLoaderForTest())
@@ -437,7 +435,6 @@ func Test_buildFbExecutor(t *testing.T) {
 		fluentBitParsersPath.Name(),
 		fbVerbose,
 		fbTmpDir,
-		"",
 	)
 
 	executorBuilder := buildFbExecutor(fbIntCfg, confLoaderForTest())
@@ -462,13 +459,11 @@ func Test_buildFbExecutor_ConfigFormatFromVersion(t *testing.T) {
 	cases := []struct {
 		name           string
 		fbVersion      string
-		formatSetting  string
 		expectedExt    string
 		expectedPrefix string
 	}{
-		{"5.1 keeps classic", "5.1.2", "", ".conf", "[INPUT]"},
-		{"6.0 without classic gets yaml", "6.0.0", "", ".yaml", "pipeline:"},
-		{"yaml can be forced on 5.1", "5.1.2", "yaml", ".yaml", "pipeline:"},
+		{"5.1 keeps classic", "5.1.2", ".conf", "[INPUT]"},
+		{"6.0 without classic gets yaml", "6.0.0", ".yaml", "pipeline:"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -487,7 +482,7 @@ func Test_buildFbExecutor_ConfigFormatFromVersion(t *testing.T) {
 			ffRetriever.ShouldNotGetFeatureFlag(fflag.FlagFluentBit19)
 
 			fbIntCfg := NewFBSupervisorConfig(ffRetriever, "agentDir", "agentDir", "loggingBinDir",
-				fbExe, fbLib, fbParsers, false, filepath.Join(tmpDir, "fb"), tc.formatSetting)
+				fbExe, fbLib, fbParsers, false, filepath.Join(tmpDir, "fb"))
 
 			exec, err := buildFbExecutor(fbIntCfg, confLoaderForTest())()
 			require.NoError(t, err)

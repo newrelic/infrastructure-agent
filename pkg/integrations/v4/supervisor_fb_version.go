@@ -34,7 +34,6 @@ var (
 
 	errFbVersionNotFound       = errors.New("fluent bit version not found in output")
 	errFbYAMLNotSupported      = errors.New("fluent bit version does not support YAML config")
-	errFbClassicNotSupported   = errors.New("fluent bit version does not support classic config")
 	errFbExternalCfgMismatch   = errors.New("external fluent bit config format does not match the selected format")
 	errFbExternalYAMLNoVersion = errors.New("external fluent bit config is YAML but fluent bit version could not be detected")
 )
@@ -138,19 +137,14 @@ func describeFBVersion(version FBVersion, known bool) string {
 	return "v" + version.String()
 }
 
-// selectFBConfigFormat decides which config format to generate.
-//
-// With "auto":
+// selectFBConfigFormat decides which config format to generate:
 //   - customer external config in YAML: YAML, as classic cannot include YAML files.
 //   - version unknown: classic, which is the behaviour before version detection existed.
 //   - version below 6.0.0: classic.
 //   - version 6.0.0 or newer (no classic support): YAML.
 //
-// A forced format or an external config file that the selected format cannot include returns an error.
-//
-//nolint:cyclop
+// An external config file that the selected format cannot include returns an error.
 func selectFBConfigFormat(
-	setting logs.FBConfigFormat,
 	version FBVersion,
 	versionErr error,
 	externalCfg logs.FBCfgExternal,
@@ -158,16 +152,14 @@ func selectFBConfigFormat(
 	versionKnown := versionErr == nil
 	externalFormat := externalCfg.ConfigFormat()
 
-	format := setting
-	if format == logs.FBConfigFormatAuto || format == "" {
-		switch {
-		case externalFormat == logs.FBConfigFormatYAML:
-			format = logs.FBConfigFormatYAML
-		case !versionKnown || version.supportsClassic():
-			format = logs.FBConfigFormatClassic
-		default:
-			format = logs.FBConfigFormatYAML
-		}
+	var format logs.FBConfigFormat
+	switch {
+	case externalFormat == logs.FBConfigFormatYAML:
+		format = logs.FBConfigFormatYAML
+	case !versionKnown || version.supportsClassic():
+		format = logs.FBConfigFormatClassic
+	default:
+		format = logs.FBConfigFormatYAML
 	}
 
 	if format == logs.FBConfigFormatYAML && versionKnown && !version.supportsYAML() {
@@ -175,13 +167,9 @@ func selectFBConfigFormat(
 			errFbYAMLNotSupported, version, fbYAMLMinMajor, fbYAMLMinMinor)
 	}
 
-	if format == logs.FBConfigFormatYAML && !versionKnown && setting != logs.FBConfigFormatYAML {
-		// auto picked YAML only because the external file is YAML, without knowing if FB can read it
+	if format == logs.FBConfigFormatYAML && !versionKnown {
+		// YAML picked only because the external file is YAML, without knowing if FB can read it
 		sFBLogger.WithError(versionErr).Warn(errFbExternalYAMLNoVersion.Error())
-	}
-
-	if format == logs.FBConfigFormatClassic && versionKnown && !version.supportsClassic() {
-		return "", fmt.Errorf("%w: detected v%s", errFbClassicNotSupported, version)
 	}
 
 	if externalFormat != "" && externalFormat != format {

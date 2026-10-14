@@ -212,7 +212,6 @@ func TestFBCfgFormatAs(t *testing.T) {
 	}{
 		{"classic", FBConfigFormatClassic, classic},
 		{"yaml", FBConfigFormatYAML, yamlCfg},
-		{"auto falls back to classic", FBConfigFormatAuto, classic},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -220,30 +219,6 @@ func TestFBCfgFormatAs(t *testing.T) {
 			result, _, err := fbCfg.FormatAs(tc.format)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expected, result)
-		})
-	}
-}
-
-func TestParseFBConfigFormat(t *testing.T) {
-	t.Parallel()
-
-	cases := []struct {
-		value    string
-		expected FBConfigFormat
-		wantErr  bool
-	}{
-		{"", FBConfigFormatAuto, false},
-		{"auto", FBConfigFormatAuto, false},
-		{"classic", FBConfigFormatClassic, false},
-		{" YAML ", FBConfigFormatYAML, false},
-		{"toml", FBConfigFormatAuto, true},
-	}
-	for _, tc := range cases {
-		t.Run(tc.value, func(t *testing.T) {
-			t.Parallel()
-			format, err := ParseFBConfigFormat(tc.value)
-			assert.Equal(t, tc.expected, format)
-			assert.Equal(t, tc.wantErr, err != nil)
 		})
 	}
 }

@@ -949,12 +949,6 @@ type Config struct {
 	// Public: No
 	FluentBitExePath string `yaml:"fluent_bit_exe_path" envconfig:"fluent_bit_exe_path" public:"false"`
 
-	// FluentBitConfigFormat is the config file format the agent generates for fluent-bit: "auto", "classic" or
-	// "yaml". With "auto" the agent picks the format from the detected fluent-bit version.
-	// Default: auto
-	// Public: No
-	FluentBitConfigFormat string `yaml:"fluent_bit_config_format" envconfig:"fluent_bit_config_format" public:"false"`
-
 	// FluentBitParsersPath is the location where the FluentBit parsers.conf file is placed. It is currently required
 	// by the "syslog" input plugin, specifies several message parsers and comes out-of-the-box with FluentBit.
 	// Default: /var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf
