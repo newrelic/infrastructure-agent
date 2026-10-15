@@ -102,13 +102,8 @@ deployment:
         windows_exporter.exe:
           kind: file
           copy_from_file: ${nr-sub:packages.infra-agent.dir}\\integrations\\windows_exporter.exe
-    # nrjmx, a JMX bridge used by JMX-based OHIs: the nrjmx.jar and its wrapper script, which must stay side by side.
-    # Integrations that need it should point NR_JMX_TOOL to the wrapper (a single executable, not a "java -jar ..." command):
-    #   NR_JMX_TOOL: "${nr-sub:shared_filesystem_dir}\\jmx-tool\\nrjmx.bat"
-    # Java must be reachable by the integration through PATH.
-    jmx-tool:
-      kind: dir
-      entries:
+        # nrjmx, a JMX bridge used by JMX-based OHIs: the jar and its wrapper script, which must stay side by side
+        # and next to the integrations. Java must be reachable by the integration through PATH.
         nrjmx.jar:
           kind: file
           copy_from_file: ${nr-sub:packages.infra-agent.dir}\\integrations\\nrjmx.jar
