@@ -17,6 +17,10 @@ on:
         required: false
         default: 'false'
         type: string
+      A2Q_ENV:
+        required: false
+        default: 'staging'
+        type: string
 
 
 env:
@@ -51,7 +55,7 @@ jobs:
       - name: set vars for legibility (state, inventory ...)
         run: |
           if [[ "${{ inputs.A2Q }}" == "true" ]]; then
-            echo "TERRAFORM_STATE=a2q-canaries-linux-${{ inputs.TAG }}"  >> $GITHUB_ENV
+            echo "TERRAFORM_STATE=a2q-canaries-linux-${{ inputs.A2Q_ENV }}-${{ inputs.TAG }}"  >> $GITHUB_ENV
           else
             echo "TERRAFORM_STATE=canaries-linux-${{ inputs.TAG }}"  >> $GITHUB_ENV
           fi
@@ -98,8 +102,8 @@ jobs:
       - name: set vars for legibility (state, inventory ...)
         run: |
           if [[ "${{ inputs.A2Q }}" == "true" ]]; then
-            echo "PREVIOUS_TERRAFORM_STATE=a2q-canaries-windows-${{ inputs.TAG }}-previous"  >> $GITHUB_ENV
-            echo "TERRAFORM_STATE=a2q-canaries-windows-${{ inputs.TAG }}-current"  >> $GITHUB_ENV
+            echo "PREVIOUS_TERRAFORM_STATE=a2q-canaries-windows-${{ inputs.A2Q_ENV }}-${{ inputs.TAG }}-previous"  >> $GITHUB_ENV
+            echo "TERRAFORM_STATE=a2q-canaries-windows-${{ inputs.A2Q_ENV }}-${{ inputs.TAG }}-current"  >> $GITHUB_ENV
           else
             echo "PREVIOUS_TERRAFORM_STATE=canaries-windows-${{ inputs.TAG }}-previous"  >> $GITHUB_ENV
             echo "TERRAFORM_STATE=canaries-windows-${{ inputs.TAG }}-current"  >> $GITHUB_ENV
