@@ -286,6 +286,33 @@ jobs:
           fi
           echo "✓ nrjmx.jar extracted"
 
+      - name: Check nrjmx wrapper scripts
+        run: |
+          set -euo pipefail
+
+          # The wrappers in build/embed/nrjmx replace the ones nrjmx ships, which look for a system-wide installation
+          # first (Linux) or hardcode its path (Windows). Fail if the upstream Linux wrapper changed, so that someone
+          # reviews whether ours needs to follow (new JVM options, classpath, main class...).
+          EXPECTED_WRAPPER_SHA="$(cat build/embed/nrjmx/upstream-wrapper.sha256)"
+          ACTUAL_WRAPPER_SHA="$(sha256sum extracted/nrjmx/usr/bin/nrjmx | cut -d' ' -f1)"
+          if [ "${EXPECTED_WRAPPER_SHA}" != "${ACTUAL_WRAPPER_SHA}" ]; then
+            echo "::error::The upstream nrjmx wrapper changed (expected ${EXPECTED_WRAPPER_SHA}, got ${ACTUAL_WRAPPER_SHA})."
+            echo "::error::Review build/embed/nrjmx/nrjmx and build/embed/nrjmx/nrjmx.bat, then update build/embed/nrjmx/upstream-wrapper.sha256."
+            exit 1
+          fi
+
+          # Smoke test: the wrapper must start the jar that sits next to it, from any location.
+          SMOKE_DIR="$(mktemp -d)/with space"
+          mkdir -p "${SMOKE_DIR}"
+          cp build/embed/nrjmx/nrjmx "${SMOKE_DIR}/nrjmx"
+          cp extracted/nrjmx/usr/lib/nrjmx/nrjmx.jar "${SMOKE_DIR}/"
+          chmod +x "${SMOKE_DIR}/nrjmx"
+          if ! "${SMOKE_DIR}/nrjmx" -help | grep -q '^usage: nrjmx'; then
+            echo "::error::build/embed/nrjmx/nrjmx failed to run nrjmx.jar"
+            exit 1
+          fi
+          echo "✓ nrjmx wrapper scripts checked"
+
       - name: Extract MSI artifacts
         run: |
           set -euo pipefail
@@ -418,6 +445,7 @@ jobs:
           cp "${SRC}/newrelic-integrations/nri-prometheus.exe" "${DEST}/integrations/"
           cp "${SRC}/newrelic-integrations/nr-winpkg.exe" "${DEST}/integrations/"
           cp "extracted/nrjmx/usr/lib/nrjmx/nrjmx.jar" "${DEST}/integrations/"
+          cp "build/embed/nrjmx/nrjmx.bat" "${DEST}/integrations/"
 
           # Copy logging components
           cp "${SRC}/newrelic-integrations/logging/fluent-bit.exe" "${DEST}/logging/"
@@ -466,6 +494,8 @@ jobs:
             cp "${DEB_SRC}/opt/newrelic-infra/newrelic-integrations/bin/nri-docker" "${DEST}/integrations/"
             cp "${DEB_SRC}/opt/newrelic-infra/newrelic-integrations/bin/nri-prometheus" "${DEST}/integrations/"
             cp "extracted/nrjmx/usr/lib/nrjmx/nrjmx.jar" "${DEST}/integrations/"
+            cp "build/embed/nrjmx/nrjmx" "${DEST}/integrations/nrjmx"
+            chmod +x "${DEST}/integrations/nrjmx"
 
             # Copy logging components
             cp "${DEB_SRC}/var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so" "${DEST}/logging/"
