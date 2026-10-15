@@ -19,6 +19,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/id"
 	"github.com/newrelic/infrastructure-agent/internal/feature_flags"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/executor"
+	"github.com/newrelic/infrastructure-agent/pkg/disk"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/logs"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
@@ -28,7 +29,7 @@ import (
 
 const (
 	FbConfTempFolderNameDefault      = "fb"
-	temporaryFolderPermissions       = 0o755
+	temporaryFolderPermissions       = 0o700
 	MaxNumberOfFbConfigTempFiles int = 50
 )
 
@@ -233,8 +234,8 @@ func buildFbExecutor(fbIntCfg fBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 
 // returns the file name
 func saveToTempFile(tempDir string, config []byte) (string, error) {
-	// ensure that tempdir exits
-	err := os.MkdirAll(tempDir, temporaryFolderPermissions)
+	// ensure that tempdir exists and is safe to reuse
+	err := disk.MkdirAll(tempDir, temporaryFolderPermissions)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create temporary folder for fluent-bit")
 	}
