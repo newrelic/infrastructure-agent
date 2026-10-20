@@ -2,5 +2,5 @@
 # core.autocrlf setting - gofmt always emits LF, so a CRLF checkout (e.g. on a Windows runner
 # with autocrlf enabled) makes even correctly-formatted files fail formatting checks.
 *.go text eol=lf
-build/embed/nrjmx/nrjmx.bat text eol=crlf
-build/embed/nrjmx/nrjmx text eol=lf
+build/embed/agent-control/nrjmx-wrappers/nrjmx.bat text eol=crlf
+build/embed/agent-control/nrjmx-wrappers/nrjmx text eol=lf
