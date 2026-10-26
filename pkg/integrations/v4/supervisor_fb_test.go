@@ -13,6 +13,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent/cmdchannel/fflag"
@@ -444,6 +445,55 @@ func Test_buildFbExecutor(t *testing.T) {
 	assert.Equal(t, fbIntCfg.getFbPath(), exec.(*executor.Executor).Command)        //nolint:forcetypeassert
 	assert.Equal(t, fluentBitNRLibPath.Name(), exec.(*executor.Executor).Args[3])   //nolint:forcetypeassert
 	assert.Equal(t, fluentBitParsersPath.Name(), exec.(*executor.Executor).Args[5]) //nolint:forcetypeassert
+	// the fake binary cannot report its version, so the classic format is kept
+	assert.True(t, strings.HasSuffix(exec.(*executor.Executor).Args[1], ".conf")) //nolint:forcetypeassert
+}
+
+func Test_buildFbExecutor_ConfigFormatFromVersion(t *testing.T) {
+	t.Parallel()
+
+	if runtime.GOOS == "windows" {
+		t.Skip("fake fluent-bit binary is a shell script")
+	}
+
+	cases := []struct {
+		name           string
+		fbVersion      string
+		expectedExt    string
+		expectedPrefix string
+	}{
+		{"5.1 keeps classic", "5.1.2", ".conf", "[INPUT]"},
+		{"6.0 without classic gets yaml", "6.0.0", ".yaml", "pipeline:"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			tmpDir := t.TempDir()
+			fbExe := filepath.Join(tmpDir, "fluent-bit")
+			script := "#!/bin/sh\necho 'Fluent Bit v" + tc.fbVersion + "'\n"
+			require.NoError(t, os.WriteFile(fbExe, []byte(script), 0o700)) //nolint:gosec
+			fbLib := filepath.Join(tmpDir, "out_newrelic.so")
+			require.NoError(t, os.WriteFile(fbLib, nil, 0o600))
+			fbParsers := filepath.Join(tmpDir, "parsers.conf")
+			require.NoError(t, os.WriteFile(fbParsers, nil, 0o600))
+
+			ffRetriever := &feature_flags.FeatureFlagRetrieverMock{}
+			ffRetriever.ShouldNotGetFeatureFlag(fflag.FlagFluentBit19)
+
+			fbIntCfg := NewFBSupervisorConfig(ffRetriever, "agentDir", "agentDir", "loggingBinDir",
+				fbExe, fbLib, fbParsers, false, filepath.Join(tmpDir, "fb"))
+
+			exec, err := buildFbExecutor(fbIntCfg, confLoaderForTest())()
+			require.NoError(t, err)
+
+			cfgPath := exec.(*executor.Executor).Args[1] //nolint:forcetypeassert
+			assert.Equal(t, tc.expectedExt, filepath.Ext(cfgPath))
+			content, err := os.ReadFile(cfgPath)
+			require.NoError(t, err)
+			assert.True(t, strings.HasPrefix(strings.TrimSpace(string(content)), tc.expectedPrefix), string(content))
+		})
+	}
 }
 
 func confLoaderForTest() *logs.CfgLoader {

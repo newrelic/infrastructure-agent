@@ -1962,7 +1962,7 @@ func TestGetTotalTargetFilesForPath(t *testing.T) {
 				Name: "log-file-1",
 				File: "./*_test.go", // we count the number of test files in /pkg/integrations/v4/logs/ folder
 			},
-			4,
+			5,
 		},
 		{
 			"File path log config with no matches",
@@ -2022,7 +2022,7 @@ func TestNewFbConfForTargetFileCount(t *testing.T) {
 					File: "./*_test.go", // we count the number of test files in /pkg/integrations/v4/logs/ folder
 				},
 			},
-			4,
+			5,
 		},
 		{
 			"Target File Count test-2 for File path config",
@@ -2033,7 +2033,7 @@ func TestNewFbConfForTargetFileCount(t *testing.T) {
 					File: "./*.go", // we count the number of go files in /pkg/integrations/v4/logs/ folder
 				},
 			},
-			11,
+			14,
 		},
 		{
 			"Target File Count test-2 for Non-file path config",
