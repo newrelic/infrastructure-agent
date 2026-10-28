@@ -10,15 +10,15 @@ import (
 	"errors"
 	"syscall"
 
-	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/api/types"
-	"github.com/containerd/containerd/cio"
-	"github.com/containerd/containerd/containers"
-	"github.com/containerd/containerd/content"
-	"github.com/containerd/containerd/errdefs"
-	"github.com/containerd/containerd/images"
-	"github.com/containerd/containerd/oci"
-	"github.com/containerd/containerd/platforms"
+	containerd "github.com/containerd/containerd/v2/client"
+	"github.com/containerd/containerd/v2/core/containers"
+	"github.com/containerd/containerd/v2/core/content"
+	"github.com/containerd/containerd/v2/core/images"
+	"github.com/containerd/containerd/v2/pkg/cio"
+	"github.com/containerd/containerd/v2/pkg/oci"
+	"github.com/containerd/errdefs"
+	"github.com/containerd/platforms"
 	"github.com/containerd/typeurl/v2"
 	"github.com/opencontainers/go-digest"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
@@ -134,6 +134,10 @@ func (m *MockContainerdContainer) NewTask(_ context.Context, _ cio.Creator, _ ..
 
 func (m *MockContainerdContainer) Spec(_ context.Context) (*oci.Spec, error) {
 	return nil, errUnimplemented
+}
+
+func (m *MockContainerdContainer) Restore(_ context.Context, _ cio.Creator, _ string) (int, error) {
+	return -1, errUnimplemented
 }
 
 func (m *MockContainerdContainer) Task(ctx context.Context, attach cio.Attach) (containerd.Task, error) { //nolint:ireturn

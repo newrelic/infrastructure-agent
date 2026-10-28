@@ -8,9 +8,9 @@ import (
 	"context"
 	"syscall"
 
-	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/api/services/tasks/v1"
-	"github.com/containerd/containerd/namespaces"
+	containerd "github.com/containerd/containerd/v2/client"
+	"github.com/containerd/containerd/v2/pkg/namespaces"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
 	"github.com/newrelic/infrastructure-agent/pkg/ipc"
 	"github.com/pkg/errors"

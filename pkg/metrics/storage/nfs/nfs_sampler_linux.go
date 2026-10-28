@@ -111,18 +111,23 @@ func parseDetailedNFSStats(sample *Sample, ms *procfs.MountStatsNFS) {
 	sample.JukeboxDelay = &ms.Events.JukeboxDelay
 	sample.PNFSRead = &ms.Events.PNFSRead
 	sample.PNFSWrite = &ms.Events.PNFSWrite
-	sample.Bind = &ms.Transport.Bind
-	sample.Connect = &ms.Transport.Connect
-	sample.ConnectIdleTime = &ms.Transport.ConnectIdleTime
-	sample.IdleTimeSeconds = &ms.Transport.IdleTimeSeconds
-	sample.Sends = &ms.Transport.Sends
-	sample.Receives = &ms.Transport.Receives
-	sample.BadTransactionIDs = &ms.Transport.BadTransactionIDs
-	sample.CumulativeActiveRequests = &ms.Transport.CumulativeActiveRequests
-	sample.CumulativeBacklog = &ms.Transport.CumulativeBacklog
-	sample.MaximumRPCSlotsUsed = &ms.Transport.MaximumRPCSlotsUsed
-	sample.CumulativeSendingQueue = &ms.Transport.CumulativeSendingQueue
-	sample.CumulativePendingQueue = &ms.Transport.CumulativePendingQueue
+	// procfs exposes one entry per transport (e.g. nconnect); keep the last, as previous versions did.
+	if len(ms.Transport) == 0 {
+		return
+	}
+	t := ms.Transport[len(ms.Transport)-1]
+	sample.Bind = &t.Bind
+	sample.Connect = &t.Connect
+	sample.ConnectIdleTime = &t.ConnectIdleTime
+	sample.IdleTimeSeconds = &t.IdleTimeSeconds
+	sample.Sends = &t.Sends
+	sample.Receives = &t.Receives
+	sample.BadTransactionIDs = &t.BadTransactionIDs
+	sample.CumulativeActiveRequests = &t.CumulativeActiveRequests
+	sample.CumulativeBacklog = &t.CumulativeBacklog
+	sample.MaximumRPCSlotsUsed = &t.MaximumRPCSlotsUsed
+	sample.CumulativeSendingQueue = &t.CumulativeSendingQueue
+	sample.CumulativePendingQueue = &t.CumulativePendingQueue
 }
 
 func populateNFSPerSecMetrics(lms statsCache, ops []procfs.NFSOperationStats, sample *Sample, checkTime time.Time) {
