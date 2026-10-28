@@ -9,8 +9,8 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/containerd/containerd"
-	"github.com/containerd/containerd/namespaces"
+	containerd "github.com/containerd/containerd/v2/client"
+	"github.com/containerd/containerd/v2/pkg/namespaces"
 )
 
 // ContainerdSocket is the default socket for containerd.

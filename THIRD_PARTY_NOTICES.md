@@ -86,7 +86,7 @@ Distributed under the following license(s):
 
 
 
-## [github.com/containerd/containerd](https://github.com/containerd/containerd)
+## [github.com/containerd/containerd/api](https://github.com/containerd/containerd)
 
 Distributed under the following license(s):
 
@@ -94,7 +94,23 @@ Distributed under the following license(s):
 
 
 
-## [github.com/containerd/containerd/api](https://github.com/containerd/containerd)
+## [github.com/containerd/containerd/v2](https://github.com/containerd/containerd)
+
+Distributed under the following license(s):
+
+* Apache-2.0
+
+
+
+## [github.com/containerd/errdefs](https://github.com/containerd/errdefs)
+
+Distributed under the following license(s):
+
+* Apache-2.0
+
+
+
+## [github.com/containerd/platforms](https://github.com/containerd/platforms)
 
 Distributed under the following license(s):
 
