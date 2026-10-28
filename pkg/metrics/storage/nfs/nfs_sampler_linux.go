@@ -115,19 +115,19 @@ func parseDetailedNFSStats(sample *Sample, ms *procfs.MountStatsNFS) {
 	if len(ms.Transport) == 0 {
 		return
 	}
-	t := ms.Transport[len(ms.Transport)-1]
-	sample.Bind = &t.Bind
-	sample.Connect = &t.Connect
-	sample.ConnectIdleTime = &t.ConnectIdleTime
-	sample.IdleTimeSeconds = &t.IdleTimeSeconds
-	sample.Sends = &t.Sends
-	sample.Receives = &t.Receives
-	sample.BadTransactionIDs = &t.BadTransactionIDs
-	sample.CumulativeActiveRequests = &t.CumulativeActiveRequests
-	sample.CumulativeBacklog = &t.CumulativeBacklog
-	sample.MaximumRPCSlotsUsed = &t.MaximumRPCSlotsUsed
-	sample.CumulativeSendingQueue = &t.CumulativeSendingQueue
-	sample.CumulativePendingQueue = &t.CumulativePendingQueue
+	transport := ms.Transport[len(ms.Transport)-1]
+	sample.Bind = &transport.Bind
+	sample.Connect = &transport.Connect
+	sample.ConnectIdleTime = &transport.ConnectIdleTime
+	sample.IdleTimeSeconds = &transport.IdleTimeSeconds
+	sample.Sends = &transport.Sends
+	sample.Receives = &transport.Receives
+	sample.BadTransactionIDs = &transport.BadTransactionIDs
+	sample.CumulativeActiveRequests = &transport.CumulativeActiveRequests
+	sample.CumulativeBacklog = &transport.CumulativeBacklog
+	sample.MaximumRPCSlotsUsed = &transport.MaximumRPCSlotsUsed
+	sample.CumulativeSendingQueue = &transport.CumulativeSendingQueue
+	sample.CumulativePendingQueue = &transport.CumulativePendingQueue
 }
 
 func populateNFSPerSecMetrics(lms statsCache, ops []procfs.NFSOperationStats, sample *Sample, checkTime time.Time) {
