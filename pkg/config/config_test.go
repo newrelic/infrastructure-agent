@@ -873,9 +873,9 @@ func TestLoadYamlConfig_safeDirCheckEnabled(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "omitted defaults to false",
+			name: "omitted defaults to true",
 			yaml: `license_key: "xxx"`,
-			want: false,
+			want: true,
 		},
 		{
 			name: "explicitly enabled",

@@ -31,8 +31,9 @@ var Create = os.Create
 var ErrUnsafeDirAfterCreate = errors.New("path is not safe to use after creation, possibly due to a race")
 
 // SafeDirCheckEnabled toggles the ownership/mount-point safety check MkdirAll applies to a
-// pre-existing path before reusing it as-is. It defaults to false - MkdirAll then behaves
-// like plain os.MkdirAll, blindly reusing whatever is already there. It is set from
+// pre-existing path before reusing it as-is. When false, MkdirAll behaves like plain
+// os.MkdirAll, blindly reusing whatever is already there. Its zero value is false; the agent's
+// default (true) comes from config.NewConfig. It is set from
 // config.NormalizeConfig, which is also why it lives on every call site that uses MkdirAll
 // (internal/agent/agent.go, internal/agent/delta/store.go, cmd/newrelic-infra/initialize,
 // pkg/integrations/v4/supervisor_fb.go, ...): gating inside MkdirAll itself, rather than in
@@ -44,7 +45,7 @@ var ErrUnsafeDirAfterCreate = errors.New("path is not safe to use after creation
 var SafeDirCheckEnabled atomic.Bool //nolint:gochecknoglobals
 
 // MkdirAll creates a directory path along with any necessary parents, like os.MkdirAll. With
-// SafeDirCheckEnabled disabled (the default), this is exactly os.MkdirAll. When enabled, it
+// SafeDirCheckEnabled disabled, this is exactly os.MkdirAll. When enabled, it
 // never blindly reuses a pre-existing path: if path already exists but is not a real
 // directory owned by the current user, or is writable by group/other, it is removed and
 // recreated fresh. This prevents a local attacker from planting (or symlinking) a predictable

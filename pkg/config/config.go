@@ -887,8 +887,8 @@ type Config struct {
 	// SafeDirCheckEnabled, when enabled, makes the agent reject and recreate any directory it
 	// manages (the data directory, integration temp dirs, ...) that isn't owned by the current
 	// user or group, or that's writable by group/other and isn't a distinct mount point. It
-	// defaults to false.
-	// Default: false
+	// defaults to true; set it to false to reuse pre-existing directories as-is.
+	// Default: true
 	// Public: No
 	SafeDirCheckEnabled bool `envconfig:"safe_dir_check_enabled" public:"false" yaml:"safe_dir_check_enabled"`
 
@@ -1986,6 +1986,7 @@ func NewConfig() *Config {
 		AgentTempDir:                defaultAgentTempDir,
 		ProcessContainerDecoration:  defaultProcessContainerDecoration,
 		WinNetworkInterfaceV2:       defaultWinNetworkInterfaceV2,
+		SafeDirCheckEnabled:         true,
 	}
 }
 

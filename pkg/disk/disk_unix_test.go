@@ -14,15 +14,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestMain enables the safe-dir check for the whole package's test run, since it defaults to
-// false and every test below (other than the ones explicitly exercising the disabled/default
-// path) assumes it's on.
+// TestMain pins the safe-dir check on for the whole package's test run, so the tests below
+// (other than the ones explicitly exercising the disabled path) don't depend on its default.
 func TestMain(m *testing.M) {
 	SafeDirCheckEnabled.Store(true)
 
 	code := m.Run()
 
-	SafeDirCheckEnabled.Store(false)
+	SafeDirCheckEnabled.Store(true)
 	os.Exit(code)
 }
 
