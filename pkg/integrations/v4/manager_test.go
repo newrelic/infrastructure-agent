@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/constants"
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/health"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/testhelp"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/testhelp/testemit"
@@ -31,6 +32,7 @@ import (
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
 	gotest "gotest.tools/assert"
 )
 
@@ -1351,4 +1353,55 @@ func instancesLookupLegacy(definitionFolders ...string) integration.InstancesLoo
 			return "", errors.New("lookup by name not expected")
 		},
 	}
+}
+
+func TestManager_IntegrationsHealth(t *testing.T) {
+	// GIVEN a configuration file declaring a working integration
+	dir, err := tempFiles(map[string]string{"nri-hello.yaml": v4File})
+	require.NoError(t, err)
+	defer removeTempFiles(t, dir)
+
+	healthDir := filepath.Join(dir, "health")
+
+	// AND an integrations manager with health reporting enabled
+	emitter := &testemit.RecordEmitter{}
+	mgr := NewManager(ManagerConfig{
+		ConfigPaths:               []string{dir},
+		PassthroughEnvironment:    passthroughEnv,
+		IntegrationsHealthEnabled: true,
+		IntegrationsHealthDir:     healthDir,
+	}, config.NewPathLoader(), emitter, integration.ErrLookup, definitionQ, configEntryQ, track.NewTracker(nil), host.IDLookup{})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go mgr.Start(ctx)
+
+	// THEN a health file named after the configuration file reports it healthy
+	healthFile := filepath.Join(healthDir, "nri-hello.yaml")
+	require.Eventually(t, func() bool {
+		report, err := readHealthReport(healthFile)
+
+		return err == nil && report.Healthy && report.Status == "All integrations healthy"
+	}, 30*time.Second, 100*time.Millisecond)
+
+	// AND WHEN the configuration file is removed
+	require.NoError(t, os.Remove(filepath.Join(dir, "nri-hello.yaml")))
+
+	// THEN no stale health file is left behind
+	assert.Eventually(t, func() bool {
+		_, err := os.Stat(healthFile)
+
+		return os.IsNotExist(err)
+	}, 30*time.Second, 100*time.Millisecond)
+}
+
+func readHealthReport(path string) (health.Report, error) {
+	var report health.Report
+
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		return report, err
+	}
+
+	return report, yaml.Unmarshal(contents, &report)
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/entity/host"
 	"sync"
 
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/health"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/databind"
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/cmdrequest"
@@ -32,6 +33,9 @@ type Group struct {
 	configHandle         configrequest.HandleFn
 	terminateDefinitionQ chan string
 	idLookup             host.IDLookup
+	// healthReporter is shared by every runner of this group, because they all belong to the same
+	// integration configuration file. Nil unless integrations health reporting is enabled.
+	healthReporter *health.Reporter
 }
 
 type runnerErrorHandler func(ctx context.Context, errs <-chan error)
@@ -61,11 +65,27 @@ func NewGroup(
 	return
 }
 
+// SetHealthReporter sets the reporter this group's runners record their health into. It must be
+// called before Run. A nil reporter, the default, disables health reporting.
+func (g *Group) SetHealthReporter(hr *health.Reporter) {
+	g.healthReporter = hr
+}
+
 // Run launches all the integrations to run in background. They can be cancelled with the
 // provided context
 func (g *Group) Run(ctx context.Context) (hasStartedAnyOHI bool) {
+	if g.healthReporter != nil {
+		// Write the file before the first execution: a configuration file declaring no integration
+		// would otherwise never produce one, and a missing health file reads as a failing check.
+		if err := g.healthReporter.Init(); err != nil {
+			illog.WithError(err).Warn("Cannot write initial integration health file")
+		}
+	}
+
 	for _, integr := range g.integrations {
-		go NewRunner(integr, g.emitter, g.dSources, g.handleErrorsProvide, g.cmdReqHandle, g.configHandle, g.terminateDefinitionQ, g.idLookup).Run(ctx, nil, nil)
+		go NewRunner(integr, g.emitter, g.dSources, g.handleErrorsProvide, g.cmdReqHandle, g.configHandle, g.terminateDefinitionQ, g.idLookup).
+			WithHealthReporter(g.healthReporter).
+			Run(ctx, nil, nil)
 		hasStartedAnyOHI = true
 	}
 
