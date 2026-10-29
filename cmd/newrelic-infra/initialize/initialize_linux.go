@@ -8,13 +8,9 @@ package initialize
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
-	"os/user"
 	"path"
-	"strconv"
 	"strings"
-	"syscall"
 
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 	"github.com/newrelic/infrastructure-agent/pkg/disk"
@@ -75,7 +71,7 @@ func verifySingularity(pidfile string) error {
 		}
 	}
 
-	pidBytes, err := ioutil.ReadFile(pidfile)
+	pidBytes, err := os.ReadFile(pidfile)
 	if err != nil {
 		// If the file does not exist, this is fine.
 		if pErr, ok := err.(*os.PathError); !ok || !os.IsNotExist(pErr.Err) {
@@ -98,48 +94,11 @@ func verifySingularity(pidfile string) error {
 }
 
 func assertTempFolderOwnership(config *config.Config) error {
-	// Folder already exists. Check ownership.
-	if fi, err := os.Stat(config.DefaultIntegrationsTempDir); !os.IsNotExist(err) {
-		var currentUserUID string
-		currentUser, err := user.Current()
-		if err != nil {
-			log.WithError(err).Warn("Failed to get current user. Assuming 'root (0)'.")
-			currentUserUID = "0"
-		} else {
-			currentUserUID = currentUser.Uid
-		}
-		UID, _ := strconv.Atoi(currentUserUID)
-
-		// Get UID and GID of a file. Solution inspired by https://stackoverflow.com/q/58179647
-		var folderUID int
-		if stat, ok := fi.Sys().(*syscall.Stat_t); ok {
-			folderUID = int(stat.Uid)
-		}
-
-		logEntry := log.WithField("user_id", UID).
-			WithField("folder_uid", folderUID).
-			WithField("folder", config.DefaultIntegrationsTempDir)
-
-		if folderUID == UID {
-			logEntry.
-				WithField("folder", config.DefaultIntegrationsTempDir).
-				Debug("Temp folder belongs to user running the agent. Continuing.")
-			return nil
-		}
-
-		logEntry.Warn("Temp folder belongs to a different user. Trying to recreate folder for security purposes...")
-		err = os.RemoveAll(config.DefaultIntegrationsTempDir)
-		if err != nil {
-			errLog := log.WithField("folder", config.DefaultIntegrationsTempDir).
-				WithError(err)
-			errLog.Warn("Failed to remove temp folder. Cannot continue until the folder is removed.")
-
-			return err
-		}
-	}
-
-	// If we got here, either the folder does not exist or we removed it, so let's create it.
-	err := os.MkdirAll(config.DefaultIntegrationsTempDir, integrationsDirPermissions)
+	// disk.MkdirAll refuses to reuse a pre-existing path that isn't a real directory
+	// owned by the user running the agent and free of group/other write access: if the
+	// temp folder doesn't meet that bar (e.g. planted by another local user, or a
+	// symlink), it is wiped and recreated fresh for security purposes.
+	err := disk.MkdirAll(config.DefaultIntegrationsTempDir, integrationsDirPermissions)
 	if err != nil {
 		log.WithField("folder", config.DefaultIntegrationsTempDir).
 			WithError(err).
