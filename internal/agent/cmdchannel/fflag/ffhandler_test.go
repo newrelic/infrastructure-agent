@@ -24,6 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 //nolint:gochecknoglobals
@@ -465,4 +466,51 @@ func Test_handleFBRestart_FlagRetrieverError(t *testing.T) {
 	assert.ErrorIs(t, errForTest, entries[0].Data["error"].(error)) //nolint:forcetypeassert
 
 	mock.AssertExpectationsForObjects(t, ffRetriever, restarter)
+}
+
+func TestFFHandlerHandle_FluentBitYAMLFlagSetsFlagAndRestartsFluentBit(t *testing.T) {
+	t.Parallel()
+
+	cmd := commandapi.Command{
+		Args: []byte(`{
+			"category": "Infra_Agent",
+			"flag": "fluent_bit_yaml_config",
+			"enabled": true }`),
+	}
+
+	ffSetter := &feature_flags.FeatureFlagSetterMock{}
+	ffSetter.ShouldReturnNoError(FlagFluentBitYAML)
+	restarter := &FBRestarterMock{}
+	restarter.ShouldReturnNoError()
+
+	h := NewHandler(&config.Config{}, ffSetter, testLogger)
+	h.SetFBRestarter(restarter)
+
+	require.NoError(t, h.Handle(context.Background(), cmd, false))
+
+	mock.AssertExpectationsForObjects(t, ffSetter, restarter)
+}
+
+func TestFFHandlerHandle_FluentBitYAMLFlagUnchangedDoesNotRestartFluentBit(t *testing.T) {
+	t.Parallel()
+
+	cmd := commandapi.Command{
+		Args: []byte(`{
+			"category": "Infra_Agent",
+			"flag": "fluent_bit_yaml_config",
+			"enabled": true }`),
+	}
+
+	ffSetter := &feature_flags.FeatureFlagSetterMock{}
+	ffSetter.ShouldReturnError(FlagFluentBitYAML, feature_flags.ErrFeatureFlagAlreadyExists)
+	// no restart expected: the mock fails the test on any unexpected Restart call
+	restarter := &FBRestarterMock{}
+
+	h := NewHandler(&config.Config{}, ffSetter, testLogger)
+	h.SetFBRestarter(restarter)
+
+	require.NoError(t, h.Handle(context.Background(), cmd, false))
+
+	mock.AssertExpectationsForObjects(t, ffSetter, restarter)
+	restarter.AssertNotCalled(t, "Restart")
 }

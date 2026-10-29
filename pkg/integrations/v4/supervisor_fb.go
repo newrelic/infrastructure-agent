@@ -74,6 +74,7 @@ type fBSupervisorConfig struct {
 	FluentBitVerbose     bool
 	ConfTemporaryFolder  string
 	ffRetriever          feature_flags.Retriever
+	versionDetector      *fbVersionDetector
 }
 
 // NewFBSupervisorConfig creates a new fBSupervisorConfig that will contain the FF retriever
@@ -100,6 +101,7 @@ func NewFBSupervisorConfig(
 		FluentBitParsersPath: fluentBitParsersPath,
 		FluentBitVerbose:     fluentBitVerbose,
 		ConfTemporaryFolder:  confTempFolder,
+		versionDetector:      newFBVersionDetector(),
 	}
 }
 
@@ -138,6 +140,17 @@ func (c *fBSupervisorConfig) getFbPath() string {
 	}
 
 	return c.defaultFluentBitExePath(exists, enabled, loggingBinDir)
+}
+
+// isYAMLConfigFlagEnabled returns true only if the YAML config feature flag was received and is enabled.
+func (c *fBSupervisorConfig) isYAMLConfigFlagEnabled() bool {
+	if c.ffRetriever == nil {
+		return false
+	}
+
+	enabled, exists := c.ffRetriever.GetFeatureFlag(fflag.FlagFluentBitYAML)
+
+	return exists && enabled
 }
 
 // SendEventFn wrapper for sending events to nr.
@@ -179,17 +192,38 @@ func fbPostRunActions(sendEventFn SendEventFn) func(ctx2.Context, cmdExitStatus)
 
 // buildFbExecutor builds the function required by supervisor when running the process.
 func buildFbExecutor(fbIntCfg fBSupervisorConfig, cfgLoader *logs.CfgLoader) func() (Executor, error) {
+	versionDetector := fbIntCfg.versionDetector
+	if versionDetector == nil {
+		versionDetector = newFBVersionDetector()
+	}
+
 	return func() (Executor, error) {
 		if !fbIntCfg.IsLogForwarderAvailable() {
 			return nil, errFbNotAvailable
 		}
 
-		cfgContent, externalCfg, cErr := cfgLoader.LoadAndFormat()
+		fbPath := fbIntCfg.getFbPath()
+		fbVersion, versionErr := versionDetector.Detect(fbPath)
+		if versionErr != nil {
+			sFBLogger.WithError(versionErr).WithField("fbExePath", fbPath).
+				Warn("Could not detect Fluent Bit version.")
+		}
+
+		yamlFlag := fbIntCfg.isYAMLConfigFlagEnabled()
+
+		cfgContent, cfgFormat, externalCfg, cErr := cfgLoader.LoadAndFormatWith(
+			func(externalCfg logs.FBCfgExternal) (logs.FBConfigFormat, error) {
+				return selectFBConfigFormat(fbVersion, versionErr, externalCfg, yamlFlag)
+			})
 		if cErr != nil {
 			return nil, cErr
 		}
 
-		cfgTmpPath, err := saveToTempFile(fbIntCfg.ConfTemporaryFolder, []byte(cfgContent))
+		sFBLogger.WithField("fluentBitVersion", describeFBVersion(fbVersion, versionErr == nil)).
+			WithField("configFormat", cfgFormat).
+			Info("Generated Fluent Bit config.")
+
+		cfgTmpPath, err := saveToTempFile(fbIntCfg.ConfTemporaryFolder, []byte(cfgContent), cfgFormat.FileExtension())
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create temporary fb sFBLogger config file")
 		}
@@ -204,7 +238,7 @@ func buildFbExecutor(fbIntCfg fBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 		}
 
 		args := []string{
-			fbIntCfg.getFbPath(),
+			fbPath,
 			"-c",
 			cfgTmpPath,
 			"-e",
@@ -231,8 +265,8 @@ func buildFbExecutor(fbIntCfg fBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 	}
 }
 
-// returns the file name
-func saveToTempFile(tempDir string, config []byte) (string, error) {
+// returns the file name. The extension tells Fluent Bit which config parser to use.
+func saveToTempFile(tempDir string, config []byte, extension string) (string, error) {
 	// ensure that tempdir exits
 	err := os.MkdirAll(tempDir, temporaryFolderPermissions)
 	if err != nil {
@@ -240,7 +274,7 @@ func saveToTempFile(tempDir string, config []byte) (string, error) {
 	}
 
 	// create it
-	file, err := os.CreateTemp(tempDir, "nr_fb_config")
+	file, err := os.CreateTemp(tempDir, "nr_fb_config*"+extension)
 	if err != nil {
 		return "", err
 	}

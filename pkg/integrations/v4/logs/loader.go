@@ -169,6 +169,26 @@ func (l *CfgLoader) LoadAndFormat() (string, FBCfgExternal, error) {
 	return fbConfig.Format()
 }
 
+// FormatSelector picks the Fluent Bit config format once the external config (if any) is known.
+type FormatSelector func(externalCfg FBCfgExternal) (FBConfigFormat, error)
+
+// LoadAndFormatWith loads the logging configuration and renders it in the format returned by selectFormat.
+func (l *CfgLoader) LoadAndFormatWith(selectFormat FormatSelector) (string, FBConfigFormat, FBCfgExternal, error) {
+	fbConfig, ok := l.LoadAll()
+	if !ok {
+		return "", "", FBCfgExternal{}, errors.New("failed to load log configs")
+	}
+
+	format, err := selectFormat(fbConfig.ExternalCfg)
+	if err != nil {
+		return "", "", FBCfgExternal{}, err
+	}
+
+	content, externalCfg, err := fbConfig.FormatAs(format)
+
+	return content, format, externalCfg, err
+}
+
 func (l *CfgLoader) parseYAML(content []byte) (c LogsCfg, err error) {
 	var y YAML
 	if err = yaml.Unmarshal(content, &y); err != nil {

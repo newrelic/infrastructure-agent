@@ -27,6 +27,7 @@ const (
 	FlagFullProcess           = "full_process_sampling"
 	FlagDmRegisterDeprecated  = "dm_register_deprecated"
 	FlagFluentBit19           = "fluent_bit_19_win"
+	FlagFluentBitYAML         = "fluent_bit_yaml_config"
 	FlagFullInventoryDeletion = "full_inventory_deletion"
 	// Config
 	CfgYmlRegisterEnabled              = "register_enabled"
@@ -151,7 +152,7 @@ func (h *handler) Handle(ctx context.Context, c commandapi.Command, isInitialFet
 		return
 	}
 
-	if ffArgs.Flag == FlagFluentBit19 {
+	if ffArgs.Flag == FlagFluentBit19 || ffArgs.Flag == FlagFluentBitYAML {
 		h.handleFBRestart(ffArgs)
 
 		return
