@@ -17,10 +17,41 @@ on:
         default: true
         required: false
 
+# Added 'contents: read' to allow fetching release information
 permissions:
   id-token: write
+  contents: read
 
 jobs:
+  validate-tag:
+    name: Validate Input Tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate that tag is the latest pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          echo "Fetching latest pre-release tag from newrelic/infrastructure-agent..."
+
+          # Use the GitHub CLI to call the API, find all pre-releases, and get the tag_name of the very first one (the latest)
+          LATEST_PRERELEASE_TAG=$(gh api /repos/newrelic/infrastructure-agent/releases --jq 'map(select(.prerelease == true)) | .[0].tag_name')
+
+          if [ -z "$LATEST_PRERELEASE_TAG" ]; then
+            echo "Could not determine the latest pre-release tag. Please check the repository."
+            exit 1
+          fi
+
+          echo "Input tag: $INPUT_TAG"
+          echo "Latest pre-release tag: $LATEST_PRERELEASE_TAG"
+
+          if [ "$INPUT_TAG" == "$LATEST_PRERELEASE_TAG" ]; then
+            echo "Validation successful. Input tag matches the latest pre-release."
+          else
+            echo "Validation Failed: The provided tag is not the latest pre-release."
+            exit 1
+          fi
+
   test-prerelease-windows:
     if: ${{ github.event.inputs.windows == 'true' }}
     uses: ./.github/workflows/component_prerelease_testing.yml
@@ -32,6 +63,7 @@ jobs:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
       
   test-prerelease-linux:
+    needs: validate-tag
     if: ${{ github.event.inputs.linux == 'true' }}
     uses: ./.github/workflows/component_prerelease_testing.yml
     with:
