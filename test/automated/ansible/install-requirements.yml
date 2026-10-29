@@ -12,6 +12,7 @@
       "sles-15.5": http://download.opensuse.org/distribution/leap/15.5/repo/oss/
       "sles-15.6": http://download.opensuse.org/distribution/leap/15.6/repo/oss/
       "sles-15.7": http://download.opensuse.org/distribution/leap/15.6/repo/oss/
+      "sles-16.0": http://download.opensuse.org/distribution/leap/16.0/repo/oss/
 
   tasks:
     - name: Remove EOL repository sources
