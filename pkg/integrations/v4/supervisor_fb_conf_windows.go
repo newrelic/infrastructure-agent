@@ -7,20 +7,13 @@ package v4
 import "path/filepath"
 
 const (
-	// defaults for td-agent-bit (<=1.9).
-	defaultLoggingBinDir1 = "logging-legacy"
-	// defaults for fluent-bit (>=2.0).
-	defaultLoggingBinDir2 = "logging"
-	// both versions have the same name.
-	defaultFluentBitExe = "fluent-bit.exe"
+	// defaults for fluent-bit (>=2.0). The legacy td-agent-bit (<=1.9) is no longer bundled.
+	defaultLoggingBinDir = "logging"
+	defaultFluentBitExe  = "fluent-bit.exe"
 )
 
-func (c *fBSupervisorConfig) defaultLoggingBinDir(ffExists bool, ffEnabled bool) string {
-	loggingBinDir := defaultLoggingBinDir2
-	if ffExists && ffEnabled {
-		loggingBinDir = defaultLoggingBinDir1
-	}
-	return filepath.Join(c.agentDir, c.integrationsDir, loggingBinDir)
+func (c *fBSupervisorConfig) defaultLoggingBinDir(_ bool, _ bool) string {
+	return filepath.Join(c.agentDir, c.integrationsDir, defaultLoggingBinDir)
 }
 
 func (c *fBSupervisorConfig) defaultFluentBitExePath(_ bool, _ bool, loggingBinDir string) string {
