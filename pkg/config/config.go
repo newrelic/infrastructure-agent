@@ -782,6 +782,27 @@ type Config struct {
 	// Public: Yes
 	EnableWinUpdatePlugin bool `yaml:"enable_win_update_plugin" envconfig:"enable_win_update_plugin" os:"windows"`
 
+	// EnableIntermediateCertsPlugin enables the intermediate certificates plugin, which reports the intermediate CA
+	// certificates (CA certificates that are not self-signed) found on the host as inventory. On Linux the CA
+	// directories are scanned, on Windows the LocalMachine "CA" certificate store is read and on macOS the System
+	// keychain is read. Only public certificate metadata is reported, never private keys.
+	// Default: False
+	// Public: Yes
+	EnableIntermediateCertsPlugin bool `yaml:"enable_intermediate_certs_plugin" envconfig:"enable_intermediate_certs_plugin" public:"true"`
+
+	// IntermediateCertsRefreshSec Sampling period / interval in seconds for the intermediate certificates plugin.
+	// Set as value -1 for disabling it. 60 is the minimum value.
+	// Default: 3600
+	// Public: Yes
+	IntermediateCertsRefreshSec int64 `yaml:"intermediate_certs_refresh_sec" envconfig:"intermediate_certs_refresh_sec" public:"true"`
+
+	// IntermediateCertsIncludeRoots makes the intermediate certificates plugin report the root (self-signed) CA
+	// certificates too. A host trusts around 150 root certificates by default, so this noticeably increases the
+	// inventory size. Entries carry a "type" attribute to tell roots from intermediates.
+	// Default: False
+	// Public: Yes
+	IntermediateCertsIncludeRoots bool `yaml:"intermediate_certs_include_roots" envconfig:"intermediate_certs_include_roots" public:"true"`
+
 	// InventoryArchiveEnabled When enabled, the delta storage will save each successful deltas submission into
 	// .sent files in the delta store.
 	// Default: True

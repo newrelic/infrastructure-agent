@@ -54,6 +54,10 @@ func RegisterPlugins(a *agent.Agent) error {
 		a.RegisterPlugin(pluginsWindows.NewUpdatesPlugin(ids.PluginID{"packages", "windows_updates"}, a.Context))
 	}
 
+	if config.EnableIntermediateCertsPlugin {
+		a.RegisterPlugin(pluginsWindows.NewIntermediateCertsPlugin(a.Context))
+	}
+
 	if config.FilesConfigOn {
 		a.RegisterPlugin(NewConfigFilePlugin(ids.PluginID{"files", "config"}, a.Context))
 	}
