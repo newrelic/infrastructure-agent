@@ -37,6 +37,7 @@
         - 15.5
         - 15.6
         - 15.7
+        - generic
 
 - src: "newrelic-infra-fips-{version}-1.sles{os_version}.{arch}.rpm"
   arch:
@@ -52,6 +53,7 @@
         - 15.5
         - 15.6
         - 15.7
+        - generic
 
 - src: "newrelic-infra-fips-{version}-1.amazonlinux-{os_version}.{arch}.rpm"
   arch:
@@ -106,6 +108,7 @@
         - 15.5
         - 15.6
         - 15.7
+        - generic
 
 - src: "newrelic-infra-fips-{version}-1.sles{os_version}.{arch}.rpm.sum"
   arch:
@@ -121,6 +124,7 @@
         - 15.5
         - 15.6
         - 15.7
+        - generic
 
 - src: "newrelic-infra-fips-{version}-1.amazonlinux-{os_version}.{arch}.rpm.sum"
   arch:
