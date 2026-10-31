@@ -12,6 +12,10 @@ on:
       dest_prefix:
         description: 'Repo prefix'
         required: true
+      publish_version:
+        description: 'infrastructure-publish-action version: v1 | v2 (empty = PUBLISH_VERSION repository variable)'
+        required: false
+        default: ''
   push:
     branches:
       - 'prerelease-on-demand_*'
@@ -35,10 +39,16 @@ env:
   GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
   BRANCH: ${{ inputs.branch }}
   DEST_PREFIX: ${{ inputs.dest_prefix }}
-  AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
   AWS_REGION: "us-east-1"
 
 jobs:
+  config:
+    name: Resolve publish target
+    uses: ./.github/workflows/component_publish_config.yml
+    with:
+      ENV: staging
+      PUBLISH_VERSION: ${{ inputs.publish_version }}
+
   # Keeping it as no component until we figure out how to pass env variables to component
   packaging:
     name: Create MSI & Upload into GHA workflow cache
@@ -98,7 +108,9 @@ jobs:
   publish:
     name: Build and upload artifacts into GH Release assets
     runs-on: ubuntu-latest
-    needs: [ packaging ]
+    needs: [ config, packaging ]
+    env:
+      PUBLISH_VERSION: ${{ needs.config.outputs.publish_version }}
     strategy:
       matrix:
         assetsType:
@@ -111,21 +123,61 @@ jobs:
         with:
           name: windows-assets
 
-      - name: Publish msi to S3 action
+      - name: Publish msi to S3 action (publish-action v1)
+        if: ${{ env.PUBLISH_VERSION == 'v1' }}
         uses: newrelic/infrastructure-publish-action@v1
         env:
           DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
           DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
           GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
           GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
-          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
-          AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
-          AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
-          ACCESS_POINT_HOST: "staging"
+          AWS_ACCESS_KEY_ID: ${{ needs.config.outputs.publish_version == 'v2' && secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING_V2 || secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
+          AWS_SECRET_ACCESS_KEY: ${{ needs.config.outputs.publish_version == 'v2' && secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING_V2 || secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
+          AWS_ROLE_ARN: ${{ needs.config.outputs.publish_version == 'v2' && secrets.OHAI_AWS_ROLE_ARN_STAGING_V2 || secrets.OHAI_AWS_ROLE_ARN_STAGING }}
+          AWS_ROLE_SESSION_NAME: ${{ needs.config.outputs.publish_version == 'v2' && secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING_V2 || secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
+          ACCESS_POINT_HOST: ${{ needs.config.outputs.access_point_host }}
           RUN_ID: ${{ github.run_id }}
-          AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
-          AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
+          AWS_S3_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_bucket_name }}
+          AWS_S3_LOCK_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_lock_bucket_name }}
+        with:
+          tag: ${{env.FAKE_TAG}}
+          app_name: "newrelic-infra"
+          repo_name: "newrelic/infrastructure-agent"
+          schema: "custom"
+          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.BRANCH }}/build/upload-schema-windows-${{ matrix.assetsType }}.yml"
+          aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
+          aws_s3_lock_bucket_name: ${{ env.AWS_S3_LOCK_BUCKET_NAME }}
+          access_point_host: ${{ env.ACCESS_POINT_HOST }}
+          run_id: ${{ env.RUN_ID }}
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role_session_name: ${{ env.AWS_ROLE_SESSION_NAME }}
+          aws_role_arn: ${{ env.AWS_ROLE_ARN }}
+          # used for signing package stuff
+          gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
+          gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
+          disable_lock: ${{ env.DISABLE_LOCK }}
+          dest_prefix: ${{ env.DEST_PREFIX }}
+          local_packages_path:  "/srv"
+          apt_skip_mirror:  true
+
+      - name: Publish msi to S3 action (publish-action v2)
+        if: ${{ env.PUBLISH_VERSION == 'v2' }}
+        uses: newrelic/infrastructure-publish-action@v2
+        env:
+          DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
+          DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
+          GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+          GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+          AWS_ACCESS_KEY_ID: ${{ needs.config.outputs.publish_version == 'v2' && secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING_V2 || secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
+          AWS_SECRET_ACCESS_KEY: ${{ needs.config.outputs.publish_version == 'v2' && secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING_V2 || secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
+          AWS_ROLE_ARN: ${{ needs.config.outputs.publish_version == 'v2' && secrets.OHAI_AWS_ROLE_ARN_STAGING_V2 || secrets.OHAI_AWS_ROLE_ARN_STAGING }}
+          AWS_ROLE_SESSION_NAME: ${{ needs.config.outputs.publish_version == 'v2' && secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING_V2 || secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
+          ACCESS_POINT_HOST: ${{ needs.config.outputs.access_point_host }}
+          RUN_ID: ${{ github.run_id }}
+          AWS_S3_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_bucket_name }}
+          AWS_S3_LOCK_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_lock_bucket_name }}
         with:
           tag: ${{env.FAKE_TAG}}
           app_name: "newrelic-infra"

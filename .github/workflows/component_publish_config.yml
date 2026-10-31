@@ -1,0 +1,115 @@
+name: .. 🚧 Publish target config
+
+# Single source of truth for where (and with which publish-action version) packages are published.
+#
+# The target is selected by the repository variable PUBLISH_VERSION (v1 | v2):
+#   v1 -> infrastructure-publish-action@v1 -> legacy buckets   (nr-downloads-ohai-staging / nr-downloads-main)
+#   v2 -> infrastructure-publish-action@v2 -> batch buckets    (nr-downloads-ohai-batch-staging / nr-downloads-ohai-batch-prod)
+#
+# Rollback: set the repository variable PUBLISH_VERSION back to v1 (no code change needed).
+# Before flipping in either direction, sync the buckets (see sync-s3-bucket.yml) so the target
+# repository contains every release published to the other one.
+#
+# Callers also pick the matching credentials, e.g.:
+#   AWS_ACCESS_KEY_ID: ${{ needs.config.outputs.publish_version == 'v2' && secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION_V2 || secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION }}
+
+on:
+  workflow_call:
+    inputs:
+      ENV:
+        description: 'Environment to publish to: staging | production'
+        required: true
+        type: string
+      PUBLISH_VERSION:
+        description: 'Overrides the PUBLISH_VERSION repository variable: v1 | v2 (empty = use the variable)'
+        required: false
+        type: string
+        default: ''
+    outputs:
+      publish_version:
+        description: 'Selected publish-action version: v1 | v2'
+        value: ${{ jobs.config.outputs.publish_version }}
+      aws_s3_bucket_name:
+        value: ${{ jobs.config.outputs.aws_s3_bucket_name }}
+      aws_s3_lock_bucket_name:
+        value: ${{ jobs.config.outputs.aws_s3_lock_bucket_name }}
+      access_point_host:
+        value: ${{ jobs.config.outputs.access_point_host }}
+      s3_website_url:
+        description: 'S3 website endpoint of the bucket (no path)'
+        value: ${{ jobs.config.outputs.s3_website_url }}
+      repo_endpoint:
+        description: 'Repository endpoint used by install tests'
+        value: ${{ jobs.config.outputs.repo_endpoint }}
+
+permissions:
+  contents: read
+
+jobs:
+  config:
+    name: Resolve publish target
+    runs-on: ubuntu-latest
+    outputs:
+      publish_version: ${{ steps.resolve.outputs.publish_version }}
+      aws_s3_bucket_name: ${{ steps.resolve.outputs.aws_s3_bucket_name }}
+      aws_s3_lock_bucket_name: ${{ steps.resolve.outputs.aws_s3_lock_bucket_name }}
+      access_point_host: ${{ steps.resolve.outputs.access_point_host }}
+      s3_website_url: ${{ steps.resolve.outputs.s3_website_url }}
+      repo_endpoint: ${{ steps.resolve.outputs.repo_endpoint }}
+    steps:
+      - name: Resolve publish target
+        id: resolve
+        env:
+          TARGET_ENV: ${{ inputs.ENV }}
+          VERSION_OVERRIDE: ${{ inputs.PUBLISH_VERSION }}
+          VERSION_VAR: ${{ vars.PUBLISH_VERSION }}
+        run: |
+          version="${VERSION_OVERRIDE:-${VERSION_VAR:-v1}}"
+
+          case "${version}" in
+            v1|v2) ;;
+            *) echo "::error::PUBLISH_VERSION must be v1 or v2, got '${version}'"; exit 1 ;;
+          esac
+
+          case "${TARGET_ENV}-${version}" in
+            staging-v1)
+              bucket="nr-downloads-ohai-staging"
+              lock_bucket="onhost-ci-lock-staging"
+              access_point_host="staging"
+              repo_endpoint="http://${bucket}.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
+              ;;
+            staging-v2)
+              bucket="nr-downloads-ohai-batch-staging" # placeholder until the bucket is provisioned
+              lock_bucket="onhost-ci-lock-staging"
+              access_point_host="staging"
+              repo_endpoint="http://${bucket}.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
+              ;;
+            production-v1)
+              bucket="nr-downloads-main"
+              lock_bucket="onhost-ci-lock"
+              access_point_host="production"
+              repo_endpoint="https://download.newrelic.com/infrastructure_agent"
+              ;;
+            production-v2)
+              bucket="nr-downloads-ohai-batch-prod" # placeholder until the bucket is provisioned
+              lock_bucket="onhost-ci-lock"
+              access_point_host="production"
+              # served through the CDN once the ELB switch to the new bucket is done
+              repo_endpoint="https://download.newrelic.com/infrastructure_agent"
+              ;;
+            *)
+              echo "::error::ENV must be staging or production, got '${TARGET_ENV}'"
+              exit 1
+              ;;
+          esac
+
+          {
+            echo "publish_version=${version}"
+            echo "aws_s3_bucket_name=${bucket}"
+            echo "aws_s3_lock_bucket_name=${lock_bucket}"
+            echo "access_point_host=${access_point_host}"
+            echo "s3_website_url=http://${bucket}.s3-website-us-east-1.amazonaws.com"
+            echo "repo_endpoint=${repo_endpoint}"
+          } >> "${GITHUB_OUTPUT}"
+
+          echo "Publishing ${TARGET_ENV} with publish-action ${version} to s3://${bucket}"
