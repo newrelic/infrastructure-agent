@@ -1,6 +1,6 @@
-name: .. 🚧 Publish stage | v2 (new batch bucket, publish-action@v2)
+name: .. 🚧 Publish stage | v2 (new batch bucket and credentials)
 
-# v2 publish stage: runs the v2 component workflows (infrastructure-publish-action@v2) against the new
+# v2 publish stage: runs the v2 component workflows (same infrastructure-publish-action@v1) against the new
 # bucket with the *_V2 credentials. Bucket names live in component_publish_config.yml.
 # Called by the entrypoint workflows when the repository variable PUBLISH_VERSION is 'v2'.
 # Roll back by setting PUBLISH_VERSION to v1 (after syncing the buckets, see sync-s3-bucket.yml).
@@ -29,6 +29,11 @@ on:
         required: false
         type: boolean
         default: true
+      DEST_PREFIX:
+        description: 'Test runs only: publish under testing-pre-releases/<DEST_PREFIX>/ (staging only)'
+        required: false
+        type: string
+        default: ''
       WINDOWS_DISABLE_LOCK:
         required: false
         type: boolean
@@ -52,6 +57,7 @@ jobs:
     with:
       ENV: ${{ inputs.ENV }}
       PUBLISH_VERSION: v2
+      DEST_PREFIX: ${{ inputs.DEST_PREFIX }}
 
   publish-linux:
     name: Publish linux artifacts into s3 (v2)
@@ -75,6 +81,7 @@ jobs:
       AWS_S3_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_bucket_name }}
       AWS_S3_LOCK_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_lock_bucket_name }}
       ASSETS_TYPE: ${{ inputs.ASSETS_TYPE }}
+      DEST_PREFIX: ${{ needs.config.outputs.dest_prefix }}
 
   publish-windows:
     name: Publish windows artifacts into s3 (v2)
@@ -98,6 +105,7 @@ jobs:
       AWS_S3_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_bucket_name }}
       AWS_S3_LOCK_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_lock_bucket_name }}
       ASSETS_TYPE: ${{ inputs.ASSETS_TYPE }}
+      DEST_PREFIX: ${{ needs.config.outputs.dest_prefix }}
       DISABLE_LOCK: ${{ inputs.WINDOWS_DISABLE_LOCK }}
 
   purge-cdn:

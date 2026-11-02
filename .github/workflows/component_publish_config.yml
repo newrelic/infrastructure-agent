@@ -1,11 +1,11 @@
 name: .. 🚧 Publish target config
 
-# Single source of truth for where (and with which publish-action version) packages are published.
+# Single source of truth for where (legacy v1 buckets or the new v2 buckets) packages are published.
 #
 # The target is selected by the repository variable PUBLISH_VERSION (v1 | v2). It is one switch for
 # staging and production alike: prerelease (staging) and release (production) always use the same version.
-#   v1 -> infrastructure-publish-action@v1 -> legacy buckets   (nr-downloads-ohai-staging / nr-downloads-main)
-#   v2 -> infrastructure-publish-action@v2 -> batch buckets    (nr-downloads-ohai-batch-staging / nr-downloads-ohai-batch-prod)
+#   v1 -> legacy buckets, original credentials   (nr-downloads-ohai-staging / nr-downloads-main)
+#   v2 -> batch buckets,  *_V2 credentials     (nr-downloads-ohai-batch-staging / nr-downloads-ohai-batch-prod)
 #
 # Test bucket: set PUBLISH_V2_BUCKET_STAGING / PUBLISH_V2_BUCKET_PRODUCTION (and, for production tests,
 # PUBLISH_V2_REPO_ENDPOINT_PRODUCTION) instead of editing the placeholder names below.
@@ -14,7 +14,7 @@ name: .. 🚧 Publish target config
 # Before flipping in either direction, sync the buckets (see sync-s3-bucket.yml) so the target
 # repository contains every release published to the other one.
 #
-# The publish itself is NOT switched here: the entrypoint workflows call publish_stage_v1.yml or
+# The publish action itself stays at @v1 for both sets. The publish itself is NOT switched here: the entrypoint workflows call publish_stage_v1.yml or
 # publish_stage_v2.yml depending on the same variable. This file serves publish_stage_v2.yml (bucket
 # names), the test endpoints (prerelease*, molecule, recover) and the on-demand workflows.
 
@@ -30,9 +30,14 @@ on:
         required: false
         type: string
         default: ''
+      DEST_PREFIX:
+        description: 'Test runs only: publish under testing-pre-releases/<DEST_PREFIX>/ instead of the repository root (staging + v2 only)'
+        required: false
+        type: string
+        default: ''
     outputs:
       publish_version:
-        description: 'Selected publish-action version: v1 | v2'
+        description: 'Selected bucket set: v1 (legacy) | v2 (new)'
         value: ${{ jobs.config.outputs.publish_version }}
       aws_s3_bucket_name:
         value: ${{ jobs.config.outputs.aws_s3_bucket_name }}
@@ -40,6 +45,9 @@ on:
         value: ${{ jobs.config.outputs.aws_s3_lock_bucket_name }}
       access_point_host:
         value: ${{ jobs.config.outputs.access_point_host }}
+      dest_prefix:
+        description: 'Full publish-action dest_prefix (empty = repository root)'
+        value: ${{ jobs.config.outputs.dest_prefix }}
       s3_website_url:
         description: 'S3 website endpoint of the bucket (no path)'
         value: ${{ jobs.config.outputs.s3_website_url }}
@@ -59,6 +67,7 @@ jobs:
       aws_s3_bucket_name: ${{ steps.resolve.outputs.aws_s3_bucket_name }}
       aws_s3_lock_bucket_name: ${{ steps.resolve.outputs.aws_s3_lock_bucket_name }}
       access_point_host: ${{ steps.resolve.outputs.access_point_host }}
+      dest_prefix: ${{ steps.resolve.outputs.dest_prefix }}
       s3_website_url: ${{ steps.resolve.outputs.s3_website_url }}
       repo_endpoint: ${{ steps.resolve.outputs.repo_endpoint }}
     steps:
@@ -68,6 +77,7 @@ jobs:
           TARGET_ENV: ${{ inputs.ENV }}
           VERSION_OVERRIDE: ${{ inputs.PUBLISH_VERSION }}
           VERSION_VAR: ${{ vars.PUBLISH_VERSION }}
+          DEST_PREFIX_INPUT: ${{ inputs.DEST_PREFIX }}
           # optional overrides, e.g. to point v2 at a test bucket without touching code
           V2_BUCKET_STAGING: ${{ vars.PUBLISH_V2_BUCKET_STAGING }}
           V2_BUCKET_PRODUCTION: ${{ vars.PUBLISH_V2_BUCKET_PRODUCTION }}
@@ -114,8 +124,25 @@ jobs:
               ;;
           esac
 
+          # Test runs: publish under testing-pre-releases/<name>/, same layout as the on-demand workflows.
+          dest_prefix=""
+          if [ -n "${DEST_PREFIX_INPUT}" ]; then
+            if ! printf '%s' "${DEST_PREFIX_INPUT}" | grep -Eq '^[A-Za-z0-9._-]+$'; then
+              echo "::error::dest_prefix may only contain letters, digits, '.', '_' and '-', got '${DEST_PREFIX_INPUT}'"
+              exit 1
+            fi
+            if [ "${TARGET_ENV}" != "staging" ] || [ "${version}" != "v2" ]; then
+              echo "::error::dest_prefix is only supported for staging with v2 (env=${TARGET_ENV}, version=${version}); refusing to publish to the repository root"
+              exit 1
+            fi
+            dest_prefix="testing-pre-releases/${DEST_PREFIX_INPUT}/infrastructure_agent/"
+            access_point_host="http://${bucket}.s3-website-us-east-1.amazonaws.com/testing-pre-releases/${DEST_PREFIX_INPUT}"
+            repo_endpoint="${access_point_host}/infrastructure_agent"
+          fi
+
           {
             echo "publish_version=${version}"
+            echo "dest_prefix=${dest_prefix}"
             echo "aws_s3_bucket_name=${bucket}"
             echo "aws_s3_lock_bucket_name=${lock_bucket}"
             echo "access_point_host=${access_point_host}"
@@ -123,4 +150,4 @@ jobs:
             echo "repo_endpoint=${repo_endpoint}"
           } >> "${GITHUB_OUTPUT}"
 
-          echo "Publishing ${TARGET_ENV} with publish-action ${version} to s3://${bucket}"
+          echo "Publishing ${TARGET_ENV} with bucket set ${version} to s3://${bucket}"

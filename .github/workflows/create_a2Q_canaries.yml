@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       publish_version:
-        description: 'infrastructure-publish-action version for this run: v1 | v2 (empty = PUBLISH_VERSION repository variable). Anything else fails the run'
+        description: 'Bucket set for this run: v1 (legacy) | v2 (new) (empty = PUBLISH_VERSION repository variable). Anything else fails the run'
         required: false
         default: ''
       tag:

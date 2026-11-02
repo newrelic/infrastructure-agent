@@ -4,7 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       publish_version:
-        description: 'infrastructure-publish-action version for this run: v1 | v2 (empty = PUBLISH_VERSION repository variable). Anything else fails the run'
+        description: 'Bucket set for this run: v1 (legacy) | v2 (new) (empty = PUBLISH_VERSION repository variable). Anything else fails the run'
+        required: false
+        default: ''
+      dest_prefix:
+        description: 'Test runs only (needs v2): publish/test under testing-pre-releases/<dest_prefix>/ instead of the repository root'
         required: false
         default: ''
       tag:
@@ -31,6 +35,7 @@ jobs:
     with:
       ENV: staging
       PUBLISH_VERSION: ${{ inputs.publish_version }}
+      DEST_PREFIX: ${{ inputs.dest_prefix }}
 
   test-prerelease-windows:
     needs: config

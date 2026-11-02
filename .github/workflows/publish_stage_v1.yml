@@ -1,4 +1,4 @@
-name: .. 🚧 Publish stage | v1 (legacy bucket, publish-action@v1)
+name: .. 🚧 Publish stage | v1 (legacy bucket and credentials)
 
 # v1 publish stage: runs the v1 component workflows (infrastructure-publish-action@v1) against the legacy
 # buckets with the original credentials. This is today's behaviour, unchanged.

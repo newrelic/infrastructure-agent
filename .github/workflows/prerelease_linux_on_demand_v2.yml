@@ -1,4 +1,4 @@
-name: . 🚀 🐧 🦺 Prerelease Linux On Demand (v2)
+name: . 🚀 🐧 🦺 Prerelease Linux On Demand (v2 bucket)
 
 on:
   workflow_dispatch:
@@ -49,7 +49,7 @@ env:
   GPG_MAIL: 'infrastructure-eng@newrelic.com'
   DISABLE_PUBLISH: true
 
-# v2 twin of prerelease_linux_on_demand.yml: publishes with infrastructure-publish-action@v2 to the new bucket with the *_V2
+# v2 twin of prerelease_linux_on_demand.yml: publishes with infrastructure-publish-action@v1 (unchanged) to the new bucket with the *_V2
 # credentials. Run it any time to try v2 without flipping the PUBLISH_VERSION repository variable.
 
 jobs:
@@ -113,7 +113,7 @@ jobs:
 
       - name: Publish NON-FIPS deb to S3 action
         if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'NON-FIPS' }}
-        uses: newrelic/infrastructure-publish-action@v2
+        uses: newrelic/infrastructure-publish-action@v1
         with:
           tag: ${{env.FAKE_TAG}}
           app_name: "newrelic-infra"
@@ -139,7 +139,7 @@ jobs:
 
       - name: Publish NON-FIPS rpm to S3 action
         if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'NON-FIPS' }}
-        uses: newrelic/infrastructure-publish-action@v2
+        uses: newrelic/infrastructure-publish-action@v1
         with:
           tag: ${{env.FAKE_TAG}}
           app_name: "newrelic-infra"
@@ -164,7 +164,7 @@ jobs:
 
       - name: Publish NON-FIPS targz to S3 action
         if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'NON-FIPS' }}
-        uses: newrelic/infrastructure-publish-action@v2
+        uses: newrelic/infrastructure-publish-action@v1
         with:
           tag: ${{env.FAKE_TAG}}
           app_name: "newrelic-infra"
@@ -208,7 +208,7 @@ jobs:
 
       - name: Publish FIPS deb to S3 action
         if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'FIPS' }}
-        uses: newrelic/infrastructure-publish-action@v2
+        uses: newrelic/infrastructure-publish-action@v1
         with:
           tag: ${{env.FAKE_TAG}}
           app_name: "newrelic-infra-fips"
@@ -234,7 +234,7 @@ jobs:
 
       - name: Publish FIPS rpm to S3 action
         if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'FIPS' }}
-        uses: newrelic/infrastructure-publish-action@v2
+        uses: newrelic/infrastructure-publish-action@v1
         with:
           tag: ${{env.FAKE_TAG}}
           app_name: "newrelic-infra-fips"
@@ -259,7 +259,7 @@ jobs:
 
       - name: Publish FIPS targz to S3 action
         if: ${{ inputs.BUILD_MODE == 'ALL' || inputs.BUILD_MODE == 'FIPS' }}
-        uses: newrelic/infrastructure-publish-action@v2
+        uses: newrelic/infrastructure-publish-action@v1
         with:
           tag: ${{env.FAKE_TAG}}
           app_name: "newrelic-infra-fips"

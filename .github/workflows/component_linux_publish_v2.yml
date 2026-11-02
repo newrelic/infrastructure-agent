@@ -1,4 +1,6 @@
-name: .. 🚧 Linux | Publish to S3 (v2)
+name: .. 🚧 Linux | Publish to S3 (v2 bucket)
+
+# The publish action stays at infrastructure-publish-action@v1; v2 only changes the bucket, repository endpoint and credentials.
 
 on:
   workflow_call:
@@ -21,6 +23,11 @@ on:
         required: true
 
     inputs:
+      DEST_PREFIX:
+        description: 'Optional publish-action dest_prefix for test runs (empty = repository root)'
+        required: false
+        type: string
+        default: ''
       TAG:
         required: true
         type: string
@@ -60,6 +67,7 @@ env:
   RUN_ID: ${{ inputs.RUN_ID }}
   ASSETS_TYPE: ${{ inputs.ASSETS_TYPE }}
   DISABLE_LOCK: ${{ inputs.DISABLE_LOCK == true }}
+  DEST_PREFIX: ${{ inputs.DEST_PREFIX }}
   AWS_REGION: "us-east-1"
   ACCESS_POINT_HOST: ${{ inputs.ACCESS_POINT_HOST }}
 
@@ -93,7 +101,7 @@ jobs:
           password: ${{ env.DOCKER_HUB_PASSWORD }}
       - name: Publish ${{ matrix.assetsType }} to S3 action
         if: ${{ (env.ASSETS_TYPE == 'all' || env.ASSETS_TYPE == matrix.assetsType) }}
-        uses: newrelic/infrastructure-publish-action@v2
+        uses: newrelic/infrastructure-publish-action@v1
         with:
           tag: ${{env.TAG}}
           app_name: "newrelic-infra${{ matrix.suffix }}"
@@ -113,3 +121,4 @@ jobs:
           gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
           gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
           disable_lock: ${{ env.DISABLE_LOCK }}
+          dest_prefix: ${{ env.DEST_PREFIX }}
