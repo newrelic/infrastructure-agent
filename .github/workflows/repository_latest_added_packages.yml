@@ -33,6 +33,8 @@ jobs:
     name: List latest added packages into the S3 repository
     runs-on: ubuntu-24.04
     needs: config
+    env:
+      AWS_REGION: ${{ needs.config.outputs.aws_region }}
     steps:
       - name: List latest packages in Production S3
         if: ${{ github.event.inputs.environment == 'production' }}

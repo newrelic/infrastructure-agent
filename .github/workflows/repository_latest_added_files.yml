@@ -48,6 +48,8 @@ jobs:
     name: List files added before and after datetime
     runs-on: ubuntu-24.04
     needs: config
+    env:
+      AWS_REGION: ${{ needs.config.outputs.aws_region }}
     steps:
       - name: Validate datetime
         run: |
