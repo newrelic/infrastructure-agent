@@ -16,8 +16,9 @@ on:
     inputs:
       AWS_S3_BUCKET_NAME:
         description: 'Bucket the CDN serves; objects listed here are the ones purged'
-        required: true
+        required: false
         type: string
+        default: 'nr-downloads-main'
       AWS_REGION:
         description: 'Region of the bucket'
         required: false

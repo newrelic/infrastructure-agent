@@ -120,7 +120,7 @@ jobs:
               region="${V2_REGION:-us-east-2}"
               bucket="${V2_BUCKET_STAGING:-nr-downloads-ohai-batch-staging}" # v2 default, override with PUBLISH_V2_BUCKET_*
               lock_bucket="${V2_LOCK_BUCKET_STAGING:-onhost-ci-lock-batch-staging}" # v2 has its own lock bucket (same region), override with PUBLISH_V2_LOCK_BUCKET_*
-              access_point_host="staging"
+              access_point_host="http://${bucket}.$(website_host "${region}")" # a URL, not the "staging" keyword (that one means the legacy staging bucket)
               repo_endpoint="http://${bucket}.$(website_host "${region}")/infrastructure_agent"
               ;;
             production-v1)
