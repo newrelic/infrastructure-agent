@@ -1,7 +1,8 @@
 name: .. 🚧 Publish stage | v2 (new batch bucket and credentials)
 
 # v2 publish stage: runs the v2 component workflows (same infrastructure-publish-action@v1) against the new
-# bucket with the *_V2 credentials. Bucket names live in component_publish_config.yml.
+# bucket. Credentials: the *_V2 secrets if they exist, otherwise the same secrets v1 uses (so they only need
+# creating when bucket 2 gets its own credentials). Bucket names live in component_publish_config.yml.
 # Called by the entrypoint workflows when the repository variable PUBLISH_VERSION is 'v2'.
 # Roll back by setting PUBLISH_VERSION to v1 (after syncing the buckets, see sync-s3-bucket.yml).
 
@@ -69,10 +70,10 @@ jobs:
       DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
       GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
       GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
-      AWS_ACCESS_KEY_ID: ${{ inputs.ENV == 'production' && secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION_V2 || secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING_V2 }}
-      AWS_SECRET_ACCESS_KEY: ${{ inputs.ENV == 'production' && secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION_V2 || secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING_V2 }}
-      AWS_ROLE_ARN: ${{ inputs.ENV == 'production' && secrets.OHAI_AWS_ROLE_ARN_PRODUCTION_V2 || secrets.OHAI_AWS_ROLE_ARN_STAGING_V2 }}
-      AWS_ROLE_SESSION_NAME: ${{ inputs.ENV == 'production' && secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION_V2 || secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING_V2 }}
+      AWS_ACCESS_KEY_ID: ${{ (inputs.ENV == 'production' && (secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION_V2 || secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION)) || (inputs.ENV != 'production' && (secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING_V2 || secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING)) }}
+      AWS_SECRET_ACCESS_KEY: ${{ (inputs.ENV == 'production' && (secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION_V2 || secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION)) || (inputs.ENV != 'production' && (secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING_V2 || secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING)) }}
+      AWS_ROLE_ARN: ${{ (inputs.ENV == 'production' && (secrets.OHAI_AWS_ROLE_ARN_PRODUCTION_V2 || secrets.OHAI_AWS_ROLE_ARN_PRODUCTION)) || (inputs.ENV != 'production' && (secrets.OHAI_AWS_ROLE_ARN_STAGING_V2 || secrets.OHAI_AWS_ROLE_ARN_STAGING)) }}
+      AWS_ROLE_SESSION_NAME: ${{ (inputs.ENV == 'production' && (secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION_V2 || secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION)) || (inputs.ENV != 'production' && (secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING_V2 || secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING)) }}
     with:
       ACCESS_POINT_HOST: ${{ needs.config.outputs.access_point_host }}
       SCHEMA_BRANCH: "master"
@@ -93,10 +94,10 @@ jobs:
       DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
       GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
       GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
-      AWS_ACCESS_KEY_ID: ${{ inputs.ENV == 'production' && secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION_V2 || secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING_V2 }}
-      AWS_SECRET_ACCESS_KEY: ${{ inputs.ENV == 'production' && secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION_V2 || secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING_V2 }}
-      AWS_ROLE_ARN: ${{ inputs.ENV == 'production' && secrets.OHAI_AWS_ROLE_ARN_PRODUCTION_V2 || secrets.OHAI_AWS_ROLE_ARN_STAGING_V2 }}
-      AWS_ROLE_SESSION_NAME: ${{ inputs.ENV == 'production' && secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION_V2 || secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING_V2 }}
+      AWS_ACCESS_KEY_ID: ${{ (inputs.ENV == 'production' && (secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION_V2 || secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION)) || (inputs.ENV != 'production' && (secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING_V2 || secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING)) }}
+      AWS_SECRET_ACCESS_KEY: ${{ (inputs.ENV == 'production' && (secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION_V2 || secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION)) || (inputs.ENV != 'production' && (secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING_V2 || secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING)) }}
+      AWS_ROLE_ARN: ${{ (inputs.ENV == 'production' && (secrets.OHAI_AWS_ROLE_ARN_PRODUCTION_V2 || secrets.OHAI_AWS_ROLE_ARN_PRODUCTION)) || (inputs.ENV != 'production' && (secrets.OHAI_AWS_ROLE_ARN_STAGING_V2 || secrets.OHAI_AWS_ROLE_ARN_STAGING)) }}
+      AWS_ROLE_SESSION_NAME: ${{ (inputs.ENV == 'production' && (secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION_V2 || secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION)) || (inputs.ENV != 'production' && (secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING_V2 || secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING)) }}
     with:
       ACCESS_POINT_HOST: ${{ needs.config.outputs.access_point_host }}
       SCHEMA_BRANCH: "master"
@@ -115,9 +116,9 @@ jobs:
     uses: ./.github/workflows/component_purge_cdn.yml
     secrets:
       CLOUDFARE_KEY: ${{ secrets.CLOUDFARE_KEY }}
-      AWS_ACCESS_KEY_ID: ${{ inputs.ENV == 'production' && secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION_V2 || secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING_V2 }}
-      AWS_SECRET_ACCESS_KEY: ${{ inputs.ENV == 'production' && secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION_V2 || secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING_V2 }}
-      AWS_ROLE_ARN: ${{ inputs.ENV == 'production' && secrets.OHAI_AWS_ROLE_ARN_PRODUCTION_V2 || secrets.OHAI_AWS_ROLE_ARN_STAGING_V2 }}
-      AWS_ROLE_SESSION_NAME: ${{ inputs.ENV == 'production' && secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION_V2 || secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING_V2 }}
+      AWS_ACCESS_KEY_ID: ${{ (inputs.ENV == 'production' && (secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION_V2 || secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION)) || (inputs.ENV != 'production' && (secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING_V2 || secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING)) }}
+      AWS_SECRET_ACCESS_KEY: ${{ (inputs.ENV == 'production' && (secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION_V2 || secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION)) || (inputs.ENV != 'production' && (secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING_V2 || secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING)) }}
+      AWS_ROLE_ARN: ${{ (inputs.ENV == 'production' && (secrets.OHAI_AWS_ROLE_ARN_PRODUCTION_V2 || secrets.OHAI_AWS_ROLE_ARN_PRODUCTION)) || (inputs.ENV != 'production' && (secrets.OHAI_AWS_ROLE_ARN_STAGING_V2 || secrets.OHAI_AWS_ROLE_ARN_STAGING)) }}
+      AWS_ROLE_SESSION_NAME: ${{ (inputs.ENV == 'production' && (secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION_V2 || secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION)) || (inputs.ENV != 'production' && (secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING_V2 || secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING)) }}
     with:
       AWS_S3_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_bucket_name }}

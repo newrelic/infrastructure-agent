@@ -50,7 +50,7 @@ env:
   DISABLE_PUBLISH: true
 
 # v2 twin of prerelease_linux_on_demand.yml: publishes with infrastructure-publish-action@v1 (unchanged) to the new bucket with the *_V2
-# credentials. Run it any time to try v2 without flipping the PUBLISH_VERSION repository variable.
+# credentials if they exist (otherwise the same credentials v1 uses). Run it any time to try v2 without flipping the PUBLISH_VERSION repository variable.
 
 jobs:
   config:
@@ -67,10 +67,10 @@ jobs:
     env:
       AWS_S3_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_bucket_name }}
       AWS_S3_LOCK_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_lock_bucket_name }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING_V2 }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING_V2 }}
-      AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING_V2 }}
-      AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING_V2 }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING_V2 || secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING_V2 || secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
+      AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING_V2 || secrets.OHAI_AWS_ROLE_ARN_STAGING }}
+      AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING_V2 || secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
 
     steps:
       - name: dest_prefix for testing
