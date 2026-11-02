@@ -115,7 +115,7 @@ jobs:
   publish-v1:
     name: Publish to s3 staging (v1)
     if: ${{ needs.config.outputs.publish_version == 'v1' }}
-    needs: config
+    needs: [config, packaging]
     uses: ./.github/workflows/publish_stage_v1.yml
     secrets: inherit
     with:
@@ -128,7 +128,7 @@ jobs:
   publish-v2:
     name: Publish to s3 staging (v2)
     if: ${{ needs.config.outputs.publish_version == 'v2' }}
-    needs: config
+    needs: [config, packaging]
     uses: ./.github/workflows/publish_stage_v2.yml
     secrets: inherit
     with:
