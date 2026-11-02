@@ -8,7 +8,9 @@ name: .. 🚧 Publish target config
 #   v2 -> batch buckets,  *_V2 credentials     (nr-downloads-ohai-batch-staging / nr-downloads-ohai-batch-prod)
 #
 # Test bucket: set PUBLISH_V2_BUCKET_STAGING / PUBLISH_V2_BUCKET_PRODUCTION (and, for production tests,
-# PUBLISH_V2_REPO_ENDPOINT_PRODUCTION) instead of editing the placeholder names below.
+# PUBLISH_V2_REPO_ENDPOINT_PRODUCTION) instead of editing the placeholder names below. The lock bucket is
+# shared with v1 by default; PUBLISH_V2_LOCK_BUCKET_STAGING / _PRODUCTION override it (e.g. onhost-ci-lock-testing
+# when the credentials only reach the testing lock bucket).
 #
 # Rollback: set the repository variable PUBLISH_VERSION back to v1 (no code change needed).
 # Before flipping in either direction, sync the buckets (see sync-s3-bucket.yml) so the target
@@ -81,6 +83,8 @@ jobs:
           # optional overrides, e.g. to point v2 at a test bucket without touching code
           V2_BUCKET_STAGING: ${{ vars.PUBLISH_V2_BUCKET_STAGING }}
           V2_BUCKET_PRODUCTION: ${{ vars.PUBLISH_V2_BUCKET_PRODUCTION }}
+          V2_LOCK_BUCKET_STAGING: ${{ vars.PUBLISH_V2_LOCK_BUCKET_STAGING }}
+          V2_LOCK_BUCKET_PRODUCTION: ${{ vars.PUBLISH_V2_LOCK_BUCKET_PRODUCTION }}
           V2_REPO_ENDPOINT_PRODUCTION: ${{ vars.PUBLISH_V2_REPO_ENDPOINT_PRODUCTION }}
         run: |
           # precedence: workflow input (test runs) > PUBLISH_VERSION repository variable > v1
@@ -100,7 +104,7 @@ jobs:
               ;;
             staging-v2)
               bucket="${V2_BUCKET_STAGING:-nr-downloads-ohai-batch-staging}" # placeholder default until the bucket is provisioned
-              lock_bucket="onhost-ci-lock-staging"
+              lock_bucket="${V2_LOCK_BUCKET_STAGING:-onhost-ci-lock-staging}"
               access_point_host="staging"
               repo_endpoint="http://${bucket}.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
               ;;
@@ -112,7 +116,7 @@ jobs:
               ;;
             production-v2)
               bucket="${V2_BUCKET_PRODUCTION:-nr-downloads-ohai-batch-prod}" # placeholder default until the bucket is provisioned
-              lock_bucket="onhost-ci-lock"
+              lock_bucket="${V2_LOCK_BUCKET_PRODUCTION:-onhost-ci-lock}"
               access_point_host="production"
               # served through the CDN once the ELB switch to the new bucket is done; until then set
               # PUBLISH_V2_REPO_ENDPOINT_PRODUCTION to test against the new bucket directly
