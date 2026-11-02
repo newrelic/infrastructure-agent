@@ -63,6 +63,8 @@ jobs:
     name: Execute S3 PIT restore
     needs: config
     runs-on: ubuntu-24.04
+    env:
+      AWS_REGION: ${{ needs.config.outputs.aws_region }}
     steps:
       - name: Validate datetime
         run: |

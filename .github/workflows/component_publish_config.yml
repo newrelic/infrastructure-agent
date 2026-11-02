@@ -7,10 +7,13 @@ name: .. 🚧 Publish target config
 #   v1 -> legacy buckets, original credentials   (nr-downloads-ohai-staging / nr-downloads-main)
 #   v2 -> batch buckets,  *_V2 credentials     (nr-downloads-ohai-batch-staging / nr-downloads-ohai-batch-prod)
 #
-# Test bucket: set PUBLISH_V2_BUCKET_STAGING / PUBLISH_V2_BUCKET_PRODUCTION (and, for production tests,
-# PUBLISH_V2_REPO_ENDPOINT_PRODUCTION) instead of editing the placeholder names below. The lock bucket is
-# shared with v1 by default; PUBLISH_V2_LOCK_BUCKET_STAGING / _PRODUCTION override it (e.g. onhost-ci-lock-testing
-# when the credentials only reach the testing lock bucket).
+# v2 buckets and its own lock bucket live in us-east-2 (v1 stays in us-east-1). Override without editing code:
+#   PUBLISH_V2_BUCKET_STAGING / _PRODUCTION       bucket names
+#   PUBLISH_V2_LOCK_BUCKET_STAGING / _PRODUCTION  lock bucket names
+#   PUBLISH_V2_REGION                             region of those buckets (default us-east-2)
+#   PUBLISH_V2_REPO_ENDPOINT_PRODUCTION           production test URL until the ELB switch
+# e.g. to test against nr-downloads-ohai-testing set the bucket, PUBLISH_V2_LOCK_BUCKET_STAGING=onhost-ci-lock-testing
+# and PUBLISH_V2_REGION=us-east-1.
 #
 # Rollback: set the repository variable PUBLISH_VERSION back to v1 (no code change needed).
 # Before flipping in either direction, sync the buckets (see sync-s3-bucket.yml) so the target
@@ -47,6 +50,9 @@ on:
         value: ${{ jobs.config.outputs.aws_s3_lock_bucket_name }}
       access_point_host:
         value: ${{ jobs.config.outputs.access_point_host }}
+      aws_region:
+        description: 'Region of the buckets (v1: us-east-1, v2: us-east-2 unless overridden)'
+        value: ${{ jobs.config.outputs.aws_region }}
       dest_prefix:
         description: 'Full publish-action dest_prefix (empty = repository root)'
         value: ${{ jobs.config.outputs.dest_prefix }}
@@ -69,6 +75,7 @@ jobs:
       aws_s3_bucket_name: ${{ steps.resolve.outputs.aws_s3_bucket_name }}
       aws_s3_lock_bucket_name: ${{ steps.resolve.outputs.aws_s3_lock_bucket_name }}
       access_point_host: ${{ steps.resolve.outputs.access_point_host }}
+      aws_region: ${{ steps.resolve.outputs.aws_region }}
       dest_prefix: ${{ steps.resolve.outputs.dest_prefix }}
       s3_website_url: ${{ steps.resolve.outputs.s3_website_url }}
       repo_endpoint: ${{ steps.resolve.outputs.repo_endpoint }}
@@ -84,6 +91,7 @@ jobs:
           V2_BUCKET_STAGING: ${{ vars.PUBLISH_V2_BUCKET_STAGING }}
           V2_BUCKET_PRODUCTION: ${{ vars.PUBLISH_V2_BUCKET_PRODUCTION }}
           V2_LOCK_BUCKET_STAGING: ${{ vars.PUBLISH_V2_LOCK_BUCKET_STAGING }}
+          V2_REGION: ${{ vars.PUBLISH_V2_REGION }}
           V2_LOCK_BUCKET_PRODUCTION: ${{ vars.PUBLISH_V2_LOCK_BUCKET_PRODUCTION }}
           V2_REPO_ENDPOINT_PRODUCTION: ${{ vars.PUBLISH_V2_REPO_ENDPOINT_PRODUCTION }}
         run: |
@@ -95,28 +103,37 @@ jobs:
             *) echo "::error::PUBLISH_VERSION must be v1 or v2, got '${version}'"; exit 1 ;;
           esac
 
+          # S3 static-website endpoint: us-east-1 uses the legacy "s3-website-<region>" form, newer regions "s3-website.<region>"
+          website_host() {
+            if [ "$1" = "us-east-1" ]; then echo "s3-website-us-east-1.amazonaws.com"; else echo "s3-website.$1.amazonaws.com"; fi
+          }
+
           case "${TARGET_ENV}-${version}" in
             staging-v1)
+              region="us-east-1"
               bucket="nr-downloads-ohai-staging"
               lock_bucket="onhost-ci-lock-staging"
               access_point_host="staging"
-              repo_endpoint="http://${bucket}.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
+              repo_endpoint="http://${bucket}.$(website_host "${region}")/infrastructure_agent"
               ;;
             staging-v2)
-              bucket="${V2_BUCKET_STAGING:-nr-downloads-ohai-batch-staging}" # placeholder default until the bucket is provisioned
-              lock_bucket="${V2_LOCK_BUCKET_STAGING:-onhost-ci-lock-staging}"
+              region="${V2_REGION:-us-east-2}"
+              bucket="${V2_BUCKET_STAGING:-nr-downloads-ohai-batch-staging}" # v2 default, override with PUBLISH_V2_BUCKET_*
+              lock_bucket="${V2_LOCK_BUCKET_STAGING:-onhost-ci-lock-batch-staging}" # v2 has its own lock bucket (same region), override with PUBLISH_V2_LOCK_BUCKET_*
               access_point_host="staging"
-              repo_endpoint="http://${bucket}.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
+              repo_endpoint="http://${bucket}.$(website_host "${region}")/infrastructure_agent"
               ;;
             production-v1)
+              region="us-east-1"
               bucket="nr-downloads-main"
               lock_bucket="onhost-ci-lock"
               access_point_host="production"
               repo_endpoint="https://download.newrelic.com/infrastructure_agent"
               ;;
             production-v2)
-              bucket="${V2_BUCKET_PRODUCTION:-nr-downloads-ohai-batch-prod}" # placeholder default until the bucket is provisioned
-              lock_bucket="${V2_LOCK_BUCKET_PRODUCTION:-onhost-ci-lock}"
+              region="${V2_REGION:-us-east-2}"
+              bucket="${V2_BUCKET_PRODUCTION:-nr-downloads-ohai-batch-prod}" # v2 default, override with PUBLISH_V2_BUCKET_*
+              lock_bucket="${V2_LOCK_BUCKET_PRODUCTION:-onhost-ci-lock-batch-prod}" # v2 has its own lock bucket (same region), override with PUBLISH_V2_LOCK_BUCKET_*
               access_point_host="production"
               # served through the CDN once the ELB switch to the new bucket is done; until then set
               # PUBLISH_V2_REPO_ENDPOINT_PRODUCTION to test against the new bucket directly
@@ -140,7 +157,7 @@ jobs:
               exit 1
             fi
             dest_prefix="testing-pre-releases/${DEST_PREFIX_INPUT}/infrastructure_agent/"
-            access_point_host="http://${bucket}.s3-website-us-east-1.amazonaws.com/testing-pre-releases/${DEST_PREFIX_INPUT}"
+            access_point_host="http://${bucket}.$(website_host "${region}")/testing-pre-releases/${DEST_PREFIX_INPUT}"
             repo_endpoint="${access_point_host}/infrastructure_agent"
           fi
 
@@ -150,7 +167,8 @@ jobs:
             echo "aws_s3_bucket_name=${bucket}"
             echo "aws_s3_lock_bucket_name=${lock_bucket}"
             echo "access_point_host=${access_point_host}"
-            echo "s3_website_url=http://${bucket}.s3-website-us-east-1.amazonaws.com"
+            echo "aws_region=${region}"
+            echo "s3_website_url=http://${bucket}.$(website_host "${region}")"
             echo "repo_endpoint=${repo_endpoint}"
           } >> "${GITHUB_OUTPUT}"
 

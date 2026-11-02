@@ -28,6 +28,11 @@ on:
         required: false
         type: string
         default: ''
+      AWS_REGION:
+        description: 'Region of the v2 buckets'
+        required: false
+        type: string
+        default: 'us-east-2'
       TAG:
         required: true
         type: string
@@ -68,7 +73,7 @@ env:
   ASSETS_TYPE: ${{ inputs.ASSETS_TYPE }}
   DISABLE_LOCK: ${{ inputs.DISABLE_LOCK == true }}
   DEST_PREFIX: ${{ inputs.DEST_PREFIX }}
-  AWS_REGION: "us-east-1"
+  AWS_REGION: ${{ inputs.AWS_REGION }}
   ACCESS_POINT_HOST: ${{ inputs.ACCESS_POINT_HOST }}
 
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

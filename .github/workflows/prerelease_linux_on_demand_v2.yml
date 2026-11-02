@@ -44,7 +44,6 @@ env:
   FIXED_SUFFIX: "infrastructure_agent/"
   # skip mirror repo for a single package test, or allow mirroring to have multiple packages in a custom repo
   SKIP_MIRROR_REPO: ${{ github.event.inputs.skip_mirror_repo }}
-  AWS_REGION: "us-east-1"
   RUN_ID: ${{ github.run_id }}
   GPG_MAIL: 'infrastructure-eng@newrelic.com'
   DISABLE_PUBLISH: true
@@ -65,6 +64,7 @@ jobs:
     runs-on: ubuntu-latest-4-cores
     needs: config
     env:
+      AWS_REGION: ${{ needs.config.outputs.aws_region }}
       AWS_S3_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_bucket_name }}
       AWS_S3_LOCK_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_lock_bucket_name }}
       AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING_V2 || secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
