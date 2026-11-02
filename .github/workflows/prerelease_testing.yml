@@ -3,6 +3,10 @@ name: . 🚀 🛠 Test pre-release
 on:
   workflow_dispatch:
     inputs:
+      publish_version:
+        description: 'infrastructure-publish-action version for this run: v1 | v2 (empty = PUBLISH_VERSION repository variable). Anything else fails the run'
+        required: false
+        default: ''
       tag:
         description: 'Tag to test'
         required: true
@@ -21,10 +25,19 @@ permissions:
   id-token: write
 
 jobs:
+  config:
+    name: Resolve publish target
+    uses: ./.github/workflows/component_publish_config.yml
+    with:
+      ENV: staging
+      PUBLISH_VERSION: ${{ inputs.publish_version }}
+
   test-prerelease-windows:
+    needs: config
     if: ${{ github.event.inputs.windows == 'true' }}
     uses: ./.github/workflows/component_prerelease_testing.yml
     with:
+      REPO_ENDPOINT: ${{ needs.config.outputs.repo_endpoint }}
       PLATFORM: "windows"
       TAG: ${{ github.event.inputs.tag }}
       TAG_OR_UNIQUE_NAME: "${{ github.event.inputs.tag }}-windows"
@@ -32,9 +45,11 @@ jobs:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
       
   test-prerelease-linux:
+    needs: config
     if: ${{ github.event.inputs.linux == 'true' }}
     uses: ./.github/workflows/component_prerelease_testing.yml
     with:
+      REPO_ENDPOINT: ${{ needs.config.outputs.repo_endpoint }}
       PLATFORM: "linux"
       TAG: ${{ github.event.inputs.tag }}
       TAG_OR_UNIQUE_NAME: "${{ github.event.inputs.tag }}-linux"

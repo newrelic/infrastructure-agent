@@ -7,7 +7,6 @@ on:
     tags:
       - '*'
 
-
 permissions:
   contents: read
 
@@ -25,11 +24,16 @@ env:
   GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
   GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
   SCHEMA_BRANCH: ${{ github.event.release.tag_name }}
-  AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
   AWS_REGION: "us-east-1"
   REPO_WORKDIR: 'src/github.com/newrelic/infrastructure-agent'
 
 jobs:
+  config:
+    name: Resolve test endpoint
+    uses: ./.github/workflows/component_publish_config.yml
+    with:
+      ENV: staging
+
   unit-test:
     uses: ./.github/workflows/component_windows_unit_test.yml
 
@@ -108,35 +112,41 @@ jobs:
       TAG: ${{ github.event.release.tag_name }}
       PUBLISH: true
 
-  publishing-to-s3:
-    name: Publish windows artifacts into s3 staging bucket
-    uses: ./.github/workflows/component_windows_publish.yml
-    needs: [ packaging ]
-    secrets:
-      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
-      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
-      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
-      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
-      AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
-      AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
-      AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
+  publish-v1:
+    name: Publish to s3 staging (v1)
+    if: ${{ needs.config.outputs.publish_version == 'v1' }}
+    needs: config
+    uses: ./.github/workflows/publish_stage_v1.yml
+    secrets: inherit
     with:
-      ACCESS_POINT_HOST: "staging"
-      SCHEMA_BRANCH: "master"
-      RUN_ID: ${{ github.run_id }}
+      ENV: staging
       TAG: ${{ github.event.release.tag_name }}
-      AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
-      AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
       ASSETS_TYPE: "all"
+      LINUX: false
+      WINDOWS_DISABLE_LOCK: false
+
+  publish-v2:
+    name: Publish to s3 staging (v2)
+    if: ${{ needs.config.outputs.publish_version == 'v2' }}
+    needs: config
+    uses: ./.github/workflows/publish_stage_v2.yml
+    secrets: inherit
+    with:
+      ENV: staging
+      TAG: ${{ github.event.release.tag_name }}
+      ASSETS_TYPE: "all"
+      LINUX: false
+      WINDOWS_DISABLE_LOCK: false
 
   test-prerelease-windows:
-    needs: [publishing-to-s3]
+    needs: [ config, publish-v1, publish-v2 ]
+    if: ${{ !failure() && !cancelled() }}
     permissions:
       contents: read
       id-token: write # calls component_prerelease_testing.yml which needs AWS OIDC auth
     uses: ./.github/workflows/component_prerelease_testing.yml
     with:
+      REPO_ENDPOINT: ${{ needs.config.outputs.repo_endpoint }}
       PLATFORM: "windows"
       TAG: ${{ github.event.release.tag_name }}
       TAG_OR_UNIQUE_NAME: "${{ github.event.release.tag_name }}-windows"
@@ -144,12 +154,13 @@ jobs:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
 
   canaries-windows:
-    needs: [test-prerelease-windows]
+    needs: [ config, test-prerelease-windows ]
     permissions:
       contents: read
       id-token: write # calls component_canaries.yml which needs AWS OIDC auth
     uses: ./.github/workflows/component_canaries.yml
     with:
+      REPO_ENDPOINT: ${{ needs.config.outputs.repo_endpoint }}
       PLATFORM: "windows"
       TAG: ${{ github.event.release.tag_name }}
     secrets:

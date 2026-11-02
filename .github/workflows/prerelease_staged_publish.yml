@@ -3,6 +3,10 @@ name: . 🚀 🪜 Staged pre-release for Linux, Windows
 on:
   workflow_dispatch:
     inputs:
+      publish_version:
+        description: 'infrastructure-publish-action version for this run: v1 | v2 (empty = PUBLISH_VERSION repository variable). Anything else fails the run'
+        required: false
+        default: ''
       tag:
         description: 'Tag to pre-release'
         required: true
@@ -10,7 +14,6 @@ on:
         description: 'Assets type to pre-release: all, targz, zip, msi, deb, rpm'
         required: true
         default: 'all'
-
 
 permissions:
   contents: read
@@ -22,56 +25,35 @@ env:
   DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
   DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
   SCHEMA_BRANCH: ${{ github.event.inputs.tag }}
-  AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
-  AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
-  AWS_REGION: "us-east-1"
-  AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
-  AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
-  AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
 
 jobs:
 
-  publishing-to-s3:
-    name: Publish linux artifacts into s3 staging bucket
-    uses: ./.github/workflows/component_linux_publish.yml
-    secrets:
-      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
-      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
-      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
-      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
-      AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
-      AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
-      AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
+  config:
+    name: Resolve publish version
+    uses: ./.github/workflows/component_publish_config.yml
     with:
-      ACCESS_POINT_HOST: "staging"
-      SCHEMA_BRANCH: "master"
-      RUN_ID: ${{ github.run_id }}
+      ENV: staging
+      PUBLISH_VERSION: ${{ inputs.publish_version }}
+
+  publish-v1:
+    name: Publish to s3 staging (v1)
+    if: ${{ needs.config.outputs.publish_version == 'v1' }}
+    needs: config
+    uses: ./.github/workflows/publish_stage_v1.yml
+    secrets: inherit
+    with:
+      ENV: staging
       TAG: ${{ github.event.inputs.tag }}
-      AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
-      AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
       ASSETS_TYPE: ${{ github.event.inputs.assetsType }}
 
-
-  publishing-to-s3-windows:
-    name: Publish windows artifacts into s3 staging bucket
-    uses: ./.github/workflows/component_windows_publish.yml
-    secrets:
-      DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
-      DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
-      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
-      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
-      AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
-      AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
-      AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
+  publish-v2:
+    name: Publish to s3 staging (v2)
+    if: ${{ needs.config.outputs.publish_version == 'v2' }}
+    needs: config
+    uses: ./.github/workflows/publish_stage_v2.yml
+    secrets: inherit
     with:
-      ACCESS_POINT_HOST: "staging"
-      SCHEMA_BRANCH: "master"
-      RUN_ID: ${{ github.run_id }}
+      ENV: staging
       TAG: ${{ github.event.inputs.tag }}
-      AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
-      AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
       ASSETS_TYPE: ${{ github.event.inputs.assetsType }}
-      DISABLE_LOCK: true
+

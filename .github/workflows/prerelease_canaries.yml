@@ -3,6 +3,10 @@ name: . 🐤 Canaries
 on:
   workflow_dispatch:
     inputs:
+      publish_version:
+        description: 'infrastructure-publish-action version for this run: v1 | v2 (empty = PUBLISH_VERSION repository variable). Anything else fails the run'
+        required: false
+        default: ''
       tag:
         description: 'Tag to test'
         required: true
@@ -31,28 +35,41 @@ permissions:
   id-token: write
 
 jobs:
+  config:
+    name: Resolve publish target
+    uses: ./.github/workflows/component_publish_config.yml
+    with:
+      ENV: staging
+      PUBLISH_VERSION: ${{ inputs.publish_version }}
+
   canaries-windows:
+    needs: config
     if: ${{ github.event.inputs.windows == 'true' }}
     uses: ./.github/workflows/component_canaries.yml
     with:
+      REPO_ENDPOINT: ${{ needs.config.outputs.repo_endpoint }}
       PLATFORM: "windows"
       TAG: ${{ github.event.inputs.tag }}
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
       
   canaries-linux:
+    needs: config
     if: ${{ github.event.inputs.linux == 'true' }}
     uses: ./.github/workflows/component_canaries.yml
     with:
+      REPO_ENDPOINT: ${{ needs.config.outputs.repo_endpoint }}
       PLATFORM: "linux"
       TAG: ${{ github.event.inputs.tag }}
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
       
   canaries-macos:
+    needs: config
     if: ${{ github.event.inputs.macos == 'true' }}
     uses: ./.github/workflows/component_canaries.yml
     with:
+      REPO_ENDPOINT: ${{ needs.config.outputs.repo_endpoint }}
       PLATFORM: "macos"
       TAG: ${{ github.event.inputs.tag }}
     secrets:
