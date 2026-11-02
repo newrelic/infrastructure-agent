@@ -134,7 +134,7 @@ jobs:
               region="${V2_REGION:-us-east-2}"
               bucket="${V2_BUCKET_PRODUCTION:-nr-downloads-ohai-batch-prod}" # v2 default, override with PUBLISH_V2_BUCKET_*
               lock_bucket="${V2_LOCK_BUCKET_PRODUCTION:-onhost-ci-lock-batch-prod}" # v2 has its own lock bucket (same region), override with PUBLISH_V2_LOCK_BUCKET_*
-              access_point_host="production"
+              access_point_host="https://download.newrelic.com" # not the "production" keyword: that one reads the apt repo from the legacy bucket
               # served through the CDN once the ELB switch to the new bucket is done; until then set
               # PUBLISH_V2_REPO_ENDPOINT_PRODUCTION to test against the new bucket directly
               repo_endpoint="${V2_REPO_ENDPOINT_PRODUCTION:-https://download.newrelic.com/infrastructure_agent}"
