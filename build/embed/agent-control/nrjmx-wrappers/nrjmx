@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+# Wrapper for the nrjmx.jar bundled next to it in the Agent Control package.
+# gojmx (used by nri-jmx and other JMX-based integrations) runs nrjmx as a single executable, so it cannot be a
+# "java -jar ..." command line. It finds this script next to the integration (or through NR_JMX_TOOL).
+# Always uses the jar in this directory, never a system-wide nrjmx installation.
+
+java_tool="java"
+
+if [ -n "${NRIA_JAVA_HOME}" ]; then
+    java_tool="${NRIA_JAVA_HOME}/bin/java"
+elif [ -n "${JAVA_HOME}" ]; then
+    java_tool="${JAVA_HOME}/bin/java"
+fi
+
+script_dir="$(dirname "$(readlink -f "$0")")"
+
+exec "${java_tool}" -jar "${script_dir}/nrjmx.jar" "$@"
