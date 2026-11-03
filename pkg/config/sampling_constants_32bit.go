@@ -37,12 +37,14 @@ const (
 	FREQ_PLUGIN_SYSVINIT_UPDATES       = 30 // seconds
 	FREQ_PLUGIN_UPSTART_UPDATES        = 30 // seconds
 
-	FREQ_PLUGIN_FACTER_UPDATES            = 30 // seconds -- facter plugin
-	FREQ_PLUGIN_PACKAGE_MGRS_UPDATES      = 30 // seconds -- rpm, deb plugins. RPM watches /var/lib/rpm/.rpm.lock, dpkg: /var/lib/dpkg/lock
-	FREQ_PLUGIN_SELINUX_UPDATES           = 30 // seconds
-	FREQ_PLUGIN_HOST_ALIASES              = 30 // seconds
-	FREQ_PLUGIN_NETWORK_INTERFACE_UPDATES = 60 // seconds
-	FREQ_PLUGIN_CLOUD_SECURITY_UPDATES    = 60 // seconds
+	FREQ_PLUGIN_FACTER_UPDATES            = 30   // seconds -- facter plugin
+	FREQ_PLUGIN_PACKAGE_MGRS_UPDATES      = 30   // seconds -- rpm, deb plugins. RPM watches /var/lib/rpm/.rpm.lock, dpkg: /var/lib/dpkg/lock
+	FREQ_PLUGIN_SELINUX_UPDATES           = 30   // seconds
+	FREQ_PLUGIN_HOST_ALIASES              = 30   // seconds
+	FREQ_PLUGIN_NETWORK_INTERFACE_UPDATES = 60   // seconds
+	FREQ_PLUGIN_CLOUD_SECURITY_UPDATES    = 60   // seconds
+	FREQ_PLUGIN_INTERMEDIATE_CERTS        = 3600 // seconds
+	FREQ_MINIMUM_INTERMEDIATE_CERTS       = 60   // seconds
 
 	// WINDOWS PLUGINS
 	FREQ_PLUGIN_WINDOWS_SERVICES = 30 // seconds, 0 == off, 30 == minimum otherwise: inventory: running services

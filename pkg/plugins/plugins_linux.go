@@ -74,6 +74,9 @@ func RegisterPlugins(agent *agnt.Agent) error {
 			agent.RegisterPlugin(NewConfigFilePlugin(ids.PluginID{"files", "config"}, agent.Context))
 		}
 		agent.RegisterPlugin(pluginsLinux.NewUsersPlugin(agent.Context))
+		if config.EnableIntermediateCertsPlugin {
+			agent.RegisterPlugin(pluginsLinux.NewIntermediateCertsPlugin(agent.Context))
+		}
 		agent.RegisterPlugin(pluginsLinux.NewDaemontoolsPlugin(ids.PluginID{"services", "daemontools"}, agent.Context))
 		agent.RegisterPlugin(pluginsLinux.NewSupervisorPlugin(ids.PluginID{"services", "supervisord"}, agent.Context))
 		agent.RegisterPlugin(NewNetworkInterfacePlugin(ids.PluginID{"system", "network_interfaces"}, agent.Context))

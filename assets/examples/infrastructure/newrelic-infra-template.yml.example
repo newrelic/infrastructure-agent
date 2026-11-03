@@ -894,6 +894,43 @@ license_key: your_license_key
 #
 
 #
+# Option   : enable_intermediate_certs_plugin
+# Env var  : NRIA_ENABLE_INTERMEDIATE_CERTS_PLUGIN
+# Value    : Enables the intermediate certificates plugin, which reports the
+#            intermediate CA certificates (CA certificates that are not
+#            self-signed) found on the host as inventory. On Linux the system
+#            CA directories are scanned; on Windows the LocalMachine
+#            "Intermediate Certification Authorities" store is read; on macOS
+#            the System keychain is read. Only public certificate metadata is
+#            reported.
+# Default  : false
+#
+#enable_intermediate_certs_plugin: false
+#
+
+#
+# Option   : intermediate_certs_refresh_sec
+# Env var  : NRIA_INTERMEDIATE_CERTS_REFRESH_SEC
+# Value    : Sampling interval for the intermediate certificates plugin, in
+#            seconds. Set to -1 to disable it. Minimum value is 60.
+# Default  : 3600
+#
+#intermediate_certs_refresh_sec: 3600
+#
+
+#
+# Option   : intermediate_certs_include_roots
+# Env var  : NRIA_INTERMEDIATE_CERTS_INCLUDE_ROOTS
+# Value    : Makes the intermediate certificates plugin report the root
+#            (self-signed) CA certificates too. A host trusts around 150 roots
+#            by default, so this noticeably increases the inventory size.
+#            Each entry has a "type" attribute (root or intermediate).
+# Default  : false
+#
+#intermediate_certs_include_roots: false
+#
+
+#
 # Option   : legacy_storage_sampler
 # Env var  : NRIA_LEGACY_STORAGE_SAMPLER
 # Value    : Set to True to force the agent to use windows WMI, the legacy
