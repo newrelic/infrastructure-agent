@@ -7,10 +7,11 @@ name: .. 🚧 Publish target config
 #   v1 -> legacy buckets, original credentials   (nr-downloads-ohai-staging / nr-downloads-main)
 #   v2 -> batch buckets,  *_V2 credentials     (nr-downloads-ohai-batch-staging / nr-downloads-ohai-batch-prod)
 #
-# v2 buckets and its own lock bucket live in us-east-2 (v1 stays in us-east-1). Override without editing code:
+# v2 buckets live in us-east-2 (v1 stays in us-east-1); the lock bucket is shared with v1 by default. Override without editing code:
 #   PUBLISH_V2_BUCKET_STAGING / _PRODUCTION       bucket names
 #   PUBLISH_V2_LOCK_BUCKET_STAGING / _PRODUCTION  lock bucket names
-#   PUBLISH_V2_REGION                             region of those buckets (default us-east-2)
+#   PUBLISH_V2_REGION                             region of the v2 buckets (default us-east-2)
+#   PUBLISH_V2_LOCK_REGION                        region of the lock bucket (default us-east-1, where the shared lock bucket is)
 #   PUBLISH_V2_REPO_ENDPOINT_PRODUCTION           production test URL until the ELB switch
 # e.g. to test against nr-downloads-ohai-testing set the bucket, PUBLISH_V2_LOCK_BUCKET_STAGING=onhost-ci-lock-testing
 # and PUBLISH_V2_REGION=us-east-1.
@@ -53,6 +54,9 @@ on:
       aws_region:
         description: 'Region of the buckets (v1: us-east-1, v2: us-east-2 unless overridden)'
         value: ${{ jobs.config.outputs.aws_region }}
+      aws_lock_region:
+        description: 'Region of the lock bucket (us-east-1 unless overridden; the lock bucket is shared with v1)'
+        value: ${{ jobs.config.outputs.aws_lock_region }}
       dest_prefix:
         description: 'Full publish-action dest_prefix (empty = repository root)'
         value: ${{ jobs.config.outputs.dest_prefix }}
@@ -76,6 +80,7 @@ jobs:
       aws_s3_lock_bucket_name: ${{ steps.resolve.outputs.aws_s3_lock_bucket_name }}
       access_point_host: ${{ steps.resolve.outputs.access_point_host }}
       aws_region: ${{ steps.resolve.outputs.aws_region }}
+      aws_lock_region: ${{ steps.resolve.outputs.aws_lock_region }}
       dest_prefix: ${{ steps.resolve.outputs.dest_prefix }}
       s3_website_url: ${{ steps.resolve.outputs.s3_website_url }}
       repo_endpoint: ${{ steps.resolve.outputs.repo_endpoint }}
@@ -92,6 +97,7 @@ jobs:
           V2_BUCKET_PRODUCTION: ${{ vars.PUBLISH_V2_BUCKET_PRODUCTION }}
           V2_LOCK_BUCKET_STAGING: ${{ vars.PUBLISH_V2_LOCK_BUCKET_STAGING }}
           V2_REGION: ${{ vars.PUBLISH_V2_REGION }}
+          V2_LOCK_REGION: ${{ vars.PUBLISH_V2_LOCK_REGION }}
           V2_LOCK_BUCKET_PRODUCTION: ${{ vars.PUBLISH_V2_LOCK_BUCKET_PRODUCTION }}
           V2_REPO_ENDPOINT_PRODUCTION: ${{ vars.PUBLISH_V2_REPO_ENDPOINT_PRODUCTION }}
         run: |
@@ -111,6 +117,7 @@ jobs:
           case "${TARGET_ENV}-${version}" in
             staging-v1)
               region="us-east-1"
+              lock_region="us-east-1"
               bucket="nr-downloads-ohai-staging"
               lock_bucket="onhost-ci-lock-staging"
               access_point_host="staging"
@@ -118,13 +125,15 @@ jobs:
               ;;
             staging-v2)
               region="${V2_REGION:-us-east-2}"
+              lock_region="${V2_LOCK_REGION:-us-east-1}" # the shared lock bucket lives in us-east-1
               bucket="${V2_BUCKET_STAGING:-nr-downloads-ohai-batch-staging}" # v2 default, override with PUBLISH_V2_BUCKET_*
-              lock_bucket="${V2_LOCK_BUCKET_STAGING:-onhost-ci-lock-batch-staging}" # v2 has its own lock bucket (same region), override with PUBLISH_V2_LOCK_BUCKET_*
+              lock_bucket="${V2_LOCK_BUCKET_STAGING:-onhost-ci-lock-staging}" # same lock bucket as v1 (one lock for every publisher), override with PUBLISH_V2_LOCK_BUCKET_*
               access_point_host="http://${bucket}.$(website_host "${region}")" # a URL, not the "staging" keyword (that one means the legacy staging bucket)
               repo_endpoint="http://${bucket}.$(website_host "${region}")/infrastructure_agent"
               ;;
             production-v1)
               region="us-east-1"
+              lock_region="us-east-1"
               bucket="nr-downloads-main"
               lock_bucket="onhost-ci-lock"
               access_point_host="production"
@@ -132,8 +141,9 @@ jobs:
               ;;
             production-v2)
               region="${V2_REGION:-us-east-2}"
+              lock_region="${V2_LOCK_REGION:-us-east-1}" # the shared lock bucket lives in us-east-1
               bucket="${V2_BUCKET_PRODUCTION:-nr-downloads-ohai-batch-prod}" # v2 default, override with PUBLISH_V2_BUCKET_*
-              lock_bucket="${V2_LOCK_BUCKET_PRODUCTION:-onhost-ci-lock-batch-prod}" # v2 has its own lock bucket (same region), override with PUBLISH_V2_LOCK_BUCKET_*
+              lock_bucket="${V2_LOCK_BUCKET_PRODUCTION:-onhost-ci-lock}" # same lock bucket as v1 (one lock for every publisher), override with PUBLISH_V2_LOCK_BUCKET_*
               access_point_host="https://download.newrelic.com" # not the "production" keyword: that one reads the apt repo from the legacy bucket
               # served through the CDN once the ELB switch to the new bucket is done; until then set
               # PUBLISH_V2_REPO_ENDPOINT_PRODUCTION to test against the new bucket directly
@@ -168,6 +178,7 @@ jobs:
             echo "aws_s3_lock_bucket_name=${lock_bucket}"
             echo "access_point_host=${access_point_host}"
             echo "aws_region=${region}"
+            echo "aws_lock_region=${lock_region}"
             echo "s3_website_url=http://${bucket}.$(website_host "${region}")"
             echo "repo_endpoint=${repo_endpoint}"
           } >> "${GITHUB_OUTPUT}"

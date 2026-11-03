@@ -84,6 +84,7 @@ jobs:
       ASSETS_TYPE: ${{ inputs.ASSETS_TYPE }}
       DEST_PREFIX: ${{ needs.config.outputs.dest_prefix }}
       AWS_REGION: ${{ needs.config.outputs.aws_region }}
+      AWS_LOCK_REGION: ${{ needs.config.outputs.aws_lock_region }}
 
   publish-windows:
     name: Publish windows artifacts into s3 (v2)
@@ -109,6 +110,7 @@ jobs:
       ASSETS_TYPE: ${{ inputs.ASSETS_TYPE }}
       DEST_PREFIX: ${{ needs.config.outputs.dest_prefix }}
       AWS_REGION: ${{ needs.config.outputs.aws_region }}
+      AWS_LOCK_REGION: ${{ needs.config.outputs.aws_lock_region }}
       DISABLE_LOCK: ${{ inputs.WINDOWS_DISABLE_LOCK }}
 
   purge-cdn:

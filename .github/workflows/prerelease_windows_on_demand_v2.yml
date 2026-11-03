@@ -106,6 +106,7 @@ jobs:
     needs: [ config, packaging ]
     env:
       AWS_REGION: ${{ needs.config.outputs.aws_region }}
+      AWS_LOCK_REGION: ${{ needs.config.outputs.aws_lock_region }}
     strategy:
       matrix:
         assetsType:
@@ -146,6 +147,7 @@ jobs:
           access_point_host: ${{ env.ACCESS_POINT_HOST }}
           run_id: ${{ env.RUN_ID }}
           aws_region: ${{ env.AWS_REGION }}
+          aws_lock_region: ${{ env.AWS_LOCK_REGION }}
           aws_role_session_name: ${{ env.AWS_ROLE_SESSION_NAME }}
           aws_role_arn: ${{ env.AWS_ROLE_ARN }}
           # used for signing package stuff

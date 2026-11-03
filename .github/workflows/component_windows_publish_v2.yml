@@ -33,6 +33,11 @@ on:
         required: false
         type: string
         default: 'us-east-2'
+      AWS_LOCK_REGION:
+        description: 'Region of the lock bucket (it can differ from the bucket region)'
+        required: false
+        type: string
+        default: 'us-east-1'
       TAG:
         required: true
         type: string
@@ -77,6 +82,7 @@ env:
   DISABLE_LOCK: ${{ inputs.DISABLE_LOCK == true }}
   DEST_PREFIX: ${{ inputs.DEST_PREFIX }}
   AWS_REGION: ${{ inputs.AWS_REGION }}
+  AWS_LOCK_REGION: ${{ inputs.AWS_LOCK_REGION }}
   ACCESS_POINT_HOST: ${{ inputs.ACCESS_POINT_HOST }}
 
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -119,6 +125,7 @@ jobs:
           access_point_host: ${{ env.ACCESS_POINT_HOST }}
           run_id: ${{ env.RUN_ID }}
           aws_region: ${{ env.AWS_REGION }}
+          aws_lock_region: ${{ env.AWS_LOCK_REGION }}
           aws_role_session_name: ${{ env.AWS_ROLE_SESSION_NAME }}
           aws_role_arn: ${{ env.AWS_ROLE_ARN }}
           # used for signing package stuff
