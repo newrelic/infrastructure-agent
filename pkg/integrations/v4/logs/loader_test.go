@@ -28,6 +28,7 @@ var (
 		Match:       "*",
 		LicenseKey:  "license",
 		SendMetrics: false,
+		Compression: "gzip",
 	}
 	fbCfgEntityDecoration = FBCfgFilter{
 		Name:  "record_modifier",
@@ -127,7 +128,7 @@ logs:
 		t.Run(tt.name, func(t *testing.T) {
 			// SUT
 			conf := newTestConf(tt.folder, disabledTroubleshootCfg, false)
-			cfg, ok := NewFolderLoader(conf, idnProvide, hostnameProvider).LoadAll()
+			cfg, ok := NewFolderLoader(conf, idnProvide, hostnameProvider, false).LoadAll()
 
 			assert.Equal(t, tt.expectOK, ok)
 			assert.Equal(t, tt.wantCfg, cfg)
@@ -175,24 +176,25 @@ logs:
 			Match:       "*",
 			LicenseKey:  "license",
 			SendMetrics: true,
+			Compression: "gzip",
 		},
 	}
 
 	conf := newTestConf(validFileFolder, disabledTroubleshootCfg, true)
-	cfg, ok := NewFolderLoader(conf, idnProvide, hostnameProvider).LoadAll()
+	cfg, ok := NewFolderLoader(conf, idnProvide, hostnameProvider, false).LoadAll()
 	assert.Equal(t, true, ok)
 	assert.Equal(t, expectedCfg, cfg)
 }
 
 func TestCfgLoader_LoadAll_TroubleshootDisabed(t *testing.T) {
 	disabledTroubleshootCfg := config.NewTroubleshootCfg(false, false, "")
-	_, ok := NewFolderLoader(newTestConf("", disabledTroubleshootCfg, false), idnProvide, hostnameProvider).LoadAll()
+	_, ok := NewFolderLoader(newTestConf("", disabledTroubleshootCfg, false), idnProvide, hostnameProvider, false).LoadAll()
 	assert.False(t, ok, "should return ok=false when there is no logging configuration directory and troubleshoot is disabled")
 }
 
 func TestCfgLoader_LoadAll_TroubleshootNoLogFile(t *testing.T) {
 	troublesCfg := config.NewTroubleshootCfg(true, false, "")
-	cfg, ok := NewFolderLoader(newTestConf("", troublesCfg, false), idnProvide, hostnameProvider).LoadAll()
+	cfg, ok := NewFolderLoader(newTestConf("", troublesCfg, false), idnProvide, hostnameProvider, false).LoadAll()
 	assert.Equal(t, ok, true, "Enabling troubleshoot with no logging configurations should start the log forwarder")
 	assert.Equal(t, FBCfg{
 		Inputs: []FBCfgInput{
@@ -219,7 +221,7 @@ func TestCfgLoader_LoadAll_TroubleshootNoLogFile(t *testing.T) {
 
 func TestCfgLoader_LoadAll_TroubleshootLogFile(t *testing.T) {
 	troublesCfg := config.NewTroubleshootCfg(true, true, "/agent_log_file")
-	cfg, ok := NewFolderLoader(newTestConf("", troublesCfg, false), idnProvide, hostnameProvider).LoadAll()
+	cfg, ok := NewFolderLoader(newTestConf("", troublesCfg, false), idnProvide, hostnameProvider, false).LoadAll()
 	assert.Equal(t, ok, true, "Enabling troubleshoot with no logging configurations should start the log forwarder")
 	assert.Equal(t, FBCfg{
 		Inputs: []FBCfgInput{
@@ -437,7 +439,7 @@ logs:
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// SUT
-			gotC, err := NewFolderLoader(newTestConf("", disabledTroubleshootCfg, false), idnProvide, hostnameProvider).parseYAML(tt.contents)
+			gotC, err := NewFolderLoader(newTestConf("", disabledTroubleshootCfg, false), idnProvide, hostnameProvider, false).parseYAML(tt.contents)
 			assert.Equal(t, tt.wantErr, err)
 			assert.Equal(t, tt.wantC, gotC)
 		})
