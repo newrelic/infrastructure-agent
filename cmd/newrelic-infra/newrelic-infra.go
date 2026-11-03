@@ -295,6 +295,8 @@ func initializeAgentAndRun(c *config.Config, logFwCfg config.LogForward) error {
 		c.PluginInstanceDirs,
 		pluginSourceDirs,
 	)
+	v4ManagerConfig.IntegrationsHealthEnabled = c.IntegrationsHealthEnabled
+	v4ManagerConfig.IntegrationsHealthDir = c.IntegrationsHealthDir
 
 	userAgent := agent.GenerateUserAgent("New Relic Infrastructure Agent", buildVersion)
 	transport := backendhttp.BuildTransport(c, backendhttp.ClientTimeout)
