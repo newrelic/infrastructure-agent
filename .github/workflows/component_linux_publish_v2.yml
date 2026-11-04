@@ -134,5 +134,3 @@ jobs:
           gpg_private_key_base64: ${{ env.GPG_PRIVATE_KEY_BASE64 }}
           disable_lock: ${{ env.DISABLE_LOCK }}
           dest_prefix: ${{ env.DEST_PREFIX }}
-          # a fresh test prefix has no apt repository to mirror from
-          apt_skip_mirror: ${{ startsWith(env.DEST_PREFIX, 'testing-pre-releases/') }}
