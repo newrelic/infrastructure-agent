@@ -90,7 +90,7 @@ jobs:
           DEST_PREFIX_INPUT: ${{ inputs.DEST_PREFIX }}
         run: |
           # precedence: workflow input (test runs) > PUBLISH_VERSION repository variable > v1
-          version="${VERSION_OVERRIDE:-${VERSION_VAR:-v1}}"
+          version="${VERSION_OVERRIDE:-${VERSION_VAR:-v2}}" # TEST BRANCH ONLY: default flipped from v1
 
           case "${version}" in
             v1|v2) ;;
