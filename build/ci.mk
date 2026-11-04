@@ -185,9 +185,10 @@ ci/sync-s3/preview-staging: ci/validate-aws-credentials
 # `rm` + `cp`: a run that is cut short (job time limit, expired credentials, network) can be run again and
 # resumes, instead of starting from an emptied target.
 # Naming: <target>-from-<source>.
+# The CLI prefixes each filter with the folder being synced, so the filters are relative to infrastructure_agent/.
 S3_EXISTING_BUCKETS_REGION ?= us-east-1
 S3_BATCH_BUCKETS_REGION ?= us-east-2
-S3_SYNC_FILTERS := --exclude '*/infrastructure_agent/beta/*' --exclude '*/infrastructure_agent/test/*' --exclude '*/newrelic-infra.repo'
+S3_SYNC_FILTERS := --exclude 'beta/*' --exclude 'test/*' --exclude '*/newrelic-infra.repo'
 
 # $(1) source bucket, $(2) source region, $(3) target bucket, $(4) target region
 define S3_SYNC_CROSS_REGION
