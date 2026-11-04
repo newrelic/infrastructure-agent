@@ -41,7 +41,7 @@ env:
   # force all custom packages to be published to a fixed path
   FIXED_PREFIX: "testing-pre-releases"
   # using infrastructure_agent as suffix allows use to mirror an on_demand repo
-  FIXED_SUFFIX: "infrastructure_agent/"
+  FIXED_SUFFIX: "infrastructure_agent_v2/"
   # skip mirror repo for a single package test, or allow mirroring to have multiple packages in a custom repo
   SKIP_MIRROR_REPO: ${{ github.event.inputs.skip_mirror_repo }}
   AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
@@ -107,7 +107,7 @@ jobs:
           app_name: "newrelic-infra"
           repo_name: "newrelic/infrastructure-agent"
           schema: "custom"
-          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.BRANCH }}/build/upload-schema-linux-deb.yml"
+          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.BRANCH }}/build/v2/upload-schema-linux-deb.yml"
           aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
@@ -133,7 +133,7 @@ jobs:
           app_name: "newrelic-infra"
           repo_name: "newrelic/infrastructure-agent"
           schema: "custom"
-          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.BRANCH }}/build/upload-schema-linux-rpm.yml"
+          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.BRANCH }}/build/v2/upload-schema-linux-rpm.yml"
           aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
@@ -158,7 +158,7 @@ jobs:
           app_name: "newrelic-infra"
           repo_name: "newrelic/infrastructure-agent"
           schema: "custom"
-          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.BRANCH }}/build/upload-schema-linux-targz.yml"
+          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.BRANCH }}/build/v2/upload-schema-linux-targz.yml"
           aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
@@ -202,7 +202,7 @@ jobs:
           app_name: "newrelic-infra-fips"
           repo_name: "newrelic/infrastructure-agent"
           schema: "custom"
-          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.BRANCH }}/build/upload-schema-linux-deb-fips.yml"
+          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.BRANCH }}/build/v2/upload-schema-linux-deb-fips.yml"
           aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
@@ -228,7 +228,7 @@ jobs:
           app_name: "newrelic-infra-fips"
           repo_name: "newrelic/infrastructure-agent"
           schema: "custom"
-          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.BRANCH }}/build/upload-schema-linux-rpm-fips.yml"
+          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.BRANCH }}/build/v2/upload-schema-linux-rpm-fips.yml"
           aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
@@ -253,7 +253,7 @@ jobs:
           app_name: "newrelic-infra-fips"
           repo_name: "newrelic/infrastructure-agent"
           schema: "custom"
-          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.BRANCH }}/build/upload-schema-linux-targz-fips.yml"
+          schema_url: "https://raw.githubusercontent.com/newrelic/infrastructure-agent/${{ env.BRANCH }}/build/v2/upload-schema-linux-targz-fips.yml"
           aws_access_key_id: ${{ env.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
