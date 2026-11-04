@@ -18,8 +18,15 @@ permissions:
   contents: read
 
 jobs:
+  config:
+    name: Resolve publish target
+    uses: ./.github/workflows/component_publish_config.yml
+    with:
+      ENV: ${{ github.event.inputs.staging == 'true' && 'staging' || 'production' }}
+
   molecule-packaging-tests:
+    needs: config
     uses: ./.github/workflows/component_molecule_packaging.yml
     with:
       TAG: "${{ github.event.inputs.tag }}"
-      REPO_ENDPOINT: ${{ github.event.inputs.staging == 'true' && 'http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent' ||  'https://download.newrelic.com/infrastructure_agent'  }}
+      REPO_ENDPOINT: ${{ needs.config.outputs.repo_endpoint }}
