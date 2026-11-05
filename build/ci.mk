@@ -191,19 +191,6 @@ ci/sync-s3/production-v2-from-v1: ci/validate-aws-credentials
 ci/sync-s3/staging-v2: ci/validate-aws-credentials
 	@aws s3 sync s3://nr-downloads-main/infrastructure_agent_v2/ s3://nr-downloads-ohai-staging/infrastructure_agent_v2/ --copy-props metadata-directive --delete --no-progress $(S3_V2_FILTERS)
 
-# infrastructure_agent_v2/ <- infrastructure_agent/ inside one bucket (same region).
-# `aws s3 sync --delete` mirrors the folder and can be run again if it is cut short, instead of `rm` + `cp`.
-# The CLI prefixes each filter with the source folder, so these filters are relative to infrastructure_agent/.
-S3_V2_FILTERS := --exclude 'beta/*' --exclude 'test/*' --exclude '*/newrelic-infra.repo'
-
-.PHONY : ci/sync-s3/staging-v2-from-v1
-ci/sync-s3/staging-v2-from-v1: ci/validate-aws-credentials
-	@aws s3 sync s3://nr-downloads-ohai-staging/infrastructure_agent/ s3://nr-downloads-ohai-staging/infrastructure_agent_v2/ --copy-props metadata-directive --delete --no-progress $(S3_V2_FILTERS)
-
-.PHONY : ci/sync-s3/production-v2-from-v1
-ci/sync-s3/production-v2-from-v1: ci/validate-aws-credentials
-	@aws s3 sync s3://nr-downloads-main/infrastructure_agent/ s3://nr-downloads-main/infrastructure_agent_v2/ --copy-props metadata-directive --delete --no-progress $(S3_V2_FILTERS)
-
 .PHONY : ci/sync-s3/staging-v1-from-v2
 ci/sync-s3/staging-v1-from-v2: ci/validate-aws-credentials
 	@aws s3 sync s3://nr-downloads-ohai-staging/infrastructure_agent_v2/ s3://nr-downloads-ohai-staging/infrastructure_agent/ --copy-props metadata-directive --delete --no-progress $(S3_V2_FILTERS)
