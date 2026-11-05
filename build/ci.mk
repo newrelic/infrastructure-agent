@@ -163,15 +163,31 @@ ifndef AWS_REGION
 	exit 1
 endif
 
+# The trailing slash on the `rm` paths keeps infrastructure_agent_v2/ out of the match. The CLI prefixes each filter
+# with the folder being processed, so the filters are relative to infrastructure_agent/; `rm` excludes the same
+# folders as `cp`, so beta/ and test/ in the target are neither deleted nor overwritten.
 .PHONY : ci/sync-s3/staging
 ci/sync-s3/staging: ci/validate-aws-credentials
-	@aws s3 rm --recursive s3://nr-downloads-ohai-staging/infrastructure_agent
-	@aws s3 cp --recursive --copy-props metadata-directive --exclude '*/infrastructure_agent/beta/*' --exclude '*/infrastructure_agent/test/*' --exclude '*/newrelic-infra.repo' s3://nr-downloads-main/infrastructure_agent/ s3://nr-downloads-ohai-staging/infrastructure_agent/
+	@aws s3 rm --recursive --exclude 'beta/*' --exclude 'test/*' s3://nr-downloads-ohai-staging/infrastructure_agent/
+	@aws s3 cp --recursive --copy-props metadata-directive --exclude 'beta/*' --exclude 'test/*' --exclude '*/newrelic-infra.repo' s3://nr-downloads-main/infrastructure_agent/ s3://nr-downloads-ohai-staging/infrastructure_agent/
+
+# infrastructure_agent_v2/ <- infrastructure_agent/ inside one bucket (same region).
+# `aws s3 sync --delete` mirrors the folder and can be run again if it is cut short, instead of `rm` + `cp`.
+# The CLI prefixes each filter with the source folder, so these filters are relative to infrastructure_agent/.
+S3_V2_FILTERS := --exclude 'beta/*' --exclude 'test/*' --exclude '*/newrelic-infra.repo'
+
+.PHONY : ci/sync-s3/staging-v2-from-v1
+ci/sync-s3/staging-v2-from-v1: ci/validate-aws-credentials
+	@aws s3 sync s3://nr-downloads-ohai-staging/infrastructure_agent/ s3://nr-downloads-ohai-staging/infrastructure_agent_v2/ --copy-props metadata-directive --delete --no-progress $(S3_V2_FILTERS)
+
+.PHONY : ci/sync-s3/production-v2-from-v1
+ci/sync-s3/production-v2-from-v1: ci/validate-aws-credentials
+	@aws s3 sync s3://nr-downloads-main/infrastructure_agent/ s3://nr-downloads-main/infrastructure_agent_v2/ --copy-props metadata-directive --delete --no-progress $(S3_V2_FILTERS)
 
 .PHONY : ci/sync-s3/testing
 ci/sync-s3/testing: ci/validate-aws-credentials
-	@aws s3 rm --recursive s3://nr-downloads-ohai-testing/infrastructure_agent
-	@aws s3 cp --recursive --copy-props metadata-directive --exclude '*/infrastructure_agent/beta/*' --exclude '*/infrastructure_agent/test/*' --exclude '*/newrelic-infra.repo' s3://nr-downloads-main/infrastructure_agent/ s3://nr-downloads-ohai-testing/infrastructure_agent/
+	@aws s3 rm --recursive --exclude 'beta/*' --exclude 'test/*' s3://nr-downloads-ohai-testing/infrastructure_agent/
+	@aws s3 cp --recursive --copy-props metadata-directive --exclude 'beta/*' --exclude 'test/*' --exclude '*/newrelic-infra.repo' s3://nr-downloads-main/infrastructure_agent/ s3://nr-downloads-ohai-testing/infrastructure_agent/
 
 .PHONY : ci/sync-s3/preview-staging
 ci/sync-s3/preview-staging: ci/validate-aws-credentials
