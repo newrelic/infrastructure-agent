@@ -13,6 +13,17 @@ on:
         required: true
       AWS_ROLE_SESSION_NAME:
         required: true
+    inputs:
+      AWS_S3_BUCKET_NAME:
+        description: 'Bucket the CDN serves; objects listed here are the ones purged'
+        required: false
+        type: string
+        default: 'nr-downloads-main'
+      AWS_REGION:
+        description: 'Region of the bucket'
+        required: false
+        type: string
+        default: 'us-east-1'
 
 
 permissions:
@@ -20,8 +31,8 @@ permissions:
 
 env:
   CLOUDFARE_KEY: ${{ secrets.CLOUDFARE_KEY }}
-  AWS_S3_BUCKET_NAME: "nr-downloads-main"
-  AWS_REGION: "us-east-1"
+  AWS_S3_BUCKET_NAME: ${{ inputs.AWS_S3_BUCKET_NAME }}
+  AWS_REGION: ${{ inputs.AWS_REGION }}
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
@@ -36,4 +47,5 @@ jobs:
       - name: CDN purge
         env:
           CLOUDFARE_KEY: ${{env.CLOUDFARE_KEY }}
+          AWS_S3_BUCKET_NAME: ${{ env.AWS_S3_BUCKET_NAME }}
         run: tools/cdn-purge/purge.sh
