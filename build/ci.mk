@@ -194,6 +194,35 @@ ci/sync-s3/preview-staging: ci/validate-aws-credentials
 	@aws s3 rm --recursive s3://nr-downloads-ohai-staging/preview
 	@aws s3 cp --recursive --copy-props metadata-directive --exclude '*/newrelic-infra.repo' s3://nr-downloads-main/preview/ s3://nr-downloads-ohai-staging/preview/
 
+# Cross-region sync of the OHAI batch-publish buckets, folder infrastructure_agent/ only.
+# The batch buckets are in us-east-2 and the existing ones in us-east-1, so every target passes
+# --source-region and --region (server side copy).
+# Same filters as ci/sync-s3/staging. Unlike it, this uses `aws s3 sync --delete` (mirror) instead of
+# `rm` + `cp`: a run that is cut short (job time limit, expired credentials, network) can be run again and
+# resumes, instead of starting from an emptied target.
+# Naming: <target>-from-<source>.
+# The CLI prefixes each filter with the folder being synced, so the filters are relative to infrastructure_agent/.
+S3_EXISTING_BUCKETS_REGION ?= us-east-1
+S3_BATCH_BUCKETS_REGION ?= us-east-2
+S3_SYNC_FILTERS := --exclude 'beta/*' --exclude 'test/*' --exclude '*/newrelic-infra.repo'
+
+# $(1) source bucket, $(2) source region, $(3) target bucket, $(4) target region
+define S3_SYNC_CROSS_REGION
+aws s3 sync s3://$(1)/infrastructure_agent/ s3://$(3)/infrastructure_agent/ --source-region $(2) --region $(4) --copy-props metadata-directive --delete --no-progress $(S3_SYNC_FILTERS)
+endef
+
+.PHONY : ci/sync-s3/batch-staging-from-staging
+ci/sync-s3/batch-staging-from-staging: ci/validate-aws-credentials
+	@$(call S3_SYNC_CROSS_REGION,nr-downloads-ohai-staging,$(S3_EXISTING_BUCKETS_REGION),nr-downloads-ohai-batch-staging,$(S3_BATCH_BUCKETS_REGION))
+
+.PHONY : ci/sync-s3/batch-prod-from-prod
+ci/sync-s3/batch-prod-from-prod: ci/validate-aws-credentials
+	@$(call S3_SYNC_CROSS_REGION,nr-downloads-main,$(S3_EXISTING_BUCKETS_REGION),nr-downloads-ohai-batch-prod,$(S3_BATCH_BUCKETS_REGION))
+
+.PHONY : ci/sync-s3/batch-staging-from-batch-prod
+ci/sync-s3/batch-staging-from-batch-prod: ci/validate-aws-credentials
+	@$(call S3_SYNC_CROSS_REGION,nr-downloads-ohai-batch-prod,$(S3_BATCH_BUCKETS_REGION),nr-downloads-ohai-batch-staging,$(S3_BATCH_BUCKETS_REGION))
+
 .PHONY: ci/third-party-notices-check
 ci/third-party-notices-check: ci/deps
 	@docker run --rm -t \
