@@ -20,59 +20,71 @@ permissions:
   contents: read
 
 jobs:
+
+  config:
+    name: Resolve publish target
+    uses: ./.github/workflows/component_publish_config.yml
+    with:
+      ENV: production
   publishing-to-s3-linux:
     name: Publish linux artifacts into s3 production bucket
     uses: ./.github/workflows/component_linux_publish.yml
+    needs: config
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
       GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
       GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
-      AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION }}
-      AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_PRODUCTION }}
-      AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION }}
+      AWS_ACCESS_KEY_ID: ${{ needs.config.outputs.publish_version == 'v2' && secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION_V2 || secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION }}
+      AWS_SECRET_ACCESS_KEY: ${{ needs.config.outputs.publish_version == 'v2' && secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION_V2 || secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION }}
+      AWS_ROLE_ARN: ${{ needs.config.outputs.publish_version == 'v2' && secrets.OHAI_AWS_ROLE_ARN_PRODUCTION_V2 || secrets.OHAI_AWS_ROLE_ARN_PRODUCTION }}
+      AWS_ROLE_SESSION_NAME: ${{ needs.config.outputs.publish_version == 'v2' && secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION_V2 || secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION }}
     with:
       SCHEMA_BRANCH: "master"
-      ACCESS_POINT_HOST: "production"
+      ACCESS_POINT_HOST: ${{ needs.config.outputs.access_point_host }}
       RUN_ID: ${{ github.run_id }}
       TAG: ${{ github.event.inputs.tag }}
-      AWS_S3_BUCKET_NAME: "nr-downloads-main"
-      AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock"
+      AWS_S3_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_bucket_name }}
+      AWS_S3_LOCK_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_lock_bucket_name }}
+      PUBLISH_VERSION: ${{ needs.config.outputs.publish_version }}
       ASSETS_TYPE: ${{ github.event.inputs.assetsType }}
 
   publishing-to-s3-windows:
     name: Publish linux artifacts into s3 production bucket
     uses: ./.github/workflows/component_windows_publish.yml
+    needs: config
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
       GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
       GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
-      AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION }}
-      AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_PRODUCTION }}
-      AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION }}
+      AWS_ACCESS_KEY_ID: ${{ needs.config.outputs.publish_version == 'v2' && secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION_V2 || secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION }}
+      AWS_SECRET_ACCESS_KEY: ${{ needs.config.outputs.publish_version == 'v2' && secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION_V2 || secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION }}
+      AWS_ROLE_ARN: ${{ needs.config.outputs.publish_version == 'v2' && secrets.OHAI_AWS_ROLE_ARN_PRODUCTION_V2 || secrets.OHAI_AWS_ROLE_ARN_PRODUCTION }}
+      AWS_ROLE_SESSION_NAME: ${{ needs.config.outputs.publish_version == 'v2' && secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION_V2 || secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION }}
     with:
-      ACCESS_POINT_HOST: "production"
+      ACCESS_POINT_HOST: ${{ needs.config.outputs.access_point_host }}
       SCHEMA_BRANCH: "master"
       RUN_ID: ${{ github.run_id }}
       TAG: ${{ github.event.inputs.tag }}
-      AWS_S3_BUCKET_NAME: "nr-downloads-main"
-      AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock"
+      AWS_S3_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_bucket_name }}
+      AWS_S3_LOCK_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_lock_bucket_name }}
+      PUBLISH_VERSION: ${{ needs.config.outputs.publish_version }}
       ASSETS_TYPE: ${{ github.event.inputs.assetsType }}
       DISABLE_LOCK: true
 
   purge-cdn:
     name: Purge CDN
-    needs: [ publishing-to-s3-windows, publishing-to-s3-linux ]
+    needs: [ config, publishing-to-s3-windows, publishing-to-s3-linux ]
     uses: ./.github/workflows/component_purge_cdn.yml
     secrets:
       CLOUDFARE_KEY: ${{secrets.CLOUDFARE_KEY }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION }}
-      AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_PRODUCTION }}
-      AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION }}
+      AWS_ACCESS_KEY_ID: ${{ needs.config.outputs.publish_version == 'v2' && secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION_V2 || secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION }}
+      AWS_SECRET_ACCESS_KEY: ${{ needs.config.outputs.publish_version == 'v2' && secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION_V2 || secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION }}
+      AWS_ROLE_ARN: ${{ needs.config.outputs.publish_version == 'v2' && secrets.OHAI_AWS_ROLE_ARN_PRODUCTION_V2 || secrets.OHAI_AWS_ROLE_ARN_PRODUCTION }}
+      AWS_ROLE_SESSION_NAME: ${{ needs.config.outputs.publish_version == 'v2' && secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION_V2 || secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION }}
+    with:
+      AWS_S3_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_bucket_name }}
 
   publish-docker-images:
     uses: ./.github/workflows/component_docker_publish.yml

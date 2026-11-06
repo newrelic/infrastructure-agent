@@ -11,6 +11,13 @@ permissions:
   contents: read
 
 jobs:
+
+  config:
+    name: Resolve publish target
+    uses: ./.github/workflows/component_publish_config.yml
+    with:
+      ENV: staging
+
   unit-test:
     uses: ./.github/workflows/component_linux_unit_test.yml
     secrets:
@@ -172,39 +179,41 @@ jobs:
     # point to staging after tests
     name: Publish linux artifacts into s3 staging bucket
     uses: ./.github/workflows/component_linux_publish.yml
-    needs: [packaging-amd64, packaging-amd64-fips, packaging-arm, packaging-arm64, packaging-arm64-fips, packaging-legacy]
+    needs: [ config, packaging-amd64, packaging-amd64-fips, packaging-arm, packaging-arm64, packaging-arm64-fips, packaging-legacy ]
     secrets:
       DOCKER_HUB_ID: ${{secrets.OHAI_DOCKER_HUB_ID}}
       DOCKER_HUB_PASSWORD: ${{secrets.OHAI_DOCKER_HUB_PASSWORD}}
       GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
       GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
-      AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
-      AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
-      AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
+      AWS_ACCESS_KEY_ID: ${{ needs.config.outputs.publish_version == 'v2' && secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING_V2 || secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
+      AWS_SECRET_ACCESS_KEY: ${{ needs.config.outputs.publish_version == 'v2' && secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING_V2 || secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
+      AWS_ROLE_ARN: ${{ needs.config.outputs.publish_version == 'v2' && secrets.OHAI_AWS_ROLE_ARN_STAGING_V2 || secrets.OHAI_AWS_ROLE_ARN_STAGING }}
+      AWS_ROLE_SESSION_NAME: ${{ needs.config.outputs.publish_version == 'v2' && secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING_V2 || secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
     with:
-      ACCESS_POINT_HOST: "staging"
+      ACCESS_POINT_HOST: ${{ needs.config.outputs.access_point_host }}
       SCHEMA_BRANCH: "master"
       RUN_ID: ${{ github.run_id }}
       TAG: ${{ github.event.release.tag_name }}
-      AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
-      AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
+      AWS_S3_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_bucket_name }}
+      AWS_S3_LOCK_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_lock_bucket_name }}
+      PUBLISH_VERSION: ${{ needs.config.outputs.publish_version }}
       ASSETS_TYPE: "all"
 
   molecule-packaging-tests:
     uses: ./.github/workflows/component_molecule_packaging.yml
-    needs: [publishing-to-s3]
+    needs: [config, publishing-to-s3]
     with:
       TAG: ${{ github.event.release.tag_name }}
-      REPO_ENDPOINT: "http://nr-downloads-ohai-staging.s3-website-us-east-1.amazonaws.com/infrastructure_agent"
+      REPO_ENDPOINT: ${{ needs.config.outputs.repo_endpoint }}
 
   test-prerelease-linux:
-    needs: [molecule-packaging-tests]
+    needs: [ config, molecule-packaging-tests ]
     permissions:
       contents: read
       id-token: write # calls component_prerelease_testing.yml which needs AWS OIDC auth
     uses: ./.github/workflows/component_prerelease_testing.yml
     with:
+      REPO_ENDPOINT: ${{ needs.config.outputs.repo_endpoint }}
       PLATFORM: "linux"
       TAG: ${{ github.event.release.tag_name }}
       TAG_OR_UNIQUE_NAME: "${{ github.event.release.tag_name }}-linux"
@@ -212,12 +221,13 @@ jobs:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
       
   canaries-linux:
-    needs: [test-prerelease-linux]
+    needs: [ config, test-prerelease-linux ]
     permissions:
       contents: read
       id-token: write # calls component_canaries.yml which needs AWS OIDC auth
     uses: ./.github/workflows/component_canaries.yml
     with:
+      REPO_ENDPOINT: ${{ needs.config.outputs.repo_endpoint }}
       PLATFORM: "linux"
       TAG: ${{ github.event.release.tag_name }}
     secrets:
