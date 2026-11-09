@@ -96,12 +96,15 @@ jobs:
           # - Same exclusions as S3_V2_FILTERS in build/ci.mk, plus folder markers (keys ending in /).
           # - Objects of 8 MiB or more are left out: the CLI copies them in parts, which changes their ETag, so they
           #   would always look different. They are versioned artifacts, the sync already handles them.
+          # - Objects whose ETag has a "-" (multipart upload) are left out, whatever their size: the CLI copies an
+          #   object under 8 MiB in one request, so the copy gets a plain MD5 ETag and would never match the source.
+          #   Some 5-8 MiB packages were uploaded in parts. The sync already handles them.
           list() {
             aws s3api list-objects-v2 --bucket "$BUCKET" --prefix "$1/" \
                 --query 'Contents[?Size<`8388608`].[Key,ETag]' --output text |
               awk -F'\t' -v p="$1/" 'NF == 2 {
                 k = substr($1, length(p) + 1)
-                if (k !~ /\/$/ && k !~ /^(beta|test)\// && k !~ /\/newrelic-infra\.repo$/) print k "\t" $2
+                if (k !~ /\/$/ && k !~ /^(beta|test)\// && k !~ /\/newrelic-infra\.repo$/ && $2 !~ /-/) print k "\t" $2
               }' |
               LC_ALL=C sort
           }
