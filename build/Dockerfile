@@ -42,18 +42,9 @@ ENV PATH="/usr/local/go/bin:/go/bin:${PATH}"
 ENV GOPATH="/go"
 
 # Download and install the GitHub CLI
-RUN for attempt in 1 2 3; do \
-      if curl --fail -L https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_${GH_ARCH}.deb -o gh_${GH_VERSION}_linux_${GH_ARCH}.deb && \
-         dpkg-deb --info gh_${GH_VERSION}_linux_${GH_ARCH}.deb >/dev/null 2>&1; then \
-        dpkg -i gh_${GH_VERSION}_linux_${GH_ARCH}.deb && \
-        rm gh_${GH_VERSION}_linux_${GH_ARCH}.deb && \
-        exit 0; \
-      fi; \
-      rm -f gh_${GH_VERSION}_linux_${GH_ARCH}.deb; \
-      sleep 2; \
-    done; \
-    echo "Failed to download a valid GitHub CLI package" >&2; \
-    exit 1
+RUN curl -L https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_${GH_ARCH}.deb -o gh_${GH_VERSION}_linux_${GH_ARCH}.deb && \
+    dpkg -i gh_${GH_VERSION}_linux_${GH_ARCH}.deb && \
+    rm gh_${GH_VERSION}_linux_${GH_ARCH}.deb
 
 # Optional: Set Go environment flags
 ENV GOFLAGS="-buildvcs=false"
