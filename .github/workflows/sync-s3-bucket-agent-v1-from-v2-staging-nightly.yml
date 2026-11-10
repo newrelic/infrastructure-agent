@@ -1,0 +1,142 @@
+name: Nightly sync S3 infrastructure_agent from infrastructure_agent_v2 (staging)
+
+# Daily at 8AM IST (02:30 UTC), syncs inside the staging bucket:
+#   s3://nr-downloads-ohai-staging/infrastructure_agent_v2/ -> s3://nr-downloads-ohai-staging/infrastructure_agent/
+on:
+  # schedule:
+  #   - cron: '30 2 * * *'
+  workflow_dispatch:
+
+# One sync per bucket at a time, shared with the other staging sync workflows. Queued runs wait instead of cancelling the running one.
+concurrency:
+  group: s3-sync-agent-v2-staging
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: "us-east-1"
+  TEMP_AWS_PROFILE: temp_aws_profile
+
+jobs:
+  sync-s3-v2-staging:
+    name: Synchronize S3 infrastructure_agent from infrastructure_agent_v2 (staging)
+    runs-on: ubuntu-24.04
+    # The AWS session lasts 14400s (240 min): up to 30 min waiting for the lock, the rest for the sync.
+    timeout-minutes: 230
+    env:
+      # Lock settings, named like the inputs of infrastructure-publish-action
+      AWS_S3_LOCK_BUCKET_NAME: onhost-ci-lock-staging
+      # Region of the lock bucket, falls back to AWS_REGION when empty
+      AWS_S3_LOCK_BUCKET_REGION: us-east-1
+      LOCK_GROUP: lockgroup
+      # 30 retries, 1 minute apart (the action's default)
+      LOCK_RETRIES: 30
+      # <app>_<tag>_<run_id>, like the lock owner of the action
+      LOCK_OWNER: agent-v2-nightly_staging_${{ github.run_id }}
+    steps:
+      - name: Checkout Infra Agent repository
+        uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - name: Checkout s3-pit-restore repository for aws-credentials setup script
+        uses: actions/checkout@v4
+        with:
+          repository: newrelic-forks/s3-pit-restore
+          ref: master
+          path: s3-pit-restore
+
+      - name: Setup AWS credentials for Staging
+        run: |
+          ./s3-pit-restore/setup_aws_credentials.sh
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
+          AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
+          AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
+          AWS_SESSION_DURATION_SECONDS: 14400
+          TEMP_AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
+
+      - name: Acquire S3 publish lock
+        id: lock
+        env:
+          AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
+          LOCK_TAGS: department=product&product=integrations&project=infrastructure-publish-action&owning_team=CAOS&environment=us-development
+        run: |
+          # Same lock as infrastructure-publish-action: JSON {"owner","created_at"} at the key LOCK_GROUP of the
+          # lock bucket, polled up to LOCK_RETRIES times, 1 minute apart. The create is atomic (If-None-Match),
+          # unlike the action's check-then-write.
+          lock_region="${AWS_S3_LOCK_BUCKET_REGION:-$AWS_REGION}"
+          printf '{"owner":"%s","created_at":"%s"}' "$LOCK_OWNER" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$RUNNER_TEMP/lock.json"
+          tries=0
+          while true; do
+            if err=$(aws s3api put-object --bucket "$AWS_S3_LOCK_BUCKET_NAME" --key "$LOCK_GROUP" --region "$lock_region" \
+                --body "$RUNNER_TEMP/lock.json" --tagging "$LOCK_TAGS" --if-none-match '*' 2>&1 >/dev/null); then
+              echo "acquired s3://$AWS_S3_LOCK_BUCKET_NAME/$LOCK_GROUP as $LOCK_OWNER"
+              exit 0
+            fi
+            # Only a busy lock is worth waiting for, anything else (permissions, region, ...) fails right away.
+            case "$err" in
+              *PreconditionFailed*|*ConditionalRequestConflict*) ;;
+              *) echo "::error::cannot write the lock: $err"; exit 1 ;;
+            esac
+            if aws s3api get-object --bucket "$AWS_S3_LOCK_BUCKET_NAME" --key "$LOCK_GROUP" --region "$lock_region" \
+                "$RUNNER_TEMP/holder.json" >/dev/null 2>&1; then
+              echo "lock held by: $(cat "$RUNNER_TEMP/holder.json")"
+              # A lock owned by this run (left by an earlier attempt of the same run) counts as free, like in the action.
+              if [ "$(jq -r '.owner // empty' "$RUNNER_TEMP/holder.json")" = "$LOCK_OWNER" ]; then
+                echo "the lock already belongs to this run"
+                exit 0
+              fi
+            fi
+            tries=$((tries + 1))
+            if [ "$tries" -gt "$LOCK_RETRIES" ]; then
+              echo "::error::lock still busy after $LOCK_RETRIES retries. If the holder is a dead job, delete s3://$AWS_S3_LOCK_BUCKET_NAME/$LOCK_GROUP and run again"
+              exit 1
+            fi
+            echo "lock is busy, retry $tries/$LOCK_RETRIES in 60s"
+            sleep 60
+          done
+
+      - name: Run sync on Staging
+        run: make ci/sync-s3/staging-v1-from-v2
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
+
+      # Runs on failure and cancellation too; only deletes a lock owned by this run.
+      - name: Release S3 publish lock
+        if: ${{ always() && steps.lock.outcome != 'skipped' }}
+        env:
+          AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
+        run: |
+          lock_region="${AWS_S3_LOCK_BUCKET_REGION:-$AWS_REGION}"
+          if ! err=$(aws s3api get-object --bucket "$AWS_S3_LOCK_BUCKET_NAME" --key "$LOCK_GROUP" --region "$lock_region" \
+              "$RUNNER_TEMP/current.json" 2>&1 >/dev/null); then
+            case "$err" in
+              *NoSuchKey*) echo "no lock to release"; exit 0 ;;
+              *) echo "::error::cannot read the lock: $err"; exit 1 ;;
+            esac
+          fi
+          owner="$(jq -r '.owner // empty' "$RUNNER_TEMP/current.json")"
+          if [ "$owner" != "$LOCK_OWNER" ]; then
+            echo "lock is owned by '$owner', not '$LOCK_OWNER', leaving it alone"
+            exit 0
+          fi
+          aws s3api delete-object --bucket "$AWS_S3_LOCK_BUCKET_NAME" --key "$LOCK_GROUP" --region "$lock_region" >/dev/null
+          echo "released s3://$AWS_S3_LOCK_BUCKET_NAME/$LOCK_GROUP"
+
+  notify-failure:
+    name: Notify failure
+    needs: [sync-s3-v2-staging]
+    if: ${{ failure() }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Notify failure via Slack
+        uses: archive/github-actions-slack@master
+        with:
+          slack-bot-user-oauth-access-token: ${{ secrets.COREINT_SLACK_TOKEN }}
+          slack-channel: ${{ secrets.COREINT_SLACK_CHANNEL }}
+          slack-text: ":rotating_light: Nightly sync S3 infrastructure_agent from infrastructure_agent_v2 (Staging) failed :warning: @hero check <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|the run> :rotating_light:"
