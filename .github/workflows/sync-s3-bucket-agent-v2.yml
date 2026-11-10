@@ -3,6 +3,11 @@ name: . ⚠️Sync S3 infrastructure_agent_v2 from infrastructure_agent ⚠️
 # Syncs the infrastructure_agent_v2/ folder with infrastructure_agent/ inside one bucket:
 #   staging     s3://nr-downloads-ohai-staging/infrastructure_agent/ -> s3://nr-downloads-ohai-staging/infrastructure_agent_v2/
 #   production  s3://nr-downloads-main/infrastructure_agent/         -> s3://nr-downloads-main/infrastructure_agent_v2/
+#
+# Two modes:
+#   soft (default)  `aws s3 sync --delete`. Only size and modification time are compared.
+#   hard            deletes infrastructure_agent_v2/ (except beta/, test/ and newrelic-infra.repo) and copies everything 
+#                   again, whatever the size or time. Use it to get an exact copy after a failed publish.
 on:
   workflow_dispatch:
     inputs:
@@ -14,6 +19,14 @@ on:
           - staging
           - production
         default: 'staging'
+      sync_mode:
+        type: choice
+        required: true
+        description: 'soft = aws s3 sync --delete, hard = delete infrastructure_agent_v2/ then copy everything again'
+        options:
+          - soft
+          - hard
+        default: 'soft'
 
 
 permissions:
@@ -64,16 +77,25 @@ jobs:
           AWS_SESSION_DURATION_SECONDS: 14400
           TEMP_AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
 
-      - name: Run sync on Staging
-        if: ${{ github.event.inputs.environment == 'staging' }}
+      - name: Run soft sync on Staging
+        if: ${{ github.event.inputs.environment == 'staging' && github.event.inputs.sync_mode != 'hard' }}
         run: |
           AWS_REGION="${{ env.AWS_REGION }}" \
           AWS_PROFILE="${{ env.TEMP_AWS_PROFILE }}" \
           make ci/sync-s3/staging-v2-from-v1
 
-      - name: Run sync on Production
-        if: ${{ github.event.inputs.environment == 'production' }}
+      - name: Run soft sync on Production
+        if: ${{ github.event.inputs.environment == 'production' && github.event.inputs.sync_mode != 'hard' }}
         run: |
           AWS_REGION="${{ env.AWS_REGION }}" \
           AWS_PROFILE="${{ env.TEMP_AWS_PROFILE }}" \
           make ci/sync-s3/production-v2-from-v1
+
+      - name: Run hard sync on ${{ github.event.inputs.environment }}
+        if: ${{ github.event.inputs.sync_mode == 'hard' }}
+        env:
+          ENVIRONMENT: ${{ github.event.inputs.environment }}
+        run: |
+          AWS_REGION="${{ env.AWS_REGION }}" \
+          AWS_PROFILE="${{ env.TEMP_AWS_PROFILE }}" \
+          make "ci/sync-s3/${ENVIRONMENT}-v2-from-v1-hard"

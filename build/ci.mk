@@ -184,6 +184,24 @@ ci/sync-s3/staging-v2-from-v1: ci/validate-aws-credentials
 ci/sync-s3/production-v2-from-v1: ci/validate-aws-credentials
 	@aws s3 sync s3://nr-downloads-main/infrastructure_agent/ s3://nr-downloads-main/infrastructure_agent_v2/ --copy-props metadata-directive --delete --no-progress $(S3_V2_FILTERS)
 
+# Hard version of the two targets above, `rm` + `cp` instead of `sync`.
+# `aws s3 sync` only compares size and modification time, so a file that has the same size in both folders and is
+# newer in infrastructure_agent_v2/ is skipped even when its content differs (e.g. apt InRelease/Release/Release.gpg
+# or yum repomd.xml left behind by a failed publish). Here everything is copied again.
+# The folder is empty or partial while it runs, so clients can fail until it ends, and it is not safe to resume.
+# Nothing is deleted when infrastructure_agent/ is empty.
+.PHONY : ci/sync-s3/staging-v2-from-v1-hard
+ci/sync-s3/staging-v2-from-v1-hard: ci/validate-aws-credentials
+	@test -n "$$(aws s3 ls s3://nr-downloads-ohai-staging/infrastructure_agent/ | head -n 1)" || { echo "s3://nr-downloads-ohai-staging/infrastructure_agent/ is empty, refusing to delete infrastructure_agent_v2/"; exit 1; }
+	@aws s3 rm --recursive $(S3_V2_FILTERS) s3://nr-downloads-ohai-staging/infrastructure_agent_v2/
+	@aws s3 cp --recursive --copy-props metadata-directive --no-progress $(S3_V2_FILTERS) s3://nr-downloads-ohai-staging/infrastructure_agent/ s3://nr-downloads-ohai-staging/infrastructure_agent_v2/
+
+.PHONY : ci/sync-s3/production-v2-from-v1-hard
+ci/sync-s3/production-v2-from-v1-hard: ci/validate-aws-credentials
+	@test -n "$$(aws s3 ls s3://nr-downloads-main/infrastructure_agent/ | head -n 1)" || { echo "s3://nr-downloads-main/infrastructure_agent/ is empty, refusing to delete infrastructure_agent_v2/"; exit 1; }
+	@aws s3 rm --recursive $(S3_V2_FILTERS) s3://nr-downloads-main/infrastructure_agent_v2/
+	@aws s3 cp --recursive --copy-props metadata-directive --no-progress $(S3_V2_FILTERS) s3://nr-downloads-main/infrastructure_agent/ s3://nr-downloads-main/infrastructure_agent_v2/
+
 .PHONY : ci/sync-s3/testing
 ci/sync-s3/testing: ci/validate-aws-credentials
 	@aws s3 rm --recursive --exclude 'beta/*' --exclude 'test/*' s3://nr-downloads-ohai-testing/infrastructure_agent/
