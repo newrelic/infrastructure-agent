@@ -3,8 +3,8 @@ name: Nightly sync S3 infrastructure_agent from infrastructure_agent_v2 (product
 # Daily at 8AM IST (02:30 UTC), syncs inside the production bucket:
 #   s3://nr-downloads-main/infrastructure_agent_v2/ -> s3://nr-downloads-main/infrastructure_agent/
 on:
-  schedule:
-    - cron: '30 2 * * *'
+  # schedule:
+  #   - cron: '30 2 * * *'
   workflow_dispatch:
 
 # One sync per bucket at a time, shared with the other production sync workflows. Queued runs wait instead of cancelling the running one.
@@ -128,26 +128,15 @@ jobs:
           aws s3api delete-object --bucket "$AWS_S3_LOCK_BUCKET_NAME" --key "$LOCK_GROUP" --region "$lock_region" >/dev/null
           echo "released s3://$AWS_S3_LOCK_BUCKET_NAME/$LOCK_GROUP"
 
-      - name: Send Slack notification to OHAI on success
-        if: ${{ success() }}
-        uses: slackapi/slack-github-action@v1
+  notify-failure:
+    name: Notify failure
+    needs: [sync-s3-v2-production]
+    if: ${{ failure() }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Notify failure via Slack
+        uses: archive/github-actions-slack@master
         with:
-          payload: |
-            {
-              "text": ":white_check_mark: Nightly sync S3 infrastructure_agent from infrastructure_agent_v2 (Production) succeeded <${{ env.GITHUB_JOB_URL }}>"
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.OHAI_SLACK_WEBHOOK }}
-          GITHUB_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
-      - name: Send Slack notification to OHAI on failure
-        if: ${{ failure() }}
-        uses: slackapi/slack-github-action@v1
-        with:
-          payload: |
-            {
-              "text": ":rotating_light: Nightly sync S3 infrastructure_agent from infrastructure_agent_v2 (Production) failed :warning: :warning: :warning: @hero check <${{ env.GITHUB_JOB_URL }}> :rotating_light:"
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.OHAI_SLACK_WEBHOOK }}
-          GITHUB_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          slack-bot-user-oauth-access-token: ${{ secrets.COREINT_SLACK_TOKEN }}
+          slack-channel: ${{ secrets.COREINT_SLACK_CHANNEL }}
+          slack-text: ":rotating_light: Nightly sync S3 infrastructure_agent from infrastructure_agent_v2 (Production) failed :warning: @hero check <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|the run> :rotating_light:"
