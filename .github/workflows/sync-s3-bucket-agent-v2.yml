@@ -3,6 +3,11 @@ name: . ⚠️Sync S3 infrastructure_agent_v2 from infrastructure_agent ⚠️
 # Syncs the infrastructure_agent_v2/ folder with infrastructure_agent/ inside one bucket:
 #   staging     s3://nr-downloads-ohai-staging/infrastructure_agent/ -> s3://nr-downloads-ohai-staging/infrastructure_agent_v2/
 #   production  s3://nr-downloads-main/infrastructure_agent/         -> s3://nr-downloads-main/infrastructure_agent_v2/
+#
+# Two modes:
+#   soft (default)  `aws s3 sync --delete`. Only size and modification time are compared.
+#   hard            deletes infrastructure_agent_v2/ (except beta/, test/ and newrelic-infra.repo) and copies everything 
+#                   again, whatever the size or time. Use it to get an exact copy after a failed publish.
 on:
   workflow_dispatch:
     inputs:
@@ -14,6 +19,14 @@ on:
           - staging
           - production
         default: 'staging'
+      sync_mode:
+        type: choice
+        required: true
+        description: 'soft = aws s3 sync --delete, hard = delete infrastructure_agent_v2/ then copy everything again'
+        options:
+          - soft
+          - hard
+        default: 'soft'
 
 
 permissions:
@@ -64,78 +77,25 @@ jobs:
           AWS_SESSION_DURATION_SECONDS: 14400
           TEMP_AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
 
-      - name: Run sync on Staging
-        if: ${{ github.event.inputs.environment == 'staging' }}
+      - name: Run soft sync on Staging
+        if: ${{ github.event.inputs.environment == 'staging' && github.event.inputs.sync_mode != 'hard' }}
         run: |
           AWS_REGION="${{ env.AWS_REGION }}" \
           AWS_PROFILE="${{ env.TEMP_AWS_PROFILE }}" \
           make ci/sync-s3/staging-v2-from-v1
 
-      - name: Run sync on Production
-        if: ${{ github.event.inputs.environment == 'production' }}
+      - name: Run soft sync on Production
+        if: ${{ github.event.inputs.environment == 'production' && github.event.inputs.sync_mode != 'hard' }}
         run: |
           AWS_REGION="${{ env.AWS_REGION }}" \
           AWS_PROFILE="${{ env.TEMP_AWS_PROFILE }}" \
           make ci/sync-s3/production-v2-from-v1
 
-      # `aws s3 sync` only compares size and modification time: a file with the same size in both folders that is
-      # newer in infrastructure_agent_v2/ is skipped even when its content differs. After a partial publish this
-      # leaves the apt InRelease/Release/Release.gpg files (same size, different hashes) pointing at Packages files
-      # that were rolled back, and apt clients fail with "size check mismatch". This step compares ETags and copies
-      # whatever still differs, then fails if anything is left.
-      - name: Copy the files the sync skipped
+      - name: Run hard sync on ${{ github.event.inputs.environment }}
+        if: ${{ github.event.inputs.sync_mode == 'hard' }}
         env:
-          AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
-          BUCKET: ${{ inputs.environment == 'production' && 'nr-downloads-main' || 'nr-downloads-ohai-staging' }}
+          ENVIRONMENT: ${{ github.event.inputs.environment }}
         run: |
-          set -euo pipefail
-          work="$RUNNER_TEMP/reconcile"
-          mkdir -p "$work"
-
-          # "<key relative to the folder><TAB><ETag>" of every object, sorted.
-          # - Same exclusions as S3_V2_FILTERS in build/ci.mk, plus folder markers (keys ending in /).
-          # - Objects of 8 MiB or more are left out: the CLI copies them in parts, which changes their ETag, so they
-          #   would always look different. They are versioned artifacts, the sync already handles them.
-          # - Objects whose ETag has a "-" (multipart upload) are left out, whatever their size: the CLI copies an
-          #   object under 8 MiB in one request, so the copy gets a plain MD5 ETag and would never match the source.
-          #   Some 5-8 MiB packages were uploaded in parts. The sync already handles them.
-          list() {
-            aws s3api list-objects-v2 --bucket "$BUCKET" --prefix "$1/" \
-                --query 'Contents[?Size<`8388608`].[Key,ETag]' --output text |
-              awk -F'\t' -v p="$1/" 'NF == 2 {
-                k = substr($1, length(p) + 1)
-                if (k !~ /\/$/ && k !~ /^(beta|test)\// && k !~ /\/newrelic-infra\.repo$/ && $2 !~ /-/) print k "\t" $2
-              }' |
-              LC_ALL=C sort
-          }
-          # Keys of the source that are missing in the destination or have a different ETag.
-          differing() {
-            LC_ALL=C comm -23 "$work/source.tsv" "$work/dest.tsv" | cut -f1
-          }
-          copy() {
-            aws s3 cp "s3://$BUCKET/infrastructure_agent/$1" "s3://$BUCKET/infrastructure_agent_v2/$1" \
-              --copy-props metadata-directive --no-progress
-          }
-          export -f copy
-          export BUCKET
-
-          list infrastructure_agent > "$work/source.tsv"
-          list infrastructure_agent_v2 > "$work/dest.tsv"
-          differing > "$work/todo.txt"
-          echo "$(wc -l < "$work/todo.txt") objects differ after the sync"
-          head -n 50 "$work/todo.txt"
-
-          # Index and signature files go last, so a client never reads a new index before the files it lists.
-          index='(^|/)(InRelease|Release|Release\.gpg|repomd\.xml|repomd\.xml\.asc)$'
-          grep -vE "$index" "$work/todo.txt" > "$work/data.txt" || true
-          grep -E "$index" "$work/todo.txt" > "$work/index.txt" || true
-          xargs -a "$work/data.txt" -d '\n' -r -P 8 -I{} bash -c 'copy "$1"' _ {}
-          while IFS= read -r key; do copy "$key"; done < "$work/index.txt"
-
-          list infrastructure_agent_v2 > "$work/dest.tsv"
-          if [ -n "$(differing)" ]; then
-            echo "::error::objects still differ between infrastructure_agent/ and infrastructure_agent_v2/"
-            differing | head -n 50
-            exit 1
-          fi
-          echo "infrastructure_agent_v2/ matches infrastructure_agent/"
+          AWS_REGION="${{ env.AWS_REGION }}" \
+          AWS_PROFILE="${{ env.TEMP_AWS_PROFILE }}" \
+          make "ci/sync-s3/${ENVIRONMENT}-v2-from-v1-hard"
