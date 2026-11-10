@@ -121,7 +121,8 @@ jobs:
               bucket="nr-downloads-main"
               lock_bucket="onhost-ci-lock"
               access_point_host="production"
-              repo_endpoint="https://download.newrelic.com/${repo_path}"
+              # public URL stays infrastructure_agent for v1 and v2: the ELB maps it to infrastructure_agent_v2 on cutover
+              repo_endpoint="https://download.newrelic.com/infrastructure_agent"
               ;;
             *)
               echo "::error::ENV must be staging or production, got '${TARGET_ENV}'"

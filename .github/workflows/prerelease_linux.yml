@@ -232,6 +232,7 @@ jobs:
 
   test-prerelease-linux:
     needs: [ config, molecule-packaging-tests ]
+    if: ${{ !failure() && !cancelled() }}
     permissions:
       contents: read
       id-token: write # calls component_prerelease_testing.yml which needs AWS OIDC auth
@@ -246,6 +247,7 @@ jobs:
       
   canaries-linux:
     needs: [ config, test-prerelease-linux ]
+    if: ${{ !failure() && !cancelled() }}
     permissions:
       contents: read
       id-token: write # calls component_canaries.yml which needs AWS OIDC auth
@@ -271,6 +273,7 @@ jobs:
 
   prune-previous-canaries-linux:
     needs: [canaries-linux, get_previous_tag]
+    if: ${{ !failure() && !cancelled() }}
     permissions:
       contents: read
       id-token: write # calls component_canaries_prune.yml which needs AWS OIDC auth

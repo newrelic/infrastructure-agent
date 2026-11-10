@@ -178,6 +178,7 @@ jobs:
 
   canaries-windows:
     needs: [ config, test-prerelease-windows ]
+    if: ${{ !failure() && !cancelled() }}
     permissions:
       contents: read
       id-token: write # calls component_canaries.yml which needs AWS OIDC auth
@@ -201,6 +202,7 @@ jobs:
 
   prune-canaries-windows:
     needs: [canaries-windows, get_previous_tag]
+    if: ${{ !failure() && !cancelled() }}
     permissions:
       contents: read
       id-token: write # calls component_canaries_prune.yml which needs AWS OIDC auth
