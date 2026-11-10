@@ -113,30 +113,53 @@ jobs:
       PUBLISH: true
 
   publish-v1:
-    name: Publish to s3 staging (v1)
+    name: Publish windows artifacts into s3 staging bucket (v1)
     if: ${{ needs.config.outputs.publish_version == 'v1' }}
     needs: [config, packaging]
-    uses: ./.github/workflows/publish_stage_v1.yml
-    secrets: inherit
+    uses: ./.github/workflows/component_windows_publish.yml
+    secrets:
+      DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
+      DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
+      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
+      AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
+      AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
     with:
-      ENV: staging
+      ACCESS_POINT_HOST: "staging"
+      SCHEMA_BRANCH: "master"
+      RUN_ID: ${{ github.run_id }}
       TAG: ${{ github.event.release.tag_name }}
+      AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
+      AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
       ASSETS_TYPE: "all"
-      LINUX: false
-      WINDOWS_DISABLE_LOCK: false
 
   publish-v2:
-    name: Publish to s3 staging (v2)
+    name: Publish windows artifacts into s3 staging bucket (v2)
     if: ${{ needs.config.outputs.publish_version == 'v2' }}
     needs: [config, packaging]
-    uses: ./.github/workflows/publish_stage_v2.yml
-    secrets: inherit
+    uses: ./.github/workflows/component_windows_publish_v2.yml
+    secrets:
+      DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
+      DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
+      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      AWS_ACCESS_KEY_ID: ${{ (secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING_V2 || secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING) }}
+      AWS_SECRET_ACCESS_KEY: ${{ (secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING_V2 || secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING) }}
+      AWS_ROLE_ARN: ${{ (secrets.OHAI_AWS_ROLE_ARN_STAGING_V2 || secrets.OHAI_AWS_ROLE_ARN_STAGING) }}
+      AWS_ROLE_SESSION_NAME: ${{ (secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING_V2 || secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING) }}
     with:
-      ENV: staging
+      ACCESS_POINT_HOST: ${{ needs.config.outputs.access_point_host }}
+      SCHEMA_BRANCH: "feat/publish-v2-shared-buckets" # TEMP: build/v2 schemas are not on master yet; revert to "master" before merge
+      RUN_ID: ${{ github.run_id }}
       TAG: ${{ github.event.release.tag_name }}
+      AWS_S3_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_bucket_name }}
+      AWS_S3_LOCK_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_lock_bucket_name }}
       ASSETS_TYPE: "all"
-      LINUX: false
-      WINDOWS_DISABLE_LOCK: false
+      DEST_PREFIX: ${{ needs.config.outputs.dest_prefix }}
+      AWS_REGION: ${{ needs.config.outputs.aws_region }}
+      AWS_LOCK_REGION: ${{ needs.config.outputs.aws_lock_region }}
 
   test-prerelease-windows:
     needs: [ config, publish-v1, publish-v2 ]
