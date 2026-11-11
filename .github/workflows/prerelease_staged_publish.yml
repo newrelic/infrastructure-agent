@@ -79,7 +79,7 @@ jobs:
       AWS_ROLE_SESSION_NAME: ${{ (secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING_V2 || secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING) }}
     with:
       ACCESS_POINT_HOST: ${{ needs.config.outputs.access_point_host }}
-      SCHEMA_BRANCH: "master"
+      SCHEMA_BRANCH: "feat/publish-v2-shared-buckets" # TEMP: build/v2 schemas are not on master yet; revert to "master" before merge
       RUN_ID: ${{ github.run_id }}
       TAG: ${{ github.event.inputs.tag }}
       AWS_S3_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_bucket_name }}
@@ -129,7 +129,7 @@ jobs:
       AWS_ROLE_SESSION_NAME: ${{ (secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING_V2 || secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING) }}
     with:
       ACCESS_POINT_HOST: ${{ needs.config.outputs.access_point_host }}
-      SCHEMA_BRANCH: "master"
+      SCHEMA_BRANCH: "feat/publish-v2-shared-buckets" # TEMP: build/v2 schemas are not on master yet; revert to "master" before merge
       RUN_ID: ${{ github.run_id }}
       TAG: ${{ github.event.inputs.tag }}
       AWS_S3_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_bucket_name }}
