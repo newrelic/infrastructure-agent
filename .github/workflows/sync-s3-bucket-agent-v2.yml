@@ -146,8 +146,8 @@ jobs:
             sleep 60
           done
 
-      - name: Run sync on Staging
-        if: ${{ github.event.inputs.environment == 'staging' }}
+      - name: Run soft sync on Staging
+        if: ${{ github.event.inputs.environment == 'staging' && github.event.inputs.sync_mode != 'hard' }}
         run: |
           AWS_REGION="${{ env.AWS_REGION }}" \
           AWS_PROFILE="${{ env.TEMP_AWS_PROFILE }}" \
