@@ -2,6 +2,10 @@ name: . 🚀 🧬 Test package installation
 on:
   workflow_dispatch:
     inputs:
+      publish_version:
+        description: 'Bucket set for this run: v1 (legacy) | v2 (new) (empty = PUBLISH_VERSION repository variable). Anything else fails the run'
+        required: false
+        default: ''
       tag:
         description: 'Version of the agent to test installation'
         required: true
@@ -23,6 +27,7 @@ jobs:
     uses: ./.github/workflows/component_publish_config.yml
     with:
       ENV: ${{ github.event.inputs.staging == 'true' && 'staging' || 'production' }}
+      PUBLISH_VERSION: ${{ inputs.publish_version }}
 
   molecule-packaging-tests:
     needs: config
