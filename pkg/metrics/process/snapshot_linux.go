@@ -125,19 +125,6 @@ func (pw *linuxProcess) Username() (string, error) {
 	return pw.user, nil
 }
 
-func (pw *linuxProcess) uid() (uint32, error) {
-	uuids, err := pw.process.Uids()
-	if err != nil {
-		return 0, fmt.Errorf("error getting process uids: %w", err) //nolint:wrapcheck
-	}
-
-	if len(uuids) == 0 {
-		return 0, errInvalidUidsForProcess //nolint:wrapcheck
-	}
-
-	return uuids[0], nil
-}
-
 // usernameFromGetent returns the username using getent https://man7.org/linux/man-pages/man1/getent.1.html
 // getent passwd format example:
 // deleteme:x:63367:63367:Dynamic User:/:/usr/sbin/nologin
@@ -151,7 +138,7 @@ func usernameFromGetent(uid uint32) (string, error) {
 		return out[0:sepIdx], nil
 	}
 
-	return "", errMalformedGetentEntry //nolint:wrapcheck
+	return "", errMalformedGetentEntry
 }
 
 func (pw *linuxProcess) IOCounters() (*process.IOCountersStat, error) {
@@ -377,4 +364,17 @@ func (pw *linuxProcess) CmdLine(withArgs bool) (string, error) {
 	}
 	pw.cmdLine = helpers.SanitizeCommandLine(string(cmdLineBytes))
 	return pw.cmdLine, nil
+}
+
+func (pw *linuxProcess) uid() (uint32, error) {
+	uuids, err := pw.process.Uids()
+	if err != nil {
+		return 0, fmt.Errorf("error getting process uids: %w", err)
+	}
+
+	if len(uuids) == 0 {
+		return 0, errInvalidUidsForProcess
+	}
+
+	return uuids[0], nil
 }
