@@ -128,9 +128,39 @@ jobs:
           aws s3api delete-object --bucket "$AWS_S3_LOCK_BUCKET_NAME" --key "$LOCK_GROUP" --region "$lock_region" >/dev/null
           echo "released s3://$AWS_S3_LOCK_BUCKET_NAME/$LOCK_GROUP"
 
+  get-version-to-test:
+    name: Get the agent version to test (production)
+    needs: [sync-s3-v2-production]
+    runs-on: ubuntu-24.04
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Get the latest release
+        id: tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # The latest release that is not a pre-release nor a draft.
+          tag=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq '.tag_name // empty')
+          if ! [[ "$tag" =~ ^[0-9]+(\.[0-9]+)+$ ]]; then
+            echo "::error::cannot get a version from the GitHub releases, got '$tag'"
+            exit 1
+          fi
+          echo "Testing the installation of $tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+  test-package-installation:
+    name: Test package installation (production)
+    needs: [get-version-to-test]
+    uses: ./.github/workflows/component_molecule_packaging.yml
+    with:
+      TAG: ${{ needs.get-version-to-test.outputs.tag }}
+      REPO_ENDPOINT: http://nr-downloads-main.s3-website-us-east-1.amazonaws.com/infrastructure_agent
+
   notify-failure:
     name: Notify failure
-    needs: [sync-s3-v2-production]
+    needs: [sync-s3-v2-production, get-version-to-test, test-package-installation]
     if: ${{ failure() }}
     runs-on: ubuntu-24.04
     steps:
@@ -139,4 +169,4 @@ jobs:
         with:
           slack-bot-user-oauth-access-token: ${{ secrets.COREINT_SLACK_TOKEN }}
           slack-channel: ${{ secrets.COREINT_SLACK_CHANNEL }}
-          slack-text: ":rotating_light: Nightly sync S3 infrastructure_agent from infrastructure_agent_v2 (Production) failed :warning: @hero check <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|the run> :rotating_light:"
+          slack-text: ":rotating_light: Nightly sync S3 infrastructure_agent from infrastructure_agent_v2 (Production) failed :warning: sync: ${{ needs.sync-s3-v2-production.result }}, package installation test: ${{ needs.test-package-installation.result }} @hero check <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|the run> :rotating_light:"
