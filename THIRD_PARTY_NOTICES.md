@@ -310,7 +310,7 @@ Distributed under the following license(s):
 
 
 
-## [github.com/shirou/gopsutil/v3](https://github.com/shirou/gopsutil)
+## [github.com/shirou/gopsutil/v4](https://github.com/shirou/gopsutil)
 
 Distributed under the following license(s):
 

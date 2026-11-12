@@ -15,7 +15,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
-	"github.com/shirou/gopsutil/v3/host"
+	"github.com/shirou/gopsutil/v4/host"
 	. "gopkg.in/check.v1"
 )
 
