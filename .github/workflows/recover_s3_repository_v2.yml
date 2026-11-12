@@ -94,22 +94,16 @@ jobs:
           echo "RESTORE_TIME=$datetime" >> "$GITHUB_ENV"
           echo "Restoring s3://$BUCKET/$prefix at $datetime"
 
-      - name: Checkout Infra Agent repository
-        uses: actions/checkout@v4
-        with:
-          path: agent
-
       - name: Checkout s3-pit-restore repository
         uses: actions/checkout@v4
         with:
           repository: newrelic-forks/s3-pit-restore
           ref: master
-          path: s3-pit-restore
 
       - name: Setup AWS credentials for Staging
         if: ${{ inputs.environment == 'staging' }}
         run: |
-          ./s3-pit-restore/setup_aws_credentials.sh
+          ./setup_aws_credentials.sh
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
@@ -121,7 +115,7 @@ jobs:
       - name: Setup AWS credentials for Production
         if: ${{ inputs.environment == 'production' }}
         run: |
-          ./s3-pit-restore/setup_aws_credentials.sh
+          ./setup_aws_credentials.sh
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION }}
@@ -131,7 +125,6 @@ jobs:
           TEMP_AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
 
       - name: Run S3 PIT restore
-        id: restore
         env:
           AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
         run: |
@@ -140,4 +133,4 @@ jobs:
           TIME="$RESTORE_TIME" \
           IMAGE="$IMAGE" \
           AWS_PROFILE="$AWS_PROFILE" \
-          make -C s3-pit-restore restore
+          make restore
