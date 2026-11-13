@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/shirou/gopsutil/v3/disk"
+	"github.com/shirou/gopsutil/v4/disk"
 	"github.com/sirupsen/logrus"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"

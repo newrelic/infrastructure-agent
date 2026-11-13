@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/prometheus/procfs"
-	"github.com/shirou/gopsutil/v3/disk"
+	"github.com/shirou/gopsutil/v4/disk"
 )
 
 func populateNFS(cache map[string]statsCache, detailed bool) ([]*Sample, error) {
