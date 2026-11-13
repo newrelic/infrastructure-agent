@@ -3,6 +3,14 @@ name: . 🚀 🛠 Test pre-release
 on:
   workflow_dispatch:
     inputs:
+      publish_version:
+        description: 'Bucket set for this run: v1 (legacy) | v2 (new) (empty = PUBLISH_VERSION repository variable). Anything else fails the run'
+        required: false
+        default: ''
+      dest_prefix:
+        description: 'Test runs only (needs v2): publish/test under testing-pre-releases/<dest_prefix>/ instead of the repository root'
+        required: false
+        default: ''
       tag:
         description: 'Tag to test'
         required: true
@@ -18,13 +26,24 @@ on:
         required: false
 
 permissions:
+  contents: read # required by the called component_publish_config.yml
   id-token: write
 
 jobs:
+  config:
+    name: Resolve publish target
+    uses: ./.github/workflows/component_publish_config.yml
+    with:
+      ENV: staging
+      PUBLISH_VERSION: ${{ inputs.publish_version }}
+      DEST_PREFIX: ${{ inputs.dest_prefix }}
+
   test-prerelease-windows:
+    needs: config
     if: ${{ github.event.inputs.windows == 'true' }}
     uses: ./.github/workflows/component_prerelease_testing.yml
     with:
+      REPO_ENDPOINT: ${{ needs.config.outputs.repo_endpoint }}
       PLATFORM: "windows"
       TAG: ${{ github.event.inputs.tag }}
       TAG_OR_UNIQUE_NAME: "${{ github.event.inputs.tag }}-windows"
@@ -32,9 +51,11 @@ jobs:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
       
   test-prerelease-linux:
+    needs: config
     if: ${{ github.event.inputs.linux == 'true' }}
     uses: ./.github/workflows/component_prerelease_testing.yml
     with:
+      REPO_ENDPOINT: ${{ needs.config.outputs.repo_endpoint }}
       PLATFORM: "linux"
       TAG: ${{ github.event.inputs.tag }}
       TAG_OR_UNIQUE_NAME: "${{ github.event.inputs.tag }}-linux"

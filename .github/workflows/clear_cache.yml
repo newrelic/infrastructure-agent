@@ -8,12 +8,23 @@ permissions:
   contents: read
 
 jobs:
+  config:
+    name: Resolve bucket set
+    uses: ./.github/workflows/component_publish_config.yml
+    with:
+      ENV: production
+
   purge-cdn:
     name: Purge CDN
+    needs: config
     uses: ./.github/workflows/component_purge_cdn.yml
     secrets:
       CLOUDFARE_KEY: ${{secrets.CLOUDFARE_KEY }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION }}
-      AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_PRODUCTION }}
-      AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION }}
+      AWS_ACCESS_KEY_ID: ${{ needs.config.outputs.publish_version == 'v2' && (secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION_V2 || secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION) || secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION }}
+      AWS_SECRET_ACCESS_KEY: ${{ needs.config.outputs.publish_version == 'v2' && (secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION_V2 || secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION) || secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION }}
+      AWS_ROLE_ARN: ${{ needs.config.outputs.publish_version == 'v2' && (secrets.OHAI_AWS_ROLE_ARN_PRODUCTION_V2 || secrets.OHAI_AWS_ROLE_ARN_PRODUCTION) || secrets.OHAI_AWS_ROLE_ARN_PRODUCTION }}
+      AWS_ROLE_SESSION_NAME: ${{ needs.config.outputs.publish_version == 'v2' && (secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION_V2 || secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION) || secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION }}
+    with:
+      AWS_S3_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_bucket_name }}
+      AWS_REGION: ${{ needs.config.outputs.aws_region }}
+      REPO_PATH: ${{ needs.config.outputs.repo_path }}
