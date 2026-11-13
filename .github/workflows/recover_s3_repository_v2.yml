@@ -1,0 +1,136 @@
+name: . ⚠️⚠️⚠️ Recover S3 Repository infrastructure_agent_v2 back in time ⚠️⚠️⚠️
+
+on:
+  workflow_dispatch:
+    inputs:
+      date_year:
+        description: 'UTC Date YEAR (YYYY) to recover the S3 repository back in time'
+        type: string
+        required: true
+      date_month:
+        description: 'UTC Date MONTH (MM) to recover the S3 repository back in time'
+        type: string
+        required: true
+      date_day:
+        description: 'UTC Date DAY (DD) to recover the S3 repository back in time'
+        type: string
+        required: true
+      time:
+        description: 'UTC Time (HH:MM:SS) to recover the S3 repository back in time'
+        type: string
+        required: true
+      path:
+        description: 'Path under infrastructure_agent_v2 folder to recover (w/o leading nor trailing slash). Empty = all of it'
+        type: string
+        required: false
+      environment:
+        type: choice
+        required: true
+        description: 'Environment to run the action'
+        options:
+          - staging
+          - production
+        default: 'staging'
+
+# Never at the same time as a sync of the same bucket, queued runs wait.
+concurrency:
+  group: s3-sync-agent-v2-${{ inputs.environment }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  IMAGE: 'ghcr.io/newrelic-forks/s3-pit-restore:latest'
+  AWS_REGION: "us-east-1"
+  TEMP_AWS_PROFILE: temp_aws_profile
+  BUCKET: ${{ inputs.environment == 'production' && 'nr-downloads-main' || 'nr-downloads-ohai-staging' }}
+
+jobs:
+  recover-s3-repository:
+    name: Execute S3 PIT restore of infrastructure_agent_v2
+    runs-on: ubuntu-24.04
+    # The AWS session lasts 14400s (240 min)
+    timeout-minutes: 230
+    steps:
+      - name: Validate the inputs
+        env:
+          DATE_YEAR: ${{ inputs.date_year }}
+          DATE_MONTH: ${{ inputs.date_month }}
+          DATE_DAY: ${{ inputs.date_day }}
+          TIME_OF_DAY: ${{ inputs.time }}
+          S3_PATH: ${{ inputs.path }}
+        run: |
+          set -euo pipefail
+          datetime="${DATE_MONTH}-${DATE_DAY}-${DATE_YEAR} ${TIME_OF_DAY} +0000"
+          python3 - "$datetime" <<'PY'
+          import sys
+          from datetime import datetime, timedelta, timezone
+          raw = sys.argv[1]
+          try:
+              when = datetime.strptime(raw, "%m-%d-%Y %H:%M:%S %z")
+          except ValueError:
+              sys.exit("::error::'%s' is not a valid UTC datetime, expected MM-DD-YYYY HH:MM:SS" % raw)
+          now = datetime.now(timezone.utc)
+          if when >= now:
+              sys.exit("::error::the datetime is in the future")
+          if when < now - timedelta(days=7):
+              sys.exit("::error::the datetime is more than 7 days in the past")
+          PY
+          echo "the datetime is valid, not in the future and not older than 7 days"
+
+          if [ -n "$S3_PATH" ] && { ! [[ "$S3_PATH" =~ ^[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*$ ]] || [[ "$S3_PATH" == *..* ]]; }; then
+            echo "::error::invalid path '$S3_PATH': it is relative to infrastructure_agent_v2, with no leading, trailing nor repeated slashes"
+            exit 1
+          fi
+
+          # No trailing slash: the Makefile of s3-pit-restore rejects it. Without a path the prefix is only the folder
+          # name, which is not a prefix of any other folder of the bucket (infrastructure_agent is, of this one).
+          prefix="infrastructure_agent_v2"
+          if [ -n "$S3_PATH" ]; then
+            prefix="$prefix/$S3_PATH"
+          fi
+          echo "PREFIX=$prefix" >> "$GITHUB_ENV"
+          echo "RESTORE_TIME=$datetime" >> "$GITHUB_ENV"
+          echo "Restoring s3://$BUCKET/$prefix at $datetime"
+
+      - name: Checkout s3-pit-restore repository
+        uses: actions/checkout@v4
+        with:
+          repository: newrelic-forks/s3-pit-restore
+          ref: master
+
+      - name: Setup AWS credentials for Staging
+        if: ${{ inputs.environment == 'staging' }}
+        run: |
+          ./setup_aws_credentials.sh
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
+          AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
+          AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
+          AWS_SESSION_DURATION_SECONDS: 14400
+          TEMP_AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
+
+      - name: Setup AWS credentials for Production
+        if: ${{ inputs.environment == 'production' }}
+        run: |
+          ./setup_aws_credentials.sh
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION }}
+          AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_PRODUCTION }}
+          AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION }}
+          AWS_SESSION_DURATION_SECONDS: 14400
+          TEMP_AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
+
+      - name: Run S3 PIT restore
+        env:
+          AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
+        run: |
+          BUCKET="$BUCKET" \
+          PREFIX="$PREFIX" \
+          TIME="$RESTORE_TIME" \
+          IMAGE="$IMAGE" \
+          AWS_PROFILE="$AWS_PROFILE" \
+          make restore
