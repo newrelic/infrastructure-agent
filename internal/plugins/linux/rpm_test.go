@@ -82,6 +82,14 @@ func TestParsePackageInfo_WarnsOnDroppedLinesOncePerLine(t *testing.T) {
 	assert.Equal(t, RpmItem{"test", "1.0", "r2", "x386", "12345", "none"}, resultPackages[0])
 }
 
+var errNoSuchFile = errors.New("no such file or directory")
+
+const (
+	firstPath  = "/db/first"
+	secondPath = "/db/second"
+	thirdPath  = "/db/third"
+)
+
 // fakeFileWatcher accepts only the paths listed in watchable and records every path it was asked to watch.
 type fakeFileWatcher struct {
 	watchable map[string]struct{}
@@ -94,13 +102,13 @@ func (f *fakeFileWatcher) Add(name string) error {
 		return nil
 	}
 
-	return errors.New("no such file or directory")
+	return errNoSuchFile
 }
 
 func TestWatchFirstAvailable(t *testing.T) {
 	t.Parallel()
 
-	paths := []string{"/db/first", "/db/second", "/db/third"}
+	paths := []string{firstPath, secondPath, thirdPath}
 
 	cases := []struct {
 		name         string
@@ -110,44 +118,48 @@ func TestWatchFirstAvailable(t *testing.T) {
 	}{
 		{
 			name:         "first path available",
-			watchable:    []string{"/db/first", "/db/second", "/db/third"},
-			wantAttempts: []string{"/db/first"},
+			watchable:    []string{firstPath, secondPath, thirdPath},
+			wantErr:      false,
+			wantAttempts: []string{firstPath},
 		},
 		{
 			name:         "falls back to second path",
-			watchable:    []string{"/db/second", "/db/third"},
-			wantAttempts: []string{"/db/first", "/db/second"},
+			watchable:    []string{secondPath, thirdPath},
+			wantErr:      false,
+			wantAttempts: []string{firstPath, secondPath},
 		},
 		{
 			name:         "falls back to last path",
-			watchable:    []string{"/db/third"},
-			wantAttempts: []string{"/db/first", "/db/second", "/db/third"},
+			watchable:    []string{thirdPath},
+			wantErr:      false,
+			wantAttempts: []string{firstPath, secondPath, thirdPath},
 		},
 		{
 			name:         "no path available",
+			watchable:    nil,
 			wantErr:      true,
-			wantAttempts: []string{"/db/first", "/db/second", "/db/third"},
+			wantAttempts: []string{firstPath, secondPath, thirdPath},
 		},
 	}
 
-	for _, tc := range cases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			watcher := &fakeFileWatcher{watchable: map[string]struct{}{}, attempts: nil}
-			for _, path := range tc.watchable {
+			for _, path := range testCase.watchable {
 				watcher.watchable[path] = struct{}{}
 			}
 
 			err := watchFirstAvailable(watcher, paths)
 
-			if tc.wantErr {
+			if testCase.wantErr {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
 			}
-			assert.Equal(t, tc.wantAttempts, watcher.attempts)
+
+			assert.Equal(t, testCase.wantAttempts, watcher.attempts)
 		})
 	}
 }
@@ -159,7 +171,7 @@ func TestRpmDBWatchPaths_SupportsAllRpmBackends(t *testing.T) {
 		"/var/lib/rpm/Installtid",
 		"/var/lib/rpm/rpmdb.sqlite",
 		"/var/lib/rpm/Packages.db",
-	}, rpmDBWatchPaths)
+	}, rpmDBWatchPaths())
 }
 
 // Only the ndb backend file exists, as on SLES 16.0: the watcher must be set up and report writes to it.
@@ -172,6 +184,7 @@ func TestWatchFirstAvailable_NdbBackendWithRealWatcher(t *testing.T) {
 
 	watcher, err := fsnotify.NewWatcher()
 	require.NoError(t, err)
+
 	defer func() { _ = watcher.Close() }()
 
 	paths := []string{
@@ -186,7 +199,7 @@ func TestWatchFirstAvailable_NdbBackendWithRealWatcher(t *testing.T) {
 	select {
 	case event := <-watcher.Events:
 		assert.Equal(t, ndbFile, event.Name)
-		assert.True(t, event.Op&fsnotify.Write == fsnotify.Write)
+		assert.Equal(t, fsnotify.Write, event.Op&fsnotify.Write)
 	case <-time.After(5 * time.Second):
 		t.Fatal("timeout waiting for the write event on the ndb database file")
 	}

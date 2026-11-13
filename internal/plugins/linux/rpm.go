@@ -32,12 +32,14 @@ const (
 	RpmPath = "/bin/rpm"
 )
 
-// rpmDBWatchPaths lists the RPM database files that change on package modifications, in order of preference.
+// rpmDBWatchPaths returns the RPM database files that change on package modifications, in order of preference.
 // Which one exists depends on the database backend of the installed rpm version.
-var rpmDBWatchPaths = []string{
-	"/var/lib/rpm/Installtid",   
-	"/var/lib/rpm/rpmdb.sqlite", 
-	"/var/lib/rpm/Packages.db",  // ndb backend (e.g. SLES 16.0, rpm 4.20)
+func rpmDBWatchPaths() []string {
+	return []string{
+		"/var/lib/rpm/Installtid",
+		"/var/lib/rpm/rpmdb.sqlite",
+		"/var/lib/rpm/Packages.db", // ndb backend (e.g. SLES 16.0, rpm 4.20)
+	}
 }
 
 type fileWatcher interface {
@@ -47,12 +49,17 @@ type fileWatcher interface {
 func watchFirstAvailable(watcher fileWatcher, paths []string) error {
 	var err error
 	for _, path := range paths {
-		if err = watcher.Add(path); err == nil {
+		err = watcher.Add(path)
+		if err == nil {
 			return nil
 		}
 	}
 
-	return err
+	if err != nil {
+		return fmt.Errorf("none of the rpm database files can be watched: %w", err)
+	}
+
+	return nil
 }
 
 type rpmPlugin struct {
@@ -162,10 +169,11 @@ func (p *rpmPlugin) Run() {
 	}
 
 	// Listening writes to a RPM database file used on packages modifications
-	err = watchFirstAvailable(watcher, rpmDBWatchPaths)
+	err = watchFirstAvailable(watcher, rpmDBWatchPaths())
 	if err != nil {
 		rpmlog.WithError(err).Error("can't setup trigger file watcher for rpm")
 		p.Unregister()
+
 		return
 	}
 
