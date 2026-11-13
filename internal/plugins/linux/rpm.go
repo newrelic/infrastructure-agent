@@ -35,18 +35,15 @@ const (
 // rpmDBWatchPaths lists the RPM database files that change on package modifications, in order of preference.
 // Which one exists depends on the database backend of the installed rpm version.
 var rpmDBWatchPaths = []string{
-	"/var/lib/rpm/Installtid",   // bdb backend (rpm < 4.16)
-	"/var/lib/rpm/rpmdb.sqlite", // sqlite backend (rpm >= 4.16)
+	"/var/lib/rpm/Installtid",   
+	"/var/lib/rpm/rpmdb.sqlite", 
 	"/var/lib/rpm/Packages.db",  // ndb backend (e.g. SLES 16.0, rpm 4.20)
 }
 
-// fileWatcher is the subset of fsnotify.Watcher needed to subscribe to file events.
 type fileWatcher interface {
 	Add(name string) error
 }
 
-// watchFirstAvailable subscribes the watcher to the first of the paths that can be watched.
-// If none can be watched it returns the error of the last attempt.
 func watchFirstAvailable(watcher fileWatcher, paths []string) error {
 	var err error
 	for _, path := range paths {
