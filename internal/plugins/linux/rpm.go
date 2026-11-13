@@ -32,6 +32,32 @@ const (
 	RpmPath = "/bin/rpm"
 )
 
+// rpmDBWatchPaths lists the RPM database files that change on package modifications, in order of preference.
+// Which one exists depends on the database backend of the installed rpm version.
+var rpmDBWatchPaths = []string{
+	"/var/lib/rpm/Installtid",   // bdb backend (rpm < 4.16)
+	"/var/lib/rpm/rpmdb.sqlite", // sqlite backend (rpm >= 4.16)
+	"/var/lib/rpm/Packages.db",  // ndb backend (e.g. SLES 16.0, rpm 4.20)
+}
+
+// fileWatcher is the subset of fsnotify.Watcher needed to subscribe to file events.
+type fileWatcher interface {
+	Add(name string) error
+}
+
+// watchFirstAvailable subscribes the watcher to the first of the paths that can be watched.
+// If none can be watched it returns the error of the last attempt.
+func watchFirstAvailable(watcher fileWatcher, paths []string) error {
+	var err error
+	for _, path := range paths {
+		if err = watcher.Add(path); err == nil {
+			return nil
+		}
+	}
+
+	return err
+}
+
 type rpmPlugin struct {
 	agent.PluginCommon
 	frequency    time.Duration
@@ -139,15 +165,11 @@ func (p *rpmPlugin) Run() {
 	}
 
 	// Listening writes to a RPM database file used on packages modifications
-	err = watcher.Add("/var/lib/rpm/Installtid")
+	err = watchFirstAvailable(watcher, rpmDBWatchPaths)
 	if err != nil {
-		// New versions of rpm (> 4.16) do not contain Installtid database file
-		err = watcher.Add("/var/lib/rpm/rpmdb.sqlite")
-		if err != nil {
-			rpmlog.WithError(err).Error("can't setup trigger file watcher for rpm")
-			p.Unregister()
-			return
-		}
+		rpmlog.WithError(err).Error("can't setup trigger file watcher for rpm")
+		p.Unregister()
+		return
 	}
 
 	counter := 1
