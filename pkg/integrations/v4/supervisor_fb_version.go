@@ -23,22 +23,13 @@ const (
 	// YAML config (including YAML parsers files) is fully supported since 3.2.
 	fbYAMLMinMajor = 3
 	fbYAMLMinMinor = 2
-	// First Fluent Bit version without classic config support. Classic is deprecated at the end
-	// of 2026 and the removal release is not announced yet: 6.0.0 is an assumption to revisit.
-	fbNoClassicMajor = 6
-	fbNoClassicMinor = 0
 )
-
-// fbMigrationDocURL points to the guide to migrate Fluent Bit classic configuration to YAML.
-// TODO: placeholder, replace it with the published migration guide URL before enabling the feature flag.
-const fbMigrationDocURL = "https://docs.newrelic.com/docs/logs/forward-logs/fluent-bit-yaml-migration-PLACEHOLDER"
 
 var (
 	fbVersionRegex = regexp.MustCompile(`Fluent Bit v(\d+)\.(\d+)\.(\d+)`)
 
 	errFbVersionNotFound       = errors.New("fluent bit version not found in output")
 	errFbYAMLNotSupported      = errors.New("fluent bit version does not support YAML config")
-	errFbExternalCfgMismatch   = errors.New("external fluent bit config format does not match the selected format")
 	errFbExternalYAMLNoVersion = errors.New("external fluent bit config is YAML but fluent bit version could not be detected")
 )
 
@@ -58,10 +49,6 @@ func (v FBVersion) AtLeast(major, minor int) bool {
 
 func (v FBVersion) supportsYAML() bool {
 	return v.AtLeast(fbYAMLMinMajor, fbYAMLMinMinor)
-}
-
-func (v FBVersion) supportsClassic() bool {
-	return !v.AtLeast(fbNoClassicMajor, fbNoClassicMinor)
 }
 
 // ParseFBVersion extracts the version from the "fluent-bit --version" output, ie: "Fluent Bit v5.1.2".
@@ -141,20 +128,7 @@ func describeFBVersion(version FBVersion, known bool) string {
 	return "v" + version.String()
 }
 
-func classicDeprecationMessage() string {
-	return "Fluent Bit classic .conf configuration is deprecated and will stop working at the end of 2026. " +
-		"Migrate your fluentbit config_file to YAML. More info: " + fbMigrationDocURL
-}
-
-// selectFBConfigFormat decides which config format to generate:
-//   - customer external config in YAML: YAML, as classic cannot include YAML files.
-//   - yamlFlag enabled and version supports YAML (3.2 or newer): YAML.
-//   - version unknown: classic, which is the behaviour before version detection existed.
-//   - version below 6.0.0: classic.
-//   - version 6.0.0 or newer (no classic support): YAML.
-//
-// An external config file that the selected format cannot include returns an error.
-// A classic external config file that is still included logs a deprecation warning.
+// An external config determines the format; otherwise the flag enables YAML on supported versions.
 func selectFBConfigFormat(
 	version FBVersion,
 	versionErr error,
@@ -168,12 +142,12 @@ func selectFBConfigFormat(
 	switch {
 	case externalFormat == logs.FBConfigFormatYAML:
 		format = logs.FBConfigFormatYAML
+	case externalFormat == logs.FBConfigFormatClassic:
+		format = logs.FBConfigFormatClassic
 	case yamlFlag && versionKnown && version.supportsYAML():
 		format = logs.FBConfigFormatYAML
-	case !versionKnown || version.supportsClassic():
-		format = logs.FBConfigFormatClassic
 	default:
-		format = logs.FBConfigFormatYAML
+		format = logs.FBConfigFormatClassic
 	}
 
 	if format == logs.FBConfigFormatYAML && versionKnown && !version.supportsYAML() {
@@ -186,15 +160,10 @@ func selectFBConfigFormat(
 		sFBLogger.WithError(versionErr).Warn(errFbExternalYAMLNoVersion.Error())
 	}
 
-	if externalFormat != "" && externalFormat != format {
-		return "", fmt.Errorf("%w: %s is %s, but the agent generates %s config for fluent bit %s, "+
-			"classic configuration is deprecated, please migrate it to a %s file: %s",
-			errFbExternalCfgMismatch, externalCfg.CfgFilePath, externalFormat, format,
-			describeFBVersion(version, versionKnown), format, fbMigrationDocURL)
-	}
-
 	if externalFormat == logs.FBConfigFormatClassic {
-		sFBLogger.WithField("configFile", externalCfg.CfgFilePath).Warn(classicDeprecationMessage())
+		sFBLogger.WithField("configFile", externalCfg.CfgFilePath).
+			Warn("Using classic Fluent Bit configuration for the external config file. " +
+				"Newer Fluent Bit features may require YAML; migrate your fluentbit config_file to YAML.")
 	}
 
 	return format, nil

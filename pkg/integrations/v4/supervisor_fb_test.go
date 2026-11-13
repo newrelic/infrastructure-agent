@@ -464,12 +464,19 @@ func Test_buildFbExecutor_ConfigFormatFromVersion(t *testing.T) {
 		yamlFlagExists bool
 		expectedExt    string
 		expectedPrefix string
+		external       string
+		include        string
 	}{
-		{"5.1 keeps classic", "5.1.2", false, true, ".conf", "[INPUT]"},
-		{"5.1 flag not received keeps classic", "5.1.2", false, false, ".conf", "[INPUT]"},
-		{"6.0 without classic gets yaml", "6.0.0", false, true, ".yaml", "pipeline:"},
-		{"5.1 flag enabled gets yaml", "5.1.2", true, true, ".yaml", "pipeline:"},
-		{"3.1 flag enabled keeps classic", "3.1.9", true, true, ".conf", "[INPUT]"},
+		{"5.1 keeps classic", "5.1.2", false, true, ".conf", "[INPUT]", "", ""},
+		{"5.1 flag not received keeps classic", "5.1.2", false, false, ".conf", "[INPUT]", "", ""},
+		{"6.0 flag disabled keeps classic", "6.0.0", false, true, ".conf", "[INPUT]", "", ""},
+		{"6.0 flag enabled gets yaml", "6.0.0", true, true, ".yaml", "pipeline:", "", ""},
+		{"5.1 flag enabled gets yaml", "5.1.2", true, true, ".yaml", "pipeline:", "", ""},
+		{"3.1 flag enabled keeps classic", "3.1.9", true, true, ".conf", "[INPUT]", "", ""},
+		{"external classic", "6.0.0", true, true, ".conf", "[INPUT]", "/etc/fb/custom.conf",
+			"@INCLUDE /etc/fb/custom.conf"},
+		{"external yaml", "5.1.2", false, true, ".yaml", "pipeline:", "/etc/fb/custom.yaml",
+			"/etc/fb/custom.yaml"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -491,7 +498,19 @@ func Test_buildFbExecutor_ConfigFormatFromVersion(t *testing.T) {
 			fbIntCfg := NewFBSupervisorConfig(ffRetriever, "agentDir", "agentDir", "loggingBinDir",
 				fbExe, fbLib, fbParsers, false, filepath.Join(tmpDir, "fb"))
 
-			exec, err := buildFbExecutor(fbIntCfg, confLoaderForTest())()
+			loader := confLoaderForTest()
+			if tc.external != "" {
+				loggingDir := filepath.Join(tmpDir, "logging.d")
+				require.NoError(t, os.Mkdir(loggingDir, 0o700))
+				loggingConfig := "logs:\n  - name: app\n    file: /var/log/app.log\n" +
+					"  - name: external\n    fluentbit:\n      config_file: " + tc.external + "\n"
+				require.NoError(t, os.WriteFile(filepath.Join(loggingDir, "logging.yml"), []byte(loggingConfig), 0o600))
+				loader = logs.NewFolderLoader(config.LogForward{ConfigsDir: loggingDir},
+					func() entity.Identity { return entity.Identity{ID: 13} },
+					testhelpers.NewFakeHostnameResolver("full_hostname", "short_hostname", nil))
+			}
+
+			exec, err := buildFbExecutor(fbIntCfg, loader)()
 			require.NoError(t, err)
 
 			cfgPath := exec.(*executor.Executor).Args[1] //nolint:forcetypeassert
@@ -499,6 +518,9 @@ func Test_buildFbExecutor_ConfigFormatFromVersion(t *testing.T) {
 			content, err := os.ReadFile(cfgPath)
 			require.NoError(t, err)
 			assert.True(t, strings.HasPrefix(strings.TrimSpace(string(content)), tc.expectedPrefix), string(content))
+			if tc.include != "" {
+				assert.Contains(t, string(content), tc.include)
+			}
 		})
 	}
 }

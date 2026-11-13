@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/newrelic/infrastructure-agent/pkg/integrations/v4/logs"
+	"github.com/sirupsen/logrus"
+	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -48,22 +50,17 @@ func TestFBVersion_Support(t *testing.T) {
 	cases := []struct {
 		version FBVersion
 		yaml    bool
-		classic bool
 	}{
-		{FBVersion{1, 9, 3}, false, true},
-		{FBVersion{3, 1, 9}, false, true},
-		{FBVersion{3, 2, 0}, true, true},
-		{FBVersion{5, 1, 2}, true, true},
-		{FBVersion{5, 9, 0}, true, true},
-		{FBVersion{6, 0, 0}, true, false},
-		{FBVersion{6, 1, 0}, true, false},
-		{FBVersion{7, 0, 0}, true, false},
+		{FBVersion{1, 9, 3}, false},
+		{FBVersion{3, 1, 9}, false},
+		{FBVersion{3, 2, 0}, true},
+		{FBVersion{5, 1, 2}, true},
+		{FBVersion{6, 0, 0}, true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.version.String(), func(t *testing.T) {
 			t.Parallel()
 			assert.Equal(t, tc.yaml, tc.version.supportsYAML())
-			assert.Equal(t, tc.classic, tc.version.supportsClassic())
 		})
 	}
 }
@@ -94,11 +91,11 @@ func TestSelectFBConfigFormat(t *testing.T) {
 		{"1.9 classic", v19, nil, noExternal, false, logs.FBConfigFormatClassic, nil},
 		{"5.1 classic", v51, nil, noExternal, false, logs.FBConfigFormatClassic, nil},
 		{"5.9 classic", v59, nil, noExternal, false, logs.FBConfigFormatClassic, nil},
-		{"6.0 yaml", v60, nil, noExternal, false, logs.FBConfigFormatYAML, nil},
+		{"6.0 classic when flag disabled", v60, nil, noExternal, false, logs.FBConfigFormatClassic, nil},
 		{"unknown classic", FBVersion{}, errUnknown, noExternal, false, logs.FBConfigFormatClassic, nil},
 		// external .conf
 		{"5.1 external conf", v51, nil, externalConf, false, logs.FBConfigFormatClassic, nil},
-		{"6.0 external conf", v60, nil, externalConf, false, "", errFbExternalCfgMismatch},
+		{"6.0 external conf", v60, nil, externalConf, false, logs.FBConfigFormatClassic, nil},
 		{"unknown external conf", FBVersion{}, errUnknown, externalConf, false, logs.FBConfigFormatClassic, nil},
 		// external .yaml
 		{"5.1 external yaml", v51, nil, externalYAML, false, logs.FBConfigFormatYAML, nil},
@@ -112,7 +109,9 @@ func TestSelectFBConfigFormat(t *testing.T) {
 		{"flag 5.1 yaml", v51, nil, noExternal, true, logs.FBConfigFormatYAML, nil},
 		{"flag 6.0 yaml", v60, nil, noExternal, true, logs.FBConfigFormatYAML, nil},
 		{"flag unknown classic", FBVersion{}, errUnknown, noExternal, true, logs.FBConfigFormatClassic, nil},
-		{"flag 5.1 external conf errors", v51, nil, externalConf, true, "", errFbExternalCfgMismatch},
+		{"flag 5.1 external conf stays classic", v51, nil, externalConf, true, logs.FBConfigFormatClassic, nil},
+		{"flag 6.0 external conf stays classic", v60, nil, externalConf, true, logs.FBConfigFormatClassic, nil},
+		{"flag unknown external conf", FBVersion{}, errUnknown, externalConf, true, logs.FBConfigFormatClassic, nil},
 		{"flag 5.1 external yaml", v51, nil, externalYAML, true, logs.FBConfigFormatYAML, nil},
 		{"flag 1.9 external conf stays classic", v19, nil, externalConf, true, logs.FBConfigFormatClassic, nil},
 	}
@@ -130,25 +129,21 @@ func TestSelectFBConfigFormat(t *testing.T) {
 	}
 }
 
-func TestClassicDeprecationMessage(t *testing.T) {
-	t.Parallel()
-
-	msg := classicDeprecationMessage()
-	assert.Contains(t, msg, "deprecated")
-	assert.Contains(t, msg, "end of 2026")
-	assert.Contains(t, msg, "YAML")
-	assert.Contains(t, msg, fbMigrationDocURL)
-}
-
-func TestSelectFBConfigFormat_MismatchErrorPointsToMigrationDoc(t *testing.T) {
-	t.Parallel()
+func TestSelectFBConfigFormat_WarnsForExternalClassic(t *testing.T) {
+	logger, hook := logtest.NewNullLogger()
+	originalLogger := sFBLogger
+	sFBLogger = func() *logrus.Entry { return logrus.NewEntry(logger) }
+	t.Cleanup(func() { sFBLogger = originalLogger })
 
 	external := logs.FBCfgExternal{CfgFilePath: "/etc/fb/custom.conf"} //nolint:exhaustruct
-
-	_, err := selectFBConfigFormat(FBVersion{5, 1, 2}, nil, external, true)
-	require.ErrorIs(t, err, errFbExternalCfgMismatch)
-	assert.Contains(t, err.Error(), "/etc/fb/custom.conf")
-	assert.Contains(t, err.Error(), fbMigrationDocURL)
+	format, err := selectFBConfigFormat(FBVersion{6, 0, 0}, nil, external, true)
+	require.NoError(t, err)
+	assert.Equal(t, logs.FBConfigFormatClassic, format)
+	require.Len(t, hook.AllEntries(), 1)
+	entry := hook.LastEntry()
+	assert.Equal(t, logrus.WarnLevel, entry.Level)
+	assert.Equal(t, external.CfgFilePath, entry.Data["configFile"])
+	assert.Contains(t, entry.Message, "Newer Fluent Bit features may require YAML")
 }
 
 func TestFBVersionDetector_CachesUntilBinaryChanges(t *testing.T) {
