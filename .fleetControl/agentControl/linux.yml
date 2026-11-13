@@ -1,6 +1,6 @@
 namespace: newrelic
 name: com.newrelic.infrastructure
-version: 1.0.1
+version: 1.1.0
 platform: host
 operating_system: linux
 protocol_version: "1.0"
@@ -117,6 +117,14 @@ deployment:
         nri-prometheus:
           kind: file
           copy_from_file: ${nr-sub:packages.infra-agent.dir}/integrations/nri-prometheus
+        # nrjmx, a JMX bridge used by JMX-based OHIs: the jar and its wrapper script, which must stay side by side
+        # and next to the integrations. Java must be reachable by the integration: in PATH, or through NRIA_JAVA_HOME / JAVA_HOME.
+        nrjmx.jar:
+          kind: file
+          copy_from_file: ${nr-sub:packages.infra-agent.dir}/integrations/nrjmx.jar
+        nrjmx:
+          kind: file
+          copy_from_file: ${nr-sub:packages.infra-agent.dir}/integrations/nrjmx
   executables:
     - id: newrelic-infra
       path: ${nr-sub:packages.infra-agent.dir}/newrelic-infra

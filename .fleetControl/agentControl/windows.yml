@@ -1,6 +1,6 @@
 namespace: newrelic
 name: com.newrelic.infrastructure
-version: 1.0.1
+version: 1.1.0
 platform: host
 operating_system: windows
 protocol_version: "1.0"
@@ -102,6 +102,14 @@ deployment:
         windows_exporter.exe:
           kind: file
           copy_from_file: ${nr-sub:packages.infra-agent.dir}\\integrations\\windows_exporter.exe
+        # nrjmx, a JMX bridge used by JMX-based OHIs: the jar and its wrapper script, which must stay side by side
+        # and next to the integrations. Java must be reachable by the integration through PATH.
+        nrjmx.jar:
+          kind: file
+          copy_from_file: ${nr-sub:packages.infra-agent.dir}\\integrations\\nrjmx.jar
+        nrjmx.bat:
+          kind: file
+          copy_from_file: ${nr-sub:packages.infra-agent.dir}\\integrations\\nrjmx.bat
   executables:
     - id: newrelic-infra
       path: ${nr-sub:packages.infra-agent.dir}\\newrelic-infra.exe
