@@ -21,7 +21,7 @@ on:
         type: string
         required: true
       path:
-        description: 'Path under infrastructure_agent folder to recover (w/o leading nor trailing slash)'
+        description: 'Path under the chosen folder to recover (w/o leading nor trailing slash). Empty = the whole folder'
         type: string
         required: false
       environment:
@@ -32,13 +32,21 @@ on:
           - staging
           - production
         default: 'staging'
+      folder:
+        type: choice
+        required: true
+        description: 'Folder of the bucket to recover'
+        options:
+          - infrastructure_agent
+          - infrastructure_agent_v2
+        default: 'infrastructure_agent'
 
 
 permissions:
   contents: read
 
 env:
-  MANDATORY_PREFIX: 'infrastructure_agent/'
+  MANDATORY_PREFIX: '${{ github.event.inputs.folder }}/'
   IMAGE: 'ghcr.io/newrelic-forks/s3-pit-restore:latest'
   AWS_REGION: "us-east-1"
   TEMP_AWS_PROFILE: temp_aws_profile
@@ -97,7 +105,7 @@ jobs:
           fi
           
           if  [[ "$s3_path" == "" ]]; then
-            echo "MANDATORY_PREFIX=infrastructure_agent" >> $GITHUB_ENV
+            echo "MANDATORY_PREFIX=${{ github.event.inputs.folder }}" >> $GITHUB_ENV
           fi
 
       - name: Checkout repository
@@ -106,6 +114,8 @@ jobs:
           repository: newrelic-forks/s3-pit-restore
           ref: master
 
+      # `make restore` is restore-in-folder plus replace-original. They run as two steps, each with fresh credentials,
+      # because together they can outlast one AWS session (each pass over a whole folder takes 1 to 1.5 hours).
       - name: Setup AWS credentials for Production
         if: ${{ github.event.inputs.environment == 'production' }}
         run: |
@@ -118,7 +128,7 @@ jobs:
           AWS_SESSION_DURATION_SECONDS: 14400
           TEMP_AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
 
-      - name: Run S3 PIT restore
+      - name: Restore Production S3 at the chosen time into .restored
         if: ${{ github.event.inputs.environment == 'production' }}
         run: |
           BUCKET="nr-downloads-main" \
@@ -126,7 +136,31 @@ jobs:
           TIME="${{ env.DATE_TIME }}" \
           IMAGE="${{ env.IMAGE }}" \
           AWS_PROFILE="${{ env.TEMP_AWS_PROFILE }}" \
-          make restore
+          make restore-in-folder
+
+      - name: Refresh AWS credentials for Production
+        if: ${{ github.event.inputs.environment == 'production' }}
+        run: |
+          ./setup_aws_credentials.sh
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION }}
+          AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_PRODUCTION }}
+          AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION }}
+          AWS_SESSION_DURATION_SECONDS: 14400
+          TEMP_AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
+
+      - name: Replace the original folder with the restored one in Production S3
+        if: ${{ github.event.inputs.environment == 'production' }}
+        run: |
+          PREFIX="${{ env.MANDATORY_PREFIX }}${{ github.event.inputs.path }}"
+          BUCKET="nr-downloads-main" \
+          PREFIX="$PREFIX" \
+          TIME="${{ env.DATE_TIME }}" \
+          AWS_PROFILE="${{ env.TEMP_AWS_PROFILE }}" \
+          make replace-original
+          echo "Restored s3://nr-downloads-main/$PREFIX at ${{ env.DATE_TIME }}"
+          echo "Backup of the previous folder: s3://nr-downloads-main/$PREFIX.original"
 
       - name: Setup AWS credentials for Staging
         if: ${{ github.event.inputs.environment == 'staging' }}
@@ -140,7 +174,7 @@ jobs:
           AWS_SESSION_DURATION_SECONDS: 14400
           TEMP_AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
 
-      - name: Run S3 PIT restore in Staging S3
+      - name: Restore Staging S3 at the chosen time into .restored
         if: ${{ github.event.inputs.environment == 'staging' }}
         run: |
           BUCKET="nr-downloads-ohai-staging" \
@@ -148,4 +182,28 @@ jobs:
           TIME="${{ env.DATE_TIME }}" \
           IMAGE="${{ env.IMAGE }}" \
           AWS_PROFILE="${{ env.TEMP_AWS_PROFILE }}" \
-          make restore
+          make restore-in-folder
+
+      - name: Refresh AWS credentials for Staging
+        if: ${{ github.event.inputs.environment == 'staging' }}
+        run: |
+          ./setup_aws_credentials.sh
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
+          AWS_ROLE_ARN: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
+          AWS_ROLE_SESSION_NAME: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
+          AWS_SESSION_DURATION_SECONDS: 14400
+          TEMP_AWS_PROFILE: ${{ env.TEMP_AWS_PROFILE }}
+
+      - name: Replace the original folder with the restored one in Staging S3
+        if: ${{ github.event.inputs.environment == 'staging' }}
+        run: |
+          PREFIX="${{ env.MANDATORY_PREFIX }}${{ github.event.inputs.path }}"
+          BUCKET="nr-downloads-ohai-staging" \
+          PREFIX="$PREFIX" \
+          TIME="${{ env.DATE_TIME }}" \
+          AWS_PROFILE="${{ env.TEMP_AWS_PROFILE }}" \
+          make replace-original
+          echo "Restored s3://nr-downloads-ohai-staging/$PREFIX at ${{ env.DATE_TIME }}"
+          echo "Backup of the previous folder: s3://nr-downloads-ohai-staging/$PREFIX.original"
