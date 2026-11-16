@@ -11,7 +11,7 @@ variable "windows_password" {
   default = ""
 }
 
-variable "platform"{
+variable "platform" {
   default = ""
 }
 
@@ -59,12 +59,12 @@ variable "a2q_env" {
 }
 
 locals {
-    a2q_limited_ec2_filters = ["A2Q_config1_", "A2Q_config2_"]
-    filtered_ec2 = (
-      var.is_A2Q && contains(["eu", "jp"], var.a2q_env)
-      ? local.a2q_limited_ec2_filters
-      : (var.platform == "windows" ? var.windows_ec2 : flatten([var.linux_ec2_amd, var.linux_ec2_arm]))
-    )
+  a2q_limited_ec2_filters = ["A2Q_config1_", "A2Q_config2_"]
+  filtered_ec2 = (
+    var.is_A2Q && contains(["eu", "jp", "us"], var.a2q_env)
+    ? local.a2q_limited_ec2_filters
+    : (var.platform == "windows" ? var.windows_ec2 : flatten([var.linux_ec2_amd, var.linux_ec2_arm]))
+  )
 }
 
 module "env-provisioner" {
@@ -85,5 +85,5 @@ module "env-provisioner" {
 
 
 output "check_vars" {
-    value = "${var.inventory_output}"
+  value = var.inventory_output
 }
