@@ -52,6 +52,7 @@ func (jo *JobObject) AddProcess(process *os.Process) error {
 	if err != nil {
 		return fmt.Errorf("failed to open process %d: %w", process.Pid, err)
 	}
+
 	defer func() { _ = windows.CloseHandle(processHandle) }()
 
 	err = windows.AssignProcessToJobObject(jo.handle, processHandle)
