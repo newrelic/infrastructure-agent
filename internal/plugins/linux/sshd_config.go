@@ -30,14 +30,14 @@ var sshdlog = log.WithPlugin("SshdConfig")
 
 const sles16sshConfigPath = "/usr/etc/ssh/sshd_config"
 
-func fileIsMissing(path string) bool {
+func IsFileMissing(path string) bool {
 	_, err := os.Stat(path)
 
 	return errors.Is(err, fs.ErrNotExist)
 }
 
 func resolveSshdConfigPath(defaultPath, fallbackPath string) string {
-	if fileIsMissing(defaultPath) && !fileIsMissing(fallbackPath) {
+	if IsFileMissing(defaultPath) && !IsFileMissing(fallbackPath) {
 		return fallbackPath
 	}
 
