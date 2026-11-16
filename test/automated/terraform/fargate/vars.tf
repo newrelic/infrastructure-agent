@@ -38,14 +38,14 @@ variable "efs_volume_name" {
 }
 
 variable "additional_efs_security_group_rules" {
-    default = [
+  default = [
     {
-      type                     = "ingress"
-      from_port                = 0
-      to_port                  = 65535
-      protocol                 = "tcp"
-      cidr_blocks              = ["10.10.0.0/24"]
-      description              = "Allow ingress traffic to EFS from trusted subnet"
+      type        = "ingress"
+      from_port   = 0
+      to_port     = 65535
+      protocol    = "tcp"
+      cidr_blocks = ["10.10.0.0/24"]
+      description = "Allow ingress traffic to EFS from trusted subnet"
     }
   ]
 }
@@ -84,6 +84,10 @@ variable "secret_name_license_keys_canaries_A2Q_eu" {
 
 variable "secret_name_license_keys_canaries_A2Q_jp" {
   default = "caos/canaries/license_keys_canaries_A2Q_jp-Dx4cAw"
+}
+
+variable "secret_name_license_keys_canaries_A2Q_us" {
+  default = "caos/canaries/license_keys_canaries_A2Q_us-3WESx7"
 }
 
 variable "secret_name_account" {
