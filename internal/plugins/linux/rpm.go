@@ -144,9 +144,14 @@ func (p *rpmPlugin) Run() {
 		// New versions of rpm (> 4.16) do not contain Installtid database file
 		err = watcher.Add("/var/lib/rpm/rpmdb.sqlite")
 		if err != nil {
-			rpmlog.WithError(err).Error("can't setup trigger file watcher for rpm")
-			p.Unregister()
-			return
+			// rpm 4.20 on SLES 16.0 uses the ndb backend, whose database file is Packages.db
+			err = watcher.Add("/var/lib/rpm/Packages.db")
+			if err != nil {
+				rpmlog.WithError(err).Error("can't setup trigger file watcher for rpm")
+				p.Unregister()
+
+				return
+			}
 		}
 	}
 
