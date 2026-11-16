@@ -12,14 +12,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	. "gopkg.in/check.v1"
+	check "gopkg.in/check.v1"
 )
 
 type SshdConfigSuite struct{}
 
-var _ = Suite(&SshdConfigSuite{})
+var _ = check.Suite(&SshdConfigSuite{})
 
-func (self *SshdConfigSuite) TestParseSshdConfig(c *C) {
+func (suite *SshdConfigSuite) TestParseSshdConfig(checks *check.C) {
 	testInputs := map[string]struct {
 		configText     string
 		expectedConfig map[string]string
@@ -54,8 +54,8 @@ PermitRootLogin no
 
 	for _, inputs := range testInputs {
 		config, err := parseSshdConfig(inputs.configText)
-		c.Check(err, IsNil)
-		c.Check(config, DeepEquals, inputs.expectedConfig)
+		checks.Check(err, check.IsNil)
+		checks.Check(config, check.DeepEquals, inputs.expectedConfig)
 	}
 }
 
@@ -68,10 +68,30 @@ func TestResolveSshdConfigPath(t *testing.T) {
 		fallbackExists bool
 		wantfallback   bool
 	}{
-		{name: "only the default file exists", defaultExists: true, fallbackExists: false, wantfallback: false},
-		{name: "both exist: the default file wins", defaultExists: true, fallbackExists: true, wantfallback: false},
-		{name: "only the fallback file exists: falls back to it", defaultExists: false, fallbackExists: true, wantfallback: true},
-		{name: "neither exists: keeps the default path", defaultExists: false, fallbackExists: false, wantfallback: false},
+		{
+			name:           "only the default file exists",
+			defaultExists:  true,
+			fallbackExists: false,
+			wantfallback:   false,
+		},
+		{
+			name:           "both exist: the default file wins",
+			defaultExists:  true,
+			fallbackExists: true,
+			wantfallback:   false,
+		},
+		{
+			name:           "only the fallback file exists: falls back to it",
+			defaultExists:  false,
+			fallbackExists: true,
+			wantfallback:   true,
+		},
+		{
+			name:           "neither exists: keeps the default path",
+			defaultExists:  false,
+			fallbackExists: false,
+			wantfallback:   false,
+		},
 	}
 
 	for _, testCase := range cases {
