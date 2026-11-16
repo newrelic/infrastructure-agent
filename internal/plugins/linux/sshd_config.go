@@ -6,10 +6,12 @@
 package linux
 
 import (
+	"errors"
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/internal/agent/types"
 	"github.com/newrelic/infrastructure-agent/pkg/entity"
-	"io/ioutil"
+	"io/fs"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -24,6 +26,30 @@ import (
 )
 
 var sshdlog = log.WithPlugin("SshdConfig")
+
+var errNoSshdConfig = errors.New("no sshd config file found")
+
+func sshdConfigPaths() []string {
+	return []string{
+		helpers.HostEtc("/ssh/sshd_config"),
+		"/usr/etc/ssh/sshd_config", // SLES 16 ships the defaults here
+	}
+}
+
+func readFirstExisting(paths []string) ([]byte, error) {
+	for _, path := range paths {
+		content, err := os.ReadFile(path)
+		if err == nil {
+			return content, nil
+		}
+
+		if !errors.Is(err, fs.ErrNotExist) {
+			return nil, fmt.Errorf("reading %s: %w", path, err)
+		}
+	}
+
+	return nil, fmt.Errorf("%w in %v", errNoSshdConfig, paths)
+}
 
 type SshdConfigPlugin struct {
 	agent.PluginCommon
@@ -110,7 +136,7 @@ func (self *SshdConfigPlugin) Run() {
 
 	refreshTimer := time.NewTicker(self.frequency)
 	for {
-		configBuf, err := ioutil.ReadFile(helpers.HostEtc("/ssh/sshd_config"))
+		configBuf, err := readFirstExisting(sshdConfigPaths())
 		if err != nil {
 			sshdlog.WithError(err).Error("reading sshd config file")
 			self.Unregister()
