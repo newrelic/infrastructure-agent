@@ -8,13 +8,14 @@ package linux
 import (
 	"errors"
 	"fmt"
-	"github.com/newrelic/infrastructure-agent/internal/agent/types"
-	"github.com/newrelic/infrastructure-agent/pkg/entity"
 	"io/fs"
 	"os"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/newrelic/infrastructure-agent/internal/agent/types"
+	"github.com/newrelic/infrastructure-agent/pkg/entity"
 
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 
@@ -27,28 +28,20 @@ import (
 
 var sshdlog = log.WithPlugin("SshdConfig")
 
-var errNoSshdConfig = errors.New("no sshd config file found")
+const sles16sshConfigPath = "/usr/etc/ssh/sshd_config"
 
-func sshdConfigPaths() []string {
-	return []string{
-		helpers.HostEtc("/ssh/sshd_config"),
-		"/usr/etc/ssh/sshd_config", // SLES 16 ships the defaults here
-	}
+func fileIsMissing(path string) bool {
+	_, err := os.Stat(path)
+
+	return errors.Is(err, fs.ErrNotExist)
 }
 
-func readFirstExisting(paths []string) ([]byte, error) {
-	for _, path := range paths {
-		content, err := os.ReadFile(path)
-		if err == nil {
-			return content, nil
-		}
-
-		if !errors.Is(err, fs.ErrNotExist) {
-			return nil, fmt.Errorf("reading %s: %w", path, err)
-		}
+func resolveSshdConfigPath(defaultPath, fallbackPath string) string {
+	if fileIsMissing(defaultPath) && !fileIsMissing(fallbackPath) {
+		return fallbackPath
 	}
 
-	return nil, fmt.Errorf("%w in %v", errNoSshdConfig, paths)
+	return defaultPath
 }
 
 type SshdConfigPlugin struct {
@@ -136,9 +129,11 @@ func (self *SshdConfigPlugin) Run() {
 
 	refreshTimer := time.NewTicker(self.frequency)
 	for {
-		configBuf, err := readFirstExisting(sshdConfigPaths())
+		configPath := resolveSshdConfigPath(helpers.HostEtc("/ssh/sshd_config"), sles16sshConfigPath)
+
+		configBuf, err := os.ReadFile(configPath)
 		if err != nil {
-			sshdlog.WithError(err).Error("reading sshd config file")
+			sshdlog.WithError(err).WithField("path", configPath).Error("reading sshd config file")
 			self.Unregister()
 			return
 		}
