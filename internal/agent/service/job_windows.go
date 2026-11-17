@@ -43,17 +43,23 @@ func NewJob() (*JobObject, error) {
 
 // AddProcess to the JobObject.
 func (jo *JobObject) AddProcess(process *os.Process) error {
+	// Do not read the handle out of os.Process internals: its memory layout changes between Go
+	// versions (it broke in Go 1.23) and AssignProcessToJobObject then fails with an invalid
+	// handle. Open our own handle by PID with the access rights the assignment requires.
+	const access = windows.PROCESS_SET_QUOTA | windows.PROCESS_TERMINATE
 
-	// Using unsafe operation we are using the handle inside os.Process.
-	processHandle := (*struct {
-		pid    int
-		handle windows.Handle
-	})(unsafe.Pointer(process)).handle
-
-	err := windows.AssignProcessToJobObject(jo.handle, processHandle)
+	processHandle, err := windows.OpenProcess(access, false, uint32(process.Pid)) //nolint:gosec
 	if err != nil {
-		return fmt.Errorf("failed to assign process to job object: %v", err)
+		return fmt.Errorf("failed to open process %d: %w", process.Pid, err)
 	}
+
+	defer func() { _ = windows.CloseHandle(processHandle) }()
+
+	err = windows.AssignProcessToJobObject(jo.handle, processHandle)
+	if err != nil {
+		return fmt.Errorf("failed to assign process to job object: %w", err)
+	}
+
 	return nil
 }
 
