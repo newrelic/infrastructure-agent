@@ -30,9 +30,20 @@ func TestJobObject_AddProcess_ProcessIsTerminatedWhenJobIsClosed(t *testing.T) {
 
 	require.NoError(t, cmd.Start())
 
-	exited := make(chan error, 1)
+	exited := make(chan struct{})
 
-	go func() { exited <- cmd.Wait() }()
+	go func() {
+		_ = cmd.Wait()
+
+		close(exited)
+	}()
+
+	// Make sure the process does not outlive the test if an assertion below fails.
+	t.Cleanup(func() {
+		_ = cmd.Process.Kill()
+
+		<-exited
+	})
 
 	require.NoError(t, job.AddProcess(cmd.Process))
 	require.NoError(t, job.Close())
