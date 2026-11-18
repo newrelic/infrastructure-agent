@@ -33,6 +33,10 @@ func RegisterPlugins(a *agent.Agent) error {
 		a.RegisterPlugin(NewConfigFilePlugin(*ids.NewPluginID("files", "config"), a.Context))
 	}
 
+	if config.EnableIntermediateCertsPlugin {
+		a.RegisterPlugin(darwin.NewIntermediateCertsPlugin(a.Context))
+	}
+
 	if config.IsIntegrationsOnly {
 		registerIntegrationsOnlyPlugin(a)
 	}
