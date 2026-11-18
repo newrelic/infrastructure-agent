@@ -80,11 +80,16 @@ func TestHostDisk(t *testing.T) {
 	t.Logf("Used Bytes sampleB: %v", *storageSample.UsedBytes)
 
 	diskMonitor := metrics.NewDiskMonitor(storageSampler)
-	diskMonitor.Sample()
+	// Baseline taken from the same monitor as sampleA so both are summed over the same devices.
+	sampleB, err := diskMonitor.Sample()
+	require.NoError(t, err, "Error sampling disk baseline.")
+
+	const bytesWritten = 20 * 1024 * 1024 // well above btrfs commit/accounting noise
+	const diffTolerance = 1024 * 1024
 	// Create a file
 	f, err := os.Create(pathForTmpFile())
 	require.NoError(t, err, "Error creating a file.")
-	data := make([]byte, int(2e7)) // 20MB, well above btrfs commit/accounting noise
+	data := make([]byte, bytesWritten)
 	_, _ = f.Write(data)
 	_ = f.Sync()
 	syscall.Sync() // btrfs only updates statfs counters on transaction commit, fsync is not enough
@@ -99,12 +104,15 @@ func TestHostDisk(t *testing.T) {
 	sampleA, _ := diskMonitor.Sample()
 	t.Logf("Free Bytes sampleA: %v", sampleA.FreeBytes)
 	t.Logf("User Bytes sampleA: %v", sampleA.UsedBytes)
+	t.Logf("Used Bytes delta: %v (wrote %d)", sampleA.UsedBytes-sampleB.UsedBytes, bytesWritten)
 	t.Logf("Reads per sec sampleA: %v", sampleA.ReadsPerSec)
 	t.Logf("Writes per sec sampleA: %v", sampleA.WritesPerSec)
 
 	assert.NotEqual(t, 0, sampleA.ReadsPerSec, "Reads per sec is 0")
 	assert.NotEqual(t, 0, sampleA.WritesPerSec, "Writes per sec is 0")
-	assert.True(t, *storageSample.UsedBytes+1e4 < sampleA.UsedBytes, "Used bytes did not increase enough, UserBytesBefore: %f UserBytesAfter %f ", *(storageSample.UsedBytes), sampleA.UsedBytes)
+	assert.True(t, sampleA.UsedBytes >= sampleB.UsedBytes+float64(bytesWritten-diffTolerance),
+		"Used bytes did not increase enough, expected an increase of about %d, UserBytesBefore: %f UserBytesAfter %f ",
+		bytesWritten, sampleB.UsedBytes, sampleA.UsedBytes)
 }
 
 func TestHostCachedMemory(t *testing.T) {
