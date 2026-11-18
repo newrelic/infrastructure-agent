@@ -75,6 +75,15 @@ type fBSupervisorConfig struct {
 	ConfTemporaryFolder  string
 	ffRetriever          feature_flags.Retriever
 	versionDetector      *fbVersionDetector
+	// configFormat is the customer's fluent_bit_config_format setting: "yaml", "conf" or empty (not set).
+	configFormat string
+}
+
+// WithConfigFormat sets the customer's fluent_bit_config_format setting.
+func (c fBSupervisorConfig) WithConfigFormat(format string) fBSupervisorConfig {
+	c.configFormat = format
+
+	return c
 }
 
 // NewFBSupervisorConfig creates a new fBSupervisorConfig that will contain the FF retriever
@@ -213,7 +222,7 @@ func buildFbExecutor(fbIntCfg fBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 
 		cfgContent, cfgFormat, externalCfg, cErr := cfgLoader.LoadAndFormatWith(
 			func(externalCfg logs.FBCfgExternal) (logs.FBConfigFormat, error) {
-				return selectFBConfigFormat(fbVersion, versionErr, externalCfg, yamlFlag)
+				return selectFBConfigFormat(fbVersion, versionErr, externalCfg, fbIntCfg.configFormat, yamlFlag)
 			})
 		if cErr != nil {
 			return nil, cErr

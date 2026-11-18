@@ -118,7 +118,52 @@ func TestSelectFBConfigFormat(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			format, err := selectFBConfigFormat(tc.version, tc.versionErr, tc.external, tc.yamlFlag)
+			format, err := selectFBConfigFormat(tc.version, tc.versionErr, tc.external, "", tc.yamlFlag)
+			assert.Equal(t, tc.expected, format)
+			if tc.wantErr == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.ErrorIs(t, err, tc.wantErr)
+			}
+		})
+	}
+}
+
+func TestSelectFBConfigFormat_UserSetting(t *testing.T) {
+	t.Parallel()
+
+	errUnknown := errors.New("unknown")
+	none := logs.FBCfgExternal{}                                      //nolint:exhaustruct
+	extConf := logs.FBCfgExternal{CfgFilePath: "/etc/fb/custom.conf"} //nolint:exhaustruct
+	extYAML := logs.FBCfgExternal{CfgFilePath: "/etc/fb/custom.yaml"} //nolint:exhaustruct
+	v19, v51, unknown := FBVersion{1, 9, 3}, FBVersion{5, 1, 2}, FBVersion{}
+
+	cases := []struct {
+		name       string
+		version    FBVersion
+		versionErr error
+		external   logs.FBCfgExternal
+		setting    string
+		flag       bool
+		expected   logs.FBConfigFormat
+		wantErr    error
+	}{
+		{"yaml wins over flag off", v51, nil, none, "yaml", false, logs.FBConfigFormatYAML, nil},
+		{"conf wins over flag on", v51, nil, none, "conf", true, logs.FBConfigFormatClassic, nil},
+		{"yaml on old version falls back", v19, nil, none, "yaml", false, logs.FBConfigFormatClassic, nil},
+		{"yaml on unknown version falls back", unknown, errUnknown, none, "yaml", false, logs.FBConfigFormatClassic, nil},
+		{"yaml with external yaml", v51, nil, extYAML, "yaml", false, logs.FBConfigFormatYAML, nil},
+		{"yaml with external conf errors", v51, nil, extConf, "yaml", false, "", errFbYAMLVsConfExternal},
+		{"conf with external conf", v51, nil, extConf, "conf", false, logs.FBConfigFormatClassic, nil},
+		{"conf with external yaml errors", v51, nil, extYAML, "conf", false, "", errFbConfFormatVsYAMLExternal},
+		{"yaml with old version and external yaml errors", v19, nil, extYAML, "yaml", false, "", errFbYAMLNotSupported},
+		{"conf with old version and external yaml errors", v19, nil, extYAML, "conf", false, "", errFbYAMLNotSupported},
+		{"yaml with old version and external conf", v19, nil, extConf, "yaml", false, logs.FBConfigFormatClassic, nil},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			format, err := selectFBConfigFormat(tc.version, tc.versionErr, tc.external, tc.setting, tc.flag)
 			assert.Equal(t, tc.expected, format)
 			if tc.wantErr == nil {
 				assert.NoError(t, err)
@@ -136,7 +181,7 @@ func TestSelectFBConfigFormat_WarnsForExternalClassic(t *testing.T) {
 	t.Cleanup(func() { sFBLogger = originalLogger })
 
 	external := logs.FBCfgExternal{CfgFilePath: "/etc/fb/custom.conf"} //nolint:exhaustruct
-	format, err := selectFBConfigFormat(FBVersion{6, 0, 0}, nil, external, true)
+	format, err := selectFBConfigFormat(FBVersion{6, 0, 0}, nil, external, "", true)
 	require.NoError(t, err)
 	assert.Equal(t, logs.FBConfigFormatClassic, format)
 	require.Len(t, hook.AllEntries(), 1)

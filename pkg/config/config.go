@@ -164,6 +164,12 @@ func (dc *DynamicConfig) isEmpty() bool {
 //
 // Configuration structs
 // Use the 'public' annotation to specify the visibility of the config option: false/obfuscate [default: true]
+// Accepted values of the fluent_bit_config_format setting.
+const (
+	FluentBitConfigFormatYAML = "yaml"
+	FluentBitConfigFormatConf = "conf"
+)
+
 type Config struct {
 	dynamicConfig *DynamicConfig `databind:"ignored"`
 
@@ -954,6 +960,13 @@ type Config struct {
 	// Default: /var/db/newrelic-infra/newrelic-integrations/logging/parsers.conf
 	// Public: No
 	FluentBitParsersPath string `yaml:"fluent_bit_parsers_path" envconfig:"fluent_bit_parsers_path" public:"false"`
+
+	// FluentBitConfigFormat selects the format of the Fluent Bit configuration the agent generates:
+	// "yaml" or "conf" (classic). When empty, the agent defaults to YAML on Fluent Bit 3.2 or newer,
+	// staged by the fluent_bit_yaml_config feature flag. Setting "conf" is the way back to classic.
+	// Default: Empty
+	// Public: Yes
+	FluentBitConfigFormat string `yaml:"fluent_bit_config_format" envconfig:"fluent_bit_config_format" public:"true"`
 
 	// FluentBitNRLibPath is the location from where fluent-bit can load the newrelic fluent-bit library.
 	// Default: /var/db/newrelic-infra/newrelic-integrations/logging/out_newrelic.so
@@ -2334,6 +2347,15 @@ func NormalizeConfig(cfg *Config, cfgMetadata config_loader.YAMLMetadata) (err e
 
 	if cfg.LoggingHomeDir == "" {
 		cfg.LoggingHomeDir = filepath.Join(cfg.AgentDir, DefaultIntegrationsDir, defaultLoggingHomeDir)
+	}
+
+	cfg.FluentBitConfigFormat = strings.ToLower(strings.TrimSpace(cfg.FluentBitConfigFormat))
+	switch cfg.FluentBitConfigFormat {
+	case "", FluentBitConfigFormatYAML, FluentBitConfigFormatConf:
+	default:
+		nlog.WithField("fluent_bit_config_format", cfg.FluentBitConfigFormat).
+			Warn("Invalid fluent_bit_config_format, expected 'yaml' or 'conf'. Using the default.")
+		cfg.FluentBitConfigFormat = ""
 	}
 
 	if cfg.FluentBitParsersPath == "" {
