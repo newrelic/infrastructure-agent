@@ -69,6 +69,7 @@ func TestHostDisk(t *testing.T) {
 	ctx.On("Config").Return(&config.Config{
 		MetricsNetworkSampleRate: 1,
 	})
+	syscall.Sync() // flush pending writes/deletes so the baseline is stable on btrfs
 	storageSampler := storage.NewSampler(ctx)
 	storageSamples, _ := storageSampler.Sample()
 
@@ -83,8 +84,10 @@ func TestHostDisk(t *testing.T) {
 	// Create a file
 	f, err := os.Create(pathForTmpFile())
 	require.NoError(t, err, "Error creating a file.")
-	data := make([]byte, int(1e5), int(1e5)) // Initialize an empty byte slice
-	f.Write(data)                            // Write it to the file
+	data := make([]byte, int(2e7)) // 20MB, well above btrfs commit/accounting noise
+	_, _ = f.Write(data)
+	_ = f.Sync()
+	syscall.Sync() // btrfs only updates statfs counters on transaction commit, fsync is not enough
 	defer f.Close()
 	defer func() {
 		os.Remove(pathForTmpFile())
