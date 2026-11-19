@@ -4,6 +4,10 @@ run-name: ${{ github.actor }} is setting up canaries for A2Q 🚀
 on:
   workflow_dispatch:
     inputs:
+      publish_version:
+        description: 'Bucket set for this run: v1 (legacy) | v2 (new) (empty = PUBLISH_VERSION repository variable). Anything else fails the run'
+        required: false
+        default: ''
       tag:
         description: 'Tag to test'
         required: true
@@ -23,14 +27,23 @@ permissions:
   contents: read
 
 jobs:
+  config:
+    name: Resolve publish target
+    uses: ./.github/workflows/component_publish_config.yml
+    with:
+      ENV: staging
+      PUBLISH_VERSION: ${{ inputs.publish_version }}
+
   A2Q-canaries-windows:
     # EU/JP only provision config1+config2 (both Linux) - no windows fan-out for those envs.
+    needs: config
     if: ${{ github.event.inputs.windows == 'true' }}
     permissions:
       contents: read
       id-token: write # calls component_canaries.yml which needs AWS OIDC auth
     uses: ./.github/workflows/component_canaries.yml
     with:
+      REPO_ENDPOINT: ${{ needs.config.outputs.repo_endpoint }}
       PLATFORM: "windows"
       TAG: ${{ github.event.inputs.tag }}
       A2Q: true
@@ -38,6 +51,7 @@ jobs:
     secrets:
       AWS_VPC_SUBNET: ${{secrets.AWS_VPC_SUBNET}}
   A2Q-canaries-linux:
+    needs: config
     if: ${{ github.event.inputs.linux == 'true' }}
     strategy:
       matrix:
@@ -47,6 +61,7 @@ jobs:
       id-token: write # calls component_canaries.yml which needs AWS OIDC auth
     uses: ./.github/workflows/component_canaries.yml
     with:
+      REPO_ENDPOINT: ${{ needs.config.outputs.repo_endpoint }}
       PLATFORM: "linux"
       TAG: ${{ github.event.inputs.tag }}
       A2Q: true

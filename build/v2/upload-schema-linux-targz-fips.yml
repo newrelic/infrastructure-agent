@@ -1,0 +1,33 @@
+---
+- src: "newrelic-infra-fips_linux_{version}_{arch}.tar.gz"
+  uploads:
+    - type: file
+      dest: "{dest_prefix}binaries/linux/{arch}/{src}"
+  arch:
+    - amd64
+    - arm64
+
+#########################
+  # UPLOAD CHECKSUMS #
+#########################
+
+- src: "newrelic-infra-fips_linux_{version}_{arch}.tar.gz.sum"
+  uploads:
+    - type: file
+      dest: "{dest_prefix}binaries/linux/{arch}/{src}"
+  arch:
+    - amd64
+    - arm64
+
+#########################
+  # UPLOAD SIGNATURE #
+#########################
+
+- src: "newrelic-infra-fips_linux_{version}_{arch}.tar.gz.asc"
+  uploads:
+    - type: file
+      dest: "{dest_prefix}binaries/linux/{arch}/{src}"
+  arch:
+    - amd64
+    - arm64
+    
