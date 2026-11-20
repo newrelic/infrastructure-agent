@@ -3,6 +3,9 @@
 package logs
 
 import (
+	"fmt"
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -250,4 +253,71 @@ func TestFBConfigFormat_FileExtension(t *testing.T) {
 
 	assert.Equal(t, ".yaml", FBConfigFormatYAML.FileExtension())
 	assert.Equal(t, ".conf", FBConfigFormatClassic.FileExtension())
+}
+
+// TestFBCfgFormatYAML_CoversEveryField fills every field of the input, filter and output blocks and
+// checks the value is in the YAML. A field added to the classic template without a YAML twin fails here.
+func TestFBCfgFormatYAML_CoversEveryField(t *testing.T) {
+	t.Parallel()
+
+	// not copied as a value: the license key is passed through an env var, and
+	// ValidateCerts is only written when false (validateproxycerts: false).
+	skipped := map[string]string{"LicenseKey": "${NR_LICENSE_KEY_ENV_VAR}", "ValidateCerts": ""}
+
+	fill := func(target any) []string {
+		var wanted []string
+		v := reflect.ValueOf(target).Elem()
+		for i := 0; i < v.NumField(); i++ {
+			field := v.Type().Field(i)
+			if replacement, ok := skipped[field.Name]; ok {
+				if replacement != "" {
+					v.Field(i).SetString("secret-must-not-be-written")
+					wanted = append(wanted, replacement)
+				}
+
+				continue
+			}
+
+			value := fmt.Sprintf("val%s%d", field.Name, i)
+			switch field.Type.Kind() { //nolint:exhaustive
+			case reflect.String:
+				v.Field(i).SetString(value)
+				wanted = append(wanted, value)
+			case reflect.Int:
+				v.Field(i).SetInt(int64(1000 + i))
+				wanted = append(wanted, fmt.Sprint(1000+i))
+			case reflect.Bool:
+				v.Field(i).SetBool(true)
+			case reflect.Map:
+				v.Field(i).Set(reflect.ValueOf(map[string]string{"k" + value: "v" + value}))
+				wanted = append(wanted, "k"+value, "v"+value)
+			case reflect.Struct:
+				// ExternalCfg is checked by the includes tests
+			default:
+				t.Fatalf("field %s has an unhandled type %s, extend this test", field.Name, field.Type)
+			}
+		}
+
+		return wanted
+	}
+
+	var (
+		input  FBCfgInput
+		filter FBCfgFilter
+		output FBCfgOutput
+	)
+	wanted := append(fill(&input), fill(&filter)...)
+	wanted = append(wanted, fill(&output)...)
+
+	out, _, err := FBCfg{Inputs: []FBCfgInput{input}, Filters: []FBCfgFilter{filter}, Output: output}.FormatYAML()
+	require.NoError(t, err)
+
+	for _, w := range wanted {
+		assert.True(t, strings.Contains(out, w), "%q is missing from the YAML output:\n%s", w, out)
+	}
+	assert.NotContains(t, out, "secret-must-not-be-written", "the license key must only be an env var")
+	// the true booleans are written as lowercase string flags
+	assert.Contains(t, out, "ignoresystemproxy:")
+	assert.Contains(t, out, "sendmetrics:")
+	assert.Contains(t, out, "validateproxycerts: \"false\"")
 }
