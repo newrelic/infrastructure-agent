@@ -8,7 +8,7 @@ package metrics
 
 import (
 	"github.com/newrelic/infrastructure-agent/internal/agent"
-	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v4/cpu"
 )
 
 // NewCPUMonitor creates a new CPU monitor using gopsutil for Unix-like platforms (Linux and macOS).

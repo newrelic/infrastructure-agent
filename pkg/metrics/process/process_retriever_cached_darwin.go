@@ -6,8 +6,8 @@ package process
 import (
 	"fmt"
 	"github.com/newrelic/infrastructure-agent/pkg/helpers"
-	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/process"
+	"github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/process"
 	"os/exec"
 	"strconv"
 	"strings"

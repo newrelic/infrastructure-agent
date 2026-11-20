@@ -13,7 +13,7 @@ import (
 	"runtime"
 	"strconv"
 
-	"github.com/shirou/gopsutil/v3/host"
+	"github.com/shirou/gopsutil/v4/host"
 )
 
 const (
@@ -32,7 +32,8 @@ func addOSDependantConfig(fbOSConfig *FBOSConfig) {
 		WithField("PlatformVersion", hostInfo.PlatformVersion).
 		Debug("windows attributes")
 
-	matches := platformBuildNumberRegex.FindStringSubmatch(hostInfo.PlatformVersion)
+	// KernelVersion carries the "... Build <n>.<ubr>" string; gopsutil v4 PlatformVersion is the DisplayVersion.
+	matches := platformBuildNumberRegex.FindStringSubmatch(hostInfo.KernelVersion)
 
 	if len(matches) == numMatchesExpected {
 		if buildNumber, err := strconv.Atoi(matches[1]); err == nil {
