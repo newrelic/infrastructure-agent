@@ -19,6 +19,10 @@ import (
 
 const fbVersionTimeout = 5 * time.Second
 
+// fbMigrationDocURL points to the guide for migrating Fluent Bit classic configuration to YAML.
+// TODO: placeholder, replace with the final documentation link.
+const fbMigrationDocURL = "<FLUENT_BIT_YAML_MIGRATION_DOC_URL>"
+
 // Fluent Bit versions that drive the config format selection.
 const (
 	// YAML config (including YAML parsers files) is fully supported since 3.2.
@@ -31,9 +35,11 @@ var (
 
 	errFbVersionNotFound          = errors.New("fluent bit version not found in output")
 	errFbYAMLNotSupported         = errors.New("fluent bit version does not support YAML config")
-	errFbConfFormatVsYAMLExternal = errors.New("fluent_bit_config_format is conf but the external config file is YAML")
-	errFbYAMLVsConfExternal       = errors.New("fluent_bit_config_format is yaml but the external config file is classic")
-	errFbExternalYAMLNoVersion    = errors.New("external fluent bit config is YAML but fluent bit version could not be detected")
+	errFbConfFormatVsYAMLExternal = errors.New(
+		"fluent_bit_config_format is conf but the external config file is YAML, " +
+			"set fluent_bit_config_format to yaml or migrate the external file to classic format, see " +
+			fbMigrationDocURL)
+	errFbExternalYAMLNoVersion = errors.New("external fluent bit config is YAML but fluent bit version could not be detected")
 )
 
 // FBVersion is a Fluent Bit version as printed by "fluent-bit --version".
@@ -133,6 +139,7 @@ func describeFBVersion(version FBVersion, known bool) string {
 
 // selectFBConfigFormat picks the format following the customer's fluent_bit_config_format setting
 // (userFormat: "yaml", "conf" or empty), the external config file and the Fluent Bit version.
+// The yaml feature flag has the last word: while it is off the agent behaves as before, always classic.
 // YAML and classic files can't include each other, so the external file's format has to be honored.
 //
 //nolint:cyclop
@@ -143,6 +150,10 @@ func selectFBConfigFormat(
 	userFormat string,
 	yamlFlag bool,
 ) (logs.FBConfigFormat, error) {
+	if !yamlFlag {
+		return logs.FBConfigFormatClassic, nil
+	}
+
 	versionKnown := versionErr == nil
 	supportsYAML := versionKnown && version.supportsYAML()
 	externalFormat := externalCfg.ConfigFormat()
@@ -174,12 +185,15 @@ func selectFBConfigFormat(
 
 		return logs.FBConfigFormatYAML, nil
 	case logs.FBConfigFormatClassic:
+		// A classic file can't be included from YAML, so the external file's format wins.
 		if wantsYAML {
-			return "", fmt.Errorf("%w: %s", errFbYAMLVsConfExternal, externalCfg.CfgFilePath)
+			sFBLogger.WithField("configFile", externalCfg.CfgFilePath).
+				Warn("fluent_bit_config_format is yaml but the external config file is classic. Using classic.")
 		}
 		sFBLogger.WithField("configFile", externalCfg.CfgFilePath).
 			Warn("Using classic Fluent Bit configuration for the external config file. " +
-				"Newer Fluent Bit features may require YAML; migrate your fluentbit config_file to YAML.")
+				"Newer Fluent Bit features may require YAML; migrate your fluentbit config_file to YAML, see " +
+				fbMigrationDocURL)
 
 		return logs.FBConfigFormatClassic, nil
 	}
@@ -195,7 +209,7 @@ func selectFBConfigFormat(
 			"could not be detected. Using classic.")
 
 		return logs.FBConfigFormatClassic, nil
-	case yamlFlag && supportsYAML:
+	case supportsYAML:
 		return logs.FBConfigFormatYAML, nil
 	default:
 		return logs.FBConfigFormatClassic, nil

@@ -466,17 +466,38 @@ func Test_buildFbExecutor_ConfigFormatFromVersion(t *testing.T) {
 		expectedPrefix string
 		external       string
 		include        string
+		setting        string
+		wantErr        error
 	}{
-		{"5.1 keeps classic", "5.1.2", false, true, ".conf", "[INPUT]", "", ""},
-		{"5.1 flag not received keeps classic", "5.1.2", false, false, ".conf", "[INPUT]", "", ""},
-		{"6.0 flag disabled keeps classic", "6.0.0", false, true, ".conf", "[INPUT]", "", ""},
-		{"6.0 flag enabled gets yaml", "6.0.0", true, true, ".yaml", "pipeline:", "", ""},
-		{"5.1 flag enabled gets yaml", "5.1.2", true, true, ".yaml", "pipeline:", "", ""},
-		{"3.1 flag enabled keeps classic", "3.1.9", true, true, ".conf", "[INPUT]", "", ""},
-		{"external classic", "6.0.0", true, true, ".conf", "[INPUT]", "/etc/fb/custom.conf",
-			"@INCLUDE /etc/fb/custom.conf"},
-		{"external yaml", "5.1.2", false, true, ".yaml", "pipeline:", "/etc/fb/custom.yaml",
-			"/etc/fb/custom.yaml"},
+		{"5.1 keeps classic", "5.1.2", false, true, ".conf", "[INPUT]", "", "", "", nil},
+		{"5.1 flag not received keeps classic", "5.1.2", false, false, ".conf", "[INPUT]", "", "", "", nil},
+		{"5.0 flag disabled keeps classic", "5.0.0", false, true, ".conf", "[INPUT]", "", "", "", nil},
+		{"5.0 flag enabled gets yaml", "5.0.0", true, true, ".yaml", "pipeline:", "", "", "", nil},
+		{"5.1 flag enabled gets yaml", "5.1.2", true, true, ".yaml", "pipeline:", "", "", "", nil},
+		{"3.2 flag enabled gets yaml", "3.2.0", true, true, ".yaml", "pipeline:", "", "", "", nil},
+		{"3.1 flag enabled keeps classic", "3.1.9", true, true, ".conf", "[INPUT]", "", "", "", nil},
+		{"external classic", "5.0.0", true, true, ".conf", "[INPUT]", "/etc/fb/custom.conf",
+			"@INCLUDE /etc/fb/custom.conf", "", nil},
+		{"external yaml", "5.1.2", true, true, ".yaml", "pipeline:", "/etc/fb/custom.yaml",
+			"/etc/fb/custom.yaml", "", nil},
+		{"external yaml on old fluent bit fails", "3.1.9", true, true, "", "", "/etc/fb/custom.yaml", "", "",
+			errFbYAMLNotSupported},
+		// customer setting
+		{"setting yaml is ignored without the flag", "5.1.2", false, true, ".conf", "[INPUT]", "", "", "yaml", nil},
+		{"setting yaml is ignored when the flag was not received", "5.1.2", false, false, ".conf", "[INPUT]", "", "",
+			"yaml", nil},
+		{"external yaml is not honored without the flag", "5.1.2", false, true, ".conf", "[INPUT]",
+			"/etc/fb/custom.yaml", "@INCLUDE /etc/fb/custom.yaml", "", nil},
+		{"setting yaml on old fluent bit keeps classic", "3.1.9", true, true, ".conf", "[INPUT]", "", "", "yaml", nil},
+		{"setting conf beats the flag", "5.1.2", true, true, ".conf", "[INPUT]", "", "", "conf", nil},
+		{"setting yaml with external classic gives classic", "5.1.2", true, true, ".conf", "[INPUT]",
+			"/etc/fb/custom.conf", "@INCLUDE /etc/fb/custom.conf", "yaml", nil},
+		{"setting yaml with external yaml", "5.1.2", true, true, ".yaml", "pipeline:", "/etc/fb/custom.yaml",
+			"/etc/fb/custom.yaml", "yaml", nil},
+		{"setting conf with external classic", "5.1.2", true, true, ".conf", "[INPUT]", "/etc/fb/custom.conf",
+			"@INCLUDE /etc/fb/custom.conf", "conf", nil},
+		{"setting conf with external yaml fails", "5.1.2", true, true, "", "", "/etc/fb/custom.yaml", "", "conf",
+			errFbConfFormatVsYAMLExternal},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -496,7 +517,7 @@ func Test_buildFbExecutor_ConfigFormatFromVersion(t *testing.T) {
 			ffRetriever.ShouldGetFeatureFlag(fflag.FlagFluentBitYAML, tc.yamlFlag, tc.yamlFlagExists)
 
 			fbIntCfg := NewFBSupervisorConfig(ffRetriever, "agentDir", "agentDir", "loggingBinDir",
-				fbExe, fbLib, fbParsers, false, filepath.Join(tmpDir, "fb"))
+				fbExe, fbLib, fbParsers, false, filepath.Join(tmpDir, "fb")).WithConfigFormat(tc.setting)
 
 			loader := confLoaderForTest()
 			if tc.external != "" {
@@ -511,6 +532,11 @@ func Test_buildFbExecutor_ConfigFormatFromVersion(t *testing.T) {
 			}
 
 			exec, err := buildFbExecutor(fbIntCfg, loader)()
+			if tc.wantErr != nil {
+				require.ErrorIs(t, err, tc.wantErr)
+
+				return
+			}
 			require.NoError(t, err)
 
 			cfgPath := exec.(*executor.Executor).Args[1] //nolint:forcetypeassert

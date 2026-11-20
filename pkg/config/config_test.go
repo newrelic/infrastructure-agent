@@ -1441,3 +1441,46 @@ func TestNrDomainForRegion(t *testing.T) {
 		})
 	}
 }
+
+func TestNormalizeConfig_FluentBitConfigFormat(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name     string
+		yaml     string
+		expected string
+	}{
+		{"not set stays empty", "", ""},
+		{"yaml", "fluent_bit_config_format: yaml", "yaml"},
+		{"conf", "fluent_bit_config_format: conf", "conf"},
+		{"case and spaces are ignored", "fluent_bit_config_format: \"  YAML \"", "yaml"},
+		{"invalid value goes back to the default", "fluent_bit_config_format: classic", ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			tmp, err := createTestFile([]byte("license_key: \"xxx\"\n" + tc.yaml))
+			require.NoError(t, err)
+
+			defer os.Remove(tmp.Name())
+
+			cfg, err := LoadConfig(tmp.Name())
+			require.NoError(t, err)
+			assert.Equal(t, tc.expected, cfg.FluentBitConfigFormat)
+		})
+	}
+}
+
+func TestFluentBitConfigFormat_FromEnv(t *testing.T) {
+	t.Setenv("NRIA_FLUENT_BIT_CONFIG_FORMAT", "YAML")
+
+	tmp, err := createTestFile([]byte("license_key: \"xxx\"\n"))
+	require.NoError(t, err)
+
+	defer os.Remove(tmp.Name())
+
+	cfg, err := LoadConfig(tmp.Name())
+	require.NoError(t, err)
+	assert.Equal(t, FluentBitConfigFormatYAML, cfg.FluentBitConfigFormat)
+}

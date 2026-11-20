@@ -159,17 +159,17 @@ func (dc *DynamicConfig) isEmpty() bool {
 	return dc.databindSources == nil
 }
 
-// IMPORTANT NOTE: If you add new config fields, consider checking the ignore list in
-// the plugins/agent_config.go plugin to not send undesired fields as inventory
-//
-// Configuration structs
-// Use the 'public' annotation to specify the visibility of the config option: false/obfuscate [default: true]
 // Accepted values of the fluent_bit_config_format setting.
 const (
 	FluentBitConfigFormatYAML = "yaml"
 	FluentBitConfigFormatConf = "conf"
 )
 
+// IMPORTANT NOTE: If you add new config fields, consider checking the ignore list in
+// the plugins/agent_config.go plugin to not send undesired fields as inventory
+//
+// Configuration structs
+// Use the 'public' annotation to specify the visibility of the config option: false/obfuscate [default: true]
 type Config struct {
 	dynamicConfig *DynamicConfig `databind:"ignored"`
 

@@ -212,13 +212,18 @@ func buildFbExecutor(fbIntCfg fBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 		}
 
 		fbPath := fbIntCfg.getFbPath()
-		fbVersion, versionErr := versionDetector.Detect(fbPath)
-		if versionErr != nil {
-			sFBLogger.WithError(versionErr).WithField("fbExePath", fbPath).
-				Warn("Could not detect Fluent Bit version.")
-		}
-
 		yamlFlag := fbIntCfg.isYAMLConfigFlagEnabled()
+
+		// with the flag off nothing new runs: no version detection and always the classic format
+		var fbVersion FBVersion
+		var versionErr error
+		if yamlFlag {
+			fbVersion, versionErr = versionDetector.Detect(fbPath)
+			if versionErr != nil {
+				sFBLogger.WithError(versionErr).WithField("fbExePath", fbPath).
+					Warn("Could not detect Fluent Bit version.")
+			}
+		}
 
 		cfgContent, cfgFormat, externalCfg, cErr := cfgLoader.LoadAndFormatWith(
 			func(externalCfg logs.FBCfgExternal) (logs.FBConfigFormat, error) {
@@ -228,9 +233,11 @@ func buildFbExecutor(fbIntCfg fBSupervisorConfig, cfgLoader *logs.CfgLoader) fun
 			return nil, cErr
 		}
 
-		sFBLogger.WithField("fluentBitVersion", describeFBVersion(fbVersion, versionErr == nil)).
-			WithField("configFormat", cfgFormat).
-			Info("Generated Fluent Bit config.")
+		if yamlFlag {
+			sFBLogger.WithField("fluentBitVersion", describeFBVersion(fbVersion, versionErr == nil)).
+				WithField("configFormat", cfgFormat).
+				Info("Generated Fluent Bit config.")
+		}
 
 		cfgTmpPath, err := saveToTempFile(fbIntCfg.ConfTemporaryFolder, []byte(cfgContent), cfgFormat.FileExtension())
 		if err != nil {
