@@ -26,6 +26,8 @@ permissions:
 env:
   TAG: ${{ inputs.TAG }}
   DOCKER_PUBLISH: ${{ inputs.PUBLISH == true }}
+  DOCKER_HUB_ID: ${{ secrets.DOCKER_HUB_ID }}
+  DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
   PFX_CERTIFICATE_BASE64: ${{ secrets.PFX_CERTIFICATE_BASE64 }}
   PFX_PASSPHRASE: ${{ secrets.PFX_PASSPHRASE }}
   PFX_CERTIFICATE_DESCRIPTION: 'New Relic'
@@ -47,11 +49,11 @@ jobs:
           check-latest: true
 
       - name: Login to DockerHub
-        if: ${{ inputs.PUBLISH == true }}
+        if: ${{ inputs.PUBLISH == true && env.DOCKER_HUB_ID != '' && env.DOCKER_HUB_PASSWORD != '' }}
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_HUB_ID }}
-          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+          username: ${{ env.DOCKER_HUB_ID }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
 
       - name: Get PFX certificate from GH secrets
         shell: bash
@@ -131,11 +133,11 @@ jobs:
           check-latest: true
 
       - name: Login to DockerHub
-        if: ${{ inputs.PUBLISH == true }}
+        if: ${{ inputs.PUBLISH == true && env.DOCKER_HUB_ID != '' && env.DOCKER_HUB_PASSWORD != '' }}
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_HUB_ID }}
-          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+          username: ${{ env.DOCKER_HUB_ID }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
 
       - name: Get PFX certificate from GH secrets
         shell: bash

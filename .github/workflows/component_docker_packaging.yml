@@ -50,6 +50,7 @@ jobs:
           ref: ${{env.TAG}}
 
       - name: Login to DockerHub
+        if: ${{ env.DOCKER_HUB_ID != '' && env.DOCKER_HUB_PASSWORD != '' }}
         uses: docker/login-action@v1
         with:
           username: ${{ env.DOCKER_HUB_ID }}

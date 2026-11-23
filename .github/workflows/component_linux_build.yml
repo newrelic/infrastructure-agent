@@ -18,6 +18,8 @@ permissions:
 
 env:
   TAG: ${{ inputs.TAG }}
+  DOCKER_HUB_ID: ${{ secrets.DOCKER_HUB_ID }}
+  DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
 jobs:
   test-build:
@@ -26,10 +28,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Login to DockerHub
+        if: ${{ env.DOCKER_HUB_ID != '' && env.DOCKER_HUB_PASSWORD != '' }}
         uses: docker/login-action@v4
         with:
-          username: ${{ secrets.DOCKER_HUB_ID }}
-          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+          username: ${{ env.DOCKER_HUB_ID }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
       - name: Build all platforms:arch
         run: make ci/build
       - name: Test FIPS binaries for fips compliance
