@@ -14,7 +14,7 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 
-	"github.com/shirou/gopsutil/v3/host"
+	"github.com/shirou/gopsutil/v4/host"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v2"
@@ -1189,7 +1189,7 @@ func TestFBConfigForWinevtlog(t *testing.T) {
 
 func isWindowsBuildNumberLowerOrEqualsThan(windowsBuildNumber int) bool {
 	if hostInfo, err := host.Info(); err == nil {
-		matches := windowsBuildNumberRegex.FindStringSubmatch(hostInfo.PlatformVersion)
+		matches := windowsBuildNumberRegex.FindStringSubmatch(hostInfo.KernelVersion)
 
 		if len(matches) == 2 {
 			if buildNumber, err2 := strconv.Atoi(matches[1]); err2 == nil {

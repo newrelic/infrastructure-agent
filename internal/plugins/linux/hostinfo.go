@@ -28,7 +28,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/helpers/fingerprint"
 	"github.com/newrelic/infrastructure-agent/pkg/log"
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
-	"github.com/shirou/gopsutil/v3/host"
+	"github.com/shirou/gopsutil/v4/host"
 	"github.com/sirupsen/logrus"
 )
 

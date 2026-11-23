@@ -14,6 +14,8 @@ import (
 	"github.com/newrelic/infrastructure-agent/internal/agent/mocks"
 	"github.com/newrelic/infrastructure-agent/internal/testhelpers"
 	"github.com/newrelic/infrastructure-agent/pkg/config"
+	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
+	"github.com/shirou/gopsutil/v4/process"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -268,4 +270,42 @@ func TestLinuxHarvester_GetServiceForPid_OnEmptyUseCommandName(t *testing.T) {
 	assert.Equal(t, sample.CommandName, sample.ProcessDisplayName)
 	assert.Equal(t, "process.test", sample.CommandName)
 	assert.Contains(t, sample.CmdLine, os.Args[0])
+}
+
+// gopsutil v4 maps /proc/<pid>/io read_bytes/write_bytes to DiskReadBytes/DiskWriteBytes and rchar/wchar to
+// ReadBytes/WriteBytes. The agent must keep reporting the disk bytes (v3 ReadBytes/WriteBytes semantics).
+func TestLinuxHarvester_PopulateIOCounters_UsesDiskBytes(t *testing.T) {
+	t.Parallel()
+
+	const elapsedSeconds = 2.0
+
+	last := &process.IOCountersStat{
+		ReadCount: 10, WriteCount: 20,
+		ReadBytes: 1_000_000, WriteBytes: 2_000_000, // rchar/wchar: must not be used
+		DiskReadBytes: 100, DiskWriteBytes: 200,
+	}
+	current := &process.IOCountersStat{
+		ReadCount: 14, WriteCount: 26,
+		ReadBytes: 9_000_000, WriteBytes: 8_000_000,
+		DiskReadBytes: 500, DiskWriteBytes: 1200,
+	}
+
+	snapshot := &SnapshotMock{} //nolint:exhaustruct,exhaustruct_v5
+	snapshot.ShouldReturnIOCounters(current, nil)
+
+	sample := &types.ProcessSample{}                         //nolint:exhaustruct,exhaustruct_v5
+	lastSample := &types.ProcessSample{LastIOCounters: last} //nolint:exhaustruct,exhaustruct_v5
+
+	harvester := &linuxHarvester{} //nolint:exhaustruct,exhaustruct_v5
+	err := harvester.populateIOCounters(sample, lastSample, snapshot, elapsedSeconds)
+	require.NoError(t, err)
+
+	require.NotNil(t, sample.IOReadBytesPerSecond)
+	require.NotNil(t, sample.IOWriteBytesPerSecond)
+	assert.InDelta(t, 200.0, *sample.IOReadBytesPerSecond, 0.001)  // (500-100)/2
+	assert.InDelta(t, 500.0, *sample.IOWriteBytesPerSecond, 0.001) // (1200-200)/2
+	require.NotNil(t, sample.IOTotalReadBytes)
+	require.NotNil(t, sample.IOTotalWriteBytes)
+	assert.Equal(t, uint64(500), *sample.IOTotalReadBytes)
+	assert.Equal(t, uint64(1200), *sample.IOTotalWriteBytes)
 }

@@ -31,7 +31,7 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/pkg/config"
 
-	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v4/cpu"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 )
