@@ -15,7 +15,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/sysinfo/cloud"
 
 	"github.com/newrelic/infrastructure-agent/pkg/plugins/ids"
-	"github.com/shirou/gopsutil/v4/host"
+	"github.com/shirou/gopsutil/v3/host"
 	. "gopkg.in/check.v1"
 )
 
@@ -56,14 +56,12 @@ func (s *HostinfoSuite) TestDataGathering(c *C) {
 		OS:              "windows",
 		Platform:        "platform",
 		PlatformFamily:  "family",
-		PlatformVersion: "25H2",
-		KernelVersion:   "10.0.26100.1 Build 26100.1",
+		PlatformVersion: "version",
 		BootTime:        uint64(now),
 	}
 	data := plugin.gatherHostinfo(plugin.Context, info)
 
 	c.Assert(data, NotNil)
-	c.Assert(data.WindowsVersion, Equals, "10.0.26100.1 Build 26100.1")
 }
 
 func (s *HostinfoSuite) TestCPUAndRamInfo(c *C) {

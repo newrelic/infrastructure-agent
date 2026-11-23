@@ -20,9 +20,9 @@ import (
 
 	"golang.org/x/sys/windows/registry"
 
-	"github.com/shirou/gopsutil/v4/cpu"
-	"github.com/shirou/gopsutil/v4/host"
-	"github.com/shirou/gopsutil/v4/mem"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/host"
+	"github.com/shirou/gopsutil/v3/mem"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/internal/plugins/common"
@@ -113,9 +113,7 @@ func (self *HostinfoPlugin) gatherHostinfo(context agent.AgentContext, info *hos
 		HostInfoData:    commonHostInfo,
 		WindowsPlatform: info.Platform,
 		WindowsFamily:   info.PlatformFamily,
-		// KernelVersion keeps the "10.0.<build>.<ubr> Build <build>.<ubr>" format (gopsutil v3 PlatformVersion);
-		// gopsutil v4 PlatformVersion is the registry DisplayVersion (e.g. "23H2"), empty on Server 2016/2019.
-		WindowsVersion: info.KernelVersion,
+		WindowsVersion:  info.PlatformVersion,
 	}
 
 	// set specific OS fields
