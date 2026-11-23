@@ -14,7 +14,7 @@ import (
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/acquire"
 	"github.com/newrelic/infrastructure-agent/pkg/metrics/types"
 	"github.com/pkg/errors"
-	"github.com/shirou/gopsutil/v4/process"
+	"github.com/shirou/gopsutil/v3/process"
 	"github.com/sirupsen/logrus"
 )
 
@@ -171,22 +171,15 @@ func (ps *linuxHarvester) populateIOCounters(sample, lastSample *types.ProcessSa
 		return err
 	}
 	if ioCounters != nil {
-		// Bytes are the ones that reach the storage layer (/proc/<pid>/io read_bytes/write_bytes), as reported by
-		// gopsutil v3 in ReadBytes/WriteBytes. gopsutil v4 maps those to DiskReadBytes/DiskWriteBytes and uses
-		// ReadBytes/WriteBytes for rchar/wchar (every read/write syscall, incl. page cache, sockets and pipes).
 		// Delta
 		if lastSample != nil && lastSample.LastIOCounters != nil {
 			lastCounters := lastSample.LastIOCounters
 
-			mplog.WithField(config.TracesFieldName, config.FeatureTrace).Tracef(
-				"ReadCount: %d, WriteCount: %d, DiskReadBytes: %d, DiskWriteBytes: %d",
-				ioCounters.ReadCount, ioCounters.WriteCount, ioCounters.DiskReadBytes, ioCounters.DiskWriteBytes)
+			mplog.WithField(config.TracesFieldName, config.FeatureTrace).Tracef("ReadCount: %d, WriteCount: %d, ReadBytes: %d, WriteBytes: %d", ioCounters.ReadCount, ioCounters.WriteCount, ioCounters.ReadBytes, ioCounters.WriteBytes)
 			ioReadCountPerSecond := acquire.CalculateSafeDelta(ioCounters.ReadCount, lastCounters.ReadCount, elapsedSeconds)
 			ioWriteCountPerSecond := acquire.CalculateSafeDelta(ioCounters.WriteCount, lastCounters.WriteCount, elapsedSeconds)
-			ioReadBytesPerSecond := acquire.CalculateSafeDelta(
-				ioCounters.DiskReadBytes, lastCounters.DiskReadBytes, elapsedSeconds)
-			ioWriteBytesPerSecond := acquire.CalculateSafeDelta(
-				ioCounters.DiskWriteBytes, lastCounters.DiskWriteBytes, elapsedSeconds)
+			ioReadBytesPerSecond := acquire.CalculateSafeDelta(ioCounters.ReadBytes, lastCounters.ReadBytes, elapsedSeconds)
+			ioWriteBytesPerSecond := acquire.CalculateSafeDelta(ioCounters.WriteBytes, lastCounters.WriteBytes, elapsedSeconds)
 
 			sample.IOReadCountPerSecond = &ioReadCountPerSecond
 			sample.IOWriteCountPerSecond = &ioWriteCountPerSecond
@@ -197,8 +190,8 @@ func (ps *linuxHarvester) populateIOCounters(sample, lastSample *types.ProcessSa
 		// Cumulative
 		sample.IOTotalReadCount = &ioCounters.ReadCount
 		sample.IOTotalWriteCount = &ioCounters.WriteCount
-		sample.IOTotalReadBytes = &ioCounters.DiskReadBytes
-		sample.IOTotalWriteBytes = &ioCounters.DiskWriteBytes
+		sample.IOTotalReadBytes = &ioCounters.ReadBytes
+		sample.IOTotalWriteBytes = &ioCounters.WriteBytes
 
 		sample.LastIOCounters = ioCounters
 	}

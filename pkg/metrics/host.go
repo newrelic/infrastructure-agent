@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/shirou/gopsutil/v4/host"
+	"github.com/shirou/gopsutil/v3/host"
 )
 
 type HostSample struct {
