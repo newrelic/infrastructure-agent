@@ -15,8 +15,9 @@
   tasks:
     - name: Installation tests suite
       vars:
-        target_agent_version: "1.77.0" # minimum version for rhel 10
-        target_agent_version_fips: "1.77.0" # minimum version for rhel 10
+        # 1.77.0 is the minimum version for rhel 10, sles-16.0 repos start at 2.1.0 so older versions do not exist there
+        target_agent_version: "{{ '2.1.0' if 'sles-16.0' in inventory_hostname else '1.77.0' }}"
+        target_agent_version_fips: "{{ '2.1.0' if 'sles-16.0' in inventory_hostname else '1.77.0' }}"
 
       block:
         - name: Install agent
