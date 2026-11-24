@@ -16,8 +16,8 @@
   tasks:
     - name: agent upgrade tests suite
       vars:
-        # sles-16.0 repos start at 2.1.0 so older versions do not exist there
-        target_agent_version: "{{ '2.1.0' if 'sles-16.0' in inventory_hostname else '1.77.0' }}"
+        # pinned to 2.1.1 so the version exists on every supported OS (sles-16.0 repos start at 2.1.0)
+        target_agent_version: "2.1.1"
 
       block:
 
