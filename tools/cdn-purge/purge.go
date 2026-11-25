@@ -54,23 +54,25 @@ const (
 	defaultRegion = "us-east-1"
 	// more keys could be added if issues arise
 	cloudfarePurgeURL          = "https://api.cloudflare.com/client/v4/zones/ac389f8f109894ed5e2aeb2d8af3d6ce/purge_cache"
-	aptDistributionsPath       = "infrastructure_agent/linux/apt/dists/"
+	defaultRepoPath            = "infrastructure_agent"
+	aptDistributionsPath       = "linux/apt/dists/"
 	aptDistributionPackageFile = "main/binary-amd64/Packages.bz2"
-	rhDistributionsPath        = "infrastructure_agent/linux/yum/"
-	zypperDistributionsPath    = "infrastructure_agent/linux/zypp/"
+	rhDistributionsPath        = "linux/yum/"
+	zypperDistributionsPath    = "linux/zypp/"
 )
 
 var (
-	bucket, region, keysStr, cloudfareKey string
-	timeoutS3, timeoutCDN                 time.Duration
-	attempts                              int
-	verbose                               bool
+	bucket, region, repoPath, keysStr, cloudfareKey string
+	timeoutS3, timeoutCDN                           time.Duration
+	attempts                                        int
+	verbose                                         bool
 )
 
 func init() {
 	flag.BoolVar(&verbose, "v", false, "Verbose output.")
 	flag.StringVar(&bucket, "b", defaultBucket, "Bucket name.")
 	flag.StringVar(&region, "r", defaultRegion, "Region name.")
+	flag.StringVar(&repoPath, "p", defaultRepoPath, "Repository folder inside the bucket.")
 	flag.StringVar(&keysStr, "k", "", "Keys separated by comma.")
 	flag.IntVar(&attempts, "a", 5, "Retry attempts per key.")
 	flag.DurationVar(&timeoutS3, "t", 10*time.Second, "Timeout to fetch an S3 object.")
@@ -225,12 +227,12 @@ func getDefaultKeys(ctx context.Context, cl *s3.Client) ([]string, error) {
 		return nil, err
 	}
 
-	rhKeys, err := rpmDistributionsMetadataFilesKeys(ctx, cl, rhDistributionsPath)
+	rhKeys, err := rpmDistributionsMetadataFilesKeys(ctx, cl, repoPath+"/"+rhDistributionsPath)
 	if err != nil {
 		return nil, err
 	}
 
-	zypperKeys, err := rpmDistributionsMetadataFilesKeys(ctx, cl, zypperDistributionsPath)
+	zypperKeys, err := rpmDistributionsMetadataFilesKeys(ctx, cl, repoPath+"/"+zypperDistributionsPath)
 	if err != nil {
 		return nil, err
 	}
@@ -259,7 +261,7 @@ func listFoldersInPath(ctx context.Context, cl *s3.Client, s3path string) ([]str
 }
 
 func aptDistributionsPackageFilesKeys(ctx context.Context, cl *s3.Client) ([]string, error) {
-	aptDistrosPaths, err := listFoldersInPath(ctx, cl, aptDistributionsPath)
+	aptDistrosPaths, err := listFoldersInPath(ctx, cl, repoPath+"/"+aptDistributionsPath)
 	if err != nil {
 		return nil, err
 	}

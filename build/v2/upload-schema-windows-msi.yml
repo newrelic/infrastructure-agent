@@ -1,0 +1,20 @@
+---
+- src: "newrelic-infra-amd64.{version}.msi"
+  uploads:
+    - type: file
+      dest: "{dest_prefix}windows/newrelic-infra.{version}.msi"
+    - type: file
+      override: true
+      dest: "{dest_prefix}windows/newrelic-infra.msi"
+
+
+#########################
+  # UPLOAD CHECKSUMS #
+#########################
+- src: "newrelic-infra-amd64.{version}.msi.sum"
+  uploads:
+    - type: file
+      dest: "{dest_prefix}windows/newrelic-infra.{version}.msi.sum"
+    - type: file
+      override: true
+      dest: "{dest_prefix}windows/newrelic-infra.msi.sum"

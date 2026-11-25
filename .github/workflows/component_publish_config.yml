@@ -1,0 +1,174 @@
+name: .. 🚧 Publish target config
+
+# Single source of truth for where (v1 or v2 layout) packages are published.
+#
+# The target is selected by the repository variable PUBLISH_VERSION (v1 | v2). It is one switch for
+# staging and production alike: prerelease (staging) and release (production) always use the same version.
+#   v1 -> original buckets and credentials, repository path  infrastructure_agent/
+#   v2 -> SAME buckets, region and lock bucket as v1, repository path  infrastructure_agent_v2/
+#
+# Only the publish path differs between the two: both write into nr-downloads-ohai-staging (staging) and
+# nr-downloads-main (production), so v1 and v2 side by side never touch each other's files.
+#
+# Rollback: set the repository variable PUBLISH_VERSION back to v1 (no code change needed).
+#
+# The publish action itself stays at @v1 for both sets. The publish itself is NOT switched here: the entrypoint workflows call publish_stage_v1.yml or
+# publish_stage_v2.yml depending on the same variable. This file serves publish_stage_v2.yml (bucket
+# names and repository path), the test endpoints (prerelease*, molecule, recover) and the on-demand workflows.
+
+on:
+  workflow_call:
+    inputs:
+      ENV:
+        description: 'Environment to publish to: staging | production'
+        required: true
+        type: string
+      PUBLISH_VERSION:
+        description: 'Overrides the PUBLISH_VERSION repository variable: v1 | v2 (empty = use the variable)'
+        required: false
+        type: string
+        default: ''
+      DEST_PREFIX:
+        description: 'Test runs only: publish under testing-pre-releases/<DEST_PREFIX>/ instead of the v2 repository path (staging + v2 only)'
+        required: false
+        type: string
+        default: ''
+    outputs:
+      publish_version:
+        description: 'Selected publish layout: v1 (infrastructure_agent) | v2 (infrastructure_agent_v2)'
+        value: ${{ jobs.config.outputs.publish_version }}
+      aws_s3_bucket_name:
+        value: ${{ jobs.config.outputs.aws_s3_bucket_name }}
+      aws_s3_lock_bucket_name:
+        value: ${{ jobs.config.outputs.aws_s3_lock_bucket_name }}
+      access_point_host:
+        value: ${{ jobs.config.outputs.access_point_host }}
+      aws_region:
+        description: 'Region of the buckets (us-east-1, shared by v1 and v2)'
+        value: ${{ jobs.config.outputs.aws_region }}
+      aws_lock_region:
+        description: 'Region of the lock bucket (us-east-1, shared by v1 and v2)'
+        value: ${{ jobs.config.outputs.aws_lock_region }}
+      dest_prefix:
+        description: 'Full publish-action dest_prefix (v2: infrastructure_agent_v2/, or the testing-pre-releases one; empty for v1)'
+        value: ${{ jobs.config.outputs.dest_prefix }}
+      s3_website_url:
+        description: 'S3 website endpoint of the bucket (no path)'
+        value: ${{ jobs.config.outputs.s3_website_url }}
+      repo_endpoint:
+        description: 'Repository endpoint used by install tests'
+        value: ${{ jobs.config.outputs.repo_endpoint }}
+      repo_path:
+        description: 'Repository folder inside the bucket: infrastructure_agent (v1) | infrastructure_agent_v2 (v2)'
+        value: ${{ jobs.config.outputs.repo_path }}
+
+permissions:
+  contents: read
+
+jobs:
+  config:
+    name: Resolve publish target
+    runs-on: ubuntu-latest
+    outputs:
+      publish_version: ${{ steps.resolve.outputs.publish_version }}
+      aws_s3_bucket_name: ${{ steps.resolve.outputs.aws_s3_bucket_name }}
+      aws_s3_lock_bucket_name: ${{ steps.resolve.outputs.aws_s3_lock_bucket_name }}
+      access_point_host: ${{ steps.resolve.outputs.access_point_host }}
+      aws_region: ${{ steps.resolve.outputs.aws_region }}
+      aws_lock_region: ${{ steps.resolve.outputs.aws_lock_region }}
+      dest_prefix: ${{ steps.resolve.outputs.dest_prefix }}
+      s3_website_url: ${{ steps.resolve.outputs.s3_website_url }}
+      repo_endpoint: ${{ steps.resolve.outputs.repo_endpoint }}
+      repo_path: ${{ steps.resolve.outputs.repo_path }}
+    steps:
+      - name: Resolve publish target
+        id: resolve
+        env:
+          TARGET_ENV: ${{ inputs.ENV }}
+          VERSION_OVERRIDE: ${{ inputs.PUBLISH_VERSION }}
+          VERSION_VAR: ${{ vars.PUBLISH_VERSION }}
+          DEST_PREFIX_INPUT: ${{ inputs.DEST_PREFIX }}
+        run: |
+          # precedence: workflow input (test runs) > PUBLISH_VERSION repository variable > v1
+          version="${VERSION_OVERRIDE:-${VERSION_VAR:-v1}}"
+
+          case "${version}" in
+            v1|v2) ;;
+            *) echo "::error::PUBLISH_VERSION must be v1 or v2, got '${version}'"; exit 1 ;;
+          esac
+
+          # S3 static-website endpoint: us-east-1 uses the legacy "s3-website-<region>" form, newer regions "s3-website.<region>"
+          website_host() {
+            if [ "$1" = "us-east-1" ]; then echo "s3-website-us-east-1.amazonaws.com"; else echo "s3-website.$1.amazonaws.com"; fi
+          }
+
+          # v1 and v2 share buckets, regions and lock buckets; only the repository folder differs
+          repo_path="infrastructure_agent"
+          [ "${version}" = "v2" ] && repo_path="infrastructure_agent_v2"
+
+          case "${TARGET_ENV}" in
+            staging)
+              region="us-east-1"
+              lock_region="us-east-1"
+              bucket="nr-downloads-ohai-staging"
+              lock_bucket="onhost-ci-lock-staging"
+              access_point_host="staging"
+              repo_endpoint="http://${bucket}.$(website_host "${region}")/${repo_path}"
+              ;;
+            production)
+              region="us-east-1"
+              lock_region="us-east-1"
+              bucket="nr-downloads-main"
+              lock_bucket="onhost-ci-lock"
+              access_point_host="production"
+              # public URL stays infrastructure_agent for v1 and v2: the ELB maps it to infrastructure_agent_v2 on cutover
+              repo_endpoint="https://download.newrelic.com/infrastructure_agent"
+              ;;
+            *)
+              echo "::error::ENV must be staging or production, got '${TARGET_ENV}'"
+              exit 1
+              ;;
+          esac
+
+          # Test runs: publish under testing-pre-releases/<name>/, same layout as the on-demand workflows.
+          dest_prefix=""
+          if [ -n "${DEST_PREFIX_INPUT}" ]; then
+            if ! printf '%s' "${DEST_PREFIX_INPUT}" | grep -Eq '^[A-Za-z0-9._-]+$'; then
+              echo "::error::dest_prefix may only contain letters, digits, '.', '_' and '-', got '${DEST_PREFIX_INPUT}'"
+              exit 1
+            fi
+            if [ "${TARGET_ENV}" != "staging" ] || [ "${version}" != "v2" ]; then
+              echo "::error::dest_prefix is only supported for staging with v2 (env=${TARGET_ENV}, version=${version}); refusing to publish to the repository root"
+              exit 1
+            fi
+            dest_prefix="testing-pre-releases/${DEST_PREFIX_INPUT}/${repo_path}/"
+            access_point_host="http://${bucket}.$(website_host "${region}")/testing-pre-releases/${DEST_PREFIX_INPUT}"
+            repo_endpoint="${access_point_host}/${repo_path}"
+          elif [ "${version}" = "v2" ]; then
+            dest_prefix="${repo_path}/"
+          fi
+
+          # v2 keeps its own apt/yum repository under ${repo_path}; the "staging"/"production" keywords make the
+          # publish action read the v1 repository, so v2 passes the plain host (the schemas append /${repo_path}).
+          if [ "${version}" = "v2" ] && [ -z "${DEST_PREFIX_INPUT}" ]; then
+            if [ "${TARGET_ENV}" = "staging" ]; then
+              access_point_host="http://${bucket}.$(website_host "${region}")"
+            else
+              access_point_host="https://download.newrelic.com"
+            fi
+          fi
+
+          {
+            echo "publish_version=${version}"
+            echo "dest_prefix=${dest_prefix}"
+            echo "aws_s3_bucket_name=${bucket}"
+            echo "aws_s3_lock_bucket_name=${lock_bucket}"
+            echo "access_point_host=${access_point_host}"
+            echo "aws_region=${region}"
+            echo "aws_lock_region=${lock_region}"
+            echo "s3_website_url=http://${bucket}.$(website_host "${region}")"
+            echo "repo_endpoint=${repo_endpoint}"
+            echo "repo_path=${repo_path}"
+          } >> "${GITHUB_OUTPUT}"
+
+          echo "Publishing ${TARGET_ENV} with bucket set ${version} to s3://${bucket}"

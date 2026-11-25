@@ -1,0 +1,130 @@
+name: .. 🚧 Publish stage | v2 (new batch bucket and credentials)
+
+# v2 publish stage: runs the v2 component workflows (same infrastructure-publish-action@v1) against the new
+# bucket. Credentials: the *_V2 secrets if they exist, otherwise the same secrets v1 uses (so they only need
+# creating when bucket 2 gets its own credentials). Bucket names live in component_publish_config.yml.
+# Called by the entrypoint workflows when the repository variable PUBLISH_VERSION is 'v2'.
+# Roll back by setting PUBLISH_VERSION to v1 (after syncing the buckets, see sync-s3-bucket.yml).
+
+on:
+  workflow_call:
+    inputs:
+      ENV:
+        description: 'staging | production'
+        required: true
+        type: string
+      TAG:
+        required: true
+        type: string
+      ASSETS_TYPE:
+        required: false
+        type: string
+        default: 'all'
+      LINUX:
+        description: 'Publish the Linux packages'
+        required: false
+        type: boolean
+        default: true
+      WINDOWS:
+        description: 'Publish the Windows packages'
+        required: false
+        type: boolean
+        default: true
+      DEST_PREFIX:
+        description: 'Test runs only: publish under testing-pre-releases/<DEST_PREFIX>/ (staging only)'
+        required: false
+        type: string
+        default: ''
+      WINDOWS_DISABLE_LOCK:
+        required: false
+        type: boolean
+        default: true
+      PURGE:
+        description: 'Purge the CDN after publishing (production only)'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      CLOUDFARE_KEY:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  config:
+    name: Resolve publish v2 target
+    uses: ./.github/workflows/component_publish_config.yml
+    with:
+      ENV: ${{ inputs.ENV }}
+      PUBLISH_VERSION: v2
+      DEST_PREFIX: ${{ inputs.DEST_PREFIX }}
+
+  publish-linux:
+    name: Publish linux artifacts into s3 (v2)
+    if: ${{ inputs.LINUX }}
+    uses: ./.github/workflows/component_linux_publish_v2.yml
+    needs: config
+    secrets:
+      DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
+      DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
+      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      AWS_ACCESS_KEY_ID: ${{ (inputs.ENV == 'production' && (secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION_V2 || secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION)) || (inputs.ENV != 'production' && (secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING_V2 || secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING)) }}
+      AWS_SECRET_ACCESS_KEY: ${{ (inputs.ENV == 'production' && (secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION_V2 || secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION)) || (inputs.ENV != 'production' && (secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING_V2 || secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING)) }}
+      AWS_ROLE_ARN: ${{ (inputs.ENV == 'production' && (secrets.OHAI_AWS_ROLE_ARN_PRODUCTION_V2 || secrets.OHAI_AWS_ROLE_ARN_PRODUCTION)) || (inputs.ENV != 'production' && (secrets.OHAI_AWS_ROLE_ARN_STAGING_V2 || secrets.OHAI_AWS_ROLE_ARN_STAGING)) }}
+      AWS_ROLE_SESSION_NAME: ${{ (inputs.ENV == 'production' && (secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION_V2 || secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION)) || (inputs.ENV != 'production' && (secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING_V2 || secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING)) }}
+    with:
+      ACCESS_POINT_HOST: ${{ needs.config.outputs.access_point_host }}
+      SCHEMA_BRANCH: "master"
+      RUN_ID: ${{ github.run_id }}
+      TAG: ${{ inputs.TAG }}
+      AWS_S3_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_bucket_name }}
+      AWS_S3_LOCK_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_lock_bucket_name }}
+      ASSETS_TYPE: ${{ inputs.ASSETS_TYPE }}
+      DEST_PREFIX: ${{ needs.config.outputs.dest_prefix }}
+      AWS_REGION: ${{ needs.config.outputs.aws_region }}
+      AWS_LOCK_REGION: ${{ needs.config.outputs.aws_lock_region }}
+
+  publish-windows:
+    name: Publish windows artifacts into s3 (v2)
+    if: ${{ inputs.WINDOWS }}
+    uses: ./.github/workflows/component_windows_publish_v2.yml
+    needs: config
+    secrets:
+      DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
+      DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
+      GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+      GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
+      AWS_ACCESS_KEY_ID: ${{ (inputs.ENV == 'production' && (secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION_V2 || secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION)) || (inputs.ENV != 'production' && (secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING_V2 || secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING)) }}
+      AWS_SECRET_ACCESS_KEY: ${{ (inputs.ENV == 'production' && (secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION_V2 || secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION)) || (inputs.ENV != 'production' && (secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING_V2 || secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING)) }}
+      AWS_ROLE_ARN: ${{ (inputs.ENV == 'production' && (secrets.OHAI_AWS_ROLE_ARN_PRODUCTION_V2 || secrets.OHAI_AWS_ROLE_ARN_PRODUCTION)) || (inputs.ENV != 'production' && (secrets.OHAI_AWS_ROLE_ARN_STAGING_V2 || secrets.OHAI_AWS_ROLE_ARN_STAGING)) }}
+      AWS_ROLE_SESSION_NAME: ${{ (inputs.ENV == 'production' && (secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION_V2 || secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION)) || (inputs.ENV != 'production' && (secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING_V2 || secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING)) }}
+    with:
+      ACCESS_POINT_HOST: ${{ needs.config.outputs.access_point_host }}
+      SCHEMA_BRANCH: "master"
+      RUN_ID: ${{ github.run_id }}
+      TAG: ${{ inputs.TAG }}
+      AWS_S3_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_bucket_name }}
+      AWS_S3_LOCK_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_lock_bucket_name }}
+      ASSETS_TYPE: ${{ inputs.ASSETS_TYPE }}
+      DEST_PREFIX: ${{ needs.config.outputs.dest_prefix }}
+      AWS_REGION: ${{ needs.config.outputs.aws_region }}
+      AWS_LOCK_REGION: ${{ needs.config.outputs.aws_lock_region }}
+      DISABLE_LOCK: ${{ inputs.WINDOWS_DISABLE_LOCK }}
+
+  purge-cdn:
+    name: Purge CDN (v2)
+    if: ${{ inputs.PURGE && !failure() && !cancelled() }}
+    needs: [ config, publish-linux, publish-windows ]
+    uses: ./.github/workflows/component_purge_cdn.yml
+    secrets:
+      CLOUDFARE_KEY: ${{ secrets.CLOUDFARE_KEY }}
+      AWS_ACCESS_KEY_ID: ${{ (inputs.ENV == 'production' && (secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION_V2 || secrets.OHAI_AWS_ACCESS_KEY_ID_PRODUCTION)) || (inputs.ENV != 'production' && (secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING_V2 || secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING)) }}
+      AWS_SECRET_ACCESS_KEY: ${{ (inputs.ENV == 'production' && (secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION_V2 || secrets.OHAI_AWS_SECRET_ACCESS_KEY_PRODUCTION)) || (inputs.ENV != 'production' && (secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING_V2 || secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING)) }}
+      AWS_ROLE_ARN: ${{ (inputs.ENV == 'production' && (secrets.OHAI_AWS_ROLE_ARN_PRODUCTION_V2 || secrets.OHAI_AWS_ROLE_ARN_PRODUCTION)) || (inputs.ENV != 'production' && (secrets.OHAI_AWS_ROLE_ARN_STAGING_V2 || secrets.OHAI_AWS_ROLE_ARN_STAGING)) }}
+      AWS_ROLE_SESSION_NAME: ${{ (inputs.ENV == 'production' && (secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION_V2 || secrets.OHAI_AWS_ROLE_SESSION_NAME_PRODUCTION)) || (inputs.ENV != 'production' && (secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING_V2 || secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING)) }}
+    with:
+      AWS_S3_BUCKET_NAME: ${{ needs.config.outputs.aws_s3_bucket_name }}
+      AWS_REGION: ${{ needs.config.outputs.aws_region }}
+      REPO_PATH: ${{ needs.config.outputs.repo_path }}
