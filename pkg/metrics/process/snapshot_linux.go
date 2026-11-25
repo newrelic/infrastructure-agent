@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -334,7 +335,22 @@ func (pw *linuxProcess) VmSize() int64 {
 }
 
 func (pw *linuxProcess) Command() string {
-	return pw.stats.command
+	// `comm` values in Linux are limited to TASK_COMM_LEN (16) chars (inc. null byte),
+	// if it's shorter than that, return the value from /proc/<pid>/stat
+	// Reading the link requires read permissions on the executable,
+	// so this is only available when running as root.
+	if len(pw.stats.command) < 15 || !pw.privileged {
+		return pw.stats.command
+	}
+
+	// Otherwise, read the link of /proc/<pid>/exe and return the base name
+	exePath, err := pw.process.Exe()
+	if err != nil {
+		return pw.stats.command
+	}
+
+	exeName := filepath.Base(exePath)
+	return exeName
 }
 
 //////////////////////////
