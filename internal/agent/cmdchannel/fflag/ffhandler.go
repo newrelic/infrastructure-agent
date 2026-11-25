@@ -23,11 +23,12 @@ const (
 	FlagParallelizeInventory  = "parallelize_inventory_enabled"
 	FlagAsyncInventoryHandler = "async_inventory_handler_enabled"
 
-	FlagProtocolV4            = "protocol_v4_enabled"
-	FlagFullProcess           = "full_process_sampling"
-	FlagDmRegisterDeprecated  = "dm_register_deprecated"
-	FlagFluentBit19           = "fluent_bit_19_win"
-	FlagFullInventoryDeletion = "full_inventory_deletion"
+	FlagProtocolV4               = "protocol_v4_enabled"
+	FlagFullProcess              = "full_process_sampling"
+	FlagDmRegisterDeprecated     = "dm_register_deprecated"
+	FlagFluentBit19              = "fluent_bit_19_win"
+	FlagFullInventoryDeletion    = "full_inventory_deletion"
+	FlagFluentBitZstdCompression = "fluent_bit_zstd_compression_enabled"
 	// Config
 	CfgYmlRegisterEnabled              = "register_enabled"
 	CfgYmlParallelizeInventory         = "inventory_queue_len"
@@ -152,6 +153,12 @@ func (h *handler) Handle(ctx context.Context, c commandapi.Command, isInitialFet
 	}
 
 	if ffArgs.Flag == FlagFluentBit19 {
+		h.handleFBRestart(ffArgs)
+
+		return
+	}
+
+	if ffArgs.Flag == FlagFluentBitZstdCompression {
 		h.handleFBRestart(ffArgs)
 
 		return
