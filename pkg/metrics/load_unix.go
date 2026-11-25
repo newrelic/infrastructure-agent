@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"runtime/debug"
 
-	"github.com/shirou/gopsutil/v3/load"
+	"github.com/shirou/gopsutil/v4/load"
 )
 
 func NewLoadMonitor() *LoadMonitor {

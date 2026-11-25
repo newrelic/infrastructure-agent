@@ -21,7 +21,7 @@ import (
 	"unsafe"
 
 	"github.com/newrelic/infrastructure-agent/pkg/sample"
-	gopsnet "github.com/shirou/gopsutil/v3/net"
+	gopsnet "github.com/shirou/gopsutil/v4/net"
 
 	"github.com/newrelic/infrastructure-agent/internal/agent"
 	"github.com/newrelic/infrastructure-agent/pkg/config"

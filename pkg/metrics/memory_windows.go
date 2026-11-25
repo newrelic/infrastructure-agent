@@ -2,7 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 package metrics
 
-import "github.com/shirou/gopsutil/v3/mem"
+import (
+	"fmt"
+
+	"github.com/shirou/gopsutil/v4/mem"
+)
 
 // NewMemoryMonitor returns a reference to a memory monitor that reads the memory metrics as reported by the system
 func NewMemoryMonitor(_ bool) *MemoryMonitor {
@@ -21,17 +25,31 @@ func gopsMemorySample() (*mem.VirtualMemoryStat, error) {
 }
 
 // returns the available swap metrics.
+//
+// On Windows swap is reported as commit limit/charge (RAM + pagefile), as the agent did with gopsutil v3 and
+// as other agents (e.g. Datadog system.swap.*) do. gopsutil v4 mem.SwapMemory reports the pagefile only, which
+// would silently change swapTotalBytes/swapUsedBytes/swapFreeBytes for existing Windows hosts.
 func swapMemory() (*SwapSample, error) {
-	swap, err := mem.SwapMemory()
+	ex, err := mem.NewExWindows().VirtualMemory()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("reading commit limit/charge: %w", err)
+	}
+
+	return commitSwapSample(ex.CommitTotal, ex.CommitLimit), nil
+}
+
+// commitSwapSample builds the swap sample from the commit charge and limit, both in bytes.
+func commitSwapSample(commitTotal, commitLimit uint64) *SwapSample {
+	var free uint64
+	if commitLimit > commitTotal {
+		free = commitLimit - commitTotal
 	}
 
 	return &SwapSample{
-		SwapFree:  float64(swap.Free),
-		SwapTotal: float64(swap.Total),
-		SwapUsed:  float64(swap.Used),
-	}, nil
+		SwapFree:  float64(free),
+		SwapTotal: float64(commitLimit),
+		SwapUsed:  float64(commitTotal),
+	}
 }
 
 // returns the memory metrics.
