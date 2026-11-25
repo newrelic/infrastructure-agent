@@ -23,6 +23,8 @@ permissions:
 env:
   TAG: ${{ inputs.TAG }}
   DOCKER_PUBLISH: ${{ inputs.PUBLISH == true }}
+  DOCKER_HUB_ID: ${{ secrets.DOCKER_HUB_ID }}
+  DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
 jobs:
   build-container:
@@ -41,10 +43,11 @@ jobs:
           version: v0.13.1
 
       - name: Login to DockerHub
+        if: ${{ env.DOCKER_HUB_ID != '' && env.DOCKER_HUB_PASSWORD != '' }}
         uses: docker/login-action@v4
         with:
-          username: ${{ secrets.DOCKER_HUB_ID }}
-          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+          username: ${{ env.DOCKER_HUB_ID }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
 
       - name: Build agent binaries
         run: make ci/build

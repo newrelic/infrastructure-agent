@@ -85,7 +85,7 @@ jobs:
 
     steps:
       - name: Login to DockerHub
-        if: ${{ (env.ASSETS_TYPE == 'all' || env.ASSETS_TYPE == matrix.assetsType) }}
+        if: ${{ (env.ASSETS_TYPE == 'all' || env.ASSETS_TYPE == matrix.assetsType) && env.DOCKER_HUB_ID != '' && env.DOCKER_HUB_PASSWORD != '' }}
         uses: docker/login-action@v1
         with:
           username: ${{ env.DOCKER_HUB_ID }}

@@ -23,6 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Login to DockerHub
+        if: ${{ env.DOCKER_HUB_ID != '' && env.DOCKER_HUB_PASSWORD != '' }}
         uses: docker/login-action@v1
         with:
           username: ${{ env.DOCKER_HUB_ID }}
@@ -30,6 +31,7 @@ jobs:
       - name: Install go deps
         run: make ci/deps
       - name: Scan code for vulnerabilities with Snyk
+        if: ${{ env.SNYK_TOKEN != '' }}
         run: make ci/snyk-test
 
   scan-container:
@@ -48,6 +50,7 @@ jobs:
           version: v0.13.1
 
       - name: Login to DockerHub
+        if: ${{ env.DOCKER_HUB_ID != '' && env.DOCKER_HUB_PASSWORD != '' }}
         uses: docker/login-action@v1
         with:
           username: ${{ env.DOCKER_HUB_ID }}

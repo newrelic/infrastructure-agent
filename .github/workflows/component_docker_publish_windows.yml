@@ -22,6 +22,8 @@ permissions: {}
 
 env:
   TAG: ${{ inputs.TAG }}
+  DOCKER_HUB_ID: ${{ secrets.OHAI_DOCKER_HUB_ID }}
+  DOCKER_HUB_PASSWORD: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
 
 jobs:
   publish-windows-ltsc2022:
@@ -30,10 +32,11 @@ jobs:
 
     steps:
       - name: Login to DockerHub
+        if: ${{ env.DOCKER_HUB_ID != '' && env.DOCKER_HUB_PASSWORD != '' }}
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.OHAI_DOCKER_HUB_ID }}
-          password: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
+          username: ${{ env.DOCKER_HUB_ID }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
 
       - name: Pull RC image
         run: docker pull newrelic/infrastructure:${{ env.TAG }}-rc-ltsc2022
@@ -50,10 +53,11 @@ jobs:
 
     steps:
       - name: Login to DockerHub
+        if: ${{ env.DOCKER_HUB_ID != '' && env.DOCKER_HUB_PASSWORD != '' }}
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.OHAI_DOCKER_HUB_ID }}
-          password: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
+          username: ${{ env.DOCKER_HUB_ID }}
+          password: ${{ env.DOCKER_HUB_PASSWORD }}
 
       - name: Pull RC image
         run: docker pull newrelic/infrastructure:${{ env.TAG }}-rc-ltsc2019
