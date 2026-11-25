@@ -17,6 +17,7 @@ import (
 
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/cache"
 
+	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/health"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/integration"
 	"github.com/newrelic/infrastructure-agent/internal/integrations/v4/when"
 	"github.com/newrelic/infrastructure-agent/pkg/databind/pkg/data"
@@ -66,6 +67,8 @@ type runner struct {
 	cache          cache.Cache
 	terminateQueue chan<- string
 	idLookup       host.IDLookup
+	// healthReporter is nil unless integrations health reporting is enabled, which is the default.
+	healthReporter *health.Reporter
 }
 
 // NewRunner creates an integration runner instance.
@@ -102,6 +105,33 @@ func NewRunner(
 	return r
 }
 
+// WithHealthReporter sets the reporter this runner records its execution results into, and returns
+// the runner so it can be chained onto NewRunner. A nil reporter, the default, disables health
+// recording entirely.
+func (r *runner) WithHealthReporter(hr *health.Reporter) *runner { //nolint:revive
+	r.healthReporter = hr
+
+	return r
+}
+
+// recordHealth stores the outcome of an execution round. It is a no-op when health reporting is
+// disabled, and a write failure never interrupts the integration.
+func (r *runner) recordHealth(res health.Result) {
+	if r.healthReporter == nil {
+		return
+	}
+
+	if err := r.healthReporter.Record(r.definition.Hash(), r.definition.Name, res); err != nil {
+		r.log.WithError(err).Warn("Cannot write integration health file")
+	}
+}
+
+// lineOutcome is what one integration process' standard output produced, from a health standpoint.
+type lineOutcome struct {
+	dataPayloads int
+	errs         []string
+}
+
 func (r *runner) Run(ctx context.Context, pidWCh, exitCodeCh chan<- int) {
 	r.log = illog.WithFields(LogFields(r.definition))
 	defer r.killChildren()
@@ -119,11 +149,17 @@ func (r *runner) Run(ctx context.Context, pidWCh, exitCodeCh chan<- int) {
 			r.log.
 				WithError(helpers.ObfuscateSensitiveDataFromError(err)).
 				Error("can't fetch discovery items")
+			r.recordHealth(health.Result{
+				Executions: 1,
+				Errors:     []string{helpers.ObfuscateSensitiveDataFromError(err).Error()},
+			})
 		} else {
 			if when.All(r.definition.WhenConditions...) {
 				r.execute(ctx, discovery, info, pidWCh, exitCodeCh)
 			} else {
 				r.log.Debug("Integration conditions where not met, skipping execution")
+				// nothing ran, which is not a failure of the integration
+				r.recordHealth(health.Result{})
 			}
 		}
 
@@ -252,6 +288,11 @@ func (r *runner) execute(ctx context.Context, matches *databind.Values, discover
 	if err != nil {
 		txn.NoticeError(err)
 		r.log.WithError(err).Error("can't start integration")
+		r.recordHealth(health.Result{
+			Executions: 1,
+			Errors:     []string{helpers.ObfuscateSensitiveDataFromError(err).Error()},
+		})
+
 		return
 	}
 
@@ -259,11 +300,17 @@ func (r *runner) execute(ctx context.Context, matches *databind.Values, discover
 	wg := sync.WaitGroup{}
 	waitForCurrent := make(chan struct{})
 	wg.Add(len(outputs) * 3)
-	for _, out := range outputs {
-		o := out
+
+	// each goroutine writes only its own index, so these need no lock; they must not be read before
+	// waitForCurrent is closed
+	lineOutcomes := make([]lineOutcome, len(outputs))
+	errOutcomes := make([][]string, len(outputs))
+
+	for i, out := range outputs {
+		i, o := i, out
 		go func(txn instrumentation.Transaction) {
 			defer wg.Done()
-			r.handleLines(ctx, o.Receive.Stdout, o.ExtraLabels, o.EntityRewrite)
+			lineOutcomes[i] = r.handleLines(ctx, o.Receive.Stdout, o.ExtraLabels, o.EntityRewrite)
 		}(txn)
 
 		go func(txn instrumentation.Transaction) {
@@ -273,8 +320,7 @@ func (r *runner) execute(ctx context.Context, matches *databind.Values, discover
 
 		go func(txn instrumentation.Transaction) {
 			defer wg.Done()
-			r.handleErrors(ctx, o.Receive.Errors)
-
+			errOutcomes[i] = r.handleErrorsAndCollect(ctx, o.Receive.Errors)
 		}(txn)
 	}
 
@@ -287,11 +333,32 @@ func (r *runner) execute(ctx context.Context, matches *databind.Values, discover
 	select {
 	case <-ctx.Done():
 		r.log.Debug("Integration has been interrupted. Finishing.")
+		// the goroutines above may still be writing to lineOutcomes and errOutcomes, so report a
+		// fixed result instead of reading them
+		r.recordHealth(health.Result{
+			Executions: len(outputs),
+			Errors:     []string{"integration execution was interrupted or timed out"},
+		})
 	case <-waitForCurrent:
 		r.log.Debug("Integration instances finished their execution. Waiting until next interval.")
+		r.recordHealth(roundResult(lineOutcomes, errOutcomes))
+	}
+}
+
+// roundResult collapses the per-process outcomes of one execution round into a single result.
+func roundResult(lineOutcomes []lineOutcome, errOutcomes [][]string) health.Result {
+	res := health.Result{Executions: len(lineOutcomes)}
+
+	for _, outcome := range lineOutcomes {
+		res.DataPayloads += outcome.dataPayloads
+		res.Errors = append(res.Errors, outcome.errs...)
 	}
 
-	return
+	for _, errs := range errOutcomes {
+		res.Errors = append(res.Errors, errs...)
+	}
+
+	return res
 }
 
 func (r *runner) handleStderr(stderr <-chan []byte) {
@@ -365,9 +432,50 @@ func (r *runner) logErrors(ctx context.Context, errs <-chan error) {
 	}
 }
 
-func (r *runner) handleLines(ctx context.Context, stdout <-chan []byte, extraLabels data.Map, entityRewrite []data.EntityRewrite) {
+// handleErrorsAndCollect forwards the execution error channel to the configured error handler and,
+// when health reporting is enabled, collects the obfuscated error messages on the way. Draining
+// errs to completion is what guarantees the forwarding goroutine terminates: the executor closes
+// the channel when the process ends.
+func (r *runner) handleErrorsAndCollect(ctx context.Context, errs <-chan error) []string {
+	if r.healthReporter == nil {
+		r.handleErrors(ctx, errs)
+
+		return nil
+	}
+
+	var collected []string
+
+	forwarded := make(chan error)
+	handlerDone := make(chan struct{})
+
+	go func() {
+		defer close(handlerDone)
+		r.handleErrors(ctx, forwarded)
+	}()
+
+	for err := range errs {
+		if err != nil {
+			collected = append(collected, helpers.ObfuscateSensitiveDataFromError(err).Error())
+		}
+
+		select {
+		case forwarded <- err:
+		case <-handlerDone:
+			// the handler returned early, most likely because the context was cancelled; keep
+			// draining errs so the executor is never blocked on a full channel
+		}
+	}
+
+	close(forwarded)
+	<-handlerDone
+
+	return collected
+}
+
+func (r *runner) handleLines(ctx context.Context, stdout <-chan []byte, extraLabels data.Map, entityRewrite []data.EntityRewrite) lineOutcome {
 	txn := instrumentation.TransactionFromContext(ctx)
 	payloadSize := 0
+	outcome := lineOutcome{}
 	for line := range stdout {
 		llog := r.log.WithFieldsF(func() logrus.Fields {
 			return logrus.Fields{"payload": string(line)}
@@ -421,9 +529,17 @@ func (r *runner) handleLines(ctx context.Context, stdout <-chan []byte, extraLab
 		}
 
 		payloadSize += len(line)
+		if r.healthReporter != nil && health.HasData(line) {
+			outcome.dataPayloads++
+		}
+
 		err := r.emitter.Emit(r.definition, extraLabels, entityRewrite, line)
 		if err != nil {
 			llog.WithError(err).Warn("Cannot emit integration payload")
+
+			if r.healthReporter != nil {
+				outcome.errs = append(outcome.errs, helpers.ObfuscateSensitiveDataFromError(err).Error())
+			}
 		} else {
 			r.heartBeat()
 		}
@@ -438,6 +554,8 @@ func (r *runner) handleLines(ctx context.Context, stdout <-chan []byte, extraLab
 	}
 
 	txn.AddAttribute("payload_size", payloadSize)
+
+	return outcome
 }
 
 func contextWithHostID(ctx context.Context, hostID string) context.Context {
